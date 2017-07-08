@@ -275,6 +275,51 @@ double wallclock(void)
 }
 
 
+/**
+ * Helper function to print file's size in human-readable format. This will
+ * produce strings such as:
+ *     44.74GB (48043231704 bytes)
+ *     921MB (965757797 bytes)
+ *     2.206MB (2313045 bytes)
+ *     38.69KB (39615 bytes)
+ *     214 bytes
+ *     0 bytes
+ * The function returns a pointer to a static string buffer, so the caller
+ * should not attempt to deallocate the buffer, or call this function from
+ * multiple threads at the same time, or hold on to the value returned for
+ * extended periods of time.
+ */
+char* filesize_to_str(size_t fsize)
+{
+  #define NSUFFIXES 4
+  #define BUFFSIZE 100
+  static char suffixes[NSUFFIXES] = {'T', 'G', 'M', 'K'};
+  static char output[BUFFSIZE];
+  for (int i = 0; i <= NSUFFIXES; i++) {
+    int shift = (NSUFFIXES - i) * 10;
+    if ((fsize >> shift) == 0) continue;
+    int ndigits = 3;
+    for (; ndigits >= 1; ndigits--) {
+      if ((fsize >> (shift + 12 - ndigits * 3)) == 0) break;
+    }
+    if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
+      if (i < NSUFFIXES) {
+        snprintf(output, BUFFSIZE, "%zd%cB (%zd bytes)",
+                 fsize >> shift, suffixes[i], fsize);
+        return output;
+      }
+    } else {
+      snprintf(output, BUFFSIZE, "%.*f%cB (%zd bytes)",
+               ndigits, (double)fsize / (1 << shift), suffixes[i], fsize);
+      return output;
+    }
+  }
+  if (fsize == 1) return "1 byte";
+  snprintf(output, BUFFSIZE, "%zd bytes", fsize);
+  return output;
+}
+
+
 
 //=================================================================================================
 //
@@ -728,7 +773,7 @@ int freadMain(freadMainArgs _args) {
         fileSize = (size_t) stat_buf.st_size;
         if (fileSize == 0) {close(fd); STOP("File is empty: %s", fnam);}
         if (verbose) {
-            DTPRINT("  File opened, size %.6f GB.\n", 1.0*fileSize/(1024*1024*1024));
+            DTPRINT("  File opened, size = %s.\n", filesize_to_str(fileSize));
             DTPRINT("  Memory mapping ... ");
         }
 
@@ -759,7 +804,7 @@ int freadMain(freadMainArgs _args) {
         fileSize = (size_t)liFileSize.QuadPart;
         if (fileSize<=0) { CloseHandle(hFile); STOP("File is empty: %s", fnam); }
         if (verbose) {
-            DTPRINT("  File opened, size %.6f GB.\n", (double)fileSize/(1024*1024*1024));
+            DTPRINT("  File opened, size = %s.\n", filesize_to_str(fileSize));
             DTPRINT("  Memory mapping ... ");
         }
         DWORD hi = (fileSize) >> 32;            // tried very very hard again on 26 & 27th April 2017 to over-map file by 1 byte
@@ -1674,7 +1719,7 @@ int freadMain(freadMainArgs _args) {
       tReread = tRead = wallclock();
       tTot = tRead-t0;
       if (hasPrinted || verbose) {
-        DTPRINT("\rRead %zd rows x %d columns from %.3fGB file in ", DTi, ncol-ndrop, 1.0*fileSize/(1024*1024*1024));
+        DTPRINT("\rRead %zd rows x %d columns from %s file in ", DTi, ncol-ndrop, filesize_to_str(fileSize));
         DTPRINT("%02d:%06.3f wall clock time\n", (int)tTot/60, fmod(tTot,60.0));
         // since parallel, clock() cycles is parallel too: so wall clock will have to do
       }
