@@ -1395,7 +1395,12 @@ int freadMain(freadMainArgs _args) {
       nJumps = 1;
     }
     size_t initialBuffRows = allocnrow / (size_t)nJumps;
+    
+    // Catch initialBuffRows==0 when max_nrows is small, seg fault #2243
+    // Rather than 10, maybe 1 would work too but then 1.5 grow factor * 1 would still be 1. This clamp
+    // should only engage when max_nrows is supplied, and supplied small too, so doesn't matter too much.
     if (initialBuffRows < 10) initialBuffRows = 10;
+    
     if (initialBuffRows > INT32_MAX) STOP("Buffer size %lld is too large\n", initialBuffRows);
     nth = imin(nJumps, nth);
 
