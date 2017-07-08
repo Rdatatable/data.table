@@ -1446,12 +1446,12 @@ int freadMain(freadMainArgs _args) {
       nJumps = 1;
     }
     size_t initialBuffRows = allocnrow / (size_t)nJumps;
-    
+
     // Catch initialBuffRows==0 when max_nrows is small, seg fault #2243
     // Rather than 10, maybe 1 would work too but then 1.5 grow factor * 1 would still be 1. This clamp
     // should only engage when max_nrows is supplied, and supplied small too, so doesn't matter too much.
     if (initialBuffRows < 10) initialBuffRows = 10;
-    
+
     if (initialBuffRows > INT32_MAX) STOP("Buffer size %lld is too large\n", initialBuffRows);
     nth = imin(nJumps, nth);
 
@@ -1478,7 +1478,8 @@ int freadMain(freadMainArgs _args) {
           (rowSize1 && !myBuff1) || !myBuff0) stopTeam = true;
 
       #pragma omp for ordered schedule(dynamic) reduction(+:thNextGoodLine,thRead,thPush)
-      for (int jump=0; jump<nJumps+nth; jump++) {
+      for (int jump = 0; jump < nJumps; jump++) {
+        if (stopTeam) continue;  // nothing left to do
         double tt0 = 0, tt1 = 0;
         if (verbose) { tt1 = tt0 = wallclock(); }
 
@@ -1513,7 +1514,6 @@ int freadMain(freadMainArgs _args) {
           }
           myNrow = 0;
         }
-        if (jump>=nJumps || stopTeam) continue;  // nothing left to do. This jump was the dummy extra one.
 
         const char *tch = pos + (size_t)jump*chunkBytes;
         const char *nextJump = jump<nJumps-1 ? tch+chunkBytes+eolLen : lastRowEnd;
@@ -1707,6 +1707,17 @@ int freadMain(freadMainArgs _args) {
         // END ORDERED.
         // Next thread can now start its ordered section and write its results to the final DT at the same time as me.
         // Ordered has to be last in some OpenMP implementations currently. Logically though, pushBuffer happens now.
+      }
+      // End for loop over all jump points
+
+      // Push out all buffers one last time.
+      if (myNrow) {
+        double tt1 = 0;
+        if (verbose) tt1 = wallclock();
+        pushBuffer(myBuff8, myBuff4, myBuff1, /*anchor=*/thisJumpStart,
+                   (int)myNrow, myDTi, (int)rowSize8, (int)rowSize4, (int)rowSize1,
+                   nStringCols, nNonStringCols);
+        if (verbose) thRead += wallclock() - tt1;
       }
       // Each thread to free its own buffer.
       free(myBuff8); myBuff8 = NULL;
