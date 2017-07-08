@@ -1273,10 +1273,11 @@ int freadMain(freadMainArgs _args) {
 
     size_t estnrow=1, allocnrow=1;
     double meanLineLen=0;
+    size_t bytesRead = 0;
     if (sampleLines<=1) {
       // column names only are present; e.g. fread("A\n")
     } else {
-      size_t bytesRead = (size_t)(lastRowEnd - pos);
+      bytesRead = (size_t)(lastRowEnd - pos);
       meanLineLen = (double)sumLen/sampleLines;
       estnrow = CEIL(bytesRead/meanLineLen);  // only used for progress meter and verbose line below
       double sd = sqrt( (sumLenSq - (sumLen*sumLen)/sampleLines)/(sampleLines-1) );
@@ -1392,14 +1393,20 @@ int freadMain(freadMainArgs _args) {
     if (nJumps/*from sampling*/>1) {
       // ensure data size is split into same sized chunks (no remainder in last chunk) and a multiple of nth
       // when nth==1 we still split by chunk for consistency (testing) and code sanity
-      nJumps = (int)((size_t)(lastRowEnd-pos)/chunkBytes);  // (int) rounds down
+      nJumps = (int)(bytesRead/chunkBytes);  // (int) rounds down
       if (nJumps==0) nJumps=1;
       else if (nJumps>nth) nJumps = nth*(1+(nJumps-1)/nth);
-      chunkBytes = (size_t)((lastRowEnd-pos)/nJumps);
+      chunkBytes = bytesRead / (size_t)nJumps;
     } else {
       nJumps = 1;
     }
     size_t initialBuffRows = allocnrow / (size_t)nJumps;
+    
+    // Catch initialBuffRows==0 when max_nrows is small, seg fault #2243
+    // Rather than 10, maybe 1 would work too but then 1.5 grow factor * 1 would still be 1. This clamp
+    // should only engage when max_nrows is supplied, and supplied small too, so doesn't matter too much.
+    if (initialBuffRows < 10) initialBuffRows = 10;
+    
     if (initialBuffRows > INT32_MAX) STOP("Buffer size %lld is too large\n", initialBuffRows);
     nth = imin(nJumps, nth);
 
