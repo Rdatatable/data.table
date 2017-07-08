@@ -28,7 +28,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{na}{The string to use for missing values in the data. Default is a blank string \code{""}.}
   \item{dec}{The decimal separator, by default \code{"."}. See link in references. Cannot be the same as \code{sep}.}
   \item{row.names}{Should row names be written? For compatibility with \code{data.frame} and \code{write.csv} since \code{data.table} never has row names. Hence default \code{FALSE} unlike \code{write.csv}.} 
-  \item{col.names}{Should the column names (header row) be written? If missing, \code{append=TRUE} and the file already exists, the default is set to \code{FALSE} for convenience to prevent column names appearing again mid file.}
+  \item{col.names}{Should the column names (header row) be written? The default is TRUE. However, if missing, \code{append=TRUE} and the file already exists, the default is set to \code{FALSE} for convenience to prevent column names appearing again mid file.}
   \item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings.
       \itemize{
 	\item{"escape" - the quote character (as well as the backslash character) is escaped in C style by a backslash, or}
