@@ -9959,7 +9959,9 @@ test(1800.1, fread("A\n1e55555555\n-1e+234056\n2e-59745"), data.table(A=c(Inf, -
 
 DT = data.table(A=seq(1, 1000000), B="x", C=TRUE)
 fwrite(DT, f<-tempfile())
-test(1815, fread(f, nrows=5), DT[1:5])
+test(1815, fread(f, nrows=5), DT[1:5])  #2243
+
+test(1816, fread("A,E\n1,2\n5,7\n4,6\n\x1A"), data.table(A=c(1L, 5L, 4L), E=c(2L, 7L, 6L)))  #1612
 
 ##########################
 
