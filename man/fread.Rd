@@ -112,7 +112,7 @@ finagler = "to get or achieve by guile or manipulation" \url{http://dictionary.r
 \dontrun{
 
 # Demo speedup
-n=1e6
+n = 1e6
 DT = data.table( a=sample(1:1000,n,replace=TRUE),
                  b=sample(1:1000,n,replace=TRUE),
                  c=rnorm(n),
@@ -143,21 +143,24 @@ system.time(DF2 <- read.table("test.csv",header=TRUE,sep=",",quote="",
 # 10 sec (consistently). All known tricks and known nrows, see references.
 
 require(data.table)
-system.time(DT <- fread("test.csv"))
-#  3 sec (faster and friendlier)
+if(all(sapply(c("sqldf", "ff"), requireNamespace, quietly = TRUE))) {
+  require(sqldf)
+  require(ff)
+  
+  system.time(DT <- fread("test.csv"))
+  #  3 sec (faster and friendlier)
 
-require(sqldf)
-system.time(SQLDF <- read.csv.sql("test.csv",dbname=NULL))
-# 20 sec (friendly too, good defaults)
+  system.time(SQLDF <- read.csv.sql("test.csv",dbname=NULL))
+  # 20 sec (friendly too, good defaults)
 
-require(ff)
-system.time(FFDF <- read.csv.ffdf(file="test.csv",nrows=n))
-# 20 sec (friendly too, good defaults)
+  system.time(FFDF <- read.csv.ffdf(file="test.csv",nrows=n))
+  # 20 sec (friendly too, good defaults)
 
-identical(DF1,DF2)
-all.equal(as.data.table(DF1), DT)
-identical(DF1,within(SQLDF,{b<-as.integer(b);c<-as.numeric(c)}))
-identical(DF1,within(as.data.frame(FFDF),d<-as.character(d)))
+  identical(DF1,DF2)
+  all.equal(as.data.table(DF1), DT)
+  identical(DF1,within(SQLDF,{b<-as.integer(b);c<-as.numeric(c)}))
+  identical(DF1,within(as.data.frame(FFDF),d<-as.character(d)))
+}
 
 # Scaling up ...
 l = vector("list",10)
@@ -198,7 +201,7 @@ colClasses = sapply(read.csv("2008.csv",nrows=200),class)
 
 system.time(DF <- read.table("2008.csv", header=TRUE, sep=",",          
     quote="",stringsAsFactors=FALSE,comment.char="",nrows=7009730,      
-    colClasses=colClasses)
+    colClasses=colClasses))
 # 360 secs
 
 system.time(DT <- fread("2008.csv"))

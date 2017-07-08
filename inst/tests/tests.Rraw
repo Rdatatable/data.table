@@ -9989,6 +9989,12 @@ test(1813, fread("A,B\n1,2\n3,4", skip="4", verbose=T), output="Found skip='4' o
 test(1814, fread("A,B\n1,2\n3,4", skip=10L), error="skip=10 but the input has only 3 line(s)")
 test(1814, fread("A,B\n1,2\n3,4\n   \n\t", skip=3L), error="All input has been skipped")
 
+DT = data.table(A=seq(1, 1000000), B="x", C=TRUE)
+fwrite(DT, f<-tempfile())
+test(1815, fread(f, nrows=5), DT[1:5])  #2243
+
+test(1816, fread("A,E\n1,2\n5,7\n4,6\n\x1A"), data.table(A=c(1L, 5L, 4L), E=c(2L, 7L, 6L)))  #1612
+
 
 ##########################
 

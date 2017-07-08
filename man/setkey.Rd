@@ -24,6 +24,11 @@ attribute \code{sorted}). The sorted columns are the key. The key can be any
 columns in any order. The columns are sorted in ascending order always. The table 
 is changed \emph{by reference} and is therefore very memory efficient.
 
+\code{setindex()} creates an index on provided columns. Index is simply an 
+order of dataset by provided columns. It is being stored as \code{data.table} 
+attribute so dataset can retain original order. 
+See \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} vignette for more details.
+
 \code{key()} returns the \code{data.table}'s key if it exists, and \code{NULL} 
 if none exist.
 

@@ -136,12 +136,12 @@ options(datatable.optimize = Inf)
 options(datatable.auto.index = FALSE)
 system.time(ans1 <- dt[id == 100L]) # vector scan
 system.time(ans2 <- dt[id == 100L]) # vector scan
-system.time(dt[id %in% 100:500])    # vector scan
+system.time(dt[id \%in\% 100:500])    # vector scan
 
 options(datatable.auto.index = TRUE)
 system.time(ans1 <- dt[id == 100L]) # index + binary search subset
 system.time(ans2 <- dt[id == 100L]) # only binary search subset
-system.time(dt[id %in% 100:500])    # only binary search subset again
+system.time(dt[id \%in\% 100:500])    # only binary search subset again
 
 }}
 \keyword{ data }
