@@ -324,6 +324,51 @@ static int retreat_eof_to(const char *neweof, const char **sof,
 }
 
 
+/**
+ * Helper function to print file's size in human-readable format. This will
+ * produce strings such as:
+ *     44.74GB (48043231704 bytes)
+ *     921MB (965757797 bytes)
+ *     2.206MB (2313045 bytes)
+ *     38.69KB (39615 bytes)
+ *     214 bytes
+ *     0 bytes
+ * The function returns a pointer to a static string buffer, so the caller
+ * should not attempt to deallocate the buffer, or call this function from
+ * multiple threads at the same time, or hold on to the value returned for
+ * extended periods of time.
+ */
+char* filesize_to_str(size_t fsize)
+{
+  #define NSUFFIXES 4
+  #define BUFFSIZE 100
+  static char suffixes[NSUFFIXES] = {'T', 'G', 'M', 'K'};
+  static char output[BUFFSIZE];
+  for (int i = 0; i <= NSUFFIXES; i++) {
+    int shift = (NSUFFIXES - i) * 10;
+    if ((fsize >> shift) == 0) continue;
+    int ndigits = 3;
+    for (; ndigits >= 1; ndigits--) {
+      if ((fsize >> (shift + 12 - ndigits * 3)) == 0) break;
+    }
+    if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
+      if (i < NSUFFIXES) {
+        snprintf(output, BUFFSIZE, "%zd%cB (%zd bytes)",
+                 fsize >> shift, suffixes[i], fsize);
+        return output;
+      }
+    } else {
+      snprintf(output, BUFFSIZE, "%.*f%cB (%zd bytes)",
+               ndigits, (double)fsize / (1 << shift), suffixes[i], fsize);
+      return output;
+    }
+  }
+  if (fsize == 1) return "1 byte";
+  snprintf(output, BUFFSIZE, "%zd bytes", fsize);
+  return output;
+}
+
+
 
 //=================================================================================================
 //
@@ -860,7 +905,7 @@ int freadMain(freadMainArgs _args)
         fileSize = (size_t) stat_buf.st_size;
         if (fileSize == 0) {close(fd); STOP("File is empty: %s", fnam);}
         if (verbose) {
-            DTPRINT("  File opened, size %.6f GB.\n", 1.0*fileSize/(1024*1024*1024));
+            DTPRINT("  File opened, size = %s.\n", filesize_to_str(fileSize));
             DTPRINT("  Memory mapping ... ");
         }
 
@@ -891,7 +936,7 @@ int freadMain(freadMainArgs _args)
         fileSize = (size_t)liFileSize.QuadPart;
         if (fileSize<=0) { CloseHandle(hFile); STOP("File is empty: %s", fnam); }
         if (verbose) {
-            DTPRINT("  File opened, size %.6f GB.\n", (double)fileSize/(1024*1024*1024));
+            DTPRINT("  File opened, size = %s.\n", filesize_to_str(fileSize));
             DTPRINT("  Memory mapping ... ");
         }
         DWORD hi = (fileSize) >> 32;            // tried very very hard again on 26 & 27th April 2017 to over-map file by 1 byte
@@ -923,25 +968,31 @@ int freadMain(freadMainArgs _args)
 
     //*********************************************************************************************
     // [3] Check whether the file contains BOM (Byte Order Mark), and if yes
-    //     strip it, modifying `sof`. Also, presence of BOM allows us to
-    //     reliably detect the file's encoding.
+    //     strip it, modifying `sof`. If the last byte in file is 0x1A (Ctrl+Z)
+    //     then skip it too, modifying `eof`.
+    //     Also, presence of BOM allows us to sometimes detect file's encoding.
+    //
     //     See: https://en.wikipedia.org/wiki/Byte_order_mark
-    //     See: issues #1087 and #1465
+    //     See: issues #1087, #1465 and #1612
     //*********************************************************************************************
     if (verbose) DTPRINT("[3] Detect and skip BOM\n");
     if (fileSize >= 3 && memcmp(sof, "\xEF\xBB\xBF", 3) == 0) {
       sof += 3;
       // ienc = CE_UTF8;
-      if (args.verbose) DTPRINT("  UTF-8 byte order mark EF BB BF found at the start of the file and skipped.\n");
+      if (verbose) DTPRINT("  UTF-8 byte order mark EF BB BF found at the start of the file and skipped.\n");
     }
     else if (fileSize >= 4 && memcmp(sof, "\x84\x31\x95\x33", 4) == 0) {
       sof += 4;
       // ienc = CE_GB18030;
-      if (args.verbose) DTPRINT("  GB-18030 byte order mark 84 31 95 33 found at the start of the file and skipped.\n");
+      if (verbose) DTPRINT("  GB-18030 byte order mark 84 31 95 33 found at the start of the file and skipped.\n");
       DTWARN("GB-18030 encoding detected, however fread() is unable to decode it. Some character fields may be garbled.\n");
     }
     else if (fileSize >= 2 && sof[0] + sof[1] == '\xFE' + '\xFF') {  // either 0xFE 0xFF or 0xFF 0xFE
       STOP("File is encoded in UTF-16, this encoding is not supported by fread(). Please recode the file to UTF-8.");
+    }
+    if (eof[-1] == '\x1A') {
+      eof--;
+      if (verbose) DTPRINT("  Last byte of input found to be 0x1A (Ctrl+Z) and removed.\n");
     }
 
 
@@ -1663,6 +1714,12 @@ int freadMain(freadMainArgs _args)
       DTPRINT("  njumps=%d and chunkBytes=%zd\n", nJumps, chunkBytes);
     }
     size_t initialBuffRows = allocnrow / (size_t)nJumps;
+    
+    // Catch initialBuffRows==0 when max_nrows is small, seg fault #2243
+    // Rather than 10, maybe 1 would work too but then 1.5 grow factor * 1 would still be 1. This clamp
+    // should only engage when max_nrows is supplied, and supplied small too, so doesn't matter too much.
+    if (initialBuffRows < 10) initialBuffRows = 10;
+    
     if (initialBuffRows > INT32_MAX) STOP("Buffer size %lld is too large\n", initialBuffRows);
     nth = imin(nJumps, nth);
 
@@ -1949,9 +2006,8 @@ int freadMain(freadMainArgs _args)
       tReread = tRead = wallclock();
       tTot = tRead-t0;
       if (hasPrinted || verbose) {
-        DTPRINT("\rRead %zd rows x %d columns from %.3fGB file in ", DTi, ncol-ndrop, 1.0*fileSize/(1024*1024*1024));
-        DTPRINT("%02d:%06.3f ", (int)tTot/60, fmod(tTot,60.0));
-        DTPRINT("wall clock time (can be slowed down by any other open apps even if seemingly idle)\n");
+        DTPRINT("\rRead %zd rows x %d columns from %s file in ", DTi, ncol-ndrop, filesize_to_str(fileSize));
+        DTPRINT("%02d:%06.3f wall clock time\n", (int)tTot/60, fmod(tTot,60.0));
         // since parallel, clock() cycles is parallel too: so wall clock will have to do
       }
       // not-bumped columns are assigned type -CT_STRING in the rerun, so we have to count types now

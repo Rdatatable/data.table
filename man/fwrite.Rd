@@ -91,11 +91,11 @@ system("diff /dev/shm/tmp1.csv /dev/shm/tmp2.csv")                  # identical
 set.seed(1)
 N = 1e7
 DT = data.table(
-  str1=sample(sprintf("%010d",sample(N,1e5,replace=TRUE)), N, replace=TRUE),
-  str2=sample(sprintf("%09d",sample(N,1e5,replace=TRUE)), N, replace=TRUE),
+  str1=sample(sprintf("\%010d",sample(N,1e5,replace=TRUE)), N, replace=TRUE),
+  str2=sample(sprintf("\%09d",sample(N,1e5,replace=TRUE)), N, replace=TRUE),
   str3=sample(sapply(sample(2:30, 100, TRUE), function(n)
      paste0(sample(LETTERS, n, TRUE), collapse="")), N, TRUE),
-  str4=sprintf("%05d",sample(sample(1e5,50),N,TRUE)),
+  str4=sprintf("\%05d",sample(sample(1e5,50),N,TRUE)),
   num1=sample(round(rnorm(1e6,mean=6.5,sd=15),2), N, replace=TRUE),
   num2=sample(round(rnorm(1e6,mean=6.5,sd=15),10), N, replace=TRUE),
   str5=sample(c("Y","N"),N,TRUE),
@@ -104,7 +104,8 @@ DT = data.table(
   int2=sample(N,N,replace=TRUE)-N/2
 )                                                                   #     774MB
 system.time(fwrite(DT,"/dev/shm/tmp1.csv"))                         #      1.1s
-system.time(write.csv(DT,"/dev/shm/tmp2.csv",row.names=F,quote=F))  #     63.2s
+system.time(write.csv(DT,"/dev/shm/tmp2.csv",                       #     63.2s
+                      row.names=FALSE, quote=FALSE))
 system("diff /dev/shm/tmp1.csv /dev/shm/tmp2.csv")                  # identical
 
 unlink("/dev/shm/tmp1.csv")
