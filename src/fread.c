@@ -73,9 +73,9 @@ static const double NAND = (double)NAN;
 static const double INFD = (double)INFINITY;
 
 // Forward declarations
-static int Field(const char **this, lenOff *target, const char **end,
+static int Field(const char **ptr, lenOff *target, const char **end,
                  const char *soh, const char *eoh);
-static int parse_string(const char **this, lenOff *target);
+static int parse_string(const char **ptr, lenOff *target);
 static int parse_string_continue(const char **ptr, lenOff *target);
 
 
@@ -1447,23 +1447,13 @@ int freadMain(freadMainArgs _args)
               jlineStart = ch;  // to avoid 'Line finished early' below and get to the sampleLines++ block at the end of this while
             }
             jline++;
-            // DTPRINT("  Line %d: <<%.*s>>  (ch=%p)\n", jline, STRLIM(ch,80,end), ch, (const void*)ch);
             int field=0;
             const char *fieldStart = ch;  // Needed outside loop for error messages below
             while (*ch!=eol && field<ncol) {
                 // DTPRINT("<<%.*s>>(%d)", STRLIM(ch,20,end), ch, quoteRule);
                 fieldStart=ch;
-                int res;
-                while (type[field]<=CT_STRING && (res = fun[type[field]](&ch, trash))) {
-                  int neols = 0;
-                  while (res == 2 && neols++ < 100) {
-                    if (ch == end) {
-                      if (eoh && end != eoh) { ch = soh; end = eoh; }
-                      else { res = 1; break; }
-                    }
-                    res = parse_string_continue(&ch, trash);
-                  }
-                  if (res == 0) break;
+                while (type[field]<CT_STRING ? fun[type[field]](&ch, trash)
+                                             : Field(&ch, trash, &end, soh, eoh)) {
                   ch = fieldStart;
                   if (type[field] < CT_STRING) {
                     type[field]++;
@@ -1910,7 +1900,6 @@ int freadMain(freadMainArgs _args)
           if (!at_line_end) {
             #pragma omp critical
             if (!stopTeam) {
-              // DTPRINT("tch=%p (=lineStart+%d), *tch=%02x\n", tch, tch-tlineStart, *tch);
               stopTeam = true;
               snprintf(stopErr, stopErrSize,
                 "Too many fields on out-of-sample row %zd. Read all %d expected columns but more are present. <<%.*s>>",
