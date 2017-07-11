@@ -59,6 +59,8 @@
 
 3. Test 1675.1 updated to cope with a change in R-devel in June 2017 related to `factor()` and `NA` levels.
 
+4. Package `ezknitr` has been added to the whitelist of packages that run user code and should be consider data.table-aware, [#2266](https://github.com/Rdatatable/data.table/issues/2266). Thanks to Matt Mills for testing and reporting.
+
 ### Changes in v1.10.4  (on CRAN 01 Feb 2017)
 
 #### BUG FIXES
