@@ -1,4 +1,8 @@
-#ifdef CLOCK_REALTIME
+#if defined(CLOCK_REALTIME) && !defined(DISABLE_CLOCK_REALTIME)
+#define HAS_CLOCK_REALTIME
+#endif
+
+#ifdef HAS_CLOCK_REALTIME
   #include <time.h>      // clock_gettime for wallclock()
 #else
   #include <sys/time.h>  // gettimeofday for wallclock()
@@ -262,7 +266,7 @@ static inline _Bool nextGoodLine(const char **this, int ncol)
 double wallclock(void)
 {
     double ans = 0;
-#ifdef CLOCK_REALTIME
+#ifdef HAS_CLOCK_REALTIME
     struct timespec tp;
     if (0==clock_gettime(CLOCK_REALTIME, &tp))
         ans = (double) tp.tv_sec + 1e-9 * (double) tp.tv_nsec;
