@@ -141,7 +141,7 @@ is.ff <- function(x) inherits(x, "ff")  # define this in data.table so that we d
 
 #NCOL <- function(x) {
 #    # copied from base, but additionally covers data.table via is.list()
-#    # because NCOL in base explicity tests using is.data.frame()
+#    # because NCOL in base explicitly tests using is.data.frame()
 #    if (is.list(x) && !is.ff(x)) return(length(x))
 #    if (is.array(x) && length(dim(x)) > 1L) ncol(x) else as.integer(1L)
 #}

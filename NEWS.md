@@ -988,7 +988,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
 
   26.  `dcast.data.table` provides better error message when `fun.aggregate` is specified but it returns length != 1. Closes [#693](https://github.com/Rdatatable/data.table/issues/693). Thanks to Trevor Alexander for reporting [here on SO](http://stackoverflow.com/questions/24152733/undocumented-error-in-dcast-data-table).
 
-  27.  `dcast.data.table` tries to preserve attributes whereever possible, except when `value.var` is a `factor` (or ordered factor). For `factor` types, the casted columns will be coerced to type `character` thereby losing the `levels` attribute. Closes [#688](https://github.com/Rdatatable/data.table/issues/688). Thanks to juancentro for reporting.
+  27.  `dcast.data.table` tries to preserve attributes wherever possible, except when `value.var` is a `factor` (or ordered factor). For `factor` types, the casted columns will be coerced to type `character` thereby losing the `levels` attribute. Closes [#688](https://github.com/Rdatatable/data.table/issues/688). Thanks to juancentro for reporting.
 
   28.  `melt` now returns friendly error when `meaure.vars` are not in data instead of segfault. Closes [#699](https://github.com/Rdatatable/data.table/issues/688). Thanks to vsalmendra for [this post on SO](http://stackoverflow.com/q/24326797/559784) and the subsequent bug report.
 
