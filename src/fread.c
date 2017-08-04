@@ -33,6 +33,7 @@ static char sep, eol, eol2;
 static char whiteChar; // what to consider as whitespace to skip: ' ', '\t' or 0 means both (when sep!=' ' && sep!='\t')
 static int eolLen;
 static char quote, dec;
+static char finalByte;
 
 // Quote rule:
 //   0 = Fields may be quoted, any quote inside the field is doubled. This is
@@ -124,13 +125,9 @@ void freadCleanup(void)
       if (ret) DTPRINT("System errno %d unmapping file\n", errno);
     #endif
     mmp = NULL;
-  } else {
-    if (eof) *_const_cast(eof) = '\0';
-    // for direct char * input (e.g. tests) we temporarily put eol there so restore '\0'
-    // if (eof) for when file is empty and STOP() is called before eof has been set (test 885)
   }
   fileSize = 0;
-  sep = whiteChar = eol = eol2 = quote = dec = '\0';
+  sep = whiteChar = eol = eol2 = quote = dec = finalByte = '\0';
   eolLen = 0;
   quoteRule = -1;
   any_number_like_NAstrings = false;
@@ -220,6 +217,7 @@ static inline _Bool is_NAstring(const char *fieldStart) {
  * beginning of the next line.
  * Returns the number of fields on the current line, or -1 if the line cannot
  * be parsed using current settings.
+ * This does not need to be particularly efficient; it's just used for format detection.
  */
 static inline int countfields(const char **this)
 {
@@ -234,9 +232,10 @@ static inline int countfields(const char **this)
     if (Field(&ch, &trash)) return -1;   // -1 means this line not valid for this sep and quote rule
     // Field() leaves *ch resting on sep, eol or >=eof. Checked inside Field().
     ncol++;
-    if (ch<eof && *ch==eol) { ch+=eolLen; break; }
-    ch++;  // move over sep (which will already be last ' ' if sep=' ').
+    if (*ch==eol) { ch+=eolLen; break; }
+    ch+=(*ch==sep);  // move over sep (which will already be last ' ' if sep=' ').
   }
+  if (ch==eof && finalByte && (finalByte==sep || ncol==0 || eof[-1]==sep)) ncol++;
   *this = ch;
   return ncol;
 }
@@ -358,15 +357,15 @@ static int Field(const char **this, lenOff *target)
           break;  // found undoubled closing quote
         }
       }
-      if (ch>=eof || *ch!=quote) return 1;
-      break;
+      if (*ch==quote || (ch==eof && finalByte==quote)) break;   // we can safely reference *eof which is always '\0'
+      return 1;
     case 1:  // quoted with embedded quotes escaped; the final unescaped " must be followed by sep|eol
       while (++ch<eof && *ch!=quote && eolCount<100) {
         eolCount += (*ch==eol);
-        ch += (*ch=='\\');
+        ch += (*ch=='\\' && ch<eof-1);
       }
-      if (ch>=eof || *ch!=quote) return 1;
-      break;
+      if (*ch==quote || (ch==eof && finalByte==quote)) break;
+      return 1;
     case 2:  // (i) quoted (perhaps because the source system knows sep is present) but any quotes were not escaped at all,
              // so look for ", to define the end.   (There might not be any quotes present to worry about, anyway).
              // (ii) not-quoted but there is a quote at the beginning so it should have been, look for , at the end
@@ -746,8 +745,7 @@ int freadMain(freadMainArgs _args) {
     // the file.
     const char *sof = NULL;
     // const char *eof = NULL;
-    // Convenience variable for iteration over the file.
-    const char *ch = NULL, *end = NULL;
+    const char *ch = NULL;
 
 
     //*********************************************************************************************
@@ -756,6 +754,7 @@ int freadMain(freadMainArgs _args) {
     //*********************************************************************************************
     if (verbose) DTPRINT("[2] Opening the file\n");
     mmp = NULL;
+    finalByte = '\0';    // finalByte only ever !='\0' for files and when the file's final data line is ended abrubtly without last line ending
     if (args.input) {
         if (verbose) DTPRINT("`input` argument is given, interpreting as raw text to read\n");
         sof = args.input;
@@ -785,7 +784,7 @@ int freadMain(freadMainArgs _args) {
         // Mac doesn't appear to support MAP_POPULATE anyway (failed on CRAN when I tried).
         // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
         //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
-        mmp = mmap(NULL, fileSize+1, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW pages. +1 for '\0' we'll add
+        mmp = mmap(NULL, fileSize, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW for last page finalByte
         close(fd);  // we don't need to keep file handle open
         if (mmp == MAP_FAILED) {
 #else
@@ -820,19 +819,13 @@ int freadMain(freadMainArgs _args) {
         CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
         if (mmp == NULL) {
 #endif
-            if (sizeof(char *)==4) {
-                STOP("Opened file ok, obtained its size on disk (%.1fMB) but couldn't memory map it. This is a 32bit machine. You don't need more RAM per se but this fread function is tuned for 64bit addressability at the expense of large file support on 32bit machines. You probably need more RAM to store the resulting data.table, anyway. And most speed benefits of data.table are on 64bit with large RAM, too. Please upgrade to 64bit.", (double)fileSize/(1024*1024));
-                // if we support this on 32bit, we may need to use stat64 instead, as R does
-            } else if (sizeof(char *)==8) {
-                STOP("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. This is a 64bit machine so this is surprising. Please report.", (double)fileSize/(1024*1024));
-            } else {
-                STOP("Opened file ok, obtained its size on disk (%.1fMB), but couldn't memory map it. Size of pointer is %d on this machine. Probably failing because this is neither a 32bit or 64bit machine. Please report.", (double)fileSize/(1024*1024), sizeof(char *));
-            }
+          int nbit = 8*sizeof(char *);
+          STOP("Opened %s file ok but could not memory map it. This is a %dbit process. %s.", filesize_to_str(fileSize), nbit,
+                nbit<=32 ? "Please upgrade to 64bit" : "There is probably not enough contiguous virtual memory available");
         }
         sof = (const char*) mmp;
         if (verbose) DTPRINT("ok\n");  // to end 'Memory mapping ... '
     } else {
-        sof = NULL;
         STOP("Neither `input` nor `filename` are given, nothing to read.");
     }
     eof = sof + fileSize;
@@ -867,7 +860,7 @@ int freadMain(freadMainArgs _args) {
       eof--;
       if (verbose) DTPRINT("  Last byte of input found to be 0x1A (Ctrl+Z) and removed.\n");
     }
-
+    if (eof<=sof) STOP("Input is empty after removing BOM and any terminal control characters");
 
     //*********************************************************************************************
     // [4] Auto detect end-of-line character(s)
@@ -879,56 +872,71 @@ int freadMain(freadMainArgs _args) {
     //*********************************************************************************************
     if (verbose) DTPRINT("[4] Detect end-of-line character(s)\n");
 
-    // Scan the file until the first newline character is found. By the end of
-    // this loop `ch` will be pointing to such a character, or to eof if there
-    // are no newlines in the file.
-    ch = sof;
-    while (ch<eof && *ch!='\n' && *ch!='\r') {
-        if (*ch==quote) while(++ch<eof && *ch!=quote) {}; // (TODO unbounded to fix) allows protection of \n and \r inside column names
-        ch++;                                             // this 'if' needed in case opening protection is not closed before eof
-    }
+    // Scan the file from the end backwards until the first newline character is found. This avoids the more common of the
+    // rare case of different newlines embedded in quoted column names. It also avoids the cost of passing over a potentially
+    // very large number of column names just to find the line ending. BUT we will avoid line-ending detection altogether next
+    // and this (including eolLen) will go away.
 
-    // No newlines were found
-    if (ch>=eof) {
-        if (verbose) {
-          DTPRINT("  Input ends before any \\r or \\n observed. Input will be "
-                  "treated as a single row and copied to a temporary buffer.\n");
-        }
-        eol = eol2 = '\n';
-        eolLen = 1;
+    ch = eof-1;
+    while (ch>=sof && (*ch==' ' || *ch=='\t')) ch--;
+    if (ch>=sof && *ch!='\n' && *ch!='\r') {
+      if (args.filename) {
+        if (verbose) DTPRINT("  File ends abruptly with '%c'. If problems occur, please append a newline to properly end the last record; e.g. 'echo >> file.csv'.\n", *ch);
+        eof--;
+        finalByte = *eof;
+        *_const_cast(eof) = '\0';  // cow page
+        // finalByte could be ' ' or '\t' here because the last field may contain trailing whitespace and stripWhite
+        // could be false. That would only be the case though if other non-whitespace occurred after the final newline.
+        ch = eof-1;
+      }
+      // else char* input already ended in \0 ok, checked above
+      // Now keep searching backwards to find the last newline
+      while (ch>=sof && *ch!='\n' && *ch!='\r') ch--;
     }
-    // Otherwise `ch` is pointing to the first newline character encountered
+    if (ch<sof) {
+      if (verbose) DTPRINT("  Input contains no \\r or \\n. Treating as a single row.\n");
+      eol = eol2 = '\n';
+      eolLen = 1;
+    }
     else {
+        // `ch` is pointing to the very last \r or \n in the input
         eol=eol2=*ch; eolLen=1;
-        if (eol=='\r') {
-            if (ch+1<eof && *(ch+1)=='\n') {
+        if (eol2=='\n') {
+            if (ch-1>=sof && *(ch-1)=='\r') {
                 if (verbose) DTPRINT("  Detected eol as \\r\\n (CRLF) in that order, the Windows standard.\n");
-                eol2='\n'; eolLen=2;
-            } else {
-                if (ch+1<eof && *(ch+1)=='\r')
+                eol='\r'; eolLen=2;
+                if (ch-2>=sof && *(ch-2)=='\r') {
                     STOP("Line ending is \\r\\r\\n. R's download.file() appears to add the extra \\r in text mode on Windows. Please download again in binary mode (mode='wb') which might be faster too. Alternatively, pass the URL directly to fread and it will download the file in binary mode for you.");
-                    // NB: on Windows, download.file from file: seems to condense \r\r too. So
-                if (verbose) DTPRINT("  Detected eol as \\r only (no \\n or \\r afterwards). An old Mac 9 standard, discontinued in 2002 according to Wikipedia.\n");
+                    // NB: on Windows, download.file from file seems to condense \r\r too.
+                }
+            } else {
+                if (verbose) DTPRINT("  Detected eol as \\n only, the UNIX and Mac standard.\n");
             }
-        } else if (eol=='\n') {
-            if (ch+1<eof && *(ch+1)=='\r') {
+        }
+        else {
+            // eol2=='\r'
+            if (ch-1>=sof && *(ch-1)=='\n') {
                 DTWARN("Detected eol as \\n\\r, a highly unusual line ending. According to Wikipedia the Acorn BBC used this. If it is intended that the first column on the next row is a character column where the first character of the field value is \\r (why?) then the first column should start with a quote (i.e. 'protected'). Proceeding with attempt to read the file.\n");
-                eol2='\r'; eolLen=2;
-            } else if (verbose) DTPRINT("  Detected eol as \\n only (no \\r afterwards), the UNIX and Mac standard.\n");
-        } else
-            STOP("Internal error: if no \\r or \\n found then ch should be eof");
+                eol='\n'; eolLen=2;
+            } else {
+                if (verbose) DTPRINT("Detected line ending as \\r. An old Mac 9 standard discontinued in 2002 according to Wikipedia.\n");
+            }
+        }
+        if (args.filename && finalByte=='\0') {
+            // Use the final newline byte(s) to write '\0' and move eof back to there.
+            // No need to remember finalByte here as we checked above that there is only whitespace afterwards.
+            eof = ch - (eolLen-1);
+            *_const_cast(eof) = '\0';  // cow last page
+        }
     }
-    // Ensure file ends with eol so we don't need to check 'ch<eof && *ch...' everywhere in deep loops just because
-    // the very last field in the file might finish abrubtly with no final \n (or \r\n on Windows).
-    // The file was opened readonly and mapped with page level copy-on-write so this won't write to file.
-    // On Windows we may only have a problem if the file i) does not end with newline already AND ii) it is an exact multiple
-    // of the VirtualAlloc block size (64k) -- for such rare cases we could ask the Windows user to add an ending newline.
-    // TODO - only need to do this *eof write if final data line does end abrubtly. This is a first step for now to see if it works.
-    // On Linux and Mac it's safe since mmap() there accepts fileSize+1. On Windows, it writes into the last page MAP_COMMIT'd for this
-    // file which is ok I think as VirtualAlloc() allocates on boundaries (64k on Windows). There may be a way on Windows
-    // using Zw* lower level but I haven't yet managed to include headers correctly (I asked on r-package-devel on 28 Apr).
-    *_const_cast(eof) = eol;
-
+    // We have now ensured the input ends on eof and that *eof=='\0' too.
+    // If the file ended abruptly (rare), the last character was remembered in finalByte.
+    // We have made most files which end properly with final end-of-line now abruptly end with a \0 instead (in the cow page).
+    // This may seem counterintuitive but now we have consistency within the constraints of no mmap of fileSize+1.
+    // In all but Field processing, we don't need to test for eof at all, since \0 is terminal just as well as \r or \n.
+    // When we need to, we now have two options: i) if (*ch && ...) (i.e. !='\0') which saves a compare, or ii) ch<eof as usual
+    // If UTF strings contain \0 we can branch in that rare case to test if ch==eof too if necessary. We have that option.
+    // If a field does not end with sep or eol, it's only in that rare case do we then need to test if it is \0 or not.
 
     //*********************************************************************************************
     // [6] Position to line `skipNrow+1` or to line containing `skipString`.
@@ -951,8 +959,7 @@ int freadMain(freadMainArgs _args) {
     const char *pos = sof;
     ch = pos;
     if (args.skipString) {
-        // TODO: unsafe! there might be no \0 at the end of the file
-        ch = strstr(sof, args.skipString);
+        ch = strstr(sof, args.skipString);  // as there is now a \0 at the end, this is safely bounded
         if (!ch) STOP("skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)",
                       args.skipString);
         while (ch>sof && *(ch-1)!=eol2) ch--;  // move to beginning of line
@@ -976,7 +983,7 @@ int freadMain(freadMainArgs _args) {
     while (ch<eof && isspace(*ch)) {   // isspace matches ' ', \t, \n and \r
       if (*ch==eol) { ch+=eolLen; lineStart=ch; line++; } else ch++;
     }
-    if (ch>=eof) STOP("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace.");
+    if (ch>=eof && !finalByte) STOP("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace.");
     if (verbose) {
       if (lineStart>ch) DTPRINT("  Moved forward to first non-blank line (%d)\n", line);
       DTPRINT("  Positioned on line %d starting: <<%.*s>>\n", line, STRLIM(lineStart, 30), lineStart);
@@ -1132,6 +1139,7 @@ int freadMain(freadMainArgs _args) {
       // DTPRINT("Field %d <<%.*s>>\n", field, STRLIM(ch, 20), ch);
       skip_white(&ch);
       if (allchar && !on_sep(&ch) && !StrtoD(&ch, (double *)trash)) allchar=false;  // don't stop early as we want to check all columns to eol here
+      if (allchar && ch==eof && finalByte>='0' && finalByte<='9') { allchar=false; continue; }    // test 893 
       // considered looking for one isalpha present but we want 1E9 to be considered a value not a column name
       ch = this;  // rewind to the start of this field
       Field(&ch, (lenOff *)trash);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
@@ -1147,7 +1155,7 @@ int freadMain(freadMainArgs _args) {
         // colNames was calloc'd so nothing to do; all len=off=0 already
         ch = pos;  // back to start of first row. Treat as first data row, no column names present.
         // now check previous line which is being discarded and give helpful msg to user ...
-        if (ch>sof && args.skipNrow==0) {
+        if (ch>sof && args.skipNrow==0 && args.skipString==NULL) {
           ch -= (eolLen+1);
           if (ch<sof) ch=sof;  // for when sof[0]=='\n'
           while (ch>sof && *ch!=eol2) ch--;
@@ -1173,8 +1181,13 @@ int freadMain(freadMainArgs _args) {
             colNames[i].off += (size_t)(start-colNamesAnchor);
             if (ch>=eof || *ch==eol) break;   // already checked number of fields previously above
         }
-        if (ch<eof && *ch!=eol) STOP("Internal error: reading colnames did not end on eol");
-        if (ch<eof) ch+=eolLen;
+        if (ch==eof && finalByte) {
+            // single line containing column names only without ending newline
+            *_const_cast(eof) = finalByte;  // put back the saved finalByte, no other field processing will happen and we are done
+            colNames[ncol-1].len++; 
+        }
+        else if (*ch!=eol && *ch!='\0') STOP("Internal error: reading colnames did not end on eol or '\\0' but '%c'", *ch);
+        else if (ch<eof) ch+=eolLen;
         pos=ch;    // now on first data row (row after column names)
     }
     int row1Line = line;
@@ -1251,6 +1264,7 @@ int freadMain(freadMainArgs _args) {
                 // DTPRINT("<<%.*s>>(%d)", STRLIM(ch,20,end), ch, quoteRule);
                 fieldStart=ch;
                 while (type[field]<=CT_STRING && fun[type[field]](&ch, trash)) {
+                  if (finalByte && ch==eof) break;  // if very final field contains, for example, NA then finalByte=='A' and 'N' on its own should not cause bump to character
                   ch=fieldStart;
                   if (type[field]<CT_STRING) { type[field]++; bumped=true; }
                   else {
@@ -1292,7 +1306,7 @@ int freadMain(freadMainArgs _args) {
                 // not necessarily a problem (especially if we detected no quoting), but we test it and nice to have
                 // a warning regardless of quoting rule just incase file has been inadvertently truncated
                 // This warning is early at type skipping around stage before reading starts, so user can cancel early
-                if (type[ncol-1]==CT_STRING && *fieldStart==quote && *(ch-1)!=quote) {
+                if (type[ncol-1]==CT_STRING && *fieldStart==quote && (*(ch-1)!=quote && finalByte!=quote)) {
                   if (quoteRule<2) STOP("Internal error: Last field of last field should select quote rule 2");
                   DTWARN("Last field of last line starts with a quote but is not finished with a quote before end of file: <<%.*s>>",
                           STRLIM(fieldStart, 200), fieldStart);
@@ -1582,9 +1596,15 @@ int freadMain(freadMainArgs _args) {
           }
 
           int j = 0;
+          const char *fieldStart = tch;
+          
+          int finalFieldLen = 0;  // only used when finalByte
+          char finalSep = '\0';   // only used when finalByte
+          oneLastTimeIfFinalByte:
+          
           while (j < ncol) {
             // DTPRINT("Field %d: '%.10s' as type %d  (tch=%p)\n", j+1, tch, type[j], tch);
-            const char *fieldStart = tch;
+            fieldStart = tch;
             int8_t joldType = type[j];   // fetch shared type once. Cannot read half-written byte.
             int8_t thisType = joldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
             int8_t absType = (int8_t) abs(thisType);
@@ -1604,7 +1624,8 @@ int freadMain(freadMainArgs _args) {
 
             if (joldType == CT_STRING) {
               ((lenOff*) myBuff8Pos)->off += (size_t)(fieldStart - thisJumpStart);
-            } else if (thisType != joldType) {  // rare out-of-sample type exception
+            } else if (thisType != joldType             // rare out-of-sample type exception.
+                       && (!finalByte || finalSep)) {   // don't bump the final field until we've replaced the finalByte (if any) test 894.0221 where final field is NA and finalByte=='A'
               #pragma omp critical
               {
                 joldType = type[j];  // fetch shared value again in case another thread bumped it while I was waiting.
@@ -1629,6 +1650,71 @@ int freadMain(freadMainArgs _args) {
             j++;
             if (tch>=eof || *tch==eol) break;
             tch++;
+          }
+
+          // One extra branch at the end of each input line; it should be very well predicted and skipped vast majority of time.
+          // All because cow mmap fileSize+1 doesn't work on Mac and Windows when fileSize%pageSize==0
+          // The goal here is to handle the rare case of files that don't end with newline and are also exactly a multiple of page size, PR#2200.
+          if (finalByte && tch==eof) {
+            if (j<=0 || *eof!='\0' || !args.filename) {
+              #pragma omp critical
+              if (!stopTeam) {
+                stopTeam = true;
+                snprintf(stopErr, stopErrSize, "Internal error in final field: j<=0 || *eof!='\\0' || !args.filename");
+                // Direct non-file input is already ended with '\0'. finalByte is only ever set for files and only when they end abruptly without final newline
+              }
+              break;
+            }
+            if (!finalSep) {
+              // Just read final field for the first time and finalSep hasn't been set yet.
+              // finalByte is true so we need to reread the final field
+              // fieldStart will be correct even in very complicated cases where for example jump points are
+              //   skipped because we delay and isolate this final field logic to this latest point when we really need it
+              if (fieldStart>(char *)mmp) {
+                // Vastly more common and expected branch: there is at least 1 byte before the very last field in the file (a separator or a newline)
+                // Shift final field back 1 character in cow pages(s). 
+                // We do not allocate a copy for the last field because that would need *eof to be moved to the copy's end, but eof is shared across threads.
+                finalFieldLen = (int)(tch-fieldStart);
+                finalSep = fieldStart[-1];  // remember the byte we're shifting back over; either sep or newline
+                memmove(_const_cast(fieldStart-1), fieldStart, finalFieldLen);  // cow page.
+                *_const_cast(eof-1) = finalByte;
+                // *eof=='\0' already, checked above
+                tch = fieldStart-1;
+              } else {
+                // Very very rare, other than in edge case tests.
+                // File is one single field (no column names, no separator) which does not end with a newline
+                if (fileSize%4096==0 || nth>1) {  // TODO: portable way to discover relevant page size. 
+                  #pragma omp critical
+                  if (!stopTeam) {
+                    stopTeam = true;
+                    snprintf(stopErr, stopErrSize,
+                      nth==1 ? "File is very very very unusual. It appears to be one single field (no column names, no separators) which also has a length a multiple of 4096 and also does not end with a newline. Please add a new line at the end using for example 'echo >> file.txt'." : "Internal error: A single field file (!) somehow has nth>1");
+                  }
+                  break;
+                }
+                // otherwise there is one byte after eof which we can reliably write to in the very last cow page
+                // We could do this branch for filesSize%4096 != 0 too, but we desire to run all tests through the alternative branch above (like test 893 which
+                //   causes a type bump in the last field due to the finalByte) 
+                fileSize++;
+                *_const_cast(eof++) = finalByte;  // here we eof++ which is ok as nth==1 checked above
+                *_const_cast(eof) = '\0';
+                tch = fieldStart;
+                finalByte = '\0'; // so this branch doesn't run again. We dealt with it. 
+              }
+              // reread final field
+              j--;
+              *((char**) allBuffPos[size[j]]) -= size[j];
+              goto oneLastTimeIfFinalByte;
+            } else if (nTypeBump) {
+              // The very final field was just reread due to finalByte!='\0' and finalSep!='\0' so that was done by shifting it back.
+              // But there are out-of-sample type exceptions so there will be a reread and we have to shift the final field forwards again and put
+              //   back the finalSep before the final field.
+              // If no reread then careful to leave field shifted back for when it is type character since lenOff points there.
+              memmove(_const_cast(fieldStart+1), fieldStart, finalFieldLen); // shift final field forwards
+              *_const_cast(fieldStart) = finalSep;  // put the finalField's preceeding sep or newline back again
+              finalSep = '\0';  // important to reset in case whole file is reread due to out-of-sample type exceptions
+              finalFieldLen = 0;
+            }
           }
 
           if (j < ncol)  {
