@@ -12,7 +12,7 @@
 \alias{rounding}
 \title{Optimisations in data.table}
 \description{
-\code{data.table} internally optimises certain expressions inorder to improve 
+\code{data.table} internally optimises certain expressions in order to improve 
 performance. This section briefly summarises those optimisations.
 
 Note that there's no additional input needed from the user to take advantage 

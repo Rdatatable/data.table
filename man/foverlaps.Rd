@@ -55,7 +55,7 @@ For \code{type="end"}, the intervals overlap iff \code{b == d}. For
 \code{type="within"}, the intervals overlap iff \code{a>=c and b<=d}. For
 \code{type="equal"}, the intervals overlap iff \code{a==c and b==d}. For
 \code{type="any"}, as long as \code{c<=b and d>=a}, they overlap. In addition
-to these requirments, they also have to satisfy the \code{minoverlap} argument
+to these requirements, they also have to satisfy the \code{minoverlap} argument
 as explained above.
 
 NB: \code{maxgap} argument, when > 0, is to be interpreted according to the type
