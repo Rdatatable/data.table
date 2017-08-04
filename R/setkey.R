@@ -330,11 +330,11 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
     if (unique) l = lapply(l, unique)
 
     dups = FALSE # fix for #1513
-    # using rep.int instead of rep speeds things up considerably (but attributes are dropped).
-    j = lapply(l, class)  # changed "vapply" to avoid errors with "ordered" "factor" input
     if (length(l)==1L && sorted && length(o <- forderv(l[[1L]])))
         l[[1L]] = l[[1L]][o]
     else if (length(l) > 1L) {
+        # using rep.int instead of rep speeds things up considerably (but attributes are dropped).
+        attribs = lapply(l, attributes)  # remember attributes for resetting after rep.int
         n = vapply(l, length, 0L)
         nrow = prod(n)
         x = c(rev(take(cumprod(rev(n)))), 1L)
@@ -351,8 +351,9 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
                 l[[i]] = rep.int(y, times = nrow/(x[i]*n[i]))
             else
                 l[[i]] = rep.int(rep.int(y, times = rep.int(x[i], n[i])), times = nrow/(x[i]*n[i]))
-            if (any(class(l[[i]]) != j[[i]]))
-                setattr(l[[i]], 'class', j[[i]]) # reset "Date" class - rep.int coerces to integer
+            if (!is.null(attribs[[i]])){
+                attributes(l[[i]]) <- attribs[[i]] # reset all attributes that were destroyed by rep.int
+            }
         }
     }
     setattr(l, "row.names", .set_row_names(length(l[[1L]])))

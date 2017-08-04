@@ -9974,6 +9974,53 @@ test(1770.6, fread(f)[256,V64], "0ABC")
 test(1770.7, fread(f, skip="spam"), error="not found in input")
 unlink(f)
 
+# CJ retains attributes and classes, #2029, PR#2150
+
+l <- list(a = as.POSIXct(c("2016-01-01", "2017-01-01"), tz = "UTC"),
+          b = as.POSIXct(c("2016-01-01", "2017-01-01")),
+          c = as.Date("2015-01-01"), ## according to comment about CJ loosing date class
+          d = factor(c("a", "b", "c"), ordered = TRUE), ## according to comment about bug with ordered factors
+          e = factor(c("a", "b", "c"), ordered = FALSE),
+          f = c(1,2),
+          g = c("a", "b"),
+          h = c(TRUE, FALSE))
+setattr(l$g, "test", "testval")## add hand-made attribute
+
+test(1771.1, lapply(l, attributes), lapply(do.call(CJ, l), attributes))
+test(1771.2, lapply(l, class), lapply(do.call(CJ, l), class))
+
+l <- list(a = factor(c("a", "b", "c"), ordered = TRUE),
+          b = as.POSIXct(c("2016-01-01", "2017-01-01")),
+          c = as.Date("2015-01-01"),
+          d = factor(c("a", "b", "c"), ordered = TRUE),
+          e = as.POSIXct(c("2016-01-01", "2017-01-01"), tz = "UTC"),
+          f = c(1,2),
+          g = c("a", "b"),
+          h = c(TRUE, FALSE))
+
+
+test(1771.3, lapply(l, attributes), lapply(do.call(CJ, l), attributes))
+test(1771.4, lapply(l, class), lapply(do.call(CJ, l), class))
+
+l <- list(a = factor(c("a", "b", "c"), ordered = TRUE),
+          b = as.POSIXct(c("2016-01-01", "2017-01-01")),
+          c = as.Date("2015-01-01"),
+          d = factor(c("a", "b", "c"), ordered = TRUE),
+          e = c(TRUE, FALSE),
+          f = c(1,2),
+          g = c("a", "b"),
+          h = as.POSIXct(c("2016-01-01", "2017-01-01"), tz = "UTC"))
+
+test(1771.5, lapply(l, attributes), lapply(do.call(CJ, l), attributes))
+test(1771.6, lapply(l, class), lapply(do.call(CJ, l), class))
+
+l <- list(a = NA,
+          c = c(1,2),
+          d = as.POSIXct("2016-01-01", tz = "UTC"))
+
+test(1771.7, lapply(l, attributes), lapply(do.call(CJ, l), attributes))
+test(1771.8, lapply(l, class), lapply(do.call(CJ, l), class))
+
 
 ##########################
 
