@@ -1,4 +1,5 @@
 #include "fread.h"
+#include "freadR.h"
 #include "data.table.h"
 
 /*****    TO DO    *****
@@ -39,7 +40,7 @@ static cetype_t ienc = CE_NATIVE;
 static SEXP DT;
 static int8_t *type;
 static int8_t *size;
-static int ncol;
+static int ncol = 0;
 static int protecti=0;
 static _Bool verbose = 0;
 static _Bool warningsAreErrors = 0;
@@ -75,6 +76,7 @@ SEXP freadR(
 
   freadMainArgs args;
   protecti=0;
+  ncol = 0;
   const char *ch, *ch2;
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
     error("fread input must be a single character string: a filename or the data itself");
@@ -313,39 +315,39 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 
 size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size_t allocNrow) {
   // save inputs for use by pushBuffer
-  ncol = ncolArg;
+  int newDT = (ncol == 0);
   size = sizeArg;
   type = typeArg;
-  DT=PROTECT(allocVector(VECSXP,ncol-ndrop));  // safer to leave over allocation to alloc.col on return in fread.R
-  protecti++;
-  if (ndrop==0) {
-    setAttrib(DT,R_NamesSymbol,colNamesSxp);  // colNames mkChar'd in userOverride step
-  } else {
-    SEXP tt;
-    setAttrib(DT, R_NamesSymbol, tt = allocVector(STRSXP, ncol-ndrop));
-    for (int i=0,resi=0; i<ncol; i++) if (type[i]!=CT_DROP) {
-      SET_STRING_ELT(tt,resi++,STRING_ELT(colNamesSxp,i));
+  if (newDT) {
+    ncol = ncolArg;
+    DT=PROTECT(allocVector(VECSXP,ncol-ndrop));  // safer to leave over allocation to alloc.col on return in fread.R
+    protecti++;
+    if (ndrop==0) {
+      setAttrib(DT,R_NamesSymbol,colNamesSxp);  // colNames mkChar'd in userOverride step
+    } else {
+      SEXP tt;
+      setAttrib(DT, R_NamesSymbol, tt = allocVector(STRSXP, ncol-ndrop));
+      for (int i=0,resi=0; i<ncol; i++) if (type[i]!=CT_DROP) {
+        SET_STRING_ELT(tt,resi++,STRING_ELT(colNamesSxp,i));
+      }
     }
   }
   size_t DTbytes = SIZEOF(DT)*(ncol-ndrop)*2; // the VECSXP and its column names (exclude global character cache usage)
   for (int i=0,resi=0; i<ncol; i++) {
     if (type[i] == CT_DROP) continue;
-    SEXP thiscol = allocVector(typeSxp[ type[i] ], allocNrow);
-    SET_VECTOR_ELT(DT,resi++,thiscol);     // no need to PROTECT thiscol, see R-exts 5.9.1
-    if (type[i]==CT_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(char_integer64));
-    SET_TRUELENGTH(thiscol, allocNrow);
-    DTbytes += SIZEOF(thiscol)*allocNrow;
+    int oldSxpType = newDT? -1 : TYPEOF(VECTOR_ELT(DT, resi));
+    int oldIsInt64 = newDT? 0 : INHERITS(VECTOR_ELT(DT, resi), char_integer64);
+    int newIsInt64 = type[i] == CT_INT64;
+    if (type[i] > 0 && (oldSxpType != typeSxp[type[i]] || oldIsInt64 != newIsInt64)) {
+      SEXP thiscol = allocVector(typeSxp[type[i]], allocNrow);
+      SET_VECTOR_ELT(DT,resi,thiscol);     // no need to PROTECT thiscol, see R-exts 5.9.1
+      if (type[i]==CT_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(char_integer64));
+      SET_TRUELENGTH(thiscol, allocNrow);
+      DTbytes += SIZEOF(thiscol)*allocNrow;
+    }
+    resi++;
   }
   return DTbytes;
-}
-
-
-void reallocColType(int col,  // which column of the result, not of type[]. (they are different when ndrop>0)
-                    colType newType) {
-  uint64_t nrow = length(VECTOR_ELT(DT,0));
-  SEXP tt;
-  SET_VECTOR_ELT(DT, col, tt=allocVector(typeSxp[ newType ], nrow));
-  if (newType==CT_INT64) setAttrib(tt, R_ClassSymbol, ScalarString(char_integer64));
 }
 
 
@@ -362,11 +364,20 @@ void setFinalNrow(size_t nrow) {
 }
 
 
-void pushBuffer(const void *buff8, const void *buff4, const void *buff1,
-                const char *anchor, int nRows, size_t DTi,
-                int rowSize8, int rowSize4, int rowSize1,
-                int nStringCols, int nNonStringCols)
+void pushBuffer(ThreadLocalFreadParsingContext *ctx)
 {
+  const void *buff8 = ctx->buff8;
+  const void *buff4 = ctx->buff4;
+  const void *buff1 = ctx->buff1;
+  const char *anchor = ctx->anchor;
+  int nRows = (int) ctx->nRows;
+  size_t DTi = ctx->DTi;
+  int rowSize8 = (int) ctx->rowSize8;
+  int rowSize4 = (int) ctx->rowSize4;
+  int rowSize1 = (int) ctx->rowSize1;
+  int nStringCols = ctx->nStringCols;
+  int nNonStringCols = ctx->nNonStringCols;
+
   // Do all the string columns first so as to minimize and concentrate the time inside the single critical.
   // While the string columns are happening other threads before me can be copying their non-string buffers to the
   // final DT and other threads after me can be filling their buffers too.
@@ -479,3 +490,9 @@ void freadLastWarning(const char *format, ...) {
   freadCleanup();
   warning(msg);
 }
+
+
+void prepareThreadContext(ThreadLocalFreadParsingContext *ctx) {}
+void postprocessBuffer(ThreadLocalFreadParsingContext *ctx) {}
+void orderBuffer(ThreadLocalFreadParsingContext *ctx) {}
+void freeThreadContext(ThreadLocalFreadParsingContext *ctx) {}
