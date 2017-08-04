@@ -2,16 +2,12 @@
 test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
     if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
         # package developer
-        if ("package:data.table" %in% search()) stop("data.table package loaded")
-        if (.Platform$OS.type == "unix" && Sys.info()['sysname'] != "Darwin")
-            d = path.expand("~/data.table/inst/tests")
-        else {
-            if (!pkg %in% dir()) stop(paste(pkg, " not in dir()", sep=""))
-            d = paste(getwd(),"/", pkg, "/inst/tests",sep="")
-        }
+        if ("package:data.table" %in% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
+        d = if (pkg %in% dir()) paste0(getwd(),"/",pkg) else Sys.getenv("CC_DIR")
+        d = paste0(d, "/inst/tests")
     } else {
-        # user
-        d = paste(getNamespaceInfo("data.table","path"),"/tests",sep="")
+        # R CMD check and user running test.data.table()
+        d = paste0(getNamespaceInfo("data.table","path"),"/tests")
     }
     # for (fn in dir(d,"*.[rR]$",full=TRUE)) {  # testthat runs those
     oldenc = options(encoding="UTF-8")[[1L]]  # just for tests 708-712 on Windows
@@ -51,7 +47,12 @@ compactprint <- function(DT, topn=2) {
                 " Types=",paste(substring(sapply(DT,typeof),1,3),collapse=","),
                 " Classes=",paste(substring(tt,1,3),collapse=","),
                 "]",sep="")
-    print(copy(DT)[,(cn):=""], topn=topn)
+    if (nrow(DT)) {
+      print(copy(DT)[,(cn):=""], topn=topn)
+    } else {
+      print(DT)  # "Empty data.table (0 rows) of <ncol> columns ...
+      if (ncol(DT)) cat(cn,"\n")
+    }
     invisible()
 }
 

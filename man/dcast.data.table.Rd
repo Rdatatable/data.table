@@ -48,9 +48,9 @@ If the formula's LHS contains the same column more than once, ex: \code{dcast(DT
 
 Names for columns that are being cast are generated in the same order (separated by an underscore, \code{_}) from the (unique) values in each column mentioned in the formula RHS.
 
-From \code{v1.9.4}, \code{dcast} tries to preserve attributes whereever possible.
+From \code{v1.9.4}, \code{dcast} tries to preserve attributes wherever possible.
 
-\bold{NEW}: From \code{v1.9.6}, it is possible to cast multiple \code{value.var} columns and also cast by providing multiple \code{fun.aggregate} functions. Multiple \code{fun.aggregate} functions should be provided as a \code{list}, for e.g., \code{list(mean, sum, function(x) paste(x, collapse="")}. \code{value.var} can be either a character vector or list of length=1, or a list of length equal to \code{length(fun.aggregate)}. When \code{value.var} is a character vector or a list of length 1, each function mentioned under \code{fun.aggregate} is applied to every column specified under \code{value.var} column. When \code{value.var} is a list of length equal to \code{length(fun.aggregate)} each element of \code{fun.aggregate} is appled to each element of \code{value.var} column.
+\bold{NEW}: From \code{v1.9.6}, it is possible to cast multiple \code{value.var} columns and also cast by providing multiple \code{fun.aggregate} functions. Multiple \code{fun.aggregate} functions should be provided as a \code{list}, for e.g., \code{list(mean, sum, function(x) paste(x, collapse="")}. \code{value.var} can be either a character vector or list of length=1, or a list of length equal to \code{length(fun.aggregate)}. When \code{value.var} is a character vector or a list of length 1, each function mentioned under \code{fun.aggregate} is applied to every column specified under \code{value.var} column. When \code{value.var} is a list of length equal to \code{length(fun.aggregate)} each element of \code{fun.aggregate} is applied to each element of \code{value.var} column.
 
 }
 \value{

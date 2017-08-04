@@ -141,7 +141,7 @@ is.ff <- function(x) inherits(x, "ff")  # define this in data.table so that we d
 
 #NCOL <- function(x) {
 #    # copied from base, but additionally covers data.table via is.list()
-#    # because NCOL in base explicity tests using is.data.frame()
+#    # because NCOL in base explicitly tests using is.data.frame()
 #    if (is.list(x) && !is.ff(x)) return(length(x))
 #    if (is.array(x) && length(dim(x)) > 1L) ncol(x) else as.integer(1L)
 #}
@@ -812,7 +812,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # i is not a data.table
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
             if (is.logical(i)) {
-                if (isTRUE(i)) irows=i=NULL
+                if (length(i)==1L  # to avoid unname copy when length(i)==nrow (normal case we don't want to slow down)
+		    && isTRUE(unname(i))) irows=i=NULL  # unname() for #2152 - length 1 named logical vector.
                 # NULL is efficient signal to avoid creating 1:nrow(x) but still return all rows, fixes #1249
                 
                 else if (length(i)<=1L) irows=i=integer(0)

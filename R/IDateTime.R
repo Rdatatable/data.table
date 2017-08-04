@@ -12,8 +12,7 @@ as.IDate.Date <- function(x, ...) {
     structure(as.integer(x), class=c("IDate","Date"))
 }    
 
-as.IDate.POSIXct <- function(x, ...) {
-  tz = attr(x, "tzone")
+as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
   as.IDate(as.Date(x, tz = tz, ...))
 }
