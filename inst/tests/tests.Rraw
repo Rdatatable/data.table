@@ -9953,6 +9953,27 @@ test(1768, fread("issue_2157_sampling_overlap.txt")[,c("X1","X2","X7","X8")],
            output="X1 X2.*1: ABCD021917 NA.*678.0000.*2:.*1314: ABCD032617.*732.9818")
 test(1769, fread("issue_2157_sampling_reached_eof_early.txt")[,c("X1","X2","X10","X11")],
            output="X1 X2.*1:.*6.00.*2: 2005-08-15.*1228: 2017-05-10  0 -112186.00 500")
+           
+# Test unbounded strstr() (in particular when fileSize is exactly 64k on Windows), #2201
+ff = file(f<-tempfile(), open="wb")
+line255 = paste(rep("123,456,789,0AB",16),collapse=",")
+test(1770.1, nchar(line255), 255)
+for (i in 1:256) cat(line255, "\x0A", sep="", file=ff)  # use \n line ending even on Windows
+close(ff)
+test(1770.2, file.size(f), 65536)
+test(1770.3, fread(f)[256,V64], "0AB")
+test(1770.4, fread(f, skip="spam"), error="not found in input")
+unlink(f)
+# Now without final newline but still exactly 65536 in size :
+ff = file(f<-tempfile(), open="wb")
+for (i in 1:255) cat(line255, "\x0A", sep="", file=ff)
+cat(line255, "C", sep="", file=ff)
+close(ff)
+test(1770.5, file.size(f), 65536)
+test(1770.6, fread(f)[256,V64], "0ABC")
+test(1770.7, fread(f, skip="spam"), error="not found in input")
+unlink(f)
+
 
 ##########################
 
