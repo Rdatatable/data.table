@@ -1139,7 +1139,7 @@ int freadMain(freadMainArgs _args) {
       // DTPRINT("Field %d <<%.*s>>\n", field, STRLIM(ch, 20), ch);
       skip_white(&ch);
       if (allchar && !on_sep(&ch) && !StrtoD(&ch, (double *)trash)) allchar=false;  // don't stop early as we want to check all columns to eol here
-      if (allchar && ch==eof && finalByte>='0' && finalByte<='9') { allchar=false; continue; }    // test 893 
+      if (allchar && ch==eof && finalByte>='0' && finalByte<='9') { allchar=false; continue; }    // test 893
       // considered looking for one isalpha present but we want 1E9 to be considered a value not a column name
       ch = this;  // rewind to the start of this field
       Field(&ch, (lenOff *)trash);  // StrtoD does not consume quoted fields according to the quote rule, so redo with Field()
@@ -1184,7 +1184,7 @@ int freadMain(freadMainArgs _args) {
         if (ch==eof && finalByte) {
             // single line containing column names only without ending newline
             *_const_cast(eof) = finalByte;  // put back the saved finalByte, no other field processing will happen and we are done
-            colNames[ncol-1].len++; 
+            colNames[ncol-1].len++;
         }
         else if (*ch!=eol && *ch!='\0') STOP("Internal error: reading colnames did not end on eol or '\\0' but '%c'", *ch);
         else if (ch<eof) ch+=eolLen;
@@ -1495,6 +1495,26 @@ int freadMain(freadMainArgs _args) {
           (rowSize4 && !myBuff4) ||
           (rowSize1 && !myBuff1) || !myBuff0) stopTeam = true;
 
+      ThreadLocalFreadParsingContext ctx = {
+        .anchor = NULL,
+        .buff8 = myBuff8,
+        .buff4 = myBuff4,
+        .buff1 = myBuff1,
+        .rowSize8 = rowSize8,
+        .rowSize4 = rowSize4,
+        .rowSize1 = rowSize1,
+        .DTi = 0,
+        .nRows = allocnrow,
+        .threadn = me,
+        .quoteRule = quoteRule,
+        .stopTeam = &stopTeam,
+        #ifndef DTPY
+        .nStringCols = nStringCols,
+        .nNonStringCols = nNonStringCols
+        #endif
+      };
+      prepareThreadContext(&ctx);
+
       #pragma omp for ordered schedule(dynamic) reduction(+:thNextGoodLine,thRead,thPush)
       for (int jump = 0; jump < nJumps; jump++) {
         if (stopTeam) continue;  // nothing left to do
@@ -1513,9 +1533,7 @@ int freadMain(freadMainArgs _args) {
           // iii) myBuff is hot, so this is the best time to transpose it to result, and first time possible as soon
           //      as we know the previous jump's number of rows.
           //  iv) so that myBuff can be small
-          pushBuffer(myBuff8, myBuff4, myBuff1, /*anchor=*/thisJumpStart,
-                     (int)myNrow, myDTi, (int)rowSize8, (int)rowSize4, (int)rowSize1,
-                     nStringCols, nNonStringCols);
+          pushBuffer(&ctx);
           if (verbose) { tt1 = wallclock(); thPush += tt1 - tt0; tt0 = tt1; }
 
           if (me==0 && (hasPrinted || (args.showProgress && jump/nth==4 &&
@@ -1562,9 +1580,9 @@ int freadMain(freadMainArgs _args) {
             long diff8 = (char*)myBuff8Pos - (char*)myBuff8;
             long diff4 = (char*)myBuff4Pos - (char*)myBuff4;
             long diff1 = (char*)myBuff1Pos - (char*)myBuff1;
-            myBuff8 = realloc(myBuff8, rowSize8 * myBuffRows);
-            myBuff4 = realloc(myBuff4, rowSize4 * myBuffRows);
-            myBuff1 = realloc(myBuff1, rowSize1 * myBuffRows);
+            ctx.buff8 = myBuff8 = realloc(myBuff8, rowSize8 * myBuffRows);
+            ctx.buff4 = myBuff4 = realloc(myBuff4, rowSize4 * myBuffRows);
+            ctx.buff1 = myBuff1 = realloc(myBuff1, rowSize1 * myBuffRows);
             if ((rowSize8 && !myBuff8) ||
                 (rowSize4 && !myBuff4) ||
                 (rowSize1 && !myBuff1)) {
@@ -1597,11 +1615,11 @@ int freadMain(freadMainArgs _args) {
 
           int j = 0;
           const char *fieldStart = tch;
-          
+
           int finalFieldLen = 0;  // only used when finalByte
           char finalSep = '\0';   // only used when finalByte
           oneLastTimeIfFinalByte:
-          
+
           while (j < ncol) {
             // DTPRINT("Field %d: '%.10s' as type %d  (tch=%p)\n", j+1, tch, type[j], tch);
             fieldStart = tch;
@@ -1672,7 +1690,7 @@ int freadMain(freadMainArgs _args) {
               //   skipped because we delay and isolate this final field logic to this latest point when we really need it
               if (fieldStart>(char *)mmp) {
                 // Vastly more common and expected branch: there is at least 1 byte before the very last field in the file (a separator or a newline)
-                // Shift final field back 1 character in cow pages(s). 
+                // Shift final field back 1 character in cow pages(s).
                 // We do not allocate a copy for the last field because that would need *eof to be moved to the copy's end, but eof is shared across threads.
                 finalFieldLen = (int)(tch-fieldStart);
                 finalSep = fieldStart[-1];  // remember the byte we're shifting back over; either sep or newline
@@ -1683,7 +1701,7 @@ int freadMain(freadMainArgs _args) {
               } else {
                 // Very very rare, other than in edge case tests.
                 // File is one single field (no column names, no separator) which does not end with a newline
-                if (fileSize%4096==0 || nth>1) {  // TODO: portable way to discover relevant page size. 
+                if (fileSize%4096==0 || nth>1) {  // TODO: portable way to discover relevant page size.
                   #pragma omp critical
                   if (!stopTeam) {
                     stopTeam = true;
@@ -1694,12 +1712,12 @@ int freadMain(freadMainArgs _args) {
                 }
                 // otherwise there is one byte after eof which we can reliably write to in the very last cow page
                 // We could do this branch for filesSize%4096 != 0 too, but we desire to run all tests through the alternative branch above (like test 893 which
-                //   causes a type bump in the last field due to the finalByte) 
+                //   causes a type bump in the last field due to the finalByte)
                 fileSize++;
                 *_const_cast(eof++) = finalByte;  // here we eof++ which is ok as nth==1 checked above
                 *_const_cast(eof) = '\0';
                 tch = fieldStart;
-                finalByte = '\0'; // so this branch doesn't run again. We dealt with it. 
+                finalByte = '\0'; // so this branch doesn't run again. We dealt with it.
               }
               // reread final field
               j--;
@@ -1770,6 +1788,9 @@ int freadMain(freadMainArgs _args) {
           myNrow++;
         }
         if (verbose) { tt1 = wallclock(); thRead += tt1 - tt0; tt0 = tt1; }
+        ctx.anchor = thisJumpStart;
+        ctx.nRows = myNrow;
+        postprocessBuffer(&ctx);
 
         #pragma omp ordered
         {
@@ -1783,6 +1804,7 @@ int freadMain(freadMainArgs _args) {
             stopTeam=true;
           }
           myDTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
+          ctx.DTi = myDTi;
           if (myDTi >= nrowLimit) {
             // nrowLimit was supplied and a previous thread reached that limit while I was counting my rows
             stopTeam=true;
@@ -1793,6 +1815,8 @@ int freadMain(freadMainArgs _args) {
           // tell next thread 2 things :
           prevJumpEnd = tch; // i) the \n I finished on so it can check (above) it started exactly on that \n good line start
           DTi += myNrow;     // ii) which row in the final result it should start writing to. As soon as I know myNrow.
+          ctx.nRows = myNrow;
+          orderBuffer(&ctx);
         }
         // END ORDERED.
         // Next thread can now start its ordered section and write its results to the final DT at the same time as me.
@@ -1802,11 +1826,8 @@ int freadMain(freadMainArgs _args) {
 
       // Push out all buffers one last time.
       if (myNrow) {
-        double tt1 = 0;
-        if (verbose) tt1 = wallclock();
-        pushBuffer(myBuff8, myBuff4, myBuff1, /*anchor=*/thisJumpStart,
-                   (int)myNrow, myDTi, (int)rowSize8, (int)rowSize4, (int)rowSize1,
-                   nStringCols, nNonStringCols);
+        double tt1 = verbose? wallclock() : 0;
+        pushBuffer(&ctx);
         if (verbose) thRead += wallclock() - tt1;
       }
       // Each thread to free its own buffer.
@@ -1814,6 +1835,7 @@ int freadMain(freadMainArgs _args) {
       free(myBuff4); myBuff4 = NULL;
       free(myBuff1); myBuff1 = NULL;
       free(myBuff0); myBuff0 = NULL;
+      freeThreadContext(&ctx);
     }
     // end parallel
     if (firstTime) {
@@ -1859,19 +1881,20 @@ int freadMain(freadMainArgs _args) {
       allocnrow = DTi;
     }
     setFinalNrow(DTi);
+
+    // However if some of the columns could not be read due to out-of-sample
+    // type exceptions, we'll need to re-read the input file.
     if (firstTime && nTypeBump) {
       rowSize1 = rowSize4 = rowSize8 = 0;
       nStringCols = 0;
       nNonStringCols = 0;
       for (int j=0, resj=-1; j<ncol; j++) {
-        size[j] = 0;
         if (type[j] == CT_DROP) continue;
         resj++;
         if (type[j]<0) {
           // column was bumped due to out-of-sample type exception
-          int newType = type[j] *= -1;   // final type for this column
-          reallocColType(resj, newType);
-          size[j] = typeSize[newType];
+          type[j] = -type[j];
+          size[j] = typeSize[type[j]];
           rowSize1 += (size[j] & 1);
           rowSize4 += (size[j] & 4);
           rowSize8 += (size[j] & 8);
@@ -1880,8 +1903,10 @@ int freadMain(freadMainArgs _args) {
           // we'll skip over non-bumped columns in the rerun, whilst still incrementing resi (hence not CT_DROP)
           // not -type[i] either because that would reprocess the contents of not-bumped columns wastefully
           type[j] = -CT_STRING;
+          size[j] = 0;
         }
       }
+      allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, DTi);
       // reread from the beginning
       DTi = 0;
       prevJumpEnd = ch = pos;
