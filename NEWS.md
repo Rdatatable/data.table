@@ -20,6 +20,8 @@
 
 2. `fwrite` now always quotes empty strings (`,"",`) to distinguish them from `NA` which by default is still empty (`,,`) but can be changed using `na=` as before. If `na=` is provided and `quote=` is the default `'auto'` then `quote=` is set to `TRUE` so that if the `na=` value occurs in the data, it can be distinguished from `NA`. Thanks to Ethan Welty for the request [#2214](https://github.com/Rdatatable/data.table/issues/2214) and Pasha for the code change and tests, [#2215](https://github.com/Rdatatable/data.table/issues/2215).
 
+3. Added helpful message when subsetting by a logical column without wrapping it in parentheses, [#1844](https://github.com/Rdatatable/data.table/issues/1844). Thanks @dracodoc for the suggestion and @MichaelChirico for the PR.
+
 #### BUG FIXES
 
 1. The type pun fix (using union) in 1.10.4 resolved some CRAN flavors but still failed the new `fwrite` nanotime test with R-devel on MacOS using latest clang from latest Xcode 8.2. It seems that clang optimizations in Xcode 8 are particularly aggressive and require even stricter adherence to C standards. The type pun was already centralized and now uses `memcpy` which is ok by C standards and compilers apparently know to optimize to avoid call overhead.
@@ -498,7 +500,6 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
   41. The license field is changed from "GPL (>= 2)" to "GPL-3 | file LICENSE" due to independent communication from two users of data.table at Google. The lack of an explicit license file was preventing them from contributing patches to data.table. Further, Google lawyers require the full text of the license and not a URL to the license. Since this requirement appears to require the choice of one license, we opted for GPL-3 and we checked the GPL-3 is fine by Google for them to use and contribute to. Accordingly, data.table's LICENSE file is an exact duplicate copy of the canonical GPL-3.
   
   42. Thanks to @rrichmond for finding and reporting a regression in dev before release with `roll` not respecting fractions in type double, [#1904](https://github.com/Rdatatable/data.table/issues/1904). For example dates like `zoo::as.yearmon("2016-11")` which is stored as `double` value 2016.833. Fixed and test added.
-
 
 ### Changes in v1.9.6  (on CRAN 19 Sep 2015)
 

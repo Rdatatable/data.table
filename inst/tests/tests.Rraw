@@ -10035,6 +10035,16 @@ test(1772.2, split(DT, by = c('a', 'b'), sorted = TRUE),
           a.1 = data.table(a = structure(2L, .Label = c("b", "a"), class = "factor"), b = 1, c = 4L), 
           a.2 = data.table(a = structure(2L, .Label = c("b", "a"), class = "factor"), b = 2, c = 1L)))
 
+# More helpful error message when using a single symbol name for a logical column to subset, #1844
+# Used to be just 'not found'
+if (exists("A")) rm(A)
+if (exists("B")) rm(B)
+if (exists("NOTEXIST")) rm(NOTEXIST)
+DT <- data.table(A = c(FALSE, TRUE), B = 1:2)
+test(1773.1, DT[A], error = "not found in calling scope.*Wrap the symbol with")
+test(1773.2, DT[B], error = "not found in calling scope and it is not a column of type logical")
+test(1773.3, DT[NOTEXIST], error = "not found in calling scope and it is not a column of type logical")
+test(1773.4, DT[(A)], DT[2])
 
 ##########################
 

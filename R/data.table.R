@@ -587,8 +587,20 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 if (length(xo)) i = fsort(xo[i], internal=TRUE) else i = fsort(i, internal=TRUE) # fix for #1495
                 leftcols = rightcols = NULL  # these are used later to know whether a join was done, affects column order of result. So reset.
             }
-        } else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
-          else i = eval(isub, parent.frame(), parent.frame())
+        } 
+	else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
+        else {
+	    # isub is a single symbol name such as B in DT[B]
+            i = try(eval(isub, parent.frame(), parent.frame()), silent=TRUE)
+            if (inherits(i,"try-error")) {
+              # must be "not found" since isub is a mere symbol
+              col = try(eval(isub, x), silent=TRUE)  # is it a column name?
+              if (identical(typeof(col),"logical"))
+                stop(as.character(isub)," is not found in calling scope but it is a column of type logical. Wrap the symbol with '()' if you wish to select rows where that column is TRUE.")
+              else
+		stop(as.character(isub)," is not found in calling scope and it is not a column of type logical. When the first argument inside DT[...] is a single symbol, it is looked for in calling scope.")
+            }
+        }
         if (restore.N) {
             assign(".N", old.N, envir=parent.frame())
             if (locked.N) lockBinding(".N", parent.frame())
