@@ -296,15 +296,32 @@ ans
 
 We could have accomplished the same operation by doing `nrow(flights[origin == "JFK" & month == 6L])`. However, it would have to subset the entire *data.table* first corresponding to the *row indices* in `i` *and then* return the rows using `nrow()`, which is unnecessary and inefficient. We will cover this and other optimisation aspects in detail under the *data.table design* vignette.
 
-### g) Great! But how can I refer to columns by names in `j` (like in a *data.frame*)?
+### g) Great! But how can I refer to columns by names in `j` (like in a *data.frame*)? {#refer_j}
 
-You can refer to column names the *data.frame* way using `with = FALSE`.
+If you're writing out the column names explicitly, there's no difference vis-a-vis `data.frame` (since v1.9.8).
 
 #### -- Select both `arr_delay` and `dep_delay` columns the *data.frame* way.
 
-```{r}
-ans <- flights[, c("arr_delay", "dep_delay"), with = FALSE]
+```{r j_cols_no_with}
+ans <- flights[, c("arr_delay", "dep_delay")]
 head(ans)
+```
+
+If you've stored the desired columns in a character vector, there are two options: Using the `..` prefix, or using the `with` argument.
+
+#### -- Select columns named in a variable using the `..` prefix
+
+```{r j_cols_dot_prefix}
+select_cols = c("arr_delay", "dep_delay")
+flights[ , ..select_cols]
+```
+
+For those familiar with the Unix terminal, the `..` prefix should be reminiscent of the "up-one-level" command, which is analogous to what's happening here -- the `..` signals to `data.table` to look for the `select_cols` variable "up-one-level", i.e., in the global environment in this case.
+
+#### -- Select columns named in a variable using `with = FALSE`
+
+```{r j_cols_with}
+flights[ , select_cols, with = FALSE]
 ```
 
 The argument is named `with` after the R function `with()` because of similar functionality. Suppose you've a *data.frame* `DF` and you'd like to subset all rows where `x > 1`.
@@ -319,8 +336,6 @@ DF[DF$x > 1, ] # data.frame needs that ',' as well
 DF[with(DF, x > 1), ]
 ```
 
-#### {.bs-callout .bs-callout-info #with_false}
-
 * Using `with()` in (2) allows using `DF`'s column `x` as if it were a variable.
 
     Hence the argument name `with` in *data.table*. Setting `with = FALSE` disables the ability to refer to columns as if they are variables, thereby restoring the "*data.frame* mode".
@@ -331,9 +346,9 @@ DF[with(DF, x > 1), ]
     ## not run
 
     # returns all columns except arr_delay and dep_delay
-    ans <- flights[, !c("arr_delay", "dep_delay"), with = FALSE]
+    ans <- flights[, !c("arr_delay", "dep_delay")]
     # or
-    ans <- flights[, -c("arr_delay", "dep_delay"), with = FALSE]
+    ans <- flights[, -c("arr_delay", "dep_delay")]
     ```
 
 * From `v1.9.5+`, we can also select by specifying start and end column names, for e.g, `year:day` to select the first three columns.
@@ -342,17 +357,15 @@ DF[with(DF, x > 1), ]
     ## not run
 
     # returns year,month and day
-    ans <- flights[, year:day, with = FALSE]
+    ans <- flights[, year:day]
     # returns day, month and year
-    ans <- flights[, day:year, with = FALSE]
+    ans <- flights[, day:year]
     # returns all columns except year, month and day
-    ans <- flights[, -(year:day), with = FALSE]
-    ans <- flights[, !(year:day), with = FALSE]
+    ans <- flights[, -(year:day)]
+    ans <- flights[, !(year:day)]
     ```
 
     This is particularly handy while working interactively.
-
-#
 
 `with = TRUE` is default in *data.table* because we can do much more by allowing `j` to handle expressions - especially when combined with `by` as we'll see in a moment.
 
@@ -582,7 +595,7 @@ We are almost there. There is one little thing left to address. In our `flights`
 
 Using the argument `.SDcols`. It accepts either column names or column indices. For example, `.SDcols = c("arr_delay", "dep_delay")` ensures that `.SD` contains only these two columns for each group.
 
-Similar to the [with = FALSE section](#with_false), you can also provide the columns to remove instead of columns to keep using `-` or `!` sign as well as select consecutive columns as `colA:colB` and deselect consecutive columns as `!(colA:colB) or `-(colA:colB)`.
+Similar to [part g)](#refer_j), you can also provide the columns to remove instead of columns to keep using `-` or `!` sign as well as select consecutive columns as `colA:colB` and deselect consecutive columns as `!(colA:colB)` or `-(colA:colB)`.
 
 #
 Now let us try to use `.SD` along with `.SDcols` to get the `mean()` of `arr_delay` and `dep_delay` columns grouped by `origin`, `dest` and `month`.
@@ -672,7 +685,7 @@ We can do much more in `i` by keying a *data.table*, which allows blazing fast s
 
 1. Select columns the *data.table* way: `DT[, .(colA, colB)]`.
 
-2. Select columns the *data.frame* way: `DT[, c("colA", "colB"), with = FALSE]`.
+2. Select columns the *data.frame* way: `DT[, c("colA", "colB")]`.
 
 3. Compute on columns: `DT[, .(sum(colA), mean(colB))]`.
 

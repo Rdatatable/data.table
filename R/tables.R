@@ -5,7 +5,7 @@ tables <- function(mb=TRUE,order.col="NAME",width=80,env=parent.frame(),silent=F
 {
     # Prints name, size and colnames of all data.tables in the calling environment by default
     tt = objects(envir=env, all.names=TRUE)
-    ss = which(as.logical(sapply(tt, function(x) is.data.table(get(x,envir=env)))))
+    ss = which(vapply_1b(tt, function(x) is.data.table(get(x,envir=env))))
     if (!length(ss)) {
         if (!silent) cat("No objects of class data.table exist in .GlobalEnv\n")
         return(invisible(data.table(NULL)))

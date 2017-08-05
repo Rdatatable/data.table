@@ -12,8 +12,7 @@ as.IDate.Date <- function(x, ...) {
     structure(as.integer(x), class=c("IDate","Date"))
 }    
 
-as.IDate.POSIXct <- function(x, ...) {
-  tz = attr(x, "tzone")
+as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
   as.IDate(as.Date(x, tz = tz, ...))
 }
@@ -121,7 +120,10 @@ as.character.ITime <- format.ITime <- function(x, ...) {
     x  <- abs(unclass(x))
     hh <- x %/% 3600L
     mm <- (x - hh * 3600L) %/% 60L
-    ss <- trunc(x - hh * 3600L - 60L * mm)
+    # #2171 -- trunc gives numeric but %02d requires integer;
+    #   as.integer is also faster (but doesn't handle integer overflow)
+    #   http://stackoverflow.com/questions/43894077
+    ss <- as.integer(x - hh * 3600L - 60L * mm)
     res = sprintf('%02d:%02d:%02d', hh, mm, ss)
     # Fix for #1354, so that "NA" input is handled correctly.
     if (is.na(any(neg))) res[is.na(x)] = NA
@@ -244,7 +246,7 @@ second  <- function(x) as.integer(as.POSIXlt(x)$sec)
 minute  <- function(x) as.POSIXlt(x)$min
 hour    <- function(x) as.POSIXlt(x)$hour
 yday    <- function(x) as.POSIXlt(x)$yday + 1L
-wday    <- function(x) as.POSIXlt(x)$wday + 1L
+wday    <- function(x) (unclass(as.IDate(x)) + 4L) %% 7L + 1L
 mday    <- function(x) as.POSIXlt(x)$mday
 week    <- function(x) yday(x) %/% 7L + 1L
 isoweek <- function(x) {

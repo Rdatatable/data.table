@@ -265,6 +265,12 @@ static void writeString(SEXP column, int i, char **thisCh)
     Rboolean q = quote;
     if (q==NA_LOGICAL) { // quote="auto"
       const char *tt = CHAR(x);
+      if (*tt == '\0') {
+        // Empty strings are always quoted: this distinguishes them from NAs
+        *ch = '"'; ch[1] = '"';
+        *thisCh += 2;
+        return;
+      }
       while (*tt!='\0' && *tt!=sep && *tt!=sep2 && *tt!='\n' && *tt!='"') *ch++ = *tt++;
       // Windows includes \n in its \r\n so looking for \n only is sufficient
       // sep2 is set to '\0' when no list columns are present
@@ -494,8 +500,8 @@ static writer_fun_t whichWriter(SEXP column) {
     if (INHERITS(column, char_Date))     return writeDateInt;
     return writeInteger;
   case REALSXP:
-    if (INHERITS(column, char_integer64))
-      return (INHERITS(column, char_nanotime) && dateTimeAs!=DATETIMEAS_EPOCH) ? writeNanotime : writeInteger;
+    if (INHERITS(column, char_nanotime) && dateTimeAs!=DATETIMEAS_EPOCH) return writeNanotime;
+    if (INHERITS(column, char_integer64))return writeInteger;
     if (dateTimeAs==DATETIMEAS_EPOCH)    return writeNumeric;
     if (INHERITS(column, char_Date))     return writeDateReal;
     if (INHERITS(column, char_POSIXct))  return writePOSIXct;
@@ -602,6 +608,8 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
   na = CHAR(STRING_ELT(na_Arg, 0));
   dec = *CHAR(STRING_ELT(dec_Arg,0));
   quote = LOGICAL(quote_Arg)[0];
+  // When NA is a non-empty string, then we must quote all string fields
+  if (*na != '\0' && quote == NA_LOGICAL) quote = TRUE;
   qmethod_escape = LOGICAL(qmethod_escapeArg)[0];
   const char *filename = CHAR(STRING_ELT(filename_Arg, 0));
   logicalAsInt = LOGICAL(logicalAsInt_Arg)[0];

@@ -14,8 +14,11 @@
     * Numeric data that has been quoted is now detected and read as numeric.
     * The ability to position `autostart` anywhere inside one of multiple tables in a single file is removed with warning. It used to search upwards from that line to find the start of the table based on a consistent number of columns. People appear to be using `skip="string"` or `skip=nrow` to find the header row exactly, which is retained and simpler. It was too difficult to retain search-upwards-autostart together with skipping blank lines, filling incomplete rows and parallelization. Varying format and height messy header info above the column names is still auto detected and auto skipped.
     * `dec=','` is now implemented directly so there is no dependency on locale. The options `datatable.fread.dec.experiment` and `datatable.fread.dec.locale` have been removed.
-    * Many thanks to @yaakovfeldman, Guillermo Ponce, Arun Srinivasan, Hugh Parsonage, Mark Klik, Pasha Stetsenko, Mahyar K for testing before release to CRAN: [#2070](https://github.com/Rdatatable/data.table/issues/2070), [#2073](https://github.com/Rdatatable/data.table/issues/2073), [#2087](https://github.com/Rdatatable/data.table/issues/2087), [#2091](https://github.com/Rdatatable/data.table/issues/2091), [#2107](https://github.com/Rdatatable/data.table/issues/2107), [fst#50](https://github.com/fstpackage/fst/issues/50#issuecomment-294287846), [#2118](https://github.com/Rdatatable/data.table/issues/2118), [#2092](https://github.com/Rdatatable/data.table/issues/2092), [#1888](https://github.com/Rdatatable/data.table/issues/1888), [#2123](https://github.com/Rdatatable/data.table/issues/2123)
-    * Now detects GB-18030 and UTF-16 encodings and in verbose mode prints a message about BOM detection.
+    * Detects GB-18030 and UTF-16 encodings and in verbose mode prints a message about BOM detection.
+    * Detects and ignores trailing ^Z end-of-file control character sometimes created on MS DOS/Windows, [#1612](https://github.com/Rdatatable/data.table/issues/1612). Thanks to Gergely Daróczi for reporting and providing a file.
+    * Many thanks to @yaakovfeldman, Guillermo Ponce, Arun Srinivasan, Hugh Parsonage, Mark Klik, Pasha Stetsenko, Mahyar K, Tom Crockett, @cnoelke, @qinjs for testing before release to CRAN: [#2070](https://github.com/Rdatatable/data.table/issues/2070), [#2073](https://github.com/Rdatatable/data.table/issues/2073), [#2087](https://github.com/Rdatatable/data.table/issues/2087), [#2091](https://github.com/Rdatatable/data.table/issues/2091), [#2107](https://github.com/Rdatatable/data.table/issues/2107), [fst#50](https://github.com/fstpackage/fst/issues/50#issuecomment-294287846), [#2118](https://github.com/Rdatatable/data.table/issues/2118), [#2092](https://github.com/Rdatatable/data.table/issues/2092), [#1888](https://github.com/Rdatatable/data.table/issues/1888), [#2123](https://github.com/Rdatatable/data.table/issues/2123), [#2167](https://github.com/Rdatatable/data.table/issues/2167), [#2194](https://github.com/Rdatatable/data.table/issues/2194), [#2238](https://github.com/Rdatatable/data.table/issues/2238), [#2228](https://github.com/Rdatatable/data.table/issues/2228), [#1464](https://github.com/Rdatatable/data.table/issues/1464), [#2201](https://github.com/Rdatatable/data.table/issues/2201)
+
+2. `fwrite` now always quotes empty strings (`,"",`) to distinguish them from `NA` which by default is still empty (`,,`) but can be changed using `na=` as before. If `na=` is provided and `quote=` is the default `'auto'` then `quote=` is set to `TRUE` so that if the `na=` value occurs in the data, it can be distinguished from `NA`. Thanks to Ethan Welty for the request [#2214](https://github.com/Rdatatable/data.table/issues/2214) and Pasha for the code change and tests, [#2215](https://github.com/Rdatatable/data.table/issues/2215).
 
 #### BUG FIXES
 
@@ -34,14 +37,33 @@
 
 7. Seg fault in `rbindlist()` when one or more items are empty, [#2019](https://github.com/Rdatatable/data.table/issues/2019). Thanks Michael Lang for the pull request.
 
-8. Error printing 0-length `ITime` objects, [#2032](https://github.com/Rdatatable/data.table/issues/2032). Thanks Michael Chirico for the pull request.
+8. Error printing 0-length `ITime` and `NA` objects, [#2032](https://github.com/Rdatatable/data.table/issues/2032) and [#2171](https://github.com/Rdatatable/data.table/issues/2171). Thanks Michael Chirico for the pull requests and @franknarf1 for pointing out a shortcoming of the initial fix.
 
 9. `as.IDate.POSIXct` error with `NULL` timezone, [#1973](https://github.com/Rdatatable/data.table/issues/1973). Thanks @lbilli for reporting and Michael Chirico for the pull request.
 
-10. `split.data.table` respects `factor` ordering in `by` argument, [#2082](https://github.com/Rdatatable/data.table/issues/2082). Thanks to @MichaelChirico for identifying and fixing the issue.
+10. Printing a null `data.table` with `print` no longer visibly outputs `NULL`, [#1852](https://github.com/Rdatatable/data.table/issues/1852). Thanks @aaronmcdaid for spotting and @MichaelChirico for the PR.
+
+11. `data.table` now works with Shiny Reactivity / Flexdashboard. The error was typically something like `col not found` in `DT[col==val]`. Thanks to Dirk Eddelbuettel leading Matt through reproducible steps and @sergeganakou and Richard White for reporting. Closes [#2001](https://github.com/Rdatatable/data.table/issues/2001) and [shiny/#1696](https://github.com/rstudio/shiny/issues/1696).
+
+12. The `as.IDate.POSIXct` method passed `tzone` along but was not exported. So `tzone` is now taken into account by `as.IDate` too as well as `IDateTime`, [#977](https://github.com/Rdatatable/data.table/issues/977) and [#1498](https://github.com/Rdatatable/data.table/issues/1498). Tests added.
+
+13. Named logical vector now select rows as expected from single row data.table. Thanks to @skranz for reporting. Closes [#2152](https://github.com/Rdatatable/data.table/issues/2152).
+
+14. `fread()`'s rare `Internal error: Sampling jump point 10 is before the last jump ended` has been fixed, [#2157](https://github.com/Rdatatable/data.table/issues/2157). Thanks to Frank Erickson and Artem Klevtsov for reporting with example files which are now added to the test suite.
+
+15. `CJ()` no longer loses attribute information, [#2029](https://github.com/Rdatatable/data.table/issues/2029). Thanks to @MarkusBonsch and @royalts for the pull request.
+
+16. `split.data.table` respects `factor` ordering in `by` argument, [#2082](https://github.com/Rdatatable/data.table/issues/2082). Thanks to @MichaelChirico for identifying and fixing the issue.
 
 #### NOTES
 
+1. `?data.table` makes explicit the option of using a `logical` vector in `j` to select columns, [#1978](https://github.com/Rdatatable/data.table/issues/1978). Thanks @Henrik-P for the note and @MichaelChirico for filing.
+
+2. The `nanotime` v0.2.0 update on CRAN 22 June 2017 changed from `integer64` to `S4` and broke `fwrite` of `nanotime` columns. The onus is on package maintainers to check downstream packages before release to CRAN. `fwrite` updated to work with `nanotime` both before and after v0.2.0.
+
+3. Test 1675.1 updated to cope with a change in R-devel in June 2017 related to `factor()` and `NA` levels.
+
+4. Package `ezknitr` has been added to the whitelist of packages that run user code and should be consider data.table-aware, [#2266](https://github.com/Rdatatable/data.table/issues/2266). Thanks to Matt Mills for testing and reporting.
 
 ### Changes in v1.10.4  (on CRAN 01 Feb 2017)
 
@@ -970,7 +992,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
 
   26.  `dcast.data.table` provides better error message when `fun.aggregate` is specified but it returns length != 1. Closes [#693](https://github.com/Rdatatable/data.table/issues/693). Thanks to Trevor Alexander for reporting [here on SO](http://stackoverflow.com/questions/24152733/undocumented-error-in-dcast-data-table).
 
-  27.  `dcast.data.table` tries to preserve attributes whereever possible, except when `value.var` is a `factor` (or ordered factor). For `factor` types, the casted columns will be coerced to type `character` thereby losing the `levels` attribute. Closes [#688](https://github.com/Rdatatable/data.table/issues/688). Thanks to juancentro for reporting.
+  27.  `dcast.data.table` tries to preserve attributes wherever possible, except when `value.var` is a `factor` (or ordered factor). For `factor` types, the casted columns will be coerced to type `character` thereby losing the `levels` attribute. Closes [#688](https://github.com/Rdatatable/data.table/issues/688). Thanks to juancentro for reporting.
 
   28.  `melt` now returns friendly error when `meaure.vars` are not in data instead of segfault. Closes [#699](https://github.com/Rdatatable/data.table/issues/688). Thanks to vsalmendra for [this post on SO](http://stackoverflow.com/q/24326797/559784) and the subsequent bug report.
 

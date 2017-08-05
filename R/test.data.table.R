@@ -2,16 +2,12 @@
 test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
     if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
         # package developer
-        if ("package:data.table" %in% search()) stop("data.table package loaded")
-        if (.Platform$OS.type == "unix" && Sys.info()['sysname'] != "Darwin")
-            d = path.expand("~/data.table/inst/tests")
-        else {
-            if (!pkg %in% dir()) stop(paste(pkg, " not in dir()", sep=""))
-            d = paste(getwd(),"/", pkg, "/inst/tests",sep="")
-        }
+        if ("package:data.table" %in% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
+        d = if (pkg %in% dir()) paste0(getwd(),"/",pkg) else Sys.getenv("CC_DIR")
+        d = paste0(d, "/inst/tests")
     } else {
-        # user
-        d = paste(getNamespaceInfo("data.table","path"),"/tests",sep="")
+        # R CMD check and user running test.data.table()
+        d = paste0(getNamespaceInfo("data.table","path"),"/tests")
     }
     # for (fn in dir(d,"*.[rR]$",full=TRUE)) {  # testthat runs those
     oldenc = options(encoding="UTF-8")[[1L]]  # just for tests 708-712 on Windows
@@ -45,13 +41,18 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
 # .devtesting = TRUE
 
 compactprint <- function(DT, topn=2) {
-    tt = sapply(DT,function(x)class(x)[1L])
+    tt = vapply_1c(DT,function(x)class(x)[1L])
     tt[tt=="integer64"] = "i64"
     cn = paste(" [Key=",paste(key(DT),collapse=","),
                 " Types=",paste(substring(sapply(DT,typeof),1,3),collapse=","),
                 " Classes=",paste(substring(tt,1,3),collapse=","),
                 "]",sep="")
-    print(copy(DT)[,(cn):=""], topn=topn)
+    if (nrow(DT)) {
+      print(copy(DT)[,(cn):=""], topn=topn)
+    } else {
+      print(DT)  # "Empty data.table (0 rows) of <ncol> columns ...
+      if (ncol(DT)) cat(cn,"\n")
+    }
     invisible()
 }
 
@@ -158,15 +159,15 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
             xc=copy(x)
             yc=copy(y)  # so we don't affect the original data which may be used in the next test
             # drop unused levels in factors
-            if (length(x)) for (i in which(sapply(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
-            if (length(y)) for (i in which(sapply(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
+            if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
+            if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
             setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
             setattr(yc,"row.names",NULL)
             setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
             setattr(yc,"index",NULL)
             if (identical(xc,yc) && identical(key(x),key(y))) return()  # check key on original x and y because := above might have cleared it on xc or yc
             if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
-                identical(sapply(xc,typeof), sapply(yc,typeof))) return()
+                identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return()
         }
         if (is.factor(x) && is.factor(y)) {
             x = factor(x)
