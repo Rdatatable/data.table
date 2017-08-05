@@ -17,8 +17,6 @@ SEXP uniqlist(SEXP l, SEXP order)
 
     int *iidx = Calloc(isize, int); // for 'idx'
     int *n_iidx; // to catch allocation errors using Realloc!
-    if (NA_INTEGER != NA_LOGICAL || sizeof(NA_INTEGER)!=sizeof(NA_LOGICAL)) 
-        error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
     ncol = length(l);
     nrow = length(VECTOR_ELT(l,0));
     len = 1;
@@ -34,7 +32,7 @@ SEXP uniqlist(SEXP l, SEXP order)
         while (--j>=0 && b) {
             v=VECTOR_ELT(l,j);
             switch (TYPEOF(v)) {
-            case INTSXP : case LGLSXP :
+            case INTSXP : case LGLSXP :  // NA_INTEGER==NA_LOGICAL checked in init.c
                 b=INTEGER(v)[thisi]==INTEGER(v)[previ]; break;
             case STRSXP :
                 // fix for #469, when key is set, duplicated calls uniqlist, where encoding 
@@ -85,56 +83,52 @@ SEXP uniqlengths(SEXP x, SEXP n) {
 
 // we could compute `uniqlist` and `uniqlengths` and then construct the result
 // but that seems unnecessary waste of memory and roundabout..
-// so, we'll do it directly here.. 'order()' is implemented in C-api, but not used 
-// in R side yet, but if need be, it can be added easily.
-SEXP rleid(SEXP l, SEXP order) {
-    Rboolean b, byorder;
-    unsigned long long *ulv; // for numeric check speed-up
-    SEXP v, ans, class;
-    R_len_t nrow = length(VECTOR_ELT(l,0)), ncol = length(l);
-    R_len_t i, j, len = 1, thisi, previ;
-
-    if (!nrow || !ncol) return (allocVector(INTSXP, 0));
-    for (i=1; i<ncol; i++) {
-        if (length(VECTOR_ELT(l,i)) != nrow)
-            error("All elements to input list must be of same length. Element [%d] has length %d != length of first element = %d.", i+1, length(VECTOR_ELT(l,i)), nrow);
+// so, we'll do it directly here..
+SEXP rleid(SEXP l, SEXP cols)
+{
+  R_len_t nrow = length(VECTOR_ELT(l,0)), ncol = length(l);
+  if (!nrow || !ncol) return (allocVector(INTSXP, 0));
+  if (!isInteger(cols) || LENGTH(cols)==0) error("cols must be an integer vector with length >= 1");
+  for (int i=0; i<LENGTH(cols); i++) {
+    int this = INTEGER(cols)[i];
+    if (this<1 || this>LENGTH(l)) error("Item %d of cols is %d which is outside range of l [1,length(l)=%d]", i+1, this, LENGTH(l));
+  }
+  for (int i=1; i<ncol; i++) {
+    if (length(VECTOR_ELT(l,i)) != nrow) error("All elements to input list must be of same length. Element [%d] has length %d != length of first element = %d.", i+1, length(VECTOR_ELT(l,i)), nrow);
+  }
+  SEXP ans = PROTECT(allocVector(INTSXP, nrow));
+  R_len_t grp = 1;
+  INTEGER(ans)[0] = grp; // first row is always the first of first group
+  for (int i=1; i<nrow; i++) {
+    Rboolean b = TRUE;
+    int j = LENGTH(cols);
+    // the last column varies the most frequently so check that first and work backwards
+    while (--j>=0 && b) {
+      SEXP v = VECTOR_ELT(l, INTEGER(cols)[j]-1);
+      switch (TYPEOF(v)) {
+      case INTSXP : case LGLSXP :
+        b = INTEGER(v)[i]==INTEGER(v)[i-1];
+        break;
+      case STRSXP :
+        b = STRING_ELT(v,i)==STRING_ELT(v,i-1);
+        // TODO: do we want to check encodings here now that forder seems to?
+        // Old comment : forder checks no non-ascii unknown, and either UTF-8 or Latin1 but not both.
+        //               So == pointers is ok given that check
+        break;
+      case REALSXP : {
+        long long *ll = (long long *)DATAPTR(v);  
+        b = ll[i]==ll[i-1]; }
+        // 8 bytes of bits are identical. For real (no rounding currently) and integer64
+        // long long == 8 bytes checked in init.c
+        break;
+      default :
+        error("Type '%s' not supported", type2char(TYPEOF(v))); 
+      }
     }
-    if (NA_INTEGER != NA_LOGICAL || sizeof(NA_INTEGER)!=sizeof(NA_LOGICAL)) 
-        error("Have assumed NA_INTEGER == NA_LOGICAL (currently R_NaInt). If R changes this in future (seems unlikely), an extra case is required; a simple change.");
-    ans = PROTECT(allocVector(INTSXP, nrow));
-    INTEGER(ans)[0] = 1; // first row is always the first of first group
-    byorder = INTEGER(order)[0] != -1;
-    thisi = byorder ? INTEGER(order)[0]-1 : 0;
-    for (i=1; i<nrow; i++) {
-        previ = thisi;
-        thisi = byorder ? INTEGER(order)[i]-1 : i;
-        j = ncol;  // the last column varies the most frequently so check that first and work backwards
-        b = TRUE;
-        while (--j>=0 && b) {
-            v=VECTOR_ELT(l,j);
-            switch (TYPEOF(v)) {
-            case INTSXP : case LGLSXP :
-                b=INTEGER(v)[thisi]==INTEGER(v)[previ]; break;
-            case STRSXP :
-                b=STRING_ELT(v,thisi)==STRING_ELT(v,previ); break;  // forder checks no non-ascii unknown, and either UTF-8 or Latin1 but not both. So == pointers is ok given that check.
-            case REALSXP :
-                ulv = (unsigned long long *)REAL(v);  
-                b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
-                if (!b) {
-                    class = getAttrib(v, R_ClassSymbol);
-                    twiddle = (isString(class) && STRING_ELT(class, 0)==char_integer64) ? &i64twiddle : &dtwiddle;
-                    b = twiddle(ulv, thisi, 1) == twiddle(ulv, previ, 1);
-                }
-                break;
-                // TO DO: store previ twiddle call, but it'll need to be vector since this is in a loop through columns. Hopefully the first == will short circuit most often
-            default :
-                error("Type '%s' not supported", type2char(TYPEOF(v))); 
-            }
-        }
-        INTEGER(ans)[i] = b ? len : ++len;
-    }
-    UNPROTECT(1);
-    return(ans);
+    INTEGER(ans)[i] = (grp+=!b);
+  }
+  UNPROTECT(1);
+  return(ans);
 }
 
 SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP multArg) {

@@ -63,7 +63,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                         thisfill = PROTECT(allocVector(REALSXP, 1));
                         dthisfill = (unsigned long long *)REAL(thisfill);
                         if (INTEGER(fill)[0] == NA_INTEGER)
-                            dthisfill[0] = NAINT64;
+                            dthisfill[0] = NA_INT64_LL;
                         else dthisfill[0] = (unsigned long long)INTEGER(fill)[0];
                     } else {
                         thisfill = PROTECT(coerceVector(fill, REALSXP));
@@ -160,7 +160,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                         thisfill = PROTECT(allocVector(REALSXP, 1));
                         dthisfill = (unsigned long long *)REAL(thisfill);
                         if (INTEGER(fill)[0] == NA_INTEGER)
-                            dthisfill[0] = NAINT64;
+                            dthisfill[0] = NA_INT64_LL;
                         else dthisfill[0] = (unsigned long long)INTEGER(fill)[0];
                     } else {
                         thisfill = PROTECT(coerceVector(fill, REALSXP));

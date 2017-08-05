@@ -2,10 +2,7 @@
 title: "Efficient reshaping using data.tables"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_document:
-    theme: spacelab
-    highlight: pygments
-    css : css/bootstrap.css
+  rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Efficient reshaping using data.tables}
   %\VignetteEngine{knitr::rmarkdown}
@@ -36,7 +33,7 @@ We will load the data sets directly within sections.
 
 ## Introduction
 
-The `melt` and `dcast` functions for *data.tables* are extensions of the corresponding functions from the [reshape2](http://cran.r-project.org/package=reshape2) package.
+The `melt` and `dcast` functions for *data.tables* are extensions of the corresponding functions from the [reshape2](https://cran.r-project.org/package=reshape2) package.
 
 In this vignette, we will
 
@@ -88,7 +85,7 @@ str(DT.m1)
 
 * We can also specify column *indices* instead of *names*.
 
-* By default, `variable` column is of type `factor`. Set `variable.factor` argument to `FALSE` if you'd like to return a *character* vector instead. `variable.factor` argument is only available in `melt` from `data.table` and not in the [`reshape2` package](http://github.com/hadley/reshape).
+* By default, `variable` column is of type `factor`. Set `variable.factor` argument to `FALSE` if you'd like to return a *character* vector instead. `variable.factor` argument is only available in `melt` from `data.table` and not in the [`reshape2` package](https://github.com/hadley/reshape).
 
 * By default, the molten columns are automatically named `variable` and `value`.
 

@@ -19,7 +19,7 @@ test:
     # run check
     - R CMD check $(ls -1t *.tar.gz | head -n 1) --no-manual --as-cran
     # produce artifacts
-    - Rscript -e 'drat::insertArtifacts(repodir="public", repo.url="'"$USERNS"'/data.table", log.files=c("tests/tests.Rout"))'
+    - Rscript -e 'drat::insertArtifacts(repodir="public", repo.url="'"$USERNS"'/data.table", log.files=c("tests/main.Rout"))'
   artifacts:
     paths:
       - public
@@ -36,7 +36,7 @@ test-vanilla:
     - R CMD check $(ls -1t *.tar.gz | head -n 1) --ignore-vignettes --no-manual --as-cran
     # produce artifacts
     - Rscript -e 'install.packages("drat", repos="https://jangorecki.gitlab.io/drat")'
-    - Rscript -e 'drat::insertArtifacts(repodir="public/vanilla", repo.url="'"$USERNS"'/data.table/vanilla", log.files=c("tests/tests.Rout"))'
+    - Rscript -e 'drat::insertArtifacts(repodir="public/vanilla", repo.url="'"$USERNS"'/data.table/vanilla", log.files=c("tests/main.Rout"))'
   artifacts:
     paths:
       - public
@@ -55,7 +55,7 @@ test-r-devel:
     # run check
     - RD CMD check $(ls -1t *.tar.gz | head -n 1) --no-manual --as-cran
     # produce artifacts
-    - RDscript -e '.libPaths(setdiff(.libPaths(), "/usr/lib/R/library")); drat::insertArtifacts(repodir="public/r-devel", repo.url="'"$USERNS"'/data.table/r-devel", log.files=c("tests/tests.Rout"))'
+    - RDscript -e '.libPaths(setdiff(.libPaths(), "/usr/lib/R/library")); drat::insertArtifacts(repodir="public/r-devel", repo.url="'"$USERNS"'/data.table/r-devel", log.files=c("tests/main.Rout"))'
   artifacts:
     paths:
       - public
@@ -72,7 +72,7 @@ test-r-3.0.0:
     - R3 CMD check $(ls -1t *.tar.gz | head -n 1) --no-manual --as-cran
     # produce artifacts
     - R3script -e 'install.packages("drat", repos="https://jangorecki.gitlab.io/drat", method="curl")'
-    - R3script -e 'drat::insertArtifacts(repodir="public/r-3.0.0", repo.url="'"$USERNS"'/data.table/r-3.0.0", log.files=c("tests/tests.Rout"))'
+    - R3script -e 'drat::insertArtifacts(repodir="public/r-3.0.0", repo.url="'"$USERNS"'/data.table/r-3.0.0", log.files=c("tests/main.Rout"))'
   artifacts:
     paths:
       - public

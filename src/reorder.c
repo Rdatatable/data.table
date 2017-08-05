@@ -1,5 +1,107 @@
 #include "data.table.h"
-#include <Rdefines.h>
+
+SEXP reorder(SEXP x, SEXP order)
+{
+    // For internal use only by setkey().
+    // 'order' must strictly be a permutation of 1:n (i.e. no repeats, zeros or NAs)
+    // If only a small subset in the middle is reordered the ends are moved in: [start,end].
+    // x may be a vector, or a list of same-length vectors such as data.table
+    
+    R_len_t nrow, ncol;
+    int maxSize = 0;
+    if (isNewList(x)) {
+      nrow = length(VECTOR_ELT(x,0));
+      ncol = length(x);
+      for (int i=0; i<ncol; i++) {
+        SEXP v = VECTOR_ELT(x,i);
+        if (SIZEOF(v)!=4 && SIZEOF(v)!=8)
+          error("Item %d of list is type '%s' which isn't yet supported", i+1, type2char(TYPEOF(v)));
+        if (length(v)!=nrow)
+          error("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table.", i+1, length(v), nrow);
+        if (SIZEOF(v) > maxSize)
+          maxSize=SIZEOF(v);
+      }
+    } else {
+      if (SIZEOF(x)!=4 && SIZEOF(x)!=8)
+        error("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported", type2char(TYPEOF(x)));
+      maxSize = SIZEOF(x);
+      nrow = length(x);
+      ncol = 1;
+    }
+    if (!isInteger(order)) error("order must be an integer vector");
+    if (length(order) != nrow) error("nrow(x)[%d]!=length(order)[%d]",nrow,length(order));
+    
+    R_len_t start = 0;
+    while (start<nrow && INTEGER(order)[start] == start+1) start++;
+    if (start==nrow) return(R_NilValue);  // input is 1:n, nothing to do
+    R_len_t end = nrow-1;
+    while (INTEGER(order)[end] == end+1) end--;
+    for (R_len_t i=start; i<=end; i++) { 
+      int itmp = INTEGER(order)[i]-1;
+      if (itmp<start || itmp>end) error("order is not a permutation of 1:nrow[%d]", nrow);
+    }
+    // Creorder is for internal use (so we should get the input right!), but the check above seems sensible, otherwise
+    // would be segfault below. The for loop above should run in neglible time (sequential) and will also catch NAs.
+    // It won't catch duplicates in order, but that's ok. Checking that would be going too far given this is for internal use only.
+    
+    // Enough working ram for one column of the largest type, for every thread.
+    // Up to a limit of 1GB total. It's system dependent how to find out the truly free RAM - TODO.
+    // Without a limit it could easily start swapping and not work at all.
+    int nth = MIN(getDTthreads(), ncol);
+    size_t oneTmpSize = (end-start+1)*(size_t)maxSize;
+    size_t totalLimit = 1024*1024*(size_t)1024;  // 1GB
+    nth = MIN(totalLimit/oneTmpSize, nth);
+    if (nth==0) nth=1;  // if one column's worth is very big, we'll just have to try
+    char *tmp[nth];  // VLA ok because small; limited to max getDTthreads() not ncol which could be > 1e6
+    int ok=0; for (; ok<nth; ok++) {
+      tmp[ok] = malloc(oneTmpSize);
+      if (tmp[ok] == NULL) break;
+    }
+    if (ok==0) error("unable to allocate %d * %d bytes of working memory for reordering data.table", end-start+1, maxSize);
+    nth = ok;  // as many threads for which we have a successful malloc
+    // So we can still reorder a 10GB table in 16GB of RAM, as long as we have at least one column's worth of tmp
+    
+    #pragma omp parallel for schedule(dynamic) num_threads(nth)
+    for (int i=0; i<ncol; i++) {
+      const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
+      const int size = SIZEOF(v);
+      const int me = omp_get_thread_num();
+      const int *vi = INTEGER(order)+start;
+      if (size==4) {
+        const int *vd = (const int *)DATAPTR(v);
+        int *tmpp = (int *)tmp[me];
+        for (int j=start; j<=end; j++) {
+          *tmpp++ = vd[*vi++ -1];  // just copies 4 bytes, including pointers on 32bit
+        }
+      } else {
+        const double *vd = (const double *)DATAPTR(v);
+        double *tmpp = (double *)tmp[me];
+        for (int j=start; j<=end; j++) {
+          *tmpp++ = vd[*vi++ -1];  // just copies 8 bytes, pointers too including STRSXP and VECSXP
+        }
+      }
+      // How is this possible to not only ignore the write barrier but in parallel too?
+      // Only because this reorder() function accepts and checks a unique permutation of 1:nrow. It
+      // performs an in-place shuffle. This operation in the end does not change gcgen, mark or
+      // named/refcnt. They all stay the same even for STRSXP and VECSXP because it's just a data shuffle.
+      //
+      // Theory:
+      // The write to tmp is contiguous and io efficient (so less threads should not help that)
+      // The read from vd is as io efficient as order is ordered (the more threads the better when close
+      // to ordered but less threads may help when not very ordered).
+      // TODO large data benchmark to confirm theory and auto tune.
+      // io probably limits too much but at least this is our best shot (e.g. branchless) in finding out
+      // on other platforms with faster bus, perhaps
+      
+      // copy the reordered data back into the original vector
+      memcpy((char *)DATAPTR(v) + start*(size_t)size,
+             tmp[me],
+             (end-start+1)*(size_t)size);
+      // size_t, otherwise #5305 (integer overflow in memcpy)
+    }
+    for (int i=0; i<nth; i++) free(tmp[i]);
+    return(R_NilValue);
+}
 
 // reverse a vector - equivalent of rev(x) in base, but implemented in C and about 12x faster (on 1e8)
 SEXP setrev(SEXP x) {
@@ -34,110 +136,5 @@ SEXP setrev(SEXP x) {
     Free(tmp);
     return(R_NilValue);
 }
-
-SEXP reorder(SEXP x, SEXP order)
-{
-    // For internal use only by setkey().
-    // Reordering a vector in-place doesn't change generations so we can skip SET_STRING_ELT overhead etc.
-    // Speed is dominated by page fetch when input is randomly ordered so we're at the software limit here (better bus etc should shine).
-    // 'order' must strictly be a permutation of 1:n (i.e. no repeats, zeros or NAs)
-    // If only a small subset is reordered, this is detected using start and end.
-    // x may be a vector, or a list of vectors e.g. data.table
-    char *tmp, *tmpp, *vd;
-    SEXP v;
-    R_len_t i, j, itmp, nrow, ncol, start, end;
-    size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
-
-    if (isNewList(x)) {
-        nrow = length(VECTOR_ELT(x,0));
-        ncol = length(x);
-        for (i=0;i<ncol;i++) {
-            v = VECTOR_ELT(x,i);
-            if (SIZEOF(v) == 0) error("Item %d of list is type '%s' which isn't yet supported", i+1, type2char(TYPEOF(v)));
-            if (length(v)!=nrow) error("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table.", i+1, length(v), nrow);
-        }
-    } else {
-        if (SIZEOF(x) == 0) error("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported", type2char(TYPEOF(x)));
-        nrow = length(x);
-        ncol = 1;
-    }
-    if (!isInteger(order)) error("order must be an integer vector");
-    if (length(order) != nrow) error("nrow(x)[%d]!=length(order)[%d]",nrow,length(order));
-    
-    start = 0;
-    while (start<nrow && INTEGER(order)[start] == start+1) start++;
-    if (start==nrow) return(R_NilValue);  // input is 1:n, nothing to do
-    end = nrow-1;
-    while (INTEGER(order)[end] == end+1) end--;
-    for (i=start; i<=end; i++) { itmp=INTEGER(order)[i]-1; if (itmp<start || itmp>end) error("order is not a permutation of 1:nrow[%d]", nrow); }
-    // Creorder is for internal use (so we should get the input right!), but the check above seems sensible, otherwise
-    // would be segfault below. The for loop above should run in neglible time (sequential) and will also catch NAs.
-    // It won't catch duplicates in order, but that's ok. Checking that would be going too far given this is for internal use only.
-    
-    tmp=(char *)malloc((end-start+1)*sizeof(double));   // Enough working space for one column of the largest type. setSizes() has a check too.
-                                                        // So we can reorder a 10GB table in 16GB of RAM
-    if (!tmp) error("unable to allocate %d * %d bytes of working memory for reordering data.table", end-start+1, sizeof(double));
-    for (i=0; i<ncol; i++) {
-        v = isNewList(x) ? VECTOR_ELT(x,i) : x;
-        size = SIZEOF(v);
-        if (!size) error("don't know how to reorder type '%s' of column %d. Please send this message to datatable-help",type2char(TYPEOF(v)),i+1);
-        tmpp=tmp;
-        vd = (char *)DATAPTR(v);
-        if (size==4) {
-            for (j=start;j<=end;j++) {
-                *(int *)tmpp = ((int *)vd)[INTEGER(order)[j]-1];  // just copies 4 bytes (pointers on 32bit too)
-                tmpp += 4;
-            }
-        } else {
-            if (size!=8) error("Size of column %d's type isn't 4 or 8", i+1);
-            for (j=start;j<=end;j++) {
-                *(double *)tmpp = ((double *)vd)[INTEGER(order)[j]-1];  // just copies 8 bytes (pointers on 64bit too)
-                tmpp += 8;
-            }
-        }
-        memcpy(vd + start*size, tmp, (end-start+1) * size);
-    }
-    free(tmp);
-    return(R_NilValue);
-}
-
-
-/* 
-used to be : 
-for (j=0;j<nrow;j++) {
-  memcpy((char *)tmpp, (char *)DATAPTR(VECTOR_ELT(dt,i)) + ((size_t)(INTEGER(order)[j]-1))*size, size);
-  tmpp += size;
-}
-This added 5s in 4e8 calls (see below) [-O3 on]. That 5s is insignificant vs page fetch, though, unless already
-ordered when page fetch goes away. Perhaps memcpy(dest, src, 4) and memcpy(dest, src, 8) would be optimized to remove
-call overhead but memcpy(dest, src, size) isn't since optimizer doesn't know value of 'size' variable up front.
-
-DT = setDT(lapply(1:4, function(x){sample(1e5,1e8,replace=TRUE)}))
-o = fastorder(DT, 1L)
-none = 1:1e8                           
-                                       
-# worst case 5% faster, thoroughly random     # before   after
-system.time(.Call(Creorder,DT,o))             # 102.301  97.082
-system.time(.Call(Creorder,DT,o))             # 102.602  97.001
-
-# best case 50% faster, already ordered       # before   after
-system.time(.Call(Creorder,DT,none))          # 9.310    4.187
-system.time(.Call(Creorder,DT,none))          # 9.295    4.077
-
-# Somewhere inbetween 5%-50% would be e.g. grouped data where we're reordering the blocks.
-# But, likely the worst case speedup most of the time. On my slow netbook anyway, with slow RAM.
-
-# However, on decent laptop (faster RAM/bus etc) it looks better at 40% speedup consistently ...
-
-# thoroughly random                           # before   after
-system.time(.Call("Creorder",DT,o))           # 33.216   19.184
-system.time(.Call("Creorder",DT,o))           # 30.556   18.667
-
-# already ordered                             # before   after
-system.time(.Call("Creorder",DT,none))        # 4.172    2.384
-system.time(.Call("Creorder",DT,none))        # 4.076    2.356
-
-*/
-
 
 

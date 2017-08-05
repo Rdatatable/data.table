@@ -125,11 +125,12 @@ static void HashTableSetup(HashData *d, RLEN n)
     d->hash = shash;
     d->equal = sequal;
     MKsetup(d, n);
-    d->HashTable = malloc(sizeof(struct llist *) * (d->M));
-    if (d->HashTable == NULL) error("malloc failed in rbindlist.c. This part of the code will be reworked.");
+    //d->HashTable = malloc(sizeof(struct llist *) * (d->M));
+    //if (d->HashTable == NULL) error("malloc failed in rbindlist.c. This part of the code will be reworked.");
+    d->HashTable = (struct llist **)R_alloc(d->M, sizeof(struct llist *));
     for (RLEN i = 0; i < d->M; i++) d->HashTable[i] = NULL;
 }
-
+/*
 static void CleanHashTable(HashData *d)
 {
     struct llist * root, * tmp;
@@ -144,6 +145,7 @@ static void CleanHashTable(HashData *d)
     }
     free(d->HashTable);
 }
+*/
 
 // factorType is 1 for factor and 2 for ordered
 // will simply unique normal factors and attempt to find global order for ordered ones
@@ -194,8 +196,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
             }
             if (data.nmax-- < 0) error("hash table is full");
 
-            pl = malloc(sizeof(struct llist));
-            if (pl == NULL) error("malloc failed in rbindlist.c. This part of the code will be reworked.");
+            pl = (struct llist *)R_alloc(1, sizeof(struct llist));
             pl->next = NULL;
             pl->i = i;
             pl->j = j;
@@ -211,9 +212,10 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
     SEXP finalLevels = PROTECT(allocVector(STRSXP, uniqlen));
     R_len_t counter = 0;
     if (*factorType == 2) {
-        int * locs = malloc(sizeof(int) * len);
-        if (locs == NULL) error("malloc failed in rbindlist.c. This part of the code will be reworked.");
-        for (i = 0; i < len; ++i) locs[i] = 0;
+        int *locs = (int *)R_alloc(len, sizeof(int));
+        for (int i=0; i<len; i++) locs[i] = 0;
+        // note there's a goto (!!) normalFactor below. When locs was allocated with malloc, the goto jumped over the
+        // old free() and caused leak. Now uses the safer R_alloc.  TODO - review all this logic.
 
         R_len_t k;
         SEXP tmp;
@@ -289,7 +291,6 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
                 if (h[idx] == NULL) error("internal hash error, please report to datatable-help");
             }
         }
-        free (locs);
     }
 
  normalFactor:
@@ -315,7 +316,8 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
         }
     }
 
-    CleanHashTable(&data);
+    // CleanHashTable(&data);   No longer needed now we use R_alloc(). But the hash table approach
+    // will be removed completely at some point.
 
     return finalLevels;
 }
@@ -402,11 +404,12 @@ static SEXP fast_order(SEXP dt, R_len_t byArg, R_len_t handleSorted) {
     }    
     ans = PROTECT(forder(dt, by, retGrp, sortStr, order, na)); protecti++;
     if (!length(ans) && handleSorted != 0) {
-        starts = PROTECT(getAttrib(ans, mkString("starts"))); protecti++;
+        starts = getAttrib(ans, sym_starts);
         // if cols are already sorted, 'forder' gives integer(0), got to replace it with 1:.N
         ans = PROTECT(allocVector(INTSXP, length(VECTOR_ELT(dt, 0)))); protecti++;
         for (i=0; i<length(ans); i++) INTEGER(ans)[i] = i+1;
-        setAttrib(ans, install("starts"), starts);
+        // TODO: for loop appears redundant because length(ans)==0 due to if (!length(ans)) above
+        setAttrib(ans, sym_starts, starts);
     }
     UNPROTECT(protecti); // ans
     return(ans);
@@ -439,7 +442,7 @@ static SEXP match_names(SEXP v) {
     runid  = VECTOR_ELT(dt, 2);
     
     uorder = PROTECT(fast_order(dt, 2, 1));  protecti++; // byArg alone is set, everything else is set inside fast_order
-    starts = PROTECT(getAttrib(uorder, mkString("starts"))); protecti++;
+    starts = getAttrib(uorder, sym_starts);
     ulens  = PROTECT(uniq_lengths(starts, length(lnames))); protecti++;
     
     // seq_len(.N) for each group
@@ -450,7 +453,7 @@ static SEXP match_names(SEXP v) {
     }
     // order again
     uorder = PROTECT(fast_order(dt, 2, 1));  protecti++; // byArg alone is set, everything else is set inside fast_order
-    starts = PROTECT(getAttrib(uorder, mkString("starts"))); protecti++;
+    starts = getAttrib(uorder, sym_starts);
     ulens  = PROTECT(uniq_lengths(starts, length(lnames))); protecti++;    
     ncols  = length(starts);
     // check if order has to be changed (bysameorder = FALSE here by default - in `[.data.table` parlance)
@@ -492,7 +495,8 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
     
     data->first = -1; data->lcount = 0; data->n_rows = 0; data->n_cols = 0; data->protecti = 0;
     data->max_type = NULL; data->is_factor = NULL; data->ans_ptr = R_NilValue; data->mincol=0;
-    data->fn_rows = Calloc(LENGTH(l), int); data->colname = R_NilValue;
+    data->fn_rows = (int *)R_alloc(LENGTH(l), sizeof(int));
+    data->colname = R_NilValue;
 
     // get first non null name, 'rbind' was doing a 'match.names' for each item.. which is a bit more time consuming.
     // And warning that it'll be matched by names is not necessary, I think, as that's the default for 'rbind'. We 
@@ -508,6 +512,7 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
     if (!isNull(col_name)) { data->colname = PROTECT(col_name); data->protecti++; }
     if (usenames) { lnames = PROTECT(allocVector(VECSXP, LENGTH(l))); data->protecti++;}
     for (i=0; i<LENGTH(l); i++) {
+        data->fn_rows[i] = 0;  // careful to initialize before continues as R_alloc above doesn't initialize
         li = VECTOR_ELT(l, i);
         if (isNull(li)) continue;
         if (TYPEOF(li) != VECSXP) error("Item %d of list input is not a data.frame, data.table or list",i+1);
@@ -555,10 +560,12 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
     
     // decide type of each column
     // initialize the max types - will possibly increment later
-    data->max_type  = Calloc(data->n_cols, SEXPTYPE);
-    data->is_factor = Calloc(data->n_cols, int);
+    data->max_type  = (SEXPTYPE *)R_alloc(data->n_cols, sizeof(SEXPTYPE));
+    data->is_factor = (int *)R_alloc(data->n_cols, sizeof(int));
     for (i = 0; i< data->n_cols; i++) {
         thisClass = R_NilValue;
+        data->max_type[i] = 0;
+        data->is_factor[i] = 0;
         if (usenames) f_ind = VECTOR_ELT(findices, i);
         for (j=data->first; j<LENGTH(l); j++) {
             if (data->is_factor[i] == 2) break;
@@ -604,7 +611,6 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
     Rboolean usenames, fill, to_copy = FALSE, coerced=FALSE, isidcol = !isNull(idcol);
     SEXP fnames = R_NilValue, findices = R_NilValue, f_ind = R_NilValue, ans, lf, li, target, thiscol, levels;
     SEXP factorLevels = R_NilValue, finalFactorLevels;
-    Rboolean *isRowOrdered = NULL;
     R_len_t protecti=0;
 
     // first level of error checks
@@ -627,7 +633,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
     preprocess(l, usenames, fill, &data);
     fnames   = VECTOR_ELT(data.ans_ptr, 0);
     findices = VECTOR_ELT(data.ans_ptr, 1);
-    protecti = data.protecti;
+    protecti = data.protecti;   // TODO very ugly and doesn't seem right. Assign items to list instead, perhaps.
     if (data.n_rows == 0 && data.n_cols == 0) {
         UNPROTECT(protecti);
         return(R_NilValue);
@@ -637,7 +643,8 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
         protecti++;
     }
     factorLevels = PROTECT(allocVector(VECSXP, data.lcount));
-    isRowOrdered = Calloc(data.lcount, Rboolean);
+    Rboolean *isRowOrdered = (Rboolean *)R_alloc(data.lcount, sizeof(Rboolean));
+    for (int i=0; i<data.lcount; i++) isRowOrdered[i] = FALSE;
     
     ans = PROTECT(allocVector(VECSXP, data.n_cols+isidcol)); protecti++;
     setAttrib(ans, R_NamesSymbol, fnames);
@@ -774,10 +781,6 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
         }
     }
 
-    Free(data.max_type);
-    Free(data.is_factor);
-    Free(data.fn_rows);
-    Free(isRowOrdered);
     UNPROTECT(protecti);
     return(ans);
 }
@@ -825,7 +828,7 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
 
     // order - first time
     order = PROTECT(fast_order(dt, 2, 1));
-    start = PROTECT(getAttrib(order, mkString("starts")));
+    start = getAttrib(order, sym_starts);
     lens  = PROTECT(uniq_lengths(start, length(order))); // length(order) = nrow(dt)
     grpid = VECTOR_ELT(dt, 1);
     index = VECTOR_ELT(dt, 2);
@@ -839,9 +842,9 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
         k += j;
     }
     // order - again
-    UNPROTECT(3); // order, start, lens
+    UNPROTECT(2); // order, lens
     order = PROTECT(fast_order(dt, 2, 1)); 
-    start = PROTECT(getAttrib(order, mkString("starts")));
+    start = getAttrib(order, sym_starts);
     lens  = PROTECT(uniq_lengths(start, length(order)));
     
     ans = PROTECT(allocVector(INTSXP, nx));
@@ -853,7 +856,7 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
         if (oi > nx-1) continue;
         INTEGER(ans)[oi] = (li == 2) ? INTEGER(index)[INTEGER(order)[si+1]-1]+1 : INTEGER(nomatch)[0];
     }
-    UNPROTECT(5); // order, start, lens, ans
+    UNPROTECT(4); // order, lens, ans
     return(ans);
 }
 
@@ -866,7 +869,7 @@ static SEXP listlist(SEXP x) {
     lx = PROTECT(allocVector(VECSXP, 1));
     SET_VECTOR_ELT(lx, 0, x);
     xo = PROTECT(fast_order(lx, 1, 1));
-    xs = PROTECT(getAttrib(xo, mkString("starts")));
+    xs = getAttrib(xo, sym_starts);
     xl = PROTECT(uniq_lengths(xs, length(x)));
     
     ans0 = PROTECT(allocVector(STRSXP, length(xs)));
@@ -885,7 +888,7 @@ static SEXP listlist(SEXP x) {
     ans = PROTECT(allocVector(VECSXP, 2));
     SET_VECTOR_ELT(ans, 0, ans0);
     SET_VECTOR_ELT(ans, 1, ans1);
-    UNPROTECT(7);
+    UNPROTECT(6);
     return(ans);
 }
 

@@ -23,20 +23,25 @@ static union {double d;
 # define SQRTL sqrt
 #endif
 
-SEXP gstart(SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
+SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int i, j, g, *this;
     // clock_t start = clock();
-    if (!isInteger(o)) error("o is not integer vector");
-    if (!isInteger(f)) error("f is not integer vector");
-    if (!isInteger(l)) error("l is not integer vector");
+    if (TYPEOF(env) != ENVSXP) error("env is not an environment");
+    // The type of jsub is pretty flexbile in R, so leave checking to eval() below.
+    if (!isInteger(o)) error("o is not an integer vector");
+    if (!isInteger(f)) error("f is not an integer vector");
+    if (!isInteger(l)) error("l is not an integer vector");
+    if (!isInteger(irowsArg) && !isNull(irowsArg)) error("irowsArg is not an integer vector");
     ngrp = LENGTH(l);
     if (LENGTH(f) != ngrp) error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp);
     grpn=0;
-    grpsize = INTEGER(l);  // l will be protected in calling R scope until gend(), too
+    grpsize = INTEGER(l);
     for (i=0; i<ngrp; i++) grpn+=grpsize[i];
     if (LENGTH(o) && LENGTH(o)!=grpn) error("o has length %d but sum(l)=%d", LENGTH(o), grpn);
-    grp = malloc(grpn * sizeof(int));
-    if (!grp) error("Unable to allocate %d * %d bytes in gstart", grpn, sizeof(int));
+    
+    grp = (int *)R_alloc(grpn, sizeof(int));
+    // global grp because the g* functions (inside jsub) share this common memory
+    
     if (LENGTH(o)) {
         isunsorted = 1; // for gmedian
         for (g=0; g<ngrp; g++) {
@@ -57,14 +62,20 @@ SEXP gstart(SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
 
     irows = INTEGER(irowsArg);
     if (!isNull(irowsArg)) irowslen = length(irowsArg);
+    
+    SEXP ans = PROTECT( eval(jsub, env) );
+    // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.
+    if (isVectorAtomic(ans)) {
+      SEXP tt = ans;
+      ans = PROTECT(allocVector(VECSXP, 1));
+      SET_VECTOR_ELT(ans, 0, tt);
+      UNPROTECT(1);
+    }
+    ngrp = 0; maxgrpn = 0; irowslen = -1; isunsorted = 0;
 
-    // Rprintf("gstart took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
-    return(R_NilValue);
-}
-
-SEXP gend() {
-    free(grp); grp = NULL; ngrp = 0; maxgrpn = 0; irowslen = -1; isunsorted = 0;
-    return(R_NilValue);
+    // Rprintf("gforce took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+    UNPROTECT(1);
+    return(ans);
 }
 
 // long double usage here results in test 648 being failed when running with valgrind
@@ -79,9 +90,8 @@ SEXP gsum(SEXP x, SEXP narm)
     //clock_t start = clock();
     SEXP ans;
     if (grpn != n) error("grpn [%d] != length(x) [%d] in gsum", grpn, n);
-    long double *s = malloc(ngrp * sizeof(long double));
+    long double *s = calloc(ngrp, sizeof(long double));
     if (!s) error("Unable to allocate %d * %d bytes for gsum", ngrp, sizeof(long double));
-    memset(s, 0, ngrp * sizeof(long double)); // all-0 bits == (long double)0, checked in init.c
     switch(TYPEOF(x)) {
     case LGLSXP: case INTSXP:
         for (i=0; i<n; i++) {
@@ -159,14 +169,12 @@ SEXP gmean(SEXP x, SEXP narm)
     n = (irowslen == -1) ? length(x) : irowslen;
     if (grpn != n) error("grpn [%d] != length(x) [%d] in gsum", grpn, n);
 
-    long double *s = malloc(ngrp * sizeof(long double));
+    long double *s = calloc(ngrp, sizeof(long double));
     if (!s) error("Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE", ngrp, sizeof(long double));
-    memset(s, 0, ngrp * sizeof(long double)); // all-0 bits == (long double)0, checked in init.c
 
-    int *c = malloc(ngrp * sizeof(int));
+    int *c = calloc(ngrp, sizeof(int));
     if (!c) error("Unable to allocate %d * %d bytes for counts in gmean na.rm=TRUE", ngrp, sizeof(int));
-    memset(c, 0, ngrp * sizeof(int)); // all-0 bits == (int)0, checked in init.c
-        
+
     switch(TYPEOF(x)) {
     case LGLSXP: case INTSXP:
         for (i=0; i<n; i++) {
@@ -216,45 +224,33 @@ SEXP gmin(SEXP x, SEXP narm)
     //clock_t start = clock();
     SEXP ans;
     if (grpn != n) error("grpn [%d] != length(x) [%d] in gmin", grpn, n);
-    char *update = Calloc(ngrp, char);
-    if (update == NULL) error("Unable to allocate %d * %d bytes for gmin", ngrp, sizeof(char));
     switch(TYPEOF(x)) {
     case LGLSXP: case INTSXP:
         ans = PROTECT(allocVector(INTSXP, ngrp));
-        for (i=0; i<ngrp; i++) INTEGER(ans)[i] = 0;
         if (!LOGICAL(narm)[0]) {
+            for (i=0; i<ngrp; i++) INTEGER(ans)[i] = INT_MAX;
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
-                if (INTEGER(x)[ix] != NA_INTEGER && INTEGER(ans)[thisgrp] != NA_INTEGER) {
-                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] > INTEGER(x)[ix] ) {
-                        INTEGER(ans)[thisgrp] = INTEGER(x)[ix];
-                        if (update[thisgrp] != 1) update[thisgrp] = 1;
-                    }
-                } else INTEGER(ans)[thisgrp] = NA_INTEGER;
+                if (INTEGER(x)[ix] < INTEGER(ans)[thisgrp])   // NA_INTEGER==INT_MIN checked in init.c
+                    INTEGER(ans)[thisgrp] = INTEGER(x)[ix];
             }
         } else {
+            for (i=0; i<ngrp; i++) INTEGER(ans)[i] = NA_INTEGER;
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
-                if (INTEGER(x)[ix] != NA_INTEGER) {
-                    if ( update[thisgrp] != 1 || INTEGER(ans)[thisgrp] > INTEGER(x)[ix] ) {
-                        INTEGER(ans)[thisgrp] = INTEGER(x)[ix];
-                        if (update[thisgrp] != 1) update[thisgrp] = 1;
-                    }
-                } else {
-                    if (update[thisgrp] != 1) {
-                        INTEGER(ans)[thisgrp] = NA_INTEGER;
-                    }
-                }
+                if (INTEGER(x)[ix] == NA_INTEGER) continue;
+                if (INTEGER(ans)[thisgrp] == NA_INTEGER || INTEGER(x)[ix] < INTEGER(ans)[thisgrp])
+                    INTEGER(ans)[thisgrp] = INTEGER(x)[ix];
             }
             for (i=0; i<ngrp; i++) {
-                if (update[i] != 1)  {// equivalent of INTEGER(ans)[thisgrp] == NA_INTEGER
+                if (INTEGER(ans)[i] == NA_INTEGER) {
                     warning("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base");
                     UNPROTECT(1);
                     ans = PROTECT(coerceVector(ans, REALSXP));
                     for (i=0; i<ngrp; i++) {
-                        if (update[i] != 1) REAL(ans)[i] = R_PosInf;
+                        if (ISNA(REAL(ans)[i])) REAL(ans)[i] = R_PosInf;
                     }
                     break;
                 }
@@ -263,35 +259,33 @@ SEXP gmin(SEXP x, SEXP narm)
         break;
     case STRSXP:
         ans = PROTECT(allocVector(STRSXP, ngrp));
-        for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, mkChar(""));
         if (!LOGICAL(narm)[0]) {
+            for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, R_BlankString);
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
-                if (STRING_ELT(x, ix) != NA_STRING && STRING_ELT(ans, thisgrp) != NA_STRING) {
-                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x, ix))) > 0 ) {
-                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
-                        if (update[thisgrp] != 1) update[thisgrp] = 1;
-                    }
-                } else SET_STRING_ELT(ans, thisgrp, NA_STRING);
-            }
-        } else {
-            for (i=0; i<n; i++) {
-                thisgrp = grp[i];
-                ix = (irowslen == -1) ? i : irows[i]-1;
-                if (STRING_ELT(x, ix) != NA_STRING) {
-                    if ( update[thisgrp] != 1 || strcmp(CHAR(STRING_ELT(ans, thisgrp)), CHAR(STRING_ELT(x, ix))) > 0 ) {
-                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
-                        if (update[thisgrp] != 1) update[thisgrp] = 1;
-                    }
+                if (STRING_ELT(x, ix) == NA_STRING) {
+                    SET_STRING_ELT(ans, thisgrp, NA_STRING);
                 } else {
-                    if (update[thisgrp] != 1) {
-                        SET_STRING_ELT(ans, thisgrp, NA_STRING);
+                    if (STRING_ELT(ans, thisgrp) == R_BlankString ||
+                        (STRING_ELT(ans, thisgrp) != NA_STRING && strcmp(CHAR(STRING_ELT(x, ix)), CHAR(STRING_ELT(ans, thisgrp))) < 0 )) {
+                        SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
                     }
                 }
             }
+        } else {
+            for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, NA_STRING);
+            for (i=0; i<n; i++) {
+                thisgrp = grp[i];
+                ix = (irowslen == -1) ? i : irows[i]-1;
+                if (STRING_ELT(x, ix) == NA_STRING) continue;
+                if (STRING_ELT(ans, thisgrp) == NA_STRING || 
+                    strcmp(CHAR(STRING_ELT(x, ix)), CHAR(STRING_ELT(ans, thisgrp))) < 0) {
+                    SET_STRING_ELT(ans, thisgrp, STRING_ELT(x, ix));
+                }
+            }
             for (i=0; i<ngrp; i++) {
-                if (update[i] != 1)  {// equivalent of INTEGER(ans)[thisgrp] == NA_INTEGER
+                if (STRING_ELT(ans, i)==NA_STRING) {
                     warning("No non-missing values found in at least one group. Returning 'NA' for such groups to be consistent with base");
                     break;
                 }
@@ -300,38 +294,27 @@ SEXP gmin(SEXP x, SEXP narm)
         break;
     case REALSXP:
         ans = PROTECT(allocVector(REALSXP, ngrp));
-        for (i=0; i<ngrp; i++) REAL(ans)[i] = 0;
-        if (!LOGICAL(narm)[0]) {
+        if (!LOGICAL(narm)[0]) {    
+            for (i=0; i<ngrp; i++) REAL(ans)[i] = R_PosInf;
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
-                if ( !ISNA(REAL(x)[ix]) && !ISNA(REAL(ans)[thisgrp]) ) {
-                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] > REAL(x)[ix] || 
-                         (ISNAN(REAL(x)[ix]) && !ISNAN(REAL(ans)[thisgrp])) ) { // #1461
-                        REAL(ans)[thisgrp] = REAL(x)[ix];
-                        if (update[thisgrp] != 1) update[thisgrp] = 1;
-                    }
-                } else REAL(ans)[thisgrp] = NA_REAL;
+                if (ISNAN(REAL(x)[ix]) || REAL(x)[ix] < REAL(ans)[thisgrp])
+                    REAL(ans)[thisgrp] = REAL(x)[ix];
             }
         } else {
+            for (i=0; i<ngrp; i++) REAL(ans)[i] = NA_REAL;
             for (i=0; i<n; i++) {
                 thisgrp = grp[i];
                 ix = (irowslen == -1) ? i : irows[i]-1;
-                if ( !ISNAN(REAL(x)[ix]) ) { // #1461
-                    if ( update[thisgrp] != 1 || REAL(ans)[thisgrp] > REAL(x)[ix] ) {
-                        REAL(ans)[thisgrp] = REAL(x)[ix];
-                        if (update[thisgrp] != 1) update[thisgrp] = 1;
-                    }
-                } else {
-                    if (update[thisgrp] != 1) {
-                        REAL(ans)[thisgrp] = R_PosInf;
-                    }
-                }
+                if (ISNAN(REAL(x)[ix])) continue;
+                if (ISNAN(REAL(ans)[thisgrp]) || REAL(x)[ix] < REAL(ans)[thisgrp])
+                    REAL(ans)[thisgrp] = REAL(x)[ix];
             }
-            // everything taken care of already. Just warn if all NA groups have occurred at least once
             for (i=0; i<ngrp; i++) {
-                if (update[i] != 1)  {// equivalent of REAL(ans)[thisgrp] == R_PosInf
+                if (ISNAN(REAL(ans)[i])) {
                     warning("No non-missing values found in at least one group. Returning 'Inf' for such groups to be consistent with base");
+                    for (; i<ngrp; i++) if (ISNAN(REAL(ans)[i])) REAL(ans)[i] = R_PosInf;
                     break;
                 }
             }
@@ -342,7 +325,6 @@ SEXP gmin(SEXP x, SEXP narm)
     }
     copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     UNPROTECT(1);
-    Free(update);
     // Rprintf("this gmin took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
     return(ans);
 }
@@ -358,8 +340,11 @@ SEXP gmax(SEXP x, SEXP narm)
     //clock_t start = clock();
     SEXP ans;
     if (grpn != n) error("grpn [%d] != length(x) [%d] in gmax", grpn, n);
-    char *update = Calloc(ngrp, char);
-    if (update == NULL) error("Unable to allocate %d * %d bytes for gmax", ngrp, sizeof(char));
+    
+    // TODO rework gmax in the same way as gmin and remove this *update
+    char *update = (char *)R_alloc(ngrp, sizeof(char));
+    for (int i=0; i<ngrp; i++) update[i] = 0;
+    
     switch(TYPEOF(x)) {
     case LGLSXP: case INTSXP:
         ans = PROTECT(allocVector(INTSXP, ngrp));
@@ -484,7 +469,6 @@ SEXP gmax(SEXP x, SEXP narm)
     }
     copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     UNPROTECT(1);
-    Free(update);
     // Rprintf("this gmax took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
     return(ans);
 }
@@ -528,7 +512,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
                         }
                     } else {
                         u.d = REAL(x)[k];
-                        if (u.ll != NAINT64) {
+                        if (u.ll != NA_INT64_LL) {
                             REAL(sub)[j] = (double)u.ll;
                         } else {
                             REAL(ans)[i] = NA_REAL;
@@ -564,7 +548,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
                         } else { nacount++; continue; }
                     } else {
                         u.d = REAL(x)[k];
-                        if (u.ll != NAINT64) {
+                        if (u.ll != NA_INT64_LL) {
                             REAL(sub)[j-nacount] = (double)u.ll;
                         } else { nacount++; continue; }
                     }

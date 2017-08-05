@@ -24,6 +24,11 @@ attribute \code{sorted}). The sorted columns are the key. The key can be any
 columns in any order. The columns are sorted in ascending order always. The table 
 is changed \emph{by reference} and is therefore very memory efficient.
 
+\code{setindex()} creates an index on provided columns. Index is simply an 
+order of dataset by provided columns. It is being stored as \code{data.table} 
+attribute so dataset can retain original order. 
+See \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} vignette for more details.
+
 \code{key()} returns the \code{data.table}'s key if it exists, and \code{NULL} 
 if none exist.
 
@@ -36,7 +41,7 @@ setkeyv(x, cols, verbose=getOption("datatable.verbose"), physical = TRUE)
 setindex(...)
 setindexv(...)
 key(x)
-indices(x)
+indices(x, vectors = FALSE)
 haskey(x)
 key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 }
@@ -51,6 +56,8 @@ names.}
 \item{verbose}{ Output status and information. }
 \item{physical}{ TRUE changes the order of the data in RAM. FALSE adds a 
 secondary key a.k.a. index. }
+\item{vectors}{ logical scalar default \code{FALSE}, when set to \code{TRUE}
+then list of character vectors is returned, each vector refers to one index. }
 }
 \details{
 \code{setkey} reorders (or sorts) the rows of a data.table by the columns 
@@ -155,6 +162,13 @@ DT = data.table(A=5:1,B=letters[5:1])
 DT2 = copy(DT)        # explicit copy() needed to copy a data.table
 setkey(DT2,B)         # now just changes DT2
 identical(DT,DT2)     # FALSE. DT and DT2 are now different tables
+
+DT = data.table(A=5:1,B=letters[5:1])
+setindex(DT)          # set indices
+setindex(DT, A)
+setindex(DT, B)
+indices(DT)           # get indices single vector
+indices(DT, vectors = TRUE) # get indices list
 }
 \keyword{ data }
 

@@ -1,7 +1,8 @@
-setthreads <- function(threads) {
-    .Call(CsetThreads, as.integer(threads[1L]))
+setDTthreads <- function(threads) {
+    invisible(.Call(CsetDTthreads, as.integer(threads)))
 }
 
-getthreads <- function() {
-    .Call(CgetThreads)
+getDTthreads <- function() {
+    .Call(CgetDTthreads)
 }
+

@@ -17,12 +17,12 @@ SEXP seq_int(int n, int start) {
 // very specific "set_diff" for integers
 SEXP set_diff(SEXP x, int n) {
     SEXP ans, xmatch;
-    int i, j = 0, *buf;
+    int i, j = 0;
     if (TYPEOF(x) != INTSXP) error("'x' must be an integer");
     if (n <= 0) error("'n' must be a positive integer");
     xmatch = match(x, seq_int(n, 1), 0); // took a while to realise: matches vec against x - thanks to comment from Matthew in assign.c!
     
-    buf = (int *) R_alloc(n, sizeof(int));
+    int *buf = (int *) R_alloc(n, sizeof(int));
     for (i=0; i<n; i++) {
         if (INTEGER(xmatch)[i] == 0) {
             buf[j++] = i+1;
@@ -39,7 +39,7 @@ SEXP set_diff(SEXP x, int n) {
 // for melt's `na.rm=TRUE` option
 SEXP which_notNA(SEXP x) {
     SEXP v, ans;
-    int i, j=0, n = length(x), *buf;
+    int i, j=0, n = length(x);
     
     PROTECT(v = allocVector(LGLSXP, n));
     switch (TYPEOF(x)) {
@@ -60,7 +60,7 @@ SEXP which_notNA(SEXP x) {
             "which_notNA", type2char(TYPEOF(x)));
     }
     
-    buf = (int *) R_alloc(n, sizeof(int));
+    int *buf = (int *) R_alloc(n, sizeof(int));
     for (i = 0; i < n; i++) {
         if (LOGICAL(v)[i] == TRUE) {
             buf[j] = i + 1;
@@ -75,14 +75,14 @@ SEXP which_notNA(SEXP x) {
     return(ans);
 }
 
-SEXP which(SEXP x, Rboolean bool) {
+SEXP which(SEXP x, Rboolean val) {
     
-    int i, j=0, n = length(x), *buf;
+    int i, j=0, n = length(x);
     SEXP ans;
     if (!isLogical(x)) error("Argument to 'which' must be logical");
-    buf = (int *) R_alloc(n, sizeof(int));
+    int *buf = (int *) R_alloc(n, sizeof(int));
     for (i = 0; i < n; i++) {
-        if (LOGICAL(x)[i] == bool) {
+        if (LOGICAL(x)[i] == val) {
             buf[j] = i + 1;
             j++;
         }
@@ -96,10 +96,10 @@ SEXP which(SEXP x, Rboolean bool) {
 }
 
 // whichwrapper for R
-SEXP whichwrapper(SEXP x, SEXP bool) {
-    // if (LOGICAL(bool)[0] == NA_LOGICAL)
-    //     error("bool should be logical TRUE/FALSE");
-    return which(x, LOGICAL(bool)[0]);
+SEXP whichwrapper(SEXP x, SEXP val) {
+    // if (LOGICAL(val)[0] == NA_LOGICAL)
+    //     error("val should be logical TRUE/FALSE");
+    return which(x, LOGICAL(val)[0]);
 }
 
 // hack by calling paste using eval. could change this to strcat, but not sure about buffer size for large data.tables... Any ideas Matthew?
@@ -317,14 +317,16 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
     }
     if (length(varnames) != 1)
         error("'variable.name' must be a character/integer vector of length=1.");
-    data->leach = malloc(sizeof(int) * data->lvalues);
-    data->isidentical = malloc(sizeof(int) * data->lvalues);
-    data->isfactor = calloc(sizeof(int), data->lvalues);
-    data->maxtype = calloc(sizeof(SEXPTYPE), data->lvalues);
+    data->leach = (int *)R_alloc(data->lvalues, sizeof(int));
+    data->isidentical = (int *)R_alloc(data->lvalues, sizeof(int));
+    data->isfactor = (int *)R_alloc(data->lvalues, sizeof(int));
+    data->maxtype = (SEXPTYPE *)R_alloc(data->lvalues, sizeof(SEXPTYPE));
     for (i=0; i<data->lvalues; i++) {
         tmp = VECTOR_ELT(data->valuecols, i);
         data->leach[i] = length(tmp);
-        data->isidentical[i] = 1;
+        data->isidentical[i] = 1;  // TODO - why 1 and not Rboolean TRUE?
+        data->isfactor[i] = 0;  // seems to hold 2 below, so not an Rboolean FALSE here. TODO - better name for variable?
+        data->maxtype[i] = 0;   // R_alloc doesn't initialize so careful to here, relied on below
         data->lmax = (data->lmax > data->leach[i]) ? data->lmax : data->leach[i];
         data->lmin = (data->lmin < data->leach[i]) ? data->lmin : data->leach[i];
         for (j=0; j<data->leach[i]; j++) {
@@ -355,7 +357,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
     
     int i, j, k, protecti=0, counter=0, thislen=0;
     SEXP tmp, seqcols, thiscol, thisvaluecols, target, ansvals, thisidx=R_NilValue, flevels, clevels;
-    Rboolean coerced=FALSE, thisfac=FALSE, *isordered, copyattr = FALSE, thisvalfactor;
+    Rboolean coerced=FALSE, thisfac=FALSE, copyattr = FALSE, thisvalfactor;
     size_t size;
     for (i=0; i<data->lvalues; i++) {
         thisvaluecols = VECTOR_ELT(data->valuecols, i);
@@ -385,7 +387,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         }
     } else data->totlen = data->nrow * data->lmax;
     flevels = PROTECT(allocVector(VECSXP, data->lmax)); protecti++;
-    isordered = malloc(sizeof(Rboolean) * data->lmax);
+    Rboolean *isordered = (Rboolean *)R_alloc(data->lmax, sizeof(Rboolean));
     ansvals = PROTECT(allocVector(VECSXP, data->lvalues)); protecti++;
     for (i=0; i<data->lvalues; i++) {
         thisvalfactor = (data->maxtype[i] == VECSXP) ? FALSE : valfactor;
@@ -476,7 +478,6 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         }
     }
     UNPROTECT(protecti);
-    free(isordered);
     return(ansvals);
 }
 
@@ -693,11 +694,6 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
         }
         setAttrib(ans, R_NamesSymbol, ansnames);
     }
-    // should be 'free', not 'Free'. Fixes #1059
-    free(data.isfactor);
-    free(data.maxtype);
-    free(data.leach);
-    free(data.isidentical);
     UNPROTECT(protecti);
     return(ans);
 }

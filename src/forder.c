@@ -1034,6 +1034,7 @@ static void isort(int *x, int *o, int n)
 {
     if (n<=2) {
         if (nalast == 0 && n == 2) {                        // nalast = 0 and n == 2 (check bottom of this file for explanation)
+            if (o[0]==-1) { o[0]=1; o[1]=2; }
             for (int i=0; i<n; i++) if (x[i] == NA_INTEGER) o[i] = 0; 
             push(1); push(1);
             return;
@@ -1065,6 +1066,7 @@ static void dsort(double *x, int *o, int n)
 {
     if (n <= 2) {                                           // nalast = 0 and n == 2 (check bottom of this file for explanation)
         if (nalast == 0 && n == 2) {                        // don't have to twiddle here.. at least one will be NA and 'n' WILL BE 2.
+            if (o[0]==-1) { o[0]=1; o[1]=2; }
             for (int i=0; i<n; i++) if (is_nan(x, i)) o[i] = 0;
             push(1); push(1);
             return;
@@ -1123,7 +1125,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     o[0] = -1;                                  // so [i|c|d]sort know they can populate o directly with no working memory needed to reorder existing order
                                                 // had to repace this from '0' to '-1' because 'nalast = 0' replace 'o[.]' with 0 values.
     xd = DATAPTR(x);
-    
     stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
     savetl_init();   // from now on use Error not error.
 
@@ -1304,7 +1305,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     }
     if (LOGICAL(retGrp)[0]) {
         ngrp = gsngrp[flip];
-        setAttrib(ans, install("starts"), x = allocVector(INTSXP, ngrp));
+        setAttrib(ans, sym_starts, x = allocVector(INTSXP, ngrp));
         //if (isSorted || LOGICAL(sort)[0])
             for (INTEGER(x)[0]=1, i=1; i<ngrp; i++) INTEGER(x)[i] = INTEGER(x)[i-1] + gs[flip][i-1];
         //else {
@@ -1313,7 +1314,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         //    for (i=0; i<ngrp; i++) { INTEGER(x)[i] = o[i+cumsum]; cumsum+=gs[flip][i]; }
         //    isort(INTEGER(x), ngrp);
         //}
-        setAttrib(ans, install("maxgrpn"), ScalarInteger(gsmax[flip]));
+        setAttrib(ans, sym_maxgrpn, ScalarInteger(gsmax[flip]));
     }
     
     gsfree();
