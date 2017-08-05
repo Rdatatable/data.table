@@ -10021,6 +10021,20 @@ l <- list(a = NA,
 test(1771.7, lapply(l, attributes), lapply(do.call(CJ, l), attributes))
 test(1771.8, lapply(l, class), lapply(do.call(CJ, l), class))
 
+# split.data.table should respect non-alphabetic order if passed a factor in by, #2082
+DT = data.table(a = factor(c('a', 'b', 'b', 'a'), levels = c('b', 'a')), 
+                b = c(2, 2, 1, 1), c = 1:4)
+test(1772.1, split(DT, by = 'a', sorted = TRUE),
+     list(b = data.table(a = structure(c(1L, 1L), .Label = c("b", "a"), class = "factor"), 
+                         b = c(2, 1), c = 2:3),
+          a = data.table(a = structure(c(2L, 2L), .Label = c("b", "a"), class = "factor"),
+                         b = c(2, 1), c = c(1L, 4L))))
+test(1772.2, split(DT, by = c('a', 'b'), sorted = TRUE),
+     list(b.1 = data.table(a = structure(1L, .Label = c("b", "a"), class = "factor"), b = 1, c = 3L),
+          b.2 = data.table(a = structure(1L, .Label = c("b", "a"), class = "factor"), b = 2, c = 2L),
+          a.1 = data.table(a = structure(2L, .Label = c("b", "a"), class = "factor"), b = 1, c = 4L), 
+          a.2 = data.table(a = structure(2L, .Label = c("b", "a"), class = "factor"), b = 2, c = 1L)))
+
 
 ##########################
 
