@@ -10037,8 +10037,12 @@ test(1772.2, split(DT, by = c('a', 'b'), sorted = TRUE),
 
 # With verbose, add helpful error when using logical column names incorrectly, #1844
 if (exists("A")) rm(A)
+if (exists("B")) rm(B)
+if (exists("NOTEXIST")) rm(NOTEXIST)
 DT <- data.table(A = c(FALSE, TRUE), B = 1:2)
-test(1773, DT[A, verbose = TRUE], error = "be sure to wrap")
+test(1773.1, DT[A], error = "not found in calling scope.*Wrap the symbol with")
+test(1773.2, DT[B], error = "not found in calling scope and it is not a column of type logical")
+test(1773.3, DT[NOTEXIST], error = "not found in calling scope and it is not a column of type logical")
 
 ##########################
 
