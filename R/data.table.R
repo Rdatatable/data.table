@@ -588,17 +588,17 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 leftcols = rightcols = NULL  # these are used later to know whether a join was done, affects column order of result. So reset.
             }
         } 
-	else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
+        else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
         else {
-	    # isub is a single symbol name such as B in DT[B]
+            # isub is a single symbol name such as B in DT[B]
             i = try(eval(isub, parent.frame(), parent.frame()), silent=TRUE)
             if (inherits(i,"try-error")) {
-              # must be "not found" since isub is a mere symbol
-              col = try(eval(isub, x), silent=TRUE)  # is it a column name?
-              if (identical(typeof(col),"logical"))
-                stop(as.character(isub)," is not found in calling scope but it is a column of type logical. Wrap the symbol with '()' if you wish to select rows where that column is TRUE.")
-              else
-		stop(as.character(isub)," is not found in calling scope and it is not a column of type logical. When the first argument inside DT[...] is a single symbol, it is looked for in calling scope.")
+                # must be "not found" since isub is a mere symbol
+                col = try(eval(isub, x), silent=TRUE)  # is it a column name?
+                if (identical(typeof(col),"logical"))
+                    stop(as.character(isub)," is not found in calling scope but it is a column of type logical. If you wish to select rows where that column is TRUE, either wrap the symbol with '()' or use ==TRUE to be clearest to readers of your code.")
+                else
+                    stop(as.character(isub)," is not found in calling scope and it is not a column of type logical. When the first argument inside DT[...] is a single symbol, it is looked for in calling scope.")
             }
         }
         if (restore.N) {
