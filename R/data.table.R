@@ -594,7 +594,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             i = try(eval(isub, parent.frame(), parent.frame()), silent=TRUE)
             if (inherits(i,"try-error")) {
               # must be "not found" since isub is a mere symbol
-              col = try(eval(isub, x, inherits=FALSE), silent=TRUE)  # is it a column name?
+              col = try(eval(isub, x), silent=TRUE)  # is it a column name?
               if (identical(typeof(col),"logical"))
                 stop(as.character(isub)," is not found in calling scope but it is a column of type logical. Wrap the symbol with '()' if you wish to select rows where that column is TRUE.")
               else
