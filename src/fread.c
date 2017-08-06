@@ -71,7 +71,6 @@ static freadMainArgs args;  // global for use by DTPRINT
 
 const char typeName[NUMTYPE][10] = {"drop", "bool8", "int32", "int32", "int64", "float64", "string"};
 int8_t     typeSize[NUMTYPE]     = { 0,      1,       4,       4,       8,       8,         8      };
-// size_t to prevent potential overflow of n*typeSize[i] (standard practice)
 
 // NAN and INFINITY constants are float, so cast to double once up front.
 static const double NAND = (double)NAN;
@@ -79,8 +78,6 @@ static const double INFD = (double)INFINITY;
 
 // Forward declarations
 static int Field(const char **this, lenOff *target);
-// static int parse_string(const char **ptr, lenOff *target);
-// static int parse_string_continue(const char **ptr, lenOff *target);
 
 
 //=================================================================================================
@@ -292,7 +289,7 @@ double wallclock(void)
  * multiple threads at the same time, or hold on to the value returned for
  * extended periods of time.
  */
-char* filesize_to_str(size_t fsize)
+static char* filesize_to_str(size_t fsize)
 {
   #define NSUFFIXES 4
   #define BUFFSIZE 100
@@ -410,7 +407,7 @@ static int Field(const char **this, lenOff *target)
     if (is_NAstring(fieldStart)) fieldLen=INT32_MIN;
   }
   target->len = fieldLen;
-  target->off = (uint32_t)(fieldStart-*this);  // agnostic & thread-safe
+  target->off = (int32_t)(fieldStart - *this);  // agnostic & thread-safe
   *this = ch; // Update caller's ch. This may be after fieldStart+fieldLen due to quotes and/or whitespace
   return 0;
 }
@@ -726,6 +723,9 @@ int freadMain(freadMainArgs _args) {
         else
           DTPRINT("  None of the NAstrings look like numbers.\n");
       }
+      if (args.skipNrow) DTPRINT("  skip num lines = %lld\n", args.skipNrow);
+      if (args.skipString) DTPRINT("  skip to string = <<%s>>\n", args.skipString);
+      DTPRINT("  show progress = %d\n", args.showProgress);
     }
 
     stripWhite = args.stripWhite;
@@ -1092,7 +1092,6 @@ int freadMain(freadMainArgs _args) {
       ncol = topNmax;
     } else {
       // find the top line with the consistent number of fields.  There might be irregular header lines above it.
-      //int nmax=0, thisLine=-1, whichmax=0;
       ncol = topNumFields;
       int thisLine=-1;
       while (ch<eof && ++thisLine<JUMPLINES) {
@@ -1233,7 +1232,6 @@ int freadMain(freadMainArgs _args) {
     }
 
     size_t sampleLines=0;
-    size_t sampleBytes=0;
     double sumLen=0.0, sumLenSq=0.0;
     int minLen=INT32_MAX, maxLen=-1;   // int_max so the first if(thisLen<minLen) is always true; similarly for max
     const char *lastRowEnd=pos;
@@ -1246,7 +1244,6 @@ int freadMain(freadMainArgs _args) {
         if (j>0 && !nextGoodLine(&ch, ncol))
           STOP("Could not find first good line start after jump point %d when sampling.", j);
         _Bool bumped = 0;  // did this jump find any different types; to reduce verbose output to relevant lines
-        const char *thisStart = ch;
         int jline = 0;  // line from this jump point
         while(ch<eof && (jline<JUMPLINES || j==nJumps-1)) {  // nJumps==1 implies sample all of input to eof; last jump to eof too
             const char *jlineStart = ch;
@@ -1323,7 +1320,6 @@ int freadMain(freadMainArgs _args) {
             if (thisLineLen<minLen) minLen=thisLineLen;
             if (thisLineLen>maxLen) maxLen=thisLineLen;
         }
-        sampleBytes += (size_t)(ch-thisStart);
         if (verbose && (bumped || j==0 || j==nJumps-1)) {
           DTPRINT("  Type codes (jump %03d)    : ",j); printTypes(ncol);
           DTPRINT("  Quote rule %d\n", quoteRule);
@@ -1837,7 +1833,14 @@ int freadMain(freadMainArgs _args) {
       free(myBuff0); myBuff0 = NULL;
       freeThreadContext(&ctx);
     }
-    // end parallel
+    //-- end parallel ------------------
+
+
+    //*********************************************************************************************
+    // [13] Finalize the datatable
+    //*********************************************************************************************
+    if (hasPrinted && verbose) DTPRINT("\n");
+    if (verbose) DTPRINT("[13] Finalizing the datatable\n");
     if (firstTime) {
       tReread = tRead = wallclock();
       tTot = tRead-t0;
