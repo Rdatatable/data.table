@@ -10277,6 +10277,115 @@ test(1773.2, DT[B], error = "not found in calling scope and it is not a column o
 test(1773.3, DT[NOTEXIST], error = "not found in calling scope and it is not a column of type logical")
 test(1773.4, DT[(A)], DT[2])
 
+# New as.data.table.array method in v1.10.5
+set.seed(1L)
+ar.dimnames = list(color = sort(c("green","yellow","red")), 
+                   year = as.character(2011:2015), 
+                   status = sort(c("active","inactive","archived","removed")))
+ar.dim = sapply(ar.dimnames, length)
+ar = array(sample(c(rep(NA, 4), 4:7/2), prod(ar.dim), TRUE),
+           unname(ar.dim), # array() having length(dims) < 3 will be created as matrix in R so will not be dispatched here but as.data.table.matrix
+           ar.dimnames)
+dt = as.data.table(ar, na.rm=FALSE)
+dimcols = head(names(dt), -1L)
+test(1774.1, TRUE, all(
+    nrow(dt) == 60L,
+    prod(sapply(ar.dimnames, length)) == dt[, prod(sapply(.SD, uniqueN)), .SDcols = dimcols],
+    dt[is.na(value), .N] == 30L,
+    dt[, .N==1L, c(dimcols)]$V1
+))
+dt = as.data.table(ar)
+dimcols = head(names(dt), -1L)
+test(1774.2, TRUE, all(
+    nrow(dt) == 30L,
+    prod(sapply(ar.dimnames, length)) == dt[, prod(sapply(.SD, uniqueN)), .SDcols = dimcols],
+    dt[is.na(value), .N] == 0L,
+    dt[, .N==1L, c(dimcols)]$V1
+))
+# 4D unnamed
+x = array(1:81, dim=rep(3L,4))
+dt = as.data.table(x, na.rm=FALSE)
+test(1774.3, TRUE, all(
+    identical(dim(dt), c(81L,5L)),
+    identical(names(dt), c(paste0("V",1:4),"value")),
+    all(dt[J(1L)][1L, value] == 1L, dt[J(2L)][1L, value] == 2L, dt[J(3L)][.N, value] == 81L) # this also tests if dt is keyed
+))
+# 4D named dim values but not dims
+x = array(1:81, dim=rep(3L, 4L), dimnames=rep(list(letters[1:3]), 4L))
+dt = as.data.table(x, na.rm=FALSE)
+test(1774.4, TRUE, all(
+    identical(dim(dt), c(81L,5L)),
+    identical(names(dt), c(paste0("V",1:4),"value")),
+    all(dt[J("a")][1L, value] == 1L, dt[J("b")][1L, value] == 2L, dt[J("c")][.N, value] == 81L)
+))
+# 4D named dim values and dims
+x = array(1:81, dim=rep(3L, 4L), dimnames=setNames(rep(list(letters[1:3]), 4L), letters[1:4]))
+dt = as.data.table(x, na.rm=FALSE)
+test(1774.5, TRUE, all(
+    identical(dim(dt), c(81L,5L)),
+    identical(names(dt), c(letters[1:4],"value")),
+    all(dt[J("a")][1L, value] == 1L, dt[J("b")][1L, value] == 2L, dt[J("c")][.N, value] == 81L)
+))
+# third dim of length 1L so really 2D
+x = array(1:4, dim=c(2L,2L,1L), dimnames=list(a=letters[1:2], b=letters[1:2], c="a"))
+dt = as.data.table(x, na.rm=FALSE)
+test(1774.6, TRUE, all(
+    identical(dim(dt), c(4L,4L)),
+    identical(names(dt), c("a","b","c","value")),
+    all(dt[J("a")][, value] == c(1L,3L), dt[J("b")][, value] == c(2L,4L))
+))
+# second and third dim of length 1L so really 1D
+x = array(1:2, dim=c(2L,1L,1L), dimnames=list(a=letters[1:2], b="a", c="a"))
+dt = as.data.table(x, na.rm=FALSE)
+test(1774.7, TRUE, all(
+    identical(dim(dt), c(2L,4L)),
+    identical(names(dt), c("a","b","c","value")),
+    all(dt[J("a")][, value] == 1L, dt[J("b")][, value] == 2L)
+))
+# 3x3x3 na.rm=FALSE / sorted=TRUE
+set.seed(2)
+x = rnorm(27)
+x[sample(length(x), length(x)/2)] = NA
+dim(x) = c(3L,3L,3L)
+dt = as.data.table(x, na.rm=FALSE)
+test(1774.8, TRUE, all(
+    identical(dim(dt), c(27L,4L)),
+    identical(names(dt), c(paste0("V",1:3),"value")),
+    dt[is.na(value), .N] > 0L,
+    length(key(dt)) > 0L
+))
+# na.rm=TRUE / sorted=TRUE
+dt = as.data.table(x)
+test(1774.9, TRUE, all(
+    identical(dim(dt), c(14L,4L)),
+    identical(names(dt), c(paste0("V",1:3),"value")),
+    dt[is.na(value), .N] == 0L,
+    length(key(dt)) > 0L
+))
+# na.rm=TRUE / sorted=FALSE
+dt = as.data.table(x, sorted=FALSE)
+test(1774.10, TRUE, all(
+    identical(dim(dt), c(14L,4L)),
+    identical(names(dt), c(paste0("V",1:3),"value")),
+    dt[is.na(value), .N] == 0L,
+    is.unsorted(dt[[1]]),
+    is.null(key(dt))
+))
+# na.rm=FALSE / sorted=FALSE
+dt = as.data.table(x, na.rm=FALSE, sorted=FALSE)
+test(1774.11, TRUE, all(
+    identical(dim(dt), c(27L,4L)),
+    identical(names(dt), c(paste0("V",1:3),"value")),
+    is.unsorted(dt[[1]]),
+    is.null(key(dt))
+))
+# expects error on value.name overlapping with column names in result (dimension names)
+x = array(1:2, dim=c(2L,1L,1L), dimnames=list(a=letters[1:2], b="a", c="a"))
+test(1774.12, as.data.table(x, value.name="a"), error = "Argument 'value.name' should not overlap with column names in result")
+x = array(1:2, dim=c(2L,1L,1L), dimnames=list(a=letters[1:2], b="a", value="a"))
+test(1774.13, as.data.table(x), error = "Argument 'value.name' should not overlap with column names in result")
+
+
 ##########################
 
 test(1800, fread("A\n6e55693457e549ecfce0\n"), data.table(A=c("6e55693457e549ecfce0")))
