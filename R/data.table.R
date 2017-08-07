@@ -93,16 +93,17 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
       toprint = rbind(abbs, toprint)
       rownames(toprint)[1L] = ""
     }
+    if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
     if (printdots) {
-        toprint = rbind(head(toprint,topn),"---"="",tail(toprint,topn))
-        rownames(toprint) = format(rownames(toprint),justify="right")
-        print(toprint,right=TRUE,quote=quote)
+        toprint = rbind(head(toprint, topn), "---"="", tail(toprint, topn))
+        rownames(toprint) = format(rownames(toprint), justify="right")
+        print(toprint, right=TRUE, quote=quote)
         return(invisible())
     }
     if (nrow(toprint)>20L)
         # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
-        toprint=rbind(toprint,matrix(colnames(toprint),nrow=1)) # fixes bug #4934
-    print(toprint,right=TRUE,quote=quote)
+        toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #4934
+    print(toprint, right=TRUE, quote=quote)
     invisible()
 }
 
