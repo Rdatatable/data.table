@@ -32,6 +32,8 @@
 
 8. `as.data.table()` gains new method for `array`s to return a useful data.table, [#1418](https://github.com/Rdatatable/data.table/issues/1418).
 
+9. `print.data.table` gains `print.keys` argument, `FALSE` by default, which displays the keys and/or indices (secondary keys) of a `data.table`, more of [#1523](https://github.com/Rdatatable/data.table/issues/1523). Thanks @MichaelChirico for the PR, Yike Lu for the suggestion and Arun for honing that idea to its present form.
+
 
 #### BUG FIXES
 
