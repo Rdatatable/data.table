@@ -10,7 +10,7 @@ as.data.table.xts <- function(x, keep.rownames = TRUE, ...) {
 as.xts.data.table <- function(x, ...) {
     stopifnot(requireNamespace("xts"), !missing(x), is.data.table(x))
     if (!any((index_class <- class(x[[1L]])) %in% c("POSIXct","Date"))) stop("data.table must have a POSIXct, Date or IDate column on first position, use `setcolorder` function.")
-    colsNumeric = sapply(x, is.numeric)[-1L] # exclude first col, xts index
+    colsNumeric = vapply_1b(x, is.numeric)[-1L] # exclude first col, xts index
     if (any(!colsNumeric)) warning(paste("Following columns are not numeric and will be omitted:", paste(names(colsNumeric)[!colsNumeric], collapse=", ")))
     r = setDF(x[, .SD, .SDcols=names(colsNumeric)[colsNumeric]])
     xts::as.xts(r, order.by=if ("IDate" %in% index_class) as.Date(x[[1L]]) else x[[1L]])

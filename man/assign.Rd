@@ -3,7 +3,7 @@
 \alias{set}
 \title{ Assignment by reference }
 \description{
-    Fast add, remove and update subsets of columns, by reference. \code{:=} opertor can be used in two ways: \code{LHS := RHS} form, and \code{Functional form}. See \code{Usage}.
+    Fast add, remove and update subsets of columns, by reference. \code{:=} operator can be used in two ways: \code{LHS := RHS} form, and \code{Functional form}. See \code{Usage}.
 
     \code{set} is a low overhead loopable version of \code{:=}. It is particularly useful for repetitively updating rows of certain columns by reference (using a for-loop). See \code{Examples}. It can not perform grouping operations.
 
@@ -64,7 +64,7 @@ Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerc
 \code{data.table}s are \emph{not} copied-on-change by \code{:=}, \code{setkey} or any of the other \code{set*} functions. See \code{\link{copy}}.
 }
 
-\section{Advanced (internals):}{It is easy to see how \emph{sub-assigning} to existing columns is done internally. Removing columns by reference is also straightforward by modifying the vector of column pointers only (using memmove in C). However adding (new) columns is more tricky as to how the \code{data.table} can be grown \emph{by reference}: the list vector of column pointers is \emph{over-allocated}, see \code{\link{truelength}}. By defining \code{:=} in \code{j} we believe update synax is natural, and scales, but it also bypasses \code{[<-} dispatch and allows \code{:=} to update by reference with no copies of any part of memory at all.
+\section{Advanced (internals):}{It is easy to see how \emph{sub-assigning} to existing columns is done internally. Removing columns by reference is also straightforward by modifying the vector of column pointers only (using memmove in C). However adding (new) columns is more tricky as to how the \code{data.table} can be grown \emph{by reference}: the list vector of column pointers is \emph{over-allocated}, see \code{\link{truelength}}. By defining \code{:=} in \code{j} we believe update syntax is natural, and scales, but it also bypasses \code{[<-} dispatch and allows \code{:=} to update by reference with no copies of any part of memory at all.
 
 Since \code{[.data.table} incurs overhead to check the existence and type of arguments (for example), \code{set()} provides direct (but less flexible) assignment by reference with low overhead, appropriate for use inside a \code{for} loop. See examples. \code{:=} is more powerful and flexible than \code{set()} because \code{:=} is intended to be combined with \code{i} and \code{by} in single queries on large datasets.
 }

@@ -33,7 +33,7 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
         if (any0orNA) {
           // define needed vars just when we need them. To registerize and to limit scope related bugs 
           union { double d; long long ll; } naval;
-          if (INHERITS(source, char_integer64)) naval.ll = NAINT64;
+          if (INHERITS(source, char_integer64)) naval.ll = NA_INT64_LL;
           else naval.d = NA_REAL;
           for (int i=0, ansi=0; i<LENGTH(idx); i++) {
               int this = INTEGER(idx)[i];
@@ -277,18 +277,21 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     UNPROTECT(1);    
 
     // maintain key if ordered subset ...
-    SEXP key = getAttrib(x, install("sorted"));
+    SEXP key = getAttrib(x, sym_sorted);
     if (length(key)) {
         SEXP in = PROTECT(chmatch(key,getAttrib(ans,R_NamesSymbol), 0, TRUE)); // (nomatch ignored when in=TRUE)
         int i = 0;  while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
         UNPROTECT(1);
         // i is now the keylen that can be kept. 2 lines above much easier in C than R
         if (i==0) {
-            setAttrib(ans, install("sorted"), R_NilValue);
+            setAttrib(ans, sym_sorted, R_NilValue);
             // clear key that was copied over by copyMostAttrib() above
-        } else if (isOrderedSubset(rows, ScalarInteger(length(VECTOR_ELT(x,0))))) {
-            setAttrib(ans, install("sorted"), tmp=allocVector(STRSXP, i));
-            for (int j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
+        } else {
+            if (isOrderedSubset(rows, PROTECT(ScalarInteger(length(VECTOR_ELT(x,0)))))) {
+              setAttrib(ans, sym_sorted, tmp=allocVector(STRSXP, i));
+              for (int j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
+            }
+            UNPROTECT(1);  // the ScalarInteger above. isOrderedSubset() is exposed at R level hence needs SEXP
         }
     }
     setAttrib(ans, install(".data.table.locked"), R_NilValue);

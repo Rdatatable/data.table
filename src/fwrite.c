@@ -18,10 +18,11 @@
 #define NUM_SF   15
 #define SIZE_SF  1000000000000000ULL  // 10^NUM_SF
 
-// Globals for this file only (written once to hold parameters passed from R level)                   
+// Globals for this file only. Written once to hold parameters passed from R level.
 static const char *na;                 // by default "" or if set then usually "NA"
 static char sep;                       // comma in .csv files
-static char sep2;                      // ; in list column vectors
+static char sep2;                      // '|' within list columns
+static const char *sep2start, *sep2end;
 static char dec;                       // the '.' in the number 3.1416. In Europe often: 3,1416
 static Rboolean verbose=FALSE;         // be chatty?
 static Rboolean quote=FALSE;           // whether to surround fields with double quote ". NA means 'auto' (default)
@@ -31,53 +32,60 @@ static Rboolean squash=FALSE;          // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 static int dateTimeAs=0;               // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd), 2=epoch, 3=write.csv
 #define DATETIMEAS_EPOCH     2
 #define DATETIMEAS_WRITECSV  3
-#define ET_DATE    1   // extraType values
-#define ET_ITIME   2
-#define ET_INT64   3
-#define ET_POSIXCT 4
-#define ET_FACTOR  5
+typedef void (*writer_fun_t)(SEXP, int, char **);
 
-static inline void writeInteger(long long x, char **thisCh)
+static inline void write_chars(const char *x, char **thisCh)
 {
-  char *ch = *thisCh;
-  // both integer and integer64 are passed to this function so careful
-  // to test for NA_INTEGER in the calling code. INT_MIN (NA_INTEGER) is
-  // a valid non-NA in integer64
-  if (x == 0) {
-    *ch++ = '0';
-  } else {
-    if (x<0) { *ch++ = '-'; x=-x; }
-    // avoid log() call for speed. write backwards then reverse when we know how long
-    int width = 0;
-    while (x>0) { *ch++ = '0'+x%10; x /= 10; width++; }
-    for (int i=width/2; i>0; i--) {
-      char tmp=*(ch-i);
-      *(ch-i) = *(ch-width+i-1);
-      *(ch-width+i-1) = tmp;
-    }
-  }
-  *thisCh = ch;
-}
-
-static inline void writeChars(const char *x, char **thisCh)
-{
-  // similar to C's strcpy but i) doesn't copy \0 and ii) moves destination along
+  // similar to C's strcpy but i) doesn't include trailing \0 and ii) moves destination along
   char *ch = *thisCh;
   while (*x) *ch++=*x++;
   *thisCh = ch;
 }
 
-static inline void writeLogical(Rboolean x, char **thisCh)
+static void writeLogical(SEXP column, int i, char **thisCh)
 {
+  Rboolean x = LOGICAL(column)[i];
   char *ch = *thisCh;
   if (x == NA_LOGICAL) {
-    writeChars(na, &ch);
+    write_chars(na, &ch);
   } else if (logicalAsInt) {
     *ch++ = '0'+x;
   } else if (x) {
     *ch++='T'; *ch++='R'; *ch++='U'; *ch++='E';
   } else {
     *ch++='F'; *ch++='A'; *ch++='L'; *ch++='S'; *ch++='E';
+  }
+  *thisCh = ch;
+}
+
+static inline void write_positive_int(long long x, char **thisCh)
+{
+  // Avoid log() for speed. Write backwards then reverse when we know how long.
+  // Separate function just because it's used if row numbers are asked for, too
+  // x >= 1
+  char *ch = *thisCh;
+  int width = 0;
+  while (x>0) { *ch++ = '0'+x%10; x /= 10; width++; }
+  for (int i=width/2; i>0; i--) {
+    char tmp=*(ch-i);
+    *(ch-i) = *(ch-width+i-1);
+    *(ch-width+i-1) = tmp;
+  }
+  *thisCh = ch;
+}
+
+static void writeInteger(SEXP column, int i, char **thisCh)
+{
+  long long x = (TYPEOF(column)!=REALSXP) ? INTEGER(column)[i] : DtoLL(REAL(column)[i]);
+  // != REALSXP rather than ==INTSXP to cover LGLSXP when logicalAsInt==TRUE
+  char *ch = *thisCh;
+  if (x == 0) {
+    *ch++ = '0';
+  } else if (x == ((TYPEOF(column)==INTSXP) ? NA_INTEGER : NA_INT64_LL)) {
+    write_chars(na, &ch);
+  } else {
+    if (x<0) { *ch++ = '-'; x=-x; }
+    write_positive_int(x, &ch);
   }
   *thisCh = ch;
 }
@@ -101,17 +109,17 @@ SEXP genLookups() {
 // these at runtime; libraries and hardware vary.\n\
 // These small lookup tables are used for speed.\n\
 //\n\n");
-  fprintf(f, "double sigparts[53] = {\n0.0,\n");
+  fprintf(f, "const double sigparts[53] = {\n0.0,\n");
   for (int i=1; i<=52; i++) {
     fprintf(f, "%.40Le%s\n",ldexpl(1.0L,-i), i==52?"":",");
   }
-  fprintf(f, "};\n\ndouble expsig[2048] = {\n");
+  fprintf(f, "};\n\nconst double expsig[2048] = {\n");
   char x[2048][60];
   for (int i=0; i<2048; i++) {
     sprintf(x[i], "%.40Le", ldexpl(1.0L, i-1023));
     fprintf(f, "%.*s%s\n", (int)(strchr(x[i],'e')-x[i]), x[i], (i==2047?"":",") );
   }
-  fprintf(f, "};\n\nint exppow[2048] = {\n");
+  fprintf(f, "};\n\nconst int exppow[2048] = {\n");
   for (int i=0; i<2048; i++) {
     fprintf(f, "%d%s", atoi(strchr(x[i],'e')+1), (i==2047?"":",") );
   }
@@ -121,12 +129,7 @@ SEXP genLookups() {
 }
 */
 
-static union {
-  double d;
-  unsigned long long ull;
-} u;
-
-static inline void writeNumeric(double x, char **thisCh)
+static void writeNumeric(SEXP column, int i, char **thisCh)
 {
   // hand-rolled / specialized for speed
   // *thisCh is safely the output destination with enough space (ensured via calculating maxLineLen up front)
@@ -136,10 +139,11 @@ static inline void writeNumeric(double x, char **thisCh)
   //  ii) no C libary calls such as sprintf() where the fmt string has to be interpretted over and over
   // iii) no need to return variables or flags.  Just writes.
   //  iv) shorter, easier to read and reason with. In one self contained place.
+  double x = REAL(column)[i];
   char *ch = *thisCh;
   if (!R_FINITE(x)) {
     if (ISNAN(x)) {
-      writeChars(na, &ch);
+      write_chars(na, &ch);
     } else if (x>0) {
       *ch++ = 'I'; *ch++ = 'n'; *ch++ = 'f';
     } else {
@@ -149,6 +153,7 @@ static inline void writeNumeric(double x, char **thisCh)
     *ch++ = '0';   // and we're done.  so much easier rather than passing back special cases
   } else {
     if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign, already written. no need to pass back sign
+    union { double d; unsigned long long ull; } u;
     u.d = x;
     unsigned long long fraction = u.ull & 0xFFFFFFFFFFFFF;  // (1ULL<<52)-1;
     int exponent = (int)((u.ull>>52) & 0x7FF);              // [0,2047]
@@ -249,18 +254,25 @@ static inline void writeNumeric(double x, char **thisCh)
   *thisCh = ch;
 }
 
-static inline void writeString(SEXP x, char **thisCh)
+static void writeString(SEXP column, int i, char **thisCh)
 {
+  SEXP x = STRING_ELT(column, i);
   char *ch = *thisCh;
   if (x == NA_STRING) {
     // NA is not quoted by write.csv even when quote=TRUE to distinguish from "NA"
-    writeChars(na, &ch);
+    write_chars(na, &ch);
   } else {
     Rboolean q = quote;
     if (q==NA_LOGICAL) { // quote="auto"
       const char *tt = CHAR(x);
+      if (*tt == '\0') {
+        // Empty strings are always quoted: this distinguishes them from NAs
+        *ch = '"'; ch[1] = '"';
+        *thisCh += 2;
+        return;
+      }
       while (*tt!='\0' && *tt!=sep && *tt!=sep2 && *tt!='\n' && *tt!='"') *ch++ = *tt++;
-      // windows includes \n in its \r\n so looking for \n only is sufficient
+      // Windows includes \n in its \r\n so looking for \n only is sufficient
       // sep2 is set to '\0' when no list columns are present
       if (*tt=='\0') {
         // most common case: no sep, newline or " contained in string
@@ -271,7 +283,7 @@ static inline void writeString(SEXP x, char **thisCh)
       q = TRUE;
     }
     if (q==FALSE) {
-      writeChars(CHAR(x), &ch);
+      write_chars(CHAR(x), &ch);
     } else {
       *ch++ = '"';
       const char *tt = CHAR(x);
@@ -293,13 +305,20 @@ static inline void writeString(SEXP x, char **thisCh)
   *thisCh = ch;
 }
 
+static void writeFactor(SEXP column, int i, char **thisCh) {
+  char *ch = *thisCh;
+  if (INTEGER(column)[i]==NA_INTEGER) write_chars(na, &ch);
+  else writeString(getAttrib(column, R_LevelsSymbol), INTEGER(column)[i]-1, &ch);
+  *thisCh = ch;
+}
+
 // DATE/TIME
-static inline void writeITime(int x, char **thisCh)
+static inline void write_time(int x, char **thisCh)
 {
   char *ch = *thisCh;
-  if (x<0) writeChars(na, &ch);  // <0 covers NA_INTEGER too
-  else if (dateTimeAs == DATETIMEAS_EPOCH) writeInteger(x, &ch);
-  else {
+  if (x<0) {  // <0 covers NA_INTEGER too (==INT_MIN checked in init.c)
+    write_chars(na, &ch);  
+  } else {
     int hh = x/3600;
     int mm = (x - hh*3600) / 60;
     int ss = x%60;
@@ -316,8 +335,11 @@ static inline void writeITime(int x, char **thisCh)
   }
   *thisCh = ch;
 }
+static void writeITime(SEXP column, int i, char **thisCh) {
+  write_time(INTEGER(column)[i], thisCh);
+}
 
-static inline void writeDate(int x, char **thisCh)
+static inline void write_date(int x, char **thisCh)
 {
   // From base ?Date :
   //  "  Dates are represented as the number of days since 1970-01-01, with negative values
@@ -325,10 +347,10 @@ static inline void writeDate(int x, char **thisCh)
   // even though that calendar was not in use long ago (it was adopted in 1752 in Great Britain and its
   // colonies)  "
 
-  // The algorithm here was taken from civil_from_days() here :
+  // The algorithm here in data.table::fwrite was taken from civil_from_days() here :
   //   http://howardhinnant.github.io/date_algorithms.html
-  // donated to the public domain thanks to Howard Hinnant, 2013.
-  // The rebase to 1 March 0000 is inspired; avoids needing isleap at all.
+  // which was donated to the public domain thanks to Howard Hinnant, 2013.
+  // The rebase to 1 March 0000 is inspired: avoids needing isleap() at all.
   // The only small modifications here are :
   //   1) no need for era
   //   2) impose date range of [0000-03-01, 9999-12-31]. All 3,652,365 dates tested in test 1739
@@ -338,9 +360,10 @@ static inline void writeDate(int x, char **thisCh)
   // as.integer(as.Date(c("0000-03-01","9999-12-31"))) == c(-719468,+2932896)
 
   char *ch = *thisCh;
-  if (x< -719468 || x>2932896) writeChars(na, &ch);  // NA_INTEGER<(-719468) too (==INT_MIN checked in init.c)
-  else if (dateTimeAs == DATETIMEAS_EPOCH) writeInteger(x, &ch);
-  else {
+  if (x< -719468 || x>2932896) {
+    // NA_INTEGER<(-719468) (==INT_MIN checked in init.c)
+    write_chars(na, &ch);
+  } else {
     x += 719468;  // convert days from 1970-01-01 to days from 0000-03-01 (the day after 29 Feb 0000)
     int y = (x - x/1461 + x/36525 - x/146097) / 365;  // year of the preceeding March 1st
     int z =  x - y*365 - y/4 + y/100 - y/400 + 1;     // days from March 1st in year y
@@ -364,12 +387,15 @@ static inline void writeDate(int x, char **thisCh)
   }
   *thisCh = ch;
 }
+static void writeDateInt(SEXP column, int i, char **thisCh) {
+  write_date(INTEGER(column)[i], thisCh);
+}
+static void writeDateReal(SEXP column, int i, char **thisCh) {
+  write_date(R_FINITE(REAL(column)[i]) ? (int)REAL(column)[i] : NA_INTEGER, thisCh);
+}
 
-
-static inline void writePOSIXct(double x, char **thisCh)
+static void writePOSIXct(SEXP column, int i, char **thisCh)
 {
-  char *ch = *thisCh;
-  
   // Write ISO8601 UTC by default to encourage ISO standards, stymie ambiguity and for speed.
   // R internally represents POSIX datetime in UTC always. Its 'tzone' attribute can be ignored.
   // R's representation ignores leap seconds too which is POSIX compliant, convenient and fast.
@@ -377,9 +403,11 @@ static inline void writePOSIXct(double x, char **thisCh)
   // All positive integers up to 2^53 (9e15) are exactly representable by double which is relied
   // on in the ops here; number of seconds since epoch.
   
-  if (!R_FINITE(x)) { writeChars(na, &ch); }
-  else if (dateTimeAs==DATETIMEAS_EPOCH) writeNumeric(x, &ch);
-  else {
+  double x = REAL(column)[i];
+  char *ch = *thisCh;
+  if (!R_FINITE(x)) {
+    write_chars(na, &ch);
+  } else {
     int xi, d, t;
     if (x>=0) {
       xi = (int)x;
@@ -394,35 +422,113 @@ static inline void writePOSIXct(double x, char **thisCh)
     int m = (int)((x-xi)*10000000); // 7th digit used to round up if 9
     m += (m%10);  // 9 is numerical accuracy, 8 or less then we truncate to last microsecond
     m /= 10;
-    writeDate(d, &ch);
+    write_date(d, &ch);
     *ch++ = 'T';
     ch -= squash;
-    writeITime(t, &ch);
+    write_time(t, &ch);
     if (squash || (m && m%1000==0)) {
-       // when squash always write 3 digits of milliseconds even if 000, for consistent scale of squash integer64
-       // don't use writeInteger() because it doesn't 0 pad which we need here
-       // integer64 is big enough for squash with milli but not micro; trunc (not round) micro when squash
-       m /= 1000;
-       *ch++ = '.';
-       ch -= squash;
-       *(ch+2) = '0'+m%10; m/=10;
-       *(ch+1) = '0'+m%10; m/=10;
-       *ch     = '0'+m;
-       ch += 3;
+      // when squash always write 3 digits of milliseconds even if 000, for consistent scale of squash integer64
+      // don't use writeInteger() because it doesn't 0 pad which we need here
+      // integer64 is big enough for squash with milli but not micro; trunc (not round) micro when squash
+      m /= 1000;
+      *ch++ = '.';
+      ch -= squash;
+      *(ch+2) = '0'+m%10; m/=10;
+      *(ch+1) = '0'+m%10; m/=10;
+      *ch     = '0'+m;
+      ch += 3;
     } else if (m) {
-       // microseconds are present and !squash
-       *ch++ = '.';
-       *(ch+5) = '0'+m%10; m/=10;
-       *(ch+4) = '0'+m%10; m/=10;
-       *(ch+3) = '0'+m%10; m/=10;
-       *(ch+2) = '0'+m%10; m/=10;
-       *(ch+1) = '0'+m%10; m/=10;
-       *ch     = '0'+m;
-       ch += 6;
+      // microseconds are present and !squash
+      *ch++ = '.';
+      *(ch+5) = '0'+m%10; m/=10;
+      *(ch+4) = '0'+m%10; m/=10;
+      *(ch+3) = '0'+m%10; m/=10;
+      *(ch+2) = '0'+m%10; m/=10;
+      *(ch+1) = '0'+m%10; m/=10;
+      *ch     = '0'+m;
+      ch += 6;
     }
     *ch++ = 'Z';
     ch -= squash;
   }
+  *thisCh = ch;
+}
+
+static void writeNanotime(SEXP column, int i, char **thisCh)
+{
+  long long x = DtoLL(REAL(column)[i]);
+  char *ch = *thisCh;
+  if (x == NA_INT64_LL) {
+    write_chars(na, &ch);
+  } else {
+    int d/*days*/, s/*secs*/, n/*nanos*/;
+    n = x % 1000000000;
+    x /= 1000000000;
+    if (x>=0 && n>=0) {
+      d = x / 86400;
+      s = x % 86400;
+    } else {
+      // before 1970-01-01T00:00:00.000000000Z
+      if (n) { x--; n += 1000000000; }
+      d = (x+1)/86400 - 1;
+      s = x - d*86400;  // x and d are both negative here; secs becomes the positive number of seconds into the day
+    }
+    write_date(d, &ch);
+    *ch++ = 'T';
+    ch -= squash;
+    write_time(s, &ch);
+    *ch++ = '.';
+    ch -= squash;
+    for (int i=8; i>=0; i--) { *(ch+i) = '0'+n%10; n/=10; }  // always 9 digits for nanoseconds
+    ch += 9;
+    *ch++ = 'Z';
+    ch -= squash;
+  }
+  *thisCh = ch;
+}
+
+static void writeList(SEXP, int, char **); // prototype needed because it calls back to whichWriter too
+
+static writer_fun_t whichWriter(SEXP column) {
+  switch(TYPEOF(column)) {
+  case LGLSXP:
+    return logicalAsInt ? writeInteger : writeLogical;
+  case INTSXP:
+    if (isFactor(column))                return writeFactor;
+    if (dateTimeAs==DATETIMEAS_EPOCH)    return writeInteger;
+    if (INHERITS(column, char_ITime))    return writeITime;
+    if (INHERITS(column, char_Date))     return writeDateInt;
+    return writeInteger;
+  case REALSXP:
+    if (INHERITS(column, char_nanotime) && dateTimeAs!=DATETIMEAS_EPOCH) return writeNanotime;
+    if (INHERITS(column, char_integer64))return writeInteger;
+    if (dateTimeAs==DATETIMEAS_EPOCH)    return writeNumeric;
+    if (INHERITS(column, char_Date))     return writeDateReal;
+    if (INHERITS(column, char_POSIXct))  return writePOSIXct;
+    return writeNumeric;
+  case STRSXP:
+    return writeString;
+  case VECSXP:
+    return writeList;
+  default:
+    return NULL;
+  }
+}
+
+static void writeList(SEXP column, int i, char **thisCh) {
+  SEXP v = VECTOR_ELT(column,i);
+  writer_fun_t fun = whichWriter(v);
+  if (TYPEOF(v)==VECSXP || fun==NULL) {
+    error("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing atomic vectors of type logical, integer, integer64, double, character and factor, currently.", i+1, type2char(TYPEOF(v)));
+  }
+  char *ch = *thisCh;
+  write_chars(sep2start, &ch);
+  for (int j=0; j<LENGTH(v); j++) {
+    (*fun)(v, j, &ch);
+    *ch++ = sep2;
+  }
+  if (LENGTH(v)) ch--; // backup over the last sep2 after the last item
+  write_chars(sep2end, &ch);
   *thisCh = ch;
 }
 
@@ -492,9 +598,9 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
   verbose = LOGICAL(verbose_Arg)[0];
   
   sep = *CHAR(STRING_ELT(sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
-  const char *sep2start = CHAR(STRING_ELT(sep2_Arg, 0));
+  sep2start = CHAR(STRING_ELT(sep2_Arg, 0));
   sep2 = *CHAR(STRING_ELT(sep2_Arg, 1));
-  const char *sep2end = CHAR(STRING_ELT(sep2_Arg, 2));
+  sep2end = CHAR(STRING_ELT(sep2_Arg, 2));
   
   const char *eol = CHAR(STRING_ELT(eol_Arg, 0));
   // someone might want a trailer on every line so allow any length string as eol
@@ -502,6 +608,8 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
   na = CHAR(STRING_ELT(na_Arg, 0));
   dec = *CHAR(STRING_ELT(dec_Arg,0));
   quote = LOGICAL(quote_Arg)[0];
+  // When NA is a non-empty string, then we must quote all string fields
+  if (*na != '\0' && quote == NA_LOGICAL) quote = TRUE;
   qmethod_escape = LOGICAL(qmethod_escapeArg)[0];
   const char *filename = CHAR(STRING_ELT(filename_Arg, 0));
   logicalAsInt = LOGICAL(logicalAsInt_Arg)[0];
@@ -536,41 +644,24 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
     }
   }
   
-  int sameType = TYPEOF(VECTOR_ELT(DFin, 0)); // to avoid deep switch later
-
-  // Store column type tests in lookup for efficiency
-  // ET_INT64, ET_ITIME, ET_DATE, ET_POSIXCT, ET_FACTOR
-  char *extraType = (char *)R_alloc(ncol, sizeof(char)); // not a VLA as ncol could be > 1e6 columns
-  
+  // Allocate lookup vector to writer function for each column. For simplicity and robustness via many fewer lines
+  // of code and less logic need. Secondly, for efficiency to save deep switch and branches later.
+  // Don't use a VLA as ncol could be > 1e6 columns
+  writer_fun_t *fun = (writer_fun_t *)R_alloc(ncol, sizeof(writer_fun_t));
   for (int j=0; j<ncol; j++) {
     SEXP column = VECTOR_ELT(DF, j);
     if (nrow != length(column))
       error("Column %d's length (%d) is not the same as column 1's length (%d)", j+1, length(column), nrow);
-    extraType[j] = 0;
-    if (isFactor(column)) {
-      extraType[j] = ET_FACTOR;
-    } else if (INHERITS(column, char_integer64)) {
-      if (TYPEOF(column)!=REALSXP) error("Column %d inherits from 'integer64' but is type '%s' not REALSXP", j+1, type2char(TYPEOF(column)));
-      extraType[j] = ET_INT64;
-    } else if (INHERITS(column, char_ITime)) {
-      extraType[j] = ET_ITIME;
-    } else if (INHERITS(column, char_Date)) {  // including IDate which inherits from Date
-      extraType[j] = ET_DATE;
-    } else if (INHERITS(column, char_POSIXct)) {
-      if (dateTimeAs==DATETIMEAS_WRITECSV) error("Internal error: column should have already been coerced to character");
-      extraType[j] = ET_POSIXCT;
-    }
-    if (TYPEOF(column)!=sameType || getAttrib(column,R_ClassSymbol)!=R_NilValue) {
-      sameType = 0;  // only all plain INTSXP or all plain REALSXP save the deep switch() below. 
-    }
-    if (firstListColumn==0 && TYPEOF(column)==VECSXP) firstListColumn = j+1;
+    if ((fun[j] = whichWriter(column)) == NULL)
+      error("Column %d's type is '%s' - not yet implemented.", j+1, type2char(TYPEOF(column)) );
+    if (TYPEOF(column)==VECSXP && firstListColumn==0) firstListColumn = j+1;
   }
-  
+
   if (!firstListColumn) {
     if (verbose) Rprintf("No list columns are present. Setting sep2='' otherwise quote='auto' would quote fields containing sep2.\n");
     sep2='\0';
   } else {
-    if (verbose) Rprintf("If quote='auto' all fields will be quoted if the field contains either sep ('%c') or sep2[2] ('%c'). Column %d is a list column.\n", sep, sep2, firstListColumn );
+    if (verbose) Rprintf("If quote='auto', fields will be quoted if the field contains either sep ('%c') or sep2[2] ('%c') because column %d is a list column.\n", sep, sep2, firstListColumn );
     if (dec==sep) error("Internal error: dec != sep was checked at R level");
     if (dec==sep2 || sep==sep2)
       error("sep ('%c'), sep2[2L] ('%c') and dec ('%c') must all be different when list columns are present. Column %d is a list column.", sep, sep2, dec, firstListColumn); 
@@ -587,7 +678,7 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
   // Estimate max line length of a 1000 row sample (100 rows in 10 places).
   // 'Estimate' even of this sample because quote='auto' may add quotes and escape embedded quotes.
   // Buffers will be resized later if there are too many line lengths outside the sample, anyway.
-  // maxLineLen is just used to determine rowsPerBatch.
+  // maxLineLen is required to determine a reasonable rowsPerBatch.
   int maxLineLen = 0;
   int na_len = strlen(na);
   int step = nrow<1000 ? 100 : nrow/10;
@@ -603,89 +694,39 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
       }
       for (int j=0; j<ncol; j++) {
         SEXP column = VECTOR_ELT(DF, j);
-        static char tmp[32]; // +- 15digits dec e +- nnn \0 = 23 + 9 safety = 32. Covers integer64 too (20 digits).
+        static char tmp[64]; // +- 15digits dec e +- nnn \0 = 23 + 9 safety = 32. Covers integer64 too (20 digits).
+                             // nanotime could be 36 chars: yyyy-mm-ddTHH:MM:SS.000000000+00:00. So be safe with 64.
         char *ch=tmp;
-        switch(TYPEOF(column)) {
-        case LGLSXP:
-          thisLineLen += logicalAsInt ? 1/*0|1*/ : 5/*FALSE*/;  // na_len might be 2 (>1) but ok; this is estimate
-          break;
-        case INTSXP: {
-          int i32 = INTEGER(column)[i];
-          if (i32 == NA_INTEGER) ch += na_len;
-          else if (extraType[j] == ET_FACTOR) ch += LENGTH(STRING_ELT(getAttrib(column,R_LevelsSymbol), i32-1));
-          else if (extraType[j] == ET_ITIME) ch += 8;
-          else if (extraType[j] == ET_DATE) writeDate(i32, &ch);
-          else writeInteger(i32, &ch); }
-          thisLineLen += (int)(ch-tmp);
-          break;          
-        case REALSXP:
-          if (extraType[j] == ET_INT64) {
-            long long i64 = *(long long *)&REAL(column)[i];
-            if (i64==NAINT64) ch += na_len;
-            else writeInteger(i64, &ch);
-          }
-          else if (extraType[j]==ET_DATE) writeDate((int)REAL(column)[i], &ch);
-          else if (extraType[j]==ET_POSIXCT) writePOSIXct(REAL(column)[i], &ch);
-          else writeNumeric(REAL(column)[i], &ch);
-          thisLineLen += (int)(ch-tmp);
-          break;
-        case STRSXP:
-          thisLineLen += LENGTH(STRING_ELT(column, i));
-          break;
-        case VECSXP: {
+        if (TYPEOF(column)==STRSXP) thisLineLen+=LENGTH(STRING_ELT(column, i));
+        else if (isFactor(column)) {
+          int k = INTEGER(column)[i];
+          thisLineLen += (k==NA_INTEGER) ? na_len : LENGTH(STRING_ELT(getAttrib(column,R_LevelsSymbol), k-1));
+        } else if (TYPEOF(column)==VECSXP) {
           // a list column containing atomic vectors in each cell
+          // for thisLineLen calculation we don't want to allocate tmp wide enough for the potentially
+          // long field. Just to know its width we can add up the width of each item individually.
           SEXP v = VECTOR_ELT(column,i);
           thisLineLen += strlen(sep2start);
-          switch(TYPEOF(v)) {
-          case LGLSXP :
-            thisLineLen += LENGTH(v) * (logicalAsInt ? 1 : 5);
-            break;
-          case INTSXP:
-            if (isFactor(v)) {
-              SEXP l = getAttrib(v, R_LevelsSymbol);
-              for (int k=0; k<LENGTH(v); k++) {
-                thisLineLen += INTEGER(v)[k]==NA_INTEGER ? na_len : LENGTH(STRING_ELT(l, INTEGER(v)[k]-1));
-              }
+          if (TYPEOF(v)==STRSXP) for (int k=0; k<LENGTH(v); k++) thisLineLen += LENGTH(STRING_ELT(v, k));
+          else if (isFactor(v)) {
+            SEXP l = getAttrib(v, R_LevelsSymbol);
+            for (int k=0; k<LENGTH(v); k++) {
+              thisLineLen += INTEGER(v)[k]==NA_INTEGER ? na_len : LENGTH(STRING_ELT(l, INTEGER(v)[k]-1));
             }
-            else if (INHERITS(v, char_ITime)) thisLineLen += LENGTH(v) * (6 + 2*!squash);
-            else if (INHERITS(v, char_Date))  thisLineLen += LENGTH(v) * (8 + 2*!squash);
-            else {
-              for (int k=0; k<LENGTH(v); k++) {
-                if ( INTEGER(v)[k]==NA_INTEGER ) thisLineLen += na_len;
-                else { writeInteger(INTEGER(v)[k], &ch); thisLineLen+=(int)(ch-tmp); ch=tmp; }
-              }
-            }
-            break;
-          case REALSXP:
-            if (INHERITS(v, char_integer64)) {
-              for (int k=0; k<LENGTH(v); k++) {
-                long long i64 = *(long long *)&REAL(v)[k];
-                if (i64==NAINT64) thisLineLen += na_len;
-                else {
-                  writeInteger(i64, &ch);
-                  thisLineLen += (int)(ch-tmp);
-                  ch=tmp;
-                }
-              }
-            }
-            else if (INHERITS(v, char_Date)) thisLineLen += LENGTH(v) * (8 + 2*!squash);
-            else if (INHERITS(v, char_POSIXct)) {
-              for (int k=0; k<LENGTH(v); k++) { writePOSIXct(REAL(v)[k], &ch); thisLineLen+=(int)(ch-tmp); ch=tmp; }
-            } else {
-              for (int k=0; k<LENGTH(v); k++) { writeNumeric(REAL(v)[k], &ch); thisLineLen+=(int)(ch-tmp); ch=tmp; }
-            }
-            break;
-          case STRSXP:
-            for (int k=0; k<LENGTH(v); k++) thisLineLen += LENGTH(STRING_ELT(v, k));
-            break;
-          default:
-            error("Column %d is a list column but on row %d is type '%s' - not yet implemented. fwrite() can write list columns containing atomic vectors of type logical, integer, integer64, double, character and factor, currently.", j+1, type2char(TYPEOF(v)));
-          }  // end switch on atomic vector type in a list column 
-          thisLineLen += LENGTH(v)/*sep2 after each field*/ +strlen(sep2end); }
-          // LENGTH(v) could be 0 so we don't subtract one for the last sep2 (just an estimate anyway)
-          break;  // from case VECSXP for list column
-        default:
-          error("Column %d's type is '%s' - not yet implemented.", j+1, type2char(TYPEOF(column)) );
+          } else {
+            writer_fun_t fun = whichWriter(v);
+            if (fun==NULL) error("Column %d is a list column but on row %d is type '%s' - not yet implemented. fwrite() can write list columns containing atomic vectors of type logical, integer, integer64, double, character and factor, currently.", j+1, i+1, type2char(TYPEOF(v)));
+            for (int k=0; k<LENGTH(v); k++) {
+              (*fun)(v, k, &ch); thisLineLen+=(int)(ch-tmp); ch=tmp;
+            } 
+          }
+          thisLineLen += LENGTH(v); // sep2 after each field. LENGTH(v) could be 0 so don't -1 (only estimate anyway)
+          thisLineLen += strlen(sep2end);          
+        } else {
+          // regular atomic columns like integer, integer64, double, date and time
+          (*fun[j])(column, i, &ch);
+          thisLineLen += (int)(ch-tmp);
+          ch = tmp;
         }
         thisLineLen++; // column sep
       } // next column
@@ -705,7 +746,7 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
     // eol must be passed from R level as '\r\n' on Windows since write() only auto-converts \n to \r\n in
     // _O_TEXT mode. We use O_BINARY for full control and perhaps speed since O_TEXT must have to deep branch an if('\n')
 #else
-    f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0644);
+    f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0666);
 #endif
     if (f == -1) {
       int erropen = errno;
@@ -738,11 +779,11 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
         *ch++ = sep;
       }
       for (int j=0; j<ncol; j++) {
-        writeString(STRING_ELT(names, j), &ch);
+        writeString(names, j, &ch);
         *ch++ = sep;
       }
       ch--;  // backup onto the last sep after the last column
-      writeChars(eol, &ch);  // replace it with the newline 
+      write_chars(eol, &ch);  // replace it with the newline 
       if (f==-1) { *ch='\0'; Rprintf(buffer); }
       else if (WRITE(f, buffer, (int)(ch-buffer))==-1) {
         int errwrite=errno;
@@ -822,192 +863,33 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
       if (failed) continue;  // Not break. See comments above about #omp cancel
       int end = ((nrow-start)<rowsPerBatch) ? nrow : start+rowsPerBatch;
       
-      // all-integer and all-double deep switch() avoidance. We could code up all-integer64
-      // as well but that seems even less likely in practice than all-integer or all-double
-      if (sameType==REALSXP && !doRowNames) {
-        // avoid deep switch() on type.
-        for (RLEN i=start; i<end; i++) {
-          char *lineStart = ch;
-          for (int j=0; j<ncol; j++) {
-            SEXP column = VECTOR_ELT(DF, j);
-            writeNumeric(REAL(column)[i], &ch);
-            *ch++ = sep;
+      for (RLEN i=start; i<end; i++) {
+        char *lineStart = ch;
+        if (doRowNames) {
+          if (rowNames==NULL) {
+            if (quote!=FALSE) *ch++='"';  // default 'auto' will quote the row.name numbers
+            write_positive_int(i+1, &ch);
+            if (quote!=FALSE) *ch++='"';
+          } else {
+            writeString(rowNames, i, &ch);
           }
-          ch--;  // backup onto the last sep after the last column
-          writeChars(eol, &ch);  // replace it with the newline.
-          
-          size_t thisLineLen = ch-lineStart;
-          if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
-          checkBuffer(&buffer, &myAlloc, &ch, myMaxLineLen);
-          if (failed) break;
+          *ch++=sep;
         }
-      } else if (sameType==INTSXP && !doRowNames) {
-        for (RLEN i=start; i<end; i++) {
-          char *lineStart = ch;
-          for (int j=0; j<ncol; j++) {
-            SEXP column = VECTOR_ELT(DF, j);
-            if (INTEGER(column)[i] == NA_INTEGER) {
-              writeChars(na, &ch);
-            } else {
-              writeInteger(INTEGER(column)[i], &ch);
-            }
-            *ch++ = sep;
-          }
-          ch--;
-          writeChars(eol, &ch);
-          
-          size_t thisLineLen = ch-lineStart;
-          if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
-          checkBuffer(&buffer, &myAlloc, &ch, myMaxLineLen);
-          if (failed) break;
+        for (int j=0; j<ncol; j++) {
+          (*fun[j])(VECTOR_ELT(DF, j), i, &ch);
+          *ch++ = sep;
         }
-      } else {
-        // mixed types. switch() on every cell value since must write row-by-row
-        for (RLEN i=start; i<end; i++) {
-          char *lineStart = ch;
-          if (doRowNames) {
-            if (rowNames==NULL) {
-              if (quote!=FALSE) *ch++='"';  // default 'auto' will quote the row.name numbers
-              writeInteger(i+1, &ch);
-              if (quote!=FALSE) *ch++='"';
-            } else {
-              writeString(STRING_ELT(rowNames, i), &ch);
-            }
-            *ch++=sep;
-          }
-          for (int j=0; j<ncol; j++) {
-            SEXP column = VECTOR_ELT(DF, j);
-            switch(TYPEOF(column)) {
-            case LGLSXP:
-              writeLogical(LOGICAL(column)[i], &ch);
-              break;
-            case INTSXP:
-              if (INTEGER(column)[i] == NA_INTEGER) {
-                writeChars(na, &ch);
-              } else if (extraType[j] == ET_FACTOR) {
-                writeString(STRING_ELT(getAttrib(column,R_LevelsSymbol), INTEGER(column)[i]-1), &ch);
-              } else if (extraType[j] == ET_ITIME) {
-                writeITime(INTEGER(column)[i], &ch);
-              } else if (extraType[j] == ET_DATE) {
-                writeDate(INTEGER(column)[i], &ch);
-              } else {
-                writeInteger(INTEGER(column)[i], &ch);
-              }
-              break;
-            case REALSXP:
-              if (extraType[j] == ET_INT64) {
-                long long i64 = *(long long *)&REAL(column)[i];
-                if (i64 == NAINT64) {
-                  writeChars(na, &ch);
-                } else {
-                  writeInteger(i64, &ch);
-                }
-              } else {
-                if (extraType[j] == ET_DATE) {
-                  writeDate( R_FINITE(REAL(column)[i]) ? (int)REAL(column)[i] : NA_INTEGER, &ch);
-                } else if (extraType[j] == ET_POSIXCT) {
-                  writePOSIXct(REAL(column)[i], &ch);
-                } else {
-                  writeNumeric(REAL(column)[i], &ch); // handles NA, Inf etc within it
-                }
-              }
-              break;
-            case STRSXP:
-              writeString(STRING_ELT(column, i), &ch);
-              break;
-              
-            case VECSXP: {
-              // a list column containing atomic vectors in each cell
-              SEXP v = VECTOR_ELT(column,i);
-              writeChars(sep2start, &ch);
-              switch(TYPEOF(v)) {
-              case LGLSXP :
-                for (int k=0; k<LENGTH(v); k++) {
-                  writeLogical(LOGICAL(v)[k], &ch);
-                  *ch++ = sep2;
-                }
-                break;
-              case INTSXP:
-                if (isFactor(v)) {
-                  SEXP l = getAttrib(v, R_LevelsSymbol);
-                  for (int k=0; k<LENGTH(v); k++) {
-                    if (INTEGER(v)[k]==NA_INTEGER) writeChars(na, &ch);
-                    else writeString(STRING_ELT(l, INTEGER(v)[k]-1), &ch);
-                    *ch++ = sep2;
-                  }
-                } else if (INHERITS(v, char_ITime)) {
-                  for (int k=0; k<LENGTH(v); k++) {
-                    writeITime(INTEGER(v)[k], &ch);
-                    *ch++ = sep2;
-                  }
-                } else if (INHERITS(v, char_Date)) {
-                  for (int k=0; k<LENGTH(v); k++) {
-                    writeDate(INTEGER(v)[k], &ch);
-                    *ch++ = sep2;
-                  }
-                } else {
-                  for (int k=0; k<LENGTH(v); k++) {
-                    if (INTEGER(v)[k]==NA_INTEGER ) writeChars(na, &ch);
-                    else writeInteger(INTEGER(v)[k], &ch);
-                    *ch++ = sep2;
-                  }
-                }
-                break;
-              case REALSXP:
-                if (INHERITS(v, char_integer64)) {
-                  for (int k=0; k<LENGTH(v); k++) {
-                    long long i64 = *(long long *)&REAL(v)[k];
-                    if (i64==NAINT64) writeChars(na, &ch);
-                    else writeInteger(i64, &ch);
-                    *ch++ = sep2;
-                  }
-                } else if (INHERITS(v, char_Date)) {
-                  for (int k=0; k<LENGTH(v); k++) {
-                    writeDate(R_FINITE(REAL(v)[k]) ? (int)REAL(v)[k] : NA_INTEGER, &ch);
-                    *ch++ = sep2;
-                  }
-                } else if (INHERITS(v, char_POSIXct)) {
-                  for (int k=0; k<LENGTH(v); k++) {
-                    writePOSIXct(REAL(v)[k], &ch);
-                    *ch++ = sep2;
-                  }
-                } else {
-                  for (int k=0; k<LENGTH(v); k++) {
-                    writeNumeric(REAL(v)[k], &ch);
-                    *ch++ = sep2;
-                  }
-                }
-                break;
-              case STRSXP:
-                for (int k=0; k<LENGTH(v); k++) {
-                  writeString(STRING_ELT(v, k), &ch);
-                  *ch++ = sep2;
-                }
-                break;
-              default:
-                error("Column %d is a list column but on row %d is type '%s' - not yet implemented. fwrite() can write list columns containing atomic vectors of type logical, integer, integer64, double, character and factor, currently.", j+1, type2char(TYPEOF(v)));
-              }  // end switch on atomic vector type in a list column
-              if (LENGTH(v)) ch--; // backup over the last sep2 after the last item
-              writeChars(sep2end, &ch); }
-              break;  // from case VECSXP for list column
-              
-            default:
-              error("Internal error: unsupported column type should have been thrown above when calculating maxLineLen");
-            }
-            *ch++ = sep; // next column
-          }
-          ch--;  // backup onto the last sep after the last column. 0-columns was caught and returned earlier, so >=1 cols.
-          writeChars(eol, &ch);  // replace it with the newline.
-          
-          // Track longest line seen so far. If we start to see longer lines than we saw in the
-          // sample, we'll realloc the buffer. The rowsPerBatch chosen based on the (very good) sample,
-          // must fit in the buffer. Can't early write and reset buffer because the
-          // file output would be out-of-order. Can't change rowsPerBatch after the 'parallel for' started.
-          size_t thisLineLen = ch-lineStart;
-          if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
-          checkBuffer(&buffer, &myAlloc, &ch, myMaxLineLen);
-          if (failed) break; // don't write any more rows, fall through to clear up and error() below
-        }
+        ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
+        write_chars(eol, &ch);  // replace it with the newline.
+        
+        // Track longest line seen so far. If we start to see longer lines than we saw in the
+        // sample, we'll realloc the buffer. The rowsPerBatch chosen based on the (very good) sample,
+        // must fit in the buffer. Can't early write and reset buffer because the
+        // file output would be out-of-order. Can't change rowsPerBatch after the 'parallel for' started.
+        size_t thisLineLen = ch-lineStart;
+        if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
+        checkBuffer(&buffer, &myAlloc, &ch, myMaxLineLen);
+        if (failed) break; // this thread stop writing rows; fall through to clear up and error() below
       }
       #pragma omp ordered
       {
@@ -1036,10 +918,10 @@ SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g.
               // showProgress=FALSE until this can be fixed or removed.
               int ETA = (int)((nrow-end)*(((double)(now-start_time))/end));
               if (hasPrinted || ETA >= 2) {
-                if (verbose && !hasPrinted) Rprintf("\n"); 
+                if (verbose && !hasPrinted) Rprintf("\n");
                 Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. "
-                        "anyBufferGrown=%s; maxBuffUsed=%d%%. Finished in %d secs.      ",
-                         (100.0*end)/nrow, nrow, (int)(now-start_time), nth, nth==1?"":"s", 
+                        "anyBufferGrown=%s; maxBuffUsed=%d%%. ETA %d secs.      ",
+                         (100.0*end)/nrow, nrow, (int)(now-start_time), nth, nth==1?"":"s",
                          anyBufferGrown?"yes":"no", maxBuffUsedPC, ETA);
                 R_FlushConsole();    // for Windows
                 next_time = now+1;
