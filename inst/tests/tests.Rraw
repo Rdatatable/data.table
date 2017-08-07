@@ -4014,8 +4014,9 @@ a <- c("\"\"\"\")  \" \"   \"  \"    \"",  "\"\"\"\")  \" \"   \"  \"   \"",  "\
 test(1188, forderv(a), INT(1,3,2))
 
 # test as.ITime vectorization
+# and that the 12 seconds here aren't silently chopped just because the first is formatted %H:%M
 x = c("18:00", "18:00:12")
-test(1189, all(as.character(as.ITime(x)) == c("18:00:00", "18:00:12")))
+test(1189, as.character(as.ITime(x)), c("18:00:00", "18:00:12"))
 
 # that CJ() orders in the same order as setkey, #5375
 DT = CJ(c("Corp", "CORP"), 1:3)
@@ -9174,7 +9175,7 @@ test(1693.7, month(t), 8L)
 test(1693.8, quarter(t), 3L)
 test(1693.9, year(t), 2016L)
 
-<<<<<<< HEAD
+
 # fix for #1740 - sub-assigning NAs for factors
 dt = data.table(x = 1:5, y = factor(c("","a","b","a", "")), z = 5:9)
 ans = data.table(x = 1:5, y = factor(c(NA,"a","b","a", NA)), z = 5:9)
@@ -10118,10 +10119,10 @@ test(1817, fread("bad.txt")[c(1,.N),c(1,3)],  #2238, fileSize multiple of 4096
            data.table("####################"=c("#############","#########"),
                       "###############################################"=c(0,0)))   # not sure why this all-0 column is detectected as numeric rather than integer
 test(1818, fread("session_aborted_fatal_error.txt")[c(1,.N),c(1,2,250,251)], data.table(V1=c("ACSSF","ACSSF"),V2=c("2010m1","2010m1"),V250=-1L,V251=-1L))
-=======
-# expansion of uses of as.ITime.character
-test(1694, as.ITime("2015-09-29 08:22:00"), structure(30120L, class = "ITime"))
->>>>>>> aa5b56fe5cd1bc857a78b7ea2509f05a6592724a
+
+# expansion of uses of as.ITime.character, PR#1796
+test(1819, as.ITime("2015-09-29 08:22:00"), structure(30120L, class = "ITime"))
+
 
 ##########################
 

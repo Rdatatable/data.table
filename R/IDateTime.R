@@ -100,16 +100,26 @@ as.ITime.default <- function(x, ...) {
 as.ITime.character <- function (x, format, ...) {
     x <- unclass(x)
     if (!missing(format)) return(as.ITime(strptime(x, format = format, ...)))
-    xx <- x[!is.na(x)]
-    if (!length(xx)) return(as.ITime(strptime(x, "%Y/%m/%d", ...)))
-    if (all(!is.na(strptime(xx, f <- "%Y-%m-%d %H:%M:%OS", ...))) || 
-        all(!is.na(strptime(xx, f <- "%Y/%m/%d %H:%M:%OS", ...))) ||
-        all(!is.na(strptime(xx, f <- "%Y-%m-%d %H:%M", ...))) ||
-        all(!is.na(strptime(xx, f <- "%Y/%m/%d %H:%M", ...))) ||
-        all(!is.na(strptime(xx, f <- "%Y-%m-%d", ...))) ||
-        all(!is.na(strptime(xx, f <- "%Y/%m/%d", ...)))) {
-        return(as.ITime(strptime(x, f, ...)))
+    # else allow for mixed formats, such as test 1189 where seconds are caught despite varying format
+    y <- strptime(x, format = "%H:%M:%OS", ...)
+    w <- which(is.na(y))
+    formats = c("%H:%M",
+                "%Y-%m-%d %H:%M:%OS",
+                "%Y/%m/%d %H:%M:%OS",
+                "%Y-%m-%d %H:%M",
+                "%Y/%m/%d %H:%M",
+                "%Y-%m-%d",
+                "%Y/%m/%d")
+    for (f in formats) {
+      if (!length(w)) break
+      new <- strptime(x[w], format = f, ...)
+      nna <- !is.na(new)
+      if (any(nna)) {
+        y[ w[nna] ] <- new
+        w <- w[!nna]
+      }
     }
+    return(as.ITime(y))
 }
 
 as.ITime.POSIXlt <- function(x, ...) {
