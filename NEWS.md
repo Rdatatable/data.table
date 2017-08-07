@@ -22,6 +22,9 @@
 
 3. Added helpful message when subsetting by a logical column without wrapping it in parentheses, [#1844](https://github.com/Rdatatable/data.table/issues/1844). Thanks @dracodoc for the suggestion and @MichaelChirico for the PR.
 
+4. `tables` gains `index` argument for supplementary metadata about `data.table`s in memory (or any optionally specified environment), part of [#1648](https://github.com/Rdatatable/data.table/issues/1648). Thanks due variously to @jangorecki, @rsaporta, @MichaelChirico for ideas and work towards PR.
+
+
 #### BUG FIXES
 
 1. The type pun fix (using union) in 1.10.4 resolved some CRAN flavors but still failed the new `fwrite` nanotime test with R-devel on MacOS using latest clang from latest Xcode 8.2. It seems that clang optimizations in Xcode 8 are particularly aggressive and require even stricter adherence to C standards. The type pun was already centralized and now uses `memcpy` which is ok by C standards and compilers apparently know to optimize to avoid call overhead.
@@ -252,6 +255,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
   29. `all.equal.data.table` gains `check.attributes`, `ignore.col.order`, `ignore.row.order` and `tolerance` arguments.
   
   30. `keyby=` is now much faster by not doing not needed work; e.g. 25s down to 13s for a 1.5GB DT with 200m rows and 86m groups. With more groups or bigger data, larger speedup factors are possible. Please always use `keyby=` unless you really need `by=`. `by=` returns the groups in first appearance order and takes longer to do that. See [#1880](https://github.com/Rdatatable/data.table/issues/1880) for more info and please register your views there on changing the default.
+
 
 #### BUG FIXES
 
