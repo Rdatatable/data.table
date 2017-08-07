@@ -117,7 +117,7 @@ zone may be specified.
 
 In \code{as.POSIXct} methods for \code{ITime} and \code{IDate}, the
 second argument is required to be \code{tz} based on the generic
-template, but to make converting easier, the second arguement is
+template, but to make converting easier, the second argument is
 interpreted as a date instead of a time zone if it is of type
 \code{IDate} or \code{ITime}. Therefore, you can use either of the
 following: \code{as.POSIXct(time, date)} or \code{as.POSIXct(date,

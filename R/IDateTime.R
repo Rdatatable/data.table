@@ -12,8 +12,9 @@ as.IDate.Date <- function(x, ...) {
     structure(as.integer(x), class=c("IDate","Date"))
 }    
 
-as.IDate.POSIXct <- function(x, ...) {
-  as.IDate(as.Date(x, tz = attr(x, "tzone"), ...))
+as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
+  if (is.null(tz)) tz = "UTC"
+  as.IDate(as.Date(x, tz = tz, ...))
 }
 
 as.IDate.IDate <- function(x, ...) x
@@ -96,14 +97,28 @@ as.ITime.default <- function(x, ...) {
     as.ITime(as.POSIXlt(x, ...))
 }
 
-as.ITime.character <- function(x, format, ...) {
+as.ITime.character <- function (x, format, ...) {
     x <- unclass(x)
-    if (!missing(format)) 
-        return(as.ITime(strptime(x, format = format, ...)))
+    if (!missing(format)) return(as.ITime(strptime(x, format = format, ...)))
+    # else allow for mixed formats, such as test 1189 where seconds are caught despite varying format
     y <- strptime(x, format = "%H:%M:%OS", ...)
-    y.nas <- is.na(y)
-    y[y.nas] <- strptime(x[y.nas], format = "%H:%M", ...)
-
+    w <- which(is.na(y))
+    formats = c("%H:%M",
+                "%Y-%m-%d %H:%M:%OS",
+                "%Y/%m/%d %H:%M:%OS",
+                "%Y-%m-%d %H:%M",
+                "%Y/%m/%d %H:%M",
+                "%Y-%m-%d",
+                "%Y/%m/%d")
+    for (f in formats) {
+      if (!length(w)) break
+      new <- strptime(x[w], format = f, ...)
+      nna <- !is.na(new)
+      if (any(nna)) {
+        y[ w[nna] ] <- new
+        w <- w[!nna]
+      }
+    }
     return(as.ITime(y))
 }
 
@@ -119,10 +134,11 @@ as.character.ITime <- format.ITime <- function(x, ...) {
     x  <- abs(unclass(x))
     hh <- x %/% 3600L
     mm <- (x - hh * 3600L) %/% 60L
-    ss <- trunc(x - hh * 3600L - 60L * mm)
-    res = paste(substring(paste("0", hh, sep = ""), nchar(paste(hh))), 
-              substring(paste("0", mm, sep = ""), nchar(paste(mm))), 
-              substring(paste("0", ss, sep = ""), nchar(paste(ss))), sep = ":")
+    # #2171 -- trunc gives numeric but %02d requires integer;
+    #   as.integer is also faster (but doesn't handle integer overflow)
+    #   http://stackoverflow.com/questions/43894077
+    ss <- as.integer(x - hh * 3600L - 60L * mm)
+    res = sprintf('%02d:%02d:%02d', hh, mm, ss)
     # Fix for #1354, so that "NA" input is handled correctly.
     if (is.na(any(neg))) res[is.na(x)] = NA
     neg = which(neg)
@@ -244,7 +260,7 @@ second  <- function(x) as.integer(as.POSIXlt(x)$sec)
 minute  <- function(x) as.POSIXlt(x)$min
 hour    <- function(x) as.POSIXlt(x)$hour
 yday    <- function(x) as.POSIXlt(x)$yday + 1L
-wday    <- function(x) as.POSIXlt(x)$wday + 1L
+wday    <- function(x) (unclass(as.IDate(x)) + 4L) %% 7L + 1L
 mday    <- function(x) as.POSIXlt(x)$mday
 week    <- function(x) yday(x) %/% 7L + 1L
 isoweek <- function(x) {

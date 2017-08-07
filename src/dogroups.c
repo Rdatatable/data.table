@@ -44,7 +44,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     // fix for longstanding FR/bug, #495. E.g., DT[, c(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:v3] resulted in error.. the idea is, 1) we create .SDall, which is normally == .SD. But if extra vars are detected in jexp other than .SD, then .SD becomes a shallow copy of .SDall with only .SDcols in .SD. Since internally, we don't make a copy, changing .SDall will reflect in .SD. Hopefully this'll workout :-). 
     SDall = findVar(install(".SDall"), env);
     
-    defineVar(install(".BY"), BY = allocVector(VECSXP, ngrpcols), env);
+    defineVar(sym_BY, BY = allocVector(VECSXP, ngrpcols), env);
     bynames = PROTECT(allocVector(STRSXP, ngrpcols));  protecti++;   // TO DO: do we really need bynames, can we assign names afterwards in one step?
     for (i=0; i<ngrpcols; i++) {
         j = INTEGER(grpcols)[i]-1;
@@ -58,7 +58,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             error("Unsupported type '%s' in column %d of 'by'", type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1);
     }
     setAttrib(BY, R_NamesSymbol, bynames); // Fix for #5415 - BY doesn't retain names anymore
-    R_LockBinding(install(".BY"), env);
+    R_LockBinding(sym_BY, env);
     if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols))) error("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]",length(bynames),length(groups),length(grpcols));
     // TO DO: check this check above.
     

@@ -14,7 +14,7 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
          isString(value) && (strcmp(CHAR(STRING_ELT(value, 0)), "data.table") == 0 || 
          strcmp(CHAR(STRING_ELT(value, 0)), "data.frame") == 0) )
         error("Internal structure doesn't seem to be a list. Can't set class to be 'data.table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' methods instead.");
-    if (isLogical(x) && x == ScalarLogical(TRUE)) {
+    if (isLogical(x) && x == ScalarLogical(TRUE)) {  // ok not to protect this ScalarLogical() as not assigned or passed
         x = PROTECT(duplicate(x));
         setAttrib(x, name, NAMED(value) ? duplicate(value) : value);
         UNPROTECT(1);
@@ -79,7 +79,7 @@ SEXP address(SEXP x)
     // A better way than : http://stackoverflow.com/a/10913296/403310
     char buffer[32];
     snprintf(buffer, 32, "%p", (void *)x);
-    return(ScalarString(mkChar(buffer)));
+    return(mkString(buffer));
 }
 
 SEXP copyNamedInList(SEXP x)
@@ -102,8 +102,6 @@ SEXP copyNamedInList(SEXP x)
 	return R_NilValue;
 }
 
-
-
 SEXP dim(SEXP x)
 {
     // fast implementation of dim.data.table
@@ -125,3 +123,5 @@ SEXP dim(SEXP x)
 
     return ans;
 }
+
+

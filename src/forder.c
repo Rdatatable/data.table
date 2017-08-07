@@ -1305,7 +1305,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     }
     if (LOGICAL(retGrp)[0]) {
         ngrp = gsngrp[flip];
-        setAttrib(ans, install("starts"), x = allocVector(INTSXP, ngrp));
+        setAttrib(ans, sym_starts, x = allocVector(INTSXP, ngrp));
         //if (isSorted || LOGICAL(sort)[0])
             for (INTEGER(x)[0]=1, i=1; i<ngrp; i++) INTEGER(x)[i] = INTEGER(x)[i-1] + gs[flip][i-1];
         //else {
@@ -1314,7 +1314,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         //    for (i=0; i<ngrp; i++) { INTEGER(x)[i] = o[i+cumsum]; cumsum+=gs[flip][i]; }
         //    isort(INTEGER(x), ngrp);
         //}
-        setAttrib(ans, install("maxgrpn"), ScalarInteger(gsmax[flip]));
+        setAttrib(ans, sym_maxgrpn, ScalarInteger(gsmax[flip]));
     }
     
     gsfree();

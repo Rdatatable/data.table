@@ -142,9 +142,11 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     // isorted arg
     o = NULL;
     if (!LOGICAL(isorted)[0]) {
-        SEXP order = PROTECT(vec_init(length(icolsArg), ScalarInteger(1))); // rep(1, length(icolsArg))
-        SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
-        protecti += 2;
+        SEXP order = PROTECT(int_vec_init(length(icolsArg), 1)); // rep(1L, length(icolsArg))
+        SEXP oSxp = PROTECT(forder(i, icolsArg, PROTECT(ScalarLogical(FALSE)),
+                            PROTECT(ScalarLogical(TRUE)), order, PROTECT(ScalarLogical(FALSE))));
+        UNPROTECT(3); // The 3 logicals in line above. TODO - split head of forder into C-level callable
+        protecti += 2;   // order and oSxp
         if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
     }
 
@@ -180,7 +182,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     SET_VECTOR_ELT(ans, 2, retIndexArg);
     SET_VECTOR_ELT(ans, 3, allLen1Arg);
     SET_VECTOR_ELT(ans, 4, allGrp1Arg);
-    SET_STRING_ELT(ansnames, 0, mkChar("starts"));
+    SET_STRING_ELT(ansnames, 0, char_starts);  // changed from mkChar to char_ to pass the grep in CRAN_Release.cmd
     SET_STRING_ELT(ansnames, 1, mkChar("lens"));
     SET_STRING_ELT(ansnames, 2, mkChar("indices"));
     SET_STRING_ELT(ansnames, 3, mkChar("allLen1"));
@@ -364,7 +366,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
             }
         }
         if (col>-1 && op[col] != EQ) {
-            Rboolean isivalNA = !isInt64 ? ISNAN(REAL(ic)[ir]) : (*(long long *)&REAL(ic)[ir] == NAINT64);
+            Rboolean isivalNA = !isInt64 ? ISNAN(REAL(ic)[ir]) : (DtoLL(REAL(ic)[ir]) == NA_INT64_LL);
             switch (op[col]) {
             case LE : if (!isivalNA) xlow = xlowIn; break;
             case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
@@ -372,12 +374,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
             case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
             }
             // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
-            if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(REAL(xc)[XIND(xlow+1)]) : (*(long long *)&REAL(xc)[XIND(xlow+1)] == NAINT64))) {
+            if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(REAL(xc)[XIND(xlow+1)]) : (DtoLL(REAL(xc)[XIND(xlow+1)]) == NA_INT64_LL))) {
                 tmplow = xlow; tmpupp = xupp;
                 while (tmplow < tmpupp-1) {
                     mid = tmplow + (tmpupp-tmplow)/2;
                     xval.d = REAL(xc)[XIND(mid)];
-                    if (!isInt64 ? ISNAN(xval.d) : xval.ll == NAINT64) tmplow = mid; else tmpupp = mid;
+                    if (!isInt64 ? ISNAN(xval.d) : xval.ll == NA_INT64_LL) tmplow = mid; else tmpupp = mid;
                 }
                 xlow = tmplow; // tmplow is the index of last NA value
             }

@@ -4,9 +4,8 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
                    qmethod=c("double","escape"),
                    logicalAsInt=FALSE, dateTimeAs = c("ISO","squash","epoch","write.csv"),
                    buffMB=8, nThread=getDTthreads(),
-                   showProgress = getOption("datatable.showProgress"),
-                   verbose = getOption("datatable.verbose"),
-                   ..turbo=TRUE) {
+                   showProgress=interactive(),
+                   verbose=getOption("datatable.verbose")) {
     isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
     na = as.character(na[1L]) # fix for #1725
     if (missing(qmethod)) qmethod = qmethod[1L]
@@ -29,7 +28,6 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         isLOGICAL(col.names), isLOGICAL(append), isLOGICAL(row.names),
         isLOGICAL(verbose), isLOGICAL(showProgress), isLOGICAL(logicalAsInt),
         length(na) == 1L, #1725, handles NULL or character(0) input
-        isLOGICAL(..turbo),
         is.character(file) && length(file)==1 && !is.na(file),
         length(buffMB)==1 && !is.na(buffMB) && 1<=buffMB && buffMB<=1024,
         length(nThread)==1 && !is.na(nThread) && nThread>=1
@@ -37,7 +35,6 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     file <- path.expand(file)  # "~/foo/bar"
     if (append && missing(col.names) && (file=="" || file.exists(file)))
         col.names = FALSE  # test 1658.16 checks this
-    if (!..turbo) warning("The ..turbo=FALSE option will be removed in future. Please report any problems with ..turbo=TRUE.")
     if (identical(quote,"auto")) quote=NA  # logical NA
     if (file=="") {
         # console output (Rprintf) isn't thread safe.
@@ -45,10 +42,9 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         nThread=1L
         showProgress=FALSE
     }
-   
     .Call(Cwritefile, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
                       row.names, col.names, logicalAsInt, dateTimeAs, buffMB, nThread,
-                      showProgress, verbose, ..turbo)
+                      showProgress, verbose)
     invisible()
 }
 

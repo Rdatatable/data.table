@@ -14,9 +14,8 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   qmethod = c("double","escape"),
   logicalAsInt = FALSE, dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(),
-  showProgress = getOption("datatable.showProgress"),
-  verbose = getOption("datatable.verbose"),
-  ..turbo=TRUE)
+  showProgress = interactive(),
+  verbose = getOption("datatable.verbose"))
 }
 \arguments{
   \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}.}
@@ -29,7 +28,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{na}{The string to use for missing values in the data. Default is a blank string \code{""}.}
   \item{dec}{The decimal separator, by default \code{"."}. See link in references. Cannot be the same as \code{sep}.}
   \item{row.names}{Should row names be written? For compatibility with \code{data.frame} and \code{write.csv} since \code{data.table} never has row names. Hence default \code{FALSE} unlike \code{write.csv}.} 
-  \item{col.names}{Should the column names (header row) be written? If missing, \code{append=TRUE} and the file already exists, the default is set to \code{FALSE} for convenience to prevent column names appearing again mid file.}
+  \item{col.names}{Should the column names (header row) be written? The default is TRUE. However, if missing, \code{append=TRUE} and the file already exists, the default is set to \code{FALSE} for convenience to prevent column names appearing again mid file.}
   \item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings.
       \itemize{
 	\item{"escape" - the quote character (as well as the backslash character) is escaped in C style by a backslash, or}
@@ -51,7 +50,6 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
   \item{verbose}{Be chatty and report timings?}
-  \item{..turbo}{Use specialized custom C code to format numeric, integer and integer64 columns. This reduces call overhead to the C library and avoids copies. Try with and without to see the difference it makes on your machine and please report any differences in output. If you do find cases where \code{..turbo=FALSE} is needed, please report them as bugs, since this option WILL BE REMOVED in future. Hence why it has the \code{..} prefix.}
 }
 \details{
 \code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
@@ -93,11 +91,11 @@ system("diff /dev/shm/tmp1.csv /dev/shm/tmp2.csv")                  # identical
 set.seed(1)
 N = 1e7
 DT = data.table(
-  str1=sample(sprintf("%010d",sample(N,1e5,replace=TRUE)), N, replace=TRUE),
-  str2=sample(sprintf("%09d",sample(N,1e5,replace=TRUE)), N, replace=TRUE),
+  str1=sample(sprintf("\%010d",sample(N,1e5,replace=TRUE)), N, replace=TRUE),
+  str2=sample(sprintf("\%09d",sample(N,1e5,replace=TRUE)), N, replace=TRUE),
   str3=sample(sapply(sample(2:30, 100, TRUE), function(n)
      paste0(sample(LETTERS, n, TRUE), collapse="")), N, TRUE),
-  str4=sprintf("%05d",sample(sample(1e5,50),N,TRUE)),
+  str4=sprintf("\%05d",sample(sample(1e5,50),N,TRUE)),
   num1=sample(round(rnorm(1e6,mean=6.5,sd=15),2), N, replace=TRUE),
   num2=sample(round(rnorm(1e6,mean=6.5,sd=15),10), N, replace=TRUE),
   str5=sample(c("Y","N"),N,TRUE),
@@ -106,7 +104,8 @@ DT = data.table(
   int2=sample(N,N,replace=TRUE)-N/2
 )                                                                   #     774MB
 system.time(fwrite(DT,"/dev/shm/tmp1.csv"))                         #      1.1s
-system.time(write.csv(DT,"/dev/shm/tmp2.csv",row.names=F,quote=F))  #     63.2s
+system.time(write.csv(DT,"/dev/shm/tmp2.csv",                       #     63.2s
+                      row.names=FALSE, quote=FALSE))
 system("diff /dev/shm/tmp1.csv /dev/shm/tmp2.csv")                  # identical
 
 unlink("/dev/shm/tmp1.csv")

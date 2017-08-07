@@ -4,15 +4,10 @@
 
 sudo apt-get update
 sudo apt-get upgrade
-
-sudo apt-get install pandoc
-# v1.12 as on Ubuntu repo Sep-2015 had 'no header_extensions' problem. Needed manual update to v1.15
-# Ubuntu now has v1.16 which is fine.
-
 R
-update.packages()
+update.packages(ask=FALSE)
 # See here for getting R.oo to install: https://github.com/HenrikBengtsson/R.utils/issues/29
-q()
+q("no")
 
 # Ensure latest version of R otherwise problems with CRAN not finding dependents that depend on latest R
 # e.g. mirror may have been disabled in sources.list when upgrading ubuntu
@@ -43,10 +38,44 @@ grep "Rprintf" data.table/src/init.c
 grep "nearest *=" data.table/src/*.c  # none
 grep "class *=" data.table/src/*.c    # quite a few but none global
 
+# No undefined type punning of the form:  *(long long *)&REAL(column)[i]
+# Failed clang 3.9.1 -O3 due to this, I think.
+grep "&REAL" data.table/src/*.c
+
+# seal leak potential where two unprotected API calls are passed to the same
+# function call, usually involving install() or mkChar()
+# Greppable thanks to single lines and wide screens
+# See comments in init.c
+cd data.table/src
+grep install.*alloc *.c   --exclude init.c
+grep install.*Scalar *.c
+grep alloc.*install *.c   --exclude init.c
+grep Scalar.*install *.c
+grep mkChar.*alloc *.c
+grep mkChar.*Scalar *.c
+grep alloc.*mkChar *.c
+grep Scalar.*mkChar *.c
+grep "getAttrib.*mk" *.c   # use sym_* in getAttrib calls
+grep "PROTECT *( *getAttrib" *.c  # attributes are already protected
+grep "\"starts\"" *.c     --exclude init.c
+grep "setAttrib(" *.c      # scan all setAttrib calls manually as a double-check
+grep "install(" *.c       --exclude init.c   # TODO: perhaps in future pre-install all constants
+
+# ScalarInteger and ScalarString allocate and must be PROTECTed unless i) returned (which protects),
+# or ii) passed to setAttrib (which protects, providing leak-seals above are ok)
+# ScalarLogical in R now returns R's global TRUE but from R 3.1.0; Apr 2014. Before that it allocates.
+# Aside: ScalarInteger may return globals for small integers in future version of R.
+grep ScalarInteger *.c   # Check all Scalar* either PROTECTed, return-ed or passed to setAttrib.
+grep ScalarLogical *.c   # When we move R dependency to 3.1.0+, no need to protect ScalarLogical
+grep ScalarString *.c
+
+cd
+R
 cc(clean=TRUE)  # to compile with -pedandic
+q("no")
 R CMD build data.table
-R CMD check data.table_1.9.9.tar.gz --as-cran
-R CMD INSTALL data.table_1.9.9.tar.gz
+R CMD check data.table_1.10.1.tar.gz --as-cran
+R CMD INSTALL data.table_1.10.1.tar.gz
 R
 require(data.table)
 test.data.table()
@@ -75,7 +104,7 @@ install.packages("chron")
 q("no")
 ### END ONE TIME BUILD
 
-R300 CMD INSTALL ~/data.table_1.9.9.tar.gz
+R300 CMD INSTALL ~/data.table_1.10.1.tar.gz
 R300
 require(data.table)
 test.data.table()
@@ -85,11 +114,14 @@ test.data.table()
 #  valgrind
 ###############################################
 
-vi .R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-R --vanilla CMD INSTALL data.table_1.9.9.tar.gz
+vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
+R --vanilla CMD INSTALL data.table_1.10.5.tar.gz
 R -d "valgrind --tool=memcheck --leak-check=full --show-leak-kinds=definite" --vanilla
 require(data.table)
 require(bit64)
+test.data.table()
+
+gctorture(TRUE)   # very very slow, though. Don't run with suggests tests.
 test.data.table()
 
 # Investigated and ignore :
@@ -98,8 +130,10 @@ test.data.table()
 #   http://stackoverflow.com/questions/13558067/what-does-this-valgrind-warning-mean-warning-set-address-range-perms
 # Ignore heap summaries around test 1705 and 1707/1708 due to the fork() test opening/closing, I guess.
 # Tests 1729.4, 1729.8, 1729.11, 1729.13 again have precision issues under valgrind only.
+# Leaks for tests 1738.5, 1739.3 but no data.table .c lines are flagged, rather libcairo.so
+#   and libfontconfig.so via GEMetricInfo and GEStrWidth in libR.so
 
-vi .R/Makevars  # make the -O3 line active again
+vi ~/.R/Makevars  # make the -O3 line active again
 
 ###############################################
 #  R-devel with UBSAN and ASAN on too
@@ -119,7 +153,7 @@ Rdevel
 install.packages("bit64")  # important to run tests using integer64
 # Skip compatibility tests with other Suggests packages; unlikely UBSAN/ASAN problems there.
 q("no")
-Rdevel CMD INSTALL ~/data.table_1.9.9.tar.gz
+Rdevel CMD INSTALL ~/data.table_1.10.1.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
 # them (above) so should be passed through to here
 Rdevel
@@ -218,7 +252,7 @@ sudo apt-get -y build-dep r-cran-cairodevice
 sudo apt-get -y build-dep r-cran-tkrplot
 sudo apt-get -y install libcurl4-openssl-dev    # needed by devtools
 sudo apt-get -y install xorg-dev x11-common libgdal-dev libproj-dev mysql-client libcairo2-dev libglpk-dev
-sudo apt-get -y install texlive texlive-latex-extra texlive-bibtex-extra texinfo fonts-inconsolata latex-xcolor
+sudo apt-get -y install texlive texlive-latex-extra texlive-bibtex-extra texlive-science texinfo texlive-fonts-extra latex-xcolor
 sudo apt-get -y install libv8-dev
 sudo apt-get -y install gsl-bin libgsl0-dev
 sudo apt-get -y install libgtk2.0-dev netcdf-bin
@@ -234,36 +268,47 @@ sudo apt-get -y install libfftw3-dev  # for package fftwtools
 sudo apt-get -y install libgsl-dev
 sudo apt-get -y install octave liboctave-dev
 sudo apt-get -y install jags
+sudo apt-get -y install libmpfr-dev
+sudo apt-get -y install bwidget
+sudo apt-get -y install librsvg2-dev  # for rsvg
+sudo apt-get -y install libboost-all-dev libboost-locale-dev  # for textTinyR
 sudo R CMD javareconf
 # ENDIF
 
-sudo R
-update.packages(ask=FALSE)
-q('no')
-
 cd ~/build/revdeplib/
 export R_LIBS=~/build/revdeplib/
-R CMD INSTALL ~/data.table_1.9.9.tar.gz       # ** ensure latest version installed into revdeplib **
+export R_LIBS_SITE=none
+export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
 R
+.libPaths()   # should be just 2 items: revdeplib and the base R package library
+update.packages(ask=FALSE)
+# if package not found on mirror, try manually a different one:
+install.packages("MIAmaxent", repos="http://cloud.r-project.org/")
+update.packages(ask=FALSE)   # a repeat sometimes does more, keep repeating until none
 
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
 # Ensure no library() call in .Rprofile, such as library(bit64)
 source("http://bioconductor.org/biocLite.R")
 biocLite()
-biocLite("BiocUpgrade")
+biocLite()   # keep repeating until returns with nothing left to do
+# biocLite("BiocUpgrade")
+# This error means it's up to date: "Bioconductor version 3.4 cannot be upgraded with R version 3.3.2"
 
 avail = available.packages(repos=c(getOption("repos"), BiocInstaller::biocinstallRepos()[["BioCsoft"]]))
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
 table(avail[deps,"Repository"])
+length(deps)
 old = 0
 new = 0
 for (p in deps) {
    fn = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-   if (!file.exists(fn) || identical(tryCatch(packageVersion(p), error=function(e)FALSE), FALSE)) {
+   if (!file.exists(fn) || 
+       identical(tryCatch(packageVersion(p), error=function(e)FALSE), FALSE) ||
+       packageVersion(p) != avail[p,"Version"]) {
      system(paste0("rm -f ", p, "*.tar.gz"))  # Remove previous *.tar.gz.  -f to be silent if not there (i.e. first time seeing this package)
      system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version)
      if (!length(grep("bioc",avail[p,"Repository"]))) {
-       install.packages(p)  # To install its dependencies really.
+       install.packages(p, dependencies=TRUE)  # To install its dependencies really.
      } else {
        biocLite(p,suppressUpdates=TRUE)        # To install its dependencies really.
      }
@@ -273,8 +318,6 @@ for (p in deps) {
    } else {
      old = old+1
    }
-   if (packageVersion(p) != avail[p,"Version"])
-       stop("Installed version of ",p," doesn't equal the previously downloaded tar.gz")
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 table(avail[deps,"Repository"])
@@ -282,15 +325,13 @@ table(avail[deps,"Repository"])
 # To identify and remove the tar.gz no longer needed :
 for (p in deps) {
    f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-   # system(paste0("mv ",f," ",f,"_TEMP"))
+   system(paste0("mv ",f," ",f,"_TEMP"))
+}
+system("rm *.tar.gz")
+for (p in deps) {
+   f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
    system(paste0("mv ",f,"_TEMP ",f))
 }
-
-R CMD INSTALL ~/data.table_1.9.9.tar.gz       # ** ensure latest version installed into revdeplib **
-export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
-rm -rf *.Rcheck                               # delete all previous .Rcheck directories
-ls -1 *.tar.gz | wc -l                        # check this equals length(deps) above
-time ls -1 *.tar.gz | parallel R CMD check    # apx 2 hrs for 291 packages on my 4 cpu laptop with 8 threads
 
 status = function(which="both") {
   if (which=="both") {
@@ -298,9 +339,16 @@ status = function(which="both") {
      cat("BIOC:\n"); status("bioc")
      cat("Oldest 00check.log (to check no old stale ones somehow missed):\n")
      system("find . -name '00check.log' | xargs ls -lt | tail -1")
+     cat("\n")
+     if (file.exists("/tmp/started.flag")) {
+       system("ls -lrt /tmp/*.flag")
+       tt = as.POSIXct(file.info(c("/tmp/started.flag","/tmp/finished.flag"))$ctime)
+       if (is.na(tt[2])) tt[2] = Sys.time()
+       print(diff(tt))
+     }
      return(invisible())
   }
-  if (which=="cran") deps = deps[grep("cran",avail[deps,"Repository"])]
+  if (which=="cran") deps = deps[-grep("bioc",avail[deps,"Repository"])]
   if (which=="bioc") deps = deps[grep("bioc",avail[deps,"Repository"])]
   x = unlist(sapply(deps, function(x) {
     fn = paste0("./",x,".Rcheck/00check.log")
@@ -324,12 +372,39 @@ status = function(which="both") {
       "OK      :",sprintf("%3d",length(ok)),"\n",
       "TOTAL   :",length(e)+length(w)+length(n)+length(ok),"/",length(deps),"\n",
       "RUNNING :",sprintf("%3d",length(r)),":",paste(sort(names(x)[r])),"\n",
-      if (length(ns)==0) "\n" else paste0("NOT STARTED (first 5 of ",length(ns),") : ",paste(sort(names(x)[head(ns,5)]),collapse=" "),"\n")
+      if (length(ns)==0) "\n" else paste0("NOT STARTED (first 20 of ",length(ns),") : ",paste(sort(names(x)[head(ns,20)]),collapse="|"),"\n")
       )
   invisible()
 }
 
 status()
+
+run = function(all=FALSE) {
+  numtgz = as.integer(system("ls -1 *.tar.gz | wc -l", intern=TRUE))
+  stopifnot(numtgz==length(deps))
+  cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
+  if (!all) {
+    x = sapply(paste0("./",deps,".Rcheck"), file.exists)
+    x = deps[!x]
+    if (!length(x)) { cat("All package checks have already run. To rerun all: run(all=TRUE).\n"); return(); }
+    cat("Running checks for",length(x),"packages\n")
+    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | parallel R CMD check") 
+  } else {
+    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | parallel R CMD check"
+    # apx 2.5 hrs for 313 packages on my 4 cpu laptop with 8 threads
+  }
+  cat("Command:",cmd,"\n")
+  if (as.integer(system("ps -a | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
+  cat("Proceed? (ctrl-c or enter)\n")
+  scan(quiet=TRUE)
+  system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
+  system(paste(cmd,">/dev/null 2>&1 && touch /tmp/finished.flag"),wait=FALSE)
+  #                                 ^^ must be && and not ; otherwise wait doesn't wait
+}
+
+run()
+system("R CMD INSTALL ~/data.table_1.10.4.tar.gz")      # ** ensure latest version installed into revdeplib **
+
 
 # Investigate and fix the fails ...
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
@@ -339,6 +414,8 @@ R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails a
 R CMD check <failing_package>.tar.gz
 ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check
 
+# Warning: replacing previous import robustbase::sigma by stats::sigma when loading VIM
+# Reinstalling robustbase fixed this warning. Even though it was up to date, reinstalling made a difference.
 
 
 
@@ -349,18 +426,19 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CM
 Bump versions in DESCRIPTION and NEWS to even release number
 Do not push to GitHub. Prevents even a slim possibility of user getting premature version. install_github() should only ever fetch odd releases at all times. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
 R CMD build data.table
-R CMD check --as-cran data.table_1.10.0.tar.gz
+R CMD check --as-cran data.table_1.10.4.tar.gz
 Resubmit to winbuilder (both R-release and R-devel)
 Submit to CRAN
 Bump version in DESCRIPTION to next ODD dev version
 Add new heading in NEWS for the next dev version
 Push to GitHub so dev can continue
+Bump dev badge on homepage
 Cross fingers accepted first time. If not, push changes to devel and backport locally
 Close milestone
 ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
 
 Submit message template:
-Have rechecked the 229 CRAN packages using data.table.
+Have rechecked the 339 CRAN packages using data.table.
 Either ok or have liaised with maintainers in advance.
 
 

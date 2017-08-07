@@ -39,15 +39,11 @@
              "datatable.warnredundantby"="TRUE",                  # not a function argument
              "datatable.alloccol"="1024L",           # argument 'n' of alloc.col. Over-allocate 1024 spare column slots
              "datatable.integer64"="'integer64'",    # datatable.<argument name>    integer64|double|character
-             "datatable.showProgress"="TRUE",        # in fread and fwrite
              "datatable.auto.index"="TRUE",          # DT[col=="val"] to auto add index so 2nd time faster
              "datatable.use.index"="TRUE",           # global switch to address #1422
              "datatable.fread.datatable"="TRUE",
-             "datatable.fread.dec.experiment"="TRUE", # temp.  will remove once stable
-             "datatable.fread.dec.locale"=if (.Platform$OS.type=="unix") "'fr_FR.utf8'" else "'French_France.1252'",
-             "datatable.prettyprint.char" = NULL, # FR #1091
-             "datatable.old.unique.by.key" = "FALSE",  # TODO: warn 1 year, remove after 2 years
-             "datatable.WhenJisSymbolThenCallingScope" = "FALSE"   # TODO: warn (asking user to change to DT[,"someCol"] or DT[["someCol"]], then change default, then remove.
+             "datatable.prettyprint.char" = NULL,     # FR #1091
+             "datatable.old.unique.by.key" = "FALSE"  # TODO: warn 1 year, remove after 2 years
              )
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))
