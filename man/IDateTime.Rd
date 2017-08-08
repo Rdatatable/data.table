@@ -29,12 +29,15 @@
 \alias{round.IDate}
 \alias{seq.IDate}
 \alias{split.IDate}
-\alias{hour}   
-\alias{yday}   
-\alias{wday}   
-\alias{mday}   
-\alias{week}   
-\alias{month}  
+\alias{second}
+\alias{minute}
+\alias{hour}
+\alias{yday}
+\alias{wday}
+\alias{mday}
+\alias{week}
+\alias{isoweek}
+\alias{month}
 \alias{quarter}
 \alias{year}
 \alias{IDate-class}
@@ -64,14 +67,17 @@ as.ITime(x, ...)
 IDateTime(x, ...)
 \method{IDateTime}{default}(x, ...)
 
-hour(x)   
-yday(x)   
-wday(x)   
-mday(x)   
-week(x)   
-month(x)  
+second(x)
+minute(x)
+hour(x)
+yday(x)
+wday(x)
+mday(x)
+week(x)
+isoweek(x)
+month(x)
 quarter(x)
-year(x)   
+year(x)
 
 }
 
@@ -89,7 +95,7 @@ year(x)
 \code{IDate} is a date class derived from \code{Date}. It has the same
 internal representation as the \code{Date} class, except the storage
 mode is integer. \code{IDate} is a relatively simple wrapper, and it
-should work in almost all situations as a replacement for \code{Date}. 
+should work in almost all situations as a replacement for \code{Date}.
 
 Functions that use \code{Date} objects generally work for
 \code{IDate} objects. This package provides specific methods for
@@ -111,14 +117,14 @@ zone may be specified.
 
 In \code{as.POSIXct} methods for \code{ITime} and \code{IDate}, the
 second argument is required to be \code{tz} based on the generic
-template, but to make converting easier, the second arguement is
+template, but to make converting easier, the second argument is
 interpreted as a date instead of a time zone if it is of type
 \code{IDate} or \code{ITime}. Therefore, you can use either of the
 following: \code{as.POSIXct(time, date)} or \code{as.POSIXct(date,
 time)}.
 
 \code{IDateTime} takes a date-time input and returns a data table with
-columns \code{date} and \code{time}. 
+columns \code{date} and \code{time}.
 
 Using integer storage allows dates and/or times to be used as data table
 keys. With positive integers with a range less than 100,000, grouping
@@ -131,7 +137,7 @@ intervals. \code{as.POSIXlt} is also useful. For example,
 \code{as.POSIXlt(x)$mon} is the integer month. The R base convenience
 functions \code{weekdays}, \code{months}, and \code{quarters} can also
 be used, but these return character values, so they must be converted to
-factors for use with data.table.
+factors for use with data.table. \code{isoweek} is ISO 8601-consistent.
 
 The \code{round} method for IDate's is useful for grouping and plotting. It can
 round to weeks, months, quarters, and years.
@@ -148,11 +154,14 @@ round to weeks, months, quarters, and years.
    For \code{IDateTime}, a data table with columns \code{idate} and
    \code{itime} in \code{IDate} and \code{ITime} format.
 
-   \code{hour}, code{yday}, \code{wday}, \code{mday}, \code{week},
-   \code{month}, \code{quarter}, and \code{year} return integer values
-   for hour, day of year, day of week, day of month, week, month,
-   quarter, and year.
-   
+   \code{second}, \code{minute}, \code{hour}, \code{yday}, \code{wday},
+   \code{mday}, \code{week}, \code{month}, \code{quarter},
+   and \code{year} return integer values
+   for second, minute, hour, day of year, day of week,
+   day of month, week, month, quarter, and year, respectively.
+
+   These values are all taken directly from the \code{POSIXlt} representation of \code{x}, with the notable difference that while \code{yday}, \code{wday}, and \code{mon} are all 0-based, here they are 1-based.
+
 }
 \references{
 
@@ -160,7 +169,8 @@ round to weeks, months, quarters, and years.
   R News, vol. 4, no. 1, June 2004.
 
   H. Wickham, http://gist.github.com/10238.
-  
+
+  ISO 8601, http://www.iso.org/iso/home/standards/iso8601.htm
 }
 
 \author{ Tom Short, t.short@ieee.org }
@@ -177,7 +187,7 @@ round to weeks, months, quarters, and years.
 
 # S4 coercion also works
 identical(as.IDate("2001-01-01"), as("2001-01-01", "IDate"))
- 
+
 # create ITime:
 (t <- as.ITime("10:45"))
 
@@ -190,18 +200,18 @@ identical(as.ITime("10:45"), as("10:45", "ITime"))
 
 as.POSIXct("2001-01-01") + as.ITime("10:45")
 
-datetime <- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "5 hour")    
+datetime <- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "5 hour")
 (af <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = "a,idate,itime"))
 
 af[, mean(a), by = "itime"]
 af[, mean(a), by = list(hour = hour(itime))]
-af[, mean(a), by = list(wday = factor(weekdays(idate)))] 
-af[, mean(a), by = list(wday = wday(idate))] 
+af[, mean(a), by = list(wday = factor(weekdays(idate)))]
+af[, mean(a), by = list(wday = wday(idate))]
 
-as.POSIXct(af$idate) 
-as.POSIXct(af$idate, time = af$itime) 
-as.POSIXct(af$idate, af$itime) 
-as.POSIXct(af$idate, time = af$itime, tz = "GMT") 
+as.POSIXct(af$idate)
+as.POSIXct(af$idate, time = af$itime)
+as.POSIXct(af$idate, af$itime)
+as.POSIXct(af$idate, time = af$itime, tz = "GMT")
 
 as.POSIXct(af$itime, af$idate)
 as.POSIXct(af$itime) # uses today's date
@@ -216,7 +226,7 @@ if (require(chron)) {
     as.chron(as.ITime("10:45"), as.IDate("2000-01-01"))
     as.ITime(chron(times = "11:01:01"))
     IDateTime(chron("12/31/98","10:45:00"))
-}  
+}
 
 }
 \keyword{utilities}

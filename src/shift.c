@@ -63,7 +63,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                         thisfill = PROTECT(allocVector(REALSXP, 1));
                         dthisfill = (unsigned long long *)REAL(thisfill);
                         if (INTEGER(fill)[0] == NA_INTEGER)
-                            dthisfill[0] = NAINT64;
+                            dthisfill[0] = NA_INT64_LL;
                         else dthisfill[0] = (unsigned long long)INTEGER(fill)[0];
                     } else {
                         thisfill = PROTECT(coerceVector(fill, REALSXP));
@@ -110,6 +110,18 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                         copyMostAttrib(this, tmp);
                     }
                 break;
+
+		case VECSXP :
+		    thisfill = PROTECT(coerceVector(fill, VECSXP));
+		    for (j=0; j<nk; j++) {
+			tmp = allocVector(VECSXP, xrows);
+			SET_VECTOR_ELT(ans, i*nk+j, tmp);
+			for (m=0; m<xrows; m++)
+			    SET_VECTOR_ELT(tmp, m, (m < INTEGER(k)[j]) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(this, m - INTEGER(k)[j]));
+			copyMostAttrib(this, tmp);
+		    }
+		break;
+
                 default :
                     error("Unsupported type '%s'", type2char(TYPEOF(this)));
             }
@@ -148,7 +160,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                         thisfill = PROTECT(allocVector(REALSXP, 1));
                         dthisfill = (unsigned long long *)REAL(thisfill);
                         if (INTEGER(fill)[0] == NA_INTEGER)
-                            dthisfill[0] = NAINT64;
+                            dthisfill[0] = NA_INT64_LL;
                         else dthisfill[0] = (unsigned long long)INTEGER(fill)[0];
                     } else {
                         thisfill = PROTECT(coerceVector(fill, REALSXP));
@@ -193,6 +205,18 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
                         copyMostAttrib(this, tmp);
                     }
                 break;
+
+		case VECSXP :
+		    thisfill = PROTECT(coerceVector(fill, VECSXP));
+		    for (j=0; j<nk; j++) {
+			tmp = allocVector(VECSXP, xrows);
+			SET_VECTOR_ELT(ans, i*nk+j, tmp);
+			for (m=0; m<xrows; m++)
+			    SET_VECTOR_ELT(tmp, m, (xrows-m <= INTEGER(k)[j]) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(this, m + INTEGER(k)[j]));
+			copyMostAttrib(this, tmp);
+		    }
+		break;
+
     	        default :
     	            error("Unsupported type '%s'", type2char(TYPEOF(this)));
         	}

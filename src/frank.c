@@ -46,7 +46,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
                 dv = (double *)REAL(v);
                 for (j=0; j<n; j++) {
                     u.d = dv[j];
-                    LOGICAL(ans)[j] |= (u.ull == NAINT64);
+                    LOGICAL(ans)[j] |= (u.ull == NA_INT64_LL);   // TODO: can be == NA_INT64_D directly
                 }
             } else {
                 for (j=0; j<n; j++) LOGICAL(ans)[j] |= ISNAN(REAL(v)[j]);
@@ -172,7 +172,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
                 dv = (double *)REAL(v);
                 for (j=0; j<n; j++) {
                     u.d = dv[j];
-                    if (u.ull == NAINT64) {
+                    if (u.ull == NA_INT64_LL) {
                         LOGICAL(ans)[0] = 1;
                         break;
                     }

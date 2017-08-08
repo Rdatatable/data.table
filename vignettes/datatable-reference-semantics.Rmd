@@ -1,11 +1,8 @@
 ---
 title: "Reference semantics"
 date: "`r Sys.Date()`"
-output: 
-  rmarkdown::html_document:
-    theme: spacelab
-    highlight: pygments
-    css : css/bootstrap.css
+output:
+  rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Reference semantics}
   %\VignetteEngine{knitr::rmarkdown}
@@ -16,13 +13,12 @@ vignette: >
 require(data.table)
 knitr::opts_chunk$set(
   comment = "#",
-  error = FALSE,
-  tidy = FALSE,
-  cache = FALSE,
-  collapse=TRUE)
-# options(datatable.auto.index=FALSE)
+    error = FALSE,
+     tidy = FALSE,
+    cache = FALSE,
+ collapse = TRUE)
 ```
-This vignette discusses *data.table*'s reference semantics which allows to *add/update/delete* columns of a *data.table by reference*, and also combine them with `i` and `by`. It is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, and perform aggregations by group. If you're not familar with these concepts, please read the *"Introduction to data.table"* vignette first.
+This vignette discusses *data.table*'s reference semantics which allows to *add/update/delete* columns of a *data.table by reference*, and also combine them with `i` and `by`. It is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, and perform aggregations by group. If you're not familiar with these concepts, please read the *"Introduction to data.table"* vignette first.
 
 ***
 
@@ -30,8 +26,8 @@ This vignette discusses *data.table*'s reference semantics which allows to *add/
 
 We will use the same `flights` data as in the *"Introduction to data.table"* vignette.
 
-```{r echo=FALSE}
-options(width=100)
+```{r echo = FALSE}
+options(width = 100L)
 ```
 
 ```{r}
@@ -59,13 +55,13 @@ All the operations we have seen so far in the previous vignette resulted in a ne
 Before we look at *reference semantics*, consider the *data.frame* shown below:
 
 ```{r}
-DF = data.frame(ID = c("b","b","b","a","a","c"), a = 1:6, b = 7:12, c=13:18)
+DF = data.frame(ID = c("b","b","b","a","a","c"), a = 1:6, b = 7:12, c = 13:18)
 DF
 ```
 
 When we did:
 
-```{r eval=FALSE}
+```{r eval = FALSE}
 DF$c <- 18:13               # (1) -- replace entire column
 # or
 DF$c[DF$ID == "b"] <- 15:13 # (2) -- subassign in column 'c'
@@ -86,21 +82,21 @@ With *data.table's* `:=` operator, absolutely no copies are made in *both* (1) a
 
 ### b) The `:=` operator
 
-It can be used in `j` in two ways: 
+It can be used in `j` in two ways:
 
 (a) The `LHS := RHS` form
 
-    ```{r eval=FALSE}
+    ```{r eval = FALSE}
     DT[, c("colA", "colB", ...) := list(valA, valB, ...)]
 
-    # when you have only one column to assign to you 
+    # when you have only one column to assign to you
     # can drop the quotes and list(), for convenience
     DT[, colA := valA]
 	  ```
 
 (b) The functional form
 
-	```{r eval=FALSE}
+	```{r eval = FALSE}
 	DT[, `:=`(colA = valA, # valA is assigned to colA
 	          colB = valB, # valB is assigned to colB
 	          ...
@@ -111,15 +107,15 @@ It can be used in `j` in two ways:
 
 Note that the code above explains how `:=` can be used. They are not working examples. We will start using them on `flights` *data.table* from the next section.
 
-# 
+#
 
 #### {.bs-callout .bs-callout-info}
 
-* Form (a) is usually easy to program with and is particularly useful when you don't know the columns to assign values to in advance.
+* In (a), `LHS` takes a character vector of column names and `RHS` a *list of values*. `RHS` just needs to be a `list`, irrespective of how its generated (e.g., using `lapply()`, `list()`, `mget()`, `mapply()` etc.). This form is usually easy to program with and is particularly useful when you don't know the columns to assign values to in advance.
 
-* On the other hand, form (b) is handy if you would like to jot some comments down for later.
+* On the other hand, (b) is handy if you would like to jot some comments down for later.
 
-* The result is returned *invisibly*. 
+* The result is returned *invisibly*.
 
 * Since `:=` is available in `j`, we can combine it with `i` and `by` operations just like the aggregation operations we saw in the previous vignette.
 
@@ -136,7 +132,7 @@ For the rest of the vignette, we will work with `flights` *data.table*.
 #### -- How can we add columns *speed* and *total delay* of each flight to `flights` *data.table*?
 
 ```{r}
-flights[, `:=`(speed = distance / (air_time/60), # speed in km/hr
+flights[, `:=`(speed = distance / (air_time/60), # speed in mph (mi/h)
                delay = arr_delay + dep_delay)]   # delay in minutes
 head(flights)
 
@@ -148,7 +144,7 @@ head(flights)
 
 * We did not have to assign the result back to `flights`.
 
-* The `flights` *data.table* now contains the two newly added columns. This is what we mean by *added by reference*. 
+* The `flights` *data.table* now contains the two newly added columns. This is what we mean by *added by reference*.
 
 * We used the functional form so that we could add comments on the side to explain what the computation does. You can also see the `LHS := RHS` form (commented).
 
@@ -190,6 +186,12 @@ Let's look at all the `hours` to verify.
 flights[, sort(unique(hour))]
 ```
 
+#### Exercise: {.bs-callout .bs-callout-warning #update-by-reference-question}
+
+What is the difference between `flights[hour == 24L, hour := 0L]` and `flights[hour == 24L][, hour := 0L]`? Hint: The latter needs an assignment (`<-`) if you would want to use the result later.
+
+If you can't figure it out, have a look at the `Note` section of `?":="`.
+
 ### c) Delete column by reference
 
 #### -- Remove `delay` column
@@ -210,7 +212,7 @@ head(flights)
 
 * When there is just one column to delete, we can drop the `c()` and double quotes and just use the column name *unquoted*, for convenience. That is:
 
-    ```{r eval=FALSE}
+    ```{r eval = FALSE}
     flights[, delay := NULL]
     ```
 
@@ -223,7 +225,7 @@ We have already seen the use of `i` along with `:=` in [Section 2b](#ref-i-j). L
 #### -- How can we add a new column which contains for each `orig,dest` pair the maximum speed?
 
 ```{r}
-flights[, max_speed := max(speed), by=.(origin, dest)]
+flights[, max_speed := max(speed), by = .(origin, dest)]
 head(flights)
 ```
 
@@ -275,7 +277,7 @@ Let's say we would like to create a function that would return the *maximum spee
 ```{r}
 foo <- function(DT) {
   DT[, speed := distance / (air_time/60)]
-  DT[, .(max_speed = max(speed)), by=month]
+  DT[, .(max_speed = max(speed)), by = month]
 }
 ans = foo(flights)
 head(flights)
@@ -299,10 +301,10 @@ The `copy()` function *deep* copies the input object and therefore any subsequen
 
 There are two particular places where `copy()` function is essential:
 
-1. Contrary to the situation we have seen in the previous point, we may not want the input data.table to a function to be modified *by reference*. As an example, let's consider the task in the previous section, except we don't want to modify `flghts` by reference. 
+1. Contrary to the situation we have seen in the previous point, we may not want the input data.table to a function to be modified *by reference*. As an example, let's consider the task in the previous section, except we don't want to modify `flights` by reference.
 
     Let's first delete the `speed` column we generated in the previous section.
-    
+
     ```{r}
     flights[, speed := NULL]
     ```
@@ -310,9 +312,9 @@ There are two particular places where `copy()` function is essential:
 
     ```{r}
     foo <- function(DT) {
-      DT <- copy(DT)                             ## deep copy
-      DT[, speed := distance / (air_time/60)]    ## doesn't affect 'flights'
-      DT[, .(max_speed = max(speed)), by=month]
+      DT <- copy(DT)                              ## deep copy
+      DT[, speed := distance / (air_time/60)]     ## doesn't affect 'flights'
+      DT[, .(max_speed = max(speed)), by = month]
     }
     ans <- foo(flights)
     head(flights)
@@ -332,19 +334,19 @@ However we could improve this functionality further by *shallow* copying instead
 2. When we store the column names on to a variable, e.g., `DT_n = names(DT)`, and then *add/update/delete* column(s) *by reference*. It would also modify `DT_n`, unless we do `copy(names(DT))`.
 
     ```{r}
-    DT = data.table(x=1, y=2)
+    DT = data.table(x = 1L, y = 2L)
     DT_n = names(DT)
     DT_n
 
     ## add a new column by reference
-    DT[, z := 3]
+    DT[, z := 3L]
 
     ## DT_n also gets updated
     DT_n
 
     ## use `copy()`
     DT_n = copy(names(DT))
-    DT[, w := 4]
+    DT[, w := 4L]
 
     ## DT_n doesn't get updated
     DT_n
@@ -360,9 +362,9 @@ However we could improve this functionality further by *shallow* copying instead
 
 * We can use `:=` for its side effect or use `copy()` to not modify the original object while updating by reference.
 
-# 
+#
 
-So far we have seen a whole lot in `j`, and how to combine it with `by` and little of `i`. Let's turn our attention back to `i` in the next vignette *"Keys and fast binary search based subset"* to peform *blazing fast subsets* by *keying data.tables*. 
+So far we have seen a whole lot in `j`, and how to combine it with `by` and little of `i`. Let's turn our attention back to `i` in the next vignette *"Keys and fast binary search based subset"* to perform *blazing fast subsets* by *keying data.tables*.
 
 ***
 

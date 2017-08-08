@@ -93,15 +93,14 @@ static void gsfree() {
      3. Separated setRange so forder can redirect to iradix
 */
 
-static int range, off;                                                      // used by both icount and forder
+static int range, xmin;                                                  // used by both icount and forder
 static void setRange(int *x, int n)
 {
     int i, tmp;
-    int xmin = NA_INTEGER, xmax = NA_INTEGER;
+    xmin = NA_INTEGER;     // used by forder
+    int xmax = NA_INTEGER; // declared locally as we only need xmin outside
     double overflow;
     
-    off = (nalast == 1) ? 0 : 1;   // nalast^decreasing ? 0 : 1;            // off=0 will store values starting from index 0. NAs will go last.
-                                                                            // off=1 will store values starting from index 1. NAs will be at 0th index.
     i = 0;
     while(i<n && x[i]==NA_INTEGER) i++;
     if (i<n) xmax = xmin = x[i];
@@ -116,8 +115,7 @@ static void setRange(int *x, int n)
     overflow = (double)xmax - (double)xmin + 1;                             // ex: x=c(-2147483647L, NA_integer_, 1L) results in overflowing int range.
     if (overflow > INT_MAX) {range = INT_MAX; return;}                      // detect and force iradix here, since icount is out of the picture
     range = xmax-xmin+1;
-    off = order==1 ? -xmin+off : xmax+off;                                  // so that  off+order*x[i]  (below in icount)
-                                                                            // => (x[i]-xmin)+0|1  or  (xmax-x[i])+0|1
+    
     return;
 }
 
@@ -135,31 +133,41 @@ static void icount(int *x, int *o, int n)
 */
 {
     int i=0, tmp;
-    int napos = (nalast == 1) ? range : 0;      // increasing ? 0 : range   // take care of 'nalast' argument
+    int napos = range;  // always count NA in last bucket and we'll account for nalast option in due course
     static unsigned int counts[N_RANGE+1] = {0};                            // static is IMPORTANT, counting sort is called repetitively.
     /* counts are set back to 0 at the end efficiently. 1e5 = 0.4MB i.e 
     tiny. We'll only use the front part of it, as large as range. So it's 
     just reserving space, not using it. Have defined N_RANGE to be 100000.*/
     if (range > N_RANGE) Error("Internal error: range = %d; isorted can't handle range > %d", range, N_RANGE);
     for(i=0; i<n; i++) {
-        if (x[i] == NA_INTEGER) counts[napos]++;                            // For nalast=NA case, we won't remove/skip NAs, rather set 'o' indices
-        else counts[off + order*x[i]]++;                                     // to 0. subset will skip them. We can't know how many NAs to skip 
-    }                                                                       // beforehand - i.e. while allocating "ans" vector
+        if (x[i] == NA_INTEGER) counts[napos]++;             // For nalast=NA case, we won't remove/skip NAs, rather set 'o' indices
+        else counts[x[i]-xmin]++;                            // to 0. subset will skip them. We can't know how many NAs to skip 
+    }                                                        // beforehand - i.e. while allocating "ans" vector
     // TO DO: at this point if the last count==n then it's all the same number and we can stop now.
     // Idea from Terdiman, then improved on that by not needing to loop through counts.
     
-    tmp = 0;                                                                // *** BLOCK 4 ***
-    for (i=0; i<=range; i++) 
+    tmp = 0;
+    if (nalast!=1 && counts[napos]) {
+        push(counts[napos]);
+        tmp += counts[napos];
+    }
+    int w = (order==1) ? 0 : range-1;                                   // *** BLOCK 4 ***
+    for (i=0; i<range; i++) 
     /* no point in adding tmp<n && i<=range, since range includes max, 
        need to go to max, unlike 256 loops elsewhere in forder.c */
     {
-        if (counts[i]) {                                                    // cumulate but not through 0's. Helps resetting zeros when n<range, below.
-            push(counts[i]);
-            counts[i] = (tmp += counts[i]);
+        if (counts[w]) {                                                    // cumulate but not through 0's. Helps resetting zeros when n<range, below.
+            push(counts[w]);
+            counts[w] = (tmp += counts[w]);
         }
+        w += order; // order is +1 or -1
+    }
+    if (nalast==1 && counts[napos]) {
+        push(counts[napos]);
+        counts[napos] = (tmp += counts[napos]);
     }
     for(i=n-1; i>=0; i--) {
-        o[--counts[(x[i] == NA_INTEGER) ? napos : off+order*x[i]]] = (int)(i+1);    // This way na.last=TRUE/FALSE cases will have just a single if-check overhead.
+        o[--counts[(x[i] == NA_INTEGER) ? napos : x[i]-xmin]] = (int)(i+1);    // This way na.last=TRUE/FALSE cases will have just a single if-check overhead.
     }
     if (nalast == 0)                                                        // nalast = 1, -1 are both taken care already.
         for (i=0; i<n; i++) o[i] = (x[o[i]-1] == NA_INTEGER) ? 0 : o[i];    // nalast = 0 is dealt with separately as it just sets o to 0
@@ -172,7 +180,7 @@ static void icount(int *x, int *o, int n)
         doesn't matter if we set to 0 several times on any repeats */
         counts[napos]=0;
         for (i=0; i<n; i++) {
-            if (x[i]!=NA_INTEGER) counts[off + order*x[i]]=0;
+            if (x[i]!=NA_INTEGER) counts[x[i]-xmin]=0;
         }
     } else {
         memset(counts, 0, (range+1)*sizeof(int));                           // *** BLOCK 6 ***
@@ -414,7 +422,8 @@ static void iradix_r(int *xsub, int *osub, int n, int radix)
 // + changed to MSD and hooked into forder framework here.
 // + replaced tolerance with rounding s.f.
 
-static int dround = 2;
+// No rounding by default, for now. Handles #1642, #1728, #1463, #485
+static int dround = 0;
 static unsigned long long dmask1;
 static unsigned long long dmask2;
 
@@ -704,7 +713,7 @@ int StrCmp2(SEXP x, SEXP y) {    // same as StrCmp but also takes into account '
     if (x == y) return 0;                   // same cached pointer (including NA_STRING==NA_STRING)
     if (x == NA_STRING) return nalast;      // if x=NA, nalast=1 ? then x > y else x < y (Note: nalast == 0 is already taken care of in 'csorted', won't be 0 here)
     if (y == NA_STRING) return -nalast;     // if y=NA, nalast=1 ? then y > x
-    return order*strcmp(CHAR(x), CHAR(y));  // same as explanation in StrCmp
+    return order*strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));  // same as explanation in StrCmp
 }
 
 int StrCmp(SEXP x, SEXP y)            // also used by bmerge and chmatch
@@ -712,9 +721,13 @@ int StrCmp(SEXP x, SEXP y)            // also used by bmerge and chmatch
     if (x == y) return 0;             // same cached pointer (including NA_STRING==NA_STRING)
     if (x == NA_STRING) return -1;    // x<y
     if (y == NA_STRING) return 1;     // x>y
-    return strcmp(CHAR(x), CHAR(y));  // can return 0 here for the same string in known and unknown encodings, good if the unknown string is in that encoding but not if not
-}                                     // ordering is ascii only (C locale). TO DO: revisit and allow user to change to strcoll, and take account of Encoding
-                                      // see comments in bmerge().  10k calls of strcmp = 0.37s, 10k calls of strcoll = 4.7s. See ?Comparison, ?Encoding, Scollate in R internals.
+    return strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y))); // ENC2UTF8 handles encoding issues by converting all marked non-utf8 encodings alone to utf8 first. The function could be wrapped in the first if-statement already instead of at the last stage, but this is to ensure that all-ascii cases are handled with maximum efficiency.
+    // This seems to fix the issues as far as I've checked. Will revisit if necessary.
+    
+    // OLD COMMENT: can return 0 here for the same string in known and unknown encodings, good if the unknown string is in that encoding but not if not ordering is ascii only (C locale). TO DO: revisit and allow user to change to strcoll, and take account of Encoding. see comments in bmerge().  10k calls of strcmp = 0.37s, 10k calls of strcoll = 4.7s. See ?Comparison, ?Encoding, Scollate in R internals.
+
+}
+
 // TO DO: check that all unknown encodings are ascii; i.e. no non-ascii unknowns are present, and that either Latin1
 //        or UTF-8 is used by user, not both. Then error if not. If ok, then can proceed with byte level. ascii is never marked known by R, but non-ascii (i.e. knowable encoding) could be marked unknown.
 //        does R internals have is_ascii function exported?  If not, simple enough.
@@ -1021,6 +1034,7 @@ static void isort(int *x, int *o, int n)
 {
     if (n<=2) {
         if (nalast == 0 && n == 2) {                        // nalast = 0 and n == 2 (check bottom of this file for explanation)
+            if (o[0]==-1) { o[0]=1; o[1]=2; }
             for (int i=0; i<n; i++) if (x[i] == NA_INTEGER) o[i] = 0; 
             push(1); push(1);
             return;
@@ -1052,6 +1066,7 @@ static void dsort(double *x, int *o, int n)
 {
     if (n <= 2) {                                           // nalast = 0 and n == 2 (check bottom of this file for explanation)
         if (nalast == 0 && n == 2) {                        // don't have to twiddle here.. at least one will be NA and 'n' WILL BE 2.
+            if (o[0]==-1) { o[0]=1; o[1]=2; }
             for (int i=0; i<n; i++) if (is_nan(x, i)) o[i] = 0;
             push(1); push(1);
             return;
@@ -1082,9 +1097,14 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     if (isNewList(DT)) {
         if (!length(DT)) error("DT is an empty list() of 0 columns");
         if (!isInteger(by) || !length(by)) error("DT has %d columns but 'by' is either not integer or length 0", length(DT));  // seq_along(x) at R level
-        for (i=0; i<LENGTH(by); i++) if (INTEGER(by)[i] < 1 || INTEGER(by)[i] > length(DT)) error("'by' value %d out of range [1,%d]", INTEGER(by)[i], length(DT));
         n = length(VECTOR_ELT(DT,0));
-        x = VECTOR_ELT(DT,INTEGER(by)[0]-1);        
+        for (i=0; i<LENGTH(by); i++) {
+            if (INTEGER(by)[i] < 1 || INTEGER(by)[i] > length(DT)) 
+                error("'by' value %d out of range [1,%d]", INTEGER(by)[i], length(DT));
+            if ( n != length(VECTOR_ELT(DT, INTEGER(by)[i]-1)) )
+                error("Column %d is length %d which differs from length of column 1 (%d)\n", INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), n);
+        }
+        x = VECTOR_ELT(DT,INTEGER(by)[0]-1);
     } else {
         if (!isNull(by)) error("Input is a single vector but 'by' is not NULL");
         n = length(DT);
@@ -1105,7 +1125,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     o[0] = -1;                                  // so [i|c|d]sort know they can populate o directly with no working memory needed to reorder existing order
                                                 // had to repace this from '0' to '-1' because 'nalast = 0' replace 'o[.]' with 0 values.
     xd = DATAPTR(x);
-    
     stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
     savetl_init();   // from now on use Error not error.
 
@@ -1286,7 +1305,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     }
     if (LOGICAL(retGrp)[0]) {
         ngrp = gsngrp[flip];
-        setAttrib(ans, install("starts"), x = allocVector(INTSXP, ngrp));
+        setAttrib(ans, sym_starts, x = allocVector(INTSXP, ngrp));
         //if (isSorted || LOGICAL(sort)[0])
             for (INTEGER(x)[0]=1, i=1; i<ngrp; i++) INTEGER(x)[i] = INTEGER(x)[i-1] + gs[flip][i-1];
         //else {
@@ -1295,7 +1314,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         //    for (i=0; i<ngrp; i++) { INTEGER(x)[i] = o[i+cumsum]; cumsum+=gs[flip][i]; }
         //    isort(INTEGER(x), ngrp);
         //}
-        setAttrib(ans, install("maxgrpn"), ScalarInteger(gsmax[flip]));
+        setAttrib(ans, sym_maxgrpn, ScalarInteger(gsmax[flip]));
     }
     
     gsfree();

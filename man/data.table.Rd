@@ -2,23 +2,23 @@
 \alias{data.table-package}
 \docType{package}
 \alias{data.table}
-\alias{as.data.table}
-\alias{is.data.table}
 \alias{Ops.data.table}
 \alias{is.na.data.table}
 \alias{[.data.table}
 \title{ Enhanced data.frame }
 \description{
-   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast subset, fast grouping, fast update, fast ordered joins and list columns in a short and flexible syntax, for faster development. It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that \emph{only} accept \code{data.frame}.
+   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast and memory efficient: file reader and writer, aggregations, updates, equi, non-equi, rolling, range and interval joins, in a short and flexible syntax, for faster development. 
+
+   It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that accept \emph{only} \code{data.frame}s.
    
-   The 10 minute quick start guide to \code{data.table} may be a good place to start: \href{../doc/datatable-intro.pdf}{\code{vignette("datatable-intro")}}. Or, the first section of FAQs is intended to be read from start to finish and is considered core documentation: \href{../doc/datatable-faq.pdf}{\code{vignette("datatable-faq")}}. If you have read and searched these documents and the help page below, please feel free to ask questions on \href{http://r.789695.n4.nabble.com/datatable-help-f2315188.html}{datatable-help} or the Stack Overflow \href{http://stackoverflow.com/questions/tagged/data.table}{data.table tag}. To report a bug please type: \code{bug.report(package="data.table")}.
+   Type \code{vignette(package="data.table")} to get started. The \href{../doc/datatable-intro.html}{Introduction to data.table} vignette introduces \code{data.table}'s \code{x[i, j, by]} syntax and is a good place to start. If you have read the vignettes and the help page below, please feel free to ask questions on Stack Overflow \href{http://stackoverflow.com/questions/tagged/data.table}{data.table tag} or on \href{http://r.789695.n4.nabble.com/datatable-help-f2315188.html}{datatable-help} mailing list. To report a bug please type: \code{bug.report(package = "data.table")}.
    
-   Please check the \href{https://github.com/Rdatatable/data.table/wiki}{homepage} for up to the minute \href{https://github.com/Rdatatable/data.table/blob/master/README.md}{news}.
+   Please check the \href{https://github.com/Rdatatable/data.table/wiki}{homepage} for up to the minute live NEWS.
    
-   Tip: one of the quickest ways to learn the features is to type \code{example(data.table)} and study the output at the prompt.
+   Tip: one of the \emph{quickest} ways to learn the features is to type \code{example(data.table)} and study the output at the prompt.
 }
 \usage{
-data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
+data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
 
 \method{[}{data.table}(x, i, j, by, keyby, with = TRUE,
   nomatch = getOption("datatable.nomatch"),                   # default: NA_integer_
@@ -31,279 +31,400 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL)
   .SDcols,
   verbose = getOption("datatable.verbose"),                   # default: FALSE
   allow.cartesian = getOption("datatable.allow.cartesian"),   # default: FALSE
-  drop = NULL, 
-  on = NULL # join without setting keys, new feature from v1.9.6+
-  )
+  drop = NULL, on = NULL)
 }
 \arguments{
-  \item{\dots}{ Just as \code{\dots} in \code{\link{data.frame}}. Usual recycling rules are applied to vectors of different lengths to create a list of equal length vectors.
+    \item{\dots}{ Just as \code{\dots} in \code{\link{data.frame}}. Usual recycling rules are applied to vectors of different lengths to create a list of equal length vectors.}
 
-}
-  \item{keep.rownames}{ If \code{\dots} is a \code{matrix} or \code{data.frame}, \code{TRUE} will retain the rownames of that object in a column named \code{rn}.
+    \item{keep.rownames}{ If \code{\dots} is a \code{matrix} or \code{data.frame}, \code{TRUE} will retain the rownames of that object in a column named \code{rn}.}
 
-}
-  \item{check.names}{ Just as \code{check.names} in \code{\link{data.frame}}.
+    \item{check.names}{ Just as \code{check.names} in \code{\link{data.frame}}.}
 
-}
-  \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}.
+    \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}.}
 
-}
-  \item{x}{ A \code{data.table}.
+    \item{stringsAsFactors}{Logical (default is \code{FALSE}). Convert all \code{character} columns to \code{factor}s?}
 
-}
-  \item{i}{ Integer, logical or character vector, single column numeric \code{matrix}, expression of column names, \code{list} or \code{data.table}.
+    \item{x}{ A \code{data.table}.}
 
-  integer and logical vectors work the same way they do in \code{\link{[.data.frame}}. Other than \code{NA}s in logical \code{i} are treated as \code{FALSE} and a single \code{NA} logical is not recycled to match the number of rows, as it is in \code{[.data.frame}.
+    \item{i}{ Integer, logical or character vector, single column numeric \code{matrix}, expression of column names, \code{list}, \code{data.frame} or \code{data.table}.
 
-  character is matched to the first column of \code{x}'s key.
+        \code{integer} and \code{logical} vectors work the same way they do in \code{\link{[.data.frame}} except logical \code{NA}s are treated as FALSE.
 
-  expression is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables) and can evaluate to any of the other types.
+        \code{expression} is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables) and can evaluate to any of the other types.
 
-  When \code{i} is a \code{data.table}, \code{x} must have a key. \code{i} is \emph{joined} to \code{x} using \code{x}'s key and the rows in \code{x} that match are returned. An equi-join is performed between each column in \code{i} to each column in \code{x}'s key; i.e., column 1 of \code{i} is matched to the 1st column of \code{x}'s key, column 2 to the second, etc. The match is a binary search in compiled C in O(log n) time. If \code{i} has \emph{fewer} columns than \code{x}'s key then not all of {x}'s key columns will be joined to (a common use case) and many rows of \code{x} will (ordinarily) match to each row of \code{i}. If \code{i} has \emph{more} columns than \code{x}'s key, the columns of \code{i} not involved in the join are included in the result. If \code{i} also has a key, it is \code{i}'s key columns that are used to match to \code{x}'s key columns (column 1 of \code{i}'s key is joined to column 1 of \code{x}'s key, column 2 of \code{i}'s key to column 2 of \code{x}'s key, and so on for as long as the shorter key) and a binary merge of the two tables is carried out. In all joins the names of the columns are irrelevant; the columns of \code{x}'s key are joined to in order, either from column 1 onwards of \code{i} when \code{i} is unkeyed, or from column 1 onwards of \code{i}'s key. In code, the number of join columns is determined by \code{min(length(key(x)),if (haskey(i)) length(key(i)) else ncol(i))}.
+        \code{character}, \code{list} and \code{data.frame} input to \code{i} is converted into a \code{data.table} internally using \code{\link{as.data.table}}. 
+
+        If \code{i} is a \code{data.table}, the columns in \code{i} to be matched against \code{x} can be specified using one of these ways:
+
+        \itemize{
+            \item{\code{on} argument (see below). It allows for both \code{equi-} and the newly implemented \code{non-equi} joins.}
+
+            \item{If not, \code{x} \emph{must be keyed}. Key can be set using \code{\link{setkey}}. If \code{i} is also keyed, then first \emph{key} column of \code{i} is matched against first \emph{key} column of \code{x}, second against second, etc..
+
+            If \code{i} is not keyed, then first column of \code{i} is matched against first \emph{key} column of \code{x}, second column of \code{i} against second \emph{key} column of \code{x}, etc...
+
+            This is summarised in code as \code{min(length(key(x)), if (haskey(i)) length(key(i)) else ncol(i))}.}
+        }
+        Using \code{on=} is recommended (even during keyed joins) as it helps understand the code better and also allows for \emph{non-equi} joins.
   
-  All types of `i` may be prefixed with \code{!}. This signals a \emph{not-join} or \emph{not-select} should be performed. Throughout \code{data.table} documentation, where we refer to the type of `i`, we mean the type of `i` \emph{after} the `!`, if present. See examples.
+        When the binary operator \code{==} alone is used, an \emph{equi} join is performed. In SQL terms, \code{x[i]} then performs a \emph{right join} by default. \code{i} prefixed with \code{!} signals a \emph{not-join} or \emph{not-select}. 
 
-  Advanced: When \code{i} is an expression of column names that evaluates to \code{data.table} or \code{list}, a join is performed. We call this a \emph{self join}.
+        Support for \emph{non-equi} join was recently implemented, which allows for other binary operators \code{>=, >, <= and <}.
 
-  Advanced: When \code{i} is a single variable name, it is not considered an expression of column names and is instead evaluated in calling scope.
+        See \href{../doc/datatable-keys-fast-subset.html}{Keys and fast binary search based subset} and \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
 
-}
-  \item{j}{ A single column name, single expresson of column names, \code{list()} of expressions of column names, an expression or function call that evaluates to \code{list} (including \code{data.frame} and \code{data.table} which are \code{list}s, too), or (when \code{with=FALSE}) a vector of names or positions to select.
+        \emph{Advanced:} When \code{i} is a single variable name, it is not considered an expression of column names and is instead evaluated in calling scope.
+    }
 
-  \code{j} is evaluated within the frame of the \code{data.table}; i.e., it sees column names as if they are variables. Use \code{j=list(...)} to return multiple columns and/or expressions of columns. A single column or single expression returns that type, usually a vector. See the examples.
+    \item{j}{When \code{with=TRUE} (default), \code{j} is evaluated within the frame of the data.table; i.e., it sees column names as if they are variables. This allows to not just \emph{select} columns in \code{j}, but also \code{compute} on them e.g., \code{x[, a]} and \code{x[, sum(a)]} returns \code{x$a} and \code{sum(x$a)} as a vector respectively. \code{x[, .(a, b)]} and \code{x[, .(sa=sum(a), sb=sum(b))]} returns a two column data.table each, the first simply \emph{selecting} columns \code{a, b} and the second \emph{computing} their sums. 
 
-}
-  \item{by}{ A single unquoted column name, a \code{list()} of expressions of column names, a single character string containing comma separated column names (where spaces are significant since column names may contain spaces even at the start or end), or a character vector of column names.
+    The expression `.()` is a \emph{shorthand} alias to \code{list()}; they both mean the same. As long as \code{j} returns a \code{list}, each element of the list becomes a column in the resulting \code{data.table}. This is the default \emph{enhanced} mode.
 
-  The \code{list()} of expressions is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{j=list(...)} may be omitted when there is just one expression, for convenience, typically a single expression such as \code{sum(colB)}; e.g., \code{DT[,sum(colB),by=colA]}.
+    When \code{with=FALSE}, \code{j} can be a vector of column names or positions to select (as in \code{data.frame}), or a logical vector with length \code{ncol(x)} defining columns to select. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled. 
 
-  When \code{by} contains the first \code{n} columns of \code{x}'s key, we call this a \emph{keyed by}. In a keyed by the groups appear contiguously in RAM and memory is copied in bulk internally, for extra speed. Otherwise, we call it an \emph{ad hoc by}. Ad hoc by is still many times faster than \code{tapply}, for example, but just not as fast as keyed by when datasets are very large, in particular when the size of \emph{each group} is large. Not to be confused with \code{keyby=} defined below.
+    \emph{Advanced:} \code{j} also allows the use of special \emph{read-only} symbols: \code{\link{.SD}}, \code{\link{.N}}, \code{\link{.I}}, \code{\link{.GRP}}, \code{\link{.BY}}.
 
-  Advanced: When \code{i} is a \code{data.table}, \code{DT[i,j,by=.EACHI]} evaluates \code{j} for the groups in `DT` that each row in \code{i} joins to. That is, you can join (in \code{i}) and aggregate (in \code{j}) simultaneously. We call this \emph{grouping by each i}. It is particularly memory efficient as you don't have to materialise the join result only to aggregate later. Please refer to \href{http://stackoverflow.com/a/27004566/559784}{this Stackoverflow answer} for a more detailed explanation until we \href{https://github.com/Rdatatable/data.table/issues/944}{roll out vignettes}.
+    \emph{Advanced:} When \code{i} is a \code{data.table}, the columns of \code{i} can be referred to in \code{j} by using the prefix \code{i.}, e.g., \code{X[Y, .(val, i.val)]}. Here \code{val} refers to \code{X}'s column and \code{i.val} \code{Y}'s. 
 
-  Advanced: When grouping, symbols \code{.SD}, \code{.BY}, \code{.N}, \code{.I} and \code{.GRP} may be used in the \code{j} expression, defined as follows.
-  
-  \code{.SD} is a \code{data.table} containing the \bold{S}ubset of \code{x}'s \bold{D}ata for each group, excluding any columns used in \code{by} (or \code{keyby}).
-  
-  \code{.BY} is a \code{list} containing a length 1 vector for each item in \code{by}. This can be useful when \code{by} is not known in advance. The \code{by} variables are also available to \code{j} directly by name; useful for example for titles of graphs if \code{j} is a plot command, or to branch with \code{if()} depending on the value of a group variable.
-  
-  \code{.N} is an integer, length 1, containing the number of rows in the group. This may be useful when the column names are not known in advance and for convenience generally. When grouping by \code{i}, \code{.N} is the number of rows in \code{x} matched to, for each row of \code{i}, regardless of whether \code{nomatch} is \code{NA} or \code{0}. It is renamed to \code{N} (no dot) in the result (otherwise a column called \code{".N"} could conflict with the \code{.N} variable, see FAQ 4.6 for more details and example), unless it is explicity named; e.g., \code{DT[,list(total=.N),by=a]}.
-  
-  \code{.I} is an integer vector equal to \code{seq_len(nrow(x))}. While grouping, it holds for each item in the group, it's row location in \code{x}. This is useful to subset in \code{j}; e.g. \code{DT[, .I[which.max(somecol)], by=grp]}.
-  
-  \code{.GRP} is an integer, length 1, containing a simple group counter. 1 for the 1st group, 2 for the 2nd, etc.
-  
-  \code{.SD}, \code{.BY}, \code{.N}, \code{.I} and \code{.GRP} are \emph{read only}. Their bindings are locked and attempting to assign to them will generate an error. If you wish to manipulate \code{.SD} before returning it, take a \code{copy(.SD)} first (see FAQ 4.5). Using \code{:=} in the \code{j} of \code{.SD} is reserved for future use as a (tortuously) flexible way to update \code{DT} by reference by group (even when groups are not contiguous in an ad hoc by).
+    \emph{Advanced:} Columns of \code{x} can now be referred to using the prefix \code{x.} and is particularly useful during joining to refer to \code{x}'s \emph{join} columns as they are otherwise masked by \code{i}'s. For example, \code{X[Y, .(x.a-i.a, b), on="a"]}.
 
-  Advanced: In the \code{X[Y,j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.
+    See \href{../doc/datatable-intro.html}{Introduction to data.table} vignette and examples.} 
 
-}
-  \item{keyby}{ An \emph{ad-hoc-by} or \emph{keyed-by} (just as \code{by=} defined above) but with an additional \code{setkey()} run on the \code{by} columns of the result afterwards, for convenience. It is common practice to use `keyby=` routinely when you wish the result to be sorted. Out loud we read \code{keyby=} as \emph{by= then setkey}. Otherwise, `by=` can be relied on to return the groups in the order they appear in the data.
-  
-}
-  \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. When \code{with=FALSE} \code{j} is a character vector of column names or a numeric vector of column positions to select, and the value returned is always a \code{data.table}. \code{with=FALSE} is often useful in \code{data.table} to select columns dynamically.
+    \item{by}{ Column names are seen as if they are variables (as in \code{j} when \code{with=TRUE}). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{by} accepts: 
 
-}
-  \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}'s key, \code{nomatch=NA} (default) means \code{NA} is returned for \code{x}'s non-join columns for that row of \code{i}. \code{0} means no rows will be returned for that row of \code{i}. The default value (used when \code{nomatch} is not supplied) can be changed from \code{NA} to \code{0} using \code{options(datatable.nomatch=0)}.
+    \itemize{
+        \item{A single unquoted column name: e.g., \code{DT[, .(sa=sum(a)), by=x]}}
 
-}
-  \item{mult}{ When \emph{multiple} rows in \code{x} match to the row in \code{i}, \code{mult} controls which are returned: \code{"all"} (default), \code{"first"} or \code{"last"}.
+        \item{a \code{list()} of expressions of column names: e.g., \code{DT[, .(sa=sum(a)), by=.(x=x>0, y)]}}
 
-}
-  \item{roll}{ Applies to the last join column, generally a date but can be any ordered variable, irregular and including gaps. If \code{roll=TRUE} and \code{i}'s row matches to all but the last \code{x} join column, and its value in the last \code{i} join column falls in a gap (including after the last observation in \code{x} for that group), then the \emph{prevailing} value in \code{x} is \emph{rolled} forward. This operation is particularly fast using a modified binary search. The operation is also known as last observation carried forward (LOCF). Usually, there should be no duplicates in \code{x}'s key, the last key column is a date (or time, or datetime) and all the columns of \code{x}'s key are joined to. A common idiom is to select a contemporaneous regular time series (\code{dts}) across a set of identifiers (\code{ids}):  \code{DT[CJ(ids,dts),roll=TRUE]} where \code{DT} has a 2-column key (id,date) and \code{\link{CJ}} stands for \emph{cross join}.
-  When \code{roll} is a positive number, this limits how far values are carried forward. \code{roll=TRUE} is equivalent to \code{roll=+Inf}.
-  When \code{roll} is a negative number, values are rolled backwards; i.e., next observation carried backwards (NOCB). Use \code{-Inf} for unlimited roll back.
-  When \code{roll} is \code{"nearest"}, the nearest value is joined to.
-  
-}
-  \item{rollends}{ A logical vector length 2 (a single logical is recycled). When rolling forward (e.g. \code{roll=TRUE}) if a value is past the \emph{last} observation within each group defined by the join columns, \code{rollends[2]=TRUE} will roll the last value forwards. \code{rollends[1]=TRUE} will roll the first value backwards if the value is before it. If \code{rollends=FALSE} the value of \code{i} must fall in a gap in \code{x} but not after the end or before the beginning of the data, for that group defined by all but the last join column. When \code{roll} is a finite number, that limit is also applied when rolling the ends.
-  
-}
-  \item{which}{ \code{TRUE} returns the row numbers of \code{x} that \code{i} matches to. \code{NA} returns the row numbers of \code{i} that have no match in \code{x}. By default \code{FALSE} and the rows in \code{x} that match are returned.
+        \item{a single character string containing comma separated column names (where spaces are significant since column names may contain spaces even at the start or end): e.g., \code{DT[, sum(a), by="x,y,z"]}}
 
-}
-  \item{.SDcols}{ Advanced. Specifies the columns of \code{x} included in \code{.SD}. May be character column names or numeric positions. This is useful for speed when applying a function through a subset of (possible very many) columns; e.g., \code{DT[,lapply(.SD,sum),by="x,y",.SDcols=301:350]}.
+        \item{a character vector of column names: e.g., \code{DT[, sum(a), by=c("x", "y")]}}
+
+        \item{or of the form \code{startcol:endcol}: e.g., \code{DT[, sum(a), by=x:z]}}
+    }
+
+    \emph{Advanced:} When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}), \code{DT[i, j, by=.EACHI]} evaluates \code{j} for the groups in `DT` that each row in \code{i} joins to. That is, you can join (in \code{i}) and aggregate (in \code{j}) simultaneously. We call this \emph{grouping by each i}. See \href{http://stackoverflow.com/a/27004566/559784}{this StackOverflow answer} for a more detailed explanation until we \href{https://github.com/Rdatatable/data.table/issues/944}{roll out vignettes}.
+
+    \emph{Advanced:} In the \code{X[Y, j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.}
+
+    \item{keyby}{ Same as \code{by}, but with an additional \code{setkey()} run on the \code{by} columns of the result, for convenience. It is common practice to use `keyby=` routinely when you wish the result to be sorted.}
+
+    \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. 
+
+        When \code{with=FALSE} \code{j} is a character vector of column names, a numeric/logical vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is often useful in \code{data.table} to select columns dynamically. Note that \code{x[, cols, with=FALSE]} is equivalent to \code{x[, .SD, .SDcols=cols]}.}
+
+    \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{0} means no rows will be returned for that row of \code{i}. Use \code{options(datatable.nomatch=0)} to change the default value (used when \code{nomatch} is not supplied).}
+
+    \item{mult}{ When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}) and \emph{multiple} rows in \code{x} match to the row in \code{i}, \code{mult} controls which are returned: \code{"all"} (default), \code{"first"} or \code{"last"}.}
+
+    \item{roll}{ When \code{i} is a \code{data.table} and its row matches to all but the last \code{x} join column, and its value in the last \code{i} join column falls in a gap (including after the last observation in \code{x} for that group), then:
+
+        \itemize{
+            \item{\code{+Inf} (or \code{TRUE}) rolls the \emph{prevailing} value in \code{x} forward. It is also known as last observation carried forward (LOCF).}
+            \item{\code{-Inf} rolls backwards instead; i.e., next observation carried backward (NOCB).}
+            \item{finite positive or negative number limits how far values are carried forward or backward.}
+            \item{"nearest" rolls the nearest value instead.}
+        }
+        Rolling joins apply to the last join column, generally a date but can be any variable. It is particularly fast using a modified binary search.
+        
+        A common idiom is to select a contemporaneous regular time series (\code{dts}) across a set of identifiers (\code{ids}):  \code{DT[CJ(ids,dts),roll=TRUE]} where \code{DT} has a 2-column key (id,date) and \code{\link{CJ}} stands for \emph{cross join}.}
+
+    \item{rollends}{ A logical vector length 2 (a single logical is recycled) indicating whether values falling before the first value or after the last value for a group should be rolled as well.
+        \itemize{
+            \item{If \code{rollends[2]=TRUE}, it will roll the last value forward. \code{TRUE} by default for LOCF and \code{FALSE} for NOCB rolls.}
+            \item{If \code{rollends[1]=TRUE}, it will roll the first value backward. \code{TRUE} by default for NOCB and \code{FALSE} for LOCF rolls.}
+        }
+        When \code{roll} is a finite number, that limit is also applied when rolling the ends.}
+
+    \item{which}{\code{TRUE} returns the row numbers of \code{x} that \code{i} matches to. If \code{NA}, returns the row numbers of \code{i} that have no match in \code{x}. By default \code{FALSE} and the rows in \code{x} that match are returned.}
+
+    \item{.SDcols}{ Specifies the columns of \code{x} to be included in the special symbol \code{\link{.SD}} which stands for \code{Subset of data.table}. May be character column names or numeric positions. This is useful for speed when applying a function through a subset of (possible very many) columns; e.g., \code{DT[, lapply(.SD, sum), by="x,y", .SDcols=301:350]}.
  
+    For convenient interactive use, the form \code{startcol:endcol} is also allowed (as in \code{by}), e.g., \code{DT[, lapply(.SD, sum), by=x:y, .SDcols=a:f]}
 }
   \item{verbose}{ \code{TRUE} turns on status and information messages to the console. Turn this on by default using \code{options(datatable.verbose=TRUE)}. The quantity and types of verbosity may be expanded in future.
 
 }  
   \item{allow.cartesian}{ \code{FALSE} prevents joins that would result in more than \code{nrow(x)+nrow(i)} rows. This is usually caused by duplicate values in \code{i}'s join columns, each of which join to the same group in `x` over and over again: a \emph{misspecified} join. Usually this was not intended and the join needs to be changed. The word 'cartesian' is used loosely in this context. The traditional cartesian join is (deliberately) difficult to achieve in \code{data.table}: where every row in \code{i} joins to every row in \code{x} (a \code{nrow(x)*nrow(i)} row result). 'cartesian' is just meant in a 'large multiplicative' sense. }
   
-  \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \code{vignette("datatable-faq")}.
-  
-}
-  \item{on}{ A named atomic vector of column names indicating which columns in \code{i} should be joined to which columns in \code{x}. See \code{Examples}.}
+  \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \href{../doc/datatable-faq.html}{datatable-faq}.}
+
+  \item{on}{ Indicate which columns in \code{i} should be joined with columns in \code{x} along with the type of binary operator to join with. When specified, this overrides the keys set on \code{x} and \code{i}. There are multiple ways of specifying \code{on} argument: 
+        \itemize{
+            \item{As a character vector, e.g., \code{X[Y, on=c("a", "b")]}. This assumes both these columns are present in \code{X} and \code{Y}.}
+            \item{As a \emph{named} character vector, e.g., \code{X[Y, on=c(x="a", y="b")]}. This is useful when column names to join by are different between the two tables. 
+
+            NB: \code{X[Y, on=c("a", y="b")]} is also possible if column \code{"a"} is common between the two tables.}
+            \item{For convenience during interactive scenarios, it is also possible to use \code{.()} syntax as \code{X[Y, on=.(a, b)]}.}
+            \item{From v1.9.8, (non-equi) joins using binary operators \code{>=, >, <=, <} are also possible, e.g., \code{X[Y, on=c("x>=a", "y<=b")]}, or for interactive use as \code{X[Y, on=.(x>=a, y<=b)]}.}
+        }
+        See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
+    }
 }
 \details{
-\code{data.table} builds on base \R functionality to reduce 2 types of time :
+\code{data.table} builds on base \R functionality to reduce 2 types of time:\cr
+
 \enumerate{
-\item programming time (easier to write, read, debug and maintain)
-\item compute time
+    \item{programming time (easier to write, read, debug and maintain), and}
+    \item{compute time (fast and memory efficient).}
 }
 
-It combines database like operations such as \code{\link{subset}}, \code{\link{with}} and \code{\link{by}} and provides similar joins that \code{\link{merge}} provides but faster. This is achieved by using R's column based ordered in-memory \code{data.frame} structure, \code{eval} within the environment of a \code{list}, the \code{[.data.table} mechanism to condense the features, and compiled C to make certain operations fast.
+The general form of data.table syntax is:\cr
 
-The package can be used just for rapid programming (compact syntax). Largest compute time benefits are on 64bit platforms with plentiful RAM, or when smaller datasets are repeatedly queried within a loop, or when other methods use so much working memory that they fail with an out of memory error.
+\preformatted{
+    DT[ i,  j,  by ] # + extra arguments
+        |   |   |
+        |   |    -------> grouped by what?
+        |    -------> what to do?
+         ---> on which rows?
+}
 
-As with \code{[.data.frame}, \emph{compound queries} can be concatenated on one line; e.g., 
+The way to read this out loud is: "Take \code{DT}, subset rows by \code{i}, \emph{then} compute \code{j} grouped by \code{by}. Here are some basic usage examples expanding on this definition. See the vignette (and examples) for working examples.
+
 \preformatted{
-    DT[,sum(v),by=colA][V1<300][tail(order(V1))]
-    # sum(v) by colA then return the 6 largest which are under 300
+    X[, a]                      # return col 'a' from X as vector. If not found, search in parent frame.
+    X[, .(a)]                   # same as above, but return as a data.table.
+    X[, sum(a)]                 # return sum(a) as a vector (with same scoping rules as above)
+    X[, .(sum(a)), by=c]        # get sum(a) grouped by 'c'.
+    X[, sum(a), by=c]           # same as above, .() can be ommitted in by on single expression for convenience
+    X[, sum(a), by=c:f]         # get sum(a) grouped by all columns in between 'c' and 'f' (both inclusive)
+
+    X[, sum(a), keyby=b]        # get sum(a) grouped by 'b', and sort that result by the grouping column 'b'
+    X[, sum(a), by=b][order(b)] # same order as above, but by chaining compound expressions
+    X[c>1, sum(a), by=c]        # get rows where c>1 is TRUE, and on those rows, get sum(a) grouped by 'c'
+    X[Y, .(a, b), on="c"]       # get rows where Y$c == X$c, and select columns 'X$a' and 'X$b' for those rows
+    X[Y, .(a, i.a), on="c"]     # get rows where Y$c == X$c, and then select 'X$a' and 'Y$a' (=i.a)
+    X[Y, sum(a*i.a), on="c" by=.EACHI] # for *each* 'Y$c', get sum(a*i.a) on matching rows in 'X$c'
+
+    X[, plot(a, b), by=c]       # j accepts any expression, generates plot for each group and returns no data
+    # see ?assign to add/update/delete columns by reference using the same consistent interface
 }
-The \code{j} expression does not have to return data; e.g.,
-\preformatted{
-    DT[,plot(colB,colC),by=colA]
-    # produce a set of plots (likely to pdf) returning no data
-}
-Multiple \code{data.table}s (e.g. \code{X}, \code{Y} and \code{Z}) can be joined in many ways; e.g.,
-\preformatted{
-    X[Y][Z]
-    X[Z][Y]
-    X[Y[Z]]
-    X[Z[Y]]
-}
+
 A \code{data.table} is a \code{list} of vectors, just like a \code{data.frame}. However :
 \enumerate{
-\item it never has rownames. Instead it may have one \emph{key} of one or more columns. This key can be used for row indexing instead of rownames.
+\item it never has or uses rownames. Rownames based indexing can be done by setting a \emph{key} of one or more columns or done \emph{ad-hoc} using the \code{on} argument (now preferred).
 \item it has enhanced functionality in \code{[.data.table} for fast joins of keyed tables, fast aggregation, fast last observation carried forward (LOCF) and fast add/modify/delete of columns by reference with no copy at all.
 }
 
-Since a \code{list} \emph{is} a \code{vector}, \code{data.table} columns may be type \code{list}. Columns of type \code{list} can contain mixed types. Each item in a column of type \code{list} may be different lengths. This is true of \code{data.frame}, too.
+See the \code{see also} section for the several other \emph{methods} that are available for operating on data.tables efficiently.
 
-Several \emph{methods} are provided for \code{data.table}, including \code{is.na}, \code{na.omit},
-\code{t}, \code{rbind}, \code{cbind}, \code{merge} and others.
 }
 \references{
-\code{data.table} homepage: \url{https://github.com/Rdatatable/data.table/wiki}\cr
-User reviews: \url{http://crantastic.org/packages/data-table}\cr
-\url{http://en.wikipedia.org/wiki/Binary_search}\cr
-\url{http://en.wikipedia.org/wiki/Radix_sort}             
+\url{https://github.com/Rdatatable/data.table/wiki} (\code{data.table} homepage)\cr
+\url{http://crantastic.org/packages/data-table} (User reviews)\cr
+\url{http://en.wikipedia.org/wiki/Binary_search}
 }
-\note{ If \code{keep.rownames} or \code{check.names} are supplied they must be written in full because \R does not allow partial argument names after `\code{\dots}`. For example, \code{data.table(DF,keep=TRUE)} will create a
-column called \code{"keep"} containing \code{TRUE} and this is correct behaviour; \code{data.table(DF,keep.rownames=TRUE)} was intended.
+\note{ If \code{keep.rownames} or \code{check.names} are supplied they must be written in full because \R does not allow partial argument names after `\code{\dots}`. For example, \code{data.table(DF, keep=TRUE)} will create a
+column called \code{"keep"} containing \code{TRUE} and this is correct behaviour; \code{data.table(DF, keep.rownames=TRUE)} was intended.
 
-POSIXlt is not supported as a column type because it uses 40 bytes to store a single datetime. Unexpected errors may occur if you manage to create a column of type POSIXlt. Please see \href{https://github.com/Rdatatable/data.table/blob/master/README.md}{NEWS} for 1.6.3, and \code{\link{IDateTime}} instead. IDateTime has methods to convert to and from POSIXlt.
+\code{POSIXlt} is not supported as a column type because it uses 40 bytes to store a single datetime. They are implicitly converted to \code{POSIXct} type with \emph{warning}. You may also be interested in \code{\link{IDateTime}} instead; it has methods to convert to and from \code{POSIXlt}.
 }
-\seealso{ \code{\link{data.frame}}, \code{\link{[.data.frame}} , \code{\link{setkey}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}}, \code{\link{unique.data.table}}, \code{\link{copy}}, \code{\link{:=}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{rbindlist}}, \code{\link{setNumericRounding}}
-}
+\seealso{ \code{\link{special-symbols}}, \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{setorder}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}}, \code{\link{unique.data.table}}, \code{\link{copy}}, \code{\link{:=}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{rbindlist}}, \code{\link{setNumericRounding}}, \code{\link{datatable-optimize}}, \code{\link{fsetdiff}}, \code{\link{funion}}, \code{\link{fintersect}}, \code{\link{fsetequal}}, \code{\link{anyDuplicated}}, \code{\link{uniqueN}}, \code{\link{rowid}}, \code{\link{rleid}}, \code{\link{na.omit}}, \code{\link{frank}} }
 \examples{
 \dontrun{
 example(data.table)  # to run these examples at the prompt}
 
-DF = data.frame(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9)
-DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9)
+DF = data.frame(x=rep(c("b","a","c"),each=3), y=c(1,3,6), v=1:9)
+DT = data.table(x=rep(c("b","a","c"),each=3), y=c(1,3,6), v=1:9)
 DF
 DT
-identical(dim(DT),dim(DF)) # TRUE
-identical(DF$a, DT$a)      # TRUE
-is.list(DF)                # TRUE
-is.list(DT)                # TRUE
+identical(dim(DT), dim(DF))    # TRUE
+identical(DF$a, DT$a)          # TRUE
+is.list(DF)                    # TRUE
+is.list(DT)                    # TRUE
 
-is.data.frame(DT)          # TRUE
+is.data.frame(DT)              # TRUE
 
 tables()
 
-DT[2]                      # 2nd row
-DT[,v]                     # v column (as vector)
-DT[,list(v)]               # v column (as data.table)
-DT[2:3,sum(v)]             # sum(v) over rows 2 and 3
-DT[2:5,cat(v,"\n")]        # just for j's side effect
-DT[c(FALSE,TRUE)]          # even rows (usual recycling)
+# basic row subset operations
+DT[2]                          # 2nd row
+DT[3:2]                        # 3rd and 2nd row
+DT[order(x)]                   # no need for order(DT$x)
+DT[order(x), ]                 # same as above. The ',' is optional
+DT[y>2]                        # all rows where DT$y > 2
+DT[y>2 & v>5]                  # compound logical expressions
+DT[!2:4]                       # all rows other than 2:4
+DT[-(2:4)]                     # same
 
-DT[,2,with=FALSE]          # 2nd column
+# select|compute columns data.table way
+DT[, v]                        # v column (as vector)
+DT[, list(v)]                  # v column (as data.table)
+DT[, .(v)]                     # same as above, .() is a shorthand alias to list()
+DT[, sum(v)]                   # sum of column v, returned as vector
+DT[, .(sum(v))]                # same, but return data.table (column autonamed V1)
+DT[, .(sv=sum(v))]             # same, but column named "sv"
+DT[, .(v, v*2)]                # return two column data.table, v and v*2
+
+# subset rows and select|compute data.table way
+DT[2:3, sum(v)]                # sum(v) over rows 2 and 3, return vector
+DT[2:3, .(sum(v))]             # same, but return data.table with column V1
+DT[2:3, .(sv=sum(v))]          # same, but return data.table with column sv 
+DT[2:5, cat(v, "\n")]          # just for j's side effect
+
+# select columns the data.frame way
+DT[, 2, with=FALSE]            # 2nd column, returns a data.table always
 colNum = 2
-DT[,colNum,with=FALSE]     # same
+DT[, colNum, with=FALSE]       # same, equivalent to DT[, .SD, .SDcols=colNum]
+DT[["v"]]                      # same as DT[, v] but much faster
 
-setkey(DT,x)               # set a 1-column key. No quotes, for convenience.
-setkeyv(DT,"x")            # same (v in setkeyv stands for vector)
-v="x"
-setkeyv(DT,v)              # same
-# key(DT)<-"x"             # copies whole table, please use set* functions instead
+# grouping operations - j and by
+DT[, sum(v), by=x]             # ad hoc by, order of groups preserved in result
+DT[, sum(v), keyby=x]          # same, but order the result on by cols
+DT[, sum(v), by=x][order(x)]   # same but by chaining expressions together
 
-DT["a"]                    # binary search (fast)
-DT[x=="a"]                 # same; i.e. binary search (fast)
+# fast ad hoc row subsets (subsets as joins)
+DT["a", on="x"]                # same as x == "a" but uses binary search (fast)
+DT["a", on=.(x)]               # same, for convenience, no need to quote every column
+DT[.("a"), on="x"]             # same
+DT[x=="a"]                     # same, single "==" internally optimised to use binary search (fast)
+DT[x!="b" | y!=3]              # not yet optimized, currently vector scan subset
+DT[.("b", 3), on=c("x", "y")]  # join on columns x,y of DT; uses binary search (fast)
+DT[.("b", 3), on=.(x, y)]      # same, but using on=.()
+DT[.("b", 1:2), on=c("x", "y")]             # no match returns NA
+DT[.("b", 1:2), on=.(x, y), nomatch=0]      # no match row is not returned
+DT[.("b", 1:2), on=c("x", "y"), roll=Inf]   # locf, nomatch row gets rolled by previous row
+DT[.("b", 1:2), on=.(x, y), roll=-Inf]      # nocb, nomatch row gets rolled by next row
+DT["b", sum(v*y), on="x"]                   # on rows where DT$x=="b", calculate sum(v*y)
 
-DT[,sum(v),by=x]           # keyed by
-DT[,sum(v),by=key(DT)]     # same
-DT[,sum(v),by=y]           # ad hoc by
+# all together now
+DT[x!="a", sum(v), by=x]                    # get sum(v) by "x" for each i != "a"
+DT[!"a", sum(v), by=.EACHI, on="x"]         # same, but using subsets-as-joins
+DT[c("b","c"), sum(v), by=.EACHI, on="x"]   # same
+DT[c("b","c"), sum(v), by=.EACHI, on=.(x)]  # same, using on=.()
 
-DT["a",sum(v)]                    # j for one group
-DT[c("a","b"),sum(v),by=.EACHI]   # j for two groups
-
-X = data.table(c("b","c"),foo=c(4,2))
+# joins as subsets
+X = data.table(x=c("c","b"), v=8:7, foo=c(4,2))
 X
 
-DT[X]                      # join
-DT[X,sum(v),by=.EACHI]     # join and eval j for each row in i
-DT[X,mult="first"]         # first row of each group
-DT[X,mult="last"]          # last row of each group
-DT[X,sum(v)*foo,by=.EACHI] # join inherited scope
+DT[X, on="x"]                         # right join
+X[DT, on="x"]                         # left join
+DT[X, on="x", nomatch=0]              # inner join
+DT[!X, on="x"]                        # not join
+DT[X, on=.(y<=foo)]                   # NEW non-equi join (v1.9.8+)
+DT[X, on="y<=foo"]                    # same as above
+DT[X, on=c("y<=foo")]                 # same as above
+DT[X, on=.(y>=foo)]                   # NEW non-equi join (v1.9.8+)
+DT[X, on=.(x, y<=foo)]                # NEW non-equi join (v1.9.8+)
+DT[X, .(x,y,x.y,v), on=.(x, y>=foo)]  # Select x's join columns as well
 
-setkey(DT,x,y)             # 2-column key
-setkeyv(DT,c("x","y"))     # same
+DT[X, on="x", mult="first"]           # first row of each group
+DT[X, on="x", mult="last"]            # last row of each group
+DT[X, sum(v), by=.EACHI, on="x"]      # join and eval j for each row in i
+DT[X, sum(v)*foo, by=.EACHI, on="x"]  # join inherited scope
+DT[X, sum(v)*i.v, by=.EACHI, on="x"]  # 'i,v' refers to X's v column
+DT[X, on=.(x, v>=v), sum(y)*foo, by=.EACHI] # NEW non-equi join with by=.EACHI (v1.9.8+)
 
-DT["a"]                    # join to 1st column of key
-DT[.("a")]                 # same, .() is an alias for list()
-DT[list("a")]              # same
-DT[.("a",3)]               # join to 2 columns
-DT[.("a",3:6)]             # join 4 rows (2 missing)
-DT[.("a",3:6),nomatch=0]   # remove missing
-DT[.("a",3:6),roll=TRUE]   # rolling join (locf)
+# setting keys
+kDT = copy(DT)                        # (deep) copy DT to kDT to work with it.
+setkey(kDT,x)                         # set a 1-column key. No quotes, for convenience.
+setkeyv(kDT,"x")                      # same (v in setkeyv stands for vector)
+v="x"
+setkeyv(kDT,v)                        # same
+# key(kDT)<-"x"                       # copies whole table, please use set* functions instead
+haskey(kDT)                           # TRUE
+key(kDT)                              # "x"
 
-DT[,sum(v),by=.(y\%\%2)]   # by expression
-DT[,.SD[2],by=x]           # 2nd row of each group
-DT[,tail(.SD,2),by=x]      # last 2 rows of each group
-DT[,lapply(.SD,sum),by=x]  # apply through columns by group
+# fast *keyed* subsets
+kDT["a"]                              # subset-as-join on *key* column 'x'
+kDT["a", on="x"]                      # same, being explicit using 'on=' (preferred)
 
-DT[,list(MySum=sum(v),
-         MyMin=min(v),
-         MyMax=max(v)),
-    by=.(x,y\%\%2)]        # by 2 expressions
+# all together
+kDT[!"a", sum(v), by=.EACHI]          # get sum(v) for each i != "a"
 
-DT[,sum(v),x][V1<20]       # compound query
-DT[,sum(v),x][order(-V1)]  # ordering results
+# multi-column key
+setkey(kDT,x,y)                       # 2-column key
+setkeyv(kDT,c("x","y"))               # same
 
-print(DT[,z:=42L])         # add new column by reference
-print(DT[,z:=NULL])        # remove column by reference
-print(DT["a",v:=42L])      # subassign to existing v column by reference
-print(DT["b",v2:=84L])     # subassign to new column by reference (NA padded)
+# fast *keyed* subsets on multi-column key
+kDT["a"]                              # join to 1st column of key
+kDT["a", on="x"]                      # on= is optional, but is preferred
+kDT[.("a")]                           # same, .() is an alias for list()
+kDT[list("a")]                        # same
+kDT[.("a", 3)]                        # join to 2 columns
+kDT[.("a", 3:6)]                      # join 4 rows (2 missing)
+kDT[.("a", 3:6), nomatch=0]           # remove missing
+kDT[.("a", 3:6), roll=TRUE]           # locf rolling join
+kDT[.("a", 3:6), roll=Inf]            # same as above
+kDT[.("a", 3:6), roll=-Inf]           # nocb rolling join
+kDT[!.("a")]                          # not join
+kDT[!"a"]                             # same
 
-DT[,m:=mean(v),by=x][]     # add new column by reference by group
-                           # NB: postfix [] is shortcut to print()
+# more on special symbols, see also ?"special-symbols"
+DT[.N]                                # last row
+DT[, .N]                              # total number of rows in DT
+DT[, .N, by=x]                        # number of rows in each group
+DT[, .SD, .SDcols=x:y]                # select columns 'x' and 'y'
+DT[, .SD[1]]                          # first row of all columns
+DT[, .SD[1], by=x]                    # first row of 'y' and 'v' for each group in 'x'
+DT[, c(.N, lapply(.SD, sum)), by=x]   # get rows *and* sum columns 'v' and 'y' by group
+DT[, .I[1], by=x]                     # row number in DT corresponding to each group
+DT[, grp := .GRP, by=x]               # add a group counter column
+X[, DT[.BY, y, on="x"], by=x]         # join within each group
 
-DT[,.SD[which.min(v)],by=x][]  # nested query by group
+# add/update/delete by reference (see ?assign)
+print(DT[, z:=42L])                   # add new column by reference
+print(DT[, z:=NULL])                  # remove column by reference
+print(DT["a", v:=42L, on="x"])        # subassign to existing v column by reference
+print(DT["b", v2:=84L, on="x"])       # subassign to new column by reference (NA padded)
 
-DT[!.("a")]                # not join
-DT[!"a"]                   # same
-DT[!2:4]                   # all rows other than 2:4
-DT[x!="b" | y!=3]          # not yet optimized, currently vector scans
-DT[!.("b",3)]              # same result but much faster
+DT[, m:=mean(v), by=x][]              # add new column by reference by group
+                                      # NB: postfix [] is shortcut to print()
+# advanced usage
+DT = data.table(x=rep(c("b","a","c"),each=3), v=c(1,1,1,2,2,1,1,2,2), y=c(1,3,6), a=1:9, b=9:1)
 
+DT[, sum(v), by=.(y\%\%2)]              # expressions in by
+DT[, sum(v), by=.(bool = y\%\%2)]       # same, using a named list to change by column name
+DT[, .SD[2], by=x]                    # get 2nd row of each group
+DT[, tail(.SD,2), by=x]               # last 2 rows of each group
+DT[, lapply(.SD, sum), by=x]          # sum of all (other) columns for each group
+DT[, .SD[which.min(v)], by=x]         # nested query by group
 
-# new feature: 'on' argument, from v1.9.6+
-DT1 = data.table(x=c("c", "a", "b", "a", "b"), a=1:5)
-DT2 = data.table(x=c("d", "c", "b"), mul=6:8)
-DT3 = data.table(w=c("d", "c", "b"), mul=6:8)
+DT[, list(MySum=sum(v),
+          MyMin=min(v),
+          MyMax=max(v)),
+    by=.(x, y\%\%2)]                    # by 2 expressions
 
-DT1[DT2, on=c(x="x")] # join on columns 'x'
-DT1[DT2, on="x"] # same as above
-DT1[DT3, on=c(x="w")] # join column 'x' of DT1 to 'w' of DT3
-DT1[DT2, .(sum(a) * mul), by=.EACHI, on="x"] # using by=.EACHI
-DT1[DT2, .(sum(a) * mul), by=.EACHI, on="x", nomatch=0L] # using by=.EACHI
+DT[, .(a = .(a), b = .(b)), by=x]     # list columns
+DT[, .(seq = min(a):max(b)), by=x]    # j is not limited to just aggregations
+DT[, sum(v), by=x][V1<20]             # compound query
+DT[, sum(v), by=x][order(-V1)]        # ordering results
+DT[, c(.N, lapply(.SD,sum)), by=x]    # get number of observations and sum per group
+DT[, {tmp <- mean(y); 
+      .(a = a-tmp, b = b-tmp)
+      }, by=x]                        # anonymous lambdain 'j', j accepts any valid 
+                                      # expression. TO REMEMBER: every element of 
+                                      # the list becomes a column in result.
+pdf("new.pdf")
+DT[, plot(a,b), by=x]                 # can also plot in 'j'
+dev.off()
 
-# Follow r-help posting guide, support is here (*not* r-help) :
+# using rleid, get max(y) and min of all cols in .SDcols for each consecutive run of 'v'
+DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
+
+# Follow r-help posting guide, SUPPORT is here (*not* r-help) :
 # http://stackoverflow.com/questions/tagged/data.table
 # or
 # datatable-help@lists.r-forge.r-project.org
 
 \dontrun{
-vignette("datatable-intro")
-vignette("datatable-faq")
+if (interactive()) {
+  vignette("datatable-intro")
+  vignette("datatable-reference-semantics")
+  vignette("datatable-keys-fast-subset")
+  vignette("datatable-secondary-indices-and-auto-indexing")
+  vignette("datatable-reshape")
+  vignette("datatable-faq")
 
-test.data.table()          # over 1,300 low level tests
 
-update.packages()          # keep up to date
+  test.data.table()          # over 5700 low level tests
+
+  # keep up to date with latest stable version on CRAN
+  update.packages()
+  # get the latest devel (needs Rtools for windows, xcode for mac)
+  install.packages("data.table", repos = "https://Rdatatable.github.io/data.table", type = "source")
+}
 }}
 \keyword{ data }
 

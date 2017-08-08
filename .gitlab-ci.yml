@@ -1,0 +1,89 @@
+variables:
+  USERNS: "https://jangorecki.gitlab.io" # user namespace for local fork drat install string
+
+stages:
+  - test
+  - deploy
+
+test:
+  stage: test
+  image: docker.io/jangorecki/r-pkg
+  script:
+    # install suggests
+    - Rscript -e 'install.packages(c("chron", "ggplot2", "plyr", "reshape", "reshape2", "testthat", "hexbin", "fastmatch", "nlme", "xts", "bit64", "gdata", "caret", "knitr", "curl", "zoo", "plm", "rmarkdown"))'
+    - Rscript -e 'source("https://bioconductor.org/biocLite.R"); biocLite("GenomicRanges")'
+    # add git commit hash metadata
+    - echo "Commit:" $CI_BUILD_REF >> ./DESCRIPTION
+    # build package
+    - R CMD build .
+    # run check
+    - R CMD check $(ls -1t *.tar.gz | head -n 1) --no-manual --as-cran
+    # produce artifacts
+    - Rscript -e 'drat::insertArtifacts(repodir="public", repo.url="'"$USERNS"'/data.table", log.files=c("tests/main.Rout"))'
+  artifacts:
+    paths:
+      - public
+
+test-vanilla:
+  stage: test
+  image: docker.io/jangorecki/r-base-dev
+  script:
+    # build package
+    - R CMD build . --no-build-vignettes
+    # run check
+    - export _R_CHECK_CRAN_INCOMING_=FALSE
+    - export _R_CHECK_FORCE_SUGGESTS_=FALSE
+    - R CMD check $(ls -1t *.tar.gz | head -n 1) --ignore-vignettes --no-manual --as-cran
+    # produce artifacts
+    - Rscript -e 'install.packages("drat", repos="https://jangorecki.gitlab.io/drat")'
+    - Rscript -e 'drat::insertArtifacts(repodir="public/vanilla", repo.url="'"$USERNS"'/data.table/vanilla", log.files=c("tests/main.Rout"))'
+  artifacts:
+    paths:
+      - public
+
+test-r-devel:
+  stage: test
+  image: docker.io/jangorecki/drd-pkg
+  script:
+    # install suggests
+    - RDscript -e 'install.packages(c("chron", "ggplot2", "plyr", "reshape", "reshape2", "testthat", "hexbin", "fastmatch", "nlme", "xts", "bit64", "gdata", "caret", "knitr", "curl", "zoo", "plm", "rmarkdown"))'
+    - RDscript -e 'source("https://bioconductor.org/biocLite.R"); biocLite("GenomicRanges")'
+    # build package
+    - RD CMD build .
+    # Some suggested deps might fail to install on R-devel
+    - export _R_CHECK_FORCE_SUGGESTS_=FALSE
+    # run check
+    - RD CMD check $(ls -1t *.tar.gz | head -n 1) --no-manual --as-cran
+    # produce artifacts
+    - RDscript -e '.libPaths(setdiff(.libPaths(), "/usr/lib/R/library")); drat::insertArtifacts(repodir="public/r-devel", repo.url="'"$USERNS"'/data.table/r-devel", log.files=c("tests/main.Rout"))'
+  artifacts:
+    paths:
+      - public
+
+test-r-3.0.0:
+  stage: test
+  image: docker.io/jangorecki/r-3.0.0
+  script:
+    # build package
+    - R3 CMD build .
+    # run check
+    - export _R_CHECK_CRAN_INCOMING_=FALSE
+    - export _R_CHECK_FORCE_SUGGESTS_=FALSE
+    - R3 CMD check $(ls -1t *.tar.gz | head -n 1) --no-manual --as-cran
+    # produce artifacts
+    - R3script -e 'install.packages("drat", repos="https://jangorecki.gitlab.io/drat", method="curl")'
+    - R3script -e 'drat::insertArtifacts(repodir="public/r-3.0.0", repo.url="'"$USERNS"'/data.table/r-3.0.0", log.files=c("tests/main.Rout"))'
+  artifacts:
+    paths:
+      - public
+
+pages:
+  only:
+    - master
+  stage: deploy
+  image: docker.io/alpine
+  script:
+    - ls -lR public
+  artifacts:
+    paths:
+      - public

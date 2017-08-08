@@ -34,7 +34,7 @@ Note that any additional attributes that might exist on individual items of the 
 \value{
     An unkeyed \code{data.table} containing a concatenation of all the items passed in.
 }
-\seealso{ \code{\link{data.table}} }
+\seealso{ \code{\link{data.table}}, \code{\link{split.data.table}} }
 \examples{
 # default case
 DT1 = data.table(A=1:3,B=letters[1:3])

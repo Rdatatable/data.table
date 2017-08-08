@@ -1,3 +1,12 @@
 ^\.travis\.yml$
 ^Contributing\.md$
 ^CRAN_Release\.cmd$
+^deploy\.sh$
+^.*\.Rproj$
+^\.Rproj\.user$
+^appveyor\.yml$
+^.gitlab-ci\.yml$
+^\.idea$
+^\.RData$
+^\.Rhistory$
+^data\.table_.*\.tar\.gz$

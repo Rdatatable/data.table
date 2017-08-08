@@ -15,12 +15,15 @@ Type 'demo()' for some demos, 'help()' for on-line help, or
 'help.start()' for an HTML browser interface to help.
 Type 'q()' to quit R.
 
-> require(knitr)
+> if (suppressPackageStartupMessages(requireNamespace("knitr", quietly = TRUE))) {
++     require(knitr)
++     knit("knitr.Rmd", quiet=TRUE)
++     cat(readLines("knitr.md"), sep="\n")
++ } else {
++     cat(readLines("knitr.Rout.mock", warn = FALSE), sep="\n")
++ }
 Loading required package: knitr
-> knit("knitr.Rmd", quiet=TRUE)
 Loading required package: data.table
-[1] "knitr.md"
-> cat(readLines("knitr.md"),sep="\n")
 
 ```r
 require(data.table)              # print?

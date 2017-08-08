@@ -1,5 +1,5 @@
 
-bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, verbose)
+bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose)
 {
     # TO DO: rename leftcols to icols, rightcols to xcols
     # NB: io is currently just TRUE or FALSE for whether i is keyed
@@ -89,15 +89,8 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, v
             set(i, j=lc, value=newval)
         }
     }
-        
-    # Now that R doesn't copy named inputs to list(), we can return these as a list()
-    # TO DO: could be allocated inside Cbmerge and returned as list from that
-    f__ = integer(nrow(i))
-    len__ = integer(nrow(i))
-    allLen1 = logical(1)
-    
     if (verbose) {last.started.at=proc.time()[3];cat("Starting bmerge ...");flush.console()}
-    .Call(Cbmerge, i, x, as.integer(leftcols), as.integer(rightcols), io<-haskey(i), xo, roll, rollends, nomatch, f__, len__, allLen1)
+    ans = .Call(Cbmerge, i, x, as.integer(leftcols), as.integer(rightcols), io<-haskey(i), xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
     # NB: io<-haskey(i) necessary for test 579 where the := above change the factor to character and remove i's key
     if (verbose) {cat("done in",round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
 
@@ -109,7 +102,7 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, v
         if (haskey(origi))
             setattr(i, 'sorted', key(origi))
     }    
-    return(list(starts=f__, lens=len__, allLen1=allLen1))
+    return(ans)
 }
 
 

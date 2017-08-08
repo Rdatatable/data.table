@@ -24,6 +24,8 @@ check_formula <- function(formula, varnames, valnames) {
     vars = all.vars(formula)
     vars = vars[!vars %chin% c(".", "...")]
     allvars = c(vars, valnames)
+    if (any(allvars %in% varnames[duplicated(varnames)])) 
+      stop('data.table to cast must have unique column names')
     ans = deparse_formula(as.list(formula)[-1L], varnames, allvars)
 }
 
@@ -67,6 +69,7 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
             vals = replicate(length(funs), vals)
         else stop("When 'fun.aggregate' and 'value.var' are both lists, 'value.var' must be either of length =1 or =length(fun.aggregate).")
     }
+    only_one_fun = length(unlist(funs)) == 1L
     dots = list(...)
     construct_funs <- function(fun, val) {
         if (!is.list(fun)) fun = list(fun)
@@ -80,7 +83,8 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
                     expr = c(expr, dots)
                 ans[[k]] = as.call(expr)
                 # changed order of arguments here, #1153
-                nms[k] = paste(j, all.names(i, max.names=1L, functions=TRUE), sep=sep)
+                nms[k] = if (only_one_fun) j else 
+                            paste(j, all.names(i, max.names=1L, functions=TRUE), sep=sep)
                 k = k+1L;
             }
         }
@@ -92,9 +96,8 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
 
 dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
     if (!is.data.table(data)) stop("'data' must be a data.table.")
-    if (anyDuplicated(names(data))) stop('data.table to cast must have unique column names')
-    drop = as.logical(drop[1])
-    if (is.na(drop)) stop("'drop' must be logical TRUE/FALSE")
+    drop = as.logical(rep(drop, length.out=2L))
+    if (any(is.na(drop))) stop("'drop' must be logical TRUE/FALSE")
     lvals = value_vars(value.var, names(data))
     valnames = unique(unlist(lvals))
     lvars = check_formula(formula, names(data), valnames)
@@ -111,7 +114,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
     }
     setattr(lvars, 'names', c("lhs", "rhs"))
     # Have to take care of duplicate names, and provide names for expression columns properly.
-    varnames = make.unique(sapply(unlist(lvars), all.vars, max.names=1L), sep=sep)
+    varnames = make.unique(vapply_1c(unlist(lvars), all.vars, max.names=1L), sep=sep)
     dupidx = which(valnames %in% varnames)
     if (length(dupidx)) {
         dups = valnames[dupidx]
@@ -122,7 +125,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
     rhsnames = tail(varnames, -length(lvars$lhs))
     setattr(dat, 'names', c(varnames, valnames))
     setDT(dat)
-    if (any(sapply(as.list(dat)[varnames], is.list))) {
+    if (any(vapply_1b(as.list(dat)[varnames], is.list))) {
         stop("Columns specified in formula can not be of type list")
     }
     m <- as.list(match.call()[-1L])
@@ -177,14 +180,15 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
     if (length(rhsnames)) {
         lhs = shallow(dat, lhsnames); rhs = shallow(dat, rhsnames); val = shallow(dat, valnames)
         # handle drop=TRUE/FALSE - Update: Logic moved to R, AND faster than previous version. Take that... old me :-).
-        if (drop) {
+        if (all(drop)) {
             map = setDT(lapply(list(lhsnames, rhsnames), function(cols) frankv(dat, cols=cols, ties.method="dense")))
             maporder = lapply(map, order_)
             mapunique = lapply(seq_along(map), function(i) .Call(CsubsetVector, map[[i]], maporder[[i]]))
             lhs = .Call(CsubsetDT, lhs, maporder[[1L]], seq_along(lhs))
             rhs = .Call(CsubsetDT, rhs, maporder[[2L]], seq_along(rhs))
         } else {
-            lhs_ = cj_uniq(lhs); rhs_ = cj_uniq(rhs)
+            lhs_ = if (!drop[1L]) cj_uniq(lhs) else setkey(unique(lhs, by=names(lhs)))
+            rhs_ = if (!drop[2L]) cj_uniq(rhs) else setkey(unique(rhs, by=names(rhs)))
             map = vector("list", 2L)
             .Call(Csetlistelt, map, 1L, lhs_[lhs, which=TRUE])
             .Call(Csetlistelt, map, 2L, rhs_[rhs, which=TRUE])
@@ -194,12 +198,13 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
             .Call(Csetlistelt, mapunique, 2L, seq_len(nrow(rhs_)))
             lhs = lhs_; rhs = rhs_
         }
-        maplen = sapply(mapunique, length)
+        maplen = vapply_1i(mapunique, length)
         idx = do.call("CJ", mapunique)[map, I := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
-        ans = .Call("Cfcast", lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call))
+        ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call))
         allcols = do.call("paste", c(rhs, sep=sep))
         if (length(valnames) > 1L)
-            allcols = do.call("paste", c(CJ(valnames, allcols, sorted=FALSE), sep=sep))
+            allcols = do.call("paste", if (identical(".", allcols)) list(valnames, sep=sep) 
+                        else c(CJ(valnames, allcols, sorted=FALSE), sep=sep))
             # removed 'setcolorder()' here, #1153
         setattr(ans, 'names', c(lhsnames, allcols))
         setDT(ans); setattr(ans, 'sorted', lhsnames)
@@ -217,7 +222,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
             lhs_ = cj_uniq(lhs)
             idx = lhs_[lhs, I := .I][["I"]]
             lhs_[, I := NULL]
-            ans = .Call("Cfcast", lhs_, val, nrow(lhs_), 1L, idx, fill, fill.default, is.null(fun.call))
+            ans = .Call(Cfcast, lhs_, val, nrow(lhs_), 1L, idx, fill, fill.default, is.null(fun.call))
             setDT(ans); setattr(ans, 'sorted', lhsnames)
             setnames(ans, c(lhsnames, valnames))
         }

@@ -14,6 +14,12 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
          isString(value) && (strcmp(CHAR(STRING_ELT(value, 0)), "data.table") == 0 || 
          strcmp(CHAR(STRING_ELT(value, 0)), "data.frame") == 0) )
         error("Internal structure doesn't seem to be a list. Can't set class to be 'data.table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' methods instead.");
+    if (isLogical(x) && x == ScalarLogical(TRUE)) {  // ok not to protect this ScalarLogical() as not assigned or passed
+        x = PROTECT(duplicate(x));
+        setAttrib(x, name, NAMED(value) ? duplicate(value) : value);
+        UNPROTECT(1);
+        return(x);
+    }
     setAttrib(x, name,
         NAMED(value) ? duplicate(value) : value);
         // duplicate is temp fix to restore R behaviour prior to R-devel change on 10 Jan 2014 (r64724).
@@ -73,7 +79,7 @@ SEXP address(SEXP x)
     // A better way than : http://stackoverflow.com/a/10913296/403310
     char buffer[32];
     snprintf(buffer, 32, "%p", (void *)x);
-    return(ScalarString(mkChar(buffer)));
+    return(mkString(buffer));
 }
 
 SEXP copyNamedInList(SEXP x)
@@ -95,4 +101,27 @@ SEXP copyNamedInList(SEXP x)
 	}
 	return R_NilValue;
 }
+
+SEXP dim(SEXP x)
+{
+    // fast implementation of dim.data.table
+
+    if (TYPEOF(x) != VECSXP) {
+	error("dim.data.table expects a data.table as input (which is a list), but seems to be of type %s", 
+	    type2char(TYPEOF(x)));
+    }
+    
+    SEXP ans = allocVector(INTSXP, 2);
+    if(length(x) == 0) {
+	INTEGER(ans)[0] = 0;
+	INTEGER(ans)[1] = 0;
+    }
+    else {
+	INTEGER(ans)[0] = length(VECTOR_ELT(x, 0));
+	INTEGER(ans)[1] = length(x);
+    }
+
+    return ans;
+}
+
 

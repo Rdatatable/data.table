@@ -40,7 +40,7 @@ DT[1,a:=as.integer(a)]                # no
 DT[1,a:=10L][]                        # yes. ...[] == oops, forgot print(...)
 
 # Test that error in := doesn't suppress next valid print, bug #2376
-try(DT[,foo:=ColumnNameTypo])         # error: not found.
+tryCatch(DT[,foo:=ColumnNameTypo], error=function(e) e$message)         # error: not found.
 DT                                    # yes
 DT                                    # yes
 
