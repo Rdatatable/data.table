@@ -30,6 +30,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
                              nrows=getOption("datatable.print.nrows"), 
                              class=getOption("datatable.print.class"), 
                              row.names=getOption("datatable.print.rownames"), 
+                             print.keys=getOption("datatable.print.keys"),
                              quote=FALSE, ...) {    # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
     # nrows - under this the whole (small) table is printed, unless topn is provided (100)
     # class - should column class be printed underneath column name? (FALSE)
@@ -55,6 +56,13 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     if (!is.numeric(topn)) topn = 5L
     topnmiss = missing(topn)
     topn = max(as.integer(topn),1L)
+    if (print.keys){
+      if (!is.null(ky <- key(x))) 
+        cat("Key: <", paste(ky, collapse=", "), ">\n", sep="")
+      if (!is.null(ixs <- indices(x))) 
+        cat("Ind", if (length(ixs) > 1) "ices" else "ex", ": <",
+            paste(ixs, collapse=">, <"), ">\n", sep="")
+    }
     if (nrow(x) == 0L) {
         if (length(x)==0L)
            cat("Null data.table (0 rows and 0 cols)\n")  # See FAQ 2.5 and NEWS item in v1.8.9
@@ -93,16 +101,17 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
       toprint = rbind(abbs, toprint)
       rownames(toprint)[1L] = ""
     }
+    if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
     if (printdots) {
-        toprint = rbind(head(toprint,topn),"---"="",tail(toprint,topn))
-        rownames(toprint) = format(rownames(toprint),justify="right")
-        print(toprint,right=TRUE,quote=quote)
+        toprint = rbind(head(toprint, topn), "---"="", tail(toprint, topn))
+        rownames(toprint) = format(rownames(toprint), justify="right")
+        print(toprint, right=TRUE, quote=quote)
         return(invisible())
     }
     if (nrow(toprint)>20L)
         # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
-        toprint=rbind(toprint,matrix(colnames(toprint),nrow=1)) # fixes bug #4934
-    print(toprint,right=TRUE,quote=quote)
+        toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #4934
+    print(toprint, right=TRUE, quote=quote)
     invisible()
 }
 
@@ -2589,22 +2598,30 @@ setnames <- function(x,old,new) {
     invisible(x)
 }
 
-setcolorder <- function(x,neworder)
+setcolorder <- function(x, neworder)
 {
+    if (any(duplicated(neworder))) stop("neworder contains duplicates")
     # if (!is.data.table(x)) stop("x is not a data.table")
-    if (length(neworder)!=length(x)) stop("neworder is length ",length(neworder)," but x has ",length(x)," columns.")
+    if (length(neworder) != length(x)) {
+      if (length(neworder) > length(x)) 
+        stop("neworder is length ", length(neworder), 
+             " but x has only ", length(x), " columns.")
+      #if shorter than length(x), pad by the missing
+      #  elements (checks below will catch other mistakes)
+      neworder = c(neworder, setdiff(if (is.character(neworder)) names(x)
+                                     else seq_along(x), neworder))
+    }
     if (is.character(neworder)) {
-        if (any(duplicated(neworder))) stop("neworder contains duplicate column names")
-        if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
-        o = as.integer(chmatch(neworder,names(x)))
-        if (any(is.na(o))) stop("Names in neworder not found in x: ",paste(neworder[is.na(o)],collapse=","))
+        if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ", paste(names(x)[duplicated(names(x))], collapse=","), ". Please remove or rename the duplicate(s) and try again.")
+        o = as.integer(chmatch(neworder, names(x)))
+        if (any(is.na(o))) stop("Names in neworder not found in x: ", paste(neworder[is.na(o)], collapse=","))
     } else {
         if (!is.numeric(neworder)) stop("neworder is not a character or numeric vector")
         o = as.integer(neworder)
         m = !(o %in% seq_len(length(x)))
-        if (any(m)) stop("Column numbers in neworder out of bounds: ",paste(o[m],collapse=","))
+        if (any(m)) stop("Column numbers in neworder out of bounds: ", paste(o[m], collapse=","))
     }
-    .Call(Csetcolorder,x,o)
+    .Call(Csetcolorder, x, o)
     invisible(x)
 }
 

@@ -5,6 +5,8 @@ Authors@R: c(
   person("Matt","Dowle",      role=c("aut","cre"), email="mattjdowle@gmail.com"),
   person("Arun","Srinivasan", role="aut", email="arunkumar.sriniv@gmail.com"),
   person("Jan","Gorecki",     role="ctb"),
+  person("Michael","Chirico", role="ctb"),
+  person("Pasha","Stetsenko", role="ctb"),
   person("Tom","Short",       role="ctb"),
   person("Steve","Lianoglou", role="ctb"),
   person("Eduard","Antonyan", role="ctb") )
