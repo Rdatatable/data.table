@@ -22,7 +22,7 @@ load \code{reshape2} package \emph{before} loading \code{data.table}.
 \item{data}{ A \code{data.table} object to melt.}
 \item{id.vars}{vector of id variables. Can be integer (corresponding id 
 column numbers) or character (id column names) vector. If missing, all 
-non-measure columns will be assigned to it.}
+non-measure columns will be assigned to it. If integer, must be positive; see Details. }
 \item{measure.vars}{vector of measure variables. Can be integer (corresponding 
 measure column numbers) or character (measure column names) vector. If missing, 
 all non-id columns will be assigned to it.
@@ -77,7 +77,10 @@ be coerced to \code{character} type. This is to be compatible with
 \code{reshape2}'s \code{melt.data.frame}. To get a \code{factor} column, set 
 \code{value.factor = TRUE}. \code{melt.data.table} also preserves 
 \code{ordered} factors.
+
+Note that, as opposed to the (undocumented) behavior of \code{reshape2::melt}, \code{id.vars}, when specified as numbers, must be between 1 and \code{ncol(data)}.
 }
+
 \value{
 An unkeyed \code{data.table} containing the molten data.
 }
