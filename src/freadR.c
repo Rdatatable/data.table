@@ -478,7 +478,7 @@ void STOP(const char *format, ...) {
   vsnprintf(msg, 2000, format, args);
   va_end(args);
   freadCleanup();
-  error(msg);
+  error("%s", msg);
 }
 
 void freadLastWarning(const char *format, ...) {

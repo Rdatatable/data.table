@@ -10456,6 +10456,12 @@ test(1818, fread("session_aborted_fatal_error.txt")[c(1,.N),c(1,2,250,251)], dat
 # expansion of uses of as.ITime.character, PR#1796
 test(1819, as.ITime("2015-09-29 08:22:00"), structure(30120L, class = "ITime"))
 
+# Issue 2287: the % sign in the error message should not be interpreted as a format string!
+test(1820.1, fread("name,id\nfoo,1\nbar%\n"), error="Expecting 2 fields but found 1: <<bar%>>")
+test(1820.2, fread("name,id\nfoo,1\nbar%d"), error="Expecting 2 fields but found 1: <<bar%d>>")
+test(1820.3, fread("name,id\nfoo,1\nbar%s"), error="Expecting 2 fields but found 1: <<bar%s>>")
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
