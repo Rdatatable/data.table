@@ -12,6 +12,7 @@
     nrows=getOption("datatable.print.nrows"),        # default: 100
     class=getOption("datatable.print.class"),  # default: FALSE
     row.names=getOption("datatable.print.rownames"), # default: TRUE
+    print.keys=getOption("datatable.print.keys"),    # default: FALSE
     quote=FALSE,...)
 }
 \arguments{
@@ -20,6 +21,7 @@
   \item{nrows}{ The number of rows which will be printed before truncation is enforced. }
   \item{class}{ If \code{TRUE}, the resulting output will include above each column its storage class (or a self-evident abbreviation thereof). }
   \item{row.names}{ If \code{TRUE}, row indices will be printed alongside \code{x}. }
+  \item{print.keys}{ If \code{TRUE}, any \code{\link{key}} and/or \code{\link[=indices]{index}} currently assigned to \code{x} will be printed prior to the preview of the data. }
   \item{quote}{ If \code{TRUE}, all output will appear in quotes, as in \code{print.default}. }
   \item{\dots}{ Other arguments ultimately passed to \code{format}. }
 }
@@ -46,4 +48,11 @@
   #`row.names` can be eliminated to save space
   DT <- data.table(a = 1:3)
   print(DT, row.names = FALSE)
+  
+  #`print.keys` can alert which columns are currently keys
+  DT <- data.table(a=1:3, b=4:6, c=7:9, key="b,a")
+  setindexv(DT, c("a", "b"))
+  setindexv(DT, "a")
+  print(DT, print.keys=TRUE)
 }
+

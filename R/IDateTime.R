@@ -97,14 +97,28 @@ as.ITime.default <- function(x, ...) {
     as.ITime(as.POSIXlt(x, ...))
 }
 
-as.ITime.character <- function(x, format, ...) {
+as.ITime.character <- function (x, format, ...) {
     x <- unclass(x)
-    if (!missing(format)) 
-        return(as.ITime(strptime(x, format = format, ...)))
+    if (!missing(format)) return(as.ITime(strptime(x, format = format, ...)))
+    # else allow for mixed formats, such as test 1189 where seconds are caught despite varying format
     y <- strptime(x, format = "%H:%M:%OS", ...)
-    y.nas <- is.na(y)
-    y[y.nas] <- strptime(x[y.nas], format = "%H:%M", ...)
-
+    w <- which(is.na(y))
+    formats = c("%H:%M",
+                "%Y-%m-%d %H:%M:%OS",
+                "%Y/%m/%d %H:%M:%OS",
+                "%Y-%m-%d %H:%M",
+                "%Y/%m/%d %H:%M",
+                "%Y-%m-%d",
+                "%Y/%m/%d")
+    for (f in formats) {
+      if (!length(w)) break
+      new <- strptime(x[w], format = f, ...)
+      nna <- !is.na(new)
+      if (any(nna)) {
+        y[ w[nna] ] <- new
+        w <- w[!nna]
+      }
+    }
     return(as.ITime(y))
 }
 
