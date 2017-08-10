@@ -10461,6 +10461,23 @@ test(1820.1, fread("name,id\nfoo,1\nbar%\n"), error="Expecting 2 fields but foun
 test(1820.2, fread("name,id\nfoo,1\nbar%d"), error="Expecting 2 fields but found 1: <<bar%d>>")
 test(1820.3, fread("name,id\nfoo,1\nbar%s"), error="Expecting 2 fields but found 1: <<bar%s>>")
 
+# new argument for print.data.table: col.names
+#   issue #1482 / PR #1483
+DT = data.table(a = 1:21, b = 22:42)
+test(1821.1, sum(grepl("a.*b", capture.output(print(DT, col.names = "auto")))), 2L)
+test(1821.2, sum(grepl("a.*b", capture.output(print(DT, col.names = "top")))), 1L)
+x = capture.output(print(DT, col.names = "none"))
+test(1821.3, sum(grepl("a.*b", x)), 0L)
+test(1821.4, length(x), nrow(DT))
+test(1821.5, print(DT, col.names = "asdf"), error = "Valid options")
+test(1821.6, capture.output(print(DT[1:5], col.names = "none", class = TRUE)),
+     c("1: 1 22", "2: 2 23", "3: 3 24", "4: 4 25", "5: 5 26"), 
+     warning = "Column classes.*suppressed")
+suppressWarnings(
+  x <- capture.output(print(DT, col.names = "none", class = TRUE))
+)
+test(1821.7, sum(grepl("<", x)), 0L)
+
 
 ##########################
 
