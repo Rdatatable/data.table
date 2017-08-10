@@ -1,3 +1,5 @@
+# Moved here out from data.table.R on 10 Aug 2017. See data.table.R for history prior to that. 
+
 print.data.table <- function(x, topn=getOption("datatable.print.topn"), 
                              nrows=getOption("datatable.print.nrows"), 
                              class=getOption("datatable.print.class"), 
