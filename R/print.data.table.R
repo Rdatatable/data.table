@@ -4,10 +4,15 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
                              nrows=getOption("datatable.print.nrows"), 
                              class=getOption("datatable.print.class"), 
                              row.names=getOption("datatable.print.rownames"), 
+                             col.names=getOption("datatable.print.colnames"),
                              print.keys=getOption("datatable.print.keys"),
                              quote=FALSE, ...) {    # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
     # nrows - under this the whole (small) table is printed, unless topn is provided (100)
     # class - should column class be printed underneath column name? (FALSE)
+    if (!col.names %in% c("auto", "top", "none"))
+      stop("Valid options for col.names are 'auto', 'top', and 'none'")
+    if (col.names == "none" && class)
+      warning("Column classes will be suppressed when col.names is 'none'")
     if (!shouldPrint(x)) {   
         #  := in [.data.table sets .global$print=address(x) to suppress the next print i.e., like <- does. See FAQ 2.22 and README item in v1.9.5
         # The issue is distinguishing "> DT" (after a previous := in a function) from "> DT[,foo:=1]". To print.data.table(), there
@@ -60,8 +65,10 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     
     # FR #5020 - add row.names = logical argument to print.data.table
     if (isTRUE(row.names)) rownames(toprint)=paste(format(rn,right=TRUE,scientific=FALSE),":",sep="") else rownames(toprint)=rep.int("", nrow(toprint))
-    if (is.null(names(x)) | all(names(x) == "")) colnames(toprint)=rep("", ncol(toprint)) # fixes bug #97 (RF#4934) and #545 (RF#5253)
-    if (isTRUE(class)) {
+    if (is.null(names(x)) || all(names(x) == ""))
+      # fixes bug #97 (RF#4934) and #545 (RF#5253)
+      colnames(toprint)=rep("", ncol(toprint)) 
+    if (isTRUE(class) && col.names != "none") {
       #Matching table for most common types & their abbreviations
       class_abb = c(list = "<list>", integer = "<int>", numeric = "<num>",
             character = "<char>", Date = "<Date>", complex = "<cplx>",
@@ -79,13 +86,22 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     if (printdots) {
         toprint = rbind(head(toprint, topn), "---"="", tail(toprint, topn))
         rownames(toprint) = format(rownames(toprint), justify="right")
-        print(toprint, right=TRUE, quote=quote)
+        if (col.names == "none") { 
+            cut_top(print(toprint, right=TRUE, quote=quote))
+        } else {
+            print(toprint, right=TRUE, quote=quote)
+        }
         return(invisible())
     }
-    if (nrow(toprint)>20L)
+    if (nrow(toprint)>20L && col.names == "auto")
         # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
+        #   option to shut this off per request of Oleg Bondar on SO, #1482
         toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #4934
-    print(toprint, right=TRUE, quote=quote)
+    if (col.names == "none") {
+        cut_top(print(toprint, right=TRUE, quote=quote))
+    } else {
+        print(toprint, right=TRUE, quote=quote)
+    }
     invisible()
 }
 
@@ -125,3 +141,7 @@ shouldPrint = function(x) {
   .global$print = ""
   ret
 }
+
+# for removing the head (column names) of matrix output entirely,
+#   as opposed to printing a blank line, for excluding col.names per PR #1483
+cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')

@@ -32,7 +32,11 @@
 
 8. `as.data.table()` gains new method for `array`s to return a useful data.table, [#1418](https://github.com/Rdatatable/data.table/issues/1418).
 
-9. `print.data.table` gains `print.keys` argument, `FALSE` by default, which displays the keys and/or indices (secondary keys) of a `data.table`, more of [#1523](https://github.com/Rdatatable/data.table/issues/1523). Thanks @MichaelChirico for the PR, Yike Lu for the suggestion and Arun for honing that idea to its present form.
+9. `print.data.table()` (all via master issue  [#1523](https://github.com/Rdatatable/data.table/issues/1523)):
+
+    * gains `print.keys` argument, `FALSE` by default, which displays the keys and/or indices (secondary keys) of a `data.table`. Thanks @MichaelChirico for the PR, Yike Lu for the suggestion and Arun for honing that idea to its present form.
+    
+    * gains `col.names` argument, `"auto"` by default, which toggles which registers of column names to include in printed output. `"top"` forces `data.frame`-like behavior where column names are only ever included at the top of the output, as opposed to the default behavior which appends the column names below the output as well for longer (>20 rows) tables. `"none"` shuts down column name printing altogether. Thanks @MichaelChirico for the PR, Oleg Bondar for the suggestion, and Arun for guiding commentary.
 
 
 #### BUG FIXES
