@@ -27,6 +27,12 @@
 #include "fread.h"
 #include "freadLookups.h"
 
+// On Windows variables of type `size_t` cannot be printed with "%zu" in the
+// `snprintf()` function. For those variables we will cast them into
+// `long long int` before printing; and this #define makes it slightly simpler.
+#define llint long long int
+
+
 // Private globals to save passing all of them through to highly iterated field processors
 static const char *eof;
 static char sep, eol, eol2;
@@ -308,6 +314,7 @@ static char* filesize_to_str(size_t fsize)
   #define BUFFSIZE 100
   static char suffixes[NSUFFIXES] = {'T', 'G', 'M', 'K'};
   static char output[BUFFSIZE];
+  llint isize = (llint) fsize;
   for (int i = 0; i <= NSUFFIXES; i++) {
     int shift = (NSUFFIXES - i) * 10;
     if ((fsize >> shift) == 0) continue;
@@ -317,18 +324,18 @@ static char* filesize_to_str(size_t fsize)
     }
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < NSUFFIXES) {
-        snprintf(output, BUFFSIZE, "%zd%cB (%zd bytes)",
-                 fsize >> shift, suffixes[i], fsize);
+        snprintf(output, BUFFSIZE, "%lld%cB (%lld bytes)",
+                 isize >> shift, suffixes[i], isize);
         return output;
       }
     } else {
-      snprintf(output, BUFFSIZE, "%.*f%cB (%zd bytes)",
-               ndigits, (double)fsize / (1 << shift), suffixes[i], fsize);
+      snprintf(output, BUFFSIZE, "%.*f%cB (%lld bytes)",
+               ndigits, (double)fsize / (1 << shift), suffixes[i], isize);
       return output;
     }
   }
   if (fsize == 1) return "1 byte";
-  snprintf(output, BUFFSIZE, "%zd bytes", fsize);
+  snprintf(output, BUFFSIZE, "%lld bytes", isize);
   return output;
 }
 
@@ -1613,9 +1620,9 @@ int freadMain(freadMainArgs _args) {
               if (!stopTeam) {
                 stopTeam = true;
                 snprintf(stopErr, stopErrSize,
-                  "Row %zd is empty. It is outside the sample rows. "
+                  "Row %lld is empty. It is outside the sample rows. "
                   "Set fill=true to treat it as an NA row, or blank.lines.skip=true to skip it",
-                  myDTi + myNrow);
+                  (llint)(myDTi + myNrow));
                   // TODO - include a few (numbered) lines before and after in the message.
               }
               break;
@@ -1660,10 +1667,10 @@ int freadMain(freadMainArgs _args) {
                 if (thisType < joldType) {   // thisType<0 (type-exception)
                   char temp[1001];
                   int len = snprintf(temp, 1000,
-                    "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %zd\n",
+                    "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %lld\n",
                     j+1, colNames[j].len, colNamesAnchor + colNames[j].off,
                     typeName[abs(joldType)], typeName[abs(thisType)],
-                    (int)(tch-fieldStart), fieldStart, myDTi+myNrow);
+                    (int)(tch-fieldStart), fieldStart, (llint)(myDTi+myNrow));
                   typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + (size_t)len + 1);
                   strcpy(typeBumpMsg+typeBumpMsgSize, temp);
                   typeBumpMsgSize += (size_t)len;
@@ -1751,9 +1758,9 @@ int freadMain(freadMainArgs _args) {
               if (!stopTeam) {
                 stopTeam = true;
                 snprintf(stopErr, stopErrSize,
-                  "Expecting %d cols but row %zd contains only %d cols (sep='%c'). " \
+                  "Expecting %d cols but row %lld contains only %d cols (sep='%c'). " \
                   "Consider fill=true. <<%s>>",
-                  ncol, myDTi, j, sep, strlim(tlineStart, 500));
+                  ncol, (llint)myDTi, j, sep, strlim(tlineStart, 500));
               }
               break;
             }
@@ -1788,8 +1795,8 @@ int freadMain(freadMainArgs _args) {
             if (!stopTeam) {
               stopTeam = true;
               snprintf(stopErr, stopErrSize,
-                "Too many fields on out-of-sample row %zd. Read all %d expected columns but more are present. <<%s>>",
-                myDTi, ncol, strlim(tlineStart, 500));
+                "Too many fields on out-of-sample row %lld. Read all %d expected columns but more are present. <<%s>>",
+                (llint)myDTi, ncol, strlim(tlineStart, 500));
             }
             break;
           }

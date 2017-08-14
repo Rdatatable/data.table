@@ -10478,6 +10478,16 @@ suppressWarnings(
 )
 test(1821.7, sum(grepl("<", x)), 0L)
 
+# Issue 2299: snprintf(%zd / %zu) on Windows is not working
+# The following example forces a wrong column count outside of the sampled rows
+src = paste(c("A,B",
+              paste(rep("1,2", 100), collapse="\n"),
+              "999",
+              paste(rep("3,4", 10000), collapse="\n"),
+              ""),
+            collapse="\n")
+test(1822, fread(src), error="Expecting 2 cols but row .+ contains only 1 cols")
+
 
 ##########################
 
