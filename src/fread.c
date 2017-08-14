@@ -20,12 +20,19 @@
   #include <errno.h>     // errno
   #include <string.h>    // strerror
   #include <stdarg.h>    // va_list, va_start
-  #include <stdio.h>     // vsnprintf
+  #include <stdio.h>     // snprintf
   #include <math.h>      // ceil, sqrt, isfinite
 #endif
 #include <omp.h>
 #include "fread.h"
 #include "freadLookups.h"
+
+// On Windows variables of type `size_t` cannot be printed with "%zu" in the
+// `snprintf()` function. For those variables we will cast them into
+// `unsigned long long int` before printing; and this #define makes it 
+// slightly simpler.
+#define llu   unsigned long long int
+
 
 // Private globals to save passing all of them through to highly iterated field processors
 static const char *eof;
@@ -308,6 +315,7 @@ static char* filesize_to_str(size_t fsize)
   #define BUFFSIZE 100
   static char suffixes[NSUFFIXES] = {'T', 'G', 'M', 'K'};
   static char output[BUFFSIZE];
+  llu lsize = (llu) fsize;
   for (int i = 0; i <= NSUFFIXES; i++) {
     int shift = (NSUFFIXES - i) * 10;
     if ((fsize >> shift) == 0) continue;
@@ -317,18 +325,18 @@ static char* filesize_to_str(size_t fsize)
     }
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < NSUFFIXES) {
-        snprintf(output, BUFFSIZE, "%zd%cB (%zd bytes)",
-                 fsize >> shift, suffixes[i], fsize);
+        snprintf(output, BUFFSIZE, "%llu%cB (%llu bytes)",
+                 lsize >> shift, suffixes[i], lsize);
         return output;
       }
     } else {
-      snprintf(output, BUFFSIZE, "%.*f%cB (%zd bytes)",
-               ndigits, (double)fsize / (1 << shift), suffixes[i], fsize);
+      snprintf(output, BUFFSIZE, "%.*f%cB (%llu bytes)",
+               ndigits, (double)fsize / (1 << shift), suffixes[i], lsize);
       return output;
     }
   }
   if (fsize == 1) return "1 byte";
-  snprintf(output, BUFFSIZE, "%zd bytes", fsize);
+  snprintf(output, BUFFSIZE, "%llu bytes", lsize);
   return output;
 }
 
@@ -1613,9 +1621,9 @@ int freadMain(freadMainArgs _args) {
               if (!stopTeam) {
                 stopTeam = true;
                 snprintf(stopErr, stopErrSize,
-                  "Row %zd is empty. It is outside the sample rows. "
+                  "Row %llu is empty. It is outside the sample rows. "
                   "Set fill=true to treat it as an NA row, or blank.lines.skip=true to skip it",
-                  myDTi + myNrow);
+                  (llu)(myDTi + myNrow));
                   // TODO - include a few (numbered) lines before and after in the message.
               }
               break;
@@ -1660,10 +1668,10 @@ int freadMain(freadMainArgs _args) {
                 if (thisType < joldType) {   // thisType<0 (type-exception)
                   char temp[1001];
                   int len = snprintf(temp, 1000,
-                    "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %zd\n",
+                    "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %llu\n",
                     j+1, colNames[j].len, colNamesAnchor + colNames[j].off,
                     typeName[abs(joldType)], typeName[abs(thisType)],
-                    (int)(tch-fieldStart), fieldStart, myDTi+myNrow);
+                    (int)(tch-fieldStart), fieldStart, (llu)(myDTi+myNrow));
                   typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + (size_t)len + 1);
                   strcpy(typeBumpMsg+typeBumpMsgSize, temp);
                   typeBumpMsgSize += (size_t)len;
@@ -1751,9 +1759,9 @@ int freadMain(freadMainArgs _args) {
               if (!stopTeam) {
                 stopTeam = true;
                 snprintf(stopErr, stopErrSize,
-                  "Expecting %d cols but row %zd contains only %d cols (sep='%c'). " \
+                  "Expecting %d cols but row %llu contains only %d cols (sep='%c'). " \
                   "Consider fill=true. <<%s>>",
-                  ncol, myDTi, j, sep, strlim(tlineStart, 500));
+                  ncol, (llu)myDTi, j, sep, strlim(tlineStart, 500));
               }
               break;
             }
@@ -1788,8 +1796,8 @@ int freadMain(freadMainArgs _args) {
             if (!stopTeam) {
               stopTeam = true;
               snprintf(stopErr, stopErrSize,
-                "Too many fields on out-of-sample row %zd. Read all %d expected columns but more are present. <<%s>>",
-                myDTi, ncol, strlim(tlineStart, 500));
+                "Too many fields on out-of-sample row %llu. Read all %d expected columns but more are present. <<%s>>",
+                (llu)myDTi, ncol, strlim(tlineStart, 500));
             }
             break;
           }
@@ -1936,10 +1944,10 @@ int freadMain(freadMainArgs _args) {
       DTPRINT("%8.3fs (%3.0f%%) sep=", tLayout-tMap, 100.0*(tLayout-tMap)/tTot);
         DTPRINT(sep=='\t' ? "'\\t'" : (sep=='\n' ? "'\\n'" : "'%c'"), sep);
         DTPRINT(" ncol=%d and header detection\n", ncol);
-      DTPRINT("%8.3fs (%3.0f%%) Column type detection using %zd sample rows\n",
-        tColType-tLayout, 100.0*(tColType-tLayout)/tTot, sampleLines);
-      DTPRINT("%8.3fs (%3.0f%%) Allocation of %zd rows x %d cols (%.3fGB)\n",
-        tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, allocnrow, ncol, DTbytes/(1024.0*1024*1024));
+      DTPRINT("%8.3fs (%3.0f%%) Column type detection using %llu sample rows\n",
+        tColType-tLayout, 100.0*(tColType-tLayout)/tTot, (llu)sampleLines);
+      DTPRINT("%8.3fs (%3.0f%%) Allocation of %llu rows x %d cols (%.3fGB)\n",
+        tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, (llu)allocnrow, ncol, DTbytes/(1024.0*1024*1024));
       thNextGoodLine/=nth; thRead/=nth; thPush/=nth;
       double thWaiting = tRead-tAlloc-thNextGoodLine-thRead-thPush;
       DTPRINT("%8.3fs (%3.0f%%) Reading %d chunks of %.3fMB (%d rows) using %d threads\n",
