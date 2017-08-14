@@ -20,7 +20,7 @@
   #include <errno.h>     // errno
   #include <string.h>    // strerror
   #include <stdarg.h>    // va_list, va_start
-  #include <stdio.h>     // vsnprintf
+  #include <stdio.h>     // snprintf
   #include <math.h>      // ceil, sqrt, isfinite
 #endif
 #include <omp.h>
