@@ -36,7 +36,6 @@ build:
   script:
     - Rscript -e 'install.packages("knitr", repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
     - rm -r bus
-    - echo "Commit:" $CI_BUILD_REF >> ./DESCRIPTION
     - R CMD build .
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
     - mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib/.
