@@ -7,6 +7,7 @@ all:
 	$(MAKE) build
 	$(MAKE) install
 	$(MAKE) test
+	$(MAKE) check
 
 .PHONY: clean
 clean:
@@ -18,8 +19,12 @@ build:
 
 .PHONY: install
 install:
-	$(R) CMD install data.table_1.10.5.tar.gz
+	$(R) CMD INSTALL data.table_1.10.5.tar.gz
 
 .PHONY: test
 test:
 	$(R) -e 'require(data.table); test.data.table()'
+
+.PHONY: check
+check:
+	$(R) CMD check data.table_1.10.5.tar.gz --as-cran --ignore-vignettes --no-stop-on-test-error
