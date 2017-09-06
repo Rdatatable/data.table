@@ -1,23 +1,18 @@
 Filing issues
 -------------
 
-Please read these points carefully and follow them while filing issues so that we all save time.
+- **One issue for one purpose**. Don't add more than one bug or several feature requests in the same issue.
+- Please read and follow all the instructions at **[Support](https://github.com/Rdatatable/data.table/wiki/Support)** before filing; e.g. **check [NEWS](https://github.com/Rdatatable/data.table/blob/master/NEWS.md)** first and **search existing [Issues](https://github.com/Rdatatable/data.table/issues)**.
+- Please **use tags** rather than words at the beginning of titles; e.g. [feature request], [bug].
 
-- **One issue for one purpose**. Don't add more than one *bug*, *feature request*, *documentation request*, *question*, etc.. on to the same issue. 
-- If you've found a *bug*, thanks for reporting. Please read and follow all the instructions at **[Support](https://github.com/Rdatatable/data.table/wiki/Support)** before filing; e.g. check [NEWS](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) first and search existing [Issues](https://github.com/Rdatatable/data.table/issues).
-- If you've a *request* of some kind, e.g., *feature request* or *documentation request*, it'd be much appreciated if you could tag appropriately; e.g. **[feature request]**. Please **do not** place keywords at the beginning of the title. This helps us to prioritise easily using tags. 
-- If you need *support*, e.g., installation issues or upgrade issues, please add **[Support]** at the beginning of the title. This helps us to easily identify the most common support issues, and provide solutions in a separate page.
-- If you have a general *question*, add **[Question]** at the beginning of the title. But note that you're likely to get help faster on the [Mailinglist](https://lists.r-forge.r-project.org/mailman/listinfo/datatable-help) or on [Stackoverflow data.table tag](http://stackoverflow.com/questions/tagged/r+data.table).
-- If you've an issue that doesn't fall into any of these categories, then it'd be helpful if you could add **[Misc]** to your title.
-
-It becomes cumbersome to have to ask the same set of questions over and over. So please follow the instructions above for filing issues.
+**Filing issues is contributing. Thank you!**
 
 Pull Requests (PR)
 ------------------
 
-If you are confident, you do not need to file an issue before creating a PR. It's easier for us to accept and merge a self contained PR with everything in one place. If discussion is needed, it can be done in the PR. However, the PR's status must be fully passing automated tests before we will start to look at it. So before you spend the time getting to that stage it may save you time by creating an Issue first to start a discussion and check if your idea will fly.
+If you not fixing an open issue but you are confident, you do not need to file a new issue before submitting the PR. It's easier for us to accept and merge a self contained PR with everything in one place. If discussion is needed, it can be done in the PR. However, **the PR's status must be passing tests before we will start to look at it**. So before you spend the time getting to that stage it may save you time by creating an issue first to start a discussion to see if your idea will fly. If you are going to spend more than a day on the PR, creating an issue first lets other people know you are working on it to save duplicating effort.
 
-1. Every new feature or bug fix must have a new test in `inst/tests/tests.Rraw`. You _must please_ check that the test fails _without_ the fix since the test suite only checks that the new test passes _with_ the fix, which is not sufficient. For example, run your new test with the current CRAN version and verify it correctly fails. 
+1. Every new feature or bug fix must have a new test in `inst/tests/tests.Rraw`. You _must_ check that the test fails _without_ the fix since the test suite only checks that the new test passes _with_ the fix, which is not sufficient. For example, run your new test with the current CRAN version and verify it correctly fails. 
 2. Unless the change is very trivial (e.g. typo fix) there must be a new item in NEWS. Please thank yourself by name and include what the thanks is for. Follow the prevailing style at the top of the file; e.g. "Problem with X in Y circumstance is fixed, [#123](issue link). Thanks to <them> for reporting and <me> for fixing, [PR#145](PR link)". These are the release notes that others may quickly skim and search so please use relevant helpful keywords with that in mind.
 3. Please create the PR against the `master` branch. Create a branch for that feature/bug fix in the main project and use that as a base for your pull requests.
 4. Just one feauture/bug fix per PR please. Small changes are easier to accept than big sweeping changes. Sometimes big sweeping changes are needed and we just have to dicuss those case by case.
