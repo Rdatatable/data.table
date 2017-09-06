@@ -1051,9 +1051,15 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 }
                 # fix for long standing FR/bug, #495 and #484
                 allcols = c(names(x), xdotprefix, names(i), idotprefix)
-                if ( length(othervars <- setdiff(intersect(av, allcols), c(bynames, ansvars))) ) {
-                    # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or 
-                    # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc., 
+
+                # Do not include z in othervars when j is z := expr (#2326)
+                av_allcols <- intersect(av, allcols)
+                if (is.call(jsub) && length(jsub[[1L]]) == 1L && jsub[[1L]] == ":=" && is.symbol(jsub[[2L]])) {
+                  av_allcols <- setdiff(av_allcols, as.character(jsub[[2L]]))
+                }
+                if ( length(othervars <- setdiff(av_allcols, c(bynames, ansvars))) ) {
+                    # we've a situation like DT[, c(sum(V1), lapply(.SD, mean)), by=., .SDcols=...] or
+                    # DT[, lapply(.SD, function(x) x *v1), by=, .SDcols=...] etc.,
                     ansvars = union(ansvars, othervars)
                     ansvals = chmatch(ansvars, names(x))
                 }

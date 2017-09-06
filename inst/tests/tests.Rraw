@@ -10488,6 +10488,14 @@ src = paste(c("A,B",
             collapse="\n")
 test(1822, fread(src), error="Expecting 2 cols but row .+ contains only 1 cols")
 
+# Issue 2326: .SD mistakenly includes column being set when get() appears in j
+DT <- data.table(x = seq(1, 10), y = seq(10, 1))
+DT[, z := ncol(.SD) + y, .SDcols = "x"]
+test(1823.1, DT$z, seq(11, 2))
+DT[, z := ncol(.SD) + get("y"), .SDcols = "x"]
+test(1823.2, DT$z, seq(11, 2))
+DT[, z := ncol(.SD) + get("y"), .SDcols = c("x", "z")]
+test(1823.3, DT$z, seq(12, 3))
 
 ##########################
 
