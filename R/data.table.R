@@ -1052,7 +1052,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 # fix for long standing FR/bug, #495 and #484
                 allcols = c(names(x), xdotprefix, names(i), idotprefix)
 
-                # Do not include z in othervars when j is z := expr
+                # Do not include z in othervars when j is z := expr (#2326)
                 av_allcols <- intersect(av, allcols)
                 if (is.call(jsub) && length(jsub[[1L]]) == 1L && jsub[[1L]] == ":=" && is.symbol(jsub[[2L]])) {
                   av_allcols <- setdiff(av_allcols, as.character(jsub[[2L]]))
