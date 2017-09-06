@@ -45,7 +45,18 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
-    alreadykeyedbythiskey = identical(key(x),cols)
+
+  ## determine, whether key is already present:
+  if(identical(key(x),cols)){
+    ## key is present, nothing needs to be done
+    return(invisible(x))
+  } else if(identical(head(key(x), length(cols)), cols)){
+    ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
+    setattr(x,"sorted",cols)
+    return(invisible(x))
+    ## maybe additional speedup can be achieved if part of the key is already present?
+  }
+    
     if (".xi" %chin% names(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
     for (i in cols) {
         .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
@@ -65,7 +76,6 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     }
     setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
     if (length(o)) {
-        if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
         if (verbose) {
             tt = system.time(.Call(Creorder,x,o))
             cat("reorder took", tt["user.self"]+tt["sys.self"], "sec\n")
@@ -75,7 +85,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     } else {
         if (verbose) cat("x is already ordered by these columns, no need to call reorder\n")
     } # else empty integer() from forderv means x is already ordered by those cols, nothing to do.
-    if (!alreadykeyedbythiskey) setattr(x,"sorted",cols)   # the if() just to save plonking an identical vector into the attribute
+    setattr(x,"sorted",cols)
     invisible(x)
 }
 
