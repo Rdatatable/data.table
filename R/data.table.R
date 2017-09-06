@@ -1054,7 +1054,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 
                 # Do not include z in othervars when j is z := expr
                 av_allcols <- intersect(av, allcols)
-                if (length(jsub[[1L]]) == 1L && jsub[[1L]] == ":=" && is.symbol(jsub[[2L]])) {
+                if (is.call(jsub) && length(jsub[[1L]]) == 1L && jsub[[1L]] == ":=" && is.symbol(jsub[[2L]])) {
                   av_allcols <- setdiff(av_allcols, as.character(jsub[[2L]]))
                 }
                 if ( length(othervars <- setdiff(av_allcols, c(bynames, ansvars))) ) {
