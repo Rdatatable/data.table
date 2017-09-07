@@ -2353,14 +2353,41 @@ point <- function(to, to_idx, from, from_idx) {
     isnull = is.null(cols)
     if (!isnull) cols = validate(cols, x)  # NULL is default = all columns
     ans = .Call(Cshallowwrapper, x, cols)  # copies VECSXP only
-    if (retain.key && isnull) return(ans)  # handle most frequent case first
-    # rest of the cases
-    cols = names(x)[cols]
-    retain.key = retain.key && identical(cols, head(key(x), length(cols)))
-    setattr(ans, 'sorted', if (haskey(x) && retain.key) cols else NULL)
+    
+    if(retain.key){
+      if(isnull) return(ans) # handle most frequent case first
+      ## get correct key if cols are present
+      cols = names(x)[cols]
+      keylength <- which.first(!key(ans) %chin% cols) - 1L
+      if(is.na(keylength)) keylength <- length(key(ans))
+      if(!keylength){
+        setattr(ans, "sorted", NULL) ## no key remaining
+      } else {
+        setattr(ans, "sorted", head(key(ans), keylength)) ## keep what can be kept
+      }
+      ## take care of attributes.
+      indices <- names(attributes(attr(ans, "index")))
+      for(index in indices){
+        indexcols <- strsplit(index, split = "__")[[1]][-1L]
+        indexlength <- which.first(!indexcols %chin% cols) - 1L
+        if(is.na(indexlength)) next ## all columns are present, nothing to be done
+        reducedindex <- paste0(c("", indexcols[seq_len(indexlength)]), collapse = "__") ## the columns until the first missing form the new index
+        if(reducedindex %chin% indices || !indexlength){
+          ## Either reduced index already present or no columns of the original index remain.
+          ## Drop the original index completely
+          setattr(attr(ans, "index", exact = TRUE), index, NULL)
+        } else {
+          ## rename index to reducedindex
+          names(attributes(attr(ans, "index")))[names(attributes(attr(ans, "index"))) == index] <- reducedindex
+        }
+      }
+    } else { # retain.key == FALSE
+      setattr(ans, "sorted", NULL)
+      setattr(ans, "index", NULL)
+    }
     if (unlock) setattr(ans, '.data.table.locked', NULL)
     ans
-    # TODO: check/remove attributes for secondary keys?
+    
 }
 
 shallow <- function(x, cols=NULL) {
