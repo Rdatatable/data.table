@@ -10508,6 +10508,9 @@ test(1823.2, DT$z, seq(11, 2))
 DT[, z := ncol(.SD) + get("y"), .SDcols = c("x", "z")]
 test(1823.3, DT$z, seq(12, 3))
 
+# Issue 2250
+test(1824, fread("A,B\n1,384325987234905827340958734572934\n"), data.table(A=1L, B="384325987234905827340958734572934"))
+
 # Issue 2251
 test(1825.1, fread('A,B\n"1","2"', colClasses = "integer"), data.table(A=1L, B=2L))
 test(1825.2, fread('A,B\n"1","2"', colClasses = "character"), data.table(A="1", B="2"))
