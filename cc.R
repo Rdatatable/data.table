@@ -31,7 +31,7 @@ sourceDir <- function(path=getwd(), trace = TRUE, ...) {
 
 cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) {
   suppressMessages(library(bit64))
-  old = getwd()
+  # old = getwd()
   setwd(paste0(cc_dir,"/src"))
   cat(getwd(),"\n")
   gc()
@@ -71,7 +71,7 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) 
   for (i in seq_along(xx$.External))
     assign(xx$.External[[i]]$name,  xx$.External[[i]]$address, env=.GlobalEnv)
   sourceDir(paste0(cc_dir,"/R"))
-  setwd(old)
+  setwd(paste0(cc_dir,"/inst/tests/"))  # so that tests using test files here can be F5'd easily
   .onLoad()
   if(test)test.data.table()
   gc()
