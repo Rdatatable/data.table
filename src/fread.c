@@ -799,7 +799,7 @@ int freadMain(freadMainArgs _args) {
     #endif
       int nbit = 8*sizeof(char *);
       STOP("Opened %s file ok but could not memory map it. This is a %dbit process. %s.", filesize_to_str(fileSize), nbit,
-            nbit<=32 ? "Please upgrade to 64bit" : "There is probably not enough contiguous virtual memory available");
+           nbit<=32 ? "Please upgrade to 64bit" : "There is probably not enough contiguous virtual memory available");
     }
     sof = (const char*) mmp;
     if (verbose) DTPRINT("ok\n");  // to end 'Memory mapping ... '
@@ -921,13 +921,13 @@ int freadMain(freadMainArgs _args) {
   if (args.skipString) {
     ch = strstr(sof, args.skipString);  // as there is now a \0 at the end, this is safely bounded
     if (!ch) STOP("skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)",
-                   args.skipString);
+                  args.skipString);
     while (ch>sof && ch[-1]!='\n') ch--;  // move to beginning of line
     pos = ch;
     ch = sof;
     while (ch<pos) line+=(*ch++=='\n');
     if (verbose) DTPRINT("Found skip='%s' on line %d. Taking this to be header row or first row of data.\n",
-                          args.skipString, line);
+                         args.skipString, line);
     ch = pos;
   }
   // Skip the first `skipNrow` lines of input.
@@ -1025,7 +1025,7 @@ int freadMain(freadMainArgs _args) {
         //if (args.verbose) DTPRINT("numLines[i]=%d, topNumLines=%d, numFields[i]=%d, topNumFields=%d\n",
         //                           numLines[i], topNumLines, numFields[i], topNumFields);
         if (numFields[i]>1 &&
-            ( numLines[i]>topNumLines ||   // most number of consistent ncol wins
+            ((numLines[i]>topNumLines) ||   // most number of consistent ncol wins
              (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=' '))) {  // ties resolved by numFields
           topNumLines = numLines[i];
           topNumFields = numFields[i];
@@ -1093,8 +1093,7 @@ int freadMain(freadMainArgs _args) {
 
   //*********************************************************************************************
   //*********************************************************************************************
-  if (verbose)
-    DTPRINT("[07] Detect column types, good nrow estimate and whether first row is column names\n");
+  if (verbose) DTPRINT("[07] Detect column types, good nrow estimate and whether first row is column names\n");
   //
   //*********************************************************************************************
   //*********************************************************************************************
@@ -1204,7 +1203,7 @@ int freadMain(freadMainArgs _args) {
             if (quoteRule >= 3) STOP("Even quoteRule 3 was insufficient!");
             if (verbose)
               DTPRINT("Bumping quote rule from %d to %d due to field %d on line %d of sampling jump %d starting <<%s>>\n",
-                       quoteRule, quoteRule+1, field+1, jline, j, strlim(fieldStart,200));
+                      quoteRule, quoteRule+1, field+1, jline, j, strlim(fieldStart,200));
             quoteRule++;
           }
           bumped=true;
@@ -1227,7 +1226,7 @@ int freadMain(freadMainArgs _args) {
         if (finalByte && type[ncol-1]!=previousLastColType) {
           // revert bump due to e.g. ,NA<eof> in the last field of last row where finalByte=='A' and N caused bump to character (test 894.0221)
           if (verbose) DTPRINT("  Reverted bump of final column from %d to %d on final field due to finalByte='%c'. This will trigger a reread. Finish the file properly with newline to avoid.\n",
-                                  previousLastColType, type[ncol-1], finalByte);
+                               previousLastColType, type[ncol-1], finalByte);
           type[ncol-1] = previousLastColType;
         }
         if ((finalByte==sep && sep!=' ') || (sep==' ' && finalByte!='\0' && finalByte!=' ')) field++;
@@ -1312,7 +1311,7 @@ int freadMain(freadMainArgs _args) {
       DTPRINT("  Line length: mean=%.2f sd=%.2f min=%d max=%d\n", meanLineLen, sd, minLen, maxLen);
       DTPRINT("  Estimated number of rows: %llu / %.2f = %llu\n", (llu)bytesRead, meanLineLen, (llu)estnrow);
       DTPRINT("  Initial alloc = %llu rows (%llu + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n",
-               (llu)allocnrow, (llu)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
+              (llu)allocnrow, (llu)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
     }
     if (nJumps==1) {
       if (verbose) DTPRINT("  All rows were sampled since file is small so we know nrow=%llu exactly\n", (llu)sampleLines);
@@ -1330,8 +1329,7 @@ int freadMain(freadMainArgs _args) {
 
   //*********************************************************************************************
   //*********************************************************************************************
-  if (verbose)
-    DTPRINT("[08] Assign column names\n");
+  if (verbose) DTPRINT("[08] Assign column names\n");
   //
   // Updates pos(ition) to rest after the column names (if any) at the start of the first data row
   //*********************************************************************************************
@@ -1843,7 +1841,7 @@ int freadMain(freadMainArgs _args) {
     // not-bumped columns are assigned type -CT_STRING in the rerun, so we have to count types now
     if (verbose) {
       DTPRINT("Thread buffers were grown %d times (if all %d threads each grew once, this figure would be %d)\n",
-               buffGrown, nth, nth);
+              buffGrown, nth, nth);
       int typeCounts[NUMTYPE];
       for (int i=0; i<NUMTYPE; i++) typeCounts[i] = 0;
       for (int i=0; i<ncol; i++) typeCounts[ abs(type[i]) ]++;
@@ -1934,4 +1932,3 @@ int freadMain(freadMainArgs _args) {
   freadCleanup();
   return 1;
 }
-
