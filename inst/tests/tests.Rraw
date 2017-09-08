@@ -10508,6 +10508,10 @@ test(1823.2, DT$z, seq(11, 2))
 DT[, z := ncol(.SD) + get("y"), .SDcols = c("x", "z")]
 test(1823.3, DT$z, seq(12, 3))
 
+# Issue 2250
+test(1824, fread("A,B\n1,384325987234905827340958734572934\n"), data.table(A=1L, B="384325987234905827340958734572934"))
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
