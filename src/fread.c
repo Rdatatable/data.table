@@ -29,7 +29,7 @@
 
 // On Windows variables of type `size_t` cannot be printed with "%zu" in the
 // `snprintf()` function. For those variables we will cast them into
-// `unsigned long long int` before printing; and this #define makes it 
+// `unsigned long long int` before printing; and this #define makes it
 // slightly simpler.
 #define llu   unsigned long long int
 
@@ -210,7 +210,7 @@ static inline _Bool end_of_field(char ch) {
 
 static inline const char *end_NA_string(const char *fieldStart) {
   const char* const* nastr = NAstrings;
-  const char *mostConsumed = fieldStart; // tests 1550* includes both 'na' and 'nan' in nastrings. Don't stop after 'na' if 'nan' can be consumed too. 
+  const char *mostConsumed = fieldStart; // tests 1550* includes both 'na' and 'nan' in nastrings. Don't stop after 'na' if 'nan' can be consumed too.
   while (*nastr) {
     const char *ch1 = fieldStart;
     const char *ch2 = *nastr;
@@ -389,7 +389,7 @@ static void Field(const char **this, lenOff *target)
   fieldStart++;  // step over opening quote
   switch(quoteRule) {
   case 0:  // quoted with embedded quotes doubled; the final unescaped " must be followed by sep|eol
-    while (*++ch) {  
+    while (*++ch) {
       if (*ch=='\n' && ++eolCount==100) return;  // TODO: expose this 100 to user to allow them to control limiting runaway fields
       if (*ch==quote) {
         if (ch[1]==quote) { ch++; continue; }
@@ -404,7 +404,7 @@ static void Field(const char **this, lenOff *target)
       if (*ch==quote) break;
     }
     break;
-  case 2:  
+  case 2:
     // (i) quoted (perhaps because the source system knows sep is present) but any quotes were not escaped at all,
     // so look for ", to define the end.   (There might not be any quotes present to worry about, anyway).
     // (ii) not-quoted but there is a quote at the beginning so it should have been; look for , at the end
@@ -442,7 +442,7 @@ static void Field(const char **this, lenOff *target)
     skip_white(&ch);
     *this = ch;
   } else {
-    *this = ch;  
+    *this = ch;
     if (*ch=='\0' && quoteRule!=2) { target->off--; target->len++; }  // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
     if (stripWhite) while(target->len>0 && ch[-1]==' ') { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
   }
@@ -462,10 +462,10 @@ static void StrtoI32(const char **this, int32_t *target)
   // sep, \r, \n and *eof=='\0' all serve as valid terminators here by dint of being !=[0-9]
   // see init.c for checks of unsigned uint_fast8_t cast
   // optimizer should implement 10* as ((x<<2 + x)<<1) or (x<<3 + x<<1)
-  
+
   /*if (loseLeadingZeroOption)*/ while (*ch=='0') ch++;
-  while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {  
-    acc = 10*acc + digit;                         
+  while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
+    acc = 10*acc + digit;
     ch++;
     sf++;
   }
@@ -493,8 +493,8 @@ static void StrtoI64(const char **this, int64_t *target)
   uint_fast64_t acc = 0;  // important unsigned not signed here; we now need the full unsigned range
   uint_fast8_t digit, sf=0;
   while (*ch=='0') ch++;
-  while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {  
-    acc = 10*acc + digit;                         
+  while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
+    acc = 10*acc + digit;
     ch++;
     sf++;
   }
@@ -548,8 +548,8 @@ static void StrtoD(const char **this, double *target)
   int_fast32_t e = 0;     // width of M to adjust NM by dec location
   uint_fast8_t digit, sf=0;
   while (*ch=='0') ch++;
-  while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {  
-    acc = 10*acc + digit;                         
+  while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
+    acc = 10*acc + digit;
     ch++;
     sf++;
   }
@@ -558,9 +558,9 @@ static void StrtoD(const char **this, double *target)
     if (sf==0) while (*ch=='0') {  // e.g. 0.000000000000000000 => 0.0 (test 1817)
       ch++;
       e--;
-    } 
-    while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {  
-      acc = 10*acc + digit;                         
+    }
+    while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
+      acc = 10*acc + digit;
       ch++;
       e--;
       sf++;
@@ -572,7 +572,7 @@ static void StrtoD(const char **this, double *target)
     _Bool Eneg = *ch=='-';
     ch += (Eneg || *ch=='+');
     int E=0, max_digits=3;
-    while ( max_digits && (digit=(uint_fast8_t)(*ch-'0'))<10 ) {  
+    while ( max_digits && (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
       E = 10*E + digit;
       ch++;
       max_digits--;
@@ -644,7 +644,7 @@ int freadMain(freadMainArgs _args) {
   //*********************************************************************************************
   _Bool verbose = args.verbose;
   _Bool warningsAreErrors = args.warningsAreErrors;
-  
+
   if (freadCleanup() && verbose)
     DTPRINT("Previous fread() session was not cleaned up properly. Cleaned up ok at the beginning of this fread() call.\n");
 
@@ -1079,7 +1079,7 @@ int freadMain(freadMainArgs _args) {
     DTPRINT("  Quote rule picked = %d\n", quoteRule);
     DTPRINT("  fill=%s and the most number of columns found is %d\n", fill?"true":"false", ncol);
   }
-  
+
   // Now check previous line which is being discarded and give helpful message to user
   if (prevStart && args.skipNrow==0 && args.skipString==NULL) {
     ch = prevStart;
@@ -1098,9 +1098,9 @@ int freadMain(freadMainArgs _args) {
   //
   //*********************************************************************************************
   //*********************************************************************************************
-  
+
   if (verbose && args.header!=NA_BOOL8) DTPRINT("  'header' changed by user from 'auto' to %s\n", args.header?"true":"false");
-  
+
   type = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
   size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
   if (!type || !size) STOP("Failed to allocate %d x 2 bytes for type/size: %s", ncol, strerror(errno));
@@ -1253,7 +1253,7 @@ int freadMain(freadMainArgs _args) {
         firstDataRowAfterPotentialColumnNames = false;
       } else if (sampleLines==0) firstDataRowAfterPotentialColumnNames = true;  // To trigger 2nd row starting from type 1 again to compare to 1st row to decide if column names present
       ch += (*ch=='\n');
-      
+
       lastRowEnd = ch;
       //DTPRINT("\n");
       int thisLineLen = (int)(ch-jlineStart);  // ch is now on start of next line so this includes line ending already
@@ -1284,8 +1284,8 @@ int freadMain(freadMainArgs _args) {
     if (sampleLines<=1) {
       // e.g. fread("A,B\n")
       if (verbose) DTPRINT("  'header' determined to be %s because there are%s non-strings on the 1st and only row\n", args.header?"true":"false", args.header?" no":"");
-    } else {    
-      if (verbose) DTPRINT("  'header' determined to be %s\n", args.header ? 
+    } else {
+      if (verbose) DTPRINT("  'header' determined to be %s\n", args.header ?
                            "true because types of row 1 and row 2 are the same and all columns are string" :
                            "false because types of row 1 and row 2 are the same and at least one column is not string" );
     }
@@ -1326,8 +1326,8 @@ int freadMain(freadMainArgs _args) {
     }
     if (verbose) DTPRINT("  =====\n");
   }
-  
-  
+
+
   //*********************************************************************************************
   //*********************************************************************************************
   if (verbose)
@@ -1341,7 +1341,7 @@ int freadMain(freadMainArgs _args) {
   const char *colNamesAnchor = ch;
   colNames = calloc((size_t)ncol, sizeof(lenOff));
   if (!colNames) STOP("Unable to allocate %d*%d bytes for column name pointers: %s", ncol, sizeof(lenOff), strerror(errno));
-  
+
   if (args.header==false) {
     // colNames was calloc'd so nothing to do; all len=off=0 already and default column names (V1, V2, etc) will be assigned
   } else {
@@ -1593,7 +1593,7 @@ int freadMain(freadMainArgs _args) {
         int finalFieldLen = 0;  // only used when finalByte
         char finalSep = '\0';   // only used when finalByte. It is correct to be '\0' and not 127 (it's either set (!=0) or not (==0))
         oneLastTimeIfFinalByte:
-        
+
         //*** START HOT ***//
         if (sep!=' ' && !any_number_like_NAstrings) {  // TODO:  can this 'if' be dropped somehow? Can numeric NAstrings be dealt with afterwards in one go as numeric comparison?
           // Try most common and fastest branch first: no whitespace, no quoted numeric, ",," means NA
@@ -1606,7 +1606,7 @@ int freadMain(freadMainArgs _args) {
             fun[abs(thisType)](&tch, target);
             if (thisType == CT_STRING) ((lenOff*) myBuff8Pos)->off += (size_t)(fieldStart - thisJumpStart);  // TODO: save branch and move inside Field via &struct arg as per TODO's above
             if (*tch!=sep) break;
-            *((char **) allBuffPos[size[j]]) += size[j];  // TODO: Pasha's idea to bump inside processor. Will need a way to rewind though now that processor doesn't know if it fully consumed field. 
+            *((char **) allBuffPos[size[j]]) += size[j];  // TODO: Pasha's idea to bump inside processor. Will need a way to rewind though now that processor doesn't know if it fully consumed field.
             tch++;
             j++;
           }
@@ -1628,7 +1628,7 @@ int freadMain(freadMainArgs _args) {
           // if *tch=='\0' then fall through below and reread final field if finalByte is set
         }
         //*** END TEPID. NOW COLD.
-        
+
         // Either whitespace surrounds field in which case the processor will fault very quickly, it's numeric but quoted (quote will fault the non-string processor),
         // it contains an NA string, or there's an out-of-sample type bump needed.
         // In all those cases we're ok to be a bit slower. The rest of this line will be processed using the slower version.
@@ -1636,7 +1636,7 @@ int freadMain(freadMainArgs _args) {
         // This way (each line has new opportunity of the fast path) if only a little bit of the file is quoted (e.g. just when commas are present as fwrite does)
         // then a penalty isn't paid everywhere.
         // TODO: reduce(slowerBranch++). So we can see in verbose mode if this is happening too much.
-        
+
         if (sep==' ') {
           while (*tch==' ') tch++;  // multiple sep=' ' at the tlineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
           fieldStart = tch;
@@ -1672,7 +1672,7 @@ int freadMain(freadMainArgs _args) {
               }
               break;
             }
-            
+
             // guess is insufficient out-of-sample, type is changed to negative sign and then bumped. Continue to
             // check that the new type is sufficient for the rest of the column (and any other columns also in out-of-sample bump status) to be
             // sure a single re-read will definitely work.
@@ -1771,7 +1771,7 @@ int freadMain(freadMainArgs _args) {
           }
           break;
         }
-        tch += (*tch=='\n');  
+        tch += (*tch=='\n');
         myNrow++;
       }
       if (verbose) { tt1 = wallclock(); thRead += tt1 - tt0; tt0 = tt1; }
