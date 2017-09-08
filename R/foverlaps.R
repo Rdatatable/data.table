@@ -77,6 +77,12 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     ## hopefully all checks are over. Now onto the actual task at hand.
     origx = x; x = shallow(x, by.x)
     origy = y; y = shallow(y, by.y)
+    
+    if (identical(by.x, key(origx)[seq_along(by.x)]))
+      setattr(x, 'sorted', by.x)
+    setattr(y, 'sorted', by.y) ## is definitely sorted on by.y
+    
+    
     roll = switch(type, start=, end=, equal= 0.0, 
                     any=, within= +Inf)
     make_call <- function(names, fun=NULL) {
