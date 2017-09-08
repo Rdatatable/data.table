@@ -730,6 +730,8 @@ int freadMain(freadMainArgs _args) {
   // [2] Open and memory-map the input file, setting up the parsing context
   //     (sof, eof, ch).
   //*********************************************************************************************
+  double tMap;  // moment when memory-map step has finished
+  {
   if (verbose) DTPRINT("[02] Opening the file\n");
   mmp = NULL;
   finalByte = '\0';   // only ever !='\0' for files and when the file's final data line is ended abrubtly without last line ending
@@ -807,7 +809,8 @@ int freadMain(freadMainArgs _args) {
     STOP("Neither `input` nor `filename` are given, nothing to read.");
   }
   eof = sof + fileSize;
-  double tMap = wallclock();
+  tMap = wallclock();
+  }
 
 
   //*********************************************************************************************
@@ -819,6 +822,7 @@ int freadMain(freadMainArgs _args) {
   //     See: https://en.wikipedia.org/wiki/Byte_order_mark
   //     See: issues #1087, #1465 and #1612
   //*********************************************************************************************
+  {
   if (verbose) DTPRINT("[03] Detect and skip BOM\n");
   if (fileSize >= 3 && memcmp(sof, "\xEF\xBB\xBF", 3) == 0) {
     sof += 3;
@@ -839,11 +843,13 @@ int freadMain(freadMainArgs _args) {
     if (verbose) DTPRINT("  Last byte of input found to be 0x1A (Ctrl+Z) and removed.\n");
   }
   if (eof<=sof) STOP("Input is empty after removing BOM and any terminal control characters");
+  }
 
 
   //*********************************************************************************************
   // [4] Terminate mmap with \0
   //*********************************************************************************************
+  {
   if (verbose) DTPRINT("[04] Arrange mmap to be \\0 terminated\n");
   if (args.filename) {
     ch = eof-1; // eof was resting after the last byte and should never be dereferenced there (bus error when fileSize%4096==0)
@@ -896,6 +902,7 @@ int freadMain(freadMainArgs _args) {
   // When we need to, we now have two options: i) if (*ch && ...) (i.e. !='\0') which saves a compare to eof on every byte, or ii) ch<eof as usual
   // If UTF strings contain \0 we can branch in that rare case to test if ch==eof too if necessary. We have that option.
   // If a field does not end with sep or eol, it's only in that rare case do we then need to test if it is \0 or not.
+  }
 
 
   //*********************************************************************************************
@@ -911,13 +918,14 @@ int freadMain(freadMainArgs _args) {
   //     what text editors report, or bash commands like "wc -l", "head -n"
   //     or "tail -n".
   //*********************************************************************************************
+  const char *pos;  // Location where the actual data in the file begins
+  int line = 1;     // Current line number
+  {
   if (verbose) DTPRINT("[05] Skipping initial rows if needed\n");
 
-  int line = 1;
   // line is for error and warning messages so considers raw \n whether inside quoted fields or not, just
   // like wc -l, head -n and tail -n
-  const char *pos = sof;
-  ch = pos;
+  ch = pos = sof;
   if (args.skipString) {
     ch = strstr(sof, args.skipString);  // as there is now a \0 at the end, this is safely bounded
     if (!ch) STOP("skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)",
@@ -948,6 +956,7 @@ int freadMain(freadMainArgs _args) {
     DTPRINT("  Positioned on line %d starting: <<%s>>\n", line, strlim(lineStart, 30));
   }
   ch = pos = lineStart;
+  }
 
 
   //*********************************************************************************************
@@ -958,6 +967,9 @@ int freadMain(freadMainArgs _args) {
   //     actually reading the data yet. Most likely to check consistency
   //     across a set of files.
   //*********************************************************************************************
+  const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
+  int ncol;  // Detected number of columns in the file
+  {
   if (verbose) DTPRINT("[06] Detect separator, quoting rule, and ncolumns\n");
 
   int nseps;
@@ -987,7 +999,6 @@ int freadMain(freadMainArgs _args) {
   int topNmax=1;            // for that sep and quote rule, what was the max number of columns (just for fill=true)
                             //   (when fill=true, the max is usually the header row and is the longest but there are more
                             //    lines of fewer)
-  const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
 
   // We will scan the input line-by-line (at most `JUMPLINES + 1` lines; "+1"
   // covers the header row, at this stage we don't know if it's present), and
@@ -1046,7 +1057,6 @@ int freadMain(freadMainArgs _args) {
   }
   if (!firstJumpEnd) STOP("Internal error: no sep won");
 
-  int ncol;
   quoteRule = topQuoteRule;
   sep = topSep;
   whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
@@ -1089,15 +1099,20 @@ int freadMain(freadMainArgs _args) {
                      line, strlim(pos, 30), ncol, line-1, strlim(prevStart, 30), tt);
   }
   if (ch!=pos) STOP("Internal error. ch!=pos after checking the line before the first data row");
+  }
 
 
   //*********************************************************************************************
+  // [7] Detect column types, good nrow estimate and whether first row is column names
   //*********************************************************************************************
+  size_t allocnrow;       // Number of rows in the allocated DataTable
+  double meanLineLen;     // Average length (in bytes) of a single line in the input file
+  int nJumps;             // How many jumps to use when pre-scanning the file
+  size_t sampleLines;     // How many lines were sampled during the initial pre-scan
+  size_t bytesRead;       // Bytes in the whole data section
+  const char *lastRowEnd; // Pointer to the end of the data section
+  {
   if (verbose) DTPRINT("[07] Detect column types, good nrow estimate and whether first row is column names\n");
-  //
-  //*********************************************************************************************
-  //*********************************************************************************************
-
   if (verbose && args.header!=NA_BOOL8) DTPRINT("  'header' changed by user from 'auto' to %s\n", args.header?"true":"false");
 
   type = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
@@ -1115,7 +1130,7 @@ int freadMain(freadMainArgs _args) {
   // how many places in the file to jump to and test types there (the very end is added as 11th or 101th)
   // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GB) it is
   // worth spending a few extra seconds sampling 10,000 rows to decrease a chance of costly reread even further.
-  int nJumps = 0;
+  nJumps = 0;
   size_t sz = (size_t)(eof - pos);
   if (jump0size>0) {
     if (jump0size*100*2 < sz) nJumps=100;  // 100 jumps * 100 lines = 10,000 line sample
@@ -1131,11 +1146,11 @@ int freadMain(freadMainArgs _args) {
                  (llu)sz, (llu)jump0size, (llu)(sz/(2*jump0size)));
   }
 
-  size_t sampleLines=0;
+  sampleLines = 0;
   int row1Line = line;
   double sumLen=0.0, sumLenSq=0.0;
   int minLen=INT32_MAX, maxLen=-1;   // int_max so the first if(thisLen<minLen) is always true; similarly for max
-  const char *lastRowEnd=pos;
+  lastRowEnd = pos;
   _Bool firstDataRowAfterPotentialColumnNames = false;  // for test 1585.7
   for (int j=0; j<nJumps; j++) {
     ch = (j == 0) ? pos :
@@ -1272,9 +1287,10 @@ int freadMain(freadMainArgs _args) {
     DTWARN("Found the last consistent line but text exists afterwards (discarded): <<%s>>", strlim(ch,200));
   }
 
-  size_t estnrow=1, allocnrow=1;
-  double meanLineLen=0;
-  size_t bytesRead = 0;
+  size_t estnrow=1;
+  allocnrow = 1;
+  meanLineLen = 0;
+  bytesRead = 0;
 
   if (args.header==NA_BOOL8) {
     args.header=true;
@@ -1325,18 +1341,19 @@ int freadMain(freadMainArgs _args) {
     }
     if (verbose) DTPRINT("  =====\n");
   }
-
+  }
 
   //*********************************************************************************************
-  //*********************************************************************************************
-  if (verbose) DTPRINT("[08] Assign column names\n");
-  //
+  // [8] Assign column names
   // Updates pos(ition) to rest after the column names (if any) at the start of the first data row
   //*********************************************************************************************
-  //*********************************************************************************************
+  double tLayout;  // Timer for assigning column names
+  const char *colNamesAnchor = pos;
+  {
+  if (verbose) DTPRINT("[08] Assign column names\n");
 
   ch = pos;  // back to start of first row (likely column names)
-  const char *colNamesAnchor = ch;
+
   colNames = calloc((size_t)ncol, sizeof(lenOff));
   if (!colNames) STOP("Unable to allocate %d*%d bytes for column name pointers: %s", ncol, sizeof(lenOff), strerror(errno));
 
@@ -1363,12 +1380,21 @@ int freadMain(freadMainArgs _args) {
     pos = ch;    // now on first data row (row after column names)
     // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
   }
-  double tLayout = wallclock();
+  tLayout = wallclock();
+  }
 
 
   //*********************************************************************************************
   // [9] Apply colClasses, select, drop and integer64
   //*********************************************************************************************
+  double tColType;    // Timer for applying user column class overrides
+  int ndrop;          // Number of columns dropped that will be dropped from the file being read
+  int nStringCols;    // Number of string columns in the file
+  int nNonStringCols; // Number of all other columns in the file
+  size_t rowSize1;    // Total bytesize of all fields having sizeof==1
+  size_t rowSize4;    // Total bytesize of all fields having sizeof==4
+  size_t rowSize8;    // Total bytesize of all fields having sizeof==8
+  {
   if (verbose) DTPRINT("[09] Apply user overrides on column types\n");
   ch = pos;
   oldType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
@@ -1379,12 +1405,13 @@ int freadMain(freadMainArgs _args) {
     freadCleanup();
     return 1;
   }
-  int ndrop=0, nUserBumped=0;
-  size_t rowSize1 = 0;
-  size_t rowSize4 = 0;
-  size_t rowSize8 = 0;
-  int nStringCols = 0;
-  int nNonStringCols = 0;
+  ndrop = 0;
+  int nUserBumped=0;
+  rowSize1 = 0;
+  rowSize4 = 0;
+  rowSize8 = 0;
+  nStringCols = 0;
+  nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
     size[j] = typeSize[type[j]];
     rowSize1 += (size[j] & 1);  // only works if all sizes are powers of 2
@@ -1402,26 +1429,29 @@ int freadMain(freadMainArgs _args) {
     DTPRINT("  After %d type and %d drop user overrides : ", nUserBumped, ndrop);
     printTypes(ncol); DTPRINT("\n");
   }
-  double tColType = wallclock();
+  tColType = wallclock();
+  }
 
 
   //*********************************************************************************************
   // [10] Allocate the result columns
   //*********************************************************************************************
+  double tAlloc;  // Timer for allocating the DataTable
+  size_t DTbytes; // Size of the allocated DataTable, in bytes
+  {
   if (verbose) DTPRINT("[10] Allocate memory for the datatable\n");
   if (verbose) {
     DTPRINT("  Allocating %d column slots (%d - %d dropped) with %llu rows\n",
             ncol-ndrop, ncol, ndrop, (llu)allocnrow);
   }
-  size_t DTbytes = allocateDT(type, size, ncol, ndrop, allocnrow);
-  double tAlloc = wallclock();
+  DTbytes = allocateDT(type, size, ncol, ndrop, allocnrow);
+  tAlloc = wallclock();
+  }
 
 
   //*********************************************************************************************
   // [11] Read the data
   //*********************************************************************************************
-  if (verbose) DTPRINT("[11] Read the data\n");
-  ch = pos;   // back to start of first data row
   int hasPrinted=0;  // the percentage last printed so it prints every 2% without many calls to wallclock()
   _Bool stopTeam=false, firstTime=true;  // _Bool for MT-safey (cannot ever read half written _Bool value)
   int nTypeBump=0, nTypeBumpCols=0;
@@ -1439,6 +1469,9 @@ int freadMain(freadMainArgs _args) {
   // For the 44GB file with 12875 columns, the max line len is 108,497. We may want each chunk to write to its
   // own page (4k) of the final column, hence 1000 rows of the smallest type (4 byte int) is just
   // under 4096 to leave space for R's header + malloc's header.
+  {
+  if (verbose) DTPRINT("[11] Read the data\n");
+
   if (nJumps/*from sampling*/>1) {
     // ensure data size is split into same sized chunks (no remainder in last chunk) and a multiple of nth
     // when nth==1 we still split by chunk for consistency (testing) and code sanity
@@ -1823,11 +1856,13 @@ int freadMain(freadMainArgs _args) {
     freeThreadContext(&ctx);
   }
   //-- end parallel ------------------
+  }
 
 
   //*********************************************************************************************
   // [12] Finalize the datatable
   //*********************************************************************************************
+  {
   if (hasPrinted && verbose) DTPRINT("\n");
   if (verbose) DTPRINT("[12] Finalizing the datatable\n");
   if (firstTime) {
@@ -1901,7 +1936,7 @@ int freadMain(freadMainArgs _args) {
     allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, DTi);
     // reread from the beginning
     DTi = 0;
-    prevJumpEnd = ch = pos;
+    prevJumpEnd = pos;
     firstTime = false;
     nTypeBump = 0; // for test 1328.1. Otherwise the last field would get shifted forwards again.
     goto read;
@@ -1930,5 +1965,7 @@ int freadMain(freadMainArgs _args) {
     DTPRINT("%8.3fs        Total\n", tTot);
   }
   freadCleanup();
+  }
+
   return 1;
 }
