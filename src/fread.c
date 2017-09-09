@@ -169,16 +169,12 @@ static inline size_t clamp_szt(size_t x, size_t lower, size_t upper) {
 static const char* strlim(const char *ch, size_t limit) {
   static char buf[1002];
   static int flip = 0;
-  size_t maxwidth = umin(umin(limit, 500), (size_t)(eof - ch));
-  char *newline = memchr(ch, '\n', maxwidth);
-  if (newline) {
-    while(newline>ch && newline[-1]=='\r') newline--;
-    maxwidth = (size_t)(newline - ch);
-  }
   char *ptr = buf + 501 * flip;
   flip = 1 - flip;
-  strncpy(ptr, ch, maxwidth);
-  ptr[maxwidth] = '\0';
+  char *ch2 = ptr;
+  int width = 0;
+  while (*ch && *ch!='\r' && *ch!='\n' && width++<500) *ch2++ = *ch++;
+  *ch2 = '\0';
   return ptr;
 }
 
@@ -887,18 +883,13 @@ int freadMain(freadMainArgs _args) {
       eof = ch;
     }
     else {
-      // file ends abruptly without a final newline after the last line
+      // file ends abruptly without a final \n after the last line. In rare cases there might be a lone \r after the last line and if so we do this method too.
       const char *ch2 = ch;
-      while (ch2>=sof && *ch2!='\n') ch2--;  // look for any \n at all. If none found, it's definitely a single line (likely column names only)
+      while (ch2>=sof && *ch2!='\n' && *ch2!='\r') ch2--;  // look for any \n or \r before the last line. If none found, it's a single line (likely column names only)
       if (ch2<sof) {
         // single line input. Use the simpler approach with 4096 restriction for this rare case.
         if (fileSize%4096==0) {  // TODO: portable way to discover relevant page size? 4096 is lowest common denominator though and should suffice
-          STOP("File is very very unusual. It is one single line, '\\n' does not occur at all not even at the end, and the file size is an exact multiple of 4096. Please add a new line at the end using for example 'echo >> %s'.", args.filename);
-        }
-        // do any \\r exist?
-        ch2=sof; while (ch2<eof && *ch2!='\r') ch2++;
-        if (ch2<eof) {
-          STOP("File contains \\r only and no \\n at all, an old Mac 9 line ending discontinued in 2002 according to Wikipedia. Please raise a feature request on GitHub if you'd like this supported.");
+          STOP("File is very very unusual. It is one single line and the file's size is an exact multiple of 4096 bytes. Please append a newline at the end using for example 'echo >> %s'.", args.filename);
         }
         // otherwise there is one byte after eof which we can reliably write to in the very last cow page
         // We could do this routinely (not just for single line input) when fileSize%4096!=0 but we desire to run all tests through the harder branch
@@ -906,7 +897,7 @@ int freadMain(freadMainArgs _args) {
         fileSize++;
       }
       else {
-        if (verbose) DTPRINT("  File ends abruptly with '%c'. This should be fine but if a problem does occur, please report that problem as a bug and workaround it by appending a newline to properly end the last record; e.g. 'echo >> file.csv'.\n", *ch);
+        if (verbose) DTPRINT("  File ends abruptly with '%c'. This should be fine but if a problem does occur, please report that problem as a bug and workaround it by appending a newline to properly end the last record; e.g. 'echo >> %s'.\n", *ch, args.filename);
         eof--;
         if (*eof != '\r') finalByte = *eof;
         // finalByte could be ' ' or '\t' here because the last field may contain trailing whitespace which must be kept when stripWhite=FALSE
@@ -1261,7 +1252,7 @@ int freadMain(freadMainArgs _args) {
         }
         field++;
       }
-      while (*ch=='\r') ch++;
+      eol(&ch);
       if (ch==eof) {
         if (finalByte && type[ncol-1]!=previousLastColType) {
           // revert bump due to e.g. ,NA<eof> in the last field of last row where finalByte=='A' and N caused bump to character (test 894.0221)
@@ -1272,15 +1263,15 @@ int freadMain(freadMainArgs _args) {
         if ((finalByte==sep && sep!=' ') || (sep==' ' && finalByte!='\0' && finalByte!=' ')) field++;
       }
       if (field<ncol-1 && !fill) {
-        if (*ch!='\n' && *ch!='\0') {
-          STOP("Internal error: line has finished early but not on an '\\n' or '\\0' (fill=false). Please report as bug.");
+        if (*ch!='\n' && *ch!='\r' && *ch!='\0') {
+          STOP("Internal error: line has finished early but not on an '\\n', '\\r' or '\\0' (fill=false). Please report as bug.");
         } else {
           STOP("Line %d has too few fields when detecting types. Use fill=TRUE to pad with NA. Expecting %d fields but found %d: <<%s>>%s",
                jline, ncol, field+1, strlim(jlineStart,200),
                nrowLimit<=jline ? ". You have tried to request fewer rows with the nrows= argument but this will not help because the full sample is still taken for type consistency; set fill=TRUE instead." : "");
         }
       }
-      if (field>=ncol || (*ch!='\n' && *ch!='\0')) {   // >=ncol covers ==ncol. We do not expect >ncol to ever happen.
+      if (field>=ncol || (*ch!='\n' && *ch!='\r' && *ch!='\0')) {   // >=ncol covers ==ncol. We do not expect >ncol to ever happen.
         STOP("Line %d from sampling jump %d starting <<%s>> has more than the expected %d fields. "
              "Separator '%c' occurs at position %d which is character %d of the last field: <<%s>>. "
              "Consider setting 'comment.char=' if there is a trailing comment to be ignored.",
@@ -1291,7 +1282,7 @@ int freadMain(freadMainArgs _args) {
         if (fill) for (int j=field+1; j<ncol; j++) type[j]=1;
         firstDataRowAfterPotentialColumnNames = false;
       } else if (sampleLines==0) firstDataRowAfterPotentialColumnNames = true;  // To trigger 2nd row starting from type 1 again to compare to 1st row to decide if column names present
-      ch += (*ch=='\n');
+      ch += (*ch=='\n' || *ch=='\r');
 
       lastRowEnd = ch;
       //DTPRINT("\n");
