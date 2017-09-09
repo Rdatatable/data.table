@@ -77,9 +77,6 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   ## hopefully all checks are over. Now onto the actual task at hand.
   origx = x; x = shallow(x, by.x)
   origy = y; y = shallow(y, by.y)
-  if (identical(by.x, key(origx)[seq_along(by.x)]))
-    setattr(x, 'sorted', by.x)
-  setattr(y, 'sorted', by.y) ## is definitely sorted on by.y
   roll = switch(type, start=, end=, equal= 0.0, 
                 any=, within= +Inf)
   make_call <- function(names, fun=NULL) {
@@ -116,7 +113,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
   matches <- function(ii, xx, del, ...) {
     cols = setdiff(names(xx), del)
-    xx = shallow(xx, cols)
+    xx = .shallow(xx, cols, retain.key = FALSE)
     ans = bmerge(xx, ii, seq_along(xx), seq_along(xx), haskey(xx), integer(0), mult=mult, ops=rep(1L, length(xx)), integer(0), 1L, verbose=verbose, ...)
     # vecseq part should never run here, but still...
     if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL)
