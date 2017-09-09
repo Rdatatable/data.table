@@ -208,6 +208,25 @@ static inline _Bool end_of_field(char ch) {
 }
 
 
+/**
+ * eol() accepts a position and, if any of the following line endings, moves to the end of that sequence
+ * and returns true. Repeated \r are considered one. At most one \n will be moved over.
+ * 1. \n      Unix
+ * 2. \r\n    Windows
+ * 3. \r\r\n  R's download.file() in text mode doubling up \r
+ * 4. \r      Old MacOS 9 format discontinued in 2002 but then #2347 was raised straight away when I tried not to support it
+ * 5. \n\r    Acorn BBC (!) and RISC OS according to Wikipedia.
+ * 6. \r\r\r  Might as well, for completeness
+ */
+static inline _Bool eol(const char **this) {
+  const char *ch = *this;
+  while (*ch=='\r') ch++;
+  if (*ch=='\n') { while (ch[1]=='\r') ch++; *this = ch; return true; }  // 1,2,3 and 5
+  else if (ch>*this) { *this = ch-1; return true; }                      // 4 and 6
+  return false;
+}
+
+
 static inline const char *end_NA_string(const char *fieldStart) {
   const char* const* nastr = NAstrings;
   const char *mostConsumed = fieldStart; // tests 1550* includes both 'na' and 'nan' in nastrings. Don't stop after 'na' if 'nan' can be consumed too.
@@ -235,8 +254,7 @@ static inline int countfields(const char **this)
   const char *ch = *this;
   if (sep==' ') while (*ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
   skip_white(&ch);
-  while (*ch=='\r') ch++;
-  if (*ch=='\n') {
+  if (eol(&ch)) {
     *this = ch+1;
     return 0;
   }
@@ -256,8 +274,7 @@ static inline int countfields(const char **this)
       ncol++;
       continue;
     }
-    while (*ch=='\r') ch++;
-    if (*ch=='\n') { *this=ch+1; return ncol; }
+    if (eol(&ch)) { *this=ch+1; return ncol; }
     if (*ch!='\0') return -1;  // -1 means this line not valid for this sep and quote rule
     break;
   }
@@ -1167,8 +1184,7 @@ int freadMain(freadMainArgs _args) {
       if (sep==' ') while (*ch==' ') ch++;  // multiple sep=' ' at the jlineStart does not mean sep(!)
       // detect blank lines ...
       skip_white(&ch);
-      while (*ch=='\r') ch++;
-      if (*ch=='\n' || *ch=='\0') {
+      if (eol(&ch) || *ch=='\0') {
         if (!skipEmptyLines && !fill) break;
         ch += (*ch=='\n');
         if (!skipEmptyLines) sampleLines++;  // TODO: fall through more gracefully
@@ -1374,10 +1390,10 @@ int freadMain(freadMainArgs _args) {
         if (ch[1]=='\r' || ch[1]=='\n' || ch[1]=='\0') { ch++; break; }
       }
     }
-    while (*ch=='\r') ch++;
-    if (*ch!='\n' && *ch!='\0') STOP("Internal error: reading colnames ending on '%c'", *ch);
-    ch += (*ch=='\n');
-    pos = ch;    // now on first data row (row after column names)
+    if (eol(&ch)) pos = ++ch;
+    else if (*ch=='\0') pos = ch;
+    else STOP("Internal error: reading colnames ending on '%c'", *ch);
+    // now on first data row (row after column names)
     // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
   }
   tLayout = wallclock();
@@ -1642,14 +1658,14 @@ int freadMain(freadMainArgs _args) {
             j++;
           }
           //*** END HOT. START TEPID ***//
-          if (j==0 && tch==fieldStart) {
+          /*  if (j==0 && tch==fieldStart) {
             // empty line
             while (*tch=='\r') tch++;
             if (*tch=='\0') break;
             if (*tch=='\n' && skipEmptyLines) { tch++; continue; }
-          }
-          while (*tch=='\r') tch++;    // Windows line ending \r\n. Multiple \r for R's download.file() in default text mode which doubles up \r to \r\r\n
-          if (*tch=='\n') {
+          }  */
+          if (eol(&tch)) {
+            if (j==0 && skipEmptyLines) { tch++; continue; }
             *((char **) allBuffPos[size[j]]) += size[j];
             j++;
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJump). Usually happens, fastest path
@@ -1791,8 +1807,7 @@ int freadMain(freadMainArgs _args) {
           }
           break;
         }
-        while (*tch=='\r') tch++;
-        if (*tch!='\n' && *tch!='\0') {
+        if (!eol(&tch) && *tch!='\0') {
           #pragma omp critical
           if (!stopTeam) {
             stopTeam = true;
@@ -1802,7 +1817,7 @@ int freadMain(freadMainArgs _args) {
           }
           break;
         }
-        tch += (*tch=='\n');
+        if (*tch!='\0') tch++;
         myNrow++;
       }
       if (verbose) { tt1 = wallclock(); thRead += tt1 - tt0; tt0 = tt1; }
