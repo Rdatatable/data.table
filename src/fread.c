@@ -220,9 +220,18 @@ static inline _Bool end_of_field(char ch) {
  */
 static inline _Bool eol(const char **this) {
   const char *ch = *this;
-  while (*ch=='\r') ch++;
-  if (*ch=='\n') { while (ch[1]=='\r') ch++; *this = ch; return true; }  // 1,2,3 and 5
-  else if (ch>*this) { *this = ch-1; return true; }                      // 4 and 6
+  while (*ch=='\r') ch++;  // commonly happens once on Windows for type 2
+  if (*ch=='\n') {
+    // 1,2,3 and 5 (one \n with any number of \r before and/or after)
+    while (ch[1]=='\r') ch++;  // type 5. Could drop but we're only tepid here so keep for completeness and full generality.
+    *this = ch;
+    return true;
+  }
+  else if (ch>*this) {  // did we move over some \r above?
+    // 4 and 6 (\r only with no \n before or after)
+    *this = ch-1;  // move back onto the last \r
+    return true;
+  }
   return false;
 }
 
@@ -1658,14 +1667,12 @@ int freadMain(freadMainArgs _args) {
             j++;
           }
           //*** END HOT. START TEPID ***//
-          /*  if (j==0 && tch==fieldStart) {
+          if (j==0 && tch==fieldStart) {
             // empty line
-            while (*tch=='\r') tch++;
             if (*tch=='\0') break;
-            if (*tch=='\n' && skipEmptyLines) { tch++; continue; }
-          }  */
+            if (eol(&tch) && skipEmptyLines) { tch++; continue; }
+          }
           if (eol(&tch)) {
-            if (j==0 && skipEmptyLines) { tch++; continue; }
             *((char **) allBuffPos[size[j]]) += size[j];
             j++;
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJump). Usually happens, fastest path
