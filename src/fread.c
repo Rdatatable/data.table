@@ -169,16 +169,12 @@ static inline size_t clamp_szt(size_t x, size_t lower, size_t upper) {
 static const char* strlim(const char *ch, size_t limit) {
   static char buf[1002];
   static int flip = 0;
-  size_t maxwidth = umin(umin(limit, 500), (size_t)(eof - ch));
-  char *newline = memchr(ch, '\n', maxwidth);
-  if (newline) {
-    while(newline>ch && newline[-1]=='\r') newline--;
-    maxwidth = (size_t)(newline - ch);
-  }
   char *ptr = buf + 501 * flip;
   flip = 1 - flip;
-  strncpy(ptr, ch, maxwidth);
-  ptr[maxwidth] = '\0';
+  char *ch2 = ptr;
+  int width = 0;
+  while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<500) *ch2++ = *ch++;
+  *ch2 = '\0';
   return ptr;
 }
 
@@ -205,6 +201,34 @@ static inline void skip_white(const char **this) {
 static inline _Bool end_of_field(char ch) {
   return ch==sep || ((unsigned)ch<32 && (ch=='\r' || ch=='\n' || ch=='\0'));
   // letters and numbers will short-circuit on ch<32 being false
+}
+
+
+/**
+ * eol() accepts a position and, if any of the following line endings, moves to the end of that sequence
+ * and returns true. Repeated \r are considered one. At most one \n will be moved over.
+ * 1. \n      Unix
+ * 2. \r\n    Windows
+ * 3. \r\r\n  R's download.file() in text mode doubling up \r
+ * 4. \r      Old MacOS 9 format discontinued in 2002 but then #2347 was raised straight away when I tried not to support it
+ * 5. \n\r    Acorn BBC (!) and RISC OS according to Wikipedia.
+ * 6. \r\r\r  Might as well, for completeness
+ */
+static inline _Bool eol(const char **this) {
+  const char *ch = *this;
+  while (*ch=='\r') ch++;  // commonly happens once on Windows for type 2
+  if (*ch=='\n') {
+    // 1,2,3 and 5 (one \n with any number of \r before and/or after)
+    while (ch[1]=='\r') ch++;  // type 5. Could drop but we're only tepid here so keep for completeness and full generality.
+    *this = ch;
+    return true;
+  }
+  else if (ch>*this) {  // did we move over some \r above?
+    // 4 and 6 (\r only with no \n before or after)
+    *this = ch-1;  // move back onto the last \r
+    return true;
+  }
+  return false;
 }
 
 
@@ -235,8 +259,7 @@ static inline int countfields(const char **this)
   const char *ch = *this;
   if (sep==' ') while (*ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
   skip_white(&ch);
-  while (*ch=='\r') ch++;
-  if (*ch=='\n') {
+  if (eol(&ch)) {
     *this = ch+1;
     return 0;
   }
@@ -256,8 +279,7 @@ static inline int countfields(const char **this)
       ncol++;
       continue;
     }
-    while (*ch=='\r') ch++;
-    if (*ch=='\n') { *this=ch+1; return ncol; }
+    if (eol(&ch)) { *this=ch+1; return ncol; }
     if (*ch!='\0') return -1;  // -1 means this line not valid for this sep and quote rule
     break;
   }
@@ -861,18 +883,13 @@ int freadMain(freadMainArgs _args) {
       eof = ch;
     }
     else {
-      // file ends abruptly without a final newline after the last line
+      // file ends abruptly without a final \n after the last line. In rare cases there might be a lone \r after the last line and if so we do this method too.
       const char *ch2 = ch;
-      while (ch2>=sof && *ch2!='\n') ch2--;  // look for any \n at all. If none found, it's definitely a single line (likely column names only)
+      while (ch2>=sof && *ch2!='\n' && *ch2!='\r') ch2--;  // look for any \n or \r before the last line. If none found, it's a single line (likely column names only)
       if (ch2<sof) {
         // single line input. Use the simpler approach with 4096 restriction for this rare case.
         if (fileSize%4096==0) {  // TODO: portable way to discover relevant page size? 4096 is lowest common denominator though and should suffice
-          STOP("File is very very unusual. It is one single line, '\\n' does not occur at all not even at the end, and the file size is an exact multiple of 4096. Please add a new line at the end using for example 'echo >> %s'.", args.filename);
-        }
-        // do any \\r exist?
-        ch2=sof; while (ch2<eof && *ch2!='\r') ch2++;
-        if (ch2<eof) {
-          STOP("File contains \\r only and no \\n at all, an old Mac 9 line ending discontinued in 2002 according to Wikipedia. Please raise a feature request on GitHub if you'd like this supported.");
+          STOP("File is very very unusual. It is one single line and the file's size is an exact multiple of 4096 bytes. Please append a newline at the end using for example 'echo >> %s'.", args.filename);
         }
         // otherwise there is one byte after eof which we can reliably write to in the very last cow page
         // We could do this routinely (not just for single line input) when fileSize%4096!=0 but we desire to run all tests through the harder branch
@@ -880,7 +897,7 @@ int freadMain(freadMainArgs _args) {
         fileSize++;
       }
       else {
-        if (verbose) DTPRINT("  File ends abruptly with '%c'. This should be fine but if a problem does occur, please report that problem as a bug and workaround it by appending a newline to properly end the last record; e.g. 'echo >> file.csv'.\n", *ch);
+        if (verbose) DTPRINT("  File ends abruptly with '%c'. This should be fine but if a problem does occur, please report that problem as a bug and workaround it by appending a newline to properly end the last record; e.g. 'echo >> %s'.\n", *ch, args.filename);
         eof--;
         if (*eof != '\r') finalByte = *eof;
         // finalByte could be ' ' or '\t' here because the last field may contain trailing whitespace which must be kept when stripWhite=FALSE
@@ -1167,10 +1184,9 @@ int freadMain(freadMainArgs _args) {
       if (sep==' ') while (*ch==' ') ch++;  // multiple sep=' ' at the jlineStart does not mean sep(!)
       // detect blank lines ...
       skip_white(&ch);
-      while (*ch=='\r') ch++;
-      if (*ch=='\n' || *ch=='\0') {
+      if (eol(&ch) || *ch=='\0') {
         if (!skipEmptyLines && !fill) break;
-        ch += (*ch=='\n');
+        ch += (*ch!='\0');
         if (!skipEmptyLines) sampleLines++;  // TODO: fall through more gracefully
         continue;
       }
@@ -1236,7 +1252,7 @@ int freadMain(freadMainArgs _args) {
         }
         field++;
       }
-      while (*ch=='\r') ch++;
+      eol(&ch);
       if (ch==eof) {
         if (finalByte && type[ncol-1]!=previousLastColType) {
           // revert bump due to e.g. ,NA<eof> in the last field of last row where finalByte=='A' and N caused bump to character (test 894.0221)
@@ -1247,15 +1263,15 @@ int freadMain(freadMainArgs _args) {
         if ((finalByte==sep && sep!=' ') || (sep==' ' && finalByte!='\0' && finalByte!=' ')) field++;
       }
       if (field<ncol-1 && !fill) {
-        if (*ch!='\n' && *ch!='\0') {
-          STOP("Internal error: line has finished early but not on an '\\n' or '\\0' (fill=false). Please report as bug.");
+        if (*ch!='\n' && *ch!='\r' && *ch!='\0') {
+          STOP("Internal error: line has finished early but not on an '\\n', '\\r' or '\\0' (fill=false). Please report as bug.");
         } else {
           STOP("Line %d has too few fields when detecting types. Use fill=TRUE to pad with NA. Expecting %d fields but found %d: <<%s>>%s",
                jline, ncol, field+1, strlim(jlineStart,200),
                nrowLimit<=jline ? ". You have tried to request fewer rows with the nrows= argument but this will not help because the full sample is still taken for type consistency; set fill=TRUE instead." : "");
         }
       }
-      if (field>=ncol || (*ch!='\n' && *ch!='\0')) {   // >=ncol covers ==ncol. We do not expect >ncol to ever happen.
+      if (field>=ncol || (*ch!='\n' && *ch!='\r' && *ch!='\0')) {   // >=ncol covers ==ncol. We do not expect >ncol to ever happen.
         STOP("Line %d from sampling jump %d starting <<%s>> has more than the expected %d fields. "
              "Separator '%c' occurs at position %d which is character %d of the last field: <<%s>>. "
              "Consider setting 'comment.char=' if there is a trailing comment to be ignored.",
@@ -1266,7 +1282,7 @@ int freadMain(freadMainArgs _args) {
         if (fill) for (int j=field+1; j<ncol; j++) type[j]=1;
         firstDataRowAfterPotentialColumnNames = false;
       } else if (sampleLines==0) firstDataRowAfterPotentialColumnNames = true;  // To trigger 2nd row starting from type 1 again to compare to 1st row to decide if column names present
-      ch += (*ch=='\n');
+      ch += (*ch=='\n' || *ch=='\r');
 
       lastRowEnd = ch;
       //DTPRINT("\n");
@@ -1374,10 +1390,10 @@ int freadMain(freadMainArgs _args) {
         if (ch[1]=='\r' || ch[1]=='\n' || ch[1]=='\0') { ch++; break; }
       }
     }
-    while (*ch=='\r') ch++;
-    if (*ch!='\n' && *ch!='\0') STOP("Internal error: reading colnames ending on '%c'", *ch);
-    ch += (*ch=='\n');
-    pos = ch;    // now on first data row (row after column names)
+    if (eol(&ch)) pos = ++ch;
+    else if (*ch=='\0') pos = ch;
+    else STOP("Internal error: reading colnames ending on '%c'", *ch);
+    // now on first data row (row after column names)
     // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
   }
   tLayout = wallclock();
@@ -1642,18 +1658,18 @@ int freadMain(freadMainArgs _args) {
             j++;
           }
           //*** END HOT. START TEPID ***//
-          if (j==0 && tch==fieldStart) {
-            // empty line
-            while (*tch=='\r') tch++;
-            if (*tch=='\0') break;
-            if (*tch=='\n' && skipEmptyLines) { tch++; continue; }
+          if (tch==tlineStart) {
+            skip_white(&tch);
+            if (*tch=='\0') break;  // empty last line
+            if (eol(&tch) && skipEmptyLines) { tch++; continue; }
+            tch = tlineStart;  // in case white space at the beginning may need to be including in field
           }
-          while (*tch=='\r') tch++;    // Windows line ending \r\n. Multiple \r for R's download.file() in default text mode which doubles up \r to \r\r\n
-          if (*tch=='\n') {
+          else if (eol(&tch)) {
             *((char **) allBuffPos[size[j]]) += size[j];
             j++;
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJump). Usually happens, fastest path
-          } else {
+          }
+          else {
             tch = fieldStart; // restart field as int processor could have moved to A in ",123A,", or we could be on \0 when we always reread last field regardless
           }
           // if *tch=='\0' then fall through below and reread final field if finalByte is set
@@ -1672,7 +1688,7 @@ int freadMain(freadMainArgs _args) {
           while (*tch==' ') tch++;  // multiple sep=' ' at the tlineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
           fieldStart = tch;
         }
-        if (fill || *tch!='\n') while (j < ncol) {
+        if (fill || (*tch!='\n' && *tch!='\r')) while (j < ncol) {
           fieldStart = tch;
           int8_t joldType = type[j];
           int8_t thisType = joldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
@@ -1738,7 +1754,7 @@ int freadMain(freadMainArgs _args) {
           j++;
           if (*tch==sep) { tch++; continue; }
           if (tch==eof && finalByte==sep && sep!=' ') { finalByte='\0'; continue; }
-          if (fill && (*tch=='\n' || *tch=='\0') && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
+          if (fill && (*tch=='\n' || *tch=='\r' || *tch=='\0') && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
           break;
         }
 
@@ -1791,8 +1807,7 @@ int freadMain(freadMainArgs _args) {
           }
           break;
         }
-        while (*tch=='\r') tch++;
-        if (*tch!='\n' && *tch!='\0') {
+        if (!eol(&tch) && *tch!='\0') {
           #pragma omp critical
           if (!stopTeam) {
             stopTeam = true;
@@ -1802,7 +1817,7 @@ int freadMain(freadMainArgs _args) {
           }
           break;
         }
-        tch += (*tch=='\n');
+        if (*tch!='\0') tch++;
         myNrow++;
       }
       if (verbose) { tt1 = wallclock(); thRead += tt1 - tt0; tt0 = tt1; }

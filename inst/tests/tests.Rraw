@@ -5850,7 +5850,7 @@ test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input wor
 test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist; getwd()==")
 
 # Test for #802
-test(1453, fread("fread_line_error.csv"), error="Line 12 from sampling jump 0 starting <<31,3-0-7 4>>.*more than.*24 fields.*position 61.*character 3")
+test(1453, fread("fread_line_error.csv"), error="Line 12 from sampling jump 0 starting <<31,3-0-7 4.*has more than.*24 fields.*position 61.*character 3")
 # TODO: add comment=="#".   Ensure only after last field is observed.
 
 # no-sep-found => sep="\n", use case for this in #738
@@ -6976,7 +6976,7 @@ test(1555.6, fread(str5), data.table(ITERATION="bla", THETA1=39.5527, THETA2=21.
 test(1555.7, fread(str1, strip.white=FALSE), data.table(ITERATION=0L, THETA1=39.5527, THETA2=21.0651))
 test(1555.8, names(fread(str2, strip.white=FALSE)),  c(" ITERATION","    THETA1","       THETA2"))
 test(1555.9, names(fread(str3, strip.white=FALSE)),  c(" ITERATION  ","  THETA1   ","    THETA2"))
-test(1555.10, names(fread(str4, strip.white=FALSE)), c(" ITERATION  ","  THETA1   ","    \"THETA2\""))
+test(1555.11, names(fread(str4, strip.white=FALSE)), c(" ITERATION  ","  THETA1   ","    \"THETA2\""))
 
 # bug #1035, reply to the post from another user
 str1="  22 4 6 4\n  34 22 34 5\n  6 2 1 4\n"
@@ -10444,9 +10444,17 @@ test(1804.2, fread("A,B\n", na.strings="NA\t"), error="NAstring .* has whitespac
 test(1805, fread("A\n", verbose=TRUE), data.table(A=logical()), output="text input (not a filename)")
 test(1806, fread('"A,B,C\n1,2,3\n4,5,6'), data.table('"A'=c(1L,4L), B=c(2L,5L), C=c(3L,6L)))
 test(1807, fread('A,B,"C\nD",E'), data.table(A=logical(), B=logical(), "C\nD"=logical(), E=logical()))
+test(1808.1, fread("A,B\r1,2\r3,4"), data.table(A=c(1L,3L),B=c(2L,4L)))
+test(1808.2, fread("A,B\r1,2\r3,4\r"), data.table(A=c(1L,3L),B=c(2L,4L)))
 cat("A,B\r1,2\r3,4",file=f<-tempfile())
-test(1808, fread(f), error="old Mac 9 line ending discontinued in 2002.*Please raise a feature request.*")
-# test(1809, fread("A,B\n\r1,2\n\r3,4\n\r5,6"), data.table(A=c(1L,3L,5L), B=c(2L,4L,6L)), warn="Detected eol as \\n\\r, a highly unusual line ending. According to Wikipedia the Acorn BBC used this. If it is intended that the first column on the next row is a character column where the first character of the field value is \\r (why?) then the first column should start with a quote (i.e. 'protected'). Proceeding with attempt to read the file.")
+  test(1808.3, fread(f), data.table(A=c(1L,3L),B=c(2L,4L)))
+unlink(f)
+test(1808.4, fread("A,B\r1,3\r\r\r2,4\r"), data.table(A=1:2, B=3:4))
+test(1808.5, fread("A,B\r1,3\r\r \r2,4\r"), data.table(A=1L, B=3L), warning="afterwards.*discarded.*<<2,4>>")
+test(1808.6, fread("A,B\r1,3\r\r \r2,4\r", blank.lines.skip=TRUE), data.table(A=1:2, B=3:4))
+test(1808.7, fread("A,B\r1,3\r\r \r2,4\r", fill=TRUE), data.table(A=c(1L,NA,2L), B=c(3L,NA,4L)))
+test(1808.8, fread("A,B\r1,3\r\r \r2,\r", blank.lines.skip=TRUE, fill=TRUE), data.table(A=1:2, B=c(3L,NA)))
+test(1809, fread("A,B\n\r1,2\n\r3,4\n\r5,6"), data.table(A=c(1L,3L,5L), B=c(2L,4L,6L)))
 cat("A,B\n1,q\n2,w\n3,xyz", file=f<-tempfile()); test(1810, fread(f,verbose=TRUE), data.table(A=c(1L,2L,3L), B=c("q","w","xyz")), output="File ends abruptly with 'z'"); unlink(f)
 test(1811, fread("A,B\n1,2\n3,4", skip="boo"), error="skip='boo' not found in input")
 test(1812, fread("A,B\n1,2\n3,4\n", skip="4", verbose=T), data.table(V1=3L, V2=4L), output="Found skip='4' on line 3")
