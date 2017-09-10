@@ -173,7 +173,7 @@ static const char* strlim(const char *ch, size_t limit) {
   flip = 1 - flip;
   char *ch2 = ptr;
   int width = 0;
-  while (*ch && *ch!='\r' && *ch!='\n' && width++<500) *ch2++ = *ch++;
+  while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<500) *ch2++ = *ch++;
   *ch2 = '\0';
   return ptr;
 }
@@ -1186,7 +1186,7 @@ int freadMain(freadMainArgs _args) {
       skip_white(&ch);
       if (eol(&ch) || *ch=='\0') {
         if (!skipEmptyLines && !fill) break;
-        ch += (*ch=='\n');
+        ch += (*ch!='\0');
         if (!skipEmptyLines) sampleLines++;  // TODO: fall through more gracefully
         continue;
       }
@@ -1658,16 +1658,18 @@ int freadMain(freadMainArgs _args) {
             j++;
           }
           //*** END HOT. START TEPID ***//
-          if (j==0 && tch==fieldStart) {
-            // empty line
-            if (*tch=='\0') break;
+          if (tch==tlineStart) {
+            skip_white(&tch);
+            if (*tch=='\0') break;  // empty last line
             if (eol(&tch) && skipEmptyLines) { tch++; continue; }
+            tch = tlineStart;  // in case white space at the beginning may need to be including in field
           }
-          if (eol(&tch)) {
+          else if (eol(&tch)) {
             *((char **) allBuffPos[size[j]]) += size[j];
             j++;
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJump). Usually happens, fastest path
-          } else {
+          }
+          else {
             tch = fieldStart; // restart field as int processor could have moved to A in ",123A,", or we could be on \0 when we always reread last field regardless
           }
           // if *tch=='\0' then fall through below and reread final field if finalByte is set
@@ -1686,7 +1688,7 @@ int freadMain(freadMainArgs _args) {
           while (*tch==' ') tch++;  // multiple sep=' ' at the tlineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
           fieldStart = tch;
         }
-        if (fill || *tch!='\n') while (j < ncol) {
+        if (fill || (*tch!='\n' && *tch!='\r')) while (j < ncol) {
           fieldStart = tch;
           int8_t joldType = type[j];
           int8_t thisType = joldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
@@ -1752,7 +1754,7 @@ int freadMain(freadMainArgs _args) {
           j++;
           if (*tch==sep) { tch++; continue; }
           if (tch==eof && finalByte==sep && sep!=' ') { finalByte='\0'; continue; }
-          if (fill && (*tch=='\n' || *tch=='\0') && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
+          if (fill && (*tch=='\n' || *tch=='\r' || *tch=='\0') && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
           break;
         }
 
