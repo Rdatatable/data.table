@@ -172,8 +172,8 @@ static const char* strlim(const char *ch, size_t limit) {
   char *ptr = buf + 501 * flip;
   flip = 1 - flip;
   char *ch2 = ptr;
-  int width = 0;
-  while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<500) *ch2++ = *ch++;
+  size_t width = 0;
+  while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<limit) *ch2++ = *ch++;
   *ch2 = '\0';
   return ptr;
 }
@@ -206,13 +206,13 @@ static inline _Bool end_of_field(char ch) {
 
 /**
  * eol() accepts a position and, if any of the following line endings, moves to the end of that sequence
- * and returns true. Repeated \r are considered one. At most one \n will be moved over.
- * 1. \n      Unix
- * 2. \r\n    Windows
- * 3. \r\r\n  R's download.file() in text mode doubling up \r
- * 4. \r      Old MacOS 9 format discontinued in 2002 but then #2347 was raised straight away when I tried not to support it
- * 5. \n\r    Acorn BBC (!) and RISC OS according to Wikipedia.
- * 6. \r\r\r  Might as well, for completeness
+ * and returns true. Repeated \\r are considered one. At most one \\n will be moved over.
+ * 1. \\n        Unix
+ * 2. \\r\\n     Windows
+ * 3. \\r\\r\\n  R's download.file() in text mode doubling up \\r
+ * 4. \\r        Old MacOS 9 format discontinued in 2002 but then #2347 was raised straight away when I tried not to support it
+ * 5. \\n\\r     Acorn BBC (!) and RISC OS according to Wikipedia.
+ * 6. \\r\\r\\r  Might as well, for completeness
  */
 static inline _Bool eol(const char **this) {
   const char *ch = *this;
@@ -1110,7 +1110,7 @@ int freadMain(freadMainArgs _args) {
   // Now check previous line which is being discarded and give helpful message to user
   if (prevStart && args.skipNrow==0 && args.skipString==NULL) {
     ch = prevStart;
-    int tt = countfields(&ch);
+    tt = countfields(&ch);
     if (tt==ncol) STOP("Internal error: row before first data row has the same number of fields but we're not using it.");
     if (tt>1) DTWARN("Starting data input on line %d <<%s>> with %d fields and discarding line %d <<%s>> before it because it has a different number of fields (%d).",
                      line, strlim(pos, 30), ncol, line-1, strlim(prevStart, 30), tt);
@@ -1215,7 +1215,9 @@ int freadMain(freadMainArgs _args) {
         // Saves deep 'if (target)' inside processors.
         double trash_val; // double so that this storage is aligned. char trash[8] would not be aligned.
         void *trash = (void*)&trash_val;
-        while (type[field]<=CT_STRING && (fun[type[field]](&ch, trash), !end_of_field(*ch))) {
+        while (type[field]<=CT_STRING) {
+          fun[type[field]](&ch, trash);
+          if (end_of_field(*ch)) break;
           skip_white(&ch);
           if (end_of_field(*ch)) break;
           ch = end_NA_string(fieldStart);
@@ -1268,7 +1270,7 @@ int freadMain(freadMainArgs _args) {
         } else {
           STOP("Line %d has too few fields when detecting types. Use fill=TRUE to pad with NA. Expecting %d fields but found %d: <<%s>>%s",
                jline, ncol, field+1, strlim(jlineStart,200),
-               nrowLimit<=jline ? ". You have tried to request fewer rows with the nrows= argument but this will not help because the full sample is still taken for type consistency; set fill=TRUE instead." : "");
+               nrowLimit<=(size_t)jline ? ". You have tried to request fewer rows with the nrows= argument but this will not help because the full sample is still taken for type consistency; set fill=TRUE instead." : "");
         }
       }
       if (field>=ncol || (*ch!='\n' && *ch!='\r' && *ch!='\0')) {   // >=ncol covers ==ncol. We do not expect >ncol to ever happen.
@@ -1279,7 +1281,7 @@ int freadMain(freadMainArgs _args) {
              strlim(fieldStart,200));
       }
       if (firstDataRowAfterPotentialColumnNames) {
-        if (fill) for (int j=field+1; j<ncol; j++) type[j]=1;
+        if (fill) for (int jj=field+1; jj<ncol; jj++) type[jj]=1;
         firstDataRowAfterPotentialColumnNames = false;
       } else if (sampleLines==0) firstDataRowAfterPotentialColumnNames = true;  // To trigger 2nd row starting from type 1 again to compare to 1st row to decide if column names present
       ch += (*ch=='\n' || *ch=='\r');
@@ -1491,7 +1493,7 @@ int freadMain(freadMainArgs _args) {
   if (nJumps/*from sampling*/>1) {
     // ensure data size is split into same sized chunks (no remainder in last chunk) and a multiple of nth
     // when nth==1 we still split by chunk for consistency (testing) and code sanity
-    nJumps = bytesRead/chunkBytes;
+    nJumps = (int)(bytesRead/chunkBytes);
     if (nJumps==0) nJumps=1;
     else if (nJumps>nth) nJumps = nth*(1+(nJumps-1)/nth);
     chunkBytes = bytesRead / (size_t)nJumps;
