@@ -81,13 +81,13 @@ SEXP freadR(
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
     error("fread input must be a single character string: a filename or the data itself");
   ch = ch2 = (const char *)CHAR(STRING_ELT(inputArg,0));
-  while (*ch2!='\n' && *ch2!='\0') ch2++;
-  args.input = (*ch2=='\n') ? ch : R_ExpandFileName(ch); // for convenience so user doesn't have to call path.expand()
+  while (*ch2!='\n' && *ch2!='\r' && *ch2!='\0') ch2++;
+  args.input = (*ch2=='\0') ? R_ExpandFileName(ch) : ch; // for convenience so user doesn't have to call path.expand()
 
   ch = args.input;
-  while (*ch!='\0' && *ch!='\n') ch++;
-  if (*ch=='\n' || args.input[0]=='\0') {
-    if (verbose) DTPRINT("Input contains a \\n (or is \"\"). Taking this to be text input (not a filename)\n");
+  while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
+  if (*ch!='\0' || args.input[0]=='\0') {
+    if (verbose) DTPRINT("Input contains a \\n or is \"\". Taking this to be text input (not a filename)\n");
     args.filename = NULL;
   } else {
     if (verbose) DTPRINT("Input contains no \\n. Taking this to be a filename to open\n");

@@ -1,10 +1,10 @@
 foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.y = key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=getOption("datatable.nomatch"), which = FALSE,  verbose=getOption("datatable.verbose")) {
-  
+
   if (!is.data.table(y) || !is.data.table(x)) stop("y and x must both be data.tables. Use `setDT()` to convert list/data.frames to data.tables by reference or as.data.table() to convert to data.tables by copying.")
-  maxgap = as.integer(maxgap); minoverlap = as.integer(minoverlap); 
-  which = as.logical(which); nomatch = as.integer(nomatch); 
+  maxgap = as.integer(maxgap); minoverlap = as.integer(minoverlap)
+  which = as.logical(which); nomatch = as.integer(nomatch)
   if (!length(maxgap) || length(maxgap) != 1L || is.na(maxgap) || maxgap < 0L)
-    stop("maxgap must be a non-negative integer value of length 1")    
+    stop("maxgap must be a non-negative integer value of length 1")
   if (!length(minoverlap) || length(minoverlap) != 1L || is.na(minoverlap) || minoverlap < 1L)
     stop("minoverlap must be a positive integer value of length 1")
   if (!length(which) || length(which) != 1L || is.na(which))
@@ -49,15 +49,14 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     stop("x has some duplicated column name(s): ",paste(unique(names(x)[dup.x]),collapse=","),". Please remove or rename the duplicate(s) and try again.")
   if (any(dup.y<-duplicated(names(y))))
     stop("y has some duplicated column name(s): ",paste(unique(names(y)[dup.y]),collapse=","),". Please remove or rename the duplicate(s) and try again.")
-  
-  xnames = by.x; xintervals = tail(xnames, 2L);
-  ynames = by.y; yintervals = tail(ynames, 2L);
+  xnames = by.x; xintervals = tail(xnames, 2L)
+  ynames = by.y; yintervals = tail(ynames, 2L)
   if (!storage.mode(x[[xintervals[1L]]]) %chin% c("double", "integer") || !storage.mode(x[[xintervals[2L]]]) %chin% c("double", "integer"))
-    stop("The last two columns in by.x should correspond to the 'start' and 'end' intervals in data.table 'x' and must be integer/numeric type.") 
+    stop("The last two columns in by.x should correspond to the 'start' and 'end' intervals in data.table 'x' and must be integer/numeric type.")
   if ( any(x[[xintervals[2L]]] - x[[xintervals[1L]]] < 0L) )
     stop("All entries in column ", xintervals[1L], " should be <= corresponding entries in column ", xintervals[2L], " in data.table 'x'")
   if (!storage.mode(y[[yintervals[1L]]]) %chin% c("double", "integer") || !storage.mode(y[[yintervals[2L]]]) %chin% c("double", "integer"))
-    stop("The last two columns in by.y should correspond to the 'start' and 'end' intervals in data.table 'y' and must be integer/numeric type.") 
+    stop("The last two columns in by.y should correspond to the 'start' and 'end' intervals in data.table 'y' and must be integer/numeric type.")
   if ( any(y[[yintervals[2L]]] - y[[yintervals[1L]]] < 0L) )
     stop("All entries in column ", yintervals[1L], " should be <= corresponding entries in column ", yintervals[2L], " in data.table 'y'")
   ## see NOTES below:
@@ -73,12 +72,10 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     isdouble = TRUE
     isposix = "POSIXct" %chin% yclass
   } else incr = 1L # integer or Date class for example
-  
   ## hopefully all checks are over. Now onto the actual task at hand.
   origx = x; x = shallow(x, by.x)
   origy = y; y = shallow(y, by.y)
-  roll = switch(type, start=, end=, equal= 0.0, 
-                any=, within= +Inf)
+  roll = switch(type, start=, end=, equal= 0.0, any=, within= +Inf)
   make_call <- function(names, fun=NULL) {
     if (is.character(names))
       names = lapply(names, as.name)
@@ -96,16 +93,16 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
           # fix for #1006 - 0.0 occurs in both start and end
           # better fix for 0.0, and other -ves. can't use 'incr'
           # hopefully this doesn't open another can of worms
-          (val+dt_eps())*(1 + sign(val)*dt_eps()) 
+          (val+dt_eps())*(1 + sign(val)*dt_eps())
         }
-        else val+incr, 
+        else val+incr,
         list(val = mcall[[3L]], incr = incr))
     }
     make_call(c(icall, pos=mcall), quote(list))
   }
-  uycols = switch(type, start = yintervals[1L], 
-                  end = yintervals[2L], any =, 
-                  within =, equal = yintervals)
+  uycols = switch(type, start = yintervals[1L],
+              end = yintervals[2L], any =,
+              within =, equal = yintervals)
   call = construct(head(ynames, -2L), uycols, type)
   if (verbose) {last.started.at=proc.time()[3];cat("unique() + setkey() operations done in ...");flush.console()}
   uy = unique(y[, eval(call)])
@@ -173,7 +170,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   }
 }
 
-## Notes: (If there's a better way than the solution I propose here, I'd be glad to apply it.)
+# Notes: (If there's a better way than the solution I propose here, I'd be glad to apply it.)
 # Side note: This post is a great read on floating points: http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
 
 # We add 1L to the end coordinate in case of integers to generate lookup to identify interval overlaps properly. And that is great!
@@ -181,35 +178,35 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
 
 # ---
 # Firstly, assuming 64-bit precision, we can't simply add 1L. For e.g., consider:
-# x = data.table(start=0.88, end=0.88)
-# y = data.table(start=0.26, end=0.61, key=c("start", "end"))
+#   x = data.table(start=0.88, end=0.88)
+#   y = data.table(start=0.26, end=0.61, key=c("start", "end"))
 # and we'd like to do:
-# foverlaps(x, y, type="any")
+#   foverlaps(x, y, type="any")
 # Adding 1 to 0.61 will result in 1.61, and will make sure 0.88 falls between 0.26 and 1.61, and that's wrong!
 
-# POSIXct objects are internally numeric as well. 
+# POSIXct objects are internally numeric as well.
 
 # So how do we determine the "increment" (1L for integers) for numeric type?
-# To get there, we need to understand that the "increment" is a great idea. Just the value isn't correct in case of numerics. Let's consider 
-# just ordinary "numeric" objects (non-POSIXct). The idea behind increment is to ensure that the "end" coordinate gets incremented to the *next 
-# distinguishable representative number*!!! In case of integers, the next integer after 5L is 6L. Simple. Increment is 1L (assuming no integer 
+# To get there, we need to understand that the "increment" is a great idea. Just the value isn't correct in case of numerics. Let's consider
+# just ordinary "numeric" objects (non-POSIXct). The idea behind increment is to ensure that the "end" coordinate gets incremented to the *next
+# distinguishable representative number*!!! In case of integers, the next integer after 5L is 6L. Simple. Increment is 1L (assuming no integer
 # overflows). In case of "numeric" that "increment" is (1 + .Machine$double.eps), and this gets *multiplied* (not added) to "end" coordinate.
 # Simple again. It fixes the problem, for now (read on).
 
 # NOTE THAT simply doing ("end" + .Machine$double.eps ^ 0.5) is insufficient because this doesn't work as the numbers grow bigger. For e.g., try:
-# identical(3e8, 3e8+.Machine$double.eps^0.5)
-# identical(3e8, 3e8*(1+.Machine$double.eps))
+#   identical(3e8, 3e8+.Machine$double.eps^0.5)
+#   identical(3e8, 3e8*(1+.Machine$double.eps))
 
 # The important point is that we **need to be ABSOLUTELY sure** that "end coordinate" gets incremented to it's *next representative number*. Why? Consider a 'subject' interval [4,4]. When we collapse this to get the 1D-form and take `unique`, if the "end" coordinate is not distinguishable from the start coordinate, `unique` will return just one value. And this brings us back to square-one (the reason why we needed to add one in the first place!!). For example, consider query = c(5,5) and subject = c(4,4). Now, after collapsing and taking unique, if we end up with just one 4, then performing the join later will result in [5,5] actually matching 4 whose lookup will have valid indices and not NULL resulting in an incorrect overlap. We absolutely need the second 4, and we want it to be greater than the start 4, but just the smallest separation between them possible (so that we don't miss any other numbers that fall in that range).
 
 # For POSIXct objects, we could still do the same. But a) multiplication is not supported for POSIXt objects, so we'll have to unclass it, multiply and convert back.. which is not ideal - timezone, time spent on conversion etc.. and b) all.equal in base considers a tolerance of 0.001 for POSIXt objects, I'm guessing this is for "millisecond" resolution? The problem with (b) is that more than millisecond resolution will return incorrect results again.
 
-# # More than millisecond resolution. Results are not stable.
-# tt = c( as.POSIXct('2011-10-11 07:49:36.0003'), as.POSIXct('2011-10-11 07:49:36.0199'), as.POSIXct('2011-10-11 07:49:36.0399'))
-# DT1 = data.table(start=tt, end=tt)
-# DT2 = data.table(start=tt[2], end=tt[2])
-# setkey(DT2)
-# foverlaps(DT1, DT2, which=TRUE)
+# More than millisecond resolution. Results are not stable.
+#   tt = c( as.POSIXct('2011-10-11 07:49:36.0003'), as.POSIXct('2011-10-11 07:49:36.0199'), as.POSIXct('2011-10-11 07:49:36.0399'))
+#   DT1 = data.table(start=tt, end=tt)
+#   DT2 = data.table(start=tt[2], end=tt[2])
+#   setkey(DT2)
+#   foverlaps(DT1, DT2, which=TRUE)
 
 # So, to put an end to this problem, we'll unclass it, multiply and convert back. In any case, the join does not depend on the timezone, as the internal numeric equivalent seems to be identical irrespective of the time zones.. So that's good news!
 # ---
@@ -221,3 +218,4 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
 # Tests are added to ensure we cover these aspects (to my knowledge) to ensure that any undesirable changes in the future breaks those tests.
 
 # Conclusion: floating point manipulations are hell!
+
