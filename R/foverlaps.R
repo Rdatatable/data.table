@@ -49,7 +49,6 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     stop("x has some duplicated column name(s): ",paste(unique(names(x)[dup.x]),collapse=","),". Please remove or rename the duplicate(s) and try again.")
   if (any(dup.y<-duplicated(names(y))))
     stop("y has some duplicated column name(s): ",paste(unique(names(y)[dup.y]),collapse=","),". Please remove or rename the duplicate(s) and try again.")
-
   xnames = by.x; xintervals = tail(xnames, 2L)
   ynames = by.y; yintervals = tail(ynames, 2L)
   if (!storage.mode(x[[xintervals[1L]]]) %chin% c("double", "integer") || !storage.mode(x[[xintervals[2L]]]) %chin% c("double", "integer"))
@@ -73,7 +72,6 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     isdouble = TRUE
     isposix = "POSIXct" %chin% yclass
   } else incr = 1L # integer or Date class for example
-
   ## hopefully all checks are over. Now onto the actual task at hand.
   origx = x; x = shallow(x, by.x)
   origy = y; y = shallow(y, by.y)
@@ -116,7 +114,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   matches <- function(ii, xx, del, ...) {
     cols = setdiff(names(xx), del)
     xx = shallow(xx, cols)
-ans = bmerge(xx, ii, seq_along(xx), seq_along(xx), haskey(xx), integer(0), mult=mult, ops=rep(1L, length(xx)), integer(0), 1L, verbose=verbose, ...)
+    ans = bmerge(xx, ii, seq_along(xx), seq_along(xx), haskey(xx), integer(0), mult=mult, ops=rep(1L, length(xx)), integer(0), 1L, verbose=verbose, ...)
     # vecseq part should never run here, but still...
     if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL)
   }
