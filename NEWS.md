@@ -6,7 +6,8 @@
 #### NEW FEATURES
 
 1. `fread()`:
-    * Efficiency savings at C level including **parallelization**; e.g. a 9GB 2 column integer csv input is **50s down to 12s** to cold load on a 4 core laptop with 16GB RAM and SSD. Run `echo 3 >/proc/sys/vm/drop_caches` first to measure cold load time. Subsequent load time (after file has been cached by OS on the first run) **40s down to 6s**.
+    * Efficiency savings at C level including **parallelization** announced [here](https://github.com/Rdatatable/data.table/wiki/talks/BARUG_201704_ParallelFread.pdf); e.g. a 9GB 2 column integer csv input is **50s down to 12s** to cold load on a 4 core laptop with 16GB RAM and SSD. Run `echo 3 >/proc/sys/vm/drop_caches` first to measure cold load time. Subsequent load time (after file has been cached by OS on the first run) **40s down to 6s**.
+    * The [fread for small data](https://github.com/Rdatatable/data.table/wiki/Convenience-features-of-fread) page has been revised.
     * Memory maps lazily; e.g. `nrow=10` is **12s down to 0.01s** from cold for the 9GB file. Large files close to your RAM limit may work more reliably too. The progress meter will commence sooner and more consistently.
     * `fread` has always jumped to the middle and to the end of the file for a much improved column type guess. The sample size is increased from 100 rows at 10 jump jump points (1,000 rows) to 100 rows at 100 jumps points (10,000 row sample). In the rare case of there still being out-of-sample type exceptions, those columns are now *automatically reread* so you don't have to use `colClasses` yourself.
     * Large number of columns support; e.g. **12,000 columns** tested.
@@ -14,7 +15,7 @@
     * Numeric data that has been quoted is now detected and read as numeric.
     * The ability to position `autostart` anywhere inside one of multiple tables in a single file is removed with warning. It used to search upwards from that line to find the start of the table based on a consistent number of columns. People appear to be using `skip="string"` or `skip=nrow` to find the header row exactly, which is retained and simpler. It was too difficult to retain search-upwards-autostart together with skipping/filling blank lines, filling incomplete rows and parallelization too. If there is any header info above the column names, it is still auto detected and auto skipped (particularly useful when loading a set of files where the column names start on different lines due to a varying height messy header).
     * `dec=','` is now implemented directly so there is no dependency on locale. The options `datatable.fread.dec.experiment` and `datatable.fread.dec.locale` have been removed.
-    * `\\r\\r\\n` line endings are now handled, such as produced by `base::download.file()` by default doubling up `\\r`. Other rare line endings are also handled: `\\r` and `\\n\\r`.
+    * `\\r\\r\\n` line endings are now handled such as produced by `base::download.file()` when it doubles up `\\r`. Other rare line endings (`\\r` and `\\n\\r`) are now more robust.
     * Mixed line endings are now handled; e.g. a file formed by concatenating a Unix file and a Windows file so that some lines end with `\\n` while others end with `\\r\\n`.
     * Automatic detection of whether the first row is column names is improved by comparing the types of the fields on the first and second row.
     * Detects GB-18030 and UTF-16 encodings and in verbose mode prints a message about BOM detection.
