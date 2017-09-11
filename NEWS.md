@@ -83,9 +83,7 @@
 
 18. Integer values that are too large to fit in `int64` will now be read as strings [#2250](https://github.com/Rdatatable/data.table/issues/2250).
 
-
-18. .shallow retains keys correctly [#2336](https://github.com/Rdatatable/data.table/issues/2336)
-    Thanks to @MarkusBonsch for reporting and fixing
+19. Internal-only `.shallow` now retains keys correctly, [#2336](https://github.com/Rdatatable/data.table/issues/2336). Thanks to @MarkusBonsch for reporting, fixing ([PR #2337](https://github.com/Rdatatable/data.table/pull/2337)) and adding 37 tests. This much advances the journey towards exporting `shallow()`, [#2323](https://github.com/Rdatatable/data.table/issues/2323).
     
 #### NOTES
 
