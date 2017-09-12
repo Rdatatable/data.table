@@ -10578,6 +10578,12 @@ test(1825.1, fread('A,B\n"1","2"', colClasses = "integer"), data.table(A=1L, B=2
 test(1825.2, fread('A,B\n"1","2"', colClasses = "character"), data.table(A="1", B="2"))
 test(1825.3, fread('A,B\n"1","2"', colClasses = "numeric"), data.table(A=1.0, B=2.0))
 
+# Issue 2222
+test(1827.1, fread("A,B\n1987,1\n1987,3\n", na.strings=c("1987", "NA")), data.table(A=c(NA,NA),B=c(1L,3L)))
+test(1827.2, fread("A,B\n1987,1\n1,3\n",    na.strings=c("1987", "NA")), data.table(A=c(NA,1L),B=c(1L,3L)))
+test(1827.3, fread("A,B\n1987,1\n1987,3\n", na.strings="1987"), data.table(A=c(NA,NA),B=c(1L,3L)))
+test(1827.4, fread("A,B\n1987,1\n1,3\n",    na.strings="198"),  data.table(A=c(1987L,1L),B=c(1L,3L)))
+
 
 ##########################
 
