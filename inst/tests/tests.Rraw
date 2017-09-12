@@ -10581,7 +10581,7 @@ test(1825.3, fread('A,B\n"1","2"', colClasses = "numeric"), data.table(A=1.0, B=
 # issue 2351
 set.seed(1)
 DT = data.table(id=paste0("id",1:1e5), v=sample(100,1e5,replace=TRUE))
-fwrite(DT, file=f<-tempfile(), eol="\r")  # if testing at the console, use one slash i.e. "\r". It's test.data.table's source() that needs the extra \
+fwrite(DT, file=f<-tempfile(), eol="\r")
 test(1826.1, fread(f)[c(1,2,.N-1,.N)], data.table(id=c("id1","id2","id99999","id100000"), v=c(27L,38L,10L,13L)))
 cat("id888,42", file=f, append=TRUE)  # without final \r after last line
 test(1826.2, fread(f)[c(1,2,.N-1,.N)], data.table(id=c("id1","id2","id100000","id888"), v=c(27L,38L,13L,42L)))
