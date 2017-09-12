@@ -172,6 +172,7 @@ static const char* strlim(const char *ch, size_t limit) {
   char *ptr = buf + 501 * flip;
   flip = 1 - flip;
   char *ch2 = ptr;
+  if (limit>500) limit=500;
   size_t width = 0;
   while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<limit) *ch2++ = *ch++;
   *ch2 = '\0';
