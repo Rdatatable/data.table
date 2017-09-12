@@ -10588,6 +10588,12 @@ cat("id888,42", file=f, append=TRUE)  # without final \r after last line
 test(1826.2, fread(f)[c(1,2,.N-1,.N)], data.table(id=c("id1","id2","id100000","id888"), v=c(27L,38L,13L,42L)))
 unlink(f)
 
+# Issue 2222
+test(1827.1, fread("A,B\n1987,1\n1987,3\n", na.strings=c("1987", "NA")), data.table(A=c(NA,NA),B=c(1L,3L)))
+test(1827.2, fread("A,B\n1987,1\n1,3\n",    na.strings=c("1987", "NA")), data.table(A=c(NA,1L),B=c(1L,3L)))
+test(1827.3, fread("A,B\n1987,1\n1987,3\n", na.strings="1987"), data.table(A=c(NA,NA),B=c(1L,3L)))
+test(1827.4, fread("A,B\n1987,1\n1,3\n",    na.strings="198"),  data.table(A=c(1987L,1L),B=c(1L,3L)))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
