@@ -297,15 +297,17 @@ static inline _Bool nextGoodLine(const char **this, int ncol)  //  TODO: remove 
   // We don't know which line number this is, either, because we jumped straight to it. So return true/false for
   // the line number and error message to be worked out up there.
   int attempts=0;
-  while (ch<eof && attempts++<30) {
-    while (*ch!='\n') ch++;
-    ch += (*ch=='\n');
-    int i = 0, thisNcol=0;
+  while (attempts++<30) {
+    while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
+    if (*ch=='\0') return false;
+    eol(&ch);  // move to last byte of the line ending sequence
+    ch++;      // move to first byte of next line
+    int i=0;
     const char *ch2 = ch;
-    while (ch2<eof && i<5 && ( (thisNcol=countfields(&ch2))==ncol || (thisNcol==0 && (skipEmptyLines || fill)))) i++;
-    if (i==5 || ch2>=eof) break;
+    while (i<5 && countfields(&ch2)==ncol) i++;
+    if (i==5) break;
   }
-  if (ch<eof && attempts<30) { *this = ch; return true; }
+  if (*ch!='\0' && attempts<30) { *this = ch; return true; }
   return false;
 }
 
@@ -1169,14 +1171,18 @@ int freadMain(freadMainArgs _args) {
   int minLen=INT32_MAX, maxLen=-1;   // int_max so the first if(thisLen<minLen) is always true; similarly for max
   lastRowEnd = pos;
   _Bool firstDataRowAfterPotentialColumnNames = false;  // for test 1585.7
+  _Bool lastSampleJumpOk = false;   // it won't be ok if its nextGoodLine returns false as testing in test 1768
   for (int j=0; j<nJumps; j++) {
     ch = (j == 0) ? pos :
          (j == nJumps-1) ? eof - (size_t)(0.5*jump0size) :
                            pos + (size_t)j*((size_t)(eof-pos)/(size_t)(nJumps-1));
     if (ch<lastRowEnd) ch=lastRowEnd;  // Overlap when apx 1,200 lines (just over 11*100) with short lines at the beginning and longer lines near the end, #2157
     if (ch>=eof) break;                // The 9th jump could reach the end in the same situation and that's ok. As long as the end is sampled is what we want.
-    if (j>0 && !nextGoodLine(&ch, ncol))
-      STOP("Could not find first good line start after jump point %d when sampling.", j);
+    if (j>0 && !nextGoodLine(&ch, ncol)) {
+      // skip this jump for sampling. Very unusual and in such unusual cases, we don't mind a slightly worse guess.
+      continue;
+    }
+    if (j==nJumps-1) lastSampleJumpOk = true;
     _Bool bumped = 0;  // did this jump find any different types; to reduce verbose output to relevant lines
     int jline = 0;     // line from this jump point
     while(ch<eof && (jline<JUMPLINES || j==nJumps-1)) {  // nJumps==1 implies sample all of input to eof; last jump to eof too
@@ -1298,9 +1304,14 @@ int freadMain(freadMainArgs _args) {
       DTPRINT("  Quote rule %d\n", quoteRule);
     }
   }
-  while (ch<eof && isspace(*ch)) ch++;
-  if (ch<eof) {
-    DTWARN("Found the last consistent line but text exists afterwards (discarded): <<%s>>", strlim(ch,200));
+  if (lastSampleJumpOk) {
+    while (ch<eof && isspace(*ch)) ch++;
+    if (ch<eof)
+      DTWARN("Found the last consistent line but text exists afterwards (discarded): <<%s>>", strlim(ch,200));
+  } else {
+    // nextGoodLine() was false for the last (extra) jump to check the end
+    // must set lastRowEnd to eof accordingly otherwise it'll be left wherever the last good jump finished
+    lastRowEnd = eof;
   }
 
   size_t estnrow=1;
