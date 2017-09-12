@@ -2511,10 +2511,11 @@ cat("3.14",file=f<-tempfile()); test(892, fread(f), data.table(V1=3.14)); unlink
 cat("1.23\n3.14",file=f<-tempfile()); test(892.1, fread(f), data.table(V1=c(1.23,3.14))); unlink(f)
 cat("A,3",file=f<-tempfile()); test(893, fread(f), data.table(V1="A",V2=3L)); unlink(f)
 if (.Platform$OS.type=="unix") test(893.5, fread("A,B\r\n\r\n"), data.table(A=logical(),B=logical()))
+eols = c("\n", "\r\n", "\r", "\n\r", "\r\r\n")
 for (nc in c(0,1,2)) {   # 0 means all cols here
 for (nr in c(0,1,2,3,5,10,18,19,20,21,22,28,29,30,31,32,38,39,40,41,42)) {  # 30 and 40 are trigger points for auto skip
-for (eol in if (.Platform$OS.type=="unix") c("\n","\r\n") else "\n") {
-    ne = if (eol == "\n") 1 else 2
+for (ne in seq_along(eols)) {
+    eol = eols[ne]
     headDT = head(DT,nr)[,seq_len(if (nc==0) ncol(DT) else nc),with=FALSE]
     if (nr==0) for (j in seq_len(ncol(headDT))) set(headDT,j=j,value=logical())  # when read back in empty cols are the lowest type (logical)
     f = tempfile()
