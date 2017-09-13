@@ -9,6 +9,13 @@ all:
 	$(MAKE) test
 	$(MAKE) check
 
+.PHONY: some
+some:
+	$(MAKE) clean
+	$(MAKE) build
+	$(MAKE) install
+	$(MAKE) test
+
 .PHONY: clean
 clean:
 	rm -f data.table_1.10.5.tar.gz
