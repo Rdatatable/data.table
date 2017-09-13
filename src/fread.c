@@ -98,7 +98,8 @@ typedef struct FieldParseContext {
 // Forward declarations
 static void Field(FieldParseContext *ctx);
 
-#define ASSERT(cond)  if (!(cond)) STOP("Internal error in line %d of fread.c, please report on data.table GitHub", __LINE__)
+#define ASSERT(cond, msg, ...) \
+  if (!(cond)) STOP("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg, __LINE__, __VA_ARGS__)
 
 
 
@@ -1616,7 +1617,7 @@ int freadMain(freadMainArgs _args) {
     DTPRINT("[11] Read the data\n");
     DTPRINT("  jumps=[%d..%d), chunk_size=%llu, total_size=%llu\n", jump0, nJumps, (llu)chunkBytes, (llu)(lastRowEnd-pos));
   }
-  ASSERT(allocnrow <= nrowLimit);
+  ASSERT(allocnrow <= nrowLimit, "allocnrow(%llu) < nrowLimit(%llu)", (llu)allocnrow, (llu)nrowLimit);
   #pragma omp parallel num_threads(nth)
   {
     int me = omp_get_thread_num();
