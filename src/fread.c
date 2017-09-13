@@ -98,6 +98,8 @@ typedef struct FieldParseContext {
 // Forward declarations
 static void Field(FieldParseContext *ctx);
 
+#define ASSERT(cond)  if (!(cond)) STOP("Internal error in line %d of fread.c, please report on data.table GitHub", __LINE__)
+
 
 
 //=================================================================================================
@@ -164,7 +166,6 @@ _Bool freadCleanup(void)
 
 #define CEIL(x)  ((size_t)(double)ceil(x))
 static inline size_t umax(size_t a, size_t b) { return a > b ? a : b; }
-static inline size_t umin(size_t a, size_t b) { return a < b ? a : b; }
 static inline int imin(int a, int b) { return a < b ? a : b; }
 
 /** Return value of `x` clamped to the range [upper, lower] */
@@ -1615,7 +1616,7 @@ int freadMain(freadMainArgs _args) {
     DTPRINT("[11] Read the data\n");
     DTPRINT("  jumps=[%d..%d), chunk_size=%llu, total_size=%llu\n", jump0, nJumps, (llu)chunkBytes, (llu)(lastRowEnd-pos));
   }
-  size_t maxRowsToRead = umin(nrowLimit, allocnrow);
+  ASSERT(allocnrow <= nrowLimit);
   #pragma omp parallel num_threads(nth)
   {
     int me = omp_get_thread_num();
@@ -1924,19 +1925,19 @@ int freadMain(freadMainArgs _args) {
           stopTeam=true;
         }
         ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
-        if (ctx.DTi >= maxRowsToRead) {
-          // a previous thread has already reached the `maxRowsToRead` limit
+        if (ctx.DTi >= allocnrow) {  // a previous thread has already reached the `allocnrow` limit
           stopTeam = true;
           myNrow = 0;
-        } else if (myNrow + ctx.DTi > maxRowsToRead) {
-          if (nrowLimit <= allocnrow) {
-            // current thread has reached `nrowLimit`: the number of rows will be truncated
+        } else if (myNrow + ctx.DTi > allocnrow) {  // current thread has reached `allocnrow` limit
+          if (allocnrow == nrowLimit) {
+            // allocnrow is the same as nrowLimit, no need to reallocate the DT,
+            // just truncate the rows in the current chunk.
             myNrow = nrowLimit - ctx.DTi;
           } else {
-            // Current thread has reached `allocnrow` limit. In this case we
-            // arrange to terminate all threads but remember the position where
-            // the previous thread has finished. We will reallocate the DT
-            // and restart reading from the same point.
+            // We reached `allocnrow` limit, but there are more data to read
+            // left. In this case we arrange to terminate all threads but
+            // remember the position where the previous thread has finished. We
+            // will reallocate the DT and restart reading from the same point.
             jump0 = jump;
             extraAllocRows = (double)(DTi+myNrow)*nJumps/(jump+1) * 1.2 - allocnrow;
             if (extraAllocRows < 1024) extraAllocRows = 1024;
@@ -1973,6 +1974,7 @@ int freadMain(freadMainArgs _args) {
 
   if (extraAllocRows) {
     allocnrow += extraAllocRows;
+    if (allocnrow > nrowLimit) allocnrow = nrowLimit;
     if (verbose) DTPRINT("  Too few rows allocated. Allocating additional %llu rows (now nrows=%llu) and continue reading from jump point %d\n", (llu)extraAllocRows, (llu)allocnrow, jump0);
     allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, allocnrow);
     extraAllocRows = 0;
