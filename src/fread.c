@@ -280,9 +280,8 @@ static inline const char *end_NA_string(const char *fieldStart) {
 static inline int countfields(const char **this)
 {
   static lenOff trash;  // see comment on other trash declarations
-  // static void *trashptr = (void*) &trash;
   static void *targets[9];
-  targets[8] = targets[0] = (void*) &trash;
+  targets[8] = (void*) &trash;
   const char *ch = *this;
   if (sep==' ') while (*ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
   skip_white(&ch);
@@ -451,7 +450,7 @@ static char* filesize_to_str(size_t fsize)
 static void Field(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
-  lenOff *target = (lenOff*) ctx->targets[8];
+  lenOff *target = (lenOff*) ctx->targets[sizeof(lenOff)];
 
   // need to skip_white first for the reason that a quoted field might have space before the
   // quote; e.g. test 1609. We need to skip the space(s) to then switch on quote or not.
@@ -542,7 +541,7 @@ static void Field(FieldParseContext *ctx)
 static void StrtoI32(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
-  int32_t *target = (int32_t*) ctx->targets[4];
+  int32_t *target = (int32_t*) ctx->targets[sizeof(int32_t)];
 
   _Bool neg = *ch=='-';
   ch += (neg || *ch=='+');
@@ -579,7 +578,7 @@ static void StrtoI32(FieldParseContext *ctx)
 static void StrtoI64(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
-  int64_t *target = (int64_t*) ctx->targets[8];
+  int64_t *target = (int64_t*) ctx->targets[sizeof(int64_t)];
 
   _Bool neg = *ch=='-';
   ch += (neg || *ch=='+');
@@ -717,7 +716,7 @@ static void StrtoB(FieldParseContext *ctx)
 }
 
 typedef void (*reader_fun_t)(FieldParseContext *ctx);
-static reader_fun_t field_parsers[NUMTYPE] = {
+static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &Field,
   (reader_fun_t) &StrtoB,
   (reader_fun_t) &StrtoI32,
@@ -1294,15 +1293,15 @@ int freadMain(freadMainArgs _args) {
           type[field] = 1;  // re-initialize for 2nd row onwards
         }
         // throw-away storage for processors to write to in this preamble.
-        size_t trash; // size_t so that this storage is aligned. char trash[8] would not be aligned.
-        void *targets[9] = {&trash, &trash, NULL, NULL, &trash, NULL, NULL, NULL, &trash};
+        double trash; // double so that this storage is aligned. char trash[8] would not be aligned.
+        void *targets[9] = {NULL, &trash, NULL, NULL, &trash, NULL, NULL, NULL, &trash};
         FieldParseContext fctx = {
           .ch = &ch,
           .targets = targets,
           .anchor = NULL,
         };
         while (type[field]<=CT_STRING) {
-          field_parsers[type[field]](&fctx);
+          fun[type[field]](&fctx);
           if (end_of_field(*ch)) break;
           skip_white(&ch);
           if (end_of_field(*ch)) break;
@@ -1312,7 +1311,7 @@ int freadMain(freadMainArgs _args) {
             ch = fieldStart;
             if (*ch==quote) {
               ch++;
-              field_parsers[type[field]](&fctx);
+              fun[type[field]](&fctx);
               if (*ch==quote && end_of_field(ch[1])) { ch++; break; }
             }
             type[field]++;
@@ -1614,24 +1613,14 @@ int freadMain(freadMainArgs _args) {
     const char *thisJumpStart=NULL;  // The first good start-of-line after the jump point
     size_t myDTi = 0;  // which row in the final DT result I should start writing my chunk to
     size_t myNrow = 0; // the number of rows in my chunk
-
-    // Allocate thread-private row-major myBuff
-    // Do not reuse trash for myBuff0 as that might create write conflicts
-    // between threads, causing slowdown of the process.
     size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
-    void *myBuff8 = malloc(rowSize8 * myBuffRows + 8);
-    void *myBuff4 = malloc(rowSize4 * myBuffRows + 4);
-    void *myBuff1 = malloc(rowSize1 * myBuffRows + 1);
-    void *myBuff0 = malloc(8);  // for CT_DROP columns
-    if ((rowSize8 && !myBuff8) || (rowSize4 && !myBuff4) || (rowSize1 && !myBuff1) || !myBuff0) {
-      stopTeam = true;
-    }
 
+    // Allocate thread-private row-major `myBuff`s
     ThreadLocalFreadParsingContext ctx = {
       .anchor = NULL,
-      .buff8 = myBuff8,
-      .buff4 = myBuff4,
-      .buff1 = myBuff1,
+      .buff8 = malloc(rowSize8 * myBuffRows + 8),
+      .buff4 = malloc(rowSize4 * myBuffRows + 4),
+      .buff1 = malloc(rowSize1 * myBuffRows + 1),
       .rowSize8 = rowSize8,
       .rowSize4 = rowSize4,
       .rowSize1 = rowSize1,
@@ -1645,6 +1634,9 @@ int freadMain(freadMainArgs _args) {
       .nNonStringCols = nNonStringCols
       #endif
     };
+    if ((rowSize8 && !ctx.buff8) || (rowSize4 && !ctx.buff4) || (rowSize1 && !ctx.buff1)) {
+      stopTeam = true;
+    }
     prepareThreadContext(&ctx);
 
     #pragma omp for ordered schedule(dynamic) reduction(+:thNextGoodLine,thRead,thPush)
@@ -1698,17 +1690,12 @@ int freadMain(freadMainArgs _args) {
       thisJumpStart=tch;
       if (verbose) { tt1 = wallclock(); thNextGoodLine += tt1 - tt0; tt0 = tt1; }
 
-      void *allBuffPosN[9] = {myBuff0, myBuff1, NULL, NULL, myBuff4, NULL, NULL, NULL, myBuff8};
+      void *targets[9] = {NULL, ctx.buff1, NULL, NULL, ctx.buff4, NULL, NULL, NULL, ctx.buff8};
       FieldParseContext fctx = {
         .ch = &tch,
-        .targets = allBuffPosN,
+        .targets = targets,
         .anchor = thisJumpStart,
       };
-      void **allBuffPos[9];
-      allBuffPos[0] = &fctx.targets[0];
-      allBuffPos[1] = &fctx.targets[1];
-      allBuffPos[4] = &fctx.targets[4];
-      allBuffPos[8] = &fctx.targets[8];
 
       while (tch<nextJump) {
         if (myNrow == myBuffRows) {
@@ -1716,14 +1703,14 @@ int freadMain(freadMainArgs _args) {
           myBuffRows *= 1.5;
           #pragma omp atomic
           buffGrown++;
-          ctx.buff8 = myBuff8 = realloc(myBuff8, rowSize8 * myBuffRows + 8);
-          ctx.buff4 = myBuff4 = realloc(myBuff4, rowSize4 * myBuffRows + 4);
-          ctx.buff1 = myBuff1 = realloc(myBuff1, rowSize1 * myBuffRows + 1);
+          ctx.buff8 = realloc(ctx.buff8, rowSize8 * myBuffRows + 8);
+          ctx.buff4 = realloc(ctx.buff4, rowSize4 * myBuffRows + 4);
+          ctx.buff1 = realloc(ctx.buff1, rowSize1 * myBuffRows + 1);
           if ((rowSize8 && !ctx.buff8) || (rowSize4 && !ctx.buff4) || (rowSize1 && !ctx.buff1)) {
             stopTeam = true;
             break;
           }
-          // shift current buffer positions, since myBuffX were probably moved by realloc
+          // shift current buffer positions, since `myBuffX`s were probably moved by realloc
           fctx.targets[8] = (void*)((char*)ctx.buff8 + myNrow * rowSize8);
           fctx.targets[4] = (void*)((char*)ctx.buff4 + myNrow * rowSize4);
           fctx.targets[1] = (void*)((char*)ctx.buff1 + myNrow * rowSize1);
@@ -1743,9 +1730,10 @@ int freadMain(freadMainArgs _args) {
             // DTPRINT("Field %d: '%.10s' as type %d  (tch=%p)\n", j+1, tch, type[j], tch);
             fieldStart = tch;
             int8_t thisType = type[j];  // fetch shared type once. Cannot read half-written byte is one reason type's type is single byte to avoid atomic read here.
-            field_parsers[abs(thisType)](&fctx);
+            int8_t thisSize = size[j];
+            fun[abs(thisType)](&fctx);
             if (*tch!=sep) break;
-            *((char **) allBuffPos[size[j]]) += size[j];
+            ((char **) targets)[thisSize] += thisSize;
             tch++;
             j++;
           }
@@ -1757,7 +1745,8 @@ int freadMain(freadMainArgs _args) {
             tch = tlineStart;  // in case white space at the beginning may need to be including in field
           }
           else if (eol(&tch)) {
-            *((char **) allBuffPos[size[j]]) += size[j];
+            int8_t thisSize = size[j];
+            ((char **) targets)[thisSize] += thisSize;
             j++;
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJump). Usually happens, fastest path
           }
@@ -1797,7 +1786,7 @@ int freadMain(freadMainArgs _args) {
               if (!end_of_field(*tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
               if (*tch==quote) { quoted=true; tch++; }
             } // else Field() handles NA inside it unlike other processors e.g. ,, is interpretted as "" or NA depending on option read inside Field()
-            field_parsers[abs(thisType)](&fctx);
+            fun[abs(thisType)](&fctx);
             if (quoted && *tch==quote) tch++;
             skip_white(&tch);
             if (end_of_field(*tch)) {
@@ -1838,7 +1827,7 @@ int freadMain(freadMainArgs _args) {
               } // else another thread just bumped to a (negative) higher or equal type while I was waiting, so do nothing
             }
           }
-          *((char**) allBuffPos[size[j]]) += size[j];
+          ((char**) targets)[size[j]] += size[j];
           j++;
           if (*tch==sep) { tch++; continue; }
           if (tch==eof && finalByte==sep && sep!=' ') { finalByte='\0'; continue; }
@@ -1870,7 +1859,7 @@ int freadMain(freadMainArgs _args) {
             *_const_cast(eof-1) = finalByte;  // *eof=='\0' already
             tch = fieldStart-1;
             j--;
-            *((char**) allBuffPos[size[j]]) -= size[j];
+            ((char**) targets)[size[j]] -= size[j];
             goto oneLastTimeIfFinalByte;  // reread final field now that it has been shifted back one byte and the finalByte placed at the end
           } else if (nTypeBump) {
             // The very final field was just jiggled and reread due to finalByte!='\0' and finalSep!='\0'.
@@ -1952,10 +1941,9 @@ int freadMain(freadMainArgs _args) {
       if (verbose) thRead += wallclock() - tt1;
     }
     // Each thread to free their own buffer.
-    free(myBuff8); myBuff8 = NULL;
-    free(myBuff4); myBuff4 = NULL;
-    free(myBuff1); myBuff1 = NULL;
-    free(myBuff0); myBuff0 = NULL;
+    free(ctx.buff8); ctx.buff8 = NULL;
+    free(ctx.buff4); ctx.buff4 = NULL;
+    free(ctx.buff1); ctx.buff1 = NULL;
     freeThreadContext(&ctx);
   }
   //-- end parallel ------------------
