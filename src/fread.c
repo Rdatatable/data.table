@@ -82,8 +82,22 @@ int8_t     typeSize[NUMTYPE]     = { 0,      1,       4,       8,       8,      
 static const double NAND = (double)NAN;
 static const double INFD = (double)INFINITY;
 
+typedef struct FieldParseContext {
+  // Pointer to the current parsing location
+  const char **ch;
+  // Parse target buffers, indexed by size. A parser that reads values of byte
+  // size `sz` will attempt to write that value into `targets[sz]`. Thus,
+  // generally this is an array with elements 0, 1, 4, and 8 defined, while all
+  // other pointers are NULL.
+  void **targets;
+  // String "anchor" for `Field()` parser -- the difference `ch - anchor` will
+  // be written out as the string offset.
+  const char *anchor;
+} FieldParseContext;
+
 // Forward declarations
-static void Field(const char **this, lenOff *target);
+static void Field(FieldParseContext *ctx);
+
 
 
 //=================================================================================================
@@ -199,9 +213,18 @@ static inline void skip_white(const char **this) {
 }
 
 
-static inline _Bool end_of_field(char ch) {
-  return ch==sep || ((unsigned)ch<32 && (ch=='\r' || ch=='\n' || ch=='\0'));
-  // letters and numbers will short-circuit on ch<32 being false
+/**
+ * Return True iff `ch` is a valid field terminator character: either a field
+ * separator or a newline.
+ */
+static inline _Bool end_of_field(const char ch) {
+  // \r is 13, \n is 10, and \0 is 0. The second part is optimized based on the
+  // fact that the characters in the ASCII range 0..13 are very rare, so a
+  // single check `ch<=13` is almost equivalent to checking whether `ch` is one
+  // of \r, \n, \0. We cast to unsigned first because `char` type is signed by
+  // default, and therefore characters in the range 0x80-0xFF are actually
+  // treated as negatives.
+  return ch==sep || ((uint8_t)ch<=13 && (ch=='\n' || ch=='\r' || ch=='\0'));
 }
 
 
@@ -257,6 +280,8 @@ static inline const char *end_NA_string(const char *fieldStart) {
 static inline int countfields(const char **this)
 {
   static lenOff trash;  // see comment on other trash declarations
+  static void *targets[9];
+  targets[8] = (void*) &trash;
   const char *ch = *this;
   if (sep==' ') while (*ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
   skip_white(&ch);
@@ -265,8 +290,13 @@ static inline int countfields(const char **this)
     return 0;
   }
   int ncol = 1;
+  FieldParseContext ctx = {
+    .ch = &ch,
+    .targets = targets,
+    .anchor = NULL,
+  };
   while (ch<eof) {
-    Field(&ch, &trash);
+    Field(&ctx);
     // Field() leaves *ch resting on sep, \r, \n or *eof=='\0'
     if (sep==' ' && *ch==sep) {
       while (ch[1]==' ') ch++;
@@ -376,33 +406,67 @@ static char* filesize_to_str(size_t fsize)
 
 
 
-//=================================================================================================
+//==============================================================================
+// Field parsers
 //
-//   Field parsers
+// This section contains functions each designed to parse values of a particular
+// type from the input string. All these functions have the same signature:
 //
-//=================================================================================================
+//     void parser(FieldParseContext *ctx);
+//
+// Here the FieldParseContext structure contains the following fields:
+//   .ch -- pointer to the current parsing location
+//   .targets -- array of memory buffers where parsers store their results
+//   + any other parser-specific fields (for example Field() uses .anchor)
+//
+// Each parser is expected to scan the input starting from position `ch`, and
+// then perform one and only one of the following:
+//
+//   1. If the value can be successfully parsed, then it is stored into the
+//      `ctx.targets[sizeof(value)]` buffer, and the parsing location `ctx.ch`
+//      is advanced to point at the first unread byte in the input.
+//   2. If the value cannot be parsed, then the parser must store an NA value
+//      into the `ctx.targets[sizeof(value)]` buffer. The parsing location
+//      `ctx.ch` should be left unmodified.
+//
+// Note that it is not the parser's job ot advance the `ctx.targets` pointer --
+// this is left to the caller. The reason for this is because we have different
+// parsing scenarios:
+//   - in the "normal" case the value will be written and the target pointer
+//     advanced;
+//   - in the "trash" case the value will be written but no pointer will be
+//     modified, and we allow the value to be overwritten by a subsequent call;
+//   - in the "typebump" case the value will be written, but some _other_ target
+//     pointer will be advanced. Thus, the value that was just written will be
+//     eventually overwritten, while some other buffer will have a gap filled
+//     with random data (we will reread that column anyways, so it's ok).
+//
+// In all cases the caller is responsible to ensure that the `targets[sz]`
+// buffer is properly allocated and has enough space to write a single value of
+// size `sz`.
+//
+//==============================================================================
 
-// TODO: Pasha's idea of passing one struct * to field processors. Then no need for extra arguments on stack,
-//       we can access chunkStart from here and bump buffer inside processor saving branch on CT_STRING outside.
-
-static void Field(const char **this, lenOff *target)
+static void Field(FieldParseContext *ctx)
 {
-  const char *ch = *this;
+  const char *ch = *(ctx->ch);
+  lenOff *target = (lenOff*) ctx->targets[sizeof(lenOff)];
+
   // need to skip_white first for the reason that a quoted field might have space before the
   // quote; e.g. test 1609. We need to skip the space(s) to then switch on quote or not.
   if (*ch==' ' && stripWhite) while(*++ch==' ');  // if sep==' ' the space would have been skipped already and we wouldn't be on space now.
   const char *fieldStart=ch;
   if (*ch!=quote || quoteRule==3) {
     // Most common case. Unambiguously not quoted. Simply search for sep|eol. If field contains sep|eol then it should have been quoted and we do not try to heal that.
-    target->off = (int32_t)(fieldStart - *this);
     while(!end_of_field(*ch)) ch++;  // sep, \r, \n or \0 will end
-    *this = ch;
+    *(ctx->ch) = ch;
     int fieldLen = (int)(ch-fieldStart);
     if (stripWhite) {   // TODO:  do this if and the next one together once in bulk afterwards before push
       while(fieldLen>0 && ch[-1]==' ') { fieldLen--; ch--; }
       // this space can't be sep otherwise it would have stopped the field earlier inside end_of_field()
     }
     if ((fieldLen==0 && blank_is_a_NAstring) || (fieldLen && end_NA_string(fieldStart)==ch)) fieldLen=INT32_MIN;  // TODO - speed up by avoiding end_NA_string when there are none
+    target->off = (int32_t)(fieldStart - ctx->anchor);
     target->len = fieldLen;
     return;
   }
@@ -461,22 +525,24 @@ static void Field(const char **this, lenOff *target)
     return;  // Internal error: undefined quote rule
   }
   target->len = (int32_t)(ch - fieldStart);
-  target->off = (int32_t)(fieldStart - *this);
+  target->off = (int32_t)(fieldStart - ctx->anchor);
   if (*ch==quote) {
     ch++;
     skip_white(&ch);
-    *this = ch;
+    *(ctx->ch) = ch;
   } else {
-    *this = ch;
+    *(ctx->ch) = ch;
     if (*ch=='\0' && quoteRule!=2) { target->off--; target->len++; }  // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
     if (stripWhite) while(target->len>0 && ch[-1]==' ') { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
   }
 }
 
 
-static void StrtoI32(const char **this, int32_t *target)
+static void StrtoI32(FieldParseContext *ctx)
 {
-  const char *ch = *this;
+  const char *ch = *(ctx->ch);
+  int32_t *target = (int32_t*) ctx->targets[sizeof(int32_t)];
+
   _Bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;  // to know if at least one digit is present
@@ -502,16 +568,18 @@ static void StrtoI32(const char **this, int32_t *target)
   //     (acc==0 && ch-start==1) ) {
   if ((sf || ch>start) && sf<=10 && acc<=INT32_MAX) {
     *target = neg ? -(int32_t)acc : (int32_t)acc;
-    *this = ch;
+    *(ctx->ch) = ch;
   } else {
     *target = NA_INT32;  // empty field ideally, contains NA and fall through to check if NA (in which case this write is important), or just plain invalid
   }
 }
 
 
-static void StrtoI64(const char **this, int64_t *target)
+static void StrtoI64(FieldParseContext *ctx)
 {
-  const char *ch = *this;
+  const char *ch = *(ctx->ch);
+  int64_t *target = (int64_t*) ctx->targets[sizeof(int64_t)];
+
   _Bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;
@@ -531,7 +599,7 @@ static void StrtoI64(const char **this, int64_t *target)
   //     (acc==0 && ch-start==1) ) {
   if ((sf || ch>start) && sf<=19 && acc<=INT64_MAX) {
     *target = neg ? -(int64_t)acc : (int64_t)acc;
-    *this = ch;
+    *(ctx->ch) = ch;
   } else {
     *target = NA_INT64;
   }
@@ -551,21 +619,23 @@ cat("1.0E350L\n};\n", file=f, append=TRUE)
 // TODO  Add faster StrtoD_quick for small precision positive numerics such as prices without a sign or
 //       an E (e.g. $.cents) which don't need I64, long double, or Inf/NAN. Could have more than two levels.
 
-static void StrtoD(const char **this, double *target)
+static void StrtoD(FieldParseContext *ctx)
 {
   // [+|-]N[.M][[E|e][+|-]E] or [+|-]Inf, [+|-]Inf or NAN
-  const char *ch = *this;
+  const char *ch = *(ctx->ch);
+  double *target = (double*) ctx->targets[sizeof(double)];
+
   _Bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;
   if (ch[0]=='I' && (   (ch[1]=='n' && ch[2]=='f')
                      || (ch[1]=='N' && ch[2]=='F'))) {
-    *this = ch+3;
+    *(ctx->ch) = ch + 3;
     *target = neg ? -INFD : INFD;
     return;
   }
   if (ch[0]=='N' && ch[1]=='A' && ch[2]=='N') {
-    *this = ch+3;
+    *(ctx->ch) = ch + 3;
     *target = NAND;
     return;
   }
@@ -610,17 +680,18 @@ static void StrtoD(const char **this, double *target)
   if (ch>start) {
     *target = (double)((long double)acc * pow10lookup[e]);
     if (neg) *target = -*target;
-    *this = ch;
+    *(ctx->ch) = ch;
   } else {
     *target = NA_FLOAT64;
   }
 }
 
 
-static void StrtoB(const char **this, int8_t *target)
+static void StrtoB(FieldParseContext *ctx)
 {
-  const char *ch = *this;
-  *target = NA_BOOL8;
+  const char *ch = *(ctx->ch);
+  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+
   _Bool logical01 = false;  // TO DO: i) expose choice to user, ii) create separate processor and iii) default false in R for consistency with base R
   if ( logical01 && (*ch=='0' || *ch=='1') ) {
     *target = (*ch=='1');
@@ -637,11 +708,14 @@ static void StrtoB(const char **this, int8_t *target)
       *target=0;
       ch+=5;
     }
+  } else {
+    *target = NA_BOOL8;
+    return;
   }
-  *this = ch;
+  *(ctx->ch) = ch;
 }
 
-typedef void (*reader_fun_t)(const char **ptr, void *target);
+typedef void (*reader_fun_t)(FieldParseContext *ctx);
 static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &Field,
   (reader_fun_t) &StrtoB,
@@ -1219,11 +1293,15 @@ int freadMain(freadMainArgs _args) {
           type[field] = 1;  // re-initialize for 2nd row onwards
         }
         // throw-away storage for processors to write to in this preamble.
-        // Saves deep 'if (target)' inside processors.
-        double trash_val; // double so that this storage is aligned. char trash[8] would not be aligned.
-        void *trash = (void*)&trash_val;
+        double trash; // double so that this storage is aligned. char trash[8] would not be aligned.
+        void *targets[9] = {NULL, &trash, NULL, NULL, &trash, NULL, NULL, NULL, &trash};
+        FieldParseContext fctx = {
+          .ch = &ch,
+          .targets = targets,
+          .anchor = NULL,
+        };
         while (type[field]<=CT_STRING) {
-          fun[type[field]](&ch, trash);
+          fun[type[field]](&fctx);
           if (end_of_field(*ch)) break;
           skip_white(&ch);
           if (end_of_field(*ch)) break;
@@ -1233,7 +1311,7 @@ int freadMain(freadMainArgs _args) {
             ch = fieldStart;
             if (*ch==quote) {
               ch++;
-              fun[type[field]](&ch, trash);
+              fun[type[field]](&fctx);
               if (*ch==quote && end_of_field(ch[1])) { ch++; break; }
             }
             type[field]++;
@@ -1253,7 +1331,6 @@ int freadMain(freadMainArgs _args) {
           args.header=true;
           if (verbose) DTPRINT("  'header' determined to be true due to column %d having string on row 1 and a lower type (%s) on row 2\n", field+1, typeName[type[field]]);
         }
-        // DTPRINT("%d  (ch = %p)\n", type[field], ch);
         if (*ch!=sep) break;
         if (sep==' ') {
           while (ch[1]==' ') ch++;
@@ -1294,7 +1371,6 @@ int freadMain(freadMainArgs _args) {
       ch += (*ch=='\n' || *ch=='\r');
 
       lastRowEnd = ch;
-      //DTPRINT("\n");
       int thisLineLen = (int)(ch-jlineStart);  // ch is now on start of next line so this includes line ending already
       sampleLines++;
       sumLen += thisLineLen;
@@ -1392,12 +1468,18 @@ int freadMain(freadMainArgs _args) {
   } else {
     line++;
     if (sep==' ') while (*ch==' ') ch++;
+    void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames};
+    FieldParseContext fctx = {
+      .ch = &ch,
+      .targets = targets,
+      .anchor = colNamesAnchor,
+    };
     ch--;
     for (int i=0; i<ncol; i++) {
       // Use Field() here as it handles quotes, leading space etc inside it
-      const char *start = ++ch;
-      Field(&ch, colNames+i);  // stores the string length and offset as <uint,uint> in colnames[i]
-      colNames[i].off += (size_t)(start-colNamesAnchor);
+      ch++;
+      Field(&fctx);  // stores the string length and offset as <uint,uint> in colNames[i]
+      ((lenOff**) fctx.targets)[8]++;
       if (*ch!=sep) break;
       if (sep==' ') {
         while (ch[1]==' ') ch++;
@@ -1531,26 +1613,14 @@ int freadMain(freadMainArgs _args) {
     const char *thisJumpStart=NULL;  // The first good start-of-line after the jump point
     size_t myDTi = 0;  // which row in the final DT result I should start writing my chunk to
     size_t myNrow = 0; // the number of rows in my chunk
-
-    // Allocate thread-private row-major myBuff
-    // Do not reuse trash for myBuff0 as that might create write conflicts
-    // between threads, causing slowdown of the process.
     size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
-    void *myBuff8 = malloc(rowSize8 * myBuffRows);
-    void *myBuff4 = malloc(rowSize4 * myBuffRows);
-    void *myBuff1 = malloc(rowSize1 * myBuffRows);
-    void *myBuff0 = malloc(8);  // for CT_DROP columns
-    if ((rowSize8 && !myBuff8) ||
-        (rowSize4 && !myBuff4) ||
-        (rowSize1 && !myBuff1) || !myBuff0) {
-      stopTeam = true;
-    }
 
+    // Allocate thread-private row-major `myBuff`s
     ThreadLocalFreadParsingContext ctx = {
       .anchor = NULL,
-      .buff8 = myBuff8,
-      .buff4 = myBuff4,
-      .buff1 = myBuff1,
+      .buff8 = malloc(rowSize8 * myBuffRows + 8),
+      .buff4 = malloc(rowSize4 * myBuffRows + 4),
+      .buff1 = malloc(rowSize1 * myBuffRows + 1),
       .rowSize8 = rowSize8,
       .rowSize4 = rowSize4,
       .rowSize1 = rowSize1,
@@ -1564,6 +1634,9 @@ int freadMain(freadMainArgs _args) {
       .nNonStringCols = nNonStringCols
       #endif
     };
+    if ((rowSize8 && !ctx.buff8) || (rowSize4 && !ctx.buff4) || (rowSize1 && !ctx.buff1)) {
+      stopTeam = true;
+    }
     prepareThreadContext(&ctx);
 
     #pragma omp for ordered schedule(dynamic) reduction(+:thNextGoodLine,thRead,thPush)
@@ -1617,12 +1690,12 @@ int freadMain(freadMainArgs _args) {
       thisJumpStart=tch;
       if (verbose) { tt1 = wallclock(); thNextGoodLine += tt1 - tt0; tt0 = tt1; }
 
-      void *myBuff1Pos = myBuff1, *myBuff4Pos = myBuff4, *myBuff8Pos = myBuff8;
-      void **allBuffPos[9];
-      allBuffPos[0] = &myBuff0;
-      allBuffPos[1] = &myBuff1Pos;
-      allBuffPos[4] = &myBuff4Pos;
-      allBuffPos[8] = &myBuff8Pos;
+      void *targets[9] = {NULL, ctx.buff1, NULL, NULL, ctx.buff4, NULL, NULL, NULL, ctx.buff8};
+      FieldParseContext fctx = {
+        .ch = &tch,
+        .targets = targets,
+        .anchor = thisJumpStart,
+      };
 
       while (tch<nextJump) {
         if (myNrow == myBuffRows) {
@@ -1630,22 +1703,17 @@ int freadMain(freadMainArgs _args) {
           myBuffRows *= 1.5;
           #pragma omp atomic
           buffGrown++;
-          long diff8 = (char*)myBuff8Pos - (char*)myBuff8;
-          long diff4 = (char*)myBuff4Pos - (char*)myBuff4;
-          long diff1 = (char*)myBuff1Pos - (char*)myBuff1;
-          ctx.buff8 = myBuff8 = realloc(myBuff8, rowSize8 * myBuffRows);
-          ctx.buff4 = myBuff4 = realloc(myBuff4, rowSize4 * myBuffRows);
-          ctx.buff1 = myBuff1 = realloc(myBuff1, rowSize1 * myBuffRows);
-          if ((rowSize8 && !myBuff8) ||
-              (rowSize4 && !myBuff4) ||
-              (rowSize1 && !myBuff1)) {
+          ctx.buff8 = realloc(ctx.buff8, rowSize8 * myBuffRows + 8);
+          ctx.buff4 = realloc(ctx.buff4, rowSize4 * myBuffRows + 4);
+          ctx.buff1 = realloc(ctx.buff1, rowSize1 * myBuffRows + 1);
+          if ((rowSize8 && !ctx.buff8) || (rowSize4 && !ctx.buff4) || (rowSize1 && !ctx.buff1)) {
             stopTeam = true;
             break;
           }
-          // restore myBuffXPos in case myBuffX was moved by realloc
-          myBuff8Pos = (void*)((char*)myBuff8 + diff8);
-          myBuff4Pos = (void*)((char*)myBuff4 + diff4);
-          myBuff1Pos = (void*)((char*)myBuff1 + diff1);
+          // shift current buffer positions, since `myBuffX`s were probably moved by realloc
+          fctx.targets[8] = (void*)((char*)ctx.buff8 + myNrow * rowSize8);
+          fctx.targets[4] = (void*)((char*)ctx.buff4 + myNrow * rowSize4);
+          fctx.targets[1] = (void*)((char*)ctx.buff1 + myNrow * rowSize1);
         }
         const char *tlineStart = tch;  // for error message
         const char *fieldStart = tch;
@@ -1662,12 +1730,10 @@ int freadMain(freadMainArgs _args) {
             // DTPRINT("Field %d: '%.10s' as type %d  (tch=%p)\n", j+1, tch, type[j], tch);
             fieldStart = tch;
             int8_t thisType = type[j];  // fetch shared type once. Cannot read half-written byte is one reason type's type is single byte to avoid atomic read here.
-            void *target = thisType > 0 ? *(allBuffPos[size[j]]) : myBuff0;
-            // TODO:  can allBuffPos[0] be set to myBuff0? The += at the end will then just +=0. Then remove *target variable. May go away anyway when struct * gets passed to processors.
-            fun[abs(thisType)](&tch, target);
-            if (thisType == CT_STRING) ((lenOff*) myBuff8Pos)->off += (size_t)(fieldStart - thisJumpStart);  // TODO: save branch and move inside Field via &struct arg as per TODO's above
+            int8_t thisSize = size[j];
+            fun[abs(thisType)](&fctx);
             if (*tch!=sep) break;
-            *((char **) allBuffPos[size[j]]) += size[j];  // TODO: Pasha's idea to bump inside processor. Will need a way to rewind though now that processor doesn't know if it fully consumed field.
+            ((char **) targets)[thisSize] += thisSize;
             tch++;
             j++;
           }
@@ -1679,7 +1745,8 @@ int freadMain(freadMainArgs _args) {
             tch = tlineStart;  // in case white space at the beginning may need to be including in field
           }
           else if (eol(&tch)) {
-            *((char **) allBuffPos[size[j]]) += size[j];
+            int8_t thisSize = size[j];
+            ((char **) targets)[thisSize] += thisSize;
             j++;
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJump). Usually happens, fastest path
           }
@@ -1719,13 +1786,9 @@ int freadMain(freadMainArgs _args) {
               if (!end_of_field(*tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
               if (*tch==quote) { quoted=true; tch++; }
             } // else Field() handles NA inside it unlike other processors e.g. ,, is interpretted as "" or NA depending on option read inside Field()
-            void *target = thisType > 0 ? *(allBuffPos[size[j]]) : myBuff0;
-            fun[abs(thisType)](&tch, target);
+            fun[abs(thisType)](&fctx);
             if (quoted && *tch==quote) tch++;
-            if (thisType == CT_STRING)
-              ((lenOff*) myBuff8Pos)->off += (size_t)(fieldStart - thisJumpStart);  // TODO: avoid just like in the hot loop
-            else
-              skip_white(&tch);
+            skip_white(&tch);
             if (end_of_field(*tch)) {
               if (sep==' ' && *tch==' ') {
                 while (tch[1]==' ') tch++;  // multiple space considered one sep so move to last
@@ -1764,7 +1827,7 @@ int freadMain(freadMainArgs _args) {
               } // else another thread just bumped to a (negative) higher or equal type while I was waiting, so do nothing
             }
           }
-          *((char**) allBuffPos[size[j]]) += size[j];
+          ((char**) targets)[size[j]] += size[j];
           j++;
           if (*tch==sep) { tch++; continue; }
           if (tch==eof && finalByte==sep && sep!=' ') { finalByte='\0'; continue; }
@@ -1796,7 +1859,7 @@ int freadMain(freadMainArgs _args) {
             *_const_cast(eof-1) = finalByte;  // *eof=='\0' already
             tch = fieldStart-1;
             j--;
-            *((char**) allBuffPos[size[j]]) -= size[j];
+            ((char**) targets)[size[j]] -= size[j];
             goto oneLastTimeIfFinalByte;  // reread final field now that it has been shifted back one byte and the finalByte placed at the end
           } else if (nTypeBump) {
             // The very final field was just jiggled and reread due to finalByte!='\0' and finalSep!='\0'.
@@ -1878,10 +1941,9 @@ int freadMain(freadMainArgs _args) {
       if (verbose) thRead += wallclock() - tt1;
     }
     // Each thread to free their own buffer.
-    free(myBuff8); myBuff8 = NULL;
-    free(myBuff4); myBuff4 = NULL;
-    free(myBuff1); myBuff1 = NULL;
-    free(myBuff0); myBuff0 = NULL;
+    free(ctx.buff8); ctx.buff8 = NULL;
+    free(ctx.buff4); ctx.buff4 = NULL;
+    free(ctx.buff1); ctx.buff1 = NULL;
     freeThreadContext(&ctx);
   }
   //-- end parallel ------------------
