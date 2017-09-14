@@ -3,7 +3,7 @@
 \title{ Fast and friendly file finagler }
 \description{
    Similar to \code{read.table} but faster and more convenient. All controls such as \code{sep}, \code{colClasses} and \code{nrows} are automatically detected. \code{bit64::integer64} types are also detected and read directly without needing to read as character before converting.
-   
+
    Dates are read as character currently. They can be converted afterwards using the excellent \code{fasttime} package or standard base functions.
 
    `fread` is for \emph{regular} delimited files; i.e., where every row has the same number of columns. In future, secondary separator (\code{sep2}) may be specified \emph{within} each column. Such columns will be read as type \code{list} where each cell is itself a vector.
@@ -14,12 +14,12 @@ nrows=Inf, header="auto", na.strings="NA",
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"), autostart=NA,
 skip=0, select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
-col.names, 
-check.names=FALSE, encoding="unknown", 
-strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, 
+col.names,
+check.names=FALSE, encoding="unknown",
+strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL,
 showProgress=interactive(),
 data.table=getOption("datatable.fread.datatable"),
-nThread=getDTthreads(), logical01=FALSE
+nThread=getDTthreads(), logical01=TRUE
 )
 }
 \arguments{
@@ -64,20 +64,20 @@ If an empty line is encountered then reading stops there (unless \code{blank.lin
 
 \bold{Line endings:} All known line endings are detected automatically: \code{\\n} (*NIX including Mac), \code{\\r\\n} (Windows CRLF), \code{\\r} (old Mac) and \code{\\n\\r} (just in case). There is no need to convert input files first. \code{fread} running on any architecture will read a file from any architecture. Both \code{\\r} and \code{\\n} may be embedded in character strings (including column names) provided the field is quoted.
 
-\bold{Decimal separator and locale:} \code{fread(...,dec=",")} should just work. \code{fread} uses C function \code{strtod} to read numeric data; e.g., \code{1.23} or \code{1,23}. \code{strtod} retrieves the decimal separator (\code{.} or \code{,} usually) from the locale of the R session rather than as an argument passed to the \code{strtod} function. So for \code{fread(...,dec=",")} to work, \code{fread} changes this (and only this) R session's locale temporarily to a locale which provides the desired decimal separator. 
+\bold{Decimal separator and locale:} \code{fread(...,dec=",")} should just work. \code{fread} uses C function \code{strtod} to read numeric data; e.g., \code{1.23} or \code{1,23}. \code{strtod} retrieves the decimal separator (\code{.} or \code{,} usually) from the locale of the R session rather than as an argument passed to the \code{strtod} function. So for \code{fread(...,dec=",")} to work, \code{fread} changes this (and only this) R session's locale temporarily to a locale which provides the desired decimal separator.
 
 On Windows, "French_France.1252" is tried which should be available as standard (any locale with comma decimal separator would suffice) and on unix "fr_FR.utf8" (you may need to install this locale on unix). \code{fread()} is very careful to set the locale back again afterwards, even if the function fails with an error. The choice of locale is determined by \code{options()$datatable.fread.dec.locale}. This may be a \emph{vector} of locale names and if so they will be tried in turn until the desired \code{dec} is obtained; thus allowing more than two different decimal separators to be selected. This is a new feature in v1.9.6 and is experimental. In case of problems, turn it off with \code{options(datatable.fread.dec.experiment=FALSE)}.
 
-\bold{Quotes:} 
+\bold{Quotes:}
 
-When \code{quote} is a single character, 
+When \code{quote} is a single character,
 
   \itemize{
       \item{Spaces and other whitespace (other than \code{sep} and \code{\\n}) may appear in unquoted character fields, e.g., \code{...,2,Joe Bloggs,3.14,...}.}
 
-      \item{When \code{character} columns are \emph{quoted}, they must start and end with that quoting character immediately followed by \code{sep} or \code{\\n}, e.g., \code{...,2,"Joe Bloggs",3.14,...}. 
+      \item{When \code{character} columns are \emph{quoted}, they must start and end with that quoting character immediately followed by \code{sep} or \code{\\n}, e.g., \code{...,2,"Joe Bloggs",3.14,...}.
 
-      In essence quoting character fields are \emph{required} only if \code{sep} or \code{\\n} appears in the string value. Quoting may be used to signify that numeric data should be read as text. Unescaped quotes may be present in a quoted field, e.g., \code{...,2,"Joe, "Bloggs"",3.14,...}, as well as escaped quotes, e.g., \code{...,2,"Joe \",Bloggs\"",3.14,...}. 
+      In essence quoting character fields are \emph{required} only if \code{sep} or \code{\\n} appears in the string value. Quoting may be used to signify that numeric data should be read as text. Unescaped quotes may be present in a quoted field, e.g., \code{...,2,"Joe, "Bloggs"",3.14,...}, as well as escaped quotes, e.g., \code{...,2,"Joe \",Bloggs\"",3.14,...}.
 
       If an embedded quote is followed by the separator inside a quoted field, the embedded quotes up to that point in that field must be balanced; e.g. \code{...,2,"www.blah?x="one",y="two"",3.14,...}.
 
@@ -147,7 +147,7 @@ require(data.table)
 if(all(sapply(c("sqldf", "ff"), requireNamespace, quietly = TRUE))) {
   require(sqldf)
   require(ff)
-  
+
   system.time(DT <- fread("test.csv"))
   #  3 sec (faster and friendlier)
 
@@ -171,8 +171,8 @@ tables()
 write.table(DTbig,"testbig.csv",sep=",",row.names=FALSE,quote=FALSE)
 # 500MB (10 million rows x 6 columns)
 
-system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",         
-    quote="",stringsAsFactors=FALSE,comment.char="",nrows=1e7,                     
+system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",
+    quote="",stringsAsFactors=FALSE,comment.char="",nrows=1e7,
     colClasses=c("integer","integer","numeric",
                  "character","numeric","integer")))
 # 100-200 sec (varies)
@@ -190,7 +190,7 @@ download.file("http://stat-computing.org/dataexpo/2009/2008.csv.bz2",
               destfile="2008.csv.bz2")
 # 109MB (compressed)
 
-system("bunzip2 2008.csv.bz2")                                          
+system("bunzip2 2008.csv.bz2")
 # 658MB (7,009,728 rows x 29 columns)
 
 colClasses = sapply(read.csv("2008.csv",nrows=100),class)
@@ -200,8 +200,8 @@ colClasses = sapply(read.csv("2008.csv",nrows=200),class)
 # 5 character, 24 integer. Correct. Might have missed data only using 100 rows
 # since read.table assumes colClasses is correct.
 
-system.time(DF <- read.table("2008.csv", header=TRUE, sep=",",          
-    quote="",stringsAsFactors=FALSE,comment.char="",nrows=7009730,      
+system.time(DF <- read.table("2008.csv", header=TRUE, sep=",",
+    quote="",stringsAsFactors=FALSE,comment.char="",nrows=7009730,
     colClasses=colClasses))
 # 360 secs
 
@@ -260,7 +260,7 @@ fread(data, colClasses=list(character=2:4))     # same using column numbers
 
 # drop
 fread(data, colClasses=c("B"="NULL","C"="NULL"))   # as read.csv
-fread(data, colClasses=list(NULL=c("B","C")))      # 
+fread(data, colClasses=list(NULL=c("B","C")))      #
 fread(data, drop=c("B","C"))      # same but less typing, easier to read
 fread(data, drop=2:3)             # same using column numbers
 
