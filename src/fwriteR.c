@@ -1,6 +1,116 @@
 
 #include "data.table.h"
 
+/* Non-agnostic writers
+ * Where possible we use common agnostic writers. But in these cases there are unavoidable differences
+ * in the structure of the data being written.
+ */
+
+static void writeString(SEXP col, int row, char **thisCh)
+{
+  SEXP x = STRING_ELT(col, row);
+  char *ch = *thisCh;
+  if (x == NA_STRING) {
+    // NA is not quoted by write.csv even when quote=TRUE to distinguish from "NA"
+    write_chars(na, &ch);
+  } else {
+    Rboolean q = quote;
+    if (q==NA_LOGICAL) { // quote="auto"
+      const char *tt = CHAR(x);
+      if (*tt == '\0') {
+        // Empty strings are always quoted: this distinguishes them from NAs
+        *ch = '"'; ch[1] = '"';
+        *thisCh += 2;
+        return;
+      }
+      while (*tt!='\0' && *tt!=sep && *tt!=sep2 && *tt!='\n' && *tt!='"') *ch++ = *tt++;
+      // Windows includes \n in its \r\n so looking for \n only is sufficient
+      // sep2 is set to '\0' when no list columns are present
+      if (*tt=='\0') {
+        // most common case: no sep, newline or " contained in string
+        *thisCh = ch;  // advance caller over the field already written
+        return;
+      }
+      ch = *thisCh; // rewind the field written since it needs to be quoted
+      q = TRUE;
+    }
+    if (q==FALSE) {
+      write_chars(CHAR(x), &ch);
+    } else {
+      *ch++ = '"';
+      const char *tt = CHAR(x);
+      if (qmethod_escape) {
+        while (*tt!='\0') {
+          if (*tt=='"' || *tt=='\\') *ch++ = '\\';
+          *ch++ = *tt++;
+        }
+      } else {
+        // qmethod='double'
+        while (*tt!='\0') {
+          if (*tt=='"') *ch++ = '"';
+          *ch++ = *tt++;
+        }
+      }
+      *ch++ = '"';
+    }
+  }
+  *thisCh = ch;
+}
+
+static void writeFactor(SEXP column, int i, char **thisCh) {
+  char *ch = *thisCh;
+  if (INTEGER(column)[i]==NA_INTEGER) write_chars(na, &ch);
+  else writeString(getAttrib(column, R_LevelsSymbol), INTEGER(column)[i]-1, &ch);
+  *thisCh = ch;
+}
+
+static void writeList(SEXP, int, char **); // prototype needed because it calls back to whichWriter too
+
+static writer_fun_t whichWriter(SEXP column) {
+  switch(TYPEOF(column)) {
+  case LGLSXP:
+    return logicalAsInt ? writeInteger : writeLogical;
+  case INTSXP:
+    if (isFactor(column))                return writeFactor;
+    if (dateTimeAs==DATETIMEAS_EPOCH)    return writeInteger;
+    if (INHERITS(column, char_ITime))    return writeITime;
+    if (INHERITS(column, char_Date))     return writeDateInt;
+    return writeInteger;
+  case REALSXP:
+    if (INHERITS(column, char_nanotime) && dateTimeAs!=DATETIMEAS_EPOCH) return writeNanotime;
+    if (INHERITS(column, char_integer64))return writeInteger;
+    if (dateTimeAs==DATETIMEAS_EPOCH)    return writeNumeric;
+    if (INHERITS(column, char_Date))     return writeDateReal;
+    if (INHERITS(column, char_POSIXct))  return writePOSIXct;
+    return writeNumeric;
+  case STRSXP:
+    return writeString;
+  case VECSXP:
+    return writeList;
+  default:
+    return NULL;
+  }
+}
+
+static void writeList(SEXP column, int i, char **thisCh) {
+  SEXP v = VECTOR_ELT(column,i);
+  writer_fun_t fun = whichWriter(v);
+  if (TYPEOF(v)==VECSXP || fun==NULL) {
+    error("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing atomic vectors of type logical, integer, integer64, double, character and factor, currently.", i+1, type2char(TYPEOF(v)));
+  }
+  char *ch = *thisCh;
+  write_chars(sep2start, &ch);
+  for (int j=0; j<LENGTH(v); j++) {
+    (*fun)(v, j, &ch);
+    *ch++ = sep2;
+  }
+  if (LENGTH(v)) ch--; // backup over the last sep2 after the last item
+  write_chars(sep2end, &ch);
+  *thisCh = ch;
+}
+
+
+
 SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g. data.frame, data.table
                SEXP filename_Arg,
                SEXP sep_Arg,
