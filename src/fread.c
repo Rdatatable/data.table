@@ -75,8 +75,8 @@ static lenOff *colNames = NULL;
 static int8_t *oldType = NULL;
 static freadMainArgs args;  // global for use by DTPRINT
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "int32", "int64", "float64", "string"};
-int8_t     typeSize[NUMTYPE]     = { 0,      1,       4,       8,       8,         8      };
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8      };
 
 // NAN and INFINITY constants are float, so cast to double once up front.
 static const double NAND = (double)NAN;
@@ -689,44 +689,85 @@ static void StrtoD(FieldParseContext *ctx)
 }
 
 
-static void StrtoB(FieldParseContext *ctx)
+
+/* Parse numbers 0 | 1 as boolean. */
+static void parse_bool_numeric(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
-
-  _Bool logical01 = false;  // TO DO: i) expose choice to user, ii) create separate processor and iii) default false in R for consistency with base R
-  if ( logical01 && (*ch=='0' || *ch=='1') ) {
-    *target = (*ch=='1');
-    ch++;
-  } else if (*ch=='T' || *ch=='t') {
-    if ((ch+3<eof && ch[1]=='R' && ch[2]=='U' && ch[3]=='E') ||    // These long forms usually come from base R's write.csv
-        (ch+3<eof && ch[1]=='r' && ch[2]=='u' && ch[3]=='e')) {
-      *target=1;
-      ch+=4;
-    }
-  } else if (*ch=='F' || *ch=='f') {
-    if ((ch+4<eof && ch[1]=='A' && ch[2]=='L' && ch[3]=='S' && ch[4]=='E') ||
-        (ch+4<eof && ch[1]=='a' && ch[2]=='l' && ch[3]=='s' && ch[4]=='e')) {
-      *target=0;
-      ch+=5;
-    }
+  uint8_t d = (uint8_t)(*ch - '0');  // '0'=>0, '1'=>1, everything else > 1
+  if (d <= 1) {
+    *target = (int8_t) d;
+    *(ctx->ch) = ch + 1;
   } else {
     *target = NA_BOOL8;
-    return;
   }
-  *(ctx->ch) = ch;
 }
+
+/* Parse uppercase TRUE | FALSE as boolean. */
+static void parse_bool_uppercase(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  if (ch[0]=='T' && ch[1]=='R' && ch[2]=='U' && ch[3]=='E') {
+    *target = 1;
+    *(ctx->ch) = ch + 4;
+  } else if (ch[0]=='F' && ch[1]=='A' && ch[2]=='L' && ch[3]=='S' && ch[4]=='E') {
+    *target = 0;
+    *(ctx->ch) = ch + 5;
+  } else {
+    *target = NA_BOOL8;
+  }
+}
+
+/* Parse camelcase True | False as boolean. */
+static void parse_bool_titlecase(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  if (ch[0]=='T' && ch[1]=='r' && ch[2]=='u' && ch[3]=='e') {
+    *target = 1;
+    *(ctx->ch) = ch + 4;
+  } else if (ch[0]=='F' && ch[1]=='a' && ch[2]=='l' && ch[3]=='s' && ch[4]=='e') {
+    *target = 0;
+    *(ctx->ch) = ch + 5;
+  } else {
+    *target = NA_BOOL8;
+  }
+}
+
+/* Parse lowercase true | false as boolean. */
+static void parse_bool_lowercase(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  if (ch[0]=='t' && ch[1]=='r' && ch[2]=='u' && ch[3]=='e') {
+    *target = 1;
+    *(ctx->ch) = ch + 4;
+  } else if (ch[0]=='f' && ch[1]=='a' && ch[2]=='l' && ch[3]=='s' && ch[4]=='e') {
+    *target = 0;
+    *(ctx->ch) = ch + 5;
+  } else {
+    *target = NA_BOOL8;
+  }
+}
+
+
 
 typedef void (*reader_fun_t)(FieldParseContext *ctx);
 static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &Field,
-  (reader_fun_t) &StrtoB,
+  (reader_fun_t) &parse_bool_numeric,
+  (reader_fun_t) &parse_bool_uppercase,
+  (reader_fun_t) &parse_bool_titlecase,
+  (reader_fun_t) &parse_bool_lowercase,
   (reader_fun_t) &StrtoI32,
   (reader_fun_t) &StrtoI64,
   (reader_fun_t) &StrtoD,
   (reader_fun_t) &Field
 };
 
+static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 
 //=================================================================================================
@@ -791,6 +832,7 @@ int freadMain(freadMainArgs _args) {
     if (errno==0 && (size_t)(end - ch) == nchar) any_number_like_NAstrings = true;
     nastr++;
   }
+  disabled_parsers[CT_BOOL8_N] = !args.logical01;
   if (verbose) {
     if (*NAstrings == NULL) {
       DTPRINT("  No NAstrings provided.\n");
@@ -807,6 +849,7 @@ int freadMain(freadMainArgs _args) {
     if (args.skipNrow) DTPRINT("  skip num lines = %lld\n", args.skipNrow);
     if (args.skipString) DTPRINT("  skip to string = <<%s>>\n", args.skipString);
     DTPRINT("  show progress = %d\n", args.showProgress);
+    DTPRINT("  0/1 column will be read as %s\n", args.logical01? "boolean" : "integer");
   }
 
   stripWhite = args.stripWhite;
@@ -1215,11 +1258,12 @@ int freadMain(freadMainArgs _args) {
   size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
   if (!type || !size) STOP("Failed to allocate %d x 2 bytes for type/size: %s", ncol, strerror(errno));
 
+  int8_t type0 = 1;
+  while (disabled_parsers[type0]) type0++;
   for (int j=0; j<ncol; j++) {
-    // initialize with the first (lowest) type, 1==CT_BOOL8 at the time of writing. If we add CT_BOOL1 or CT_BOOL2 in
-    /// future, using 1 here means this line won't need to be changed. CT_DROP is 0 and 1 is the first type.
-    type[j] = 1;
-    size[j] = typeSize[type[j]];
+    // initialize with the lowest available type
+    type[j] = type0;
+    size[j] = typeSize[type0];
   }
 
   size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first JUMPLINES from the start (jump point 0)
@@ -1292,7 +1336,7 @@ int freadMain(freadMainArgs _args) {
             args.header=false;
             if (verbose) DTPRINT("  'header' determined to be false due to first field not being type string\n");
           }
-          type[field] = 1;  // re-initialize for 2nd row onwards
+          type[field] = type0;  // re-initialize for 2nd row onwards
         }
         // throw-away storage for processors to write to in this preamble.
         double trash; // double so that this storage is aligned. char trash[8] would not be aligned.
@@ -1317,6 +1361,7 @@ int freadMain(freadMainArgs _args) {
               if (*ch==quote && end_of_field(ch[1])) { ch++; break; }
             }
             type[field]++;
+            while (disabled_parsers[type[field]]) type[field]++;
           } else {
             // the field could not be read with this quote rule, try again with next one
             // Trying the next rule will only be successful if the number of fields is consistent with it
@@ -1367,7 +1412,7 @@ int freadMain(freadMainArgs _args) {
              strlim(fieldStart,200));
       }
       if (firstDataRowAfterPotentialColumnNames) {
-        if (fill) for (int jj=field+1; jj<ncol; jj++) type[jj]=1;
+        if (fill) for (int jj=field+1; jj<ncol; jj++) type[jj] = type0;
         firstDataRowAfterPotentialColumnNames = false;
       } else if (sampleLines==0) firstDataRowAfterPotentialColumnNames = true;  // To trigger 2nd row starting from type 1 again to compare to 1st row to decide if column names present
       ch += (*ch=='\n' || *ch=='\r');
@@ -1415,7 +1460,7 @@ int freadMain(freadMainArgs _args) {
   }
   if (sampleLines<=1) {
     if (args.header==true) {
-      for (int j=0; j<ncol; j++) type[j]=1;
+      for (int j=0; j<ncol; j++) type[j] = type0;
       // when column-names-only, 2nd row didn't happen, so initialize needs to be done now so that empty columns should be type logical
       // rather than the type of the column names (most likely string)
     }
@@ -1813,6 +1858,7 @@ int freadMain(freadMainArgs _args) {
             // check that the new type is sufficient for the rest of the column (and any other columns also in out-of-sample bump status) to be
             // sure a single re-read will definitely work.
             absType++;
+            while (disabled_parsers[absType]) absType++;
             thisType = -absType;
             tch = fieldStart;
           }

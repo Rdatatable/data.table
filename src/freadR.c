@@ -28,9 +28,9 @@ as.read.table=true/false option.  Or fread.table and fread.csv (see http://r.789
 
 #define NUT  NUMTYPE+2  // +1 for "numeric" alias for "double"; +1 for CLASS fallback using as.class() at R level afterwards
 
-static int  typeSxp[NUT] =     { NILSXP, LGLSXP,   INTSXP,   REALSXP,    REALSXP,   STRSXP,     REALSXP,   STRSXP   };
-static char typeRName[NUT][10]={"drop", "logical","integer","integer64","double",  "character","numeric", "CLASS"   };
-static int  typeEnum[NUT] =    { CT_DROP,CT_BOOL8, CT_INT32, CT_INT64,   CT_FLOAT64,CT_STRING,  CT_FLOAT64,CT_STRING};
+static int  typeSxp[NUT] =     { NILSXP, LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,   REALSXP,    REALSXP,   STRSXP,     REALSXP,   STRSXP   };
+static char typeRName[NUT][10]={"drop",  "logical",  "logical",  "logical",  "logical",  "integer","integer64","double",  "character","numeric", "CLASS"  };
+static int  typeEnum[NUT] =    { CT_DROP,CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_INT32, CT_INT64,   CT_FLOAT64,CT_STRING,  CT_FLOAT64,CT_STRING};
 static colType readInt64As=CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
@@ -64,6 +64,7 @@ SEXP freadR(
   SEXP nThreadArg,
   SEXP verboseArg,
   SEXP warnings2errorsArg,
+  SEXP logical01Arg,
 
   // extras needed by callbacks from freadMain
   SEXP selectArg,
@@ -123,6 +124,7 @@ SEXP freadR(
     if (INTEGER(nrowLimitArg)[0]>=0) args.nrowLimit = (int64_t)INTEGER(nrowLimitArg)[0];
   }
 
+  args.logical01 = LOGICAL(logical01Arg)[0];
   args.skipNrow=0;
   args.skipString=NULL;
   if (isString(skipArg)) {
@@ -192,7 +194,7 @@ SEXP freadR(
 _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 {
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
-  if (typeSize[CT_BOOL8]!=1) STOP("Internal error: typeSize[CT_BOOL8] != 1");
+  if (typeSize[CT_BOOL8_N]!=1) STOP("Internal error: typeSize[CT_BOOL8_N] != 1");
   if (typeSize[CT_STRING]!=8) STOP("Internal error: typeSize[CT_STRING] != 1");
   colNamesSxp = NULL;
   if (colNames!=NULL) {
@@ -455,7 +457,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
         }
       } else
       if (thisSize == 1) {
-        if (type[j] != CT_BOOL8) STOP("Field size is 1 but the field is of type %d\n", type[j]);
+        if (type[j] > CT_BOOL8_L) STOP("Field size is 1 but the field is of type %d\n", type[j]);
         Rboolean *dest = (Rboolean *)((char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*sizeof(Rboolean));
         char *src1 = (char*)buff1 + off1;
         for (int i=0; i<nRows; i++) {

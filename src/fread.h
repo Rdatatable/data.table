@@ -13,7 +13,10 @@
 typedef enum {
   NEG = -1,       // dummy to force signed type; sign bit used for out-of-sample type bump management
   CT_DROP = 0,    // skip column requested by user; it is navigated as a string column with the prevailing quoteRule
-  CT_BOOL8,       // int8_t; first enum value must be 1 not 0(=CT_DROP) so that it can be negated to -1.
+  CT_BOOL8_N,     // int8_t; first enum value must be 1 not 0(=CT_DROP) so that it can be negated to -1.
+  CT_BOOL8_U,
+  CT_BOOL8_T,
+  CT_BOOL8_L,
   CT_INT32,       // int32_t
   CT_INT64,       // int64_t
   CT_FLOAT64,     // double (64-bit IEEE 754 float)
@@ -125,7 +128,11 @@ typedef struct freadMainArgs
   // leaks would occur.
   _Bool warningsAreErrors;
 
-  char _padding[2];
+  // If true, then column of 0s and 1s will be read as logical, otherwise it
+  // will become integer.
+  _Bool logical01;
+
+  char _padding[1];
 
   // Any additional implementation-specific parameters.
   FREAD_MAIN_ARGS_EXTRA_FIELDS
