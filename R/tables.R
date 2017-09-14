@@ -1,7 +1,7 @@
 # globals to pass NOTE from R CMD check, see http://stackoverflow.com/questions/9439256
-MB = NCOL = NROW = NULL   
+MB = NCOL = NROW = NULL
 
-tables <- function(mb=TRUE, order.col="NAME", width=80, 
+tables <- function(mb=TRUE, order.col="NAME", width=80,
                    env=parent.frame(), silent=FALSE, index=FALSE)
 {
     # Prints name, size and colnames of all data.tables in the calling environment by default
@@ -14,14 +14,14 @@ tables <- function(mb=TRUE, order.col="NAME", width=80,
     DT_names = all_obj[is_DT]
     info = rbindlist(lapply(DT_names, function(dt_n){
         DT = get(dt_n, envir=env)   # doesn't copy
-        info_i = 
-            data.table(NAME = dt_n, 
+        info_i =
+            data.table(NAME = dt_n,
                        NROW = nrow(DT),
                        NCOL = ncol(DT))
-        if (mb) 
+        if (mb)
           # mb is an option because object.size() appears to be slow.
           # **TO DO: revisit**
-          set(info_i, , "MB", 
+          set(info_i, , "MB",
                 #1048576 = 1024^2
                 round(as.numeric(object.size(DT))/1048576))
         set(info_i, , "COLS", list(list(names(DT))))
@@ -35,7 +35,7 @@ tables <- function(mb=TRUE, order.col="NAME", width=80,
         total = sum(info$MB)
         info[ , MB := format(sprintf("%2s", prettyNum(MB, big.mark=",")), justify="right")]
     }
-    if (!order.col %in% names(info)) stop("order.col='",order.col,"' not a column name of info") 
+    if (!order.col %in% names(info)) stop("order.col='",order.col,"' not a column name of info")
     info = info[base::order(info[[order.col]])]  # base::order to maintain locale ordering of table names
     m = as.matrix(info)
     colnames(m)[2] = sprintf(paste("%",nchar(m[1,"NROW"]), "s", sep=""), "NROW")

@@ -22,11 +22,11 @@ chgroup(x)
 }
 \details{
   Fast versions of \code{match}, \code{\%in\%} and \code{order}, optimised for character vectors. \code{chgroup} groups together duplicated values but retains the group order (according the first appearance order of each group), efficiently. They have been primarily developed for internal use by data.table, but have been exposed since that seemed appropriate.
-  
+
   Strings are already cached internally by R (\code{CHARSXP}) and that is utilised by these functions. No hash table is built or cached, so the first call is the same speed as subsequent calls. Essentially, a counting sort (similar to \code{base::sort.list(x,method="radix")}, see \code{\link{setkey}}) is implemented using the (almost) unused truelength of CHARSXP as the counter. \emph{Where} R \emph{has} used truelength of CHARSXP (where a character value is shared by a variable name), the non zero truelengths are stored first and reinstated afterwards. Each of the \code{ch*} functions implements a variation on this theme. Remember that internally in R, length of a CHARSXP is the nchar of the string and DATAPTR is the string itself.
-  
+
   Methods that do build and cache a hash table (such as the \href{http://www.rforge.net/fastmatch}{fastmatch package}) are \emph{much} faster on subsequent calls (almost instant) but a little slower on the first. Therefore \code{chmatch} may be particularly suitable for ephemeral vectors (such as local variables in functions) or tasks that are only done once. Much depends on the length of \code{x} and \code{table}, how many unique strings each contains, and whether the position of the first match is all that is required.
-  
+
   It may be possible to speed up fastmatch's hash table build time by using the technique in \code{data.table}, and we have suggested this to its author. If successful, fastmatch would then be fastest in all cases.
   }
 \value{

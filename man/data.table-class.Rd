@@ -18,7 +18,7 @@
 \author{ Steve Lianoglou }
 \seealso{
   \code{\link{data.table}}
-}  
+}
 
 \examples{
 ## Used in inheritence.

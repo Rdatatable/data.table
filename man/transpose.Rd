@@ -2,7 +2,7 @@
 \alias{transpose}
 \title{Efficient transpose of list}
 \description{
-  \code{transpose} is an efficient way to transpose \code{lists}, \code{data frames} or \code{data tables}. 
+  \code{transpose} is an efficient way to transpose \code{lists}, \code{data frames} or \code{data tables}.
 }
 
 \usage{

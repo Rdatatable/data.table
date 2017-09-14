@@ -106,8 +106,8 @@ R_CallMethodDef callMethods[] = {
 {"Csetnamed", (DL_FUNC) &setnamed, -1},
 {"Caddress", (DL_FUNC) &address, -1},
 {"CcopyNamedInList", (DL_FUNC) &copyNamedInList, -1},
-{"Cfmelt", (DL_FUNC) &fmelt, -1}, 
-{"Cfcast", (DL_FUNC) &fcast, -1}, 
+{"Cfmelt", (DL_FUNC) &fmelt, -1},
+{"Cfcast", (DL_FUNC) &fcast, -1},
 {"Cuniqlist", (DL_FUNC) &uniqlist, -1},
 {"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
 {"Csetrev", (DL_FUNC) &setrev, -1},
@@ -183,7 +183,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
     if (sizeof(uint64_t) != 8) error("Checking sizeof(uint64_t) [%d] is 8 %s", sizeof(uint64_t), msg);
     if (sizeof(signed char) != 1) error("Checking sizeof(signed char) [%d] is 1 %s", sizeof(signed char), msg);
     if (sizeof(int8_t) != 1) error("Checking sizeof(int8_t) [%d] is 1 %s", sizeof(int8_t), msg);
-    
+
     SEXP tmp = PROTECT(allocVector(INTSXP,2));
     if (LENGTH(tmp)!=2) error("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s", LENGTH(tmp), msg);
     if (TRUELENGTH(tmp)!=0) error("Checking TRUELENGTH(allocVector(INTSXP,2)) [%d] is 0 %s", TRUELENGTH(tmp), msg);
@@ -203,28 +203,28 @@ void attribute_visible R_init_datatable(DllInfo *info)
     long double ld = 3.14;
     memset(&ld, 0, sizeof(long double));
     if (ld != 0.0) error("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s", msg);
-    
+
     // Check unsigned cast used in fread.c. This isn't overflow/underflow, just cast.
-    if ((uint_fast8_t)('0'-'/') != 1) error("The ascii character '/' is not just before '0'"); 
+    if ((uint_fast8_t)('0'-'/') != 1) error("The ascii character '/' is not just before '0'");
     if ((uint_fast8_t)('/'-'0') < 10) error("The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false.");
-    if ((uint_fast8_t)(':'-'9') != 1) error("The ascii character ':' is not just after '9'"); 
+    if ((uint_fast8_t)(':'-'9') != 1) error("The ascii character ':' is not just after '9'");
     if ((uint_fast8_t)('9'-':') < 10) error("The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false.");
-    
+
     // Variables rather than #define for NA_INT64 to ensure correct usage; i.e. not casted
     NA_INT64_LL = LLONG_MIN;
     NA_INT64_D = LLtoD(NA_INT64_LL);
     if (NA_INT64_LL != DtoLL(NA_INT64_D)) error("Conversion of NA_INT64 via double failed %lld!=%lld", NA_INT64_LL, DtoLL(NA_INT64_D));
     // LLONG_MIN when punned to double is the sign bit set and then all zeros in exponent and significand i.e. -0.0
     //   That's why we must never test for NA_INT64_D using == in double type. Must always DtoLL and compare long long types.
-    //   Assigning NA_INT64_D to a REAL is ok however. 
+    //   Assigning NA_INT64_D to a REAL is ok however.
     if (NA_INT64_D != 0.0)  error("NA_INT64_D (negative -0.0) is not == 0.0.");
     if (NA_INT64_D != -0.0) error("NA_INT64_D (negative -0.0) is not ==-0.0.");
     if (ISNAN(NA_INT64_D)) error("ISNAN(NA_INT64_D) is TRUE but should not be");
     if (isnan(NA_INT64_D)) error("isnan(NA_INT64_D) is TRUE but should not be");
-        
+
     setNumericRounding(PROTECT(ScalarInteger(0))); // #1642, #1728, #1463, #485
     UNPROTECT(1);
-    
+
     // create needed strings in advance for speed, same techique as R_*Symbol
     // Following R-exts 5.9.4; paragraph and example starting "Using install ..."
     // either use PRINTNAME(install()) or R_PreserveObject(mkChar()) here.
@@ -239,18 +239,18 @@ void attribute_visible R_init_datatable(DllInfo *info)
       error("PRINTNAME(install(\"integer64\")) has returned %s not %s",
             type2char(TYPEOF(char_integer64)), type2char(CHARSXP));
     }
-    
+
     // create commonly used symbols, same as R_*Symbol but internal to DT
     // Not really for speed but to avoid leak in situations like setAttrib(DT, install(), allocVector()) where
     // the allocVector() can happen first and then the install() could gc and free it before it is protected
     // within setAttrib. Thanks to Bill Dunlap finding and reporting. Using these symbols instead of install()
     // avoids the gc without needing an extra PROTECT and immediate UNPROTECT after the setAttrib which would
     // look odd (and devs in future might be tempted to remove them). Avoiding passing install() to API calls
-    // keeps the code neat and readable. Also see grep's added to CRAN_Release.cmd to find such calls. 
+    // keeps the code neat and readable. Also see grep's added to CRAN_Release.cmd to find such calls.
     sym_sorted  = install("sorted");
     sym_BY      = install(".BY");
     sym_maxgrpn = install("maxgrpn");
-    
+
     avoid_openmp_hang_within_fork();
 }
 
@@ -273,14 +273,14 @@ inline Rboolean INHERITS(SEXP x, SEXP char_) {
 }
 
 inline long long DtoLL(double x) {
-  // Type punning such as 
+  // Type punning such as
   //     *(long long *)&REAL(column)[i]
   // is undefined by C standards. This was the cause of v1.10.2 failing on 31 Jan 2017
   // under clang 3.9.1 -O3 and solaris-sparc but was ok on solaris-x86 and gcc.
   // Then the union method :
   //     union {double d; long long ll;} u;
   //     u.d = x;
-  //     return u.ll; 
+  //     return u.ll;
   // passed on some of those but still failed on MacOS with latest clang from latest
   // Xcode 8.2 and -O2. It seems that memcpy is the safest way, is clear, and compilers
   // will optimize away the call overhead.

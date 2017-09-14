@@ -12,7 +12,7 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
     R_len_t reslen,i,j,k, thisx;
     double limit;
     SEXP ans;
-    
+
     if (!isInteger(x)) error("x must be an integer vector");
     if (!isInteger(len)) error("len must be an integer vector");
     if (LENGTH(x) != LENGTH(len)) error("x and len must be the same length");

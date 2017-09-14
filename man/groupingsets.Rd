@@ -62,7 +62,7 @@ cube(dt, j = lapply(.SD, sum), by = c("color","year","status"), id=TRUE, .SDcols
 cube(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE)
 
 # groupingsets
-groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), 
+groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"),
              sets = list("color", c("year","status"), character()), id=TRUE)
 }
 \keyword{ data }

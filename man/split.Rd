@@ -7,7 +7,7 @@
 }
 \usage{
 \method{split}{data.table}(x, f, drop = FALSE,
-      by, sorted = FALSE, keep.by = TRUE, flatten = TRUE, 
+      by, sorted = FALSE, keep.by = TRUE, flatten = TRUE,
       ..., verbose = getOption("datatable.verbose"))
 }
 \arguments{
@@ -30,9 +30,9 @@
 \seealso{ \code{\link{data.table}}, \code{\link{rbindlist}} }
 \examples{
 set.seed(123)
-dt = data.table(x1 = rep(letters[1:2], 6), 
-                x2 = rep(letters[3:5], 4), 
-                x3 = rep(letters[5:8], 3), 
+dt = data.table(x1 = rep(letters[1:2], 6),
+                x2 = rep(letters[3:5], 4),
+                x3 = rep(letters[5:8], 3),
                 y = rnorm(12))
 dt = dt[sample(.N)]
 df = as.data.frame(dt)

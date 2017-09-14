@@ -23,8 +23,8 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
     savetl_init();
     for (i=0; i<length(x); i++) {
         s = STRING_ELT(x,i);
-        if (s != NA_STRING && ENC_KNOWN(s) != 64) { // PREV: s != NA_STRING && !ENC_KNOWN(s) - changed to fix for bug #5159. The previous fix 
-                                           // dealt with UNKNOWN encodings. But we could have the same string, where both are in different 
+        if (s != NA_STRING && ENC_KNOWN(s) != 64) { // PREV: s != NA_STRING && !ENC_KNOWN(s) - changed to fix for bug #5159. The previous fix
+                                           // dealt with UNKNOWN encodings. But we could have the same string, where both are in different
                                            // encodings than ASCII (ex: UTF8 and Latin1). To fix this, we'll to resort to 'match' if not ASCII.
                                            // This takes care of all anomalies. It's unfortunate the 'chmatch' can't be used in these cases...
                                            // // fix for the 2nd part of bug #5159
@@ -34,7 +34,7 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
             // The same string in different encodings (where unknown encoding is different to known, too) are different
             // CHARSXP pointers; this chmatch relies on pointer equality only. We tried mkChar(CHAR(s)) [ what install() does ]
             // but this impacted the fastest cases too much. Hence fall back to match() on the first unknown encoding detected
-            // since match() considers the same string in different encodings as equal (but slower). See #2538 and #4818. 
+            // since match() considers the same string in different encodings as equal (but slower). See #2538 and #4818.
             savetl_end();
             UNPROTECT(1);
             return (in ? match_logical(table, x) : match(table, x, nomatch));
@@ -48,7 +48,7 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
     }
     for (i=length(table)-1; i>=0; i--) {
         s = STRING_ELT(table,i);
-        if (s != NA_STRING && ENC_KNOWN(s) != 64) { // changed !ENC_KNOWN(s) to !ASCII(s) - check above for explanation	
+        if (s != NA_STRING && ENC_KNOWN(s) != 64) { // changed !ENC_KNOWN(s) to !ASCII(s) - check above for explanation
             for (int j=i+1; j<LENGTH(table); j++) SET_TRUELENGTH(STRING_ELT(table,j),0);  // reinstate 0 rather than leave the -i-1
             savetl_end();
             UNPROTECT(1);
