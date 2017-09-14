@@ -19,7 +19,7 @@ check.names=FALSE, encoding="unknown",
 strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, 
 showProgress=interactive(),
 data.table=getOption("datatable.fread.datatable"),
-nThread=getDTthreads()
+nThread=getDTthreads(), logical01=FALSE
 )
 }
 \arguments{
@@ -50,6 +50,7 @@ nThread=getDTthreads()
   \item{showProgress}{ \code{TRUE} displays progress on the console if the ETA is greater than 3 seconds. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
   \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. }
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
+  \item{logical01}{If TRUE a column containing only 0s and 1s will be read as logical, otherwise as integer.}
 }
 \details{
 
