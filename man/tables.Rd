@@ -5,7 +5,7 @@
   Convenience function for concisely summarizing some metadata of all \code{data.table}s in memory (or an optionally specified environment).
 }
 \usage{
-tables(mb=TRUE, order.col="NAME", width=80, 
+tables(mb=TRUE, order.col="NAME", width=80,
        env=parent.frame(), silent=FALSE, index=FALSE)
 }
 \arguments{

@@ -5,10 +5,10 @@
 \description{
    Convenience functions for generating a unique row ids within each group. It accepts atomic vectors, lists, data.frames or data.tables as input.
 
-   \code{rowid} is intended for interactive use, particularly along with the function \code{dcast} to generate unique ids directly in the formula. 
+   \code{rowid} is intended for interactive use, particularly along with the function \code{dcast} to generate unique ids directly in the formula.
 
    \code{rowidv(dt, cols=c("x", "y"))} is equivalent to column \code{N} in the code \code{dt[, N := seq_len(.N), by=c("x", "y")]}.
-   
+
    See examples for more.
 }
 \usage{

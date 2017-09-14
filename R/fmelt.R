@@ -1,6 +1,6 @@
 # Add melt generic, don't import reshape2 as it requires R >= 3.0.0.
 melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
-  if (is.data.table(data)) 
+  if (is.data.table(data))
       UseMethod("melt", data)
   else
       reshape2::melt(data, ..., na.rm=na.rm, value.name=value.name)
@@ -13,8 +13,8 @@ patterns <- function(..., cols=character(0)) {
     lapply(p, grep, cols)
 }
 
-melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variable", 
-           value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE, 
+melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variable",
+           value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE,
            verbose = getOption("datatable.verbose")) {
     if (!is.data.table(data)) stop("'data' must be a data.table")
     if (missing(id.vars)) id.vars=NULL
@@ -31,12 +31,12 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
         measure.vars = patterns(pats, cols=cols)
     }
     if (is.list(measure.vars) && length(measure.vars) > 1L) {
-        if (length(value.name) == 1L)  
+        if (length(value.name) == 1L)
           value.name = paste(value.name, seq_along(measure.vars), sep="")
     }
-    ans <- .Call(Cfmelt, data, id.vars, measure.vars, 
-            as.logical(variable.factor), as.logical(value.factor), 
-            variable.name, value.name, as.logical(na.rm), 
+    ans <- .Call(Cfmelt, data, id.vars, measure.vars,
+            as.logical(variable.factor), as.logical(value.factor),
+            variable.name, value.name, as.logical(na.rm),
             as.logical(verbose))
     setDT(ans)
     if (any(duplicated(names(ans)))) {

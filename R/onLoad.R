@@ -1,6 +1,6 @@
 .onLoad <- function(libname, pkgname) {
     # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
-    
+
     "Please read FAQ 2.23 (vignette('datatable-faq')) which explains in detail why data.table adds one for loop to the start of base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
     # Commented as a character string so this message is retained and seen by anyone who types data.table:::.onLoad
     tt = base::cbind.data.frame
@@ -50,10 +50,10 @@
     for (i in setdiff(names(opts),names(options()))) {
         eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))
     }
-    
+
     if (!is.null(getOption("datatable.old.bywithoutby")))
         warning("Option 'datatable.old.bywithoutby' has been removed as warned for 2 years. It is now ignored. Please use by=.EACHI instead and stop using this option.")
-    
+
     # reshape2
     # Tried this :
     # if (!"package:reshape2" %in% search()) {
@@ -63,13 +63,13 @@
     # which works. But then when melt in data.table is loaded, _that's_ what generates the mask message.
     # There's also a NOTE: Package startup functions should not change the search path.
     # Therefore, removed. Users will need to make sure reshape2 isn't loaded, or loaded behind data.table on search()
-    
+
     # Test R behaviour ...
-    
+
     x = 1:3
     y = list(x)
     .R.listCopiesNamed <<- (address(x) != address(y[[1]]))   # FALSE from R 3.1
-    
+
     DF = data.frame(a=1:3, b=4:6)
     add1 = address(DF$a)
     add2 = address(DF$b)
@@ -78,7 +78,7 @@
     add4 = address(DF$B)
     .R.assignNamesCopiesAll <<- add1 != add3                 # FALSE from R 3.1
     if ((add1 == add3) != (add2 == add4)) stop("If one column is copied surely the other should be as well, when checking .R.assignNamesCopiesAll")
-    
+
     DF = data.frame(a=1:3, b=4:6)
     add1 = address(DF$a)
     add2 = address(DF)
@@ -87,7 +87,7 @@
     add4 = address(DF)
     .R.subassignCopiesOthers <<- add1 != add3                # FALSE from R 3.1
     .R.subassignCopiesVecsxp <<- add2 != add4                # currently TRUE in R 3.1, but could feasibly change
-    
+
     invisible()
 }
 

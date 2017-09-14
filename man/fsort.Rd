@@ -19,7 +19,7 @@ fsort(x, decreasing = FALSE, na.last = FALSE, internal=FALSE, verbose=FALSE, ...
 \details{
   Returns the input in sorted order. Fast using parallelism.
 }
-\value{    
+\value{
   The input in sorted order.
 }
 

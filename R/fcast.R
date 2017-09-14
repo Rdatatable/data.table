@@ -1,19 +1,19 @@
 guess <- function(x) {
     if ("value" %chin% names(x))
         return("value")
-    if ("(all)" %chin% names(x)) 
+    if ("(all)" %chin% names(x))
         return("(all)")
     var <- names(x)[ncol(x)]
     message("Using '", var, "' as value column. Use 'value.var' to override")
     return(var)
 }
 
-dcast <- function(data, formula, fun.aggregate = NULL, ..., margins = NULL, 
+dcast <- function(data, formula, fun.aggregate = NULL, ..., margins = NULL,
             subset = NULL, fill = NULL, value.var = guess(data)) {
-    if (is.data.table(data)) 
+    if (is.data.table(data))
         UseMethod("dcast", data)
-    else 
-        reshape2::dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins, 
+    else
+        reshape2::dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
             subset = subset, fill = fill, value.var = value.var)
 }
 
@@ -24,7 +24,7 @@ check_formula <- function(formula, varnames, valnames) {
     vars = all.vars(formula)
     vars = vars[!vars %chin% c(".", "...")]
     allvars = c(vars, valnames)
-    if (any(allvars %in% varnames[duplicated(varnames)])) 
+    if (any(allvars %in% varnames[duplicated(varnames)]))
       stop('data.table to cast must have unique column names')
     ans = deparse_formula(as.list(formula)[-1L], varnames, allvars)
 }
@@ -53,13 +53,13 @@ value_vars <- function(value.var, varnames) {
     iswrong = which(!valnames %in% varnames)
     if (length(iswrong))
         stop("value.var values [", paste(value.var[iswrong], collapse=", "), "] are not found in 'data'.")
-    value.var    
+    value.var
 }
 
 aggregate_funs <- function(funs, vals, sep="_", ...) {
-    if (is.call(funs) && funs[[1L]] == "eval") 
+    if (is.call(funs) && funs[[1L]] == "eval")
         funs = eval(funs[[2L]], parent.frame(2L), parent.frame(2L))
-    if (is.call(funs) && as.character(funs[[1L]]) %in% c("c", "list")) 
+    if (is.call(funs) && as.character(funs[[1L]]) %in% c("c", "list"))
         funs = lapply(as.list(funs)[-1L], function(x) {
             if (is.call(x) && as.character(x[[1L]]) %in% c("c", "list")) as.list(x)[-1L] else x
         })
@@ -83,7 +83,7 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
                     expr = c(expr, dots)
                 ans[[k]] = as.call(expr)
                 # changed order of arguments here, #1153
-                nms[k] = if (only_one_fun) j else 
+                nms[k] = if (only_one_fun) j else
                             paste(j, all.names(i, max.names=1L, functions=TRUE), sep=sep)
                 k = k+1L;
             }
@@ -107,7 +107,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
     dat = vector("list", length(allcols))
     for (i in seq_along(allcols)) {
         x = allcols[[i]]
-        dat[[i]] = if (identical(x, quote(`.`))) rep(".", nrow(data)) 
+        dat[[i]] = if (identical(x, quote(`.`))) rep(".", nrow(data))
                       else eval(x, data, parent.frame())
         if (is.function(dat[[i]]))
             stop("Column [", deparse(x), "] not found or of unknown type.")
@@ -166,7 +166,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
         o[idx] # subsetVector retains attributes, using R's subset for now
     }
     cj_uniq <- function(DT) {
-        do.call("CJ", lapply(DT, function(x) 
+        do.call("CJ", lapply(DT, function(x)
             if (is.factor(x)) {
                 xint = seq_along(levels(x))
                 setattr(xint, 'levels', levels(x))
@@ -175,7 +175,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
     ))}
     valnames = setdiff(names(dat), varnames)
     # 'dat' != 'data'? then setkey to speed things up (slightly), else ad-hoc (for now). Still very fast!
-    if (!is.null(fun.call) || !is.null(subset)) 
+    if (!is.null(fun.call) || !is.null(subset))
         setkeyv(dat, varnames)
     if (length(rhsnames)) {
         lhs = shallow(dat, lhsnames); rhs = shallow(dat, rhsnames); val = shallow(dat, valnames)
@@ -203,7 +203,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
         ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call))
         allcols = do.call("paste", c(rhs, sep=sep))
         if (length(valnames) > 1L)
-            allcols = do.call("paste", if (identical(".", allcols)) list(valnames, sep=sep) 
+            allcols = do.call("paste", if (identical(".", allcols)) list(valnames, sep=sep)
                         else c(CJ(valnames, allcols, sorted=FALSE), sep=sep))
             # removed 'setcolorder()' here, #1153
         setattr(ans, 'names', c(lhsnames, allcols))

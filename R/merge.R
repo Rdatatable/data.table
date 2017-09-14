@@ -11,7 +11,7 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     if ((x0 <- length(x)==0L) | (y0 <- length(y)==0L)) warning(sprintf("You are trying to join data.tables where %s 0 columns data.table.", if(x0 & y0) "'x' and 'y' arguments are" else if(x0 & !y0) "'x' argument is" else if(!x0 & y0) "'y' argument is"))
     if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ",paste(names(x)[duplicated(names(x))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
     if (any(duplicated(names(y)))) stop("y has some duplicated column name(s): ",paste(names(y)[duplicated(names(y))],collapse=","),". Please remove or rename the duplicate(s) and try again.")
-    
+
     ## set up 'by'/'by.x'/'by.y'
     if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )
         stop("`by.x` and `by.y` must be of same length.")
@@ -29,7 +29,7 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     } else {
         if (is.null(by))
             by = intersect(key(x), key(y))
-        if (is.null(by)) 
+        if (is.null(by))
             by = key(x)
         if (is.null(by))
             by = intersect(names(x), names(y))
@@ -78,9 +78,9 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     if (nrow(dt) > 0L) {
       setkeyv(dt, if (sort) by.x else NULL)
     }
-    # merge resets class, #1378. X[Y] is quite clear that X is being *subset* by Y, 
-    # makes sense to therefore retain X's class, unlike `merge`. Hard to tell what 
-    # class to retain for *full join* for example. 
+    # merge resets class, #1378. X[Y] is quite clear that X is being *subset* by Y,
+    # makes sense to therefore retain X's class, unlike `merge`. Hard to tell what
+    # class to retain for *full join* for example.
     setattr(dt, 'class', c("data.table", "data.frame"))
     dt
 }

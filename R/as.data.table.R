@@ -9,9 +9,9 @@ as.data.table.default <- function(x, ...){
   setDT(as.data.frame(x, ...))[]
 }
 
-as.data.table.factor <- as.data.table.ordered <- 
-as.data.table.integer <- as.data.table.numeric <- 
-as.data.table.logical <- as.data.table.character <- 
+as.data.table.factor <- as.data.table.ordered <-
+as.data.table.integer <- as.data.table.numeric <-
+as.data.table.logical <- as.data.table.character <-
 as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ...) {
     if (is.matrix(x)) {
         return(as.data.table.matrix(x, ...))
@@ -19,7 +19,7 @@ as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ..
     tt = deparse(substitute(x))[1]
     nm = names(x)
     # FR #2356 - transfer names of named vector as "rn" column if required
-    if (!identical(keep.rownames, FALSE) & !is.null(nm)) 
+    if (!identical(keep.rownames, FALSE) & !is.null(nm))
         x <- list(nm, unname(x))
     else x <- list(x)
     if (tt == make.names(tt)) {
@@ -87,7 +87,7 @@ as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name=
         stop("Argument 'sorted' must be scalar logical and non-NA")
     if (!is.logical(na.rm) || length(na.rm)!=1L || is.na(na.rm))
         stop("Argument 'na.rm' must be scalar logical and non-NA")
-    
+
     dnx = dimnames(x)
     # NULL dimnames will create integer keys, not character as in table method
     val = rev(if (is.null(dnx)) lapply(dim(x), seq.int) else dnx)
@@ -153,9 +153,9 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
     alloc.col(x)
 }
 
-# don't retain classes before "data.frame" while converting 
-# from it.. like base R does. This'll break test #527 (see 
-# tests and as.data.table.data.frame) I've commented #527 
+# don't retain classes before "data.frame" while converting
+# from it.. like base R does. This'll break test #527 (see
+# tests and as.data.table.data.frame) I've commented #527
 # for now. This addresses #1078 and #1128
 .resetclass <- function(x, class) {
     cx = class(x)
@@ -177,7 +177,7 @@ as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...) {
     ## NOTE: This test (#527) is no longer in effect ##
     # for nlme::groupedData which has class c("nfnGroupedData","nfGroupedData","groupedData","data.frame")
     # See test 527.
-    ## 
+    ##
 
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(ans, "class", .resetclass(x, "data.frame"))

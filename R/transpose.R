@@ -1,8 +1,8 @@
 transpose <- function(l, fill=NA, ignore.empty=FALSE) {
     ans = .Call(Ctranspose, l, fill, ignore.empty)
     if (is.data.table(l)) setDT(ans)
-    else if (is.data.frame(l)) { 
-        if (is.null(names(ans))) 
+    else if (is.data.frame(l)) {
+        if (is.null(names(ans)))
             setattr(ans, "names", paste("V", seq_along(ans), sep = ""))
         setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
         setattr(ans, "class", "data.frame")
@@ -16,7 +16,7 @@ tstrsplit <- function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
         keep = suppressWarnings(as.integer(keep))
         chk = min(keep) >= min(1L, length(ans)) & max(keep) <= length(ans)
         if (!isTRUE(chk)) # handles NA case too
-            stop("'keep' should contain integer values between ", 
+            stop("'keep' should contain integer values between ",
                 min(1L, length(ans)), " and ", length(ans), ".")
         ans = ans[keep]
     }
@@ -28,7 +28,7 @@ tstrsplit <- function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
         stop("'names' must be TRUE/FALSE or a character vector.")
     if (length(names) != length(ans)) {
         str = if (missing(keep)) "ans" else "keep"
-        stop("length(names) (= ", length(names), 
+        stop("length(names) (= ", length(names),
             ") is not equal to length(", str, ") (= ", length(ans), ").")
     }
     setattr(ans, 'names', names)

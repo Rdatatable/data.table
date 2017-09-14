@@ -18,7 +18,7 @@ rleidv(x, cols=seq_along(x), prefix=NULL)
 \details{
     At times aggregation (or grouping) operations need to be performed where consecutive runs of identical values should belong to the same group (See \code{\link[base]{rle}}). The use for such a function has come up repeatedly on StackOverflow, see the \code{See Also} section. This function allows to generate "run-length" groups directly.
 
-    \code{rleid} is designed for interactive use and accepts a sequence of vectors as arguments. For programming, \code{rleidv} might be more useful. 
+    \code{rleid} is designed for interactive use and accepts a sequence of vectors as arguments. For programming, \code{rleidv} might be more useful.
 }
 \value{
     When \code{prefix = NULL}, an integer vector with same length as \code{NROW(x)}, else a character vector with the value in \code{prefix} prefixed to the ids obtained.

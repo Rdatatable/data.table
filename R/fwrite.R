@@ -22,7 +22,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         is.character(sep) && length(sep)==1L && nchar(sep) == 1L,
         is.character(sep2) && length(sep2)==3L && nchar(sep2[2L])==1L,
         is.character(dec) && length(dec)==1L && nchar(dec) == 1L,
-        dec != sep,  # sep2!=dec and sep2!=sep checked at C level when we know if list columns are present 
+        dec != sep,  # sep2!=dec and sep2!=sep checked at C level when we know if list columns are present
         is.character(eol) && length(eol)==1L,
         length(qmethod) == 1L && qmethod %in% c("double", "escape"),
         isLOGICAL(col.names), isLOGICAL(append), isLOGICAL(row.names),

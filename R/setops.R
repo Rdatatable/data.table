@@ -21,8 +21,8 @@ setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE
     if (is.null(x) || !length(x)) return(x)
     by.x = validate(by.x, x)
     if (is.null(y) || !length(y)) return(unique(x, by=by.x))
-    by.y = validate(by.y, y)    
-    if (length(by.x) != length(by.y)) stop("length(by.x) != length(by.y)") 
+    by.y = validate(by.y, y)
+    if (length(by.x) != length(by.y)) stop("length(by.x) != length(by.y)")
     # factor in x should've factor/character in y, and viceversa
     for (a in seq_along(by.x)) {
         lc = by.y[a]
@@ -120,7 +120,7 @@ fsetequal <- function(x, y) {
 all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attributes=TRUE, ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps), ...) {
     stopifnot(is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order), is.numeric(tolerance))
     if (!is.data.table(target) || !is.data.table(current)) stop("'target' and 'current' must be both data.tables")
-    
+
     msg = character(0)
     # init checks that detect high level all.equal
     if (nrow(current) != nrow(target)) msg = "Different number of rows"
@@ -129,12 +129,12 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     diff.colorder = !identical(names(target), names(current))
     if (check.attributes && diff.colnames) msg = c(msg, "Different column names")
     if (!diff.colnames && !ignore.col.order && diff.colorder) msg = c(msg, "Different column order")
-    
+
     if (length(msg)) return(msg) # skip check.attributes and further heavy processing
-    
+
     # ignore.col.order
     if (ignore.col.order && diff.colorder) current = setcolorder(shallow(current), names(target))
-    
+
     # Always check modes equal, like base::all.equal
     targetModes = vapply_1c(target, mode)
     currentModes = vapply_1c(current,  mode)
@@ -144,7 +144,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
          paste(names(targetModes)[w],"(",paste(targetModes[w],currentModes[w],sep="!="),")",sep="")
                       ,collapse=" ")))
     }
-    
+
     if (check.attributes) {
         squashClass = function(x) if (is.object(x)) paste(class(x),collapse=";") else mode(x)
         # else mode() is so that integer==numeric, like base all.equal does.
@@ -159,7 +159,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
                       ,collapse=" ")))
         }
     }
-    
+
     if (check.attributes) {
         # check key
         k1 = key(target)
@@ -177,7 +177,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
                            if(length(i1)) paste0(": ", paste(i1, collapse=", ")) else " has no index",
                            if(length(i2)) paste0(": ", paste(i2, collapse=", ")) else " has no index"))
         }
-        
+
         # Trim any extra row.names attributes that came from some inheritence
         # Trim ".internal.selfref" as long as there is no `all.equal.externalptr` method
         exclude.attrs = function(x, attrs = c("row.names",".internal.selfref")) x[!names(x) %in% attrs]
@@ -188,7 +188,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
         attrs.r = all.equal(a1[nm1], a2[nm2], ..., check.attributes = check.attributes)
         if (is.character(attrs.r)) return(paste("Attributes: <", attrs.r, ">")) # skip further heavy processing
     }
-    
+
     if (ignore.row.order) {
         if (".seqn" %in% names(target))
             stop("None of the datasets to compare should contain a column named '.seqn'")
@@ -269,7 +269,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
                         cols.r = "Levels not identical even after refactoring since trim.levels is TRUE"
                     } else {
                         cols.r = "Levels not identical. No attempt to refactor because trim.levels is FALSE"
-                    }    
+                    }
                 } else {
                     cols.r = all.equal(x, y, check.attributes=check.attributes)
                     # the check.attributes here refers to everything other than the levels, which are always

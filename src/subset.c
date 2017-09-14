@@ -31,7 +31,7 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
         break;
     case REALSXP :
         if (any0orNA) {
-          // define needed vars just when we need them. To registerize and to limit scope related bugs 
+          // define needed vars just when we need them. To registerize and to limit scope related bugs
           union { double d; long long ll; } naval;
           if (INHERITS(source, char_integer64)) naval.ll = NA_INT64_LL;
           else naval.d = NA_REAL;
@@ -130,7 +130,7 @@ static void check_idx(SEXP idx, int max, /*outputs...*/int *ansLen, Rboolean *an
 // return whether any 0, NA (or >max) exist and set any0orNA if so, for branchless subsetVectorRaw
 // >max is treated as NA for consistency with [.data.frame and operations like cbind(DT[w],DT[w+1])
 // if any negatives then error since they should have been dealt with by convertNegativeIdx() called
-// from R level first. 
+// from R level first.
 // do this once up-front and reuse the result for each column
 // single cache efficient sweep so no need to go parallel (well, very low priority to go parallel)
 {
@@ -209,18 +209,18 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
 * subsetDT - Subsets a data.table
 * NOTE:
 *   1) 'rows' and 'cols' are 1-based, passed from R level
-*   2) Originally for subsetting vectors in fcast and now the beginnings of 
+*   2) Originally for subsetting vectors in fcast and now the beginnings of
 *       [.data.table ported to C
-*   3) Immediate need is for R 3.1 as lglVec[1] now returns R's global TRUE 
+*   3) Immediate need is for R 3.1 as lglVec[1] now returns R's global TRUE
 *       and we don't want := to change that global [think 1 row data.tables]
-*   4) Could do it other ways but may as well go to C now as we were going to 
+*   4) Could do it other ways but may as well go to C now as we were going to
 *       do that anyway
 */
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows)));
     if (!length(x)) return(x);  // return empty list
-    
-    // check index once up front for 0 or NA, for branchless subsetVectorRaw 
+
+    // check index once up front for 0 or NA, for branchless subsetVectorRaw
     R_len_t ansn=0;
     Rboolean any0orNA=FALSE;
     check_idx(rows, length(VECTOR_ELT(x,0)), &ansn, &any0orNA);
@@ -231,7 +231,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
         if (this<1 || this>LENGTH(x)) error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
     }
     SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+64));  // just do alloc.col directly, eventually alloc.col can be deprecated.
-    copyMostAttrib(x, ans);  // other than R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol  
+    copyMostAttrib(x, ans);  // other than R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
                              // so includes row.names (oddly, given other dims aren't) and "sorted", dealt with below
     SET_TRUELENGTH(ans, LENGTH(ans));
     SETLENGTH(ans, LENGTH(cols));
@@ -269,12 +269,12 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     setAttrib(ans, R_NamesSymbol, tmp);
     subsetVectorRaw(tmp, getAttrib(x, R_NamesSymbol), cols, /*any0orNA=*/FALSE);
     UNPROTECT(1);
-    
+
     tmp = PROTECT(allocVector(INTSXP, 2));
     INTEGER(tmp)[0] = NA_INTEGER;
     INTEGER(tmp)[1] = -ansn;
     setAttrib(ans, R_RowNamesSymbol, tmp);  // The contents of tmp must be set before being passed to setAttrib(). setAttrib looks at tmp value and copies it in the case of R_RowNamesSymbol. Caused hard to track bug around 28 Sep 2014.
-    UNPROTECT(1);    
+    UNPROTECT(1);
 
     // maintain key if ordered subset ...
     SEXP key = getAttrib(x, sym_sorted);

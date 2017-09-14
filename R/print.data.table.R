@@ -1,9 +1,9 @@
-# Moved here out from data.table.R on 10 Aug 2017. See data.table.R for history prior to that. 
+# Moved here out from data.table.R on 10 Aug 2017. See data.table.R for history prior to that.
 
-print.data.table <- function(x, topn=getOption("datatable.print.topn"), 
-                             nrows=getOption("datatable.print.nrows"), 
-                             class=getOption("datatable.print.class"), 
-                             row.names=getOption("datatable.print.rownames"), 
+print.data.table <- function(x, topn=getOption("datatable.print.topn"),
+                             nrows=getOption("datatable.print.nrows"),
+                             class=getOption("datatable.print.class"),
+                             row.names=getOption("datatable.print.rownames"),
                              col.names=getOption("datatable.print.colnames"),
                              print.keys=getOption("datatable.print.keys"),
                              quote=FALSE, ...) {    # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
@@ -13,7 +13,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
       stop("Valid options for col.names are 'auto', 'top', and 'none'")
     if (col.names == "none" && class)
       warning("Column classes will be suppressed when col.names is 'none'")
-    if (!shouldPrint(x)) {   
+    if (!shouldPrint(x)) {
         #  := in [.data.table sets .global$print=address(x) to suppress the next print i.e., like <- does. See FAQ 2.22 and README item in v1.9.5
         # The issue is distinguishing "> DT" (after a previous := in a function) from "> DT[,foo:=1]". To print.data.table(), there
         # is no difference. Now from R 3.2.0 a side effect of the very welcome and requested change to avoid silent deep copy is that
@@ -23,7 +23,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
         #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
         SYS <- sys.calls()
         if (length(SYS) <= 2 ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
-            ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) && 
+            ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) &&
               as.character(thisSYS) %chin% mimicsAutoPrint ) )  {
             return(invisible())
             # is.symbol() temp fix for #1758.
@@ -36,9 +36,9 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     topnmiss = missing(topn)
     topn = max(as.integer(topn),1L)
     if (print.keys){
-      if (!is.null(ky <- key(x))) 
+      if (!is.null(ky <- key(x)))
         cat("Key: <", paste(ky, collapse=", "), ">\n", sep="")
-      if (!is.null(ixs <- indices(x))) 
+      if (!is.null(ixs <- indices(x)))
         cat("Ind", if (length(ixs) > 1) "ices" else "ex", ": <",
             paste(ixs, collapse=">, <"), ">\n", sep="")
     }
@@ -59,15 +59,15 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
         printdots = FALSE
     }
     toprint=format.data.table(toprint, ...)
-    
+
     if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(x,inherits,"integer64"))) require_bit64()
     # When we depend on R 3.2.0 (Apr 2015) we can use isNamespaceLoaded() added then, instead of %chin% above
-    
+
     # FR #5020 - add row.names = logical argument to print.data.table
     if (isTRUE(row.names)) rownames(toprint)=paste(format(rn,right=TRUE,scientific=FALSE),":",sep="") else rownames(toprint)=rep.int("", nrow(toprint))
     if (is.null(names(x)) || all(names(x) == ""))
       # fixes bug #97 (RF#4934) and #545 (RF#5253)
-      colnames(toprint)=rep("", ncol(toprint)) 
+      colnames(toprint)=rep("", ncol(toprint))
     if (isTRUE(class) && col.names != "none") {
       #Matching table for most common types & their abbreviations
       class_abb = c(list = "<list>", integer = "<int>", numeric = "<num>",
@@ -86,7 +86,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     if (printdots) {
         toprint = rbind(head(toprint, topn), "---"="", tail(toprint, topn))
         rownames(toprint) = format(rownames(toprint), justify="right")
-        if (col.names == "none") { 
+        if (col.names == "none") {
             cut_top(print(toprint, right=TRUE, quote=quote))
         } else {
             print(toprint, right=TRUE, quote=quote)
