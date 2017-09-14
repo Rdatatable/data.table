@@ -41,6 +41,7 @@ static SEXP DT;
 static int8_t *type;
 static int8_t *size;
 static int ncol = 0;
+static int64_t dtnrows = 0;
 static int protecti=0;
 static _Bool verbose = 0;
 static _Bool warningsAreErrors = 0;
@@ -77,6 +78,7 @@ SEXP freadR(
   freadMainArgs args;
   protecti=0;
   ncol = 0;
+  dtnrows = 0;
   const char *ch, *ch2;
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
     error("fread input must be a single character string: a filename or the data itself");
@@ -315,11 +317,12 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 
 size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size_t allocNrow) {
   // save inputs for use by pushBuffer
-  int newDT = (ncol == 0);
   size = sizeArg;
   type = typeArg;
+  int newDT = (ncol == 0);
   if (newDT) {
     ncol = ncolArg;
+    dtnrows = allocNrow;
     DT=PROTECT(allocVector(VECSXP,ncol-ndrop));  // safer to leave over allocation to alloc.col on return in fread.R
     protecti++;
     if (ndrop==0) {
@@ -332,14 +335,27 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
       }
     }
   }
+  // TODO: move DT size calculation into a separate function (since the final size is different from the initial size anyways)
   size_t DTbytes = SIZEOF(DT)*(ncol-ndrop)*2; // the VECSXP and its column names (exclude global character cache usage)
-  for (int i=0,resi=0; i<ncol; i++) {
+
+  // For each column we could have one of the following cases:
+  //   * if the DataTable is "new", then make a new vector
+  //   * if the column's type has changed, then replace it with a new vector
+  //     (however if column's type[i] is negative, then it means we're skipping
+  //     the column in the rerun, and its type hasn't actually changed).
+  //   * if dtnrows≠allocNrow and the column's type has not changed, then that
+  //     column needs to be re-alloced (using growVector).
+  //   * otherwise leave the column as-is.
+  for (int i=0, resi=0; i<ncol; i++) {
     if (type[i] == CT_DROP) continue;
-    int oldSxpType = newDT? -1 : TYPEOF(VECTOR_ELT(DT, resi));
-    int oldIsInt64 = newDT? 0 : INHERITS(VECTOR_ELT(DT, resi), char_integer64);
+    SEXP col = VECTOR_ELT(DT, resi);
+    int oldIsInt64 = newDT? 0 : INHERITS(col, char_integer64);
     int newIsInt64 = type[i] == CT_INT64;
-    if (type[i] > 0 && (oldSxpType != typeSxp[type[i]] || oldIsInt64 != newIsInt64)) {
-      SEXP thiscol = allocVector(typeSxp[type[i]], allocNrow);
+    int typeChanged = (type[i] > 0) && (newDT || TYPEOF(col) != typeSxp[type[i]] || oldIsInt64 != newIsInt64);
+    int nrowChanged = (allocNrow != dtnrows);
+    if (typeChanged || nrowChanged) {
+      SEXP thiscol = typeChanged ? allocVector(typeSxp[type[i]], allocNrow)
+                                 : growVector(col, allocNrow);
       SET_VECTOR_ELT(DT,resi,thiscol);     // no need to PROTECT thiscol, see R-exts 5.9.1
       if (type[i]==CT_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(char_integer64));
       SET_TRUELENGTH(thiscol, allocNrow);
@@ -347,6 +363,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     }
     resi++;
   }
+  dtnrows = allocNrow;
   return DTbytes;
 }
 
@@ -354,7 +371,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
 void setFinalNrow(size_t nrow) {
   // TODO realloc
   if (length(DT)) {
-    if (nrow == length(VECTOR_ELT(DT, 0)))
+    if (nrow == dtnrows)
       return;
     for (int i=0; i<LENGTH(DT); i++) {
       SETLENGTH(VECTOR_ELT(DT,i), nrow);

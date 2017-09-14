@@ -98,6 +98,9 @@ typedef struct FieldParseContext {
 // Forward declarations
 static void Field(FieldParseContext *ctx);
 
+#define ASSERT(cond, msg, ...) \
+  if (!(cond)) STOP("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg, __LINE__, __VA_ARGS__)
+
 
 
 //=================================================================================================
@@ -164,7 +167,6 @@ _Bool freadCleanup(void)
 
 #define CEIL(x)  ((size_t)(double)ceil(x))
 static inline size_t umax(size_t a, size_t b) { return a > b ? a : b; }
-static inline size_t umin(size_t a, size_t b) { return a < b ? a : b; }
 static inline int imin(int a, int b) { return a < b ? a : b; }
 
 /** Return value of `x` clamped to the range [upper, lower] */
@@ -1575,14 +1577,18 @@ int freadMain(freadMainArgs _args) {
   size_t DTi = 0;   // the current row number in DT that we are writing to
   const char *prevJumpEnd = pos;  // the position after the last line the last thread processed (for checking)
   int buffGrown=0;
-  size_t chunkBytes = umax((size_t)(1000*meanLineLen), 1ULL/*MB*/ *1024*1024);
   // chunkBytes is the distance between each jump point; it decides the number of jumps
   // We may want each chunk to write to its own page of the final column, hence 1000*maxLen
   // For the 44GB file with 12875 columns, the max line len is 108,497. We may want each chunk to write to its
   // own page (4k) of the final column, hence 1000 rows of the smallest type (4 byte int) is just
   // under 4096 to leave space for R's header + malloc's header.
-  {
-  if (verbose) DTPRINT("[11] Read the data\n");
+  size_t chunkBytes = umax((size_t)(1000*meanLineLen), 1ULL/*MB*/ *1024*1024);
+  // Index of the first jump to read. May be modified if we ever need to restart
+  // reading from the middle of the file.
+  int jump0 = 0;
+  // If we need to restart reading the file because we ran out of allocation
+  // space, then this variable will tell how many new rows has to be allocated.
+  size_t extraAllocRows = 0;
 
   if (nJumps/*from sampling*/>1) {
     // ensure data size is split into same sized chunks (no remainder in last chunk) and a multiple of nth
@@ -1604,14 +1610,20 @@ int freadMain(freadMainArgs _args) {
   if (initialBuffRows > INT32_MAX) STOP("Buffer size %lld is too large\n", initialBuffRows);
   nth = imin(nJumps, nth);
 
+
   read:  // we'll return here to reread any columns with out-of-sample type exceptions
+  {
+  if (verbose) {
+    DTPRINT("[11] Read the data\n");
+    DTPRINT("  jumps=[%d..%d), chunk_size=%llu, total_size=%llu\n", jump0, nJumps, (llu)chunkBytes, (llu)(lastRowEnd-pos));
+  }
+  ASSERT(allocnrow <= nrowLimit, "allocnrow(%llu) < nrowLimit(%llu)", (llu)allocnrow, (llu)nrowLimit);
   #pragma omp parallel num_threads(nth)
   {
     int me = omp_get_thread_num();
     #pragma omp master
     nth = omp_get_num_threads();
     const char *thisJumpStart=NULL;  // The first good start-of-line after the jump point
-    size_t myDTi = 0;  // which row in the final DT result I should start writing my chunk to
     size_t myNrow = 0; // the number of rows in my chunk
     size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
 
@@ -1624,7 +1636,7 @@ int freadMain(freadMainArgs _args) {
       .rowSize8 = rowSize8,
       .rowSize4 = rowSize4,
       .rowSize1 = rowSize1,
-      .DTi = 0,
+      .DTi = 0,  // which row in the final DT result I should start writing my chunk to
       .nRows = allocnrow,
       .threadn = me,
       .quoteRule = quoteRule,
@@ -1640,7 +1652,7 @@ int freadMain(freadMainArgs _args) {
     prepareThreadContext(&ctx);
 
     #pragma omp for ordered schedule(dynamic) reduction(+:thNextGoodLine,thRead,thPush)
-    for (int jump = 0; jump < nJumps; jump++) {
+    for (int jump = jump0; jump < nJumps; jump++) {
       if (stopTeam) continue;  // must be continue and not break. We desire not to depend on (newer) omp cancel yet
       double tt0 = 0, tt1 = 0;
       if (verbose) { tt1 = tt0 = wallclock(); }
@@ -1817,7 +1829,7 @@ int freadMain(freadMainArgs _args) {
                   "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %llu\n",
                   j+1, colNames[j].len, colNamesAnchor + colNames[j].off,
                   typeName[abs(joldType)], typeName[abs(thisType)],
-                  (int)(tch-fieldStart), fieldStart, (llu)(myDTi+myNrow));
+                  (int)(tch-fieldStart), fieldStart, (llu)(ctx.DTi+myNrow));
                 typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + (size_t)len + 1);
                 strcpy(typeBumpMsg+typeBumpMsgSize, temp);
                 typeBumpMsgSize += (size_t)len;
@@ -1880,7 +1892,7 @@ int freadMain(freadMainArgs _args) {
             snprintf(stopErr, stopErrSize,
               "Expecting %d cols but row %llu contains only %d cols (sep='%c'). " \
               "Consider fill=true. <<%s>>",
-              ncol, (llu)myDTi, j, sep, strlim(tlineStart, 500));
+              ncol, (llu)ctx.DTi, j, sep, strlim(tlineStart, 500));
           }
           break;
         }
@@ -1890,7 +1902,7 @@ int freadMain(freadMainArgs _args) {
             stopTeam = true;
             snprintf(stopErr, stopErrSize,
               "Too many fields on out-of-sample row %llu. Read all %d expected columns but more are present. <<%s>>",
-              (llu)myDTi, ncol, strlim(tlineStart, 500));
+              (llu)ctx.DTi, ncol, strlim(tlineStart, 500));
           }
           break;
         }
@@ -1905,7 +1917,7 @@ int freadMain(freadMainArgs _args) {
       #pragma omp ordered
       {
         // stopTeam could be true if a previous thread already stopped while I was waiting my turn
-        if (!stopTeam && prevJumpEnd != thisJumpStart) {
+        if (!stopTeam && prevJumpEnd != thisJumpStart && jump > jump0) {
           snprintf(stopErr, stopErrSize,
             "Jump %d did not finish counting rows exactly where jump %d found its first good line start: "
             "prevEnd(%p)<<%s>> != thisStart(prevEnd%+d)<<%s>>",
@@ -1913,14 +1925,26 @@ int freadMain(freadMainArgs _args) {
             (int)(thisJumpStart-prevJumpEnd), strlim(thisJumpStart,50));
           stopTeam=true;
         }
-        myDTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
-        ctx.DTi = myDTi;
-        if (myDTi >= nrowLimit) {
-          // nrowLimit was supplied and a previous thread reached that limit while I was counting my rows
-          stopTeam=true;
+        ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
+        if (ctx.DTi >= allocnrow) {  // a previous thread has already reached the `allocnrow` limit
+          stopTeam = true;
           myNrow = 0;
-        } else {
-          myNrow = umin(myNrow, nrowLimit - myDTi); // for the last jump that reaches nrowLimit
+        } else if (myNrow + ctx.DTi > allocnrow) {  // current thread has reached `allocnrow` limit
+          if (allocnrow == nrowLimit) {
+            // allocnrow is the same as nrowLimit, no need to reallocate the DT,
+            // just truncate the rows in the current chunk.
+            myNrow = nrowLimit - ctx.DTi;
+          } else {
+            // We reached `allocnrow` limit, but there are more data to read
+            // left. In this case we arrange to terminate all threads but
+            // remember the position where the previous thread has finished. We
+            // will reallocate the DT and restart reading from the same point.
+            jump0 = jump;
+            extraAllocRows = (double)(DTi+myNrow)*nJumps/(jump+1) * 1.2 - allocnrow;
+            if (extraAllocRows < 1024) extraAllocRows = 1024;
+            myNrow = 0;
+            stopTeam = true;
+          }
         }
                            // tell next thread (she not me) 2 things :
         prevJumpEnd = tch; // i) the \n I finished on so she can check (above) she started exactly on that \n good line start
@@ -1947,6 +1971,16 @@ int freadMain(freadMainArgs _args) {
     freeThreadContext(&ctx);
   }
   //-- end parallel ------------------
+  }
+
+  if (extraAllocRows) {
+    allocnrow += extraAllocRows;
+    if (allocnrow > nrowLimit) allocnrow = nrowLimit;
+    if (verbose) DTPRINT("  Too few rows allocated. Allocating additional %llu rows (now nrows=%llu) and continue reading from jump point %d\n", (llu)extraAllocRows, (llu)allocnrow, jump0);
+    allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, allocnrow);
+    extraAllocRows = 0;
+    stopTeam = false;
+    goto read;
   }
 
 

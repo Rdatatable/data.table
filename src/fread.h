@@ -232,14 +232,16 @@ _Bool userOverride(int8_t *types, lenOff *colNames, const char *anchor,
 
 
 /**
- * This function is invoked by `freadMain` right before the main scan of the
- * input file. This function should allocate the resulting `DataTable` structure
- * and prepare to receive the data in chunks.
+ * This function is invoked by `freadMain` before the main scan of the input
+ * file. It should allocate the resulting `DataTable` structure and prepare
+ * to receive the data in chunks.
  *
- * If the input file needs to be re-read due to out-of-sample type exceptions,
- * then this function will be called second time with updated `types` array.
- * Then this function's responsibility is to update the allocation of those
- * columns properly.
+ * Additionally, this function will be invoked if the main scan was
+ * unsuccessful. This may happen either because there were out-of-sample type
+ * exceptions (i.e. a value was found in one of the columns that wasn't
+ * acceptable for that column's type), or if the initial estimate of the file's
+ * number of rows turned out to be too conservative, and more rows has to be
+ * appended to the DataTable.
  *
  * @param types
  *     array of type codes for each column. Same as in the `userOverride`

@@ -10594,6 +10594,15 @@ test(1827.2, fread("A,B\n1987,1\n1,3\n",    na.strings=c("1987", "NA")), data.ta
 test(1827.3, fread("A,B\n1987,1\n1987,3\n", na.strings="1987"), data.table(A=c(NA,NA),B=c(1L,3L)))
 test(1827.4, fread("A,B\n1987,1\n1,3\n",    na.strings="198"),  data.table(A=c(1987L,1L),B=c(1L,3L)))
 
+# Issue 2246 : reading from a table where the number of rows is not estimated correctly up-front
+DT1 = data.table(A=rep(123L, 100L), B=456L)
+DT2 = data.table(A=rep(1L, 200L), B=2L)
+DT = rbind(DT1, DT2, DT1, DT2, DT1, DT2, DT1, DT2, DT1, DT2, DT1, DT2, DT1, DT2, DT1, DT2, DT1, DT2, DT1, DT1)
+fwrite(DT, f<-tempfile())
+test(1828, fread(f), DT)
+
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
