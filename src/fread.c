@@ -75,8 +75,8 @@ static lenOff *colNames = NULL;
 static int8_t *oldType = NULL;
 static freadMainArgs args;  // global for use by DTPRINT
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "string"};
-int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8      };
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8      };
 
 // NAN and INFINITY constants are float, so cast to double once up front.
 static const double NAND = (double)NAN;
@@ -621,7 +621,7 @@ cat("1.0E350L\n};\n", file=f, append=TRUE)
 // TODO  Add faster StrtoD_quick for small precision positive numerics such as prices without a sign or
 //       an E (e.g. $.cents) which don't need I64, long double, or Inf/NAN. Could have more than two levels.
 
-static void StrtoD(FieldParseContext *ctx)
+static void parse_double_regular(FieldParseContext *ctx)
 {
   // [+|-]N[.M][[E|e][+|-]E] or [+|-]Inf, [+|-]Inf or NAN
   const char *ch = *(ctx->ch);
@@ -688,6 +688,80 @@ static void StrtoD(FieldParseContext *ctx)
   }
 }
 
+
+/**
+ * Parser for hexadecimal doubles as used in Java.
+ *
+ * The numbers are in the following format:
+ *
+ *   [+|-] (0x|0X) (0.|1.) HexDigits (p|P) [+|-] DecExponent
+ *
+ * Thus the number has optional sign; followed by hex prefix `0x` or `0X`;
+ * followed by hex significand which may be in the form of either `0.HHHHH...`
+ * or `1.HHHHH...` where `H` are hex-digits (there can be no more than 13
+ * digits; first form is used for subnormal numbers, second for normal ones);
+ * followed by exponent indicator `p` or `P`; followed by optional exponent
+ * sign; and lastly followed by the exponent which is a decimal number.
+ *
+ * This can be directly converted into IEEE-754 double representation:
+ *
+ *   <1 bit: sign> <11 bits: exp+1022> <52 bits: significand>
+ *
+ * This parser also recognizes literals "NaN" and "Infinity" which can be
+ * produced by Java.
+ *
+ * @see http://docs.oracle.com/javase/specs/jls/se8/html/jls-3.html#jls-3.10.2
+ * @see https://en.wikipedia.org/wiki/IEEE_754-1985
+ */
+static void parse_double_hexadecimal(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  double *target = (double*) ctx->targets[sizeof(double)];
+  uint64_t neg;
+  _Bool Eneg, subnormal = 0;
+  ch += (neg = (*ch=='-')) + (*ch=='+');
+
+  if (ch[0]=='0' && (ch[1]=='x' || ch[1]=='X') &&
+      (ch[2]=='1' || (subnormal = ch[2]=='0')) && ch[3]=='.') {
+    ch += 4;
+    uint64_t acc = 0;
+    uint8_t digit;
+    const char *ch0 = ch;
+    while ((digit = hexdigits[(uint8_t)(*ch)]) < 16) {
+      acc = (acc << 4) + digit;
+      ch++;
+    }
+    size_t ndigits = ch - ch0;
+    if (ndigits > 13 || !(*ch=='p' || *ch=='P')) goto fail;
+    acc <<= (13 - ndigits) * 4;
+    ch += 1 + (Eneg = ch[1]=='-') + (ch[1]=='+');
+    uint64_t E = 0;
+    while ((digit = (uint8_t)(*ch-'0')) < 10) {
+      E = 10*E + digit;
+      ch++;
+    }
+    E = 1023 + (Eneg? -E : E) - subnormal;
+    if (subnormal ? E : (E<1 || E>2046)) goto fail;
+
+    *((uint64_t*)target) = (neg << 63) | (E << 52) | (acc);
+    *(ctx->ch) = ch;
+    return;
+  }
+  if (ch[0]=='N' && ch[1]=='a' && ch[2]=='N') {
+    *target = NA_FLOAT64;
+    *(ctx->ch) = ch + 3;
+    return;
+  }
+  if (ch[0]=='I' && ch[1]=='n' && ch[2]=='f' && ch[3]=='i' &&
+      ch[4]=='n' && ch[5]=='i' && ch[6]=='t' && ch[7]=='y') {
+    *target = neg ? -INFD : INFD;
+    *(ctx->ch) = ch + 8;
+    return;
+  }
+
+  fail:
+    *target = NA_FLOAT64;
+}
 
 
 /* Parse numbers 0 | 1 as boolean. */
@@ -763,11 +837,12 @@ static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &parse_bool_lowercase,
   (reader_fun_t) &StrtoI32,
   (reader_fun_t) &StrtoI64,
-  (reader_fun_t) &StrtoD,
+  (reader_fun_t) &parse_double_regular,
+  (reader_fun_t) &parse_double_hexadecimal,
   (reader_fun_t) &Field
 };
 
-static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 
 //=================================================================================================

@@ -20,6 +20,7 @@ typedef enum {
   CT_INT32,       // int32_t
   CT_INT64,       // int64_t
   CT_FLOAT64,     // double (64-bit IEEE 754 float)
+  CT_FLOAT64_HEX, // double, in hexadecimal format
   CT_STRING,      // lenOff struct below
   NUMTYPE         // placeholder for the number of types including drop; used for allocation and loop bounds
 } colType;
@@ -27,6 +28,7 @@ typedef enum {
 extern int8_t typeSize[NUMTYPE];
 extern const char typeName[NUMTYPE][10];
 extern const long double pow10lookup[701];
+extern const uint8_t hexdigits[256];
 
 
 // Strings are pushed by fread_main using an offset from an anchor address plus
