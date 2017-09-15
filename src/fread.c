@@ -718,7 +718,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
   const char *ch = *(ctx->ch);
   double *target = (double*) ctx->targets[sizeof(double)];
   uint64_t neg;
-  _Bool Eneg, subnormal;
+  _Bool Eneg, subnormal = 0;
   ch += (neg = (*ch=='-')) + (*ch=='+');
 
   if (ch[0]=='0' && (ch[1]=='x' || ch[1]=='X') &&
@@ -731,7 +731,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
       acc = (acc << 4) + digit;
       ch++;
     }
-    int ndigits = ch - ch0;
+    size_t ndigits = ch - ch0;
     if (ndigits > 13 || !(*ch=='p' || *ch=='P')) goto fail;
     acc <<= (13 - ndigits) * 4;
     ch += 1 + (Eneg = ch[1]=='-') + (ch[1]=='+');
