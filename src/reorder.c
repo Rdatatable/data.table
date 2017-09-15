@@ -6,7 +6,7 @@ SEXP reorder(SEXP x, SEXP order)
     // 'order' must strictly be a permutation of 1:n (i.e. no repeats, zeros or NAs)
     // If only a small subset in the middle is reordered the ends are moved in: [start,end].
     // x may be a vector, or a list of same-length vectors such as data.table
-    
+
     R_len_t nrow, ncol;
     int maxSize = 0;
     if (isNewList(x)) {
@@ -30,20 +30,20 @@ SEXP reorder(SEXP x, SEXP order)
     }
     if (!isInteger(order)) error("order must be an integer vector");
     if (length(order) != nrow) error("nrow(x)[%d]!=length(order)[%d]",nrow,length(order));
-    
+
     R_len_t start = 0;
     while (start<nrow && INTEGER(order)[start] == start+1) start++;
     if (start==nrow) return(R_NilValue);  // input is 1:n, nothing to do
     R_len_t end = nrow-1;
     while (INTEGER(order)[end] == end+1) end--;
-    for (R_len_t i=start; i<=end; i++) { 
+    for (R_len_t i=start; i<=end; i++) {
       int itmp = INTEGER(order)[i]-1;
       if (itmp<start || itmp>end) error("order is not a permutation of 1:nrow[%d]", nrow);
     }
     // Creorder is for internal use (so we should get the input right!), but the check above seems sensible, otherwise
     // would be segfault below. The for loop above should run in neglible time (sequential) and will also catch NAs.
     // It won't catch duplicates in order, but that's ok. Checking that would be going too far given this is for internal use only.
-    
+
     // Enough working ram for one column of the largest type, for every thread.
     // Up to a limit of 1GB total. It's system dependent how to find out the truly free RAM - TODO.
     // Without a limit it could easily start swapping and not work at all.
@@ -60,7 +60,7 @@ SEXP reorder(SEXP x, SEXP order)
     if (ok==0) error("unable to allocate %d * %d bytes of working memory for reordering data.table", end-start+1, maxSize);
     nth = ok;  // as many threads for which we have a successful malloc
     // So we can still reorder a 10GB table in 16GB of RAM, as long as we have at least one column's worth of tmp
-    
+
     #pragma omp parallel for schedule(dynamic) num_threads(nth)
     for (int i=0; i<ncol; i++) {
       const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
@@ -92,7 +92,7 @@ SEXP reorder(SEXP x, SEXP order)
       // TODO large data benchmark to confirm theory and auto tune.
       // io probably limits too much but at least this is our best shot (e.g. branchless) in finding out
       // on other platforms with faster bus, perhaps
-      
+
       // copy the reordered data back into the original vector
       memcpy((char *)DATAPTR(v) + start*(size_t)size,
              tmp[me],

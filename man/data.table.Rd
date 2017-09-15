@@ -7,14 +7,14 @@
 \alias{[.data.table}
 \title{ Enhanced data.frame }
 \description{
-   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast and memory efficient: file reader and writer, aggregations, updates, equi, non-equi, rolling, range and interval joins, in a short and flexible syntax, for faster development. 
+   \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast and memory efficient: file reader and writer, aggregations, updates, equi, non-equi, rolling, range and interval joins, in a short and flexible syntax, for faster development.
 
    It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that accept \emph{only} \code{data.frame}s.
-   
+
    Type \code{vignette(package="data.table")} to get started. The \href{../doc/datatable-intro.html}{Introduction to data.table} vignette introduces \code{data.table}'s \code{x[i, j, by]} syntax and is a good place to start. If you have read the vignettes and the help page below, please feel free to ask questions on Stack Overflow \href{http://stackoverflow.com/questions/tagged/data.table}{data.table tag} or on \href{http://r.789695.n4.nabble.com/datatable-help-f2315188.html}{datatable-help} mailing list. To report a bug please type: \code{bug.report(package = "data.table")}.
-   
+
    Please check the \href{https://github.com/Rdatatable/data.table/wiki}{homepage} for up to the minute live NEWS.
-   
+
    Tip: one of the \emph{quickest} ways to learn the features is to type \code{example(data.table)} and study the output at the prompt.
 }
 \usage{
@@ -52,7 +52,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
         \code{expression} is evaluated within the frame of the \code{data.table} (i.e. it sees column names as if they are variables) and can evaluate to any of the other types.
 
-        \code{character}, \code{list} and \code{data.frame} input to \code{i} is converted into a \code{data.table} internally using \code{\link{as.data.table}}. 
+        \code{character}, \code{list} and \code{data.frame} input to \code{i} is converted into a \code{data.table} internally using \code{\link{as.data.table}}.
 
         If \code{i} is a \code{data.table}, the columns in \code{i} to be matched against \code{x} can be specified using one of these ways:
 
@@ -66,8 +66,8 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
             This is summarised in code as \code{min(length(key(x)), if (haskey(i)) length(key(i)) else ncol(i))}.}
         }
         Using \code{on=} is recommended (even during keyed joins) as it helps understand the code better and also allows for \emph{non-equi} joins.
-  
-        When the binary operator \code{==} alone is used, an \emph{equi} join is performed. In SQL terms, \code{x[i]} then performs a \emph{right join} by default. \code{i} prefixed with \code{!} signals a \emph{not-join} or \emph{not-select}. 
+
+        When the binary operator \code{==} alone is used, an \emph{equi} join is performed. In SQL terms, \code{x[i]} then performs a \emph{right join} by default. \code{i} prefixed with \code{!} signals a \emph{not-join} or \emph{not-select}.
 
         Support for \emph{non-equi} join was recently implemented, which allows for other binary operators \code{>=, >, <= and <}.
 
@@ -76,21 +76,21 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
         \emph{Advanced:} When \code{i} is a single variable name, it is not considered an expression of column names and is instead evaluated in calling scope.
     }
 
-    \item{j}{When \code{with=TRUE} (default), \code{j} is evaluated within the frame of the data.table; i.e., it sees column names as if they are variables. This allows to not just \emph{select} columns in \code{j}, but also \code{compute} on them e.g., \code{x[, a]} and \code{x[, sum(a)]} returns \code{x$a} and \code{sum(x$a)} as a vector respectively. \code{x[, .(a, b)]} and \code{x[, .(sa=sum(a), sb=sum(b))]} returns a two column data.table each, the first simply \emph{selecting} columns \code{a, b} and the second \emph{computing} their sums. 
+    \item{j}{When \code{with=TRUE} (default), \code{j} is evaluated within the frame of the data.table; i.e., it sees column names as if they are variables. This allows to not just \emph{select} columns in \code{j}, but also \code{compute} on them e.g., \code{x[, a]} and \code{x[, sum(a)]} returns \code{x$a} and \code{sum(x$a)} as a vector respectively. \code{x[, .(a, b)]} and \code{x[, .(sa=sum(a), sb=sum(b))]} returns a two column data.table each, the first simply \emph{selecting} columns \code{a, b} and the second \emph{computing} their sums.
 
     The expression `.()` is a \emph{shorthand} alias to \code{list()}; they both mean the same. As long as \code{j} returns a \code{list}, each element of the list becomes a column in the resulting \code{data.table}. This is the default \emph{enhanced} mode.
 
-    When \code{with=FALSE}, \code{j} can be a vector of column names or positions to select (as in \code{data.frame}), or a logical vector with length \code{ncol(x)} defining columns to select. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled. 
+    When \code{with=FALSE}, \code{j} can be a vector of column names or positions to select (as in \code{data.frame}), or a logical vector with length \code{ncol(x)} defining columns to select. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled.
 
     \emph{Advanced:} \code{j} also allows the use of special \emph{read-only} symbols: \code{\link{.SD}}, \code{\link{.N}}, \code{\link{.I}}, \code{\link{.GRP}}, \code{\link{.BY}}.
 
-    \emph{Advanced:} When \code{i} is a \code{data.table}, the columns of \code{i} can be referred to in \code{j} by using the prefix \code{i.}, e.g., \code{X[Y, .(val, i.val)]}. Here \code{val} refers to \code{X}'s column and \code{i.val} \code{Y}'s. 
+    \emph{Advanced:} When \code{i} is a \code{data.table}, the columns of \code{i} can be referred to in \code{j} by using the prefix \code{i.}, e.g., \code{X[Y, .(val, i.val)]}. Here \code{val} refers to \code{X}'s column and \code{i.val} \code{Y}'s.
 
     \emph{Advanced:} Columns of \code{x} can now be referred to using the prefix \code{x.} and is particularly useful during joining to refer to \code{x}'s \emph{join} columns as they are otherwise masked by \code{i}'s. For example, \code{X[Y, .(x.a-i.a, b), on="a"]}.
 
-    See \href{../doc/datatable-intro.html}{Introduction to data.table} vignette and examples.} 
+    See \href{../doc/datatable-intro.html}{Introduction to data.table} vignette and examples.}
 
-    \item{by}{ Column names are seen as if they are variables (as in \code{j} when \code{with=TRUE}). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{by} accepts: 
+    \item{by}{ Column names are seen as if they are variables (as in \code{j} when \code{with=TRUE}). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{by} accepts:
 
     \itemize{
         \item{A single unquoted column name: e.g., \code{DT[, .(sa=sum(a)), by=x]}}
@@ -110,7 +110,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
     \item{keyby}{ Same as \code{by}, but with an additional \code{setkey()} run on the \code{by} columns of the result, for convenience. It is common practice to use `keyby=` routinely when you wish the result to be sorted.}
 
-    \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. 
+    \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables.
 
         When \code{with=FALSE} \code{j} is a character vector of column names, a numeric/logical vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is often useful in \code{data.table} to select columns dynamically. Note that \code{x[, cols, with=FALSE]} is equivalent to \code{x[, .SD, .SDcols=cols]}.}
 
@@ -127,7 +127,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
             \item{"nearest" rolls the nearest value instead.}
         }
         Rolling joins apply to the last join column, generally a date but can be any variable. It is particularly fast using a modified binary search.
-        
+
         A common idiom is to select a contemporaneous regular time series (\code{dts}) across a set of identifiers (\code{ids}):  \code{DT[CJ(ids,dts),roll=TRUE]} where \code{DT} has a 2-column key (id,date) and \code{\link{CJ}} stands for \emph{cross join}.}
 
     \item{rollends}{ A logical vector length 2 (a single logical is recycled) indicating whether values falling before the first value or after the last value for a group should be rolled as well.
@@ -140,20 +140,20 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
     \item{which}{\code{TRUE} returns the row numbers of \code{x} that \code{i} matches to. If \code{NA}, returns the row numbers of \code{i} that have no match in \code{x}. By default \code{FALSE} and the rows in \code{x} that match are returned.}
 
     \item{.SDcols}{ Specifies the columns of \code{x} to be included in the special symbol \code{\link{.SD}} which stands for \code{Subset of data.table}. May be character column names or numeric positions. This is useful for speed when applying a function through a subset of (possible very many) columns; e.g., \code{DT[, lapply(.SD, sum), by="x,y", .SDcols=301:350]}.
- 
+
     For convenient interactive use, the form \code{startcol:endcol} is also allowed (as in \code{by}), e.g., \code{DT[, lapply(.SD, sum), by=x:y, .SDcols=a:f]}
 }
   \item{verbose}{ \code{TRUE} turns on status and information messages to the console. Turn this on by default using \code{options(datatable.verbose=TRUE)}. The quantity and types of verbosity may be expanded in future.
 
-}  
+}
   \item{allow.cartesian}{ \code{FALSE} prevents joins that would result in more than \code{nrow(x)+nrow(i)} rows. This is usually caused by duplicate values in \code{i}'s join columns, each of which join to the same group in `x` over and over again: a \emph{misspecified} join. Usually this was not intended and the join needs to be changed. The word 'cartesian' is used loosely in this context. The traditional cartesian join is (deliberately) difficult to achieve in \code{data.table}: where every row in \code{i} joins to every row in \code{x} (a \code{nrow(x)*nrow(i)} row result). 'cartesian' is just meant in a 'large multiplicative' sense. }
-  
+
   \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \href{../doc/datatable-faq.html}{datatable-faq}.}
 
-  \item{on}{ Indicate which columns in \code{i} should be joined with columns in \code{x} along with the type of binary operator to join with. When specified, this overrides the keys set on \code{x} and \code{i}. There are multiple ways of specifying \code{on} argument: 
+  \item{on}{ Indicate which columns in \code{i} should be joined with columns in \code{x} along with the type of binary operator to join with. When specified, this overrides the keys set on \code{x} and \code{i}. There are multiple ways of specifying \code{on} argument:
         \itemize{
             \item{As a character vector, e.g., \code{X[Y, on=c("a", "b")]}. This assumes both these columns are present in \code{X} and \code{Y}.}
-            \item{As a \emph{named} character vector, e.g., \code{X[Y, on=c(x="a", y="b")]}. This is useful when column names to join by are different between the two tables. 
+            \item{As a \emph{named} character vector, e.g., \code{X[Y, on=c(x="a", y="b")]}. This is useful when column names to join by are different between the two tables.
 
             NB: \code{X[Y, on=c("a", y="b")]} is also possible if column \code{"a"} is common between the two tables.}
             \item{For convenience during interactive scenarios, it is also possible to use \code{.()} syntax as \code{X[Y, on=.(a, b)]}.}
@@ -260,7 +260,7 @@ DT[, .(v, v*2)]                # return two column data.table, v and v*2
 # subset rows and select|compute data.table way
 DT[2:3, sum(v)]                # sum(v) over rows 2 and 3, return vector
 DT[2:3, .(sum(v))]             # same, but return data.table with column V1
-DT[2:3, .(sv=sum(v))]          # same, but return data.table with column sv 
+DT[2:3, .(sv=sum(v))]          # same, but return data.table with column sv
 DT[2:5, cat(v, "\n")]          # just for j's side effect
 
 # select columns the data.frame way
@@ -391,10 +391,10 @@ DT[, .(seq = min(a):max(b)), by=x]    # j is not limited to just aggregations
 DT[, sum(v), by=x][V1<20]             # compound query
 DT[, sum(v), by=x][order(-V1)]        # ordering results
 DT[, c(.N, lapply(.SD,sum)), by=x]    # get number of observations and sum per group
-DT[, {tmp <- mean(y); 
+DT[, {tmp <- mean(y);
       .(a = a-tmp, b = b-tmp)
-      }, by=x]                        # anonymous lambdain 'j', j accepts any valid 
-                                      # expression. TO REMEMBER: every element of 
+      }, by=x]                        # anonymous lambdain 'j', j accepts any valid
+                                      # expression. TO REMEMBER: every element of
                                       # the list becomes a column in result.
 pdf("new.pdf")
 DT[, plot(a,b), by=x]                 # can also plot in 'j'

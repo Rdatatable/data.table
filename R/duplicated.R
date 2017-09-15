@@ -13,7 +13,7 @@ duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq
     # however, in this case we can bypass having to go to forderv at all.
     if (!length(query$by)) return(logical(0))
     res <- rep.int(TRUE, nrow(x))
-    
+
     if (query$use.keyprefix) {
         f = uniqlist(shallow(x, query$by))
         if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
@@ -93,8 +93,8 @@ anyDuplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=
     idx
 }
 
-# simple straightforward helper function to get the number 
-# of groups in a vector or data.table. Here by data.table, 
+# simple straightforward helper function to get the number
+# of groups in a vector or data.table. Here by data.table,
 # we really mean `.SD` - used in a grouping operation
 # TODO: optimise uniqueN further with GForce.
 uniqueN <- function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) { # na.rm, #1455

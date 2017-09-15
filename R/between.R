@@ -1,4 +1,4 @@
-# is x[i] in between lower[i] and upper[i] ? 
+# is x[i] in between lower[i] and upper[i] ?
 between <- function(x,lower,upper,incbounds=TRUE) {
     is_strictly_numeric <- function(x) is.numeric(x) && !"integer64" %in% class(x)
     if (is_strictly_numeric(x) && is_strictly_numeric(lower) &&
@@ -25,8 +25,8 @@ inrange <- function(x,lower,upper,incbounds=TRUE) {
     if (verbose) {last.started.at=proc.time()[3];cat("forderv(query) took ... ");flush.console()}
     xo = forderv(query)
     if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
-    ans = bmerge(shallow(subject), query, 1:2, c(1L,1L), FALSE, xo, 
-            0, c(FALSE, TRUE), 0L, "all", ops, integer(0), 
+    ans = bmerge(shallow(subject), query, 1:2, c(1L,1L), FALSE, xo,
+            0, c(FALSE, TRUE), 0L, "all", ops, integer(0),
             1L, verbose) # fix for #1819, turn on verbose messages
     options(datatable.verbose=FALSE)
     setDT(ans[c("starts", "lens")], key=c("starts", "lens"))

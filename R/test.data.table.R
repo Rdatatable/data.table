@@ -137,7 +137,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     }
     if (inherits(err,"try-error") || (!missing(y) && inherits(err<-try(y,TRUE),"try-error"))) {
         cat("Test",num,err)
-        assign("nfail", nfail+1, parent.frame(), inherits=TRUE)  
+        assign("nfail", nfail+1, parent.frame(), inherits=TRUE)
         assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
         return()
     }

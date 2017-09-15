@@ -16,7 +16,7 @@ setDF(x, rownames=NULL)
 
 \details{
   This feature request came up on the \href{http://r.789695.n4.nabble.com/Is-there-any-overhead-to-converting-back-and-forth-from-a-data-table-to-a-data-frame-td4688332.html}{data.table mailing list}. All \code{data.table} attributes including any keys of the input data.table are stripped off.
-  
+
   When using \code{rownames}, recall that the row names of a \code{data.frame} must be unique. By default, the assigned set of row names is simply the sequence 1, ..., \code{nrow(x)} (or \code{length(x)} for \code{list}s).
 }
 

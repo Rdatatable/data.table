@@ -15,7 +15,7 @@
 \alias{is.data.table}
 \title{Coerce to data.table}
 \description{
-Functions to check if an object is \code{data.table}, or coerce it if possible. 
+Functions to check if an object is \code{data.table}, or coerce it if possible.
 
 }
 \usage{
@@ -38,7 +38,7 @@ is.data.table(x)
 }
 \details{
 
-  \code{as.data.table} is a generic function with many methods, and other packages can supply further methods. 
+  \code{as.data.table} is a generic function with many methods, and other packages can supply further methods.
 
   If a \code{list} is supplied, each element is converted to a column in the \code{data.table} with shorter elements recycled automatically. Similarly, each column of a \code{matrix} is converted separately.
 
@@ -48,7 +48,7 @@ is.data.table(x)
 
   \code{keep.rownames} argument can be used to preserve the (row)names attribute in the resulting \code{data.table}.
 }
-\seealso{ 
+\seealso{
   \code{\link{data.table}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setkey}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{:=}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{rbindlist}}, \code{\link{setNumericRounding}}, \code{\link{datatable-optimize}}
 }
 \examples{
