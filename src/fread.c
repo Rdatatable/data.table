@@ -75,8 +75,8 @@ static lenOff *colNames = NULL;
 static int8_t *oldType = NULL;
 static freadMainArgs args;  // global for use by DTPRINT
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "int32", "int64", "float64", "string"};
-int8_t     typeSize[NUMTYPE]     = { 0,      1,       4,       8,       8,         8      };
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8      };
 
 // NAN and INFINITY constants are float, so cast to double once up front.
 static const double NAND = (double)NAN;
@@ -97,6 +97,9 @@ typedef struct FieldParseContext {
 
 // Forward declarations
 static void Field(FieldParseContext *ctx);
+
+#define ASSERT(cond, msg, ...) \
+  if (!(cond)) STOP("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg, __LINE__, __VA_ARGS__)
 
 
 
@@ -164,7 +167,6 @@ _Bool freadCleanup(void)
 
 #define CEIL(x)  ((size_t)(double)ceil(x))
 static inline size_t umax(size_t a, size_t b) { return a > b ? a : b; }
-static inline size_t umin(size_t a, size_t b) { return a < b ? a : b; }
 static inline int imin(int a, int b) { return a < b ? a : b; }
 
 /** Return value of `x` clamped to the range [upper, lower] */
@@ -687,44 +689,85 @@ static void StrtoD(FieldParseContext *ctx)
 }
 
 
-static void StrtoB(FieldParseContext *ctx)
+
+/* Parse numbers 0 | 1 as boolean. */
+static void parse_bool_numeric(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
-
-  _Bool logical01 = false;  // TO DO: i) expose choice to user, ii) create separate processor and iii) default false in R for consistency with base R
-  if ( logical01 && (*ch=='0' || *ch=='1') ) {
-    *target = (*ch=='1');
-    ch++;
-  } else if (*ch=='T' || *ch=='t') {
-    if ((ch+3<eof && ch[1]=='R' && ch[2]=='U' && ch[3]=='E') ||    // These long forms usually come from base R's write.csv
-        (ch+3<eof && ch[1]=='r' && ch[2]=='u' && ch[3]=='e')) {
-      *target=1;
-      ch+=4;
-    }
-  } else if (*ch=='F' || *ch=='f') {
-    if ((ch+4<eof && ch[1]=='A' && ch[2]=='L' && ch[3]=='S' && ch[4]=='E') ||
-        (ch+4<eof && ch[1]=='a' && ch[2]=='l' && ch[3]=='s' && ch[4]=='e')) {
-      *target=0;
-      ch+=5;
-    }
+  uint8_t d = (uint8_t)(*ch - '0');  // '0'=>0, '1'=>1, everything else > 1
+  if (d <= 1) {
+    *target = (int8_t) d;
+    *(ctx->ch) = ch + 1;
   } else {
     *target = NA_BOOL8;
-    return;
   }
-  *(ctx->ch) = ch;
 }
+
+/* Parse uppercase TRUE | FALSE as boolean. */
+static void parse_bool_uppercase(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  if (ch[0]=='T' && ch[1]=='R' && ch[2]=='U' && ch[3]=='E') {
+    *target = 1;
+    *(ctx->ch) = ch + 4;
+  } else if (ch[0]=='F' && ch[1]=='A' && ch[2]=='L' && ch[3]=='S' && ch[4]=='E') {
+    *target = 0;
+    *(ctx->ch) = ch + 5;
+  } else {
+    *target = NA_BOOL8;
+  }
+}
+
+/* Parse camelcase True | False as boolean. */
+static void parse_bool_titlecase(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  if (ch[0]=='T' && ch[1]=='r' && ch[2]=='u' && ch[3]=='e') {
+    *target = 1;
+    *(ctx->ch) = ch + 4;
+  } else if (ch[0]=='F' && ch[1]=='a' && ch[2]=='l' && ch[3]=='s' && ch[4]=='e') {
+    *target = 0;
+    *(ctx->ch) = ch + 5;
+  } else {
+    *target = NA_BOOL8;
+  }
+}
+
+/* Parse lowercase true | false as boolean. */
+static void parse_bool_lowercase(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  if (ch[0]=='t' && ch[1]=='r' && ch[2]=='u' && ch[3]=='e') {
+    *target = 1;
+    *(ctx->ch) = ch + 4;
+  } else if (ch[0]=='f' && ch[1]=='a' && ch[2]=='l' && ch[3]=='s' && ch[4]=='e') {
+    *target = 0;
+    *(ctx->ch) = ch + 5;
+  } else {
+    *target = NA_BOOL8;
+  }
+}
+
+
 
 typedef void (*reader_fun_t)(FieldParseContext *ctx);
 static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &Field,
-  (reader_fun_t) &StrtoB,
+  (reader_fun_t) &parse_bool_numeric,
+  (reader_fun_t) &parse_bool_uppercase,
+  (reader_fun_t) &parse_bool_titlecase,
+  (reader_fun_t) &parse_bool_lowercase,
   (reader_fun_t) &StrtoI32,
   (reader_fun_t) &StrtoI64,
   (reader_fun_t) &StrtoD,
   (reader_fun_t) &Field
 };
 
+static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 
 //=================================================================================================
@@ -789,6 +832,7 @@ int freadMain(freadMainArgs _args) {
     if (errno==0 && (size_t)(end - ch) == nchar) any_number_like_NAstrings = true;
     nastr++;
   }
+  disabled_parsers[CT_BOOL8_N] = !args.logical01;
   if (verbose) {
     if (*NAstrings == NULL) {
       DTPRINT("  No NAstrings provided.\n");
@@ -805,6 +849,7 @@ int freadMain(freadMainArgs _args) {
     if (args.skipNrow) DTPRINT("  skip num lines = %lld\n", args.skipNrow);
     if (args.skipString) DTPRINT("  skip to string = <<%s>>\n", args.skipString);
     DTPRINT("  show progress = %d\n", args.showProgress);
+    DTPRINT("  0/1 column will be read as %s\n", args.logical01? "boolean" : "integer");
   }
 
   stripWhite = args.stripWhite;
@@ -1213,11 +1258,12 @@ int freadMain(freadMainArgs _args) {
   size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
   if (!type || !size) STOP("Failed to allocate %d x 2 bytes for type/size: %s", ncol, strerror(errno));
 
+  int8_t type0 = 1;
+  while (disabled_parsers[type0]) type0++;
   for (int j=0; j<ncol; j++) {
-    // initialize with the first (lowest) type, 1==CT_BOOL8 at the time of writing. If we add CT_BOOL1 or CT_BOOL2 in
-    /// future, using 1 here means this line won't need to be changed. CT_DROP is 0 and 1 is the first type.
-    type[j] = 1;
-    size[j] = typeSize[type[j]];
+    // initialize with the lowest available type
+    type[j] = type0;
+    size[j] = typeSize[type0];
   }
 
   size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first JUMPLINES from the start (jump point 0)
@@ -1290,7 +1336,7 @@ int freadMain(freadMainArgs _args) {
             args.header=false;
             if (verbose) DTPRINT("  'header' determined to be false due to first field not being type string\n");
           }
-          type[field] = 1;  // re-initialize for 2nd row onwards
+          type[field] = type0;  // re-initialize for 2nd row onwards
         }
         // throw-away storage for processors to write to in this preamble.
         double trash; // double so that this storage is aligned. char trash[8] would not be aligned.
@@ -1315,6 +1361,7 @@ int freadMain(freadMainArgs _args) {
               if (*ch==quote && end_of_field(ch[1])) { ch++; break; }
             }
             type[field]++;
+            while (disabled_parsers[type[field]]) type[field]++;
           } else {
             // the field could not be read with this quote rule, try again with next one
             // Trying the next rule will only be successful if the number of fields is consistent with it
@@ -1365,7 +1412,7 @@ int freadMain(freadMainArgs _args) {
              strlim(fieldStart,200));
       }
       if (firstDataRowAfterPotentialColumnNames) {
-        if (fill) for (int jj=field+1; jj<ncol; jj++) type[jj]=1;
+        if (fill) for (int jj=field+1; jj<ncol; jj++) type[jj] = type0;
         firstDataRowAfterPotentialColumnNames = false;
       } else if (sampleLines==0) firstDataRowAfterPotentialColumnNames = true;  // To trigger 2nd row starting from type 1 again to compare to 1st row to decide if column names present
       ch += (*ch=='\n' || *ch=='\r');
@@ -1413,7 +1460,7 @@ int freadMain(freadMainArgs _args) {
   }
   if (sampleLines<=1) {
     if (args.header==true) {
-      for (int j=0; j<ncol; j++) type[j]=1;
+      for (int j=0; j<ncol; j++) type[j] = type0;
       // when column-names-only, 2nd row didn't happen, so initialize needs to be done now so that empty columns should be type logical
       // rather than the type of the column names (most likely string)
     }
@@ -1575,14 +1622,18 @@ int freadMain(freadMainArgs _args) {
   size_t DTi = 0;   // the current row number in DT that we are writing to
   const char *prevJumpEnd = pos;  // the position after the last line the last thread processed (for checking)
   int buffGrown=0;
-  size_t chunkBytes = umax((size_t)(1000*meanLineLen), 1ULL/*MB*/ *1024*1024);
   // chunkBytes is the distance between each jump point; it decides the number of jumps
   // We may want each chunk to write to its own page of the final column, hence 1000*maxLen
   // For the 44GB file with 12875 columns, the max line len is 108,497. We may want each chunk to write to its
   // own page (4k) of the final column, hence 1000 rows of the smallest type (4 byte int) is just
   // under 4096 to leave space for R's header + malloc's header.
-  {
-  if (verbose) DTPRINT("[11] Read the data\n");
+  size_t chunkBytes = umax((size_t)(1000*meanLineLen), 1ULL/*MB*/ *1024*1024);
+  // Index of the first jump to read. May be modified if we ever need to restart
+  // reading from the middle of the file.
+  int jump0 = 0;
+  // If we need to restart reading the file because we ran out of allocation
+  // space, then this variable will tell how many new rows has to be allocated.
+  size_t extraAllocRows = 0;
 
   if (nJumps/*from sampling*/>1) {
     // ensure data size is split into same sized chunks (no remainder in last chunk) and a multiple of nth
@@ -1604,14 +1655,20 @@ int freadMain(freadMainArgs _args) {
   if (initialBuffRows > INT32_MAX) STOP("Buffer size %lld is too large\n", initialBuffRows);
   nth = imin(nJumps, nth);
 
+
   read:  // we'll return here to reread any columns with out-of-sample type exceptions
+  {
+  if (verbose) {
+    DTPRINT("[11] Read the data\n");
+    DTPRINT("  jumps=[%d..%d), chunk_size=%llu, total_size=%llu\n", jump0, nJumps, (llu)chunkBytes, (llu)(lastRowEnd-pos));
+  }
+  ASSERT(allocnrow <= nrowLimit, "allocnrow(%llu) < nrowLimit(%llu)", (llu)allocnrow, (llu)nrowLimit);
   #pragma omp parallel num_threads(nth)
   {
     int me = omp_get_thread_num();
     #pragma omp master
     nth = omp_get_num_threads();
     const char *thisJumpStart=NULL;  // The first good start-of-line after the jump point
-    size_t myDTi = 0;  // which row in the final DT result I should start writing my chunk to
     size_t myNrow = 0; // the number of rows in my chunk
     size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
 
@@ -1624,7 +1681,7 @@ int freadMain(freadMainArgs _args) {
       .rowSize8 = rowSize8,
       .rowSize4 = rowSize4,
       .rowSize1 = rowSize1,
-      .DTi = 0,
+      .DTi = 0,  // which row in the final DT result I should start writing my chunk to
       .nRows = allocnrow,
       .threadn = me,
       .quoteRule = quoteRule,
@@ -1640,7 +1697,7 @@ int freadMain(freadMainArgs _args) {
     prepareThreadContext(&ctx);
 
     #pragma omp for ordered schedule(dynamic) reduction(+:thNextGoodLine,thRead,thPush)
-    for (int jump = 0; jump < nJumps; jump++) {
+    for (int jump = jump0; jump < nJumps; jump++) {
       if (stopTeam) continue;  // must be continue and not break. We desire not to depend on (newer) omp cancel yet
       double tt0 = 0, tt1 = 0;
       if (verbose) { tt1 = tt0 = wallclock(); }
@@ -1801,6 +1858,7 @@ int freadMain(freadMainArgs _args) {
             // check that the new type is sufficient for the rest of the column (and any other columns also in out-of-sample bump status) to be
             // sure a single re-read will definitely work.
             absType++;
+            while (disabled_parsers[absType]) absType++;
             thisType = -absType;
             tch = fieldStart;
           }
@@ -1817,7 +1875,7 @@ int freadMain(freadMainArgs _args) {
                   "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %llu\n",
                   j+1, colNames[j].len, colNamesAnchor + colNames[j].off,
                   typeName[abs(joldType)], typeName[abs(thisType)],
-                  (int)(tch-fieldStart), fieldStart, (llu)(myDTi+myNrow));
+                  (int)(tch-fieldStart), fieldStart, (llu)(ctx.DTi+myNrow));
                 typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + (size_t)len + 1);
                 strcpy(typeBumpMsg+typeBumpMsgSize, temp);
                 typeBumpMsgSize += (size_t)len;
@@ -1880,7 +1938,7 @@ int freadMain(freadMainArgs _args) {
             snprintf(stopErr, stopErrSize,
               "Expecting %d cols but row %llu contains only %d cols (sep='%c'). " \
               "Consider fill=true. <<%s>>",
-              ncol, (llu)myDTi, j, sep, strlim(tlineStart, 500));
+              ncol, (llu)ctx.DTi, j, sep, strlim(tlineStart, 500));
           }
           break;
         }
@@ -1890,7 +1948,7 @@ int freadMain(freadMainArgs _args) {
             stopTeam = true;
             snprintf(stopErr, stopErrSize,
               "Too many fields on out-of-sample row %llu. Read all %d expected columns but more are present. <<%s>>",
-              (llu)myDTi, ncol, strlim(tlineStart, 500));
+              (llu)ctx.DTi, ncol, strlim(tlineStart, 500));
           }
           break;
         }
@@ -1905,7 +1963,7 @@ int freadMain(freadMainArgs _args) {
       #pragma omp ordered
       {
         // stopTeam could be true if a previous thread already stopped while I was waiting my turn
-        if (!stopTeam && prevJumpEnd != thisJumpStart) {
+        if (!stopTeam && prevJumpEnd != thisJumpStart && jump > jump0) {
           snprintf(stopErr, stopErrSize,
             "Jump %d did not finish counting rows exactly where jump %d found its first good line start: "
             "prevEnd(%p)<<%s>> != thisStart(prevEnd%+d)<<%s>>",
@@ -1913,14 +1971,26 @@ int freadMain(freadMainArgs _args) {
             (int)(thisJumpStart-prevJumpEnd), strlim(thisJumpStart,50));
           stopTeam=true;
         }
-        myDTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
-        ctx.DTi = myDTi;
-        if (myDTi >= nrowLimit) {
-          // nrowLimit was supplied and a previous thread reached that limit while I was counting my rows
-          stopTeam=true;
+        ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
+        if (ctx.DTi >= allocnrow) {  // a previous thread has already reached the `allocnrow` limit
+          stopTeam = true;
           myNrow = 0;
-        } else {
-          myNrow = umin(myNrow, nrowLimit - myDTi); // for the last jump that reaches nrowLimit
+        } else if (myNrow + ctx.DTi > allocnrow) {  // current thread has reached `allocnrow` limit
+          if (allocnrow == nrowLimit) {
+            // allocnrow is the same as nrowLimit, no need to reallocate the DT,
+            // just truncate the rows in the current chunk.
+            myNrow = nrowLimit - ctx.DTi;
+          } else {
+            // We reached `allocnrow` limit, but there are more data to read
+            // left. In this case we arrange to terminate all threads but
+            // remember the position where the previous thread has finished. We
+            // will reallocate the DT and restart reading from the same point.
+            jump0 = jump;
+            extraAllocRows = (double)(DTi+myNrow)*nJumps/(jump+1) * 1.2 - allocnrow;
+            if (extraAllocRows < 1024) extraAllocRows = 1024;
+            myNrow = 0;
+            stopTeam = true;
+          }
         }
                            // tell next thread (she not me) 2 things :
         prevJumpEnd = tch; // i) the \n I finished on so she can check (above) she started exactly on that \n good line start
@@ -1947,6 +2017,16 @@ int freadMain(freadMainArgs _args) {
     freeThreadContext(&ctx);
   }
   //-- end parallel ------------------
+  }
+
+  if (extraAllocRows) {
+    allocnrow += extraAllocRows;
+    if (allocnrow > nrowLimit) allocnrow = nrowLimit;
+    if (verbose) DTPRINT("  Too few rows allocated. Allocating additional %llu rows (now nrows=%llu) and continue reading from jump point %d\n", (llu)extraAllocRows, (llu)allocnrow, jump0);
+    allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, allocnrow);
+    extraAllocRows = 0;
+    stopTeam = false;
+    goto read;
   }
 
 

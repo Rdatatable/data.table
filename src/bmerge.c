@@ -47,7 +47,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     i = iArg; x = xArg;  // set globals so bmerge_r can see them.
     if (!isInteger(icolsArg)) error("Internal error: icols is not integer vector");
     if (!isInteger(xcolsArg)) error("Internal error: xcols is not integer vector");
-    if (LENGTH(icolsArg) > LENGTH(xcolsArg)) error("Internal error: length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg)); 
+    if (LENGTH(icolsArg) > LENGTH(xcolsArg)) error("Internal error: length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg));
     icols = INTEGER(icolsArg);
     xcols = INTEGER(xcolsArg);
     xN = LENGTH(VECTOR_ELT(x,0));
@@ -335,7 +335,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         while(ilow<tmpupp-1) {
             mid = ilow + (tmpupp-ilow)/2;
             xval.s = ENC2UTF8(STRING_ELT(ic, o ? o[mid]-1 : mid));
-            if (xval.s == ival.s) tmpupp=mid; else ilow=mid;   // see above re == 
+            if (xval.s == ival.s) tmpupp=mid; else ilow=mid;   // see above re ==
         }
         break;
     case REALSXP :
@@ -349,7 +349,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                 xlow=mid;
             } else if (xval.ull>ival.ull) {
                 xupp=mid;
-            } else { // xval.ull == ival.ull) 
+            } else { // xval.ull == ival.ull)
                 tmplow = mid;
                 tmpupp = mid;
                 while(tmplow<xupp-1) {
@@ -432,13 +432,13 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                             if (ctr+ilen >= anslen) {
                                 anslen = 1.1*anslen;
                                 tmpptr = Realloc(retFirst, anslen, int);
-                                if (tmpptr != NULL) retFirst = tmpptr; 
+                                if (tmpptr != NULL) retFirst = tmpptr;
                                 else error("Error in reallocating memory in non-equi joins.\n");
                                 tmpptr = Realloc(retLength, anslen, int);
-                                if (tmpptr != NULL) retLength = tmpptr; 
+                                if (tmpptr != NULL) retLength = tmpptr;
                                 else error("Error in reallocating memory in non-equi joins.\n");
                                 tmpptr = Realloc(retIndex, anslen, int);
-                                if (tmpptr != NULL) retIndex = tmpptr; 
+                                if (tmpptr != NULL) retIndex = tmpptr;
                                 else error("Error in reallocating memory in non-equi joins.\n");
                             }
                         } else if (mult == FIRST) {
@@ -486,13 +486,13 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         } else {
             // Regular roll=TRUE|+ve|-ve
             // Fixed issues: #1405, #1650, #1007
-            // TODO: incorporate the twiddle logic for roll as well instead of tolerance?  
+            // TODO: incorporate the twiddle logic for roll as well instead of tolerance?
             if ( (   (roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))
                   || (roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )
               && (   (TYPEOF(ic)==REALSXP &&
                       (ival.d = REAL(ic)[ir], xval.d = REAL(xc)[XIND(xlow)], 1) &&
                      (( !isInt64 &&
-                        (ival.d-xval.d-rollabs < 1e-6 || 
+                        (ival.d-xval.d-rollabs < 1e-6 ||
                          ival.d-xval.d == rollabs /*#1007*/))
                    || ( isInt64 &&
                         (double)(ival.ll-xval.ll)-rollabs < 1e-6 ) ))  // cast to double for when rollabs==Inf
@@ -506,7 +506,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
               && (   (TYPEOF(ic)==REALSXP &&
                       (ival.d = REAL(ic)[ir], xval.d = REAL(xc)[XIND(xupp)], 1) &&
                      (( !isInt64 &&
-                        (xval.d-ival.d-rollabs < 1e-6 || 
+                        (xval.d-ival.d-rollabs < 1e-6 ||
                          xval.d-ival.d == rollabs /*#1007*/))
                    || ( isInt64 &&
                         (double)(xval.ll-ival.ll)-rollabs < 1e-6 ) ))
@@ -517,12 +517,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
             }
         }
         if (iupp-ilow > 2 && retFirst[ir]!=NA_INTEGER) {
-            // >=2 equal values in the last column being rolling to the same point.  
+            // >=2 equal values in the last column being rolling to the same point.
             for (j=ilow+1; j<iupp; j++) {
                 // will rewrite retFirst[ir] to itself, but that's ok
                 if (o) k=o[j]-1; else k=j;
                 retFirst[k] = retFirst[ir];
-                retLength[k]= retLength[ir]; 
+                retLength[k]= retLength[ir];
             }
         }
     }

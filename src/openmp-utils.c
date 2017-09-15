@@ -9,7 +9,7 @@
 * 3) And not if user doesn't want to:
 *    i) Respect env variable OMP_NUM_THREADS (which just calls (ii) on startup)
 *    ii) Respect omp_set_num_threads()
-*    iii) Provide way to restrict data.table only independently of base R and 
+*    iii) Provide way to restrict data.table only independently of base R and
 *         other packages using openMP
 * 4) Avoid user needing to remember to unset this control after their use of data.table
 * 5) Automatically drop down to 1 thread when called from parallel package (e.g. mclapply) to
@@ -39,7 +39,7 @@ SEXP setDTthreads(SEXP threads) {
         error("Argument to setDTthreads must be a single integer >= 0. \
             Default 0 is recommended to use all CPU.");
     }
-    // do not call omp_set_num_threads() here as that affects other openMP 
+    // do not call omp_set_num_threads() here as that affects other openMP
     // packages and base R as well potentially.
     int old = DTthreads;
     DTthreads = INTEGER(threads)[0];

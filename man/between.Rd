@@ -7,10 +7,10 @@
 \description{
 Intended for use in \code{i} in \code{[.data.table}.
 
-\code{between} is equivalent to \code{x >= lower & x <= upper} when 
+\code{between} is equivalent to \code{x >= lower & x <= upper} when
 \code{incbounds=TRUE}, or \code{x > lower & y < upper} when \code{FALSE}.
 
-\code{inrange} checks whether each value in \code{x} is in between any of 
+\code{inrange} checks whether each value in \code{x} is in between any of
 the intervals provided in \code{lower,upper}.
 }
 \usage{
@@ -21,37 +21,37 @@ inrange(x, lower, upper, incbounds=TRUE)
 x \%inrange\% y
 }
 \arguments{
-\item{x}{ Any orderable vector, i.e., those with relevant methods for 
-\code{`<=`}, such as \code{numeric}, \code{character}, \code{Date}, etc. in 
+\item{x}{ Any orderable vector, i.e., those with relevant methods for
+\code{`<=`}, such as \code{numeric}, \code{character}, \code{Date}, etc. in
 case of \code{between} and a numeric vector in case of \code{inrange}.}
 \item{lower}{ Lower range bound.}
 \item{upper}{ Upper range bound.}
-\item{y}{ A length-2 \code{vector} or \code{list}, with \code{y[[1]]} 
-interpreted as \code{lower} and \code{y[[2]]} as \code{upper}.} 
-\item{incbounds}{ \code{TRUE} means inclusive bounds, i.e., [lower,upper]. 
-\code{FALSE} means exclusive bounds, i.e., (lower,upper). 
+\item{y}{ A length-2 \code{vector} or \code{list}, with \code{y[[1]]}
+interpreted as \code{lower} and \code{y[[2]]} as \code{upper}.}
+\item{incbounds}{ \code{TRUE} means inclusive bounds, i.e., [lower,upper].
+\code{FALSE} means exclusive bounds, i.e., (lower,upper).
 
 It is set to \code{TRUE} by default for infix notations.}
 }
 \details{
 
-From \code{v1.9.8+}, \code{between} is vectorised. \code{lower} and 
+From \code{v1.9.8+}, \code{between} is vectorised. \code{lower} and
 \code{upper} are recycled to \code{length(x)} if necessary.
 
-\emph{non-equi} joins were recently implemented in \code{v1.9.8}. It extends 
-binary search based joins in \code{data.table} to other binary operators 
-including \code{>=, <=, >, <}. \code{inrange} makes use of this new  
+\emph{non-equi} joins were recently implemented in \code{v1.9.8}. It extends
+binary search based joins in \code{data.table} to other binary operators
+including \code{>=, <=, >, <}. \code{inrange} makes use of this new
 functionality and performs a range join.
 
 }
 \value{
-Logical vector as the same length as \code{x} with value \code{TRUE} for those 
+Logical vector as the same length as \code{x} with value \code{TRUE} for those
 that lie within the specified range.
 }
-\note{ Current implementation does not make use of ordered keys for 
+\note{ Current implementation does not make use of ordered keys for
 \code{\%between\%}. }
 \seealso{
-\code{\link{data.table}}, \code{\link{like}}, \code{\link{\%chin\%}} 
+\code{\link{data.table}}, \code{\link{like}}, \code{\link{\%chin\%}}
 }
 \examples{
 X = data.table(a=1:5, b=6:10, c=c(5:1))

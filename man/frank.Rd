@@ -10,11 +10,11 @@
 }
 
 \usage{
-frank(x, ..., na.last=TRUE, ties.method=c("average", 
+frank(x, ..., na.last=TRUE, ties.method=c("average",
   "first", "random", "max", "min", "dense"))
 
-frankv(x, cols=seq_along(x), order=1L, na.last=TRUE, 
-      ties.method=c("average", "first", "random", 
+frankv(x, cols=seq_along(x), order=1L, na.last=TRUE,
+      ties.method=c("average", "first", "random",
         "max", "min", "dense"))
 
 }
@@ -33,7 +33,7 @@ frankv(x, cols=seq_along(x), order=1L, na.last=TRUE,
 
   In addition to the \code{ties.method} values possible using base's \code{\link[base]{rank}}, it also provides another additional argument \emph{"dense"} which returns the ranks without any gaps in the ranking. See examples.
 }
-\value{    
+\value{
   A numeric vector of length equal to \code{NROW(x)} (unless \code{na.last = NA}, when missing values are removed). The vector is of integer type unless \code{ties.method = "average"} when it is of double type (irrespective of ties).
 }
 

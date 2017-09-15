@@ -4,7 +4,7 @@
 \title{ Remove rows with missing values on columns specified }
 \description{
     This is a \code{data.table} method for the S3 generic \code{stats::na.omit}. The internals are written in C for speed. See examples for benchmark timings.
-    
+
     \code{bit64::integer64} type is also supported.
 }
 
@@ -18,7 +18,7 @@
   \item{\dots}{ Further arguments special methods could require. }
 }
 \details{
-The \code{data.table} method consists of an additional argument \code{cols}, which when specified looks for missing values in just those columns specified. The default value for \code{cols} is all the columns, to be consistent with the default behaviour of \code{stats::na.omit}. 
+The \code{data.table} method consists of an additional argument \code{cols}, which when specified looks for missing values in just those columns specified. The default value for \code{cols} is all the columns, to be consistent with the default behaviour of \code{stats::na.omit}.
 
 It does not add the attribute \code{na.action} as \code{stats::na.omit} does.
 }
@@ -40,7 +40,7 @@ na.omit(DT, cols=c("x", "y"))
 \dontrun{
 # Timings on relatively large data
 set.seed(1L)
-DT = data.table(x = sample(c(1:100, NA_integer_), 5e7L, TRUE), 
+DT = data.table(x = sample(c(1:100, NA_integer_), 5e7L, TRUE),
                 y = sample(c(rnorm(100), NA), 5e7L, TRUE))
 system.time(ans1 <- na.omit(DT)) ## 2.6 seconds
 system.time(ans2 <- stats:::na.omit.data.frame(DT)) ## 29 seconds

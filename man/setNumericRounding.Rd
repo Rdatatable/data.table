@@ -3,7 +3,7 @@
 \alias{getNumericRounding}
 \title{ Change or turn off numeric rounding }
 \description{
-Change rounding to 0, 1 or 2 bytes when joining, grouping or ordering numeric 
+Change rounding to 0, 1 or 2 bytes when joining, grouping or ordering numeric
 (i.e. double, POSIXct) columns.
 }
 \usage{
@@ -14,25 +14,25 @@ getNumericRounding()
   \item{x}{ integer or numeric vector: 0 (default), 1 or 2 byte rounding }
 }
 \details{
-Computers cannot represent some floating point numbers (such as 0.6) 
-precisely, using base 2. This leads to unexpected behaviour when joining or 
-grouping columns of type 'numeric'; i.e. 'double', see example below. In 
-cases where this is undesirable, data.table allows rounding such data up to 
-approximately 11 s.f. which is plenty of digits for many cases. This is 
-achieved by rounding the last 2 bytes off the significand. Other possible 
+Computers cannot represent some floating point numbers (such as 0.6)
+precisely, using base 2. This leads to unexpected behaviour when joining or
+grouping columns of type 'numeric'; i.e. 'double', see example below. In
+cases where this is undesirable, data.table allows rounding such data up to
+approximately 11 s.f. which is plenty of digits for many cases. This is
+achieved by rounding the last 2 bytes off the significand. Other possible
 values are 1 byte rounding, or no rounding (full precision, default).
- 
-It's bytes rather than bits because it's tied in with the radix sort 
-algorithm for sorting numerics which sorts byte by byte. With the default 
-rounding of 0 bytes, at most 8 passes are needed. With rounding of 2 bytes, at 
+
+It's bytes rather than bits because it's tied in with the radix sort
+algorithm for sorting numerics which sorts byte by byte. With the default
+rounding of 0 bytes, at most 8 passes are needed. With rounding of 2 bytes, at
 most 6 passes are needed (and therefore might be a tad faster).
 
-For large numbers (integers > 2^31), we recommend using 
-\code{bit64::integer64}, even though the default is to round off 0 bytes (full 
+For large numbers (integers > 2^31), we recommend using
+\code{bit64::integer64}, even though the default is to round off 0 bytes (full
 precision).
  }
 \value{
-\code{setNumericRounding} returns no value; the new value is applied. 
+\code{setNumericRounding} returns no value; the new value is applied.
 \code{getNumericRounding} returns the current value: 0, 1 or 2.
 }
 \seealso{

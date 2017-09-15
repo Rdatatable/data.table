@@ -13,14 +13,14 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
         xx
     }
     if (is.atomic(x)) {
-        if (!missing(cols) && !is.null(cols)) 
+        if (!missing(cols) && !is.null(cols))
             stop("x is a single vector, non-NULL 'cols' doesn't make sense")
         cols = 1L
         x = as_list(x)
     } else {
         if (!length(cols))
             stop("x is a list, 'cols' can not be 0-length")
-        if (is.character(cols)) 
+        if (is.character(cols))
             cols = chmatch(cols, names(x))
         cols = as.integer(cols)
     }
@@ -34,13 +34,13 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
         nas  = x[[ncol(x)]]
     }
     if (ties.method == "random") {
-        set(x, i = if (is.na(na.last)) which_(nas, FALSE) else NULL, 
-               j = "..stats_runif..", 
+        set(x, i = if (is.na(na.last)) which_(nas, FALSE) else NULL,
+               j = "..stats_runif..",
                value = stats::runif(nrow(x)))
         order = if (length(order) == 1L) c(rep(order, length(cols)), 1L) else c(order, 1L)
         cols = c(cols, ncol(x))
     }
-    xorder  = forderv(x, by=cols, order=order, sort=TRUE, retGrp=TRUE, 
+    xorder  = forderv(x, by=cols, order=order, sort=TRUE, retGrp=TRUE,
                 na.last=if (identical(na.last, FALSE)) na.last else TRUE)
     xstart  = attr(xorder, 'starts')
     xsorted = FALSE
@@ -48,7 +48,7 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
         xsorted = TRUE
         xorder  = seq_along(x[[1L]])
     }
-    ans = switch(ties.method, 
+    ans = switch(ties.method,
            average = , min = , max =, dense = {
                rank = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), ties.method)
            },

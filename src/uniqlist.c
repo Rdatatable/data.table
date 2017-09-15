@@ -4,10 +4,10 @@
 // Also improvements for numeric type with a hack of checking unsigned int (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
 SEXP uniqlist(SEXP l, SEXP order)
 {
-    // This works like UNIX uniq as referred to by ?base::unique; i.e., it 
-    // drops immediately repeated rows but doesn't drop duplicates of any 
-    // previous row. Unless, order is provided, then it also drops any previous 
-    // row. l must be a list of same length vectors ans is allocated first 
+    // This works like UNIX uniq as referred to by ?base::unique; i.e., it
+    // drops immediately repeated rows but doesn't drop duplicates of any
+    // previous row. Unless, order is provided, then it also drops any previous
+    // row. l must be a list of same length vectors ans is allocated first
     // (maximum length the number of rows) and the length returned in anslen.
     // DONE: ans is now grown
     Rboolean b, byorder;
@@ -35,11 +35,11 @@ SEXP uniqlist(SEXP l, SEXP order)
             case INTSXP : case LGLSXP :  // NA_INTEGER==NA_LOGICAL checked in init.c
                 b=INTEGER(v)[thisi]==INTEGER(v)[previ]; break;
             case STRSXP :
-                // fix for #469, when key is set, duplicated calls uniqlist, where encoding 
+                // fix for #469, when key is set, duplicated calls uniqlist, where encoding
                 // needs to be taken care of.
                 b=ENC2UTF8(STRING_ELT(v,thisi))==ENC2UTF8(STRING_ELT(v,previ)); break;  // marked non-utf8 encodings are converted to utf8 so as to match properly when inputs are of different encodings.
             case REALSXP :
-                ulv = (unsigned long long *)REAL(v);  
+                ulv = (unsigned long long *)REAL(v);
                 b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
                 if (!b) {
                     class = getAttrib(v, R_ClassSymbol);
@@ -49,7 +49,7 @@ SEXP uniqlist(SEXP l, SEXP order)
                 break;
                 // TO DO: store previ twiddle call, but it'll need to be vector since this is in a loop through columns. Hopefully the first == will short circuit most often
             default :
-                error("Type '%s' not supported", type2char(TYPEOF(v))); 
+                error("Type '%s' not supported", type2char(TYPEOF(v)));
             }
         }
         if (!b) iidx[len++] = i+1;
@@ -60,7 +60,7 @@ SEXP uniqlist(SEXP l, SEXP order)
         }
     }
     PROTECT(ans = allocVector(INTSXP, len));
-    memcpy(INTEGER(ans), iidx, sizeof(int)*len); // sizeof is of type size_t - no integer overflow issues   
+    memcpy(INTEGER(ans), iidx, sizeof(int)*len); // sizeof is of type size_t - no integer overflow issues
     Free(iidx);
     UNPROTECT(1);
     return(ans);
@@ -116,13 +116,13 @@ SEXP rleid(SEXP l, SEXP cols)
         //               So == pointers is ok given that check
         break;
       case REALSXP : {
-        long long *ll = (long long *)DATAPTR(v);  
+        long long *ll = (long long *)DATAPTR(v);
         b = ll[i]==ll[i-1]; }
         // 8 bytes of bits are identical. For real (no rounding currently) and integer64
         // long long == 8 bytes checked in init.c
         break;
       default :
-        error("Type '%s' not supported", type2char(TYPEOF(v))); 
+        error("Type '%s' not supported", type2char(TYPEOF(v)));
       }
     }
     INTEGER(ans)[i] = (grp+=!b);
@@ -165,7 +165,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
         // "first"=add next grp to current grp iff min(next) >= min(current)
         // "last"=add next grp to current grp iff max(next) >= max(current)
         // in addition to this thisi >= previ should be satisfied
-        // could result in more groups.. so done only for first/last cases 
+        // could result in more groups.. so done only for first/last cases
         // as it allows to extract indices directly in bmerge.
         grplen = (i+1 < ngrps) ? igrps[i+1]-igrps[i] : nrows-igrps[i]+1;
         starts = igrps[i]-1 + (mult != LAST ? 0 : grplen-1);
@@ -175,8 +175,8 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
             previ = ansgrp[k];
             // b=TRUE is ideal for mult=ALL, results in lesser groups
             b = mult == ALL || (thisi >= previ);
-            // >= 0 is not necessary as first col will always be in 
-            // increasing order. NOTE: all "==" cols are already skipped for 
+            // >= 0 is not necessary as first col will always be in
+            // increasing order. NOTE: all "==" cols are already skipped for
             // computing nestedid during R-side call, for efficiency.
             while(b && --j>0) {
                 v = VECTOR_ELT(l,INTEGER(cols)[j]-1);
@@ -198,7 +198,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
             if (b) break;
         }
         // TODO: move this as the outer for-loop and parallelise..
-        // but preferably wait to see if problems with that big non-equi 
+        // but preferably wait to see if problems with that big non-equi
         // group sizes do occur that commonly before to invest time here.
         if (rlen != starts) {
             tmp = b ? k : nansgrp++;
@@ -209,7 +209,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
         if (nansgrp >= ansgrpsize) {
             ansgrpsize = 1.1*ansgrpsize*nrows/i;
             ptr = Realloc(ansgrp, ansgrpsize, int);
-            if (ptr != NULL) ansgrp = ptr; 
+            if (ptr != NULL) ansgrp = ptr;
             else error("Error in reallocating memory in 'nestedid'\n");
         }
         for (j=0; j<grplen; j++) {

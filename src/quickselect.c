@@ -15,13 +15,13 @@ double dquickselect(double *x, int n, int k) {
     l=0;
     ir=n-1;
     for(;;) {
-        if (ir <= l+1) { 
+        if (ir <= l+1) {
             if (ir == l+1 && x[ir] < x[l]) {
                 SWAP(x[l],x[ir]);
             }
         return x[k];
         } else {
-            mid=(l+ir) >> 1; 
+            mid=(l+ir) >> 1;
             SWAP(x[mid],x[l+1]);
             if (x[l] > x[ir]) {
                 SWAP(x[l],x[ir]);
@@ -32,18 +32,18 @@ double dquickselect(double *x, int n, int k) {
             if (x[l] > x[l+1]) {
                 SWAP(x[l],x[l+1]);
             }
-            i=l+1; 
+            i=l+1;
             j=ir;
-            a=x[l+1]; 
-            for (;;) { 
-                do i++; while (x[i] < a); 
-                do j--; while (x[j] > a); 
-                if (j < i) break; 
+            a=x[l+1];
+            for (;;) {
+                do i++; while (x[i] < a);
+                do j--; while (x[j] > a);
+                if (j < i) break;
                     SWAP(x[i],x[j]);
-            } 
-            x[l+1]=x[j]; 
+            }
+            x[l+1]=x[j];
             x[j]=a;
-            if (j >= k) ir=j-1; 
+            if (j >= k) ir=j-1;
             if (j <= k) l=i;
         }
     }
@@ -56,13 +56,13 @@ double iquickselect(int *x, int n, int k) {
     l=0;
     ir=n-1;
     for(;;) {
-        if (ir <= l+1) { 
+        if (ir <= l+1) {
             if (ir == l+1 && x[ir] < x[l]) {
                 SWAP(x[l],x[ir]);
             }
         return (double)(x[k]);
         } else {
-            mid=(l+ir) >> 1; 
+            mid=(l+ir) >> 1;
             SWAP(x[mid],x[l+1]);
             if (x[l] > x[ir]) {
                 SWAP(x[l],x[ir]);
@@ -73,18 +73,18 @@ double iquickselect(int *x, int n, int k) {
             if (x[l] > x[l+1]) {
                 SWAP(x[l],x[l+1]);
             }
-            i=l+1; 
+            i=l+1;
             j=ir;
-            a=x[l+1]; 
-            for (;;) { 
-                do i++; while (x[i] < a); 
-                do j--; while (x[j] > a); 
-                if (j < i) break; 
+            a=x[l+1];
+            for (;;) {
+                do i++; while (x[i] < a);
+                do j--; while (x[j] > a);
+                if (j < i) break;
                     SWAP(x[i],x[j]);
-            } 
-            x[l+1]=x[j]; 
+            }
+            x[l+1]=x[j];
             x[j]=a;
-            if (j >= k) ir=j-1; 
+            if (j >= k) ir=j-1;
             if (j <= k) l=i;
         }
     }

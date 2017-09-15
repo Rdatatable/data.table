@@ -23,7 +23,7 @@ Each item of \code{l} can be a \code{data.table}, \code{data.frame} or \code{lis
 
 In versions \code{<= v1.9.2}, each item for \code{rbindlist} should have the same number of columns as the first non empty item. \code{rbind.data.table} gained a \code{fill} argument to fill missing columns with \code{NA} in \code{v1.9.2}, which allowed for \code{rbind(...)} binding unequal number of columns.
 
-In version \code{> v1.9.2}, these functionalities were extended to \code{rbindlist} (and written entirely in C for speed). \code{rbindlist} has \code{use.names} argument, which is set to \code{FALSE} by default for backwards compatibility. It also contains \code{fill} argument as well and can bind unequal columns when set to \code{TRUE}. 
+In version \code{> v1.9.2}, these functionalities were extended to \code{rbindlist} (and written entirely in C for speed). \code{rbindlist} has \code{use.names} argument, which is set to \code{FALSE} by default for backwards compatibility. It also contains \code{fill} argument as well and can bind unequal columns when set to \code{TRUE}.
 
 With these changes, the only difference between \code{rbind(...)} and \code{rbindlist(l)} is their \emph{default argument} \code{use.names}.
 
