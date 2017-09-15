@@ -674,7 +674,7 @@ static void parse_double_regular(FieldParseContext *ctx)
   if (sf>18) goto fail;  // Too much precision for double. TODO: reduce to 15(?) and discard trailing 0's.
   if (*ch=='E' || *ch=='e') {
     if (ch==start) goto fail;  // something valid must be between [+|-] and E, character E alone is invalid.
-    ch += 1 + (Eneg = ch[1]=='-') + (ch[1]=='+');
+    ch += 1/*E*/ + (Eneg = ch[1]=='-') + (ch[1]=='+');
     int E=0, max_digits=3;
     while ( max_digits && (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
       E = 10*E + digit;
