@@ -2,7 +2,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
                    sep=",", sep2=c("","|",""), eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
                    na="", dec=".", row.names=FALSE, col.names=TRUE,
                    qmethod=c("double","escape"),
-                   logicalAsInt=FALSE, dateTimeAs = c("ISO","squash","epoch","write.csv"),
+                   logical01=TRUE, logicalAsInt=logical01, dateTimeAs = c("ISO","squash","epoch","write.csv"),
                    buffMB=8, nThread=getDTthreads(),
                    showProgress=interactive(),
                    verbose=getOption("datatable.verbose")) {
@@ -10,6 +10,12 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     na = as.character(na[1L]) # fix for #1725
     if (missing(qmethod)) qmethod = qmethod[1L]
     if (missing(dateTimeAs)) dateTimeAs = dateTimeAs[1L]
+    if (!missing(logical01) && !missing(logicalAsInt))
+      stop("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
+    if (!missing(logicalAsInt)) {
+      warning("logicalAsInt has been renamed logical01 for consistency with fread. It will work fine but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
+      logical01 = logicalAsInt
+    }
     else if (length(dateTimeAs)>1) stop("dateTimeAs must be a single string")
     dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
     if (is.na(dateTimeAs)) stop("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")

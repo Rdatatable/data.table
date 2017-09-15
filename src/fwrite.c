@@ -484,108 +484,36 @@ static inline void checkBuffer(
   }
 }
 
-SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g. data.frame, data.table
-               SEXP filename_Arg,
-               SEXP sep_Arg,
-               SEXP sep2_Arg,
-               SEXP eol_Arg,
-               SEXP na_Arg,
-               SEXP dec_Arg,
-               SEXP quote_Arg,          // 'auto'=NA_LOGICAL|TRUE|FALSE
-               SEXP qmethod_escapeArg,  // TRUE|FALSE
-               SEXP append,             // TRUE|FALSE
-               SEXP row_names,          // TRUE|FALSE
-               SEXP col_names,          // TRUE|FALSE
-               SEXP logicalAsInt_Arg,   // TRUE|FALSE
-               SEXP dateTimeAs_Arg,     // 0=ISO(yyyy-mm-dd),1=squash(yyyymmdd),2=epoch,3=write.csv
-               SEXP buffMB_Arg,         // [1-1024] default 8MB
-               SEXP nThread,
-               SEXP showProgress_Arg,
-               SEXP verbose_Arg)
+void writefile(
+  const char *filename,
+  void **DFin,             // any list of same length vectors; e.g. data.frame, data.table
+  int ncol,
+  int64_t nrow,
+  writer_fun_t *fun,       // a unique set of writer_fun_t function pointers
+  int8_t *whichFun,        // length ncol vector containing which fun[] to use for each column
+  char sep,
+  const char *eol,
+  const char *na,
+  char dec,
+  char quote,
+  _Bool quotes_doubled,    // FALSE means escape quotes using backslash
+  _Bool append,
+  void *row_names,
+  void *col_names,
+  _Bool logical01,         // TRUE|FALSE
+  int dateTimeAs,          // 0=ISO(yyyy-mm-dd), 1=squash(yyyymmdd), 2=epoch, 3=write.csv
+  int buffMB,              // [1-1024] default 8MB
+  int nThread,
+  _Bool showProgress,
+  _Bool verbose)
 {
-  if (!isNewList(DFin)) error("fwrite must be passed an object of type list; e.g. data.frame, data.table");
-  RLEN ncol = length(DFin);
-  if (ncol==0) {
-    warning("fwrite was passed an empty list of no columns. Nothing to write.");
-    return R_NilValue;
-  }
-  RLEN nrow = length(VECTOR_ELT(DFin, 0));
-
-  const Rboolean showProgress = LOGICAL(showProgress_Arg)[0];
   time_t start_time = time(NULL);
   time_t next_time = start_time+2; // start printing progress meter in 2 sec if not completed by then
 
-  verbose = LOGICAL(verbose_Arg)[0];
-
-  sep = *CHAR(STRING_ELT(sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
-  sep2start = CHAR(STRING_ELT(sep2_Arg, 0));
-  sep2 = *CHAR(STRING_ELT(sep2_Arg, 1));
-  sep2end = CHAR(STRING_ELT(sep2_Arg, 2));
-
-  const char *eol = CHAR(STRING_ELT(eol_Arg, 0));
-  // someone might want a trailer on every line so allow any length string as eol
-
-  na = CHAR(STRING_ELT(na_Arg, 0));
-  dec = *CHAR(STRING_ELT(dec_Arg,0));
-  quote = LOGICAL(quote_Arg)[0];
-  // When NA is a non-empty string, then we must quote all string fields
-  if (*na != '\0' && quote == NA_LOGICAL) quote = TRUE;
-  qmethod_escape = LOGICAL(qmethod_escapeArg)[0];
-  const char *filename = CHAR(STRING_ELT(filename_Arg, 0));
-  logicalAsInt = LOGICAL(logicalAsInt_Arg)[0];
-  dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
   squash = (dateTimeAs==1);
-  int nth = INTEGER(nThread)[0];
   int firstListColumn = 0;
   clock_t t0=clock();
 
-  SEXP DF = DFin;
-  int protecti = 0;
-  if (dateTimeAs == DATETIMEAS_WRITECSV) {
-    int j=0; while(j<ncol && !INHERITS(VECTOR_ELT(DFin,j), char_POSIXct)) j++;
-    if (j<ncol) {
-      // dateTimeAs=="write.csv" && there exist some POSIXct columns; coerce them
-      DF = PROTECT(allocVector(VECSXP, ncol));
-      protecti++;
-      // potentially large if ncol=1e6 as reported in #1903 where using large VLA caused stack overflow
-      SEXP s = PROTECT(allocList(2));
-      SET_TYPEOF(s, LANGSXP);
-      SETCAR(s, install("format.POSIXct"));
-      for (int j=0; j<ncol; j++) {
-        SEXP column = VECTOR_ELT(DFin, j);
-        if (INHERITS(column, char_POSIXct)) {
-          SETCAR(CDR(s), column);
-          SET_VECTOR_ELT(DF, j, eval(s, R_GlobalEnv));
-        } else {
-          SET_VECTOR_ELT(DF, j, column);
-        }
-      }
-      UNPROTECT(1);  // s, not DF
-    }
-  }
-
-  // Allocate lookup vector to writer function for each column. For simplicity and robustness via many fewer lines
-  // of code and less logic need. Secondly, for efficiency to save deep switch and branches later.
-  // Don't use a VLA as ncol could be > 1e6 columns
-  writer_fun_t *fun = (writer_fun_t *)R_alloc(ncol, sizeof(writer_fun_t));
-  for (int j=0; j<ncol; j++) {
-    SEXP column = VECTOR_ELT(DF, j);
-    if (nrow != length(column))
-      error("Column %d's length (%d) is not the same as column 1's length (%d)", j+1, length(column), nrow);
-    if ((fun[j] = whichWriter(column)) == NULL)
-      error("Column %d's type is '%s' - not yet implemented.", j+1, type2char(TYPEOF(column)) );
-    if (TYPEOF(column)==VECSXP && firstListColumn==0) firstListColumn = j+1;
-  }
-
-  if (!firstListColumn) {
-    if (verbose) Rprintf("No list columns are present. Setting sep2='' otherwise quote='auto' would quote fields containing sep2.\n");
-    sep2='\0';
-  } else {
-    if (verbose) Rprintf("If quote='auto', fields will be quoted if the field contains either sep ('%c') or sep2[2] ('%c') because column %d is a list column.\n", sep, sep2, firstListColumn );
-    if (dec==sep) error("Internal error: dec != sep was checked at R level");
-    if (dec==sep2 || sep==sep2)
-      error("sep ('%c'), sep2[2L] ('%c') and dec ('%c') must all be different when list columns are present. Column %d is a list column.", sep, sep2, dec, firstListColumn);
-  }
 
   // user may want row names even when they don't exist (implied row numbers as row names)
   Rboolean doRowNames = LOGICAL(row_names)[0];

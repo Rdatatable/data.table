@@ -110,7 +110,6 @@ static void writeList(SEXP column, int i, char **thisCh) {
 }
 
 
-
 SEXP writefile(SEXP DFin,               // any list of same length vectors; e.g. data.frame, data.table
                SEXP filename_Arg,
                SEXP sep_Arg,
