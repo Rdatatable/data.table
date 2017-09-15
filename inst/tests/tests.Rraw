@@ -10620,6 +10620,23 @@ test(1829.4, fread("A\n0x1.FFFFFFFFFFFFp+1023\n0x1.0000000000000p-1022\n"),  # l
 test(1829.5, fread("A,B,C,D,E,F\n0x2.0p1,0x1.333,0x1.aaaaaaaaaaaaaaaP1,0x1.ABCDEFGp1,0x1.0p-1023,0x0.1p1"),
              data.table(A="0x2.0p1", B="0x1.333", C="0x1.aaaaaaaaaaaaaaaP1", D="0x1.ABCDEFGp1", E="0x1.0p-1023", F="0x0.1p1"))
 
+# Reading "advanced" floating point literals (i.e. various NaNs / Infs)
+test(1830.1, fread("A\n+Inf\nINF\n-inf\n-Infinity\n1.3e2"),
+             data.table(A=c(Inf, Inf, -Inf, -Inf, 130)))
+test(1830.2, fread("B\n.2\nnan\nNaN\n-NAN\nqNaN\n+NaN%\nsNaN\nNaNQ\nNaNS\n-.999e-1"),
+             data.table(B=c(0.2, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, -0.0999)))
+test(1830.3, fread("C\n1.0\nNaN3490\n-qNaN9\n+sNaN99999\nNaN000000\nNaN000"),
+             data.table(C=c(1, NaN, NaN, NaN, NaN, NaN)))
+test(1830.4, fread("D\n1.\n1.#SNAN\n1.#QNAN\n1.#IND\n1.#INF\n"),
+             data.table(D=c(1, NaN, NaN, NaN, Inf)))
+test(1830.5, fread("E\n0e0\n#DIV/0!\n#VALUE!\n#NULL!\n#NAME?\n#NUM!\n#REF!\n#N/A\n1e0\n"),
+             data.table(E=c(0, NaN, NaN, NaN, NaN, NaN, NaN, NaN, 1)))
+test(1830.6, fread("F\n1.1\n+1.333333333333333\n5.9e320\n45609E11\n-00890.e-003\n"),
+             data.table(F=c(1.1, 1.333333333333333, 5.9e320, 45609e11, -890e-3)))
+test(1830.7, fread("G\n0.000000000000000000000000000000000000000000000000000000000000449548\n"),
+             data.table(G=c(4.49548e-61)))
+
+
 
 ##########################
 

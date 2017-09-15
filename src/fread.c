@@ -75,11 +75,11 @@ static lenOff *colNames = NULL;
 static int8_t *oldType = NULL;
 static freadMainArgs args;  // global for use by DTPRINT
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "string"};
-int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8      };
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         8      };
 
 // NAN and INFINITY constants are float, so cast to double once up front.
-static const double NAND = (double)NAN;
+// static const double NAND = (double)NAN;
 static const double INFD = (double)INFINITY;
 
 typedef struct FieldParseContext {
@@ -621,72 +621,144 @@ cat("1.0E350L\n};\n", file=f, append=TRUE)
 // TODO  Add faster StrtoD_quick for small precision positive numerics such as prices without a sign or
 //       an E (e.g. $.cents) which don't need I64, long double, or Inf/NAN. Could have more than two levels.
 
+/**
+ * Parse "usual" double literals, in the form
+ *
+ *   [+|-] (NNN|NNN.|.MMM|NNN.MMM) [(E|e) [+|-] EEE]
+ *
+ * where `NNN`, `MMM`, `EEE` are one or more decimal digits, representing the
+ * whole part, fractional part, and the exponent respectively.
+ *
+ * Right now we do not parse floating numbers that would incur significant loss
+ * of precision, for example `1.2439827340958723094785103` will not be parsed
+ * as a double.
+ */
 static void parse_double_regular(FieldParseContext *ctx)
 {
-  // [+|-]N[.M][[E|e][+|-]E] or [+|-]Inf, [+|-]Inf or NAN
+  //
   const char *ch = *(ctx->ch);
   double *target = (double*) ctx->targets[sizeof(double)];
 
-  _Bool neg = *ch=='-';
-  ch += (neg || *ch=='+');
+  _Bool neg, Eneg;
+  ch += (neg = *ch=='-') + (*ch=='+');
+
   const char *start = ch;
-  if (ch[0]=='I' && (   (ch[1]=='n' && ch[2]=='f')
-                     || (ch[1]=='N' && ch[2]=='F'))) {
-    *(ctx->ch) = ch + 3;
-    *target = neg ? -INFD : INFD;
-    return;
-  }
-  if (ch[0]=='N' && ch[1]=='A' && ch[2]=='N') {
-    *(ctx->ch) = ch + 3;
-    *target = NAND;
-    return;
-  }
-  uint_fast64_t acc = 0;  // holds N.M as NM
-  int_fast32_t e = 0;     // width of M to adjust NM by dec location
+  uint_fast64_t acc = 0;  // holds NNN.MMM as NNNMMM
+  int_fast32_t e = 0;     // width of MMM to adjust NNNMMM by dec location
   uint_fast8_t digit, sf=0;
   while (*ch=='0') ch++;
+
+  const char *ch0 = ch;
   while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
     acc = 10*acc + digit;
     ch++;
-    sf++;
   }
+  sf = ch - ch0;
   if (*ch==dec) {
     ch++;
-    if (sf==0) while (*ch=='0') {  // e.g. 0.000000000000000000 => 0.0 (test 1817)
-      ch++;
-      e--;
+    // Numbers like 0.00000000000000000000000000000000004 can be read without
+    // loss of precision as 4e-35  (test 1817)
+    if (sf==0 && *ch=='0') {
+      ch0 = ch;
+      while (*ch=='0') ch++;
+      e -= (ch - ch0);
     }
+    ch0 = ch;
     while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
       acc = 10*acc + digit;
       ch++;
-      e--;
-      sf++;
     }
+    e -= (ch - ch0);
+    sf += (ch - ch0);
   }
-  if (sf>18) return;  // Too much precision for double. TODO: reduce to 15(?) and discard trailing 0's.
-  if ((*ch=='E' || *ch=='e') && ch>start) {  // ch>start so that something valid must be between [+|-] and E.  So that character E alone is invalid.
-    ch++;
-    _Bool Eneg = *ch=='-';
-    ch += (Eneg || *ch=='+');
+  if (sf>18) goto fail;  // Too much precision for double. TODO: reduce to 15(?) and discard trailing 0's.
+  if (*ch=='E' || *ch=='e') {
+    if (ch==start) goto fail;  // something valid must be between [+|-] and E, character E alone is invalid.
+    ch += 1 + (Eneg = ch[1]=='-') + (ch[1]=='+');
     int E=0, max_digits=3;
     while ( max_digits && (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
       E = 10*E + digit;
       ch++;
       max_digits--;
     }
-    if (Eneg) E=-E;
-    e += E;
+    e += Eneg? -E : E;
   }
   e += 350; // lookup table is arranged from -350 (0) to +350 (700)
-  if (e<0 || e>700) return;
-  if (ch>start) {
-    *target = (double)((long double)acc * pow10lookup[e]);
-    if (neg) *target = -*target;
-    *(ctx->ch) = ch;
-  } else {
+  if (e<0 || e>700 || ch==start) goto fail;
+
+  *target = (double)((long double)acc * pow10lookup[e]);
+  if (neg) *target = -*target;
+  *(ctx->ch) = ch;
+  return;
+
+  fail:
     *target = NA_FLOAT64;
-  }
 }
+
+
+
+/**
+ * Parses double values, but also understands various forms of NAN literals
+ * (each can possibly be preceded with a `+` or `-` sign):
+ *
+ *   nan, inf, NaN, NAN, NaN%, NaNQ, NaNS, qNaN, sNaN, NaN12345, sNaN54321,
+ *   1.#SNAN, 1.#QNAN, 1.#IND, 1.#INF, INF, Inf, Infinity,
+ *   #DIV/0!, #VALUE!, #NULL!, #NAME?, #NUM!, #REF!, #N/A
+ *
+ */
+static void parse_double_extended(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  double *target = (double*) ctx->targets[sizeof(double)];
+  _Bool neg, quoted;
+  ch += (quoted = (*ch=='"'));
+  ch += (neg = (*ch=='-')) + (*ch=='+');
+
+  if (ch[0]=='n' && ch[1]=='a' && ch[2]=='n' && (ch += 3)) goto return_nan;
+  if (ch[0]=='i' && ch[1]=='n' && ch[2]=='f' && (ch += 3)) goto return_inf;
+  if (ch[0]=='I' && ch[1]=='N' && ch[2]=='F' && (ch += 3)) goto return_inf;
+  if (ch[0]=='I' && ch[1]=='n' && ch[2]=='f' && (ch += 3)) {
+    if (ch[0]=='i' && ch[1]=='n' && ch[2]=='i' && ch[3]=='t' && ch[4]=='y') ch += 5;
+    goto return_inf;
+  }
+  if (ch[0]=='N' && (ch[1]=='A' || ch[1]=='a') && ch[2]=='N' && (ch += 3)) {
+    if (ch[-2]=='a' && (*ch=='%' || *ch=='Q' || *ch=='S')) ch++;
+    while ((uint_fast8_t)(*ch-'0') < 10) ch++;
+    goto return_nan;
+  }
+  if ((ch[0]=='q' || ch[0]=='s') && ch[1]=='N' && ch[2]=='a' && ch[3]=='N' && (ch += 4)) {
+    while ((uint_fast8_t)(*ch-'0') < 10) ch++;
+    goto return_nan;
+  }
+  if (ch[0]=='1' && ch[1]=='.' && ch[2]=='#') {
+    if ((ch[3]=='S' || ch[3]=='Q') && ch[4]=='N' && ch[5]=='A' && ch[6]=='N' && (ch += 7)) goto return_nan;
+    if (ch[3]=='I' && ch[4]=='N' && ch[5]=='D' && (ch += 6)) goto return_nan;
+    if (ch[3]=='I' && ch[4]=='N' && ch[5]=='F' && (ch += 6)) goto return_inf;
+  }
+  if (ch[0]=='#') {  // Excel-specific "numbers"
+    if (ch[1]=='D' && ch[2]=='I' && ch[3]=='V' && ch[4]=='/' && ch[5]=='0' && ch[6]=='!' && (ch += 7)) goto return_nan;
+    if (ch[1]=='V' && ch[2]=='A' && ch[3]=='L' && ch[4]=='U' && ch[5]=='E' && ch[6]=='!' && (ch += 7)) goto return_nan;
+    if (ch[1]=='N' && ch[2]=='U' && ch[3]=='L' && ch[4]=='L' && ch[5]=='!' && (ch += 6)) goto return_nan;
+    if (ch[1]=='N' && ch[2]=='A' && ch[3]=='M' && ch[4]=='E' && ch[5]=='?' && (ch += 6)) goto return_nan;
+    if (ch[1]=='N' && ch[2]=='U' && ch[3]=='M' && ch[4]=='!' && (ch += 5)) goto return_nan;
+    if (ch[1]=='R' && ch[2]=='E' && ch[3]=='F' && ch[4]=='!' && (ch += 5)) goto return_nan;
+    if (ch[1]=='N' && ch[2]=='/' && ch[3]=='A' && (ch += 4)) goto return_nan;
+  }
+  parse_double_regular(ctx);
+  return;
+
+  return_inf:
+    if (quoted && *ch!='"') goto fail;
+    *(ctx->ch) = ch + quoted;
+    *target = neg? -INFD : INFD;
+    return;
+  return_nan:
+    if (quoted && *ch!='"') goto fail;
+    *(ctx->ch) = ch + quoted;
+  fail:
+    *target = NA_FLOAT64;
+}
+
 
 
 /**
@@ -838,11 +910,12 @@ static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &StrtoI32,
   (reader_fun_t) &StrtoI64,
   (reader_fun_t) &parse_double_regular,
+  (reader_fun_t) &parse_double_extended,
   (reader_fun_t) &parse_double_hexadecimal,
   (reader_fun_t) &Field
 };
 
-static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 
 //=================================================================================================
