@@ -79,7 +79,7 @@ const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", 
 int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         8      };
 
 // NAN and INFINITY constants are float, so cast to double once up front.
-// static const double NAND = (double)NAN;
+static const double NAND = (double)NAN;
 static const double INFD = (double)INFINITY;
 
 typedef struct FieldParseContext {
@@ -738,25 +738,29 @@ static void parse_double_extended(FieldParseContext *ctx)
   if (ch[0]=='#') {  // Excel-specific "numbers"
     if (ch[1]=='D' && ch[2]=='I' && ch[3]=='V' && ch[4]=='/' && ch[5]=='0' && ch[6]=='!' && (ch += 7)) goto return_nan;
     if (ch[1]=='V' && ch[2]=='A' && ch[3]=='L' && ch[4]=='U' && ch[5]=='E' && ch[6]=='!' && (ch += 7)) goto return_nan;
-    if (ch[1]=='N' && ch[2]=='U' && ch[3]=='L' && ch[4]=='L' && ch[5]=='!' && (ch += 6)) goto return_nan;
-    if (ch[1]=='N' && ch[2]=='A' && ch[3]=='M' && ch[4]=='E' && ch[5]=='?' && (ch += 6)) goto return_nan;
-    if (ch[1]=='N' && ch[2]=='U' && ch[3]=='M' && ch[4]=='!' && (ch += 5)) goto return_nan;
-    if (ch[1]=='R' && ch[2]=='E' && ch[3]=='F' && ch[4]=='!' && (ch += 5)) goto return_nan;
-    if (ch[1]=='N' && ch[2]=='/' && ch[3]=='A' && (ch += 4)) goto return_nan;
+    if (ch[1]=='N' && ch[2]=='U' && ch[3]=='L' && ch[4]=='L' && ch[5]=='!' && (ch += 6)) goto return_na;
+    if (ch[1]=='N' && ch[2]=='A' && ch[3]=='M' && ch[4]=='E' && ch[5]=='?' && (ch += 6)) goto return_na;
+    if (ch[1]=='N' && ch[2]=='U' && ch[3]=='M' && ch[4]=='!' && (ch += 5)) goto return_na;
+    if (ch[1]=='R' && ch[2]=='E' && ch[3]=='F' && ch[4]=='!' && (ch += 5)) goto return_na;
+    if (ch[1]=='N' && ch[2]=='/' && ch[3]=='A' && (ch += 4)) goto return_na;
   }
   parse_double_regular(ctx);
   return;
 
   return_inf:
-    if (quoted && *ch!='"') goto fail;
-    *(ctx->ch) = ch + quoted;
     *target = neg? -INFD : INFD;
-    return;
+    goto ok;
   return_nan:
-    if (quoted && *ch!='"') goto fail;
-    *(ctx->ch) = ch + quoted;
-  fail:
+    *target = NAND;
+    goto ok;
+  return_na:
     *target = NA_FLOAT64;
+  ok:
+    if (quoted && *ch!='"') {
+      *target = NA_FLOAT64;
+    } else {
+      *(ctx->ch) = ch + quoted;
+    }
 }
 
 
