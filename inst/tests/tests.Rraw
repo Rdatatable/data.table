@@ -10606,6 +10606,15 @@ DT = rbind(DT1, DT2, DT1, DT2, DT1, DT2, DT1, DT2, DT1, DT2, DT1, DT2, DT1, DT2,
 fwrite(DT, f<-tempfile())
 test(1828, fread(f), DT)
 
+# Reading hexadecimal floating point numbers
+test(1829.1, fread("A\n0x1.0p0\n-0x1.0p1\n0X1.0P3\n0x1.4p3\n0x1.9p6\nNaN\nInfinity\n-Infinity"), 
+             data.table(A=c(1, -2, 8, 10, 100, NaN, Inf, -Inf)))
+test(1829.2, fread("A\n0x1.e04b81cad165ap-1\n0x1.fb47e352e9a63p-5\n0x1.fa0fd778c351ap-1\n0x1.7c0a21cf2b982p-7\n"), 
+             data.table(A=c(0.93807607, 0.06192393, 0.98840211, 0.01159789)))
+test(1829.3, fread("A\n0x0.FFFFFFFFFFFFp-1022\n0x0.0000000000001p-1022\n"),  # largest/smallest subnormal numbers
+             data.table(A=c(2.2250738585072e-308, 4.940656458412e-324)))
+test(1829.4, fread("A,B,C,D\n0x2.0p1,0x1.333,0x1.aaaaaaaaaaaaaaaP1,0x1.ABCDEFGp1"),
+             data.table(A="0x2.0p1", B="0x1.333", C="0x1.aaaaaaaaaaaaaaaP1", D="0x1.ABCDEFGp1"))
 
 
 ##########################
