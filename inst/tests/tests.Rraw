@@ -10638,7 +10638,7 @@ test(1830.5, identical(
   data.table(D=c(1, NaN, NaN, NaN, Inf))))
 test(1830.6, identical(
   fread("E\n0e0\n#DIV/0!\n#VALUE!\n#NULL!\n#NAME?\n#NUM!\n#REF!\n#N/A\n1e0\n"),
-  data.table(E=c(0, NaN, NaN, NaN, NaN, NaN, NaN, NaN, 1))))
+  data.table(E=c(0, NaN, NaN, NA, NA, NA, NA, NA, 1))))
 test(1830.7, identical(
   fread("F\n1.1\n+1.333333333333333\n5.9e320\n45609E11\n-00890.e-003\n"),
   data.table(F=c(1.1, 1.333333333333333, 5.9e320, 45609e11, -890e-3))))
