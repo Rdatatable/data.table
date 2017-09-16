@@ -796,7 +796,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 
         if (!with) {
             # missing(by)==TRUE was already checked above before dealing with i
-            if (is.call(jsub) && deparse(jsub[[1]], 500L) %in% c("!", "-")) {  # TODO is deparse avoidable here?
+            if (is.call(jsub) && deparse(jsub[[1]], 500L, backtick=FALSE) %in% c("!", "-")) {  # TODO is deparse avoidable here?
                 notj = TRUE
                 jsub = jsub[[2L]]
             } else notj = FALSE
@@ -1020,7 +1020,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                     # FR #4979 - negative numeric and character indices for SDcols
                     colsub = substitute(.SDcols)
                     # fix for #5190. colsub[[1L]] gave error when it's a symbol.
-                    if (is.call(colsub) && deparse(colsub[[1L]], 500L) %in% c("!", "-")) {
+                    if (is.call(colsub) && deparse(colsub[[1L]], 500L, backtick=FALSE) %in% c("!", "-")) {
                         colm = TRUE
                         colsub = colsub[[2L]]
                     } else colm = FALSE
