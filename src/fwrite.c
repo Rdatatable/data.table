@@ -159,7 +159,7 @@ static void writeNumeric(double *col, int row, char **thisCh)
   //  iv) shorter, easier to read and reason with in one self contained place.
   double x = col[row];
   char *ch = *thisCh;
-  if (isfinite(x)) {
+  if (!isfinite(x)) {
     if (isnan(x)) {
       write_chars(na, &ch);
     } else {
@@ -514,19 +514,25 @@ void writefile(
   int firstListColumn = 0;
   clock_t t0=clock();
 
-
   // user may want row names even when they don't exist (implied row numbers as row names)
-  Rboolean doRowNames = LOGICAL(row_names)[0];
-  SEXP rowNames = NULL;
-  if (doRowNames) {
-    rowNames = getAttrib(DFin, R_RowNamesSymbol);
-    if (!isString(rowNames)) rowNames=NULL;
-  }
+  _Bool doRowNames = false;
 
   // Estimate max line length of a 1000 row sample (100 rows in 10 places).
   // 'Estimate' even of this sample because quote='auto' may add quotes and escape embedded quotes.
   // Buffers will be resized later if there are too many line lengths outside the sample, anyway.
   // maxLineLen is required to determine a reasonable rowsPerBatch.
+
+
+  // alloc one buffMB here.  Keep rewriting each field to it, to sum up the size.  Restriction: one field can't be
+  // greater that minimumum buffMB (1MB = 1 million characters).  Otherwise unbounded overwrite. Possible with very
+  // very long single strings, or very long list column values.
+  // The caller guarantees no field with be longer than this. If so, it can set buffMB larger. It might know
+  // due to some stats it has maintained on each column or in the environment generally.
+  // However, a single field being longer than 1 million characters is considered a very reasonable restriction.
+  // Once we have a good line length estimate, we may increase the buffer size a lot anyway.
+  // The default buffMB is 8MB,  so it's really 8 million character limit by default. 1MB is because user might set
+  // buffMB to 1, say if they have 512 CPUs or more, perhaps.
+
   int maxLineLen = 0;
   int na_len = strlen(na);
   int step = nrow<1000 ? 100 : nrow/10;
