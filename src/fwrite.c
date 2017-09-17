@@ -35,36 +35,55 @@ static int dateTimeAs=0;              // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd), 2
 #define DATETIMEAS_WRITECSV  3
 typedef void (*writer_fun_t)(void *, int, char **);
 
-static inline void write_chars(const char *x, char **thisCh)
+static inline void write_chars(const char *x, char **thCh)
 {
   // similar to C's strcpy but i) doesn't include trailing \0 and ii) moves destination along
-  char *ch = *thisCh;
+  char *ch = *thCh;
   while (*x) *ch++=*x++;
-  *thisCh = ch;
+  *thCh = ch;
 }
 
-static void writeLogical(int *col, int row, char **thisCh)
+static void writeLogicalBest(int8_t *col, int row, char **thCh)
 {
-  int x = col[row];
-  char *ch = *thisCh;
+  int8_t x = col[row];
+  if (x==INT8_MIN) return;  // na empty field
+  *(*thCh++) = '0'+x;
+}
+
+
+static void writeLogical01(int32_t *col, int row, char **thCh)
+{
+  int32_t x = col[row];
+  char *ch = *thCh;
   if (x == INT32_MIN) {
     write_chars(na, &ch);
-  } else if (logicalAsInt) {   // TODO raise this up to use different processor, default TRUE
+  } else {
     *ch++ = '0'+x;
+  }
+  *thCh = ch;
+}
+
+
+static void writeLogicalLong(int32_t *col, int row, char **thCh)
+{
+  int32_t x = col[row];
+  char *ch = *thCh;
+  if (x == INT32_MIN) {
+    write_chars(na, &ch);
   } else if (x) {
     *ch++='T'; *ch++='R'; *ch++='U'; *ch++='E';
   } else {
     *ch++='F'; *ch++='A'; *ch++='L'; *ch++='S'; *ch++='E';
   }
-  *thisCh = ch;
+  *thCh = ch;
 }
 
-static inline void write_positive_int(int64_t x, char **thisCh)
+static inline void write_positive_int(int64_t x, char **thCh)
 {
   // Avoid log() for speed. Write backwards then reverse when we know how long.
   // Separate function just because it's used if row numbers are asked for, too
   // x >= 1
-  char *ch = *thisCh;
+  char *ch = *thCh;
   int width = 0;
   while (x>0) { *ch++ = '0'+x%10; x /= 10; width++; }
   for (int i=width/2; i>0; i--) {
@@ -72,12 +91,12 @@ static inline void write_positive_int(int64_t x, char **thisCh)
     *(ch-i) = *(ch-width+i-1);
     *(ch-width+i-1) = tmp;
   }
-  *thisCh = ch;
+  *thCh = ch;
 }
 
-static void writeInt32(int32_t *col, int row, char **thisCh)
+static void writeInt32(int32_t *col, int row, char **thCh)
 {
-  char *ch = *thisCh;
+  char *ch = *thCh;
   int32_t x = col[row];
   if (x == 0) {
     *ch++ = '0';
@@ -87,12 +106,12 @@ static void writeInt32(int32_t *col, int row, char **thisCh)
     if (x<0) { *ch++ = '-'; x=-x; }
     write_positive_int(x, &ch);
   }
-  *thisCh = ch;
+  *thCh = ch;
 }
 
-static void writeInt64(int64_t *col, int row, char **thisCh)
+static void writeInt64(int64_t *col, int row, char **thCh)
 {
-  char *ch = *thisCh;
+  char *ch = *thCh;
   int64_t x = col[row];
   if (x == 0) {
     *ch++ = '0';
@@ -102,7 +121,7 @@ static void writeInt64(int64_t *col, int row, char **thisCh)
     if (x<0) { *ch++ = '-'; x=-x; }
     write_positive_int(x, &ch);
   }
-  *thisCh = ch;
+  *thCh = ch;
 }
 
 /*
@@ -145,10 +164,10 @@ void genLookups() {
 }
 */
 
-static void writeNumeric(double *col, int row, char **thisCh)
+static void writeNumeric(double *col, int row, char **thCh)
 {
   // hand-rolled / specialized for speed
-  // *thisCh is safely the output destination with enough space (ensured via calculating maxLineLen up front)
+  // *thCh is safely the output destination with enough space (ensured via calculating maxLineLen up front)
   // technique similar to base R (format.c:formatReal and printutils.c:EncodeReal0)
   // differences/tricks :
   //   i) no buffers. writes straight to the final file buffer passed to write()
@@ -156,7 +175,7 @@ static void writeNumeric(double *col, int row, char **thisCh)
   // iii) no need to return variables or flags.  Just writes.
   //  iv) shorter, easier to read and reason with in one self contained place.
   double x = col[row];
-  char *ch = *thisCh;
+  char *ch = *thCh;
   if (!isfinite(x)) {
     if (isnan(x)) {
       write_chars(na, &ch);
@@ -266,17 +285,17 @@ static void writeNumeric(double *col, int row, char **thisCh)
       }
     }
   }
-  *thisCh = ch;
+  *thCh = ch;
 }
 
 
 
 // DATE/TIME
 
-static inline void write_time(int x, char **thisCh)
+static inline void write_time(int x, char **thCh)
 // just a helper called below by the real writers (time-only and datetime)
 {
-  char *ch = *thisCh;
+  char *ch = *thCh;
   if (x<0) {  // <0 covers NA_INTEGER too (==INT_MIN checked in init.c)
     write_chars(na, &ch);
   } else {
@@ -294,14 +313,14 @@ static inline void write_time(int x, char **thisCh)
     *ch++ = '0'+ss/10;
     *ch++ = '0'+ss%10;
   }
-  *thisCh = ch;
+  *thCh = ch;
 }
 
-static void writeITime(int *col, int row, char **thisCh) {
-  write_time(col[row], thisCh);
+static void writeITime(int *col, int row, char **thCh) {
+  write_time(col[row], thCh);
 }
 
-static inline void write_date(int x, char **thisCh)
+static inline void write_date(int x, char **thCh)
 // just a helper called below by the two real writers (date-only and datetime)
 {
   // From base ?Date :
@@ -322,7 +341,7 @@ static inline void write_date(int x, char **thisCh)
   // The end result is 5 lines of simple branch free integer math with no library calls.
   // as.integer(as.Date(c("0000-03-01","9999-12-31"))) == c(-719468,+2932896)
 
-  char *ch = *thisCh;
+  char *ch = *thCh;
   if (x< -719468 || x>2932896) {
     // NA_INTEGER<(-719468) (==INT_MIN checked in init.c)
     write_chars(na, &ch);
@@ -348,16 +367,16 @@ static inline void write_date(int x, char **thisCh)
     *ch   = '0'+y%10; y/=10;
     ch += 8 + 2*!squash;
   }
-  *thisCh = ch;
+  *thCh = ch;
 }
-static void writeDateInt(int *col, int row, char **thisCh) {
-  write_date(col[row], thisCh);
+static void writeDateInt(int *col, int row, char **thCh) {
+  write_date(col[row], thCh);
 }
-static void writeDateReal(double *col, int row, char **thisCh) {
-  write_date(isfinite(col[row]) ? (int)(col[row]) : INT32_MIN, thisCh);
+static void writeDateReal(double *col, int row, char **thCh) {
+  write_date(isfinite(col[row]) ? (int)(col[row]) : INT32_MIN, thCh);
 }
 
-static void writePOSIXct(double *col, int row, char **thisCh)
+static void writePOSIXct(double *col, int row, char **thCh)
 {
   // Write ISO8601 UTC by default to encourage ISO standards, stymie ambiguity and for speed.
   // R internally represents POSIX datetime in UTC always. Its 'tzone' attribute can be ignored.
@@ -367,7 +386,7 @@ static void writePOSIXct(double *col, int row, char **thisCh)
   // on in the ops here; number of seconds since epoch.
 
   double x = col[row];
-  char *ch = *thisCh;
+  char *ch = *thCh;
   if (!isfinite(x)) {
     write_chars(na, &ch);
   } else {
@@ -414,13 +433,13 @@ static void writePOSIXct(double *col, int row, char **thisCh)
     *ch++ = 'Z';
     ch -= squash;
   }
-  *thisCh = ch;
+  *thCh = ch;
 }
 
-static void writeNanotime(int64_t *col, int row, char **thisCh)
+static void writeNanotime(int64_t *col, int row, char **thCh)
 {
   int64_t x = col[row];
-  char *ch = *thisCh;
+  char *ch = *thCh;
   if (x == INT64_MIN) {
     write_chars(na, &ch);
   } else {
@@ -447,7 +466,7 @@ static void writeNanotime(int64_t *col, int row, char **thisCh)
     *ch++ = 'Z';
     ch -= squash;
   }
-  *thisCh = ch;
+  *thCh = ch;
 }
 
 
