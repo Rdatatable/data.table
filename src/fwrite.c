@@ -17,25 +17,26 @@
 #define WRITE write
 #define CLOSE close
 #endif
-
-extern double wallclock(void);
+#include <omp.h>
+#include "freadR.h"    // STOP, DTPRINT, DTWARN
 
 #define NUM_SF   15
 #define SIZE_SF  1000000000000000ULL  // 10^NUM_SF
 
 // Globals for this file only. Written once to hold parameters passed from R level.
-static const char *na;                // by default "" or if set (not recommended) then usually "NA"
-static char dec;                      // the '.' in the number 3.1416. In Europe often: 3,1416
-static bool verbose=false;            // be chatty?
-static bool quote=false;              // whether to surround fields with double quote ". NA means 'auto' (default)
-static bool qmethod_escape=false;     // when quoting fields, how to manage double quote in the field contents
-static bool squash=false;             // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
-static int dateTimeAs=0;              // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd), 2=epoch, 3=write.csv
-#define DATETIMEAS_EPOCH     2
-#define DATETIMEAS_WRITECSV  3
-typedef void (*writer_fun_t)(void *, int, char **);
+static char *na;                       // by default "" or if set (not recommended) then usually "NA"
+static char sep;                       // comma in .csv files
+char sep2;                             // '|' within list columns. Used here to know if field should be quoted and in freadR.c to write sep2 in list columns
+static char dec;                       // the '.' in the number 3.1416. In Europe often: 3,1416
+static int8_t quote=INT8_MIN;          // whether to surround fields with double quote ". NA means 'auto' (default)
+static bool qmethod_escape=false;      // when quoting fields, how to escape double quotes in the field contents (default false means to add another double quote)
+static bool squash=false;              // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 
-static inline void write_chars(const char *x, char **thCh)
+extern const char *getString(void *, int);
+extern const char *getCategString(void *, int);
+extern double wallclock(void);
+
+inline void write_chars(const char *x, char **thCh)
 {
   // similar to C's strcpy but i) doesn't include trailing \0 and ii) moves destination along
   char *ch = *thCh;
@@ -43,28 +44,21 @@ static inline void write_chars(const char *x, char **thCh)
   *thCh = ch;
 }
 
-static void writeLogicalBest(int8_t *col, int row, char **thCh)
+void writeBool8(int8_t *col, int row, char **thCh)
 {
   int8_t x = col[row];
-  if (x==INT8_MIN) return;  // na empty field
+  if (x==INT8_MIN) return;
   *(*thCh++) = '0'+x;
 }
 
-
-static void writeLogical01(int32_t *col, int row, char **thCh)
+void writeBool32(int32_t *col, int row, char **thCh)
 {
   int32_t x = col[row];
-  char *ch = *thCh;
-  if (x == INT32_MIN) {
-    write_chars(na, &ch);
-  } else {
-    *ch++ = '0'+x;
-  }
-  *thCh = ch;
+  if (x==INT32_MIN) return;
+  *(*thCh++) = '0'+x;
 }
 
-
-static void writeLogicalLong(int32_t *col, int row, char **thCh)
+void writeBool32AsString(int32_t *col, int row, char **thCh)
 {
   int32_t x = col[row];
   char *ch = *thCh;
@@ -94,7 +88,7 @@ static inline void write_positive_int(int64_t x, char **thCh)
   *thCh = ch;
 }
 
-static void writeInt32(int32_t *col, int row, char **thCh)
+void writeInt32(int32_t *col, int row, char **thCh)
 {
   char *ch = *thCh;
   int32_t x = col[row];
@@ -104,12 +98,12 @@ static void writeInt32(int32_t *col, int row, char **thCh)
     write_chars(na, &ch);
   } else {
     if (x<0) { *ch++ = '-'; x=-x; }
-    write_positive_int(x, &ch);
+    write_positive_int((int64_t)x, &ch);
   }
   *thCh = ch;
 }
 
-static void writeInt64(int64_t *col, int row, char **thCh)
+void writeInt64(int64_t *col, int row, char **thCh)
 {
   char *ch = *thCh;
   int64_t x = col[row];
@@ -164,7 +158,7 @@ void genLookups() {
 }
 */
 
-static void writeNumeric(double *col, int row, char **thCh)
+void writeFloat64(double *col, int row, char **thCh)
 {
   // hand-rolled / specialized for speed
   // *thCh is safely the output destination with enough space (ensured via calculating maxLineLen up front)
@@ -288,11 +282,9 @@ static void writeNumeric(double *col, int row, char **thCh)
   *thCh = ch;
 }
 
-
-
 // DATE/TIME
 
-static inline void write_time(int x, char **thCh)
+static inline void write_time(int32_t x, char **thCh)
 // just a helper called below by the real writers (time-only and datetime)
 {
   char *ch = *thCh;
@@ -316,11 +308,11 @@ static inline void write_time(int x, char **thCh)
   *thCh = ch;
 }
 
-static void writeITime(int *col, int row, char **thCh) {
+void writeITime(int32_t *col, int row, char **thCh) {
   write_time(col[row], thCh);
 }
 
-static inline void write_date(int x, char **thCh)
+static inline void write_date(int32_t x, char **thCh)
 // just a helper called below by the two real writers (date-only and datetime)
 {
   // From base ?Date :
@@ -369,14 +361,16 @@ static inline void write_date(int x, char **thCh)
   }
   *thCh = ch;
 }
-static void writeDateInt(int *col, int row, char **thCh) {
+
+void writeDateInt32(int32_t *col, int row, char **thCh) {
   write_date(col[row], thCh);
 }
-static void writeDateReal(double *col, int row, char **thCh) {
+
+void writeDateFloat64(double *col, int row, char **thCh) {
   write_date(isfinite(col[row]) ? (int)(col[row]) : INT32_MIN, thCh);
 }
 
-static void writePOSIXct(double *col, int row, char **thCh)
+void writePOSIXct(double *col, int row, char **thCh)
 {
   // Write ISO8601 UTC by default to encourage ISO standards, stymie ambiguity and for speed.
   // R internally represents POSIX datetime in UTC always. Its 'tzone' attribute can be ignored.
@@ -436,7 +430,7 @@ static void writePOSIXct(double *col, int row, char **thCh)
   *thCh = ch;
 }
 
-static void writeNanotime(int64_t *col, int row, char **thCh)
+void writeNanotime(int64_t *col, int row, char **thCh)
 {
   int64_t x = col[row];
   char *ch = *thCh;
@@ -467,6 +461,66 @@ static void writeNanotime(int64_t *col, int row, char **thCh)
     ch -= squash;
   }
   *thCh = ch;
+}
+
+static inline void write_string(const char *x, char **thCh)
+{
+  char *ch = *thCh;
+  if (x == NULL) {
+    // NA is not quoted even when quote=TRUE to distinguish from quoted "NA" value.  But going forward: ,,==NA and ,"",==empty string
+    write_chars(na, &ch);
+  } else {
+    int8_t q = quote;
+    if (q==INT8_MIN) { // NA means quote="auto"
+      const char *tt = x;
+      if (*tt == '\0') {
+        // Empty strings are always quoted to distinguish from ,,==NA
+        *ch++='"'; *ch++='"';
+        *thCh = ch;
+        return;
+      }
+      while (*tt!='\0' && *tt!=sep && *tt!=sep2 && *tt!='\n' && *tt!='\r' && *tt!='"') *ch++ = *tt++;
+      // Windows includes \n in its \r\n so looking for \n only is sufficient
+      // sep2 is set to '\0' when no list columns are present
+      if (*tt=='\0') {
+        // most common case: no sep, newline or " contained in string
+        *thCh = ch;  // advance caller over the field already written
+        return;
+      }
+      ch = *thCh; // rewind the field written since it needs to be quoted
+      q = true;
+    }
+    if (q==false) {
+      write_chars(x, &ch);
+    } else {
+      *ch++ = '"';
+      const char *tt = x;
+      if (qmethod_escape) {
+        while (*tt!='\0') {
+          if (*tt=='"' || *tt=='\\') *ch++ = '\\';
+          *ch++ = *tt++;
+        }
+      } else {
+        // qmethod='double'
+        while (*tt!='\0') {
+          if (*tt=='"') *ch++ = '"';
+          *ch++ = *tt++;
+        }
+      }
+      *ch++ = '"';
+    }
+  }
+  *thCh = ch;
+}
+
+void writeString(void *col, int row, char **thCh)
+{
+  write_string(getString(col, row), thCh);
+}
+
+void writeCategString(void *col, int row, char **thCh)
+{
+  write_string(getCategString(col, row), thCh);
 }
 
 
@@ -501,7 +555,7 @@ static inline void checkBuffer(
   }
 }
 
-void writefile(
+void fwriteMain(
   const char *filename,
   void **columns,         // a vector of pointers to all-same-length column vectors
   int ncol,
@@ -518,7 +572,6 @@ void writefile(
   bool append,
   bool doRowNames,        // optional, likely false
   void *rowNames,         // if doRowNames is true and rowNames is not NULL then they're used, otherwise row numbers are output.
-  int dateTimeAs,         // 0=ISO(yyyy-mm-dd), 1=squash(yyyymmdd), 2=epoch, 3=write.csv.  TODO: raise to caller choosing fun[]
   int buffMB,             // [1-1024] default 8MB
   int nth,
   bool showProgress,
@@ -530,7 +583,6 @@ void writefile(
   double t0 = startTime;
 
   squash = (dateTimeAs==1);
-  int firstListColumn = 0;
 
   // Estimate max line length of a 1000 row sample (100 rows in 10 places).
   // 'Estimate' even of this sample because quote='auto' may add quotes and escape embedded quotes.
@@ -566,7 +618,7 @@ void writefile(
       int thisLineLen=0;
       if (doRowNames) {
         if (rowNames) {
-          const char *ch = buff;
+          char *ch = buff;
           writeString(rowNames, i, &ch);
           thisLineLen += (int)(ch-buff);     // see comments above about restrictions/guarantees/contracts
         } else {
@@ -626,16 +678,21 @@ void writefile(
     }
     for (int j=0; j<ncol; j++) {
       writeString(colNames, j, &ch);
-      if (WRITE(f, buff, (int)(ch-buff))==-1) {
-        int errwrite=errno;
-        close(f); // the close might fail too but we want to report the write error
+      if (WRITE(f, buff, (int)(ch-buff))==-1) {  // TODO: move error check inside WRITE
+        int errwrite=errno;  // capture write errno now incase close fails with a different errno
+        close(f);
         free(buff);
         STOP("%s: '%s'", strerror(errwrite), filename);
       }
       ch = buff;  // overwrite column names at the start in case they are > 1 million bytes long
       *ch++ = sep;  // this sep after the last column name won't be written to the file
     }
-    WRITE(f, eol, eolLen);   // TODO: move error check above inside WRITE
+    if (WRITE(f, eol, eolLen)==-1) {
+      int errwrite=errno;
+      close(f);
+      free(buff);
+      STOP("%s: '%s'", strerror(errwrite), filename);
+    }
   }
   free(buff);  // TODO: also to be free'd in cleanup when there's an error opening file above
   if (verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
@@ -764,7 +821,7 @@ void writefile(
                          anyBufferGrown?"yes":"no", maxBuffUsedPC, ETA);
                 // TODO: use progress() as in fread
                 nextTime = now+1;
-                hasPrinted = TRUE;
+                hasPrinted = true;
               }
             }
             // May be possible for master thread (me==0) to call R_CheckUserInterrupt() here.
