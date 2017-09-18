@@ -552,17 +552,19 @@ static void StrtoI32(FieldParseContext *ctx)
   // acc needs to be 64bit so that 5bn (still 10 digits but greater than 4bn) does not overflow. It could be
   //   signed but we use unsigned to be clear it will never be negative
   uint_fast64_t acc = 0;
-  uint_fast8_t digit, sf=0; // significant figures = digits from the first non-zero onwards including trailing zeros
+  uint_fast8_t digit;
   // sep, \r, \n and *eof=='\0' all serve as valid terminators here by dint of being !=[0-9]
   // see init.c for checks of unsigned uint_fast8_t cast
   // optimizer should implement 10* as ((x<<2 + x)<<1) or (x<<3 + x<<1)
 
   /*if (loseLeadingZeroOption)*/ while (*ch=='0') ch++;
-  while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
+  // number significant figures = digits from the first non-zero onwards including trailing zeros
+  uint_fast32_t sf = 0;
+  while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
     acc = 10*acc + digit;
-    ch++;
     sf++;
   }
+  ch += sf;
   // INT32 range is NA==-2147483648(INT32_MIN) then symmetric [-2147483647,+2147483647] so we can just test INT32_MAX
   // The max (2147483647) happens to be 10 digits long, hence <=10.
   // Leading 0 (such as 001 and 099 but not 0, +0 or -0) will cause type bump to _full which has the
@@ -586,14 +588,15 @@ static void StrtoI64(FieldParseContext *ctx)
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;
-  uint_fast64_t acc = 0;  // important unsigned not signed here; we now need the full unsigned range
-  uint_fast8_t digit, sf=0;
   while (*ch=='0') ch++;
-  while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
+  uint_fast64_t acc = 0;  // important unsigned not signed here; we now need the full unsigned range
+  uint_fast8_t digit;
+  uint_fast32_t sf = 0;
+  while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
     acc = 10*acc + digit;
-    ch++;
     sf++;
   }
+  ch += sf;
   // INT64 range is NA==-9223372036854775808(INT64_MIN) then symmetric [-9223372036854775807,+9223372036854775807].
   // A 20+ digit number is caught as too large via the field width check <=19, since leading zeros trigger character type not numeric
   // TODO Check tests exist that +9223372036854775808 and +9999999999999999999 are caught as too large. They are stll 19 wide
@@ -646,31 +649,32 @@ static void parse_double_regular(FieldParseContext *ctx)
   const char *start = ch;
   uint_fast64_t acc = 0;  // holds NNN.MMM as NNNMMM
   int_fast32_t e = 0;     // width of MMM to adjust NNNMMM by dec location
-  uint_fast8_t digit, sf=0;
+  uint_fast8_t digit;
   while (*ch=='0') ch++;
 
-  const char *ch0 = ch;
-  while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
+  uint_fast32_t sf = 0;
+  while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
     acc = 10*acc + digit;
-    ch++;
+    sf++;
   }
-  sf = (uint_fast8_t)(ch - ch0);
+  ch += sf;
   if (*ch==dec) {
     ch++;
     // Numbers like 0.00000000000000000000000000000000004 can be read without
     // loss of precision as 4e-35  (test 1817)
     if (sf==0 && *ch=='0') {
-      ch0 = ch;
-      while (*ch=='0') ch++;
-      e -= (ch - ch0);
+      while (ch[e]=='0') e++;
+      ch += e;
+      e = -e;
     }
-    ch0 = ch;
-    while ( (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
+    uint_fast32_t k = 0;
+    while ( (digit=(uint_fast8_t)(ch[k]-'0'))<10 ) {
       acc = 10*acc + digit;
-      ch++;
+      k++;
     }
-    e -= (ch - ch0);
-    sf += (ch - ch0);
+    ch += k;
+    sf += k;
+    e -= k;
   }
   if (sf>18) goto fail;  // Too much precision for double. TODO: reduce to 15(?) and discard trailing 0's.
   if (*ch=='E' || *ch=='e') {
