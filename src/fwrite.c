@@ -18,7 +18,7 @@
 #define CLOSE close
 #endif
 #include <omp.h>
-#include "freadR.h"    // STOP, DTPRINT, DTWARN
+#include "fwrite.h"
 
 #define NUM_SF   15
 #define SIZE_SF  1000000000000000ULL  // 10^NUM_SF
@@ -26,7 +26,7 @@
 // Globals for this file only. Written once to hold parameters passed from R level.
 static char *na;                       // by default "" or if set (not recommended) then usually "NA"
 static char sep;                       // comma in .csv files
-char sep2;                             // '|' within list columns. Used here to know if field should be quoted and in freadR.c to write sep2 in list columns
+static char sep2;                      // '|' within list columns. Used here to know if field should be quoted and in freadR.c to write sep2 in list columns
 static char dec;                       // the '.' in the number 3.1416. In Europe often: 3,1416
 static int8_t quote=INT8_MIN;          // whether to surround fields with double quote ". NA means 'auto' (default)
 static bool qmethod_escape=false;      // when quoting fields, how to escape double quotes in the field contents (default false means to add another double quote)
@@ -36,32 +36,32 @@ extern const char *getString(void *, int);
 extern const char *getCategString(void *, int);
 extern double wallclock(void);
 
-inline void write_chars(const char *x, char **thCh)
+inline void write_chars(const char *x, char **pch)
 {
   // similar to C's strcpy but i) doesn't include trailing \0 and ii) moves destination along
-  char *ch = *thCh;
+  char *ch = *pch;
   while (*x) *ch++=*x++;
-  *thCh = ch;
+  *pch = ch;
 }
 
-void writeBool8(int8_t *col, int row, char **thCh)
+void writeBool8(int8_t *col, int row, char **pch)
 {
   int8_t x = col[row];
   if (x==INT8_MIN) return;
-  *(*thCh++) = '0'+x;
+  *(*pch++) = '0'+x;
 }
 
-void writeBool32(int32_t *col, int row, char **thCh)
+void writeBool32(int32_t *col, int row, char **pch)
 {
   int32_t x = col[row];
   if (x==INT32_MIN) return;
-  *(*thCh++) = '0'+x;
+  *(*pch++) = '0'+x;
 }
 
-void writeBool32AsString(int32_t *col, int row, char **thCh)
+void writeBool32AsString(int32_t *col, int row, char **pch)
 {
   int32_t x = col[row];
-  char *ch = *thCh;
+  char *ch = *pch;
   if (x == INT32_MIN) {
     write_chars(na, &ch);
   } else if (x) {
@@ -69,15 +69,15 @@ void writeBool32AsString(int32_t *col, int row, char **thCh)
   } else {
     *ch++='F'; *ch++='A'; *ch++='L'; *ch++='S'; *ch++='E';
   }
-  *thCh = ch;
+  *pch = ch;
 }
 
-static inline void write_positive_int(int64_t x, char **thCh)
+static inline void write_positive_int(int64_t x, char **pch)
 {
   // Avoid log() for speed. Write backwards then reverse when we know how long.
   // Separate function just because it's used if row numbers are asked for, too
   // x >= 1
-  char *ch = *thCh;
+  char *ch = *pch;
   int width = 0;
   while (x>0) { *ch++ = '0'+x%10; x /= 10; width++; }
   for (int i=width/2; i>0; i--) {
@@ -85,12 +85,12 @@ static inline void write_positive_int(int64_t x, char **thCh)
     *(ch-i) = *(ch-width+i-1);
     *(ch-width+i-1) = tmp;
   }
-  *thCh = ch;
+  *pch = ch;
 }
 
-void writeInt32(int32_t *col, int row, char **thCh)
+void writeInt32(int32_t *col, int row, char **pch)
 {
-  char *ch = *thCh;
+  char *ch = *pch;
   int32_t x = col[row];
   if (x == 0) {
     *ch++ = '0';
@@ -100,12 +100,12 @@ void writeInt32(int32_t *col, int row, char **thCh)
     if (x<0) { *ch++ = '-'; x=-x; }
     write_positive_int((int64_t)x, &ch);
   }
-  *thCh = ch;
+  *pch = ch;
 }
 
-void writeInt64(int64_t *col, int row, char **thCh)
+void writeInt64(int64_t *col, int row, char **pch)
 {
-  char *ch = *thCh;
+  char *ch = *pch;
   int64_t x = col[row];
   if (x == 0) {
     *ch++ = '0';
@@ -115,7 +115,7 @@ void writeInt64(int64_t *col, int row, char **thCh)
     if (x<0) { *ch++ = '-'; x=-x; }
     write_positive_int(x, &ch);
   }
-  *thCh = ch;
+  *pch = ch;
 }
 
 /*
@@ -158,10 +158,10 @@ void genLookups() {
 }
 */
 
-void writeFloat64(double *col, int row, char **thCh)
+void writeFloat64(double *col, int row, char **pch)
 {
   // hand-rolled / specialized for speed
-  // *thCh is safely the output destination with enough space (ensured via calculating maxLineLen up front)
+  // *pch is safely the output destination with enough space (ensured via calculating maxLineLen up front)
   // technique similar to base R (format.c:formatReal and printutils.c:EncodeReal0)
   // differences/tricks :
   //   i) no buffers. writes straight to the final file buffer passed to write()
@@ -169,7 +169,7 @@ void writeFloat64(double *col, int row, char **thCh)
   // iii) no need to return variables or flags.  Just writes.
   //  iv) shorter, easier to read and reason with in one self contained place.
   double x = col[row];
-  char *ch = *thCh;
+  char *ch = *pch;
   if (!isfinite(x)) {
     if (isnan(x)) {
       write_chars(na, &ch);
@@ -279,15 +279,15 @@ void writeFloat64(double *col, int row, char **thCh)
       }
     }
   }
-  *thCh = ch;
+  *pch = ch;
 }
 
 // DATE/TIME
 
-static inline void write_time(int32_t x, char **thCh)
+static inline void write_time(int32_t x, char **pch)
 // just a helper called below by the real writers (time-only and datetime)
 {
-  char *ch = *thCh;
+  char *ch = *pch;
   if (x<0) {  // <0 covers NA_INTEGER too (==INT_MIN checked in init.c)
     write_chars(na, &ch);
   } else {
@@ -305,14 +305,14 @@ static inline void write_time(int32_t x, char **thCh)
     *ch++ = '0'+ss/10;
     *ch++ = '0'+ss%10;
   }
-  *thCh = ch;
+  *pch = ch;
 }
 
-void writeITime(int32_t *col, int row, char **thCh) {
-  write_time(col[row], thCh);
+void writeITime(int32_t *col, int row, char **pch) {
+  write_time(col[row], pch);
 }
 
-static inline void write_date(int32_t x, char **thCh)
+static inline void write_date(int32_t x, char **pch)
 // just a helper called below by the two real writers (date-only and datetime)
 {
   // From base ?Date :
@@ -333,7 +333,7 @@ static inline void write_date(int32_t x, char **thCh)
   // The end result is 5 lines of simple branch free integer math with no library calls.
   // as.integer(as.Date(c("0000-03-01","9999-12-31"))) == c(-719468,+2932896)
 
-  char *ch = *thCh;
+  char *ch = *pch;
   if (x< -719468 || x>2932896) {
     // NA_INTEGER<(-719468) (==INT_MIN checked in init.c)
     write_chars(na, &ch);
@@ -359,18 +359,18 @@ static inline void write_date(int32_t x, char **thCh)
     *ch   = '0'+y%10; y/=10;
     ch += 8 + 2*!squash;
   }
-  *thCh = ch;
+  *pch = ch;
 }
 
-void writeDateInt32(int32_t *col, int row, char **thCh) {
-  write_date(col[row], thCh);
+void writeDateInt32(int32_t *col, int row, char **pch) {
+  write_date(col[row], pch);
 }
 
-void writeDateFloat64(double *col, int row, char **thCh) {
-  write_date(isfinite(col[row]) ? (int)(col[row]) : INT32_MIN, thCh);
+void writeDateFloat64(double *col, int row, char **pch) {
+  write_date(isfinite(col[row]) ? (int)(col[row]) : INT32_MIN, pch);
 }
 
-void writePOSIXct(double *col, int row, char **thCh)
+void writePOSIXct(double *col, int row, char **pch)
 {
   // Write ISO8601 UTC by default to encourage ISO standards, stymie ambiguity and for speed.
   // R internally represents POSIX datetime in UTC always. Its 'tzone' attribute can be ignored.
@@ -380,7 +380,7 @@ void writePOSIXct(double *col, int row, char **thCh)
   // on in the ops here; number of seconds since epoch.
 
   double x = col[row];
-  char *ch = *thCh;
+  char *ch = *pch;
   if (!isfinite(x)) {
     write_chars(na, &ch);
   } else {
@@ -427,13 +427,13 @@ void writePOSIXct(double *col, int row, char **thCh)
     *ch++ = 'Z';
     ch -= squash;
   }
-  *thCh = ch;
+  *pch = ch;
 }
 
-void writeNanotime(int64_t *col, int row, char **thCh)
+void writeNanotime(int64_t *col, int row, char **pch)
 {
   int64_t x = col[row];
-  char *ch = *thCh;
+  char *ch = *pch;
   if (x == INT64_MIN) {
     write_chars(na, &ch);
   } else {
@@ -460,12 +460,12 @@ void writeNanotime(int64_t *col, int row, char **thCh)
     *ch++ = 'Z';
     ch -= squash;
   }
-  *thCh = ch;
+  *pch = ch;
 }
 
-static inline void write_string(const char *x, char **thCh)
+static inline void write_string(const char *x, char **pch)
 {
-  char *ch = *thCh;
+  char *ch = *pch;
   if (x == NULL) {
     // NA is not quoted even when quote=TRUE to distinguish from quoted "NA" value.  But going forward: ,,==NA and ,"",==empty string
     write_chars(na, &ch);
@@ -476,7 +476,7 @@ static inline void write_string(const char *x, char **thCh)
       if (*tt == '\0') {
         // Empty strings are always quoted to distinguish from ,,==NA
         *ch++='"'; *ch++='"';
-        *thCh = ch;
+        *pch = ch;
         return;
       }
       while (*tt!='\0' && *tt!=sep && *tt!=sep2 && *tt!='\n' && *tt!='\r' && *tt!='"') *ch++ = *tt++;
@@ -484,10 +484,10 @@ static inline void write_string(const char *x, char **thCh)
       // sep2 is set to '\0' when no list columns are present
       if (*tt=='\0') {
         // most common case: no sep, newline or " contained in string
-        *thCh = ch;  // advance caller over the field already written
+        *pch = ch;  // advance caller over the field already written
         return;
       }
-      ch = *thCh; // rewind the field written since it needs to be quoted
+      ch = *pch; // rewind the field written since it needs to be quoted
       q = true;
     }
     if (q==false) {
@@ -510,17 +510,17 @@ static inline void write_string(const char *x, char **thCh)
       *ch++ = '"';
     }
   }
-  *thCh = ch;
+  *pch = ch;
 }
 
-void writeString(void *col, int row, char **thCh)
+void writeString(void *col, int row, char **pch)
 {
-  write_string(getString(col, row), thCh);
+  write_string(getString(col, row), pch);
 }
 
-void writeCategString(void *col, int row, char **thCh)
+void writeCategString(void *col, int row, char **pch)
 {
-  write_string(getCategString(col, row), thCh);
+  write_string(getCategString(col, row), pch);
 }
 
 
@@ -555,34 +555,14 @@ static inline void checkBuffer(
   }
 }
 
-void fwriteMain(
-  const char *filename,
-  void **columns,         // a vector of pointers to all-same-length column vectors
-  int ncol,
-  int64_t nrow,
-  void *colNames,         // NULL means no header, otherwise ncol strings
-  writer_fun_t *fun,      // a vector of writer_fun_t function pointers
-  int8_t *whichFun,       // length ncol vector containing which fun[] to use for each column
-  char sep,
-  const char *eol,
-  const char *na,
-  char dec,
-  char quote,
-  bool quotesDoubled,     // false means escape quotes using backslash
-  bool append,
-  bool doRowNames,        // optional, likely false
-  void *rowNames,         // if doRowNames is true and rowNames is not NULL then they're used, otherwise row numbers are output.
-  int buffMB,             // [1-1024] default 8MB
-  int nth,
-  bool showProgress,
-  bool verbose)
+void fwriteMain(fwriteMainArgs args)
 {
 
   double startTime = wallclock();
   double nextTime = startTime+2; // start printing progress meter in 2 sec if not completed by then
   double t0 = startTime;
 
-  squash = (dateTimeAs==1);
+  squash = args.squashDateTime;
 
   // Estimate max line length of a 1000 row sample (100 rows in 10 places).
   // 'Estimate' even of this sample because quote='auto' may add quotes and escape embedded quotes.
@@ -602,103 +582,103 @@ void fwriteMain(
 
   // Cold section as only 1,000 rows. Speed not an issue issue here.
   // Overestimating line length is ok.
-  int eolLen = strlen(eol);
+  int eolLen = strlen(args.eol);
   if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
 
+  int buffMB = args.buffMB;
   if (buffMB<1 || buffMB>1024) STOP("buffMB=%d outside [1,1024]", buffMB);
   size_t buffSize = (size_t)1024*1024*buffMB;
   char *buff = malloc(buffSize);
   if (!buff) STOP("Unable to allocate %dMB for line length estimation: %s", buffMB, strerror(errno));
 
   int maxLineLen = 0;
-  int step = nrow<1000 ? 100 : nrow/10;
-  for (int start=0; start<nrow; start+=step) {
-    int end = (nrow-start)<100 ? nrow : start+100;
+  int step = args.nrow<1000 ? 100 : args.nrow/10;
+  for (int start=0; start<args.nrow; start+=step) {
+    int end = (args.nrow-start)<100 ? args.nrow : start+100;
     for (int i=start; i<end; i++) {
       int thisLineLen=0;
-      if (doRowNames) {
-        if (rowNames) {
+      if (args.doRowNames) {
+        if (args.rowNames) {
           char *ch = buff;
-          writeString(rowNames, i, &ch);
+          writeString(args.rowNames, i, &ch);
           thisLineLen += (int)(ch-buff);     // see comments above about restrictions/guarantees/contracts
         } else {
-          thisLineLen += 1+(int)log10(nrow);  // the width of the row number
+          thisLineLen += 1+(int)log10(args.nrow);  // the width of the row number
         }
-        thisLineLen += 2*(quote!='\0') + 1/*sep*/;
+        thisLineLen += 2*(args.doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
       }
-      for (int j=0; j<ncol; j++) {
+      for (int j=0; j<args.ncol; j++) {
         char *ch = buff;                // overwrite each field at the beginning of buff to be more robust to single fields > 1 million bytes
-        fun[whichFun[j]]( columns[j], i, &ch );
+        args.funs[args.whichFun[j]]( args.columns[j], i, &ch );
         thisLineLen += (int)(ch-buff) + 1/*sep*/;        // see comments above about restrictions/guarantees/contracts
       }
-      thisLineLen += eolLen;
       if (thisLineLen > maxLineLen) maxLineLen = thisLineLen;
     }
   }
-  maxLineLen += strlen(eol);
-  if (verbose) DTPRINT("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
+  maxLineLen += eolLen;
+  if (args.verbose) DTPRINT("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
 
   int f;
-  if (*filename=='\0') {
+  if (*args.filename=='\0') {
     f=-1;  // file="" means write to standard output
-    eol = "\n";  // We'll use DTPRINT which converts \n to \r\n inside it on Windows
+    // eol = "\n";  // We'll use DTPRINT which converts \n to \r\n inside it on Windows
   } else {
 #ifdef WIN32
-    f = _open(filename, _O_WRONLY | _O_BINARY | _O_CREAT | (append ? _O_APPEND : _O_TRUNC), _S_IWRITE);
+    f = _open(args.filename, _O_WRONLY | _O_BINARY | _O_CREAT | (args.append ? _O_APPEND : _O_TRUNC), _S_IWRITE);
     // O_BINARY rather than O_TEXT for explicit control and speed since it seems that write() has a branch inside it
     // to convert \n to \r\n on Windows when in text mode not not when in binary mode.
 #else
-    f = open(filename, O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC), 0666);
+    f = open(args.filename, O_WRONLY | O_CREAT | (args.append ? O_APPEND : O_TRUNC), 0666);
     // There is no binary/text mode distinction on Linux and Mac
 #endif
     if (f == -1) {
       int erropen = errno;
-      if( access( filename, F_OK ) != -1 )
-        STOP("%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?", strerror(erropen), filename);
-      else
-        STOP("%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?", strerror(erropen), filename);
+      STOP(access( args.filename, F_OK ) != -1 ?
+           "%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?" :
+           "%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?",
+           strerror(erropen), args.filename);
     }
   }
   t0=wallclock();
 
-  if (verbose) {
+  if (args.verbose) {
     DTPRINT("Writing column names ... ");
     if (f==-1) DTPRINT("\n");
   }
-  if (colNames) {
+  if (args.colNames) {
     // We don't know how long this line will be.
     // It could be (much) longer than the data row line lengths
     // To keep things simple we'll reuse the same buffer used above for each field, and write each column name separately to the file.
     // If multiple calls to write() is ever an issue, we'll come back to this. But very unlikely.
     char *ch = buff;
-    if (doRowNames) {
+    if (args.doRowNames) {
       // Unusual: the extra blank column name when row_names are added as the first column
-      if (quote!=false) { *ch++='"'; *ch++='"'; } // to match write.csv
+      if (args.doQuote!=0/*'auto'(NA) or true*/) { *ch++='"'; *ch++='"'; } // to match write.csv
       *ch++ = sep;
     }
-    for (int j=0; j<ncol; j++) {
-      writeString(colNames, j, &ch);
+    for (int j=0; j<args.ncol; j++) {
+      writeString(args.colNames, j, &ch);
       if (WRITE(f, buff, (int)(ch-buff))==-1) {  // TODO: move error check inside WRITE
         int errwrite=errno;  // capture write errno now incase close fails with a different errno
         close(f);
         free(buff);
-        STOP("%s: '%s'", strerror(errwrite), filename);
+        STOP("%s: '%s'", strerror(errwrite), args.filename);
       }
       ch = buff;  // overwrite column names at the start in case they are > 1 million bytes long
-      *ch++ = sep;  // this sep after the last column name won't be written to the file
+      *ch++ = args.sep;  // this sep after the last column name won't be written to the file
     }
-    if (WRITE(f, eol, eolLen)==-1) {
+    if (WRITE(f, args.eol, eolLen)==-1) {
       int errwrite=errno;
       close(f);
       free(buff);
-      STOP("%s: '%s'", strerror(errwrite), filename);
+      STOP("%s: '%s'", strerror(errwrite), args.filename);
     }
   }
   free(buff);  // TODO: also to be free'd in cleanup when there's an error opening file above
-  if (verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
-  if (nrow == 0) {
-    if (verbose) DTPRINT("No data rows present (nrow==0)\n");
-    if (f!=-1 && CLOSE(f)) STOP("%s: '%s'", strerror(errno), filename);
+  if (args.verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
+  if (args.nrow == 0) {
+    if (args.verbose) DTPRINT("No data rows present (nrow==0)\n");
+    if (f!=-1 && CLOSE(f)) STOP("%s: '%s'", strerror(errno), args.filename);
     return;
   }
 
@@ -714,12 +694,13 @@ void fwriteMain(
   rowsPerBatch =
     (10*maxLineLen > buffSize) ? 1 :  // very very long lines (100,000 characters+) each thread will just do one row at a time.
     0.5 * buffSize/maxLineLen;        // Aim for 50% buffer usage. See checkBuffer for comments.
-  if (rowsPerBatch > nrow) rowsPerBatch=nrow;
-  int numBatches = (nrow-1)/rowsPerBatch + 1;
+  if (rowsPerBatch > args.nrow) rowsPerBatch = args.nrow;
+  int numBatches = (args.nrow-1)/rowsPerBatch + 1;
+  int nth = args.nth;
   if (numBatches < nth) nth = numBatches;
-  if (verbose) {
+  if (args.verbose) {
     DTPRINT("Writing %d rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d) ... ",
-            nrow, numBatches, rowsPerBatch, buffMB, showProgress, nth);
+            args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
     if (f==-1) DTPRINT("\n");
   }
   t0 = wallclock();
@@ -753,30 +734,30 @@ void fwriteMain(
     int me = omp_get_thread_num();
 
     #pragma omp for ordered schedule(dynamic)
-    for(int start=0; start<nrow; start+=rowsPerBatch) {
+    for(int start=0; start<args.nrow; start+=rowsPerBatch) {
       if (failed) continue;  // Not break. See comments above about #omp cancel
-      int end = ((nrow-start)<rowsPerBatch) ? nrow : start+rowsPerBatch;
+      int end = ((args.nrow - start)<rowsPerBatch) ? args.nrow : start + rowsPerBatch;
       for (int i=start; i<end; i++) {
         char *lineStart = ch;
         // Tepid starts here (once at beginning of each per line)
-        if (doRowNames) {
-          if (rowNames==NULL) {
-            if (quote!=false) *ch++='"';  // default 'auto' will quote the row.name numbers
+        if (args.doRowNames) {
+          if (args.rowNames==NULL) {
+            if (args.doQuote!=0/*NA'auto' or true*/) *ch++='"';  // default 'auto' will quote the row.name numbers
             write_positive_int(i+1, &ch);
-            if (quote!=false) *ch++='"';
+            if (args.doQuote!=0) *ch++='"';
           } else {
-            writeString(rowNames, i, &ch);
+            writeString(args.rowNames, i, &ch);
           }
           *ch++=sep;
         }
         // Hot loop
-        for (int j=0; j<ncol; j++) {
-          (*fun[whichFun[j]])(columns[j], i, &ch);
+        for (int j=0; j<args.ncol; j++) {
+          (*args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
           *ch++ = sep;
         }
         // Tepid again (once at the end of each line)
         ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
-        write_chars(eol, &ch);  // overwrite last sep with eol instead
+        write_chars(args.eol, &ch);  // overwrite last sep with eol instead
 
         // Track longest line seen so far. If we start to see longer lines than we saw in the
         // sample, we'll realloc the buffer. The rowsPerBatch chosen based on the (very good) sample,
@@ -807,17 +788,17 @@ void fwriteMain(
             int used = 100*((double)(ch-myBuff))/buffSize;  // percentage of original buffMB
             if (used > maxBuffUsedPC) maxBuffUsedPC = used;
             double now;
-            if (me==0 && showProgress && (now=wallclock())>=nextTime && !failed) {
+            if (me==0 && args.showProgress && (now=wallclock())>=nextTime && !failed) {
               // See comments above inside the f==-1 clause.
               // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
               // master thread (me==0) and hopefully this will work on Windows. If not, user should set
               // showProgress=FALSE until this can be fixed or removed.
-              int ETA = (int)((nrow-end)*((now-startTime)/end));
+              int ETA = (int)((args.nrow-end)*((now-startTime)/end));
               if (hasPrinted || ETA >= 2) {
-                if (verbose && !hasPrinted) DTPRINT("\n");
+                if (args.verbose && !hasPrinted) DTPRINT("\n");
                 DTPRINT("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. "
                         "anyBufferGrown=%s; maxBuffUsed=%d%%. ETA %d secs.      ",
-                         (100.0*end)/nrow, nrow, (int)(now-startTime), nth, nth==1?"":"s",
+                         (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
                          anyBufferGrown?"yes":"no", maxBuffUsedPC, ETA);
                 // TODO: use progress() as in fread
                 nextTime = now+1;
@@ -859,18 +840,19 @@ void fwriteMain(
     }
   }
   if (f!=-1 && CLOSE(f) && !failed)
-    STOP("%s: '%s'", strerror(errno), filename);
+    STOP("%s: '%s'", strerror(errno), args.filename);
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
   // from the original error.
   if (failed<0) {
-    STOP("%s. One or more threads failed to malloc or realloc their private buffer. nThread=%d and initial buffMB per thread was %d.\n", strerror(-failed), nth, buffMB);
+    STOP("%s. One or more threads failed to malloc or realloc their private buffer. nThread=%d and initial buffMB per thread was %d.\n",
+         strerror(-failed), nth, args.buffMB);
   } else if (failed>0) {
-    STOP("%s: '%s'", strerror(failed), filename);
+    STOP("%s: '%s'", strerror(failed), args.filename);
   }
-  if (verbose) DTPRINT("done (actual nth=%d, anyBufferGrown=%s, maxBuffUsed=%d%%)\n",
-                       nth, anyBufferGrown?"yes":"no", maxBuffUsedPC);
+  if (args.verbose) DTPRINT("done (actual nth=%d, anyBufferGrown=%s, maxBuffUsed=%d%%)\n",
+                            nth, anyBufferGrown?"yes":"no", maxBuffUsedPC);
   return;
 }
 

@@ -17,8 +17,7 @@ SEXP setcharvec();
 SEXP setcolorder();
 SEXP chmatchwrapper();
 SEXP freadR();
-SEXP writefile();
-SEXP genLookups();
+SEXP fwriteR();
 SEXP reorder();
 SEXP rbindlist();
 SEXP vecseq();
@@ -96,8 +95,7 @@ R_CallMethodDef callMethods[] = {
 {"Csetcolorder", (DL_FUNC) &setcolorder, -1},
 {"Cchmatchwrapper", (DL_FUNC) &chmatchwrapper, -1},
 {"CfreadR", (DL_FUNC) &freadR, -1},
-{"Cwritefile", (DL_FUNC) &writefile, -1},
-{"CgenLookups", (DL_FUNC) &genLookups, -1},
+{"CfwriteR", (DL_FUNC) &fwriteR, -1},
 {"Creorder", (DL_FUNC) &reorder, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
