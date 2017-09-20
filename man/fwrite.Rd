@@ -12,7 +12,8 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
   na = "", dec = ".", row.names = FALSE, col.names = TRUE,
   qmethod = c("double","escape"),
-  logicalAsInt = FALSE, dateTimeAs = c("ISO","squash","epoch","write.csv"),
+  logical01 = TRUE, logicalAsInt = logical01,
+  dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(),
   showProgress = interactive(),
   verbose = getOption("datatable.verbose"))
@@ -34,7 +35,8 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
 	\item{"escape" - the quote character (as well as the backslash character) is escaped in C style by a backslash, or}
 	\item{"double" (default, same as \code{write.csv}), in which case the double quote is doubled with another one.}
       }}
-  \item{logicalAsInt}{Should \code{logical} values be written as \code{1} and \code{0} rather than \code{"TRUE"} and \code{"FALSE"}?}
+  \item{logical01}{Should \code{logical} values be written as \code{1} and \code{0} rather than \code{"TRUE"} and \code{"FALSE"}?}
+  \item{logicalAsInt}{Deprecated. Old name for `logical01`. Name change for consistency with `fread` for which `logicalAsInt` would not make sense.}
   \item{dateTimeAs}{ How \code{Date}/\code{IDate}, \code{ITime} and \code{POSIXct} items are written.
       \itemize{
 	\item{"ISO" (default) - \code{2016-09-12}, \code{18:12:16} and \code{2016-09-12T18:12:16.999999Z}. 0, 3 or 6 digits of fractional seconds are printed if and when present for convenience, regardless of any R options such as \code{digits.secs}. The idea being that if milli and microseconds are present then you most likely want to retain them. R's internal UTC representation is written faithfully to encourage ISO standards, stymie timezone ambiguity and for speed. An option to consider is to start R in the UTC timezone simply with \code{"$ TZ='UTC' R"} at the shell (NB: it must be one or more spaces between \code{TZ='UTC'} and \code{R}, anything else will be silently ignored; this TZ setting applies just to that R process) or \code{Sys.setenv(TZ='UTC')} at the R prompt and then continue as if UTC were local time.}

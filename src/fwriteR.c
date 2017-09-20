@@ -62,8 +62,8 @@ typedef enum {   // same order as fun[] above
 
 static int32_t whichWriter(SEXP);
 
-void writeList(void *col, int64_t row, char **pch) {
-  SEXP v = VECTOR_ELT(col,row);
+void writeList(SEXP *col, int64_t row, char **pch) {
+  SEXP v = col[row];
   int32_t wf = whichWriter(v);
   if (TYPEOF(v)==VECSXP || wf==INT32_MIN) {
     error("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing atomic vectors of type logical, integer, integer64, double, character and factor, currently.",
@@ -181,6 +181,11 @@ SEXP fwriteR(
   // Allocate and populate lookup vector to writer function for each column, whichFun[]
   args.whichFun = (uint8_t *)R_alloc(args.ncol, sizeof(uint8_t));
 
+  // just for use at this level to control whichWriter() when called now for each column and
+  // when called later for cell items of list columns (if any)
+  dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
+  logical01 = LOGICAL(logical01_Arg)[0];
+
   int firstListColumn = 0;
   for (int j=0; j<args.ncol; j++) {
     SEXP column = VECTOR_ELT(DFcoerced, j);
@@ -224,14 +229,9 @@ SEXP fwriteR(
             args.sep, args.sep2, args.dec, firstListColumn);
     }
   }
-
   // just for writeList at this level currently
   sep2start = CHAR(STRING_ELT(sep2_Arg, 0));
   sep2end = CHAR(STRING_ELT(sep2_Arg, 2));
-
-  // just for use at this level by whichWriter()
-  dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
-  logical01 = LOGICAL(logical01_Arg)[0];
 
   args.eol = CHAR(STRING_ELT(eol_Arg, 0));
   args.na = CHAR(STRING_ELT(na_Arg, 0));

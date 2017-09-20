@@ -48,14 +48,21 @@ void writeBool8(int8_t *col, int row, char **pch)
 {
   int8_t x = col[row];
   if (x==INT8_MIN) return;
-  *(*pch++) = '0'+x;
+  char *ch = *pch;
+  *ch++ = '0'+x;
+  *pch = ch;
 }
 
 void writeBool32(int32_t *col, int row, char **pch)
 {
   int32_t x = col[row];
-  if (x==INT32_MIN) return;
-  *(*pch++) = '0'+x;
+  char *ch = *pch;
+  if (x==INT32_MIN) {
+    write_chars(na, &ch);
+  } else {
+    *ch++ = '0'+x;
+  }
+  *pch = ch;
 }
 
 void writeBool32AsString(int32_t *col, int row, char **pch)
@@ -567,6 +574,11 @@ void fwriteMain(fwriteMainArgs args)
   sep2 = args.sep2;
   dec = args.dec;
   doQuote = args.doQuote;
+
+  // When NA is a non-empty string, then we must quote all string fields in case they contain the na string
+  // na is recommended to be empty, though
+  if (na[0]!='\0' && doQuote==INT8_MIN) doQuote = true;
+
   qmethodEscape = args.qmethodEscape;
   squashDateTime = args.squashDateTime;
 
@@ -611,7 +623,7 @@ void fwriteMain(fwriteMainArgs args)
         } else {
           thisLineLen += 1+(int)log10(args.nrow);  // the width of the row number
         }
-        thisLineLen += 2*(args.doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
+        thisLineLen += 2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
       }
       for (int j=0; j<args.ncol; j++) {
         char *ch = buff;                // overwrite each field at the beginning of buff to be more robust to single fields > 1 million bytes
@@ -659,7 +671,7 @@ void fwriteMain(fwriteMainArgs args)
     char *ch = buff;
     if (args.doRowNames) {
       // Unusual: the extra blank column name when row_names are added as the first column
-      if (args.doQuote!=0/*'auto'(NA) or true*/) { *ch++='"'; *ch++='"'; } // to match write.csv
+      if (doQuote!=0/*'auto'(NA) or true*/) { *ch++='"'; *ch++='"'; } // to match write.csv
       *ch++ = sep;
     }
     for (int j=0; j<args.ncol; j++) {
@@ -753,9 +765,9 @@ void fwriteMain(fwriteMainArgs args)
         // Tepid starts here (once at beginning of each per line)
         if (args.doRowNames) {
           if (args.rowNames==NULL) {
-            if (args.doQuote!=0/*NA'auto' or true*/) *ch++='"';  // default 'auto' will quote the row.name numbers
+            if (doQuote!=0/*NA'auto' or true*/) *ch++='"';
             write_positive_int(i+1, &ch);
-            if (args.doQuote!=0) *ch++='"';
+            if (doQuote!=0) *ch++='"';
           } else {
             writeString(args.rowNames, i, &ch);
           }

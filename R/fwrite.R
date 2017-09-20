@@ -10,6 +10,9 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     na = as.character(na[1L]) # fix for #1725
     if (missing(qmethod)) qmethod = qmethod[1L]
     if (missing(dateTimeAs)) dateTimeAs = dateTimeAs[1L]
+    else if (length(dateTimeAs)>1) stop("dateTimeAs must be a single string")
+    dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
+    if (is.na(dateTimeAs)) stop("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
     if (!missing(logical01) && !missing(logicalAsInt))
       stop("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
     if (!missing(logicalAsInt)) {
@@ -17,9 +20,6 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
       logical01 = logicalAsInt
       logicalAsInt=NULL
     }
-    else if (length(dateTimeAs)>1) stop("dateTimeAs must be a single string")
-    dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
-    if (is.na(dateTimeAs)) stop("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
     buffMB = as.integer(buffMB)
     nThread = as.integer(nThread)
     # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
