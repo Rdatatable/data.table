@@ -8855,6 +8855,11 @@ unlink(f)
 ok_dt <- data.table(foo="bar")
 test(1658.22, fwrite(ok_dt, quote=TRUE), output='"foo"\n"bar"\n')
 
+# integer NA
+DT = data.table(A=c(2L,NA,3L), B=c(NA,4:5))
+test(1658.23, fwrite(DT), output='A,B2,,43,5')
+test(1658.24, fwrite(DT, na="NA", verbose=TRUE), output='Writing column names.*"A","B".*2,NANA,43,5')
+
 options(oldverbose)
 
 # wrong argument types
