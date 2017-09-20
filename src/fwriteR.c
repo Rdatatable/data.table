@@ -195,9 +195,11 @@ SEXP fwriteR(
     if (TYPEOF(column)==VECSXP && firstListColumn==0) firstListColumn = j+1;
   }
 
-  args.colNames = LOGICAL(colNames_Arg)[0] ? (void *)DATAPTR(getAttrib(DF, R_NamesSymbol)) : NULL;
+  SEXP cn = getAttrib(DF, R_NamesSymbol);
+  args.colNames = (LOGICAL(colNames_Arg)[0] && isString(cn)) ? (void *)DATAPTR(cn) : NULL;
 
   // user may want row names even when they don't exist (implied row numbers as row names)
+  // so we need a separate boolean flag as well as the row names should they exist (rare)
   args.doRowNames = LOGICAL(rowNames_Arg)[0];
   args.rowNames = NULL;
   if (args.doRowNames) {
