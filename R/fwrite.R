@@ -18,7 +18,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     if (!missing(logical01) && !missing(logicalAsInt))
       stop("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
     if (!missing(logicalAsInt)) {
-      warning("logicalAsInt has been renamed logical01 for consistency with fread. It will work fine but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
+      # TODO: warning("logicalAsInt has been renamed logical01 for consistency with fread. It will work fine but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
       logical01 = logicalAsInt
       logicalAsInt=NULL
     }
