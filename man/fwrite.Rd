@@ -12,11 +12,12 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
   na = "", dec = ".", row.names = FALSE, col.names = TRUE,
   qmethod = c("double","escape"),
-  logical01 = TRUE, logicalAsInt = logical01,
+  logical01 = getOption("datatable.logical01", TRUE),
+  logicalAsInt = logical01,  # deprecated
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(),
   showProgress = interactive(),
-  verbose = getOption("datatable.verbose"))
+  verbose = getOption("datatable.verbose", FALSE))
 }
 \arguments{
   \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}.}
