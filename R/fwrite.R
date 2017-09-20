@@ -46,10 +46,10 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         col.names = FALSE  # test 1658.16 checks this
     if (identical(quote,"auto")) quote=NA  # logical NA
     if (file=="") {
-        # console output (Rprintf) isn't thread safe.
-        # Perhaps more so on Windows (as experienced) than Linux
-        nThread=1L
-        showProgress=FALSE
+        # console output which it seems isn't thread safe on Windows even when one-batch-at-a-time
+        nThread = 1L
+        showProgress = FALSE
+        eol = "\n"  # Rprintf() is used at C level which knows inside it to output \r\n on Windows. Otherwise extra \r is output.
     }
     .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
                     row.names, col.names, logical01, dateTimeAs, buffMB, nThread,
