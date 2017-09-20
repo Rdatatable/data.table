@@ -10647,6 +10647,16 @@ test(1830.8, identical(
   data.table(G=c(4.49548e-61))))
 
 
+# Test that integers just above 128 or 256 characters in length parse as strings, not as integers/floats
+# This guards against potential overflows in the count of digits
+src1 = paste0(rep("1234567890", 13), collapse="")  # length = 130, slightly above 128
+src2 = paste0(rep("12345678900987654321", 13), collapse="")  # length = 260, slightly above 256
+test(1831.1, fread(paste0("A\n", src1)), data.table(A=src1))
+test(1831.2, fread(paste0("A\n", src2)), data.table(A=src2))
+test(1831.3, fread(paste0("A\n", src2, ".33")), data.table(A=paste0(src2, ".33")))
+test(1831.4, fread(paste0("A\n", "1.", src2)), data.table(A=paste0("1.", src2)))
+
+
 
 ##########################
 
