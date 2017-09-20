@@ -24,13 +24,13 @@
 #define SIZE_SF  1000000000000000ULL  // 10^NUM_SF
 
 // Globals for this file only. Written once to hold parameters passed from R level.
-static char *na;                       // by default "" or if set (not recommended) then usually "NA"
+static const char *na;                 // by default "" or if set (not recommended) then usually "NA"
 static char sep;                       // comma in .csv files
 static char sep2;                      // '|' within list columns. Used here to know if field should be quoted and in freadR.c to write sep2 in list columns
 static char dec;                       // the '.' in the number 3.1416. In Europe often: 3,1416
-static int8_t quote=INT8_MIN;          // whether to surround fields with double quote ". NA means 'auto' (default)
-static bool qmethod_escape=false;      // when quoting fields, how to escape double quotes in the field contents (default false means to add another double quote)
-static bool squash=false;              // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
+static int8_t doQuote=INT8_MIN;        // whether to surround fields with double quote ". NA means 'auto' (default)
+static bool qmethodEscape=false;       // when quoting fields, how to escape double quotes in the field contents (default false means to add another double quote)
+static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 
 extern const char *getString(void *, int);
 extern const char *getCategString(void *, int);
@@ -297,11 +297,11 @@ static inline void write_time(int32_t x, char **pch)
     *ch++ = '0'+hh/10;
     *ch++ = '0'+hh%10;
     *ch++ = ':';
-    ch -= squash;
+    ch -= squashDateTime;
     *ch++ = '0'+mm/10;
     *ch++ = '0'+mm%10;
     *ch++ = ':';
-    ch -= squash;
+    ch -= squashDateTime;
     *ch++ = '0'+ss/10;
     *ch++ = '0'+ss%10;
   }
@@ -344,20 +344,20 @@ static inline void write_date(int32_t x, char **pch)
     int md = monthday[z];  // See fwriteLookups.h for how the 366 item lookup 'monthday' is arranged
     y += z && (md/100)<3;  // The +1 above turned z=-1 to 0 (meaning Feb29 of year y not Jan or Feb of y+1)
 
-    ch += 7 + 2*!squash;
+    ch += 7 + 2*!squashDateTime;
     *ch-- = '0'+md%10; md/=10;
     *ch-- = '0'+md%10; md/=10;
     *ch-- = '-';
-    ch += squash;
+    ch += squashDateTime;
     *ch-- = '0'+md%10; md/=10;
     *ch-- = '0'+md%10; md/=10;
     *ch-- = '-';
-    ch += squash;
+    ch += squashDateTime;
     *ch-- = '0'+y%10; y/=10;
     *ch-- = '0'+y%10; y/=10;
     *ch-- = '0'+y%10; y/=10;
     *ch   = '0'+y%10; y/=10;
-    ch += 8 + 2*!squash;
+    ch += 8 + 2*!squashDateTime;
   }
   *pch = ch;
 }
@@ -400,21 +400,21 @@ void writePOSIXct(double *col, int row, char **pch)
     m /= 10;
     write_date(d, &ch);
     *ch++ = 'T';
-    ch -= squash;
+    ch -= squashDateTime;
     write_time(t, &ch);
-    if (squash || (m && m%1000==0)) {
-      // when squash always write 3 digits of milliseconds even if 000, for consistent scale of squash integer64
+    if (squashDateTime || (m && m%1000==0)) {
+      // when squashDateTime always write 3 digits of milliseconds even if 000, for consistent scale of squash integer64
       // don't use writeInteger() because it doesn't 0 pad which we need here
       // integer64 is big enough for squash with milli but not micro; trunc (not round) micro when squash
       m /= 1000;
       *ch++ = '.';
-      ch -= squash;
+      ch -= squashDateTime;
       *(ch+2) = '0'+m%10; m/=10;
       *(ch+1) = '0'+m%10; m/=10;
       *ch     = '0'+m;
       ch += 3;
     } else if (m) {
-      // microseconds are present and !squash
+      // microseconds are present and !squashDateTime
       *ch++ = '.';
       *(ch+5) = '0'+m%10; m/=10;
       *(ch+4) = '0'+m%10; m/=10;
@@ -425,7 +425,7 @@ void writePOSIXct(double *col, int row, char **pch)
       ch += 6;
     }
     *ch++ = 'Z';
-    ch -= squash;
+    ch -= squashDateTime;
   }
   *pch = ch;
 }
@@ -451,14 +451,14 @@ void writeNanotime(int64_t *col, int row, char **pch)
     }
     write_date(d, &ch);
     *ch++ = 'T';
-    ch -= squash;
+    ch -= squashDateTime;
     write_time(s, &ch);
     *ch++ = '.';
-    ch -= squash;
+    ch -= squashDateTime;
     for (int i=8; i>=0; i--) { *(ch+i) = '0'+n%10; n/=10; }  // always 9 digits for nanoseconds
     ch += 9;
     *ch++ = 'Z';
-    ch -= squash;
+    ch -= squashDateTime;
   }
   *pch = ch;
 }
@@ -470,7 +470,7 @@ static inline void write_string(const char *x, char **pch)
     // NA is not quoted even when quote=TRUE to distinguish from quoted "NA" value.  But going forward: ,,==NA and ,"",==empty string
     write_chars(na, &ch);
   } else {
-    int8_t q = quote;
+    int8_t q = doQuote;
     if (q==INT8_MIN) { // NA means quote="auto"
       const char *tt = x;
       if (*tt == '\0') {
@@ -495,7 +495,7 @@ static inline void write_string(const char *x, char **pch)
     } else {
       *ch++ = '"';
       const char *tt = x;
-      if (qmethod_escape) {
+      if (qmethodEscape) {
         while (*tt!='\0') {
           if (*tt=='"' || *tt=='\\') *ch++ = '\\';
           *ch++ = *tt++;
@@ -562,7 +562,13 @@ void fwriteMain(fwriteMainArgs args)
   double nextTime = startTime+2; // start printing progress meter in 2 sec if not completed by then
   double t0 = startTime;
 
-  squash = args.squashDateTime;
+  na = args.na;
+  sep = args.sep;
+  sep2 = args.sep2;
+  dec = args.dec;
+  doQuote = args.doQuote;
+  qmethodEscape = args.qmethodEscape;
+  squashDateTime = args.squashDateTime;
 
   // Estimate max line length of a 1000 row sample (100 rows in 10 places).
   // 'Estimate' even of this sample because quote='auto' may add quotes and escape embedded quotes.
@@ -658,7 +664,10 @@ void fwriteMain(fwriteMainArgs args)
     }
     for (int j=0; j<args.ncol; j++) {
       writeString(args.colNames, j, &ch);
-      if (WRITE(f, buff, (int)(ch-buff))==-1) {  // TODO: move error check inside WRITE
+      if (f==-1) {
+        *ch = '\0';
+        DTPRINT(buff);
+      } else if (WRITE(f, buff, (int)(ch-buff))==-1) {  // TODO: move error check inside WRITE
         int errwrite=errno;  // capture write errno now incase close fails with a different errno
         close(f);
         free(buff);
@@ -667,7 +676,9 @@ void fwriteMain(fwriteMainArgs args)
       ch = buff;  // overwrite column names at the start in case they are > 1 million bytes long
       *ch++ = args.sep;  // this sep after the last column name won't be written to the file
     }
-    if (WRITE(f, args.eol, eolLen)==-1) {
+    if (f==-1) {
+      DTPRINT(args.eol);
+    } else if (WRITE(f, args.eol, eolLen)==-1) {
       int errwrite=errno;
       close(f);
       free(buff);
@@ -752,8 +763,11 @@ void fwriteMain(fwriteMainArgs args)
         }
         // Hot loop
         for (int j=0; j<args.ncol; j++) {
-          (*args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
+          //printf("j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
+          (args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
+          //printf("  j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
           *ch++ = sep;
+          //printf("  j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
         }
         // Tepid again (once at the end of each line)
         ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.

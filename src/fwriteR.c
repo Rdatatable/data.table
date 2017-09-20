@@ -15,12 +15,13 @@ static const char *sep2start, *sep2end;
 
 // Non-agnostic helpers ...
 
-const char *getString(SEXP col, int row) {   // TODO: inline for use in fwrite.c
-  SEXP x = STRING_ELT(col, row);
+const char *getString(SEXP *col, int row) {   // TODO: inline for use in fwrite.c
+  SEXP x = col[row];
   return x==NA_STRING ? NULL : CHAR(x);
 }
 
 const char *getCategString(SEXP col, int row) {
+  // the only writer that needs to have the header of the SEXP column, to get to the levels
   int x = INTEGER(col)[row];
   return x==NA_INTEGER ? NULL : CHAR(STRING_ELT(getAttrib(col, R_LevelsSymbol), x-1));
 }
@@ -118,20 +119,21 @@ SEXP fwriteR(
   SEXP na_Arg,
   SEXP dec_Arg,
   SEXP quote_Arg,          // 'auto'=NA_LOGICAL|TRUE|FALSE
-  SEXP qmethod_escapeArg,  // TRUE|FALSE
-  SEXP append,             // TRUE|FALSE
-  SEXP row_names,          // TRUE|FALSE
-  SEXP col_names,          // TRUE|FALSE
+  SEXP qmethodEscape_Arg,  // TRUE|FALSE
+  SEXP append_Arg,         // TRUE|FALSE
+  SEXP rowNames_Arg,       // TRUE|FALSE
+  SEXP colNames_Arg,       // TRUE|FALSE
   SEXP logical01_Arg,      // TRUE|FALSE
   SEXP dateTimeAs_Arg,     // 0=ISO(yyyy-mm-dd),1=squash(yyyymmdd),2=epoch,3=write.csv
   SEXP buffMB_Arg,         // [1-1024] default 8MB
-  SEXP nThread,
+  SEXP nThread_Arg,
   SEXP showProgress_Arg,
   SEXP verbose_Arg)
 {
   if (!isNewList(DF)) error("fwrite must be passed an object of type list; e.g. data.frame, data.table");
   fwriteMainArgs args;
-
+  args.verbose = LOGICAL(verbose_Arg)[0];
+  args.filename = CHAR(STRING_ELT(filename_Arg, 0));
   args.ncol = length(DF);
   if (args.ncol==0) {
     warning("fwrite was passed an empty list of no columns. Nothing to write.");
@@ -139,30 +141,9 @@ SEXP fwriteR(
   }
   args.nrow = length(VECTOR_ELT(DF, 0));
 
-  args.showProgress = LOGICAL(showProgress_Arg)[0];
-  args.verbose = LOGICAL(verbose_Arg)[0];
-
-  args.sep = *CHAR(STRING_ELT(sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
-  sep2start = CHAR(STRING_ELT(sep2_Arg, 0));
-  args.sep2 = sep2 = *CHAR(STRING_ELT(sep2_Arg, 1));
-  sep2end = CHAR(STRING_ELT(sep2_Arg, 2));
-
-  args.eol = CHAR(STRING_ELT(eol_Arg, 0));
-  // someone might want a trailer on every line so allow any length string as eol
-
-  args.na = CHAR(STRING_ELT(na_Arg, 0));
-  args.dec = *CHAR(STRING_ELT(dec_Arg,0));
-  args.doQuote = LOGICAL(quote_Arg)[0] == NA_LOGICAL ? INT8_MIN : LOGICAL(quote_Arg)[0]==1;
-  args.qmethodEscape = (int8_t)(LOGICAL(qmethod_escapeArg)[0]==1);
-  args.filename = CHAR(STRING_ELT(filename_Arg, 0));
-  logical01 = LOGICAL(logical01_Arg)[0]==1;
-  dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
-  args.squashDateTime = (dateTimeAs==1);
-  args.nth = INTEGER(nThread)[0];
-  int firstListColumn = 0;
-
   SEXP DFcoerced = DF;
   int protecti = 0;
+  dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
   if (dateTimeAs == DATETIMEAS_WRITECSV) {
     int j=0;
     while(j<args.ncol && !INHERITS(VECTOR_ELT(DF,j), char_POSIXct)) j++;
@@ -188,10 +169,19 @@ SEXP fwriteR(
     }
   }
 
-  // Allocate and populate lookup vector to writer function for each column, whichFun[]
-  // Don't use a VLA as ncol could be > 1e6 columns
+  // allocate new `columns` vector. Although this could be DATAPTR(DFcoerced) directly, it can't
+  // because there's an offset on each column that points to (DATAPTR for each column) which fread.c
+  // would need to know. Rather than have the complication of a new offset variable, we just alloc a
+  // new vetcors of pointers directly. It won't make a difference to speed because only this new
+  // vector need be used by fread.c.  It just uses a tiny bit more memory (ncol * 8 bytes).
+  args.columns = (void *)R_alloc(args.ncol, sizeof(SEXP));
+
   args.funs = funs;  // funs declared statically at the top of this file
+
+  // Allocate and populate lookup vector to writer function for each column, whichFun[]
   args.whichFun = (uint8_t *)R_alloc(args.ncol, sizeof(uint8_t));
+
+  int firstListColumn = 0;
   for (int j=0; j<args.ncol; j++) {
     SEXP column = VECTOR_ELT(DFcoerced, j);
     if (args.nrow != length(column))
@@ -200,13 +190,28 @@ SEXP fwriteR(
     if (wf<0) {
       error("Column %d's type is '%s' - not yet implemented in fwrite.", j+1, type2char(TYPEOF(column)));
     }
+    args.columns[j] = (wf==WF_CategString ? column : (void *)DATAPTR(column));
     args.whichFun[j] = (uint8_t)wf;
     if (TYPEOF(column)==VECSXP && firstListColumn==0) firstListColumn = j+1;
   }
 
+  args.colNames = LOGICAL(colNames_Arg)[0] ? (void *)DATAPTR(getAttrib(DF, R_NamesSymbol)) : NULL;
+
+  // user may want row names even when they don't exist (implied row numbers as row names)
+  args.doRowNames = LOGICAL(rowNames_Arg)[0];
+  args.rowNames = NULL;
+  if (args.doRowNames) {
+    SEXP rn = getAttrib(DF, R_RowNamesSymbol);
+    args.rowNames = isString(rn) ? (void *)DATAPTR(rn) : NULL;
+  }
+
+  args.sep = *CHAR(STRING_ELT(sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
+  args.sep2 = sep2 = *CHAR(STRING_ELT(sep2_Arg, 1));
+  args.dec = *CHAR(STRING_ELT(dec_Arg,0));
+
   if (!firstListColumn) {
     if (args.verbose) Rprintf("No list columns are present. Setting sep2='' otherwise quote='auto' would quote fields containing sep2.\n");
-    args.sep2='\0';
+    args.sep2 = sep2 = '\0';
   } else {
     if (args.verbose) {
       Rprintf("If quote='auto', fields will be quoted if the field contains either sep ('%c') or sep2 ('%c') because column %d is a list column.\n",
@@ -218,13 +223,23 @@ SEXP fwriteR(
     }
   }
 
-  // user may want row names even when they don't exist (implied row numbers as row names)
-  args.doRowNames = LOGICAL(row_names)[0];
-  args.rowNames = NULL;
-  if (args.doRowNames) {
-    SEXP rn = getAttrib(DF, R_RowNamesSymbol);
-    args.rowNames = isString(rn) ? (void *)rn : NULL;
-  }
+  // just for writeList at this level currently
+  sep2start = CHAR(STRING_ELT(sep2_Arg, 0));
+  sep2end = CHAR(STRING_ELT(sep2_Arg, 2));
+
+  // just for use at this level by whichWriter()
+  dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
+  logical01 = LOGICAL(logical01_Arg)[0];
+
+  args.eol = CHAR(STRING_ELT(eol_Arg, 0));
+  args.na = CHAR(STRING_ELT(na_Arg, 0));
+  args.doQuote = LOGICAL(quote_Arg)[0] == NA_LOGICAL ? INT8_MIN : LOGICAL(quote_Arg)[0]==1;
+  args.qmethodEscape = (int8_t)(LOGICAL(qmethodEscape_Arg)[0]==1);
+  args.squashDateTime = (dateTimeAs==1);
+  args.append = LOGICAL(append_Arg)[0];
+  args.buffMB = INTEGER(buffMB_Arg)[0];
+  args.nth = INTEGER(nThread_Arg)[0];
+  args.showProgress = LOGICAL(showProgress_Arg)[0];
 
   fwriteMain(args);
 

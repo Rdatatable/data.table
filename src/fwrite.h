@@ -1,4 +1,3 @@
-
 #ifdef DTPY
   #include "py_fread.h"
 #else
@@ -31,14 +30,12 @@ typedef struct fwriteMainArgs
   // will not validate the encoding).
   const char *filename;
 
-  // a vector of pointers to all-same-length column vectors
-  void **columns;
-
   int ncol;
 
   int64_t nrow;
 
-  void *colNames;         // NULL means no header, otherwise ncol strings
+  // a vector of pointers to all-same-length column vectors
+  void **columns;
 
   writer_fun_t *funs;      // a vector of writer_fun_t function pointers
 
@@ -47,15 +44,21 @@ typedef struct fwriteMainArgs
   // A limit of 256 writers seems more than sufficient
   uint8_t *whichFun;
 
+  void *colNames;         // NULL means no header, otherwise ncol strings
+
+  bool doRowNames;        // optional, likely false
+
+  void *rowNames;         // if doRowNames is true and rowNames is not NULL then they're used, otherwise row numbers are output.
+
   char sep;
 
   char sep2;
 
+  char dec;
+
   const char *eol;
 
   const char *na;
-
-  char dec;
 
   // The quote character is always " (ascii 34) and cannot be changed since nobody on Earth uses a different quoting character, surely
   // doQuote controls whether to quote fields or not. NA=="auto" (default) means the contents are inspected to see if sep, eol or quote
@@ -67,10 +70,6 @@ typedef struct fwriteMainArgs
   bool squashDateTime;
 
   bool append;
-
-  bool doRowNames;        // optional, likely false
-
-  void *rowNames;         // if doRowNames is true and rowNames is not NULL then they're used, otherwise row numbers are output.
 
   int buffMB;             // [1-1024] default 8MB
 

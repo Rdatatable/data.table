@@ -15,6 +15,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     if (!missing(logicalAsInt)) {
       warning("logicalAsInt has been renamed logical01 for consistency with fread. It will work fine but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
       logical01 = logicalAsInt
+      logicalAsInt=NULL
     }
     else if (length(dateTimeAs)>1) stop("dateTimeAs must be a single string")
     dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
@@ -32,7 +33,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         is.character(eol) && length(eol)==1L,
         length(qmethod) == 1L && qmethod %in% c("double", "escape"),
         isLOGICAL(col.names), isLOGICAL(append), isLOGICAL(row.names),
-        isLOGICAL(verbose), isLOGICAL(showProgress), isLOGICAL(logicalAsInt),
+        isLOGICAL(verbose), isLOGICAL(showProgress), isLOGICAL(logical01),
         length(na) == 1L, #1725, handles NULL or character(0) input
         is.character(file) && length(file)==1 && !is.na(file),
         length(buffMB)==1 && !is.na(buffMB) && 1<=buffMB && buffMB<=1024,
@@ -48,11 +49,9 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         nThread=1L
         showProgress=FALSE
     }
-    .Call(Cwritefile, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
-                      row.names, col.names, logicalAsInt, dateTimeAs, buffMB, nThread,
-                      showProgress, verbose)
+    .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
+                    row.names, col.names, logical01, dateTimeAs, buffMB, nThread,
+                    showProgress, verbose)
     invisible()
 }
-
-genLookups = function() invisible(.Call(CgenLookups))
 
