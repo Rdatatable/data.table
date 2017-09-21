@@ -10501,6 +10501,11 @@ test(1777.18, fread("A,B,C\nD,E,F\n", verbose=TRUE), data.table(A="D", B="E", C=
 test(1777.19, fread("A,B,C\nC,D,4\n", verbose=TRUE), data.table(A="C",B="D",C=4L),
               output="due to column 3 containing a string on row 1 and a lower type.*on row 2")
 
+# unquoted fields containing \r, #2371
+test(1778, fread("A,B,C\n0,,\n1,hello\rworld,2\n3,test,4\n", verbose=TRUE),
+           data.table(A=c(0L,1L,3L), B=c("","hello\rworld","test"), C=c(NA,2L,4L)),
+           output="\\r-only line endings are not allowed because \\n is found in the data")
+
 
 ##########################
 
