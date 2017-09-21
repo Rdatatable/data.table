@@ -1489,7 +1489,8 @@ int freadMain(freadMainArgs _args) {
           // 2nd non-blank row is being read now.
           // 1st row's type is remembered and compared to second row to decide if 1st row is column names or not
           thisColumnNameWasString = (type[field]==CT_STRING);
-          if (field==0 && args.header==NA_BOOL8 && !thisColumnNameWasString) {
+          if (field==0 && args.header==NA_BOOL8 && !thisColumnNameWasString && type[field]>1) {
+            // the '&& type[field]>1' catches and skips over empty field (via lowest type having been read as NA) on the first row, #2370.
             args.header=false;
             if (verbose) DTPRINT("  'header' determined to be false due to first field not being type string\n");
           }

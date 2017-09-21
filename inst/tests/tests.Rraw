@@ -10475,6 +10475,19 @@ cat(txt, file=f<-tempfile())
 test(1776.3, fread(f), fread(txt))
 unlink(f)
 
+# column name detection when some columns are empty, #2370
+test(1777.1, fread(",A,B\n1,3,5\n2,4,6\n"), data.table(V1=1:2, A=3:4, B=5:6))
+test(1777.2, fread("A,,B\n1,3,5\n2,4,6\n"), data.table(A=1:2, V2=3:4, B=5:6))
+test(1777.3, fread("A,B,\n1,3,5\n2,4,6\n"), data.table(A=1:2, B=3:4, V3=5:6))
+test(1777.4, fread(",A,\n1,3,5\n2,4,6\n"), data.table(V1=1:2, A=3:4, V3=5:6))
+test(1777.5, fread("A,,\n1,3,5\n2,4,6\n"), data.table(A=1:2, V2=3:4, V3=5:6))
+test(1777.6, fread(",,A\n1,3,5\n2,4,6\n"), data.table(V1=1:2, V2=3:4, A=5:6))
+test(1777.7, fread(",9,A\n1,3,5\n2,4,6\n"), data.table(V1=1:2, "9"=3:4, A=5:6))
+test(1777.8, fread(",A,9\n1,3,5\n2,4,6\n"), data.table(V1=1:2, A=3:4, "9"=5:6))
+test(1777.9, fread(",7,9\n1,3,5\n2,4,6\n"), data.table(V1=c(NA,1:2), V2=c(7L,3:4), V3=c(9L,5:6)))
+test(1777.11, fread(",,\n1,3,5\n2,4,6\n"), data.table(V1=c(NA,1:2), V2=c(NA,3:4), V3=c(NA,5:6)))
+
+
 ##########################
 
 test(1800, fread("A\n6e55693457e549ecfce0\n"), data.table(A=c("6e55693457e549ecfce0")))
