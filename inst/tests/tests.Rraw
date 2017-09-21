@@ -6367,7 +6367,7 @@ if ("package:bit64" %in% search()) {
     y = sample(letters, length(x), TRUE)
     ll = paste(x,y, sep=",", collapse="\n")
     test(1500.3, fread(ll),
-        data.table(V1=c("12345678901234", rep(NA, 178), "a"), V2=y))
+        data.table("12345678901234"=c(rep(NA, 178), "a"), "t"=y[-1]))
 
     x = c("12345678901234", rep("NA", 178), "0.5")
     y = sample(letters, length(x), TRUE)
@@ -6963,7 +6963,7 @@ str = "x,y\nx1,\"oops\" y1"
 test(1551.3, fread(str), data.table(x = "x1", y = "\"oops\" y1"))
 #1077
 str = '2,3\n""foo,bar'
-test(1551.4, fread(str), data.table(V1 = c("2", "\"\"foo"), V2 = c("3", "bar")))
+test(1551.4, fread(str), data.table("2" = "\"\"foo", "3" = "bar"))
 #1079
 str = 'L1\tsome\tunquoted\tstuff\nL2\tsome\t"half" quoted\tstuff\nL3\tthis\t"should work"\tok though'
 test(1551.5, fread(str), data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "should work"), stuff = c("stuff", "ok though")))
@@ -10485,8 +10485,11 @@ test(1777.6, fread(",,A\n1,3,5\n2,4,6\n"), data.table(V1=1:2, V2=3:4, A=5:6))
 test(1777.7, fread(",9,A\n1,3,5\n2,4,6\n"), data.table(V1=1:2, "9"=3:4, A=5:6))
 test(1777.8, fread(",A,9\n1,3,5\n2,4,6\n"), data.table(V1=1:2, A=3:4, "9"=5:6))
 test(1777.9, fread(",7,9\n1,3,5\n2,4,6\n"), data.table(V1=c(NA,1:2), V2=c(7L,3:4), V3=c(9L,5:6)))
-test(1777.10, fread(",,\n1,3,5\n2,4,6\n"), data.table(V1=c(NA,1:2), V2=c(NA,3:4), V3=c(NA,5:6)))
-test(1777.11, fread(",A,B\n1,3,5\n2,4,6\n", logical01=FALSE), data.table(V1=1:2, A=3:4, B=5:6))
+# we skip test numbers .10, .20 etc because they print as .1 and .2
+test(1777.11, fread(",,\n1,3,5\n2,4,6\n"), data.table(V1=c(NA,1:2), V2=c(NA,3:4), V3=c(NA,5:6)))
+test(1777.12, fread(",A,B\n1,3,5\n2,4,6\n", logical01=FALSE), data.table(V1=1:2, A=3:4, B=5:6))  # logical01 is included to catch a prior bug despite there being no logical columns
+test(1777.13, fread(",A,B\n1,3,5\n2,4,6\n", header=TRUE), data.table(V1=1:2, A=3:4, B=5:6))
+test(1777.14, fread(",A,B\n1,3,5\n2,4,6\n", header=FALSE), data.table(V1=c(NA,1:2), V2=c("A",3:4), V3=c("B",5:6)))
 
 
 ##########################
