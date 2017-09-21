@@ -10502,9 +10502,18 @@ test(1777.19, fread("A,B,C\nC,D,4\n", verbose=TRUE), data.table(A="C",B="D",C=4L
               output="due to column 3 containing a string on row 1 and a lower type.*on row 2")
 
 # unquoted fields containing \r, #2371
-test(1778, fread("A,B,C\n0,,\n1,hello\rworld,2\n3,test,4\n", verbose=TRUE),
-           data.table(A=c(0L,1L,3L), B=c("","hello\rworld","test"), C=c(NA,2L,4L)),
+test(1778.1, fread("A,B,C\n0,,\n1,hello\rworld,2\n3,test,4\n", verbose=TRUE),
+           DT <- data.table(A=c(0L,1L,3L), B=c("","hello\rworld","test"), C=c(NA,2L,4L)),
            output="\\r-only line endings are not allowed because \\n is found in the data")
+fwrite(DT, f<-tempfile())
+test(1778.2, readLines(f), c("A,B,C", "0,\"\",", "1,\"hello", "world\",2", "3,test,4"))
+# fwrite quotes the field containing \r ........... ^^ ............ ^^
+# and that reading back in gets us back to DT faithfully
+test(1778.3, fread(f), DT)
+tt = setDT(read.csv(f, stringsAsFactors=FALSE))
+tt[2, B:=gsub("\n","\r",B)]  # base R changes the \r to a \n, so restore that
+test(1778.4, tt, DT)
+unlink(f)
 
 
 ##########################
