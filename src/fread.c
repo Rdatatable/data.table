@@ -240,7 +240,7 @@ static inline bool end_of_field(const char ch) {
  * 5. \\n\\r     Acorn BBC (!) and RISC OS according to Wikipedia.
  * 6. \\r\\r\\r  Might as well, for completeness
  */
-static inline bool eol(const char **pch) {
+static inline bool eol(const char **pch) {   // !!TODO!! this is overkill to call repetitively in Field() looking for eol()!
   const char *ch = *pch;
   while (*ch=='\r') ch++;  // commonly happens once on Windows for type 2
   if (*ch=='\n') {
