@@ -10490,6 +10490,16 @@ test(1777.11, fread(",,\n1,3,5\n2,4,6\n"), data.table(V1=c(NA,1:2), V2=c(NA,3:4)
 test(1777.12, fread(",A,B\n1,3,5\n2,4,6\n", logical01=FALSE), data.table(V1=1:2, A=3:4, B=5:6))  # logical01 is included to catch a prior bug despite there being no logical columns
 test(1777.13, fread(",A,B\n1,3,5\n2,4,6\n", header=TRUE), data.table(V1=1:2, A=3:4, B=5:6))
 test(1777.14, fread(",A,B\n1,3,5\n2,4,6\n", header=FALSE), data.table(V1=c(NA,1:2), V2=c("A",3:4), V3=c("B",5:6)))
+test(1777.15, fread("A,B,C\n", verbose=TRUE), data.table(A=logical(),B=logical(),C=logical()),
+              output="because there are no number fields in the first and only row")
+test(1777.16, fread("A,B,3\n", verbose=TRUE), data.table(V1="A",V2="B",V3=3L),
+              output="because there are number fields in the first and only row")
+test(1777.17, fread("A,B,3\nC,D,4\n", verbose=TRUE), data.table(V1=c("A","C"),V2=c("B","D"),V3=3:4),
+              output="because there are some number columns and those columns do not have a string field at the top of them")
+test(1777.18, fread("A,B,C\nD,E,F\n", verbose=TRUE), data.table(A="D", B="E", C="F"),
+              output="because all columns are type string and a better guess is not possible")
+test(1777.19, fread("A,B,C\nC,D,4\n", verbose=TRUE), data.table(A="C",B="D",C=4L),
+              output="due to column 3 containing a string on row 1 and a lower type.*on row 2")
 
 
 ##########################
