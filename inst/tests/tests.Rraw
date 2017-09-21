@@ -6367,7 +6367,7 @@ if ("package:bit64" %in% search()) {
     y = sample(letters, length(x), TRUE)
     ll = paste(x,y, sep=",", collapse="\n")
     test(1500.3, fread(ll),
-        data.table(V1=c("12345678901234", rep(NA, 178), "a"), V2=y))
+        data.table("12345678901234"=c(rep(NA, 178), "a"), "t"=y[-1]))
 
     x = c("12345678901234", rep("NA", 178), "0.5")
     y = sample(letters, length(x), TRUE)
@@ -6963,7 +6963,7 @@ str = "x,y\nx1,\"oops\" y1"
 test(1551.3, fread(str), data.table(x = "x1", y = "\"oops\" y1"))
 #1077
 str = '2,3\n""foo,bar'
-test(1551.4, fread(str), data.table(V1 = c("2", "\"\"foo"), V2 = c("3", "bar")))
+test(1551.4, fread(str), data.table("2" = "\"\"foo", "3" = "bar"))
 #1079
 str = 'L1\tsome\tunquoted\tstuff\nL2\tsome\t"half" quoted\tstuff\nL3\tthis\t"should work"\tok though'
 test(1551.5, fread(str), data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "should work"), stuff = c("stuff", "ok though")))
@@ -10474,6 +10474,33 @@ txt = '"b","bc8d5",\n"c",,"2f685"\n"d",,\n,"cdfb9",\n'
 cat(txt, file=f<-tempfile())
 test(1776.3, fread(f), fread(txt))
 unlink(f)
+
+# column name detection when some columns are empty, #2370
+test(1777.1, fread(",A,B\n1,3,5\n2,4,6\n"), data.table(V1=1:2, A=3:4, B=5:6))
+test(1777.2, fread("A,,B\n1,3,5\n2,4,6\n"), data.table(A=1:2, V2=3:4, B=5:6))
+test(1777.3, fread("A,B,\n1,3,5\n2,4,6\n"), data.table(A=1:2, B=3:4, V3=5:6))
+test(1777.4, fread(",A,\n1,3,5\n2,4,6\n"), data.table(V1=1:2, A=3:4, V3=5:6))
+test(1777.5, fread("A,,\n1,3,5\n2,4,6\n"), data.table(A=1:2, V2=3:4, V3=5:6))
+test(1777.6, fread(",,A\n1,3,5\n2,4,6\n"), data.table(V1=1:2, V2=3:4, A=5:6))
+test(1777.7, fread(",9,A\n1,3,5\n2,4,6\n"), data.table(V1=1:2, "9"=3:4, A=5:6))
+test(1777.8, fread(",A,9\n1,3,5\n2,4,6\n"), data.table(V1=1:2, A=3:4, "9"=5:6))
+test(1777.9, fread(",7,9\n1,3,5\n2,4,6\n"), data.table(V1=c(NA,1:2), V2=c(7L,3:4), V3=c(9L,5:6)))
+# we skip test numbers .10, .20 etc because they print as .1 and .2
+test(1777.11, fread(",,\n1,3,5\n2,4,6\n"), data.table(V1=c(NA,1:2), V2=c(NA,3:4), V3=c(NA,5:6)))
+test(1777.12, fread(",A,B\n1,3,5\n2,4,6\n", logical01=FALSE), data.table(V1=1:2, A=3:4, B=5:6))  # logical01 is included to catch a prior bug despite there being no logical columns
+test(1777.13, fread(",A,B\n1,3,5\n2,4,6\n", header=TRUE), data.table(V1=1:2, A=3:4, B=5:6))
+test(1777.14, fread(",A,B\n1,3,5\n2,4,6\n", header=FALSE), data.table(V1=c(NA,1:2), V2=c("A",3:4), V3=c("B",5:6)))
+test(1777.15, fread("A,B,C\n", verbose=TRUE), data.table(A=logical(),B=logical(),C=logical()),
+              output="because there are no number fields in the first and only row")
+test(1777.16, fread("A,B,3\n", verbose=TRUE), data.table(V1="A",V2="B",V3=3L),
+              output="because there are number fields in the first and only row")
+test(1777.17, fread("A,B,3\nC,D,4\n", verbose=TRUE), data.table(V1=c("A","C"),V2=c("B","D"),V3=3:4),
+              output="because there are some number columns and those columns do not have a string field at the top of them")
+test(1777.18, fread("A,B,C\nD,E,F\n", verbose=TRUE), data.table(A="D", B="E", C="F"),
+              output="because all columns are type string and a better guess is not possible")
+test(1777.19, fread("A,B,C\nC,D,4\n", verbose=TRUE), data.table(A="C",B="D",C=4L),
+              output="due to column 3 containing a string on row 1 and a lower type.*on row 2")
+
 
 ##########################
 

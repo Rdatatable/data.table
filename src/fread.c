@@ -1487,12 +1487,8 @@ int freadMain(freadMainArgs _args) {
         bool thisColumnNameWasString = false;
         if (firstDataRowAfterPotentialColumnNames) {
           // 2nd non-blank row is being read now.
-          // 1st row's type is remembered and compared to second row to decide if 1st row is column names or not
+          // 1st row's type is remembered and compared (a little lower down) to second row to decide if 1st row is column names or not
           thisColumnNameWasString = (type[field]==CT_STRING);
-          if (field==0 && args.header==NA_BOOL8 && !thisColumnNameWasString) {
-            args.header=false;
-            if (verbose) DTPRINT("  'header' determined to be false due to first field not being type string\n");
-          }
           type[field] = type0;  // re-initialize for 2nd row onwards
         }
         // throw-away storage for processors to write to in this preamble.
@@ -1533,7 +1529,7 @@ int freadMain(freadMainArgs _args) {
         }
         if (args.header==NA_BOOL8 && thisColumnNameWasString && type[field]<CT_STRING) {
           args.header=true;
-          if (verbose) DTPRINT("  'header' determined to be true due to column %d having string on row 1 and a lower type (%s) on row 2\n", field+1, typeName[type[field]]);
+          if (verbose) DTPRINT("  'header' determined to be true due to column %d containing a string on row 1 and a lower type (%s) on row 2\n", field+1, typeName[type[field]]);
         }
         if (*ch!=sep) break;
         if (sep==' ') {
@@ -1603,16 +1599,22 @@ int freadMain(freadMainArgs _args) {
   bytesRead = 0;
 
   if (args.header==NA_BOOL8) {
-    args.header=true;
-    for (int j=0; j<ncol; j++)
-      if (type[j]<CT_STRING) args.header=false;
-    if (sampleLines<=1) {
-      // e.g. fread("A,B\n")
-      if (verbose) DTPRINT("  'header' determined to be %s because there are%s non-strings on the 1st and only row\n", args.header?"true":"false", args.header?" no":"");
-    } else {
-      if (verbose) DTPRINT("  'header' determined to be %s\n", args.header ?
-                           "true because types of row 1 and row 2 are the same and all columns are string" :
-                           "false because types of row 1 and row 2 are the same and at least one column is not string" );
+    args.header = true;
+    for (int j=0; j<ncol; j++) {
+      if (type[j]<CT_STRING) {
+        args.header = false;
+        break;
+      }
+    }
+    if (verbose) {
+      if (sampleLines<=1) {
+        DTPRINT("  'header' determined to be %s because there are%s number fields in the first and only row\n", args.header?"true":"false", args.header?" no":"");
+      } else {
+        if (args.header)
+          DTPRINT("  'header' determined to be true because all columns are type string and a better guess is not possible\n");
+        else
+          DTPRINT("  'header' determined to be false because there are some number columns and those columns do not have a string field at the top of them\n");
+      }
     }
   }
   if (sampleLines<=1) {
