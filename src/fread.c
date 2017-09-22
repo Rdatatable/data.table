@@ -40,6 +40,7 @@ static char sep;
 static char whiteChar; // what to consider as whitespace to skip: ' ', '\t' or 0 means both (when sep!=' ' && sep!='\t')
 static char quote, dec;
 static char finalByte;
+static bool LFpresent=true;  // only false very rarely for \r-only files to flag that no \n are present
 
 // Quote rule:
 //   0 = Fields may be quoted, any quote inside the field is doubled. This is
@@ -157,6 +158,7 @@ bool freadCleanup(void)
   blank_is_a_NAstring = false;
   stripWhite = true;
   skipEmptyLines = false;
+  LFpresent = true;
   fill = false;
   // following are borrowed references: do not free
   eof = NULL;
@@ -216,21 +218,6 @@ static inline void skip_white(const char **pch) {
 
 
 /**
- * Return True iff `ch` is a valid field terminator character: either a field
- * separator or a newline.
- */
-static inline bool end_of_field(const char ch) {
-  // \r is 13, \n is 10, and \0 is 0. The second part is optimized based on the
-  // fact that the characters in the ASCII range 0..13 are very rare, so a
-  // single check `ch<=13` is almost equivalent to checking whether `ch` is one
-  // of \r, \n, \0. We cast to unsigned first because `char` type is signed by
-  // default, and therefore characters in the range 0x80-0xFF are actually
-  // treated as negatives.
-  return ch==sep || ((uint8_t)ch<=13 && (ch=='\n' || ch=='\r' || ch=='\0'));
-}
-
-
-/**
  * eol() accepts a position and, if any of the following line endings, moves to the end of that sequence
  * and returns true. Repeated \\r are considered one. At most one \\n will be moved over.
  * 1. \\n        Unix
@@ -242,6 +229,7 @@ static inline bool end_of_field(const char ch) {
  */
 static inline bool eol(const char **pch) {
   const char *ch = *pch;
+  // we call eol() when we expect to be on an eol(), so optimize as if we are on an eol
   while (*ch=='\r') ch++;  // commonly happens once on Windows for type 2
   if (*ch=='\n') {
     // 1,2,3 and 5 (one \n with any number of \r before and/or after)
@@ -249,12 +237,30 @@ static inline bool eol(const char **pch) {
     *pch = ch;
     return true;
   }
-  else if (ch>*pch) {  // did we move over some \r above?
+  if (ch>*pch && !LFpresent) {
     // 4 and 6 (\r only with no \n before or after)
+    // very rare, not recommended and almost did not support
+    // ch>*pch only if we moved over some \r in the first while() above
+    // as long as no \n are present in the file (noLFpresent) we can consider \r-only as line ending, #2371
     *pch = ch-1;  // move back onto the last \r
     return true;
   }
   return false;
+}
+
+
+/**
+ * Return True iff `ch` is a valid field terminator character: either a field
+ * separator or a newline.
+ */
+static inline bool end_of_field(const char *ch) {
+  // \r is 13, \n is 10, and \0 is 0. The second part is optimized based on the
+  // fact that the characters in the ASCII range 0..13 are very rare, so a
+  // single check `ch<=13` is almost equivalent to checking whether `ch` is one
+  // of \r, \n, \0. We cast to unsigned first because `char` type is signed by
+  // default, and therefore characters in the range 0x80-0xFF are negative.
+  // We use eol() because that looks at LFpresent inside it w.r.t. \r
+  return *ch==sep || ((uint8_t)*ch<=13 && (*ch=='\0' || eol(&ch)));
 }
 
 
@@ -270,6 +276,7 @@ static inline const char *end_NA_string(const char *fieldStart) {
   }
   return mostConsumed;
 }
+
 
 /**
  * Compute the number of fields on the current line (taking into account the
@@ -461,7 +468,7 @@ static void Field(FieldParseContext *ctx)
   const char *fieldStart=ch;
   if (*ch!=quote || quoteRule==3) {
     // Most common case. Unambiguously not quoted. Simply search for sep|eol. If field contains sep|eol then it should have been quoted and we do not try to heal that.
-    while(!end_of_field(*ch)) ch++;  // sep, \r, \n or \0 will end
+    while(!end_of_field(ch)) ch++;  // sep, \r, \n or \0 will end
     *(ctx->ch) = ch;
     int fieldLen = (int)(ch-fieldStart);
     if (stripWhite) {   // TODO:  do this if and the next one together once in bulk afterwards before push
@@ -506,14 +513,14 @@ static void Field(FieldParseContext *ctx)
     {
       const char *ch2 = ch;
       while (*++ch && *ch!='\n' && *ch!='\r') {
-        if (*ch==quote && end_of_field(ch[1])) {ch2=ch; break;}  // (*1) regular ", ending; leave *ch on closing quote
+        if (*ch==quote && end_of_field(ch+1)) {ch2=ch; break;}  // (*1) regular ", ending; leave *ch on closing quote
         if (*ch==sep) {
           // first sep in this field
           // if there is a ", afterwards but before the next \n, use that; the field was quoted and it's still case (i) above.
           // Otherwise break here at this first sep as it's case (ii) above (the data contains a quote at the start and no sep)
           ch2 = ch;
           while (*++ch2 && *ch2!='\n' && *ch2!='\r') {
-            if (*ch2==quote && end_of_field(ch2[1])) {
+            if (*ch2==quote && end_of_field(ch2+1)) {
               ch = ch2;                                          // (*2) move on to that first ", -- that's this field's ending
               break;
             }
@@ -1217,11 +1224,20 @@ int freadMain(freadMainArgs _args) {
   const char *pos;  // Location where the actual data in the file begins
   int line = 1;     // Current line number
   {
+
+  // First, set 'LFpresent' for use by eol() to know if \r-only line ending is allowed, #2371
+  // Very rare and not recommended \r-only files will be completely scanned at this point, which we're fine with. Otherwise it stops
+  // as soon as the first \n is found.
+  ch = pos = sof;
+  while (*ch!='\n' && *ch!='\0') ch++;
+  LFpresent = (*ch=='\n');
+  if (verbose) DTPRINT("  \\r-only line endings are%s allowed because \\n is%s found in the data\n", LFpresent?" not":"", LFpresent?"":" not");
+  ch = pos;
+
   if (verbose) DTPRINT("[05] Skipping initial rows if needed\n");
 
   // line is for error and warning messages so considers raw \n whether inside quoted fields or not, just
   // like wc -l, head -n and tail -n
-  ch = pos = sof;
   if (args.skipString) {
     ch = strstr(sof, args.skipString);  // as there is now a \0 at the end, this is safely bounded
     if (!ch) STOP("skip='%s' not found in input (it is case sensitive and literal; i.e., no patterns, wildcards or regex)",
@@ -1501,17 +1517,17 @@ int freadMain(freadMainArgs _args) {
         };
         while (type[field]<=CT_STRING) {
           fun[type[field]](&fctx);
-          if (end_of_field(*ch)) break;
+          if (end_of_field(ch)) break;
           skip_white(&ch);
-          if (end_of_field(*ch)) break;
+          if (end_of_field(ch)) break;
           ch = end_NA_string(fieldStart);
-          if (end_of_field(*ch)) break;
+          if (end_of_field(ch)) break;
           if (type[field]<CT_STRING) {
             ch = fieldStart;
             if (*ch==quote) {
               ch++;
               fun[type[field]](&fctx);
-              if (*ch==quote && end_of_field(ch[1])) { ch++; break; }
+              if (*ch==quote && end_of_field(ch+1)) { ch++; break; }
             }
             type[field]++;
             while (disabled_parsers[type[field]]) type[field]++;
@@ -1999,13 +2015,13 @@ int freadMain(freadMainArgs _args) {
               const char *afterSpace = tch;
               tch = end_NA_string(fieldStart);
               skip_white(&tch);
-              if (!end_of_field(*tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
+              if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
               if (*tch==quote) { quoted=true; tch++; }
             } // else Field() handles NA inside it unlike other processors e.g. ,, is interpretted as "" or NA depending on option read inside Field()
             fun[abs(thisType)](&fctx);
             if (quoted && *tch==quote) tch++;
             skip_white(&tch);
-            if (end_of_field(*tch)) {
+            if (end_of_field(tch)) {
               if (sep==' ' && *tch==' ') {
                 while (tch[1]==' ') tch++;  // multiple space considered one sep so move to last
                 if (tch[1]=='\r' || tch[1]=='\n' || tch[1]=='\0') tch++;
