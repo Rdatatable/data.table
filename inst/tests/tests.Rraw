@@ -10226,9 +10226,9 @@ test(1764.1, format(as.ITime(character(0))), character(0))
 test(1764.2, format(structure(NA_integer_, class = "ITime")), NA_character_)
 
 # IDateTime error when tzone is NULL, #1973
-x = as.POSIXct('2017-03-17')
+x = as.POSIXct('2017-03-17', tz="UTC")
 attr(x, 'tzone') = NULL
-test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17 00:00:00")
+test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17")
 
 # print(null.data.table()) should not output NULL as well, #1852
 # use capture.output() in this case rather than output= to ensure NULL is not output
