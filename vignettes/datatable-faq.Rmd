@@ -52,7 +52,7 @@ Reminder: you can place _any_ R expression inside `DT[...]` using column names a
 
 ## Why does `DT[,"region"]` return a 1-column data.table rather than a vector?
 
-See the [answer above](#j-num). Try `DT$region` instead. Or `DT[["region"]]`. 
+See the [answer above](#j-num). Try `DT$region` instead. Or `DT[["region"]]`.
 
 
 ## Why does `DT[, region]` return a vector for the "region" column?  I'd like a 1-column data.table.
@@ -595,7 +595,7 @@ Please file suggestions, bug reports and enhancement requests on our [issues tra
 
 Please do star the package on [GitHub](https://github.com/Rdatatable/data.table/wiki). This helps encourage the developers and helps other R users find the package.
 
-You can submit pull requests to change the code and/or documentation yourself; see our [Contribution Guidelines](https://github.com/Rdatatable/data.table/blob/master/Contributing.md).
+You can submit pull requests to change the code and/or documentation yourself; see our [Contribution Guidelines](https://github.com/Rdatatable/data.table/blob/master/CONTRIBUTING.md).
 
 ## I think it's not great. How do I warn others about my experience?
 Please put your vote and comments on [Crantastic](http://crantastic.org/packages/data-table). Please make it constructive so we have a chance to improve.
@@ -612,5 +612,4 @@ Sure. You're more likely to get a faster answer from the Issues page or Stack Ov
 ## I have created a package that uses data.table. How do I ensure my package is data.table-aware so that inheritance from `data.frame` works?
 
 Please see [this answer](http://stackoverflow.com/a/10529888/403310).
-
 

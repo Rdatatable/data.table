@@ -1,89 +1,257 @@
 variables:
-  USERNS: "https://jangorecki.gitlab.io" # user namespace for local fork drat install string
+  CI_TOOLS: "https://svn.r-project.org/R/branches/tools4pkgs/src/library/tools/R/packages.R"
+  CRAN_MIRROR: "https://cloud.r-project.org"
+  BIOC_MIRROR: "https://bioconductor.org/packages/3.4/bioc"
+  _R_CHECK_FORCE_SUGGESTS_: "FALSE"
 
 stages:
+  - dependencies
+  - build
   - test
+  - integration
   - deploy
 
-test:
-  stage: test
-  image: docker.io/jangorecki/r-pkg
-  script:
-    # install suggests
-    - Rscript -e 'install.packages(c("chron", "ggplot2", "plyr", "reshape", "reshape2", "testthat", "hexbin", "fastmatch", "nlme", "xts", "bit64", "gdata", "caret", "knitr", "curl", "zoo", "plm", "rmarkdown"))'
-    - Rscript -e 'source("https://bioconductor.org/biocLite.R"); biocLite("GenomicRanges")'
-    # add git commit hash metadata
-    - echo "Commit:" $CI_BUILD_REF >> ./DESCRIPTION
-    # build package
-    - R CMD build .
-    # run check
-    - R CMD check $(ls -1t *.tar.gz | head -n 1) --no-manual --as-cran
-    # produce artifacts
-    - Rscript -e 'drat::insertArtifacts(repodir="public", repo.url="'"$USERNS"'/data.table", log.files=c("tests/main.Rout"))'
-  artifacts:
-    paths:
-      - public
-
-test-vanilla:
-  stage: test
+mirror-packages:
+  stage: dependencies
+  tags:
+    - linux
   image: docker.io/jangorecki/r-base-dev
   script:
-    # build package
-    - R CMD build . --no-build-vignettes
-    # run check
-    - export _R_CHECK_CRAN_INCOMING_=FALSE
-    - export _R_CHECK_FORCE_SUGGESTS_=FALSE
-    - R CMD check $(ls -1t *.tar.gz | head -n 1) --ignore-vignettes --no-manual --as-cran
-    # produce artifacts
-    - Rscript -e 'install.packages("drat", repos="https://jangorecki.gitlab.io/drat")'
-    - Rscript -e 'drat::insertArtifacts(repodir="public/vanilla", repo.url="'"$USERNS"'/data.table/vanilla", log.files=c("tests/main.Rout"))'
+    - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
+    # mirror R dependencies
+    - Rscript -e 'source(Sys.getenv("CI_TOOLS")); mirror.packages(packages.dcf("DESCRIPTION", "all"), repos=c(Sys.getenv("CRAN_MIRROR"), Sys.getenv("BIOC_MIRROR")), repodir="bus/mirror-packages/cran")'
+    #- Rscript -e 'source(Sys.getenv("CI_TOOLS")); mirror.packages(type="win.binary", packages.dcf("DESCRIPTION", "all"), repos=c(Sys.getenv("CRAN_MIRROR"), Sys.getenv("BIOC_MIRROR")), repodir="bus/mirror-packages/cran")'
   artifacts:
+    expire_in: 2 weeks
     paths:
-      - public
+      - bus
 
-test-r-devel:
-  stage: test
-  image: docker.io/jangorecki/drd-pkg
+build:
+  stage: build
+  tags:
+    - linux
+  image: docker.io/jangorecki/r-builder
+  dependencies:
+  - mirror-packages
   script:
-    # install suggests
-    - RDscript -e 'install.packages(c("chron", "ggplot2", "plyr", "reshape", "reshape2", "testthat", "hexbin", "fastmatch", "nlme", "xts", "bit64", "gdata", "caret", "knitr", "curl", "zoo", "plm", "rmarkdown"))'
-    - RDscript -e 'source("https://bioconductor.org/biocLite.R"); biocLite("GenomicRanges")'
-    # build package
-    - RD CMD build .
-    # Some suggested deps might fail to install on R-devel
-    - export _R_CHECK_FORCE_SUGGESTS_=FALSE
-    # run check
-    - RD CMD check $(ls -1t *.tar.gz | head -n 1) --no-manual --as-cran
-    # produce artifacts
-    - RDscript -e '.libPaths(setdiff(.libPaths(), "/usr/lib/R/library")); drat::insertArtifacts(repodir="public/r-devel", repo.url="'"$USERNS"'/data.table/r-devel", log.files=c("tests/main.Rout"))'
+    - Rscript -e 'install.packages("knitr", repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
+    - rm -r bus
+    - R CMD build .
+    - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
+    - mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib/.
+    - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/build/cran"), addFiles=TRUE)'
   artifacts:
+    expire_in: 2 weeks
     paths:
-      - public
+      - bus
 
-test-r-3.0.0:
+test-r-release: # R-release most comprehensive tests, force all suggests
   stage: test
+  tags:
+    - linux
+  variables: # unlike CRAN
+    _R_CHECK_CRAN_INCOMING_: "FALSE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
+    _R_CHECK_FORCE_SUGGESTS_: "TRUE"
+    OPENBLAS_MAIN_FREE: "1"
+  image: docker.io/jangorecki/r-builder
+  dependencies:
+  - mirror-packages
+  - build
+  script:
+    - mkdir -p bus/$CI_BUILD_NAME
+    - Rscript -e 'source(Sys.getenv("CI_TOOLS")); if (length(pkgs<-packages.dcf("DESCRIPTION", "all"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
+    - cd bus/$CI_BUILD_NAME
+    - Rscript -e 'file.copy(download.packages("data.table", repos=file.path("file:",normalizePath("../build/cran")))[,2], ".")'
+    - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
+  artifacts:
+    expire_in: 2 weeks
+    when: always
+    paths:
+      - bus
+
+test-r-release-cran: # R-release CRAN check
+  stage: test
+  tags:
+    - linux
+  image: docker.io/jangorecki/r-builder
+  variables:
+    _R_CHECK_CRAN_INCOMING_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
+  dependencies:
+  - mirror-packages
+  - build
+  script:
+    - mkdir -p bus/$CI_BUILD_NAME
+    - Rscript -e 'source(Sys.getenv("CI_TOOLS")); if (length(pkgs<-packages.dcf("DESCRIPTION", "all"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
+    - cd bus/$CI_BUILD_NAME
+    - Rscript -e 'file.copy(download.packages("data.table", repos=file.path("file:",normalizePath("../build/cran")))[,2], ".")'
+    - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
+  artifacts:
+    expire_in: 2 weeks
+    when: always
+    paths:
+      - bus
+
+test-r-devel-cran: # R-devel CRAN check
+  stage: test
+  tags:
+    - linux
+  image: docker.io/jangorecki/drd-pkg # image could be replaced with ubuntu-based builder, this one is based on rocker/drd which is debian
+  variables:
+    _R_CHECK_CRAN_INCOMING_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
+  dependencies:
+  - mirror-packages
+  - build
+  script:
+    - mkdir -p bus/$CI_BUILD_NAME
+    - RDscript -e 'source(Sys.getenv("CI_TOOLS")); if (length(pkgs<-packages.dcf("DESCRIPTION", "all"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
+    - cd bus/$CI_BUILD_NAME
+    - Rscript -e 'file.copy(download.packages("data.table", repos=file.path("file:",normalizePath("../build/cran")))[,2], ".")'
+    - RD CMD check --as-cran --no-manual $(ls -1t data.table_*.tar.gz | head -n 1) # remove --no-manual when own image provided
+  artifacts:
+    expire_in: 2 weeks
+    when: always
+    paths:
+      - bus
+
+test-r-release-vanilla: # check minimal installation, no suggested deps, no vignettes or manuals
+  stage: test
+  tags:
+    - linux
+  image: docker.io/jangorecki/r-base-dev
+  dependencies:
+  - mirror-packages
+  - build
+  script:
+    - mkdir -p bus/$CI_BUILD_NAME
+    - Rscript -e 'source(Sys.getenv("CI_TOOLS")); if (length(pkgs<-packages.dcf("DESCRIPTION"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
+    - cd bus/$CI_BUILD_NAME
+    - Rscript -e 'file.copy(download.packages("data.table", repos=file.path("file:",normalizePath("../build/cran")))[,2], ".")'
+    - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
+  artifacts:
+    expire_in: 2 weeks
+    when: always
+    paths:
+      - bus
+
+test-r-3.0.0-cran:
+  stage: test
+  tags:
+    - linux
   image: docker.io/jangorecki/r-3.0.0
+  variables:
+    _R_CHECK_CRAN_INCOMING_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
+  dependencies:
+  - mirror-packages
+  - build
   script:
-    # build package
-    - R3 CMD build .
-    # run check
-    - export _R_CHECK_CRAN_INCOMING_=FALSE
-    - export _R_CHECK_FORCE_SUGGESTS_=FALSE
-    - R3 CMD check $(ls -1t *.tar.gz | head -n 1) --no-manual --as-cran
-    # produce artifacts
-    - R3script -e 'install.packages("drat", repos="https://jangorecki.gitlab.io/drat", method="curl")'
-    - R3script -e 'drat::insertArtifacts(repodir="public/r-3.0.0", repo.url="'"$USERNS"'/data.table/r-3.0.0", log.files=c("tests/main.Rout"))'
+    - mkdir -p bus/$CI_BUILD_NAME
+    - curl -O $CI_TOOLS
+    - R3script -e 'source("packages.R"); if (length(pkgs<-packages.dcf("DESCRIPTION", "all"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
+    - cd bus/$CI_BUILD_NAME
+    - R3script -e 'file.copy(download.packages("data.table", repos=file.path("file:",normalizePath("../build/cran")))[,2], ".")'
+    - R3 CMD check --no-manual --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
   artifacts:
+    expire_in: 2 weeks
+    when: always
     paths:
-      - public
+      - bus
+
+.test-r-release-windows:
+  stage: test
+  tags:
+    - windows # TODO provide machine
+  script: # TODO win scripts
+    - mkdir -p bus/$CI_BUILD_NAME
+    - Rscript -e 'source(Sys.getenv("CI_TOOLS")); if (length(pkgs<-packages.dcf("DESCRIPTION", "all"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
+    - cd bus/$CI_BUILD_NAME
+    - Rscript -e 'file.copy(download.packages("data.table", repos=file.path("file:",normalizePath("../build/cran")))[,2], ".")'
+    - R CMD build --no-manual --no-build-vignettes .
+    - R CMD check --no-manual --ignore-vignettes data.table_X.zip
+    # build windows binaries
+    - R CMD INSTALL --build data.table_X.zip
+  artifacts:
+    expire_in: 2 weeks
+    when: always
+    paths:
+      - bus
+
+integration: # merging all artifacts so multiple deploy jobs can build same repo
+  stage: integration
+  tags:
+    - linux
+  only:
+    - gl-ci-upgrade
+    - master
+  image: docker.io/jangorecki/r-builder
+  dependencies:
+  - mirror-packages
+  - build
+  - test-r-release
+  - test-r-release-cran
+  - test-r-devel-cran
+  - test-r-release-vanilla
+  - test-r-3.0.0-cran
+  script:
+    - mkdir -p bus/$CI_BUILD_NAME
+    # integration helpers, not in tools4pkgs branch, for multi pkgs use: pkg<-strsplit(job, "-", fixed=TRUE)[[1L]][2L]
+    - echo 'test.jobs<-c("test-r-release"="data.table","test-r-release-cran"="data.table","test-r-devel-cran"="data.table","test-r-release-vanilla"="data.table","test-r-3.0.0-cran"="data.table")' > integration.R
+    - echo 'lib.copy<-function(lib.from, repodir="bus/integration/cran"){ pkgs.from<-list.dirs(lib.from, recursive=FALSE); pkgs.to<-list.dirs(lib.to<-file.path(repodir,"library"), recursive=FALSE); pkg.copy<-function(pkg.from, lib.to){ pkg<-basename(pkg.from); dir.create(file.path(lib.to, pkg), recursive=TRUE); lib.dirs<-intersect(c("html","doc"), all.lib.dirs<-list.dirs(pkg.from, full.names=FALSE)); ans1<-setNames(file.copy(file.path(pkg.from, lib.dirs), file.path(lib.to, pkg), recursive=TRUE), lib.dirs); lib.files<-setdiff(list.files(pkg.from), all.lib.dirs); ans2<-setNames(file.copy(file.path(pkg.from, lib.files), file.path(lib.to, pkg)), lib.files); all(ans1, ans2)}; pkgs.from.new<-pkgs.from[!basename(pkgs.from) %in% basename(pkgs.to)]; setNames(sapply(pkgs.from.new, pkg.copy, lib.to=lib.to), basename(pkgs.from.new)) }' >> integration.R
+    - echo 'doc.copy<-function(repodir="bus/integration/cran"){ cp1<-c("COPYING","AUTHORS","THANKS"); ans1<-setNames(file.copy(file.path(R.home("doc"), cp1), file.path(repodir, "doc", cp1)), cp1); cp2<-c("html","manual"); ans2<-setNames(file.copy(file.path(R.home("doc"), cp2), file.path(repodir,"doc"), recursive=TRUE), cp2); c(ans1, ans2) }' >> integration.R
+    - echo 'check.copy<-function(job, repodir="bus/integration/cran"){ dir.create(job.checks<-file.path(repodir, "web", "checks", pkg<-"data.table", job), recursive=TRUE); all(file.copy(file.path("bus", sprintf("%s/%s.Rcheck", job, pkg), c("00install.out","00check.log")), job.checks)) }' >> integration.R
+    - echo 'pdf.copy<-function(job, repodir="bus/integration/cran"){ dir.create(pkg.to<-file.path(repodir,"web","packages",pkg<-"data.table"), recursive=TRUE); file.copy(file.path("bus", job, sprintf("%s.Rcheck", pkg), sprintf("%s-manual.pdf",pkg)), to=file.path(pkg.to, sprintf("%s.pdf",pkg))) }' >> integration.R
+    - echo 'check.test<-function(job) { check<-readLines(file.path("bus", job, sprintf("%s.Rcheck", pkg<-"data.table"), "00check.log")); check[length(check)] }' >> integration.R
+    #- echo '' >> integration.R
+    # TODO: testing CRAN check results raise error so deploy wont start if there are check issues
+    - Rscript -e 'source("integration.R"); sapply(names(test.jobs), check.test, simplify=FALSE)'
+    # merge mirror-packages and R devel packages
+    - cp -R bus/mirror-packages/cran bus/$CI_BUILD_NAME/
+    - mkdir -p bus/$CI_BUILD_NAME/cran/library bus/$CI_BUILD_NAME/cran/doc
+    - mv $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib
+    - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran"), addFiles=TRUE)'
+    # install all pkgs to render html and double check successful installation of all devel packages
+    - mkdir -p /tmp/opencran/library /tmp/opencran/doc/html
+    - Rscript -e 'install.packages("data.table", dependencies=TRUE, lib="/tmp/opencran/library", repos=file.path("file:",normalizePath("bus/integration/cran")), INSTALL_opts="--html", quiet=TRUE)'
+    - Rscript -e 'sapply("data.table", packageVersion, lib.loc="/tmp/opencran/library", simplify=FALSE)'
+    # R docs, html, css, icons
+    - Rscript -e 'source("integration.R"); doc.copy(repodir="/tmp/opencran")'
+    # Update packages.html, rewrite file:/ to relative path
+    - Rscript -e 'setwd("/tmp/opencran/doc/html"); make.packages.html(lib.loc="../../library", docdir="/tmp/opencran/doc"); tmp<-readLines(f<-"/tmp/opencran/doc/html/packages.html"); writeLines(gsub("file:///../../library","../../library", tmp, fixed=TRUE), f)'
+    - mv /tmp/opencran/doc bus/integration/cran/
+    # library
+    - Rscript -e 'source("integration.R"); lib.copy(lib.from="/tmp/opencran/library")'
+    # web/checks/$pkg/$job: 00install.out, 00check.log
+    - Rscript -e 'source("integration.R"); sapply(names(test.jobs), check.copy)'
+    # web/packages - here is only single package
+    #- Rscript -e 'source("integration.R"); sapply(sprintf("test-%s-r-release", unique(test.jobs)), pdf.copy)'
+    - Rscript -e 'source("integration.R"); pdf.copy("test-r-release")'
+    # TODO: web/checks/check_results_$pkg.html
+    # https://github.com/wch/r-source/blob/trunk/src/library/tools/R/CRANtools.R
+    # TODO: web/packages/$pkg/index.html
+  artifacts:
+    expire_in: 2 weeks
+    paths:
+      - bus
 
 pages:
-  only:
-    - master
   stage: deploy
-  image: docker.io/alpine
+  environment: production
+  tags:
+    - linux
+  only:
+    - gl-ci-upgrade
+    - master
+  image: docker.io/ubuntu
+  dependencies:
+  - integration
   script:
-    - ls -lR public
+    - mkdir -p public
+    - cp -r bus/integration/cran/* public
+    - cat public/src/contrib/PACKAGES
   artifacts:
+    expire_in: 2 weeks
     paths:
       - public

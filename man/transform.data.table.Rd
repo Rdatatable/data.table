@@ -6,9 +6,9 @@
 \title{ Data table utilities }
 \description{
   Utilities for \code{data.table} transformation.
-  
+
   \strong{\code{transform} by group is particularly slow. Please use \code{:=} by group instead.}
-  
+
   \code{within}, \code{transform} and other similar functions in \code{data.table} are not just provided for users who expect them to work, but for non-data.table-aware packages to retain keys, for example. Hopefully the (much) faster and more convenient \code{data.table} syntax will be used in time. See examples.
 }
 \usage{
@@ -29,7 +29,7 @@ added, or removed) are updated in the returned data.table.
 
 Note that \code{transform} will keep the key of the
 \code{data.table} provided the \emph{targets} of the transform (i.e. the
-columns that appear in \ldots) are not in the key of the data.table. 
+columns that appear in \ldots) are not in the key of the data.table.
 \code{within} also retains the key provided the key columns are not \emph{touched}.
 }
 \value{

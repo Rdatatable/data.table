@@ -5,7 +5,7 @@
   In \code{data.table} parlance, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory, which is as large as one column.. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function \code{data.table} provides.
 
   \code{setDT} converts lists (both named and unnamed) and data.frames to data.tables \emph{by reference}. This feature was requested on \href{http://stackoverflow.com/questions/20345022/convert-a-data-frame-to-a-data-table-without-copy}{Stackoverflow}.
-  
+
 }
 \usage{
 setDT(x, keep.rownames=FALSE, key=NULL, check.names=FALSE)
@@ -30,15 +30,15 @@ setDT(x, keep.rownames=FALSE, key=NULL, check.names=FALSE)
 \examples{
 
 set.seed(45L)
-X = data.frame(A=sample(3, 10, TRUE), 
-         B=sample(letters[1:3], 10, TRUE), 
+X = data.frame(A=sample(3, 10, TRUE),
+         B=sample(letters[1:3], 10, TRUE),
          C=sample(10), stringsAsFactors=FALSE)
 
-# Convert X to data.table by reference and 
+# Convert X to data.table by reference and
 # get the frequency of each "A,B" combination
 setDT(X)[, .N, by=.(A,B)]
 
-# convert list to data.table 
+# convert list to data.table
 # autofill names
 X = list(1:4, letters[1:4])
 setDT(X)

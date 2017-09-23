@@ -14,12 +14,12 @@ SEXP dt_na(SEXP x, SEXP cols) {
     int i, j, n=0, this;
     double *dv;
     SEXP v, ans, class;
-    
+
     if (!isNewList(x)) error("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'", type2char(TYPEOF(x)));
     if (!isInteger(cols)) error("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'", type2char(TYPEOF(cols)));
     for (i=0; i<LENGTH(cols); i++) {
         this = INTEGER(cols)[i];
-        if (this<1 || this>LENGTH(x)) 
+        if (this<1 || this>LENGTH(x))
             error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
         if (!n) n = length(VECTOR_ELT(x, this-1));
     }
@@ -41,7 +41,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
             for (j=0; j<n; j++) LOGICAL(ans)[j] |= (STRING_ELT(v, j) == NA_STRING);
             break;
         case REALSXP:
-            class = getAttrib(v, R_ClassSymbol);        
+            class = getAttrib(v, R_ClassSymbol);
             if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
                 dv = (double *)REAL(v);
                 for (j=0; j<n; j++) {
@@ -52,7 +52,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
                 for (j=0; j<n; j++) LOGICAL(ans)[j] |= ISNAN(REAL(v)[j]);
             }
             break;
-        case RAWSXP: 
+        case RAWSXP:
             // no such thing as a raw NA
             // vector already initialised to all 0's
             break;
@@ -85,7 +85,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
     ans = (ties == MEAN) ? PROTECT(allocVector(REALSXP, n)) : PROTECT(allocVector(INTSXP, n));
     if (n > 0) {
         switch (ties) {
-            case MEAN : 
+            case MEAN :
             for (i = 0; i < length(xstartArg); i++) {
                 for (j = xstart[i]-1; j < xstart[i]+xlen[i]-1; j++)
                     REAL(ans)[xorder[j]-1] = (2*xstart[i]+xlen[i]-1)/2.0;
@@ -136,12 +136,12 @@ SEXP anyNA(SEXP x, SEXP cols) {
     int i, j, n=0, this;
     double *dv;
     SEXP v, ans, class;
-    
+
     if (!isNewList(x)) error("Internal error. Argument 'x' to CanyNA is type '%s' not 'list'", type2char(TYPEOF(x)));
     if (!isInteger(cols)) error("Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'", type2char(TYPEOF(cols)));
     for (i=0; i<LENGTH(cols); i++) {
         this = INTEGER(cols)[i];
-        if (this<1 || this>LENGTH(x)) 
+        if (this<1 || this>LENGTH(x))
             error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
         if (!n) n = length(VECTOR_ELT(x, this-1));
     }
@@ -167,7 +167,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
             if (j < n) LOGICAL(ans)[0] = 1;
             break;
         case REALSXP:
-            class = getAttrib(v, R_ClassSymbol);        
+            class = getAttrib(v, R_ClassSymbol);
             if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
                 dv = (double *)REAL(v);
                 for (j=0; j<n; j++) {
@@ -182,7 +182,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
                 if (j < n) LOGICAL(ans)[0] = 1;
             }
             break;
-        case RAWSXP: 
+        case RAWSXP:
             // no such thing as a raw NA
             // vector already initialised to all 0's
             break;

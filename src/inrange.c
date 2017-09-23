@@ -12,7 +12,7 @@ SEXP inrange(SEXP ansArg, SEXP xoArg, SEXP startsArg, SEXP lenArg) {
             ans[nxo ? xo[j]-1 : j] = 1;
         }
     }
-    // old complicated logic which is only really useful when matches 
+    // old complicated logic which is only really useful when matches
     // contains A LOT of overlapping indices.. rare in real examples.
     // so switched to simpler logic above.. retaining it commented for now.
 

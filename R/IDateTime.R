@@ -27,7 +27,7 @@ as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
 
 as.IDate.IDate <- function(x, ...) x
 
-as.Date.IDate <- function(x, ...) { 
+as.Date.IDate <- function(x, ...) {
     structure(as.numeric(x), class="Date")
 }
 
@@ -60,7 +60,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
 
 #Adapted from `+.Date`
 `+.IDate` <- function (e1, e2) {
-    if (nargs() == 1L) 
+    if (nargs() == 1L)
         return(e1)
     if (inherits(e1, "difftime") || inherits(e2, "difftime"))
         stop("difftime objects may not be added to IDate. Use plain integer instead of difftime.")
@@ -69,17 +69,17 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
         return(`+.Date`(e1,e2))
         # IDate doesn't support fractional days; revert to base Date
     }
-    if (inherits(e1, "Date") && inherits(e2, "Date")) 
+    if (inherits(e1, "Date") && inherits(e2, "Date"))
         stop("binary + is not defined for \"IDate\" objects")
     structure(as.integer(unclass(e1) + unclass(e2)), class = c("IDate", "Date"))
 }
 
 `-.IDate` <- function (e1, e2) {
-    if (!inherits(e1, "IDate")) 
+    if (!inherits(e1, "IDate"))
         stop("can only subtract from \"IDate\" objects")
     if (storage.mode(e1) != "integer")
         stop("Internal error: storage mode of IDate is somehow no longer integer")
-    if (nargs() == 1) 
+    if (nargs() == 1)
         stop("unary - is not defined for \"IDate\" objects")
     if (inherits(e2, "difftime"))
         stop("difftime objects may not be subtracted from IDate. Use plain integer instead of difftime.")
@@ -180,7 +180,7 @@ print.ITime <- function(x, ...) {
     print(format(x))
 }
 
-rep.ITime <- function (x, ...) 
+rep.ITime <- function (x, ...)
 {
     y <- rep(unclass(x), ...)
     structure(y, class = "ITime")
@@ -240,7 +240,7 @@ as.chron.IDate <- function(x, time = NULL, ...) {
             chron::chron(dates. = chron::as.chron(as.Date(x)), times. = chron::as.chron(time))
         } else {
             chron::chron(dates. = chron::as.chron(as.Date(x)))
-        }    
+        }
     }
 }
 
@@ -250,7 +250,7 @@ as.chron.ITime <- function(x, date = NULL, ...) {
             chron::chron(dates. = chron::as.chron(as.Date(date)), times. = chron::as.chron(x))
         } else {
             chron::chron(times. = as.character(x))
-        }  
+        }
     }
 }
 
@@ -282,20 +282,20 @@ week    <- function(x) yday(x) %/% 7L + 1L
 isoweek <- function(x) {
   #ISO 8601-conformant week, as described at
   #  https://en.wikipedia.org/wiki/ISO_week_date
-  
+
   #Approach:
   # * Find nearest Thursday to each element of x
   # * Find the number of weeks having passed between
   #   January 1st of the year of the nearest Thursdays and x
-  
+
   xlt <- as.POSIXlt(x)
-  
+
   #We want Thursday to be 3 (4 by default in POSIXlt), so
   #  subtract 1 and re-divide; also, POSIXlt increment by seconds
   nearest_thurs <- xlt + (3 - ((xlt$wday - 1) %% 7)) * 86400
-  
+
   year_start <- as.POSIXct(paste0(as.POSIXlt(nearest_thurs)$year + 1900L, "-01-01"))
-  
+
   as.integer(1 + unclass(difftime(nearest_thurs, year_start, units = "days")) %/% 7)
 }
 month   <- function(x) as.POSIXlt(x)$mon + 1L

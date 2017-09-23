@@ -2,9 +2,12 @@
 #define dt_FREAD_H
 #include <stdint.h>  // uint32_t
 #include <stdlib.h>  // size_t
+#include <stdbool.h> // bool
 #ifdef DTPY
+  #include "myomp.h"
   #include "py_fread.h"
 #else
+  #include <omp.h>
   #include "freadR.h"
 #endif
 
@@ -13,11 +16,15 @@
 typedef enum {
   NEG = -1,       // dummy to force signed type; sign bit used for out-of-sample type bump management
   CT_DROP = 0,    // skip column requested by user; it is navigated as a string column with the prevailing quoteRule
-  CT_BOOL8,       // int8_t; first type enum value must be 1 not 0 so that it can be negated to -1.
-  CT_INT32_BARE,  // int32_t bare bones fast
-  CT_INT32_FULL,  // int32_t if spaces or quotes can surround the value
+  CT_BOOL8_N,     // int8_t; first enum value must be 1 not 0(=CT_DROP) so that it can be negated to -1.
+  CT_BOOL8_U,
+  CT_BOOL8_T,
+  CT_BOOL8_L,
+  CT_INT32,       // int32_t
   CT_INT64,       // int64_t
   CT_FLOAT64,     // double (64-bit IEEE 754 float)
+  CT_FLOAT64_EXT, // double, with NAN/INF literals
+  CT_FLOAT64_HEX, // double, in hexadecimal format
   CT_STRING,      // lenOff struct below
   NUMTYPE         // placeholder for the number of types including drop; used for allocation and loop bounds
 } colType;
@@ -25,6 +32,7 @@ typedef enum {
 extern int8_t typeSize[NUMTYPE];
 extern const char typeName[NUMTYPE][10];
 extern const long double pow10lookup[701];
+extern const uint8_t hexdigits[256];
 
 
 // Strings are pushed by fread_main using an offset from an anchor address plus
@@ -102,21 +110,21 @@ typedef struct freadMainArgs
   int8_t header;
 
   // Strip the whitespace from fields (usually True).
-  _Bool stripWhite;
+  bool stripWhite;
 
   // If True, empty lines in the file will be skipped. Otherwise empty lines
   // will produce rows of NAs.
-  _Bool skipEmptyLines;
+  bool skipEmptyLines;
 
   // If True, then rows are allowed to have variable number of columns, and
   // all ragged rows will be filled with NAs on the right.
-  _Bool fill;
+  bool fill;
 
   // If True, then emit progress messages during the parsing.
-  _Bool showProgress;
+  bool showProgress;
 
   // Emit extra debug-level information.
-  _Bool verbose;
+  bool verbose;
 
   // If true, then this field instructs `fread` to treat warnings as errors. In
   // particular in R this setting is turned on whenever `option(warn=2)` is set,
@@ -124,9 +132,13 @@ typedef struct freadMainArgs
   // However `fread` still needs to know that the exception will be raised, so
   // that it can do proper cleanup / resource deallocation -- otherwise memory
   // leaks would occur.
-  _Bool warningsAreErrors;
+  bool warningsAreErrors;
 
-  char _padding[2];
+  // If true, then column of 0s and 1s will be read as logical, otherwise it
+  // will become integer.
+  bool logical01;
+
+  char _padding[1];
 
   // Any additional implementation-specific parameters.
   FREAD_MAIN_ARGS_EXTRA_FIELDS
@@ -141,17 +153,17 @@ typedef struct ThreadLocalFreadParsingContext
 {
   // Pointer that serves as a starting point for all offsets within the `lenOff`
   // structs.
-  const char *restrict anchor;
+  const char *__restrict__ anchor;
 
   // Output buffers for values with different alignment requirements. For
   // example all `lenOff` columns, `double` columns and `int64` columns will be
-  // written to buffer `buff8`; at the same time `_Bool` and `int8` columns will
+  // written to buffer `buff8`; at the same time `bool` and `int8` columns will
   // be stored in memory buffer `buff1`.
   // Within each buffer the data is stored in row-major order, i.e. in the same
   // order as in the original CSV file.
-  void *restrict buff8;
-  void *restrict buff4;
-  void *restrict buff1;
+  void *__restrict__ buff8;
+  void *__restrict__ buff4;
+  void *__restrict__ buff1;
 
   // Size (in bytes) for a single row of data within the buffers `buff8`,
   // `buff4` and `buff1` correspondingly.
@@ -169,7 +181,7 @@ typedef struct ThreadLocalFreadParsingContext
   // Reference to the flag that controls the parser's execution. Setting this
   // flag to true will force parsing of the CSV file to terminate in the near
   // future.
-  _Bool *stopTeam;
+  bool *stopTeam;
 
   int threadn;
 
@@ -228,19 +240,21 @@ int freadMain(freadMainArgs args);
  *    this function may return `false` to request that fread abort reading
  *    the CSV file. Normally, this function should return `true`.
  */
-_Bool userOverride(int8_t *types, lenOff *colNames, const char *anchor,
-                   int ncol);
+bool userOverride(int8_t *types, lenOff *colNames, const char *anchor,
+                  int ncol);
 
 
 /**
- * This function is invoked by `freadMain` right before the main scan of the
- * input file. This function should allocate the resulting `DataTable` structure
- * and prepare to receive the data in chunks.
+ * This function is invoked by `freadMain` before the main scan of the input
+ * file. It should allocate the resulting `DataTable` structure and prepare
+ * to receive the data in chunks.
  *
- * If the input file needs to be re-read due to out-of-sample type exceptions,
- * then this function will be called second time with updated `types` array.
- * Then this function's responsibility is to update the allocation of those
- * columns properly.
+ * Additionally, this function will be invoked if the main scan was
+ * unsuccessful. This may happen either because there were out-of-sample type
+ * exceptions (i.e. a value was found in one of the columns that wasn't
+ * acceptable for that column's type), or if the initial estimate of the file's
+ * number of rows turned out to be too conservative, and more rows has to be
+ * appended to the DataTable.
  *
  * @param types
  *     array of type codes for each column. Same as in the `userOverride`
@@ -334,7 +348,7 @@ void freeThreadContext(ThreadLocalFreadParsingContext *ctx);
 void progress(double percent/*[0,1]*/, double ETA/*secs*/);
 
 
-void freadCleanup(void);
+bool freadCleanup(void);
 double wallclock(void);
 
 #endif

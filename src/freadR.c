@@ -28,9 +28,9 @@ as.read.table=true/false option.  Or fread.table and fread.csv (see http://r.789
 
 #define NUT  NUMTYPE+2  // +1 for "numeric" alias for "double"; +1 for CLASS fallback using as.class() at R level afterwards
 
-static int  typeSxp[NUT] =     { NILSXP, LGLSXP,   INTSXP,        INTSXP,        REALSXP,    REALSXP,   STRSXP,     REALSXP,   STRSXP   };
-static char typeRName[NUT][10]={"drop", "logical","integer",     "integer",     "integer64","double",  "character","numeric", "CLASS"   };
-static int  typeEnum[NUT] =    { CT_DROP,CT_BOOL8, CT_INT32_BARE, CT_INT32_FULL, CT_INT64,   CT_FLOAT64,CT_STRING,  CT_FLOAT64,CT_STRING};
+static int  typeSxp[NUT] =     {NILSXP,  LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        STRSXP,      REALSXP,    STRSXP   };
+static char typeRName[NUT][10]={"drop",  "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "character", "numeric",  "CLASS"  };
+static int  typeEnum[NUT] =    {CT_DROP, CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_STRING,   CT_FLOAT64, CT_STRING};
 static colType readInt64As=CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
@@ -41,6 +41,7 @@ static SEXP DT;
 static int8_t *type;
 static int8_t *size;
 static int ncol = 0;
+static int64_t dtnrows = 0;
 static int protecti=0;
 static _Bool verbose = 0;
 static _Bool warningsAreErrors = 0;
@@ -63,6 +64,7 @@ SEXP freadR(
   SEXP nThreadArg,
   SEXP verboseArg,
   SEXP warnings2errorsArg,
+  SEXP logical01Arg,
 
   // extras needed by callbacks from freadMain
   SEXP selectArg,
@@ -77,17 +79,18 @@ SEXP freadR(
   freadMainArgs args;
   protecti=0;
   ncol = 0;
+  dtnrows = 0;
   const char *ch, *ch2;
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
     error("fread input must be a single character string: a filename or the data itself");
   ch = ch2 = (const char *)CHAR(STRING_ELT(inputArg,0));
-  while (*ch2!='\n' && *ch2!='\0') ch2++;
-  args.input = (*ch2=='\n') ? ch : R_ExpandFileName(ch); // for convenience so user doesn't have to call path.expand()
+  while (*ch2!='\n' && *ch2!='\r' && *ch2!='\0') ch2++;
+  args.input = (*ch2=='\0') ? R_ExpandFileName(ch) : ch; // for convenience so user doesn't have to call path.expand()
 
   ch = args.input;
-  while (*ch!='\0' && *ch!='\n') ch++;
-  if (*ch=='\n' || args.input[0]=='\0') {
-    if (verbose) DTPRINT("Input contains a \\n (or is \"\"). Taking this to be text input (not a filename)\n");
+  while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
+  if (*ch!='\0' || args.input[0]=='\0') {
+    if (verbose) DTPRINT("Input contains a \\n or is \"\". Taking this to be text input (not a filename)\n");
     args.filename = NULL;
   } else {
     if (verbose) DTPRINT("Input contains no \\n. Taking this to be a filename to open\n");
@@ -121,6 +124,7 @@ SEXP freadR(
     if (INTEGER(nrowLimitArg)[0]>=0) args.nrowLimit = (int64_t)INTEGER(nrowLimitArg)[0];
   }
 
+  args.logical01 = LOGICAL(logical01Arg)[0];
   args.skipNrow=0;
   args.skipString=NULL;
   if (isString(skipArg)) {
@@ -190,7 +194,7 @@ SEXP freadR(
 _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 {
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
-  if (typeSize[CT_BOOL8]!=1) STOP("Internal error: typeSize[CT_BOOL8] != 1");
+  if (typeSize[CT_BOOL8_N]!=1) STOP("Internal error: typeSize[CT_BOOL8_N] != 1");
   if (typeSize[CT_STRING]!=8) STOP("Internal error: typeSize[CT_STRING] != 1");
   colNamesSxp = NULL;
   if (colNames!=NULL) {
@@ -301,7 +305,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       int k = isInteger(tt) ? INTEGER(tt)[i] : (int)REAL(tt)[i];
       if (k == NA_INTEGER) continue;
       if (k<1 || k>ncol) STOP("Column number %d (select[%d]) is out of range [1,ncol=%d]",k,i+1,ncol);
-      if (type[k-1]<0) STOP("Column number %d ('%s') has been selected twice by select=", k, STRING_ELT(colNames,k-1));
+      if (type[k-1]<0) STOP("Column number %d ('%s') has been selected twice by select=", k, CHAR(STRING_ELT(colNamesSxp,k-1)));
       type[k-1] *= -1; // detect and error on duplicates on all types without calling duplicated() at all
     }
     for (int i=0; i<ncol; i++) {
@@ -315,11 +319,12 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 
 size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size_t allocNrow) {
   // save inputs for use by pushBuffer
-  int newDT = (ncol == 0);
   size = sizeArg;
   type = typeArg;
+  int newDT = (ncol == 0);
   if (newDT) {
     ncol = ncolArg;
+    dtnrows = allocNrow;
     DT=PROTECT(allocVector(VECSXP,ncol-ndrop));  // safer to leave over allocation to alloc.col on return in fread.R
     protecti++;
     if (ndrop==0) {
@@ -332,14 +337,27 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
       }
     }
   }
+  // TODO: move DT size calculation into a separate function (since the final size is different from the initial size anyways)
   size_t DTbytes = SIZEOF(DT)*(ncol-ndrop)*2; // the VECSXP and its column names (exclude global character cache usage)
-  for (int i=0,resi=0; i<ncol; i++) {
+
+  // For each column we could have one of the following cases:
+  //   * if the DataTable is "new", then make a new vector
+  //   * if the column's type has changed, then replace it with a new vector
+  //     (however if column's type[i] is negative, then it means we're skipping
+  //     the column in the rerun, and its type hasn't actually changed).
+  //   * if dtnrows≠allocNrow and the column's type has not changed, then that
+  //     column needs to be re-alloced (using growVector).
+  //   * otherwise leave the column as-is.
+  for (int i=0, resi=0; i<ncol; i++) {
     if (type[i] == CT_DROP) continue;
-    int oldSxpType = newDT? -1 : TYPEOF(VECTOR_ELT(DT, resi));
-    int oldIsInt64 = newDT? 0 : INHERITS(VECTOR_ELT(DT, resi), char_integer64);
+    SEXP col = VECTOR_ELT(DT, resi);
+    int oldIsInt64 = newDT? 0 : INHERITS(col, char_integer64);
     int newIsInt64 = type[i] == CT_INT64;
-    if (type[i] > 0 && (oldSxpType != typeSxp[type[i]] || oldIsInt64 != newIsInt64)) {
-      SEXP thiscol = allocVector(typeSxp[type[i]], allocNrow);
+    int typeChanged = (type[i] > 0) && (newDT || TYPEOF(col) != typeSxp[type[i]] || oldIsInt64 != newIsInt64);
+    int nrowChanged = (allocNrow != dtnrows);
+    if (typeChanged || nrowChanged) {
+      SEXP thiscol = typeChanged ? allocVector(typeSxp[type[i]], allocNrow)
+                                 : growVector(col, allocNrow);
       SET_VECTOR_ELT(DT,resi,thiscol);     // no need to PROTECT thiscol, see R-exts 5.9.1
       if (type[i]==CT_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(char_integer64));
       SET_TRUELENGTH(thiscol, allocNrow);
@@ -347,6 +365,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     }
     resi++;
   }
+  dtnrows = allocNrow;
   return DTbytes;
 }
 
@@ -354,7 +373,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
 void setFinalNrow(size_t nrow) {
   // TODO realloc
   if (length(DT)) {
-    if (nrow == length(VECTOR_ELT(DT, 0)))
+    if (nrow == dtnrows)
       return;
     for (int i=0; i<LENGTH(DT); i++) {
       SETLENGTH(VECTOR_ELT(DT,i), nrow);
@@ -438,7 +457,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
         }
       } else
       if (thisSize == 1) {
-        if (type[j] != CT_BOOL8) STOP("Field size is 1 but the field is of type %d\n", type[j]);
+        if (type[j] > CT_BOOL8_L) STOP("Field size is 1 but the field is of type %d\n", type[j]);
         Rboolean *dest = (Rboolean *)((char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*sizeof(Rboolean));
         char *src1 = (char*)buff1 + off1;
         for (int i=0; i<nRows; i++) {
@@ -478,7 +497,7 @@ void STOP(const char *format, ...) {
   vsnprintf(msg, 2000, format, args);
   va_end(args);
   freadCleanup();
-  error(msg);
+  error("%s", msg);
 }
 
 void freadLastWarning(const char *format, ...) {

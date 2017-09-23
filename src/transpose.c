@@ -9,7 +9,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
     SEXPTYPE type, maxtype=0;
     Rboolean coerce = FALSE;
 
-    if (!isNewList(l)) 
+    if (!isNewList(l))
         error("l must be a list.");
     if (!length(l))
         return(duplicate(l));
@@ -24,7 +24,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
     R_len_t *len  = (R_len_t *)R_alloc(ln, sizeof(R_len_t));
     for (i=0; i<ln; i++) {
         li = VECTOR_ELT(l, i);
-        if (!isVectorAtomic(li) && !isNull(li)) 
+        if (!isVectorAtomic(li) && !isNull(li))
             error("Item %d of list input is not an atomic vector", i+1);
         len[i] = length(li);
         if (len[i] > maxlen)
@@ -84,7 +84,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
                 }
             break;
             default :
-                error("Unsupported column type '%s'", type2char(maxtype)); 
+                error("Unsupported column type '%s'", type2char(maxtype));
         }
         if (coerce) {
             coerce = FALSE;

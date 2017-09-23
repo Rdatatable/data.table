@@ -1,4 +1,2 @@
 
-### Project overview is on the GitHub Wiki tab, our [HOMEPAGE](http://r-datatable.com)
-
-
+### Overview is on the project's [homepage](http://r-datatable.com).

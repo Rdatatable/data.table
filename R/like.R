@@ -1,6 +1,6 @@
 like <- function(vector, pattern)
 {
-    # Intended for use with a data.table 'where' 
+    # Intended for use with a data.table 'where'
     # Don't use * or % like SQL's like.  Uses regexpr syntax - more powerful.
     if (is.factor(vector)) {
         as.integer(vector) %in% grep(pattern,levels(vector))
