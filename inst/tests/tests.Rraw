@@ -9269,7 +9269,7 @@ test(1695.13, x %between% c(3, 7), logical(0))
 old_opt = getOption("datatable.verbose")
 options(datatable.verbose = TRUE)
 x = data.table(A = 10:17)
-test(1696.0, any(grepl("bmerge", capture.output(x[A %inrange% 13:14]))), TRUE)
+test(1696.0, x[A %inrange% 13:14], output="bmerge")
 # restore verbosity
 options(datatable.verbose = old_opt)
 
@@ -10693,7 +10693,6 @@ test(1830.8, identical(
   fread("G\n0.000000000000000000000000000000000000000000000000000000000000449548\n"),
   data.table(G=c(4.49548e-61))))
 
-
 # Test that integers just above 128 or 256 characters in length parse as strings, not as integers/floats
 # This guards against potential overflows in the count of digits
 src1 = paste0(rep("1234567890", 13), collapse="")  # length = 130, slightly above 128
@@ -10703,6 +10702,12 @@ test(1831.2, fread(paste0("A\n", src2)), data.table(A=src2))
 test(1831.3, fread(paste0("A\n", src2, ".33")), data.table(A=paste0(src2, ".33")))
 test(1831.4, fread(paste0("A\n", "1.", src2)), data.table(A=paste0("1.", src2)))
 
+DT = as.data.table(matrix(5L, nrow=10, ncol=10))
+test(1832.1, fwrite(DT, f<-tempfile(), verbose=TRUE), output="Column writers")
+DT = as.data.table(matrix(5L, nrow=10, ncol=60))
+# Using capture.output directly to look for the "..." because test(,output=) intercepts [] for convenience elsewhere
+test(1832.2, any(grepl("^Column writers.* [.][.][.] ", capture.output(fwrite(DT, f, verbose=TRUE)))))
+unlink(f)
 
 
 ##########################

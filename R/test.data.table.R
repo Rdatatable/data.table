@@ -78,12 +78,14 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     all.equal.result = TRUE
     assign("ntest", get("ntest", parent.frame()) + 1, parent.frame(), inherits=TRUE)   # bump number of tests run
     assign("lastnum", num, parent.frame(), inherits=TRUE)
-    v = getOption("datatable.verbose")
-    i = interactive()   # exists(".devtesting",parent.frame()) && get(".devtesting", parent.frame())
-    if (v || i) {
-        cat(if (i) "\r" else "\n\n", "Running test id ", num, "     ",sep="")
-    }
-    # TO DO: every line that could possibly fail should ideally be inside test()
+
+    cat("\rRunning test id", num, "     ")
+    flush.console()
+    # This flush is for Windows to make sure last test number is written to file in CRAN and win-builder output where
+    # console output is captured. \r seems especially prone to not being auto flushed. The downside is that the last 13
+    # lines output are filled with the last 13 "running test num" lines rather than the last error output, but that's
+    # better than the dev-time-lost when it crashes and it actually crashed much later than the last test number visible.
+
     xsub = substitute(x)
     ysub = substitute(y)
     if (is.null(output)) err <<- try(x,TRUE)

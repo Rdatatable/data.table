@@ -15,12 +15,12 @@ static const char *sep2start, *sep2end;
 
 // Non-agnostic helpers ...
 
-const char *getString(SEXP *col, int row) {   // TODO: inline for use in fwrite.c
+const char *getString(SEXP *col, int64_t row) {   // TODO: inline for use in fwrite.c
   SEXP x = col[row];
   return x==NA_STRING ? NULL : CHAR(x);
 }
 
-const char *getCategString(SEXP col, int row) {
+const char *getCategString(SEXP col, int64_t row) {
   // the only writer that needs to have the header of the SEXP column, to get to the levels
   int x = INTEGER(col)[row];
   return x==NA_INTEGER ? NULL : CHAR(STRING_ELT(getAttrib(col, R_LevelsSymbol), x-1));

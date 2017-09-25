@@ -44,20 +44,19 @@ inline void write_chars(const char *x, char **pch)
   *pch = ch;
 }
 
-void writeBool8(int8_t *col, int row, char **pch)
+void writeBool8(int8_t *col, int64_t row, char **pch)
 {
   int8_t x = col[row];
-  if (x==INT8_MIN) return;
   char *ch = *pch;
-  *ch++ = '0'+x;
-  *pch = ch;
+  *ch++ = '0'+(x==1);
+  *pch = ch-(x==INT8_MIN);  // if NA then step back, to save a branch
 }
 
-void writeBool32(int32_t *col, int row, char **pch)
+void writeBool32(int32_t *col, int64_t row, char **pch)
 {
   int32_t x = col[row];
   char *ch = *pch;
-  if (x==INT32_MIN) {
+  if (x==INT32_MIN) {  // TODO: when na=='\0' as recommended, use a branchless writer
     write_chars(na, &ch);
   } else {
     *ch++ = '0'+x;
@@ -65,7 +64,7 @@ void writeBool32(int32_t *col, int row, char **pch)
   *pch = ch;
 }
 
-void writeBool32AsString(int32_t *col, int row, char **pch)
+void writeBool32AsString(int32_t *col, int64_t row, char **pch)
 {
   int32_t x = col[row];
   char *ch = *pch;
@@ -79,48 +78,45 @@ void writeBool32AsString(int32_t *col, int row, char **pch)
   *pch = ch;
 }
 
-static inline void write_positive_int(int64_t x, char **pch)
+static inline void reverse(char *upp, char *low)
 {
-  // Avoid log() for speed. Write backwards then reverse when we know how long.
-  // Separate function just because it's used if row numbers are asked for, too
-  // x >= 1
-  char *ch = *pch;
-  int width = 0;
-  while (x>0) { *ch++ = '0'+x%10; x /= 10; width++; }
-  for (int i=width/2; i>0; i--) {
-    char tmp=*(ch-i);
-    *(ch-i) = *(ch-width+i-1);
-    *(ch-width+i-1) = tmp;
+  upp--;
+  while (upp>low) {
+    char tmp = *upp;
+    *upp = *low;
+    *low = tmp;
+    upp--;
+    low++;
   }
-  *pch = ch;
 }
 
-void writeInt32(int32_t *col, int row, char **pch)
+void writeInt32(int32_t *col, int64_t row, char **pch)
 {
   char *ch = *pch;
   int32_t x = col[row];
-  if (x == 0) {
-    *ch++ = '0';
-  } else if (x == INT32_MIN) {
+  if (x == INT32_MIN) {
     write_chars(na, &ch);
   } else {
     if (x<0) { *ch++ = '-'; x=-x; }
-    write_positive_int((int64_t)x, &ch);
+    // Avoid log() for speed. Write backwards then reverse when we know how long.
+    char *low = ch;
+    do { *ch++ = '0'+x%10; x/=10; } while (x>0);
+    reverse(ch, low);
   }
   *pch = ch;
 }
 
-void writeInt64(int64_t *col, int row, char **pch)
+void writeInt64(int64_t *col, int64_t row, char **pch)
 {
   char *ch = *pch;
   int64_t x = col[row];
-  if (x == 0) {
-    *ch++ = '0';
-  } else if (x == INT64_MIN) {
+  if (x == INT64_MIN) {
     write_chars(na, &ch);
   } else {
     if (x<0) { *ch++ = '-'; x=-x; }
-    write_positive_int(x, &ch);
+    char *low = ch;
+    do { *ch++ = '0'+x%10; x/=10; } while (x>0);
+    reverse(ch, low);
   }
   *pch = ch;
 }
@@ -165,7 +161,7 @@ void genLookups() {
 }
 */
 
-void writeFloat64(double *col, int row, char **pch)
+void writeFloat64(double *col, int64_t row, char **pch)
 {
   // hand-rolled / specialized for speed
   // *pch is safely the output destination with enough space (ensured via calculating maxLineLen up front)
@@ -315,7 +311,7 @@ static inline void write_time(int32_t x, char **pch)
   *pch = ch;
 }
 
-void writeITime(int32_t *col, int row, char **pch) {
+void writeITime(int32_t *col, int64_t row, char **pch) {
   write_time(col[row], pch);
 }
 
@@ -369,15 +365,15 @@ static inline void write_date(int32_t x, char **pch)
   *pch = ch;
 }
 
-void writeDateInt32(int32_t *col, int row, char **pch) {
+void writeDateInt32(int32_t *col, int64_t row, char **pch) {
   write_date(col[row], pch);
 }
 
-void writeDateFloat64(double *col, int row, char **pch) {
+void writeDateFloat64(double *col, int64_t row, char **pch) {
   write_date(isfinite(col[row]) ? (int)(col[row]) : INT32_MIN, pch);
 }
 
-void writePOSIXct(double *col, int row, char **pch)
+void writePOSIXct(double *col, int64_t row, char **pch)
 {
   // Write ISO8601 UTC by default to encourage ISO standards, stymie ambiguity and for speed.
   // R internally represents POSIX datetime in UTC always. Its 'tzone' attribute can be ignored.
@@ -437,7 +433,7 @@ void writePOSIXct(double *col, int row, char **pch)
   *pch = ch;
 }
 
-void writeNanotime(int64_t *col, int row, char **pch)
+void writeNanotime(int64_t *col, int64_t row, char **pch)
 {
   int64_t x = col[row];
   char *ch = *pch;
@@ -520,12 +516,12 @@ static inline void write_string(const char *x, char **pch)
   *pch = ch;
 }
 
-void writeString(void *col, int row, char **pch)
+void writeString(void *col, int64_t row, char **pch)
 {
   write_string(getString(col, row), pch);
 }
 
-void writeCategString(void *col, int row, char **pch)
+void writeCategString(void *col, int64_t row, char **pch)
 {
   write_string(getCategString(col, row), pch);
 }
@@ -564,7 +560,6 @@ static inline void checkBuffer(
 
 void fwriteMain(fwriteMainArgs args)
 {
-
   double startTime = wallclock();
   double nextTime = startTime+2; // start printing progress meter in 2 sec if not completed by then
   double t0 = startTime;
@@ -609,11 +604,23 @@ void fwriteMain(fwriteMainArgs args)
   char *buff = malloc(buffSize);
   if (!buff) STOP("Unable to allocate %dMB for line length estimation: %s", buffMB, strerror(errno));
 
+  if (args.verbose) {
+    DTPRINT("Column writers: ");
+    if (args.ncol<=50) {
+      for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
+    } else {
+      for (int j=0; j<30; j++) DTPRINT("%d ", args.whichFun[j]);
+      DTPRINT("... ");
+      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
+    }
+    DTPRINT("\n");
+  }
+
   int maxLineLen = 0;
   int step = args.nrow<1000 ? 100 : args.nrow/10;
-  for (int start=0; start<args.nrow; start+=step) {
-    int end = (args.nrow-start)<100 ? args.nrow : start+100;
-    for (int i=start; i<end; i++) {
+  for (int64_t start=0; start<args.nrow; start+=step) {
+    int64_t end = (args.nrow-start)<100 ? args.nrow : start+100;
+    for (int64_t i=start; i<end; i++) {
       int thisLineLen=0;
       if (args.doRowNames) {
         if (args.rowNames) {
@@ -757,16 +764,17 @@ void fwriteMain(fwriteMainArgs args)
     int me = omp_get_thread_num();
 
     #pragma omp for ordered schedule(dynamic)
-    for(int start=0; start<args.nrow; start+=rowsPerBatch) {
+    for(int64_t start=0; start<args.nrow; start+=rowsPerBatch) {
       if (failed) continue;  // Not break. See comments above about #omp cancel
-      int end = ((args.nrow - start)<rowsPerBatch) ? args.nrow : start + rowsPerBatch;
-      for (int i=start; i<end; i++) {
+      int64_t end = ((args.nrow - start)<rowsPerBatch) ? args.nrow : start + rowsPerBatch;
+      for (int64_t i=start; i<end; i++) {
         char *lineStart = ch;
         // Tepid starts here (once at beginning of each per line)
         if (args.doRowNames) {
           if (args.rowNames==NULL) {
             if (doQuote!=0/*NA'auto' or true*/) *ch++='"';
-            write_positive_int(i+1, &ch);
+            int64_t rn = i+1;
+            writeInt64(&rn, 0, &ch);
             if (doQuote!=0) *ch++='"';
           } else {
             writeString(args.rowNames, i, &ch);

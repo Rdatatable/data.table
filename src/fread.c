@@ -1010,7 +1010,7 @@ int freadMain(freadMainArgs _args) {
       else
         DTPRINT("  None of the NAstrings look like numbers.\n");
     }
-    if (args.skipNrow) DTPRINT("  skip num lines = %lld\n", args.skipNrow);
+    if (args.skipNrow) DTPRINT("  skip num lines = %llu\n", (llu)args.skipNrow);
     if (args.skipString) DTPRINT("  skip to string = <<%s>>\n", args.skipString);
     DTPRINT("  show progress = %d\n", args.showProgress);
     DTPRINT("  0/1 column will be read as %s\n", args.logical01? "boolean" : "integer");
@@ -1244,14 +1244,14 @@ int freadMain(freadMainArgs _args) {
     pos = ch;
     ch = sof;
     while (ch<pos) line+=(*ch++=='\n');
-    if (verbose) DTPRINT("Found skip='%s' on line %d. Taking this to be header row or first row of data.\n",
-                         args.skipString, line);
+    if (verbose) DTPRINT("Found skip='%s' on line %llu. Taking this to be header row or first row of data.\n",
+                         args.skipString, (llu)line);
     ch = pos;
   }
   // Skip the first `skipNrow` lines of input.
   else if (args.skipNrow>0) {
     while (ch<eof && line<=args.skipNrow) line+=(*ch++=='\n');
-    if (ch>=eof) STOP("skip=%d but the input only has %d line%s", args.skipNrow, line, line>1?"s":"");
+    if (ch>=eof) STOP("skip=%llu but the input only has %llu line%s", (llu)args.skipNrow, (llu)line, line>1?"s":"");
     pos = ch;
   }
 
