@@ -150,12 +150,12 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
   \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \href{../doc/datatable-faq.html}{datatable-faq}.}
 
-  \item{on}{ Indicate which columns in \code{i} should be joined with columns in \code{x} along with the type of binary operator to join with. When specified, this overrides the keys set on \code{x} and \code{i}. There are multiple ways of specifying \code{on} argument:
+  \item{on}{ Indicate which columns in \code{x} should be joined with which columns in \code{i} along with the type of binary operator to join with (see non-equi joins below on this). When specified, this overrides the keys set on \code{x} and \code{i}. There are multiple ways of specifying the \code{on} argument:
         \itemize{
-            \item{As a character vector, e.g., \code{X[Y, on=c("a", "b")]}. This assumes both these columns are present in \code{X} and \code{Y}.}
-            \item{As a \emph{named} character vector, e.g., \code{X[Y, on=c(x="a", y="b")]}. This is useful when column names to join by are different between the two tables.
+            \item{As an unnamed character vector, e.g., \code{X[Y, on=c("a", "b")]}, used when columns \code{a} and \code{b} are common to both \code{X} and \code{Y}.}
+            \item{As a \emph{named} character vector, e.g., \code{X[Y, on=c(V1="a", V2="b")]}, used when the joining measure (e.g., ID) is shared between the two tables, but the column names are not. The values of \code{on} (\code{"a"} and \code{"b"} in the example) refer to column names in \code{i} and the corresponding names of \code{on} (\code{V1} and \code{V2} in the example) refer to column names in \code{x}. 
 
-            NB: \code{X[Y, on=c("a", y="b")]} is also possible if column \code{"a"} is common between the two tables.}
+            NB: shorthand like \code{X[Y, on=c("a", V2="b")]} is also possible if, e.g., column \code{"a"} is common between the two tables.}
             \item{For convenience during interactive scenarios, it is also possible to use \code{.()} syntax as \code{X[Y, on=.(a, b)]}.}
             \item{From v1.9.8, (non-equi) joins using binary operators \code{>=, >, <=, <} are also possible, e.g., \code{X[Y, on=c("x>=a", "y<=b")]}, or for interactive use as \code{X[Y, on=.(x>=a, y<=b)]}.}
         }
