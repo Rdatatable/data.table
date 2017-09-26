@@ -19,11 +19,23 @@ based on the columns (and column order) provided. It reorders the table
 \emph{by reference} and is therefore very memory efficient.
 
 Also \code{x[order(.)]} is now optimised internally to use data.table's fast
-order by default. data.table always reorders in C-locale. To sort by session
-locale, use \code{x[base::order(.)]} instead.
+order. data.table always reorders in C-locale. To sort by session
+locale, use \code{x[base::order(.)]} instead but with a speed penalty.
 In English locales, for example, this means data.table will sort upper-case letters before
-lower-case letters: in data.table, \code{B < a}
-whereas in \code{base::order} \code{B > a}.
+lower-case letters because in data.table, \code{B < a}
+whereas in \code{base::order} \code{B > a}. Note this makes no difference in most cases
+of data; e.g. ids where only uppercase or lowercase letters are used (`"AB123"<"AC234"`
+is always true, regardless), or country names and words which are consistently capitalized.
+For example, `"America" < "Brazil"` is not affected (it's always true in both base R and data.table),
+and neither is `"america" < "brazil"` (always true too); since the first letter is consistently
+capitalized. But, whether `"america" < "Brazil"` (the words are not consistently capitalized) is
+true or false in base R depends on the locale of your R session. In America it is true by default
+and false if you i) type `Sys.setlocale(locale="C")`, ii) the R session has been started in a C locale
+for you which can happen on servers/services (the locale comes from the environment the R session
+is started in). However, `"america" < "Brazil"` is always, consistently false in data.table which
+can be a surprise because it differs to base R by default in most regions. It is false because
+`"B"<"a"` is true because all upper-case letters come first, followed by all lower case letters
+(the ascii number of each letter determines the order, which is what is meant by `C-locale`).
 
 
 \code{bit64::integer64} type is also supported for reordering rows of a
