@@ -21,6 +21,10 @@ based on the columns (and column order) provided. It reorders the table
 Also \code{x[order(.)]} is now optimised internally to use data.table's fast 
 order by default. data.table always reorders in C-locale. To sort by session 
 locale, use \code{x[base::order(.)]} instead.
+In particular, data.table will sort upper-case letters before
+lower-case letters: in data.table, \code{B < a}
+whereas it is common in \code{base::order} for \code{B > a}.
+
 
 \code{bit64::integer64} type is also supported for reordering rows of a 
 \code{data.table}.
