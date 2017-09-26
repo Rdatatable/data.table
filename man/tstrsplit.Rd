@@ -19,7 +19,7 @@ tstrsplit(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE)
   \item{names}{\code{TRUE} auto names the list with \code{V1, V2} etc. Default (\code{FALSE}) is to return an unnamed list.}
 }
 \details{
-  It internally calls \code{strsplit} first, and then \code{\link{transpose}} on the result. 
+  It internally calls \code{strsplit} first, and then \code{\link{transpose}} on the result.
 
   \code{names} argument can be used to return an auto named list, although this argument does not have any effect when used with \code{:=}, which requires names to be provided explicitly. It might be useful in other scenarios.
 }

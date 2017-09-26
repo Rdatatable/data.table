@@ -1,6 +1,6 @@
 #include "data.table.h"
 #include <Rdefines.h>
-#include <Rmath.h> 
+#include <Rmath.h>
 
 /*
 Copied from src/main/summary.c with the following changes :
@@ -115,9 +115,9 @@ SEXP fastmean(SEXP args)
     copyMostAttrib(x, ans);
     UNPROTECT(1);
     return(ans);
-} 
+}
 
-/*		        
+/*
 	    case CPLXSXP:
 	        PROTECT(ans = allocVector(CPLXSXP, 1));
 	        for (i = 0; i < n; i++) {
@@ -135,7 +135,7 @@ SEXP fastmean(SEXP args)
 	        COMPLEX(ans)[0].r = (double) s;
 	        COMPLEX(ans)[0].i = (double) si;
 	        break;
-*/        
+*/
 
 
 

@@ -1,10 +1,13 @@
 # Source: https://github.com/github/gitignore/blob/master/R.gitignore
 # History files
+.RData
 .Rhistory
 .Rapp.history
 
-# Example code in package build process
+# Package build process
 *-Ex.R
+data.table_*.tar.gz
+data.table.Rcheck
 
 # RStudio files
 .Rproj.user
@@ -20,3 +23,4 @@ vignettes/*.pdf
 
 *~
 .DS_Store
+.idea

@@ -10,15 +10,16 @@ as.IDate.default <-
 
 as.IDate.Date <- function(x, ...) {
     structure(as.integer(x), class=c("IDate","Date"))
-}    
+}
 
-as.IDate.POSIXct <- function(x, ...) {
-  as.IDate(as.Date(x, tz = attr(x, "tzone"), ...))
+as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
+  if (is.null(tz)) tz = "UTC"
+  as.IDate(as.Date(x, tz = tz, ...))
 }
 
 as.IDate.IDate <- function(x, ...) x
 
-as.Date.IDate <- function(x, ...) { 
+as.Date.IDate <- function(x, ...) {
     structure(as.numeric(x), class="Date")
 }
 
@@ -51,7 +52,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
 
 #Adapted from `+.Date`
 `+.IDate` <- function (e1, e2) {
-    if (nargs() == 1L) 
+    if (nargs() == 1L)
         return(e1)
     if (inherits(e1, "difftime") || inherits(e2, "difftime"))
         stop("difftime objects may not be added to IDate. Use plain integer instead of difftime.")
@@ -60,17 +61,17 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
         return(`+.Date`(e1,e2))
         # IDate doesn't support fractional days; revert to base Date
     }
-    if (inherits(e1, "Date") && inherits(e2, "Date")) 
+    if (inherits(e1, "Date") && inherits(e2, "Date"))
         stop("binary + is not defined for \"IDate\" objects")
     structure(as.integer(unclass(e1) + unclass(e2)), class = c("IDate", "Date"))
 }
 
 `-.IDate` <- function (e1, e2) {
-    if (!inherits(e1, "IDate")) 
+    if (!inherits(e1, "IDate"))
         stop("can only subtract from \"IDate\" objects")
     if (storage.mode(e1) != "integer")
         stop("Internal error: storage mode of IDate is somehow no longer integer")
-    if (nargs() == 1) 
+    if (nargs() == 1)
         stop("unary - is not defined for \"IDate\" objects")
     if (inherits(e2, "difftime"))
         stop("difftime objects may not be subtracted from IDate. Use plain integer instead of difftime.")
@@ -96,14 +97,28 @@ as.ITime.default <- function(x, ...) {
     as.ITime(as.POSIXlt(x, ...))
 }
 
-as.ITime.character <- function(x, format, ...) {
+as.ITime.character <- function (x, format, ...) {
     x <- unclass(x)
-    if (!missing(format)) 
-        return(as.ITime(strptime(x, format = format, ...)))
+    if (!missing(format)) return(as.ITime(strptime(x, format = format, ...)))
+    # else allow for mixed formats, such as test 1189 where seconds are caught despite varying format
     y <- strptime(x, format = "%H:%M:%OS", ...)
-    y.nas <- is.na(y)
-    y[y.nas] <- strptime(x[y.nas], format = "%H:%M", ...)
-
+    w <- which(is.na(y))
+    formats = c("%H:%M",
+                "%Y-%m-%d %H:%M:%OS",
+                "%Y/%m/%d %H:%M:%OS",
+                "%Y-%m-%d %H:%M",
+                "%Y/%m/%d %H:%M",
+                "%Y-%m-%d",
+                "%Y/%m/%d")
+    for (f in formats) {
+      if (!length(w)) break
+      new <- strptime(x[w], format = f, ...)
+      nna <- !is.na(new)
+      if (any(nna)) {
+        y[ w[nna] ] <- new
+        w <- w[!nna]
+      }
+    }
     return(as.ITime(y))
 }
 
@@ -119,10 +134,11 @@ as.character.ITime <- format.ITime <- function(x, ...) {
     x  <- abs(unclass(x))
     hh <- x %/% 3600L
     mm <- (x - hh * 3600L) %/% 60L
-    ss <- trunc(x - hh * 3600L - 60L * mm)
-    res = paste(substring(paste("0", hh, sep = ""), nchar(paste(hh))), 
-              substring(paste("0", mm, sep = ""), nchar(paste(mm))), 
-              substring(paste("0", ss, sep = ""), nchar(paste(ss))), sep = ":")
+    # #2171 -- trunc gives numeric but %02d requires integer;
+    #   as.integer is also faster (but doesn't handle integer overflow)
+    #   http://stackoverflow.com/questions/43894077
+    ss <- as.integer(x - hh * 3600L - 60L * mm)
+    res = sprintf('%02d:%02d:%02d', hh, mm, ss)
     # Fix for #1354, so that "NA" input is handled correctly.
     if (is.na(any(neg))) res[is.na(x)] = NA
     neg = which(neg)
@@ -148,7 +164,7 @@ print.ITime <- function(x, ...) {
     print(format(x))
 }
 
-rep.ITime <- function (x, ...) 
+rep.ITime <- function (x, ...)
 {
     y <- rep(unclass(x), ...)
     structure(y, class = "ITime")
@@ -208,7 +224,7 @@ as.chron.IDate <- function(x, time = NULL, ...) {
             chron::chron(dates. = chron::as.chron(as.Date(x)), times. = chron::as.chron(time))
         } else {
             chron::chron(dates. = chron::as.chron(as.Date(x)))
-        }    
+        }
     }
 }
 
@@ -218,7 +234,7 @@ as.chron.ITime <- function(x, date = NULL, ...) {
             chron::chron(dates. = chron::as.chron(as.Date(date)), times. = chron::as.chron(x))
         } else {
             chron::chron(times. = as.character(x))
-        }  
+        }
     }
 }
 
@@ -244,26 +260,26 @@ second  <- function(x) as.integer(as.POSIXlt(x)$sec)
 minute  <- function(x) as.POSIXlt(x)$min
 hour    <- function(x) as.POSIXlt(x)$hour
 yday    <- function(x) as.POSIXlt(x)$yday + 1L
-wday    <- function(x) as.POSIXlt(x)$wday + 1L
+wday    <- function(x) (unclass(as.IDate(x)) + 4L) %% 7L + 1L
 mday    <- function(x) as.POSIXlt(x)$mday
 week    <- function(x) yday(x) %/% 7L + 1L
 isoweek <- function(x) {
   #ISO 8601-conformant week, as described at
   #  https://en.wikipedia.org/wiki/ISO_week_date
-  
+
   #Approach:
   # * Find nearest Thursday to each element of x
   # * Find the number of weeks having passed between
   #   January 1st of the year of the nearest Thursdays and x
-  
+
   xlt <- as.POSIXlt(x)
-  
+
   #We want Thursday to be 3 (4 by default in POSIXlt), so
   #  subtract 1 and re-divide; also, POSIXlt increment by seconds
   nearest_thurs <- xlt + (3 - ((xlt$wday - 1) %% 7)) * 86400
-  
+
   year_start <- as.POSIXct(paste0(as.POSIXlt(nearest_thurs)$year + 1900L, "-01-01"))
-  
+
   as.integer(1 + unclass(difftime(nearest_thurs, year_start, units = "days")) %/% 7)
 }
 month   <- function(x) as.POSIXlt(x)$mon + 1L

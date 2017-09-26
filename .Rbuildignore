@@ -6,3 +6,9 @@
 ^\.Rproj\.user$
 ^appveyor\.yml$
 ^.gitlab-ci\.yml$
+^\.idea$
+^\.RData$
+^\.Rhistory$
+^data\.table_.*\.tar\.gz$
+^cc\.R$
+^Makefile$

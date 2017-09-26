@@ -36,16 +36,27 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
         return(invisible(x))
     }
     if (identical(cols,"")) stop("cols is the empty string. Use NULL to remove the key.")
-    if (any(nchar(cols)==0)) stop("cols contains some blanks.")
+    if (!all(nzchar(cols))) stop("cols contains some blanks.")
     if (!length(cols)) {
         cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
     } else {
-        # remove backticks from cols 
+        # remove backticks from cols
         cols <- gsub("`", "", cols)
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
     }
-    alreadykeyedbythiskey = identical(key(x),cols)
+
+  ## determine, whether key is already present:
+  if(identical(key(x),cols)){
+    ## key is present, nothing needs to be done
+    return(invisible(x))
+  } else if(identical(head(key(x), length(cols)), cols)){
+    ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
+    setattr(x,"sorted",cols)
+    return(invisible(x))
+    ## maybe additional speedup can be achieved if part of the key is already present?
+  }
+
     if (".xi" %chin% names(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
     for (i in cols) {
         .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
@@ -65,7 +76,6 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     }
     setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
     if (length(o)) {
-        if (alreadykeyedbythiskey) warning("Already keyed by this key but had invalid row order, key rebuilt. If you didn't go under the hood please let datatable-help know so the root cause can be fixed.")
         if (verbose) {
             tt = system.time(.Call(Creorder,x,o))
             cat("reorder took", tt["user.self"]+tt["sys.self"], "sec\n")
@@ -75,7 +85,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     } else {
         if (verbose) cat("x is already ordered by these columns, no need to call reorder\n")
     } # else empty integer() from forderv means x is already ordered by those cols, nothing to do.
-    if (!alreadykeyedbythiskey) setattr(x,"sorted",cols)   # the if() just to save plonking an identical vector into the attribute
+    setattr(x,"sorted",cols)
     invisible(x)
 }
 
@@ -86,10 +96,13 @@ key2 <- function(x) {
     if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
     gsub("^__","",ans)
 }
-indices <- function(x) {
+indices <- function(x, vectors = FALSE) {
     ans = names(attributes(attr(x,"index",exact=TRUE)))
     if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
-    gsub("^__","",ans)
+    ans <- gsub("^__","",ans)
+    if (isTRUE(vectors))
+        ans <- strsplit(ans, "__", fixed = TRUE)
+    ans
 }
 
 get2key <- function(x, col) attr(attr(x,"index",exact=TRUE),paste("__",col,sep=""),exact=TRUE)   # work in progress, not yet exported
@@ -162,7 +175,7 @@ forderv <- function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.la
         if ( !missing(order) && (length(order) != 1L || !(order %in% c(1L, -1L))) )
             stop("x is a single vector, length(order) must be =1 and it's value should be 1 (ascending) or -1 (descending).")
     } else {
-        if (!length(x)) return(integer(0)) # to be consistent with base::order. this'll make sure forderv(NULL) will result in error 
+        if (!length(x)) return(integer(0)) # to be consistent with base::order. this'll make sure forderv(NULL) will result in error
                                            # (as base does) but forderv(data.table(NULL)) and forderv(list()) will return integer(0))
         if (is.character(by)) by=chmatch(by, names(x))
         by = as.integer(by)
@@ -190,9 +203,9 @@ forder <- function(x, ..., na.last=TRUE, decreasing=FALSE)
         for (i in seq_along(cols)) {
             v=cols[[i]]
             if (i == 1L && is.call(v) && length(v) == 2L && v[[1L]] == "list") return(1L) # to be consistent with base, see comment below under while loop
-            while (is.call(v) && length(v) == 2L && v[[1L]] != "list") { 
-                # take care of "--x", "{-x}", "(---+x)" etc., cases and also "list(y)". 'list(y)' is ambiguous though. In base, with(DT, order(x, list(y))) will error 
-                # that 'arguments are not of same lengths'. But with(DT, order(list(x), list(y))) will return 1L, which is very strange. On top of that, with(DT, 
+            while (is.call(v) && length(v) == 2L && v[[1L]] != "list") {
+                # take care of "--x", "{-x}", "(---+x)" etc., cases and also "list(y)". 'list(y)' is ambiguous though. In base, with(DT, order(x, list(y))) will error
+                # that 'arguments are not of same lengths'. But with(DT, order(list(x), list(y))) will return 1L, which is very strange. On top of that, with(DT,
                 # order(x, as.list(10:1)) would return 'unimplemented type list'. It's all very inconsistent. But we HAVE to be consistent with base HERE.
                 if (!as.character(v[[1L]]) %chin% c("+", "-")) break   # FIX for bug #5583
                 if (v[[1L]] == "-") order[i] = -order[i]
@@ -215,7 +228,7 @@ forder <- function(x, ..., na.last=TRUE, decreasing=FALSE)
     }
     cols = seq_along(ans)
     for (i in cols) {
-        if (!typeof(ans[[i]]) %chin% c("integer","logical","character","double")) 
+        if (!typeof(ans[[i]]) %chin% c("integer","logical","character","double"))
             stop("Column '",i,"' is type '",typeof(ans[[i]]),"' which is not supported for ordering currently.")
     }
     o = forderv(ans, cols, sort=TRUE, retGrp=FALSE, order= if (decreasing) -order else order, na.last)
@@ -276,11 +289,11 @@ setorderv <- function(x, cols, order=1L, na.last=FALSE)
         warning("cols is a character vector of zero length. Use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
         return(x)
     }
-    if (any(nchar(cols)==0)) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
+    if (!all(nzchar(cols))) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
     if (!length(cols)) {
         cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
     } else {
-        # remove backticks from cols 
+        # remove backticks from cols
         cols <- gsub("`", "", cols)
         miss = !(cols %in% colnames(x))
         if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
@@ -327,11 +340,11 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
     if (unique) l = lapply(l, unique)
 
     dups = FALSE # fix for #1513
-    # using rep.int instead of rep speeds things up considerably (but attributes are dropped).
-    j = lapply(l, class)  # changed "vapply" to avoid errors with "ordered" "factor" input
     if (length(l)==1L && sorted && length(o <- forderv(l[[1L]])))
         l[[1L]] = l[[1L]][o]
     else if (length(l) > 1L) {
+        # using rep.int instead of rep speeds things up considerably (but attributes are dropped).
+        attribs = lapply(l, attributes)  # remember attributes for resetting after rep.int
         n = vapply(l, length, 0L)
         nrow = prod(n)
         x = c(rev(take(cumprod(rev(n)))), 1L)
@@ -340,30 +353,31 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
             # fix for #1513
             if (sorted) {
                 if (length(o <- forderv(y, retGrp=TRUE))) y = y[o]
-                if (!dups) dups = attr(o, 'maxgrpn') > 1L 
+                if (!dups) dups = attr(o, 'maxgrpn') > 1L
             }
-            if (i == 1L) 
+            if (i == 1L)
                 l[[i]] = rep.int(y, times = rep.int(x[i], n[i]))   # i.e. rep(y, each=x[i])
             else if (i == length(n))
                 l[[i]] = rep.int(y, times = nrow/(x[i]*n[i]))
             else
                 l[[i]] = rep.int(rep.int(y, times = rep.int(x[i], n[i])), times = nrow/(x[i]*n[i]))
-            if (any(class(l[[i]]) != j[[i]]))
-                setattr(l[[i]], 'class', j[[i]]) # reset "Date" class - rep.int coerces to integer
+            if (!is.null(attribs[[i]])){
+                attributes(l[[i]]) <- attribs[[i]] # reset all attributes that were destroyed by rep.int
+            }
         }
     }
     setattr(l, "row.names", .set_row_names(length(l[[1L]])))
     setattr(l, "class", c("data.table", "data.frame"))
 
-    if (is.null(vnames <- names(l))) 
-        vnames = vector("character", length(l)) 
+    if (is.null(vnames <- names(l)))
+        vnames = vector("character", length(l))
     if (any(tt <- vnames == "")) {
         vnames[tt] = paste("V", which(tt), sep="")
         setattr(l, "names", vnames)
     }
     l <- alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
     if (sorted) {
-        if (!dups) setattr(l, 'sorted', names(l)) 
+        if (!dups) setattr(l, 'sorted', names(l))
         else setkey(l) # fix #1513
     }
     l

@@ -14,16 +14,16 @@ setnames(x,old,new)
   \item{name}{ The character attribute name. }
   \item{value}{ The value to assign to the attribute or \code{NULL} removes the attribute, if present. }
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, the new column names, which must be the same length as the number of columns. See examples. }
-  \item{new}{ Optional. New column names, must be the same length as columns provided to \code{old} argument. } 
+  \item{new}{ Optional. New column names, must be the same length as columns provided to \code{old} argument. }
 }
 \details{
 
   \code{setnames} operates on \code{data.table} and \code{data.frame} not other types like \code{list} and \code{vector}. It can be used to change names \emph{by name} with built-in checks and warnings (e.g., if any old names are missing or appear more than once).
-  
+
   \code{setattr} is a more general function that allows setting of any attribute to an object \emph{by reference}.
-  
+
   A very welcome change in R 3.1+ was that `names<-` and `colnames<-` no longer copy the \emph{entire} object as they used to (up to 4 times), see examples below. They now take a shallow copy. The `set*` functions in data.table are still useful because they don't even take a shallow copy. This allows changing names and attributes of a (usually very large) \code{data.table} in the global environment \emph{from within functions}. Like a database.
-  
+
   }
 \value{
     The input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setnames(DT,"V1", "Y")[, .N, by=Y]}. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). See \code{?copy}.
@@ -37,7 +37,7 @@ setnames(x,old,new)
 DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies and syntax
 try(tracemem(DF))                  # try() for R sessions opted out of memory profiling
 colnames(DF)[1] <- "A"             # 4 shallow copies (R >= 3.1, was 4 deep copies before)
-names(DF)[1] <- "A"                # 3 shallow copies 
+names(DF)[1] <- "A"                # 3 shallow copies
 names(DF) <- c("A", "b")           # 1 shallow copy
 `names<-`(DF,c("A","b"))           # 1 shallow copy
 

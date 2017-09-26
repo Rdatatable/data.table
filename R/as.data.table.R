@@ -9,9 +9,9 @@ as.data.table.default <- function(x, ...){
   setDT(as.data.frame(x, ...))[]
 }
 
-as.data.table.factor <- as.data.table.ordered <- 
-as.data.table.integer <- as.data.table.numeric <- 
-as.data.table.logical <- as.data.table.character <- 
+as.data.table.factor <- as.data.table.ordered <-
+as.data.table.integer <- as.data.table.numeric <-
+as.data.table.logical <- as.data.table.character <-
 as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ...) {
     if (is.matrix(x)) {
         return(as.data.table.matrix(x, ...))
@@ -19,7 +19,7 @@ as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ..
     tt = deparse(substitute(x))[1]
     nm = names(x)
     # FR #2356 - transfer names of named vector as "rn" column if required
-    if (!identical(keep.rownames, FALSE) & !is.null(nm)) 
+    if (!identical(keep.rownames, FALSE) & !is.null(nm))
         x <- list(nm, unname(x))
     else x <- list(x)
     if (tt == make.names(tt)) {
@@ -30,29 +30,11 @@ as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ..
     as.data.table.list(x, FALSE)
 }
 
-R300_provideDimnames <- function (x, sep = "", base = list(LETTERS)) {
-    # backported from R3.0.0 so data.table can depend on R 2.14.0 
-    dx <- dim(x)
-    dnx <- dimnames(x)
-    if (new <- is.null(dnx)) 
-        dnx <- vector("list", length(dx))
-    k <- length(M <- vapply(base, length, 1L))
-    for (i in which(vapply(dnx, is.null, NA))) {
-        ii <- 1L + (i - 1L)%%k
-        dnx[[i]] <- make.unique(base[[ii]][1L + 0:(dx[i] - 1L)%%M[ii]], 
-            sep = sep)
-        new <- TRUE
-    }
-    if (new) 
-        dimnames(x) <- dnx
-    x
-}
-
 # as.data.table.table - FR #4848
 as.data.table.table <- function(x, keep.rownames=FALSE, ...) {
     # Fix for bug #5408 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
-    val = rev(dimnames(R300_provideDimnames(x)))
-    if (is.null(names(val)) || all(nchar(names(val)) == 0L)) 
+    val = rev(dimnames(provideDimnames(x)))
+    if (is.null(names(val)) || !any(nzchar(names(val))))
         setattr(val, 'names', paste("V", rev(seq_along(val)), sep=""))
     ans <- data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x))
     setcolorder(ans, c(rev(head(names(ans), -1)), "N"))
@@ -74,7 +56,8 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
     ic <- seq_len(ncols)
     dn <- dimnames(x)
     collabs <- dn[[2L]]
-    if (any(empty <- nchar(collabs) == 0L))
+    empty <- !nzchar(collabs)
+    if (any(empty))
         collabs[empty] <- paste("V", ic, sep = "")[empty]
     value <- vector("list", ncols)
     if (mode(x) == "character") {
@@ -91,6 +74,37 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
     setattr(value,"row.names",.set_row_names(nrows))
     setattr(value,"class",c("data.table","data.frame"))
     alloc.col(value)
+}
+
+# as.data.table.array - #1418
+as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name="value", na.rm=TRUE, ...) {
+    dx = dim(x)
+    if (length(dx) <= 2L)
+        stop("as.data.table.array method should be only called for arrays with 3+ dimensions, for 2 dimensions matrix method should be used")
+    if (!is.character(value.name) || length(value.name)!=1L || is.na(value.name) || !nzchar(value.name))
+        stop("Argument 'value.name' must be scalar character, non-NA and non zero char")
+    if (!is.logical(sorted) || length(sorted)!=1L || is.na(sorted))
+        stop("Argument 'sorted' must be scalar logical and non-NA")
+    if (!is.logical(na.rm) || length(na.rm)!=1L || is.na(na.rm))
+        stop("Argument 'na.rm' must be scalar logical and non-NA")
+
+    dnx = dimnames(x)
+    # NULL dimnames will create integer keys, not character as in table method
+    val = rev(if (is.null(dnx)) lapply(dim(x), seq.int) else dnx)
+    if (is.null(names(val)) || all(!nzchar(names(val))))
+        setattr(val, 'names', paste("V", rev(seq_along(val)), sep=""))
+    if (value.name %in% names(val))
+        stop(sprintf("Argument 'value.name' should not overlap with column names in result: %s.", paste(rev(names(val)), collapse=", ")))
+    N = NULL
+    ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N=as.vector(x))
+    if (isTRUE(na.rm))
+        ans = ans[!is.na(N)]
+    setnames(ans, "N", value.name)
+    dims = rev(head(names(ans), -1))
+    setcolorder(ans, c(dims, value.name))
+    if (isTRUE(sorted))
+        setkeyv(ans, dims)
+    ans[]
 }
 
 as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
@@ -139,9 +153,9 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
     alloc.col(x)
 }
 
-# don't retain classes before "data.frame" while converting 
-# from it.. like base R does. This'll break test #527 (see 
-# tests and as.data.table.data.frame) I've commented #527 
+# don't retain classes before "data.frame" while converting
+# from it.. like base R does. This'll break test #527 (see
+# tests and as.data.table.data.frame) I've commented #527
 # for now. This addresses #1078 and #1128
 .resetclass <- function(x, class) {
     cx = class(x)
@@ -163,7 +177,7 @@ as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...) {
     ## NOTE: This test (#527) is no longer in effect ##
     # for nlme::groupedData which has class c("nfnGroupedData","nfGroupedData","groupedData","data.frame")
     # See test 527.
-    ## 
+    ##
 
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(ans, "class", .resetclass(x, "data.frame"))

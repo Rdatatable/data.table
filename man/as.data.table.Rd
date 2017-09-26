@@ -1,5 +1,6 @@
 \name{as.data.table}
 \alias{as.data.table}
+\alias{as.data.table.array}
 \alias{as.data.table.matrix}
 \alias{as.data.table.list}
 \alias{as.data.table.data.frame}
@@ -14,7 +15,7 @@
 \alias{is.data.table}
 \title{Coerce to data.table}
 \description{
-Functions to check if an object is \code{data.table}, or coerce it if possible. 
+Functions to check if an object is \code{data.table}, or coerce it if possible.
 
 }
 \usage{
@@ -22,17 +23,22 @@ as.data.table(x, keep.rownames=FALSE, \dots)
 
 \method{as.data.table}{data.table}(x, \dots)
 
+\method{as.data.table}{array}(x, keep.rownames=FALSE, sorted=TRUE, value.name="value", na.rm=TRUE, \dots)
+
 is.data.table(x)
 
 }
 \arguments{
   \item{x}{An R object.}
   \item{keep.rownames}{Default is \code{FALSE}. If \code{TRUE}, adds the input object's names as a separate column named \code{"rn"}. \code{keep.rownames = "id"} names the column \code{"id"} instead.}
+  \item{sorted}{logical used in \emph{array} method, default \code{TRUE}.}
+  \item{value.name}{character scalar used in \emph{array} method, default \code{"value"}.}
+  \item{na.rm}{logical used in \emph{array} method, default \code{TRUE} will remove rows with \code{NA} values.}
   \item{\dots}{Additional arguments to be passed to or from other methods.}
 }
 \details{
 
-  \code{as.data.table} is a generic function with many methods, and other packages can supply further methods. 
+  \code{as.data.table} is a generic function with many methods, and other packages can supply further methods.
 
   If a \code{list} is supplied, each element is converted to a column in the \code{data.table} with shorter elements recycled automatically. Similarly, each column of a \code{matrix} is converted separately.
 
@@ -42,7 +48,7 @@ is.data.table(x)
 
   \code{keep.rownames} argument can be used to preserve the (row)names attribute in the resulting \code{data.table}.
 }
-\seealso{ 
+\seealso{
   \code{\link{data.table}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setkey}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{:=}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{rbindlist}}, \code{\link{setNumericRounding}}, \code{\link{datatable-optimize}}
 }
 \examples{
@@ -74,6 +80,11 @@ as.data.table(df, keep.rownames="rownames")
 
 dt = data.table(x=rep(c("x","y","z"),each=2), y=c(1:6))
 as.data.table(dt)
+
+ar = rnorm(27)
+ar[sample(27, 15)] = NA
+dim(ar) = c(3L,3L,3L)
+as.data.table(ar)
 }
 \keyword{ data }
 

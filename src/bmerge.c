@@ -26,8 +26,6 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 #define GE 4
 #define GT 5
 
-typedef unsigned long long ull;
-
 static SEXP i, x, nqgrp;
 static int ncol, *icols, *xcols, *o, *xo, *retFirst, *retLength, *retIndex, *allLen1, *allGrp1, *rollends, ilen, anslen;
 static int *op, nqmaxgrp, *tmpptr, scols;
@@ -49,7 +47,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     i = iArg; x = xArg;  // set globals so bmerge_r can see them.
     if (!isInteger(icolsArg)) error("Internal error: icols is not integer vector");
     if (!isInteger(xcolsArg)) error("Internal error: xcols is not integer vector");
-    if (LENGTH(icolsArg) > LENGTH(xcolsArg)) error("Internal error: length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg)); 
+    if (LENGTH(icolsArg) > LENGTH(xcolsArg)) error("Internal error: length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg));
     icols = INTEGER(icolsArg);
     xcols = INTEGER(xcolsArg);
     xN = LENGTH(VECTOR_ELT(x,0));
@@ -144,9 +142,11 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     // isorted arg
     o = NULL;
     if (!LOGICAL(isorted)[0]) {
-        SEXP order = PROTECT(vec_init(length(icolsArg), ScalarInteger(1))); // rep(1, length(icolsArg))
-        SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
-        protecti += 2;
+        SEXP order = PROTECT(int_vec_init(length(icolsArg), 1)); // rep(1L, length(icolsArg))
+        SEXP oSxp = PROTECT(forder(i, icolsArg, PROTECT(ScalarLogical(FALSE)),
+                            PROTECT(ScalarLogical(TRUE)), order, PROTECT(ScalarLogical(FALSE))));
+        UNPROTECT(3); // The 3 logicals in line above. TODO - split head of forder into C-level callable
+        protecti += 2;   // order and oSxp
         if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
     }
 
@@ -182,7 +182,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
     SET_VECTOR_ELT(ans, 2, retIndexArg);
     SET_VECTOR_ELT(ans, 3, allLen1Arg);
     SET_VECTOR_ELT(ans, 4, allGrp1Arg);
-    SET_STRING_ELT(ansnames, 0, mkChar("starts"));
+    SET_STRING_ELT(ansnames, 0, char_starts);  // changed from mkChar to char_ to pass the grep in CRAN_Release.cmd
     SET_STRING_ELT(ansnames, 1, mkChar("lens"));
     SET_STRING_ELT(ansnames, 2, mkChar("indices"));
     SET_STRING_ELT(ansnames, 3, mkChar("allLen1"));
@@ -200,9 +200,10 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
 static union {
   int i;
   double d;
-  unsigned long long ll;
+  unsigned long long ull;
+  long long ll;
   SEXP s;
-} ival, xval; // last two are for #1405 for use in roll condition check
+} ival, xval;
 
 static int mid, tmplow, tmpupp;  // global to save them being added to recursive stack. Maybe optimizer would do this anyway.
 static SEXP ic, xc;
@@ -224,8 +225,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
 // new: col starts with -1 for non-equi joins, which gathers rows from nested id group counter 'thisgrp'
 {
     int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn, j, k, ir, lir, tmp;
-    SEXP class;
-    Rboolean isInt64;
+    Rboolean isInt64=FALSE;
     ir = lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
     if (o) ir = o[lir]-1;                      // ir = the actual i row if i were ordered
     if (col>-1) {
@@ -335,39 +335,38 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         while(ilow<tmpupp-1) {
             mid = ilow + (tmpupp-ilow)/2;
             xval.s = ENC2UTF8(STRING_ELT(ic, o ? o[mid]-1 : mid));
-            if (xval.s == ival.s) tmpupp=mid; else ilow=mid;   // see above re == 
+            if (xval.s == ival.s) tmpupp=mid; else ilow=mid;   // see above re ==
         }
         break;
     case REALSXP :
-        class = getAttrib(xc, R_ClassSymbol);
-        isInt64 = isString(class) && STRING_ELT(class, 0)==char_integer64;
+        isInt64 = INHERITS(xc, char_integer64);
         twiddle = isInt64 ? &i64twiddle : &dtwiddle;
-        ival.ll = twiddle(DATAPTR(ic), ir, 1);
+        ival.ull = twiddle(DATAPTR(ic), ir, 1);
         while(xlow < xupp-1) {
             mid = xlow + (xupp-xlow)/2;
-            xval.ll = twiddle(DATAPTR(xc), XIND(mid), 1);
-            if (xval.ll<ival.ll) {
+            xval.ull = twiddle(DATAPTR(xc), XIND(mid), 1);
+            if (xval.ull<ival.ull) {
                 xlow=mid;
-            } else if (xval.ll>ival.ll) {
+            } else if (xval.ull>ival.ull) {
                 xupp=mid;
-            } else { // xval.ll == ival.ll) 
+            } else { // xval.ull == ival.ull)
                 tmplow = mid;
                 tmpupp = mid;
                 while(tmplow<xupp-1) {
                     mid = tmplow + (xupp-tmplow)/2;
-                    xval.ll = twiddle(DATAPTR(xc), XIND(mid), 1);
-                    if (xval.ll == ival.ll) tmplow=mid; else xupp=mid;
+                    xval.ull = twiddle(DATAPTR(xc), XIND(mid), 1);
+                    if (xval.ull == ival.ull) tmplow=mid; else xupp=mid;
                 }
                 while(xlow<tmpupp-1) {
                     mid = xlow + (tmpupp-xlow)/2;
-                    xval.ll = twiddle(DATAPTR(xc), XIND(mid), 1);
-                    if (xval.ll == ival.ll) tmpupp=mid; else xlow=mid;
+                    xval.ull = twiddle(DATAPTR(xc), XIND(mid), 1);
+                    if (xval.ull == ival.ull) tmpupp=mid; else xlow=mid;
                 }
                 break;
             }
         }
         if (col>-1 && op[col] != EQ) {
-            Rboolean isivalNA = !isInt64 ? ISNAN(REAL(ic)[ir]) : (*(long long *)&REAL(ic)[ir] == NAINT64);
+            Rboolean isivalNA = !isInt64 ? ISNAN(REAL(ic)[ir]) : (DtoLL(REAL(ic)[ir]) == NA_INT64_LL);
             switch (op[col]) {
             case LE : if (!isivalNA) xlow = xlowIn; break;
             case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
@@ -375,12 +374,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
             case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
             }
             // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
-            if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(REAL(xc)[XIND(xlow+1)]) : (*(long long *)&REAL(xc)[XIND(xlow+1)] == NAINT64))) {
+            if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(REAL(xc)[XIND(xlow+1)]) : (DtoLL(REAL(xc)[XIND(xlow+1)]) == NA_INT64_LL))) {
                 tmplow = xlow; tmpupp = xupp;
                 while (tmplow < tmpupp-1) {
                     mid = tmplow + (tmpupp-tmplow)/2;
                     xval.d = REAL(xc)[XIND(mid)];
-                    if (!isInt64 ? ISNAN(xval.d) : xval.ll == NAINT64) tmplow = mid; else tmpupp = mid;
+                    if (!isInt64 ? ISNAN(xval.d) : xval.ll == NA_INT64_LL) tmplow = mid; else tmpupp = mid;
                 }
                 xlow = tmplow; // tmplow is the index of last NA value
             }
@@ -390,13 +389,13 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         if (col>-1) {
             while(tmplow<iupp-1) {
                 mid = tmplow + (iupp-tmplow)/2;
-                xval.ll = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid, 1 );
-                if (xval.ll == ival.ll) tmplow=mid; else iupp=mid;
+                xval.ull = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid, 1 );
+                if (xval.ull == ival.ull) tmplow=mid; else iupp=mid;
             }
             while(ilow<tmpupp-1) {
                 mid = ilow + (tmpupp-ilow)/2;
-                xval.ll = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid, 1 );
-                if (xval.ll == ival.ll) tmpupp=mid; else ilow=mid;
+                xval.ull = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid, 1 );
+                if (xval.ull == ival.ull) tmpupp=mid; else ilow=mid;
             }
         }
         // ilow and iupp now surround the group in ic, too
@@ -433,13 +432,13 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                             if (ctr+ilen >= anslen) {
                                 anslen = 1.1*anslen;
                                 tmpptr = Realloc(retFirst, anslen, int);
-                                if (tmpptr != NULL) retFirst = tmpptr; 
+                                if (tmpptr != NULL) retFirst = tmpptr;
                                 else error("Error in reallocating memory in non-equi joins.\n");
                                 tmpptr = Realloc(retLength, anslen, int);
-                                if (tmpptr != NULL) retLength = tmpptr; 
+                                if (tmpptr != NULL) retLength = tmpptr;
                                 else error("Error in reallocating memory in non-equi joins.\n");
                                 tmpptr = Realloc(retIndex, anslen, int);
-                                if (tmpptr != NULL) retIndex = tmpptr; 
+                                if (tmpptr != NULL) retIndex = tmpptr;
                                 else error("Error in reallocating memory in non-equi joins.\n");
                             }
                         } else if (mult == FIRST) {
@@ -485,39 +484,45 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
                 retLength[ir] = 1;
             }
         } else {
-            // To fix #1405 we've to compute the difference in unsigned long long and typecase back to 
-            // double; to handle integer64 cases as well. Previous implementation segfaulted since it 
-            // accessed values beyond xupp/xlow, #1650. Fix for that involves integrating the logic 
-            // directly inside. "ull" is typedef for unsigned long long
+            // Regular roll=TRUE|+ve|-ve
+            // Fixed issues: #1405, #1650, #1007
             // TODO: incorporate the twiddle logic for roll as well instead of tolerance?
             if ( (   (roll>0.0 && (!lowmax || xlow>xlowIn) && (xupp<xuppIn || !uppmax || rollends[1]))
                   || (roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )
-              && (   (TYPEOF(ic)==REALSXP && 
-                   ((double)((ull)REAL(ic)[ir]-(ull)REAL(xc)[XIND(xlow)])-rollabs<1e-6 || 
-                    (double)((ull)REAL(ic)[ir]-(ull)REAL(xc)[XIND(xlow)]) == rollabs)) // #1007 fix
-                  || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(ic)[ir]-INTEGER(xc)[XIND(xlow)])-rollabs<1e-6 ) 
+              && (   (TYPEOF(ic)==REALSXP &&
+                      (ival.d = REAL(ic)[ir], xval.d = REAL(xc)[XIND(xlow)], 1) &&
+                     (( !isInt64 &&
+                        (ival.d-xval.d-rollabs < 1e-6 ||
+                         ival.d-xval.d == rollabs /*#1007*/))
+                   || ( isInt64 &&
+                        (double)(ival.ll-xval.ll)-rollabs < 1e-6 ) ))  // cast to double for when rollabs==Inf
+                  || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(ic)[ir]-INTEGER(xc)[XIND(xlow)])-rollabs < 1e-6 )
                   || (TYPEOF(ic)==STRSXP)   )) {
                 retFirst[ir] = xlow+1;
                 retLength[ir] = 1;
             } else if
                (  (  (roll<0.0 && (!uppmax || xupp<xuppIn) && (xlow>xlowIn || !lowmax || rollends[0]))
                   || (roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )
-              && (   (TYPEOF(ic)==REALSXP && 
-                    ((double)((ull)REAL(xc)[XIND(xupp)]-(ull)REAL(ic)[ir])-rollabs<1e-6 || 
-                     (double)((ull)REAL(xc)[XIND(xupp)]-(ull)REAL(ic)[ir]) == rollabs)) // 1007 fix
-                  || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(xc)[XIND(xupp)]-INTEGER(ic)[ir])-rollabs<1e-6 )
+              && (   (TYPEOF(ic)==REALSXP &&
+                      (ival.d = REAL(ic)[ir], xval.d = REAL(xc)[XIND(xupp)], 1) &&
+                     (( !isInt64 &&
+                        (xval.d-ival.d-rollabs < 1e-6 ||
+                         xval.d-ival.d == rollabs /*#1007*/))
+                   || ( isInt64 &&
+                        (double)(xval.ll-ival.ll)-rollabs < 1e-6 ) ))
+                  || (TYPEOF(ic)<=INTSXP && (double)(INTEGER(xc)[XIND(xupp)]-INTEGER(ic)[ir])-rollabs < 1e-6 )
                   || (TYPEOF(ic)==STRSXP)   )) {
                 retFirst[ir] = xupp+1;   // == xlow+2
                 retLength[ir] = 1;
             }
         }
         if (iupp-ilow > 2 && retFirst[ir]!=NA_INTEGER) {
-            // >=2 equal values in the last column being rolling to the same point.  
+            // >=2 equal values in the last column being rolling to the same point.
             for (j=ilow+1; j<iupp; j++) {
                 // will rewrite retFirst[ir] to itself, but that's ok
                 if (o) k=o[j]-1; else k=j;
                 retFirst[k] = retFirst[ir];
-                retLength[k]= retLength[ir]; 
+                retLength[k]= retLength[ir];
             }
         }
     }

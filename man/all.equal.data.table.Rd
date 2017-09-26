@@ -7,7 +7,7 @@
 }
 
 \usage{
-  \method{all.equal}{data.table}(target, current, trim.levels=TRUE, check.attributes=TRUE, 
+  \method{all.equal}{data.table}(target, current, trim.levels=TRUE, check.attributes=TRUE,
     ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps),
     ...)
 }
@@ -21,19 +21,19 @@
     A logical indicating whether or not to remove all unused levels in columns
     that are factors before running equality check. It effect only when \code{check.attributes} is TRUE and \code{ignore.row.order} is FALSE.
   }
-    
+
   \item{check.attributes}{
     A logical indicating whether or not to check attributes, will apply not only to data.table but also attributes of the columns. It will skip \code{c("row.names",".internal.selfref")} data.table attributes.
   }
-  
+
   \item{ignore.col.order}{
     A logical indicating whether or not to ignore columns order in \code{data.table}.
   }
-  
+
   \item{ignore.row.order}{
     A logical indicating whether or not to ignore rows order in \code{data.table}. This option requires datasets to use data types on which join can be made, so no support for \emph{list, complex, raw}, but still supports \link[bit64]{integer64}.
   }
-  
+
   \item{tolerance}{
     A numeric value used when comparing numeric columns, by default \code{sqrt(.Machine$double.eps)}. Unless non-default value provided it will be forced to \code{0} if used together with \code{ignore.row.order} and duplicate rows detected or factor columns present.
   }
@@ -48,7 +48,7 @@
 }
 
 \value{
-  Either \code{TRUE} or a vector of mode \code{"character"} describing the 
+  Either \code{TRUE} or a vector of mode \code{"character"} describing the
   differences between \code{target} and \code{current}.
 }
 

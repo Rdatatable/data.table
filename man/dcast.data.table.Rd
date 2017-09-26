@@ -3,17 +3,17 @@
 \alias{dcast}
 \title{Fast dcast for data.table}
 \description{
-  \code{dcast.data.table} is a much faster version of \code{reshape2::dcast}, but for \code{data.table}s. More importantly, it's capable of handling very large data quite efficiently in terms of memory usage in comparison to \code{reshape2::dcast}. 
+  \code{dcast.data.table} is a much faster version of \code{reshape2::dcast}, but for \code{data.table}s. More importantly, it's capable of handling very large data quite efficiently in terms of memory usage in comparison to \code{reshape2::dcast}.
 
-  From 1.9.6, \code{dcast} is implemented as an S3 generic in \code{data.table}. To melt or cast \code{data.table}s, it is not necessary to load \code{reshape2} anymore. If you have load \code{reshape2}, do so before loading \code{data.table} to prevent unwanted masking. 
+  From 1.9.6, \code{dcast} is implemented as an S3 generic in \code{data.table}. To melt or cast \code{data.table}s, it is not necessary to load \code{reshape2} anymore. If you have load \code{reshape2}, do so before loading \code{data.table} to prevent unwanted masking.
 
   \bold{NEW}: \code{dcast.data.table} can now cast multiple \code{value.var} columns and also accepts multiple functions to \code{fun.aggregate}. See Examples for more.
 }
 
 % \method{dcast}{data.table}
 \usage{
-\method{dcast}{data.table}(data, formula, fun.aggregate = NULL, sep = "_", 
-    ..., margins = NULL, subset = NULL, fill = NULL, 
+\method{dcast}{data.table}(data, formula, fun.aggregate = NULL, sep = "_",
+    ..., margins = NULL, subset = NULL, fill = NULL,
     drop = TRUE, value.var = guess(data),
     verbose = getOption("datatable.verbose"))
 }
@@ -28,17 +28,17 @@
   \item{margins}{Not implemented yet. Should take variable names to compute margins on. A value of \code{TRUE} would compute all margins.}
   \item{subset}{Specified if casting should be done on a subset of the data. Ex: \code{subset = .(col1 <= 5)} or \code{subset = .(variable != "January")}.}
   \item{fill}{Value with which to fill missing cells. If \code{fun.aggregate} is present, takes the value by applying the function on a 0-length vector.}
-  \item{drop}{\code{FALSE} will cast by including all missing combinations. 
+  \item{drop}{\code{FALSE} will cast by including all missing combinations.
 
   \bold{NEW:} Following \href{https://github.com/Rdatatable/data.table/issues/1512}{#1512}, \code{c(FALSE, TRUE)} will only include all missing combinations of formula \code{LHS}. And \code{c(TRUE, FALSE)} will only include all missing combinations of formula RHS. See Examples.}
-  
+
   \item{value.var}{Name of the column whose values will be filled to cast. Function `guess()` tries to, well, guess this column automatically, if none is provided.
 
   \bold{NEW}: it is now possible to cast multiple \code{value.var} columns simultaneously. See Examples. }
   \item{verbose}{Not used yet. May be dropped in the future or used to provide informative messages through the console.}
 }
 \details{
-The cast formula takes the form \code{LHS ~ RHS}, ex: \code{var1 + var2 ~ var3}. The order of entries in the formula is essential. There are two special variables: \code{.} and \code{...}. \code{.} represents no variable; \code{...} represents all variables not otherwise mentioned in \code{formula}; see Examples. 
+The cast formula takes the form \code{LHS ~ RHS}, ex: \code{var1 + var2 ~ var3}. The order of entries in the formula is essential. There are two special variables: \code{.} and \code{...}. \code{.} represents no variable; \code{...} represents all variables not otherwise mentioned in \code{formula}; see Examples.
 
 \code{dcast} also allows \code{value.var} columns of type \code{list}.
 
@@ -48,9 +48,9 @@ If the formula's LHS contains the same column more than once, ex: \code{dcast(DT
 
 Names for columns that are being cast are generated in the same order (separated by an underscore, \code{_}) from the (unique) values in each column mentioned in the formula RHS.
 
-From \code{v1.9.4}, \code{dcast} tries to preserve attributes whereever possible.
+From \code{v1.9.4}, \code{dcast} tries to preserve attributes wherever possible.
 
-\bold{NEW}: From \code{v1.9.6}, it is possible to cast multiple \code{value.var} columns and also cast by providing multiple \code{fun.aggregate} functions. Multiple \code{fun.aggregate} functions should be provided as a \code{list}, for e.g., \code{list(mean, sum, function(x) paste(x, collapse="")}. \code{value.var} can be either a character vector or list of length=1, or a list of length equal to \code{length(fun.aggregate)}. When \code{value.var} is a character vector or a list of length 1, each function mentioned under \code{fun.aggregate} is applied to every column specified under \code{value.var} column. When \code{value.var} is a list of length equal to \code{length(fun.aggregate)} each element of \code{fun.aggregate} is appled to each element of \code{value.var} column.
+\bold{NEW}: From \code{v1.9.6}, it is possible to cast multiple \code{value.var} columns and also cast by providing multiple \code{fun.aggregate} functions. Multiple \code{fun.aggregate} functions should be provided as a \code{list}, for e.g., \code{list(mean, sum, function(x) paste(x, collapse="")}. \code{value.var} can be either a character vector or list of length=1, or a list of length equal to \code{length(fun.aggregate)}. When \code{value.var} is a character vector or a list of length 1, each function mentioned under \code{fun.aggregate} is applied to every column specified under \code{value.var} column. When \code{value.var} is a list of length equal to \code{length(fun.aggregate)} each element of \code{fun.aggregate} is applied to each element of \code{value.var} column.
 
 }
 \value{
@@ -73,9 +73,9 @@ dcast(DT, chick ~ time, fun=mean, subset=.(time < 10 & chick < 20))
 
 # drop argument, #1512
 DT <- data.table(v1 = c(1.1, 1.1, 1.1, 2.2, 2.2, 2.2),
-                 v2 = factor(c(1L, 1L, 1L, 3L, 3L, 3L), levels=1:3), 
-                 v3 = factor(c(2L, 3L, 5L, 1L, 2L, 6L), levels=1:6), 
-                 v4 = c(3L, 2L, 2L, 5L, 4L, 3L)) 
+                 v2 = factor(c(1L, 1L, 1L, 3L, 3L, 3L), levels=1:3),
+                 v3 = factor(c(2L, 3L, 5L, 1L, 2L, 6L), levels=1:6),
+                 v4 = c(3L, 2L, 2L, 5L, 4L, 3L))
 # drop=TRUE
 dcast(DT, v1 + v2 ~ v3)                      # default is drop=TRUE
 dcast(DT, v1 + v2 ~ v3, drop=FALSE)          # all missing combinations of both LHS and RHS
@@ -96,8 +96,8 @@ dcast(DT, v1 + v2 ~ ., value.var = "v4", fun.aggregate = sum)
 \dontrun{
 # benchmark against reshape2's dcast, minimum of 3 runs
 set.seed(45)
-DT <- data.table(aa=sample(1e4, 1e6, TRUE), 
-      bb=sample(1e3, 1e6, TRUE), 
+DT <- data.table(aa=sample(1e4, 1e6, TRUE),
+      bb=sample(1e3, 1e6, TRUE),
       cc = sample(letters, 1e6, TRUE), dd=runif(1e6))
 system.time(dcast(DT, aa ~ cc, fun=sum)) # 0.12 seconds
 system.time(dcast(DT, bb ~ cc, fun=mean)) # 0.04 seconds
@@ -106,7 +106,7 @@ system.time(dcast(DT, aa + bb ~ cc, fun=sum)) # 1.2 seconds
 }
 
 # NEW FEATURE - multiple value.var and multiple fun.aggregate
-dt = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE), 
+dt = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE),
                 z=sample(letters[1:2], 20,TRUE), d1 = runif(20), d2=1L)
 # multiple value.var
 dcast(dt, x + y ~ z, fun=sum, value.var=c("d1","d2"))

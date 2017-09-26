@@ -96,30 +96,14 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
 }
 
 // used in bmerge.c
-SEXP vec_init(R_len_t n, SEXP val) {
-
-    SEXP ans;
-    R_len_t i;
-    if (n < 0) error("Input argument 'n' to 'vec_init' must be >= 0");
-    ans = PROTECT(allocVector(TYPEOF(val), n));
-    switch(TYPEOF(val)) {
-        case INTSXP :
-        for (i=0; i<n; i++) INTEGER(ans)[i] = INTEGER(val)[0];
-        break;
-        case REALSXP :
-        for (i=0; i<n; i++) REAL(ans)[i] = REAL(val)[0];
-        break;
-        case LGLSXP :
-        for (i=0; i<n; i++) LOGICAL(ans)[i] = LOGICAL(val)[0];
-        break;
-        case STRSXP :
-        for (i=0; i<n; i++) SET_STRING_ELT(ans, i, STRING_ELT(val, 0));
-        break;
-        case VECSXP :
-        for (i=0; i<n; i++) SET_VECTOR_ELT(ans, i, VECTOR_ELT(val, 0));
-        default :
-        error("Unknown input type '%s'", type2char(TYPEOF(val)));
-    }
+SEXP int_vec_init(R_len_t n, int val) {
+    // Matt removed the SEXP val input because the ScalarInteger() input wasn't PROTECTed in caller
+    // and was potentially leaking/crashing.
+    // This function only used once and only for int, so to remove untested lines (code-coverage)
+    // decided to simplify it rather than add the PROTECT and UNPROTECT in caller.
+    if (n < 0) error("Input argument 'n' to 'int_vec_init' must be >= 0");
+    SEXP ans = PROTECT(allocVector(INTSXP, n));
+    for (R_len_t i=0; i<n; i++) INTEGER(ans)[i] = val;
     UNPROTECT(1);
     return(ans);
 }

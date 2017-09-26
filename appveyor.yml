@@ -12,17 +12,30 @@ install:
 
 environment:
   global:
+    CRAN: http://cloud.r-project.org/
     WARNINGS_ARE_ERRORS: 1
+    USE_RTOOLS: true
+    GCC_PATH: mingw_64
+# Default GCC_PATH appears to be gcc-4.6.3 which is now unsupported as from Rtools.exe v3.4
+    R_CHECK_ARGS: --no-manual
+# R_CHECK_ARGS specified in order to turn off --as-cran as that can be slow
 
   matrix:
-  - R_VERSION: devel
-    R_ARCH: x64
-
   - R_VERSION: release
+    R_ARCH: x64
+    
+  - R_VERSION: devel
     R_ARCH: x64
 
 build_script:
   - set _R_CHECK_FORCE_SUGGESTS_=false
+# R-devel needs packages recompiled as from 12 Sep 2017
+# Guessing that was the cause of knitr causing AppVeyor R-devel checks to fail
+# Commenting out these for now so at least the rest of data.table is checked on R-devel on Windows
+#  - travis-tool.sh r_install bit64
+#  - travis-tool.sh r_install fastmatch
+#  - travis-tool.sh r_install knitr
+#  - travis-tool.sh r_install nanotime
 
 test_script:
   - travis-tool.sh run_tests

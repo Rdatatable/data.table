@@ -1,9 +1,12 @@
-#include "data.table.h"
 #include "fwriteLookups.h"
 #include <errno.h>
-#include <unistd.h>  // for access()
+#include <unistd.h>    // for access()
 #include <fcntl.h>
-#include <time.h>
+#include <stdbool.h>   // true and false
+#include <stdint.h>    // INT32_MIN
+#include <math.h>      // isfinite, isnan
+#include <stdlib.h>    // abs
+#include <string.h>    // strlen, strerror
 #ifdef WIN32
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -14,48 +17,118 @@
 #define WRITE write
 #define CLOSE close
 #endif
+#include <omp.h>
+#include "fwrite.h"
 
 #define NUM_SF   15
 #define SIZE_SF  1000000000000000ULL  // 10^NUM_SF
 
-// Globals for this file only (written once to hold parameters passed from R level)                   
-static const char *na_str;             // by default "" or if set then usually "NA"
-static size_t na_len;                  // nchar(na_str). So 0 for "", or 2 for "NA"
-static char col_sep;                   // comma in .csv files
-static char dec_sep;                   // the '.' in the number 3.1416. In Europe often: 3,1416
-static Rboolean verbose=FALSE;         // be chatty?
-static Rboolean quote=FALSE;           // whether to surround fields with double quote ". NA means 'auto' (default)
-static Rboolean qmethod_escape=TRUE;   // when quoting fields, how to manage double quote in the field contents
+// Globals for this file only. Written once to hold parameters passed from R level.
+static const char *na;                 // by default "" or if set (not recommended) then usually "NA"
+static char sep;                       // comma in .csv files
+static char sep2;                      // '|' within list columns. Used here to know if field should be quoted and in freadR.c to write sep2 in list columns
+static char dec;                       // the '.' in the number 3.1416. In Europe often: 3,1416
+static int8_t doQuote=INT8_MIN;        // whether to surround fields with double quote ". NA means 'auto' (default)
+static bool qmethodEscape=false;       // when quoting fields, how to escape double quotes in the field contents (default false means to add another double quote)
+static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 
-static inline void writeInteger(long long x, char **thisCh)
+extern const char *getString(void *, int);
+extern const char *getCategString(void *, int);
+extern double wallclock(void);
+
+inline void write_chars(const char *x, char **pch)
 {
-  char *ch = *thisCh;
-  // both integer and integer64 are passed to this function so careful
-  // to test for NA_INTEGER in the calling code. INT_MIN (NA_INTEGER) is
-  // a valid non-NA in integer64
-  if (x == 0) {
-    *ch++ = '0';
+  // similar to C's strcpy but i) doesn't include trailing \0 and ii) moves destination along
+  char *ch = *pch;
+  while (*x) *ch++=*x++;
+  *pch = ch;
+}
+
+void writeBool8(int8_t *col, int64_t row, char **pch)
+{
+  int8_t x = col[row];
+  char *ch = *pch;
+  *ch++ = '0'+(x==1);
+  *pch = ch-(x==INT8_MIN);  // if NA then step back, to save a branch
+}
+
+void writeBool32(int32_t *col, int64_t row, char **pch)
+{
+  int32_t x = col[row];
+  char *ch = *pch;
+  if (x==INT32_MIN) {  // TODO: when na=='\0' as recommended, use a branchless writer
+    write_chars(na, &ch);
+  } else {
+    *ch++ = '0'+x;
+  }
+  *pch = ch;
+}
+
+void writeBool32AsString(int32_t *col, int64_t row, char **pch)
+{
+  int32_t x = col[row];
+  char *ch = *pch;
+  if (x == INT32_MIN) {
+    write_chars(na, &ch);
+  } else if (x) {
+    *ch++='T'; *ch++='R'; *ch++='U'; *ch++='E';
+  } else {
+    *ch++='F'; *ch++='A'; *ch++='L'; *ch++='S'; *ch++='E';
+  }
+  *pch = ch;
+}
+
+static inline void reverse(char *upp, char *low)
+{
+  upp--;
+  while (upp>low) {
+    char tmp = *upp;
+    *upp = *low;
+    *low = tmp;
+    upp--;
+    low++;
+  }
+}
+
+void writeInt32(int32_t *col, int64_t row, char **pch)
+{
+  char *ch = *pch;
+  int32_t x = col[row];
+  if (x == INT32_MIN) {
+    write_chars(na, &ch);
   } else {
     if (x<0) { *ch++ = '-'; x=-x; }
-    // avoid log() call for speed. write backwards then reverse when we know how long
-    int width = 0;
-    while (x>0) { *ch++ = '0'+x%10; x /= 10; width++; }
-    for (int i=width/2; i>0; i--) {
-      char tmp=*(ch-i);
-      *(ch-i) = *(ch-width+i-1);
-      *(ch-width+i-1) = tmp;
-    }
+    // Avoid log() for speed. Write backwards then reverse when we know how long.
+    char *low = ch;
+    do { *ch++ = '0'+x%10; x/=10; } while (x>0);
+    reverse(ch, low);
   }
-  *thisCh = ch;
+  *pch = ch;
 }
 
-SEXP genLookups() {
-  Rprintf("genLookups commented out of the package so it's clear it isn't needed to build. The hooks are left in so it's easy to put back in development should we need to.\n");
-  // e.g. ldexpl may not be available on some platforms, or if it is it may not be accurate.
-  return R_NilValue;
+void writeInt64(int64_t *col, int64_t row, char **pch)
+{
+  char *ch = *pch;
+  int64_t x = col[row];
+  if (x == INT64_MIN) {
+    write_chars(na, &ch);
+  } else {
+    if (x<0) { *ch++ = '-'; x=-x; }
+    char *low = ch;
+    do { *ch++ = '0'+x%10; x/=10; } while (x>0);
+    reverse(ch, low);
+  }
+  *pch = ch;
 }
+
 /*
-  FILE *f = fopen("/tmp/fwriteLookups.h", "w"); 
+ * Generate fwriteLookup.h which defines sigparts, expsig and exppow that writeNumeric() that follows uses.
+ * It was run once a long time ago in dev and we don't need to generate it again unless we change it.
+ * Commented out and left here in the file where its result is used, in case we need it in future.
+ * Reason: ldexpl may not be available on all platforms and is slower than a direct lookup when it is.
+ *
+void genLookups() {
+  FILE *f = fopen("/tmp/fwriteLookups.h", "w");
   fprintf(f, "//\n\
 // Generated by fwrite.c:genLookups()\n\
 //\n\
@@ -68,17 +141,17 @@ SEXP genLookups() {
 // these at runtime; libraries and hardware vary.\n\
 // These small lookup tables are used for speed.\n\
 //\n\n");
-  fprintf(f, "double sigparts[53] = {\n0.0,\n");
+  fprintf(f, "const double sigparts[53] = {\n0.0,\n");
   for (int i=1; i<=52; i++) {
     fprintf(f, "%.40Le%s\n",ldexpl(1.0L,-i), i==52?"":",");
   }
-  fprintf(f, "};\n\ndouble expsig[2048] = {\n");
+  fprintf(f, "};\n\nconst double expsig[2048] = {\n");
   char x[2048][60];
   for (int i=0; i<2048; i++) {
     sprintf(x[i], "%.40Le", ldexpl(1.0L, i-1023));
     fprintf(f, "%.*s%s\n", (int)(strchr(x[i],'e')-x[i]), x[i], (i==2047?"":",") );
   }
-  fprintf(f, "};\n\nint exppow[2048] = {\n");
+  fprintf(f, "};\n\nconst int exppow[2048] = {\n");
   for (int i=0; i<2048; i++) {
     fprintf(f, "%d%s", atoi(strchr(x[i],'e')+1), (i==2047?"":",") );
   }
@@ -88,39 +161,35 @@ SEXP genLookups() {
 }
 */
 
-static union {
-  double d;
-  unsigned long long ull;
-} u;
-
-static inline void writeNumeric(double x, char **thisCh)
+void writeFloat64(double *col, int64_t row, char **pch)
 {
   // hand-rolled / specialized for speed
-  // *thisCh is safely the output destination with enough space (ensured via calculating maxLineLen up front)
+  // *pch is safely the output destination with enough space (ensured via calculating maxLineLen up front)
   // technique similar to base R (format.c:formatReal and printutils.c:EncodeReal0)
   // differences/tricks :
   //   i) no buffers. writes straight to the final file buffer passed to write()
   //  ii) no C libary calls such as sprintf() where the fmt string has to be interpretted over and over
   // iii) no need to return variables or flags.  Just writes.
-  //  iv) shorter, easier to read and reason with. In one self contained place.
-  char *ch = *thisCh;
-  if (!R_FINITE(x)) {
-    if (ISNAN(x)) {
-      memcpy(ch, na_str, na_len); ch += na_len; // by default na_len==0 and the memcpy call will be skipped
-    } else if (x>0) {
-      *ch++ = 'I'; *ch++ = 'n'; *ch++ = 'f';
+  //  iv) shorter, easier to read and reason with in one self contained place.
+  double x = col[row];
+  char *ch = *pch;
+  if (!isfinite(x)) {
+    if (isnan(x)) {
+      write_chars(na, &ch);
     } else {
-      *ch++ = '-'; *ch++ = 'I'; *ch++ = 'n'; *ch++ = 'f';
+      if (x<0) *ch++ = '-';
+      *ch++ = 'I'; *ch++ = 'n'; *ch++ = 'f';
     }
   } else if (x == 0.0) {
     *ch++ = '0';   // and we're done.  so much easier rather than passing back special cases
   } else {
     if (x < 0.0) { *ch++ = '-'; x = -x; }  // and we're done on sign, already written. no need to pass back sign
+    union { double d; uint64_t l; } u;
     u.d = x;
-    unsigned long long fraction = u.ull & 0xFFFFFFFFFFFFF;  // (1ULL<<52)-1;
-    int exponent = (int)((u.ull>>52) & 0x7FF);              // [0,2047]
+    uint64_t fraction = u.l & 0xFFFFFFFFFFFFF;           // (1<<52)-1;
+    uint32_t exponent = (int32_t)((u.l>>52) & 0x7FF);    // [0,2047]
 
-    // Now sum the appropriate powers 2^-(1:52) of the fraction 
+    // Now sum the appropriate powers 2^-(1:52) of the fraction
     // Important for accuracy to start with the smallest first; i.e. 2^-52
     // Exact powers of 2 (1.0, 2.0, 4.0, etc) are represented precisely with fraction==0
     // Skip over tailing zeros for exactly representable numbers such 0.5, 0.75
@@ -129,9 +198,9 @@ static inline void writeNumeric(double x, char **thisCh)
     double acc = 0;  // 'long double' not needed
     int i = 52;
     if (fraction) {
-      while ((fraction & 0xFF) == 0) { fraction >>= 8; i-=8; } 
+      while ((fraction & 0xFF) == 0) { fraction >>= 8; i-=8; }
       while (fraction) {
-        acc += sigparts[(((fraction&1u)^1u)-1u) & i];
+        acc += sigparts[(((fraction & 1u)^1u)-1u) & i];
         i--;
         fraction >>= 1;
       }
@@ -143,11 +212,11 @@ static inline void writeNumeric(double x, char **thisCh)
     // By design we can just lookup the power from the tables
     double y = (1.0+acc) * expsig[exponent];  // low magnitude mult
     int exp = exppow[exponent];
-    if (y>=10.0) { y /= 10; exp++; }
-    unsigned long long l = y * SIZE_SF;  // low magnitude mult 10^NUM_SF
+    if (y>=9.99999999999999) { y /= 10; exp++; }
+    uint64_t l = y * SIZE_SF;  // low magnitude mult 10^NUM_SF
     // l now contains NUM_SF+1 digits as integer where repeated /10 below is accurate
 
-    // if (verbose) Rprintf("\nTRACE: acc=%.20Le ; y=%.20Le ; l=%llu ; e=%d     ", acc, y, l, exp);    
+    // if (verbose) Rprintf("\nTRACE: acc=%.20Le ; y=%.20Le ; l=%llu ; e=%d     ", acc, y, l, exp);
 
     if (l%10 >= 5) l+=10; // use the last digit to round
     l /= 10;
@@ -160,7 +229,7 @@ static inline void writeNumeric(double x, char **thisCh)
       while (l%10 == 0) { l /= 10; trailZero++; }
       int sf = NUM_SF - trailZero;
       if (sf==0) {sf=1; exp++;}  // e.g. l was 9999999[5-9] rounded to 10000000 which added 1 digit
-      
+
       // l is now an unsigned long that doesn't start or end with 0
       // sf is the number of digits now in l
       // exp is e<exp> were l to be written with the decimal sep after the first digit
@@ -183,7 +252,7 @@ static inline void writeNumeric(double x, char **thisCh)
          if (dr) {
            while (dr && sf) { *ch--='0'+l%10; l/=10; dr--; sf--; }
            while (dr) { *ch--='0'; dr--; }
-           *ch-- = dec_sep;
+           *ch-- = dec;
          }
          while (dl0) { *ch--='0'; dl0--; }
          while (sf) { *ch--='0'+l%10; l/=10; sf--; }
@@ -193,10 +262,10 @@ static inline void writeNumeric(double x, char **thisCh)
         // scientific ...
         ch += sf;  // sf-1 + 1 for dec
         for (int i=sf; i>1; i--) {
-          *ch-- = '0' + l%10;   
+          *ch-- = '0' + l%10;
           l /= 10;
         }
-        if (sf == 1) ch--; else *ch-- = dec_sep;
+        if (sf == 1) ch--; else *ch-- = dec;
         *ch = '0' + l;
         ch += sf + (sf>1);
         *ch++ = 'e';  // lower case e to match base::write.csv
@@ -213,36 +282,223 @@ static inline void writeNumeric(double x, char **thisCh)
       }
     }
   }
-  *thisCh = ch;
+  *pch = ch;
 }
 
-static inline void writeString(SEXP x, char **thisCh)
+// DATE/TIME
+
+static inline void write_time(int32_t x, char **pch)
+// just a helper called below by the real writers (time-only and datetime)
 {
-  char *ch = *thisCh;
-  if (x == NA_STRING) {
-    // NA is not quoted by write.csv even when quote=TRUE to distinguish from "NA"
-    memcpy(ch, na_str, na_len); ch += na_len;
+  char *ch = *pch;
+  if (x<0) {  // <0 covers NA_INTEGER too (==INT_MIN checked in init.c)
+    write_chars(na, &ch);
   } else {
-    Rboolean q = quote;
-    if (q==NA_LOGICAL) { // quote="auto"
-      const char *tt = CHAR(x);
-      while (*tt!='\0' && *tt!=col_sep && *tt!='\n') *ch++ = *tt++;
-      // windows includes \n in its \r\n so looking for \n only is sufficient
-      if (*tt=='\0') {
-        // most common case: no sep or newline contained in string
-        *thisCh = ch;  // advance caller over the field already written
+    int hh = x/3600;
+    int mm = (x - hh*3600) / 60;
+    int ss = x%60;
+    *ch++ = '0'+hh/10;
+    *ch++ = '0'+hh%10;
+    *ch++ = ':';
+    ch -= squashDateTime;
+    *ch++ = '0'+mm/10;
+    *ch++ = '0'+mm%10;
+    *ch++ = ':';
+    ch -= squashDateTime;
+    *ch++ = '0'+ss/10;
+    *ch++ = '0'+ss%10;
+  }
+  *pch = ch;
+}
+
+void writeITime(int32_t *col, int64_t row, char **pch) {
+  write_time(col[row], pch);
+}
+
+static inline void write_date(int32_t x, char **pch)
+// just a helper called below by the two real writers (date-only and datetime)
+{
+  // From base ?Date :
+  //  "  Dates are represented as the number of days since 1970-01-01, with negative values
+  // for earlier dates. They are always printed following the rules of the current Gregorian calendar,
+  // even though that calendar was not in use long ago (it was adopted in 1752 in Great Britain and its
+  // colonies)  "
+
+  // The algorithm here in data.table::fwrite was taken from civil_from_days() here :
+  //   http://howardhinnant.github.io/date_algorithms.html
+  // which was donated to the public domain thanks to Howard Hinnant, 2013.
+  // The rebase to 1 March 0000 is inspired: avoids needing isleap() at all.
+  // The only small modifications here are :
+  //   1) no need for era
+  //   2) impose date range of [0000-03-01, 9999-12-31]. All 3,652,365 dates tested in test 1739
+  //   3) use direct lookup for mmdd rather than the math using 153, 2 and 5
+  //   4) use true/false value (md/100)<3 rather than ?: branch
+  // The end result is 5 lines of simple branch free integer math with no library calls.
+  // as.integer(as.Date(c("0000-03-01","9999-12-31"))) == c(-719468,+2932896)
+
+  char *ch = *pch;
+  if (x< -719468 || x>2932896) {
+    // NA_INTEGER<(-719468) (==INT_MIN checked in init.c)
+    write_chars(na, &ch);
+  } else {
+    x += 719468;  // convert days from 1970-01-01 to days from 0000-03-01 (the day after 29 Feb 0000)
+    int y = (x - x/1461 + x/36525 - x/146097) / 365;  // year of the preceeding March 1st
+    int z =  x - y*365 - y/4 + y/100 - y/400 + 1;     // days from March 1st in year y
+    int md = monthday[z];  // See fwriteLookups.h for how the 366 item lookup 'monthday' is arranged
+    y += z && (md/100)<3;  // The +1 above turned z=-1 to 0 (meaning Feb29 of year y not Jan or Feb of y+1)
+
+    ch += 7 + 2*!squashDateTime;
+    *ch-- = '0'+md%10; md/=10;
+    *ch-- = '0'+md%10; md/=10;
+    *ch-- = '-';
+    ch += squashDateTime;
+    *ch-- = '0'+md%10; md/=10;
+    *ch-- = '0'+md%10; md/=10;
+    *ch-- = '-';
+    ch += squashDateTime;
+    *ch-- = '0'+y%10; y/=10;
+    *ch-- = '0'+y%10; y/=10;
+    *ch-- = '0'+y%10; y/=10;
+    *ch   = '0'+y%10; y/=10;
+    ch += 8 + 2*!squashDateTime;
+  }
+  *pch = ch;
+}
+
+void writeDateInt32(int32_t *col, int64_t row, char **pch) {
+  write_date(col[row], pch);
+}
+
+void writeDateFloat64(double *col, int64_t row, char **pch) {
+  write_date(isfinite(col[row]) ? (int)(col[row]) : INT32_MIN, pch);
+}
+
+void writePOSIXct(double *col, int64_t row, char **pch)
+{
+  // Write ISO8601 UTC by default to encourage ISO standards, stymie ambiguity and for speed.
+  // R internally represents POSIX datetime in UTC always. Its 'tzone' attribute can be ignored.
+  // R's representation ignores leap seconds too which is POSIX compliant, convenient and fast.
+  // Aside: an often overlooked option for users is to start R in UTC: $ TZ='UTC' R
+  // All positive integers up to 2^53 (9e15) are exactly representable by double which is relied
+  // on in the ops here; number of seconds since epoch.
+
+  double x = col[row];
+  char *ch = *pch;
+  if (!isfinite(x)) {
+    write_chars(na, &ch);
+  } else {
+    int xi, d, t;
+    if (x>=0) {
+      xi = (int)x;
+      d = xi / 86400;
+      t = xi % 86400;
+    } else {
+      // before 1970-01-01T00:00:00Z
+      xi = (int)floor(x);
+      d = (xi+1)/86400 - 1;
+      t = xi - d*86400;  // xi and d are both negative here; t becomes the positive number of seconds into the day
+    }
+    int m = (int)((x-xi)*10000000); // 7th digit used to round up if 9
+    m += (m%10);  // 9 is numerical accuracy, 8 or less then we truncate to last microsecond
+    m /= 10;
+    write_date(d, &ch);
+    *ch++ = 'T';
+    ch -= squashDateTime;
+    write_time(t, &ch);
+    if (squashDateTime || (m && m%1000==0)) {
+      // when squashDateTime always write 3 digits of milliseconds even if 000, for consistent scale of squash integer64
+      // don't use writeInteger() because it doesn't 0 pad which we need here
+      // integer64 is big enough for squash with milli but not micro; trunc (not round) micro when squash
+      m /= 1000;
+      *ch++ = '.';
+      ch -= squashDateTime;
+      *(ch+2) = '0'+m%10; m/=10;
+      *(ch+1) = '0'+m%10; m/=10;
+      *ch     = '0'+m;
+      ch += 3;
+    } else if (m) {
+      // microseconds are present and !squashDateTime
+      *ch++ = '.';
+      *(ch+5) = '0'+m%10; m/=10;
+      *(ch+4) = '0'+m%10; m/=10;
+      *(ch+3) = '0'+m%10; m/=10;
+      *(ch+2) = '0'+m%10; m/=10;
+      *(ch+1) = '0'+m%10; m/=10;
+      *ch     = '0'+m;
+      ch += 6;
+    }
+    *ch++ = 'Z';
+    ch -= squashDateTime;
+  }
+  *pch = ch;
+}
+
+void writeNanotime(int64_t *col, int64_t row, char **pch)
+{
+  int64_t x = col[row];
+  char *ch = *pch;
+  if (x == INT64_MIN) {
+    write_chars(na, &ch);
+  } else {
+    int d/*days*/, s/*secs*/, n/*nanos*/;
+    n = x % 1000000000;
+    x /= 1000000000;
+    if (x>=0 && n>=0) {
+      d = x / 86400;
+      s = x % 86400;
+    } else {
+      // before 1970-01-01T00:00:00.000000000Z
+      if (n) { x--; n += 1000000000; }
+      d = (x+1)/86400 - 1;
+      s = x - d*86400;  // x and d are both negative here; secs becomes the positive number of seconds into the day
+    }
+    write_date(d, &ch);
+    *ch++ = 'T';
+    ch -= squashDateTime;
+    write_time(s, &ch);
+    *ch++ = '.';
+    ch -= squashDateTime;
+    for (int i=8; i>=0; i--) { *(ch+i) = '0'+n%10; n/=10; }  // always 9 digits for nanoseconds
+    ch += 9;
+    *ch++ = 'Z';
+    ch -= squashDateTime;
+  }
+  *pch = ch;
+}
+
+static inline void write_string(const char *x, char **pch)
+{
+  char *ch = *pch;
+  if (x == NULL) {
+    // NA is not quoted even when quote=TRUE to distinguish from quoted "NA" value.  But going forward: ,,==NA and ,"",==empty string
+    write_chars(na, &ch);
+  } else {
+    int8_t q = doQuote;
+    if (q==INT8_MIN) { // NA means quote="auto"
+      const char *tt = x;
+      if (*tt == '\0') {
+        // Empty strings are always quoted to distinguish from ,,==NA
+        *ch++='"'; *ch++='"';
+        *pch = ch;
         return;
       }
-      ch = *thisCh; // rewind the field written since it contains some sep or \n
-      q = TRUE;
+      while (*tt!='\0' && *tt!=sep && *tt!=sep2 && *tt!='\n' && *tt!='\r' && *tt!='"') *ch++ = *tt++;
+      // Windows includes \n in its \r\n so looking for \n only is sufficient
+      // sep2 is set to '\0' when no list columns are present
+      if (*tt=='\0') {
+        // most common case: no sep, newline or " contained in string
+        *pch = ch;  // advance caller over the field already written
+        return;
+      }
+      ch = *pch; // rewind the field written since it needs to be quoted
+      q = true;
     }
-    if (q==FALSE) {
-      memcpy(ch, CHAR(x), LENGTH(x));
-      ch += LENGTH(x);
+    if (q==false) {
+      write_chars(x, &ch);
     } else {
       *ch++ = '"';
-      const char *tt = CHAR(x);
-      if (qmethod_escape) {
+      const char *tt = x;
+      if (qmethodEscape) {
         while (*tt!='\0') {
           if (*tt=='"' || *tt=='\\') *ch++ = '\\';
           *ch++ = *tt++;
@@ -257,18 +513,19 @@ static inline void writeString(SEXP x, char **thisCh)
       *ch++ = '"';
     }
   }
-  *thisCh = ch;
+  *pch = ch;
 }
 
-static inline Rboolean isInteger64(SEXP x) {
-  SEXP class;
-  if (TYPEOF(x)==REALSXP && isString(class = getAttrib(x, R_ClassSymbol))) {
-    for (int i=0; i<LENGTH(class); i++) {   // inherits()
-      if (STRING_ELT(class, i) == char_integer64) return TRUE;
-    }
-  }
-  return FALSE;
+void writeString(void *col, int64_t row, char **pch)
+{
+  write_string(getString(col, row), pch);
 }
+
+void writeCategString(void *col, int64_t row, char **pch)
+{
+  write_string(getCategString(col, row), pch);
+}
+
 
 static int failed = 0;
 static int rowsPerBatch;
@@ -301,199 +558,158 @@ static inline void checkBuffer(
   }
 }
 
-SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g. data.frame, data.table
-               SEXP filenameArg,
-               SEXP col_sep_Arg,
-               SEXP row_sep_Arg,
-               SEXP na_Arg,
-               SEXP dec_Arg,
-               SEXP quoteArg,           // 'auto'=NA_LOGICAL|TRUE|FALSE
-               SEXP qmethod_escapeArg,  // TRUE|FALSE
-               SEXP append,             // TRUE|FALSE
-               SEXP row_names,          // TRUE|FALSE
-               SEXP col_names,          // TRUE|FALSE
-               SEXP logicalAsInt_Arg,   // TRUE|FALSE
-               SEXP buffMB_Arg,         // [1-1024] default 8MB
-               SEXP nThread,
-               SEXP showProgressArg,
-               SEXP verboseArg,
-               SEXP turboArg)
+void fwriteMain(fwriteMainArgs args)
 {
-  if (!isNewList(DF)) error("fwrite must be passed an object of type list; e.g. data.frame, data.table");
-  RLEN ncol = length(DF);
-  if (ncol==0) error("fwrite must be passed a non-empty list");
-  RLEN nrow = length(VECTOR_ELT(DF, 0));
-  for (int i=1; i<ncol; i++) {
-    if (nrow != length(VECTOR_ELT(DF, i)))
-      error("Column %d's length (%d) is not the same as column 1's length (%d)", i+1, length(VECTOR_ELT(DF, i)), nrow);
-  }
-#ifndef _OPENMP
-  Rprintf("This installation has no OpenMP support. fwrite() will still work but slower in single threaded mode.\n");
-  // Not warning() because that would cause test.data.table() to error about the unexpected warnings
-#endif
+  double startTime = wallclock();
+  double nextTime = startTime+2; // start printing progress meter in 2 sec if not completed by then
+  double t0 = startTime;
 
-  const Rboolean showProgress = LOGICAL(showProgressArg)[0];
-  time_t start_time = time(NULL);
-  time_t next_time = start_time+2; // start printing progress meter in 2 sec if not completed by then
-  
-  verbose = LOGICAL(verboseArg)[0];
-  const Rboolean turbo = LOGICAL(turboArg)[0];
-  
-  col_sep = *CHAR(STRING_ELT(col_sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
-  const char *row_sep = CHAR(STRING_ELT(row_sep_Arg, 0));
-  int row_sep_len = strlen(row_sep);  // someone somewhere might want a trailer on every line
-  na_str = CHAR(STRING_ELT(na_Arg, 0));
-  na_len = strlen(na_str);
-  dec_sep = *CHAR(STRING_ELT(dec_Arg,0));
-  quote = LOGICAL(quoteArg)[0];
-  qmethod_escape = LOGICAL(qmethod_escapeArg)[0];
-  const char *filename = CHAR(STRING_ELT(filenameArg, 0));
-  Rboolean logicalAsInt = LOGICAL(logicalAsInt_Arg)[0];
-  int nth = INTEGER(nThread)[0];
+  na = args.na;
+  sep = args.sep;
+  sep2 = args.sep2;
+  dec = args.dec;
+  doQuote = args.doQuote;
 
-  int f;
-  if (*filename=='\0') {
-    f=-1;  // file="" means write to standard output
-    row_sep = "\n";  // We'll use Rprintf(); it knows itself about \r\n on Windows
-    row_sep_len = 1;
-  } else { 
-#ifdef WIN32
-    f = _open(filename, _O_WRONLY | _O_BINARY | _O_CREAT | (LOGICAL(append)[0] ? _O_APPEND : _O_TRUNC), _S_IWRITE);
-    // row_sep must be passed from R level as '\r\n' on Windows since write() only auto-converts \n to \r\n in
-    // _O_TEXT mode. We use O_BINARY for full control and perhaps speed since O_TEXT must have to deep branch an if('\n')
-#else
-    f = open(filename, O_WRONLY | O_CREAT | (LOGICAL(append)[0] ? O_APPEND : O_TRUNC), 0644);
-#endif
-    if (f == -1) {
-      int erropen = errno;
-      if( access( filename, F_OK ) != -1 )
-        error("%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?", strerror(erropen), filename);
-      else
-        error("%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?", strerror(erropen), filename); 
-    }
-  }
-  clock_t t0=clock();
-  
-  // Store column type tests in lookups for efficiency
-  int sameType = TYPEOF(VECTOR_ELT(DF, 0)); // to avoid deep switch later
-  SEXP levels[ncol];        // VLA. NULL means not-factor too, else the levels
-  Rboolean integer64[ncol]; // VLA
-  for (int j=0; j<ncol; j++) {
-    SEXP column = VECTOR_ELT(DF, j);
-    levels[j] = NULL;
-    integer64[j] = FALSE;
-    if (isFactor(column)) {
-      levels[j] = getAttrib(column, R_LevelsSymbol);
-      sameType = 0;
-    } else if (isInteger64(column)) {  // tests class() string vector
-      integer64[j] = TRUE;
-      sameType = 0;
-    } else {
-      if (TYPEOF(column) != sameType) sameType = 0;
-    }
-  }
-  
-  // user may want row names even when they don't exist (implied row numbers as row names)
-  Rboolean doRowNames = LOGICAL(row_names)[0];
-  SEXP rowNames = NULL;
-  if (doRowNames) {
-    rowNames = getAttrib(DF, R_RowNamesSymbol);
-    if (!isString(rowNames)) rowNames=NULL;
-  }
-  
+  // When NA is a non-empty string, then we must quote all string fields in case they contain the na string
+  // na is recommended to be empty, though
+  if (na[0]!='\0' && doQuote==INT8_MIN) doQuote = true;
+
+  qmethodEscape = args.qmethodEscape;
+  squashDateTime = args.squashDateTime;
+
   // Estimate max line length of a 1000 row sample (100 rows in 10 places).
-  // Estimate even of this sample because quote='auto' may add quotes and escape embedded quotes.
-  // Buffers will be resized later if there are too many actual line lengths outside the sample estimate.
+  // 'Estimate' even of this sample because quote='auto' may add quotes and escape embedded quotes.
+  // Buffers will be resized later if there are too many line lengths outside the sample, anyway.
+  // maxLineLen is required to determine a reasonable rowsPerBatch.
+
+
+  // alloc one buffMB here.  Keep rewriting each field to it, to sum up the size.  Restriction: one field can't be
+  // greater that minimumum buffMB (1MB = 1 million characters).  Otherwise unbounded overwrite. Possible with very
+  // very long single strings, or very long list column values.
+  // The caller guarantees no field with be longer than this. If so, it can set buffMB larger. It might know
+  // due to some stats it has maintained on each column or in the environment generally.
+  // However, a single field being longer than 1 million characters is considered a very reasonable restriction.
+  // Once we have a good line length estimate, we may increase the buffer size a lot anyway.
+  // The default buffMB is 8MB,  so it's really 8 million character limit by default. 1MB is because user might set
+  // buffMB to 1, say if they have 512 CPUs or more, perhaps.
+
+  // Cold section as only 1,000 rows. Speed not an issue issue here.
+  // Overestimating line length is ok.
+  int eolLen = strlen(args.eol);
+  if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
+
+  int buffMB = args.buffMB;
+  if (buffMB<1 || buffMB>1024) STOP("buffMB=%d outside [1,1024]", buffMB);
+  size_t buffSize = (size_t)1024*1024*buffMB;
+  char *buff = malloc(buffSize);
+  if (!buff) STOP("Unable to allocate %dMB for line length estimation: %s", buffMB, strerror(errno));
+
+  if (args.verbose) {
+    DTPRINT("Column writers: ");
+    if (args.ncol<=50) {
+      for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
+    } else {
+      for (int j=0; j<30; j++) DTPRINT("%d ", args.whichFun[j]);
+      DTPRINT("... ");
+      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
+    }
+    DTPRINT("\n");
+  }
+
   int maxLineLen = 0;
-  int step = nrow<1000 ? 100 : nrow/10;
-  for (int start=0; start<nrow; start+=step) {
-    int end = (nrow-start)<100 ? nrow : start+100;
-    for (int i=start; i<end; i++) {
+  int step = args.nrow<1000 ? 100 : args.nrow/10;
+  for (int64_t start=0; start<args.nrow; start+=step) {
+    int64_t end = (args.nrow-start)<100 ? args.nrow : start+100;
+    for (int64_t i=start; i<end; i++) {
       int thisLineLen=0;
-      if (doRowNames) {
-        if (rowNames) thisLineLen += LENGTH(STRING_ELT(rowNames,i));
-        else thisLineLen += 1+(int)log10(nrow);
-        if (quote==TRUE) thisLineLen+=2;
-        thisLineLen++; // col_sep
-      }
-      for (int j=0; j<ncol; j++) {
-        SEXP column = VECTOR_ELT(DF, j);
-        static char tmp[32]; // +- 15digits dec e +- nnn \0 = 23 + 9 safety = 32. Covers integer64 too (20 digits).
-        char *ch=tmp;
-        switch(TYPEOF(column)) {
-        case LGLSXP:
-          thisLineLen = logicalAsInt ? 1/*0|1*/ : 5/*FALSE*/;  // na_len might be 2 (>1) but ok; this is estimate
-          break;
-        case INTSXP: {
-          int i32 = INTEGER(column)[i];
-          if (i32 == NA_INTEGER) thisLineLen += na_len;
-          else if (levels[j] != NULL) thisLineLen += LENGTH(STRING_ELT(levels[j], i32-1));
-          else { writeInteger(i32, &ch); thisLineLen += (int)(ch-tmp); } }
-          break;          
-        case REALSXP:
-          if (integer64[j]) {
-            long long i64 = *(long long *)&REAL(column)[i];
-            if (i64==NAINT64)                              thisLineLen += na_len;
-            else { writeInteger(i64,             &ch); thisLineLen += (int)(ch-tmp); }
-          } else { writeNumeric(REAL(column)[i], &ch); thisLineLen += (int)(ch-tmp); }
-          break;
-        case STRSXP:
-          thisLineLen += LENGTH(STRING_ELT(column, i));
-          break;
-        default:
-          error("Column %d's type is '%s' - not yet implemented.", j+1, type2char(TYPEOF(column)) );
+      if (args.doRowNames) {
+        if (args.rowNames) {
+          char *ch = buff;
+          writeString(args.rowNames, i, &ch);
+          thisLineLen += (int)(ch-buff);     // see comments above about restrictions/guarantees/contracts
+        } else {
+          thisLineLen += 1+(int)log10(args.nrow);  // the width of the row number
         }
-        thisLineLen++; // col_sep
+        thisLineLen += 2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
       }
-      thisLineLen += row_sep_len;
+      for (int j=0; j<args.ncol; j++) {
+        char *ch = buff;                // overwrite each field at the beginning of buff to be more robust to single fields > 1 million bytes
+        args.funs[args.whichFun[j]]( args.columns[j], i, &ch );
+        thisLineLen += (int)(ch-buff) + 1/*sep*/;        // see comments above about restrictions/guarantees/contracts
+      }
       if (thisLineLen > maxLineLen) maxLineLen = thisLineLen;
     }
   }
-  if (verbose) Rprintf("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(clock()-t0)/CLOCKS_PER_SEC);
-  
-  t0=clock();  
-  if (verbose) {
-    Rprintf("Writing column names ... ");
-    if (f==-1) Rprintf("\n");
-  }
-  if (LOGICAL(col_names)[0]) {
-    SEXP names = getAttrib(DF, R_NamesSymbol);  
-    if (names!=NULL) {
-      if (LENGTH(names) != ncol) error("Internal error: length of column names is not equal to the number of columns. Please report.");
-      // allow for quoting even when not.
-      int buffSize = 2/*""*/ +1/*,*/;
-      for (int j=0; j<ncol; j++) buffSize += 1/*"*/ +2*LENGTH(STRING_ELT(names, j)) +1/*"*/ +1/*,*/;
-      //     in case every name full of quotes(!) to be escaped ^^
-      buffSize += row_sep_len +1/*\0*/;
-      char *buffer = malloc(buffSize);
-      if (buffer == NULL) error("Unable to allocate %d buffer for column names", buffSize);
-      char *ch = buffer;
-      if (doRowNames) {
-        if (quote!=FALSE) { *ch++='"'; *ch++='"'; } // to match write.csv
-        *ch++ = col_sep;
-      }
-      for (int j=0; j<ncol; j++) {
-        writeString(STRING_ELT(names, j), &ch);
-        *ch++ = col_sep;
-      }
-      ch--;  // backup onto the last col_sep after the last column
-      memcpy(ch, row_sep, row_sep_len);  // replace it with the newline 
-      ch += row_sep_len;
-      if (f==-1) { *ch='\0'; Rprintf(buffer); }
-      else if (WRITE(f, buffer, (int)(ch-buffer))==-1) {
-        int errwrite=errno;
-        close(f); // the close might fail too but we want to report the write error
-        free(buffer);
-        error("%s: '%s'", strerror(errwrite), filename);
-      }
-      free(buffer);
+  maxLineLen += eolLen;
+  if (args.verbose) DTPRINT("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
+
+  int f;
+  if (*args.filename=='\0') {
+    f=-1;  // file="" means write to standard output
+    // eol = "\n";  // We'll use DTPRINT which converts \n to \r\n inside it on Windows
+  } else {
+#ifdef WIN32
+    f = _open(args.filename, _O_WRONLY | _O_BINARY | _O_CREAT | (args.append ? _O_APPEND : _O_TRUNC), _S_IWRITE);
+    // O_BINARY rather than O_TEXT for explicit control and speed since it seems that write() has a branch inside it
+    // to convert \n to \r\n on Windows when in text mode not not when in binary mode.
+#else
+    f = open(args.filename, O_WRONLY | O_CREAT | (args.append ? O_APPEND : O_TRUNC), 0666);
+    // There is no binary/text mode distinction on Linux and Mac
+#endif
+    if (f == -1) {
+      int erropen = errno;
+      STOP(access( args.filename, F_OK ) != -1 ?
+           "%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?" :
+           "%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?",
+           strerror(erropen), args.filename);
     }
   }
-  if (verbose) Rprintf("done in %.3fs\n", 1.0*(clock()-t0)/CLOCKS_PER_SEC);
-  if (nrow == 0) {
-    if (verbose) Rprintf("No data rows present (nrow==0)\n");
-    if (f!=-1 && CLOSE(f)) error("%s: '%s'", strerror(errno), filename);
-    return(R_NilValue);
+  t0=wallclock();
+
+  if (args.verbose) {
+    DTPRINT("Writing column names ... ");
+    if (f==-1) DTPRINT("\n");
+  }
+  if (args.colNames) {
+    // We don't know how long this line will be.
+    // It could be (much) longer than the data row line lengths
+    // To keep things simple we'll reuse the same buffer used above for each field, and write each column name separately to the file.
+    // If multiple calls to write() is ever an issue, we'll come back to this. But very unlikely.
+    char *ch = buff;
+    if (args.doRowNames) {
+      // Unusual: the extra blank column name when row_names are added as the first column
+      if (doQuote!=0/*'auto'(NA) or true*/) { *ch++='"'; *ch++='"'; } // to match write.csv
+      *ch++ = sep;
+    }
+    for (int j=0; j<args.ncol; j++) {
+      writeString(args.colNames, j, &ch);
+      if (f==-1) {
+        *ch = '\0';
+        DTPRINT(buff);
+      } else if (WRITE(f, buff, (int)(ch-buff))==-1) {  // TODO: move error check inside WRITE
+        int errwrite=errno;  // capture write errno now incase close fails with a different errno
+        close(f);
+        free(buff);
+        STOP("%s: '%s'", strerror(errwrite), args.filename);
+      }
+      ch = buff;  // overwrite column names at the start in case they are > 1 million bytes long
+      *ch++ = args.sep;  // this sep after the last column name won't be written to the file
+    }
+    if (f==-1) {
+      DTPRINT(args.eol);
+    } else if (WRITE(f, args.eol, eolLen)==-1) {
+      int errwrite=errno;
+      close(f);
+      free(buff);
+      STOP("%s: '%s'", strerror(errwrite), args.filename);
+    }
+  }
+  free(buff);  // TODO: also to be free'd in cleanup when there's an error opening file above
+  if (args.verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
+  if (args.nrow == 0) {
+    if (args.verbose) DTPRINT("No data rows present (nrow==0)\n");
+    if (f!=-1 && CLOSE(f)) STOP("%s: '%s'", strerror(errno), args.filename);
+    return;
   }
 
   // Decide buffer size and rowsPerBatch for each thread
@@ -501,204 +717,97 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
   // turn out to be longer than estimated from the sample.
   // buffSize large enough to fit many lines to i) reduce calls to write() and ii) reduce thread sync points
   // It doesn't need to be small in cache because it's written contiguously.
-  // If we don't use all the buffer for any reasons that's ok as OS will only page in the pages touched.
+  // If we don't use all the buffer for any reasons that's ok as OS will only getch the cache lines touched.
   // So, generally the larger the better up to max filesize/nth to use all the threads. A few times
   //   smaller than that though, to achieve some load balancing across threads since schedule(dynamic).
-  int buffMB = INTEGER(buffMB_Arg)[0]; // checked at R level between 1 and 1024
-  if (buffMB<1 || buffMB>1024) error("buffMB=%d outside [1,1024]", buffMB); // check it again even so
-  size_t buffSize = 1024*1024*buffMB;
-  if (maxLineLen > buffSize) buffSize=2*maxLineLen;  // A very long line; at least 1,048,576 characters
+  if (maxLineLen > buffSize) buffSize=2*maxLineLen;  // A very long line; at least 1,048,576 characters (since min(buffMB)==1)
   rowsPerBatch =
-    (10*maxLineLen > buffSize) ? 1 :  // very long lines (100,000 characters+) we'll just do one row at a time.
+    (10*maxLineLen > buffSize) ? 1 :  // very very long lines (100,000 characters+) each thread will just do one row at a time.
     0.5 * buffSize/maxLineLen;        // Aim for 50% buffer usage. See checkBuffer for comments.
-  if (rowsPerBatch > nrow) rowsPerBatch=nrow;
-  int numBatches = (nrow-1)/rowsPerBatch + 1;
+  if (rowsPerBatch > args.nrow) rowsPerBatch = args.nrow;
+  int numBatches = (args.nrow-1)/rowsPerBatch + 1;
+  int nth = args.nth;
   if (numBatches < nth) nth = numBatches;
-  if (verbose) {
-    Rprintf("Writing %d rows in %d batches of %d rows (each buffer size %dMB, turbo=%d, showProgress=%d, nth=%d) ... ",
-    nrow, numBatches, rowsPerBatch, buffMB, turbo, showProgress, nth);
-    if (f==-1) Rprintf("\n");
+  if (args.verbose) {
+    DTPRINT("Writing %d rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d) ... ",
+            args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
+    if (f==-1) DTPRINT("\n");
   }
-  t0 = clock();
-  
+  t0 = wallclock();
+
   failed=0;  // static global so checkBuffer can set it. -errno for malloc or realloc fails, +errno for write fail
-  Rboolean hasPrinted=FALSE;
-  Rboolean anyBufferGrown=FALSE;
+  bool hasPrinted=false;
+  bool anyBufferGrown=false;
   int maxBuffUsedPC=0;
-  
+
   #pragma omp parallel num_threads(nth)
   {
-    char *ch, *buffer;               // local to each thread
-    ch = buffer = malloc(buffSize);  // each thread has its own buffer
-    // Don't use any R API alloc here (e.g. R_alloc); they are
-    // not thread-safe as per last sentence of R-exts 6.1.1.
-    
-    if (buffer==NULL) {failed=-errno;}
+    char *ch, *myBuff;               // local to each thread
+    ch = myBuff = malloc(buffSize);  // each thread has its own buffer. malloc and errno are thread-safe.
+    if (myBuff==NULL) {failed=-errno;}
     // Do not rely on availability of '#omp cancel' new in OpenMP v4.0 (July 2013).
     // OpenMP v4.0 is in gcc 4.9+ (https://gcc.gnu.org/wiki/openmp) but
     // not yet in clang as of v3.8 (http://openmp.llvm.org/)
     // If not-me failed, I'll see shared 'failed', fall through loop, free my buffer
-    // and after parallel section, single thread will call R API error() safely.
-    
+    // and after parallel section, single thread will call STOP() safely.
+
     size_t myAlloc = buffSize;
     size_t myMaxLineLen = maxLineLen;
-    // so we can realloc(). Should only be needed if there are very long single CHARSXP
-    // much longer than occurred in the sample for maxLineLen. Or for list() columns 
-    // contain vectors which are much longer than occurred in the sample.
-    
+    // so we can realloc(). Should only be needed if there are very long lines that are
+    // much longer than occurred in the sample for maxLineLen; e.g. unusally long string values
+    // that didn't occur in the sample, or list columns with some very long vectors in some cells.
+
     #pragma omp single
     {
       nth = omp_get_num_threads();  // update nth with the actual nth (might be different than requested)
     }
     int me = omp_get_thread_num();
-    
+
     #pragma omp for ordered schedule(dynamic)
-    for(RLEN start=0; start<nrow; start+=rowsPerBatch) {
+    for(int64_t start=0; start<args.nrow; start+=rowsPerBatch) {
       if (failed) continue;  // Not break. See comments above about #omp cancel
-      int end = ((nrow-start)<rowsPerBatch) ? nrow : start+rowsPerBatch;
-      
-      // all-integer and all-double deep switch() avoidance. We could code up all-integer64
-      // as well but that seems even less likely in practice than all-integer or all-double
-      if (turbo && sameType==REALSXP && !doRowNames) {
-        // avoid deep switch() on type. turbo switches on both sameType and specialized writeNumeric
-        for (RLEN i=start; i<end; i++) {
-          char *lineStart = ch;
-          for (int j=0; j<ncol; j++) {
-            SEXP column = VECTOR_ELT(DF, j);
-            writeNumeric(REAL(column)[i], &ch);
-            *ch++ = col_sep;
+      int64_t end = ((args.nrow - start)<rowsPerBatch) ? args.nrow : start + rowsPerBatch;
+      for (int64_t i=start; i<end; i++) {
+        char *lineStart = ch;
+        // Tepid starts here (once at beginning of each per line)
+        if (args.doRowNames) {
+          if (args.rowNames==NULL) {
+            if (doQuote!=0/*NA'auto' or true*/) *ch++='"';
+            int64_t rn = i+1;
+            writeInt64(&rn, 0, &ch);
+            if (doQuote!=0) *ch++='"';
+          } else {
+            writeString(args.rowNames, i, &ch);
           }
-          ch--;  // backup onto the last col_sep after the last column
-          memcpy(ch, row_sep, row_sep_len);  // replace it with the newline.
-          ch += row_sep_len;
-          
-          size_t thisLineLen = ch-lineStart;
-          if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
-          checkBuffer(&buffer, &myAlloc, &ch, myMaxLineLen);
-          if (failed) break;
+          *ch++=sep;
         }
-      } else if (turbo && sameType==INTSXP && !doRowNames) {
-        for (RLEN i=start; i<end; i++) {
-          char *lineStart = ch;
-          for (int j=0; j<ncol; j++) {
-            SEXP column = VECTOR_ELT(DF, j);
-            if (INTEGER(column)[i] == NA_INTEGER) {
-              memcpy(ch, na_str, na_len); ch += na_len;
-            } else {
-              writeInteger(INTEGER(column)[i], &ch);
-            }
-            *ch++ = col_sep;
-          }
-          ch--;
-          memcpy(ch, row_sep, row_sep_len);
-          ch += row_sep_len;
-          
-          size_t thisLineLen = ch-lineStart;
-          if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
-          checkBuffer(&buffer, &myAlloc, &ch, myMaxLineLen);
-          if (failed) break;
+        // Hot loop
+        for (int j=0; j<args.ncol; j++) {
+          //printf("j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
+          (args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
+          //printf("  j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
+          *ch++ = sep;
+          //printf("  j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
         }
-      } else {
-        // mixed types. switch() on every cell value since must write row-by-row
-        for (RLEN i=start; i<end; i++) {
-          char *lineStart = ch;
-          if (doRowNames) {
-            if (rowNames==NULL) {
-              if (quote!=FALSE) *ch++='"';  // default 'auto' will quote the row.name numbers
-              writeInteger(i+1, &ch);
-              if (quote!=FALSE) *ch++='"';
-            } else {
-              writeString(STRING_ELT(rowNames, i), &ch);
-            }
-            *ch++=col_sep;
-          }
-          for (int j=0; j<ncol; j++) {
-            SEXP column = VECTOR_ELT(DF, j);
-            switch(TYPEOF(column)) {
-            case LGLSXP: {
-              Rboolean bool = LOGICAL(column)[i];
-              if (bool == NA_LOGICAL) {
-                memcpy(ch, na_str, na_len); ch += na_len;
-              } else if (logicalAsInt) {
-                *ch++ = '0'+bool;
-              } else if (bool) {
-                *ch++='T'; *ch++='R'; *ch++='U'; *ch++='E';
-              } else {
-                *ch++='F'; *ch++='A'; *ch++='L'; *ch++='S'; *ch++='E';
-              } }
-              break;
-            case REALSXP:
-              if (integer64[j]) {
-                long long i64 = *(long long *)&REAL(column)[i];
-                if (i64 == NAINT64) {
-                  memcpy(ch, na_str, na_len); ch += na_len;
-                } else {
-                  if (turbo) {
-                    writeInteger(i64, &ch);
-                  } else {
-                    ch += sprintf(ch,
-                    #ifdef WIN32
-                        "%I64d"
-                    #else
-                        "%lld"
-                    #endif
-                    , i64);
-                  }
-                }
-              } else {
-                if (turbo) {
-                  writeNumeric(REAL(column)[i], &ch); // handles NA, Inf etc within it
-                } else {
-                  // if there are any problems with the specialized writeNumeric, user can revert to (slower) standard library
-                  if (ISNAN(REAL(column)[i])) {
-                    memcpy(ch, na_str, na_len); ch += na_len;
-                  } else {
-                    ch += sprintf(ch, "%.15g", REAL(column)[i]);
-                  }
-                }
-              }
-              break;
-            case INTSXP:
-              if (INTEGER(column)[i] == NA_INTEGER) {
-                memcpy(ch, na_str, na_len); ch += na_len;
-              } else if (levels[j] != NULL) {   // isFactor(column) == TRUE
-                writeString(STRING_ELT(levels[j], INTEGER(column)[i]-1), &ch);
-              } else {
-                if (turbo) {
-                  writeInteger(INTEGER(column)[i], &ch);
-                } else {
-                  ch += sprintf(ch, "%d", INTEGER(column)[i]);
-                }
-              }
-              break;
-            case STRSXP:
-              writeString(STRING_ELT(column, i), &ch);
-              break;
-            // default:
-            // An uncovered type would have already thrown above when calculating maxLineLen earlier
-            }
-            *ch++ = col_sep;
-          }
-          ch--;  // backup onto the last col_sep after the last column
-          memcpy(ch, row_sep, row_sep_len);  // replace it with the newline. TODO: replace memcpy call with eol1 eol2 --eolLen 
-          ch += row_sep_len;
-          
-          // Track longest line seen so far. If we start to see longer lines than we saw in the
-          // sample, we'll realloc the buffer. The rowsPerBatch chosen based on the (very good) sample,
-          // must fit in the buffer. Can't early write and reset buffer because the
-          // file output would be out-of-order. Can't change rowsPerBatch after the 'parallel for' started.
-          size_t thisLineLen = ch-lineStart;
-          if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
-          checkBuffer(&buffer, &myAlloc, &ch, myMaxLineLen);
-          if (failed) break; // don't write any more rows, fall through to clear up and error() below
-        }
+        // Tepid again (once at the end of each line)
+        ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
+        write_chars(args.eol, &ch);  // overwrite last sep with eol instead
+
+        // Track longest line seen so far. If we start to see longer lines than we saw in the
+        // sample, we'll realloc the buffer. The rowsPerBatch chosen based on the (very good) sample,
+        // must fit in the buffer. Can't early write and reset buffer because the
+        // file output would be out-of-order. Can't change rowsPerBatch after the 'parallel for' started.
+        size_t thisLineLen = ch-lineStart;
+        if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
+        checkBuffer(&myBuff, &myAlloc, &ch, myMaxLineLen);
+        if (failed) break; // this thread stop writing rows; fall through to clear up and STOP() below
       }
       #pragma omp ordered
       {
         if (!failed) { // a thread ahead of me could have failed below while I was working or waiting above
           if (f==-1) {
-            *ch='\0';  // standard C string end marker so Rprintf knows where to stop
-            Rprintf(buffer);
+            *ch='\0';  // standard C string end marker so DTPRINT knows where to stop
+            DTPRINT(myBuff);
             // nth==1 at this point since when file=="" (f==-1 here) fwrite.R calls setDTthreads(1)
             // Although this ordered section is one-at-a-time it seems that calling Rprintf() here, even with a
             // R_FlushConsole() too, causes corruptions on Windows but not on Linux. At least, as observed so
@@ -706,32 +815,32 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
             // by slave threads, even when one-at-a-time. Anyway, made this single-threaded when output to console
             // to be safe (setDTthreads(1) in fwrite.R) since output to console doesn't need to be fast.
           } else {
-            if (WRITE(f, buffer, (int)(ch-buffer)) == -1) {
+            if (WRITE(f, myBuff, (int)(ch-myBuff)) == -1) {
               failed=errno;
             }
-            if (myAlloc > buffSize) anyBufferGrown = TRUE;
-            int used = 100*((double)(ch-buffer))/buffSize;  // percentage of original buffMB
+            if (myAlloc > buffSize) anyBufferGrown = true;
+            int used = 100*((double)(ch-myBuff))/buffSize;  // percentage of original buffMB
             if (used > maxBuffUsedPC) maxBuffUsedPC = used;
-            time_t now;
-            if (me==0 && showProgress && (now=time(NULL))>=next_time && !failed) {
+            double now;
+            if (me==0 && args.showProgress && (now=wallclock())>=nextTime && !failed) {
               // See comments above inside the f==-1 clause.
               // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
               // master thread (me==0) and hopefully this will work on Windows. If not, user should set
               // showProgress=FALSE until this can be fixed or removed.
-              int ETA = (int)((nrow-end)*(((double)(now-start_time))/end));
+              int ETA = (int)((args.nrow-end)*((now-startTime)/end));
               if (hasPrinted || ETA >= 2) {
-                if (verbose && !hasPrinted) Rprintf("\n"); 
-                Rprintf("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. "
-                        "anyBufferGrown=%s; maxBuffUsed=%d%%. Finished in %d secs.    ",
-                         (100.0*end)/nrow, nrow, (int)(now-start_time), nth, nth==1?"":"s", 
+                if (args.verbose && !hasPrinted) DTPRINT("\n");
+                DTPRINT("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. "
+                        "anyBufferGrown=%s; maxBuffUsed=%d%%. ETA %d secs.      ",
+                         (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
                          anyBufferGrown?"yes":"no", maxBuffUsedPC, ETA);
-                R_FlushConsole();    // for Windows
-                next_time = now+1;
-                hasPrinted = TRUE;
+                // TODO: use progress() as in fread
+                nextTime = now+1;
+                hasPrinted = true;
               }
             }
             // May be possible for master thread (me==0) to call R_CheckUserInterrupt() here.
-            // Something like: 
+            // Something like:
             // if (me==0) {
             //   failed = TRUE;  // inside ordered here; the slaves are before ordered and not looking at 'failed'
             //   R_CheckUserInterrupt();
@@ -745,11 +854,11 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
             // Conclusion for now: do not provide ability to interrupt.
             // write() errors and malloc() fails will be caught and cleaned up properly, however.
           }
-          ch = buffer;  // back to the start of my buffer ready to fill it up again
+          ch = myBuff;  // back to the start of my buffer ready to fill it up again
         }
       }
     }
-    free(buffer);
+    free(myBuff);
     // all threads will call this free on their buffer, even if one or more threads had malloc
     // or realloc fail. If the initial malloc failed, free(NULL) is ok and does nothing.
   }
@@ -757,28 +866,27 @@ SEXP writefile(SEXP DF,                 // any list of same length vectors; e.g.
   if (hasPrinted) {
     if (!failed) {
       // clear the progress meter
-      Rprintf("\r                                                   "
+      DTPRINT("\r                                                                       "
               "                                                              \r");
-      R_FlushConsole();  // for Windows
     } else {
       // unless failed as we'd like to see anyBufferGrown and maxBuffUsedPC
-      Rprintf("\n");
+      DTPRINT("\n");
     }
   }
   if (f!=-1 && CLOSE(f) && !failed)
-    error("%s: '%s'", strerror(errno), filename);
+    STOP("%s: '%s'", strerror(errno), args.filename);
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
   // from the original error.
   if (failed<0) {
-    error("%s. One or more threads failed to malloc or realloc their private buffer. nThread=%d and initial buffMB per thread was %d.\n", strerror(-failed), nth, buffMB);
+    STOP("%s. One or more threads failed to malloc or realloc their private buffer. nThread=%d and initial buffMB per thread was %d.\n",
+         strerror(-failed), nth, args.buffMB);
   } else if (failed>0) {
-    error("%s: '%s'", strerror(failed), filename);
+    STOP("%s: '%s'", strerror(failed), args.filename);
   }
-  if (verbose) Rprintf("done (actual nth=%d, anyBufferGrown=%s, maxBuffUsed=%d%%)\n",
-                       nth, anyBufferGrown?"yes":"no", maxBuffUsedPC);
-  return(R_NilValue);
+  if (args.verbose) DTPRINT("done (actual nth=%d, anyBufferGrown=%s, maxBuffUsed=%d%%)\n",
+                            nth, anyBufferGrown?"yes":"no", maxBuffUsedPC);
+  return;
 }
-
 

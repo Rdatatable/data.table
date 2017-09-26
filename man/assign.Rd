@@ -3,7 +3,7 @@
 \alias{set}
 \title{ Assignment by reference }
 \description{
-    Fast add, remove and update subsets of columns, by reference. \code{:=} opertor can be used in two ways: \code{LHS := RHS} form, and \code{Functional form}. See \code{Usage}.
+    Fast add, remove and update subsets of columns, by reference. \code{:=} operator can be used in two ways: \code{LHS := RHS} form, and \code{Functional form}. See \code{Usage}.
 
     \code{set} is a low overhead loopable version of \code{:=}. It is particularly useful for repetitively updating rows of certain columns by reference (using a for-loop). See \code{Examples}. It can not perform grouping operations.
 
@@ -64,12 +64,12 @@ Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerc
 \code{data.table}s are \emph{not} copied-on-change by \code{:=}, \code{setkey} or any of the other \code{set*} functions. See \code{\link{copy}}.
 }
 
-\section{Advanced (internals):}{It is easy to see how \emph{sub-assigning} to existing columns is done internally. Removing columns by reference is also straightforward by modifying the vector of column pointers only (using memmove in C). However adding (new) columns is more tricky as to how the \code{data.table} can be grown \emph{by reference}: the list vector of column pointers is \emph{over-allocated}, see \code{\link{truelength}}. By defining \code{:=} in \code{j} we believe update synax is natural, and scales, but it also bypasses \code{[<-} dispatch and allows \code{:=} to update by reference with no copies of any part of memory at all.
+\section{Advanced (internals):}{It is easy to see how \emph{sub-assigning} to existing columns is done internally. Removing columns by reference is also straightforward by modifying the vector of column pointers only (using memmove in C). However adding (new) columns is more tricky as to how the \code{data.table} can be grown \emph{by reference}: the list vector of column pointers is \emph{over-allocated}, see \code{\link{truelength}}. By defining \code{:=} in \code{j} we believe update syntax is natural, and scales, but it also bypasses \code{[<-} dispatch and allows \code{:=} to update by reference with no copies of any part of memory at all.
 
 Since \code{[.data.table} incurs overhead to check the existence and type of arguments (for example), \code{set()} provides direct (but less flexible) assignment by reference with low overhead, appropriate for use inside a \code{for} loop. See examples. \code{:=} is more powerful and flexible than \code{set()} because \code{:=} is intended to be combined with \code{i} and \code{by} in single queries on large datasets.
 }
 \section{Note:}{
-    \code{DT[a > 4, b := c]} is different from \code{DT[a > 4][, b := c]}. The first expression updates (or adds) column \code{b} with the value \code{c} on those rows where \code{a > 4} evaluates to \code{TRUE}. \code{X} is updated \emph{by reference}, therefore no assignment needed. 
+    \code{DT[a > 4, b := c]} is different from \code{DT[a > 4][, b := c]}. The first expression updates (or adds) column \code{b} with the value \code{c} on those rows where \code{a > 4} evaluates to \code{TRUE}. \code{X} is updated \emph{by reference}, therefore no assignment needed.
 
     The second expression on the other hand updates a \emph{new} \code{data.table} that's returned by the subset operation. Since the subsetted data.table is ephemeral (it is not assigned to a symbol), the result would be lost; unless the result is assigned, for example, as follows: \code{ans <- DT[a > 4][, b := c]}.
 }
@@ -88,8 +88,8 @@ DT                          # DT changed by reference
 DT[2, d := 10L][]           # shorthand for update and print
 
 DT[b > 4, b := d * 2L]      # subassign to b with d*2L on those rows where b > 4 is TRUE
-DT[b > 4][, b := d * 2L]    # different from above. [, := ] is performed on the subset 
-                            # which is an new (ephemeral) data.table. Result needs to be 
+DT[b > 4][, b := d * 2L]    # different from above. [, := ] is performed on the subset
+                            # which is an new (ephemeral) data.table. Result needs to be
                             # assigned to a variable (using `<-`).
 
 DT[, e := mean(d), by = a]  # add new column by group by reference
@@ -102,10 +102,10 @@ DT["B", f := mean(d)]       # subassign to new column, NA initialized
 
 \dontrun{
 # Speed example ...
-    
+
 m = matrix(1, nrow = 2e6L, ncol = 100L)
 DF = as.data.frame(m)
-DT = as.data.table(m)    
+DT = as.data.table(m)
 
 system.time(for (i in 1:1000) DF[i, 1] = i)
 # 15.856 seconds
@@ -118,7 +118,7 @@ system.time(for (i in 1:1000) set(DT, i, 1L, i))
 # The above is to demonstrate overhead, not to recommend looping in this way. But the option
 # of set() is there if you need it.
 }
-    
+
 }
 \keyword{ data }
 
