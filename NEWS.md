@@ -107,6 +107,8 @@
 
 7. Added some clarification about the usage of `on` to `?data.table`, [#2383](https://github.com/Rdatatable/data.table/issues/2383). Thanks to @peterlittlejohn for volunteering his confusion and @MichaelChirico for brushing things up.
 
+8. Clarified that "data.table sorts in `C-locale`" means that upper-case letters may be sorted differently in `setorder` than `base::order`.
+
 
 ### Changes in v1.10.4  (on CRAN 01 Feb 2017)
 
