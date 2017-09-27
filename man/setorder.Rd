@@ -19,24 +19,8 @@ based on the columns (and column order) provided. It reorders the table
 \emph{by reference} and is therefore very memory efficient.
 
 Also \code{x[order(.)]} is now optimised internally to use data.table's fast
-order. data.table always reorders in "C-locale". To sort by session
-locale, use \code{x[base::order(.)]}.
-In English locales, for example, this means data.table will sort upper-case letters before
-lower-case letters because in data.table, \code{"B" < "a"}
-whereas in \code{base::order} \code{"B" > "a"}. Note this makes no difference in most cases
-of data; e.g. ids where only uppercase or lowercase letters are present (\code{"AB123" < "AC234"}
-is always true, regardless), or country names and words which are consistently capitalized.
-For example, \code{"America" < "Brazil"} is not affected (it's always true in both base R and data.table),
-and neither is \code{"america" < "brazil"} (always true too); since the first letter is consistently
-capitalized. But, whether \code{"america" < "Brazil"} (the words are not consistently capitalized) is
-true or false in base R depends on the locale of your R session. In English locales, it is true by default
-and false if you either type \code{Sys.setlocale(locale="C")}, or the R session has been started in a C locale
-for you which can happen on servers/services (the locale comes from the environment the R session
-is started in). However, \code{"america" < "Brazil"} is always, consistently false in data.table which
-can be a surprise in English regions because it differs to base R by default there. It is false because
-\code{"B" < "a"} is true because all upper-case letters come first, followed by all lower-case letters;
-the ascii number of each letter determines the order, which is what is meant by "C-locale".
-
+order. data.table always reorders in "C-locale" (see Details). To sort by session
+locale, use \code{x[base::order(.)]}. 
 
 \code{bit64::integer64} type is also supported for reordering rows of a
 \code{data.table}.
@@ -90,6 +74,24 @@ is \code{TRUE} for \code{x[order(.)]} to be consistent with \code{base::order}.
 Only \code{x[order(.)]} can have \code{na.last = NA} as it's a subset operation
 as opposed to \code{setorder} or \code{setorderv} which reorders the data.table
 by reference.
+
+\code{data.table} always reorders in "C-locale".
+As a consequence, the ordering may be different to that obtained by \code{base::order}.
+In English locales, for example, sorting is case-sensitive in C-locale. 
+Thus, sorting \code{c("c", "a", "B")} returns \code{c("B", "a", "c")} in \code{data.table}
+ but \code{c("a", "B", "c")} in \code{base::order}. Note this makes no difference in most cases
+of data; both return identical results on ids where only upper-case or lower-case letters are present (\code{"AB123" < "AC234"}
+is true in both), or on country names and other proper nouns which are consistently capitalized.
+For example, neither \code{"America" < "Brazil"} nor
+\code{"america" < "brazil"} are affected since the first letter is consistently
+capitalized.
+
+Using C-locale makes the behaviour of sorting in \code{data.table} more consistent across sessions and locales.
+The behaviour of \code{base::order} depends on assumptions about the locale of the R session.
+In English locales, \code{"america" < "BRAZIL"} is true by default
+but false if you either type \code{Sys.setlocale(locale="C")} or the R session has been started in a C locale
+for you -- which can happen on servers/services since the locale comes from the environment the R session
+was started in. By contrast, \code{"america" < "BRAZIL"} is always false in \code{data.table} regardless of the way your R session was started.
 
 If \code{setorder} results in reordering of the rows of a keyed \code{data.table},
 then it's key will be set to \code{NULL}.
