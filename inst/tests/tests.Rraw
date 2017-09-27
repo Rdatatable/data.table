@@ -40,6 +40,11 @@ started.at = Sys.time()
 oldalloccol = options(datatable.alloccol=1024L)
 
 if (!.devtesting) {
+    # Only ::: here so that when testing in dev we use the version in .GlobalEnv. If we used ::: in tests
+    # it would pick up the installed version and you'd have to reinstall every time in dev.
+    # Or, when :: is here, there should be a comment saying which package uses that name. That's so that
+    # test.data.table() works for users who have that other package installed.
+    # The string "data.table::" should exist nowhere else in this file other than here inside this branch.
     test = data.table:::test
     INT = data.table:::INT
     compactprint = data.table:::compactprint
@@ -58,16 +63,14 @@ if (!.devtesting) {
     .R.subassignCopiesOthers = data.table:::.R.subassignCopiesOthers
     .R.subassignCopiesVecsxp = data.table:::.R.subassignCopiesVecsxp
     setdiff_ = data.table:::setdiff_
-    frankv = data.table::frankv
     is_na = data.table:::is_na
     shallow = data.table:::shallow # until exported
     chmatch2 = data.table:::chmatch2
     which_ = data.table:::which_
-    shift = data.table::shift
     any_na = data.table:::any_na
     replace_dot_alias = data.table:::replace_dot_alias
     isReallyReal = data.table:::isReallyReal
-    between = data.table::between
+    between = data.table::between   # which package contains between?
     which.first = data.table:::which.first
     which.last = data.table:::which.last
     trim = data.table:::trim
@@ -3735,7 +3738,7 @@ if (.Machine$sizeof.longdouble == 16) {
 
   tol = 3.000214e-13
   x = c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.18909, NaN, 5.18909-1.2*tol, 5.18909-0.04*tol)
-  # cat(data.table:::binary(x[c(5,10,12,13)]),sep="\n")
+  # cat(binary(x[c(5,10,12,13)]),sep="\n")
   # 0 10000000001 010011000001101000001100111100011000 00000000 11000000
   # 0 10000000001 010011000001101000001100111100011000 00000000 10101000
   # 0 10000000001 010011000001101000001100111100010111 11111111 00010011
@@ -5778,18 +5781,18 @@ thisDT <- copy(DT)[2, x1 := 3]
 test(1419.1, key(thisDT), NULL)
 thisDT <- copy(DT)[2, x2 := 3]
 test(1419.2, key(thisDT), "x1")
-test(1419.3, data.table:::forderv(thisDT, c("x1")), integer(0))
+test(1419.3, forderv(thisDT, c("x1")), integer(0))
 thisDT <- copy(DT)[2, x2 := 3]
 test(1419.4, key(thisDT), "x1")
-test(1419.5, data.table:::forderv(thisDT, c("x1")), integer(0))
+test(1419.5, forderv(thisDT, c("x1")), integer(0))
 thisDT <- copy(DT)[3, x3 := 3]
 test(1419.6, key(thisDT), c("x1", "x2"))
-test(1419.7, data.table:::forderv(thisDT, c("x1", "x2")), integer(0))
+test(1419.7, forderv(thisDT, c("x1", "x2")), integer(0))
 thisDT <- copy(DT)[3, c("x1", "x3") := .(3,3)]
 test(1419.8,key(thisDT), NULL)
 thisDT <- copy(DT)[3, c("x2", "x3") := .(3,3)]
 test(1419.9, key(thisDT), "x1")
-test(1419.10, data.table:::forderv(thisDT, c("x1")), integer(0))
+test(1419.10, forderv(thisDT, c("x1")), integer(0))
 setkey(DT, NULL)
 thisDT <- copy(DT)[3, x3 := 3]
 test(1419.11, key(thisDT), NULL)
@@ -5822,8 +5825,7 @@ allIndicesValid <- function(DT){
   for(idx in seq_along(indices(DT))){
     index <- attr(attr(DT, "index"), paste0("__", indices(DT)[idx], collapse = ""))
     if(!length(index)) index <- seq_len(nrow(DT))
-    if(length(data.table:::forderv(DT[index],
-                                   indices(DT, vectors = TRUE)[[idx]]))){
+    if(length(forderv(DT[index], indices(DT, vectors = TRUE)[[idx]]))){
       ## index is not properly ordered
       return(FALSE)
     }
