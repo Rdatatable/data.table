@@ -40,11 +40,13 @@ started.at = Sys.time()
 oldalloccol = options(datatable.alloccol=1024L)
 
 if (!.devtesting) {
-    # Only ::: here so that when testing in dev we use the version in .GlobalEnv. If we used ::: in tests
-    # it would pick up the installed version and you'd have to reinstall every time in dev.
-    # Or, when :: is here, there should be a comment saying which package uses that name. That's so that
-    # test.data.table() works for users who have that other package installed.
-    # The string "data.table::" should exist nowhere else in this file other than here inside this branch.
+
+    # Make symbols to the installed version's ::: so that we can i) test internal-only not-exposed R functions
+    # in the test suite when user runs test.data.table() from installed package AND ii) so that in dev the same
+    # tests can be used but in dev they test the package in .GlobalEnv. If we used ::: throughout tests, that
+    # would pick up the installed version and in dev you'd have to reinstall every time which slows down dev.
+    # NB: The string "data.table:::" should exist nowhere else in this file other than here inside this branch.
+    
     test = data.table:::test
     INT = data.table:::INT
     compactprint = data.table:::compactprint
@@ -57,7 +59,6 @@ if (!.devtesting) {
     setrev = data.table:::setrev
     setreordervec = data.table:::setreordervec
     selfrefok = data.table:::selfrefok
-    setattr = data.table::setattr     # so as not to use bit::setattr
     .R.listCopiesNamed = data.table:::.R.listCopiesNamed
     .R.assignNamesCopiesAll = data.table:::.R.assignNamesCopiesAll
     .R.subassignCopiesOthers = data.table:::.R.subassignCopiesOthers
@@ -70,15 +71,24 @@ if (!.devtesting) {
     any_na = data.table:::any_na
     replace_dot_alias = data.table:::replace_dot_alias
     isReallyReal = data.table:::isReallyReal
-    between = data.table::between   # which package contains between?
     which.first = data.table:::which.first
     which.last = data.table:::which.last
     trim = data.table:::trim
     `%+%.default` = data.table:::`%+%.default`
     .shallow = data.table:::.shallow
     getdots = data.table:::getdots
-    second = data.table::second # avoid S4Vectors::second
     binary = data.table:::binary
+    
+    # Also, for functions that are masked by other packages, we need to map the data.table one. Or else, 
+    # the other package's function would be picked up. As above, we only need to do this because we desire
+    # to develop in .GlobalEnv with cc().
+    # NB: The string "data.table::" should exist nowhere else in this file other than here inside this branch.
+                                          # masked by which Suggests package?
+                                          # =================================
+    setattr = data.table::setattr         # bit
+    shift = data.table::shift             # IRanges, GenomicRanges
+    between = data.table::between         # plm
+    second = data.table::second           # S4Vectors
 }
 
 # test for covering tables.R 100%, we need to run tables() before creating any data.tables to return null data.table
