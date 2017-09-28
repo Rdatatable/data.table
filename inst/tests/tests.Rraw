@@ -5777,9 +5777,9 @@ test(1416, indices(DT), 'foo')
 setindex(DT,foo,bar,baz)
 test(1417, DT[2,baz:=10L,verbose=TRUE], output=".*Shortening index 'foo__bar__baz' to 'foo__bar' due to an update on a key column")  # test last
 setindex(DT,bar,baz)
-test(1418, DT[2,c("foo","bar"):=10L,verbose=TRUE], output=".*Dropping index.* due to an update on a key column")     # test 2nd to 1st
+test(1418.1, DT[2,c("foo","bar"):=10L,verbose=TRUE], output=".*Dropping index.* due to an update on a key column")     # test 2nd to 1st
 setindex(DT,bar,baz)
-test(1419, DT[2,c("foo","baz"):=10L,verbose=TRUE], output=".*Shortening index 'bar__baz' to 'bar' due to an update on a key column")     # test 2nd to 2nd
+test(1418.2, DT[2,c("foo","baz"):=10L,verbose=TRUE], output=".*Shortening index 'bar__baz' to 'bar' due to an update on a key column")     # test 2nd to 2nd
 
 ## testing key retainment on assign (#2372)
 DT <- data.table(x1 = c(1,1,1,1,1,2,2,2,2,2),
@@ -5802,28 +5802,29 @@ thisDT <- copy(DT)[3, c("x1", "x3") := .(3,3)]
 test(1419.8,key(thisDT), NULL)
 thisDT <- copy(DT)[3, c("x2", "x3") := .(3,3)]
 test(1419.9, key(thisDT), "x1")
-test(1419.10, forderv(thisDT, c("x1")), integer(0))
+# skip test numbers ending 0 because if 1419.10 fails, it prints as 1419.1 the same as 1419.1
+test(1419.11, forderv(thisDT, c("x1")), integer(0))
 setkey(DT, NULL)
 thisDT <- copy(DT)[3, x3 := 3]
-test(1419.11, key(thisDT), NULL)
+test(1419.12, key(thisDT), NULL)
 ## same tests for empty DT
 ## forderv tests can be skipped for empty DT
 DT <- DT[0]
 thisDT <- copy(DT)[, x3 := 3]
-test(1419.12, key(thisDT), NULL)
+test(1419.13, key(thisDT), NULL)
 setkeyv(DT, c("x1", "x2", "x3"))
 thisDT <- copy(DT)[, x1 := 3]
-test(1419.13, key(thisDT), NULL)
-thisDT <- copy(DT)[, x2 := 3]
-test(1419.14, key(thisDT), "x1")
+test(1419.14, key(thisDT), NULL)
 thisDT <- copy(DT)[, x2 := 3]
 test(1419.15, key(thisDT), "x1")
+thisDT <- copy(DT)[, x2 := 3]
+test(1419.16, key(thisDT), "x1")
 thisDT <- copy(DT)[, x3 := 3]
-test(1419.16, key(thisDT), c("x1", "x2"))
+test(1419.17, key(thisDT), c("x1", "x2"))
 thisDT <- copy(DT)[, c("x1", "x3") := .(3,3)]
-test(1419.17, key(thisDT), NULL)
+test(1419.18, key(thisDT), NULL)
 thisDT <- copy(DT)[, c("x2", "x3") := .(3,3)]
-test(1419.18, key(thisDT), "x1")
+test(1419.19, key(thisDT), "x1")
 
 ## testing secondary key retainment on assign (#2372)
 DT <- data.table(a = c(1,1,1,2,1,2,2,2,2,2),
@@ -5846,49 +5847,49 @@ allIndicesValid <- function(DT){
   }
   return(TRUE)
 }
-test(1419.19, indices(copy(DT)[1, a:=1]), NULL)
+test(1419.21, indices(copy(DT)[1, a:=1]), NULL)
 setindex(DT, a)
 setindex(DT, a, aaa)
 setindex(DT, ab, aaa)
 setindex(DT)
-test(1419.21, allIndicesValid(DT), TRUE)
+test(1419.22, allIndicesValid(DT), TRUE)
 thisDT <- copy(DT)[1, a:=1][, aaa := 1][, ab := 1]
-test(1419.22, indices(thisDT), NULL)
-test(1419.23, allIndicesValid(thisDT), TRUE)
+test(1419.23, indices(thisDT), NULL)
+test(1419.24, allIndicesValid(thisDT), TRUE)
 thisDT <- copy(DT)[, b := 2]
-test(1419.24, indices(thisDT), c("a", "a__aaa", "ab__aaa"))
-test(1419.25, allIndicesValid(thisDT), TRUE)
+test(1419.25, indices(thisDT), c("a", "a__aaa", "ab__aaa"))
+test(1419.26, allIndicesValid(thisDT), TRUE)
 thisDT <- copy(DT)[, ab := 2]
-test(1419.26, indices(thisDT), c("a", "a__aaa", "a__aaa__b"))
-test(1419.27, allIndicesValid(thisDT), TRUE)
+test(1419.27, indices(thisDT), c("a", "a__aaa", "a__aaa__b"))
+test(1419.28, allIndicesValid(thisDT), TRUE)
 thisDT <- copy(DT)[, aaa := 2]
-test(1419.28, indices(thisDT), c("a", "ab"))
-test(1419.29, allIndicesValid(thisDT), TRUE)
-thisDT <- copy(DT)[, c("aaa", "b") := 2]
-test(1419.30, indices(thisDT), c("a", "ab"))
+test(1419.29, indices(thisDT), c("a", "ab"))
 test(1419.31, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, c("aaa", "b") := 2]
+test(1419.32, indices(thisDT), c("a", "ab"))
+test(1419.33, allIndicesValid(thisDT), TRUE)
 ## same on empty DT
 DT <- DT[0]
 setindex(DT, a)
 setindex(DT, a, aaa)
 setindex(DT, ab, aaa)
 setindex(DT)
-test(1419.32, allIndicesValid(DT), TRUE)
+test(1419.34, allIndicesValid(DT), TRUE)
 thisDT <- copy(DT)[, a:=1][, aaa := 1][, ab := 1]
-test(1419.33, indices(thisDT), NULL)
-test(1419.34, allIndicesValid(thisDT), TRUE)
-thisDT <- copy(DT)[, b := 2]
-test(1419.35, indices(thisDT), c("a", "a__aaa", "ab__aaa"))
+test(1419.35, indices(thisDT), NULL)
 test(1419.36, allIndicesValid(thisDT), TRUE)
-thisDT <- copy(DT)[, ab := 2]
-test(1419.37, indices(thisDT), c("a", "a__aaa", "a__aaa__b"))
+thisDT <- copy(DT)[, b := 2]
+test(1419.37, indices(thisDT), c("a", "a__aaa", "ab__aaa"))
 test(1419.38, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, ab := 2]
+test(1419.39, indices(thisDT), c("a", "a__aaa", "a__aaa__b"))
+test(1419.41, allIndicesValid(thisDT), TRUE)
 thisDT <- copy(DT)[, aaa := 2]
-test(1419.39, indices(thisDT), c("a", "ab"))
-test(1419.40, allIndicesValid(thisDT), TRUE)
+test(1419.42, indices(thisDT), c("a", "ab"))
+test(1419.43, allIndicesValid(thisDT), TRUE)
 thisDT <- copy(DT)[, c("aaa", "b") := 2]
-test(1419.41, indices(thisDT), c("a", "ab"))
-test(1419.42, allIndicesValid(thisDT), TRUE)
+test(1419.44, indices(thisDT), c("a", "ab"))
+test(1419.45, allIndicesValid(thisDT), TRUE)
 
 
 # setnames updates secondary key
