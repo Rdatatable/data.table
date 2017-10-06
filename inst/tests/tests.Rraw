@@ -5779,7 +5779,7 @@ test(1417, DT[2,baz:=10L,verbose=TRUE], output=".*Shortening index 'foo__bar__ba
 setindex(DT,bar,baz)
 test(1418.1, DT[2,c("foo","bar"):=10L,verbose=TRUE], output=".*Dropping index.* due to an update on a key column")     # test 2nd to 1st
 setindex(DT,bar,baz)
-test(1418.2, DT[2,c("foo","baz"):=10L,verbose=TRUE], output=".*Shortening index 'bar__baz' to 'bar' due to an update on a key column")     # test 2nd to 2nd
+test(1418.2, DT[2,c("foo","baz"):=10L,verbose=TRUE], output=".*Dropping index 'bar__baz' due to an update on a key column")     # test 2nd to 2nd
 
 ## testing key retainment on assign (#2372)
 DT <- data.table(x1 = c(1,1,1,1,1,2,2,2,2,2),
@@ -5826,11 +5826,8 @@ test(1419.18, key(thisDT), NULL)
 thisDT <- copy(DT)[, c("x2", "x3") := .(3,3)]
 test(1419.19, key(thisDT), "x1")
 
-## testing secondary key retainment on assign (#2372)
-DT <- data.table(a = c(1,1,1,2,1,2,2,2,2,2),
-                 aaa = c(2,1,2,2,2,1,1,2,2,2),
-                 b = c(1,2,1,1,2,1,1,1,1,2),
-                 ab  = rnorm(10))
+## testing secondary index retainment on assign (#2372)
+
 allIndicesValid <- function(DT){
   ## checks that the order of all indices is correct
   for(idx in seq_along(indices(DT))){
@@ -5847,6 +5844,13 @@ allIndicesValid <- function(DT){
   }
   return(TRUE)
 }
+
+## on data.table where indices are not integer(0)
+DT <- data.table(a = c(1,1,1,2,1,2,2,2,2,2),
+                 aaa = c(2,1,2,2,2,1,1,2,2,2),
+                 b = c(1,2,1,1,2,1,1,1,1,2),
+                 ab  = rnorm(10))
+
 test(1419.21, indices(copy(DT)[1, a:=1]), NULL)
 setindex(DT, a)
 setindex(DT, a, aaa)
@@ -5860,36 +5864,67 @@ thisDT <- copy(DT)[, b := 2]
 test(1419.25, indices(thisDT), c("a", "a__aaa", "ab__aaa"))
 test(1419.26, allIndicesValid(thisDT), TRUE)
 thisDT <- copy(DT)[, ab := 2]
-test(1419.27, indices(thisDT), c("a", "a__aaa", "a__aaa__b"))
+test(1419.27, indices(thisDT), c("a", "a__aaa"))
 test(1419.28, allIndicesValid(thisDT), TRUE)
 thisDT <- copy(DT)[, aaa := 2]
-test(1419.29, indices(thisDT), c("a", "ab"))
+test(1419.29, indices(thisDT), c("a"))
 test(1419.31, allIndicesValid(thisDT), TRUE)
 thisDT <- copy(DT)[, c("aaa", "b") := 2]
-test(1419.32, indices(thisDT), c("a", "ab"))
+test(1419.32, indices(thisDT), c("a"))
 test(1419.33, allIndicesValid(thisDT), TRUE)
-## same on empty DT
-DT <- DT[0]
+
+## on data.table where indices are integer(0)
+DT <- data.table(a = c(1,1,1,1,1,2,2,2,2,2),
+                 aaa = c(1,1,2,2,2,1,1,2,2,2),
+                 b = c(1,2,1,2,3,1,2,1,2,3),
+                 ab  = 1:10)
+
+test(1419.34, indices(copy(DT)[1, a:=1]), NULL)
 setindex(DT, a)
 setindex(DT, a, aaa)
 setindex(DT, ab, aaa)
 setindex(DT)
-test(1419.34, allIndicesValid(DT), TRUE)
-thisDT <- copy(DT)[, a:=1][, aaa := 1][, ab := 1]
-test(1419.35, indices(thisDT), NULL)
-test(1419.36, allIndicesValid(thisDT), TRUE)
+test(1419.35, allIndicesValid(DT), TRUE)
+thisDT <- copy(DT)[1, a:=1][, aaa := 1][, ab := 1]
+test(1419.36, indices(thisDT), NULL)
+test(1419.37, allIndicesValid(thisDT), TRUE)
 thisDT <- copy(DT)[, b := 2]
-test(1419.37, indices(thisDT), c("a", "a__aaa", "ab__aaa"))
-test(1419.38, allIndicesValid(thisDT), TRUE)
+test(1419.38, indices(thisDT), c("a", "a__aaa", "ab__aaa"))
+test(1419.39, allIndicesValid(thisDT), TRUE)
 thisDT <- copy(DT)[, ab := 2]
-test(1419.39, indices(thisDT), c("a", "a__aaa", "a__aaa__b"))
-test(1419.41, allIndicesValid(thisDT), TRUE)
+test(1419.41, indices(thisDT), c("a", "a__aaa", "a__aaa__b"))
+test(1419.42, allIndicesValid(thisDT), TRUE)
 thisDT <- copy(DT)[, aaa := 2]
-test(1419.42, indices(thisDT), c("a", "ab"))
-test(1419.43, allIndicesValid(thisDT), TRUE)
+test(1419.43, indices(thisDT), c("a", "ab"))
+test(1419.44, allIndicesValid(thisDT), TRUE)
 thisDT <- copy(DT)[, c("aaa", "b") := 2]
-test(1419.44, indices(thisDT), c("a", "ab"))
-test(1419.45, allIndicesValid(thisDT), TRUE)
+test(1419.45, indices(thisDT), c("a", "ab"))
+test(1419.46, allIndicesValid(thisDT), TRUE)
+
+## on empty DT
+DT <- DT[0]
+setindex(DT, NULL)
+test(1419.47, indices(copy(DT)[, a:=1]), NULL)
+setindex(DT, a)
+setindex(DT, a, aaa)
+setindex(DT, ab, aaa)
+setindex(DT)
+test(1419.48, allIndicesValid(DT), TRUE)
+thisDT <- copy(DT)[, a:=1][, aaa := 1][, ab := 1]
+test(1419.49, indices(thisDT), NULL)
+test(1419.51, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, b := 2]
+test(1419.52, indices(thisDT), c("a", "a__aaa", "ab__aaa"))
+test(1419.53, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, ab := 2]
+test(1419.54, indices(thisDT), c("a", "a__aaa", "a__aaa__b"))
+test(1419.55, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, aaa := 2]
+test(1419.56, indices(thisDT), c("a", "ab"))
+test(1419.57, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, c("aaa", "b") := 2]
+test(1419.58, indices(thisDT), c("a", "ab"))
+test(1419.59, allIndicesValid(thisDT), TRUE)
 
 
 # setnames updates secondary key
@@ -7006,25 +7041,27 @@ test(1545.137, key(.shallow(x1, cols=c("a1", "a2"), retain.key=TRUE)), "a1")
 test(1545.138, key(.shallow(x1, cols=c("a3"), retain.key=TRUE)), NULL)
 
 # tests for #2336. .shallow now retains indices as well
-x1 <- data.table(a1 = c('a', 'a', 'a', 'a', 'b', 'c'), a2 = c(2L, 2L, 1L, 2L, 3L, 2L), a3 = c(FALSE, TRUE, TRUE, FALSE, FALSE, TRUE), key="a1,a2")
+x1 <- data.table(a1 = c('a', 'a', 'a', 'a', 'b', 'c'), 
+                 a2 = c(1L, 1L, 1L, 2L, 2L, 2L), 
+                 a3 = c(FALSE, TRUE, FALSE, FALSE, FALSE, TRUE))
 setindex(x1, a1, a2, a3)
 setindex(x1, a1, a3)
+setindex(x1, a1, a2) ## index with length 0
 test(1545.15, indices(.shallow(x1, retain.key=FALSE)), NULL)
-test(1545.16, indices(.shallow(x1, cols = "a1", retain.key=FALSE)), NULL)
+test(1545.16, indices(.shallow(x1, cols = "a2", retain.key=FALSE)), NULL)
 test(1545.17, indices(.shallow(x1, retain.key=TRUE)), indices(x1))
 test(1545.18, forderv(.shallow(x1, retain.key=TRUE)[attr(attr(.shallow(x1, retain.key=TRUE), "index"), "__a1__a2__a3")], c("a1", "a2", "a3")), integer(0))
 test(1545.19, forderv(.shallow(x1, retain.key=TRUE)[attr(attr(.shallow(x1, retain.key=TRUE), "index"), "__a1__a3")], c("a1", "a3")), integer(0))
-test(1545.20, forderv(.shallow(x1, retain.key=TRUE)[attr(attr(.shallow(x1, retain.key=TRUE), "index"), "__a1")], c("a1")), integer(0))
+test(1545.20, forderv(.shallow(x1, retain.key=TRUE), c("a1", "a2")), integer(0))
 test(1545.21, indices(.shallow(x1, cols = "a1", retain.key=TRUE)), c("a1"))
-test(1545.22, forderv(.shallow(x1, cols = "a1", retain.key=TRUE)[attr(attr(.shallow(x1, cols = "a1", retain.key=TRUE), "index"), "__a1")], c("a1")), integer(0))
+test(1545.22, forderv(.shallow(x1, cols = "a1", retain.key=TRUE), c("a1")), integer(0))
 test(1545.23, attributes(attr(.shallow(x1, cols = c("a1", "a2"), retain.key = TRUE), "index", exact = TRUE)), attributes(attr(.shallow(x1, cols = c("a2", "a1"), retain.key = TRUE), "index", exact = TRUE)))
-test(1545.24, indices(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE)), c("a1__a2", "a1"))
-test(1545.25, forderv(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE)[attr(attr(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE), "index"), "__a1")], c("a1")), integer(0))
-test(1545.26, forderv(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE)[attr(attr(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE), "index"), "__a1__a2")], c("a1", "a2")), integer(0))
-test(1545.27, indices(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE)), c("a1", "a1__a3"))
-test(1545.28, forderv(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE)[attr(attr(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE), "index"), "__a1")], c("a1")), integer(0))
-test(1545.29, forderv(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE)[attr(attr(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE), "index"), "__a1__a3")], c("a1", "a3")), integer(0))
-test(1545.30, indices(.shallow(x1, cols = c("a2", "a3"), retain.key=TRUE)), NULL)
+test(1545.24, indices(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE)), c("a1__a2"))
+test(1545.25, forderv(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE), c("a1", "a2")), integer(0))
+test(1545.26, indices(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE)), c("a1__a3", "a1"))
+test(1545.27, forderv(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE), c("a1")), integer(0))
+test(1545.28, forderv(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE)[attr(attr(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE), "index"), "__a1__a3")], c("a1", "a3")), integer(0))
+test(1545.29, indices(.shallow(x1, cols = c("a2", "a3"), retain.key=TRUE)), NULL)
 test(1545.31, indices(.shallow(x1, cols = c("a3"), retain.key=TRUE)), NULL)
 test(1545.32, .shallow(x1, cols = c("a1", "a2", "a3"), retain.key=TRUE), .shallow(x1, retain.key=TRUE))
 

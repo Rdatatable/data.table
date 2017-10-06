@@ -281,13 +281,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     // newcolnames : add these columns (if any)
     // cols : column names or numbers corresponding to the values to set
     // rows : row numbers to assign
-    R_len_t i, j, nrow, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum;
+    R_len_t i, j, nrow, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
     SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key, index, a, assignedNames, indexNames;
     SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
     Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, isDataTable=FALSE;
     char *s1, *s2, *s3, *s4, *s5;
     const char *c1, *tc1, *tc2;
-    int *buf, k=0, newKeyLength;
+    int *buf, k=0, newKeyLength, indexNo;
     size_t size; // must be size_t otherwise overflow later in memcpy
     if (isNull(dt)) error("assign has been passed a NULL dt");
     if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
@@ -641,10 +641,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     index = getAttrib(dt, install("index"));
     if (index != R_NilValue) {
         s = ATTRIB(index);
+        indexNo = 0;
         // get a vector with all index names
         PROTECT(indexNames = allocVector(STRSXP, xlength(s)));
         protecti++;
-        int indexNo = 0;
         while(s != R_NilValue){
             SET_STRING_ELT(indexNames, indexNo, PRINTNAME(TAG(s)));
             indexNo++;
@@ -654,6 +654,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         indexNo = 0;
         while(s != R_NilValue) { 
             a = TAG(s);
+            indexLength = xlength(CAR(s));
             tc1 = c1 = CHAR(PRINTNAME(a));  // the index name; e.g. "__col1__col2"
             if (*tc1!='_' || *(tc1+1)!='_') {
                 // fix for #1396
@@ -703,21 +704,23 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
                 setAttrib(index, a, R_NilValue);
                 SET_STRING_ELT(indexNames, indexNo, NA_STRING);
                 if (verbose) {
-                  Rprintf("Dropping index '%s' due to an update on a key column\n", c1+2);
+                    Rprintf("Dropping index '%s' due to an update on a key column\n", c1+2);
                 }
             } else if(newKeyLength < strlen(c1)){
-                if(LOGICAL(chmatch(mkString(s4), indexNames, 0, TRUE))[0]) { // index is shortened, but shortened version is already covered by other index.
-                    setAttrib(index, a, R_NilValue);
-                    SET_STRING_ELT(indexNames, indexNo, NA_STRING);
-                    if (verbose) {
-                      Rprintf("Dropping index '%s' due to an update on a key column\n", c1+2);
-                    }
-                } else { 
-                    // rename index to shortened version
+                if(indexLength == 0 && // shortened index can be kept since it is just information on the order (see #2372)
+                   LOGICAL(chmatch(mkString(s4), indexNames, 0, TRUE))[0] == 0 ){// index with shortened name not present yet
                     SET_TAG(s, install(s4));
                     SET_STRING_ELT(indexNames, indexNo, mkChar(s4));
                     if (verbose) {
-                      Rprintf("Shortening index '%s' to '%s' due to an update on a key column\n", c1+2, s4 + 2);
+                        Rprintf("Shortening index '%s' to '%s' due to an update on a key column\n", c1+2, s4 + 2);
+                    }
+                } else{ // indexLength > 0 || shortened name present already
+                    // indexLength > 0 indicates reordering. Drop it to avoid spurious reordering in non-indexed columns (#2372)
+                    // shortened anme already present indicates that index needs to be dropped to avoid duplicate indices.
+                    setAttrib(index, a, R_NilValue);
+                    SET_STRING_ELT(indexNames, indexNo, NA_STRING);
+                    if (verbose) {
+                        Rprintf("Dropping index '%s' due to an update on a key column\n", c1+2);
                     }
                 }
             } //else: index is not affected by assign: nothing to be done
