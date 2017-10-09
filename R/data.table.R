@@ -2378,6 +2378,9 @@ point <- function(to, to_idx, from, from_idx) {
           ## Either reduced index already present or no columns of the original index remain.
           ## Drop the original index completely
           setattr(attr(ans, "index", exact = TRUE), index, NULL)
+        } else if(length(attr(attr(ans, "index"), index))){
+          ## index is not length 0. Drop it since shortening could lead to spurious reordering in discarded columns (#2336)
+          setattr(attr(ans, "index", exact = TRUE), index, NULL)
         } else {
           ## rename index to reducedindex
           names(attributes(attr(ans, "index")))[names(attributes(attr(ans, "index"))) == index] <- reducedindex
