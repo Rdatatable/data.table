@@ -185,7 +185,6 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
     SETLENGTH(newdt,l);
     SET_TRUELENGTH(newdt,n);
     setselfref(newdt);
-    // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
     UNPROTECT(protecti);
     return(newdt);
 }
@@ -477,11 +476,16 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         }
         vlen = length(thisvalue);
         if (length(rows)==0 && targetlen==vlen && (vlen>0 || nrow==0)) {
-            if (  NAMED(thisvalue)==2 ||  // set() protects the NAMED of atomic vectors from .Call setting arguments to 2 by wrapping with list
+            if (  MAYBE_SHARED(thisvalue) ||  // set() protects the NAMED of atomic vectors from .Call setting arguments to 2 by wrapping with list
                  (TYPEOF(values)==VECSXP && i>LENGTH(values)-1)) { // recycled RHS would have columns pointing to others, #185.
                 if (verbose) {
-                    if (NAMED(thisvalue)==2) Rprintf("RHS for item %d has been duplicated because NAMED is %d, but then is being plonked.\n",i+1, NAMED(thisvalue));
-                    else Rprintf("RHS for item %d has been duplicated because the list of RHS values (length %d) is being recycled, but then is being plonked.\n", i+1, length(values));
+                    if (length(values)==length(cols)) {
+                      // usual branch
+                      Rprintf("RHS for item %d has been duplicated because NAMED is %d, but then is being plonked.\n", i+1, NAMED(thisvalue));
+                    } else {
+                      // rare branch where the lhs of := is longer than the items on the rhs of :=
+                      Rprintf("RHS for item %d has been duplicated because the list of RHS values (length %d) is being recycled, but then is being plonked.\n", i+1, length(values));
+                    }
                 }
                 thisvalue = duplicate(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
             } else {
@@ -778,7 +782,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
 }
 
 static Rboolean anyNamed(SEXP x) {
-    if (NAMED(x)) return TRUE;
+    if (MAYBE_REFERENCED(x)) return TRUE;
     if (isNewList(x)) for (int i=0; i<LENGTH(x); i++)
         if (anyNamed(VECTOR_ELT(x,i))) return TRUE;
     return FALSE;
@@ -1016,27 +1020,4 @@ SEXP pointWrapper(SEXP to, SEXP to_idx, SEXP from, SEXP from_idx) {
     }
     return(to);
 }
-
-/*
-SEXP pointer(SEXP x) {
-    SEXP ans;
-    PROTECT(ans = allocVector(REALSXP, 1));
-    REAL(ans)[0] = (double)x;
-    UNPROTECT(1);
-    return(ans);
-}
-
-SEXP named(SEXP x) {
-    SEXP y = (SEXP)(REAL(x)[0]);
-    Rprintf("%d length = %d\n",NAMED(y), LENGTH(y));
-    return(R_NilValue);
-}
-
-void setnamed(double *x, int *v) {   // call by .Call(,DUP=FALSE) only.
-    SEXP y = (SEXP)(*x);
-    Rprintf("%d length = %d\n",NAMED(y), LENGTH(y));
-    SET_NAMED(y,*v);
-}
-*/
-
 

@@ -2411,7 +2411,7 @@ alloc.col <- function(DT, n=getOption("datatable.alloccol"), verbose=getOption("
         name = as.character(name)
         assign(name,ans,parent.frame(),inherits=TRUE)
     }
-    .Call(Csetnamed,ans,0L)
+    .Call(Csetmutable,ans)
 }
 
 selfrefok <- function(DT,verbose=getOption("datatable.verbose")) {
