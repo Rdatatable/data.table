@@ -87,7 +87,6 @@ test.data.table(verbose=TRUE)  # since main.R no longer tests verbose mode
 # Upload to win-builder, both release and dev
 
 
-
 ###############################################
 #  R 3.0.0 (stated dependency)
 ###############################################
@@ -110,6 +109,18 @@ q("no")
 R300 CMD INSTALL ~/data.table_1.10.1.tar.gz
 R300
 require(data.table)
+test.data.table()
+
+
+###############################################
+#  Compiles from source when OpenMP is disabled
+###############################################
+vi ~/.R/Makevars
+# Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
+R CMD build .
+R CMD INSTALL data.table_1.10.5.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R
+require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
 
 
@@ -138,6 +149,7 @@ test.data.table()
 
 vi ~/.R/Makevars  # make the -O3 line active again
 
+
 ###############################################
 #  R-devel with UBSAN and ASAN on too
 ###############################################
@@ -149,7 +161,7 @@ tar xvf R-devel.tar.gz
 cd R-devel
 # Following R-exts#4.3.3
 # (clang 3.6.0 works but gcc 4.9.2 fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel)
-./configure CC="clang -std=gnu99 -fsanitize=undefined,address" CFLAGS="-fno-omit-frame-pointer -O0 -g -Wall -pedantic -mtune=native" --without-recommended-packages --disable-byte-compiled-packages
+./configure CC="clang-5.0 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-g -O0 -Wall -pedantic" --without-recommended-packages --disable-byte-compiled-packages
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 Rdevel
@@ -421,7 +433,6 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CM
 # Reinstalling robustbase fixed this warning. Even though it was up to date, reinstalling made a difference.
 
 
-
 ###############################################
 #  Release to CRAN
 ###############################################
@@ -443,5 +454,4 @@ Close milestone
 Submit message template:
 Have rechecked the 339 CRAN packages using data.table.
 Either ok or have liaised with maintainers in advance.
-
 

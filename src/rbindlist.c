@@ -632,7 +632,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
     // check for factor, get max types, and when usenames=TRUE get the answer 'names' and column indices for proper reordering.
     preprocess(l, usenames, fill, &data);
     fnames   = VECTOR_ELT(data.ans_ptr, 0);
-    findices = VECTOR_ELT(data.ans_ptr, 1);
+    if (usenames) findices = VECTOR_ELT(data.ans_ptr, 1);
     protecti = data.protecti;   // TODO very ugly and doesn't seem right. Assign items to list instead, perhaps.
     if (data.n_rows == 0 && data.n_cols == 0) {
         UNPROTECT(protecti);
