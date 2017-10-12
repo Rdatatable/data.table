@@ -53,10 +53,11 @@ At optimisation level \code{>= 2}, i.e., \code{getOption("datatable.optimize")} 
 \itemize{
 
     \item Expressions in \code{j} which contain only the functions
-    \code{min, max, mean, median, var, sd, prod} (for example,
+    \code{min, max, mean, median, var, sd, sum, prod, first, last, head, tail} (for example,
     \code{dt[, list(mean(x), median(x), min(y), max(y)), by=z]}), they are very
     effectively optimised using what we call \emph{GForce}. These functions
-    are automatically replaced with \code{gmin, gmax, gmean, gmedian, gvar, gsd, gprod}, respectively.
+    are automatically replaced with a corresponding GForce version
+    with pattern \code{g*}, e.g., \code{prod} becomes \code{gprod}.
 
     Normally, once the rows belonging to each group are identified, the values
     corresponding to the group are gathered and the \code{j}-expression is
