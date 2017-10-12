@@ -41,6 +41,7 @@ SEXP setDTthreads(SEXP threads) {
     }
     int old = DTthreads;
     DTthreads = INTEGER(threads)[0];
+#ifdef _OPENMP
     if (omp_get_max_threads() < omp_get_thread_limit()) {
       if (DTthreads==0) {
         // for example after test 1705 has auto switched to single-threaded for parallel's fork,
@@ -51,6 +52,7 @@ SEXP setDTthreads(SEXP threads) {
         omp_set_num_threads( MIN(DTthreads, omp_get_thread_limit()) );
       }
     }
+#endif
     return ScalarInteger(old);
 }
 
@@ -59,7 +61,9 @@ void when_fork() {
 
     // attempted workaround for Intel's OpenMP implementation which leaves threads running after
     // parallel region; these crash when forked.
+#ifdef _OPENMP
     omp_set_num_threads(1);
+#endif
 
     // GNU OpenMP seems ok with just setting DTthreads to 1 which limits the next parallel region
     // if data.table is used within the fork'd proceess.
