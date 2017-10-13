@@ -10,7 +10,7 @@ as.data.table.xts <- function(x, keep.rownames = TRUE, ...) {
 as.xts.data.table <- function(x, ...) {
     stopifnot(requireNamespace("xts"), !missing(x), is.data.table(x))
     if (!xts::is.timeBased(x[[1L]])) stop("data.table must have a time based column in first position, use `setcolorder` function to change the order, or see ?timeBased for supported types")
-    colsNumeric = vapply_1b(x, is.numeric)[-1L]
+    colsNumeric = vapply_1b(x, is.numeric)[-1L] # exclude first col, xts index
     if (any(!colsNumeric)) warning(paste("Following columns are not numeric and will be omitted:", paste(names(colsNumeric)[!colsNumeric], collapse = ", ")))
     r = setDF(x[, .SD, .SDcols = names(colsNumeric)[colsNumeric]])
     return(xts::as.xts(r, order.by = x[[1L]]))
