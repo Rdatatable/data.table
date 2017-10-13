@@ -185,7 +185,6 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
     SETLENGTH(newdt,l);
     SET_TRUELENGTH(newdt,n);
     setselfref(newdt);
-    // SET_NAMED(dt,1);  // for some reason, R seems to set NAMED=2 via setAttrib?  Need NAMED to be 1 for passing to assign via a .C dance before .Call (which sets NAMED to 2), and we can't use .C with DUP=FALSE on lists.
     UNPROTECT(protecti);
     return(newdt);
 }
@@ -281,13 +280,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     // newcolnames : add these columns (if any)
     // cols : column names or numbers corresponding to the values to set
     // rows : row numbers to assign
-    R_len_t i, j, nrow, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum;
-    SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key, index, a;
+    R_len_t i, j, nrow, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
+    SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key, index, a, assignedNames, indexNames;
     SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
     Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, isDataTable=FALSE;
-    char *s1, *s2, *s3;
-    const char *c1, *c2, *tc1, *tc2;
-    int *buf, k=0;
+    char *s1, *s2, *s3, *s4, *s5;
+    const char *c1, *tc1, *tc2;
+    int *buf, k=0, newKeyLength, indexNo;
     size_t size; // must be size_t otherwise overflow later in memcpy
     if (isNull(dt)) error("assign has been passed a NULL dt");
     if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
@@ -477,11 +476,16 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         }
         vlen = length(thisvalue);
         if (length(rows)==0 && targetlen==vlen && (vlen>0 || nrow==0)) {
-            if (  NAMED(thisvalue)==2 ||  // set() protects the NAMED of atomic vectors from .Call setting arguments to 2 by wrapping with list
+            if (  MAYBE_SHARED(thisvalue) ||  // set() protects the NAMED of atomic vectors from .Call setting arguments to 2 by wrapping with list
                  (TYPEOF(values)==VECSXP && i>LENGTH(values)-1)) { // recycled RHS would have columns pointing to others, #185.
                 if (verbose) {
-                    if (NAMED(thisvalue)==2) Rprintf("RHS for item %d has been duplicated because NAMED is %d, but then is being plonked.\n",i+1, NAMED(thisvalue));
-                    else Rprintf("RHS for item %d has been duplicated because the list of RHS values (length %d) is being recycled, but then is being plonked.\n", i+1, length(values));
+                    if (length(values)==length(cols)) {
+                      // usual branch
+                      Rprintf("RHS for item %d has been duplicated because NAMED is %d, but then is being plonked.\n", i+1, NAMED(thisvalue));
+                    } else {
+                      // rare branch where the lhs of := is longer than the items on the rhs of :=
+                      Rprintf("RHS for item %d has been duplicated because the list of RHS values (length %d) is being recycled, but then is being plonked.\n", i+1, length(values));
+                    }
                 }
                 thisvalue = duplicate(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
             } else {
@@ -611,60 +615,122 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         }
         memrecycle(targetcol, rows, 0, targetlen, RHS);  // also called from dogroups where these arguments are used more
     }
+    PROTECT(assignedNames = allocVector(STRSXP, LENGTH(cols)));
+    protecti++;
+    for (i=0;i<LENGTH(cols);i++) SET_STRING_ELT(assignedNames,i,STRING_ELT(names,INTEGER(cols)[i]-1));
     key = getAttrib(dt, sym_sorted);
     if (length(key)) {
-        // if assigning to any key column, then drop the key. any() and subsetVector() don't seem to be
-        // exposed by R API at C level, so this is done here long hand.
-        PROTECT(tmp = allocVector(STRSXP, LENGTH(cols)));
+        // if assigning to at least one key column, the key is truncated to one position before the first changed column.
+        //any() and subsetVector() don't seem to be exposed by R API at C level, so this is done here long hand.
+        PROTECT(tmp = chmatch(key, assignedNames, 0, TRUE));
         protecti++;
-        for (i=0;i<LENGTH(cols);i++) SET_STRING_ELT(tmp,i,STRING_ELT(names,INTEGER(cols)[i]-1));
-        if (length(key)) {
-            PROTECT(tmp = chmatch(tmp, key, 0, TRUE));
-            protecti++;
-            for (i=0;i<LENGTH(tmp);i++) if (LOGICAL(tmp)[i]) {
-                // If a key column is being assigned to, clear the key, since it may change the row ordering.
-                // More likely that users will assign to non-key columns, though, most of the time.
-                setAttrib(dt, sym_sorted, R_NilValue);
-                break;
-            }
+        newKeyLength = xlength(key);
+        for (i=0;i<LENGTH(tmp);i++) if (LOGICAL(tmp)[i]) {
+            // If a key column is being assigned to, set newKeyLength to the key element before since everything after that may have changed in order.
+            newKeyLength = i;
+            break;
         }
+        if(newKeyLength == 0){
+          // no valid key columns remain, remove the key
+          setAttrib(dt, sym_sorted, R_NilValue);
+        } else if (newKeyLength < xlength(key)){
+          // new key is shorter than original one. Reassign
+          PROTECT(tmp = allocVector(STRSXP, newKeyLength));
+          protecti++;
+          memcpy((char *)DATAPTR(tmp), (char *)DATAPTR(key), newKeyLength * sizeof(SEXP));
+          setAttrib(dt, sym_sorted, tmp);
+        }
+        //else: no key column changed, nothing to be done
     }
-    index = getAttrib(dt,install("index"));
+    index = getAttrib(dt, install("index"));
     if (index != R_NilValue) {
         s = ATTRIB(index);
-        while(s != R_NilValue) {
-            a = TAG(s);
-            tc1 = c1 = CHAR(PRINTNAME(a));  // the index name; e.g. "__col1__col2"
+        indexNo = 0;
+        // get a vector with all index names
+        PROTECT(indexNames = allocVector(STRSXP, xlength(s)));
+        protecti++;
+        while(s != R_NilValue){
+            SET_STRING_ELT(indexNames, indexNo, PRINTNAME(TAG(s)));
+            indexNo++;
             s = CDR(s);
-            for (i=0; i<LENGTH(cols); i++) {
-                tc2 = c2 = CHAR(STRING_ELT(names, INTEGER(cols)[i]-1));  // the column name being updated; e.g. "col1"
-                while (*tc1) {
-                    if (*tc1!='_' || *(tc1+1)!='_') {
-                    	// fix for #1396
-                    	if (verbose) {
-                    		Rprintf("Dropping index '%s' as it doesn't have '__' at the beginning of its name. It was very likely created by v1.9.4 of data.table.\n", c1);
-                    	}
-                    	setAttrib(index, a, R_NilValue);
-                    	i = LENGTH(cols);
-                    	break;
-                    }
-                    tc1 += 2;
-                    if (*tc1=='\0') error("Internal error: index name ends with trailing __");
-                    while (*tc1 && *tc2 && *tc1 == *tc2) { tc1++; tc2++; }
-                    if (*tc2=='\0' && (*tc1=='\0' || (*tc1=='_' && *(tc1+1)=='_'))) {
-                        if (verbose) {
-                            thisvalue = (TYPEOF(values)==VECSXP && LENGTH(values)>0) ? VECTOR_ELT(values,i%LENGTH(values)) : values;
-                            Rprintf("Dropping index '%s' due to %s '%s' (column %d)\n", c1+2, isNull(thisvalue) ? "delete of" : "update on", c2, INTEGER(cols)[i]);
-                        }
-                        setAttrib(index, a, R_NilValue);
-                        i = LENGTH(cols);  // skip remaining cols, have already deleted this index
-                        break;  // next index
-                    }
-                    tc2 = c2;   // back to start of column name being updated
-                    while (*tc1 && (*tc1!='_' || *(tc1+1)!='_')) tc1++;  // advance to next column in index name
+        }
+        s = ATTRIB(index); // reset to first element
+        indexNo = 0;
+        while(s != R_NilValue) { 
+            a = TAG(s);
+            indexLength = xlength(CAR(s));
+            tc1 = c1 = CHAR(PRINTNAME(a));  // the index name; e.g. "__col1__col2"
+            if (*tc1!='_' || *(tc1+1)!='_') {
+                // fix for #1396
+                if (verbose) {
+                    Rprintf("Dropping index '%s' as it doesn't have '__' at the beginning of its name. It was very likely created by v1.9.4 of data.table.\n", tc1);
                 }
-                tc1 = c1;
+                setAttrib(index, a, R_NilValue);
+                indexNo++;
+                s = CDR(s);
+                continue; // with next index
             }
+            tc1 += 2; // tc1 always marks the start of a key column
+            if (!*tc1) error("Internal error: index name ends with trailing __");
+            // check the position of the first appearance of an assigned column in the index.
+            // the new index will be truncated to this position.
+            s4 = (char*) malloc(strlen(c1) + 3);
+            if(s4 == NULL){
+              error("Internal error: Couldn't allocate memory for s4.");
+            }
+            memcpy(s4, c1, strlen(c1));
+            memset(s4 + strlen(c1), '\0', 1);
+            strcat(s4, "__"); // add trailing '__' to newKey so we can search for pattern '__colName__' also at the end of the index.
+            newKeyLength = strlen(c1);
+            for(int i = 0; i < xlength(assignedNames); i++){
+                tc2 = CHAR(STRING_ELT(assignedNames, i));
+                s5 = (char*) malloc(strlen(tc2) + 5); //4 * '_' + \0
+                if(s5 == NULL){
+                  free(s4);
+                  error("Internal error: Couldn't allocate memory for s5.");
+                }
+                memset(s5, '_', 2);
+                memset(s5 + 2, '\0', 1);
+                strcat(s5, tc2);
+                strcat(s5, "__");
+                tc2 = strstr(s4, s5);
+                if(tc2 == NULL){ // column is not part of key
+                    free(s5);
+                    continue;
+                }
+                if(tc2 - s4 < newKeyLength){ // new column match is before last match
+                  newKeyLength = tc2 - s4;
+                }
+                free(s5);
+            }
+            memset(s4 + newKeyLength, '\0', 1); // truncate the new key to the new length
+            if(newKeyLength == 0){ // no valid key column remains. Drop the key
+                setAttrib(index, a, R_NilValue);
+                SET_STRING_ELT(indexNames, indexNo, NA_STRING);
+                if (verbose) {
+                    Rprintf("Dropping index '%s' due to an update on a key column\n", c1+2);
+                }
+            } else if(newKeyLength < strlen(c1)){
+                if(indexLength == 0 && // shortened index can be kept since it is just information on the order (see #2372)
+                   LOGICAL(chmatch(mkString(s4), indexNames, 0, TRUE))[0] == 0 ){// index with shortened name not present yet
+                    SET_TAG(s, install(s4));
+                    SET_STRING_ELT(indexNames, indexNo, mkChar(s4));
+                    if (verbose) {
+                        Rprintf("Shortening index '%s' to '%s' due to an update on a key column\n", c1+2, s4 + 2);
+                    }
+                } else{ // indexLength > 0 || shortened name present already
+                    // indexLength > 0 indicates reordering. Drop it to avoid spurious reordering in non-indexed columns (#2372)
+                    // shortened anme already present indicates that index needs to be dropped to avoid duplicate indices.
+                    setAttrib(index, a, R_NilValue);
+                    SET_STRING_ELT(indexNames, indexNo, NA_STRING);
+                    if (verbose) {
+                        Rprintf("Dropping index '%s' due to an update on a key column\n", c1+2);
+                    }
+                }
+            } //else: index is not affected by assign: nothing to be done
+            free(s4);
+            indexNo ++;
+            s = CDR(s);
         }
     }
     if (anytodelete) {
@@ -716,7 +782,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
 }
 
 static Rboolean anyNamed(SEXP x) {
-    if (NAMED(x)) return TRUE;
+    if (MAYBE_REFERENCED(x)) return TRUE;
     if (isNewList(x)) for (int i=0; i<LENGTH(x); i++)
         if (anyNamed(VECTOR_ELT(x,i))) return TRUE;
     return FALSE;
@@ -954,27 +1020,4 @@ SEXP pointWrapper(SEXP to, SEXP to_idx, SEXP from, SEXP from_idx) {
     }
     return(to);
 }
-
-/*
-SEXP pointer(SEXP x) {
-    SEXP ans;
-    PROTECT(ans = allocVector(REALSXP, 1));
-    REAL(ans)[0] = (double)x;
-    UNPROTECT(1);
-    return(ans);
-}
-
-SEXP named(SEXP x) {
-    SEXP y = (SEXP)(REAL(x)[0]);
-    Rprintf("%d length = %d\n",NAMED(y), LENGTH(y));
-    return(R_NilValue);
-}
-
-void setnamed(double *x, int *v) {   // call by .Call(,DUP=FALSE) only.
-    SEXP y = (SEXP)(*x);
-    Rprintf("%d length = %d\n",NAMED(y), LENGTH(y));
-    SET_NAMED(y,*v);
-}
-*/
-
 

@@ -23,7 +23,7 @@ SEXP rbindlist();
 SEXP vecseq();
 SEXP copyattr();
 SEXP setlistelt();
-SEXP setnamed();
+SEXP setmutable();
 SEXP address();
 SEXP copyNamedInList();
 SEXP fmelt();
@@ -101,7 +101,7 @@ R_CallMethodDef callMethods[] = {
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
 {"Ccopyattr", (DL_FUNC) &copyattr, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
-{"Csetnamed", (DL_FUNC) &setnamed, -1},
+{"Csetmutable", (DL_FUNC) &setmutable, -1},
 {"Caddress", (DL_FUNC) &address, -1},
 {"CcopyNamedInList", (DL_FUNC) &copyNamedInList, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1},
@@ -174,11 +174,13 @@ void attribute_visible R_init_datatable(DllInfo *info)
     if ((int)NA_INTEGER != (int)INT_MIN) error("Checking NA_INTEGER [%d] == INT_MIN [%d] %s", NA_INTEGER, INT_MIN, msg);
     if ((int)NA_INTEGER != (int)NA_LOGICAL) error("Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s", NA_INTEGER, NA_LOGICAL, msg);
     if (sizeof(int) != 4) error("Checking sizeof(int) [%d] is 4 %s", sizeof(int), msg);
-    if (sizeof(double) != 8) error("Checking sizeof(double) [%d] is 8 %s", sizeof(double), msg);  // 8 on both 32bit and 64bit.
+    if (sizeof(double) != 8) error("Checking sizeof(double) [%d] is 8 %s", sizeof(double), msg);     // 8 on both 32bit and 64bit
+    // alignof not available in C99: if (alignof(double) != 8) error("Checking alignof(double) [%d] is 8 %s", alignof(double), msg);  // 8 on both 32bit and 64bit
     if (sizeof(long long) != 8) error("Checking sizeof(long long) [%d] is 8 %s", sizeof(long long), msg);
     if (sizeof(char *) != 4 && sizeof(char *) != 8) error("Checking sizeof(pointer) [%d] is 4 or 8 %s", sizeof(char *), msg);
     if (sizeof(SEXP) != sizeof(char *)) error("Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s", sizeof(SEXP), sizeof(char *), msg);
     if (sizeof(uint64_t) != 8) error("Checking sizeof(uint64_t) [%d] is 8 %s", sizeof(uint64_t), msg);
+    if (sizeof(int64_t) != 8) error("Checking sizeof(int64_t) [%d] is 8 %s", sizeof(int64_t), msg);
     if (sizeof(signed char) != 1) error("Checking sizeof(signed char) [%d] is 1 %s", sizeof(signed char), msg);
     if (sizeof(int8_t) != 1) error("Checking sizeof(int8_t) [%d] is 1 %s", sizeof(int8_t), msg);
 
@@ -273,30 +275,23 @@ inline Rboolean INHERITS(SEXP x, SEXP char_) {
 inline long long DtoLL(double x) {
   // Type punning such as
   //     *(long long *)&REAL(column)[i]
-  // is undefined by C standards. This was the cause of v1.10.2 failing on 31 Jan 2017
-  // under clang 3.9.1 -O3 and solaris-sparc but was ok on solaris-x86 and gcc.
-  // Then the union method :
-  //     union {double d; long long ll;} u;
-  //     u.d = x;
-  //     return u.ll;
-  // passed on some of those but still failed on MacOS with latest clang from latest
-  // Xcode 8.2 and -O2. It seems that memcpy is the safest way, is clear, and compilers
-  // will optimize away the call overhead.
-  // There is a grep in CRAN_Release.cmd to detect type punning; use this I64 instead.
-  //
+  // is undefined by C standards. This may have been the cause of 1.10.2 failing on 31 Jan 2017
+  // under clang 3.9.1 -O3 and solaris-sparc but not solaris-x86 or gcc.
+  // There is now a grep in CRAN_Release.cmd; use this union method instead.
+  // int64_t may help rather than 'long long' (TODO: replace all long long with int64_t)
   // The two types must be the same size. That is checked in R_init_datatable (above)
-  // where sizeof(long long)==sizeof(double)==8 is checked.
+  // where sizeof(int64_t)==sizeof(double)==8 is checked.
   // Endianness should not matter because whether big or little, endianness is the same
   // inside this process, and the two types are the same size.
-  long long ll;
-  memcpy(&ll, &x, 8);
-  return ll;
+  union {double d; int64_t i64;} u;  // not static, inline instead
+  u.d = x;
+  return (long long)u.i64;
 }
 
 inline double LLtoD(long long x) {
-  double d;
-  memcpy(&d, &x, 8);
-  return d;
+  union {double d; int64_t i64;} u;
+  u.i64 = (int64_t)x;
+  return u.d;
 }
 
 

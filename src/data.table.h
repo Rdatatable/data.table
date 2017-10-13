@@ -37,6 +37,14 @@
 #endif
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+// Backport macros added to R in 2017 so we don't need to update dependency from R 3.0.0
+#ifndef MAYBE_SHARED
+# define MAYBE_SHARED(x) (NAMED(x) > 1)
+#endif
+#ifndef MAYBE_REFERENCED
+# define MAYBE_REFERENCED(x) ( NAMED(x) > 0 )
+#endif
+
 // init.c
 void setSizes();
 SEXP char_integer64;

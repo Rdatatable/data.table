@@ -187,19 +187,21 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             if (LOGICAL(verbose)[0]) tstart = clock();
             if (LENGTH(order)==0) {
                 rownum = INTEGER(starts)[i]-1;
-                for (j=0; j<length(SDall); j++) {
-                    size = SIZEOF(VECTOR_ELT(SDall,j));
-                    memcpy((char *)DATAPTR(VECTOR_ELT(SDall,j)),  // direct memcpy best here, for usually large size groups. by= each row is slow and not recommended anyway, so we don't mind there's no switch here for grpn==1
-                       (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+rownum*size,
-                       grpn*size);
-                    // SD is our own alloc'd memory, and the source (DT) is protected throughout, so no need for SET_* overhead
-                }
                 for (j=0; j<grpn; j++) INTEGER(I)[j] = rownum+j+1;
-                for (j=0; j<length(xSD); j++) {
-                    size = SIZEOF(VECTOR_ELT(xSD,j));
-                    memcpy((char *)DATAPTR(VECTOR_ELT(xSD,j)),  // ok use of memcpy. Loop'd through columns not rows
-                       (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(xjiscols)[j]-1))+rownum*size,
-                       size);
+                if (rownum>=0) {
+                  for (j=0; j<length(SDall); j++) {
+                      size = SIZEOF(VECTOR_ELT(SDall,j));
+                      memcpy((char *)DATAPTR(VECTOR_ELT(SDall,j)),  // direct memcpy best here, for usually large size groups. by= each row is slow and not recommended anyway, so we don't mind there's no switch here for grpn==1
+                         (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+rownum*size,
+                         grpn*size);
+                      // SD is our own alloc'd memory, and the source (DT) is protected throughout, so no need for SET_* overhead
+                  }
+                  for (j=0; j<length(xSD); j++) {
+                      size = SIZEOF(VECTOR_ELT(xSD,j));
+                      memcpy((char *)DATAPTR(VECTOR_ELT(xSD,j)),  // ok use of memcpy. Loop'd through columns not rows
+                         (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(xjiscols)[j]-1))+rownum*size,
+                         size);
+                  }
                 }
                 if (LOGICAL(verbose)[0]) { tblock[0] += clock()-tstart; nblock[0]++; }
             } else {

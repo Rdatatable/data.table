@@ -16,12 +16,12 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
         error("Internal structure doesn't seem to be a list. Can't set class to be 'data.table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' methods instead.");
     if (isLogical(x) && x == ScalarLogical(TRUE)) {  // ok not to protect this ScalarLogical() as not assigned or passed
         x = PROTECT(duplicate(x));
-        setAttrib(x, name, NAMED(value) ? duplicate(value) : value);
+        setAttrib(x, name, MAYBE_REFERENCED(value) ? duplicate(value) : value);
         UNPROTECT(1);
         return(x);
     }
     setAttrib(x, name,
-        NAMED(value) ? duplicate(value) : value);
+        MAYBE_REFERENCED(value) ? duplicate(value) : value);
         // duplicate is temp fix to restore R behaviour prior to R-devel change on 10 Jan 2014 (r64724).
         // TO DO: revisit. Enough to reproduce is: DT=data.table(a=1:3); DT[2]; DT[,b:=2]
         // ... Error: selfrefnames is ok but tl names [1] != tl [100]
@@ -67,10 +67,11 @@ SEXP setlistelt(SEXP l, SEXP i, SEXP value)
     return(R_NilValue);
 }
 
-SEXP setnamed(SEXP x, SEXP value)
+SEXP setmutable(SEXP x)
 {
-    if (!isInteger(value) || LENGTH(value)!=1) error("Second argument to setnamed must a length 1 integer vector");
-    SET_NAMED(x,INTEGER(value)[0]);
+    // called from one single place at R level. TODO: avoid somehow, but fails tests without
+    // At least the SET_NAMED() direct call is passed 0 and makes no assumptions about >0.  Good enough for now as patch for CRAN is needed.
+    SET_NAMED(x,0);
     return(x);
 }
 
@@ -95,7 +96,7 @@ SEXP copyNamedInList(SEXP x)
 
     if (TYPEOF(x) != VECSXP) error("x isn't a VECSXP");
     for (int i=0; i<LENGTH(x); i++) {
-	    if (NAMED(VECTOR_ELT(x, i))) {
+	    if (MAYBE_REFERENCED(VECTOR_ELT(x, i))) {
 	        SET_VECTOR_ELT(x, i, duplicate(VECTOR_ELT(x,i)));
 	    }
 	}

@@ -203,7 +203,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     for (int i=0; i<ncol; i++) {
       SEXP this;
       if (colNames[i].len<=0) {
-        char buff[10];
+        char buff[12];
         sprintf(buff,"V%d",i+1);
         this = mkChar(buff);
       } else {

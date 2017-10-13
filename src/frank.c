@@ -5,11 +5,6 @@
 
 extern SEXP char_integer64;
 
-static union {
-    double d;
-    unsigned long long ull;
-} u;
-
 SEXP dt_na(SEXP x, SEXP cols) {
     int i, j, n=0, this;
     double *dv;
@@ -45,8 +40,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
             if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
                 dv = (double *)REAL(v);
                 for (j=0; j<n; j++) {
-                    u.d = dv[j];
-                    LOGICAL(ans)[j] |= (u.ull == NA_INT64_LL);   // TODO: can be == NA_INT64_D directly
+                    LOGICAL(ans)[j] |= (DtoLL(dv[j]) == NA_INT64_LL);   // TODO: can be == NA_INT64_D directly
                 }
             } else {
                 for (j=0; j<n; j++) LOGICAL(ans)[j] |= ISNAN(REAL(v)[j]);
@@ -171,8 +165,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
             if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
                 dv = (double *)REAL(v);
                 for (j=0; j<n; j++) {
-                    u.d = dv[j];
-                    if (u.ull == NA_INT64_LL) {
+                    if (DtoLL(dv[j]) == NA_INT64_LL) {
                         LOGICAL(ans)[0] = 1;
                         break;
                     }

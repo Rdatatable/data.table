@@ -40,6 +40,13 @@ started.at = Sys.time()
 oldalloccol = options(datatable.alloccol=1024L)
 
 if (!.devtesting) {
+
+    # Make symbols to the installed version's ::: so that we can i) test internal-only not-exposed R functions
+    # in the test suite when user runs test.data.table() from installed package AND ii) so that in dev the same
+    # tests can be used but in dev they test the package in .GlobalEnv. If we used ::: throughout tests, that
+    # would pick up the installed version and in dev you'd have to reinstall every time which slows down dev.
+    # NB: The string "data.table:::" should exist nowhere else in this file other than here inside this branch.
+
     test = data.table:::test
     INT = data.table:::INT
     compactprint = data.table:::compactprint
@@ -52,22 +59,18 @@ if (!.devtesting) {
     setrev = data.table:::setrev
     setreordervec = data.table:::setreordervec
     selfrefok = data.table:::selfrefok
-    setattr = data.table::setattr     # so as not to use bit::setattr
     .R.listCopiesNamed = data.table:::.R.listCopiesNamed
     .R.assignNamesCopiesAll = data.table:::.R.assignNamesCopiesAll
     .R.subassignCopiesOthers = data.table:::.R.subassignCopiesOthers
     .R.subassignCopiesVecsxp = data.table:::.R.subassignCopiesVecsxp
     setdiff_ = data.table:::setdiff_
-    frankv = data.table::frankv
     is_na = data.table:::is_na
     shallow = data.table:::shallow # until exported
     chmatch2 = data.table:::chmatch2
     which_ = data.table:::which_
-    shift = data.table::shift
     any_na = data.table:::any_na
     replace_dot_alias = data.table:::replace_dot_alias
     isReallyReal = data.table:::isReallyReal
-    between = data.table::between
     which.first = data.table:::which.first
     which.last = data.table:::which.last
     trim = data.table:::trim
@@ -76,8 +79,18 @@ if (!.devtesting) {
     getdots = data.table:::getdots
     as.ITime.default = data.table:::as.ITime.default
     as.IDate.default = data.table:::as.IDate.default
-    second = data.table::second # avoid S4Vectors::second
     binary = data.table:::binary
+
+    # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
+    # the other package's function would be picked up. As above, we only need to do this because we desire
+    # to develop in .GlobalEnv with cc().
+    # NB: The string "data.table::" should exist nowhere else in this file other than here inside this branch.
+                                          # masked by which Suggests package?
+                                          # =================================
+    setattr = data.table::setattr         # bit
+    shift = data.table::shift             # IRanges, GenomicRanges
+    between = data.table::between         # plm
+    second = data.table::second           # S4Vectors
 }
 
 # test for covering tables.R 100%, we need to run tables() before creating any data.tables to return null data.table
@@ -3737,7 +3750,7 @@ if (.Machine$sizeof.longdouble == 16) {
 
   tol = 3.000214e-13
   x = c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.18909, NaN, 5.18909-1.2*tol, 5.18909-0.04*tol)
-  # cat(data.table:::binary(x[c(5,10,12,13)]),sep="\n")
+  # cat(binary(x[c(5,10,12,13)]),sep="\n")
   # 0 10000000001 010011000001101000001100111100011000 00000000 11000000
   # 0 10000000001 010011000001101000001100111100011000 00000000 10101000
   # 0 10000000001 010011000001101000001100111100010111 11111111 00010011
@@ -5740,14 +5753,14 @@ test(1396, DT[a==2, verbose=TRUE], DT[2], output="Creating new index 'a'")
 test(1397, DT[b==6, verbose=TRUE], DT[3], output="Creating new index 'b'")
 test(1398, DT[b==6, verbose=TRUE], DT[3], output="Using existing index 'b'")
 test(1399, indices(DT), c("a","b"))
-test(1400, DT[2, a:=4L, verbose=TRUE], data.table(a=c(1L,4L,3L),b=4:6), output="Dropping index 'a' due to update on 'a' (column 1)")
+test(1400, DT[2, a:=4L, verbose=TRUE], data.table(a=c(1L,4L,3L),b=4:6), output=".*Dropping index 'a' due to an update on a key column")
 test(1401, indices(DT), "b")
-test(1402, DT[,b:=NULL,verbose=TRUE], data.table(a=c(1L,4L,3L)), output="Dropping index 'b' due to delete of 'b' (column 2)")
+test(1402, DT[,b:=NULL,verbose=TRUE], data.table(a=c(1L,4L,3L)), output=".*Dropping index 'b' due to an update on a key column")
 test(1403, indices(DT), NULL)
 DT = data.table(x=1:5)
 test(1404, DT[, y := x <= 2L], data.table(x=1:5, y=c(TRUE,TRUE,FALSE,FALSE,FALSE)))
 test(1405, DT[y == TRUE, .N, verbose=TRUE], 2L, output="Creating new index")
-test(1406, DT[, y := x <= 3L, verbose=TRUE], data.table(x=1:5, y=c(TRUE,TRUE,TRUE,FALSE,FALSE)), output="Dropping index")
+test(1406, DT[, y := x <= 3L, verbose=TRUE], data.table(x=1:5, y=c(TRUE,TRUE,TRUE,FALSE,FALSE)), output=".*Dropping index")
 test(1407, DT[y == TRUE, .N], 3L)
 DT = data.table(x=1:5, y=10:6)
 test(1408, DT[x==3,verbose=TRUE], DT[3], output="Creating")
@@ -5761,14 +5774,160 @@ test(1413, DT[x==5], DT[1])
 DT = data.table(foo=1:3, bar=4:6, baz=9:7)
 setindex(DT,foo,bar,baz)
 test(1414, indices(DT), c("foo__bar__baz"))
-test(1415, DT[2,bar:=10L,verbose=TRUE], output="Dropping index 'foo__bar__baz' due to update on 'bar'")  # test middle
-test(1416, indices(DT), NULL)
+test(1415, DT[2,bar:=10L,verbose=TRUE], output=".*Shortening index 'foo__bar__baz' to 'foo' due to an update on a key column")  # test middle
+test(1416, indices(DT), 'foo')
 setindex(DT,foo,bar,baz)
-test(1417, DT[2,baz:=10L,verbose=TRUE], output="Dropping index 'foo__bar__baz' due to update on 'baz'")  # test last
+test(1417, DT[2,baz:=10L,verbose=TRUE], output=".*Shortening index 'foo__bar__baz' to 'foo__bar' due to an update on a key column")  # test last
 setindex(DT,bar,baz)
-test(1418, DT[2,c("foo","bar"):=10L,verbose=TRUE], output="Dropping index.* due to update on 'bar'")     # test 2nd to 1st
+test(1418.1, DT[2,c("foo","bar"):=10L,verbose=TRUE], output=".*Dropping index.* due to an update on a key column")     # test 2nd to 1st
 setindex(DT,bar,baz)
-test(1419, DT[2,c("foo","baz"):=10L,verbose=TRUE], output="Dropping index.* due to update on 'baz'")     # test 2nd to 2nd
+test(1418.2, DT[2,c("foo","baz"):=10L,verbose=TRUE], output=".*Dropping index 'bar__baz' due to an update on a key column")     # test 2nd to 2nd
+
+## testing key retainment on assign (#2372)
+DT <- data.table(x1 = c(1,1,1,1,1,2,2,2,2,2),
+                 x2 = c(1,1,2,2,2,1,1,2,2,2),
+                 x3 = c(1,2,1,1,2,1,1,1,1,2),
+                 y  = rnorm(10),
+                 key = c("x1", "x2", "x3"))
+thisDT <- copy(DT)[2, x1 := 3]
+test(1419.1, key(thisDT), NULL)
+thisDT <- copy(DT)[2, x2 := 3]
+test(1419.2, key(thisDT), "x1")
+test(1419.3, forderv(thisDT, c("x1")), integer(0))
+thisDT <- copy(DT)[2, x2 := 3]
+test(1419.4, key(thisDT), "x1")
+test(1419.5, forderv(thisDT, c("x1")), integer(0))
+thisDT <- copy(DT)[3, x3 := 3]
+test(1419.6, key(thisDT), c("x1", "x2"))
+test(1419.7, forderv(thisDT, c("x1", "x2")), integer(0))
+thisDT <- copy(DT)[3, c("x1", "x3") := .(3,3)]
+test(1419.8,key(thisDT), NULL)
+thisDT <- copy(DT)[3, c("x2", "x3") := .(3,3)]
+test(1419.9, key(thisDT), "x1")
+# skip test numbers ending 0 because if 1419.10 fails, it prints as 1419.1 the same as 1419.1
+test(1419.11, forderv(thisDT, c("x1")), integer(0))
+setkey(DT, NULL)
+thisDT <- copy(DT)[3, x3 := 3]
+test(1419.12, key(thisDT), NULL)
+## same tests for empty DT
+## forderv tests can be skipped for empty DT
+DT <- DT[0]
+thisDT <- copy(DT)[, x3 := 3]
+test(1419.13, key(thisDT), NULL)
+setkeyv(DT, c("x1", "x2", "x3"))
+thisDT <- copy(DT)[, x1 := 3]
+test(1419.14, key(thisDT), NULL)
+thisDT <- copy(DT)[, x2 := 3]
+test(1419.15, key(thisDT), "x1")
+thisDT <- copy(DT)[, x2 := 3]
+test(1419.16, key(thisDT), "x1")
+thisDT <- copy(DT)[, x3 := 3]
+test(1419.17, key(thisDT), c("x1", "x2"))
+thisDT <- copy(DT)[, c("x1", "x3") := .(3,3)]
+test(1419.18, key(thisDT), NULL)
+thisDT <- copy(DT)[, c("x2", "x3") := .(3,3)]
+test(1419.19, key(thisDT), "x1")
+
+## testing secondary index retainment on assign (#2372)
+
+allIndicesValid <- function(DT){
+  ## checks that the order of all indices is correct
+  for(idx in seq_along(indices(DT))){
+    index <- attr(attr(DT, "index"), paste0("__", indices(DT)[idx], collapse = ""))
+    if(!length(index)) index <- seq_len(nrow(DT))
+    if(length(forderv(DT[index], indices(DT, vectors = TRUE)[[idx]]))){
+      ## index is not properly ordered
+      return(FALSE)
+    }
+    if(any(duplicated(names(attributes(attr(DT, "index")))))){
+      ## index names are not unique
+      return(FALSE)
+    }
+  }
+  return(TRUE)
+}
+
+## on data.table where indices are not integer(0)
+DT <- data.table(a = c(1,1,1,2,1,2,2,2,2,2),
+                 aaa = c(2,1,2,2,2,1,1,2,2,2),
+                 b = c(1,2,1,1,2,1,1,1,1,2),
+                 ab  = rnorm(10))
+
+test(1419.21, indices(copy(DT)[1, a:=1]), NULL)
+setindex(DT, a)
+setindex(DT, a, aaa)
+setindex(DT, ab, aaa)
+setindex(DT)
+test(1419.22, allIndicesValid(DT), TRUE)
+thisDT <- copy(DT)[1, a:=1][, aaa := 1][, ab := 1]
+test(1419.23, indices(thisDT), NULL)
+test(1419.24, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, b := 2]
+test(1419.25, indices(thisDT), c("a", "a__aaa", "ab__aaa"))
+test(1419.26, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, ab := 2]
+test(1419.27, indices(thisDT), c("a", "a__aaa"))
+test(1419.28, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, aaa := 2]
+test(1419.29, indices(thisDT), c("a"))
+test(1419.31, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, c("aaa", "b") := 2]
+test(1419.32, indices(thisDT), c("a"))
+test(1419.33, allIndicesValid(thisDT), TRUE)
+
+## on data.table where indices are integer(0)
+DT <- data.table(a = c(1,1,1,1,1,2,2,2,2,2),
+                 aaa = c(1,1,2,2,2,1,1,2,2,2),
+                 b = c(1,2,1,2,3,1,2,1,2,3),
+                 ab  = 1:10)
+
+test(1419.34, indices(copy(DT)[1, a:=1]), NULL)
+setindex(DT, a)
+setindex(DT, a, aaa)
+setindex(DT, ab, aaa)
+setindex(DT)
+test(1419.35, allIndicesValid(DT), TRUE)
+thisDT <- copy(DT)[1, a:=1][, aaa := 1][, ab := 1]
+test(1419.36, indices(thisDT), NULL)
+test(1419.37, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, b := 2]
+test(1419.38, indices(thisDT), c("a", "a__aaa", "ab__aaa"))
+test(1419.39, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, ab := 2]
+test(1419.41, indices(thisDT), c("a", "a__aaa", "a__aaa__b"))
+test(1419.42, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, aaa := 2]
+test(1419.43, indices(thisDT), c("a", "ab"))
+test(1419.44, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, c("aaa", "b") := 2]
+test(1419.45, indices(thisDT), c("a", "ab"))
+test(1419.46, allIndicesValid(thisDT), TRUE)
+
+## on empty DT
+DT <- DT[0]
+setindex(DT, NULL)
+test(1419.47, indices(copy(DT)[, a:=1]), NULL)
+setindex(DT, a)
+setindex(DT, a, aaa)
+setindex(DT, ab, aaa)
+setindex(DT)
+test(1419.48, allIndicesValid(DT), TRUE)
+thisDT <- copy(DT)[, a:=1][, aaa := 1][, ab := 1]
+test(1419.49, indices(thisDT), NULL)
+test(1419.51, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, b := 2]
+test(1419.52, indices(thisDT), c("a", "a__aaa", "ab__aaa"))
+test(1419.53, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, ab := 2]
+test(1419.54, indices(thisDT), c("a", "a__aaa", "a__aaa__b"))
+test(1419.55, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, aaa := 2]
+test(1419.56, indices(thisDT), c("a", "ab"))
+test(1419.57, allIndicesValid(thisDT), TRUE)
+thisDT <- copy(DT)[, c("aaa", "b") := 2]
+test(1419.58, indices(thisDT), c("a", "ab"))
+test(1419.59, allIndicesValid(thisDT), TRUE)
+
 
 # setnames updates secondary key
 DT = data.table(a=1:5,b=10:6)
@@ -6884,25 +7043,27 @@ test(1545.137, key(.shallow(x1, cols=c("a1", "a2"), retain.key=TRUE)), "a1")
 test(1545.138, key(.shallow(x1, cols=c("a3"), retain.key=TRUE)), NULL)
 
 # tests for #2336. .shallow now retains indices as well
-x1 <- data.table(a1 = c('a', 'a', 'a', 'a', 'b', 'c'), a2 = c(2L, 2L, 1L, 2L, 3L, 2L), a3 = c(FALSE, TRUE, TRUE, FALSE, FALSE, TRUE), key="a1,a2")
+x1 <- data.table(a1 = c('a', 'a', 'a', 'a', 'b', 'c'),
+                 a2 = c(1L, 1L, 1L, 2L, 2L, 2L),
+                 a3 = c(FALSE, TRUE, FALSE, FALSE, FALSE, TRUE))
 setindex(x1, a1, a2, a3)
 setindex(x1, a1, a3)
+setindex(x1, a1, a2) ## index with length 0
 test(1545.15, indices(.shallow(x1, retain.key=FALSE)), NULL)
-test(1545.16, indices(.shallow(x1, cols = "a1", retain.key=FALSE)), NULL)
+test(1545.16, indices(.shallow(x1, cols = "a2", retain.key=FALSE)), NULL)
 test(1545.17, indices(.shallow(x1, retain.key=TRUE)), indices(x1))
 test(1545.18, forderv(.shallow(x1, retain.key=TRUE)[attr(attr(.shallow(x1, retain.key=TRUE), "index"), "__a1__a2__a3")], c("a1", "a2", "a3")), integer(0))
 test(1545.19, forderv(.shallow(x1, retain.key=TRUE)[attr(attr(.shallow(x1, retain.key=TRUE), "index"), "__a1__a3")], c("a1", "a3")), integer(0))
-test(1545.20, forderv(.shallow(x1, retain.key=TRUE)[attr(attr(.shallow(x1, retain.key=TRUE), "index"), "__a1")], c("a1")), integer(0))
+test(1545.20, forderv(.shallow(x1, retain.key=TRUE), c("a1", "a2")), integer(0))
 test(1545.21, indices(.shallow(x1, cols = "a1", retain.key=TRUE)), c("a1"))
-test(1545.22, forderv(.shallow(x1, cols = "a1", retain.key=TRUE)[attr(attr(.shallow(x1, cols = "a1", retain.key=TRUE), "index"), "__a1")], c("a1")), integer(0))
+test(1545.22, forderv(.shallow(x1, cols = "a1", retain.key=TRUE), c("a1")), integer(0))
 test(1545.23, attributes(attr(.shallow(x1, cols = c("a1", "a2"), retain.key = TRUE), "index", exact = TRUE)), attributes(attr(.shallow(x1, cols = c("a2", "a1"), retain.key = TRUE), "index", exact = TRUE)))
-test(1545.24, indices(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE)), c("a1__a2", "a1"))
-test(1545.25, forderv(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE)[attr(attr(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE), "index"), "__a1")], c("a1")), integer(0))
-test(1545.26, forderv(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE)[attr(attr(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE), "index"), "__a1__a2")], c("a1", "a2")), integer(0))
-test(1545.27, indices(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE)), c("a1", "a1__a3"))
-test(1545.28, forderv(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE)[attr(attr(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE), "index"), "__a1")], c("a1")), integer(0))
-test(1545.29, forderv(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE)[attr(attr(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE), "index"), "__a1__a3")], c("a1", "a3")), integer(0))
-test(1545.30, indices(.shallow(x1, cols = c("a2", "a3"), retain.key=TRUE)), NULL)
+test(1545.24, indices(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE)), c("a1__a2"))
+test(1545.25, forderv(.shallow(x1, cols = c("a1", "a2"), retain.key=TRUE), c("a1", "a2")), integer(0))
+test(1545.26, indices(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE)), c("a1__a3", "a1"))
+test(1545.27, forderv(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE), c("a1")), integer(0))
+test(1545.28, forderv(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE)[attr(attr(.shallow(x1, cols = c("a1", "a3"), retain.key=TRUE), "index"), "__a1__a3")], c("a1", "a3")), integer(0))
+test(1545.29, indices(.shallow(x1, cols = c("a2", "a3"), retain.key=TRUE)), NULL)
 test(1545.31, indices(.shallow(x1, cols = c("a3"), retain.key=TRUE)), NULL)
 test(1545.32, .shallow(x1, cols = c("a1", "a2", "a3"), retain.key=TRUE), .shallow(x1, retain.key=TRUE))
 
@@ -9271,7 +9432,7 @@ test(1695.13, x %between% c(3, 7), logical(0))
 old_opt = getOption("datatable.verbose")
 options(datatable.verbose = TRUE)
 x = data.table(A = 10:17)
-test(1696.0, any(grepl("bmerge", capture.output(x[A %inrange% 13:14]))), TRUE)
+test(1696.0, x[A %inrange% 13:14], output="bmerge")
 # restore verbosity
 options(datatable.verbose = old_opt)
 
@@ -9346,12 +9507,12 @@ if (.Platform$OS.type=="unix") {
 # as used by package popEpi in its tests
 test(1704, all.equal(data.table( a=1:3, b=4:6 ), data.table( A=1:3, B=4:6 ), check.attributes=FALSE))
 
-if (.Platform$OS.type!="windows") {
+# setDTthreads(2) was at the top of this file (tests.Rraw). Since CRAN's policy is max two.
+# However, under UBSAN and ASAN, threads are limited to 1 thread, so only run this test when we have 2 threads.
+if (.Platform$OS.type!="windows" && getDTthreads()==2) {
   # On Windows: "'mc.cores' > 1 is not supported on Windows".
   # parallel package isn't parallel on Windows, but data.table is.
   if ("package:parallel" %in% search()) {   #1745 and #1727
-    test(1705, getDTthreads()<=2) # this was set at the top of tests.Rraw.  CRAN's policy is max two.
-                                  # not 1, to pass on Rdevel clag UBSAN and ASAN without OpenMP
     lx <- replicate(4, runif(1e5), simplify=FALSE)
     f <- function(mc.cores = 2, threads = 2) {
       setDTthreads(threads)
@@ -9360,9 +9521,11 @@ if (.Platform$OS.type!="windows") {
     f(1, 1) # was always ok
     f(2, 1) # was always ok
     f(1, 2) # was always ok
-    f(2, 2) # used to hang. Now should not because data.table auto switches to single threaded
-            # commenting out avoid_openmp_hang_within_fork() confirms this test catches catches the hang
-    test(1706, getDTthreads()<=2) # Tests that it reverts to previous state after use of mclapply
+    f(2, 2) # Used to hang. Now should not because data.table auto switches to single threaded
+            # Commenting out avoid_openmp_hang_within_fork() confirms this test catches catches the hang
+    test(1705, getDTthreads()==1) # Stays in single-threaded mode after returning from mclapply's fork
+    setDTthreads(2)
+    test(1706, getDTthreads()==2) # User returned to multi-threaded after fork.
   } else {
     cat("Tests 1705 and 1706 not run. If required call library(parallel) first.\n")
   }
@@ -10203,11 +10366,15 @@ test(1759, fread("alluniquechar.csv")[c(1,2,4999,5000)],
 # fread should use multiple threads on single column input.
 # tests 2 threads; the very reasonable limit on CRAN
 # file needs to be reasonably large for threads to kick in (minimum chunkSize is 1MB currently)
-N = if (TRUE) 2e6 else 1e9   # offline speed check
-fwrite(data.table(A=sample(10,N,replace=TRUE)), f<-tempfile())
-test(1760.1, file.info(f)$size > 4*1024*1024)
-test(1760.2, fread(f, verbose=TRUE, nThread=2), output="using 2 threads")
-unlink(f)
+if (getDTthreads() != 2) {
+  cat("Test 1760 not run because this session either has no OpenMP or has been limited to one thread (e.g. under UBSAN and ASAN)\n")
+} else {
+  N = if (TRUE) 2e6 else 1e9   # offline speed check
+  fwrite(data.table(A=sample(10,N,replace=TRUE)), f<-tempfile())
+  test(1760.1, file.info(f)$size > 4*1024*1024)
+  test(1760.2, fread(f, verbose=TRUE, nThread=2), output="using 2 threads")
+  unlink(f)
+}
 
 # fread single column with superfluous fill=TRUE, #2118
 test(1761.1, fread("1\n2\n3", fill=TRUE), data.table(V1=1:3))
@@ -10228,9 +10395,9 @@ test(1764.1, format(as.ITime(character(0))), character(0))
 test(1764.2, format(structure(NA_integer_, class = "ITime")), NA_character_)
 
 # IDateTime error when tzone is NULL, #1973
-x = as.POSIXct('2017-03-17')
+x = as.POSIXct('2017-03-17', tz="UTC")
 attr(x, 'tzone') = NULL
-test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17 00:00:00")
+test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17")
 
 # print(null.data.table()) should not output NULL as well, #1852
 # use capture.output() in this case rather than output= to ensure NULL is not output
@@ -10724,7 +10891,6 @@ test(1830.8, identical(
   fread("G\n0.000000000000000000000000000000000000000000000000000000000000449548\n"),
   data.table(G=c(4.49548e-61))))
 
-
 # Test that integers just above 128 or 256 characters in length parse as strings, not as integers/floats
 # This guards against potential overflows in the count of digits
 src1 = paste0(rep("1234567890", 13), collapse="")  # length = 130, slightly above 128
@@ -10734,6 +10900,12 @@ test(1831.2, fread(paste0("A\n", src2)), data.table(A=src2))
 test(1831.3, fread(paste0("A\n", src2, ".33")), data.table(A=paste0(src2, ".33")))
 test(1831.4, fread(paste0("A\n", "1.", src2)), data.table(A=paste0("1.", src2)))
 
+DT = as.data.table(matrix(5L, nrow=10, ncol=10))
+test(1832.1, fwrite(DT, f<-tempfile(), verbose=TRUE), output="Column writers")
+DT = as.data.table(matrix(5L, nrow=10, ncol=60))
+# Using capture.output directly to look for the "..." because test(,output=) intercepts [] for convenience elsewhere
+test(1832.2, any(grepl("^Column writers.* [.][.][.] ", capture.output(fwrite(DT, f, verbose=TRUE)))))
+unlink(f)
 
 
 ##########################

@@ -1010,7 +1010,7 @@ int freadMain(freadMainArgs _args) {
       else
         DTPRINT("  None of the NAstrings look like numbers.\n");
     }
-    if (args.skipNrow) DTPRINT("  skip num lines = %lld\n", args.skipNrow);
+    if (args.skipNrow) DTPRINT("  skip num lines = %llu\n", (llu)args.skipNrow);
     if (args.skipString) DTPRINT("  skip to string = <<%s>>\n", args.skipString);
     DTPRINT("  show progress = %d\n", args.showProgress);
     DTPRINT("  0/1 column will be read as %s\n", args.logical01? "boolean" : "integer");
@@ -1098,9 +1098,7 @@ int freadMain(freadMainArgs _args) {
         DTPRINT("  File opened, size = %s.\n", filesize_to_str(fileSize));
         DTPRINT("  Memory mapping ... ");
       }
-      DWORD hi = (fileSize) >> 32;            // tried very very hard again on 26 & 27th April 2017 to over-map file by 1 byte
-      DWORD lo = (fileSize) & 0xFFFFFFFFull;  // on Windows for COW/FILE_MAP_COPY on read-only file, with no joy.
-      HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, hi, lo, NULL);
+      HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, 0, 0, NULL);
       if (hMap==NULL) { CloseHandle(hFile); STOP("This is Windows, CreateFileMapping returned error %d for file %s", GetLastError(), fnam); }
       mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);  // fileSize must be <= hilo passed to CreateFileMapping above.
       CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
@@ -1246,14 +1244,14 @@ int freadMain(freadMainArgs _args) {
     pos = ch;
     ch = sof;
     while (ch<pos) line+=(*ch++=='\n');
-    if (verbose) DTPRINT("Found skip='%s' on line %d. Taking this to be header row or first row of data.\n",
-                         args.skipString, line);
+    if (verbose) DTPRINT("Found skip='%s' on line %llu. Taking this to be header row or first row of data.\n",
+                         args.skipString, (llu)line);
     ch = pos;
   }
   // Skip the first `skipNrow` lines of input.
   else if (args.skipNrow>0) {
     while (ch<eof && line<=args.skipNrow) line+=(*ch++=='\n');
-    if (ch>=eof) STOP("skip=%d but the input only has %d line%s", args.skipNrow, line, line>1?"s":"");
+    if (ch>=eof) STOP("skip=%llu but the input only has %llu line%s", (llu)args.skipNrow, (llu)line, line>1?"s":"");
     pos = ch;
   }
 

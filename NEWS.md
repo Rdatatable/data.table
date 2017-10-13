@@ -49,61 +49,81 @@
     
 10. setkeyv accelerated if key already exists [#2331](https://github.com/Rdatatable/data.table/issues/2331). Thanks to @MarkusBonsch for the PR.
 
+11. improved key handling when assigning with ':=' [#2372](https://github.com/Rdatatable/data.table/issues/2372). Keys and secondary indices used to be dropped completely if one of the columns was affected by ':='. Now, as much as possible of the remaining keys and indices is retained for re-use. Thanks to @MarkusBonsch for the PR.
+
 
 #### BUG FIXES
 
-1. The type pun fix (using union) in 1.10.4 resolved some CRAN flavors but still failed the new `fwrite` nanotime test with R-devel on MacOS using latest clang from latest Xcode 8.2. It seems that clang optimizations in Xcode 8 are particularly aggressive and require even stricter adherence to C standards. The type pun was already centralized and now uses `memcpy` which is ok by C standards and compilers apparently know to optimize to avoid call overhead.
-
-2. The new quote rules handles this single field `"Our Stock Screen Delivers an Israeli Software Company (MNDO, CTCH)<\/a> SmallCapInvestor.com - Thu, May 19, 2011 10:02 AM EDT<\/cite><\/div>Yesterday in \""Google, But for Finding
+1. The new quote rules handles this single field `"Our Stock Screen Delivers an Israeli Software Company (MNDO, CTCH)<\/a> SmallCapInvestor.com - Thu, May 19, 2011 10:02 AM EDT<\/cite><\/div>Yesterday in \""Google, But for Finding
  Great Stocks\"", I discussed the value of stock screeners as a powerful tool"`, [#2051](https://github.com/Rdatatable/data.table/issues/2051). Thanks to @scarrascoso for reporting. Example file added to test suite.
 
-3. `fwrite()` creates a file with permissions that now play correctly with `Sys.umask()`, [#2049](https://github.com/Rdatatable/data.table/issues/2049). Thanks to @gnguy for reporting.
+2. `fwrite()` creates a file with permissions that now play correctly with `Sys.umask()`, [#2049](https://github.com/Rdatatable/data.table/issues/2049). Thanks to @gnguy for reporting.
 
-4. `fread()` no longer holds an open lock on the file when a line outside the large sample has too many fields and generates an error, [#2044](https://github.com/Rdatatable/data.table/issues/2044). Thanks to Hugh Parsonage for reporting.
+3. `fread()` no longer holds an open lock on the file when a line outside the large sample has too many fields and generates an error, [#2044](https://github.com/Rdatatable/data.table/issues/2044). Thanks to Hugh Parsonage for reporting.
 
-5. When `fread()` and `print()` see `integer64` columns are present but package `bit64` is not installed, the warning is now displayed as intended. Thanks to a question by Santosh on r-help and forwarded by Bill Dunlap.
+4. Setting `j = {}` no longer results in an error, [#2142](https://github.com/Rdatatable/data.table/issues/2142). Thanks Michael Chirico for the pull request.
 
-6. Setting `j = {}` no longer results in an error, [#2142](https://github.com/Rdatatable/data.table/issues/2142). Thanks Michael Chirico for the pull request.
+5. Seg fault in `rbindlist()` when one or more items are empty, [#2019](https://github.com/Rdatatable/data.table/issues/2019). Thanks Michael Lang for the pull request.
 
-7. Seg fault in `rbindlist()` when one or more items are empty, [#2019](https://github.com/Rdatatable/data.table/issues/2019). Thanks Michael Lang for the pull request.
+6. Error printing 0-length `ITime` and `NA` objects, [#2032](https://github.com/Rdatatable/data.table/issues/2032) and [#2171](https://github.com/Rdatatable/data.table/issues/2171). Thanks Michael Chirico for the pull requests and @franknarf1 for pointing out a shortcoming of the initial fix.
 
-8. Error printing 0-length `ITime` and `NA` objects, [#2032](https://github.com/Rdatatable/data.table/issues/2032) and [#2171](https://github.com/Rdatatable/data.table/issues/2171). Thanks Michael Chirico for the pull requests and @franknarf1 for pointing out a shortcoming of the initial fix.
+7. `as.IDate.POSIXct` error with `NULL` timezone, [#1973](https://github.com/Rdatatable/data.table/issues/1973). Thanks @lbilli for reporting and Michael Chirico for the pull request.
 
-9. `as.IDate.POSIXct` error with `NULL` timezone, [#1973](https://github.com/Rdatatable/data.table/issues/1973). Thanks @lbilli for reporting and Michael Chirico for the pull request.
+8. Printing a null `data.table` with `print` no longer visibly outputs `NULL`, [#1852](https://github.com/Rdatatable/data.table/issues/1852). Thanks @aaronmcdaid for spotting and @MichaelChirico for the PR.
 
-10. Printing a null `data.table` with `print` no longer visibly outputs `NULL`, [#1852](https://github.com/Rdatatable/data.table/issues/1852). Thanks @aaronmcdaid for spotting and @MichaelChirico for the PR.
+9. `data.table` now works with Shiny Reactivity / Flexdashboard. The error was typically something like `col not found` in `DT[col==val]`. Thanks to Dirk Eddelbuettel leading Matt through reproducible steps and @sergeganakou and Richard White for reporting. Closes [#2001](https://github.com/Rdatatable/data.table/issues/2001) and [shiny/#1696](https://github.com/rstudio/shiny/issues/1696).
 
-11. `data.table` now works with Shiny Reactivity / Flexdashboard. The error was typically something like `col not found` in `DT[col==val]`. Thanks to Dirk Eddelbuettel leading Matt through reproducible steps and @sergeganakou and Richard White for reporting. Closes [#2001](https://github.com/Rdatatable/data.table/issues/2001) and [shiny/#1696](https://github.com/rstudio/shiny/issues/1696).
+10. The `as.IDate.POSIXct` method passed `tzone` along but was not exported. So `tzone` is now taken into account by `as.IDate` too as well as `IDateTime`, [#977](https://github.com/Rdatatable/data.table/issues/977) and [#1498](https://github.com/Rdatatable/data.table/issues/1498). Tests added.
 
-12. The `as.IDate.POSIXct` method passed `tzone` along but was not exported. So `tzone` is now taken into account by `as.IDate` too as well as `IDateTime`, [#977](https://github.com/Rdatatable/data.table/issues/977) and [#1498](https://github.com/Rdatatable/data.table/issues/1498). Tests added.
+11. Named logical vector now select rows as expected from single row data.table. Thanks to @skranz for reporting. Closes [#2152](https://github.com/Rdatatable/data.table/issues/2152).
 
-13. Named logical vector now select rows as expected from single row data.table. Thanks to @skranz for reporting. Closes [#2152](https://github.com/Rdatatable/data.table/issues/2152).
+12. `fread()`'s rare `Internal error: Sampling jump point 10 is before the last jump ended` has been fixed, [#2157](https://github.com/Rdatatable/data.table/issues/2157). Thanks to Frank Erickson and Artem Klevtsov for reporting with example files which are now added to the test suite.
 
-14. `fread()`'s rare `Internal error: Sampling jump point 10 is before the last jump ended` has been fixed, [#2157](https://github.com/Rdatatable/data.table/issues/2157). Thanks to Frank Erickson and Artem Klevtsov for reporting with example files which are now added to the test suite.
+13. `CJ()` no longer loses attribute information, [#2029](https://github.com/Rdatatable/data.table/issues/2029). Thanks to @MarkusBonsch and @royalts for the pull request.
 
-15. `CJ()` no longer loses attribute information, [#2029](https://github.com/Rdatatable/data.table/issues/2029). Thanks to @MarkusBonsch and @royalts for the pull request.
+14. `split.data.table` respects `factor` ordering in `by` argument, [#2082](https://github.com/Rdatatable/data.table/issues/2082). Thanks to @MichaelChirico for identifying and fixing the issue.
 
-16. `split.data.table` respects `factor` ordering in `by` argument, [#2082](https://github.com/Rdatatable/data.table/issues/2082). Thanks to @MichaelChirico for identifying and fixing the issue.
+15. `.SD` would incorrectly include symbol on lhs of `:=` when `.SDcols` is specified and `get()` appears in `j`. Thanks @renkun-ken for reporting and the PR, and @ProfFancyPants for reporing a regression introduced in the PR. Closes [#2326](https://github.com/Rdatatable/data.table/issues/2326) and [#2338](https://github.com/Rdatatable/data.table/issues/2338).
 
-17. `.SD` would incorrectly include symbol on lhs of `:=` when `.SDcols` is specified and `get()` appears in `j`. Thanks @renkun-ken for reporting and the PR, and @ProfFancyPants for reporing a regression introduced in the PR. Closes [#2326](https://github.com/Rdatatable/data.table/issues/2326) and [#2338](https://github.com/Rdatatable/data.table/issues/2338).
+16. Integer values that are too large to fit in `int64` will now be read as strings [#2250](https://github.com/Rdatatable/data.table/issues/2250).
 
-18. Integer values that are too large to fit in `int64` will now be read as strings [#2250](https://github.com/Rdatatable/data.table/issues/2250).
-
-19. Internal-only `.shallow` now retains keys correctly, [#2336](https://github.com/Rdatatable/data.table/issues/2336). Thanks to @MarkusBonsch for reporting, fixing ([PR #2337](https://github.com/Rdatatable/data.table/pull/2337)) and adding 37 tests. This much advances the journey towards exporting `shallow()`, [#2323](https://github.com/Rdatatable/data.table/issues/2323).
+17. Internal-only `.shallow` now retains keys correctly, [#2336](https://github.com/Rdatatable/data.table/issues/2336). Thanks to @MarkusBonsch for reporting, fixing ([PR #2337](https://github.com/Rdatatable/data.table/pull/2337)) and adding 37 tests. This much advances the journey towards exporting `shallow()`, [#2323](https://github.com/Rdatatable/data.table/issues/2323).
     
 #### NOTES
 
 1. `?data.table` makes explicit the option of using a `logical` vector in `j` to select columns, [#1978](https://github.com/Rdatatable/data.table/issues/1978). Thanks @Henrik-P for the note and @MichaelChirico for filing.
 
-2. The `nanotime` v0.2.0 update on CRAN 22 June 2017 changed from `integer64` to `S4` and broke `fwrite` of `nanotime` columns. The onus is on package maintainers to check downstream packages before release to CRAN. `fwrite` updated to work with `nanotime` both before and after v0.2.0.
+2. Test 1675.1 updated to cope with a change in R-devel in June 2017 related to `factor()` and `NA` levels.
 
-3. Test 1675.1 updated to cope with a change in R-devel in June 2017 related to `factor()` and `NA` levels.
+3. Package `ezknitr` has been added to the whitelist of packages that run user code and should be consider data.table-aware, [#2266](https://github.com/Rdatatable/data.table/issues/2266). Thanks to Matt Mills for testing and reporting.
 
-4. Package `ezknitr` has been added to the whitelist of packages that run user code and should be consider data.table-aware, [#2266](https://github.com/Rdatatable/data.table/issues/2266). Thanks to Matt Mills for testing and reporting.
+4. Printing with `quote = TRUE` now quotes column names as well, [#1319](https://github.com/Rdatatable/data.table/issues/1319). Thanks @jan-glx for the suggestion and @MichaelChirico for the PR.
 
-5. Printing with `quote = TRUE` now quotes column names as well, [#1319](https://github.com/Rdatatable/data.table/issues/1319). Thanks @jan-glx for the suggestion and @MichaelChirico for the PR.
+5. Added a blurb to `?melt.data.table` explicating the subtle difference in behavior of the `id.vars` argument vis-a-vis its analog in `reshape2::melt`, [#1699](https://github.com/Rdatatable/data.table/issues/1699). Thanks @MichaelChirico for uncovering and filing. 
 
-6. Added a blurb to `?melt.data.table` explicating the subtle difference in behavior of the `id.vars` argument vis-a-vis its analog in `reshape2::melt`, [#1699](https://github.com/Rdatatable/data.table/issues/1699). Thanks @MichaelChirico for uncovering and filing. 
+6. Added some clarification about the usage of `on` to `?data.table`, [#2383](https://github.com/Rdatatable/data.table/issues/2383). Thanks to @peterlittlejohn for volunteering his confusion and @MichaelChirico for brushing things up.
+
+7. Clarified that "data.table always sorts in `C-locale`" means that upper-case letters are sorted before lower-case letters by ordering in data.table (e.g. `setorder`, `setkey`, `DT[order(...)]`). Thanks to @hughparsonage for the pull request editing the documentation. Note this makes no difference in most cases of data; e.g. ids where only uppercase or lowercase letters are used (`"AB123"<"AC234"` is always true, regardless), or country names and words which are consistently capitalized. For example, `"America" < "Brazil"` is not affected (it's always true), and neither is `"america" < "brazil"` (always true too); since the first letter is consistently capitalized. But, whether `"america" < "Brazil"` (the words are not consistently capitalized) is true or false in base R depends on the locale of your R session. In America it is true by default and false if you i) type `Sys.setlocale(locale="C")`, ii) the R session has been started in a C locale for you which can happen on servers/services (the locale comes from the environment the R session is started in). However, `"america" < "Brazil"` is always, consistently false in data.table which can be a surprise because it differs to base R by default in most regions. It is false because `"B"<"a"` is true because all upper-case letters come first, followed by all lower case letters (the ascii number of each letter determines the order, which is what is meant by `C-locale`).
+
+
+### Changes in v1.10.4-2  (on CRAN 12 Oct 2017)
+
+1. OpenMP on MacOS is now supported by CRAN and included in CRAN's package binaries for Mac. But installing v1.10.4-1 from source on MacOS failed when OpenMP was not enabled at compile time, [#2409](https://github.com/Rdatatable/data.table/issues/2409). Thanks to Liz Macfie and @fupangpangpang for reporting. The startup message when OpenMP is not enabled has been updated.
+
+2. Two rare potential memory faults fixed, thanks to CRAN's automated use of latest compiler tools; e.g. clang-5 and gcc-7
+
+
+### Changes in v1.10.4-1  (on CRAN 09 Oct 2017)
+
+1. The `nanotime` v0.2.0 update on CRAN 22 June 2017 changed from `integer64` to `S4` and broke `fwrite` of `nanotime` columns. Fixed to work with `nanotime` both before and after v0.2.0.
+
+2. Pass R-devel changes related to `deparse(,backtick=)` and `factor()`.
+
+3. Internal `NAMED()==2` now `MAYBE_SHARED()`, [#2330](https://github.com/Rdatatable/data.table/issues/2330). Back-ported to pass under the stated dependency, R 3.0.0.
+
+4. Attempted improvement on Mac-only when the `parallel` package is used too (which forks), [#2137](https://github.com/Rdatatable/data.table/issues/2137). Intel's OpenMP implementation appears to leave threads running after the OpenMP parallel region (inside data.table) has finished unlike GNU libgomp. So, if and when `parallel`'s `fork` is invoked by the user after data.table has run in parallel already, instability occurs. The problem only occurs with Mac package binaries from CRAN because they are built by CRAN with Intel's OpenMP library. No known problems on Windows or Linux and no known problems on any platform when `parallel` is not used. If this Mac-only fix still doesn't work, call `setDTthreads(1)` immediately after `library(data.table)` which has been reported to fix the problem by putting `data.table` into single threaded mode earlier.
+
+5. When `fread()` and `print()` see `integer64` columns are present but package `bit64` is not installed, the warning is now displayed as intended. Thanks to a question by Santosh on r-help and forwarded by Bill Dunlap.
 
 
 ### Changes in v1.10.4  (on CRAN 01 Feb 2017)
