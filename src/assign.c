@@ -228,9 +228,9 @@ SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP verbose) {
     for(R_len_t i = 0; i < LENGTH(ans); i++) {
         // clear the same excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #4890).
 
-	setAttrib(VECTOR_ELT(ans, i), R_NamesSymbol, R_NilValue);
-	setAttrib(VECTOR_ELT(ans, i), R_DimSymbol, R_NilValue);
-	setAttrib(VECTOR_ELT(ans, i), R_DimNamesSymbol, R_NilValue);
+        setAttrib(VECTOR_ELT(ans, i), R_NamesSymbol, R_NilValue);
+        setAttrib(VECTOR_ELT(ans, i), R_DimSymbol, R_NilValue);
+        setAttrib(VECTOR_ELT(ans, i), R_DimNamesSymbol, R_NilValue);
     }
 
     UNPROTECT(1);

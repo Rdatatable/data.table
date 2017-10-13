@@ -727,11 +727,11 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
                 for (r=0; r<thislen; r++)
                     SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thiscol,r));
                 break;
-	    case CPLXSXP : // #1659 fix
-		if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. Please report to datatable-help.");
-		for (r=0; r<thislen; r++)
-		    COMPLEX(target)[ansloc+r] = COMPLEX(thiscol)[r];
-		break;
+            case CPLXSXP : // #1659 fix
+                if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. Please report to datatable-help.");
+                for (r=0; r<thislen; r++)
+                    COMPLEX(target)[ansloc+r] = COMPLEX(thiscol)[r];
+                break;
             case REALSXP:
             case INTSXP:
             case LGLSXP:
