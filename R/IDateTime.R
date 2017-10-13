@@ -5,8 +5,14 @@
 
 as.IDate <- function(x, ...) UseMethod("as.IDate")
 
-as.IDate.default <-
-    function(x, ...) as.IDate(as.Date(x, ...))
+as.IDate.default <- function(x, tz = attr(x, "tzone"), ...) {
+    if (is.null(tz)) tz = "UTC"
+    as.IDate(as.Date(x, tz = tz, ...))
+}
+
+as.IDate.numeric <- function(x, ...) {
+    structure(as.integer(x) %/% 86400L, class=c("IDate","Date"))
+}
 
 as.IDate.Date <- function(x, ...) {
     structure(as.integer(x), class=c("IDate","Date"))
@@ -14,7 +20,7 @@ as.IDate.Date <- function(x, ...) {
 
 as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
-  as.IDate(as.Date(x, tz = tz, ...))
+  if (tz %in% c("UTC", "GMT")) as.IDate(unclass(x), ...) else as.IDate(as.Date(x, tz = tz, ...))
 }
 
 as.IDate.IDate <- function(x, ...) x
@@ -97,7 +103,16 @@ as.ITime.default <- function(x, ...) {
     as.ITime(as.POSIXlt(x, ...))
 }
 
-as.ITime.character <- function (x, format, ...) {
+as.ITime.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
+    if (is.null(tz)) tz = "UTC"
+    if (tz %in% c("UTC", "GMT")) as.ITime(unclass(x), ...) else as.ITime(as.POSIXlt(x, tz = tz, ...))
+}
+
+as.ITime.numeric <- function(x, ...) {
+    structure(as.integer(x) %% 86400L, class = "ITime")
+}
+
+as.ITime.character <- function(x, format, ...) {
     x <- unclass(x)
     if (!missing(format)) return(as.ITime(strptime(x, format = format, ...)))
     # else allow for mixed formats, such as test 1189 where seconds are caught despite varying format
@@ -285,5 +300,4 @@ isoweek <- function(x) {
 month   <- function(x) as.POSIXlt(x)$mon + 1L
 quarter <- function(x) as.POSIXlt(x)$mon %/% 3L + 1L
 year    <- function(x) as.POSIXlt(x)$year + 1900L
-
 

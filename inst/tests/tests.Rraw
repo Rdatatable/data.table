@@ -77,6 +77,8 @@ if (!.devtesting) {
     `%+%.default` = data.table:::`%+%.default`
     .shallow = data.table:::.shallow
     getdots = data.table:::getdots
+    as.ITime.default = data.table:::as.ITime.default
+    as.IDate.default = data.table:::as.IDate.default
     binary = data.table:::binary
 
     # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
@@ -10681,6 +10683,35 @@ tt = setDT(read.csv(f, stringsAsFactors=FALSE))
 tt[2, B:=gsub("\n","\r",B)]  # base R changes the \r to a \n, so restore that
 test(1778.4, tt, DT)
 unlink(f)
+
+# #1392 IDate ITime new methods for faster conversion
+# conversion in-out match for UTC
+same = list(l = as.POSIXlt("2015-10-12 13:19:35", tz = "UTC"))
+same$p = as.POSIXct(same$l)
+same$d = as.Date(same$p)
+same$n = as.numeric(same$p)
+same$i = as.integer(same$p)
+ld = sapply(same, as.IDate)
+test(1779.1, uniqueN(ld)==1L)
+lt = sapply(same[-3L], as.ITime) # exclude date
+test(1779.2, uniqueN(lt)==1L)
+# some random 1e6 timestamps old defaults vs new methods UTC
+intpx = function(x) as.integer(as.POSIXct(x, origin = "1970-01-01", tz = "UTC"))
+set.seed(1)
+i = sample(seq(intpx("2014-10-12"), intpx("2015-10-12")), 1e6, TRUE)
+p = as.POSIXct(i, origin = "1970-01-01", tz = "UTC")
+test(1779.3, identical(as.ITime.default(p), as.ITime(p)))
+test(1779.4, identical(as.IDate.default(p), as.IDate(p)))
+# test for non-UTC
+p = as.POSIXct(i, origin = "1970-01-01", tz = "Asia/Hong_Kong")
+test(1779.5, identical(as.ITime.default(p), as.ITime(p)))
+test(1779.6, identical(as.IDate.default(p), as.IDate(p)))
+p = as.POSIXct(i, origin = "1970-01-01", tz = "America/New_York")
+test(1779.7, identical(as.ITime.default(p), as.ITime(p)))
+test(1779.8, identical(as.IDate.default(p), as.IDate(p)))
+p = as.POSIXct(i, origin = "1970-01-01")
+test(1779.9, identical(as.ITime.default(p), as.ITime(p)))
+test(1779.11, identical(as.IDate.default(p), as.IDate(p)))
 
 
 ##########################

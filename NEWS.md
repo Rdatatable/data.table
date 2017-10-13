@@ -49,7 +49,9 @@
     
 10. setkeyv accelerated if key already exists [#2331](https://github.com/Rdatatable/data.table/issues/2331). Thanks to @MarkusBonsch for the PR.
 
-11. improved key handling when assigning with ':=' [#2372](https://github.com/Rdatatable/data.table/issues/2372). Keys and secondary indices used to be dropped completely if one of the columns was affected by ':='. Now, as much as possible of the remaining keys and indices is retained for re-use. Thanks to @MarkusBonsch for the PR.
+11. Keys and indexes are now partially retained up to the key column assigned to with ':=' [#2372](https://github.com/Rdatatable/data.table/issues/2372). They used to be dropped completely if any one of the columns was affected by `:=`. Tanks to @MarkusBonsch for the PR.
+
+12. Faster `as.IDate` and `as.ITime` methods for `POSIXct` and `numeric`, [#1392](https://github.com/Rdatatable/data.table/issues/1392). Thanks to Jan Gorecki for the PR.
 
 
 #### BUG FIXES
