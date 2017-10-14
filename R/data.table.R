@@ -708,7 +708,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
             if (is.logical(i)) {
                 if (length(i)==1L  # to avoid unname copy when length(i)==nrow (normal case we don't want to slow down)
-		    && isTRUE(unname(i))) irows=i=NULL  # unname() for #2152 - length 1 named logical vector.
+                    && isTRUE(unname(i))) irows=i=NULL  # unname() for #2152 - length 1 named logical vector.
                 # NULL is efficient signal to avoid creating 1:nrow(x) but still return all rows, fixes #1249
 
                 else if (length(i)<=1L) irows=i=integer(0)
@@ -2327,17 +2327,17 @@ copy <- function(x) {
                            # TO DO: inside Ccopy it could reset tl to 0 or length, but no matter as selfrefok detects it
                            # TO DO: revisit duplicate.c in R 3.0.3 and see where it's at
     if (!is.data.table(x)) {
-	# fix for #1476. TODO: find if a cleaner fix is possible..
-	if (is.list(x)) {
-	    anydt = vapply(x, is.data.table, TRUE, USE.NAMES=FALSE)
-	    if (sum(anydt)) {
-		newx[anydt] = lapply(newx[anydt], function(x) {
-				    setattr(x, ".data.table.locked", NULL)
-				    alloc.col(x)
-				})
-	    }
-	}
-	return(newx)   # e.g. in as.data.table.list() the list is copied before changing to data.table
+        # fix for #1476. TODO: find if a cleaner fix is possible..
+        if (is.list(x)) {
+            anydt = vapply(x, is.data.table, TRUE, USE.NAMES=FALSE)
+            if (sum(anydt)) {
+                newx[anydt] = lapply(newx[anydt], function(x) {
+                    setattr(x, ".data.table.locked", NULL)
+                    alloc.col(x)
+                })
+            }
+        }
+        return(newx)   # e.g. in as.data.table.list() the list is copied before changing to data.table
     }
     setattr(newx,".data.table.locked",NULL)
     alloc.col(newx)
@@ -2437,13 +2437,13 @@ setattr <- function(x,name,value) {
         # creating names longer than the number of columns of x, and to change the key, too
         # For convenience so that setattr(DT,"names",allnames) works as expected without requiring a switch to setnames.
     else {
-	# fix for R's global TRUE value input, #1281
-	ans = .Call(Csetattrib, x, name, value)
-	# If name=="names" and this is the first time names are assigned (e.g. in data.table()), this will be grown by alloc.col very shortly afterwards in the caller.
-	if (!is.null(ans)) {
-	    warning("Input is a length=1 logical that points to the same address as R's global TRUE value. Therefore the attribute has not been set by reference, rather on a copy. You will need to assign the result back to a variable. See https://github.com/Rdatatable/data.table/issues/1281 for more.")
-	    x = ans
-	}
+        # fix for R's global TRUE value input, #1281
+        ans = .Call(Csetattrib, x, name, value)
+        # If name=="names" and this is the first time names are assigned (e.g. in data.table()), this will be grown by alloc.col very shortly afterwards in the caller.
+        if (!is.null(ans)) {
+            warning("Input is a length=1 logical that points to the same address as R's global TRUE value. Therefore the attribute has not been set by reference, rather on a copy. You will need to assign the result back to a variable. See https://github.com/Rdatatable/data.table/issues/1281 for more.")
+            x = ans
+        }
     }
     # fix for #1142 - duplicated levels for factors
     if (name == "levels" && is.factor(x) && anyDuplicated(value))
@@ -2686,10 +2686,10 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
         x = null.data.table()
     } else if (is.list(x)) {
         # copied from as.data.table.list - except removed the copy
-	for (i in seq_along(x)) {
-	    if (inherits(x[[i]], "POSIXlt"))
-		stop("Column ", i, " is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
-	}
+        for (i in seq_along(x)) {
+            if (inherits(x[[i]], "POSIXlt"))
+            stop("Column ", i, " is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+        }
         n = vapply(x, length, 0L)
         mn = max(n)
         if (any(n<mn))

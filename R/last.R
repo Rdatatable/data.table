@@ -6,7 +6,7 @@
 last <- function(x, ...) {
     if (nargs()==1L) {
         if (is.vector(x)) {
-        	if (!length(x)) return(x) else return(x[[length(x)]])  # for vectors, [[ works like [
+            if (!length(x)) return(x) else return(x[[length(x)]])  # for vectors, [[ works like [
         } else if (is.data.frame(x)) return(x[NROW(x),])
     }
     if(!requireNamespace("xts", quietly = TRUE)) {
