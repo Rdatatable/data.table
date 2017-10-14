@@ -52,22 +52,25 @@ At optimisation level \code{>= 2}, i.e., \code{getOption("datatable.optimize")} 
 
 \itemize{
 
-    \item When expressions in \code{j} which contains only these functions
-    \code{min, max, mean, median, var, sd, prod}, for example,
-    \code{dt[, list(mean(x), median(x), min(y), max(y)), by=z]}, they are very
-    effectively optimised using, what we call, \emph{GForce}. These functions
-    are replaced with \code{gmean, gmedian, gmin, gmax} instead.
+    \item Expressions in \code{j} which contain only the functions
+    \code{min, max, mean, median, var, sd, sum, prod, first, last, head, tail} (for example,
+    \code{dt[, list(mean(x), median(x), min(y), max(y)), by=z]}), they are very
+    effectively optimised using what we call \emph{GForce}. These functions
+    are automatically replaced with a corresponding GForce version
+    with pattern \code{g*}, e.g., \code{prod} becomes \code{gprod}.
 
-    Normally, once the rows belonging to each groups are identified, the values
-    corresponding to the group is gathered and the \code{j-expression} is
+    Normally, once the rows belonging to each group are identified, the values
+    corresponding to the group are gathered and the \code{j}-expression is
     evaluated. This can be improved by computing the result directly without
     having to gather the values or evaluating the expression for each group
     (which can get costly with large number of groups) by implementing it
     specifically for a particular function. As a result, it is extremely fast.
 
     \item In addition to all the functions above, `.N` is also optimised to
-    use GForce. It when used separately or combined with the functions mentioned
-    above still uses GForce.
+    use GForce, when used separately or when combined with the functions mentioned
+    above. Note further that GForce-optimized functions must be used separately,
+    i.e., code like \code{dt[ , max(x) - min(x), by=z]} will \emph{not} currently
+    be optimized to use \code{gmax, gmin}.
 
     \item Expressions of the form \code{DT[i, j, by]} are also optimised when
     \code{i} is a \emph{subset} operation and \code{j} is any/all of the functions

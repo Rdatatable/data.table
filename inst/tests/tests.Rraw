@@ -46,7 +46,7 @@ if (!.devtesting) {
     # tests can be used but in dev they test the package in .GlobalEnv. If we used ::: throughout tests, that
     # would pick up the installed version and in dev you'd have to reinstall every time which slows down dev.
     # NB: The string "data.table:::" should exist nowhere else in this file other than here inside this branch.
-    
+
     test = data.table:::test
     INT = data.table:::INT
     compactprint = data.table:::compactprint
@@ -77,9 +77,11 @@ if (!.devtesting) {
     `%+%.default` = data.table:::`%+%.default`
     .shallow = data.table:::.shallow
     getdots = data.table:::getdots
+    as.ITime.default = data.table:::as.ITime.default
+    as.IDate.default = data.table:::as.IDate.default
     binary = data.table:::binary
-    
-    # Also, for functions that are masked by other packages, we need to map the data.table one. Or else, 
+
+    # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
     # the other package's function would be picked up. As above, we only need to do this because we desire
     # to develop in .GlobalEnv with cc().
     # NB: The string "data.table::" should exist nowhere else in this file other than here inside this branch.
@@ -5785,7 +5787,7 @@ test(1418.2, DT[2,c("foo","baz"):=10L,verbose=TRUE], output=".*Dropping index 'b
 DT <- data.table(x1 = c(1,1,1,1,1,2,2,2,2,2),
                  x2 = c(1,1,2,2,2,1,1,2,2,2),
                  x3 = c(1,2,1,1,2,1,1,1,1,2),
-                 y  = rnorm(10), 
+                 y  = rnorm(10),
                  key = c("x1", "x2", "x3"))
 thisDT <- copy(DT)[2, x1 := 3]
 test(1419.1, key(thisDT), NULL)
@@ -7056,8 +7058,8 @@ test(1545.137, key(.shallow(x1, cols=c("a1", "a2"), retain.key=TRUE)), "a1")
 test(1545.138, key(.shallow(x1, cols=c("a3"), retain.key=TRUE)), NULL)
 
 # tests for #2336. .shallow now retains indices as well
-x1 <- data.table(a1 = c('a', 'a', 'a', 'a', 'b', 'c'), 
-                 a2 = c(1L, 1L, 1L, 2L, 2L, 2L), 
+x1 <- data.table(a1 = c('a', 'a', 'a', 'a', 'b', 'c'),
+                 a2 = c(1L, 1L, 1L, 2L, 2L, 2L),
                  a3 = c(FALSE, TRUE, FALSE, FALSE, FALSE, TRUE))
 setindex(x1, a1, a2, a3)
 setindex(x1, a1, a3)
@@ -9495,17 +9497,25 @@ test(1701.7, dt[dt, .(xa=x.a, ia=i.a), .EACHI, on="a"], data.table(a=1L, xa=1L, 
 
 # ISO 8601-consistent week numbering, #1765
 #  test cases via https://en.wikipedia.org/wiki/ISO_week_date
+#  as well as specified in relation to #2407
 test_cases <- c("2005-01-01", "2005-01-02", "2005-12-31",
                 "2007-01-01", "2007-12-30", "2007-12-31",
                 "2008-01-01", "2008-12-28", "2008-12-29",
                 "2008-12-30", "2008-12-31", "2009-01-01",
                 "2009-12-31", "2010-01-01",
-                "2010-01-02", "2010-01-03")
+                "2010-01-02", "2010-01-03",
+                #see https://stackoverflow.com/questions/43944430 & #2407
+                "2014-12-29", "2014-12-22", "2015-02-02")
 
 test_values <- c(53L, 53L, 52L, 1L, 52L, 1L, 1L,
-                 52L, 1L, 1L, 1L, 1L, 53L, 53L, 53L, 53L)
+                 52L, 1L, 1L, 1L, 1L, 53L, 53L, 53L, 53L,
+                 1L, 52L, 6L)
 
-test(1702, isoweek(test_cases), test_values)
+test(1702.1, isoweek(test_cases), test_values)
+# calculating via character skirts timezone issues,
+#   but calculating from Date brings these into play, #2407
+test(1702.2, isoweek(as.Date(test_cases)), test_values)
+test(1702.3, isoweek(as.POSIXct(test_cases)), test_values)
 
 # fread, ensure no shell commands #1702
 if (.Platform$OS.type=="unix") {
@@ -9520,12 +9530,12 @@ if (.Platform$OS.type=="unix") {
 # as used by package popEpi in its tests
 test(1704, all.equal(data.table( a=1:3, b=4:6 ), data.table( A=1:3, B=4:6 ), check.attributes=FALSE))
 
-if (.Platform$OS.type!="windows") {
+# setDTthreads(2) was at the top of this file (tests.Rraw). Since CRAN's policy is max two.
+# However, under UBSAN and ASAN, threads are limited to 1 thread, so only run this test when we have 2 threads.
+if (.Platform$OS.type!="windows" && getDTthreads()==2) {
   # On Windows: "'mc.cores' > 1 is not supported on Windows".
   # parallel package isn't parallel on Windows, but data.table is.
   if ("package:parallel" %in% search()) {   #1745 and #1727
-    test(1705, getDTthreads()<=2) # this was set at the top of tests.Rraw.  CRAN's policy is max two.
-                                  # not 1, to pass on Rdevel clag UBSAN and ASAN without OpenMP
     lx <- replicate(4, runif(1e5), simplify=FALSE)
     f <- function(mc.cores = 2, threads = 2) {
       setDTthreads(threads)
@@ -9534,9 +9544,11 @@ if (.Platform$OS.type!="windows") {
     f(1, 1) # was always ok
     f(2, 1) # was always ok
     f(1, 2) # was always ok
-    f(2, 2) # used to hang. Now should not because data.table auto switches to single threaded
-            # commenting out avoid_openmp_hang_within_fork() confirms this test catches catches the hang
-    test(1706, getDTthreads()<=2) # Tests that it reverts to previous state after use of mclapply
+    f(2, 2) # Used to hang. Now should not because data.table auto switches to single threaded
+            # Commenting out avoid_openmp_hang_within_fork() confirms this test catches catches the hang
+    test(1705, getDTthreads()==1) # Stays in single-threaded mode after returning from mclapply's fork
+    setDTthreads(2)
+    test(1706, getDTthreads()==2) # User returned to multi-threaded after fork.
   } else {
     cat("Tests 1705 and 1706 not run. If required call library(parallel) first.\n")
   }
@@ -10377,11 +10389,15 @@ test(1759, fread("alluniquechar.csv")[c(1,2,4999,5000)],
 # fread should use multiple threads on single column input.
 # tests 2 threads; the very reasonable limit on CRAN
 # file needs to be reasonably large for threads to kick in (minimum chunkSize is 1MB currently)
-N = if (TRUE) 2e6 else 1e9   # offline speed check
-fwrite(data.table(A=sample(10,N,replace=TRUE)), f<-tempfile())
-test(1760.1, file.info(f)$size > 4*1024*1024)
-test(1760.2, fread(f, verbose=TRUE, nThread=2), output="using 2 threads")
-unlink(f)
+if (getDTthreads() != 2) {
+  cat("Test 1760 not run because this session either has no OpenMP or has been limited to one thread (e.g. under UBSAN and ASAN)\n")
+} else {
+  N = if (TRUE) 2e6 else 1e9   # offline speed check
+  fwrite(data.table(A=sample(10,N,replace=TRUE)), f<-tempfile())
+  test(1760.1, file.info(f)$size > 4*1024*1024)
+  test(1760.2, fread(f, verbose=TRUE, nThread=2), output="using 2 threads")
+  unlink(f)
+}
 
 # fread single column with superfluous fill=TRUE, #2118
 test(1761.1, fread("1\n2\n3", fill=TRUE), data.table(V1=1:3))
@@ -10690,6 +10706,35 @@ tt = setDT(read.csv(f, stringsAsFactors=FALSE))
 tt[2, B:=gsub("\n","\r",B)]  # base R changes the \r to a \n, so restore that
 test(1778.4, tt, DT)
 unlink(f)
+
+# #1392 IDate ITime new methods for faster conversion
+# conversion in-out match for UTC
+same = list(l = as.POSIXlt("2015-10-12 13:19:35", tz = "UTC"))
+same$p = as.POSIXct(same$l)
+same$d = as.Date(same$p)
+same$n = as.numeric(same$p)
+same$i = as.integer(same$p)
+ld = sapply(same, as.IDate)
+test(1779.1, uniqueN(ld)==1L)
+lt = sapply(same[-3L], as.ITime) # exclude date
+test(1779.2, uniqueN(lt)==1L)
+# some random 1e6 timestamps old defaults vs new methods UTC
+intpx = function(x) as.integer(as.POSIXct(x, origin = "1970-01-01", tz = "UTC"))
+set.seed(1)
+i = sample(seq(intpx("2014-10-12"), intpx("2015-10-12")), 1e6, TRUE)
+p = as.POSIXct(i, origin = "1970-01-01", tz = "UTC")
+test(1779.3, identical(as.ITime.default(p), as.ITime(p)))
+test(1779.4, identical(as.IDate.default(p), as.IDate(p)))
+# test for non-UTC
+p = as.POSIXct(i, origin = "1970-01-01", tz = "Asia/Hong_Kong")
+test(1779.5, identical(as.ITime.default(p), as.ITime(p)))
+test(1779.6, identical(as.IDate.default(p), as.IDate(p)))
+p = as.POSIXct(i, origin = "1970-01-01", tz = "America/New_York")
+test(1779.7, identical(as.ITime.default(p), as.ITime(p)))
+test(1779.8, identical(as.IDate.default(p), as.IDate(p)))
+p = as.POSIXct(i, origin = "1970-01-01")
+test(1779.9, identical(as.ITime.default(p), as.ITime(p)))
+test(1779.11, identical(as.IDate.default(p), as.IDate(p)))
 
 
 ##########################
