@@ -293,7 +293,8 @@ isoweek <- function(x) {
   #  subtract 1 and re-divide; also, POSIXlt increment by seconds
   nearest_thurs <- xlt + (3 - ((xlt$wday - 1) %% 7)) * 86400
 
-  year_start <- as.POSIXct(paste0(as.POSIXlt(nearest_thurs)$year + 1900L, "-01-01"))
+  #as.POSIXct here caused time zone issues, #2407
+  year_start <- as.Date(format(nearest_thurs, '%Y-01-01'))
 
   as.integer(1 + unclass(difftime(nearest_thurs, year_start, units = "days")) %/% 7)
 }
