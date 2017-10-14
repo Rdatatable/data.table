@@ -167,91 +167,91 @@ R_ExternalMethodDef externalMethods[] = {
 void attribute_visible R_init_datatable(DllInfo *info)
 // relies on pkg/src/Makevars to mv data.table.so to datatable.so
 {
-    R_registerRoutines(info, NULL, callMethods, NULL, externalMethods);
-    R_useDynamicSymbols(info, FALSE);
-    setSizes();
-    const char *msg = "... failed. Please forward this message to maintainer('data.table').";
-    if ((int)NA_INTEGER != (int)INT_MIN) error("Checking NA_INTEGER [%d] == INT_MIN [%d] %s", NA_INTEGER, INT_MIN, msg);
-    if ((int)NA_INTEGER != (int)NA_LOGICAL) error("Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s", NA_INTEGER, NA_LOGICAL, msg);
-    if (sizeof(int) != 4) error("Checking sizeof(int) [%d] is 4 %s", sizeof(int), msg);
-    if (sizeof(double) != 8) error("Checking sizeof(double) [%d] is 8 %s", sizeof(double), msg);     // 8 on both 32bit and 64bit
-    // alignof not available in C99: if (alignof(double) != 8) error("Checking alignof(double) [%d] is 8 %s", alignof(double), msg);  // 8 on both 32bit and 64bit
-    if (sizeof(long long) != 8) error("Checking sizeof(long long) [%d] is 8 %s", sizeof(long long), msg);
-    if (sizeof(char *) != 4 && sizeof(char *) != 8) error("Checking sizeof(pointer) [%d] is 4 or 8 %s", sizeof(char *), msg);
-    if (sizeof(SEXP) != sizeof(char *)) error("Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s", sizeof(SEXP), sizeof(char *), msg);
-    if (sizeof(uint64_t) != 8) error("Checking sizeof(uint64_t) [%d] is 8 %s", sizeof(uint64_t), msg);
-    if (sizeof(int64_t) != 8) error("Checking sizeof(int64_t) [%d] is 8 %s", sizeof(int64_t), msg);
-    if (sizeof(signed char) != 1) error("Checking sizeof(signed char) [%d] is 1 %s", sizeof(signed char), msg);
-    if (sizeof(int8_t) != 1) error("Checking sizeof(int8_t) [%d] is 1 %s", sizeof(int8_t), msg);
+  R_registerRoutines(info, NULL, callMethods, NULL, externalMethods);
+  R_useDynamicSymbols(info, FALSE);
+  setSizes();
+  const char *msg = "... failed. Please forward this message to maintainer('data.table').";
+  if ((int)NA_INTEGER != (int)INT_MIN) error("Checking NA_INTEGER [%d] == INT_MIN [%d] %s", NA_INTEGER, INT_MIN, msg);
+  if ((int)NA_INTEGER != (int)NA_LOGICAL) error("Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s", NA_INTEGER, NA_LOGICAL, msg);
+  if (sizeof(int) != 4) error("Checking sizeof(int) [%d] is 4 %s", sizeof(int), msg);
+  if (sizeof(double) != 8) error("Checking sizeof(double) [%d] is 8 %s", sizeof(double), msg);     // 8 on both 32bit and 64bit
+  // alignof not available in C99: if (alignof(double) != 8) error("Checking alignof(double) [%d] is 8 %s", alignof(double), msg);  // 8 on both 32bit and 64bit
+  if (sizeof(long long) != 8) error("Checking sizeof(long long) [%d] is 8 %s", sizeof(long long), msg);
+  if (sizeof(char *) != 4 && sizeof(char *) != 8) error("Checking sizeof(pointer) [%d] is 4 or 8 %s", sizeof(char *), msg);
+  if (sizeof(SEXP) != sizeof(char *)) error("Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s", sizeof(SEXP), sizeof(char *), msg);
+  if (sizeof(uint64_t) != 8) error("Checking sizeof(uint64_t) [%d] is 8 %s", sizeof(uint64_t), msg);
+  if (sizeof(int64_t) != 8) error("Checking sizeof(int64_t) [%d] is 8 %s", sizeof(int64_t), msg);
+  if (sizeof(signed char) != 1) error("Checking sizeof(signed char) [%d] is 1 %s", sizeof(signed char), msg);
+  if (sizeof(int8_t) != 1) error("Checking sizeof(int8_t) [%d] is 1 %s", sizeof(int8_t), msg);
 
-    SEXP tmp = PROTECT(allocVector(INTSXP,2));
-    if (LENGTH(tmp)!=2) error("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s", LENGTH(tmp), msg);
-    if (TRUELENGTH(tmp)!=0) error("Checking TRUELENGTH(allocVector(INTSXP,2)) [%d] is 0 %s", TRUELENGTH(tmp), msg);
-    UNPROTECT(1);
+  SEXP tmp = PROTECT(allocVector(INTSXP,2));
+  if (LENGTH(tmp)!=2) error("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s", LENGTH(tmp), msg);
+  if (TRUELENGTH(tmp)!=0) error("Checking TRUELENGTH(allocVector(INTSXP,2)) [%d] is 0 %s", TRUELENGTH(tmp), msg);
+  UNPROTECT(1);
 
-    // According to IEEE (http://en.wikipedia.org/wiki/IEEE_754-1985#Zero) we can rely on 0.0 being all 0 bits.
-    // But check here anyway just to be sure, just in case this answer is right (http://stackoverflow.com/a/2952680/403310).
-    int i = 314;
-    memset(&i, 0, sizeof(int));
-    if (i != 0) error("Checking memset(&i,0,sizeof(int)); i == (int)0 %s", msg);
-    unsigned int ui = 314;
-    memset(&ui, 0, sizeof(unsigned int));
-    if (ui != 0) error("Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s", msg);
-    double d = 3.14;
-    memset(&d, 0, sizeof(double));
-    if (d != 0.0) error("Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s", msg);
-    long double ld = 3.14;
-    memset(&ld, 0, sizeof(long double));
-    if (ld != 0.0) error("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s", msg);
+  // According to IEEE (http://en.wikipedia.org/wiki/IEEE_754-1985#Zero) we can rely on 0.0 being all 0 bits.
+  // But check here anyway just to be sure, just in case this answer is right (http://stackoverflow.com/a/2952680/403310).
+  int i = 314;
+  memset(&i, 0, sizeof(int));
+  if (i != 0) error("Checking memset(&i,0,sizeof(int)); i == (int)0 %s", msg);
+  unsigned int ui = 314;
+  memset(&ui, 0, sizeof(unsigned int));
+  if (ui != 0) error("Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s", msg);
+  double d = 3.14;
+  memset(&d, 0, sizeof(double));
+  if (d != 0.0) error("Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s", msg);
+  long double ld = 3.14;
+  memset(&ld, 0, sizeof(long double));
+  if (ld != 0.0) error("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s", msg);
 
-    // Check unsigned cast used in fread.c. This isn't overflow/underflow, just cast.
-    if ((uint_fast8_t)('0'-'/') != 1) error("The ascii character '/' is not just before '0'");
-    if ((uint_fast8_t)('/'-'0') < 10) error("The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false.");
-    if ((uint_fast8_t)(':'-'9') != 1) error("The ascii character ':' is not just after '9'");
-    if ((uint_fast8_t)('9'-':') < 10) error("The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false.");
+  // Check unsigned cast used in fread.c. This isn't overflow/underflow, just cast.
+  if ((uint_fast8_t)('0'-'/') != 1) error("The ascii character '/' is not just before '0'");
+  if ((uint_fast8_t)('/'-'0') < 10) error("The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false.");
+  if ((uint_fast8_t)(':'-'9') != 1) error("The ascii character ':' is not just after '9'");
+  if ((uint_fast8_t)('9'-':') < 10) error("The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false.");
 
-    // Variables rather than #define for NA_INT64 to ensure correct usage; i.e. not casted
-    NA_INT64_LL = LLONG_MIN;
-    NA_INT64_D = LLtoD(NA_INT64_LL);
-    if (NA_INT64_LL != DtoLL(NA_INT64_D)) error("Conversion of NA_INT64 via double failed %lld!=%lld", NA_INT64_LL, DtoLL(NA_INT64_D));
-    // LLONG_MIN when punned to double is the sign bit set and then all zeros in exponent and significand i.e. -0.0
-    //   That's why we must never test for NA_INT64_D using == in double type. Must always DtoLL and compare long long types.
-    //   Assigning NA_INT64_D to a REAL is ok however.
-    if (NA_INT64_D != 0.0)  error("NA_INT64_D (negative -0.0) is not == 0.0.");
-    if (NA_INT64_D != -0.0) error("NA_INT64_D (negative -0.0) is not ==-0.0.");
-    if (ISNAN(NA_INT64_D)) error("ISNAN(NA_INT64_D) is TRUE but should not be");
-    if (isnan(NA_INT64_D)) error("isnan(NA_INT64_D) is TRUE but should not be");
+  // Variables rather than #define for NA_INT64 to ensure correct usage; i.e. not casted
+  NA_INT64_LL = LLONG_MIN;
+  NA_INT64_D = LLtoD(NA_INT64_LL);
+  if (NA_INT64_LL != DtoLL(NA_INT64_D)) error("Conversion of NA_INT64 via double failed %lld!=%lld", NA_INT64_LL, DtoLL(NA_INT64_D));
+  // LLONG_MIN when punned to double is the sign bit set and then all zeros in exponent and significand i.e. -0.0
+  //   That's why we must never test for NA_INT64_D using == in double type. Must always DtoLL and compare long long types.
+  //   Assigning NA_INT64_D to a REAL is ok however.
+  if (NA_INT64_D != 0.0)  error("NA_INT64_D (negative -0.0) is not == 0.0.");
+  if (NA_INT64_D != -0.0) error("NA_INT64_D (negative -0.0) is not ==-0.0.");
+  if (ISNAN(NA_INT64_D)) error("ISNAN(NA_INT64_D) is TRUE but should not be");
+  if (isnan(NA_INT64_D)) error("isnan(NA_INT64_D) is TRUE but should not be");
 
-    setNumericRounding(PROTECT(ScalarInteger(0))); // #1642, #1728, #1463, #485
-    UNPROTECT(1);
+  setNumericRounding(PROTECT(ScalarInteger(0))); // #1642, #1728, #1463, #485
+  UNPROTECT(1);
 
-    // create needed strings in advance for speed, same techique as R_*Symbol
-    // Following R-exts 5.9.4; paragraph and example starting "Using install ..."
-    // either use PRINTNAME(install()) or R_PreserveObject(mkChar()) here.
-    char_integer64 = PRINTNAME(install("integer64"));
-    char_ITime =     PRINTNAME(install("ITime"));
-    char_Date =      PRINTNAME(install("Date"));   // used for IDate too since IDate inherits from Date
-    char_POSIXct =   PRINTNAME(install("POSIXct"));
-    char_nanotime =  PRINTNAME(install("nanotime"));
-    char_starts =    PRINTNAME(sym_starts = install("starts"));
-    if (TYPEOF(char_integer64) != CHARSXP) {
-      // checking one is enough in case of any R-devel changes
-      error("PRINTNAME(install(\"integer64\")) has returned %s not %s",
-            type2char(TYPEOF(char_integer64)), type2char(CHARSXP));
-    }
+  // create needed strings in advance for speed, same techique as R_*Symbol
+  // Following R-exts 5.9.4; paragraph and example starting "Using install ..."
+  // either use PRINTNAME(install()) or R_PreserveObject(mkChar()) here.
+  char_integer64 = PRINTNAME(install("integer64"));
+  char_ITime =     PRINTNAME(install("ITime"));
+  char_Date =      PRINTNAME(install("Date"));   // used for IDate too since IDate inherits from Date
+  char_POSIXct =   PRINTNAME(install("POSIXct"));
+  char_nanotime =  PRINTNAME(install("nanotime"));
+  char_starts =    PRINTNAME(sym_starts = install("starts"));
+  if (TYPEOF(char_integer64) != CHARSXP) {
+    // checking one is enough in case of any R-devel changes
+    error("PRINTNAME(install(\"integer64\")) has returned %s not %s",
+      type2char(TYPEOF(char_integer64)), type2char(CHARSXP));
+  }
 
-    // create commonly used symbols, same as R_*Symbol but internal to DT
-    // Not really for speed but to avoid leak in situations like setAttrib(DT, install(), allocVector()) where
-    // the allocVector() can happen first and then the install() could gc and free it before it is protected
-    // within setAttrib. Thanks to Bill Dunlap finding and reporting. Using these symbols instead of install()
-    // avoids the gc without needing an extra PROTECT and immediate UNPROTECT after the setAttrib which would
-    // look odd (and devs in future might be tempted to remove them). Avoiding passing install() to API calls
-    // keeps the code neat and readable. Also see grep's added to CRAN_Release.cmd to find such calls.
-    sym_sorted  = install("sorted");
-    sym_BY      = install(".BY");
-    sym_maxgrpn = install("maxgrpn");
+  // create commonly used symbols, same as R_*Symbol but internal to DT
+  // Not really for speed but to avoid leak in situations like setAttrib(DT, install(), allocVector()) where
+  // the allocVector() can happen first and then the install() could gc and free it before it is protected
+  // within setAttrib. Thanks to Bill Dunlap finding and reporting. Using these symbols instead of install()
+  // avoids the gc without needing an extra PROTECT and immediate UNPROTECT after the setAttrib which would
+  // look odd (and devs in future might be tempted to remove them). Avoiding passing install() to API calls
+  // keeps the code neat and readable. Also see grep's added to CRAN_Release.cmd to find such calls.
+  sym_sorted  = install("sorted");
+  sym_BY      = install(".BY");
+  sym_maxgrpn = install("maxgrpn");
 
-    avoid_openmp_hang_within_fork();
+  avoid_openmp_hang_within_fork();
 }
 
 inline Rboolean INHERITS(SEXP x, SEXP char_) {
@@ -265,9 +265,9 @@ inline Rboolean INHERITS(SEXP x, SEXP char_) {
   // ii) no attrib writes must be possible in other threads.
   SEXP class;
   if (isString(class = getAttrib(x, R_ClassSymbol))) {
-    for (int i=0; i<LENGTH(class); i++) {
-      if (STRING_ELT(class, i) == char_) return TRUE;
-    }
+  for (int i=0; i<LENGTH(class); i++) {
+    if (STRING_ELT(class, i) == char_) return TRUE;
+  }
   }
   return FALSE;
 }
