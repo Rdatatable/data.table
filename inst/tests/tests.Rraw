@@ -6201,10 +6201,10 @@ if ("package:xts" %in% search()) {
     xt_dt_xt_q = as.xts.data.table(as.data.table(xt_q))
     xt_y = xts::to.yearly(xt)
     xt_dt_xt_y = as.xts.data.table(as.data.table(xt_y))
-    test(1465.5, xt_w, xt_dt_xt_w)
-    test(1465.6, xt_m, xt_dt_xt_m)
-    test(1465.7, xt_q, xt_dt_xt_q)
-    test(1465.8, xt_y, xt_dt_xt_y)
+    test(1465.5, all.equal(xt_w, xt_dt_xt_w, check.attributes = FALSE))
+    test(1465.6, all.equal(xt_m, xt_dt_xt_m, check.attributes = FALSE))
+    test(1465.7, all.equal(xt_q, xt_dt_xt_q, check.attributes = FALSE))
+    test(1465.8, all.equal(xt_y, xt_dt_xt_y, check.attributes = FALSE))
 }
 
 # as.data.table.default #969
