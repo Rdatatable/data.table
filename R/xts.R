@@ -13,5 +13,5 @@ as.xts.data.table <- function(x, ...) {
     colsNumeric = vapply_1b(x, is.numeric)[-1L] # exclude first col, xts index
     if (any(!colsNumeric)) warning(paste("Following columns are not numeric and will be omitted:", paste(names(colsNumeric)[!colsNumeric], collapse = ", ")))
     r = setDF(x[, .SD, .SDcols = names(colsNumeric)[colsNumeric]])
-    return(xts::as.xts(r, order.by = order.by = if ("IDate" %in% class(x[[1L]])) as.Date(x[[1L]]) else x[[1L]]))
+    return(xts::as.xts(r, order.by = if ("IDate" %in% class(x[[1L]])) as.Date(x[[1L]]) else x[[1L]]))
 }
