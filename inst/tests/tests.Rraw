@@ -9482,17 +9482,25 @@ test(1701.7, dt[dt, .(xa=x.a, ia=i.a), .EACHI, on="a"], data.table(a=1L, xa=1L, 
 
 # ISO 8601-consistent week numbering, #1765
 #  test cases via https://en.wikipedia.org/wiki/ISO_week_date
+#  as well as specified in relation to #2407
 test_cases <- c("2005-01-01", "2005-01-02", "2005-12-31",
                 "2007-01-01", "2007-12-30", "2007-12-31",
                 "2008-01-01", "2008-12-28", "2008-12-29",
                 "2008-12-30", "2008-12-31", "2009-01-01",
                 "2009-12-31", "2010-01-01",
-                "2010-01-02", "2010-01-03")
+                "2010-01-02", "2010-01-03",
+                #see https://stackoverflow.com/questions/43944430 & #2407
+                "2014-12-29", "2014-12-22", "2015-02-02")
 
 test_values <- c(53L, 53L, 52L, 1L, 52L, 1L, 1L,
-                 52L, 1L, 1L, 1L, 1L, 53L, 53L, 53L, 53L)
+                 52L, 1L, 1L, 1L, 1L, 53L, 53L, 53L, 53L,
+                 1L, 52L, 6L)
 
-test(1702, isoweek(test_cases), test_values)
+test(1702.1, isoweek(test_cases), test_values)
+# calculating via character skirts timezone issues,
+#   but calculating from Date brings these into play, #2407
+test(1702.2, isoweek(as.Date(test_cases)), test_values)
+test(1702.3, isoweek(as.POSIXct(test_cases)), test_values)
 
 # fread, ensure no shell commands #1702
 if (.Platform$OS.type=="unix") {
