@@ -21,7 +21,7 @@ grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n 
 # Ensure no calls to omp_set_num_threads() [to avoid affecting other packages and base R]
 grep --exclude="data.table/src/openmp-utils.c" omp_set_num_threads data.table/src/*
 
-# Endure no calls to omp_get_max_threads() also since access should be via getDTthreads()
+# Ensure no calls to omp_get_max_threads() also since access should be via getDTthreads()
 grep --exclude="data.table/src/openmp-utils.c" omp_get_max_threads data.table/src/*
 
 # Ensure all #pragama omp parallel directives include a num_threads() clause
@@ -44,6 +44,11 @@ grep "&REAL" data.table/src/*.c
 
 # No use of long long, instead use int64_t. TODO
 # grep "long long" data.table/src/*.c
+
+# No tabs in C or R code (sorry Richard Hendricks)
+grep -P "\t" data.table/R/*.R
+grep -P "\t" data.table/src/*.c
+
 
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
