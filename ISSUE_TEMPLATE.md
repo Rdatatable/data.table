@@ -1,3 +1,5 @@
+Click preview tab ^^^ above!
+
 By continuing to file this new issue / feature request, I confirm I have :
 1. searched issues for the same issue I have and will include links to similar issues explaining why mine is different
 2. searched the [live NEWS file](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) to see if it has been fixed in dev already. If so, I tried the [latest dev version](https://github.com/Rdatatable/data.table/wiki/Installation#windows).
