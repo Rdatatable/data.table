@@ -187,7 +187,7 @@ The way to read this out loud is: "Take \code{DT}, subset rows by \code{i}, \emp
     X[, .(a)]                   # same as above, but return as a data.table.
     X[, sum(a)]                 # return sum(a) as a vector (with same scoping rules as above)
     X[, .(sum(a)), by=c]        # get sum(a) grouped by 'c'.
-    X[, sum(a), by=c]           # same as above, .() can be ommitted in by on single expression for convenience
+    X[, sum(a), by=c]           # same as above, .() can be omitted in by on single expression for convenience
     X[, sum(a), by=c:f]         # get sum(a) grouped by all columns in between 'c' and 'f' (both inclusive)
 
     X[, sum(a), keyby=b]        # get sum(a) grouped by 'b', and sort that result by the grouping column 'b'
@@ -393,7 +393,7 @@ DT[, sum(v), by=x][order(-V1)]        # ordering results
 DT[, c(.N, lapply(.SD,sum)), by=x]    # get number of observations and sum per group
 DT[, {tmp <- mean(y);
       .(a = a-tmp, b = b-tmp)
-      }, by=x]                        # anonymous lambdain 'j', j accepts any valid
+      }, by=x]                        # anonymous lambda in 'j', j accepts any valid
                                       # expression. TO REMEMBER: every element of
                                       # the list becomes a column in result.
 pdf("new.pdf")

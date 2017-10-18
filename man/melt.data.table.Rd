@@ -7,7 +7,7 @@ An S3 method for melting \code{data.table}s written in C for speed and memory
 efficiency. Since \code{v1.9.6}, \code{melt.data.table} allows melting into
 multiple columns simultaneously.
 
-It is not necessary to load \code{reshape2} anymore. But if you have to, then
+It is not necessary to load \code{reshape2} any more. But if you have to, then
 load \code{reshape2} package \emph{before} loading \code{data.table}.
 }
 \usage{
@@ -78,7 +78,7 @@ be coerced to \code{character} type. This is to be compatible with
 \code{value.factor = TRUE}. \code{melt.data.table} also preserves
 \code{ordered} factors.
 
-Note that, as opposed to the (undocumented) behavior of \code{reshape2::melt}, \code{id.vars}, when specified as numbers, must be between 1 and \code{ncol(data)}.
+Note that, as opposed to the (undocumented) behaviour of \code{reshape2::melt}, \code{id.vars}, when specified as numbers, must be between 1 and \code{ncol(data)}.
 }
 
 \value{

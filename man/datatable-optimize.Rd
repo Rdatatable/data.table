@@ -32,15 +32,15 @@ At optimisation level \code{>= 1}, i.e., \code{getOption("datatable.optimize")}
 
 \itemize{
     \item The base function \code{order} is internally replaced with
-    \code{data.table}'s \emph{fast ordering}. That is, \code{dt[order(...)]}
-    gets internally optimised to \code{dt[forder(...)]}.
+    \code{data.table}'s \emph{fast ordering}. That is, \code{DT[order(...)]}
+    gets internally optimised to \code{DT[forder(...)]}.
 
-    \item The expression \code{dt[, lapply(.SD, fun), by=.]} gets optimised
-    to \code{dt[, list(fun(a), fun(b), ...), by=.]} where \code{a,b, ...} are
+    \item The expression \code{DT[, lapply(.SD, fun), by=.]} gets optimised
+    to \code{DT[, list(fun(a), fun(b), ...), by=.]} where \code{a,b, ...} are
     columns in \code{.SD}. This improves performance tremendously.
 
-    \item Similarly, the expression \code{dt[, c(.N, lapply(.SD, fun)), by=.]}
-    gets optimised to \code{dt[, list(.N, fun(a), fun(b), ...)]}. \code{.N} is
+    \item Similarly, the expression \code{DT[, c(.N, lapply(.SD, fun)), by=.]}
+    gets optimised to \code{DT[, list(.N, fun(a), fun(b), ...)]}. \code{.N} is
     just for example here.
 
     \item \code{base::mean} function is internally optimised to use
@@ -54,7 +54,7 @@ At optimisation level \code{>= 2}, i.e., \code{getOption("datatable.optimize")} 
 
     \item Expressions in \code{j} which contain only the functions
     \code{min, max, mean, median, var, sd, sum, prod, first, last, head, tail} (for example,
-    \code{dt[, list(mean(x), median(x), min(y), max(y)), by=z]}), they are very
+    \code{DT[, list(mean(x), median(x), min(y), max(y)), by=z]}), they are very
     effectively optimised using what we call \emph{GForce}. These functions
     are automatically replaced with a corresponding GForce version
     with pattern \code{g*}, e.g., \code{prod} becomes \code{gprod}.
@@ -69,7 +69,7 @@ At optimisation level \code{>= 2}, i.e., \code{getOption("datatable.optimize")} 
     \item In addition to all the functions above, `.N` is also optimised to
     use GForce, when used separately or when combined with the functions mentioned
     above. Note further that GForce-optimized functions must be used separately,
-    i.e., code like \code{dt[ , max(x) - min(x), by=z]} will \emph{not} currently
+    i.e., code like \code{DT[ , max(x) - min(x), by=z]} will \emph{not} currently
     be optimized to use \code{gmax, gmin}.
 
     \item Expressions of the form \code{DT[i, j, by]} are also optimised when
@@ -82,8 +82,8 @@ creating an \emph{index} on the first run. Any successive subsets on the same
 column then reuses this index to \emph{binary search} (instead of
 \emph{vector scan}) and is therefore fast.
 
-At the moment, expressions of the form \code{dt[col == val]} and
-\code{dt[col \%in\% val]} are both optimised. We plan to expand this to more
+At the moment, expressions of the form \code{DT[col == val]} and
+\code{DT[col \%in\% val]} are both optimised. We plan to expand this to more
 operators and conditions in the future.
 
 Auto indexing can be switched off with the global option
@@ -95,41 +95,41 @@ indices set global option \code{options(datatable.use.index = FALSE)}.
 \dontrun{
 # Generate a big data.table with a relatively many columns
 set.seed(1L)
-dt = lapply(1:20, function(x) sample(c(-100:100), 5e6L, TRUE))
-setDT(dt)[, id := sample(1e5, 5e6, TRUE)]
-print(object.size(dt), units="Mb") # 400MB, not huge, but will do
+DT = lapply(1:20, function(x) sample(c(-100:100), 5e6L, TRUE))
+setDT(DT)[, id := sample(1e5, 5e6, TRUE)]
+print(object.size(DT), units="Mb") # 400MB, not huge, but will do
 
 # 'order' optimisation
 options(datatable.optimize = 1L) # optimisation 'on'
-system.time(ans1 <- dt[order(id)])
+system.time(ans1 <- DT[order(id)])
 options(datatable.optimize = 0L) # optimisation 'off'
-system.time(ans2 <- dt[order(id)])
+system.time(ans2 <- DT[order(id)])
 identical(ans1, ans2)
 
 # optimisation of 'lapply(.SD, fun)'
 options(datatable.optimize = 1L) # optimisation 'on'
-system.time(ans1 <- dt[, lapply(.SD, min), by=id])
+system.time(ans1 <- DT[, lapply(.SD, min), by=id])
 options(datatable.optimize = 0L) # optimisation 'off'
-system.time(ans2 <- dt[, lapply(.SD, min), by=id])
+system.time(ans2 <- DT[, lapply(.SD, min), by=id])
 identical(ans1, ans2)
 
 # optimisation of 'mean'
 options(datatable.optimize = 1L) # optimisation 'on'
-system.time(ans1 <- dt[, lapply(.SD, mean), by=id])
-system.time(ans2 <- dt[, lapply(.SD, base::mean), by=id])
+system.time(ans1 <- DT[, lapply(.SD, mean), by=id])
+system.time(ans2 <- DT[, lapply(.SD, base::mean), by=id])
 identical(ans1, ans2)
 
 # optimisation of 'c(.N, lapply(.SD, ))'
 options(datatable.optimize = 1L) # optimisation 'on'
-system.time(ans1 <- dt[, c(.N, lapply(.SD, min)), by=id])
+system.time(ans1 <- DT[, c(.N, lapply(.SD, min)), by=id])
 options(datatable.optimize = 0L) # optimisation 'off'
-system.time(ans2 <- dt[, c(N=.N, lapply(.SD, min)), by=id])
+system.time(ans2 <- DT[, c(N=.N, lapply(.SD, min)), by=id])
 identical(ans1, ans2)
 
 # GForce
 options(datatable.optimize = 2L) # optimisation 'on'
-system.time(ans1 <- dt[, lapply(.SD, median), by=id])
-system.time(ans2 <- dt[, lapply(.SD, function(x) as.numeric(stats::median(x))), by=id])
+system.time(ans1 <- DT[, lapply(.SD, median), by=id])
+system.time(ans2 <- DT[, lapply(.SD, function(x) as.numeric(stats::median(x))), by=id])
 identical(ans1, ans2)
 
 # restore optimization
@@ -137,14 +137,14 @@ options(datatable.optimize = Inf)
 
 # auto indexing
 options(datatable.auto.index = FALSE)
-system.time(ans1 <- dt[id == 100L]) # vector scan
-system.time(ans2 <- dt[id == 100L]) # vector scan
-system.time(dt[id \%in\% 100:500])    # vector scan
+system.time(ans1 <- DT[id == 100L]) # vector scan
+system.time(ans2 <- DT[id == 100L]) # vector scan
+system.time(DT[id \%in\% 100:500])    # vector scan
 
 options(datatable.auto.index = TRUE)
-system.time(ans1 <- dt[id == 100L]) # index + binary search subset
-system.time(ans2 <- dt[id == 100L]) # only binary search subset
-system.time(dt[id \%in\% 100:500])    # only binary search subset again
+system.time(ans1 <- DT[id == 100L]) # index + binary search subset
+system.time(ans2 <- DT[id == 100L]) # only binary search subset
+system.time(DT[id \%in\% 100:500])    # only binary search subset again
 
 }}
 \keyword{ data }

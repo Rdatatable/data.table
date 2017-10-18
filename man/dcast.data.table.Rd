@@ -5,7 +5,7 @@
 \description{
   \code{dcast.data.table} is a much faster version of \code{reshape2::dcast}, but for \code{data.table}s. More importantly, it's capable of handling very large data quite efficiently in terms of memory usage in comparison to \code{reshape2::dcast}.
 
-  From 1.9.6, \code{dcast} is implemented as an S3 generic in \code{data.table}. To melt or cast \code{data.table}s, it is not necessary to load \code{reshape2} anymore. If you have load \code{reshape2}, do so before loading \code{data.table} to prevent unwanted masking.
+  From 1.9.6, \code{dcast} is implemented as an S3 generic in \code{data.table}. To melt or cast \code{data.table}s, it is not necessary to load \code{reshape2} any more. If you have load \code{reshape2}, do so before loading \code{data.table} to prevent unwanted masking.
 
   \bold{NEW}: \code{dcast.data.table} can now cast multiple \code{value.var} columns and also accepts multiple functions to \code{fun.aggregate}. See Examples for more.
 }
@@ -106,16 +106,16 @@ system.time(dcast(DT, aa + bb ~ cc, fun=sum)) # 1.2 seconds
 }
 
 # NEW FEATURE - multiple value.var and multiple fun.aggregate
-dt = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE),
+DT = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE),
                 z=sample(letters[1:2], 20,TRUE), d1 = runif(20), d2=1L)
 # multiple value.var
-dcast(dt, x + y ~ z, fun=sum, value.var=c("d1","d2"))
+dcast(DT, x + y ~ z, fun=sum, value.var=c("d1","d2"))
 # multiple fun.aggregate
-dcast(dt, x + y ~ z, fun=list(sum, mean), value.var="d1")
+dcast(DT, x + y ~ z, fun=list(sum, mean), value.var="d1")
 # multiple fun.agg and value.var (all combinations)
-dcast(dt, x + y ~ z, fun=list(sum, mean), value.var=c("d1", "d2"))
+dcast(DT, x + y ~ z, fun=list(sum, mean), value.var=c("d1", "d2"))
 # multiple fun.agg and value.var (one-to-one)
-dcast(dt, x + y ~ z, fun=list(sum, mean), value.var=list("d1", "d2"))
+dcast(DT, x + y ~ z, fun=list(sum, mean), value.var=list("d1", "d2"))
 }
 \seealso{
   \code{\link{melt.data.table}}, \code{\link{rowid}}, \url{https://cran.r-project.org/package=reshape}

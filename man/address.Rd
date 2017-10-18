@@ -11,7 +11,7 @@
   \item{x}{ Anything. }
 }
 \details{
-Sometimes useful in determining whether a value has been copied or not, programatically.
+Sometimes useful in determining whether a value has been copied or not, programmatically.
 }
 \value{
     A character vector length 1.
