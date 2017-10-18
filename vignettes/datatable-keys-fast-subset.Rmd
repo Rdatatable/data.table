@@ -228,7 +228,7 @@ flights[.("JFK", "MIA")]
 
 #### How does the subset work here? {.bs-callout .bs-callout-info #multiple-key-point}
 
-* It is important to undertand how this works internally. *"JFK"* is first matched against the first key column `origin`. And *within those matching rows*, *"MIA"* is matched against the second key column `dest` to obtain *row indices* where both `origin` and `dest` match the given values.
+* It is important to understand how this works internally. *"JFK"* is first matched against the first key column `origin`. And *within those matching rows*, *"MIA"* is matched against the second key column `dest` to obtain *row indices* where both `origin` and `dest` match the given values.
 
 * Since no `j` is provided, we simply return *all columns* corresponding to those row indices.
 
@@ -293,7 +293,7 @@ flights[.("LGA", "TPA"), .(arr_delay)][order(-arr_delay)]
 
 ### c) Compute or *do* in `j`
 
-#### -- Find the maximum arrival delay correspondong to `origin = "LGA"` and `dest = "TPA"`.
+#### -- Find the maximum arrival delay corresponding to `origin = "LGA"` and `dest = "TPA"`.
 
 ```{r}
 flights[.("LGA", "TPA"), max(arr_delay)]
@@ -329,7 +329,7 @@ key(flights)
 
 * And on those row indices, we replace the `key` column with the value `0`.
 
-* Since we have replaced values on the *key* column, the *data.table* `flights` isn't sorted by `hour` anymore. Therefore, the key has been automatically removed by setting to NULL.
+* Since we have replaced values on the *key* column, the *data.table* `flights` isn't sorted by `hour` any more. Therefore, the key has been automatically removed by setting to NULL.
 
 #
 Now, there shouldn't be any *24* in the `hour` column.
@@ -461,7 +461,7 @@ dim(ans2)
 identical(ans1$val, ans2$val)
 ```
 
-* The speedup is **~`r round(t1[3]/max(t2[3], .001))`x**!
+* The speed-up is **~`r round(t1[3]/max(t2[3], .001))`x**!
 
 ### b) Why does keying a *data.table* result in blazing fast susbets?
 

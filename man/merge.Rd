@@ -42,7 +42,7 @@ from \code{y}.  The default is \code{FALSE}, so that only rows with data from bo
 sorted by setting the key to the \code{by / by.x} columns. If \code{FALSE}, the
 result is not sorted.}
 \item{suffixes}{A \code{character(2)} specifying the suffixes to be used for
-making non-\code{by} column names unique. The suffix behavior works in a similar
+making non-\code{by} column names unique. The suffix behaviour works in a similar
 fashion as the \code{\link{merge.data.frame}} method does.}
 \item{allow.cartesian}{See \code{allow.cartesian} in \code{\link{[.data.table}}.}
 \item{\dots}{Not used at this time.}
