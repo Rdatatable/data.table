@@ -158,7 +158,7 @@ head(ans)
     (identical(ans1, ans2))
     ````
 
-The speedup here is **~`r round(t1[3]/t2[3])`x**. We will discuss *data.table*'s fast order in more detail in the *data.table internals* vignette.
+The speed-up here is **~`r round(t1[3]/t2[3])`x**. We will discuss *data.table*'s fast order in more detail in the *data.table internals* vignette.
 
 * This is so that you can improve performance tremendously while using already familiar functions.
 

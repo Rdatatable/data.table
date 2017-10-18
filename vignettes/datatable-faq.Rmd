@@ -69,7 +69,7 @@ The `j` expression is the 2nd argument. Try `DT[ , c("x","y","z")]` or `DT[ , .(
 
 In v1.9.8 released Nov 2016 there is an ability to turn on new behaviour: `options(datatable.WhenJisSymbolThenCallingScope=TRUE)`. It will then work as you expected, just like data.frame. If you are a new user of data.table, you should probably do this. You can place this command in your .Rprofile file so you don't have to remember again. See the long item in release notes about this. The release notes are linked at the top of the data.table homepage: [NEWS](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).
 
-Without turning on that new behavior, what's happening is that the `j` expression sees objects in the calling scope. The variable `mycol` does not exist as a column name of `DT` so data.table then looked in the calling scope and found `mycol` there and returned its value `"x"`. This is correct behaviour currently. Had `mycol` been a column name, then that column's data would have been returned. What has been done to date has been `DT[ , mycol, with = FALSE]` which will return the `x` column's data as required. That will still work in the future, too. Alternatively, since a data.table _is_ a `list`, too, you have been and still will be able to write and rely on `DT[[mycol]]`.
+Without turning on that new behaviour, what's happening is that the `j` expression sees objects in the calling scope. The variable `mycol` does not exist as a column name of `DT` so data.table then looked in the calling scope and found `mycol` there and returned its value `"x"`. This is correct behaviour currently. Had `mycol` been a column name, then that column's data would have been returned. What has been done to date has been `DT[ , mycol, with = FALSE]` which will return the `x` column's data as required. That will still work in the future, too. Alternatively, since a data.table _is_ a `list`, too, you have been and still will be able to write and rely on `DT[[mycol]]`.
 
 ## What are the benefits of being able to use column names as if they are variables inside `DT[...]`?
 
@@ -217,7 +217,7 @@ sapply(DT[0], class)
 ## Why has the `DT()` alias been removed? {#DTremove1}
 `DT` was introduced originally as a wrapper for a list of `j `expressions. Since `DT` was an alias for data.table, this was a convenient way to take care of silent recycling in cases where each item of the `j` list evaluated to different lengths. The alias was one reason grouping was slow, though.
 
-As of v1.3, `list()` or `.()` should be passed instead to the `j` argument. These are much faster, especially when there are many groups. Internally, this was a nontrivial change. Vector recycling is now done internally, along with several other speed enhancements for grouping.
+As of v1.3, `list()` or `.()` should be passed instead to the `j` argument. These are much faster, especially when there are many groups. Internally, this was a non-trivial change. Vector recycling is now done internally, along with several other speed enhancements for grouping.
 
 ## But my code uses `j = DT(...)` and it works. The previous FAQ says that `DT()` has been removed. {#DTremove2}
 
@@ -362,7 +362,7 @@ The general form is :
 DT[where, select|update, group by][order by][...] ... [...]
 ```
 
-A key advantage of column vectors in R is that they are _ordered_, unlike SQL[^2]. We can use ordered functions in `data.table queries such as `diff()` and we can use _any_ R function from any package, not just the functions that are defined in SQL. A disadvantage is that R objects must fit in memory, but with several R packages such as ff, bigmemory, mmap and indexing, this is changing.
+A key advantage of column vectors in R is that they are _ordered_, unlike SQL[^2]. We can use ordered functions in `data.table` queries such as `diff()` and we can use _any_ R function from any package, not just the functions that are defined in SQL. A disadvantage is that R objects must fit in memory, but with several R packages such as `ff`, `bigmemory`, `mmap` and `indexing`, this is changing.
 
 [^2]: It may be a surprise to learn that `select top 10 * from ...` does _not_ reliably return the same rows over time in SQL. You do need to include an `order by` clause, or use a clustered index to guarantee row order; _i.e._, SQL is inherently unordered.
 
