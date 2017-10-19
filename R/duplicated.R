@@ -12,17 +12,18 @@ duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq
   # fix for bug #5405 - unique on null data table returns error (because of 'forderv')
   # however, in this case we can bypass having to go to forderv at all.
   if (!length(query$by)) return(logical(0))
-  res <- rep.int(TRUE, nrow(x))
 
   if (query$use.keyprefix) {
     f = uniqlist(shallow(x, query$by))
     if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
   } else {
     o = forderv(x, by=query$by, sort=FALSE, retGrp=TRUE)
+    if (attr(o, 'maxgrpn') == 1L) return(rep.int(FALSE, nrow(x)))
     f = attr(o,"starts")
     if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
     if (length(o)) f=o[f]
   }
+  res <- rep.int(TRUE, nrow(x))
   res[f] = FALSE
   res
 }
