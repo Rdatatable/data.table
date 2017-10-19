@@ -107,7 +107,8 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
       cols = which(colClasses=="factor")
   }
   setfactor(ans, cols, verbose)
-  if (!missing(select)) {
+  # 2007: is.missing is not correct since default value of select is NULL
+  if (!is.null(select)) {
     # fix for #1445
     if (is.numeric(select)) {
       reorder = if (length(o <- forderv(select))) o else seq_along(select)

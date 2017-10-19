@@ -35,7 +35,7 @@
 
 5. Improved auto-detection of `character` inputs' formats to `as.ITime` to mirror the logic in `as.POSIXlt.character`, [#1383](https://github.com/Rdatatable/data.table/issues/1383) Thanks @franknarf1 for identifying a discrepancy and @MichaelChirico for investigating.
 
-6. `setcolorder()` now accepts less than `ncol(DT)` columns to be moved to the front, [#592](https://github.com/Rdatatable/data.table/issues/592). Thanks @MichaelChirico for the PR. 
+6. `setcolorder()` now accepts less than `ncol(DT)` columns to be moved to the front, [#592](https://github.com/Rdatatable/data.table/issues/592). Thanks @MichaelChirico for the PR. This also incidentally fixed [#2007](https://github.com/Rdatatable/data.table/issues/2007) whereby explicitly setting `select = NULL` in `fread` errored; thanks to @rcapell for reporting that and @dselivanov and @MichaelChirico for investigating and providing a new test.
 
 7. Three new *Grouping Sets* functions: `rollup`, `cube` and `groupingsets`, [#1377](https://github.com/Rdatatable/data.table/issues/1377). Allows to aggregation on various grouping levels at once producing sub-totals and grand total.
 
