@@ -10932,7 +10932,7 @@ unlink(f)
 
 # ensure explicitly setting select to default value doesn't error, #2007
 test(1833, fread('V1,V2\n1,2', select = NULL),
-     data.table(V1 = TRUE, V2 = 2))
+     data.table(V1 = TRUE, V2 = 2L))
 
 ##########################
 
