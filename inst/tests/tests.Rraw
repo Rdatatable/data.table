@@ -6019,7 +6019,7 @@ test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input wor
 test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist; getwd()==")
 
 # Test for #802
-test(1453, fread("fread_line_error.csv"), error="Line 12 from sampling jump 0 starting <<31,3-0-7 4.*has more than.*24 fields.*position 61.*character 3")
+test(1453, fread("fread_line_error.csv"), error="Line 12 starting <<31,3-0-7 4.*has more than.*24 fields.*position 61.*character 3")
 # TODO: add comment=="#".   Ensure only after last field is observed.
 
 # no-sep-found => sep="\n", use case for this in #738
@@ -10330,8 +10330,8 @@ if ("package:nanotime" %in% search()) {
 
 # check too many fields error from ,\n line ending highlighted in #2044
 test(1753.1, fread("X,Y\n1,2\n3,4\n5,6"), data.table(X=INT(1,3,5),Y=INT(2,4,6)))
-test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), error="Line 3 from sampling jump 0 starting <<3,4,>> has more than.*2 fields")
-test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 3 from sampling jump 0 starting <<3,4,7>> has more than.*2 fields")
+test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), error="Line 3 starting <<3,4,>> has more than.*2 fields")
+test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 3 starting <<3,4,7>> has more than.*2 fields")
 
 # issue 2051 where a quoted field contains ",  New quote rule detection handles it.
 test(1753.4, fread("issue_2051.csv")[2,grep("^Our.*tool$",COLUMN50)], 1L)
@@ -10933,6 +10933,18 @@ unlink(f)
 # ensure explicitly setting select to default value doesn't error, #2007
 test(1833, fread('V1,V2\n1,2', select = NULL),
      data.table(V1 = TRUE, V2 = 2L))
+
+# fread file for which nextGoodLine in sampling struggles, #2404
+# Every line in the first 100 has a quoted field containing sep, so the quote rule was being
+#   bumped to 3 (now fixed not to) which gave rise to nextGoodLine struggling later.
+# The file is not finished with \n either, but that's not an issue.
+test(1834.1, dim(DT<-fread("grr.csv", header=FALSE)), c(2839, 12))
+test(1834.2, DT[c(1,2,.N-1,.N), c(1,2,11,12)],
+             data.table(V1="AAAAAAAAAA",
+                        V2=c("AAAAAAAA","AAAAAAAAAA","AAAAAAAAAA","AAAAAAAAAA"),
+                        V11=c("AAAAAAAAAAAAAAAA","","AAAAAAAAAA","AAAA"),
+                        V12=c("AAAAAAAAAAAAA","","AAAAAAA","AAA")))
+
 
 ##########################
 
