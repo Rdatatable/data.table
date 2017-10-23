@@ -10945,6 +10945,21 @@ test(1834.2, DT[c(1,2,.N-1,.N), c(1,2,11,12)],
                         V11=c("AAAAAAAAAAAAAAAA","","AAAAAAAAAA","AAAA"),
                         V12=c("AAAAAAAAAAAAA","","AAAAAAA","AAA")))
 
+# Create a file to test a sample jump being skipped due to format error. It will fail later in the read step because
+# this is a real error. Currently have not constructed an error for which nextGoodLine looks good, but in fact is not.
+# Would need a very complicated construction of embedded new lines in quoted fields, to test that.
+# This test size with default buffMB results in 2 threads being used. 2 is important to pass on CRAN.
+DT = as.data.table(CO2)
+f = tempfile()
+for (i in 0:1000) {
+  start = nrow(CO2)*i
+  fwrite(DT[,Plant:=start:(start+nrow(CO2)-1)], f, append=TRUE, col.names=FALSE)
+  if (i==502) write("-999,Bad,Line,0.0,0.0,extra\n", f, append=TRUE)
+}
+test(1835, fread(f, verbose=TRUE),
+  output = "Not using sample from jump 50.*could not establish the true line start.*jumps=[0..2)",
+  error  = "Too many fields on out-of-sample row.*-999,Bad,Line,0.0,0.0,extra")
+unlink(f)
 
 ##########################
 

@@ -1578,7 +1578,7 @@ int freadMain(freadMainArgs _args) {
              "Consider setting 'comment.char=' if there is a trailing comment to be ignored.",
              jline, strlim(jlineStart,10), ncol, *ch, (int)(ch-jlineStart+1), (int)(ch-fieldStart+1), strlim(fieldStart,200));
         }
-        if (verbose) DTPRINT("Not using sample from jump %d. Looks like a complicated file where nextGoodLine could not establish the true line start.\n", j);
+        if (verbose) DTPRINT("  Not using sample from jump %d. Looks like a complicated file where nextGoodLine could not establish the true line start.\n", j);
         skip = true;
         break;
       }
