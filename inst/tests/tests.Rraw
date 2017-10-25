@@ -10963,6 +10963,7 @@ unlink(f)
 
 test(1836, fread('1,2,"3,a"\n4,5,"6,b"'), data.table(V1=c(1L,4L), V2=c(2L,5L), V3=c("3,a","6,b")))   # 2196
 
+test(1837, fread('v1,v2,v3,v4,v5\n1,2,3,4,5', select=-1), error="out of range.*Consider drop= instead")  #2423
 
 ##########################
 

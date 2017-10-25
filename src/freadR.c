@@ -304,7 +304,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     for (int i=0; i<LENGTH(tt); i++) {
       int k = isInteger(tt) ? INTEGER(tt)[i] : (int)REAL(tt)[i];
       if (k == NA_INTEGER) continue;
-      if (k<1 || k>ncol) STOP("Column number %d (select[%d]) is out of range [1,ncol=%d]",k,i+1,ncol);
+      if (k<1 || k>ncol) STOP("Column number %d (select[%d]) is out of range [1,ncol=%d]. Consider drop= instead.",k,i+1,ncol);
       if (type[k-1]<0) STOP("Column number %d ('%s') has been selected twice by select=", k, CHAR(STRING_ELT(colNamesSxp,k-1)));
       type[k-1] *= -1; // detect and error on duplicates on all types without calling duplicated() at all
     }
