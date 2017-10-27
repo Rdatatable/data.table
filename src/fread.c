@@ -1344,7 +1344,8 @@ int freadMain(freadMainArgs _args) {
         if (numFields[i] > nmax) nmax=numFields[i];  // for fill=true to know max number of columns
         // if (verbose) DTPRINT("numLines[i]=%d, topNumLines=%d, numFields[i]=%d, topNumFields=%d\n",
         //                       numLines[i], topNumLines, numFields[i], topNumFields);
-        if (numFields[i]>1 &&
+        if ( numFields[i]>1 &&
+            (numLines[i]>1 || (/*blank line after single line*/numFields[i+1]==0)) &&
             ((numLines[i]>topNumLines) ||   // most number of consistent ncol wins
              (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=topSep && sep!=' '))) {
              //                                       ^ ties in numLines resolved by numFields (more fields win)

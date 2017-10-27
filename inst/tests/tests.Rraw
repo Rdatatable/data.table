@@ -10965,6 +10965,10 @@ test(1836, fread('1,2,"3,a"\n4,5,"6,b"'), data.table(V1=c(1L,4L), V2=c(2L,5L), V
 
 test(1837, fread('v1,v2,v3,v4,v5\n1,2,3,4,5', select=-1), error="out of range.*Consider drop= instead")  #2423
 
+test(1838, fread("default payment next month\n0.5524\n0.2483\n0.1157\n"), data.table("default payment next month"=c(0.5524,0.2483,0.1157)))  #2322
+
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
