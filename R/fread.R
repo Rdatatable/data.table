@@ -3,7 +3,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
 {
   if (is.null(sep)) sep="\n"         # C level knows that \n means \r\n on Windows, for example
   else {
-    stopifnot( is.character(sep), length(sep)==1 )
+    stopifnot( length(sep)==1, !is.na(sep), is.character(sep) )
     if (sep=="") sep="\n"            # meaning readLines behaviour. The 3 values (NULL, "" or "\n") are equivalent.
     else if (sep=="auto") sep=""     # sep=="" at C level means auto sep
     else stopifnot( nchar(sep)==1 )  # otherwise an actual character to use as sep

@@ -10978,8 +10978,20 @@ test(1839.3, fread(f, fill=TRUE), data.table(a=c(4,NA,2,3.14,999)))
 test(1839.4, fread(f, fill=TRUE, blank.lines.skip=TRUE), data.table(a=c(4,2,3.14,999)))
 fwrite(DT, f)  # new default sets na="NA" when ncol==1
 test(1839.5, fread(f), DT)
+unlink(f)
 
-
+# readLines behaviour, #1616
+txt = 'a,b\n ab,cd,ce\n abcdef\n hjkli \n'  # now auto detected as ncol 1 anyway
+test(1840.1, fread(txt), data.table("a,b" = c("ab,cd,ce","abcdef","hjkli")))
+write('a,b\n ab,cd,ce\nabc,def \n hj,kli  \n', f<-tempfile())  # write to file to generate \r\n line ending on Windows, test 1840.6 below
+test(1840.2, fread(f), error="more than the expected")
+test(1840.3, fread(f, sep=NA), error="!is.na(sep) is not TRUE")
+test(1840.4, fread(f, sep=NA_character_), error="!is.na(sep) is not TRUE")
+test(1840.5, fread(f, sep=""), ans<-data.table("a,b"=c("ab,cd,ce","abc,def","hj,kli")))
+test(1840.6, fread(f, sep="\n"), ans)
+test(1840.7, fread(f, sep=NULL), ans)
+test(1840.8, fread(f, sep=NULL, strip.white=FALSE), data.table("a,b"=c(" ab,cd,ce","abc,def "," hj,kli  ")))
+unlink(f)
 
 ##########################
 
