@@ -1,8 +1,13 @@
 
 fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=NA,skip=0,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=interactive(),data.table=getOption("datatable.fread.datatable"),nThread=getDTthreads(),logical01=TRUE)
 {
-  stopifnot( is.character(sep), length(sep)==1, sep=="auto" || nchar(sep)==1 )
-  if (sep == "auto") sep=""
+  if (is.null(sep)) sep="\n"         # C level knows that \n means \r\n on Windows, for example
+  else {
+    stopifnot( is.character(sep), length(sep)==1 )
+    if (sep=="") sep="\n"            # meaning readLines behaviour. The 3 values (NULL, "" or "\n") are equivalent.
+    else if (sep=="auto") sep=""     # sep=="" at C level means auto sep
+    else stopifnot( nchar(sep)==1 )  # otherwise an actual character to use as sep
+  }
   stopifnot( is.character(dec), length(dec)==1, nchar(dec)==1 )
   # handle encoding, #563
   if (length(encoding) != 1L || !encoding %in% c("unknown", "UTF-8", "Latin-1")) {

@@ -29,6 +29,7 @@
 2. `fwrite()`:
     * empty strings are now always quoted (`,"",`) to distinguish them from `NA` which by default is still empty (`,,`) but can be changed using `na=` as before. If `na=` is provided and `quote=` is the default `'auto'` then `quote=` is set to `TRUE` so that if the `na=` value occurs in the data, it can be distinguished from `NA`. Thanks to Ethan Welty for the request [#2214](https://github.com/Rdatatable/data.table/issues/2214) and Pasha for the code change and tests, [#2215](https://github.com/Rdatatable/data.table/issues/2215).
     * `logicalAsInt` has been renamed `logical01` and the default changed from `FALSE` to `TRUE`, both changes for consistency with `fread` (see item above). The old name `logicalAsInt` continues to work but is now deprecated. The previous default can easily be restored without any code changes by setting `options("datatable.logical01" = FALSE)`.
+    * When `DT` is a single column, `na=` is now set to `"NA"` to avoid blank lines in the output, [#2106](https://github.com/Rdatatable/data.table/issues/2106). Thanks to @skanskan, Michael Chirico and @franknarf1 for the testing and ideas.
 
 3. Added helpful message when subsetting by a logical column without wrapping it in parentheses, [#1844](https://github.com/Rdatatable/data.table/issues/1844). Thanks @dracodoc for the suggestion and @MichaelChirico for the PR.
 

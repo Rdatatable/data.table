@@ -1608,7 +1608,7 @@ int freadMain(freadMainArgs _args) {
   if (lastSampleJumpOk) {
     while (ch<eof && isspace(*ch)) ch++;
     if (ch<eof)
-      DTWARN("Found the last consistent line but text exists afterwards (discarded): <<%s>>", strlim(ch,200));
+      DTWARN("Found the last consistent line but text exists afterwards. Consider fill=TRUE and/or blank.lines.skip=TRUE. First 200 characters of discarded line: <<%s>>", strlim(ch,200));
   } else {
     // nextGoodLine() was false for the last (extra) jump to check the end
     // must set lastRowEnd to eof accordingly otherwise it'll be left wherever the last good jump finished

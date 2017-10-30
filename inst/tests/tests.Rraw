@@ -9673,9 +9673,9 @@ test(1729.2, fwrite(data.table(V2=c(9.999999999999998223643160599749535322189331
 DT = data.table(V1=c(9999999999.99, 0.00000000000000099, 0.0000000000000000000009, 0.9, 9.0, 9.1, 99.9,
                      0.000000000000000000000999999999999999999999999,
                      99999999999999999999999999999.999999))
-ans = "V19999999999.999.9e-169e-220.999.199.91e-211e+29"
+ans = "\"V1\"9999999999.999.9e-169e-220.999.199.91e-211e+29"
 test(1729.3, fwrite(DT), output=ans)
-test(1729.4, write.csv(DT,row.names=FALSE,quote=FALSE), output=ans)
+test(1729.4, write.csv(DT,row.names=FALSE), output=ans)
 options(oldverbose)
 
 # same decimal/scientific rule (shortest format) as write.csv
@@ -9741,13 +9741,13 @@ ans = c("V1","5.123456789e+300","-5.123456789e+300",
 # 0 11111110100 010111011111100101001110101100000011 01101011 10101100
 # 0 00000001010 000101000110010100110011101010000110 00111110 01010001
 # 0 11111110100 011001101011100100100011110110110000 01001110 01011101
-test(1729.9, fwrite(DT), output=paste(ans,collapse=""))
+test(1729.9, fwrite(DT,na=""), output=paste(ans,collapse=""))
 test(1729.11, write.csv(DT,row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))
 DT = data.table(unlist(.Machine[c("double.eps","double.neg.eps","double.xmin","double.xmax")]))
 #    double.eps double.neg.eps    double.xmin    double.xmax
 #  2.220446e-16   1.110223e-16  2.225074e-308  1.797693e+308
 test(1729.12, typeof(DT[[1L]]), "double")
-test(1729.13, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+test(1729.13, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE)))
 
 if ("package:bit64" %in% search()) {
   test(1730.1, typeof(-2147483647L), "integer")
@@ -9904,10 +9904,11 @@ test(1736.6, capture.output(fwrite(DT, sep='|', sep2=c("{",",","}"), logicalAsIn
  c("A|B|C", "1|{1,2,3,4,5,6,7,8,9,10}|{s,t,u,v,w}",
  "2|{15,16,17,18}|{1.2,2.3,3.4,3.14159265358979,-9}", "3|{7}|{foo,bar}", "4|{9,10}|{1,1,0}"))
 DT = data.table(A=c("foo","ba|r","baz"))
-test(1736.7, capture.output(fwrite(DT)), c("A","foo","ba|r","baz"))  # no list column so no need to quote
+test(1736.7, capture.output(fwrite(DT,na="")), c("A","foo","ba|r","baz"))              # no list column so no need to quote
+test(1736.8, capture.output(fwrite(DT)), c("\"A\"","\"foo\"","\"ba|r\"","\"baz\""))    # column name is quoted because na="NA" due to 1-column
 DT = data.table(A=c("foo","ba|r","baz"), B=list(1:3,1:4,c("fo|o","ba,r","baz"))) # now list column and need to quote
-test(1736.8, capture.output(fwrite(DT)), c("A,B", "foo,1|2|3", "\"ba|r\",1|2|3|4", "baz,\"fo|o\"|\"ba,r\"|baz"))
-test(1736.9, capture.output(fwrite(DT,quote=TRUE)), c("\"A\",\"B\"", "\"foo\",1|2|3", "\"ba|r\",1|2|3|4", "\"baz\",\"fo|o\"|\"ba,r\"|\"baz\""))
+test(1736.9, capture.output(fwrite(DT)), c("A,B", "foo,1|2|3", "\"ba|r\",1|2|3|4", "baz,\"fo|o\"|\"ba,r\"|baz"))
+test(1736.11, capture.output(fwrite(DT,quote=TRUE)), c("\"A\",\"B\"", "\"foo\",1|2|3", "\"ba|r\",1|2|3|4", "\"baz\",\"fo|o\"|\"ba,r\"|\"baz\""))
 
 # any list of same length vector input
 test(1737.1, fwrite(list()), NULL, warning="fwrite was passed an empty list of no columns")
@@ -9918,8 +9919,8 @@ test(1737.5, fwrite(list(1.2,B=c("foo","bar"))), error="Column 2's length (2) is
 
 # fwrite ITime, Date, IDate
 DT = data.table(A=as.ITime(c("23:59:58","23:59:59","12:00:00","00:00:01",NA,"00:00:00")))
-test(1738.1, capture.output(fwrite(DT)), c("A","23:59:58","23:59:59","12:00:00","00:00:01","","00:00:00"))
-test(1738.2, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE, na="")))
+test(1738.1, capture.output(fwrite(DT)), c("\"A\"","23:59:58","23:59:59","12:00:00","00:00:01","NA","00:00:00"))
+test(1738.2, capture.output(fwrite(DT,na="")), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE, na="")))
 dts = c("1901-05-17","1907-10-22","1929-10-24","1962-05-28","1987-10-19","2008-09-15",
         "1968-12-30","1968-12-31","1969-01-01","1969-01-02")
 DT = data.table(A=as.Date(dts), B=as.IDate(dts))
@@ -10308,7 +10309,8 @@ if ("package:bit64" %in% search()) {
 # end Grouping Sets
 
 # for completeness, added test for NA problem to close #1837. Fixed long ago before release to CRAN.
-test(1751, capture.output(fwrite(data.table(x=NA_integer_),verbose=FALSE)), c("x",""))
+test(1751.1, capture.output(fwrite(data.table(x=NA_integer_),verbose=FALSE)), c("\"x\"","NA"))
+test(1751.2, capture.output(fwrite(data.table(x=NA_integer_),na="",verbose=FALSE)), c("x",""))
 
 if ("package:nanotime" %in% search()) {
   DT = data.table(A=nanotime(tt<-c("2016-09-28T15:30:00.000000070Z",
@@ -10966,6 +10968,16 @@ test(1836, fread('1,2,"3,a"\n4,5,"6,b"'), data.table(V1=c(1L,4L), V2=c(2L,5L), V
 test(1837, fread('v1,v2,v3,v4,v5\n1,2,3,4,5', select=-1), error="out of range.*Consider drop= instead")  #2423
 
 test(1838, fread("default payment next month\n0.5524\n0.2483\n0.1157\n"), data.table("default payment next month"=c(0.5524,0.2483,0.1157)))  #2322
+
+# better writing and reading of NA in single column input, #2106
+DT = data.table(a=c(4,NA,2,3.14,999,NA))
+fwrite(DT, f<-tempfile(), na="")  # old default for na was always ""
+test(1839.1, fread(f), data.table(a=4L), warning="text exists afterwards.*Consider fill.*blank.lines.skip.*<<2>>")
+test(1839.2, fread(f, blank.lines.skip=TRUE), data.table(a=c(4,2,3.14,999)))
+test(1839.3, fread(f, fill=TRUE), data.table(a=c(4,NA,2,3.14,999)))
+test(1839.4, fread(f, fill=TRUE, blank.lines.skip=TRUE), data.table(a=c(4,2,3.14,999)))
+fwrite(DT, f)  # new default sets na="NA" when ncol==1
+test(1839.5, fread(f), DT)
 
 
 
