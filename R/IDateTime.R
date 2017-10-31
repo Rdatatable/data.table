@@ -5,7 +5,7 @@
 
 as.IDate <- function(x, ...) UseMethod("as.IDate")
 
-as.IDate.default <- function(x, tz = attr(x, "tzone"), ...) {
+as.IDate.default <- function(x, ..., tz = attr(x, "tzone")) {
   if (is.null(tz)) tz = "UTC"
   as.IDate(as.Date(x, tz = tz, ...))
 }

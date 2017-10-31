@@ -10737,6 +10737,7 @@ test(1779.8, identical(as.IDate.default(p), as.IDate(p)))
 p = as.POSIXct(i, origin = "1970-01-01")
 test(1779.9, identical(as.ITime.default(p), as.ITime(p)))
 test(1779.11, identical(as.IDate.default(p), as.IDate(p)))
+test(1779.12, as.IDate("20170929", "%Y%m%d"), as.IDate("20170929", format="%Y%m%d"))   # 2453
 
 
 ##########################
