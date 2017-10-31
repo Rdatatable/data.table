@@ -6663,6 +6663,7 @@ x = as.numeric(runif(2))
 test(1514.6, isReallyReal(x), TRUE)
 x = numeric()
 test(1514.7, isReallyReal(x), FALSE)
+test(1514.8, isReallyReal(9L), error="x must be of type double")
 
 # #1091
 old.option = getOption("datatable.prettyprint.char")
@@ -11001,6 +11002,9 @@ test(1841, fread("A\n0.58E-2141\n"), data.table(A="0.58E-2141"))   # no ERANGE w
 
 DT = data.table()     # 2452
 test(1842, setnames(DT, character(0)), DT)
+
+test(1843, is.sorted((0+0i)^(-3:3)), error = "type 'complex' is not yet supported")  # to cover error message in forder.c
+
 
 ##########################
 
