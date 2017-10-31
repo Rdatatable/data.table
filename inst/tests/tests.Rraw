@@ -10993,6 +10993,8 @@ test(1840.7, fread(f, sep=NULL), ans)
 test(1840.8, fread(f, sep=NULL, strip.white=FALSE), data.table("a,b"=c(" ab,cd,ce","abc,def "," hj,kli  ")))
 unlink(f)
 
+test(1841, fread("A\n0.58E-2141\n"), data.table(A="0.58E-2141"))   # no ERANGE warning and so no leak, #918
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
