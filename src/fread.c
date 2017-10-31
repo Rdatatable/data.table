@@ -1344,7 +1344,8 @@ int freadMain(freadMainArgs _args) {
         if (numFields[i] > nmax) nmax=numFields[i];  // for fill=true to know max number of columns
         // if (verbose) DTPRINT("numLines[i]=%d, topNumLines=%d, numFields[i]=%d, topNumFields=%d\n",
         //                       numLines[i], topNumLines, numFields[i], topNumFields);
-        if (numFields[i]>1 &&
+        if ( numFields[i]>1 &&
+            (numLines[i]>1 || (/*blank line after single line*/numFields[i+1]==0)) &&
             ((numLines[i]>topNumLines) ||   // most number of consistent ncol wins
              (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=topSep && sep!=' '))) {
              //                                       ^ ties in numLines resolved by numFields (more fields win)
@@ -1607,7 +1608,7 @@ int freadMain(freadMainArgs _args) {
   if (lastSampleJumpOk) {
     while (ch<eof && isspace(*ch)) ch++;
     if (ch<eof)
-      DTWARN("Found the last consistent line but text exists afterwards (discarded): <<%s>>", strlim(ch,200));
+      DTWARN("Found the last consistent line but text exists afterwards. Consider fill=TRUE and/or blank.lines.skip=TRUE. First 200 characters of discarded line: <<%s>>", strlim(ch,200));
   } else {
     // nextGoodLine() was false for the last (extra) jump to check the end
     // must set lastRowEnd to eof accordingly otherwise it'll be left wherever the last good jump finished
