@@ -10714,11 +10714,11 @@ unlink(f)
 same = list(l = as.POSIXlt("2015-10-12 13:19:35", tz = "UTC"))
 same$p = as.POSIXct(same$l)
 same$d = as.Date(same$p)
-same$n = as.numeric(same$p)
-same$i = as.integer(same$p)
+same$n = as.numeric(same$d)
+same$i = as.integer(same$d)
 ld = sapply(same, as.IDate)
 test(1779.1, uniqueN(ld)==1L)
-lt = sapply(same[-3L], as.ITime) # exclude date
+lt = sapply(same[1:2], as.ITime) # exclude date
 test(1779.2, uniqueN(lt)==1L)
 # some random 1e6 timestamps old defaults vs new methods UTC
 intpx = function(x) as.integer(as.POSIXct(x, origin = "1970-01-01", tz = "UTC"))
@@ -10738,6 +10738,8 @@ p = as.POSIXct(i, origin = "1970-01-01")
 test(1779.9, identical(as.ITime.default(p), as.ITime(p)))
 test(1779.11, identical(as.IDate.default(p), as.IDate(p)))
 test(1779.12, as.IDate("20170929", "%Y%m%d"), as.IDate("20170929", format="%Y%m%d"))   # 2453
+test(1779.13, as.IDate(1),  as.IDate("1970-01-02"))  # 2446
+test(1779.14, as.IDate(1L), as.IDate("1970-01-02"))
 
 
 ##########################

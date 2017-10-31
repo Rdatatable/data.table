@@ -11,7 +11,7 @@ as.IDate.default <- function(x, ..., tz = attr(x, "tzone")) {
 }
 
 as.IDate.numeric <- function(x, ...) {
-  structure(as.integer(x) %/% 86400L, class=c("IDate","Date"))
+  structure(as.integer(x), class=c("IDate","Date"))
 }
 
 as.IDate.Date <- function(x, ...) {
@@ -20,7 +20,10 @@ as.IDate.Date <- function(x, ...) {
 
 as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
-  if (tz %in% c("UTC", "GMT")) as.IDate(unclass(x), ...) else as.IDate(as.Date(x, tz = tz, ...))
+  if (tz %in% c("UTC", "GMT"))
+    structure(as.integer(x) %/% 86400L, class=c("IDate","Date"))
+  else
+    as.IDate(as.Date(x, tz = tz, ...))
 }
 
 as.IDate.IDate <- function(x, ...) x
