@@ -104,7 +104,7 @@
 
 #### NOTES
 
-0. The license has been changed from GPL to MPL (Mozilla Public License). All contributors were consulted and approved. PR #nnn details the reasons for the change.
+0. The license has been changed from GPL to MPL (Mozilla Public License). All contributors were consulted and approved. [PR#2456](https://github.com/Rdatatable/data.table/pull/2456) details the reasons for the change.
 
 1. `?data.table` makes explicit the option of using a `logical` vector in `j` to select columns, [#1978](https://github.com/Rdatatable/data.table/issues/1978). Thanks @Henrik-P for the note and @MichaelChirico for filing.
 
