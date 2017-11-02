@@ -3549,6 +3549,15 @@ test(1123, rbindlist(list(DT, DT4)), data.table(factor(c('a','a'), levels = c('a
 test(1124, rbind(DT1, DT1), data.table(factor(c('a','a'), levels = c('b','a','f'))))
 test(1125, rbindlist(list(DT1, DT1)), data.table(factor(c('a','a'), levels = c('b','a','f'))))
 
+# coverage of rbindlist.c:289, #2346.
+# The hashing there hashes pointer address (CHARSXP) so this test attempts to use a large enough
+# sample of unique strings to generate that condition reliably to test that collision branch.
+set.seed(1)
+manyChars = paste0("id",sample(99999,10000))
+DT1 = data.table(ordered(sample(manyChars, 1000), levels=sample(manyChars)))
+DT2 = data.table(factor(sample(manyChars, 1000)))
+test(1125.1, rbindlist(list(DT1,DT2))[c(1,2,.N-1,.N),as.character(V1)], c("id85645","id80957","id73436","id33445"))
+
 ## test rbind(..., fill = TRUE)
 DT = data.table(a = 1:2, b = 1:2)
 DT1 = data.table(a = 3:4, c = 1:2)
