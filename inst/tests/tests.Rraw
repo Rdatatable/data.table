@@ -3549,6 +3549,15 @@ test(1123, rbindlist(list(DT, DT4)), data.table(factor(c('a','a'), levels = c('a
 test(1124, rbind(DT1, DT1), data.table(factor(c('a','a'), levels = c('b','a','f'))))
 test(1125, rbindlist(list(DT1, DT1)), data.table(factor(c('a','a'), levels = c('b','a','f'))))
 
+# coverage of rbindlist.c:289, #2346.
+# The hashing there hashes pointer address (CHARSXP) so this test attempts to use a large enough
+# sample of unique strings to generate that condition reliably to test that collision branch.
+set.seed(1)
+manyChars = paste0("id",sample(99999,10000))
+DT1 = data.table(ordered(sample(manyChars, 1000), levels=sample(manyChars)))
+DT2 = data.table(factor(sample(manyChars, 1000)))
+test(1125.1, rbindlist(list(DT1,DT2))[c(1,2,.N-1,.N),as.character(V1)], c("id85645","id80957","id73436","id33445"))
+
 ## test rbind(..., fill = TRUE)
 DT = data.table(a = 1:2, b = 1:2)
 DT1 = data.table(a = 3:4, c = 1:2)
@@ -3750,20 +3759,21 @@ if (.Machine$sizeof.longdouble == 16) {
 
   tol = 3.000214e-13
   x = c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.18909, NaN, 5.18909-1.2*tol, 5.18909-0.04*tol)
-  # cat(binary(x[c(5,10,12,13)]),sep="\n")
-  # 0 10000000001 010011000001101000001100111100011000 00000000 11000000
-  # 0 10000000001 010011000001101000001100111100011000 00000000 10101000
-  # 0 10000000001 010011000001101000001100111100010111 11111111 00010011
-  # 0 10000000001 010011000001101000001100111100011000 00000000 10011010
+
+  test(1147.4, binary(x[c(5,10,12,13)]),
+    c("0 10000000001 010011000001101000001100111100011000 00000000 11000000",
+      "0 10000000001 010011000001101000001100111100011000 00000000 10101000",
+      "0 10000000001 010011000001101000001100111100010111 11111111 00010011",
+      "0 10000000001 010011000001101000001100111100011000 00000000 10011010"))
 
   setNumericRounding(0)
-  test(1147.4, forderv(x), INT(6, 9, 2, 11, 8, 7, 4, 12, 13, 10, 5, 1, 3))
+  test(1147.5, forderv(x), INT(6, 9, 2, 11, 8, 7, 4, 12, 13, 10, 5, 1, 3))
 
   setNumericRounding(1)
-  test(1147.5, forderv(x), INT(6, 9, 2, 11, 8, 7, 4, 12, 5, 10, 13, 1, 3))
+  test(1147.6, forderv(x), INT(6, 9, 2, 11, 8, 7, 4, 12, 5, 10, 13, 1, 3))
 
   setNumericRounding(2)
-  test(1147.6, forderv(x), INT(6, 9, 2, 11, 8, 7, 4, 5, 10, 12, 13, 1, 3))
+  test(1147.7, forderv(x), INT(6, 9, 2, 11, 8, 7, 4, 5, 10, 12, 13, 1, 3))
   # rounds item 12 at bit 48 doesn't just truncate
 
   setNumericRounding(old)
@@ -4395,17 +4405,23 @@ ix = with(DT, order(4*x-5*y, decreasing=TRUE))
 test(1251.6, DT[order(4*x-5*y, decreasing=TRUE)], DT[ix])
 ix = with(DT, order(1-DT$x, decreasing=TRUE))
 test(1251.7, DT[order(1-DT$x, decreasing=TRUE)], DT[ix])
-test(1251.8, DT[order(x, list(-y), decreasing=TRUE)], error = "Column .* for ordering currently") # consistent with base (not the same error, but will error with "forder's" error instead)
+test(1251.8, DT[order(x, list(-y), decreasing=TRUE)],
+             error = "Column 2 is length 1 which differs from length of column 1.*10")
+test(1251.9, DT[base::order(x, list(-y), decreasing=TRUE)],
+             error = "argument lengths differ")   # data.table's error is more helpful than base's
 # more "edge cases" to ensure we're consistent with base
-test(1251.9, DT[order("a")], DT[1L])
-test(1251.10, DT[order("b", "a")], DT[1L])
-test(1251.11, DT[order(list("b", "a"))], error = "Column .* for ordering currently")
-test(1251.12, DT[order(list("b"), list("a"))], DT[1L])
+test(1251.11, DT[order("a")], DT[1L])
+test(1251.12, DT[order("b", "a")], DT[1L])
+test(1251.13, DT[order(list("b", "a"))], error = "First column being ordered is type 'list', not yet supported")
+test(1251.14, DT[order(list("b"), list("a"))], DT[1L])
 
 ##############################################################
 # extensive tests for order optimisation within `[.data.table`
 ##############################################################
 seed = as.integer(Sys.time())
+# This choice of seed by Arun was very good as it revealed problems that a fixed seed would not.
+# Test 1844 is now added to consistently run the rare cases discovered here (depending on the seed) to cover all lines in
+# forder consistently to save pull requests failing coverage tests randomly, issue #2346
 seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
 set.seed(seed)
 # these variable try to simulate groups of length 1, 2, < 200, > 200 so as to cover all different internal implementations
@@ -5017,7 +5033,7 @@ test(1319.5, DT[order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])], DT[base:::
 # test to make sure old things are not modified (ridiculous, but "consistency" demands it!)
 test(1319.6, DT[order(list(DT$a))], DT[1])
 test(1319.7, DT[order(list(DT$a), list(DT$b))], DT[1])
-test(1319.8, DT[order(list(DT$a, DT$b))], error="Column '1' is type 'list' which is not")
+test(1319.8, DT[order(list(DT$a, DT$b))], error="First column being ordered is type 'list', not yet supported")
 
 # FR #703. Not so extensive testing because test 1223 already tests for everything else extensively. Only integer64 here.
 # this'll be the test for both DT[order(.)] and setorder(.) as both internally uses forder/forderv
@@ -6662,6 +6678,7 @@ x = as.numeric(runif(2))
 test(1514.6, isReallyReal(x), TRUE)
 x = numeric()
 test(1514.7, isReallyReal(x), FALSE)
+test(1514.8, isReallyReal(9L), error="x must be of type double")
 
 # #1091
 old.option = getOption("datatable.prettyprint.char")
@@ -8774,8 +8791,6 @@ test(1640.2, x[y, c(.SD, .(x.aa=x.aa)), on=c(aa="bb")], data.table(aa=3:5, cc=c(
 
 # tests for non-equi joins
 # function to create a random data.table with all necessary columns
-# set.seed(45L) # for testing..
-set.seed(unclass(Sys.time()))
 nq_fun = function(n=100L) {
     i1 = sample(sample(n, 10L), n, TRUE)
     i2 = sample(-n/2:n/2, n, TRUE)
@@ -8801,10 +8816,6 @@ nq_fun = function(n=100L) {
     dt
 }
 
-dt1 = nq_fun(400L)
-dt2 = nq_fun(50L)
-x = na.omit(dt1)
-y = na.omit(dt2)
 nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
     ops = c("==", ">=", "<=", ">", "<")
     xclass = sapply(x, class)
@@ -8862,22 +8873,33 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
     }
 }
 
-if (TRUE) {  # turn off to FALSE temporarily if needed to rerun valgrind, as very slow
+for (s in 0:1) {  # turn off temporarily using 'in NULL' when using valgrind, as very slow
+  seed = c(as.integer(Sys.time()), 1509611616L)[s+1]
+  # the fixed seed is to test branch bmerge.c:433 for cosistent coverage, issue #2346
+
+  set.seed(seed)
+  dt1 = nq_fun(400L)
+  dt2 = nq_fun(50L)
+  x = na.omit(dt1)
+  y = na.omit(dt2)
+
+  d = s/10
+
   # without NAs in x and i
-  nqjoin_test(x, y, 1L, 1641.0, mult="all")
-  nqjoin_test(x, y, 2L, 1642.0, mult="all")
-  nqjoin_test(x, y, 1L, 1643.0, mult="first")
-  nqjoin_test(x, y, 2L, 1644.0, mult="first")
-  nqjoin_test(x, y, 1L, 1645.0, mult="last")
-  nqjoin_test(x, y, 2L, 1646.0, mult="last")
+  nqjoin_test(x, y, 1L, 1641.0+d, mult="all")
+  nqjoin_test(x, y, 2L, 1642.0+d, mult="all")
+  nqjoin_test(x, y, 1L, 1643.0+d, mult="first")
+  nqjoin_test(x, y, 2L, 1644.0+d, mult="first")
+  nqjoin_test(x, y, 1L, 1645.0+d, mult="last")
+  nqjoin_test(x, y, 2L, 1646.0+d, mult="last")
 
   # with NAs in x and i
-  nqjoin_test(dt1, dt2, 1L, 1647.0, mult="all")
-  nqjoin_test(dt1, dt2, 2L, 1648.0, mult="all")
-  nqjoin_test(dt1, dt2, 1L, 1649.0, mult="first")
-  nqjoin_test(dt1, dt2, 2L, 1650.0, mult="first")
-  nqjoin_test(dt1, dt2, 1L, 1651.0, mult="last")
-  nqjoin_test(dt1, dt2, 2L, 1652.0, mult="last")
+  nqjoin_test(dt1, dt2, 1L, 1647.0+d, mult="all")
+  nqjoin_test(dt1, dt2, 2L, 1648.0+d, mult="all")
+  nqjoin_test(dt1, dt2, 1L, 1649.0+d, mult="first")
+  nqjoin_test(dt1, dt2, 2L, 1650.0+d, mult="first")
+  nqjoin_test(dt1, dt2, 1L, 1651.0+d, mult="last")
+  nqjoin_test(dt1, dt2, 2L, 1652.0+d, mult="last")
 }
 
 # TODO: add tests for nomatch=NA..
@@ -9732,22 +9754,22 @@ ans = c("V1","5.123456789e+300","-5.123456789e+300",
 #     a problem with the test mechanism itself or something else strange or unexpected
 # Exactly the same binary representation on both linux and windows (so any differences in
 # output are not because the value itself is stored differently) :
-# > cat(binary(DT[[1]]),sep="\n")
-# 0 11111100101 111010011010000100010111101110000100 11110100 00000100
-# 1 11111100101 111010011010000100010111101110000100 11110100 00000100
-# 0 00000001001 110000010110110001011100010100100101 00110101 01110101
-# 0 11111110100 001000111010010100010110111010000010 11011001 10111010
-# 0 00000001010 000011011010011101101010100101111100 10111001 10101101
-# 0 11111110100 010111011111100101001110101100000011 01101011 10101100
-# 0 00000001010 000101000110010100110011101010000110 00111110 01010001
-# 0 11111110100 011001101011100100100011110110110000 01001110 01011101
-test(1729.9, fwrite(DT,na=""), output=paste(ans,collapse=""))
-test(1729.11, write.csv(DT,row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))
+test(1729.9, binary(DT[[1]]),
+  c("0 11111100101 111010011010000100010111101110000100 11110100 00000100",
+    "1 11111100101 111010011010000100010111101110000100 11110100 00000100",
+    "0 00000001001 110000010110110001011100010100100101 00110101 01110101",
+    "0 11111110100 001000111010010100010110111010000010 11011001 10111010",
+    "0 00000001010 000011011010011101101010100101111100 10111001 10101101",
+    "0 11111110100 010111011111100101001110101100000011 01101011 10101100",
+    "0 00000001010 000101000110010100110011101010000110 00111110 01010001",
+    "0 11111110100 011001101011100100100011110110110000 01001110 01011101"))
+test(1729.11, fwrite(DT,na=""), output=paste(ans,collapse=""))
+test(1729.12, write.csv(DT,row.names=FALSE,quote=FALSE), output=paste(ans,collapse=""))
 DT = data.table(unlist(.Machine[c("double.eps","double.neg.eps","double.xmin","double.xmax")]))
 #    double.eps double.neg.eps    double.xmin    double.xmax
 #  2.220446e-16   1.110223e-16  2.225074e-308  1.797693e+308
-test(1729.12, typeof(DT[[1L]]), "double")
-test(1729.13, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE)))
+test(1729.13, typeof(DT[[1L]]), "double")
+test(1729.14, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE)))
 
 if ("package:bit64" %in% search()) {
   test(1730.1, typeof(-2147483647L), "integer")
@@ -11000,6 +11022,26 @@ test(1841, fread("A\n0.58E-2141\n"), data.table(A="0.58E-2141"))   # no ERANGE w
 
 DT = data.table()     # 2452
 test(1842, setnames(DT, character(0)), DT)
+
+test(1843, is.sorted((0+0i)^(-3:3)), error = "type 'complex' is not yet supported")  # to cover error message in forder.c
+
+# forder consistent coverage, #2454
+# test loop 1253.13* covers these cases sometimes depending on its random time-based seed
+# make a minimal example where there's a group size of 2 in the 2nd column (type double) with an NA too and na.last=NA
+# covers the branch in forder.c:dsort line 1070 starting: if (nalast == 0 && n == 2) {
+DT = data.table(c("a","a","a","b","b"),c(2,1,3,NA,2))
+test(1844.1, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,5))
+DT = data.table(c("a","a","a","b","b"),c(2,1,3,2,NA))
+test(1844.2, forder(DT,V1,V2,na.last=NA), INT(2,1,3,4,0))
+# now with two NAs in that 2-group covers forder.c:forder line 1269 starting: else if (nalast == 0 && tmp==-2) {
+DT = data.table(c("a","a","a","b","b"),c(2,1,3,NA,NA))
+test(1844.3, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,0))
+DT = data.table((0+0i)^(-3:3), 7:1)
+test(1844.4, forder(DT,V1,V2), error="First column being ordered is type 'complex', not yet supported")
+test(1844.5, forder(DT,V2,V1), 7:1)  # there are no groups in the first column being sorted (V2)
+DT = data.table((0+0i)^(-3:3), c(5L,5L,1L,2L,2L,2L,2L))
+test(1844.6, forder(DT,V2,V1), error="Column 2 of 'by'.*is type 'complex', not yet supported")
+
 
 ##########################
 

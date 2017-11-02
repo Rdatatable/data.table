@@ -1430,23 +1430,9 @@ SEXP isReallyReal(SEXP x) {
   return(ans);
 }
 
-void pbin(unsigned long long n)
-// trace utility for dev to be used in gdb, since couldn't get stdlib::atoi() to link
-{
-  int sofar = 0;
-  for(int shift=sizeof(long long)*8-1; shift>=0; shift--)
-  {
-     if (n >> shift & 1)
-     Rprintf("1");
-     else
-     Rprintf("0");
-     if (++sofar == 1 || sofar == 12) Rprintf(" ");
-  }
-  Rprintf("\n");
-}
 
 SEXP binary(SEXP x)
-// base::intToBits is close, but why does it print the result as "00 00 00 00" (raw) rather than ("0000") bits, seems odd.
+// base::intToBits is close, but why does that print the result as "00 00 00 00" (raw) rather than ("0000") bits? Seems odd.
 {
   char buffer[69];
   int j;
