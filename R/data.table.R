@@ -639,10 +639,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       # 'setorder', as there's another 'setorder' in generating 'irows' below...
       if (length(ans$indices)) setorder(setDT(ans[1:3]), indices)
       allLen1 = ans$allLen1
-      allGrp1 = ans$allGrp1
       f__ = ans$starts
       len__ = ans$lens
-      indices__ = ans$indices
+      allGrp1 = FALSE # was previously 'ans$allGrp1'. Fixing #1991. TODO: Revisit about allGrp1 possibility for speedups in certain cases when I find some time.
+      indices__ = if (length(ans$indices)) ans$indices else seq_along(f__) # also for #1991 fix
       # length of input nomatch (single 0 or NA) is 1 in both cases.
       # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
       # If using secondary key of x, f__ will refer to xo
@@ -695,7 +695,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       }
       if (length(xo) && length(irows)) {
         irows = xo[irows]   # TO DO: fsort here?
-        if (mult=="all" && !allGrp1) {
+        if (mult=="all" && !allGrp1) { # following #1991 fix, !allGrp1 will always be TRUE. TODO: revisit.
           irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
         }
       }
@@ -1263,7 +1263,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (address(ans[[target]]) == address(i[[source]])) ans[[target]] = copy(ans[[target]])
           }
         } else {
-      ii = rep.int(if(allGrp1) seq_len(nrow(i)) else indices__, len__)
+          ii = rep.int(indices__, len__) # following #1991 fix, allGrp1=FALSE always. TODO: revisit later
           for (s in seq_along(icols)) {
             target = icolsAns[s]
             source = icols[s]

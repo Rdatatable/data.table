@@ -11042,6 +11042,12 @@ test(1844.5, forder(DT,V2,V1), 7:1)  # there are no groups in the first column b
 DT = data.table((0+0i)^(-3:3), c(5L,5L,1L,2L,2L,2L,2L))
 test(1844.6, forder(DT,V2,V1), error="Column 2 of 'by'.*is type 'complex', not yet supported")
 
+# fix for non-equi joins issue #1991. Thanks to Henrik for the nice minimal example.
+d1 <- data.table(x = c(rep(c("b", "a", "c"), each = 3), c("a", "b")), y = c(rep(c(1, 3, 6), 3), 6, 6), id = 1:11)
+d2 <- data.table(id = 1:2, val = c(4, 2))
+d3 <- data.table(x = rep(c("a", "b", "c"), each = 3), y = c(6, 1, 3), id = 1:9)
+test(1845.1, d1[d2, id, on = .(y >= val)], INT(3,6,9,10,11,2,3,5,6,8,9,10,11))
+test(1845.2, d3[d2, id, on = .(y >= val)], INT(1,4,7,1,3,4,6,7,9))
 
 ##########################
 
