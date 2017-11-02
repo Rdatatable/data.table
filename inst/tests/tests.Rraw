@@ -4396,17 +4396,23 @@ ix = with(DT, order(4*x-5*y, decreasing=TRUE))
 test(1251.6, DT[order(4*x-5*y, decreasing=TRUE)], DT[ix])
 ix = with(DT, order(1-DT$x, decreasing=TRUE))
 test(1251.7, DT[order(1-DT$x, decreasing=TRUE)], DT[ix])
-test(1251.8, DT[order(x, list(-y), decreasing=TRUE)], error = "Column .* for ordering currently") # consistent with base (not the same error, but will error with "forder's" error instead)
+test(1251.8, DT[order(x, list(-y), decreasing=TRUE)],
+             error = "Column 2 is length 1 which differs from length of column 1.*10")
+test(1251.9, DT[base::order(x, list(-y), decreasing=TRUE)],
+             error = "argument lengths differ")   # data.table's error is more helpful than base's
 # more "edge cases" to ensure we're consistent with base
-test(1251.9, DT[order("a")], DT[1L])
-test(1251.10, DT[order("b", "a")], DT[1L])
-test(1251.11, DT[order(list("b", "a"))], error = "Column .* for ordering currently")
-test(1251.12, DT[order(list("b"), list("a"))], DT[1L])
+test(1251.11, DT[order("a")], DT[1L])
+test(1251.12, DT[order("b", "a")], DT[1L])
+test(1251.13, DT[order(list("b", "a"))], error = "First column being ordered is type 'list', not yet supported")
+test(1251.14, DT[order(list("b"), list("a"))], DT[1L])
 
 ##############################################################
 # extensive tests for order optimisation within `[.data.table`
 ##############################################################
 seed = as.integer(Sys.time())
+# This choice of seed by Arun was very good as it revealed problems that a fixed seed would not.
+# Test 1844 is now added to consistently run the rare cases discovered here (depending on the seed) to cover all lines in
+# forder consistently to save pull requests failing coverage tests randomly, issue #2346
 seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
 set.seed(seed)
 # these variable try to simulate groups of length 1, 2, < 200, > 200 so as to cover all different internal implementations
@@ -5018,7 +5024,7 @@ test(1319.5, DT[order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])], DT[base:::
 # test to make sure old things are not modified (ridiculous, but "consistency" demands it!)
 test(1319.6, DT[order(list(DT$a))], DT[1])
 test(1319.7, DT[order(list(DT$a), list(DT$b))], DT[1])
-test(1319.8, DT[order(list(DT$a, DT$b))], error="Column '1' is type 'list' which is not")
+test(1319.8, DT[order(list(DT$a, DT$b))], error="First column being ordered is type 'list', not yet supported")
 
 # FR #703. Not so extensive testing because test 1223 already tests for everything else extensively. Only integer64 here.
 # this'll be the test for both DT[order(.)] and setorder(.) as both internally uses forder/forderv
@@ -11004,6 +11010,23 @@ DT = data.table()     # 2452
 test(1842, setnames(DT, character(0)), DT)
 
 test(1843, is.sorted((0+0i)^(-3:3)), error = "type 'complex' is not yet supported")  # to cover error message in forder.c
+
+# forder consistent coverage, #2454
+# test loop 1253.13* covers these cases sometimes depending on its random time-based seed
+# make a minimal example where there's a group size of 2 in the 2nd column (type double) with an NA too and na.last=NA
+# covers the branch in forder.c:dsort line 1070 starting: if (nalast == 0 && n == 2) {
+DT = data.table(c("a","a","a","b","b"),c(2,1,3,NA,2))
+test(1844.1, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,5))
+DT = data.table(c("a","a","a","b","b"),c(2,1,3,2,NA))
+test(1844.2, forder(DT,V1,V2,na.last=NA), INT(2,1,3,4,0))
+# now with two NAs in that 2-group covers forder.c:forder line 1269 starting: else if (nalast == 0 && tmp==-2) {
+DT = data.table(c("a","a","a","b","b"),c(2,1,3,NA,NA))
+test(1844.3, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,0))
+DT = data.table((0+0i)^(-3:3), 7:1)
+test(1844.4, forder(DT,V1,V2), error="First column being ordered is type 'complex', not yet supported")
+test(1844.5, forder(DT,V2,V1), 7:1)  # there are no groups in the first column being sorted (V2)
+DT = data.table((0+0i)^(-3:3), c(5L,5L,1L,2L,2L,2L,2L))
+test(1844.6, forder(DT,V2,V1), error="Column 2 of 'by'.*is type 'complex', not yet supported")
 
 
 ##########################

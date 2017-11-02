@@ -227,10 +227,7 @@ forder <- function(x, ..., na.last=TRUE, decreasing=FALSE)
     }
   }
   cols = seq_along(ans)
-  for (i in cols) {
-    if (!typeof(ans[[i]]) %chin% c("integer","logical","character","double"))
-      stop("Column '",i,"' is type '",typeof(ans[[i]]),"' which is not supported for ordering currently.")
-  }
+  # Supported column types are checked at C level
   o = forderv(ans, cols, sort=TRUE, retGrp=FALSE, order= if (decreasing) -order else order, na.last)
   if (!length(o)) o = seq_along(ans[[1L]]) else o
   o
