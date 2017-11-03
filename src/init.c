@@ -71,7 +71,7 @@ SEXP gprod();
 SEXP nestedid();
 SEXP setDTthreads();
 SEXP getDTthreads_R();
-SEXP nqnewindices();
+SEXP nqRecreateIndices();
 SEXP fsort();
 SEXP inrange();
 SEXP between();
@@ -149,7 +149,7 @@ R_CallMethodDef callMethods[] = {
 {"Cnestedid", (DL_FUNC) &nestedid, -1},
 {"CsetDTthreads", (DL_FUNC) &setDTthreads, -1},
 {"CgetDTthreads", (DL_FUNC) &getDTthreads_R, -1},
-{"Cnqnewindices", (DL_FUNC) &nqnewindices, -1},
+{"CnqRecreateIndices", (DL_FUNC) &nqRecreateIndices, -1},
 {"Cfsort", (DL_FUNC) &fsort, -1},
 {"Cinrange", (DL_FUNC) &inrange, -1},
 {"Cbetween", (DL_FUNC) &between, -1},
