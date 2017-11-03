@@ -11049,6 +11049,12 @@ d3 <- data.table(x = rep(c("a", "b", "c"), each = 3), y = c(6, 1, 3), id = 1:9)
 test(1845.1, d1[d2, id, on = .(y >= val)], INT(3,6,9,10,11,2,3,5,6,8,9,10,11))
 test(1845.2, d3[d2, id, on = .(y >= val)], INT(1,4,7,1,3,4,6,7,9))
 
+# fix for non-equi join issue #1986, when d2 is 0-row data.table
+d1 <- data.table(a=1L, b=2L)
+d2 <- d1[0L]
+test(1846.1, d2[d1, on=.(a>a, b<b)], d1)
+test(1846.2, d2[d1, on=.(a>a)], data.table(a=1L, b=NA_integer_, i.b=2L))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

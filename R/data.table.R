@@ -584,7 +584,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           if (verbose) {last.started.at=proc.time()[3];cat("  Generating non-equi group ids ... ");flush.console()}
           nqgrp = .Call(Cnestedid, x, rightcols[non_equi:length(rightcols)], xo, xg, resetlen, mult)
           if (verbose) {cat("done in", round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
-          if ( (nqmaxgrp <- max(nqgrp)) > 1L) { # got some non-equi join work to do
+          if (length(nqgrp)) nqmaxgrp = max(nqgrp) # fix for #1986, when 'x' is 0-row table max(.) returns -Inf.
+          if (nqmaxgrp > 1L) { # got some non-equi join work to do
             if ("_nqgrp_" %in% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
             if (verbose) {last.started.at=proc.time()[3];cat("  Recomputing forder with non-equi ids ... ");flush.console()}
             set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
