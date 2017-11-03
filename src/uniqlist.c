@@ -225,7 +225,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
 
 SEXP nqnewindices(SEXP xo, SEXP len, SEXP indices, SEXP nArg) {
 
-  R_len_t i, n = INTEGER(nArg)[0], nas=0, tmp=0;
+  R_len_t i, n = INTEGER(nArg)[0], j=0, tmp=0;
   SEXP ans, newstarts, newlen;
   ans = PROTECT(allocVector(VECSXP, 2));
   SET_VECTOR_ELT(ans, 0, (newstarts = allocVector(INTSXP, n)));
@@ -237,13 +237,18 @@ SEXP nqnewindices(SEXP xo, SEXP len, SEXP indices, SEXP nArg) {
       INTEGER(newlen)[INTEGER(indices)[i]-1] += INTEGER(len)[i];
     else INTEGER(newlen)[INTEGER(indices)[i]-1] = INTEGER(len)[i] != 0;
   }
-  for (i=0; i<n; i++) {
-    if (INTEGER(xo)[nas++] == NA_INTEGER) {
-      INTEGER(newstarts)[i] = NA_INTEGER;
+  // TODO: revisit ... can this be simplified? Not much time ATM.
+  i = 0; // reset i
+  while (j < length(xo)) { // fix for #2360
+    if (INTEGER(xo)[j] <= 0) { // NA_integer_ = INT_MIN is checked in init.c IIRC
+      INTEGER(newstarts)[i] = INTEGER(xo)[j];
+      j++; // newlen will be 1 for xo=NA and 0 for xo=0 .. but we need to increment by 1 for both
     } else {
-      INTEGER(newstarts)[i] = INTEGER(newlen)[i] ? tmp+1 : 0;
+      INTEGER(newstarts)[i] = tmp+1;
       tmp += INTEGER(newlen)[i];
+      j += INTEGER(newlen)[i];
     }
+    i++;
   }
   UNPROTECT(1);
   return (ans);

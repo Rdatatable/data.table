@@ -106,6 +106,7 @@
 
 23. Non-equi joins work as expected when `x` in `x[i, on=...]` is a 0-row data.table. Closes [#1986](https://github.com/Rdatatable/data.table/issues/1986).
 
+24. Non-equi joins along with `by=.EACHI` returned incorrect result in some rare cases as reported under [#2360](https://github.com/Rdatatable/data.table/issues/2360). This is fixed now. Thanks @ebs238 for the nice minimal reproducible report.
 
 #### NOTES
 
