@@ -132,12 +132,15 @@ SEXP rleid(SEXP l, SEXP cols)
 }
 
 SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP multArg) {
-  Rboolean b, byorder = length(order);
+  Rboolean byorder = (length(order)>0);
   SEXP v, ans, class;
+  if (!isNewList(l) || length(l) < 1) error("Internal error: nestedid was not passed a list length 1 or more");
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
-  R_len_t i, j, k, thisi, previ, ansgrpsize=1000, nansgrp=0;
-  R_len_t *ptr, *ansgrp = Calloc(ansgrpsize, R_len_t), tmp, starts, grplen;
+  if (nrows==0) return(allocVector(INTSXP, 0));
+  R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;
+  R_len_t *ptr, *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen;
   R_len_t ngrps = length(grps), *i64 = Calloc(ncols, R_len_t);
+  if (ngrps==0) error("Internal error: nrows[%d]>0 but ngrps==0", nrows);
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
   if (!isInteger(cols) || ncols == 0)
     error("cols must be an integer vector of positive length");
@@ -148,7 +151,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
   else error("Internal error: invalid value for 'mult'. Please report to datatable-help");
   // integer64
-  for (j=0; j<ncols; j++) {
+  for (int j=0; j<ncols; j++) {
     class = getAttrib(VECTOR_ELT(l, INTEGER(cols)[j]-1), R_ClassSymbol);
     i64[j] = isString(class) && STRING_ELT(class, 0) == char_integer64;
   }
@@ -157,11 +160,11 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   grplen = (ngrps == 1) ? nrows : igrps[1]-igrps[0];
   starts = igrps[0]-1 + (mult != LAST ? 0 : grplen-1);
   ansgrp[0] = byorder ? INTEGER(order)[starts]-1 : starts;
-  for (j=0; j<grplen; j++) {
+  for (int j=0; j<grplen; j++) {
     ians[byorder ? INTEGER(order)[igrps[0]-1+j]-1 : igrps[0]-1+j] = 1;
   }
   nansgrp = 1;
-  for (i=1; i<ngrps; i++) {
+  for (int i=1; i<ngrps; i++) {
     // "first"=add next grp to current grp iff min(next) >= min(current)
     // "last"=add next grp to current grp iff max(next) >= max(current)
     // in addition to this thisi >= previ should be satisfied
@@ -170,8 +173,10 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
     grplen = (i+1 < ngrps) ? igrps[i+1]-igrps[i] : nrows-igrps[i]+1;
     starts = igrps[i]-1 + (mult != LAST ? 0 : grplen-1);
     thisi = byorder ? INTEGER(order)[starts]-1 : starts;
-    for (k=0; k<nansgrp; k++) {
-      j = ncols;
+    Rboolean b = TRUE;
+    int k = 0;
+    for (; k<nansgrp; k++) {
+      int j = ncols;
       previ = ansgrp[k];
       // b=TRUE is ideal for mult=ALL, results in lesser groups
       b = mult == ALL || (thisi >= previ);
@@ -200,6 +205,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
     // TODO: move this as the outer for-loop and parallelise..
     // but preferably wait to see if problems with that big non-equi
     // group sizes do occur that commonly before to invest time here.
+    int tmp=0;
     if (rlen != starts) {
       tmp = b ? k : nansgrp++;
     } else { // we're wrapping up this group, reset nansgrp
@@ -212,7 +218,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
       if (ptr != NULL) ansgrp = ptr;
       else error("Error in reallocating memory in 'nestedid'\n");
     }
-    for (j=0; j<grplen; j++) {
+    for (int j=0; j<grplen; j++) {
       ians[byorder ? INTEGER(order)[igrps[i]-1+j]-1 : igrps[i]-1+j] = tmp+1;
     }
     ansgrp[tmp] = thisi;
