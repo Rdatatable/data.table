@@ -1,7 +1,5 @@
 #include "data.table.h"
 #include <Rdefines.h>
-//#include <sys/mman.h>
-#include <Rversion.h>
 #include <fcntl.h>
 #include <time.h>
 

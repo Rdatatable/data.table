@@ -1,7 +1,6 @@
 #include <R.h>
 #define USE_RINTERNALS
 #include <Rinternals.h>
-#include <Rversion.h>
 #ifdef _OPENMP
   #include <omp.h>
 #else // so it still compiles on machines with compilers void of openmp support
@@ -12,10 +11,12 @@
 // raise(SIGINT);
 #include <stdint.h> // for uint64_t rather than unsigned long long
 
+#define RVersion(major, minor, micro)  ((major<<16) + (minor<<8) + (micro))
+
 // Fixes R-Forge #5150, and #1641
-// a simple check for R version to decide if the type should be R_len_t or 
+// a simple check for R version to decide if the type should be R_len_t or
 // R_xlen_t long vector support was added in R 3.0.0
-#if defined(R_VERSION) && R_VERSION >= R_Version(3, 0, 0)
+#if defined(R_VERSION) && R_VERSION >= RVersion(3, 0, 0)
   typedef R_xlen_t RLEN;
 #else
   typedef R_len_t RLEN;
@@ -58,7 +59,7 @@ SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
 Rboolean INHERITS(SEXP x, SEXP char_);
-long long DtoLL(double x); 
+long long DtoLL(double x);
 double LLtoD(long long x);
 double NA_INT64_D;
 long long NA_INT64_LL;
@@ -113,14 +114,14 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 void memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
 
-SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, 
-                SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, 
-                SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, 
+SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
+                SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts,
+                SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames,
                 SEXP on, SEXP verbose);
 
 // bmerge.c
-SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, 
-                SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, 
+SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted,
+                SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg,
                 SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
 SEXP ENC2UTF8(SEXP s);
 
