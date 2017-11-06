@@ -1,7 +1,6 @@
 #include "data.table.h"
 #include <Rdefines.h>
 #include <Rmath.h>
-#include <Rversion.h>
 
 static SEXP *saveds=NULL;
 static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
@@ -657,7 +656,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     }
     s = ATTRIB(index); // reset to first element
     indexNo = 0;
-    while(s != R_NilValue) { 
+    while(s != R_NilValue) {
       a = TAG(s);
       indexLength = xlength(CAR(s));
       tc1 = c1 = CHAR(PRINTNAME(a));  // the index name; e.g. "__col1__col2"

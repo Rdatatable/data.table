@@ -11,16 +11,12 @@
 // raise(SIGINT);
 #include <stdint.h> // for uint64_t rather than unsigned long long
 
-#define RVersion(major, minor, micro)  ((major<<16) + (minor<<8) + (micro))
-
-// Fixes R-Forge #5150, and #1641
-// a simple check for R version to decide if the type should be R_len_t or
-// R_xlen_t long vector support was added in R 3.0.0
-#if defined(R_VERSION) && R_VERSION >= RVersion(3, 0, 0)
-  typedef R_xlen_t RLEN;
-#else
-  typedef R_len_t RLEN;
-#endif
+// data.table depends on R>=3.0.0 when R_xlen_t was introduced
+// Before R 3.0.0, RLEN used to be switched to R_len_t as R_xlen_t wasn't available.
+// We could now replace all RLEN with R_xlen_t directly. Or keep RLEN for the shorter
+// name so as not to have to check closely one letter difference R_xlen_t/R_len_t. We
+// might also undefine R_len_t to ensure not to use it.
+typedef R_xlen_t RLEN;
 
 #define IS_UTF8(x)  (LEVELS(x) & 8)
 #define IS_ASCII(x) (LEVELS(x) & 64)
@@ -138,5 +134,4 @@ double wallclock();
 // openmp-utils.c
 int getDTthreads();
 void avoid_openmp_hang_within_fork();
-
 
