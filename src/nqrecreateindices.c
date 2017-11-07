@@ -11,7 +11,7 @@ SEXP nqRecreateIndices(SEXP xo, SEXP len, SEXP indices, SEXP nArg) {
   SET_VECTOR_ELT(ans, 1, (newlen = allocVector(INTSXP, n)));
 
   for (int i=0; i<n; i++) INTEGER(newlen)[i] = 0;
-  // simplifying this logic to solve #2275
+  // simplifying logic ... also fixes #2275
   for (int i=0; i<length(indices); i++) {
     INTEGER(newlen)[INTEGER(indices)[i]-1] += INTEGER(len)[i];
   }
