@@ -10756,7 +10756,12 @@ test(1779.6, identical(as.IDate.default(p), as.IDate(p)))
 p = as.POSIXct(i, origin = "1970-01-01", tz = "America/New_York")
 test(1779.7, identical(as.ITime.default(p), as.ITime(p)))
 test(1779.8, identical(as.IDate.default(p), as.IDate(p)))
-p = as.POSIXct(i, origin = "1970-01-01")
+
+# R 3.0.1 had the following bug fix in R News :
+#  " as.POSIXct.numeric was coercing origin using the tz argument and not "GMT" as documented (PR#14973) "
+# So tz="UTC" is required on next line for test 1779.9 to pass R 3.0.0 (current stated dependency). 
+# Test 1779.9 would be fine without the tz="UTC" from R 3.0.1 onwards.
+p = as.POSIXct(i, origin = "1970-01-01", tz="UTC")
 test(1779.9, identical(as.ITime.default(p), as.ITime(p)))
 test(1779.11, identical(as.IDate.default(p), as.IDate(p)))
 test(1779.12, as.IDate("20170929", "%Y%m%d"), as.IDate("20170929", format="%Y%m%d"))   # 2453
