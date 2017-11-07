@@ -11077,6 +11077,16 @@ test(1847.1, ans1, INT(2:13,NA))
 test(1847.2, ans2, INT(NA, 2:3, NA, NA, NA, 3, rep(1, 6)))
 test(1847.3, ans3, INT(NA, 3:4, rep(NA, 10)))
 
+# Adding test for #2275, same fix for #2360 above also takes care of this, i.e., with nqRecreateIndices
+cols <- c("START_DATE", "EXPIRY_DATE")
+DT1  <- fread("issue_2275_dt1.csv")[, DT1_ID := .I][, DATE := as.Date(DATE)]
+DT2  <- fread("issue_2275_dt2.csv")[, DT2_ID := .I][, (cols) := lapply(.SD, as.Date), .SDcols=cols]
+
+ans1 <- DT2[DT1, on=.(RANDOM_STRING, START_DATE <= DATE, EXPIRY_DATE >= DATE), .N, by=.EACHI ]$N > 0L
+tmp  <- DT1[DT2, on=.(RANDOM_STRING, DATE >= START_DATE, DATE <= EXPIRY_DATE), which=TRUE, nomatch=0L]
+ans2 <- DT1[, DT1_ID %in% tmp]
+test(1850.1, ans1, ans2)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
