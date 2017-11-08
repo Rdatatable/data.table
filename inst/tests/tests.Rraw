@@ -10759,7 +10759,7 @@ test(1779.8, identical(as.IDate.default(p), as.IDate(p)))
 
 # R 3.0.1 had the following bug fix in R News :
 #  " as.POSIXct.numeric was coercing origin using the tz argument and not "GMT" as documented (PR#14973) "
-# So tz="UTC" is required on next line for test 1779.9 to pass R 3.0.0 (current stated dependency). 
+# So tz="UTC" is required on next line for test 1779.9 to pass R 3.0.0 (current stated dependency).
 # Test 1779.9 would be fine without the tz="UTC" from R 3.0.1 onwards.
 p = as.POSIXct(i, origin = "1970-01-01", tz="UTC")
 test(1779.9, identical(as.ITime.default(p), as.ITime(p)))
@@ -11085,7 +11085,33 @@ DT2  <- fread("issue_2275_dt2.csv")[, DT2_ID := .I][, (cols) := lapply(.SD, as.D
 ans1 <- DT2[DT1, on=.(RANDOM_STRING, START_DATE <= DATE, EXPIRY_DATE >= DATE), .N, by=.EACHI ]$N > 0L
 tmp  <- DT1[DT2, on=.(RANDOM_STRING, DATE >= START_DATE, DATE <= EXPIRY_DATE), which=TRUE, nomatch=0L]
 ans2 <- DT1[, DT1_ID %in% tmp]
-test(1850.1, ans1, ans2)
+test(1848, ans1, ans2)
+
+
+# when last field is quoted contains sep and select= is used too, #2464
+test(1849.1, fread('Date,Description,Amount,Balance\n20150725,abcd,"$3,004","$5,006"', select=c("Date", "Description", "Amount")),
+             data.table(Date=20150725L,Description="abcd",Amount="$3,004"))
+test(1849.2, fread('Date,Description,Amount,Balance\n20150725,abcd,"$3,004","$5,006"', select=c("Date", "Description", "Balance")),
+             data.table(Date=20150725L,Description="abcd",Balance="$5,006"))
+test(1849.3, fread('Date,Description,Amount,Balance\n20150725,abcd,"$3,004","$5,006"\n', select=c("Date", "Description", "Amount")),
+             data.table(Date=20150725L,Description="abcd",Amount="$3,004"))
+test(1849.4, fread('Date,Description,Amount,Balance\n20150725,abcd,"$3,004","$5,006"\n', select=c("Date", "Description", "Balance")),
+             data.table(Date=20150725L,Description="abcd",Balance="$5,006"))
+cat('Date,Description,Amount,Balance\n20150725,abcd,"$3,004","$5,006"', file=f<-tempfile())
+test(1849.5, fread(f,verbose=TRUE),
+             data.table(Date=20150725L,Description="abcd",Amount="$3,004", Balance="$5,006"),
+             output="File ends abruptly with '\"'")
+test(1849.6, fread(f, select=c("Date", "Description", "Amount")),
+             data.table(Date=20150725L,Description="abcd",Amount="$3,004"))
+test(1849.7, fread(f, select=c("Date", "Description", "Balance")),
+             data.table(Date=20150725L,Description="abcd",Balance="$5,006"))
+cat('\n', file=f, append=TRUE)
+test(1849.8, fread(f, select=c("Date", "Description", "Amount")),
+             data.table(Date=20150725L,Description="abcd",Amount="$3,004"))
+test(1849.9, fread(f, select=c("Date", "Description", "Balance")),
+             data.table(Date=20150725L,Description="abcd",Balance="$5,006"))
+unlink(f)
+
 
 ##########################
 

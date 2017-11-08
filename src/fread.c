@@ -541,7 +541,10 @@ static void Field(FieldParseContext *ctx)
     *(ctx->ch) = ch;
   } else {
     *(ctx->ch) = ch;
-    if (*ch=='\0' && quoteRule!=2) { target->off--; target->len++; }  // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
+    if (*ch=='\0') {
+      if (finalByte==quote && ch==eof) return;             // test 1849.* for issue 2464 where final quoted field contains a sep and no \n ending the file
+      if (quoteRule!=2) { target->off--; target->len++; }  // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
+    }
     if (stripWhite) while(target->len>0 && ch[-1]==' ') { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
   }
 }
@@ -1989,9 +1992,9 @@ int freadMain(freadMainArgs _args) {
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJump). Usually happens, fastest path
           }
           else {
-            tch = fieldStart; // restart field as int processor could have moved to A in ",123A,", or we could be on \0 when we always reread last field regardless
+            tch = fieldStart; // restart field as int processor could have moved to A in ",123A,"
           }
-          // if *tch=='\0' then fall through below and reread final field if finalByte is set
+          // if *tch=='\0' then *eof in mind, fall through to below and, if finalByte is set, reread final field
         }
         //*** END TEPID. NOW COLD.
 
@@ -2016,7 +2019,7 @@ int freadMain(freadMainArgs _args) {
           while (absType < NUMTYPE) {
             tch = fieldStart;
             bool quoted = false;
-            if (absType < CT_STRING) {
+            if (absType<CT_STRING && absType>CT_DROP/*Field() too*/) {
               skip_white(&tch);
               const char *afterSpace = tch;
               tch = end_NA_string(fieldStart);
