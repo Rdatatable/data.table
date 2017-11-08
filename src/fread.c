@@ -542,7 +542,7 @@ static void Field(FieldParseContext *ctx)
   } else {
     *(ctx->ch) = ch;
     if (*ch=='\0') {
-      if (finalByte==quote && ch==eof) return;             // test 1847 for issue 2464 where final quoted field contains a sep and no \n ending the file
+      if (finalByte==quote && ch==eof) return;             // test 1849.* for issue 2464 where final quoted field contains a sep and no \n ending the file
       if (quoteRule!=2) { target->off--; target->len++; }  // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
     }
     if (stripWhite) while(target->len>0 && ch[-1]==' ') { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
