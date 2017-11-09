@@ -11112,6 +11112,11 @@ test(1849.9, fread(f, select=c("Date", "Description", "Balance")),
              data.table(Date=20150725L,Description="abcd",Balance="$5,006"))
 unlink(f)
 
+# segfault when rbindlist is asked to create a DT with more than 2bn rows
+DT = data.table(1:1e6)
+L = vector("list", 2148)
+for (i in seq_along(L)) L[[i]] = DT   # many references to the same DT to avoid actually using large RAM for this test
+test(1850, rbindlist(L), error="Total rows in the list is 2148000000 which is larger than the maximum number of rows, currently 2147483647")
 
 ##########################
 

@@ -68,7 +68,7 @@
 
 4. Setting `j = {}` no longer results in an error, [#2142](https://github.com/Rdatatable/data.table/issues/2142). Thanks Michael Chirico for the pull request.
 
-5. Seg fault in `rbindlist()` when one or more items are empty, [#2019](https://github.com/Rdatatable/data.table/issues/2019). Thanks Michael Lang for the pull request.
+5. Segfault in `rbindlist()` when one or more items are empty, [#2019](https://github.com/Rdatatable/data.table/issues/2019). Thanks Michael Lang for the pull request. Another segfault if the result would be more than 2bn rows, thanks to @jsams's comment in [#2340](https://github.com/Rdatatable/data.table/issues/2340#issuecomment-331505494).
 
 6. Error printing 0-length `ITime` and `NA` objects, [#2032](https://github.com/Rdatatable/data.table/issues/2032) and [#2171](https://github.com/Rdatatable/data.table/issues/2171). Thanks Michael Chirico for the pull requests and @franknarf1 for pointing out a shortcoming of the initial fix.
 
@@ -461,7 +461,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
   
   59. Added `+.IDate` method so that IDate + integer retains the `IDate` class, [#1528](https://github.com/Rdatatable/data.table/issues/1528); thanks @MichaelChirico for FR&PR. Similarly, added `-.IDate` so that IDate - IDate returns a plain integer rather than difftime.
   
-  60. Radix ordering an integer vector containing INTMAX (2147483647) with decreasing=TRUE and na.last=FALSE failed ASAN check and seg faulted some systems. As reported for base R [#16925](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16925) whose new code comes from data.table. Simplified code, added test and proposed change to base R.
+  60. Radix ordering an integer vector containing INTMAX (2147483647) with decreasing=TRUE and na.last=FALSE failed ASAN check and segfaulted some systems. As reported for base R [#16925](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16925) whose new code comes from data.table. Simplified code, added test and proposed change to base R.
 
   60. Fixed test in `onAttach()` for when `Packaged` field is missing from `DESCRIPTION`, [#1706](https://github.com/Rdatatable/data.table/issues/1706); thanks @restonslacker for BR&PR.
 
@@ -679,7 +679,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
       * sep="." now works (when dec!="."), [#502](https://github.com/Rdatatable/data.table/issues/502). Thanks to Ananda Mahto for reporting.
       * better error message if quoted field is missing an end quote, [#802](https://github.com/Rdatatable/data.table/issues/802). Thanks to Vladimir Sitnikov for the sample file which is now included in the test suite.
       * providing sep which is not present in the file now reads as if sep="\n" rather than 'sep not found', #738. Thanks to Adam Kennedy for explaining the use-case.
-      * seg fault with errors over 1,000 characters (when long lines are included) is fixed, [#802](https://github.com/Rdatatable/data.table/issues/802). Thanks again to Vladimir Sitnikov.
+      * segfault with errors over 1,000 characters (when long lines are included) is fixed, [#802](https://github.com/Rdatatable/data.table/issues/802). Thanks again to Vladimir Sitnikov.
       * Missing `integer64` values are properly assigned `NA`s. Closes [#488](https://github.com/Rdatatable/data.table/issues/488). Thanks to @PeterStoyanov and @richierocks for the report.
       * Column headers with empty strings aren't skipped anymore. [Closes #483](https://github.com/Rdatatable/data.table/issues/483). Thanks to @RobyJoehanes and @kforner.
       * Detects separator correctly when commas also exist in text fields. Closes [#923](https://github.com/Rdatatable/data.table/issues/923). Thanks to @raymondben for the report.
@@ -906,7 +906,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
       * accepts trailing backslash in quoted fields. Thanks to user2970844 for highlighting [here](http://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash).
       * Blank and `"NA"` values in logical columns (`T`,`True`,`TRUE`) no longer cause them to be read as character, [#567](https://github.com/Rdatatable/data.table/issues/567). Thanks to Adam November for reporting.
       * URLs now work on Windows. R's `download.file()` converts `\r\n` to `\r\r\n` on Windows. Now avoided by downloading in binary mode. Thanks to Steve Miller and Dean MacGregor for reporting, [#492](https://github.com/Rdatatable/data.table/issues/492).
-      * Fixed seg fault in sparse data files when bumping to character, [#796](https://github.com/Rdatatable/data.table/issues/796) and [#722](https://github.com/Rdatatable/data.table/issues/722). Thanks to Adam Kennedy and Richard Cotton for the detailed reproducible reports.
+      * Fixed segfault in sparse data files when bumping to character, [#796](https://github.com/Rdatatable/data.table/issues/796) and [#722](https://github.com/Rdatatable/data.table/issues/722). Thanks to Adam Kennedy and Richard Cotton for the detailed reproducible reports.
       * New argument `fread(...,data.table=FALSE)` returns a `data.frame` instead of a `data.table`. This can be set globally: `options(datatable.fread.datatable=FALSE)`.
 
   6. `.()` can now be used in `j` and is identical to `list()`, for consistency with `i`.
@@ -2190,7 +2190,7 @@ USER VISIBLE CHANGES
         dynamic and passed one of those values all meaning 'don't group'. Thanks
         to Joseph Voelkel reporting and Chris Neff for further use cases. Tests added.
 
-    *   chorder(character()) was a seg fault, #2026. Fixed and test added.
+    *   chorder(character()) was a segfault, #2026. Fixed and test added.
 
     *   When grouping by i, if the first row of i had no match, .N was 1 rather than 0.
         Fixed and tests added. Thanks to a question by user1165199 on Stack Overflow :
@@ -2544,7 +2544,7 @@ USER VISIBLE CHANGES
         introduced in v1.6.1). Thanks to Steven Bagley for
         reporting.
 
-   *    Errors and seg faults could occur in grouping when
+   *    Errors and segfaults could occur in grouping when
         j contained character or list columns. Many thanks
         to Jim Holtman for providing a reproducible example.
 
@@ -2746,7 +2746,7 @@ USER VISIBLE CHANGES
 #### BUG FIXES
 
     *   Assignment to factor columns (using :=, [<- or $<-) could cause
-        'variable not found' errors and a seg fault in some circumstances
+        'variable not found' errors and a segfault in some circumstances
         due to a new feature in v1.7.0: "Factor columns on LHS of :=, [<-
         and $<- can now be assigned new levels", fixing #1664. Thanks to
         Daniele Signori for reporting.
