@@ -477,14 +477,16 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
 
 
 void progress(double p, double eta) {
-  Rprintf("\rRead %.0f%%. ETA %02d:%02d ", p, (int)eta/60, (int)eta%60);
-  // See comments in fwrite.c for how we might in future be able to R_CheckUserInterrupt() here.
-  //   ( Had crashes with R_CheckUserInterrupt() even when called only from master thread, to overcome. )
-  #ifdef WIN32
-  R_FlushConsole();
+  // called from thread 0 only
+  REprintf("\rRead %.0f%%. ETA %02d:%02d ", p, (int)eta/60, (int)eta%60);
+  R_FlushConsole();  // Windows in mind which doesn't flush until \n it seems. May as well for Linux/Mac too.
+  // See issue 2457 for why this is REprinf to avoid Rprintf's call to R_CheckUserInterrupt() every 100 lines.
+  // It's the R_CheckUserInterrupt() that has caused crashes before when called from OpenMP parallel region
+  // even when called only from master thread.
+  // fwrite.c has some comments about how it might be possible to call R_CheckUserInterrupt() here so that
+  // a long running fread can be stopped by user with Ctrl-C (or ESC on Windows).
   // Could try R_ProcessEvents() too as per
   // https://cran.r-project.org/bin/windows/base/rw-FAQ.html#The-console-freezes-when-my-compiled-code-is-running
-  #endif
 }
 
 
