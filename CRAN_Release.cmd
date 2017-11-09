@@ -166,14 +166,14 @@ tar xvf R-devel.tar.gz
 cd R-devel
 # Following R-exts#4.3.3
 # (clang 3.6.0 works but gcc 4.9.2 fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel)
-./configure CC="clang-5.0 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-g -O0 -Wall -pedantic" --without-recommended-packages --disable-byte-compiled-packages
+./configure CC="clang-5.0 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-g -Og -Wall -pedantic" --without-recommended-packages --disable-byte-compiled-packages
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 Rdevel
 install.packages("bit64")  # important to run tests using integer64
 # Skip compatibility tests with other Suggests packages; unlikely UBSAN/ASAN problems there.
 q("no")
-Rdevel CMD INSTALL ~/data.table_1.10.1.tar.gz
+Rdevel CMD INSTALL data.table_1.10.5.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
 # them (above) so should be passed through to here
 Rdevel
