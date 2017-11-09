@@ -639,7 +639,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
     return(R_NilValue);
   }
   if (data.n_rows > INT32_MAX) {
-    error("Total rows in the list is %lld which is larger than the maximum number of rows, currently %lld",
+    error("Total rows in the list is %lld which is larger than the maximum number of rows, currently %d",
           (long long)data.n_rows, INT32_MAX);
   }
   if (isidcol) {
