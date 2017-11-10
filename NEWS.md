@@ -23,11 +23,14 @@
     * Added option `logical01` to read a column of only `0`s and `1`s as `logical`, default `TRUE` for convenience in most cases. The large sample of rows throughout the file means that `fread` will be confident that the column really does just contain `0`s and `1`s, enabling and encouraging this convenient and efficient choice to save needing conversion afterwards or setting `colClasses` manually. In R, `logical` is `integer` anyway and can be treated as such in calculations. Further, it is no longer allowed to have mixed-case literals within a single column; i.e., a column of `TRUE/FALSE`s is ok, as well as `True/False`s and `true/false`s, but mixing different styles together is not.
     * Added ability to recognize and parse hexadecimal floating point numbers, as used for example in Java. Thanks for @scottstanfield [#2316](https://github.com/Rdatatable/data.table/issues/2316) for the report.
     * Now handles floating-point NaN values in a wide variety of formats, including `NaN`, `sNaN`, `1.#QNAN`, `NaN1234`, `#NUM!` and others, [#1800](https://github.com/Rdatatable/data.table/issues/1800). Thanks to Jori Liesenborgs for highlighting and the PR.
-    * Many thanks to @yaakovfeldman, Guillermo Ponce, Arun Srinivasan, Hugh Parsonage, Mark Klik, Pasha Stetsenko, Mahyar K, Tom Crockett, @cnoelke, @qinjs, @etienne-s, Mark Danese, Avraham Adler for testing before release to CRAN: [#2070](https://github.com/Rdatatable/data.table/issues/2070), [#2073](https://github.com/Rdatatable/data.table/issues/2073), [#2087](https://github.com/Rdatatable/data.table/issues/2087), [#2091](https://github.com/Rdatatable/data.table/issues/2091), [#2107](https://github.com/Rdatatable/data.table/issues/2107), [fst#50](https://github.com/fstpackage/fst/issues/50#issuecomment-294287846), [#2118](https://github.com/Rdatatable/data.table/issues/2118), [#2092](https://github.com/Rdatatable/data.table/issues/2092), [#1888](https://github.com/Rdatatable/data.table/issues/1888), [#2123](https://github.com/Rdatatable/data.table/issues/2123), [#2167](https://github.com/Rdatatable/data.table/issues/2167), [#2194](https://github.com/Rdatatable/data.table/issues/2194), [#2238](https://github.com/Rdatatable/data.table/issues/2238), [#2228](https://github.com/Rdatatable/data.table/issues/2228), [#1464](https://github.com/Rdatatable/data.table/issues/1464), [#2201](https://github.com/Rdatatable/data.table/issues/2201), [#2287](https://github.com/Rdatatable/data.table/issues/2287), [#2299](https://github.com/Rdatatable/data.table/issues/2299), [#2285](https://github.com/Rdatatable/data.table/issues/2285), [#2251](https://github.com/Rdatatable/data.table/issues/2251), [#2347](https://github.com/Rdatatable/data.table/issues/2347), [#2222](https://github.com/Rdatatable/data.table/issues/2222), [#2352](https://github.com/Rdatatable/data.table/issues/2352), [#2246](https://github.com/Rdatatable/data.table/issues/2246), [#2370](https://github.com/Rdatatable/data.table/issues/2370), [#2371](https://github.com/Rdatatable/data.table/issues/2371)
+    * If negative numbers are passed to `select=` the out-of-range error now suggests `drop=` instead, [#2423](https://github.com/Rdatatable/data.table/issues/2423). Thanks to Michael Chirico for the suggestion.
+    * `sep=NULL` or `sep=""` (i.e., no column separator) can now be used to specify single column input reliably like `base::readLines`, [#1616](https://github.com/Rdatatable/data.table/issues/1616). `sep='\\n'` still works (even on Windows where line ending is actually `\\r\\n`) but `NULL` or `""` are now documented and recommended. Thanks to Dmitriy Selivanov for the pull request and many others for comments. As before, `sep=NA` is not valid; use the default `"auto"` for automatic separator detection. `sep='\\n'` may be deprecated in future.
+    * Many thanks to @yaakovfeldman, Guillermo Ponce, Arun Srinivasan, Hugh Parsonage, Mark Klik, Pasha Stetsenko, Mahyar K, Tom Crockett, @cnoelke, @qinjs, @etienne-s, Mark Danese, Avraham Adler, @franknarf1, @MichaelChirico for testing before release to CRAN: [#2070](https://github.com/Rdatatable/data.table/issues/2070), [#2073](https://github.com/Rdatatable/data.table/issues/2073), [#2087](https://github.com/Rdatatable/data.table/issues/2087), [#2091](https://github.com/Rdatatable/data.table/issues/2091), [#2107](https://github.com/Rdatatable/data.table/issues/2107), [fst#50](https://github.com/fstpackage/fst/issues/50#issuecomment-294287846), [#2118](https://github.com/Rdatatable/data.table/issues/2118), [#2092](https://github.com/Rdatatable/data.table/issues/2092), [#1888](https://github.com/Rdatatable/data.table/issues/1888), [#2123](https://github.com/Rdatatable/data.table/issues/2123), [#2167](https://github.com/Rdatatable/data.table/issues/2167), [#2194](https://github.com/Rdatatable/data.table/issues/2194), [#2238](https://github.com/Rdatatable/data.table/issues/2238), [#2228](https://github.com/Rdatatable/data.table/issues/2228), [#1464](https://github.com/Rdatatable/data.table/issues/1464), [#2201](https://github.com/Rdatatable/data.table/issues/2201), [#2287](https://github.com/Rdatatable/data.table/issues/2287), [#2299](https://github.com/Rdatatable/data.table/issues/2299), [#2285](https://github.com/Rdatatable/data.table/issues/2285), [#2251](https://github.com/Rdatatable/data.table/issues/2251), [#2347](https://github.com/Rdatatable/data.table/issues/2347), [#2222](https://github.com/Rdatatable/data.table/issues/2222), [#2352](https://github.com/Rdatatable/data.table/issues/2352), [#2246](https://github.com/Rdatatable/data.table/issues/2246), [#2370](https://github.com/Rdatatable/data.table/issues/2370), [#2371](https://github.com/Rdatatable/data.table/issues/2371), [#2404](https://github.com/Rdatatable/data.table/issues/2404), [#2196](https://github.com/Rdatatable/data.table/issues/2196), [#2322](https://github.com/Rdatatable/data.table/issues/2322), [#2453](https://github.com/Rdatatable/data.table/issues/2453), [#2446](https://github.com/Rdatatable/data.table/issues/2446), [#2464](https://github.com/Rdatatable/data.table/issues/2464), [#2457](https://github.com/Rdatatable/data.table/issues/2457)
 
 2. `fwrite()`:
     * empty strings are now always quoted (`,"",`) to distinguish them from `NA` which by default is still empty (`,,`) but can be changed using `na=` as before. If `na=` is provided and `quote=` is the default `'auto'` then `quote=` is set to `TRUE` so that if the `na=` value occurs in the data, it can be distinguished from `NA`. Thanks to Ethan Welty for the request [#2214](https://github.com/Rdatatable/data.table/issues/2214) and Pasha for the code change and tests, [#2215](https://github.com/Rdatatable/data.table/issues/2215).
     * `logicalAsInt` has been renamed `logical01` and the default changed from `FALSE` to `TRUE`, both changes for consistency with `fread` (see item above). The old name `logicalAsInt` continues to work but is now deprecated. The previous default can easily be restored without any code changes by setting `options("datatable.logical01" = FALSE)`.
+    * When `DT` is a single column, `na=` is now set to `"NA"` to avoid blank lines in the output, [#2106](https://github.com/Rdatatable/data.table/issues/2106). Thanks to @skanskan, Michael Chirico and @franknarf1 for the testing and ideas.
 
 3. Added helpful message when subsetting by a logical column without wrapping it in parentheses, [#1844](https://github.com/Rdatatable/data.table/issues/1844). Thanks @dracodoc for the suggestion and @MichaelChirico for the PR.
 
@@ -65,7 +68,7 @@
 
 4. Setting `j = {}` no longer results in an error, [#2142](https://github.com/Rdatatable/data.table/issues/2142). Thanks Michael Chirico for the pull request.
 
-5. Seg fault in `rbindlist()` when one or more items are empty, [#2019](https://github.com/Rdatatable/data.table/issues/2019). Thanks Michael Lang for the pull request.
+5. Segfault in `rbindlist()` when one or more items are empty, [#2019](https://github.com/Rdatatable/data.table/issues/2019). Thanks Michael Lang for the pull request. Another segfault if the result would be more than 2bn rows, thanks to @jsams's comment in [#2340](https://github.com/Rdatatable/data.table/issues/2340#issuecomment-331505494).
 
 6. Error printing 0-length `ITime` and `NA` objects, [#2032](https://github.com/Rdatatable/data.table/issues/2032) and [#2171](https://github.com/Rdatatable/data.table/issues/2171). Thanks Michael Chirico for the pull requests and @franknarf1 for pointing out a shortcoming of the initial fix.
 
@@ -93,9 +96,24 @@
 
 18. `isoweek` calculation is correct regardless of local timezone setting (`Sys.timezone()`), [#2407](https://github.com/Rdatatable/data.table/issues/2407). Thanks to @MoebiusAV and @SimonCoulombe for reporting and @MichaelChirico for fixing.
 
-19. fixed `as.xts.data.table` to support all xts supported time based index clasess [#2408](https://github.com/Rdatatable/data.table/issues/2408). Thanks to @ebs238 for reporting and for the PR.
-    
+19. Fixed `as.xts.data.table` to support all xts supported time based index clasess [#2408](https://github.com/Rdatatable/data.table/issues/2408). Thanks to @ebs238 for reporting and for the PR.
+
+20. A memory leak when a very small number such as `0.58E-2141` is bumped to type `character` is resolved, [#918](https://github.com/Rdatatable/data.table/issues/918).
+
+21. The edge case `setnames(data.table(), character(0))` now works rather than error, [#2452](https://github.com/Rdatatable/data.table/issues/2452).
+
+22. Order of rows returned in non-equi joins were incorrect in certain scenarios as reported under [#1991](https://github.com/Rdatatable/data.table/issues/1991). This is now fixed. Thanks to @Henrik-P for reporting.
+
+23. Non-equi joins work as expected when `x` in `x[i, on=...]` is a 0-row data.table. Closes [#1986](https://github.com/Rdatatable/data.table/issues/1986).
+
+24. Non-equi joins along with `by=.EACHI` returned incorrect result in some rare cases as reported under [#2360](https://github.com/Rdatatable/data.table/issues/2360). This is fixed now. This fix also takes care of [#2275](https://github.com/Rdatatable/data.table/issues/2275). Thanks to @ebs238 for the nice minimal reproducible report, @Mihael for asking on SO and to @Frank for following up on SO and filing an issue.
+
+25. `by=.EACHI` works now when `list` columns are being returned and some join values are missing, [#2300](https://github.com/Rdatatable/data.table/issues/2300). Thanks to @jangorecki and @franknarf1 for the reproducible examples which have been added to the test suite.
+
+
 #### NOTES
+
+0. The license has been changed from GPL to MPL (Mozilla Public License). All contributors were consulted and approved. [PR#2456](https://github.com/Rdatatable/data.table/pull/2456) details the reasons for the change.
 
 1. `?data.table` makes explicit the option of using a `logical` vector in `j` to select columns, [#1978](https://github.com/Rdatatable/data.table/issues/1978). Thanks @Henrik-P for the note and @MichaelChirico for filing.
 
@@ -110,6 +128,11 @@
 6. Added some clarification about the usage of `on` to `?data.table`, [#2383](https://github.com/Rdatatable/data.table/issues/2383). Thanks to @peterlittlejohn for volunteering his confusion and @MichaelChirico for brushing things up.
 
 7. Clarified that "data.table always sorts in `C-locale`" means that upper-case letters are sorted before lower-case letters by ordering in data.table (e.g. `setorder`, `setkey`, `DT[order(...)]`). Thanks to @hughparsonage for the pull request editing the documentation. Note this makes no difference in most cases of data; e.g. ids where only uppercase or lowercase letters are used (`"AB123"<"AC234"` is always true, regardless), or country names and words which are consistently capitalized. For example, `"America" < "Brazil"` is not affected (it's always true), and neither is `"america" < "brazil"` (always true too); since the first letter is consistently capitalized. But, whether `"america" < "Brazil"` (the words are not consistently capitalized) is true or false in base R depends on the locale of your R session. In America it is true by default and false if you i) type `Sys.setlocale(locale="C")`, ii) the R session has been started in a C locale for you which can happen on servers/services (the locale comes from the environment the R session is started in). However, `"america" < "Brazil"` is always, consistently false in data.table which can be a surprise because it differs to base R by default in most regions. It is false because `"B"<"a"` is true because all upper-case letters come first, followed by all lower case letters (the ascii number of each letter determines the order, which is what is meant by `C-locale`).
+
+
+### Changes in v1.10.4-3  (on CRAN 20 Oct 2017)
+
+1. Fixed crash/hang on MacOS when `parallel::mclapply` is used and data.table is merely loaded, [#2418](https://github.com/Rdatatable/data.table/issues/2418). Oddly, all tests including test 1705 (which tests `mclapply` with data.table) passed fine on CRAN. It appears to be some versions of MacOS or some versions of libraries on MacOS, perhaps. Many thanks to Martin Morgan for reporting and confirming this fix works. Thanks also to @asenabouth, Joe Thorley and Danton Noriega for testing, debugging and confirming that automatic parallelism inside data.table (such as `fwrite`) works well even on these MacOS installations. See also news items below for 1.10.4-1 and 1.10.4-2.
 
 
 ### Changes in v1.10.4-2  (on CRAN 12 Oct 2017)
@@ -441,7 +464,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
   
   59. Added `+.IDate` method so that IDate + integer retains the `IDate` class, [#1528](https://github.com/Rdatatable/data.table/issues/1528); thanks @MichaelChirico for FR&PR. Similarly, added `-.IDate` so that IDate - IDate returns a plain integer rather than difftime.
   
-  60. Radix ordering an integer vector containing INTMAX (2147483647) with decreasing=TRUE and na.last=FALSE failed ASAN check and seg faulted some systems. As reported for base R [#16925](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16925) whose new code comes from data.table. Simplified code, added test and proposed change to base R.
+  60. Radix ordering an integer vector containing INTMAX (2147483647) with decreasing=TRUE and na.last=FALSE failed ASAN check and segfaulted some systems. As reported for base R [#16925](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16925) whose new code comes from data.table. Simplified code, added test and proposed change to base R.
 
   60. Fixed test in `onAttach()` for when `Packaged` field is missing from `DESCRIPTION`, [#1706](https://github.com/Rdatatable/data.table/issues/1706); thanks @restonslacker for BR&PR.
 
@@ -659,7 +682,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
       * sep="." now works (when dec!="."), [#502](https://github.com/Rdatatable/data.table/issues/502). Thanks to Ananda Mahto for reporting.
       * better error message if quoted field is missing an end quote, [#802](https://github.com/Rdatatable/data.table/issues/802). Thanks to Vladimir Sitnikov for the sample file which is now included in the test suite.
       * providing sep which is not present in the file now reads as if sep="\n" rather than 'sep not found', #738. Thanks to Adam Kennedy for explaining the use-case.
-      * seg fault with errors over 1,000 characters (when long lines are included) is fixed, [#802](https://github.com/Rdatatable/data.table/issues/802). Thanks again to Vladimir Sitnikov.
+      * segfault with errors over 1,000 characters (when long lines are included) is fixed, [#802](https://github.com/Rdatatable/data.table/issues/802). Thanks again to Vladimir Sitnikov.
       * Missing `integer64` values are properly assigned `NA`s. Closes [#488](https://github.com/Rdatatable/data.table/issues/488). Thanks to @PeterStoyanov and @richierocks for the report.
       * Column headers with empty strings aren't skipped anymore. [Closes #483](https://github.com/Rdatatable/data.table/issues/483). Thanks to @RobyJoehanes and @kforner.
       * Detects separator correctly when commas also exist in text fields. Closes [#923](https://github.com/Rdatatable/data.table/issues/923). Thanks to @raymondben for the report.
@@ -886,7 +909,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
       * accepts trailing backslash in quoted fields. Thanks to user2970844 for highlighting [here](http://stackoverflow.com/questions/24375832/fread-and-column-with-a-trailing-backslash).
       * Blank and `"NA"` values in logical columns (`T`,`True`,`TRUE`) no longer cause them to be read as character, [#567](https://github.com/Rdatatable/data.table/issues/567). Thanks to Adam November for reporting.
       * URLs now work on Windows. R's `download.file()` converts `\r\n` to `\r\r\n` on Windows. Now avoided by downloading in binary mode. Thanks to Steve Miller and Dean MacGregor for reporting, [#492](https://github.com/Rdatatable/data.table/issues/492).
-      * Fixed seg fault in sparse data files when bumping to character, [#796](https://github.com/Rdatatable/data.table/issues/796) and [#722](https://github.com/Rdatatable/data.table/issues/722). Thanks to Adam Kennedy and Richard Cotton for the detailed reproducible reports.
+      * Fixed segfault in sparse data files when bumping to character, [#796](https://github.com/Rdatatable/data.table/issues/796) and [#722](https://github.com/Rdatatable/data.table/issues/722). Thanks to Adam Kennedy and Richard Cotton for the detailed reproducible reports.
       * New argument `fread(...,data.table=FALSE)` returns a `data.frame` instead of a `data.table`. This can be set globally: `options(datatable.fread.datatable=FALSE)`.
 
   6. `.()` can now be used in `j` and is identical to `list()`, for consistency with `i`.
@@ -2170,7 +2193,7 @@ USER VISIBLE CHANGES
         dynamic and passed one of those values all meaning 'don't group'. Thanks
         to Joseph Voelkel reporting and Chris Neff for further use cases. Tests added.
 
-    *   chorder(character()) was a seg fault, #2026. Fixed and test added.
+    *   chorder(character()) was a segfault, #2026. Fixed and test added.
 
     *   When grouping by i, if the first row of i had no match, .N was 1 rather than 0.
         Fixed and tests added. Thanks to a question by user1165199 on Stack Overflow :
@@ -2524,7 +2547,7 @@ USER VISIBLE CHANGES
         introduced in v1.6.1). Thanks to Steven Bagley for
         reporting.
 
-   *    Errors and seg faults could occur in grouping when
+   *    Errors and segfaults could occur in grouping when
         j contained character or list columns. Many thanks
         to Jim Holtman for providing a reproducible example.
 
@@ -2726,7 +2749,7 @@ USER VISIBLE CHANGES
 #### BUG FIXES
 
     *   Assignment to factor columns (using :=, [<- or $<-) could cause
-        'variable not found' errors and a seg fault in some circumstances
+        'variable not found' errors and a segfault in some circumstances
         due to a new feature in v1.7.0: "Factor columns on LHS of :=, [<-
         and $<- can now be assigned new levels", fixing #1664. Thanks to
         Daniele Signori for reporting.

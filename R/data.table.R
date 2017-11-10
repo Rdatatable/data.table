@@ -584,7 +584,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           if (verbose) {last.started.at=proc.time()[3];cat("  Generating non-equi group ids ... ");flush.console()}
           nqgrp = .Call(Cnestedid, x, rightcols[non_equi:length(rightcols)], xo, xg, resetlen, mult)
           if (verbose) {cat("done in", round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
-          if ( (nqmaxgrp <- max(nqgrp)) > 1L) { # got some non-equi join work to do
+          if (length(nqgrp)) nqmaxgrp = max(nqgrp) # fix for #1986, when 'x' is 0-row table max(.) returns -Inf.
+          if (nqmaxgrp > 1L) { # got some non-equi join work to do
             if ("_nqgrp_" %in% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
             if (verbose) {last.started.at=proc.time()[3];cat("  Recomputing forder with non-equi ids ... ");flush.console()}
             set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
@@ -639,10 +640,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       # 'setorder', as there's another 'setorder' in generating 'irows' below...
       if (length(ans$indices)) setorder(setDT(ans[1:3]), indices)
       allLen1 = ans$allLen1
-      allGrp1 = ans$allGrp1
       f__ = ans$starts
       len__ = ans$lens
-      indices__ = ans$indices
+      allGrp1 = FALSE # was previously 'ans$allGrp1'. Fixing #1991. TODO: Revisit about allGrp1 possibility for speedups in certain cases when I find some time.
+      indices__ = if (length(ans$indices)) ans$indices else seq_along(f__) # also for #1991 fix
       # length of input nomatch (single 0 or NA) is 1 in both cases.
       # When no match, len__ is 0 for nomatch=0 and 1 for nomatch=NA, so len__ isn't .N
       # If using secondary key of x, f__ will refer to xo
@@ -676,7 +677,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (nqbyjoin) {
           irows = if (length(xo)) xo[irows] else irows
           xo = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
-          ans = .Call(Cnqnewindices, xo, len__, indices__, max(indices__))
+          ans = .Call(CnqRecreateIndices, xo, len__, indices__, max(indices__))
           f__ = ans[[1L]]; len__ = ans[[2L]]
           allLen1 = FALSE # TODO; should this always be FALSE?
           irows = NULL # important to reset
@@ -695,7 +696,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       }
       if (length(xo) && length(irows)) {
         irows = xo[irows]   # TO DO: fsort here?
-        if (mult=="all" && !allGrp1) {
+        if (mult=="all" && !allGrp1) { # following #1991 fix, !allGrp1 will always be TRUE. TODO: revisit.
           irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
         }
       }
@@ -1263,7 +1264,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (address(ans[[target]]) == address(i[[source]])) ans[[target]] = copy(ans[[target]])
           }
         } else {
-      ii = rep.int(if(allGrp1) seq_len(nrow(i)) else indices__, len__)
+          ii = rep.int(indices__, len__) # following #1991 fix, allGrp1=FALSE always. TODO: revisit later
           for (s in seq_along(icols)) {
             target = icolsAns[s]
             source = icols[s]
@@ -2451,7 +2452,6 @@ setnames <- function(x,old,new) {
   # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
   # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
   if (!is.data.frame(x)) stop("x is not a data.table or data.frame")
-  if (!length(attr(x,"names"))) stop("x has no column names")  # because setnames is for user user. Internally, use setattr(x,"names",...)
   if (length(names(x)) != length(x)) stop("dt is length ",length(dt)," but its names are length ",length(names(x)))
   if (missing(new)) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2

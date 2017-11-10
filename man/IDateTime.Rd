@@ -50,7 +50,7 @@
 }
 \usage{
 as.IDate(x, ...)
-\method{as.IDate}{default}(x, tz = attr(x, "tzone"), \dots)
+\method{as.IDate}{default}(x, \dots, tz = attr(x, "tzone"))
 \method{as.IDate}{Date}(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)

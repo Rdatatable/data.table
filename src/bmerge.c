@@ -28,7 +28,7 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
 
 static SEXP i, x, nqgrp;
 static int ncol, *icols, *xcols, *o, *xo, *retFirst, *retLength, *retIndex, *allLen1, *allGrp1, *rollends, ilen, anslen;
-static int *op, nqmaxgrp, *tmpptr, scols;
+static int *op, nqmaxgrp, scols;
 static int ctr, nomatch; // populating matches for non-equi joins
 enum {ALL, FIRST, LAST} mult = ALL;
 static double roll, rollabs;
@@ -431,15 +431,9 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
               ++ctr;
               if (ctr+ilen >= anslen) {
                 anslen = 1.1*anslen;
-                tmpptr = Realloc(retFirst, anslen, int);
-                if (tmpptr != NULL) retFirst = tmpptr;
-                else error("Error in reallocating memory in non-equi joins.\n");
-                tmpptr = Realloc(retLength, anslen, int);
-                if (tmpptr != NULL) retLength = tmpptr;
-                else error("Error in reallocating memory in non-equi joins.\n");
-                tmpptr = Realloc(retIndex, anslen, int);
-                if (tmpptr != NULL) retIndex = tmpptr;
-                else error("Error in reallocating memory in non-equi joins.\n");
+                retFirst = Realloc(retFirst, anslen, int);   // if fails, it fails inside Realloc with R error
+                retLength = Realloc(retLength, anslen, int);
+                retIndex = Realloc(retIndex, anslen, int);
               }
             } else if (mult == FIRST) {
               retFirst[k] = (XIND(retFirst[k]-1) > XIND(xlow+1)) ? xlow+2 : retFirst[k];

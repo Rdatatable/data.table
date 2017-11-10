@@ -71,9 +71,8 @@ static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 // Private globals so they can be cleaned up both on error and on successful return
 static void *mmp = NULL;
 static size_t fileSize;
-static int8_t *type = NULL, *size = NULL;
+static int8_t *type = NULL, *tmpType = NULL, *size = NULL;
 static lenOff *colNames = NULL;
-static int8_t *oldType = NULL;
 static freadMainArgs args;  // global for use by DTPRINT
 
 const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "string"};
@@ -128,11 +127,11 @@ static char* _const_cast(const char *ptr) {
  */
 bool freadCleanup(void)
 {
-  bool neededCleanup = (type || size || colNames || oldType || mmp);
+  bool neededCleanup = (type || tmpType || size || colNames || mmp);
   free(type); type = NULL;
+  free(tmpType); tmpType = NULL;
   free(size); size = NULL;
   free(colNames); colNames = NULL;
-  free(oldType); oldType = NULL;
   if (mmp != NULL) {
     // Important to unmap as OS keeps internal reference open on file. Process is not exiting as
     // we're a .so/.dll here. If this was a process exiting we wouldn't need to unmap.
@@ -542,7 +541,10 @@ static void Field(FieldParseContext *ctx)
     *(ctx->ch) = ch;
   } else {
     *(ctx->ch) = ch;
-    if (*ch=='\0' && quoteRule!=2) { target->off--; target->len++; }  // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
+    if (*ch=='\0') {
+      if (finalByte==quote && ch==eof) return;             // test 1849.* for issue 2464 where final quoted field contains a sep and no \n ending the file
+      if (quoteRule!=2) { target->off--; target->len++; }  // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
+    }
     if (stripWhite) while(target->len>0 && ch[-1]==' ') { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
   }
 }
@@ -1343,11 +1345,14 @@ int freadMain(freadMainArgs _args) {
       i = -1;
       while (numLines[++i]) {
         if (numFields[i] > nmax) nmax=numFields[i];  // for fill=true to know max number of columns
-        //if (args.verbose) DTPRINT("numLines[i]=%d, topNumLines=%d, numFields[i]=%d, topNumFields=%d\n",
-        //                           numLines[i], topNumLines, numFields[i], topNumFields);
-        if (numFields[i]>1 &&
+        // if (verbose) DTPRINT("numLines[i]=%d, topNumLines=%d, numFields[i]=%d, topNumFields=%d\n",
+        //                       numLines[i], topNumLines, numFields[i], topNumFields);
+        if ( numFields[i]>1 &&
+            (numLines[i]>1 || (/*blank line after single line*/numFields[i+1]==0)) &&
             ((numLines[i]>topNumLines) ||   // most number of consistent ncol wins
-             (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=' '))) {  // ties resolved by numFields
+             (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=topSep && sep!=' '))) {
+             //                                       ^ ties in numLines resolved by numFields (more fields win)
+             //                                                           ^ but don't resolve a tie with a higher quote rule unless the sep is different too, #2404 and test 2839
           topNumLines = numLines[i];
           topNumFields = numFields[i];
           topSep = sep;
@@ -1425,16 +1430,15 @@ int freadMain(freadMainArgs _args) {
   if (verbose) DTPRINT("[07] Detect column types, good nrow estimate and whether first row is column names\n");
   if (verbose && args.header!=NA_BOOL8) DTPRINT("  'header' changed by user from 'auto' to %s\n", args.header?"true":"false");
 
-  type = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
-  size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
-  if (!type || !size) STOP("Failed to allocate %d x 2 bytes for type/size: %s", ncol, strerror(errno));
+  type =    (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
+  tmpType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
+  if (!type || !tmpType) STOP("Failed to allocate 2 x %d bytes for type and tmpType: %s", ncol, strerror(errno));
 
   int8_t type0 = 1;
   while (disabled_parsers[type0]) type0++;
   for (int j=0; j<ncol; j++) {
     // initialize with the lowest available type
-    type[j] = type0;
-    size[j] = typeSize[type0];
+    tmpType[j] = type[j] = type0;
   }
 
   size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first JUMPLINES from the start (jump point 0)
@@ -1474,9 +1478,9 @@ int freadMain(freadMainArgs _args) {
       // skip this jump for sampling. Very unusual and in such unusual cases, we don't mind a slightly worse guess.
       continue;
     }
-    if (j==nJumps-1) lastSampleJumpOk = true;
-    bool bumped = 0;  // did this jump find any different types; to reduce verbose output to relevant lines
-    int jline = 0;     // line from this jump point
+    bool bumped = false;  // did this jump find any different types; to reduce verbose output to relevant lines
+    bool skip = false;
+    int jline = 0;    // line from this jump point
     while(ch<eof && (jline<JUMPLINES || j==nJumps-1)) {  // nJumps==1 implies sample all of input to eof; last jump to eof too
       const char *jlineStart = ch;
       if (sep==' ') while (*ch==' ') ch++;  // multiple sep=' ' at the jlineStart does not mean sep(!)
@@ -1492,7 +1496,7 @@ int freadMain(freadMainArgs _args) {
       int field=0;
       const char *fieldStart = NULL; // Needed outside loop for error messages below
       ch--;
-      int8_t previousLastColType = (sampleLines <= 1 ? 1 : type[ncol-1]);  // to revert any bump in last colum due to final field on final row due to finalByte
+      int8_t previousLastColType = (sampleLines <= 1 ? 1 : tmpType[ncol-1]);  // to revert any bump in last colum due to final field on final row due to finalByte
       while (field<ncol) {
         // DTPRINT("<<%s>>(%d)", strlim(ch,20), quoteRule);
         ch++;
@@ -1502,8 +1506,8 @@ int freadMain(freadMainArgs _args) {
         if (firstDataRowAfterPotentialColumnNames) {
           // 2nd non-blank row is being read now.
           // 1st row's type is remembered and compared (a little lower down) to second row to decide if 1st row is column names or not
-          thisColumnNameWasString = (type[field]==CT_STRING);
-          type[field] = type0;  // re-initialize for 2nd row onwards
+          thisColumnNameWasString = (tmpType[field]==CT_STRING);
+          tmpType[field] = type0;  // re-initialize for 2nd row onwards
         }
         // throw-away storage for processors to write to in this preamble.
         double trash; // double so that this storage is aligned. char trash[8] would not be aligned.
@@ -1513,22 +1517,22 @@ int freadMain(freadMainArgs _args) {
           .targets = targets,
           .anchor = NULL,
         };
-        while (type[field]<=CT_STRING) {
-          fun[type[field]](&fctx);
+        while (tmpType[field]<=CT_STRING) {
+          fun[tmpType[field]](&fctx);
           if (end_of_field(ch)) break;
           skip_white(&ch);
           if (end_of_field(ch)) break;
           ch = end_NA_string(fieldStart);
           if (end_of_field(ch)) break;
-          if (type[field]<CT_STRING) {
+          if (tmpType[field]<CT_STRING) {
             ch = fieldStart;
             if (*ch==quote) {
               ch++;
-              fun[type[field]](&fctx);
+              fun[tmpType[field]](&fctx);
               if (*ch==quote && end_of_field(ch+1)) { ch++; break; }
             }
-            type[field]++;
-            while (disabled_parsers[type[field]]) type[field]++;
+            tmpType[field]++;
+            while (disabled_parsers[tmpType[field]]) tmpType[field]++;
           } else {
             // the field could not be read with this quote rule, try again with next one
             // Trying the next rule will only be successful if the number of fields is consistent with it
@@ -1541,9 +1545,9 @@ int freadMain(freadMainArgs _args) {
           bumped=true;
           ch = fieldStart;
         }
-        if (args.header==NA_BOOL8 && thisColumnNameWasString && type[field]<CT_STRING) {
+        if (args.header==NA_BOOL8 && thisColumnNameWasString && tmpType[field]<CT_STRING) {
           args.header=true;
-          if (verbose) DTPRINT("  'header' determined to be true due to column %d containing a string on row 1 and a lower type (%s) on row 2\n", field+1, typeName[type[field]]);
+          if (verbose) DTPRINT("  'header' determined to be true due to column %d containing a string on row 1 and a lower type (%s) on row 2\n", field+1, typeName[tmpType[field]]);
         }
         if (*ch!=sep) break;
         if (sep==' ') {
@@ -1554,11 +1558,11 @@ int freadMain(freadMainArgs _args) {
       }
       eol(&ch);
       if (ch==eof) {
-        if (finalByte && type[ncol-1]!=previousLastColType) {
+        if (finalByte && tmpType[ncol-1]!=previousLastColType) {
           // revert bump due to e.g. ,NA<eof> in the last field of last row where finalByte=='A' and N caused bump to character (test 894.0221)
           if (verbose) DTPRINT("  Reverted bump of final column from %d to %d on final field due to finalByte='%c'. This will trigger a reread. Finish the file properly with newline to avoid.\n",
-                               previousLastColType, type[ncol-1], finalByte);
-          type[ncol-1] = previousLastColType;
+                               previousLastColType, tmpType[ncol-1], finalByte);
+          tmpType[ncol-1] = previousLastColType;
         }
         if ((finalByte==sep && sep!=' ') || (sep==' ' && finalByte!='\0' && finalByte!=' ')) field++;
       }
@@ -1572,14 +1576,18 @@ int freadMain(freadMainArgs _args) {
         }
       }
       if (field>=ncol || (*ch!='\n' && *ch!='\r' && *ch!='\0')) {   // >=ncol covers ==ncol. We do not expect >ncol to ever happen.
-        STOP("Line %d from sampling jump %d starting <<%s>> has more than the expected %d fields. "
+        if (j==0) {
+          STOP("Line %d starting <<%s>> has more than the expected %d fields. "
              "Separator '%c' occurs at position %d which is character %d of the last field: <<%s>>. "
              "Consider setting 'comment.char=' if there is a trailing comment to be ignored.",
-             jline, j, strlim(jlineStart,10), ncol, *ch, (int)(ch-jlineStart+1), (int)(ch-fieldStart+1),
-             strlim(fieldStart,200));
+             jline, strlim(jlineStart,10), ncol, *ch, (int)(ch-jlineStart+1), (int)(ch-fieldStart+1), strlim(fieldStart,200));
+        }
+        if (verbose) DTPRINT("  Not using sample from jump %d. Looks like a complicated file where nextGoodLine could not establish the true line start.\n", j);
+        skip = true;
+        break;
       }
       if (firstDataRowAfterPotentialColumnNames) {
-        if (fill) for (int jj=field+1; jj<ncol; jj++) type[jj] = type0;
+        if (fill) for (int jj=field+1; jj<ncol; jj++) tmpType[jj] = type0;
         firstDataRowAfterPotentialColumnNames = false;
       } else if (sampleLines==0) firstDataRowAfterPotentialColumnNames = true;  // To trigger 2nd row starting from type 1 again to compare to 1st row to decide if column names present
       ch += (*ch=='\n' || *ch=='\r');
@@ -1592,6 +1600,9 @@ int freadMain(freadMainArgs _args) {
       if (thisLineLen<minLen) minLen=thisLineLen;
       if (thisLineLen>maxLen) maxLen=thisLineLen;
     }
+    if (skip) continue;
+    if (j==nJumps-1) lastSampleJumpOk = true;
+    if (bumped) memcpy(type, tmpType, (size_t)ncol);
     if (verbose && (bumped || j==0 || j==nJumps-1)) {
       DTPRINT("  Type codes (jump %03d)    : ",j); printTypes(ncol);
       DTPRINT("  Quote rule %d\n", quoteRule);
@@ -1600,7 +1611,7 @@ int freadMain(freadMainArgs _args) {
   if (lastSampleJumpOk) {
     while (ch<eof && isspace(*ch)) ch++;
     if (ch<eof)
-      DTWARN("Found the last consistent line but text exists afterwards (discarded): <<%s>>", strlim(ch,200));
+      DTWARN("Found the last consistent line but text exists afterwards. Consider fill=TRUE and/or blank.lines.skip=TRUE. First 200 characters of discarded line: <<%s>>", strlim(ch,200));
   } else {
     // nextGoodLine() was false for the last (extra) jump to check the end
     // must set lastRowEnd to eof accordingly otherwise it'll be left wherever the last good jump finished
@@ -1729,9 +1740,7 @@ int freadMain(freadMainArgs _args) {
   {
   if (verbose) DTPRINT("[09] Apply user overrides on column types\n");
   ch = pos;
-  oldType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
-  if (!oldType) STOP("Unable to allocate %d bytes to check user overrides of column types", ncol);
-  memcpy(oldType, type, (size_t)ncol) ;
+  memcpy(tmpType, type, (size_t)ncol) ;
   if (!userOverride(type, colNames, colNamesAnchor, ncol)) { // colNames must not be changed but type[] can be
     if (verbose) DTPRINT("  Cancelled by user: userOverride() returned false.");
     freadCleanup();
@@ -1742,6 +1751,8 @@ int freadMain(freadMainArgs _args) {
   rowSize1 = 0;
   rowSize4 = 0;
   rowSize8 = 0;
+  size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
+  if (!size) STOP("Failed to allocate %d bytes for size array: %s", ncol, strerror(errno));
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
@@ -1750,11 +1761,11 @@ int freadMain(freadMainArgs _args) {
     rowSize4 += (size[j] & 4);
     rowSize8 += (size[j] & 8);
     if (type[j]==CT_DROP) { ndrop++; continue; }
-    if (type[j]<oldType[j])
+    if (type[j]<tmpType[j])
       STOP("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' which will lose accuracy. " \
            "If this was intended, please coerce to the lower type afterwards. Only overrides to a higher type are permitted.",
-           j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[oldType[j]], typeName[type[j]]);
-    nUserBumped += type[j]>oldType[j];
+           j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
+    nUserBumped += type[j]>tmpType[j];
     if (type[j] == CT_STRING) nStringCols++; else nNonStringCols++;
   }
   if (verbose) {
@@ -1981,9 +1992,9 @@ int freadMain(freadMainArgs _args) {
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJump). Usually happens, fastest path
           }
           else {
-            tch = fieldStart; // restart field as int processor could have moved to A in ",123A,", or we could be on \0 when we always reread last field regardless
+            tch = fieldStart; // restart field as int processor could have moved to A in ",123A,"
           }
-          // if *tch=='\0' then fall through below and reread final field if finalByte is set
+          // if *tch=='\0' then *eof in mind, fall through to below and, if finalByte is set, reread final field
         }
         //*** END TEPID. NOW COLD.
 
@@ -2008,7 +2019,7 @@ int freadMain(freadMainArgs _args) {
           while (absType < NUMTYPE) {
             tch = fieldStart;
             bool quoted = false;
-            if (absType < CT_STRING) {
+            if (absType<CT_STRING && absType>CT_DROP/*Field() too*/) {
               skip_white(&tch);
               const char *afterSpace = tch;
               tch = end_NA_string(fieldStart);
@@ -2120,8 +2131,8 @@ int freadMain(freadMainArgs _args) {
           if (!stopTeam) {
             stopTeam = true;
             snprintf(stopErr, stopErrSize,
-              "Too many fields on out-of-sample row %llu. Read all %d expected columns but more are present. <<%s>>",
-              (llu)ctx.DTi, ncol, strlim(tlineStart, 500));
+              "Too many fields on out-of-sample row %llu from jump %d. Read all %d expected columns but more are present. <<%s>>",
+              (llu)ctx.DTi, jump, ncol, strlim(tlineStart, 500));
           }
           break;
         }
@@ -2297,9 +2308,9 @@ int freadMain(freadMainArgs _args) {
     DTPRINT("%8.3fs (%3.0f%%) Allocation of %llu rows x %d cols (%.3fGB)\n",
             tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, (llu)allocnrow, ncol, DTbytes/(1024.0*1024*1024));
     thNextGoodLine/=nth; thRead/=nth; thPush/=nth;
-    double thWaiting = tRead-tAlloc-thNextGoodLine-thRead-thPush;
+    double thWaiting = tReread-tAlloc-thNextGoodLine-thRead-thPush;
     DTPRINT("%8.3fs (%3.0f%%) Reading %d chunks of %.3fMB (%d rows) using %d threads\n",
-            tRead-tAlloc, 100.0*(tRead-tAlloc)/tTot, nJumps, (double)chunkBytes/(1024*1024), (int)(chunkBytes/meanLineLen), nth);
+            tReread-tAlloc, 100.0*(tReread-tAlloc)/tTot, nJumps, (double)chunkBytes/(1024*1024), (int)(chunkBytes/meanLineLen), nth);
     DTPRINT("   = %8.3fs (%3.0f%%) Finding first non-embedded \\n after each jump\n", thNextGoodLine, 100.0*thNextGoodLine/tTot);
     DTPRINT("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers\n", thRead, 100.0*thRead/tTot);
     DTPRINT("   + %8.3fs (%3.0f%%) Transpose\n", thPush, 100.0*thPush/tTot);

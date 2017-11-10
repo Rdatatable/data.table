@@ -56,23 +56,28 @@ SEXP setDTthreads(SEXP threads) {
   return ScalarInteger(old);
 }
 
-// auto avoid deadlock when data.table called from parallel::mclapply
+/*
+  Auto avoid deadlock when data.table is used from within parallel::mclapply
+  GNU OpenMP seems ok with just setting DTthreads to 1 which limits the next parallel region
+  if data.table is used within the fork'd proceess. This is tested by test 1705.
+
+  We used to have an after_fork() callback too, to return to multi-threaded mode after parallel's
+  fork completes. But now in an attempt to alleviate problems propogating (likely Intel's OpenMP only)
+  we now leave data.table in single-threaded mode after parallel's fork. User can call setDTthreads(0)
+  to return to multi-threaded as we do in tests on Linux.
+
+  DO NOT call omp_set_num_threads(1) inside when_fork()!! That causes a different crash/hang on MacOS
+  upon mclapply's fork even if data.table is merely loaded and neither used yet in the session nor by
+  what mclapply is calling. Even when passing on CRAN's MacOS all-OK. As discovered by several MacOS
+  and RStudio users here when 1.10.4-2 went to CRAN :
+     https://github.com/Rdatatable/data.table/issues/2418
+  v1.10.4-3 removed the call to omp_set_num_threads().
+  We do not know why calling (mere) omp_set_num_threads(1) in the when_fork() would cause a problem
+  on MacOS.
+*/
+
 void when_fork() {
-
-  // attempted workaround for Intel's OpenMP implementation which leaves threads running after
-  // parallel region; these crash when forked.
-#ifdef _OPENMP
-  omp_set_num_threads(1);
-#endif
-
-  // GNU OpenMP seems ok with just setting DTthreads to 1 which limits the next parallel region
-  // if data.table is used within the fork'd proceess.
   DTthreads = 1;
-
-  // We used to have an after_fork() callback too, to return to multi-threaded mode after parallel's
-  // fork completes. But now in an attempt to alleviate problems propogating (likely Intel's OpenMP only)
-  // we now leave data.table in single-threaded mode after parallel's fork. User can call setDTthreads(0)
-  // to return to multi-threaded as we do in tests on Linux.
 }
 
 void avoid_openmp_hang_within_fork() {
