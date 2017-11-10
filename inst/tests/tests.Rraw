@@ -11118,6 +11118,15 @@ L = vector("list", 2148)
 for (i in seq_along(L)) L[[i]] = DT   # many references to the same DT to avoid actually using large RAM for this test
 test(1850, rbindlist(L), error="Total rows in the list is 2148000000 which is larger than the maximum number of rows, currently 2147483647")
 
+# by=.EACHI missings to list columns, #2300
+dt = data.table(a=factor(1:5, levels=1:10), b=as.list(letters[1:5]))
+dt2 = data.table(a=as.factor(1:10))
+test(1851.1, dt[dt2, .SD, by=.EACHI, on="a", .SDcols="b"],
+             data.table(a=as.factor(1:10), b={tmp=vector("list",10); tmp[1:5]=as.list(letters[1:5]); tmp}))
+test(1851.2, data.table(a = 1:2, b = list("yo", NULL))[.(1:3), on=.(a), x.b, by = .EACHI],
+             data.table(a = 1:3, x.b = list("yo", NULL, NULL)))
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.

@@ -108,6 +108,9 @@
 
 24. Non-equi joins along with `by=.EACHI` returned incorrect result in some rare cases as reported under [#2360](https://github.com/Rdatatable/data.table/issues/2360). This is fixed now. This fix also takes care of [#2275](https://github.com/Rdatatable/data.table/issues/2275). Thanks to @ebs238 for the nice minimal reproducible report, @Mihael for asking on SO and to @Frank for following up on SO and filing an issue.
 
+25. `by=.EACHI` works now when `list` columns are being returned and some join values are missing, [#2300](https://github.com/Rdatatable/data.table/issues/2300). Thanks to @jangorecki and @franknarf1 for the reproducible examples which have been added to the test suite.
+
+
 #### NOTES
 
 0. The license has been changed from GPL to MPL (Mozilla Public License). All contributors were consulted and approved. [PR#2456](https://github.com/Rdatatable/data.table/pull/2456) details the reasons for the change.
