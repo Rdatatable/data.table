@@ -3,14 +3,12 @@
 #include <stdint.h>  // uint32_t
 #include <stdlib.h>  // size_t
 #include <stdbool.h> // bool
+#include "myomp.h"
 #ifdef DTPY
-  #include "myomp.h"
   #include "py_fread.h"
 #else
-  #include <omp.h>
   #include "freadR.h"
 #endif
-
 
 // Ordered hierarchy of types
 typedef enum {
