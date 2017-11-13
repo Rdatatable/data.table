@@ -2457,8 +2457,14 @@ setnames <- function(x,old,new) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
     if (!is.character(old)) stop("Passed a vector of type '",typeof(old),"'. Needs to be type 'character'.")
     if (length(old) != ncol(x)) stop("Can't assign ",length(old)," names to a ",ncol(x)," column data.table")
+    nx <- names(x)
     # note that duplicate names are permitted to be created in this usage only
-    w = which(names(x) != old)
+    if (anyNA(nx)) {
+      # if x somehow has some NA names, which() needs help to return them, #2475
+      w = which((nx != old) | (is.na(nx) & !is.na(old)))
+    } else {
+      w = which(nx != old)
+    }
     if (!length(w)) return(invisible(x))  # no changes
     new = old[w]
     i = w

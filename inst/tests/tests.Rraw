@@ -11141,7 +11141,12 @@ DT2 <- data.table(lookup=c("test1","test2","test3"), lookup_result=c(1,2,3))
 DT1[colname_with_suffix == "not found", ]  # automatically creates index on colname_with_suffix
 target <- data.table(colname = c("test1", "test2", "test2", "test3"), colname_with_suffix = c("other", "test", "includes test within", "other"), lookup_result = c(1,2,2,3))
 target[colname_with_suffix == "not found", ]
-test(1852.1, DT1[DT2, lookup_result := i.lookup_result, on=c("colname"="lookup")], target)
+test(1852, DT1[DT2, lookup_result := i.lookup_result, on=c("colname"="lookup")], target)
+
+# NA column names and missing new argument to setnames, #2475
+DT = setNames(data.frame(a = 1, b = 2, c = 3, d = 4), c(NA, "b", "c", NA))
+setnames(DT, c('a', 'b', 'c', 'd'))
+test(1853, names(DT), c('a', 'b', 'c', 'd'))
 
 ##########################
 
