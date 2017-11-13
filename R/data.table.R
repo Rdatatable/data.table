@@ -2460,8 +2460,7 @@ setnames <- function(x,old,new) {
     nx <- names(x)
     # note that duplicate names are permitted to be created in this usage only
     if (anyNA(nx)) {
-      # 2475 -- if x somehow got NA names,
-      #   which will skip logical NA values
+      # if x somehow has some NA names, which() needs help to return them, #2475
       w = which((nx != old) | (is.na(nx) & !is.na(old)))
     } else {
       w = which(nx != old)
