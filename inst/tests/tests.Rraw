@@ -11135,10 +11135,18 @@ test(1851.1, dt[dt2, .SD, by=.EACHI, on="a", .SDcols="b"],
 test(1851.2, data.table(a = 1:2, b = list("yo", NULL))[.(1:3), on=.(a), x.b, by = .EACHI],
              data.table(a = 1:3, x.b = list("yo", NULL, NULL)))
 
+# test that indices are only used on exact name match, #2465
+DT1 <- data.table(colname=c("test1","test2","test2","test3"), colname_with_suffix=c("other","test","includes test within","other"))
+DT2 <- data.table(lookup=c("test1","test2","test3"), lookup_result=c(1,2,3))
+DT1[colname_with_suffix == "not found", ]  # automatically creates index on colname_with_suffix
+target <- data.table(colname = c("test1", "test2", "test2", "test3"), colname_with_suffix = c("other", "test", "includes test within", "other"), lookup_result = c(1,2,2,3))
+target[colname_with_suffix == "not found", ]
+test(1852, DT1[DT2, lookup_result := i.lookup_result, on=c("colname"="lookup")], target)
+
 # NA column names and missing new argument to setnames, #2475
 DT = setNames(data.frame(a = 1, b = 2, c = 3, d = 4), c(NA, "b", "c", NA))
 setnames(DT, c('a', 'b', 'c', 'd'))
-test(1852, names(DT), c('a', 'b', 'c', 'd'))
+test(1853, names(DT), c('a', 'b', 'c', 'd'))
 
 ##########################
 
