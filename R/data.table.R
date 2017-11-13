@@ -602,7 +602,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           } else {
             if (isTRUE(getOption("datatable.use.index"))) {
               idxName = paste0("__", names(on), sep="", collapse="")  # TODO: wrong, no sep!
-              xo = attr(attr(x, 'index'), idxName)
+              xo = attr(attr(x, 'index'), idxName, exact = TRUE)
               if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
             }
             if (is.null(xo)) {
