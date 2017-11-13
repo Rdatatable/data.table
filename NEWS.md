@@ -112,6 +112,7 @@
 
 26. Indices are now retrieved by exact name, [#2465] (https://github.com/Rdatatable/data.table/issues/2465). Thanks to @pannnda for reporting and providing a reproducible example and to @MarkusBonsch for fixing.
 
+27. GForce implementations for `median` and `var` while used along with `by` argument, at times, resulted in "negative length vectors not allowed" error message. This is now fixed. Closes [#2046](https://github.com/Rdatatable/data.table/issues/2046) and [#2111](https://github.com/Rdatatable/data.table/issues/2111). Thanks to @caneff and @osofr for filing issues on Github and to @kmillar for identifying and explaining the issue under #2046.
 
 #### NOTES
 

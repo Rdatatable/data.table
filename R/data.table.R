@@ -1787,7 +1787,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     assign(".N", len__, thisEnv) # For #5760
     #fix for #1683
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
-    ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
+    # Fixing 2046 and 2111. o__ when key exists is set to integer(0) without additional 'starts' and 'maxgrpn' attributes. 'maxgrpn' attribute was used in gforce internally by looking for attribute, which resulted in a junk value, sometimes -ve, which created the issue. Thanks @kmillar for debugging as well. Check for existence of attribute and if NULL generate it directly with max(len__). Better fix would be to fix it upstream with attributes for o__, but better to do it when this function is simplified.
+    maxgrplen = attr(o__, "maxgrpn")
+    if (is.null(maxgrplen)) maxgrplen = max(len__)
+    ans = gforce(thisEnv, jsub, o__, f__, len__, irows, maxgrplen) # irows needed for #971.
     gi = if (length(o__)) o__[f__] else f__
     g = lapply(grpcols, function(i) groups[[i]][gi])
     ans = c(g, ans)
@@ -2804,7 +2807,7 @@ gmin <- function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)
 gmax <- function(x, na.rm=FALSE) .Call(Cgmax, x, na.rm)
 gvar <- function(x, na.rm=FALSE) .Call(Cgvar, x, na.rm)
 gsd <- function(x, na.rm=FALSE) .Call(Cgsd, x, na.rm)
-gforce <- function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, rows)
+gforce <- function(env, jsub, o, f, l, rows, maxgrpn) .Call(Cgforce, env, jsub, o, f, l, rows, maxgrpn)
 
 isReallyReal <- function(x) {
   .Call(CisReallyReal, x)

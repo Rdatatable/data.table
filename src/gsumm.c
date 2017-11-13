@@ -25,7 +25,7 @@ static union {
 # define SQRTL sqrt
 #endif
 
-SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
+SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg, SEXP maxgrpnArg) {
   int i, j, g, *this;
   // clock_t start = clock();
   if (TYPEOF(env) != ENVSXP) error("env is not an environment");
@@ -34,6 +34,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (!isInteger(f)) error("f is not an integer vector");
   if (!isInteger(l)) error("l is not an integer vector");
   if (!isInteger(irowsArg) && !isNull(irowsArg)) error("irowsArg is not an integer vector");
+  if (!isInteger(maxgrpnArg)) error("maxgrpnArg is not an integer vector");
   ngrp = LENGTH(l);
   if (LENGTH(f) != ngrp) error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp);
   grpn=0;
@@ -58,7 +59,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   }
   // for gmedian
   // initialise maxgrpn
-  maxgrpn = INTEGER(getAttrib(o, install("maxgrpn")))[0];
+  maxgrpn = INTEGER(maxgrpnArg)[0];
   oo = INTEGER(o);
   ff = INTEGER(f);
 
