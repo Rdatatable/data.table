@@ -10821,7 +10821,13 @@ DT = data.table(A=seq(1, 1000000), B="x", C=TRUE)
 fwrite(DT, f<-tempfile())
 test(1815, fread(f, nrows=5), DT[1:5])  #2243
 
-test(1816, fread("A,E\n1,2\n5,7\n4,6\n\x1A"), data.table(A=c(1L, 5L, 4L), E=c(2L, 7L, 6L)))  #1612; auto remove Ctrl-Z ending file
+test(1816, fread("A,E\n1,2\n5,7\n4,6\n\x1A\x1A"), data.table(A=c(1L, 5L, 4L), E=c(2L, 7L, 6L)))  #1612; auto remove Ctrl-Z ending file
+ff = file(f <- tempfile())
+open(ff, "wb")
+cat("A,B\n5,2", file=ff)
+writeBin(as.raw(c(0x00, 0x00, 0x00)), ff)
+close(ff)
+test(1816.1, fread(f), data.table(A=c(5L), B=c(2L)))  #1895
 
 test(1817, fread("bad.txt")[c(1,.N),c(1,3)],  #2238, fileSize multiple of 4096
            data.table("####################"=c("#############","#########"),
