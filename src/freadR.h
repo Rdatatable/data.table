@@ -8,7 +8,7 @@ void STOP(const char *format, ...);
 void freadLastWarning(const char *format, ...);
 
 
-#define DTPRINT Rprintf
+#define DTPRINT REprintf
 
 
 #define DTWARN(...) { \
