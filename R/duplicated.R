@@ -21,7 +21,7 @@ duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq
     if (attr(o, 'maxgrpn') == 1L) return(rep.int(FALSE, nrow(x)))
     f = attr(o,"starts")
     if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
-    if (length(o)) f=o[f]
+    if (length(o)) f = o[f]
   }
   res <- rep.int(TRUE, nrow(x))
   res[f] = FALSE
@@ -30,13 +30,22 @@ duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq
 
 unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
   if (!cedta()) return(NextMethod("unique"))
-  if (missing(by) && isTRUE(getOption("datatable.old.unique.by.key")))  #1284
-    by = key(x)
-  dups <- duplicated.data.table(x, incomparables, fromLast, by, ...)
-  ans <- .Call(CsubsetDT, x, which_(dups, FALSE), seq_len(ncol(x))) # more memory efficient version of which(!dups)
-  if (nrow(x) != nrow(ans)) setindexv(ans, NULL)[] else ans #1760
-  # i.e. x[!dups] but avoids [.data.table overhead when unique() is loop'd
-  # TO DO: allow logical to be passed through to C level, and allow cols=NULL to mean all, for further speed gain.
+  if (!identical(incomparables, FALSE)) {
+    .NotYetUsed("incomparables != FALSE")
+  }
+  if (missing(by) && isTRUE(getOption("datatable.old.unique.by.key"))) by = key(x)  #1284
+  else if (is.null(by)) by=seq_along(x)
+  o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)
+  # if by=key(x), forderv tests for orderedness within it quickly and will short-circuit
+  # there isn't any need in unique() to call uniqlist like duplicated does; uniqlist retuns a new nrow(x) vector anyway and isn't
+  # as efficient as forderv returning empty o when input is already ordered
+  if (attr(o, 'maxgrpn') == 1L) return(x)  # avoid copy. Oftentimes, user just wants to check DT is unique with perhaps nrow(unique(DT))==nrow(DT)
+  f = attr(o,"starts")
+  if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
+  if (length(o)) f = o[f]
+  if (length(o <- forderv(f))) f = f[o]  # don't sort the uniques too
+  .Call(CsubsetDT, x, f, seq_len(ncol(x)))
+  # TO DO: allow by=NULL to mean all, for further speed gain.
   #        See news for v1.9.3 for link to benchmark use-case on datatable-help.
 }
 
