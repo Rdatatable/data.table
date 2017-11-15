@@ -2244,7 +2244,7 @@ int freadMain(freadMainArgs _args) {
       if (hasPrinted || verbose) DTPRINT("Rereading %d columns due to out-of-sample type exceptions.\n", nTypeBumpCols);
       if (verbose) DTPRINT("%s", typeBumpMsg);
       // TODO - construct and output the copy and pastable colClasses argument so user can avoid the reread time in future.
-      free(typeBumpMsg);
+      free(typeBumpMsg); typeBumpMsg=NULL; typeBumpMsgSize=0;
     }
   } else {
     tReread = wallclock();

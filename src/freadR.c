@@ -380,6 +380,7 @@ void setFinalNrow(size_t nrow) {
       SET_TRUELENGTH(VECTOR_ELT(DT,i), nrow);
     }
   }
+  R_FlushConsole(); // # 2481. Just a convenient place; nothing per se to do with setFinalNrow()
 }
 
 
