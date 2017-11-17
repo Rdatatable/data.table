@@ -358,6 +358,7 @@ static inline bool nextGoodLine(const char **pch, int ncol)  //  TODO: remove us
 
 double wallclock(void)
 {
+  return 0.0;
   double ans = 0;
   #ifdef HAS_CLOCK_REALTIME
   struct timespec tp;
@@ -2273,6 +2274,7 @@ int freadMain(freadMainArgs _args) {
       DTi = 0;
       prevJumpEnd = pos;
       firstTime = false;
+      hasPrinted = 1; // reset the progress meter to 1%
       nTypeBump = 0; // for test 1328.1. Otherwise the last field would get shifted forwards again.
       jump0 = 0;     // for #2486
       goto read;
