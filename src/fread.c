@@ -1851,7 +1851,7 @@ int freadMain(freadMainArgs _args) {
     DTPRINT("[11] Read the data\n");
     DTPRINT("  jumps=[%d..%d), chunk_size=%llu, total_size=%llu\n", jump0, nJumps, (llu)chunkBytes, (llu)(lastRowEnd-pos));
   }
-  
+
   read:  // we'll return here to reread any columns with out-of-sample type exceptions
          // no DTPRINT from now until after we're sure not returning here, for #2481
   ASSERT(allocnrow <= nrowLimit, "allocnrow(%llu) < nrowLimit(%llu)", (llu)allocnrow, (llu)nrowLimit);
@@ -1937,6 +1937,7 @@ int freadMain(freadMainArgs _args) {
           stopTeam = true;
           snprintf(stopErr, stopErrSize, "No good line could be found from jump point %d\n",jump);
         }
+        continue;
       }
       thisJumpStart=tch;
       if (verbose) { tt1 = wallclock(); thNextGoodLine += tt1 - tt0; tt0 = tt1; }
