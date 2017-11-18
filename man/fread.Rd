@@ -19,7 +19,8 @@ check.names=FALSE, encoding="unknown",
 strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL,
 showProgress=interactive(),
 data.table=getOption("datatable.fread.datatable"),
-nThread=getDTthreads(), logical01=TRUE
+nThread=getDTthreads(), logical01=TRUE,
+logFileName=paste0(tempdir(),"/fread.out")
 )
 }
 \arguments{
@@ -51,6 +52,7 @@ nThread=getDTthreads(), logical01=TRUE
   \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. }
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{logical01}{If TRUE a column containing only 0s and 1s will be read as logical, otherwise as integer.}
+  \item{logFileName}{A temporary file where verbose messages are written. In the event of a problem, this saves you needing to rerun with \code{verbose=TRUE}; just look at the log file instead. By default it is \code{fread.out} in the directory returned by \code{tempdir()}, as the usage section above shows.}
 }
 \details{
 

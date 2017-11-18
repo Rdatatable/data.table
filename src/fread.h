@@ -63,6 +63,12 @@ typedef struct freadMainArgs
   // with `filename`.
   const char *input;
 
+  // Ouput log file. When verbose=true, this must be a valid writable file
+  // or "stdout". When verbose=false, it may be NULL to suppress output.
+  // By default, verbose=false with a valid log file is used to always write
+  // to the log file to save the user needing to rerun with verbose=true.
+  const char *logFileName;
+
   // Maximum number of rows to read, or INT64_MAX to read the entire dataset.
   // Note that even if `nrowLimit = 0`, fread() will scan a sample of rows in
   // the file to detect column names and types (and other parsing settings).

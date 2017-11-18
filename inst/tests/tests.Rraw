@@ -8190,8 +8190,8 @@ if ("package:bit64" %in% search()) {
 
 # fix for #1087 and #1465
 test(1627, charToRaw(names(fread("issue_1087_utf8_bom.csv"))[1L]), as.raw(97L))
-test(1627.1, names(fread("issue_1087_utf8_bom.csv", verbose=T))[1L], "a", output="UTF-8 byte order mark EF BB BF found")
-test(1627.2, names(fread("gb18030.txt", verbose=T))[1L], "x", output="GB-18030 byte order mark 84 31 95 33 found", warning="GB-18030 encoding detected")
+test(1627.1, names(fread("issue_1087_utf8_bom.csv", verbose=TRUE))[1L], "a", output="UTF-8 byte order mark EF BB BF found")
+test(1627.2, names(fread("gb18030.txt"))[1L], "x", warning="GB-18030 encoding detected")
 test(1627.3, fread("utf16le.txt"), error="File is encoded in UTF-16")
 test(1627.4, fread("utf16be.txt"), error="File is encoded in UTF-16")
 
@@ -10720,7 +10720,7 @@ test(1777.19, fread("A,B,C\nC,D,4\n", verbose=TRUE), data.table(A="C",B="D",C=4L
 # unquoted fields containing \r, #2371
 test(1778.1, fread("A,B,C\n0,,\n1,hello\rworld,2\n3,test,4\n", verbose=TRUE),
            DT <- data.table(A=c(0L,1L,3L), B=c("","hello\rworld","test"), C=c(NA,2L,4L)),
-           output="\\r-only line endings are not allowed because \\n is found in the data")
+           output="\\n has been found.*common and ideal")
 fwrite(DT, f<-tempfile())
 test(1778.2, readLines(f), c("A,B,C", "0,\"\",", "1,\"hello", "world\",2", "3,test,4"))
 # fwrite quotes the field containing \r ........... ^^ ............ ^^
@@ -10999,10 +10999,11 @@ for (i in 0:1000) {
   fwrite(DT[,Plant:=start:(start+nrow(CO2)-1)], f, append=TRUE, col.names=FALSE)
   if (i==502) write("-999,Bad,Line,0.0,0.0,extra\n", f, append=TRUE)
 }
-test(1835, fread(f, verbose=TRUE),
-  output = "Not using sample from jump 50.*could not establish the true line start.*jumps=[0..2)",
-  error  = "Too many fields on out-of-sample row.*-999,Bad,Line,0.0,0.0,extra")
+test(1835.1, fread(f), error="Too many fields on out-of-sample row.*-999,Bad,Line,0.0,0.0,extra")
 unlink(f)
+# when an error occurs, the verbose output before the error is in the log file. Test that too.
+out = readLines(paste0(tempdir(),"/fread.out"))
+test(1835.2, length(grep("Not using sample from jump 50.*could not establish the true line start", out)), 1L)
 
 test(1836, fread('1,2,"3,a"\n4,5,"6,b"'), data.table(V1=c(1L,4L), V2=c(2L,5L), V3=c("3,a","6,b")))   # 2196
 

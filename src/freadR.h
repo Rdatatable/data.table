@@ -9,7 +9,7 @@ void freadLastWarning(const char *format, ...);
 
 
 #define DTPRINT Rprintf
-
+#define LOG(...) if (logFile) fprintf(logFile, __VA_ARGS__)
 
 #define DTWARN(...) { \
   if (warningsAreErrors) \
