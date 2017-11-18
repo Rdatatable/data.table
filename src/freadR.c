@@ -479,7 +479,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
 
 void progress(double p, double eta) {
   // called from thread 0 only
-  REprintf("\rRead %.0f%%. ETA %02d:%02d ", p, (int)eta/60, (int)eta%60);
+  REprintf("Read %.0f%%. ETA %02d:%02d\n", p, (int)eta/60, (int)eta%60);
   R_FlushConsole();  // Windows in mind which doesn't flush until \n it seems. May as well for Linux/Mac too.
   // See issue 2457 for why this is REprinf to avoid Rprintf's call to R_CheckUserInterrupt() every 100 lines.
   // It's the R_CheckUserInterrupt() that has caused crashes before when called from OpenMP parallel region
