@@ -1051,7 +1051,7 @@ int freadMain(freadMainArgs _args) {
       LOG("  None of the NAstrings look like numbers.\n");
     }
   }
-  if (args.skipNrow) LOG("  skip num lines = %llu\n", (llu)args.skipNrow);
+  if (args.skipNrow) LOG("  skip num lines = %llu\n", /*(llu)*/args.skipNrow);
   if (args.skipString) LOG("  skip to string = <<%s>>\n", args.skipString);
   LOG("  show progress = %d\n", args.showProgress);
   LOG("  0/1 column will be read as %s\n", args.logical01? "boolean" : "integer");
@@ -1280,7 +1280,7 @@ int freadMain(freadMainArgs _args) {
     ch = sof;
     while (ch<pos) line+=(*ch++=='\n');
     LOG("Found skip='%s' on line %llu. Taking this to be header row or first row of data.\n",
-        args.skipString, (llu)line);
+        args.skipString, /*(llu)*/line);
     ch = pos;
   }
   // Skip the first `skipNrow` lines of input.
@@ -1487,7 +1487,7 @@ int freadMain(freadMainArgs _args) {
     LOG("jump0size==0\n");
   } else {
     LOG("(%llu bytes from row 1 to eof) / (2 * %llu jump0size) == %llu\n",
-         (llu)sz, (llu)jump0size, (llu)(sz/(2*jump0size)));
+         /*(llu)*/sz, /*(llu)*/jump0size, /*(llu)*/(sz/(2*jump0size)));
   }
 
   sampleLines = 0;
@@ -1687,20 +1687,20 @@ int freadMain(freadMainArgs _args) {
     // sd can be very close to 0.0 sometimes, so apply a +10% minimum
     // blank lines have length 1 so for fill=true apply a +100% maximum. It'll be grown if needed.
     LOG("  =====\n");
-    LOG("  Sampled %llu rows (handled \\n inside quoted fields) at %d jump points\n", (llu)sampleLines, nJumps);
-    LOG("  Bytes from first data row on line %d to the end of last row: %llu\n", row1Line, (llu)bytesRead);
+    LOG("  Sampled %llu rows (handled \\n inside quoted fields) at %d jump points\n", /*(llu)*/sampleLines, nJumps);
+    LOG("  Bytes from first data row on line %d to the end of last row: %llu\n", row1Line, /*(llu)*/bytesRead);
     LOG("  Line length: mean=%.2f sd=%.2f min=%d max=%d\n", meanLineLen, sd, minLen, maxLen);
-    LOG("  Estimated number of rows: %llu / %.2f = %llu\n", (llu)bytesRead, meanLineLen, (llu)estnrow);
+    LOG("  Estimated number of rows: %llu / %.2f = %llu\n", /*(llu)*/bytesRead, meanLineLen, /*(llu)*/estnrow);
     LOG("  Initial alloc = %llu rows (%llu + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n",
-           (llu)allocnrow, (llu)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
+           /*(llu)*/allocnrow, /*(llu)*/estnrow, (int)(100.0*allocnrow/estnrow-100.0));
     if (nJumps==1) {
-      LOG("  All rows were sampled since file is small so we know nrow=%llu exactly\n", (llu)sampleLines);
+      LOG("  All rows were sampled since file is small so we know nrow=%llu exactly\n", /*(llu)*/sampleLines);
       estnrow = allocnrow = sampleLines;
     } else {
       if (sampleLines > allocnrow) STOP("Internal error: sampleLines(%llu) > allocnrow(%llu)", (llu)sampleLines, (llu)allocnrow);
     }
     if (nrowLimit < allocnrow) {
-      LOG("  Alloc limited to lower nrows=%llu passed in.\n", (llu)nrowLimit);
+      LOG("  Alloc limited to lower nrows=%llu passed in.\n", /*(llu)*/nrowLimit);
       estnrow = allocnrow = nrowLimit;
     }
     LOG("  =====\n");
@@ -1805,7 +1805,7 @@ int freadMain(freadMainArgs _args) {
   //*********************************************************************************************
   LOG("[10] Allocate memory for the datatable\n");
   LOG("  Allocating %d column slots (%d - %d dropped) with %llu rows\n",
-         ncol-ndrop, ncol, ndrop, (llu)allocnrow);
+         ncol-ndrop, ncol, ndrop, /*(llu)*/allocnrow);
   size_t DTbytes = allocateDT(type, size, ncol, ndrop, allocnrow);
   double tAlloc = wallclock();
 
@@ -1860,7 +1860,7 @@ int freadMain(freadMainArgs _args) {
 
   read:  // we'll return here to reread any columns with out-of-sample type exceptions
   LOG("[11] Read the data\n");
-  LOG("  jumps=[%d..%d), chunk_size=%llu, total_size=%llu\n", jump0, nJumps, (llu)chunkBytes, (llu)(lastRowEnd-pos));
+  LOG("  jumps=[%d..%d), chunk_size=%llu, total_size=%llu\n", jump0, nJumps, /*(llu)*/chunkBytes, /*(llu)*/(lastRowEnd-pos));
   ASSERT(allocnrow <= nrowLimit, "allocnrow(%llu) < nrowLimit(%llu)", (llu)allocnrow, (llu)nrowLimit);
   #pragma omp parallel num_threads(nth)
   {
@@ -2238,7 +2238,7 @@ int freadMain(freadMainArgs _args) {
     allocnrow += extraAllocRows;
     if (allocnrow > nrowLimit) allocnrow = nrowLimit;
     LOG("  Too few rows allocated. Allocating additional %llu rows (now nrows=%llu) and continue reading from jump point %d\n",
-          (llu)extraAllocRows, (llu)allocnrow, jump0);
+          /*(llu)*/extraAllocRows, /*(llu)*/allocnrow, jump0);
     allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, allocnrow);
     extraAllocRows = 0;
     goto read;   // jump0>0 at this point, set above
@@ -2290,7 +2290,7 @@ int freadMain(freadMainArgs _args) {
 
   double tTot = tReread-t0;  // tReread==tRead when there was no reread
   LOG("Read %llu rows x %d columns from %s file in %02d:%06.3f wall clock time\n",
-       (llu)DTi, ncol-ndrop, filesize_to_str(fileSize), (int)tTot/60, fmod(tTot,60.0));
+       /*(llu)*/DTi, ncol-ndrop, filesize_to_str(fileSize), (int)tTot/60, fmod(tTot,60.0));
 
   //*********************************************************************************************
   // [12] Finalize the datatable
@@ -2309,9 +2309,9 @@ int freadMain(freadMainArgs _args) {
     LOG(sep=='\t' ? "'\\t'" : (sep=='\n' ? "'\\n'" : "'%c'"), sep);
     LOG(" ncol=%d and header detection\n", ncol);
   LOG("%8.3fs (%3.0f%%) Column type detection using %llu sample rows\n",
-      tColType-tLayout, 100.0*(tColType-tLayout)/tTot, (llu)sampleLines);
+      tColType-tLayout, 100.0*(tColType-tLayout)/tTot, /*(llu)*/sampleLines);
   LOG("%8.3fs (%3.0f%%) Allocation of %llu rows x %d cols (%.3fGB) of which %llu (%3.0f%%) rows used\n",
-      tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, (llu)allocnrow, ncol, DTbytes/(1024.0*1024*1024), (llu)DTi, 100.0*DTi/allocnrow);
+      tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, /*(llu)*/allocnrow, ncol, DTbytes/(1024.0*1024*1024), /*(llu)*/DTi, 100.0*DTi/allocnrow);
   thNextGoodLine/=nth; thRead/=nth; thPush/=nth;
   double thWaiting = tReread-tAlloc-thNextGoodLine-thRead-thPush;
   LOG("%8.3fs (%3.0f%%) Reading %d chunks of %.3fMB (%d rows) using %d threads\n",
