@@ -1051,7 +1051,7 @@ int freadMain(freadMainArgs _args) {
       LOG("  None of the NAstrings look like numbers.\n");
     }
   }
-  if (args.skipNrow) LOG("  skip num lines = %llu\n", /*(llu)*/args.skipNrow);
+  if (args.skipNrow) LOG("  skip num lines = %d\n", (int)args.skipNrow);
   if (args.skipString) LOG("  skip to string = <<%s>>\n", args.skipString);
   LOG("  show progress = %d\n", args.showProgress);
   LOG("  0/1 column will be read as %s\n", args.logical01? "boolean" : "integer");
