@@ -410,66 +410,15 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       assign("x", x, order_env)
       i = eval(isub, order_env, parent.frame())             # for optimisation of 'order' to 'forder'
       # that forder returns integer(0) is taken care of internally within forder
-    } else if (is.call(isub) &&
-           getOption("datatable.use.index") && # #1422
-           as.character(isub[[1L]]) %chin% c("==","%in%") &&
-           is.name(isub[[2L]]) &&
-           (isub2<-as.character(isub[[2L]])) %chin% names(x) &&
-           (getOption("datatable.auto.index") || (isub2 %chin% indices(x))) && # `||` used to either auto.index or already have index #1422
-           is.null(attr(x, '.data.table.locked'))) {  # fix for #958, don't create auto index on '.SD'.
-      # LHS is a column name symbol
-      # simplest case for now (single ==).  Later, top level may be &,|,< or >
-      # TO DO: print method could print physical and secondary keys at end.
-      # TO DO: move down to if (is.data.table) clause below, later ...
-      RHS = eval(isub[[3L]], x, parent.frame())
-      # fix for #961
-      if (is.list(RHS)) RHS = as.character(RHS)
-      if (isub[[1L]] == "==" && length(RHS)>1) {
-        if (length(RHS)!=nrow(x)) stop("RHS of == is length ",length(RHS)," which is not 1 or nrow (",nrow(x),"). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead.")
-        i = x[[isub2]] == RHS    # DT[colA == colB] regular element-wise vector scan
-      } else if ( (is.integer(x[[isub2]]) && is.double(RHS) && isReallyReal(RHS)) || (mode(x[[isub2]]) != mode(RHS) && !(class(x[[isub2]]) %in% c("character", "factor") &&
-             class(RHS) %in% c("character", "factor"))) ||
-             (is.factor(x[[isub2]]) && !is.factor(RHS) && mode(RHS)=="numeric") ) { # fringe case, #1361. TODO: cleaner way of doing these checks.
-          # re-direct all non-matching mode cases to base R, as data.table's binary
-          # search based join is strict in types. #957 and #961.
-          i = if (isub[[1L]] == "==") x[[isub2]] == RHS else x[[isub2]] %in% RHS
-      } else {
-        # fix for #932 (notjoin) and also when RHS is NA (and notjoin is also TRUE)
-        if (isub[[1L]] == "==") {
-          # RHS is of length=1 or n
-          if (any_na(as_list(RHS))) {
-            notjoin = FALSE
-            RHS = RHS[0L]
-          } else if (notjoin) {
-            RHS = c(RHS, if (is.double(RHS)) c(NA, NaN) else NA)
-          }
-        }
-        if (haskey(x) && isub2 == key(x)[1L]) {
-          # join to key(x)[1L]
-          xo <- integer()
-          rightcols = chmatch(key(x)[1],names(x))
-        } else {
-          xo = get2key(x,isub2)  # Can't be any index with that col as the first one because those indexes will reorder within each group
-          if (is.null(xo)) {   # integer() would be valid and signifies o=1:.N
-            if (verbose) {cat("Creating new index '",isub2,"'\n",sep="");flush.console()}
-            if (identical(getOption("datatable.auto.index"), FALSE)) warning("Index is being created on '",isub2,"' besides the fact that option 'datatable.auto.index' is FALSE. Please report to data.table#1422.") # why not double check that, even if won't happen now may be a good check for future changes
-            setindexv(x,isub2)
-            xo = get2key(x,isub2)
-          } else {
-            if (verbose) {cat("Using existing index '",isub2,"'\n",sep="");flush.console()}
-          }
-          rightcols = chmatch(isub2, names(x))
-        }
-        # convert RHS to list to join to key (either physical or secondary)
-        i = as.data.table( unique(RHS) )
-        # To do: wrap isub[[3L]] with as.data.table() first before eval to save copy
-        leftcols = 1L
-        ans = bmerge(i, x, leftcols, rightcols, io<-FALSE, xo, roll=0.0, rollends=c(FALSE,FALSE), nomatch=0L, mult="all", 1L, nqgrp, nqmaxgrp, verbose=verbose)
+    } else if (length(o <- .prepareFastSubset(isub = isub, x = x,
+                                              enclos =  parent.frame(),
+                                              notjoin = notjoin, verbose = verbose))){
+        notjoin <- o$notjoin
+        ans = bmerge(o$i, x, o$leftcols, o$rightcols, io<-TRUE, o$xo, roll=0.0, rollends=c(FALSE,FALSE), nomatch=0L, mult="all", rep(1L, length(o$rightcols)), nqgrp, nqmaxgrp, verbose=verbose)
         # No need to shallow copy i before passing to bmerge; we just created i above ourselves
         i = if (ans$allLen1 && !identical(suppressWarnings(min(ans$starts)), 0L)) ans$starts else vecseq(ans$starts, ans$lens, NULL)
-        if (length(xo)) i = fsort(xo[i], internal=TRUE) else i = fsort(i, internal=TRUE) # fix for #1495
+        if (length(o$xo)) i = fsort(o$xo[i], internal=TRUE) else i = fsort(i, internal=TRUE) # fix for #1495
         leftcols = rightcols = NULL  # these are used later to know whether a join was done, affects column order of result. So reset.
-      }
     }
     else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
     else {
@@ -2814,4 +2763,137 @@ gforce <- function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, 
 
 isReallyReal <- function(x) {
   .Call(CisReallyReal, x)
+}
+
+.prepareFastSubset <- function(isub, x, enclos, notjoin, verbose = FALSE){
+  ## helper that decides, whether a fast binary search can be performed, if i is a call
+  ## Fast binary search is currently possible for calls like colA == 1, colA %in% c(1,2)
+  ## colA == 1 & colB == 2 & colC %chin% c("a", "b"), ...
+  ## Notjoin is only supported for single column subsets.
+  ## Additional restrictions are imposed if x is .SD, or if options indicate that no optimization 
+  ## is to be performed
+  #' @param isub the substituted i
+  #' @param x the data.table
+  #' @param enclos The environment where to evaluate when RHS is not a column of x
+  #' @param notjoin boolean that is set before, indicating whether i started with '!'
+  #'                If notjoin == TRUE, only calls without '&' connection are supported, i.e. single column subsets
+  #' @param verbose TRUE for detailed output
+  #' @return If i is not fast subsettable, NULL. Else, a list with four entries: 
+  #'        out$i: a data.table that will be used as i with proper column names.
+  #'        out$xo: the ordering index that will be used by bmerge (integer(0) for no reordering necesary)
+  #'        out$leftcols The column numbers in i
+  #'        out$rightcols The corresponding column numbers in x
+  #'        out$notjoin Bool. In some cases, notjoin is updated within the function.
+  #'        ATTENTION: If nothing else helps, an auto-index is created on x unless options prevent this.
+  if (!is.call(isub)) return(NULL)
+  if (!is.null(attr(x, '.data.table.locked'))) return(NULL)  # fix for #958, don't create auto index on '.SD'.
+  if (!getOption("datatable.use.index")) {
+    return(NULL) # #1422 
+    ## Does this option also prevent the usage of keys? It is interpreted in this way here...
+  }
+  ## Determine, whether the nature of isub in general supports fast binary search
+  remainingIsub <- isub
+  i <- list()
+  while(length(remainingIsub)){
+    if (length(remainingIsub[[1L]]) != 1) return(NULL) ## only single symbol &, ==, %in%, %chin% allowed. 
+    if (remainingIsub[[1L]] != "&"){ ## only a single expression present or a different connection.
+      stub <- remainingIsub
+      remainingIsub <- NULL ## there is no remainder to be evaluated after stub.
+    } else { 
+      ## multiple expressions with & connection. 
+      if (notjoin) return(NULL) ## expressions of type DT[!(a==1 & b==2)] currently not supported
+      stub <- remainingIsub[[3L]] ## the single column expression like col == 4
+      remainingIsub <- remainingIsub[[2L]] ## the potentially longer expression with additional '&'
+    }
+    ## check the stub if it is fastSubsettable
+    if (length(stub[[1L]]) != 1) return(NULL) ## Whatever it is, definitely not ==, %in%, or %chin%
+    operator <- as.character(stub[[1L]])
+    if (!operator %chin% c("==", "%in%", "%chin%")) return(NULL) ## operator not supported
+    if (!is.name(stub[[2L]])) return(NULL)
+    col <- as.character(stub[[2L]])
+    if (!col %chin% names(x)) return(NULL) ## any non-column name prevents fast subsetting
+    ## now check the RHS of stub
+    RHS = eval(stub[[3L]], x, enclos)
+    # fix for #961
+    if (is.list(RHS)) RHS = as.character(RHS)
+    if (length(RHS) != 1 && operator == "=="){
+      if (length(RHS) != nrow(x)) stop("RHS of == is length ",length(RHS)," which is not 1 or nrow (",nrow(x),"). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead.")
+      return(NULL) # DT[colA == colB] regular element-wise vector scan
+    }
+    if ((is.integer(x[[col]]) && is.double(RHS) && isReallyReal(RHS)) || 
+        (mode(x[[col]]) != mode(RHS) && 
+         !(class(x[[col]]) %in% c("character", "factor") && class(RHS) %in% c("character", "factor"))) ||
+        (is.factor(x[[col]]) && !is.factor(RHS) && mode(RHS)=="numeric") ) { # fringe case, #1361. TODO: cleaner way of doing these checks.
+      # re-direct all non-matching mode cases to base R, as data.table's binary
+      # search based join is strict in types. #957 and #961.
+      return(NULL)
+    }
+    if (operator == "==") { ## addional requirements for equal operator and notjoin
+      # RHS is of length=1 or n
+      if (any_na(as_list(RHS))) {
+        notjoin = FALSE
+        RHS = RHS[0L]
+      } else if (notjoin) {
+        RHS = c(RHS, if (is.double(RHS)) c(NA, NaN) else NA)
+      }
+    }
+    ## if it passed until here, fast subset can be done for this stub
+    i <- c(i, setNames(list(RHS), col))
+    ## loop continues with remainingIsub
+  } 
+  if (length(i) == 0) stop("Internal error in .isFastSubsettable. Please report to data.table developers")
+  ## convert i to data.table with all combinations in rows. Care is needed with names as we do 
+  ## it with 'do.call' and this would cause problems if colNames were 'sorted' or 'unique'
+  ## as these two would be interpreted as args for CJ
+  colNames <- names(i)
+  names(i) <- NULL 
+  i$sorted <- TRUE
+  i$unique <- TRUE
+  i <- do.call(CJ, i)
+  setnames(i, colNames)
+  idx <- NULL 
+  ## check whether key fits the columns in i.
+  ## order of key columns makes no difference, as long as they are all upfront in the key, I believe.
+  if (all(names(i) %chin% head(key(x), length(i)))){
+      if (verbose) {cat("Optimized subsetting with key '", paste0( head(key(x), length(i)), collapse = ", "),"'\n",sep="");flush.console()}
+      idx <- integer(0) ## integer(0) is not NULL! Indicates that is is ordered correctly.
+      idxCols <- head(key(x), length(i)) ## in correct order!
+  } 
+  if (is.null(idx)){
+    ## check whether an exising index can be used
+    ## An index can be used if the first elements correspond to the columns in i (similar to the key above)
+    ## Previously, the head of an index was not used because of reordering within groups of i.
+    ## However, I believe this is of no concern as the original order is restored after the bmerge anyways.
+    ## if multiple indices are possible, choose one with integer(0), so no reordering is necessary
+    candidates <- indices(x, vectors = TRUE)
+    idx <- NULL
+    for (cand in candidates){
+      if (all(names(i) %chin% head(cand, length(i)))){
+        idx <- attr(attr(x, "index"), paste0("__", cand, collapse = ""))
+        finalCand <- cand
+        if (length(idx) == 0) break ## the index is already optimal since it doesn't require sorting
+      }
+    }
+    if (!is.null(idx)){
+      if (verbose) {cat("Optimized subsetting with index '", paste0("__", finalCand, collapse = ""),"'\n",sep="");flush.console()}
+      idxCols <- head(finalCand, length(i)) ## in correct order!
+    }
+  } 
+  if (is.null(idx)){
+    ## if nothing else helped, auto create a new index that can be used
+    if (!getOption("datatable.auto.index")) return(NULL) 
+    if (verbose) {cat("Creating new index '", paste0("__", names(i), collapse = ""),"'\n",sep="");flush.console()}
+    if (verbose) {cat("Optimized subsetting with index '", paste0("__", names(i), collapse = ""),"'\n",sep="");flush.console()}
+    setindexv(x, names(i))
+    idx <- attr(attr(x, "index"), paste0("__", names(i), collapse = ""))
+    idxCols <- names(i)
+  }
+  setkeyv(i, idxCols)
+  return(list(i  = i, 
+              xo = idx, 
+              leftcols  = chmatch(idxCols, names(i)), 
+              rightcols = chmatch(idxCols, names(x)),
+              notjoin = notjoin
+              )
+         )
 }
