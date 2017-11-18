@@ -32,6 +32,7 @@
 // `unsigned long long int` before printing; and this #define makes it
 // slightly simpler.
 #define llu   unsigned long long int
+// Usage of %llu reduced to %d in all but STOP()s in scabbling to solve #2481 stack imbalance related to verbose output / progress meter in RStudio Windows.
 
 
 // Private globals to save passing all of them through to highly iterated field processors
@@ -417,18 +418,18 @@ static const char* filesize_to_str(size_t fsize)
     }
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < NSUFFIXES) {
-        snprintf(output, BUFFSIZE, "%llu%cB (%llu bytes)",
-                 lsize >> shift, suffixes[i], lsize);
+        snprintf(output, BUFFSIZE, "%d%cB (%d bytes)",
+                 (int)(lsize >> shift), suffixes[i], (int)lsize);
         return output;
       }
     } else {
-      snprintf(output, BUFFSIZE, "%.*f%cB (%llu bytes)",
-               ndigits, (double)fsize / (1 << shift), suffixes[i], lsize);
+      snprintf(output, BUFFSIZE, "%.*f%cB (%d bytes)",
+               ndigits, (double)fsize / (1 << shift), suffixes[i], (int)lsize);
       return output;
     }
   }
   if (fsize == 1) return one_byte;
-  snprintf(output, BUFFSIZE, "%llu bytes", lsize);
+  snprintf(output, BUFFSIZE, "%d bytes", (int)lsize);
   return output;
 }
 
@@ -1279,8 +1280,8 @@ int freadMain(freadMainArgs _args) {
     pos = ch;
     ch = sof;
     while (ch<pos) line+=(*ch++=='\n');
-    LOG("Found skip='%s' on line %llu. Taking this to be header row or first row of data.\n",
-        args.skipString, /*(llu)*/line);
+    LOG("Found skip='%s' on line %d. Taking this to be header row or first row of data.\n",
+        args.skipString, (int)line);
     ch = pos;
   }
   // Skip the first `skipNrow` lines of input.
@@ -1486,8 +1487,8 @@ int freadMain(freadMainArgs _args) {
   if (jump0size==0) {
     LOG("jump0size==0\n");
   } else {
-    LOG("(%llu bytes from row 1 to eof) / (2 * %llu jump0size) == %llu\n",
-         /*(llu)*/sz, /*(llu)*/jump0size, /*(llu)*/(sz/(2*jump0size)));
+    LOG("(%d bytes from row 1 to eof) / (2 * %d jump0size) == %d\n",
+         (int)sz, (int)jump0size, (int)(sz/(2*jump0size)));
   }
 
   sampleLines = 0;
@@ -1687,20 +1688,20 @@ int freadMain(freadMainArgs _args) {
     // sd can be very close to 0.0 sometimes, so apply a +10% minimum
     // blank lines have length 1 so for fill=true apply a +100% maximum. It'll be grown if needed.
     LOG("  =====\n");
-    LOG("  Sampled %llu rows (handled \\n inside quoted fields) at %d jump points\n", /*(llu)*/sampleLines, nJumps);
-    LOG("  Bytes from first data row on line %d to the end of last row: %llu\n", row1Line, /*(llu)*/bytesRead);
+    LOG("  Sampled %d rows (handled \\n inside quoted fields) at %d jump points\n", (int)sampleLines, nJumps);
+    LOG("  Bytes from first data row on line %d to the end of last row: %d\n", row1Line, (int)bytesRead);
     LOG("  Line length: mean=%.2f sd=%.2f min=%d max=%d\n", meanLineLen, sd, minLen, maxLen);
-    LOG("  Estimated number of rows: %llu / %.2f = %llu\n", /*(llu)*/bytesRead, meanLineLen, /*(llu)*/estnrow);
-    LOG("  Initial alloc = %llu rows (%llu + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n",
-           /*(llu)*/allocnrow, /*(llu)*/estnrow, (int)(100.0*allocnrow/estnrow-100.0));
+    LOG("  Estimated number of rows: %d / %.2f = %d\n", (int)bytesRead, meanLineLen, (int)estnrow);
+    LOG("  Initial alloc = %d rows (%d + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n",
+           (int)allocnrow, (int)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
     if (nJumps==1) {
-      LOG("  All rows were sampled since file is small so we know nrow=%llu exactly\n", /*(llu)*/sampleLines);
+      LOG("  All rows were sampled since file is small so we know nrow=%d exactly\n", (int)sampleLines);
       estnrow = allocnrow = sampleLines;
     } else {
       if (sampleLines > allocnrow) STOP("Internal error: sampleLines(%llu) > allocnrow(%llu)", (llu)sampleLines, (llu)allocnrow);
     }
     if (nrowLimit < allocnrow) {
-      LOG("  Alloc limited to lower nrows=%llu passed in.\n", /*(llu)*/nrowLimit);
+      LOG("  Alloc limited to lower nrows=%d passed in.\n", (int)nrowLimit);
       estnrow = allocnrow = nrowLimit;
     }
     LOG("  =====\n");
@@ -1804,8 +1805,8 @@ int freadMain(freadMainArgs _args) {
   // [10] Allocate the result columns
   //*********************************************************************************************
   LOG("[10] Allocate memory for the datatable\n");
-  LOG("  Allocating %d column slots (%d - %d dropped) with %llu rows\n",
-         ncol-ndrop, ncol, ndrop, /*(llu)*/allocnrow);
+  LOG("  Allocating %d column slots (%d - %d dropped) with %d rows\n",
+         ncol-ndrop, ncol, ndrop, (int)allocnrow);
   size_t DTbytes = allocateDT(type, size, ncol, ndrop, allocnrow);
   double tAlloc = wallclock();
 
@@ -1860,8 +1861,8 @@ int freadMain(freadMainArgs _args) {
 
   read:  // we'll return here to reread any columns with out-of-sample type exceptions
   LOG("[11] Read the data\n");
-  LOG("  jumps=[%d..%d), chunk_size=%llu, total_size=%llu\n", jump0, nJumps, /*(llu)*/chunkBytes, /*(llu)*/(lastRowEnd-pos));
-  ASSERT(allocnrow <= nrowLimit, "allocnrow(%llu) < nrowLimit(%llu)", (llu)allocnrow, (llu)nrowLimit);
+  LOG("  jumps=[%d..%d), chunk_size=%d, total_size=%d\n", jump0, nJumps, (int)chunkBytes, (int)(lastRowEnd-pos));
+  ASSERT(allocnrow <= nrowLimit, "allocnrow(%d) < nrowLimit(%d)", (int)allocnrow, (int)nrowLimit);
   #pragma omp parallel num_threads(nth)
   {
     int me = omp_get_thread_num();
@@ -2075,10 +2076,10 @@ int freadMain(freadMainArgs _args) {
                 if (verbose) {
                   char temp[1001];
                   int len = snprintf(temp, 1000,
-                    "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %llu\n",
+                    "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %d\n",
                     j+1, colNames[j].len, colNamesAnchor + colNames[j].off,
                     typeName[abs(joldType)], typeName[abs(thisType)],
-                    (int)(tch-fieldStart), fieldStart, (llu)(ctx.DTi+myNrow));
+                    (int)(tch-fieldStart), fieldStart, (int)(ctx.DTi+myNrow));
                   typeBumpMsg = (char*) realloc(typeBumpMsg, typeBumpMsgSize + (size_t)len + 1);
                   strcpy(typeBumpMsg+typeBumpMsgSize, temp);
                   typeBumpMsgSize += (size_t)len;
@@ -2140,9 +2141,9 @@ int freadMain(freadMainArgs _args) {
           if (!stopTeam) {
             stopTeam = true;
             snprintf(stopErr, stopErrSize,
-              "Expecting %d cols but row %llu contains only %d cols (sep='%c'). " \
+              "Expecting %d cols but row %d contains only %d cols (sep='%c'). " \
               "Consider fill=true. <<%s>>",
-              ncol, (llu)ctx.DTi, j, sep, strlim(tlineStart, 500));
+              ncol, (int)ctx.DTi, j, sep, strlim(tlineStart, 500));
           }
           break;
         }
@@ -2151,8 +2152,8 @@ int freadMain(freadMainArgs _args) {
           if (!stopTeam) {
             stopTeam = true;
             snprintf(stopErr, stopErrSize,
-              "Too many fields on out-of-sample row %llu from jump %d. Read all %d expected columns but more are present. <<%s>>",
-              (llu)ctx.DTi, jump, ncol, strlim(tlineStart, 500));
+              "Too many fields on out-of-sample row %d from jump %d. Read all %d expected columns but more are present. <<%s>>",
+              (int)ctx.DTi, jump, ncol, strlim(tlineStart, 500));
           }
           break;
         }
@@ -2237,8 +2238,8 @@ int freadMain(freadMainArgs _args) {
   if (extraAllocRows) {
     allocnrow += extraAllocRows;
     if (allocnrow > nrowLimit) allocnrow = nrowLimit;
-    LOG("  Too few rows allocated. Allocating additional %llu rows (now nrows=%llu) and continue reading from jump point %d\n",
-          /*(llu)*/extraAllocRows, /*(llu)*/allocnrow, jump0);
+    LOG("  Too few rows allocated. Allocating additional %d rows (now nrows=%d) and continue reading from jump point %d\n",
+          (int)extraAllocRows, (int)allocnrow, jump0);
     allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, allocnrow);
     extraAllocRows = 0;
     goto read;   // jump0>0 at this point, set above
@@ -2289,8 +2290,8 @@ int freadMain(freadMainArgs _args) {
   }
 
   double tTot = tReread-t0;  // tReread==tRead when there was no reread
-  LOG("Read %llu rows x %d columns from %s file in %02d:%06.3f wall clock time\n",
-       /*(llu)*/DTi, ncol-ndrop, filesize_to_str(fileSize), (int)tTot/60, fmod(tTot,60.0));
+  LOG("Read %d rows x %d columns from %s file in %02d:%06.3f wall clock time\n",
+       (int)DTi, ncol-ndrop, filesize_to_str(fileSize), (int)tTot/60, fmod(tTot,60.0));
 
   //*********************************************************************************************
   // [12] Finalize the datatable
@@ -2308,10 +2309,10 @@ int freadMain(freadMainArgs _args) {
   LOG("%8.3fs (%3.0f%%) sep=", tLayout-tMap, 100.0*(tLayout-tMap)/tTot);
     LOG(sep=='\t' ? "'\\t'" : (sep=='\n' ? "'\\n'" : "'%c'"), sep);
     LOG(" ncol=%d and header detection\n", ncol);
-  LOG("%8.3fs (%3.0f%%) Column type detection using %llu sample rows\n",
-      tColType-tLayout, 100.0*(tColType-tLayout)/tTot, /*(llu)*/sampleLines);
-  LOG("%8.3fs (%3.0f%%) Allocation of %llu rows x %d cols (%.3fGB) of which %llu (%3.0f%%) rows used\n",
-      tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, /*(llu)*/allocnrow, ncol, DTbytes/(1024.0*1024*1024), /*(llu)*/DTi, 100.0*DTi/allocnrow);
+  LOG("%8.3fs (%3.0f%%) Column type detection using %d sample rows\n",
+      tColType-tLayout, 100.0*(tColType-tLayout)/tTot, (int)sampleLines);
+  LOG("%8.3fs (%3.0f%%) Allocation of %d rows x %d cols (%.3fGB) of which %d (%3.0f%%) rows used\n",
+      tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, (int)allocnrow, ncol, DTbytes/(1024.0*1024*1024), (int)DTi, 100.0*DTi/allocnrow);
   thNextGoodLine/=nth; thRead/=nth; thPush/=nth;
   double thWaiting = tReread-tAlloc-thNextGoodLine-thRead-thPush;
   LOG("%8.3fs (%3.0f%%) Reading %d chunks of %.3fMB (%d rows) using %d threads\n",
