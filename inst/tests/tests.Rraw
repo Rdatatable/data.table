@@ -5972,6 +5972,35 @@ test(1435, DT[b==max(a)], DT[3])
 test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing double column i.'a' to integer")
 DT[,a:=factor(letters[a])]
 test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new index '__a'")
+## test that the lookup env for RHS is correct. In internal env,notjoin is FALSE in this case.
+notjoin <- TRUE
+DT <- data.table(x = TRUE)
+test(1437.1, DT[x == notjoin], DT)
+## column names 'sorted' and 'unique' could cause problems because of CJ with do.call in .prepareFastSubset
+DT <- data.table(sorted = TRUE, unique = FALSE)
+test(1437.2, DT[sorted == TRUE & unique == FALSE], DT)
+## test no reordering in groups
+DT <- data.table(x = c(1,1,1,2), y = c(3,2,1,1))
+setindex(DT, x, y)
+test(1437.3, DT[x==1], setindex(data.table(x = c(1,1,1), y = c(3,2,1)), x,y))
+## test that key order makes no difference
+DT <- data.table(x = c(2,1,1,1), y = c(3,2,1,1), z = c(1,1,2,2))
+test(1437.4, setkey(setkey(DT, x,y,z)[x==1&y==1&z==2], NULL),setkey(setkey(DT, y,x,z)[x==1&y==1&z==2], NULL))
+setkey(DT, NULL)
+setorder(DT, -x, -y, z)
+DT2 <- copy(DT)
+setindex(DT, x,y,z)
+setindex(DT2, z,y,x)
+test(1437.5, setindex(DT[x==1&y==1&z==2], NULL),setindex(DT2[x==1&y==1&z==2], NULL))
+## test that query order makes no difference
+DT <- data.table(x = c(1,1,1,2,2,2), y = c(1,1,2,2,3,3), z = rnorm(6))
+test(1437.6, copy(DT)[x==2 & y==3], copy(DT)[y==3 & x==2])
+## test that optimization really takes place for ==, %in%, %chin%, also when connected with &
+test(1437.7, DT[x==2, verbose = TRUE], output = "Optimized subsetting")
+test(1437.8, DT[x %in% c(2,3), verbose = TRUE], output = "Optimized subsetting")
+DT[, a:= sample(LETTERS,6)]
+test(1437.9, DT[a %chin% c("A", "B"), verbose = TRUE], output = "Optimized subsetting")
+test(1437.11, DT[a %chin% c("A", "B") & x == 3 & y %in% c(1,2), verbose = TRUE], output = "Optimized subsetting")
 
 # fread dec=',' e.g. France
 test(1438, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1 is not TRUE")

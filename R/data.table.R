@@ -2778,8 +2778,8 @@ isReallyReal <- function(x) {
   #' @param notjoin boolean that is set before, indicating whether i started with '!'
   #'                If notjoin == TRUE, only calls without '&' connection are supported, i.e. single column subsets
   #' @param verbose TRUE for detailed output
-  #' @return If i is not fast subsettable, NULL. Else, a list with four entries: 
-  #'        out$i: a data.table that will be used as i with proper column names.
+  #' @return If i is not fast subsettable, NULL. Else, a list with entries: 
+  #'        out$i: a data.table that will be used as i with proper column names and key.
   #'        out$xo: the ordering index that will be used by bmerge (integer(0) for no reordering necesary)
   #'        out$leftcols The column numbers in i
   #'        out$rightcols The corresponding column numbers in x
