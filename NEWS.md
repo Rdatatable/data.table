@@ -56,6 +56,9 @@
 
 12. Faster `as.IDate` and `as.ITime` methods for `POSIXct` and `numeric`, [#1392](https://github.com/Rdatatable/data.table/issues/1392). Thanks to Jan Gorecki for the PR.
 
+13. Subsetting optimization with keys and indices is now possible for compound queries like DT[a==1 & b ==2], [#2472](https://github.com/Rdatatable/data.table/issues/2472).
+Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementation. 
+
 
 #### BUG FIXES
 
