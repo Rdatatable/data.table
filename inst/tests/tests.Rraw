@@ -7202,7 +7202,16 @@ test(1554.4, idx, structure(c(2L, 3L, 4L, 7L, 9L, 10L), .Dim = c(6L, 1L), .Dimna
 # strip.white and other enhancements to 'fread()'
 # bug #1113
 ans1 <- fread("issue_1113_fread.txt")
-ans2 <- setDT(read.table("issue_1113_fread.txt", header=TRUE))
+# some inconsistency by R version on whether the last column
+#   () gets read as numeric (which it is) or as factor,
+#   see discussion on issue #2484; not clear exactly what changed
+#   in R to fix this (or when), so just test is.character
+#   and force numeric instead of testing R version
+ans2 <- read.table("issue_1113_fread.txt", header=TRUE, stringsAsFactors = FALSE)
+if (is.character(ans2$MCMCOBJ)) {
+  ans2$MCMCOBJ = as.numeric(ans2$MCMCOBJ)
+}
+setDT(ans2)
 setnames(ans2, names(ans1))
 test(1555.1, ans1, ans2)
 
