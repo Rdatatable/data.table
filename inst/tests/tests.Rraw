@@ -5092,6 +5092,7 @@ test(1330, fread('A,B\nfoo,1\nAnalyst\\,2\nbar,3'), data.table(A=c('foo','Analys
 test(1331.1, fread('A,B\nfoo,1\nAnalyst\\ ,2\nbar,3'), data.table(A=c('foo','Analyst\\','bar'), B=1:3)) # strip.white=TRUE
 test(1331.2, fread('A,B\nfoo,1\nAnalyst\\ ,2\nbar,3', strip.white=FALSE), data.table(A=c('foo','Analyst\\ ','bar'), B=1:3))
 test(1332, fread('A,B\nfoo,1\n"Analyst\\",2\nbar,3'), data.table(A=c('foo','Analyst\\','bar'), B=1:3))
+test(1332.2, fread("ab,x\n  cd,x ", sep = ",", strip.white = FALSE, header = FALSE), data.table(V1=c("ab", "  cd"), V2=c("x", "x ")))  # Issue 2376
 # double \\ in this file means one in the input, so the above " is escaped by a single '\' but still read ok
 test(1333.1, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3'), data.table(A = c("foo", "Analyst\\", "bar"), B = 1:3))
 test(1333.2, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3', strip.white=FALSE), data.table(A = c("foo", "Analyst\\", "bar"), B = 1:3))  # it's a quoted field with space afterwards; strip.white only applies to non-quoted strings
