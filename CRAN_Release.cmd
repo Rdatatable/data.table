@@ -93,26 +93,22 @@ test.data.table(verbose=TRUE)  # since main.R no longer tests verbose mode
 
 
 ###############################################
-#  R 3.0.0 (stated dependency)
+#  R 3.1.0 (stated dependency)
 ###############################################
 
 ### ONE TIME BUILD
 sudo apt-get -y build-dep r-base
 cd ~/build
-wget http://cran.stat.ucla.edu/src/base/R-3/R-3.0.0.tar.gz
-tar xvf R-3.0.0.tar.gz
-cd R-3.0.0
+wget http://cran.stat.ucla.edu/src/base/R-3/R-3.1.0.tar.gz
+tar xvf R-3.1.0.tar.gz
+cd R-3.1.0
 ./configure --without-recommended-packages
 make
-alias R300=~/build/R-3.0.0/bin/R
-cd ..
-R300
-install.packages("chron")
-q("no")
+alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
-R300 CMD INSTALL ~/data.table_1.10.1.tar.gz
-R300
+R310 CMD INSTALL ./data.table_1.10.5.tar.gz
+R310
 require(data.table)
 test.data.table()
 
