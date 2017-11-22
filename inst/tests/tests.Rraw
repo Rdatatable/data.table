@@ -11023,13 +11023,23 @@ test(1838, fread("default payment next month\n0.5524\n0.2483\n0.1157\n"), data.t
 # better writing and reading of NA in single column input, #2106
 DT = data.table(a=c(4,NA,2,3.14,999,NA))
 fwrite(DT, f<-tempfile(), na="")  # old default for na was always ""
-test(1839.1, fread(f), data.table(a=4L), warning="text exists afterwards.*Consider fill.*blank.lines.skip.*<<2>>")
+test(1839.1, fread(f), data.table(a=c(4,NA,2,3.14,999)))
 test(1839.2, fread(f, blank.lines.skip=TRUE), data.table(a=c(4,2,3.14,999)))
 test(1839.3, fread(f, fill=TRUE), data.table(a=c(4,NA,2,3.14,999)))
 test(1839.4, fread(f, fill=TRUE, blank.lines.skip=TRUE), data.table(a=c(4,2,3.14,999)))
 fwrite(DT, f)  # new default sets na="NA" when ncol==1
 test(1839.5, fread(f), DT)
 unlink(f)
+
+lines = c("DECLARATION OF INDEPENDENCE",
+          "We hold these truths to be self-evident, that all men are created equal,",
+          "that they are endowed by their Creator with certain unalienable Rights,",
+          "that among these are Life, Liberty and the pursuit of Happiness.",
+          "",
+          "That to secure these rights, Governments are instituted among Men,",
+          "deriving their just powers from the consent of the governed.")
+txt = paste(lines, collapse="\n")
+test(1839.6, fread(txt, sep=""), data.table("DECLARATION OF INDEPENDENCE"=lines[-1]))  # fread should eventually be able auto-detect sep=""
 
 # readLines behaviour, #1616
 txt = 'a,b\n ab,cd,ce\n abcdef\n hjkli \n'  # now auto detected as ncol 1 anyway
