@@ -3156,8 +3156,8 @@ test(1077, DT[, sum(V2),by=ff(V2)], DT[, sum(V2),by=list(ff(V2))])
 d = data.frame(x=1:5)
 f = function(x) {suppressWarnings(DF<-data.frame(x=x, y=1:10)); setattr(DF$x,"names","a");DF}
 l = apply(d, 1, f)
-test(1078.1, length(names(l[[1]]$x)), 10)   # test this test is creating names on the column
-test(1078.2, length(names(l[[2]]$x)), 10)
+test(1078.1, length(names(l[[1]]$x)), 10L)   # test this test is creating names on the column
+test(1078.2, length(names(l[[2]]$x)), 10L)
 a = rbindlist(l)
 test(1078.3, a$x, rep(1:5,each=10))   # a$x would segfault before the fix to rbindlist
 
@@ -3755,7 +3755,7 @@ if (.Machine$sizeof.longdouble == 16) {
   setNumericRounding(1)
   test(1147.2, ans, forderv(x))
   setNumericRounding(2)
-  test(1147.3, sum(ans != forderv(x)), 2)
+  test(1147.3, sum(ans != forderv(x)), 2L)
 
   tol = 3.000214e-13
   x = c(8, NaN, Inf, -7.18918, 5.18909+0.07*tol, NA, -7.18918111, -Inf, NA, 5.18909, NaN, 5.18909-1.2*tol, 5.18909-0.04*tol)
@@ -3928,14 +3928,14 @@ setkey(DT, z)
 test(1162.6, is.sorted(DT[[3L]]), TRUE)
 
 setkey(DT, x, y)
-test(1162.7, length(forderv(DT, by=1:2)), 0)
+test(1162.7, length(forderv(DT, by=1:2)), 0L)
 setkey(DT, x, z)
-test(1162.8, length(forderv(DT, by=c(1L, 3L))), 0)
+test(1162.8, length(forderv(DT, by=c(1L, 3L))), 0L)
 setkey(DT, y, z)
-test(1162.9, length(forderv(DT, by=2:3)), 0)
+test(1162.9, length(forderv(DT, by=2:3)), 0L)
 setkey(DT)
 # test number 1162.10 skipped because if it fails it confusingly prints out as 1662.1 not 1662.10
-test(1162.11, length(forderv(DT, by=1:3)), 0)
+test(1162.11, length(forderv(DT, by=1:3)), 0L)
 test(1162.12, is.sorted(DT, by=1:3), TRUE, warning="Use.*forderv.*for efficiency in one step, so you have o as well if not sorted")
 test(1162.13, is.sorted(DT, by=2:1), FALSE, warning="Use.*forderv.*for efficiency in one step, so you have o as well if not sorted")
 
@@ -3982,14 +3982,14 @@ test(1168.2, as.data.frame(ans), rbind(as.data.frame(tmp1), as.data.frame(tmp2))
 
 # checks of "" and NA_character_ ordering.
 test(1169, forderv(c(NA,"","a","NA")), INT(1,2,4,3))  # data.table does ascii ordering currently, so N comes before a
-test(1170, length(forderv(c(NA,"","NA","a"))), 0)
+test(1170, length(forderv(c(NA,"","NA","a"))), 0L)
 test(1171, forderv(c("",NA,"a","NA")), INT(2,1,4,3))
-test(1172, length(forderv(NA_character_)), 0)
-test(1173, length(forderv(c(NA_character_,NA_character_))), 0)
-test(1174, length(forderv(c(NA_character_,NA_character_,NA_character_))), 0)
-test(1175, length(forderv("")), 0)
-test(1176, length(forderv(c("",""))), 0)
-test(1177, length(forderv(c("","",""))), 0)
+test(1172, length(forderv(NA_character_)), 0L)
+test(1173, length(forderv(c(NA_character_,NA_character_))), 0L)
+test(1174, length(forderv(c(NA_character_,NA_character_,NA_character_))), 0L)
+test(1175, length(forderv("")), 0L)
+test(1176, length(forderv(c("",""))), 0L)
+test(1177, length(forderv(c("","",""))), 0L)
 test(1178, forderv(c("",NA,"")), INT(2,1,3))
 
 # Test no invalid sort order warning when key is ok and 2nd colum is character/double
@@ -4063,16 +4063,16 @@ DT = data.table(rnk = c(0, 0.0909090909090909, 0.181818181818182, 0.272727272727
 # 2 byte rounding is about 11 s.f., so val[3] and val[4] are considered different
 test(1192, DT[,.N,keyby=val], setkey(DT,val)[,.N,by=val])  # tests uniqlist uses twiddle
 test(1193, DT[,.N,by=val]$N, INT(1,1,1,1))
-test(1194, DT[.(x),.N], 1)  # tests bmerge uses twiddle
+test(1194, DT[.(x),.N], 1L)  # tests bmerge uses twiddle
 DT[3, val:=0.0275016249291963]
 setkey(DT, NULL)  # val[3] and val[4] are now equal, within 2 byte rounding
 test(1195, DT[,.N,keyby=val], setkey(DT,val)[,.N,by=val])
 old_rounding = getNumericRounding() # default is 0
 test(1196.1, DT[,.N,by=val]$N, INT(1,1,1,1))
-test(1197.1, DT[.(x),.N], 1)
+test(1197.1, DT[.(x),.N], 1L)
 setNumericRounding(2L)
 test(1196.2, DT[,.N,by=val]$N, INT(1,1,2))
-test(1197.2, DT[.(x),.N], 2)
+test(1197.2, DT[.(x),.N], 2L)
 setNumericRounding(old_rounding)
 
 DT = data.table(id=1:2, val1=6:1, val2=6:1)   # 5380
@@ -4601,7 +4601,7 @@ for (dround in c(0,2)) {
     setNumericRounding(dround)  # rounding should not affect the result here because although small, it's very accurace (1 s.f.)
     for (i in c(-30:-1,1:30)) {
         DT = data.table(c(1 * (10^i),2,9999,-1,0,1))
-        test(test_no, nrow(DT[, .N, by=V1]), 6)
+        test(test_no, nrow(DT[, .N, by=V1]), 6L)
         test_no = test_no + 0.001
     }
 }
@@ -9274,7 +9274,7 @@ test(1673.5, as.IDate("2016-04-28") - as.IDate("2016-04-20"), 8L)
 # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16925
 # It seems this 'just' fails ASAN, but also results in seg fault under some compilers
 # https://github.com/rstudio/shiny/issues/1200
-test(1674, forderv(c(2147483645L, 2147483646L, 2147483647L, 2147483644L), order=-1L), c(3,2,1,4))
+test(1674, forderv(c(2147483645L, 2147483646L, 2147483647L, 2147483644L), order=-1L), INT(3,2,1,4))
 
 # fix for #1718
 # In R-devel somwhere between 12 June 2017 (r72786) and 27 June 2017 (r72859), the behaviour of factor() changed.
@@ -9359,7 +9359,7 @@ dt <- data.table(a = c("1", "1", "2", "2", "3", "4", "4", "4"),
                  d = c(TRUE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE))
 dt[d == TRUE, `:=`(b = "M")] # create index
 udt <- unique(dt, by = c("a", "b"))
-test(1684, nrow(udt[d == TRUE]), 2)
+test(1684, nrow(udt[d == TRUE]), 2L)
 
 # #1758, data.table print issue
 foo <- function(annot=c("a", "b")) {
@@ -9549,6 +9549,10 @@ test(1702.1, isoweek(test_cases), test_values)
 test(1702.2, isoweek(as.Date(test_cases)), test_values)
 test(1702.3, isoweek(as.POSIXct(test_cases)), test_values)
 
+# 1% sample of a 400-year cycle of dates for extra robustness
+isotest = fread('isoweek_test.csv')
+test(1702.4, isoweek(isotest$input_date), isotest$expected_output)
+
 # fread, ensure no shell commands #1702
 if (.Platform$OS.type=="unix") {
     cat("a,b\n4,2", file=f<-tempfile())
@@ -9726,7 +9730,7 @@ DT = data.table(V1=c(-00000.00006, -123456789.123456789,
                      5.123456789e-290, -5.123456789e-290,
                      5.123456789e-307, -5.123456789e-307,
                      5.123456789e+307, -5.123456789e+307))
-test(1729.5, nrow(DT), 507)
+test(1729.5, nrow(DT), 507L)
 
 oldverbose=options(datatable.verbose=FALSE)
 # capture.output() exact tests must not be polluted with verbosity
@@ -9750,7 +9754,7 @@ y = capture.output(write.csv(DT,row.names=FALSE,quote=FALSE))[-1]
 test(1729.6, x[c(177,238)], c("-1234567891234500000","1234567891234500000"))
 x = x[-c(177,238)]
 y = y[-c(177,238)]
-test(1729.7, length(x), 505)
+test(1729.7, length(x), 505L)
 test(1729.8, x, y)
 if (!identical(x,y)) print(data.table(row=1:length(x), `fwrite`=x, `write.csv`=y)[x!=y])
 
@@ -10476,7 +10480,7 @@ test(1769, fread("issue_2157_sampling_reached_eof_early.txt")[,c("X1","X2","X10"
 # Test unbounded strstr() (in particular when fileSize is exactly 64k on Windows), #2201
 ff = file(f<-tempfile(), open="wb")
 line255 = paste(rep("123,456,789,0AB",16),collapse=",")
-test(1770.1, nchar(line255), 255)
+test(1770.1, nchar(line255), 255L)
 for (i in 1:256) cat(line255, "\x0A", sep="", file=ff)  # use \n line ending even on Windows
 close(ff)
 test(1770.2, file.info(f)$size, 65536)
@@ -10893,11 +10897,11 @@ test(1823.2, DT$z, seq(11, 2))
 DT[, z := ncol(.SD) + get("y"), .SDcols = c("x", "z")]
 test(1823.3, DT$z, seq(12, 3))
 DT[, x := {.SD; x + 1}, .SDcols = "y"]
-test(1823.4, DT$x, seq(2, 11))
+test(1823.4, DT$x, as.double(seq(2, 11)))
 DT[, z := ncol(.SD) + x, .SDcols = "y"]
-test(1823.5, DT$z, seq(3, 12))
+test(1823.5, DT$z, as.double(seq(3, 12)))
 DT[, z := ncol(.SD) + x, .SDcols = c("x", "y")]
-test(1823.6, DT$z, seq(4, 13))
+test(1823.6, DT$z, as.double(seq(4, 13)))
 
 # Issue 2250
 test(1824, fread("A,B\n2,384325987234905827340958734572934\n"), data.table(A=2L, B="384325987234905827340958734572934"))
@@ -10991,7 +10995,7 @@ test(1833, fread('V1,V2\n1,2', select = NULL),
 # Every line in the first 100 has a quoted field containing sep, so the quote rule was being
 #   bumped to 3 (now fixed not to) which gave rise to nextGoodLine struggling later.
 # The file is not finished with \n either, but that's not an issue.
-test(1834.1, dim(DT<-fread("grr.csv", header=FALSE)), c(2839, 12))
+test(1834.1, dim(DT<-fread("grr.csv", header=FALSE)), INT(2839, 12))
 test(1834.2, DT[c(1,2,.N-1,.N), c(1,2,11,12)],
              data.table(V1="AAAAAAAAAA",
                         V2=c("AAAAAAAA","AAAAAAAAAA","AAAAAAAAAA","AAAAAAAAAA"),
