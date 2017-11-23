@@ -292,7 +292,7 @@ isoweek <- function(x) {
   x = as.IDate(x)   # number of days since 1 Jan 1970 (a Thurs)
   nearest_thurs = as.IDate(7L * (as.integer(x + 3L) %/% 7L))
   year_start <- as.IDate(format(nearest_thurs, '%Y-01-01'))
-  1L + (nearest_thurs - year_start) %/% 7
+  1L + (nearest_thurs - year_start) %/% 7L
 }
 
 month   <- function(x) as.POSIXlt(x)$mon + 1L
