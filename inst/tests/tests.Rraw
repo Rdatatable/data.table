@@ -5547,12 +5547,12 @@ test(1375.3, DT[,mean(Petal.Width),by=Species][V1>1,Species:=toupper(Species)]$S
 # Secondary keys a.k.a indexes ...
 DT = data.table(a=1:10,b=10:1)
 test(1376.1, indices(DT), NULL)
-test(1376.2, DT[b==7L,verbose=TRUE], DT[4L], output="Creating new index '__b'")
+test(1376.2, DT[b==7L,verbose=TRUE], DT[4L], output="Creating new index 'b'")
 test(1376.3, indices(DT), "b")
-test(1376.4, DT[b==8L,verbose=TRUE], DT[3L], output="Optimized subsetting with index '__b'")
+test(1376.4, DT[b==8L,verbose=TRUE], DT[3L], output="Optimized subsetting with index 'b'")
 test(1376.5, DT[a==7L,verbose=TRUE], DT[7L], output="Creating new index")  # add 2nd secondary key
 test(1376.6, indices(DT), c("b","a"))  # 2 secondary keys of single columns
-test(1376.7, DT[a==7L,verbose=TRUE], DT[7L], output="Optimized subsetting with index '__a'")
+test(1376.7, DT[a==7L,verbose=TRUE], DT[7L], output="Optimized subsetting with index 'a'")
 setkey(DT,b)
 test(1376.8, indices(DT), NULL)
 test(1376.9, list(DT[a==2L], indices(DT)), list(DT[9L],"a"))  # create indices for next test
@@ -5765,9 +5765,9 @@ if ("package:knitr" %in% search()) {
 
 # dropping secondary keys on update or delete
 DT = data.table(a=1:3, b=4:6)
-test(1396, DT[a==2, verbose=TRUE], DT[2], output="Creating new index '__a'")
-test(1397, DT[b==6, verbose=TRUE], DT[3], output="Creating new index '__b'")
-test(1398, DT[b==6, verbose=TRUE], DT[3], output="Optimized subsetting with index '__b'")
+test(1396, DT[a==2, verbose=TRUE], DT[2], output="Creating new index 'a'")
+test(1397, DT[b==6, verbose=TRUE], DT[3], output="Creating new index 'b'")
+test(1398, DT[b==6, verbose=TRUE], DT[3], output="Optimized subsetting with index 'b'")
 test(1399, indices(DT), c("a","b"))
 test(1400, DT[2, a:=4L, verbose=TRUE], data.table(a=c(1L,4L,3L),b=4:6), output=".*Dropping index 'a' due to an update on a key column")
 test(1401, indices(DT), "b")
@@ -5951,14 +5951,14 @@ setindex(DT,b)
 test(1420, indices(DT), "b")
 setnames(DT,"b","foo")
 test(1421, indices(DT), "foo")
-test(1422, DT[foo==9, verbose=TRUE], DT[2], output="Optimized subsetting with index '__foo'")
+test(1422, DT[foo==9, verbose=TRUE], DT[2], output="Optimized subsetting with index 'foo'")
 setindex(DT,a,foo)
 test(1423, indices(DT), c("foo","a__foo"))   # tests as well that order of attributes is retained although we don't use that property currently.
 test(1424, indices(setnames(DT,"foo","bar")), c("bar","a__bar"))
 test(1425, indices(setnames(DT,"a","baz")), c("bar","baz__bar"))
-test(1426, DT[baz==4L, verbose=TRUE], output="Optimized subsetting with index '__baz__bar'")
+test(1426, DT[baz==4L, verbose=TRUE], output="Optimized subsetting with index 'baz__bar'")
 test(1427, indices(DT), c("bar","baz__bar"))
-test(1428, DT[bar==9L, verbose=TRUE], output="Optimized subsetting with index '__bar'")
+test(1428, DT[bar==9L, verbose=TRUE], output="Optimized subsetting with index 'bar'")
 test(1429, indices(setnames(DT,"bar","a")), c("a", "baz__a"))
 
 # Finalised == and %in% optimization in i
@@ -5971,7 +5971,7 @@ test(1434, DT[a==b+1], DT[c(1,4,6)])
 test(1435, DT[b==max(a)], DT[3])
 test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing double column i.'a' to integer")
 DT[,a:=factor(letters[a])]
-test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new index '__a'")
+test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new index 'a'")
 ## test that the lookup env for RHS is correct. In internal env,notjoin is FALSE in this case.
 notjoin <- TRUE
 DT <- data.table(x = TRUE)
@@ -9178,7 +9178,7 @@ test(1665.2, ans <- capture.output(dt2), ans) # just checking that it doesn't er
 # Use existing index even when auto index is disabled #1422
 d = data.table(k=3:1) # subset - no index
 options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
-test(1666.1, d[k==1L, verbose=TRUE], d[3L], output="Creating new index '__k'")
+test(1666.1, d[k==1L, verbose=TRUE], d[3L], output="Creating new index 'k'")
 d = data.table(k=3:1)
 options("datatable.use.index"=TRUE, "datatable.auto.index"=FALSE)
 test(1666.2, grep("Creating new index", capture.output(d[k==1L, verbose=TRUE])), integer(0)) # do not create index
@@ -9191,9 +9191,9 @@ test(1666.4, grep("Creating new index", capture.output(d[k==1L, verbose=TRUE])),
 d = data.table(k=3:1) # subset - index
 setindex(d, k)
 options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
-test(1666.5, d[k==1L, verbose=TRUE], d[3L], output="Optimized subsetting with index '__k'")
+test(1666.5, d[k==1L, verbose=TRUE], d[3L], output="Optimized subsetting with index 'k'")
 options("datatable.use.index"=TRUE, "datatable.auto.index"=FALSE)
-test(1666.6, d[k==1L, verbose=TRUE], d[3L], output="Optimized subsetting with index '__k'")
+test(1666.6, d[k==1L, verbose=TRUE], d[3L], output="Optimized subsetting with index 'k'")
 options("datatable.use.index"=FALSE, "datatable.auto.index"=FALSE)
 test(1666.7, grep("Using existing index", capture.output(d[k==1L, verbose=TRUE])), integer(0)) # not using existing index
 options("datatable.use.index"=FALSE, "datatable.auto.index"=TRUE)

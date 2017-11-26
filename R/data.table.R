@@ -2787,10 +2787,6 @@ isReallyReal <- function(x) {
   #'        ATTENTION: If nothing else helps, an auto-index is created on x unless options prevent this.
   if (!is.call(isub)) return(NULL)
   if (!is.null(attr(x, '.data.table.locked'))) return(NULL)  # fix for #958, don't create auto index on '.SD'.
-  if (!getOption("datatable.use.index")) {
-    return(NULL) # #1422 
-    ## Does this option also prevent the usage of keys? It is interpreted in this way here...
-  }
   ## Determine, whether the nature of isub in general supports fast binary search
   remainingIsub <- isub
   i <- list()
@@ -2860,6 +2856,7 @@ isReallyReal <- function(x) {
       idxCols <- head(key(x), length(i)) ## in correct order!
   } 
   if (is.null(idx)){
+    if (!getOption("datatable.use.index")) return(NULL) # #1422
     ## check whether an exising index can be used
     ## An index can be used if the first elements correspond to the columns in i (similar to the key above)
     ## Previously, the head of an index was not used because of reordering within groups of i.
@@ -2875,15 +2872,15 @@ isReallyReal <- function(x) {
       }
     }
     if (!is.null(idx)){
-      if (verbose) {cat("Optimized subsetting with index '", paste0("__", finalCand, collapse = ""),"'\n",sep="");flush.console()}
+      if (verbose) {cat("Optimized subsetting with index '", paste0( finalCand, collapse = "__"),"'\n",sep="");flush.console()}
       idxCols <- head(finalCand, length(i)) ## in correct order!
     }
   } 
   if (is.null(idx)){
     ## if nothing else helped, auto create a new index that can be used
     if (!getOption("datatable.auto.index")) return(NULL) 
-    if (verbose) {cat("Creating new index '", paste0("__", names(i), collapse = ""),"'\n",sep="");flush.console()}
-    if (verbose) {cat("Optimized subsetting with index '", paste0("__", names(i), collapse = ""),"'\n",sep="");flush.console()}
+    if (verbose) {cat("Creating new index '", paste0(names(i), collapse = "__"),"'\n",sep="");flush.console()}
+    if (verbose) {cat("Optimized subsetting with index '", paste0(names(i), collapse = "__"),"'\n",sep="");flush.console()}
     setindexv(x, names(i))
     idx <- attr(attr(x, "index"), paste0("__", names(i), collapse = ""))
     idxCols <- names(i)
