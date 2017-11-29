@@ -176,14 +176,14 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
       y = factor(y)
       if (identical(x,y)) return()
     }
-    if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y))) return()
+    if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y)) && typeof(x)==typeof(y)) return()
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
   }
   cat("Test",num,"ran without errors but failed check that x equals y:\n")
   cat("> x =",deparse(xsub),"\n")
-  if (is.data.table(x)) compactprint(x) else if (length(x)>6) {cat("First 6 of", length(x),":");print(head(x))} else print(x)
+  if (is.data.table(x)) compactprint(x) else {cat("First 6 of ", length(x)," (type '", typeof(x), "'): ", sep=""); print(head(x))}
   cat("> y =",deparse(ysub),"\n")
-  if (is.data.table(y)) compactprint(y) else if (length(y)>6) {cat("First 6 of", length(y),":");print(head(y))} else print(y)
+  if (is.data.table(y)) compactprint(y) else {cat("First 6 of ", length(y)," (type '", typeof(y), "'): ", sep=""); print(head(y))}
   if (!isTRUE(all.equal.result)) cat(all.equal.result,sep="\n")
   assign("nfail", nfail+1, parent.frame(), inherits=TRUE)
   assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
