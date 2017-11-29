@@ -10999,11 +10999,10 @@ for (i in 0:1000) {
   fwrite(DT[,Plant:=start:(start+nrow(CO2)-1)], f, append=TRUE, col.names=FALSE)
   if (i==502) write("-999,Bad,Line,0.0,0.0,extra\n", f, append=TRUE)
 }
-test(1835.1, fread(f), error="Too many fields on out-of-sample row.*-999,Bad,Line,0.0,0.0,extra")
+test(1835, fread(f, verbose=TRUE),
+  output = "Not using sample from jump 50.*could not establish the true line start.*jumps=[0..2)",
+  error  = "Too many fields on out-of-sample row.*-999,Bad,Line,0.0,0.0,extra")
 unlink(f)
-# when an error occurs, the verbose output before the error is in the log file. Test that too.
-out = readLines(paste0(tempdir(),"/fread.out"))
-test(1835.2, length(grep("Not using sample from jump 50.*could not establish the true line start", out)), 1L)
 
 test(1836, fread('1,2,"3,a"\n4,5,"6,b"'), data.table(V1=c(1L,4L), V2=c(2L,5L), V3=c("3,a","6,b")))   # 2196
 

@@ -71,8 +71,7 @@ SEXP freadR(
   SEXP dropArg,
   SEXP colClassesArg,
   SEXP integer64Arg,
-  SEXP encodingArg,
-  SEXP logFileNameArg
+  SEXP encodingArg
 ) {
   verbose = LOGICAL(verboseArg)[0];
   warningsAreErrors = LOGICAL(warnings2errorsArg)[0];
@@ -181,8 +180,6 @@ SEXP freadR(
   else if (strcmp(tt, "UTF-8")==0) ienc = CE_UTF8;
   else STOP("encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'", tt);
   // === end extras ===
-
-  args.logFileName = isNull(logFileNameArg) ? NULL : CHAR(STRING_ELT(logFileNameArg,0));
 
   DT = R_NilValue; // created by callback
   freadMain(args);
