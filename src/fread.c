@@ -957,6 +957,7 @@ static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int freadMain(freadMainArgs _args) {
   args = _args;  // assign to global for use by DTPRINT() in other functions
   double t0 = wallclock();
+  double nextTime = t0+1.0; // start printing progress meter in 1 sec if not completed by then
 
   //*********************************************************************************************
   // [1] Extract the arguments and check their validity
@@ -1799,7 +1800,7 @@ int freadMain(freadMainArgs _args) {
   //*********************************************************************************************
   // [11] Read the data
   //*********************************************************************************************
-  int hasPrinted=0;  // the percentage last printed so it prints every 2% without many calls to wallclock()
+  bool hasProgressPrinted=false;
   bool stopTeam=false, firstTime=true;  // bool for MT-safey (cannot ever read half written bool value)
   int nTypeBump=0, nTypeBumpCols=0;
   double tRead=0, tReread=0;
@@ -1885,9 +1886,8 @@ int freadMain(freadMainArgs _args) {
     #pragma omp for ordered schedule(dynamic) reduction(+:thNextGoodLine,thRead,thPush)
     for (int jump = jump0; jump < nJumps; jump++) {
       if (stopTeam) continue;  // must continue and not break. We desire not to depend on (relatively new) omp cancel directive, yet
-      double tt0 = 0, tt1 = 0;
-      if (verbose) { tt1 = tt0 = wallclock(); }
-
+      double tLast = 0.0;      // thread local wallclock time at last measuring point for verbose mode only.
+      if (verbose) tLast = wallclock();
       if (myNrow) {
         // On the 2nd iteration onwards for this thread, push the data from the previous jump
         // Convoluted because the ordered section has to be last in some OpenMP implementations :
@@ -1901,18 +1901,16 @@ int freadMain(freadMainArgs _args) {
         //      as we know the previous jump's number of rows.
         //  iv) so that myBuff can be small
         pushBuffer(&ctx);
-        if (verbose) { tt1 = wallclock(); thPush += tt1 - tt0; tt0 = tt1; }
-
-        if (me==0 && (hasPrinted || (args.showProgress && jump/nth==4 &&
-                                    ((double)nJumps/(nth*3)-1.0)*(wallclock()-tAlloc)>3.0))) {
+        double now = 0.0;
+        if (verbose || (me==0 && args.showProgress)) { now = wallclock(); thPush += now-tLast; tLast = now; }
+        if (me==0 && jump>0 && args.showProgress && now>nextTime && !stopTeam) {
           // Important for thread safety inside progess() that this is called not just from critical but that
           // it's the master thread too, hence me==0.
-          // Jump 0 might not be assigned to thread 0; jump/nth==4 to wait for 4 waves to complete then decide once.
-          int p = (int)(100.0*jump/nJumps);
-          if (p>=hasPrinted) {
-            // TODO: Add ETA. Ok to call wallclock() here.
-            progress((double)p, /*eta*/(double)0.0);
-            hasPrinted = p+2;  // update every 2%
+          int ETA = (int)(((now-tAlloc)/jump) * (nJumps-jump));
+          if (hasProgressPrinted || ETA>=1.0) {
+            progress((int)(100.0*jump/nJumps), ETA);
+            nextTime = now+0.5;  // update progress in 0.5sec
+            hasProgressPrinted = true;
           }
         }
         myNrow = 0;
@@ -1934,7 +1932,7 @@ int freadMain(freadMainArgs _args) {
         continue;
       }
       thisJumpStart=tch;
-      if (verbose) { tt1 = wallclock(); thNextGoodLine += tt1 - tt0; tt0 = tt1; }
+      if (verbose) { double now = wallclock(); thNextGoodLine += now-tLast; tLast=now; }
 
       void *targets[9] = {NULL, ctx.buff1, NULL, NULL, ctx.buff4, NULL, NULL, NULL, ctx.buff8};
       FieldParseContext fctx = {
@@ -2146,7 +2144,7 @@ int freadMain(freadMainArgs _args) {
         if (*tch!='\0') tch++;
         myNrow++;
       }
-      if (verbose) { tt1 = wallclock(); thRead += tt1 - tt0; tt0 = tt1; }
+      if (verbose) { double now = wallclock(); thRead += now-tLast; tLast = now; }
       ctx.anchor = thisJumpStart;
       ctx.nRows = myNrow;
       postprocessBuffer(&ctx);
@@ -2197,9 +2195,9 @@ int freadMain(freadMainArgs _args) {
 
     // Push out all buffers one last time.
     if (myNrow) {
-      double tt1 = verbose? wallclock() : 0;
+      double now = verbose ? wallclock() : 0;
       pushBuffer(&ctx);
-      if (verbose) thRead += wallclock() - tt1;
+      if (verbose) thRead += wallclock() - now;
     }
     // Each thread to free their own buffer.
     free(ctx.buff8); ctx.buff8 = NULL;
@@ -2230,6 +2228,10 @@ int freadMain(freadMainArgs _args) {
     extraAllocRows = 0;
     goto read;   // jump0>0 at this point, set above
   }
+
+  // tell progress meter to finish up; e.g. write final newline
+  // if there's a reread, the progress meter will start again from 0
+  if (hasProgressPrinted) progress(100, 0);
 
   if (firstTime) {
     tReread = tRead = wallclock();
@@ -2266,7 +2268,6 @@ int freadMain(freadMainArgs _args) {
       DTi = 0;
       prevJumpEnd = pos;
       firstTime = false;
-      hasPrinted = 1;  // reset the progress meter to 1%
       nTypeBump = 0;   // for test 1328.1. Otherwise the last field would get shifted forwards again.
       jump0 = 0;       // for #2486
       goto read;

@@ -53,6 +53,7 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) 
 
   if (clean) system("rm *.o *.so")
 
+  # TODO add -Wextra too
   if (debug) {
     ret = system("MAKEFLAGS='-j CC=gcc-7 CFLAGS=-std=c99\\ -Og\\ -ggdb\\ -Wall\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c")
   } else {
