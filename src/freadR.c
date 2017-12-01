@@ -112,9 +112,9 @@ SEXP freadR(
 
   // header is the only boolean where NA is valid and means 'auto'.
   // LOGICAL in R is signed 32 bits with NA_LOGICAL==INT_MIN, currently.
-  args.header = FALSE;
+  args.header = false;
   if (LOGICAL(headerArg)[0]==NA_LOGICAL) args.header = NA_BOOL8;
-  else if (LOGICAL(headerArg)[0]==TRUE) args.header = TRUE;
+  else if (LOGICAL(headerArg)[0]==TRUE) args.header = true;
 
   args.nrowLimit = INT64_MAX;
   // checked at R level
@@ -193,7 +193,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
   if (typeSize[CT_BOOL8_N]!=1) STOP("Internal error: typeSize[CT_BOOL8_N] != 1");
   if (typeSize[CT_STRING]!=8) STOP("Internal error: typeSize[CT_STRING] != 1");
-  colNamesSxp = NULL;
+  colNamesSxp = R_NilValue;
   if (colNames!=NULL) {
     colNamesSxp = PROTECT(allocVector(STRSXP, ncol));
     protecti++;
@@ -312,7 +312,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     }
     UNPROTECT(nprot);
   }
-  return TRUE;  // continue
+  return true;
 }
 
 
