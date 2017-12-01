@@ -1854,7 +1854,10 @@ int freadMain(freadMainArgs _args) {
   {
     int me = omp_get_thread_num();
     #pragma omp master
-    nth = omp_get_num_threads();
+    {
+      nth = omp_get_num_threads();
+      if (me!=0) stopTeam = true;
+    }
     const char *thisJumpStart=NULL;  // The first good start-of-line after the jump point
     size_t myNrow = 0; // the number of rows in my chunk
     size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
@@ -1901,11 +1904,14 @@ int freadMain(freadMainArgs _args) {
         //      as we know the previous jump's number of rows.
         //  iv) so that myBuff can be small
         pushBuffer(&ctx);
+        myNrow = 0;
+
         double now = 0.0;
         if (verbose || (me==0 && args.showProgress)) { now = wallclock(); thPush += now-tLast; tLast = now; }
         if (me==0 && jump>0 && args.showProgress && now>nextTime && !stopTeam) {
           // Important for thread safety inside progess() that this is called not just from critical but that
-          // it's the master thread too, hence me==0.
+          // it's the master thread too, hence me==0. OpenMP doesn't allow '#pragma omp master' here, but we
+          // did check above that master's me==0.
           int ETA = (int)(((now-tAlloc)/jump) * (nJumps-jump));
           if (hasProgressPrinted || ETA>=1.0) {
             progress((int)(100.0*jump/nJumps), ETA);
@@ -1913,7 +1919,6 @@ int freadMain(freadMainArgs _args) {
             hasProgressPrinted = true;
           }
         }
-        myNrow = 0;
       }
 
       const char *tch = pos + (size_t)jump*chunkBytes;
