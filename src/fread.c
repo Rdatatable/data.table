@@ -957,7 +957,7 @@ static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int freadMain(freadMainArgs _args) {
   args = _args;  // assign to global for use by DTPRINT() in other functions
   double t0 = wallclock();
-  double nextTime = t0+1.0; // start printing progress meter in 1 sec if not completed by then
+  // double nextTime = t0+1.0; // start printing progress meter in 1 sec if not completed by then
 
   //*********************************************************************************************
   // [1] Extract the arguments and check their validity
@@ -1908,14 +1908,14 @@ int freadMain(freadMainArgs _args) {
 
         double now = 0.0;
         if (verbose || (me==0 && args.showProgress)) { now = wallclock(); thPush += now-tLast; tLast = now; }
-        if (me==0 && jump>0 && args.showProgress && now>nextTime && !stopTeam) {
+        if (me==0 && jump>0 && args.showProgress) { // && now>nextTime && !stopTeam) {
           // Important for thread safety inside progess() that this is called not just from critical but that
           // it's the master thread too, hence me==0. OpenMP doesn't allow '#pragma omp master' here, but we
           // did check above that master's me==0.
           int ETA = (int)(((now-tAlloc)/jump) * (nJumps-jump));
-          if (hasProgressPrinted || ETA>=1.0) {
+          if (1) { // hasProgressPrinted || ETA>=1) {
             progress((int)(100.0*jump/nJumps), ETA);
-            nextTime = now+0.5;  // update progress in 0.5sec
+            // nextTime = now+0.5;  // update progress in 0.5sec
             hasProgressPrinted = true;
           }
         }
