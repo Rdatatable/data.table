@@ -508,12 +508,12 @@ void progress(int p, int eta) {
     REprintf("%s", bar);
     bar[toPrint] = '=';
     displayed = p;
-    R_FlushConsole();  // Windows in mind which doesn't flush until \n it seems. May as well for Linux/Mac too.
   }
   if (p==50) {
     REprintf("|\n");
     displayed = -1;
   }
+  R_FlushConsole();  // Windows/RStudio in mind, #2482. May as well for Linux/Mac too.
 }
 
 
