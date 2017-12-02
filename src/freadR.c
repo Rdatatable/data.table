@@ -486,7 +486,7 @@ void progress(int p, int eta) {
 
   // REprinf to avoid Rprintf's call to R_CheckUserInterrupt() every 100 lines, issue #2457
   // It's the R_CheckUserInterrupt() that has caused crashes before when called from OpenMP parallel region
-  // even when called only from master thread.
+  // even when called only from master thread. Update: can now retry within critical.
   // fwrite.c has some comments about how it might be possible to call R_CheckUserInterrupt() here so that
   // a long running fread can be stopped by user with Ctrl-C (or ESC on Windows).
   // Could try R_ProcessEvents() too as per
@@ -494,26 +494,29 @@ void progress(int p, int eta) {
 
   // No use of \r to avoid bug in RStudio, linked in the same issue #2457
 
-  static int displayed = -1;  // -1 means not yet displayed
-  static char bar[] = "================================================== ";  // 50 marks
+  static int displayed = -1;  // -1 means not yet displayed, otherwise [0,50] '=' are displayed
+  static char bar[] = "================================================== ";  // 50 marks for each 2%
   if (p<0 || p>100 || (p==100 && displayed==-1)) return;
-  if (displayed==-1) {
-    REprintf("|--------------------------------------------------|\n|"); // 50 dashes for each 2%
-    displayed = 0;
+  #pragma omp critical
+  {
+    if (displayed==-1) {
+      REprintf("|--------------------------------------------------|\n|");
+      displayed = 0;
+    }
+    p/=2;
+    int toPrint = p-displayed;
+    if (toPrint) {
+      bar[toPrint] = '\0';
+      REprintf("%s", bar);
+      bar[toPrint] = '=';
+      displayed = p;
+    }
+    if (p==50) {
+      REprintf("|\n");
+      displayed = -1;
+    }
+    R_FlushConsole();
   }
-  p/=2;
-  int toPrint = p-displayed;
-  if (toPrint) {
-    bar[toPrint] = '\0';
-    REprintf("%s", bar);
-    bar[toPrint] = '=';
-    displayed = p;
-  }
-  if (p==50) {
-    REprintf("|\n");
-    displayed = -1;
-  }
-  R_FlushConsole();  // Windows/RStudio in mind, #2482. May as well for Linux/Mac too.
 }
 
 
