@@ -61,6 +61,9 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
       stop("File '",input,"' does not exist; getwd()=='", getwd(), "'",
         ". Include correct full path, or one or more spaces to consider the input a system command.")
     }
+    if (substring(input,1,1)==" ") {
+      stop("Input argument contains no \\n and contains one or more spaces, so it looks like a system command. Please remove the leading space.")
+    }
     tt = tempfile()
     on.exit(unlink(tt), add = TRUE)
     if (.Platform$OS.type == "unix") {
