@@ -1149,13 +1149,13 @@ int freadMain(freadMainArgs _args) {
   else if (fileSize >= 2 && sof[0] + sof[1] == '\xFE' + '\xFF') {  // either 0xFE 0xFF or 0xFF 0xFE
     STOP("File is encoded in UTF-16, this encoding is not supported by fread(). Please recode the file to UTF-8.");
   }
-  if (eof[-1] == '\x1A' || eof[-1] == '\0') {
+  if (eof>sof && (eof[-1]=='\x1A' || eof[-1]=='\0')) {
     char c = eof[-1];
-    while (eof > sof && eof[-1] == c) eof--;
+    while (eof>sof && eof[-1]==c) eof--;
     if (verbose) DTPRINT("  Last byte(s) of input found to be %s and removed.\n",
-                         c? "0x1A (Ctrl+Z)" : "0x00 (NUL)");
+                         c ? "0x1A (Ctrl+Z)" : "0x00 (NUL)");
   }
-  if (eof<=sof) STOP("Input is empty after removing BOM and any terminal control characters");
+  if (eof<=sof) STOP("Input is empty or only contains BOM or terminal control characters");
   }
 
 

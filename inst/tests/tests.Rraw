@@ -2516,6 +2516,10 @@ unlink(f)
 # showed up on winbuilder so far, so might be in combination with the D: tempdir() there; perhaps D: is on a network drive or something.
 cat("",file=f<-tempfile()); test(885, fread(f), error="empty"); unlink(f)
 test(885.1, fread(""), error="empty")
+test(885.2, fread(), error="empty")
+cat("", file=f<-tempfile()); test(885.3, fread(f), error="File is empty:"); unlink(f)
+cat(" ", file=f<-tempfile()); test(885.4, fread(f), error="either empty.*whitespace.*or skip has"); unlink(f)
+test(885.5, fread(" "), error="space")
 test(886, fread("\n"), error="empty")
 test(887, fread("  \n\t  \t  \n    \n  "), error="empty")
 cat("A", file=f<-tempfile()); test(888, fread(f), data.table(A=logical())); unlink(f)
@@ -5975,7 +5979,7 @@ DT[,a:=factor(letters[a])]
 test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new index 'a'")
 
 # fread dec=',' e.g. France
-test(1438, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1 is not TRUE")
+test(1438, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1L is not TRUE")
 test(1439, fread("A;B\n8;2,34\n", dec="1"), data.table(A=8L, B="2,34"))
 test(1440, fread("A;B\n8;2,34\n", dec=","), data.table(A=8L, B=2.34))
 test(1441, fread("A;B\n1;2,34\n", sep=".", dec="."), error="sep == dec ('.') is not allowed")
