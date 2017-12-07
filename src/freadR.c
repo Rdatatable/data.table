@@ -496,21 +496,24 @@ void progress(int p, int eta) {
 
   static int displayed = -1;  // -1 means not yet displayed, otherwise [0,50] '=' are displayed
   static char bar[] = "================================================== ";  // 50 marks for each 2%
-  if (p<0 || p>100 || (p==100 && displayed==-1)) return;
+  if (displayed==-1) {
+    if (eta<3 || p>50) return;
+    #pragma omp critical
+    {
+      REprintf("|--------------------------------------------------|\n|");
+      R_FlushConsole();
+    }
+    displayed = 0;
+  }
+  p/=2;
+  int toPrint = p-displayed;
+  if (toPrint==0) return;
+  bar[toPrint] = '\0';
   #pragma omp critical
   {
-    if (displayed==-1) {
-      REprintf("|--------------------------------------------------|\n|");
-      displayed = 0;
-    }
-    p/=2;
-    int toPrint = p-displayed;
-    if (toPrint) {
-      bar[toPrint] = '\0';
-      REprintf("%s", bar);
-      bar[toPrint] = '=';
-      displayed = p;
-    }
+    REprintf("%s", bar);
+    bar[toPrint] = '=';
+    displayed = p;
     if (p==50) {
       REprintf("|\n");
       displayed = -1;

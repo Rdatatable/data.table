@@ -955,7 +955,6 @@ static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int freadMain(freadMainArgs _args) {
   args = _args;  // assign to global for use by DTPRINT() in other functions
   double t0 = wallclock();
-  double nextTime = t0+2.0; // start printing progress meter in 2 sec (if ETA from there > 2 seconds)
 
   //*********************************************************************************************
   // [1] Extract the arguments and check their validity
@@ -1798,7 +1797,6 @@ int freadMain(freadMainArgs _args) {
   //*********************************************************************************************
   // [11] Read the data
   //*********************************************************************************************
-  bool hasProgressPrinted=false;
   bool stopTeam=false, firstTime=true;  // bool for MT-safey (cannot ever read half written bool value)
   int nTypeBump=0, nTypeBumpCols=0;
   double tRead=0, tReread=0;
@@ -1851,10 +1849,16 @@ int freadMain(freadMainArgs _args) {
   #pragma omp parallel num_threads(nth)
   {
     int me = omp_get_thread_num();
+    bool myShowProgress = false;
     #pragma omp master
     {
       nth = omp_get_num_threads();
-      if (me!=0) stopTeam = true;
+      if (me!=0) {
+        // should never happen
+        snprintf(stopErr, stopErrSize, "Master thread is not thread 0 but thread %d. This should never happen.\n", me);
+        stopTeam = true;
+      }
+      myShowProgress = args.showProgress;
     }
     const char *thisJumpStart=NULL;  // The first good start-of-line after the jump point
     size_t myNrow = 0; // the number of rows in my chunk
@@ -1903,18 +1907,16 @@ int freadMain(freadMainArgs _args) {
         //  iv) so that myBuff can be small
         pushBuffer(&ctx);
         myNrow = 0;
-
-        double now = 0.0;
-        if (verbose || (me==0 && args.showProgress)) { now = wallclock(); thPush += now-tLast; tLast = now; }
-        if (me==0 && jump>0 && args.showProgress && now>nextTime && !stopTeam) {
-          // Important for thread safety inside progess() that this is called not just from critical but that
-          // it's the master thread too, hence me==0. OpenMP doesn't allow '#pragma omp master' here, but we
-          // did check above that master's me==0.
-          int ETA = (int)(((now-tAlloc)/jump) * (nJumps-jump));
-          if (hasProgressPrinted || ETA>=2) {
+        if (verbose || myShowProgress) {
+          double now = wallclock();
+          thPush += now-tLast;
+          tLast = now;
+          if (myShowProgress && /*wait for all threads to process 2 jumps*/jump>=nth*2) {
+            // Important for thread safety inside progess() that this is called not just from critical but that
+            // it's the master thread too, hence me==0. OpenMP doesn't allow '#pragma omp master' here, but we
+            // did check above that master's me==0.
+            int ETA = (int)(((now-tAlloc)/jump) * (nJumps-jump));
             progress((int)(100.0*jump/nJumps), ETA);
-            nextTime = now+0.5;  // update progress in 0.5sec
-            hasProgressPrinted = true;
           }
         }
       }
@@ -2234,7 +2236,7 @@ int freadMain(freadMainArgs _args) {
 
   // tell progress meter to finish up; e.g. write final newline
   // if there's a reread, the progress meter will start again from 0
-  if (hasProgressPrinted) progress(100, 0);
+  if (args.showProgress) progress(100, 0);
 
   if (firstTime) {
     tReread = tRead = wallclock();
