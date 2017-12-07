@@ -1496,9 +1496,9 @@ int freadMain(freadMainArgs _args) {
       // detect blank lines ...
       skip_white(&ch);
       if (eol(&ch) || *ch=='\0') {
-        if (!skipEmptyLines && !fill) break;
+        if (!skipEmptyLines && !fill && ncol>1) break;
         ch += (*ch!='\0');
-        if (!skipEmptyLines) sampleLines++;  // TODO: fall through more gracefully
+        if (!skipEmptyLines || ncol==1) sampleLines++;  // TODO: fall through more gracefully
         continue;
       }
       jline++;
@@ -2016,7 +2016,7 @@ int freadMain(freadMainArgs _args) {
           while (*tch==' ') tch++;  // multiple sep=' ' at the tlineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
           fieldStart = tch;
         }
-        if (fill || (*tch!='\n' && *tch!='\r')) while (j < ncol) {
+        if (fill || ncol==1 || (*tch!='\n' && *tch!='\r')) while (j < ncol) {
           fieldStart = tch;
           int8_t joldType = type[j];
           int8_t thisType = joldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
