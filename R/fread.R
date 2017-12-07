@@ -3,12 +3,12 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
 {
   if (is.null(sep)) sep="\n"         # C level knows that \n means \r\n on Windows, for example
   else {
-    stopifnot( length(sep)==1, !is.na(sep), is.character(sep) )
+    stopifnot( length(sep)==1L, !is.na(sep), is.character(sep) )
     if (sep=="") sep="\n"            # meaning readLines behaviour. The 3 values (NULL, "" or "\n") are equivalent.
     else if (sep=="auto") sep=""     # sep=="" at C level means auto sep
     else stopifnot( nchar(sep)==1 )  # otherwise an actual character to use as sep
   }
-  stopifnot( is.character(dec), length(dec)==1, nchar(dec)==1 )
+  stopifnot( is.character(dec), length(dec)==1, nchar(dec)==1L )
   # handle encoding, #563
   if (length(encoding) != 1L || !encoding %in% c("unknown", "UTF-8", "Latin-1")) {
     stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
@@ -17,12 +17,12 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   isTrueFalseNA = function(x) isTRUE(x) || identical(FALSE, x) || identical(NA, x)
   stopifnot( isTrueFalse(strip.white), isTrueFalse(blank.lines.skip), isTrueFalse(fill), isTrueFalse(showProgress),
              isTrueFalse(stringsAsFactors), isTrueFalse(verbose), isTrueFalse(check.names), isTrueFalse(logical01) )
-  stopifnot( is.numeric(nrows), length(nrows)==1 )
+  stopifnot( is.numeric(nrows), length(nrows)==1L )
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
   stopifnot(isTrueFalseNA(header))
-  stopifnot(length(skip)==1)
-  stopifnot(is.numeric(nThread) && length(nThread)==1)
+  stopifnot(length(skip)==1L)
+  stopifnot(is.numeric(nThread) && length(nThread)==1L)
   nThread=as.integer(nThread)
   stopifnot(nThread>=1)
   if (!missing(file)) {
@@ -52,7 +52,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
       curl::curl_download(input, tt, mode = "wb", quiet = !showProgress)
     }
     input = tt
-  } else if (input == "" || length(grep('\\n|\\r', input)) > 0) {
+  } else if (input == "" || length(grep('\\n|\\r', input)) > 0L) {
     # text input
   } else if (isTRUE(file.info(input)$isdir)) { # fix for #989, dir.exists() requires v3.2+
     stop("'input' can not be a directory name, but must be a single character string containing a file name, a command, full path to a file, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or the input data itself.")
@@ -61,7 +61,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
       stop("File '",input,"' does not exist; getwd()=='", getwd(), "'",
         ". Include correct full path, or one or more spaces to consider the input a system command.")
     }
-    if (substring(input,1,1)==" ") {
+    if (substring(input,1L,1L)==" ") {
       stop("Input argument contains no \\n and contains one or more spaces, so it looks like a system command. Please remove the leading space.")
     }
     tt = tempfile()
