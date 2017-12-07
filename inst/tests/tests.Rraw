@@ -5979,7 +5979,7 @@ DT[,a:=factor(letters[a])]
 test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new index 'a'")
 
 # fread dec=',' e.g. France
-test(1438, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1 is not TRUE")
+test(1438, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1L is not TRUE")
 test(1439, fread("A;B\n8;2,34\n", dec="1"), data.table(A=8L, B="2,34"))
 test(1440, fread("A;B\n8;2,34\n", dec=","), data.table(A=8L, B=2.34))
 test(1441, fread("A;B\n1;2,34\n", sep=".", dec="."), error="sep == dec ('.') is not allowed")

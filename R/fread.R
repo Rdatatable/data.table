@@ -8,7 +8,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
     else if (sep=="auto") sep=""     # sep=="" at C level means auto sep
     else stopifnot( nchar(sep)==1 )  # otherwise an actual character to use as sep
   }
-  stopifnot( is.character(dec), length(dec)==1, nchar(dec)==1L )
+  stopifnot( is.character(dec), length(dec)==1L, nchar(dec)==1L )
   # handle encoding, #563
   if (length(encoding) != 1L || !encoding %in% c("unknown", "UTF-8", "Latin-1")) {
     stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
