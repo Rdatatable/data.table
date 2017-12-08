@@ -6002,6 +6002,70 @@ test(1437.8, DT[x %in% c(2,3), verbose = TRUE], output = "Optimized subsetting")
 DT[, a:= sample(LETTERS,6)]
 test(1437.9, DT[a %chin% c("A", "B"), verbose = TRUE], output = "Optimized subsetting")
 test(1437.11, DT[a %chin% c("A", "B") & x == 3 & y %in% c(1,2), verbose = TRUE], output = "Optimized subsetting")
+## do extensive tests of optimized vs non-optimized queries for identical results.
+## very much inspired by the tests for non equi joins (1641ff)
+set.seed(13545)
+library(bit64)
+n <- 1e3 ## rows of the data.table. I checked that with these rows and the seed, all queries (except for == NA) have at least one match
+## create test DT
+DT <- data.table(intCol    = sample(c(1:3, NA), n, replace = TRUE),
+                 doubleCol = sample(c(1.86, 1000.345, 2.346, NA, NaN), n, replace = TRUE), 
+                 boolCol   = sample(c(TRUE, FALSE, NA), n, replace = TRUE),
+                 charCol   = sample(c(LETTERS[1:3], NA), n, replace = TRUE))
+if ("package:bit64" %in% search()) DT[, int64Col := as.integer64(sample(1:3, n, replace = TRUE))]
+## get list with unique values excluding NA
+vals <- lapply(DT, function(x) {out <- unique(x); out[!is.na(out)]})
+## define possible queries for each column. Separate queries with NAs
+queries <- list(intCol    = c(paste0("intCol == ", sample(vals$intCol, 1)),
+                              paste0("intCol %in% c(", paste0(sample(vals$intCol, 3, replace = TRUE), collapse = ","), ")"),
+                              paste0("intCol == NA"),
+                              paste0("intCol %in% c(", paste0(c(NA,sample(vals$intCol, 3, replace = TRUE)), collapse = ","), ")")),
+                doubleCol = c(paste0("doubleCol == ", sample(vals$doubleCol, 1)),
+                              paste0("doubleCol %in% c(", paste0(sample(vals$doubleCol, 3, replace = TRUE), collapse = ","), ")"),
+                              paste0("doubleCol == NA"),
+                              paste0("doubleCol == NaN"),
+                              paste0("doubleCol %in% c(NA, NaN, ", paste0(sample(vals$doubleCol, 3, replace = TRUE), collapse = ","), ")")),
+                boolCol   = c(paste0("boolCol == ", sample(vals$boolCol, 1)), ## %in% query makes no sense for bools, therefore not tested
+                              paste0("boolCol == NA")),
+                charCol   = c(paste0("charCol == '", sample(vals$charCol, 1), "'"),
+                              paste0("charCol %in% c(", paste0("'", sample(vals$charCol, 3, replace = TRUE), "'", collapse = ","), ")"),
+                              paste0("charCol %chin% c(", paste0("'", sample(vals$charCol, 3, replace = TRUE), "'", collapse = ","), ")"),
+                              paste0("charCol == NA"),
+                              paste0("charCol %in% c(NA, ", paste0("'", sample(vals$charCol, 3, replace = TRUE), "'", collapse = ","), ")"),
+                              paste0("charCol %chin% c(NA, ", paste0("'", sample(vals$charCol, 3, replace = TRUE), "'", collapse = ","), ")")
+                )
+)
+if ("package:bit64" %in% search()) 
+  queries$int64Col = c(paste0("int64Col == ", sample(vals$int64Col, 1)),
+                       paste0("int64Col %in% as.integer64(c(", paste0(sample(vals$int64Col, 3, replace = TRUE), collapse = ","), "))"),
+                       paste0("int64Col == NA_integer64_"),
+                       paste0("int64Col %in% c(NA_integer64_, as.integer64(", paste0(sample(vals$int64Col, 3, replace = TRUE), collapse = ","), "))")
+  ) 
+## create all combinations of queries, connected by "&".
+## Includes cll combinations, also with a subset of columns, but no permutations
+all <- data.table(intCol    = character(0),
+                  doubleCol = character(0),
+                  boolCol   = character(0),
+                  charCol   = character(0),
+                  int64Col  = character(0))
+for(thisLength in 1:3){
+  ## get all query combinations with up to three columns
+  combs <- as.list(as.data.table(combn(length(queries),thisLength)))
+  for(comb in combs)  all <- rbind(all, do.call(CJ, queries[comb]), fill = TRUE)
+}
+all[is.na(all)] <- "missing"
+## construct the query string
+all[, query := paste(intCol, doubleCol, boolCol, charCol, int64Col, sep = "&")]
+all[, query := gsub("&missing$", "", gsub("missing&", "", query))]
+## test each query string
+test_no <- 1437.011
+for(t in seq_len(nrow(all))){
+  thisQuery <- all$query[t]
+  ansOpt <- DT[eval(parse(text = thisQuery))]
+  ansRef <- subset(DT, subset = eval(parse(text = thisQuery)))
+  test(signif(test_no, 7), ansOpt, ansRef)
+  test_no <- test_no + 0.001
+}
 
 # fread dec=',' e.g. France
 test(1438, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1 is not TRUE")
