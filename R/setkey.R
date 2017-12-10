@@ -334,7 +334,7 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
   # Cross Join will then produce a join table with the combination of all values (cross product).
   # The last vector is varied the quickest in the table, so dates should be last for roll for example
   l = list(...)
-  emptyList <- FALSE ## fix for XXX
+  emptyList <- FALSE ## fix for #2511
   if(any(sapply(l, length) == 0)){
     ## at least one column is empty The whole thing will be empty in the end
     emptyList <- TRUE

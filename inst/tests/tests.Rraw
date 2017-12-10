@@ -11187,7 +11187,7 @@ DT = setNames(data.frame(a = 1, b = 2, c = 3, d = 4), c(NA, "b", "c", NA))
 setnames(DT, c('a', 'b', 'c', 'd'))
 test(1853, names(DT), c('a', 'b', 'c', 'd'))
 
-# CJ bug with multiple empty vectors (#XXX)
+# CJ bug with multiple empty vectors (#2511)
 test(1854.1, data.frame(CJ(x = integer(0))), setattr(expand.grid(x = integer(0)), "out.attrs", NULL))
 test(1854.2, data.frame(CJ(x = integer(0), y = character(0))), setattr(expand.grid(x = integer(0), y = character(0)), "out.attrs", NULL))
 test(1854.3, data.frame(CJ(x = integer(0), y = c("a", "b"))), setattr(expand.grid(x = integer(0), y = c("a", "b")), "out.attrs", NULL))
