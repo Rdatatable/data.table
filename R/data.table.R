@@ -2843,7 +2843,7 @@ isReallyReal <- function(x) {
   ## as these two would be interpreted as args for CJ
   colNames <- names(i)
   names(i) <- NULL 
-  i$sorted <- TRUE
+  i$sorted <- FALSE
   i$unique <- TRUE
   i <- do.call(CJ, i)
   setnames(i, colNames)
