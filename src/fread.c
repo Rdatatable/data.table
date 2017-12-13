@@ -1495,9 +1495,9 @@ int freadMain(freadMainArgs _args) {
       // detect blank lines ...
       skip_white(&ch);
       if (ncol>1 && (eol(&ch) || *ch=='\0')) {
-        if (!skipEmptyLines && !fill && ncol>1) break;
+        if (!skipEmptyLines && !fill) break;
         ch += (*ch!='\0');
-        if (!skipEmptyLines || ncol==1) sampleLines++;  // TODO: fall through more gracefully
+        if (!skipEmptyLines) sampleLines++;  // TODO: fall through more gracefully
         continue;
       }
       jline++;
