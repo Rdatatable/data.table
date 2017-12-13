@@ -11187,6 +11187,9 @@ DT = setNames(data.frame(a = 1, b = 2, c = 3, d = 4), c(NA, "b", "c", NA))
 setnames(DT, c('a', 'b', 'c', 'd'))
 test(1853, names(DT), c('a', 'b', 'c', 'd'))
 
+
+test(1855, fread('B,C\n"12"  ,15\n"13"  ,18\n"14"  ,3'), data.table(B=c(12L, 13L, 14L), C=c(15L, 18L, 3L)))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
