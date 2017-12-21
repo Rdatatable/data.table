@@ -5,7 +5,7 @@
 #
 language: r
 dist: trusty
-sudo: false
+sudo: required
 cache: packages
 warnings_are_errors: true
 r_check_args: ""
