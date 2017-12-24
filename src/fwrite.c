@@ -17,7 +17,7 @@
 #define WRITE write
 #define CLOSE close
 #endif
-#include <omp.h>
+#include "myomp.h"
 #include "fwrite.h"
 
 #define NUM_SF   15

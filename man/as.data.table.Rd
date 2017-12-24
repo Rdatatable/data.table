@@ -73,13 +73,13 @@ as.data.table(ll)
 as.data.table(ll, keep.rownames=TRUE)
 as.data.table(ll, keep.rownames="rownames")
 
-df = data.frame(x=rep(c("x","y","z"),each=2), y=c(1,3,6), row.names=LETTERS[1:6])
-as.data.table(df)
-as.data.table(df, keep.rownames=TRUE)
-as.data.table(df, keep.rownames="rownames")
+DF = data.frame(x=rep(c("x","y","z"),each=2), y=c(1,3,6), row.names=LETTERS[1:6])
+as.data.table(DF)
+as.data.table(DF, keep.rownames=TRUE)
+as.data.table(DF, keep.rownames="rownames")
 
-dt = data.table(x=rep(c("x","y","z"),each=2), y=c(1:6))
-as.data.table(dt)
+DT = data.table(x=rep(c("x","y","z"),each=2), y=c(1:6))
+as.data.table(DT)
 
 ar = rnorm(27)
 ar[sample(27, 15)] = NA

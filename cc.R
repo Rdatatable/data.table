@@ -53,10 +53,11 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) 
 
   if (clean) system("rm *.o *.so")
 
+  # TODO add -Wextra too
   if (debug) {
-    ret = system("MAKEFLAGS='-j CC=gcc CFLAGS=-std=gnu99\\ -O0\\ -ggdb\\ -Wall\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c")
+    ret = system("MAKEFLAGS='-j CC=gcc-7 CFLAGS=-std=c99\\ -Og\\ -ggdb\\ -Wall\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c")
   } else {
-    ret = system("MAKEFLAGS='-j CC=gcc CFLAGS=-fopenmp\\ -std=gnu99\\ -O3\\ -pipe\\ -Wall\\ -pedantic' R CMD SHLIB -o data.table.so *.c")
+    ret = system("MAKEFLAGS='-j CC=gcc-7 CFLAGS=-fopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic' R CMD SHLIB -o data.table.so *.c")
   }
   if (ret) return()
   # clang -Weverything includes -pedantic and issues many more warnings than gcc

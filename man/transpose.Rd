@@ -32,8 +32,8 @@ ll = list(1:5, 6:8)
 transpose(ll)
 setDT(transpose(ll, fill=0))[]
 
-dt = data.table(x=1:5, y=6:10)
-transpose(dt)
+DT = data.table(x=1:5, y=6:10)
+transpose(DT)
 }
 \seealso{
   \code{\link{data.table}}, \code{\link{tstrsplit}}

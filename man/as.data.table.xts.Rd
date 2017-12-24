@@ -21,7 +21,7 @@ if (requireNamespace("xts", quietly = TRUE)) {
   sample.xts <- xts::as.xts(sample_matrix) # xts might not be attached on search path
   # print head of xts
   print(head(sample.xts))
-  # print dt
+  # print data.table
   print(as.data.table(sample.xts))
 }
 }

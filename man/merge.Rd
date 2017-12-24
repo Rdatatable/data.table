@@ -42,7 +42,7 @@ from \code{y}.  The default is \code{FALSE}, so that only rows with data from bo
 sorted by setting the key to the \code{by / by.x} columns. If \code{FALSE}, the
 result is not sorted.}
 \item{suffixes}{A \code{character(2)} specifying the suffixes to be used for
-making non-\code{by} column names unique. The suffix behavior works in a similar
+making non-\code{by} column names unique. The suffix behaviour works in a similar
 fashion as the \code{\link{merge.data.frame}} method does.}
 \item{allow.cartesian}{See \code{allow.cartesian} in \code{\link{[.data.table}}.}
 \item{\dots}{Not used at this time.}
@@ -54,13 +54,13 @@ fashion as the \code{\link{merge.data.frame}} method does.}
 the class of its first argument. Note that, unlike \code{SQL}, \code{NA} is
 matched against \code{NA} (and \code{NaN} against \code{NaN}) while merging.
 
-In versions \code{<= v1.9.4}, if the specified columns in \code{by} was not the
+In versions \code{<= v1.9.4}, if the specified columns in \code{by} were not the
 key (or head of the key) of \code{x} or \code{y}, then a \code{\link{copy}} is
-first rekeyed prior to performing the merge. This was less performant and memory
+first re-keyed prior to performing the merge. This was less performant as well as memory
 inefficient. The concept of secondary keys (implemented in \code{v1.9.4}) was
 used to overcome this limitation from \code{v1.9.6}+. No deep copies are made
-anymore and therefore very performant and memory efficient. Also there is better
-control for providing the columns to merge on with the help of newly implemented
+any more, thereby improving performance and memory efficiency. Also, there is better
+control for providing the columns to merge on with the help of the newly implemented
 \code{by.x} and \code{by.y} arguments.
 
 For a more \code{data.table}-centric way of merging two \code{data.table}s, see

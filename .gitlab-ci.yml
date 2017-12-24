@@ -115,6 +115,7 @@ test-r-devel-cran: # R-devel CRAN check
     when: always
     paths:
       - bus
+  allow_failure: true
 
 test-r-release-vanilla: # check minimal installation, no suggested deps, no vignettes or manuals
   stage: test
@@ -136,11 +137,11 @@ test-r-release-vanilla: # check minimal installation, no suggested deps, no vign
     paths:
       - bus
 
-test-r-3.0.0-cran:
+test-r-3.1.0-cran:
   stage: test
   tags:
     - linux
-  image: docker.io/jangorecki/r-3.0.0
+  image: docker.io/jangorecki/r-3.1.0
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
@@ -194,11 +195,11 @@ integration: # merging all artifacts so multiple deploy jobs can build same repo
   - test-r-release-cran
   - test-r-devel-cran
   - test-r-release-vanilla
-  - test-r-3.0.0-cran
+  - test-r-3.1.0-cran
   script:
     - mkdir -p bus/$CI_BUILD_NAME
     # integration helpers, not in tools4pkgs branch, for multi pkgs use: pkg<-strsplit(job, "-", fixed=TRUE)[[1L]][2L]
-    - echo 'test.jobs<-c("test-r-release"="data.table","test-r-release-cran"="data.table","test-r-devel-cran"="data.table","test-r-release-vanilla"="data.table","test-r-3.0.0-cran"="data.table")' > integration.R
+    - echo 'test.jobs<-c("test-r-release"="data.table","test-r-release-cran"="data.table","test-r-devel-cran"="data.table","test-r-release-vanilla"="data.table","test-r-3.1.0-cran"="data.table")' > integration.R
     - echo 'lib.copy<-function(lib.from, repodir="bus/integration/cran"){ pkgs.from<-list.dirs(lib.from, recursive=FALSE); pkgs.to<-list.dirs(lib.to<-file.path(repodir,"library"), recursive=FALSE); pkg.copy<-function(pkg.from, lib.to){ pkg<-basename(pkg.from); dir.create(file.path(lib.to, pkg), recursive=TRUE); lib.dirs<-intersect(c("html","doc"), all.lib.dirs<-list.dirs(pkg.from, full.names=FALSE)); ans1<-setNames(file.copy(file.path(pkg.from, lib.dirs), file.path(lib.to, pkg), recursive=TRUE), lib.dirs); lib.files<-setdiff(list.files(pkg.from), all.lib.dirs); ans2<-setNames(file.copy(file.path(pkg.from, lib.files), file.path(lib.to, pkg)), lib.files); all(ans1, ans2)}; pkgs.from.new<-pkgs.from[!basename(pkgs.from) %in% basename(pkgs.to)]; setNames(sapply(pkgs.from.new, pkg.copy, lib.to=lib.to), basename(pkgs.from.new)) }' >> integration.R
     - echo 'doc.copy<-function(repodir="bus/integration/cran"){ cp1<-c("COPYING","AUTHORS","THANKS"); ans1<-setNames(file.copy(file.path(R.home("doc"), cp1), file.path(repodir, "doc", cp1)), cp1); cp2<-c("html","manual"); ans2<-setNames(file.copy(file.path(R.home("doc"), cp2), file.path(repodir,"doc"), recursive=TRUE), cp2); c(ans1, ans2) }' >> integration.R
     - echo 'check.copy<-function(job, repodir="bus/integration/cran"){ dir.create(job.checks<-file.path(repodir, "web", "checks", pkg<-"data.table", job), recursive=TRUE); all(file.copy(file.path("bus", sprintf("%s/%s.Rcheck", job, pkg), c("00install.out","00check.log")), job.checks)) }' >> integration.R

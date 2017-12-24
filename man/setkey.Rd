@@ -14,7 +14,7 @@
 \description{
 In \code{data.table} parlance, all \code{set*} functions change their input
 \emph{by reference}. That is, no copy is made at all, other than temporary
-working memory, which is as large as one column.. The only other \code{data.table}
+working memory, which is as large as one column. The only other \code{data.table}
 operator that modifies input by reference is \code{\link{:=}}. Check out the
 \code{See Also} section below for other \code{set*} function \code{data.table}
 provides.
@@ -125,7 +125,7 @@ reference. See \code{?copy}.
 \url{http://stereopsis.com/radix.html}
 }
 \note{ Despite its name, \code{base::sort.list(x,method="radix")} actually
-invokes a \emph{counting sort} in R, not a radix sort. See do_radixsort in
+invokes a \emph{counting sort} in R, not a radix sort. See \code{do_radixsort} in
 src/main/sort.c. A counting sort, however, is particularly suitable for
 sorting integers and factors, and we like it. In fact we like it so much
 that \code{data.table} contains a counting sort algorithm for character vectors

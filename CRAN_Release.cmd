@@ -21,7 +21,7 @@ grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n 
 # Ensure no calls to omp_set_num_threads() [to avoid affecting other packages and base R]
 grep --exclude="data.table/src/openmp-utils.c" omp_set_num_threads data.table/src/*
 
-# Endure no calls to omp_get_max_threads() also since access should be via getDTthreads()
+# Ensure no calls to omp_get_max_threads() also since access should be via getDTthreads()
 grep --exclude="data.table/src/openmp-utils.c" omp_get_max_threads data.table/src/*
 
 # Ensure all #pragama omp parallel directives include a num_threads() clause
@@ -41,6 +41,14 @@ grep "class *=" data.table/src/*.c    # quite a few but none global
 # No undefined type punning of the form:  *(long long *)&REAL(column)[i]
 # Failed clang 3.9.1 -O3 due to this, I think.
 grep "&REAL" data.table/src/*.c
+
+# No use of long long, instead use int64_t. TODO
+# grep "long long" data.table/src/*.c
+
+# No tabs in C or R code (sorry Richard Hendricks)
+grep -P "\t" data.table/R/*.R
+grep -P "\t" data.table/src/*.c
+
 
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
@@ -71,7 +79,7 @@ grep ScalarString *.c
 
 cd
 R
-cc(clean=TRUE)  # to compile with -pedandic
+cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently gcc-7) as CRAN does
 q("no")
 R CMD build data.table
 R CMD check data.table_1.10.1.tar.gz --as-cran
@@ -84,29 +92,36 @@ test.data.table(verbose=TRUE)  # since main.R no longer tests verbose mode
 # Upload to win-builder, both release and dev
 
 
-
 ###############################################
-#  R 3.0.0 (stated dependency)
+#  R 3.1.0 (stated dependency)
 ###############################################
 
 ### ONE TIME BUILD
 sudo apt-get -y build-dep r-base
 cd ~/build
-wget http://cran.stat.ucla.edu/src/base/R-3/R-3.0.0.tar.gz
-tar xvf R-3.0.0.tar.gz
-cd R-3.0.0
+wget http://cran.stat.ucla.edu/src/base/R-3/R-3.1.0.tar.gz
+tar xvf R-3.1.0.tar.gz
+cd R-3.1.0
 ./configure --without-recommended-packages
 make
-alias R300=~/build/R-3.0.0/bin/R
-cd ..
-R300
-install.packages("chron")
-q("no")
+alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
-R300 CMD INSTALL ~/data.table_1.10.1.tar.gz
-R300
+R310 CMD INSTALL ./data.table_1.10.5.tar.gz
+R310
 require(data.table)
+test.data.table()
+
+
+###############################################
+#  Compiles from source when OpenMP is disabled
+###############################################
+vi ~/.R/Makevars
+# Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
+R CMD build .
+R CMD INSTALL data.table_1.10.5.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R
+require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
 
 
@@ -135,6 +150,7 @@ test.data.table()
 
 vi ~/.R/Makevars  # make the -O3 line active again
 
+
 ###############################################
 #  R-devel with UBSAN and ASAN on too
 ###############################################
@@ -145,15 +161,18 @@ rm -rf R-devel
 tar xvf R-devel.tar.gz
 cd R-devel
 # Following R-exts#4.3.3
-# (clang 3.6.0 works but gcc 4.9.2 fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel)
-./configure CC="clang -std=gnu99 -fsanitize=undefined,address" CFLAGS="-fno-omit-frame-pointer -O0 -g -Wall -pedantic -mtune=native" --without-recommended-packages --disable-byte-compiled-packages  
+./configure CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-g -Og -Wall -pedantic" LIBS="-lpthread" --without-recommended-packages --disable-byte-compiled-packages --disable-openmp
+# For ubsan, disabled openmp otherwise gcc fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel
+# UBSAN gives direct line number under gcc but not clang it seems. clang-5.0 has been helpful too, though.
+# If use later gcc-8, add F77=gfortran-8
+# LIBS="-lpthread" otherwise ld error about DSO missing
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 Rdevel
 install.packages("bit64")  # important to run tests using integer64
 # Skip compatibility tests with other Suggests packages; unlikely UBSAN/ASAN problems there.
 q("no")
-Rdevel CMD INSTALL ~/data.table_1.10.1.tar.gz
+Rdevel CMD INSTALL data.table_1.10.5.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
 # them (above) so should be passed through to here
 Rdevel
@@ -244,7 +263,7 @@ shutdown now   # doesn't return you to host prompt properly so just kill the win
 sudo apt-get update
 sudo apt-get -y install htop
 sudo apt-get -y install r-base r-base-dev
-sudo apt-get -y build-dep r-base-dev     
+sudo apt-get -y build-dep r-base-dev
 sudo apt-get -y build-dep qpdf
 sudo apt-get -y build-dep r-cran-rgl
 sudo apt-get -y build-dep r-cran-rmpi
@@ -302,7 +321,7 @@ old = 0
 new = 0
 for (p in deps) {
    fn = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-   if (!file.exists(fn) || 
+   if (!file.exists(fn) ||
        identical(tryCatch(packageVersion(p), error=function(e)FALSE), FALSE) ||
        packageVersion(p) != avail[p,"Version"]) {
      system(paste0("rm -f ", p, "*.tar.gz"))  # Remove previous *.tar.gz.  -f to be silent if not there (i.e. first time seeing this package)
@@ -388,7 +407,7 @@ run = function(all=FALSE) {
     x = deps[!x]
     if (!length(x)) { cat("All package checks have already run. To rerun all: run(all=TRUE).\n"); return(); }
     cat("Running checks for",length(x),"packages\n")
-    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | parallel R CMD check") 
+    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | parallel R CMD check")
   } else {
     cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | parallel R CMD check"
     # apx 2.5 hrs for 313 packages on my 4 cpu laptop with 8 threads
@@ -418,7 +437,6 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CM
 # Reinstalling robustbase fixed this warning. Even though it was up to date, reinstalling made a difference.
 
 
-
 ###############################################
 #  Release to CRAN
 ###############################################
@@ -440,5 +458,4 @@ Close milestone
 Submit message template:
 Have rechecked the 339 CRAN packages using data.table.
 Either ok or have liaised with maintainers in advance.
-
 

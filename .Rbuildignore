@@ -1,5 +1,6 @@
 ^\.travis\.yml$
-^Contributing\.md$
+^CONTRIBUTING\.md$
+^ISSUE_TEMPLATE\.md$
 ^CRAN_Release\.cmd$
 ^deploy\.sh$
 ^.*\.Rproj$

@@ -10,7 +10,8 @@ This is new functionality as of Nov 2016. We may need to refine argument names a
 fwrite(x, file = "", append = FALSE, quote = "auto",
   sep = ",", sep2 = c("","|",""),
   eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
-  na = "", dec = ".", row.names = FALSE, col.names = TRUE,
+  na = if (length(x)>1L) "" else "NA", dec = ".",
+  row.names = FALSE, col.names = TRUE,
   qmethod = c("double","escape"),
   logical01 = getOption("datatable.logical01", TRUE),
   logicalAsInt = logical01,  # deprecated

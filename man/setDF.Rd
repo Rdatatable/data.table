@@ -2,7 +2,7 @@
 \alias{setDF}
 \title{Coerce a data.table to data.frame by reference}
 \description{
-  In \code{data.table} parlance, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory, which is as large as one column.. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function \code{data.table} provides.
+  In \code{data.table} parlance, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory, which is as large as one column. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function \code{data.table} provides.
 
   A helper function to convert a \code{data.table} or \code{list} of equal length to \code{data.frame} by reference.
 }
@@ -21,7 +21,7 @@ setDF(x, rownames=NULL)
 }
 
 \value{
-    The input \code{data.table} is modified by reference to a \code{data.frame} and returned (invisibly). If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}..
+    The input \code{data.table} is modified by reference to a \code{data.frame} and returned (invisibly). If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.
 }
 
 \seealso{ \code{\link{data.table}}, \code{\link{as.data.table}}, \code{\link{setDT}}, \code{\link{copy}}, \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setorder}}
