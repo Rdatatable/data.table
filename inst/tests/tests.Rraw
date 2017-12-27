@@ -6005,7 +6005,6 @@ test(1437.11, DT[a %chin% c("A", "B") & x == 3 & y %in% c(1,2), verbose = TRUE],
 ## do extensive tests of optimized vs non-optimized queries for identical results.
 ## very much inspired by the tests for non equi joins (1641ff)
 set.seed(13545)
-library(bit64)
 n <- 1e3 ## rows of the data.table. I checked that with these rows and the seed, all queries (except for == NA) have at least one match
 ## create test DT
 DT <- data.table(intCol    = sample(c(1:3, NA), n, replace = TRUE),
@@ -6058,7 +6057,7 @@ all[is.na(all)] <- "missing"
 all[, query := paste(intCol, doubleCol, boolCol, charCol, int64Col, sep = "&")]
 all[, query := gsub("&missing$", "", gsub("missing&", "", query))]
 ## test each query string
-test_no <- 1437.011
+test_no <- 1437.012
 for(t in seq_len(nrow(all))){
   thisQuery <- all$query[t]
   ansOpt <- DT[eval(parse(text = thisQuery))]
