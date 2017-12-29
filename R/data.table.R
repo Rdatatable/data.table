@@ -2800,6 +2800,7 @@ isReallyReal <- function(x) {
   #'        out$notjoin Bool. In some cases, notjoin is updated within the function.
   #'        
   #'        ATTENTION: If nothing else helps, an auto-index is created on x unless options prevent this.
+  if(getOption("datatable.optimize") < 3L) return(NULL) ## level three optimization required.
   if (!is.call(isub)) return(NULL)
   if (!is.null(attr(x, '.data.table.locked'))) return(NULL)  # fix for #958, don't create auto index on '.SD'.
   ## a list of all possible operators with their on translations
