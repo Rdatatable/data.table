@@ -273,6 +273,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
   rightcols = leftcols = integer()
+  optimizedSubset = FALSE ## flag: tells, whether a normal query was optimized into a join.
   if (!with && missing(j)) stop("j must be provided when with=FALSE")
   if (!missing(j)) {
     jsub = replace_dot_alias(substitute(j))
@@ -413,12 +414,16 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     } else if (length(o <- .prepareFastSubset(isub = isub, x = x,
                                               enclos =  parent.frame(),
                                               notjoin = notjoin, verbose = verbose))){
+        ## redirect to the is.data.table(x) == TRUE branch. 
+        ## Additional flag to adapt things after bmerge:
+        optimizedSubset <- TRUE
         notjoin <- o$notjoin
-        ans = bmerge(o$i, x, o$leftcols, o$rightcols, io<-TRUE, o$xo, roll=0.0, rollends=c(FALSE,FALSE), nomatch=0L, mult="all", rep(1L, length(o$rightcols)), nqgrp, nqmaxgrp, verbose=verbose)
-        # No need to shallow copy i before passing to bmerge; we just created i above ourselves
-        i = if (ans$allLen1 && !identical(suppressWarnings(min(ans$starts)), 0L)) ans$starts else vecseq(ans$starts, ans$lens, NULL)
-        if (length(o$xo)) i = fsort(o$xo[i], internal=TRUE) else i = fsort(i, internal=TRUE) # fix for #1495
-        leftcols = rightcols = NULL  # these are used later to know whether a join was done, affects column order of result. So reset.
+        i <- o$i
+        on <- o$on
+        ## the following two are ignored if i is not a data.table. 
+        ## Since we are converting i to data.table, it is important to set them properly.
+        nomatch <- 0L
+        mult <- "all"
     }
     else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
     else {
@@ -649,7 +654,17 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
         }
       }
-    } else {
+      if(optimizedSubset){
+        ## special treatment for calls like DT[x == 3] that are transformed into DT[J(x=3), on = "x==x"]
+        irows = fsort(irows, internal=TRUE) ## restore original order
+        ## make sure, all columns are taken from x and not from i.
+        ## This is done by simply telling data.table to continue as if there was a simple subset
+        leftcols  = integer(0)
+        rightcols = integer(0)
+        i <- irows ## important to make i not a data.table because otherwise Gforce doesn't kick in
+      }
+    } 
+    else {
       if (!missing(on)) {
         stop("logical error. i is not a data.table, but 'on' argument is provided.")
       }
@@ -723,7 +738,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       xcols = xcolsAns = seq_along(x)[-rightcols]
     }
     ansvals = chmatch(ansvars, nx)
-  } else {
+  } 
+  else {
     if (is.data.table(i)) {
       idotprefix = paste0("i.", names(i))
       xdotprefix = paste0("x.", names(x))
@@ -2780,16 +2796,20 @@ isReallyReal <- function(x) {
   #' @param verbose TRUE for detailed output
   #' @return If i is not fast subsettable, NULL. Else, a list with entries: 
   #'        out$i: a data.table that will be used as i with proper column names and key.
-  #'        out$xo: the ordering index that will be used by bmerge (integer(0) for no reordering necesary)
-  #'        out$leftcols The column numbers in i
-  #'        out$rightcols The corresponding column numbers in x
+  #'        out$on: the correct 'on' statement that will be used for x[i, on =...]
   #'        out$notjoin Bool. In some cases, notjoin is updated within the function.
+  #'        
   #'        ATTENTION: If nothing else helps, an auto-index is created on x unless options prevent this.
   if (!is.call(isub)) return(NULL)
   if (!is.null(attr(x, '.data.table.locked'))) return(NULL)  # fix for #958, don't create auto index on '.SD'.
+  ## a list of all possible operators with their on translations
+  validOps <- rbind(data.table(op = "==", on = "=="),
+                    data.table(op = "%in%", on = "=="),
+                    data.table(op = "%chin%", on = "=="))
   ## Determine, whether the nature of isub in general supports fast binary search
   remainingIsub <- isub
   i <- list()
+  on <- character(0)
   while(length(remainingIsub)){
     if (length(remainingIsub[[1L]]) != 1) return(NULL) ## only single symbol &, ==, %in%, %chin% allowed. 
     if (remainingIsub[[1L]] != "&"){ ## only a single expression present or a different connection.
@@ -2804,10 +2824,11 @@ isReallyReal <- function(x) {
     ## check the stub if it is fastSubsettable
     if (length(stub[[1L]]) != 1) return(NULL) ## Whatever it is, definitely not ==, %in%, or %chin%
     operator <- as.character(stub[[1L]])
-    if (!operator %chin% c("==", "%in%", "%chin%")) return(NULL) ## operator not supported
+    if (!operator %chin% validOps$op) return(NULL) ## operator not supported
     if (!is.name(stub[[2L]])) return(NULL)
     col <- as.character(stub[[2L]])
     if (!col %chin% names(x)) return(NULL) ## any non-column name prevents fast subsetting
+    if(col %chin% names(i)) return(NULL) ## repeated appearance of the same column not suported (e.g. DT[x < 3 & x < 5])
     ## now check the RHS of stub
     RHS = eval(stub[[3L]], x, enclos)
     # fix for #961
@@ -2835,6 +2856,7 @@ isReallyReal <- function(x) {
     }
     ## if it passed until here, fast subset can be done for this stub
     i <- c(i, setNames(list(RHS), col))
+    on <- c(on, paste0(col, validOps$on[validOps$op == operator], col))
     ## loop continues with remainingIsub
   } 
   if (length(i) == 0) stop("Internal error in .isFastSubsettable. Please report to data.table developers")
@@ -2887,9 +2909,7 @@ isReallyReal <- function(x) {
   }
   setkeyv(i, idxCols)
   return(list(i  = i, 
-              xo = idx, 
-              leftcols  = chmatch(idxCols, names(i)), 
-              rightcols = chmatch(idxCols, names(x)),
+              on = on, 
               notjoin = notjoin
               )
          )

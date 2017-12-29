@@ -5999,9 +5999,21 @@ test(1437.6, copy(DT)[x==2 & y==3], copy(DT)[y==3 & x==2])
 ## test that optimization really takes place for ==, %in%, %chin%, also when connected with &
 test(1437.7, DT[x==2, verbose = TRUE], output = "Optimized subsetting")
 test(1437.8, DT[x %in% c(2,3), verbose = TRUE], output = "Optimized subsetting")
-DT[, a:= sample(LETTERS,6)]
+DT[, a:= c("A", "Q", "W", "C", "X", "Q")]
 test(1437.9, DT[a %chin% c("A", "B"), verbose = TRUE], output = "Optimized subsetting")
 test(1437.11, DT[a %chin% c("A", "B") & x == 3 & y %in% c(1,2), verbose = TRUE], output = "Optimized subsetting")
+## multiple selections on the same column are not optimized and yield correct result
+test(1437.12, DT[a %chin% c("A", "B") & a == "A", verbose = TRUE], output = "   x y          z a1: 1 1 -0.3621238 A")
+test(1437.13, DT[a %chin% c("A", "B") & a == "C"], DT[0])
+## queries with 'or' connection are not optimized and yield the correct result.
+test(1437.14, DT[a %chin% c("A", "B") | x == 2, verbose = TRUE], output = "   x y          z a1: 1 1 -0.3621238 A2: 2 2 -0.1667033 C3: 2 3 -1.0436674 X4: 2 3 -1.9729349 Q")
+test(1437.15, DT[a %chin% c("A", "B") | x == 2], DT[c(1, 4, 5, 6)])
+## notjoin queries with connection are not optimized and yield the correct result.
+test(1437.16, DT[!a %chin% c("A", "B") & x == 2, verbose = TRUE], output = "   x y          z a1: 2 2 -0.1667033 C2: 2 3 -1.0436674 X3: 2 3 -1.9729349 Q")
+test(1437.17, DT[!a %chin% c("A", "B") & x == 2], DT[c(4, 5, 6)])
+## queries with j are optimized (Correct results are tested extensively below)
+test(1437.18, DT[x == 2, .(test = x+y), verbose = TRUE], output = "Optimized subsetting")
+test(1437.19, DT[x == 2, test := x+y, verbose = TRUE], output = "Optimized subsetting")
 ## do extensive tests of optimized vs non-optimized queries for identical results.
 ## very much inspired by the tests for non equi joins (1641ff)
 set.seed(13545)
@@ -6057,7 +6069,7 @@ all[is.na(all)] <- "missing"
 all[, query := paste(intCol, doubleCol, boolCol, charCol, int64Col, sep = "&")]
 all[, query := gsub("&missing$", "", gsub("missing&", "", query))]
 ## test each query string
-test_no <- 1437.012
+test_no <- 1437.020
 for(t in seq_len(nrow(all))){
   thisQuery <- all$query[t]
   ansOpt <- DT[eval(parse(text = thisQuery))]
