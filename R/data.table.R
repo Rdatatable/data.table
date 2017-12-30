@@ -2783,36 +2783,37 @@ isReallyReal <- function(x) {
 
 .prepareFastSubset <- function(isub, x, enclos, notjoin, verbose = FALSE){
   ## helper that decides, whether a fast binary search can be performed, if i is a call
-  ## Fast binary search is currently possible for calls like colA == 1, colA %in% c(1,2)
-  ## colA == 1 & colB == 2 & colC %chin% c("a", "b"), ...
-  ## Notjoin is only supported for single column subsets.
+  ## For details on the supported queries, see \code{\link{datatable-optimize}}
   ## Additional restrictions are imposed if x is .SD, or if options indicate that no optimization 
   ## is to be performed
   #' @param isub the substituted i
   #' @param x the data.table
   #' @param enclos The environment where to evaluate when RHS is not a column of x
-  #' @param notjoin boolean that is set before, indicating whether i started with '!'
-  #'                If notjoin == TRUE, only calls without '&' connection are supported, i.e. single column subsets
+  #' @param notjoin boolean that is set before, indicating whether i started with '!'.
   #' @param verbose TRUE for detailed output
   #' @return If i is not fast subsettable, NULL. Else, a list with entries: 
   #'        out$i: a data.table that will be used as i with proper column names and key.
   #'        out$on: the correct 'on' statement that will be used for x[i, on =...]
   #'        out$notjoin Bool. In some cases, notjoin is updated within the function.
-  #'        
   #'        ATTENTION: If nothing else helps, an auto-index is created on x unless options prevent this.
-  if(getOption("datatable.optimize") < 3L) return(NULL) ## level three optimization required.
+  if(getOption("datatable.optimize") < 3L) return(NULL) ## at least level three optimization required.
   if (!is.call(isub)) return(NULL)
   if (!is.null(attr(x, '.data.table.locked'))) return(NULL)  # fix for #958, don't create auto index on '.SD'.
-  ## a list of all possible operators with their on translations
+  ## a list of all possible operators with their translations into the 'on' clause
   validOps <- rbind(data.table(op = "==", on = "=="),
                     data.table(op = "%in%", on = "=="),
-                    data.table(op = "%chin%", on = "=="))
+                    data.table(op = "%chin%", on = "=="),
+                    data.table(op = "<", on = "<"),
+                    data.table(op = "<=", on = "<="),
+                    data.table(op = ">", on = ">"),
+                    data.table(op = ">=", on = ">="))
   ## Determine, whether the nature of isub in general supports fast binary search
   remainingIsub <- isub
   i <- list()
   on <- character(0)
+  nonEqui = FALSE
   while(length(remainingIsub)){
-    if (length(remainingIsub[[1L]]) != 1) return(NULL) ## only single symbol &, ==, %in%, %chin% allowed. 
+    if (length(remainingIsub[[1L]]) != 1) return(NULL) ## only single symbol, either '&' or one of validOps allowed. 
     if (remainingIsub[[1L]] != "&"){ ## only a single expression present or a different connection.
       stub <- remainingIsub
       remainingIsub <- NULL ## there is no remainder to be evaluated after stub.
@@ -2820,10 +2821,10 @@ isReallyReal <- function(x) {
       ## multiple expressions with & connection. 
       if (notjoin) return(NULL) ## expressions of type DT[!(a==1 & b==2)] currently not supported
       stub <- remainingIsub[[3L]] ## the single column expression like col == 4
-      remainingIsub <- remainingIsub[[2L]] ## the potentially longer expression with additional '&'
+      remainingIsub <- remainingIsub[[2L]] ## the potentially longer expression with potential additional '&'
     }
     ## check the stub if it is fastSubsettable
-    if (length(stub[[1L]]) != 1) return(NULL) ## Whatever it is, definitely not ==, %in%, or %chin%
+    if (length(stub[[1L]]) != 1) return(NULL) ## Whatever it is, definitely not one of the valid operators
     operator <- as.character(stub[[1L]])
     if (!operator %chin% validOps$op) return(NULL) ## operator not supported
     if (!is.name(stub[[2L]])) return(NULL)
@@ -2846,18 +2847,23 @@ isReallyReal <- function(x) {
       # search based join is strict in types. #957 and #961.
       return(NULL)
     }
-    if (operator == "==") { ## addional requirements for equal operator and notjoin
+    if (!operator %chin% c("%in%", "%chin%")) { 
+      # addional requirements for notjoin and NA values. Behaviour is different for %in%, %chin% compared to other operators
       # RHS is of length=1 or n
       if (any_na(as_list(RHS))) {
+        ## dt[x == NA] or dt[x <= NA] will always return empty
         notjoin = FALSE
         RHS = RHS[0L]
       } else if (notjoin) {
+        ## dt[!x == 3] must not return rows where x is NA
         RHS = c(RHS, if (is.double(RHS)) c(NA, NaN) else NA)
       }
     }
     ## if it passed until here, fast subset can be done for this stub
     i <- c(i, setNames(list(RHS), col))
     on <- c(on, paste0(col, validOps$on[validOps$op == operator], col))
+    ## remember, whether there are non-equi elements in the query.
+    nonEqui = nonEqui | validOps$on[validOps$op == operator] != "=="
     ## loop continues with remainingIsub
   } 
   if (length(i) == 0) stop("Internal error in .isFastSubsettable. Please report to data.table developers")
@@ -2871,13 +2877,23 @@ isReallyReal <- function(x) {
   i <- do.call(CJ, i)
   setnames(i, colNames)
   idx <- NULL 
-  ## check whether key fits the columns in i.
-  ## order of key columns makes no difference, as long as they are all upfront in the key, I believe.
-  if (all(names(i) %chin% head(key(x), length(i)))){
-      if (verbose) {cat("Optimized subsetting with key '", paste0( head(key(x), length(i)), collapse = ", "),"'\n",sep="");flush.console()}
-      idx <- integer(0) ## integer(0) is not NULL! Indicates that is is ordered correctly.
-      idxCols <- head(key(x), length(i)) ## in correct order!
-  } 
+  ## If we are doing an equi-join, indices are needed.
+  ## If the query includes non-equi elements (<, >, <=, >=), the index has to be recalculated anyways.
+  if(nonEqui){
+    if (verbose) {cat("Optimized subsetting with non-equi join", "'\n",sep="");flush.console()}
+    idx <- "dummy" ## just for the flow, won't be used anywhere
+    idxCols <- NULL 
+  }
+  if(is.null(idx)){
+      ## we are seeing an equi-join
+      ## check whether key fits the columns in i.
+      ## order of key columns makes no difference, as long as they are all upfront in the key, I believe.
+      if (all(names(i) %chin% head(key(x), length(i)))){
+          if (verbose) {cat("Optimized subsetting with key '", paste0( head(key(x), length(i)), collapse = ", "),"'\n",sep="");flush.console()}
+          idx <- integer(0) ## integer(0) is not NULL! Indicates that x is ordered correctly.
+          idxCols <- head(key(x), length(i)) ## in correct order!
+      }
+  }
   if (is.null(idx)){
     if (!getOption("datatable.use.index")) return(NULL) # #1422
     ## check whether an exising index can be used
@@ -2908,7 +2924,9 @@ isReallyReal <- function(x) {
     idx <- attr(attr(x, "index"), paste0("__", names(i), collapse = ""))
     idxCols <- names(i)
   }
-  setkeyv(i, idxCols)
+  if(!is.null(idxCols)){
+    setkeyv(i, idxCols)
+  }
   return(list(i  = i, 
               on = on, 
               notjoin = notjoin
