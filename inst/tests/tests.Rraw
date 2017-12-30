@@ -6059,7 +6059,7 @@ if ("package:bit64" %in% search())
                        paste0("int64Col == NA_integer64_"),
                        paste0("int64Col %in% c(NA_integer64_, as.integer64(", paste0(sample(vals$int64Col, 3, replace = TRUE), collapse = ","), "))")
   ) 
-## create all combinations of queries, connected by "&".
+## create all combinations of up to three queries, connected by "&".
 ## Includes cll combinations, also with a subset of columns, but no permutations
 all <- data.table(intCol    = character(0),
                   doubleCol = character(0),
@@ -6078,11 +6078,19 @@ all[, query := gsub("&missing$", "", gsub("missing&", "", query))]
 ## test each query string
 test_no <- 1437.022
 for(t in seq_len(nrow(all))){
+  ## test the query with missing j
   thisQuery <- all$query[t]
   options("datatable.optimize" = 3L)
   ansOpt <- DT[eval(parse(text = thisQuery))]
   options("datatable.optimize" = 2L)
   ansRef <- DT[eval(parse(text = thisQuery))]
+  test(signif(test_no, 7), ansOpt, ansRef)
+  test_no <- test_no + 0.001
+  ## repeat the test with 'which = TRUE'
+  options("datatable.optimize" = 3L)
+  ansOpt <- DT[eval(parse(text = thisQuery)), which = TRUE]
+  options("datatable.optimize" = 2L)
+  ansRef <- DT[eval(parse(text = thisQuery)), which = TRUE]
   test(signif(test_no, 7), ansOpt, ansRef)
   test_no <- test_no + 0.001
 }
