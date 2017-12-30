@@ -6072,9 +6072,12 @@ for(thisLength in 1:3){
   for(comb in combs)  all <- rbind(all, do.call(CJ, queries[comb]), fill = TRUE)
 }
 all[is.na(all)] <- "missing"
-## construct the query string
+## construct the query string in i
 all[, query := paste(intCol, doubleCol, boolCol, charCol, int64Col, sep = "&")]
 all[, query := gsub("&missing$", "", gsub("missing&", "", query))]
+## define examplarytest queries for j
+jQueries <- c(".(test = intCol + doubleCol, test2 = paste0(boolCol, charCol))",
+              "c('test1', 'test2') := list(pmax(intCol, doubleCol), !boolCol)") 
 ## test each query string
 test_no <- 1437.022
 for(t in seq_len(nrow(all))){
@@ -6093,6 +6096,15 @@ for(t in seq_len(nrow(all))){
   ansRef <- DT[eval(parse(text = thisQuery)), which = TRUE]
   test(signif(test_no, 7), ansOpt, ansRef)
   test_no <- test_no + 0.001
+  ## repeat the test with the j queries
+  for(thisJquery in jQueries) {
+    options("datatable.optimize" = 3L)
+    ansOpt <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery))]
+    options("datatable.optimize" = 2L)
+    ansRef <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery))]
+    test(signif(test_no, 7), ansOpt, ansRef)
+    test_no <- test_no + 0.001  
+  }
 }
 options("datatable.optimize" = oldOpt) ## restore to default
 
