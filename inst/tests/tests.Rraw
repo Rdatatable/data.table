@@ -6024,32 +6024,40 @@ options("datatable.optimize" = 2L)
 test(1437.25, DT[x == 2, verbose = TRUE], output = "^   x y")
 options("datatable.optimize" = oldOpt)
 test(1437.26, DT[x == 2, verbose = TRUE], output = "Optimized subsetting")
+## non-equi operators on character columns are not optimized and yield the correct result
+test(1437.27, DT[a < "X", verbose = TRUE], output = "^   x y")
+test(1437.28, DT[a < "X"], DT[c(1:4, 6)])
+test(1437.29, DT[a <= "X", verbose = TRUE], output = "^   x y")
+test(1437.31, DT[a <= "X"], DT)
+test(1437.32, DT[a > "A", verbose = TRUE], output = "^   x y")
+test(1437.33, DT[a > "A"], DT[c(2:6)])
+test(1437.34, DT[a >= "A", verbose = TRUE], output = "^   x y")
+test(1437.35, DT[a >= "A"], DT)
 ## NaN on right hand side is treated correctly. NA on right hand side is not reaching .prepareFastSubset, so not tested here
 DT <- data.table(x = c(1L:10L, NA_integer_, NA_integer_), y = c(1:10, NA_real_, NaN))
-test(1437.27, DT[y == NaN], DT[0])
-test(1437.28, DT[y < NaN], DT[0])
-test(1437.29, DT[y <= NaN], DT[0])
-test(1437.31, DT[y > NaN], DT[0])
-test(1437.32, DT[y >= NaN], DT[0])
-test(1437.33, DT[y == NA], DT[0])
-test(1437.34, DT[y != NaN], DT[0]) ## != not optimized yet, but maybe in the future
-test(1437.35, DT[x < 5 & y == NaN], DT[0])
+test(1437.36, DT[y == NaN], DT[0])
+test(1437.37, DT[y < NaN], DT[0])
+test(1437.38, DT[y <= NaN], DT[0])
+test(1437.39, DT[y > NaN], DT[0])
+test(1437.41, DT[y >= NaN], DT[0])
+test(1437.42, DT[y == NA], DT[0])
+test(1437.43, DT[y != NaN], DT[0]) ## != not optimized yet, but maybe in the future
+test(1437.44, DT[x < 5 & y == NaN], DT[0])
 ## notjoin treats NA's correctly
-test(1437.36, DT[!x == 3], DT[-c(3,11,12)])
-test(1437.37, DT[!x < 3], DT[-c(1:2,11,12)])
-test(1437.38, DT[!x <= 3], DT[-c(1:3,11,12)])
-test(1437.39, DT[!x > 3], DT[-c(4:12)])
-test(1437.41, DT[!x >= 3], DT[-c(3:12)])
-test(1437.42, DT[!y >= 3], DT[-c(3:12)])
-## non-equi operators on character columns are not optimized and yield the correct result
-test(1437.43, DT[a < "X", verbose = TRUE], output = "^   x y")
-test(1437.44, DT[a < "X"], DT[c(1:4, 6)])
-test(1437.45, DT[a <= "X", verbose = TRUE], output = "^   x y")
-test(1437.46, DT[a <= "X"], DT)
-test(1437.47, DT[a > "A", verbose = TRUE], output = "^   x y")
-test(1437.48, DT[a > "A"], DT[c(2:6)])
-test(1437.49, DT[a >= "A", verbose = TRUE], output = "^   x y")
-test(1437.51, DT[a >= "A"], DT)
+test(1437.45, DT[!x == 3], DT[-c(3,11,12)])
+test(1437.46, DT[!x < 3], DT[-c(1:2,11,12)])
+test(1437.47, DT[!x <= 3], DT[-c(1:3,11,12)])
+test(1437.48, DT[!x > 3], DT[-c(4:12)])
+test(1437.49, DT[!x >= 3], DT[-c(3:12)])
+test(1437.51, DT[!y >= 3], DT[-c(3:12)])
+## column comparisons are not affected
+DT <- data.table(x = c(1:10, 1:10, 1:10), y = c(1:20, -1:-10))
+test(1437.51, DT[x == y], DT[1:10])
+test(1437.52, DT[x < y], DT[11:20])
+test(1437.53, DT[x <= y], DT[1:20])
+test(1437.54, DT[x > y], DT[21:30])
+test(1437.55, DT[x >= y], DT[c(1:10, 21:30)])
+test(1437.56, DT[x >= y], DT[c(1:10, 21:30)])
 ## do extensive tests of optimized vs non-optimized queries for identical results.
 ## very much inspired by the tests for non equi joins (1641ff)
 set.seed(13545)
@@ -6112,7 +6120,7 @@ all[, query := gsub("&missing$", "", gsub("missing&", "", query))]
 jQueries <- c(".(test = intCol + doubleCol, test2 = paste0(boolCol, charCol))",
               "c('test1', 'test2') := list(pmax(intCol, doubleCol), !boolCol)") 
 ## test each query string
-test_no <- 1437.0052
+test_no <- 1437.0057
 for(t in seq_len(nrow(all))){
   ## test the query with missing j
   thisQuery <- all$query[t]

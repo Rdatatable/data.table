@@ -2835,8 +2835,8 @@ isReallyReal <- function(x) {
     RHS = eval(stub[[3L]], x, enclos)
     # fix for #961
     if (is.list(RHS)) RHS = as.character(RHS)
-    if (length(RHS) != 1 && operator == "=="){
-      if (length(RHS) != nrow(x)) stop("RHS of == is length ",length(RHS)," which is not 1 or nrow (",nrow(x),"). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead.")
+    if (length(RHS) != 1 && !operator %chin% c("%in%", "%chin%")){
+      if (length(RHS) != nrow(x)) stop("RHS of ", operator, " is length ",length(RHS)," which is not 1 or nrow (",nrow(x),"). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead.")
       return(NULL) # DT[colA == colB] regular element-wise vector scan
     }
     if ((is.integer(x[[col]]) && is.double(RHS) && isReallyReal(RHS)) || 
@@ -2847,6 +2847,7 @@ isReallyReal <- function(x) {
       # search based join is strict in types. #957 and #961.
       return(NULL)
     }
+    if(is.character(x[[col]]) && !operator %chin% c("==", "%in%", "%chin%")) return(NULL) ## base R allows for non-equi operators on character columns, but these can't be optimized.
     if (!operator %chin% c("%in%", "%chin%")) { 
       # addional requirements for notjoin and NA values. Behaviour is different for %in%, %chin% compared to other operators
       # RHS is of length=1 or n
@@ -2859,6 +2860,8 @@ isReallyReal <- function(x) {
         RHS = c(RHS, if (is.double(RHS)) c(NA, NaN) else NA)
       }
     }
+    ## notjoin doesn't work with < and > operators because of NA handling
+    if(notjoin && operator %chin% c("<", ">")) return(NULL)
     ## if it passed until here, fast subset can be done for this stub
     i <- c(i, setNames(list(RHS), col))
     on <- c(on, paste0(col, validOps$on[validOps$op == operator], col))
