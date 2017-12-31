@@ -161,8 +161,11 @@ rm -rf R-devel
 tar xvf R-devel.tar.gz
 cd R-devel
 # Following R-exts#4.3.3
-# (clang 3.6.0 works but gcc 4.9.2 fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel)
-./configure CC="clang-5.0 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-g -Og -Wall -pedantic" --without-recommended-packages --disable-byte-compiled-packages
+./configure CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-g -Og -Wall -pedantic" LIBS="-lpthread" --without-recommended-packages --disable-byte-compiled-packages --disable-openmp
+# For ubsan, disabled openmp otherwise gcc fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel
+# UBSAN gives direct line number under gcc but not clang it seems. clang-5.0 has been helpful too, though.
+# If use later gcc-8, add F77=gfortran-8
+# LIBS="-lpthread" otherwise ld error about DSO missing
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 Rdevel

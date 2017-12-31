@@ -112,9 +112,9 @@ SEXP freadR(
 
   // header is the only boolean where NA is valid and means 'auto'.
   // LOGICAL in R is signed 32 bits with NA_LOGICAL==INT_MIN, currently.
-  args.header = FALSE;
+  args.header = false;
   if (LOGICAL(headerArg)[0]==NA_LOGICAL) args.header = NA_BOOL8;
-  else if (LOGICAL(headerArg)[0]==TRUE) args.header = TRUE;
+  else if (LOGICAL(headerArg)[0]==TRUE) args.header = true;
 
   args.nrowLimit = INT64_MAX;
   // checked at R level
@@ -138,14 +138,11 @@ SEXP freadR(
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
     error("'na.strings' is type '%s'.  Must be either NULL or a character vector.", type2char(TYPEOF(NAstringsArg)));
   int nnas = length(NAstringsArg);
-  if (nnas>100)  // very conservative limit
-    error("length(na.strings)==%d. This is too many to allocate pointers for on stack", nnas);
-  const char **NAstrings = alloca((nnas + 1) * sizeof(char*));
+  const char **NAstrings = (const char **)R_alloc((nnas + 1), sizeof(char*));  // +1 for the final NULL to save a separate nna variable
   for (int i=0; i<nnas; i++)
     NAstrings[i] = CHAR(STRING_ELT(NAstringsArg,i));
   NAstrings[nnas] = NULL;
   args.NAstrings = NAstrings;
-
 
   // here we use _Bool and rely on fread at R level to check these do not contain NA_LOGICAL
   args.stripWhite = LOGICAL(stripWhiteArg)[0];
@@ -196,7 +193,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
   if (typeSize[CT_BOOL8_N]!=1) STOP("Internal error: typeSize[CT_BOOL8_N] != 1");
   if (typeSize[CT_STRING]!=8) STOP("Internal error: typeSize[CT_STRING] != 1");
-  colNamesSxp = NULL;
+  colNamesSxp = R_NilValue;
   if (colNames!=NULL) {
     colNamesSxp = PROTECT(allocVector(STRSXP, ncol));
     protecti++;
@@ -214,11 +211,9 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   }
   if (length(colClassesSxp)) {
     SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT));
-    protecti++;
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
     if (isString(colClassesSxp)) {
       SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT, FALSE));
-      protecti++;
       if (LENGTH(colClassesSxp)==1) {
         signed char newType = typeEnum[INTEGER(typeEnum_idx)[0]-1];
         if (newType == CT_DROP) STOP("colClasses='drop' is not permitted; i.e. to drop all columns and load nothing");
@@ -232,11 +227,11 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         STOP("colClasses is an unnamed character vector but its length is %d. Must be length 1 or ncol (%d in this case) when unnamed. To specify types for a subset of columns you can either name the items with the column names or pass list() format to colClasses using column names or column numbers. See examples in ?fread.",
               LENGTH(colClassesSxp), ncol);
       }
+      UNPROTECT(1);  // typeEnum_idx
     } else {
       if (!isNewList(colClassesSxp)) STOP("CfreadR: colClasses is not type list");
       if (!length(getAttrib(colClassesSxp, R_NamesSymbol))) STOP("CfreadR: colClasses is type list but has no names");
       SEXP typeEnum_idx = PROTECT(chmatch(getAttrib(colClassesSxp, R_NamesSymbol), typeRName_sxp, NUT, FALSE));
-      protecti++;
       for (int i=0; i<LENGTH(colClassesSxp); i++) {
         SEXP items;
         signed char thisType = typeEnum[INTEGER(typeEnum_idx)[i]-1];
@@ -249,7 +244,6 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         SEXP itemsInt;
         if (isString(items)) itemsInt = PROTECT(chmatch(items, colNamesSxp, NA_INTEGER, FALSE));
         else itemsInt = PROTECT(coerceVector(items, INTSXP));
-        protecti++;
         for (int j=0; j<LENGTH(items); j++) {
           int k = INTEGER(itemsInt)[j];
           if (k==NA_INTEGER) {
@@ -263,9 +257,12 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
             // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
           }
         }
+        UNPROTECT(1); // itemsInt
       }
       for (int i=0; i<ncol; i++) if (type[i]<0) type[i] *= -1;  // undo sign; was used to detect duplicates
+      UNPROTECT(1);  // typeEnum_idx
     }
+    UNPROTECT(1); // typeRName_sxp
   }
   if (readInt64As != CT_INT64) {
     for (int i=0; i<ncol; i++) if (type[i]==CT_INT64) type[i] = readInt64As;
@@ -274,7 +271,6 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     SEXP itemsInt;
     if (isString(dropSxp)) itemsInt = PROTECT(chmatch(dropSxp, colNamesSxp, NA_INTEGER, FALSE));
     else itemsInt = PROTECT(coerceVector(dropSxp, INTSXP));
-    protecti++;
     for (int j=0; j<LENGTH(itemsInt); j++) {
       int k = INTEGER(itemsInt)[j];
       if (k==NA_INTEGER) {
@@ -292,12 +288,14 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         }
       }
     }
+    UNPROTECT(1); // itemsInt
   } else if (length(selectSxp)) {
     SEXP tt;
+    int nprot = 0;
     if (isString(selectSxp)) {
       // invalid cols check part of #1445 moved here (makes sense before reading the file)
       tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER, FALSE));
-      protecti++;
+      nprot++;
       for (int i=0; i<length(selectSxp); i++) if (INTEGER(tt)[i]==NA_INTEGER)
         DTWARN("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
     } else tt = selectSxp;
@@ -312,8 +310,9 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       if (type[i]<0) type[i] *= -1;
       else type[i]=CT_DROP;
     }
+    UNPROTECT(nprot);
   }
-  return TRUE;  // continue
+  return true;
 }
 
 
@@ -477,17 +476,50 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
 }
 
 
-void progress(double p, double eta) {
+void progress(int p, int eta) {
   // called from thread 0 only
-  REprintf("\rRead %.0f%%. ETA %02d:%02d ", p, (int)eta/60, (int)eta%60);
-  R_FlushConsole();  // Windows in mind which doesn't flush until \n it seems. May as well for Linux/Mac too.
-  // See issue 2457 for why this is REprinf to avoid Rprintf's call to R_CheckUserInterrupt() every 100 lines.
+  // p between 0 and 100
+  // eta in seconds
+  // Initialized the first time it is called with p>0
+  // Must be called at the end with p==100 to finish off and reset
+  // If it's called twice at the end with p=100, that's ok
+
+  // REprinf to avoid Rprintf's call to R_CheckUserInterrupt() every 100 lines, issue #2457
   // It's the R_CheckUserInterrupt() that has caused crashes before when called from OpenMP parallel region
-  // even when called only from master thread.
+  // even when called only from master thread. Update: can now retry within critical.
   // fwrite.c has some comments about how it might be possible to call R_CheckUserInterrupt() here so that
   // a long running fread can be stopped by user with Ctrl-C (or ESC on Windows).
   // Could try R_ProcessEvents() too as per
   // https://cran.r-project.org/bin/windows/base/rw-FAQ.html#The-console-freezes-when-my-compiled-code-is-running
+
+  // No use of \r to avoid bug in RStudio, linked in the same issue #2457
+
+  static int displayed = -1;  // -1 means not yet displayed, otherwise [0,50] '=' are displayed
+  static char bar[] = "================================================== ";  // 50 marks for each 2%
+  if (displayed==-1) {
+    if (eta<3 || p>50) return;
+    #pragma omp critical
+    {
+      REprintf("|--------------------------------------------------|\n|");
+      R_FlushConsole();
+    }
+    displayed = 0;
+  }
+  p/=2;
+  int toPrint = p-displayed;
+  if (toPrint==0) return;
+  bar[toPrint] = '\0';
+  #pragma omp critical
+  {
+    REprintf("%s", bar);
+    bar[toPrint] = '=';
+    displayed = p;
+    if (p==50) {
+      REprintf("|\n");
+      displayed = -1;
+    }
+    R_FlushConsole();
+  }
 }
 
 

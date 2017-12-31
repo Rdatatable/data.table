@@ -2516,6 +2516,10 @@ unlink(f)
 # showed up on winbuilder so far, so might be in combination with the D: tempdir() there; perhaps D: is on a network drive or something.
 cat("",file=f<-tempfile()); test(885, fread(f), error="empty"); unlink(f)
 test(885.1, fread(""), error="empty")
+test(885.2, fread(), error="empty")
+cat("", file=f<-tempfile()); test(885.3, fread(f), error="File is empty:"); unlink(f)
+cat(" ", file=f<-tempfile()); test(885.4, fread(f), error="either empty.*whitespace.*or skip has"); unlink(f)
+test(885.5, fread(" "), error="space")
 test(886, fread("\n"), error="empty")
 test(887, fread("  \n\t  \t  \n    \n  "), error="empty")
 cat("A", file=f<-tempfile()); test(888, fread(f), data.table(A=logical())); unlink(f)
@@ -2909,7 +2913,7 @@ DT = data.table( A=as.character(x), B=1:100)
 DT[115, A:="123456789123456"]  # row 115 is outside the 100 rows at 10 points.
 fwrite(DT,f<-tempfile())
 test(1016.1, sapply(suppressWarnings(fread(f,verbose=TRUE)),"class"), c(A="integer64", B="integer"),
-             output="Column 1.*A.*bumped.*int32.*int64.*<<123456789123456>>.*Rereading 1 columns")
+             output="Rereading 1 columns.*Column 1.*A.*bumped.*int32.*int64.*<<123456789123456>>")
 # suppressWarnings for 'bit64 is not installed' warning on AppVeyor where we (correctly) don't install Suggests
 test(1016.2, fread(f, colClasses = c(A="numeric"), verbose=TRUE), copy(DT)[,A:=as.numeric(A)], output="Rereading 0 columns")
 DT[90, A:="321456789123456"]   # inside the sample
@@ -6150,7 +6154,7 @@ for(t in seq_len(nrow(all))){
 options("datatable.optimize" = oldOpt) ## restore to default
 
 # fread dec=',' e.g. France
-test(1438, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1 is not TRUE")
+test(1438, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1L is not TRUE")
 test(1439, fread("A;B\n8;2,34\n", dec="1"), data.table(A=8L, B="2,34"))
 test(1440, fread("A;B\n8;2,34\n", dec=","), data.table(A=8L, B=2.34))
 test(1441, fread("A;B\n1;2,34\n", sep=".", dec="."), error="sep == dec ('.') is not allowed")
@@ -8375,8 +8379,8 @@ if ("package:bit64" %in% search()) {
 
 # fix for #1087 and #1465
 test(1627, charToRaw(names(fread("issue_1087_utf8_bom.csv"))[1L]), as.raw(97L))
-test(1627.1, names(fread("issue_1087_utf8_bom.csv", verbose=T))[1L], "a", output="UTF-8 byte order mark EF BB BF found")
-test(1627.2, names(fread("gb18030.txt", verbose=T))[1L], "x", output="GB-18030 byte order mark 84 31 95 33 found", warning="GB-18030 encoding detected")
+test(1627.1, names(fread("issue_1087_utf8_bom.csv", verbose=TRUE))[1L], "a", output="UTF-8 byte order mark EF BB BF found")
+test(1627.2, names(fread("gb18030.txt"))[1L], "x", warning="GB-18030 encoding detected")
 test(1627.3, fread("utf16le.txt"), error="File is encoded in UTF-16")
 test(1627.4, fread("utf16be.txt"), error="File is encoded in UTF-16")
 
@@ -10909,7 +10913,7 @@ test(1777.19, fread("A,B,C\nC,D,4\n", verbose=TRUE), data.table(A="C",B="D",C=4L
 # unquoted fields containing \r, #2371
 test(1778.1, fread("A,B,C\n0,,\n1,hello\rworld,2\n3,test,4\n", verbose=TRUE),
            DT <- data.table(A=c(0L,1L,3L), B=c("","hello\rworld","test"), C=c(NA,2L,4L)),
-           output="\\r-only line endings are not allowed because \\n is found in the data")
+           output="\\n has been found.*common and ideal")
 fwrite(DT, f<-tempfile())
 test(1778.2, readLines(f), c("A,B,C", "0,\"\",", "1,\"hello", "world\",2", "3,test,4"))
 # fwrite quotes the field containing \r ........... ^^ ............ ^^
