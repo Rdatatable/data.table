@@ -77,15 +77,24 @@ At optimisation level \code{>= 2}, i.e., \code{getOption("datatable.optimize")} 
     discussed above.
 }
 
-\bold{Auto indexing:} \code{data.table} also allows for blazing fast subsets by
-creating an \emph{index} on the first run. Any successive subsets on the same
-column then reuses this index to \emph{binary search} (instead of
+At optimisation level \code{>= 3}, i.e., \code{getOption("datatable.optimize")} >= 3, additional optimisations for subsets in i are implemented on top of the optimisations already shown above. Subsetting operations are - if possible - translated into joins to make use of blazing fast binary search using indices and keys. The following queries are optimized:
+
+\itemize{
+
+    \item Supported operators: \code{==}, \code{\%in\%}, \code{\%chin\%}, \code{>}, \code{>=}, \code{<}, and \code{<=}. The operator \code{!=} is not supported yet.
+    \item Queries on multiple columns are supported, if the connector is '\code{&}', e.g. \code{DT[x == 2 & y < 3]} is supported, but \code{DT[x == 2 | y < 3]} is not.
+    \item Queries with multiple criteria on one column are \emph{not} supported, e.g. \code{DT[x == 2 & x < 5]} is not supported.
+    \item Queries with non-missing j are supported, e.g. \code{DT[x == 3 & y < 5, .(new = x-y)]} or \code{DT[x == 3 & y < 5, new := x-y]} are supported. Also extends to queries using \code{with = FALSE}.
+    \item "notjoin" queries, i.e. queries that start with \code{!}, are only supported if there are no \code{&} connections, e.g. \code{DT[!x==3]} is supported, but \code{DT[!x==3 & y == 4]} is not.
+    \item "notjoin" queries, i.e. queries that start with \code{!}, are not supported for the operators \code{<} and \code{>}, e.g. \code{DT[!x<=3]} is supported, but \code{DT[x<3]} is not. The reason is NA handling.
+    \item For character columns, only \code{==}, \code{\%in\%}, and \code{\%chin\%} operators are supported.
+}
+
+If in doubt, whether your query benefits from optimization, call it with the \code{verbose = TRUE} argument. You should see "Optimized subsetting...".
+
+\bold{Auto indexing:} In case a query is optimized, but no appropriate key or index is found, \code{data.table} automatically creates an \emph{index} on the first run. Any successive subsets on the same
+column then reuse this index to \emph{binary search} (instead of
 \emph{vector scan}) and is therefore fast.
-
-At the moment, expressions of the form \code{DT[col == val]} and
-\code{DT[col \%in\% val]} are both optimised. We plan to expand this to more
-operators and conditions in the future.
-
 Auto indexing can be switched off with the global option
 \code{options(datatable.auto.index = FALSE)}. To switch off using existing
 indices set global option \code{options(datatable.use.index = FALSE)}.
@@ -132,16 +141,13 @@ system.time(ans1 <- DT[, lapply(.SD, median), by=id])
 system.time(ans2 <- DT[, lapply(.SD, function(x) as.numeric(stats::median(x))), by=id])
 identical(ans1, ans2)
 
-# restore optimization
-options(datatable.optimize = Inf)
-
-# auto indexing
-options(datatable.auto.index = FALSE)
+# optimized subsets
+options(datatable.optimize = 2L)
 system.time(ans1 <- DT[id == 100L]) # vector scan
 system.time(ans2 <- DT[id == 100L]) # vector scan
 system.time(DT[id \%in\% 100:500])    # vector scan
 
-options(datatable.auto.index = TRUE)
+options(datatable.optimize = 3L)
 system.time(ans1 <- DT[id == 100L]) # index + binary search subset
 system.time(ans2 <- DT[id == 100L]) # only binary search subset
 system.time(DT[id \%in\% 100:500])    # only binary search subset again
