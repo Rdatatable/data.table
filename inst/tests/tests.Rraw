@@ -11187,6 +11187,16 @@ DT = setNames(data.frame(a = 1, b = 2, c = 3, d = 4), c(NA, "b", "c", NA))
 setnames(DT, c('a', 'b', 'c', 'd'))
 test(1853, names(DT), c('a', 'b', 'c', 'd'))
 
+# CJ bug with multiple empty vectors (#2511)
+test(1854.1, data.frame(CJ(x = integer(0))), setattr(expand.grid(x = integer(0)), "out.attrs", NULL))
+test(1854.2, data.frame(CJ(x = integer(0), y = character(0))), setattr(expand.grid(x = integer(0), y = character(0)), "out.attrs", NULL))
+test(1854.3, data.frame(CJ(x = integer(0), y = c("a", "b"))), setattr(expand.grid(x = integer(0), y = c("a", "b")), "out.attrs", NULL))
+test(1854.4, data.frame(CJ(x = integer(0), y = character(0), z = logical(0))), setattr(expand.grid(x = integer(0), y = character(0), z = logical(0)), "out.attrs", NULL))
+test(1854.5, data.frame(CJ(x = character(0), y = NA_real_)), setattr(expand.grid(x = character(0), y = NA_real_), "out.attrs", NULL))
+if ("package:bit64" %in% search()) {
+  test(1854.6, data.frame(CJ(x = integer64(0), y = as.integer64(2))), setattr(expand.grid(x = integer64(0), y = as.integer64(2)), "out.attrs", NULL))
+}
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
