@@ -1537,7 +1537,11 @@ int freadMain(freadMainArgs _args) {
             if (*ch==quote) {
               ch++;
               fun[tmpType[field]](&fctx);
-              if (*ch==quote && end_of_field(ch+1)) { ch++; break; }
+              if (*ch==quote) {
+                ch++;
+                skip_white(&ch);
+                if (end_of_field(ch)) break;
+              }
             }
             tmpType[field]++;
             while (disabled_parsers[tmpType[field]]) tmpType[field]++;
