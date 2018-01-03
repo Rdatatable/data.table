@@ -11187,7 +11187,55 @@ DT = setNames(data.frame(a = 1, b = 2, c = 3, d = 4), c(NA, "b", "c", NA))
 setnames(DT, c('a', 'b', 'c', 'd'))
 test(1853, names(DT), c('a', 'b', 'c', 'd'))
 
-test(1854, fread("A,B\n "), data.table(A=logical(), B=logical()))  # 2543
+# CJ bug with multiple empty vectors (#2511)
+test(1854.1, data.frame(CJ(x = integer(0))), setattr(expand.grid(x = integer(0)), "out.attrs", NULL))
+test(1854.2, data.frame(CJ(x = integer(0), y = character(0))), setattr(expand.grid(x = integer(0), y = character(0)), "out.attrs", NULL))
+test(1854.3, data.frame(CJ(x = integer(0), y = c("a", "b"))), setattr(expand.grid(x = integer(0), y = c("a", "b")), "out.attrs", NULL))
+test(1854.4, data.frame(CJ(x = integer(0), y = character(0), z = logical(0))), setattr(expand.grid(x = integer(0), y = character(0), z = logical(0)), "out.attrs", NULL))
+test(1854.5, data.frame(CJ(x = character(0), y = NA_real_)), setattr(expand.grid(x = character(0), y = NA_real_), "out.attrs", NULL))
+if ("package:bit64" %in% search()) {
+  test(1854.6, data.frame(CJ(x = integer64(0), y = as.integer64(2))), setattr(expand.grid(x = integer64(0), y = as.integer64(2)), "out.attrs", NULL))
+}
+
+# Blank lines are valid CSV format for single column datasets and should read smoothly by default, #2516.
+# Only for ncol>1 are blank lines not valid (correct number of commas should be present) and so a warning (at least) should occur for those.
+# This means trailing newline are now significant for single column data (so that fread(fwrite(DT))==DT), but not significant when ncol>1.
+test(1855.1, fread("A\n"), data.table(A=logical()))
+test(1855.2, fread("A\n\n"), data.table(A=NA))
+test(1855.3, fread("A\n\n\n"), data.table(A=c(NA,NA)))
+test(1855.4, fread("A\n1\n2\n\n\n3\n"), data.table(A=c(1L,2L,NA,NA,3L)))
+test(1855.5, fread("A\n1\n2\n\n\n3\n\n"), data.table(A=c(1L,2L,NA,NA,3L,NA)))
+test(1856.1, fread("A,B\n"), ans<-data.table(A=logical(), B=logical()))
+test(1856.2, fread("A,B\n\n"), ans)
+test(1856.3, fread("A,B\n\n\n"), ans)
+test(1856.4, fread("A,B\n3,4\n\n\n"), data.table(A=3L, B=4L))
+test(1856.5, fread("A,B\n3,4\n,\n\n\n"), data.table(A=c(3L,NA), B=c(4L,NA)))
+test(1856.6, fread("A,B\n3,4\n\n5,6\n"), data.table(A=3L, B=4L), warning="text exists afterwards")
+DTs = list(                                      # passed fread(fwrite(DT))==DT before fix?
+  data.table(A=logical(0)),                      # yes
+  data.table(A=NA),                              # no
+  data.table(A=c(NA,NA)),                        # no
+  data.table(A=c(1L,2L,NA,NA,3L)),               # no
+  data.table(A=c(1L,2L,NA,NA,3L,NA)),            # no
+  data.table(A=logical(0), B=logical(0)),        # yes
+  data.table(A=3L, B=4L),                        # yes
+  data.table(A=c(3L,NA), B=c(4L,NA)),            # yes
+  data.table(A=c(3L,NA,5L), B=c(4L,NA,6L)),      # yes
+  data.table(A=c(3L,NA,5L,NA), B=c(4L,NA,6L,NA)) # yes
+)
+f = tempfile()
+for (i in seq_along(DTs)) {
+  fwrite(DTs[[i]], file=f)
+  test(1857.0 + i/100, fread(f), DTs[[i]])
+}
+unlink(f)
+
+# quoted fields followed by whitespace, #2520
+test(1858, fread('B,C\n"12"  ,15\n"13"  ,18\n"14"  ,3'), data.table(B=c(12L, 13L, 14L), C=c(15L, 18L, 3L)))
+
+test(1859, fread("A\n", nrows=0), data.table(A=logical()))  # 2512
+
+test(1860, fread("A,B\n "), data.table(A=logical(), B=logical()))  # 2543
 
 ##########################
 
