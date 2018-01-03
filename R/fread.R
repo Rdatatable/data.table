@@ -83,6 +83,14 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   if (!is.null(colClasses) && is.atomic(colClasses)) {
     if (!is.character(colClasses)) stop("colClasses is not type list or character vector")
     if (!length(colClasses)) stop("colClasses is character vector ok but has 0 length")
+
+    # Issue 1634 'fread doesn't check colClasses to be valid type'
+    # Needs to be before tapply as won't work on list()
+    colClasses <- check_colClasses_validity(colClasses,
+                                            # Notify user where the warning came from
+                                            # (i.e. 'Warning in fread(...))'
+                                            preamble = paste0("In ", deparse(match.call()), ": "))
+
     if (!is.null(names(colClasses))) {   # names are column names; convert to list approach
       colClasses = tapply(names(colClasses), colClasses, c, simplify=FALSE)
     }
@@ -157,3 +165,133 @@ setfactor <- function(x, cols, verbose) {
   }
   invisible(x)
 }
+
+
+
+#' @title Fix Issue 1634
+# From ?read.csv, difference in supported values
+
+#           read.csv  fread
+#  NA              X      X
+#  logical         X      X
+#  integer         X      X
+#  numeric         X      X
+#  character       X      X
+#  factor          X      X
+#  raw             X
+#  complex         X
+#  Date            X
+#  POSIXct         X
+#
+
+#' @param colClasses User-supplied \strong{non-empty, character} vector colClasses whose validity will be checked.
+#' Note that \code{is.character(colClasses)} and \code{!length(colClasses)} are assumed.
+#' @param supported_colClasses Character vector of colClasses whose values are valid and supported
+#' @param unsupported_colClasses Character vector of colClasses whose values are valid in \code{\link[utils]{read.csv}},
+#' but not \code{fread}.
+#' @param preamble Text withing \code{warning()} to appear before the warning message (if applicable).
+#' Possibly \code{deparse(match.call())}.
+#' @param silent If \code{FALSE}, the default, if any \code{colClasses} are not in \code{supported_colClasses} emits a warning
+#' in addition to fixing its values. If \code{TRUE}, no warning is emitted.
+#' @return \code{colClasses} with any entries not in \code{supported_colClasses} replaced with \code{"NA"}.
+check_colClasses_validity <- function(colClasses,
+                                      supported_colClasses = c("logical",
+                                                               "integer",
+                                                               "numeric", "double",
+                                                               "character",
+                                                               "factor",
+                                                               "NA",
+                                                               NA_character_),
+                                      unsupported_colClasses = c("raw",
+                                                                 "complex",
+                                                                 "Date",
+                                                                 "POSIXct"),
+                                      preamble = NULL,
+                                      silent = FALSE) {
+  out <- colClasses
+  # Avoid NA %chin% x
+  colClasses[is.na(colClasses)] <- "NA"
+  if (!all(colClasses %chin% supported_colClasses)) {
+    tot_colClasses_to_fix <- sum(!colClasses %chin% supported_colClasses)
+    out[!colClasses %chin% supported_colClasses] <- NA_character_
+    # Going to warn so performance not crucial.
+
+    unsupported_entries <- colClasses[colClasses %chin% unsupported_colClasses]
+    invalid_entries <- colClasses[!(colClasses %chin% c(unsupported_colClasses, supported_colClasses))]
+
+    report_unsupported <- function(u_e) {
+      switch(as.character(uniqueN(u_e)),
+             "1" = {
+               paste0("value '", unique(u_e), "' is not supported in fread(). ")
+             },
+
+             "2" = {
+               paste0("values '", unique(u_e)[1],
+                      "' and '", unique(u_e)[2],"' are not supported in fread(). ")
+             },
+
+             # Otherwise >= 2
+             # I don't anticipate the internal argument unsupported_colClasses to be huge.
+             paste0("values '", paste0(unique(u_e), collapse = "', '"), "' are not supported in fread().")
+      )
+
+    }
+
+    report_invalid <- function(i_e) {
+      msg <-
+        switch(as.character(uniqueN(i_e)),
+               "1" = {
+                 paste0("value '", unique(i_e), "' is invalid. ")
+               },
+
+               "2" = {
+                 paste0("values '", unique(i_e)[1],
+                        "' and '", unique(i_e)[2],"' are invalid. ")
+               },
+
+               # Otherwise >= 2
+               # I don't anticipate the internal argument 'unsupported_colClasses' to be huge.
+               paste("values '", paste0(unique(i_e), collapse = "', '"), "' are not valid.")
+        )
+    }
+
+
+    warn_msg <-
+      if (length(unsupported_entries)) {
+        if (length(invalid_entries)) {
+          c("colClasses contains invalid values. ",
+            "The ", report_unsupported(unsupported_entries), " ",
+            "In addition, the ",
+            report_invalid(invalid_entries))
+        } else {
+          c("colClasses contains ",
+            if (tot_colClasses_to_fix == 1L) {
+              "an unsupported value. "
+            } else {
+              "unsupported values. "
+            },
+            "The ",
+            report_unsupported(unsupported_entries))
+        }
+      } else {
+        c("colClasses contains ",
+          if (tot_colClasses_to_fix == 1L) {
+            "an invalid value. "
+          } else {
+            "invalid values. "
+          },
+          "The ",
+          report_invalid(invalid_entries))
+      }
+
+    if (!silent) {
+      warning(preamble,
+              warn_msg, "These values will be set to NA (i.e. ignored) and the corresponding colClasses will be inferred from the data.",
+              call. = FALSE)
+    }
+  }
+  out[out == "NA"] <- NA_character_
+  out
+}
+
+

@@ -10097,12 +10097,12 @@ test(1743.4, sapply(fread("a,b\n1,a", colClasses=c("character", "factor")), clas
 ## Supported in read.csv but not fread
 test(1743.5, sapply(fread("a,b\n2017-01-01,1", colClasses=c("Date", "integer")), class), c(a="character", b="integer"), warning="colClasses contains an unsupported value.*Date.*is not supported in fread.")
 test(1743.6, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), c(a="character", b="integer", c="character"), warning="colClasses contains unsupported values.*Date.*and.*complex.*are not supported in fread.")
-test(1743.7, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", "raw")), class), c(a="character", b="integer", c="character", d="character"), warning="colClasses contains unsupported values.*Date.*complex.*raw.*are not supported in fread.")
+test(1743.7, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", "raw")), class), c(a="character", b="integer", c="character", d="integer"), warning="colClasses contains unsupported values.*Date.*complex.*raw.*are not supported in fread.")
 
 ## Just invalid
 test(1743.8, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="colClasses contains an invalid value.*foo.")
 test(1743.9, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("foo", "integer", "bar")), class), c(a="character", b="integer", c="character"), warning="colClasses contains invalid values.*foo.*bar.")
-test(1743.10, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("foo", "integer", "bar", "baz")), class), c(a="character", b="integer", c="character", d="character"), warning="colClasses contains invalid values.*foo.*bar.*baz.")
+test(1743.10, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("foo", "integer", "bar", "baz")), class), c(a="character", b="integer", c="character", d="integer"), warning="colClasses contains invalid values.*foo.*bar.*baz.")
 
 ## Suggestions for typos of supported values
 # test(1743.11, sapply(fread("a,b\n1,2", colClasses = c("intege", "inetger")), class), c(a="integer", b="integer"))
