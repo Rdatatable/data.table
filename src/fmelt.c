@@ -184,7 +184,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
     valuecols = PROTECT(allocVector(VECSXP, 1)); protecti++;
     SET_VECTOR_ELT(valuecols, 0, tmp);
-    warning("To be consistent with reshape2's melt, id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are conisdered id.vars, which in this case are columns [%s]. Consider providing at least one of 'id' or 'measure' vars in future.", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
+    warning("To be consistent with reshape2's melt, id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are considered id.vars, which in this case are columns [%s]. Consider providing at least one of 'id' or 'measure' vars in future.", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
   } else if (!isNull(id) && isNull(measure)) {
     switch(TYPEOF(id)) {
       case STRSXP  : PROTECT(tmp = chmatch(id, dtnames, 0, FALSE)); protecti++; break;
