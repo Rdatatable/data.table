@@ -11233,7 +11233,7 @@ unlink(f)
 # quoted fields followed by whitespace, #2520
 test(1858, fread('B,C\n"12"  ,15\n"13"  ,18\n"14"  ,3'), data.table(B=c(12L, 13L, 14L), C=c(15L, 18L, 3L)))
 
-test(1859, fread("A\n", nrows=0), data.table(A=c(T))[0,])  # 2512
+test(1859, fread("A\n", nrows=0), data.table(A=logical(0)))  # 2512
 
 ##########################
 
