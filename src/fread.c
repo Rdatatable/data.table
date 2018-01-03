@@ -1657,6 +1657,7 @@ int freadMain(freadMainArgs _args) {
   }
   if (sampleLines<=1) {
     if (args.header==true) {
+      allocnrow = 0;
       for (int j=0; j<ncol; j++) type[j] = type0;
       // when column-names-only, 2nd row didn't happen, so initialize needs to be done now so that empty columns should be type logical
       // rather than the type of the column names (most likely string)
