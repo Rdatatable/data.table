@@ -153,7 +153,10 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
   \item{on}{ Indicate which columns in \code{x} should be joined with which columns in \code{i} along with the type of binary operator to join with (see non-equi joins below on this). When specified, this overrides the keys set on \code{x} and \code{i}. There are multiple ways of specifying the \code{on} argument:
         \itemize{
             \item{As an unnamed character vector, e.g., \code{X[Y, on=c("a", "b")]}, used when columns \code{a} and \code{b} are common to both \code{X} and \code{Y}.}
-            \item{As a \emph{named} character vector, e.g., \code{X[Y, on=c(V1="a", V2="b")]}, used when the joining measure (e.g., ID) is shared between the two tables, but the column names are not. The values of \code{on} (\code{"a"} and \code{"b"} in the example) refer to column names in \code{i} and the corresponding names of \code{on} (\code{V1} and \code{V2} in the example) refer to column names in \code{x}. 
+            \item{\emph{Foreign key joins}: As a \emph{named} character vector when the join columns have different names in \code{X} and \code{Y}.
+            For example, \code{X[Y, on=c(x1="y1", x2="y2")]} joins \code{X} and \code{Y} by matching columns \code{x1} and \code{x2} in \code{X} with columns \code{y1} and \code{y2} in \code{Y}, respectively.
+
+            From v1.9.8, you can also express foreign key joins using the binary operator \code{==}, e.g. \code{X[Y, on=c("x1==y1", "x2==y2")]}.
 
             NB: shorthand like \code{X[Y, on=c("a", V2="b")]} is also possible if, e.g., column \code{"a"} is common between the two tables.}
             \item{For convenience during interactive scenarios, it is also possible to use \code{.()} syntax as \code{X[Y, on=.(a, b)]}.}
@@ -302,6 +305,9 @@ DT[X, on="x"]                         # right join
 X[DT, on="x"]                         # left join
 DT[X, on="x", nomatch=0]              # inner join
 DT[!X, on="x"]                        # not join
+DT[X, on=c(y="v")]                    # join using column "y" of DT with column "v" of X
+DT[X, on="y==v"]                      # same as above (v1.9.8+)
+
 DT[X, on=.(y<=foo)]                   # NEW non-equi join (v1.9.8+)
 DT[X, on="y<=foo"]                    # same as above
 DT[X, on=c("y<=foo")]                 # same as above

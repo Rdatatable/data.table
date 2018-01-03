@@ -1494,10 +1494,10 @@ int freadMain(freadMainArgs _args) {
       if (sep==' ') while (*ch==' ') ch++;  // multiple sep=' ' at the jlineStart does not mean sep(!)
       // detect blank lines ...
       skip_white(&ch);
-      if (eol(&ch) || *ch=='\0') {
-        if (!skipEmptyLines && !fill && ncol>1) break;
+      if (ncol>1 && (eol(&ch) || *ch=='\0')) {
+        if (!skipEmptyLines && !fill) break;
         ch += (*ch!='\0');
-        if (!skipEmptyLines || ncol==1) sampleLines++;  // TODO: fall through more gracefully
+        if (!skipEmptyLines) sampleLines++;  // TODO: fall through more gracefully
         continue;
       }
       jline++;
@@ -1537,7 +1537,11 @@ int freadMain(freadMainArgs _args) {
             if (*ch==quote) {
               ch++;
               fun[tmpType[field]](&fctx);
-              if (*ch==quote && end_of_field(ch+1)) { ch++; break; }
+              if (*ch==quote) {
+                ch++;
+                skip_white(&ch);
+                if (end_of_field(ch)) break;
+              }
             }
             tmpType[field]++;
             while (disabled_parsers[tmpType[field]]) tmpType[field]++;
