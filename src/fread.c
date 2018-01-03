@@ -302,7 +302,7 @@ static inline int countfields(const char **pch)
   const char *ch = *pch;
   if (sep==' ') while (*ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
   skip_white(&ch);
-  if (eol(&ch)) {
+  if (eol(&ch) || ch==eof) {
     *pch = ch+1;
     return 0;
   }
