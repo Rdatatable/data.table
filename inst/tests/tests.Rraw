@@ -11263,3 +11263,4 @@ cat("\n",plat,"\n\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in 
 # an update to Rdevel itself; data.table doesn't have any other dependency) since there appears to be no other
 # way to see the timestamp that CRAN checks were run. Some CRAN machines lag by several days.
 
+}
