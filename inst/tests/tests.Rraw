@@ -5996,7 +5996,6 @@ test(1444.4, fread(paste(paste("Hz.BB.GHG.", 1:10, sep = ""), collapse="\n"), se
              data.table(V1="Hz",V2="BB",V3="GHG",V4=1:10))
 
 # doubled quote inside a quoted field followed by an embedded newline
-if (.Platform$OS.type == "unix") {
 test(1445, fread("doublequote_newline.csv")[7:10], data.table(A=c(1L,1L,2L,1L), B=c("a","embedded \"\"field\"\"\nwith some embedded new\nlines as well","not this one","a")))
 }
 # the example from #489 directly :
@@ -6022,7 +6021,6 @@ if ("package:bit64" %in% search()) {
                       BLYBZ = c(0L,4L,6L),
                       ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE","",""),
                       JKCRUUBAVQ = c("",".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ","")))
-}
 
 # Fix for #927
 DT = data.table(x=1L, y=2L)
@@ -7612,7 +7610,6 @@ test(1584.1, f1("fread_blank.txt", f=FALSE, b=TRUE), f2("fread_blank.txt", f=FAL
 test(1584.2, f1("fread_blank2.txt", f=FALSE, b=TRUE), f2("fread_blank2.txt", f=FALSE, b=TRUE))
 test(1584.3, f1("fread_blank3.txt", f=FALSE, b=TRUE), f2("fread_blank3.txt", f=FALSE, b=TRUE))
 
-if (.Platform$OS.type == "unix") {
 # fread fill=TRUE, #536. Also takes care of #1124.
 # the appended [-28,], [-(7:9),] and [-29,] remove the final all-NA rows due to repeated eol ending the file
 test(1585.1, f1("536_fread_fill_1.txt"), f2("536_fread_fill_1.txt")[-28,])
@@ -7626,7 +7623,6 @@ test(1585.6, f1("536_fread_fill_3_extreme.txt", b=TRUE), f2("536_fread_fill_3_ex
 # no warning about bumping type. when fill=TRUE, column type detection starts at first non-empty line (which makes sense).
 test(1585.7, f1("536_fread_fill_4.txt"), f2("536_fread_fill_4.txt")[-29,])
 test(1585.8, f1("536_fread_fill_4.txt", b=TRUE), f2("536_fread_fill_4.txt", b=TRUE))
-}
 
 # TODO: add a test when fill=FALSE, but blank.lines.skip=TRUE, when the same effect should happen
 # TODO: fix and add test for cases like this:
@@ -8057,11 +8053,9 @@ DT = data.frame(x=1, y=2)
 setattr(DT, 'class', c('data.table', 'data.frame')) # simulates over-allocation lost scenario
 if (!truelength(DT)) test(1620, truelength(as.data.table(DT)), 1026L)
 
-if (.Platform$OS.type == "unix") {
 # fix for #1116, (#1239 and #1201)
 test(1621.1, fread("issue_1116_fread_few_lines.txt", logical01=FALSE), setDT(read.delim("issue_1116_fread_few_lines.txt", stringsAsFactors=FALSE, sep=",", check.names=FALSE)))
 test(1621.2, fread("issue_1116_fread_few_lines_2.txt", logical01=FALSE), setDT(read.delim("issue_1116_fread_few_lines_2.txt", stringsAsFactors=FALSE, sep=",", check.names=FALSE)))
-}
 
 # fix for #1573
 ans1 = fread("issue_1573_fill.txt", fill=TRUE, na.strings="")
