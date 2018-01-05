@@ -2864,7 +2864,7 @@ isReallyReal <- function(x) {
     if(notjoin && operator %chin% c("<", ">")) return(NULL)
     ## if it passed until here, fast subset can be done for this stub
     i <- c(i, setNames(list(RHS), col))
-    on <- c(on, paste0(col, validOps$on[validOps$op == operator], col))
+    on <- c(on, setNames(paste0(col, validOps$on[validOps$op == operator], col), col))
     ## remember, whether there are non-equi elements in the query.
     nonEqui = nonEqui | validOps$on[validOps$op == operator] != "=="
     ## loop continues with remainingIsub
@@ -2929,6 +2929,7 @@ isReallyReal <- function(x) {
   }
   if(!is.null(idxCols)){
     setkeyv(i, idxCols)
+    on <- on[idxCols] ## make sure 'on' is in the correct order. Otherwise the logic won't recognise that a key / index already exists.
   }
   return(list(i  = i, 
               on = on, 
