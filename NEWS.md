@@ -117,6 +117,8 @@
 
 28. CJ() works with multiple empty vectors now [#2511](https://github.com/Rdatatable/data.table/issues/2511). Thanks to @MarkusBonsch for fixing.
 
+29. `:=` assignment of one vector to two or more columns, e.g. DT[, c("x", "y") := 1:10], caused a tricky error if `setnames` was called afterwards because the code failed to copy the vector. [#2540](https://github.com/Rdatatable/data.table/issues/2540). This is an old issue [#185](https://github.com/Rdatatable/data.table/issues/185) that had been fixed but reappeared when code was refactored. Thanks to @patrickhowerter for the report and the reproducible example and to @MarkusBonsch for fixing.
+
 
 #### NOTES
 
