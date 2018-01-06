@@ -120,7 +120,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
 
   # Should be after set_colClasses_ante
   if (stringsAsFactors) {
-    for (j in which(vapply(ans, is.character, logical(1)))) {
+    for (j in which(vapply(ans, is.character, logical(1L)))) {
       set(ans, j = j, value = try_with(.subset2(ans, j),
                                        as_factor(.subset2(ans, j)),
                                        paste0("Column ", j, " was type 'character', but when trying to honour `stringsAsFactors = TRUE`, fread encountered the following problem")))
@@ -192,7 +192,7 @@ set_colClasses_ante <- function(ans,
                if (!is.null(select) || !is.null(drop)) {
                  if (is.character(select) || is.character(drop)) {
 
-                   if (any(vapply(colClasses, is.integer, logical(1)))) {
+                   if (any(vapply(colClasses, is.integer, logical(1L)))) {
                      sel_dro <- if (is.character(select)) "select" else "drop"
                      # Difficult unless select in Cfread records the original positions in the file.
                      #
@@ -332,7 +332,7 @@ set_colClasses_ante <- function(ans,
                }
                # Safe to use NULL_colClasses now
                if (length(NULL_colClasses)) {
-                 char_NULL_colClasses <- vapply(NULL_colClasses, is.character, logical(1))
+                 char_NULL_colClasses <- vapply(NULL_colClasses, is.character, logical(1L))
                  if (all(char_NULL_colClasses)) {
                    null_cols <- unlist(NULL_colClasses, use.names = FALSE)
                    ans[, (null_cols) := NULL]
