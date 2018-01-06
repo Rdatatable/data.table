@@ -10090,44 +10090,49 @@ test(1743.4, sapply(fread("a,b\n1,a", colClasses=c("character", "factor")), clas
 
 
 # Issue #1634: 'fread doesn't check colClasses to be valid type'
+# Currently using BioGenerics, which doesn't support USE.NAMES
 ## Date supported character/list colClasses
 test(1743.5, sapply(fread("a,b\n2017-01-01,1", colClasses=c("Date", "integer")), class), c(a="Date", b="integer"))
 test(1743.6, sapply(fread("a,b\n2017-01-01,1", colClasses=list(Date = 1L, integer = 2L)), class), c(a="Date", b="integer"))
 test(1743.6, sapply(fread("a,b\n2017-01-01,2017-01-02", colClasses=list(Date = 1:2)), class), c(a="Date", b="Date"))
 test(1743.7, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), c(a="Date", b="integer", c="complex"))
 test(1743.8, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), c(a="Date", b="integer", c="complex"))
-test(1743.9, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", "raw")), class), c(a="Date",b="integer",c="complex",d="raw"))
-test(1743.10, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", "raw")), class), c(a="Date",b="integer",c="complex",d="raw"))
-test(1743.11, x = vapply(fread("a,b\n2015-01-01,2015-01-01", colClasses = c(NA, "IDate")), inherits, what = "IDate", FUN.VALUE = logical(1)), y = c(a=FALSE, b=TRUE))
+test(1743.9, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", NA)), class), c(a="Date",b="integer",c="complex",d="integer"))
+test(1743.11, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", "raw")), class), c(a="Date",b="integer",c="complex",d="raw"))
+test(1743.12, x = vapply(fread("a,b\n2015-01-01,2015-01-01", colClasses = c(NA, "IDate")), inherits, what = "IDate", FUN.VALUE = logical(1)), y = c(a=FALSE, b=TRUE))
 
 
 ## Attempts to impose incompatible colClasses is a warning (not an error)
 ## and does not change the value of the columns
-test(1743.12, sapply(fread("a,b\n09/05/98,2015-01-01", colClasses = "Date"), class), y=c(a="character", b="Date"), warning="standard unambiguous format")
+test(1743.13, sapply(fread("a,b\n09/05/98,2015-01-01", colClasses = "Date"), class), y=c(a="character", b="Date"), warning="standard unambiguous format")
 
 ## Just invalid
-test(1743.13, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="[nN]o method .*for .*foo")
-test(1743.14, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="the column will be left as type .*character")
+test(1743.14, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="[nN]o method .*for .*foo")
+test(1743.15, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="the column will be left as type .*character")
 
 ## When colClasses is a list, it should still work if factor is a name of multiple elements.
-test(1743.15, sapply(fread("a,b\nc,d", colClasses = list(factor = 1L, factor = 2L)), class), c(a="factor", b="factor"))
-test(1743.16, sapply(fread("a,b,c,d\nw,x,y,z", colClasses = list(factor = 1L, factor = 2L, factor = "c")), class), c(a="factor", b="factor", c ="factor", d="character"))
+test(1743.16, sapply(fread("a,b\nc,d", colClasses = list(factor = 1L, factor = 2L)), class), c(a="factor", b="factor"))
+test(1743.17, sapply(fread("a,b,c,d\nw,x,y,z", colClasses = list(factor = 1L, factor = 2L, factor = "c")), class), c(a="factor", b="factor", c ="factor", d="character"))
 
 ## When colClasses is used with select, integers in colClasses refer to the original column order
-test(1743.17, sapply(fread("a,b,c\nd,e,f", colClasses = list(Date = 1L), select = 2:3), class), y = c(b="character", c="character"))
+test(1743.18, sapply(fread("a,b,c\nd,e,f", colClasses = list(Date = 1L), select = 2:3), class), y = c(b="character", c="character"))
 ##
-test(1743.18, sapply(fread("a,b,c\n2,2,f", colClasses = list(character = 1L), select = 2:3), class), y = c(b="integer", c="character"))
-
-## When colClasses is used with select, integers in colClasses refer to the original column order
-test(1743.17, sapply(fread("a,b,c\nd,e,f", colClasses = list(Date = 1L), drop = 1), class), y = c(b="character", c="character"))
-##
-test(1743.18, sapply(fread("a,b,c\n2,2,f", colClasses = list(character = 1L), drop = 1), class), y = c(b="integer", c="character"))
+test(1743.19, sapply(fread("a,b,c\n2,2,f", colClasses = list(character = 1L), select = 2:3), class), y = c(b="integer", c="character"))
 
 ## We are unable to work out colClasses when it contains integers with select/drop character
-test(1743.19, sapply(fread("a,b,c\n2,2,f", colClasses = list(character = 1L), drop = "a"), class), y = c(b="integer", c="character"), warning = "drop.* specifies columns by name, but some elements of colClasses refer to position. This combination is not supported. Some colClasses may not have been set")
-test(1743.20, sapply(fread("a,b,c\n2,2,f", colClasses = list(character = "c", integer = 2L), drop = "a"), class), y = c(b="integer", c="character"), warning = "drop.* specifies columns by name, but some elements of colClasses refer to position. This combination is not supported. Some colClasses may not have been set")
+test(1743.21, sapply(fread("a,b,c\n1999/01/01,2,f", colClasses = list(Date = 1L), drop = "a"), class), y = c(b="integer", c="character"), warning = "drop.* specifies columns by name, but some elements of colClasses refer to position. This combination is not supported. Some colClasses may not have been set")
+test(1743.22, sapply(fread("a,b,c\n2,2,f", colClasses = list(complex = "c", integer = 2L), drop = "a"), class), y = c(b="integer", c="character"), warning = "drop.* specifies columns by name, but some elements of colClasses refer to position. This combination is not supported. Some colClasses may not have been set")
 # But this is ok
-test(1743.21, sapply(fread("a,b,c\n2,2,f", colClasses = list(character = "c", integer = "b"), drop = "a"), class), y = c(b="integer", c="character"))
+test(1743.23, sapply(fread("a,b,c\n2,2,f", colClasses = list(character = "c", integer = "b"), drop = "a"), class), y = c(b="integer", c="character"))
+
+## POSIXct
+test(1743.24, vapply(fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses = c("POSIXct", "integer", "character")), inherits, FUN.VALUE = FALSE, what = "POSIXct", USE.NAMES = FALSE), c(TRUE, FALSE, FALSE))
+test(1743.25, vapply(fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses = list(POSIXct="c", character="b"), drop=c("a","b")), inherits, FUN.VALUE = FALSE, what = "POSIXct", USE.NAMES = FALSE), c(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE))
+test(1743.26, vapply(fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses = list(POSIXct="c", character=2), drop=c("a","b")), inherits, FUN.VALUE = FALSE, what = "POSIXct", USE.NAMES = FALSE), c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE), warning="drop specifies columns by name.*colClasses refer to position")
+
+## raw same behaviour as read.csv
+test(1743.27, sapply(fread("a,b\n05,05", colClasses = c("raw", "integer")), class), sapply(read.csv(text ="a,b\n05,05", colClasses = c("raw", "integer")), class))
+test(1743.28, sapply(fread("a,b\n05,05", colClasses = list(raw = 1L)), class), sapply(read.csv(text = "a,b\n05,05", colClasses = c("raw", "integer")), class))
 
 
 # rolling join stopped working for double with fractions, #1904
