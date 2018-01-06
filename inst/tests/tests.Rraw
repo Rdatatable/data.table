@@ -10132,6 +10132,7 @@ test(1743.212, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = c(1L, 3L)
 test(1743.213, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = c(1L, 3L)), select = 3:2), class), y = c(c="factor", b="integer"))
 test(1743.214, sapply(fread("a,b,c,d\n2,2,f,x", colClasses = list(factor = c(1L, 3L), Date = 4), select = 3:2), class), y = c(c="factor", b="integer"))
 test(1743.215, sapply(fread("a,b,c\n2,2,f", colClasses = c("integer", "integer", "factor"), select=2:3), class), y = c(b="integer", c="factor"))
+test(1743.216, sapply(fread("a,b\n1,x", colClasses = list(factor = "b"), select = "b"), class), c(b = "chracter"))
 
 ## We are unable to work out colClasses when it contains integers with select/drop character
 test(1743.22, sapply(fread("a,b,c\n1999/01/01,2,f", colClasses = list(Date = 1L), drop = "a"), class), y = c(b="integer", c="character"), warning = "drop.* specifies columns by name, but some elements of colClasses refer to position. This combination is not supported. Some colClasses may not have been set")

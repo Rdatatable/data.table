@@ -116,7 +116,8 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   # Fix Issue 1634
   set_colClasses_ante(ans,
                       select = select, drop = drop,
-                      colClasses = colClasses)
+                      colClasses = colClasses,
+                      verbose = verbose)
 
   # Should be after set_colClasses_ante
   if (stringsAsFactors) {
@@ -173,10 +174,11 @@ set_colClasses_ante <- function(ans,
                                                         "integer", "integer64",
                                                         "numeric", "double",
                                                         "character",
-                                                        NA_character_)) {
+                                                        NA_character_),
+                                verbose = FALSE) {
 
   if (length(colClasses) && any(!is.na(colClasses))) {
-
+    if (verbose) cat("Applying colClasses:\n")
     switch(typeof(colClasses),
            "list" = {
              if (!all(names(colClasses) %chin% already_set_classes)) {
@@ -209,7 +211,7 @@ set_colClasses_ante <- function(ans,
                      } else {
                        colClasses <-
                          lapply(colClasses, function(el) {
-                           el[el %chin% drop]
+                           el[el %chin% select]
                          })
                      }
                    }
@@ -280,6 +282,7 @@ set_colClasses_ante <- function(ans,
                  new_class <- names(colClasses)[cCi]
                  # Already done.
                  if (!new_class %chin% already_set_classes && length(colClasses[[cCi]])) {
+                   if (verbose && new_class != "NULL") cat("\tSetting column(s) ", colClasses[[cCi]], " to ", new_class, "\n")
                    switch(new_class,
                           "factor" = {
                             factor_cols <- colClasses[[cCi]]
@@ -379,6 +382,7 @@ set_colClasses_ante <- function(ans,
                if (is.numeric(select)) {
                  # Failure to include this line will result in a crash
                  select <- as.integer(select)
+
                  if (!is.sorted(select)) {
                    select <- select[forderv(select, by = NULL)]
                  }
@@ -393,6 +397,8 @@ set_colClasses_ante <- function(ans,
                for (j in which_new) {
                  v <- ans[[j]]
                  new_class <- colClasses[[j]]
+                 if (verbose && new_class != "NULL") cat("\tChanging column ", j, " to ", new_class, "\n")
+
                  switch(new_class,
                         "factor" = {
                           set(ans, j = j, value = try_factor(v, j))
