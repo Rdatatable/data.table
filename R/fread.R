@@ -244,7 +244,7 @@ set_colClasses_ante <- function(ans,
                            # character, nothing to do
                            # except make sure we don't provide
                            # set with any alien columns
-                           el[el %chin% names(out)]
+                           el[el %chin% names(ans)]
                          }
                        })
                    } else {
@@ -465,10 +465,10 @@ try_with <- function(v, as.v, preamble) {
 
 }
 
-try_factor <- function(v, y) {
+try_factor <- function(v, j) {
   try_with(v,
            as_factor(v),
-           paste0("Column ", j, " was set by colClasses to be 'complex', but fread encountered the following"))
+           paste0("Column ", j, " was set by colClasses to be 'factor', but fread encountered the following"))
 }
 
 try_complex <- function(v, j) {

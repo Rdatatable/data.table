@@ -6023,6 +6023,7 @@ if ("package:bit64" %in% search()) {
                       BLYBZ = c(0L,4L,6L),
                       ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE","",""),
                       JKCRUUBAVQ = c("",".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ","")))
+}
 
 # Fix for #927
 DT = data.table(x=1L, y=2L)
@@ -10116,7 +10117,12 @@ test(1743.17, sapply(fread("a,b\nc,d", colClasses = list(factor = 1L, factor = 2
 test(1743.18, sapply(fread("a,b,c,d\nw,x,y,z", colClasses = list(factor = 1L, factor = 2L, factor = "c")), class), c(a="factor", b="factor", c ="factor", d="character"))
 
 ## When colClasses is used with select, integers in colClasses refer to the original column order
-test(1743.19, sapply(fread("a,b,c\nd,e,f", colClasses = list(Date = 1L), select = 2:3), class), y = c(b="character", c="character"))
+test(1743.191, sapply(fread("a,b,c\nd,e,f", colClasses = list(Date = 1L), select = 2:3), class), y = c(b="character", c="character"))
+test(1743.192, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c(1L, 3L), Date = 4), select = 3:2), class), y = c(c="raw", b="integer"))
+test(1743.193, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c(1L, 3L), Date = 4), drop = c(1, 4)), class), y = c(b="integer", c="raw"))
+test(1743.194, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c("a", "c"), Date = "d"), drop = c(1L, 4L)), class), y = c(b="integer", c="raw"))
+test(1743.195, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c("a", "c"), Date = "d"), select = c(2L, 3L)), class), y = c(b="integer", c="raw"))
+test(1743.196, sapply(fread("a,b,c,d\n2,0+1i,2,x", colClasses = list(raw = c("a", "c"), complex = "b", Date = "d"), select = c(2L, 3L)), class), y = c(b="complex", c="raw"))
 
 ## factors
 test(1743.211, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = 1L), select = 2:3), class), y = c(b="integer", c="character"))
@@ -10124,16 +10130,15 @@ test(1743.212, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = c(1L, 3L)
 ## concordance with #1445 - respect select's order
 test(1743.213, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = c(1L, 3L)), select = 3:2), class), y = c(c="factor", b="integer"))
 test(1743.214, sapply(fread("a,b,c,d\n2,2,f,x", colClasses = list(factor = c(1L, 3L), Date = 4), select = 3:2), class), y = c(c="factor", b="integer"))
-test(1743.215, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c(1L, 3L), Date = 4), select = 3:2), class), y = c(c="raw", b="integer"))
-test(1743.216, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c(1L, 3L), Date = 4), drop = c(1, 4)), class), y = c(b="integer", c="raw"))
-
-
+test(1743.215, sapply(fread("a,b,c\n2,2,f", colClasses = c("integer", "integer", "factor"), select=2:3), class), y = c(b="integer", c="factor"))
 
 ## We are unable to work out colClasses when it contains integers with select/drop character
 test(1743.22, sapply(fread("a,b,c\n1999/01/01,2,f", colClasses = list(Date = 1L), drop = "a"), class), y = c(b="integer", c="character"), warning = "drop.* specifies columns by name, but some elements of colClasses refer to position. This combination is not supported. Some colClasses may not have been set")
 test(1743.23, sapply(fread("a,b,c\n2,2,f", colClasses = list(complex = "c", integer = 2L), drop = "a"), class), y = c(b="integer", c="character"), warning = "drop.* specifies columns by name, but some elements of colClasses refer to position. This combination is not supported. Some colClasses may not have been set")
 # But this is ok
-test(1743.24, sapply(fread("a,b,c\n2,2,f", colClasses = list(character = "c", integer = "b"), drop = "a"), class), y = c(b="integer", c="character"))
+test(1743.241, sapply(fread("a,b,c\n2,2,f", colClasses = list(character = "c", integer = "b"), drop = "a"), class), y = c(b="integer", c="character"))
+test(1743.242, sapply(fread("a,b,c\n2,2,f", colClasses = c("integer", "integer", "factor"), drop = "a"), class), y = c(b="integer", c="character"), warning="drop.* specifies columns by name, but some elements of colClasses refer to position.")
+
 
 ## POSIXct
 test(1743.25, vapply(fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses = c("POSIXct", "integer", "character")), inherits, FUN.VALUE = FALSE, what = "POSIXct", USE.NAMES = FALSE), c(TRUE, FALSE, FALSE))
@@ -10146,6 +10151,7 @@ test(1743.29, sapply(fread("a,b\n05,05", colClasses = list(raw = 1L)), class), s
 
 ## colClasses Examples
 data1743 = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
+data1743.307 = "A,B,C,D,E,F,G\n1,3,5,7,9,11,13\n2,4,6,8,10,12,14\n"
 
 ### drop examples weren't working
 test(1743.301, names(fread(data1743, colClasses=c("B"="NULL","C"="NULL"))), c("A", "D"))
@@ -10155,10 +10161,11 @@ test(1743.304, names(fread(data1743, drop=2:3)), c("A", "D"))
 ### Similarly
 test(1743.305, names(fread(data1743, colClasses=c("integer", "NULL", "NULL", "integer"))), c("A", "D"))
 test(1743.306, names(fread(data1743, colClasses=c("integer", "NULL", "NULL", "integer"), drop=4)), c("A"))
+test(1743.307, names(fread(data1743.307, colClasses=list(NULL = c("C", "D"), NULL = 1:2, NULL = "F", NULL = 5))), c("G"))
 
 ### Warning examples
 test(1743.31, names(fread(data1743, colClasses="NULL")), LETTERS[1:4], warning="colClasses.*quoted.*interpreted as colClasses.*NULL")
-
+test(1743.32, sapply(fread("A,B\na,0+1i", colClasses="complex"), class), c(A="character", B="complex"), warning="Column 1 was set by colClasses to be .complex")
 
 
 # rolling join stopped working for double with fractions, #1904
@@ -11320,4 +11327,3 @@ cat("\n",plat,"\n\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in 
 # an update to Rdevel itself; data.table doesn't have any other dependency) since there appears to be no other
 # way to see the timestamp that CRAN checks were run. Some CRAN machines lag by several days.
 
-}
