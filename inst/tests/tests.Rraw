@@ -10123,6 +10123,7 @@ test(1743.193, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c(1L, 3
 test(1743.194, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c("a", "c"), Date = "d"), drop = c(1L, 4L)), class), y = c(b="integer", c="raw"))
 test(1743.195, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c("a", "c"), Date = "d"), select = c(2L, 3L)), class), y = c(b="integer", c="raw"))
 test(1743.196, sapply(fread("a,b,c,d\n2,0+1i,2,x", colClasses = list(raw = c("a", "c"), complex = "b", Date = "d"), select = c(2L, 3L)), class), y = c(b="complex", c="raw"))
+test(1743.197, sapply(fread("A,B,C,D\nA,B,X,4", select = c(1, 4, 3, 2), colClasses = c("factor", "factor", "character", "integer")), class), c("A" = "factor", "D" = "integer", "C" = "character", "B" = "factor"))
 
 ## factors
 test(1743.211, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = 1L), select = 2:3), class), y = c(b="integer", c="character"))

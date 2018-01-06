@@ -377,6 +377,11 @@ set_colClasses_ante <- function(ans,
                }
 
                if (is.numeric(select)) {
+                 # Failure to include this line will result in a crash
+                 select <- as.integer(select)
+                 if (!is.sorted(select)) {
+                   select <- select[forderv(select, by = NULL)]
+                 }
                  colClasses <- colClasses[select]
                  which_new <- which(!colClasses %chin% already_set_classes)
                }
