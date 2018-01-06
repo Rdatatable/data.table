@@ -84,12 +84,11 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
     if (!is.character(colClasses)) stop("colClasses is not type list or character vector")
     if (!length(colClasses)) stop("colClasses is character vector ok but has 0 length")
 
-    # Issue 1634 'fread doesn't check colClasses to be valid type'
-    # Needs to be before tapply as won't work on list()
-    # colClasses <- check_colClasses_validity(colClasses,
-    #                                         # Notify user where the warning came from
-    #                                         # (i.e. 'Warning in fread(...))'
-    #                                         preamble = paste0("In ", deparse(match.call()), ": "))
+    if (identical(colClasses, "NULL")) {
+      colClasses = NULL
+      warning('colClasses="NULL" (quoted) which will be interpreted as colClasses=NULL (the default), ',
+              'as opposed to dropping every column.')
+    }
 
     if (!is.null(names(colClasses))) {   # names are column names; convert to list approach
       colClasses = tapply(names(colClasses), colClasses, c, simplify=FALSE)
@@ -169,9 +168,8 @@ set_colClasses_ante <- function(ans,
                                 select,
                                 drop,
                                 colClasses,
-                                unsupported_classes = NULL,
-                                already_set_classes = c("NULL",
-                                                        "logical",
+                                unsupported_classes = NULL, # != "NULL"
+                                already_set_classes = c("logical",
                                                         "integer", "integer64",
                                                         "numeric", "double",
                                                         "character",
@@ -268,6 +266,10 @@ set_colClasses_ante <- function(ans,
                  }
                }
 
+               # NULL columns should be treated differently, because
+               # positions will affect columns to the right
+               NULL_colClasses <- colClasses[names(colClasses) == "NULL"]
+
                #
                # When colClasses is a list, it looks like
                #  list(<new_class1> = <new_class1_cols>, <new_class2> = <new_class2_cols>)
@@ -307,6 +309,9 @@ set_colClasses_ante <- function(ans,
                               set(ans, j = POSIXct_col, value = try_POSIXct(ans[[POSIXct_col]], POSIXct_col))
                             }
                           },
+                          "NULL" = {
+                            # do nothing for the time being.
+                          },
 
                           # Finally, try foreign methods
                           {
@@ -321,6 +326,22 @@ set_colClasses_ante <- function(ans,
                                                           "', but fread encountered the following")))
                             }
                           })
+                 }
+               }
+               # Safe to use NULL_colClasses now
+               if (length(NULL_colClasses)) {
+                 char_NULL_colClasses <- vapply(NULL_colClasses, is.character, logical(1))
+                 if (all(char_NULL_colClasses)) {
+                   null_cols <- unlist(NULL_colClasses, use.names = FALSE)
+                   ans[, (null_cols) := NULL]
+                 } else {
+
+                   # consider
+                   # NULL_colClasses = list(NULL = c("C", "D"), NULL = 1:2, NULL = "E", NULL = 5)
+                   # Not sure which is best practice, by numbers (reversed) or by column name?
+                   null_cols <- c(unlist(NULL_colClasses[char_NULL_colClasses], use.names = FALSE),
+                                  names(ans)[unlist(NULL_colClasses[!char_NULL_colClasses], use.names = FALSE)])
+                   ans[, (null_cols) := NULL]
                  }
                }
              }
@@ -381,6 +402,9 @@ set_colClasses_ante <- function(ans,
                         "POSIXct" = {
                           set(ans, j = j, value = try_POSIXct(v, j))
                         },
+                        "NULL" = {
+                          # Do nothing
+                        },
 
                         # Finally,
                         {
@@ -392,6 +416,11 @@ set_colClasses_ante <- function(ans,
                                                       " was set by colClasses to be '", new_class,
                                                       "', but fread encountered the following")))
                         })
+               }
+
+               if ("NULL" %chin% colClasses) {
+                 null_cols <- which(colClasses == "NULL")
+                 ans[, (null_cols) := NULL]
                }
              }
            })

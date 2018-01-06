@@ -50,9 +50,9 @@ nThread=getDTthreads(), logical01=TRUE
     \item{\code{colClasses} in \code{fread} is intended for rare overrides, not for routine use. If \code{colClasses} is used, \code{fread} will only promote a column to a \emph{higher} type; it won't downgrade a column to a lower type since this would risk loss of information. You have to coerce such columns afterwards yourself, if you really require data loss.}
     }
     If the list form of \code{colClasses} is used in conjuction with
-    then \code{select} xor \code{drop}, references to \code{colClasses} by position (e.g. \code{colClasses = list(integer = 2)})
+    \code{select} xor \code{drop}, references to \code{colClasses} by position (e.g. \code{colClasses = list(integer = 2)})
     are only allowed if \code{select} xor \code{drop} are integer (i.e. references to positions) as well. In this case,
-    both references to column position are references to the file, rather than the result.}
+    both references to column position are references to the file, rather than the result. (That is, \code{colClasses = list(factor = n)} and \code{select = n} both refer to same column.)}
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{utils::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
   \item{dec}{ The decimal separator as in \code{utils::read.csv}. If not "." (default) then usually ",". See details. }
   \item{col.names}{ A vector of optional names for the variables (columns). The default is to use the header column if present or detected, or if not "V" followed by the column number. }

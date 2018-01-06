@@ -10144,6 +10144,22 @@ test(1743.27, vapply(fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0
 test(1743.28, sapply(fread("a,b\n05,05", colClasses = c("raw", "integer")), class), sapply(read.csv(text ="a,b\n05,05", colClasses = c("raw", "integer")), class))
 test(1743.29, sapply(fread("a,b\n05,05", colClasses = list(raw = 1L)), class), sapply(read.csv(text = "a,b\n05,05", colClasses = c("raw", "integer")), class))
 
+## colClasses Examples
+data1743 = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
+
+### drop examples weren't working
+test(1743.301, names(fread(data1743, colClasses=c("B"="NULL","C"="NULL"))), c("A", "D"))
+test(1743.302, names(fread(data1743, colClasses=list(NULL=c("B","C")))), c("A", "D"))
+test(1743.303, names(fread(data1743, drop=c("B","C"))), c("A", "D"))
+test(1743.304, names(fread(data1743, drop=2:3)), c("A", "D"))
+### Similarly
+test(1743.305, names(fread(data1743, colClasses=c("integer", "NULL", "NULL", "integer"))), c("A", "D"))
+test(1743.306, names(fread(data1743, colClasses=c("integer", "NULL", "NULL", "integer"), drop=4)), c("A"))
+
+### Warning examples
+test(1743.31, names(fread(data1743, colClasses="NULL")), LETTERS[1:4], warning="colClasses.*quoted.*interpreted as colClasses.*NULL")
+
+
 
 # rolling join stopped working for double with fractions, #1904
 DT = data.table(A=c(1999.917,2000.417,2000.917,2001.417,2001.917))
