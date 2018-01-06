@@ -187,8 +187,8 @@ set_colClasses_ante <- function(ans,
                  names(colClasses)[which(unsupported_classes %chin% names(colClasses))] <- "character"
                }
 
-               # If select or drop were used, colClasses may not be useable
-               # or may need modification before it can be applied correctly.
+               # If select or drop were used, colClasses is either unuseable
+               # or will need modification before it can be applied safely.
                if (!is.null(select) || !is.null(drop)) {
                  if (is.character(select) || is.character(drop)) {
 
@@ -217,10 +217,12 @@ set_colClasses_ante <- function(ans,
                    # select/drop is integer
                    if (is.null(select)) {
                      # If colClasses contains a character list item here,
-                     # no problem, it will just be skipped when set() is used.
-                     # For integers
-                     # we need to decrement those above a dropped column
-
+                     # no problem with ordering, because set() will use
+                     # column names. Only need to make sure that set isn't
+                     # provided with a column that doesn't exist.
+                     #
+                     # For integers, we need to decrement those above a dropped column
+                     # by the number of dropped columns < column specified
                      colClasses <-
                        lapply(colClasses, function(el) {
                          if (is.integer(el)) {
@@ -228,9 +230,9 @@ set_colClasses_ante <- function(ans,
                            # x <- c(1, 3, 5, 9, 10, 11)
                            # expect:
                            # 1 => 1 - stays (below minimum drop)
-                           # 3 => 2 - reduced by 1 = number of drops below 3
+                           # 3 => 2 - reduced by 1 = number of dropped columns below 3
                            # 5 => NULL is dropped
-                           # 9 => 6 = 9 - 3 number of drops below
+                           # 9 => 6 = 9 - 3 dropped columns below
                            # etc
                            out <- el[!el %in% drop]
                            if (length(out)) {
