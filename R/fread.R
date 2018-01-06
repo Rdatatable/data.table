@@ -470,16 +470,24 @@ try_with <- function(v, as.v, preamble) {
 
 }
 
+try_preamble <- function(j, cls) {
+  if (is.character(j)) {
+    sprintf("Column %s was set by colClasses to be '%s', but fread encountered the following", j, cls)
+  } else {
+    sprintf("Column %d was set by colClasses to be '%s', but fread encountered the following", j, cls)
+  }
+}
+
 try_factor <- function(v, j) {
   try_with(v,
            as_factor(v),
-           paste0("Column ", j, " was set by colClasses to be 'factor', but fread encountered the following"))
+           try_preamble(j, "factor"))
 }
 
 try_complex <- function(v, j) {
   try_with(v,
            as.complex(v),
-           paste0("Column ", j, " was set by colClasses to be 'complex', but fread encountered the following"))
+           try_preamble(j, "complex"))
 }
 
 try_raw <- function(v, j, ...) {
@@ -505,19 +513,19 @@ try_raw <- function(v, j, ...) {
            #   return (Rbyte) val;
            # }
            scan(text = v, what = raw(), ..., quiet = TRUE),
-           paste0("Column ", j, " was set by colClasses to be 'raw', but fread encountered the following"))
+           try_preamble(j, "raw"))
 }
 
 try_Date <- function(v, j) {
   try_with(v,
            as.Date(v),
-           paste0("Column ", j, " was set by colClasses to be 'Date', but fread encountered the following"))
+           try_preamble(j, "Date"))
 }
 
 try_POSIXct <- function(v, j) {
   try_with(v,
            as.POSIXct(v),
-           paste0("Column ", j, " was set by colClasses to be 'POSIXct', but fread encountered the following"))
+           try_preamble(j, "POSIXct"))
 }
 
 # simplified but faster version of `factor()` for internal use.
