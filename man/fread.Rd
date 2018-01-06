@@ -36,15 +36,23 @@ nThread=getDTthreads(), logical01=TRUE
   \item{skip}{ If 0 (default) start on the first line and from there finds the first row with a consistent number of columns. This automatically avoids irregular header information before the column names row. \code{skip>0} means ignore the first \code{skip} rows manually. \code{skip="string"} searches for \code{"string"} in the file (e.g. a substring of the column names row) and starts on that line (inspired by read.xls in package gdata). }
   \item{select}{ Vector of column names or numbers to keep, drop the rest. }
   \item{drop}{ Vector of column names or numbers to drop, keep the rest. }
-  \item{colClasses}{ A character vector of classes (named or unnamed) for the columns, as in \code{\link[utils]{read.csv}}, but with the following differences:
+  \item{colClasses}{If \code{NULL}, the default, the classes of the columns are inferred from the input's contents.
+  Otherwise, \code{colClasses} specifies the classes for the columns, as in \code{\link[utils]{read.csv}}, but with the following differences:
   \itemize{
-    \item{The only supported values are \code{NA}, \code{"logical"}, \code{"integer"}, \code{"numeric"}, \code{"double"}, \code{"character"}, and \code{"factor"}. If other values are specified, they are replaced with \code{NA}, with a warning.}
+    \item{The classes \code{NA}, \code{"logical"}, \code{"integer"},
+    \code{"numeric"}, \code{"double"},
+    \code{"character"} are inferred when read.
+    If other classes are specified, they are coerced using \code{\link{set}} after the data is read.
+    Unlike \code{read.csv} if such coercion would result in an error or introduce \code{NA}s,
+    the attempt is aborted for that column, with a warning (not an error), and the column is left unchanged
+    (probably as a \code{character} column).}
     \item{Named lists of vectors of column names or numbers are supported. (See examples.)}
     \item{\code{colClasses} in \code{fread} is intended for rare overrides, not for routine use. If \code{colClasses} is used, \code{fread} will only promote a column to a \emph{higher} type; it won't downgrade a column to a lower type since this would risk loss of information. You have to coerce such columns afterwards yourself, if you really require data loss.}
     }
-
-
-  Or a named list of vectors of column names or numbers, see examples.  }
+    If the list form of \code{colClasses} is used in conjuction with
+    then \code{select} xor \code{drop}, references to \code{colClasses} by position (e.g. \code{colClasses = list(integer = 2)})
+    are only allowed if \code{select} xor \code{drop} are integer (i.e. references to positions) as well. In this case,
+    both references to column position are references to the file, rather than the result.}
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{utils::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
   \item{dec}{ The decimal separator as in \code{utils::read.csv}. If not "." (default) then usually ",". See details. }
   \item{col.names}{ A vector of optional names for the variables (columns). The default is to use the header column if present or detected, or if not "V" followed by the column number. }

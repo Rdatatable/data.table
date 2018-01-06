@@ -113,31 +113,20 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   if (check.names) {
     setattr(ans, 'names', make.names(names(ans), unique=TRUE))
   }
-  cols = NULL
-  if (stringsAsFactors)
-    cols = which(vapply(ans, is.character, TRUE))
-  else if (length(colClasses)) {
-    if (is.list(colClasses) && "factor" %in% names(colClasses)) {
-      # Need to support e.g. list(factor = 1, factor = 2, factor = "x")
-      cols <-
-        # unique
-        unlist(lapply(colClasses[names(colClasses) == "factor"],
-                      function(el) {
-                        if (is.character(el)) {
-                          which(names(ans) == el)
-                        } else {
-                          el
-                        }
-                      }),
-               use.names = FALSE)
-      cols = unique(cols)
-    } else if (is.character(colClasses) && "factor" %chin% colClasses)
-      cols = which(colClasses=="factor")
-  }
-  setfactor(ans, cols, verbose)
 
   # Fix Issue 1634
-  set_colClasses_ante(ans, select = select, drop = drop, colClasses = colClasses)
+  set_colClasses_ante(ans,
+                      select = select, drop = drop,
+                      colClasses = colClasses)
+
+  # Should be after set_colClasses_ante
+  if (stringsAsFactors) {
+    for (j in which(vapply(ans, is.character, logical(1)))) {
+      set(ans, j = j, value = try_with(.subset2(ans, j),
+                                       as_factor(.subset2(ans, j)),
+                                       paste0("Column ", j, " was type 'character', but when trying to honour `stringsAsFactors = TRUE`, fread encountered the following problem")))
+    }
+  }
 
 
   # 2007: is.missing is not correct since default value of select is NULL
@@ -166,16 +155,8 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
 }
 
 # for internal use only. Used in `fread` and `data.table` for 'stringsAsFactors' argument
+# Not used
 setfactor <- function(x, cols, verbose) {
-  # simplified but faster version of `factor()` for internal use.
-  as_factor <- function(x) {
-    lev = forderv(x, retGrp = TRUE, na.last = NA)
-    # get levels, also take care of all sorted condition
-    lev = if (length(lev)) x[lev[attributes(lev)$starts]] else x[attributes(lev)$starts]
-    ans = chmatch(x, lev)
-    setattr(ans, 'levels', lev)
-    setattr(ans, 'class', 'factor')
-  }
   if (length(cols)) {
     if (verbose) cat("Converting column(s) [", paste(names(x)[cols], collapse = ", "), "] from 'char' to 'factor'\n", sep = "")
     for (j in cols) set(x, j = j, value = as_factor(.subset2(x, j)))
@@ -194,8 +175,7 @@ set_colClasses_ante <- function(ans,
                                                         "integer", "integer64",
                                                         "numeric", "double",
                                                         "character",
-                                                        NA_character_,
-                                                        "factor")) {
+                                                        NA_character_)) {
 
   if (length(colClasses) && any(!is.na(colClasses))) {
 
@@ -209,6 +189,8 @@ set_colClasses_ante <- function(ans,
                  names(colClasses)[which(unsupported_classes %chin% names(colClasses))] <- "character"
                }
 
+               # If select or drop were used, colClasses may not be useable
+               # or may need modification before it can be applied correctly.
                if (!is.null(select) || !is.null(drop)) {
                  if (is.character(select) || is.character(drop)) {
 
@@ -258,20 +240,26 @@ set_colClasses_ante <- function(ans,
                            } else {
                              integer(0)
                            }
+                         } else {
+                           # character, nothing to do
+                           # except make sure we don't provide
+                           # set with any alien columns
+                           el[el %chin% names(out)]
                          }
                        })
                    } else {
                      # Is this known already?
                      select <- as.integer(select)
+                     # This does not conflict with #1445
+                     # as this is within a function.
                      if (!is.sorted(select)) {
-                       # I notice that sort/sort.int are verboten within data.table
-                       # Hence why I'm using this as opposed to sort.int
-                       select <- select[forderv(x, by = NULL)]
+                       select <- select[forderv(select, by = NULL)]
                      }
                      colClasses <-
                        lapply(colClasses, function(el) {
                          if (is.integer(el)) {
-                           el[match(el, select, nomatch = 0L)]
+                           out <- match(el, select, nomatch = 0L)
+                           out[out > 0L]
                          } else {
                            el[el %chin% names(ans)]
                          }
@@ -289,6 +277,12 @@ set_colClasses_ante <- function(ans,
                  # Already done.
                  if (!new_class %chin% already_set_classes && length(colClasses[[cCi]])) {
                    switch(new_class,
+                          "factor" = {
+                            factor_cols <- colClasses[[cCi]]
+                            for (factor_col in factor_cols) {
+                              set(ans, j = factor_col, value = try_factor(ans[[factor_col]], factor_col))
+                            }
+                          },
                           "complex" = {
                             complex_cols <- colClasses[[cCi]]
                             for (complex_col in complex_cols) {
@@ -322,7 +316,7 @@ set_colClasses_ante <- function(ans,
                                   j = other_col,
                                   value = try_with(ans[[other_col]],
                                                    methods::as(ans[[other_col]], new_class),
-                                                   paste0("Column ", j,
+                                                   paste0("Column ", other_col,
                                                           " was set by colClasses to be '", new_class,
                                                           "', but fread encountered the following")))
                             }
@@ -342,58 +336,73 @@ set_colClasses_ante <- function(ans,
                colClasses[colClasses %chin% unsupported_classes] <- NA_character_
              }
 
-             which_new <- which(!colClasses %chin% already_set_classes)
-             if (length(colClasses) == 1L) {
-               which_new <- seq_along(ans)
-               colClasses <- rep_len(colClasses, ncol(ans))
-             } else {
+             if (!all(colClasses %chin% already_set_classes)) {
+               which_new <- which(!colClasses %chin% already_set_classes)
+               if (length(colClasses) == 1L) {
+                 which_new <- seq_along(ans)
+                 colClasses <- rep_len(colClasses, ncol(ans))
+               }
 
-               # character select/drop can be handled by set
-               # only need to consider
+
+               if (is.character(select) || is.character(drop)) {
+                 sel_dro <- if (is.character(select)) "select" else "drop"
+                 # Difficult unless select in Cfread records the original positions in the file.
+                 #
+                 warning(sel_dro, " specifies columns by name, but some elements of colClasses refer to position. ",
+                         "This combination is not supported. Some colClasses may not have been set.")
+                 return(ans)
+               }
+
                if (is.numeric(select)) {
                  colClasses <- colClasses[select]
+                 which_new <- which(!colClasses %chin% already_set_classes)
                }
                if (is.numeric(drop)) {
                  colClasses <- colClasses[-drop]
+                 which_new <- which(!colClasses %chin% already_set_classes)
+               }
+
+               for (j in which_new) {
+                 v <- ans[[j]]
+                 new_class <- colClasses[[j]]
+                 switch(new_class,
+                        "factor" = {
+                          set(ans, j = j, value = try_factor(v, j))
+                        },
+                        "complex" = {
+                          set(ans, j = j, value = try_complex(v, j))
+                        },
+                        "raw" = {
+                          set(ans, j = j, value = try_raw(v, j))
+                        },
+                        "Date" = {
+                          set(ans, j = j, value = try_Date(v, j))
+                        },
+                        "POSIXct" = {
+                          set(ans, j = j, value = try_POSIXct(v, j))
+                        },
+
+                        # Finally,
+                        {
+                          set(ans,
+                              j = j,
+                              value = try_with(v,
+                                               methods::as(v, new_class),
+                                               paste0("Column ", j,
+                                                      " was set by colClasses to be '", new_class,
+                                                      "', but fread encountered the following")))
+                        })
                }
              }
-
-             for (j in which_new) {
-               v <- ans[[j]]
-               new_class <- colClasses[[j]]
-               switch(new_class,
-                      "complex" = {
-                        set(ans, j = j, value = try_complex(v, j))
-                      },
-                      # .NotYetImplemented
-                      "raw" = {
-                        set(ans, j = j, value = try_raw(v, j))
-                      },
-                      "Date" = {
-                        set(ans, j = j, value = try_Date(v, j))
-                      },
-                      "POSIXct" = {
-                        set(ans, j = j, value = try_POSIXct(v, j))
-                      },
-
-                      # Finally,
-                      {
-                        set(ans,
-                            j = j,
-                            value = try_with(v,
-                                             methods::as(v, new_class),
-                                             paste0("Column ", j,
-                                                    " was set by colClasses to be '", new_class,
-                                                    "', but fread encountered the following")))
-                      })
-             }
            })
+
   }
   invisible(ans)
 }
 # Following try_* functions designed to try coercion to a particular class,
 # and aborting whenever it encounters any warning or error. Different to
-# read.csv -- won't attempt coercion if NAs introduced.
+# read.csv -- won't attempt coercion if NAs introduced, but also less fussy
+# and won't error if a column won't work, instead reverting to previous class.
 try_with <- function(v, as.v, preamble) {
   #' @param v vector of values for which class is intended to be changed
   #' @param as.v A (promise of a) function applied to v (e.g. as.numeric(v))
@@ -425,6 +434,12 @@ try_with <- function(v, as.v, preamble) {
 
 }
 
+try_factor <- function(v, y) {
+  try_with(v,
+           as_factor(v),
+           paste0("Column ", j, " was set by colClasses to be 'complex', but fread encountered the following"))
+}
+
 try_complex <- function(v, j) {
   try_with(v,
            as.complex(v),
@@ -434,6 +449,25 @@ try_complex <- function(v, j) {
 try_raw <- function(v, j, ...) {
   # No performance improvement with using nmax = nr
   try_with(v,
+           # As in read.csv, which ultimately uses src/main/scan.c Line 193 (or thereabouts)
+           # static Rbyte
+           # strtoraw (const char *nptr, char **endptr)
+           # {
+           #   const char *p = nptr;
+           #   int i, val = 0;
+           #
+           #   /* should have whitespace plus exactly 2 hex digits */
+           #     while(Rspace(*p)) p++;
+           #   for(i = 1; i <= 2; i++, p++) {
+           #     val *= 16;
+           #     if(*p >= '0' && *p <= '9') val += *p - '0';
+           #     else if (*p >= 'A' && *p <= 'F') val += *p - 'A' + 10;
+           #     else if (*p >= 'a' && *p <= 'f') val += *p - 'a' + 10;
+           #     else {val = 0; break;}
+           #   }
+           #   *endptr = (char *) p;
+           #   return (Rbyte) val;
+           # }
            scan(text = v, what = raw(), ..., quiet = TRUE),
            paste0("Column ", j, " was set by colClasses to be 'raw', but fread encountered the following"))
 }
@@ -448,6 +482,16 @@ try_POSIXct <- function(v, j) {
   try_with(v,
            as.POSIXct(v),
            paste0("Column ", j, " was set by colClasses to be 'POSIXct', but fread encountered the following"))
+}
+
+# simplified but faster version of `factor()` for internal use.
+as_factor <- function(x) {
+  lev = forderv(x, retGrp = TRUE, na.last = NA)
+  # get levels, also take care of all sorted condition
+  lev = if (length(lev)) x[lev[attributes(lev)$starts]] else x[attributes(lev)$starts]
+  ans = chmatch(x, lev)
+  setattr(ans, 'levels', lev)
+  setattr(ans, 'class', 'factor')
 }
 
 
