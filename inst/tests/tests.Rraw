@@ -2151,6 +2151,9 @@ test(752, DT[,head(.SD,2)[,new:=1:.N],by=a], data.table(a=rep(1:3,each=2),b=c(1:
 # Test duplicate() of recycled plonking RHS, #2298
 DT = data.table(a=letters[3:1],x=1:3)
 test(753, setkey(DT[,c("x1","x2"):=x],a), data.table(a=letters[1:3],x=3:1,x1=3:1,x2=3:1,key="a"))
+test(753.1, DT[,c("x1","x2"):=4:6, verbose = TRUE], data.table(a=letters[1:3],x=3:1,x1=4:6,x2=4:6,key="a"),
+            output = "RHS for item 2 has been duplicated")
+test(753.2, DT[2,x2:=7L], data.table(a=letters[1:3],x=3:1,x1=4:6,x2=c(4L,7L,6L),key="a"))
 DT = data.table(a=letters[3:1],x=1:3,y=4:6)
 test(754, setkey(DT[,c("x1","y1","x2","y2"):=list(x,y)],a), data.table(a=letters[1:3],x=3:1,y=6:4,x1=3:1,y1=6:4,x2=3:1,y2=6:4,key="a"))
 # And non-recycling i.e. that a single column copy does copy the column
