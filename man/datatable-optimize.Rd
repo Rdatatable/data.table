@@ -81,13 +81,11 @@ At optimisation level \code{>= 3}, i.e., \code{getOption("datatable.optimize")} 
 
 \itemize{
 
-    \item Supported operators: \code{==}, \code{\%in\%}, \code{\%chin\%}, \code{>}, \code{>=}, \code{<}, and \code{<=}. The operator \code{!=} is not supported yet.
-    \item Queries on multiple columns are supported, if the connector is '\code{&}', e.g. \code{DT[x == 2 & y < 3]} is supported, but \code{DT[x == 2 | y < 3]} is not.
-    \item Queries with multiple criteria on one column are \emph{not} supported, e.g. \code{DT[x == 2 & x < 5]} is not supported.
-    \item Queries with non-missing j are supported, e.g. \code{DT[x == 3 & y < 5, .(new = x-y)]} or \code{DT[x == 3 & y < 5, new := x-y]} are supported. Also extends to queries using \code{with = FALSE}.
+    \item Supported operators: \code{==}, \code{\%in\%}. Non-equi operators(>, <, etc.) are not supported yet because non-equi joins are slower than vector based subsets.
+    \item Queries on multiple columns are supported, if the connector is '\code{&}', e.g. \code{DT[x == 2 & y == 3]} is supported, but \code{DT[x == 2 | y == 3]} is not.
+    \item Queries with multiple criteria on one column are \emph{not} supported, e.g. \code{DT[x == 2 & x \%in\% c(2,5)]} is not supported.
+    \item Queries with non-missing j are supported, e.g. \code{DT[x == 3 & y == 5, .(new = x-y)]} or \code{DT[x == 3 & y == 5, new := x-y]} are supported. Also extends to queries using \code{with = FALSE}.
     \item "notjoin" queries, i.e. queries that start with \code{!}, are only supported if there are no \code{&} connections, e.g. \code{DT[!x==3]} is supported, but \code{DT[!x==3 & y == 4]} is not.
-    \item "notjoin" queries, i.e. queries that start with \code{!}, are not supported for the operators \code{<} and \code{>}, e.g. \code{DT[!x<=3]} is supported, but \code{DT[x<3]} is not. The reason is NA handling.
-    \item For character columns, only \code{==}, \code{\%in\%}, and \code{\%chin\%} operators are supported.
 }
 
 If in doubt, whether your query benefits from optimization, call it with the \code{verbose = TRUE} argument. You should see "Optimized subsetting...".

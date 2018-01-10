@@ -2802,11 +2802,7 @@ isReallyReal <- function(x) {
   ## a list of all possible operators with their translations into the 'on' clause
   validOps <- rbind(data.table(op = "==", on = "=="),
                     data.table(op = "%in%", on = "=="),
-                    data.table(op = "%chin%", on = "=="),
-                    data.table(op = "<", on = "<"),
-                    data.table(op = "<=", on = "<="),
-                    data.table(op = ">", on = ">"),
-                    data.table(op = ">=", on = ">="))
+                    data.table(op = "%chin%", on = "=="))
   ## Determine, whether the nature of isub in general supports fast binary search
   remainingIsub <- isub
   i <- list()
@@ -2860,13 +2856,9 @@ isReallyReal <- function(x) {
         RHS = c(RHS, if (is.double(RHS)) c(NA, NaN) else NA)
       }
     }
-    ## notjoin doesn't work with < and > operators because of NA handling
-    if(notjoin && operator %chin% c("<", ">")) return(NULL)
     ## if it passed until here, fast subset can be done for this stub
     i <- c(i, setNames(list(RHS), col))
     on <- c(on, setNames(paste0(col, validOps$on[validOps$op == operator], col), col))
-    ## remember, whether there are non-equi elements in the query.
-    nonEqui = nonEqui | validOps$on[validOps$op == operator] != "=="
     ## loop continues with remainingIsub
   } 
   if (length(i) == 0) stop("Internal error in .isFastSubsettable. Please report to data.table developers")
@@ -2880,13 +2872,6 @@ isReallyReal <- function(x) {
   i <- do.call(CJ, i)
   setnames(i, colNames)
   idx <- NULL 
-  ## If we are doing an equi-join, indices are needed.
-  ## If the query includes non-equi elements (<, >, <=, >=), the index has to be recalculated anyways.
-  if(nonEqui){
-    if (verbose) {cat("Optimized subsetting with non-equi join", "'\n",sep="");flush.console()}
-    idx <- "dummy" ## just for the flow, won't be used anywhere
-    idxCols <- NULL 
-  }
   if(is.null(idx)){
       ## we are seeing an equi-join
       ## check whether key fits the columns in i.
