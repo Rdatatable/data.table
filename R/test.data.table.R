@@ -14,13 +14,13 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
-  olddir = setwd(d)
-  on.exit(setwd(olddir))
+
   envirs <- list()
   for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
     cat("Running",fn,"\n")
     oldverbose = options(datatable.verbose=verbose)
     envirs[[fn]] = new.env(parent=.GlobalEnv)
+    assign("testDir", function(x)file.path(d,x), envir=envirs[[fn]])
     if(isTRUE(silent)){
       try(sys.source(fn,envir=envirs[[fn]]), silent=silent)
     } else {
