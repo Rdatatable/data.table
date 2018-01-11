@@ -110,8 +110,8 @@ format.data.table <- function (x, ..., justify="none") {
     stop("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
   format.item <- function(x) {
-    if (is.atomic(x) || is.formula(x)) # FR #2591 - format.data.table issue with columns of class "formula"
-      paste(c(format(head(x, 6L), justify=justify, ...), if(length(x) > 6L) "..."), collapse=",")  # fix for #5435 - format has to be added here...
+    if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
+      paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 - format has to be added here...
     else
       paste("<", class(x)[1L], ">", sep="")
   }
@@ -146,5 +146,3 @@ shouldPrint = function(x) {
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
 cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
 
-# FR #2591 - format.data.table issue with columns of class "formula"
-is.formula <- function(x) class(x) == "formula"
