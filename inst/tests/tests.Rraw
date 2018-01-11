@@ -6001,6 +6001,7 @@ setindex(DT, x,y,z)
 setindex(DT2, z,y,x)
 test(1437.5, setindex(DT[x==1&y==1&z==2], NULL),setindex(DT2[x==1&y==1&z==2], NULL))
 ## test that query order makes no difference
+set.seed(1)
 DT <- data.table(x = c(1,1,1,2,2,2), y = c(1,1,2,2,3,3), z = rnorm(6))
 test(1437.6, copy(DT)[x==2 & y==3], copy(DT)[y==3 & x==2])
 ## test that optimization really takes place for the supportd operators, also when connected with &
@@ -6010,13 +6011,13 @@ DT[, a:= c("A", "Q", "W", "C", "X", "Q")]
 test(1437.9, DT[a %chin% c("A", "B"), verbose = TRUE], output = "Optimized subsetting")
 test(1437.11, DT[a %chin% c("A", "B") & x == 3 & y %in% c(1,2), verbose = TRUE], output = "Optimized subsetting")
 ## multiple selections on the same column are not optimized and yield correct result
-test(1437.12, DT[a %chin% c("A", "B") & a == "A", verbose = TRUE], output = "   x y          z a1: 1 1 -0.3621238 A")
+test(1437.12, DT[a %chin% c("A", "B") & a == "A", verbose = TRUE], output = "   x y          z a1: 1 1 -0.6264538 A")
 test(1437.13, DT[a %chin% c("A", "B") & a == "C"], DT[0])
 ## queries with 'or' connection are not optimized and yield the correct result.
-test(1437.14, DT[a %chin% c("A", "B") | x == 2, verbose = TRUE], output = "   x y          z a1: 1 1 -0.3621238 A2: 2 2 -0.1667033 C3: 2 3 -1.0436674 X4: 2 3 -1.9729349 Q")
+test(1437.14, DT[a %chin% c("A", "B") | x == 2, verbose = TRUE], output = "   x y          z a1: 1 1 -0.6264538 A2: 2 2  1.5952808 C3: 2 3  0.3295078 X4: 2 3 -0.8204684 Q")
 test(1437.15, DT[a %chin% c("A", "B") | x == 2], DT[c(1, 4, 5, 6)])
 ## notjoin queries with connection are not optimized and yield the correct result.
-test(1437.16, DT[!a %chin% c("A", "B") & x == 2, verbose = TRUE], output = "   x y          z a1: 2 2 -0.1667033 C2: 2 3 -1.0436674 X3: 2 3 -1.9729349 Q")
+test(1437.16, DT[!a %chin% c("A", "B") & x == 2, verbose = TRUE], output = "   x y          z a1: 2 2  1.5952808 C2: 2 3  0.3295078 X3: 2 3 -0.8204684 Q")
 test(1437.17, DT[!a %chin% c("A", "B") & x == 2], DT[c(4, 5, 6)])
 ## queries with j are optimized (Correct results are tested extensively below)
 test(1437.18, DT[x == 2, .(test = x+y), verbose = TRUE], output = "Optimized subsetting")
@@ -6044,7 +6045,7 @@ n <- 1e3 ## rows of the data.table. I checked that with these rows and the seed,
 oldOpt <- getOption("datatable.optimize") ## remember for restoring after the test
 ## create test DT
 DT <- data.table(intCol    = sample(c(1:3, NA), n, replace = TRUE),
-                 doubleCol = sample(c(1.86, 1000.345, 2.346, NA, NaN), n, replace = TRUE), 
+                 doubleCol = sample(c(1.86, 1000.345, 2.346, NA, NaN), n, replace = TRUE),
                  boolCol   = sample(c(TRUE, FALSE, NA), n, replace = TRUE),
                  charCol   = sample(c(LETTERS[1:3], NA), n, replace = TRUE))
 if ("package:bit64" %in% search()) DT[, int64Col := as.integer64(sample(1:3, n, replace = TRUE))]
@@ -6060,9 +6061,9 @@ queries <- list(intCol    = c(paste0("intCol == ", sample(vals$intCol, 1)),
                               paste0("charCol %in% c(NA, ", paste0("'", sample(vals$charCol, 3, replace = TRUE), "'", collapse = ","), ")"),
                               paste0("charCol %chin% c(NA, ", paste0("'", sample(vals$charCol, 3, replace = TRUE), "'", collapse = ","), ")"))
                               )
-if ("package:bit64" %in% search()) 
+if ("package:bit64" %in% search())
   queries$int64Col = c(paste0("int64Col == ", sample(vals$int64Col, 1)),
-                       paste0("int64Col %in% c(NA_integer64_, as.integer64(", paste0(sample(vals$int64Col, 3, replace = TRUE), collapse = ","), "))")) 
+                       paste0("int64Col %in% c(NA_integer64_, as.integer64(", paste0(sample(vals$int64Col, 3, replace = TRUE), collapse = ","), "))"))
 ## create all combinations of up to three queries, connected by "&".
 ## Includes all combinations, also with a subset of columns, but no permutations
 all <- data.table(intCol    = character(0),
@@ -6081,7 +6082,7 @@ all[, query := paste(intCol, doubleCol, boolCol, charCol, int64Col, sep = "&")]
 all[, query := gsub("&missing$", "", gsub("missing&", "", query))]
 ## define examplary test queries for j
 jQueries <- c(".(test = intCol + doubleCol, test2 = paste0(boolCol, charCol))",
-              "c('test1', 'test2') := list(pmax(intCol, doubleCol), !boolCol)") 
+              "c('test1', 'test2') := list(pmax(intCol, doubleCol), !boolCol)")
 ## test each query string
 test_no <- 1437.0028
 for(t in seq_len(nrow(all))){
@@ -6107,7 +6108,7 @@ for(t in seq_len(nrow(all))){
     options("datatable.optimize" = 2L)
     ansRef <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery))]
     test(signif(test_no, 7), ansOpt, ansRef)
-    test_no <- test_no + 0.0001  
+    test_no <- test_no + 0.0001
   }
 }
 options("datatable.optimize" = oldOpt) ## restore to default
