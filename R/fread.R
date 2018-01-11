@@ -121,7 +121,31 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
 
   # Should be after set_colClasses_ante
   if (stringsAsFactors) {
-    for (j in which(vapply(ans, is.character, logical(1L)))) {
+    # Re Issue 2025
+    if (is.double(stringsAsFactors)) {
+      should_be_factor <- function(v) is.character(v) && uniqueN(v) < nr / stringsAsFactors
+      cols_to_factor <- which(vapply(ans, should_be_factor, logical(1L)))
+      if (verbose) {
+        cat("stringsAsFactors=", stringsAsFactors, ", interpreting as the minimum number",
+            "of distinct values a character column must have (as a proportion of its length)",
+            "to be converted to factor.")
+        if (length(cols_to_factor) == 0L) cat("There were no such columns.")
+        if (length(cols_to_factor) == 1L) cat("There was one such column: ", names(ans)[cols_to_factor], ".")
+
+        if (length(cols_to_factor) >= 2L) {
+          cat("There were", length(cols_to_factor), "such columns: ",
+              if (length(cols_to_factor) <= 10L) {
+                names(ans)[cols_to_factor]
+              } else {
+                c(names(ans)[cols_to_factor[1:6]], "(First 6 shown.)")
+              },
+              ".")
+        }
+      }
+    } else {
+      cols_to_factor <- which(vapply(ans, is.character, logical(1L)))
+    }
+    for (j in cols_to_factor) {
       set(ans, j = j, value = try_with(.subset2(ans, j),
                                        as_factor(.subset2(ans, j)),
                                        paste0("Column ", j, " was type 'character', but when trying to honour `stringsAsFactors = TRUE`, fread encountered the following problem")))
