@@ -16,9 +16,6 @@ setPackageName("data.table",.global)
 # So even though .BY doesn't appear in this file, it should still be NULL here and exported because it's
 # defined in SDenv and can be used by users.
 
-# FR #2591 - format.data.table issue with columns of class "formula"
-is.formula <- function(x) class(x) == "formula"
-
 is.data.table <- function(x) inherits(x, "data.table")
 is.ff <- function(x) inherits(x, "ff")  # define this in data.table so that we don't have to require(ff), but if user is using ff we'd like it to work
 
@@ -602,7 +599,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           } else {
             if (isTRUE(getOption("datatable.use.index"))) {
               idxName = paste0("__", names(on), sep="", collapse="")  # TODO: wrong, no sep!
-              xo = attr(attr(x, 'index'), idxName)
+              xo = attr(attr(x, 'index'), idxName, exact = TRUE)
               if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
             }
             if (is.null(xo)) {
@@ -2457,8 +2454,14 @@ setnames <- function(x,old,new) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
     if (!is.character(old)) stop("Passed a vector of type '",typeof(old),"'. Needs to be type 'character'.")
     if (length(old) != ncol(x)) stop("Can't assign ",length(old)," names to a ",ncol(x)," column data.table")
+    nx <- names(x)
     # note that duplicate names are permitted to be created in this usage only
-    w = which(names(x) != old)
+    if (anyNA(nx)) {
+      # if x somehow has some NA names, which() needs help to return them, #2475
+      w = which((nx != old) | (is.na(nx) & !is.na(old)))
+    } else {
+      w = which(nx != old)
+    }
     if (!length(w)) return(invisible(x))  # no changes
     new = old[w]
     i = w

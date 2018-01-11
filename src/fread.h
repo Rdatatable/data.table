@@ -3,14 +3,12 @@
 #include <stdint.h>  // uint32_t
 #include <stdlib.h>  // size_t
 #include <stdbool.h> // bool
+#include "myomp.h"
 #ifdef DTPY
-  #include "myomp.h"
   #include "py_fread.h"
 #else
-  #include <omp.h>
   #include "freadR.h"
 #endif
-
 
 // Ordered hierarchy of types
 typedef enum {
@@ -345,7 +343,7 @@ void freeThreadContext(ThreadLocalFreadParsingContext *ctx);
 /**
  * Progress-reporting function.
  */
-void progress(double percent/*[0,1]*/, double ETA/*secs*/);
+void progress(int percent/*[0,100]*/, int ETA/*secs*/);
 
 
 bool freadCleanup(void);

@@ -1,15 +1,10 @@
 #include <R.h>
 #define USE_RINTERNALS
 #include <Rinternals.h>
-#ifdef _OPENMP
-  #include <omp.h>
-#else // so it still compiles on machines with compilers void of openmp support
-  #define omp_get_num_threads() 1
-  #define omp_get_thread_num() 0
-#endif
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 #include <stdint.h> // for uint64_t rather than unsigned long long
+#include "myomp.h"
 
 // data.table depends on R>=3.0.0 when R_xlen_t was introduced
 // Before R 3.0.0, RLEN used to be switched to R_len_t as R_xlen_t wasn't available.
