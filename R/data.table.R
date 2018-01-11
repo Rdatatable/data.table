@@ -16,9 +16,6 @@ setPackageName("data.table",.global)
 # So even though .BY doesn't appear in this file, it should still be NULL here and exported because it's
 # defined in SDenv and can be used by users.
 
-# FR #2591 - format.data.table issue with columns of class "formula"
-is.formula <- function(x) class(x) == "formula"
-
 is.data.table <- function(x) inherits(x, "data.table")
 is.ff <- function(x) inherits(x, "ff")  # define this in data.table so that we don't have to require(ff), but if user is using ff we'd like it to work
 

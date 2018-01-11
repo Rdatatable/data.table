@@ -334,12 +334,18 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
   # Cross Join will then produce a join table with the combination of all values (cross product).
   # The last vector is varied the quickest in the table, so dates should be last for roll for example
   l = list(...)
-  if (unique) l = lapply(l, unique)
+  emptyList <- FALSE ## fix for #2511
+  if(any(sapply(l, length) == 0)){
+    ## at least one column is empty The whole thing will be empty in the end
+    emptyList <- TRUE
+    l <- lapply(l, "[", 0)
+  }
+  if (unique && !emptyList) l = lapply(l, unique)
 
   dups = FALSE # fix for #1513
-  if (length(l)==1L && sorted && length(o <- forderv(l[[1L]])))
+  if (length(l)==1L && !emptyList && sorted && length(o <- forderv(l[[1L]])))
     l[[1L]] = l[[1L]][o]
-  else if (length(l) > 1L) {
+  else if (length(l) > 1L && !emptyList) {
     # using rep.int instead of rep speeds things up considerably (but attributes are dropped).
     attribs = lapply(l, attributes)  # remember attributes for resetting after rep.int
     n = vapply(l, length, 0L)
