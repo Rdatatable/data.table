@@ -5964,10 +5964,10 @@ setindex(DT,a,foo)
 test(1423, indices(DT), c("foo","a__foo"))   # tests as well that order of attributes is retained although we don't use that property currently.
 test(1424, indices(setnames(DT,"foo","bar")), c("bar","a__bar"))
 test(1425, indices(setnames(DT,"a","baz")), c("bar","baz__bar"))
-test(1426, DT[baz==4L, verbose=TRUE], output="Optimized subsetting with index 'baz__bar'")
-test(1427, indices(DT), c("bar","baz__bar"))
+test(1426, DT[baz==4L, verbose=TRUE], output="Creating new index 'baz'")
+test(1427, indices(DT), c("bar","baz__bar", "baz"))
 test(1428, DT[bar==9L, verbose=TRUE], output="Optimized subsetting with index 'bar'")
-test(1429, indices(setnames(DT,"bar","a")), c("a", "baz__a"))
+test(1429, indices(setnames(DT,"bar","a")), c("baz", "a", "baz__a"))
 
 # Finalised == and %in% optimization in i
 DT = data.table(a=1:3,b=c(0,2,3,0,0,2))

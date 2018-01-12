@@ -2882,22 +2882,18 @@ isReallyReal <- function(x) {
   if (is.null(idx)){
     if (!getOption("datatable.use.index")) return(NULL) # #1422
     ## check whether an exising index can be used
-    ## An index can be used if the first elements correspond to the columns in i (similar to the key above)
-    ## Previously, the head of an index was not used because of reordering within groups of i.
-    ## However, I believe this is of no concern as the original order is restored after the bmerge anyways.
-    ## if multiple indices are possible, choose one with integer(0), so no reordering is necessary
+    ## An index can be used if it corresponds exactly to the columns in i (similar to the key above)
     candidates <- indices(x, vectors = TRUE)
     idx <- NULL
     for (cand in candidates){
-      if (all(names(i) %chin% head(cand, length(i)))){
+      if (all(names(i) %chin% cand) && length(cand) == length(i)){
         idx <- attr(attr(x, "index"), paste0("__", cand, collapse = ""))
-        finalCand <- cand
-        if (length(idx) == 0) break ## the index is already optimal since it doesn't require sorting
+        idxCols <- cand
+        break
       }
     }
     if (!is.null(idx)){
-      if (verbose) {cat("Optimized subsetting with index '", paste0( finalCand, collapse = "__"),"'\n",sep="");flush.console()}
-      idxCols <- head(finalCand, length(i)) ## in correct order!
+      if (verbose) {cat("Optimized subsetting with index '", paste0( idxCols, collapse = "__"),"'\n",sep="");flush.console()}
     }
   } 
   if (is.null(idx)){
