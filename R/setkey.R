@@ -134,10 +134,9 @@ setreordervec <- function(x, order) .Call(Creorder, x, order)
 # Maybe just a grep through *.R for use of these function internally would be better (TO DO).
 
 # Don't use base::is.unsorted internally, because :
-#    1) it returns NA if any(is.na(.)) where NAs are detected at R level, inefficiently
-#    2) it uses locale whereas in data.table we control locale sorting independently (C locale currently, but
+#    1) it uses locale whereas in data.table we control locale sorting independently (C locale currently, but
 #       "sorted" attribute will need an extra attribute "locale" so we can check if key's locale is the current locale)
-#    3) wrapper needed, used to be :
+#    2) wrapper needed, used to be :
 #       identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.na(x))
 #       where the && was needed to maintain backwards compatibility after r-devel's change of is.unsorted(NA) to FALSE (was NA) [May 2013].
 # The others (order, sort.int etc) are turned off to protect ourselves from using them internally, for speed and for
