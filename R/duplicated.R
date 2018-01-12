@@ -50,6 +50,24 @@ unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alo
   #        See news for v1.9.3 for link to benchmark use-case on datatable-help.
 }
 
+# Test for #2013 unique() memory efficiency improvement in v1.10.5
+# set.seed(1)
+# Create unique 7.6GB DT on 16GB laptop
+# DT = data.table(
+#  A = sample(1e8, 2e8, TRUE),
+#  B = sample(1e8, 2e8, TRUE),
+#  C = 1:2e8,
+#  D = 1:2e8,
+#  E = 1:2e8,
+#  F = 1:2e8,
+#  G = 1:2e8,
+#  H = 1:2e8,
+#  I = 1:2e8,
+#  J = 1:2e8
+# )
+# print(dim(unique(DT)))  # works now, failed with oom in 1.10.4-3
+
+
 ## Specify the column names to be used in the uniqueness query, and if this
 ## query can take advantage of the keys of `x` (if present).
 ## returns a list
