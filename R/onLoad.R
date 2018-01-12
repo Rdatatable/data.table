@@ -45,7 +45,7 @@
        "datatable.use.index"="TRUE",           # global switch to address #1422
        "datatable.fread.datatable"="TRUE",
        "datatable.prettyprint.char" = NULL,     # FR #1091
-       "datatable.old.unique.by.key" = "FALSE", # TODO: warn 1 year, remove after 2 years
+       "datatable.old.unique.by.key" = "FALSE", # TODO: change warnings in duplicated.R to error on or after Jan 2019 then remove in Jan 2020.
        "datatable.logical01" = "TRUE"           # fwrite/fread to revert to FALSE. TODO: warn in next release and remove after 1 year
        )
   for (i in setdiff(names(opts),names(options()))) {

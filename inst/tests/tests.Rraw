@@ -11247,6 +11247,14 @@ test(1860, fread("A,B\n "), data.table(A=logical(), B=logical()))  # 2543
 DT = data.table(A=c(1L,1L,2L), B=c(3L,4L,4L))
 test(1861, address(unique(DT)), address(DT))
 
+# New warning for deprecated old behaviour option
+setkey(DT,A)
+options(datatable.old.unique.by.key=TRUE)
+test(1862.1, unique(DT), data.table(A=1:2, B=3:4, key="A"), warning="deprecated option")
+options(datatable.old.unique.by.key=NULL)
+test(1862.2, unique(DT,by=key(DT)), data.table(A=1:2, B=3:4, key="A"))
+
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
