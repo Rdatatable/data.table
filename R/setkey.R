@@ -134,10 +134,9 @@ setreordervec <- function(x, order) .Call(Creorder, x, order)
 # Maybe just a grep through *.R for use of these function internally would be better (TO DO).
 
 # Don't use base::is.unsorted internally, because :
-#    1) it returns NA if any(is.na(.)) where NAs are detected at R level, inefficiently
-#    2) it uses locale whereas in data.table we control locale sorting independently (C locale currently, but
+#    1) it uses locale whereas in data.table we control locale sorting independently (C locale currently, but
 #       "sorted" attribute will need an extra attribute "locale" so we can check if key's locale is the current locale)
-#    3) wrapper needed, used to be :
+#    2) wrapper needed, used to be :
 #       identical(FALSE,is.unsorted(x)) && !(length(x)==1 && is.na(x))
 #       where the && was needed to maintain backwards compatibility after r-devel's change of is.unsorted(NA) to FALSE (was NA) [May 2013].
 # The others (order, sort.int etc) are turned off to protect ourselves from using them internally, for speed and for
@@ -177,7 +176,14 @@ forderv <- function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.la
   } else {
     if (!length(x)) return(integer(0)) # to be consistent with base::order. this'll make sure forderv(NULL) will result in error
                        # (as base does) but forderv(data.table(NULL)) and forderv(list()) will return integer(0))
-    if (is.character(by)) by=chmatch(by, names(x))
+    if (is.character(by)) {
+      w = chmatch(by, names(x))
+      if (anyNA(w)) stop("'by' contains '",by[is.na(w)][1],"' which is not a column name")
+      by = w
+    }
+    else if (typeof(by)=="double" && isReallyReal(by)) {
+      stop("'by' is type 'double' but one or more items in it are not whole integers")
+    }
     by = as.integer(by)
     if ( (length(order) != 1L && length(order) != length(by)) || any(!order %in% c(1L, -1L)) )
       stop("x is a list, length(order) must be either =1 or =length(by) and each value should be 1 or -1 for each column in 'by', corresponding to ascending or descending order, respectively. If length(order) == 1, it will be recycled to length(by).")

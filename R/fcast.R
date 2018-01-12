@@ -97,7 +97,7 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
 dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
   if (!is.data.table(data)) stop("'data' must be a data.table.")
   drop = as.logical(rep(drop, length.out=2L))
-  if (any(is.na(drop))) stop("'drop' must be logical TRUE/FALSE")
+  if (anyNA(drop)) stop("'drop' must be logical TRUE/FALSE")
   lvals = value_vars(value.var, names(data))
   valnames = unique(unlist(lvals))
   lvars = check_formula(formula, names(data), valnames)

@@ -59,6 +59,7 @@
 
 12. Faster `as.IDate` and `as.ITime` methods for `POSIXct` and `numeric`, [#1392](https://github.com/Rdatatable/data.table/issues/1392). Thanks to Jan Gorecki for the PR.
 
+13. `unique(DT)` now returns `DT` early when there are no duplicates to save RAM, [#2013](https://github.com/Rdatatable/data.table/issues/2013). Thanks to Michael Chirico for the PR. 
 
 #### BUG FIXES
 
