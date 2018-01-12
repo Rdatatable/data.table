@@ -280,7 +280,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   setAttrib(ans, R_RowNamesSymbol, tmp);  // The contents of tmp must be set before being passed to setAttrib(). setAttrib looks at tmp value and copies it in the case of R_RowNamesSymbol. Caused hard to track bug around 28 Sep 2014.
   UNPROTECT(1);
 
-  // clear any index that was copied over by copyMostAttrib() above, e.g. #1760
+  // clear any index that was copied over by copyMostAttrib() above, e.g. #1760 and #1734 (test 1678)
   setAttrib(ans, sym_index, R_NilValue);
   // but maintain key if ordered subset
   SEXP key = getAttrib(x, sym_sorted);

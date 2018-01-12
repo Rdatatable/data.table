@@ -33,6 +33,7 @@ unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alo
   if (!identical(incomparables, FALSE)) {
     .NotYetUsed("incomparables != FALSE")
   }
+  if (nrow(x) <= 1L) return(x)
   if (missing(by) && isTRUE(getOption("datatable.old.unique.by.key"))) by = key(x)  #1284
   else if (is.null(by)) by=seq_along(x)
   o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)

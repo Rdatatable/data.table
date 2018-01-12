@@ -2197,6 +2197,7 @@ is_na <- function(x, by=seq_along(x)) .Call(Cdt_na, x, by)
 any_na <- function(x, by=seq_along(x)) .Call(CanyNA, x, by)
 
 na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE, ...) {
+  # compare to stats:::na.omit.data.frame
   if (!cedta()) return(NextMethod())
   if ( !missing(invert) && is.na(as.logical(invert)) )
     stop("Argument 'invert' must be logical TRUE/FALSE")
@@ -2209,9 +2210,10 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
   }
   cols = as.integer(cols)
   ix = .Call(Cdt_na, object, cols)
-  ans = .Call(CsubsetDT, object, which_(ix, bool = invert), seq_along(object))
-  if (any(ix)) setindexv(ans, NULL)[] else ans #1734
-  # compare the above to stats:::na.omit.data.frame
+  if (any(ix))
+    .Call(CsubsetDT, object, which_(ix, bool = invert), seq_along(object))
+  else
+    object
 }
 
 which_ <- function(x, bool = TRUE) {
