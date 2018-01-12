@@ -27,6 +27,7 @@
     lockBinding("rbind.data.frame",baseenv())
   }
   # Set options for the speed boost in v1.8.0 by avoiding 'default' arg of getOption(,default=)
+  # TODO: submit improvement to .Internal(getOption(x)) in base::getOption to return NULL when option not set, to avoid (relatively slow) 'x %in% names(options())' there.
   opts = c("datatable.verbose"="FALSE",            # datatable.<argument name>
        "datatable.nomatch"="NA_integer_",      # datatable.<argument name>
        "datatable.optimize"="Inf",             # datatable.<argument name>
