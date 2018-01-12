@@ -11243,6 +11243,10 @@ test(1859, fread("A\n", nrows=0), data.table(A=logical()))  # 2512
 
 test(1860, fread("A,B\n "), data.table(A=logical(), B=logical()))  # 2543
 
+# That unique(DT) returns DT when there are no dups, #2013
+DT = data.table(A=c(1L,1L,2L), B=c(3L,4L,4L))
+test(1861, address(unique(DT)), address(DT))
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
