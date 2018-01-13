@@ -93,26 +93,22 @@ test.data.table(verbose=TRUE)  # since main.R no longer tests verbose mode
 
 
 ###############################################
-#  R 3.0.0 (stated dependency)
+#  R 3.1.0 (stated dependency)
 ###############################################
 
 ### ONE TIME BUILD
 sudo apt-get -y build-dep r-base
 cd ~/build
-wget http://cran.stat.ucla.edu/src/base/R-3/R-3.0.0.tar.gz
-tar xvf R-3.0.0.tar.gz
-cd R-3.0.0
+wget http://cran.stat.ucla.edu/src/base/R-3/R-3.1.0.tar.gz
+tar xvf R-3.1.0.tar.gz
+cd R-3.1.0
 ./configure --without-recommended-packages
 make
-alias R300=~/build/R-3.0.0/bin/R
-cd ..
-R300
-install.packages("chron")
-q("no")
+alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
-R300 CMD INSTALL ~/data.table_1.10.1.tar.gz
-R300
+R310 CMD INSTALL ./data.table_1.10.5.tar.gz
+R310
 require(data.table)
 test.data.table()
 
@@ -165,8 +161,11 @@ rm -rf R-devel
 tar xvf R-devel.tar.gz
 cd R-devel
 # Following R-exts#4.3.3
-# (clang 3.6.0 works but gcc 4.9.2 fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel)
-./configure CC="clang-5.0 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-g -Og -Wall -pedantic" --without-recommended-packages --disable-byte-compiled-packages
+./configure CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-g -Og -Wall -pedantic" LIBS="-lpthread" --without-recommended-packages --disable-byte-compiled-packages --disable-openmp
+# For ubsan, disabled openmp otherwise gcc fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel
+# UBSAN gives direct line number under gcc but not clang it seems. clang-5.0 has been helpful too, though.
+# If use later gcc-8, add F77=gfortran-8
+# LIBS="-lpthread" otherwise ld error about DSO missing
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 Rdevel

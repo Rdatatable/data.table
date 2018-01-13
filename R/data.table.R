@@ -16,9 +16,6 @@ setPackageName("data.table",.global)
 # So even though .BY doesn't appear in this file, it should still be NULL here and exported because it's
 # defined in SDenv and can be used by users.
 
-# FR #2591 - format.data.table issue with columns of class "formula"
-is.formula <- function(x) class(x) == "formula"
-
 is.data.table <- function(x) inherits(x, "data.table")
 is.ff <- function(x) inherits(x, "ff")  # define this in data.table so that we don't have to require(ff), but if user is using ff we'd like it to work
 
@@ -814,7 +811,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       if (is.character(j)) {
         if (notj) {
           w = chmatch(j, names(x))
-          if (any(is.na(w))) {
+          if (anyNA(w)) {
             warning("column(s) not removed because not found: ",paste(j[is.na(w)],collapse=","))
             w = w[!is.na(w)]
           }
@@ -1039,12 +1036,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           } else if (is.numeric(.SDcols)) {
             # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
             if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
-            if (any(is.na(.SDcols)) || any(abs(.SDcols)>ncol(x)) || any(abs(.SDcols)<1L)) stop(".SDcols is numeric but out of bounds (or NA)")
+            if (anyNA(.SDcols) || any(abs(.SDcols)>ncol(x)) || any(abs(.SDcols)<1L)) stop(".SDcols is numeric but out of bounds (or NA)")
             if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
             ansvals = if (colm) setdiff(seq_along(names(x)), c(as.integer(.SDcols), which(names(x) %chin% bynames))) else as.integer(.SDcols)
           } else {
             if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
-            if (any(is.na(.SDcols)) || any(!.SDcols %chin% names(x))) stop("Some items of .SDcols are not column names (or are NA)")
+            if (anyNA(.SDcols) || any(!.SDcols %chin% names(x))) stop("Some items of .SDcols are not column names (or are NA)")
             if (colm) ansvars = setdiff(setdiff(names(x), .SDcols), bynames) else ansvars = .SDcols
             # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
             ansvals = chmatch(ansvars, names(x))
@@ -1985,7 +1982,7 @@ tail.data.table <- function(x, n=6, ...) {
   } else i = NULL          # meaning (to C code) all rows, without allocating 1L:nrow(x) vector
   if (missing(j)) j=names(x)
   if (!is.atomic(j)) stop("j must be atomic vector, see ?is.atomic")
-  if (any(is.na(j))) stop("NA in j")
+  if (anyNA(j)) stop("NA in j")
   if (is.character(j)) {
     newnames = setdiff(j,names(x))
     cols = as.integer(chmatch(j, c(names(x),newnames)))
@@ -2203,6 +2200,7 @@ is_na <- function(x, by=seq_along(x)) .Call(Cdt_na, x, by)
 any_na <- function(x, by=seq_along(x)) .Call(CanyNA, x, by)
 
 na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE, ...) {
+  # compare to stats:::na.omit.data.frame
   if (!cedta()) return(NextMethod())
   if ( !missing(invert) && is.na(as.logical(invert)) )
     stop("Argument 'invert' must be logical TRUE/FALSE")
@@ -2215,9 +2213,10 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
   }
   cols = as.integer(cols)
   ix = .Call(Cdt_na, object, cols)
-  ans = .Call(CsubsetDT, object, which_(ix, bool = invert), seq_along(object))
-  if (any(ix)) setindexv(ans, NULL)[] else ans #1734
-  # compare the above to stats:::na.omit.data.frame
+  if (any(ix))
+    .Call(CsubsetDT, object, which_(ix, bool = invert), seq_along(object))
+  else
+    object
 }
 
 which_ <- function(x, bool = TRUE) {
@@ -2460,8 +2459,14 @@ setnames <- function(x,old,new) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
     if (!is.character(old)) stop("Passed a vector of type '",typeof(old),"'. Needs to be type 'character'.")
     if (length(old) != ncol(x)) stop("Can't assign ",length(old)," names to a ",ncol(x)," column data.table")
+    nx <- names(x)
     # note that duplicate names are permitted to be created in this usage only
-    w = which(names(x) != old)
+    if (anyNA(nx)) {
+      # if x somehow has some NA names, which() needs help to return them, #2475
+      w = which((nx != old) | (is.na(nx) & !is.na(old)))
+    } else {
+      w = which(nx != old)
+    }
     if (!length(w)) return(invisible(x))  # no changes
     new = old[w]
     i = w
@@ -2479,7 +2484,7 @@ setnames <- function(x,old,new) {
       if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
       if (any(duplicated(old))) stop("Some duplicates exist in 'old': ", paste(old[duplicated(old)],collapse=","))
       i = chmatch(old,names(x))
-      if (any(is.na(i))) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
+      if (anyNA(i)) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
       if (any(tt<-!is.na(chmatch(old,names(x)[-i])))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ",paste(old[tt],collapse=","))
     }
     if (length(new)!=length(i)) stop("'old' is length ",length(i)," but 'new' is length ",length(new))
@@ -2524,7 +2529,7 @@ setcolorder <- function(x, neworder)
   if (is.character(neworder)) {
     if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ", paste(names(x)[duplicated(names(x))], collapse=","), ". Please remove or rename the duplicate(s) and try again.")
     o = as.integer(chmatch(neworder, names(x)))
-    if (any(is.na(o))) stop("Names in neworder not found in x: ", paste(neworder[is.na(o)], collapse=","))
+    if (anyNA(o)) stop("Names in neworder not found in x: ", paste(neworder[is.na(o)], collapse=","))
   } else {
     if (!is.numeric(neworder)) stop("neworder is not a character or numeric vector")
     o = as.integer(neworder)

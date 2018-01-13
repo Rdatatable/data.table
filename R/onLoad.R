@@ -27,6 +27,7 @@
     lockBinding("rbind.data.frame",baseenv())
   }
   # Set options for the speed boost in v1.8.0 by avoiding 'default' arg of getOption(,default=)
+  # TODO: submit improvement to .Internal(getOption(x)) in base::getOption to return NULL when option not set, to avoid (relatively slow) 'x %in% names(options())' there.
   opts = c("datatable.verbose"="FALSE",            # datatable.<argument name>
        "datatable.nomatch"="NA_integer_",      # datatable.<argument name>
        "datatable.optimize"="Inf",             # datatable.<argument name>
@@ -45,7 +46,7 @@
        "datatable.use.index"="TRUE",           # global switch to address #1422
        "datatable.fread.datatable"="TRUE",
        "datatable.prettyprint.char" = NULL,     # FR #1091
-       "datatable.old.unique.by.key" = "FALSE", # TODO: warn 1 year, remove after 2 years
+       "datatable.old.unique.by.key" = "FALSE", # TODO: change warnings in duplicated.R to error on or after Jan 2019 then remove in Jan 2020.
        "datatable.logical01" = "TRUE"           # fwrite/fread to revert to FALSE. TODO: warn in next release and remove after 1 year
        )
   for (i in setdiff(names(opts),names(options()))) {

@@ -248,6 +248,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   // look odd (and devs in future might be tempted to remove them). Avoiding passing install() to API calls
   // keeps the code neat and readable. Also see grep's added to CRAN_Release.cmd to find such calls.
   sym_sorted  = install("sorted");
+  sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
 
