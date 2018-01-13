@@ -59,8 +59,10 @@
 
 12. Faster `as.IDate` and `as.ITime` methods for `POSIXct` and `numeric`, [#1392](https://github.com/Rdatatable/data.table/issues/1392). Thanks to Jan Gorecki for the PR.
 
-13. Subsetting optimization with keys and indices is now possible for compound queries like DT[a==1 & b ==2], [#2472](https://github.com/Rdatatable/data.table/issues/2472).
-Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementation. 
+13. `unique(DT)` now returns `DT` early when there are no duplicates to save RAM, [#2013](https://github.com/Rdatatable/data.table/issues/2013). Thanks to Michael Chirico for the PR.
+
+14. Subsetting optimization with keys and indices is now possible for compound queries like `DT[a==1 & b==2]`, [#2472](https://github.com/Rdatatable/data.table/issues/2472).
+Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementation.
 
 
 #### BUG FIXES
@@ -146,6 +148,8 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
 8. `data.table`'s dependency has been moved forward from R 3.0.0 (Apr 2013) to R 3.1.0 (Apr 2014; i.e. 3.5 years old). We keep this dependency as old as possible for as long as possible as requested by users in managed environments. Thanks to Jan Gorecki, the test suite from latest dev now runs on R 3.1.0 continously, as well as R-release (currently 3.4.2) and latest R-devel snapshot. [Our CRAN release procedures](https://github.com/Rdatatable/data.table/blob/master/CRAN_Release.cmd) also double check with this stated dependency before release to CRAN. The primary motivation for the bump to R 3.1.0 was allowing one new test which relies on better non-copying behaviour in that version, [#2484](https://github.com/Rdatatable/data.table/issues/2484). It also allows further internal simplifications. Thanks to @MichaelChirico for fixing another test that failed on R 3.1.0 due to slightly different behaviour of `base::read.csv` in R 3.1.0-only which the test was comparing to, [#2489](https://github.com/Rdatatable/data.table/pull/2489).
 
 9. New vignette added: _Importing data.table_ - focused on using data.table as a dependency in R packages. Answers most commonly asked questions and promote good practices.
+
+10. As warned in v1.9.8 release notes below in this file (on CRAN 25 Nov 2016) it has been 1 year since then and so use of `options(datatable.old.unique.by.key=TRUE)` to restore the old default is now deprecated with warning. The new warning states that this option still works and repeats the request to pass `by=key(DT)` explicitly to `unique()`, `duplicated()`, `uniqueN()` and `anyDuplicated()` and to stop using this option. In another year, this warning will become error. Another year after that the option will be removed.
 
 
 ### Changes in v1.10.4-3  (on CRAN 20 Oct 2017)

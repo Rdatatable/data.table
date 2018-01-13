@@ -125,7 +125,7 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
   return target;
 }
 
-static void check_idx(SEXP idx, int max, /*outputs...*/int *ansLen, Rboolean *any0orNA)
+static void check_idx(SEXP idx, int max, /*outputs...*/int *ansLen, Rboolean *any0orNA, Rboolean *monotonic)
 // count non-0 in idx => the length of the subset result stored in *ansLen
 // return whether any 0, NA (or >max) exist and set any0orNA if so, for branchless subsetVectorRaw
 // >max is treated as NA for consistency with [.data.frame and operations like cbind(DT[w],DT[w+1])
@@ -135,17 +135,21 @@ static void check_idx(SEXP idx, int max, /*outputs...*/int *ansLen, Rboolean *an
 // single cache efficient sweep so no need to go parallel (well, very low priority to go parallel)
 {
   if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx)));
-  Rboolean anyNeg=FALSE, anyNA=FALSE;
+  Rboolean anyNeg=FALSE, anyNA=FALSE, anyLess=FALSE;
   int ans=0;
+  int last = INT32_MIN;
   for (int i=0; i<LENGTH(idx); i++) {
     int this = INTEGER(idx)[i];
     ans += (this!=0);
     anyNeg |= this<0 && this!=NA_INTEGER;
     anyNA |= this==NA_INTEGER || this>max;
+    anyLess |= this<last;
+    last = this;
   }
   if (anyNeg) error("Internal error: idx contains negatives. Should have been dealt with earlier.");
   *ansLen = ans;
   *any0orNA = ans<LENGTH(idx) || anyNA;
+  *monotonic = !anyLess; // for the purpose of ordered keys, this==last is allowed
 }
 
 // TODO - currently called from R level first. Can it be called from check_idx instead?
@@ -222,8 +226,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
 
   // check index once up front for 0 or NA, for branchless subsetVectorRaw
   R_len_t ansn=0;
-  Rboolean any0orNA=FALSE;
-  check_idx(rows, length(VECTOR_ELT(x,0)), &ansn, &any0orNA);
+  Rboolean any0orNA=FALSE, orderedSubset=FALSE;
+  check_idx(rows, length(VECTOR_ELT(x,0)), &ansn, &any0orNA, &orderedSubset);
 
   if (!isInteger(cols)) error("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols)));
   for (int i=0; i<LENGTH(cols); i++) {
@@ -276,7 +280,9 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   setAttrib(ans, R_RowNamesSymbol, tmp);  // The contents of tmp must be set before being passed to setAttrib(). setAttrib looks at tmp value and copies it in the case of R_RowNamesSymbol. Caused hard to track bug around 28 Sep 2014.
   UNPROTECT(1);
 
-  // maintain key if ordered subset ...
+  // clear any index that was copied over by copyMostAttrib() above, e.g. #1760 and #1734 (test 1678)
+  setAttrib(ans, sym_index, R_NilValue);
+  // but maintain key if ordered subset
   SEXP key = getAttrib(x, sym_sorted);
   if (length(key)) {
     SEXP in = PROTECT(chmatch(key,getAttrib(ans,R_NamesSymbol), 0, TRUE)); // (nomatch ignored when in=TRUE)
@@ -287,11 +293,10 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
       setAttrib(ans, sym_sorted, R_NilValue);
       // clear key that was copied over by copyMostAttrib() above
     } else {
-      if (isOrderedSubset(rows, PROTECT(ScalarInteger(length(VECTOR_ELT(x,0)))))) {
+      if (orderedSubset) {
         setAttrib(ans, sym_sorted, tmp=allocVector(STRSXP, i));
         for (int j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
       }
-      UNPROTECT(1);  // the ScalarInteger above. isOrderedSubset() is exposed at R level hence needs SEXP
     }
   }
   setAttrib(ans, install(".data.table.locked"), R_NilValue);
@@ -302,8 +307,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
 
 SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   int ansn;
-  Rboolean any0orNA;
-  check_idx(idx, length(x), &ansn, &any0orNA);
+  Rboolean any0orNA, orderedSubset;
+  check_idx(idx, length(x), &ansn, &any0orNA, &orderedSubset);
   SEXP ans = PROTECT(allocVector(TYPEOF(x), ansn));
   SETLENGTH(ans, ansn);
   SET_TRUELENGTH(ans, ansn);
@@ -312,5 +317,4 @@ SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   UNPROTECT(1);
   return ans;
 }
-
 

@@ -46,6 +46,7 @@ SEXP char_Date;
 SEXP char_POSIXct;
 SEXP char_nanotime;
 SEXP sym_sorted;
+SEXP sym_index;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
