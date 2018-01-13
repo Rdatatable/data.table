@@ -122,7 +122,7 @@
 
 29. `:=` assignment of one vector to two or more columns, e.g. `DT[, c("x", "y") := 1:10]`, failed to copy the `1:10` data causing errors later if and when those columns were updated by reference, [#2540](https://github.com/Rdatatable/data.table/issues/2540). This is an old issue ([#185](https://github.com/Rdatatable/data.table/issues/185)) that had been fixed but reappeared when code was refactored. Thanks to @patrickhowerter for the detailed report with reproducible example and to @MarkusBonsch for fixing and strengthening tests so it doesn't reappear again.
 
-27. GForce implementations for `median` and `var` while used along with `by` argument, at times, resulted in "negative length vectors not allowed" error message. This is now fixed. Closes [#2046](https://github.com/Rdatatable/data.table/issues/2046) and [#2111](https://github.com/Rdatatable/data.table/issues/2111). Thanks to @caneff and @osofr for filing issues on Github and to @kmillar for identifying and explaining the issue under #2046.
+30. GForce implementations for `median` and `var` while used along with `by` argument, at times, resulted in "negative length vectors not allowed" error message. This is now fixed. Closes [#2046](https://github.com/Rdatatable/data.table/issues/2046) and [#2111](https://github.com/Rdatatable/data.table/issues/2111). Thanks to @caneff and @osofr for filing issues on Github and to @kmillar for identifying and explaining the issue under #2046.
 
 #### NOTES
 
