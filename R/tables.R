@@ -30,9 +30,9 @@ tables <- function(mb=TRUE, order.col="NAME", width=80,
   if (!silent) {
     # prettier printing on console
     tt = copy(info)
-    tt[ , NROW := format(sprintf("%4s", prettyNum(NROW, big.mark=",")), justify="right")]   # %4s is for minimum width
-    tt[ , NCOL := format(sprintf("%4s", prettyNum(NCOL, big.mark=",")), justify="right")]
-    if (mb) tt[ , MB := format(sprintf("%2s", prettyNum(MB, big.mark=",")), justify="right")]
+    tt[ , NROW := format(prettyNum(NROW, big.mark=","), width = 4L, justify="right")]
+    tt[ , NCOL := format(prettyNum(NCOL, big.mark=","), width = 4L, justify="right")]
+    if (mb) tt[ , MB := format(prettyNum(MB, big.mark=","), width = 2L, justify="right")]
     print(tt, class=FALSE, nrow=Inf)
     if (mb) cat("Total: ", prettyNum(as.character(sum(info$MB)), big.mark=","), "MB\n", sep="")
   }
