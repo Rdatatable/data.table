@@ -110,7 +110,9 @@ format.data.table <- function (x, ..., justify="none") {
     stop("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
   format.item <- function(x) {
-    if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
+    if (is.null(x))  # NULL item in a list column
+      ""
+    else if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
       paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 - format has to be added here...
     else
       paste("<", class(x)[1L], ">", sep="")

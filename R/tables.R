@@ -18,36 +18,24 @@ tables <- function(mb=TRUE, order.col="NAME", width=80,
       data.table(NAME = dt_n,
                  NROW = nrow(DT),
                  NCOL = ncol(DT))
-    if (mb)
-      # mb is an option because object.size() appears to be slow.
-      # **TO DO: revisit**
-      set(info_i, , "MB",
-        #1048576 = 1024^2
-        round(as.numeric(object.size(DT))/1048576))
+    if (mb) set(info_i, , "MB", round(as.numeric(object.size(DT))/1024^2))
+    # mb is an option because object.size() appears to be slow. TO DO: revisit
     set(info_i, , "COLS", list(list(names(DT))))
     set(info_i, , "KEY", list(list(key(DT))))
     if (index) set(info_i, , "INDICES", list(list(indices(DT))))
     info_i
   }))
-  info[ , NROW := format(sprintf("%4s", prettyNum(NROW, big.mark=",")), justify="right")]   # %4s is for minimum width
-  info[ , NCOL := format(sprintf("%4s", prettyNum(NCOL, big.mark=",")), justify="right")]
-  if (mb) {
-    total = sum(info$MB)
-    info[ , MB := format(sprintf("%2s", prettyNum(MB, big.mark=",")), justify="right")]
-  }
   if (!order.col %in% names(info)) stop("order.col='",order.col,"' not a column name of info")
   info = info[base::order(info[[order.col]])]  # base::order to maintain locale ordering of table names
-  m = as.matrix(info)
-  colnames(m)[2] = sprintf(paste("%",nchar(m[1,"NROW"]), "s", sep=""), "NROW")
-  colnames(m)[3] = sprintf(paste("%",nchar(m[1,"NCOL"]), "s", sep=""), "NCOL")
-  if (mb) colnames(m)[4] = sprintf(paste("%", nchar(m[1,"MB"]), "s", sep=""), "MB")
-  m[ , "COLS"] = substring(m[,"COLS"], 1L, width)
-  m[ , "KEY"] = substring(m[,"KEY"], 1L, width)
   if (!silent) {
-    print(m, quote=FALSE, right=FALSE)
-    if (mb) cat("Total: ", prettyNum(as.character(total), big.mark=","), "MB\n", sep="")
+    # prettier printing on console
+    tt = copy(info)
+    tt[ , NROW := format(sprintf("%4s", prettyNum(NROW, big.mark=",")), justify="right")]   # %4s is for minimum width
+    tt[ , NCOL := format(sprintf("%4s", prettyNum(NCOL, big.mark=",")), justify="right")]
+    if (mb) tt[ , MB := format(sprintf("%2s", prettyNum(MB, big.mark=",")), justify="right")]
+    print(tt, class=FALSE, nrow=Inf)
+    if (mb) cat("Total: ", prettyNum(as.character(sum(info$MB)), big.mark=","), "MB\n", sep="")
   }
   invisible(info)
 }
-
 
