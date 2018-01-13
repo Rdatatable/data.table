@@ -29,10 +29,14 @@ tables <- function(mb=TRUE, order.col="NAME", width=80,
   info = info[base::order(info[[order.col]])]  # base::order to maintain locale ordering of table names
   if (!silent) {
     # prettier printing on console
+    pretty_format = function(x, width) {
+      format(prettyNum(x, big.mark=","),
+             width=width, justify="right")
+    }
     tt = copy(info)
-    tt[ , NROW := format(prettyNum(NROW, big.mark=","), width = 4L, justify="right")]
-    tt[ , NCOL := format(prettyNum(NCOL, big.mark=","), width = 4L, justify="right")]
-    if (mb) tt[ , MB := format(prettyNum(MB, big.mark=","), width = 2L, justify="right")]
+    tt[ , NROW := pretty_format(NROW, width=4L)]
+    tt[ , NCOL := pretty_format(NCOL, width=4L)]
+    if (mb) tt[ , MB := pretty_format(MB, width=2L)]
     print(tt, class=FALSE, nrow=Inf)
     if (mb) cat("Total: ", prettyNum(as.character(sum(info$MB)), big.mark=","), "MB\n", sep="")
   }
