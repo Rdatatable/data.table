@@ -11257,6 +11257,7 @@ test(1862.2, unique(DT,by=key(DT)), data.table(A=1:2, B=3:4, key="A"))
 # Fix the bug when keys contain non UTF8 strings #2566 #2462 #1826
 # Only on Windows platform it might fail, because other platforms use UTF8 as the native encoding.
 DT <- fread(file = testDir("issue_2566.csv"), encoding = "UTF-8")
+DT[, x := enc2native(x)] # because fread return's UTF-8 encoding column even on windows
 setkey(DT, x)
 test(1863.1, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
 setkey(DT, y)
