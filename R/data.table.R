@@ -653,7 +653,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       }
       if(optimizedSubset){
         ## special treatment for calls like DT[x == 3] that are transformed into DT[J(x=3), on = "x==x"]
+        if (verbose) {last.started.at=proc.time()[3];cat("Reordering", length(irows), "rows after bmerge done in ... ");flush.console()}
         irows = fsort(irows, internal=TRUE) ## restore original order
+        if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
         ## make sure, all columns are taken from x and not from i.
         ## This is done by simply telling data.table to continue as if there was a simple subset
         leftcols  = integer(0)
@@ -2902,8 +2904,10 @@ isReallyReal <- function(x) {
     ## if nothing else helped, auto create a new index that can be used
     if (!getOption("datatable.auto.index")) return(NULL) 
     if (verbose) {cat("Creating new index '", paste0(names(i), collapse = "__"),"'\n",sep="");flush.console()}
-    if (verbose) {cat("Optimized subsetting with index '", paste0(names(i), collapse = "__"),"'\n",sep="");flush.console()}
+    if (verbose) {last.started.at=proc.time()[3];cat("Creating index", paste0(names(i), collapse = "__"), "done in ... ");flush.console()}
     setindexv(x, names(i))
+    if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
+    if (verbose) {cat("Optimized subsetting with index '", paste0(names(i), collapse = "__"),"'\n",sep="");flush.console()}
     idx <- attr(attr(x, "index"), paste0("__", names(i), collapse = ""))
     idxCols <- names(i)
   }
