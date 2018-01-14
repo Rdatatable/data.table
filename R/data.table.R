@@ -2810,17 +2810,30 @@ isReallyReal <- function(x) {
   on <- character(0)
   nonEqui = FALSE
   while(length(remainingIsub)){
-    if (length(remainingIsub[[1L]]) != 1) return(NULL) ## only single symbol, either '&' or one of validOps allowed. 
-    if (remainingIsub[[1L]] != "&"){ ## only a single expression present or a different connection.
+    if(is.call(remainingIsub)){
+      if (length(remainingIsub[[1L]]) != 1) return(NULL) ## only single symbol, either '&' or one of validOps allowed. 
+      if (remainingIsub[[1L]] != "&"){ ## only a single expression present or a different connection.
+        stub <- remainingIsub
+        remainingIsub <- NULL ## there is no remainder to be evaluated after stub.
+      } else {
+        ## multiple expressions with & connection. 
+        if (notjoin) return(NULL) ## expressions of type DT[!(a==1 & b==2)] currently not supported
+        stub <- remainingIsub[[3L]] ## the single column expression like col == 4
+        remainingIsub <- remainingIsub[[2L]] ## the potentially longer expression with potential additional '&'
+      }
+    } else { ## single symbol present
       stub <- remainingIsub
-      remainingIsub <- NULL ## there is no remainder to be evaluated after stub.
-    } else { 
-      ## multiple expressions with & connection. 
-      if (notjoin) return(NULL) ## expressions of type DT[!(a==1 & b==2)] currently not supported
-      stub <- remainingIsub[[3L]] ## the single column expression like col == 4
-      remainingIsub <- remainingIsub[[2L]] ## the potentially longer expression with potential additional '&'
+      remainingIsub <- NULL
     }
     ## check the stub if it is fastSubsettable
+    if(is.symbol(stub)){
+      ## something like DT[x & y]. If x and y are logical columns, we can optimize.
+      col <- as.character(stub)
+      if(!col %chin% names(x)) return(NULL)
+      if(!is.logical(x[[col]])) return(NULL)
+      ## redirect to normal DT[x == TRUE]
+      stub <- call("==", as.symbol(col), TRUE)
+    }
     if (length(stub[[1L]]) != 1) return(NULL) ## Whatever it is, definitely not one of the valid operators
     operator <- as.character(stub[[1L]])
     if (!operator %chin% validOps$op) return(NULL) ## operator not supported

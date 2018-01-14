@@ -6038,6 +6038,14 @@ test(1437.26, DT[!x == 3], DT[-c(3,11,12)])
 ## column comparisons are not affected
 DT <- data.table(x = c(1:10, 1:10, 1:10), y = c(1:20, -1:-10))
 test(1437.27, DT[x == y], DT[1:10])
+## subsets with logical vectors are optimized correctly.
+DT <- data.table(x = c(TRUE, TRUE, TRUE, FALSE), y = c(FALSE, TRUE, FALSE, TRUE))
+test(1437.28, DT[x & y, verbose = TRUE], output = "Optimized subsetting")
+test(1437.29, DT[x & y], DT[2])
+## subsets where just cols are given but columns are not logical are not optimized.
+DT <- data.table(x = c(1, 0, 2, 4), y = c(0, 2, 1, 3))
+test(1437.31, DT[x & y, verbose = TRUE], output = "   x y")
+test(1437.32, DT[x & y], DT[3:4])
 ## do extensive tests of optimized vs non-optimized queries for identical results.
 ## very much inspired by the tests for non equi joins (1641ff)
 set.seed(13545)
@@ -6084,7 +6092,7 @@ all[, query := gsub("&missing$", "", gsub("missing&", "", query))]
 jQueries <- c(".(test = intCol + doubleCol, test2 = paste0(boolCol, charCol))",
               "c('test1', 'test2') := list(pmax(intCol, doubleCol), !boolCol)")
 ## test each query string
-test_no <- 1437.0028
+test_no <- 1437.0033
 for(t in seq_len(nrow(all))){
   ## test the query with missing j
   thisQuery <- all$query[t]
