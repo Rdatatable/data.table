@@ -124,6 +124,9 @@
 
 30. "Negative length vectors not allowed" error when grouping `median` and `var` fixed, [#2046](https://github.com/Rdatatable/data.table/issues/2046) and [#2111](https://github.com/Rdatatable/data.table/issues/2111). Thanks to @caneff and @osofr for reporting and to @kmillar for debugging and explaining the cause.
 
+31. Fixed a bug on Windows where `data.table`s containing non-UTF8 strings in `key`s were not properly sorted, [#2462](https://github.com/Rdatatable/data.table/issues/2462), [#1826](https://github.com/Rdatatable/data.table/issues/1826)  and [StackOverflow](https://stackoverflow.com/questions/47599934/why-doesnt-r-data-table-support-well-for-non-ascii-keys-on-windows). Thanks to @shrektan for reporting and fixing.
+
+
 #### NOTES
 
 0. The license has been changed from GPL to MPL (Mozilla Public License). All contributors were consulted and approved. [PR#2456](https://github.com/Rdatatable/data.table/pull/2456) details the reasons for the change.

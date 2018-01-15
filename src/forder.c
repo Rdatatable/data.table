@@ -866,7 +866,7 @@ static void csort(SEXP *x, int *o, int n)
   /* can't use otmp, since iradix might be called here and that uses otmp (and xtmp).
      alloc_csort_otmp(n) is called from forder for either n=nrow if 1st column,
      or n=maxgrpn if onwards columns */
-  for(i=0; i<n; i++) csort_otmp[i] = (x[i] == NA_STRING) ? NA_INTEGER : -TRUELENGTH(x[i]);
+  for(i=0; i<n; i++) csort_otmp[i] = (x[i] == NA_STRING) ? NA_INTEGER : -TRUELENGTH(ENC2UTF8(x[i]));
   if (nalast == 0 && n == 2) {                        // special case for nalast==0. n==1 is handled inside forder. at least 1 will be NA here
     if (o[0] == -1) for (i=0; i<n; i++) o[i] = i+1;    // else use o from caller directly (not 1st column)
     for (int i=0; i<n; i++) if (csort_otmp[i] == NA_INTEGER) o[i] = 0;
@@ -899,7 +899,7 @@ static void csort_pre(SEXP *x, int n)
   // savetl_init() is called once at the start of forder
   old_un = ustr_n;
   for(i=0; i<n; i++) {
-    s = x[i];
+    s = ENC2UTF8(x[i]);
     if (TRUELENGTH(s)<0) continue;   // this case first as it's the most frequent. Already in ustr, this negative is its ordering.
     if (TRUELENGTH(s)>0) {  // Save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
       savetl(s);          // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.

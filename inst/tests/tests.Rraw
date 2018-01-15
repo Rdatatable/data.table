@@ -11258,6 +11258,18 @@ test(1863.1, DT[, median(y), by=x], data.table(x=1, V1=0, key="x"))
 DT = data.table(col1 = c(1,1,1, 2,2,2), col2 = c(2,2,2,1,1,1), ID = c(rep(1,3), rep(2,3)), key="ID")
 test(1863.2, DT[, lapply(.SD, var), by=ID], data.table(ID=c(1,2), col1=0, col2=0, key="ID"))
 
+# Fix the bug when keys contain non UTF8 strings #2566 #2462 #1826
+# Only on Windows platform it might fail, because other platforms use UTF8 as the native encoding.
+DT <- fread(file = testDir("issue_2566.csv"), encoding = "UTF-8")
+# `fread` return a utf-8 encoded data, we should convert x to native encoding.
+# However, we need this condition to ensure the native encoding can be used for Chinese characters.
+# Otherwise, the test will fail because the strings have been damaged.
+if (identical(enc2utf8(enc2native(DT$x)), DT$x)) DT[, x:= enc2native(x)]
+setkey(DT, x)
+test(1864.1, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
+setkey(DT, y)
+test(1864.2, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
+
 
 ##########################
 
