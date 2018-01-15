@@ -37,6 +37,17 @@ typedef R_xlen_t RLEN;
 # define MAYBE_REFERENCED(x) ( NAMED(x) > 0 )
 #endif
 
+// If we find a non-ASCII, non-NA, non-UTF8 encoding, we try to convert it to UTF8. That is, marked non-ascii/non-UTF8 encodings will
+// always be checked in UTF8 locale. This seems to be the best fix Arun could think of to put the encoding issues to rest.
+// Since the if-statement will fail with the first condition check in "normal" ASCII cases, there shouldn't be huge penalty issues in
+// most cases. Fix for #66, #69, #469 and #1293
+// TODO: compare 1.9.6 performance with 1.9.7 with huge number of ASCII strings, and again after Jan 2018 when made macro.
+// Matt moved this to be macro in Jan 2018 so that branch can benefit from branch prediction too wherever used inside loops.
+// This IS_ASCII will dereference s and that cache fetch is the part that may bite more than the branch, though. Without a call to
+// to ENC2UTF as all, the pointer value can just be compared by the calling code without deferencing it. It may still be worth
+// timing the impact and manually avoiding (is there an IS_ASCII on the character vector rather than testing each item every time?)
+#define ENC2UTF8(s) ((IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s)) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
+
 // init.c
 void setSizes();
 SEXP char_integer64;
@@ -115,7 +126,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
 SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted,
                 SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg,
                 SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
-SEXP ENC2UTF8(SEXP s);
 
 // rbindlist.c
 SEXP combineFactorLevels(SEXP factorLevels, int *factorType, Rboolean *isRowOrdered);
