@@ -699,7 +699,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (notjoin) {
       if (byjoin || !is.integer(irows) || is.na(nomatch)) stop("Internal error: notjoin but byjoin or !integer or nomatch==NA")
       irows = irows[irows!=0L]
+      if (verbose) {last.started.at=proc.time()[3];cat("Inverting irows for notjoin done in ... ");flush.console()}
       i = irows = if (length(irows)) seq_len(nrow(x))[-irows] else NULL  # NULL meaning all rows i.e. seq_len(nrow(x))
+      if (verbose) cat(round(proc.time()[3]-last.started.at, 3), "sec\n")
       leftcols = integer()  # proceed as if row subset from now on, length(leftcols) is switched on later
       rightcols = integer()
       # Doing this once here, helps speed later when repeatedly subsetting each column. R's [irows] would do this for each
