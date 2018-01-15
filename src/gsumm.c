@@ -25,7 +25,7 @@ static union {
 # define SQRTL sqrt
 #endif
 
-SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg, SEXP maxgrpnArg) {
+SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   int i, j, g, *this;
   // clock_t start = clock();
   if (TYPEOF(env) != ENVSXP) error("env is not an environment");
@@ -34,7 +34,6 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg, SEXP max
   if (!isInteger(f)) error("f is not an integer vector");
   if (!isInteger(l)) error("l is not an integer vector");
   if (!isInteger(irowsArg) && !isNull(irowsArg)) error("irowsArg is not an integer vector");
-  if (!isInteger(maxgrpnArg)) error("maxgrpnArg is not an integer vector");
   ngrp = LENGTH(l);
   if (LENGTH(f) != ngrp) error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp);
   grpn=0;
@@ -45,24 +44,25 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg, SEXP max
   grp = (int *)R_alloc(grpn, sizeof(int));
   // global grp because the g* functions (inside jsub) share this common memory
 
+  maxgrpn = 0;
   if (LENGTH(o)) {
     isunsorted = 1; // for gmedian
     for (g=0; g<ngrp; g++) {
       this = INTEGER(o) + INTEGER(f)[g]-1;
       for (j=0; j<grpsize[g]; j++)  grp[ this[j]-1 ] = g;
+      if (grpsize[g]>maxgrpn) maxgrpn = grpsize[g];  // recalculate (may as well since looping anyway) and check below
     }
   } else {
     for (g=0; g<ngrp; g++) {
       this = grp + INTEGER(f)[g]-1;
       for (j=0; j<grpsize[g]; j++)  this[j] = g;
+      if (grpsize[g]>maxgrpn) maxgrpn = grpsize[g];  // needed for #2046 and #2111 when maxgrpn attribute is not attached to empty o
     }
   }
-  // for gmedian
-  // initialise maxgrpn
-  maxgrpn = INTEGER(maxgrpnArg)[0];
+  SEXP tt = getAttrib(o, install("maxgrpn"));
+  if (length(tt) && INTEGER(tt)[0]!=maxgrpn) error("Internal error: o's maxgrpn mismatches recalculated maxgrpn");
   oo = INTEGER(o);
   ff = INTEGER(f);
-
   irows = INTEGER(irowsArg);
   if (!isNull(irowsArg)) irowslen = length(irowsArg);
 
