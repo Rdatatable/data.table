@@ -242,11 +242,9 @@ xenv <- new.env()
 xenv$TESTDT <- TESTDT
 rm(TESTDT)
 DT <- data.table(a = 1)
-setnames(DT, paste(rev(LETTERS), collapse=""))
-test(69.4, capture.output(tables(width = 10L)),
-     c("     NAME NROW   NCOL   MB   COLS         KEY   ",
-       "[1,] \"DT\" \"   1\" \"   1\" \" 0\" \"ZYXWVUTSRQ\" \"NULL\"",
-       "Total: 0MB"))
+test(69.4, tables(), output="NAME NROW NCOL MB COLS KEY1:   DT    1    1  0    a.*Total: 0MB")
+DT <- data.table(A=1:2, B=3:4, C=5:6, D=7:8, E=9:10, F=11:12, G=13:14, H=15:16, key="A,D,F,G")
+test(69.5, tables(), output="NAME NROW NCOL MB            COLS     KEY1:   DT    2    8  0 A,B,C,D,E,F,... A,D,F,G.*Total: 0MB")
 
 nenv <- new.env()
 nenv$DT <- data.table(a = 1)
@@ -11254,6 +11252,12 @@ test(1862.1, unique(DT), data.table(A=1:2, B=3:4, key="A"), warning="deprecated 
 options(datatable.old.unique.by.key=NULL)
 test(1862.2, unique(DT,by=key(DT)), data.table(A=1:2, B=3:4, key="A"))
 
+# fix for -ve indices issue in gmedian (2046) and gvar (2111)
+DT = data.table(x=c(1,1,1),y=c(3,0,0), key="x")
+test(1863.1, DT[, median(y), by=x], data.table(x=1, V1=0, key="x"))
+DT = data.table(col1 = c(1,1,1, 2,2,2), col2 = c(2,2,2,1,1,1), ID = c(rep(1,3), rep(2,3)), key="ID")
+test(1863.2, DT[, lapply(.SD, var), by=ID], data.table(ID=c(1,2), col1=0, col2=0, key="ID"))
+
 # Fix the bug when keys contain non UTF8 strings #2566 #2462 #1826
 # Only on Windows platform it might fail, because other platforms use UTF8 as the native encoding.
 DT <- fread(file = testDir("issue_2566.csv"), encoding = "UTF-8")
@@ -11262,9 +11266,10 @@ DT <- fread(file = testDir("issue_2566.csv"), encoding = "UTF-8")
 # Otherwise, the test will fail because the strings have been damaged.
 if (identical(enc2utf8(enc2native(DT$x)), DT$x)) DT[, x:= enc2native(x)]
 setkey(DT, x)
-test(1863.1, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
+test(1864.1, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
 setkey(DT, y)
-test(1863.2, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
+test(1864.2, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
+
 
 ##########################
 
