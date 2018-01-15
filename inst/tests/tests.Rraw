@@ -242,11 +242,9 @@ xenv <- new.env()
 xenv$TESTDT <- TESTDT
 rm(TESTDT)
 DT <- data.table(a = 1)
-setnames(DT, paste(rev(LETTERS), collapse=""))
-test(69.4, capture.output(tables(width = 10L)),
-     c("     NAME NROW   NCOL   MB   COLS         KEY   ",
-       "[1,] \"DT\" \"   1\" \"   1\" \" 0\" \"ZYXWVUTSRQ\" \"NULL\"",
-       "Total: 0MB"))
+test(69.4, tables(), output="NAME NROW NCOL MB COLS KEY1:   DT    1    1  0    a.*Total: 0MB")
+DT <- data.table(A=1:2, B=3:4, C=5:6, D=7:8, E=9:10, F=11:12, G=13:14, H=15:16, key="A,D,F,G")
+test(69.5, tables(), output="NAME NROW NCOL MB            COLS     KEY1:   DT    2    8  0 A,B,C,D,E,F,... A,D,F,G.*Total: 0MB")
 
 nenv <- new.env()
 nenv$DT <- data.table(a = 1)
