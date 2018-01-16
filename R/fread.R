@@ -146,9 +146,27 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
       cols_to_factor <- which(vapply(ans, is.character, logical(1L)))
     }
     for (j in cols_to_factor) {
-      set(ans, j = j, value = try_with(.subset2(ans, j),
-                                       as_factor(.subset2(ans, j)),
-                                       paste0("Column ", j, " was type 'character', but when trying to honour `stringsAsFactors = TRUE`, fread encountered the following problem")))
+      set(ans,
+          j = j,
+          value = tryCatch(as_factor(.subset2(ans, j)),
+                           error = function(e) {
+                             warning("Column ", j, " was type 'character', ",
+                                     "but when trying to honour ",
+                                     "`stringsAsFactors = ", deparse(substitute(stringsAsFactors)), "` ",
+                                     "fread encountered the following error:\n\t",
+                                     e$message, "\n",
+                                     " so the column will be left as 'character'.")
+                             return(.subset2(ans, j))
+                           },
+                           warning = function(e) {
+                             warning("Column ", j, " was type 'character', ",
+                                     "but when trying to honour ",
+                                     "`stringsAsFactors = ", deparse(substitute(stringsAsFactors)), "` ",
+                                     "fread encountered the following warning:\n\t",
+                                     e$message, "\n",
+                                     " so the column will be left as 'character'.")
+                             return(.subset2(ans, j))
+                           }))
     }
   }
 
@@ -321,57 +339,53 @@ set_colClasses_ante <- function(ans,
       #             cCi ^
       for (cCi in seq_along(colClasses)) {
         new_class <- names(colClasses)[cCi]
-        # Already done.
-        if (!new_class %chin% already_set_classes && length(colClasses[[cCi]])) {
-          if (verbose && new_class != "NULL") cat("\tSetting column(s) ", colClasses[[cCi]], " to ", new_class, "\n")
-          switch(new_class,
-                 "factor" = {
-                   factor_cols <- colClasses[[cCi]]
-                   for (factor_col in factor_cols) {
-                     set(ans, j = factor_col, value = try_factor(ans[[factor_col]], factor_col))
-                   }
-                 },
-                 "complex" = {
-                   complex_cols <- colClasses[[cCi]]
-                   for (complex_col in complex_cols) {
-                     set(ans, j = complex_col, value = try_complex(ans[[complex_col]], complex_col))
-                   }
-                 },
-                 "raw" = {
-                   raw_cols <- colClasses[[cCi]]
-                   for (raw_col in raw_cols) {
-                     set(ans, j = raw_col, value = try_raw(ans[[raw_col]], raw_col))
-                   }
-                 },
-                 "Date" = {
-                   date_cols <- colClasses[[cCi]]
-                   for (date_col in date_cols) {
-                     set(ans, j = date_col, value = try_Date(ans[[date_col]], date_col))
-                   }
-                 },
-                 "POSIXct" = {
-                   POSIXct_cols <- colClasses[[cCi]]
-                   for (POSIXct_col in POSIXct_cols) {
-                     set(ans, j = POSIXct_col, value = try_POSIXct(ans[[POSIXct_col]], POSIXct_col))
-                   }
-                 },
-                 "NULL" = {
-                   # do nothing for the time being.
-                 },
+        new_class_cols <- colClasses[[cCi]]
+        # Skip if already done.
+        if (!new_class %chin% already_set_classes && length(new_class_cols)) {
+          if (verbose && new_class != "NULL") {
+            cat("\tSetting column(s) ", new_class_cols, " to ", new_class, "\n")
+          }
 
-                 # Finally, try foreign methods
-                 {
-                   other_cols <- colClasses[[cCi]]
-                   for (other_col in other_cols) {
-                     set(ans,
-                         j = other_col,
-                         value = try_with(ans[[other_col]],
-                                          methods::as(ans[[other_col]], new_class),
-                                          paste0("Column ", other_col,
-                                                 " was set by colClasses to be '", new_class,
-                                                 "', but fread encountered the following")))
-                   }
-                 })
+          for (j in new_class_cols) {
+            v <- .subset2(ans, j)
+            new_v <-
+              # Following tryCatch designed to try coercion to a particular class,
+              # and abort on any column if it encounters any warning or error. Different to
+              # read.csv -- won't attempt coercion if NAs introduced, but also less fussy
+              # and won't error if a column won't work, instead reverting to previous class.
+              tryCatch({
+                switch(new_class,
+                       "factor" = as_factor(v),
+                       "complex" = as.complex(v),
+                       "raw" = as_raw(v),  # Internal implementation
+                       "Date" = as.Date(v),
+                       "POSIXct" = as.POSIXct(v),
+                       "NULL" = v,  # Do nothing for now.
+                       # Finally,
+                       methods::as(v, new_class))
+              },
+              warning = function(e) {
+                warn_msg <-
+                      sprintf("Column %s was set by colClasses to be '%s', but fread encountered the following warning:\n\t %s\nso the column will be left as type '%s'",
+                              as.character(j), new_class, e$message, typeof(v))
+                warning(warn_msg)
+                return(v)
+              },
+              # Since errors themselves raise warnings,
+              # put after.
+              error = function(e) {
+                err_msg <-
+                  sprintf("Column %s was set by colClasses to be '%s', but fread encountered the following error:\n\t %s\nso the column will be left as type '%s'",
+                          as.character(j), new_class, e$message, typeof(v))
+                warning(err_msg,
+                        call. = FALSE)
+                return(v)
+              })
+
+            # New value may be the same as the old value
+            # if the coercion was aborted.
+            set(ans, j = j, value = new_v)
+          }
         }
       }
       # Safe to use NULL_colClasses now
@@ -379,113 +393,21 @@ set_colClasses_ante <- function(ans,
         char_NULL_colClasses <- vapply(NULL_colClasses, is.character, logical(1L))
         if (all(char_NULL_colClasses)) {
           null_cols <- unlist(NULL_colClasses, use.names = FALSE)
-          ans[, (null_cols) := NULL]
         } else {
-
           # consider
           # NULL_colClasses = list(NULL = c("C", "D"), NULL = 1:2, NULL = "E", NULL = 5)
           # Not sure which is best practice, by numbers (reversed) or by column name?
+          # I chose by name.
           null_cols <- c(unlist(NULL_colClasses[char_NULL_colClasses], use.names = FALSE),
                          names(ans)[unlist(NULL_colClasses[!char_NULL_colClasses], use.names = FALSE)])
-          ans[, (null_cols) := NULL]
+
         }
+        ans[, (null_cols) := NULL]
       }
     }
 
   }
   invisible(ans)
-}
-# Following try_* functions designed to try coercion to a particular class,
-# and aborting whenever it encounters any warning or error. Different to
-# read.csv -- won't attempt coercion if NAs introduced, but also less fussy
-# and won't error if a column won't work, instead reverting to previous class.
-try_with <- function(v, as.v, preamble) {
-  #' @param v vector of values for which class is intended to be changed
-  #' @param as.v A (promise of a) function applied to v (e.g. as.numeric(v))
-  #' @param preamble Length-one character, if \code{as.v} emits a warning, \code{preamble} is prepended to the warning message.
-  #' @return If as.v does not emit a warning, as.v; otherwise v.
-  #'
-
-  tryCatch(as.v,
-           warning = function(e) {
-             warn_msg <- paste(paste(preamble, "warning:"),
-                               e$message,
-                               sep = "\n\t")
-             warning(warn_msg,
-                     "\nso the column will be left as type ", typeof(v), ".",
-                     call. = FALSE)
-             return(v)
-           },
-           # Since errors themselves raise warnings,
-           # put after.
-           error = function(e) {
-             err_msg <- paste(paste(preamble, "error:"),
-                              e$message,
-                              sep = "\n\t")
-             warning(err_msg,
-                     "\nso the column will be left as type ", typeof(v), ".",
-                     call. = FALSE)
-             return(v)
-           })
-
-}
-
-try_preamble <- function(j, cls) {
-  if (is.character(j)) {
-    sprintf("Column %s was set by colClasses to be '%s', but fread encountered the following", j, cls)
-  } else {
-    sprintf("Column %d was set by colClasses to be '%s', but fread encountered the following", j, cls)
-  }
-}
-
-try_factor <- function(v, j) {
-  try_with(v,
-           as_factor(v),
-           try_preamble(j, "factor"))
-}
-
-try_complex <- function(v, j) {
-  try_with(v,
-           as.complex(v),
-           try_preamble(j, "complex"))
-}
-
-try_raw <- function(v, j, ...) {
-  # No performance improvement with using nmax = nr
-  try_with(v,
-           # As in read.csv, which ultimately uses src/main/scan.c Line 193 (or thereabouts)
-           # static Rbyte
-           # strtoraw (const char *nptr, char **endptr)
-           # {
-           #   const char *p = nptr;
-           #   int i, val = 0;
-           #
-           #   /* should have whitespace plus exactly 2 hex digits */
-           #     while(Rspace(*p)) p++;
-           #   for(i = 1; i <= 2; i++, p++) {
-           #     val *= 16;
-           #     if(*p >= '0' && *p <= '9') val += *p - '0';
-           #     else if (*p >= 'A' && *p <= 'F') val += *p - 'A' + 10;
-           #     else if (*p >= 'a' && *p <= 'f') val += *p - 'a' + 10;
-           #     else {val = 0; break;}
-           #   }
-           #   *endptr = (char *) p;
-           #   return (Rbyte) val;
-           # }
-           scan(text = v, what = raw(), ..., quiet = TRUE),
-           try_preamble(j, "raw"))
-}
-
-try_Date <- function(v, j) {
-  try_with(v,
-           as.Date(v),
-           try_preamble(j, "Date"))
-}
-
-try_POSIXct <- function(v, j) {
-  try_with(v,
-           as.POSIXct(v),
-           try_preamble(j, "POSIXct"))
 }
 
 # simplified but faster version of `factor()` for internal use.
@@ -496,6 +418,29 @@ as_factor <- function(x) {
   ans = chmatch(x, lev)
   setattr(ans, 'levels', lev)
   setattr(ans, 'class', 'factor')
+}
+
+# As in read.csv, which ultimately uses src/main/scan.c Line 193 (or thereabouts)
+# static Rbyte
+# strtoraw (const char *nptr, char **endptr)
+# {
+#   const char *p = nptr;
+#   int i, val = 0;
+#
+#   /* should have whitespace plus exactly 2 hex digits */
+#     while(Rspace(*p)) p++;
+#   for(i = 1; i <= 2; i++, p++) {
+#     val *= 16;
+#     if(*p >= '0' && *p <= '9') val += *p - '0';
+#     else if (*p >= 'A' && *p <= 'F') val += *p - 'A' + 10;
+#     else if (*p >= 'a' && *p <= 'f') val += *p - 'a' + 10;
+#     else {val = 0; break;}
+#   }
+#   *endptr = (char *) p;
+#   return (Rbyte) val;
+# }
+as_raw <- function(x) {
+  scan(text = x, what = raw(), quiet = TRUE)
 }
 
 
