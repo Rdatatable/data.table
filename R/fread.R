@@ -16,7 +16,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   isTrueFalse = function(x) isTRUE(x) || identical(FALSE, x)
   isTrueFalseNA = function(x) isTRUE(x) || identical(FALSE, x) || identical(NA, x)
   stopifnot( isTrueFalse(strip.white), isTrueFalse(blank.lines.skip), isTrueFalse(fill), isTrueFalse(showProgress),
-             isTrueFalse(stringsAsFactors), isTrueFalse(verbose), isTrueFalse(check.names), isTrueFalse(logical01) )
+             isTrueFalse(stringsAsFactors) || is.double(stringsAsFactors), isTrueFalse(verbose), isTrueFalse(check.names), isTrueFalse(logical01) )
   stopifnot( is.numeric(nrows), length(nrows)==1L )
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
@@ -127,7 +127,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   if (stringsAsFactors) {
     # Re Issue 2025
     if (is.double(stringsAsFactors)) {
-      should_be_factor <- function(v) is.character(v) && uniqueN(v) < nr / stringsAsFactors
+      should_be_factor <- function(v) is.character(v) && uniqueN(v) < nr * stringsAsFactors
       cols_to_factor <- which(vapply(ans, should_be_factor, logical(1L)))
       if (verbose) {
         cat("stringsAsFactors=", stringsAsFactors, ", interpreting as the minimum number",
