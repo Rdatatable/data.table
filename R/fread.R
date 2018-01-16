@@ -203,264 +203,194 @@ set_colClasses_ante <- function(ans,
 
   if (length(colClasses) && any(!is.na(colClasses))) {
     if (verbose) cat("Applying colClasses:\n")
-    switch(typeof(colClasses),
-           "list" = {
-             if (!all(names(colClasses) %chin% already_set_classes)) {
-               # for e.g. colClasses = list(character = 1, Date = 2)
-               #       to avoid arcane warnings when set is used recommending to use integers for j =.
-               colClasses <- lapply(colClasses, function(x) if (is.double(x)) as.integer(x) else x)
-               if (!is.null(unsupported_classes) && any(unsupported_classes %chin% names(colClasses))) {
-                 names(colClasses)[which(unsupported_classes %chin% names(colClasses))] <- "character"
-               }
+    if (typeof(colClasses) == "character") {
 
-               # If select or drop were used, colClasses is either unuseable
-               # or will need modification before it can be applied safely.
-               if (!is.null(select) || !is.null(drop)) {
-                 if (is.character(select) || is.character(drop)) {
+      colClasses <-
+        if (length(colClasses) == 1L) {
+          if (is.na(colClasses)) {
+            NA_character_
+          } else {
+            setNames(list(seq_along(ans)), colClasses[1])
+          }
+        } else {
+          # c("integer", "character", "character", "character") ==> list(character = 2:4, integer = 1)
+          unique_colClasses <- unique(colClasses)
+          unique_colClasses <- unique_colClasses[!is.na(unique_colClasses)]
+          setNames(lapply(unique_colClasses, function(x) which(colClasses == x)),
+                   unique_colClasses)
+        }
+    }
 
-                   if (any(vapply(colClasses, is.integer, logical(1L)))) {
-                     sel_dro <- if (is.character(select)) "select" else "drop"
-                     # Difficult unless select in Cfread records the original positions in the file.
-                     #
-                     warning(sel_dro, " specifies columns by name, but some elements of colClasses refer to position. ",
-                             "This combination is not supported. Some colClasses may not have been set.")
-                     return(ans)
-                   } else {
-                     # both select/drop and all colClasses are character
-                     if (is.null(select)) {
-                       colClasses <-
-                         lapply(colClasses, function(el) {
-                           el[!el %chin% drop]
-                         })
-                     } else {
-                       colClasses <-
-                         lapply(colClasses, function(el) {
-                           el[el %chin% select]
-                         })
-                     }
+
+    if (!all(names(colClasses) %chin% already_set_classes)) {
+      # for e.g. colClasses = list(character = 1, Date = 2)
+      #       to avoid arcane warnings when set is used recommending to use integers for j =.
+      colClasses <- lapply(colClasses, function(x) if (is.double(x)) as.integer(x) else x)
+      if (!is.null(unsupported_classes) && any(unsupported_classes %chin% names(colClasses))) {
+        names(colClasses)[which(unsupported_classes %chin% names(colClasses))] <- "character"
+      }
+
+      # If select or drop were used, colClasses is either unuseable
+      # or will need modification before it can be applied safely.
+      if (!is.null(select) || !is.null(drop)) {
+        if (is.character(select) || is.character(drop)) {
+
+          if (any(vapply(colClasses, is.integer, logical(1L)))) {
+            sel_dro <- if (is.character(select)) "select" else "drop"
+            # Difficult unless select in Cfread records the original positions in the file.
+            #
+            warning(sel_dro, " specifies columns by name, but some elements of colClasses refer to position. ",
+                    "This combination is not supported. Some colClasses may not have been set.")
+            return(ans)
+          } else {
+            # both select/drop and all colClasses are character
+            if (is.null(select)) {
+              colClasses <-
+                lapply(colClasses, function(el) {
+                  el[!el %chin% drop]
+                })
+            } else {
+              colClasses <-
+                lapply(colClasses, function(el) {
+                  el[el %chin% select]
+                })
+            }
+          }
+        } else {
+          # select/drop is integer
+          if (is.null(select)) {
+            # If colClasses contains a character list item here,
+            # no problem with ordering, because set() will use
+            # column names. Only need to make sure that set isn't
+            # provided with a column that doesn't exist.
+            #
+            # For integers, we need to decrement those above a dropped column
+            # by the number of dropped columns < column specified
+            colClasses <-
+              lapply(colClasses, function(el) {
+                if (is.integer(el)) {
+                  # drop <- c(2, 5, 7, 10)
+                  # x <- c(1, 3, 5, 9, 10, 11)
+                  # expect:
+                  # 1 => 1 - stays (below minimum drop)
+                  # 3 => 2 - reduced by 1 = number of dropped columns below 3
+                  # 5 => NULL is dropped
+                  # 9 => 6 = 9 - 3 dropped columns below
+                  # etc
+                  out <- el[!el %in% drop]
+                  if (length(out)) {
+                    out - cumsum(seq_len(max(out)) %in% drop)[out]
+                  } else {
+                    integer(0)
+                  }
+                } else {
+                  # character, nothing to do
+                  # except make sure we don't provide
+                  # set with any alien columns
+                  el[el %chin% names(ans)]
+                }
+              })
+          } else {
+            # Is this known already?
+            select <- as.integer(select)
+            # This does not conflict with #1445
+            # as this is within a function.
+            if (!is.sorted(select)) {
+              select <- select[forderv(select, by = NULL)]
+            }
+            colClasses <-
+              lapply(colClasses, function(el) {
+                if (is.integer(el)) {
+                  out <- match(el, select, nomatch = 0L)
+                  out[out > 0L]
+                } else {
+                  el[el %chin% names(ans)]
+                }
+              })
+          }
+        }
+      }
+
+      # NULL columns should be treated differently, because
+      # positions will affect columns to the right
+      NULL_colClasses <- colClasses[names(colClasses) == "NULL"]
+
+      #
+      # When colClasses is a list, it looks like
+      #  list(<new_class1> = <new_class1_cols>, <new_class2> = <new_class2_cols>)
+      #             cCi ^
+      for (cCi in seq_along(colClasses)) {
+        new_class <- names(colClasses)[cCi]
+        # Already done.
+        if (!new_class %chin% already_set_classes && length(colClasses[[cCi]])) {
+          if (verbose && new_class != "NULL") cat("\tSetting column(s) ", colClasses[[cCi]], " to ", new_class, "\n")
+          switch(new_class,
+                 "factor" = {
+                   factor_cols <- colClasses[[cCi]]
+                   for (factor_col in factor_cols) {
+                     set(ans, j = factor_col, value = try_factor(ans[[factor_col]], factor_col))
                    }
-                 } else {
-                   # select/drop is integer
-                   if (is.null(select)) {
-                     # If colClasses contains a character list item here,
-                     # no problem with ordering, because set() will use
-                     # column names. Only need to make sure that set isn't
-                     # provided with a column that doesn't exist.
-                     #
-                     # For integers, we need to decrement those above a dropped column
-                     # by the number of dropped columns < column specified
-                     colClasses <-
-                       lapply(colClasses, function(el) {
-                         if (is.integer(el)) {
-                           # drop <- c(2, 5, 7, 10)
-                           # x <- c(1, 3, 5, 9, 10, 11)
-                           # expect:
-                           # 1 => 1 - stays (below minimum drop)
-                           # 3 => 2 - reduced by 1 = number of dropped columns below 3
-                           # 5 => NULL is dropped
-                           # 9 => 6 = 9 - 3 dropped columns below
-                           # etc
-                           out <- el[!el %in% drop]
-                           if (length(out)) {
-                             out - cumsum(seq_len(max(out)) %in% drop)[out]
-                           } else {
-                             integer(0)
-                           }
-                         } else {
-                           # character, nothing to do
-                           # except make sure we don't provide
-                           # set with any alien columns
-                           el[el %chin% names(ans)]
-                         }
-                       })
-                   } else {
-                     # Is this known already?
-                     select <- as.integer(select)
-                     # This does not conflict with #1445
-                     # as this is within a function.
-                     if (!is.sorted(select)) {
-                       select <- select[forderv(select, by = NULL)]
-                     }
-                     colClasses <-
-                       lapply(colClasses, function(el) {
-                         if (is.integer(el)) {
-                           out <- match(el, select, nomatch = 0L)
-                           out[out > 0L]
-                         } else {
-                           el[el %chin% names(ans)]
-                         }
-                       })
+                 },
+                 "complex" = {
+                   complex_cols <- colClasses[[cCi]]
+                   for (complex_col in complex_cols) {
+                     set(ans, j = complex_col, value = try_complex(ans[[complex_col]], complex_col))
                    }
-                 }
-               }
+                 },
+                 "raw" = {
+                   raw_cols <- colClasses[[cCi]]
+                   for (raw_col in raw_cols) {
+                     set(ans, j = raw_col, value = try_raw(ans[[raw_col]], raw_col))
+                   }
+                 },
+                 "Date" = {
+                   date_cols <- colClasses[[cCi]]
+                   for (date_col in date_cols) {
+                     set(ans, j = date_col, value = try_Date(ans[[date_col]], date_col))
+                   }
+                 },
+                 "POSIXct" = {
+                   POSIXct_cols <- colClasses[[cCi]]
+                   for (POSIXct_col in POSIXct_cols) {
+                     set(ans, j = POSIXct_col, value = try_POSIXct(ans[[POSIXct_col]], POSIXct_col))
+                   }
+                 },
+                 "NULL" = {
+                   # do nothing for the time being.
+                 },
 
-               # NULL columns should be treated differently, because
-               # positions will affect columns to the right
-               NULL_colClasses <- colClasses[names(colClasses) == "NULL"]
+                 # Finally, try foreign methods
+                 {
+                   other_cols <- colClasses[[cCi]]
+                   for (other_col in other_cols) {
+                     set(ans,
+                         j = other_col,
+                         value = try_with(ans[[other_col]],
+                                          methods::as(ans[[other_col]], new_class),
+                                          paste0("Column ", other_col,
+                                                 " was set by colClasses to be '", new_class,
+                                                 "', but fread encountered the following")))
+                   }
+                 })
+        }
+      }
+      # Safe to use NULL_colClasses now
+      if (length(NULL_colClasses)) {
+        char_NULL_colClasses <- vapply(NULL_colClasses, is.character, logical(1L))
+        if (all(char_NULL_colClasses)) {
+          null_cols <- unlist(NULL_colClasses, use.names = FALSE)
+          ans[, (null_cols) := NULL]
+        } else {
 
-               #
-               # When colClasses is a list, it looks like
-               #  list(<new_class1> = <new_class1_cols>, <new_class2> = <new_class2_cols>)
-               #             cCi ^
-               for (cCi in seq_along(colClasses)) {
-                 new_class <- names(colClasses)[cCi]
-                 # Already done.
-                 if (!new_class %chin% already_set_classes && length(colClasses[[cCi]])) {
-                   if (verbose && new_class != "NULL") cat("\tSetting column(s) ", colClasses[[cCi]], " to ", new_class, "\n")
-                   switch(new_class,
-                          "factor" = {
-                            factor_cols <- colClasses[[cCi]]
-                            for (factor_col in factor_cols) {
-                              set(ans, j = factor_col, value = try_factor(ans[[factor_col]], factor_col))
-                            }
-                          },
-                          "complex" = {
-                            complex_cols <- colClasses[[cCi]]
-                            for (complex_col in complex_cols) {
-                              set(ans, j = complex_col, value = try_complex(ans[[complex_col]], complex_col))
-                            }
-                          },
-                          "raw" = {
-                            raw_cols <- colClasses[[cCi]]
-                            for (raw_col in raw_cols) {
-                              set(ans, j = raw_col, value = try_raw(ans[[raw_col]], raw_col))
-                            }
-                          },
-                          "Date" = {
-                            date_cols <- colClasses[[cCi]]
-                            for (date_col in date_cols) {
-                              set(ans, j = date_col, value = try_Date(ans[[date_col]], date_col))
-                            }
-                          },
-                          "POSIXct" = {
-                            POSIXct_cols <- colClasses[[cCi]]
-                            for (POSIXct_col in POSIXct_cols) {
-                              set(ans, j = POSIXct_col, value = try_POSIXct(ans[[POSIXct_col]], POSIXct_col))
-                            }
-                          },
-                          "NULL" = {
-                            # do nothing for the time being.
-                          },
-
-                          # Finally, try foreign methods
-                          {
-                            other_cols <- colClasses[[cCi]]
-                            for (other_col in other_cols) {
-                              set(ans,
-                                  j = other_col,
-                                  value = try_with(ans[[other_col]],
-                                                   methods::as(ans[[other_col]], new_class),
-                                                   paste0("Column ", other_col,
-                                                          " was set by colClasses to be '", new_class,
-                                                          "', but fread encountered the following")))
-                            }
-                          })
-                 }
-               }
-               # Safe to use NULL_colClasses now
-               if (length(NULL_colClasses)) {
-                 char_NULL_colClasses <- vapply(NULL_colClasses, is.character, logical(1L))
-                 if (all(char_NULL_colClasses)) {
-                   null_cols <- unlist(NULL_colClasses, use.names = FALSE)
-                   ans[, (null_cols) := NULL]
-                 } else {
-
-                   # consider
-                   # NULL_colClasses = list(NULL = c("C", "D"), NULL = 1:2, NULL = "E", NULL = 5)
-                   # Not sure which is best practice, by numbers (reversed) or by column name?
-                   null_cols <- c(unlist(NULL_colClasses[char_NULL_colClasses], use.names = FALSE),
-                                  names(ans)[unlist(NULL_colClasses[!char_NULL_colClasses], use.names = FALSE)])
-                   ans[, (null_cols) := NULL]
-                 }
-               }
-             }
-           },
-
-           "character" = {
-             # If character, guaranteed to not have names
-             # (due to tapply(names(colClasses), colClasses, c, simplify=FALSE) above)
-             if (!is.null(unsupported_classes) && any(colClasses %chin% unsupported_classes)) {
-               warning("colClasses contains '",
-                       paste(unique(colClasses[colClasses %chin% unsupported_classes]),
-                             collapse = "', '"), "', which will be ignored.")
-               colClasses[colClasses %chin% unsupported_classes] <- NA_character_
-             }
-
-             if (!all(colClasses %chin% already_set_classes)) {
-               which_new <- which(!colClasses %chin% already_set_classes)
-               if (length(colClasses) == 1L) {
-                 which_new <- seq_along(ans)
-                 colClasses <- rep_len(colClasses, ncol(ans))
-               }
-
-
-               if (is.character(select) || is.character(drop)) {
-                 sel_dro <- if (is.character(select)) "select" else "drop"
-                 # Difficult unless select in Cfread records the original positions in the file.
-                 #
-                 warning(sel_dro, " specifies columns by name, but some elements of colClasses refer to position. ",
-                         "This combination is not supported. Some colClasses may not have been set.")
-                 return(ans)
-               }
-
-               if (is.numeric(select)) {
-                 # Failure to include this line will result in a crash
-                 select <- as.integer(select)
-
-                 if (!is.sorted(select)) {
-                   select <- select[forderv(select, by = NULL)]
-                 }
-                 colClasses <- colClasses[select]
-                 which_new <- which(!colClasses %chin% already_set_classes)
-               }
-               if (is.numeric(drop)) {
-                 colClasses <- colClasses[-drop]
-                 which_new <- which(!colClasses %chin% already_set_classes)
-               }
-
-               for (j in which_new) {
-                 v <- ans[[j]]
-                 new_class <- colClasses[[j]]
-                 if (verbose && new_class != "NULL") cat("\tChanging column ", j, " to ", new_class, "\n")
-
-                 switch(new_class,
-                        "factor" = {
-                          set(ans, j = j, value = try_factor(v, j))
-                        },
-                        "complex" = {
-                          set(ans, j = j, value = try_complex(v, j))
-                        },
-                        "raw" = {
-                          set(ans, j = j, value = try_raw(v, j))
-                        },
-                        "Date" = {
-                          set(ans, j = j, value = try_Date(v, j))
-                        },
-                        "POSIXct" = {
-                          set(ans, j = j, value = try_POSIXct(v, j))
-                        },
-                        "NULL" = {
-                          # Do nothing
-                        },
-
-                        # Finally,
-                        {
-                          set(ans,
-                              j = j,
-                              value = try_with(v,
-                                               methods::as(v, new_class),
-                                               paste0("Column ", j,
-                                                      " was set by colClasses to be '", new_class,
-                                                      "', but fread encountered the following")))
-                        })
-               }
-
-               if ("NULL" %chin% colClasses) {
-                 null_cols <- which(colClasses == "NULL")
-                 ans[, (null_cols) := NULL]
-               }
-             }
-           })
+          # consider
+          # NULL_colClasses = list(NULL = c("C", "D"), NULL = 1:2, NULL = "E", NULL = 5)
+          # Not sure which is best practice, by numbers (reversed) or by column name?
+          null_cols <- c(unlist(NULL_colClasses[char_NULL_colClasses], use.names = FALSE),
+                         names(ans)[unlist(NULL_colClasses[!char_NULL_colClasses], use.names = FALSE)])
+          ans[, (null_cols) := NULL]
+        }
+      }
+    }
 
   }
   invisible(ans)
