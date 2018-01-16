@@ -113,9 +113,13 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
     setattr(ans, 'names', make.names(names(ans), unique=TRUE))
   }
 
+  if (is.numeric(select)) {
+    select <- as.integer(select)
+  }
   # Fix Issue 1634
   set_colClasses(ans,
-                 select = select, drop = drop,
+                 select = select,
+                 drop = drop,
                  colClasses = colClasses,
                  verbose = verbose)
 
@@ -174,8 +178,13 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   # 2007: is.missing is not correct since default value of select is NULL
   if (!is.null(select)) {
     # fix for #1445
-    if (is.numeric(select)) {
-      reorder = if (length(o <- forderv(select))) o else seq_along(select)
+    if (is.integer(select)) {
+      reorder <-
+        if (length(o <- forderv(select))) {
+          match(select, select[o], nomatch = 0L)
+        } else {
+          seq_along(select)
+        }
     } else {
       reorder = select[select %chin% names(ans)]
       # any missing columns are warning about in fread.c and skipped
@@ -309,8 +318,6 @@ set_colClasses <- function(ans,
                 }
               })
           } else {
-            # Is this known already?
-            select <- as.integer(select)
             # This does not conflict with #1445
             # as this is within a function.
             if (!is.sorted(select)) {

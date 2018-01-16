@@ -8048,6 +8048,8 @@ test(1618.3, fread("a,c,b\n1,2,3", select=c(3,2)), data.table(b=3L, c=2L))
 test(1618.4, fread("a,c,b\n1,2,3", select=c(2:3)), data.table(c=2L, b=3L))
 test(1618.5, fread("a,c,b\n1,2,3", select=c("b", "c"), col.names=c("q", "r")), data.table(q=3L, r=2L))
 test(1618.6, fread("a,c,b\n1,2,3", select=c("b", "z")), data.table(b=3L), warning="Column name 'z' not found.*skipping")
+select1618.8 <- c(4, 9, 8, 23, 1, 21, 5, 18, 11, 13)
+test(1618.8, names(fread("a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z\na,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z", select = select1618.8)), letters[select1618.8])
 
 # fix for #1270. Have been problems with R before vs after 3.1.0 here. But now ok in all R versions.
 DT = data.table(x=1:2, y=5:6)
@@ -10138,6 +10140,9 @@ test(1743.213, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = c(1L, 3L)
 test(1743.214, sapply(fread("a,b,c,d\n2,2,f,x", colClasses = list(factor = c(1L, 3L), Date = 4), select = 3:2), class), y = c(c="factor", b="integer"))
 test(1743.215, sapply(fread("a,b,c\n2,2,f", colClasses = c("integer", "integer", "factor"), select=2:3), class), y = c(b="integer", c="factor"))
 test(1743.216, sapply(fread("a,b\n1,x", colClasses = list(factor = "b"), select = "b"), class), c(b = "factor"))
+test(1743.217, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor = c(1, 2, 4), factor = 3), select = c(5, 6, 2, 4)), class), y = c(e = "character", f = "character", b = "factor", d = "factor"))
+test(1743.218, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor = c(1, 2, 4), factor = 3), select = c(5, 4, 2, 3)), class), y = c(e = "character", d = "factor", b = "factor", c = "factor"))
+
 
 ## We are unable to work out colClasses when it contains integers with select/drop character
 test(1743.22, sapply(fread("a,b,c\n1999/01/01,2,f", colClasses = list(Date = 1L), drop = "a"), class), y = c(b="integer", c="character"), warning = "drop.* specifies columns by name, but some elements of colClasses refer to position. This combination is not supported. Some colClasses may not have been set")
