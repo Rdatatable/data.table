@@ -153,20 +153,20 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
       set(ans,
           j = j,
           value = tryCatch(as_factor(.subset2(ans, j)),
-                           error = function(e) {
-                             warning("Column ", j, " was type 'character', ",
-                                     "but when trying to honour ",
-                                     "`stringsAsFactors = ", deparse(substitute(stringsAsFactors)), "` ",
-                                     "fread encountered the following error:\n\t",
-                                     e$message, "\n",
-                                     " so the column will be left as 'character'.")
-                             return(.subset2(ans, j))
-                           },
                            warning = function(e) {
                              warning("Column ", j, " was type 'character', ",
                                      "but when trying to honour ",
                                      "`stringsAsFactors = ", deparse(substitute(stringsAsFactors)), "` ",
                                      "fread encountered the following warning:\n\t",
+                                     e$message, "\n",
+                                     " so the column will be left as 'character'.")
+                             return(.subset2(ans, j))
+                           },
+                           error = function(e) {
+                             warning("Column ", j, " was type 'character', ",
+                                     "but when trying to honour ",
+                                     "`stringsAsFactors = ", deparse(substitute(stringsAsFactors)), "` ",
+                                     "fread encountered the following error:\n\t",
                                      e$message, "\n",
                                      " so the column will be left as 'character'.")
                              return(.subset2(ans, j))
