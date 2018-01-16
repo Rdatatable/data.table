@@ -61,6 +61,8 @@
 
 13. `unique(DT)` now returns `DT` early when there are no duplicates to save RAM, [#2013](https://github.com/Rdatatable/data.table/issues/2013). Thanks to Michael Chirico for the PR. 
 
+14. `melt.data.table` now offers friendlier functionality for providing `value.name` for `list` input to `measure.vars`, [#1547](https://github.com/Rdatatable/data.table/issues/1547). Thanks @MichaelChirico and @franknarf1 for the suggestion and use cases, @jangorecki and @mrdwab for implementation feedback, and @MichaelChirico for ultimate implementation.
+
 #### BUG FIXES
 
 1. The new quote rules handles this single field `"Our Stock Screen Delivers an Israeli Software Company (MNDO, CTCH)<\/a> SmallCapInvestor.com - Thu, May 19, 2011 10:02 AM EDT<\/cite><\/div>Yesterday in \""Google, But for Finding

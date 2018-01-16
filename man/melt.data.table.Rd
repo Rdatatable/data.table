@@ -30,11 +30,9 @@ all non-id columns will be assigned to it.
 \code{measure.vars} also now accepts a list of character/integer vectors to
 melt into multiple columns - i.e., melt into more than one \code{value} columns
 simultaneously. Use \code{\link{patterns}} to provide multiple patterns
-conveniently. See also \code{Examples}.}
-\item{variable.name}{name for the measured variable names column. The default
-name is 'variable'.}
-\item{value.name}{name for the molten data values column. The default name is
-'value'.}
+conveniently, and provide names to \code{measure.vars} to name these columns in the output. See also \code{Examples}.}
+\item{variable.name}{name for the measured variable names column. The default name is \code{'variable'}.}
+\item{value.name}{name for the molten data values column(s). The default name is \code{'value'}. Multiple names can be provided here for the case when \code{measure.vars} is a \code{list}, though note well that the names provided in \code{measure.vars} take precedence. }
 \item{na.rm}{If \code{TRUE}, \code{NA} values will be removed from the molten
 data.}
 \item{variable.factor}{If \code{TRUE}, the \code{variable} column will be
@@ -127,6 +125,8 @@ melt(DT, id=1, measure=c("c_1", "i_2"), na.rm=TRUE) # remove NA
 melt(DT, id=1:2, measure=patterns("^f_", "^d_"), value.factor=TRUE)
 # same as above, but provide list of columns directly by column names or indices
 melt(DT, id=1:2, measure=list(3:4, c("d_1", "d_2")), value.factor=TRUE)
+# same as above, but provide names directly:
+melt(DT, id=1:2, measure=patterns(f="^f_", d="^d_"), value.factor=TRUE)
 
 # na.rm=TRUE removes rows with NAs in any 'value' columns
 melt(DT, id=1:2, measure=patterns("f_", "d_"), value.factor=TRUE, na.rm=TRUE)

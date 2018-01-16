@@ -7,7 +7,7 @@ melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
 }
 
 patterns <- function(..., cols=character(0)) {
-  p = unlist(list(...), use.names=FALSE)
+  p = unlist(list(...))
   if (!is.character(p))
     stop("Input patterns must be of type character.")
   lapply(p, grep, cols)
@@ -31,8 +31,19 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
     measure.vars = patterns(pats, cols=cols)
   }
   if (is.list(measure.vars) && length(measure.vars) > 1L) {
-    if (length(value.name) == 1L)
-      value.name = paste(value.name, seq_along(measure.vars), sep="")
+    if (is.null(names(measure.vars))) {
+      # user-provided or default stub
+      if (length(value.name) == 1L) {
+        value.name = paste0(value.name, seq_along(measure.vars))
+      }
+    } else {
+      if (length(value.name) > 1L) {
+        warning("'value.name' provided in both 'measure.vars'",
+                "and 'value.name argument'; value provided in",
+                "'measure.vars' is given precedence.")
+      }
+      value.name = names(measure.vars)
+    }
   }
   ans <- .Call(Cfmelt, data, id.vars, measure.vars,
       as.logical(variable.factor), as.logical(value.factor),
