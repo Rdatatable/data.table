@@ -30,7 +30,10 @@ nThread=getDTthreads(), logical01=TRUE
   \item{header}{ Does the first data line contain column names? Defaults according to whether every non-empty field on the first data line is type character. If so, or TRUE is supplied, any empty column names are given a default name. }
   \item{na.strings}{ A character vector of strings which are to be interpreted as \code{NA} values. By default \code{",,"} for columns read as type character is read as a blank string (\code{""}) and \code{",NA,"} is read as \code{NA}. Typical alternatives might be \code{na.strings=NULL} (no coercion to NA at all!) or perhaps \code{na.strings=c("NA","N/A","null")}. }
   \item{file}{ File path, useful when we want to ensure that no shell commands will be executed. File path can also be provided to \code{input} argument. }
-  \item{stringsAsFactors}{ Convert all character columns to factors? }
+  \item{stringsAsFactors}{Convert all character columns to factors?
+  Also accepts numeric input \eqn{[0, 1]}: a value of \eqn{1/r} coerces to factor any character column where there are fewer unique values than \code{nrow(.) / r}. For example, if the \code{data.table} to be read has
+  100 rows and \code{stringsAsFactors=0.2} then any character column with fewer than 20 unique values
+  will be coerced to \code{factor}.}
   \item{verbose}{ Be chatty and report timings? }
   \item{autostart}{ Deprecated and ignored with warning. Please use \code{skip} instead. }
   \item{skip}{ If 0 (default) start on the first line and from there finds the first row with a consistent number of columns. This automatically avoids irregular header information before the column names row. \code{skip>0} means ignore the first \code{skip} rows manually. \code{skip="string"} searches for \code{"string"} in the file (e.g. a substring of the column names row) and starts on that line (inspired by read.xls in package gdata). }
