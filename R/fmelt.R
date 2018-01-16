@@ -31,7 +31,8 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
     measure.vars = patterns(pats, cols=cols)
   }
   if (is.list(measure.vars) && length(measure.vars) > 1L) {
-    if (is.null(names(measure.vars))) {
+    meas.nm = names(measure.vars)
+    if (is.null(meas.nm)) {
       # user-provided or default stub
       if (length(value.name) == 1L) {
         value.name = paste0(value.name, seq_along(measure.vars))
@@ -42,7 +43,10 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
                 "and 'value.name argument'; value provided in",
                 "'measure.vars' is given precedence.")
       }
-      value.name = names(measure.vars)
+      if (any(is.na(meas.nm)) || !all(nzchar(meas.nm))) {
+        stop("Please provide a name to each element of 'measure.vars'.")
+      }
+      value.name = meas.nm
     }
   }
   ans <- .Call(Cfmelt, data, id.vars, measure.vars,

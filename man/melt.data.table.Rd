@@ -30,6 +30,7 @@ non-measure columns will be assigned to it. If integer, must be positive; see De
     \item{ Vector can be \code{integer} (implying column numbers) or \code{character} (column names). }
     \item{ \code{list} is a generalization of the vector version -- each element of the list (which should be \code{integer} or \code{character} as above) will become a \code{melt}ed column. }
     \item{ Pattern-based column matching can be achieved with the regular expression-based \code{\link{patterns}} syntax; multiple patterns will produce multiple columns. }
+  }
 
     For convenience/clarity in the case of multiple \code{melt}ed columns, resulting column names can be supplied as names to the elements \code{measure.vars} (in the \code{list} and \code{patterns} usages). See also \code{Examples}. }
 \item{variable.name}{name for the measured variable names column. The default name is \code{'variable'}.}
