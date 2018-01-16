@@ -114,10 +114,10 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   }
 
   # Fix Issue 1634
-  set_colClasses_ante(ans,
-                      select = select, drop = drop,
-                      colClasses = colClasses,
-                      verbose = verbose)
+  set_colClasses(ans,
+                 select = select, drop = drop,
+                 colClasses = colClasses,
+                 verbose = verbose)
 
   # Should be after set_colClasses_ante
   if (stringsAsFactors) {
@@ -207,17 +207,17 @@ setfactor <- function(x, cols, verbose) {
 }
 
 
-set_colClasses_ante <- function(ans,
-                                select,
-                                drop,
-                                colClasses,
-                                unsupported_classes = NULL, # != "NULL"
-                                already_set_classes = c("logical",
-                                                        "integer", "integer64",
-                                                        "numeric", "double",
-                                                        "character",
-                                                        NA_character_),
-                                verbose = FALSE) {
+set_colClasses <- function(ans,
+                           select,
+                           drop,
+                           colClasses,
+                           unsupported_classes = NULL, # != "NULL"
+                           already_set_classes = c("logical",
+                                                   "integer", "integer64",
+                                                   "numeric", "double",
+                                                   "character",
+                                                   NA_character_),
+                           verbose = FALSE) {
 
   if (length(colClasses) && any(!is.na(colClasses))) {
     if (verbose) cat("Applying colClasses:\n")
