@@ -10181,6 +10181,15 @@ test(1743.307, names(fread(data1743.307, colClasses=list(NULL = c("C", "D"), NUL
 test(1743.31, names(fread(data1743, colClasses="NULL")), LETTERS[1:4], warning="colClasses.*quoted.*interpreted as colClasses.*NULL")
 test(1743.32, sapply(fread("A,B\na,0+1i", colClasses="complex"), class), c(A="character", B="complex"), warning="Column 1 was set by colClasses to be .complex")
 
+## stringsAsFactors = double Issue #2025
+fwrite(data.table(v1 = sample(letters, size = 26 * 10, replace = TRUE), V2 = paste0("A", c(1:259, 1)), V3 = sample.int(26, n = 260, replace = TRUE)), temp1743_41.csv <- tempfile(fileext = ".csv"))
+test(1743.411, sapply(fread(temp1743_41.csv), class)[[1]], "character")
+test(1743.412, sapply(fread(temp1743_41.csv, stringsAsFactors = 0), class)[[1]], "character")
+test(1743.413, sapply(fread(temp1743_41.csv, stringsAsFactors = 0.10), class)[[1]], "character")
+test(1743.414, sapply(fread(temp1743_41.csv, stringsAsFactors = 0.11), class)[[1]], "factor")
+test(1743.415, sapply(fread(temp1743_41.csv, stringsAsFactors = 0.12), class)[[1]], "factor")
+test(1743.416, sapply(fread(temp1743_41.csv, stringsAsFactors = 1.00), class)[[2]], "factor")
+invisible(file.remove(temp1743_41.csv))
 
 # rolling join stopped working for double with fractions, #1904
 DT = data.table(A=c(1999.917,2000.417,2000.917,2001.417,2001.917))
