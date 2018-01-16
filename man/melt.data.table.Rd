@@ -23,14 +23,15 @@ load \code{reshape2} package \emph{before} loading \code{data.table}.
 \item{id.vars}{vector of id variables. Can be integer (corresponding id
 column numbers) or character (id column names) vector. If missing, all
 non-measure columns will be assigned to it. If integer, must be positive; see Details. }
-\item{measure.vars}{vector of measure variables. Can be integer (corresponding
-measure column numbers) or character (measure column names) vector. If missing,
-all non-id columns will be assigned to it.
+\item{measure.vars}{Measure variables for \code{melt}ing. Can be missing, vector, list, or pattern-based.
 
-\code{measure.vars} also now accepts a list of character/integer vectors to
-melt into multiple columns - i.e., melt into more than one \code{value} columns
-simultaneously. Use \code{\link{patterns}} to provide multiple patterns
-conveniently, and provide names to \code{measure.vars} to name these columns in the output. See also \code{Examples}.}
+  \itemize{
+    \item{ When missing, \code{measure.vars} will become all columns outside \code{id.vars}. }
+    \item{ Vector can be \code{integer} (implying column numbers) or \code{character} (column names). }
+    \item{ \code{list} is a generalization of the vector version -- each element of the list (which should be \code{integer} or \code{character} as above) will become a \code{melt}ed column. }
+    \item{ Pattern-based column matching can be achieved with the regular expression-based \code{\link{patterns}} syntax; multiple patterns will produce multiple columns. }
+
+    For convenience/clarity in the case of multiple \code{melt}ed columns, resulting column names can be supplied as names to the elements \code{measure.vars} (in the \code{list} and \code{patterns} usages). See also \code{Examples}. }
 \item{variable.name}{name for the measured variable names column. The default name is \code{'variable'}.}
 \item{value.name}{name for the molten data values column(s). The default name is \code{'value'}. Multiple names can be provided here for the case when \code{measure.vars} is a \code{list}, though note well that the names provided in \code{measure.vars} take precedence. }
 \item{na.rm}{If \code{TRUE}, \code{NA} values will be removed from the molten
