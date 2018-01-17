@@ -11270,6 +11270,13 @@ test(1864.1, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
 setkey(DT, y)
 test(1864.2, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
 
+# memory exception under asan if there's an extra comma out-of-sample, #2523
+data = rep("a,b,c,d,e,f,g", 2100)
+data[111] = "a,b,c,d,e,f,g,"
+cat(data, file=(f<-tempfile()), sep="\n")
+test(1865, fread(f, header=FALSE), error="Too many fields.*Read all 7 expected.*but more are present.*a,b,c,d,e,f,g,")
+unlink(f)
+
 
 ##########################
 
