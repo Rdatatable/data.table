@@ -1,0 +1,3 @@
+Package: testDTimport
+Version: 0.1
+Imports: data.table
