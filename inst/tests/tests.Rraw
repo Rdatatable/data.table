@@ -11303,6 +11303,17 @@ names(mvlist) = NULL
 names(mvlist) = c('jan', '', '') #partially-missing names
 test(1865.5, melt(DT, measure.vars = mvlist),
      error = 'Please provide a name')
+# previously untested behavior used in ?patterns
+DT = data.table(x1 = 1:5, x2 = 6:10,
+                y1 = letters[1:5], y2 = letters[6:10])
+DTout = data.table(
+  variable = factor(c(1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L)),
+  value1 = 1:10,
+  value2 = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j")
+)
+test(1865.6,
+    melt(DT, measure.vars = patterns("^x", "^y", cols=names(DT))),
+    DTout)
 
 ##########################
 
