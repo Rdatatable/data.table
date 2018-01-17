@@ -7,7 +7,9 @@ melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
 }
 
 patterns <- function(..., cols=character(0)) {
-  p = unlist(list(...))
+  # if ... has no names, names(list(...)) will be "";
+  #   this assures they'll be NULL instead
+  p = unlist(list(...), use.names = any(nzchar(names(...))))
   if (!is.character(p))
     stop("Input patterns must be of type character.")
   lapply(p, grep, cols)
