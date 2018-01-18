@@ -654,7 +654,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       if(optimizedSubset){
         ## special treatment for calls like DT[x == 3] that are transformed into DT[J(x=3), on = "x==x"]
         if (verbose) {last.started.at=proc.time()[3];cat("Reordering", length(irows), "rows after bmerge done in ... ");flush.console()}
-        irows = fsort(irows, internal=TRUE) ## restore original order
+        ## restore original order. This is a very expensive operation.
+        ## benchmarks have shown that starting with 1e6 irows, a tweak can significantly reduce time
+        ## (see #2366)
+        if(length(irows) < 1e6){
+          irows = fsort(irows, internal=TRUE) ## internally, fsort on integer falls back to forderv
+        } else {
+          irows = as.integer(fsort(as.numeric(irows))) ## parallelized for numeric, but overhead of type conversion
+        }
         if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
         ## make sure, all columns are taken from x and not from i.
         ## This is done by simply telling data.table to continue as if there was a simple subset
