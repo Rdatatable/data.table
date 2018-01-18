@@ -11313,12 +11313,25 @@ DTout = data.table(
 )
 test(1866.6, melt(DT, measure.vars = patterns("^x", "^y", cols=names(DT))), DTout)
 
+# test for fixed bug #5519 - dcast returned error when a package imported data.table. Fixed with commit 1263 v1.9.3
+here = testDir('')
+system(sprintf('cd %s && %s CMD build testDTimport',
+               here, file.path(R.home("bin"), "R")))
+lib = tempdir()
+pkg = testDir('testDTimport_0.1.tar.gz')
+## force utils to supercede RStudio's version, if necessary
+utils::install.packages(pkg, lib = lib, repos = NULL,
+                        type = 'source', quiet = TRUE, verbose = FALSE)
+library(testDTimport, lib.loc = lib)
+DT = data.table(a = c(1, 1, 2, 2), b = c('A', 'B', 'A', 'B'), v = 1:4)
+test(1867, test1865(DT), dcast(DT, a ~ b, value.var = 'v'))
+detach('package:testDTimport', unload = TRUE)
+remove.packages('testDTimport', lib = lib)
+file.remove(pkg)
 
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
-
-# TO DO: Add test for fixed bug #5519 - dcast returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forderv (ref R wish #15644)
 # TO DO: tests of freading classes like Date and the verbose messages there.
