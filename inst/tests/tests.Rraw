@@ -11277,6 +11277,42 @@ cat(data, file=(f<-tempfile()), sep="\n")
 test(1865, fread(f, header=FALSE), error="Too many fields.*Read all 7 expected.*but more are present.*a,b,c,d,e,f,g,")
 unlink(f)
 
+# "Natural" provision of value.name in measure.vars list, #1547 and #2551
+DT = data.table(
+  meas1_jan = 0.45, meas1_feb = 0.38, meas1_mar = 0.62,
+  meas2_jan = 0.42, meas2_feb = 0.48, meas2_mar = 0.46,
+  meas3_jan = 0.54, meas3_feb = 0.47
+)
+DTout = data.table(
+  variable = factor(1:3),
+  jan = c(0.45, 0.42, 0.54),
+  feb = c(0.38, 0.48, 0.47),
+  mar = c(0.62, 0.46, NA)
+)
+test(1866.1, melt(DT, measure.vars = patterns(jan="_jan", feb="_feb", mar="_mar")), DTout)
+mvlist = list(
+  jan = sprintf('meas%d_jan', 1:3),
+  feb = sprintf('meas%d_feb', 1:3),
+  mar = sprintf('meas%d_mar', 1:2)
+)
+test(1866.2, melt(DT, measure.vars = mvlist), DTout)
+test(1866.3, melt(DT, measure.vars = mvlist, value.name = c('a', 'b', 'c')),
+             DTout, warning = 'value.name.*given precedence')
+names(mvlist) = NULL
+names(mvlist)[1L] = 'jan' # NA names
+test(1866.4, melt(DT, measure.vars = mvlist), error = 'Please provide a name')
+names(mvlist) = NULL
+names(mvlist) = c('jan', '', '') #partially-missing names
+test(1866.5, melt(DT, measure.vars = mvlist), error = 'Please provide a name')
+# previously untested behavior used in ?patterns
+DT = data.table(x1=1:5, x2=6:10, y1=letters[1:5], y2=letters[6:10])
+DTout = data.table(
+  variable = factor(c(1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L)),
+  value1 = 1:10,
+  value2 = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j")
+)
+test(1866.6, melt(DT, measure.vars = patterns("^x", "^y", cols=names(DT))), DTout)
+
 
 ##########################
 
