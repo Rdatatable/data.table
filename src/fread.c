@@ -1998,7 +1998,7 @@ int freadMain(freadMainArgs _args) {
             if (eol(&tch) && skipEmptyLines) { tch++; continue; }
             tch = tlineStart;  // in case white space at the beginning may need to be including in field
           }
-          else if (eol(&tch)) {
+          else if (eol(&tch) && j<ncol) {   // j<ncol needed for #2523 (erroneous extra comma after last field)
             int8_t thisSize = size[j];
             ((char **) targets)[thisSize] += thisSize;
             j++;

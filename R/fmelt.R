@@ -7,7 +7,9 @@ melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
 }
 
 patterns <- function(..., cols=character(0)) {
-  p = unlist(list(...), use.names=FALSE)
+  # if ... has no names, names(list(...)) will be "";
+  #   this assures they'll be NULL instead
+  p = unlist(list(...), use.names = any(nzchar(names(...))))
   if (!is.character(p))
     stop("Input patterns must be of type character.")
   lapply(p, grep, cols)
@@ -31,8 +33,23 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
     measure.vars = patterns(pats, cols=cols)
   }
   if (is.list(measure.vars) && length(measure.vars) > 1L) {
-    if (length(value.name) == 1L)
-      value.name = paste(value.name, seq_along(measure.vars), sep="")
+    meas.nm = names(measure.vars)
+    if (is.null(meas.nm)) {
+      # user-provided or default stub
+      if (length(value.name) == 1L) {
+        value.name = paste0(value.name, seq_along(measure.vars))
+      }
+    } else {
+      if (length(value.name) > 1L) {
+        warning("'value.name' provided in both 'measure.vars'",
+                "and 'value.name argument'; value provided in",
+                "'measure.vars' is given precedence.")
+      }
+      if (any(is.na(meas.nm)) || !all(nzchar(meas.nm))) {
+        stop("Please provide a name to each element of 'measure.vars'.")
+      }
+      value.name = meas.nm
+    }
   }
   ans <- .Call(Cfmelt, data, id.vars, measure.vars,
       as.logical(variable.factor), as.logical(value.factor),
