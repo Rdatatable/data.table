@@ -12,7 +12,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
   na = as.character(na[1L]) # fix for #1725
   if (missing(qmethod)) qmethod = qmethod[1L]
   if (missing(dateTimeAs)) dateTimeAs = dateTimeAs[1L]
-  else if (length(dateTimeAs)>1) stop("dateTimeAs must be a single string")
+  else if (length(dateTimeAs)>1L) stop("dateTimeAs must be a single string")
   dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
   if (is.na(dateTimeAs)) stop("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
   if (!missing(logical01) && !missing(logicalAsInt))
@@ -37,9 +37,9 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     isLOGICAL(col.names), isLOGICAL(append), isLOGICAL(row.names),
     isLOGICAL(verbose), isLOGICAL(showProgress), isLOGICAL(logical01),
     length(na) == 1L, #1725, handles NULL or character(0) input
-    is.character(file) && length(file)==1 && !is.na(file),
-    length(buffMB)==1 && !is.na(buffMB) && 1<=buffMB && buffMB<=1024,
-    length(nThread)==1 && !is.na(nThread) && nThread>=1
+    is.character(file) && length(file)==1L && !is.na(file),
+    length(buffMB)==1L && !is.na(buffMB) && 1<=buffMB && buffMB<=1024,
+    length(nThread)==1L && !is.na(nThread) && nThread>=1L
     )
   file <- path.expand(file)  # "~/foo/bar"
   if (append && missing(col.names) && (file=="" || file.exists(file)))

@@ -76,7 +76,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
   nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
   whichfail = get("whichfail", parent.frame())
   all.equal.result = TRUE
-  assign("ntest", get("ntest", parent.frame()) + 1, parent.frame(), inherits=TRUE)   # bump number of tests run
+  assign("ntest", get("ntest", parent.frame()) + 1L, parent.frame(), inherits=TRUE)   # bump number of tests run
   assign("lastnum", num, parent.frame(), inherits=TRUE)
 
   cat("\rRunning test id", num, "     ")
@@ -129,7 +129,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
         cat("Observed: no error or warning\n")
       else
         cat("Observed ",observedtype,": '",gsub("^[(]converted from warning[)] ","",gsub("\n$","",gsub("^Error.* : \n  ","",as.character(err)))),"'\n",sep="")
-      assign("nfail", nfail+1, parent.frame(), inherits=TRUE)   # Not the same as nfail <<- nfail + 1, it seems (when run via R CMD check)
+      assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)   # Not the same as nfail <<- nfail + 1, it seems (when run via R CMD check)
       assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
       return()
     }
@@ -139,7 +139,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
   }
   if (inherits(err,"try-error") || (!missing(y) && inherits(err<-try(y,TRUE),"try-error"))) {
     cat("Test",num,err)
-    assign("nfail", nfail+1, parent.frame(), inherits=TRUE)
+    assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
     assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
     return()
   }
@@ -149,7 +149,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     cat("Test",num,"expected TRUE but observed:\n")
     cat(">",deparse(xsub),"\n")
     if (is.data.table(x)) compactprint(x) else print(x)
-    assign("nfail", nfail+1, parent.frame(), inherits=TRUE)
+    assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
     assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
     return()
   } else {
@@ -185,7 +185,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
   cat("> y =",deparse(ysub),"\n")
   if (is.data.table(y)) compactprint(y) else {cat("First 6 of ", length(y)," (type '", typeof(y), "'): ", sep=""); print(head(y))}
   if (!isTRUE(all.equal.result)) cat(all.equal.result,sep="\n")
-  assign("nfail", nfail+1, parent.frame(), inherits=TRUE)
+  assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
   assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
   invisible()
 }
