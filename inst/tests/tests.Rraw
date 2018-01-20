@@ -6055,7 +6055,8 @@ oldOpt <- getOption("datatable.optimize") ## remember for restoring after the te
 DT <- data.table(intCol    = sample(c(1:3, NA), n, replace = TRUE),
                  doubleCol = sample(c(1.86, 1000.345, 2.346, NA, NaN), n, replace = TRUE),
                  boolCol   = sample(c(TRUE, FALSE, NA), n, replace = TRUE),
-                 charCol   = sample(c(LETTERS[1:3], NA), n, replace = TRUE))
+                 charCol   = sample(c(LETTERS[1:3], NA), n, replace = TRUE),
+                 groupCol  = sample(c("a", "b", "c"), n, replace = TRUE))
 if ("package:bit64" %in% search()) DT[, int64Col := as.integer64(sample(1:3, n, replace = TRUE))]
 ## get list with unique values excluding NA
 vals <- lapply(DT, function(x) {out <- unique(x); out[!is.na(out)]})
@@ -6091,6 +6092,8 @@ all[, query := gsub("&missing$", "", gsub("missing&", "", query))]
 ## define examplary test queries for j
 jQueries <- c(".(test = intCol + doubleCol, test2 = paste0(boolCol, charCol))",
               "c('test1', 'test2') := list(pmax(intCol, doubleCol), !boolCol)")
+## define example 'by' values
+bys <- c("groupCol", character(0))
 ## test each query string
 test_no <- 1437.0033
 for(t in seq_len(nrow(all))){
@@ -6111,12 +6114,15 @@ for(t in seq_len(nrow(all))){
   test_no <- test_no + 0.0001
   ## repeat the test with the j queries
   for(thisJquery in jQueries) {
-    options("datatable.optimize" = 3L)
-    ansOpt <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery))]
-    options("datatable.optimize" = 2L)
-    ansRef <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery))]
-    test(signif(test_no, 7), ansOpt, ansRef)
-    test_no <- test_no + 0.0001
+    ## do it with and without existing "by"
+    for(thisBy in bys){
+      options("datatable.optimize" = 3L)
+      ansOpt <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery)), by = thisBy]
+      options("datatable.optimize" = 2L)
+      ansRef <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery)), by = thisBy]
+      test(signif(test_no, 7), ansOpt, ansRef)
+      test_no <- test_no + 0.0001
+    }
   }
 }
 options("datatable.optimize" = oldOpt) ## restore to default
