@@ -1632,26 +1632,21 @@ int freadMain(freadMainArgs _args) {
     int tt = countfields(&ch);
     if (tt==ncol) STOP("Internal error: row before first data row has the same number of fields but we're not using it.");
     if (ch!=pos)  STOP("Internal error: ch!=pos after counting fields in the line before the first data row.");
-    if (tt==1 && ncol>1) {
-      DTWARN("Discarding line %d <<%s>> because it has one field and starting data input on line %d <<%s>> with %d fields.", line-1, strlim(prevStart, 30), line, strlim(pos, 30), ncol);
+    if (verbose) DTPRINT("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names.", tt);
+    if (tt<ncol) {
+      DTWARN("Detected %d column names but the data has %d columns. Added %d extra default column name%s.\n", tt, ncol, ncol-tt, (ncol-tt>1)?"s":"");
+    } else if (tt>ncol) {
+      if (fill) STOP("Internal error: fill=true but there is a previous row which should already have been filled.");
+      DTWARN("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n", tt, ncol);
+      fill = true;
+      type =    (int8_t *)realloc(type,    (size_t)tt * sizeof(int8_t));
+      tmpType = (int8_t *)realloc(tmpType, (size_t)tt * sizeof(int8_t));
+      if (!type || !tmpType) STOP("Failed to realloc 2 x %d bytes for type and tmpType: %s", tt, strerror(errno));
+      for (int j=ncol; j<tt; j++) { tmpType[j] = type[j] = type0; }
+      ncol = tt;
     }
-    if (tt>1) {
-      if (verbose) DTPRINT("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names.", tt);
-      if (tt<ncol) {
-        DTWARN("Detected %d column names but the data has %d columns. Added %d extra default column name%s.\n", tt, ncol, ncol-tt, (ncol-tt>1)?"s":"");
-      } else if (tt>ncol) {
-        if (fill) STOP("Internal error: fill=true but there is a previous row which should already have been filled.");
-        DTWARN("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n", tt, ncol);
-        fill = true;
-        type =    (int8_t *)realloc(type,    (size_t)tt * sizeof(int8_t));
-        tmpType = (int8_t *)realloc(tmpType, (size_t)tt * sizeof(int8_t));
-        if (!type || !tmpType) STOP("Failed to realloc 2 x %d bytes for type and tmpType: %s", tt, strerror(errno));
-        for (int j=ncol; j<tt; j++) { tmpType[j] = type[j] = type0; }
-        ncol = tt;
-      }
-      args.header = true;
-      pos = prevStart;
-    }
+    args.header = true;
+    pos = prevStart;
   }
 
   if (args.header==NA_BOOL8) {
