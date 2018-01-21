@@ -208,16 +208,6 @@ static union {
 static int mid, tmplow, tmpupp;  // global to save them being added to recursive stack. Maybe optimizer would do this anyway.
 static SEXP ic, xc;
 
-// If we find a non-ASCII, non-NA, non-UTF8 encoding, we try to convert it to UTF8. That is, marked non-ascii/non-UTF8 encodings will always be checked in UTF8 locale. This seems to be the best fix I could think of to put the encoding issues to rest..
-// Since the if-statement will fail with the first condition check in "normal" ASCII cases, there shouldn't be huge penalty issues for default setup.
-// Fix for #66, #69, #469 and #1293
-// TODO: compare 1.9.6 performance with 1.9.7 with huge number of ASCII strings.
-SEXP ENC2UTF8(SEXP s) {
-  if (!IS_ASCII(s) && s != NA_STRING && !IS_UTF8(s))
-    s = mkCharCE(translateCharUTF8(s), CE_UTF8);
-  return (s);
-}
-
 void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax)
 // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
 // lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
