@@ -125,20 +125,17 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
     if (nrows[i]==0L) stop("Item ",i," has no length. Provide at least one item (such as NA, NA_integer_ etc) to be repeated to match the ",nr," rows in the longest column. Or, all columns can be 0 length, for insert()ing rows into.")
     # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
     if (nr%%nrows[i] != 0L) warning("Item ", i, " is of size ", nrows[i], " but maximum size is ", nr, " (recycled leaving remainder of ", nr%%nrows[i], " items)")
-    # if (nr%%nrows[i] == 0L) {
-      if (is.data.frame(xi)) {   # including data.table
-        ..i = rep(seq_len(nrow(xi)), length.out = nr)
-        x[[i]] = xi[..i,,drop=FALSE]
-        next
-      }
-      if (is.atomic(xi) || is.list(xi)) {
-        # TO DO: surely use set() here, or avoid the coercion
-        x[[i]] = rep(xi, length.out = nr)
-        next
-      }
-      stop("problem recycling column ",i,", try a simpler type")
-    # }
-    stop("argument ",i," (nrow ",nrows[i],") cannot be recycled without remainder to match longest nrow (",nr,")")
+    if (is.data.frame(xi)) {   # including data.table
+      ..i = rep(seq_len(nrow(xi)), length.out = nr)
+      x[[i]] = xi[..i,,drop=FALSE]
+      next
+    }
+    if (is.atomic(xi) || is.list(xi)) {
+      # TO DO: surely use set() here, or avoid the coercion
+      x[[i]] = rep(xi, length.out = nr)
+      next
+    }
+    stop("problem recycling column ",i,", try a simpler type")
   }
   if (any(numcols>0L)) {
     value = vector("list",sum(pmax(numcols,1L)))
@@ -1686,13 +1683,16 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "first", "tail", "[") # added .N for #5760
         .ok <- function(q) {
           if (dotN(q)) return(TRUE) # For #5760
-          cond = is.call(q) && as.character(q[[1L]]) %chin% gfuns && !is.call(q[[2L]])
+          cond = is.call(q) && as.character(q1 <- q[[1L]]) %chin% gfuns && !is.call(q[[2L]])
+          # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
           ans  = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L)))
           if (identical(ans, TRUE)) return(ans)
-          ans = cond && length(q) == 3L &&
-            length(q[[3L]]) == 1L && is.numeric(q[[3L]]) && (
-              as.character(q[[1L]]) %chin% c("head", "tail") && q[[3L]] == 1L ||
-                as.character(q[[1L]]) %chin% "["  && q[[3L]] > 0 )
+          # otherwise there must be three arguments, and only in two cases --
+          #   1) head/tail(x, 1) or 2) x[n], n>0
+          ans = cond && length(q)==3L &&
+            length(q3 <- q[[3L]])==1L && is.numeric(q3) && (
+              (as.character(q1) %chin% c("head", "tail") && q3==1L) ||
+                (as.character(q1) %chin% "[" && q3 > 0) )
           if (is.na(ans)) ans=FALSE
           ans
         }

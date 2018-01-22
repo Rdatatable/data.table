@@ -2868,6 +2868,7 @@ DT = data.table(a=1:3,b=4:6,b=7:9,c=10:12)
 test(1005, rbind(DT,DT), data.table(a=rep(1:3,2),b=rep(4:6,2),b=rep(7:9,2),c=rep(10:12,2)))
 M <- mtcars
 colnames(M)[11] <- NA
+# NOTE -- this test requires having options('width') sufficiently wide
 test(1006, print(as.data.table(M), nrows=10), output="gear NA.*1: 21.0")
 
 # rbinding factor with non-factor/character
@@ -4040,6 +4041,9 @@ test(1187.4, DT[, list(sum(y,na.rm=MyVar), mean(y,na.rm=MyVar)), by=x, verbose=T
              DT[, list(sum(y,na.rm=FALSE), mean(y,na.rm=FALSE)), by=x])
 test(1187.5, DT[, mean(y,na.rm=MyVar), by=x, verbose=TRUE], output="GForce optimized j to",
              DT[, mean(y,na.rm=FALSE), by=x])
+# GForce should not turn on when the .ok function isn't triggered
+test(1187.6, DT[ , mean(y, trim = .2), by = x, verbose = TRUE], output = 'GForce FALSE')
+
 
 
 # test from Zach Mayer
@@ -7511,19 +7515,21 @@ test(1579.10, dt[, tail(.SD,1L), by=x],    dt[, utils::tail(.SD,1L), by=x])
 test(1579.11, dt[, tail(.SD,1L), by=x],    dt[, utils::tail(.SD,1L), by=x])
 test(1579.12, dt[, tail(.SD,1L), keyby=x], dt[, utils::tail(.SD,1L), keyby=x])
 test(1579.13, dt[, tail(.SD,1L), keyby=x], dt[, utils::tail(.SD,1L), keyby=x])
+# GForce _doesn't_ work when n > 1
+test(1579.14, dt[ , tail(.SD, 2), by = x, verbose = TRUE], output = 'GForce FALSE')
 
 mysub <- function(x, n) x[n]
-test(1579.14, dt[, .SD[2],  by=x],    dt[, mysub(.SD,2),  by=x])
 test(1579.15, dt[, .SD[2],  by=x],    dt[, mysub(.SD,2),  by=x])
-test(1579.16, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
+test(1579.16, dt[, .SD[2],  by=x],    dt[, mysub(.SD,2),  by=x])
 test(1579.17, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
-test(1579.18, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
+test(1579.18, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
 test(1579.19, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
-test(1579.20, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
+test(1579.20, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
 test(1579.21, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
+test(1579.22, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
 
 ans = capture.output(dt[, .SD[2], by=x, verbose=TRUE])
-test(1579.22, any(grepl("GForce optimized", ans)), TRUE)
+test(1579.23, any(grepl("GForce optimized", ans)), TRUE)
 
 options(datatable.optimize=optim)
 
@@ -9256,17 +9262,20 @@ test(1672.1, DT[ , .(.I[1L], V2[1L]), by = V1],
 #make sure GForce operating
 test(1672.2, DT[ , .(.I[1L], V2[1L]), by = V1, verbose = TRUE],
      output = "GForce optimized j")
+#make sure GForce not operating for inversion
+test(1672.3, DT[ , .(.I[-1L], V2[1L]), by = V1, verbose = TRUE],
+     output = "GForce FALSE)
 #make sure works on .I by itself
-test(1672.3, DT[ , .I[1L], by = V1],
+test(1672.4, DT[ , .I[1L], by = V1],
      output = "   V1 V11:  1  12:  2  2")
 #make sure GForce here as well
-test(1672.4, DT[ , .I[1L], by = V1, verbose = TRUE],
+test(1672.5, DT[ , .I[1L], by = V1, verbose = TRUE],
      output = "GForce optimized j")
 #make sure works with order
-test(1672.5, DT[order(V1), .I[1L], by = V1],
+test(1672.6, DT[order(V1), .I[1L], by = V1],
      output = "   V1 V11:  1  12:  2  2")
 # should also work with subsetting
-test(1672.6, DT[1:5, .(.I[1L], V2[1L]), by = V1],
+test(1672.7, DT[1:5, .(.I[1L], V2[1L]), by = V1],
      output = "   V1 V1 V21:  1  1  12:  2  2  2")
 
 #tests for #1528
@@ -11313,6 +11322,14 @@ DTout = data.table(
 )
 test(1866.6, melt(DT, measure.vars = patterns("^x", "^y", cols=names(DT))), DTout)
 
+# miscellaneous missing tests uncovered by CodeCov difference
+#   in the process of PR #2573
+## data.table cannot recycle complicated types
+short_s4_col = getClass("MethodDefinition")
+test(1867.1, data.table(a = 1:4, short_s4_col), error = 'problem recycling.*try a simpler type')
+## i must be a data.table when on is specified
+DT = data.table(a = 1:3)
+test(1867.2, DT[c(TRUE, FALSE), on = 'coefficients'], error = "not a data.table, but 'on'")
 
 ##########################
 
