@@ -2601,7 +2601,7 @@ test(901.2, DT<-fread(f), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.
 f = testDir("2008head.csv")
 test(902, fread(f,logical01=FALSE), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
 test(903, fread("A,B\n1,3,foo,5\n2,4,barbaz,6"), data.table(A=1:2, B=3:4, V3=c("foo","barbaz"), V4=5:6),
-          warning="Detected 2 column names but.*4.*Added 2 extra default column names[.]")
+          warning="Detected 2 column names but.*4.*Added 2 extra default column names at the end")
 test(904, fread("A,B,C,D\n1,3,foo,5\n2,4,barbaz,6"), DT<-data.table(A=1:2,B=3:4,C=c("foo","barbaz"),D=5:6))  # ok
 test(905, fread('A,B,C,D\n1,3,foo,5\n2,4,"barbaz",6'), DT)
 test(906, fread('A,B,C,D\n1,3,foo,5\n2,4,"ba,r,baz",6'), DT[2,C:="ba,r,baz"])
@@ -11315,20 +11315,26 @@ test(1866.6, melt(DT, measure.vars = patterns("^x", "^y", cols=names(DT))), DTou
 
 # auto fill too few column names (#1625) and auto fill=TRUE when too many column names
 test(1867.1, fread("A,B\n1,3,5,7\n2,4,6,8\n"), data.table(A=1:2, B=3:4, V3=5:6, V4=7:8),
-             warning="Detected 2 column names but.*4.*Added 2 extra default column names[.]")
+             warning="Detected 2 column names but.*4.*Added 2 extra default column names at the end[.]")
 test(1867.2, fread("A,B,C,D,E\n1,3,5,7\n2,4,6,8\n"), data.table(A=1:2, B=3:4, C=5:6, D=7:8, E=NA),
              warning="Detected 5.*but.*4.*Filling rows automatically.")
-test(1867.3, fread(testDir("fillheader.csv"))[c(1,.N), c(1,29,30)], data.table("TLA NAME"="Ashburton District", NORTHING=c(5154177L,5144032L), V30=NA),
-             warning="Detected 29.*but.*30.*Added 1 extra default column name[.]")
+test(1867.3, fread(testDir("fillheader.csv"))[c(1,.N), c(1,29,30)], data.table("V1"="Ashburton District", EASTING=c(5154177L,5144032L), NORTHING=NA),
+             warning="Detected 29.*but.*30.*Added 1 extra default column name.*guessed to be row names or an index.*valid file")
+             # in this unusual case, every data row has a trailing comma but the column names do not. So the guess is wrong; a deliberate choice currently.
 test(1867.4, fread("A,B\nCol1,Col2,Col3\n1,3,5\n2,4,6\n"), data.table(Col1=1:2, Col2=3:4, Col3=5:6))
-test(1867.5, fread("A\nCol1,Col2\n1,3,5\n2,4,6\n"), data.table(Col1=1:2, Col2=3:4, V3=5:6), warning="Added 1 extra default column name")
+test(1867.5, fread("A\nCol1,Col2\n1,3,5\n2,4,6\n"), data.table(V1=1:2, Col1=3:4, Col2=5:6), warning="Added 1 extra default column name.*guessed to be row names or an index")
 test(1867.6, fread("Some header\ninfo\nCol1,Col2,Col3\n1,3,5\n2,4,6\n"), data.table(Col1=1:2, Col2=3:4, Col3=5:6))
-test(1867.7, fread("Some header\ninfo\n\nCol1,Col2\n1,3,5\n2,4,6\n"), data.table(Col1=1:2, Col2=3:4, V3=5:6), warning="Added 1 extra")
+test(1867.7, fread("Some header\ninfo\n\nCol1,Col2\n1,3,5\n2,4,6\n"), data.table(V1=1:2, Col1=3:4, Col2=5:6), warning="Added 1 extra")
 test(1867.8, fread("A,B,C,D,E\n1,3,5\n2,4,6\n"), data.table(A=1:2, B=3:4, C=5:6, D=NA, E=NA), warning="Detected 5.*but.*3.*Filling rows automatically")
 test(1867.9, fread("Heading text\nA,B,C,D,E\n1,3,5\n2,4,6\n"), data.table(A=1:2, B=3:4, C=5:6, D=NA, E=NA), warning="Detected 5.*but.*3.*Filling rows automatically")
-test(1867.11, fread("Heading text\n1,3,5\n2,4,6\n"), data.table("Heading text"=1:2, V2=3:4, V3=5:6), warning="Added 2 extra default column names[.]")
+test(1867.11, fread("Heading text\n1,3,5\n2,4,6\n"), data.table("Heading text"=1:2, V2=3:4, V3=5:6), warning="Added 2 extra default column names at the end")
 test(1867.12, fread("A,B\n\n1,3,5\n2,4,6\n"), data.table(V1=1:2, V2=3:4, V3=5:6))
-test(1867.13, fread("A\n1,3\n2,4\n"), data.table(A=1:2, V2=3:4), warning="Added 1 extra default column name")
+test(1867.13, fread("A\n1,3\n2,4\n"), data.table(V1=1:2, A=3:4), warning="Added 1 extra default column name")
+# test from #763, covers #1818 too
+DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1L,3L,6L), v=10:18)
+write.table(DT, file = (f<-tempfile()), sep = "\t")
+test(1867.14, fread(f), data.table(V1=1:9, x=DT$x, y=DT$y, v=DT$v), warning="Added 1 extra default column name")
+unlink(f)
 
 
 ##########################

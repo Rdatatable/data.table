@@ -1423,6 +1423,7 @@ int freadMain(freadMainArgs _args) {
   size_t sampleLines;     // How many lines were sampled during the initial pre-scan
   size_t bytesRead;       // Bytes in the whole data section
   const char *lastRowEnd; // Pointer to the end of the data section
+  bool autoFirstColName = false; // true when there's one less column name and then it's assumed that the first column is row names or index
   {
   if (verbose) DTPRINT("[07] Detect column types, good nrow estimate and whether first row is column names\n");
   if (verbose && args.header!=NA_BOOL8) DTPRINT("  'header' changed by user from 'auto' to %s\n", args.header?"true":"false");
@@ -1634,7 +1635,9 @@ int freadMain(freadMainArgs _args) {
     if (ch!=pos)  STOP("Internal error: ch!=pos after counting fields in the line before the first data row.");
     if (verbose) DTPRINT("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names.", tt);
     if (tt<ncol) {
-      DTWARN("Detected %d column names but the data has %d columns. Added %d extra default column name%s.\n", tt, ncol, ncol-tt, (ncol-tt>1)?"s":"");
+      autoFirstColName = (tt==ncol-1);
+      DTWARN("Detected %d column names but the data has %d columns (i.e. an invalid file format). Added %d extra default column name%s\n", tt, ncol, ncol-tt,
+             autoFirstColName ? " for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file writer to create a valid file." : "s at the end.");
     } else if (tt>ncol) {
       if (fill) STOP("Internal error: fill=true but there is a previous row which should already have been filled.");
       DTWARN("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n", tt, ncol);
@@ -1726,7 +1729,7 @@ int freadMain(freadMainArgs _args) {
   } else {
     line++;
     if (sep==' ') while (*ch==' ') ch++;
-    void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames};
+    void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
     FieldParseContext fctx = {
       .ch = &ch,
       .targets = targets,
