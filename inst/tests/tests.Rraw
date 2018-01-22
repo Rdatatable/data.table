@@ -11335,6 +11335,7 @@ DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1L,3L,6L), v=10:18)
 write.table(DT, file = (f<-tempfile()), sep = "\t")
 test(1867.14, fread(f), data.table(V1=1:9, x=DT$x, y=DT$y, v=DT$v), warning="Added 1 extra default column name")
 unlink(f)
+# test(1867.15, fread(testDir("iterations.txt"))) # #1416 TODO (trailing tabs on most but not at the beginning and a "-" intended to mean missing but taken as text column name)
 
 
 ##########################
