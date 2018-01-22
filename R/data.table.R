@@ -561,30 +561,30 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           # non-equi operators present.. investigate groups..
           if (verbose) cat("Non-equi join operators detected ... \n")
           if (!missingroll) stop("roll is not implemented for non-equi joins yet.")
-          if (verbose) {last.started.at=proc.time()[3L];cat("  forder took ... ");flush.console()}
+          if (verbose) {last.started.at=proc.time();cat("  forder took ... ");flush.console()}
           # TODO: could check/reuse secondary indices, but we need 'starts' attribute as well!
           xo = forderv(x, rightcols, retGrp=TRUE)
-          if (verbose) {cat(round(proc.time()[3L]-last.started.at,3L),"secs\n");flush.console}
+          if (verbose) {cat(timetaken(last.started.at)); flush.console()}
           xg = attr(xo, 'starts')
           resetcols = head(rightcols, non_equi-1L)
           if (length(resetcols)) {
             # TODO: can we get around having to reorder twice here?
             # or at least reuse previous order?
-            if (verbose) {last.started.at=proc.time()[3L];cat("  Generating group lengths ... ");flush.console()}
+            if (verbose) {last.started.at=proc.time();cat("  Generating group lengths ... ");flush.console()}
             resetlen = attr(forderv(x, resetcols, retGrp=TRUE), 'starts')
             resetlen = .Call(Cuniqlengths, resetlen, nrow(x))
-            if (verbose) {cat("done in",round(proc.time()[3L]-last.started.at,3L),"secs\n");flush.console}
+            if (verbose) {cat("done in", timetaken(last.started.at)); flush.console()}
           } else resetlen = integer(0L)
-          if (verbose) {last.started.at=proc.time()[3L];cat("  Generating non-equi group ids ... ");flush.console()}
+          if (verbose) {last.started.at=proc.time();cat("  Generating non-equi group ids ... ");flush.console()}
           nqgrp = .Call(Cnestedid, x, rightcols[non_equi:length(rightcols)], xo, xg, resetlen, mult)
-          if (verbose) {cat("done in", round(proc.time()[3L]-last.started.at,3L),"secs\n");flush.console}
+          if (verbose) {cat("done in", timetaken(last.started.at)); flush.console()}
           if (length(nqgrp)) nqmaxgrp = max(nqgrp) # fix for #1986, when 'x' is 0-row table max(.) returns -Inf.
           if (nqmaxgrp > 1L) { # got some non-equi join work to do
             if ("_nqgrp_" %in% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
-            if (verbose) {last.started.at=proc.time()[3L];cat("  Recomputing forder with non-equi ids ... ");flush.console()}
+            if (verbose) {last.started.at=proc.time();cat("  Recomputing forder with non-equi ids ... ");flush.console()}
             set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
             xo = forderv(nqx, c(ncol(nqx), rightcols))
-            if (verbose) {cat("done in",round(proc.time()[3L]-last.started.at,3L),"secs\n");flush.console}
+            if (verbose) {cat("done in", timetaken(last.started.at)); flush.console()}
           } else nqgrp = integer(0L)
           if (verbose) cat("  Found", nqmaxgrp, "non-equi group(s) ...\n")
         }
@@ -600,9 +600,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
               if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
             }
             if (is.null(xo)) {
-              last.started.at=proc.time()[3L]
+              if (verbose) {last.started.at=proc.time(); flush.console()}
               xo = forderv(x, by = rightcols)
-              if (verbose) cat("Calculated ad hoc index in", round(proc.time()[3L]-last.started.at,3L), "secs\n")
+              if (verbose) {cat("Calculated ad hoc index in", timetaken(last.started.at)); flush.console()}
               # TODO: use setindex() instead, so it's cached for future reuse
             }
           }
@@ -620,10 +620,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       # Implementation for not-join along with by=.EACHI, #604
       if (notjoin && (byjoin || mult != "all")) { # mult != "all" needed for #1571 fix
         notjoin = FALSE
-        if (verbose) {last.started.at=proc.time()[3L];cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff(x,i) ...");flush.console()}
+        if (verbose) {last.started.at=proc.time();cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff(x,i) ...");flush.console()}
         orignames = copy(names(i))
         i = setdiff_(x, i, rightcols, leftcols) # part of #547
-        if (verbose) {cat("done in",round(proc.time()[3L]-last.started.at,3L),"secs\n");flush.console}
+        if (verbose) {cat("done in", timetaken(last.started.at)); flush.console()}
         setnames(i, orignames[leftcols])
         setattr(i, 'sorted', names(i)) # since 'x' has key set, this'll always be sorted
       }
@@ -1447,7 +1447,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 
     if (length(byval) && length(byval[[1L]])) {
       if (!bysameorder) {
-        if (verbose) {last.started.at=proc.time()[3L];cat("Finding groups using forderv ... ");flush.console()}
+        if (verbose) {last.started.at=proc.time();cat("Finding groups using forderv ... ");flush.console()}
         o__ = forderv(byval, sort=!missing(keyby), retGrp=TRUE)
         # The sort= argument is called sortStr at C level. It's just about saving the sort of unique strings at
         # C level for efficiency (cgroup vs csort) when by= not keyby=. All other types are always sorted. Getting
@@ -1457,37 +1457,37 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # forderv() returns empty integer() if already ordered to save allocating 1:xnrow
         bysameorder = orderedirows && !length(o__)
         if (verbose) {
-          cat(round(proc.time()[3L]-last.started.at, 3L), "sec\n")
-          last.started.at=proc.time()[3L]
+          cat(timetaken(last.started.at))
+          last.started.at=proc.time()
           cat("Finding group sizes from the positions (can be avoided to save RAM) ... ")
           flush.console()  # for windows
         }
         f__ = attr(o__, "starts")
         len__ = uniqlengths(f__, xnrow)
-        if (verbose) { cat(round(proc.time()[3L]-last.started.at, 3L), "sec\n");flush.console()}
+        if (verbose) {cat(timetaken(last.started.at)); flush.console()}
         if (!bysameorder && missing(keyby)) {
           # TO DO: lower this into forder.c
-          if (verbose) {last.started.at=proc.time()[3L];cat("Getting back original order ... ");flush.console()}
+          if (verbose) {last.started.at=proc.time();cat("Getting back original order ... ");flush.console()}
           firstofeachgroup = o__[f__]
           if (length(origorder <- forderv(firstofeachgroup))) {
             f__ = f__[origorder]
             len__ = len__[origorder]
           }
-          if (verbose) {cat(round(proc.time()[3L]-last.started.at, 3L), "sec\n")}
+          if (verbose) {cat(timetaken(last.started.at)); flush.console()}
         }
         if (!orderedirows && !length(o__)) o__ = seq_len(xnrow)  # temp fix.  TODO: revist orderedirows
       } else {
-        if (verbose) {last.started.at=proc.time()[3L];cat("Finding groups using uniqlist ... ");flush.console()}
+        if (verbose) {last.started.at=proc.time();cat("Finding groups using uniqlist ... ");flush.console()}
         f__ = uniqlist(byval)
         if (verbose) {
-          cat(round(proc.time()[3L]-last.started.at, 3L), "sec\n")
-          last.started.at=proc.time()[3L]
+          cat(timetaken(last.started.at))
+          last.started.at=proc.time()
           cat("Finding group sizes from the positions (can be avoided to save RAM) ... ")
           flush.console()  # for windows
         }
         len__ = uniqlengths(f__, xnrow)
         # TO DO: combine uniqlist and uniquelengths into one call.  Or, just set len__ to NULL when dogroups infers that.
-        if (verbose) { cat(round(proc.time()[3L]-last.started.at, 3L), "sec\n");flush.console() }
+        if (verbose) { cat(timetaken(last.started.at)); flush.console() }
       }
     } else {
       f__=NULL
@@ -1777,7 +1777,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     # for consistency of empty case in test 184
     f__=len__=0L
   }
-  if (verbose) {last.started.at=proc.time()[3L];cat("Making each group and running j (GForce ",GForce,") ... ",sep="");flush.console()}
+  if (verbose) {last.started.at=proc.time();cat("Making each group and running j (GForce ",GForce,") ... ",sep="");flush.console()}
   if (GForce) {
     thisEnv = new.env()  # not parent=parent.frame() so that gsum is found
     for (ii in ansvars) assign(ii, x[[ii]], thisEnv)
@@ -1791,7 +1791,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   } else {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose)
   }
-  if (verbose) {cat(round(proc.time()[3L]-last.started.at,3L),"secs\n");flush.console()}
+  if (verbose) {cat(timetaken(last.started.at)); flush.console()}
   # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
   # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
   # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
@@ -1811,9 +1811,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (!missing(keyby)) {
       cnames = as.character(bysubl)[-1L]
       if (all(cnames %chin% names(x))) {
-        if (verbose) {last.started.at=proc.time()[3L];cat("setkey() after the := with keyby= ... ");flush.console()}
+        if (verbose) {last.started.at=proc.time();cat("setkey() after the := with keyby= ... ");flush.console()}
         setkeyv(x,cnames)  # TO DO: setkey before grouping to get memcpy benefit.
-        if (verbose) {cat(round(proc.time()[3L]-last.started.at,3L),"secs\n");flush.console()}
+        if (verbose) {cat(timetaken(last.started.at)); flush.console()}
       }
       else warning(":= keyby not straightforward character column names or list() of column names, treating as a by:",paste(cnames,collapse=","),"\n")
     }
@@ -1838,9 +1838,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     setnames(ans,seq_along(bynames),bynames)   # TO DO: reinvestigate bynames flowing from dogroups here and simplify
   }
   if (byjoin && !missing(keyby) && !bysameorder) {
-    if (verbose) {last.started.at=proc.time()[3L];cat("setkey() afterwards for keyby=.EACHI ... ");flush.console()}
+    if (verbose) {last.started.at=proc.time();cat("setkey() afterwards for keyby=.EACHI ... ");flush.console()}
     setkeyv(ans,names(ans)[seq_along(byval)])
-    if (verbose) {cat(round(proc.time()[3L]-last.started.at,3L),"secs\n");flush.console()}
+    if (verbose) {cat(timetaken(last.started.at)); flush.console()}
   } else if (!missing(keyby) || (haskey(x) && bysameorder)) {
     setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
   }

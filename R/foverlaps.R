@@ -104,10 +104,10 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
               end = yintervals[2L], any =,
               within =, equal = yintervals)
   call = construct(head(ynames, -2L), uycols, type)
-  if (verbose) {last.started.at=proc.time()[3L];cat("unique() + setkey() operations done in ...");flush.console()}
+  if (verbose) {last.started.at=proc.time();cat("unique() + setkey() operations done in ...");flush.console()}
   uy = unique(y[, eval(call)])
   setkey(uy)[, `:=`(lookup = list(list(integer(0L))), type_lookup = list(list(integer(0L))), count=0L, type_count=0L)]
-  if (verbose) {cat(round(proc.time()[3L]-last.started.at,3L),"secs\n");flush.console}
+  if (verbose) {cat(timetaken(last.started.at)); flush.console()}
   matches <- function(ii, xx, del, ...) {
     cols = setdiff(names(xx), del)
     xx = .shallow(xx, cols, retain.key = FALSE)
@@ -130,9 +130,9 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   .Call(Clookup, uy, nrow(y), indices(uy, y, yintervals, nomatch=0L, roll=roll), maxgap, minoverlap, mult, type, verbose)
   if (maxgap == 0L && minoverlap == 1L) {
     iintervals = tail(names(x), 2L)
-    if (verbose) {last.started.at=proc.time()[3L];cat("binary search(es) done in ...");flush.console()}
+    if (verbose) {last.started.at=proc.time();cat("binary search(es) done in ...");flush.console()}
     xmatches = indices(uy, x, xintervals, nomatch=0L, roll=roll)
-    if (verbose) {cat(round(proc.time()[3L]-last.started.at,3L),"secs\n");flush.console}
+    if (verbose) {cat(timetaken(last.started.at));flush.console}
     olaps = .Call(Coverlaps, uy, xmatches, mult, type, nomatch, verbose)
   } else if (maxgap == 0L && minoverlap > 1L) {
     stop("Not yet implemented")

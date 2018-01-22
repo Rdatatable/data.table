@@ -4042,7 +4042,12 @@ test(1187.4, DT[, list(sum(y,na.rm=MyVar), mean(y,na.rm=MyVar)), by=x, verbose=T
 test(1187.5, DT[, mean(y,na.rm=MyVar), by=x, verbose=TRUE], output="GForce optimized j to",
              DT[, mean(y,na.rm=FALSE), by=x])
 # GForce should not turn on when the .ok function isn't triggered
-test(1187.6, DT[ , mean(y, trim = .2), by = x, verbose = TRUE], output = 'GForce FALSE')
+test(1187.6, DT[ , mean(y, trim = .2),
+                by = x, verbose = TRUE],
+     data.table(x = c("a", "b", "c", "d"),
+                V1 = c(NA, 3.33333333333333, NA, NA)),
+     output = 'j unchanged',
+     warning = "'trim' is not yet optimized")
 
 
 
@@ -9264,7 +9269,7 @@ test(1672.2, DT[ , .(.I[1L], V2[1L]), by = V1, verbose = TRUE],
      output = "GForce optimized j")
 #make sure GForce not operating for inversion
 test(1672.3, DT[ , .(.I[-1L], V2[1L]), by = V1, verbose = TRUE],
-     output = "GForce FALSE)
+     output = "GForce FALSE")
 #make sure works on .I by itself
 test(1672.4, DT[ , .I[1L], by = V1],
      output = "   V1 V11:  1  12:  2  2")
