@@ -11341,6 +11341,18 @@ test(1867.14, fread(f), data.table(V1=1:9, x=DT$x, y=DT$y, v=DT$v), warning="Add
 unlink(f)
 # test(1867.15, fread(testDir("iterations.txt"))) # #1416 TODO (trailing tabs on most but not at the beginning and a "-" intended to mean missing but taken as text column name)
 
+# non equi joins bug fix #2313
+dt <- data.table(
+  patient.id = c(1L, 2L, 1L, 1L, 2L, 2L, 2L),
+  h.date = as.Date(c("2013/10/15", "2014/10/15", "2015/7/16", "2016/1/7", 
+                                   "2015/12/20", "2015/12/25", "2016/2/10")))
+setorder(dt)
+dt[, `:=`(start.date = h.date - 365, end.date = h.date)]
+# This line below would error without this fix
+ans <- dt[dt, on = .(patient.id, h.date >= start.date, h.date <= end.date),
+         .(patient.id, i.start.date, i.end.date, g = .GRP, .N, x.h.date),
+         by=.EACHI]
+test(1868, "x.h.date" %in% names(ans), TRUE)
 
 ##########################
 
