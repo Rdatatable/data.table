@@ -3,8 +3,8 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
   if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     # package developer
     if ("package:data.table" %in% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
-    d = if (pkg %in% dir()) paste0(getwd(),"/",pkg) else Sys.getenv("CC_DIR")
-    d = paste0(d, "/inst/tests")
+    d = if (pkg %in% dir()) file.path(getwd(), pkg) else Sys.getenv("CC_DIR")
+    d = file.path(d, "inst/tests")
   } else {
     # R CMD check and user running test.data.table()
     d = paste0(getNamespaceInfo("data.table","path"),"/tests")
@@ -40,13 +40,16 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
 # whichfail = NULL
 # .devtesting = TRUE
 
-compactprint <- function(DT, topn=2) {
+# essentially toString.default
+makeString = function (x) paste(x, collapse = ",")
+
+compactprint <- function(DT, topn=2L) {
   tt = vapply_1c(DT,function(x)class(x)[1L])
   tt[tt=="integer64"] = "i64"
-  cn = paste(" [Key=",paste(key(DT),collapse=","),
-             " Types=",paste(substring(sapply(DT,typeof),1,3),collapse=","),
-             " Classes=",paste(substring(tt,1,3),collapse=","),
-             "]",sep="")
+  tt = substring(tt, 1L, 3L)
+  cn = paste0(" [Key=",makeString(key(DT)),
+             " Types=", makeString(substring(sapply(DT, typeof), 1L, 3L)),
+             " Classes=", makeString(tt), "]")
   if (nrow(DT)) {
     print(copy(DT)[,(cn):=""], topn=topn)
   } else {

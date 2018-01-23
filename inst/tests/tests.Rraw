@@ -11376,6 +11376,41 @@ test(1869.1, data.table(a = 1:4, short_s4_col), error = 'problem recycling.*try 
 ## i must be a data.table when on is specified
 DT = data.table(a = 1:3)
 test(1869.2, DT[c(TRUE, FALSE), on = 'coefficients'], error = "not a data.table, but 'on'")
+## missing tests for round.IDate
+test_dates = c(
+  "2017-01-05", "2017-08-04", "2017-06-05", "2017-04-15",
+  "2017-06-11", "2017-10-04", "2017-04-19", "2017-01-11",
+  "2017-03-08", "2017-10-10"
+)
+test_dates = as.IDate(test_dates)
+test(1869.3, round(test_dates, 'weeks'),
+     structure(c(17167L, 17377L, 17321L, 17272L, 17328L,
+                 17440L, 17272L, 17174L, 17230L, 17447L),
+               class = c("IDate", "Date")))
+test(1869.4, round(test_dates, 'months'),
+     structure(c(17167L, 17379L, 17318L, 17257L, 17318L,
+                 17440L, 17257L, 17167L, 17226L, 17440L),
+               class = c("IDate", "Date")))
+test(1869.5, round(test_dates, 'quarters'),
+     structure(c(17167L, 17348L, 17257L, 17257L, 17257L,
+                 17440L, 17257L, 17167L, 17167L, 17440L),
+               class = c("IDate", "Date")))
+test(1869.6, round(test_dates, 'years'),
+     structure(c(17167L, 17167L, 17167L, 17167L, 17167L,
+                 17167L, 17167L, 17167L, 17167L, 17167L),
+               class = c("IDate", "Date")))
+test(1869.7, round(test_dates, 'centuries'),
+     error = 'should be one of')
+## missing a test of mday
+test(1869.8, mday(test_dates),
+     c(5L, 4L, 5L, 15L, 11L, 4L, 19L, 11L, 8L, 10L))
+## META TEST of helper function compactprint from test.data.table
+DT = data.table(a = 1, b = 2, key = 'a')
+DT_out = gsub('\\s+$', '', capture.output(compactprint(DT)))
+test(1869.9, DT_out,
+     c("   a b  [Key=a Types=dou,dou Classes=num,num]",
+       "1: 1 2"))
+
 
 ##########################
 
