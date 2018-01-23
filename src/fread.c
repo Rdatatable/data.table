@@ -1287,8 +1287,9 @@ int freadMain(freadMainArgs _args) {
   //     actually reading the data yet. Most likely to check consistency
   //     across a set of files.
   //*********************************************************************************************
-  const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
   int ncol;  // Detected number of columns in the file
+  const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
+  const char *prevStart = NULL;  // the start of the non-empty line before the first not-ignored row (for warning message later, or taking as column names)
   {
   if (verbose) DTPRINT("[06] Detect separator, quoting rule, and ncolumns\n");
 
@@ -1384,7 +1385,6 @@ int freadMain(freadMainArgs _args) {
   sep = topSep;
   whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
   ch = pos;
-  const char *prevStart = NULL;  // the start of the non-empty line before the first not-ignored row
   if (fill) {
     // start input from first populated line, already pos.
     ncol = topNmax;
@@ -1412,18 +1412,7 @@ int freadMain(freadMainArgs _args) {
     DTPRINT("  Quote rule picked = %d\n", quoteRule);
     DTPRINT("  fill=%s and the most number of columns found is %d\n", fill?"true":"false", ncol);
   }
-
-  // Now check previous line which is being discarded and give helpful message to user
-  if (prevStart && args.skipNrow==0 && args.skipString==NULL) {
-    ch = prevStart;
-    tt = countfields(&ch);
-    if (tt==ncol) STOP("Internal error: row before first data row has the same number of fields but we're not using it.");
-    if (tt>1) DTWARN("Starting data input on line %d <<%s>> with %d fields and discarding line %d <<%s>> before it because it has a different number of fields (%d).",
-                     line, strlim(pos, 30), ncol, line-1, strlim(prevStart, 30), tt);
   }
-  if (ch!=pos) STOP("Internal error. ch!=pos after checking the line before the first data row");
-  }
-
 
   //*********************************************************************************************
   // [7] Detect column types, good nrow estimate and whether first row is column names
@@ -1434,6 +1423,7 @@ int freadMain(freadMainArgs _args) {
   size_t sampleLines;     // How many lines were sampled during the initial pre-scan
   size_t bytesRead;       // Bytes in the whole data section
   const char *lastRowEnd; // Pointer to the end of the data section
+  bool autoFirstColName = false; // true when there's one less column name and then it's assumed that the first column is row names or index
   {
   if (verbose) DTPRINT("[07] Detect column types, good nrow estimate and whether first row is column names\n");
   if (verbose && args.header!=NA_BOOL8) DTPRINT("  'header' changed by user from 'auto' to %s\n", args.header?"true":"false");
@@ -1636,6 +1626,32 @@ int freadMain(freadMainArgs _args) {
   meanLineLen = 0;
   bytesRead = 0;
 
+  if (args.header==NA_BOOL8 && prevStart!=NULL && args.skipNrow==0 && args.skipString==NULL) {
+    // The first data row matches types in the row after that, and user didn't override default auto detection.
+    // Maybe previous line (if there is one, prevStart!=NULL) contains column names but there are too few (which is why it didn't become the first data row).
+    ch = prevStart;
+    int tt = countfields(&ch);
+    if (tt==ncol) STOP("Internal error: row before first data row has the same number of fields but we're not using it.");
+    if (ch!=pos)  STOP("Internal error: ch!=pos after counting fields in the line before the first data row.");
+    if (verbose) DTPRINT("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names.", tt);
+    if (tt<ncol) {
+      autoFirstColName = (tt==ncol-1);
+      DTWARN("Detected %d column names but the data has %d columns (i.e. an invalid file format). Added %d extra default column name%s\n", tt, ncol, ncol-tt,
+             autoFirstColName ? " for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file." : "s at the end.");
+    } else if (tt>ncol) {
+      if (fill) STOP("Internal error: fill=true but there is a previous row which should already have been filled.");
+      DTWARN("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n", tt, ncol);
+      fill = true;
+      type =    (int8_t *)realloc(type,    (size_t)tt * sizeof(int8_t));
+      tmpType = (int8_t *)realloc(tmpType, (size_t)tt * sizeof(int8_t));
+      if (!type || !tmpType) STOP("Failed to realloc 2 x %d bytes for type and tmpType: %s", tt, strerror(errno));
+      for (int j=ncol; j<tt; j++) { tmpType[j] = type[j] = type0; }
+      ncol = tt;
+    }
+    args.header = true;
+    pos = prevStart;
+  }
+
   if (args.header==NA_BOOL8) {
     args.header = true;
     for (int j=0; j<ncol; j++) {
@@ -1713,7 +1729,7 @@ int freadMain(freadMainArgs _args) {
   } else {
     line++;
     if (sep==' ') while (*ch==' ') ch++;
-    void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames};
+    void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
     FieldParseContext fctx = {
       .ch = &ch,
       .targets = targets,

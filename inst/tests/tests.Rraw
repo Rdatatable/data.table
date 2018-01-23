@@ -2600,8 +2600,8 @@ test(901.2, DT<-fread(f), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.
 # Columns 'Cancelled' and 'Diverted' seem boolean (so logical01=TRUE good default for those) but Month just happens to be all-Jan
 f = testDir("2008head.csv")
 test(902, fread(f,logical01=FALSE), as.data.table(read.csv(f,stringsAsFactors=FALSE)))
-test(903, fread("A,B\n1,3,foo,5\n2,4,barbaz,6"), data.table(1:2,3:4,c("foo","barbaz"),5:6),
-          warning="Starting.*on line 2 <<1,3,foo,5>> with 4 fields.*discarding line 1 <<A,B>>.*fields.*2")  # invalid colnames (too short)
+test(903, fread("A,B\n1,3,foo,5\n2,4,barbaz,6"), data.table(A=1:2, B=3:4, V3=c("foo","barbaz"), V4=5:6),
+          warning="Detected 2 column names but.*4.*Added 2 extra default column names at the end")
 test(904, fread("A,B,C,D\n1,3,foo,5\n2,4,barbaz,6"), DT<-data.table(A=1:2,B=3:4,C=c("foo","barbaz"),D=5:6))  # ok
 test(905, fread('A,B,C,D\n1,3,foo,5\n2,4,"barbaz",6'), DT)
 test(906, fread('A,B,C,D\n1,3,foo,5\n2,4,"ba,r,baz",6'), DT[2,C:="ba,r,baz"])
@@ -11199,6 +11199,10 @@ DT1[colname_with_suffix == "not found", ]  # automatically creates index on coln
 target <- data.table(colname = c("test1", "test2", "test2", "test3"), colname_with_suffix = c("other", "test", "includes test within", "other"), lookup_result = c(1,2,2,3))
 target[colname_with_suffix == "not found", ]
 test(1852, DT1[DT2, lookup_result := i.lookup_result, on=c("colname"="lookup")], target)
+# test that joins don't change row order when there is an index with additional columns present, #2559
+dt <- data.table(x = c(1,1), y = c(2,1))
+setindex(dt, x, y)
+test(1852.1, dt[J(x=1), on = "x==x"], setindex(dt, NULL))
 
 # NA column names and missing new argument to setnames, #2475
 DT = setNames(data.frame(a = 1, b = 2, c = 3, d = 4), c(NA, "b", "c", NA))
@@ -11327,14 +11331,51 @@ DTout = data.table(
 )
 test(1866.6, melt(DT, measure.vars = patterns("^x", "^y", cols=names(DT))), DTout)
 
+# auto fill too few column names (#1625) and auto fill=TRUE when too many column names
+test(1867.1, fread("A,B\n1,3,5,7\n2,4,6,8\n"), data.table(A=1:2, B=3:4, V3=5:6, V4=7:8),
+             warning="Detected 2 column names but.*4.*Added 2 extra default column names at the end[.]")
+test(1867.2, fread("A,B,C,D,E\n1,3,5,7\n2,4,6,8\n"), data.table(A=1:2, B=3:4, C=5:6, D=7:8, E=NA),
+             warning="Detected 5.*but.*4.*Filling rows automatically.")
+test(1867.3, fread(testDir("fillheader.csv"))[c(1,.N), c(1,29,30)], data.table("V1"="Ashburton District", EASTING=c(5154177L,5144032L), NORTHING=NA),
+             warning="Detected 29.*but.*30.*Added 1 extra default column name.*guessed to be row names or an index.*valid file")
+             # in this unusual case, every data row has a trailing comma but the column names do not. So the guess is wrong; a deliberate choice currently.
+test(1867.4, fread("A,B\nCol1,Col2,Col3\n1,3,5\n2,4,6\n"), data.table(Col1=1:2, Col2=3:4, Col3=5:6))
+test(1867.5, fread("A\nCol1,Col2\n1,3,5\n2,4,6\n"), data.table(V1=1:2, Col1=3:4, Col2=5:6), warning="Added 1 extra default column name.*guessed to be row names or an index")
+test(1867.6, fread("Some header\ninfo\nCol1,Col2,Col3\n1,3,5\n2,4,6\n"), data.table(Col1=1:2, Col2=3:4, Col3=5:6))
+test(1867.7, fread("Some header\ninfo\n\nCol1,Col2\n1,3,5\n2,4,6\n"), data.table(V1=1:2, Col1=3:4, Col2=5:6), warning="Added 1 extra")
+test(1867.8, fread("A,B,C,D,E\n1,3,5\n2,4,6\n"), data.table(A=1:2, B=3:4, C=5:6, D=NA, E=NA), warning="Detected 5.*but.*3.*Filling rows automatically")
+test(1867.9, fread("Heading text\nA,B,C,D,E\n1,3,5\n2,4,6\n"), data.table(A=1:2, B=3:4, C=5:6, D=NA, E=NA), warning="Detected 5.*but.*3.*Filling rows automatically")
+test(1867.11, fread("Heading text\n1,3,5\n2,4,6\n"), data.table("Heading text"=1:2, V2=3:4, V3=5:6), warning="Added 2 extra default column names at the end")
+test(1867.12, fread("A,B\n\n1,3,5\n2,4,6\n"), data.table(V1=1:2, V2=3:4, V3=5:6))
+test(1867.13, fread("A\n1,3\n2,4\n"), data.table(V1=1:2, A=3:4), warning="Added 1 extra default column name")
+# test from #763, covers #1818 too
+DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1L,3L,6L), v=10:18)
+write.table(DT, file = (f<-tempfile()), sep = "\t")
+test(1867.14, fread(f), data.table(V1=1:9, x=DT$x, y=DT$y, v=DT$v), warning="Added 1 extra default column name")
+unlink(f)
+# test(1867.15, fread(testDir("iterations.txt"))) # #1416 TODO (trailing tabs on most but not at the beginning and a "-" intended to mean missing but taken as text column name)
+
+# non equi joins bug fix #2313
+dt <- data.table(
+  patient.id = c(1L, 2L, 1L, 1L, 2L, 2L, 2L),
+  h.date = as.Date(c("2013/10/15", "2014/10/15", "2015/7/16", "2016/1/7",
+                                   "2015/12/20", "2015/12/25", "2016/2/10")))
+setorder(dt)
+dt[, `:=`(start.date = h.date - 365, end.date = h.date)]
+# This line below would error without this fix
+ans <- dt[dt, on = .(patient.id, h.date >= start.date, h.date <= end.date),
+         .(patient.id, i.start.date, i.end.date, g = .GRP, .N, x.h.date),
+         by=.EACHI]
+test(1868, "x.h.date" %in% names(ans), TRUE)
+
 # miscellaneous missing tests uncovered by CodeCov difference
 #   in the process of PR #2573
 ## data.table cannot recycle complicated types
 short_s4_col = getClass("MethodDefinition")
-test(1867.1, data.table(a = 1:4, short_s4_col), error = 'problem recycling.*try a simpler type')
+test(1869.1, data.table(a = 1:4, short_s4_col), error = 'problem recycling.*try a simpler type')
 ## i must be a data.table when on is specified
 DT = data.table(a = 1:3)
-test(1867.2, DT[c(TRUE, FALSE), on = 'coefficients'], error = "not a data.table, but 'on'")
+test(1869.2, DT[c(TRUE, FALSE), on = 'coefficients'], error = "not a data.table, but 'on'")
 
 ##########################
 
@@ -11354,7 +11395,6 @@ test(1867.2, DT[c(TRUE, FALSE), on = 'coefficients'], error = "not a data.table,
 
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name. Actually, is that true?  Need "..J".
 # TO DO: why did SO answer using eval twice in j need .SD in lapply(f,eval,.SD) on 19 Apr
-# TO DO: change all 1 to 1L internally (done in data.table.R, other .R to do)
 
 # TO DO: check the "j is named list could be inefficient" message from verbose than Chris N showed recently to 15 May
 # TO DO: !make sure explicitly that unnamed lists are being executed by dogroups!

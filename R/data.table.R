@@ -1501,7 +1501,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (length(xcols)) {
     #  TODO add: if (length(alloc)==nrow(x)) stop("There is no need to deep copy x in this case")
     SDenv$.SDall = .Call(CsubsetDT,x,alloc,xcols)    # must be deep copy when largest group is a subset
-    if (xdotcols) setattr(SDenv$.SDall, 'names', ansvars[seq_along(xcols)]) # now that we allow 'x.' prefix in 'j'
+    if (xdotcols) setattr(SDenv$.SDall, 'names', ansvars[xcolsAns]) # now that we allow 'x.' prefix in 'j', #2313 bug fix - [xcolsAns]
     SDenv$.SD = if (!length(othervars)) SDenv$.SDall else shallow(SDenv$.SDall, setdiff(ansvars, othervars))
   }
   if (nrow(SDenv$.SDall)==0L) {
