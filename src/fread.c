@@ -1163,7 +1163,7 @@ int freadMain(freadMainArgs _args) {
     if (ch2<sof) {
       // no \n or \r found in the file => it's a single line (likely column names only)
       if (fileSize%4096==0) {
-        STOP("File is very very unusual. It is one single line and the file's size is an exact multiple of 4096 bytes. Please append a newline at the end using for example 'echo >> %s'.", args.filename);
+        STOP("File is very very unusual. It is one single line without any \\r or \\n at the end, and the file's size is an exact multiple of 4096 bytes. Until we can implement support for this case, please append a newline at the end using for example 'echo >> %s'.", args.filename);
       }
       // otherwise there is one byte after eof which we can reliably write to in the very last cow page
       // We could do this routinely (not just for single line input) when fileSize%4096!=0 but we desire to run all tests through the harder
