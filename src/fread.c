@@ -227,13 +227,13 @@ static inline void skip_white(const char **pch) {
 
 /**
  * eol() accepts a position and, if any of the following line endings, moves to the end of that sequence
- * and returns true. Repeated \\r are considered one. At most one \\n will be moved over.
+ * and returns true. Repeated \\r around \n are considered one. At most one \\n will be moved over, though.
  * 1. \\n        Unix
  * 2. \\r\\n     Windows
  * 3. \\r\\r\\n  R's download.file() in text mode doubling up \\r
- * 4. \\r        Old MacOS 9 format discontinued in 2002 but then #2347 was raised straight away when I tried not to support it
+ * 4. \\r        Old MacOS 9 format discontinued in 2002 but then #2347 was raised straight away when I tried not to support it, #2371
  * 5. \\n\\r     Acorn BBC (!) and RISC OS according to Wikipedia.
- * 6. \\r\\r\\r  Might as well, for completeness
+ * 6. \\r\\r\\r  Not supported. So that blank lines in single column files generate NA ok, #2542.
  */
 static inline bool eol(const char **pch) {
   const char *ch = *pch;
@@ -241,19 +241,12 @@ static inline bool eol(const char **pch) {
   while (*ch=='\r') ch++;  // commonly happens once on Windows for type 2
   if (*ch=='\n') {
     // 1,2,3 and 5 (one \n with any number of \r before and/or after)
+    // most common branch as we only call eol() when we expect to be on eol
     while (ch[1]=='\r') ch++;  // type 5. Could drop but we're only tepid here so keep for completeness and full generality.
     *pch = ch;
     return true;
   }
-  if (ch>*pch && !LFpresent) {
-    // 4 and 6 (\r only with no \n before or after)
-    // very rare, not recommended and almost did not support
-    // ch>*pch only if we moved over some \r in the first while() above
-    // as long as no \n are present in the file (noLFpresent) we can consider \r-only as line ending, #2371
-    *pch = ch-1;  // move back onto the last \r
-    return true;
-  }
-  return false;
+  return !LFpresent && **pch=='\r';
 }
 
 
@@ -1054,7 +1047,6 @@ int freadMain(freadMainArgs _args) {
   {
   if (verbose) DTPRINT("[02] Opening the file\n");
   mmp = NULL;
-  finalByte = '\0';   // only ever !='\0' for files and when the file's final data line is ended abrubtly without last line ending
   if (args.input) {
     if (verbose) DTPRINT("  `input` argument is provided rather than a file name, interpreting as raw text to read\n");
     sof = args.input;
@@ -1162,55 +1154,46 @@ int freadMain(freadMainArgs _args) {
   //*********************************************************************************************
   // [4] Terminate mmap with \0
   //*********************************************************************************************
-  {
   if (verbose) DTPRINT("[04] Arrange mmap to be \\0 terminated\n");
+  finalByte = '\0';
   if (args.filename) {
-    ch = eof-1; // eof was resting after the last byte and should never be dereferenced there (bus error when fileSize%4096==0)
-    while (ch>=sof && (*ch==' ' || *ch=='\t' || *ch=='\r')) ch--;
-    if (ch>=sof && *ch=='\n') {
-      // found last \n in the file and there is no non-whitespace after it
-      // ideal case, we'll use it to place \0 and no need to remember finalByte
-      while (ch>sof && ch[-1]=='\r') ch--;  // move to the first of any preceeding \r too
-      eof = ch;
-    }
-    else {
-      // file ends abruptly without a final \n after the last line. In rare cases there might be a lone \r after the last line and if so we do this method too.
-      const char *ch2 = ch;
-      while (ch2>=sof && *ch2!='\n' && *ch2!='\r') ch2--;  // look for any \n or \r before the last line. If none found, it's a single line (likely column names only)
-      if (ch2<sof) {
-        // single line input. Use the simpler approach with 4096 restriction for this rare case.
-        if (fileSize%4096==0) {  // TODO: portable way to discover relevant page size? 4096 is lowest common denominator though and should suffice
-          STOP("File is very very unusual. It is one single line and the file's size is an exact multiple of 4096 bytes. Please append a newline at the end using for example 'echo >> %s'.", args.filename);
-        }
-        // otherwise there is one byte after eof which we can reliably write to in the very last cow page
-        // We could do this routinely (not just for single line input) when fileSize%4096!=0 but we desire to run all tests through the harder branch
-        // below that uses finalByte approach to test that logic. Like test 893 which causes a type bump in the last field due to the finalByte.
-        fileSize++;
+    // eof is currently resting after the last byte of the file
+    const char *ch2 = eof-1;
+    while (ch2>=sof && *ch2!='\n' && *ch2!='\r') ch2--;
+    if (ch2<sof) {
+      // no \n or \r found in the file => it's a single line (likely column names only)
+      if (fileSize%4096==0) {
+        STOP("File is very very unusual. It is one single line and the file's size is an exact multiple of 4096 bytes. Please append a newline at the end using for example 'echo >> %s'.", args.filename);
       }
-      else {
-        if (verbose) DTPRINT("  File ends abruptly with '%c'. This should be fine but if a problem does occur, please report that problem as a bug and workaround it by appending a newline to properly end the last record; e.g. 'echo >> %s'.\n", *ch, args.filename);
-        eof--;
-        if (*eof != '\r') finalByte = *eof;
-        // finalByte could be ' ' or '\t' here because the last field may contain trailing whitespace which must be kept when stripWhite=FALSE
-        // That would only be the case though if other non-whitespace occurred on the last line, though. Otherwise the last \n at the start of
-        // of the last line would have been found and used.
-        // Note that the character printed in the message is not necessarily the one saved to finalByte. But it is the one that the user would
-        // see as the last printing character on their display.
+      // otherwise there is one byte after eof which we can reliably write to in the very last cow page
+      // We could do this routinely (not just for single line input) when fileSize%4096!=0 but we desire to run all tests through the harder
+      // branch later that uses finalByte, to test that logic; e.g. test 893 which causes a type bump in the last field due to the finalByte.
+      // TODO: portable way to discover relevant page size. 4096 is lowest common denominator though and should suffice.
+      fileSize++;
+    } else {
+      eof--;
+      if (*eof=='\n' && eof>sof && eof[-1]=='\r') {
+        *_const_cast(eof-1) = '\n';  // move \n back to leave last byte for '\0' in cow page
+      } else {
+        finalByte = *eof;
+        // remember finalByte so we can reread final field correctly after reading all data.
+        // for now, finalByte could still be \n or \r and if so, we'll deal with that later below when we know if it's single column input or not
+        if (verbose && !isspace(finalByte)) {
+          DTPRINT("  File ends abruptly with '%c'. This should be fine but if a problem does occur, please report that problem as a bug and workaround it by appending a newline to properly end the last record; e.g. 'echo >> %s'.\n", finalByte, args.filename);
+        }
       }
     }
     *_const_cast(eof) = '\0';  // cow page
   }
   // else char* input already guaranteed to end with \0. We do not modify direct char* input at all, ever.
-
   // We have now ensured the input ends on eof and that *eof=='\0' too.
   // If the file ended abruptly (rare), the last character was remembered in finalByte.
   // We have made most files which end properly with final end-of-line now abruptly end with a \0 instead (in the cow page).
   // This may seem counterintuitive but now we have consistency within the constraints of no mmap of fileSize+1.
-  // In processors we don't need to test for ch<eof at all now, since \0 is terminal just as well as \r or \n.
+  // In field processors we don't need to test for ch<eof at all now, since \0 is terminal just as well as \r or \n.
   // When we need to, we now have two options: i) if (*ch && ...) (i.e. !='\0') which saves a compare to eof on every byte, or ii) ch<eof as usual
   // If UTF strings contain \0 we can branch in that rare case to test if ch==eof too if necessary. We have that option.
   // If a field does not end with sep or eol, it's only in that rare case do we then need to test if it is \0 or not.
-  }
 
 
   //*********************************************************************************************
@@ -1411,6 +1394,22 @@ int freadMain(freadMainArgs _args) {
             tt, line, strlim(pos, 30));
     DTPRINT("  Quote rule picked = %d\n", quoteRule);
     DTPRINT("  fill=%s and the most number of columns found is %d\n", fill?"true":"false", ncol);
+  }
+
+  if (finalByte=='\n' || finalByte=='\r') {
+    if (ncol==1 && (eof[-1]=='\n' || eof[-1]=='\r') && (finalByte=='\n' || (!LFpresent && finalByte=='\r'))) {
+      // Multiple newlines at the end are significant in the case of 1-column files only (multiple NA at the end)
+      // However, 1-column files are very unusual, and with more than one newline at the end too is even more unusual
+      // So we'll handle it with the 4096 restriction for simplicity, in the same way as the single row exception
+      if (fileSize%4096==0) {
+        STOP("File is very very unusual. It is single column, the file's size is an exact multiple of 4096 bytes, and it ends with 2 or more end-of-line. Do the multiple end-of-line really represent missing values in extra rows at the end? If so, please append a space at the end until we can implement support for this, using for example 'echo ' ' >> %s'.", args.filename);
+      }
+      if (verbose) DTPRINT("  1-column file ends with multiple end-of-line. Restoring finalByte and using extra byte in cow page.\n");
+      *_const_cast(eof) = finalByte;
+      fileSize++;
+      *_const_cast(++eof) = '\0';
+    }
+    finalByte = '\0';  // only if finalByte is not \r or \n might it be significant from now on
   }
   }
 
