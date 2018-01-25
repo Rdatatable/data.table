@@ -237,7 +237,7 @@ set_colClasses <- function(ans,
           if (is.na(colClasses)) {
             NA_character_
           } else {
-            setNames(list(seq_along(ans)), colClasses[1])
+            setNames(list(seq_along(ans)), colClasses[1L])
           }
         } else {
           # c("integer", "character", "character", "character") ==> list(character = 2:4, integer = 1)
@@ -308,7 +308,7 @@ set_colClasses <- function(ans,
                   if (length(out)) {
                     out - cumsum(seq_len(max(out)) %in% drop)[out]
                   } else {
-                    integer(0)
+                    integer(0L)
                   }
                 } else {
                   # character, nothing to do
