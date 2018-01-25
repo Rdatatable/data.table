@@ -52,11 +52,11 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) 
   setwd(file.path(cc_dir,"src"))
   cat(getwd(),"\n")
   if (clean) system("rm *.o *.so")
-  # TODO add -Wextra too
   if (debug) {
-    ret = system("MAKEFLAGS='-j CC=gcc-7 CFLAGS=-std=c99\\ -Og\\ -ggdb\\ -Wall\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c")
+    ret = system("MAKEFLAGS='-j CC=gcc-7 PKG_CFLAGS=-fno-openmp CFLAGS=-std=c99\\ -Og\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c")
   } else {
     ret = system("MAKEFLAGS='-j CC=gcc-7 CFLAGS=-fopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic' R CMD SHLIB -o data.table.so *.c")
+    # TODO add -Wextra too?
   }
   if (ret) return()
   # clang -Weverything includes -pedantic and issues many more warnings than gcc
