@@ -240,6 +240,8 @@ set_colClasses <- function(ans,
             setNames(list(seq_along(ans)), colClasses[1L])
           }
         } else {
+          # Convert 'character' type to 'list'
+          #
           # c("integer", "character", "character", "character") ==> list(character = 2:4, integer = 1)
           unique_colClasses <- unique(colClasses)
           unique_colClasses <- unique_colClasses[!is.na(unique_colClasses)]
