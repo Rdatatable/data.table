@@ -1493,7 +1493,7 @@ int freadMain(freadMainArgs _args) {
       int field=0;
       const char *fieldStart = NULL; // Needed outside loop for error messages below
       ch--;
-      int8_t previousLastColType = (sampleLines <= 1 ? 1 : tmpType[ncol-1]);  // to revert any bump in last colum due to final field on final row due to finalByte
+      int8_t previousLastColType = (sampleLines <= 1 ? type0 : tmpType[ncol-1]);  // to revert any bump in last colum due to final field on final row due to finalByte
       while (field<ncol) {
         // DTPRINT("<<%s>>(%d)", strlim(ch,20), quoteRule);
         ch++;
