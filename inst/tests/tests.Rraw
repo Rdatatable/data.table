@@ -2888,13 +2888,13 @@ test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(
 # an fread error shouldn't hold a lock on the file on Windows
 f = tempfile()
 cat('A,B\n1,2\n3\n5,6\n', file=f)
-test(1010.1, fread(f), error="Line 3 has too few fields.*fill.*TRUE")
+test(1010.1, fread(f), error="Line 3 does not have 2 fields.*fill.*TRUE")
 cat('7\n8,9',file=f,append=TRUE)   # that append works after error
 test(1010.2, fread(f,fill=TRUE), data.table(A=INT(1,3,5,7,8), B=INT(2,NA,6,NA,9)))
-test(1010.3, fread(f), error="Line 3 has too few fields.*fill.*TRUE")
+test(1010.3, fread(f), error="Line 3 does not have 2 fields.*fill.*TRUE")
 cat('A,B\n1,2\n3\n5,6\n', file=f)  # that overwrite works after error
 test(1010.4, fread(f,fill=TRUE), data.table(A=INT(1,3,5), B=INT(2,NA,6)))
-test(1010.5, fread(f), error="Line 3 has too few fields.*fill.*TRUE")
+test(1010.5, fread(f), error="Line 3 does not have 2 fields.*fill.*TRUE")
 unlink(f)                          # that file can be removed after error
 test(1010.6, !file.exists(f))
 
@@ -7275,13 +7275,11 @@ f = testDir("issue_773_fread.txt")
 ans = data.table(AAA=as.character(c(4,7,rep(1,17),31,21)),
                  BBB=as.character(c(5,8,rep(2,17),32,22)),
                  CCC=as.integer(c(6,9,rep(3,17),33,23)))
-test(1558.1, fread(f, nrow=21L), error="Line 23 has too few fields.*<<ZZZ.*YYY>>.*You have tried.*nrows=.*but this will not help because.*set fill=TRUE instead")
-# Even though nrow=21 (+1 header line) finished on the line before the problem, we still require a good sample of the whole file by setting fill=TRUE
-# This ensures consistency of types of the subset with other subsets. The types of AAA and BBB are character due to the sample
-# rows even though those columns only become character on line 23.
-test(1558.2, fread(f, nrow=21L, fill=TRUE), ans)
-test(1558.3, fread(f, nrow=22L), error="Line 23 has too few fields.*<<ZZZ.*YYY>>.*You have tried.*nrows=.*but this will not help because.*set fill=TRUE instead")
-test(1558.4, fread(f, nrow=22L, fill=TRUE), rbind(ans, list("ZZZ","YYY",NA)))
+test(1558.1, fread(f), error="Line 23 does not have 3 fields.*<<ZZZ.*YYY>>")
+test(1558.2, fread(f, nrow=21L), ans)
+test(1558.3, fread(f, nrow=21L, fill=TRUE), ans)
+test(1558.4, fread(f, nrow=22L), error="Line 23 does not have 3 fields.*<<ZZZ.*YYY>>")
+test(1558.5, fread(f, nrow=22L, fill=TRUE), rbind(ans, list("ZZZ","YYY",NA)))
 
 # FR # 1338 -- check.names argument of setDT
 ans=data.table(X=1:3,"X.1"=1:3)
@@ -10374,8 +10372,8 @@ if ("package:nanotime" %in% search()) {
 
 # check too many fields error from ,\n line ending highlighted in #2044
 test(1753.1, fread("X,Y\n1,2\n3,4\n5,6"), data.table(X=INT(1,3,5),Y=INT(2,4,6)))
-test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), error="Line 3 starting <<3,4,>> has more than.*2 fields")
-test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 3 starting <<3,4,7>> has more than.*2 fields")
+test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), error="Line 3 does not have 2 fields.*<<3,4,>>")
+test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 3 has more than.*2 fields.*'7' at position 5.*<<3,4,7>>")
 
 # issue 2051 where a quoted field contains ",  New quote rule detection handles it.
 test(1753.4, fread(testDir("issue_2051.csv"))[2,grep("^Our.*tool$",COLUMN50)], 1L)
@@ -10735,7 +10733,7 @@ test(1777.17, fread("A,B,3\nC,D,4\n", verbose=TRUE), data.table(V1=c("A","C"),V2
 test(1777.18, fread("A,B,C\nD,E,F\n", verbose=TRUE), data.table(A="D", B="E", C="F"),
               output="because all columns are type string and a better guess is not possible")
 test(1777.19, fread("A,B,C\nC,D,4\n", verbose=TRUE), data.table(A="C",B="D",C=4L),
-              output="due to column 3 containing a string on row 1 and a lower type.*on row 2")
+              output="due to column 3 containing a string on row 1 and a lower type.*in the rest of the.*sample rows")
 
 # unquoted fields containing \r, #2371
 test(1778.1, fread("A,B,C\n0,,\n1,hello\rworld,2\n3,test,4\n", verbose=TRUE),
@@ -10863,9 +10861,9 @@ test(1818, fread(testDir("session_aborted_fatal_error.txt"))[c(1,.N),c(1,2,250,2
 test(1819, as.ITime("2015-09-29 08:22:00"), structure(30120L, class = "ITime"))
 
 # Issue 2287: the % sign in the error message should not be interpreted as a format string!
-test(1820.1, fread("name,id\nfoo,1\nbar%\n"), error="Expecting 2 fields but found 1: <<bar%>>")
-test(1820.2, fread("name,id\nfoo,1\nbar%d"), error="Expecting 2 fields but found 1: <<bar%d>>")
-test(1820.3, fread("name,id\nfoo,1\nbar%s"), error="Expecting 2 fields but found 1: <<bar%s>>")
+test(1820.1, fread("name,id\nfoo,1\nbar%\n"), error="Line 3 does not have 2 fields.*<<bar%>>")
+test(1820.2, fread("name,id\nfoo,1\nbar%d"), error="Line 3 does not have 2 fields.*<<bar%d>>")
+test(1820.3, fread("name,id\nfoo,1\nbar%s"), error="Line 3 does not have 2 fields.*<<bar%s>>")
 
 # new argument for print.data.table: col.names
 #   issue #1482 / PR #1483
@@ -10892,7 +10890,7 @@ src = paste(c("A,B",
               paste(rep("3,4", 10000), collapse="\n"),
               ""),
             collapse="\n")
-test(1822, fread(src), error="Expecting 2 cols but row .+ contains only 1 cols")
+test(1822, fread(src), error="Line 102 does not have 2 fields.*<<999>>")
 
 # Issue 2326: .SD mistakenly includes column being set when get() appears in j
 DT <- data.table(x = seq(1, 10), y = seq(10, 1))
@@ -11020,8 +11018,8 @@ for (i in 0:1000) {
   if (i==502) write("-999,Bad,Line,0.0,0.0,extra\n", f, append=TRUE)
 }
 test(1835, fread(f, verbose=TRUE),
-  output = "Not using sample from jump 50.*could not establish the true line start.*jumps=[0..2)",
-  error  = "Too many fields on out-of-sample row.*-999,Bad,Line,0.0,0.0,extra")
+  output = "Not using sample from jump 50.*could not establish the next true line start.*jumps=[0..2)",
+  error  = "Line 42253 does not have 5 fields.*<<-999,Bad,Line,0.0,0.0,extra>>")
 unlink(f)
 
 test(1836, fread('1,2,"3,a"\n4,5,"6,b"'), data.table(V1=c(1L,4L), V2=c(2L,5L), V3=c("3,a","6,b")))   # 2196
@@ -11276,7 +11274,7 @@ test(1864.2, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
 data = rep("a,b,c,d,e,f,g", 2100)
 data[111] = "a,b,c,d,e,f,g,"
 cat(data, file=(f<-tempfile()), sep="\n")
-test(1865, fread(f, header=FALSE), error="Too many fields.*Read all 7 expected.*but more are present.*a,b,c,d,e,f,g,")
+test(1865, fread(f, header=FALSE), error="Line 111 does not have 7 fields.*<<a,b,c,d,e,f,g,>>")
 unlink(f)
 
 # "Natural" provision of value.name in measure.vars list, #1547 and #2551

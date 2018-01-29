@@ -1476,7 +1476,7 @@ int freadMain(freadMainArgs _args) {
   size_t sampleLines;     // How many lines were sampled during the initial pre-scan
   const char *lastRowEnd; // Pointer to the end of the data section
   bool autoFirstColName = false; // true when there's one less column name and then it's assumed that the first column is row names or index
-  int row1Line = 0;
+  int row1Line = line;
   size_t estnrow=1;
   size_t allocnrow=0;     // Number of rows in the allocated DataTable
   double meanLineLen=0.0; // Average length (in bytes) of a single line in the input file
@@ -1517,7 +1517,6 @@ int freadMain(freadMainArgs _args) {
   }
 
   sampleLines = 0;
-  row1Line = line;
   double sumLen=0.0, sumLenSq=0.0;
   int minLen=INT32_MAX, maxLen=-1;   // int_max so the first if(thisLen<minLen) is always true; similarly for max
   lastRowEnd = pos;
@@ -1711,14 +1710,14 @@ int freadMain(freadMainArgs _args) {
       DTPRINT("  Estimated number of rows: %llu / %.2f = %llu\n", (llu)bytesRead, meanLineLen, (llu)estnrow);
       DTPRINT("  Initial alloc = %llu rows (%llu + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n",
               (llu)allocnrow, (llu)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
+      DTPRINT("  =====\n");
     } else {
       if (sampleLines > allocnrow) STOP("Internal error: sampleLines(%llu) > allocnrow(%llu)", (llu)sampleLines, (llu)allocnrow);
     }
-    if (nrowLimit < allocnrow) {
-      if (verbose) DTPRINT("  Alloc limited to lower nrows=%llu passed in.\n", (llu)nrowLimit);
-      estnrow = allocnrow = nrowLimit;
-    }
-    if (verbose) DTPRINT("  =====\n");
+  }
+  if (nrowLimit < allocnrow) {
+    if (verbose) DTPRINT("  Alloc limited to lower nrows=%llu passed in.\n", (llu)nrowLimit);
+    estnrow = allocnrow = nrowLimit;
   }
   }
 
@@ -1875,7 +1874,7 @@ int freadMain(freadMainArgs _args) {
   read:  // we'll return here to reread any columns with out-of-sample type exceptions
   if (verbose) DTPRINT("  jumps=[%d..%d), chunk_size=%llu, total_size=%llu\n",
                        jump0, nJumps, (llu)chunkBytes, (llu)(lastRowEnd-pos));
-  ASSERT(allocnrow <= nrowLimit, "allocnrow(%llu) < nrowLimit(%llu)", (llu)allocnrow, (llu)nrowLimit);
+  ASSERT(allocnrow <= nrowLimit, "allocnrow(%llu) <= nrowLimit(%llu)", (llu)allocnrow, (llu)nrowLimit);
   #pragma omp parallel num_threads(nth)
   {
     int me = omp_get_thread_num();
@@ -1893,6 +1892,7 @@ int freadMain(freadMainArgs _args) {
     const char *thisJumpStart=NULL;  // The first good start-of-line after the jump point
     size_t myNrow = 0; // the number of rows in my chunk
     size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
+    bool myLineError = false;
 
     // Allocate thread-private row-major `myBuff`s
     ThreadLocalFreadParsingContext ctx = {
@@ -1952,6 +1952,7 @@ int freadMain(freadMainArgs _args) {
       }
 
       const char *tch = pos + (size_t)jump*chunkBytes;
+      const char *tlineStart = tch;
       const char *nextJump = jump<nJumps-1 ? tch+chunkBytes+1/*\n*/ : lastRowEnd;
       // +1 is for when nextJump happens to fall exactly on a \n. The
       // next thread will start one line later because nextGoodLine() starts by finding next eol.
@@ -1994,7 +1995,7 @@ int freadMain(freadMainArgs _args) {
           fctx.targets[4] = (void*)((char*)ctx.buff4 + myNrow * rowSize4);
           fctx.targets[1] = (void*)((char*)ctx.buff1 + myNrow * rowSize1);
         }
-        const char *tlineStart = tch;  // for error message
+        tlineStart = tch;  // for error message
         const char *fieldStart = tch;
         int j = 0;
 
@@ -2154,9 +2155,14 @@ int freadMain(freadMainArgs _args) {
             finalFieldLen = 0;
           }
         }
-        if (j < ncol)  {
+        if (j<ncol || (!eol(&tch) && *tch!='\0'))  {
           // not enough columns observed (including empty line). If fill==true, fields should already have been filled above due to continue inside while(j<ncol)
-          #pragma omp critical
+          // or too many fields observed
+          // delay error to the ordered clause so that the first line error is reported with the correct line number.
+          myLineError = true;
+          break;
+        }
+          /*#pragma omp critical
           if (!stopTeam) {
             stopTeam = true;
             snprintf(stopErr, stopErrSize,
@@ -2176,7 +2182,7 @@ int freadMain(freadMainArgs _args) {
               // TODO: move this message into the ordered section as ctx.DTi is not yet updated at this point
           }
           break;
-        }
+        }*/
         if (*tch!='\0') tch++;
         myNrow++;
       }
@@ -2196,28 +2202,38 @@ int freadMain(freadMainArgs _args) {
             (int)(thisJumpStart-prevJumpEnd), strlim(thisJumpStart,50));
           stopTeam=true;
         }
-        ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
-        if (ctx.DTi >= allocnrow) {  // a previous thread has already reached the `allocnrow` limit
-          stopTeam = true;
-          myNrow = 0;
-        } else if (myNrow + ctx.DTi > allocnrow) {  // current thread has reached `allocnrow` limit
-          if (allocnrow == nrowLimit) {
-            // allocnrow is the same as nrowLimit, no need to reallocate the DT,
-            // just truncate the rows in the current chunk.
-            myNrow = nrowLimit - ctx.DTi;
-          } else {
-            // We reached `allocnrow` limit, but there are more data to read
-            // left. In this case we arrange to terminate all threads but
-            // remember the position where the previous thread has finished. We
-            // will reallocate the DT and restart reading from the same point.
-            jump0 = jump;
-            extraAllocRows = (size_t)((double)(DTi+myNrow)*nJumps/(jump+1) * 1.2) - allocnrow;
-            if (extraAllocRows < 1024) extraAllocRows = 1024;
-            myNrow = 0;
+        //if (!stopTeam) {
+          ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
+          if (ctx.DTi >= allocnrow) {  // a previous thread has already reached the `allocnrow` limit
             stopTeam = true;
+            myNrow = 0;
+            myLineError = false;
+          } else if (myNrow + ctx.DTi > allocnrow) {  // current thread has reached `allocnrow` limit
+            if (allocnrow == nrowLimit) {
+              // allocnrow is the same as nrowLimit, no need to reallocate the DT,
+              // just truncate the rows in the current chunk
+              myNrow = nrowLimit - ctx.DTi;
+              myLineError = false;  // e.g. the format error is after nrowLimit so clear error, e.g. test 1558.1
+            } else {
+              // We reached `allocnrow` limit, but there are more data to read
+              // left. In this case we arrange to terminate all threads but
+              // remember the position where the previous thread has finished. We
+              // will reallocate the DT and restart reading from the same point.
+              jump0 = jump;
+              extraAllocRows = (size_t)((double)(DTi+myNrow)*nJumps/(jump+1) * 1.2) - allocnrow;
+              if (extraAllocRows < 1024) extraAllocRows = 1024;
+              myNrow = 0;
+              stopTeam = true;
+            }
           }
-        }
-                           // tell next thread (she not me) 2 things :
+          if (myLineError) {
+            stopTeam = true;
+            snprintf(stopErr, stopErrSize,
+              "Line %llu does not have %d fields. Consider fill=TRUE and comment.char=. First 500 characters of line: <<%s>>",
+                (llu)ctx.DTi+myNrow+row1Line, ncol, strlim(tlineStart, 500));
+          }
+        //}
+        // tell next thread (she not me) 2 things :
         prevJumpEnd = tch; // i) the \n I finished on so she can check (above) she started exactly on that \n good line start
         DTi += myNrow;     // ii) which row in the final result she should start writing to since now I know myNrow.
         ctx.nRows = myNrow;
@@ -2244,7 +2260,7 @@ int freadMain(freadMainArgs _args) {
   //-- end parallel ------------------
 
   if (stopTeam && stopErr[0]!='\0') {
-    STOP(stopErr);
+    STOP("%s", stopErr);
   } else {
     // nrowLimit applied and stopped early normally
     stopTeam = false;
