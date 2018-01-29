@@ -1266,8 +1266,8 @@ int freadMain(freadMainArgs _args) {
   //     what text editors report, or bash commands like "wc -l", "head -n"
   //     or "tail -n".
   //*********************************************************************************************
-  const char *pos;  // Location where the actual data in the file begins
-  int line = 1;     // Current line number
+  const char *pos;   // Location where the actual data in the file begins
+  int row1line = 1;  // The line number where the data starts. Normally row 1 is column names and row1line ends up == 2.
   {
 
   // First, set 'LFpresent' for use by eol() to know if \r-only line ending is allowed, #2371
@@ -1293,27 +1293,27 @@ int freadMain(freadMainArgs _args) {
     while (ch>sof && ch[-1]!='\n') ch--;  // move to beginning of line
     pos = ch;
     ch = sof;
-    while (ch<pos) line+=(*ch++=='\n');
+    while (ch<pos) row1line+=(*ch++=='\n');
     if (verbose) DTPRINT("Found skip='%s' on line %llu. Taking this to be header row or first row of data.\n",
-                         args.skipString, (llu)line);
+                         args.skipString, (llu)row1line);
     ch = pos;
   }
   // Skip the first `skipNrow` lines of input.
   else if (args.skipNrow>0) {
-    while (ch<eof && line<=args.skipNrow) line+=(*ch++=='\n');
-    if (ch>=eof) STOP("skip=%llu but the input only has %llu line%s", (llu)args.skipNrow, (llu)line, line>1?"s":"");
+    while (ch<eof && row1line<=args.skipNrow) row1line+=(*ch++=='\n');
+    if (ch>=eof) STOP("skip=%llu but the input only has %llu line%s", (llu)args.skipNrow, (llu)row1line, row1line>1?"s":"");
     pos = ch;
   }
 
   // skip blank input at the start
   const char *lineStart = ch;
   while (ch<eof && isspace(*ch)) {   // isspace matches ' ', \t, \n and \r
-    if (*ch=='\n') { ch++; lineStart=ch; line++; } else ch++;
+    if (*ch=='\n') { ch++; lineStart=ch; row1line++; } else ch++;
   }
   if (ch>=eof && !finalByte) STOP("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace.");
   if (verbose) {
-    if (lineStart>ch) DTPRINT("  Moved forward to first non-blank line (%d)\n", line);
-    DTPRINT("  Positioned on line %d starting: <<%s>>\n", line, strlim(lineStart, 30));
+    if (lineStart>ch) DTPRINT("  Moved forward to first non-blank line (%d)\n", row1line);
+    DTPRINT("  Positioned on line %d starting: <<%s>>\n", row1line, strlim(lineStart, 30));
   }
   ch = pos = lineStart;
   }
@@ -1434,20 +1434,20 @@ int freadMain(freadMainArgs _args) {
     while (ch<eof && ++thisLine<JUMPLINES) {
       const char *lastLineStart = ch;
       int tt = countfields(&ch);
-      if (tt==ncol) { ch=pos=lastLineStart; line+=thisLine; break; }
+      if (tt==ncol) { ch=pos=lastLineStart; row1line+=thisLine; break; }
       else prevStart = (tt>0 ? lastLineStart : NULL);
     }
   }
   // For standard regular separated files, we're now on the first byte of the file.
 
-  if (ncol<1 || line<1) STOP("Internal error: ncol==%d line==%d after detecting sep, ncol and first line", ncol, line);
+  if (ncol<1 || row1line<1) STOP("Internal error: ncol==%d line==%d after detecting sep, ncol and first line", ncol, row1line);
   int tt = countfields(&ch);
   ch = pos; // move back to start of line since countfields() moved to next
   if (!fill && tt!=ncol) STOP("Internal error: first line has field count %d but expecting %d", tt, ncol);
   if (verbose) {
     DTPRINT("  Detected %d columns on line %d. This line is either column "
             "names or first data row. Line starts as: <<%s>>\n",
-            tt, line, strlim(pos, 30));
+            tt, row1line, strlim(pos, 30));
     DTPRINT("  Quote rule picked = %d\n", quoteRule);
     DTPRINT("  fill=%s and the most number of columns found is %d\n", fill?"true":"false", ncol);
   }
@@ -1476,7 +1476,6 @@ int freadMain(freadMainArgs _args) {
   size_t sampleLines;     // How many lines were sampled during the initial pre-scan
   const char *lastRowEnd; // Pointer to the end of the data section
   bool autoFirstColName = false; // true when there's one less column name and then it's assumed that the first column is row names or index
-  int row1Line = line;
   size_t estnrow=1;
   size_t allocnrow=0;     // Number of rows in the allocated DataTable
   double meanLineLen=0.0; // Average length (in bytes) of a single line in the input file
@@ -1527,7 +1526,7 @@ int freadMain(freadMainArgs _args) {
       ch = pos;
       if (args.header!=false) {
         countfields(&ch); // skip first row for type guessing as it's probably column names
-        row1Line++;
+        row1line++;
       }
       firstRowStart = ch;
     } else {
@@ -1575,7 +1574,7 @@ int freadMain(freadMainArgs _args) {
         if (jump==0) {
           STOP("Line %d has more than the expected %d fields. Stopped on '%c' at position %d. "
              "Consider setting 'comment.char=' if there is a trailing comment to be ignored. First 500 characters of line: <<%s>>",
-             row1Line+jumpLine-1, ncol, *ch, (int)(ch-lineStart+1), strlim(lineStart,500));
+             row1line+jumpLine-1, ncol, *ch, (int)(ch-lineStart+1), strlim(lineStart,500));
         }
         if (verbose) {
           DTPRINT("  Not using sample from jump %d. Looks like a complicated file where nextGoodLine could not establish the next true line start.\n", jump);
@@ -1649,6 +1648,7 @@ int freadMain(freadMainArgs _args) {
     }
     args.header = true;
     pos = prevStart;
+    row1line--;
   }
 
   if (args.header==NA_BOOL8) {
@@ -1656,6 +1656,7 @@ int freadMain(freadMainArgs _args) {
     for (int j=0; j<ncol; j++) {
       if (tmpType[j]<CT_STRING) {
         args.header = false;
+        row1line--;
         break;
       }
     }
@@ -1705,7 +1706,7 @@ int freadMain(freadMainArgs _args) {
     if (verbose) {
       DTPRINT("  =====\n");
       DTPRINT("  Sampled %llu rows (handled \\n inside quoted fields) at %d jump points\n", (llu)sampleLines, nJumps);
-      DTPRINT("  Bytes from first data row on line %d to the end of last row: %llu\n", row1Line, (llu)bytesRead);
+      DTPRINT("  Bytes from first data row on line %d to the end of last row: %llu\n", row1line, (llu)bytesRead);
       DTPRINT("  Line length: mean=%.2f sd=%.2f min=%d max=%d\n", meanLineLen, sd, minLen, maxLen);
       DTPRINT("  Estimated number of rows: %llu / %.2f = %llu\n", (llu)bytesRead, meanLineLen, (llu)estnrow);
       DTPRINT("  Initial alloc = %llu rows (%llu + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n",
@@ -1737,7 +1738,7 @@ int freadMain(freadMainArgs _args) {
 
   if (args.header==false) {
     // colNames was calloc'd so nothing to do; all len=off=0 already and default column names (V1, V2, etc) will be assigned
-    row1Line--;
+    // row1line--;
   } else {
     if (sep==' ') while (*ch==' ') ch++;
     void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
@@ -2230,7 +2231,7 @@ int freadMain(freadMainArgs _args) {
             stopTeam = true;
             snprintf(stopErr, stopErrSize,
               "Line %llu does not have %d fields. Consider fill=TRUE and comment.char=. First 500 characters of line: <<%s>>",
-                (llu)ctx.DTi+myNrow+row1Line, ncol, strlim(tlineStart, 500));
+                (llu)ctx.DTi+myNrow+row1line, ncol, strlim(tlineStart, 500));
           }
         //}
         // tell next thread (she not me) 2 things :
