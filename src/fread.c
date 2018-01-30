@@ -2209,13 +2209,13 @@ int freadMain(freadMainArgs _args) {
             stopTeam = true;
             myNrow = 0;
             myLineError = false;
-          } else if (myNrow + ctx.DTi > allocnrow) {  // current thread has reached `allocnrow` limit
+          } else if (myNrow + ctx.DTi >= allocnrow) {  // current thread's rows will fill all allocnrow
             if (allocnrow == nrowLimit) {
               // allocnrow is the same as nrowLimit, no need to reallocate the DT,
               // just truncate the rows in the current chunk
               myNrow = nrowLimit - ctx.DTi;
               myLineError = false;  // e.g. the format error is after nrowLimit so clear error, e.g. test 1558.1
-            } else {
+            } else if (myNrow + ctx.DTi > allocnrow) {
               // We reached `allocnrow` limit, but there are more data to read
               // left. In this case we arrange to terminate all threads but
               // remember the position where the previous thread has finished. We
