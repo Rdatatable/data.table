@@ -11364,6 +11364,16 @@ test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(V1=c("A","",""),
 test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,NA,500L), V3=c(NA,NA,600L)))
 test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA,3.4)))
 
+# nrows= now ignores errors after those rows as expected, #1267
+# txt = "V1, V2, V3\n1,2,3\nV4, V5, V6, V7\n4,5,6,7\n8,9,10,11\n"
+# fread(txt)
+# fread(txt, nrows = 1, header = TRUE, skip = 0)
+# fread("1,2,3\n1,2", nrows=1)
+# for ( i in 100:1) {
+#   lines <- paste0(paste(rep("1,2,3", i), collapse='\n'), "\n1,2")
+#   fread(lines, nrows=i)
+# }
+
 
 ##########################
 

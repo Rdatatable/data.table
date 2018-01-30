@@ -939,6 +939,8 @@ static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 static bool detect_types( const char **pch, int8_t type[], int ncol) {
   // used in sampling column types and whether column names are present
+  // test at most ncol fields. If there are fewer fields, the data read step later
+  // will error (if fill==false) when the line number is known, so we don't need to handle that here.
   bool bumped=false;
   const char *ch = *pch;
   double trash; // double so that this throw-away storage is aligned. char trash[8] would not be aligned.
@@ -989,7 +991,6 @@ static bool detect_types( const char **pch, int8_t type[], int ncol) {
     if (sep==' ') while (ch[1]==' ') ch++;
     ch++;
   }
-  //if (field!=ncol) STOP("Internal error: field!=ncol in detect_type");
   *pch = ch;
   return bumped;
 }
@@ -1737,7 +1738,6 @@ int freadMain(freadMainArgs _args) {
 
   if (args.header==false) {
     // colNames was calloc'd so nothing to do; all len=off=0 already and default column names (V1, V2, etc) will be assigned
-    // row1line--;
   } else {
     if (sep==' ') while (*ch==' ') ch++;
     void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
