@@ -1568,13 +1568,12 @@ int freadMain(freadMainArgs _args) {
               previousLastColType, tmpType[ncol-1], finalByte);
           tmpType[ncol-1] = previousLastColType;
         }
-        // TODO DELETE ... if ((finalByte==sep && sep!=' ') || (sep==' ' && finalByte!='\0' && finalByte!=' ')) field++;
       }
       if (!eol(&ch) && *ch!='\0') {
         if (jump==0) {
-          STOP("Line %d has more than the expected %d fields. Stopped on '%c' at position %d. "
+          STOP("Line %d has more than the expected %d fields. Stopped on <<%s>> at character %d. "
              "Consider setting 'comment.char=' if there is a trailing comment to be ignored. First 500 characters of line: <<%s>>",
-             row1line+jumpLine-1, ncol, *ch, (int)(ch-lineStart+1), strlim(lineStart,500));
+             row1line+jumpLine-1, ncol, strlim(ch-1,10), (int)(ch-lineStart), strlim(lineStart,500));
         }
         if (verbose) {
           DTPRINT("  Not using sample from jump %d. Looks like a complicated file where nextGoodLine could not establish the next true line start.\n", jump);
@@ -1893,7 +1892,7 @@ int freadMain(freadMainArgs _args) {
     const char *thisJumpStart=NULL;  // The first good start-of-line after the jump point
     size_t myNrow = 0; // the number of rows in my chunk
     size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
-    bool myLineError = false;
+    int myWrongNumberFields = -1;      // -1 means false. If set, it's set to >=0 holding the (wrong) number of fields observed
 
     // Allocate thread-private row-major `myBuff`s
     ThreadLocalFreadParsingContext ctx = {
@@ -2157,33 +2156,13 @@ int freadMain(freadMainArgs _args) {
           }
         }
         if (j<ncol || (!eol(&tch) && *tch!='\0'))  {
-          // not enough columns observed (including empty line). If fill==true, fields should already have been filled above due to continue inside while(j<ncol)
-          // or too many fields observed
-          // delay error to the ordered clause so that the first line error is reported with the correct line number.
-          myLineError = true;
+          // Too few or too many columns observed (including empty line). If fill==true, fields should already have been filled
+          // above due to continue inside while(j<ncol)
+          // Delay error to the ordered clause so that the first line with error is reported (e.g. if two jumps both
+          // see an error at the same time) with the correct line number too (which needs all preceeding jumps to process first)
+          myWrongNumberFields = j;  // used in error message. It was initialized to -1.
           break;
         }
-          /*#pragma omp critical
-          if (!stopTeam) {
-            stopTeam = true;
-            snprintf(stopErr, stopErrSize,
-              "Line %llu has too few fields (%d but expected %d). Consider fill=TRUE. First 500 characters of line: <<%s>>",
-              (llu)ctx.DTi+myNrow+row1Line, j, ncol, strlim(tlineStart, 500));
-              // TODO: move this message into the ordered section as ctx.DTi is not yet updated at this point
-          }
-          break;
-        }
-        if (!eol(&tch) && *tch!='\0') {
-          #pragma omp critical
-          if (!stopTeam) {
-            stopTeam = true;
-            snprintf(stopErr, stopErrSize,
-              "Line %llu contains too many fields. Read all %d expected columns but more are present. First 500 characters of line: <<%s>>",
-              (llu)ctx.DTi+myNrow+row1Line, ncol, strlim(tlineStart, 500));
-              // TODO: move this message into the ordered section as ctx.DTi is not yet updated at this point
-          }
-          break;
-        }*/
         if (*tch!='\0') tch++;
         myNrow++;
       }
@@ -2202,38 +2181,44 @@ int freadMain(freadMainArgs _args) {
             jump-1, jump, (const void*)prevJumpEnd, strlim(prevJumpEnd,50),
             (int)(thisJumpStart-prevJumpEnd), strlim(thisJumpStart,50));
           stopTeam=true;
+          // TODO: allow bad jumps to be skipped and remove this stop
         }
-        //if (!stopTeam) {
-          ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
-          if (ctx.DTi >= allocnrow) {  // a previous thread has already reached the `allocnrow` limit
-            stopTeam = true;
+        ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
+        if (ctx.DTi >= allocnrow) {  // a previous thread has already reached the `allocnrow` limit
+          stopTeam = true;
+          myNrow = 0;
+          myWrongNumberFields = -1;  // forget the error, as it occured after the nrow limit requested by user
+        } else if (myNrow + ctx.DTi >= allocnrow) {  // current thread's rows will fill all allocnrow
+          if (allocnrow == nrowLimit) {
+            // allocnrow is the same as nrowLimit, no need to reallocate the DT,
+            // just truncate the rows in the current chunk
+            myNrow = nrowLimit - ctx.DTi;
+            myWrongNumberFields = -1;  // e.g. test 1558.2 where the format error is after nrowLimit
+          } else if (myNrow + ctx.DTi > allocnrow) {
+            // We reached `allocnrow` limit, but there are more data to read
+            // left. In this case we arrange to terminate all threads but
+            // remember the position where the previous thread has finished. We
+            // will reallocate the DT and restart reading from the same point.
+            jump0 = jump;
+            extraAllocRows = (size_t)((double)(DTi+myNrow)*nJumps/(jump+1) * 1.2) - allocnrow;
+            if (extraAllocRows < 1024) extraAllocRows = 1024;
             myNrow = 0;
-            myLineError = false;
-          } else if (myNrow + ctx.DTi >= allocnrow) {  // current thread's rows will fill all allocnrow
-            if (allocnrow == nrowLimit) {
-              // allocnrow is the same as nrowLimit, no need to reallocate the DT,
-              // just truncate the rows in the current chunk
-              myNrow = nrowLimit - ctx.DTi;
-              myLineError = false;  // e.g. the format error is after nrowLimit so clear error, e.g. test 1558.1
-            } else if (myNrow + ctx.DTi > allocnrow) {
-              // We reached `allocnrow` limit, but there are more data to read
-              // left. In this case we arrange to terminate all threads but
-              // remember the position where the previous thread has finished. We
-              // will reallocate the DT and restart reading from the same point.
-              jump0 = jump;
-              extraAllocRows = (size_t)((double)(DTi+myNrow)*nJumps/(jump+1) * 1.2) - allocnrow;
-              if (extraAllocRows < 1024) extraAllocRows = 1024;
-              myNrow = 0;
-              stopTeam = true;
-            }
-          }
-          if (myLineError) {
             stopTeam = true;
-            snprintf(stopErr, stopErrSize,
-              "Line %llu does not have %d fields. Consider fill=TRUE and comment.char=. First 500 characters of line: <<%s>>",
-                (llu)ctx.DTi+myNrow+row1line, ncol, strlim(tlineStart, 500));
           }
-        //}
+        }
+        if (myWrongNumberFields>=0) {
+          stopTeam = true;
+          if (myWrongNumberFields<ncol) {
+            snprintf(stopErr, stopErrSize,
+              "Line %llu has too few fields. Expecting %d fields but found %d. Consider fill=TRUE. First 500 characters of line: <<%s>>",
+              (llu)ctx.DTi+myNrow+row1line, ncol, myWrongNumberFields, strlim(tlineStart, 500));
+          } else {
+            snprintf(stopErr, stopErrSize,
+              "Line %llu has more than the expected %d fields. Stopped on <<%s>> at character %d. "
+              "Consider setting 'comment.char=' if there is a trailing comment to be ignored. First 500 characters of line: <<%s>>",
+              (llu)ctx.DTi+myNrow+row1line, ncol, strlim(tch+1,10), (int)(tch-tlineStart+2), strlim(tlineStart,500));
+          }
+        }
         // tell next thread (she not me) 2 things :
         prevJumpEnd = tch; // i) the \n I finished on so she can check (above) she started exactly on that \n good line start
         DTi += myNrow;     // ii) which row in the final result she should start writing to since now I know myNrow.
