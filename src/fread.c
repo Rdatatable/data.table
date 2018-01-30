@@ -1470,7 +1470,7 @@ int freadMain(freadMainArgs _args) {
   }
 
   //*********************************************************************************************
-  // [7] Detect column types, estimate nrow, and whether first row is column names
+  // [7] Detect column types, good nrow estimate and whether first row is column names
   //*********************************************************************************************
   int nJumps;             // How many jumps to use when pre-scanning the file
   size_t sampleLines;     // How many lines were sampled during the initial pre-scan
