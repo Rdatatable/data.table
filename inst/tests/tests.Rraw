@@ -4954,7 +4954,7 @@ test(1312, DT[,setkey(.SD),by=a], error="Setting a physical key on .SD is reserv
 # gmin and gmax extensive testing (because there are tricky cases)
 DT <- data.table(x=rep(1:6, each=3), y=INT(4,-1,0, NA,4,10, 4,NA,10, 4,10,NA, -2147483647, -2147483647, -2147483647, 2147483647, 2147483647, 2147483647))
 # make sure GForce is running
-options(datatable.optimize=2L)
+options(datatable.optimize=3L)
 
 # for integers
 test(1313.1, DT[, min(y), by=x], DT[, base:::min(y), by=x])
@@ -5553,10 +5553,10 @@ DT = data.table(a=1:10,b=10:1)
 test(1376.1, indices(DT), NULL)
 test(1376.2, DT[b==7L,verbose=TRUE], DT[4L], output="Creating new index 'b'")
 test(1376.3, indices(DT), "b")
-test(1376.4, DT[b==8L,verbose=TRUE], DT[3L], output="Using existing index 'b'")
+test(1376.4, DT[b==8L,verbose=TRUE], DT[3L], output="Optimized subsetting with index 'b'")
 test(1376.5, DT[a==7L,verbose=TRUE], DT[7L], output="Creating new index")  # add 2nd secondary key
 test(1376.6, indices(DT), c("b","a"))  # 2 secondary keys of single columns
-test(1376.7, DT[a==7L,verbose=TRUE], DT[7L], output="Using existing index 'a'")
+test(1376.7, DT[a==7L,verbose=TRUE], DT[7L], output="Optimized subsetting with index 'a'")
 setkey(DT,b)
 test(1376.8, indices(DT), NULL)
 test(1376.9, list(DT[a==2L], indices(DT)), list(DT[9L],"a"))  # create indices for next test
@@ -5771,7 +5771,7 @@ if ("package:knitr" %in% search()) {
 DT = data.table(a=1:3, b=4:6)
 test(1396, DT[a==2, verbose=TRUE], DT[2], output="Creating new index 'a'")
 test(1397, DT[b==6, verbose=TRUE], DT[3], output="Creating new index 'b'")
-test(1398, DT[b==6, verbose=TRUE], DT[3], output="Using existing index 'b'")
+test(1398, DT[b==6, verbose=TRUE], DT[3], output="Optimized subsetting with index 'b'")
 test(1399, indices(DT), c("a","b"))
 test(1400, DT[2, a:=4L, verbose=TRUE], data.table(a=c(1L,4L,3L),b=4:6), output=".*Dropping index 'a' due to an update on a key column")
 test(1401, indices(DT), "b")
@@ -5955,14 +5955,14 @@ setindex(DT,b)
 test(1420, indices(DT), "b")
 setnames(DT,"b","foo")
 test(1421, indices(DT), "foo")
-test(1422, DT[foo==9, verbose=TRUE], DT[2], output="Using existing index 'foo'")
+test(1422, DT[foo==9, verbose=TRUE], DT[2], output="Optimized subsetting with index 'foo'")
 setindex(DT,a,foo)
 test(1423, indices(DT), c("foo","a__foo"))   # tests as well that order of attributes is retained although we don't use that property currently.
 test(1424, indices(setnames(DT,"foo","bar")), c("bar","a__bar"))
 test(1425, indices(setnames(DT,"a","baz")), c("bar","baz__bar"))
 test(1426, DT[baz==4L, verbose=TRUE], output="Creating new index 'baz'")
-test(1427, indices(DT), c("bar","baz__bar","baz"))
-test(1428, DT[bar==9L, verbose=TRUE], output="Using existing index 'bar'")
+test(1427, indices(DT), c("bar","baz__bar", "baz"))
+test(1428, DT[bar==9L, verbose=TRUE], output="Optimized subsetting with index 'bar'")
 test(1429, indices(setnames(DT,"bar","a")), c("baz", "a", "baz__a"))
 
 # Finalised == and %in% optimization in i
@@ -5973,9 +5973,155 @@ test(1432, DT[a==b], DT[2:3])
 test(1433, DT[a %in% b], DT[c(2,3,5,6)])
 test(1434, DT[a==b+1], DT[c(1,4,6)])
 test(1435, DT[b==max(a)], DT[3])
-test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing double column i.'V1' to integer")
+test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing double column i.'a' to integer")
 DT[,a:=factor(letters[a])]
 test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new index 'a'")
+## test that the lookup env for RHS is correct. In internal env,notjoin is FALSE in this case.
+notjoin <- TRUE
+DT <- data.table(x = TRUE)
+test(1437.1, DT[x == notjoin], DT)
+## column names 'sorted' and 'unique' could cause problems because of CJ with do.call in .prepareFastSubset
+DT <- data.table(sorted = TRUE, unique = FALSE)
+test(1437.2, DT[sorted == TRUE & unique == FALSE], DT)
+## test no reordering in groups
+DT <- data.table(x = c(1,1,1,2), y = c(3,2,1,1))
+setindex(DT, x, y)
+test(1437.3, DT[x==1], setindex(data.table(x = c(1,1,1), y = c(3,2,1)), x,y))
+## test that key order makes no difference
+DT <- data.table(x = c(2,1,1,1), y = c(3,2,1,1), z = c(1,1,2,2))
+test(1437.4, setkey(setkey(DT, x,y,z)[x==1&y==1&z==2], NULL),setkey(setkey(DT, y,x,z)[x==1&y==1&z==2], NULL))
+setkey(DT, NULL)
+setorder(DT, -x, -y, z)
+DT2 <- copy(DT)
+setindex(DT, x,y,z)
+setindex(DT2, z,y,x)
+test(1437.5, setindex(DT[x==1&y==1&z==2], NULL),setindex(DT2[x==1&y==1&z==2], NULL))
+## test that query order makes no difference
+set.seed(1)
+DT <- data.table(x = c(1,1,1,2,2,2), y = c(1,1,2,2,3,3), z = rnorm(6))
+test(1437.6, copy(DT)[x==2 & y==3], copy(DT)[y==3 & x==2])
+## test that optimization really takes place for the supportd operators, also when connected with &
+test(1437.7, DT[x==2, verbose = TRUE], output = "Optimized subsetting")
+test(1437.8, DT[x %in% c(2,3), verbose = TRUE], output = "Optimized subsetting")
+DT[, a:= c("A", "Q", "W", "C", "X", "Q")]
+test(1437.9, DT[a %chin% c("A", "B"), verbose = TRUE], output = "Optimized subsetting")
+test(1437.11, DT[a %chin% c("A", "B") & x == 3 & y %in% c(1,2), verbose = TRUE], output = "Optimized subsetting")
+## multiple selections on the same column are not optimized and yield correct result
+test(1437.12, DT[a %chin% c("A", "B") & a == "A", verbose = TRUE], output = "   x y          z a1: 1 1 -0.6264538 A")
+test(1437.13, DT[a %chin% c("A", "B") & a == "C"], DT[0])
+## queries with 'or' connection are not optimized and yield the correct result.
+test(1437.14, DT[a %chin% c("A", "B") | x == 2, verbose = TRUE], output = "   x y          z a1: 1 1 -0.6264538 A2: 2 2  1.5952808 C3: 2 3  0.3295078 X4: 2 3 -0.8204684 Q")
+test(1437.15, DT[a %chin% c("A", "B") | x == 2], DT[c(1, 4, 5, 6)])
+## notjoin queries with connection are not optimized and yield the correct result.
+test(1437.16, DT[!a %chin% c("A", "B") & x == 2, verbose = TRUE], output = "   x y          z a1: 2 2  1.5952808 C2: 2 3  0.3295078 X3: 2 3 -0.8204684 Q")
+test(1437.17, DT[!a %chin% c("A", "B") & x == 2], DT[c(4, 5, 6)])
+## queries with j are optimized (Correct results are tested extensively below)
+test(1437.18, DT[x == 2, .(test = x+y), verbose = TRUE], output = "Optimized subsetting")
+test(1437.19, DT[x == 2, test := x+y, verbose = TRUE], output = "Optimized subsetting")
+## optimize option level 3 is required
+oldOpt <- getOption("datatable.optimize")
+options("datatable.optimize" = 2L)
+test(1437.21, DT[x == 2, verbose = TRUE], output = "^   x y")
+options("datatable.optimize" = oldOpt)
+test(1437.22, DT[x == 2, verbose = TRUE], output = "Optimized subsetting")
+## NaN on right hand side is treated correctly. NA on right hand side is not reaching .prepareFastSubset, so not tested here
+DT <- data.table(x = c(1L:10L, NA_integer_, NA_integer_), y = c(1:10, NA_real_, NaN))
+test(1437.23, DT[y == NaN], DT[0])
+test(1437.24, DT[y == NA], DT[0])
+test(1437.25, DT[x == 5 & y == NaN], DT[0])
+## notjoin treats NA's correctly
+test(1437.26, DT[!x == 3], DT[-c(3,11,12)])
+## column comparisons are not affected
+DT <- data.table(x = c(1:10, 1:10, 1:10), y = c(1:20, -1:-10))
+test(1437.27, DT[x == y], DT[1:10])
+## subsets with logical vectors are optimized correctly.
+DT <- data.table(x = c(TRUE, TRUE, TRUE, FALSE), y = c(FALSE, TRUE, FALSE, TRUE))
+test(1437.28, DT[x & y, verbose = TRUE], output = "Optimized subsetting")
+test(1437.29, DT[x & y], DT[2])
+## subsets where just cols are given but columns are not logical are not optimized.
+DT <- data.table(x = c(1, 0, 2, 4), y = c(0, 2, 1, 3))
+test(1437.31, DT[x & y, verbose = TRUE], output = "   x y")
+test(1437.32, DT[x & y], DT[3:4])
+## do extensive tests of optimized vs non-optimized queries for identical results.
+## very much inspired by the tests for non equi joins (1641ff)
+set.seed(13545)
+n <- 1e3 ## rows of the data.table. I checked that with these rows and the seed, all queries (except for == NA) have at least one match
+oldOpt <- getOption("datatable.optimize") ## remember for restoring after the test
+## create test DT
+DT <- data.table(intCol    = sample(c(1:3, NA), n, replace = TRUE),
+                 doubleCol = sample(c(1.86, 1000.345, 2.346, NA, NaN), n, replace = TRUE),
+                 boolCol   = sample(c(TRUE, FALSE, NA), n, replace = TRUE),
+                 charCol   = sample(c(LETTERS[1:3], NA), n, replace = TRUE),
+                 groupCol  = sample(c("a", "b", "c"), n, replace = TRUE))
+if ("package:bit64" %in% search()) DT[, int64Col := as.integer64(sample(1:3, n, replace = TRUE))]
+## get list with unique values excluding NA
+vals <- lapply(DT, function(x) {out <- unique(x); out[!is.na(out)]})
+## define possible queries for each column.
+queries <- list(intCol    = c(paste0("intCol == ", sample(vals$intCol, 1)),
+                              paste0("intCol %in% c(", paste0(c(NA,sample(vals$intCol, 3, replace = TRUE)), collapse = ","), ")")),
+                doubleCol = c(paste0("doubleCol == ", sample(vals$doubleCol, 1)),
+                              paste0("doubleCol %in% c(NA, NaN, ", paste0(sample(vals$doubleCol, 3, replace = TRUE), collapse = ","), ")")),
+                boolCol   = c(paste0("boolCol == ", sample(vals$boolCol, 1))), ## %in% query makes no sense for bools, therefore not tested
+                charCol   = c(paste0("charCol == '", sample(vals$charCol, 1), "'"),
+                              paste0("charCol %in% c(NA, ", paste0("'", sample(vals$charCol, 3, replace = TRUE), "'", collapse = ","), ")"),
+                              paste0("charCol %chin% c(NA, ", paste0("'", sample(vals$charCol, 3, replace = TRUE), "'", collapse = ","), ")"))
+                              )
+if ("package:bit64" %in% search())
+  queries$int64Col = c(paste0("int64Col == ", sample(vals$int64Col, 1)),
+                       paste0("int64Col %in% c(NA_integer64_, as.integer64(", paste0(sample(vals$int64Col, 3, replace = TRUE), collapse = ","), "))"))
+## create all combinations of up to three queries, connected by "&".
+## Includes all combinations, also with a subset of columns, but no permutations
+all <- data.table(intCol    = character(0),
+                  doubleCol = character(0),
+                  boolCol   = character(0),
+                  charCol   = character(0),
+                  int64Col  = character(0))
+for(thisLength in 1:3){
+  ## get all query combinations with up to three columns
+  combs <- as.list(as.data.table(combn(length(queries),thisLength)))
+  for(comb in combs)  all <- rbind(all, do.call(CJ, queries[comb]), fill = TRUE)
+}
+all[is.na(all)] <- "missing"
+## construct the query string in i
+all[, query := paste(intCol, doubleCol, boolCol, charCol, int64Col, sep = "&")]
+all[, query := gsub("&missing$", "", gsub("missing&", "", query))]
+## define examplary test queries for j
+jQueries <- c(".(test = intCol + doubleCol, test2 = paste0(boolCol, charCol))",
+              "c('test1', 'test2') := list(pmax(intCol, doubleCol), !boolCol)")
+## define example 'by' values
+bys <- c("groupCol", character(0))
+## test each query string
+test_no <- 1437.0033
+for(t in seq_len(nrow(all))){
+  ## test the query with missing j
+  thisQuery <- all$query[t]
+  options("datatable.optimize" = 3L)
+  ansOpt <- DT[eval(parse(text = thisQuery))]
+  options("datatable.optimize" = 2L)
+  ansRef <- DT[eval(parse(text = thisQuery))]
+  test(signif(test_no, 8), ansOpt, ansRef)
+  test_no <- test_no + 0.0001
+  ## repeat the test with 'which = TRUE'
+  options("datatable.optimize" = 3L)
+  ansOpt <- DT[eval(parse(text = thisQuery)), which = TRUE]
+  options("datatable.optimize" = 2L)
+  ansRef <- DT[eval(parse(text = thisQuery)), which = TRUE]
+  test(signif(test_no, 7), ansOpt, ansRef)
+  test_no <- test_no + 0.0001
+  ## repeat the test with the j queries
+  for(thisJquery in jQueries) {
+    ## do it with and without existing "by"
+    for(thisBy in bys){
+      options("datatable.optimize" = 3L)
+      ansOpt <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery)), by = thisBy]
+      options("datatable.optimize" = 2L)
+      ansRef <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery)), by = thisBy]
+      test(signif(test_no, 7), ansOpt, ansRef)
+      test_no <- test_no + 0.0001
+    }
+  }
+}
+options("datatable.optimize" = oldOpt) ## restore to default
 
 # fread dec=',' e.g. France
 test(1438, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1L is not TRUE")
@@ -9176,9 +9322,9 @@ test(1666.4, grep("Creating new index", capture.output(d[k==1L, verbose=TRUE])),
 d = data.table(k=3:1) # subset - index
 setindex(d, k)
 options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
-test(1666.5, d[k==1L, verbose=TRUE], d[3L], output="Using existing index 'k'")
+test(1666.5, d[k==1L, verbose=TRUE], d[3L], output="Optimized subsetting with index 'k'")
 options("datatable.use.index"=TRUE, "datatable.auto.index"=FALSE)
-test(1666.6, d[k==1L, verbose=TRUE], d[3L], output="Using existing index 'k'")
+test(1666.6, d[k==1L, verbose=TRUE], d[3L], output="Optimized subsetting with index 'k'")
 options("datatable.use.index"=FALSE, "datatable.auto.index"=FALSE)
 test(1666.7, grep("Using existing index", capture.output(d[k==1L, verbose=TRUE])), integer(0)) # not using existing index
 options("datatable.use.index"=FALSE, "datatable.auto.index"=TRUE)
