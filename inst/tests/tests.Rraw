@@ -2889,13 +2889,13 @@ test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(
 # an fread error shouldn't hold a lock on the file on Windows
 f = tempfile()
 cat('A,B\n1,2\n3\n5,6\n', file=f)
-test(1010.1, fread(f), error="Line 3 has too few fields.*fill.*TRUE")
+test(1010.1, fread(f), error="Line 3 has too few fields.*Expecting 2 fields but found 1.*fill.*TRUE")
 cat('7\n8,9',file=f,append=TRUE)   # that append works after error
 test(1010.2, fread(f,fill=TRUE), data.table(A=INT(1,3,5,7,8), B=INT(2,NA,6,NA,9)))
-test(1010.3, fread(f), error="Line 3 has too few fields.*fill.*TRUE")
+test(1010.3, fread(f), error="Line 3 has too few fields.*Expecting 2 fields but found 1.*fill.*TRUE")
 cat('A,B\n1,2\n3\n5,6\n', file=f)  # that overwrite works after error
 test(1010.4, fread(f,fill=TRUE), data.table(A=INT(1,3,5), B=INT(2,NA,6)))
-test(1010.5, fread(f), error="Line 3 has too few fields.*fill.*TRUE")
+test(1010.5, fread(f), error="Line 3 has too few fields.*Expecting 2 fields but found 1.*fill.*TRUE")
 unlink(f)                          # that file can be removed after error
 test(1010.6, !file.exists(f))
 
@@ -4963,7 +4963,7 @@ test(1312, DT[,setkey(.SD),by=a], error="Setting a physical key on .SD is reserv
 # gmin and gmax extensive testing (because there are tricky cases)
 DT <- data.table(x=rep(1:6, each=3), y=INT(4,-1,0, NA,4,10, 4,NA,10, 4,10,NA, -2147483647, -2147483647, -2147483647, 2147483647, 2147483647, 2147483647))
 # make sure GForce is running
-options(datatable.optimize=2L)
+options(datatable.optimize=3L)
 
 # for integers
 test(1313.1, DT[, min(y), by=x], DT[, base:::min(y), by=x])
@@ -5562,10 +5562,10 @@ DT = data.table(a=1:10,b=10:1)
 test(1376.1, indices(DT), NULL)
 test(1376.2, DT[b==7L,verbose=TRUE], DT[4L], output="Creating new index 'b'")
 test(1376.3, indices(DT), "b")
-test(1376.4, DT[b==8L,verbose=TRUE], DT[3L], output="Using existing index 'b'")
+test(1376.4, DT[b==8L,verbose=TRUE], DT[3L], output="Optimized subsetting with index 'b'")
 test(1376.5, DT[a==7L,verbose=TRUE], DT[7L], output="Creating new index")  # add 2nd secondary key
 test(1376.6, indices(DT), c("b","a"))  # 2 secondary keys of single columns
-test(1376.7, DT[a==7L,verbose=TRUE], DT[7L], output="Using existing index 'a'")
+test(1376.7, DT[a==7L,verbose=TRUE], DT[7L], output="Optimized subsetting with index 'a'")
 setkey(DT,b)
 test(1376.8, indices(DT), NULL)
 test(1376.9, list(DT[a==2L], indices(DT)), list(DT[9L],"a"))  # create indices for next test
@@ -5780,7 +5780,7 @@ if ("package:knitr" %in% search()) {
 DT = data.table(a=1:3, b=4:6)
 test(1396, DT[a==2, verbose=TRUE], DT[2], output="Creating new index 'a'")
 test(1397, DT[b==6, verbose=TRUE], DT[3], output="Creating new index 'b'")
-test(1398, DT[b==6, verbose=TRUE], DT[3], output="Using existing index 'b'")
+test(1398, DT[b==6, verbose=TRUE], DT[3], output="Optimized subsetting with index 'b'")
 test(1399, indices(DT), c("a","b"))
 test(1400, DT[2, a:=4L, verbose=TRUE], data.table(a=c(1L,4L,3L),b=4:6), output=".*Dropping index 'a' due to an update on a key column")
 test(1401, indices(DT), "b")
@@ -5964,14 +5964,14 @@ setindex(DT,b)
 test(1420, indices(DT), "b")
 setnames(DT,"b","foo")
 test(1421, indices(DT), "foo")
-test(1422, DT[foo==9, verbose=TRUE], DT[2], output="Using existing index 'foo'")
+test(1422, DT[foo==9, verbose=TRUE], DT[2], output="Optimized subsetting with index 'foo'")
 setindex(DT,a,foo)
 test(1423, indices(DT), c("foo","a__foo"))   # tests as well that order of attributes is retained although we don't use that property currently.
 test(1424, indices(setnames(DT,"foo","bar")), c("bar","a__bar"))
 test(1425, indices(setnames(DT,"a","baz")), c("bar","baz__bar"))
 test(1426, DT[baz==4L, verbose=TRUE], output="Creating new index 'baz'")
-test(1427, indices(DT), c("bar","baz__bar","baz"))
-test(1428, DT[bar==9L, verbose=TRUE], output="Using existing index 'bar'")
+test(1427, indices(DT), c("bar","baz__bar", "baz"))
+test(1428, DT[bar==9L, verbose=TRUE], output="Optimized subsetting with index 'bar'")
 test(1429, indices(setnames(DT,"bar","a")), c("baz", "a", "baz__a"))
 
 # Finalised == and %in% optimization in i
@@ -5982,9 +5982,155 @@ test(1432, DT[a==b], DT[2:3])
 test(1433, DT[a %in% b], DT[c(2,3,5,6)])
 test(1434, DT[a==b+1], DT[c(1,4,6)])
 test(1435, DT[b==max(a)], DT[3])
-test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing double column i.'V1' to integer")
+test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing double column i.'a' to integer")
 DT[,a:=factor(letters[a])]
 test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new index 'a'")
+## test that the lookup env for RHS is correct. In internal env,notjoin is FALSE in this case.
+notjoin <- TRUE
+DT <- data.table(x = TRUE)
+test(1437.1, DT[x == notjoin], DT)
+## column names 'sorted' and 'unique' could cause problems because of CJ with do.call in .prepareFastSubset
+DT <- data.table(sorted = TRUE, unique = FALSE)
+test(1437.2, DT[sorted == TRUE & unique == FALSE], DT)
+## test no reordering in groups
+DT <- data.table(x = c(1,1,1,2), y = c(3,2,1,1))
+setindex(DT, x, y)
+test(1437.3, DT[x==1], setindex(data.table(x = c(1,1,1), y = c(3,2,1)), x,y))
+## test that key order makes no difference
+DT <- data.table(x = c(2,1,1,1), y = c(3,2,1,1), z = c(1,1,2,2))
+test(1437.4, setkey(setkey(DT, x,y,z)[x==1&y==1&z==2], NULL),setkey(setkey(DT, y,x,z)[x==1&y==1&z==2], NULL))
+setkey(DT, NULL)
+setorder(DT, -x, -y, z)
+DT2 <- copy(DT)
+setindex(DT, x,y,z)
+setindex(DT2, z,y,x)
+test(1437.5, setindex(DT[x==1&y==1&z==2], NULL),setindex(DT2[x==1&y==1&z==2], NULL))
+## test that query order makes no difference
+set.seed(1)
+DT <- data.table(x = c(1,1,1,2,2,2), y = c(1,1,2,2,3,3), z = rnorm(6))
+test(1437.6, copy(DT)[x==2 & y==3], copy(DT)[y==3 & x==2])
+## test that optimization really takes place for the supportd operators, also when connected with &
+test(1437.7, DT[x==2, verbose = TRUE], output = "Optimized subsetting")
+test(1437.8, DT[x %in% c(2,3), verbose = TRUE], output = "Optimized subsetting")
+DT[, a:= c("A", "Q", "W", "C", "X", "Q")]
+test(1437.9, DT[a %chin% c("A", "B"), verbose = TRUE], output = "Optimized subsetting")
+test(1437.11, DT[a %chin% c("A", "B") & x == 3 & y %in% c(1,2), verbose = TRUE], output = "Optimized subsetting")
+## multiple selections on the same column are not optimized and yield correct result
+test(1437.12, DT[a %chin% c("A", "B") & a == "A", verbose = TRUE], output = "   x y          z a1: 1 1 -0.6264538 A")
+test(1437.13, DT[a %chin% c("A", "B") & a == "C"], DT[0])
+## queries with 'or' connection are not optimized and yield the correct result.
+test(1437.14, DT[a %chin% c("A", "B") | x == 2, verbose = TRUE], output = "   x y          z a1: 1 1 -0.6264538 A2: 2 2  1.5952808 C3: 2 3  0.3295078 X4: 2 3 -0.8204684 Q")
+test(1437.15, DT[a %chin% c("A", "B") | x == 2], DT[c(1, 4, 5, 6)])
+## notjoin queries with connection are not optimized and yield the correct result.
+test(1437.16, DT[!a %chin% c("A", "B") & x == 2, verbose = TRUE], output = "   x y          z a1: 2 2  1.5952808 C2: 2 3  0.3295078 X3: 2 3 -0.8204684 Q")
+test(1437.17, DT[!a %chin% c("A", "B") & x == 2], DT[c(4, 5, 6)])
+## queries with j are optimized (Correct results are tested extensively below)
+test(1437.18, DT[x == 2, .(test = x+y), verbose = TRUE], output = "Optimized subsetting")
+test(1437.19, DT[x == 2, test := x+y, verbose = TRUE], output = "Optimized subsetting")
+## optimize option level 3 is required
+oldOpt <- getOption("datatable.optimize")
+options("datatable.optimize" = 2L)
+test(1437.21, DT[x == 2, verbose = TRUE], output = "^   x y")
+options("datatable.optimize" = oldOpt)
+test(1437.22, DT[x == 2, verbose = TRUE], output = "Optimized subsetting")
+## NaN on right hand side is treated correctly. NA on right hand side is not reaching .prepareFastSubset, so not tested here
+DT <- data.table(x = c(1L:10L, NA_integer_, NA_integer_), y = c(1:10, NA_real_, NaN))
+test(1437.23, DT[y == NaN], DT[0])
+test(1437.24, DT[y == NA], DT[0])
+test(1437.25, DT[x == 5 & y == NaN], DT[0])
+## notjoin treats NA's correctly
+test(1437.26, DT[!x == 3], DT[-c(3,11,12)])
+## column comparisons are not affected
+DT <- data.table(x = c(1:10, 1:10, 1:10), y = c(1:20, -1:-10))
+test(1437.27, DT[x == y], DT[1:10])
+## subsets with logical vectors are optimized correctly.
+DT <- data.table(x = c(TRUE, TRUE, TRUE, FALSE), y = c(FALSE, TRUE, FALSE, TRUE))
+test(1437.28, DT[x & y, verbose = TRUE], output = "Optimized subsetting")
+test(1437.29, DT[x & y], DT[2])
+## subsets where just cols are given but columns are not logical are not optimized.
+DT <- data.table(x = c(1, 0, 2, 4), y = c(0, 2, 1, 3))
+test(1437.31, DT[x & y, verbose = TRUE], output = "   x y")
+test(1437.32, DT[x & y], DT[3:4])
+## do extensive tests of optimized vs non-optimized queries for identical results.
+## very much inspired by the tests for non equi joins (1641ff)
+set.seed(13545)
+n <- 1e3 ## rows of the data.table. I checked that with these rows and the seed, all queries (except for == NA) have at least one match
+oldOpt <- getOption("datatable.optimize") ## remember for restoring after the test
+## create test DT
+DT <- data.table(intCol    = sample(c(1:3, NA), n, replace = TRUE),
+                 doubleCol = sample(c(1.86, 1000.345, 2.346, NA, NaN), n, replace = TRUE),
+                 boolCol   = sample(c(TRUE, FALSE, NA), n, replace = TRUE),
+                 charCol   = sample(c(LETTERS[1:3], NA), n, replace = TRUE),
+                 groupCol  = sample(c("a", "b", "c"), n, replace = TRUE))
+if ("package:bit64" %in% search()) DT[, int64Col := as.integer64(sample(1:3, n, replace = TRUE))]
+## get list with unique values excluding NA
+vals <- lapply(DT, function(x) {out <- unique(x); out[!is.na(out)]})
+## define possible queries for each column.
+queries <- list(intCol    = c(paste0("intCol == ", sample(vals$intCol, 1)),
+                              paste0("intCol %in% c(", paste0(c(NA,sample(vals$intCol, 3, replace = TRUE)), collapse = ","), ")")),
+                doubleCol = c(paste0("doubleCol == ", sample(vals$doubleCol, 1)),
+                              paste0("doubleCol %in% c(NA, NaN, ", paste0(sample(vals$doubleCol, 3, replace = TRUE), collapse = ","), ")")),
+                boolCol   = c(paste0("boolCol == ", sample(vals$boolCol, 1))), ## %in% query makes no sense for bools, therefore not tested
+                charCol   = c(paste0("charCol == '", sample(vals$charCol, 1), "'"),
+                              paste0("charCol %in% c(NA, ", paste0("'", sample(vals$charCol, 3, replace = TRUE), "'", collapse = ","), ")"),
+                              paste0("charCol %chin% c(NA, ", paste0("'", sample(vals$charCol, 3, replace = TRUE), "'", collapse = ","), ")"))
+                              )
+if ("package:bit64" %in% search())
+  queries$int64Col = c(paste0("int64Col == ", sample(vals$int64Col, 1)),
+                       paste0("int64Col %in% c(NA_integer64_, as.integer64(", paste0(sample(vals$int64Col, 3, replace = TRUE), collapse = ","), "))"))
+## create all combinations of up to three queries, connected by "&".
+## Includes all combinations, also with a subset of columns, but no permutations
+all <- data.table(intCol    = character(0),
+                  doubleCol = character(0),
+                  boolCol   = character(0),
+                  charCol   = character(0),
+                  int64Col  = character(0))
+for(thisLength in 1:3){
+  ## get all query combinations with up to three columns
+  combs <- as.list(as.data.table(combn(length(queries),thisLength)))
+  for(comb in combs)  all <- rbind(all, do.call(CJ, queries[comb]), fill = TRUE)
+}
+all[is.na(all)] <- "missing"
+## construct the query string in i
+all[, query := paste(intCol, doubleCol, boolCol, charCol, int64Col, sep = "&")]
+all[, query := gsub("&missing$", "", gsub("missing&", "", query))]
+## define examplary test queries for j
+jQueries <- c(".(test = intCol + doubleCol, test2 = paste0(boolCol, charCol))",
+              "c('test1', 'test2') := list(pmax(intCol, doubleCol), !boolCol)")
+## define example 'by' values
+bys <- c("groupCol", character(0))
+## test each query string
+test_no <- 1437.0033
+for(t in seq_len(nrow(all))){
+  ## test the query with missing j
+  thisQuery <- all$query[t]
+  options("datatable.optimize" = 3L)
+  ansOpt <- DT[eval(parse(text = thisQuery))]
+  options("datatable.optimize" = 2L)
+  ansRef <- DT[eval(parse(text = thisQuery))]
+  test(signif(test_no, 8), ansOpt, ansRef)
+  test_no <- test_no + 0.0001
+  ## repeat the test with 'which = TRUE'
+  options("datatable.optimize" = 3L)
+  ansOpt <- DT[eval(parse(text = thisQuery)), which = TRUE]
+  options("datatable.optimize" = 2L)
+  ansRef <- DT[eval(parse(text = thisQuery)), which = TRUE]
+  test(signif(test_no, 7), ansOpt, ansRef)
+  test_no <- test_no + 0.0001
+  ## repeat the test with the j queries
+  for(thisJquery in jQueries) {
+    ## do it with and without existing "by"
+    for(thisBy in bys){
+      options("datatable.optimize" = 3L)
+      ansOpt <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery)), by = thisBy]
+      options("datatable.optimize" = 2L)
+      ansRef <- DT[eval(parse(text = thisQuery)), eval(parse(text = thisJquery)), by = thisBy]
+      test(signif(test_no, 7), ansOpt, ansRef)
+      test_no <- test_no + 0.0001
+    }
+  }
+}
+options("datatable.optimize" = oldOpt) ## restore to default
 
 # fread dec=',' e.g. France
 test(1438, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1L is not TRUE")
@@ -6048,7 +6194,7 @@ test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input wor
 test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist; getwd()==")
 
 # Test for #802
-test(1453, fread(testDir("fread_line_error.csv")), error="Line 12 starting <<31,3-0-7 4.*has more than.*24 fields.*position 61.*character 3")
+test(1453, fread(testDir("fread_line_error.csv")), error="Line 12 has more than.*24 fields.*Stopped on <<,M,B.Y,Q.B>> at character 61.*<<31,3-0-7 4:1:7.5 HVV,")
 # TODO: add comment=="#".   Ensure only after last field is observed.
 
 # no-sep-found => sep="\n", use case for this in #738
@@ -6571,8 +6717,8 @@ if ("package:bit64" %in% search()) {
     x = c("12345678901234", rep("NA", 178), "a")
     y = sample(letters, length(x), TRUE)
     ll = paste(x,y, sep=",", collapse="\n")
-    test(1500.3, fread(ll),
-        data.table("12345678901234"=c(rep(NA, 178), "a"), "t"=y[-1]))
+    test(1500.3, fread(ll, na=NULL),
+        data.table(V1=x, V2=y))
 
     x = c("12345678901234", rep("NA", 178), "0.5")
     y = sample(letters, length(x), TRUE)
@@ -7171,7 +7317,7 @@ str = "x,y\nx1,\"oops\" y1"
 test(1551.3, fread(str), data.table(x = "x1", y = "\"oops\" y1"))
 #1077
 str = '2,3\n""foo,bar'
-test(1551.4, fread(str), data.table("2" = "\"\"foo", "3" = "bar"))
+test(1551.4, fread(str), data.table(V1=c("2","\"\"foo"), V2=c("3","bar")))
 #1079
 str = 'L1\tsome\tunquoted\tstuff\nL2\tsome\t"half" quoted\tstuff\nL3\tthis\t"should work"\tok though'
 test(1551.5, fread(str), data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "should work"), stuff = c("stuff", "ok though")))
@@ -7284,13 +7430,11 @@ f = testDir("issue_773_fread.txt")
 ans = data.table(AAA=as.character(c(4,7,rep(1,17),31,21)),
                  BBB=as.character(c(5,8,rep(2,17),32,22)),
                  CCC=as.integer(c(6,9,rep(3,17),33,23)))
-test(1558.1, fread(f, nrow=21L), error="Line 23 has too few fields.*<<ZZZ.*YYY>>.*You have tried.*nrows=.*but this will not help because.*set fill=TRUE instead")
-# Even though nrow=21 (+1 header line) finished on the line before the problem, we still require a good sample of the whole file by setting fill=TRUE
-# This ensures consistency of types of the subset with other subsets. The types of AAA and BBB are character due to the sample
-# rows even though those columns only become character on line 23.
-test(1558.2, fread(f, nrow=21L, fill=TRUE), ans)
-test(1558.3, fread(f, nrow=22L), error="Line 23 has too few fields.*<<ZZZ.*YYY>>.*You have tried.*nrows=.*but this will not help because.*set fill=TRUE instead")
-test(1558.4, fread(f, nrow=22L, fill=TRUE), rbind(ans, list("ZZZ","YYY",NA)))
+test(1558.1, fread(f), error="Line 23 has too few fields.*Expecting 3 fields but found 2.*<<ZZZ.*YYY>>")
+test(1558.2, fread(f, nrow=21L), ans)
+test(1558.3, fread(f, nrow=21L, fill=TRUE), ans)
+test(1558.4, fread(f, nrow=22L), error="Line 23 has too few fields.*Expecting 3 fields but found 2.*<<ZZZ.*YYY>>")
+test(1558.5, fread(f, nrow=22L, fill=TRUE), rbind(ans, list("ZZZ","YYY",NA)))
 
 # FR # 1338 -- check.names argument of setDT
 ans=data.table(X=1:3,"X.1"=1:3)
@@ -9189,9 +9333,9 @@ test(1666.4, grep("Creating new index", capture.output(d[k==1L, verbose=TRUE])),
 d = data.table(k=3:1) # subset - index
 setindex(d, k)
 options("datatable.use.index"=TRUE, "datatable.auto.index"=TRUE)
-test(1666.5, d[k==1L, verbose=TRUE], d[3L], output="Using existing index 'k'")
+test(1666.5, d[k==1L, verbose=TRUE], d[3L], output="Optimized subsetting with index 'k'")
 options("datatable.use.index"=TRUE, "datatable.auto.index"=FALSE)
-test(1666.6, d[k==1L, verbose=TRUE], d[3L], output="Using existing index 'k'")
+test(1666.6, d[k==1L, verbose=TRUE], d[3L], output="Optimized subsetting with index 'k'")
 options("datatable.use.index"=FALSE, "datatable.auto.index"=FALSE)
 test(1666.7, grep("Using existing index", capture.output(d[k==1L, verbose=TRUE])), integer(0)) # not using existing index
 options("datatable.use.index"=FALSE, "datatable.auto.index"=TRUE)
@@ -10388,8 +10532,8 @@ if ("package:nanotime" %in% search()) {
 
 # check too many fields error from ,\n line ending highlighted in #2044
 test(1753.1, fread("X,Y\n1,2\n3,4\n5,6"), data.table(X=INT(1,3,5),Y=INT(2,4,6)))
-test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), error="Line 3 starting <<3,4,>> has more than.*2 fields")
-test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 3 starting <<3,4,7>> has more than.*2 fields")
+test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), error="Line 3 has more than.*2 fields. Stopped on <<,>> at character 4.*<<3,4,>>")
+test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 3 has more than.*2 fields. Stopped on <<,7>> at character 4.*<<3,4,7>>")
 
 # issue 2051 where a quoted field contains ",  New quote rule detection handles it.
 test(1753.4, fread(testDir("issue_2051.csv"))[2,grep("^Our.*tool$",COLUMN50)], 1L)
@@ -10749,7 +10893,7 @@ test(1777.17, fread("A,B,3\nC,D,4\n", verbose=TRUE), data.table(V1=c("A","C"),V2
 test(1777.18, fread("A,B,C\nD,E,F\n", verbose=TRUE), data.table(A="D", B="E", C="F"),
               output="because all columns are type string and a better guess is not possible")
 test(1777.19, fread("A,B,C\nC,D,4\n", verbose=TRUE), data.table(A="C",B="D",C=4L),
-              output="due to column 3 containing a string on row 1 and a lower type.*on row 2")
+              output="due to column 3 containing a string on row 1 and a lower type.*in the rest of the.*sample rows")
 
 # unquoted fields containing \r, #2371
 test(1778.1, fread("A,B,C\n0,,\n1,hello\rworld,2\n3,test,4\n", verbose=TRUE),
@@ -10877,9 +11021,9 @@ test(1818, fread(testDir("session_aborted_fatal_error.txt"))[c(1,.N),c(1,2,250,2
 test(1819, as.ITime("2015-09-29 08:22:00"), structure(30120L, class = "ITime"))
 
 # Issue 2287: the % sign in the error message should not be interpreted as a format string!
-test(1820.1, fread("name,id\nfoo,1\nbar%\n"), error="Expecting 2 fields but found 1: <<bar%>>")
-test(1820.2, fread("name,id\nfoo,1\nbar%d"), error="Expecting 2 fields but found 1: <<bar%d>>")
-test(1820.3, fread("name,id\nfoo,1\nbar%s"), error="Expecting 2 fields but found 1: <<bar%s>>")
+test(1820.1, fread("name,id\nfoo,1\nbar%\n"), error="Line 3 has too few.*Expecting 2 fields but found 1.*<<bar%>>")
+test(1820.2, fread("name,id\nfoo,1\nbar%d"), error="Line 3 has too few.*Expecting 2 fields but found 1.*<<bar%d>>")
+test(1820.3, fread("name,id\nfoo,1\nbar%s"), error="Line 3 has too few.*Expecting 2 fields but found 1.*<<bar%s>>")
 
 # new argument for print.data.table: col.names
 #   issue #1482 / PR #1483
@@ -10906,7 +11050,7 @@ src = paste(c("A,B",
               paste(rep("3,4", 10000), collapse="\n"),
               ""),
             collapse="\n")
-test(1822, fread(src), error="Expecting 2 cols but row .+ contains only 1 cols")
+test(1822, fread(src), error="Line 102 has too few.*Expecting 2 fields but found 1.*<<999>>")
 
 # Issue 2326: .SD mistakenly includes column being set when get() appears in j
 DT <- data.table(x = seq(1, 10), y = seq(10, 1))
@@ -11034,8 +11178,8 @@ for (i in 0:1000) {
   if (i==502) write("-999,Bad,Line,0.0,0.0,extra\n", f, append=TRUE)
 }
 test(1835, fread(f, verbose=TRUE),
-  output = "Not using sample from jump 50.*could not establish the true line start.*jumps=[0..2)",
-  error  = "Too many fields on out-of-sample row.*-999,Bad,Line,0.0,0.0,extra")
+  output = "Not using sample from jump 50.*could not establish the next true line start.*jumps=[0..2)",
+  error  = "Line 42253 has more than the expected 5 fields.*<<-999,Bad,Line,0.0,0.0,extra>>")
 unlink(f)
 
 test(1836, fread('1,2,"3,a"\n4,5,"6,b"'), data.table(V1=c(1L,4L), V2=c(2L,5L), V3=c("3,a","6,b")))   # 2196
@@ -11290,7 +11434,7 @@ test(1864.2, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
 data = rep("a,b,c,d,e,f,g", 2100)
 data[111] = "a,b,c,d,e,f,g,"
 cat(data, file=(f<-tempfile()), sep="\n")
-test(1865, fread(f, header=FALSE), error="Too many fields.*Read all 7 expected.*but more are present.*a,b,c,d,e,f,g,")
+test(1865, fread(f, header=FALSE), error="Line 111.*more than.*7 fields.*Stopped on <<,>> at character 14.*<<a,b,c,d,e,f,g,>>")
 unlink(f)
 
 # "Natural" provision of value.name in measure.vars list, #1547 and #2551
@@ -11375,6 +11519,7 @@ test(1869.5, fread("A,B\r2,3\r\r,\r2,4\r\r"), data.table(A=2L, B=3L), warning="c
 test(1869.6, fread(testDir("colnames4096.csv")), error="very unusual.*one single line without any.*r.*n at the end.*and.*multiple of 4096")
 test(1869.7, fread(testDir("onecol4096.csv")), error="very unusual.*single column.*multiple of 4096.*ends with 2 or more end-of-line")
 
+<<<<<<< HEAD
 # miscellaneous missing tests uncovered by CodeCov difference
 #   in the process of PR #2573
 ## data.table cannot recycle complicated types
@@ -11432,6 +11577,23 @@ X = data.table(x=c("c","b"), v=8:7, foo=c(4,2))
 DT = data.table(x=rep(c("b","a","c"),each=3), y=c(1,3,6), v=1:9)
 test(1870.13, DT[X, on=.(x, v>=v), verbose = TRUE],
      output = 'Non-equi join operators.*forder took.*group lengths.*done.*non-equi group ids.*done')
+=======
+# better colname detection by comparing potential column names to the whole sample not just the first row of the sample, #2526
+test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,300L,500L), V3=c(200L,400L,600L)))
+test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,NA,500L), V3=c(NA,NA,600L)))
+test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA,3.4)))
+
+# nrows= now ignores errors after those rows as expected, #1267
+# txt = "V1, V2, V3\n1,2,3\nV4, V5, V6, V7\n4,5,6,7\n8,9,10,11\n"
+# fread(txt)
+# fread(txt, nrows = 1, header = TRUE, skip = 0)
+# fread("1,2,3\n1,2", nrows=1)
+# for ( i in 100:1) {
+#   lines <- paste0(paste(rep("1,2,3", i), collapse='\n'), "\n1,2")
+#   fread(lines, nrows=i)
+# }
+
+>>>>>>> 05c512253e265dcc05f66cf5cdf25a440d10d8d0
 
 ##########################
 
