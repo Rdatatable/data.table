@@ -1,3 +1,5 @@
+# nocov start
+
 .onLoad <- function(libname, pkgname) {
   # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
 
@@ -110,3 +112,5 @@ getRversion <- function(...) stop("Reminder to data.table developers: don't use 
   # So 'detach' doesn't find datatable.so, as it looks by default for data.table.so
   library.dynam.unload("datatable", libpath)
 }
+
+# nocov end

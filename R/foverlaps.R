@@ -15,6 +15,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   mult = match.arg(mult)
   if (type == "equal")
     stop("type = 'equal' is not implemented yet. But note that this is just the same as a normal data.table join y[x, ...], unless you are also interested in setting 'minoverlap / maxgap' arguments. But those arguments are not implemented yet as well.")
+  # if (maxgap > 0L || minoverlap > 1L) # for future implementation
   if (maxgap != 0L || minoverlap != 1L)
     stop("maxgap and minoverlap arguments are not yet implemented.")
   if (is.null(by.y))
@@ -129,6 +130,22 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   }
   # nomatch has no effect here, just for passing arguments consistently to `bmerge`
   .Call(Clookup, uy, nrow(y), indices(uy, y, yintervals, nomatch=0L, roll=roll), maxgap, minoverlap, mult, type, verbose)
+  # placeholder for future improvement
+  # if (maxgap == 0L && minoverlap == 1L) {
+  # iintervals = tail(names(x), 2L)
+  #    if (verbose) {last.started.at=proc.time();cat("binary search(es) done in ...");flush.console()}
+  #    xmatches = indices(uy, x, xintervals, nomatch=0L, roll=roll)
+  #    if (verbose) {cat(timetaken(last.started.at));flush.console()}
+  #    olaps = .Call(Coverlaps, uy, xmatches, mult, type, nomatch, verbose)
+  #  } else if (maxgap == 0L && minoverlap > 1L) {
+  #    stop("Not yet implemented")
+  #  } else if (maxgap > 0L && minoverlap == 1L) {
+  #    stop("Not yet implemented")
+  #  } else if (maxgap > 0L && minoverlap > 1L) {
+  #    if (maxgap > minoverlap)
+  #      warning("maxgap > minoverlap. maxgap will have no effect here.")
+  #    stop("Not yet implemented")
+  #  }
   if (verbose) {last.started.at=proc.time();cat("binary search(es) done in ...");flush.console()}
   xmatches = indices(uy, x, xintervals, nomatch=0L, roll=roll)
   if (verbose) {cat(timetaken(last.started.at));flush.console}
