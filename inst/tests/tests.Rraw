@@ -3075,8 +3075,7 @@ test(1042, DT[-5, mean(x), by = group], data.table(group=c(1,2), V1=c(1.5, 3.5))
 # Test when abs(negative index) > nrow(dt) - should warn
 test(1042.1, DT[-10], DT, warning="Item 1 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 1.")
 test(1042.2, DT[c(-5, -10), mean(x), by = group], data.table(group=c(1,2),V1=c(1.5,3.5)), warning="Item 2 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 2.")
-#  Test #1043 TO DO - mixed negatives
-test(1043, DT[c(1, -5)], error="Item 2 of i is -5 and item 1 is 1. Cannot mix positives and negatives.")
+test(1043, DT[c(1, -5)], error="Cannot mix positives and negatives.")
 
 # crash (floating point exception), when assigning null data.table() to multiple cols, #4731
 DT = data.table(x=1:5,y=6:10)
@@ -11520,6 +11519,19 @@ test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA
 #   fread(lines, nrows=i)
 # }
 
+# assortment of tests from #2572
+## negative indexing should retain key
+DT = data.table(a = c(5, 5, 7, 2, 2),
+                b = 1:5, key = 'a')
+test(1871.1, key(DT[-c(2, 3)]), 'a')
+test(1871.2, key(DT[-(1:5)]), 'a')
+test(1871.3, key(DT[-2, sum(b), by = a]), 'a')
+## behavior of out-of-bound subsets
+##   (mixed +/- already covered in 1043)
+test(1871.4, DT[3:6],
+     data.table(a = c(5, 5, 7, NA),
+                b = c(1L, 2L, 3L, NA)))
+test(1871.5, DT[0:5], DT)
 
 ##########################
 
@@ -11531,14 +11543,9 @@ test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA
 # TO DO: tests of freading classes like Date and the verbose messages there.
 # TO DO: Test mid read bump of logical T/F to character, collapse back to T and F.
 
-# TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
 # TO DO: tests on double in add hoc by
-# TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
-#        test on out of bound i subsets e.g. 6:10 when DT has 7 rows, and mixed negative and positive i integer is error.
-#  test that ordered subsets when i is unkeyed now retain x's key (using is.sorted(f__))
 
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name. Actually, is that true?  Need "..J".
-# TO DO: why did SO answer using eval twice in j need .SD in lapply(f,eval,.SD) on 19 Apr
 # TO DO: change all 1 to 1L internally (done in data.table.R, other .R to do)
 
 # TO DO: check the "j is named list could be inefficient" message from verbose than Chris N showed recently to 15 May
