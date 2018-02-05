@@ -11510,11 +11510,14 @@ test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(V1=c("A","",""),
 test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,NA,500L), V3=c(NA,NA,600L)))
 test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA,3.4)))
 
-# nrows= now ignores errors after those rows as expected, #1267
-# txt = "V1, V2, V3\n1,2,3\nV4, V5, V6, V7\n4,5,6,7\n8,9,10,11\n"
-# fread(txt)
-# fread(txt, nrows = 1, header = TRUE, skip = 0)
-# fread("1,2,3\n1,2", nrows=1)
+# nrows= now ignores errors after those nrows as expected and skip= determines first row for sure, #1267
+txt = "V1, V2, V3\n2,3,4\nV4, V5, V6, V7\n4,5,6,7\n8,9,10,11\n"
+test(1871.1, fread(txt), data.table(V4=INT(4,8), V5=INT(5,9), V6=INT(6,10), V7=INT(7,11)))
+test(1871.2, fread(txt, nrows=1), data.table(V4=4L, V5=5L, V6=6L, V7=7L))
+test(1871.3, fread(txt, skip=0), ans<-data.table(V1=2L, V2=3L, V3=4L), warning="discarded line V4, V5")
+test(1871.4, fread(txt, skip=0, nrows=1), ans)
+test(1871.5, fread(txt, skip=0, nrows=1, header=TRUE), ans)
+test(1871.6, fread(txt, skip=0, nrows=1, header=FALSE), data.table(V1=c("V1","2"), V2=c("V2","3"), V3=c("V3","4")))
 # for ( i in 100:1) {
 #   lines <- paste0(paste(rep("1,2,3", i), collapse='\n'), "\n1,2")
 #   fread(lines, nrows=i)

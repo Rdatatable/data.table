@@ -1,5 +1,5 @@
 
-fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=NA,skip=0,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=interactive(),data.table=getOption("datatable.fread.datatable"),nThread=getDTthreads(),logical01=TRUE)
+fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),skip="auto",select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=interactive(),data.table=getOption("datatable.fread.datatable"),nThread=getDTthreads(),logical01=TRUE,autostart=NA)
 {
   if (is.null(sep)) sep="\n"         # C level knows that \n means \r\n on Windows, for example
   else {
@@ -21,7 +21,6 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
   stopifnot(isTrueFalseNA(header))
-  stopifnot(length(skip)==1L)
   stopifnot(is.numeric(nThread) && length(nThread)==1L)
   nThread=as.integer(nThread)
   stopifnot(nThread>=1)
@@ -87,7 +86,11 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
       colClasses = tapply(names(colClasses), colClasses, c, simplify=FALSE)
     }
   }
-  if (is.numeric(skip)) skip = as.integer(skip)
+  stopifnot(length(skip)==1L, !is.na(skip), is.character(skip) || is.numeric(skip))
+  if (skip=="auto") skip=-1L
+  # so, skip="string" so long as "string" is not "auto". The skip="auto" default best conveys something
+  # is automatic there (better than skip=-1 or skip=NA). skip="string" is rarely used, so ok to treat "auto" specially.
+  if (is.double(skip)) skip = as.integer(skip)
   warnings2errors = getOption("warn") >= 2
   ans = .Call(CfreadR,input,sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
               fill,showProgress,nThread,verbose,warnings2errors,logical01,select,drop,colClasses,integer64,encoding)

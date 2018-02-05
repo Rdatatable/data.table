@@ -1073,7 +1073,7 @@ int freadMain(freadMainArgs _args) {
       else
         DTPRINT("  None of the NAstrings look like numbers.\n");
     }
-    if (args.skipNrow) DTPRINT("  skip num lines = %llu\n", (llu)args.skipNrow);
+    if (args.skipNrow >= 0) DTPRINT("  skip num lines = %llu\n", (llu)args.skipNrow);
     if (args.skipString) DTPRINT("  skip to string = <<%s>>\n", args.skipString);
     DTPRINT("  show progress = %d\n", args.showProgress);
     DTPRINT("  0/1 column will be read as %s\n", args.logical01? "boolean" : "integer");
@@ -1269,6 +1269,7 @@ int freadMain(freadMainArgs _args) {
   //*********************************************************************************************
   const char *pos;   // Location where the actual data in the file begins
   int row1line = 1;  // The line number where the data starts. Normally row 1 is column names and row1line ends up == 2.
+  bool skipAuto = true;
   {
 
   // First, set 'LFpresent' for use by eol() to know if \r-only line ending is allowed, #2371
@@ -1298,12 +1299,14 @@ int freadMain(freadMainArgs _args) {
     if (verbose) DTPRINT("Found skip='%s' on line %llu. Taking this to be header row or first row of data.\n",
                          args.skipString, (llu)row1line);
     ch = pos;
+    skipAuto = false;
   }
-  // Skip the first `skipNrow` lines of input.
-  else if (args.skipNrow>0) {
+  // Skip the first `skipNrow` lines of input, including 0 to force the first line to be the start
+  else if (args.skipNrow >= 0) {
     while (ch<eof && row1line<=args.skipNrow) row1line+=(*ch++=='\n');
     if (ch>=eof) STOP("skip=%llu but the input only has %llu line%s", (llu)args.skipNrow, (llu)row1line, row1line>1?"s":"");
     pos = ch;
+    skipAuto = false;
   }
 
   // skip blank input at the start
@@ -1383,7 +1386,12 @@ int freadMain(freadMainArgs _args) {
       while (ch<eof && thisLine++<JUMPLINES) {
         int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
         if (thisncol<0) { numFields[0]=-1; break; }  // invalid file with this sep and quote rule; abort
-        if (thisncol!=lastncol) { numFields[++i]=thisncol; lastncol=thisncol; } // new contiguous consistent ncol started
+        if (thisncol!=lastncol) {
+          if (!skipAuto && i==0) break;  // biggest contiguous group always starting on the line skip= landed on
+          // else new contiguous consistent ncol started
+          numFields[++i]=thisncol;
+          lastncol=thisncol;
+        }
         numLines[i]++;
       }
       if (numFields[0]==-1) continue;
@@ -1425,11 +1433,11 @@ int freadMain(freadMainArgs _args) {
   sep = topSep;
   whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
   ch = pos;
-  if (fill) {
+  if (fill || !skipAuto) {
     // start input from first populated line, already pos.
     ncol = topNmax;
   } else {
-    // find the top line with the consistent number of fields.  There might be irregular banner lines above it.
+    // find the top line with the consistent number of fields.  There might be irregular banner lines above it (skip="auto")
     ncol = topNumFields;
     int thisLine=-1;
     while (ch<eof && ++thisLine<JUMPLINES) {
@@ -1543,6 +1551,22 @@ int freadMain(freadMainArgs _args) {
     bool bumped = false;  // did this jump find any different types; to reduce verbose output to relevant lines
     bool skipThisJump = false;
     int jumpLine = 0;    // line from this jump point start
+
+
+    setting nrows= must turn off jump sampling (just use the first min(JUMPLINES,nrowLimit))  AND turn off multithreading because we can't have type bumps
+    in later chunks affecting the current jump (before we know whether this or the next jump will fill nrowLimit, while threads 7 and 8 are reading!)  This will much simplify
+    the horrid logic later where we struggled with allocnrow==nrowLimit.  Cancelling the error was wrong thing to do due to the possible wrong bumps.
+    All we need is an extra  'if nrowLimit reached then break;' in COLD section (and branch predicted)
+    Add to manual that using nrows= will turn off multithreading.
+
+    Read up to the error line, return up to there and then report the error line as warning.  In sampling too, not stop.
+    Add to ?fread that for production purposes, options(warn=2) should be turned on.
+    Or, report up to 5 lines at the end as warning, otherwise, error.
+
+    So the errors in the ordered section, can only be not-errors if it is the last chunk being processed. To ensure no later jump chunk bumped types. If so, they can be
+    warnings about stopping on that line.
+
+
     while(ch<eof && (jumpLine++<JUMPLINES || jump==nJumps-1)) {  // nJumps==1 implies sample all of input to eof; last jump to eof too
       const char *lineStart = ch;
       if (sep==' ') while (*ch==' ') ch++;  // multiple sep=' ' at the beginning of a line does not mean sep
@@ -1624,7 +1648,7 @@ int freadMain(freadMainArgs _args) {
     }
   }
 
-  if (args.header==NA_BOOL8 && prevStart!=NULL && args.skipNrow==0 && args.skipString==NULL) {
+  if (args.header==NA_BOOL8 && prevStart!=NULL && skipAuto) {
     // The first data row matches types in the row after that, and user didn't override default auto detection.
     // Maybe previous line (if there is one, prevStart!=NULL) contains column names but there are too few (which is why it didn't become the first data row).
     ch = prevStart;
