@@ -1,9 +1,11 @@
 test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
   if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     # package developer
+    # nocov start
     if ("package:data.table" %in% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
     d = if (pkg %in% dir()) file.path(getwd(), pkg) else Sys.getenv("CC_DIR")
     d = file.path(d, "inst/tests")
+    # nocov end
   } else {
     # R CMD check and user running test.data.table()
     d = paste0(getNamespaceInfo("data.table","path"),"/tests")
@@ -21,7 +23,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
     envirs[[fn]] = new.env(parent=.GlobalEnv)
     assign("testDir", function(x)file.path(d,x), envir=envirs[[fn]])
     if(isTRUE(silent)){
-      try(sys.source(fn,envir=envirs[[fn]]), silent=silent)
+      try(sys.source(fn,envir=envirs[[fn]]), silent=silent)  # nocov
     } else {
       sys.source(fn,envir=envirs[[fn]])
     }
@@ -39,13 +41,12 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
 # whichfail = NULL
 # .devtesting = TRUE
 
-# essentially toString.default
-makeString = function (x) paste(x, collapse = ",")
-
+# nocov start
 compactprint <- function(DT, topn=2L) {
   tt = vapply_1c(DT,function(x)class(x)[1L])
   tt[tt=="integer64"] = "i64"
   tt = substring(tt, 1L, 3L)
+  makeString = function(x) paste(x, collapse = ",")  # essentially toString.default
   cn = paste0(" [Key=",makeString(key(DT)),
              " Types=", makeString(substring(sapply(DT, typeof), 1L, 3L)),
              " Classes=", makeString(tt), "]")
@@ -57,6 +58,7 @@ compactprint <- function(DT, topn=2L) {
   }
   invisible()
 }
+# nocov end
 
 INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 
@@ -104,6 +106,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     output = gsub("+","\\+",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
     output = gsub("\n","",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
     if (!length(grep(output,out))) {
+      # nocov start
       cat("Test",num,"didn't produce correct output:\n")
       cat(">",deparse(xsub),"\n")
       cat("Expected: '",output,"'\n",sep="")
@@ -111,6 +114,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
       assign("nfail", nfail+1, parent.frame(), inherits=TRUE)
       assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
       return()
+      # nocov end
     }
   }
   if (!is.null(error) || !is.null(warning)) {
@@ -124,6 +128,7 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
     if (! (inherits(err,"try-error") &&
            length(grep(patt,err)) &&
            type==observedtype)) {
+      # nocov start
       cat("Test",num,"didn't produce correct",type,":\n")
       cat(">",deparse(xsub),"\n")
       cat("Expected ",type,": '",txt,"'\n",sep="")
@@ -134,26 +139,31 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
       assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)   # Not the same as nfail <<- nfail + 1, it seems (when run via R CMD check)
       assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
       return()
+      # nocov end
     }
     if (type=="warning")
       err <- if (is.null(output)) x<-try(suppressWarnings(x),TRUE) else out<-paste(capture.output(x<-try(suppressWarnings(x),TRUE)),collapse="")
     else return()
   }
   if (inherits(err,"try-error") || (!missing(y) && inherits(err<-try(y,TRUE),"try-error"))) {
+    # nocov start
     cat("Test",num,err)
     assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
     assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
     return()
+    # nocov end
   }
   if (missing(y)) {
     if (!is.null(output)) return()
     if (isTRUE(as.vector(x))) return()  # as.vector to drop names of a named vector such as returned by system.time
+    # nocov start
     cat("Test",num,"expected TRUE but observed:\n")
     cat(">",deparse(xsub),"\n")
     if (is.data.table(x)) compactprint(x) else print(x)
     assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
     assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
     return()
+    # nocov end
   } else {
     if (identical(x,y)) return()
     if (is.data.table(x) && is.data.table(y)) {
@@ -173,14 +183,10 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
       if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
         identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return()
     }
-    if (is.factor(x) && is.factor(y)) {
-      x = factor(x)
-      y = factor(y)
-      if (identical(x,y)) return()
-    }
     if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y)) && typeof(x)==typeof(y)) return()
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
   }
+  # nocov start
   cat("Test",num,"ran without errors but failed check that x equals y:\n")
   cat("> x =",deparse(xsub),"\n")
   if (is.data.table(x)) compactprint(x) else {cat("First 6 of ", length(x)," (type '", typeof(x), "'): ", sep=""); print(head(x))}
@@ -190,5 +196,6 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
   assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
   assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
   invisible()
+  # nocov end
 }
 
