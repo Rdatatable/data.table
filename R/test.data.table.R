@@ -1,4 +1,3 @@
-# nocov start
 test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
   if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     # package developer
@@ -43,8 +42,6 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
 # essentially toString.default
 makeString = function (x) paste(x, collapse = ",")
 
-# nocov end
-
 compactprint <- function(DT, topn=2L) {
   tt = vapply_1c(DT,function(x)class(x)[1L])
   tt[tt=="integer64"] = "i64"
@@ -61,7 +58,6 @@ compactprint <- function(DT, topn=2L) {
   invisible()
 }
 
-# nocov start
 INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 
 test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
@@ -196,4 +192,3 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
   invisible()
 }
 
-# nocov end
