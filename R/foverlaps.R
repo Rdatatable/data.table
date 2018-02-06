@@ -130,26 +130,24 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   }
   # nomatch has no effect here, just for passing arguments consistently to `bmerge`
   .Call(Clookup, uy, nrow(y), indices(uy, y, yintervals, nomatch=0L, roll=roll), maxgap, minoverlap, mult, type, verbose)
-  # placeholder for future improvement
-  # if (maxgap == 0L && minoverlap == 1L) {
-  # iintervals = tail(names(x), 2L)
-  #    if (verbose) {last.started.at=proc.time();cat("binary search(es) done in ...");flush.console()}
-  #    xmatches = indices(uy, x, xintervals, nomatch=0L, roll=roll)
-  #    if (verbose) {cat(timetaken(last.started.at));flush.console()}
-  #    olaps = .Call(Coverlaps, uy, xmatches, mult, type, nomatch, verbose)
-  #  } else if (maxgap == 0L && minoverlap > 1L) {
-  #    stop("Not yet implemented")
-  #  } else if (maxgap > 0L && minoverlap == 1L) {
-  #    stop("Not yet implemented")
-  #  } else if (maxgap > 0L && minoverlap > 1L) {
-  #    if (maxgap > minoverlap)
-  #      warning("maxgap > minoverlap. maxgap will have no effect here.")
-  #    stop("Not yet implemented")
-  #  }
-  if (verbose) {last.started.at=proc.time();cat("binary search(es) done in ...");flush.console()}
-  xmatches = indices(uy, x, xintervals, nomatch=0L, roll=roll)
-  if (verbose) {cat(timetaken(last.started.at));flush.console}
-  olaps = .Call(Coverlaps, uy, xmatches, mult, type, nomatch, verbose)
+  if (maxgap == 0L && minoverlap == 1L) {
+    # iintervals = tail(names(x), 2L)    # iintervals not yet used so commented out for now
+    if (verbose) {last.started.at=proc.time();cat("binary search(es) done in ...");flush.console()}
+    xmatches = indices(uy, x, xintervals, nomatch=0L, roll=roll)
+    if (verbose) {cat(timetaken(last.started.at));flush.console()}
+    olaps = .Call(Coverlaps, uy, xmatches, mult, type, nomatch, verbose)
+  }
+  # nocov start
+  else if (maxgap == 0L && minoverlap > 1L) {
+    stop("Not yet implemented")
+  } else if (maxgap > 0L && minoverlap == 1L) {
+    stop("Not yet implemented")
+  } else if (maxgap > 0L && minoverlap > 1L) {
+    if (maxgap > minoverlap)
+      warning("maxgap > minoverlap. maxgap will have no effect here.")
+    stop("Not yet implemented")
+  }
+  # nocov end
 
   setDT(olaps)
   setnames(olaps, c("xid", "yid"))
