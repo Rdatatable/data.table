@@ -1,3 +1,5 @@
+# nocov start
+
 .onLoad <- function(libname, pkgname) {
   # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
 
@@ -7,9 +9,9 @@
   ss = body(tt)
   if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
   prefix = if (!missing(pkgname)) "data.table::" else ""  # R provides the arguments when it calls .onLoad, I don't in dev/test
-  if (!length(grep("data.table",ss[[2]]))) {
-    ss = ss[c(1,NA,2:length(ss))]
-    ss[[2]] = parse(text=paste("if (!identical(class(..1),'data.frame')) for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,"data.table(...)) }",sep=""))[[1]]
+  if (!length(grep("data.table",ss[[2L]]))) {
+    ss = ss[c(1L, NA, 2L:length(ss))]
+    ss[[2L]] = parse(text=paste("if (!identical(class(..1),'data.frame')) for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,"data.table(...)) }",sep=""))[[1]]
     body(tt)=ss
     (unlockBinding)("cbind.data.frame",baseenv())
     assign("cbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
@@ -18,9 +20,9 @@
   tt = base::rbind.data.frame
   ss = body(tt)
   if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
-  if (!length(grep("data.table",ss[[2]]))) {
-    ss = ss[c(1,NA,2:length(ss))]
-    ss[[2]] = parse(text=paste("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }",sep=""))[[1]] # fix for #4995
+  if (!length(grep("data.table",ss[[2L]]))) {
+    ss = ss[c(1L, NA, 2L:length(ss))]
+    ss[[2L]] = parse(text=paste("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }",sep=""))[[1L]] # fix for #4995
     body(tt)=ss
     (unlockBinding)("rbind.data.frame",baseenv())
     assign("rbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
@@ -68,9 +70,9 @@
 
   # Test R behaviour ...
 
-  x = 1:3
+  x = 1L:3L
   y = list(x)
-  .R.listCopiesNamed <<- (address(x) != address(y[[1]]))   # FALSE from R 3.1
+  .R.listCopiesNamed <<- (address(x) != address(y[[1L]]))   # FALSE from R 3.1
 
   DF = data.frame(a=1:3, b=4:6)
   add1 = address(DF$a)
@@ -84,7 +86,7 @@
   DF = data.frame(a=1:3, b=4:6)
   add1 = address(DF$a)
   add2 = address(DF)
-  DF[2,"b"] = 7  # changed b but not a
+  DF[2L, "b"] = 7  # changed b but not a
   add3 = address(DF$a)
   add4 = address(DF)
   .R.subassignCopiesOthers <<- add1 != add3                # FALSE from R 3.1
@@ -110,3 +112,5 @@ getRversion <- function(...) stop("Reminder to data.table developers: don't use 
   # So 'detach' doesn't find datatable.so, as it looks by default for data.table.so
   library.dynam.unload("datatable", libpath)
 }
+
+# nocov end

@@ -22,7 +22,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
     #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
     SYS <- sys.calls()
-    if (length(SYS) <= 2 ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
+    if (length(SYS) <= 2L ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
         ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) &&
           as.character(thisSYS) %chin% mimicsAutoPrint ) )  {
       return(invisible())
@@ -39,14 +39,14 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     if (!is.null(ky <- key(x)))
     cat("Key: <", paste(ky, collapse=", "), ">\n", sep="")
     if (!is.null(ixs <- indices(x)))
-    cat("Ind", if (length(ixs) > 1) "ices" else "ex", ": <",
+    cat("Ind", if (length(ixs) > 1L) "ices" else "ex", ": <",
       paste(ixs, collapse=">, <"), ">\n", sep="")
   }
   if (nrow(x) == 0L) {
     if (length(x)==0L)
        cat("Null data.table (0 rows and 0 cols)\n")  # See FAQ 2.5 and NEWS item in v1.8.9
     else
-       cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1L)"s",": ",paste(head(names(x),6),collapse=","),if(ncol(x)>6)"...","\n",sep="")
+       cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1L)"s",": ",paste(head(names(x),6L),collapse=","),if(ncol(x)>6L)"...","\n",sep="")
     return(invisible())
   }
   if (topn*2<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
