@@ -1,18 +1,20 @@
+# nocov start
+
 .onAttach <- function(libname, pkgname) {
   # Runs when attached to search() path such as by library() or require()
   if (interactive()) {
   v = packageVersion("data.table")
   d = read.dcf(system.file("DESCRIPTION", package="data.table"), fields = c("Packaged", "Built"))
-  if (is.na(d[1])) {
-    if (is.na(d[2])) {
+  if (is.na(d[1L])) {
+    if (is.na(d[2L])) {
       return() #neither field exists
     } else {
-      d = unlist(strsplit(d[2], split="; "))[3]
+      d = unlist(strsplit(d[2L], split="; "))[3L]
     }
   } else {
-    d = d[1]
+    d = d[1L]
   }
-  dev = as.integer(v[1,3])%%2 == 1  # version number odd => dev
+  dev = as.integer(v[1L, 3L]) %% 2L == 1L  # version number odd => dev
   packageStartupMessage("data.table ", v, if(dev) paste0(" IN DEVELOPMENT built ", d))
   if (dev && (Sys.Date() - as.Date(d))>28)
     packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update.\n**********")
@@ -24,4 +26,4 @@
   }
 }
 
-
+# nocov end

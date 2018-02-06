@@ -6,7 +6,7 @@ melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
     reshape2::melt(data, ..., na.rm=na.rm, value.name=value.name)
 }
 
-patterns <- function(..., cols=character(0)) {
+patterns <- function(..., cols=character(0L)) {
   # if ... has no names, names(list(...)) will be "";
   #   this assures they'll be NULL instead
   p = unlist(list(...), use.names = any(nzchar(names(...))))

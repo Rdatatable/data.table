@@ -53,10 +53,10 @@ as.list.IDate <- function(x, ...) NextMethod()
 round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ...) {
   units <- match.arg(digits)
   as.IDate(switch(units,
-          weeks  = round(x, "year") + 7 * (yday(x) %/% 7),
-          months = ISOdate(year(x), month(x), 1),
-          quarters = ISOdate(year(x), 3 * (quarter(x)-1) + 1, 1),
-          years = ISOdate(year(x), 1, 1)))
+          weeks  = round(x, "year") + 7L * (yday(x) %/% 7L),
+          months = ISOdate(year(x), month(x), 1L),
+          quarters = ISOdate(year(x), 3L * (quarter(x)-1L) + 1L, 1L),
+          years = ISOdate(year(x), 1L, 1L)))
 }
 
 #Adapted from `+.Date`
@@ -80,7 +80,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
     stop("can only subtract from \"IDate\" objects")
   if (storage.mode(e1) != "integer")
     stop("Internal error: storage mode of IDate is somehow no longer integer")
-  if (nargs() == 1)
+  if (nargs() == 1L)
     stop("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))
     stop("difftime objects may not be subtracted from IDate. Use plain integer instead of difftime.")
