@@ -45,7 +45,7 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
                 "and 'value.name argument'; value provided in",
                 "'measure.vars' is given precedence.")
       }
-      if (any(is.na(meas.nm)) || !all(nzchar(meas.nm))) {
+      if (anyNA(meas.nm) || !all(nzchar(meas.nm))) {
         stop("Please provide a name to each element of 'measure.vars'.")
       }
       value.name = meas.nm
