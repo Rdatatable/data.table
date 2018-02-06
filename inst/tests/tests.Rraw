@@ -11575,16 +11575,16 @@ test(1872.9, DT_out,
 x = data.table(start=c(5,31,22,16), end=c(8,50,25,18), val2 = 7:10)
 y = data.table(start=c(10, 20, 30), end=c(15, 35, 45), val1 = 1:3)
 setkey(y, start, end)
-test(1872.10, foverlaps(x, y, maxgap = 2), error = 'maxgap and minoverlap.*not yet')
-test(1872.11, foverlaps(x, y, minoverlap = 2), error = 'maxgap and minoverlap.*not yet')
+test(1872.11, foverlaps(x, y, maxgap = 2), error = 'maxgap and minoverlap.*not yet')
+test(1872.12, foverlaps(x, y, minoverlap = 2), error = 'maxgap and minoverlap.*not yet')
 ## tests of verbose output
 ### foverlaps
-test(1872.12, foverlaps(x, y, verbose = TRUE),
+test(1872.13, foverlaps(x, y, verbose = TRUE),
      output = 'unique.*setkey.*operations.*binary search')
 ### [.data.table
 X = data.table(x=c("c","b"), v=8:7, foo=c(4,2))
 DT = data.table(x=rep(c("b","a","c"),each=3), y=c(1,3,6), v=1:9)
-test(1872.13, DT[X, on=.(x, v>=v), verbose = TRUE],
+test(1872.14, DT[X, on=.(x, v>=v), verbose = TRUE],
      output = 'Non-equi join operators.*forder took.*group lengths.*done.*non-equi group ids.*done')
 
 ##########################
