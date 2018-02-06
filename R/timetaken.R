@@ -5,7 +5,7 @@ timetaken <- function(started.at)
     secs <- as.double(difftime(Sys.time(), started.at, units="secs"))
    } else {
     # new faster method using started.at = proc.time()
-    secs = proc.time()[3] - started.at[3]
+    secs = proc.time()[3L] - started.at[3L]
    }
    mins <- secs %/% 60
    hrs <- mins %/% 60

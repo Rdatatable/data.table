@@ -1,7 +1,7 @@
 setkey <- function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE)
 {
   if (is.character(x)) stop("x may no longer be the character name of the data.table. The possibility was undocumented and has been removed.")
-  cols = as.character(substitute(list(...))[-1])
+  cols = as.character(substitute(list(...))[-1L])
   if (!length(cols)) cols=colnames(x)
   else if (identical(cols,"NULL")) cols=NULL
   setkeyv(x, cols, verbose=verbose, physical=physical)
@@ -62,7 +62,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
     if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
   }
-  if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey")
+  if (!is.character(cols) || length(cols)<1L) stop("'cols' should be character at this point in setkey")
   if (verbose) {
     tt = system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
     cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
@@ -148,7 +148,7 @@ is.sorted <- function(x, by=seq_along(x)) {
     # could pass through a flag for forderv to return early on first FALSE. But we don't need that internally
     # since internally we always then need ordering, an it's better in one step. Don't want inefficiency to creep in.
     # This is only here for user/debugging use to check/test valid keys; e.g. data.table:::is.sorted(DT,by)
-    0 == length(forderv(x,by,retGrp=FALSE,sort=TRUE))
+    0L == length(forderv(x,by,retGrp=FALSE,sort=TRUE))
   } else {
     if (!missing(by)) stop("x is vector but 'by' is supplied")
     .Call(Cfsorted, x)
@@ -174,8 +174,8 @@ forderv <- function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.la
     if ( !missing(order) && (length(order) != 1L || !(order %in% c(1L, -1L))) )
       stop("x is a single vector, length(order) must be =1 and it's value should be 1 (ascending) or -1 (descending).")
   } else {
-    if (!length(x)) return(integer(0)) # to be consistent with base::order. this'll make sure forderv(NULL) will result in error
-                       # (as base does) but forderv(data.table(NULL)) and forderv(list()) will return integer(0))
+    if (!length(x)) return(integer(0L)) # to be consistent with base::order. this'll make sure forderv(NULL) will result in error
+                       # (as base does) but forderv(data.table(NULL)) and forderv(list()) will return integer(0L))
     if (is.character(by)) {
       w = chmatch(by, names(x))
       if (anyNA(w)) stop("'by' contains '",by[is.na(w)][1],"' which is not a column name")
@@ -196,9 +196,9 @@ forderv <- function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.la
 forder <- function(x, ..., na.last=TRUE, decreasing=FALSE)
 {
   if (!is.data.table(x)) stop("x must be a data.table.")
-  if (ncol(x) == 0) stop("Attempting to order a 0-column data.table.")
+  if (ncol(x) == 0L) stop("Attempting to order a 0-column data.table.")
   if (is.na(decreasing) || !is.logical(decreasing)) stop("'decreasing' must be logical TRUE or FALSE")
-  cols = substitute(list(...))[-1]
+  cols = substitute(list(...))[-1L]
   if (identical(as.character(cols),"NULL") || !length(cols)) return(NULL) # to provide the same output as base::order
   ans = x
   order = rep(1L, length(cols))
@@ -259,15 +259,15 @@ setorder <- function(x, ..., na.last=FALSE)
 # as opposed to DT[order(.)] where na.last=TRUE, to be consistent with base
 {
   if (!is.data.frame(x)) stop("x must be a data.frame or data.table.")
-  cols = substitute(list(...))[-1]
+  cols = substitute(list(...))[-1L]
   if (identical(as.character(cols),"NULL")) return(x)
   if (length(cols)) {
     cols=as.list(cols)
     order=rep(1L, length(cols))
     for (i in seq_along(cols)) {
       v=as.list(cols[[i]])
-      if (length(v) > 1 && v[[1L]] == "+") v=v[[-1L]]
-      else if (length(v) > 1 && v[[1L]] == "-") {
+      if (length(v) > 1L && v[[1L]] == "+") v=v[[-1L]]
+      else if (length(v) > 1L && v[[1L]] == "-") {
         v=v[[-1L]]
         order[i] = -1L
       }
@@ -306,7 +306,7 @@ setorderv <- function(x, cols, order=1L, na.last=FALSE)
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
     if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
   }
-  if (!is.character(cols) || length(cols)<1) stop("'cols' should be character at this point in setkey.")
+  if (!is.character(cols) || length(cols)<1L) stop("'cols' should be character at this point in setkey.")
 
   o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
   if (length(o)) {
@@ -341,10 +341,10 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
   # The last vector is varied the quickest in the table, so dates should be last for roll for example
   l = list(...)
   emptyList <- FALSE ## fix for #2511
-  if(any(sapply(l, length) == 0)){
+  if(any(sapply(l, length) == 0L)){
     ## at least one column is empty The whole thing will be empty in the end
     emptyList <- TRUE
-    l <- lapply(l, "[", 0)
+    l <- lapply(l, "[", 0L)
   }
   if (unique && !emptyList) l = lapply(l, unique)
 

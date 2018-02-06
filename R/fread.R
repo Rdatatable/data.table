@@ -4,9 +4,9 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   if (is.null(sep)) sep="\n"         # C level knows that \n means \r\n on Windows, for example
   else {
     stopifnot( length(sep)==1L, !is.na(sep), is.character(sep) )
-    if (sep=="") sep="\n"            # meaning readLines behaviour. The 3 values (NULL, "" or "\n") are equivalent.
-    else if (sep=="auto") sep=""     # sep=="" at C level means auto sep
-    else stopifnot( nchar(sep)==1 )  # otherwise an actual character to use as sep
+    if (sep=="") sep="\n"             # meaning readLines behaviour. The 3 values (NULL, "" or "\n") are equivalent.
+    else if (sep=="auto") sep=""      # sep=="" at C level means auto sep
+    else stopifnot( nchar(sep)==1L )  # otherwise an actual character to use as sep
   }
   stopifnot( is.character(dec), length(dec)==1L, nchar(dec)==1L )
   # handle encoding, #563
@@ -23,7 +23,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   stopifnot(isTrueFalseNA(header))
   stopifnot(is.numeric(nThread) && length(nThread)==1L)
   nThread=as.integer(nThread)
-  stopifnot(nThread>=1)
+  stopifnot(nThread>=1L)
   if (!missing(file)) {
     if (!identical(input, "")) stop("You can provide 'input' or 'file', not both.")
     if (!file.exists(file)) stop(sprintf("Provided file '%s' does not exists.", file))
@@ -94,7 +94,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   warnings2errors = getOption("warn") >= 2
   ans = .Call(CfreadR,input,sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
               fill,showProgress,nThread,verbose,warnings2errors,logical01,select,drop,colClasses,integer64,encoding)
-  nr = length(ans[[1]])
+  nr = length(ans[[1L]])
   if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(ans,inherits,"integer64"))) require_bit64()
   setattr(ans,"row.names",.set_row_names(nr))
 

@@ -10,12 +10,12 @@ duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq
     by = key(x)
     warning(warning_oldUniqueByKey)
   }
-  if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0)) # fix for bug #5582
+  if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0L)) # fix for bug #5582
   if (is.na(fromLast) || !is.logical(fromLast)) stop("'fromLast' must be TRUE or FALSE")
   query <- .duplicated.helper(x, by)
   # fix for bug #5405 - unique on null data table returns error (because of 'forderv')
   # however, in this case we can bypass having to go to forderv at all.
-  if (!length(query$by)) return(logical(0))
+  if (!length(query$by)) return(logical(0L))
 
   if (query$use.keyprefix) {
     f = uniqlist(shallow(x, query$by))
@@ -88,7 +88,7 @@ unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alo
   if (use.sub.cols) {
     ## Did the user specify (integer) indexes for the columns?
     if (is.numeric(by)) {
-      if (any(as.integer(by) != by) || any(by<1) || any(by>ncol(x))) {
+      if (any(as.integer(by) != by) || any(by<1L) || any(by>ncol(x))) {
         stop("Integer values between 1 and ncol are required for 'by' when ",
              "column indices. It's often better to use column names.")
       }
