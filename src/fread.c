@@ -1518,7 +1518,7 @@ int freadMain(freadMainArgs _args) {
     // *2 to get a good spacing. We don't want overlaps resulting in double counting.
   }
   nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
-  if (nrowLimit<INT64_MAX) nJumps=1; // when nrowLimit supplied by user, no jumps and single threaded
+  if (nrowLimit<INT64_MAX) nJumps=1; // when nrowLimit supplied by user, no jumps (not even at the end) and single threaded
   if (verbose) {
     DTPRINT("  Number of sampling jump points = %d because ", nJumps);
     if (nrowLimit<INT64_MAX) DTPRINT("nrow limit (%llu) supplied\n", (llu)nrowLimit);
@@ -1680,7 +1680,7 @@ int freadMain(freadMainArgs _args) {
           DTPRINT("  'header' determined to be false because there are some number columns and those columns do not have a string field at the top of them\n");
       }
     }
-    if (args.header==false && nJumps==1) sampleLines++; // all data rows were sampled, so increment sampleLines because it becomes the exact nrow allocation
+    if (args.header==false && nJumps<=2) sampleLines++; // all data rows may have been sampled, so increment sampleLines because it becomes the exact nrow allocation
   }
 
   if (args.header==false) {
@@ -1860,7 +1860,7 @@ int freadMain(freadMainArgs _args) {
   // space, then this variable will tell how many new rows has to be allocated.
   size_t extraAllocRows = 0;
 
-  if (nJumps/*from sampling*/>1) {
+  if (nJumps/*from sampling*/>2) {
     // ensure data size is split into same sized chunks (no remainder in last chunk) and a multiple of nth
     // when nth==1 we still split by chunk for consistency (testing) and code sanity
     nJumps = (int)(bytesRead/chunkBytes);
@@ -1868,7 +1868,8 @@ int freadMain(freadMainArgs _args) {
     else if (nJumps>nth) nJumps = nth*(1+(nJumps-1)/nth);
     chunkBytes = bytesRead / (size_t)nJumps;
   } else {
-    ASSERT(nJumps==1, "nJumps (%d) != 1", nJumps);
+    ASSERT(nJumps==1 /*when nrowLimit supplied*/ || nJumps==2 /*small files*/, "nJumps (%d) != 1|2", nJumps);
+    nJumps=1;
   }
   size_t initialBuffRows = allocnrow / (size_t)nJumps;
 
