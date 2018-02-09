@@ -11599,7 +11599,16 @@ test(1873.4, DT[3:6],
      data.table(a = c(5, 5, 7, NA),
                 b = c(1L, 2L, 3L, NA)))
 test(1873.5, DT[0:5], DT)
-
+## if fread bumps logical to character,
+##   the original string representation should be kept
+DT = data.table(A=rep("True", 2200), B="FALSE", C='0')
+DT[111, LETTERS[1:3] := .("here", "be", "dragons")]
+fwrite(DT, f<-tempfile())
+test(1873.6, fread(f, verbose=TRUE), DT,
+     output=paste("Column 1.*bumped from 'bool8' to 'string'",
+                  "Column 2.*bumped from 'bool8' to 'string'",
+                  "Column 3.*bumped from 'bool8' to 'string'",
+                  sep = '.*'))
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
@@ -11608,7 +11617,6 @@ test(1873.5, DT[0:5], DT)
 
 # TO DO: test and highlight in docs that negatives are fine and fast in forderv (ref R wish #15644)
 # TO DO: tests of freading classes like Date and the verbose messages there.
-# TO DO: Test mid read bump of logical T/F to character, collapse back to T and F.
 
 # TO DO: tests on double in add hoc by
 
