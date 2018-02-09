@@ -2077,7 +2077,10 @@ int freadMain(freadMainArgs _args) {
               if (*tch==quote) { quoted=true; tch++; }
             } // else Field() handles NA inside it unlike other processors e.g. ,, is interpretted as "" or NA depending on option read inside Field()
             fun[abs(thisType)](&fctx);
-            if (quoted && *tch==quote) tch++;
+            if (quoted) {
+              if (*tch==quote) tch++;
+              else goto typebump;
+            }
             skip_white(&tch);
             if (end_of_field(tch)) {
               if (sep==' ' && *tch==' ') {
@@ -2090,6 +2093,7 @@ int freadMain(freadMainArgs _args) {
             // guess is insufficient out-of-sample, type is changed to negative sign and then bumped. Continue to
             // check that the new type is sufficient for the rest of the column (and any other columns also in out-of-sample bump status) to be
             // sure a single re-read will definitely work.
+            typebump:
             absType++;
             while (disabled_parsers[absType]) absType++;
             thisType = -absType;
