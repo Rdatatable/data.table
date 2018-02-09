@@ -28,7 +28,7 @@ trim <- function(x) {
 }
 
 # take (I don't see it being used anywhere)
-take <- function(x, n=1)
+take <- function(x, n=1L)
 {
   # returns the head of head, without the last n observations
   # convenient when inlining expressions

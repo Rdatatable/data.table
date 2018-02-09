@@ -2866,6 +2866,7 @@ DT = data.table(a=1:3,b=4:6,b=7:9,c=10:12)
 test(1005, rbind(DT,DT), data.table(a=rep(1:3,2),b=rep(4:6,2),b=rep(7:9,2),c=rep(10:12,2)))
 M <- mtcars
 colnames(M)[11] <- NA
+# NOTE -- this test requires having options('width') sufficiently wide
 test(1006, print(as.data.table(M), nrows=10), output="gear NA.*1: 21.0")
 
 # rbinding factor with non-factor/character
@@ -4037,7 +4038,10 @@ test(1187.4, DT[, list(sum(y,na.rm=MyVar), mean(y,na.rm=MyVar)), by=x, verbose=T
              DT[, list(sum(y,na.rm=FALSE), mean(y,na.rm=FALSE)), by=x])
 test(1187.5, DT[, mean(y,na.rm=MyVar), by=x, verbose=TRUE], output="GForce optimized j to",
              DT[, mean(y,na.rm=FALSE), by=x])
-
+# GForce should not turn on when the .ok function isn't triggered
+test(1187.6, DT[, mean(y, trim=.2), by=x, verbose=TRUE],
+             data.table(x = c("a", "b", "c", "d"), V1 = c(NA, 3.33333333333333, NA, NA)),
+             output='j unchanged', warning="'trim' is not yet optimized")
 
 # test from Zach Mayer
 a <- c("\"\"\"\")  \" \"   \"  \"    \"",  "\"\"\"\")  \" \"   \"  \"   \"",  "\"\"\"\")  \" \"   \"  \"    ,\"")
@@ -7652,19 +7656,21 @@ test(1579.10, dt[, tail(.SD,1L), by=x],    dt[, utils::tail(.SD,1L), by=x])
 test(1579.11, dt[, tail(.SD,1L), by=x],    dt[, utils::tail(.SD,1L), by=x])
 test(1579.12, dt[, tail(.SD,1L), keyby=x], dt[, utils::tail(.SD,1L), keyby=x])
 test(1579.13, dt[, tail(.SD,1L), keyby=x], dt[, utils::tail(.SD,1L), keyby=x])
+# GForce _doesn't_ work when n > 1
+test(1579.14, dt[ , tail(.SD, 2), by = x, verbose = TRUE], output = 'GForce FALSE')
 
 mysub <- function(x, n) x[n]
-test(1579.14, dt[, .SD[2],  by=x],    dt[, mysub(.SD,2),  by=x])
 test(1579.15, dt[, .SD[2],  by=x],    dt[, mysub(.SD,2),  by=x])
-test(1579.16, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
+test(1579.16, dt[, .SD[2],  by=x],    dt[, mysub(.SD,2),  by=x])
 test(1579.17, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
-test(1579.18, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
+test(1579.18, dt[, .SD[2],  keyby=x], dt[, mysub(.SD,2),  keyby=x])
 test(1579.19, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
-test(1579.20, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
+test(1579.20, dt[, .SD[2L], by=x],    dt[, mysub(.SD,2L), by=x])
 test(1579.21, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
+test(1579.22, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
 
 ans = capture.output(dt[, .SD[2], by=x, verbose=TRUE])
-test(1579.22, any(grepl("GForce optimized", ans)), TRUE)
+test(1579.23, any(grepl("GForce optimized", ans)), TRUE)
 
 options(datatable.optimize=optim)
 
@@ -9397,17 +9403,20 @@ test(1672.1, DT[ , .(.I[1L], V2[1L]), by = V1],
 #make sure GForce operating
 test(1672.2, DT[ , .(.I[1L], V2[1L]), by = V1, verbose = TRUE],
      output = "GForce optimized j")
+#make sure GForce not operating for inversion
+test(1672.3, DT[ , .(.I[-1L], V2[1L]), by = V1, verbose = TRUE],
+     output = "GForce FALSE")
 #make sure works on .I by itself
-test(1672.3, DT[ , .I[1L], by = V1],
+test(1672.4, DT[ , .I[1L], by = V1],
      output = "   V1 V11:  1  12:  2  2")
 #make sure GForce here as well
-test(1672.4, DT[ , .I[1L], by = V1, verbose = TRUE],
+test(1672.5, DT[ , .I[1L], by = V1, verbose = TRUE],
      output = "GForce optimized j")
 #make sure works with order
-test(1672.5, DT[order(V1), .I[1L], by = V1],
+test(1672.6, DT[order(V1), .I[1L], by = V1],
      output = "   V1 V11:  1  12:  2  2")
 # should also work with subsetting
-test(1672.6, DT[1:5, .(.I[1L], V2[1L]), by = V1],
+test(1672.7, DT[1:5, .(.I[1L], V2[1L]), by = V1],
      output = "   V1 V1 V21:  1  1  12:  2  2  2")
 
 #tests for #1528
@@ -11505,9 +11514,9 @@ test(1869.6, fread(testDir("colnames4096.csv")), error="very unusual.*one single
 test(1869.7, fread(testDir("onecol4096.csv")), error="very unusual.*single column.*multiple of 4096.*ends with 2 or more end-of-line")
 
 # better colname detection by comparing potential column names to the whole sample not just the first row of the sample, #2526
-test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,300L,500L), V3=c(200L,400L,600L)))
-test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,NA,500L), V3=c(NA,NA,600L)))
-test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA,3.4)))
+test(1871.1, fread("A,100,200\n,300,400\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,300L,500L), V3=c(200L,400L,600L)))
+test(1871.2, fread("A,100,\n,,\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,NA,500L), V3=c(NA,NA,600L)))
+test(1871.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA,3.4)))
 
 # nrows= now ignores errors after those rows as expected, #1267
 # txt = "V1, V2, V3\n1,2,3\nV4, V5, V6, V7\n4,5,6,7\n8,9,10,11\n"
@@ -11519,19 +11528,77 @@ test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA
 #   fread(lines, nrows=i)
 # }
 
+# miscellaneous missing tests uncovered by CodeCov difference
+#   in the process of PR #2573
+## data.table cannot recycle complicated types
+short_s4_col = getClass("MethodDefinition")
+test(1872.1, data.table(a = 1:4, short_s4_col), error = 'problem recycling.*try a simpler type')
+## i must be a data.table when on is specified
+DT = data.table(a = 1:3)
+test(1872.2, DT[c(TRUE, FALSE), on = 'coefficients'], error = "not a data.table, but 'on'")
+## missing tests for round.IDate
+test_dates = c(
+  "2017-01-05", "2017-08-04", "2017-06-05", "2017-04-15",
+  "2017-06-11", "2017-10-04", "2017-04-19", "2017-01-11",
+  "2017-03-08", "2017-10-10"
+)
+test_dates = as.IDate(test_dates)
+test(1872.3, round(test_dates, 'weeks'),
+     structure(c(17167L, 17377L, 17321L, 17272L, 17328L,
+                 17440L, 17272L, 17174L, 17230L, 17447L),
+               class = c("IDate", "Date")))
+test(1872.4, round(test_dates, 'months'),
+     structure(c(17167L, 17379L, 17318L, 17257L, 17318L,
+                 17440L, 17257L, 17167L, 17226L, 17440L),
+               class = c("IDate", "Date")))
+test(1872.5, round(test_dates, 'quarters'),
+     structure(c(17167L, 17348L, 17257L, 17257L, 17257L,
+                 17440L, 17257L, 17167L, 17167L, 17440L),
+               class = c("IDate", "Date")))
+test(1872.6, round(test_dates, 'years'),
+     structure(c(17167L, 17167L, 17167L, 17167L, 17167L,
+                 17167L, 17167L, 17167L, 17167L, 17167L),
+               class = c("IDate", "Date")))
+test(1872.7, round(test_dates, 'centuries'),
+     error = 'should be one of')
+## missing a test of mday
+test(1872.8, mday(test_dates),
+     c(5L, 4L, 5L, 15L, 11L, 4L, 19L, 11L, 8L, 10L))
+## META TEST of helper function compactprint from test.data.table
+DT = data.table(a = 1, b = 2, key = 'a')
+DT_out = gsub('\\s+$', '', capture.output(compactprint(DT)))
+test(1872.9, DT_out,
+     c("   a b  [Key=a Types=dou,dou Classes=num,num]",
+       "1: 1 2"))
+## Test as-yet unimplemented features of foverlaps
+x = data.table(start=c(5,31,22,16), end=c(8,50,25,18), val2 = 7:10)
+y = data.table(start=c(10, 20, 30), end=c(15, 35, 45), val1 = 1:3)
+setkey(y, start, end)
+test(1872.11, foverlaps(x, y, maxgap = 2), error = 'maxgap and minoverlap.*not yet')
+test(1872.12, foverlaps(x, y, minoverlap = 2), error = 'maxgap and minoverlap.*not yet')
+## tests of verbose output
+### foverlaps
+test(1872.13, foverlaps(x, y, verbose = TRUE),
+     output = 'unique.*setkey.*operations.*binary search')
+### [.data.table
+X = data.table(x=c("c","b"), v=8:7, foo=c(4,2))
+DT = data.table(x=rep(c("b","a","c"),each=3), y=c(1,3,6), v=1:9)
+test(1872.14, DT[X, on=.(x, v>=v), verbose = TRUE],
+     output = 'Non-equi join operators.*forder took.*group lengths.*done.*non-equi group ids.*done')
+
 # assortment of tests from #2572
 ## negative indexing should retain key
 DT = data.table(a = c(5, 5, 7, 2, 2),
                 b = 1:5, key = 'a')
-test(1871.1, key(DT[-c(2, 3)]), 'a')
-test(1871.2, key(DT[-(1:5)]), 'a')
-test(1871.3, key(DT[-2, sum(b), by = a]), 'a')
+test(1873.1, key(DT[-c(2, 3)]), 'a')
+test(1873.2, key(DT[-(1:5)]), 'a')
+test(1873.3, key(DT[-2, sum(b), by = a]), 'a')
 ## behavior of out-of-bound subsets
 ##   (mixed +/- already covered in 1043)
-test(1871.4, DT[3:6],
+test(1873.4, DT[3:6],
      data.table(a = c(5, 5, 7, NA),
                 b = c(1L, 2L, 3L, NA)))
-test(1871.5, DT[0:5], DT)
+test(1873.5, DT[0:5], DT)
 
 ##########################
 
@@ -11546,7 +11613,6 @@ test(1871.5, DT[0:5], DT)
 # TO DO: tests on double in add hoc by
 
 # TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name. Actually, is that true?  Need "..J".
-# TO DO: change all 1 to 1L internally (done in data.table.R, other .R to do)
 
 # TO DO: check the "j is named list could be inefficient" message from verbose than Chris N showed recently to 15 May
 # TO DO: !make sure explicitly that unnamed lists are being executed by dogroups!

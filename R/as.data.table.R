@@ -16,7 +16,7 @@ as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ..
   if (is.matrix(x)) {
     return(as.data.table.matrix(x, ...))
   }
-  tt = deparse(substitute(x))[1]
+  tt = deparse(substitute(x))[1L]
   nm = names(x)
   # FR #2356 - transfer names of named vector as "rn" column if required
   if (!identical(keep.rownames, FALSE) & !is.null(nm))
@@ -37,7 +37,7 @@ as.data.table.table <- function(x, keep.rownames=FALSE, ...) {
   if (is.null(names(val)) || !any(nzchar(names(val))))
     setattr(val, 'names', paste("V", rev(seq_along(val)), sep=""))
   ans <- data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x))
-  setcolorder(ans, c(rev(head(names(ans), -1)), "N"))
+  setcolorder(ans, c(rev(head(names(ans), -1L)), "N"))
   ans
 }
 
@@ -100,7 +100,7 @@ as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name=
   if (isTRUE(na.rm))
     ans = ans[!is.na(N)]
   setnames(ans, "N", value.name)
-  dims = rev(head(names(ans), -1))
+  dims = rev(head(names(ans), -1L))
   setcolorder(ans, c(dims, value.name))
   if (isTRUE(sorted))
     setkeyv(ans, dims)
@@ -133,7 +133,7 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
         # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
         if (!n[i] && mn)
           warning("Item ", i, " is of size 0 but maximum size is ", mn, ", therefore recycled with 'NA'")
-        else if (n[i] && mn %% n[i] != 0)
+        else if (n[i] && mn %% n[i] != 0L)
           warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
         x[[i]] = rep(x[[i]], length.out=mn)
       }
