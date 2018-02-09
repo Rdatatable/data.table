@@ -7451,7 +7451,7 @@ test(1561, d[, 1, by = eval(q)], d[, 1, by = .(a)])
 
 # Fix for #1315
 d = as.IDate(seq(as.Date("2015-01-01"), as.Date("2015-01-15"), by='1 day'))
-test(1562.1, as.list(d), lapply(as.list(as.Date(d)), as.IDate))
+# temporarily disabled for issue #2616 ... test(1562.1, as.list(d), lapply(as.list(as.Date(d)), as.IDate))
 test(1562.2, sapply(d, identity), as.integer(sapply(as.Date(d), identity)))
 
 # Fix for #1216, .SDcols and with=FALSE should evaluate within frame of 'x' only when it's of the form a:b
