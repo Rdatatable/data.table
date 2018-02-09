@@ -65,8 +65,6 @@ static bool skipEmptyLines=false, fill=false;
 
 static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 
-#define JUMPLINES 100    // at each of the 100 jumps how many lines to guess column types (10,000 sample lines)
-
 // Private globals so they can be cleaned up both on error and on successful return
 static void *mmp = NULL;
 static size_t fileSize;
@@ -166,6 +164,7 @@ bool freadCleanup(void)
 
 #define CEIL(x)  ((size_t)(double)ceil(x))
 static inline size_t umax(size_t a, size_t b) { return a > b ? a : b; }
+static inline size_t umin(size_t a, size_t b) { return a < b ? a : b; }
 static inline int imin(int a, int b) { return a < b ? a : b; }
 
 /** Return value of `x` clamped to the range [upper, lower] */
@@ -1333,6 +1332,7 @@ int freadMain(freadMainArgs _args) {
   int ncol;  // Detected number of columns in the file
   const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
   const char *prevStart = NULL;  // the start of the non-empty line before the first not-ignored row (for warning message later, or taking as column names)
+  int jumpLines = (int)umin(100,nrowLimit);   // how many lines from each jump point to use. If nrowLimit is supplied, nJumps is later set to 1 as well.
   {
   if (verbose) DTPRINT("[06] Detect separator, quoting rule, and ncolumns\n");
 
@@ -1364,26 +1364,28 @@ int freadMain(freadMainArgs _args) {
                             //   (when fill=true, the max is usually the header row and is the longest but there are more
                             //    lines of fewer)
 
-  // We will scan the input line-by-line (at most `JUMPLINES + 1` lines; "+1"
+  // We will scan the input line-by-line (at most 100+1 lines; "+1"
   // covers the header row, at this stage we don't know if it's present), and
   // detect the number of fields on each line. If several consecutive lines
   // have the same number of fields, we'll call them a "contiguous group of
   // lines". Arrays `numFields` and `numLines` contain information about each
-  // contiguous group of lines encountered while scanning the first JUMPLINES
-  // + 1 lines: 'numFields` gives the count of fields in each group, and
-  // `numLines` has the number of lines in each group.
-  int numFields[JUMPLINES+1];
-  int numLines[JUMPLINES+1];
+  // contiguous group of lines encountered while scanning the first 100+1
+  // lines: 'numFields` gives the count of fields in each group, and
+  // `numLines` has the number of lines in each group. There is always a lot
+  // of unused space at the end of these vectors. They are only jumpLines+1 big
+  // for the worst case that no adjacent lines have the same number of fields.
+  int numFields[jumpLines+1];
+  int numLines[jumpLines+1];
   for (int s=0; s<nseps; s++) {
     sep = seps[s];
     whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));  // 0 means both ' ' and '\t' to be skipped
     for (quoteRule=0; quoteRule<4; quoteRule++) {  // quote rule in order of preference
       ch = pos;
       // if (verbose) DTPRINT("  Trying sep='%c' with quoteRule %d ...\n", sep, quoteRule);
-      for (int i=0; i<=JUMPLINES; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
+      for (int i=0; i<=jumpLines; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
       int i=-1; // The slot we're counting the currently contiguous consistent ncol
       int thisLine=0, lastncol=-1;
-      while (ch<eof && thisLine++<JUMPLINES) {
+      while (ch<eof && thisLine++<jumpLines) {
         int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
         if (thisncol<0) { numFields[0]=-1; break; }  // invalid file with this sep and quote rule; abort
         if (thisncol!=lastncol) {
@@ -1440,7 +1442,7 @@ int freadMain(freadMainArgs _args) {
     // find the top line with the consistent number of fields.  There might be irregular banner lines above it (skip="auto")
     ncol = topNumFields;
     int thisLine=-1;
-    while (ch<eof && ++thisLine<JUMPLINES) {
+    while (ch<eof && ++thisLine<jumpLines) {
       const char *lastLineStart = ch;
       int tt = countfields(&ch);
       if (tt==ncol) { ch=pos=lastLineStart; row1line+=thisLine; break; }
@@ -1504,22 +1506,23 @@ int freadMain(freadMainArgs _args) {
     tmpType[j] = type[j] = type0;
   }
 
-  size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first JUMPLINES from the start (jump point 0)
+  size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first 100 lines from the start (jump point 0)
   // how many places in the file to jump to and test types there (the very end is added as 11th or 101th)
   // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GB) it is
   // worth spending a few extra seconds sampling 10,000 rows to decrease a chance of costly reread even further.
-  nJumps = 0;
+  nJumps = 1;
   size_t sz = (size_t)(eof - pos);
   if (jump0size>0) {
     if (jump0size*100*2 < sz) nJumps=100;  // 100 jumps * 100 lines = 10,000 line sample
     else if (jump0size*10*2 < sz) nJumps=10;
     // *2 to get a good spacing. We don't want overlaps resulting in double counting.
-    // nJumps==1 means the whole (small) file will be sampled with one thread
   }
   nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
+  if (nrowLimit<INT64_MAX) nJumps=1; // when nrowLimit supplied by user, no jumps and single threaded
   if (verbose) {
     DTPRINT("  Number of sampling jump points = %d because ", nJumps);
-    if (jump0size==0) DTPRINT("jump0size==0\n");
+    if (nrowLimit<INT64_MAX) DTPRINT("nrow limit (%llu) supplied\n", (llu)nrowLimit);
+    else if (jump0size==0) DTPRINT("jump0size==0\n");
     else DTPRINT("(%llu bytes from row 1 to eof) / (2 * %llu jump0size) == %llu\n",
                  (llu)sz, (llu)jump0size, (llu)(sz/(2*jump0size)));
   }
@@ -1539,7 +1542,7 @@ int freadMain(freadMainArgs _args) {
       }
       firstRowStart = ch;
     } else {
-      ch = (jump == nJumps-1) ? eof - (size_t)(0.5*jump0size) :
+      ch = (jump == nJumps-1) ? eof - (size_t)(0.5*jump0size) :  // to almost-surely sample the last line
                                 pos + (size_t)jump*((size_t)(eof-pos)/(size_t)(nJumps-1));
     }
     if (ch<lastRowEnd) ch=lastRowEnd;  // Overlap when apx 1,200 lines (just over 11*100) with short lines at the beginning and longer lines near the end, #2157
@@ -1552,22 +1555,7 @@ int freadMain(freadMainArgs _args) {
     bool skipThisJump = false;
     int jumpLine = 0;    // line from this jump point start
 
-
-    setting nrows= must turn off jump sampling (just use the first min(JUMPLINES,nrowLimit))  AND turn off multithreading because we can't have type bumps
-    in later chunks affecting the current jump (before we know whether this or the next jump will fill nrowLimit, while threads 7 and 8 are reading!)  This will much simplify
-    the horrid logic later where we struggled with allocnrow==nrowLimit.  Cancelling the error was wrong thing to do due to the possible wrong bumps.
-    All we need is an extra  'if nrowLimit reached then break;' in COLD section (and branch predicted)
-    Add to manual that using nrows= will turn off multithreading.
-
-    Read up to the error line, return up to there and then report the error line as warning.  In sampling too, not stop.
-    Add to ?fread that for production purposes, options(warn=2) should be turned on.
-    Or, report up to 5 lines at the end as warning, otherwise, error.
-
-    So the errors in the ordered section, can only be not-errors if it is the last chunk being processed. To ensure no later jump chunk bumped types. If so, they can be
-    warnings about stopping on that line.
-
-
-    while(ch<eof && (jumpLine++<JUMPLINES || jump==nJumps-1)) {  // nJumps==1 implies sample all of input to eof; last jump to eof too
+    while(ch<eof && jumpLine++<jumpLines) {
       const char *lineStart = ch;
       if (sep==' ') while (*ch==' ') ch++;  // multiple sep=' ' at the beginning of a line does not mean sep
       // detect blank lines ...
@@ -1585,14 +1573,12 @@ int freadMain(freadMainArgs _args) {
       // if too few fields are found, then we proceed here as if fill=true. If fill is "warning" or FALSE, we'll delay the message
       // in the data read loop where we know the line number exactly. (We're jumping here so we don't know the line number yet).
 
-      if (ch==eof) {  // TODO bring next line into this one 'if'
-        if (finalByte && tmpType[ncol-1]!=previousLastColType) {
-          // revert bump due to e.g. ,NA<eof> in the last field of last row where finalByte=='A' and N caused bump to character (test 894.0221)
-          if (verbose) DTPRINT("  Reverted bump of final column from %d to %d on final field due to finalByte='%c'."
-              " If the bump was actually correct, there will be a reread. Finish the file properly with newline to avoid the reread.\n",
-              previousLastColType, tmpType[ncol-1], finalByte);
-          tmpType[ncol-1] = previousLastColType;
-        }
+      if (ch==eof && finalByte && tmpType[ncol-1]!=previousLastColType) {
+        // revert bump due to e.g. ,NA<eof> in the last field of last row where finalByte=='A' and N caused bump to character (test 894.0221)
+        if (verbose) DTPRINT("  Reverted bump of final column from %d to %d on final field due to finalByte='%c'."
+            " If the bump was actually correct, there will be a reread. Finish the file properly with newline to avoid the reread.\n",
+            previousLastColType, tmpType[ncol-1], finalByte);
+        tmpType[ncol-1] = previousLastColType;
       }
       if (!eol(&ch) && *ch!='\0') {
         if (jump==0) {
@@ -1715,7 +1701,7 @@ int freadMain(freadMainArgs _args) {
   meanLineLen=0.0; // Average length (in bytes) of a single line in the input file
   bytesRead=0;     // Bytes in the data section (i.e. excluding column names, header and footer, if any)
 
-  if (nJumps==1) {
+  if (sampleLines < jumpLines) {
     if (verbose) DTPRINT("  All rows were sampled since file is small so we know nrow=%llu exactly\n", (llu)sampleLines);
     estnrow = allocnrow = sampleLines;
   } else {
@@ -1882,7 +1868,7 @@ int freadMain(freadMainArgs _args) {
     else if (nJumps>nth) nJumps = nth*(1+(nJumps-1)/nth);
     chunkBytes = bytesRead / (size_t)nJumps;
   } else {
-    nJumps = 1;
+    ASSERT(nJumps==1, "nJumps (%d) != 1", nJumps);
   }
   size_t initialBuffRows = allocnrow / (size_t)nJumps;
 

@@ -121,7 +121,7 @@ SEXP freadR(
   if (isReal(nrowLimitArg)) {
     if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0) args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
   } else {
-    if (INTEGER(nrowLimitArg)[0]>=0) args.nrowLimit = (int64_t)INTEGER(nrowLimitArg)[0];
+    if (INTEGER(nrowLimitArg)[0]>=1) args.nrowLimit = (int64_t)INTEGER(nrowLimitArg)[0];
   }
 
   args.logical01 = LOGICAL(logical01Arg)[0];
