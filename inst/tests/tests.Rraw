@@ -7423,9 +7423,9 @@ test(1557.5, names(fread(str, col.names=1:2)), error="Passed a vector of type")
 
 # Fix for #773
 f = testDir("issue_773_fread.txt")
-ans = data.table(AAA=as.character(c(4,7,rep(1,17),31,21)),
-                 BBB=as.character(c(5,8,rep(2,17),32,22)),
-                 CCC=as.integer(c(6,9,rep(3,17),33,23)))
+ans = data.table(AAA=INT(c(4,7,rep(1,17),31,21)),
+                 BBB=INT(c(5,8,rep(2,17),32,22)),
+                 CCC=INT(c(6,9,rep(3,17),33,23)))
 test(1558.1, fread(f), error="Line 23 has too few fields.*Expecting 3 fields but found 2.*<<ZZZ.*YYY>>")
 test(1558.2, fread(f, nrow=21L), ans)
 test(1558.3, fread(f, nrow=21L, fill=TRUE), ans)
@@ -11522,12 +11522,18 @@ test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA
 
 # nrows= now ignores errors after those nrows as expected and skip= determines first row for sure, #1267
 txt = "V1, V2, V3\n2,3,4\nV4, V5, V6, V7\n4,5,6,7\n8,9,10,11\n"
-test(1871.1, fread(txt), data.table(V4=INT(4,8), V5=INT(5,9), V6=INT(6,10), V7=INT(7,11)))
-test(1871.2, fread(txt, nrows=1), data.table(V4=4L, V5=5L, V6=6L, V7=7L))
-test(1871.3, fread(txt, skip=0), ans<-data.table(V1=2L, V2=3L, V3=4L), warning="discarded line V4, V5")
-test(1871.4, fread(txt, skip=0, nrows=1), ans)
-test(1871.5, fread(txt, skip=0, nrows=1, header=TRUE), ans)
-test(1871.6, fread(txt, skip=0, nrows=1, header=FALSE), data.table(V1=c("V1","2"), V2=c("V2","3"), V3=c("V3","4")))
+test(1871.1, fread(txt), ans <- data.table(V4=INT(4,8), V5=INT(5,9), V6=INT(6,10), V7=INT(7,11)))
+test(1871.2, fread(txt, skip=2), ans)
+test(1871.3, fread(txt, skip=2, nrow=1), ans[1,])
+test(1871.4, fread(txt, skip=2, nrow=3), ans)
+test(1871.5, fread(txt, skip=3), ans <- data.table(V1=INT(4,8), V2=INT(5,9), V3=INT(6,10), V4=INT(7,11)))
+test(1871.6, fread(txt, skip=3, nrow=1), ans[1,])
+test(1871.7, fread(txt, nrows=1), data.table(V1=2L, V2=3L, V3=4L))
+test(1871.8, fread(txt, skip=0), error="Line 3 has more than the expected 3 fields.*<<V4, V5, V6, V7>>")
+test(1871.9, fread(txt, skip=0, nrows=1), ans<-data.table(V1=2L, V2=3L, V3=4L))
+test(1871.11, fread(txt, skip=0, nrows=1, header=TRUE), ans)
+test(1871.12, fread(txt, skip=0, nrows=1, header=FALSE), data.table(V1="V1", V2="V2", V3="V3"))
+test(1871.13, fread(txt, skip=0, nrows=2, header=FALSE), data.table(V1=c("V1","2"), V2=c("V2","3"), V3=c("V3","4")))
 # for ( i in 100:1) {
 #   lines <- paste0(paste(rep("1,2,3", i), collapse='\n'), "\n1,2")
 #   fread(lines, nrows=i)

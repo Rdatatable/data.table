@@ -1997,7 +1997,7 @@ int freadMain(freadMainArgs _args) {
         .anchor = thisJumpStart,
       };
 
-      while (tch<nextJump) {
+      while (tch<nextJump && (nth>1 || DTi+myNrow<nrowLimit)) {  // setting nrowLimit sets nth to 1 to avoid bump or error on row after nrowLimit
         if (myNrow == myBuffRows) {
           // buffer full due to unusually short lines in this chunk vs the sample; e.g. #2070
           myBuffRows *= 1.5;
@@ -2374,8 +2374,27 @@ int freadMain(freadMainArgs _args) {
     }
   }
   setFinalNrow(DTi);
+
   if (skippedFooter) {
     DTWARN("Discarded footer: <<%s>>", strlim(skippedFooter,500));
+  }
+  else if (prevJumpEnd<eof && DTi<nrowLimit) {
+    ch = prevJumpEnd;
+    while (ch<eof && isspace(*ch)) ch++;
+    if (ch==eof) {
+      // whitespace at the end of the file is always skipped
+    } else {
+      const char *skippedFooter = ch;
+      // now ensure it's just one line.
+      while (ch<eof && *ch!='\n' && *ch!='\r') ch++;
+      while (ch<eof && isspace(*ch)) ch++;
+      if (ch==eof) {
+        DTWARN("Discarded footer: <<%s>>", strlim(skippedFooter,500));
+      }
+      else {
+        STOP("More than one line: <<%s>>", strlim(skippedFooter,500));
+      }
+    }
   }
 
   if (verbose) {
