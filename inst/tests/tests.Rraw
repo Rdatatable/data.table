@@ -2746,9 +2746,9 @@ test(966, fread(input, colClasses=list(character=2:4)), error="Column number 4 (
 test(967, nrow(fread( paste( rep('a\tb\n', 10000), collapse=''), header=FALSE)), 10000L)
 
 # Test fread warns about removal of any footer (and autostart skips up over it)
-test(968, fread("A,B\n1,3\n2,4\n\nRowcount: 2\n"), data.table(A=1:2,B=3:4), warning="Found the last.*discarded.*Rowcount: 2")
-test(969, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2"), data.table(A=1:2,B=3:4), warning="Found the last.*discarded.*Rowcount: 2")
-test(970, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2\n\n"), data.table(A=1:2,B=3:4), warning="Found the last.*discarded.*Rowcount: 2")
+test(968, fread("A,B\n1,3\n2,4\n\nRowcount: 2\n"), data.table(A=1:2,B=3:4), warning="Discarded footer.*Rowcount: 2")
+test(969, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2"), data.table(A=1:2,B=3:4), warning="Discarded footer.*Rowcount: 2")
+test(970, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2\n\n"), data.table(A=1:2,B=3:4), warning="Discarded footer.*Rowcount: 2")
 
 # fread skip override
 input = "some,bad,data\nA,B,C\n1,3,5\n2,4,6\n"
@@ -2758,11 +2758,11 @@ test(973, fread(input, skip=2), data.table(V1=1:2,V2=3:4,V3=5:6))
 test(974, fread(input, skip=2, header=TRUE), data.table("1"=2L,"3"=4L,"5"=6L))
 test(975, fread(input, skip="B"), data.table(A=1:2,B=3:4,C=5:6))
 input = "\n\nA,B\n1,3\n2,4\n\nC,D\n5,7\n6,8\n\nE,F\n9,11\n10,12\n"   # 3 tables in one file
-test(976, fread(input), data.table(A=1:2,B=3:4), warning="Found the last.*discarded.*C,D")
-test(977, fread(input, skip="C"), data.table(C=5:6,D=7:8), warning="Found the last.*discarded.*E,F")
-test(978.1, fread(input, skip="D"), data.table(C=5:6,D=7:8), warning="Found the last.*discarded.*E,F")
-test(978.2, fread(input, skip=",F"), data.table(E=9:10,F=11:12))
-test(978.3, fread(input, skip=3), data.table(V1=1:2, V2=3:4), warning="Found the last.*discarded.*C,D")
+test(976, fread(input), error="Line 6 has too few fields. Expecting 2 fields but found 0")
+test(977, fread(input, skip="C"), error="Line 10 has too few fields. Expecting 2 fields but found 0")
+test(978.1, fread(input, skip="D"), error="Line 10")
+test(978.2, fread(input, skip=",F"), data.table(E=9:10, F=11:12))
+test(978.3, fread(input, skip=9), data.table(E=9:10, F=11:12))
 
 # mixed add and update in same `:=` bug/crash, #2528 and #2778
 DT = data.table(x=rep(1:2, c(3,2)), y=6:10)
@@ -7409,8 +7409,9 @@ str2="YYYY MM DD HH mm             19490             40790
 test(1555.14, fread(str1), fread(str2))
 
 # fix for #1330
-test(1556.1, fread(testDir("issue_1330_fread.txt"), nrow=2), data.table(a=1:2, b=1:2), warning="Found.*discarded.*<<3.*3>>")
-test(1556.2, fread(testDir("issue_1330_fread.txt"), nrow=4), data.table(a=1:2, b=1:2), warning="Found.*discarded.*<<3.*3>>")
+test(1556.1, fread(testDir("issue_1330_fread.txt"), nrow=2), data.table(a=1:2, b=1:2))
+test(1556.2, fread(testDir("issue_1330_fread.txt"), nrow=3), error="Line 4 has too few fields")
+test(1556.3, fread(testDir("issue_1330_fread.txt"), nrow=4), error="Line 4 has too few fields")
 
 # FR #768
 str="1,2\n3,4\n"
@@ -7766,7 +7767,7 @@ test(1585.2, f1(testDir("536_fread_fill_1.txt"), b=TRUE), f2(testDir("536_fread_
 test(1585.3, f1(testDir("536_fread_fill_2.txt")), f2(testDir("536_fread_fill_2.txt")))
 test(1585.4, f1(testDir("536_fread_fill_2.txt"), b=TRUE), f2(testDir("536_fread_fill_2.txt"), b=TRUE))
 
-test(1585.5, f1(testDir("536_fread_fill_3_extreme.txt")), f2(testDir("536_fread_fill_3_extreme.txt"))[-(7:9),])
+test(1585.5, f1(testDir("536_fread_fill_3_extreme.txt")), f2(testDir("536_fread_fill_3_extreme.txt"))[-9,])
 test(1585.6, f1(testDir("536_fread_fill_3_extreme.txt"), b=TRUE), f2(testDir("536_fread_fill_3_extreme.txt"), b=TRUE))
 # no warning about bumping type. when fill=TRUE, column type detection starts at first non-empty line (which makes sense).
 test(1585.7, f1(testDir("536_fread_fill_4.txt")), f2(testDir("536_fread_fill_4.txt"))[-29,])
@@ -10978,8 +10979,8 @@ test(1808.2, fread("A,B\r1,2\r3,4\r"), data.table(A=c(1L,3L),B=c(2L,4L)))
 cat("A,B\r1,2\r3,4",file=f<-tempfile())
   test(1808.3, fread(f), data.table(A=c(1L,3L),B=c(2L,4L)))
 unlink(f)
-test(1808.4, fread("A,B\r1,3\r\r\r2,4\r"), data.table(A=TRUE, B=3L), warning="last consistent line")
-test(1808.5, fread("A,B\r4,3\r\r \r2,4\r"), data.table(A=4L, B=3L), warning="afterwards.*discarded.*<<2,4>>")
+test(1808.4, fread("A,B\r1,3\r\r\r2,4\r"), data.table(A=TRUE, B=3L), warning="Discarded footer: <<2,4>>")
+test(1808.5, fread("A,B\r4,3\r\r \r2,4\r"), data.table(A=4L, B=3L), warning="Discarded footer: <<2,4>>")
 test(1808.6, fread("A,B\r1,3\r\r \r2,4\r", blank.lines.skip=TRUE), data.table(A=1:2, B=3:4))
 test(1808.7, fread("A,B\r1,3\r\r \r2,4\r", fill=TRUE), data.table(A=c(1L,NA,NA,2L), B=c(3L,NA,NA,4L)))
 test(1808.8, fread("A,B\r1,3\r\r \r2,\r", blank.lines.skip=TRUE, fill=TRUE), data.table(A=1:2, B=c(3L,NA)))
@@ -11015,10 +11016,10 @@ test(1818, fread(testDir("session_aborted_fatal_error.txt"))[c(1,.N),c(1,2,250,2
 # expansion of uses of as.ITime.character, PR#1796
 test(1819, as.ITime("2015-09-29 08:22:00"), structure(30120L, class = "ITime"))
 
-# Issue 2287: the % sign in the error message should not be interpreted as a format string!
-test(1820.1, fread("name,id\nfoo,1\nbar%\n"), error="Line 3 has too few.*Expecting 2 fields but found 1.*<<bar%>>")
-test(1820.2, fread("name,id\nfoo,1\nbar%d"), error="Line 3 has too few.*Expecting 2 fields but found 1.*<<bar%d>>")
-test(1820.3, fread("name,id\nfoo,1\nbar%s"), error="Line 3 has too few.*Expecting 2 fields but found 1.*<<bar%s>>")
+# Issue 2287: the % sign in the error/warning message should not be interpreted as a format string!
+test(1820.1, fread("name,id\nfoo,2\nbar%\n"), data.table(name="foo", id=2L), warning="Discarded footer: <<bar%>>")
+test(1820.2, fread("name,id\nfoo,2\nbar%d"), data.table(name="foo", id=2L), warning="Discarded footer: <<bar%d>>")
+test(1820.3, fread("name,id\nfoo,2\nbar%s"), data.table(name="foo", id=2L), warning="Discarded footer: <<bar%s>>")
 
 # new argument for print.data.table: col.names
 #   issue #1482 / PR #1483
@@ -11369,7 +11370,7 @@ test(1856.2, fread("A,B\n\n"), ans)
 test(1856.3, fread("A,B\n\n\n"), ans)
 test(1856.4, fread("A,B\n3,4\n\n\n"), data.table(A=3L, B=4L))
 test(1856.5, fread("A,B\n3,4\n,\n\n\n"), data.table(A=c(3L,NA), B=c(4L,NA)))
-test(1856.6, fread("A,B\n3,4\n\n5,6\n"), data.table(A=3L, B=4L), warning="text exists afterwards")
+test(1856.6, fread("A,B\n3,4\n\n5,6\n"), data.table(A=3L, B=4L), warning="Discarded footer: <<5,6>>")
 DTs = list(                                      # passed fread(fwrite(DT))==DT before fix?
   data.table(A=logical(0)),                      # yes
   data.table(A=NA),                              # no
@@ -11510,7 +11511,7 @@ test(1869.1, fread("A\r1\r\r\r2\r"), data.table(A=c(1L,NA,NA,2L)))
 test(1869.2, fread("A\r1\r\r\r2\r\r"), data.table(A=c(1L,NA,NA,2L,NA)))
 test(1869.3, fread("A\r1\r\r\r2\r\r\r"), data.table(A=c(1L,NA,NA,2L,NA,NA)))
 test(1869.4, fread("A,B\r2,3\r,\r,\r4,5\r\r"), data.table(A=c(2L,NA,NA,4L), B=c(3L,NA,NA,5L)))
-test(1869.5, fread("A,B\r2,3\r\r,\r2,4\r\r"), data.table(A=2L, B=3L), warning="consistent line")
+test(1869.5, fread("A,B\r2,3\r\r,\r2,4\r\r"), error="Line 3 has too few fields. Expecting 2 fields but found 0.")  # two line footer because of the comma. Only 1 line footers are auto discarded.
 test(1869.6, fread(testDir("colnames4096.csv")), error="very unusual.*one single line without any.*r.*n at the end.*and.*multiple of 4096")
 test(1869.7, fread(testDir("onecol4096.csv")), error="very unusual.*single column.*multiple of 4096.*ends with 2 or more end-of-line")
 
