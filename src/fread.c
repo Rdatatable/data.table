@@ -992,6 +992,7 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
     if (sep==' ') while (ch[1]==' ') ch++;
     ch++;
   }
+  if (ch==eof && finalByte && finalByte==sep && sep!=' ') field++;  // for test 1776.2
   *pch = ch;
   return field; // the number of fields so caller knows if ncol were read
 }
@@ -2110,7 +2111,7 @@ int freadMain(freadMainArgs _args) {
           }
 
           if (thisType != joldType             // rare out-of-sample type exception.
-              && (!finalByte || finalSep)) {   // don't bump the final field until we've replaced the finalByte (if any) test 894.0221 where final field is NA and finalByte=='A'
+              && (tch<eof || !finalByte || finalSep)) {   // don't bump the final field until we've replaced the finalByte (if any) test 894.0221 where final field is NA and finalByte=='A'
             if (!checkedNumberOfFields && !fill) {
               // check this line has the correct number of fields. If not, don't apply the bump from this invalid line. Instead fall through to myStoppingEarly below.
               const char *tt = fieldStart;

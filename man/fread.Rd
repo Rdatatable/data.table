@@ -11,15 +11,15 @@
 \usage{
 fread(input, file, sep="auto", sep2="auto", dec=".", quote="\"",
 nrows=Inf, header="auto", na.strings="NA",
-stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"), autostart=NA,
-skip=0, select=NULL, drop=NULL, colClasses=NULL,
+stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"),
+skip="__auto__", select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
 col.names,
 check.names=FALSE, encoding="unknown",
 strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL,
 showProgress=interactive(),
 data.table=getOption("datatable.fread.datatable"),
-nThread=getDTthreads(), logical01=TRUE
+nThread=getDTthreads(), logical01=TRUE, autostart=NA
 )
 }
 \arguments{
@@ -32,7 +32,6 @@ nThread=getDTthreads(), logical01=TRUE
   \item{file}{ File path, useful when we want to ensure that no shell commands will be executed. File path can also be provided to \code{input} argument. }
   \item{stringsAsFactors}{ Convert all character columns to factors? }
   \item{verbose}{ Be chatty and report timings? }
-  \item{autostart}{ Deprecated and ignored with warning. Please use \code{skip} instead. }
   \item{skip}{ If 0 (default) start on the first line and from there finds the first row with a consistent number of columns. This automatically avoids irregular header information before the column names row. \code{skip>0} means ignore the first \code{skip} rows manually. \code{skip="string"} searches for \code{"string"} in the file (e.g. a substring of the column names row) and starts on that line (inspired by read.xls in package gdata). }
   \item{select}{ Vector of column names or numbers to keep, drop the rest. }
   \item{drop}{ Vector of column names or numbers to drop, keep the rest. }
@@ -51,6 +50,7 @@ nThread=getDTthreads(), logical01=TRUE
   \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. }
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{logical01}{If TRUE a column containing only 0s and 1s will be read as logical, otherwise as integer.}
+  \item{autostart}{ Deprecated and ignored with warning. Please use \code{skip} instead. }
 }
 \details{
 
