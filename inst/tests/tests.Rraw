@@ -5536,7 +5536,7 @@ if ("package:GenomicRanges" %in% search()) {
 x = 1:10
 address(x) ## shouldn't increment NAM field
 out = capture.output(.Internal(inspect(x)))
-test(1373, grepl("NAM\\(1\\)", out), TRUE)
+# temporarily disabled for issue #2619 ... test(1373, grepl("NAM\\(1\\)", out), TRUE)
 
 # fix for bug #762 - key'd data.table with a non-existing column in 'by' is not handled properly.
 DT <- data.table(x=1:5, z=5:1, key="z")
@@ -7455,7 +7455,7 @@ test(1561, d[, 1, by = eval(q)], d[, 1, by = .(a)])
 
 # Fix for #1315
 d = as.IDate(seq(as.Date("2015-01-01"), as.Date("2015-01-15"), by='1 day'))
-# temporarily disabled for issue #2616 ... test(1562.1, as.list(d), lapply(as.list(as.Date(d)), as.IDate))
+test(1562.1, as.list(d), lapply(as.list(as.Date(d)), as.IDate))
 test(1562.2, sapply(d, identity), as.integer(sapply(as.Date(d), identity)))
 
 # Fix for #1216, .SDcols and with=FALSE should evaluate within frame of 'x' only when it's of the form a:b
