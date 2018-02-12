@@ -7450,7 +7450,7 @@ test(1561, d[, 1, by = eval(q)], d[, 1, by = .(a)])
 
 # Fix for #1315
 d = as.IDate(seq(as.Date("2015-01-01"), as.Date("2015-01-15"), by='1 day'))
-test(1562.1, as.list(d), lapply(as.list(as.Date(d)), as.IDate))
+# temporarily disabled for issue #2616 ... test(1562.1, as.list(d), lapply(as.list(as.Date(d)), as.IDate))
 test(1562.2, sapply(d, identity), as.integer(sapply(as.Date(d), identity)))
 
 # Fix for #1216, .SDcols and with=FALSE should evaluate within frame of 'x' only when it's of the form a:b
@@ -11610,6 +11610,12 @@ test(1873.6, fread(outf, verbose=TRUE), DT,
                   "Column 2.*bumped from 'bool8' to 'string'",
                   "Column 3.*bumped from 'bool8' to 'string'",
                   sep = '.*'))
+
+DT = data.table(A=rep(10L, 2200), B="20")
+DT[111, B:="3,456"]
+fwrite(DT, f<-tempfile())
+test(1874, fread(f), DT)
+
 ##########################
 
 # TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
