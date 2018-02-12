@@ -1707,7 +1707,7 @@ int freadMain(freadMainArgs _args) {
   meanLineLen=0.0; // Average length (in bytes) of a single line in the input file
   bytesRead=0;     // Bytes in the data section (i.e. excluding column names, header and footer, if any)
 
-  if (sampleLines < jumpLines) {
+  if (sampleLines <= jumpLines) {
     if (verbose) DTPRINT("  All rows were sampled since file is small so we know nrow=%llu exactly\n", (llu)sampleLines);
     estnrow = allocnrow = sampleLines;
   } else {

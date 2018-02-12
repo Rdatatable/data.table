@@ -11541,10 +11541,10 @@ test(1871.9, fread(txt, skip=0, nrows=1), ans<-data.table(V1=2L, V2=3L, V3=4L))
 test(1871.11, fread(txt, skip=0, nrows=1, header=TRUE), ans)
 test(1871.12, fread(txt, skip=0, nrows=1, header=FALSE), data.table(V1="V1", V2="V2", V3="V3"))
 test(1871.13, fread(txt, skip=0, nrows=2, header=FALSE), data.table(V1=c("V1","2"), V2=c("V2","3"), V3=c("V3","4")))
-# for ( i in 100:1) {
-#   lines <- paste0(paste(rep("1,2,3", i), collapse='\n'), "\n1,2")
-#   fread(lines, nrows=i)
-# }
+for (i in 100:1) {
+  lines <- paste(c(rep("2,3,4",i), "2,3"), collapse='\n')
+  test(1871.2 + i/1000, fread(lines, nrows=i), data.table(V1=rep.int(2L,i), V2=3L, V3=4L))
+}
 
 # miscellaneous missing tests uncovered by CodeCov difference
 #   in the process of PR #2573
