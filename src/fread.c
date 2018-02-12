@@ -1303,8 +1303,8 @@ int freadMain(freadMainArgs _args) {
     ch = pos;
     skipAuto = false;
   }
-  // Skip the first `skipNrow` lines of input, including 0 to force the first line to be the start
   else if (args.skipNrow >= 0) {
+    // Skip the first `skipNrow` lines of input, including 0 to force the first line to be the start
     while (ch<eof && row1line<=args.skipNrow) row1line+=(*ch++=='\n');
     if (ch>=eof) STOP("skip=%llu but the input only has %llu line%s", (llu)args.skipNrow, (llu)row1line, row1line>1?"s":"");
     pos = ch;
@@ -1488,7 +1488,6 @@ int freadMain(freadMainArgs _args) {
   //*********************************************************************************************
   int nJumps;             // How many jumps to use when pre-scanning the file
   size_t sampleLines;     // How many lines were sampled during the initial pre-scan
-  //const char *lastRowEnd; // Pointer to the end of the data section
   bool autoFirstColName = false; // true when there's one less column name and then it's assumed that the first column is row names or index
   size_t estnrow=1;
   size_t allocnrow=0;     // Number of rows in the allocated DataTable
@@ -1535,7 +1534,6 @@ int freadMain(freadMainArgs _args) {
   int minLen=INT32_MAX, maxLen=-1;   // int_max so the first if(thisLen<minLen) is always true; similarly for max
   const char *lastRowEnd = pos;
   const char *firstRowStart = pos;
-  //bool lastSampleJumpOk = false;   // it won't be ok if its nextGoodLine returns false as testing in test 1768
   for (int jump=0; jump<nJumps; jump++) {
     if (jump==0) {
       ch = pos;
@@ -1552,12 +1550,9 @@ int freadMain(freadMainArgs _args) {
     if (ch>=eof) break;                // The 9th jump could reach the end in the same situation and that's ok. As long as the end is sampled is what we want.
     if (jump>0 && !nextGoodLine(&ch, ncol)) {
       // skip this jump for sampling. Very unusual and in such unusual cases, we don't mind a slightly worse guess.
-      //lastSampleJumpOk = false;
       continue;
     }
-    //lastSampleJumpOk = true;
     bool bumped = false;  // did this jump find any different types; to reduce verbose output to relevant lines
-    //bool skipThisJump = false;
     int jumpLine = 0;    // line from this jump point start
 
     while(ch<eof && jumpLine++<jumpLines) {
@@ -1611,19 +1606,7 @@ int freadMain(freadMainArgs _args) {
       DTPRINT("  Type codes (jump %03d)    : %s  Quote rule %d\n", jump, typesAsString(ncol), quoteRule);
     }
   }
-  /*
-  ch = lastRowEnd;
-  while (ch<eof && isspace(*ch)) ch++;
-  if (ch<eof) {
-    if (lastSampleJumpOk) {
-      DTWARN("Found the last consistent line but text exists afterwards. Consider fill=TRUE and/or blank.lines.skip=TRUE. First 200 characters of discarded line: <<%s>>", strlim(ch,200));
-    } else {
-      // nextGoodLine() was false for the last (extra) jump to check the end
-      // must set lastRowEnd to eof accordingly otherwise it'll be left wherever the last good jump finished
-      lastRowEnd = eof;
-    }
-  }
-*/
+
   ch = pos;
   if (args.header==NA_BOOL8) {
     for (int j=0; j<ncol; j++) tmpType[j]=type0;   // reuse tmpType
@@ -1852,7 +1835,6 @@ int freadMain(freadMainArgs _args) {
   char stopErr[stopErrSize+1]="";  // must be compile time size: the message is generated and we can't free before STOP
   size_t DTi = 0;   // the current row number in DT that we are writing to
   const char *prevJumpEnd = pos;  // the position after the last line the last thread processed (for checking)
-  // const char *skippedFooter = NULL;  // if footer is skipped, this is its location to be printed.
   int buffGrown=0;
   // chunkBytes is the distance between each jump point; it decides the number of jumps
   // We may want each chunk to write to its own page of the final column, hence 1000*maxLen
@@ -2350,9 +2332,6 @@ int freadMain(freadMainArgs _args) {
   }
   setFinalNrow(DTi);
 
-  /*if (skippedFooter) {
-    DTWARN("Discarded footer: <<%s>>", strlim(skippedFooter,500));
-  }*/
   if (prevJumpEnd<eof && DTi<nrowLimit) {
     ch = prevJumpEnd;
     while (ch<eof && isspace(*ch)) ch++;

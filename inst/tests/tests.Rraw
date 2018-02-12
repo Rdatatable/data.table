@@ -2887,9 +2887,9 @@ DT = data.table(a=c(NA,NA,FALSE,FALSE), b=c(1,1,2,2))
 test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(NA_integer_,0L))) # sum(logical()) should be integer, not real
 
 # an fread error shouldn't hold a lock on the file on Windows
+# TODO: now that these are warnings and not errors, we need another way to trigger a STOP() inside fread.c. options(warn=2) isn't enough.
 cat('A,B\n1,2\n3\n5,6\n', file=(f<-tempfile()))
 test(1010.1, fread(f), ans<-data.table(A=TRUE, B=2L), warning=(txt<-"Stopped early on line 3.*Expected 2 fields but found 1.*fill.*TRUE.*<<3>>"))
-oldw = options(warn=2)   # !!TODO!!: this doesn't seem sufficient in test framework to turn the warning into error.
 test(1010.2, fread(f), ans, warning=txt)
 cat('7\n8,9',file=f,append=TRUE)   # that append works after error
 test(1010.3, fread(f,fill=TRUE), data.table(A=INT(1,3,5,7,8), B=INT(2,NA,6,NA,9)))
@@ -2899,7 +2899,6 @@ test(1010.5, fread(f,fill=TRUE), data.table(A=INT(1,3,5), B=INT(2,NA,6)))
 test(1010.6, fread(f), ans, warning=txt)
 unlink(f)                          # that file can be removed after error
 test(1010.7, !file.exists(f))
-options(oldw)
 
 # detection of unescaped quotes, quote rule 3
 test(1011, fread('A,B\n"aa",1\n"bb,2\n"cc",3\n'), data.table(A=c('aa', '"bb', 'cc'), B=1:3))
