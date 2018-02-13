@@ -11375,6 +11375,7 @@ test(1856.3, fread("A,B\n\n\n"), ans)
 test(1856.4, fread("A,B\n3,4\n\n\n"), data.table(A=3L, B=4L))
 test(1856.5, fread("A,B\n3,4\n,\n\n\n"), data.table(A=c(3L,NA), B=c(4L,NA)))
 test(1856.6, fread("A,B\n3,4\n\n5,6\n"), data.table(A=3L, B=4L), warning="Discarded single-line footer: <<5,6>>")
+test(1856.7, fread(testDir("test0.txt"))[c(1,997,998,999)], data.table(x0=c(656609L, NA, -2368L, 955199L)))  # issue 2515
 DTs = list(                                      # passed fread(fwrite(DT))==DT before fix?
   data.table(A=logical(0)),                      # yes
   data.table(A=NA),                              # no
