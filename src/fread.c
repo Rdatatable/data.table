@@ -139,10 +139,10 @@ bool freadCleanup(void)
     // may call freadCleanup(), thus resulting in an infinite loop.
     #ifdef WIN32
       if (!UnmapViewOfFile(mmp))
-        DTPRINT("System error %d unmapping view of file\n", GetLastError());
+        DTPRINT("System error %d unmapping view of file\n", GetLastError());      // nocov
     #else
       if (munmap(mmp, fileSize))
-        DTPRINT("System errno %d unmapping file: %s\n", errno, strerror(errno));
+        DTPRINT("System errno %d unmapping file: %s\n", errno, strerror(errno));  // nocov
     #endif
     mmp = NULL;
   }
@@ -206,9 +206,9 @@ static char *typesAsString(int ncol) {
   if (ncol<=100) {
     for (; i<ncol; i++) str[i] = typeLetter[type[i]];
   } else {
-    for (; i<80; i++) str[i] = typeLetter[type[i]];
-    str[i++]='.'; str[i++]='.'; str[i++]='.';
-    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[type[j]];
+    for (; i<80; i++) str[i] = typeLetter[type[i]];                   // nocov
+    str[i++]='.'; str[i++]='.'; str[i++]='.';                         // nocov
+    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[type[j]];  // nocov
   }
   str[i] = '\0';
   return str;

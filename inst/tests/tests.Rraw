@@ -11613,6 +11613,10 @@ fwrite(DT,f<-tempfile())
 test(1873, fread(f), DT)
 unlink(f)
 
+# no good jump start, #2267
+# At 35MB, the bad_fill.csv file size exceeds CRAN limit. Need to reduce its size.
+# test(1874.1, fread(testDir("bad_fill.csv")), error="No good line could be found from jump point")
+# test(1874.2, fread(testDir("bad_fill.csv"), fill=TRUE), error="No good line could be found from jump point")
 
 
 ##########################
