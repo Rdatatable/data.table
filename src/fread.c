@@ -334,18 +334,18 @@ static inline int countfields(const char **pch)
 
 static inline const char *nextGoodLine(const char *ch, int ncol)
 {
-  // We may have landed inside quoted field containing embedded sep and/or embedded \n.
-  // Find next \n and see if ncol fields are found there. If not, test the next 5 \n.
-  // Otherwise, just return the next one and the only downside will be a bit slower. The caller will
-  // either skip (sampling) or the previous thread will run-on (reading) to resolve it with certainty.
+  // We may have landed inside a quoted field containing embedded sep and/or embedded \n.
+  // Find next \n and see if ncol fields are found there. If not, test the \n after that, etc.
+  // If this doesn't return the true line start, no matter. The previous thread will run-on and
+  // resolve it. A good guess is all we need here. Being wrong will just be a bit slower.
+  // If there are no embedded newlines, all newlines are true, and this guess will never be wrong.
   while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
   if (ch==eof) return eof;
-  eol(&ch);  // move to last byte of the line ending sequence
+  eol(&ch);  // move to last byte of the line ending sequence (e.g. \r\r\n would be +2).
   ch++;      // move to first byte of next line
-  const char *simpleNext = ch;
-  // if a better one can't be found, return simply the next newline. This will be the case when
-  // fill=TRUE and the jump lands before 5 too-short lines, for example. If there aren't any quoted
-  // fields containing newlines then this simpleNext will be good.
+  const char *simpleNext = ch;  // simply the first newline after the jump
+  // if a better one can't be found, return this one (simpleNext). This will be the case when
+  // fill=TRUE and the jump lands before 5 too-short lines, for example.
   int attempts=0;
   while (attempts++<5) {
     const char *ch2 = ch;
@@ -1561,33 +1561,17 @@ int freadMain(freadMainArgs _args) {
 
     while(ch<eof && jumpLine++<jumpLines) {
       const char *lineStart = ch;
-
-
-      /*
-      // detect blank lines ...
-      skip_white(&ch);
-      if (ncol>1 && (eol(&ch) || *ch=='\0')) {
-        if (!skipEmptyLines && !fill) break;
-        ch += (*ch!='\0');
-        if (!skipEmptyLines) sampleLines++;  // TODO: fall through more gracefully
-        continue;
-      }
-      */
-
       int8_t previousLastColType = tmpType[ncol-1];  // to revert any bump in last colum due to final field on final row due to finalByte
       int thisNcol = detect_types(&ch, tmpType, ncol, &bumped);
-      // if (ncol>1 && thisNcol==0 &&
-
-      if (thisNcol==0 && skipEmptyLines) { if (eol(&ch)) ch++; continue; }
+      if (thisNcol==0 && skipEmptyLines) {
+        if (eol(&ch)) ch++;
+        continue;
+      }
       if ( (thisNcol<ncol && ncol>1 && !fill) ||
            (!eol(&ch) && *ch!='\0') ) {
-        //if (thisNcol==0 && skipEmptyLines) {
-        //  if (eol(&ch)) ch++;
-        //  continue;
-        //}
         if (verbose && jump>0) DTPRINT("  A line with too-few or too-many fields was found in sample from jump %d. Type bumps from this jump will be ignored.\n", jump);
         bumped = false;
-        if (jump==0) lastRowEnd=eof;  // to prevent the end from being tested; e.g. a short file will blank line within first 100 like test 976
+        if (jump==0) lastRowEnd=eof;  // to prevent the end from being tested; e.g. a short file with blank line within first 100 like test 976
         break;
       }
       if (ch==eof && finalByte && tmpType[ncol-1]!=previousLastColType) {
@@ -1904,7 +1888,6 @@ int freadMain(freadMainArgs _args) {
       }
       myShowProgress = args.showProgress;
     }
-    // const char *thisJumpStart=NULL;  // The first good start-of-line after the jump point
     size_t myNrow = 0; // the number of rows in my chunk
     size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
     bool myStoppingEarly = false;      // true when an empty or too-short or too-long row is encountered when fill=false
@@ -1968,7 +1951,7 @@ int freadMain(freadMainArgs _args) {
       }
 
       const char *tch = jump==0 ? pos : nextGoodLine(pos+(size_t)jump*chunkBytes, ncol);
-      const char *thisJumpStart=tch;
+      const char *thisJumpStart = tch;   // "this" for prev/this/next adjective used later, rather than a (mere) t prefix for thread-local.
       const char *tLineStart = tch;
       const char *nextJump = jump<nJumps-1 ? nextGoodLine(pos + (size_t)(jump+1)*chunkBytes, ncol) : eof;
 
