@@ -11618,6 +11618,13 @@ unlink(f)
 # test(1874.1, fread(testDir("bad_fill.csv")), error="No good line could be found from jump point")
 # test(1874.2, fread(testDir("bad_fill.csv"), fill=TRUE), error="No good line could be found from jump point")
 
+# fix for segFault with setAttr on "class" attribute with 0length value #2386
+# setting to NULL works
+test(1875.1, attr(setattr(1, "class", NULL), "class"), NULL)
+# setting to empty character fails with error
+test(1875.2, setattr(1, "class", character(0)), error = "attempt to set invalid 'class' attribute")
+# setting other attribute to empty character works
+test(1875.3, attr(setattr(1, "test", character(0)), "test"), character(0))
 
 ##########################
 

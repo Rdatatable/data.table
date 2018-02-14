@@ -2411,6 +2411,8 @@ setattr <- function(x,name,value) {
     # creating names longer than the number of columns of x, and to change the key, too
     # For convenience so that setattr(DT,"names",allnames) works as expected without requiring a switch to setnames.
   else {
+    # fix for #2386. Don't allow to set 'class' to character(0)
+    if(name == "class" && !is.null(value) && length(value) == 0L) stop("attempt to set invalid 'class' attribute")
     # fix for R's global TRUE value input, #1281
     ans = .Call(Csetattrib, x, name, value)
     # If name=="names" and this is the first time names are assigned (e.g. in data.table()), this will be grown by alloc.col very shortly afterwards in the caller.
