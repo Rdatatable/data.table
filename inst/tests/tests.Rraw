@@ -11178,7 +11178,7 @@ for (i in 0:1000) {
   if (i==502) write("-999,Bad,Line,0.0,0.0,extra\n", f, append=TRUE)
 }
 test(1835, fread(f, verbose=TRUE),
-  output = "A line with too-few or too-many.*jump 50.*Type bumps.*ignored",
+  output = "A line with too-many.*jump 50.*Type bumps.*ignored",
   warning = "Stopped.*line 42253. Expected 5 fields but found 6.*discarded.*<<-999,Bad,Line,0.0,0.0,extra>>")
 unlink(f)
 
@@ -11624,7 +11624,7 @@ test(1874.1, fread(f,header=FALSE,verbose=TRUE)[c(1,51094,102184),],
            data.table(V1=c("ABCDEFGHIJKLMNOPQRST000001","","ABCDEFGHIJKLMNOPQRST102184")),
            output="jumps=[0..2)")  # ensure jump 1 happened
 
-# out-of-sample short lines in the first jump
+# out-of-sample short lines in the first jump, not near the jump point
 x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
 x[5104:5200] = "small,batch,short,lines"   # 4 fields not 5
 cat(x, file=f, sep="\n")
