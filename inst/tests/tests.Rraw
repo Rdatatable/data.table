@@ -11613,7 +11613,7 @@ fwrite(DT,f<-tempfile())
 test(1873, fread(f), DT)
 unlink(f)
 
-# better jump sync and run-on in PR#2627
+# Better jump sync and run-on in PR#2627
 # Reproduces error 'did not finish exactly where jump 1 found ...' in #2561 in master before PR #2627
 # the jump point is just before an empty line and the nextGoodLine() wasn't sync'd properly
 x = sprintf("ABCDEFGHIJKLMNOPQRST%06d", 1:102184)
@@ -11624,11 +11624,10 @@ test(1874, fread(f,header=FALSE,verbose=TRUE)[c(1,51094,102184),],
            output="jumps=[0..2)")  # ensure jump 1 happened
 unlink(f)
 
-
-# no good jump start, #2267
-# At 35MB, the bad_fill.csv file size exceeds CRAN limit. Need to reduce its size.
-# test(1874.1, fread(testDir("bad_fill.csv")), error="No good line could be found from jump point")
-# test(1874.2, fread(testDir("bad_fill.csv"), fill=TRUE), error="No good line could be found from jump point")
+# no good jump start, #2267. Reproduce by arranging jump point to fall before a set of 30 or more too-few lines
+# At 35MB, the bad_fill.csv file size exceeds CRAN limit.
+# "bad_fill.csv:  "No good line could be found from jump point" => helpful warning where too-few line in
+# with fill=TRUE, it then works
 
 
 ##########################
