@@ -11614,20 +11614,35 @@ test(1873, fread(f), DT)
 unlink(f)
 
 # Better jump sync and run-on in PR#2627
+
 # Reproduces error 'did not finish exactly where jump 1 found ...' in #2561 in master before PR #2627
 # the jump point is just before an empty line and the nextGoodLine() wasn't sync'd properly
 x = sprintf("ABCDEFGHIJKLMNOPQRST%06d", 1:102184)
 x[51094]=""
 cat(x, file=f<-tempfile(), sep="\n")
-test(1874, fread(f,header=FALSE,verbose=TRUE)[c(1,51094,102184),],
+test(1874.1, fread(f,header=FALSE,verbose=TRUE)[c(1,51094,102184),],
            data.table(V1=c("ABCDEFGHIJKLMNOPQRST000001","","ABCDEFGHIJKLMNOPQRST102184")),
            output="jumps=[0..2)")  # ensure jump 1 happened
-unlink(f)
 
-# no good jump start, #2267. Reproduce by arranging jump point to fall before a set of 30 or more too-few lines
-# At 35MB, the bad_fill.csv file size exceeds CRAN limit.
-# "bad_fill.csv:  "No good line could be found from jump point" => helpful warning where too-few line in
-# with fill=TRUE, it then works
+# out-of-sample short lines in the first jump
+x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
+x[5104:5200] = "small,batch,short,lines"   # 4 fields not 5
+cat(x, file=f, sep="\n")
+test(1874.2, fread(f), data.table(V1=rep("ABCD",5103L), V2="FGHI", V3="KLMN", V4="PQRS", V5=1:5103),
+             warning="Stopped early on line 5104.*<<small,batch,short,lines>>")
+test(1874.3, fread(f,fill=TRUE,verbose=TRUE)[c(1,5103,5104,5200,5201,102184),],
+             data.table(V1=c("ABCD","ABCD","small","small","ABCD","ABCD"),
+                        V2=c("FGHI","FGHI","batch","batch","FGHI","FGHI"),
+                        V3=c("KLMN","KLMN","short","short","KLMN","KLMN"),
+                        V4=c("PQRS","PQRS","lines","lines","PQRS","PQRS"),
+                        V5=c(1L,5103L,NA,NA,5201L,102184L)),
+             output="jumps=[0..2)")
+
+# jump just before a set of 30 or more too-few lines, to reproduce "No good line could be found" error in #2267
+#fread(f), warning
+#fread(f,fill=TRUE)
+
+unlink(f)
 
 
 ##########################

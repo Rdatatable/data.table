@@ -1953,7 +1953,7 @@ int freadMain(freadMainArgs _args) {
       const char *tch = jump==0 ? pos : nextGoodLine(pos+(size_t)jump*chunkBytes, ncol);
       const char *thisJumpStart = tch;   // "this" for prev/this/next adjective used later, rather than a (mere) t prefix for thread-local.
       const char *tLineStart = tch;
-      const char *nextJump = jump<nJumps-1 ? nextGoodLine(pos + (size_t)(jump+1)*chunkBytes, ncol) : eof;
+      const char *nextJumpStart = jump<nJumps-1 ? nextGoodLine(pos + (size_t)(jump+1)*chunkBytes, ncol) : eof;
 
       void *targets[9] = {NULL, ctx.buff1, NULL, NULL, ctx.buff4, NULL, NULL, NULL, ctx.buff8};
       FieldParseContext fctx = {
@@ -1962,7 +1962,7 @@ int freadMain(freadMainArgs _args) {
         .anchor = thisJumpStart,
       };
 
-      while (tch<nextJump && (nth>1 || DTi+myNrow<nrowLimit)) {  // setting nrowLimit sets nth to 1 to avoid bump or error on row after nrowLimit
+      while (tch<nextJumpStart && (nth>1 || DTi+myNrow<nrowLimit)) {  // setting nrowLimit sets nth to 1 to avoid bump or error on row after nrowLimit
         if (myNrow == myBuffRows) {
           // buffer full due to unusually short lines in this chunk vs the sample; e.g. #2070
           myBuffRows *= 1.5;
@@ -2013,7 +2013,7 @@ int freadMain(freadMainArgs _args) {
             int8_t thisSize = size[j];
             ((char **) targets)[thisSize] += thisSize;
             j++;
-            if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJump). Usually happens, fastest path
+            if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJumpStart). Usually happens, fastest path
           }
           else {
             tch = fieldStart; // restart field as int processor could have moved to A in ",123A,"
@@ -2168,10 +2168,26 @@ int freadMain(freadMainArgs _args) {
       ctx.nRows = myNrow;
       postprocessBuffer(&ctx);
 
+      if (!myStoppingEarly && tch!=nextJumpStart) {
+        // the next jump had trouble finding a good line start. In the exraordinary event that it managed to complete all its rows, then
+        // they will be be garbled by being recycled around line ending and should be discarded. My tch now is for sure the right line ending.
+        // I will take over and rerun the next thread's jump now. I am now known as the 'sweeper'. Next thread(s) will be held waiting here
+        // before ordered section until sweeper finds next good jump-handover. Any 'swept' jumps will have myNrow set to 0 inside ordered. It could
+        // be that the next jump they receive has already been swept by me too, and if so they'll skip at the start of the parallel loop until
+        // they get a non-swept jump to start processing.
+
+      }
+
       #pragma omp ordered
       {
         // stopTeam could be true if a previous thread already stopped while I was waiting my turn
-        if (!stopTeam && prevJumpEnd!=thisJumpStart && jump>jump0) {
+        if (stopTeam) {
+          // previous thread stopped every while I was waiting my turn to enter ordered
+          // if I think I was stopping early, then it doesn't matter because a previous thread stopped even earlier
+          myNrow=0;                 // discard my buffer
+          myStoppingEarly=false;
+        }
+        else if (prevJumpEnd!=thisJumpStart && jump>jump0) {
           // rare case of, e.g. many newlines inside many quoted fields, where nextGoodLine() did not find the true next good line start.
           // Now we're inside ordered, the easiest option to avoid code complexity, is just to restart execution with jump0 here.
           snprintf(stopErr, stopErrSize,
@@ -2218,7 +2234,7 @@ int freadMain(freadMainArgs _args) {
     }
     // End for loop over all jump points
 
-    // Push out all buffers one last time.
+    // Push out all buffers one last time (only needed because of gomp ordered workaround above with push first in the loop)
     if (myNrow) {
       double now = verbose ? wallclock() : 0;
       pushBuffer(&ctx);
