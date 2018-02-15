@@ -11178,7 +11178,7 @@ for (i in 0:1000) {
   if (i==502) write("-999,Bad,Line,0.0,0.0,extra\n", f, append=TRUE)
 }
 test(1835, fread(f, verbose=TRUE),
-  output = "A line with too-many.*jump 50.*Type bumps.*ignored",
+  output = "A line with too-many.*jump 50.*jump landed awkwardly.*skipped",
   warning = "Stopped.*line 42253. Expected 5 fields but found 6.*discarded.*<<-999,Bad,Line,0.0,0.0,extra>>")
 unlink(f)
 
@@ -11653,6 +11653,18 @@ test(1874.5, fread(f,fill=TRUE,verbose=TRUE)[c(1,51093,51094,51150,51151,.N),],
                         V4=c("PQRS","PQRS","lines","lines","PQRS","PQRS"),
                         V5=c(1L,51093L,NA,NA,51151L,102184L)),
              output="jumps=[0..2)")
+#
+# jump inside a quoted field containing many new lines, to simulate a dirty jump
+# we'll make this example even harder/impossible for nextGoodLine to resolve by making the lines resemble the number and types of the true lines, too.
+x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
+x[51093] = "\"A,B,C,D,1\nA,B,C,D,2\nA,B,C,D,3\nA,B,C,D,4\nA,B,C,D,5\nA,B,C,D,6\nA,B,C,D,7\nA,B,C,D,8\n\",FGHI,KLMN,PQRS,51093"
+cat(x, file=f, sep="\n")
+test(1875.6, fread(f,verbose=TRUE)[c(1,51092:51094,.N),],
+             data.table(V1=c("ABCD","ABCD", "A,B,C,D,1\nA,B,C,D,2\nA,B,C,D,3\nA,B,C,D,4\nA,B,C,D,5\nA,B,C,D,6\nA,B,C,D,7\nA,B,C,D,8\n", "ABCD","ABCD"),
+                        V2="FGHI", V3="KLMN", V4="PQRS", V5=c(1L,51092:51094,102184L)),
+             output = "too-few.*sample jump 50.*jump landed awkwardly.*skipped.*Read the data.*jumps=[0..2).*jumps=[1..2).*Reading 2 chunks (1 swept)")
+# Aside: although the file (with over 100,000 lines) is big enough for 100 sampling jumps (of which just 1, the middle one, skipped),
+#   it's still too small for more than 2 reading chunks to be worth it which is correct (based on buffMB not nth)
 unlink(f)
 
 
