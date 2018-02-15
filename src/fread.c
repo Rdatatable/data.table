@@ -1924,7 +1924,7 @@ int freadMain(freadMainArgs _args) {
 
     #pragma omp for ordered schedule(dynamic) reduction(+:thRead,thPush)
     for (int jump = jump0; jump < nJumps; jump++) {
-      if (stopTeam && !myStoppingEarly) continue;  // must continue and not break. We desire not to depend on (relatively new) omp cancel directive, yet
+      if (stopTeam) continue;  // must continue and not break. We desire not to depend on (relatively new) omp cancel directive, yet
       double tLast = 0.0;      // thread local wallclock time at last measuring point for verbose mode only.
       if (verbose) tLast = wallclock();
       if (myNrow) {
@@ -1953,7 +1953,6 @@ int freadMain(freadMainArgs _args) {
             progress((int)(100.0*jump/nJumps), ETA);
           }
         }
-        if (myStoppingEarly) continue;
       }
 
       const char *tch = jump==0 ? pos : nextGoodLine(pos+(size_t)jump*chunkBytes, ncol);
@@ -2176,14 +2175,13 @@ int freadMain(freadMainArgs _args) {
 
       if (!myStoppingEarly && tch>nextJumpStart) {
         // the next jump's start was incorrect; it's dirty. I'm now the sweeper and I'll sweep the dirty jump.
-        STOP("dirty jump found");  // temp
+        STOP("dirty jump found -- not yet swept (TODO)");
       }
 
       #pragma omp ordered
       {
-        if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered.
+        if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered
           myNrow = 0;               // discard my buffer
-          myStoppingEarly = false;  // previous thread stopped even earlier
         }
         else if (headPos>thisJumpStart) {  // sweeper swept me
           myNrow=0;                        // discard my buffer
@@ -2196,40 +2194,22 @@ int freadMain(freadMainArgs _args) {
         }
         else {
           ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
-          if (ctx.DTi >= allocnrow) {  // a previous thread has already reached the `allocnrow` limit
-            stopTeam = true;  // TODO: this should have been set already when the allocnrow limit was reached.  Don't need this clause here
+          if (ctx.DTi + myNrow > allocnrow) {
+            // Guess for DT's nrow was insufficient. We cannot realloc DT now because other threads are pushing to DT now in
+            // parallel. So, stop team, realloc and then restart reading from this jump.
+            extraAllocRows = (size_t)((double)(DTi+myNrow)*nJumps/(jump+1) * 1.2) - allocnrow;
+            if (extraAllocRows < 1024) extraAllocRows = 1024;
             myNrow = 0;
-          } else if (myNrow + ctx.DTi >= allocnrow) {  // current thread's rows will fill all allocnrow
-            if (allocnrow == nrowLimit) {
-              // the loop above should have stopped when the nrowLimit was reached
-              ASSERT(myNrow == nrowLimit-ctx.DTi, "myNrow[%llu] == nrowLimit[%llu]-ctx.DTi[%llu]", myNrow, nrowLimit, ctx.DTi);
-              ASSERT(nth==1, "nth[%d]==1", nth);
-              // TODO: remove these ASSERT and can't STOP here within parallel region
-            } else if (myNrow + ctx.DTi > allocnrow) {    // TODO: move this higher up, simplify
-              // We reached `allocnrow` limit, but there are more data to read
-              // left. In this case we arrange to terminate all threads but
-              // remember the position where the previous thread has finished. We
-              // will reallocate the DT and restart reading from the same point.
-              jump0 = jump;
-              extraAllocRows = (size_t)((double)(DTi+myNrow)*nJumps/(jump+1) * 1.2) - allocnrow;
-              if (extraAllocRows < 1024) extraAllocRows = 1024;
-              myNrow = 0;
-              stopTeam = true;
-            }
+            stopTeam = true;
+            jump0 = jump;
           }
-
-          //if (myStoppingEarly || stopTeam) {
-          //  if (stopTeam || myNrow==0) myStoppingEarly=false;
-          //  stopTeam=true;
-          //} else {
-
-          if (!stopTeam) {
+          else {
             // tell next thread 2 things :
             headPos = tch;     // i) advance headPos; the jump start up to which all rows have been pushed
             DTi += myNrow;     // ii) which row in the final result she should start writing to since now I know myNrow.
             ctx.nRows = myNrow;
             orderBuffer(&ctx);
-            if (myStoppingEarly) { stopTeam=true; myStoppingEarly=false; }
+            if (myStoppingEarly) stopTeam = true;
           }
         }
       }
@@ -2240,6 +2220,7 @@ int freadMain(freadMainArgs _args) {
     // End for loop over all jump points
 
     // Push out all buffers one last time (only needed because of gomp ordered workaround above with push first in the loop)
+    // If stopped early, this will happen once for thread at headPos (the only one left with myNrow>0)
     if (myNrow) {
       double now = verbose ? wallclock() : 0;
       pushBuffer(&ctx);

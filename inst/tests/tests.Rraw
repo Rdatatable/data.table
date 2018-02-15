@@ -11639,6 +11639,7 @@ test(1874.3, fread(f,fill=TRUE,verbose=TRUE)[c(1,5020,5021,5041,5042,.N),],
              output="jumps=[0..2)")
 #
 # jump just before a set of 30 or more too-few lines, to reproduce "No good line could be found" error in #2267
+# confirmed fails in master with that error before PR#2627
 x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
 x[51094:51150] = "small,batch,short,lines"   # 4 fields not 5
 cat(x, file=f, sep="\n")
