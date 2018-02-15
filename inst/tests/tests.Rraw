@@ -11655,16 +11655,17 @@ test(1874.5, fread(f,fill=TRUE,verbose=TRUE)[c(1,51093,51094,51150,51151,.N),],
              output="jumps=[0..2)")
 #
 # jump inside a quoted field containing many new lines, to simulate a dirty jump
-# we'll make this example even harder/impossible for nextGoodLine to resolve by making the lines resemble the number and types of the true lines, too.
+# we'll make this jump landing even harder for nextGoodLine() by making the lines resemble the number and types of the true lines, too.
+# Rather than needing to make nextGoodLine() better and better (at some point it's impossible), in these rare cases we'll just sweep dirty jumps.
 x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
 x[51093] = "\"A,B,C,D,1\nA,B,C,D,2\nA,B,C,D,3\nA,B,C,D,4\nA,B,C,D,5\nA,B,C,D,6\nA,B,C,D,7\nA,B,C,D,8\n\",FGHI,KLMN,PQRS,51093"
 cat(x, file=f, sep="\n")
-test(1875.6, fread(f,verbose=TRUE)[c(1,51092:51094,.N),],
+test(1875.6, fread(f,verbose=TRUE)[c(1,51092:51094,.N),][3,V1:=gsub("\r","",V1)],  # gsub since R on Windows replaces \n with \r\n
              data.table(V1=c("ABCD","ABCD", "A,B,C,D,1\nA,B,C,D,2\nA,B,C,D,3\nA,B,C,D,4\nA,B,C,D,5\nA,B,C,D,6\nA,B,C,D,7\nA,B,C,D,8\n", "ABCD","ABCD"),
                         V2="FGHI", V3="KLMN", V4="PQRS", V5=c(1L,51092:51094,102184L)),
              output = "too-few.*sample jump 50.*jump landed awkwardly.*skipped.*Read the data.*jumps=[0..2).*jumps=[1..2).*Reading 2 chunks (1 swept)")
-# Aside: although the file (with over 100,000 lines) is big enough for 100 sampling jumps (of which just 1, the middle one, skipped),
-#   it's still too small for more than 2 reading chunks to be worth it which is correct (based on buffMB not nth)
+# Aside: although the file (with over 100,000 lines) is big enough for 100 sampling jumps (of which just 1, the middle sample jump, skipped), it's
+#   still too small for more than 2 reading chunks to be worth it which is correct (based on buffMB not nth)
 unlink(f)
 
 
