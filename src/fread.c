@@ -2185,7 +2185,7 @@ int freadMain(freadMainArgs _args) {
           myNrow = 0;               // discard my buffer
           myStoppingEarly = false;  // previous thread stopped even earlier
         }
-        else if (headPos>thisJumpStart) {  // sweeper swept me, see comment above
+        else if (headPos>thisJumpStart) {  // sweeper swept me
           myNrow=0;                        // discard my buffer
           myStoppingEarly = false;         // my invalid line (if any) didn't turn out to be invalid after all (sweeper resolved it)
           nSwept++;                        // count me as a dirty jump
@@ -2205,7 +2205,7 @@ int freadMain(freadMainArgs _args) {
               ASSERT(myNrow == nrowLimit-ctx.DTi, "myNrow[%llu] == nrowLimit[%llu]-ctx.DTi[%llu]", myNrow, nrowLimit, ctx.DTi);
               ASSERT(nth==1, "nth[%d]==1", nth);
               // TODO: remove these ASSERT and can't STOP here within parallel region
-            } else if (myNrow + ctx.DTi > allocnrow) {
+            } else if (myNrow + ctx.DTi > allocnrow) {    // TODO: move this higher up, simplify
               // We reached `allocnrow` limit, but there are more data to read
               // left. In this case we arrange to terminate all threads but
               // remember the position where the previous thread has finished. We
