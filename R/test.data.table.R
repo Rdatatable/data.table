@@ -50,11 +50,11 @@ compactprint <- function(DT, topn=2L) {
   cn = paste0(" [Key=",makeString(key(DT)),
              " Types=", makeString(substring(sapply(DT, typeof), 1L, 3L)),
              " Classes=", makeString(tt), "]")
-  if (nrow(DT)) {
+  if (nrow(DT)>(topn+topn+1)) {
     print(copy(DT)[,(cn):=""], topn=topn)
   } else {
-    print(DT)  # "Empty data.table (0 rows) of <ncol> columns ...
-    if (ncol(DT)) cat(cn,"\n")
+    print(DT)
+    if (nrow(DT)==0 && ncol(DT)>0) cat(cn,"\n")  # "Empty data.table (0 rows) of <ncol> columns ...
   }
   invisible()
 }
