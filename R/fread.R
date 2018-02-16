@@ -65,14 +65,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
     }
     tt = tempfile()
     on.exit(unlink(tt), add = TRUE)
-    if (.Platform$OS.type == "unix") {
-      if (file.exists('/dev/shm') && file.info('/dev/shm')$isdir) {
-        tt = tempfile(tmpdir = '/dev/shm')
-      }
-      system(paste('(', input, ') > ', tt, sep=""))
-    } else {
-      shell(paste('(', input, ') > ', tt, sep=""))
-    }
+    (if (.Platform$OS.type == "unix") system else shell)(paste('(', input, ') > ', tt, sep=""))
     input = tt
   }
   if (is.logical(colClasses)) {
