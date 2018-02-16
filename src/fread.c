@@ -689,7 +689,7 @@ static void parse_double_regular(FieldParseContext *ctx)
       ch++;
       e++;
     }
-    if (*ch!=dec) goto fail;
+    if (*ch!=dec && *ch!='e' && *ch!='E') goto fail;
   }
 
   // Read the fractional part of the number, if it's present
