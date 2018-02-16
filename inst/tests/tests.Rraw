@@ -9721,7 +9721,7 @@ if (.Platform$OS.type=="unix") {
     cat("a,b\n4,2", file=f<-tempfile())
     cmd <- sprintf("cat %s", f)
     test(1703.1, fread(cmd), data.table(a=4L, b=2L))
-    test(1703.2, fread(file=cmd), error=sprintf("Provided file '%s' does not exists", cmd))
+    test(1703.2, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
     unlink(f)
 }
 
@@ -11667,6 +11667,9 @@ test(1875.6, fread(f,verbose=TRUE)[c(1,51092:51094,.N),][3,V1:=gsub("\r","",V1)]
 # Aside: although the file (with over 100,000 lines) is big enough for 100 sampling jumps (of which just 1, the middle sample jump, skipped), it's
 #   still too small for more than 2 reading chunks to be worth it which is correct (based on buffMB not nth)
 unlink(f)
+
+test(1876, fread("http://hkhfsk\nhttp://fhdkf\nhttp://kjfhskd\nhttp://hfkjf", header=FALSE),    # data not a download, #2531
+           data.table(V1=c("http://hkhfsk","http://fhdkf","http://kjfhskd","http://hfkjf")))
 
 
 ##########################
