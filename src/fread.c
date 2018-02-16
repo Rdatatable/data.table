@@ -655,60 +655,108 @@ cat("1.0E350L\n};\n", file=f, append=TRUE)
  */
 static void parse_double_regular(FieldParseContext *ctx)
 {
-  //
+  #define FLOAT_MAX_DIGITS 18
   const char *ch = *(ctx->ch);
   double *target = (double*) ctx->targets[sizeof(double)];
 
   bool neg, Eneg;
   ch += (neg = *ch=='-') + (*ch=='+');
 
-  const char *start = ch;
-  uint_fast64_t acc = 0;  // holds NNN.MMM as NNNMMM
-  int_fast32_t e = 0;     // width of MMM to adjust NNNMMM by dec location
-  uint_fast8_t digit;
+  const char* start = ch; // beginning of the number, without the initial sign
+  uint_fast64_t acc = 0;  // mantissa NNN.MMM as a single 64-bit integer NNNMMM
+  int_fast32_t e = 0;     // the number's exponent. The value being parsed is
+                          // equal to acc * pow(10,e)
+  uint_fast8_t digit;     // temporary variable, holds last scanned digit.
+
+  // Skip leading zeros
   while (*ch=='0') ch++;
 
-  uint_fast32_t sf = 0;
-  while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
+  // Read the first, integer part of the floating number (but no more than
+  // FLOAT_MAX_DIGITS digits).
+  int_fast32_t sflimit = FLOAT_MAX_DIGITS;
+  while ((digit=(uint_fast8_t)(*ch-'0'))<10 && sflimit) {
     acc = 10*acc + digit;
-    sf++;
-  }
-  ch += sf;
-  if (*ch==dec) {
+    sflimit--;
     ch++;
-    // Numbers like 0.00000000000000000000000000000000004 can be read without
-    // loss of precision as 4e-35  (test 1817)
-    if (sf==0 && *ch=='0') {
-      while (ch[e]=='0') e++;
-      ch += e;
-      e = -e;
+  }
+
+  // If maximum allowed number of digits were read, but more are present -- then
+  // we will read and discard those extra digits, but only if they are followed
+  // by a decimal point (otherwise it's a just big integer, which should be
+  // treated as a string instead of losing precision).
+  if (sflimit==0 && (uint_fast8_t)(*ch-'0')<10) {
+    while ((uint_fast8_t)(*ch-'0')<10) {
+      ch++;
+      e++;
     }
-    uint_fast32_t k = 0;
-    while ( (digit=(uint_fast8_t)(ch[k]-'0'))<10 ) {
+    if (*ch!=dec) goto fail;
+  }
+
+  // Read the fractional part of the number, if it's present
+  if (*ch==dec) {
+    ch++;  // skip the decimal point
+    // If the integer part was 0, then leading zeros in the fractional part do
+    // not count against the number's precision. In practice it means that
+    // numbers like 0.00000000000000000000000000000000004 can be read without
+    // loss of precision as 4e-35  (test 1817)
+    if (*ch=='0' && acc==0) {
+      int_fast32_t k = 0;
+      while (ch[k]=='0') k++;
+      ch += k;
+      e = -k;
+    }
+
+    // Now read the significant digits in the fractional part of the number
+    int_fast32_t k = 0;
+    while ((digit=(uint_fast8_t)(ch[k]-'0'))<10 && sflimit) {
       acc = 10*acc + digit;
       k++;
+      sflimit--;
     }
     ch += k;
-    sf += k;
     e -= k;
+
+    // If more digits are present, skip them
+    if (sflimit==0) {
+      while ((uint_fast8_t)(*ch-'0')<10) ch++;
+    }
+    // Check that at least 1 digit was present in either the integer or
+    // fractional part ("+1" here accounts for the decimal point char).
+    if (ch == start + 1) goto fail;
   }
-  if (sf>18) goto fail;  // Too much precision for double. TODO: reduce to 15(?) and discard trailing 0's.
+  // If there is no fractional part, then check that the integer part actually
+  // exists (otherwise it's not a valid number)...
+  else {
+    if (ch == start) goto fail;
+  }
+
+  // Finally parse the "exponent" part of the number (if present)
   if (*ch=='E' || *ch=='e') {
     if (ch==start) goto fail;  // something valid must be between [+|-] and E, character E alone is invalid.
     ch += 1/*E*/ + (Eneg = ch[1]=='-') + (ch[1]=='+');
-    int E=0, max_digits=3;
-    while ( max_digits && (digit=(uint_fast8_t)(*ch-'0'))<10 ) {
-      E = 10*E + digit;
+    int_fast32_t E = 0;
+    if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+      E = digit;
       ch++;
-      max_digits--;
+      if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+        E = E*10 + digit;
+        ch++;
+        if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+          E = E*10 + digit;
+          ch++;
+        }
+      }
+    } else {
+      // Not a single digit after "E"? Invalid number
+      goto fail;
     }
     e += Eneg? -E : E;
   }
   e += 350; // lookup table is arranged from -350 (0) to +350 (700)
-  if (e<0 || e>700 || ch==start) goto fail;
+  if (e<0 || e>700) goto fail;
 
-  *target = (double)((long double)acc * pow10lookup[e]);
-  if (neg) *target = -*target;
+  double r = (double)((long double)acc * pow10lookup[e]);
+  *target = neg? -r : r;
   *(ctx->ch) = ch;
   return;
 
