@@ -49,7 +49,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
        cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1L)"s",": ",paste(head(names(x),6L),collapse=","),if(ncol(x)>6L)"...","\n",sep="")
     return(invisible())
   }
-  if (topn*2<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
+  if ((topn*2+1)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
     toprint = rbind(head(x, topn), tail(x, topn))
     rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
     printdots = TRUE

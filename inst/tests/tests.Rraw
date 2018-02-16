@@ -11178,7 +11178,7 @@ for (i in 0:1000) {
   if (i==502) write("-999,Bad,Line,0.0,0.0,extra\n", f, append=TRUE)
 }
 test(1835, fread(f, verbose=TRUE),
-  output = "A line with too-few or too-many.*jump 50.*Type bumps.*ignored",
+  output = "A line with too-many.*jump 50.*jump landed awkwardly.*skipped",
   warning = "Stopped.*line 42253. Expected 5 fields but found 6.*discarded.*<<-999,Bad,Line,0.0,0.0,extra>>")
 unlink(f)
 
@@ -11613,10 +11613,60 @@ fwrite(DT,f<-tempfile())
 test(1873, fread(f), DT)
 unlink(f)
 
-# no good jump start, #2267
-# At 35MB, the bad_fill.csv file size exceeds CRAN limit. Need to reduce its size.
-# test(1874.1, fread(testDir("bad_fill.csv")), error="No good line could be found from jump point")
-# test(1874.2, fread(testDir("bad_fill.csv"), fill=TRUE), error="No good line could be found from jump point")
+# Better jump sync and run-on in PR#2627
+#
+# Reproduces error 'did not finish exactly where jump 1 found ...' in #2561 in master before PR #2627
+# the jump point is just before an empty line and the nextGoodLine() wasn't sync'd properly
+x = sprintf("ABCDEFGHIJKLMNOPQRST%06d", 1:102184)
+x[51094]=""
+cat(x, file=f<-tempfile(), sep="\n")
+test(1874.1, fread(f,header=FALSE,verbose=TRUE)[c(1,51094,.N),],
+           data.table(V1=c("ABCDEFGHIJKLMNOPQRST000001","","ABCDEFGHIJKLMNOPQRST102184")),
+           output="jumps=[0..2)")  # ensure jump 1 happened
+#
+# out-of-sample short lines in the first jump, not near the jump point
+x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
+x[5021:5041] = "small,batch,short,lines"   # 4 fields not 5
+cat(x, file=f, sep="\n")
+test(1874.2, fread(f), data.table(V1="ABCD", V2="FGHI", V3="KLMN", V4="PQRS", V5=1:5020),
+             warning="Stopped early on line 5021.*<<small,batch,short,lines>>")
+test(1874.3, fread(f,fill=TRUE,verbose=TRUE)[c(1,5020,5021,5041,5042,.N),],
+             data.table(V1=c("ABCD","ABCD","small","small","ABCD","ABCD"),
+                        V2=c("FGHI","FGHI","batch","batch","FGHI","FGHI"),
+                        V3=c("KLMN","KLMN","short","short","KLMN","KLMN"),
+                        V4=c("PQRS","PQRS","lines","lines","PQRS","PQRS"),
+                        V5=c(1L,5020L,NA,NA,5042L,102184L)),
+             output="jumps=[0..2)")
+#
+# jump just before a set of 30 or more too-few lines, to reproduce "No good line could be found" error in #2267
+# confirmed fails in master with that error before PR#2627
+x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
+x[51094:51150] = "small,batch,short,lines"   # 4 fields not 5
+cat(x, file=f, sep="\n")
+test(1874.4, fread(f,verbose=TRUE), data.table(V1="ABCD", V2="FGHI", V3="KLMN", V4="PQRS", V5=1:51093),
+             warning="Stopped early on line 51094.*<<small,batch,short,lines>>",
+             output="jumps=[0..2)")
+test(1874.5, fread(f,fill=TRUE,verbose=TRUE)[c(1,51093,51094,51150,51151,.N),],
+             data.table(V1=c("ABCD","ABCD","small","small","ABCD","ABCD"),
+                        V2=c("FGHI","FGHI","batch","batch","FGHI","FGHI"),
+                        V3=c("KLMN","KLMN","short","short","KLMN","KLMN"),
+                        V4=c("PQRS","PQRS","lines","lines","PQRS","PQRS"),
+                        V5=c(1L,51093L,NA,NA,51151L,102184L)),
+             output="jumps=[0..2)")
+#
+# jump inside a quoted field containing many new lines, to simulate a dirty jump
+# we'll make this jump landing even harder for nextGoodLine() by making the lines resemble the number and types of the true lines, too.
+# Rather than needing to make nextGoodLine() better and better (at some point it's impossible), in these rare cases we'll just sweep dirty jumps.
+x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
+x[51093] = "\"A,B,C,D,1\nA,B,C,D,2\nA,B,C,D,3\nA,B,C,D,4\nA,B,C,D,5\nA,B,C,D,6\nA,B,C,D,7\nA,B,C,D,8\n\",FGHI,KLMN,PQRS,51093"
+cat(x, file=f, sep="\n")
+test(1875.6, fread(f,verbose=TRUE)[c(1,51092:51094,.N),][3,V1:=gsub("\r","",V1)],  # gsub since R on Windows replaces \n with \r\n
+             data.table(V1=c("ABCD","ABCD", "A,B,C,D,1\nA,B,C,D,2\nA,B,C,D,3\nA,B,C,D,4\nA,B,C,D,5\nA,B,C,D,6\nA,B,C,D,7\nA,B,C,D,8\n", "ABCD","ABCD"),
+                        V2="FGHI", V3="KLMN", V4="PQRS", V5=c(1L,51092:51094,102184L)),
+             output = "too-few.*sample jump 50.*jump landed awkwardly.*skipped.*Read the data.*jumps=[0..2).*jumps=[1..2).*Reading 2 chunks (1 swept)")
+# Aside: although the file (with over 100,000 lines) is big enough for 100 sampling jumps (of which just 1, the middle sample jump, skipped), it's
+#   still too small for more than 2 reading chunks to be worth it which is correct (based on buffMB not nth)
+unlink(f)
 
 
 ##########################
