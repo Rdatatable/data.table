@@ -51,6 +51,13 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     start[chmatch(dupnames, start, 0L)] = paste(dupnames, suffixes[1L], sep="")
     end[chmatch(dupnames, end, 0L)] = paste(dupnames, suffixes[2L], sep="")
   }
+  # If by.x != by.y then the 'by' column(s) are named as 'by.x' - we need
+  # to also handle cases where the 'by.x' column names are in 'end'
+  dupkeyx = intersect(by.x, end)
+  if (length(dupkeyx)) {
+    by.x[chmatch(dupkeyx, by.x, 0L)] = paste(dupkeyx, suffixes[1L], sep="")
+    end[chmatch(dupkeyx, end, 0L)] = paste(dupkeyx, suffixes[2L], sep="")
+  }
 
   dt = y[x,nomatch = if (all.x) NA else 0L,on=by,allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
 
