@@ -11673,11 +11673,11 @@ test(1876, fread("http://hkhfsk\nhttp://fhdkf\nhttp://kjfhskd\nhttp://hfkjf", he
 
 # fix for segFault with setAttr on "class" attribute with 0length value #2386
 # setting to NULL works
-test(1875.1, attr(setattr(1, "class", NULL), "class"), NULL)
+test(1875.1, attr(setattr(data.table(x = 1:10), "class", NULL), "class"), NULL)
 # setting to empty character fails with error
-test(1875.2, setattr(1, "class", character(0)), error = "attempt to set invalid 'class' attribute")
+test(1875.2, setattr(data.table(x = 1:10), "class", character(0)), error = "attempt to set invalid 'class' attribute")
 # setting other attribute to empty character works
-test(1875.3, attr(setattr(1, "test", character(0)), "test"), character(0))
+test(1875.3, attr(setattr(data.table(x = 1:10), "test", character(0)), "test"), character(0))
 
 ##########################
 
