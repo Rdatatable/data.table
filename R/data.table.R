@@ -2815,9 +2815,9 @@ isReallyReal <- function(x) {
   if (!is.call(isub)) return(NULL)
   if (!is.null(attr(x, '.data.table.locked'))) return(NULL)  # fix for #958, don't create auto index on '.SD'.
   ## a list of all possible operators with their translations into the 'on' clause
-  validOps <- rbind(data.table(op = "==", on = "=="),
-                    data.table(op = "%in%", on = "=="),
-                    data.table(op = "%chin%", on = "=="))
+  validOps <- list(op = c("==", "%in%", "%chin%"),
+                   on = c("==", "==",   "=="))
+
   ## Determine, whether the nature of isub in general supports fast binary search
   remainingIsub <- isub
   i <- list()
