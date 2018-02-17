@@ -33,10 +33,10 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
     if (!is.character(input) || length(input)!=1L) {
       stop("'input' must be a single character string containing a file name, a system command containing at least one space, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or, the input data itself containing at least one \\n or \\r")
     }
-    if (file.exists(input)) {
-      if (isTRUE(file.info(input)$isdir)) stop("File '",input,"' is a directory. Not yet implemented.")
-    } else if ( input == "" || length(grep('\\n|\\r', input)) ) {
+    if ( input == "" || length(grep('\\n|\\r', input)) ) {
       # input is data itself containing at least one \n or \r
+    } else if (file.exists(input)) {
+      if (isTRUE(file.info(input)$isdir)) stop("File '",input,"' is a directory. Not yet implemented.")
     } else {
       if (substring(input,1L,1L)==" ") {
         stop("Input argument is not a file name and contains no \\n or \\r, but starts with a space. Please remove the leading space.")
