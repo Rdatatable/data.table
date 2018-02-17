@@ -139,7 +139,8 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
 32. `x.` prefixes during joins sometimes resulted in a "column not found" error. This is now fixed. Closes [#2313](https://github.com/Rdatatable/data.table/issues/2313). Thanks to @franknarf1 for the MRE.
 
 33. Fixed bug where result of `merge()` would contain duplicate column names if `by.x` was also in `names(y)`.
-Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdatatable/data.table/pull/2631)
+Where there are duplicate column names (i.e. `suffixes = c("", "")`) `merge()` will throw a warning to match
+the behaviour of `base:::merge.data.frame()`. Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdatatable/data.table/pull/2631). 
 
 #### NOTES
 

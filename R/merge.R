@@ -85,6 +85,15 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
   if (nrow(dt) > 0L) {
     setkeyv(dt, if (sort) by.x else NULL)
   }
+  
+  # Throw warning if there are duplicate column names in 'dt' (i.e. if
+  # `suffixes=c("","")`, to match behaviour in base:::merge.data.frame)
+  resultdupnames <- names(dt)[duplicated(names(dt))]
+  if (length(resultdupnames)) {
+    warning("column names ", paste0("'", resultdupnames, "'", collapse=", "), 
+            " are duplicated in the result")
+  }
+  
   # merge resets class, #1378. X[Y] is quite clear that X is being *subset* by Y,
   # makes sense to therefore retain X's class, unlike `merge`. Hard to tell what
   # class to retain for *full join* for example.
