@@ -2746,9 +2746,9 @@ test(966, fread(input, colClasses=list(character=2:4)), error="Column number 4 (
 test(967, nrow(fread( paste( rep('a\tb\n', 10000), collapse=''), header=FALSE)), 10000L)
 
 # Test fread warns about removal of any footer (and autostart skips up over it)
-test(968, fread("A,B\n1,3\n2,4\n\nRowcount: 2\n"), data.table(A=1:2,B=3:4), warning="Found the last.*discarded.*Rowcount: 2")
-test(969, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2"), data.table(A=1:2,B=3:4), warning="Found the last.*discarded.*Rowcount: 2")
-test(970, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2\n\n"), data.table(A=1:2,B=3:4), warning="Found the last.*discarded.*Rowcount: 2")
+test(968, fread("A,B\n1,3\n2,4\n\nRowcount: 2\n"), data.table(A=1:2,B=3:4), warning="Discarded single-line footer.*Rowcount: 2")
+test(969, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2"), data.table(A=1:2,B=3:4), warning="Discarded single-line footer.*Rowcount: 2")
+test(970, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2\n\n"), data.table(A=1:2,B=3:4), warning="Discarded single-line footer.*Rowcount: 2")
 
 # fread skip override
 input = "some,bad,data\nA,B,C\n1,3,5\n2,4,6\n"
@@ -2758,11 +2758,11 @@ test(973, fread(input, skip=2), data.table(V1=1:2,V2=3:4,V3=5:6))
 test(974, fread(input, skip=2, header=TRUE), data.table("1"=2L,"3"=4L,"5"=6L))
 test(975, fread(input, skip="B"), data.table(A=1:2,B=3:4,C=5:6))
 input = "\n\nA,B\n1,3\n2,4\n\nC,D\n5,7\n6,8\n\nE,F\n9,11\n10,12\n"   # 3 tables in one file
-test(976, fread(input), data.table(A=1:2,B=3:4), warning="Found the last.*discarded.*C,D")
-test(977, fread(input, skip="C"), data.table(C=5:6,D=7:8), warning="Found the last.*discarded.*E,F")
-test(978.1, fread(input, skip="D"), data.table(C=5:6,D=7:8), warning="Found the last.*discarded.*E,F")
-test(978.2, fread(input, skip=",F"), data.table(E=9:10,F=11:12))
-test(978.3, fread(input, skip=3), data.table(V1=1:2, V2=3:4), warning="Found the last.*discarded.*C,D")
+test(976, fread(input), data.table(A=1:2, B=3:4), warning="Stopped early on line 6.*First discarded non-empty line: <<C,D>>")
+test(977, fread(input, skip="C"), ans<-data.table(C=5:6, D=7:8), warning="Stopped early on line 10.*First discarded non-empty line: <<E,F>>")
+test(978.1, fread(input, skip="D"), ans, warning="Stopped.*line 10.*<<E,F>>")
+test(978.2, fread(input, skip=",F"), data.table(E=9:10, F=11:12))
+test(978.3, fread(input, skip=9), data.table(E=9:10, F=11:12))
 
 # mixed add and update in same `:=` bug/crash, #2528 and #2778
 DT = data.table(x=rep(1:2, c(3,2)), y=6:10)
@@ -2887,17 +2887,18 @@ DT = data.table(a=c(NA,NA,FALSE,FALSE), b=c(1,1,2,2))
 test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(NA_integer_,0L))) # sum(logical()) should be integer, not real
 
 # an fread error shouldn't hold a lock on the file on Windows
-f = tempfile()
-cat('A,B\n1,2\n3\n5,6\n', file=f)
-test(1010.1, fread(f), error="Line 3 has too few fields.*Expecting 2 fields but found 1.*fill.*TRUE")
+# TODO: now that these are warnings and not errors, we need another way to trigger a STOP() inside fread.c. options(warn=2) isn't enough.
+cat('A,B\n1,2\n3\n5,6\n', file=(f<-tempfile()))
+test(1010.1, fread(f), ans<-data.table(A=TRUE, B=2L), warning=(txt<-"Stopped early on line 3.*Expected 2 fields but found 1.*fill.*TRUE.*<<3>>"))
+test(1010.2, fread(f), ans, warning=txt)
 cat('7\n8,9',file=f,append=TRUE)   # that append works after error
-test(1010.2, fread(f,fill=TRUE), data.table(A=INT(1,3,5,7,8), B=INT(2,NA,6,NA,9)))
-test(1010.3, fread(f), error="Line 3 has too few fields.*Expecting 2 fields but found 1.*fill.*TRUE")
+test(1010.3, fread(f,fill=TRUE), data.table(A=INT(1,3,5,7,8), B=INT(2,NA,6,NA,9)))
+test(1010.4, fread(f), ans, warning=txt)
 cat('A,B\n1,2\n3\n5,6\n', file=f)  # that overwrite works after error
-test(1010.4, fread(f,fill=TRUE), data.table(A=INT(1,3,5), B=INT(2,NA,6)))
-test(1010.5, fread(f), error="Line 3 has too few fields.*Expecting 2 fields but found 1.*fill.*TRUE")
+test(1010.5, fread(f,fill=TRUE), data.table(A=INT(1,3,5), B=INT(2,NA,6)))
+test(1010.6, fread(f), ans, warning=txt)
 unlink(f)                          # that file can be removed after error
-test(1010.6, !file.exists(f))
+test(1010.7, !file.exists(f))
 
 # detection of unescaped quotes, quote rule 3
 test(1011, fread('A,B\n"aa",1\n"bb,2\n"cc",3\n'), data.table(A=c('aa', '"bb', 'cc'), B=1:3))
@@ -5533,7 +5534,7 @@ if ("package:GenomicRanges" %in% search()) {
 x = 1:10
 address(x) ## shouldn't increment NAM field
 out = capture.output(.Internal(inspect(x)))
-test(1373, grepl("NAM\\(1\\)", out), TRUE)
+# temporarily disabled for issue #2619 ... test(1373, grepl("NAM\\(1\\)", out), TRUE)
 
 # fix for bug #762 - key'd data.table with a non-existing column in 'by' is not handled properly.
 DT <- data.table(x=1:5, z=5:1, key="z")
@@ -6188,7 +6189,8 @@ test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input wor
 test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist; getwd()==")
 
 # Test for #802
-test(1453, fread(testDir("fread_line_error.csv")), error="Line 12 has more than.*24 fields.*Stopped on <<,M,B.Y,Q.B>> at character 61.*<<31,3-0-7 4:1:7.5 HVV,")
+test(1453, fread(testDir("fread_line_error.csv")), fread(testDir("fread_line_error.csv"), nrow=11),
+           warning="Stopped.*line 12. Expected 24 fields but found 47.*First discarded non-empty line: <<31,3-0-7 4:1:7.5 HVV,")
 # TODO: add comment=="#".   Ensure only after last field is observed.
 
 # no-sep-found => sep="\n", use case for this in #738
@@ -7408,8 +7410,9 @@ str2="YYYY MM DD HH mm             19490             40790
 test(1555.14, fread(str1), fread(str2))
 
 # fix for #1330
-test(1556.1, fread(testDir("issue_1330_fread.txt"), nrow=2), data.table(a=1:2, b=1:2), warning="Found.*discarded.*<<3.*3>>")
-test(1556.2, fread(testDir("issue_1330_fread.txt"), nrow=4), data.table(a=1:2, b=1:2), warning="Found.*discarded.*<<3.*3>>")
+test(1556.1, fread(testDir("issue_1330_fread.txt"), nrow=2), ans<-data.table(a=1:2, b=1:2))
+test(1556.2, fread(testDir("issue_1330_fread.txt"), nrow=3), ans, warning=w<-"Stopped early on line 4. Expected 2.*found 0.*First discarded non-empty line: <<3.*3>>")
+test(1556.3, fread(testDir("issue_1330_fread.txt"), nrow=4), ans, warning=w)
 
 # FR #768
 str="1,2\n3,4\n"
@@ -7421,13 +7424,13 @@ test(1557.5, names(fread(str, col.names=1:2)), error="Passed a vector of type")
 
 # Fix for #773
 f = testDir("issue_773_fread.txt")
-ans = data.table(AAA=as.character(c(4,7,rep(1,17),31,21)),
-                 BBB=as.character(c(5,8,rep(2,17),32,22)),
-                 CCC=as.integer(c(6,9,rep(3,17),33,23)))
-test(1558.1, fread(f), error="Line 23 has too few fields.*Expecting 3 fields but found 2.*<<ZZZ.*YYY>>")
+ans = data.table(AAA=INT(c(4,7,rep(1,17),31,21)),
+                 BBB=INT(c(5,8,rep(2,17),32,22)),
+                 CCC=INT(c(6,9,rep(3,17),33,23)))
+test(1558.1, fread(f), ans, warning=w<-"Stopped early on line 23. Expected 3 fields but found 2[.].*First discarded non-empty line: <<ZZZ.*YYY>>")
 test(1558.2, fread(f, nrow=21L), ans)
 test(1558.3, fread(f, nrow=21L, fill=TRUE), ans)
-test(1558.4, fread(f, nrow=22L), error="Line 23 has too few fields.*Expecting 3 fields but found 2.*<<ZZZ.*YYY>>")
+test(1558.4, fread(f, nrow=22L), ans, warning=w)
 test(1558.5, fread(f, nrow=22L, fill=TRUE), rbind(ans, list("ZZZ","YYY",NA)))
 
 # FR # 1338 -- check.names argument of setDT
@@ -7450,7 +7453,7 @@ test(1561, d[, 1, by = eval(q)], d[, 1, by = .(a)])
 
 # Fix for #1315
 d = as.IDate(seq(as.Date("2015-01-01"), as.Date("2015-01-15"), by='1 day'))
-# temporarily disabled for issue #2616 ... test(1562.1, as.list(d), lapply(as.list(as.Date(d)), as.IDate))
+test(1562.1, as.list(d), lapply(as.list(as.Date(d)), as.IDate))
 test(1562.2, sapply(d, identity), as.integer(sapply(as.Date(d), identity)))
 
 # Fix for #1216, .SDcols and with=FALSE should evaluate within frame of 'x' only when it's of the form a:b
@@ -7598,7 +7601,7 @@ test(1577.3, levels(X$b), character(0))
 input = "Header not 2 columns\n\n1,3\n2,4"
 test(1578.0, fread(input), data.table(V1=1:2, V2=3:4))
 input = "a,b\n\n1,3\n2,4"
-test(1578.1, fread(input), data.table(a=logical(), b=logical()), warning="Found.*discarded.*<<1,3>>")
+test(1578.1, fread(input), data.table(a=logical(), b=logical()), warning="Stopped early on line 2[.].*First discarded.*<<1,3>>")
 test(1578.2, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 input = "a,b\n\n\n1,3\n2,4"
 test(1578.3, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
@@ -7606,9 +7609,10 @@ input = "a,b\n\n\n1,3\n\n2,4\n\n"
 test(1578.4, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 
 f = testDir("530_fread.txt")
-test(1578.5, fread(f, skip=47L), data.table(a=logical(), b=logical()), warning="Found.*discarded.*<<1,3>>")
+test(1578.5, fread(f, skip=47L), data.table(a=logical(), b=logical()), warning="Stopped early.*discarded.*<<1,3>>")
 test(1578.6, fread(f, skip=49L), data.table(V1=1:2, V2=3:4))
 test(1578.7, fread(f, skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
+test(1578.8, fread(f, skip=48L), data.table(V1=1:2, V2=3:4))  # start on blank line 49 and skip="auto" to first data row on line 50
 
 # gforce optimisations
 dt = data.table(x  = sample(letters, 300, TRUE),
@@ -7765,7 +7769,7 @@ test(1585.2, f1(testDir("536_fread_fill_1.txt"), b=TRUE), f2(testDir("536_fread_
 test(1585.3, f1(testDir("536_fread_fill_2.txt")), f2(testDir("536_fread_fill_2.txt")))
 test(1585.4, f1(testDir("536_fread_fill_2.txt"), b=TRUE), f2(testDir("536_fread_fill_2.txt"), b=TRUE))
 
-test(1585.5, f1(testDir("536_fread_fill_3_extreme.txt")), f2(testDir("536_fread_fill_3_extreme.txt"))[-(7:9),])
+test(1585.5, f1(testDir("536_fread_fill_3_extreme.txt")), f2(testDir("536_fread_fill_3_extreme.txt"))[-9,])
 test(1585.6, f1(testDir("536_fread_fill_3_extreme.txt"), b=TRUE), f2(testDir("536_fread_fill_3_extreme.txt"), b=TRUE))
 # no warning about bumping type. when fill=TRUE, column type detection starts at first non-empty line (which makes sense).
 test(1585.7, f1(testDir("536_fread_fill_4.txt")), f2(testDir("536_fread_fill_4.txt"))[-29,])
@@ -9716,7 +9720,7 @@ if (.Platform$OS.type=="unix") {
     cat("a,b\n4,2", file=f<-tempfile())
     cmd <- sprintf("cat %s", f)
     test(1703.1, fread(cmd), data.table(a=4L, b=2L))
-    test(1703.2, fread(file=cmd), error=sprintf("Provided file '%s' does not exists", cmd))
+    test(1703.2, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
     unlink(f)
 }
 
@@ -10526,8 +10530,8 @@ if ("package:nanotime" %in% search()) {
 
 # check too many fields error from ,\n line ending highlighted in #2044
 test(1753.1, fread("X,Y\n1,2\n3,4\n5,6"), data.table(X=INT(1,3,5),Y=INT(2,4,6)))
-test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), error="Line 3 has more than.*2 fields. Stopped on <<,>> at character 4.*<<3,4,>>")
-test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), error="Line 3 has more than.*2 fields. Stopped on <<,7>> at character 4.*<<3,4,7>>")
+test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), ans<-data.table(X=TRUE,Y=2L), warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,>>")
+test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), ans,                         warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,7>>")
 
 # issue 2051 where a quoted field contains ",  New quote rule detection handles it.
 test(1753.4, fread(testDir("issue_2051.csv"))[2,grep("^Our.*tool$",COLUMN50)], 1L)
@@ -10977,8 +10981,8 @@ test(1808.2, fread("A,B\r1,2\r3,4\r"), data.table(A=c(1L,3L),B=c(2L,4L)))
 cat("A,B\r1,2\r3,4",file=f<-tempfile())
   test(1808.3, fread(f), data.table(A=c(1L,3L),B=c(2L,4L)))
 unlink(f)
-test(1808.4, fread("A,B\r1,3\r\r\r2,4\r"), data.table(A=TRUE, B=3L), warning="last consistent line")
-test(1808.5, fread("A,B\r4,3\r\r \r2,4\r"), data.table(A=4L, B=3L), warning="afterwards.*discarded.*<<2,4>>")
+test(1808.4, fread("A,B\r1,3\r\r\r2,4\r"), data.table(A=TRUE, B=3L), warning="Discarded single-line footer: <<2,4>>")
+test(1808.5, fread("A,B\r4,3\r\r \r2,4\r"), data.table(A=4L, B=3L), warning="Discarded single-line footer: <<2,4>>")
 test(1808.6, fread("A,B\r1,3\r\r \r2,4\r", blank.lines.skip=TRUE), data.table(A=1:2, B=3:4))
 test(1808.7, fread("A,B\r1,3\r\r \r2,4\r", fill=TRUE), data.table(A=c(1L,NA,NA,2L), B=c(3L,NA,NA,4L)))
 test(1808.8, fread("A,B\r1,3\r\r \r2,\r", blank.lines.skip=TRUE, fill=TRUE), data.table(A=1:2, B=c(3L,NA)))
@@ -11014,10 +11018,10 @@ test(1818, fread(testDir("session_aborted_fatal_error.txt"))[c(1,.N),c(1,2,250,2
 # expansion of uses of as.ITime.character, PR#1796
 test(1819, as.ITime("2015-09-29 08:22:00"), structure(30120L, class = "ITime"))
 
-# Issue 2287: the % sign in the error message should not be interpreted as a format string!
-test(1820.1, fread("name,id\nfoo,1\nbar%\n"), error="Line 3 has too few.*Expecting 2 fields but found 1.*<<bar%>>")
-test(1820.2, fread("name,id\nfoo,1\nbar%d"), error="Line 3 has too few.*Expecting 2 fields but found 1.*<<bar%d>>")
-test(1820.3, fread("name,id\nfoo,1\nbar%s"), error="Line 3 has too few.*Expecting 2 fields but found 1.*<<bar%s>>")
+# Issue 2287: the % sign in the error/warning message should not be interpreted as a format string!
+test(1820.1, fread("name,id\nfoo,2\nbar%\n"), data.table(name="foo", id=2L), warning="Discarded single-line footer: <<bar%>>")
+test(1820.2, fread("name,id\nfoo,2\nbar%d"), data.table(name="foo", id=2L), warning="Discarded single-line footer: <<bar%d>>")
+test(1820.3, fread("name,id\nfoo,2\nbar%s"), data.table(name="foo", id=2L), warning="Discarded single-line footer: <<bar%s>>")
 
 # new argument for print.data.table: col.names
 #   issue #1482 / PR #1483
@@ -11044,7 +11048,8 @@ src = paste(c("A,B",
               paste(rep("3,4", 10000), collapse="\n"),
               ""),
             collapse="\n")
-test(1822, fread(src), error="Line 102 has too few.*Expecting 2 fields but found 1.*<<999>>")
+test(1822, fread(src), data.table(A=rep(1L,100L), B=2L), warning="Stopped early on line 102. Expected 2 fields but found 1.*discarded.*<<999>>")
+# NB: The first sample jump uses the first 100 rows and just misses the 999. Since the data is large enough, the other jumps capture the type bump from 1 (bool) to 3 (int).
 
 # Issue 2326: .SD mistakenly includes column being set when get() appears in j
 DT <- data.table(x = seq(1, 10), y = seq(10, 1))
@@ -11172,8 +11177,8 @@ for (i in 0:1000) {
   if (i==502) write("-999,Bad,Line,0.0,0.0,extra\n", f, append=TRUE)
 }
 test(1835, fread(f, verbose=TRUE),
-  output = "Not using sample from jump 50.*could not establish the next true line start.*jumps=[0..2)",
-  error  = "Line 42253 has more than the expected 5 fields.*<<-999,Bad,Line,0.0,0.0,extra>>")
+  output = "A line with too-many.*jump 50.*jump landed awkwardly.*skipped",
+  warning = "Stopped.*line 42253. Expected 5 fields but found 6.*discarded.*<<-999,Bad,Line,0.0,0.0,extra>>")
 unlink(f)
 
 test(1836, fread('1,2,"3,a"\n4,5,"6,b"'), data.table(V1=c(1L,4L), V2=c(2L,5L), V3=c("3,a","6,b")))   # 2196
@@ -11207,7 +11212,7 @@ test(1839.6, fread(txt, sep=""), data.table("DECLARATION OF INDEPENDENCE"=lines[
 txt = 'a,b\n ab,cd,ce\n abcdef\n hjkli \n'  # now auto detected as ncol 1 anyway
 test(1840.1, fread(txt), data.table("a,b" = c("ab,cd,ce","abcdef","hjkli")))
 write('a,b\n ab,cd,ce\nabc,def \n hj,kli  ', f<-tempfile())  # write to file to generate \r\n line ending on Windows, test 1840.6 below
-test(1840.2, fread(f), error="more than the expected")
+test(1840.2, fread(f), data.table(a=logical(), b=logical()), warning="Stopped early on line 2.*discarded.*<<ab,cd,ce>>")
 test(1840.3, fread(f, sep=NA), error="!is.na(sep) is not TRUE")
 test(1840.4, fread(f, sep=NA_character_), error="!is.na(sep) is not TRUE")
 test(1840.5, fread(f, sep=""), ans<-data.table("a,b"=c("ab,cd,ce","abc,def","hj,kli")))
@@ -11368,7 +11373,8 @@ test(1856.2, fread("A,B\n\n"), ans)
 test(1856.3, fread("A,B\n\n\n"), ans)
 test(1856.4, fread("A,B\n3,4\n\n\n"), data.table(A=3L, B=4L))
 test(1856.5, fread("A,B\n3,4\n,\n\n\n"), data.table(A=c(3L,NA), B=c(4L,NA)))
-test(1856.6, fread("A,B\n3,4\n\n5,6\n"), data.table(A=3L, B=4L), warning="text exists afterwards")
+test(1856.6, fread("A,B\n3,4\n\n5,6\n"), data.table(A=3L, B=4L), warning="Discarded single-line footer: <<5,6>>")
+test(1856.7, fread(testDir("test0.txt"))[c(1,997,998,999)], data.table(x0=c(656609L, NA, -2368L, 955199L)))  # issue 2515
 DTs = list(                                      # passed fread(fwrite(DT))==DT before fix?
   data.table(A=logical(0)),                      # yes
   data.table(A=NA),                              # no
@@ -11428,7 +11434,9 @@ test(1864.2, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
 data = rep("a,b,c,d,e,f,g", 2100)
 data[111] = "a,b,c,d,e,f,g,"
 cat(data, file=(f<-tempfile()), sep="\n")
-test(1865, fread(f, header=FALSE), error="Line 111.*more than.*7 fields.*Stopped on <<,>> at character 14.*<<a,b,c,d,e,f,g,>>")
+test(1865, fread(f, header=FALSE),
+           data.table(V1=rep("a",110),V2="b",V3="c",V4="d",V5="e",V6="f",V7="g"),
+           warning="Stopped early on line 111. Expected 7.*found 8.*discarded.*<<a,b,c,d,e,f,g,>>")
 unlink(f)
 
 # "Natural" provision of value.name in measure.vars list, #1547 and #2551
@@ -11509,24 +11517,35 @@ test(1869.1, fread("A\r1\r\r\r2\r"), data.table(A=c(1L,NA,NA,2L)))
 test(1869.2, fread("A\r1\r\r\r2\r\r"), data.table(A=c(1L,NA,NA,2L,NA)))
 test(1869.3, fread("A\r1\r\r\r2\r\r\r"), data.table(A=c(1L,NA,NA,2L,NA,NA)))
 test(1869.4, fread("A,B\r2,3\r,\r,\r4,5\r\r"), data.table(A=c(2L,NA,NA,4L), B=c(3L,NA,NA,5L)))
-test(1869.5, fread("A,B\r2,3\r\r,\r2,4\r\r"), data.table(A=2L, B=3L), warning="consistent line")
+test(1869.5, fread("A,B\r2,3\r\r,\r2,4\r\r"), data.table(A=2L, B=3L), warning="Stopped.*line 3. Expected 2 fields but found 0.*First discarded non-empty line: <<,>>")  # two line footer because of the comma
 test(1869.6, fread(testDir("colnames4096.csv")), error="very unusual.*one single line without any.*r.*n at the end.*and.*multiple of 4096")
 test(1869.7, fread(testDir("onecol4096.csv")), error="very unusual.*single column.*multiple of 4096.*ends with 2 or more end-of-line")
 
 # better colname detection by comparing potential column names to the whole sample not just the first row of the sample, #2526
-test(1871.1, fread("A,100,200\n,300,400\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,300L,500L), V3=c(200L,400L,600L)))
-test(1871.2, fread("A,100,\n,,\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,NA,500L), V3=c(NA,NA,600L)))
-test(1871.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA,3.4)))
+test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,300L,500L), V3=c(200L,400L,600L)))
+test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,NA,500L), V3=c(NA,NA,600L)))
+test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA,3.4)))
 
-# nrows= now ignores errors after those rows as expected, #1267
-# txt = "V1, V2, V3\n1,2,3\nV4, V5, V6, V7\n4,5,6,7\n8,9,10,11\n"
-# fread(txt)
-# fread(txt, nrows = 1, header = TRUE, skip = 0)
-# fread("1,2,3\n1,2", nrows=1)
-# for ( i in 100:1) {
-#   lines <- paste0(paste(rep("1,2,3", i), collapse='\n'), "\n1,2")
-#   fread(lines, nrows=i)
-# }
+# nrows= now ignores errors after those nrows as expected and skip= determines first row for sure, #1267
+txt = "V1, V2, V3\n2,3,4\nV4, V5, V6, V7\n4,5,6,7\n8,9,10,11\n"
+test(1871.1, fread(txt), ans <- data.table(V4=INT(4,8), V5=INT(5,9), V6=INT(6,10), V7=INT(7,11)))
+test(1871.2, fread(txt, skip=2), ans)
+test(1871.3, fread(txt, skip=2, nrow=1), ans[1,])
+test(1871.4, fread(txt, skip=2, nrow=3), ans)
+test(1871.5, fread(txt, skip=3), ans <- data.table(V1=INT(4,8), V2=INT(5,9), V3=INT(6,10), V4=INT(7,11)))
+test(1871.6, fread(txt, skip=3, nrow=1), ans[1,])
+test(1871.7, fread(txt, nrows=1), data.table(V1=2L, V2=3L, V3=4L))
+test(1871.8, fread(txt, skip=0), data.table(V1=2L, V2=3L, V3=4L), warning="Stopped early.*line 3. Expected 3 fields but found 4.*discarded.*<<V4, V5, V6, V7>>")
+test(1871.9, fread(txt, skip=0, nrows=1), ans<-data.table(V1=2L, V2=3L, V3=4L))
+test(1871.11, fread(txt, skip=0, nrows=1, header=TRUE), ans)
+test(1871.12, fread(txt, skip=0, nrows=1, header=FALSE), data.table(V1="V1", V2="V2", V3="V3"))
+test(1871.13, fread(txt, skip=0, nrows=2, header=FALSE), data.table(V1=c("V1","2"), V2=c("V2","3"), V3=c("V3","4")))
+test(1871.14, fread("A\n100\n200", verbose=TRUE), data.table(A=c(100L,200L)), output="All rows were sampled since file is small so we know nrow=2 exactly")
+test(1871.15, fread("col1, col2, col3\n1, 2, 3\n3, 5, 6\n7, 8, 9\n\nsome text to ignore", nrows = 3L), data.table(col1=INT(1,3,7), col2=INT(2,5,8), col3=INT(3,6,9)))  # from #1671 (no warning expected)
+for (i in 100:1) {
+  lines <- paste(c(rep("2,3,4",i), "2,3"), collapse='\n')
+  test(1871.2 + i/1000, fread(lines, nrows=i), data.table(V1=rep.int(2L,i), V2=3L, V3=4L))
+}
 
 # miscellaneous missing tests uncovered by CodeCov difference
 #   in the process of PR #2573
@@ -11586,35 +11605,95 @@ DT = data.table(x=rep(c("b","a","c"),each=3), y=c(1,3,6), v=1:9)
 test(1872.14, DT[X, on=.(x, v>=v), verbose = TRUE],
      output = 'Non-equi join operators.*forder took.*group lengths.*done.*non-equi group ids.*done')
 
+# out-of-sample bump from int to quoted field containing comma, #2614
+DT = data.table(A=rep(10L, 2200), B="20")
+DT[111, B:="3,456"]
+fwrite(DT,f<-tempfile())
+test(1873, fread(f), DT)
+unlink(f)
+
+# Better jump sync and run-on in PR#2627
+#
+# Reproduces error 'did not finish exactly where jump 1 found ...' in #2561 in master before PR #2627
+# the jump point is just before an empty line and the nextGoodLine() wasn't sync'd properly
+x = sprintf("ABCDEFGHIJKLMNOPQRST%06d", 1:102184)
+x[51094]=""
+cat(x, file=f<-tempfile(), sep="\n")
+test(1874.1, fread(f,header=FALSE,verbose=TRUE)[c(1,51094,.N),],
+           data.table(V1=c("ABCDEFGHIJKLMNOPQRST000001","","ABCDEFGHIJKLMNOPQRST102184")),
+           output="jumps=[0..2)")  # ensure jump 1 happened
+#
+# out-of-sample short lines in the first jump, not near the jump point
+x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
+x[5021:5041] = "small,batch,short,lines"   # 4 fields not 5
+cat(x, file=f, sep="\n")
+test(1874.2, fread(f), data.table(V1="ABCD", V2="FGHI", V3="KLMN", V4="PQRS", V5=1:5020),
+             warning="Stopped early on line 5021.*<<small,batch,short,lines>>")
+test(1874.3, fread(f,fill=TRUE,verbose=TRUE)[c(1,5020,5021,5041,5042,.N),],
+             data.table(V1=c("ABCD","ABCD","small","small","ABCD","ABCD"),
+                        V2=c("FGHI","FGHI","batch","batch","FGHI","FGHI"),
+                        V3=c("KLMN","KLMN","short","short","KLMN","KLMN"),
+                        V4=c("PQRS","PQRS","lines","lines","PQRS","PQRS"),
+                        V5=c(1L,5020L,NA,NA,5042L,102184L)),
+             output="jumps=[0..2)")
+#
+# jump just before a set of 30 or more too-few lines, to reproduce "No good line could be found" error in #2267
+# confirmed fails in master with that error before PR#2627
+x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
+x[51094:51150] = "small,batch,short,lines"   # 4 fields not 5
+cat(x, file=f, sep="\n")
+test(1874.4, fread(f,verbose=TRUE), data.table(V1="ABCD", V2="FGHI", V3="KLMN", V4="PQRS", V5=1:51093),
+             warning="Stopped early on line 51094.*<<small,batch,short,lines>>",
+             output="jumps=[0..2)")
+test(1874.5, fread(f,fill=TRUE,verbose=TRUE)[c(1,51093,51094,51150,51151,.N),],
+             data.table(V1=c("ABCD","ABCD","small","small","ABCD","ABCD"),
+                        V2=c("FGHI","FGHI","batch","batch","FGHI","FGHI"),
+                        V3=c("KLMN","KLMN","short","short","KLMN","KLMN"),
+                        V4=c("PQRS","PQRS","lines","lines","PQRS","PQRS"),
+                        V5=c(1L,51093L,NA,NA,51151L,102184L)),
+             output="jumps=[0..2)")
+#
+# jump inside a quoted field containing many new lines, to simulate a dirty jump
+# we'll make this jump landing even harder for nextGoodLine() by making the lines resemble the number and types of the true lines, too.
+# Rather than needing to make nextGoodLine() better and better (at some point it's impossible), in these rare cases we'll just sweep dirty jumps.
+x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
+x[51093] = "\"A,B,C,D,1\nA,B,C,D,2\nA,B,C,D,3\nA,B,C,D,4\nA,B,C,D,5\nA,B,C,D,6\nA,B,C,D,7\nA,B,C,D,8\n\",FGHI,KLMN,PQRS,51093"
+cat(x, file=f, sep="\n")
+test(1875.6, fread(f,verbose=TRUE)[c(1,51092:51094,.N),][3,V1:=gsub("\r","",V1)],  # gsub since R on Windows replaces \n with \r\n
+             data.table(V1=c("ABCD","ABCD", "A,B,C,D,1\nA,B,C,D,2\nA,B,C,D,3\nA,B,C,D,4\nA,B,C,D,5\nA,B,C,D,6\nA,B,C,D,7\nA,B,C,D,8\n", "ABCD","ABCD"),
+                        V2="FGHI", V3="KLMN", V4="PQRS", V5=c(1L,51092:51094,102184L)),
+             output = "too-few.*sample jump 50.*jump landed awkwardly.*skipped.*Read the data.*jumps=[0..2).*jumps=[1..2).*Reading 2 chunks (1 swept)")
+# Aside: although the file (with over 100,000 lines) is big enough for 100 sampling jumps (of which just 1, the middle sample jump, skipped), it's
+#   still too small for more than 2 reading chunks to be worth it which is correct (based on buffMB not nth)
+unlink(f)
+
+test(1876, fread("http://hkhfsk\nhttp://fhdkf\nhttp://kjfhskd\nhttp://hfkjf", header=FALSE),    # data not a download, #2531
+           data.table(V1=c("http://hkhfsk","http://fhdkf","http://kjfhskd","http://hfkjf")))
+
 # assortment of tests from #2572
 ## negative indexing should retain key
 DT = data.table(a = c(5, 5, 7, 2, 2),
                 b = 1:5, key = 'a')
-test(1873.1, key(DT[-c(2, 3)]), 'a')
-test(1873.2, key(DT[-(1:5)]), 'a')
-test(1873.3, key(DT[-2, sum(b), by = a]), 'a')
+test(1877.1, key(DT[-c(2, 3)]), 'a')
+test(1877.2, key(DT[-(1:5)]), 'a')
+test(1877.3, key(DT[-2, sum(b), by = a]), 'a')
 ## behavior of out-of-bound subsets
 ##   (mixed +/- already covered in 1043)
-test(1873.4, DT[3:6],
+test(1877.4, DT[3:6],
      data.table(a = c(5, 5, 7, NA),
                 b = c(1L, 2L, 3L, NA)))
-test(1873.5, DT[0:5], DT)
+test(1877.5, DT[0:5], DT)
 ## if fread bumps logical to character,
 ##   the original string representation should be kept
 DT = data.table(A=rep("True", 2200), B="FALSE", C='0')
 DT[111, LETTERS[1:3] := .("here", "be", "dragons")]
 outf = testDir('test1873.6.csv')
 fwrite(DT, outf)
-test(1873.6, fread(outf, verbose=TRUE), DT,
+test(1877.6, fread(outf, verbose=TRUE), DT,
      output=paste("Column 1.*bumped from 'bool8' to 'string'",
                   "Column 2.*bumped from 'bool8' to 'string'",
                   "Column 3.*bumped from 'bool8' to 'string'",
                   sep = '.*'))
-
-DT = data.table(A=rep(10L, 2200), B="20")
-DT[111, B:="3,456"]
-fwrite(DT, f<-tempfile())
-test(1874, fread(f), DT)
 
 ##########################
 

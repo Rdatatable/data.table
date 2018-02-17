@@ -121,19 +121,17 @@ SEXP freadR(
   if (isReal(nrowLimitArg)) {
     if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0) args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
   } else {
-    if (INTEGER(nrowLimitArg)[0]>=0) args.nrowLimit = (int64_t)INTEGER(nrowLimitArg)[0];
+    if (INTEGER(nrowLimitArg)[0]>=1) args.nrowLimit = (int64_t)INTEGER(nrowLimitArg)[0];
   }
 
   args.logical01 = LOGICAL(logical01Arg)[0];
-  args.skipNrow=0;
+  args.skipNrow=-1;
   args.skipString=NULL;
   if (isString(skipArg)) {
     args.skipString = CHAR(STRING_ELT(skipArg,0));  // LENGTH==1 was checked at R level
-  } else if (isReal(skipArg)) {
-    if (R_FINITE(REAL(skipArg)[0]) && REAL(skipArg)[0]>0.0) args.skipNrow = (uint64_t)REAL(skipArg)[0];
   } else if (isInteger(skipArg)) {
-    if (INTEGER(skipArg)[0]>0) args.skipNrow = (uint64_t)INTEGER(skipArg)[0];
-  } else error("skip must be a single positive numeric (integer or double), or a string to search for");
+    args.skipNrow = (int64_t)INTEGER(skipArg)[0];
+  } else error("Internal error: skip not integer or string in freadR.c");
 
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
     error("'na.strings' is type '%s'.  Must be either NULL or a character vector.", type2char(TYPEOF(NAstringsArg)));

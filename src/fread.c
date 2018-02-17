@@ -65,8 +65,6 @@ static bool skipEmptyLines=false, fill=false;
 
 static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 
-#define JUMPLINES 100    // at each of the 100 jumps how many lines to guess column types (10,000 sample lines)
-
 // Private globals so they can be cleaned up both on error and on successful return
 static void *mmp = NULL;
 static size_t fileSize;
@@ -141,10 +139,10 @@ bool freadCleanup(void)
     // may call freadCleanup(), thus resulting in an infinite loop.
     #ifdef WIN32
       if (!UnmapViewOfFile(mmp))
-        DTPRINT("System error %d unmapping view of file\n", GetLastError());
+        DTPRINT("System error %d unmapping view of file\n", GetLastError());      // nocov
     #else
       if (munmap(mmp, fileSize))
-        DTPRINT("System errno %d unmapping file: %s\n", errno, strerror(errno));
+        DTPRINT("System errno %d unmapping file: %s\n", errno, strerror(errno));  // nocov
     #endif
     mmp = NULL;
   }
@@ -166,6 +164,7 @@ bool freadCleanup(void)
 
 #define CEIL(x)  ((size_t)(double)ceil(x))
 static inline size_t umax(size_t a, size_t b) { return a > b ? a : b; }
+static inline size_t umin(size_t a, size_t b) { return a < b ? a : b; }
 static inline int imin(int a, int b) { return a < b ? a : b; }
 
 /** Return value of `x` clamped to the range [upper, lower] */
@@ -182,14 +181,17 @@ static inline size_t clamp_szt(size_t x, size_t lower, size_t upper) {
  * Parameter `limit` cannot exceed 500.
  */
 static const char* strlim(const char *ch, size_t limit) {
-  static char buf[1002];
+  static char buf[1004];
   static int flip = 0;
-  char *ptr = buf + 501 * flip;
+  char *ptr = buf + 502 * flip;
   flip = 1 - flip;
   char *ch2 = ptr;
   if (limit>500) limit=500;
   size_t width = 0;
-  while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<limit) *ch2++ = *ch++;
+  while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<limit) {
+    if (*ch=='%') { *ch2++ = '%'; width++; } // 1004 and 502 above in case % occurs at position 500 and is doubled here
+    *ch2++ = *ch++;
+  }
   *ch2 = '\0';
   return ptr;
 }
@@ -204,9 +206,9 @@ static char *typesAsString(int ncol) {
   if (ncol<=100) {
     for (; i<ncol; i++) str[i] = typeLetter[type[i]];
   } else {
-    for (; i<80; i++) str[i] = typeLetter[type[i]];
-    str[i++]='.'; str[i++]='.'; str[i++]='.';
-    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[type[j]];
+    for (; i<80; i++) str[i] = typeLetter[type[i]];                   // nocov
+    str[i++]='.'; str[i++]='.'; str[i++]='.';                         // nocov
+    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[type[j]];  // nocov
   }
   str[i] = '\0';
   return str;
@@ -330,26 +332,29 @@ static inline int countfields(const char **pch)
 }
 
 
-static inline bool nextGoodLine(const char **pch, int ncol)  //  TODO: remove using Pasha's chunk-roll-on idea
+static inline const char *nextGoodLine(const char *ch, int ncol)
 {
-  const char *ch = *pch;
-  // we may have landed inside quoted field containing embedded sep and/or embedded \n
-  // find next \n and see if 5 good lines follow. If not try next \n, and so on, until we find the real \n
-  // We don't know which line number this is, either, because we jumped straight to it. So return true/false for
-  // the line number and error message to be worked out up there.
+  // We may have landed inside a quoted field containing embedded sep and/or embedded \n.
+  // Find next \n and see if ncol fields are found there. If not, test the \n after that, etc.
+  // If this doesn't return the true line start, no matter. The previous thread will run-on and
+  // resolve it. A good guess is all we need here. Being wrong will just be a bit slower.
+  // If there are no embedded newlines, all newlines are true, and this guess will never be wrong.
+  while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
+  if (ch==eof) return eof;
+  eol(&ch);  // move to last byte of the line ending sequence (e.g. \r\r\n would be +2).
+  ch++;      // move to first byte of next line
+  const char *simpleNext = ch;  // simply the first newline after the jump
+  // if a better one can't be found, return this one (simpleNext). This will be the case when
+  // fill=TRUE and the jump lands before 5 too-short lines, for example.
   int attempts=0;
-  while (attempts++<30) {
-    while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
-    if (*ch=='\0') return false;
-    eol(&ch);  // move to last byte of the line ending sequence
-    ch++;      // move to first byte of next line
-    int i=0;
+  while (attempts++<5) {
     const char *ch2 = ch;
-    while (i<5 && countfields(&ch2)==ncol) i++;
-    if (i==5) break;
+    if (countfields(&ch2)==ncol) return ch;  // returns simpleNext here on first attempt, almost all the time
+    while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
+    eol(&ch);
+    ch++;
   }
-  if (*ch!='\0' && attempts<30) { *pch = ch; return true; }
-  return false;
+  return simpleNext;
 }
 
 
@@ -937,11 +942,11 @@ static reader_fun_t fun[NUMTYPE] = {
 
 static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-static bool detect_types( const char **pch, int8_t type[], int ncol) {
+static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped) {
   // used in sampling column types and whether column names are present
   // test at most ncol fields. If there are fewer fields, the data read step later
   // will error (if fill==false) when the line number is known, so we don't need to handle that here.
-  bool bumped=false;
+  // leave resting on the eol; caller will advance over that eol
   const char *ch = *pch;
   double trash; // double so that this throw-away storage is aligned. char trash[8] would not be aligned.
   void *targets[9] = {NULL, &trash, NULL, NULL, &trash, NULL, NULL, NULL, &trash};
@@ -950,6 +955,9 @@ static bool detect_types( const char **pch, int8_t type[], int ncol) {
     .targets = targets,
     .anchor = NULL,
   };
+  if (sep==' ') while (*ch==' ') ch++;  // multiple sep=' ' at the beginning of a line does not mean sep
+  skip_white(&ch);
+  if (eol(&ch) || (ch==eof && finalByte && finalByte!=sep)) return 0;  // empty line
   int field=0;
   while (field<ncol) {
     // DTPRINT("<<%s>>(%d)", strlim(ch,20), quoteRule);
@@ -962,37 +970,37 @@ static bool detect_types( const char **pch, int8_t type[], int ncol) {
       if (end_of_field(ch)) break;
       ch = end_NA_string(fieldStart);
       if (end_of_field(ch)) break;
-      if (tmpType[field]<CT_STRING) {
-        ch = fieldStart;
+      ch = fieldStart;
+      if (tmpType[field]==CT_STRING) {
+        // Invalid string field. Do not bump quoteRule here because it is more likely jump is dirty. Only the
+        // thread at headPos which has full lineage to sof may bump the quoteRule.
+        break; // caller will detect this line hasn't finished properly
+      }
+      if (*ch==quote) {
+        ch++;
+        fun[tmpType[field]](&fctx);
         if (*ch==quote) {
           ch++;
-          fun[tmpType[field]](&fctx);
-          if (*ch==quote) {
-            ch++;
-            skip_white(&ch);
-            if (end_of_field(ch)) break;
-          }
+          skip_white(&ch);
+          if (end_of_field(ch)) break;
         }
-        while (disabled_parsers[++tmpType[field]]) {};
-      } else {
-        // the field could not be read with this quote rule, try again with next one
-        // Trying the next rule will only be successful if the number of fields is consistent with it
-        if (quoteRule >= 3) STOP("Even quoteRule 3 was insufficient!");
-        //if (verbose)
-        //  DTPRINT("Bumping quote rule from %d to %d due to field %d on line %d of sampling jump %d starting <<%s>>\n",
-        //          quoteRule, quoteRule+1, field+1, jline, j, strlim(fieldStart,200));
-        quoteRule++;
       }
-      bumped = true;
       ch = fieldStart;
+      while (disabled_parsers[++tmpType[field]]) {};
+      *bumped = true;
     }
     field++;
-    if (*ch!=sep) break;
-    if (sep==' ') while (ch[1]==' ') ch++;
+    if (sep==' ' && *ch==sep) {
+      while (ch[1]==' ') ch++;
+      if (ch+1==eof && finalByte && finalByte!=' ') {field++; ch++; break; }
+      if (ch[1]=='\0' || ch[1]=='\n' || ch[1]=='\r') ch++;  // space at the end of line does not mean sep
+    }
+    if (*ch!=sep || field==ncol) break;  // field==ncol is needed for 1753.2 where line ends with an extra comma but shouldn't, so shouldn't be moved over
     ch++;
   }
+  if (ch==eof && finalByte && finalByte==sep && sep!=' ') field++;  // for test 1776.2
   *pch = ch;
-  return bumped;
+  return field; // the number of fields so caller knows if ncol were read
 }
 
 
@@ -1073,7 +1081,7 @@ int freadMain(freadMainArgs _args) {
       else
         DTPRINT("  None of the NAstrings look like numbers.\n");
     }
-    if (args.skipNrow) DTPRINT("  skip num lines = %llu\n", (llu)args.skipNrow);
+    if (args.skipNrow >= 0) DTPRINT("  skip num lines = %llu\n", (llu)args.skipNrow);
     if (args.skipString) DTPRINT("  skip to string = <<%s>>\n", args.skipString);
     DTPRINT("  show progress = %d\n", args.showProgress);
     DTPRINT("  0/1 column will be read as %s\n", args.logical01? "boolean" : "integer");
@@ -1269,6 +1277,7 @@ int freadMain(freadMainArgs _args) {
   //*********************************************************************************************
   const char *pos;   // Location where the actual data in the file begins
   int row1line = 1;  // The line number where the data starts. Normally row 1 is column names and row1line ends up == 2.
+  bool skipAuto = true;
   {
 
   // First, set 'LFpresent' for use by eol() to know if \r-only line ending is allowed, #2371
@@ -1298,12 +1307,14 @@ int freadMain(freadMainArgs _args) {
     if (verbose) DTPRINT("Found skip='%s' on line %llu. Taking this to be header row or first row of data.\n",
                          args.skipString, (llu)row1line);
     ch = pos;
+    skipAuto = false;
   }
-  // Skip the first `skipNrow` lines of input.
-  else if (args.skipNrow>0) {
+  else if (args.skipNrow >= 0) {
+    // Skip the first `skipNrow` lines of input, including 0 to force the first line to be the start
     while (ch<eof && row1line<=args.skipNrow) row1line+=(*ch++=='\n');
     if (ch>=eof) STOP("skip=%llu but the input only has %llu line%s", (llu)args.skipNrow, (llu)row1line, row1line>1?"s":"");
     pos = ch;
+    skipAuto = false;
   }
 
   // skip blank input at the start
@@ -1330,6 +1341,7 @@ int freadMain(freadMainArgs _args) {
   int ncol;  // Detected number of columns in the file
   const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
   const char *prevStart = NULL;  // the start of the non-empty line before the first not-ignored row (for warning message later, or taking as column names)
+  int jumpLines = (int)umin(100,nrowLimit);   // how many lines from each jump point to use. If nrowLimit is supplied, nJumps is later set to 1 as well.
   {
   if (verbose) DTPRINT("[06] Detect separator, quoting rule, and ncolumns\n");
 
@@ -1361,29 +1373,36 @@ int freadMain(freadMainArgs _args) {
                             //   (when fill=true, the max is usually the header row and is the longest but there are more
                             //    lines of fewer)
 
-  // We will scan the input line-by-line (at most `JUMPLINES + 1` lines; "+1"
+  // We will scan the input line-by-line (at most 100+1 lines; "+1"
   // covers the header row, at this stage we don't know if it's present), and
   // detect the number of fields on each line. If several consecutive lines
   // have the same number of fields, we'll call them a "contiguous group of
   // lines". Arrays `numFields` and `numLines` contain information about each
-  // contiguous group of lines encountered while scanning the first JUMPLINES
-  // + 1 lines: 'numFields` gives the count of fields in each group, and
-  // `numLines` has the number of lines in each group.
-  int numFields[JUMPLINES+1];
-  int numLines[JUMPLINES+1];
+  // contiguous group of lines encountered while scanning the first 100+1
+  // lines: 'numFields` gives the count of fields in each group, and
+  // `numLines` has the number of lines in each group. There is always a lot
+  // of unused space at the end of these vectors. They are only jumpLines+1 big
+  // for the worst case that no adjacent lines have the same number of fields.
+  int numFields[jumpLines+1];
+  int numLines[jumpLines+1];
   for (int s=0; s<nseps; s++) {
     sep = seps[s];
     whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));  // 0 means both ' ' and '\t' to be skipped
     for (quoteRule=0; quoteRule<4; quoteRule++) {  // quote rule in order of preference
       ch = pos;
       // if (verbose) DTPRINT("  Trying sep='%c' with quoteRule %d ...\n", sep, quoteRule);
-      for (int i=0; i<=JUMPLINES; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
+      for (int i=0; i<=jumpLines; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
       int i=-1; // The slot we're counting the currently contiguous consistent ncol
       int thisLine=0, lastncol=-1;
-      while (ch<eof && thisLine++<JUMPLINES) {
+      while (ch<eof && thisLine++<jumpLines) {
         int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
         if (thisncol<0) { numFields[0]=-1; break; }  // invalid file with this sep and quote rule; abort
-        if (thisncol!=lastncol) { numFields[++i]=thisncol; lastncol=thisncol; } // new contiguous consistent ncol started
+        if (thisncol!=lastncol) {
+          if (!skipAuto && i==0) break;  // biggest contiguous group always starting on the line skip= landed on
+          // else new contiguous consistent ncol started
+          numFields[++i]=thisncol;
+          lastncol=thisncol;
+        }
         numLines[i]++;
       }
       if (numFields[0]==-1) continue;
@@ -1425,14 +1444,14 @@ int freadMain(freadMainArgs _args) {
   sep = topSep;
   whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
   ch = pos;
-  if (fill) {
+  if (fill || !skipAuto) {
     // start input from first populated line, already pos.
     ncol = topNmax;
   } else {
-    // find the top line with the consistent number of fields.  There might be irregular banner lines above it.
+    // find the top line with the consistent number of fields.  There might be irregular banner lines above it (skip="auto")
     ncol = topNumFields;
     int thisLine=-1;
-    while (ch<eof && ++thisLine<JUMPLINES) {
+    while (ch<eof && ++thisLine<jumpLines) {
       const char *lastLineStart = ch;
       int tt = countfields(&ch);
       if (tt==ncol) { ch=pos=lastLineStart; row1line+=thisLine; break; }
@@ -1475,7 +1494,6 @@ int freadMain(freadMainArgs _args) {
   //*********************************************************************************************
   int nJumps;             // How many jumps to use when pre-scanning the file
   size_t sampleLines;     // How many lines were sampled during the initial pre-scan
-  const char *lastRowEnd; // Pointer to the end of the data section
   bool autoFirstColName = false; // true when there's one less column name and then it's assumed that the first column is row names or index
   size_t estnrow=1;
   size_t allocnrow=0;     // Number of rows in the allocated DataTable
@@ -1496,22 +1514,23 @@ int freadMain(freadMainArgs _args) {
     tmpType[j] = type[j] = type0;
   }
 
-  size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first JUMPLINES from the start (jump point 0)
+  size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first 100 lines from the start (jump point 0)
   // how many places in the file to jump to and test types there (the very end is added as 11th or 101th)
   // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GB) it is
   // worth spending a few extra seconds sampling 10,000 rows to decrease a chance of costly reread even further.
-  nJumps = 0;
+  nJumps = 1;
   size_t sz = (size_t)(eof - pos);
   if (jump0size>0) {
     if (jump0size*100*2 < sz) nJumps=100;  // 100 jumps * 100 lines = 10,000 line sample
     else if (jump0size*10*2 < sz) nJumps=10;
     // *2 to get a good spacing. We don't want overlaps resulting in double counting.
-    // nJumps==1 means the whole (small) file will be sampled with one thread
   }
   nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
+  if (nrowLimit<INT64_MAX) nJumps=1; // when nrowLimit supplied by user, no jumps (not even at the end) and single threaded
   if (verbose) {
     DTPRINT("  Number of sampling jump points = %d because ", nJumps);
-    if (jump0size==0) DTPRINT("jump0size==0\n");
+    if (nrowLimit<INT64_MAX) DTPRINT("nrow limit (%llu) supplied\n", (llu)nrowLimit);
+    else if (jump0size==0) DTPRINT("jump0size==0\n");
     else DTPRINT("(%llu bytes from row 1 to eof) / (2 * %llu jump0size) == %llu\n",
                  (llu)sz, (llu)jump0size, (llu)(sz/(2*jump0size)));
   }
@@ -1519,9 +1538,8 @@ int freadMain(freadMainArgs _args) {
   sampleLines = 0;
   double sumLen=0.0, sumLenSq=0.0;
   int minLen=INT32_MAX, maxLen=-1;   // int_max so the first if(thisLen<minLen) is always true; similarly for max
-  lastRowEnd = pos;
+  const char *lastRowEnd = pos;
   const char *firstRowStart = pos;
-  bool lastSampleJumpOk = false;   // it won't be ok if its nextGoodLine returns false as testing in test 1768
   for (int jump=0; jump<nJumps; jump++) {
     if (jump==0) {
       ch = pos;
@@ -1531,59 +1549,39 @@ int freadMain(freadMainArgs _args) {
       }
       firstRowStart = ch;
     } else {
-      ch = (jump == nJumps-1) ? eof - (size_t)(0.5*jump0size) :
+      ch = (jump == nJumps-1) ? eof - (size_t)(0.5*jump0size) :  // to almost-surely sample the last line
                                 pos + (size_t)jump*((size_t)(eof-pos)/(size_t)(nJumps-1));
+      ch = nextGoodLine(ch, ncol);
     }
     if (ch<lastRowEnd) ch=lastRowEnd;  // Overlap when apx 1,200 lines (just over 11*100) with short lines at the beginning and longer lines near the end, #2157
     if (ch>=eof) break;                // The 9th jump could reach the end in the same situation and that's ok. As long as the end is sampled is what we want.
-    if (jump>0 && !nextGoodLine(&ch, ncol)) {
-      // skip this jump for sampling. Very unusual and in such unusual cases, we don't mind a slightly worse guess.
-      continue;
-    }
     bool bumped = false;  // did this jump find any different types; to reduce verbose output to relevant lines
-    bool skipThisJump = false;
     int jumpLine = 0;    // line from this jump point start
-    while(ch<eof && (jumpLine++<JUMPLINES || jump==nJumps-1)) {  // nJumps==1 implies sample all of input to eof; last jump to eof too
+
+    while(ch<eof && jumpLine++<jumpLines) {
       const char *lineStart = ch;
-      if (sep==' ') while (*ch==' ') ch++;  // multiple sep=' ' at the beginning of a line does not mean sep
-      // detect blank lines ...
-      skip_white(&ch);
-      if (ncol>1 && (eol(&ch) || *ch=='\0')) {
-        if (!skipEmptyLines && !fill) break;
-        ch += (*ch!='\0');
-        if (!skipEmptyLines) sampleLines++;  // TODO: fall through more gracefully
+      int8_t previousLastColType = tmpType[ncol-1];  // to revert any bump in last colum due to final field on final row due to finalByte
+      int thisNcol = detect_types(&ch, tmpType, ncol, &bumped);
+      if (thisNcol==0 && skipEmptyLines) {
+        if (eol(&ch)) ch++;
         continue;
       }
-
-      int8_t previousLastColType = tmpType[ncol-1];  // to revert any bump in last colum due to final field on final row due to finalByte
-
-      if (detect_types(&ch, tmpType, ncol)) bumped=true;
-      // if too few fields are found, then we proceed here as if fill=true. If fill is "warning" or FALSE, we'll delay the message
-      // in the data read loop where we know the line number exactly. (We're jumping here so we don't know the line number yet).
-
-      if (ch==eof) {  // TODO bring next line into this one 'if'
-        if (finalByte && tmpType[ncol-1]!=previousLastColType) {
-          // revert bump due to e.g. ,NA<eof> in the last field of last row where finalByte=='A' and N caused bump to character (test 894.0221)
-          if (verbose) DTPRINT("  Reverted bump of final column from %d to %d on final field due to finalByte='%c'."
-              " If the bump was actually correct, there will be a reread. Finish the file properly with newline to avoid the reread.\n",
-              previousLastColType, tmpType[ncol-1], finalByte);
-          tmpType[ncol-1] = previousLastColType;
-        }
-      }
-      if (!eol(&ch) && *ch!='\0') {
-        if (jump==0) {
-          STOP("Line %d has more than the expected %d fields. Stopped on <<%s>> at character %d. "
-             "Consider setting 'comment.char=' if there is a trailing comment to be ignored. First 500 characters of line: <<%s>>",
-             row1line+jumpLine-1, ncol, strlim(ch-1,10), (int)(ch-lineStart), strlim(lineStart,500));
-        }
-        if (verbose) {
-          DTPRINT("  Not using sample from jump %d. Looks like a complicated file where nextGoodLine could not establish the next true line start.\n", jump);
-          // the nrow estimate will still include the (probably wrong) row widths so far from this sample, but that's ok as it's just an estimate
-        }
-        skipThisJump = true;
+      if ( (thisNcol<ncol && ncol>1 && !fill) ||
+           (!eol(&ch) && *ch!='\0') ) {
+        if (verbose) DTPRINT("  A line with too-%s fields (%d/%d) was found on line %d of sample jump %d. %s\n",
+                             thisNcol<ncol ? "few" : "many", thisNcol, ncol, jumpLine, jump, jump>0 ? "Most likely this jump landed awkwardly so type bumps here will be skipped." : "");
+        bumped = false;
+        if (jump==0) lastRowEnd=eof;  // to prevent the end from being tested; e.g. a short file with blank line within first 100 like test 976
         break;
       }
-      ch += (*ch=='\n' || *ch=='\r');
+      if (ch==eof && finalByte && tmpType[ncol-1]!=previousLastColType) {
+        // revert bump due to e.g. ,NA<eof> in the last field of last row where finalByte=='A' and N caused bump to character (test 894.0221)
+        if (verbose) DTPRINT("  Reverted bump of final column from %d to %d on final field due to finalByte='%c'."
+            " If the bump was actually correct, there will be a reread. Finish the file properly with newline to avoid the reread.\n",
+            previousLastColType, tmpType[ncol-1], finalByte);
+        tmpType[ncol-1] = previousLastColType;
+      }
+      ch += (*ch=='\n' || *ch=='\r');   // eol() was called in the if() above which moved to the last of the eol sequence (if any)
       lastRowEnd = ch;
       int thisLineLen = (int)(ch-lineStart);  // ch is now on start of next line so this includes line ending already
       sampleLines++;
@@ -1591,28 +1589,28 @@ int freadMain(freadMainArgs _args) {
       sumLenSq += thisLineLen*thisLineLen;
       if (thisLineLen<minLen) minLen=thisLineLen;
       if (thisLineLen>maxLen) maxLen=thisLineLen;
+      if (jump==0 && bumped) {
+        // apply bumps after each line in the first jump from the start in case invalid line stopped early on is in the first 100 lines.
+        // otherwise later jumps must complete fully before their bumps are appplied. Invalid lines in those are more likely to be due to bad jump start.
+        memcpy(type, tmpType, (size_t)ncol);
+        bumped = false;  // detect_types() only updates &bumped when it's true. So reset to false here.
+      }
     }
-    if (skipThisJump) continue;
-    if (jump==nJumps-1) lastSampleJumpOk = true;
-    if (bumped) memcpy(type, tmpType, (size_t)ncol);
+    if (bumped) {
+      // when jump>0, apply the bumps (if any) at the end of the successfully completed jump sample
+      ASSERT(jump>0, "jump(%d)>0", jump);
+      memcpy(type, tmpType, (size_t)ncol);
+    }
     if (verbose && (bumped || jump==0 || jump==nJumps-1)) {
       DTPRINT("  Type codes (jump %03d)    : %s  Quote rule %d\n", jump, typesAsString(ncol), quoteRule);
     }
-  }
-  if (lastSampleJumpOk) {
-    while (ch<eof && isspace(*ch)) ch++;
-    if (ch<eof)
-      DTWARN("Found the last consistent line but text exists afterwards. Consider fill=TRUE and/or blank.lines.skip=TRUE. First 200 characters of discarded line: <<%s>>", strlim(ch,200));
-  } else {
-    // nextGoodLine() was false for the last (extra) jump to check the end
-    // must set lastRowEnd to eof accordingly otherwise it'll be left wherever the last good jump finished
-    lastRowEnd = eof;
   }
 
   ch = pos;
   if (args.header==NA_BOOL8) {
     for (int j=0; j<ncol; j++) tmpType[j]=type0;   // reuse tmpType
-    detect_types(&ch, tmpType, ncol);
+    bool bumped=false;
+    detect_types(&ch, tmpType, ncol, &bumped);
     if (sampleLines>0) for (int j=0; j<ncol; j++) {
       if (tmpType[j]==CT_STRING && type[j]>type0 && type[j]<CT_STRING) {
         // >type0 can only happen if the column is not all blank
@@ -1624,7 +1622,7 @@ int freadMain(freadMainArgs _args) {
     }
   }
 
-  if (args.header==NA_BOOL8 && prevStart!=NULL && args.skipNrow==0 && args.skipString==NULL) {
+  if (args.header==NA_BOOL8 && prevStart!=NULL && skipAuto) {
     // The first data row matches types in the row after that, and user didn't override default auto detection.
     // Maybe previous line (if there is one, prevStart!=NULL) contains column names but there are too few (which is why it didn't become the first data row).
     ch = prevStart;
@@ -1670,7 +1668,7 @@ int freadMain(freadMainArgs _args) {
           DTPRINT("  'header' determined to be false because there are some number columns and those columns do not have a string field at the top of them\n");
       }
     }
-    if (args.header==false && nJumps==1) sampleLines++; // all data rows were sampled, so increment sampleLines because it becomes the exact nrow allocation
+    if (args.header==false && nJumps<=2) sampleLines++; // all data rows may have been sampled, so increment sampleLines because it becomes the exact nrow allocation
   }
 
   if (args.header==false) {
@@ -1691,11 +1689,11 @@ int freadMain(freadMainArgs _args) {
   meanLineLen=0.0; // Average length (in bytes) of a single line in the input file
   bytesRead=0;     // Bytes in the data section (i.e. excluding column names, header and footer, if any)
 
-  if (nJumps==1) {
+  if (sampleLines <= jumpLines) {
     if (verbose) DTPRINT("  All rows were sampled since file is small so we know nrow=%llu exactly\n", (llu)sampleLines);
     estnrow = allocnrow = sampleLines;
   } else {
-    bytesRead = (size_t)(lastRowEnd - firstRowStart);
+    bytesRead = (size_t)(eof - firstRowStart);
     meanLineLen = (double)sumLen/sampleLines;
     estnrow = CEIL(bytesRead/meanLineLen);  // only used for progress meter and verbose line below
     double sd = sqrt( (sumLenSq - (sumLen*sumLen)/sampleLines)/(sampleLines-1) );
@@ -1829,13 +1827,14 @@ int freadMain(freadMainArgs _args) {
   bool stopTeam=false, firstTime=true;  // bool for MT-safey (cannot ever read half written bool value)
   int nTypeBump=0, nTypeBumpCols=0;
   double tRead=0, tReread=0;
-  double thNextGoodLine=0, thRead=0, thPush=0;  // reductions of timings within the parallel region
+  double thRead=0, thPush=0;  // reductions of timings within the parallel region
   char *typeBumpMsg=NULL;  size_t typeBumpMsgSize=0;
   int typeCounts[NUMTYPE];  // used for verbose output; needs populating after first read and before reread (if any) -- see later comment
-  #define stopErrSize 1000
-  char stopErr[stopErrSize+1]="";  // must be compile time size: the message is generated and we can't free before STOP
-  size_t DTi = 0;   // the current row number in DT that we are writing to
-  const char *prevJumpEnd = pos;  // the position after the last line the last thread processed (for checking)
+  #define internalErrSize 1000
+  char internalErr[internalErrSize+1]="";  // must be compile time size: the message is generated and we can't free before STOP
+  size_t DTi = 0;                  // the current row number in DT that we are writing to
+  const char *headPos = pos;       // the jump start corresponding to DTi
+  int nSwept = 0;                  // count the number of dirty jumps that were swept
   int buffGrown=0;
   // chunkBytes is the distance between each jump point; it decides the number of jumps
   // We may want each chunk to write to its own page of the final column, hence 1000*maxLen
@@ -1850,7 +1849,7 @@ int freadMain(freadMainArgs _args) {
   // space, then this variable will tell how many new rows has to be allocated.
   size_t extraAllocRows = 0;
 
-  if (nJumps/*from sampling*/>1) {
+  if (nJumps/*from sampling*/>2) {
     // ensure data size is split into same sized chunks (no remainder in last chunk) and a multiple of nth
     // when nth==1 we still split by chunk for consistency (testing) and code sanity
     nJumps = (int)(bytesRead/chunkBytes);
@@ -1858,7 +1857,8 @@ int freadMain(freadMainArgs _args) {
     else if (nJumps>nth) nJumps = nth*(1+(nJumps-1)/nth);
     chunkBytes = bytesRead / (size_t)nJumps;
   } else {
-    nJumps = 1;
+    ASSERT(nJumps==1 /*when nrowLimit supplied*/ || nJumps==2 /*small files*/, "nJumps (%d) != 1|2", nJumps);
+    nJumps=1;
   }
   size_t initialBuffRows = allocnrow / (size_t)nJumps;
 
@@ -1871,9 +1871,9 @@ int freadMain(freadMainArgs _args) {
   nth = imin(nJumps, nth);
 
   if (verbose) DTPRINT("[11] Read the data\n");
-  read:  // we'll return here to reread any columns with out-of-sample type exceptions
+  read:  // we'll return here to reread any columns with out-of-sample type exceptions, or dirty jumps
   if (verbose) DTPRINT("  jumps=[%d..%d), chunk_size=%llu, total_size=%llu\n",
-                       jump0, nJumps, (llu)chunkBytes, (llu)(lastRowEnd-pos));
+                       jump0, nJumps, (llu)chunkBytes, (llu)(eof-pos));
   ASSERT(allocnrow <= nrowLimit, "allocnrow(%llu) <= nrowLimit(%llu)", (llu)allocnrow, (llu)nrowLimit);
   #pragma omp parallel num_threads(nth)
   {
@@ -1884,15 +1884,14 @@ int freadMain(freadMainArgs _args) {
       nth = omp_get_num_threads();
       if (me!=0) {
         // should never happen
-        snprintf(stopErr, stopErrSize, "Master thread is not thread 0 but thread %d. This should never happen.\n", me);
+        snprintf(internalErr, internalErrSize, "Internal error: Master thread is not thread 0 but thread %d.\n", me);
         stopTeam = true;
       }
       myShowProgress = args.showProgress;
     }
-    const char *thisJumpStart=NULL;  // The first good start-of-line after the jump point
     size_t myNrow = 0; // the number of rows in my chunk
     size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
-    int myWrongNumberFields = -1;      // -1 means false. If set, it's set to >=0 holding the (wrong) number of fields observed
+    bool myStoppingEarly = false;      // true when an empty or too-short or too-long row is encountered when fill=false
 
     // Allocate thread-private row-major `myBuff`s
     ThreadLocalFreadParsingContext ctx = {
@@ -1918,7 +1917,7 @@ int freadMain(freadMainArgs _args) {
     }
     prepareThreadContext(&ctx);
 
-    #pragma omp for ordered schedule(dynamic) reduction(+:thNextGoodLine,thRead,thPush)
+    #pragma omp for ordered schedule(dynamic) reduction(+:thRead,thPush)
     for (int jump = jump0; jump < nJumps; jump++) {
       if (stopTeam) continue;  // must continue and not break. We desire not to depend on (relatively new) omp cancel directive, yet
       double tLast = 0.0;      // thread local wallclock time at last measuring point for verbose mode only.
@@ -1951,24 +1950,10 @@ int freadMain(freadMainArgs _args) {
         }
       }
 
-      const char *tch = pos + (size_t)jump*chunkBytes;
-      const char *tlineStart = tch;
-      const char *nextJump = jump<nJumps-1 ? tch+chunkBytes+1/*\n*/ : lastRowEnd;
-      // +1 is for when nextJump happens to fall exactly on a \n. The
-      // next thread will start one line later because nextGoodLine() starts by finding next eol.
-      // Even when nextGoodLine goes away, we still want the +1 to avoid always running-on.
-      // The correctness of this comment and logic here may have changed when eol and eolLen went away, but
-      // the code must be working otherwise the thread-hand-over check (last end == this start) would be failing.
-      if (jump>0 && !nextGoodLine(&tch, ncol)) {
-        #pragma omp critical
-        if (!stopTeam) {
-          stopTeam = true;
-          snprintf(stopErr, stopErrSize, "No good line could be found from jump point %d\n",jump);
-        }
-        continue;
-      }
-      thisJumpStart=tch;
-      if (verbose) { double now = wallclock(); thNextGoodLine += now-tLast; tLast=now; }
+      const char *tch = jump==jump0 ? headPos : nextGoodLine(pos+(size_t)jump*chunkBytes, ncol);
+      const char *thisJumpStart = tch;   // "this" for prev/this/next adjective used later, rather than a (mere) t prefix for thread-local.
+      const char *tLineStart = tch;
+      const char *nextJumpStart = jump<nJumps-1 ? nextGoodLine(pos+(size_t)(jump+1)*chunkBytes, ncol) : eof;
 
       void *targets[9] = {NULL, ctx.buff1, NULL, NULL, ctx.buff4, NULL, NULL, NULL, ctx.buff8};
       FieldParseContext fctx = {
@@ -1977,7 +1962,7 @@ int freadMain(freadMainArgs _args) {
         .anchor = thisJumpStart,
       };
 
-      while (tch<nextJump) {
+      while (tch<nextJumpStart && (nth>1 || DTi+myNrow<nrowLimit)) {  // setting nrowLimit sets nth to 1 to avoid bump or error on row after nrowLimit
         if (myNrow == myBuffRows) {
           // buffer full due to unusually short lines in this chunk vs the sample; e.g. #2070
           myBuffRows *= 1.5;
@@ -1995,7 +1980,7 @@ int freadMain(freadMainArgs _args) {
           fctx.targets[4] = (void*)((char*)ctx.buff4 + myNrow * rowSize4);
           fctx.targets[1] = (void*)((char*)ctx.buff1 + myNrow * rowSize1);
         }
-        tlineStart = tch;  // for error message
+        tLineStart = tch;  // for error message
         const char *fieldStart = tch;
         int j = 0;
 
@@ -2018,17 +2003,17 @@ int freadMain(freadMainArgs _args) {
             j++;
           }
           //*** END HOT. START TEPID ***//
-          if (tch==tlineStart) {
+          if (tch==tLineStart) {
             skip_white(&tch);
             if (*tch=='\0') break;  // empty last line
             if (eol(&tch) && skipEmptyLines) { tch++; continue; }
-            tch = tlineStart;  // in case white space at the beginning may need to be including in field
+            tch = tLineStart;  // in case white space at the beginning may need to be including in field
           }
           else if (eol(&tch) && j<ncol) {   // j<ncol needed for #2523 (erroneous extra comma after last field)
             int8_t thisSize = size[j];
             ((char **) targets)[thisSize] += thisSize;
             j++;
-            if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJump). Usually happens, fastest path
+            if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJumpStart). Usually happens, fastest path
           }
           else {
             tch = fieldStart; // restart field as int processor could have moved to A in ",123A,"
@@ -2046,9 +2031,10 @@ int freadMain(freadMainArgs _args) {
         // TODO: reduce(slowerBranch++). So we can see in verbose mode if this is happening too much.
 
         if (sep==' ') {
-          while (*tch==' ') tch++;  // multiple sep=' ' at the tlineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
+          while (*tch==' ') tch++;  // multiple sep=' ' at the tLineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
           fieldStart = tch;
         }
+        bool checkedNumberOfFields = false;
         if (fill || ncol==1 || (*tch!='\n' && *tch!='\r')) while (j < ncol) {
           fieldStart = tch;
           int8_t joldType = type[j];
@@ -2091,7 +2077,14 @@ int freadMain(freadMainArgs _args) {
           }
 
           if (thisType != joldType             // rare out-of-sample type exception.
-              && (!finalByte || finalSep)) {   // don't bump the final field until we've replaced the finalByte (if any) test 894.0221 where final field is NA and finalByte=='A'
+              && (tch<eof || !finalByte || finalSep)) {   // don't bump the final field until we've replaced the finalByte (if any) test 894.0221 where final field is NA and finalByte=='A'
+            if (!checkedNumberOfFields && !fill) {
+              // check this line has the correct number of fields. If not, don't apply the bump from this invalid line. Instead fall through to myStoppingEarly below.
+              const char *tt = fieldStart;
+              int fieldsRemaining = countfields(&tt);
+              if (j+fieldsRemaining != ncol) break;
+              checkedNumberOfFields = true;
+            }
             #pragma omp critical
             {
               joldType = type[j];  // fetch shared value again in case another thread bumped it while I was waiting.
@@ -2129,7 +2122,7 @@ int freadMain(freadMainArgs _args) {
             #pragma omp critical
             if (!stopTeam) {
               stopTeam = true;
-              snprintf(stopErr, stopErrSize, "Internal error in final field: j<=0 || *eof!='\\0' || !args.filename || fieldStart<=mmp");
+              snprintf(internalErr, internalErrSize, "Internal error in final field: j<=0 || *eof!='\\0' || !args.filename || fieldStart<=mmp");
               // Direct non-file input is already ended with '\0'. finalByte is only ever set for files and only when they end abruptly without final newline
             }
             break;
@@ -2162,9 +2155,9 @@ int freadMain(freadMainArgs _args) {
         if (j<ncol || (!eol(&tch) && *tch!='\0'))  {
           // Too few or too many columns observed (including empty line). If fill==true, fields should already have been filled
           // above due to continue inside while(j<ncol)
-          // Delay error to the ordered clause so that the first line with error is reported (e.g. if two jumps both
-          // see an error at the same time) with the correct line number too (which needs all preceeding jumps to process first)
-          myWrongNumberFields = j;  // used in error message. It was initialized to -1.
+          // We will push rows read so far and then warn we stopped early.
+          myStoppingEarly = true;
+          tch = tLineStart;
           break;
         }
         if (*tch!='\0') tch++;
@@ -2175,59 +2168,48 @@ int freadMain(freadMainArgs _args) {
       ctx.nRows = myNrow;
       postprocessBuffer(&ctx);
 
+      // if (tch>nextJumpStart) I know now that the next jump is dirty and should be swept. But, there might be earlier jumps
+      // already waiting at ordered that are dirty too; i.e. it's likely that thisJumpStart!=headPos. Therefore, sweeping must
+      // be triggered not here before ordered but when we're inside ordered and we're at headPos reliably.
+
       #pragma omp ordered
       {
-        // stopTeam could be true if a previous thread already stopped while I was waiting my turn
-        if (!stopTeam && prevJumpEnd != thisJumpStart && jump > jump0) {
-          snprintf(stopErr, stopErrSize,
-            "Jump %d did not finish counting rows exactly where jump %d found its first good line start: "
-            "prevEnd(%p)<<%s>> != thisStart(prevEnd%+d)<<%s>>",
-            jump-1, jump, (const void*)prevJumpEnd, strlim(prevJumpEnd,50),
-            (int)(thisJumpStart-prevJumpEnd), strlim(thisJumpStart,50));
-          stopTeam=true;
-          // TODO: allow bad jumps to be skipped and remove this stop
+        if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered
+          myNrow = 0;               // discard my buffer
         }
-        ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
-        if (ctx.DTi >= allocnrow) {  // a previous thread has already reached the `allocnrow` limit
+        else if (headPos!=thisJumpStart) {
+          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, headPos, thisJumpStart, sof);
           stopTeam = true;
-          myNrow = 0;
-          myWrongNumberFields = -1;  // forget the error, as it occured after the nrow limit requested by user
-        } else if (myNrow + ctx.DTi >= allocnrow) {  // current thread's rows will fill all allocnrow
-          if (allocnrow == nrowLimit) {
-            // allocnrow is the same as nrowLimit, no need to reallocate the DT,
-            // just truncate the rows in the current chunk
-            myNrow = nrowLimit - ctx.DTi;
-            myWrongNumberFields = -1;  // e.g. test 1558.2 where the format error is after nrowLimit
-          } else if (myNrow + ctx.DTi > allocnrow) {
-            // We reached `allocnrow` limit, but there are more data to read
-            // left. In this case we arrange to terminate all threads but
-            // remember the position where the previous thread has finished. We
-            // will reallocate the DT and restart reading from the same point.
-            jump0 = jump;
+        }
+        else {
+          ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
+          if (ctx.DTi + myNrow > allocnrow) {
+            // Guess for DT's nrow was insufficient. We cannot realloc DT now because other threads are pushing to DT now in
+            // parallel. So, stop team, realloc and then restart reading from this jump.
             extraAllocRows = (size_t)((double)(DTi+myNrow)*nJumps/(jump+1) * 1.2) - allocnrow;
             if (extraAllocRows < 1024) extraAllocRows = 1024;
-            myNrow = 0;
+            myNrow = 0;    // discard my buffer even though it was read correctly; this one jump will be reread wastefully in this rare case
             stopTeam = true;
+            jump0 = jump;
+          }
+          else {
+            // tell next thread 2 things :
+            headPos = tch;  // i) advance headPos; the jump start up to which all rows have been pushed
+            DTi += myNrow;  // ii) which row in the final result next thread should start writing to since now I know myNrow.
+            ctx.nRows = myNrow;
+            orderBuffer(&ctx);
+            if (myStoppingEarly) {
+              stopTeam = true;
+            } else if (headPos>nextJumpStart) {
+              nSwept++;         // next jump landed awkwardly and will be reread from headPos; i.e. next jump is dirty and will be swept
+              stopTeam = true;
+              jump0 = jump+1;   // restart team from next jump. jump0 always starts from headPos
+              // if too many jumps are dirty, scale down to single-threaded to save restarting team too much, wastefully. The file requires
+              // a single threaded read anyway due to its tortuous complexity with so many embedded newlines so often
+              if (nth>1 && nSwept>5 && (double)nSwept/jump > 0.10) nth=1;
+            }
           }
         }
-        if (myWrongNumberFields>=0) {
-          stopTeam = true;
-          if (myWrongNumberFields<ncol) {
-            snprintf(stopErr, stopErrSize,
-              "Line %llu has too few fields. Expecting %d fields but found %d. Consider fill=TRUE. First 500 characters of line: <<%s>>",
-              (llu)ctx.DTi+myNrow+row1line, ncol, myWrongNumberFields, strlim(tlineStart, 500));
-          } else {
-            snprintf(stopErr, stopErrSize,
-              "Line %llu has more than the expected %d fields. Stopped on <<%s>> at character %d. "
-              "Consider setting 'comment.char=' if there is a trailing comment to be ignored. First 500 characters of line: <<%s>>",
-              (llu)ctx.DTi+myNrow+row1line, ncol, strlim(tch+1,10), (int)(tch-tlineStart+2), strlim(tlineStart,500));
-          }
-        }
-        // tell next thread (she not me) 2 things :
-        prevJumpEnd = tch; // i) the \n I finished on so she can check (above) she started exactly on that \n good line start
-        DTi += myNrow;     // ii) which row in the final result she should start writing to since now I know myNrow.
-        ctx.nRows = myNrow;
-        orderBuffer(&ctx);
       }
       // END ORDERED.
       // Next thread can now start her ordered section and write her results to the final DT at the same time as me.
@@ -2235,11 +2217,12 @@ int freadMain(freadMainArgs _args) {
     }
     // End for loop over all jump points
 
-    // Push out all buffers one last time.
+    // Push out all buffers one last time (only needed because of gomp ordered workaround above with push first in the loop)
+    // If stopped early, this will happen once for thread at headPos (the only one left with myNrow>0)
     if (myNrow) {
       double now = verbose ? wallclock() : 0;
       pushBuffer(&ctx);
-      if (verbose) thRead += wallclock() - now;
+      if (verbose) thPush += wallclock() - now;
     }
     // Each thread to free their own buffer.
     free(ctx.buff8); ctx.buff8 = NULL;
@@ -2249,26 +2232,25 @@ int freadMain(freadMainArgs _args) {
   }
   //-- end parallel ------------------
 
-  if (stopTeam && stopErr[0]!='\0') {
-    STOP("%s", stopErr);
-  } else {
-    // nrowLimit applied and stopped early normally
+  if (stopTeam) {
+    if (internalErr[0]!='\0') {
+      STOP("%s", internalErr);  // nocov
+    }
     stopTeam = false;
-  }
-  if (DTi>allocnrow && nrowLimit>allocnrow) {
-    STOP("Internal error: DTi(%llu) > allocnrow(%llu) but nrows=%llu (not limited)",
-         (llu)DTi, (llu)allocnrow, (llu)nrowLimit);
-    // for the last jump that fills nrow limit, then ansi is +=buffi which is >allocnrow and correct
-  }
 
-  if (extraAllocRows) {
-    allocnrow += extraAllocRows;
-    if (allocnrow > nrowLimit) allocnrow = nrowLimit;
-    if (verbose) DTPRINT("  Too few rows allocated. Allocating additional %llu rows (now nrows=%llu) and continue reading from jump point %d\n",
-                         (llu)extraAllocRows, (llu)allocnrow, jump0);
-    allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, allocnrow);
-    extraAllocRows = 0;
-    goto read;   // jump0>0 at this point, set above
+    if (extraAllocRows) {
+      allocnrow += extraAllocRows;
+      if (allocnrow > nrowLimit) allocnrow = nrowLimit;
+      if (verbose) DTPRINT("  Too few rows allocated. Allocating additional %llu rows (now nrows=%llu) and continue reading from jump %d\n",
+                           (llu)extraAllocRows, (llu)allocnrow, jump0);
+      allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, allocnrow);
+      extraAllocRows = 0;
+      goto read;
+    }
+    if (jump0>0 && nSwept>0) {
+      goto read;
+    }
+    // else nrowLimit applied and stopped early normally
   }
 
   // tell progress meter to finish up; e.g. write final newline
@@ -2308,10 +2290,11 @@ int freadMain(freadMainArgs _args) {
       allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, DTi);
       // reread from the beginning
       DTi = 0;
-      prevJumpEnd = pos;
+      headPos = pos;
       firstTime = false;
       nTypeBump = 0;   // for test 1328.1. Otherwise the last field would get shifted forwards again.
       jump0 = 0;       // for #2486
+      nSwept = 0;
       goto read;
     }
   } else {
@@ -2334,6 +2317,28 @@ int freadMain(freadMainArgs _args) {
   }
   setFinalNrow(DTi);
 
+  if (headPos<eof && DTi<nrowLimit) {
+    ch = headPos;
+    while (ch<eof && isspace(*ch)) ch++;
+    if (ch==eof) {
+      // whitespace at the end of the file is always skipped ok
+    } else {
+      const char *skippedFooter = ch;
+      // detect if it's a single line footer. Commonly the row count from SQL queries.
+      while (ch<eof && *ch!='\n' && *ch!='\r') ch++;
+      while (ch<eof && isspace(*ch)) ch++;
+      if (ch==eof) {
+        DTWARN("Discarded single-line footer: <<%s>>", strlim(skippedFooter,500));
+      }
+      else {
+        ch = headPos;
+        int tt = countfields(&ch);
+        DTWARN("Stopped early on line %llu. Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>",
+          DTi+row1line, ncol, tt, strlim(skippedFooter,500));
+      }
+    }
+  }
+
   if (verbose) {
     DTPRINT("=============================\n");
     if (tTot<0.000001) tTot=0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
@@ -2345,11 +2350,10 @@ int freadMain(freadMainArgs _args) {
             tColType-tLayout, 100.0*(tColType-tLayout)/tTot, (llu)sampleLines);
     DTPRINT("%8.3fs (%3.0f%%) Allocation of %llu rows x %d cols (%.3fGB) of which %llu (%3.0f%%) rows used\n",
       tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, (llu)allocnrow, ncol, DTbytes/(1024.0*1024*1024), (llu)DTi, 100.0*DTi/allocnrow);
-    thNextGoodLine/=nth; thRead/=nth; thPush/=nth;
-    double thWaiting = tReread-tAlloc-thNextGoodLine-thRead-thPush;
-    DTPRINT("%8.3fs (%3.0f%%) Reading %d chunks of %.3fMB (%d rows) using %d threads\n",
-            tReread-tAlloc, 100.0*(tReread-tAlloc)/tTot, nJumps, (double)chunkBytes/(1024*1024), (int)(chunkBytes/meanLineLen), nth);
-    DTPRINT("   = %8.3fs (%3.0f%%) Finding first non-embedded \\n after each jump\n", thNextGoodLine, 100.0*thNextGoodLine/tTot);
+    thRead/=nth; thPush/=nth;
+    double thWaiting = tReread-tAlloc-thRead-thPush;
+    DTPRINT("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (%d rows) using %d threads\n",
+            tReread-tAlloc, 100.0*(tReread-tAlloc)/tTot, nJumps, nSwept, (double)chunkBytes/(1024*1024), (int)(chunkBytes/meanLineLen), nth);
     DTPRINT("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n", thRead, 100.0*thRead/tTot, buffGrown);
     DTPRINT("   + %8.3fs (%3.0f%%) Transpose\n", thPush, 100.0*thPush/tTot);
     DTPRINT("   + %8.3fs (%3.0f%%) Waiting\n", thWaiting, 100.0*thWaiting/tTot);

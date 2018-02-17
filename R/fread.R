@@ -1,5 +1,5 @@
 
-fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),autostart=NA,skip=0,select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=interactive(),data.table=getOption("datatable.fread.datatable"),nThread=getDTthreads(),logical01=TRUE)
+fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings="NA",stringsAsFactors=FALSE,verbose=getOption("datatable.verbose"),skip="__auto__",select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, showProgress=interactive(),data.table=getOption("datatable.fread.datatable"),nThread=getDTthreads(),logical01=TRUE,autostart=NA)
 {
   if (is.null(sep)) sep="\n"         # C level knows that \n means \r\n on Windows, for example
   else {
@@ -21,61 +21,52 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
   stopifnot(isTrueFalseNA(header))
-  stopifnot(length(skip)==1L)
   stopifnot(is.numeric(nThread) && length(nThread)==1L)
   nThread=as.integer(nThread)
   stopifnot(nThread>=1L)
   if (!missing(file)) {
-    if (!identical(input, "")) stop("You can provide 'input' or 'file', not both.")
-    if (!file.exists(file)) stop(sprintf("Provided file '%s' does not exists.", file))
+    if (!identical(input, "")) stop("You can provide 'input=' or 'file=', not both.")
+    if (!file.exists(file)) stop("File '",file,"' does not exist.")
+    if (isTRUE(file.info(file)$isdir)) stop("File '",file,"' is a directory. Not yet implemented.") # dir.exists() requires R v3.2+, #989
     input = file
+  } else {
+    if (!is.character(input) || length(input)!=1L) {
+      stop("'input' must be a single character string containing a file name, a system command containing at least one space, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or, the input data itself containing at least one \\n or \\r")
+    }
+    if ( input == "" || length(grep('\\n|\\r', input)) ) {
+      # input is data itself containing at least one \n or \r
+    } else if (file.exists(input)) {
+      if (isTRUE(file.info(input)$isdir)) stop("File '",input,"' is a directory. Not yet implemented.")
+    } else {
+      if (substring(input,1L,1L)==" ") {
+        stop("Input argument is not a file name and contains no \\n or \\r, but starts with a space. Please remove the leading space.")
+      }
+      # either a download or a system command, both to temp file
+      tmpFile = tempfile()
+      on.exit(unlink(tmpFile), add=TRUE)
+      str6 = substring(input,1,6)   # avoid grepl() for #2531
+      str7 = substring(input,1,7)
+      str8 = substring(input,1,8)
+      if (str7=="ftps://" || str8=="https://") {
+        if (!requireNamespace("curl", quietly = TRUE))
+            stop("Input URL requires https:// connection for which fread() requires 'curl' package, but cannot be found. Please install curl using 'install.packages('curl')'.")
+        curl::curl_download(input, tmpFile, mode="wb", quiet = !showProgress)
+      }
+      else if (str6=="ftp://" || str7== "http://" || str7=="file://") {
+        method = if (str7=="file://") "auto" else getOption("download.file.method", default="auto")
+        # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
+        download.file(input, tmpFile, method=method, mode="wb", quiet=!showProgress)
+        # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
+      }
+      else if (length(grep(' ', input))) {
+        (if (.Platform$OS.type == "unix") system else shell)(paste('(', input, ') > ', tmpFile, sep=""))
+      }
+      else stop("File '",input,"' does not exist; getwd()=='", getwd(), "'",
+                ". Include correct full path, or one or more spaces to consider the input a system command.")
+      input = tmpFile  # the file name
+    }
   }
   if (!missing(autostart)) warning("'autostart' is now deprecated and ignored. Consider skip='string' or skip=n");
-  is_url <- function(x) grepl("^(http|ftp)s?://", x)
-  is_secureurl <- function(x) grepl("^(http|ftp)s://", x)
-  is_file <- function(x) grepl("^file://", x)
-  if (!is.character(input) || length(input)!=1L) {
-    stop("'input' must be a single character string containing a file name, a command, full path to a file, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or the input data itself")
-  } else if (is_url(input) || is_file(input)) {
-    tt = tempfile()
-    on.exit(unlink(tt), add = TRUE)
-    # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
-    if (!is_secureurl(input)) {
-      #1668 - force "auto" when is_file to
-      #  ensure we don't use an invalid option, e.g. wget
-      method <- if (is_file(input)) "auto" else
-        getOption("download.file.method", default = "auto")
-      download.file(input, tt, method = method, mode = "wb", quiet = !showProgress)
-    } else {
-      if (!requireNamespace("curl", quietly = TRUE))
-        stop("Input URL requires https:// connection for which fread() requires 'curl' package, but cannot be found. Please install the package using 'install.packages()'.")
-      curl::curl_download(input, tt, mode = "wb", quiet = !showProgress)
-    }
-    input = tt
-  } else if (input == "" || length(grep('\\n|\\r', input)) > 0L) {
-    # text input
-  } else if (isTRUE(file.info(input)$isdir)) { # fix for #989, dir.exists() requires v3.2+
-    stop("'input' can not be a directory name, but must be a single character string containing a file name, a command, full path to a file, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or the input data itself.")
-  } else if (!file.exists(input)) {
-    if (!length(grep(' ', input))) {
-      stop("File '",input,"' does not exist; getwd()=='", getwd(), "'",
-        ". Include correct full path, or one or more spaces to consider the input a system command.")
-    }
-    if (substring(input,1L,1L)==" ") {
-      stop("Input argument contains no \\n and contains one or more spaces, so it looks like a system command. Please remove the leading space.")
-    }
-    tt = tempfile()
-    on.exit(unlink(tt), add = TRUE)
-    if (.Platform$OS.type == "unix") {
-      if (file.exists('/dev/shm') && file.info('/dev/shm')$isdir) {
-        tt = tempfile(tmpdir = '/dev/shm')
-      }
-      system(paste('(', input, ') > ', tt, sep=""))
-    } else {
-      shell(paste('(', input, ') > ', tt, sep=""))
-    }
-    input = tt
-  }
   if (is.logical(colClasses)) {
     if (!all(is.na(colClasses))) stop("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
     colClasses = NULL
@@ -87,7 +78,9 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
       colClasses = tapply(names(colClasses), colClasses, c, simplify=FALSE)
     }
   }
-  if (is.numeric(skip)) skip = as.integer(skip)
+  stopifnot(length(skip)==1L, !is.na(skip), is.character(skip) || is.numeric(skip))
+  if (skip=="__auto__") skip=-1L   # skip="string" so long as "string" is not "__auto__". Best conveys to user something is automatic there (than -1 or NA).
+  if (is.double(skip)) skip = as.integer(skip)
   warnings2errors = getOption("warn") >= 2
   ans = .Call(CfreadR,input,sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
               fill,showProgress,nThread,verbose,warnings2errors,logical01,select,drop,colClasses,integer64,encoding)
