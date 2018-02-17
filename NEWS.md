@@ -138,6 +138,9 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
 
 32. `x.` prefixes during joins sometimes resulted in a "column not found" error. This is now fixed. Closes [#2313](https://github.com/Rdatatable/data.table/issues/2313). Thanks to @franknarf1 for the MRE.
 
+33. Fixed bug where result of `merge()` would contain duplicate column names if `by.x` was also in `names(y)`.
+Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdatatable/data.table/pull/2631)
+
 #### NOTES
 
 0. The license has been changed from GPL to MPL (Mozilla Public License). All contributors were consulted and approved. [PR#2456](https://github.com/Rdatatable/data.table/pull/2456) details the reasons for the change.
