@@ -2222,7 +2222,7 @@ int freadMain(freadMainArgs _args) {
     if (myNrow) {
       double now = verbose ? wallclock() : 0;
       pushBuffer(&ctx);
-      if (verbose) thRead += wallclock() - now;
+      if (verbose) thPush += wallclock() - now;
     }
     // Each thread to free their own buffer.
     free(ctx.buff8); ctx.buff8 = NULL;
