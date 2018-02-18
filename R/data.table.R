@@ -2411,11 +2411,10 @@ setattr <- function(x,name,value) {
     # creating names longer than the number of columns of x, and to change the key, too
     # For convenience so that setattr(DT,"names",allnames) works as expected without requiring a switch to setnames.
   else {
-    # fix for R's global TRUE value input, #1281
     ans = .Call(Csetattrib, x, name, value)
     # If name=="names" and this is the first time names are assigned (e.g. in data.table()), this will be grown by alloc.col very shortly afterwards in the caller.
     if (!is.null(ans)) {
-      warning("Input is a length=1 logical that points to the same address as R's global TRUE value. Therefore the attribute has not been set by reference, rather on a copy. You will need to assign the result back to a variable. See https://github.com/Rdatatable/data.table/issues/1281 for more.")
+      warning("Input is a length=1 logical that points to the same address as R's global value. Therefore the attribute has not been set by reference, rather on a copy. You will need to assign the result back to a variable. See issue #1281.")
       x = ans
     }
   }
