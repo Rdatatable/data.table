@@ -11671,6 +11671,11 @@ unlink(f)
 test(1876, fread("http://hkhfsk\nhttp://fhdkf\nhttp://kjfhskd\nhttp://hfkjf", header=FALSE),    # data not a download, #2531
            data.table(V1=c("http://hkhfsk","http://fhdkf","http://kjfhskd","http://hfkjf")))
 
+# segfault with setattr() of "class" attribute to 0-length value, #2386
+test(1877.1, attr(setattr(data.table(x = 1:10), "class", NULL), "class"), NULL)              # ok before
+test(1877.2, attr(setattr(data.table(x = 1:10), "class", character()), "class"), NULL)       # now ok (was segfault)
+test(1877.3, attr(setattr(data.table(x = 1:10), "test", character()), "test"), character(0)) # ok before
+
 # PR #2631 - Fix duplicated names arising in merge when by.x in names(y)
 # Test should fail in there are any duplicate names after a join
 parents = data.table(name=c("Sarah", "Max"), sex=c("F", "M"), age=c(41, 43))
@@ -11678,8 +11683,8 @@ children = data.table(parent=c("Sarah", "Max", "Max"),
                        name=c("Oliver", "Sebastian", "Michelle"),
                        sex=c("M", "M", "F"), age=c(5,8,7))
 joined = merge(parents, children, by.x="name", by.y="parent")                       
-test(1877.1, length(names(joined)), length(unique(names(joined)))) 
-test(1877.2, merge(parents, children, by.x="name", by.y="parent", suffixes=c("","")),
+test(1878.1, length(names(joined)), length(unique(names(joined)))) 
+test(1878.2, merge(parents, children, by.x="name", by.y="parent", suffixes=c("","")),
              merge(parents, children, by.x="name", by.y="parent", suffixes=c("","")),
              warning = "column names.*are duplicated in the result")
 
