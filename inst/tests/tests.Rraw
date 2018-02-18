@@ -11685,7 +11685,7 @@ children = data.table(parent=c("Sarah", "Max", "Max"),
                        sex=c("M", "M", "F"), age=c(5,8,7))
 joined = merge(parents, children, by.x="name", by.y="parent")                       
 test(1878.1, length(names(joined)), length(unique(names(joined)))) 
-test(1878.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""))), 3,
+test(1878.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""))), 3L,
              warning = "column names.*are duplicated in the result")
 
 ##########################
