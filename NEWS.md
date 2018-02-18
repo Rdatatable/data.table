@@ -138,7 +138,7 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
 
 32. `x.` prefixes during joins sometimes resulted in a "column not found" error. This is now fixed. Closes [#2313](https://github.com/Rdatatable/data.table/issues/2313). Thanks to @franknarf1 for the MRE.
 
-33. setattr throws proper error when setting 'class' to 'character(0)' [#2386](https://github.com/Rdatatable/data.table/issues/2386). Thanks to @hatal175 for reporting and to @MarkusBonsch for fixing.
+33. `setattr()` no longer segfaults when setting 'class' to empty character vector, [#2386](https://github.com/Rdatatable/data.table/issues/2386). Thanks to @hatal175 for reporting and to @MarkusBonsch for fixing.
 
 #### NOTES
 
