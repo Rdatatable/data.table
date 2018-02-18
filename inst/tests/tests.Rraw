@@ -7154,15 +7154,12 @@ ans2 <- setDF(merge(setDT(d1), setDT(d2), all=TRUE, by="A"))
 test(1542.2, ans1, ans2)
 # test duplicate name cases
 setnames(d2, c("A", "Y"), c("B", "A"))
-ans1 <- suppressWarnings(merge(setDF(d1), setDF(d2), by.x="A", by.y="B"))
-ans2 <- setDF(merge(setDT(d1), setDT(d2), by.x="A", by.y="B"))
-test(1543.3, ans1, ans2)
 ans1 <- suppressWarnings(merge(setDF(d2), setDF(d1), by.x="B", by.y="A"))
 ans2 <- setDF(merge(setDT(d2), setDT(d1), by.x="B", by.y="A"))
-test(1543.4, ans1, ans2)
+test(1543.3, ans1, ans2)
 ans1 <- suppressWarnings(merge(setDF(d2), setDF(d1), all=TRUE, by.x="B", by.y="A"))
 ans2 <- setDF(merge(setDT(d2), setDT(d1), all=TRUE, by.x="B", by.y="A"))
-test(1543.5, ans1, ans2)
+test(1543.4, ans1, ans2)
 
 # test for sort=FALSE argument, #1282
 set.seed(1L)
