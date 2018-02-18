@@ -11670,12 +11670,14 @@ unlink(f)
 
 test(1876, fread("http://hkhfsk\nhttp://fhdkf\nhttp://kjfhskd\nhttp://hfkjf", header=FALSE),    # data not a download, #2531
            data.table(V1=c("http://hkhfsk","http://fhdkf","http://kjfhskd","http://hfkjf")))
+           
+# segfault with setattr() of "class" attribute to 0-length value, #2386
+test(1877.1, attr(setattr(data.table(x = 1:10), "class", NULL), "class"), NULL)              # ok before
+test(1877.2, attr(setattr(data.table(x = 1:10), "class", character()), "class"), NULL)       # now ok (was segfault)
+test(1877.3, attr(setattr(data.table(x = 1:10), "test", character()), "test"), character(0)) # ok before
 
 # Once upon a time these were parsed as floats #2625
-test(1877, fread("A,B,C,D,E\n.,+.,.e,.e+,0e\n"), data.table(A=".", B="+.", C=".e", D=".e+", E="0e"))
-
-
-
+test(1878, fread("A,B,C,D,E\n.,+.,.e,.e+,0e\n"), data.table(A=".", B="+.", C=".e", D=".e+", E="0e"))
 
 ##########################
 
