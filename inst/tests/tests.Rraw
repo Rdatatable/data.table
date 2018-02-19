@@ -2925,7 +2925,7 @@ unlink(f)
 
 # ERANGE errno handled, #4879
 test(1018, identical(fread("1.46761e-313\n"), data.table(V1=1.46761e-313)))
-test(1019, fread("A\n1.23456789123456789123456999\n"), data.table(A="1.23456789123456789123456999"))
+test(1019, fread("A\n1.23456789123456789123456999\n"), data.table(A=1.234567891234568))
 
 # crash assigning to row 0, #2754
 DT = data.table(A=1:5,B=6:10)
@@ -11141,8 +11141,8 @@ src1 = paste0(rep("1234567890", 13), collapse="")  # length = 130, slightly abov
 src2 = paste0(rep("12345678900987654321", 13), collapse="")  # length = 260, slightly above 256
 test(1831.1, fread(paste0("A\n", src1)), data.table(A=src1))
 test(1831.2, fread(paste0("A\n", src2)), data.table(A=src2))
-test(1831.3, fread(paste0("A\n", src2, ".33")), data.table(A=paste0(src2, ".33")))
-test(1831.4, fread(paste0("A\n", "1.", src2)), data.table(A=paste0("1.", src2)))
+test(1831.3, fread(paste0("A\n", src2, ".33")), data.table(A=1.2345678900987655e+259))
+test(1831.4, fread(paste0("A\n", "1.", src2)), data.table(A=1.1234567890098766))
 
 DT = as.data.table(matrix(5L, nrow=10, ncol=10))
 test(1832.1, fwrite(DT, f<-tempfile(), verbose=TRUE), output="Column writers")
@@ -11675,6 +11675,9 @@ test(1876, fread("http://hkhfsk\nhttp://fhdkf\nhttp://kjfhskd\nhttp://hfkjf", he
 test(1877.1, attr(setattr(data.table(x = 1:10), "class", NULL), "class"), NULL)              # ok before
 test(1877.2, attr(setattr(data.table(x = 1:10), "class", character()), "class"), NULL)       # now ok (was segfault)
 test(1877.3, attr(setattr(data.table(x = 1:10), "test", character()), "test"), character(0)) # ok before
+
+# In dev 1.10.5 these were parsed as floats, #2625. Caught before release to CRAN.
+test(1878, fread("A,B,C,D,E\n.,+.,.e,.e+,0e\n"), data.table(A=".", B="+.", C=".e", D=".e+", E="0e"))
 
 ##########################
 

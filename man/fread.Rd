@@ -243,13 +243,12 @@ fread("
 
 # Numerical precision :
 
-DT = fread("A\n1.010203040506070809010203040506\n")  # too precise for double, so read as character
-# TODO: add numerals=c("allow.loss", "warn.loss", "no.loss") from base::read.table
-typeof(DT$A)=="character"   # TRUE
+DT = fread("A\n1.010203040506070809010203040506\n")
+# TODO: add numerals=c("allow.loss", "warn.loss", "no.loss") from base::read.table, +"use.Rmpfr"
+typeof(DT$A)=="double"   # currently "allow.loss" with no option
 
 DT = fread("A\n1.46761e-313\n")   # read as 'numeric'
 DT[,sprintf("\%.15E",A)]   # beyond what double precision can store accurately to 15 digits
-
 # For greater accuracy use colClasses to read as character, then package Rmpfr.
 
 # colClasses
