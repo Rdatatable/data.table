@@ -2887,8 +2887,13 @@ isReallyReal <- function(x) {
     ## loop continues with remainingIsub
   }
   if (length(i) == 0L) stop("Internal error in .isFastSubsettable. Please report to data.table developers")
-  ## convert i to data.table with all combinations in rows. Care is needed with names as we do
-  ## it with 'do.call' and this would cause problems if colNames were 'sorted' or 'unique'
+  ## convert i to data.table with all combinations in rows.
+  if(length(i) > 1 && prod(sapply(i, length)) > 1e4){
+    ## CJ would result in more than 1e4 rows. This would be inefficient, especially memory-wise #2635
+    return(NULL)
+  }
+  ## Care is needed with names as we construct i
+  ## with 'CJ' and 'do.call' and this would cause problems if colNames were 'sorted' or 'unique'
   ## as these two would be interpreted as args for CJ
   colNames <- names(i)
   names(i) <- NULL
@@ -2898,7 +2903,6 @@ isReallyReal <- function(x) {
   setnames(i, colNames)
   idx <- NULL
   if(is.null(idx)){
-      ## we are seeing an equi-join
       ## check whether key fits the columns in i.
       ## order of key columns makes no difference, as long as they are all upfront in the key, I believe.
       if (all(names(i) %chin% head(key(x), length(i)))){
