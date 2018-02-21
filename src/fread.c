@@ -1299,7 +1299,7 @@ int freadMain(freadMainArgs _args) {
     if (!lastEOLreplaced) {
       // very unusual branch because properly formed csv will have final eol
       if (fileSize%4096!=0) {
-        if (verbose) DTPRINT("  File ends abruptly with '%c'. Final end-of-line is missing. Using cow page to write 0 in the byte afterwards since fileSize%4096!=0\n", eof[-1]);
+        if (verbose) DTPRINT("  File ends abruptly with '%c'. Final end-of-line is missing. Using cow page to write 0 to the last byte.\n", eof[-1]);
         // We could do this routinely (i.e. when there is a final newline too) but we desire to run all tests through the harder
         // branch above that replaces the final newline with \0 to test that logic (e.g. test 893 which causes a type bump in the last
         // field) since we rely on that logic to avoid the copy below when fileSize$4096==0 but there is a final eol ok.
@@ -1315,7 +1315,7 @@ int freadMain(freadMainArgs _args) {
         sof = mmp_copy;
         eof = (char *)mmp_copy + fileSize;
         tt = wallclock()-tt;
-        if (tt>0.5) DTPRINT("Avoidable %.3f seconds. %s time.", tt, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
+        if (tt>0.5) DTPRINT("Avoidable %.3f seconds. %s time to copy.\n", tt, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
         if (verbose) DTPRINT("  File copy in RAM took %.3f seconds.\n", tt);
       }
     }
