@@ -132,7 +132,7 @@ Slightly more extended way which also ensure that installed data.table is in ver
 ```r
 my.write = function (x) {
   if(requireNamespace("data.table", quietly=TRUE) &&
-    (package_version("data.table") >= "1.9.8")) {
+    utils::packageVersion("data.table") >= package_version("1.9.8")) {
     data.table::fwrite(x, "data.csv")
   } else {
     write.table(x, "data.csv")
