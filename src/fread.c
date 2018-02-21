@@ -1266,16 +1266,12 @@ int freadMain(freadMainArgs _args) {
   if (verbose) DTPRINT("[04] Arrange mmap to be \\0 terminated\n");
 
   // First, set 'eol_one_r' for use by eol() to know if \r-only line ending is allowed, #2371
-  eol_one_r = false;
   ch = sof;
-  while (ch<eof && *ch!='\n' && *ch!='\r') ch++;   // find first \n or \r
-  if (ch<eof && *ch=='\r') {                       // if \r found
-    while (ch<eof && *ch!='\n') ch++;              //   find next \n after it
-    if (ch==eof) eol_one_r = true;                 //   if and only if no \n found (after full scan to eof), then it is \r-only line ending (very unusual)
-  }                                                // else first \n found quickly (vastly most common)
+  while (ch<eof && *ch!='\n') ch++;
+  eol_one_r = (ch==eof);
   if (verbose) DTPRINT(eol_one_r ?
-    "  \\r has been found in the data and no \\n at all so each \\r will be taken as one line ending. This is unusual.\n" :
-    "  \\n has been found in the data and different lines can end with different line endings (e.g. mixed \n and \r\n in one file). This is common and ideal.\n");
+    "  No \\n exists in the file at all, so single \\r (if any) will be taken as one line ending. This is unusual but will happen normally when there is no \\r either; e.g. a single line missing its end of line.\n" :
+    "  \\n has been found in the input and different lines can end with different line endings (e.g. mixed \n and \r\n in one file). This is common and ideal.\n");
 
   bool lastEOLreplaced = false;
   if (args.filename) {
