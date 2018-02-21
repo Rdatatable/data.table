@@ -2888,7 +2888,7 @@ isReallyReal <- function(x) {
   }
   if (length(i) == 0L) stop("Internal error in .isFastSubsettable. Please report to data.table developers")
   ## convert i to data.table with all combinations in rows.
-  if(length(i) > 1 && prod(sapply(i, length)) > 1e4){
+  if(length(i) > 1L && prod(vapply(i, length, integer(1L))) > 1e4){
     ## CJ would result in more than 1e4 rows. This would be inefficient, especially memory-wise #2635
     return(NULL)
   }
