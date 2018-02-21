@@ -2546,7 +2546,7 @@ for (ne in seq_along(eols)) {
         # loop approach is to get no \n after last line
     }
     testIDtail = nr/100 + nc/1000 + ne/10000
-    # if (isTRUE(all.equal(testIDtail, 0.0011))) browser()
+    # if (isTRUE(all.equal(testIDtail, 0.4101))) browser()
     test(894+testIDtail, fread(f), headDT)
     file.copy(f,f2<-tempfile()); unlink(f)    # again trying to work around apparent issue on Windows
     cat(eol,file=f2,append=TRUE)   # now a 'normal' file ending with \n

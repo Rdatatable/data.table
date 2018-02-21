@@ -2147,7 +2147,6 @@ int freadMain(freadMainArgs _args) {
               } // else another thread just bumped to a (negative) higher or equal type while I was waiting, so do nothing
             }
           }
-
           ((char**) targets)[size[j]] += size[j];
           j++;
           if (*tch==sep) { tch++; continue; }
@@ -2163,10 +2162,6 @@ int freadMain(freadMainArgs _args) {
           break;
         }
         if (*tch!='\0') tch++;
-        /*else if (ncol==1 && lastEOLreplaced && (tch[-1]=='\n' || tch[-1]=='\r')) {
-          tch--;                    // rerun last empty line to get the appropriate NA written
-          lastEOLreplaced = false;  // we dealt with it, don't do this again
-        }*/
         myNrow++;
       }
       if (verbose) { double now = wallclock(); thRead += now-tLast; tLast = now; }
