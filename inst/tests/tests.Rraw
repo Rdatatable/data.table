@@ -2546,7 +2546,7 @@ for (ne in seq_along(eols)) {
         # loop approach is to get no \n after last line
     }
     testIDtail = nr/100 + nc/1000 + ne/10000
-    # if (isTRUE(all.equal(testIDtail, 0.4101))) browser()
+    # if (isTRUE(all.equal(testIDtail, 0.0011))) browser()
     test(894+testIDtail, fread(f), headDT)
     file.copy(f,f2<-tempfile()); unlink(f)    # again trying to work around apparent issue on Windows
     cat(eol,file=f2,append=TRUE)   # now a 'normal' file ending with \n
@@ -10988,7 +10988,7 @@ test(1808.6, fread("A,B\r1,3\r\r \r2,4\r", blank.lines.skip=TRUE), data.table(A=
 test(1808.7, fread("A,B\r1,3\r\r \r2,4\r", fill=TRUE), data.table(A=c(1L,NA,NA,2L), B=c(3L,NA,NA,4L)))
 test(1808.8, fread("A,B\r1,3\r\r \r2,\r", blank.lines.skip=TRUE, fill=TRUE), data.table(A=1:2, B=c(3L,NA)))
 test(1809, fread("A,B\n\r1,2\n\r3,4\n\r5,6"), data.table(A=c(1L,3L,5L), B=c(2L,4L,6L)))
-cat("A,B\n1,q\n2,w\n3,xyz", file=f<-tempfile()); test(1810, fread(f,verbose=TRUE), data.table(A=c(1L,2L,3L), B=c("q","w","xyz")), output="File ends abruptly with 'z'"); unlink(f)
+cat("A,B\n1,q\n2,w\n3,xyz", file=f<-tempfile()); test(1810, fread(f,verbose=TRUE), data.table(A=c(1L,2L,3L), B=c("q","w","xyz")), output="File ends abruptly with 'z'.*cow page"); unlink(f)
 test(1811, fread("A,B\n1,2\n3,4", skip="boo"), error="skip='boo' not found in input")
 test(1812, fread("A,B\n1,2\n3,4\n", skip="4", verbose=T), data.table(V1=3L, V2=4L), output="Found skip='4' on line 3")
 test(1813, fread("A,B\n1,2\n3,4", skip=10L), error="skip=10 but the input only has 3 lines")
@@ -11519,7 +11519,9 @@ test(1869.2, fread("A\r1\r\r\r2\r\r"), data.table(A=c(1L,NA,NA,2L,NA)))
 test(1869.3, fread("A\r1\r\r\r2\r\r\r"), data.table(A=c(1L,NA,NA,2L,NA,NA)))
 test(1869.4, fread("A,B\r2,3\r,\r,\r4,5\r\r"), data.table(A=c(2L,NA,NA,4L), B=c(3L,NA,NA,5L)))
 test(1869.5, fread("A,B\r2,3\r\r,\r2,4\r\r"), data.table(A=2L, B=3L), warning="Stopped.*line 3. Expected 2 fields but found 0.*First discarded non-empty line: <<,>>")  # two line footer because of the comma
-test(1869.6, fread(testDir("colnames4096.csv")), error="very unusual.*one single line without any.*r.*n at the end.*and.*multiple of 4096")
+test(1869.6, fread(testDir("colnames4096.csv"), verbose=TRUE)[,c(1,2,585,586)],
+             data.table(Foo000=logical(), Bar001=logical(), Foo584=logical(), B=logical()),
+             output = "Copying file in RAM.*file is very unusual.*ends abruptly.*multiple of 4096")
 test(1869.7, fread(testDir("onecol4096.csv")), error="very unusual.*single column.*multiple of 4096.*ends with 2 or more end-of-line")
 
 # better colname detection by comparing potential column names to the whole sample not just the first row of the sample, #2526
