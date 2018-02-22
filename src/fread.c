@@ -34,12 +34,11 @@
 #define llu   unsigned long long int
 
 // Private globals to save passing all of them through to highly iterated field processors
-static const char *eof;
+static const char *sof, *eof;
 static char sep;
 static char whiteChar; // what to consider as whitespace to skip: ' ', '\t' or 0 means both (when sep!=' ' && sep!='\t')
 static char quote, dec;
-static char finalByte;
-static bool LFpresent=true;  // only false very rarely for \r-only files to flag that no \n are present
+static bool eol_one_r;  // only true very rarely for \r-only files
 
 // Quote rule:
 //   0 = Fields may be quoted, any quote inside the field is doubled. This is
@@ -67,6 +66,7 @@ static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 
 // Private globals so they can be cleaned up both on error and on successful return
 static void *mmp = NULL;
+static void *mmp_copy = NULL;
 static size_t fileSize;
 static int8_t *type = NULL, *tmpType = NULL, *size = NULL;
 static lenOff *colNames = NULL;
@@ -124,7 +124,7 @@ static char* _const_cast(const char *ptr) {
  */
 bool freadCleanup(void)
 {
-  bool neededCleanup = (type || tmpType || size || colNames || mmp);
+  bool neededCleanup = (type || tmpType || size || colNames || mmp || mmp_copy);
   free(type); type = NULL;
   free(tmpType); tmpType = NULL;
   free(size); size = NULL;
@@ -146,21 +146,21 @@ bool freadCleanup(void)
     #endif
     mmp = NULL;
   }
+  free(mmp_copy); mmp_copy = NULL;
   fileSize = 0;
-  sep = whiteChar = quote = dec = finalByte = '\0';
+  sep = whiteChar = quote = dec = '\0';
   quoteRule = -1;
   any_number_like_NAstrings = false;
   blank_is_a_NAstring = false;
   stripWhite = true;
   skipEmptyLines = false;
-  LFpresent = true;
+  eol_one_r = false;
   fill = false;
   // following are borrowed references: do not free
-  eof = NULL;
+  sof = eof = NULL;
   NAstrings = NULL;
   return neededCleanup;
 }
-
 
 #define CEIL(x)  ((size_t)(double)ceil(x))
 static inline size_t umax(size_t a, size_t b) { return a > b ? a : b; }
@@ -248,7 +248,7 @@ static inline bool eol(const char **pch) {
     *pch = ch;
     return true;
   }
-  return !LFpresent && **pch=='\r';
+  return eol_one_r && **pch=='\r';
 }
 
 
@@ -262,7 +262,7 @@ static inline bool end_of_field(const char *ch) {
   // single check `ch<=13` is almost equivalent to checking whether `ch` is one
   // of \r, \n, \0. We cast to unsigned first because `char` type is signed by
   // default, and therefore characters in the range 0x80-0xFF are negative.
-  // We use eol() because that looks at LFpresent inside it w.r.t. \r
+  // We use eol() because that looks at eol_one_r inside it w.r.t. \r
   return *ch==sep || ((uint8_t)*ch<=13 && (*ch=='\0' || eol(&ch)));
 }
 
@@ -326,7 +326,6 @@ static inline int countfields(const char **pch)
     if (*ch!='\0') return -1;  // -1 means this line not valid for this sep and quote rule
     break;
   }
-  if (ch==eof && finalByte && finalByte==sep && sep!=' ') ncol++;
   *pch = ch;
   return ncol;
 }
@@ -420,6 +419,18 @@ static const char* filesize_to_str(size_t fsize)
   return output;
 }
 
+void copyFile(size_t fileSize, const char *msg, bool verbose)  // only called in very very rare cases
+{
+  double tt = wallclock();
+  mmp_copy = (char *)malloc((size_t)fileSize + 1/* extra \0 */);
+  if (!mmp_copy) STOP("Unable to allocate %s of contiguous virtual RAM. %s allocation.", filesize_to_str(fileSize), msg);
+  memcpy(mmp_copy, mmp, fileSize);
+  sof = mmp_copy;
+  eof = (char *)mmp_copy + fileSize;
+  tt = wallclock()-tt;
+  if (tt>0.5) DTPRINT("Avoidable %.3f seconds. %s time to copy.\n", tt, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
+  if (verbose) DTPRINT("  File copy in RAM took %.3f seconds.\n", tt);
+}
 
 
 //==============================================================================
@@ -548,10 +559,7 @@ static void Field(FieldParseContext *ctx)
     *(ctx->ch) = ch;
   } else {
     *(ctx->ch) = ch;
-    if (*ch=='\0') {
-      if (finalByte==quote && ch==eof) return;             // test 1849.* for issue 2464 where final quoted field contains a sep and no \n ending the file
-      if (quoteRule!=2) { target->off--; target->len++; }  // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
-    }
+    if (*ch=='\0' && quoteRule!=2) { target->off--; target->len++; }              // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
     if (stripWhite) while(target->len>0 && ch[-1]==' ') { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
   }
 }
@@ -1005,7 +1013,7 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
   };
   if (sep==' ') while (*ch==' ') ch++;  // multiple sep=' ' at the beginning of a line does not mean sep
   skip_white(&ch);
-  if (eol(&ch) || (ch==eof && finalByte && finalByte!=sep)) return 0;  // empty line
+  if (eol(&ch)) return 0;  // empty line
   int field=0;
   while (field<ncol) {
     // DTPRINT("<<%s>>(%d)", strlim(ch,20), quoteRule);
@@ -1040,13 +1048,11 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
     field++;
     if (sep==' ' && *ch==sep) {
       while (ch[1]==' ') ch++;
-      if (ch+1==eof && finalByte && finalByte!=' ') {field++; ch++; break; }
       if (ch[1]=='\0' || ch[1]=='\n' || ch[1]=='\r') ch++;  // space at the end of line does not mean sep
     }
     if (*ch!=sep || field==ncol) break;  // field==ncol is needed for 1753.2 where line ends with an extra comma but shouldn't, so shouldn't be moved over
     ch++;
   }
-  if (ch==eof && finalByte && finalByte==sep && sep!=' ') field++;  // for test 1776.2
   *pch = ch;
   return field; // the number of fields so caller knows if ncol were read
 }
@@ -1150,7 +1156,6 @@ int freadMain(freadMainArgs _args) {
   // "irrelevant" parts: the BOM mark, the banner, the headers, the skipped
   // lines, etc. Similarly, `eof` may be adjusted to take out the footer of
   // the file.
-  const char *sof = NULL;
   const char *ch = NULL;
 
   //*********************************************************************************************
@@ -1187,7 +1192,7 @@ int freadMain(freadMainArgs _args) {
       // Mac doesn't appear to support MAP_POPULATE anyway (failed on CRAN when I tried).
       // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
       //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
-      mmp = mmap(NULL, fileSize, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW for last page finalByte
+      mmp = mmap(NULL, fileSize, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW for last page lastEOLreplaced
       close(fd);  // we don't need to keep file handle open
       if (mmp == MAP_FAILED) {
     #else
@@ -1269,46 +1274,60 @@ int freadMain(freadMainArgs _args) {
   // [4] Terminate mmap with \0
   //*********************************************************************************************
   if (verbose) DTPRINT("[04] Arrange mmap to be \\0 terminated\n");
-  finalByte = '\0';
+
+  // First, set 'eol_one_r' for use by eol() to know if \r-only line ending is allowed, #2371
+  ch = sof;
+  while (ch<eof && *ch!='\n') ch++;
+  eol_one_r = (ch==eof);
+  if (verbose) DTPRINT(eol_one_r ?
+    "  No \\n exists in the file at all, so single \\r (if any) will be taken as one line ending. This is unusual but will happen normally when there is no \\r either; e.g. a single line missing its end of line.\n" :
+    "  \\n has been found in the input and different lines can end with different line endings (e.g. mixed \\n and \\r\\n in one file). This is common and ideal.\n");
+
+  bool lastEOLreplaced = false;
   if (args.filename) {
-    // eof is currently resting after the last byte of the file
-    const char *ch2 = eof-1;
-    while (ch2>=sof && *ch2!='\n' && *ch2!='\r') ch2--;
-    if (ch2<sof) {
-      // no \n or \r found in the file => it's a single line (likely column names only)
-      if (fileSize%4096==0) {
-        STOP("File is very very unusual. It is one single line without any \\r or \\n at the end, and the file's size is an exact multiple of 4096 bytes. Until we can implement support for this case, please append a newline at the end using for example 'echo >> %s'.", args.filename);
-      }
-      // otherwise there is one byte after eof which we can reliably write to in the very last cow page
-      // We could do this routinely (not just for single line input) when fileSize%4096!=0 but we desire to run all tests through the harder
-      // branch later that uses finalByte, to test that logic; e.g. test 893 which causes a type bump in the last field due to the finalByte.
-      // TODO: portable way to discover relevant page size. 4096 is lowest common denominator though and should suffice.
-      fileSize++;
+    // eof is currently resting after the last byte of the file (so don't even read it there; bus error if fileSize%4096==0)
+    ch = eof-1;
+    if (eol_one_r) {
+      while (ch>=sof && *ch!='\r') ch--;
     } else {
-      eof--;
-      if (*eof=='\n' && eof>sof && eof[-1]=='\r') {
-        *_const_cast(eof-1) = '\n';  // move \n back to leave last byte for '\0' in cow page
+      while (ch>=sof && *ch!='\n') ch--;
+      while (ch>sof && ch[-1]=='\r') ch--;  // the first of any preceeding \r to avoid a dangling \r
+    }
+    if (ch>=sof) {
+      const char *lastNewLine = ch;  // the start of the final newline sequence.
+      while (++ch<eof && isspace(*ch)) {};
+      if (ch==eof) {
+        // yes, just whitespace after last newline. Use last newline to put final \0
+        eof = lastNewLine;
+        lastEOLreplaced = true;  // only needed for blank lines at the end of single-column files
+      }
+    }
+    if (!lastEOLreplaced) {
+      // very unusual branch because properly formed csv will have final eol
+      if (fileSize%4096!=0) {
+        if (verbose) DTPRINT("  File ends abruptly with '%c'. Final end-of-line is missing. Using cow page to write 0 to the last byte.\n", eof[-1]);
+        // We could do this routinely (i.e. when there is a final newline too) but we desire to run all tests through the harder
+        // branch above that replaces the final newline with \0 to test that logic (e.g. test 893 which causes a type bump in the last
+        // field) since we rely on that logic to avoid the copy below when fileSize$4096==0 but there is a final eol ok.
+        // TODO: portable way to discover relevant page size. 4096 is lowest common denominator, though, and should suffice.
       } else {
-        finalByte = *eof;
-        // remember finalByte so we can reread final field correctly after reading all data.
-        // for now, finalByte could still be \n or \r and if so, we'll deal with that later below when we know if it's single column input or not
-        if (verbose && !isspace(finalByte)) {
-          DTPRINT("  File ends abruptly with '%c'. This should be fine but if a problem does occur, please report that problem as a bug and workaround it by appending a newline to properly end the last record; e.g. 'echo >> %s'.\n", finalByte, args.filename);
-        }
+        const char *msg = "This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file' to avoid this ";
+        if (verbose) DTPRINT("  File ends abruptly with '%c'. Copying file in RAM. %s copy.\n", eof[-1], msg);
+        // In future, we may discover a way to mmap fileSize+1 on all OS when fileSize%4096==0, reliably. If and when, this clause can be updated with no code impact elsewhere.
+        copyFile(fileSize, msg, verbose);
       }
     }
     *_const_cast(eof) = '\0';  // cow page
   }
   // else char* input already guaranteed to end with \0. We do not modify direct char* input at all, ever.
-  // We have now ensured the input ends on eof and that *eof=='\0' too.
-  // If the file ended abruptly (rare), the last character was remembered in finalByte.
-  // We have made most files which end properly with final end-of-line now abruptly end with a \0 instead (in the cow page).
+  // We have now ensured the input ends on eof and that *eof=='\0' too. Normally, lastEOLreplaced will be true.
+  // We have made most files which end properly with final end-of-line now abruptly end with a \0 (in the cow page).
   // This may seem counterintuitive but now we have consistency within the constraints of no mmap of fileSize+1.
   // In field processors we don't need to test for ch<eof at all now, since \0 is terminal just as well as \r or \n.
   // When we need to, we now have two options: i) if (*ch && ...) (i.e. !='\0') which saves a compare to eof on every byte, or ii) ch<eof as usual
   // If UTF strings contain \0 we can branch in that rare case to test if ch==eof too if necessary. We have that option.
   // If a field does not end with sep or eol, it's only in that rare case do we then need to test if it is \0 or not.
-
+  // fileSize is left unchanged at the actual file size. Use eof and sof from here on. Usually, eof-sof will be a few bytes less than fileSize.
 
   //*********************************************************************************************
   // [5] Position to line `skipNrow+1` or to line containing `skipString`.
@@ -1323,23 +1342,11 @@ int freadMain(freadMainArgs _args) {
   //     what text editors report, or bash commands like "wc -l", "head -n"
   //     or "tail -n".
   //*********************************************************************************************
-  const char *pos;   // Location where the actual data in the file begins
-  int row1line = 1;  // The line number where the data starts. Normally row 1 is column names and row1line ends up == 2.
+  const char *pos = sof;   // Location where the actual data in the file begins
+  int row1line = 1;        // The line number where the data starts. Normally row 1 is column names and row1line ends up == 2.
   bool skipAuto = true;
   {
-
-  // First, set 'LFpresent' for use by eol() to know if \r-only line ending is allowed, #2371
-  // Very rare and not recommended \r-only files will be completely scanned at this point, which we're fine with. Otherwise it stops
-  // as soon as the first \n is found.
-  ch = pos = sof;
-  while (*ch!='\n' && *ch!='\0') ch++;
-  LFpresent = (*ch=='\n');
-  if (verbose) DTPRINT(LFpresent ?
-    "  \\n has been found in the data so any mixture of line endings is allowed other than \\r-only line endings. This is common and ideal.\n"
-  : "  No \\n has been found in the data (the entire input was scanned) so \\r-only line endings are allowed. This is unusual.\n");
-
   ch = pos;
-
   if (verbose) DTPRINT("[05] Skipping initial rows if needed\n");
 
   // line is for error and warning messages so considers raw \n whether inside quoted fields or not, just
@@ -1370,7 +1377,7 @@ int freadMain(freadMainArgs _args) {
   while (ch<eof && isspace(*ch)) {   // isspace matches ' ', \t, \n and \r
     if (*ch=='\n') { ch++; lineStart=ch; row1line++; } else ch++;
   }
-  if (ch>=eof && !finalByte) STOP("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace.");
+  if (ch>=eof) STOP("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace.");
   if (verbose) {
     if (lineStart>ch) DTPRINT("  Moved forward to first non-blank line (%d)\n", row1line);
     DTPRINT("  Positioned on line %d starting: <<%s>>\n", row1line, strlim(lineStart, 30));
@@ -1520,20 +1527,21 @@ int freadMain(freadMainArgs _args) {
     DTPRINT("  fill=%s and the most number of columns found is %d\n", fill?"true":"false", ncol);
   }
 
-  if (finalByte=='\n' || finalByte=='\r') {
-    if (ncol==1 && (eof[-1]=='\n' || eof[-1]=='\r') && (finalByte=='\n' || (!LFpresent && finalByte=='\r'))) {
-      // Multiple newlines at the end are significant in the case of 1-column files only (multiple NA at the end)
-      // However, 1-column files are very unusual, and with more than one newline at the end too is even more unusual
-      // So we'll handle it with the 4096 restriction for simplicity, in the same way as the single row exception
-      if (fileSize%4096==0) {
-        STOP("File is very very unusual. It is single column, the file's size is an exact multiple of 4096 bytes, and it ends with 2 or more end-of-line. Do the multiple end-of-line really represent missing values in extra rows at the end? If so, please append a space at the end until we can implement support for this, using for example 'echo ' ' >> %s'.", args.filename);
-      }
-      if (verbose) DTPRINT("  1-column file ends with multiple end-of-line. Restoring finalByte and using extra byte in cow page.\n");
-      *_const_cast(eof) = finalByte;
-      fileSize++;
-      *_const_cast(++eof) = '\0';
+  if (ncol==1 && lastEOLreplaced && (eof[-1]=='\n' || eof[-1]=='\r')) {
+    // Multiple newlines at the end are significant in the case of 1-column files only (multiple NA at the end)
+    if (fileSize%4096==0) {
+      const char *msg = "This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and is a multiple of 4096, too.";
+      if (verbose) DTPRINT("  Copying file in RAM. %s\n", msg);
+      ASSERT(mmp_copy==NULL, "Internal error: mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.", 1/*dummy arg for macro*/);
+      copyFile(fileSize, msg, verbose);
+      pos = sof + (pos-(const char *)mmp);
+      firstJumpEnd = sof + (firstJumpEnd-(const char *)mmp);
+    } else {
+      if (verbose) DTPRINT("  1-column file ends with 2 or more end-of-line. Restoring last eol using extra byte in cow page.\n");
+      eof++;
     }
-    finalByte = '\0';  // only if finalByte is not \r or \n might it be significant from now on
+    *_const_cast(eof-1) = eol_one_r ? '\r' : '\n';
+    *_const_cast(eof) = '\0';
   }
   }
 
@@ -1608,7 +1616,6 @@ int freadMain(freadMainArgs _args) {
 
     while(ch<eof && jumpLine++<jumpLines) {
       const char *lineStart = ch;
-      int8_t previousLastColType = tmpType[ncol-1];  // to revert any bump in last colum due to final field on final row due to finalByte
       int thisNcol = detect_types(&ch, tmpType, ncol, &bumped);
       if (thisNcol==0 && skipEmptyLines) {
         if (eol(&ch)) ch++;
@@ -1621,13 +1628,6 @@ int freadMain(freadMainArgs _args) {
         bumped = false;
         if (jump==0) lastRowEnd=eof;  // to prevent the end from being tested; e.g. a short file with blank line within first 100 like test 976
         break;
-      }
-      if (ch==eof && finalByte && tmpType[ncol-1]!=previousLastColType) {
-        // revert bump due to e.g. ,NA<eof> in the last field of last row where finalByte=='A' and N caused bump to character (test 894.0221)
-        if (verbose) DTPRINT("  Reverted bump of final column from %d to %d on final field due to finalByte='%c'."
-            " If the bump was actually correct, there will be a reread. Finish the file properly with newline to avoid the reread.\n",
-            previousLastColType, tmpType[ncol-1], finalByte);
-        tmpType[ncol-1] = previousLastColType;
       }
       ch += (*ch=='\n' || *ch=='\r');   // eol() was called in the if() above which moved to the last of the eol sequence (if any)
       lastRowEnd = ch;
@@ -2032,10 +2032,6 @@ int freadMain(freadMainArgs _args) {
         const char *fieldStart = tch;
         int j = 0;
 
-        int finalFieldLen = 0;  // only used when finalByte
-        char finalSep = '\0';   // only used when finalByte. It is correct to be '\0' and not 127 (it's either set (!=0) or not (==0))
-        oneLastTimeIfFinalByte:
-
         //*** START HOT ***//
         if (sep!=' ' && !any_number_like_NAstrings) {  // TODO:  can this 'if' be dropped somehow? Can numeric NAstrings be dealt with afterwards in one go as numeric comparison?
           // Try most common and fastest branch first: no whitespace, no quoted numeric, ",," means NA
@@ -2066,7 +2062,7 @@ int freadMain(freadMainArgs _args) {
           else {
             tch = fieldStart; // restart field as int processor could have moved to A in ",123A,"
           }
-          // if *tch=='\0' then *eof in mind, fall through to below and, if finalByte is set, reread final field
+          // if *tch=='\0' then *eof in mind, fall through to below
         }
         //*** END TEPID. NOW COLD.
 
@@ -2124,8 +2120,7 @@ int freadMain(freadMainArgs _args) {
             tch = fieldStart;
           }
 
-          if (thisType != joldType             // rare out-of-sample type exception.
-              && (tch<eof || !finalByte || finalSep)) {   // don't bump the final field until we've replaced the finalByte (if any) test 894.0221 where final field is NA and finalByte=='A'
+          if (thisType != joldType) {             // rare out-of-sample type exception.
             if (!checkedNumberOfFields && !fill) {
               // check this line has the correct number of fields. If not, don't apply the bump from this invalid line. Instead fall through to myStoppingEarly below.
               const char *tt = fieldStart;
@@ -2158,47 +2153,8 @@ int freadMain(freadMainArgs _args) {
           ((char**) targets)[size[j]] += size[j];
           j++;
           if (*tch==sep) { tch++; continue; }
-          if (tch==eof && finalByte==sep && sep!=' ') { finalByte='\0'; continue; }
           if (fill && (*tch=='\n' || *tch=='\r' || *tch=='\0') && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
           break;
-        }
-
-        // The goal here is to handle the rare case of files that don't end with newline AND are also exactly a multiple of page size, PR#2200.
-        // All because mmap fileSize+1 doesn't work on Mac and Windows when fileSize%pageSize==0 (bus error on read and write)
-        if (finalByte && tch==eof) {
-          if (j<=0 || *eof!='\0' || !args.filename || fieldStart<=(char *)mmp) {
-            #pragma omp critical
-            if (!stopTeam) {
-              stopTeam = true;
-              snprintf(internalErr, internalErrSize, "Internal error in final field: j<=0 || *eof!='\\0' || !args.filename || fieldStart<=mmp");
-              // Direct non-file input is already ended with '\0'. finalByte is only ever set for files and only when they end abruptly without final newline
-            }
-            break;
-          }
-          if (!finalSep) {
-            // Just read final field for the first time and finalSep hasn't been set yet.
-            // Shift final field back 1 character in cow pages(s) and reread it.
-            // fieldStart will be correct even in very complicated cases where for example jump points are
-            //   skipped because we delay and isolate this final field logic to this latest point when we really need it
-            // We do not allocate a copy for the last field because that would need *eof to be moved to the copy's end, but eof is shared across threads.
-            finalFieldLen = (int)(tch-fieldStart);
-            finalSep = fieldStart[-1];  // remember the byte we're shifting back over; either sep or newline. fieldStart>mmp was checked above.
-            memmove(_const_cast(fieldStart-1), fieldStart, (size_t)finalFieldLen);  // cow page.
-            *_const_cast(eof-1) = finalByte;  // *eof=='\0' already
-            tch = fieldStart-1;
-            j--;
-            ((char**) targets)[size[j]] -= size[j];
-            goto oneLastTimeIfFinalByte;  // reread final field now that it has been shifted back one byte and the finalByte placed at the end
-          } else if (nTypeBump) {
-            // The very final field was just jiggled and reread due to finalByte!='\0' and finalSep!='\0'.
-            // But there are out-of-sample type exceptions (nTypeBump>0) so there will be a reread next. So we have to shift the final field
-            // forwards again and put back the finalSep before the final field.
-            // If no reread is about to happen however (nTypeBump==0), careful to leave field shifted back since lenOff points there if it is string.
-            memmove(_const_cast(fieldStart+1), fieldStart, (size_t)finalFieldLen); // shift final field forwards
-            *_const_cast(fieldStart) = finalSep;  // put the finalField's preceeding sep or newline back again
-            finalSep = '\0';  // important to reset ready for the whole file reread so that the final field gets shifted back again, a 2nd and final time
-            finalFieldLen = 0;
-          }
         }
         if (j<ncol || (!eol(&tch) && *tch!='\0'))  {
           // Too few or too many columns observed (including empty line). If fill==true, fields should already have been filled
