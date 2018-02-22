@@ -2925,7 +2925,7 @@ unlink(f)
 
 # ERANGE errno handled, #4879
 test(1018, identical(fread("1.46761e-313\n"), data.table(V1=1.46761e-313)))
-test(1019, fread("A\n1.23456789123456789123456999\n"), data.table(A="1.23456789123456789123456999"))
+test(1019, fread("A\n1.23456789123456789123456999\n"), data.table(A=1.234567891234568))
 
 # crash assigning to row 0, #2754
 DT = data.table(A=1:5,B=6:10)
@@ -3077,8 +3077,7 @@ test(1042, DT[-5, mean(x), by = group], data.table(group=c(1,2), V1=c(1.5, 3.5))
 # Test when abs(negative index) > nrow(dt) - should warn
 test(1042.1, DT[-10], DT, warning="Item 1 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 1.")
 test(1042.2, DT[c(-5, -10), mean(x), by = group], data.table(group=c(1,2),V1=c(1.5,3.5)), warning="Item 2 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 2.")
-#  Test #1043 TO DO - mixed negatives
-test(1043, DT[c(1, -5)], error="Item 2 of i is -5 and item 1 is 1. Cannot mix positives and negatives.")
+test(1043, DT[c(1, -5)], error="Cannot mix positives and negatives.")
 
 # crash (floating point exception), when assigning null data.table() to multiple cols, #4731
 DT = data.table(x=1:5,y=6:10)
@@ -6012,13 +6011,13 @@ DT[, a:= c("A", "Q", "W", "C", "X", "Q")]
 test(1437.9, DT[a %chin% c("A", "B"), verbose = TRUE], output = "Optimized subsetting")
 test(1437.11, DT[a %chin% c("A", "B") & x == 3 & y %in% c(1,2), verbose = TRUE], output = "Optimized subsetting")
 ## multiple selections on the same column are not optimized and yield correct result
-test(1437.12, DT[a %chin% c("A", "B") & a == "A", verbose = TRUE], output = "   x y          z a1: 1 1 -0.6264538 A")
+test(1437.12, DT[a %chin% c("A", "B") & a == "A", verbose = TRUE], output = "^   x y          z a1: 1 1 -0.6264538 A")
 test(1437.13, DT[a %chin% c("A", "B") & a == "C"], DT[0])
 ## queries with 'or' connection are not optimized and yield the correct result.
-test(1437.14, DT[a %chin% c("A", "B") | x == 2, verbose = TRUE], output = "   x y          z a1: 1 1 -0.6264538 A2: 2 2  1.5952808 C3: 2 3  0.3295078 X4: 2 3 -0.8204684 Q")
+test(1437.14, DT[a %chin% c("A", "B") | x == 2, verbose = TRUE], output = "^   x y          z a1: 1 1 -0.6264538 A2: 2 2  1.5952808 C3: 2 3  0.3295078 X4: 2 3 -0.8204684 Q")
 test(1437.15, DT[a %chin% c("A", "B") | x == 2], DT[c(1, 4, 5, 6)])
 ## notjoin queries with connection are not optimized and yield the correct result.
-test(1437.16, DT[!a %chin% c("A", "B") & x == 2, verbose = TRUE], output = "   x y          z a1: 2 2  1.5952808 C2: 2 3  0.3295078 X3: 2 3 -0.8204684 Q")
+test(1437.16, DT[!a %chin% c("A", "B") & x == 2, verbose = TRUE], output = "^   x y          z a1: 2 2  1.5952808 C2: 2 3  0.3295078 X3: 2 3 -0.8204684 Q")
 test(1437.17, DT[!a %chin% c("A", "B") & x == 2], DT[c(4, 5, 6)])
 ## queries with j are optimized (Correct results are tested extensively below)
 test(1437.18, DT[x == 2, .(test = x+y), verbose = TRUE], output = "Optimized subsetting")
@@ -6045,8 +6044,18 @@ test(1437.28, DT[x & y, verbose = TRUE], output = "Optimized subsetting")
 test(1437.29, DT[x & y], DT[2])
 ## subsets where just cols are given but columns are not logical are not optimized.
 DT <- data.table(x = c(1, 0, 2, 4), y = c(0, 2, 1, 3))
-test(1437.31, DT[x & y, verbose = TRUE], output = "   x y")
+test(1437.31, DT[x & y, verbose = TRUE], output = "^   x y")
 test(1437.32, DT[x & y], DT[3:4])
+## test that optimization is switched off if CJ would result in more than 1e4 rows of i (#2635)
+# single column query with more than 1e4 rows is optimized
+test(1437.33, DT[x %in% 0:1e5, verbose = TRUE], output = "Optimized subsetting")
+test(1437.34, DT[x %in% 0:1e5], DT)
+# multi column query with less than 1e4 rows in i is optimized
+test(1437.35, DT[x %in% 0:99 & y %in% 0:98, verbose = TRUE], output = "Optimized subsetting")
+test(1437.36, DT[x %in% 0:99 & y %in% 0:98], DT)
+# multi column query with more than 1e4 rows in i is not optimized
+test(1437.37, DT[x %in% 0:100 & y %in% 0:101, verbose = TRUE], output = "^   x y")
+test(1437.38, DT[x %in% 0:100 & y %in% 0:101], DT)
 ## do extensive tests of optimized vs non-optimized queries for identical results.
 ## very much inspired by the tests for non equi joins (1641ff)
 set.seed(13545)
@@ -6096,7 +6105,7 @@ jQueries <- c(".(test = intCol + doubleCol, test2 = paste0(boolCol, charCol))",
 ## define example 'by' values
 bys <- c("groupCol", character(0))
 ## test each query string
-test_no <- 1437.0033
+test_no <- 1437.0039
 for(t in seq_len(nrow(all))){
   ## test the query with missing j
   thisQuery <- all$query[t]
@@ -10985,7 +10994,7 @@ test(1808.6, fread("A,B\r1,3\r\r \r2,4\r", blank.lines.skip=TRUE), data.table(A=
 test(1808.7, fread("A,B\r1,3\r\r \r2,4\r", fill=TRUE), data.table(A=c(1L,NA,NA,2L), B=c(3L,NA,NA,4L)))
 test(1808.8, fread("A,B\r1,3\r\r \r2,\r", blank.lines.skip=TRUE, fill=TRUE), data.table(A=1:2, B=c(3L,NA)))
 test(1809, fread("A,B\n\r1,2\n\r3,4\n\r5,6"), data.table(A=c(1L,3L,5L), B=c(2L,4L,6L)))
-cat("A,B\n1,q\n2,w\n3,xyz", file=f<-tempfile()); test(1810, fread(f,verbose=TRUE), data.table(A=c(1L,2L,3L), B=c("q","w","xyz")), output="File ends abruptly with 'z'"); unlink(f)
+cat("A,B\n1,q\n2,w\n3,xyz", file=f<-tempfile()); test(1810, fread(f,verbose=TRUE), data.table(A=c(1L,2L,3L), B=c("q","w","xyz")), output="File ends abruptly with 'z'.*cow page"); unlink(f)
 test(1811, fread("A,B\n1,2\n3,4", skip="boo"), error="skip='boo' not found in input")
 test(1812, fread("A,B\n1,2\n3,4\n", skip="4", verbose=T), data.table(V1=3L, V2=4L), output="Found skip='4' on line 3")
 test(1813, fread("A,B\n1,2\n3,4", skip=10L), error="skip=10 but the input only has 3 lines")
@@ -11138,8 +11147,8 @@ src1 = paste0(rep("1234567890", 13), collapse="")  # length = 130, slightly abov
 src2 = paste0(rep("12345678900987654321", 13), collapse="")  # length = 260, slightly above 256
 test(1831.1, fread(paste0("A\n", src1)), data.table(A=src1))
 test(1831.2, fread(paste0("A\n", src2)), data.table(A=src2))
-test(1831.3, fread(paste0("A\n", src2, ".33")), data.table(A=paste0(src2, ".33")))
-test(1831.4, fread(paste0("A\n", "1.", src2)), data.table(A=paste0("1.", src2)))
+test(1831.3, fread(paste0("A\n", src2, ".33")), data.table(A=1.2345678900987655e+259))
+test(1831.4, fread(paste0("A\n", "1.", src2)), data.table(A=1.1234567890098766))
 
 DT = as.data.table(matrix(5L, nrow=10, ncol=10))
 test(1832.1, fwrite(DT, f<-tempfile(), verbose=TRUE), output="Column writers")
@@ -11516,8 +11525,12 @@ test(1869.2, fread("A\r1\r\r\r2\r\r"), data.table(A=c(1L,NA,NA,2L,NA)))
 test(1869.3, fread("A\r1\r\r\r2\r\r\r"), data.table(A=c(1L,NA,NA,2L,NA,NA)))
 test(1869.4, fread("A,B\r2,3\r,\r,\r4,5\r\r"), data.table(A=c(2L,NA,NA,4L), B=c(3L,NA,NA,5L)))
 test(1869.5, fread("A,B\r2,3\r\r,\r2,4\r\r"), data.table(A=2L, B=3L), warning="Stopped.*line 3. Expected 2 fields but found 0.*First discarded non-empty line: <<,>>")  # two line footer because of the comma
-test(1869.6, fread(testDir("colnames4096.csv")), error="very unusual.*one single line without any.*r.*n at the end.*and.*multiple of 4096")
-test(1869.7, fread(testDir("onecol4096.csv")), error="very unusual.*single column.*multiple of 4096.*ends with 2 or more end-of-line")
+test(1869.6, fread(testDir("colnames4096.csv"), verbose=TRUE)[,c(1,2,585,586)],
+             data.table(Foo000=logical(), Bar001=logical(), Foo584=logical(), B=logical()),
+             output = "Copying file in RAM.*file is very unusual.*ends abruptly.*multiple of 4096")
+test(1869.7, fread(testDir("onecol4096.csv"), verbose=TRUE)[c(1,2,245,246,249,255:.N),],
+             data.table(A=c("FooBarBazQux000","FooBarBazQux001","","FooBarBazQux245","","FooBarBazQux254","FooBarBazQux","FooBarBaz12","FooBarBazQux256","","","")),
+             output = "Copying file in RAM.*file is very unusual.*one single column, ends with 2 or more end-of-line.*and is a multiple of 4096")
 
 # better colname detection by comparing potential column names to the whole sample not just the first row of the sample, #2526
 test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,300L,500L), V3=c(200L,400L,600L)))
@@ -11673,52 +11686,57 @@ test(1877.1, attr(setattr(data.table(x = 1:10), "class", NULL), "class"), NULL) 
 test(1877.2, attr(setattr(data.table(x = 1:10), "class", character()), "class"), NULL)       # now ok (was segfault)
 test(1877.3, attr(setattr(data.table(x = 1:10), "test", character()), "test"), character(0)) # ok before
 
-# PR #2631 - Fix duplicated names arising in merge when by.x in names(y)
-# 1878.1 should fail in there are any duplicate names after a join
-# 1878.2 should fail if a warning is not thrown when suffixes leads to duplicate names
+# In dev 1.10.5 these were parsed as floats, #2625. Caught before release to CRAN.
+test(1878, fread("A,B,C,D,E\n.,+.,.e,.e+,0e\n"), data.table(A=".", B="+.", C=".e", D=".e+", E="0e"))
+
+# assortment of tests from #2572
+## negative indexing should retain key
+DT = data.table(a = c(5, 5, 7, 2, 2),
+                b = 1:5, key = 'a')
+test(1879.1, key(DT[-c(2, 3)]), 'a')
+test(1879.2, key(DT[-(1:5)]), 'a')
+test(1879.3, key(DT[-2, sum(b), by = a]), 'a')
+## behavior of out-of-bound subsets
+##   (mixed +/- already covered in 1043)
+test(1879.4, DT[3:6],
+     data.table(a = c(5, 5, 7, NA),
+                b = c(1L, 2L, 3L, NA)))
+test(1879.5, DT[0:5], DT)
+## if fread bumps logical to character,
+##   the original string representation should be kept
+DT = data.table(A=rep("True", 2200), B="FALSE", C='0')
+DT[111, LETTERS[1:3] := .("fread", "is", "faithful")]
+fwrite(DT, f<-tempfile())
+test(1879.6, fread(f, verbose=TRUE), DT,
+     output=paste("Column 1.*bumped from 'bool8' to 'string'",
+                  "Column 2.*bumped from 'bool8' to 'string'",
+                  "Column 3.*bumped from 'bool8' to 'string'",
+                  sep = '.*'))
+unlink(f)
+
+# Fix duplicated names arising in merge when by.x in names(y), PR#2631
+# 1880.1 should fail in there are any duplicate names after a join
+# 1880.2 should fail if a warning is not thrown when suffixes leads to duplicate names
 parents = data.table(name=c("Sarah", "Max"), sex=c("F", "M"), age=c(41, 43))
 children = data.table(parent=c("Sarah", "Max", "Max"), 
                        name=c("Oliver", "Sebastian", "Michelle"),
                        sex=c("M", "M", "F"), age=c(5,8,7))
 joined = merge(parents, children, by.x="name", by.y="parent")                       
-test(1878.1, length(names(joined)), length(unique(names(joined)))) 
-test(1878.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""))), 3L,
+test(1880.1, length(names(joined)), length(unique(names(joined)))) 
+test(1880.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""))), 3L,
              warning = "column names.*are duplicated in the result")
 
-##########################
 
-# TODO: Tests involving GForce functions needs to be run with optimisation level 1 and 2, so that both functions are tested all the time.
+###################################
+#  Add new tests above this line  #
+###################################
 
-# TO DO: Add test for fixed bug #5519 - dcast returned error when a package imported data.table, but dint happen when "depends" on data.table. This is fixed (commit 1263 v1.9.3), but not sure how to add test.
-
-# TO DO: test and highlight in docs that negatives are fine and fast in forderv (ref R wish #15644)
-# TO DO: tests of freading classes like Date and the verbose messages there.
-# TO DO: Test mid read bump of logical T/F to character, collapse back to T and F.
-
-# TO DO: add examples of multiple LHS (name and position) and multiple RHS to example(":=")
-# TO DO: tests on double in add hoc by
-# TO DO: test on -i that retain key e.g.  DT[-4] and DT[-4,sum(v),by=b] should both retain key
-#        test on out of bound i subsets e.g. 6:10 when DT has 7 rows, and mixed negative and positive i integer is error.
-#  test that ordered subsets when i is unkeyed now retain x's key (using is.sorted(f__))
-
-# TO DO: add FAQ that  eval() is evaled in calling frame so don't need a, then update SO question of 14 March. See the test using variable name same as column name. Actually, is that true?  Need "..J".
-# TO DO: why did SO answer using eval twice in j need .SD in lapply(f,eval,.SD) on 19 Apr
-
-# TO DO: check the "j is named list could be inefficient" message from verbose than Chris N showed recently to 15 May
-# TO DO: !make sure explicitly that unnamed lists are being executed by dogroups!
-# TO DO: Add to warning about a previous copy that class<-, levels<- can also copy whole vector.  *Any* fun<- form basically.
-# TO DO: use looped := vs set test in example(":=") or example(setnames) to test overhead in [.data.table is tested to stay low in future.
-
-# TO DO: add tests on smaller examples with NAs for 'frankv', even though can't compare to base::rank.
-## See test-* for more tests
-
-##########################
 options(warn=0)
 setDTthreads(0)
 options(oldalloccol)  # set at top of this file
-
-plat = paste("endian==",.Platform$endian,", sizeof(long double)==",.Machine$sizeof.longdouble,
-             ", sizeof(pointer)==",.Machine$sizeof.pointer, sep="")
+plat = paste0("endian==", .Platform$endian,
+              ", sizeof(long double)==", .Machine$sizeof.longdouble,
+              ", sizeof(pointer)==", .Machine$sizeof.pointer)
 if (nfail > 0) {
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
     cat("\r")
@@ -11726,6 +11744,5 @@ if (nfail > 0) {
     # important to stop() here, so that 'R CMD check' fails
 }
 cat("\n",plat,"\n\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
-# date() is included so we can tell when CRAN checks were run (in particular if they have been rerun since
-# an update to Rdevel itself; data.table doesn't have any other dependency) since there appears to be no other
-# way to see the timestamp that CRAN checks were run. Some CRAN machines lag by several days.
+# date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
+# stale due to not updating yet since a fix in R-devel, for example.
