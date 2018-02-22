@@ -2411,11 +2411,10 @@ setattr <- function(x,name,value) {
     # creating names longer than the number of columns of x, and to change the key, too
     # For convenience so that setattr(DT,"names",allnames) works as expected without requiring a switch to setnames.
   else {
-    # fix for R's global TRUE value input, #1281
     ans = .Call(Csetattrib, x, name, value)
     # If name=="names" and this is the first time names are assigned (e.g. in data.table()), this will be grown by alloc.col very shortly afterwards in the caller.
     if (!is.null(ans)) {
-      warning("Input is a length=1 logical that points to the same address as R's global TRUE value. Therefore the attribute has not been set by reference, rather on a copy. You will need to assign the result back to a variable. See https://github.com/Rdatatable/data.table/issues/1281 for more.")
+      warning("Input is a length=1 logical that points to the same address as R's global value. Therefore the attribute has not been set by reference, rather on a copy. You will need to assign the result back to a variable. See issue #1281.")
       x = ans
     }
   }
@@ -2888,8 +2887,13 @@ isReallyReal <- function(x) {
     ## loop continues with remainingIsub
   }
   if (length(i) == 0L) stop("Internal error in .isFastSubsettable. Please report to data.table developers")
-  ## convert i to data.table with all combinations in rows. Care is needed with names as we do
-  ## it with 'do.call' and this would cause problems if colNames were 'sorted' or 'unique'
+  ## convert i to data.table with all combinations in rows.
+  if(length(i) > 1L && prod(vapply(i, length, integer(1L))) > 1e4){
+    ## CJ would result in more than 1e4 rows. This would be inefficient, especially memory-wise #2635
+    return(NULL)
+  }
+  ## Care is needed with names as we construct i
+  ## with 'CJ' and 'do.call' and this would cause problems if colNames were 'sorted' or 'unique'
   ## as these two would be interpreted as args for CJ
   colNames <- names(i)
   names(i) <- NULL
@@ -2899,7 +2903,6 @@ isReallyReal <- function(x) {
   setnames(i, colNames)
   idx <- NULL
   if(is.null(idx)){
-      ## we are seeing an equi-join
       ## check whether key fits the columns in i.
       ## order of key columns makes no difference, as long as they are all upfront in the key, I believe.
       if (all(names(i) %chin% head(key(x), length(i)))){
