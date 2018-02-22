@@ -11708,7 +11708,7 @@ test(1879.5, DT[0:5], DT)
 ## if fread bumps logical to character,
 ##   the original string representation should be kept
 DT = data.table(A=rep("True", 2200), B="FALSE", C='0')
-DT[111, LETTERS[1:3] := .("here", "be", "dragons")]
+DT[111, LETTERS[1:3] := .("fread", "is", "faithful")]
 fwrite(DT, f<-tempfile())
 test(1879.6, fread(f, verbose=TRUE), DT,
      output=paste("Column 1.*bumped from 'bool8' to 'string'",
