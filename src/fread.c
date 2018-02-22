@@ -34,7 +34,7 @@
 #define llu   unsigned long long int
 
 // Private globals to save passing all of them through to highly iterated field processors
-static const char *eof;
+static const char *sof, *eof;
 static char sep;
 static char whiteChar; // what to consider as whitespace to skip: ' ', '\t' or 0 means both (when sep!=' ' && sep!='\t')
 static char quote, dec;
@@ -157,11 +157,10 @@ bool freadCleanup(void)
   eol_one_r = false;
   fill = false;
   // following are borrowed references: do not free
-  eof = NULL;
+  sof = eof = NULL;
   NAstrings = NULL;
   return neededCleanup;
 }
-
 
 #define CEIL(x)  ((size_t)(double)ceil(x))
 static inline size_t umax(size_t a, size_t b) { return a > b ? a : b; }
@@ -420,6 +419,18 @@ static const char* filesize_to_str(size_t fsize)
   return output;
 }
 
+void copyFile(size_t fileSize, const char *msg, bool verbose)  // only called in very very rare cases
+{
+  double tt = wallclock();
+  mmp_copy = (char *)malloc((size_t)fileSize + 1/* extra \0 */);
+  if (!mmp_copy) STOP("Unable to allocate %s of contiguous virtual RAM. %s allocation.", filesize_to_str(fileSize), msg);
+  memcpy(mmp_copy, mmp, fileSize);
+  sof = mmp_copy;
+  eof = (char *)mmp_copy + fileSize;
+  tt = wallclock()-tt;
+  if (tt>0.5) DTPRINT("Avoidable %.3f seconds. %s time to copy.\n", tt, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
+  if (verbose) DTPRINT("  File copy in RAM took %.3f seconds.\n", tt);
+}
 
 
 //==============================================================================
@@ -1145,7 +1156,6 @@ int freadMain(freadMainArgs _args) {
   // "irrelevant" parts: the BOM mark, the banner, the headers, the skipped
   // lines, etc. Similarly, `eof` may be adjusted to take out the footer of
   // the file.
-  const char *sof = NULL;
   const char *ch = NULL;
 
   //*********************************************************************************************
@@ -1271,7 +1281,7 @@ int freadMain(freadMainArgs _args) {
   eol_one_r = (ch==eof);
   if (verbose) DTPRINT(eol_one_r ?
     "  No \\n exists in the file at all, so single \\r (if any) will be taken as one line ending. This is unusual but will happen normally when there is no \\r either; e.g. a single line missing its end of line.\n" :
-    "  \\n has been found in the input and different lines can end with different line endings (e.g. mixed \n and \r\n in one file). This is common and ideal.\n");
+    "  \\n has been found in the input and different lines can end with different line endings (e.g. mixed \\n and \\r\\n in one file). This is common and ideal.\n");
 
   bool lastEOLreplaced = false;
   if (args.filename) {
@@ -1304,15 +1314,7 @@ int freadMain(freadMainArgs _args) {
         const char *msg = "This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file' to avoid this ";
         if (verbose) DTPRINT("  File ends abruptly with '%c'. Copying file in RAM. %s copy.\n", eof[-1], msg);
         // In future, we may discover a way to mmap fileSize+1 on all OS when fileSize%4096==0, reliably. If and when, this clause can be updated with no code impact elsewhere.
-        double tt = wallclock();
-        mmp_copy = (char *)malloc((size_t)fileSize + 1/* extra \0 */);
-        if (!mmp_copy) STOP("Unable to allocate %s of contiguous virtual RAM. %s allocation.", filesize_to_str(fileSize), msg);
-        memcpy(mmp_copy, mmp, fileSize);
-        sof = mmp_copy;
-        eof = (char *)mmp_copy + fileSize;
-        tt = wallclock()-tt;
-        if (tt>0.5) DTPRINT("Avoidable %.3f seconds. %s time to copy.\n", tt, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
-        if (verbose) DTPRINT("  File copy in RAM took %.3f seconds.\n", tt);
+        copyFile(fileSize, msg, verbose);
       }
     }
     *_const_cast(eof) = '\0';  // cow page
@@ -1527,14 +1529,19 @@ int freadMain(freadMainArgs _args) {
 
   if (ncol==1 && lastEOLreplaced && (eof[-1]=='\n' || eof[-1]=='\r')) {
     // Multiple newlines at the end are significant in the case of 1-column files only (multiple NA at the end)
-    // However, 1-column files are very unusual, and with more than one newline at the end too is even more unusual
-    // So we'll handle it with the 4096 restriction for simplicity, in the same way as the single row exception
     if (fileSize%4096==0) {
-      STOP("File is very very unusual. It is single column, the file's size is an exact multiple of 4096 bytes, and it ends with 2 or more end-of-line. Do the multiple end-of-line really represent missing values in extra rows at the end? If so, please append a space at the end until we can implement support for this, using for example 'echo ' ' >> %s'.", args.filename);
+      const char *msg = "This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and is a multiple of 4096, too.";
+      if (verbose) DTPRINT("  Copying file in RAM. %s\n", msg);
+      ASSERT(mmp_copy==NULL, "Internal error: mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.", 1/*dummy arg for macro*/);
+      copyFile(fileSize, msg, verbose);
+      pos = sof + (pos-(const char *)mmp);
+      firstJumpEnd = sof + (firstJumpEnd-(const char *)mmp);
+    } else {
+      if (verbose) DTPRINT("  1-column file ends with 2 or more end-of-line. Restoring last eol using extra byte in cow page.\n");
+      eof++;
     }
-    if (verbose) DTPRINT("  1-column file ends with multiple end-of-line. Restoring last eol using extra byte in cow page.\n");
-    *_const_cast(eof) = eol_one_r ? '\r' : '\n';
-    *_const_cast(++eof) = '\0';
+    *_const_cast(eof-1) = eol_one_r ? '\r' : '\n';
+    *_const_cast(eof) = '\0';
   }
   }
 
