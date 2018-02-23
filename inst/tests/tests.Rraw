@@ -7163,15 +7163,12 @@ ans2 <- setDF(merge(setDT(d1), setDT(d2), all=TRUE, by="A"))
 test(1542.2, ans1, ans2)
 # test duplicate name cases
 setnames(d2, c("A", "Y"), c("B", "A"))
-ans1 <- suppressWarnings(merge(setDF(d1), setDF(d2), by.x="A", by.y="B"))
-ans2 <- setDF(merge(setDT(d1), setDT(d2), by.x="A", by.y="B"))
-test(1543.3, ans1, ans2)
 ans1 <- suppressWarnings(merge(setDF(d2), setDF(d1), by.x="B", by.y="A"))
 ans2 <- setDF(merge(setDT(d2), setDT(d1), by.x="B", by.y="A"))
-test(1543.4, ans1, ans2)
+test(1543.3, ans1, ans2)
 ans1 <- suppressWarnings(merge(setDF(d2), setDF(d1), all=TRUE, by.x="B", by.y="A"))
 ans2 <- setDF(merge(setDT(d2), setDT(d1), all=TRUE, by.x="B", by.y="A"))
-test(1543.5, ans1, ans2)
+test(1543.4, ans1, ans2)
 
 # test for sort=FALSE argument, #1282
 set.seed(1L)
@@ -11717,6 +11714,18 @@ test(1879.6, fread(f, verbose=TRUE), DT,
                   sep = '.*'))
 unlink(f)
 
+# Fix duplicated names arising in merge when by.x in names(y), PR#2631
+# 1880.1 should fail in there are any duplicate names after a join
+# 1880.2 should fail if a warning is not thrown when suffixes leads to duplicate names
+parents = data.table(name=c("Sarah", "Max"), sex=c("F", "M"), age=c(41, 43))
+children = data.table(parent=c("Sarah", "Max", "Max"), 
+                       name=c("Oliver", "Sebastian", "Michelle"),
+                       sex=c("M", "M", "F"), age=c(5,8,7))
+joined = merge(parents, children, by.x="name", by.y="parent")                       
+test(1880.1, length(names(joined)), length(unique(names(joined)))) 
+test(1880.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""))), 3L,
+             warning = "column names.*are duplicated in the result")
+
 
 ###################################
 #  Add new tests above this line  #
@@ -11737,4 +11746,3 @@ if (nfail > 0) {
 cat("\n",plat,"\n\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
 # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
 # stale due to not updating yet since a fix in R-devel, for example.
-
