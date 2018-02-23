@@ -11718,7 +11718,8 @@ test(1879.6, fread(f, verbose=TRUE), DT,
 unlink(f)
 
 # CJ will should fail with proper error message #2636
-test(1880, CJ(1:1000, 1:1000, 1:1000, 1:3), error="Cross product of elements provided to CJ exceeds integer max")
+maxp = ceiling(log10(.Machine$integer.max) / 3)
+test(1880, CJ(1:10^maxp, 1:10^maxp, 1:10^maxp), error="Cross product of elements provided to CJ exceeds integer max")
 
 ###################################
 #  Add new tests above this line  #
