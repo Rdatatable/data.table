@@ -354,7 +354,7 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
   else if (length(l) > 1L && !emptyList) {
     # using rep.int instead of rep speeds things up considerably (but attributes are dropped).
     attribs = lapply(l, attributes)  # remember attributes for resetting after rep.int
-    n = vapply(l, length, 0L)
+    n = vapply(l, length, 0L) #lengths(l) will work from R 3.2.0
     nrow = prod(n)
     if (nrow > .Machine$integer.max) {
       stop("Cross product of elements provided to CJ exceeds integer max.")
