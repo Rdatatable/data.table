@@ -356,6 +356,9 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
     attribs = lapply(l, attributes)  # remember attributes for resetting after rep.int
     n = vapply(l, length, 0L)
     nrow = prod(n)
+    if (nrow > .Machine$integer.max) {
+      stop("Cross product of elements provided to CJ exceeds integer max.")
+    }
     x = c(rev(take(cumprod(rev(n)))), 1L)
     for (i in seq_along(x)) {
       y = l[[i]]
