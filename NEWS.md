@@ -139,7 +139,11 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
 
 33. `setattr()` no longer segfaults when setting 'class' to empty character vector, [#2386](https://github.com/Rdatatable/data.table/issues/2386). Thanks to @hatal175 for reporting and to @MarkusBonsch for fixing.
 
-34. `CJ` now fails with proper error message when results would exceed max integer. Closes #2636.
+34. Fixed bug where result of `merge()` would contain duplicate column names if `by.x` was also in `names(y)`.
+Where there are duplicate column names (i.e. `suffixes = c("", "")`) `merge()` will throw a warning to match
+the behaviour of `base:::merge.data.frame()`. Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdatatable/data.table/pull/2631).
+
+35. `CJ()` now fails with proper error message when results would exceed max integer, [#2636](https://github.com/Rdatatable/data.table/issues/2636).
 
 #### NOTES
 
