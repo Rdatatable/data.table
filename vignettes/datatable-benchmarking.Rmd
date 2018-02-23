@@ -1,0 +1,67 @@
+---
+title: "Benchmarking data.table"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette
+    toc: true
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{Benchmarking data.table}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+<style>
+h2 {
+    font-size: 20px;
+}
+</style>
+
+This document is meant to guide on measuring performance of data.table. Single place to documents best practices or traps to avoid.
+
+## fread: clear caches
+
+Ideally each `fread` call should be run in fresh session with the following commands preceding R execution. This clears OS cache file in RAM and HD cache.
+
+
+```sh
+free -g
+sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
+sudo lshw -class disk
+sudo hdparm -t /dev/sda
+```
+
+## subset: index optimization switch off
+
+Index optimization will currently be turned off when doing subset using index and when cross products of elements provided to filter on exceeds > 1e4.
+
+## subset: index aware benchmarking
+
+For convinience data.table automatically builds index on fields you are doing subset data. It will add some overhead to first subset on particular fields but greatly reduce time to query those columns in subsequent runs. When measuring speed best way is to measure index creation and query using index separately. Having such timings it is easy to decide what is the optimal strategy for your use case.  
+Options to control that and their defaults below.  
+
+```r
+options(datatable.auto.index=TRUE)
+options(datatable.use.index=TRUE)
+```
+
+`use.index=FALSE` will force query to not using index even if it exists, while `auto.index=FALSE` only turns of building an index automatically when doing subset on non-indexed data.
+
+## _by reference_ operations
+
+When benchmarking `set*` functions most often it make sense to measure only first run. Those functions updates data.table by reference thus in subsequent runs they use updated data.table on input. There is generally no point to measure multiple times functions like `setkey`, `setorder`.
+
+For protecting your data.table from being updated by reference can be achieved using `copy` or `data.table:::shallow` functions. Be aware `copy` might be very expensive as it needs to duplicate whole object. It is unlikely we want to include duplication time in time of the actual task we are benchmarking.
+
+## avoid `microbenchmark(, times=100)`
+
+Read above paragraph, also follow your processing workflow use case.  
+
+## multithreaded processing
+
+One of the main factor that is likely to impact timings is number of threads your machine has. In recent versions of data.table some of the functions has been parallelized.
+You can control how much threads you want to use with `?setDTthreads`.
+
+## avoid `data.table()` inside a loop
+
+As of now `data.table()` has an overhead, thus inside loops it is preferred to use `as.data.table()` or `setDT()` on a valid list.
