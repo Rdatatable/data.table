@@ -14,12 +14,6 @@ very similarly to that of \code{data.frame}s except that, by default, it attempt
 }
 
 Set the \code{by}, or \code{by.x} and \code{by.y} arguments explicitly to override this default.
-
-In addition, if any column names provided to \code{by.x} also occur in \code{names(y)} but not in \code{by.y},
-  then this \code{data.table} method will add the \code{suffixes} to those column names. As of
-  R v3.4.3, the \code{data.frame} method will not (leading to duplicate column names in the result) but a patch has
-  been proposed (see thread \url{http://r.789695.n4.nabble.com/Duplicate-column-names-created-by-base-merge-when-by-x-has-the-same-name-as-a-column-in-y-td4748345.html}
-  (here)) which is looking likely to be accepted for a future version of R.
 }
 
 \usage{
@@ -72,6 +66,12 @@ control for providing the columns to merge on with the help of the newly impleme
 For a more \code{data.table}-centric way of merging two \code{data.table}s, see
 \code{\link{[.data.table}}; e.g., \code{x[y, ...]}. See FAQ 1.12 for a detailed
 comparison of \code{merge} and \code{x[y, ...]}.
+
+If any column names provided to \code{by.x} also occur in \code{names(y)} but not in \code{by.y},
+then this \code{data.table} method will add the \code{suffixes} to those column names. As of
+R v3.4.3, the \code{data.frame} method will not (leading to duplicate column names in the result) but a patch has
+been proposed (see thread \href{http://r.789695.n4.nabble.com/Duplicate-column-names-created-by-base-merge-when-by-x-has-the-same-name-as-a-column-in-y-td4748345.html}{here})
+which is looking likely to be accepted for a future version of R.
 }
 
 \value{
