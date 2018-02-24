@@ -11718,13 +11718,21 @@ unlink(f)
 # 1880.1 should fail in there are any duplicate names after a join
 # 1880.2 should fail if a warning is not thrown when suffixes leads to duplicate names
 parents = data.table(name=c("Sarah", "Max"), sex=c("F", "M"), age=c(41, 43))
-children = data.table(parent=c("Sarah", "Max", "Max"), 
+children = data.table(parent=c("Sarah", "Max", "Max"),
                        name=c("Oliver", "Sebastian", "Michelle"),
                        sex=c("M", "M", "F"), age=c(5,8,7))
-joined = merge(parents, children, by.x="name", by.y="parent")                       
-test(1880.1, length(names(joined)), length(unique(names(joined)))) 
+joined = merge(parents, children, by.x="name", by.y="parent")
+test(1880.1, length(names(joined)), length(unique(names(joined))))
 test(1880.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""))), 3L,
              warning = "column names.*are duplicated in the result")
+
+# out-of-sample quote rule bump, #2265
+DT = data.table(A=rep("abc", 10000), B="def")
+DT[110, A:='"a"b']
+fwrite(DT, f<-tempfile(), quote=FALSE)
+test(1881.1, ans<-fread(f), DT, warning='Found and resolved improper quoting. First healed line 111: <<"a"b,def>>')
+test(1881.2, ans[110,A], '"a"b')  # double-check the value of interest directly
+unlink(f)
 
 
 ###################################
