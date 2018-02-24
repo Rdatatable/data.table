@@ -2352,7 +2352,8 @@ int freadMain(freadMainArgs _args) {
           DTi+row1line, ncol, tt, strlim(skippedFooter,500));
       }
     }
-  } else if (quoteRuleBumpedCh!=NULL) {
+  }
+  if (quoteRuleBumpedCh!=NULL && quoteRuleBumpedCh<headPos) {
     DTWARN("Found and resolved improper quoting. First healed line %d: <<%s>>", quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
   }
 
