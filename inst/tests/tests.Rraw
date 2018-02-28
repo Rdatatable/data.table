@@ -11750,6 +11750,12 @@ test(1881.3, fread(f), DT, warning=c('Discarded single-line footer: <<(10000 row
                                      'Found and resolved improper quoting. First healed line 111: <<"a"b,def>>'))
 unlink(f)
 
+# CJ will should fail with proper error message, #2636
+test(1882.1, .Machine$integer.max, 2147483647L)  # same on all platforms and very unlikely to change in R (which is good)
+test(1882.2, ceiling(.Machine$integer.max^(1/3)), 1291)
+v = seq_len(1291L)
+test(1882.3, CJ(v, v, v), error="Cross product of elements provided to CJ() would result in 2151685171 rows which exceeds .Machine$integer.max == 2147483647")
+
 
 ###################################
 #  Add new tests above this line  #

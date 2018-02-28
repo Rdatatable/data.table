@@ -141,7 +141,9 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
 
 34. Fixed bug where result of `merge()` would contain duplicate column names if `by.x` was also in `names(y)`.
 Where there are duplicate column names (i.e. `suffixes = c("", "")`) `merge()` will throw a warning to match
-the behaviour of `base:::merge.data.frame()`. Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdatatable/data.table/pull/2631). 
+the behaviour of `base:::merge.data.frame()`. Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdatatable/data.table/pull/2631).
+
+35. `CJ()` now fails with proper error message when results would exceed max integer, [#2636](https://github.com/Rdatatable/data.table/issues/2636).
 
 #### NOTES
 
@@ -166,7 +168,6 @@ the behaviour of `base:::merge.data.frame()`. Thanks to @sritchie73 for reportin
 9. New vignette added: _Importing data.table_ - focused on using data.table as a dependency in R packages. Answers most commonly asked questions and promote good practices.
 
 10. As warned in v1.9.8 release notes below in this file (on CRAN 25 Nov 2016) it has been 1 year since then and so use of `options(datatable.old.unique.by.key=TRUE)` to restore the old default is now deprecated with warning. The new warning states that this option still works and repeats the request to pass `by=key(DT)` explicitly to `unique()`, `duplicated()`, `uniqueN()` and `anyDuplicated()` and to stop using this option. In another year, this warning will become error. Another year after that the option will be removed.
-
 
 ### Changes in v1.10.4-3  (on CRAN 20 Oct 2017)
 
