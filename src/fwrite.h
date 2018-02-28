@@ -1,7 +1,10 @@
 #ifdef DTPY
   #include "py_fread.h"
 #else
-  #include "freadR.h"    // STOP, DTPRINT, DTWARN  // TODO rename frw.h?
+  #define STRICT_R_HEADERS
+  #include <R.h>
+  #define STOP     error
+  #define DTPRINT  Rprintf
 #endif
 
 typedef void (*writer_fun_t)(void *, int64_t, char **);

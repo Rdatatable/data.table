@@ -179,17 +179,19 @@ static inline size_t clamp_szt(size_t x, size_t lower, size_t upper) {
  * This function returns the string copied into an internal static buffer. Cannot
  * be called more than twice per single printf() invocation.
  * Parameter `limit` cannot exceed 500.
+ * The data might contain % characters. Therefore, careful to ensure that if the msg
+ * is constructed manually (using say snprintf) that warning(), stop()
+ * and Rprintf() are all called as warning("%s", msg) and not warning(msg).
  */
 static const char* strlim(const char *ch, size_t limit) {
-  static char buf[1004];
+  static char buf[1002];
   static int flip = 0;
-  char *ptr = buf + 502 * flip;
+  char *ptr = buf + 501 * flip;
   flip = 1 - flip;
   char *ch2 = ptr;
   if (limit>500) limit=500;
   size_t width = 0;
   while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<limit) {
-    if (*ch=='%') { *ch2++ = '%'; width++; } // 1004 and 502 above in case % occurs at position 500 and is doubled here
     *ch2++ = *ch++;
   }
   *ch2 = '\0';

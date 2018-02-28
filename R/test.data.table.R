@@ -62,7 +62,7 @@ compactprint <- function(DT, topn=2L) {
 
 INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 
-test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
+test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
@@ -90,81 +90,109 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
   # lines output are filled with the last 13 "running test num" lines rather than the last error output, but that's
   # better than the dev-time-lost when it crashes and it actually crashed much later than the last test number visible.
 
+  if (!missing(error) && !missing(y)) stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")
+  check_specials = function(string, type) {
+    found = ""
+    if (length(grep("[^[\\]([(]|[)])", string))) found = "parenthesis"
+    else if (length(grep("[^[\\]([[]|[]])", string))) found = "square bracket"
+    else if (length(grep("[^\\]\\+", string))) found = "'+'"
+    else if (length(grep("[^\\]\\^", string))) found = "'^'"
+    if (found!="") stop("Likely due to the unescaped ",found," in the ",type,"= string. Please avoid it using .* or preceed it with double backslash.")
+  }
+  string_match = function(x, y) {
+    if (length(grep(x,y,fixed=TRUE))) return(TRUE);
+    if (length(grep(x,y))) return(TRUE);
+    return(FALSE);
+  }
+
   xsub = substitute(x)
   ysub = substitute(y)
-  if (is.null(output)) err <<- try(x,TRUE)
-  else {
-    out = gsub("NULL$","",paste(capture.output(print(err<<-try(x,TRUE))),collapse=""))
-    out = gsub("\n","",gsub("\r","",out))  # ensure no \r or \n pollution on windows
-    # We use .* to shorten what we test for (so the grep below needs fixed=FALSE)
-    # but other characters should be matched literally
-    output = gsub("\\","\\\\",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
-    output = gsub("[","\\[",output,fixed=TRUE)
-    output = gsub("]","\\]",output,fixed=TRUE)
-    output = gsub("(","\\(",output,fixed=TRUE)
-    output = gsub(")","\\)",output,fixed=TRUE)
-    output = gsub("+","\\+",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
-    output = gsub("\n","",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
-    if (!length(grep(output,out))) {
-      # nocov start
-      cat("Test",num,"didn't produce correct output:\n")
-      cat(">",deparse(xsub),"\n")
-      cat("Expected: '",output,"'\n",sep="")
-      cat("Observed: '",out,"'\n",sep="")
-      assign("nfail", nfail+1, parent.frame(), inherits=TRUE)
-      assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
-      return()
-      # nocov end
-    }
+
+  actual.warns = NULL
+  wHandler = function(w) {
+    actual.warns <<- c(actual.warns, conditionMessage(w))
+    invokeRestart("muffleWarning")
   }
-  if (!is.null(error) || !is.null(warning)) {
-    type = ifelse(!is.null(error),"error","warning")
-    if (type=="error" && !missing(y)) stop("Test ",num," is invalid: when error= is provided it doesn't make sense to pass y as well")
-    patt = txt = ifelse(!is.null(error),error,warning)
-    patt = gsub("[(]","[(]",patt)
-    patt = gsub("[)]","[)]",patt)
-    patt = gsub("\\^","\\\\^", patt)  # for test 923 containing 2^31 in error message
-    observedtype = ifelse(length(grep("converted from warning",err)), "warning", "error")
-    if (! (inherits(err,"try-error") &&
-           length(grep(patt,err)) &&
-           type==observedtype)) {
-      # nocov start
-      cat("Test",num,"didn't produce correct",type,":\n")
-      cat(">",deparse(xsub),"\n")
-      cat("Expected ",type,": '",txt,"'\n",sep="")
-      if (!inherits(err,"try-error"))
-        cat("Observed: no error or warning\n")
-      else
-        cat("Observed ",observedtype,": '",gsub("^[(]converted from warning[)] ","",gsub("\n$","",gsub("^Error.* : \n  ","",as.character(err)))),"'\n",sep="")
-      assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)   # Not the same as nfail <<- nfail + 1, it seems (when run via R CMD check)
-      assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
-      return()
-      # nocov end
-    }
-    if (type=="warning")
-      err <- if (is.null(output)) x<-try(suppressWarnings(x),TRUE) else out<-paste(capture.output(x<-try(suppressWarnings(x),TRUE)),collapse="")
-    else return()
+  actual.err = NULL
+  eHandler = function(e) {
+    actual.err <<- conditionMessage(e)
+    e
   }
-  if (inherits(err,"try-error") || (!missing(y) && inherits(err<-try(y,TRUE),"try-error"))) {
+  if (is.null(output)) {
+    x = tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)
+    # save the overhead of capture.output() since there are a lot of tests, often called in loops
+  } else {
+    out = capture.output(print(x <<- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
+  }
+  fail = FALSE
+  if (length(warning) != length(actual.warns)) {
     # nocov start
-    cat("Test",num,err)
-    assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
-    assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
-    return()
-    # nocov end
-  }
-  if (missing(y)) {
-    if (!is.null(output)) return()
-    if (isTRUE(as.vector(x))) return()  # as.vector to drop names of a named vector such as returned by system.time
-    # nocov start
-    cat("Test",num,"expected TRUE but observed:\n")
-    cat(">",deparse(xsub),"\n")
-    if (is.data.table(x)) compactprint(x) else print(x)
-    assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
-    assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
-    return()
+    cat("Test",num,"produced",length(actual.warns),"warnings but expected",length(warnings),"\n")
+    fail = TRUE
     # nocov end
   } else {
+    # the expected warning occurred and, if more than 1 warning, in the expected order
+    for (i in seq_along(warning)) {
+      if (!string_match(warning[i], actual.warns[i])) {
+        # nocov start
+        browser()
+        cat("Test",num,"didn't produce the correct warning:\n")
+        cat("Expected: ", warning[i], "\n")
+        cat("Observed: ", actual.warns[i], "\n")
+        check_specials(warning[i], "warning")
+        fail = TRUE
+        # nocov end
+      }
+    }
+  }
+  if (length(error) != length(actual.err)) {
+    # nocov start
+    cat("Test",num," ")
+    if (length(error)) cat("had no error but expected error: ", error, "\n")
+    else cat("should not fail but failed with error: ", actual.err, "\n")
+    fail = TRUE
+    # nocov end
+  } else if (length(error)) {
+    if (!string_match(error, actual.err)) {
+      # nocov start
+      cat("Test",num,"didn't produce the correct error:\n")
+      cat("Expected: ", error, "\n")
+      cat("Observed: ", actual.err, "\n")
+      check_specials(error, "error")
+      fail = TRUE
+      # nocov end
+    }
+  }
+
+  if (!fail && !length(error) && length(output)) {
+    # out = paste(out, collapse="")
+
+    # out = gsub("NULL$","",out)
+    # We use .* to shorten what we test for (so the grep below needs fixed=FALSE)
+    # but other characters should be matched literally
+
+    #output = gsub("\\","\\\\",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
+    #output = gsub("[","\\[",output,fixed=TRUE)
+    #output = gsub("]","\\]",output,fixed=TRUE)
+    #output = gsub("(","\\(",output,fixed=TRUE)
+    #output = gsub(")","\\)",output,fixed=TRUE)
+    #output = gsub("+","\\+",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
+    #output = gsub("\n","",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
+    if (out[length(out)] == "NULL") out = out[-length(out)]
+    out = paste(out, collapse="\n")
+    output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
+    if (!string_match(output, out)) {
+      # nocov start
+      cat("Test",num,"didn't produce correct output:\n")
+      cat("Expected: <<",gsub("\n","\\\\n",output),">>\n",sep="")  # \n printed as '\\n' so the two lines of output can be compared vertically
+      cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
+      check_specials(output, "output")
+      fail = TRUE
+      # nocov end
+    }
+  }
+  if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
+    y = try(y,TRUE)
     if (identical(x,y)) return()
     if (is.data.table(x) && is.data.table(y)) {
       # TO DO:  test 166 doesn't pass with these :
@@ -183,19 +211,24 @@ test <- function(num,x,y,error=NULL,warning=NULL,output=NULL) {
       if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
         identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return()
     }
-    if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y)) && typeof(x)==typeof(y)) return()
+    if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y,check.names=!isTRUE(y))) && typeof(x)==typeof(y)) return()
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
+    # nocov start
+    cat("Test",num,"ran without errors but failed check that x equals y:\n")
+    cat("> x =",deparse(xsub),"\n")
+    if (is.data.table(x)) compactprint(x) else {cat("First 6 of ", length(x)," (type '", typeof(x), "'): ", sep=""); print(head(x))}
+    cat("> y =",deparse(ysub),"\n")
+    if (is.data.table(y)) compactprint(y) else {cat("First 6 of ", length(y)," (type '", typeof(y), "'): ", sep=""); print(head(y))}
+    if (!isTRUE(all.equal.result)) cat(all.equal.result,sep="\n")
+    fail = TRUE
+    # nocov end
   }
-  # nocov start
-  cat("Test",num,"ran without errors but failed check that x equals y:\n")
-  cat("> x =",deparse(xsub),"\n")
-  if (is.data.table(x)) compactprint(x) else {cat("First 6 of ", length(x)," (type '", typeof(x), "'): ", sep=""); print(head(x))}
-  cat("> y =",deparse(ysub),"\n")
-  if (is.data.table(y)) compactprint(y) else {cat("First 6 of ", length(y)," (type '", typeof(y), "'): ", sep=""); print(head(y))}
-  if (!isTRUE(all.equal.result)) cat(all.equal.result,sep="\n")
-  assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
-  assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
+  if (fail) {
+    # nocov start
+    assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)   # Not the same as nfail <<- nfail + 1, it seems (when run via R CMD check)
+    assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
+    # nocov end
+  }
   invisible()
-  # nocov end
 }
 
