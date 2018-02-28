@@ -1517,7 +1517,7 @@ test(514, x %chin% y, x %in% y)
 
 # Test new function set() in v1.8.0
 DT = data.table(a=1:3,b=4:6)
-test(515, set(DT,2,1,3), data.table(a=c(1L,3L,3L),b=4:6), warning="Coerced i")
+test(515, set(DT,2,1,3), data.table(a=c(1L,3L,3L),b=4:6), warning=c("Coerced i from numeric to integer","Coerced j from numeric to integer"))
 test(516, set(DT,"2",1,3), error="i is type 'character'")
 test(517, set(DT,2L,1,3), DT, warning="Coerced j")
 # FR #2551 implemented - removed warning from 518
@@ -1956,7 +1956,7 @@ test(670, DT[,z:=sum(y),keyby=x], ans)
 DT = data.table(x=1:2, y=1:6)
 test(671, DT[,z:=sum(y),keyby="x"], ans)
 DT = data.table(x=1:2, y=1:6)
-test(672, DT[,z:=sum(y),keyby=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)), warning=":= keyby not straightforward character column names or list[(][)] of column names, treating as a by")
+test(672, DT[,z:=sum(y),keyby=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)), warning=":= keyby not straightforward character column names or list() of column names, treating as a by")
 DT = data.table(x=1:2, y=1:6)
 test(673, DT[,z:=sum(y),by=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)))
 DT = data.table(x=1:2, y=1:6)
@@ -2313,9 +2313,9 @@ test(827.1, names(a[b]), c("User ID","Blah Blah","Yadda Yadda"))
 
 # setcolorder and merge check for dup column names, #2193(ii)
 setnames(DT2,"b","a")
-test(828, setcolorder(DT2,c("a","b")), error="x has some duplicated column name\\(s\\): a. Please remove or rename")
-test(829, merge(DT1,DT2), error="y has some duplicated column name\\(s\\): a. Please remove or rename")
-test(830, merge(DT2,DT1), error="x has some duplicated column name\\(s\\): a. Please remove or rename")
+test(828, setcolorder(DT2,c("a","b")), error="x has some duplicated column name(s): a. Please remove or rename")
+test(829, merge(DT1,DT2), error="y has some duplicated column name(s): a. Please remove or rename")
+test(830, merge(DT2,DT1), error="x has some duplicated column name(s): a. Please remove or rename")
 
 # attribs such as "comments" should be retained, #2270
 DT1 <- data.table(id = seq.int(1, 10), A = LETTERS[1:10], key = "id")
@@ -2332,7 +2332,10 @@ DT = data.table(a=1:3)
 DT[,a:=scale(a)]    # 1 column matrix auto treated as vector
 test(835, na.omit(DT), DT)
 test(836, DT[,a:=as.integer(a)], data.table(a=INT(-1,0,1)))
-test(837, DT[,a:=cbind(1,2)], data.table(a=c(1L,2L,1L)), warning="2 column matrix RHS of := will be treated as one vector")
+test(837, DT[,a:=cbind(1,2)], data.table(a=c(1L,2L,1L)),
+          warning=c("2 column matrix RHS of := will be treated as one vector",
+                    "Supplied 2 items to be assigned to 3 items.*recycled",
+                    "Coerced 'double' RHS to 'integer' to match the column's type"))
 DT = data.table(a=1:3,b=1:6)
 test(838, DT[,c:=scale(b), by=a][,c:=as.integer(1000*c)], data.table(a=1:3,b=1:6,c=rep(as.integer(1000*scale(1:2)), each=3)))
 
@@ -2402,8 +2405,8 @@ test(855, l[[1]], data.table(a=1:3,b=4:6,d=10:12))
 DF = data.frame(foo=1:2,bar=3:4)
 setnames(DF,c("baz","qux"))
 test(856, DF, data.frame(baz=1:2,qux=3:4))
-test(857.1, set(DF,NULL,"quux",5:6), error="set[(][)] on a data.frame is for changing existing columns, not adding new ones")
-test(857.2, set(DF,NULL,3L,5:6), error="set[(][)] on a data.frame is for changing existing columns, not adding new ones")
+test(857.1, set(DF,NULL,"quux",5:6), error="set() on a data.frame is for changing existing columns, not adding new ones")
+test(857.2, set(DF,NULL,3L,5:6), error="set() on a data.frame is for changing existing columns, not adding new ones")
 test(858.1, set(DF,NULL,"qux",5:6), data.frame(baz=1:2, qux=5:6))
 test(858.2, set(DF,NULL,2L,7:8), data.frame(baz=1:2, qux=7:8))
 
@@ -2453,14 +2456,14 @@ test(869, DT[J(2,42,84),print(.SD),by=.EACHI], output=c("   b", "1: 2", "2: 5", 
 
 # Test setnames with duplicate colnames
 DT = data.table(a=1:3,b=4:6,b=7:9)
-test(870, setnames(DT,"b","foo"), error="Some items of 'old' are duplicated [(]ambiguous[)] in column names: b")
+test(870, setnames(DT,"b","foo"), error="Some items of 'old' are duplicated (ambiguous) in column names: b")
 test(871, setnames(DT,c("bar","bar"),c("x","y")), error="Some duplicates exist in 'old': bar")
 test(872, setnames(DT,3,"c"), data.table(a=1:3,b=4:6,c=7:9))
 test(873, setnames(DT,"foo","bar"), error="Items of 'old' not found in column names: foo")
 test(874, setnames(DT,c(1,1),c("foo","bar")), error="Some duplicates exist in 'old': 1")
 test(875, setnames(DT,"c","b"), data.table(a=1:3,b=4:6,b=7:9))
 test(875.1, setnames(DT,"a","c"), data.table(c=1:3,b=4:6,b=7:9))  # 'a' isn't duplicated so not a problem as from v1.8.11
-test(875.2, setnames(DT,c("c","b"), c("C","B")), error="Some items of 'old' are duplicated [(]ambiguous[)] in column names: b")  # check error msg when 2nd one in old is the problem
+test(875.2, setnames(DT,c("c","b"), c("C","B")), error="Some items of 'old' are duplicated (ambiguous) in column names: b")  # check error msg when 2nd one in old is the problem
 
 # Test local var problem introduced in v1.8.3
 DT = data.table(a=1:3,b=1:6)
@@ -2653,10 +2656,10 @@ test(922, setnames(DT,c("A","B","C")), data.table(A=1:2,B=3:4,C=5:6,key="B"))
 
 # vecseq overflow, crash bug #2464
 DT = data.table(x=rep(1L,50000),key="x")
-test(923, DT[DT], error="Join results in more than 2\\^31 rows [(]internal vecseq reached physical limit[)]. Very likely misspecified join.")
+test(923, DT[DT], error="Join results in more than 2^31 rows (internal vecseq reached physical limit). Very likely misspecified join.")
 X = data.table(x=1:2,y=1:6,key="x")
 test(924.1, X[J(c(1,1,1))], X[rep(1:3,3)])
-test(924.2, X[J(c(1,1,1,1))], error="Join results in 12 rows; more than 10 = nrow\\(x\\)\\+nrow\\(i\\). Check for duplicate key values in i each of")
+test(924.2, X[J(c(1,1,1,1))], error="Join results in 12 rows; more than 10 = nrow(x)+nrow(i). Check for duplicate key values in i each of")
 
 
 # sorting of 'double' columns not correct for ties (tolerance nuance in C code), #2484
@@ -2737,8 +2740,8 @@ test(961, fread(input, colClasses=1:3), error="colClasses is not type list or ch
 test(962, fread(input, colClasses=list(1:3)), error="colClasses is type list but has no names")
 test(963, fread(input, colClasses=list(character="D")), error="Column name 'D' in colClasses..1.. not found")
 test(964, fread(input, colClasses=c(D="character")), error="Column name 'D' in colClasses..1.. not found")
-test(965, fread(input, colClasses=list(character=0)), error="Column number 0 \\(colClasses..1...1.\\) is out of range .1,ncol=3.")
-test(966, fread(input, colClasses=list(character=2:4)), error="Column number 4 \\(colClasses..1...3.\\) is out of range .1,ncol=3.")
+test(965, fread(input, colClasses=list(character=0)), error="Column number 0 (colClasses[[1]][1]) is out of range [1,ncol=3]")
+test(966, fread(input, colClasses=list(character=2:4)), error="Column number 4 (colClasses[[1]][3]) is out of range [1,ncol=3]")
 
 # Character input more than 4096 bytes (used to be passed through path.expand which imposed the limit), #2649
 test(967, nrow(fread( paste( rep('a\tb\n', 10000), collapse=''), header=FALSE)), 10000L)
@@ -2783,7 +2786,9 @@ test(980, dt1[dt2, `:=`(A=A+i.A, B=B+i.B, C=i.C)][,list(A,B,C)],
           data.table(A=INT(110,115,120,225,230,235),B=INT(330,325,320,415,410,405),C=rep(1:2,each=3)))
 DT = data.table(A=1:2,B=3:4,C=5:6)
 test(981, DT[,`:=`(D=B+4L,B=0:1,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
-          data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L)), warning="RHS 2 is length 2")
+          data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L)),
+          warning=c("RHS 2 is length 2.*group 1.*last 1 element.*discarded",
+                    "RHS 2 is length 2.*group 2.*last 1 element.*discarded"))
 DT = data.table(A=1:2,B=3:4,C=5:6)
 test(982, DT[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
           data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L))) # Also note that G is not yet iterative. In future: c(12,14)
@@ -2934,8 +2939,8 @@ test(1023, DT[c(1,2,NA,3), B:=42L], data.table(A=21L, B=c(42L,42L,42L,9:10)))
 test(1024, DT[6,A:=0L], error="i[[]1[]] is 6 which is out of range [[]1,nrow=5[]]")
 
 # crash assigning to duplicated column names/numbers, #2751
-test(1024.1, DT[,c("B","B"):=NULL], error="Can't assign to the same column twice in the same query \\(duplicates detected\\).")
-test(1024.2, DT[,c(1,2,1):=NULL], error="Can't assign to the same column twice in the same query \\(duplicates detected\\).")
+test(1024.1, DT[,c("B","B"):=NULL], error="Can't assign to the same column twice in the same query (duplicates detected).")
+test(1024.2, DT[,c(1,2,1):=NULL], error="Can't assign to the same column twice in the same query (duplicates detected).")
 
 # as.data.table.table, #4848
 DF <- data.frame(x = c(1,1,2,NA,1,2), y = c("b", "b", "b", "a", "c", "a"), z = c(1,1,1,1,1,2), stringsAsFactors=FALSE   )
@@ -2949,7 +2954,7 @@ test(1027, as.data.table(table(DF$x, DF$y, DF$z)), tab3)
 # new, updated 14th Feb, 2015. data.table(table) now redirects to as.data.table
 test(1027.1, data.table(table(1:99)), as.data.table(table(1:99)))
 # data.table() and rbindlist() in v1.8.11 now catch and removes the dim attribute. For it on to test print catches it :
-test(1027.2, {DT<-data.table(table(1:99));setattr(DT[[1]],"dim",99L);print(DT)}, error="Invalid column: it has dimensions. Can't format it. If it's the result of.*use as.data.table.*instead.")
+test(1027.2, {DT<-data.table(table(1:99));setattr(DT[[1]],"dim",99L);print(DT)}, error="Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
 
 # as.data.table.x where x is integer, numeric, etc...
 set.seed(45)
@@ -3029,7 +3034,9 @@ if ("package:reshape2" %in% search()) {
         melt(input, id.vars = by, measure.vars=var)
     }
     test(1371.1, foo(DT, by="x"), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)), warning="are not all of the same type. By order of hierarchy, the molten data value column will be of type 'double'")
-    test(1371.2, foo(DT), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)), warning="To be consistent with reshape2's melt, id.vars and")
+    test(1371.2, foo(DT), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)),
+                 warning=c("To be consistent with reshape2's melt, id.vars and",
+                           "'measure.vars'.*are not all of the same type.*Check"))
     # Fix for #1055
     DT <- data.table(A = 1:2, B = 3:4, D = 5:6, D = 7:8)
     test(1495, melt(DT, id=1:2), data.table(A=1:2, B=3:4,
@@ -3113,9 +3120,9 @@ test(1061, x[c(0, 3), number:=5L], data.table(letters=letters[1:5], factor=facto
 
 # bug #2440 fix - seqfault when j refers to grouping variable when results are empty
 DT = data.table(x=rep(c("a","b"),each=3),v=c(42,42,42,4,5,6))
-test(1062, DT[x %in% c('z'),list(x2=x),by=x], output="Empty data.table \\(0 rows\\) of 2 cols: x,x2")
-test(1063, DT[x %in% c('z'),list(vpaste=paste(v,collapse=','),x2=paste(x,x)),by=x], output="Empty data.table \\(0 rows\\) of 3 cols: x,vpaste,x2")
-test(1064, DT[integer(0), list(x2=x), by=x], output="Empty data.table \\(0 rows\\) of 2 cols: x,x2")
+test(1062, DT[x %in% c('z'),list(x2=x),by=x], output="Empty data.table (0 rows) of 2 cols: x,x2")
+test(1063, DT[x %in% c('z'),list(vpaste=paste(v,collapse=','),x2=paste(x,x)),by=x], output="Empty data.table (0 rows) of 3 cols: x,vpaste,x2")
+test(1064, DT[integer(0), list(x2=x), by=x], output="Empty data.table (0 rows) of 2 cols: x,x2")
 
 # bug #2445 fix - := fails when subsetting yields NAs and with=FALSE
 X = data.table(A=1:3, B=1:6, key="A")
@@ -3742,7 +3749,7 @@ setattr(ans, 'class', class(DT))
 test(1146.1, DT[, Time:= as.numeric(Time)], ans)
 DF <- as.data.frame(DT)
 test(1146.2, {set(DF, i=NULL, j=1L, value=seq_len(nrow(DF)));setattr(DF,"reference",NULL);DF}, data.frame(Time=1:nrow(BOD), demand=BOD$demand))
-test(1146.3, set(DF, i=NULL, j="bla", value=seq_len(nrow(DF))), error="set\\(\\) on a data.frame is for changing existing columns, not adding new ones. Please use a data.table for that.")
+test(1146.3, set(DF, i=NULL, j="bla", value=seq_len(nrow(DF))), error="set() on a data.frame is for changing existing columns, not adding new ones. Please use a data.table for that.")
 
 if (.Machine$sizeof.longdouble == 16) {
   # To not run on CRAN's solaris-sparc 32bit where sizeof.longdouble==0
@@ -4528,19 +4535,19 @@ options(datatable.optimize=1L)
 ans2 <- dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a]
 options(datatable.optimize=Inf)
 test(1268.1, dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], ans2,
-             output="GForce optimized j to 'list\\(gmean\\(b\\).*gsum\\(d\\)")
+             output="GForce optimized j to 'list(gmean(b), gmean(c), gmean(d), gsum(b), gsum(c), gsum(d))'")
 
 options(datatable.optimize=1L)
 ans2 <- dt[, c(lapply(.SD, mean), .N), by=a]
 options(datatable.optimize=Inf)
 test(1268.2, dt[, c(lapply(.SD, mean), .N), by=a, verbose=TRUE], ans2,
-             output = "lapply optimization changed j from 'c\\(lapply\\(.SD.*to.*list\\(mean\\(b.*.N")
+                  output = "lapply optimization changed j from 'c(lapply(.SD, mean), .N)' to 'list(mean(b), mean(c), mean(d), .N)'")
 
 options(datatable.optimize=1L)
 ans2 <- dt[, c(list(c), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
 test(1268.3, dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "lapply optimization changed j from 'c\\(list\\(c\\).*to.*list.*mean\\(d\\)")
+             output = "lapply optimization changed j from 'c(list(c), lapply(.SD, mean))' to 'list(c, mean(b), mean(c), mean(d))")
 
 test(1268.4, dt[, c(as.list(c), lapply(.SD, mean)), by=a],
              error = "j doesn't evaluate to the same number of columns for each group")
@@ -4549,13 +4556,13 @@ options(datatable.optimize=1L)
 ans2 <- dt[, c(sum(d), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
 test(1268.5, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "GForce optimized j to 'list\\(gsum.*gmean\\(d\\)")
+             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
 
 options(datatable.optimize=1L)
 ans2 <- dt[, c(list(sum(d)), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
 test(1268.6, dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "GForce optimized j to 'list\\(gsum\\(d\\).*gmean\\(d\\)")
+             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
 
 # newly added tests for #861
 # optimise, but no GForce
@@ -4563,7 +4570,7 @@ options(datatable.optimize=1L)
 ans2 <- dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a]
 options(datatable.optimize=Inf)
 test(1268.7, dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "lapply optimization changed j from 'c\\(list\\(sum\\(d\\).*mean\\(d\\)\\)'")
+             output = "lapply optimization changed j from 'c(list(sum(d), .I), lapply(.SD, mean))' to 'list(sum(d), .I, mean(b), mean(c), mean(d))'")
 
 # don't optimise .I in c(...)
 options(datatable.optimize=1L)
@@ -4571,7 +4578,7 @@ dt = data.table(x=c(1,1,1,2,2,2), y=1:6)
 ans2 <- dt[, c(.I, lapply(.SD, mean)), by=x]
 options(datatable.optimize=Inf)
 test(1268.8, dt[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], ans2,
-             output = "lapply optimization is on, j unchanged as 'c\\(.I, lapply\\(.SD, mean\\)\\)'")
+             output = "lapply optimization is on, j unchanged as 'c(.I, lapply(.SD, mean))'")
 
 ### FR #2722 tests end here ###
 
@@ -4704,7 +4711,7 @@ test(1288.11, rbindlist(ll, use.names=TRUE), data.table(a=c(1:3, 5:7), b=c(4:6, 
 ll <- list(list(1:3, 4:6), list(a=5:7, b=8:10))
 test(1288.12, rbindlist(ll, use.names=TRUE), data.table(a=c(1:3, 5:7), b=c(4:6, 8:10)))
 ll <- list(list(a=1:3, 4:6), list(5:7, b=8:10))
-test(1288.13, rbindlist(ll, use.names=TRUE), error="Answer requires 3 columns whereas one or more item.*has only 2 columns. This could be because the items in the list may not")
+test(1288.13, rbindlist(ll, use.names=TRUE), error="Answer requires 3 columns whereas one or more item(s) in the input list has only 2 columns. This could be because the items in the list may not")
 ll <- list(list(a=1:3, 4:6), list(5:7, b=8:10))
 test(1288.14, rbindlist(ll, fill=TRUE), data.table(a=c(1:3, rep(NA_integer_,3L)), V1=c(4:6,5:7), b=c(rep(NA_integer_, 3L), 8:10)))
 ll <- list(list(1:3, 4:6), list(5:7, 8:10))
@@ -4720,7 +4727,9 @@ cp = copy(dt)
 test(1289.1, dt[,z := c(rep(NA, 5), y), by=x], cp[, z := c(rep(NA, 5), y[1:5])], warning="RHS 1 is length 15")
 dt = data.table(x=c(1:2), y=1:10)
 cp = copy(dt)
-test(1289.2, dt[, z := c(rep(NA, 5),y), by=x], cp[, z := rep(NA_integer_, 10)], warning="RHS 1 is length 10")
+test(1289.2, dt[, z := c(rep(NA, 5),y), by=x], cp[, z := rep(NA_integer_, 10)],
+             warning=c("RHS 1 is length 10.*group 1.*last 5 element.*discarded",
+                       "RHS 1 is length 10.*group 2.*last 5 element.*discarded"))
 
 ########################################
 # Extensve testing for "duplicate" names
@@ -4837,14 +4846,18 @@ dt <- data.table(a=1:3, b=c(7,8,9), c=c(TRUE, NA, FALSE), d=as.list(4:6), e=c("a
 test(1294.1,  dt[, a := 1]$a, rep(1L, 3L))
 test(1294.2,  dt[, a := 1.5]$a, rep(1L, 3L), warning="Coerced 'double' RHS to 'integer' to match the column's type")
 test(1294.3,  dt[, a := NA]$a, rep(NA_integer_, 3L))
-test(1294.4,  dt[, a := "a"]$a, rep(NA_integer_, 3L), warning="NAs introduced by coercion")
+test(1294.4,  dt[, a := "a"]$a, rep(NA_integer_, 3L),
+              warning=c("NAs introduced by coercion",
+                        "Coerced 'character' RHS to 'integer' to match the column's type.*please"))
 test(1294.5,  dt[, a := list(list(1))]$a, rep(1L, 3L), warning="Coerced 'list' RHS to 'integer' to match the column's type")
 test(1294.6,  dt[, a := list(1L)]$a, rep(1L, 3L))
 test(1294.7,  dt[, a := list(1)]$a, rep(1L, 3L))
 test(1294.8,  dt[, a := TRUE]$a, rep(1L, 3L), warning="Coerced 'logical' RHS to 'integer' to match the column's type")
 test(1294.9,  dt[, b := 1L]$b, rep(1,3))
 test(1294.10, dt[, b := NA]$b, rep(NA_real_,3))
-test(1294.11, dt[, b := "bla"]$b, rep(NA_real_, 3), warning="NAs introduced by coercion")
+test(1294.11, dt[, b := "bla"]$b, rep(NA_real_, 3),
+              warning=c("NAs introduced by coercion",
+                        "Coerced 'character' RHS to 'double' to match the column's type.*please"))
 test(1294.12, dt[, b := list(list(1))]$b, rep(1,3), warning="Coerced 'list' RHS to 'double' to match the column's type")
 test(1294.13, dt[, b := TRUE]$b, rep(1,3), warning="Coerced 'logical' RHS to 'double' to match the column's type")
 test(1294.14, dt[, b := list(1)]$b, rep(1,3))
@@ -4868,7 +4881,7 @@ test(1294.31, dt[, e := list("bla2")]$e, rep("bla2", 3))
 
 # FR #5357, when LHS evaluates to integer(0), provide warning and return dt, not an error.
 dt = data.table(a = 1:5, b1 = 1:5, b2 = 1:5)
-test(1295, dt[, grep("c", names(d)) := NULL], dt, warning="length\\(LHS\\)==0; no columns to delete or assign RHS to")
+test(1295, dt[, grep("c", names(d)) := NULL], dt, warning="length(LHS)==0; no columns to delete or assign RHS to")
 
 # Updating logical column in one-row DT (corruption of new R 3.1 internal globals for TRUE, FALSE and NA)
 DT = data.table(a=1:6, b=c(TRUE,FALSE))

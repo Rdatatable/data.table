@@ -537,3 +537,4 @@ void prepareThreadContext(ThreadLocalFreadParsingContext *ctx) {}
 void postprocessBuffer(ThreadLocalFreadParsingContext *ctx) {}
 void orderBuffer(ThreadLocalFreadParsingContext *ctx) {}
 void freeThreadContext(ThreadLocalFreadParsingContext *ctx) {}
+

@@ -67,9 +67,8 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
   # iii) if error is supplied, y should be missing and x is tested to result in an error message matching the pattern
-  # iv) if warning is supplied, y (if supplied) is checked to equal x, and x should result in a warning message matching the pattern
+  # iv) if warning is supplied, y is checked to equal x, and x should result in a warning message matching the pattern
   # v) if output is supplied, x is evaluated and printed and the output is checked to match the pattern
-  # At most one of error, warning or output may be supplied, all single character strings (passed to grep)
   # num just needs to be numeric and unique. We normally increment integers at the end, but inserts can be made using decimals e.g. 10,11,11.1,11.2,12,13,...
   # Motivations:
   # 1) we'd like to know all tests that fail not just stop at the first. This often helps by revealing a common feature across a set of
@@ -77,6 +76,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   # 2) test() tests more deeply than a diff on console output and uses a data.table appropriate definition of "equals" different
   #    from all.equal and different to identical related to row.names and unused factor levels
   # 3) each test has a unique id which we refer to in commit messages, emails etc.
+  # 4) test that a query generates exactly 2 warnings, that they are both the correct warning messages, and that the result is the one expected
   nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
   whichfail = get("whichfail", parent.frame())
   all.equal.result = TRUE
@@ -100,9 +100,9 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     if (found!="") stop("Likely due to the unescaped ",found," in the ",type,"= string. Please avoid it using .* or preceed it with double backslash.")
   }
   string_match = function(x, y) {
-    if (length(grep(x,y,fixed=TRUE))) return(TRUE);
-    if (length(grep(x,y))) return(TRUE);
-    return(FALSE);
+    if (length(grep(x,y,fixed=TRUE))) return(TRUE)   # try literal first; useful for most messages containing ()[]+ characters
+    if (length(grep(x,y))) return(TRUE)              # if the literal failed to match, try regexp; e.g. commonly when .* is present in x.
+    return(FALSE)
   }
 
   xsub = substitute(x)
@@ -129,6 +129,8 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   if (length(warning) != length(actual.warns)) {
     # nocov start
     cat("Test",num,"produced",length(actual.warns),"warnings but expected",length(warnings),"\n")
+    cat(paste("Expected:",warning), sep="\n")
+    cat(paste("Observed:",actual.warns), sep="\n")
     fail = TRUE
     # nocov end
   } else {
@@ -165,19 +167,6 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   }
 
   if (!fail && !length(error) && length(output)) {
-    # out = paste(out, collapse="")
-
-    # out = gsub("NULL$","",out)
-    # We use .* to shorten what we test for (so the grep below needs fixed=FALSE)
-    # but other characters should be matched literally
-
-    #output = gsub("\\","\\\\",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
-    #output = gsub("[","\\[",output,fixed=TRUE)
-    #output = gsub("]","\\]",output,fixed=TRUE)
-    #output = gsub("(","\\(",output,fixed=TRUE)
-    #output = gsub(")","\\)",output,fixed=TRUE)
-    #output = gsub("+","\\+",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
-    #output = gsub("\n","",output,fixed=TRUE)  # e.g numbers like 9.9e+10 should match the + literally
     if (out[length(out)] == "NULL") out = out[-length(out)]
     out = paste(out, collapse="\n")
     output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
