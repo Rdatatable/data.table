@@ -357,7 +357,7 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
     n = vapply(l, length, 0L) #lengths(l) will work from R 3.2.0
     nrow = prod(n)
     if (nrow > .Machine$integer.max) {
-      stop("Cross product of elements provided to CJ exceeds integer max.")
+      stop("Cross product of elements provided to CJ() would result in ",nrow," rows which exceeds .Machine$integer.max == ",.Machine$integer.max)
     }
     x = c(rev(take(cumprod(rev(n)))), 1L)
     for (i in seq_along(x)) {
