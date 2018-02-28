@@ -520,8 +520,7 @@ void progress(int p, int eta) {
   }
 }
 
-
-void STOP(const char *format, ...) {
+void __halt(bool warn, const char *format, ...) {
   // Solves: http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
   // TODO: always include fnam in the STOP message. For log files etc.
   va_list args;
@@ -529,22 +528,13 @@ void STOP(const char *format, ...) {
   char msg[2000];
   vsnprintf(msg, 2000, format, args);
   va_end(args);
-  freadCleanup();
-  error("%s", msg);
+  freadCleanup(); // this closes mmp hence why we just copied substrings from mmp to msg[] first since mmp is now invalid
+  if (warn) warning("%s", msg);  // include "%s" because data in msg might include '%'
+  else error("%s", msg);
 }
-
-void freadLastWarning(const char *format, ...) {
-  va_list args;
-  va_start(args, format);
-  static char msg[2000];
-  vsnprintf(msg, 2000, format, args);
-  va_end(args);
-  freadCleanup();
-  warning(msg);
-}
-
 
 void prepareThreadContext(ThreadLocalFreadParsingContext *ctx) {}
 void postprocessBuffer(ThreadLocalFreadParsingContext *ctx) {}
 void orderBuffer(ThreadLocalFreadParsingContext *ctx) {}
 void freeThreadContext(ThreadLocalFreadParsingContext *ctx) {}
+
