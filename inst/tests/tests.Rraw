@@ -11731,12 +11731,8 @@ fwrite(DT, f<-tempfile(), quote=FALSE)
 test(1881.1, ans<-fread(f), DT, warning='Found and resolved improper quoting. First healed line 111: <<"a"b,def>>')
 test(1881.2, ans[110,A], '"a"b')  # double-check the value of interest directly
 cat("(10000 rows)\n", file=f, append=TRUE)
-test(1881.3, fread(f), DT, warning='Discarded single-line footer: <<(10000 rows)>>')
-# TOOD test() can only currently test the first warning since it currently uses options(warn=2) to turn warning into error.
-#   This strategy means we cannot yet test that the 2nd of two warnings happens too. Which it does in this case: 'Found and resolved improper quoting.' as well.
-#   Looks like this would capture multiple warnings: https://stackoverflow.com/a/4947528/403310
-#   testit::has_warning uses similar strategy.
-#   Maybe even just tryCatch.
+test(1881.3, fread(f), DT, warning=c('Discarded single-line footer: <<(10000 rows)>>',
+                                     'Found and resolved improper quoting. First healed line 111: <<"a"b,def>>'))
 unlink(f)
 
 

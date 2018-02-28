@@ -110,6 +110,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
 
   actual.warns = NULL
   wHandler = function(w) {
+    # Thanks to: https://stackoverflow.com/a/4947528/403310
     actual.warns <<- c(actual.warns, conditionMessage(w))
     invokeRestart("muffleWarning")
   }
@@ -135,7 +136,6 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     for (i in seq_along(warning)) {
       if (!string_match(warning[i], actual.warns[i])) {
         # nocov start
-        browser()
         cat("Test",num,"didn't produce the correct warning:\n")
         cat("Expected: ", warning[i], "\n")
         cat("Observed: ", actual.warns[i], "\n")
