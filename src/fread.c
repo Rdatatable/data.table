@@ -179,17 +179,19 @@ static inline size_t clamp_szt(size_t x, size_t lower, size_t upper) {
  * This function returns the string copied into an internal static buffer. Cannot
  * be called more than twice per single printf() invocation.
  * Parameter `limit` cannot exceed 500.
+ * The data might contain % characters. Therefore, careful to ensure that if the msg
+ * is constructed manually (using say snprintf) that warning(), stop()
+ * and Rprintf() are all called as warning("%s", msg) and not warning(msg).
  */
 static const char* strlim(const char *ch, size_t limit) {
-  static char buf[1004];
+  static char buf[1002];
   static int flip = 0;
-  char *ptr = buf + 502 * flip;
+  char *ptr = buf + 501 * flip;
   flip = 1 - flip;
   char *ch2 = ptr;
   if (limit>500) limit=500;
   size_t width = 0;
   while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<limit) {
-    if (*ch=='%') { *ch2++ = '%'; width++; } // 1004 and 502 above in case % occurs at position 500 and is doubled here
     *ch2++ = *ch++;
   }
   *ch2 = '\0';
@@ -1872,7 +1874,7 @@ int freadMain(freadMainArgs _args) {
   //*********************************************************************************************
   // [11] Read the data
   //*********************************************************************************************
-  bool stopTeam=false, firstTime=true;  // bool for MT-safey (cannot ever read half written bool value)
+  bool stopTeam=false, firstTime=true, restartTeam=false;  // bool for MT-safey (cannot ever read half written bool value badly)
   int nTypeBump=0, nTypeBumpCols=0;
   double tRead=0, tReread=0;
   double thRead=0, thPush=0;  // reductions of timings within the parallel region
@@ -1883,6 +1885,8 @@ int freadMain(freadMainArgs _args) {
   size_t DTi = 0;                  // the current row number in DT that we are writing to
   const char *headPos = pos;       // the jump start corresponding to DTi
   int nSwept = 0;                  // count the number of dirty jumps that were swept
+  const char *quoteRuleBumpedCh = NULL;   // in the very rare event of an out-of-sample quote rule bump, give a good warning message
+  size_t quoteRuleBumpedLine = -1;
   int buffGrown=0;
   // chunkBytes is the distance between each jump point; it decides the number of jumps
   // We may want each chunk to write to its own page of the final column, hence 1000*maxLen
@@ -1920,6 +1924,7 @@ int freadMain(freadMainArgs _args) {
 
   if (verbose) DTPRINT("[11] Read the data\n");
   read:  // we'll return here to reread any columns with out-of-sample type exceptions, or dirty jumps
+  restartTeam = false;
   if (verbose) DTPRINT("  jumps=[%d..%d), chunk_size=%llu, total_size=%llu\n",
                        jump0, nJumps, (llu)chunkBytes, (llu)(eof-pos));
   ASSERT(allocnrow <= nrowLimit, "allocnrow(%llu) <= nrowLimit(%llu)", (llu)allocnrow, (llu)nrowLimit);
@@ -1939,7 +1944,7 @@ int freadMain(freadMainArgs _args) {
     }
     size_t myNrow = 0; // the number of rows in my chunk
     size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
-    bool myStoppingEarly = false;      // true when an empty or too-short or too-long row is encountered when fill=false
+    bool myStopEarly = false;      // true when an empty or too-short line is encountered when fill=false, or too-long row
 
     // Allocate thread-private row-major `myBuff`s
     ThreadLocalFreadParsingContext ctx = {
@@ -2122,7 +2127,7 @@ int freadMain(freadMainArgs _args) {
 
           if (thisType != joldType) {             // rare out-of-sample type exception.
             if (!checkedNumberOfFields && !fill) {
-              // check this line has the correct number of fields. If not, don't apply the bump from this invalid line. Instead fall through to myStoppingEarly below.
+              // check this line has the correct number of fields. If not, don't apply the bump from this invalid line. Instead fall through to myStopEarly below.
               const char *tt = fieldStart;
               int fieldsRemaining = countfields(&tt);
               if (j+fieldsRemaining != ncol) break;
@@ -2157,10 +2162,9 @@ int freadMain(freadMainArgs _args) {
           break;
         }
         if (j<ncol || (!eol(&tch) && *tch!='\0'))  {
-          // Too few or too many columns observed (including empty line). If fill==true, fields should already have been filled
-          // above due to continue inside while(j<ncol)
-          // We will push rows read so far and then warn we stopped early.
-          myStoppingEarly = true;
+          // Too few or too many columns observed (including empty line). If fill==true, fields should already have been
+          // filled above due to continue inside while(j<ncol).
+          myStopEarly = true;
           tch = tLineStart;
           break;
         }
@@ -2193,20 +2197,29 @@ int freadMain(freadMainArgs _args) {
             extraAllocRows = (size_t)((double)(DTi+myNrow)*nJumps/(jump+1) * 1.2) - allocnrow;
             if (extraAllocRows < 1024) extraAllocRows = 1024;
             myNrow = 0;    // discard my buffer even though it was read correctly; this one jump will be reread wastefully in this rare case
-            stopTeam = true;
+            stopTeam = restartTeam = true;
             jump0 = jump;
-          }
-          else {
+          } else {
             // tell next thread 2 things :
             headPos = tch;  // i) advance headPos; the jump start up to which all rows have been pushed
             DTi += myNrow;  // ii) which row in the final result next thread should start writing to since now I know myNrow.
             ctx.nRows = myNrow;
             orderBuffer(&ctx);
-            if (myStoppingEarly) {
+            if (myStopEarly) {
+              if (quoteRule<3) {
+                quoteRule++;
+                if (quoteRuleBumpedCh == NULL) {
+                  // for warning message if the quote rule bump does in fact manage to heal it, e.g. test 1881
+                  quoteRuleBumpedCh = tLineStart;
+                  quoteRuleBumpedLine = row1line+DTi;
+                }
+                restartTeam = true;
+                jump0 = jump;  // this jump will restart from headPos, not from its beginning, e.g. test 1453
+              }
               stopTeam = true;
             } else if (headPos>nextJumpStart) {
               nSwept++;         // next jump landed awkwardly and will be reread from headPos; i.e. next jump is dirty and will be swept
-              stopTeam = true;
+              stopTeam = restartTeam = true;
               jump0 = jump+1;   // restart team from next jump. jump0 always starts from headPos
               // if too many jumps are dirty, scale down to single-threaded to save restarting team too much, wastefully. The file requires
               // a single threaded read anyway due to its tortuous complexity with so many embedded newlines so often
@@ -2251,7 +2264,8 @@ int freadMain(freadMainArgs _args) {
       extraAllocRows = 0;
       goto read;
     }
-    if (jump0>0 && nSwept>0) {
+    if (restartTeam) {
+      ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "Internal error: team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh);
       goto read;
     }
     // else nrowLimit applied and stopped early normally
@@ -2295,9 +2309,8 @@ int freadMain(freadMainArgs _args) {
       // reread from the beginning
       DTi = 0;
       headPos = pos;
+      jump0 = 0;
       firstTime = false;
-      nTypeBump = 0;   // for test 1328.1. Otherwise the last field would get shifted forwards again.
-      jump0 = 0;       // for #2486
       nSwept = 0;
       goto read;
     }
@@ -2341,6 +2354,9 @@ int freadMain(freadMainArgs _args) {
           DTi+row1line, ncol, tt, strlim(skippedFooter,500));
       }
     }
+  }
+  if (quoteRuleBumpedCh!=NULL && quoteRuleBumpedCh<headPos) {
+    DTWARN("Found and resolved improper quoting. First healed line %d: <<%s>>", quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
   }
 
   if (verbose) {

@@ -476,9 +476,9 @@ static inline void write_string(const char *x, char **pch)
     int8_t q = doQuote;
     if (q==INT8_MIN) { // NA means quote="auto"
       const char *tt = x;
-      if (*tt == '\0') {
+      if (*tt=='\0') {
         // Empty strings are always quoted to distinguish from ,,==NA
-        *ch++='"'; *ch++='"';
+        *ch++='"'; *ch++='"';   // test 1732.7 covers this (confirmed in gdb) so it's unknown why codecov claims no coverage
         *pch = ch;
         return;
       }
