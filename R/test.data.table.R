@@ -92,17 +92,22 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
 
   if (!missing(error) && !missing(y)) stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")
   check_specials = function(string, type) {
+    # helper in dev to remind dev what might be wrong when changing or adding a new test
+    # nocov start
     found = ""
     if (length(grep("[^[\\]([(]|[)])", string))) found = "parenthesis"
     else if (length(grep("[^[\\]([[]|[]])", string))) found = "square bracket"
     else if (length(grep("[^\\]\\+", string))) found = "'+'"
     else if (length(grep("[^\\]\\^", string))) found = "'^'"
     if (found!="") stop("Likely due to the unescaped ",found," in the ",type,"= string. Please avoid it using .* or preceed it with double backslash.")
+    # nocov end
   }
   string_match = function(x, y) {
-    if (length(grep(x,y,fixed=TRUE))) return(TRUE)   # try literal first; useful for most messages containing ()[]+ characters
-    if (length(grep(x,y))) return(TRUE)              # if the literal failed to match, try regexp; e.g. commonly when .* is present in x.
-    return(FALSE)
+    if (length(grep(x,y,fixed=TRUE)))  # try treating x as literal first; useful for most messages containing ()[]+ characters
+      return(TRUE)
+    if (length(grep(x,y)))             # otherwise try regexp; commonly here when .* is used in x and if so, ()[]+ must then be escaped
+      return(TRUE)
+    return(FALSE)                      # nocov
   }
 
   xsub = substitute(x)
@@ -184,32 +189,38 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     y = try(y,TRUE)
     if (identical(x,y)) return()
     if (is.data.table(x) && is.data.table(y)) {
-      # TO DO:  test 166 doesn't pass with these :
-      # if (!selfrefok(x)) stop("x selfref not ok")
-      # if (!selfrefok(y)) stop("y selfref not ok")
-      xc=copy(x)
-      yc=copy(y)  # so we don't affect the original data which may be used in the next test
-      # drop unused levels in factors
-      if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
-      if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
-      setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
-      setattr(yc,"row.names",NULL)
-      setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
-      setattr(yc,"index",NULL)
-      if (identical(xc,yc) && identical(key(x),key(y))) return()  # check key on original x and y because := above might have cleared it on xc or yc
-      if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
-        identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return()
+      if (!selfrefok(x) || !selfrefok(y)) {
+        # nocov start
+        cat("Test ",num," ran without errors but selfrefok(", if(!selfrefok(x))"x"else"y", ") is FALSE\n", sep="")
+        fail = TRUE
+        # nocov end
+      } else {
+        xc=copy(x)
+        yc=copy(y)  # so we don't affect the original data which may be used in the next test
+        # drop unused levels in factors
+        if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
+        if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
+        setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
+        setattr(yc,"row.names",NULL)
+        setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
+        setattr(yc,"index",NULL)
+        if (identical(xc,yc) && identical(key(x),key(y))) return()  # check key on original x and y because := above might have cleared it on xc or yc
+        if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
+          identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return()
+      }
     }
     if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y,check.names=!isTRUE(y))) && typeof(x)==typeof(y)) return()
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     # nocov start
-    cat("Test",num,"ran without errors but failed check that x equals y:\n")
-    cat("> x =",deparse(xsub),"\n")
-    if (is.data.table(x)) compactprint(x) else {cat("First 6 of ", length(x)," (type '", typeof(x), "'): ", sep=""); print(head(x))}
-    cat("> y =",deparse(ysub),"\n")
-    if (is.data.table(y)) compactprint(y) else {cat("First 6 of ", length(y)," (type '", typeof(y), "'): ", sep=""); print(head(y))}
-    if (!isTRUE(all.equal.result)) cat(all.equal.result,sep="\n")
-    fail = TRUE
+    if (!fail) {
+      cat("Test",num,"ran without errors but failed check that x equals y:\n")
+      cat("> x =",deparse(xsub),"\n")
+      if (is.data.table(x)) compactprint(x) else {cat("First 6 of ", length(x)," (type '", typeof(x), "'): ", sep=""); print(head(x))}
+      cat("> y =",deparse(ysub),"\n")
+      if (is.data.table(y)) compactprint(y) else {cat("First 6 of ", length(y)," (type '", typeof(y), "'): ", sep=""); print(head(y))}
+      if (!isTRUE(all.equal.result)) cat(all.equal.result,sep="\n")
+      fail = TRUE
+    }
     # nocov end
   }
   if (fail) {

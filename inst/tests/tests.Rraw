@@ -2342,8 +2342,9 @@ test(838, DT[,c:=scale(b), by=a][,c:=as.integer(1000*c)], data.table(a=1:3,b=1:6
 # Test data.table's last(). (last is used internally in data.table, too).
 test(839, last(1:10), 10L)   # If xts is loaded, this'll just test xts's last. Ok as they're consistent, for vectors.
 DT = data.table(a=1:3,b=4:6)
-test(840, last(DT), DT[3L])  # xts's last returns a one row data.table ok. So this test is ok too, whether or not xts is loaded.
-                             # But not true when DT is a one column data.table/data.frame, see below.
+test(840, setDT(last(DT)), DT[3L])
+# xts's last returns a one row data.table ok (setDT is needed to pass strict selfrefok(), otherwise the first := heals it.)
+# But not true when DT is a one column data.table/data.frame, see below.
 if ("package:xts" %in% search()) {  # e.g. when run via R CMD check
     x = xts(1:100, Sys.Date()+1:100)
     test(841, last(x,10), x[91:100,])
@@ -4218,7 +4219,8 @@ test(1226.4, data.table(data.frame()), null.data.table())
 test(1226.5, data.table(data.table()), null.data.table())
 
 # fix for bug #5321 - POSIXlt issue.
-setDT(DT1 <- data.frame(id=1:3, d=strptime(c("06:02:36", "06:02:48", "07:03:12"), "%H:%M:%S")))
+DT1 = data.frame(id=1:3, d=strptime(c("06:02:36", "06:02:48", "07:03:12"), "%H:%M:%S"))
+setDT(DT1)
 test(1227, data.table(id=1:3, d=strptime(c("06:02:36", "06:02:48", "07:03:12"), "%H:%M:%S")), DT1, warning="POSIXlt column type detected and converted to")
 
 # fix for bug #5296 - retaining class of original data.table after passing through `[.data.table`
