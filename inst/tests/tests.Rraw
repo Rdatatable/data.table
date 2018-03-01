@@ -10601,7 +10601,7 @@ test(1758, sapply(fread("A,B\n,"),class), c(A="logical",B="logical"))
 
 # Slowdown when parallel and all columns are character, #2091. This test tests the data loads ok but we need a
 # performance test environment to make sure the slowdown doesn't come back.  Fix was to delay call to SET_.
-test(1759, fread(testDir("alluniquechar.csv"))[c(1,2,4999,5000)],
+test(1759, fread(testDir("alluniquechar.csv"))[c(1,2,499,500)],
            data.table(A=c("jptokakysooopwtmlkeimzbgpeinhy","bchguwmynjhecsxpxldyzlemavmwvz",
                           "avlyclruzkazfqhyxnppaafwcveolb","dkmyfqhltlwzwwxyvshwrzrdmfyqdm"),
                       B=c("jptokakysooopwtmlkei","bchguwmynjhecsxpxldy","avlyclruzkazfqhyxnpp","dkmyfqhltlwzwwxyvshw"),
@@ -11762,6 +11762,12 @@ test(1882.1, .Machine$integer.max, 2147483647L)  # same on all platforms and ver
 test(1882.2, ceiling(.Machine$integer.max^(1/3)), 1291)
 v = seq_len(1291L)
 test(1882.3, CJ(v, v, v), error="Cross product of elements provided to CJ() would result in 2151685171 rows which exceeds .Machine$integer.max == 2147483647")
+
+# no re-read for particular file, #2509
+test(1883, fread(testDir("SA2-by-DJZ.csv"), verbose=TRUE, header=FALSE)[c(1,2,1381,.N),],
+           data.table(V1=c("Goulburn","","",""), V2=c("110018063","110018064","0&&&&&&&&","0@@@@@@@@"), V3=INT(3499,812,250796,7305367), V4=NA),
+           warning='Stopped early on line 1394.*First discarded non-empty line: <<"Dataset: 2011 Census of Population and Housing">>',
+           output="0.000s.*Rereading 0 columns")
 
 
 ###################################
