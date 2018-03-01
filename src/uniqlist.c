@@ -228,3 +228,35 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   UNPROTECT(1);
   return(ans);
 }
+
+SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
+  // single pass; short-circuit and return as soon as all 3 values are found
+  if (!isLogical(x)) error("x is not a logical vector");
+  if (!isLogical(narmArg) || length(narmArg)!=1 || INTEGER(narmArg)[0]==NA_INTEGER) error("na.rm must be TRUE or FALSE");
+  bool narm = LOGICAL(narmArg)[0]==1;
+  int n = LENGTH(x);
+  if (n==0)
+    return( ScalarInteger(0) );  // empty vector
+  Rboolean first = INTEGER(x)[0];
+  int i=1;
+  while (i<n && INTEGER(x)[i]==first) i++;
+  if (i==n)
+    return( ScalarInteger( first==NA_INTEGER && narm ? 0 : 1) ); // all one value
+  Rboolean second = INTEGER(x)[i];
+  // we've found 2 different values (first and second). Which one didn't we find? Then just look for that.
+  bool found[3];  // 0==FALSE, 1==TRUE, 2==NA
+  found[0] = found[1] = found[2] = false;
+  found[first==NA_INTEGER ? 2 : first] = true;
+  found[second==NA_INTEGER ? 2 : second] = true;
+  if (found[0]+found[1]+found[2] != 2) error("Internal error: 'found' vector invalid");
+  if (!found[2] && narm)
+    return ScalarInteger(2);  // TRUE and FALSE found before any NA, but na.rm=TRUE so we're done
+  if (!found[0])
+    while(i<n && INTEGER(x)[i]!=FALSE) i++;
+  if (!found[1])
+    while(i<n && INTEGER(x)[i]!=TRUE) i++;
+  if (!found[2])
+    while(i<n && INTEGER(x)[i]!=NA_INTEGER) i++;
+  return ScalarInteger(i<n ? (3-narm) : (2-(narm && found[2])));
+}
+
