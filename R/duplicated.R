@@ -142,7 +142,18 @@ uniqueN <- function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE)
   if (is.null(x)) return(0L)
   if (!is.atomic(x) && !is.data.frame(x))
     stop("x must be an atomic vector or data.frames/data.tables")
-  if (is.atomic(x)) x = as_list(x)
+  if (is.atomic(x)) {
+    if (is.logical(x)) {
+      # NAs + TRUE + FALSE
+      if (na.rm) {
+        return(any(x, na.rm = TRUE) + !all(x, na.rm = TRUE))
+      } else {
+        return(anyNA(x) + any(x, na.rm = TRUE) + !all(x, na.rm = TRUE))
+      }
+    } else {
+      x = as_list(x)
+    }
+  }
   if (is.null(by)) by = seq_along(x)
   o = forderv(x, by=by, retGrp=TRUE, na.last=if (!na.rm) FALSE else NA)
   starts = attr(o, 'starts')
