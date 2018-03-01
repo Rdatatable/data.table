@@ -133,7 +133,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   fail = FALSE
   if (length(warning) != length(actual.warns)) {
     # nocov start
-    cat("Test",num,"produced",length(actual.warns),"warnings but expected",length(warnings),"\n")
+    cat("Test",num,"produced",length(actual.warns),"warnings but expected",length(warning),"\n")
     cat(paste("Expected:",warning), sep="\n")
     cat(paste("Observed:",actual.warns), sep="\n")
     fail = TRUE

@@ -2090,6 +2090,10 @@ int freadMain(freadMainArgs _args) {
         if (sep==' ') {
           while (*tch==' ') tch++;  // multiple sep=' ' at the tLineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
           fieldStart = tch;
+          skip_white(&tch);
+          if (*tch=='\0') continue; // empty last line
+          if (eol(&tch) && skipEmptyLines) { tch++; continue; }
+          tch = fieldStart;         // in case tabs at the beginning of the first field need to be included
         }
         bool checkedNumberOfFields = false;
         if (fill || ncol==1 || (*tch!='\n' && *tch!='\r')) while (j < ncol) {
@@ -2172,6 +2176,10 @@ int freadMain(freadMainArgs _args) {
         if (j<ncol || (!eol(&tch) && *tch!='\0'))  {
           // Too few or too many columns observed (including empty line). If fill==true, fields should already have been
           // filled above due to continue inside while(j<ncol).
+          if (j==0 && skipEmptyLines) {
+            if (*tch!='\0') tch++;
+            continue;
+          }
           myStopEarly = true;
           tch = tLineStart;
           break;
@@ -2273,6 +2281,7 @@ int freadMain(freadMainArgs _args) {
       goto read;
     }
     if (restartTeam) {
+      if (verbose) DTPRINT("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n", jump0, nSwept, quoteRule);
       ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "Internal error: team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh);
       goto read;
     }
