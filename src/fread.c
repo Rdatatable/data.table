@@ -1402,121 +1402,129 @@ int freadMain(freadMainArgs _args) {
   {
   if (verbose) DTPRINT("[06] Detect separator, quoting rule, and ncolumns\n");
 
-  int nseps;
-  char seps[]=",|;\t ";  // default seps in order of preference. See ?fread.
-  // using seps[] not *seps for writeability (http://stackoverflow.com/a/164258/403310)
-
-  if (args.sep == '\0') {  // default is '\0' meaning 'auto'
-    if (verbose) DTPRINT("  Detecting sep ...\n");
-    nseps = (int) strlen(seps);
-  } else if (args.sep == '\n') {
-    // unusual requirement: user asked for lines as single string column
-    seps[0] = 127;  // ASCII DEL: a character different from \r, \n and \0 that isn't in the data
-    seps[1] = '\0';
-    nseps = 1;
+  if (args.sep == '\n') {  // '\n' because '\0' is taken already to mean 'auto'
+    // unusual
     if (verbose) DTPRINT("  sep='\\n' passed in meaning read lines as single character column\n");
+    sep = 127;     // ASCII DEL: a character different from \r, \n and \0 that isn't in the data
+    whiteChar = 0;
+    quoteRule = 3; // Ignore quoting
+    ncol = 1;
+    int thisLine=0;
+    while (ch<eof && thisLine++<jumpLines) {
+      countfields(&ch);
+      if (eol(&ch)) ch++;
+    }
+    firstJumpEnd = ch;  // size of first 100 lines in bytes is used later for nrow estimate
+    fill = true;        // so that blank lines are read as empty
+    ch = pos;
   } else {
-    seps[0] = args.sep;
-    seps[1] = '\0';
-    nseps = 1;
-    if (verbose) DTPRINT("  Using supplied sep '%s'\n", args.sep=='\t' ? "\\t" : seps);
-  }
+    int nseps;
+    char seps[]=",|;\t ";  // default seps in order of preference. See ?fread.
+                           // seps[] not *seps for writeability (http://stackoverflow.com/a/164258/403310)
+    if (args.sep == '\0') {
+      if (verbose) DTPRINT("  Detecting sep automatically ...\n");
+      nseps = (int) strlen(seps);
+    } else {
+      seps[0] = args.sep;
+      seps[1] = '\0';
+      nseps = 1;
+      if (verbose) DTPRINT("  Using supplied sep '%s'\n", args.sep=='\t' ? "\\t" : seps);
+    }
 
-  int topNumLines=0;        // the most number of lines with the same number of fields, so far
-  int topNumFields=1;       // how many fields that was, to resolve ties
-  char topSep=127;          // which sep that was, by default 127 (ascii del) means no sep i.e. single-column input (1 field)
-  int topQuoteRule=0;       // which quote rule that was
-  int topNmax=1;            // for that sep and quote rule, what was the max number of columns (just for fill=true)
-                            //   (when fill=true, the max is usually the header row and is the longest but there are more
-                            //    lines of fewer)
+    int topNumLines=0;        // the most number of lines with the same number of fields, so far
+    int topNumFields=1;       // how many fields that was, to resolve ties
+    char topSep=127;          // which sep that was, by default 127 (ascii del) means no sep i.e. single-column input (1 field)
+    int topQuoteRule=0;       // which quote rule that was
+    int topNmax=1;            // for that sep and quote rule, what was the max number of columns (just for fill=true)
+                              //   (when fill=true, the max is usually the header row and is the longest but there are more
+                              //    lines of fewer)
 
-  // We will scan the input line-by-line (at most 100+1 lines; "+1"
-  // covers the header row, at this stage we don't know if it's present), and
-  // detect the number of fields on each line. If several consecutive lines
-  // have the same number of fields, we'll call them a "contiguous group of
-  // lines". Arrays `numFields` and `numLines` contain information about each
-  // contiguous group of lines encountered while scanning the first 100+1
-  // lines: 'numFields` gives the count of fields in each group, and
-  // `numLines` has the number of lines in each group. There is always a lot
-  // of unused space at the end of these vectors. They are only jumpLines+1 big
-  // for the worst case that no adjacent lines have the same number of fields.
-  int numFields[jumpLines+1];
-  int numLines[jumpLines+1];
-  for (int s=0; s<nseps; s++) {
-    sep = seps[s];
-    whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));  // 0 means both ' ' and '\t' to be skipped
-    for (quoteRule=0; quoteRule<4; quoteRule++) {  // quote rule in order of preference
-      ch = pos;
-      // if (verbose) DTPRINT("  Trying sep='%c' with quoteRule %d ...\n", sep, quoteRule);
-      for (int i=0; i<=jumpLines; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
-      int i=-1; // The slot we're counting the currently contiguous consistent ncol
-      int thisLine=0, lastncol=-1;
-      while (ch<eof && thisLine++<jumpLines) {
-        int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
-        if (thisncol<0) { numFields[0]=-1; break; }  // invalid file with this sep and quote rule; abort
-        if (thisncol!=lastncol) {
-          if (!skipAuto && i==0) break;  // biggest contiguous group always starting on the line skip= landed on
-          // else new contiguous consistent ncol started
-          numFields[++i]=thisncol;
-          lastncol=thisncol;
+    // We will scan the input line-by-line (at most 100+1 lines; "+1"
+    // covers the header row, at this stage we don't know if it's present), and
+    // detect the number of fields on each line. If several consecutive lines
+    // have the same number of fields, we'll call them a "contiguous group of
+    // lines". Arrays `numFields` and `numLines` contain information about each
+    // contiguous group of lines encountered while scanning the first 100+1
+    // lines: 'numFields` gives the count of fields in each group, and
+    // `numLines` has the number of lines in each group. There is always a lot
+    // of unused space at the end of these vectors. They are only jumpLines+1 big
+    // for the worst case that no adjacent lines have the same number of fields.
+    int numFields[jumpLines+1];
+    int numLines[jumpLines+1];
+    for (int s=0; s<nseps; s++) {
+      sep = seps[s];
+      whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));  // 0 means both ' ' and '\t' to be skipped
+      for (quoteRule=0; quoteRule<4; quoteRule++) {  // quote rule in order of preference
+        ch = pos;
+        // if (verbose) DTPRINT("  Trying sep='%c' with quoteRule %d ...\n", sep, quoteRule);
+        for (int i=0; i<=jumpLines; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
+        int i=-1; // The slot we're counting the currently contiguous consistent ncol
+        int thisLine=0, lastncol=-1;
+        while (ch<eof && thisLine++<jumpLines) {
+          int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
+          if (thisncol<0) { numFields[0]=-1; break; }  // invalid file with this sep and quote rule; abort
+          if (thisncol!=lastncol) {
+            if (!skipAuto && i==0) break;  // biggest contiguous group always starting on the line skip= landed on
+            // else new contiguous consistent ncol started
+            numFields[++i]=thisncol;
+            lastncol=thisncol;
+          }
+          numLines[i]++;
         }
-        numLines[i]++;
-      }
-      if (numFields[0]==-1) continue;
-      if (firstJumpEnd==NULL) firstJumpEnd=ch;  // if this wins (doesn't get updated), it'll be single column input
-      bool updated=false;
-      int nmax=0;
+        if (numFields[0]==-1) continue;
+        if (firstJumpEnd==NULL) firstJumpEnd=ch;  // if this wins (doesn't get updated), it'll be single column input
+        bool updated=false;
+        int nmax=0;
 
-      i = -1;
-      while (numLines[++i]) {
-        if (numFields[i] > nmax) nmax=numFields[i];  // for fill=true to know max number of columns
-        // if (verbose) DTPRINT("numLines[i]=%d, topNumLines=%d, numFields[i]=%d, topNumFields=%d\n",
-        //                       numLines[i], topNumLines, numFields[i], topNumFields);
-        if ( numFields[i]>1 &&
-            (numLines[i]>1 || (/*blank line after single line*/numFields[i+1]==0)) &&
-            ((numLines[i]>topNumLines) ||   // most number of consistent ncol wins
-             (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=topSep && sep!=' '))) {
-             //                                       ^ ties in numLines resolved by numFields (more fields win)
-             //                                                           ^ but don't resolve a tie with a higher quote rule unless the sep is different too, #2404 and test 2839
-          topNumLines = numLines[i];
-          topNumFields = numFields[i];
-          topSep = sep;
-          topQuoteRule = quoteRule;
-          topNmax = nmax;
-          firstJumpEnd = ch;  // So that after the header we know how many bytes jump point 0 is
-          updated = true;
-          // Two updates can happen for the same sep and quoteRule (e.g. issue_1113_fread.txt where sep=' ') so the
-          // updated flag is just to print once.
+        i = -1;
+        while (numLines[++i]) {
+          if (numFields[i] > nmax) nmax=numFields[i];  // for fill=true to know max number of columns
+          // if (verbose) DTPRINT("numLines[i]=%d, topNumLines=%d, numFields[i]=%d, topNumFields=%d\n",
+          //                       numLines[i], topNumLines, numFields[i], topNumFields);
+          if ( numFields[i]>1 &&
+              (numLines[i]>1 || (/*blank line after single line*/numFields[i+1]==0)) &&
+              ((numLines[i]>topNumLines) ||   // most number of consistent ncol wins
+               (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=topSep && sep!=' '))) {
+               //                                       ^ ties in numLines resolved by numFields (more fields win)
+               //                                                           ^ but don't resolve a tie with a higher quote rule unless the sep is different too, #2404 and test 2839
+            topNumLines = numLines[i];
+            topNumFields = numFields[i];
+            topSep = sep;
+            topQuoteRule = quoteRule;
+            topNmax = nmax;
+            firstJumpEnd = ch;  // So that after the header we know how many bytes jump point 0 is
+            updated = true;
+            // Two updates can happen for the same sep and quoteRule (e.g. issue_1113_fread.txt where sep=' ') so the
+            // updated flag is just to print once.
+          }
         }
-      }
-      if (verbose && updated) {
-        DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep);
-        DTPRINT("  with %d lines of %d fields using quote rule %d\n", topNumLines, topNumFields, topQuoteRule);
+        if (verbose && updated) {
+          DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep);
+          DTPRINT("  with %d lines of %d fields using quote rule %d\n", topNumLines, topNumFields, topQuoteRule);
+        }
       }
     }
-  }
-  if (!firstJumpEnd) STOP("Internal error: no sep won");
-
-  quoteRule = topQuoteRule;
-  sep = topSep;
-  whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
-  ch = pos;
-  if (fill || !skipAuto) {
-    // start input from first populated line, already pos.
-    ncol = topNmax;
-  } else {
-    // find the top line with the consistent number of fields.  There might be irregular banner lines above it (skip="auto")
-    ncol = topNumFields;
-    int thisLine=-1;
-    while (ch<eof && ++thisLine<jumpLines) {
-      const char *lastLineStart = ch;
-      int tt = countfields(&ch);
-      if (tt==ncol) { ch=pos=lastLineStart; row1line+=thisLine; break; }
-      else prevStart = (tt>0 ? lastLineStart : NULL);
+    if (!firstJumpEnd) STOP("Internal error: no sep won");
+    quoteRule = topQuoteRule;
+    sep = topSep;
+    whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
+    ch = pos;
+    if (fill || !skipAuto) {
+      // start input from first populated line, already pos.
+      ncol = topNmax;
+    } else {
+      // find the top line with the consistent number of fields.  There might be irregular banner lines above it (skip="auto")
+      ncol = topNumFields;
+      int thisLine=-1;
+      while (ch<eof && ++thisLine<jumpLines) {
+        const char *lastLineStart = ch;
+        int tt = countfields(&ch);
+        if (tt==ncol) { ch=pos=lastLineStart; row1line+=thisLine; break; }
+        else prevStart = (tt>0 ? lastLineStart : NULL);
+      }
     }
   }
   // For standard regular separated files, we're now on the first byte of the file.
-
   if (ncol<1 || row1line<1) STOP("Internal error: ncol==%d line==%d after detecting sep, ncol and first line", ncol, row1line);
   int tt = countfields(&ch);
   ch = pos; // move back to start of line since countfields() moved to next
