@@ -236,27 +236,19 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   bool narm = LOGICAL(narmArg)[0]==1;
   int n = LENGTH(x);
   if (n==0)
-    return( ScalarInteger(0) );  // empty vector
+    return ScalarInteger(0);  // empty vector
   Rboolean first = INTEGER(x)[0];
   int i=1;
   while (i<n && INTEGER(x)[i]==first) i++;
   if (i==n)
-    return( ScalarInteger( first==NA_INTEGER && narm ? 0 : 1) ); // all one value
+    return ScalarInteger(first==NA_INTEGER && narm ? 0 : 1); // all one value
   Rboolean second = INTEGER(x)[i];
   // we've found 2 different values (first and second). Which one didn't we find? Then just look for that.
-  bool found[3];  // 0==FALSE, 1==TRUE, 2==NA
-  found[0] = found[1] = found[2] = false;
-  found[first==NA_INTEGER ? 2 : first] = true;
-  found[second==NA_INTEGER ? 2 : second] = true;
-  if (found[0]+found[1]+found[2] != 2) error("Internal error: 'found' vector invalid");
-  if (!found[2] && narm)
+  if (NA_LOGICAL != INT_MIN) error("NA_LOGICAL != INT_MIN");
+  Rboolean third = (first+second == 1) ? NA_INTEGER : ( first+second == INT_MIN ? TRUE : FALSE );
+  if (third==NA_INTEGER && narm)
     return ScalarInteger(2);  // TRUE and FALSE found before any NA, but na.rm=TRUE so we're done
-  if (!found[0])
-    while(i<n && INTEGER(x)[i]!=FALSE) i++;
-  if (!found[1])
-    while(i<n && INTEGER(x)[i]!=TRUE) i++;
-  if (!found[2])
-    while(i<n && INTEGER(x)[i]!=NA_INTEGER) i++;
-  return ScalarInteger(i<n ? (3-narm) : (2-(narm && found[2])));
+  while(i<n && INTEGER(x)[i]!=third) i++;
+  return ScalarInteger(i<n ? (3-narm) : (2-(narm && third!=NA_INTEGER)));
 }
 
