@@ -238,8 +238,8 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   if (n==0)
     return ScalarInteger(0);  // empty vector
   Rboolean first = INTEGER(x)[0];
-  int i=1;
-  while (i<n && INTEGER(x)[i]==first) i++;
+  int i=0;
+  while (++i<n && INTEGER(x)[i]==first);
   if (i==n)
     return ScalarInteger(first==NA_INTEGER && narm ? 0 : 1); // all one value
   Rboolean second = INTEGER(x)[i];
@@ -248,7 +248,7 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   Rboolean third = (first+second == 1) ? NA_INTEGER : ( first+second == INT_MIN ? TRUE : FALSE );
   if (third==NA_INTEGER && narm)
     return ScalarInteger(2);  // TRUE and FALSE found before any NA, but na.rm=TRUE so we're done
-  while(i<n && INTEGER(x)[i]!=third) i++;
+  while(++i<n && INTEGER(x)[i]!=third);
   return ScalarInteger(i<n ? (3-narm) : (2-(narm && third!=NA_INTEGER)));
 }
 
