@@ -11762,6 +11762,9 @@ test(1883, fread(testDir("SA2-by-DJZ.csv"), verbose=TRUE, header=FALSE)[c(1,2,13
            warning='Stopped early on line 1394.*First discarded non-empty line: <<"Dataset: 2011 Census of Population and Housing">>',
            output="0.000s.*Rereading 0 columns")
 
+# sep=NULL with quoted fields, #2548
+test(1884, fread('"A","B"\n', sep=NULL), data.table('"A","B"'=logical()))
+
 
 ###################################
 #  Add new tests above this line  #
