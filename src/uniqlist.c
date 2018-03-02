@@ -234,11 +234,11 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   if (!isLogical(x)) error("x is not a logical vector");
   if (!isLogical(narmArg) || length(narmArg)!=1 || INTEGER(narmArg)[0]==NA_INTEGER) error("na.rm must be TRUE or FALSE");
   bool narm = LOGICAL(narmArg)[0]==1;
-  const int n = LENGTH(x);
+  const R_xlen_t n = xlength(x);
   if (n==0)
     return ScalarInteger(0);  // empty vector
   Rboolean first = LOGICAL(x)[0];
-  int i=0;
+  R_xlen_t i=0;
   while (++i<n && LOGICAL(x)[i]==first);
   if (i==n)
     return ScalarInteger(first==NA_INTEGER && narm ? 0 : 1); // all one value
