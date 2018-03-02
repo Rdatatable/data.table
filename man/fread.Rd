@@ -10,7 +10,7 @@
 }
 \usage{
 fread(input, file, sep="auto", sep2="auto", dec=".", quote="\"",
-nrows=Inf, header="auto", na.strings="NA",
+nrows=Inf, header="auto", na.strings="",
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64"),         # default: "integer64"
