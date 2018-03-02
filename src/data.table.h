@@ -4,6 +4,7 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 #include <stdint.h> // for uint64_t rather than unsigned long long
+#include <stdbool.h>
 #include "myomp.h"
 
 // data.table depends on R>=3.0.0 when R_xlen_t was introduced

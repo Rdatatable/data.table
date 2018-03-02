@@ -76,6 +76,7 @@ SEXP fsort();
 SEXP inrange();
 SEXP between();
 SEXP hasOpenMP();
+SEXP uniqueNlogical();
 
 // .Externals
 SEXP fastmean();
@@ -154,6 +155,7 @@ R_CallMethodDef callMethods[] = {
 {"Cinrange", (DL_FUNC) &inrange, -1},
 {"Cbetween", (DL_FUNC) &between, -1},
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
+{"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
 {NULL, NULL, 0}
 };
 
