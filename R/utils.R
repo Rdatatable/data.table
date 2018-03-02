@@ -69,5 +69,5 @@ vapply_1i <- function (x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
 }
 
-more = function(f) system(paste("more",f))
+more = function(f) system(paste("more",f))    # nocov  (just a dev helper)
 
