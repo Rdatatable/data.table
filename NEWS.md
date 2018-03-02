@@ -65,10 +65,22 @@
 
 13. `unique(DT)` now returns `DT` early when there are no duplicates to save RAM, [#2013](https://github.com/Rdatatable/data.table/issues/2013). Thanks to Michael Chirico for the PR.
 
-14. Subsetting optimization with keys and indices is now possible for compound queries like `DT[a==1 & b==2]`, [#2472](https://github.com/Rdatatable/data.table/issues/2472).
+14. `uniqueN()` is now faster on logical vectors. Thanks to Hugh Parsonage for [PR#2648](https://github.com/Rdatatable/data.table/pull/2648).
+    ```
+    N = 1e9
+                                     was      now
+    x = c(TRUE,FALSE,NA,rep(TRUE,N))
+    uniqueN(x) == 3                 5.4s    0.00s
+    x = c(TRUE,rep(FALSE,N), NA)
+    uniqueN(x,na.rm=TRUE) == 2      5.4s    0.00s
+    x = c(rep(TRUE,N),FALSE,NA)
+    uniqueN(x) == 3                 6.7s    0.38s
+    ```
+
+15. Subsetting optimization with keys and indices is now possible for compound queries like `DT[a==1 & b==2]`, [#2472](https://github.com/Rdatatable/data.table/issues/2472).
 Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementation.
 
-15. `melt.data.table` now offers friendlier functionality for providing `value.name` for `list` input to `measure.vars`, [#1547](https://github.com/Rdatatable/data.table/issues/1547). Thanks @MichaelChirico and @franknarf1 for the suggestion and use cases, @jangorecki and @mrdwab for implementation feedback, and @MichaelChirico for ultimate implementation.
+16. `melt.data.table` now offers friendlier functionality for providing `value.name` for `list` input to `measure.vars`, [#1547](https://github.com/Rdatatable/data.table/issues/1547). Thanks @MichaelChirico and @franknarf1 for the suggestion and use cases, @jangorecki and @mrdwab for implementation feedback, and @MichaelChirico for ultimate implementation.
 
 #### BUG FIXES
 
