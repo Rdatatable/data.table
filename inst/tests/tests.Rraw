@@ -11781,6 +11781,11 @@ test(1883, fread(testDir("SA2-by-DJZ.csv"), verbose=TRUE, header=FALSE)[c(1,2,13
 # sep=NULL with quoted fields, #2548
 test(1884, fread('"A","B"\n', sep=NULL), data.table('"A","B"'=logical()))
 
+# sep=' ' and blank.lines.skip, #2535
+test(1885.1, fread(txt<-"a b 2\nc d 3\n\ne f 4\n", blank.lines.skip=TRUE), ans<-data.table(V1=c("a","c","e"), V2=c("b","d","f"), V3=2:4))
+test(1885.2, fread(txt, blank.lines.skip=TRUE, fill=TRUE), ans)
+test(1885.3, fread(txt, fill=TRUE), ans[c(1,2,NA,3),][3,1:2:=""])  # TODO when blank strings are filled as NA rather than "", this test will then fail and the := can be removed
+
 
 ###################################
 #  Add new tests above this line  #
