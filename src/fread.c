@@ -2174,12 +2174,8 @@ int freadMain(freadMainArgs _args) {
           break;
         }
         if (j<ncol || (!eol(&tch) && *tch!='\0'))  {
-          // Too few or too many columns observed (including empty line). If fill==true, fields should already have been
-          // filled above due to continue inside while(j<ncol).
-          if (j==0 && skipEmptyLines) {
-            if (*tch!='\0') tch++;
-            continue;
-          }
+          // Too few or too many columns observed (but not empty lines when skipEmptyLines as they were found and skipped earlier above).
+          // If fill==true, fields should already have been filled above due to continue inside while(j<ncol).
           myStopEarly = true;
           tch = tLineStart;
           break;
