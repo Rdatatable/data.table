@@ -11798,6 +11798,7 @@ test(1886.3, fread("A,B,C\n1,foo,bar\n2", fill=TRUE), data.table(A=1:2,B=c("foo"
 DT = data.table(chr = c(NA, "", "a"), num = c(NA, NA, 2L))
 test(1887.1, fread({fwrite(DT,f<-tempfile());f}), DT); unlink(f)
 test(1887.2, capture.output(fwrite(DT)), c("chr,num", ",", "\"\"," , "a,2"))
+test(1887.3, fread('A,B\n1,"foo"\n2,\n3,""\n')$B, c("foo", NA, ""))  # for issue #2217
 
 
 ###################################
