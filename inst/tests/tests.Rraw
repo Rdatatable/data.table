@@ -11800,6 +11800,15 @@ test(1887.1, fread({fwrite(DT,f<-tempfile());f}), DT); unlink(f)
 test(1887.2, capture.output(fwrite(DT)), c("chr,num", ",", "\"\"," , "a,2"))
 test(1887.3, fread('A,B\n1,"foo"\n2,\n3,""\n')$B, c("foo", NA, ""))  # for issue #2217
 
+# print(DT) should print NA in character columns using <NA> like base R to distinguish from "" and "NA"
+DT = data.table(A=1:4, B=c("FOO","",NA,"NA"))
+test(1888.1, print(DT), output=txt<-c("   A    B", "1: 1  FOO", "2: 2     ", "3: 3 <NA>", "4: 4   NA"))
+DF = as.data.frame(DT)
+rownames(DF) = paste0(rownames(DF),":")
+test(1888.2, print(DF), output=txt)
+txt = 'A,B\n109,MT\n7,N\n11,NA\n41,NB\n60,ND\n1,""\n2,\n3,"NA"\n4,NA\n'
+test(1888.3, print(fread(txt)), output="A    B\n1: 109   MT\n2:   7    N\n3:  11   NA\n4:  41   NB\n5:  60   ND\n6:   1     \n7:   2 <NA>\n8:   3   NA\n9:   4   NA")
+
 
 ###################################
 #  Add new tests above this line  #

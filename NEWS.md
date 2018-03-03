@@ -156,6 +156,8 @@ the behaviour of `base:::merge.data.frame()`. Thanks to @sritchie73 for reportin
 
 35. `CJ()` now fails with proper error message when results would exceed max integer, [#2636](https://github.com/Rdatatable/data.table/issues/2636).
 
+36. `NA` in character columns now display as `<NA>` just like base R to distinguish from `""` and `"NA"`.
+
 #### NOTES
 
 0. The license has been changed from GPL to MPL (Mozilla Public License). All contributors were consulted and approved. [PR#2456](https://github.com/Rdatatable/data.table/pull/2456) details the reasons for the change.
