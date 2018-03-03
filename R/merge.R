@@ -1,7 +1,9 @@
 merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
-               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
+               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
   if (!sort %in% c(TRUE, FALSE))
     stop("Argument 'sort' should be logical TRUE/FALSE")
+  if (!no.dups %in% c(TRUE, FALSE))
+    stop("Argument 'no.dups' should be logical TRUE/FALSE")
   if (!is.data.table(y)) {
     y = as.data.table(y)
     if (missing(by) && missing(by.x)) {
@@ -51,11 +53,10 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     start[chmatch(dupnames, start, 0L)] = paste(dupnames, suffixes[1L], sep="")
     end[chmatch(dupnames, end, 0L)] = paste(dupnames, suffixes[2L], sep="")
   }
-  # If by.x != by.y then the 'by' column(s) are named as 'by.x' - we need
-  # to also handle cases where the 'by.x' column names are in 'end'
+  # If no.dups = TRUE we also need to added the suffix to columns in y
+  # that share a name with by.x
   dupkeyx = intersect(by.x, end)
-  if (length(dupkeyx)) {
-    by.x[chmatch(dupkeyx, by.x, 0L)] = paste(dupkeyx, suffixes[1L], sep="")
+  if (no.dups && length(dupkeyx)) {
     end[chmatch(dupkeyx, end, 0L)] = paste(dupkeyx, suffixes[2L], sep="")
   }
 
