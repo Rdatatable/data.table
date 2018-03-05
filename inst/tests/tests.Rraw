@@ -11786,6 +11786,10 @@ test(1885.1, fread(txt<-"a b 2\nc d 3\n\ne f 4\n", blank.lines.skip=TRUE), ans<-
 test(1885.2, fread(txt, blank.lines.skip=TRUE, fill=TRUE), ans)
 test(1885.3, fread(txt, fill=TRUE), ans[c(1,2,NA,3),][3,1:2:=""])  # TODO when blank strings are filled as NA rather than "", this test will then fail and the := can be removed
 
+# file detected as no header automatically
+# (TOOD: undoubling double quotes #1109, #1299) but otherwise, auto mode correct
+test(1886, fread(testDir("quoted_no_header.csv"))[c(1,.N),list(V1,V6)], data.table(V1=c("John","Joan \"\"the bone\"\", Anne"), V6=INT(8075,123)))
+
 
 ###################################
 #  Add new tests above this line  #
