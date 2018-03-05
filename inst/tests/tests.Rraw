@@ -11743,9 +11743,10 @@ test(1879.6, fread(f, verbose=TRUE), DT,
                   sep = '.*'))
 unlink(f)
 
-# Fix duplicated names arising in merge when by.x in names(y), PR#2631
+# Fix duplicated names arising in merge when by.x in names(y), PR#2631, PR#2653
 # 1880.1 should fail in there are any duplicate names after a join
 # 1880.2 should fail if a warning is not thrown when suffixes leads to duplicate names
+# 1880.3 tests no.dups = FALSE, where names should be duplicated after the join
 parents = data.table(name=c("Sarah", "Max"), sex=c("F", "M"), age=c(41, 43))
 children = data.table(parent=c("Sarah", "Max", "Max"),
                        name=c("Oliver", "Sebastian", "Michelle"),
@@ -11754,6 +11755,8 @@ joined = merge(parents, children, by.x="name", by.y="parent")
 test(1880.1, length(names(joined)), length(unique(names(joined))))
 test(1880.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""))), 3L,
              warning = "column names.*are duplicated in the result")
+joined = suppressWarnings(merge(parents, children, by.x="name", by.y="parent", no.dups=FALSE))
+test(1880.3, any(duplicated(names(joined))), TRUE)             
 
 # out-of-sample quote rule bump, #2265
 DT = data.table(A=rep("abc", 10000), B="def")
