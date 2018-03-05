@@ -11813,6 +11813,10 @@ test(1888.2, print(DF), output=txt)
 txt = 'A,B\n109,MT\n7,N\n11,NA\n41,NB\n60,ND\n1,""\n2,\n3,"NA"\n4,NA\n'
 test(1888.3, print(fread(txt)), output="A    B\n1: 109   MT\n2:   7    N\n3:  11   NA\n4:  41   NB\n5:  60   ND\n6:   1     \n7:   2 <NA>\n8:   3   NA\n9:   4   NA")
 
+# file detected as no header automatically
+# (TOOD: undoubling double quotes #1109, #1299) but otherwise, auto mode correct
+test(1886, fread(testDir("quoted_no_header.csv"))[c(1,.N),list(V1,V6)], data.table(V1=c("John","Joan \"\"the bone\"\", Anne"), V6=INT(8075,123)))
+
 
 ###################################
 #  Add new tests above this line  #
