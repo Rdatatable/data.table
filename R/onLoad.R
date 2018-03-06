@@ -68,11 +68,10 @@
   # There's also a NOTE: Package startup functions should not change the search path.
   # Therefore, removed. Users will need to make sure reshape2 isn't loaded, or loaded behind data.table on search()
 
-  # Test R behaviour ...
-
+  # Test R behaviour that changed in v3.1 and is now depended on
   x = 1L:3L
   y = list(x)
-  .R.listCopiesNamed <<- (address(x) != address(y[[1L]]))   # FALSE from R 3.1
+  if (address(x) != address(y[[1L]])) stop("Unexpected base R behaviour: list(x) has copied x")
 
   DF = data.frame(a=1:3, b=4:6)
   add1 = address(DF$a)
@@ -80,26 +79,25 @@
   names(DF) = c("A","B")
   add3 = address(DF$A)
   add4 = address(DF$B)
-  .R.assignNamesCopiesAll <<- add1 != add3                 # FALSE from R 3.1
-  if ((add1 == add3) != (add2 == add4)) stop("If one column is copied surely the other should be as well, when checking .R.assignNamesCopiesAll")
+  if (add1!=add3 || add2!=add4) stop("Unexpected base R behaviour: names<- has copied column contents")
 
   DF = data.frame(a=1:3, b=4:6)
   add1 = address(DF$a)
-  add2 = address(DF)
+  add2 = address(DF$b)
+  add3 = address(DF)
   DF[2L, "b"] = 7  # changed b but not a
-  add3 = address(DF$a)
-  add4 = address(DF)
-  .R.subassignCopiesOthers <<- add1 != add3                # FALSE from R 3.1
-  .R.subassignCopiesVecsxp <<- add2 != add4                # currently TRUE in R 3.1, but could feasibly change
+  add4 = address(DF$a)
+  add5 = address(DF$b)
+  add6 = address(DF)
+  if (add2==add5) stop("Unexpected base R behaviour: DF[2,2]<- did not copy column 2 which was assigned to")
+  if (add1!=add4) stop("Unexpected base R behaviour: DF[2,2]<- copied the first column which was not assigned to, too")
+
+  if (add3==add6) warning("Unexpected base R behaviour: DF[2,2]<- has not copied address(DF)")
+  # R could feasibly in future not copy DF's vecsxp in this case. If that changes in R, we'd like to know via the warning
+  # because tests will likely break too. The warning will quickly tell R-core and us why, so we can then update.
 
   invisible()
 }
-
-# Switch on these variables instead of getRversion(). Set to TRUE just to create them as a single logical. They are set by .onLoad() above.
-.R.listCopiesNamed = TRUE
-.R.assignNamesCopiesAll = TRUE
-.R.subassignCopiesOthers = TRUE
-.R.subassignCopiesVecsxp = TRUE
 
 getRversion <- function(...) stop("Reminder to data.table developers: don't use getRversion() internally. Add a behaviour test to .onLoad instead.")
 # 1) using getRversion() wasted time when R3.0.3beta was released without the changes we expected in getRversion()>"3.0.2".
