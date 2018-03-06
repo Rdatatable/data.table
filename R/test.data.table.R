@@ -91,17 +91,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   # better than the dev-time-lost when it crashes and it actually crashed much later than the last test number visible.
 
   if (!missing(error) && !missing(y)) stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")
-  check_specials = function(string, type) {
-    # helper in dev to remind dev what might be wrong when changing or adding a new test
-    # nocov start
-    found = ""
-    if (length(grep("[^[\\]([(]|[)])", string))) found = "parenthesis"
-    else if (length(grep("[^[\\]([[]|[]])", string))) found = "square bracket"
-    else if (length(grep("[^\\]\\+", string))) found = "'+'"
-    else if (length(grep("[^\\]\\^", string))) found = "'^'"
-    if (found!="") stop("Likely due to the unescaped ",found," in the ",type,"= string. Please avoid it using .* or preceed it with double backslash.")
-    # nocov end
-  }
+
   string_match = function(x, y) {
     if (length(grep(x,y,fixed=TRUE)))  # try treating x as literal first; useful for most messages containing ()[]+ characters
       return(TRUE)
@@ -146,7 +136,6 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
         cat("Test",num,"didn't produce the correct warning:\n")
         cat("Expected: ", warning[i], "\n")
         cat("Observed: ", actual.warns[i], "\n")
-        check_specials(warning[i], "warning")
         fail = TRUE
         # nocov end
       }
@@ -165,7 +154,6 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
       cat("Test",num,"didn't produce the correct error:\n")
       cat("Expected: ", error, "\n")
       cat("Observed: ", actual.err, "\n")
-      check_specials(error, "error")
       fail = TRUE
       # nocov end
     }
@@ -180,7 +168,6 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
       cat("Test",num,"didn't produce correct output:\n")
       cat("Expected: <<",gsub("\n","\\\\n",output),">>\n",sep="")  # \n printed as '\\n' so the two lines of output can be compared vertically
       cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
-      check_specials(output, "output")
       fail = TRUE
       # nocov end
     }

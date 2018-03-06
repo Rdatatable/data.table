@@ -2364,7 +2364,7 @@ int freadMain(freadMainArgs _args) {
         ch = headPos;
         int tt = countfields(&ch);
         DTWARN("Stopped early on line %llu. Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>",
-          DTi+row1line, ncol, tt, strlim(skippedFooter,500));
+          (llu)DTi+row1line, ncol, tt, strlim(skippedFooter,500));
       }
     }
   }
