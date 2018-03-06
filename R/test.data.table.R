@@ -95,7 +95,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   string_match = function(x, y) {
     if (length(grep(x,y,fixed=TRUE)))  # try treating x as literal first; useful for most messages containing ()[]+ characters
       return(TRUE)
-    if (length(grep(x,y)))             # otherwise try regexp; commonly here when .* is used in x and if so, ()[]+ must then be escaped
+    if (length(tryCatch(grep(x,y), error=function(e)NULL)))  # otherwise try x as regexp; but just return FALSE if it's not a valid regexp
       return(TRUE)
     return(FALSE)                      # nocov
   }
