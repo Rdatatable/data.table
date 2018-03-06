@@ -11792,17 +11792,21 @@ test(1885.2, fread(txt, blank.lines.skip=TRUE, fill=TRUE), ans)
 test(1885.3, fread(txt, fill=TRUE), ans[c(1,2,NA,3),][3,1:2:=""])
 test(1885.4, fread(txt, fill=TRUE, na.strings=""), ans[c(1,2,NA,3),])
 
+# file detected as no header automatically
+# (TOOD: undoubling double quotes #1109, #1299) but otherwise, auto mode correct
+test(1886, fread(testDir("quoted_no_header.csv"))[c(1,.N),list(V1,V6)], data.table(V1=c("John","Joan \"\"the bone\"\", Anne"), V6=INT(8075,123)))
 
 # na="" default, #2524
-test(1886.1, fread('A,B,C\n1,foo,4\n2,,5\n3,bar,6\n'), data.table(A=1:3, B=c("foo",NA,"bar"), C=4:6))
-test(1886.2, fread('A,B,C\n1,foo,4\n2,"",5\n3,bar,6\n'), data.table(A=1:3, B=c("foo","","bar"), C=4:6))
-test(1886.3, fread("A,B,C\n1,foo,bar\n2", fill=TRUE), data.table(A=1:2,B=c("foo",NA),C=c("bar",NA)))
+test(1886.1, fread('A,B,C\n1,foo,4\n2,,5\n3,bar,6\n', na.strings=""), data.table(A=1:3, B=c("foo",NA,"bar"), C=4:6))
+test(1886.2, fread('A,B,C\n1,foo,4\n2,"",5\n3,bar,6\n', na.strings=""), data.table(A=1:3, B=c("foo","","bar"), C=4:6))
+test(1886.3, fread("A,B,C\n1,foo,bar\n2", fill=TRUE, na.strings=""), data.table(A=1:2,B=c("foo",NA),C=c("bar",NA)))
+test(1886.4, fread("A,B,C\n1,foo,bar\n2", fill=TRUE, na.strings="NA"), data.table(A=1:2,B=c("foo",""),C=c("bar","")))
 
 # preserving "" and NA_character_, #2214
 DT = data.table(chr = c(NA, "", "a"), num = c(NA, NA, 2L))
-test(1887.1, fread({fwrite(DT,f<-tempfile());f}), DT); unlink(f)
+test(1887.1, fread({fwrite(DT,f<-tempfile());f}, na.strings=""), DT); unlink(f)
 test(1887.2, capture.output(fwrite(DT)), c("chr,num", ",", "\"\"," , "a,2"))
-test(1887.3, fread('A,B\n1,"foo"\n2,\n3,""\n')$B, c("foo", NA, ""))  # for issue #2217
+test(1887.3, fread('A,B\n1,"foo"\n2,\n3,""\n', na.strings="")$B, c("foo", NA, ""))  # for issue #2217
 
 # print(DT) should print NA in character columns using <NA> like base R to distinguish from "" and "NA"
 DT = data.table(A=1:4, B=c("FOO","",NA,"NA"))
@@ -11811,11 +11815,7 @@ DF = as.data.frame(DT)
 rownames(DF) = paste0(rownames(DF),":")
 test(1888.2, print(DF), output=txt)
 txt = 'A,B\n109,MT\n7,N\n11,NA\n41,NB\n60,ND\n1,""\n2,\n3,"NA"\n4,NA\n'
-test(1888.3, print(fread(txt)), output="A    B\n1: 109   MT\n2:   7    N\n3:  11   NA\n4:  41   NB\n5:  60   ND\n6:   1     \n7:   2 <NA>\n8:   3   NA\n9:   4   NA")
-
-# file detected as no header automatically
-# (TOOD: undoubling double quotes #1109, #1299) but otherwise, auto mode correct
-test(1886, fread(testDir("quoted_no_header.csv"))[c(1,.N),list(V1,V6)], data.table(V1=c("John","Joan \"\"the bone\"\", Anne"), V6=INT(8075,123)))
+test(1888.3, print(fread(txt,na.strings="")), output="A    B\n1: 109   MT\n2:   7    N\n3:  11   NA\n4:  41   NB\n5:  60   ND\n6:   1     \n7:   2 <NA>\n8:   3   NA\n9:   4   NA")
 
 
 ###################################
