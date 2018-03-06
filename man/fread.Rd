@@ -19,7 +19,7 @@ check.names=FALSE, encoding="unknown",
 strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL,
 showProgress=interactive(),
 data.table=getOption("datatable.fread.datatable"),
-nThread=getDTthreads(), logical01=TRUE, autostart=NA
+nThread=getDTthreads(), logical01=getOption("datatable.logical01", TRUE), autostart=NA
 )
 }
 \arguments{
