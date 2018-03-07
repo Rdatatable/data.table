@@ -93,11 +93,8 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   if (!missing(error) && !missing(y)) stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")
 
   string_match = function(x, y) {
-    if (length(grep(x,y,fixed=TRUE)))  # try treating x as literal first; useful for most messages containing ()[]+ characters
-      return(TRUE)
-    if (length(tryCatch(grep(x,y), error=function(e)NULL)))  # otherwise try x as regexp; but just return FALSE if it's not a valid regexp
-      return(TRUE)
-    return(FALSE)                      # nocov
+    length(grep(x,y,fixed=TRUE)) ||                    # try treating x as literal first; useful for most messages containing ()[]+ characters
+    length(tryCatch(grep(x,y), error=function(e)NULL)) # otherwise try x as regexp
   }
 
   xsub = substitute(x)
