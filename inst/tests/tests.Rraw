@@ -11756,7 +11756,7 @@ test(1880.1, length(names(joined)), length(unique(names(joined))))
 test(1880.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""))), 3L,
              warning = "column names.*are duplicated in the result")
 joined = suppressWarnings(merge(parents, children, by.x="name", by.y="parent", no.dups=FALSE))
-test(1880.3, any(duplicated(names(joined))), TRUE)             
+test(1880.3, any(duplicated(names(joined))), TRUE)
 
 # out-of-sample quote rule bump, #2265
 DT = data.table(A=rep("abc", 10000), B="def")
@@ -11793,6 +11793,10 @@ test(1885.3, fread(txt, fill=TRUE), ans[c(1,2,NA,3),][3,1:2:=""])  # TODO when b
 # (TOOD: undoubling double quotes #1109, #1299) but otherwise, auto mode correct
 test(1886, fread(testDir("quoted_no_header.csv"))[c(1,.N),list(V1,V6)], data.table(V1=c("John","Joan \"\"the bone\"\", Anne"), V6=INT(8075,123)))
 
+# na.omit with invert & no NAs works
+DT = data.table(a = 1:5)
+DT_out = data.table(a = integer(0L))
+test(1887, na.omit(DT, invert = TRUE), DT_out)
 
 ###################################
 #  Add new tests above this line  #
