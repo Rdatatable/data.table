@@ -156,7 +156,7 @@ vi ~/.R/Makevars  # make the -O3 line active again
 ###############################################
 
 cd ~/build
-wget -N ftp://ftp.stat.math.ethz.ch/pub/Software/R/R-devel.tar.gz
+wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
 rm -rf R-devel
 tar xvf R-devel.tar.gz
 cd R-devel
