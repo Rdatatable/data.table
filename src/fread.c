@@ -2369,7 +2369,7 @@ int freadMain(freadMainArgs _args) {
     }
   }
   if (quoteRuleBumpedCh!=NULL && quoteRuleBumpedCh<headPos) {
-    DTWARN("Found and resolved improper quoting. First healed line %d: <<%s>>", quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
+    DTWARN("Found and resolved improper quoting. First healed line %llu: <<%s>>", (llu)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
   }
 
   if (verbose) {
