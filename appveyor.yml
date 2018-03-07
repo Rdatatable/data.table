@@ -16,7 +16,10 @@ environment:
     WARNINGS_ARE_ERRORS: 1
     USE_RTOOLS: true
     R_CHECK_ARGS: --no-manual --no-multiarch
-# R_CHECK_ARGS specified in order to turn off --as-cran (default) as that can be slow, and -no-multiarch so that 32bit tests run separately
+# R_CHECK_ARGS specified in order to turn off --as-cran (default) as that can be slow, and
+# -no-multiarch so that 32bit tests run separately, otherwise both 32bit and 64bit tests run in one job.
+# Separating the jobs out so we can very easily see in AppVeyor status which one(s) failed. It speeds
+# up dev cycle if the first one returns quickly since once passing locally on Linux, we push to test on Windows.
 
   matrix:
   - R_VERSION: release
@@ -24,13 +27,18 @@ environment:
     GCC_PATH: mingw_64
 # Default GCC_PATH appears to be gcc-4.6.3 which is now unsupported as from Rtools.exe v3.4
 
+  - R_VERSION: release
+    R_ARCH: i386
+    GCC_PATH: mingw_32
+
   - R_VERSION: devel
     R_ARCH: x64
     GCC_PATH: mingw_64
 
-  - R_VERSION: devel
-    R_ARCH: i386
-    GCC_PATH: mingw_32
+#  - R_VERSION: devel
+#    R_ARCH: i386
+#    GCC_PATH: mingw_32
+# Temporarily disabled on 7 March 2018 so as not to hold up PR testing while I investigate this apparently 32bit-only/Windows-only R-devel change
 
 
 build_script:
