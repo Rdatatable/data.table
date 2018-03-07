@@ -342,18 +342,17 @@ static inline const char *nextGoodLine(const char *ch, int ncol)
   // If there are no embedded newlines, all newlines are true, and this guess will never be wrong.
   while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
   if (ch==eof) return eof;
-  eol(&ch);  // move to last byte of the line ending sequence (e.g. \r\r\n would be +2).
-  ch++;      // move to first byte of next line
+  if (eol(&ch)) // move to last byte of the line ending sequence (e.g. \r\r\n would be +2).
+    ch++;       // and then move to first byte of next line
   const char *simpleNext = ch;  // simply the first newline after the jump
   // if a better one can't be found, return this one (simpleNext). This will be the case when
   // fill=TRUE and the jump lands before 5 too-short lines, for example.
   int attempts=0;
-  while (attempts++<5) {
+  while (attempts++<5 && ch<eof) {
     const char *ch2 = ch;
     if (countfields(&ch2)==ncol) return ch;  // returns simpleNext here on first attempt, almost all the time
     while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
-    eol(&ch);
-    ch++;
+    if (eol(&ch)) ch++;
   }
   return simpleNext;
 }
@@ -1044,7 +1043,7 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
         }
       }
       ch = fieldStart;
-      while (disabled_parsers[++tmpType[field]]) {};
+      while (++tmpType[field]<CT_STRING && disabled_parsers[tmpType[field]]) {};
       *bumped = true;
     }
     field++;
@@ -2131,8 +2130,7 @@ int freadMain(freadMainArgs _args) {
             // check that the new type is sufficient for the rest of the column (and any other columns also in out-of-sample bump status) to be
             // sure a single re-read will definitely work.
             typebump:
-            absType++;
-            while (disabled_parsers[absType]) absType++;
+            while (++absType<CT_STRING && disabled_parsers[absType]) {};
             thisType = -absType;
             tch = fieldStart;
           }
