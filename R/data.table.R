@@ -2178,10 +2178,16 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
   }
   cols = as.integer(cols)
   ix = .Call(Cdt_na, object, cols)
-  if (any(ix))
-    .Call(CsubsetDT, object, which_(ix, bool = invert), seq_along(object))
-  else
-    object
+  # forgot about invert with no NA case, #2660
+  if (invert) {
+    if (all(ix)) object[0L]
+    else
+      .Call(CsubsetDT, object, which_(ix, bool = TRUE), seq_along(object))
+  } else {
+    if (any(ix))
+      .Call(CsubsetDT, object, which_(ix, bool = FALSE), seq_along(object))
+    else object
+  }
 }
 
 which_ <- function(x, bool = TRUE) {
