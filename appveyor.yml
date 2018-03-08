@@ -20,12 +20,15 @@ environment:
 # -no-multiarch so that 32bit tests run separately, otherwise both 32bit and 64bit tests run in one job.
 # Separating the jobs out so we can very easily see in AppVeyor status which one(s) failed. It speeds
 # up dev cycle if the first one returns quickly since once passing locally on Linux, we push to test on Windows.
+# Default GCC_PATH appears to be gcc-4.6.3 which is now unsupported as from Rtools.exe v3.4. So, set it
+#  explicitly even if it didn't need to be varied in matrix below.
+# 32bit r-devel first as that's the highest chance of failing. If that passes, it's unlikely the others will fail.
 
   matrix:
-  - R_VERSION: release
-    R_ARCH: x64
-    GCC_PATH: mingw_64
-# Default GCC_PATH appears to be gcc-4.6.3 which is now unsupported as from Rtools.exe v3.4
+
+  - R_VERSION: devel
+    R_ARCH: i386
+    GCC_PATH: mingw_32
 
   - R_VERSION: release
     R_ARCH: i386
@@ -35,9 +38,10 @@ environment:
     R_ARCH: x64
     GCC_PATH: mingw_64
 
-  - R_VERSION: devel
-    R_ARCH: i386
-    GCC_PATH: mingw_32
+  - R_VERSION: release
+    R_ARCH: x64
+    GCC_PATH: mingw_64
+
 
 build_script:
   - set _R_CHECK_FORCE_SUGGESTS_=false
