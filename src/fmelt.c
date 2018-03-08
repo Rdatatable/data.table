@@ -531,7 +531,9 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       nlevels = data->lmax;
     }
   }
-  setAttrib(target, R_ClassSymbol, mkString("factor"));
+  SEXP tmp = PROTECT(mkString("factor"));
+  setAttrib(target, R_ClassSymbol, tmp);
+  UNPROTECT(1);  // tmp
   cnt = 0;
   if (data->lvalues == 1) {
     levels = PROTECT(allocVector(STRSXP, nlevels));
@@ -545,7 +547,9 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   } else levels = PROTECT(coerceVector(seq_int(nlevels, 1), STRSXP)); // generate levels = 1:nlevels
   // base::unique is fast on vectors, and the levels on variable columns are usually small
   SEXP uniqueLangSxp = PROTECT(lang2(install("unique"), levels));
-  setAttrib(target, R_LevelsSymbol, eval(uniqueLangSxp, R_GlobalEnv));
+  tmp = PROTECT(eval(uniqueLangSxp, R_GlobalEnv));
+  setAttrib(target, R_LevelsSymbol, tmp);
+  UNPROTECT(1); // tmp
   UNPROTECT(2); // levels, uniqueLangSxp
   if (!varfactor) SET_VECTOR_ELT(ansvars, 0, asCharacterFactor(target));
   UNPROTECT(protecti);
