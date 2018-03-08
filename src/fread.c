@@ -162,13 +162,13 @@ bool freadCleanup(void)
   return neededCleanup;
 }
 
-#define CEIL(x)  ((size_t)(double)ceil(x))
-static inline size_t umax(size_t a, size_t b) { return a > b ? a : b; }
-static inline size_t umin(size_t a, size_t b) { return a < b ? a : b; }
-static inline int imin(int a, int b) { return a < b ? a : b; }
+#define CEIL(x)  ((uint64_t)(double)ceil(x))
+static inline uint64_t umax(uint64_t a, uint64_t b) { return a > b ? a : b; }
+static inline uint64_t umin(uint64_t a, uint64_t b) { return a < b ? a : b; }
+static inline  int64_t imin( int64_t a,  int64_t b) { return a < b ? a : b; }
 
 /** Return value of `x` clamped to the range [upper, lower] */
-static inline size_t clamp_szt(size_t x, size_t lower, size_t upper) {
+static inline int64_t clamp_szt(int64_t x, int64_t lower, int64_t upper) {
   return x < lower ? lower : x > upper? upper : x;
 }
 
@@ -342,18 +342,17 @@ static inline const char *nextGoodLine(const char *ch, int ncol)
   // If there are no embedded newlines, all newlines are true, and this guess will never be wrong.
   while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
   if (ch==eof) return eof;
-  eol(&ch);  // move to last byte of the line ending sequence (e.g. \r\r\n would be +2).
-  ch++;      // move to first byte of next line
+  if (eol(&ch)) // move to last byte of the line ending sequence (e.g. \r\r\n would be +2).
+    ch++;       // and then move to first byte of next line
   const char *simpleNext = ch;  // simply the first newline after the jump
   // if a better one can't be found, return this one (simpleNext). This will be the case when
   // fill=TRUE and the jump lands before 5 too-short lines, for example.
   int attempts=0;
-  while (attempts++<5) {
+  while (attempts++<5 && ch<eof) {
     const char *ch2 = ch;
     if (countfields(&ch2)==ncol) return ch;  // returns simpleNext here on first attempt, almost all the time
     while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
-    eol(&ch);
-    ch++;
+    if (eol(&ch)) ch++;
   }
   return simpleNext;
 }
@@ -1048,7 +1047,7 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
         }
       }
       ch = fieldStart;
-      while (disabled_parsers[++tmpType[field]]) {};
+      while (++tmpType[field]<CT_STRING && disabled_parsers[tmpType[field]]) {};
       *bumped = true;
     }
     field++;
@@ -1098,7 +1097,7 @@ int freadMain(freadMainArgs _args) {
   uint64_t ui64 = NA_FLOAT64_I64;
   memcpy(&NA_FLOAT64, &ui64, 8);
 
-  size_t nrowLimit = (size_t) args.nrowLimit;
+  int64_t nrowLimit = args.nrowLimit;
   NAstrings = args.NAstrings;
   if (NAstrings==NULL) STOP("Internal error: NAstrings is itself NULL. When empty it should be pointer to NULL.");
   any_number_like_NAstrings = false;
@@ -1566,10 +1565,10 @@ int freadMain(freadMainArgs _args) {
   // [7] Detect column types, good nrow estimate and whether first row is column names
   //*********************************************************************************************
   int nJumps;             // How many jumps to use when pre-scanning the file
-  size_t sampleLines;     // How many lines were sampled during the initial pre-scan
+  int64_t sampleLines;     // How many lines were sampled during the initial pre-scan
   bool autoFirstColName = false; // true when there's one less column name and then it's assumed that the first column is row names or index
-  size_t estnrow=1;
-  size_t allocnrow=0;     // Number of rows in the allocated DataTable
+  int64_t estnrow=1;
+  int64_t allocnrow=0;     // Number of rows in the allocated DataTable
   double meanLineLen=0.0; // Average length (in bytes) of a single line in the input file
   size_t bytesRead=0;     // Bytes in the data section (i.e. excluding column names, header and footer, if any)
   {
@@ -1897,11 +1896,11 @@ int freadMain(freadMainArgs _args) {
   int typeCounts[NUMTYPE];  // used for verbose output; needs populating after first read and before reread (if any) -- see later comment
   #define internalErrSize 1000
   char internalErr[internalErrSize+1]="";  // must be compile time size: the message is generated and we can't free before STOP
-  size_t DTi = 0;                  // the current row number in DT that we are writing to
+  int64_t DTi = 0;                  // the current row number in DT that we are writing to
   const char *headPos = pos;       // the jump start corresponding to DTi
   int nSwept = 0;                  // count the number of dirty jumps that were swept
   const char *quoteRuleBumpedCh = NULL;   // in the very rare event of an out-of-sample quote rule bump, give a good warning message
-  size_t quoteRuleBumpedLine = -1;
+  int64_t quoteRuleBumpedLine = -1;
   int buffGrown=0;
   // chunkBytes is the distance between each jump point; it decides the number of jumps
   // We may want each chunk to write to its own page of the final column, hence 1000*maxLen
@@ -1914,7 +1913,7 @@ int freadMain(freadMainArgs _args) {
   int jump0 = 0;
   // If we need to restart reading the file because we ran out of allocation
   // space, then this variable will tell how many new rows has to be allocated.
-  size_t extraAllocRows = 0;
+  int64_t extraAllocRows = 0;
 
   if (nJumps/*from sampling*/>2) {
     // ensure data size is split into same sized chunks (no remainder in last chunk) and a multiple of nth
@@ -1927,7 +1926,7 @@ int freadMain(freadMainArgs _args) {
     ASSERT(nJumps==1 /*when nrowLimit supplied*/ || nJumps==2 /*small files*/, "nJumps (%d) != 1|2", nJumps);
     nJumps=1;
   }
-  size_t initialBuffRows = allocnrow / (size_t)nJumps;
+  int64_t initialBuffRows = (int64_t)allocnrow / nJumps;
 
   // Catch initialBuffRows==0 when max_nrows is small, seg fault #2243
   // Rather than 10, maybe 1 would work too but then 1.5 grow factor * 1 would still be 1. This clamp
@@ -1957,8 +1956,8 @@ int freadMain(freadMainArgs _args) {
       }
       myShowProgress = args.showProgress;
     }
-    size_t myNrow = 0; // the number of rows in my chunk
-    size_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
+    int64_t myNrow = 0; // the number of rows in my chunk
+    int64_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
     bool myStopEarly = false;      // true when an empty or too-short line is encountered when fill=false, or too-long row
 
     // Allocate thread-private row-major `myBuff`s
@@ -2138,8 +2137,7 @@ int freadMain(freadMainArgs _args) {
             // check that the new type is sufficient for the rest of the column (and any other columns also in out-of-sample bump status) to be
             // sure a single re-read will definitely work.
             typebump:
-            absType++;
-            while (disabled_parsers[absType]) absType++;
+            while (++absType<CT_STRING && disabled_parsers[absType]) {};
             thisType = -absType;
             tch = fieldStart;
           }
@@ -2213,7 +2211,7 @@ int freadMain(freadMainArgs _args) {
           if (ctx.DTi + myNrow > allocnrow) {
             // Guess for DT's nrow was insufficient. We cannot realloc DT now because other threads are pushing to DT now in
             // parallel. So, stop team, realloc and then restart reading from this jump.
-            extraAllocRows = (size_t)((double)(DTi+myNrow)*nJumps/(jump+1) * 1.2) - allocnrow;
+            extraAllocRows = (int64_t)((double)(DTi+myNrow)*nJumps/(jump+1) * 1.2) - allocnrow;
             if (extraAllocRows < 1024) extraAllocRows = 1024;
             myNrow = 0;    // discard my buffer even though it was read correctly; this one jump will be reread wastefully in this rare case
             stopTeam = restartTeam = true;
@@ -2371,12 +2369,12 @@ int freadMain(freadMainArgs _args) {
         ch = headPos;
         int tt = countfields(&ch);
         DTWARN("Stopped early on line %llu. Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>",
-          DTi+row1line, ncol, tt, strlim(skippedFooter,500));
+          (llu)DTi+row1line, ncol, tt, strlim(skippedFooter,500));
       }
     }
   }
   if (quoteRuleBumpedCh!=NULL && quoteRuleBumpedCh<headPos) {
-    DTWARN("Found and resolved improper quoting. First healed line %d: <<%s>>", quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
+    DTWARN("Found and resolved improper quoting. First healed line %llu: <<%s>>", (llu)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
   }
 
   if (verbose) {
