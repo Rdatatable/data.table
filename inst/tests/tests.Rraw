@@ -57,10 +57,6 @@ if (!.devtesting) {
     setrev = data.table:::setrev
     setreordervec = data.table:::setreordervec
     selfrefok = data.table:::selfrefok
-    .R.listCopiesNamed = data.table:::.R.listCopiesNamed
-    .R.assignNamesCopiesAll = data.table:::.R.assignNamesCopiesAll
-    .R.subassignCopiesOthers = data.table:::.R.subassignCopiesOthers
-    .R.subassignCopiesVecsxp = data.table:::.R.subassignCopiesVecsxp
     setdiff_ = data.table:::setdiff_
     is_na = data.table:::is_na
     shallow = data.table:::shallow # until exported
@@ -2371,8 +2367,7 @@ l = list(data.table(a=1:3), data.table(b=4:6))
 test(843, l[[2L]][,c:=7:9], data.table(b=4:6,c=7:9))
 test(844, l, list(data.table(a=1:3), data.table(b=4:6,c=7:9)))
 names(l) = c("foo","bar")   # R >= 3.1 no longer copies all the contents, yay
-test(845, l[["foo"]][2,d:=4L], data.table(a=1:3,d=c(NA,4L,NA)),
-    warning= if (!.R.assignNamesCopiesAll) NULL else "Invalid .internal.selfref detected and fixed")
+test(845, l[["foo"]][2,d:=4L], data.table(a=1:3,d=c(NA,4L,NA)))
 l = list(data.table(a=1:3), data.table(b=4:6))
 setattr(l,"names",c("foo","bar"))
 test(846, l[["foo"]][2,d:=4], data.table(a=1:3,d=c(NA,4,NA)))
@@ -2391,15 +2386,9 @@ options(old)
 DT1 = data.table(a=1:3, b=4:6)
 DT2 = data.table(c=7:9)
 l = list(DT1, DT2)
-if (!.R.listCopiesNamed) {
-    # From R>=3.1, list() no longer copies NAMED inputs (a very welcome change in Rdevel, r63767)
-    test(853, address(DT1) == address(l[[1L]]))
-    w = NULL
-} else {
-    test(853, address(DT1) != address(l[[1L]]))
-    w = "Invalid .internal.selfref detected and fixed.*R's list() used to copy named objects"
-}
-test(854, l[[1]][,d:=10:12], data.table(a=1:3,b=4:6,d=10:12), warning = w)
+# From R>=3.1, list() no longer copies NAMED inputs (a very welcome change in Rdevel, r63767)
+test(853, address(DT1) == address(l[[1L]]))
+test(854, l[[1]][,d:=10:12], data.table(a=1:3,b=4:6,d=10:12))
 test(855, l[[1]], data.table(a=1:3,b=4:6,d=10:12))
 
 # Test setnames on data.frame, #2273.

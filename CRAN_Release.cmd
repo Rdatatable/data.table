@@ -156,12 +156,26 @@ vi ~/.R/Makevars  # make the -O3 line active again
 ###############################################
 
 cd ~/build
-wget -N ftp://ftp.stat.math.ethz.ch/pub/Software/R/R-devel.tar.gz
+wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
 rm -rf R-devel
 tar xvf R-devel.tar.gz
 cd R-devel
 # Following R-exts#4.3.3
-./configure CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-g -Og -Wall -pedantic" LIBS="-lpthread" --without-recommended-packages --disable-byte-compiled-packages --disable-openmp
+
+## 64bit (normal)
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
+##
+
+## 32bit on 64bit Ubuntu (for tracing any 32bit-only Rdevel-only problems)
+dpkg --add-architecture i386
+apt-get update
+apt-get install libc6:i386 libstdc++6:i386 gcc-multilib g++-multilib gfortran-multilib libbz2-dev:i386 liblzma-dev:i386 libpcre3-dev:i386 libcurl3-dev:i386 libstdc++-7-dev:i386
+sudo apt-get purge libcurl4-openssl-dev    # cannot coexist, it seems
+sudo apt-get install libcurl4-openssl-dev:i386
+cd ~/build/32bit/R-devel
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --without-readline --without-x CC="gcc -m32" CXX="g++ -m32" F77="gfortran -m32" FC=${F77} OBJC=${CC} LDFLAGS="-L/usr/local/lib" LIBnn=lib LIBS="-lpthread" CFLAGS="-O0 -g -Wall -pedantic"
+##
+
 # For ubsan, disabled openmp otherwise gcc fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel
 # UBSAN gives direct line number under gcc but not clang it seems. clang-5.0 has been helpful too, though.
 # If use later gcc-8, add F77=gfortran-8
