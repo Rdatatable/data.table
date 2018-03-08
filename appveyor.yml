@@ -35,11 +35,9 @@ environment:
     R_ARCH: x64
     GCC_PATH: mingw_64
 
-#  - R_VERSION: devel
-#    R_ARCH: i386
-#    GCC_PATH: mingw_32
-# Temporarily disabled on 7 March 2018 so as not to hold up PR testing while I investigate this apparently 32bit-only/Windows-only R-devel change
-
+  - R_VERSION: devel
+    R_ARCH: i386
+    GCC_PATH: mingw_32
 
 build_script:
   - set _R_CHECK_FORCE_SUGGESTS_=false
