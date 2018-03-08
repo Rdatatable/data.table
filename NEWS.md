@@ -63,7 +63,7 @@
 
 12. Faster `as.IDate` and `as.ITime` methods for `POSIXct` and `numeric`, [#1392](https://github.com/Rdatatable/data.table/issues/1392). Thanks to Jan Gorecki for the PR.
 
-13. `unique(DT)` now returns `DT` early when there are no duplicates to save RAM, [#2013](https://github.com/Rdatatable/data.table/issues/2013). Thanks to Michael Chirico for the PR.
+13. `unique(DT)` now returns `DT` early when there are no duplicates to save RAM, [#2013](https://github.com/Rdatatable/data.table/issues/2013). Thanks to Michael Chirico for the PR, and thanks to @mgahan for pointing out a reversion in `na.omit.data.table` before release, [#2660](https://github.com/Rdatatable/data.table/issues/2660#issuecomment-371027948).
 
 14. `uniqueN()` is now faster on logical vectors. Thanks to Hugh Parsonage for [PR#2648](https://github.com/Rdatatable/data.table/pull/2648).
     ```
