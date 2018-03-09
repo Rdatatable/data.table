@@ -26,9 +26,10 @@ environment:
 
   matrix:
 
-  - R_VERSION: devel
-    R_ARCH: i386
-    GCC_PATH: mingw_32
+#  Temp off, see PR #2665
+#  - R_VERSION: devel
+#    R_ARCH: i386
+#    GCC_PATH: mingw_32
 
   - R_VERSION: release
     R_ARCH: i386

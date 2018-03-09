@@ -216,8 +216,9 @@ install.packages("bit64")
 require(bit64)
 require(data.table)
 test.data.table()  # just quick re-check
-gctorture2(step=100)
-print(Sys.time()); try(test.data.table()); print(Sys.time())
+gctorture2(step=100)    # 1h 26m
+print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
+# Running test id 1437.0331      Error : protect(): protection stack overflow
 
 
 ###############################################
