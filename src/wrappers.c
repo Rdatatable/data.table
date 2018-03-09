@@ -114,7 +114,7 @@ SEXP dim(SEXP x)
         type2char(TYPEOF(x)));
   }
 
-  SEXP ans = allocVector(INTSXP, 2);
+  SEXP ans = PROTECT(allocVector(INTSXP, 2));
   if(length(x) == 0) {
     INTEGER(ans)[0] = 0;
     INTEGER(ans)[1] = 0;
@@ -123,8 +123,7 @@ SEXP dim(SEXP x)
     INTEGER(ans)[0] = length(VECTOR_ELT(x, 0));
     INTEGER(ans)[1] = length(x);
   }
-
+  UNPROTECT(1);
   return ans;
 }
-
 

@@ -676,7 +676,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     ansids  = PROTECT(getidcols(DT, dtnames, verbose, &data)); protecti++;
 
     // populate 'ans'
-    ans = allocVector(VECSXP, data.lids+1+data.lvalues); // 1 is for variable column
+    ans = PROTECT(allocVector(VECSXP, data.lids+1+data.lvalues)); protecti++; // 1 is for variable column
     for (i=0; i<data.lids; i++) {
       SET_VECTOR_ELT(ans, i, VECTOR_ELT(ansids, i));
     }

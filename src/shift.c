@@ -5,13 +5,13 @@
 SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
 
   size_t size;
-  R_len_t i=0, j, m, nx, nk, xrows, thisk;
+  R_len_t i=0, j, m, nx, nk, xrows, thisk, protecti=0;
   SEXP x, tmp=R_NilValue, this, ans, thisfill, class;
   unsigned long long *dthisfill;
   enum {LAG, LEAD} stype = LAG;
   if (!length(obj)) return(obj); // NULL, list()
   if (isVectorAtomic(obj)) {
-    x = allocVector(VECSXP, 1);
+    x = PROTECT(allocVector(VECSXP, 1)); protecti++;
     SET_VECTOR_ELT(x, 0, obj);
   } else x = obj;
   if (!isNewList(x))
@@ -32,7 +32,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
   while(i < nk && INTEGER(k)[i] >= 0) i++;
   if (i != nk)
     error("n must be non-negative integer values (>= 0)");
-  ans = PROTECT(allocVector(VECSXP, nk * nx));
+  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
   if (stype == LAG) {
     for (i=0; i<nx; i++) {
       this  = VECTOR_ELT(x, i);
@@ -40,7 +40,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
       xrows = length(this);
       switch (TYPEOF(this)) {
       case INTSXP :
-        thisfill = PROTECT(coerceVector(fill, INTSXP));
+        thisfill = PROTECT(coerceVector(fill, INTSXP)); protecti++;
         for (j=0; j<nk; j++) {
           thisk = (xrows >= INTEGER(k)[j]) ? INTEGER(k)[j] : xrows;
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(INTSXP, xrows) );
@@ -59,13 +59,13 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
       case REALSXP :
         class = getAttrib(this, R_ClassSymbol);
         if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
-          thisfill = PROTECT(allocVector(REALSXP, 1));
+          thisfill = PROTECT(allocVector(REALSXP, 1)); protecti++;
           dthisfill = (unsigned long long *)REAL(thisfill);
           if (INTEGER(fill)[0] == NA_INTEGER)
             dthisfill[0] = NA_INT64_LL;
           else dthisfill[0] = (unsigned long long)INTEGER(fill)[0];
         } else {
-          thisfill = PROTECT(coerceVector(fill, REALSXP));
+          thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
         }
         for (j=0; j<nk; j++) {
           thisk = (xrows >= INTEGER(k)[j]) ? INTEGER(k)[j] : xrows;
@@ -83,7 +83,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         break;
 
       case LGLSXP :
-        thisfill = PROTECT(coerceVector(fill, LGLSXP));
+        thisfill = PROTECT(coerceVector(fill, LGLSXP)); protecti++;
         for (j=0; j<nk; j++) {
           thisk = (xrows >= INTEGER(k)[j]) ? INTEGER(k)[j] : xrows;
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(LGLSXP, xrows) );
@@ -98,7 +98,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         break;
 
       case STRSXP :
-        thisfill = PROTECT(coerceVector(fill, STRSXP));
+        thisfill = PROTECT(coerceVector(fill, STRSXP)); protecti++;
         for (j=0; j<nk; j++) {
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(STRSXP, xrows) );
           for (m=0; m<xrows; m++)
@@ -108,7 +108,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         break;
 
       case VECSXP :
-        thisfill = PROTECT(coerceVector(fill, VECSXP));
+        thisfill = PROTECT(coerceVector(fill, VECSXP)); protecti++;
         for (j=0; j<nk; j++) {
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(VECSXP, xrows) );
           for (m=0; m<xrows; m++)
@@ -123,7 +123,6 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
       copyMostAttrib(this, tmp);
       if (isFactor(this))
         setAttrib(tmp, R_LevelsSymbol, getAttrib(this, R_LevelsSymbol));
-      UNPROTECT(1);
     }
   } else if (stype == LEAD) {
     for (i=0; i<nx; i++) {
@@ -132,7 +131,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
       xrows = length(this);
       switch (TYPEOF(this)) {
       case INTSXP :
-        thisfill = PROTECT(coerceVector(fill, INTSXP));
+        thisfill = PROTECT(coerceVector(fill, INTSXP)); protecti++;
         for (j=0; j<nk; j++) {
           thisk = (xrows >= INTEGER(k)[j]) ? INTEGER(k)[j] : xrows;
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(INTSXP, xrows) );
@@ -151,13 +150,13 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
       case REALSXP :
         class = getAttrib(this, R_ClassSymbol);
         if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
-          thisfill = PROTECT(allocVector(REALSXP, 1));
+          thisfill = PROTECT(allocVector(REALSXP, 1)); protecti++;
           dthisfill = (unsigned long long *)REAL(thisfill);
           if (INTEGER(fill)[0] == NA_INTEGER)
             dthisfill[0] = NA_INT64_LL;
           else dthisfill[0] = (unsigned long long)INTEGER(fill)[0];
         } else {
-          thisfill = PROTECT(coerceVector(fill, REALSXP));
+          thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
         }
         for (j=0; j<nk; j++) {
           thisk = (xrows >= INTEGER(k)[j]) ? INTEGER(k)[j] : xrows;
@@ -173,7 +172,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         break;
 
       case LGLSXP :
-        thisfill = PROTECT(coerceVector(fill, LGLSXP));
+        thisfill = PROTECT(coerceVector(fill, LGLSXP)); protecti++;
         for (j=0; j<nk; j++) {
           thisk = (xrows >= INTEGER(k)[j]) ? INTEGER(k)[j] : xrows;
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(LGLSXP, xrows) );
@@ -188,7 +187,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         break;
 
       case STRSXP :
-        thisfill = PROTECT(coerceVector(fill, STRSXP));
+        thisfill = PROTECT(coerceVector(fill, STRSXP)); protecti++;
         for (j=0; j<nk; j++) {
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(STRSXP, xrows) );
           for (m=0; m<xrows; m++)
@@ -198,7 +197,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         break;
 
       case VECSXP :
-        thisfill = PROTECT(coerceVector(fill, VECSXP));
+        thisfill = PROTECT(coerceVector(fill, VECSXP)); protecti++;
         for (j=0; j<nk; j++) {
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(VECSXP, xrows) );
           for (m=0; m<xrows; m++)
@@ -210,12 +209,9 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
       default :
         error("Unsupported type '%s'", type2char(TYPEOF(this)));
       }
-      UNPROTECT(1);
     }
   }
-  UNPROTECT(1);
-  if (isVectorAtomic(obj) && length(ans) == 1)
-    return (VECTOR_ELT(ans, 0));
-  return(ans);
+  UNPROTECT(protecti);
+  return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
 }
 
