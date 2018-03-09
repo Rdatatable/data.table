@@ -354,9 +354,9 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     int typeChanged = (type[i] > 0) && (newDT || TYPEOF(col) != typeSxp[type[i]] || oldIsInt64 != newIsInt64);
     int nrowChanged = (allocNrow != dtnrows);
     if (typeChanged || nrowChanged) {
-      SEXP thiscol = typeChanged ? allocVector(typeSxp[type[i]], allocNrow)
+      SEXP thiscol = typeChanged ? allocVector(typeSxp[type[i]], allocNrow)  // no need to PROTECT, passed immediately to SET_VECTOR_ELT, see R-exts 5.9.1
                                  : growVector(col, allocNrow);
-      SET_VECTOR_ELT(DT,resi,thiscol);     // no need to PROTECT thiscol, see R-exts 5.9.1
+      SET_VECTOR_ELT(DT,resi,thiscol);
       if (type[i]==CT_INT64) {
         SEXP tt = PROTECT(ScalarString(char_integer64));
         setAttrib(thiscol, R_ClassSymbol, tt);

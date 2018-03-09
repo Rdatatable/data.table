@@ -391,8 +391,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
   ansvals = PROTECT(allocVector(VECSXP, data->lvalues)); protecti++;
   for (i=0; i<data->lvalues; i++) {
     thisvalfactor = (data->maxtype[i] == VECSXP) ? FALSE : valfactor;
-    target = allocVector(data->maxtype[i], data->totlen);
-    SET_VECTOR_ELT(ansvals, i, target);
+    SET_VECTOR_ELT(ansvals, i, target=allocVector(data->maxtype[i], data->totlen) );
     thisvaluecols = VECTOR_ELT(data->valuecols, i);
     counter = 0; copyattr = FALSE;
     for (j=0; j<data->lmax; j++) {
@@ -487,8 +486,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   SEXP ansvars, thisvaluecols, levels, target, matchvals, thisnames;
 
   ansvars = PROTECT(allocVector(VECSXP, 1)); protecti++;
-  target = allocVector(INTSXP, data->totlen);
-  SET_VECTOR_ELT(ansvars, 0, target);
+  SET_VECTOR_ELT(ansvars, 0, target=allocVector(INTSXP, data->totlen) );
   if (data->lvalues == 1) {
     thisvaluecols = VECTOR_ELT(data->valuecols, 0);
     // tmp fix for #1055
@@ -566,8 +564,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
     counter = 0;
     thiscol = VECTOR_ELT(DT, INTEGER(data->idcols)[i]-1);
     size = SIZEOF(thiscol);
-    target = allocVector(TYPEOF(thiscol), data->totlen);
-    SET_VECTOR_ELT(ansids, i, target);
+    SET_VECTOR_ELT(ansids, i, target=allocVector(TYPEOF(thiscol), data->totlen) );
     copyMostAttrib(thiscol, target); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     switch(TYPEOF(thiscol)) {
     case REALSXP :

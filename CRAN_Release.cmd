@@ -81,6 +81,11 @@ grep ScalarInteger *.c   # Check all Scalar* either PROTECTed, return-ed or pass
 grep ScalarLogical *.c   # Now we depend on 3.1.0, check ScalarLogical is NOT PROTECTed.
 grep ScalarString *.c
 
+# Inspect missing PROTECTs
+# To pass this grep is why we like SET_VECTOR_ELT(,,var=allocVector()) style on one line.
+# If a PROTECT is not needed then a comment is added explaining why and including "PROTECT" in the comment to pass this grep
+grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
+
 cd
 R
 cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently gcc-7) as CRAN does
