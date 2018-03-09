@@ -20,7 +20,10 @@ When \code{silent} equals to \code{TRUE} it will return \code{TRUE} if all tests
 }
 \seealso{ \code{\link{data.table}} }
 \examples{
-if (interactive()) test.data.table()
+\dontrun{
+  library(data.table)
+  test.data.table()
+}
 }
 \keyword{ data }
 

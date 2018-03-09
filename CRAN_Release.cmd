@@ -54,6 +54,10 @@ grep "&REAL" ./src/*.c
 grep -P "\t" ./R/*.R
 grep -P "\t" ./src/*.c
 
+# No T or F symbols in tests.Rraw. 24 valid F (quoted, column name or in data) and 1 valid T at the time of writing
+grep -n "[^A-Za-z0-9]T[^A-Za-z0-9]" ./inst/tests/tests.Rraw
+grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
+
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
 # Greppable thanks to single lines and wide screens
@@ -191,19 +195,29 @@ cd ~/build/32bit/R-devel
 # LIBS="-lpthread" otherwise ld error about DSO missing
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
+Rdevel CMD INSTALL data.table_1.10.5.tar.gz
+# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
+# them so should be passed through to here
 Rdevel
 install.packages("bit64")  # important to run tests using integer64
 # Skip compatibility tests with other Suggests packages; unlikely UBSAN/ASAN problems there.
-q("no")
-Rdevel CMD INSTALL data.table_1.10.5.tar.gz
-# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
-# them (above) so should be passed through to here
-Rdevel
 require(data.table)
 require(bit64)
 test.data.table()     # slower than usual of course due to UBSAN and ASAN. Too slow to run R CMD check.
 # Throws /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those: https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
 q("no")
+
+# Rebuild without ASAN/UBSAN and test again under torture
+make clean
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp CC="gcc -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
+make
+Rdevel CMD INSTALL data.table_1.10.5.tar.gz
+install.packages("bit64")
+require(bit64)
+require(data.table)
+test.data.table()  # just quick re-check
+gctorture2(step=100)
+print(Sys.time()); try(test.data.table()); print(Sys.time())
 
 
 ###############################################

@@ -4510,8 +4510,8 @@ test(1266, getNumericRounding(), 0L)
 setNumericRounding(old_rounding)
 
 # fread reading NA in logical columns, #4766
-DF = data.frame(I=1:3, L=c(T,F,NA), R=3.14)
-write.csv(DF,f<-tempfile(),row.names=F)
+DF = data.frame(I=1:3, L=c(TRUE,FALSE,NA), R=3.14)
+write.csv(DF,f<-tempfile(),row.names=FALSE)
 test(1267.1, fread(f)$L, c(TRUE, FALSE, NA))
 test(1267.2, fread(f), as.data.table(read.csv(f)))
 unlink(f)
@@ -4882,7 +4882,7 @@ set(DT,1L,"b",FALSE)  # passing 1L as i here is needed to avoid column plonk, so
 test(1297, as.integer(TRUE[1]), 1L)   # In R 3.1, TRUE[1] returns the global TRUE but TRUE doesn't yet (parses as new vector)
 test(1298, as.integer(TRUE), 1L)
 # orignal example, verbatim from James Sams :
-upc_table = data.table(upc=1:100000, upc_ver_uc=rep(c(1,2), times=50000), is_PL=rep(c(T, F, F, T), each=25000), product_module_code=rep(1:4, times=25000), ignore.column=2:100001)
+upc_table = data.table(upc=1:100000, upc_ver_uc=rep(c(1,2), times=50000), is_PL=rep(c(TRUE, FALSE, FALSE, TRUE), each=25000), product_module_code=rep(1:4, times=25000), ignore.column=2:100001)
 test(1299, upc_table[, .N, by=list(upc, upc_ver_uc)][,max(N)], 1L)  # all size 1 groups
 test(1300, upc_table[, list(is_PL, product_module_code), keyby=list(upc, upc_ver_uc)][,upc[1:3]], 1:3L)   # was warning "internal TRUE value has been modified"
 
@@ -6573,7 +6573,7 @@ test(1483.2, merge(x,y,all=TRUE), data.table(k=factor(c(NA,1,2,3)), v.x=c(0,1,2,
 
 x <- data.table(country="US")
 y <- data.table(country=factor("USA"))
-test(1483.3, merge(x,y,by="country",all=T), data.table(country=factor(c("US", "USA")), key="country"))
+test(1483.3, merge(x,y,by="country",all=TRUE), data.table(country=factor(c("US", "USA")), key="country"))
 setkey(y)
 test(1483.4, y[x], data.table(country=factor("US"), key="country"))
 
@@ -6718,8 +6718,8 @@ test(1497, DT[, .SD, .SDcols = !c("a", "c")], DT[, !c("a", "c"), with=FALSE])
 
 # Fix for #1060
 DT = data.table(x=1, y=2, z=3, a=4, b=5, c=6)
-test(1498.1, DT[, .SD, .SDcols=c(T,F)], DT[, c("x", "z", "b"), with=FALSE])
-test(1498.2, DT[, .SD, .SDcols=!c(T,F)], DT[, !c("x", "z", "b"), with=FALSE])
+test(1498.1, DT[, .SD, .SDcols=c(TRUE,FALSE)], DT[, c("x", "z", "b"), with=FALSE])
+test(1498.2, DT[, .SD, .SDcols=!c(TRUE,FALSE)], DT[, !c("x", "z", "b"), with=FALSE])
 
 # Fix for #1072
 dt <- data.table(group1 = "a", group2 = "z", value  = 1)
@@ -7307,9 +7307,9 @@ rm(DT)
 K = 10L
 nastrings = c('null', 'NULL', 'na', '_NA', 'NA', 'nan', 'Nan', 'NAN', 'NaN')
 DT = data.table(int = 1:K,
-                 char = sample(letters, size = K, replace = T),
+                 char = sample(letters, size = K, replace = TRUE),
                  float = 1:K + 0.1,
-                 bool = sample( c(T, F), K, replace = T))
+                 bool = sample( c(TRUE, FALSE), K, replace = TRUE))
 
 DT_NA = DT
 for (j in seq_len( ncol(DT) )) {
@@ -7944,7 +7944,7 @@ test(1603.1, rbindlist(list(d2, d1), fill=TRUE), rbindlist(list(d1,d2), fill=TRU
 # fix for #1440
 DT = data.table(a=1:3, b=4:6)
 myCol = "b"
-test(1604, DT[,.(myCol),with=F], error="When with=FALSE,")
+test(1604, DT[,.(myCol),with=FALSE], error="When with=FALSE,")
 
 # fix for segfault #1531
 DT = data.table(x=rep(c("b","a","c"),each=3), y=c(1,3,6), v=1:9)
@@ -8456,16 +8456,17 @@ B = data.table(x=c(10,20), y=c(100,200), key="x")
 test(1631, key(A[B, on="x"]), NULL)
 
 # fix for #1479, secondary keys are removed when necessary
-dt = data.table(a = rep(c(F,F,T,F,F,F,F,F,F), 3), b = c("x", "y", "z"))
+TFvec = c(FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE)
+dt = data.table(a = rep(TFvec, 3), b = c("x", "y", "z"))
 setindex(dt, a)
 dt[, a := as.logical(sum(a)), by = b]
 test(1632.1, names(attributes(attr(dt, 'index'))), NULL)
-dt = data.table(a = rep(c(F,F,T,F,F,F,F,F,F), 3), b = c("x", "y", "z"))
+dt = data.table(a = rep(TFvec, 3), b = c("x", "y", "z"))
 setindex(dt, b)
 dt[, a := as.logical(sum(a)), by = b]
 test(1632.2, names(attributes(attr(dt, 'index'))), "__b")
-dt = data.table(a = rep(c(F,F,T,F,F,F,F,F,F), 3), b = c("x", "y", "z"))
-test(1632.3, copy(dt)[, c := !a, by=b], copy(dt)[, c := c(T,T,F,T,T,T,T,T,T)])
+dt = data.table(a = rep(TFvec, 3), b = c("x", "y", "z"))
+test(1632.3, copy(dt)[, c := !a, by=b], copy(dt)[, c := !TFvec])
 
 # by accepts colA:colB for interactive scenarios, #1395
 dt = data.table(x=rep(1,18), y=rep(1:2, each=9), z=rep(1:3,each=6), a=rep(1:6, each=3))[, b := 6]
@@ -9190,7 +9191,7 @@ test(1658.6, fwrite(data.table(a=c("foo", NA), b=c(1, NA)), na="NA", quote=TRUE)
             output='"a","b"\n"foo",1\nNA,NA')
 
 # no col.names
-test(1658.7, fwrite(data.table(a="foo", b="bar"), col.names=F, quote=TRUE),
+test(1658.7, fwrite(data.table(a="foo", b="bar"), col.names=FALSE, quote=TRUE),
             output='"foo","bar"')
 
 test(1658.8, fwrite(data.table(a=c(1:5), b=c(1:5)), quote=TRUE),
@@ -11014,7 +11015,7 @@ test(1808.8, fread("A,B\r1,3\r\r \r2,\r", blank.lines.skip=TRUE, fill=TRUE), dat
 test(1809, fread("A,B\n\r1,2\n\r3,4\n\r5,6"), data.table(A=c(1L,3L,5L), B=c(2L,4L,6L)))
 cat("A,B\n1,q\n2,w\n3,xyz", file=f<-tempfile()); test(1810, fread(f,verbose=TRUE), data.table(A=c(1L,2L,3L), B=c("q","w","xyz")), output="File ends abruptly with 'z'.*cow page"); unlink(f)
 test(1811, fread("A,B\n1,2\n3,4", skip="boo"), error="skip='boo' not found in input")
-test(1812, fread("A,B\n1,2\n3,4\n", skip="4", verbose=T), data.table(V1=3L, V2=4L), output="Found skip='4' on line 3")
+test(1812, fread("A,B\n1,2\n3,4\n", skip="4", verbose=TRUE), data.table(V1=3L, V2=4L), output="Found skip='4' on line 3")
 test(1813, fread("A,B\n1,2\n3,4", skip=10L), error="skip=10 but the input only has 3 lines")
 test(1814, fread("A,B\n1,2\n3,4\n   \n\t", skip=3L), error="skip has been set after the last non-whitespace")
 
