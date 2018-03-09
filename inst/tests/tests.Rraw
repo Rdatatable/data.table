@@ -31,7 +31,7 @@ nfail = ntest = lastnum = 0
 whichfail = NULL
 
 .timingtests = FALSE
-started.at = Sys.time()
+started.at = proc.time()
 
 # Test default values in case user set global option. These are restored
 # at the end of this file.
