@@ -26,11 +26,6 @@ environment:
 
   matrix:
 
-#  Temp off, see PR #2665
-#  - R_VERSION: devel
-#    R_ARCH: i386
-#    GCC_PATH: mingw_32
-
   - R_VERSION: release
     R_ARCH: i386
     GCC_PATH: mingw_32
@@ -43,6 +38,10 @@ environment:
     R_ARCH: x64
     GCC_PATH: mingw_64
 
+#  Temp off, see PR #2665. Put first when enabled again.
+#  - R_VERSION: devel
+#    R_ARCH: i386
+#    GCC_PATH: mingw_32
 
 build_script:
   - set _R_CHECK_FORCE_SUGGESTS_=false
