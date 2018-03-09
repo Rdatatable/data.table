@@ -35,8 +35,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     switch (TYPEOF(thiscol)) {
     case INTSXP:
       for (j=0; j<ncols; j++) {
-        target = allocVector(TYPEOF(thiscol), nrows);
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target);
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
         copyMostAttrib(thiscol, target);
         for (k=0; k<nrows; k++) {
           thisidx = idx[k*ncols + j];
@@ -46,8 +45,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
       break;
     case REALSXP:
       for (j=0; j<ncols; j++) {
-        target = allocVector(TYPEOF(thiscol), nrows);
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target);
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
         copyMostAttrib(thiscol, target);
         for (k=0; k<nrows; k++) {
           thisidx = idx[k*ncols + j];
@@ -57,8 +55,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
       break;
     case LGLSXP:
       for (j=0; j<ncols; j++) {
-        target = allocVector(TYPEOF(thiscol), nrows);
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target);
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
         copyMostAttrib(thiscol, target);
         for (k=0; k<nrows; k++) {
           thisidx = idx[k*ncols + j];
@@ -68,8 +65,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
       break;
     case STRSXP:
       for (j=0; j<ncols; j++) {
-        target = allocVector(TYPEOF(thiscol), nrows);
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target);
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
         copyMostAttrib(thiscol, target);
         for (k=0; k<nrows; k++) {
           thisidx = idx[k*ncols + j];
@@ -79,8 +75,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
       break;
     case VECSXP:
       for (j=0; j<ncols; j++) {
-        target = allocVector(TYPEOF(thiscol), nrows);
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target);
+        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
         copyMostAttrib(thiscol, target);
         for (k=0; k<nrows; k++) {
           thisidx = idx[k*ncols + j];

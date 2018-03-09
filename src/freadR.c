@@ -327,8 +327,9 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     if (ndrop==0) {
       setAttrib(DT,R_NamesSymbol,colNamesSxp);  // colNames mkChar'd in userOverride step
     } else {
-      SEXP tt;
-      setAttrib(DT, R_NamesSymbol, tt = allocVector(STRSXP, ncol-ndrop));
+      SEXP tt = PROTECT(allocVector(STRSXP, ncol-ndrop));
+      setAttrib(DT, R_NamesSymbol, tt);
+      UNPROTECT(1); // tt; now that it's safely a member of protected object
       for (int i=0,resi=0; i<ncol; i++) if (type[i]!=CT_DROP) {
         SET_STRING_ELT(tt,resi++,STRING_ELT(colNamesSxp,i));
       }
@@ -353,10 +354,14 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     int typeChanged = (type[i] > 0) && (newDT || TYPEOF(col) != typeSxp[type[i]] || oldIsInt64 != newIsInt64);
     int nrowChanged = (allocNrow != dtnrows);
     if (typeChanged || nrowChanged) {
-      SEXP thiscol = typeChanged ? allocVector(typeSxp[type[i]], allocNrow)
+      SEXP thiscol = typeChanged ? allocVector(typeSxp[type[i]], allocNrow)  // no need to PROTECT, passed immediately to SET_VECTOR_ELT, see R-exts 5.9.1
                                  : growVector(col, allocNrow);
-      SET_VECTOR_ELT(DT,resi,thiscol);     // no need to PROTECT thiscol, see R-exts 5.9.1
-      if (type[i]==CT_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(char_integer64));
+      SET_VECTOR_ELT(DT,resi,thiscol);
+      if (type[i]==CT_INT64) {
+        SEXP tt = PROTECT(ScalarString(char_integer64));
+        setAttrib(thiscol, R_ClassSymbol, tt);
+        UNPROTECT(1);
+      }
       SET_TRUELENGTH(thiscol, allocNrow);
       DTbytes += SIZEOF(thiscol)*allocNrow;
     }

@@ -1,21 +1,17 @@
 timetaken <- function(started.at)
 {
-   if (inherits(started.at,"POSIXct")) {
-    # started.at was Sys.time(). Slower method due to POSIXt.
-    secs <- as.double(difftime(Sys.time(), started.at, units="secs"))
+   if (!inherits(started.at,"proc_time")) stop("Use started.at=proc.time() (faster) not Sys.time() (POSIXt and slow)")
+   secs = proc.time()[3L] - started.at[3L]
+   mins = as.integer(secs) %/% 60L
+   hrs = mins %/% 60L
+   days = hrs %/% 24L
+   mins = mins - hrs * 60L
+   hrs = hrs - days * 24L
+   if (secs > 60.0) {
+     res = if (days>=1L) paste0(days," day", if (days>1L) "s " else " ") else ""
+     paste0(res,sprintf("%02d:%02d:%02d", hrs, mins, as.integer(secs) %% 60L))
    } else {
-    # new faster method using started.at = proc.time()
-    secs = proc.time()[3L] - started.at[3L]
-   }
-   mins <- secs %/% 60
-   hrs <- mins %/% 60
-   days <- hrs %/% 24
-   mins = mins - hrs * 60
-   hrs = hrs - 24*days
-   if (secs >= 60) {
-     if (days >= 1) res = sprintf("%d days ", as.integer(days)) else res=""
-     paste(res,sprintf("%02.0f:%02.0f:%02.0f", hrs, mins, secs %% 60),sep="")
-   } else {
-     sprintf(if (secs>=10) "%.1fsec" else "%.3fsec", secs)
+     sprintf(if (secs >= 10.0) "%.1fsec" else "%.3fsec", secs)
    }
 }
+
