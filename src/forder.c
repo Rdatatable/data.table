@@ -1122,10 +1122,22 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? 0 : (LOGICAL(naArg)[0] == TRUE) ? 1 : -1; // 1=TRUE, -1=FALSE, 0=NA
   gsmaxalloc = n;  // upper limit for stack size (all size 1 groups). We'll detect and avoid that limit, but if just one non-1 group (say 2), that can't be avoided.
 
+  if (n==0) {
+    // empty vector or 0-row DT is always sorted
+    SEXP ans = PROTECT(allocVector(INTSXP, 0));
+    if (LOGICAL(retGrp)[0]) {
+      setAttrib(ans, sym_starts, allocVector(INTSXP, 0));
+      setAttrib(ans, sym_maxgrpn, ScalarInteger(0));
+    }
+    UNPROTECT(1);
+    return ans;
+  }
+  // if n==1, the code is left to proceed below in case one or more of the 1-row by= columns are NA and na.last=NA. Otherwise it would be easy to return now.
+
   SEXP ans = PROTECT(allocVector(INTSXP, n)); // once for the result, needs to be length n.
   int *o = INTEGER(ans);                      // TO DO: save allocation if NULL is returned (isSorted==TRUE)
   o[0] = -1;                                  // so [i|c|d]sort know they can populate o directly with no working memory needed to reorder existing order
-                                              // using -1 rather than 0 because 'nalast = 0' replaces 'o[.]' with 0 values. Trigger build.
+                                              // using -1 rather than 0 because 'nalast = 0' replaces 'o[.]' with 0 values.
   xd = DATAPTR(x);
   stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
   savetl_init();   // from now on use Error not error.
