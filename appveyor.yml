@@ -42,8 +42,6 @@ environment:
     R_ARCH: x64
     GCC_PATH: mingw_64
 
-##  Temp off, see PR #2665. Put first when enabled again.
-##
 
 build_script:
   - set _R_CHECK_FORCE_SUGGESTS_=false
