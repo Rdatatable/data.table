@@ -236,6 +236,11 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_POSIXct =   PRINTNAME(install("POSIXct"));
   char_nanotime =  PRINTNAME(install("nanotime"));
   char_starts =    PRINTNAME(sym_starts = install("starts"));
+  char_lens =      PRINTNAME(install("lens"));
+  char_indices =   PRINTNAME(install("indices"));
+  char_allLen1 =   PRINTNAME(install("allLen1"));
+  char_allGrp1 =   PRINTNAME(install("allGrp1"));
+
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
     error("PRINTNAME(install(\"integer64\")) has returned %s not %s",
