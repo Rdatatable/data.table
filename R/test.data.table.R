@@ -83,7 +83,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   assign("ntest", get("ntest", parent.frame()) + 1L, parent.frame(), inherits=TRUE)   # bump number of tests run
   assign("lastnum", num, parent.frame(), inherits=TRUE)
 
-  cat("\rRunning test id", num, "     ")
+  cat("\rRunning test id", sprintf("%.8g", num), "     ")
   flush.console()
   # This flush is for Windows to make sure last test number is written to file in CRAN and win-builder output where
   # console output is captured. \r seems especially prone to not being auto flushed. The downside is that the last 13
