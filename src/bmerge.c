@@ -142,10 +142,12 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   // isorted arg
   o = NULL;
   if (!LOGICAL(isorted)[0]) {
-    SEXP order = PROTECT(int_vec_init(length(icolsArg), 1)); // rep(1L, length(icolsArg))
+    SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg)));
+    protecti++;
+    for (int j=0; j<LENGTH(order); j++) INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
     SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
+    protecti++;
     // TODO - split head of forder into C-level callable
-    protecti += 2;   // order and oSxp
     if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
   }
 
@@ -182,10 +184,10 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   SET_VECTOR_ELT(ans, 3, allLen1Arg);
   SET_VECTOR_ELT(ans, 4, allGrp1Arg);
   SET_STRING_ELT(ansnames, 0, char_starts);  // changed from mkChar to char_ to pass the grep in CRAN_Release.cmd
-  SET_STRING_ELT(ansnames, 1, mkChar("lens"));
-  SET_STRING_ELT(ansnames, 2, mkChar("indices"));
-  SET_STRING_ELT(ansnames, 3, mkChar("allLen1"));
-  SET_STRING_ELT(ansnames, 4, mkChar("allGrp1"));
+  SET_STRING_ELT(ansnames, 1, char_lens);
+  SET_STRING_ELT(ansnames, 2, char_indices);
+  SET_STRING_ELT(ansnames, 3, char_allLen1);
+  SET_STRING_ELT(ansnames, 4, char_allGrp1);
   setAttrib(ans, R_NamesSymbol, ansnames);
   if (nqmaxgrp > 1 && mult == ALL) {
     Free(retFirst);

@@ -200,9 +200,9 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       if (colNames[i].len<=0) {
         char buff[12];
         sprintf(buff,"V%d",i+1);
-        this = mkChar(buff);
+        this = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
       } else {
-        this = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);
+        this = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
       }
       SET_STRING_ELT(colNamesSxp, i, this);
     }
@@ -422,9 +422,8 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
           for (int i=0; i<nRows; i++) {
             int strLen = source->len;
             if (strLen) {
-              SEXP thisStr = strLen<0 ? NA_STRING : mkCharLenCE(anchor + source->off, strLen, ienc);
               // stringLen == INT_MIN => NA, otherwise not a NAstring was checked inside fread_mean
-              SET_STRING_ELT(dest, DTi+i, thisStr);
+              SET_STRING_ELT(dest, DTi+i, strLen<0 ? NA_STRING : mkCharLenCE(anchor + source->off, strLen, ienc));
             } // else dest was already initialized with R_BlankString by allocVector()
             source += cnt8;
           }

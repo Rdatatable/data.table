@@ -76,6 +76,7 @@ grep "PROTECT *( *getAttrib" *.c  # attributes are already protected
 grep "\"starts\"" *.c     --exclude init.c
 grep "setAttrib(" *.c      # scan all setAttrib calls manually as a double-check
 grep "install(" *.c       --exclude init.c   # TODO: perhaps in future pre-install all constants
+grep mkChar *.c            # see comment in bmerge.c about passing this grep. I'm not sure char_ is really necessary, though.
 
 # ScalarInteger and ScalarString allocate and must be PROTECTed unless i) returned (which protects),
 # or ii) passed to setAttrib (which protects, providing leak-seals above are ok)
@@ -219,6 +220,12 @@ test.data.table()  # just quick re-check
 gctorture2(step=100)    # 1h 26m
 print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
 # Running test id 1437.0331      Error : protect(): protection stack overflow
+
+
+#############################################################################
+# TODO: recompile without USE_RINTERNALS and recheck write barrier under ASAN
+#############################################################################
+There are some things to overcome to achieve compile without USE_RINTERNALS, though.
 
 
 ###############################################

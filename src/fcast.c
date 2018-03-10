@@ -90,19 +90,6 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
   return(ans);
 }
 
-// used in bmerge.c
-SEXP int_vec_init(R_len_t n, int val) {
-  // Matt removed the SEXP val input because the ScalarInteger() input wasn't PROTECTed in caller
-  // and was potentially leaking/crashing.
-  // This function only used once and only for int, so to remove untested lines (code-coverage)
-  // decided to simplify it rather than add the PROTECT and UNPROTECT in caller.
-  if (n < 0) error("Input argument 'n' to 'int_vec_init' must be >= 0");
-  SEXP ans = PROTECT(allocVector(INTSXP, n));
-  for (R_len_t i=0; i<n; i++) INTEGER(ans)[i] = val;
-  UNPROTECT(1);
-  return(ans);
-}
-
 // commenting all unused functions, but not deleting it, just in case
 
 // // internal functions that are not used anymore..
