@@ -9061,33 +9061,31 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
     }
 }
 
-for (s in 0:1) {  # turn off temporarily using 'in NULL' when using valgrind, as very slow
-  seed = c(as.integer(Sys.time()), 1509611616L)[s+1]
-  # the fixed seed is to test branch bmerge.c:433 for cosistent coverage, issue #2346
+if (TRUE) {  # turn off temporarily using FALSE when using valgrind, as very slow
+  set.seed(1509611616L)
+  # this fixed seed is to test branch bmerge.c:433 for consistent coverage, issue #2346
+  # 2nd pass with random seed too removed as taking too long, contributing towards win-builder/cran limits
 
-  set.seed(seed)
   dt1 = nq_fun(400L)
   dt2 = nq_fun(50L)
   x = na.omit(dt1)
   y = na.omit(dt2)
 
-  d = s/10
-
   # without NAs in x and i
-  nqjoin_test(x, y, 1L, 1641.0+d, mult="all")
-  nqjoin_test(x, y, 2L, 1642.0+d, mult="all")
-  nqjoin_test(x, y, 1L, 1643.0+d, mult="first")
-  nqjoin_test(x, y, 2L, 1644.0+d, mult="first")
-  nqjoin_test(x, y, 1L, 1645.0+d, mult="last")
-  nqjoin_test(x, y, 2L, 1646.0+d, mult="last")
+  nqjoin_test(x, y, 1L, 1641, mult="all")
+  nqjoin_test(x, y, 2L, 1642, mult="all")
+  nqjoin_test(x, y, 1L, 1643, mult="first")
+  nqjoin_test(x, y, 2L, 1644, mult="first")
+  nqjoin_test(x, y, 1L, 1645, mult="last")
+  nqjoin_test(x, y, 2L, 1646, mult="last")
 
   # with NAs in x and i
-  nqjoin_test(dt1, dt2, 1L, 1647.0+d, mult="all")
-  nqjoin_test(dt1, dt2, 2L, 1648.0+d, mult="all")
-  nqjoin_test(dt1, dt2, 1L, 1649.0+d, mult="first")
-  nqjoin_test(dt1, dt2, 2L, 1650.0+d, mult="first")
-  nqjoin_test(dt1, dt2, 1L, 1651.0+d, mult="last")
-  nqjoin_test(dt1, dt2, 2L, 1652.0+d, mult="last")
+  nqjoin_test(dt1, dt2, 1L, 1647, mult="all")
+  nqjoin_test(dt1, dt2, 2L, 1648, mult="all")
+  nqjoin_test(dt1, dt2, 1L, 1649, mult="first")
+  nqjoin_test(dt1, dt2, 2L, 1650, mult="first")
+  nqjoin_test(dt1, dt2, 1L, 1651, mult="last")
+  nqjoin_test(dt1, dt2, 2L, 1652, mult="last")
 }
 
 # TODO: add tests for nomatch=NA..
