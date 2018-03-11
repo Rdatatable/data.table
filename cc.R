@@ -79,9 +79,5 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) 
   invisible()
 }
 
-# dummy globals for test() to work in dev
-nfail = ntest = lastnum = 0
-whichfail = NULL
-
 dd = function()cc(FALSE,debug=TRUE,clean=TRUE)
 

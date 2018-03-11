@@ -37,8 +37,9 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
 # Define test() and its globals here, for use in dev
 # But primarily called by test.data.table() calling inst/tests/tests.Rraw
 # Initialized at the top of tests.Raw ...
-# nfail = ntest = lastnum = 0
+# nfail = ntest = 0L
 # whichfail = NULL
+# timings = data.table( time=rep(0.0, 3000L), calls=0L )
 # .devtesting = TRUE
 
 # nocov start
@@ -77,18 +78,27 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   #    from all.equal and different to identical related to row.names and unused factor levels
   # 3) each test has a unique id which we refer to in commit messages, emails etc.
   # 4) test that a query generates exactly 2 warnings, that they are both the correct warning messages, and that the result is the one expected
-  nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
-  whichfail = get("whichfail", parent.frame())
-  all.equal.result = TRUE
-  assign("ntest", get("ntest", parent.frame()) + 1L, parent.frame(), inherits=TRUE)   # bump number of tests run
-  assign("lastnum", num, parent.frame(), inherits=TRUE)
-
-  cat("\rRunning test id", sprintf("%.8g", num), "     ")
-  flush.console()
-  # This flush is for Windows to make sure last test number is written to file in CRAN and win-builder output where
-  # console output is captured. \r seems especially prone to not being auto flushed. The downside is that the last 13
-  # lines output are filled with the last 13 "running test num" lines rather than the last error output, but that's
-  # better than the dev-time-lost when it crashes and it actually crashed much later than the last test number visible.
+  .test.data.table = exists("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
+  if (.test.data.table) {
+    nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
+    whichfail = get("whichfail", parent.frame())
+    assign("ntest", get("ntest", parent.frame()) + 1L, parent.frame(), inherits=TRUE)   # bump number of tests run
+    lasttime = get("lasttime", parent.frame())
+    timings = get("timings", parent.frame())
+    time = nTest = NULL  # to avoid 'no visible binding' note
+    on.exit( {
+       now = proc.time()[3]
+       took = now-lasttime  # so that prep time between tests is attributed to the following test
+       assign("lasttime", now, parent.frame(), inherits=TRUE)
+       timings[ as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE ]
+    } )
+    cat("\rRunning test id", sprintf("%.8g", num), "     ")
+    flush.console()
+    # This flush is for Windows to make sure last test number is written to file in CRAN and win-builder output where
+    # console output is captured. \r seems especially prone to not being auto flushed. The downside is that the last 13
+    # lines output are filled with the last 13 "running test num" lines rather than the last error output, but that's
+    # better than the dev-time-lost when it crashes and it actually crashed much later than the last test number visible.
+  }
 
   if (!missing(error) && !missing(y)) stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")
 
@@ -171,7 +181,8 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   }
   if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
     y = try(y,TRUE)
-    if (identical(x,y)) return()
+    if (identical(x,y)) return(invisible())
+    all.equal.result = TRUE
     if (is.data.table(x) && is.data.table(y)) {
       if (!selfrefok(x) || !selfrefok(y)) {
         # nocov start
@@ -188,12 +199,12 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
         setattr(yc,"row.names",NULL)
         setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
         setattr(yc,"index",NULL)
-        if (identical(xc,yc) && identical(key(x),key(y))) return()  # check key on original x and y because := above might have cleared it on xc or yc
+        if (identical(xc,yc) && identical(key(x),key(y))) return(invisible())  # check key on original x and y because := above might have cleared it on xc or yc
         if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
-          identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return()
+          identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return(invisible())
       }
     }
-    if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y,check.names=!isTRUE(y))) && typeof(x)==typeof(y)) return()
+    if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y,check.names=!isTRUE(y))) && typeof(x)==typeof(y)) return(invisible())
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     # nocov start
     if (!fail) {
@@ -207,9 +218,9 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     }
     # nocov end
   }
-  if (fail) {
+  if (fail && .test.data.table) {
     # nocov start
-    assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)   # Not the same as nfail <<- nfail + 1, it seems (when run via R CMD check)
+    assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
     assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
     # nocov end
   }
