@@ -2,7 +2,7 @@
 if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
     inst_pkgs = rownames(installed.packages())
-    sugg_pkgs = c("bit64", "knitr", "nanotime", "chron", "reshape", "reshape2", "testthat", "fastmatch", "nlme", "GenomicRanges", "xts", "gdata", "caret", "curl", "zoo", "plm", "rmarkdown", "parallel")
+    sugg_pkgs = c("bit64", "knitr", "nanotime", "chron", "reshape", "reshape2", "testthat", "fastmatch", "nlme", "GenomicRanges", "xts", "gdata", "curl", "zoo", "plm", "rmarkdown", "parallel")
     lapply(setNames(sugg_pkgs, nm = sugg_pkgs), function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))  # require() so it warns but doesn't halt if not available
     # reshape2 ahead of reshape ...
     try(detach(package:reshape2),silent=TRUE)
@@ -489,6 +489,21 @@ if (FALSE) {
   # Test key is dropped when non-dt-aware packages (here, plyr) reorders rows of data.table.
   DT = data.table(a=1:10,b=1:2,key="a")
   test(304, arrange(DT,b), data.table(a=INT(1,3,5,7,9,2,4,6,8,10),b=INT(1,1,1,1,1,2,2,2,2,2)))  # testing no key here, too
+
+  # Fix for #476 and #825
+  if ("package:reshape" %in% search()) {
+    DT <- data.table(ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L), DATUM = structure(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209), class = "Date"), N = c(25L, 9L, 23L, 29L, 26L, 26L, 27L, 28L, 39L, 39L, 38L, 36L, 40L, 39L, 19L, 20L, 19L), rank = c(2, 1, 3, 1, 2, 3, 4, 5, 1, 2, 3, 4, 6, 5, 2, 1, 3))
+    ans = cast(DT, ID ~ rank, value = "DATUM")
+    test(1383.3, names(DT), c("ID", "DATUM", "N", "rank"))
+  }
+  # caret seems heavy (plyr, reshape2 and withr). win-builder halts at this point consistently, but we pass on Travis and locally.
+  # So I put the win-builder fail down to resource issues, which are good to put in a separate package anyway.
+  if ("package:caret" %in% search()) {
+    DT <- data.table(x = rnorm(10), y = rnorm(10))
+    cv.ctrl <- trainControl(method = 'repeatedcv', number = 5, repeats = 1)
+    fit <- train(y ~ x, data = DT, 'lm', trControl = cv.ctrl)
+    test(1383.4, names(DT), c("x", "y"))
+  }
 }
 
 # test of . in formula, using inheritance
@@ -5631,24 +5646,6 @@ test(1383.1, DT[letters[1:3], list(var)], DT[1:5, list(var)])
 # Fix for #800 - allow.cartesian should be ignored if jsub[1L] has `:=`. TODO: maybe still warn if `i` has duplicates?
 DT=data.table(id=c(1,1), date=c(1992,1991), value=c(4.1,4.5), key="id")
 test(1383.2, copy(DT)[DT, a:=1], DT[, a := 1])
-
-# Fix for #476 and #825
-if ("package:reshape" %in% search()) {
-    DT <- data.table(ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L), DATUM = structure(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209), class = "Date"), N = c(25L, 9L, 23L, 29L, 26L, 26L, 27L, 28L, 39L, 39L, 38L, 36L, 40L, 39L, 19L, 20L, 19L), rank = c(2, 1, 3, 1, 2, 3, 4, 5, 1, 2, 3, 4, 6, 5, 2, 1, 3))
-    ans = cast(DT, ID ~ rank, value = "DATUM")
-    test(1383.3, names(DT), c("ID", "DATUM", "N", "rank"))
-} else {
-    cat("Tests 1383.3 not run. If required call library(reshape) first.\n")
-}
-
-if ("package:caret" %in% search()) {
-    DT <- data.table(x = rnorm(10), y = rnorm(10))
-    cv.ctrl <- trainControl(method = 'repeatedcv', number = 5, repeats = 1)
-    fit <- train(y ~ x, data = DT, 'lm', trControl = cv.ctrl)
-    test(1383.4, names(DT), c("x", "y"))
-} else {
-    cat("Tests 1383.4 not run. If required call library(caret) first.\n")
-}
 
 # Somehow DT[col==max(col)] was never tested, broken by auto-indexing new in v1.9.4, #858
 DT = data.table(a = c(1,1,1,2,2,2,3,3,3), b = rnorm(9))

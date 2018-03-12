@@ -12,7 +12,7 @@ Authors@R: c(
   person("Eduard","Antonyan", role="ctb") )
 Depends: R (>= 3.1.0)
 Imports: methods
-Suggests: bit64, knitr, nanotime, chron, reshape, reshape2, testthat (>= 0.4), fastmatch, nlme, xts, gdata, GenomicRanges, caret, curl, zoo, plm, rmarkdown, parallel
+Suggests: bit64, knitr, nanotime, chron, reshape, reshape2, testthat (>= 0.4), fastmatch, nlme, xts, gdata, GenomicRanges, curl, zoo, plm, rmarkdown, parallel
 Description: Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns, friendly and fast character-separated-value read/write. Offers a natural and flexible syntax, for faster development.
 License: MPL-2.0 | file LICENSE
 URL: http://r-datatable.com
