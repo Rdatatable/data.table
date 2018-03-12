@@ -2516,29 +2516,24 @@ cat("1.23\n3.14",file=f<-tempfile()); test(892.1, fread(f), data.table(V1=c(1.23
 cat("A,3",file=f<-tempfile()); test(893, fread(f), data.table(V1="A",V2=3L)); unlink(f)
 if (.Platform$OS.type=="unix") test(893.5, fread("A,B\r\n\r\n"), data.table(A=logical(),B=logical()))
 eols = c("\n", "\r\n", "\r", "\n\r", "\r\r\n")
-for (nr in c(0,1,2,3,5,10,18,19,20,21,22,28,29,30,31,32,38,39,40,41,42)) {  # 30 and 40 are trigger points for auto skip
-for (nc in c(0,1,2)) {   # 0 means all cols here
+for (nr in c(0,1,2,3,4,55,98,99,100,101,102)) {  # include around first 100 line threshold
+for (nc in c(0,1,2)) {                           # 0 means all cols here
 for (ne in seq_along(eols)) {
     eol = eols[ne]
     headDT = head(DT,nr)[,seq_len(if (nc==0) ncol(DT) else nc),with=FALSE]
     if (nr==0) for (j in seq_len(ncol(headDT))) set(headDT,j=j,value=logical())  # when read back in empty cols are the lowest type (logical)
     f = tempfile()
-    cat(names(headDT),sep=",",file=f)  # no \n at the end here
-    for (i in seq_len(nr)) {
-        cat(eol,file=f,append=TRUE)  # on unix we simulate windows too. on windows \n will write \r\n (and \r\n will write \r\r\n)
-        write.table(headDT[i],file=f,quote=FALSE,sep=",",eol="",row.names=FALSE,col.names=FALSE,append=TRUE)
-        # loop approach is to get no \n after last line
-    }
+    lines = capture.output(fwrite(headDT))
+    cat(paste(lines,collapse=eol), file=f, sep="")  # so last line abruptly ends (missing last eol) to test that, otherwise could just pass eol to fwrite
+    # on unix we simulate Windows too. On Windows \n will write \r\n (and \r\n will write \r\r\n)
     testIDtail = nr/100 + nc/1000 + ne/10000
-    # if (isTRUE(all.equal(testIDtail, 0.4101))) browser()
-    test(894+testIDtail, fread(f), headDT)
-    file.copy(f,f2<-tempfile()); unlink(f)    # again trying to work around apparent issue on Windows
-    cat(eol,file=f2,append=TRUE)   # now a 'normal' file ending with \n
-    test(895+testIDtail, fread(f2), headDT)
-    file.copy(f2,f3<-tempfile()); unlink(f2)
-    cat(eol,file=f3,append=TRUE)   # extra \n should be ignored (other than for single columns)
-    test(896+testIDtail, fread(f3), if (nc==1) rbind(headDT, list(NA)) else headDT)
-    unlink(f3)
+    # if (isTRUE(all.equal(testIDtail, 0.4103))) browser()
+    test(894+testIDtail, fread(f,na.strings=""), headDT)
+    cat(eol,file=f,append=TRUE)                     # now a normal file properly ending with final \n
+    test(895+testIDtail, fread(f,na.strings=""), headDT)
+    cat(eol,file=f,append=TRUE)                     # extra \n should be ignored other than for single columns where it is significant
+    test(896+testIDtail, fread(f,na.strings=""), if (nc==1) rbind(headDT, list(NA)) else headDT)
+    unlink(f)
 }}}
 if ("package:bit64" %in% search()) {
     n = 2100
