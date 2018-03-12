@@ -2,7 +2,7 @@
 if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
     inst_pkgs = rownames(installed.packages())
-    sugg_pkgs = c("bit64", "knitr", "nanotime", "chron", "ggplot2", "plyr", "reshape", "reshape2", "testthat", "hexbin", "fastmatch", "nlme", "GenomicRanges", "xts", "gdata", "caret", "curl", "zoo", "plm", "rmarkdown", "parallel")
+    sugg_pkgs = c("bit64", "knitr", "nanotime", "chron", "reshape", "reshape2", "testthat", "fastmatch", "nlme", "GenomicRanges", "xts", "gdata", "caret", "curl", "zoo", "plm", "rmarkdown", "parallel")
     lapply(setNames(sugg_pkgs, nm = sugg_pkgs), function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))  # require() so it warns but doesn't halt if not available
     # reshape2 ahead of reshape ...
     try(detach(package:reshape2),silent=TRUE)
@@ -447,7 +447,6 @@ test(157, a[,sum(z),by=x][1,paste(x,V1)], "e 19")  # 1st level is now first
 test(158, a[,sum(z),by=y][1,paste(y,V1)], "h 19")  # not 'f'
 test(158.5, a[,sum(z),keyby=y][1,paste(y,V1)], "j 15")  # not 'f' either
 
-
 # tests of by expression variables
 DT = data.table( a=1:5, b=11:50, d=c("A","B","C","D"), f=1:5, grp=1:5 )
 f = quote( list(d) )
@@ -465,29 +464,31 @@ test(164, foo(f), DT[,mean(b),by=d])
 test(165, subset(DT,a>2), DT[a>2])
 test(166, suppressWarnings(split(DT,DT$grp)[[2]]), DT[grp==2])
 
-if ("package:ggplot2" %in% search()) {
-    test(167, names(print(ggplot(DT,aes(b,f))+geom_point()))[c(1,3)], c("data","plot"))
-    # The names() is a stronger test that it has actually plotted, but also because test() sees the invisible result
-    test(167.1,DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 because there are 5 groups in DT data at this stage, just need 2 to test
-    # New test reported by C Neff on 11 Oct 2011
-    if ("package:hexbin" %in% search())
-       test(167.2, names(print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp)))[c(1,3)], c("data","plot"))
-    else
-       cat("Test 167.2 not run. If required call library(hexbin) first.\n")
+# and that plotting works
+test(167.1, DT[,plot(b,f)], NULL)
+test(167.2, DT[,hist(b)]$breaks, seq.int(10L,50L,by=5L))
+test(167.3, DT[,plot(b,f),by=.(grp)], data.table(grp=integer()))
+try(graphics.off(),silent=TRUE)
 
-    # Test plotting ITime with ggplot2 which seems to require an as.data.frame method for ITime, #1713
-    datetimes = c("2011 NOV18 09:29:16", "2011 NOV18 10:42:40", "2011 NOV18 23:47:12",
-              "2011 NOV19 01:06:01", "2011 NOV19 11:35:34", "2011 NOV19 11:51:09")
-    DT = IDateTime(strptime(datetimes,"%Y %b%d %H:%M:%S"))
-    test(168, print(DT[,qplot(idate,itime)])$ranges, print(qplot(DT$idate,DT$itime))$ranges)
-    test(168.1, print(DT[,qplot(idate,as.POSIXct(itime,tzone=""))])$ranges, print(qplot(idate,as.POSIXct(itime,tzone=""),data=DT))$ranges)
+if (FALSE) {
+  # TODO test in separate compatibility package as ggplot adds minutes to Travis test times (dependency chain and running too)
 
-    try(graphics.off(),silent=TRUE)
-    #try(graphics.off(),silent=TRUE) # R CMD check doesn't like graphics it seems, even when inside try()
-} else {
-    cat("Tests 167-168 not run. If required call library(ggplot2) first.\n")
-    # ggplot takes a long time so we don't include these by default
-    # From examples, the library(ggplot2) is done first, so that 'R CMD check' does include tests 167-168
+  test(168.1, names(print(ggplot(DT,aes(b,f))+geom_point()))[c(1,3)], c("data","plot"))
+  test(168.2, DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 to reduce time needed for ggplot2 to plot
+  # Test reported by C Neff on 11 Oct 2011, needs package 'hexbin'
+  test(168.3, names(print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp)))[c(1,3)], c("data","plot"))
+
+  # Test plotting ITime with ggplot2 which seems to require an as.data.frame method for ITime, #1713
+  datetimes = c("2011 NOV18 09:29:16", "2011 NOV18 10:42:40", "2011 NOV18 23:47:12",
+            "2011 NOV19 01:06:01", "2011 NOV19 11:35:34", "2011 NOV19 11:51:09")
+  DT = IDateTime(strptime(datetimes,"%Y %b%d %H:%M:%S"))
+  test(168.4, print(DT[,qplot(idate,itime)])$ranges, print(qplot(DT$idate,DT$itime))$ranges)
+  test(168.5, print(DT[,qplot(idate,as.POSIXct(itime,tzone=""))])$ranges, print(qplot(idate,as.POSIXct(itime,tzone=""),data=DT))$ranges)
+  try(graphics.off(),silent=TRUE)
+
+  # Test key is dropped when non-dt-aware packages (here, plyr) reorders rows of data.table.
+  DT = data.table(a=1:10,b=1:2,key="a")
+  test(304, arrange(DT,b), data.table(a=INT(1,3,5,7,9,2,4,6,8,10),b=INT(1,1,1,1,1,2,2,2,2,2)))  # testing no key here, too
 }
 
 # test of . in formula, using inheritance
@@ -923,13 +924,7 @@ test(302, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,42L,6L,7L),key="a"))
 DT[J(2),b:=84L]
 test(303, DT, data.table(a=c(1L,2L,2L,3L),b=c(4L,84L,84L,7L),key="a"))
 
-# Test key is dropped when non-dt-aware packages reorder rows of data.table (for example)
-if ("package:plyr" %in% search()) {
-    DT = data.table(a=1:10,b=1:2,key="a")
-    test(304, arrange(DT,b), data.table(a=INT(1,3,5,7,9,2,4,6,8,10),b=INT(1,1,1,1,1,2,2,2,2,2)))  # testing no key here, too
-} else {
-    cat("Test 304 not run. If required call library(plyr) first.\n")
-}
+# Test 304 was testing compatibility with package:plyr. Moved to the ggplot2 block above to be moved to a separate test package.
 
 # Test that changing colnames keep key in sync.
 # TO DO: will have to do this for secondary keys, too, when implemented.
@@ -3250,9 +3245,9 @@ if ("package:reshape2" %in% search()) {
     test(1104.1, x1,x2)
 
     # add test for 'subset' in dcast
-    x1 <- dcast(as.data.frame(DT), time + chick ~ variable+diet, fun=sum, subset=.(time> 20))
-    x2 <- as.data.frame(dcast(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20)))
-    test(1104.2, x1, x2)
+#    x1 <- dcast(as.data.frame(DT), time + chick ~ variable+diet, fun=sum, subset=.(time> 20))
+#    x2 <- as.data.frame(dcast(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20)))
+#    test(1104.2, x1, x2)
 
     # testing without aggregation
     x <- data.table(a=5:1, b=runif(5))
@@ -4078,7 +4073,6 @@ test(1203, address(DT[,list(b,c)]$c) != address(DT$c))
 test(1204, address(DT[1:3,"b",with=FALSE]$b) != address(DT$b))
 test(1205, address(DT[TRUE,"b",with=FALSE]$b) != address(DT$b))
 
-# Somehow we didn't test DT[order(...)] anywhere yet (other than via plyr's arrange in test 304)
 DT = data.table(a=6:1, b=1:2)
 test(1206, DT[order(b,a)], data.table(a=INT(2,4,6,1,3,5),b=INT(1,1,1,2,2,2)))
 
