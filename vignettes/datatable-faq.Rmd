@@ -602,7 +602,7 @@ You can submit pull requests to change the code and/or documentation yourself; s
 We add all articles we know about (whether positive or negative) to the [Articles](https://github.com/Rdatatable/data.table/wiki/Articles) page. All pages in the project's wiki on GitHub are open-access with no modify restrictions. Feel free to write an article, link to a negative one someone else wrote that you found, or add a new page to our wiki to collect your criticisms. Please make it constructive so we have a chance to improve.
 
 ## I have a question. I know the r-help posting guide tells me to contact the maintainer (not r-help), but is there a larger group of people I can ask?
-Yes, there are two options. You can post to [datatable-help](mailto:datatable-help@lists.r-forge.r-project.org). It's like r-help, but just for this package. Or the [`[data.table]` tag](https://stackoverflow.com/tags/data.table/info) on [Stack Overflow](https://stackoverflow.com/). Feel free to answer questions in those places, too.
+Please see the [support guide](https://github.com/Rdatatable/data.table/wiki/Support) on the project's homepage which contains up-to-date links.
 
 ## Where are the datatable-help archives?
 The [homepage](https://github.com/Rdatatable/data.table/wiki) contains links to the archives in several formats.

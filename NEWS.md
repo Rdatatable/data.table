@@ -1716,7 +1716,7 @@ USER VISIBLE CHANGES
         the value falls in a gap, and to the end value according to 'rollends'.
         'rolltolast' has been deprecated. For backwards compatibility it is converted to
         {roll=TRUE;rollends=c(FALSE,FALSE)}.
-        This implements [r-forge FR#2300](https://github.com/Rdatatable/data.table/issues/615) & [r-forge FR#206](https://github.com/Rdatatable/data.table/issues/459) and helps several recent S.O. questions.
+        This implements [FR#615](https://github.com/Rdatatable/data.table/issues/615) & [FR#459](https://github.com/Rdatatable/data.table/issues/459) and helps several recent S.O. questions.
 
 #### BUG FIXES
 
@@ -1833,9 +1833,8 @@ USER VISIBLE CHANGES
             options(datatable.print.topn=10)
         If the table to be printed has more than nrows, the top and bottom topn rows
         are printed. Otherwise, below nrows, the entire table is printed.
-        Thanks to Allan Engelhardt and Melanie Bacou for useful discussions :
-        http://lists.r-forge.r-project.org/pipermail/datatable-help/2012-September/001303.html
-        and see FAQs 2.11 and 2.22.
+        Thanks to Allan Engelhardt and Melanie Bacou for useful discussions.
+        See FAQs 2.11 and 2.22.
 
     *   When one or more rows in i have no match to x and i is unkeyed, i is now
         tested to see if it is sorted. If so, the key is retained. As before, when all rows of
@@ -2030,7 +2029,6 @@ USER VISIBLE CHANGES
         for reporting. Tests added. A warning is issued when the first column is added if L was created with
         list(DT1,DT2) since R's list() copies named inputs. Until reflist() is implemented, this warning can be
         ignored or suppressed.
-            http://lists.r-forge.r-project.org/pipermail/datatable-help/2012-August/001265.html
 
     *   DT[J(data.frame(...))] now works again, giving the same result as DT[data.frame(...)], #2265.
         Thanks to Christian Hudon for reporting. Tests added.
