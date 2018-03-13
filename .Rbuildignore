@@ -13,3 +13,5 @@
 ^data\.table_.*\.tar\.gz$
 ^cc\.R$
 ^Makefile$
+^NEWS.0.md$
+
