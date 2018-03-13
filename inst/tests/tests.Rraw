@@ -11776,7 +11776,7 @@ plat = paste0("endian==", .Platform$endian,
               ", sizeof(pointer)==", .Machine$sizeof.pointer)
 DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
 if ((x<-timings[,sum(nTest)]) != ntest) warning("Timings count mismatch:",x,"vs",ntest)
-cat("\nLongest running tests (", as.integer(tt<-DT[, sum(time)]), "secs / ", as.integer(100*tt/timings[,sum(time)]), "%) :\n", sep="")
+cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
 print(DT)
 if (nfail > 0) {
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
