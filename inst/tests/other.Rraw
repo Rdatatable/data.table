@@ -7,7 +7,7 @@ if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
 stop("WIP")
 
 inst_pkgs = rownames(installed.packages())
-pkgs = c("knitr", "nanotime", "reshape2", "ggplot2", "hexbin", "nlme", "caret", "GenomicRanges", "xts", "gdata", "zoo", "plm", "parallel")
+pkgs = c("knitr", "reshape2", "ggplot2", "hexbin", "nlme", "caret", "GenomicRanges", "gdata", "zoo", "plm", "parallel")
     lapply(setNames(other_pkgs, nm = other_pkgs), function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))  # require() so it warns but doesn't halt if not available
 
 
@@ -61,6 +61,10 @@ if ("package:reshape" %in% search()) {
 # If xts is loaded, this'll just test xts's last. Ok as they're consistent, for vectors.
 # xts's last returns a one row data.table ok (setDT is needed to pass strict selfrefok(), otherwise the first := heals it.)
 # But not true when DT is a one column data.table/data.frame, see below.
+
+# potentially, we could unload and reload xts in different orders.
+# But users should be using :: to disambiguate (like Python forces you to always) so should we be testing this, all because poeple aren't using :: ?
+
 if ("package:xts" %in% search()) {  # e.g. when run via R CMD check
     x = xts(1:100, Sys.Date()+1:100)
     test(841, last(x,10), x[91:100,])
@@ -82,59 +86,7 @@ if ("package:xts" %in% search()) {  # e.g. when run via R CMD check
     # frustrating to test as well, see comment to test 839 above).
 }
 
-# data.table-xts conversion #882
 
-if ("package:xts" %in% search()) {
-    # Date index
-    dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
-    xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
-    dt_xt = as.data.table(xt)
-    xt_dt = as.xts.data.table(dt)
-    test(1465.1, all.equal(dt, dt_xt, check.attributes = FALSE))
-    test(1465.2, xt, xt_dt)
-    # POSIXct index
-    dt <- data.table(index = as.POSIXct(as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
-    xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
-    dt_xt = as.data.table(xt)
-    xt_dt = as.xts.data.table(dt)
-    test(1465.3, all.equal(dt, dt_xt, check.attributes = FALSE))
-    test(1465.4, xt, xt_dt)
-    # index types returned from to.period
-    dt = data.table(index = as.Date((as.Date("2014-12-12") - 729):as.Date("2014-12-12"), origin = "1970-01-01"), quantity = as.numeric(rep(c(1:5), 73)), value = rep(c(1:73) * 100, 5))
-    xt = as.xts(matrix(data = c(dt$quantity, dt$value), ncol = 2, dimnames = list(NULL, c("quantity", "value"))), order.by = dt$index)
-    xt_w = xts::to.weekly(xt)
-    xt_dt_xt_w = as.xts.data.table(as.data.table(xt_w))
-    xt_m = xts::to.monthly(xt)
-    xt_dt_xt_m = as.xts.data.table(as.data.table(xt_m))
-    xt_q = xts::to.quarterly(xt)
-    xt_dt_xt_q = as.xts.data.table(as.data.table(xt_q))
-    xt_y = xts::to.yearly(xt)
-    xt_dt_xt_y = as.xts.data.table(as.data.table(xt_y))
-    test(1465.5, all.equal(xt_w, xt_dt_xt_w, check.attributes = FALSE))
-    test(1465.6, all.equal(xt_m, xt_dt_xt_m, check.attributes = FALSE))
-    test(1465.7, all.equal(xt_q, xt_dt_xt_q, check.attributes = FALSE))
-    test(1465.8, all.equal(xt_y, xt_dt_xt_y, check.attributes = FALSE))
-}
-
-
-# test xts's last()
-if ("package:xts" %in% search()) {
-    test(1531, xts::last(1:5), 5L)
-}
-
-if (!"package:xts" %in% search()) {
-    # #1347, xts issue from Joshua
-    x = as.Date(1:5, origin="2015-01-01")
-    test(1559.11, last(x), tail(x, 1L))
-} else {
-    test(1559.12, last(.xts(1:3,1:3)), .xts(1:3, 1:3)[3, ])
-}
-
-# fix for #1484
-if ("package:xts" %in% search()) {
-    x = xts::as.xts(8, order.by = as.Date("2016-01-03"))
-    test(1589, all.equal(as.data.table(x), data.table(index = as.Date("2016-01-03"), V1 = 8), check.attributes=FALSE))
-}
 
 # as.Date.IDate won't change the class if xts package loaded #1500
 if ("package:zoo" %in% search()) {
@@ -145,36 +97,6 @@ if ("package:zoo" %in% search()) {
     cat("Test 1662 not run. If required call library(zoo) first.\n")
 }
 
-# IDate support in as.xts.data.table #1499
-if ("package:xts" %in% search()) {
-    dt <- data.table(date = c(as.IDate("2014-12-31"),
-                              as.IDate("2015-12-31"),
-                              as.IDate("2016-12-31")),
-                     nav = c(100,101,99),
-                     key = "date")
-    dt.xts <- as.xts.data.table(dt)
-    test(1663, dt.xts[1L], xts::xts(data.table(nav=100), order.by=as.Date("2014-12-31")))
-} else {
-    cat("Test 1663 not run. If required call library(xts) first.\n")
-}
-
-if ("package:nanotime" %in% search()) {
-  DT = data.table(A=nanotime(tt<-c("2016-09-28T15:30:00.000000070Z",
-                                   "2016-09-29T23:59:00.000000001Z",
-                                   "2016-09-29T23:59:00.000000999Z",
-                                   "1970-01-01T00:01:01.000001000Z",
-                                   "1970-01-01T00:00:00.000000000Z",
-                                   "1969-12-31T23:59:59.999999999Z",
-                                   "1969-12-31T23:59:59.000000089Z",
-                                   "1969-12-31T12:13:14.000000000Z",
-                                   "1969-12-31T12:13:14.999999999Z",
-                                   "1969-12-31T12:13:14.000000001Z",
-                                   "1967-03-15T00:00:00.300000002Z",
-                                   "1967-03-15T23:59:59.300000002Z")))
-  test(1752, capture.output(fwrite(DT, verbose=FALSE))[-1], tt)
-} else {
-  cat("Test 1752 not run. If required call library(nanotime) first.\n")
-}
 
 if ("package:nlme" %in% search()) {
   # commented out to be consistent with base R, as #1078 and #1128 are more common cases..

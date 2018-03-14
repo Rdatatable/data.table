@@ -60,9 +60,15 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
     last = data.table::last               # xts
 }
 
-test_bit64 = suppressWarnings(suppressMessages(require(bit64)))
-if (!test_bit64) {
-  cat("** Package bit64 is not installed. Tests using it will be skipped.\n")
+# Load optional Suggests packages, which are tested by Travis for code coverage, and on CRAN
+# The reason for inclusion here is stated next to each package
+sugg = c("bit64",     # if big integers are detected in file, fread reads them as bit64::integer64 if installed (warning if not)
+         "xts",       # we have xts methods in R/xts.R
+         "nanotime",  # fwrite looks for the 'nanotime' class name at C level but we have our own writer in C
+         "chron")     # we have chron methods in R/IDateTime.R
+for (s in sugg) {
+  assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(require(s, character.only=TRUE))))
+  if (!loaded) cat("** Package",s,"is not installed. Tests using it will be skipped.\n")
 }
 # Test default values in case user set global option. These are restored at the end of this file.
 oldalloccol = options(datatable.alloccol=1024L)
@@ -6148,6 +6154,68 @@ test(1464.13, rleidv(DT, 1:2), ans<-INT(1,2,3,4,5,6,6,6,7,8,8,9,10,11,12,13,14,1
 test(1464.14, rleidv(DT, 2:1), ans)
 test(1464.15, rleidv(DT, c(3,1)), INT(1,1,2,2,3,4,5,5,6,7,8,9,10,11,12,13,14,15,16,17))
 
+if (test_xts) {
+    # data.table-xts conversion #882
+    # Date index
+    dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
+    xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
+    dt_xt = as.data.table(xt)
+    xt_dt = as.xts.data.table(dt)
+    test(1465.1, all.equal(dt, dt_xt, check.attributes = FALSE))
+    test(1465.2, xt, xt_dt)
+    # POSIXct index
+    dt <- data.table(index = as.POSIXct(as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
+    xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
+    dt_xt = as.data.table(xt)
+    xt_dt = as.xts.data.table(dt)
+    test(1465.3, all.equal(dt, dt_xt, check.attributes = FALSE))
+    test(1465.4, xt, xt_dt)
+    # index types returned from to.period
+    dt = data.table(index = as.Date((as.Date("2014-12-12") - 729):as.Date("2014-12-12"), origin = "1970-01-01"), quantity = as.numeric(rep(c(1:5), 73)), value = rep(c(1:73) * 100, 5))
+    xt = as.xts(matrix(data = c(dt$quantity, dt$value), ncol = 2, dimnames = list(NULL, c("quantity", "value"))), order.by = dt$index)
+    xt_w = xts::to.weekly(xt)
+    xt_dt_xt_w = as.xts.data.table(as.data.table(xt_w))
+    xt_m = xts::to.monthly(xt)
+    xt_dt_xt_m = as.xts.data.table(as.data.table(xt_m))
+    xt_q = xts::to.quarterly(xt)
+    xt_dt_xt_q = as.xts.data.table(as.data.table(xt_q))
+    xt_y = xts::to.yearly(xt)
+    xt_dt_xt_y = as.xts.data.table(as.data.table(xt_y))
+    test(1465.5, all.equal(xt_w, xt_dt_xt_w, check.attributes = FALSE))
+    test(1465.6, all.equal(xt_m, xt_dt_xt_m, check.attributes = FALSE))
+    test(1465.7, all.equal(xt_q, xt_dt_xt_q, check.attributes = FALSE))
+    test(1465.8, all.equal(xt_y, xt_dt_xt_y, check.attributes = FALSE))
+
+    test(1531, xts::last(1:5), 5L)
+
+    # xts issue from Joshua, #1347
+    x = as.Date(1:5, origin="2015-01-01")
+    test(1559.11, last(x), tail(x, 1L))
+
+    x = xts(1:100, Sys.Date()+1:100)
+    test(841, last(x,10), x[91:100,])
+    # The important thing this tests is that data.table's last() dispatches to xts's method when data.table is loaded above xts.
+    # But that isn't tested by R CMD check because xts is loaded above data.table, there.
+    # So to make this test is relevant, run it in fresh R session directly, after: "require(xts);require(data.table)"
+    #                                                                 rather than: "require(data.table);require(xts)"
+    # Which was the main thrust of bug#2312 fixed in v1.8.3
+
+    # fix for #1484
+    x = xts::as.xts(8, order.by = as.Date("2016-01-03"))
+    test(1589, all.equal(as.data.table(x), data.table(index = as.Date("2016-01-03"), V1 = 8), check.attributes=FALSE))
+
+    # IDate support in as.xts.data.table #1499
+    dt <- data.table(date = c(as.IDate("2014-12-31"),
+                              as.IDate("2015-12-31"),
+                              as.IDate("2016-12-31")),
+                     nav = c(100,101,99),
+                     key = "date")
+    dt.xts <- as.xts.data.table(dt)
+    test(1663, dt.xts[1L], xts::xts(data.table(nav=100), order.by=as.Date("2014-12-31")))
+}
+
+
+
 # as.data.table.default #969
 ar <- array(NA, dim=c(10,4),dimnames = list(NULL,paste("col",1:4,sep="")))
 test(1466.1, as.data.table(as.data.frame(ar)), as.data.table(ar)) # array type
@@ -7658,13 +7726,12 @@ test(1601.4, tryCatch(merge(data.table(NULL),data.table(NULL), by="a"), warning 
 # migrate `chron` dependency to Suggests #1558
 dd = as.IDate("2016-02-28")
 tt = as.ITime("03:04:43")
-if(!requireNamespace("chron", quietly = TRUE)){
-    # Since chron is recommended package and installed by default, perhaps it's ok doing requireNamespace
-    test(1602.1, as.chron.IDate(dd), error = "Install suggested `chron` package to use `as.chron.IDate` function.")
-    test(1602.2, as.chron.ITime(tt), error = "Install suggested `chron` package to use `as.chron.ITime` function.")
+if (test_chron) {
+    test(1602.1, as.chron.IDate(dd), chron::as.chron(as.Date(dd)))
+    test(1602.2, class(as.chron.ITime(tt)), "times")
 } else {
-    test(1602.3, as.chron.IDate(dd), chron::as.chron(as.Date(dd)))
-    test(1602.4, class(as.chron.ITime(tt)), "times")
+    test(1602.3, as.chron.IDate(dd), error = "Install suggested `chron` package to use `as.chron.IDate` function.")
+    test(1602.4, as.chron.ITime(tt), error = "Install suggested `chron` package to use `as.chron.ITime` function.")
 }
 
 # fix for #1549
@@ -10179,6 +10246,22 @@ if (test_bit64) {
 # for completeness, added test for NA problem to close #1837. Fixed long ago before release to CRAN.
 test(1751.1, capture.output(fwrite(data.table(x=NA_integer_),verbose=FALSE)), c("\"x\"","NA"))
 test(1751.2, capture.output(fwrite(data.table(x=NA_integer_),na="",verbose=FALSE)), c("x",""))
+
+if (test_nanotime) {
+  DT = data.table(A=nanotime(tt<-c("2016-09-28T15:30:00.000000070Z",
+                                   "2016-09-29T23:59:00.000000001Z",
+                                   "2016-09-29T23:59:00.000000999Z",
+                                   "1970-01-01T00:01:01.000001000Z",
+                                   "1970-01-01T00:00:00.000000000Z",
+                                   "1969-12-31T23:59:59.999999999Z",
+                                   "1969-12-31T23:59:59.000000089Z",
+                                   "1969-12-31T12:13:14.000000000Z",
+                                   "1969-12-31T12:13:14.999999999Z",
+                                   "1969-12-31T12:13:14.000000001Z",
+                                   "1967-03-15T00:00:00.300000002Z",
+                                   "1967-03-15T23:59:59.300000002Z")))
+  test(1752, capture.output(fwrite(DT, verbose=FALSE))[-1], tt)
+}
 
 # check too many fields error from ,\n line ending highlighted in #2044
 test(1753.1, fread("X,Y\n1,2\n3,4\n5,6"), data.table(X=INT(1,3,5),Y=INT(2,4,6)))
