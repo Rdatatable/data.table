@@ -1,0 +1,297 @@
+
+if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
+  stop("with.other.packages should not be run in dev.")
+  # Test the other packages with data.table in a fresh R session where data.table is installed. Not doing so can be the cause of false fails in dev.")
+}
+
+inst_pkgs = rownames(installed.packages())
+pkgs = c("knitr", "nanotime", "chron", "reshape2", "ggplot2", "testthat", "fastmatch", "nlme", "GenomicRanges", "xts", "gdata", "curl", "zoo", "plm", "rmarkdown", "parallel")
+    lapply(setNames(other_pkgs, nm = other_pkgs), function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))  # require() so it warns but doesn't halt if not available
+
+
+if (FALSE) {
+  # TODO test in separate compatibility package as ggplot adds minutes to Travis test times (dependency chain and running too)
+
+  test(168.1, names(print(ggplot(DT,aes(b,f))+geom_point()))[c(1,3)], c("data","plot"))
+  test(168.2, DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 to reduce time needed for ggplot2 to plot
+  # Test reported by C Neff on 11 Oct 2011, needs package 'hexbin'
+  test(168.3, names(print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp)))[c(1,3)], c("data","plot"))
+
+  # Test plotting ITime with ggplot2 which seems to require an as.data.frame method for ITime, #1713
+  datetimes = c("2011 NOV18 09:29:16", "2011 NOV18 10:42:40", "2011 NOV18 23:47:12",
+            "2011 NOV19 01:06:01", "2011 NOV19 11:35:34", "2011 NOV19 11:51:09")
+  DT = IDateTime(strptime(datetimes,"%Y %b%d %H:%M:%S"))
+  test(168.4, print(DT[,qplot(idate,itime)])$ranges, print(qplot(DT$idate,DT$itime))$ranges)
+  test(168.5, print(DT[,qplot(idate,as.POSIXct(itime,tzone=""))])$ranges, print(qplot(idate,as.POSIXct(itime,tzone=""),data=DT))$ranges)
+  try(graphics.off(),silent=TRUE)
+
+  # Test key is dropped when non-dt-aware packages (here, plyr) reorders rows of data.table.
+  DT = data.table(a=1:10,b=1:2,key="a")
+  test(304, arrange(DT,b), data.table(a=INT(1,3,5,7,9,2,4,6,8,10),b=INT(1,1,1,1,1,2,2,2,2,2)))  # testing no key here, too
+
+  # Fix for #825
+  if ("package:reshape" %in% search()) {
+    DT <- data.table(ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L), DATUM = structure(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209), class = "Date"), N = c(25L, 9L, 23L, 29L, 26L, 26L, 27L, 28L, 39L, 39L, 38L, 36L, 40L, 39L, 19L, 20L, 19L), rank = c(2, 1, 3, 1, 2, 3, 4, 5, 1, 2, 3, 4, 6, 5, 2, 1, 3))
+    ans = cast(DT, ID ~ rank, value = "DATUM")
+    test(1383.3, names(DT), c("ID", "DATUM", "N", "rank"))
+    # The bug was that names(DT) changed, hence testing DT here not ans. Same fix tested next with caret too.
+    # When running this test on 13 Mar 2018, I noticed that reshape::cast doesn't retain the Date class and returns just numbers. Now we don't
+    # test with reshape, I copied the test to the reshape2 section, changed it to use dcast and tested the result explicitly.
+  }
+  # Fix for #476
+  # caret seems heavy (plyr, reshape2 and withr). win-builder halts at this point consistently, but we pass on Travis and locally.
+  # So I put the win-builder fail down to resource issues, which are good to put in a separate package anyway.
+  if ("package:caret" %in% search()) {
+    DT <- data.table(x = rnorm(10), y = rnorm(10))
+    cv.ctrl <- trainControl(method = 'repeatedcv', number = 5, repeats = 1)
+    fit <- train(y ~ x, data = DT, 'lm', trControl = cv.ctrl)
+    test(1383.4, names(DT), c("x", "y"))
+  }
+}
+
+
+if ("package:reshape" %in% search()) {
+  warning("Package 'reshape' is loaded. We no longer test with 'reshape' loaded due to issues when both 'reshape2' and 'reshape' are loaded and :: namespace prefix has not been used. Please upgrade to 'reshape2'.")
+}
+
+
+
+# If xts is loaded, this'll just test xts's last. Ok as they're consistent, for vectors.
+# xts's last returns a one row data.table ok (setDT is needed to pass strict selfrefok(), otherwise the first := heals it.)
+# But not true when DT is a one column data.table/data.frame, see below.
+if ("package:xts" %in% search()) {  # e.g. when run via R CMD check
+    x = xts(1:100, Sys.Date()+1:100)
+    test(841, last(x,10), x[91:100,])
+    # The important thing this tests is that data.table's last() dispatches to xts's method when data.table is loaded above xts.
+    # But that isn't tested by R CMD check because xts is loaded above data.table, there.
+    # So to make this test relevant, in a fresh R session type: "require(xts);require(data.table);test.data.table()"
+    #                                              rather than: "require(data.table);require(xts);test.data.table()"
+    # Which was the main thrust of bug#2312 fixed in v1.8.3
+} else {
+    cat("Test 841 not run. If required call library(xts) first.\n")
+    # So these won't run from R CMD check (deliberately, for now) ...
+    ans = if ("package:gdata" %in% search()) list(89) else 89
+    test(842, last(list("a",1:2,89)), ans)  # xts's last and gdata::last returns a one item list here. Would prefer it to return the item itself.
+    DT = data.table(a=1:3)
+    test(842.1, last(DT), DT[3L])
+    # xts's last returns a 3L atomic here for 1 column data.frame, strangely. We wish for the last row, consistently. I tried
+    # providing a last.data.table method and using Enhances and Imports in DESCRIPTION with import() and S3method() in
+    # NAMESPACE but nothing I tried made last.data.table available to xts's last if xts was loaded above data.table (which was
+    # frustrating to test as well, see comment to test 839 above).
+}
+
+# data.table-xts conversion #882
+
+if ("package:xts" %in% search()) {
+    # Date index
+    dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
+    xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
+    dt_xt = as.data.table(xt)
+    xt_dt = as.xts.data.table(dt)
+    test(1465.1, all.equal(dt, dt_xt, check.attributes = FALSE))
+    test(1465.2, xt, xt_dt)
+    # POSIXct index
+    dt <- data.table(index = as.POSIXct(as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
+    xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
+    dt_xt = as.data.table(xt)
+    xt_dt = as.xts.data.table(dt)
+    test(1465.3, all.equal(dt, dt_xt, check.attributes = FALSE))
+    test(1465.4, xt, xt_dt)
+    # index types returned from to.period
+    dt = data.table(index = as.Date((as.Date("2014-12-12") - 729):as.Date("2014-12-12"), origin = "1970-01-01"), quantity = as.numeric(rep(c(1:5), 73)), value = rep(c(1:73) * 100, 5))
+    xt = as.xts(matrix(data = c(dt$quantity, dt$value), ncol = 2, dimnames = list(NULL, c("quantity", "value"))), order.by = dt$index)
+    xt_w = xts::to.weekly(xt)
+    xt_dt_xt_w = as.xts.data.table(as.data.table(xt_w))
+    xt_m = xts::to.monthly(xt)
+    xt_dt_xt_m = as.xts.data.table(as.data.table(xt_m))
+    xt_q = xts::to.quarterly(xt)
+    xt_dt_xt_q = as.xts.data.table(as.data.table(xt_q))
+    xt_y = xts::to.yearly(xt)
+    xt_dt_xt_y = as.xts.data.table(as.data.table(xt_y))
+    test(1465.5, all.equal(xt_w, xt_dt_xt_w, check.attributes = FALSE))
+    test(1465.6, all.equal(xt_m, xt_dt_xt_m, check.attributes = FALSE))
+    test(1465.7, all.equal(xt_q, xt_dt_xt_q, check.attributes = FALSE))
+    test(1465.8, all.equal(xt_y, xt_dt_xt_y, check.attributes = FALSE))
+}
+
+
+# test xts's last()
+if ("package:xts" %in% search()) {
+    test(1531, xts::last(1:5), 5L)
+}
+
+if (!"package:xts" %in% search()) {
+    # #1347, xts issue from Joshua
+    x = as.Date(1:5, origin="2015-01-01")
+    test(1559.11, last(x), tail(x, 1L))
+} else {
+    test(1559.12, last(.xts(1:3,1:3)), .xts(1:3, 1:3)[3, ])
+}
+
+# fix for #1484
+if ("package:xts" %in% search()) {
+    x = xts::as.xts(8, order.by = as.Date("2016-01-03"))
+    test(1589, all.equal(as.data.table(x), data.table(index = as.Date("2016-01-03"), V1 = 8), check.attributes=FALSE))
+}
+
+# as.Date.IDate won't change the class if xts package loaded #1500
+if ("package:zoo" %in% search()) {
+    x = as.IDate("2016-01-15")
+    require(zoo)
+    test(1662, class(as.Date(x)), "Date")
+} else {
+    cat("Test 1662 not run. If required call library(zoo) first.\n")
+}
+
+# IDate support in as.xts.data.table #1499
+if ("package:xts" %in% search()) {
+    dt <- data.table(date = c(as.IDate("2014-12-31"),
+                              as.IDate("2015-12-31"),
+                              as.IDate("2016-12-31")),
+                     nav = c(100,101,99),
+                     key = "date")
+    dt.xts <- as.xts.data.table(dt)
+    test(1663, dt.xts[1L], xts::xts(data.table(nav=100), order.by=as.Date("2014-12-31")))
+} else {
+    cat("Test 1663 not run. If required call library(xts) first.\n")
+}
+
+if ("package:nanotime" %in% search()) {
+  DT = data.table(A=nanotime(tt<-c("2016-09-28T15:30:00.000000070Z",
+                                   "2016-09-29T23:59:00.000000001Z",
+                                   "2016-09-29T23:59:00.000000999Z",
+                                   "1970-01-01T00:01:01.000001000Z",
+                                   "1970-01-01T00:00:00.000000000Z",
+                                   "1969-12-31T23:59:59.999999999Z",
+                                   "1969-12-31T23:59:59.000000089Z",
+                                   "1969-12-31T12:13:14.000000000Z",
+                                   "1969-12-31T12:13:14.999999999Z",
+                                   "1969-12-31T12:13:14.000000001Z",
+                                   "1967-03-15T00:00:00.300000002Z",
+                                   "1967-03-15T23:59:59.300000002Z")))
+  test(1752, capture.output(fwrite(DT, verbose=FALSE))[-1], tt)
+} else {
+  cat("Test 1752 not run. If required call library(nanotime) first.\n")
+}
+
+if ("package:nlme" %in% search()) {
+  # commented out to be consistent with base R, as #1078 and #1128 are more common cases..
+  # until we can find a workaround for this, I'm commenting this one..
+  # Search for "Fix for #1078" for the tests..
+  # test(527, {x=Orthodont;tt=lme(distance ~ age, data=x); tt[["data"]]=NULL; tt},
+  #           {x=as.data.table(Orthodont);tt=lme(distance ~ age, data=x);tt[["data"]]=NULL;tt})
+  test(528, {x=iris;tt=groupedData( Sepal.Length ~ Sepal.Width | Species, data=x);attr(tt,"class")=NULL;attr(tt,"FUN")=NULL;tt},
+            {x=as.data.table(iris);tt=groupedData( Sepal.Length ~ Sepal.Width | Species, data=x);attr(tt,"class")=NULL;attr(tt,"FUN")=NULL;attr(tt,".internal.selfref")=NULL;tt})
+}
+
+if ("package:bit64" %in% search()) {
+  # these don't pass UBSAN/USAN because of the overflow being tested here, so just over here
+  test(1730.6, as.character((as.integer64(2^62)-1)*2+1), "9223372036854775807")
+  test(1730.7, as.character((as.integer64(2^62)-1)*2+2), NA_character_, warning="integer64 overflow")
+  test(1730.8, as.character(-(as.integer64(2^62)-1)*2-1), "-9223372036854775807")
+  test(1730.9, as.character(-(as.integer64(2^62)-1)*2-2), NA_character_, warning="integer64.*flow")
+}
+
+# fix for bug #5069
+if ("package:gdata" %in% search()) {
+    DT <- data.table(a = c('asdfasdf','asdf','asdgasdgasdgasdg','sdg'), b = runif(4,0,1))
+    test(1135, write.fwf(DT, f<-tempfile()), NULL)
+    unlink(f)
+}
+
+if ("package:GenomicRanges" %in% search()) {
+    setcolorder(y, c("chr", "val", "pos1", "pos2"))
+    ans1 = foverlaps(x, y, type="any", by.x=c("chr", "start", "end"), by.y=c("chr", "pos1", "pos2"), which=TRUE, nomatch=0L)
+    test(1372.3, foverlaps(x,y,by.x=1:3, nomatch=0L), data.table(chr=x$chr[2:5], y[c(2,3,3,3), -1, with=FALSE], x[2:5, 2:3, with=FALSE]))
+    gr <- function(x) {
+        GRanges(Rle(x[[1]]), IRanges(start=x[[2]], end=x[[3]]))
+    }
+    fo <- function(gr1, gr2, ...) {
+        olaps = findOverlaps(gr1, gr2, ...)
+        if (is.vector(olaps)) return(olaps)
+        ans = setDT(list(xid=queryHits(olaps), yid=subjectHits(olaps)))
+        setorder(ans)
+        ans
+    }
+    test(1372.4, setorder(ans1), fo(gr(x), gr(y[, c(1,3,4), with=FALSE]), type="any", select="all"))
+
+    runs = 3L # repeat 3 times..
+    types=c("any", "within", "start", "end")
+    mults=c("all", "first", "last")
+    maxgap=0L; minoverlap=1L
+    verbose=FALSE; which=TRUE
+    test_no <- 1372.4
+    for (run in seq_len(runs)) {
+        n1 = max(50L, sample(1e2L, 1, FALSE))
+        n2 = max(50L, sample(1e2L, 1, FALSE))
+        N = max(100L, sample(1e3L, 1, FALSE))
+
+        i1 = sample(N, n1, TRUE)
+        i2 = sample(N, n1, TRUE)
+        start = pmin(i1,i2)
+        end = pmax(i1,i2)
+        chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
+        i = setDT(list(chr=chr, start=start, end=end))
+
+        i1 = sample(N, n2, TRUE)
+        i2 = sample(N, n2, TRUE)
+        start = pmin(i1,i2)
+        end = pmax(i1,i2)
+        chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
+        x = setDT(list(chr=chr, start=start, end=end))
+        setkey(x); setkey(i)
+        for (type in types) {
+            for (mult in mults) {
+                # data.table overlap join
+                nomatch = ifelse(mult == "all", 0L, NA_integer_)
+                ans1 = foverlaps(i, x, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
+                ans2 = fo(gr(i), gr(x), type=type, select=mult)
+                test_no = signif(test_no+.01, 7)
+                # cat("test =", test_no, ", i = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
+                test(test_no, ans1, ans2)
+            }
+        }
+    }
+}
+
+# That data.table-unaware code in packages like knitr still work
+if ("package:knitr" %in% search()) {
+    DT = data.table(x=1, y=2)
+    test(1395, kable(DT), output="x.*y.*1.*2")  # kable in knitr v1.6 calls DF[...] syntax
+} else {
+    cat("Test 1395 not run. If required call library(knitr) first.\n")
+}
+
+# for plm package
+if ("package:plm" %in% search()) {
+    set.seed(45L)
+    x  = data.table(V1=c(1L,2L), V2=LETTERS[1:3], V3=round(rnorm(4),4), V4=1:12)
+    px = pdata.frame(x, index=c("V2", "V4"), drop.index=FALSE, row.names=TRUE)
+    test(1517.5, class(as.data.table(px)), class(x))
+    test(1517.6, class(setDT(px)), class(x))
+}
+
+# setDTthreads(2) was at the top of this file (tests.Rraw). Since CRAN's policy is max two.
+# However, under UBSAN and ASAN, threads are limited to 1 thread, so only run this test when we have 2 threads.
+if (.Platform$OS.type!="windows" && getDTthreads()==2) {
+  # On Windows: "'mc.cores' > 1 is not supported on Windows".
+  # parallel package isn't parallel on Windows, but data.table is.
+  if ("package:parallel" %in% search()) {   #1745 and #1727
+    lx <- replicate(4, runif(1e5), simplify=FALSE)
+    f <- function(mc.cores = 2, threads = 2) {
+      setDTthreads(threads)
+      invisible(mclapply(lx, function(x) fsort(x), mc.cores = mc.cores))
+    }
+    f(1, 1) # was always ok
+    f(2, 1) # was always ok
+    f(1, 2) # was always ok
+    f(2, 2) # Used to hang. Now should not because data.table auto switches to single threaded
+            # Commenting out avoid_openmp_hang_within_fork() confirms this test catches catches the hang
+    test(1705, getDTthreads()==1) # Stays in single-threaded mode after returning from mclapply's fork
+    setDTthreads(2)
+    test(1706, getDTthreads()==2) # User returned to multi-threaded after fork.
+  } else {
+    cat("Tests 1705 and 1706 not run. If required call library(parallel) first.\n")
+  }
+}
+

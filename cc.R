@@ -30,7 +30,6 @@ sourceDir <- function(path=getwd(), trace = TRUE, ...) {
 }
 
 cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) {
-  suppressMessages(library(bit64))
   gc()
   try(detach("package:data.table"),silent=TRUE)
 

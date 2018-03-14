@@ -1,4 +1,4 @@
-test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
+test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE) {
   if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
@@ -7,40 +7,46 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
     d = file.path(d, "inst/tests")
     # nocov end
   } else {
-    # R CMD check and user running test.data.table()
+    # i) R CMD check and ii) user running test.data.table()
     d = paste0(getNamespaceInfo("data.table","path"),"/tests")
   }
   # for (fn in dir(d,"*.[rR]$",full=TRUE)) {  # testthat runs those
+
+  stopifnot( !(with.other.packages && benchmark) )
+  fn = if (with.other.packages) "other.Rraw"
+       else if (benchmark) "benchmark.Rraw"
+       else "tests.Rraw"
+  fn = file.path(d, fn)
+  if (!file.exists(fn)) stop(fn," does not exist")
+
+  oldverbose = options(datatable.verbose=verbose)
   oldenc = options(encoding="UTF-8")[[1L]]  # just for tests 708-712 on Windows
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
 
-  envirs <- list()
-  for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
-    cat("Running",fn,"\n")
-    oldverbose = options(datatable.verbose=verbose)
-    envirs[[fn]] = new.env(parent=.GlobalEnv)
-    assign("testDir", function(x)file.path(d,x), envir=envirs[[fn]])
-    if(isTRUE(silent)){
-      try(sys.source(fn,envir=envirs[[fn]]), silent=silent)  # nocov
-    } else {
-      sys.source(fn,envir=envirs[[fn]])
-    }
-    options(oldverbose)
+  cat("Running",fn,"\n")
+  env = new.env(parent=.GlobalEnv)
+  assign("testDir", function(x)file.path(d,x), envir=env)
+  assign("nfail", 0L, envir=env)
+  assign("ntest", 0L, envir=env)
+  assign("whichfail", NULL, envir=env)
+  setDTthreads(2) # explicitly limit to 2 so as not to breach CRAN policy (but tests are small so should not use more than 2 anyway)
+  assign("started.at", proc.time(), envir=env)
+  assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
+  assign("timings", data.table( ID = seq_len(3000L), time=0.0, nTest=0L ), envir=env)   # test timings aggregated to integer id
+  # It doesn't matter that 3000L is far larger than needed for other and benchmark.
+  if(isTRUE(silent)){
+    try(sys.source(fn,envir=env), silent=silent)  # nocov
+  } else {
+    sys.source(fn,envir=env)
   }
-  options(encoding=oldenc)
+  options(oldverbose)
+  options(oldenc)
   # Sys.setlocale("LC_CTYPE", oldlocale)
-  invisible(sum(sapply(envirs, `[[`, "nfail"))==0)
+  setDTthreads(0)
+  invisible(env$nfail==0)
 }
-
-# Define test() and its globals here, for use in dev
-# But primarily called by test.data.table() calling inst/tests/tests.Rraw
-# Initialized at the top of tests.Raw ...
-# nfail = ntest = 0L
-# whichfail = NULL
-# timings = data.table( time=rep(0.0, 3000L), calls=0L )
-# .devtesting = TRUE
 
 # nocov start
 compactprint <- function(DT, topn=2L) {

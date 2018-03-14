@@ -1,33 +1,11 @@
 
-if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
-    require(data.table)   # in dev the package should not be loaded
-    inst_pkgs = rownames(installed.packages())
-    sugg_pkgs = c("bit64", "knitr", "nanotime", "chron", "reshape2", "testthat", "fastmatch", "nlme", "GenomicRanges", "xts", "gdata", "curl", "zoo", "plm", "rmarkdown", "parallel")
-    lapply(setNames(sugg_pkgs, nm = sugg_pkgs), function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))  # require() so it warns but doesn't halt if not available
-    .devtesting=FALSE
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+    if ("package:data.table" %in% search())
+      stop("This is dev but installed data.table is loaded as well. Please unload it to prevent potential conflicts in dev.")
+    if ((tt<-compiler::enableJIT(-1))>0)
+      cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
 } else {
-    # Matt has suppressMessages(require(bit64)) in .Rprofile, to run tests with that in dev routinely.
-    .devtesting=TRUE
-}
-
-setDTthreads(2)
-# Tests are small and quick so should themselves switch to 1 thread, but explicity limit to 2
-# so as not to breach CRAN policy, just in case.
-
-nfail = ntest = 0L
-whichfail = NULL
-
-.timingtests = FALSE
-started.at = proc.time()
-lasttime = proc.time()[3L]
-
-timings = data.table( ID = seq_len(3000L), time=0.0, nTest=0L )   # test timings aggregated to integer id
-
-# Test default values in case user set global option. These are restored
-# at the end of this file.
-oldalloccol = options(datatable.alloccol=1024L)
-
-if (!.devtesting) {
+    require(data.table)
     # Make symbols to the installed version's ::: so that we can i) test internal-only not-exposed R functions
     # in the test suite when user runs test.data.table() from installed package AND ii) so that in dev the same
     # tests can be used but in dev they test the package in .GlobalEnv. If we used ::: throughout tests, that
@@ -79,10 +57,15 @@ if (!.devtesting) {
     second = data.table::second           # S4Vectors
     dcast = data.table::dcast             # reshape2
     melt = data.table::melt               # reshape2
-} else {
-  if ((tt<-compiler::enableJIT(-1))>0)
-    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test\n", sep="")
+    last = data.table::last               # xts
 }
+
+test_bit64 = suppressWarnings(suppressMessages(require(bit64)))
+if (!test_bit64) {
+  cat("** Package bit64 is not installed. Tests using it will be skipped.\n")
+}
+# Test default values in case user set global option. These are restored at the end of this file.
+oldalloccol = options(datatable.alloccol=1024L)
 
 ##########################
 
@@ -469,47 +452,6 @@ DT = IDateTime(strptime(datetimes,"%Y %b%d %H:%M:%S"))
 test(168.1, DT[,as.data.frame(itime)], data.frame(V1=as.ITime(x<-c("09:29:16","10:42:40","23:47:12","01:06:01","11:35:34","11:51:09"))))
 test(168.2, as.character(DT[,as.POSIXct(itime,tz="UTC")]), paste(as.Date(Sys.time()),x))
 test(168.3, as.character(DT[,as.POSIXct(idate,tz="UTC")]), c("2011-11-18","2011-11-18","2011-11-18","2011-11-19","2011-11-19","2011-11-19"))
-
-
-if (FALSE) {
-  # TODO test in separate compatibility package as ggplot adds minutes to Travis test times (dependency chain and running too)
-
-  test(168.1, names(print(ggplot(DT,aes(b,f))+geom_point()))[c(1,3)], c("data","plot"))
-  test(168.2, DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 to reduce time needed for ggplot2 to plot
-  # Test reported by C Neff on 11 Oct 2011, needs package 'hexbin'
-  test(168.3, names(print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp)))[c(1,3)], c("data","plot"))
-
-  # Test plotting ITime with ggplot2 which seems to require an as.data.frame method for ITime, #1713
-  datetimes = c("2011 NOV18 09:29:16", "2011 NOV18 10:42:40", "2011 NOV18 23:47:12",
-            "2011 NOV19 01:06:01", "2011 NOV19 11:35:34", "2011 NOV19 11:51:09")
-  DT = IDateTime(strptime(datetimes,"%Y %b%d %H:%M:%S"))
-  test(168.4, print(DT[,qplot(idate,itime)])$ranges, print(qplot(DT$idate,DT$itime))$ranges)
-  test(168.5, print(DT[,qplot(idate,as.POSIXct(itime,tzone=""))])$ranges, print(qplot(idate,as.POSIXct(itime,tzone=""),data=DT))$ranges)
-  try(graphics.off(),silent=TRUE)
-
-  # Test key is dropped when non-dt-aware packages (here, plyr) reorders rows of data.table.
-  DT = data.table(a=1:10,b=1:2,key="a")
-  test(304, arrange(DT,b), data.table(a=INT(1,3,5,7,9,2,4,6,8,10),b=INT(1,1,1,1,1,2,2,2,2,2)))  # testing no key here, too
-
-  # Fix for #825
-  if ("package:reshape" %in% search()) {
-    DT <- data.table(ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L), DATUM = structure(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209), class = "Date"), N = c(25L, 9L, 23L, 29L, 26L, 26L, 27L, 28L, 39L, 39L, 38L, 36L, 40L, 39L, 19L, 20L, 19L), rank = c(2, 1, 3, 1, 2, 3, 4, 5, 1, 2, 3, 4, 6, 5, 2, 1, 3))
-    ans = cast(DT, ID ~ rank, value = "DATUM")
-    test(1383.3, names(DT), c("ID", "DATUM", "N", "rank"))
-    # The bug was that names(DT) changed, hence testing DT here not ans. Same fix tested next with caret too.
-    # When running this test on 13 Mar 2018, I noticed that reshape::cast doesn't retain the Date class and returns just numbers. Now we don't
-    # test with reshape, I copied the test to the reshape2 section, changed it to use dcast and tested the result explicitly.
-  }
-  # Fix for #476
-  # caret seems heavy (plyr, reshape2 and withr). win-builder halts at this point consistently, but we pass on Travis and locally.
-  # So I put the win-builder fail down to resource issues, which are good to put in a separate package anyway.
-  if ("package:caret" %in% search()) {
-    DT <- data.table(x = rnorm(10), y = rnorm(10))
-    cv.ctrl <- trainControl(method = 'repeatedcv', number = 5, repeats = 1)
-    fit <- train(y ~ x, data = DT, 'lm', trControl = cv.ctrl)
-    test(1383.4, names(DT), c("x", "y"))
-  }
-}
 
 # test of . in formula, using inheritance
 DT = data.table(y=1:100,x=101:200,y=201:300,grp=1:5)
@@ -1399,11 +1341,12 @@ DT=data.table(x=c("a", "a", "b", "b"), y=c("a", "a", "b", "b"), key="x")
 test(475, unique(DT, by=key(DT)), data.table(x=c("a","b"),y=c("a","b"),key="x"))
 
 # Test character and list columns in tables with many small groups
-N = if (.devtesting) 1000L else 100L
+N = 100L
 DT = data.table(grp=1:(2*N),char=sample(as.hexmode(1:N),4*N,replace=TRUE),int=sample(1:N,4*N,replace=TRUE))
 ans = DT[,list(p=paste(unique(char),collapse=","),
                i=list(unique(int))), by=grp]
-test(476, nrow(as.matrix(ans)), 2L*N)   # The as.matrix triggers the "'getCharCE' must be called on a CHARSXP", or similar symptom of earlier corruption, before fix in dogroups.c.
+test(476, nrow(as.matrix(ans)), 2L*N)
+# The as.matrix triggerd the "'getCharCE' must be called on a CHARSXP", or similar symptom of earlier corruption, before the fix in dogroups.c.
 
 # Test that plonking from calling scope works, even after removing, and column copy via := is ok too.
 DT = data.table(a=1:3)
@@ -1553,30 +1496,6 @@ test(1096.4, set(DT1, i=NULL, j=7L, value=5L), error="Item 1 of column numbers i
 # Test that data.frame incompability is fixed, came to light in Feb 2012
 DT = data.table(name=c('a','b','c'), value=1:3)
 test(526, base::droplevels(DT[ name != 'a' ]), data.table(name=c('b','c'),value=2:3))   # base:: because we'll implement a fast droplevels, too.
-
-if ("package:nlme" %in% search()) {
-    # commented out to be consistent with base R, as #1078 and #1128 are more common cases..
-    # until we can find a workaround for this, I'm commenting this one..
-    # Search for "Fix for #1078" for the tests..
-    # test(527, {x=Orthodont;tt=lme(distance ~ age, data=x); tt[["data"]]=NULL; tt},
-    #           {x=as.data.table(Orthodont);tt=lme(distance ~ age, data=x);tt[["data"]]=NULL;tt})
-    test(528, {x=iris;tt=groupedData( Sepal.Length ~ Sepal.Width | Species, data=x);attr(tt,"class")=NULL;attr(tt,"FUN")=NULL;tt},
-              {x=as.data.table(iris);tt=groupedData( Sepal.Length ~ Sepal.Width | Species, data=x);attr(tt,"class")=NULL;attr(tt,"FUN")=NULL;attr(tt,".internal.selfref")=NULL;tt})
-}
-
-# Speed test of chmatch vs match.
-# sortedmatch was 40 times slower and the wrong approach, removed in v1.8.0.
-# Example from Tom in Jan 2011 who first found and raised the issue with sortedmatch.
-if (.timingtests) {
-  cat("Running 30sec (max) test ...");flush.console()
-  n = 1e6
-  a = as.character(as.hexmode(sample(n,replace=TRUE)))
-  b = as.character(as.hexmode(sample(n,replace=TRUE)))
-  test(529, system.time(ans1<-match(a,b))["user.self"] > system.time(ans2<-chmatch(a,b))["user.self"])
-  test(530, ans1, ans2)
-  # sorting a and b no longer makes a difference since both match and chmatch work via hash in some way or another
-  cat("done\n")
-}
 
 # Test that .set_row_names() is maintained on .SD for each group
 DT = data.table(a=INT(1,1,2,2,2,3,3,3,3),b=1:9)
@@ -1742,23 +1661,6 @@ test(602, base::order(DT$x,DT$y), 1:20)
 test(602.1, setkey(copy(DT), x, y), DT)
 test(602.2, setkey(copy(DT), x), {setkey(DT, NULL); setkey(DT, x)})
 
-# Test that as.list.data.table no longer copies via unclass, so speeding up sapply(DT,class) and lapply(.SD,...) etc, #2000
-N = if (.devtesting) 1e6 else 1e4
-DT = data.table(a=1:N,b=1:N,c=1:N,d=1:N)   # 15MB in dev testing, but test with N=1e7
-if (.devtesting) test(603, system.time(sapply(DT,class))["user.self"] < 0.1)
-
-# Tests on loopability, i.e. that overhead of [.data.table isn't huge, as in speed example in example(":=")
-# These are just to catch slow down regressions where instead of 1s it takes 40s
-if (.devtesting) {  # TO DO: find more robust way to turn these on for CRAN checks
-test(604, system.time(for (i in 1:1000) nrow(DT))["user.self"] < 0.5)
-test(605, system.time(for (i in 1:1000) ncol(DT))["user.self"] < 0.5)
-test(606, system.time(for (i in 1:1000) length(DT[[1L]]))["user.self"] < 0.5) # much faster than nrow, TO DO: replace internally
-}
-# TO DO: move to stress test script off CRAN ...
-# DT = as.data.table(matrix(1L,nrow=100000,ncol=100))
-# test(607, system.time(for (i in 1:1000) DT[i,V1:=i])["user.self"] < 10)  # 10 to be very wide margin for CRAN
-# test(608, DT[1:1000,V1], 1:1000)
-
 # Crash bug of chorder(character()), #2026
 test(609, chorder(character()), base::order(character()))
 test(610, chorder(""), base::order(""))
@@ -1882,41 +1784,35 @@ setattr(DT,"class",c("data.table","data.frame"))
 test(644, setkey(DT,a), error="Column 2 is length 2 which differs from length of column 1 (3)")
 test(645, setkey(DT,b), error="Column 2 is length 2 which differs from length of column 1 (3)")
 
-# Test faster mean.  Example from (now not needed as much) data.table wiki point 3.
-# Example is a lot of very small groups.
-set.seed(100)
-n=1e5  # small n so as not to overload daily CRAN checks.
-DT=data.table(grp1=sample(1:750, n, replace=TRUE),
-              grp2=sample(1:750, n, replace=TRUE),
+# Test faster mean with a lot of very small groups. Example from (now not needed as much) data.table wiki point 3.
+# benchmarks.Rraw contains the same, to be scaled up.
+set.seed(9)
+n=1e4  # very small n so as not to overload daily CRAN checks.
+DT=data.table(grp1=sample(1:150, n, replace=TRUE),
+              grp2=sample(1:150, n, replace=TRUE),
               x=rnorm(n),
               y=rnorm(n))
 DT[c(2,5),x:=NA]  # seed chosen to get a group of size 2 and 3 in the first 5 to easily inspect.
 DT[c(3,4),y:=NA]
-tt1 = system.time(ans1<-DT[,list(mean(x),mean(y)),by=list(grp1,grp2)])    # 1.1s
-tt2 = system.time(ans2<-DT[,list(.Internal(mean(x)),.Internal(mean(y))),by=list(grp1,grp2)])  # 1.1s
+tt1 = system.time(ans1<-DT[,list(mean(x),mean(y)),by=list(grp1,grp2)])
+tt2 = system.time(ans2<-DT[,list(.Internal(mean(x)),.Internal(mean(y))),by=list(grp1,grp2)])
 basemean = base::mean  # to isolate time of `::` itself
-tt3 = system.time(ans3<-DT[,list(basemean(x),basemean(y)),by=list(grp1,grp2)])   # 11s
+tt3 = system.time(ans3<-DT[,list(basemean(x),basemean(y)),by=list(grp1,grp2)])
 test(646, ans1, ans2)
 test(647, ans1, ans3)
 # this'll error with `valgrind` because of the 'long double' usage in gsumm.c (although I wonder if we need long double precision).
 # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
 # http://comments.gmane.org/gmane.comp.debugging.valgrind/10340
 test(648, any(is.na(ans1$V1)) && !any(is.nan(ans1$V1)))
-# test 649 removed as compared 1.1s to 1.1s
-if (.devtesting) test(650, tt1["user.self"] < tt3["user.self"])
-
-tt1 = system.time(ans1<-DT[,list(mean(x,na.rm=TRUE),mean(y,na.rm=TRUE)),by=list(grp1,grp2)])   # 2.0s
-tt2 = system.time(ans2<-DT[,list(mean.default(x,na.rm=TRUE),mean.default(y,na.rm=TRUE)),by=list(grp1,grp2)])  # 5.0s
+tt1 = system.time(ans1<-DT[,list(mean(x,na.rm=TRUE),mean(y,na.rm=TRUE)),by=list(grp1,grp2)])
+tt2 = system.time(ans2<-DT[,list(mean.default(x,na.rm=TRUE),mean.default(y,na.rm=TRUE)),by=list(grp1,grp2)])
 test(651, ans1, ans2)
 test(652, any(is.nan(ans1$V1)))
-if (.devtesting) test(653, tt1["user.self"] < tt2["user.self"])
-
 # See FR#2067. Here we're just testing the optimization of mean and lapply, should be comparable to above
 tt2 = system.time(ans2<-DT[,lapply(.SD,mean,na.rm=TRUE),by=list(grp1,grp2)])
 setnames(ans2,"x","V1")
 setnames(ans2,"y","V2")
 test(654, ans1, ans2)
-test(655, abs(tt1["user.self"] - tt2["user.self"])<2.0)  # unoptimized tt2 takes 30 seconds rather than 2. The difference between tt1 and tt2 is under 0.2 seconds usually, so 2.0 is very large margin for error to ensure it's not 30secs.
 
 test(656, DT[,mean(x),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
 test(657, DT[,list(mean(x)),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
@@ -2284,9 +2180,8 @@ Y = copy(X)
 X[4,b:=3L]     # create a dup group, to force allLen1=FALSE
 setkey(X)
 test(819, system.time(X[Y,allow.cartesian=TRUE])["user.self"] < 5)
-# Many minutes in 1.8.2!  Now well under 1s, but 5s for wide tolerance for CRAN. We like CRAN to tell us if any changes
-# in R or elsewhere cause the 2 minute bug to return. Hence not excluded by an if(.devtesting)
-
+# Many minutes in 1.8.2!  Now well under 1s, but 5s for wide tolerance for CRAN. We'd like CRAN to tell us if any changes
+# in R or elsewhere cause the 2 minute (!) bug to return. Hence not moving out to benmark.Rraw.
 test(820, system.time(X[Y,mult="first"])["user.self"] < 5)
 
 # Optimization of lapply(,"+"), #2212
@@ -2341,31 +2236,10 @@ DT = data.table(a=1:3,b=1:6)
 test(838, DT[,c:=scale(b), by=a][,c:=as.integer(1000*c)], data.table(a=1:3,b=1:6,c=rep(as.integer(1000*scale(1:2)), each=3)))
 
 # Test data.table's last(). (last is used internally in data.table, too).
-test(839, last(1:10), 10L)   # If xts is loaded, this'll just test xts's last. Ok as they're consistent, for vectors.
+# Compatibility with xts::last is tested in other.Rraw
+test(839, last(1:10), 10L)
 DT = data.table(a=1:3,b=4:6)
-test(840, setDT(last(DT)), DT[3L])
-# xts's last returns a one row data.table ok (setDT is needed to pass strict selfrefok(), otherwise the first := heals it.)
-# But not true when DT is a one column data.table/data.frame, see below.
-if ("package:xts" %in% search()) {  # e.g. when run via R CMD check
-    x = xts(1:100, Sys.Date()+1:100)
-    test(841, last(x,10), x[91:100,])
-    # The important thing this tests is that data.table's last() dispatches to xts's method when data.table is loaded above xts.
-    # But that isn't tested by R CMD check because xts is loaded above data.table, there.
-    # So to make this test relevant, in a fresh R session type: "require(xts);require(data.table);test.data.table()"
-    #                                              rather than: "require(data.table);require(xts);test.data.table()"
-    # Which was the main thrust of bug#2312 fixed in v1.8.3
-} else {
-    cat("Test 841 not run. If required call library(xts) first.\n")
-    # So these won't run from R CMD check (deliberately, for now) ...
-    ans = if ("package:gdata" %in% search()) list(89) else 89
-    test(842, last(list("a",1:2,89)), ans)  # xts's last and gdata::last returns a one item list here. Would prefer it to return the item itself.
-    DT = data.table(a=1:3)
-    test(842.1, last(DT), DT[3L])
-    # xts's last returns a 3L atomic here for 1 column data.frame, strangely. We wish for the last row, consistently. I tried
-    # providing a last.data.table method and using Enhances and Imports in DESCRIPTION with import() and S3method() in
-    # NAMESPACE but nothing I tried made last.data.table available to xts's last if xts was loaded above data.table (which was
-    # frustrating to test as well, see comment to test 839 above).
-}
+test(840, last(DT), DT[3L])
 
 # Test L[[1L]][,:=] updates by reference, #2204
 l = list(data.table(a=1:3), data.table(b=4:6))
@@ -2547,7 +2421,7 @@ for (ne in seq_along(eols)) {
     test(896+testIDtail, fread(f,na.strings=""), if (nc==1) rbind(headDT, list(NA)) else headDT)
     unlink(f)
 }}}
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
     n = 2100
     # To test out-of-sample type diffs, nrow needs to be more than 100*10*2.  Under that, all rows are sampled.
     DT = data.table( a=sample(1:1000,n,replace=TRUE),
@@ -2571,8 +2445,6 @@ if ("package:bit64" %in% search()) {
     test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2")), verbose=TRUE),
                 DT, output="Rereading 0 columns due to out-of-sample type exceptions")
     unlink(f)
-} else {
-    cat("Tests 897-899 not run. If required call library(bit64) first.\n")
 }
 
 # getwd() has been set by test.data.table() to the location of this tests.Rraw file. Test files should be in the same directory.
@@ -2912,7 +2784,7 @@ test(1016.1, sapply(suppressWarnings(fread(f,verbose=TRUE)),"class"), c(A="integ
 test(1016.2, fread(f, colClasses = c(A="numeric"), verbose=TRUE), copy(DT)[,A:=as.numeric(A)], output="Rereading 0 columns")
 DT[90, A:="321456789123456"]   # inside the sample
 write.table(DT,f,sep=",",row.names=FALSE,quote=FALSE)
-if ("package:bit64" %in% search()) test(1017.1, fread(f), copy(DT)[,A:=as.integer64(A)])
+if (test_bit64) test(1017.1, fread(f), copy(DT)[,A:=as.integer64(A)])
 test(1017.2, fread(f, integer64="character"), DT)
 unlink(f)
 
@@ -3244,11 +3116,6 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
 #########################################
 # All dcast.data.table tests go in here #
 #########################################
-
-if ("package:reshape" %in% search()) {
-  warning("Package 'reshape' is loaded. We no longer test with 'reshape' loaded due to issues when both 'reshape2' and 'reshape' are loaded and :: namespace prefix has not been used. Please upgrade to 'reshape2'.")
-}
-
 # This test was originally for #825 to test reshape::cast. Matt retained the test and tweaked it to test dcast instead (which retains the Date class, unlike reshape::cast it seems).
 DT = data.table(
   ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L),
@@ -3632,13 +3499,6 @@ test(1134.1, DT[, {a := 1L}], DT2)
 test(1134.2, DT[, {a := 1L; NULL}], error="You have wrapped.*which is ok.*Consider")
 test(1134.3, DT[, {b := 2L}, by=x], DT2[, b:=2L, by=x])
 test(1134.3, DT[, {b := 2L; sum(val)}, by=x], error="You have wrapped.*which is ok.*Consider")
-
-# fix for bug #5069
-if ("package:gdata" %in% search()) {
-    DT <- data.table(a = c('asdfasdf','asdf','asdgasdgasdgasdg','sdg'), b = runif(4,0,1))
-    test(1135, write.fwf(DT, f<-tempfile()), NULL)
-    unlink(f)
-}
 
 # FR #2693 and Gabor's suggestions from here: http://r.789695.n4.nabble.com/Problem-with-FAQ-2-8-tt4668878.html (correcting software according to FAQ 2.8)
 d1 <- data.table(id1 = c(1L, 2L, 2L, 3L), val = 1:4, key = "id1")
@@ -4303,17 +4163,12 @@ if (base::getRversion() < "3.3.0") {
     }
 }
 
-# Test for optimisation of 'order' to 'forder'
+# Test for optimisation of 'order' to 'forder'. Copied to benchmarks.Rraw too.
 set.seed(45L)
-DT <- data.table(x=sample(1e2, 1e6,TRUE), y=sample(1e2, 1e6,TRUE))
+DT = data.table(x=sample(1e2, 1e5, TRUE), y=sample(1e2, 1e5, TRUE))
 old = options(datatable.optimize=Inf)
-t1 = system.time(ans1 <- DT[order(x,-y)])[['elapsed']]   # optimized to forder()
-t2 = system.time(ans2 <- DT[base_order(x,-y)])[['elapsed']]  # not optimized
-test(1241.1, ans1, ans2)
-if (.devtesting) test(1241.2, t1 < t2+0.1)
-# 0.2 < 3.8 on Matt's laptop seems safe enough to test.
-# Even so, 1241.2 has been known to fail, perhaps if system swaps and this R sessions pauses or something?
-# We shouldn't have timing tests here that run on CRAN for this reason.  Hence wrapping with .devtesting
+test(1241, DT[order(x,-y)],       # optimized to forder()
+           DT[base_order(x,-y)])  # not optimized
 options(old)
 
 DT = data.table(a=1:3, b=4:6)
@@ -4598,7 +4453,7 @@ setNumericRounding(0)
 test(1269, forderv(x), base::order(x))
 setNumericRounding(2)   # not affected by rounding
 test(1270, forderv(x), base::order(x))
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
     x = as.integer64(2)^(0:62)
     x = sample(c(x,-x,0))
     if (!inherits(try(bit64::order(x),silent=TRUE), "try-error"))  # if for old version of bit64
@@ -5064,7 +4919,7 @@ test(1319.8, DT[order(list(DT$a, DT$b))], error="First column being ordered is t
 
 # FR #703. Not so extensive testing because test 1223 already tests for everything else extensively. Only integer64 here.
 # this'll be the test for both DT[order(.)] and setorder(.) as both internally uses forder/forderv
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
     set.seed(45L)
     DT <- data.table(x=as.integer64(c(-50, 0, 50, 1e18, 1e-18)), y=sample(5))
     ans1 <- forder(DT, x, na.last=TRUE, decreasing=FALSE)
@@ -5391,7 +5246,7 @@ dt = data.table(AA=sample(c(-2:2), 50, TRUE),
                 CC=sample(c(letters[1:5]), 50, TRUE),
                 DD=sample(c(-2:2), 50, TRUE),
                 EE=sample(as.logical(c(-2:2)), 50, TRUE))
-if ("package:bit64" %in% search()) dt[, DD := as.integer64(DD)]
+if (test_bit64) dt[, DD := as.integer64(DD)]
 test_no = 1369.0
 for (i in seq_along(dt)) {
     col = dt[[i]]
@@ -5423,7 +5278,7 @@ dt = data.table(AA=sample(c(-2:2, NA), 50, TRUE),
                 CC=sample(c(letters[1:5], NA), 50, TRUE),
                 DD=sample(c(-2:2, NA), 50, TRUE),
                 EE=sample(as.logical(c(-2:2, NA)), 50, TRUE))
-if ("package:bit64" %in% search()) dt[, DD := as.integer64(DD)]
+if (test_bit64) dt[, DD := as.integer64(DD)]
 
 for (i in seq_along(dt)) {
     col = dt[[i]]
@@ -5460,7 +5315,7 @@ dt = list(AA=sample(c(NA,-2:2), 50, TRUE),
                 CC=sample(c(NA,letters[1:5]), 50, TRUE),
                 DD=sample(c(NA,-2:2), 50, TRUE),
                 EE=sample(as.logical(c(NA,-2:2)), 50, TRUE))
-if ("package:bit64" %in% search()) dt[["DD"]] = as.integer64(dt[["DD"]])
+if (test_bit64) dt[["DD"]] = as.integer64(dt[["DD"]])
 test_no = 1370.0
 ans = as.list(na.omit(as.data.table(dt)))
 for (i in seq_along(dt)) {
@@ -5493,62 +5348,7 @@ setkey(y, chr, end, start)
 test(1372.2, foverlaps(x, y, by.y=1:3, type="any"), error="The first 3 columns of y's key is not identical to the columns specified in by.y.")
 setkey(y, chr, start, end)
 setnames(y, c("chr", "pos1", "pos2", "val"))
-if ("package:GenomicRanges" %in% search()) {
-    setcolorder(y, c("chr", "val", "pos1", "pos2"))
-    ans1 = foverlaps(x, y, type="any", by.x=c("chr", "start", "end"), by.y=c("chr", "pos1", "pos2"), which=TRUE, nomatch=0L)
-    test(1372.3, foverlaps(x,y,by.x=1:3, nomatch=0L), data.table(chr=x$chr[2:5], y[c(2,3,3,3), -1, with=FALSE], x[2:5, 2:3, with=FALSE]))
-    gr <- function(x) {
-        GRanges(Rle(x[[1]]), IRanges(start=x[[2]], end=x[[3]]))
-    }
-    fo <- function(gr1, gr2, ...) {
-        olaps = findOverlaps(gr1, gr2, ...)
-        if (is.vector(olaps)) return(olaps)
-        ans = setDT(list(xid=queryHits(olaps), yid=subjectHits(olaps)))
-        setorder(ans)
-        ans
-    }
-    test(1372.4, setorder(ans1), fo(gr(x), gr(y[, c(1,3,4), with=FALSE]), type="any", select="all"))
 
-    runs = 3L # repeat 3 times..
-    types=c("any", "within", "start", "end")
-    mults=c("all", "first", "last")
-    maxgap=0L; minoverlap=1L
-    verbose=FALSE; which=TRUE
-    test_no <- 1372.4
-    for (run in seq_len(runs)) {
-        n1 = max(50L, sample(1e2L, 1, FALSE))
-        n2 = max(50L, sample(1e2L, 1, FALSE))
-        N = max(100L, sample(1e3L, 1, FALSE))
-
-        i1 = sample(N, n1, TRUE)
-        i2 = sample(N, n1, TRUE)
-        start = pmin(i1,i2)
-        end = pmax(i1,i2)
-        chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
-        i = setDT(list(chr=chr, start=start, end=end))
-
-        i1 = sample(N, n2, TRUE)
-        i2 = sample(N, n2, TRUE)
-        start = pmin(i1,i2)
-        end = pmax(i1,i2)
-        chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
-        x = setDT(list(chr=chr, start=start, end=end))
-        setkey(x); setkey(i)
-        for (type in types) {
-            for (mult in mults) {
-                # data.table overlap join
-                nomatch = ifelse(mult == "all", 0L, NA_integer_)
-                ans1 = foverlaps(i, x, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
-                ans2 = fo(gr(i), gr(x), type=type, select=mult)
-                test_no = signif(test_no+.01, 7)
-                # cat("test =", test_no, ", i = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
-                test(test_no, ans1, ans2)
-            }
-        }
-    }
-} else {
-    cat("Tests 1372.3+ not run. If required call library(GenomicRanges) first.\n")
-}
 
 # fix for bug in address - #824
 x = 1:10
@@ -5751,7 +5551,7 @@ test(1393.2, rbindlist(list(DT1, DT2, DT3), fill = TRUE, idcol="ID"), ans)
 col = c(1:2, NA_integer_)
 DT = data.table(a=sample(col, 20, TRUE), b=as.numeric(sample(col,20,TRUE)), c=as.logical(sample(col,20,TRUE)), d=as.character(sample(col,20,TRUE)))
 # can't use complete.cases on bit64... will have to test integer64 separately.
-# if ("package:bit64" %in% search()) {
+# if (test_bit64) {
 #   DT[, e := as.integer64(sample(col,20,TRUE))]
 # }
 test_no = 1394
@@ -5763,14 +5563,6 @@ for (i in seq_along(DT)) {
         test(test_no, ans1, ans2)
         0L
     })
-}
-
-# That data.table-unaware code in packages like knitr still work
-if ("package:knitr" %in% search()) {
-    DT = data.table(x=1, y=2)
-    test(1395, kable(DT), output="x.*y.*1.*2")  # kable in knitr v1.6 calls DF[...] syntax
-} else {
-    cat("Test 1395 not run. If required call library(knitr) first.\n")
 }
 
 # dropping secondary keys on update or delete
@@ -6069,7 +5861,7 @@ DT <- data.table(intCol    = sample(c(1:3, NA), n, replace = TRUE),
                  boolCol   = sample(c(TRUE, FALSE, NA), n, replace = TRUE),
                  charCol   = sample(c(LETTERS[1:3], NA), n, replace = TRUE),
                  groupCol  = sample(c("a", "b", "c"), n, replace = TRUE))
-if ("package:bit64" %in% search()) DT[, int64Col := as.integer64(sample(1:3, n, replace = TRUE))]
+if (test_bit64) DT[, int64Col := as.integer64(sample(1:3, n, replace = TRUE))]
 ## get list with unique values excluding NA
 vals <- lapply(DT, function(x) {out <- unique(x); out[!is.na(out)]})
 ## define possible queries for each column.
@@ -6082,7 +5874,7 @@ queries <- list(intCol    = c(paste0("intCol == ", sample(vals$intCol, 1)),
                               paste0("charCol %in% c(NA, ", paste0("'", sample(vals$charCol, 3, replace = TRUE), "'", collapse = ","), ")"),
                               paste0("charCol %chin% c(NA, ", paste0("'", sample(vals$charCol, 3, replace = TRUE), "'", collapse = ","), ")"))
                               )
-if ("package:bit64" %in% search())
+if (test_bit64)
   queries$int64Col = c(paste0("int64Col == ", sample(vals$int64Col, 1)),
                        paste0("int64Col %in% c(NA_integer64_, as.integer64(", paste0(sample(vals$int64Col, 3, replace = TRUE), collapse = ","), "))"))
 ## create all combinations of up to three queries, connected by "&".
@@ -6172,7 +5964,7 @@ quote"\n2,should be ok\n'),
            data.table(A=1:2,B=c('embedded""
 quote','should be ok')))
 
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
     # quoted multiline (scrambled data thanks to #810)
     test(1449, fread(testDir("quoted_multiline.csv"))[c(1,43:44),c(1,22:24),with=FALSE],
            data.table(GPMLHTLN=as.integer64(c("3308386085360","3440245203140","1305220146734")),
@@ -6285,7 +6077,7 @@ test(1463.12, shift(x,1L, type="lead"),     as.numeric(c(2:5, NA)))
 test(1463.13, shift(x,1:2, type="lead"),    list(as.numeric(c(2:5, NA)), as.numeric(c(3:5, NA, NA))))
 test(1463.14, shift(x,1L, 0L, type="lead"), as.numeric(c(2:5, 0L)))
 
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
     x=as.integer64(x)
     test(1463.15, shift(x,1L),                  as.integer64(c(NA, 1:4)))
     test(1463.16, shift(x,1:2),                 list(as.integer64(c(NA, 1:4)), as.integer64(c(NA, NA, 1:3))))
@@ -6355,40 +6147,6 @@ test(1464.12, rleidv(DT, 1:4), error="outside range")
 test(1464.13, rleidv(DT, 1:2), ans<-INT(1,2,3,4,5,6,6,6,7,8,8,9,10,11,12,13,14,15,16,17))
 test(1464.14, rleidv(DT, 2:1), ans)
 test(1464.15, rleidv(DT, c(3,1)), INT(1,1,2,2,3,4,5,5,6,7,8,9,10,11,12,13,14,15,16,17))
-
-# data.table-xts conversion #882
-
-if ("package:xts" %in% search()) {
-    # Date index
-    dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
-    xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
-    dt_xt = as.data.table(xt)
-    xt_dt = as.xts.data.table(dt)
-    test(1465.1, all.equal(dt, dt_xt, check.attributes = FALSE))
-    test(1465.2, xt, xt_dt)
-    # POSIXct index
-    dt <- data.table(index = as.POSIXct(as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
-    xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
-    dt_xt = as.data.table(xt)
-    xt_dt = as.xts.data.table(dt)
-    test(1465.3, all.equal(dt, dt_xt, check.attributes = FALSE))
-    test(1465.4, xt, xt_dt)
-    # index types returned from to.period
-    dt = data.table(index = as.Date((as.Date("2014-12-12") - 729):as.Date("2014-12-12"), origin = "1970-01-01"), quantity = as.numeric(rep(c(1:5), 73)), value = rep(c(1:73) * 100, 5))
-    xt = as.xts(matrix(data = c(dt$quantity, dt$value), ncol = 2, dimnames = list(NULL, c("quantity", "value"))), order.by = dt$index)
-    xt_w = xts::to.weekly(xt)
-    xt_dt_xt_w = as.xts.data.table(as.data.table(xt_w))
-    xt_m = xts::to.monthly(xt)
-    xt_dt_xt_m = as.xts.data.table(as.data.table(xt_m))
-    xt_q = xts::to.quarterly(xt)
-    xt_dt_xt_q = as.xts.data.table(as.data.table(xt_q))
-    xt_y = xts::to.yearly(xt)
-    xt_dt_xt_y = as.xts.data.table(as.data.table(xt_y))
-    test(1465.5, all.equal(xt_w, xt_dt_xt_w, check.attributes = FALSE))
-    test(1465.6, all.equal(xt_m, xt_dt_xt_m, check.attributes = FALSE))
-    test(1465.7, all.equal(xt_q, xt_dt_xt_q, check.attributes = FALSE))
-    test(1465.8, all.equal(xt_y, xt_dt_xt_y, check.attributes = FALSE))
-}
 
 # as.data.table.default #969
 ar <- array(NA, dim=c(10,4),dimnames = list(NULL,paste("col",1:4,sep="")))
@@ -6730,7 +6488,7 @@ ans2 = dt[group1 %in% c("a", "b"), sum(value), group2]
 test(1499, ans1, ans2)
 
 # Fix for #488
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
     test(1500.1, fread("x,y\n3,\n", colClasses = list(integer64 = "y")),
             data.table(x=3L, y=as.integer64(NA)))
     # more tests after new fix
@@ -6828,7 +6586,7 @@ ans = DF[order(-xtfrm(DF$y), DF$x), ]
 test(1511, ans, setorder(DF, -y, x))
 
 # fix for #1108
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
     dt <- data.table(id = as.integer64(1:3), a = c("a", "b", "c"), key = "id")
     test(1512.1, dt[.(2)], dt[.(as.integer64(2))])
     test(1512.2, dt[.(2L)], dt[.(as.integer64(2))])
@@ -6888,14 +6646,6 @@ x = data.table(x="a", y=2L)
 setattr(x, 'class', c("foo", "data.table", "data.frame"))
 test(1517.3, class(as.data.table(x)), c("data.table", "data.frame"))
 test(1517.4, class(setDT(x)), c("data.table", "data.frame"))
-# for plm package
-if ("package:plm" %in% search()) {
-    set.seed(45L)
-    x  = data.table(V1=c(1L,2L), V2=LETTERS[1:3], V3=round(rnorm(4),4), V4=1:12)
-    px = pdata.frame(x, index=c("V2", "V4"), drop.index=FALSE, row.names=TRUE)
-    test(1517.5, class(as.data.table(px)), class(x))
-    test(1517.6, class(setDT(px)), class(x))
-}
 
 # Fix for setattr, #1142
 x = factor(rep(1:4, each=2L))
@@ -6992,11 +6742,6 @@ test(1530.2, which.first(x), which(x)[1L])
 # which.last
 test(1530.3, which.last(1:5), error = "x not boolean")
 test(1530.4, which.last(x), tail(which(x), 1L))
-
-# test xts's last()
-if ("package:xts" %in% search()) {
-    test(1531, xts::last(1:5), 5L)
-}
 
 # test for like, %like%
 set.seed(2L)
@@ -7492,14 +7237,6 @@ test(1557.4, dt[, .SD, .SDcols=paste0("index", 1:i)], dt[, .SD, .SDcols=index1:i
 # fix for #1354
 test(1558, as.ITime(NA), setattr(NA_integer_, 'class', 'ITime'))
 
-if (!"package:xts" %in% search()) {
-    # #1347, xts issue from Joshua
-    x = as.Date(1:5, origin="2015-01-01")
-    test(1559.11, last(x), tail(x, 1L))
-} else {
-    test(1559.12, last(.xts(1:3,1:3)), .xts(1:3, 1:3)[3, ])
-}
-
 # fix for #1352
 dt1 = data.table(a=1:5, b=6:10, c=11:15)
 dt2 = data.table(a=3:6, b=8:11, d=1L)
@@ -7645,7 +7382,7 @@ dt = data.table(x  = sample(letters, 300, TRUE),
                 i2 = sample(c(-10:10, NA), 300, TRUE),
                 d1 = as.numeric(sample(-10:10, 300, TRUE)),
                 d2 = as.numeric(sample(c(NA, NaN, -10:10), 300, TRUE)))
-if ('package:bit64' %in% search()) {
+if (test_bit64) {
     dt[, `:=`(d3 = as.integer64(sample(-10:10, 300, TRUE)))]
     dt[, `:=`(d4 = as.integer64(sample(c(-10:10,NA), 300, TRUE)))]
 }
@@ -7822,12 +7559,6 @@ test(1587, fread(text, key="y"), setDT(fread(text), key="y"))
 dt = data.table(i=1:10, f=as.factor(1:10))
 test(1588.1, dt[f %in% 3:4], dt[3:4])
 test(1588.2, dt[f == 3], dt[3])
-
-# fix for #1484
-if ("package:xts" %in% search()) {
-    x = xts::as.xts(8, order.by = as.Date("2016-01-03"))
-    test(1589, all.equal(as.data.table(x), data.table(index = as.Date("2016-01-03"), V1 = 8), check.attributes=FALSE))
-}
 
 # encoding issue in forder
 x <- "fa\xE7ile"
@@ -8129,7 +7860,7 @@ test(1613.445, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)], ignore.row.order = TRUE),
 test(1613.45, all.equal(dt[c(1:4,1:2)], dt[c(1L,1L,1:4)], ignore.row.order = TRUE), c("Both datasets have duplicate rows, they also have numeric columns, together with ignore.row.order this force 'tolerance' argument to 0", "Dataset 'current' has rows not present in 'target' or present in different quantity"))
 test(1613.46, all.equal(dt[c(1:2,1:4,1:2)], dt[c(1:2,1:2,1:4)], ignore.row.order = TRUE), TRUE)
 # supported type all.equal: integer64
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
     dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = bit64::as.integer64("90000000000")+1:4)
     test(1613.47, all.equal(dt, dt), TRUE)
     test(1613.48, all.equal(dt, dt, ignore.row.order = TRUE), TRUE)
@@ -8180,7 +7911,7 @@ test(1613.573, all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), i
 test(1613.581, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = 1), all.equal(x, y, ignore.row.order = TRUE, tolerance = 1)))
 test(1613.582, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = sqrt(.Machine$double.eps)/2), all.equal(x, y, ignore.row.order = TRUE, tolerance = sqrt(.Machine$double.eps)/2)), warning = "Argument 'tolerance' was forced")
 
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
     # fix for #1405, handles roll with -ve int64 values properly
     dt = data.table(x=as.integer64(c(-1000, 0)), y=c(5,10))
     val = c(-1100,-900,100)
@@ -8366,7 +8097,7 @@ test(1626.66, funion(x, y, all=TRUE), dt[c(2:4,2L,2L,1:3,2L)])
 test(1626.67, fsetequal(x, y), FALSE)
 test(1626.68, fsetequal(dt[c(2:3,3L)], dt[c(2:3,3L)]), TRUE)
 # supported type in set-ops: integer64
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
     dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = bit64::as.integer64("90000000000")+1:4)
     x = dt[c(2:4,2L,2L)]
     y = dt[c(1:3,2L)]
@@ -8378,8 +8109,6 @@ if ("package:bit64" %in% search()) {
     test(1626.74, funion(x, y, all=TRUE), dt[c(2:4,2L,2L,1:3,2L)])
     test(1626.75, fsetequal(x, y), FALSE)
     test(1626.76, fsetequal(dt[c(2:3,3L)], dt[c(2:3,3L)]), TRUE)
-} else {
-    cat("Tests 1626.[69-76] not run. If required call library(bit64) first.\n")
 }
 
 # fix for #1087 and #1465
@@ -9001,7 +8730,7 @@ nq_fun = function(n=100L) {
     c2 = sample(LETTERS[1:15], n, TRUE)
 
     dt = data.table(i1,i2,i3,i4, d1,d2,d3,d4, c1,c2)
-    if ("package:bit64" %in% search()) {
+    if (test_bit64) {
         I1 = as.integer64(sample(sample(n, 10L), n, TRUE))
         I2 = as.integer64(sample(-n/2:n/2, n, TRUE))
         I3 = as.integer64(sample(-1e6:1e6, n, TRUE))
@@ -9300,28 +9029,6 @@ nn = names(DT)
 test(1661.1, {names(DT) <- c("k", "m"); nn}, c("x","y"), warning=if (base::getRversion()>="3.1.0") NULL else "Please upgrade")
 test(1661.2, names(DT), c("k","m"))
 
-# as.Date.IDate won't change the class if xts package loaded #1500
-if ("package:zoo" %in% search()) {
-    x = as.IDate("2016-01-15")
-    require(zoo)
-    test(1662, class(as.Date(x)), "Date")
-} else {
-    cat("Test 1662 not run. If required call library(zoo) first.\n")
-}
-
-# IDate support in as.xts.data.table #1499
-if ("package:xts" %in% search()) {
-    dt <- data.table(date = c(as.IDate("2014-12-31"),
-                              as.IDate("2015-12-31"),
-                              as.IDate("2016-12-31")),
-                     nav = c(100,101,99),
-                     key = "date")
-    dt.xts <- as.xts.data.table(dt)
-    test(1663, dt.xts[1L], xts::xts(data.table(nav=100), order.by=as.Date("2014-12-31")))
-} else {
-    cat("Test 1663 not run. If required call library(xts) first.\n")
-}
-
 # fwrite crash on very large number of columns (say 100k)
 set.seed(123)
 m <- matrix(runif(3*100000), nrow = 3)
@@ -9571,7 +9278,7 @@ test(1686.2, DT[, .(V1=A,B)], DT[, c(.(get("A")), .SD), .SDcols="B"])
 test(1687.1, first(1:5), 1L)
 test(1687.2, first(data.table(x=1:5, y=6:10)), data.table(x=1L, y=6L))
 
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
     # fix for #1385 and part of #1459
     x1 = data.table(id=1, value=as.integer64(1))
     x2 = data.table(id=c(1,2))
@@ -9751,30 +9458,6 @@ if (.Platform$OS.type=="unix") {
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
 # as used by package popEpi in its tests
 test(1704, all.equal(data.table( a=1:3, b=4:6 ), data.table( A=1:3, B=4:6 ), check.attributes=FALSE))
-
-# setDTthreads(2) was at the top of this file (tests.Rraw). Since CRAN's policy is max two.
-# However, under UBSAN and ASAN, threads are limited to 1 thread, so only run this test when we have 2 threads.
-if (.Platform$OS.type!="windows" && getDTthreads()==2) {
-  # On Windows: "'mc.cores' > 1 is not supported on Windows".
-  # parallel package isn't parallel on Windows, but data.table is.
-  if ("package:parallel" %in% search()) {   #1745 and #1727
-    lx <- replicate(4, runif(1e5), simplify=FALSE)
-    f <- function(mc.cores = 2, threads = 2) {
-      setDTthreads(threads)
-      invisible(mclapply(lx, function(x) fsort(x), mc.cores = mc.cores))
-    }
-    f(1, 1) # was always ok
-    f(2, 1) # was always ok
-    f(1, 2) # was always ok
-    f(2, 2) # Used to hang. Now should not because data.table auto switches to single threaded
-            # Commenting out avoid_openmp_hang_within_fork() confirms this test catches catches the hang
-    test(1705, getDTthreads()==1) # Stays in single-threaded mode after returning from mclapply's fork
-    setDTthreads(2)
-    test(1706, getDTthreads()==2) # User returned to multi-threaded after fork.
-  } else {
-    cat("Tests 1705 and 1706 not run. If required call library(parallel) first.\n")
-  }
-}
 
 # all.equal.data.table should consider modes equal like base R (detected via Bioc's flowWorkspace tests)
 # If strict testing is required, then use identical().
@@ -9971,19 +9654,12 @@ DT = data.table(unlist(.Machine[c("double.eps","double.neg.eps","double.xmin","d
 test(1729.13, typeof(DT[[1L]]), "double")
 test(1729.14, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE)))
 
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
   test(1730.1, typeof(-2147483647L), "integer")
   test(1730.2, as.integer(-2147483648), NA_integer_, warning="coercion")
   test(1730.3, as.integer("-2147483647"), -2147483647L)
   test(1730.4, as.integer("-2147483648"), NA_integer_, warning="coercion")
   test(1730.5, as.integer64("-2147483648"), as.integer64(-2147483648))
-  if (.devtesting) {
-    # these don't pass UBSAN/USAN because of the overflow being tested here, so just in dev not on CRAN
-    test(1730.6, as.character((as.integer64(2^62)-1)*2+1), "9223372036854775807")
-    test(1730.7, as.character((as.integer64(2^62)-1)*2+2), NA_character_, warning="integer64 overflow")
-    test(1730.8, as.character(-(as.integer64(2^62)-1)*2-1), "-9223372036854775807")
-    test(1730.9, as.character(-(as.integer64(2^62)-1)*2-2), NA_character_, warning="integer64.*flow")
-  }
   # Currently bit64 truncs to extremes in character coercion. Don't test that in case bit64 changes in future.
   # as.integer64("-9223372036854775808") == NA
   # as.integer64("-9223372036854775999") == NA
@@ -10017,8 +9693,6 @@ if ("package:bit64" %in% search()) {
   ans[1] = "V1"  # the field is unquoted under `quote=FALSE`
   test(1731.5, write.csv(DT,na="__NA__",row.names=FALSE,quote=FALSE), output=ans)
   # write.csv works on integer64 because it calls bit64's as.character method
-} else {
-  cat("Tests 1730 & 1731 not run. If required call library(bit64) first.\n")
 }
 
 # fwrite(,quote='auto' and qmethod)
@@ -10082,32 +9756,6 @@ test(1734.6, capture.output(fwrite(DF,row.names=TRUE,quote=FALSE)),
              capture.output(write.csv(DF,quote=FALSE)))
 test(1734.7, capture.output(fwrite(DF,row.names=TRUE,quote=TRUE)),
              capture.output(write.csv(DF)))
-
-# fwrite showProgress test 1735. Turned off as too long/big for CRAN.
-if (FALSE) {
-  N = 6e8  # apx 6GB
-  DT = data.table(C1=sample(100000,N,replace=TRUE), C2=sample(paste0(LETTERS,LETTERS,LETTERS), N, replace=TRUE))
-  gc()
-  d = "/dev/shm/"
-  # and
-  d = "/tmp/"
-  f = paste0(d,"test.txt")
-  system.time(fwrite(DT, f, nThread=1))
-  file.info(f)$size/1024^3
-  unlink(f)
-  # ensure progress meter itself isn't taking time; e.g. too many calls to time() or clock()
-  system.time(fwrite(DT, f, showProgress=FALSE, nThread=1))
-  system.time(fwrite(DT, f, nThread=2))
-  system.time(fwrite(DT, f, nThread=4))
-  system.time(fwrite(DT, f, verbose=TRUE))
-  f2 = paste0(d,"test2.txt")
-  system.time(fwrite(DT, f2, verbose=TRUE))  # test 'No space left on device'
-  unlink(f)
-  unlink(f2)
-  system.time(fwrite(DT, f2))  # try again, should work now space free'd
-  file.info(f2)$size/1024^3
-  unlink(f2)
-}
 
 # list columns and sep2
 set.seed(1)
@@ -10482,7 +10130,7 @@ test(1750.34,
     groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=sets, id=TRUE)
 )
 # grouping sets with integer64
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
     set.seed(26)
     dt[, c("id1","id2") := list(as.integer64(sample(sample(n, n/4), n, TRUE)), as.integer64(sample(sample(n, n/2), n, TRUE)))]
     # int64 as grouping cols
@@ -10525,32 +10173,12 @@ if ("package:bit64" %in% search()) {
         r[grouping==2L, .(color, id1, amount, value, id2)],
         dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1), .SDcols=c("amount","value","id2")]
     )
-} else {
-    cat("Test 1750.[41-48] not run. If required call library(bit64) first.\n")
 }
 # end Grouping Sets
 
 # for completeness, added test for NA problem to close #1837. Fixed long ago before release to CRAN.
 test(1751.1, capture.output(fwrite(data.table(x=NA_integer_),verbose=FALSE)), c("\"x\"","NA"))
 test(1751.2, capture.output(fwrite(data.table(x=NA_integer_),na="",verbose=FALSE)), c("x",""))
-
-if ("package:nanotime" %in% search()) {
-  DT = data.table(A=nanotime(tt<-c("2016-09-28T15:30:00.000000070Z",
-                                   "2016-09-29T23:59:00.000000001Z",
-                                   "2016-09-29T23:59:00.000000999Z",
-                                   "1970-01-01T00:01:01.000001000Z",
-                                   "1970-01-01T00:00:00.000000000Z",
-                                   "1969-12-31T23:59:59.999999999Z",
-                                   "1969-12-31T23:59:59.000000089Z",
-                                   "1969-12-31T12:13:14.000000000Z",
-                                   "1969-12-31T12:13:14.999999999Z",
-                                   "1969-12-31T12:13:14.000000001Z",
-                                   "1967-03-15T00:00:00.300000002Z",
-                                   "1967-03-15T23:59:59.300000002Z")))
-  test(1752, capture.output(fwrite(DT, verbose=FALSE))[-1], tt)
-} else {
-  cat("Test 1752 not run. If required call library(nanotime) first.\n")
-}
 
 # check too many fields error from ,\n line ending highlighted in #2044
 test(1753.1, fread("X,Y\n1,2\n3,4\n5,6"), data.table(X=INT(1,3,5),Y=INT(2,4,6)))
@@ -11380,7 +11008,7 @@ test(1854.2, data.frame(CJ(x = integer(0), y = character(0))), setattr(expand.gr
 test(1854.3, data.frame(CJ(x = integer(0), y = c("a", "b"))), setattr(expand.grid(x = integer(0), y = c("a", "b")), "out.attrs", NULL))
 test(1854.4, data.frame(CJ(x = integer(0), y = character(0), z = logical(0))), setattr(expand.grid(x = integer(0), y = character(0), z = logical(0)), "out.attrs", NULL))
 test(1854.5, data.frame(CJ(x = character(0), y = NA_real_)), setattr(expand.grid(x = character(0), y = NA_real_), "out.attrs", NULL))
-if ("package:bit64" %in% search()) {
+if (test_bit64) {
   test(1854.6, data.frame(CJ(x = integer64(0), y = as.integer64(2))), setattr(expand.grid(x = integer64(0), y = as.integer64(2)), "out.attrs", NULL))
 }
 

@@ -47,39 +47,40 @@ N = 1e5
 u = as.character(as.hexmode(1:10000))
 y = sample(u,N,replace=TRUE)
 x = sample(u)
-                                             #  With N=1e7 ...
-system.time(a <- match(x,y))                 #  4.8s
-system.time(b <- chmatch(x,y))               #  0.9s   Faster than 1st fmatch
+                                           #  With N=1e7 ...
+system.time(a <- match(x,y))               #  4.8s
+system.time(b <- chmatch(x,y))             #  0.9s   Faster than 1st fmatch
 identical(a,b)
-if (fastmatchloaded<-suppressWarnings(require(fastmatch))) {
-    print(system.time(c <- fmatch(x,y)))     #  2.1s   Builds and caches hash
-    print(system.time(c <- fmatch(x,y)))     #  0.00s  Uses hash
-    identical(a,c)
+\dontrun{
+  library(fastmatch)
+  print(system.time(c <- fmatch(x,y)))     #  2.1s   Builds and caches hash
+  print(system.time(c <- fmatch(x,y)))     #  0.00s  Uses hash
+  identical(a,c)
 }
 
-system.time(a <- x \%in\% y)                   #  4.8s
-system.time(b <- x \%chin\% y)                 #  0.9s
+system.time(a <- x \%in\% y)               #  4.8s
+system.time(b <- x \%chin\% y)             #  0.9s
 identical(a,b)
-if (fastmatchloaded) {
-    match <- fmatch                          # fmatch is drop in replacement
-    print(system.time(c <- match(x,y)))      #  0.00s
-    print(system.time(c <- x \%in\% y))        #  4.8s   \%in\% still prefers base::match
-    # Anyone know how to get \%in\% to use fmatch (without masking \%in\% too)?
-    rm(match)
-    identical(a,c)
+\dontrun{
+  match <- fmatch                          # fmatch is drop in replacement
+  print(system.time(c <- match(x,y)))      #  0.00s
+  print(system.time(c <- x \%in\% y))      #  4.8s   \%in\% still prefers base::match
+  # Anyone know how to get \%in\% to use fmatch (without masking \%in\% too)?
+  rm(match)
+  identical(a,c)
 }
 
 # Different example with more unique strings ...
 u = as.character(as.hexmode(1:(N/10)))
 y = sample(u,N,replace=TRUE)
 x = sample(u,N,replace=TRUE)
-system.time(a <- match(x,y))                 # 34.0s
-system.time(b <- chmatch(x,y))               #  6.4s
+system.time(a <- match(x,y))               # 34.0s
+system.time(b <- chmatch(x,y))             #  6.4s
 identical(a,b)
-if (fastmatchloaded) {
-    print(system.time(c <- fmatch(x,y)))     #  7.9s
-    print(system.time(c <- fmatch(x,y)))     #  4.0s
-    identical(a,c)
+\dontrun{
+  print(system.time(c <- fmatch(x,y)))     #  7.9s
+  print(system.time(c <- fmatch(x,y)))     #  4.0s
+  identical(a,c)
 }
 }
 \keyword{ data }
