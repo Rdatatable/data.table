@@ -1,11 +1,13 @@
 
 if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
-  stop("with.other.packages should not be run in dev.")
-  # Test the other packages with data.table in a fresh R session where data.table is installed. Not doing so can be the cause of false fails in dev.")
+  stop("with.other.packages should not be run in dev. Test other packages with data.table in a fresh R session",
+       " where data.table is installed. Not doing so can be the cause of false errors in dev.")
 }
 
+stop("WIP")
+
 inst_pkgs = rownames(installed.packages())
-pkgs = c("knitr", "nanotime", "chron", "reshape2", "ggplot2", "testthat", "fastmatch", "nlme", "GenomicRanges", "xts", "gdata", "curl", "zoo", "plm", "rmarkdown", "parallel")
+pkgs = c("knitr", "nanotime", "reshape2", "ggplot2", "hexbin", "nlme", "caret", "GenomicRanges", "xts", "gdata", "zoo", "plm", "parallel")
     lapply(setNames(other_pkgs, nm = other_pkgs), function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))  # require() so it warns but doesn't halt if not available
 
 

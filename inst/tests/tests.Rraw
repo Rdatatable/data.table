@@ -11414,6 +11414,9 @@ DT = data.table(a = 1:5)
 DT_out = data.table(a = integer(0L))
 test(1887, na.omit(DT, invert = TRUE), DT_out)
 
+x = runif(1e4)
+test(1888, fsort(x), base::sort(x))
+
 ###################################
 #  Add new tests above this line  #
 ###################################
