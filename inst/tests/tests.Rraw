@@ -2,24 +2,11 @@
 if (!exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     require(data.table)   # in dev the package should not be loaded
     inst_pkgs = rownames(installed.packages())
-    sugg_pkgs = c("bit64", "knitr", "nanotime", "chron", "reshape", "reshape2", "testthat", "fastmatch", "nlme", "GenomicRanges", "xts", "gdata", "curl", "zoo", "plm", "rmarkdown", "parallel")
+    sugg_pkgs = c("bit64", "knitr", "nanotime", "chron", "reshape2", "testthat", "fastmatch", "nlme", "GenomicRanges", "xts", "gdata", "curl", "zoo", "plm", "rmarkdown", "parallel")
     lapply(setNames(sugg_pkgs, nm = sugg_pkgs), function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))  # require() so it warns but doesn't halt if not available
-    # reshape2 ahead of reshape ...
-    try(detach(package:reshape2),silent=TRUE)
-    try(detach(package:reshape),silent=TRUE)
-    if("reshape2" %in% inst_pkgs) library(reshape2, pos="package:base", logical.return=TRUE)
-    if("reshape" %in% inst_pkgs) library(reshape, pos="package:base", logical.return=TRUE)
     .devtesting=FALSE
 } else {
-    # Matt has suppressMessages(require(bit64)) in .Rprofile
-    if ("package:reshape2" %in% search()) {
-      detach(package:reshape2)
-      library(reshape2, pos="package:base", logical.return=TRUE)
-    }
-    if ("package:reshape" %in% search()) {
-      detach(package:reshape)
-      library(reshape, pos="package:base", logical.return=TRUE)
-    }
+    # Matt has suppressMessages(require(bit64)) in .Rprofile, to run tests with that in dev routinely.
     .devtesting=TRUE
 }
 
@@ -81,12 +68,17 @@ if (!.devtesting) {
     # the other package's function would be picked up. As above, we only need to do this because we desire
     # to develop in .GlobalEnv with cc().
     # NB: The string "data.table::" should exist nowhere else in this file other than here inside this branch.
-                                          # masked by which Suggests package?
+    # This should be retained even if these packages are removed from Suggests, because the test() in this file
+    # checks against a data.table result which needs the data.table one to run. Otherwise the user can be
+    # sure by using :: themselves.
+                                          # masked by which package?
                                           # =================================
     setattr = data.table::setattr         # bit
     shift = data.table::shift             # IRanges, GenomicRanges
     between = data.table::between         # plm
     second = data.table::second           # S4Vectors
+    dcast = data.table::dcast             # reshape2
+    melt = data.table::melt               # reshape2
 } else {
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test\n", sep="")
@@ -490,12 +482,16 @@ if (FALSE) {
   DT = data.table(a=1:10,b=1:2,key="a")
   test(304, arrange(DT,b), data.table(a=INT(1,3,5,7,9,2,4,6,8,10),b=INT(1,1,1,1,1,2,2,2,2,2)))  # testing no key here, too
 
-  # Fix for #476 and #825
+  # Fix for #825
   if ("package:reshape" %in% search()) {
     DT <- data.table(ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L), DATUM = structure(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209), class = "Date"), N = c(25L, 9L, 23L, 29L, 26L, 26L, 27L, 28L, 39L, 39L, 38L, 36L, 40L, 39L, 19L, 20L, 19L), rank = c(2, 1, 3, 1, 2, 3, 4, 5, 1, 2, 3, 4, 6, 5, 2, 1, 3))
     ans = cast(DT, ID ~ rank, value = "DATUM")
     test(1383.3, names(DT), c("ID", "DATUM", "N", "rank"))
+    # The bug was that names(DT) changed, hence testing DT here not ans. Same fix tested next with caret too.
+    # When running this test on 13 Mar 2018, I noticed that reshape::cast doesn't retain the Date class and returns just numbers. Now we don't
+    # test with reshape, I copied the test to the reshape2 section, changed it to use dcast and tested the result explicitly.
   }
+  # Fix for #476
   # caret seems heavy (plyr, reshape2 and withr). win-builder halts at this point consistently, but we pass on Travis and locally.
   # So I put the win-builder fail down to resource issues, which are good to put in a separate package anyway.
   if ("package:caret" %in% search()) {
@@ -1437,17 +1433,14 @@ d2 <- data.table(A=0:1, B=1:4, key="A")
 test(485, d2[d1, allow.cartesian=TRUE], data.table(A=INT(1,1,1,1,2,2),B=INT(2,4,2,4,NA,NA),b=INT(11,11,13,13,12,14),key="A"))
 test(486, d2[d1,sum(B),by=.EACHI], data.table(A=INT(1,1,2,2),V1=INT(6,6,NA,NA),key="A"))  # no allow.cartesian needed due to by-without-by
 
-if ("package:reshape" %in% search()) {
-    DT <- data.table(ID=rep(1:3, each=3), TIME=rep(1:3, 3), X=1:9)
-    test(487, data.table(reshape(DT, idvar="ID", timevar="TIME", direction="wide")),
-              data.table(ID=1:3,X.1=INT(1,4,7),X.2=INT(2,5,8),X.3=INT(3,6,9)))
-    # The data.table() around reshape is to drop reshape's attributes.
-    DT <- data.table(ID=rep(1:3, each=3), TIME=rep(1:3, 3), X=1:9, Y=10:18)
-    test(488, data.table(reshape(DT, idvar="ID", timevar="TIME", direction="wide")),
-              data.table(ID=1:3,X.1=INT(1,4,7),Y.1=INT(10,13,16),X.2=INT(2,5,8),Y.2=INT(11,14,17),X.3=INT(3,6,9),Y.3=INT(12,15,18)))
-} else {
-    cat("Tests 487 and 488 not run. If required call library(reshape) first.\n")
-}
+# Test base R's reshape. There is no reshape() function in package:reshape.
+DT <- data.table(ID=rep(1:3, each=3), TIME=rep(1:3, 3), X=1:9)
+test(487, data.table(stats::reshape(DT, idvar="ID", timevar="TIME", direction="wide")),
+          data.table(ID=1:3,X.1=INT(1,4,7),X.2=INT(2,5,8),X.3=INT(3,6,9)))
+# The data.table() around reshape above is to drop reshape's attributes.
+DT <- data.table(ID=rep(1:3, each=3), TIME=rep(1:3, 3), X=1:9, Y=10:18)
+test(488, data.table(stats::reshape(DT, idvar="ID", timevar="TIME", direction="wide")),
+          data.table(ID=1:3,X.1=INT(1,4,7),Y.1=INT(10,13,16),X.2=INT(2,5,8),Y.2=INT(11,14,17),X.3=INT(3,6,9),Y.3=INT(12,15,18)))
 
 # Test warnings for names<- and colnames<-,  but only warnings when caller is data.table aware.
 DT = data.table(a=1:3,b=4:6)
@@ -3242,6 +3235,25 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
 #########################################
 # All dcast.data.table tests go in here #
 #########################################
+
+if ("package:reshape" %in% search()) {
+  warning("Package 'reshape' is loaded. We no longer test with 'reshape' loaded due to issues when both 'reshape2' and 'reshape' are loaded and :: namespace prefix has not been used. Please upgrade to 'reshape2'.")
+}
+
+# This test was originally for #825 to test reshape::cast. Matt retained the test and tweaked it to test dcast instead (which retains the Date class, unlike reshape::cast it seems).
+DT = data.table(
+  ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L),
+  DATUM = structure(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209), class = "Date"),
+  N = c(25L, 9L, 23L, 29L, 26L, 26L, 27L, 28L, 39L, 39L, 38L, 36L, 40L, 39L, 19L, 20L, 19L), rank = c(2, 1, 3, 1, 2, 3, 4, 5, 1, 2, 3, 4, 6, 5, 2, 1, 3))
+test(1101.1, dcast(DT, ID ~ rank, value.var = "DATUM"), data.table(
+  ID = c(611557L, 894125L, 898856L, 898899L),
+  "1" = as.Date(c("2014-01-01", "2014-02-03", "2014-01-19", "2014-02-24")),
+  "2" = as.Date(c("2014-01-31", "2014-03-04", "2014-02-17", "2014-04-03")),
+  "3" = as.Date(c("2014-07-10", "2014-04-07", "2014-03-18", "2014-05-19")),
+  "4" = as.Date(c(NA, "2014-05-11", "2014-04-16", NA)),
+  "5" = as.Date(c(NA, "2014-06-15", "2014-05-18", NA)),
+  "6" = as.Date(c(NA, NA, "2014-06-15", NA)), key="ID"))
+
 if ("package:reshape2" %in% search()) {
 
     names(ChickWeight) <- tolower(names(ChickWeight))
