@@ -174,7 +174,7 @@ as.data.frame.ITime <- function(x, ...) {
   # ans = list(as.POSIXct(x,tzone=""))  # ggplot2 gives "Error: Discrete value supplied to continuous scale"
   setattr(ans,"class","data.frame")
   setattr(ans,"row.names", .set_row_names(length(x)))
-  setattr(ans,"names",NULL)
+  setattr(ans,"names","V1")
   ans
 }
 
