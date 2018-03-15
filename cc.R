@@ -20,6 +20,8 @@
 # c
 # test and step between R and C
 
+options(datatable.print.class = TRUE)
+
 sourceDir <- function(path=getwd(), trace = TRUE, ...) {
   # copied verbatim from example(source) in base R
   for (nm in list.files(path, pattern = "\\.[RrSsQq]$")) {
