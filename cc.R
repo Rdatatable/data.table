@@ -33,7 +33,6 @@ sourceDir <- function(path=getwd(), trace = TRUE, ...) {
 
 cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) {
   gc()
-  try(detach("package:data.table"),silent=TRUE)
 
   xx = try(getDLLRegisteredRoutines("datatable",TRUE), silent=TRUE)
   if (!inherits(xx, "try-error")) {
