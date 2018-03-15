@@ -7,7 +7,7 @@ if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
 stop("WIP")
 
 inst_pkgs = rownames(installed.packages())
-pkgs = c("knitr", "reshape2", "ggplot2", "hexbin", "nlme", "caret", "GenomicRanges", "gdata", "zoo", "plm", "parallel")
+pkgs = c("knitr", "reshape2", "ggplot2", "hexbin", "nlme", "caret", "gdata", "zoo", "plm", "parallel")
     lapply(setNames(other_pkgs, nm = other_pkgs), function(pkg) if(pkg %in% inst_pkgs) require(pkg, character.only=TRUE))  # require() so it warns but doesn't halt if not available
 
 
@@ -123,61 +123,6 @@ if ("package:gdata" %in% search()) {
     DT <- data.table(a = c('asdfasdf','asdf','asdgasdgasdgasdg','sdg'), b = runif(4,0,1))
     test(1135, write.fwf(DT, f<-tempfile()), NULL)
     unlink(f)
-}
-
-if ("package:GenomicRanges" %in% search()) {
-    setcolorder(y, c("chr", "val", "pos1", "pos2"))
-    ans1 = foverlaps(x, y, type="any", by.x=c("chr", "start", "end"), by.y=c("chr", "pos1", "pos2"), which=TRUE, nomatch=0L)
-    test(1372.3, foverlaps(x,y,by.x=1:3, nomatch=0L), data.table(chr=x$chr[2:5], y[c(2,3,3,3), -1, with=FALSE], x[2:5, 2:3, with=FALSE]))
-    gr <- function(x) {
-        GRanges(Rle(x[[1]]), IRanges(start=x[[2]], end=x[[3]]))
-    }
-    fo <- function(gr1, gr2, ...) {
-        olaps = findOverlaps(gr1, gr2, ...)
-        if (is.vector(olaps)) return(olaps)
-        ans = setDT(list(xid=queryHits(olaps), yid=subjectHits(olaps)))
-        setorder(ans)
-        ans
-    }
-    test(1372.4, setorder(ans1), fo(gr(x), gr(y[, c(1,3,4), with=FALSE]), type="any", select="all"))
-
-    runs = 3L # repeat 3 times..
-    types=c("any", "within", "start", "end")
-    mults=c("all", "first", "last")
-    maxgap=0L; minoverlap=1L
-    verbose=FALSE; which=TRUE
-    test_no <- 1372.4
-    for (run in seq_len(runs)) {
-        n1 = max(50L, sample(1e2L, 1, FALSE))
-        n2 = max(50L, sample(1e2L, 1, FALSE))
-        N = max(100L, sample(1e3L, 1, FALSE))
-
-        i1 = sample(N, n1, TRUE)
-        i2 = sample(N, n1, TRUE)
-        start = pmin(i1,i2)
-        end = pmax(i1,i2)
-        chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
-        i = setDT(list(chr=chr, start=start, end=end))
-
-        i1 = sample(N, n2, TRUE)
-        i2 = sample(N, n2, TRUE)
-        start = pmin(i1,i2)
-        end = pmax(i1,i2)
-        chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
-        x = setDT(list(chr=chr, start=start, end=end))
-        setkey(x); setkey(i)
-        for (type in types) {
-            for (mult in mults) {
-                # data.table overlap join
-                nomatch = ifelse(mult == "all", 0L, NA_integer_)
-                ans1 = foverlaps(i, x, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
-                ans2 = fo(gr(i), gr(x), type=type, select=mult)
-                test_no = signif(test_no+.01, 7)
-                # cat("test =", test_no, ", i = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
-                test(test_no, ans1, ans2)
-            }
-        }
-    }
 }
 
 # That data.table-unaware code in packages like knitr still work
