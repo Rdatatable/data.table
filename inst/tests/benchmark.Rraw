@@ -155,3 +155,14 @@ i = sample(nrow(ans),1)
 test(121, all.equal(ans[i,c(V1,V2)], dt[grp1==ans[i,grp1] & grp2==ans[i,grp2], c(mean(x),mean(y))]))
 # To DO: add a data.frame aggregate method here and check data.table is faster
 
+
+# > 1e6 columns (there used to be VLAs at C level that caused stack overflow), #1903
+set.seed(1)
+L = lapply(1:1e6, sample, x=100, size=2)
+x = capture.output(fwrite(L))
+test(1742.1, nchar(x), c(2919861L, 2919774L))   # tests 2 very long lines, too
+test(1742.2, substring(x,1,10), c("27,58,21,9","38,91,90,6"))
+test(1742.3, L[[1L]], c(27L,38L))
+test(1742.4, L[[1000000L]], c(76L, 40L))
+test(1742.5, substring(x,nchar(x)-10,nchar(x)), c("50,28,95,76","62,87,23,40"))
+

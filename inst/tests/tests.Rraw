@@ -1401,9 +1401,9 @@ test(488, data.table(stats::reshape(DT, idvar="ID", timevar="TIME", direction="w
 
 # Test warnings for names<- and colnames<-,  but only warnings when caller is data.table aware.
 DT = data.table(a=1:3,b=4:6)
-test(489, names(DT)[1]<-"A", "A", warning=if (base::getRversion()>="3.1.0") NULL else "Please upgrade")
+test(489, names(DT)[1]<-"A", "A")  # needs R >= 3.1.0, which is stated dependency now
 test(490, names(DT), c("A","b"))
-test(491, colnames(DT)[2]<-"B", "B", warning=if (base::getRversion()>="3.1.0") NULL else "Please upgrade")
+test(491, colnames(DT)[2]<-"B", "B")
 test(492, names(DT), c("A","B"))
 
 # Check setnames out of bounds errors
@@ -6426,10 +6426,8 @@ test(1484, DT[, SomeFunction(ID, setnull=1L)], DT[, SomeFunction(ID, setnull=2L)
 
 # Fix for #868
 vals = c("setosa", "versicolor", "virginica")
-if (base::getRversion()>="3.1.0") {
-  # depends on bug fix to combn() in R 3.1.0
-  test(1485, as.data.table(combn(unique(iris$Species),2)), data.table(vals[1:2], vals[c(1,3)], vals[2:3]))
-}
+test(1485, as.data.table(combn(unique(iris$Species),2)), data.table(vals[1:2], vals[c(1,3)], vals[2:3]))
+# depends on bug fix to combn() in R 3.1.0, which is now stated dependency
 
 # Fix for #955
 DT <- data.table(Time=.POSIXct(0, tz="UTC")+0:1, Value=1:2)
@@ -7902,7 +7900,7 @@ setattr(DT2, "custom2", 2L)
 test(1613.32, all.equal(DT1, DT2), "Datasets has attributes with different names: custom, custom2")
 setattr(DT1, "custom2", 2L)
 setattr(DT2, "custom", 0L)
-if (base::getRversion() > "3.0.0") test(1613.33, all.equal(DT1, DT2), paste0("Attributes: < Component ", dQuote("custom"), ": Mean relative difference: 1 >"))
+test(1613.33, all.equal(DT1, DT2), paste0("Attributes: < Component ", dQuote("custom"), ": Mean relative difference: 1 >"))
 setattr(DT2, "custom", 1L)
 test(1613.34, all.equal(DT1, DT2), TRUE)
 # trim.levels
@@ -8019,7 +8017,7 @@ test(1616.3, dt[.(1:2), c := if (c-b > 0L) b, by=.EACHI, mult="first", on="a"],
 # fix for #1281
 x <- 3 > 0
 ans = setattr(copy(x), "foo", "bar")
-if (base::getRversion() > "3.0.0") test(1617, setattr(x, "foo", "bar"), ans, warning = "Input is a length=1 logical that")
+test(1617, setattr(x, "foo", "bar"), ans, warning = "Input is a length=1 logical that")
 
 # fix for #1445
 test(1618.1, fread("a,c,b\n1,2,3", select=c("b", "c")), data.table(b=3L, c=2L))
@@ -8345,10 +8343,10 @@ test(1639.12, split(dt, as.factor(integer()), drop=TRUE), error = "group length 
 test(1639.13, split(dt, as.factor(1:2)[0L]), error = "group length is 0 but data nrow > 0") # factor length 0L with empty levels
 test(1639.14, split(dt, as.factor(1:2)[0L], drop=TRUE), error = "group length is 0 but data nrow > 0")
 # - [x] edge cases for `f` argument ----
-if (base::getRversion() > "3.0.0") test(1639.15, split(df, as.factor(NA)), split(dt, as.factor(NA))) # factor NA
-if (base::getRversion() > "3.0.0") test(1639.16, split(df, as.factor(NA), drop=TRUE), split(dt, as.factor(NA), drop=TRUE))
-if (base::getRversion() > "3.0.0") test(1639.17, lapply(split(df, as.factor(1:2)[0L][1L]), setDT), split(dt, as.factor(1:2)[0L][1L])) # factor NA with empty levels
-if (base::getRversion() > "3.0.0") test(1639.18, split(df, as.factor(1:2)[0L][1L], drop=TRUE), split(dt, as.factor(1:2)[0L][1L], drop=TRUE))
+test(1639.15, split(df, as.factor(NA)), split(dt, as.factor(NA))) # factor NA
+test(1639.16, split(df, as.factor(NA), drop=TRUE), split(dt, as.factor(NA), drop=TRUE))
+test(1639.17, lapply(split(df, as.factor(1:2)[0L][1L]), setDT), split(dt, as.factor(1:2)[0L][1L])) # factor NA with empty levels
+test(1639.18, split(df, as.factor(1:2)[0L][1L], drop=TRUE), split(dt, as.factor(1:2)[0L][1L], drop=TRUE))
 test(1639.19, lapply(split(df, as.factor(c(1L,NA,2L))), setDT), split(dt, as.factor(c(1L,NA,2L)))) # factor has NA
 test(1639.20, lapply(split(df, as.factor(c(1L,NA,2L)), drop=TRUE), setDT), split(dt, as.factor(c(1L,NA,2L)), drop=TRUE))
 test(1639.21, lapply(split(df, as.factor(c(1L,NA,2:4))[1:3]), setDT), split(dt, as.factor(c(1L,NA,2:4))[1:3])) # factor has NA with empty levels
@@ -8367,18 +8365,18 @@ test(1639.33, lapply(split(df[1L,], "z"), setDT), split(dt[1L], "z")) # nrow 1, 
 test(1639.34, lapply(suppressWarnings(split(df[1L,], c("z1","z2"))), setDT), suppressWarnings(split(dt[1L], c("z1","z2"))))
 test(1639.35, lapply(split(df[1L,], "z", drop=TRUE), setDT), split(dt[1L], "z", drop=TRUE) )
 test(1639.36, lapply(suppressWarnings(split(df[1L,], c("z1","z2"), drop=TRUE)), setDT), suppressWarnings(split(dt[1L], c("z1","z2"), drop=TRUE)))
-if (base::getRversion() > "3.0.0") test(1639.37, lapply(split(df[0L,], as.factor(NA_character_)), setDT), split(dt[0L], as.factor(NA_character_))) # nrow 0, f factor length 1L NA
-if (base::getRversion() > "3.0.0") test(1639.38, lapply(split(df[0L,], as.factor(NA_character_), drop=TRUE), setDT), split(dt[0L], as.factor(NA_character_), drop=TRUE))
-if (base::getRversion() > "3.0.0") test(1639.39, lapply(split(df[0L,], as.factor(1:2)[0L][1L]), setDT), split(dt[0L], as.factor(1:2)[0L][1L])) # nrow 0, f factor length 1L NA with empty levels
-if (base::getRversion() > "3.0.0") test(1639.40, lapply(split(df[0L,], as.factor(1:2)[0L][1L], drop=TRUE), setDT), split(dt[0L], as.factor(1:2)[0L][1L], drop=TRUE))
+test(1639.37, lapply(split(df[0L,], as.factor(NA_character_)), setDT), split(dt[0L], as.factor(NA_character_))) # nrow 0, f factor length 1L NA
+test(1639.38, lapply(split(df[0L,], as.factor(NA_character_), drop=TRUE), setDT), split(dt[0L], as.factor(NA_character_), drop=TRUE))
+test(1639.39, lapply(split(df[0L,], as.factor(1:2)[0L][1L]), setDT), split(dt[0L], as.factor(1:2)[0L][1L])) # nrow 0, f factor length 1L NA with empty levels
+test(1639.40, lapply(split(df[0L,], as.factor(1:2)[0L][1L], drop=TRUE), setDT), split(dt[0L], as.factor(1:2)[0L][1L], drop=TRUE))
 test(1639.41, lapply(split(df[0L,], as.factor(integer())), setDT), split(dt[0L], as.factor(integer()))) # nrow 0, f factor length 0L
 test(1639.42, lapply(split(df[0L,], as.factor(integer()), drop=TRUE), setDT), split(dt[0L], as.factor(integer()), drop=TRUE))
-if (base::getRversion() > "3.0.0") test(1639.43, lapply(split(df[0L,], as.factor(1:2)[0L]), setDT), split(dt[0L], as.factor(1:2)[0L])) # nrow 0, f factor length 0L with empty levels
-if (base::getRversion() > "3.0.0") test(1639.44, lapply(split(df[0L,], as.factor(1:2)[0L], drop=TRUE), setDT), split(dt[0L], as.factor(1:2)[0L], drop=TRUE))
+test(1639.43, lapply(split(df[0L,], as.factor(1:2)[0L]), setDT), split(dt[0L], as.factor(1:2)[0L])) # nrow 0, f factor length 0L with empty levels
+test(1639.44, lapply(split(df[0L,], as.factor(1:2)[0L], drop=TRUE), setDT), split(dt[0L], as.factor(1:2)[0L], drop=TRUE))
 test(1639.45, lapply(split(df[0L,], as.factor(1:3)[c(2L,NA,3L)]), setDT), split(dt[0L], as.factor(1:3)[c(2L,NA,3L)])) # nrow 0, f factor with empty levels and NA
 test(1639.46, lapply(split(df[0L,], as.factor(1:3)[c(2L,NA,3L)], drop=TRUE), setDT), split(dt[0L], as.factor(1:3)[c(2L,NA,3L)], drop=TRUE)) # nrow 0, f character length 1L NA
-if (base::getRversion() > "3.0.0") test(1639.47, lapply(split(df[0L,], NA_character_), setDT), split(dt[0L], NA_character_))
-if (base::getRversion() > "3.0.0") test(1639.48, lapply(split(df[0L,], NA_character_, drop=TRUE), setDT), split(dt[0L], NA_character_, drop=TRUE))
+test(1639.47, lapply(split(df[0L,], NA_character_), setDT), split(dt[0L], NA_character_))
+test(1639.48, lapply(split(df[0L,], NA_character_, drop=TRUE), setDT), split(dt[0L], NA_character_, drop=TRUE))
 test(1639.49, lapply(split(df[0L,], letters[c(NA,1:3)]), setDT), split(dt[0L], letters[c(NA,1:3)])) # nrow 0, f length > 1L, with NA
 test(1639.50, lapply(split(df[0L,], letters[c(NA,1:3)], drop=TRUE), setDT), split(dt[0L], letters[c(NA,1:3)], drop=TRUE))
 # - [x] split by reference to column names - `by` - for factor column ----
@@ -8777,12 +8775,10 @@ test(1639.137, sort.by.names(ans), sort.by.names(unlist(split(setDT(df), by=c("p
 test(1639.138, ans, split(as.data.table(df), by=c("product","year")))
 test(1639.139, sort.by.names(ans), sort.by.names(unlist(split(as.data.table(df), by=c("product","year"), flatten=FALSE), recursive = FALSE)))
 # test if split preallocate columns in results #1908
-if (base::getRversion() > "3.0.0") {
-  dt = data.table(x=rexp(100),y=rep(LETTERS[1:10], 10))
-  dtL = split(dt, by = "y")
-  test(1639.140, dim(dtL[[1]][, x2 := -x]), c(10L,3L))
-  test(1639.141, all(sapply(dtL, truelength) > 1000))
-}
+dt = data.table(x=rexp(100),y=rep(LETTERS[1:10], 10))
+dtL = split(dt, by = "y")
+test(1639.140, dim(dtL[[1]][, x2 := -x]), c(10L,3L))
+test(1639.141, all(sapply(dtL, truelength) > 1000))
 
 # allow x's cols (specifically x's join cols) to be referred to using 'x.' syntax
 # patch for #1615. Note that I specifically have not implemented x[y, aa, on=c(aa="bb")]
@@ -9105,7 +9101,7 @@ test(1660.2, names(dt1[dt2, on=.(Chr, Start<=Location, End>=Location)]), c(names
 # `names<-` should NOT modify by reference #1015
 DT = data.table(x=1, y=2)
 nn = names(DT)
-test(1661.1, {names(DT) <- c("k", "m"); nn}, c("x","y"), warning=if (base::getRversion()>="3.1.0") NULL else "Please upgrade")
+test(1661.1, {names(DT) <- c("k", "m"); nn}, c("x","y"))
 test(1661.2, names(DT), c("k","m"))
 
 # rbindlist support for complex type
@@ -9947,34 +9943,23 @@ test(1741.2, attr(DT[[5]],"tzone"), "UTC")
 setattr(DT[[4]], "tzone", NULL)
 setattr(DT[[5]], "tzone", NULL)
 
+# format() now supports digits = 0, to display nsmall decimal places.
+old = options(digits.secs=0)
+test(1741.3, x1<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
+             capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+options(digits.secs=3)
+test(1741.4, x2<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
+             capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+options(digits.secs=6)
+test(1741.5, x3<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
+             capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+options(old)
+# check that extra digits made it into output
+test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
 
-if (base::getRversion() >= "3.0.2") {
-  # "format() now supports digits = 0, to display nsmall decimal places."
-  old = options(digits.secs=0)
-  test(1741.3, x1<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-               capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
-  options(digits.secs=3)
-  test(1741.4, x2<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-               capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
-  options(digits.secs=6)
-  test(1741.5, x3<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-               capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
-  options(old)
-  # check that extra digits made it into output
-  test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
-}
-
-# > 1e6 columns (there used to be VLAs at C level that caused stack overflow), #1903
-set.seed(1)
-L = lapply(1:1e6, sample, x=100, size=2)
-x = capture.output(fwrite(L))
-test(1742.1, nchar(x), c(2919861L, 2919774L))   # tests 2 very long lines, too
-test(1742.2, substring(x,1,10), c("27,58,21,9","38,91,90,6"))
-test(1742.3, L[[1L]], c(27L,38L))
-test(1742.4, L[[1000000L]], c(76L, 40L))
-test(1742.5, substring(x,nchar(x)-10,nchar(x)), c("50,28,95,76","62,87,23,40"))
-
+###
 options(oldverbose)  # last capture.output(fwrite()) has happened now. TODO: tidy up and remove.
+###
 
 # fread should properly handle NA in colClasses argument #1910
 test(1743.1, sapply(fread("a,b\n3,a", colClasses=c(NA, "factor")), class), c(a="integer", b="factor"))
@@ -10054,16 +10039,14 @@ test(1750.1, # empty input gets grand total only when asked in `sets` with `char
     groupingsets(dt[0L], j = sum(value), by = c("color","year","status"), sets=list(c("color"))),
     data.table(color=character(), year=as.Date(NA)[-1L], status=factor(), V1=numeric())
 )
-if (base::getRversion()>"3.0.0") { # affected by as.factor(NA) on 2.15.0
-    test(1750.2, # empty input gets grand total non-NA, if asked
-        groupingsets(dt[0L], j = sum(value), by = c("color","year","status"), sets=list(c("color"), character())),
-        data.table(color=NA_character_, year=as.Date(NA), status=as.factor(NA), V1=0)
-    )
-    test(1750.3, # empty input non-NA grand total, also retain classes and aggregation level
-        groupingsets(dt[0L], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE),
-        data.table(grouping=7L, color=NA_character_, year=as.Date(NA), status=as.factor(NA), amount=0L, value=0)
-    )
-}
+test(1750.2, # empty input gets grand total non-NA, if asked.  Was affected by as.factor(NA) in R 2.15.0
+    groupingsets(dt[0L], j = sum(value), by = c("color","year","status"), sets=list(c("color"), character())),
+    data.table(color=NA_character_, year=as.Date(NA), status=as.factor(NA), V1=0)
+)
+test(1750.3, # empty input non-NA grand total, also retain classes and aggregation level
+    groupingsets(dt[0L], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE),
+    data.table(grouping=7L, color=NA_character_, year=as.Date(NA), status=as.factor(NA), amount=0L, value=0)
+)
 test(1750.4, # `sets=list()` produces 0 nrow, for grand total use `set=list(character())` - test at top
     nrow(groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=list(), id=TRUE)),
     0L
@@ -10124,13 +10107,11 @@ test(1750.15,
     error = "There exists duplicated column names in the results"
 )
 # set equals to `character(0)` should return grand total
-if (base::getRversion()>"3.0.0") { # affected by as.factor(NA) on 2.15.0
-    sets = list(character())
-    test(1750.16,
-        groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE),
-        dt[, c(list(cnt=.N), lapply(.SD, sum)), .(grouping=rep(7L,n), color=rep(NA_character_,n), year=rep(as.Date(NA),n), status=as.factor(rep(NA_character_,n)))]
-    )
-}
+sets = list(character())
+test(1750.16,
+    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE),
+    dt[, c(list(cnt=.N), lapply(.SD, sum)), .(grouping=rep(7L,n), color=rep(NA_character_,n), year=rep(as.Date(NA),n), status=as.factor(rep(NA_character_,n)))]
+)
 # duplicate entries in `sets` vector-wise
 sets = list("color", c("color","year","status","year","status"), "year", character())
 test(1750.17,
@@ -10222,12 +10203,10 @@ if (test_bit64) {
     )
     # int64 as measure cols
     r = groupingsets(dt, j = lapply(.SD, sum), by = c("color","status"), sets=list(c("color","status"), "status", character()), .SDcols=c("amount","value","id1","id2"), id=TRUE)
-    if (base::getRversion()>"3.0.0") { # affected by as.factor(NA) on 2.15.0
-        test(1750.45, # grand total
-            r[grouping==3L, .(color, status, amount, value, id1, id2)],
-            dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), status=as.factor(rep(NA_character_,n))), .SDcols=c("amount","value","id1","id2")]
-        )
-    }
+    test(1750.45, # grand total.   # was affected by as.factor(NA) in R 2.15.0
+        r[grouping==3L, .(color, status, amount, value, id1, id2)],
+        dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), status=as.factor(rep(NA_character_,n))), .SDcols=c("amount","value","id1","id2")]
+    )
     test(1750.46, # by status
         r[grouping==2L, .(color, status, amount, value, id1, id2)],
         dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), status), .SDcols=c("amount","value","id1","id2")]
