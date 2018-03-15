@@ -88,8 +88,6 @@ if ("package:xts" %in% search()) {  # e.g. when run via R CMD check
     # frustrating to test as well, see comment to test 839 above).
 }
 
-
-
 # as.Date.IDate won't change the class if xts package loaded #1500
 if ("package:zoo" %in% search()) {
     x = as.IDate("2016-01-15")
@@ -98,7 +96,6 @@ if ("package:zoo" %in% search()) {
 } else {
     cat("Test 1662 not run. If required call library(zoo) first.\n")
 }
-
 
 if ("package:nlme" %in% search()) {
   # commented out to be consistent with base R, as #1078 and #1128 are more common cases..

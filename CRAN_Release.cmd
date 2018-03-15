@@ -58,6 +58,9 @@ grep -P "\t" ./src/*.c
 grep -n "[^A-Za-z0-9]T[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 
+# No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
+grep -n "system[.]time" ./inst/tests/tests.Rraw
+
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
 # Greppable thanks to single lines and wide screens

@@ -66,7 +66,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 sugg = c(
   "bit64",          # if big integers are detected in file, fread reads them as bit64::integer64 if installed (warning if not)
   "xts",            # we have xts methods in R/xts.R
-  "nanotime",       # fwrite looks for the 'nanotime' class name at C level (but we have our own writer in C though)
+  "nanotime",       # fwrite looks for the 'nanotime' class name at C level (but we have our own writer in C, though)
   "chron",          # we have chron methods in R/IDateTime.R
   "GenomicRanges"   # test 1372 checks foverlaps against GenomicRanges' result and is needed for coverage of ijoin.c
   # zoo             # In DESCRIPTION:Suggests otherwise R CMD check warning: '::' or ':::' import not declared from: 'zoo'; it is tested in other.Rraw though
@@ -342,17 +342,6 @@ test(117, TESTDT[,list(a[1],v[1]),by="b"], data.table(b=c("b","e","f","i"), V1=c
 # We no longer check i for out of bounds, for consistency with data.frame and e.g. cbind(DT[w],DT[w+1]). NA rows should be returned for i>nrow
 test(118, TESTDT[8], data.table(a=as.character(NA), b=as.character(NA), v=as.integer(NA), key="b"))
 test(119, TESTDT[6:9], data.table(a=c("d","d",NA,NA), b=c("i","i",NA,NA), v=c(5L,6L,NA,NA)))
-
-n=10000
-grp1=sample(1:50,n,replace=TRUE)
-grp2=sample(1:50,n,replace=TRUE)
-dt=data.table(x=rnorm(n),y=rnorm(n),grp1=grp1,grp2=grp2)
-tt = system.time(ans <- dt[,list(.Internal(mean(x)),.Internal(mean(y))),by="grp1,grp2"])
-# test(120, tt[1] < 0.5)   # actually takes more like 0.068 << 0.5, but the micro EC2 instance can be slow sometimes.
-# TO DO: incorporate performance testing into R CMD check (using testthat?), that somehow copes with running on slow machines.
-i = sample(nrow(ans),1)
-test(121, all.equal(ans[i,c(V1,V2)], dt[grp1==ans[i,grp1] & grp2==ans[i,grp2], c(mean(x),mean(y))]))
-# To DO: add a data.frame aggregate method here and check data.table is faster
 
 # Tests of 0 and 1 row tables
 TESTDT = data.table(NULL)
@@ -1810,22 +1799,22 @@ DT=data.table(grp1=sample(1:150, n, replace=TRUE),
               y=rnorm(n))
 DT[c(2,5),x:=NA]  # seed chosen to get a group of size 2 and 3 in the first 5 to easily inspect.
 DT[c(3,4),y:=NA]
-tt1 = system.time(ans1<-DT[,list(mean(x),mean(y)),by=list(grp1,grp2)])
-tt2 = system.time(ans2<-DT[,list(.Internal(mean(x)),.Internal(mean(y))),by=list(grp1,grp2)])
+ans1 = DT[,list(mean(x),mean(y)),by=list(grp1,grp2)]
+ans2 = DT[,list(.Internal(mean(x)),.Internal(mean(y))),by=list(grp1,grp2)]
 basemean = base::mean  # to isolate time of `::` itself
-tt3 = system.time(ans3<-DT[,list(basemean(x),basemean(y)),by=list(grp1,grp2)])
+ans3 = DT[,list(basemean(x),basemean(y)),by=list(grp1,grp2)]
 test(646, ans1, ans2)
 test(647, ans1, ans3)
 # this'll error with `valgrind` because of the 'long double' usage in gsumm.c (although I wonder if we need long double precision).
 # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
 # http://comments.gmane.org/gmane.comp.debugging.valgrind/10340
 test(648, any(is.na(ans1$V1)) && !any(is.nan(ans1$V1)))
-tt1 = system.time(ans1<-DT[,list(mean(x,na.rm=TRUE),mean(y,na.rm=TRUE)),by=list(grp1,grp2)])
-tt2 = system.time(ans2<-DT[,list(mean.default(x,na.rm=TRUE),mean.default(y,na.rm=TRUE)),by=list(grp1,grp2)])
+ans1 = DT[,list(mean(x,na.rm=TRUE),mean(y,na.rm=TRUE)),by=list(grp1,grp2)]
+ans2 = DT[,list(mean.default(x,na.rm=TRUE),mean.default(y,na.rm=TRUE)),by=list(grp1,grp2)]
 test(651, ans1, ans2)
 test(652, any(is.nan(ans1$V1)))
 # See FR#2067. Here we're just testing the optimization of mean and lapply, should be comparable to above
-tt2 = system.time(ans2<-DT[,lapply(.SD,mean,na.rm=TRUE),by=list(grp1,grp2)])
+ans2 = DT[,lapply(.SD,mean,na.rm=TRUE),by=list(grp1,grp2)]
 setnames(ans2,"x","V1")
 setnames(ans2,"y","V2")
 test(654, ans1, ans2)
@@ -2191,14 +2180,14 @@ mycols = 2
 test(818, DT[,!mycols,with=FALSE], DT[,list(a,c)])
 
 # Test X[Y] slowdown, #2216
+# Many minutes in 1.8.2!  Now well under 1s, but 10s for very wide tolerance for CRAN. We'd like CRAN to tell us if any changes
+# in R or elsewhere cause the 2 minute (!) bug to return. Hence not moving out to benmark.Rraw.
 X = CJ(a=seq_len(1e3),b=seq_len(1e3))
 Y = copy(X)
 X[4,b:=3L]     # create a dup group, to force allLen1=FALSE
 setkey(X)
-test(819, system.time(X[Y,allow.cartesian=TRUE])["user.self"] < 5)
-# Many minutes in 1.8.2!  Now well under 1s, but 5s for wide tolerance for CRAN. We'd like CRAN to tell us if any changes
-# in R or elsewhere cause the 2 minute (!) bug to return. Hence not moving out to benmark.Rraw.
-test(820, system.time(X[Y,mult="first"])["user.self"] < 5)
+test(819, system.time(X[Y,allow.cartesian=TRUE])["user.self"] < 10)   # this system.time usage ok in this case
+test(820, system.time(X[Y,mult="first"])["user.self"] < 10)           # this system.time usage ok in this case
 
 # Optimization of lapply(,"+"), #2212
 DT = data.table(a=rep(1:3,each=2L),b=1:6,c=7:12)
@@ -3363,14 +3352,6 @@ test(1108, DT[, sum(eval(s))], DT[, sum(a)])
 DT <- data.table(a = 1:3, b = c(TRUE,FALSE,NA))
 test(1109, DT[b != TRUE], DT[!(b == TRUE)])
 
-# commented for now (by Arun)
-# # test the speed of simple comparison
-# DT <- data.table(a = 1:1e7)
-# t1 = system.time(DT[a == 100])[3]
-# t2 = system.time(DT[which(a == 100)])[3]
-# # make sure we're at most 30% slower than "which" (should pass most of the time)
-# test(1110, (t1 - t2)/t2 < 0.3)
-
 # test that a column named list is ok (this also affects other functions in by, might be worth adding a test for that)
 DT <- data.table(list = 1:6, a = 1:2)
 test(1111, DT[, lapply(.SD, sum), by = a], DT[, list(list = sum(list)), by = a])
@@ -3558,14 +3539,6 @@ test(1141.3, data.table(a=1:5, data.table(x=c(1,2), y=c(3,4))), data.table(a=c(1
 DT <- data.table(a=1:2)
 foo <- function() sum(1:5)
 test(1142, DT[, foo()], 15L)
-
-# Fix for bug #5106 - DT[, .N, by=y] was slow when "y" is not a column in DT
-DT <- data.table(x=sample.int(10, 1e6, replace=TRUE))
-y <- DT$x
-te1 <- system.time(ans1 <- DT[, .N, by=x])[["elapsed"]]
-te2 <- system.time(ans2 <- DT[, .N, by=y])[["elapsed"]]
-test(1143.1, ans1, setnames(ans2, "y", "x"))
-test(1143.2, abs(te1-te2) < 1, TRUE)
 
 # Fix for bug #5104 - side-effect of fixing #2531 - `:=` with grouping (by) and assigning factor columns
 DT <- data.table(x=c(1,1,1,2,2), y=factor(letters[1:5]))
@@ -9134,16 +9107,6 @@ DT = data.table(x=1, y=2)
 nn = names(DT)
 test(1661.1, {names(DT) <- c("k", "m"); nn}, c("x","y"), warning=if (base::getRversion()>="3.1.0") NULL else "Please upgrade")
 test(1661.2, names(DT), c("k","m"))
-
-# fwrite crash on very large number of columns (say 100k)
-set.seed(123)
-m <- matrix(runif(3*100000), nrow = 3)
-DT <- as.data.table(m)
-f <- tempfile()
-system.time(fwrite(DT, f, eol='\n', quote=TRUE))  # eol fixed so size test passes on Windows
-system.time(fwrite(DT, f, eol='\n', quote=TRUE))  # run again to force seg fault
-test(1664, abs(file.info(f)$size %/% 100000 - 62) <= 1.5)  # file size appears to be 34 bytes bigger on Windows (6288931 vs 6288965)
-unlink(f)
 
 # rbindlist support for complex type
 dt1 = data.table(x=1L, y=2+3i)

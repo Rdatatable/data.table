@@ -118,3 +118,40 @@ if (FALSE) {
   unlink(f2)
 }
 
+
+# test the speed of simple comparison
+DT <- data.table(a = 1:1e7)
+t1 = system.time(DT[a == 100])[3]
+t2 = system.time(DT[which(a == 100)])[3]
+# make sure we're at most 30% slower than "which" (should pass most of the time)
+test(1110, (t1 - t2)/t2 < 0.3)
+
+# Fix for bug #5106 - DT[, .N, by=y] was slow when "y" is not a column in DT
+DT <- data.table(x=sample.int(10, 1e6, replace=TRUE))
+y <- DT$x
+te1 <- system.time(ans1 <- DT[, .N, by=x])[["elapsed"]]
+te2 <- system.time(ans2 <- DT[, .N, by=y])[["elapsed"]]
+test(1143.1, ans1, setnames(ans2, "y", "x"))
+test(1143.2, abs(te1-te2) < 1, TRUE)
+
+# fwrite crash on very large number of columns (say 100k)
+set.seed(123)
+m <- matrix(runif(3*100000), nrow = 3)
+DT <- as.data.table(m)
+f <- tempfile()
+system.time(fwrite(DT, f, eol='\n', quote=TRUE))  # eol fixed so size test passes on Windows
+system.time(fwrite(DT, f, eol='\n', quote=TRUE))  # run again to force seg fault
+test(1664, abs(file.info(f)$size %/% 100000 - 62) <= 1.5)  # file size appears to be 34 bytes bigger on Windows (6288931 vs 6288965)
+unlink(f)
+
+n=10000
+grp1=sample(1:50,n,replace=TRUE)
+grp2=sample(1:50,n,replace=TRUE)
+dt=data.table(x=rnorm(n),y=rnorm(n),grp1=grp1,grp2=grp2)
+tt = system.time(ans <- dt[,list(.Internal(mean(x)),.Internal(mean(y))),by="grp1,grp2"])
+# test(120, tt[1] < 0.5)   # actually takes more like 0.068 << 0.5, but the micro EC2 instance can be slow sometimes.
+# TO DO: incorporate performance testing into R CMD check (using testthat?), that somehow copes with running on slow machines.
+i = sample(nrow(ans),1)
+test(121, all.equal(ans[i,c(V1,V2)], dt[grp1==ans[i,grp1] & grp2==ans[i,grp2], c(mean(x),mean(y))]))
+# To DO: add a data.frame aggregate method here and check data.table is faster
+
