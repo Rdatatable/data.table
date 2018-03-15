@@ -9069,6 +9069,9 @@ test(1658.27, fwrite(ok_dt, col.names="foobar"), error="isLOGICAL(col.names)")
 # null data table (no columns)
 test(1658.28, fwrite(data.table(a=1)[NULL,]), error="ncol(x) > 0L is not TRUE")
 
+# 0.0 written as 0
+test(1658.29, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="id,v\nA,1.1\nB,0\nC,9.9")
+
 ## End fwrite tests
 
 # tests for #679, inrange(), FR #707
@@ -11480,6 +11483,17 @@ test(1887, na.omit(DT, invert = TRUE), DT_out)
 
 x = runif(1e4)
 test(1888, fsort(x), base::sort(x))
+
+# doubling of savetl buffer (currently starts with 100)
+x = as.character(as.hexmode(1:1000))
+for (i in x) assign(i, 1L)
+test(1889, chmatch(x,x), 1:1000)
+
+# test DT$.<- in a data.table-unaware package
+DT = data.table(A=1:5)
+test(1890.1, stats::ts.plot(gpars=DT), error="object must have one or more observations")
+# Inside ts.plot is a gpars$ylab<- which happens before its error. That dispatches to our $<- which does the alloc.col()
+test(1890.2, DT, data.table(A=1:5))
 
 ###################################
 #  Add new tests above this line  #
