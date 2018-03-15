@@ -138,7 +138,7 @@ melt(DT, id=1:2, measure=patterns("l_", "c_"), na.rm=TRUE)
 
 }
 \seealso{
-  \code{\link{dcast}}, \url{http://had.co.nz/reshape/}
+  \code{\link{dcast}}, \url{https://cran.r-project.org/package=reshape}
 }
 \keyword{ data }
 
