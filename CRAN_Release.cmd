@@ -58,6 +58,9 @@ grep -P "\t" ./src/*.c
 grep -n "[^A-Za-z0-9]T[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 
+# No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
+grep -n "system[.]time" ./inst/tests/tests.Rraw
+
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
 # Greppable thanks to single lines and wide screens
@@ -96,7 +99,7 @@ R
 cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently gcc-7) as CRAN does
 q("no")
 R CMD build data.table
-R CMD check data.table_1.10.1.tar.gz --as-cran
+R CMD check data.table_1.10.1.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
 R CMD INSTALL data.table_1.10.1.tar.gz
 R
 require(data.table)
@@ -489,7 +492,7 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CM
 Bump versions in DESCRIPTION and NEWS to even release number
 Do not push to GitHub. Prevents even a slim possibility of user getting premature version. install_github() should only ever fetch odd releases at all times. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
 R CMD build data.table
-R CMD check --as-cran data.table_1.10.4.tar.gz
+R CMD check --as-cran data.table_1.10.4.tar.gz   # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
 Resubmit to winbuilder (both R-release and R-devel)
 Submit to CRAN
 Bump version in DESCRIPTION to next ODD dev version

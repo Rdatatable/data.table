@@ -1,4 +1,4 @@
-test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
+test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE) {
   if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
@@ -7,39 +7,46 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE) {
     d = file.path(d, "inst/tests")
     # nocov end
   } else {
-    # R CMD check and user running test.data.table()
+    # i) R CMD check and ii) user running test.data.table()
     d = paste0(getNamespaceInfo("data.table","path"),"/tests")
   }
   # for (fn in dir(d,"*.[rR]$",full=TRUE)) {  # testthat runs those
+
+  stopifnot( !(with.other.packages && benchmark) )
+  fn = if (with.other.packages) "other.Rraw"
+       else if (benchmark) "benchmark.Rraw"
+       else "tests.Rraw"
+  fn = file.path(d, fn)
+  if (!file.exists(fn)) stop(fn," does not exist")
+
+  oldverbose = options(datatable.verbose=verbose)
   oldenc = options(encoding="UTF-8")[[1L]]  # just for tests 708-712 on Windows
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
 
-  envirs <- list()
-  for (fn in file.path(d, 'tests.Rraw')) {    # not testthat
-    cat("Running",fn,"\n")
-    oldverbose = options(datatable.verbose=verbose)
-    envirs[[fn]] = new.env(parent=.GlobalEnv)
-    assign("testDir", function(x)file.path(d,x), envir=envirs[[fn]])
-    if(isTRUE(silent)){
-      try(sys.source(fn,envir=envirs[[fn]]), silent=silent)  # nocov
-    } else {
-      sys.source(fn,envir=envirs[[fn]])
-    }
-    options(oldverbose)
+  cat("Running",fn,"\n")
+  env = new.env(parent=.GlobalEnv)
+  assign("testDir", function(x)file.path(d,x), envir=env)
+  assign("nfail", 0L, envir=env)
+  assign("ntest", 0L, envir=env)
+  assign("whichfail", NULL, envir=env)
+  setDTthreads(2) # explicitly limit to 2 so as not to breach CRAN policy (but tests are small so should not use more than 2 anyway)
+  assign("started.at", proc.time(), envir=env)
+  assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
+  assign("timings", data.table( ID = seq_len(3000L), time=0.0, nTest=0L ), envir=env)   # test timings aggregated to integer id
+  # It doesn't matter that 3000L is far larger than needed for other and benchmark.
+  if(isTRUE(silent)){
+    try(sys.source(fn,envir=env), silent=silent)  # nocov
+  } else {
+    sys.source(fn,envir=env)
   }
-  options(encoding=oldenc)
+  options(oldverbose)
+  options(oldenc)
   # Sys.setlocale("LC_CTYPE", oldlocale)
-  invisible(sum(sapply(envirs, `[[`, "nfail"))==0)
+  setDTthreads(0)
+  invisible(env$nfail==0)
 }
-
-# Define test() and its globals here, for use in dev
-# But primarily called by test.data.table() calling inst/tests/tests.Rraw
-# Initialized at the top of tests.Raw ...
-# nfail = ntest = lastnum = 0
-# whichfail = NULL
-# .devtesting = TRUE
 
 # nocov start
 compactprint <- function(DT, topn=2L) {
@@ -77,18 +84,27 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   #    from all.equal and different to identical related to row.names and unused factor levels
   # 3) each test has a unique id which we refer to in commit messages, emails etc.
   # 4) test that a query generates exactly 2 warnings, that they are both the correct warning messages, and that the result is the one expected
-  nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
-  whichfail = get("whichfail", parent.frame())
-  all.equal.result = TRUE
-  assign("ntest", get("ntest", parent.frame()) + 1L, parent.frame(), inherits=TRUE)   # bump number of tests run
-  assign("lastnum", num, parent.frame(), inherits=TRUE)
-
-  cat("\rRunning test id", sprintf("%.8g", num), "     ")
-  flush.console()
-  # This flush is for Windows to make sure last test number is written to file in CRAN and win-builder output where
-  # console output is captured. \r seems especially prone to not being auto flushed. The downside is that the last 13
-  # lines output are filled with the last 13 "running test num" lines rather than the last error output, but that's
-  # better than the dev-time-lost when it crashes and it actually crashed much later than the last test number visible.
+  .test.data.table = exists("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
+  if (.test.data.table) {
+    nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
+    whichfail = get("whichfail", parent.frame())
+    assign("ntest", get("ntest", parent.frame()) + 1L, parent.frame(), inherits=TRUE)   # bump number of tests run
+    lasttime = get("lasttime", parent.frame())
+    timings = get("timings", parent.frame())
+    time = nTest = NULL  # to avoid 'no visible binding' note
+    on.exit( {
+       now = proc.time()[3]
+       took = now-lasttime  # so that prep time between tests is attributed to the following test
+       assign("lasttime", now, parent.frame(), inherits=TRUE)
+       timings[ as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE ]
+    } )
+    cat("\rRunning test id", sprintf("%.8g", num), "     ")
+    flush.console()
+    # This flush is for Windows to make sure last test number is written to file in CRAN and win-builder output where
+    # console output is captured. \r seems especially prone to not being auto flushed. The downside is that the last 13
+    # lines output are filled with the last 13 "running test num" lines rather than the last error output, but that's
+    # better than the dev-time-lost when it crashes and it actually crashed much later than the last test number visible.
+  }
 
   if (!missing(error) && !missing(y)) stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")
 
@@ -171,7 +187,8 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   }
   if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
     y = try(y,TRUE)
-    if (identical(x,y)) return()
+    if (identical(x,y)) return(invisible())
+    all.equal.result = TRUE
     if (is.data.table(x) && is.data.table(y)) {
       if (!selfrefok(x) || !selfrefok(y)) {
         # nocov start
@@ -188,12 +205,12 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
         setattr(yc,"row.names",NULL)
         setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
         setattr(yc,"index",NULL)
-        if (identical(xc,yc) && identical(key(x),key(y))) return()  # check key on original x and y because := above might have cleared it on xc or yc
+        if (identical(xc,yc) && identical(key(x),key(y))) return(invisible())  # check key on original x and y because := above might have cleared it on xc or yc
         if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
-          identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return()
+          identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return(invisible())
       }
     }
-    if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y,check.names=!isTRUE(y))) && typeof(x)==typeof(y)) return()
+    if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y,check.names=!isTRUE(y))) && typeof(x)==typeof(y)) return(invisible())
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     # nocov start
     if (!fail) {
@@ -207,9 +224,9 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     }
     # nocov end
   }
-  if (fail) {
+  if (fail && .test.data.table) {
     # nocov start
-    assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)   # Not the same as nfail <<- nfail + 1, it seems (when run via R CMD check)
+    assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
     assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
     # nocov end
   }

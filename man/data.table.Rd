@@ -215,7 +215,6 @@ See the \code{see also} section for the several other \emph{methods} that are av
 }
 \references{
 \url{https://github.com/Rdatatable/data.table/wiki} (\code{data.table} homepage)\cr
-\url{http://crantastic.org/packages/data-table} (User reviews)\cr
 \url{http://en.wikipedia.org/wiki/Binary_search}
 }
 \note{ If \code{keep.rownames} or \code{check.names} are supplied they must be written in full because \R does not allow partial argument names after `\code{\dots}`. For example, \code{data.table(DF, keep=TRUE)} will create a
