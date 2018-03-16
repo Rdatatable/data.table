@@ -11510,13 +11510,13 @@ if (identical(enc2utf8(enc2native(utf8_strings)), utf8_strings)) {
   native_strings <- enc2native(utf8_strings)
   # 1e7 length character should be large enough to trigger the garbage collecting
   DT <- data.table(x = rep(native_strings, 0.2e7), key = "x")
-  test(1881.1, unique(DT$x), sort(utf8_strings, method = "radix"))
+  test(1891.1, unique(DT$x), sort(utf8_strings, method = "radix"))
 
   # by, keyby should treat the string with different encoding as the same
   mixed_strings <- c(utf8_strings, native_strings)
   DT <- data.table(x = mixed_strings)
-  test(1881.2, DT[, .(CT = .N), keyby = x]$CT, rep(2L, 5))
-  test(1881.3, DT[, uniqueN(x)], 5L)
+  test(1891.2, DT[, .(CT = .N), keyby = x]$CT, rep(2L, 5))
+  test(1891.3, DT[, uniqueN(x)], 5L)
 }
 
 
