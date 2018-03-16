@@ -143,6 +143,9 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
 Where there are duplicate column names (i.e. `suffixes = c("", "")`) `merge()` will throw a warning to match
 the behaviour of `base:::merge.data.frame()`. Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdatatable/data.table/pull/2631). 
 
+35. Fixed a bug on Windows that `data.table` may break if the garbage collecting was triggered when sorting a large number of non-ASCII characters. Thanks to @shrektan for reporting and fixing [PR#2678](https://github.com/Rdatatable/data.table/pull/2678),  [#2674](https://github.com/Rdatatable/data.table/issues/2674).
+
+
 #### NOTES
 
 0. The license has been changed from GPL to MPL (Mozilla Public License). All contributors were consulted and approved. [PR#2456](https://github.com/Rdatatable/data.table/pull/2456) details the reasons for the change.
