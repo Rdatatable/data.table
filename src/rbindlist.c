@@ -654,8 +654,8 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
   setAttrib(ans, R_NamesSymbol, fnames);
   lf = VECTOR_ELT(l, data.first);
   for(j=0; j<data.n_cols; j++) {
-    if (fill) target = allocNAVector(data.max_type[j], data.n_rows);
-    else target = allocVector(data.max_type[j], data.n_rows);
+    if (fill) target = allocNAVector(data.max_type[j], data.n_rows);  // no PROTECT needed as passed immediately to SET_VECTOR_ELT
+    else target = allocVector(data.max_type[j], data.n_rows);         // no PROTECT needed as passed immediately to SET_VECTOR_ELT
     SET_VECTOR_ELT(ans, j+isidcol, target);
 
     if (usenames) {
@@ -768,16 +768,14 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
     R_len_t runidx = 1, cntridx = 0;
     SEXP lnames = getAttrib(l, R_NamesSymbol);
     if (isNull(lnames)) {
-      target = allocVector(INTSXP, data.n_rows);
-      SET_VECTOR_ELT(ans, 0, target);
+      SET_VECTOR_ELT(ans, 0, target=allocVector(INTSXP, data.n_rows) );
       for (i=0; i<LENGTH(l); i++) {
         for (j=0; j<data.fn_rows[i]; j++)
           INTEGER(target)[cntridx++] = runidx;
         runidx++;
       }
     } else {
-      target = allocVector(STRSXP, data.n_rows);
-      SET_VECTOR_ELT(ans, 0, target);
+      SET_VECTOR_ELT(ans, 0, target=allocVector(STRSXP, data.n_rows) );
       for (i=0; i<LENGTH(l); i++) {
         for (j=0; j<data.fn_rows[i]; j++)
           SET_STRING_ELT(target, cntridx++, STRING_ELT(lnames, i));
@@ -882,8 +880,7 @@ static SEXP listlist(SEXP x) {
   for (i=0; i<length(xs); i++) {
     SET_STRING_ELT(ans0, i, STRING_ELT(x, INTEGER(xo)[INTEGER(xs)[i]-1]-1));
     nl = INTEGER(xl)[i];
-    tmp = allocVector(INTSXP, nl);
-    SET_VECTOR_ELT(ans1, i, tmp);
+    SET_VECTOR_ELT(ans1, i, tmp=allocVector(INTSXP, nl) );
     for (j=0; j<nl; j++) {
       INTEGER(tmp)[j] = INTEGER(xo)[k+j];
     }

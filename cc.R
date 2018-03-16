@@ -20,6 +20,8 @@
 # c
 # test and step between R and C
 
+options(datatable.print.class = TRUE)
+
 sourceDir <- function(path=getwd(), trace = TRUE, ...) {
   # copied verbatim from example(source) in base R
   for (nm in list.files(path, pattern = "\\.[RrSsQq]$")) {
@@ -30,9 +32,7 @@ sourceDir <- function(path=getwd(), trace = TRUE, ...) {
 }
 
 cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) {
-  suppressMessages(library(bit64))
   gc()
-  try(detach("package:data.table"),silent=TRUE)
 
   xx = try(getDLLRegisteredRoutines("datatable",TRUE), silent=TRUE)
   if (!inherits(xx, "try-error")) {
@@ -78,10 +78,6 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) 
   gc()
   invisible()
 }
-
-# dummy globals for test() to work in dev
-nfail = ntest = lastnum = 0
-whichfail = NULL
 
 dd = function()cc(FALSE,debug=TRUE,clean=TRUE)
 

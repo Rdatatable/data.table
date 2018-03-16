@@ -215,7 +215,6 @@ See the \code{see also} section for the several other \emph{methods} that are av
 }
 \references{
 \url{https://github.com/Rdatatable/data.table/wiki} (\code{data.table} homepage)\cr
-\url{http://crantastic.org/packages/data-table} (User reviews)\cr
 \url{http://en.wikipedia.org/wiki/Binary_search}
 }
 \note{ If \code{keep.rownames} or \code{check.names} are supplied they must be written in full because \R does not allow partial argument names after `\code{\dots}`. For example, \code{data.table(DF, keep=TRUE)} will create a
@@ -409,10 +408,8 @@ dev.off()
 # using rleid, get max(y) and min of all cols in .SDcols for each consecutive run of 'v'
 DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
 
-# Follow r-help posting guide, SUPPORT is here (*not* r-help) :
-# http://stackoverflow.com/questions/tagged/data.table
-# or
-# datatable-help@lists.r-forge.r-project.org
+# Support guide and links:
+# https://github.com/Rdatatable/data.table/wiki/Support
 
 \dontrun{
 if (interactive()) {
@@ -423,13 +420,13 @@ if (interactive()) {
   vignette("datatable-reshape")
   vignette("datatable-faq")
 
-
-  test.data.table()          # over 5700 low level tests
+  test.data.table()          # over 6,000 low level tests
 
   # keep up to date with latest stable version on CRAN
   update.packages()
-  # get the latest devel (needs Rtools for windows, xcode for mac)
-  install.packages("data.table", repos = "https://Rdatatable.github.io/data.table", type = "source")
+
+  # get the latest devel version (compiled binary for Windows available -- no tools needed)
+  # https://github.com/Rdatatable/data.table/wiki/Installation
 }
 }}
 \keyword{ data }

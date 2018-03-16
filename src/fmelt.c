@@ -362,7 +362,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
   for (i=0; i<data->lvalues; i++) {
     thisvaluecols = VECTOR_ELT(data->valuecols, i);
     if (!data->isidentical[i])
-      warning("'measure.vars' [%s] are not all of the same type. By order of hierarchy, the molten data value column will be of type '%s'. All measure variables not of type '%s' will be coerced to. Check DETAILS in ?melt.data.table for more on coercion.\n", CHAR(STRING_ELT(concat(dtnames, thisvaluecols), 0)), type2char(data->maxtype[i]), type2char(data->maxtype[i]));
+      warning("'measure.vars' [%s] are not all of the same type. By order of hierarchy, the molten data value column will be of type '%s'. All measure variables not of type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on coercion.\n", CHAR(STRING_ELT(concat(dtnames, thisvaluecols), 0)), type2char(data->maxtype[i]), type2char(data->maxtype[i]));
     if (data->maxtype[i] == VECSXP && data->narm) {
       if (verbose) Rprintf("The molten data value type is a list at item %d. 'na.rm=TRUE' is ignored.\n", i+1);
       data->narm = FALSE;
@@ -391,8 +391,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
   ansvals = PROTECT(allocVector(VECSXP, data->lvalues)); protecti++;
   for (i=0; i<data->lvalues; i++) {
     thisvalfactor = (data->maxtype[i] == VECSXP) ? FALSE : valfactor;
-    target = allocVector(data->maxtype[i], data->totlen);
-    SET_VECTOR_ELT(ansvals, i, target);
+    SET_VECTOR_ELT(ansvals, i, target=allocVector(data->maxtype[i], data->totlen) );
     thisvaluecols = VECTOR_ELT(data->valuecols, i);
     counter = 0; copyattr = FALSE;
     for (j=0; j<data->lmax; j++) {
@@ -487,8 +486,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   SEXP ansvars, thisvaluecols, levels, target, matchvals, thisnames;
 
   ansvars = PROTECT(allocVector(VECSXP, 1)); protecti++;
-  target = allocVector(INTSXP, data->totlen);
-  SET_VECTOR_ELT(ansvars, 0, target);
+  SET_VECTOR_ELT(ansvars, 0, target=allocVector(INTSXP, data->totlen) );
   if (data->lvalues == 1) {
     thisvaluecols = VECTOR_ELT(data->valuecols, 0);
     // tmp fix for #1055
@@ -531,7 +529,9 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       nlevels = data->lmax;
     }
   }
-  setAttrib(target, R_ClassSymbol, mkString("factor"));
+  SEXP tmp = PROTECT(mkString("factor"));
+  setAttrib(target, R_ClassSymbol, tmp);
+  UNPROTECT(1);  // tmp
   cnt = 0;
   if (data->lvalues == 1) {
     levels = PROTECT(allocVector(STRSXP, nlevels));
@@ -545,7 +545,9 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   } else levels = PROTECT(coerceVector(seq_int(nlevels, 1), STRSXP)); // generate levels = 1:nlevels
   // base::unique is fast on vectors, and the levels on variable columns are usually small
   SEXP uniqueLangSxp = PROTECT(lang2(install("unique"), levels));
-  setAttrib(target, R_LevelsSymbol, eval(uniqueLangSxp, R_GlobalEnv));
+  tmp = PROTECT(eval(uniqueLangSxp, R_GlobalEnv));
+  setAttrib(target, R_LevelsSymbol, tmp);
+  UNPROTECT(1); // tmp
   UNPROTECT(2); // levels, uniqueLangSxp
   if (!varfactor) SET_VECTOR_ELT(ansvars, 0, asCharacterFactor(target));
   UNPROTECT(protecti);
@@ -562,8 +564,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
     counter = 0;
     thiscol = VECTOR_ELT(DT, INTEGER(data->idcols)[i]-1);
     size = SIZEOF(thiscol);
-    target = allocVector(TYPEOF(thiscol), data->totlen);
-    SET_VECTOR_ELT(ansids, i, target);
+    SET_VECTOR_ELT(ansids, i, target=allocVector(TYPEOF(thiscol), data->totlen) );
     copyMostAttrib(thiscol, target); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     switch(TYPEOF(thiscol)) {
     case REALSXP :
@@ -675,7 +676,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     ansids  = PROTECT(getidcols(DT, dtnames, verbose, &data)); protecti++;
 
     // populate 'ans'
-    ans = allocVector(VECSXP, data.lids+1+data.lvalues); // 1 is for variable column
+    ans = PROTECT(allocVector(VECSXP, data.lids+1+data.lvalues)); protecti++; // 1 is for variable column
     for (i=0; i<data.lids; i++) {
       SET_VECTOR_ELT(ans, i, VECTOR_ELT(ansids, i));
     }

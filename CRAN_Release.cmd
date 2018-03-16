@@ -12,49 +12,60 @@ q("no")
 # Ensure latest version of R otherwise problems with CRAN not finding dependents that depend on latest R
 # e.g. mirror may have been disabled in sources.list when upgrading ubuntu
 
+rm ./src/*.so
+rm ./src/*.o
+rm -rf ./data.table.Rcheck
+
 # Ensure no non-ASCII, other than in README.md is ok
 # tests.Rraw in particular have failed CRAN Solaris (only) due to this.
-# No unicode either. Put these tests in DtNonAsciiTests package.
-grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" data.table/
-grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" data.table/
+grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" ./
+
+# No unicode either?! Put these tests in DtNonAsciiTests package. Trying this again to see what happens now that Solaris is dead. Tests 1864.1 and 1864.2
+grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" ./
 
 # Ensure no calls to omp_set_num_threads() [to avoid affecting other packages and base R]
-grep --exclude="data.table/src/openmp-utils.c" omp_set_num_threads data.table/src/*
+grep --exclude="./src/openmp-utils.c" omp_set_num_threads ./src/*
 
 # Ensure no calls to omp_get_max_threads() also since access should be via getDTthreads()
-grep --exclude="data.table/src/openmp-utils.c" omp_get_max_threads data.table/src/*
+grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*
 
 # Ensure all #pragama omp parallel directives include a num_threads() clause
-grep "pragma omp parallel" data.table/src/*.c
+grep "pragma omp parallel" ./src/*.c
 
 # Ensure all .Call's first argument are unquoted.  TODO - change to use INHERITS()
-grep "[.]Call(\"" data.table/R/*.R
+grep "[.]Call(\"" ./R/*.R
 
 # Ensure no Rprintf in init.c
-grep "Rprintf" data.table/src/init.c
+grep "Rprintf" ./src/init.c
 
 # workaround for IBM AIX - ensure no globals named 'nearest' or 'class'.
 # See https://github.com/Rdatatable/data.table/issues/1351
-grep "nearest *=" data.table/src/*.c  # none
-grep "class *=" data.table/src/*.c    # quite a few but none global
+grep "nearest *=" ./src/*.c  # none
+grep "class *=" ./src/*.c    # quite a few but none global
 
 # No undefined type punning of the form:  *(long long *)&REAL(column)[i]
 # Failed clang 3.9.1 -O3 due to this, I think.
-grep "&REAL" data.table/src/*.c
+grep "&REAL" ./src/*.c
 
 # No use of long long, instead use int64_t. TODO
-# grep "long long" data.table/src/*.c
+# grep "long long" ./src/*.c
 
-# No tabs in C or R code (sorry Richard Hendricks)
-grep -P "\t" data.table/R/*.R
-grep -P "\t" data.table/src/*.c
+# No tabs in C or R code (sorry, Richard Hendricks)
+grep -P "\t" ./R/*.R
+grep -P "\t" ./src/*.c
 
+# No T or F symbols in tests.Rraw. 24 valid F (quoted, column name or in data) and 1 valid T at the time of writing
+grep -n "[^A-Za-z0-9]T[^A-Za-z0-9]" ./inst/tests/tests.Rraw
+grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
+
+# No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
+grep -n "system[.]time" ./inst/tests/tests.Rraw
 
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
 # Greppable thanks to single lines and wide screens
 # See comments in init.c
-cd data.table/src
+cd ./src
 grep install.*alloc *.c   --exclude init.c
 grep install.*Scalar *.c
 grep alloc.*install *.c   --exclude init.c
@@ -68,21 +79,27 @@ grep "PROTECT *( *getAttrib" *.c  # attributes are already protected
 grep "\"starts\"" *.c     --exclude init.c
 grep "setAttrib(" *.c      # scan all setAttrib calls manually as a double-check
 grep "install(" *.c       --exclude init.c   # TODO: perhaps in future pre-install all constants
+grep mkChar *.c            # see comment in bmerge.c about passing this grep. I'm not sure char_ is really necessary, though.
 
 # ScalarInteger and ScalarString allocate and must be PROTECTed unless i) returned (which protects),
 # or ii) passed to setAttrib (which protects, providing leak-seals above are ok)
-# ScalarLogical in R now returns R's global TRUE but from R 3.1.0; Apr 2014. Before that it allocates.
+# ScalarLogical in R now returns R's global TRUE from R 3.1.0; Apr 2014. Before that it allocated.
 # Aside: ScalarInteger may return globals for small integers in future version of R.
 grep ScalarInteger *.c   # Check all Scalar* either PROTECTed, return-ed or passed to setAttrib.
-grep ScalarLogical *.c   # When we move R dependency to 3.1.0+, no need to protect ScalarLogical
+grep ScalarLogical *.c   # Now we depend on 3.1.0, check ScalarLogical is NOT PROTECTed.
 grep ScalarString *.c
+
+# Inspect missing PROTECTs
+# To pass this grep is why we like SET_VECTOR_ELT(,,var=allocVector()) style on one line.
+# If a PROTECT is not needed then a comment is added explaining why and including "PROTECT" in the comment to pass this grep
+grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
 cd
 R
 cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently gcc-7) as CRAN does
 q("no")
 R CMD build data.table
-R CMD check data.table_1.10.1.tar.gz --as-cran
+R CMD check data.table_1.10.1.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
 R CMD INSTALL data.table_1.10.1.tar.gz
 R
 require(data.table)
@@ -156,31 +173,62 @@ vi ~/.R/Makevars  # make the -O3 line active again
 ###############################################
 
 cd ~/build
-wget -N ftp://ftp.stat.math.ethz.ch/pub/Software/R/R-devel.tar.gz
+wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
 rm -rf R-devel
 tar xvf R-devel.tar.gz
 cd R-devel
 # Following R-exts#4.3.3
-./configure CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-g -Og -Wall -pedantic" LIBS="-lpthread" --without-recommended-packages --disable-byte-compiled-packages --disable-openmp
+
+## 64bit (normal)
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
+##
+
+## 32bit on 64bit Ubuntu (for tracing any 32bit-only Rdevel-only problems)
+dpkg --add-architecture i386
+apt-get update
+apt-get install libc6:i386 libstdc++6:i386 gcc-multilib g++-multilib gfortran-multilib libbz2-dev:i386 liblzma-dev:i386 libpcre3-dev:i386 libcurl3-dev:i386 libstdc++-7-dev:i386
+sudo apt-get purge libcurl4-openssl-dev    # cannot coexist, it seems
+sudo apt-get install libcurl4-openssl-dev:i386
+cd ~/build/32bit/R-devel
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --without-readline --without-x CC="gcc -m32" CXX="g++ -m32" F77="gfortran -m32" FC=${F77} OBJC=${CC} LDFLAGS="-L/usr/local/lib" LIBnn=lib LIBS="-lpthread" CFLAGS="-O0 -g -Wall -pedantic"
+##
+
 # For ubsan, disabled openmp otherwise gcc fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel
 # UBSAN gives direct line number under gcc but not clang it seems. clang-5.0 has been helpful too, though.
 # If use later gcc-8, add F77=gfortran-8
 # LIBS="-lpthread" otherwise ld error about DSO missing
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
+Rdevel CMD INSTALL data.table_1.10.5.tar.gz
+# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
+# them so should be passed through to here
 Rdevel
 install.packages("bit64")  # important to run tests using integer64
 # Skip compatibility tests with other Suggests packages; unlikely UBSAN/ASAN problems there.
-q("no")
-Rdevel CMD INSTALL data.table_1.10.5.tar.gz
-# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
-# them (above) so should be passed through to here
-Rdevel
 require(data.table)
 require(bit64)
 test.data.table()     # slower than usual of course due to UBSAN and ASAN. Too slow to run R CMD check.
 # Throws /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those: https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
 q("no")
+
+# Rebuild without ASAN/UBSAN and test again under torture
+make clean
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp CC="gcc -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
+make
+Rdevel CMD INSTALL data.table_1.10.5.tar.gz
+install.packages("bit64")
+require(bit64)
+require(data.table)
+test.data.table()  # just quick re-check
+gctorture2(step=100)    # 1h 26m
+print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
+# Running test id 1437.0331      Error : protect(): protection stack overflow
+
+
+#############################################################################
+# TODO: recompile without USE_RINTERNALS and recheck write barrier under ASAN
+#############################################################################
+There are some things to overcome to achieve compile without USE_RINTERNALS, though.
 
 
 ###############################################
@@ -444,7 +492,7 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CM
 Bump versions in DESCRIPTION and NEWS to even release number
 Do not push to GitHub. Prevents even a slim possibility of user getting premature version. install_github() should only ever fetch odd releases at all times. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
 R CMD build data.table
-R CMD check --as-cran data.table_1.10.4.tar.gz
+R CMD check --as-cran data.table_1.10.4.tar.gz   # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
 Resubmit to winbuilder (both R-release and R-devel)
 Submit to CRAN
 Bump version in DESCRIPTION to next ODD dev version

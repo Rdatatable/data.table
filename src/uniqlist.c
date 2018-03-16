@@ -228,3 +228,28 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   UNPROTECT(1);
   return(ans);
 }
+
+SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
+  // single pass; short-circuit and return as soon as all 3 values are found
+  if (!isLogical(x)) error("x is not a logical vector");
+  if (!isLogical(narmArg) || length(narmArg)!=1 || INTEGER(narmArg)[0]==NA_INTEGER) error("na.rm must be TRUE or FALSE");
+  bool narm = LOGICAL(narmArg)[0]==1;
+  const R_xlen_t n = xlength(x);
+  if (n==0)
+    return ScalarInteger(0);  // empty vector
+  Rboolean first = LOGICAL(x)[0];
+  R_xlen_t i=0;
+  while (++i<n && LOGICAL(x)[i]==first);
+  if (i==n)
+    return ScalarInteger(first==NA_INTEGER && narm ? 0 : 1); // all one value
+  Rboolean second = LOGICAL(x)[i];
+  // we've found 2 different values (first and second). Which one didn't we find? Then just look for that.
+  // NA_LOGICAL == INT_MIN checked in init.c
+  const int third = (first+second == 1) ? NA_LOGICAL : ( first+second == INT_MIN ? TRUE : FALSE );
+  if (third==NA_LOGICAL && narm)
+    return ScalarInteger(2);  // TRUE and FALSE found before any NA, but na.rm=TRUE so we're done
+  while (++i<n) if (LOGICAL(x)[i]==third)
+    return ScalarInteger(3-narm);
+  return ScalarInteger(2-(narm && third!=NA_LOGICAL));
+}
+

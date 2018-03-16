@@ -4,6 +4,7 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 #include <stdint.h> // for uint64_t rather than unsigned long long
+#include <stdbool.h>
 #include "myomp.h"
 
 // data.table depends on R>=3.0.0 when R_xlen_t was introduced
@@ -56,6 +57,10 @@ SEXP char_IDate;
 SEXP char_Date;
 SEXP char_POSIXct;
 SEXP char_nanotime;
+SEXP char_lens;
+SEXP char_indices;
+SEXP char_allLen1;
+SEXP char_allGrp1;
 SEXP sym_sorted;
 SEXP sym_index;
 SEXP sym_BY;

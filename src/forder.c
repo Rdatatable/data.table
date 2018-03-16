@@ -1098,7 +1098,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 
   if (isNewList(DT)) {
     if (!length(DT)) error("DT is an empty list() of 0 columns");
-    if (!isInteger(by) || !length(by)) error("DT has %d columns but 'by' is either not integer or length 0", length(DT));  // seq_along(x) at R level
+    if (!isInteger(by) || !LENGTH(by)) error("DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // seq_along(x) at R level
+    if (!isInteger(orderArg) || LENGTH(orderArg)!=LENGTH(by)) error("Either 'order' is not integer or its length (%d) is different to 'by's length (%d)", LENGTH(orderArg), LENGTH(by));
     n = length(VECTOR_ELT(DT,0));
     for (i=0; i<LENGTH(by); i++) {
       if (INTEGER(by)[i] < 1 || INTEGER(by)[i] > length(DT))
@@ -1109,6 +1110,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     x = VECTOR_ELT(DT,INTEGER(by)[0]-1);
   } else {
     if (!isNull(by)) error("Input is a single vector but 'by' is not NULL");
+    if (!isInteger(orderArg) || LENGTH(orderArg)!=1) error("Input is a single vector but 'order' is not a length 1 integer");
     n = length(DT);
     x = DT;
   }
@@ -1120,12 +1122,22 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? 0 : (LOGICAL(naArg)[0] == TRUE) ? 1 : -1; // 1=TRUE, -1=FALSE, 0=NA
   gsmaxalloc = n;  // upper limit for stack size (all size 1 groups). We'll detect and avoid that limit, but if just one non-1 group (say 2), that can't be avoided.
 
-  // TODO: check for 'orderArg'
+  if (n==0) {
+    // empty vector or 0-row DT is always sorted
+    SEXP ans = PROTECT(allocVector(INTSXP, 0));
+    if (LOGICAL(retGrp)[0]) {
+      setAttrib(ans, sym_starts, allocVector(INTSXP, 0));
+      setAttrib(ans, sym_maxgrpn, ScalarInteger(0));
+    }
+    UNPROTECT(1);
+    return ans;
+  }
+  // if n==1, the code is left to proceed below in case one or more of the 1-row by= columns are NA and na.last=NA. Otherwise it would be easy to return now.
 
   SEXP ans = PROTECT(allocVector(INTSXP, n)); // once for the result, needs to be length n.
   int *o = INTEGER(ans);                      // TO DO: save allocation if NULL is returned (isSorted==TRUE)
   o[0] = -1;                                  // so [i|c|d]sort know they can populate o directly with no working memory needed to reorder existing order
-                        // had to repace this from '0' to '-1' because 'nalast = 0' replace 'o[.]' with 0 values.
+                                              // using -1 rather than 0 because 'nalast = 0' replaces 'o[.]' with 0 values.
   xd = DATAPTR(x);
   stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
   savetl_init();   // from now on use Error not error.

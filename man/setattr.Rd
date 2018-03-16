@@ -35,14 +35,16 @@ setnames(x,old,new)
 \examples{
 
 DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies and syntax
-try(tracemem(DF))                  # try() for R sessions opted out of memory profiling
+if (capabilities()["profmem"])     # usually memory profiling is available but just in case
+  tracemem(DF)
 colnames(DF)[1] <- "A"             # 4 shallow copies (R >= 3.1, was 4 deep copies before)
 names(DF)[1] <- "A"                # 3 shallow copies
 names(DF) <- c("A", "b")           # 1 shallow copy
 `names<-`(DF,c("A","b"))           # 1 shallow copy
 
 DT = data.table(a=1:2,b=3:4,c=5:6) # compare to data.table
-try(tracemem(DT))                  # by reference, no deep or shallow copies
+if (capabilities()["profmem"])
+  tracemem(DT)                     # by reference, no deep or shallow copies
 setnames(DT,"b","B")               # by name, no match() needed (warning if "b" is missing)
 setnames(DT,3,"C")                 # by position with warning if 3 > ncol(DT)
 setnames(DT,2:3,c("D","E"))        # multiple

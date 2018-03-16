@@ -46,9 +46,8 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   # cbind directs to.  And the nested loops for recycling lend themselves to being C level.
 
   x <- list(...)   # doesn't copy named inputs as from R >= 3.1.0 (a very welcome change)
-  if (!.R.listCopiesNamed) .Call(CcopyNamedInList,x)   # to maintain the old behaviour going forwards, for now. See test 548.2.
-  # **TO DO** Something strange with NAMED on components of `...`. To investigate. Or just port data.table() to C. This is why
-  # it's switched, because extra copies would be introduced in R <= 3.1.0, iiuc.
+  .Call(CcopyNamedInList,x)   # to maintain pre-Rv3.1.0 behaviour, for now. See test 548.2. TODO: revist
+  # TODO Something strange with NAMED on components of `...` to investigate. Or, just port data.table() to C.
 
   # fix for #5377 - data.table(null list, data.frame and data.table) should return null data.table. Simple fix: check all scenarios here at the top.
   if (identical(x, list(NULL)) || identical(x, list(list())) ||
@@ -1986,11 +1985,7 @@ tail.data.table <- function(x, n=6L, ...) {
     # search for one other .Call to assign in [.data.table to see how it differs
   }
   verbose=getOption("datatable.verbose")
-  if (!.R.subassignCopiesOthers) {   # From 3.1.0, DF[2,"b"] = 7 no longer copies DF$a, but the VECSXP is copied (i.e. a shallow copy).
-    x = .Call(Cassign,copy(x),i,cols,newnames,value,verbose)
-  } else {
-    .Call(Cassign,x,i,cols,newnames,value,verbose)
-  }
+  x = .Call(Cassign,copy(x),i,cols,newnames,value,verbose) # From 3.1.0, DF[2,"b"] = 7 no longer copies DF$a (so in this [<-.data.table method we need to copy)
   alloc.col(x)  #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
   if (length(reinstatekey)) setkeyv(x,reinstatekey)
   invisible(x)
@@ -2050,7 +2045,6 @@ dimnames.data.table <- function(x) {
 "dimnames<-.data.table" = function (x, value)   # so that can do  colnames(dt)=<..>  as well as names(dt)=<..>
 {
   if (!cedta()) return(`dimnames<-.data.frame`(x,value))  # won't maintain key column (if any). Revisit if ever causes a compatibility problem but don't think it's likely that packages change column names using dimnames<-. See names<-.data.table below.
-  if (.R.assignNamesCopiesAll) warning("This is R<3.1.0 where dimnames(x)<-value syntax deep copies the entire table. Please upgrade to R>=3.1.0 and see ?setnames which allows you to change names by name with built-in checks and warnings.")
   if (!is.list(value) || length(value) != 2L) stop("attempting to assign invalid object to dimnames of a data.table")
   if (!is.null(value[[1L]])) stop("data.tables do not have rownames")
   if (ncol(x) != length(value[[2L]])) stop("can't assign",length(value[[2L]]),"colnames to a",ncol(x),"column data.table")
@@ -2060,14 +2054,9 @@ dimnames.data.table <- function(x) {
 
 "names<-.data.table" <- function(x,value)
 {
-  # When non data.table aware packages change names, we'd like to maintain the key, too.
+  # When non data.table aware packages change names, we'd like to maintain the key.
   # If call is names(DT)[2]="newname", R will call this names<-.data.table function (notice no i) with 'value' already prepared to be same length as ncol
-  caller = as.character(sys.call(-2L))[1L]
-  if ( ((tt<-identical(caller,"colnames<-")) && cedta(3L)) || cedta() ) {
-    if (.R.assignNamesCopiesAll)
-      warning("This is R<3.1.0 where ",if(tt)"col","names(x)<-value deep copies the entire table (several times). Please upgrade to R>=3.1.0 and see ?setnames which allows you to change names by name with built-in checks and warnings.")
-  }
-  x = shallow(x) # `names<-` should NOT modify by reference. Related to #1015, #476 and #825. Needed for R v3.1.0+.  TO DO: revisit
+  x = shallow(x) # `names<-` should not modify by reference. Related to #1015, #476 and #825. Needed for R v3.1.0+.  TO DO: revisit
   if (is.null(value))
     setattr(x,"names",NULL)   # e.g. plyr::melt() calls base::unname()
   else
@@ -2189,10 +2178,16 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
   }
   cols = as.integer(cols)
   ix = .Call(Cdt_na, object, cols)
-  if (any(ix))
-    .Call(CsubsetDT, object, which_(ix, bool = invert), seq_along(object))
-  else
-    object
+  # forgot about invert with no NA case, #2660
+  if (invert) {
+    if (all(ix)) object[0L]
+    else
+      .Call(CsubsetDT, object, which_(ix, bool = TRUE), seq_along(object))
+  } else {
+    if (any(ix))
+      .Call(CsubsetDT, object, which_(ix, bool = FALSE), seq_along(object))
+    else object
+  }
 }
 
 which_ <- function(x, bool = TRUE) {

@@ -17,8 +17,8 @@ Set the \code{by}, or \code{by.x} and \code{by.y} arguments explicitly to overri
 }
 
 \usage{
-\method{merge}{data.table}(x, y, by = NULL, by.x = NULL, by.y = NULL,
-all = FALSE, all.x = all, all.y = all, sort = TRUE, suffixes = c(".x", ".y"),
+\method{merge}{data.table}(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE,
+all.x = all, all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE,
 allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
 ...)
 }
@@ -44,6 +44,9 @@ result is not sorted.}
 \item{suffixes}{A \code{character(2)} specifying the suffixes to be used for
 making non-\code{by} column names unique. The suffix behaviour works in a similar
 fashion as the \code{\link{merge.data.frame}} method does.}
+\item{no.dups}{logical indicating that \code{suffixes} are also appended to
+non-\code{by.y} column names in \code{y} when they have the same column name
+as any \code{by.x}.}
 \item{allow.cartesian}{See \code{allow.cartesian} in \code{\link{[.data.table}}.}
 \item{\dots}{Not used at this time.}
 }
@@ -137,5 +140,4 @@ merge(d2, d1, by.x="b", by.y="a")
 }
 
 \keyword{ data }
-
 
