@@ -3,6 +3,8 @@
 ^ISSUE_TEMPLATE\.md$
 ^CRAN_Release\.cmd$
 ^deploy\.sh$
+^\.emacs\.desktop
+^\.emacs\.desktop\.lock
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^appveyor\.yml$
