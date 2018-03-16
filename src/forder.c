@@ -1161,6 +1161,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   default :
     Error("First column being ordered is type '%s', not yet supported", type2char(TYPEOF(x)));
   }
+
+  int n_protect = 0;
   if (tmp) {                                  // -1 or 1. NEW: or -2 in case of nalast == 0 and all NAs
     if (tmp == 1) {                         // same as expected in 'order' (1 = increasing, -1 = decreasing)
       isSorted = TRUE;
@@ -1181,11 +1183,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       dsort(xd, o, n); break;
     case STRSXP :
       ux = PROTECT(allocVector(STRSXP, n));
+      n_protect++;
       for (int i=0; i<n; i++) SET_STRING_ELT(ux, i, ENC2UTF8(STRING_ELT(x, i)));
       uxd = DATAPTR(ux);
       if (sortStr) { csort_pre(uxd, n); alloc_csort_otmp(n); csort(uxd, o, n); }
       else cgroup(uxd, o, n);
-      UNPROTECT(1);
       break;
     default :
       Error("Internal error: previous default should have caught unsupported type");
@@ -1228,7 +1230,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       f = &dsorted; g = &dsort; break;
     case STRSXP :
       f = &csorted;
-      if (sortStr) { csort_pre(xd, n); alloc_csort_otmp(gsmax[1-flip]); g = &csort; }
+      ux = PROTECT(allocVector(STRSXP, n));
+      n_protect++;
+      for (int i=0; i<n; i++) SET_STRING_ELT(ux, i, ENC2UTF8(STRING_ELT(x, i)));
+      uxd = DATAPTR(ux);
+      if (sortStr) { csort_pre(uxd, n); alloc_csort_otmp(gsmax[1-flip]); g = &csort; }
       else g = &cgroup; // no increasing/decreasing order required if sortStr = FALSE, just a dummy argument
       break;
     default:
@@ -1261,10 +1267,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       osub = o+i;
       // ** TO DO **: if isSorted,  we can just point xsub into x directly. If (*f)() returns 0, though, will have to copy x at that point
       //        When doing this,  xsub could be allocated at that point for the first time.
-      if (size==4)
+      if (size==4) {
         for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = ((int *)xd)[o[i++]-1];
-      else
-        for (j=0; j<thisgrpn; j++) ((double *)xsub)[j] = ((double *)xd)[o[i++]-1];
+      } else {
+        if (TYPEOF(x) == STRSXP) {
+          for (j=0; j<thisgrpn; j++) ((double *)xsub)[j] = ((double *)uxd)[o[i++]-1];
+        } else {
+          for (j=0; j<thisgrpn; j++) ((double *)xsub)[j] = ((double *)xd)[o[i++]-1];
+        }
+      }
+
       TEND(2)
 
       // continue;  // BASELINE short circuit timing point. Up to here is the cost of creating xsub.
@@ -1315,6 +1327,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   maxlen = 1;  // reset global. Minimum needed to count "" and NA
   ustr_n = 0;
   savetl_end();
+  if (n_protect) UNPROTECT(n_protect); // Should be safe to remove after truelength being set back
   free(ustr);                ustr=NULL;          ustr_alloc=0;
 
   if (isSorted) {

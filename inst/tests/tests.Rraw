@@ -11517,6 +11517,11 @@ if (identical(enc2utf8(enc2native(utf8_strings)), utf8_strings)) {
   DT <- data.table(x = mixed_strings)
   test(1891.2, DT[, .(CT = .N), keyby = x]$CT, rep(2L, 5))
   test(1891.3, DT[, uniqueN(x)], 5L)
+
+  DT <- data.table(x = mixed_strings, y = c(native_strings, utf8_strings), z = 1)
+  test(1881.4, nrow(DT[, .N, by = .(z, x, y)]), 5L)
+  test(1881.5, nrow(DT[, .N, by = .(y, x, z)]), 5L)
+  test(1881.6, nrow(DT[, .N, by = .(y, z, x)]), 5L)
 }
 
 
