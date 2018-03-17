@@ -9073,8 +9073,8 @@ test(1658.28, fwrite(data.table(a=1)[NULL,]), error="ncol(x) > 0L is not TRUE")
 # 0.0 written as 0, but TODO #2398, probably related to the 2 lines after l==0 missing coverage in writeFloat64
 test(1658.29, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="id,v\nA,1.1\nB,0\nC,9.9")
 
-# logical NA as "NA", instead of the default na="" which writes all types including <NA> in character column as ,, consistently.
-test(1658.30, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA"), output="\"id\",\"bool\"\n1,TRUE\n2,NA\n3,FALSE")
+# logical NA as "NA" when logical01=TRUE, instead of the default na="" which writes all types including <NA> in character column as ,, consistently.
+test(1658.30, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="\"id\",\"bool\"\n1,1\n2,NA\n3,0")
 
 ## End fwrite tests
 
