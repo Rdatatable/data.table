@@ -12,7 +12,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
   na = "", dec = ".", row.names = FALSE, col.names = TRUE,
   qmethod = c("double","escape"),
-  logical01 = getOption("datatable.logical01", TRUE),
+  logical01 = getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
   logicalAsInt = logical01,  # deprecated
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(),

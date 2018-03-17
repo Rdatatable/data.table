@@ -3,17 +3,25 @@
 
 ### Changes in v1.10.5  ( in development )
 
-#### POTENTIALLY BREAKING CHANGES
+#### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES
 
 1. `fread()`'s `na.strings=` argument :
     ```
-    na.strings="NA"                           # was
-    getOption("datatable.na.strings", "NA")   # this release; i.e. no change yet
+    "NA"                                      # old default
+    getOption("datatable.na.strings", "NA")   # this release; i.e. the same; no change yet
     getOption("datatable.na.strings", "")     # future release
     ```
-This option controls how `,,` is read in character columns. It does not affect numeric columns which read `,,` as `NA` regardless. We would like `,,`=>`NA` for consistency with numeric types, and `,"",`=>empty string to be the standard default for `fwrite/fread` character columns so that `fread(fwrite(DT))==DT` without needing any change to any parameters. `fwrite` has never written `NA` as `"NA"`, by default it already writes `,,`. The use of R's `getOption()` allows data.table users to move forward early, or restore old behaviour when the default's default is changed in future.
+This option controls how `,,` is read in character columns. It does not affect numeric columns which read `,,` as `NA` regardless. We would like `,,`=>`NA` for consistency with numeric types, and `,"",`=>empty string to be the standard default for `fwrite/fread` character columns so that `fread(fwrite(DT))==DT` without needing any change to any parameters. `fwrite` has never written `NA` as `"NA"`; it already writes `,,` by default. The use of R's `getOption()` allows users to move forward now, using `options(datatable.fread.na.strings="")`, or restore old behaviour when the default's default is changed in future, using `options(datatable.fread.na.strings="NA")`.
 
-2. `fread` now reads a column of all 0's and 1's as `logical` rather than `integer`, for convenience to avoid needing to change the type afterwards or use `colClasses`. The old behaviour can be restored with `options(datatable.logical01=FALSE)`. We felt this default change was ok to make because in all operations there should be no difference: R treats `logical` and `integer` the same. If this change does cause a problem, the option is provided to restore old behaviour while you update your code. Similarly, `fwrite` now writes `logical` columns as `0/1` by default, controlled by the same option. `0/1` is smaller and faster than `"TRUE"/"FALSE"`, which can make a significant difference to space and time the more `logical` columns there are. Further, a column of `TRUE/FALSE`s is ok, as well as `True/False`s and `true/false`s, but mixing styles (e.g. `TRUE/false`) is not and will be read as type `character`.
+2. `fread()` and `fwrite()`'s `logical01=` argument :
+    ```
+    logical01 = FALSE                         # old default
+    getOption("datatable.logical01", FALSE)   # this release; i.e. the same; no change yet
+    getOption("datatable.logical01", TRUE)    # future release
+    ```
+This option controls whether a column of all 0's and 1's is read as `integer`, or `logical` directly to avoid needing to change the type afterwards to `logical` or use `colClasses`. `0/1` is smaller and faster than `"TRUE"/"FALSE"`, which can make a significant difference to space and time the more `logical` columns there are. When the default's default changes to `TRUE` for `fread` we do not expect much impact since all arithmetic operators that are currently receiving 0's and 1's as type `integer` (think `sum()`) but instead could receive `logical`, would return exactly the same result on the 0's and 1's as `logical` type. However, code that is manipulating column types using `is.integer` or `is.logical` on `fread`'s result, could require change. It could be painful if `DT[(logical_column)]` (i.e. `DT[logical_column==TRUE]`) changed behaviour due to `logical_column` no longer being type `logical` but `integer`. But that is not the change proposed. The change is the other way around; i.e., a previously `integer` column holding only 0's and 1's would now be type `logical`. Since it's that way around, we believe the scope for breakage is limited. We think a lot of code is converting 0/1 integer columns to logical anyway, either using `colClasses=` or afterwards with an assign. For `fwrite`, the level of breakage depends on the consumer of the output file. We believe `0/1` is a better more standard default choice to move to. See notes below about improvements to `fread`'s sampling for type guessing, and automatic rereading in the rare cases of out-of-sample type surprises.
+
+These options are meant for temporary use to aid your migration. You are not meant to set them to the old default and then not migrate your code that is dependent on the default. Either set the argument explicitly to the old value in all calls, or change the code to cope with the new default. In a few years we will start to remove the options, warning you if you are using them, and return to a simple default. See the history of NEWS and NEWS.0 for past migrations that have, generally speaking, been successfully managed in this way. For example, at the end of NOTES in this version's release notes, is a note about usage of `datatable.old.unique.by.key` now warning, as you were warned it would do over a year ago.
 
 #### NEW FEATURES
 
@@ -41,11 +49,12 @@ This option controls how `,,` is read in character columns. It does not affect n
     * `skip=` and `nrow=` are more reliable and are no longer affected by invalid lines outside the range specified. Thanks to Ziyad Saeed and Kyle Chung for reporting, [#1267](https://github.com/Rdatatable/data.table/issues/1267).
     * Ram disk (`/dev/shm`) is no longer used for the output of system command input. Although faster when it worked, it was causing too many device full errors; e.g., [#1139](https://github.com/Rdatatable/data.table/issues/1139) and [zUMIs/19](https://github.com/sdparekh/zUMIs/issues/19). Thanks to Kyle Chung for reporting. Standard `tempdir()` is now used. If you wish to use ram disk, set TEMPDIR to `/dev/shm`; see `?tempdir`.
     * Detecting whether a very long input string is a file name or data is now much faster, [#2531](https://github.com/Rdatatable/data.table/issues/2531). Many thanks to @javrucebo for the detailed report, benchmarks and suggestions.
+    * A column of `TRUE/FALSE`s is ok, as well as `True/False`s and `true/false`s, but mixing styles (e.g. `TRUE/false`) is not and will be read as type `character`.
     * Many thanks to @yaakovfeldman, Guillermo Ponce, Arun Srinivasan, Hugh Parsonage, Mark Klik, Pasha Stetsenko, Mahyar K, Tom Crockett, @cnoelke, @qinjs, @etienne-s, Mark Danese, Avraham Adler, @franknarf1, @MichaelChirico, @tdhock, Luke Tierney for testing dev and reporting these regressions before release to CRAN: #2070, #2073, #2087, #2091, #2107, #2118, #2092, #1888, #2123, #2167, #2194, #2238, #2228, #1464, #2201, #2287, #2299, #2285, #2251, #2347, #2222, #2352, #2246, #2370, #2371, #2404, #2196, #2322, #2453, #2446, #2464, #2457, #1895, #2481, #2499, #2516, #2520, #2512, #2523, #2542, #2526, #2518, #2515, #1671, #2267, #2561, #2625, #2265, #2548, #2535
 
 2. `fwrite()`:
     * empty strings are now always quoted (`,"",`) to distinguish them from `NA` which by default is still empty (`,,`) but can be changed using `na=` as before. If `na=` is provided and `quote=` is the default `'auto'` then `quote=` is set to `TRUE` so that if the `na=` value occurs in the data, it can be distinguished from `NA`. Thanks to Ethan Welty for the request [#2214](https://github.com/Rdatatable/data.table/issues/2214) and Pasha for the code change and tests, [#2215](https://github.com/Rdatatable/data.table/issues/2215).
-    * `logicalAsInt` has been renamed `logical01` and the default changed from `FALSE` to `TRUE`, both changes for consistency with `fread` (see item above). The old name `logicalAsInt` continues to work but is now deprecated. The previous default can easily be restored (to enable you to postpone changing your code) by setting `options("datatable.logical01" = FALSE)`.
+    * `logical01` has been added and the old name `logicalAsInt` retained. Pease move to the new name when convenient for you. The old argument name (`logicalAsInt`) will slowly be deprecated over the next few years. The default is unchanged: `FALSE`, so `logical` is still written as `"TRUE"`/`"FALSE"` in full by default. We intend to change the default's default in future to `TRUE`; see the notice at the top of these release notes.
 
 3. Added helpful message when subsetting by a logical column without wrapping it in parentheses, [#1844](https://github.com/Rdatatable/data.table/issues/1844). Thanks @dracodoc for the suggestion and @MichaelChirico for the PR.
 

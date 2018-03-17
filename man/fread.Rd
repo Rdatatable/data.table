@@ -10,16 +10,19 @@
 }
 \usage{
 fread(input, file, sep="auto", sep2="auto", dec=".", quote="\"",
-nrows=Inf, header="auto", na.strings=getOption("datatable.na.strings","NA"),
-stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"),
+nrows=Inf, header="auto",
+na.strings=getOption("datatable.na.strings","NA"),  # due to change to ""; see NEWS
+stringsAsFactors=FALSE, verbose=getOption("datatable.verbose", FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL,
-integer64=getOption("datatable.integer64"),         # default: "integer64"
+integer64=getOption("datatable.integer64", "integer64"),
 col.names,
 check.names=FALSE, encoding="unknown",
 strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL,
 showProgress=interactive(),
-data.table=getOption("datatable.fread.datatable"),
-nThread=getDTthreads(), logical01=getOption("datatable.logical01", TRUE), autostart=NA
+data.table=getOption("datatable.fread.datatable", TRUE),
+nThread=getDTthreads(),
+logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
+autostart=NA
 )
 }
 \arguments{

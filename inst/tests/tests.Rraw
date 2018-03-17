@@ -2455,7 +2455,7 @@ if (test_bit64) {
 # getwd() has been set by test.data.table() to the location of this tests.Rraw file. Test files should be in the same directory.
 f = testDir("ch11b.dat")  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
 test(900.1, fread(f, logical01=FALSE), as.data.table(read.table(f)))
-test(900.2, fread(f), as.data.table(read.table(f))[,V5:=as.logical(V5)])
+test(900.2, fread(f, logical01=TRUE), as.data.table(read.table(f))[,V5:=as.logical(V5)])
 
 f = testDir("1206FUT.txt")    # a CRLF line ending file (DOS)
 test(901.1, DT<-fread(f,strip.white=FALSE), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)))))
@@ -2759,14 +2759,14 @@ test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(
 # an fread error shouldn't hold a lock on the file on Windows
 # TODO: now that these are warnings and not errors, we need another way to trigger a STOP() inside fread.c. options(warn=2) isn't enough.
 cat('A,B\n1,2\n3\n5,6\n', file=(f<-tempfile()))
-test(1010.1, fread(f), ans<-data.table(A=TRUE, B=2L), warning=(txt<-"Stopped early on line 3.*Expected 2 fields but found 1.*fill.*TRUE.*<<3>>"))
-test(1010.2, fread(f), ans, warning=txt)
+test(1010.1, fread(f,logical01=TRUE), ans<-data.table(A=TRUE, B=2L), warning=(txt<-"Stopped early on line 3.*Expected 2 fields but found 1.*fill.*TRUE.*<<3>>"))
+test(1010.2, fread(f,logical01=TRUE), ans, warning=txt)
 cat('7\n8,9',file=f,append=TRUE)   # that append works after error
 test(1010.3, fread(f,fill=TRUE), data.table(A=INT(1,3,5,7,8), B=INT(2,NA,6,NA,9)))
-test(1010.4, fread(f), ans, warning=txt)
+test(1010.4, fread(f,logical01=TRUE), ans, warning=txt)
 cat('A,B\n1,2\n3\n5,6\n', file=f)  # that overwrite works after error
 test(1010.5, fread(f,fill=TRUE), data.table(A=INT(1,3,5), B=INT(2,NA,6)))
-test(1010.6, fread(f), ans, warning=txt)
+test(1010.6, fread(f,logical01=TRUE), ans, warning=txt)
 unlink(f)                          # that file can be removed after error
 test(1010.7, !file.exists(f))
 
@@ -3052,7 +3052,8 @@ b = rbind(a, data.table(z=2,x=1))
 test(1080, b$z, c(1,2,3,2))
 
 # mid row logical detection
-test(1081, fread("A,B,C\n1,T,2\n"), data.table(A=TRUE,B="T",C=2L))
+test(1081.1, fread("A,B,C\n1,T,2\n",logical01=TRUE), data.table(A=TRUE,B="T",C=2L))
+test(1081.2, fread("A,B,C\n1,T,2\n",logical01=FALSE), data.table(A=1L,B="T",C=2L))
 
 # cartesian join answer's key should contain only the columns considered in binary search. Fixes #2677
 set.seed(45)
@@ -10253,8 +10254,8 @@ if (test_nanotime) {
 
 # check too many fields error from ,\n line ending highlighted in #2044
 test(1753.1, fread("X,Y\n1,2\n3,4\n5,6"), data.table(X=INT(1,3,5),Y=INT(2,4,6)))
-test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), ans<-data.table(X=TRUE,Y=2L), warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,>>")
-test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), ans,                         warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,7>>")
+test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6",logical01=TRUE), ans<-data.table(X=TRUE,Y=2L), warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,>>")
+test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6",logical01=TRUE), ans,                         warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,7>>")
 
 # issue 2051 where a quoted field contains ",  New quote rule detection handles it.
 test(1753.4, fread(testDir("issue_2051.csv"))[2,grep("^Our.*tool$",COLUMN50)], 1L)
@@ -10274,7 +10275,7 @@ test(1753.4, fread(testDir("issue_2051.csv"))[2,grep("^Our.*tool$",COLUMN50)], 1
 test(1754, fread(testDir("allchar.csv"))[c(1,2,17575,17576),col2], c("AAN","BAN","YZZ","ZZZ"))
 
 # unescaped embedded quotes from here: http://stackoverflow.com/questions/42939866/fread-multiple-separators-in-a-string
-test(1755, fread(testDir("unescaped.csv")),
+test(1755, fread(testDir("unescaped.csv"), logical01=TRUE),
   data.table(No     =c(FALSE,TRUE),
              Comment=c('he said:"wonderful."', 'The problem is: reading table, and also "a problem, yes." keep going on.'),
              Type   =c('A','A')))
@@ -10704,7 +10705,7 @@ test(1808.2, fread("A,B\r1,2\r3,4\r"), data.table(A=c(1L,3L),B=c(2L,4L)))
 cat("A,B\r1,2\r3,4",file=f<-tempfile())
   test(1808.3, fread(f), data.table(A=c(1L,3L),B=c(2L,4L)))
 unlink(f)
-test(1808.4, fread("A,B\r1,3\r\r\r2,4\r"), data.table(A=TRUE, B=3L), warning="Discarded single-line footer: <<2,4>>")
+test(1808.4, fread("A,B\r1,3\r\r\r2,4\r", logical01=TRUE), data.table(A=TRUE, B=3L), warning="Discarded single-line footer: <<2,4>>")
 test(1808.5, fread("A,B\r4,3\r\r \r2,4\r"), data.table(A=4L, B=3L), warning="Discarded single-line footer: <<2,4>>")
 test(1808.6, fread("A,B\r1,3\r\r \r2,4\r", blank.lines.skip=TRUE), data.table(A=1:2, B=3:4))
 test(1808.7, fread("A,B\r1,3\r\r \r2,4\r", fill=TRUE), data.table(A=c(1L,NA,NA,2L), B=c(3L,NA,NA,4L)))
@@ -10874,8 +10875,8 @@ test(1832.2, any(grepl("^Column writers.* [.][.][.] ", capture.output(fwrite(DT,
 unlink(f)
 
 # ensure explicitly setting select to default value doesn't error, #2007
-test(1833, fread('V1,V2\n1,2', select = NULL),
-     data.table(V1 = TRUE, V2 = 2L))
+test(1833, fread('V1,V2\n5,6', select = NULL),
+     data.table(V1 = 5L, V2 = 6L))
 
 # fread file for which nextGoodLine in sampling struggles, #2404
 # Every line in the first 100 has a quoted field containing sep, so the quote rule was being
@@ -11424,11 +11425,8 @@ test(1879.5, DT[0:5], DT)
 DT = data.table(A=rep("True", 2200), B="FALSE", C='0')
 DT[111, LETTERS[1:3] := .("fread", "is", "faithful")]
 fwrite(DT, f<-tempfile())
-test(1879.6, fread(f, verbose=TRUE), DT,
-     output=paste("Column 1.*bumped from 'bool8' to 'string'",
-                  "Column 2.*bumped from 'bool8' to 'string'",
-                  "Column 3.*bumped from 'bool8' to 'string'",
-                  sep = '.*'))
+test(1879.6, fread(f, verbose=TRUE, logical01=TRUE), DT,
+     output="Column 1.*bumped from 'bool8' to 'string'.*\nColumn 2.*bumped from 'bool8' to 'string'.*\nColumn 3.*bumped from 'bool8' to 'string'")
 unlink(f)
 
 # Fix duplicated names arising in merge when by.x in names(y), PR#2631, PR#2653
