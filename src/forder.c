@@ -1082,6 +1082,12 @@ static void dsort(double *x, int *o, int n)
   }
 }
 
+bool need2utf8(SEXP x, int n)
+{
+  for (int i=0; i<n; i++) if (NEED2UTF8(STRING_ELT(x, i))) return(true);
+  return(false);
+}
+
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg)
 // sortStr TRUE from setkey, FALSE from by=
 {
@@ -1182,9 +1188,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     case REALSXP :
       dsort(xd, o, n); break;
     case STRSXP :
-      ux = PROTECT(allocVector(STRSXP, n));
-      n_protect++;
-      for (int i=0; i<n; i++) SET_STRING_ELT(ux, i, ENC2UTF8(STRING_ELT(x, i)));
+      if (need2utf8(x, n)) {
+        ux = PROTECT(allocVector(STRSXP, n)); n_protect++; 
+        for (int i=0; i<n; i++) SET_STRING_ELT(ux, i, ENC2UTF8(STRING_ELT(x, i))); 
+      } else {
+        ux = x;
+      }
       uxd = DATAPTR(ux);
       if (sortStr) { csort_pre(uxd, n); alloc_csort_otmp(n); csort(uxd, o, n); }
       else cgroup(uxd, o, n);
@@ -1230,9 +1239,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       f = &dsorted; g = &dsort; break;
     case STRSXP :
       f = &csorted;
-      ux = PROTECT(allocVector(STRSXP, n));
-      n_protect++;
-      for (int i=0; i<n; i++) SET_STRING_ELT(ux, i, ENC2UTF8(STRING_ELT(x, i)));
+      if (need2utf8(x, n)) {
+        ux = PROTECT(allocVector(STRSXP, n)); n_protect++; 
+        for (int i=0; i<n; i++) SET_STRING_ELT(ux, i, ENC2UTF8(STRING_ELT(x, i))); 
+      } else {
+        ux = x;
+      }
       uxd = DATAPTR(ux);
       if (sortStr) { csort_pre(uxd, n); alloc_csort_otmp(gsmax[1-flip]); g = &csort; }
       else g = &cgroup; // no increasing/decreasing order required if sortStr = FALSE, just a dummy argument
