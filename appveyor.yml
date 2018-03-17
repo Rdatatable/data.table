@@ -30,7 +30,7 @@ environment:
   - R_VERSION: devel
 
 before_build:
-  - cmd: ECHO Revision: %APPVEYOR_REPO_COMMIT%>>DESCRIPTION
+  - cmd: ECHO Revision: $Env:APPVEYOR_REPO_COMMIT>>DESCRIPTION
 
 build_script:
   - set _R_CHECK_FORCE_SUGGESTS_=false
