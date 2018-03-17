@@ -31,7 +31,7 @@
   # Set options for the speed boost in v1.8.0 by avoiding 'default' arg of getOption(,default=)
   # In fread and fwrite we have moved back to using getOption's default argument since it is unlikely fread and fread will be called in a loop many times, plus they
   # are relatively heavy functions where the overhead in getOption() would not be noticed.  It's only really [.data.table where getOption default bit.
-  # TODO: submit improvement to .Internal(getOption(x)) in base::getOption to return NULL when option not set, to avoid (relatively slow) 'x %in% names(options())' there.
+  # Improvement to base::getOption() now submitted (100x; 5s down to 0.05s):  https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17394
   opts = c("datatable.verbose"="FALSE",            # datatable.<argument name>
        "datatable.nomatch"="NA_integer_",      # datatable.<argument name>
        "datatable.optimize"="Inf",             # datatable.<argument name>
