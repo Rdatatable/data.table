@@ -672,7 +672,7 @@
       * Fixed segfault in sparse data files when bumping to character, [#796](https://github.com/Rdatatable/data.table/issues/796) and [#722](https://github.com/Rdatatable/data.table/issues/722). Thanks to Adam Kennedy and Richard Cotton for the detailed reproducible reports.
       * New argument `fread(...,data.table=FALSE)` returns a `data.frame` instead of a `data.table`. This can be set globally: `options(datatable.fread.datatable=FALSE)`.
 
-  6. `.()` can now be used in `j` and is identical to `list()`, for consistency with `i`.
+6. `.()` can now be used in `j` and is identical to `list()`, for consistency with `i`.
     ```R
     DT[,list(MySum=sum(B)),by=...]
     DT[,.(MySum=sum(B)),by=...]     # same
