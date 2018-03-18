@@ -37,14 +37,16 @@ Index optimization will currently be turned off when doing subset using index an
 ## subset: index aware benchmarking
 
 For convinience data.table automatically builds index on fields you are doing subset data. It will add some overhead to first subset on particular fields but greatly reduce time to query those columns in subsequent runs. When measuring speed best way is to measure index creation and query using index separately. Having such timings it is easy to decide what is the optimal strategy for your use case.  
-To control usage of index use following options.  
+To control usage of index use following options (see `?datatable.optimize` for more details):
 
 ```r
+options(datatable.optimize=2L)
+options(datatable.optimize=3L)
 options(datatable.auto.index=TRUE)
 options(datatable.use.index=TRUE)
 ```
-
-`use.index=FALSE` will force query not to use index even if it exists, while `auto.index=FALSE` only disable building index automatically when doing subset on non-indexed data.  
+`options(datatable.optimize=2L)` will turn off optimization of subsets completely, while `options(datatable.optimize=3L)` will switch it back on.
+`use.index=FALSE` will force query not to use index even if it exists, but existing keys are used for optimization. `auto.index=FALSE` only disables building index automatically when doing subset on non-indexed data.  
 
 ## _by reference_ operations
 
