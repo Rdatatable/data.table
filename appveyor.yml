@@ -30,7 +30,8 @@ environment:
   - R_VERSION: devel
 
 before_build:
-  - cmd: ECHO Revision: %APPVEYOR_REPO_COMMIT%>>DESCRIPTION
+  - cmd: ECHO no Revision metadata added to DESCRIPTION
+  #translate from unix: - cmd: ECHO "Revision:" $CI_BUILD_REF >> ./DESCRIPTION
 
 build_script:
   - set _R_CHECK_FORCE_SUGGESTS_=false
