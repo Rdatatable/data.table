@@ -1,5 +1,5 @@
 
-** THIS IS OLD NEWS.0.md. Please see latest news on GitHub [here](https://github.com/Rdatatable/data.table/blob/master/NEWS.md). **
+**This is OLD NEWS. Latest news is on GitHub [here](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).**
 
 ### Changes in v1.9.8  (on CRAN 25 Nov 2016)
 
@@ -617,13 +617,14 @@
   9. Removed an unnecessary (and silly) `giveNames` argument from `setDT()`. Not sure why I added this in the first place!
 
   10. `options(datatable.prettyprint.char=5L)` restricts the number of characters to be printed for character columns. For example:
-
-        options(datatable.prettyprint.char = 5L)
-        DT = data.table(x=1:2, y=c("abcdefghij", "klmnopqrstuv"))
-        DT
-        #    x        y
-        # 1: 1 abcde...
-        # 2: 2 klmno...
+    ```
+    options(datatable.prettyprint.char = 5L)
+    DT = data.table(x=1:2, y=c("abcdefghij", "klmnopqrstuv"))
+    DT
+    #    x        y
+    # 1: 1 abcde...
+    # 2: 2 klmno...
+    ````
 
   11. `rolltolast` argument in `[.data.table` is now defunct. It was deprecated in 1.9.4.
 
@@ -637,8 +638,8 @@
 
 #### NEW FEATURES
 
-  1. `by=.EACHI` runs `j` for each group in `DT` that each row of `i` joins to.
-    ```R
+1. `by=.EACHI` runs `j` for each group in `DT` that each row of `i` joins to.
+    ```
     setkey(DT, ID)
     DT[c("id1", "id2"), sum(val)]                # single total across both id1 and id2
     DT[c("id1", "id2"), sum(val), by = .EACHI]   # sum(val) for each id
@@ -657,7 +658,7 @@
     ```
     where `top` is a non-join column in `Y`; i.e., join inherited column. Thanks to many, especially eddi, Sadao Milberg and Gabor Grothendieck for extended discussions. Closes [#538](https://github.com/Rdatatable/data.table/issues/538).
 
-  2. Accordingly, `X[Y, j]` now does what `X[Y][, j]` did. To return the old behaviour: `options(datatable.old.bywithoutby=TRUE)`. This is a temporary option to aid migration and will be removed in future. See [this](http://r.789695.n4.nabble.com/changing-data-table-by-without-by-syntax-to-require-a-quot-by-quot-td4664770.html), [this](http://stackoverflow.com/questions/16093289/data-table-join-and-j-expression-unexpected-behavior) and [this](http://stackoverflow.com/a/16222108/403310) post for discussions and motivation.
+2. Accordingly, `X[Y, j]` now does what `X[Y][, j]` did. To return the old behaviour: `options(datatable.old.bywithoutby=TRUE)`. This is a temporary option to aid migration and will be removed in future. See [this](http://r.789695.n4.nabble.com/changing-data-table-by-without-by-syntax-to-require-a-quot-by-quot-td4664770.html), [this](http://stackoverflow.com/questions/16093289/data-table-join-and-j-expression-unexpected-behavior) and [this](http://stackoverflow.com/a/16222108/403310) post for discussions and motivation.
 
   3. `Overlap joins` ([#528](https://github.com/Rdatatable/data.table/issues/528)) is now here, finally!! Except for `type="equal"` and `maxgap` and `minoverlap` arguments, everything else is implemented. Check out `?foverlaps` and the examples there on its usage. This is a major feature addition to `data.table`.
 
@@ -671,7 +672,7 @@
       * Fixed segfault in sparse data files when bumping to character, [#796](https://github.com/Rdatatable/data.table/issues/796) and [#722](https://github.com/Rdatatable/data.table/issues/722). Thanks to Adam Kennedy and Richard Cotton for the detailed reproducible reports.
       * New argument `fread(...,data.table=FALSE)` returns a `data.frame` instead of a `data.table`. This can be set globally: `options(datatable.fread.datatable=FALSE)`.
 
-  6. `.()` can now be used in `j` and is identical to `list()`, for consistency with `i`.
+6. `.()` can now be used in `j` and is identical to `list()`, for consistency with `i`.
     ```R
     DT[,list(MySum=sum(B)),by=...]
     DT[,.(MySum=sum(B)),by=...]     # same

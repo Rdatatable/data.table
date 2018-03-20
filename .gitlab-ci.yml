@@ -36,10 +36,11 @@ build:
   script:
     - Rscript -e 'install.packages("knitr", repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
     - rm -r bus
+    - echo "Revision:" $CI_BUILD_REF >> ./DESCRIPTION
     - R CMD build .
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
     - mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib/.
-    - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/build/cran"), addFiles=TRUE)'
+    - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/build/cran"), addFiles=TRUE, fields="Revision")'
   artifacts:
     expire_in: 2 weeks
     paths:

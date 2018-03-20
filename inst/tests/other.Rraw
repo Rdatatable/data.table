@@ -9,7 +9,7 @@ if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
 test = data.table:::test
 INT = data.table:::INT
 
-pkgs = c("ggplot2", "hexbin", "plyr", "caret", "xts", "gdata", "zoo", "nlme", "bit64", "knitr", "plm", "parallel")
+pkgs = c("ggplot2", "hexbin", "plyr", "caret", "xts", "gdata", "zoo", "nlme", "bit64", "knitr", "plm", "parallel", "dtq")
 if (any(duplicated(pkgs))) stop("Internal error: pkgs has a dup")
 for (s in pkgs) {
   assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(require(s, character.only=TRUE))))
@@ -164,6 +164,20 @@ if (test_parallel) {
       test(12.2, getDTthreads()==2) # User returned to multi-threaded after fork.
     }
   }
+}
+
+if (test_dtq) {
+  set.seed(5)
+  DT = data.table(a = 1:10, b = letters[1:5])
+  LKP = data.table(b = letters[1:5], ratio = rnorm(5), key = "b")
+  DT2 = DT[, .(a = sum(a)), b
+           ][a > median(a), .(b, a, adj_a = a * 1.1)]
+  LKP[DT2, .(b, a, adj2_a = adj_a * ratio)]
+  tmp = DT[, {Sys.sleep(0.1); .(a)}]
+  ans = dtl()
+  test(13.1, is.data.table(ans))
+  test(13.2, nrow(ans)>0L)
+  test(13.3, ans[nrow(ans), elapsed > 0.1])
 }
 
 cat("\n",ntest-nfail,"out of",ntest,"tests passed.\n")

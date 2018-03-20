@@ -2455,7 +2455,7 @@ if (test_bit64) {
 # getwd() has been set by test.data.table() to the location of this tests.Rraw file. Test files should be in the same directory.
 f = testDir("ch11b.dat")  # http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat
 test(900.1, fread(f, logical01=FALSE), as.data.table(read.table(f)))
-test(900.2, fread(f), as.data.table(read.table(f))[,V5:=as.logical(V5)])
+test(900.2, fread(f, logical01=TRUE), as.data.table(read.table(f))[,V5:=as.logical(V5)])
 
 f = testDir("1206FUT.txt")    # a CRLF line ending file (DOS)
 test(901.1, DT<-fread(f,strip.white=FALSE), setDT(read.table(f,sep="\t",header=TRUE,colClasses=as.vector(sapply(DT,class)))))
@@ -2759,14 +2759,14 @@ test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(
 # an fread error shouldn't hold a lock on the file on Windows
 # TODO: now that these are warnings and not errors, we need another way to trigger a STOP() inside fread.c. options(warn=2) isn't enough.
 cat('A,B\n1,2\n3\n5,6\n', file=(f<-tempfile()))
-test(1010.1, fread(f), ans<-data.table(A=TRUE, B=2L), warning=(txt<-"Stopped early on line 3.*Expected 2 fields but found 1.*fill.*TRUE.*<<3>>"))
-test(1010.2, fread(f), ans, warning=txt)
+test(1010.1, fread(f,logical01=TRUE), ans<-data.table(A=TRUE, B=2L), warning=(txt<-"Stopped early on line 3.*Expected 2 fields but found 1.*fill.*TRUE.*<<3>>"))
+test(1010.2, fread(f,logical01=TRUE), ans, warning=txt)
 cat('7\n8,9',file=f,append=TRUE)   # that append works after error
 test(1010.3, fread(f,fill=TRUE), data.table(A=INT(1,3,5,7,8), B=INT(2,NA,6,NA,9)))
-test(1010.4, fread(f), ans, warning=txt)
+test(1010.4, fread(f,logical01=TRUE), ans, warning=txt)
 cat('A,B\n1,2\n3\n5,6\n', file=f)  # that overwrite works after error
 test(1010.5, fread(f,fill=TRUE), data.table(A=INT(1,3,5), B=INT(2,NA,6)))
-test(1010.6, fread(f), ans, warning=txt)
+test(1010.6, fread(f,logical01=TRUE), ans, warning=txt)
 unlink(f)                          # that file can be removed after error
 test(1010.7, !file.exists(f))
 
@@ -3052,7 +3052,8 @@ b = rbind(a, data.table(z=2,x=1))
 test(1080, b$z, c(1,2,3,2))
 
 # mid row logical detection
-test(1081, fread("A,B,C\n1,T,2\n"), data.table(A=TRUE,B="T",C=2L))
+test(1081.1, fread("A,B,C\n1,T,2\n",logical01=TRUE), data.table(A=TRUE,B="T",C=2L))
+test(1081.2, fread("A,B,C\n1,T,2\n",logical01=FALSE), data.table(A=1L,B="T",C=2L))
 
 # cartesian join answer's key should contain only the columns considered in binary search. Fixes #2677
 set.seed(45)
@@ -9072,6 +9073,9 @@ test(1658.28, fwrite(data.table(a=1)[NULL,]), error="ncol(x) > 0L is not TRUE")
 # 0.0 written as 0, but TODO #2398, probably related to the 2 lines after l==0 missing coverage in writeFloat64
 test(1658.29, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="id,v\nA,1.1\nB,0\nC,9.9")
 
+# logical NA as "NA" when logical01=TRUE, instead of the default na="" which writes all types including <NA> in character column as ,, consistently.
+test(1658.30, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="\"id\",\"bool\"\n1,1\n2,NA\n3,0")
+
 ## End fwrite tests
 
 # tests for #679, inrange(), FR #707
@@ -9646,9 +9650,9 @@ test(1729.2, fwrite(data.table(V2=c(9.999999999999998223643160599749535322189331
 DT = data.table(V1=c(9999999999.99, 0.00000000000000099, 0.0000000000000000000009, 0.9, 9.0, 9.1, 99.9,
                      0.000000000000000000000999999999999999999999999,
                      99999999999999999999999999999.999999))
-ans = "\"V1\"\n9999999999.99\n9.9e-16\n9e-22\n0.9\n9\n9.1\n99.9\n1e-21\n1e+29"
+ans = "V1\n9999999999.99\n9.9e-16\n9e-22\n0.9\n9\n9.1\n99.9\n1e-21\n1e+29"
 test(1729.3, fwrite(DT), output=ans)
-test(1729.4, write.csv(DT,row.names=FALSE), output=ans)
+test(1729.4, write.csv(DT,row.names=FALSE,quote=FALSE), output=ans)
 options(oldverbose)
 
 # same decimal/scientific rule (shortest format) as write.csv
@@ -9720,7 +9724,7 @@ DT = data.table(unlist(.Machine[c("double.eps","double.neg.eps","double.xmin","d
 #    double.eps double.neg.eps    double.xmin    double.xmax
 #  2.220446e-16   1.110223e-16  2.225074e-308  1.797693e+308
 test(1729.13, typeof(DT[[1L]]), "double")
-test(1729.14, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE)))
+test(1729.14, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 
 if (test_bit64) {
   test(1730.1, typeof(-2147483647L), "integer")
@@ -9842,8 +9846,8 @@ test(1736.6, capture.output(fwrite(DT, sep='|', sep2=c("{",",","}"), logicalAsIn
  c("A|B|C", "1|{1,2,3,4,5,6,7,8,9,10}|{s,t,u,v,w}",
  "2|{15,16,17,18}|{1.2,2.3,3.4,3.14159265358979,-9}", "3|{7}|{foo,bar}", "4|{9,10}|{1,1,0}"))
 DT = data.table(A=c("foo","ba|r","baz"))
-test(1736.7, capture.output(fwrite(DT,na="")), c("A","foo","ba|r","baz"))              # no list column so no need to quote
-test(1736.8, capture.output(fwrite(DT)), c("\"A\"","\"foo\"","\"ba|r\"","\"baz\""))    # column name is quoted because na="NA" due to 1-column
+test(1736.7, capture.output(fwrite(DT,na="")), c("A","foo","ba|r","baz"))    # no list column so no need to quote
+test(1736.8, capture.output(fwrite(DT)), c("A","foo","ba|r","baz"))
 DT = data.table(A=c("foo","ba|r","baz"), B=list(1:3,1:4,c("fo|o","ba,r","baz"))) # now list column and need to quote
 test(1736.9, capture.output(fwrite(DT)), c("A,B", "foo,1|2|3", "\"ba|r\",1|2|3|4", "baz,\"fo|o\"|\"ba,r\"|baz"))
 test(1736.11, capture.output(fwrite(DT,quote=TRUE)), c("\"A\",\"B\"", "\"foo\",1|2|3", "\"ba|r\",1|2|3|4", "\"baz\",\"fo|o\"|\"ba,r\"|\"baz\""))
@@ -9857,7 +9861,7 @@ test(1737.5, fwrite(list(1.2,B=c("foo","bar"))), error="Column 2's length (2) is
 
 # fwrite ITime, Date, IDate
 DT = data.table(A=as.ITime(c("23:59:58","23:59:59","12:00:00","00:00:01",NA,"00:00:00")))
-test(1738.1, capture.output(fwrite(DT)), c("\"A\"","23:59:58","23:59:59","12:00:00","00:00:01","NA","00:00:00"))
+test(1738.1, capture.output(fwrite(DT)), c("A","23:59:58","23:59:59","12:00:00","00:00:01","","00:00:00"))
 test(1738.2, capture.output(fwrite(DT,na="")), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE, na="")))
 dts = c("1901-05-17","1907-10-22","1929-10-24","1962-05-28","1987-10-19","2008-09-15",
         "1968-12-30","1968-12-31","1969-01-01","1969-01-02")
@@ -10227,9 +10231,13 @@ if (test_bit64) {
 }
 # end Grouping Sets
 
-# for completeness, added test for NA problem to close #1837. Fixed long ago before release to CRAN.
-test(1751.1, capture.output(fwrite(data.table(x=NA_integer_),verbose=FALSE)), c("\"x\"","NA"))
-test(1751.2, capture.output(fwrite(data.table(x=NA_integer_),na="",verbose=FALSE)), c("x",""))
+# for completeness, added test for NA problem to close #1837.
+DT = data.table(x=NA)
+test(1751.1, capture.output(fwrite(DT)), c("x",""))
+test(1751.2, capture.output(fwrite(DT,na="")), c("x",""))
+test(1751.3, capture.output(fwrite(DT,na="NA")), c("\"x\"","NA"))
+test(1751.4, fread({fwrite(DT, f<-tempfile());f}), DT)  # the important thing
+unlink(f)
 
 if (test_nanotime) {
   DT = data.table(A=nanotime(tt<-c("2016-09-28T15:30:00.000000070Z",
@@ -10249,8 +10257,8 @@ if (test_nanotime) {
 
 # check too many fields error from ,\n line ending highlighted in #2044
 test(1753.1, fread("X,Y\n1,2\n3,4\n5,6"), data.table(X=INT(1,3,5),Y=INT(2,4,6)))
-test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6"), ans<-data.table(X=TRUE,Y=2L), warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,>>")
-test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6"), ans,                         warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,7>>")
+test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6",logical01=TRUE), ans<-data.table(X=TRUE,Y=2L), warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,>>")
+test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6",logical01=TRUE), ans,                         warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,7>>")
 
 # issue 2051 where a quoted field contains ",  New quote rule detection handles it.
 test(1753.4, fread(testDir("issue_2051.csv"))[2,grep("^Our.*tool$",COLUMN50)], 1L)
@@ -10270,7 +10278,7 @@ test(1753.4, fread(testDir("issue_2051.csv"))[2,grep("^Our.*tool$",COLUMN50)], 1
 test(1754, fread(testDir("allchar.csv"))[c(1,2,17575,17576),col2], c("AAN","BAN","YZZ","ZZZ"))
 
 # unescaped embedded quotes from here: http://stackoverflow.com/questions/42939866/fread-multiple-separators-in-a-string
-test(1755, fread(testDir("unescaped.csv")),
+test(1755, fread(testDir("unescaped.csv"), logical01=TRUE),
   data.table(No     =c(FALSE,TRUE),
              Comment=c('he said:"wonderful."', 'The problem is: reading table, and also "a problem, yes." keep going on.'),
              Type   =c('A','A')))
@@ -10700,7 +10708,7 @@ test(1808.2, fread("A,B\r1,2\r3,4\r"), data.table(A=c(1L,3L),B=c(2L,4L)))
 cat("A,B\r1,2\r3,4",file=f<-tempfile())
   test(1808.3, fread(f), data.table(A=c(1L,3L),B=c(2L,4L)))
 unlink(f)
-test(1808.4, fread("A,B\r1,3\r\r\r2,4\r"), data.table(A=TRUE, B=3L), warning="Discarded single-line footer: <<2,4>>")
+test(1808.4, fread("A,B\r1,3\r\r\r2,4\r", logical01=TRUE), data.table(A=TRUE, B=3L), warning="Discarded single-line footer: <<2,4>>")
 test(1808.5, fread("A,B\r4,3\r\r \r2,4\r"), data.table(A=4L, B=3L), warning="Discarded single-line footer: <<2,4>>")
 test(1808.6, fread("A,B\r1,3\r\r \r2,4\r", blank.lines.skip=TRUE), data.table(A=1:2, B=3:4))
 test(1808.7, fread("A,B\r1,3\r\r \r2,4\r", fill=TRUE), data.table(A=c(1L,NA,NA,2L), B=c(3L,NA,NA,4L)))
@@ -10870,8 +10878,8 @@ test(1832.2, any(grepl("^Column writers.* [.][.][.] ", capture.output(fwrite(DT,
 unlink(f)
 
 # ensure explicitly setting select to default value doesn't error, #2007
-test(1833, fread('V1,V2\n1,2', select = NULL),
-     data.table(V1 = TRUE, V2 = 2L))
+test(1833, fread('V1,V2\n5,6', select = NULL),
+     data.table(V1 = 5L, V2 = 6L))
 
 # fread file for which nextGoodLine in sampling struggles, #2404
 # Every line in the first 100 has a quoted field containing sep, so the quote rule was being
@@ -10908,13 +10916,14 @@ test(1838, fread("default payment next month\n0.5524\n0.2483\n0.1157\n"), data.t
 
 # better writing and reading of NA in single column input, #2106
 DT = data.table(a=c(4,NA,2,3.14,999,NA))
-fwrite(DT, f<-tempfile(), na="")  # old default for na was always ""
+fwrite(DT, f<-tempfile(), na="")
 test(1839.1, fread(f), data.table(a=c(4,NA,2,3.14,999,NA)))
 test(1839.2, fread(f, blank.lines.skip=TRUE), data.table(a=c(4,2,3.14,999)))
 test(1839.3, fread(f, fill=TRUE), data.table(a=c(4,NA,2,3.14,999,NA)))
 test(1839.4, fread(f, fill=TRUE, blank.lines.skip=TRUE), data.table(a=c(4,2,3.14,999)))
-fwrite(DT, f)  # new default sets na="NA" when ncol==1
-test(1839.5, fread(f), DT)
+fwrite(DT, f, na="NA")  # base R does not do this though, it writes ,, for NAs in numeric columns (as does fwrite)
+test(1839.5, fread(f, na.strings=""), data.table(a=c("4","NA","2","3.14","999","NA")))
+test(1839.6, fread(f, na.strings="NA"), DT)  # TOOD: auto handle (unusual, even as written by R) "NA" in numeric columns
 unlink(f)
 
 lines = c("DECLARATION OF INDEPENDENCE",
@@ -11419,11 +11428,8 @@ test(1879.5, DT[0:5], DT)
 DT = data.table(A=rep("True", 2200), B="FALSE", C='0')
 DT[111, LETTERS[1:3] := .("fread", "is", "faithful")]
 fwrite(DT, f<-tempfile())
-test(1879.6, fread(f, verbose=TRUE), DT,
-     output=paste("Column 1.*bumped from 'bool8' to 'string'",
-                  "Column 2.*bumped from 'bool8' to 'string'",
-                  "Column 3.*bumped from 'bool8' to 'string'",
-                  sep = '.*'))
+test(1879.6, fread(f, verbose=TRUE, logical01=TRUE), DT,
+     output="Column 1.*bumped from 'bool8' to 'string'.*\nColumn 2.*bumped from 'bool8' to 'string'.*\nColumn 3.*bumped from 'bool8' to 'string'")
 unlink(f)
 
 # Fix duplicated names arising in merge when by.x in names(y), PR#2631, PR#2653
@@ -11470,7 +11476,8 @@ test(1884, fread('"A","B"\n', sep=NULL), data.table('"A","B"'=logical()))
 # sep=' ' and blank.lines.skip, #2535
 test(1885.1, fread(txt<-"a b 2\nc d 3\n\ne f 4\n", blank.lines.skip=TRUE), ans<-data.table(V1=c("a","c","e"), V2=c("b","d","f"), V3=2:4))
 test(1885.2, fread(txt, blank.lines.skip=TRUE, fill=TRUE), ans)
-test(1885.3, fread(txt, fill=TRUE), ans[c(1,2,NA,3),][3,1:2:=""])  # TODO when blank strings are filled as NA rather than "", this test will then fail and the := can be removed
+test(1885.3, fread(txt, fill=TRUE), ans[c(1,2,NA,3),][3,1:2:=""])
+test(1885.4, fread(txt, fill=TRUE, na.strings=""), ans[c(1,2,NA,3),])
 
 # file detected as no header automatically
 # (TOOD: undoubling double quotes #1109, #1299) but otherwise, auto mode correct
@@ -11495,6 +11502,27 @@ test(1890.1, stats::ts.plot(gpars=DT), error="object must have one or more obser
 # Inside ts.plot is a gpars$ylab<- which happens before its error. That dispatches to our $<- which does the alloc.col()
 test(1890.2, DT, data.table(A=1:5))
 
+# na="" default, #2524
+test(1891.1, fread('A,B,C\n1,foo,4\n2,,5\n3,bar,6\n', na.strings=""), data.table(A=1:3, B=c("foo",NA,"bar"), C=4:6))
+test(1891.2, fread('A,B,C\n1,foo,4\n2,"",5\n3,bar,6\n', na.strings=""), data.table(A=1:3, B=c("foo","","bar"), C=4:6))
+test(1891.3, fread("A,B,C\n1,foo,bar\n2", fill=TRUE, na.strings=""), data.table(A=1:2,B=c("foo",NA),C=c("bar",NA)))
+test(1891.4, fread("A,B,C\n1,foo,bar\n2", fill=TRUE, na.strings="NA"), data.table(A=1:2,B=c("foo",""),C=c("bar","")))
+
+# preserving "" and NA_character_, #2214
+DT = data.table(chr = c(NA, "", "a"), num = c(NA, NA, 2L))
+test(1892.1, fread({fwrite(DT,f<-tempfile());f}, na.strings=""), DT); unlink(f)
+test(1892.2, capture.output(fwrite(DT)), c("chr,num", ",", "\"\"," , "a,2"))
+test(1892.3, fread('A,B\n1,"foo"\n2,\n3,""\n', na.strings="")$B, c("foo", NA, ""))  # for issue #2217
+
+# print(DT) should print NA in character columns using <NA> like base R to distinguish from "" and "NA"
+DT = data.table(A=1:4, B=c("FOO","",NA,"NA"))
+test(1893.1, print(DT), output=txt<-c("   A    B", "1: 1  FOO", "2: 2     ", "3: 3 <NA>", "4: 4   NA"))
+DF = as.data.frame(DT)
+rownames(DF) = paste0(rownames(DF),":")
+test(1893.2, print(DF), output=txt)
+txt = 'A,B\n109,MT\n7,N\n11,NA\n41,NB\n60,ND\n1,""\n2,\n3,"NA"\n4,NA\n'
+test(1893.3, print(fread(txt,na.strings="")), output="A    B\n1: 109   MT\n2:   7    N\n3:  11   NA\n4:  41   NB\n5:  60   ND\n6:   1     \n7:   2 <NA>\n8:   3   NA\n9:   4   NA")
+
 # Ensure data.table won't break even if garbage collection gets triggered during sorting
 # a large numbers of non-ASCII characters.
 utf8_strings <- c(
@@ -11510,20 +11538,19 @@ if (identical(enc2utf8(enc2native(utf8_strings)), utf8_strings)) {
   native_strings <- enc2native(utf8_strings)
   # 1e7 length character should be large enough to trigger the garbage collecting
   DT <- data.table(x = rep(native_strings, 0.2e7), key = "x")
-  test(1891.1, unique(DT$x), sort(utf8_strings, method = "radix"))
+  test(1894.1, unique(DT$x), sort(utf8_strings, method = "radix"))
 
   # by, keyby should treat the string with different encoding as the same
   mixed_strings <- c(utf8_strings, native_strings)
   DT <- data.table(x = mixed_strings)
-  test(1891.2, DT[, .(CT = .N), keyby = x]$CT, rep(2L, 5))
-  test(1891.3, DT[, uniqueN(x)], 5L)
+  test(1894.2, DT[, .(CT = .N), keyby = x]$CT, rep(2L, 5))
+  test(1894.3, DT[, uniqueN(x)], 5L)
 
   DT <- data.table(x = mixed_strings, y = c(native_strings, utf8_strings), z = 1)
-  test(1891.4, nrow(DT[, .N, by = .(z, x, y)]), 5L)
-  test(1891.5, nrow(DT[, .N, by = .(y, x, z)]), 5L)
-  test(1891.6, nrow(DT[, .N, by = .(y, z, x)]), 5L)
+  test(1894.4, nrow(DT[, .N, by = .(z, x, y)]), 5L)
+  test(1894.5, nrow(DT[, .N, by = .(y, x, z)]), 5L)
+  test(1894.6, nrow(DT[, .N, by = .(y, z, x)]), 5L)
 }
-
 
 ###################################
 #  Add new tests above this line  #

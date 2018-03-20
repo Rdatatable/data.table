@@ -83,6 +83,7 @@ At optimisation level \code{>= 3}, i.e., \code{getOption("datatable.optimize")} 
 
     \item Supported operators: \code{==}, \code{\%in\%}. Non-equi operators(>, <, etc.) are not supported yet because non-equi joins are slower than vector based subsets.
     \item Queries on multiple columns are supported, if the connector is '\code{&}', e.g. \code{DT[x == 2 & y == 3]} is supported, but \code{DT[x == 2 | y == 3]} is not.
+    \item Optimization will currently be turned off when doing subset when cross product of elements provided to filter on exceeds > 1e4. This most likely happens if multiple \code{\%in\%}, or \code{\%chin\%} queries are combined, e.g. \code{DT[x \%in\% 1:100 & y \%in\% 1:200]} will not be optimized since \code{100 * 200 = 2e4 > 1e4}.
     \item Queries with multiple criteria on one column are \emph{not} supported, e.g. \code{DT[x == 2 & x \%in\% c(2,5)]} is not supported.
     \item Queries with non-missing j are supported, e.g. \code{DT[x == 3 & y == 5, .(new = x-y)]} or \code{DT[x == 3 & y == 5, new := x-y]} are supported. Also extends to queries using \code{with = FALSE}.
     \item "notjoin" queries, i.e. queries that start with \code{!}, are only supported if there are no \code{&} connections, e.g. \code{DT[!x==3]} is supported, but \code{DT[!x==3 & y == 4]} is not.
