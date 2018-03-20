@@ -10,16 +10,19 @@
 }
 \usage{
 fread(input, file, sep="auto", sep2="auto", dec=".", quote="\"",
-nrows=Inf, header="auto", na.strings="NA",
-stringsAsFactors=FALSE, verbose=getOption("datatable.verbose"),
+nrows=Inf, header="auto",
+na.strings=getOption("datatable.na.strings","NA"),  # due to change to ""; see NEWS
+stringsAsFactors=FALSE, verbose=getOption("datatable.verbose", FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL,
-integer64=getOption("datatable.integer64"),         # default: "integer64"
+integer64=getOption("datatable.integer64", "integer64"),
 col.names,
 check.names=FALSE, encoding="unknown",
 strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL,
 showProgress=interactive(),
-data.table=getOption("datatable.fread.datatable"),
-nThread=getDTthreads(), logical01=TRUE, autostart=NA
+data.table=getOption("datatable.fread.datatable", TRUE),
+nThread=getDTthreads(),
+logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
+autostart=NA
 )
 }
 \arguments{
@@ -28,7 +31,7 @@ nThread=getDTthreads(), logical01=TRUE, autostart=NA
   \item{sep2}{ The separator \emph{within} columns. A \code{list} column will be returned where each cell is a vector of values. This is much faster using less working memory than \code{strsplit} afterwards or similar techniques. For each column \code{sep2} can be different and is the first character in the same set above [\code{,\\t |;}], other than \code{sep}, that exists inside each field outside quoted regions in the sample. NB: \code{sep2} is not yet implemented. }
   \item{nrows}{ The maximum number of rows to read. Unlike \code{read.table}, you do not need to set this to an estimate of the number of rows in the file for better speed because that is already automatically determined by \code{fread} almost instantly using the large sample of lines. `nrows=0` returns the column names and typed empty columns determined by the large sample; useful for a dry run of a large file or to quickly check format consistency of a set of files before starting to read any of them. }
   \item{header}{ Does the first data line contain column names? Defaults according to whether every non-empty field on the first data line is type character. If so, or TRUE is supplied, any empty column names are given a default name. }
-  \item{na.strings}{ A character vector of strings which are to be interpreted as \code{NA} values. By default \code{",,"} for columns read as type character is read as a blank string (\code{""}) and \code{",NA,"} is read as \code{NA}. Typical alternatives might be \code{na.strings=NULL} (no coercion to NA at all!) or perhaps \code{na.strings=c("NA","N/A","null")}. }
+  \item{na.strings}{ A character vector of strings which are to be interpreted as \code{NA} values. By default, \code{",,"} for columns of all types, including type `character` is read as \code{NA} for consistency. \code{,"",} is unambiguous and read as an empty string. To read \code{,NA,} as \code{NA}, set \code{na.strings="NA"}. To read \code{,,} as blank string \code{""}, set \code{na.strings=NULL}. When they occur in the file, the strings in \code{na.strings} should not appear quoted since that is how the string literal \code{,"NA",} is distinguished from \code{,NA,}, for example, when \code{na.strings="NA"}. }
   \item{file}{ File path, useful when we want to ensure that no shell commands will be executed. File path can also be provided to \code{input} argument. }
   \item{stringsAsFactors}{ Convert all character columns to factors? }
   \item{verbose}{ Be chatty and report timings? }

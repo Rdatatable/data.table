@@ -58,7 +58,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     rn = seq_len(nrow(x))
     printdots = FALSE
   }
-  toprint=format.data.table(toprint, ...)
+  toprint=format.data.table(toprint, na.encode=FALSE, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
   if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(x,inherits,"integer64"))) require_bit64()
   # When we depend on R 3.2.0 (Apr 2015) we can use isNamespaceLoaded() added then, instead of %chin% above

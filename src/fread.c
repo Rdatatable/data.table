@@ -272,7 +272,7 @@ static inline bool end_of_field(const char *ch) {
 static inline const char *end_NA_string(const char *fieldStart) {
   const char* const* nastr = NAstrings;
   const char *mostConsumed = fieldStart; // tests 1550* includes both 'na' and 'nan' in nastrings. Don't stop after 'na' if 'nan' can be consumed too.
-  while (*nastr) {
+  if (nastr) while (*nastr) {
     const char *ch1 = fieldStart;
     const char *ch2 = *nastr;
     while (*ch1==*ch2 && *ch2!='\0') { ch1++; ch2++; }
@@ -918,7 +918,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
 }
 
 
-/* Parse numbers 0 | 1 as boolean. */
+/* Parse numbers 0 | 1 as boolean and ,, as NA (fwrite's default) */
 static void parse_bool_numeric(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
@@ -932,7 +932,7 @@ static void parse_bool_numeric(FieldParseContext *ctx)
   }
 }
 
-/* Parse uppercase TRUE | FALSE as boolean. */
+/* Parse uppercase TRUE | FALSE | NA as boolean (as written by default by R's write.csv */
 static void parse_bool_uppercase(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
@@ -943,6 +943,10 @@ static void parse_bool_uppercase(FieldParseContext *ctx)
   } else if (ch[0]=='F' && ch[1]=='A' && ch[2]=='L' && ch[3]=='S' && ch[4]=='E') {
     *target = 0;
     *(ctx->ch) = ch + 5;
+  } else if (ch[0]=='N' && ch[1]=='A') {
+    // the default in R's write.csv
+    *target = NA_BOOL8;
+    *(ctx->ch) = ch + 2;
   } else {
     *target = NA_BOOL8;
   }
@@ -1095,6 +1099,7 @@ int freadMain(freadMainArgs _args) {
 
   int64_t nrowLimit = args.nrowLimit;
   NAstrings = args.NAstrings;
+  if (NAstrings==NULL) STOP("Internal error: NAstrings is itself NULL. When empty it should be pointer to NULL.");
   any_number_like_NAstrings = false;
   blank_is_a_NAstring = false;
   // if we know there are no nastrings which are numbers (like -999999) then in the number
@@ -1104,6 +1109,8 @@ int freadMain(freadMainArgs _args) {
   while (*nastr) {
     if (**nastr == '\0') {
       blank_is_a_NAstring = true;
+      // if blank is the only one, as is the default, clear NAstrings so that doesn't have to be checked
+      if (nastr==NAstrings && nastr+1==NULL) NAstrings=NULL;
       nastr++;
       continue;
     }
