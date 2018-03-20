@@ -1144,7 +1144,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   int *o = INTEGER(ans);                      // TO DO: save allocation if NULL is returned (isSorted==TRUE)
   o[0] = -1;                                  // so [i|c|d]sort know they can populate o directly with no working memory needed to reorder existing order
                                               // using -1 rather than 0 because 'nalast = 0' replaces 'o[.]' with 0 values.
-  xd = DATAPTR(x);
+  xd = DATAPTR(x); uxd = xd;
   stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
   savetl_init();   // from now on use Error not error.
 
