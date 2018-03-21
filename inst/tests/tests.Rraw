@@ -1,64 +1,64 @@
 
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
-    if ("package:data.table" %in% search())
-      stop("This is dev but installed data.table is loaded as well. Please unload it to prevent potential conflicts in dev.")
-    if ((tt<-compiler::enableJIT(-1))>0)
-      cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+  if ("package:data.table" %in% search())
+    stop("This is dev but installed data.table is loaded as well. Please unload it to prevent potential conflicts in dev.")
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
 } else {
-    require(data.table)
-    # Make symbols to the installed version's ::: so that we can i) test internal-only not-exposed R functions
-    # in the test suite when user runs test.data.table() from installed package AND ii) so that in dev the same
-    # tests can be used but in dev they test the package in .GlobalEnv. If we used ::: throughout tests, that
-    # would pick up the installed version and in dev you'd have to reinstall every time which slows down dev.
-    # NB: The string "data.table:::" should exist nowhere else in this file other than here inside this branch.
+  require(data.table)
+  # Make symbols to the installed version's ::: so that we can i) test internal-only not-exposed R functions
+  # in the test suite when user runs test.data.table() from installed package AND ii) so that in dev the same
+  # tests can be used but in dev they test the package in .GlobalEnv. If we used ::: throughout tests, that
+  # would pick up the installed version and in dev you'd have to reinstall every time which slows down dev.
+  # NB: The string "data.table:::" should exist nowhere else in this file other than here inside this branch.
 
-    test = data.table:::test
-    INT = data.table:::INT
-    compactprint = data.table:::compactprint
-    is.sorted = data.table:::is.sorted
-    forderv = data.table:::forderv
-    forder = data.table:::forder
-    null.data.table = data.table:::null.data.table
-    uniqlist = data.table:::uniqlist
-    uniqlengths = data.table:::uniqlengths
-    setrev = data.table:::setrev
-    setreordervec = data.table:::setreordervec
-    selfrefok = data.table:::selfrefok
-    setdiff_ = data.table:::setdiff_
-    is_na = data.table:::is_na
-    shallow = data.table:::shallow # until exported
-    chmatch2 = data.table:::chmatch2
-    which_ = data.table:::which_
-    any_na = data.table:::any_na
-    replace_dot_alias = data.table:::replace_dot_alias
-    isReallyReal = data.table:::isReallyReal
-    which.first = data.table:::which.first
-    which.last = data.table:::which.last
-    trim = data.table:::trim
-    `%+%.default` = data.table:::`%+%.default`
-    .shallow = data.table:::.shallow
-    getdots = data.table:::getdots
-    as.ITime.default = data.table:::as.ITime.default
-    as.IDate.default = data.table:::as.IDate.default
-    binary = data.table:::binary
+  test = data.table:::test
+  INT = data.table:::INT
+  compactprint = data.table:::compactprint
+  is.sorted = data.table:::is.sorted
+  forderv = data.table:::forderv
+  forder = data.table:::forder
+  null.data.table = data.table:::null.data.table
+  uniqlist = data.table:::uniqlist
+  uniqlengths = data.table:::uniqlengths
+  setrev = data.table:::setrev
+  setreordervec = data.table:::setreordervec
+  selfrefok = data.table:::selfrefok
+  setdiff_ = data.table:::setdiff_
+  is_na = data.table:::is_na
+  shallow = data.table:::shallow # until exported
+  chmatch2 = data.table:::chmatch2
+  which_ = data.table:::which_
+  any_na = data.table:::any_na
+  replace_dot_alias = data.table:::replace_dot_alias
+  isReallyReal = data.table:::isReallyReal
+  which.first = data.table:::which.first
+  which.last = data.table:::which.last
+  trim = data.table:::trim
+  `%+%.default` = data.table:::`%+%.default`
+  .shallow = data.table:::.shallow
+  getdots = data.table:::getdots
+  as.ITime.default = data.table:::as.ITime.default
+  as.IDate.default = data.table:::as.IDate.default
+  binary = data.table:::binary
 
-    # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
-    # the other package's function would be picked up. As above, we only need to do this because we desire
-    # to develop in .GlobalEnv with cc().
-    # NB: The string "data.table::" should exist nowhere else in this file other than here inside this branch.
-    # This should be retained even if these packages are removed from Suggests, because the test() in this file
-    # checks against a data.table result which needs the data.table one to run. Otherwise the user can be
-    # sure by using :: themselves.
-                                          # masked by which package?
-                                          # =================================
-    setattr = data.table::setattr         # bit
-    shift = data.table::shift             # IRanges, GenomicRanges
-    between = data.table::between         # plm
-    second = data.table::second           # S4Vectors
-    dcast = data.table::dcast             # reshape2
-    melt = data.table::melt               # reshape2
-    last = data.table::last               # xts
-    first = data.table::first             # xts, S4Vectors
+  # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
+  # the other package's function would be picked up. As above, we only need to do this because we desire
+  # to develop in .GlobalEnv with cc().
+  # NB: The string "data.table::" should exist nowhere else in this file other than here inside this branch.
+  # This should be retained even if these packages are removed from Suggests, because the test() in this file
+  # checks against a data.table result which needs the data.table one to run. Otherwise the user can be
+  # sure by using :: themselves.
+                                        # masked by which package?
+                                        # =================================
+  setattr = data.table::setattr         # bit
+  shift = data.table::shift             # IRanges, GenomicRanges
+  between = data.table::between         # plm
+  second = data.table::second           # S4Vectors
+  dcast = data.table::dcast             # reshape2
+  melt = data.table::melt               # reshape2
+  last = data.table::last               # xts
+  first = data.table::first             # xts, S4Vectors
 }
 
 # Load optional Suggests packages, which are tested by Travis for code coverage, and on CRAN
@@ -479,10 +479,10 @@ test(173, DT[,B[B>3],by=A][,V1], c(4L,5L,6L))
 
 # Example taken from Harish post to datatable-help on 11 July
 DT <- data.table(
-     A=c("a","a","b","b","d","c","a","d"),
-     B=c("x1","x2","x2","x1","x2","x1","x1","x2"),
-     C=c(5,2,3,4,9,5,1,9)
-     )
+   A=c("a","a","b","b","d","c","a","d"),
+   B=c("x1","x2","x2","x1","x2","x1","x1","x2"),
+   C=c(5,2,3,4,9,5,1,9)
+   )
 test(174, DT[,C[C-min(C)<3],by=list(A,B)][,V1], c(1,2,3,4,9,9,5))
 test(175, DT[,C[C-min(C)<5],by=list(A,B)][,V1], c(5,1,2,3,4,9,9,5))
 
@@ -517,10 +517,10 @@ test(181, DT[,sum(v),by=b][,V1], c(12L,9L))
 # Otherwise it finds 'b' in local scope.
 setnames(DT,2,"buniquename314")
 bar = function( data, fcn ) {
-    q = substitute( fcn )
-    xx = data[,eval(q),by=a]
-    yy = data[,eval(substitute(fcn)),by=a]
-    identical(xx,yy)
+  q = substitute( fcn )
+  xx = data[,eval(q),by=a]
+  yy = data[,eval(substitute(fcn)),by=a]
+  identical(xx,yy)
 }
 test(182, bar( DT, sum(buniquename314) ), TRUE)
 
@@ -1245,8 +1245,8 @@ test(436, truelength(DT2), 3002L)
 DT = data.table(a=1:3,b=4:6)   # tl 1024 now by default
 test(437.1, truelength(DT), 1026L)
 f = function() {
-    alloc.col(DT,2042)  # DT isn't local so (via inherits=TRUE) it finds in frame above.
-    invisible()
+  alloc.col(DT,2042)  # DT isn't local so (via inherits=TRUE) it finds in frame above.
+  invisible()
 }
 f()
 test(437.2, truelength(DT), 2044L)
@@ -2410,46 +2410,46 @@ eols = c("\n", "\r\n", "\r", "\n\r", "\r\r\n")
 for (nr in c(0,1,2,3,4,55,98,99,100,101,102)) {  # include around first 100 line threshold
 for (nc in c(0,1,2)) {                           # 0 means all cols here
 for (ne in seq_along(eols)) {
-    eol = eols[ne]
-    headDT = head(DT,nr)[,seq_len(if (nc==0) ncol(DT) else nc),with=FALSE]
-    if (nr==0) for (j in seq_len(ncol(headDT))) set(headDT,j=j,value=logical())  # when read back in empty cols are the lowest type (logical)
-    f = tempfile()
-    lines = capture.output(fwrite(headDT))
-    cat(paste(lines,collapse=eol), file=f, sep="")  # so last line abruptly ends (missing last eol) to test that, otherwise could just pass eol to fwrite
-    # on unix we simulate Windows too. On Windows \n will write \r\n (and \r\n will write \r\r\n)
-    testIDtail = nr/100 + nc/1000 + ne/10000
-    # if (isTRUE(all.equal(testIDtail, 0.4103))) browser()
-    test(894+testIDtail, fread(f,na.strings=""), headDT)
-    cat(eol,file=f,append=TRUE)                     # now a normal file properly ending with final \n
-    test(895+testIDtail, fread(f,na.strings=""), headDT)
-    cat(eol,file=f,append=TRUE)                     # extra \n should be ignored other than for single columns where it is significant
-    test(896+testIDtail, fread(f,na.strings=""), if (nc==1) rbind(headDT, list(NA)) else headDT)
-    unlink(f)
+  eol = eols[ne]
+  headDT = head(DT,nr)[,seq_len(if (nc==0) ncol(DT) else nc),with=FALSE]
+  if (nr==0) for (j in seq_len(ncol(headDT))) set(headDT,j=j,value=logical())  # when read back in empty cols are the lowest type (logical)
+  f = tempfile()
+  lines = capture.output(fwrite(headDT))
+  cat(paste(lines,collapse=eol), file=f, sep="")  # so last line abruptly ends (missing last eol) to test that, otherwise could just pass eol to fwrite
+  # on unix we simulate Windows too. On Windows \n will write \r\n (and \r\n will write \r\r\n)
+  testIDtail = nr/100 + nc/1000 + ne/10000
+  # if (isTRUE(all.equal(testIDtail, 0.4103))) browser()
+  test(894+testIDtail, fread(f,na.strings=""), headDT)
+  cat(eol,file=f,append=TRUE)                     # now a normal file properly ending with final \n
+  test(895+testIDtail, fread(f,na.strings=""), headDT)
+  cat(eol,file=f,append=TRUE)                     # extra \n should be ignored other than for single columns where it is significant
+  test(896+testIDtail, fread(f,na.strings=""), if (nc==1) rbind(headDT, list(NA)) else headDT)
+  unlink(f)
 }}}
 if (test_bit64) {
-    n = 2100
-    # To test out-of-sample type diffs, nrow needs to be more than 100*10*2.  Under that, all rows are sampled.
-    DT = data.table( a=sample(1:1000,n,replace=TRUE),
-                     b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
-                     c=sample(c("foo","bar","baz"),n,replace=TRUE) )
-    fwrite(DT,f<-tempfile())
-    test(897, class(DT$b), "integer64")
-    test(898, fread(f), DT)
-    unlink(f)
-    DT[,a2:=as.integer64(a)][,a3:=as.double(a)][,a4:=gsub(" ","",format(a))]
-    DT[,b2:=as.double(b)][,b3:=gsub(" ","",format(b))]
-    DT[,r:=a/100][,r2:=gsub(" ","",format(r))]
-    DT[112, a2:=as.integer64(12345678901234)]   # start on row 112 to avoid the first 100
-    DT[113, a3:=3.14]
-    DT[114, a4:="123A"]
-    DT[115, b2:=1234567890123.45]
-    DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
-    DT[117, r2:="3.14A"]
-    fwrite(DT,f<-tempfile())
-    test(899.1, fread(f,verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")
-    test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2")), verbose=TRUE),
-                DT, output="Rereading 0 columns due to out-of-sample type exceptions")
-    unlink(f)
+  n = 2100
+  # To test out-of-sample type diffs, nrow needs to be more than 100*10*2.  Under that, all rows are sampled.
+  DT = data.table( a=sample(1:1000,n,replace=TRUE),
+                   b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
+                   c=sample(c("foo","bar","baz"),n,replace=TRUE) )
+  fwrite(DT,f<-tempfile())
+  test(897, class(DT$b), "integer64")
+  test(898, fread(f), DT)
+  unlink(f)
+  DT[,a2:=as.integer64(a)][,a3:=as.double(a)][,a4:=gsub(" ","",format(a))]
+  DT[,b2:=as.double(b)][,b3:=gsub(" ","",format(b))]
+  DT[,r:=a/100][,r2:=gsub(" ","",format(r))]
+  DT[112, a2:=as.integer64(12345678901234)]   # start on row 112 to avoid the first 100
+  DT[113, a3:=3.14]
+  DT[114, a4:="123A"]
+  DT[115, b2:=1234567890123.45]
+  DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
+  DT[117, r2:="3.14A"]
+  fwrite(DT,f<-tempfile())
+  test(899.1, fread(f,verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")
+  test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2")), verbose=TRUE),
+              DT, output="Rereading 0 columns due to out-of-sample type exceptions")
+  unlink(f)
 }
 
 # getwd() has been set by test.data.table() to the location of this tests.Rraw file. Test files should be in the same directory.
@@ -2837,98 +2837,98 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
 # All melt.data.table tests go in here #
 #########################################
 {
-    # reshape2 does not need to be loaded to run these.
-    # We run these routinely, in dev by cc(), on Travis (coverage) and on CRAN
-    set.seed(45)
-    DT <- data.table(
-          i_1 = c(1:5, NA),
-          i_2 = c(NA,6,7,8,9,10),
-          f_1 = factor(sample(c(letters[1:3], NA), 6, TRUE)),
-          c_1 = sample(c(letters[1:3], NA), 6, TRUE),
-          d_1 = as.Date(c(1:3,NA,4:5), origin="2013-09-01"),
-          d_2 = as.Date(6:1, origin="2012-01-01"))
-    DT[, l_1 := DT[, list(c=list(rep(i_1, sample(5,1)))), by = i_1]$c] # generate list cols
-    DT[, l_2 := DT[, list(c=list(rep(c_1, sample(5,1)))), by = i_1]$c]
+  # reshape2 does not need to be loaded to run these.
+  # We run these routinely, in dev by cc(), on Travis (coverage) and on CRAN
+  set.seed(45)
+  DT <- data.table(
+        i_1 = c(1:5, NA),
+        i_2 = c(NA,6,7,8,9,10),
+        f_1 = factor(sample(c(letters[1:3], NA), 6, TRUE)),
+        c_1 = sample(c(letters[1:3], NA), 6, TRUE),
+        d_1 = as.Date(c(1:3,NA,4:5), origin="2013-09-01"),
+        d_2 = as.Date(6:1, origin="2012-01-01"))
+  DT[, l_1 := DT[, list(c=list(rep(i_1, sample(5,1)))), by = i_1]$c] # generate list cols
+  DT[, l_2 := DT[, list(c=list(rep(c_1, sample(5,1)))), by = i_1]$c]
 
-    test(1035, melt(DT, id=1:2, measure=3:4), melt(DT, id=c("i_1", "i_2"), measure=c("f_1", "c_1")))
+  test(1035, melt(DT, id=1:2, measure=3:4), melt(DT, id=c("i_1", "i_2"), measure=c("f_1", "c_1")))
 
-    ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
-    ans1[, value := DT$l_1]
-    test(1036, melt(DT, id=c("i_1", "i_2", "l_2"), measure=c("l_1")), ans1)
+  ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
+  ans1[, value := DT$l_1]
+  test(1036, melt(DT, id=c("i_1", "i_2", "l_2"), measure=c("l_1")), ans1)
 
-    # melt retains attributes if all are of same type (new)
-    ans2 = data.table(c_1=DT$c_1, variable=rep(c("d_1", "d_2"), each=6), value=as.Date(c(DT$d_1, DT$d_2)))[!is.na(value)]
-    test(1037, melt(DT, id=4, measure=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
+  # melt retains attributes if all are of same type (new)
+  ans2 = data.table(c_1=DT$c_1, variable=rep(c("d_1", "d_2"), each=6), value=as.Date(c(DT$d_1, DT$d_2)))[!is.na(value)]
+  test(1037, melt(DT, id=4, measure=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
 
-    DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
-    test(1038, melt(DT2, id=1), error="Unknown column type 'complex'")
+  DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
+  test(1038, melt(DT2, id=1), error="Unknown column type 'complex'")
 
-    # more tests
-    DT[, f_2 := factor(c("z", "a", "x", "z", "a", "a"), ordered=TRUE)]
-    DT[, id := 1:6]
-    ans1 = cbind(melt(DT, id="id", measure=5:6, value.name="value1"), melt(DT, id=integer(0), measure=7:8, value.name="value2")[, variable:=NULL])
-    levels(ans1$variable) = as.character(1:2)
-    test(1038.2, ans1, melt(DT, id="id", measure=list(5:6, 7:8)))
-    test(1038.3, ans1, melt(DT, id="id", measure=list(5:6, 7:8), na.rm=TRUE)) # should've no effect
-    test(1038.7, ans1, melt(DT, id="id", measure=patterns("d_", "l_")))
-    # melt retains ordered factors!
-    test(1038.4, melt(DT, id="id", measure=c("f_1", "f_2"), value.factor=TRUE)$value, factor(c(as.character(DT$f_1), as.character(DT$f_2)), ordered=TRUE))
-    # if measure is integer(0) just returns a duplicated data.table with all idcols
-    test(1038.5, melt(DT, id=1:6, measure=integer(0)), shallow(DT, 1:6))
-    # measure.var list with single entry recycles to maximum length
-    ans = cbind(melt(DT, id="id", measure=c("c_1", "c_1"))[, variable := NULL], melt(DT, id=integer(0), measure=c("f_1", "f_2")))
-    setnames(ans, c("id", "value1", "variable", "value2"))
-    setcolorder(ans, c("id", "variable", "value1", "value2"))
-    levels(ans$variable) = as.character(1:2)
-    test(1038.6, melt(DT, id="id", measure=list(c("c_1", "c_1"), c("f_1", "f_2"))), ans)
+  # more tests
+  DT[, f_2 := factor(c("z", "a", "x", "z", "a", "a"), ordered=TRUE)]
+  DT[, id := 1:6]
+  ans1 = cbind(melt(DT, id="id", measure=5:6, value.name="value1"), melt(DT, id=integer(0), measure=7:8, value.name="value2")[, variable:=NULL])
+  levels(ans1$variable) = as.character(1:2)
+  test(1038.2, ans1, melt(DT, id="id", measure=list(5:6, 7:8)))
+  test(1038.3, ans1, melt(DT, id="id", measure=list(5:6, 7:8), na.rm=TRUE)) # should've no effect
+  test(1038.7, ans1, melt(DT, id="id", measure=patterns("d_", "l_")))
+  # melt retains ordered factors!
+  test(1038.4, melt(DT, id="id", measure=c("f_1", "f_2"), value.factor=TRUE)$value, factor(c(as.character(DT$f_1), as.character(DT$f_2)), ordered=TRUE))
+  # if measure is integer(0) just returns a duplicated data.table with all idcols
+  test(1038.5, melt(DT, id=1:6, measure=integer(0)), shallow(DT, 1:6))
+  # measure.var list with single entry recycles to maximum length
+  ans = cbind(melt(DT, id="id", measure=c("c_1", "c_1"))[, variable := NULL], melt(DT, id=integer(0), measure=c("f_1", "f_2")))
+  setnames(ans, c("id", "value1", "variable", "value2"))
+  setcolorder(ans, c("id", "variable", "value1", "value2"))
+  levels(ans$variable) = as.character(1:2)
+  test(1038.6, melt(DT, id="id", measure=list(c("c_1", "c_1"), c("f_1", "f_2"))), ans)
 
-    # test to ensure attributes on non-factor id-columns are preserved after melt
-    DT <- data.table(x=1:3, y=letters[1:3], z1=8:10, z2=11:13)
-    setattr(DT$x, 'foo', 'bla1')
-    setattr(DT$y, 'bar', 1:4)
-    test(1222.1, attr(melt(DT, id=1:2)$x, "foo"), "bla1")
-    test(1222.2, attr(melt(DT, id=1:2)$y, "bar"), 1:4)
+  # test to ensure attributes on non-factor id-columns are preserved after melt
+  DT <- data.table(x=1:3, y=letters[1:3], z1=8:10, z2=11:13)
+  setattr(DT$x, 'foo', 'bla1')
+  setattr(DT$y, 'bar', 1:4)
+  test(1222.1, attr(melt(DT, id=1:2)$x, "foo"), "bla1")
+  test(1222.2, attr(melt(DT, id=1:2)$y, "bar"), 1:4)
 
-    # bug #699 - melt segfaults when vars are not in dt
-    x = data.table(a=c(1,2),b=c(2,3),c=c(3,4))
-    test(1316.1, melt(x, id="d"), error="One or more values")
-    test(1316.2, melt(x, measure="d"), error="One or more values")
-    test(1316.3, melt(x, id="a", measure="d"), error="One or more values")
-    test(1316.4, melt(x, id="d", measure="a"), error="One or more values")
+  # bug #699 - melt segfaults when vars are not in dt
+  x = data.table(a=c(1,2),b=c(2,3),c=c(3,4))
+  test(1316.1, melt(x, id="d"), error="One or more values")
+  test(1316.2, melt(x, measure="d"), error="One or more values")
+  test(1316.3, melt(x, id="a", measure="d"), error="One or more values")
+  test(1316.4, melt(x, id="d", measure="a"), error="One or more values")
 
-    # fix for #780.
-    DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9)
-    foo = function(input, by, var) {
-        melt(input, id.vars = by, measure.vars=var)
-    }
-    test(1371.1, foo(DT, by="x"), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)), warning="are not all of the same type. By order of hierarchy, the molten data value column will be of type 'double'")
-    test(1371.2, foo(DT), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)),
-                 warning=c("To be consistent with reshape2's melt, id.vars and",
-                           "'measure.vars'.*are not all of the same type.*Check"))
-    # Fix for #1055
-    DT <- data.table(A = 1:2, B = 3:4, D = 5:6, D = 7:8)
-    test(1495, melt(DT, id=1:2), data.table(A=1:2, B=3:4,
-        variable=factor(rep(1L, 4L), labels="D"), value=5:8))
+  # fix for #780.
+  DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9)
+  foo = function(input, by, var) {
+      melt(input, id.vars = by, measure.vars=var)
+  }
+  test(1371.1, foo(DT, by="x"), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)), warning="are not all of the same type. By order of hierarchy, the molten data value column will be of type 'double'")
+  test(1371.2, foo(DT), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)),
+               warning=c("To be consistent with reshape2's melt, id.vars and",
+                         "'measure.vars'.*are not all of the same type.*Check"))
+  # Fix for #1055
+  DT <- data.table(A = 1:2, B = 3:4, D = 5:6, D = 7:8)
+  test(1495, melt(DT, id=1:2), data.table(A=1:2, B=3:4,
+      variable=factor(rep(1L, 4L), labels="D"), value=5:8))
 
-    # segfault of unprotected var caught with the help of address sanitizer
-    set.seed(1)
-    val = sample(c(1:5, NA), 1e6L, TRUE)
-    dt <- setDT(replicate(100L, val, simplify=FALSE))
-    ## to ensure there's no segfault...
-    ans <- melt(dt, measure.vars=names(dt), na.rm=TRUE)
-    test(1509, ans, ans)
+  # segfault of unprotected var caught with the help of address sanitizer
+  set.seed(1)
+  val = sample(c(1:5, NA), 1e6L, TRUE)
+  dt <- setDT(replicate(100L, val, simplify=FALSE))
+  ## to ensure there's no segfault...
+  ans <- melt(dt, measure.vars=names(dt), na.rm=TRUE)
+  test(1509, ans, ans)
 
-    # improper levels fix, #1359
-    dt = data.table(id=1:3, x=NA_character_, y=c('a', NA_character_, 'c'))
-    test(1563, melt(dt, id.var="id", na.rm=TRUE), data.table(id=c(1L,3L), variable=factor(c("y", "y")), value=c("a", "c")))
+  # improper levels fix, #1359
+  dt = data.table(id=1:3, x=NA_character_, y=c('a', NA_character_, 'c'))
+  test(1563, melt(dt, id.var="id", na.rm=TRUE), data.table(id=c(1L,3L), variable=factor(c("y", "y")), value=c("a", "c")))
 
-    # fixing segfault due to negative id and measure vars that I detected by accident
-    dt = data.table(x=1:5, y=6:10, z=11:15)
-    test(1569.1, melt(dt, id=-1, measure=NULL), error="One or more values in 'id.vars'")
-    test(1569.2, melt(dt, id=-1, measure=-1), error="One or more values in 'id.vars'")
-    test(1569.3, melt(dt, id=NULL, measure=-1), error="One or more values in 'measure.vars'")
-    test(1569.4, melt(dt, id=5, measure=-1), error="One or more values in 'id.vars'")
-    test(1569.5, melt(dt, id=1, measure=-1), error="One or more values in 'measure.vars'")
+  # fixing segfault due to negative id and measure vars that I detected by accident
+  dt = data.table(x=1:5, y=6:10, z=11:15)
+  test(1569.1, melt(dt, id=-1, measure=NULL), error="One or more values in 'id.vars'")
+  test(1569.2, melt(dt, id=-1, measure=-1), error="One or more values in 'id.vars'")
+  test(1569.3, melt(dt, id=NULL, measure=-1), error="One or more values in 'measure.vars'")
+  test(1569.4, melt(dt, id=5, measure=-1), error="One or more values in 'id.vars'")
+  test(1569.5, melt(dt, id=1, measure=-1), error="One or more values in 'measure.vars'")
 }
 
 # sorting and grouping of Inf, -Inf, NA and NaN,  #4684, #4815 & #4883
@@ -3124,194 +3124,194 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
 # All dcast.data.table tests go in here #
 #########################################
 {
-    # reshape2 does not need to be loaded to run these.
-    # On 14 March 2018, as part of pruning long tests PR#2671, Matt replaced the y value of these tests with the known result. Before that, the tests
-    # coerced to data.frame and comparing to the result of calling the reshape2::dcast data.frame method. Using an explicit known correct result is more
-    # robust than checking that two packages agree; e.g. these check the result is correctly keyed now too. We still Suggest reshape2 but if it has any
-    # problems on CRAN it won't now impact our tests.
-    # We run these routinely, in dev by cc(), on Travis (coverage) and on CRAN
+  # reshape2 does not need to be loaded to run these.
+  # On 14 March 2018, as part of pruning long tests PR#2671, Matt replaced the y value of these tests with the known result. Before that, the tests
+  # coerced to data.frame and comparing to the result of calling the reshape2::dcast data.frame method. Using an explicit known correct result is more
+  # robust than checking that two packages agree; e.g. these check the result is correctly keyed now too. We still Suggest reshape2 but if it has any
+  # problems on CRAN it won't now impact our tests.
+  # We run these routinely, in dev by cc(), on Travis (coverage) and on CRAN
 
-    # Just this first test in an extra one originally for #825 to test reshape::cast. Matt retained the test and tweaked it to test dcast
-    # instead (which retains the Date class, unlike reshape::cast it seems).
-    DT = data.table(
-      ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L),
-      DATUM = structure(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209), class = "Date"),
-      N = c(25L, 9L, 23L, 29L, 26L, 26L, 27L, 28L, 39L, 39L, 38L, 36L, 40L, 39L, 19L, 20L, 19L), rank = c(2, 1, 3, 1, 2, 3, 4, 5, 1, 2, 3, 4, 6, 5, 2, 1, 3))
-    test(1101, dcast(DT, ID ~ rank, value.var = "DATUM"), data.table(
-      ID = c(611557L, 894125L, 898856L, 898899L),
-      "1" = as.Date(c("2014-01-01", "2014-02-03", "2014-01-19", "2014-02-24")),
-      "2" = as.Date(c("2014-01-31", "2014-03-04", "2014-02-17", "2014-04-03")),
-      "3" = as.Date(c("2014-07-10", "2014-04-07", "2014-03-18", "2014-05-19")),
-      "4" = as.Date(c(NA, "2014-05-11", "2014-04-16", NA)),
-      "5" = as.Date(c(NA, "2014-06-15", "2014-05-18", NA)),
-      "6" = as.Date(c(NA, NA, "2014-06-15", NA)), key="ID"))
+  # Just this first test in an extra one originally for #825 to test reshape::cast. Matt retained the test and tweaked it to test dcast
+  # instead (which retains the Date class, unlike reshape::cast it seems).
+  DT = data.table(
+    ID = c(611557L, 611557L, 611557L, 894125L, 894125L, 894125L, 894125L, 894125L, 898856L, 898856L, 898856L, 898856L, 898856L, 898856L, 898899L, 898899L, 898899L),
+    DATUM = structure(c(16101, 16071, 16261, 16104, 16133, 16167, 16201, 16236, 16089, 16118, 16147, 16176, 16236, 16208, 16163, 16125, 16209), class = "Date"),
+    N = c(25L, 9L, 23L, 29L, 26L, 26L, 27L, 28L, 39L, 39L, 38L, 36L, 40L, 39L, 19L, 20L, 19L), rank = c(2, 1, 3, 1, 2, 3, 4, 5, 1, 2, 3, 4, 6, 5, 2, 1, 3))
+  test(1101, dcast(DT, ID ~ rank, value.var = "DATUM"), data.table(
+    ID = c(611557L, 894125L, 898856L, 898899L),
+    "1" = as.Date(c("2014-01-01", "2014-02-03", "2014-01-19", "2014-02-24")),
+    "2" = as.Date(c("2014-01-31", "2014-03-04", "2014-02-17", "2014-04-03")),
+    "3" = as.Date(c("2014-07-10", "2014-04-07", "2014-03-18", "2014-05-19")),
+    "4" = as.Date(c(NA, "2014-05-11", "2014-04-16", NA)),
+    "5" = as.Date(c(NA, "2014-06-15", "2014-05-18", NA)),
+    "6" = as.Date(c(NA, NA, "2014-06-15", NA)), key="ID"))
 
-    names(ChickWeight) <- tolower(names(ChickWeight))
-    DT = melt(as.data.table(ChickWeight), id=2:4) # calls melt.data.table
+  names(ChickWeight) <- tolower(names(ChickWeight))
+  DT = melt(as.data.table(ChickWeight), id=2:4) # calls melt.data.table
 
-    # changed 'mean' to 'sum' to avoid valgrind floating point precision based error.
-    test(1102.1, dcast(DT, time ~ variable, fun=sum)[c(1,2,11,.N)], data.table(time=c(0,2,20,21),weight=c(2053,2461,9647,9841), key="time"))
-    test(1102.2, dcast(DT, diet ~ variable, fun=sum), data.table(diet=factor(1:4), weight=c(22582, 14714, 17154, 15961), key="diet"))
-    test(1102.3,   dcast(DT, diet+chick ~ time, drop=FALSE)[c(1,.N),c(1:4,13:14)],
-                 ans<-data.table(diet=factor(c(1,4)), chick=ordered(c(18,48),levels=levels(DT$chick)), "0"=39, "2"=c(35,50), "20"=c(NA,303), "21"=c(NA,322), key="diet,chick"))
-    test(1102.4, dcast(DT, diet+chick ~ time, drop=FALSE, fill=0)[c(1,.N),c(1:4,13:14)], ans[1, c("20","21"):=0])
-    # add test for 'subset=' in dcast
-    test(1102.5, dcast(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20))[c(1,2,44,.N)],
-                 data.table(time=21, chick=ordered(c(13,9,42,48), levels=levels(DT$chick)), weight_1=c(96,98,0,0), weight_2=0, weight_3=0, weight_4=c(0,0,281,322), key="time,chick"))
+  # changed 'mean' to 'sum' to avoid valgrind floating point precision based error.
+  test(1102.1, dcast(DT, time ~ variable, fun=sum)[c(1,2,11,.N)], data.table(time=c(0,2,20,21),weight=c(2053,2461,9647,9841), key="time"))
+  test(1102.2, dcast(DT, diet ~ variable, fun=sum), data.table(diet=factor(1:4), weight=c(22582, 14714, 17154, 15961), key="diet"))
+  test(1102.3,   dcast(DT, diet+chick ~ time, drop=FALSE)[c(1,.N),c(1:4,13:14)],
+               ans<-data.table(diet=factor(c(1,4)), chick=ordered(c(18,48),levels=levels(DT$chick)), "0"=39, "2"=c(35,50), "20"=c(NA,303), "21"=c(NA,322), key="diet,chick"))
+  test(1102.4, dcast(DT, diet+chick ~ time, drop=FALSE, fill=0)[c(1,.N),c(1:4,13:14)], ans[1, c("20","21"):=0])
+  # add test for 'subset=' in dcast
+  test(1102.5, dcast(DT, time + chick ~ variable+diet, fun=sum, subset=.(time> 20))[c(1,2,44,.N)],
+               data.table(time=21, chick=ordered(c(13,9,42,48), levels=levels(DT$chick)), weight_1=c(96,98,0,0), weight_2=0, weight_3=0, weight_4=c(0,0,281,322), key="time,chick"))
 
-    # testing without aggregation
-    set.seed(3)
-    DT = data.table(a=5:1, b=runif(5))
-    ans = dcast(DT, a ~ b, value.var="b")[c(4,.N), c(2,6)]
-    setnames(ans, substring(names(ans),1,6))
-    test(1102.6, ans, data.table("0.1680"=c(NA,DT[1,b]), "0.8075"=c(DT[2,b],NA)))
+  # testing without aggregation
+  set.seed(3)
+  DT = data.table(a=5:1, b=runif(5))
+  ans = dcast(DT, a ~ b, value.var="b")[c(4,.N), c(2,6)]
+  setnames(ans, substring(names(ans),1,6))
+  test(1102.6, ans, data.table("0.1680"=c(NA,DT[1,b]), "0.8075"=c(DT[2,b],NA)))
 
-    # Fix for case 2 in bug report #5149 - dcast didn't aggregate properly when formula RHS has "."
-    set.seed(45)
-    DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
-    test(1102.7, dcast(DT, x ~ ., mean, value.var="y")[,`.`:=as.integer(`.`*10000)], data.table(x=1:5, "."=INT(3972,3427,3224,4182,3994), key="x"))
-    # also quashed another bug with `.` in formula (when there's no aggregate function):
-    DT = data.table(a=sample(5), b=runif(5), c=5:1)
-    test(1102.8, dcast(DT, a ~ ., value.var="c"), data.table(a=1:5,"."=INT(3,1,5,4,2), key="a"))
-    test(1102.9, dcast(DT, b+a~., value.var="c")[,b:=as.integer(b*1000)][], data.table(b=INT(129,319,585,662,891), a=INT(3,4,1,5,2), "."=5:1))
+  # Fix for case 2 in bug report #5149 - dcast didn't aggregate properly when formula RHS has "."
+  set.seed(45)
+  DT = data.table(x=rep(1:5, each=3), y=runif(15, 0, 1))
+  test(1102.7, dcast(DT, x ~ ., mean, value.var="y")[,`.`:=as.integer(`.`*10000)], data.table(x=1:5, "."=INT(3972,3427,3224,4182,3994), key="x"))
+  # also quashed another bug with `.` in formula (when there's no aggregate function):
+  DT = data.table(a=sample(5), b=runif(5), c=5:1)
+  test(1102.8, dcast(DT, a ~ ., value.var="c"), data.table(a=1:5,"."=INT(3,1,5,4,2), key="a"))
+  test(1102.9, dcast(DT, b+a~., value.var="c")[,b:=as.integer(b*1000)][], data.table(b=INT(129,319,585,662,891), a=INT(3,4,1,5,2), "."=5:1))
 
-    # more tests for `dcast` with formula being character and errors when formula is a hybrid
-    set.seed(1)
-    DT = data.table(a=rep(1:5, each=5), b=runif(25))
-    test(1102.11, dcast(DT, " a~ . ", value.var="b", fun=length), data.table(a=1:5, `.`=5L, key="a"))
-    test(1102.12, dcast(DT, "a ~  c ", value.var="b"), error="not found or of unknown type")
-    test(1102.13, dcast(DT, a ~  a, value.var="c"), error="are not found in 'data'")
+  # more tests for `dcast` with formula being character and errors when formula is a hybrid
+  set.seed(1)
+  DT = data.table(a=rep(1:5, each=5), b=runif(25))
+  test(1102.11, dcast(DT, " a~ . ", value.var="b", fun=length), data.table(a=1:5, `.`=5L, key="a"))
+  test(1102.12, dcast(DT, "a ~  c ", value.var="b"), error="not found or of unknown type")
+  test(1102.13, dcast(DT, a ~  a, value.var="c"), error="are not found in 'data'")
 
-    # fix for #5379 - issue when factor columns on formula LHS along with `drop=FALSE`
-    set.seed(1L)
-    DT = data.table(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]),
-                    b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
-    test(1102.14, dcast(DT, a~b, drop=FALSE, fun=length, value.var="b"),
-                  data.table(a=factor(letters[1:5]), v=INT(0,1,0,0,0), w=INT(1,1,1,0,0), x=INT(0,0,1,0,0), y=INT(2,1,1,0,0), z=INT(0,1,0,0,0), key="a"))
+  # fix for #5379 - issue when factor columns on formula LHS along with `drop=FALSE`
+  set.seed(1L)
+  DT = data.table(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]),
+                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+  test(1102.14, dcast(DT, a~b, drop=FALSE, fun=length, value.var="b"),
+                data.table(a=factor(letters[1:5]), v=INT(0,1,0,0,0), w=INT(1,1,1,0,0), x=INT(0,0,1,0,0), y=INT(2,1,1,0,0), z=INT(0,1,0,0,0), key="a"))
 
-    # reverse the levels
-    set.seed(1L)
-    DT = data.table(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[5:1]),
-                    b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
-    test(1102.14, dcast(DT, a~b, drop=FALSE, value.var="b", fun=length),
-                  data.table(a=factor(c("e","d","c","b","a"),levels=levels(DT$a)), v=INT(0,0,0,1,0), w=INT(0,0,1,1,1), x=INT(0,0,1,0,0), y=INT(0,0,1,1,2), z=INT(0,0,0,1,0), key="a"))
+  # reverse the levels
+  set.seed(1L)
+  DT = data.table(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[5:1]),
+                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+  test(1102.14, dcast(DT, a~b, drop=FALSE, value.var="b", fun=length),
+                data.table(a=factor(c("e","d","c","b","a"),levels=levels(DT$a)), v=INT(0,0,0,1,0), w=INT(0,0,1,1,1), x=INT(0,0,1,0,0), y=INT(0,0,1,1,2), z=INT(0,0,0,1,0), key="a"))
 
-    # more factor cols
-    set.seed(1L)
-    DT = data.table(a1=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]), # factor col 1
-                   a2=factor(sample(letters[6:10], 10, replace=TRUE), letters[6:10]), # factor col 2
-                   a3=sample(letters[1:3], 10, TRUE), # no factor
-                   b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
-    test(1102.15, dcast(DT, a1+a2+a3~b, drop=FALSE, value.var="b")[c(1,21,.N),lapply(.SD,as.character)],
-                  data.table(a1=c("a","b","e"), a2=c("f","g","j"), a3=c("a","c","c"), v=NA_character_, x=NA_character_, y=c(NA,"y",NA), z=NA_character_, key="a1,a2,a3"))
+  # more factor cols
+  set.seed(1L)
+  DT = data.table(a1=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]), # factor col 1
+                 a2=factor(sample(letters[6:10], 10, replace=TRUE), letters[6:10]), # factor col 2
+                 a3=sample(letters[1:3], 10, TRUE), # no factor
+                 b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+  test(1102.15, dcast(DT, a1+a2+a3~b, drop=FALSE, value.var="b")[c(1,21,.N),lapply(.SD,as.character)],
+                data.table(a1=c("a","b","e"), a2=c("f","g","j"), a3=c("a","c","c"), v=NA_character_, x=NA_character_, y=c(NA,"y",NA), z=NA_character_, key="a1,a2,a3"))
 
-    # dcast bug fix for 'subset' argument (it doesn't get key set before to run C-fcast):
-    DT = data.table(x=c(1,1,1,2,2,2,1,1), y=c(1,2,3,1,2,1,1,2), z=c(1,2,3,NA,4,5,NA,NA))
-    test(1102.16, dcast(DT, x~y, value.var="z", subset=.(!is.na(z))), data.table(x=c(1,2), `1`=c(1,5), `2`=c(2,4), `3`=c(3,NA), key="x"))
+  # dcast bug fix for 'subset' argument (it doesn't get key set before to run C-fcast):
+  DT = data.table(x=c(1,1,1,2,2,2,1,1), y=c(1,2,3,1,2,1,1,2), z=c(1,2,3,NA,4,5,NA,NA))
+  test(1102.16, dcast(DT, x~y, value.var="z", subset=.(!is.na(z))), data.table(x=c(1,2), `1`=c(1,5), `2`=c(2,4), `3`=c(3,NA), key="x"))
 
-    # FR #5675 and DOC #5676
-    set.seed(1L)
-    DT = data.table(a=sample(10), b=2013:2014, variable=rep(c("c", "d"), each=10), value=runif(20))
-    test(1102.17, names(dcast(DT, a ~ ... + b, value.var="value")), c("a", "c_2013", "c_2014", "d_2013", "d_2014"))
+  # FR #5675 and DOC #5676
+  set.seed(1L)
+  DT = data.table(a=sample(10), b=2013:2014, variable=rep(c("c", "d"), each=10), value=runif(20))
+  test(1102.17, names(dcast(DT, a ~ ... + b, value.var="value")), c("a", "c_2013", "c_2014", "d_2013", "d_2014"))
 
-    # bug git #693 - dcast error message improvement:
-    DT = data.table(x=c(1,1), y=c(2,2), z = 3:4)
-    test(1102.18, dcast(DT, x ~ y, value.var="z", fun.aggregate=identity), error="should take vector inputs and return a single value")
+  # bug git #693 - dcast error message improvement:
+  DT = data.table(x=c(1,1), y=c(2,2), z = 3:4)
+  test(1102.18, dcast(DT, x ~ y, value.var="z", fun.aggregate=identity), error="should take vector inputs and return a single value")
 
-    # bug #688 - preserving attributes
-    DT = data.table(id = c(1,1,2,2), ty = c("a","b","a","b"), da = as.Date("2014-06-20"))
-    test(1102.19, dcast(DT, formula = id ~ ty, value.var="da"), data.table(id=c(1,2), a=as.Date("2014-06-20"), b=as.Date("2014-06-20"), key="id"))
+  # bug #688 - preserving attributes
+  DT = data.table(id = c(1,1,2,2), ty = c("a","b","a","b"), da = as.Date("2014-06-20"))
+  test(1102.19, dcast(DT, formula = id ~ ty, value.var="da"), data.table(id=c(1,2), a=as.Date("2014-06-20"), b=as.Date("2014-06-20"), key="id"))
 
-    # issues/713 - dcast and fun.aggregate
-    DT = data.table(id=rep(1:2, c(3,4)), k=c(rep(letters[1:3], 2), 'c'), v=1:7)
-    foo = function (tbl, fun.aggregate) {
-        dcast(tbl, id ~ k, value.var='v', fun.aggregate=fun.aggregate, fill=NA_integer_)
-    }
-    test(1102.21, foo(DT, last), dcast(DT, id ~ k, value.var='v', fun.aggregate=last, fill=NA_integer_))
+  # issues/713 - dcast and fun.aggregate
+  DT = data.table(id=rep(1:2, c(3,4)), k=c(rep(letters[1:3], 2), 'c'), v=1:7)
+  foo = function (tbl, fun.aggregate) {
+      dcast(tbl, id ~ k, value.var='v', fun.aggregate=fun.aggregate, fill=NA_integer_)
+  }
+  test(1102.21, foo(DT, last), dcast(DT, id ~ k, value.var='v', fun.aggregate=last, fill=NA_integer_))
 
-    # more minor changes to dcast (subset argument handling symbol - removing any surprises with data.table's typical scoping rules) - test for that.
-    DT = data.table(id=rep(1:2, c(3,4)), k=c(rep(letters[1:3], 2), 'c'), v=1:7)
-    bla = c(TRUE, rep(FALSE, 6L))
-    # calling `subset=.(bla)` gives eval error when testing... not sure what's happeing! using values directly instead for now.
-    test(1102.22, dcast(DT, id ~ k, value.var="v", subset=.(c(TRUE, rep(FALSE, 6L)))), dcast(DT[1L], id ~ k, value.var="v"))
-    DT[, bla := !bla]
-    test(1102.23, dcast(DT, id ~ k, value.var="v", subset=.(bla), fun.aggregate=length), dcast(DT[(bla)], id ~ k, value.var="v", fun.aggregate=length))
+  # more minor changes to dcast (subset argument handling symbol - removing any surprises with data.table's typical scoping rules) - test for that.
+  DT = data.table(id=rep(1:2, c(3,4)), k=c(rep(letters[1:3], 2), 'c'), v=1:7)
+  bla = c(TRUE, rep(FALSE, 6L))
+  # calling `subset=.(bla)` gives eval error when testing... not sure what's happeing! using values directly instead for now.
+  test(1102.22, dcast(DT, id ~ k, value.var="v", subset=.(c(TRUE, rep(FALSE, 6L)))), dcast(DT[1L], id ~ k, value.var="v"))
+  DT[, bla := !bla]
+  test(1102.23, dcast(DT, id ~ k, value.var="v", subset=.(bla), fun.aggregate=length), dcast(DT[(bla)], id ~ k, value.var="v", fun.aggregate=length))
 
-    # issues/715
-    DT = data.table(id=rep(1:2, c(3,2)), k=c(letters[1:3], letters[1:2]), v=1:5)
-    test(1102.24, dcast(DT, id ~ k, fun.aggregate=last, value.var="v"), error="should take vector inputs and return a single value")
-    test(1102.25, dcast(DT, id ~ k, fun.aggregate=last, value.var="v", fill=NA_integer_), data.table(id=1:2, a=c(1L, 4L), b=c(2L,5L), c=c(3L,NA_integer_), key="id"))
+  # issues/715
+  DT = data.table(id=rep(1:2, c(3,2)), k=c(letters[1:3], letters[1:2]), v=1:5)
+  test(1102.24, dcast(DT, id ~ k, fun.aggregate=last, value.var="v"), error="should take vector inputs and return a single value")
+  test(1102.25, dcast(DT, id ~ k, fun.aggregate=last, value.var="v", fill=NA_integer_), data.table(id=1:2, a=c(1L, 4L), b=c(2L,5L), c=c(3L,NA_integer_), key="id"))
 
-    # Fix for #893
-    DT = data.table(
-        x = factor("a", levels = c("a", "b")),
-        y = factor("b", levels = c("a", "b")),
-        z = 1
-    )
-    test(1102.26, dcast(DT, y ~ x, drop = FALSE, value.var="z"),
-                  data.table(y=factor(c("a","b")), a=c(NA,1), b=c(NA_real_,NA), key="y"))
+  # Fix for #893
+  DT = data.table(
+      x = factor("a", levels = c("a", "b")),
+      y = factor("b", levels = c("a", "b")),
+      z = 1
+  )
+  test(1102.26, dcast(DT, y ~ x, drop = FALSE, value.var="z"),
+                data.table(y=factor(c("a","b")), a=c(NA,1), b=c(NA_real_,NA), key="y"))
 
-    # dcast.data.table new tests
-    # Fix for #1070 (special case of ... on LHS)
-    DT = data.table(label= month.abb[1:5], val=0)
-    test(1102.27, dcast(DT,... ~ label, value.var="val", sum),
-                  data.table(`.`=".", Apr=0, Feb=0, Jan=0, Mar=0, May=0, key="."))
-    # Fix for #862 (optional prefixes)
-    DT = data.table(name=c("Betty","Joe","Frank","Wendy","Sally"),
-                    address=c(rep("bla1",2), rep("bla2",2), "bla3"))
-    test(1102.28, dcast(DT, address ~ paste("cust", DT[, seq_len(.N), by=address]$V1, sep=""), value.var="name"),
-                  data.table(address=paste("bla",1:3,sep=""), cust1=c("Betty", "Frank", "Sally"), cust2=c("Joe", "Wendy", NA), key="address"))
+  # dcast.data.table new tests
+  # Fix for #1070 (special case of ... on LHS)
+  DT = data.table(label= month.abb[1:5], val=0)
+  test(1102.27, dcast(DT,... ~ label, value.var="val", sum),
+                data.table(`.`=".", Apr=0, Feb=0, Jan=0, Mar=0, May=0, key="."))
+  # Fix for #862 (optional prefixes)
+  DT = data.table(name=c("Betty","Joe","Frank","Wendy","Sally"),
+                  address=c(rep("bla1",2), rep("bla2",2), "bla3"))
+  test(1102.28, dcast(DT, address ~ paste("cust", DT[, seq_len(.N), by=address]$V1, sep=""), value.var="name"),
+                data.table(address=paste("bla",1:3,sep=""), cust1=c("Betty", "Frank", "Sally"), cust2=c("Joe", "Wendy", NA), key="address"))
 
-    # Fix for #1037 (optional prefixes + undefined variables)
-    DT = data.table(V1 = c(0L, 1L, 2L, 3L, 4L, 0L, 1L, 2L, 3L, 4L),
-                    V2 = c(1.052, 0.542, 0.496, 0.402, 0.278, 5.115, 4.329, 4.121, 4.075, 4.0088))
-    test(1102.29, dcast(DT, cumsum(V1 == 0) ~ V1, value.var = 'V2')[,lapply(.SD,function(x)as.integer(x*1000))],
-                  data.table(V1=INT(1000,2000), "0"=INT(1052,5115), "1"=INT(542,4329), "2"=INT(496,4121), "3"=INT(402,4075), "4"=INT(278,4008), key="V1"))
+  # Fix for #1037 (optional prefixes + undefined variables)
+  DT = data.table(V1 = c(0L, 1L, 2L, 3L, 4L, 0L, 1L, 2L, 3L, 4L),
+                  V2 = c(1.052, 0.542, 0.496, 0.402, 0.278, 5.115, 4.329, 4.121, 4.075, 4.0088))
+  test(1102.29, dcast(DT, cumsum(V1 == 0) ~ V1, value.var = 'V2')[,lapply(.SD,function(x)as.integer(x*1000))],
+                data.table(V1=INT(1000,2000), "0"=INT(1052,5115), "1"=INT(542,4329), "2"=INT(496,4121), "3"=INT(402,4075), "4"=INT(278,4008), key="V1"))
 
-    # Implement #716 and #739 (multiple value.var and fun.aggregate)
-    # multiple value.var
-    set.seed(1)
-    DT = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE),
-                    z=sample(letters[1:2], 20,TRUE), d1 = runif(20), d2=1L)
-    test(1102.31, dcast(DT, x + y ~ z, fun=sum, value.var=c("d1","d2"))[c(1,.N)][, 3:4:=lapply(.SD,round,4), .SDcols=c("d1_a","d1_b")][],
-                  data.table(x=INT(1,5), y=INT(1,1), d1_a=c(0.0,0.4785), d1_b=c(0.8753,0.9804), d2_a=INT(0,1), d2_b=INT(1,3), key="x,y"))
-    # multiple fun.agg
-    test(1102.32, dcast(DT, x + y ~ z, fun=list(sum, mean), value.var="d1")[c(1,.N)][, 3:6:=lapply(.SD,round,3), .SDcols=3:6][],
-                  data.table(x=INT(1,5), y=INT(1,1), d1_sum_a=c(0.0,0.479), d1_sum_b=c(0.875,0.980),d1_mean_a=c(NaN,0.479),d1_mean_b=c(0.875,0.327), key="x,y"))
-    # multiple fun.agg and value.var (all combinations)
-    test(1102.33, dcast(DT, x + y ~ z, fun=list(sum, mean), value.var=c("d1", "d2"))[c(1,.N)][, c(3,4,7:10):=lapply(.SD,round,3), .SDcols=c(3,4,7:10)][],
-                  data.table(x=INT(1,5), y=INT(1,1), d1_sum_a=c(0.0,0.479), d1_sum_b=c(0.875,0.980),d2_sum_a=INT(0,1),d2_sum_b=INT(1,3),
-                            d1_mean_a=c(NaN,0.479),d1_mean_b=c(0.875,0.327),d2_mean_a=c(NaN,1),d2_mean_b=c(1,1), key="x,y"))
-    # multiple fun.agg and value.var (one-to-one)
-    test(1102.34, dcast(DT, x + y ~ z, fun=list(sum, mean), value.var=list("d1", "d2"))[c(1,.N)][, 3:4:=lapply(.SD,round,3), .SDcols=3:4][],
-                  data.table(x=INT(1,5), y=INT(1,1), d1_sum_a=c(0.0,0.479), d1_sum_b=c(0.875,0.980),d2_mean_a=c(NaN,1),d2_mean_b=c(1,1), key="x,y"))
+  # Implement #716 and #739 (multiple value.var and fun.aggregate)
+  # multiple value.var
+  set.seed(1)
+  DT = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE),
+                  z=sample(letters[1:2], 20,TRUE), d1 = runif(20), d2=1L)
+  test(1102.31, dcast(DT, x + y ~ z, fun=sum, value.var=c("d1","d2"))[c(1,.N)][, 3:4:=lapply(.SD,round,4), .SDcols=c("d1_a","d1_b")][],
+                data.table(x=INT(1,5), y=INT(1,1), d1_a=c(0.0,0.4785), d1_b=c(0.8753,0.9804), d2_a=INT(0,1), d2_b=INT(1,3), key="x,y"))
+  # multiple fun.agg
+  test(1102.32, dcast(DT, x + y ~ z, fun=list(sum, mean), value.var="d1")[c(1,.N)][, 3:6:=lapply(.SD,round,3), .SDcols=3:6][],
+                data.table(x=INT(1,5), y=INT(1,1), d1_sum_a=c(0.0,0.479), d1_sum_b=c(0.875,0.980),d1_mean_a=c(NaN,0.479),d1_mean_b=c(0.875,0.327), key="x,y"))
+  # multiple fun.agg and value.var (all combinations)
+  test(1102.33, dcast(DT, x + y ~ z, fun=list(sum, mean), value.var=c("d1", "d2"))[c(1,.N)][, c(3,4,7:10):=lapply(.SD,round,3), .SDcols=c(3,4,7:10)][],
+                data.table(x=INT(1,5), y=INT(1,1), d1_sum_a=c(0.0,0.479), d1_sum_b=c(0.875,0.980),d2_sum_a=INT(0,1),d2_sum_b=INT(1,3),
+                          d1_mean_a=c(NaN,0.479),d1_mean_b=c(0.875,0.327),d2_mean_a=c(NaN,1),d2_mean_b=c(1,1), key="x,y"))
+  # multiple fun.agg and value.var (one-to-one)
+  test(1102.34, dcast(DT, x + y ~ z, fun=list(sum, mean), value.var=list("d1", "d2"))[c(1,.N)][, 3:4:=lapply(.SD,round,3), .SDcols=3:4][],
+                data.table(x=INT(1,5), y=INT(1,1), d1_sum_a=c(0.0,0.479), d1_sum_b=c(0.875,0.980),d2_mean_a=c(NaN,1),d2_mean_b=c(1,1), key="x,y"))
 
-    # Additional test after fixing fun.agg creation - using the example here: https://github.com/Rdatatable/data.table/issues/716
-    DT = data.table(x=1:5, y=paste("v", 1:5, sep=""), v1=6:10, v2=11:15, k1=letters[1:5], k2=letters[6:10])
-    DT.m = melt(DT, id=1:2, measure=list(3:4, 5:6))
-    test(1102.35, dcast(DT.m, x ~ y, fun.aggregate = list(sum, function(x) paste(x, collapse="")), value.var=list("value1", "value2")),
-                  data.table(x=1:5, value1_sum_v1=INT(17,0,0,0,0), value1_sum_v2=INT(0,19,0,0,0), value1_sum_v3=INT(0,0,21,0,0),
-                  value1_sum_v4=INT(0,0,0,23,0), value1_sum_v5=INT(0,0,0,0,25), value2_function_v1=c("af","","","",""),
-                  value2_function_v2=c("","bg","","",""), value2_function_v3=c("","","ch","",""), value2_function_v4=c("","","","di",""),
-                  value2_function_v5=c("","","","","ej"), key="x"))
+  # Additional test after fixing fun.agg creation - using the example here: https://github.com/Rdatatable/data.table/issues/716
+  DT = data.table(x=1:5, y=paste("v", 1:5, sep=""), v1=6:10, v2=11:15, k1=letters[1:5], k2=letters[6:10])
+  DT.m = melt(DT, id=1:2, measure=list(3:4, 5:6))
+  test(1102.35, dcast(DT.m, x ~ y, fun.aggregate = list(sum, function(x) paste(x, collapse="")), value.var=list("value1", "value2")),
+                data.table(x=1:5, value1_sum_v1=INT(17,0,0,0,0), value1_sum_v2=INT(0,19,0,0,0), value1_sum_v3=INT(0,0,21,0,0),
+                value1_sum_v4=INT(0,0,0,23,0), value1_sum_v5=INT(0,0,0,0,25), value2_function_v1=c("af","","","",""),
+                value2_function_v2=c("","bg","","",""), value2_function_v3=c("","","ch","",""), value2_function_v4=c("","","","di",""),
+                value2_function_v5=c("","","","","ej"), key="x"))
 
-    # more testing on fun.aggregate
-    DT = as.data.table(airquality)
-    ans = suppressWarnings(melt(DT, id=c("Month", "Day"), na.rm=TRUE))  # warning regards coercion to double
-    ans = ans[ , .(min=min(value), max=max(value)), by=.(Month, variable)]
-    ans = melt(ans, id=1:2, variable.name="variable2")
-    ans = dcast(ans, Month ~ variable + variable2)
-    setnames(ans, c("Month", paste(names(ans)[-1L], sep="_")))
-    valvars = c("Ozone", "Solar.R", "Wind", "Temp")
-    ans2 = suppressWarnings(dcast(DT, Month ~ ., fun=list(min, max), na.rm=TRUE, value.var=valvars))
-    setcolorder(ans, names(ans2))
-    test(1102.36, key(ans), "Month")
-    test(1102.37, ans, ans2[, names(ans2)[-1L] := lapply(.SD, as.numeric), .SDcols=-1L])
+  # more testing on fun.aggregate
+  DT = as.data.table(airquality)
+  ans = suppressWarnings(melt(DT, id=c("Month", "Day"), na.rm=TRUE))  # warning regards coercion to double
+  ans = ans[ , .(min=min(value), max=max(value)), by=.(Month, variable)]
+  ans = melt(ans, id=1:2, variable.name="variable2")
+  ans = dcast(ans, Month ~ variable + variable2)
+  setnames(ans, c("Month", paste(names(ans)[-1L], sep="_")))
+  valvars = c("Ozone", "Solar.R", "Wind", "Temp")
+  ans2 = suppressWarnings(dcast(DT, Month ~ ., fun=list(min, max), na.rm=TRUE, value.var=valvars))
+  setcolorder(ans, names(ans2))
+  test(1102.36, key(ans), "Month")
+  test(1102.37, ans, ans2[, names(ans2)[-1L] := lapply(.SD, as.numeric), .SDcols=-1L])
 
-    # test for #1210, sep argument for dcast
-    DT = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE), z=sample(letters[1:2],20,TRUE), d1=runif(20), d2=1L)
-    test(1102.38, names(dcast(DT, x ~ y + z, fun=length, value.var = "d2", sep=".")),
-                  c("x", "1.a", "1.b", "2.a", "2.b"))
+  # test for #1210, sep argument for dcast
+  DT = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE), z=sample(letters[1:2],20,TRUE), d1=runif(20), d2=1L)
+  test(1102.38, names(dcast(DT, x ~ y + z, fun=length, value.var = "d2", sep=".")),
+                c("x", "1.a", "1.b", "2.a", "2.b"))
 }
 
 # test for freading commands
@@ -3319,21 +3319,21 @@ x1 <- data.table(a = c(1:5), b = c(1:5))
 f <- tempfile()
 write.csv(x1, f, row.names = FALSE)
 if (.Platform$OS.type == "unix") {
-    gl = identical(Sys.getenv("CI_SERVER_NAME"), "GitLab CI")
-    if(gl){
-        # skip test which fails in CI, data.table#1506
-        x2 = try(fread(paste('grep -v 3 ', f, sep="")), silent = TRUE)
-        if(is.data.table(x2)) test(1105, x1[a != 3], x2)
-    } else {
-        test(1105, x1[a != 3], fread(paste('grep -v 3 ', f, sep="")))
-    }
+  gl = identical(Sys.getenv("CI_SERVER_NAME"), "GitLab CI")
+  if(gl){
+      # skip test which fails in CI, data.table#1506
+      x2 = try(fread(paste('grep -v 3 ', f, sep="")), silent = TRUE)
+      if(is.data.table(x2)) test(1105, x1[a != 3], x2)
+  } else {
+      test(1105, x1[a != 3], fread(paste('grep -v 3 ', f, sep="")))
+  }
 } else {
-    # x2 <- fread(paste('more ', f, sep=""))
-    # Doesn't work on winbuilder. Relies on 'more' available in DOS via Cygwin?
-    # Error:
-    # Syntax error: end of file unexpected (expecting ")")
-    #  Error: (converted from warning) running command 'sh.exe -c (more D:\temp\RtmpgB8D2P\file1ed828a511cd) > D:\temp\RtmpgB8D2P\file1ed84f9f44f8' had status 2
-    # test(1105, x1, x2)
+  # x2 <- fread(paste('more ', f, sep=""))
+  # Doesn't work on winbuilder. Relies on 'more' available in DOS via Cygwin?
+  # Error:
+  # Syntax error: end of file unexpected (expecting ")")
+  #  Error: (converted from warning) running command 'sh.exe -c (more D:\temp\RtmpgB8D2P\file1ed828a511cd) > D:\temp\RtmpgB8D2P\file1ed84f9f44f8' had status 2
+  # test(1105, x1, x2)
 }
 unlink(f)
 
@@ -3448,9 +3448,9 @@ MyValueIsTen <- 5
 set.seed(1)
 DT <- data.table(ID=sample(LETTERS[1:3], 6, TRUE), Value1=rnorm(6), Value2=runif(6))
 My_Fun <- function(x=copy(DT)) {
-    MyValueIsTen <- 10
-    cols <- c("Value1", "Value2")
-    x[, (cols) := lapply(.SD, function(x) MyValueIsTen), by=ID]
+  MyValueIsTen <- 10
+  cols <- c("Value1", "Value2")
+  x[, (cols) := lapply(.SD, function(x) MyValueIsTen), by=ID]
 }
 DT[, (cols) := 10]
 test(1131, My_Fun(), DT)
@@ -3489,7 +3489,7 @@ test(1136.7, d1[d2, val], c(1:3, NA))
 test(1136.8, d1[d2, val2], c(11,12,12,14))
 test(1136.9, d1[d3, list(id1, val, i.val)], data.table(id1=INT(1,2,2,4), val=c(1:3, NA), i.val=c(11,12,12,14), key="id1"))
 test(1136.11, d1[d3, list(id1, i.id1, val, i.val)], data.table(id1=INT(1,2,2,4),
-                i.id1=INT(1,2,2,4), val=c(1:3, NA), i.val=c(11,12,12,14), key="id1"))
+              i.id1=INT(1,2,2,4), val=c(1:3, NA), i.val=c(11,12,12,14), key="id1"))
 test(1136.12, d1[d2], data.table(id1=INT(1,2,2,4), val=c(1:3, NA), val2=c(11,12,12,14), key="id1"))
 
 test(1136.13, d1[J(2), id1], INT(2,2))
@@ -3941,15 +3941,15 @@ test(1206, DT[order(b,a)], data.table(a=INT(2,4,6,1,3,5),b=INT(1,1,1,2,2,2)))
 old_rounding = getNumericRounding()
 DT = data.table(A=c(1,2,-Inf,+Inf,3,-1.1,NaN,NA,3.14,NaN,2.8,NA), B=1:12, key="A")
 for (i in 1:2) {
-    setNumericRounding(if (i==1L) 0L else 2L)
-    test(1207+i*0.1, DT[.(c(NA_real_,Inf)),B], INT(8,12,4))
-    test(1208+i*0.1, DT[.(c(Inf,NA_real_)),B], INT(4,8,12))
-    test(1209+i*0.1, DT[.(c(NaN,NA_real_)),B], INT(7,10,8,12))
-    test(1210+i*0.1, DT[.(c(NA_real_,NaN)),B], INT(8,12,7,10))
-    test(1211+i*0.1, DT[,sum(B),by=A]$V1, INT(20,17,3,6,1,2,11,5,9,4))
-    test(1212+i*0.1, DT[,sum(B),by=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,Inf,1,2,3),V1=INT(20,17,7,7,13,14)))
-    test(1213+i*0.1, DT[,sum(B),keyby=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,1,2,3,Inf),V1=INT(20,17,7,13,14,7),key="g"))
-    # test(1214+i*0.1, DT[.(-200.0),roll=TRUE]$B, 3L)  # TO DO: roll to -Inf.  Also remove -Inf and test rolling to NaN and NA
+  setNumericRounding(if (i==1L) 0L else 2L)
+  test(1207+i*0.1, DT[.(c(NA_real_,Inf)),B], INT(8,12,4))
+  test(1208+i*0.1, DT[.(c(Inf,NA_real_)),B], INT(4,8,12))
+  test(1209+i*0.1, DT[.(c(NaN,NA_real_)),B], INT(7,10,8,12))
+  test(1210+i*0.1, DT[.(c(NA_real_,NaN)),B], INT(8,12,7,10))
+  test(1211+i*0.1, DT[,sum(B),by=A]$V1, INT(20,17,3,6,1,2,11,5,9,4))
+  test(1212+i*0.1, DT[,sum(B),by=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,Inf,1,2,3),V1=INT(20,17,7,7,13,14)))
+  test(1213+i*0.1, DT[,sum(B),keyby=list(g=abs(trunc(A)))], data.table(g=c(NA,NaN,1,2,3,Inf),V1=INT(20,17,7,13,14,7),key="g"))
+  # test(1214+i*0.1, DT[.(-200.0),roll=TRUE]$B, 3L)  # TO DO: roll to -Inf.  Also remove -Inf and test rolling to NaN and NA
 }
 setNumericRounding(old_rounding)
 
@@ -4010,28 +4010,27 @@ ans = vector("list", length(names(DT)))
 test_no = 1223.0
 oldnfail = nfail
 for (i in seq_along(names(DT))) {
-    cj = as.matrix(do.call(CJ, split(rep(c(1L,-1L), each=i), 1:i)))
-    ans[[i]] = combn(names(DT), i, function(x) {
-        tmp = apply(cj, 1, function(y) {
-            test_no <<- signif(test_no+.001, 7)
-            ll = as.call(c(as.name("order"),
-                    lapply(seq_along(x), function(j) {
-                        if (y[j] == 1L)
-                            as.name(x[j])
-                        else {
-                            if (class(DT[[x[j]]]) =="character")
-                                as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), as.name(x[j])))))
-                            else
-                                as.call(list(as.name("-"), as.name(x[j])))
-                            }
-                        })
-                    )
-                )
-            test(test_no, forderv(DT, by=x, order=y), with(DT, eval(ll)))
+  cj = as.matrix(do.call(CJ, split(rep(c(1L,-1L), each=i), 1:i)))
+  ans[[i]] = combn(names(DT), i, function(x) {
+    tmp = apply(cj, 1, function(y) {
+      test_no <<- signif(test_no+.001, 7)
+      ll = as.call(c(as.name("order"),
+        lapply(seq_along(x), function(j) {
+          if (y[j] == 1L)
+            as.name(x[j])
+          else {
+            if (class(DT[[x[j]]]) =="character")
+              as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), as.name(x[j])))))
+            else
+              as.call(list(as.name("-"), as.name(x[j])))
+          }
         })
-        dim(tmp)=NULL
-        list(tmp)
+      ))
+      test(test_no, forderv(DT, by=x, order=y), with(DT, eval(ll)))
     })
+    dim(tmp)=NULL
+    list(tmp)
+  })
 }
 ans = NULL
 if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
@@ -4108,24 +4107,24 @@ test(1240.2, ans2, ans1)
 # checking data.table code against itself) as well as checking data.table's ported code in R;
 # i.e. a three-way match.
 if (base::getRversion() < "3.3.0") {
-    base_order <- base::order
+  base_order <- base::order
 } else {
-    base_order <- function(..., na.last=TRUE, method=c("shell","radix")) {
-        ans1 = base::order(..., na.last=na.last, method="shell")
-        if (!is.na(na.last) || base::getRversion()>"3.3.3") {
-            ans2 = base::order(..., na.last=na.last, method="radix")
-            if (!identical(ans1,ans2)) stop("Base R's order(,method='shell') != order(,method='radix')")
-        } else {
-            # Only when na.last=NA in just R 3.3.0-3.3.3 we don't check shell==radix
-            # because there was a problem in base R's port of data.table code then when :
-            #     1) 2 or more vectors were passed to base::order(,method="radix")
-            # AND 2) na.last=NA
-            # AND 3) there is a subgroup of size exactly 2
-            # AND 4) one of those 2 items in the subgroup is NA and the other is not NA
-            # See tests 1728.3 and 1728.13.
-        }
-        ans1
+  base_order <- function(..., na.last=TRUE, method=c("shell","radix")) {
+    ans1 = base::order(..., na.last=na.last, method="shell")
+    if (!is.na(na.last) || base::getRversion()>"3.3.3") {
+      ans2 = base::order(..., na.last=na.last, method="radix")
+      if (!identical(ans1,ans2)) stop("Base R's order(,method='shell') != order(,method='radix')")
+    } else {
+      # Only when na.last=NA in just R 3.3.0-3.3.3 we don't check shell==radix
+      # because there was a problem in base R's port of data.table code then when :
+      #     1) 2 or more vectors were passed to base::order(,method="radix")
+      # AND 2) na.last=NA
+      # AND 3) there is a subgroup of size exactly 2
+      # AND 4) one of those 2 items in the subgroup is NA and the other is not NA
+      # See tests 1728.3 and 1728.13.
     }
+    ans1
+  }
 }
 
 # Test for optimisation of 'order' to 'forder'. Copied to benchmarks.Rraw too.
@@ -4165,14 +4164,14 @@ seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
 test_no = 1246.0
 oldnfail = nfail
 for (i in seq_along(names(DT))) {
-    cc = combn(names(DT), i)
-    apply(cc, 2L, function(jj) {
-        test_no <<- signif(test_no+.01, 7) # first without key
-        test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
-        test_no <<- signif(test_no+.01, 7)
-        setkeyv(DT, jj) # with key
-        test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
-    })
+  cc = combn(names(DT), i)
+  apply(cc, 2L, function(jj) {
+    test_no <<- signif(test_no+.01, 7) # first without key
+    test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test_no <<- signif(test_no+.01, 7)
+    setkeyv(DT, jj) # with key
+    test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+  })
 }
 if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
 
@@ -4188,14 +4187,14 @@ seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
 
 oldnfail = nfail
 for (i in seq_along(names(DT))) {
-    cc = combn(names(DT), i)
-    apply(cc, 2L, function(jj) {
-        test_no <<- signif(test_no+.01, 7) # first without key
-        test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
-        test_no <<- signif(test_no+.01, 7)
-        setkeyv(DT, jj) # with key
-        test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
-    })
+  cc = combn(names(DT), i)
+  apply(cc, 2L, function(jj) {
+    test_no <<- signif(test_no+.01, 7) # first without key
+    test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test_no <<- signif(test_no+.01, 7)
+    setkeyv(DT, jj) # with key
+    test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+  })
 }
 if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
 
@@ -4283,33 +4282,32 @@ ans = vector("list", length(names(DT)))
 test_no = 1253.13
 oldnfail = nfail
 for (i in seq_along(names(DT))) {
-    cj = as.matrix(do.call(CJ, split(rep(c(1L,-1L), each=i), 1:i)))
-    ans[[i]] = combn(names(DT), i, function(x) {
-        tmp = apply(cj, 1, function(y) {
-            test_no <<- signif(test_no+.001, 7)
-            ll = as.call(c(as.name("base_order"),
-                    lapply(seq_along(x), function(j) {
-                        if (y[j] == 1L)
-                            as.name(x[j])
-                        else {
-                            if (class(DT[[x[j]]]) =="character")
-                                as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), as.name(x[j])))))
-                            else
-                                as.call(list(as.name("-"), as.name(x[j])))
-                            }
-                        })
-                    )
-                )
-            ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
-            test(test_no, ans1, with(DT, eval(ll)))
-            test_no <<- signif(test_no+.001, 7)
-            ll <- as.call(c(as.list(ll), na.last=NA))
-            ans1 = forderv(DT, by=x, order=y, na.last=NA)           # nalast=NA here.
-            test(test_no, ans1[ans1 != 0], with(DT, eval(ll)))
+  cj = as.matrix(do.call(CJ, split(rep(c(1L,-1L), each=i), 1:i)))
+  ans[[i]] = combn(names(DT), i, function(x) {
+    tmp = apply(cj, 1, function(y) {
+      test_no <<- signif(test_no+.001, 7)
+      ll = as.call(c(as.name("base_order"),
+        lapply(seq_along(x), function(j) {
+          if (y[j] == 1L)
+            as.name(x[j])
+          else {
+            if (class(DT[[x[j]]]) =="character")
+              as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), as.name(x[j])))))
+            else
+              as.call(list(as.name("-"), as.name(x[j])))
+          }
         })
-        dim(tmp)=NULL
-        list(tmp)
+      ))
+      ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
+      test(test_no, ans1, with(DT, eval(ll)))
+      test_no <<- signif(test_no+.001, 7)
+      ll <- as.call(c(as.list(ll), na.last=NA))
+      ans1 = forderv(DT, by=x, order=y, na.last=NA)           # nalast=NA here.
+      test(test_no, ans1[ans1 != 0], with(DT, eval(ll)))
     })
+    dim(tmp)=NULL
+    list(tmp)
+  })
 }
 ans = NULL
 if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
@@ -4419,18 +4417,18 @@ test(1269, forderv(x), base::order(x))
 setNumericRounding(2)   # not affected by rounding
 test(1270, forderv(x), base::order(x))
 if (test_bit64) {
-    x = as.integer64(2)^(0:62)
-    x = sample(c(x,-x,0))
-    if (!inherits(try(bit64::order(x),silent=TRUE), "try-error"))  # if for old version of bit64
-        test(1271, forderv(x), bit64::order(x)) # because GenomicRanges replaces this order
-    DT = data.table( a=as.integer64(2)^45 + 1:3, b=1:6 )
-    test(1272, DT[,sum(b),by=a], data.table(a=DT$a[1:3], V1=INT(5,7,9)))
-    test(1273, unique(DT, by="a"), DT[1:3])
-    test(1274, duplicated(DT, by="a"), rep(c(FALSE,TRUE),each=3))
-    setkey(DT,a)
-    test(1275, DT[.(as.integer64(35184372088834))], DT[3:4])
-    test(1276, unique(DT, by=key(DT)), DT[c(1,3,5)])
-    test(1277, duplicated(DT, by=key(DT)), rep(c(FALSE,TRUE),3))
+  x = as.integer64(2)^(0:62)
+  x = sample(c(x,-x,0))
+  if (!inherits(try(bit64::order(x),silent=TRUE), "try-error"))  # if for old version of bit64
+      test(1271, forderv(x), bit64::order(x)) # because GenomicRanges replaces this order
+  DT = data.table( a=as.integer64(2)^45 + 1:3, b=1:6 )
+  test(1272, DT[,sum(b),by=a], data.table(a=DT$a[1:3], V1=INT(5,7,9)))
+  test(1273, unique(DT, by="a"), DT[1:3])
+  test(1274, duplicated(DT, by="a"), rep(c(FALSE,TRUE),each=3))
+  setkey(DT,a)
+  test(1275, DT[.(as.integer64(35184372088834))], DT[3:4])
+  test(1276, unique(DT, by=key(DT)), DT[c(1,3,5)])
+  test(1277, duplicated(DT, by=key(DT)), rep(c(FALSE,TRUE),3))
 }
 setNumericRounding(old_rounding)
 
@@ -4439,12 +4437,12 @@ setNumericRounding(old_rounding)
 old_rounding = getNumericRounding()
 test_no = 1278.001
 for (dround in c(0,2)) {
-    setNumericRounding(dround)  # rounding should not affect the result here because although small, it's very accurace (1 s.f.)
-    for (i in c(-30:-1,1:30)) {
-        DT = data.table(c(1 * (10^i),2,9999,-1,0,1))
-        test(test_no, nrow(DT[, .N, by=V1]), 6L)
-        test_no = test_no + 0.001
-    }
+  setNumericRounding(dround)  # rounding should not affect the result here because although small, it's very accurace (1 s.f.)
+  for (i in c(-30:-1,1:30)) {
+    DT = data.table(c(1 * (10^i),2,9999,-1,0,1))
+    test(test_no, nrow(DT[, .N, by=V1]), 6L)
+    test_no = test_no + 0.001
+  }
 }
 setNumericRounding(old_rounding)
 
@@ -4885,37 +4883,37 @@ test(1319.8, DT[order(list(DT$a, DT$b))], error="First column being ordered is t
 # FR #703. Not so extensive testing because test 1223 already tests for everything else extensively. Only integer64 here.
 # this'll be the test for both DT[order(.)] and setorder(.) as both internally uses forder/forderv
 if (test_bit64) {
-    set.seed(45L)
-    DT <- data.table(x=as.integer64(c(-50, 0, 50, 1e18, 1e-18)), y=sample(5))
-    ans1 <- forder(DT, x, na.last=TRUE, decreasing=FALSE)
-    ans2 <- forder(DT, x, na.last=FALSE, decreasing=FALSE)
-    ans3 <- forder(DT, x, na.last=TRUE, decreasing=TRUE)
-    ans4 <- forder(DT, x, na.last=FALSE, decreasing=TRUE)
-    test(1320.1, ans1, as.integer(c(1,2,5,3,4)))
-    test(1320.2, ans2, as.integer(c(1,2,5,3,4)))
-    test(1320.3, ans3, as.integer(c(4,3,2,5,1)))
-    test(1320.4, ans4, as.integer(c(4,3,2,5,1)))
+  set.seed(45L)
+  DT <- data.table(x=as.integer64(c(-50, 0, 50, 1e18, 1e-18)), y=sample(5))
+  ans1 <- forder(DT, x, na.last=TRUE, decreasing=FALSE)
+  ans2 <- forder(DT, x, na.last=FALSE, decreasing=FALSE)
+  ans3 <- forder(DT, x, na.last=TRUE, decreasing=TRUE)
+  ans4 <- forder(DT, x, na.last=FALSE, decreasing=TRUE)
+  test(1320.1, ans1, as.integer(c(1,2,5,3,4)))
+  test(1320.2, ans2, as.integer(c(1,2,5,3,4)))
+  test(1320.3, ans3, as.integer(c(4,3,2,5,1)))
+  test(1320.4, ans4, as.integer(c(4,3,2,5,1)))
 
-    set.seed(45L)
-    DT <- data.table(x=as.integer64(c(-50, 0, NA, 50, 1e18, NA, 1e-18)), y=sample(7))
-    ans1 <- forder(DT, x, na.last=TRUE, decreasing=FALSE)
-    ans2 <- forder(DT, x, na.last=FALSE, decreasing=FALSE)
-    ans3 <- forder(DT, x, na.last=TRUE, decreasing=TRUE)
-    ans4 <- forder(DT, x, na.last=FALSE, decreasing=TRUE)
+  set.seed(45L)
+  DT <- data.table(x=as.integer64(c(-50, 0, NA, 50, 1e18, NA, 1e-18)), y=sample(7))
+  ans1 <- forder(DT, x, na.last=TRUE, decreasing=FALSE)
+  ans2 <- forder(DT, x, na.last=FALSE, decreasing=FALSE)
+  ans3 <- forder(DT, x, na.last=TRUE, decreasing=TRUE)
+  ans4 <- forder(DT, x, na.last=FALSE, decreasing=TRUE)
 
-    test(1320.5, ans1, as.integer(c(1,2,7,4,5,3,6)))
-    test(1320.6, ans2, as.integer(c(3,6,1,2,7,4,5)))
-    test(1320.7, ans3, as.integer(c(5,4,2,7,1,3,6)))
-    test(1320.8, ans4, as.integer(c(3,6,5,4,2,7,1)))
+  test(1320.5, ans1, as.integer(c(1,2,7,4,5,3,6)))
+  test(1320.6, ans2, as.integer(c(3,6,1,2,7,4,5)))
+  test(1320.7, ans3, as.integer(c(5,4,2,7,1,3,6)))
+  test(1320.8, ans4, as.integer(c(3,6,5,4,2,7,1)))
 
-    # missed test - checking na.last=NA!
-    set.seed(45L)
-    DT <- data.table(x=as.integer64(c(-50, 0, NA, 50, 1e18, NA, 1e-18)), y=sample(7))
-    ans1 <- forder(DT, x, na.last=NA, decreasing=FALSE)
-    ans2 <- forder(DT, x, na.last=NA, decreasing=TRUE)
+  # missed test - checking na.last=NA!
+  set.seed(45L)
+  DT <- data.table(x=as.integer64(c(-50, 0, NA, 50, 1e18, NA, 1e-18)), y=sample(7))
+  ans1 <- forder(DT, x, na.last=NA, decreasing=FALSE)
+  ans2 <- forder(DT, x, na.last=NA, decreasing=TRUE)
 
-    test(1320.9, ans1, as.integer(c(0,0,1,2,7,4,5)))
-    test(1320.10, ans2, as.integer(c(0,0,5,4,2,7,1)))
+  test(1320.9, ans1, as.integer(c(0,0,1,2,7,4,5)))
+  test(1320.10, ans2, as.integer(c(0,0,5,4,2,7,1)))
 }
 
 # fread newlines inside quoted fields
@@ -5063,9 +5061,9 @@ test(1354, X[Y, val2 := i.val2, allow.cartesian=TRUE][, val1 := NULL][order(id)]
 # Fix for #475, setDT(CO2) should error, as it's trying to modify the object whose binding is locked.
 # CO2 is not locked in R 2.14.1 but is in R >= 3.1.0.  R NEWS isn't clear when that change happened, so just test there is an error when it is locked.
 if (bindingIsLocked("CO2",as.environment("package:datasets"))) {
-    test(1355, setDT(CO2), error="Can not convert 'CO2' to data.table by reference because binding is locked.")
+  test(1355, setDT(CO2), error="Can not convert 'CO2' to data.table by reference because binding is locked.")
 } else {
-    test(1355, setDT(CO2), CO2)
+  test(1355, setDT(CO2), CO2)
 }
 
 # Fix for #698. not join doesn't need to check for allow.cartesian=TRUE.
@@ -5214,28 +5212,28 @@ dt = data.table(AA=sample(c(-2:2), 50, TRUE),
 if (test_bit64) dt[, DD := as.integer64(DD)]
 test_no = 1369.0
 for (i in seq_along(dt)) {
-    col = dt[[i]]
-    for (j in list(TRUE, FALSE, "keep")) {
-        for (k in c("average", "min", "max", "first")) {
-            if (k == "random") set.seed(45L)
-            if (class(col) == "integer64") {
-                r1 = rank(as.integer(col), ties.method=k, na.last=j)
-                r2 = rank(-xtfrm(as.integer(col)), ties.method=k, na.last=j)
-            }
-            else {
-                r1 = rank(col, ties.method=k, na.last=j)
-                r2 = rank(-xtfrm(col), ties.method=k, na.last=j)
-            }
-            if (k == "random") set.seed(45L)
-            r3 = frankv(col, ties.method=k, na.last=j)
-            r4 = frankv(col, order=-1L, ties.method=k, na.last=j)
+  col = dt[[i]]
+  for (j in list(TRUE, FALSE, "keep")) {
+    for (k in c("average", "min", "max", "first")) {
+      if (k == "random") set.seed(45L)
+      if (class(col) == "integer64") {
+        r1 = rank(as.integer(col), ties.method=k, na.last=j)
+        r2 = rank(-xtfrm(as.integer(col)), ties.method=k, na.last=j)
+      }
+      else {
+        r1 = rank(col, ties.method=k, na.last=j)
+        r2 = rank(-xtfrm(col), ties.method=k, na.last=j)
+      }
+      if (k == "random") set.seed(45L)
+      r3 = frankv(col, ties.method=k, na.last=j)
+      r4 = frankv(col, order=-1L, ties.method=k, na.last=j)
 
-            test_no = signif(test_no+.01, 7)
-            test(test_no, r1, r3)
-            test_no = signif(test_no+.01, 7)
-            test(test_no, r2, r4)
-        }
+      test_no = signif(test_no+.01, 7)
+      test(test_no, r1, r3)
+      test_no = signif(test_no+.01, 7)
+      test(test_no, r2, r4)
     }
+  }
 }
 # test na.last=NA here separately.
 dt = data.table(AA=sample(c(-2:2, NA), 50, TRUE),
@@ -5246,26 +5244,26 @@ dt = data.table(AA=sample(c(-2:2, NA), 50, TRUE),
 if (test_bit64) dt[, DD := as.integer64(DD)]
 
 for (i in seq_along(dt)) {
-    col = dt[[i]]
-    for (k in c("average", "min", "max", "first")) {
-        if (k == "random") set.seed(45L)
-        if (class(col) == "integer64") {
-            r1 = rank(as.integer(col), ties.method=k, na.last=NA)
-            r2 = rank(-xtfrm(as.integer(col)), ties.method=k, na.last=NA)
-        }
-        else {
-            r1 = rank(col, ties.method=k, na.last=NA)
-            r2 = rank(-xtfrm(col), ties.method=k, na.last=NA)
-        }
-        if (k == "random") set.seed(45L)
-        r3 = frankv(col, ties.method=k, na.last=NA)
-        r4 = frankv(col, order=-1L, ties.method=k, na.last=NA)
-
-        test_no = signif(test_no+.01, 7)
-        test(test_no, r1, r3)
-        test_no = signif(test_no+.01, 7)
-        test(test_no, r2, r4)
+  col = dt[[i]]
+  for (k in c("average", "min", "max", "first")) {
+    if (k == "random") set.seed(45L)
+    if (class(col) == "integer64") {
+      r1 = rank(as.integer(col), ties.method=k, na.last=NA)
+      r2 = rank(-xtfrm(as.integer(col)), ties.method=k, na.last=NA)
     }
+    else {
+      r1 = rank(col, ties.method=k, na.last=NA)
+      r2 = rank(-xtfrm(col), ties.method=k, na.last=NA)
+    }
+    if (k == "random") set.seed(45L)
+    r3 = frankv(col, ties.method=k, na.last=NA)
+    r4 = frankv(col, order=-1L, ties.method=k, na.last=NA)
+
+    test_no = signif(test_no+.01, 7)
+    test(test_no, r1, r3)
+    test_no = signif(test_no+.01, 7)
+    test(test_no, r2, r4)
+  }
 }
 
 
@@ -5284,19 +5282,19 @@ if (test_bit64) dt[["DD"]] = as.integer64(dt[["DD"]])
 test_no = 1370.0
 ans = as.list(na.omit(as.data.table(dt)))
 for (i in seq_along(dt)) {
-    combn(names(dt), i, function(cols) {
-        test_no = signif(test_no+.01, 7)
-        ans1 = is_na(dt[cols])
-        ans2 = rowSums(is.na(as.data.table(dt[cols]))) > 0L
-        test(test_no, ans1, ans2)
+  combn(names(dt), i, function(cols) {
+    test_no = signif(test_no+.01, 7)
+    ans1 = is_na(dt[cols])
+    ans2 = rowSums(is.na(as.data.table(dt[cols]))) > 0L
+    test(test_no, ans1, ans2)
 
-        # update: tests for any_na
-        test_no = signif(test_no+.01, 7)
-        test(test_no, any_na(dt[cols]), TRUE)
-        test_no = signif(test_no+.01, 7)
-        test(test_no, any_na(ans[cols]), FALSE)
-        TRUE
-    })
+    # update: tests for any_na
+    test_no = signif(test_no+.01, 7)
+    test(test_no, any_na(dt[cols]), TRUE)
+    test_no = signif(test_no+.01, 7)
+    test(test_no, any_na(ans[cols]), FALSE)
+    TRUE
+  })
 }
 ## The function is_na now gains a "by" argument where we can specify the columns. Tests have not been added for that yet.
 ## However, I've added tests for 'na.omit.data.table' that uses this internally. So we don't have to add tests here again.
@@ -5317,56 +5315,56 @@ setcolorder(y, c("chr", "val", "pos1", "pos2"))
 ans1 = foverlaps(x, y, type="any", by.x=c("chr", "start", "end"), by.y=c("chr", "pos1", "pos2"), which=TRUE, nomatch=0L)
 test(1371.3, foverlaps(x,y,by.x=1:3, nomatch=0L), data.table(chr=x$chr[2:5], y[c(2,3,3,3), -1, with=FALSE], x[2:5, 2:3, with=FALSE]))
 if (test_GenomicRanges) {
-    # this branch tests the result is the same as GenomicRanges. This branch alone covers about 50% of ijoin.c
-    gr <- function(x) {
-        GRanges(Rle(x[[1]]), IRanges(start=x[[2]], end=x[[3]]))
-    }
-    fo <- function(gr1, gr2, ...) {
-        olaps = findOverlaps(gr1, gr2, ...)
-        if (is.vector(olaps)) return(olaps)
-        ans = setDT(list(xid=queryHits(olaps), yid=subjectHits(olaps)))
-        setorder(ans)
-        ans
-    }
-    test(1371.4, setorder(ans1), fo(gr(x), gr(y[, c(1,3,4), with=FALSE]), type="any", select="all"))
+  # this branch tests the result is the same as GenomicRanges. This branch alone covers about 50% of ijoin.c
+  gr <- function(x) {
+    GRanges(Rle(x[[1]]), IRanges(start=x[[2]], end=x[[3]]))
+  }
+  fo <- function(gr1, gr2, ...) {
+    olaps = findOverlaps(gr1, gr2, ...)
+    if (is.vector(olaps)) return(olaps)
+    ans = setDT(list(xid=queryHits(olaps), yid=subjectHits(olaps)))
+    setorder(ans)
+    ans
+  }
+  test(1371.4, setorder(ans1), fo(gr(x), gr(y[, c(1,3,4), with=FALSE]), type="any", select="all"))
 
-    runs = 3L # repeat 3 times..
-    types=c("any", "within", "start", "end")
-    mults=c("all", "first", "last")
-    maxgap=0L; minoverlap=1L
-    verbose=FALSE; which=TRUE
-    test_no <- 1372.0
-    for (run in seq_len(runs)) {
-        n1 = max(50L, sample(1e2L, 1, FALSE))
-        n2 = max(50L, sample(1e2L, 1, FALSE))
-        N = max(100L, sample(1e3L, 1, FALSE))
+  runs = 3L # repeat 3 times..
+  types=c("any", "within", "start", "end")
+  mults=c("all", "first", "last")
+  maxgap=0L; minoverlap=1L
+  verbose=FALSE; which=TRUE
+  test_no <- 1372.0
+  for (run in seq_len(runs)) {
+    n1 = max(50L, sample(1e2L, 1, FALSE))
+    n2 = max(50L, sample(1e2L, 1, FALSE))
+    N = max(100L, sample(1e3L, 1, FALSE))
 
-        i1 = sample(N, n1, TRUE)
-        i2 = sample(N, n1, TRUE)
-        start = pmin(i1,i2)
-        end = pmax(i1,i2)
-        chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
-        i = setDT(list(chr=chr, start=start, end=end))
+    i1 = sample(N, n1, TRUE)
+    i2 = sample(N, n1, TRUE)
+    start = pmin(i1,i2)
+    end = pmax(i1,i2)
+    chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
+    i = setDT(list(chr=chr, start=start, end=end))
 
-        i1 = sample(N, n2, TRUE)
-        i2 = sample(N, n2, TRUE)
-        start = pmin(i1,i2)
-        end = pmax(i1,i2)
-        chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
-        x = setDT(list(chr=chr, start=start, end=end))
-        setkey(x); setkey(i)
-        for (type in types) {
-            for (mult in mults) {
-                # data.table overlap join
-                nomatch = ifelse(mult == "all", 0L, NA_integer_)
-                ans1 = foverlaps(i, x, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
-                ans2 = fo(gr(i), gr(x), type=type, select=mult)
-                test_no = signif(test_no+.01, 7)
-                # cat("test =", test_no, ", i = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
-                test(test_no, ans1, ans2)
-            }
-        }
+    i1 = sample(N, n2, TRUE)
+    i2 = sample(N, n2, TRUE)
+    start = pmin(i1,i2)
+    end = pmax(i1,i2)
+    chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
+    x = setDT(list(chr=chr, start=start, end=end))
+    setkey(x); setkey(i)
+    for (type in types) {
+      for (mult in mults) {
+        # data.table overlap join
+        nomatch = ifelse(mult == "all", 0L, NA_integer_)
+        ans1 = foverlaps(i, x, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
+        ans2 = fo(gr(i), gr(x), type=type, select=mult)
+        test_no = signif(test_no+.01, 7)
+        # cat("test =", test_no, ", i = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
+        test(test_no, ans1, ans2)
+      }
     }
+  }
 }
 
 # fix for bug in address - #824
@@ -5576,13 +5574,13 @@ DT = data.table(a=sample(col, 20, TRUE), b=as.numeric(sample(col,20,TRUE)), c=as
 # }
 test_no = 1394
 for (i in seq_along(DT)) {
-    combn(names(DT), i, function(cols) {
-        ans1 = na.omit(DT, cols=cols)
-        ans2 = DT[complete.cases(DT[, cols, with=FALSE])]
-        test_no <<- signif(test_no+.001, 7)
-        test(test_no, ans1, ans2)
-        0L
-    })
+  combn(names(DT), i, function(cols) {
+    ans1 = na.omit(DT, cols=cols)
+    ans2 = DT[complete.cases(DT[, cols, with=FALSE])]
+    test_no <<- signif(test_no+.001, 7)
+    test(test_no, ans1, ans2)
+    0L
+  })
 }
 
 # dropping secondary keys on update or delete
@@ -6098,13 +6096,13 @@ test(1463.13, shift(x,1:2, type="lead"),    list(as.numeric(c(2:5, NA)), as.nume
 test(1463.14, shift(x,1L, 0L, type="lead"), as.numeric(c(2:5, 0L)))
 
 if (test_bit64) {
-    x=as.integer64(x)
-    test(1463.15, shift(x,1L),                  as.integer64(c(NA, 1:4)))
-    test(1463.16, shift(x,1:2),                 list(as.integer64(c(NA, 1:4)), as.integer64(c(NA, NA, 1:3))))
-    test(1463.17, shift(x,1L, 0L),              as.integer64(c(0L, 1:4)))
-    test(1463.18, shift(x,1L, type="lead"),     as.integer64(c(2:5, NA)))
-    test(1463.19, shift(x,1:2, type="lead"),    list(as.integer64(c(2:5, NA)), as.integer64(c(3:5, NA, NA))))
-    test(1463.20, shift(x,1L, 0L, type="lead"), as.integer64(c(2:5, 0L)))
+  x=as.integer64(x)
+  test(1463.15, shift(x,1L),                  as.integer64(c(NA, 1:4)))
+  test(1463.16, shift(x,1:2),                 list(as.integer64(c(NA, 1:4)), as.integer64(c(NA, NA, 1:3))))
+  test(1463.17, shift(x,1L, 0L),              as.integer64(c(0L, 1:4)))
+  test(1463.18, shift(x,1L, type="lead"),     as.integer64(c(2:5, NA)))
+  test(1463.19, shift(x,1:2, type="lead"),    list(as.integer64(c(2:5, NA)), as.integer64(c(3:5, NA, NA))))
+  test(1463.20, shift(x,1L, 0L, type="lead"), as.integer64(c(2:5, 0L)))
 }
 
 x=as.character(x)
@@ -6169,63 +6167,63 @@ test(1464.14, rleidv(DT, 2:1), ans)
 test(1464.15, rleidv(DT, c(3,1)), INT(1,1,2,2,3,4,5,5,6,7,8,9,10,11,12,13,14,15,16,17))
 
 if (test_xts) {
-    # data.table-xts conversion #882
-    # Date index
-    dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
-    xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
-    dt_xt = as.data.table(xt)
-    xt_dt = as.xts.data.table(dt)
-    test(1465.1, all.equal(dt, dt_xt, check.attributes = FALSE))
-    test(1465.2, xt, xt_dt)
-    # POSIXct index
-    dt <- data.table(index = as.POSIXct(as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
-    xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
-    dt_xt = as.data.table(xt)
-    xt_dt = as.xts.data.table(dt)
-    test(1465.3, all.equal(dt, dt_xt, check.attributes = FALSE))
-    test(1465.4, xt, xt_dt)
-    # index types returned from to.period
-    dt = data.table(index = as.Date((as.Date("2014-12-12") - 729):as.Date("2014-12-12"), origin = "1970-01-01"), quantity = as.numeric(rep(c(1:5), 73)), value = rep(c(1:73) * 100, 5))
-    xt = as.xts(matrix(data = c(dt$quantity, dt$value), ncol = 2, dimnames = list(NULL, c("quantity", "value"))), order.by = dt$index)
-    xt_w = xts::to.weekly(xt)
-    xt_dt_xt_w = as.xts.data.table(as.data.table(xt_w))
-    xt_m = xts::to.monthly(xt)
-    xt_dt_xt_m = as.xts.data.table(as.data.table(xt_m))
-    xt_q = xts::to.quarterly(xt)
-    xt_dt_xt_q = as.xts.data.table(as.data.table(xt_q))
-    xt_y = xts::to.yearly(xt)
-    xt_dt_xt_y = as.xts.data.table(as.data.table(xt_y))
-    test(1465.5, all.equal(xt_w, xt_dt_xt_w, check.attributes = FALSE))
-    test(1465.6, all.equal(xt_m, xt_dt_xt_m, check.attributes = FALSE))
-    test(1465.7, all.equal(xt_q, xt_dt_xt_q, check.attributes = FALSE))
-    test(1465.8, all.equal(xt_y, xt_dt_xt_y, check.attributes = FALSE))
+  # data.table-xts conversion #882
+  # Date index
+  dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
+  xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
+  dt_xt = as.data.table(xt)
+  xt_dt = as.xts.data.table(dt)
+  test(1465.1, all.equal(dt, dt_xt, check.attributes = FALSE))
+  test(1465.2, xt, xt_dt)
+  # POSIXct index
+  dt <- data.table(index = as.POSIXct(as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
+  xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
+  dt_xt = as.data.table(xt)
+  xt_dt = as.xts.data.table(dt)
+  test(1465.3, all.equal(dt, dt_xt, check.attributes = FALSE))
+  test(1465.4, xt, xt_dt)
+  # index types returned from to.period
+  dt = data.table(index = as.Date((as.Date("2014-12-12") - 729):as.Date("2014-12-12"), origin = "1970-01-01"), quantity = as.numeric(rep(c(1:5), 73)), value = rep(c(1:73) * 100, 5))
+  xt = as.xts(matrix(data = c(dt$quantity, dt$value), ncol = 2, dimnames = list(NULL, c("quantity", "value"))), order.by = dt$index)
+  xt_w = xts::to.weekly(xt)
+  xt_dt_xt_w = as.xts.data.table(as.data.table(xt_w))
+  xt_m = xts::to.monthly(xt)
+  xt_dt_xt_m = as.xts.data.table(as.data.table(xt_m))
+  xt_q = xts::to.quarterly(xt)
+  xt_dt_xt_q = as.xts.data.table(as.data.table(xt_q))
+  xt_y = xts::to.yearly(xt)
+  xt_dt_xt_y = as.xts.data.table(as.data.table(xt_y))
+  test(1465.5, all.equal(xt_w, xt_dt_xt_w, check.attributes = FALSE))
+  test(1465.6, all.equal(xt_m, xt_dt_xt_m, check.attributes = FALSE))
+  test(1465.7, all.equal(xt_q, xt_dt_xt_q, check.attributes = FALSE))
+  test(1465.8, all.equal(xt_y, xt_dt_xt_y, check.attributes = FALSE))
 
-    test(1531, xts::last(1:5), 5L)
+  test(1531, xts::last(1:5), 5L)
 
-    # xts issue from Joshua, #1347
-    x = as.Date(1:5, origin="2015-01-01")
-    test(1559.11, last(x), tail(x, 1L))
+  # xts issue from Joshua, #1347
+  x = as.Date(1:5, origin="2015-01-01")
+  test(1559.11, last(x), tail(x, 1L))
 
-    x = xts(1:100, Sys.Date()+1:100)
-    test(841, last(x,10), x[91:100,])
-    # The important thing this tests is that data.table's last() dispatches to xts's method when data.table is loaded above xts.
-    # But that isn't tested by R CMD check because xts is loaded above data.table, there.
-    # So to make this test is relevant, run it in fresh R session directly, after: "require(xts);require(data.table)"
-    #                                                                 rather than: "require(data.table);require(xts)"
-    # Which was the main thrust of bug#2312 fixed in v1.8.3
+  x = xts(1:100, Sys.Date()+1:100)
+  test(841, last(x,10), x[91:100,])
+  # The important thing this tests is that data.table's last() dispatches to xts's method when data.table is loaded above xts.
+  # But that isn't tested by R CMD check because xts is loaded above data.table, there.
+  # So to make this test is relevant, run it in fresh R session directly, after: "require(xts);require(data.table)"
+  #                                                                 rather than: "require(data.table);require(xts)"
+  # Which was the main thrust of bug#2312 fixed in v1.8.3
 
-    # fix for #1484
-    x = xts::as.xts(8, order.by = as.Date("2016-01-03"))
-    test(1589, all.equal(as.data.table(x), data.table(index = as.Date("2016-01-03"), V1 = 8), check.attributes=FALSE))
+  # fix for #1484
+  x = xts::as.xts(8, order.by = as.Date("2016-01-03"))
+  test(1589, all.equal(as.data.table(x), data.table(index = as.Date("2016-01-03"), V1 = 8), check.attributes=FALSE))
 
-    # IDate support in as.xts.data.table #1499
-    dt <- data.table(date = c(as.IDate("2014-12-31"),
-                              as.IDate("2015-12-31"),
-                              as.IDate("2016-12-31")),
-                     nav = c(100,101,99),
-                     key = "date")
-    dt.xts <- as.xts.data.table(dt)
-    test(1663, dt.xts[1L], xts::xts(data.table(nav=100), order.by=as.Date("2014-12-31")))
+  # IDate support in as.xts.data.table #1499
+  dt <- data.table(date = c(as.IDate("2014-12-31"),
+                            as.IDate("2015-12-31"),
+                            as.IDate("2016-12-31")),
+                   nav = c(100,101,99),
+                   key = "date")
+  dt.xts <- as.xts.data.table(dt)
+  test(1663, dt.xts[1L], xts::xts(data.table(nav=100), order.by=as.Date("2014-12-31")))
 }
 
 
@@ -6337,10 +6335,10 @@ test(1476.1, DT[, .(y=mean(y)), x], setDT(aggregate(y ~ x, DT, mean)))
 
 # test for 'transpose' of a list, TODO: integer64 support.
 ll = lapply(1:12, function(x) {
-    if (x <= 3) sample(10, sample(5:10, 1L))
-    else if (x > 3 & x <= 6) as.numeric(sample(101:115, sample(7:12, 1L)))
-    else if (x > 7 & x <= 9) sample(c(TRUE, FALSE), sample(7:9, 1L), TRUE)
-    else sample(letters, sample(5:10, 1L))
+  if (x <= 3) sample(10, sample(5:10, 1L))
+  else if (x > 3 & x <= 6) as.numeric(sample(101:115, sample(7:12, 1L)))
+  else if (x > 7 & x <= 9) sample(c(TRUE, FALSE), sample(7:9, 1L), TRUE)
+  else sample(letters, sample(5:10, 1L))
 })
 ans1 = setDT(transpose(ll))
 ans2 = setDT(lapply(seq_along(ans1), function(x) sapply(ll, `[`, x)))
@@ -6569,23 +6567,23 @@ test(1499, ans1, ans2)
 
 # Fix for #488
 if (test_bit64) {
-    test(1500.1, fread("x,y\n3,\n", colClasses = list(integer64 = "y")),
-            data.table(x=3L, y=as.integer64(NA)))
-    # more tests after new fix
-    test(1500.2, fread("x,y\n0,12345678901234\n0,\n0,\n0,\n0,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n12345678901234,\n0,\n0,\n0,\n0,\n0,\n"),
-        data.table(x=as.integer64(c(rep(0L, 5L), rep(NA, 11), 12345678901234, rep(0L,5L))),
-                   y=as.integer64(c(12345678901234, rep(NA,21)))))
+  test(1500.1, fread("x,y\n3,\n", colClasses = list(integer64 = "y")),
+          data.table(x=3L, y=as.integer64(NA)))
+  # more tests after new fix
+  test(1500.2, fread("x,y\n0,12345678901234\n0,\n0,\n0,\n0,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n12345678901234,\n0,\n0,\n0,\n0,\n0,\n"),
+      data.table(x=as.integer64(c(rep(0L, 5L), rep(NA, 11), 12345678901234, rep(0L,5L))),
+                 y=as.integer64(c(12345678901234, rep(NA,21)))))
 
-    x = c("12345678901234", rep("NA", 178), "a")
-    y = sample(letters, length(x), TRUE)
-    ll = paste(x,y, sep=",", collapse="\n")
-    test(1500.3, fread(ll, na=NULL),
-        data.table(V1=x, V2=y))
+  x = c("12345678901234", rep("NA", 178), "a")
+  y = sample(letters, length(x), TRUE)
+  ll = paste(x,y, sep=",", collapse="\n")
+  test(1500.3, fread(ll, na=NULL),
+      data.table(V1=x, V2=y))
 
-    x = c("12345678901234", rep("NA", 178), "0.5")
-    y = sample(letters, length(x), TRUE)
-    ll = paste(x,y, sep=",", collapse="\n")
-    test(1500.4, fread(ll), data.table(V1=suppressWarnings(as.numeric(x)), V2=y))
+  x = c("12345678901234", rep("NA", 178), "0.5")
+  y = sample(letters, length(x), TRUE)
+  ll = paste(x,y, sep=",", collapse="\n")
+  test(1500.4, fread(ll), data.table(V1=suppressWarnings(as.numeric(x)), V2=y))
 }
 
 # fix for #1082
@@ -6667,17 +6665,17 @@ test(1511, ans, setorder(DF, -y, x))
 
 # fix for #1108
 if (test_bit64) {
-    dt <- data.table(id = as.integer64(1:3), a = c("a", "b", "c"), key = "id")
-    test(1512.1, dt[.(2)], dt[.(as.integer64(2))])
-    test(1512.2, dt[.(2L)], dt[.(as.integer64(2))])
+  dt <- data.table(id = as.integer64(1:3), a = c("a", "b", "c"), key = "id")
+  test(1512.1, dt[.(2)], dt[.(as.integer64(2))])
+  test(1512.2, dt[.(2L)], dt[.(as.integer64(2))])
 
-    dt <- data.table(id = as.numeric(1:3), a = c("a", "b", "c"), key = "id")
-    test(1512.3, dt[.(2L)], dt[.(2)])
-    test(1512.4, dt[.(as.integer64(2))], dt[.(2)])
+  dt <- data.table(id = as.numeric(1:3), a = c("a", "b", "c"), key = "id")
+  test(1512.3, dt[.(2L)], dt[.(2)])
+  test(1512.4, dt[.(as.integer64(2))], dt[.(2)])
 
-    dt <- data.table(id = 1:3, a = c("a", "b", "c"), key = "id")
-    test(1512.5, dt[.(2)], dt[.(2L)])
-    test(1512.6, dt[.(as.integer64(2))], dt[.(2L)])
+  dt <- data.table(id = 1:3, a = c("a", "b", "c"), key = "id")
+  test(1512.5, dt[.(2)], dt[.(2L)])
+  test(1512.6, dt[.(as.integer64(2))], dt[.(2L)])
 }
 
 # setDT gains key argument, #1121
@@ -7174,7 +7172,7 @@ test(1551.6, fread(testDir("issue_1095_fread.txt"), logical01=FALSE), setDT(rhs)
 # FR #1314 rest of na.strings issue
 str = "a,b,c,d\n#N/A,+1,5.5,FALSE\n#N/A,5,6.6,TRUE\n#N/A,+1,#N/A,-999\n#N/A,#N/A,-999,FALSE\n#N/A,1,NA,TRUE"
 read_table = function(str, ...) {
-    setDT(read.table(text=str, stringsAsFactors=FALSE, comment.char="", sep=",", header=TRUE, ...))[]
+  setDT(read.table(text=str, stringsAsFactors=FALSE, comment.char="", sep=",", header=TRUE, ...))[]
 }
 test(1552.1, fread(str, na.strings="#N/A"), read_table(str, na.strings="#N/A"))
 test(1552.2, fread(str, na.strings=c("#N/A", "-999")), read_table(str, na.strings=c("#N/A", "-999")))
@@ -7463,8 +7461,8 @@ dt = data.table(x  = sample(letters, 300, TRUE),
                 d1 = as.numeric(sample(-10:10, 300, TRUE)),
                 d2 = as.numeric(sample(c(NA, NaN, -10:10), 300, TRUE)))
 if (test_bit64) {
-    dt[, `:=`(d3 = as.integer64(sample(-10:10, 300, TRUE)))]
-    dt[, `:=`(d4 = as.integer64(sample(c(-10:10,NA), 300, TRUE)))]
+  dt[, `:=`(d3 = as.integer64(sample(-10:10, 300, TRUE)))]
+  dt[, `:=`(d4 = as.integer64(sample(c(-10:10,NA), 300, TRUE)))]
 }
 
 # make sure gforce is on
@@ -7739,11 +7737,11 @@ test(1601.4, tryCatch(merge(data.table(NULL),data.table(NULL), by="a"), warning 
 dd = as.IDate("2016-02-28")
 tt = as.ITime("03:04:43")
 if (test_chron) {
-    test(1602.1, as.chron.IDate(dd), chron::as.chron(as.Date(dd)))
-    test(1602.2, class(as.chron.ITime(tt)), "times")
+  test(1602.1, as.chron.IDate(dd), chron::as.chron(as.Date(dd)))
+  test(1602.2, class(as.chron.ITime(tt)), "times")
 } else {
-    test(1602.3, as.chron.IDate(dd), error = "Install suggested `chron` package to use `as.chron.IDate` function.")
-    test(1602.4, as.chron.ITime(tt), error = "Install suggested `chron` package to use `as.chron.ITime` function.")
+  test(1602.3, as.chron.IDate(dd), error = "Install suggested `chron` package to use `as.chron.IDate` function.")
+  test(1602.4, as.chron.ITime(tt), error = "Install suggested `chron` package to use `as.chron.ITime` function.")
 }
 
 # fix for #1549
@@ -7923,12 +7921,12 @@ test(1613.42, all.equal(dt, dt), TRUE)
 test(1613.43, all.equal(dt, dt, ignore.row.order = TRUE), error = "Datasets to compare with 'ignore.row.order' must not have unsupported column types: raw, complex, list")
 # supported types multi column test
 dt = data.table(
-    V1 = 1:4,
-    V2 = as.numeric(1:4),
-    V3 = letters[rep(1:2, 2)],
-    V4 = factor(c("a","a","b","b")),
-    V5 = as.POSIXct("2016-03-05 12:00:00", origin="1970-01-01")+(1:4)*3600,
-    V6 = as.Date("2016-03-05", origin="1970-01-01")+(1:4)
+  V1 = 1:4,
+  V2 = as.numeric(1:4),
+  V3 = letters[rep(1:2, 2)],
+  V4 = factor(c("a","a","b","b")),
+  V5 = as.POSIXct("2016-03-05 12:00:00", origin="1970-01-01")+(1:4)*3600,
+  V6 = as.Date("2016-03-05", origin="1970-01-01")+(1:4)
 )[, V7 := as.IDate(V6)
   ][, V8 := as.ITime(V5)]
 test(1613.441, all.equal(dt, dt), TRUE)
@@ -7940,14 +7938,14 @@ test(1613.45, all.equal(dt[c(1:4,1:2)], dt[c(1L,1L,1:4)], ignore.row.order = TRU
 test(1613.46, all.equal(dt[c(1:2,1:4,1:2)], dt[c(1:2,1:2,1:4)], ignore.row.order = TRUE), TRUE)
 # supported type all.equal: integer64
 if (test_bit64) {
-    dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = bit64::as.integer64("90000000000")+1:4)
-    test(1613.47, all.equal(dt, dt), TRUE)
-    test(1613.48, all.equal(dt, dt, ignore.row.order = TRUE), TRUE)
-    test(1613.49, all.equal(dt[c(1:4,1L)], dt[c(1:4,1L)]), TRUE)
-    test(1613.50, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)]), "Column 'V1': Mean relative difference: 0.6")
-    test(1613.51, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)], ignore.row.order = TRUE), TRUE)
-    test(1613.52, all.equal(dt[c(1:4,1:2)], dt[c(1L,1L,1:4)], ignore.row.order = TRUE), c("Both datasets have duplicate rows, they also have numeric columns, together with ignore.row.order this force 'tolerance' argument to 0","Dataset 'current' has rows not present in 'target' or present in different quantity"))
-    test(1613.53, all.equal(dt[c(1:2,1:4,1:2)], dt[c(1:2,1:2,1:4)], ignore.row.order = TRUE), TRUE)
+  dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = bit64::as.integer64("90000000000")+1:4)
+  test(1613.47, all.equal(dt, dt), TRUE)
+  test(1613.48, all.equal(dt, dt, ignore.row.order = TRUE), TRUE)
+  test(1613.49, all.equal(dt[c(1:4,1L)], dt[c(1:4,1L)]), TRUE)
+  test(1613.50, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)]), "Column 'V1': Mean relative difference: 0.6")
+  test(1613.51, all.equal(dt[c(1:4,1L)], dt[c(1L,1:4)], ignore.row.order = TRUE), TRUE)
+  test(1613.52, all.equal(dt[c(1:4,1:2)], dt[c(1L,1L,1:4)], ignore.row.order = TRUE), c("Both datasets have duplicate rows, they also have numeric columns, together with ignore.row.order this force 'tolerance' argument to 0","Dataset 'current' has rows not present in 'target' or present in different quantity"))
+  test(1613.53, all.equal(dt[c(1:2,1:4,1:2)], dt[c(1:2,1:2,1:4)], ignore.row.order = TRUE), TRUE)
 }
 # all.equal - new argument 'tolerance' #1737
 x = data.table(1) # test numeric after adding 'tolerance' argument
@@ -7991,14 +7989,14 @@ test(1613.581, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = 1), all
 test(1613.582, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = sqrt(.Machine$double.eps)/2), all.equal(x, y, ignore.row.order = TRUE, tolerance = sqrt(.Machine$double.eps)/2)), warning = "Argument 'tolerance' was forced")
 
 if (test_bit64) {
-    # fix for #1405, handles roll with -ve int64 values properly
-    dt = data.table(x=as.integer64(c(-1000, 0)), y=c(5,10))
-    val = c(-1100,-900,100)
-    ans = data.table(x=as.integer64(val))
-    test(1614.1, dt[.(val), roll=Inf,  on="x"], ans[, y:=c(NA,5,10)])
-    test(1614.2, dt[.(val), roll=Inf, on="x", rollends=TRUE], ans[, y:=c(5,5,10)])
-    test(1614.3, dt[.(val), roll=-Inf, on="x"], ans[, y:=c(5,10,NA)])
-    test(1614.4, dt[.(val), roll=-Inf, on="x", rollends=TRUE], ans[, y:=c(5,10,10)])
+  # fix for #1405, handles roll with -ve int64 values properly
+  dt = data.table(x=as.integer64(c(-1000, 0)), y=c(5,10))
+  val = c(-1100,-900,100)
+  ans = data.table(x=as.integer64(val))
+  test(1614.1, dt[.(val), roll=Inf,  on="x"], ans[, y:=c(NA,5,10)])
+  test(1614.2, dt[.(val), roll=Inf, on="x", rollends=TRUE], ans[, y:=c(5,5,10)])
+  test(1614.3, dt[.(val), roll=-Inf, on="x"], ans[, y:=c(5,10,NA)])
+  test(1614.4, dt[.(val), roll=-Inf, on="x", rollends=TRUE], ans[, y:=c(5,10,10)])
 }
 
 # fix for #1571
@@ -8068,9 +8066,9 @@ options(datatable.print.rownames = old)
 # fix for #1575
 text = "colA: dataA\ncolB: dataB\ncolC: dataC\n\nColA: dataA\nColB: dataB\nColC: dataC"
 test(1625.1, fread(text, header=FALSE, sep=":", blank.lines.skip=TRUE, strip.white=FALSE),
-    setDT(read.table(text=text, header=FALSE, sep=":", blank.lines.skip=TRUE, stringsAsFactors=FALSE)))
+             setDT(read.table(text=text, header=FALSE, sep=":", blank.lines.skip=TRUE, stringsAsFactors=FALSE)))
 test(1625.2, fread(text, header=FALSE, sep=":", blank.lines.skip=TRUE),
-    setDT(read.table(text=text, header=FALSE, sep=":", blank.lines.skip=TRUE, stringsAsFactors=FALSE, strip.white=TRUE)))
+             setDT(read.table(text=text, header=FALSE, sep=":", blank.lines.skip=TRUE, stringsAsFactors=FALSE, strip.white=TRUE)))
 
 # set-operators #547
 # setops basic check all
@@ -8157,12 +8155,12 @@ test(1626.60, fsetequal(x, y), error = "x and y must not have unsupported column
 test(1626.61, fsetequal(dt[c(1:2,2L)], dt[c(1:2,2L)]), error = "x and y must not have unsupported column types: raw, complex, list")
 # supported types multi column test
 dt = data.table(
-    V1 = 1:4,
-    V2 = as.numeric(1:4),
-    V3 = letters[rep(1:2, 2)],
-    V4 = factor(c("a","a","b","b")),
-    V5 = as.POSIXct("2016-03-05 12:00:00", origin="1970-01-01")+(1:4)*3600,
-    V6 = as.Date("2016-03-05", origin="1970-01-01")+(1:4)
+  V1 = 1:4,
+  V2 = as.numeric(1:4),
+  V3 = letters[rep(1:2, 2)],
+  V4 = factor(c("a","a","b","b")),
+  V5 = as.POSIXct("2016-03-05 12:00:00", origin="1970-01-01")+(1:4)*3600,
+  V6 = as.Date("2016-03-05", origin="1970-01-01")+(1:4)
 )[, V7 := as.IDate(V6)
   ][, V8 := as.ITime(V5)]
 x = dt[c(2:4,2L,2L)]
@@ -8177,17 +8175,17 @@ test(1626.67, fsetequal(x, y), FALSE)
 test(1626.68, fsetequal(dt[c(2:3,3L)], dt[c(2:3,3L)]), TRUE)
 # supported type in set-ops: integer64
 if (test_bit64) {
-    dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = bit64::as.integer64("90000000000")+1:4)
-    x = dt[c(2:4,2L,2L)]
-    y = dt[c(1:3,2L)]
-    test(1626.69, fintersect(x, y), dt[2:3])
-    test(1626.70, fintersect(x, y, all=TRUE), dt[c(2:3,2L)])
-    test(1626.71, fsetdiff(x, y), dt[4L])
-    test(1626.72, fsetdiff(x, y, all=TRUE), dt[c(4L,2L)])
-    test(1626.73, funion(x, y), dt[c(2:4,1L)])
-    test(1626.74, funion(x, y, all=TRUE), dt[c(2:4,2L,2L,1:3,2L)])
-    test(1626.75, fsetequal(x, y), FALSE)
-    test(1626.76, fsetequal(dt[c(2:3,3L)], dt[c(2:3,3L)]), TRUE)
+  dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = bit64::as.integer64("90000000000")+1:4)
+  x = dt[c(2:4,2L,2L)]
+  y = dt[c(1:3,2L)]
+  test(1626.69, fintersect(x, y), dt[2:3])
+  test(1626.70, fintersect(x, y, all=TRUE), dt[c(2:3,2L)])
+  test(1626.71, fsetdiff(x, y), dt[4L])
+  test(1626.72, fsetdiff(x, y, all=TRUE), dt[c(4L,2L)])
+  test(1626.73, funion(x, y), dt[c(2:4,1L)])
+  test(1626.74, funion(x, y, all=TRUE), dt[c(2:4,2L,2L,1:3,2L)])
+  test(1626.75, fsetequal(x, y), FALSE)
+  test(1626.76, fsetequal(dt[c(2:3,3L)], dt[c(2:3,3L)]), TRUE)
 }
 
 # fix for #1087 and #1465
@@ -8391,61 +8389,61 @@ l = split(fdt, by = "x3", flatten=FALSE)
 test(1639.53, TRUE, all(is.list(l), identical(names(l), c("h","f","g","e")), sapply(l, is.data.table), sapply(l, nrow) == c(h=3L, f=3L, g=3L, e=3L), sapply(l, ncol) == c(h=4L, f=4L, g=4L, e=4L)))
 l = split(fdt, by = c("x1","x2"), flatten=FALSE) # multi col
 test(1639.54, TRUE, all(
-    is.list(l), identical(names(l), c("b","a")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(b=c("d","e","c"), a=c("e","d","c"))),
-    sapply(l, sapply, nrow) == rep(2L, 6),
-    sapply(l, sapply, ncol) == rep(4L, 6)
+  is.list(l), identical(names(l), c("b","a")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(b=c("d","e","c"), a=c("e","d","c"))),
+  sapply(l, sapply, nrow) == rep(2L, 6),
+  sapply(l, sapply, ncol) == rep(4L, 6)
 ))
 l = split(fdt, by = c("x1","x3"), flatten=FALSE) # empty levels appears due subset x3 by x1 groups
 test(1639.55, TRUE, all(
-    is.list(l), identical(names(l), c("b","a")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(b=c("h","f","e","g"), a=c("g","e","f","h"))),
-    sapply(l, sapply, nrow) == rep(c(3L,3L,0L,0L), 2),
-    sapply(l, sapply, ncol) == rep(4L, 8)
+  is.list(l), identical(names(l), c("b","a")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(b=c("h","f","e","g"), a=c("g","e","f","h"))),
+  sapply(l, sapply, nrow) == rep(c(3L,3L,0L,0L), 2),
+  sapply(l, sapply, ncol) == rep(4L, 8)
 ))
 l = split(fdt, by = c("x2","x3"), flatten=FALSE)
 test(1639.56, TRUE, all(
-    is.list(l), identical(names(l), c("d","e","c")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(d=c("h","f","e","g"), e=c("h","f","g","e"), c=c("f","h","e","g"))),
-    sapply(l, sapply, nrow) == rep(1L, 12),
-    sapply(l, sapply, ncol) == rep(4L, 4)
+  is.list(l), identical(names(l), c("d","e","c")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(d=c("h","f","e","g"), e=c("h","f","g","e"), c=c("f","h","e","g"))),
+  sapply(l, sapply, nrow) == rep(1L, 12),
+  sapply(l, sapply, ncol) == rep(4L, 4)
 ))
 l = split(fdt, by = c("x1","x2","x3"), flatten=FALSE) # empty levels in x3 after subset are expanded
 test(1639.57, TRUE, all(
-    is.list(l), identical(names(l), c("b","a")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, lapply, names), list(b=list(d=c("h","f","e","g"), e=c("h","f","e","g"), c=c("f","h","e","g")), a=list(e=c("g","e","f","h"), d=c("e","g","f","h"), c=c("e","g","f","h")))),
-    sapply(l, sapply, sapply, nrow) == rep(c(1L,1L,0L,0L), 6),
-    sapply(l, sapply, sapply, ncol) == rep(4L, 24)
+  is.list(l), identical(names(l), c("b","a")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, lapply, names), list(b=list(d=c("h","f","e","g"), e=c("h","f","e","g"), c=c("f","h","e","g")), a=list(e=c("g","e","f","h"), d=c("e","g","f","h"), c=c("e","g","f","h")))),
+  sapply(l, sapply, sapply, nrow) == rep(c(1L,1L,0L,0L), 6),
+  sapply(l, sapply, sapply, ncol) == rep(4L, 24)
 ))
 l = split(fdt, by = c("x3","x1"), drop=TRUE, flatten=FALSE) # multi col rev
 test(1639.58, TRUE, all(
-    is.list(l), identical(names(l), c("h","f","g","e")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
-    sapply(l, sapply, nrow) == rep(3L, 4),
-    sapply(l, sapply, ncol) == rep(4L, 8)
+  is.list(l), identical(names(l), c("h","f","g","e")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
+  sapply(l, sapply, nrow) == rep(3L, 4),
+  sapply(l, sapply, ncol) == rep(4L, 8)
 ))
 l = split(fdt, by = c("x3","x1"), flatten=FALSE) # x1 has empty levels after split on x3 first
 test(1639.59, TRUE, all(
-    is.list(l), identical(names(l), c("h","f","g","e")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(h=c("b","a"), f=c("b","a"), g=c("a","b"), e=c("a","b"))),
-    sapply(l, sapply, nrow) == rep(c(3L,0L), 4),
-    sapply(l, sapply, ncol) == rep(4L, 8)
+  is.list(l), identical(names(l), c("h","f","g","e")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(h=c("b","a"), f=c("b","a"), g=c("a","b"), e=c("a","b"))),
+  sapply(l, sapply, nrow) == rep(c(3L,0L), 4),
+  sapply(l, sapply, ncol) == rep(4L, 8)
 ))
 l = split(fdt, by = c("x3","x2","x1"), drop = TRUE, flatten=FALSE)
 test(1639.60, TRUE, all(
-    is.list(l), identical(names(l), c("h","f","g","e")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, lapply, names), list(h=list(d=c("b"), e=c("b"), c=c("b")), f=list(e=c("b"), c=c("b"), d=c("b")), g=list(e=c("a"), d=c("a"), c=c("a")), e=list(e=c("a"), d=c("a"), c=c("a")))),
-    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
-    sapply(l, sapply, sapply, ncol) == rep(4L, 12)
+  is.list(l), identical(names(l), c("h","f","g","e")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, lapply, names), list(h=list(d=c("b"), e=c("b"), c=c("b")), f=list(e=c("b"), c=c("b"), d=c("b")), g=list(e=c("a"), d=c("a"), c=c("a")), e=list(e=c("a"), d=c("a"), c=c("a")))),
+  sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+  sapply(l, sapply, sapply, ncol) == rep(4L, 12)
 ))
 sdf = split(as.data.frame(fdt), f=list(fdt$x1, fdt$x3)) # split.data.frame match
 test(1639.61, unlist(split(fdt, by = c("x1","x3"), sorted = TRUE, flatten=FALSE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT)) # vs split.data.frame by 2L drop=FALSE
@@ -8461,11 +8459,11 @@ l = split(fdt, by = "x2")
 test(1639.64, TRUE, all(is.list(l), identical(names(l), c("d","e","c","a")), sapply(l, is.data.table), sapply(l, nrow) == c(d=4L, e=4L, c=4L, a=0L), sapply(l, ncol) == c(d=4L, e=4L, c=4L, a=4L)))
 l = split(fdt, by = c("x3","x1"), flatten=FALSE)
 test(1639.65, TRUE, all(
-    is.list(l), identical(names(l), c("h","f","g","e","a","z")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(h=c("b","a","c"), f=c("b","a","c"), g=c("a","b","c"), e=c("a","b","c"), a=c("a","b","c"), z=c("a","b","c"))),
-    sapply(l, sapply, nrow) == c(rep(c(3L,0L,0L), 4), rep(0L, 6)),
-    sapply(l, sapply, ncol) == rep(4L, 18)
+  is.list(l), identical(names(l), c("h","f","g","e","a","z")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(h=c("b","a","c"), f=c("b","a","c"), g=c("a","b","c"), e=c("a","b","c"), a=c("a","b","c"), z=c("a","b","c"))),
+  sapply(l, sapply, nrow) == c(rep(c(3L,0L,0L), 4), rep(0L, 6)),
+  sapply(l, sapply, ncol) == rep(4L, 18)
 ))
 l = split(fdt, by = "x1", drop=TRUE) # empty levels in factor and drop=TRUE
 test(1639.66, TRUE, all(is.list(l), identical(names(l), c("b","a")), sapply(l, is.data.table), sapply(l, nrow) == c(b=6L, a=6L), sapply(l, ncol) == c(b=4L, a=4L)))
@@ -8473,27 +8471,27 @@ l = split(fdt, by = "x2", drop=TRUE)
 test(1639.67, TRUE, all(is.list(l), identical(names(l), c("d","e","c")), sapply(l, is.data.table), sapply(l, nrow) == c(d=4L, e=4L, c=4L), sapply(l, ncol) == c(d=4L, e=4L, c=4L)))
 l = split(fdt, by = c("x3","x1"), drop=TRUE, flatten=FALSE)
 test(1639.68, TRUE, all(
-    is.list(l), identical(names(l), c("h","f","g","e")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
-    sapply(l, sapply, nrow) == rep(3L, 4),
-    sapply(l, sapply, ncol) == rep(4L, 4)
+  is.list(l), identical(names(l), c("h","f","g","e")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
+  sapply(l, sapply, nrow) == rep(3L, 4),
+  sapply(l, sapply, ncol) == rep(4L, 4)
 ))
 l = split(fdt, by = c("x3","x1"), sorted=TRUE, flatten=FALSE) # test order for empty levels in factor and drop=FALSE
 test(1639.69, TRUE, all(
-    is.list(l), identical(names(l), c("a","e","f","g","h","z")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), setNames(rep(list(c("a","b","c")), 6), c("a","e","f","g","h","z"))),
-    sapply(l, sapply, nrow) == c(0L,0L,0L,3L,0L,0L,0L,3L,0L,3L,0L,0L,0L,3L,0L,0L,0L,0L),
-    sapply(l, sapply, ncol) == rep(4L, 18)
+  is.list(l), identical(names(l), c("a","e","f","g","h","z")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), setNames(rep(list(c("a","b","c")), 6), c("a","e","f","g","h","z"))),
+  sapply(l, sapply, nrow) == c(0L,0L,0L,3L,0L,0L,0L,3L,0L,3L,0L,0L,0L,3L,0L,0L,0L,0L),
+  sapply(l, sapply, ncol) == rep(4L, 18)
 ))
 l = split(fdt, by = c("x3","x1"), sorted=TRUE, drop=TRUE, flatten=FALSE) # test order for empty levels in factor and drop=TRUE
 test(1639.70, TRUE, all(
-    is.list(l), identical(names(l), c("e","f","g","h")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(e=c("a"), f=c("b"), g=c("a"), h=c("b"))),
-    sapply(l, sapply, nrow) == rep(3L, 4),
-    sapply(l, sapply, ncol) == rep(4L, 4)
+  is.list(l), identical(names(l), c("e","f","g","h")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(e=c("a"), f=c("b"), g=c("a"), h=c("b"))),
+  sapply(l, sapply, nrow) == rep(3L, 4),
+  sapply(l, sapply, ncol) == rep(4L, 4)
 ))
 sdf = split(as.data.frame(fdt), list(fdt$x3, fdt$x1)) # split.data.frame match on by = 2L and empty levels, drop=FALSE
 test(1639.71, unlist(split(fdt, by = c("x3","x1"), sorted=TRUE, flatten=FALSE), recursive = FALSE), lapply(sdf[sort(names(sdf))], setDT))
@@ -8506,46 +8504,46 @@ fdt = dt[, .(x1 = x1,
              y = y)]
 l = split(fdt, by = c("x2","x3"), flatten=FALSE)
 test(1639.73, TRUE, all(
-    is.list(l), identical(names(l), c("d","e","c")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(d=c("h","f","e","g"), e=c("h","f","g","e"), c=c("f","h","e","g"))),
-    sapply(l, sapply, nrow) == rep(1L, 12),
-    sapply(l, sapply, ncol) == rep(4L, 4)
+  is.list(l), identical(names(l), c("d","e","c")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(d=c("h","f","e","g"), e=c("h","f","g","e"), c=c("f","h","e","g"))),
+  sapply(l, sapply, nrow) == rep(1L, 12),
+  sapply(l, sapply, ncol) == rep(4L, 4)
 ))
 l = split(fdt, by = c("x1","x2","x3"), flatten=FALSE) # empty levels in x3 after subset on x1, x2
 test(1639.74, TRUE, all(
-    is.list(l), identical(names(l), c("b","a")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, lapply, names), list(b=list(d=c("h","f","e","g"), e=c("h","f","e","g"), c=c("f","h","e","g")), a=list(e=c("g","e","f","h"), d=c("e","g","f","h"), c=c("e","g","f","h")))),
-    sapply(l, sapply, sapply, nrow) == rep(c(1L,1L,0L,0L), 6),
-    sapply(l, sapply, sapply, ncol) == rep(4L, 24)
+  is.list(l), identical(names(l), c("b","a")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, lapply, names), list(b=list(d=c("h","f","e","g"), e=c("h","f","e","g"), c=c("f","h","e","g")), a=list(e=c("g","e","f","h"), d=c("e","g","f","h"), c=c("e","g","f","h")))),
+  sapply(l, sapply, sapply, nrow) == rep(c(1L,1L,0L,0L), 6),
+  sapply(l, sapply, sapply, ncol) == rep(4L, 24)
 ))
 l = split(fdt, by = c("x1","x2","x3"), drop=TRUE, flatten=FALSE)
 test(1639.75, TRUE, all(
-    is.list(l), identical(names(l), c("b","a")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, lapply, names), list(b=list(d=c("h","f"), e=c("h","f"), c=c("f","h")), a=list(e=c("g","e"), d=c("e","g"), c=c("e","g")))),
-    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
-    sapply(l, sapply, sapply, ncol) == rep(4L, 12)
+  is.list(l), identical(names(l), c("b","a")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, lapply, names), list(b=list(d=c("h","f"), e=c("h","f"), c=c("f","h")), a=list(e=c("g","e"), d=c("e","g"), c=c("e","g")))),
+  sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+  sapply(l, sapply, sapply, ncol) == rep(4L, 12)
 ))
 l = split(fdt, by = c("x3","x1"), flatten=FALSE) # multi col rev
 test(1639.76, TRUE, all(
-    is.list(l), identical(names(l), c("h","f","g","e")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
-    sapply(l, sapply, nrow) == rep(3L, 4),
-    sapply(l, sapply, ncol) == rep(4L, 4)
+  is.list(l), identical(names(l), c("h","f","g","e")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
+  sapply(l, sapply, nrow) == rep(3L, 4),
+  sapply(l, sapply, ncol) == rep(4L, 4)
 ))
 l = split(fdt, by = c("x3","x2","x1"), flatten=FALSE)
 test(1639.77, TRUE, all(
-    is.list(l), identical(names(l), c("h","f","g","e")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, lapply, names), list(h=list(d=c("b"), e=c("b"), c=c("b")), f=list(e=c("b"), c=c("b"), d=c("b")), g=list(e=c("a"), d=c("a"), c=c("a")), e=list(e=c("a"), d=c("a"), c=c("a")))),
-    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
-    sapply(l, sapply, sapply, ncol) == rep(4L, 12)
+  is.list(l), identical(names(l), c("h","f","g","e")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, lapply, names), list(h=list(d=c("b"), e=c("b"), c=c("b")), f=list(e=c("b"), c=c("b"), d=c("b")), g=list(e=c("a"), d=c("a"), c=c("a")), e=list(e=c("a"), d=c("a"), c=c("a")))),
+  sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+  sapply(l, sapply, sapply, ncol) == rep(4L, 12)
 ))
 fdt = dt[, .(x1 = x1, # empty levels in factor and drop=FALSE
              x2 = x2,
@@ -8553,36 +8551,36 @@ fdt = dt[, .(x1 = x1, # empty levels in factor and drop=FALSE
              y = y)]
 l = split(fdt, by = c("x3","x1"), flatten=FALSE) # empty levels in factor and drop=FALSE
 test(1639.78, TRUE, all(
-    is.list(l), identical(names(l), c("h","f","g","e","a","z")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"), a=character(), z=character())),
-    identical(lapply(l, lapply, nrow), list(h=list(b=3L), f=list(b=3L), g=list(a=3L), e=list(a=3L), a=structure(list(), .Names = character(0)), z=structure(list(), .Names = character(0)))),
-    identical(lapply(l, lapply, ncol), list(h=list(b=4L), f=list(b=4L), g=list(a=4L), e=list(a=4L), a=structure(list(), .Names = character(0)), z=structure(list(), .Names = character(0))))
+  is.list(l), identical(names(l), c("h","f","g","e","a","z")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"), a=character(), z=character())),
+  identical(lapply(l, lapply, nrow), list(h=list(b=3L), f=list(b=3L), g=list(a=3L), e=list(a=3L), a=structure(list(), .Names = character(0)), z=structure(list(), .Names = character(0)))),
+  identical(lapply(l, lapply, ncol), list(h=list(b=4L), f=list(b=4L), g=list(a=4L), e=list(a=4L), a=structure(list(), .Names = character(0)), z=structure(list(), .Names = character(0))))
 ))
 
 l = split(fdt, by = c("x3","x1"), drop=TRUE, flatten=FALSE) # empty levels in factor and drop=TRUE
 test(1639.79, TRUE, all(
-    is.list(l), identical(names(l), c("h","f","g","e")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
-    sapply(l, sapply, nrow) == rep(3L, 4),
-    sapply(l, sapply, ncol) == rep(4L, 4)
+  is.list(l), identical(names(l), c("h","f","g","e")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
+  sapply(l, sapply, nrow) == rep(3L, 4),
+  sapply(l, sapply, ncol) == rep(4L, 4)
 ))
 l = split(fdt, by = c("x3","x1"), sorted=TRUE, flatten=FALSE) # test order for empty levels in factor and drop=FALSE
 test(1639.80, TRUE, all(
-    is.list(l), identical(names(l), c("a","e","f","g","h","z")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(a=character(), e=c("a"), f=c("b"), g=c("a"), h=c("b"), z=character())),
-    identical(lapply(l, lapply, nrow), list(a=structure(list(), .Names = character(0)), e=list(a=3L), f=list(b=3L), g=list(a=3L), h=list(b=3L), z=structure(list(), .Names = character(0)))),
-    identical(lapply(l, lapply, ncol), list(a=structure(list(), .Names = character(0)), e=list(a=4L), f=list(b=4L), g=list(a=4L), h=list(b=4L), z=structure(list(), .Names = character(0))))
+  is.list(l), identical(names(l), c("a","e","f","g","h","z")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(a=character(), e=c("a"), f=c("b"), g=c("a"), h=c("b"), z=character())),
+  identical(lapply(l, lapply, nrow), list(a=structure(list(), .Names = character(0)), e=list(a=3L), f=list(b=3L), g=list(a=3L), h=list(b=3L), z=structure(list(), .Names = character(0)))),
+  identical(lapply(l, lapply, ncol), list(a=structure(list(), .Names = character(0)), e=list(a=4L), f=list(b=4L), g=list(a=4L), h=list(b=4L), z=structure(list(), .Names = character(0))))
 ))
 l = split(fdt, by = c("x3","x1"), sorted=TRUE, drop=TRUE, flatten=FALSE) # test order for empty levels in factor and drop=TRUE
 test(1639.81, TRUE, all(
-    is.list(l), identical(names(l), c("e","f","g","h")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(e=c("a"), f=c("b"), g=c("a"), h=c("b"))),
-    sapply(l, sapply, nrow) == rep(3L, 4),
-    sapply(l, sapply, ncol) == rep(4L, 4)
+  is.list(l), identical(names(l), c("e","f","g","h")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(e=c("a"), f=c("b"), g=c("a"), h=c("b"))),
+  sapply(l, sapply, nrow) == rep(3L, 4),
+  sapply(l, sapply, ncol) == rep(4L, 4)
 ))
 # - [x] split by reference to column names - `by` - for character column ----
 l = split(dt, by = "x1") # single col
@@ -8593,53 +8591,53 @@ l = split(dt, by = "x3")
 test(1639.84, TRUE, all(is.list(l), identical(names(l), c("h","f","g","e")), sapply(l, is.data.table), sapply(l, nrow) == c(h=3L, f=3L, g=3L, e=3L), sapply(l, ncol) == c(h=4L, f=4L, g=4L, e=4L)))
 l = split(dt, by = c("x1","x2"), flatten=FALSE) # multi col
 test(1639.85, TRUE, all(
-    is.list(l), identical(names(l), c("b","a")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(b=c("d","e","c"), a=c("e","d","c"))),
-    sapply(l, sapply, nrow) == rep(2L, 6),
-    sapply(l, sapply, ncol) == rep(4L, 6)
+  is.list(l), identical(names(l), c("b","a")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(b=c("d","e","c"), a=c("e","d","c"))),
+  sapply(l, sapply, nrow) == rep(2L, 6),
+  sapply(l, sapply, ncol) == rep(4L, 6)
 ))
 l = split(dt, by = c("x1","x3"), flatten=FALSE)
 test(1639.86, TRUE, all(
-    is.list(l), identical(names(l), c("b","a")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(b=c("h","f"), a=c("g","e"))),
-    sapply(l, sapply, nrow) == rep(3L, 4),
-    sapply(l, sapply, ncol) == rep(4L, 4)
+  is.list(l), identical(names(l), c("b","a")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(b=c("h","f"), a=c("g","e"))),
+  sapply(l, sapply, nrow) == rep(3L, 4),
+  sapply(l, sapply, ncol) == rep(4L, 4)
 ))
 l = split(dt, by = c("x2","x3"), flatten=FALSE)
 test(1639.87, TRUE, all(
-    is.list(l), identical(names(l), c("d","e","c")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(d=c("h","f","e","g"), e=c("h","f","g","e"), c=c("f","h","e","g"))),
-    sapply(l, sapply, nrow) == rep(1L, 12),
-    sapply(l, sapply, ncol) == rep(4L, 4)
+  is.list(l), identical(names(l), c("d","e","c")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(d=c("h","f","e","g"), e=c("h","f","g","e"), c=c("f","h","e","g"))),
+  sapply(l, sapply, nrow) == rep(1L, 12),
+  sapply(l, sapply, ncol) == rep(4L, 4)
 ))
 l = split(dt, by = c("x1","x2","x3"), flatten=FALSE)
 test(1639.88, TRUE, all(
-    is.list(l), identical(names(l), c("b","a")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, lapply, names), list(b=list(d=c("h","f"), e=c("h","f"), c=c("f","h")), a=list(e=c("g","e"), d=c("e","g"), c=c("e","g")))),
-    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
-    sapply(l, sapply, sapply, ncol) == rep(4L, 12)
+  is.list(l), identical(names(l), c("b","a")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, lapply, names), list(b=list(d=c("h","f"), e=c("h","f"), c=c("f","h")), a=list(e=c("g","e"), d=c("e","g"), c=c("e","g")))),
+  sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+  sapply(l, sapply, sapply, ncol) == rep(4L, 12)
 ))
 l = split(dt, by = c("x3","x1"), flatten=FALSE) # multi col rev
 test(1639.89, TRUE, all(
-    is.list(l), identical(names(l), c("h","f","g","e")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
-    sapply(l, sapply, nrow) == rep(3L, 4),
-    sapply(l, sapply, ncol) == rep(4L, 4)
+  is.list(l), identical(names(l), c("h","f","g","e")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
+  sapply(l, sapply, nrow) == rep(3L, 4),
+  sapply(l, sapply, ncol) == rep(4L, 4)
 ))
 l = split(dt, by = c("x3","x2","x1"), flatten=FALSE)
 test(1639.90, TRUE, all(
-    is.list(l), identical(names(l), c("h","f","g","e")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, lapply, names), list(h=list(d="b", e="b", c="b"), f=list(e="b", c="b", d="b"), g=list(e="a", d="a", c="a"), e=list(e="a",d="a",c="a"))),
-    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
-    sapply(l, sapply, sapply, ncol) == rep(4L, 12)
+  is.list(l), identical(names(l), c("h","f","g","e")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, lapply, names), list(h=list(d="b", e="b", c="b"), f=list(e="b", c="b", d="b"), g=list(e="a", d="a", c="a"), e=list(e="a",d="a",c="a"))),
+  sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+  sapply(l, sapply, sapply, ncol) == rep(4L, 12)
 ))
 # - [x] allow to keep or drop field on which we split - `keep.by` argument ----
 l = split(dt, by = "x1", keep.by = FALSE)
@@ -8650,53 +8648,53 @@ l = split(dt, by = "x3", keep.by = FALSE)
 test(1639.93, TRUE, all(is.list(l), identical(names(l), c("h","f","g","e")), sapply(l, is.data.table), sapply(l, nrow) == c(h=3L, f=3L, g=3L, e=3L), sapply(l, ncol) == c(h=3L, f=3L, g=3L, e=3L)))
 l = split(dt, by = c("x1","x2"), keep.by = FALSE, flatten=FALSE) # multi col
 test(1639.94, TRUE, all(
-    is.list(l), identical(names(l), c("b","a")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(b=c("d","e","c"), a=c("e","d","c"))),
-    sapply(l, sapply, nrow) == rep(2L, 6),
-    sapply(l, sapply, ncol) == rep(2L, 6)
+  is.list(l), identical(names(l), c("b","a")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(b=c("d","e","c"), a=c("e","d","c"))),
+  sapply(l, sapply, nrow) == rep(2L, 6),
+  sapply(l, sapply, ncol) == rep(2L, 6)
 ))
 l = split(dt, by = c("x1","x3"), keep.by = FALSE, flatten=FALSE)
 test(1639.95, TRUE, all(
-    is.list(l), identical(names(l), c("b","a")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(b=c("h","f"), a=c("g","e"))),
-    sapply(l, sapply, nrow) == rep(3L, 4),
-    sapply(l, sapply, ncol) == rep(2L, 4)
+  is.list(l), identical(names(l), c("b","a")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(b=c("h","f"), a=c("g","e"))),
+  sapply(l, sapply, nrow) == rep(3L, 4),
+  sapply(l, sapply, ncol) == rep(2L, 4)
 ))
 l = split(dt, by = c("x2","x3"), keep.by = FALSE, flatten=FALSE)
 test(1639.96, TRUE, all(
-    is.list(l), identical(names(l), c("d","e","c")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(d=c("h","f","e","g"), e=c("h","f","g","e"), c=c("f","h","e","g"))),
-    sapply(l, sapply, nrow) == rep(1L, 12),
-    sapply(l, sapply, ncol) == rep(2L, 12)
+  is.list(l), identical(names(l), c("d","e","c")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(d=c("h","f","e","g"), e=c("h","f","g","e"), c=c("f","h","e","g"))),
+  sapply(l, sapply, nrow) == rep(1L, 12),
+  sapply(l, sapply, ncol) == rep(2L, 12)
 ))
 l = split(dt, by = c("x1","x2","x3"), keep.by = FALSE, flatten=FALSE)
 test(1639.97, TRUE, all(
-    is.list(l), identical(names(l), c("b","a")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, lapply, names), list(b=list(d=c("h","f"), e=c("h","f"), c=c("f","h")), a=list(e=c("g","e"), d=c("e","g"), c=c("e","g")))),
-    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
-    sapply(l, sapply, sapply, ncol) == rep(1L, 12)
+  is.list(l), identical(names(l), c("b","a")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, lapply, names), list(b=list(d=c("h","f"), e=c("h","f"), c=c("f","h")), a=list(e=c("g","e"), d=c("e","g"), c=c("e","g")))),
+  sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+  sapply(l, sapply, sapply, ncol) == rep(1L, 12)
 ))
 l = split(dt, by = c("x3","x1"), keep.by = FALSE, flatten=FALSE) # multi col rev
 test(1639.98, TRUE, all(
-    is.list(l), identical(names(l), c("h","f","g","e")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
-    sapply(l, sapply, nrow) == rep(3L, 4),
-    sapply(l, sapply, ncol) == rep(2L, 4)
+  is.list(l), identical(names(l), c("h","f","g","e")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, names), list(h=c("b"), f=c("b"), g=c("a"), e=c("a"))),
+  sapply(l, sapply, nrow) == rep(3L, 4),
+  sapply(l, sapply, ncol) == rep(2L, 4)
 ))
 l = split(dt, by = c("x3","x2","x1"), keep.by = FALSE, flatten=FALSE)
 test(1639.99, TRUE, all(
-    is.list(l), identical(names(l), c("h","f","g","e")),
-    sapply(l, function(x) !is.data.table(x) && is.list(x)),
-    sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
-    identical(lapply(l, lapply, names), list(h=list(d="b", e="b", c="b"), f=list(e="b", c="b", d="b"), g=list(e="a", d="a", c="a"), e=list(e="a",d="a",c="a"))),
-    sapply(l, sapply, sapply, nrow) == rep(1L, 12),
-    sapply(l, sapply, sapply, ncol) == rep(1L, 12)
+  is.list(l), identical(names(l), c("h","f","g","e")),
+  sapply(l, function(x) !is.data.table(x) && is.list(x)),
+  sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
+  identical(lapply(l, lapply, names), list(h=list(d="b", e="b", c="b"), f=list(e="b", c="b", d="b"), g=list(e="a", d="a", c="a"), e=list(e="a",d="a",c="a"))),
+  sapply(l, sapply, sapply, nrow) == rep(1L, 12),
+  sapply(l, sapply, sapply, ncol) == rep(1L, 12)
 ))
 # - [x] support recursive split into nested lists for `length(by) > 2L` (default) and `flatten` arg to produce non-nested list of data.table ----
 fdt = dt[, c(lapply(.SD, as.factor), list(y=y)), .SDcols=x1:x3] # factors, flatten consistent to non-flatten length(by)==1L
@@ -8793,85 +8791,85 @@ test(1640.2, x[y, c(.SD, .(x.aa=x.aa)), on=c(aa="bb")], data.table(aa=3:5, cc=c(
 # tests for non-equi joins
 # function to create a random data.table with all necessary columns
 nq_fun = function(n=100L) {
-    i1 = sample(sample(n, 10L), n, TRUE)
-    i2 = sample(-n/2:n/2, n, TRUE)
-    i3 = sample(-1e6:1e6, n, TRUE)
-    i4 = sample(c(NA_integer_, sample(-n:n, 10L, FALSE)), n, TRUE)
+  i1 = sample(sample(n, 10L), n, TRUE)
+  i2 = sample(-n/2:n/2, n, TRUE)
+  i3 = sample(-1e6:1e6, n, TRUE)
+  i4 = sample(c(NA_integer_, sample(-n:n, 10L, FALSE)), n, TRUE)
 
-    d1 = sample(rnorm(10L), n, TRUE)
-    d2 = sample(rnorm(50), n, TRUE)
-    d3 = sample(c(Inf, -Inf, NA, NaN, runif(10L)), n, TRUE)
-    d4 = sample(c(NA, NaN, rnorm(10L)), n, TRUE)
+  d1 = sample(rnorm(10L), n, TRUE)
+  d2 = sample(rnorm(50), n, TRUE)
+  d3 = sample(c(Inf, -Inf, NA, NaN, runif(10L)), n, TRUE)
+  d4 = sample(c(NA, NaN, rnorm(10L)), n, TRUE)
 
-    c1 = sample(letters[1:5], n, TRUE)
-    c2 = sample(LETTERS[1:15], n, TRUE)
+  c1 = sample(letters[1:5], n, TRUE)
+  c2 = sample(LETTERS[1:15], n, TRUE)
 
-    dt = data.table(i1,i2,i3,i4, d1,d2,d3,d4, c1,c2)
-    if (test_bit64) {
-        I1 = as.integer64(sample(sample(n, 10L), n, TRUE))
-        I2 = as.integer64(sample(-n/2:n/2, n, TRUE))
-        I3 = as.integer64(sample(-1e6:1e6, n, TRUE))
-        I4 = as.integer64(sample(c(NA_integer_, sample(-n:n, 10L, FALSE)), n, TRUE))
-        dt = cbind(dt, data.table(I1,I2,I3,I4))
-    }
-    dt
+  dt = data.table(i1,i2,i3,i4, d1,d2,d3,d4, c1,c2)
+  if (test_bit64) {
+    I1 = as.integer64(sample(sample(n, 10L), n, TRUE))
+    I2 = as.integer64(sample(-n/2:n/2, n, TRUE))
+    I3 = as.integer64(sample(-1e6:1e6, n, TRUE))
+    I4 = as.integer64(sample(c(NA_integer_, sample(-n:n, 10L, FALSE)), n, TRUE))
+    dt = cbind(dt, data.table(I1,I2,I3,I4))
+  }
+  dt
 }
 
 nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
-    ops = c("==", ">=", "<=", ">", "<")
-    xclass = sapply(x, class)
-    runcmb = combn(names(x), k)
-    runcmb = as.data.table(runcmb[, 1:min(100L, ncol(runcmb)), drop=FALSE]) # max 100 combinations to test
-    runops = lapply(runcmb, function(cols) {
-        thisops = sample(ops, k, TRUE)
-        thisops[substring(cols,1,1)=="c"] = "=="
-        thisops
+  ops = c("==", ">=", "<=", ">", "<")
+  xclass = sapply(x, class)
+  runcmb = combn(names(x), k)
+  runcmb = as.data.table(runcmb[, 1:min(100L, ncol(runcmb)), drop=FALSE]) # max 100 combinations to test
+  runops = lapply(runcmb, function(cols) {
+    thisops = sample(ops, k, TRUE)
+    thisops[substring(cols,1,1)=="c"] = "=="
+    thisops
+  })
+  is_only_na <- function(x) is.na(x) & !is.nan(x)
+  construct <- function(cols, vals, ops) {
+    expr = lapply(seq_along(cols), function(i) {
+      GT_or_LT = ops[i]==">" || ops[i]=="<"
+      if (inherits(vals[[i]], "integer64")) {
+        if (is.na.integer64(vals[[i]])) if (GT_or_LT) quote(integer(0)) else as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
+        else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), as.integer(vals[[i]])))
+        # don't know how to construct a call with int64 -- vals[[i]] gets converted to NAN
+      } else {
+        if (is.nan(vals[[i]])) if (GT_or_LT) quote(integer(0)) else as.call(list(quote(is.nan), as.name(cols[[i]])))
+        else if (is_only_na(vals[[i]])) if (GT_or_LT) quote(integer(0)) else as.call(list(quote(is_only_na), as.name(cols[[i]])))
+        else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), vals[[i]]))
+      }
     })
-    is_only_na <- function(x) is.na(x) & !is.nan(x)
-    construct <- function(cols, vals, ops) {
-        expr = lapply(seq_along(cols), function(i) {
-            GT_or_LT = ops[i]==">" || ops[i]=="<"
-            if (inherits(vals[[i]], "integer64")) {
-                if (is.na.integer64(vals[[i]])) if (GT_or_LT) quote(integer(0)) else as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
-                else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), as.integer(vals[[i]])))
-                # don't know how to construct a call with int64 -- vals[[i]] gets converted to NAN
-            } else {
-                if (is.nan(vals[[i]])) if (GT_or_LT) quote(integer(0)) else as.call(list(quote(is.nan), as.name(cols[[i]])))
-                else if (is_only_na(vals[[i]])) if (GT_or_LT) quote(integer(0)) else as.call(list(quote(is_only_na), as.name(cols[[i]])))
-                else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), vals[[i]]))
-            }
-        })
-        ans = expr[[1L]]
-        lapply(expr[-1L], function(e) ans <<- as.call(list(quote(`&`), ans, e)))
-        ans
-    }
-    check <- function(x, y, cols, ops, mult="all") {
-        expr = lapply(1:nrow(y), function(i) {
-            expr = construct(cols, as.list(y[i, cols, with=FALSE]), ops)
-        })
-        ans = lapply(expr, function(e) {
-                val = x[eval(e)]
-                if (!nrow(val)) return(val)
-                val = if (mult=="first") val[1L] else if (mult=="last") val[.N] else val
-            })
-        rbindlist(ans)
-    }
-    nq <- function(x, y, cols, ops, nomatch=0L, mult="all") {
-        sd_cols = c(paste("x.", cols, sep=""), setdiff(names(x), cols))
-        ans = x[y, mget(sd_cols, as.environment(-1)), on = paste(cols, ops, cols, sep=""), allow=TRUE, nomatch=nomatch, mult=mult]
-        setnames(ans, gsub("^x[.]", "", names(ans)))
-        setcolorder(ans, names(x))[]
-    }
-    for (i in seq_along(runcmb)) {
-        thiscols = runcmb[[i]]
-        thisops = runops[[i]]
-        # cat("k = ", k, "\ti = ", i, "\t thiscols = [", paste(thiscols,collapse=","), "]\t thisops = [", paste(thisops,collapse=","), "]\t ", sep="")
-        ans1 = nq(x, y, thiscols, thisops, 0L, mult=mult)
-        ans2 = check(x, y, thiscols, thisops, mult=mult)
-        test_no = signif(test_no+.001, 7)
-        test(test_no, all.equal(ans1,ans2,ignore.row.order=TRUE), TRUE)
-        # if (identical(all.equal(ans1,ans2,ignore.row.order=TRUE), TRUE)) cat("successful\n") else stop("failed\n")
-    }
+    ans = expr[[1L]]
+    lapply(expr[-1L], function(e) ans <<- as.call(list(quote(`&`), ans, e)))
+    ans
+  }
+  check <- function(x, y, cols, ops, mult="all") {
+    expr = lapply(1:nrow(y), function(i) {
+      expr = construct(cols, as.list(y[i, cols, with=FALSE]), ops)
+    })
+    ans = lapply(expr, function(e) {
+          val = x[eval(e)]
+          if (!nrow(val)) return(val)
+          val = if (mult=="first") val[1L] else if (mult=="last") val[.N] else val
+    })
+    rbindlist(ans)
+  }
+  nq <- function(x, y, cols, ops, nomatch=0L, mult="all") {
+    sd_cols = c(paste("x.", cols, sep=""), setdiff(names(x), cols))
+    ans = x[y, mget(sd_cols, as.environment(-1)), on = paste(cols, ops, cols, sep=""), allow=TRUE, nomatch=nomatch, mult=mult]
+    setnames(ans, gsub("^x[.]", "", names(ans)))
+    setcolorder(ans, names(x))[]
+  }
+  for (i in seq_along(runcmb)) {
+    thiscols = runcmb[[i]]
+    thisops = runops[[i]]
+    # cat("k = ", k, "\ti = ", i, "\t thiscols = [", paste(thiscols,collapse=","), "]\t thisops = [", paste(thisops,collapse=","), "]\t ", sep="")
+    ans1 = nq(x, y, thiscols, thisops, 0L, mult=mult)
+    ans2 = check(x, y, thiscols, thisops, mult=mult)
+    test_no = signif(test_no+.001, 7)
+    test(test_no, all.equal(ans1,ans2,ignore.row.order=TRUE), TRUE)
+    # if (identical(all.equal(ans1,ans2,ignore.row.order=TRUE), TRUE)) cat("successful\n") else stop("failed\n")
+  }
 }
 
 if (TRUE) {  # turn off temporarily using FALSE when using valgrind, as very slow
@@ -8956,17 +8954,17 @@ test(1658.1, fwrite(data.table(a=c(NA, 2, 3.01), b=c('foo', NA, 'bar'))),
 
 # with quoting and qmethod="escape"
 test(1658.2, fwrite(data.table(
-    a=c(NA, 2, 3.01),
-    `other column`=c('foo bar', NA, 'quote" and \\ bs \n and newline')),
-    quote=TRUE, qmethod="escape"),
-    output='"a","other column"\n,"foo bar"\n2,\n3.01,"quote\\" and \\\\ bs \n and newline"')
+  a=c(NA, 2, 3.01),
+  `other column`=c('foo bar', NA, 'quote" and \\ bs \n and newline')),
+  quote=TRUE, qmethod="escape"),
+  output='"a","other column"\n,"foo bar"\n2,\n3.01,"quote\\" and \\\\ bs \n and newline"')
 
 # with quoting and qmethod="double" (default)
 test(1658.3, fwrite(data.table(
-    a=c(NA, 1.2e-100, 3.01),
-    "other \"column"=c('foo bar', NA, 'quote" and \\ bs')),
-    quote=TRUE, qmethod="double"),
-    output='"a","other ""column"\n,"foo bar"\n1.2e-100,\n3.01,"quote"" and \\ bs"')
+  a=c(NA, 1.2e-100, 3.01),
+  "other \"column"=c('foo bar', NA, 'quote" and \\ bs')),
+  quote=TRUE, qmethod="double"),
+  output='"a","other ""column"\n,"foo bar"\n1.2e-100,\n3.01,"quote"" and \\ bs"')
 
 # presence of " triggers auto quoting as well, #1925
 test(1658.4, fwrite(data.table(a=1:4, b=c('"foo','ba"r','baz"','a "quoted" region'))),
@@ -9027,11 +9025,11 @@ test(1658.15, fwrite(data.frame(a=c(1,2,3)), quote=TRUE),
 
 # different column types
 test(1658.16, fwrite(data.table(
-    factor1=as.factor(c('foo', 'bar')),
-    factor2=as.factor(c(NA, "baz")),
-    bool=c(TRUE,NA),
-    ints=as.integer(c(NA, 5))), na='na', quote=TRUE, logical01=FALSE),
-  output='"factor1","factor2","bool","ints"\n"foo",na,TRUE,na\n"bar","baz",na,5')
+                      factor1=as.factor(c('foo', 'bar')),
+                      factor2=as.factor(c(NA, "baz")),
+                      bool=c(TRUE,NA),
+                      ints=as.integer(c(NA, 5))), na='na', quote=TRUE, logical01=FALSE),
+              output='"factor1","factor2","bool","ints"\n"foo",na,TRUE,na\n"bar","baz",na,5')
 
 # empty data table (headers but no rows)
 empty_dt <- data.table(a=1, b=2)[0,]
@@ -9284,8 +9282,8 @@ test(1679.2, rleidv(x, prefix="id"), paste0("id", rleidv(x)))
 # melt.data.table call along with patterns from within a function, #1749
 x = data.table(x1=1:2, x2=3:4, y1=5:6, y2=7:8, z1=9:10, z2=11:12)
 foo <- function(x) {
-    pats = c("^y", "z")
-    melt(x, measure.vars=patterns(pats))
+  pats = c("^y", "z")
+  melt(x, measure.vars=patterns(pats))
 }
 test(1680.1, foo(x), melt(x, measure.vars=patterns("^y", "^z")))
 
@@ -9352,14 +9350,14 @@ test(1687.1, first(1:5), 1L)
 test(1687.2, first(data.table(x=1:5, y=6:10)), data.table(x=1L, y=6L))
 
 if (test_bit64) {
-    # fix for #1385 and part of #1459
-    x1 = data.table(id=1, value=as.integer64(1))
-    x2 = data.table(id=c(1,2))
-    test(1688.1, merge(x2, x1, by="id", all.x=TRUE)$value, as.integer64(c(1,NA)))
+  # fix for #1385 and part of #1459
+  x1 = data.table(id=1, value=as.integer64(1))
+  x2 = data.table(id=c(1,2))
+  test(1688.1, merge(x2, x1, by="id", all.x=TRUE)$value, as.integer64(c(1,NA)))
 
-    x1 = data.table(x = c(1),y = integer64(1))
-    x2 = data.table(x = c(1,2))
-    test(1688.2, merge(x1, x2, all=TRUE, by="x")$y, as.integer64(c(0, NA)))
+  x1 = data.table(x = c(1),y = integer64(1))
+  x2 = data.table(x = c(1,2))
+  test(1688.2, merge(x1, x2, all=TRUE, by="x")$y, as.integer64(c(0, NA)))
 }
 
 # Check that tz is passed though to as.Date(), #1498
@@ -9468,10 +9466,10 @@ test(1699.1, dcast(dt, x ~ ., value.var="z", fun=list(sd, mean)), data.table(x=c
 
 # minor enhancement to dcast, #1810
 dt = data.table(
-    var1 = c("a","b","c","b","d","e","f"),
-    var2 = c("aa","bb","cc","dd","ee","ee","ff"),
-    subtype = c("1","2","2","2","1","1","2"),
-    type = c("A","A","A","A","B","B","B")
+  var1 = c("a","b","c","b","d","e","f"),
+  var2 = c("aa","bb","cc","dd","ee","ee","ff"),
+  subtype = c("1","2","2","2","1","1","2"),
+  type = c("A","A","A","A","B","B","B")
 )
 test(1700.1, dcast(dt, type ~ subtype, value.var = c("var1", "var2"), fun = function(v) paste0(unique(v), collapse = "|")),
     data.table(type=c("A","B"), var1_1=c("a", "d|e"), var1_2=c("b|c", "f"),
@@ -9521,11 +9519,11 @@ test(1702.4, isoweek(isotest$input_date), isotest$expected_output)
 
 # fread, ensure no shell commands #1702
 if (.Platform$OS.type=="unix") {
-    cat("a,b\n4,2", file=f<-tempfile())
-    cmd <- sprintf("cat %s", f)
-    test(1703.1, fread(cmd), data.table(a=4L, b=2L))
-    test(1703.2, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
-    unlink(f)
+  cat("a,b\n4,2", file=f<-tempfile())
+  cmd <- sprintf("cat %s", f)
+  test(1703.1, fread(cmd), data.table(a=4L, b=2L))
+  test(1703.2, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
+  unlink(f)
 }
 
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
@@ -10037,107 +10035,107 @@ test(1749.2, indices(DT, vectors = TRUE), list(c("A","B"),"A","B"))
 n = 24L
 set.seed(25)
 dt <- data.table(
-    color = sample(c("green","yellow","red"), n, TRUE),
-    year = as.Date(sample(paste0(2011:2015,"-01-01"), n, TRUE)),
-    status = as.factor(sample(c("removed","active","inactive","archived"), n, TRUE)),
-    amount = sample(1:5, n, TRUE),
-    value = sample(c(3, 3.5, 2.5, 2), n, TRUE)
+  color = sample(c("green","yellow","red"), n, TRUE),
+  year = as.Date(sample(paste0(2011:2015,"-01-01"), n, TRUE)),
+  status = as.factor(sample(c("removed","active","inactive","archived"), n, TRUE)),
+  amount = sample(1:5, n, TRUE),
+  value = sample(c(3, 3.5, 2.5, 2), n, TRUE)
 )
 test(1750.1, # empty input gets grand total only when asked in `sets` with `character()`
-    groupingsets(dt[0L], j = sum(value), by = c("color","year","status"), sets=list(c("color"))),
-    data.table(color=character(), year=as.Date(NA)[-1L], status=factor(), V1=numeric())
+  groupingsets(dt[0L], j = sum(value), by = c("color","year","status"), sets=list(c("color"))),
+  data.table(color=character(), year=as.Date(NA)[-1L], status=factor(), V1=numeric())
 )
 test(1750.2, # empty input gets grand total non-NA, if asked.  Was affected by as.factor(NA) in R 2.15.0
-    groupingsets(dt[0L], j = sum(value), by = c("color","year","status"), sets=list(c("color"), character())),
-    data.table(color=NA_character_, year=as.Date(NA), status=as.factor(NA), V1=0)
+  groupingsets(dt[0L], j = sum(value), by = c("color","year","status"), sets=list(c("color"), character())),
+  data.table(color=NA_character_, year=as.Date(NA), status=as.factor(NA), V1=0)
 )
 test(1750.3, # empty input non-NA grand total, also retain classes and aggregation level
-    groupingsets(dt[0L], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE),
-    data.table(grouping=7L, color=NA_character_, year=as.Date(NA), status=as.factor(NA), amount=0L, value=0)
+  groupingsets(dt[0L], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE),
+  data.table(grouping=7L, color=NA_character_, year=as.Date(NA), status=as.factor(NA), amount=0L, value=0)
 )
 test(1750.4, # `sets=list()` produces 0 nrow, for grand total use `set=list(character())` - test at top
-    nrow(groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=list(), id=TRUE)),
-    0L
+  nrow(groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=list(), id=TRUE)),
+  0L
 )
 test(1750.5, # `by` must have unique column names
-    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status","year"), .SDcols=c("amount","value"), sets=list("year"), id=TRUE),
-    error = "Argument 'by' must have unique column names"
+  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status","year"), .SDcols=c("amount","value"), sets=list("year"), id=TRUE),
+  error = "Argument 'by' must have unique column names"
 )
 test(1750.6, # 0 ncol `x`
-    groupingsets(data.table(), j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=list(c("year")), id=TRUE),
-    error = "Argument 'x' is 0 column data.table, no measure to apply grouping over."
+  groupingsets(data.table(), j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=list(c("year")), id=TRUE),
+  error = "Argument 'x' is 0 column data.table, no measure to apply grouping over."
 )
 test(1750.7, # 0 length `by`, must also use `sets=list()`, so 0L rows result
-    nrow(groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = character(), .SDcols=c("amount","value"), sets=list(), id=TRUE)),
-    0L
+  nrow(groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = character(), .SDcols=c("amount","value"), sets=list(), id=TRUE)),
+  0L
 )
 test(1750.8, all( # for any single value from dataset there should be always same aggregate result on any level of grouping
-    sapply(seq_len(nrow(dt)), function(i) uniqueN(
-        groupingsets(dt[i], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character())),
-        by=c("amount","value")
-    )) == 1L
+  sapply(seq_len(nrow(dt)), function(i) uniqueN(
+    groupingsets(dt[i], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character())),
+    by=c("amount","value")
+  )) == 1L
 ), TRUE)
 # all grouping id matches in all totals
 r = groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character()), id=TRUE)
 test(1750.9, uniqueN(
-    r[, lapply(.SD, sum), by = "grouping", .SDcols = c("cnt","amount","value")],
-    by = c("cnt","amount","value")
+  r[, lapply(.SD, sum), by = "grouping", .SDcols = c("cnt","amount","value")],
+  by = c("cnt","amount","value")
 ), 1L)
 # groupingsets grouping by 'value' still possible
 r = groupingsets(dt, j = sum(amount), by = c("color","year","status","value"), sets=list(c("color","year","status"), c("year"), c("status"), character()))
 test(1750.10,
-    sapply(r, class),
-    c("color"="character","year"="Date","status"="factor","value"="numeric","V1"="integer")
+  sapply(r, class),
+  c("color"="character","year"="Date","status"="factor","value"="numeric","V1"="integer")
 )
 # groupingsets on aggregate using grouping col char type and sum - error
 test(1750.11,
-    groupingsets(dt, j = lapply(.SD, sum), by = c("status","year"), sets=list(character()), .SDcols="color"),
-    error = "invalid 'type' (character) of argument"
+  groupingsets(dt, j = lapply(.SD, sum), by = c("status","year"), sets=list(character()), .SDcols="color"),
+  error = "invalid 'type' (character) of argument"
 )
 # groupingsets on aggregate using grouping col factor type and sum - error
 test(1750.12,
-    groupingsets(dt, j = lapply(.SD, sum), by = c("color","year"), sets=list(character()), .SDcols="status"),
-    error = "not meaningful for factors"
+  groupingsets(dt, j = lapply(.SD, sum), by = c("color","year"), sets=list(character()), .SDcols="status"),
+  error = "not meaningful for factors"
 )
 # groupingsets on aggregate using grouping col char type and length, match on all subtotals
 r = groupingsets(dt, j = lapply(.SD, length), by = c("status","year"), sets=list(c("year"), c("status","year"), character()), .SDcols="color", id=TRUE)
 test(1750.13, uniqueN(
-    r[, lapply(.SD, sum), by = "grouping", .SDcols = c("color")],
-    by = c("color")
+  r[, lapply(.SD, sum), by = "grouping", .SDcols = c("color")],
+  by = c("color")
 ), 1L)
 # groupingsets double listing column, to measure and grouping
 test(1750.14,
-    groupingsets(dt, j = lapply(.SD, sum), by = c("color","amount"), sets=list(c("color"), c("color","amount")), .SDcols="amount", id=TRUE),
-    error = "There exists duplicated column names in the results"
+  groupingsets(dt, j = lapply(.SD, sum), by = c("color","amount"), sets=list(c("color"), c("color","amount")), .SDcols="amount", id=TRUE),
+  error = "There exists duplicated column names in the results"
 )
 test(1750.15,
-    groupingsets(dt, j = .(color = sum(value)), by = c("color","amount"), sets=list(c("color"), c("color","amount")), id=TRUE),
-    error = "There exists duplicated column names in the results"
+  groupingsets(dt, j = .(color = sum(value)), by = c("color","amount"), sets=list(c("color"), c("color","amount")), id=TRUE),
+  error = "There exists duplicated column names in the results"
 )
 # set equals to `character(0)` should return grand total
 sets = list(character())
 test(1750.16,
-    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE),
-    dt[, c(list(cnt=.N), lapply(.SD, sum)), .(grouping=rep(7L,n), color=rep(NA_character_,n), year=rep(as.Date(NA),n), status=as.factor(rep(NA_character_,n)))]
+  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE),
+  dt[, c(list(cnt=.N), lapply(.SD, sum)), .(grouping=rep(7L,n), color=rep(NA_character_,n), year=rep(as.Date(NA),n), status=as.factor(rep(NA_character_,n)))]
 )
 # duplicate entries in `sets` vector-wise
 sets = list("color", c("color","year","status","year","status"), "year", character())
 test(1750.17,
-    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE),
-    error = "Character vectors in 'sets' list must not have duplicated column names within single grouping set."
+  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE),
+  error = "Character vectors in 'sets' list must not have duplicated column names within single grouping set."
 )
 # duplicate entries in `sets` - double counting - actually aggregate `grouping!=5L` (not double counted) to compare to double counted values on `grouping==5L`, as double counting is expected results for this unexpected usage
 sets = list("year", c("color","year"), "year", character())
 test(1750.18, uniqueN({
-    r <- groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
-    r[, lapply(.SD, sum), by = .(double_counting = grouping==5L, double_counting = grouping!=5L), .SDcols = c("cnt","amount","value")]
+  r <- groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
+  r[, lapply(.SD, sum), by = .(double_counting = grouping==5L, double_counting = grouping!=5L), .SDcols = c("cnt","amount","value")]
 }, by = c("cnt","amount","value")
 ), 1L, warning = "Double counting is going to happen")
 # duplicate entries in `sets` but reorderd - double counting on `grouping==1L`
 sets = list(c("color","year"), "year", c("year","color"), character())
 test(1750.19, uniqueN({
-    r <- groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
-    r[, lapply(.SD, sum), by = .(double_counting = grouping==1L, double_counting = grouping!=1L), .SDcols = c("cnt","amount","value")]
+  r <- groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
+  r[, lapply(.SD, sum), by = .(double_counting = grouping==1L, double_counting = grouping!=1L), .SDcols = c("cnt","amount","value")]
 }, by = c("cnt","amount","value")
 ), 1L, warning = "Double counting is going to happen")
 # entries in `by` / `sets` not exists in data.table
@@ -10146,89 +10144,89 @@ test(1750.21, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("co
 test(1750.22, groupingsets(dt, j = .(a=sum(a)), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE), error = "object 'a' not found")
 # update by ref `:=` forbidden
 test(1750.23,
-    groupingsets(dt, j = sum_value := sum(value), by = c("color","year","status"), sets=list(c("color"), character())),
-    error = "Expression passed to grouping sets function must not update by reference."
+  groupingsets(dt, j = sum_value := sum(value), by = c("color","year","status"), sets=list(c("color"), character())),
+  error = "Expression passed to grouping sets function must not update by reference."
 )
 # rollup
 sets = local({
-    by=c("color","year","status")
-    lapply(length(by):0, function(i) by[0:i])
+  by=c("color","year","status")
+  lapply(length(by):0, function(i) by[0:i])
 })
 test(1750.31,
-    rollup(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE),
-    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
+  rollup(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE),
+  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
 )
 sets = local({
-    by=c("year","status")
-    lapply(length(by):0, function(i) by[0:i])
+  by=c("year","status")
+  lapply(length(by):0, function(i) by[0:i])
 })
 test(1750.32,
-    rollup(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), id=TRUE),
-    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=sets, id=TRUE)
+  rollup(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), id=TRUE),
+  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=sets, id=TRUE)
 )
 # cube
 sets = local({
-    by=c("color","year","status")
-    n = length(by)
-    keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
-    lapply((2L^n):1, function(j) by[keepBool[j, ]])
+  by=c("color","year","status")
+  n = length(by)
+  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
+  lapply((2L^n):1, function(j) by[keepBool[j, ]])
 })
 test(1750.33,
-    cube(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE),
-    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
+  cube(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE),
+  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
 )
 sets = local({
-    by=c("year","status")
-    n = length(by)
-    keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
-    lapply((2L^n):1, function(j) by[keepBool[j, ]])
+  by=c("year","status")
+  n = length(by)
+  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
+  lapply((2L^n):1, function(j) by[keepBool[j, ]])
 })
 test(1750.34,
-    cube(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), id=TRUE),
-    groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=sets, id=TRUE)
+  cube(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), id=TRUE),
+  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=sets, id=TRUE)
 )
 # grouping sets with integer64
 if (test_bit64) {
-    set.seed(26)
-    dt[, c("id1","id2") := list(as.integer64(sample(sample(n, n/4), n, TRUE)), as.integer64(sample(sample(n, n/2), n, TRUE)))]
-    # int64 as grouping cols
-    r = groupingsets(dt, j = lapply(.SD, sum), by = c("color","id1","id2"), sets=list(c("color","id1"), c("color","id1","id2"), "id2", c("id1","id2"), "color", character()), .SDcols=c("amount","value"), id=TRUE)
-    test(1750.41, # grand total
-        r[grouping==7L, .(color, id1, id2, amount, value)],
-        dt[, lapply(.SD, sum), .(color=rep(NA_character_, n), id1=as.integer64(rep(NA,n)), id2=as.integer64(rep(NA,n))), .SDcols=c("amount","value")]
-    )
-    test(1750.42, # by color
-        r[grouping==3L, .(color, id1, id2, amount, value)],
-        dt[, lapply(.SD, sum), .(color, id1=as.integer64(rep(NA,n)), id2=as.integer64(rep(NA,n))), .SDcols=c("amount","value")]
-    )
-    test(1750.43, # by id2
-        r[grouping==6L, .(color, id1, id2, amount, value)],
-        dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1=as.integer64(rep(NA,n)), id2), .SDcols=c("amount","value")]
-    )
-    test(1750.44, # by id1, id2
-        r[grouping==4L, .(color, id1, id2, amount, value)],
-        dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1, id2), .SDcols=c("amount","value")]
-    )
-    # int64 as measure cols
-    r = groupingsets(dt, j = lapply(.SD, sum), by = c("color","status"), sets=list(c("color","status"), "status", character()), .SDcols=c("amount","value","id1","id2"), id=TRUE)
-    test(1750.45, # grand total.   # was affected by as.factor(NA) in R 2.15.0
-        r[grouping==3L, .(color, status, amount, value, id1, id2)],
-        dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), status=as.factor(rep(NA_character_,n))), .SDcols=c("amount","value","id1","id2")]
-    )
-    test(1750.46, # by status
-        r[grouping==2L, .(color, status, amount, value, id1, id2)],
-        dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), status), .SDcols=c("amount","value","id1","id2")]
-    )
-    # int64 as grouping and measure cols
-    r = groupingsets(dt, j = lapply(.SD, sum), by = c("color","id1"), sets=list(c("color","id1"), "id1", character()), .SDcols=c("amount","value","id2"), id=TRUE)
-    test(1750.47, # grand total
-        r[grouping==3L, .(color, id1, amount, value, id2)],
-        dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1=as.integer64(rep(NA,n))), .SDcols=c("amount","value","id2")]
-    )
-    test(1750.48, # by id1
-        r[grouping==2L, .(color, id1, amount, value, id2)],
-        dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1), .SDcols=c("amount","value","id2")]
-    )
+  set.seed(26)
+  dt[, c("id1","id2") := list(as.integer64(sample(sample(n, n/4), n, TRUE)), as.integer64(sample(sample(n, n/2), n, TRUE)))]
+  # int64 as grouping cols
+  r = groupingsets(dt, j = lapply(.SD, sum), by = c("color","id1","id2"), sets=list(c("color","id1"), c("color","id1","id2"), "id2", c("id1","id2"), "color", character()), .SDcols=c("amount","value"), id=TRUE)
+  test(1750.41, # grand total
+      r[grouping==7L, .(color, id1, id2, amount, value)],
+      dt[, lapply(.SD, sum), .(color=rep(NA_character_, n), id1=as.integer64(rep(NA,n)), id2=as.integer64(rep(NA,n))), .SDcols=c("amount","value")]
+  )
+  test(1750.42, # by color
+      r[grouping==3L, .(color, id1, id2, amount, value)],
+      dt[, lapply(.SD, sum), .(color, id1=as.integer64(rep(NA,n)), id2=as.integer64(rep(NA,n))), .SDcols=c("amount","value")]
+  )
+  test(1750.43, # by id2
+      r[grouping==6L, .(color, id1, id2, amount, value)],
+      dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1=as.integer64(rep(NA,n)), id2), .SDcols=c("amount","value")]
+  )
+  test(1750.44, # by id1, id2
+      r[grouping==4L, .(color, id1, id2, amount, value)],
+      dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1, id2), .SDcols=c("amount","value")]
+  )
+  # int64 as measure cols
+  r = groupingsets(dt, j = lapply(.SD, sum), by = c("color","status"), sets=list(c("color","status"), "status", character()), .SDcols=c("amount","value","id1","id2"), id=TRUE)
+  test(1750.45, # grand total.   # was affected by as.factor(NA) in R 2.15.0
+      r[grouping==3L, .(color, status, amount, value, id1, id2)],
+      dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), status=as.factor(rep(NA_character_,n))), .SDcols=c("amount","value","id1","id2")]
+  )
+  test(1750.46, # by status
+      r[grouping==2L, .(color, status, amount, value, id1, id2)],
+      dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), status), .SDcols=c("amount","value","id1","id2")]
+  )
+  # int64 as grouping and measure cols
+  r = groupingsets(dt, j = lapply(.SD, sum), by = c("color","id1"), sets=list(c("color","id1"), "id1", character()), .SDcols=c("amount","value","id2"), id=TRUE)
+  test(1750.47, # grand total
+    r[grouping==3L, .(color, id1, amount, value, id2)],
+    dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1=as.integer64(rep(NA,n))), .SDcols=c("amount","value","id2")]
+  )
+  test(1750.48, # by id1
+    r[grouping==2L, .(color, id1, amount, value, id2)],
+    dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1), .SDcols=c("amount","value","id2")]
+  )
 }
 # end Grouping Sets
 
@@ -10471,58 +10469,58 @@ ar = array(sample(c(rep(NA, 4), 4:7/2), prod(ar.dim), TRUE),
 dt = as.data.table(ar, na.rm=FALSE)
 dimcols = head(names(dt), -1L)
 test(1774.1, TRUE, all(
-    nrow(dt) == 60L,
-    prod(sapply(ar.dimnames, length)) == dt[, prod(sapply(.SD, uniqueN)), .SDcols = dimcols],
-    dt[is.na(value), .N] == 30L,
-    dt[, .N==1L, c(dimcols)]$V1
+  nrow(dt) == 60L,
+  prod(sapply(ar.dimnames, length)) == dt[, prod(sapply(.SD, uniqueN)), .SDcols = dimcols],
+  dt[is.na(value), .N] == 30L,
+  dt[, .N==1L, c(dimcols)]$V1
 ))
 dt = as.data.table(ar)
 dimcols = head(names(dt), -1L)
 test(1774.2, TRUE, all(
-    nrow(dt) == 30L,
-    prod(sapply(ar.dimnames, length)) == dt[, prod(sapply(.SD, uniqueN)), .SDcols = dimcols],
-    dt[is.na(value), .N] == 0L,
-    dt[, .N==1L, c(dimcols)]$V1
+  nrow(dt) == 30L,
+  prod(sapply(ar.dimnames, length)) == dt[, prod(sapply(.SD, uniqueN)), .SDcols = dimcols],
+  dt[is.na(value), .N] == 0L,
+  dt[, .N==1L, c(dimcols)]$V1
 ))
 # 4D unnamed
 x = array(1:81, dim=rep(3L,4))
 dt = as.data.table(x, na.rm=FALSE)
 test(1774.3, TRUE, all(
-    identical(dim(dt), c(81L,5L)),
-    identical(names(dt), c(paste0("V",1:4),"value")),
-    all(dt[J(1L)][1L, value] == 1L, dt[J(2L)][1L, value] == 2L, dt[J(3L)][.N, value] == 81L) # this also tests if dt is keyed
+  identical(dim(dt), c(81L,5L)),
+  identical(names(dt), c(paste0("V",1:4),"value")),
+  all(dt[J(1L)][1L, value] == 1L, dt[J(2L)][1L, value] == 2L, dt[J(3L)][.N, value] == 81L) # this also tests if dt is keyed
 ))
 # 4D named dim values but not dims
 x = array(1:81, dim=rep(3L, 4L), dimnames=rep(list(letters[1:3]), 4L))
 dt = as.data.table(x, na.rm=FALSE)
 test(1774.4, TRUE, all(
-    identical(dim(dt), c(81L,5L)),
-    identical(names(dt), c(paste0("V",1:4),"value")),
-    all(dt[J("a")][1L, value] == 1L, dt[J("b")][1L, value] == 2L, dt[J("c")][.N, value] == 81L)
+  identical(dim(dt), c(81L,5L)),
+  identical(names(dt), c(paste0("V",1:4),"value")),
+  all(dt[J("a")][1L, value] == 1L, dt[J("b")][1L, value] == 2L, dt[J("c")][.N, value] == 81L)
 ))
 # 4D named dim values and dims
 x = array(1:81, dim=rep(3L, 4L), dimnames=setNames(rep(list(letters[1:3]), 4L), letters[1:4]))
 dt = as.data.table(x, na.rm=FALSE)
 test(1774.5, TRUE, all(
-    identical(dim(dt), c(81L,5L)),
-    identical(names(dt), c(letters[1:4],"value")),
-    all(dt[J("a")][1L, value] == 1L, dt[J("b")][1L, value] == 2L, dt[J("c")][.N, value] == 81L)
+  identical(dim(dt), c(81L,5L)),
+  identical(names(dt), c(letters[1:4],"value")),
+  all(dt[J("a")][1L, value] == 1L, dt[J("b")][1L, value] == 2L, dt[J("c")][.N, value] == 81L)
 ))
 # third dim of length 1L so really 2D
 x = array(1:4, dim=c(2L,2L,1L), dimnames=list(a=letters[1:2], b=letters[1:2], c="a"))
 dt = as.data.table(x, na.rm=FALSE)
 test(1774.6, TRUE, all(
-    identical(dim(dt), c(4L,4L)),
-    identical(names(dt), c("a","b","c","value")),
-    all(dt[J("a")][, value] == c(1L,3L), dt[J("b")][, value] == c(2L,4L))
+  identical(dim(dt), c(4L,4L)),
+  identical(names(dt), c("a","b","c","value")),
+  all(dt[J("a")][, value] == c(1L,3L), dt[J("b")][, value] == c(2L,4L))
 ))
 # second and third dim of length 1L so really 1D
 x = array(1:2, dim=c(2L,1L,1L), dimnames=list(a=letters[1:2], b="a", c="a"))
 dt = as.data.table(x, na.rm=FALSE)
 test(1774.7, TRUE, all(
-    identical(dim(dt), c(2L,4L)),
-    identical(names(dt), c("a","b","c","value")),
-    all(dt[J("a")][, value] == 1L, dt[J("b")][, value] == 2L)
+  identical(dim(dt), c(2L,4L)),
+  identical(names(dt), c("a","b","c","value")),
+  all(dt[J("a")][, value] == 1L, dt[J("b")][, value] == 2L)
 ))
 # 3x3x3 na.rm=FALSE / sorted=TRUE
 set.seed(2)
@@ -10531,35 +10529,35 @@ x[sample(length(x), length(x)/2)] = NA
 dim(x) = c(3L,3L,3L)
 dt = as.data.table(x, na.rm=FALSE)
 test(1774.8, TRUE, all(
-    identical(dim(dt), c(27L,4L)),
-    identical(names(dt), c(paste0("V",1:3),"value")),
-    dt[is.na(value), .N] > 0L,
-    length(key(dt)) > 0L
+  identical(dim(dt), c(27L,4L)),
+  identical(names(dt), c(paste0("V",1:3),"value")),
+  dt[is.na(value), .N] > 0L,
+  length(key(dt)) > 0L
 ))
 # na.rm=TRUE / sorted=TRUE
 dt = as.data.table(x)
 test(1774.9, TRUE, all(
-    identical(dim(dt), c(14L,4L)),
-    identical(names(dt), c(paste0("V",1:3),"value")),
-    dt[is.na(value), .N] == 0L,
-    length(key(dt)) > 0L
+  identical(dim(dt), c(14L,4L)),
+  identical(names(dt), c(paste0("V",1:3),"value")),
+  dt[is.na(value), .N] == 0L,
+  length(key(dt)) > 0L
 ))
 # na.rm=TRUE / sorted=FALSE
 dt = as.data.table(x, sorted=FALSE)
 test(1774.10, TRUE, all(
-    identical(dim(dt), c(14L,4L)),
-    identical(names(dt), c(paste0("V",1:3),"value")),
-    dt[is.na(value), .N] == 0L,
-    is.unsorted(dt[[1]]),
-    is.null(key(dt))
+  identical(dim(dt), c(14L,4L)),
+  identical(names(dt), c(paste0("V",1:3),"value")),
+  dt[is.na(value), .N] == 0L,
+  is.unsorted(dt[[1]]),
+  is.null(key(dt))
 ))
 # na.rm=FALSE / sorted=FALSE
 dt = as.data.table(x, na.rm=FALSE, sorted=FALSE)
 test(1774.11, TRUE, all(
-    identical(dim(dt), c(27L,4L)),
-    identical(names(dt), c(paste0("V",1:3),"value")),
-    is.unsorted(dt[[1]]),
-    is.null(key(dt))
+  identical(dim(dt), c(27L,4L)),
+  identical(names(dt), c(paste0("V",1:3),"value")),
+  is.unsorted(dt[[1]]),
+  is.null(key(dt))
 ))
 # expects error on value.name overlapping with column names in result (dimension names)
 x = array(1:2, dim=c(2L,1L,1L), dimnames=list(a=letters[1:2], b="a", c="a"))
@@ -10989,11 +10987,11 @@ test(1846.2, d2[d1, on=.(a>a)], data.table(a=1L, b=NA_integer_, i.b=2L))
 
 # Fix for non-equi join issue #2360.- issue in recreating new indices following non-equi binary merge
 d <- data.table(
-      index = as.Date(c("2017-08-25", "2017-08-28", "2017-08-29", "2017-08-30", "2017-08-31", "2017-09-01",
-                        "2017-09-05", "2017-09-06", "2017-09-07", "2017-09-08", "2017-09-11", "2017-09-12",
-                        "2017-09-13")),
-      High = c(52.85, 51.81, 51.86, 52.29, 52.59, 52.77, 51.9, 50.77, 50.69, 50.45, 50.67, 51.07, 51.105),
-      FwdHi = c(51.81, 51.86, 52.29, 51.9, 50.77, 50.69, 50.45, 50.45, 50.45, 50.67, NA, NA, NA))
+  index = as.Date(c("2017-08-25", "2017-08-28", "2017-08-29", "2017-08-30", "2017-08-31", "2017-09-01",
+                    "2017-09-05", "2017-09-06", "2017-09-07", "2017-09-08", "2017-09-11", "2017-09-12",
+                    "2017-09-13")),
+  High = c(52.85, 51.81, 51.86, 52.29, 52.59, 52.77, 51.9, 50.77, 50.69, 50.45, 50.67, 51.07, 51.105),
+  FwdHi = c(51.81, 51.86, 52.29, 51.9, 50.77, 50.69, 50.45, 50.45, 50.45, 50.67, NA, NA, NA))
 setkey(d, index)[, id := .I] # adding rowid for easily writing tests
 
 # [1L] is to ensure non matching rows are also included, will be NA in result
@@ -11539,11 +11537,11 @@ if ((x<-timings[,sum(nTest)]) != ntest) warning("Timings count mismatch:",x,"vs"
 cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
 print(DT, class=FALSE)
 if (nfail > 0) {
-    if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
-    cat("\r")
-    stop(nfail," error",s1," out of ",ntest," in ",timetaken(started.at)," on ",date(),". [",plat,"].",
-         " Search inst/tests/tests.Rraw for test number",s2,paste(whichfail,collapse=", "),".")
-    # important to stop() here, so that 'R CMD check' fails
+  if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
+  cat("\r")
+  stop(nfail," error",s1," out of ",ntest," in ",timetaken(started.at)," on ",date(),". [",plat,"].",
+       " Search inst/tests/tests.Rraw for test number",s2,paste(whichfail,collapse=", "),".")
+  # important to stop() here, so that 'R CMD check' fails
 }
 cat(plat,"\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
 # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
