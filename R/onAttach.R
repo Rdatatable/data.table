@@ -33,7 +33,7 @@ dcf.lib = function(pkg, field){
   # get DESCRIPTION metadata field from local library
   stopifnot(is.character(pkg), is.character(field), length(pkg)==1L, length(field)==1L)
   dcf = system.file("DESCRIPTION", package=pkg)
-  if (nchar(dcf)) read.dcf(dcf, fields=field)[1L] else NA_character_
+  if (nzchar(dcf)) read.dcf(dcf, fields=field)[1L] else NA_character_
 }
 
 dcf.repo = function(pkg, repo, field){
