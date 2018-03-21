@@ -5370,10 +5370,11 @@ if (test_GenomicRanges) {
 }
 
 # fix for bug in address - #824
-x = 1:10
+# was temporarily disabled in issue #2619
+x = c(1L,5L,3L)
 address(x) ## shouldn't increment NAM field
 out = capture.output(.Internal(inspect(x)))
-# temporarily disabled for issue #2619 ... test(1373, grepl("NAM\\(1\\)", out), TRUE)
+test(1373, grepl("NAM\\(1\\)", out), TRUE)
 
 # fix for bug #762 - key'd data.table with a non-existing column in 'by' is not handled properly.
 DT <- data.table(x=1:5, z=5:1, key="z")
