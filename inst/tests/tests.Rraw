@@ -446,7 +446,7 @@ test(166, suppressWarnings(split(DT,DT$grp)[[2]]), DT[grp==2])
 
 # and that plotting works
 test(167.1, DT[,plot(b,f)], NULL)
-test(167.2, DT[,hist(b)]$breaks, seq.int(10L,50L,by=5L))
+test(167.2, as.integer(DT[,hist(b)]$breaks), seq.int(10L,50L,by=5L)) # as.integer needed for R 3.1.0
 test(167.3, DT[,plot(b,f),by=.(grp)], data.table(grp=integer()))
 try(graphics.off(),silent=TRUE)
 
