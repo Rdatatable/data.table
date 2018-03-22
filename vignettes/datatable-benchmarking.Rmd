@@ -20,7 +20,7 @@ h2 {
 This document is a guide to accurate performance measurements of data.table, highlighting best practices and traps to avoid.
 
 ## `microbenchmark` is not always appropriate
-Repeating benchmarking many times usually does not fit well for data processing tools. 
+Repetitive benchmarking like that used by `microbenchmark` may not always be appropriate. 
 While it makes perfect sense for timing atomic calculations, it may provide misleading results for common data processing tasks, which are typically large than the scale for which `microbenchmark` was designed, and run only once.
 
 For example, the following gives the impression that `data.table` is an order of magnitude slower than `data.frame` for updating columns.
@@ -56,6 +56,10 @@ system.time(DT[, y := .I])
 #>    0.01    0.01    0.03
 ```
 
+Further, when benchmarking `set*` functions it only makes to measure the first run. Those functions update data.table by reference thus after the first run the data.table involved in the measurement will have changed.
+
+To correctly measure the average performance of `set`, protect your data.table from being updated by reference operations by using `copy` or `data.table:::shallow`. Be aware `copy` might be very expensive relative to the operation you want to time as it duplicates the whole table, but this is what other packages usually do. It is unlikely we want to include duplication time in time of the actual task we are benchmarking. It may be prudent to measure the execution time of `copy` alone and subtract it from the operation with both `copy` and the operation being timed.
+
 Matt once said:
 
 > I'm very wary of benchmarks measured in anything under 1 second. Much prefer 10 seconds or more for a single run, achieved by increasing data size. A repetition count of 500 is setting off alarm bells. 3-5 runs should be enough to convince on larger data. Call overhead and time to GC affect inferences at this very small scale.
@@ -89,11 +93,7 @@ options(datatable.use.index=TRUE)
 `options(datatable.optimize=2L)` will turn off optimization of subsets completely, while `options(datatable.optimize=3L)` will switch it back on.
 `use.index=FALSE` will force query not to use index even if it exists, but existing keys are used for optimization. `auto.index=FALSE` only disables building index automatically when doing subset on non-indexed data.
 
-## _by reference_ operations
 
-When benchmarking `set*` functions it make sense to measure only the first run. Those functions update data.table by reference thus in subsequent runs they run on a different data.table.
-
-Hence, to correctly measure the performance of `set`, protect your data.table from being updated by reference operations by using `copy` or `data.table:::shallow`. Be aware `copy` might be very expensive as it needs to duplicate whole object, but this is what other packages usually do. It is unlikely we want to include duplication time in time of the actual task we are benchmarking. It may be prudent to measure the execution time of `copy` alone. 
 
 
 
