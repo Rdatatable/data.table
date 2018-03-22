@@ -66,7 +66,7 @@ Matt once said:
 
 ## fread: clear caches
 
-Each `fread` call should be run in fresh session. Use the following shell commands before each timing. This clears OS cache file in RAM and HD cache.
+Each `fread` call should be run in a fresh session. Use the following shell commands before timing. This clears OS cache file in RAM and HD cache.
 
 ```sh
 free -g
@@ -81,7 +81,7 @@ Index optimization will currently be turned off when doing subset using index an
 
 ## subset: index aware benchmarking
 
-For convinience data.table automatically builds index on fields you are doing subset data. It will add some overhead to first subset on particular fields but greatly reduce time to query those columns in subsequent runs. When measuring speed best way is to measure index creation and query using index separately. Having such timings it is easy to decide what is the optimal strategy for your use case.
+For convenience data.table automatically builds an index on each column involved in a subset query. Index creation adds some overhead to the first subset, but greatly reduces the time of subsequent queries on those columns. The best way to measure the speed of a particular subset query is to measure both the index creation and the query with the index separately. Depending on your use case, one or the other may be more important.
 To control usage of index use following options (see `?datatable.optimize` for more details):
 
 ```r
