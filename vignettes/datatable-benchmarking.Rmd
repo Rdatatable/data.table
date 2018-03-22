@@ -17,7 +17,7 @@ h2 {
 }
 </style>
 
-This document is a guide to accurate performance measurements of data.table, highlighting best practices and traps to avoid.
+This vignette documents the best ways to accurately measure data.table's performance, as well as common traps to avoid.
 
 ## `microbenchmark` is not always appropriate
 Repetitive benchmarking like that used by `microbenchmark` may not always be appropriate. 
