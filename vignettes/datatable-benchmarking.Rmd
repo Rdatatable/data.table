@@ -17,11 +17,52 @@ h2 {
 }
 </style>
 
-This document is meant to guide on measuring performance of data.table. Single place to documents best practices or traps to avoid.
+This document is a guide to accurate performance measurements of data.table, highlighting best practices and traps to avoid.
+
+## `microbenchmark` is not always appropriate
+Repeating benchmarking many times usually does not fit well for data processing tools. 
+While it makes perfect sense for timing atomic calculations, it may provide misleading results for common data processing tasks, which are typically large than the scale for which `microbenchmark` was designed, and run only once.
+
+For example, the following gives the impression that `data.table` is an order of magnitude slower than `data.frame` for updating columns.
+
+``` r
+library(microbenchmark)
+library(data.table)
+DF <- data.frame(x = 1:5)
+DT <- data.table(x = 1:5)
+microbenchmark(DF$y <- seq.int(nrow(DF)), DT[, y := .I])
+#> Unit: microseconds
+#>                       expr     min      lq      mean   median       uq        max neval cld
+#>  DF$y <- seq.int(nrow(DF))   6.927   9.939  14.37229  15.2095  17.4690     35.840   100  a 
+#>          DT[, `:=`(y, .I)] 207.510 221.064 276.51600 228.7435 238.0795   4912.183   100   b
+```
+
+yet there is typically no real difference:
+
+```r
+n = 1e7
+DT = data.table( a=sample(1:1000,n,replace=TRUE),
+                 b=sample(1:1000,n,replace=TRUE),
+                 c=rnorm(n),
+                 d=sample(c("foo","bar","baz","qux","quux"),n,replace=TRUE),
+                 e=rnorm(n),
+                 f=sample(1:1000,n,replace=TRUE) )
+DF <- as.data.frame(DT)
+system.time(DF$y <- seq.int(nrow(DF)))
+#>    user  system elapsed 
+#>    0.01    0.00    0.02
+system.time(DT[, y := .I])
+#>    user  system elapsed 
+#>    0.01    0.01    0.03
+```
+
+Matt once said:
+
+> I'm very wary of benchmarks measured in anything under 1 second. Much prefer 10 seconds or more for a single run, achieved by increasing data size. A repetition count of 500 is setting off alarm bells. 3-5 runs should be enough to convince on larger data. Call overhead and time to GC affect inferences at this very small scale.
 
 ## fread: clear caches
 
-Ideally each `fread` call should be run in fresh session with the following commands preceding R execution. This clears OS cache file in RAM and HD cache.
+Each `fread` call should be run in fresh session. Use the following shell commands before each timing. This clears OS cache file in RAM and HD cache.
 
 ```sh
 free -g
@@ -50,22 +91,17 @@ options(datatable.use.index=TRUE)
 
 ## _by reference_ operations
 
-When benchmarking `set*` functions it make sense to measure only first run. Those functions updates data.table by reference thus in subsequent runs they get already processed data.table on input.
+When benchmarking `set*` functions it make sense to measure only the first run. Those functions update data.table by reference thus in subsequent runs they run on a different data.table.
 
-Protecting your data.table from being updated by reference operations can be achieved using `copy` or `data.table:::shallow` functions. Be aware `copy` might be very expensive as it needs to duplicate whole object, but this is what other packages usually do. It is unlikely we want to include duplication time in time of the actual task we are benchmarking.
+Hence, to correctly measure the performance of `set`, protect your data.table from being updated by reference operations by using `copy` or `data.table:::shallow`. Be aware `copy` might be very expensive as it needs to duplicate whole object, but this is what other packages usually do. It is unlikely we want to include duplication time in time of the actual task we are benchmarking. It may be prudent to measure the execution time of `copy` alone. 
 
-## avoid `microbenchmark(, times=100)`
 
-Repeating benchmarking many times usually does not fit well for data processing tools. Of course it perfectly make sense for more atomic calculations. It does not well represent use case for common data processing tasks, which rather consists of batches sequentially provided transformations, each run once.
-Matt once said:
-
-> I'm very wary of benchmarks measured in anything under 1 second. Much prefer 10 seconds or more for a single run, achieved by increasing data size. A repetition count of 500 is setting off alarm bells. 3-5 runs should be enough to convince on larger data. Call overhead and time to GC affect inferences at this very small scale.
 
 ## multithreaded processing
 
-One of the main factor that is likely to impact timings is number of threads in your machine. In recent versions of data.table some of the functions has been parallelized.
+One of the main factors that is likely to impact timings is the number of threads on your machine. In recent versions of data.table some of the functions has been parallelized.
 You can control how much threads you want to use with `setDTthreads`.
 
 ## avoid `data.table()` inside a loop
 
-As of now `data.table()` has an overhead, thus inside loops it is preferred to use `as.data.table()` or `setDT()` on a valid list.
+As of now `data.table()` has an overhead, thus inside loops it is preferred to use `as.data.table()` or `setDT()` or maybe even `setattr(<list>, "class", c("data.table", "data.frame"))` on a valid list.
