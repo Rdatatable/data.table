@@ -1859,17 +1859,58 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 #    x
 #}
 
-
-as.matrix.data.table <- function(x,...)
-{
-  dm <- dim(x)
-  cn <- names(x)
+as.matrix.data.table <- function(x, rownames, ...) {
+  rn <- NULL
+  rnc <- NULL
+  if (!missing(rownames)) { # Convert rownames to a column index if possible
+    if (is.null(rownames)) {
+      warning("rownames is NULL, ignoring rownames")
+    } else if (length(rownames) != 1) {
+      stop("rownames must be a single column in x")
+    } else if (is.na(rownames)) {
+      warning("rownames is NA, ignoring rownames")
+    } else if (is.logical(rownames) && !isTRUE(rownames)) {
+      warning("rownames is FALSE, ignoring rownames")
+    } else if (!(is.logical(rownames) || is.character(rownames) || is.numeric(rownames))) {
+      # E.g. because rownames is some sort of object that cant be converted to a column index
+      stop("rownames must be TRUE, a column index, or a column name in x")
+    } else {
+      if (is.logical(rownames) && isTRUE(rownames)) {
+        if (haskey(x)) { 
+          rownames <- key(x) 
+          if (length(rownames) > 1) {
+            warning("rownames is TRUE but multiple keys found in key(x), using first column instead")
+            rownames <- 1
+          }
+        } else { 
+          rownames <- 1
+        }
+      }
+      if (is.character(rownames)) { # Handles cases where rownames is a column name, or key(x) from TRUE
+        rnc <- chmatch(rownames, names(x))
+        if (is.na(rnc)) stop(rownames, " is not a column of x")
+      } else { # rownames is an index already
+        if (rownames < 1 || rownames > ncol(x))
+          stop("rownames is ", rownames, " which is outside the column number range [1,ncol=", ncol(x), "]")
+        rnc <- rownames
+      }
+    }
+  }
+  if (!is.null(rnc)) { # If there are rownames, extract and drop that column
+    rn <- x[, ..rnc][[1]]
+    dm <- dim(x) - c(0, 1)
+    cn <- names(x)[-rnc]
+    X <- x[, -rnc, with = FALSE]
+  } else {
+    dm <- dim(x) 
+    cn <- names(x) 
+    X <- x
+  }
   if (any(dm == 0L))
-    return(array(NA, dim = dm, dimnames = list(NULL, cn)))
+    return(array(NA, dim = dm, dimnames = list(rn, cn)))
   p <- dm[2L]
   n <- dm[1L]
   collabs <- as.list(cn)
-  X <- x
   class(X) <- NULL
   non.numeric <- non.atomic <- FALSE
   all.logical <- TRUE
@@ -1914,7 +1955,7 @@ as.matrix.data.table <- function(x,...)
   }
   X <- unlist(X, recursive = FALSE, use.names = FALSE)
   dim(X) <- c(n, length(X)/n)
-  dimnames(X) <- list(NULL, unlist(collabs, use.names = FALSE))
+  dimnames(X) <- list(rn, unlist(collabs, use.names = FALSE))
   X
 }
 
@@ -2006,10 +2047,51 @@ tail.data.table <- function(x, n=6L, ...) {
   `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
 
-as.data.frame.data.table <- function(x, ...)
+as.data.frame.data.table <- function(x, rownames, ...)
 {
-  ans = copy(x)
-  setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
+  rnc <- NULL
+  if (!missing(rownames)) { # Convert rownames to a column index if possible
+    if (is.null(rownames)) {
+      warning("rownames is NULL, ignoring rownames")
+    } else if (length(rownames) != 1) {
+      stop("rownames must be a single column in x")
+    } else if (is.na(rownames)) {
+      warning("rownames is NA, ignoring rownames")
+    } else if (is.logical(rownames) && !isTRUE(rownames)) {
+      warning("rownames is FALSE, ignoring rownames")
+    } else if (!(is.logical(rownames) || is.character(rownames) || is.numeric(rownames))) {
+      # E.g. because rownames is some sort of object that cant be converted to a column index
+      stop("rownames must be TRUE, a column index, or a column name in x")
+    } else {
+      if (is.logical(rownames) && isTRUE(rownames)) {
+        if (haskey(x)) { 
+          rownames <- key(x) 
+          if (length(rownames) > 1) {
+            warning("rownames is TRUE but multiple keys found in key(x), using first column instead")
+            rownames <- 1
+          }
+        } else { 
+          rownames <- 1
+        }
+      }
+      if (is.character(rownames)) { # Handles cases where rownames is a column name, or key(x) from TRUE
+        rnc <- chmatch(rownames, names(x))
+        if (is.na(rnc)) stop(rownames, " is not a column of x")
+      } else { # rownames is an index already
+        if (rownames < 1 || rownames > ncol(x))
+          stop("rownames is ", rownames, " which is outside the column number range [1,ncol=", ncol(x), "]")
+        rnc <- rownames
+      }
+    }
+  }
+  if (!is.null(rnc)) { # If there are rownames, extract and drop that column
+    rn <- x[, ..rnc][[1]]
+    ans <- x[, -rnc, with = FALSE]
+    rownames(ans) <- rn # settatr(ans, "row.names", rn) only wokrs for character row names
+  } else {
+    ans = copy(x)
+    setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
+  }
   setattr(ans,"class","data.frame")
   setattr(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
   setattr(ans,".internal.selfref",NULL)
