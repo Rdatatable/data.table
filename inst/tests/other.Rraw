@@ -5,6 +5,7 @@ if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
   warning("This is dev where with.other.packages should not be run. Instead, use a fresh R session with data.table installed. ",
           "Not doing so in dev can be the cause of both false errors and false passes.")
 }
+if (!"package:data.table" %in% search()) stop("data.table should be already attached, see usage header in inst/tests/other.Rraw")
 
 test = data.table:::test
 INT = data.table:::INT
@@ -168,7 +169,7 @@ if (test_parallel) {
 
 if (test_dtq) {
   set.seed(5)
-  op = options("dtq.log.include"="data.table") # `[` from data.table namespace are by default excluded
+  op = options("dtq.log.include"="") # unnamed environment created for other.Rraw evaluation in test.data.table()
   DT = data.table(a = 1:10, b = letters[1:5])
   LKP = data.table(b = letters[1:5], ratio = rnorm(5), key = "b")
   DT2 = DT[, .(a = sum(a)), b
