@@ -55,7 +55,7 @@ test-r-release: # R-release most comprehensive tests, force all suggests, also i
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     OPENBLAS_MAIN_FREE: "1"
-    TEST_DATA_TABLE_WITH_OTHER_PACKAGES: TRUE
+    TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
   image: docker.io/jangorecki/r-builder
   dependencies:
   - mirror-packages
