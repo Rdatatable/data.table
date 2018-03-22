@@ -104,4 +104,4 @@ You can control how much threads you want to use with `setDTthreads`.
 
 ## avoid `data.table()` inside a loop
 
-As of now `data.table()` has an overhead, thus inside loops it is preferred to use `as.data.table()` or `setDT()` or maybe even `setattr(<list>, "class", c("data.table", "data.frame"))` on a valid list.
+As of now `data.table()` has an overhead, thus inside loops it is preferred to use `as.data.table()` or `setDT()` on a valid list.
