@@ -21,7 +21,7 @@ This document is a guide to accurate performance measurements of data.table, hig
 
 ## `microbenchmark` is not always appropriate
 Repetitive benchmarking like that used by `microbenchmark` may not always be appropriate. 
-While it makes perfect sense for timing atomic calculations, it may provide misleading results for common data processing tasks, which are typically large than the scale for which `microbenchmark` was designed, and run only once.
+While it makes perfect sense for timing atomic calculations, it may provide misleading results for common data processing tasks, which are typically larger than the scale for which `microbenchmark` was designed, and run only once.
 
 For example, the following gives the impression that `data.table` is an order of magnitude slower than `data.frame` for updating columns.
 
