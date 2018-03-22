@@ -168,6 +168,7 @@ if (test_parallel) {
 
 if (test_dtq) {
   set.seed(5)
+  op = options("dtq.log.include"="data.table") # `[` from data.table namespace are by default excluded
   DT = data.table(a = 1:10, b = letters[1:5])
   LKP = data.table(b = letters[1:5], ratio = rnorm(5), key = "b")
   DT2 = DT[, .(a = sum(a)), b
@@ -178,6 +179,7 @@ if (test_dtq) {
   test(13.1, is.data.table(ans))
   test(13.2, nrow(ans)>0L)
   test(13.3, ans[nrow(ans), elapsed > 0.1])
+  options(op)
 }
 
 cat("\n",ntest-nfail,"out of",ntest,"tests passed.\n")
