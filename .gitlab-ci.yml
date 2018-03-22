@@ -19,8 +19,8 @@ mirror-packages:
   script:
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
     # mirror R dependencies
-    - Rscript -e 'source(Sys.getenv("CI_TOOLS")); mirror.packages(packages.dcf(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), "all"), repos=c(Sys.getenv("CRAN_MIRROR"), Sys.getenv("BIOC_MIRROR")), repodir="bus/mirror-packages/cran")'
-    #- Rscript -e 'source(Sys.getenv("CI_TOOLS")); mirror.packages(type="win.binary", packages.dcf(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), "all"), repos=c(Sys.getenv("CRAN_MIRROR"), Sys.getenv("BIOC_MIRROR")), repodir="bus/mirror-packages/cran")'
+    - Rscript -e 'source(Sys.getenv("CI_TOOLS")); mirror.packages(packages.dcf(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), "all"), repos=c(Sys.getenv("CRAN_MIRROR"), Sys.getenv("BIOC_MIRROR"), repos.dcf("inst/tests/tests-DESCRIPTION")), repodir="bus/mirror-packages/cran")'
+    #- Rscript -e 'source(Sys.getenv("CI_TOOLS")); mirror.packages(type="win.binary", packages.dcf(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), "all"), repos=c(Sys.getenv("CRAN_MIRROR"), Sys.getenv("BIOC_MIRROR"), repos.dcf("inst/tests/tests-DESCRIPTION")), repodir="bus/mirror-packages/cran")'
   artifacts:
     expire_in: 2 weeks
     paths:
