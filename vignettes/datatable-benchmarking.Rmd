@@ -56,7 +56,7 @@ system.time(DT[, y := .I])
 #>    0.01    0.01    0.03
 ```
 
-Further, when benchmarking `set*` functions it only makes to measure the first run. Those functions update data.table by reference thus after the first run the data.table involved in the measurement will have changed.
+Further, when benchmarking `set*` functions it only makes sense to measure the first run. Those functions update data.table by reference thus after the first run the data.table involved in the measurement will have changed.
 
 To correctly measure the average performance of `set`, protect your data.table from being updated by reference operations by using `copy` or `data.table:::shallow`. Be aware `copy` might be very expensive relative to the operation you want to time as it duplicates the whole table, but this is what other packages usually do. It is unlikely we want to include duplication time in time of the actual task we are benchmarking. It may be prudent to measure the execution time of `copy` alone and subtract it from the operation with both `copy` and the operation being timed.
 
