@@ -2047,51 +2047,10 @@ tail.data.table <- function(x, n=6L, ...) {
   `[<-.data.table`(x,j=name,value=value)  # important i is missing here
 }
 
-as.data.frame.data.table <- function(x, rownames, ...)
+as.data.frame.data.table <- function(x, ...)
 {
-  rnc <- NULL
-  if (!missing(rownames)) { # Convert rownames to a column index if possible
-    if (is.null(rownames)) {
-      warning("rownames is NULL, ignoring rownames")
-    } else if (length(rownames) != 1) {
-      stop("rownames must be a single column in x")
-    } else if (is.na(rownames)) {
-      warning("rownames is NA, ignoring rownames")
-    } else if (is.logical(rownames) && !isTRUE(rownames)) {
-      warning("rownames is FALSE, ignoring rownames")
-    } else if (!(is.logical(rownames) || is.character(rownames) || is.numeric(rownames))) {
-      # E.g. because rownames is some sort of object that cant be converted to a column index
-      stop("rownames must be TRUE, a column index, or a column name in x")
-    } else {
-      if (is.logical(rownames) && isTRUE(rownames)) {
-        if (haskey(x)) { 
-          rownames <- key(x) 
-          if (length(rownames) > 1) {
-            warning("rownames is TRUE but multiple keys found in key(x), using first column instead")
-            rownames <- 1
-          }
-        } else { 
-          rownames <- 1
-        }
-      }
-      if (is.character(rownames)) { # Handles cases where rownames is a column name, or key(x) from TRUE
-        rnc <- chmatch(rownames, names(x))
-        if (is.na(rnc)) stop(rownames, " is not a column of x")
-      } else { # rownames is an index already
-        if (rownames < 1 || rownames > ncol(x))
-          stop("rownames is ", rownames, " which is outside the column number range [1,ncol=", ncol(x), "]")
-        rnc <- rownames
-      }
-    }
-  }
-  if (!is.null(rnc)) { # If there are rownames, extract and drop that column
-    rn <- x[[rnc]]
-    ans <- x[, -rnc, with = FALSE]
-    rownames(ans) <- rn # settatr(ans, "row.names", rn) only wokrs for character row names
-  } else {
-    ans = copy(x)
-    setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
-  }
+  ans = copy(x)
+  setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
   setattr(ans,"class","data.frame")
   setattr(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
   setattr(ans,".internal.selfref",NULL)
