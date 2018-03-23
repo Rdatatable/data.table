@@ -17,7 +17,102 @@ h2 {
 }
 </style>
 
-This vignette documents the best ways to accurately measure data.table's performance, as well as common traps to avoid.
+```{r setup}
+library(knitr)
+opts_chunk$set(fig.width = 8, fig.height = 5)
+```
+
+```{r loadPackages}
+library(ggplot2)
+library(scales)
+library(magrittr)
+library(hutils)
+library(microbenchmark)
+library(data.table)
+
+```
+
+Benchmarking any code seems easy only on the surface. In practice, there are many pitfalls to accidentally fall into, and many opportunities to draw wrong conclusions. This vignette documents mistakes we've made or encountered to better guide speed comparisons of data.table with base R and other packages. 
+
+## Know thy query
+Different tasks require different approaches to benchmarking. For example, measuring queries that take several minutes and are run only occasionally require a very different approach to very short tasks you run frequently. Similarly, benchmarking specific tasks requires a different approach than does benchmarking data.table as a general tool.
+
+## Scale matters
+Operations in data.table are designed with large data in mind. Operations on small data sets are not typically faster than base R methods. For example, consider the following two ways to update a column on certain rows of a data.table, first on a data frame of 5 rows then on a data frame of 1 million rows:
+
+```r
+# options(digits = 1)
+N <- 5
+DF <- data.frame(x = sample.int(N), 
+                 y = 0)
+DT <- as.data.table(DF)
+microbenchmark(baDF$y[DF$x == 2] <- 1, DT[x == 2, y := 1])
+#> Unit: microseconds
+#>        expr  min   lq mean median   uq  max neval cld
+#>        base   24   29   35     38   40   81   100  a 
+#>  data.table 1290 1320 1332   1327 1336 1805   100   b
+```
+
+```r
+#> Unit: milliseconds
+#>                     expr min lq mean median uq max neval cld
+#>    DF$y[DF$x == 2L] <- 1   4  4    5      4  4  29   100   b
+#>  DT[x == 2L, `:=`(y, 1)]   1  1    2      1  2  32   100  a 
+```
+
+The base R method is considerably faster than data.table for N = 5 but at N = 1e6 the positions are reversed. A chart for varying N confirms the pattern:
+
+```{r}
+compare_update <- function(N, times = 50, auto_index = TRUE) {
+  Grid <- CJ(N = N, times = times, auto_index = auto_index)
+  Ns <- Grid[["N"]]
+  timess <- Grid[["times"]]
+  auto_indexs <- Grid[["auto_index"]]
+  
+  lapply(seq_len(nrow(Grid)), function(i) {
+    N <- Ns[i]
+    times <- timess[i]
+    auto_index <- auto_indexs[i]
+    options(datatable.auto.index = auto_index)
+    DF <- data.frame(x = sample.int(N), 
+                     y = 0)
+    DT <- as.data.table(DF)
+    microbenchmark(base = DF$y[DF$x == 2L] <- 1,
+                   data.table = DT[x == 2L, y := 1],
+                   times = times) %>%
+      as.data.table %>%
+      .[, .(med = median(time)), keyby = "expr"] %>%
+      .[, nr := N] %>%
+      .[, ti := times] %>%
+      .[, ai := auto_index]
+  }) %>% 
+    rbindlist
+}
+
+compare_update(N = 10^(1:7)) %>%
+  ggplot(aes(x = nr, y = med, color = expr)) + 
+  geom_line() + 
+  scale_x_log10(labels = comma) + 
+  scale_y_log10("log(n)", labels = comma)
+```
+
+That is, the measured execution time of data.table appears to be nearly constant as n increases, whereas base R's execution time increases superexponentially. 
+
+Put another way, for this query, data.table appears to be very fast but has a substantial *call overhead*. 
+
+Some of the difference can be explained by data.table's auto index. If we turn off auto-indexing, we see that 
+
+```{r}
+compare_update(N = 10^(1:7), 
+               auto_index = c(TRUE, FALSE)) %>%
+  .[(expr == "base") %implies% ai] %>%
+  .[expr != "base", expr := paste(expr, "(Indexing", if_else(ai, "On)", "Off)"))] %>%
+  ggplot(aes(x = nr, y = med, color = expr)) + 
+  geom_line() + 
+  scale_x_log10("nrows") + 
+  scale_y_log10("ns")
+```
+
 
 ## `microbenchmark` is not always appropriate
 Repetitive benchmarking like that used by `microbenchmark` may not always be appropriate. 
