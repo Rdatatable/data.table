@@ -1897,7 +1897,7 @@ as.matrix.data.table <- function(x, rownames, ...) {
     }
   }
   if (!is.null(rnc)) { # If there are rownames, extract and drop that column
-    rn <- x[, ..rnc][[1]]
+    rn <- x[[rnc]]
     dm <- dim(x) - c(0, 1)
     cn <- names(x)[-rnc]
     X <- x[, -rnc, with = FALSE]
@@ -2085,7 +2085,7 @@ as.data.frame.data.table <- function(x, rownames, ...)
     }
   }
   if (!is.null(rnc)) { # If there are rownames, extract and drop that column
-    rn <- x[, ..rnc][[1]]
+    rn <- x[[rnc]]
     ans <- x[, -rnc, with = FALSE]
     rownames(ans) <- rn # settatr(ans, "row.names", rn) only wokrs for character row names
   } else {
