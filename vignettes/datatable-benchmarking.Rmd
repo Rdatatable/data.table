@@ -2,9 +2,10 @@
 title: "Benchmarking data.table"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette:
+  html_document:
     toc: true
     number_sections: true
+    
 vignette: >
   %\VignetteIndexEntry{Benchmarking data.table}
   %\VignetteEngine{knitr::rmarkdown}
@@ -32,7 +33,7 @@ library(data.table)
 
 ```
 
-Benchmarking any code seems easy only on the surface. In practice, there are many pitfalls to accidentally fall into, and many opportunities to draw wrong conclusions. This vignette documents mistakes we've made or encountered to better guide speed comparisons of data.table with base R and other packages. 
+Benchmarking any code seems easy only on the surface. In practice, there are many pitfalls to accidentally fall into, and many opportunities to draw wrong conclusions. This vignette documents mistakes we've made or encountered to better guide comparisons of data.table's speed with base R and other packages. 
 
 ## Know thy query
 Different tasks require different approaches to benchmarking. For example, measuring queries that take several minutes and are run only occasionally require a very different approach to measuring very short tasks you run frequently. Similarly, benchmarking specific tasks requires a different approach than does benchmarking data.table as a general tool.
@@ -40,7 +41,7 @@ Different tasks require different approaches to benchmarking. For example, measu
 In general, performance of code should be measured by timing the code once, timing using multiple runs using `microbenchmark`, at different scales, and with optimizations turned on and off.
 
 ## Measure at different scales, or at the scale specific to the task
-Operations in data.table are designed with large data in mind. Operations on small data sets are not typically faster than base R methods. For example, consider the following two ways to update a column on certain rows of a data.table, first on a data frame of 5 rows then on a data frame of 1 million rows:
+Operations in data.table are designed with large data in mind. As a result the speed of operations on small data sets are rarely representative. For example, consider the following ways to update a column on certain rows of a data.table, first on a data frame of 5 rows then on a data frame of 1 million rows:
 
 ```r
 # options(digits = 1)
@@ -102,7 +103,7 @@ That is, the measured execution time of data.table appears to be nearly constant
 
 Put another way, for this query, data.table appears to be very fast but has a substantial *call overhead*. 
 
-Some of the difference can be explained by data.table's auto index. If we turn off auto-indexing, we see data.table's overhead reduce at the cost of speed when the number of rows is high.
+Some of the difference can be explained by data.table's use of auto-indexing. With auto-indexing turned off, data.table's overhead is reduced somewhat for small data sets but at the apparent cost of slower speeds on large data sets.
 
 ```{r}
 compare_update(N = 10^(1:7), 
@@ -119,7 +120,9 @@ compare_update(N = 10^(1:7),
 **tbd**
 
 ## Disk caching may make fread appear faster than it is
-When assessing the performance of fread, be aware that the first read is almost always slower than subsequent reads. For example, scaling the `DT` used in `fread`'s help page to `n=1e8`, the first time takes 12 s whereas the second and subsequent runs take 4 s. The relevant performance measure is almost always the first (slower) timing. We recommend to always clear the cache when measuring fread's performance, as follows:
+When assessing the performance of fread, be aware that the first read is almost always slower than subsequent reads. For example, when this vignette was written, the `DT` used in `fread`'s help page scaled to `n=1e8` took 12 seconds to read whereas the second and subsequent runs took only 4 seconds. 
+
+The relevant performance measure is almost always the first (slower) timing. We recommend to always clear the cache when measuring fread's performance, as follows:
 
 ```sh
 free -g
