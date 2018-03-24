@@ -2,7 +2,7 @@
 title: "Benchmarking data.table"
 date: "`r Sys.Date()`"
 output:
-  html_document:
+  rmarkdown::html_document:
     toc: true
     number_sections: true
     
@@ -132,7 +132,7 @@ sudo hdparm -t /dev/sda
 ```
 
 ## Account for the effect of internal optimizations
-> *See also the help file `?"data.table-optimize"`
+> *See also the help file `?"data.table-optimize"`*
 
 `data.table` may automatically optimize part of the expression being timed which can result in timings which are inaccurately fast and timings which are inaccurately slow. In general, unless you are measuring the performance of the optimization itself, you should measure your code both once and multiple times. If there is a big discrepancy between the single timing and the average of multiple timings, you should account for this when assessing performance.
 
