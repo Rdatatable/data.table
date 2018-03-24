@@ -103,7 +103,19 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
 
 17. `update.dev.pkg` is new function to update package from development repository, it will download package sources only when newer commit is available in repository. `data.table::update.dev.pkg()` defaults updates `data.table`, but any package can be used.
 
-18. `as.matrix.data.table` method now has an additional `rownames` argument allowing for a single column to be used as the `rownames` after conversion to a `matrix`. Thanks to @sritchie73 for the suggestion, use cases, [#2692](https://github.com/Rdatatable/data.table/issues/2692) and implementation [PR#2702](https://github.com/Rdatatable/data.table/pull/2702) and @MichaelChirico for additional use cases.
+18. Item 1 in NEWS for [v1.10.2](https://github.com/Rdatatable/data.table/blob/master/NEWS.md#changes-in-v1102--on-cran-31-jan-2017) on CRAN in Jan 2017 included :
+> When j is a symbol prefixed with `..` it will be looked up in calling scope and its value taken to be column names or numbers.
+> When you see the `..` prefix think one-level-up, like the directory `..` in all operating systems means the parent directory.
+> In future the `..` prefix could be made to work on all symbols apearing anywhere inside `DT[...]`.
+The response has been positive ([this tweet](https://twitter.com/MattDowle/status/967290562725359617) and [FR#2655](https://github.com/Rdatatable/data.table/issues/2655)) and so this prefix is now expanded to all symbols appearing in `j=` as a first step; e.g. :
+    ```R
+    cols = "colB"
+    DT[, c(..cols, "colC")]   # same as DT[, .(colB,colC)]
+    DT[, -..cols]             # all columns other than colB
+    ```
+Thus, `with=` should no longer be needed in any cases. Please change to using the `..` prefix and in a few years we will start to formally deprecate and remove the `with=` parameter.  If this is well received, the `..` prefix could be expanded to symbols appearing in `i=` and `by=`, too.
+
+19. `as.matrix.data.table` method now has an additional `rownames` argument allowing for a single column to be used as the `rownames` after conversion to a `matrix`. Thanks to @sritchie73 for the suggestion, use cases, [#2692](https://github.com/Rdatatable/data.table/issues/2692) and implementation [PR#2702](https://github.com/Rdatatable/data.table/pull/2702) and @MichaelChirico for additional use cases.
 
 #### BUG FIXES
 

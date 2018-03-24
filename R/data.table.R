@@ -268,42 +268,51 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   rightcols = leftcols = integer()
   optimizedSubset = FALSE ## flag: tells, whether a normal query was optimized into a join.
   if (!with && missing(j)) stop("j must be provided when with=FALSE")
+  ..syms = NULL
+  av = NULL
+  jsub = NULL
   if (!missing(j)) {
     jsub = replace_dot_alias(substitute(j))
     root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
     if (root == ":" ||
         (root %chin% c("-","!") && is.call(jsub[[2L]]) && jsub[[2L]][[1L]]=="(" && is.call(jsub[[2L]][[2L]]) && jsub[[2L]][[2L]][[1L]]==":") ||
-        ( !length(all.vars(jsub)) &&
+        ( (!length(av<-all.vars(jsub)) || all(substring(av,1L,2L)=="..")) &&
           root %chin% c("","c","paste","paste0","-","!") &&
           missing(by) )) {   # test 763. TODO: likely that !missing(by) iff with==TRUE (so, with can be removed)
       # When no variable names (i.e. symbols) occur in j, scope doesn't matter because there are no symbols to find.
+      # If variable names do occur, but they are all prefixed with .., then that means look up in calling scope.
       # Automatically set with=FALSE in this case so that DT[,1], DT[,2:3], DT[,"someCol"] and DT[,c("colB","colD")]
       # work as expected.  As before, a vector will never be returned, but a single column data.table
       # for type consistency with >1 cases. To return a single vector use DT[["someCol"]] or DT[[3]].
       # The root==":" is to allow DT[,colC:colH] even though that contains two variable names.
       # root == "-" or "!" is for tests 1504.11 and 1504.13 (a : with a ! or - modifier root)
-      # This change won't break anything because it didn't do anything anyway; i.e. used to return the
-      # j value straight back: DT[,1] == 1 which isn't possibly useful.  It was that for consistency
-      # of learning since it was simpler to state that j always gets eval'd within the scope of DT.
-      # We don't want to evaluate j at all in making this decision because i) evaluating itself could
+      # We don't want to evaluate j at all in making this decision because i) evaluating could itself
       # increment some variable and not intended to be evaluated a 2nd time later on and ii) we don't
       # want decisions like this to depend on the data or vector lengths since that can introduce
-      # inconistency reminiscent of drop in [.data.table that we seek to avoid.
+      # inconistency reminiscent of drop=TRUE in [.data.frame that we seek to avoid.
       with=FALSE
-    } else if (is.name(jsub)) {
-      jsubChar = as.character(jsub)
-      if (substring(jsubChar, 1L, 2L) == "..") {
-        if (nchar(jsubChar)==2L) stop("The symbol .. is invalid. The .. prefix must be followed by at least one character.")
-        if (!exists(jsubChar, where=parent.frame())) {
-          # We have recommended manual ".." prefix in the past so that needs to keep working and take precedence
-          jsub = as.name(jsubChar<-substring(jsubChar, 3L))
+      if (length(av)) {
+        for (..name in av) {
+          name = substring(..name, 3L)
+          if (name=="") stop("The symbol .. is invalid. The .. prefix must be followed by at least one character.")
+          if (!exists(name, where=parent.frame())) {
+            stop("Variable '",name,"' is not found in calling scope. Looking in calling scope because you used the .. prefix.",
+              if (exists(..name, where=parent.frame()))
+                paste0(" Variable '..",name,"' does exist in calling scope though, so please just removed the .. prefix from that variable name in calling scope.")
+                # We have recommended 'manual' .. prefix in the past, so try to be helpful
+              else
+                ""
+            )
+          } else if (exists(..name, where=parent.frame())) {
+            warning("Both '",name,"' and '..", name, "' exist in calling scope. Please remove the '..", name,"' variable in calling scope for clarity.")
+          }
         }
-        with = FALSE
+        ..syms = av
       }
-      if (!with && !exists(jsubChar, where=parent.frame())) {
-        # Would fail anyway with 'object 'a' not found' but give a more helpful error. Thanks to Jan's suggestion.
-        stop("Variable '",jsubChar,"' is not found in calling scope. Looking in calling scope because either you used the .. prefix or set with=FALSE")
-      }
+    } else if (is.name(jsub)) {
+      if (substring(jsub, 1L, 2L) == "..") stop("Internal error:  DT[, ..var] should be dealt with by the branch above now.")
+      if (!with && !exists(as.character(jsub), where=parent.frame()))
+        stop("Variable '",jsub,"' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.")
     }
     if (root=="{") {
       if (length(jsub) == 2L) {
@@ -778,7 +787,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       if (is.call(jsub) && length(jsub) == 3L && jsub[[1L]] == ":") {
         j = eval(jsub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame()) # else j will be evaluated for the first time on next line
       } else {
-        j = eval(jsub, parent.frame(), parent.frame())
+        names(..syms) = ..syms
+        j = eval(jsub, lapply(substring(..syms,3L), get, pos=parent.frame()), parent.frame())
       }
       if (is.logical(j)) j <- which(j)
       if (!length(j)) return( null.data.table() )
@@ -1220,6 +1230,18 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     as.POSIXct(base::strptime(x, ...))
   }
 
+  syms = all.vars(jsub)
+  syms = syms[ substring(syms,1L,2L)==".." ]
+  syms = syms[ substring(syms,3L,3L)!="." ]  # exclude ellipsis
+  for (sym in syms) {
+    getName = substring(sym, 3L)
+    if (sym %chin% names(x))
+      stop(sym," in j is looking for ",getName," in calling scope, but a column '", sym, "' exists. Column names should not start with ..")
+    if (!exists(getName, parent.frame()))
+      stop("Variable '",getName,"' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter.")
+    assign(sym, get(getName, parent.frame()), SDenv)
+  }
+
   # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
   if (missing(by) || (!byjoin && !length(byval))) {
     # No grouping: 'by' = missing | NULL | character() | "" | list()
@@ -1312,7 +1334,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     # There isn't a copy of the columns here, the xvar symbols point to the SD columns (copy-on-write).
 
     if (is.name(jsub) && is.null(lhs) && !exists(jsubChar<-as.character(jsub), SDenv, inherits=FALSE)) {
-      stop("j (the 2nd argument inside [...]) is a single symbol but column name '",jsubChar,"' is not found. Perhaps you intended DT[,..",jsubChar,"] or DT[,",jsubChar,",with=FALSE]. This difference to data.frame is deliberate and explained in FAQ 1.1.")
+      stop("j (the 2nd argument inside [...]) is a single symbol but column name '",jsubChar,"' is not found. Perhaps you intended DT[, ..",jsubChar,"]. This difference to data.frame is deliberate and explained in FAQ 1.1.")
     }
 
     jval = eval(jsub, SDenv, parent.frame())

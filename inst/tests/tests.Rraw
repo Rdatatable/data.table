@@ -11522,26 +11522,48 @@ test(1893.2, print(DF), output=txt)
 txt = 'A,B\n109,MT\n7,N\n11,NA\n41,NB\n60,ND\n1,""\n2,\n3,"NA"\n4,NA\n'
 test(1893.3, print(fread(txt,na.strings="")), output="A    B\n1: 109   MT\n2:   7    N\n3:  11   NA\n4:  41   NB\n5:  60   ND\n6:   1     \n7:   2 <NA>\n8:   3   NA\n9:   4   NA")
 
-# Allow column to be used as rownames when converting to matrix # 2702
+# .. prefix on all variables in j=, #2655 in part
+DT = data.table(x=1:3, y=4:6, z=7:9)
+cols = "z"
+test(1894.1, DT[, ..cols], DT[,.(z)])
+test(1894.2, DT[, c(..cols, "x")], DT[,.(z,x)])
+test(1894.3, DT[, !..cols], DT[,.(x,y)])
+..cols = "x"
+test(1894.4, DT[, !..cols], DT[,.(x,y)], warning="Both 'cols' and '..cols' exist in calling scope. Please remove the '..cols' variable.*clarity")
+rm(..cols)
+cols = c("z","x")
+test(1894.5, DT[, -..cols], DT[,.(y)])
+coef = 10L
+test(1894.6, DT[, y*..coef], INT(40,50,60))
+test(1894.7, DT[x==2, z*..coef], 80L)
+test(1894.8, DT[, sum(y*..coef), by=x%%2L], data.table(x=1:0, V1=INT(100,50)))
+if (exists("z")) rm(z)
+test(1894.9, DT[, sum(z)*..z], error="Variable 'z' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter.")
+z = 3L
+test(1894.11, DT[, sum(z)*..z], 72L)
+setnames(DT, "z", "..z")
+test(1894.12, DT[, sum(y)*..z], error="..z in j is looking for z in calling scope, but a column '..z' exists. Column names should not start with ..")
+
+# Allow column to be used as rownames when converting to matrix # 1895
 DT = data.table(id = letters[1:4], X = 1:4, Y = 5:8)
 mat <- matrix(1:8, ncol = 2, dimnames=list(letters[1:4], c("X", "Y")))
-test(2702.01, as.matrix(DT, 1), mat)
-test(2702.02, as.matrix(DT, "id"), mat)
-test(2702.03, as.matrix(DT, TRUE), mat)
+test(1895.01, as.matrix(DT, 1), mat)
+test(1895.02, as.matrix(DT, "id"), mat)
+test(1895.03, as.matrix(DT, TRUE), mat)
 setkey(DT, id)
-test(2702.04, as.matrix(DT, TRUE), mat)
+test(1895.04, as.matrix(DT, TRUE), mat)
 # errors
-test(2702.05, as.matrix(DT, -1), error="rownames is -1 which is outside the column number range")
-test(2702.06, as.matrix(DT, "Z"), error="Z is not a column of x")
-test(2702.07, as.matrix(DT, c(1,2)), error="rownames must be a single column in x")
-test(2702.08, as.matrix(DT, complex(1)), error="rownames must be TRUE, a column index, or a column name in x")
+test(1895.05, as.matrix(DT, -1), error="rownames is -1 which is outside the column number range")
+test(1895.06, as.matrix(DT, "Z"), error="Z is not a column of x")
+test(1895.07, as.matrix(DT, c(1,2)), error="rownames must be a single column in x")
+test(1895.08, as.matrix(DT, complex(1)), error="rownames must be TRUE, a column index, or a column name in x")
 # warningsi
 mat2 <- matrix(c(letters[1:4], 1:8), ncol=3, dimnames=list(NULL, c("id", "X", "Y")))
-test(2702.09, as.matrix(DT, NA), mat2, warning="rownames is NA, ignoring rownames")
-test(2702.10, as.matrix(DT, NULL), mat2, warning="rownames is NULL, ignoring rownames")
-test(2702.11, as.matrix(DT, FALSE), mat2, warning="rownames is FALSE, ignoring rownames")
+test(1895.09, as.matrix(DT, NA), mat2, warning="rownames is NA, ignoring rownames")
+test(1895.10, as.matrix(DT, NULL), mat2, warning="rownames is NULL, ignoring rownames")
+test(1895.11, as.matrix(DT, FALSE), mat2, warning="rownames is FALSE, ignoring rownames")
 setkey(DT, id, X)
-test(2702.12, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys found in key(x), using first column instead")
+test(1895.12, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys found in key(x), using first column instead")
 
 
 ###################################
