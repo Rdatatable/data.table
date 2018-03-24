@@ -11530,6 +11530,19 @@ test(2702.2, as.matrix(DT, "id"), mat)
 test(2702.3, as.matrix(DT, TRUE), mat)
 setkey(DT, id)
 test(2702.4, as.matrix(DT, TRUE), mat)
+# errors
+test(2702.5, as.matrix(DT, -1), error="rownames is -1 which is outside the column number range")
+test(2702.6, as.matrix(DT, "Z"), error="Z is not a column of x")
+test(2702.7, as.matrix(DT, c(1,2)), error="rownames must be a single column of x")
+test(2702.8, as.matrix(DT, complex(1)), error="rownames must be TRUE, a column index, or a column name in x")
+# warnings
+mat2 <- matrix(c(letters[1:4], 1:8), ncol=3, dimnames=list(NULL, c("id", "X", "Y")))
+test(2702.9, as.matrix(DT, NA), mat2, warning="rownames is NA, ignoring rownames")
+test(2702.10, as.matrix(DT, NULL), mat2, warning="rownames is NULL, ignoring rownames")
+test(2702.11, as.matrix(DT, FALSE), mat2, warning="rownames is FALSE, ignoring rownames")
+setkey(DT, id, X)
+test(2702.12, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys found in key(x), using first column instead")
+
 
 ###################################
 #  Add new tests above this line  #
