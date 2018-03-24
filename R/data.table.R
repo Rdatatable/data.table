@@ -304,7 +304,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 ""
             )
           } else if (exists(..name, where=parent.frame())) {
-            warning("Both '",name,"' and '..", name, "' exist in calling scope. Please remove the '..", name," variable in calling scope for clarity.")
+            warning("Both '",name,"' and '..", name, "' exist in calling scope. Please remove the '..", name,"' variable in calling scope for clarity.")
           }
         }
         ..syms = av

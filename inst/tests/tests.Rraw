@@ -11528,18 +11528,21 @@ cols = "z"
 test(1894.1, DT[, ..cols], DT[,.(z)])
 test(1894.2, DT[, c(..cols, "x")], DT[,.(z,x)])
 test(1894.3, DT[, !..cols], DT[,.(x,y)])
+..cols = "x"
+test(1894.4, DT[, !..cols], DT[,.(x,y)], warning="Both 'cols' and '..cols' exist in calling scope. Please remove the '..cols' variable.*clarity")
+rm(..cols)
 cols = c("z","x")
-test(1894.4, DT[, -..cols], DT[,.(y)])
+test(1894.5, DT[, -..cols], DT[,.(y)])
 coef = 10L
-test(1894.5, DT[, y*..coef], INT(40,50,60))
-test(1894.6, DT[x==2, z*..coef], 80L)
-test(1894.7, DT[, sum(y*..coef), by=x%%2L], data.table(x=1:0, V1=INT(100,50)))
+test(1894.6, DT[, y*..coef], INT(40,50,60))
+test(1894.7, DT[x==2, z*..coef], 80L)
+test(1894.8, DT[, sum(y*..coef), by=x%%2L], data.table(x=1:0, V1=INT(100,50)))
 if (exists("z")) rm(z)
-test(1894.8, DT[, sum(z)*..z], error="Variable 'z' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter.")
+test(1894.9, DT[, sum(z)*..z], error="Variable 'z' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter.")
 z = 3L
-test(1894.9, DT[, sum(z)*..z], 72L)
+test(1894.11, DT[, sum(z)*..z], 72L)
 setnames(DT, "z", "..z")
-test(1894.11, DT[, sum(y)*..z], error="..z in j is looking for z in calling scope, but a column '..z' exists. Column names should not start with ..")
+test(1894.12, DT[, sum(y)*..z], error="..z in j is looking for z in calling scope, but a column '..z' exists. Column names should not start with ..")
 
 
 ###################################
