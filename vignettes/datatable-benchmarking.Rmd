@@ -35,9 +35,11 @@ library(data.table)
 Benchmarking any code seems easy only on the surface. In practice, there are many pitfalls to accidentally fall into, and many opportunities to draw wrong conclusions. This vignette documents mistakes we've made or encountered to better guide speed comparisons of data.table with base R and other packages. 
 
 ## Know thy query
-Different tasks require different approaches to benchmarking. For example, measuring queries that take several minutes and are run only occasionally require a very different approach to very short tasks you run frequently. Similarly, benchmarking specific tasks requires a different approach than does benchmarking data.table as a general tool.
+Different tasks require different approaches to benchmarking. For example, measuring queries that take several minutes and are run only occasionally require a very different approach to measuring very short tasks you run frequently. Similarly, benchmarking specific tasks requires a different approach than does benchmarking data.table as a general tool.
 
-## Scale matters
+In general, performance of code should be measured by timing the code once, timing using multiple runs using `microbenchmark`, at different scales, and with optimizations turned on and off.
+
+## Measure at different scales, or at the scale specific to the task
 Operations in data.table are designed with large data in mind. Operations on small data sets are not typically faster than base R methods. For example, consider the following two ways to update a column on certain rows of a data.table, first on a data frame of 5 rows then on a data frame of 1 million rows:
 
 ```r
@@ -46,7 +48,7 @@ N <- 5
 DF <- data.frame(x = sample.int(N), 
                  y = 0)
 DT <- as.data.table(DF)
-microbenchmark(baDF$y[DF$x == 2] <- 1, DT[x == 2, y := 1])
+microbenchmark(DF$y[DF$x == 2] <- 1, DT[x == 2, y := 1])
 #> Unit: microseconds
 #>        expr  min   lq mean median   uq  max neval cld
 #>        base   24   29   35     38   40   81   100  a 
@@ -100,7 +102,7 @@ That is, the measured execution time of data.table appears to be nearly constant
 
 Put another way, for this query, data.table appears to be very fast but has a substantial *call overhead*. 
 
-Some of the difference can be explained by data.table's auto index. If we turn off auto-indexing, we see that 
+Some of the difference can be explained by data.table's auto index. If we turn off auto-indexing, we see data.table's overhead reduce at the cost of speed when the number of rows is high.
 
 ```{r}
 compare_update(N = 10^(1:7), 
@@ -113,55 +115,11 @@ compare_update(N = 10^(1:7),
   scale_y_log10("ns")
 ```
 
+## Width matters
+**tbd**
 
-## `microbenchmark` is not always appropriate
-Repetitive benchmarking like that used by `microbenchmark` may not always be appropriate. 
-While it makes perfect sense for timing atomic calculations, it may provide misleading results for common data processing tasks, which are typically larger than the scale for which `microbenchmark` was designed, and run only once.
-
-For example, the following gives the impression that `data.table` is an order of magnitude slower than `data.frame` for updating columns.
-
-``` r
-library(microbenchmark)
-library(data.table)
-DF <- data.frame(x = 1:5)
-DT <- data.table(x = 1:5)
-microbenchmark(DF$y <- seq.int(nrow(DF)), DT[, y := .I])
-#> Unit: microseconds
-#>                       expr     min      lq      mean   median       uq        max neval cld
-#>  DF$y <- seq.int(nrow(DF))   6.927   9.939  14.37229  15.2095  17.4690     35.840   100  a 
-#>          DT[, `:=`(y, .I)] 207.510 221.064 276.51600 228.7435 238.0795   4912.183   100   b
-```
-
-yet there is typically no real difference:
-
-```r
-n = 1e7
-DT = data.table( a=sample(1:1000,n,replace=TRUE),
-                 b=sample(1:1000,n,replace=TRUE),
-                 c=rnorm(n),
-                 d=sample(c("foo","bar","baz","qux","quux"),n,replace=TRUE),
-                 e=rnorm(n),
-                 f=sample(1:1000,n,replace=TRUE) )
-DF <- as.data.frame(DT)
-system.time(DF$y <- seq.int(nrow(DF)))
-#>    user  system elapsed 
-#>    0.01    0.00    0.02
-system.time(DT[, y := .I])
-#>    user  system elapsed 
-#>    0.01    0.01    0.03
-```
-
-Further, when benchmarking `set*` functions it only makes sense to measure the first run. Those functions update data.table by reference thus after the first run the data.table involved in the measurement will have changed.
-
-To correctly measure the average performance of `set`, protect your data.table from being updated by reference operations by using `copy` or `data.table:::shallow`. Be aware `copy` might be very expensive relative to the operation you want to time as it duplicates the whole table, but this is what other packages usually do. It is unlikely we want to include duplication time in time of the actual task we are benchmarking. It may be prudent to measure the execution time of `copy` alone and subtract it from the operation with both `copy` and the operation being timed.
-
-Matt once said:
-
-> I'm very wary of benchmarks measured in anything under 1 second. Much prefer 10 seconds or more for a single run, achieved by increasing data size. A repetition count of 500 is setting off alarm bells. 3-5 runs should be enough to convince on larger data. Call overhead and time to GC affect inferences at this very small scale.
-
-## fread: clear caches
-
-Each `fread` call should be run in a fresh session. Use the following shell commands before timing. This clears OS cache file in RAM and HD cache.
+## Disk caching may make fread appear faster than it is
+When assessing the performance of fread, be aware that the first read is almost always slower than subsequent reads. For example, scaling the `DT` used in `fread`'s help page to `n=1e8`, the first time takes 12 s whereas the second and subsequent runs take 4 s. The relevant performance measure is almost always the first (slower) timing. We recommend to always clear the cache when measuring fread's performance, as follows:
 
 ```sh
 free -g
@@ -170,33 +128,19 @@ sudo lshw -class disk
 sudo hdparm -t /dev/sda
 ```
 
-## subset: index optimization switch off
+## Account for the effect of internal optimizations
+> *See also the help file `?"data.table-optimize"`
 
-Index optimization will currently be turned off when doing subset using index and when cross product of elements provided to filter on exceeds > 1e4.
+`data.table` may automatically optimize part of the expression being timed which can result in timings which are inaccurately fast and timings which are inaccurately slow. In general, unless you are measuring the performance of the optimization itself, you should measure your code both once and multiple times. If there is a big discrepancy between the single timing and the average of multiple timings, you should account for this when assessing performance.
 
-## subset: index aware benchmarking
+Operations by reference can be especially prone to mismeasurement. For example, `setkey` on a single column of 100 million rows takes almost 8 s on the first run, yet subsequent runs are almost a million times faster. Of course, sometimes `setkey` *is* called on data.table that's already keyed and this optimization is not unimportant, but an unqualified statement that `setkey` can sort 100 million rows in a few microseconds is not accurate.
 
-For convenience data.table automatically builds an index on each column involved in a subset query. Index creation adds some overhead to the first subset, but greatly reduces the time of subsequent queries on those columns. The best way to measure the speed of a particular subset query is to measure both the index creation and the query with the index separately. Depending on your use case, one or the other may be more important.
-To control usage of index use following options (see `?datatable.optimize` for more details):
+## Miscellaneous advice
 
-```r
-options(datatable.optimize=2L)
-options(datatable.optimize=3L)
-options(datatable.auto.index=TRUE)
-options(datatable.use.index=TRUE)
-```
-`options(datatable.optimize=2L)` will turn off optimization of subsets completely, while `options(datatable.optimize=3L)` will switch it back on.
-`use.index=FALSE` will force query not to use index even if it exists, but existing keys are used for optimization. `auto.index=FALSE` only disables building index automatically when doing subset on non-indexed data.
+1. Run R with the `--vanilla` option when timing
+2. Ensure you are using the development version of data.table
+3. If judging data.table's performance against other packages or other software, make sure you've also taken the time to understand the best way to use and measure the other implementation. Generally, if you've made a comparison between two software packages, you should reach out to the authors of the package that's compared unfavourably to avoid unfairly painting them in a bad light. If that happens to be data.table, raise an issue on GitHub.
 
 
 
 
-
-## multithreaded processing
-
-One of the main factors that is likely to impact timings is the number of threads on your machine. In recent versions of data.table some of the functions has been parallelized.
-You can control how much threads you want to use with `setDTthreads`.
-
-## avoid `data.table()` inside a loop
-
-As of now `data.table()` has an overhead, thus inside loops it is preferred to use `as.data.table()` or `setDT()` on a valid list.
