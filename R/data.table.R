@@ -1891,7 +1891,7 @@ as.matrix.data.table <- function(x, rownames, ...) {
       stop("rownames must be a single column in x")
     } else if (is.na(rownames)) {
       warning("rownames is NA, ignoring rownames")
-    } else if (is.logical(rownames) && !isTRUE(rownames)) {
+    } else if (identical(rownames, FALSE)) {
       warning("rownames is FALSE, ignoring rownames")
     } else if (!(is.logical(rownames) || is.character(rownames) || is.numeric(rownames))) {
       # E.g. because rownames is some sort of object that cant be converted to a column index
