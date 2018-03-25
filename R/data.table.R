@@ -1897,7 +1897,7 @@ as.matrix.data.table <- function(x, rownames, ...) {
       # E.g. because rownames is some sort of object that cant be converted to a column index
       stop("rownames must be TRUE, a column index, or a column name in x")
     } else {
-      if (is.logical(rownames) && isTRUE(rownames)) {
+      if (identical(rownames, TRUE)) {
         if (haskey(x)) { 
           rownames <- key(x) 
           if (length(rownames) > 1) {
