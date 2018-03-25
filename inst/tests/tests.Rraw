@@ -11547,23 +11547,25 @@ test(1894.12, DT[, sum(y)*..z], error="..z in j is looking for z in calling scop
 # Allow column to be used as rownames when converting to matrix # 1895
 DT = data.table(id = letters[1:4], X = 1:4, Y = 5:8)
 mat <- matrix(1:8, ncol = 2, dimnames=list(letters[1:4], c("X", "Y")))
+mat2 <- matrix(c(letters[1:4], 1:8), ncol=3, dimnames=list(NULL, c("id", "X", "Y")))
+mat3 <- matrix(c(letters[1:4], 1:8), ncol=3, dimnames=list(1:4, c("id", "X", "Y")))
 test(1895.01, as.matrix(DT, 1), mat)
 test(1895.02, as.matrix(DT, "id"), mat)
 test(1895.03, as.matrix(DT, TRUE), mat)
 setkey(DT, id)
 test(1895.04, as.matrix(DT, TRUE), mat)
+test(1895.05, as.matrix(DT, 1:4), mat3)
 # errors
-test(1895.05, as.matrix(DT, -1), error="rownames is -1 which is outside the column number range")
-test(1895.06, as.matrix(DT, "Z"), error="Z is not a column of x")
-test(1895.07, as.matrix(DT, c(1,2)), error="rownames must be a single column in x")
-test(1895.08, as.matrix(DT, complex(1)), error="rownames must be TRUE, a column index, or a column name in x")
-# warningsi
-mat2 <- matrix(c(letters[1:4], 1:8), ncol=3, dimnames=list(NULL, c("id", "X", "Y")))
-test(1895.09, as.matrix(DT, NA), mat2, warning="rownames is NA, ignoring rownames")
-test(1895.10, as.matrix(DT, NULL), mat2, warning="rownames is NULL, ignoring rownames")
-test(1895.11, as.matrix(DT, FALSE), mat2, warning="rownames is FALSE, ignoring rownames")
+test(1895.06, as.matrix(DT, -1), error="rownames is -1 which is outside the column number range")
+test(1895.07, as.matrix(DT, "Z"), error="Z is not a column of x")
+test(1895.08, as.matrix(DT, c(1,2)), error="rownames must be a single column in x or a vector of row names of length nrow(x)")
+test(1895.09, as.matrix(DT, complex(1)), error="rownames must be TRUE, a column index, a column name in x, or a vector of row names")
+# warnings
+test(1895.10, as.matrix(DT, NA), mat2, warning="rownames is NA, ignoring rownames")
+test(1895.11, as.matrix(DT, NULL), mat2, warning="rownames is NULL, ignoring rownames")
+test(1895.12, as.matrix(DT, FALSE), mat2, warning="rownames is FALSE, ignoring rownames")
 setkey(DT, id, X)
-test(1895.12, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys found in key(x), using first column instead")
+test(1895.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys found in key(x), using first column instead")
 
 
 ###################################

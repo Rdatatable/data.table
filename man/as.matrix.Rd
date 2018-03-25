@@ -12,10 +12,11 @@ of the columns in the \code{data.table} as the \code{matrix} \code{rownames}.
 \arguments{
 \item{x}{a \code{data.table}}
 \item{rownames}{optional, a single column name or column index to use as 
-the \code{rownames} inthe returned \code{matrix}. If \code{TRUE} the
+the \code{rownames} in the returned \code{matrix}. If \code{TRUE} the
 \code{\link{key}} of the \code{data.table} will be used if it is a 
 single column, otherwise the first column in the \code{data.table} will
-be used.}
+be used. Alternative a vector of length \code{nrow(x)} to assign as the
+row names of the returned \code{matrix}.}
 \item{\dots}{additional arguments to be passed to or from methods.}
 }
 
