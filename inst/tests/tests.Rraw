@@ -11544,7 +11544,7 @@ test(1894.11, DT[, sum(z)*..z], 72L)
 setnames(DT, "z", "..z")
 test(1894.12, DT[, sum(y)*..z], error="..z in j is looking for z in calling scope, but a column '..z' exists. Column names should not start with ..")
 
-# Allow column to be used as rownames when converting to matrix # 1895
+# Allow column to be used as rownames when converting to matrix #2702
 DT = data.table(id = letters[1:4], X = 1:4, Y = 5:8)
 mat <- matrix(1:8, ncol = 2, dimnames=list(letters[1:4], c("X", "Y")))
 mat2 <- matrix(c(letters[1:4], 1:8), ncol=3, dimnames=list(NULL, c("id", "X", "Y")))
