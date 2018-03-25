@@ -1918,11 +1918,13 @@ as.matrix.data.table <- function(x, rownames, ...) {
       }
     }
   }
-  if (!is.null(rnc)) { # If there are rownames, extract and drop that column
+  # If the rownames argument has been used, and is a single column,
+  # extract that column's index (rnc) and drop it from x
+  if (!is.null(rnc)) { 
     rn <- x[[rnc]]
     dm <- dim(x) - c(0, 1)
     cn <- names(x)[-rnc]
-    X <- x[, -rnc, with = FALSE]
+    X <- x[, .SD, .SDcols = cn]
   } else {
     dm <- dim(x) 
     cn <- names(x) 
