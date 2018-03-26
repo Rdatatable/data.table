@@ -592,7 +592,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       io = if (missing(on)) haskey(i) else identical(unname(on), head(key(i), length(on)))
       i = .shallow(i, retain.key = io)
       ans = bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
-      # Fix for #1700 and related issues; keep columns used for non-equi joins from both x and i
+      # Fix for #1615, #1700 and related issues - keep columns used for non-equi joins from both x and i.
+      # keep copies of the full leftcols and rightcols which are needed if by = .EACHI is also used.
+      allleftcols = leftcols
+      allrightcols = rightcols
+      # Drop any non-equi join columns from leftcols and rightcols so they are kept from both x and i
       if (!missing(on) && !is.na(non_equi)) {
         leftcols = leftcols[-non_equi]
         rightcols = rightcols[-non_equi]
@@ -1258,6 +1262,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       }
     }
   }  # end of  if !missing(j)
+  
+  # Restore full leftcols and rightcols now that we have kept non-equi
+  # and rolling join columns from both x and i.
+  if (!identical(leftcols, integer(0L))) leftcols = allleftcols
+  if (!identical(rightcols, integer(0L))) rightcols = allrightcols
 
   SDenv = new.env(parent=parent.frame())
   # taking care of warnings for posixlt type, #646
