@@ -594,13 +594,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       ans = bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
       # Fix for #1700 and related issues; keep columns used for non-equi joins from both x and i
       if (!missing(on) && !is.na(non_equi)) {
-        leftcols <- leftcols[-non_equi]
-        rightcols <- rightcols[-non_equi]
+        leftcols = leftcols[-non_equi]
+        rightcols = rightcols[-non_equi]
       }
       # Do the same for rolling joins. The column used for the roll is always the last key column
       if (roll != 0) { 
-        leftcols <- leftcols[-length(leftcols)]
-        rightcols <- rightcols[-length(rightcols)]
+        leftcols = leftcols[-length(leftcols)]
+        rightcols = rightcols[-length(rightcols)]
       }
       # If there are only non-equi / roll keys then leftcols and rightcols become integer(0), 
       # which is used as a switch to keep only columns in x. Use NULL instead to signify 
