@@ -592,6 +592,16 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       io = if (missing(on)) haskey(i) else identical(unname(on), head(key(i), length(on)))
       i = .shallow(i, retain.key = io)
       ans = bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
+      # Fix for #1700 and related issues; keep columns used for non-equi joins from both x and i
+      if (!missing(on) && !is.na(non_equi)) {
+        leftcols <- leftcols[-non_equi]
+        rightcols <- rightcols[-non_equi]
+      }
+      # Do the same for rolling joins. The column used for the roll is always the last key column
+      if (roll != 0) { 
+        leftcols <- leftcols[-length(leftcols)]
+        rightcols <- rightcols[-length(rightcols)]
+      }
       # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this
       # 'setorder', as there's another 'setorder' in generating 'irows' below...
       if (length(ans$indices)) setorder(setDT(ans[1L:3L]), indices)
