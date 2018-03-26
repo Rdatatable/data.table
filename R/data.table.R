@@ -602,6 +602,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         leftcols <- leftcols[-length(leftcols)]
         rightcols <- rightcols[-length(rightcols)]
       }
+      # If there are only non-equi / roll keys then leftcols and rightcols become integer(0), 
+      # which is used as a switch to keep only columns in x. Use NULL instead to signify 
+      # keeping all columns in both x and i. 
+      if (!length(leftcols)) leftcols = NULL
+      if (!length(rightcols)) rightcols = NULL
+      
       # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this
       # 'setorder', as there's another 'setorder' in generating 'irows' below...
       if (length(ans$indices)) setorder(setDT(ans[1L:3L]), indices)
@@ -745,7 +751,16 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (missing(j)) {
     # missing(by)==TRUE was already checked above before dealing with i
     if (!length(x)) return(null.data.table())
-    if (!length(leftcols)) {
+    if (is.null(leftcols)) { # Keep all columns for non-equi / roll joins with no equi keys
+      jisvars = names(i)
+      tt = jisvars %chin% names(x)
+      if (length(tt)) jisvars[tt] = paste("i.",jisvars[tt],sep="")
+      nx = names(x)
+      ansvars = make.unique(c(nx, jisvars))
+      icols = seq_along(i)
+      icolsAns = seq.int(length(nx)+1, length.out=ncol(i))
+      xcols = xcolsAns = seq_along(x)
+    } else if (!length(leftcols)) { 
       ansvars = nx = names(x)
       jisvars = character()
       xcols = xcolsAns = seq_along(x)
