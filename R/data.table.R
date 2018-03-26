@@ -1225,6 +1225,17 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         xcols = w
         xcolsAns = seq_along(ansvars)
         icols = icolsAns = integer()
+      } else if (is.null(leftcols)) {
+        xcols = w[!wna]
+        xcolsAns = which(!wna)
+        ivars = names(i)
+        w2 = chmatch(ansvars[wna], ivars)
+        if (any(w2na <- is.na(w2))) {
+          ivars = paste("i.",ivars,sep="")
+          w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
+        }
+        icols = w2
+        icolsAns = which(wna)
       } else {
         if (!length(leftcols)) stop("column(s) not found: ", paste(ansvars[wna],collapse=", "))
         xcols = w[!wna]
