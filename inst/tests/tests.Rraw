@@ -10981,8 +10981,8 @@ test(1845.2, d3[d2, id, on = .(y >= val)], INT(1,4,7,1,3,4,6,7,9))
 # fix for non-equi join issue #1986, when d2 is 0-row data.table, thanks @ebs238 for the nice minimal example
 d1 <- data.table(a=1L, b=2L)
 d2 <- d1[0L]
-test(1846.1, d2[d1, on=.(a>a, b<b)], d1)
-test(1846.2, d2[d1, on=.(a>a)], data.table(a=1L, b=NA_integer_, i.b=2L))
+test(1846.1, d2[d1, on=.(a>a, b<b)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
+test(1846.2, d2[d1, on=.(a>a)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
 
 # Fix for non-equi join issue #2360.- issue in recreating new indices following non-equi binary merge
 d <- data.table(
