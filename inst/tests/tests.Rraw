@@ -6910,7 +6910,7 @@ test(1540.14, DT1[DT3, lapply(.SD, function(x) x * mul),
                  by=.EACHI, on=c(y="y"), .SDcols=c("a", "b"), nomatch=0L],
              DT1.copy[DT3[, c(2,1,3), with=FALSE], lapply(.SD, function(x) x * mul),
                  by=.EACHI, .SDcols=c("a", "b"), nomatch=0L])
-test(1540.15, DT1[DT3, on=c(y="y"), roll=TRUE], DT1.copy[DT3[, c(2,1,3), with=FALSE], roll=TRUE])
+test(1540.15, DT1[DT3, on=c(y="y"), roll=TRUE], DT1.copy[DT3[, c(2,1,3), with=FALSE], roll=TRUE][,c(1:4,6,5,7)])
 test(1540.16, DT1[DT3, lapply(.SD, function(x) x * mul),
                  by=.EACHI, on=c(y="y"), .SDcols=c("a", "b"), roll=TRUE],
              DT1.copy[DT3[, c(2,1,3), with=FALSE], lapply(.SD, function(x) x * mul),
