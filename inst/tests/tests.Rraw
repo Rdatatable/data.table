@@ -11543,15 +11543,6 @@ test(1894.11, DT[, sum(z)*..z], 72L)
 setnames(DT, "z", "..z")
 test(1894.12, DT[, sum(y)*..z], error="..z in j is looking for z in calling scope, but a column '..z' exists. Column names should not start with ..")
 
-# PR 2703 joins now return columns from both data.tables if the columns are
-# involved in a non-equi join or rolling join
-dt1 <- data.table(id=c("a", "a", "b", "b", "a"), x=c(1, 3, 5, 7, 9), a=6:10)
-dt2 <- data.table(id=c("a", "a", "b", "b", "a"), y=c(2, 4, 6, 8, 10), b=6:10)
-test(1895.1, names(dt1[dt2, on=.(id, x > y)]), c("id", "x", "a", "y", "b"))
-test(1895.2, names(dt1[dt2, on=.(id, x = y), roll=TRUE]), c("id", "x", "a", "y", "b"))
-# special case - all key columns are used in non-equi or rolling joins
-test(1895.3, names(dt1[dt2, on=.(x > y)]), c("id", "x", "a", "i.id", "y", "b"))
-test(1895.4, names(dt1[dt2, on=.(x = y), roll = TRUE]), c("id", "x", "a", "i.id", "y", "b"))
 
 ###################################
 #  Add new tests above this line  #
