@@ -598,8 +598,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       allrightcols = rightcols
       # Drop any non-equi join columns from leftcols and rightcols so they are kept from both x and i
       if (!missing(on) && !is.na(non_equi)) {
-        leftcols = leftcols[-non_equi]
-        rightcols = rightcols[-non_equi]
+        leftcols = leftcols[ops == 1]  # ops > 1 where there is a non-equi opertor
+        rightcols = rightcols[ops == 1]
       }
       # Do the same for rolling joins. The column used for the roll is always the last key column
       if (roll != 0) { 
