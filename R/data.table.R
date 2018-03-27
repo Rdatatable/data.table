@@ -1918,7 +1918,7 @@ as.matrix.data.table <- function(x, rownames, ...) {
         if (is.na(rnc)) stop(rownames, " is not a column of x")
       } else { # rownames is an index already
         if (rownames < 1L || rownames > ncol(x))
-          stop(sprintf("rownames is %s which is outside the column number range [1,ncol=%d]", rownames, ncol(x)))
+          stop(sprintf("rownames is %d which is outside the column number range [1,ncol=%d]", rownames, ncol(x)))
         rnc <- rownames
       }
     }
