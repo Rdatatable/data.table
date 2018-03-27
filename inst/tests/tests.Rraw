@@ -7992,10 +7992,10 @@ if (test_bit64) {
   # fix for #1405, handles roll with -ve int64 values properly
   dt = data.table(x=as.integer64(c(-1000, 0)), y=c(5,10))
   val = c(-1100,-900,100)
-  test(1614.1, dt[.(val), roll=Inf,  on="x"], data.table(x=as.integer64(NA,-1000,0), y=c(NA,5,10), V1=as.integer64(val)))
-  test(1614.2, dt[.(val), roll=Inf, on="x", rollends=TRUE], data.table(x=as.integer64(-1000,-1000,0), y=c(5,5,10), V1=as.integer64(val)))
-  test(1614.3, dt[.(val), roll=-Inf, on="x"], data.table(x=as.integer64(-1000,0,NA), y=c(5,10,NA), V1=as.integer64(val)))
-  test(1614.4, dt[.(val), roll=-Inf, on="x", rollends=TRUE], data.table(x=as.integer64(-1000,0,0), y=c(5,10,10), V1=as.integer64(val)))
+  test(1614.1, dt[.(val), roll=Inf,  on="x"], data.table(x=as.integer64(c(NA,-1000,0)), y=c(NA,5,10), V1=as.integer64(val)))
+  test(1614.2, dt[.(val), roll=Inf, on="x", rollends=TRUE], data.table(x=as.integer64(c(-1000,-1000,0)), y=c(5,5,10), V1=as.integer64(val)))
+  test(1614.3, dt[.(val), roll=-Inf, on="x"], data.table(x=as.integer64(c(-1000,0,NA)), y=c(5,10,NA), V1=as.integer64(val)))
+  test(1614.4, dt[.(val), roll=-Inf, on="x", rollends=TRUE], data.table(x=as.integer64(c(-1000,0,0)), y=c(5,10,10), V1=as.integer64(val)))
 }
 
 # fix for #1571
