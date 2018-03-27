@@ -1891,33 +1891,34 @@ as.matrix.data.table <- function(x, rownames, ...) {
       # rownames argument is a vector of row names, no column in x to drop.
       rn <- rownames
       rnc <- NULL 
-    } else if (length(rownames) != 1) {
-      stop("rownames must be a single column in x or a vector of row names of length nrow(x)")
+    } else if (length(rownames) != 1L) {
+      stop(sprintf("rownames must be a single column in x or a vector of row names of length nrow(x)=%d", nrow(x)))
     } else if (is.na(rownames)) {
       warning("rownames is NA, ignoring rownames")
     } else if (identical(rownames, FALSE)) {
       warning("rownames is FALSE, ignoring rownames")
     } else if (!(is.logical(rownames) || is.character(rownames) || is.numeric(rownames))) {
-      # E.g. because rownames is some sort of object that cant be converted to a column index
+      # E.g. because rownames is some sort of object that can't be converted to a column index
       stop("rownames must be TRUE, a column index, a column name in x, or a vector of row names")
-    } else {
+    } else { # Handles cases where rownames is a column name, or key(x) from TRUE
       if (identical(rownames, TRUE)) {
         if (haskey(x)) { 
           rownames <- key(x) 
-          if (length(rownames) > 1) {
-            warning("rownames is TRUE but multiple keys found in key(x), using first column instead")
-            rownames <- 1
+          if (length(rownames) > 1L) {
+            warning(sprintf("rownames is TRUE but multiple keys [%s] found for x; defaulting to first key column [%s]",
+                            paste(rownames, collapse = ','), rownames[1L]))
+            rownames <- 1L
           }
         } else { 
-          rownames <- 1
+          rownames <- 1L
         }
       }
-      if (is.character(rownames)) { # Handles cases where rownames is a column name, or key(x) from TRUE
+      if (is.character(rownames)) { 
         rnc <- chmatch(rownames, names(x))
         if (is.na(rnc)) stop(rownames, " is not a column of x")
       } else { # rownames is an index already
-        if (rownames < 1 || rownames > ncol(x))
-          stop("rownames is ", rownames, " which is outside the column number range [1,ncol=", ncol(x), "]")
+        if (rownames < 1L || rownames > ncol(x))
+          stop(sprintf("rownames is %s which is outside the column number range [1,ncol=%d]", rownames, ncol(x)))
         rnc <- rownames
       }
     }
