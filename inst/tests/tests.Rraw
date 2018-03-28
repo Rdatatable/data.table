@@ -11544,6 +11544,7 @@ test(1894.11, DT[, sum(z)*..z], 72L)
 setnames(DT, "z", "..z")
 test(1894.12, DT[, sum(y)*..z], error="..z in j is looking for z in calling scope, but a column '..z' exists. Column names should not start with ..")
 
+test(1895, getDTthreads(verbose=TRUE), output="omp_get_max_threads.*omp_get_thread_limit.*DTthreads")
 
 ###################################
 #  Add new tests above this line  #
