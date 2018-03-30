@@ -47,7 +47,8 @@ typedef R_xlen_t RLEN;
 // This IS_ASCII will dereference s and that cache fetch is the part that may bite more than the branch, though. Without a call to
 // to ENC2UTF as all, the pointer value can just be compared by the calling code without deferencing it. It may still be worth
 // timing the impact and manually avoiding (is there an IS_ASCII on the character vector rather than testing each item every time?)
-#define ENC2UTF8(s) ((IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s)) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
+#define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
+#define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
 
 // init.c
 void setSizes();
@@ -89,6 +90,7 @@ unsigned long long dtwiddle(void *p, int i, int order);
 unsigned long long i64twiddle(void *p, int i, int order);
 unsigned long long (*twiddle)(void *, int, int);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
+bool need2utf8(SEXP x, int n);
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);

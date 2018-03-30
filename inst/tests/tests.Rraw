@@ -11544,28 +11544,45 @@ test(1894.11, DT[, sum(z)*..z], 72L)
 setnames(DT, "z", "..z")
 test(1894.12, DT[, sum(y)*..z], error="..z in j is looking for z in calling scope, but a column '..z' exists. Column names should not start with ..")
 
+test(1895, getDTthreads(verbose=TRUE), output="omp_get_max_threads.*omp_get_thread_limit.*DTthreads")
+
+# Non ascii missing protects on ENC2UTF8; issue #2674
+utf8_strings = c("\u00e7ile", "fa\u00e7ile", "El. pa\u00c5\u00a1tas", "\u00a1tas", "\u00de")
+latin1_strings = iconv(utf8_strings, from = "UTF-8", to = "latin1")
+DT = data.table(x = sample(latin1_strings, 1000, replace=TRUE), key = "x")
+test(1896.1, enc2utf8(unique(DT$x)), sort(utf8_strings, method = "radix"))
+#  by, keyby should treat the string with different encoding as the same
+mixed_strings = c(utf8_strings, latin1_strings)
+DT = data.table(x = mixed_strings)
+test(1896.2, DT[, .(CT = .N), keyby = x]$CT, rep(2L, 5))
+test(1896.3, DT[, uniqueN(x)], 5L)
+DT = data.table(x = mixed_strings, y = c(latin1_strings, utf8_strings), z = 1)
+test(1896.4, nrow(DT[, .N, by = .(z, x, y)]), 5L)
+test(1896.5, nrow(DT[, .N, by = .(y, x, z)]), 5L)
+test(1896.6, nrow(DT[, .N, by = .(y, z, x)]), 5L)
+
 # Allow column to be used as rownames when converting to matrix #2702
 DT = data.table(id = letters[1:4], X = 1:4, Y = 5:8)
 mat <- matrix(1:8, ncol = 2, dimnames=list(letters[1:4], c("X", "Y")))
 mat2 <- matrix(c(letters[1:4], 1:8), ncol=3, dimnames=list(NULL, c("id", "X", "Y")))
 mat3 <- matrix(c(letters[1:4], 1:8), ncol=3, dimnames=list(1:4, c("id", "X", "Y")))
-test(1895.01, as.matrix(DT, 1), mat)
-test(1895.02, as.matrix(DT, "id"), mat)
-test(1895.03, as.matrix(DT, TRUE), mat)
+test(1897.01, as.matrix(DT, 1), mat)
+test(1897.02, as.matrix(DT, "id"), mat)
+test(1897.03, as.matrix(DT, TRUE), mat)
 setkey(DT, id)
-test(1895.04, as.matrix(DT, TRUE), mat)
-test(1895.05, as.matrix(DT, 1:4), mat3)
+test(1897.04, as.matrix(DT, TRUE), mat)
+test(1897.05, as.matrix(DT, 1:4), mat3)
 # errors
-test(1895.06, as.matrix(DT, -1), error="rownames is -1 which is outside the column number range")
-test(1895.07, as.matrix(DT, "Z"), error="Z is not a column of x")
-test(1895.08, as.matrix(DT, c(1,2)), error="rownames must be a single column in x or a vector of row names of length nrow(x)")
-test(1895.09, as.matrix(DT, complex(1)), error="rownames must be TRUE, a column index, a column name in x, or a vector of row names")
+test(1897.06, as.matrix(DT, -1), error="rownames is -1 which is outside the column number range")
+test(1897.07, as.matrix(DT, "Z"), error="Z is not a column of x")
+test(1897.08, as.matrix(DT, c(1,2)), error="rownames must be a single column in x or a vector of row names of length nrow(x)")
+test(1897.09, as.matrix(DT, complex(1)), error="rownames must be TRUE, a column index, a column name in x, or a vector of row names")
 # warnings
-test(1895.10, as.matrix(DT, NA), mat2, warning="rownames is NA, ignoring rownames")
-test(1895.11, as.matrix(DT, NULL), mat2, warning="rownames is NULL, ignoring rownames")
-test(1895.12, as.matrix(DT, FALSE), mat2, warning="rownames is FALSE, ignoring rownames")
+test(1897.10, as.matrix(DT, NA), mat2, warning="rownames is NA, ignoring rownames")
+test(1897.11, as.matrix(DT, NULL), mat2, warning="rownames is NULL, ignoring rownames")
+test(1897.12, as.matrix(DT, FALSE), mat2, warning="rownames is FALSE, ignoring rownames")
 setkey(DT, id, X)
-test(1895.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys found in key(x), using first column instead")
+test(1897.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys found in key(x), using first column instead")
 
 
 ###################################
