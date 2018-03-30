@@ -1093,8 +1093,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 {
   int i, j, k, grp, ngrp, tmp, *osub, thisgrpn, n, col;
   Rboolean isSorted = TRUE;
-  SEXP x, ux, class;
-  void *xd, *uxd;
+  SEXP x, class;
+  void *xd;
 #ifdef TIMING_ON
   memset(tblock, 0, NBLOCK*sizeof(clock_t));
   memset(nblock, 0, NBLOCK*sizeof(int));
@@ -1141,10 +1141,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   // if n==1, the code is left to proceed below in case one or more of the 1-row by= columns are NA and na.last=NA. Otherwise it would be easy to return now.
 
   SEXP ans = PROTECT(allocVector(INTSXP, n)); // once for the result, needs to be length n.
+  int n_protect = 1;
   int *o = INTEGER(ans);                      // TO DO: save allocation if NULL is returned (isSorted==TRUE)
   o[0] = -1;                                  // so [i|c|d]sort know they can populate o directly with no working memory needed to reorder existing order
                                               // using -1 rather than 0 because 'nalast = 0' replaces 'o[.]' with 0 values.
-  xd = DATAPTR(x); uxd = xd; // init uxd with the same value as xd. the only case that they will differ is the string needs to be re-encoded as UTF8
+  xd = DATAPTR(x);
   stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
   savetl_init();   // from now on use Error not error.
 
@@ -1168,7 +1169,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     Error("First column being ordered is type '%s', not yet supported", type2char(TYPEOF(x)));
   }
 
-  int n_protect = 0;
   if (tmp) {                                  // -1 or 1. NEW: or -2 in case of nalast == 0 and all NAs
     if (tmp == 1) {                         // same as expected in 'order' (1 = increasing, -1 = decreasing)
       isSorted = TRUE;
@@ -1189,14 +1189,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       dsort(xd, o, n); break;
     case STRSXP :
       if (need2utf8(x, n)) {
-        ux = PROTECT(allocVector(STRSXP, n)); n_protect++; 
-        for (int i=0; i<n; i++) SET_STRING_ELT(ux, i, ENC2UTF8(STRING_ELT(x, i))); 
-      } else {
-        ux = x;
+        SEXP tt = PROTECT(allocVector(STRSXP, n)); n_protect++;
+        for (int i=0; i<n; i++) SET_STRING_ELT(tt, i, ENC2UTF8(STRING_ELT(x, i)));
+        xd = DATAPTR(tt);
       }
-      uxd = DATAPTR(ux);
-      if (sortStr) { csort_pre(uxd, n); alloc_csort_otmp(n); csort(uxd, o, n); }
-      else cgroup(uxd, o, n);
+      if (sortStr) { csort_pre(xd, n); alloc_csort_otmp(n); csort(xd, o, n); }
+      else cgroup(xd, o, n);
       break;
     default :
       Error("Internal error: previous default should have caught unsupported type");
@@ -1218,7 +1216,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 
   for (col=2; col<=length(by); col++) {
     x = VECTOR_ELT(DT,INTEGER(by)[col-1]-1);
-    xd = DATAPTR(x); uxd = xd; // init uxd with the same value as xd. the only case that they will differ is the string needs to be re-encoded as UTF8
+    xd = DATAPTR(x);
     ngrp = gsngrp[flip];
     if (ngrp == n && nalast != 0) break;
     flipflop();
@@ -1240,13 +1238,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     case STRSXP :
       f = &csorted;
       if (need2utf8(x, n)) {
-        ux = PROTECT(allocVector(STRSXP, n)); n_protect++; 
-        for (int i=0; i<n; i++) SET_STRING_ELT(ux, i, ENC2UTF8(STRING_ELT(x, i))); 
-      } else {
-        ux = x;
+        SEXP tt = PROTECT(allocVector(STRSXP, n)); n_protect++;
+        for (int i=0; i<n; i++) SET_STRING_ELT(tt, i, ENC2UTF8(STRING_ELT(x, i)));
+        xd = DATAPTR(tt);
       }
-      uxd = DATAPTR(ux);
-      if (sortStr) { csort_pre(uxd, n); alloc_csort_otmp(gsmax[1-flip]); g = &csort; }
+      if (sortStr) { csort_pre(xd, n); alloc_csort_otmp(gsmax[1-flip]); g = &csort; }
       else g = &cgroup; // no increasing/decreasing order required if sortStr = FALSE, just a dummy argument
       break;
     default:
@@ -1280,9 +1276,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       // ** TO DO **: if isSorted,  we can just point xsub into x directly. If (*f)() returns 0, though, will have to copy x at that point
       //        When doing this,  xsub could be allocated at that point for the first time.
       if (size==4) {
-        for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = ((int *)uxd)[o[i++]-1];
+        for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = ((int *)xd)[o[i++]-1];
       } else {
-        for (j=0; j<thisgrpn; j++) ((double *)xsub)[j] = ((double *)uxd)[o[i++]-1];
+        for (j=0; j<thisgrpn; j++) ((double *)xsub)[j] = ((double *)xd)[o[i++]-1];
       }
 
       TEND(2)
@@ -1335,12 +1331,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   maxlen = 1;  // reset global. Minimum needed to count "" and NA
   ustr_n = 0;
   savetl_end();
-  if (n_protect) UNPROTECT(n_protect); // Should be safe to remove after truelength being set back
   free(ustr);                ustr=NULL;          ustr_alloc=0;
 
   if (isSorted) {
-    UNPROTECT(1);  // The existing o vector, which we may save in future, if in future we only create when isSorted becomes FALSE
+    // the o vector created earlier could be avoided in this case if we only create it when isSorted becomes FALSE
     ans = PROTECT(allocVector(INTSXP, 0));  // Can't attach attributes to NULL
+    n_protect++;
   }
   if (LOGICAL(retGrp)[0]) {
     ngrp = gsngrp[flip];
@@ -1366,8 +1362,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   free(cradix_counts);       cradix_counts=NULL; cradix_counts_alloc=0;
   free(cradix_xtmp);         cradix_xtmp=NULL;   cradix_xtmp_alloc=0;   // TO DO: use xtmp already got
 
-  UNPROTECT(1);
-  return( ans );
+  UNPROTECT(n_protect);
+  return ans;
 }
 
 // TODO: implement 'order' argument to 'fsorted'
