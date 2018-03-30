@@ -1144,7 +1144,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   int *o = INTEGER(ans);                      // TO DO: save allocation if NULL is returned (isSorted==TRUE)
   o[0] = -1;                                  // so [i|c|d]sort know they can populate o directly with no working memory needed to reorder existing order
                                               // using -1 rather than 0 because 'nalast = 0' replaces 'o[.]' with 0 values.
-  xd = DATAPTR(x); uxd = xd;
+  xd = DATAPTR(x); uxd = xd; // init uxd with the same value as xd. the only case that they will differ is the string needs to be re-encoded as UTF8
   stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
   savetl_init();   // from now on use Error not error.
 
@@ -1218,7 +1218,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 
   for (col=2; col<=length(by); col++) {
     x = VECTOR_ELT(DT,INTEGER(by)[col-1]-1);
-    xd = DATAPTR(x);
+    xd = DATAPTR(x); uxd = xd; // init uxd with the same value as xd. the only case that they will differ is the string needs to be re-encoded as UTF8
     ngrp = gsngrp[flip];
     if (ngrp == n && nalast != 0) break;
     flipflop();
@@ -1280,13 +1280,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       // ** TO DO **: if isSorted,  we can just point xsub into x directly. If (*f)() returns 0, though, will have to copy x at that point
       //        When doing this,  xsub could be allocated at that point for the first time.
       if (size==4) {
-        for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = ((int *)xd)[o[i++]-1];
+        for (j=0; j<thisgrpn; j++) ((int *)xsub)[j] = ((int *)uxd)[o[i++]-1];
       } else {
-        if (TYPEOF(x) == STRSXP) {
-          for (j=0; j<thisgrpn; j++) ((double *)xsub)[j] = ((double *)uxd)[o[i++]-1];
-        } else {
-          for (j=0; j<thisgrpn; j++) ((double *)xsub)[j] = ((double *)xd)[o[i++]-1];
-        }
+        for (j=0; j<thisgrpn; j++) ((double *)xsub)[j] = ((double *)uxd)[o[i++]-1];
       }
 
       TEND(2)
