@@ -11546,34 +11546,24 @@ test(1894.12, DT[, sum(y)*..z], error="..z in j is looking for z in calling scop
 
 test(1895, getDTthreads(verbose=TRUE), output="omp_get_max_threads.*omp_get_thread_limit.*DTthreads")
 
-# Ensure data.table won't break even if garbage collection gets triggered during sorting
-# a large numbers of non-ASCII characters.
-utf8_strings <- c(
-  '\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca',
-  '\u7ea2\u5229\u6536\u5165',
-  '\u4ef7\u5dee\u6536\u5165',
-  '\u5176\u4ed6\u4e1a\u52a1\u652f\u51fa',
-  '\u8d44\u4ea7\u51cf\u503c\u635f\u5931')
-if (identical(enc2utf8(enc2native(utf8_strings)), utf8_strings)) {
-  # The only meaningful environment for this test case is on a Simplified Chinese Language Windows Machine.
-  # Technically speaking, the native encoding should be an encoding that supports
-  # Simplified Chinese other that UTF-8.
-  native_strings <- enc2native(utf8_strings)
-  # 1e7 length character should be large enough to trigger the garbage collecting
-  DT <- data.table(x = rep(native_strings, 0.2e7), key = "x")
-  test(1896.1, unique(DT$x), sort(utf8_strings, method = "radix"))
+utf8_strings <- c("\u00e7ile", "fa\u00e7ile", "El. pa\u00c5\u00a1tas", "\u00a1tas", "\u00de")
+latin1_strings <- iconv(utf8_strings, from = "UTF-8", to = "latin1")
+# 1e7 length character should be large enough to trigger the garbage collecting
+DT <- data.table(x = rep(latin1_strings, 0.2e7), key = "x")
+test(1896.1, enc2utf8(unique(DT$x)), sort(utf8_strings, method = "radix"))
 
-  # by, keyby should treat the string with different encoding as the same
-  mixed_strings <- c(utf8_strings, native_strings)
-  DT <- data.table(x = mixed_strings)
-  test(1896.2, DT[, .(CT = .N), keyby = x]$CT, rep(2L, 5))
-  test(1896.3, DT[, uniqueN(x)], 5L)
+# by, keyby should treat the string with different encoding as the same
+mixed_strings <- c(utf8_strings, latin1_strings)
+DT <- data.table(x = mixed_strings)
+test(1896.2, DT[, .(CT = .N), keyby = x]$CT, rep(2L, 5))
+test(1896.3, DT[, uniqueN(x)], 5L)
 
-  DT <- data.table(x = mixed_strings, y = c(native_strings, utf8_strings), z = 1)
-  test(1896.4, nrow(DT[, .N, by = .(z, x, y)]), 5L)
-  test(1896.5, nrow(DT[, .N, by = .(y, x, z)]), 5L)
-  test(1896.6, nrow(DT[, .N, by = .(y, z, x)]), 5L)
-}
+DT <- data.table(x = mixed_strings, y = c(latin1_strings, utf8_strings), z = 1)
+test(1896.4, nrow(DT[, .N, by = .(z, x, y)]), 5L)
+test(1896.5, nrow(DT[, .N, by = .(y, x, z)]), 5L)
+test(1896.6, nrow(DT[, .N, by = .(y, z, x)]), 5L)
+
+
 
 ###################################
 #  Add new tests above this line  #
