@@ -9,7 +9,14 @@ setkey <- function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE
 
 # FR #1442
 setindex <- function(...) setkey(..., physical=FALSE)
-setindexv <- function(...) setkeyv(..., physical=FALSE)
+setindexv <- function(x, cols, verbose=getOption("datatable.verbose")) {
+  if (is.list(cols)) {
+    sapply(cols, setkeyv, x=x, verbose=verbose, physical=FALSE)
+    return(invisible(x))
+  } else {
+    setkeyv(x, cols, verbose=verbose, physical=FALSE)
+  }
+}
 
 set2key <- function(...) {
   warning("set2key() will be deprecated in the next relase. Please use setindex() instead.", call.=FALSE)

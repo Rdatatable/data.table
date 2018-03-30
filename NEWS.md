@@ -115,6 +115,8 @@ The response has been positive ([this tweet](https://twitter.com/MattDowle/statu
     ```
 Thus, `with=` should no longer be needed in any cases. Please change to using the `..` prefix and in a few years we will start to formally deprecate and remove the `with=` parameter.  If this is well received, the `..` prefix could be expanded to symbols appearing in `i=` and `by=`, too.
 
+19. `setindexv` can now assign multiple (separate) indices by accepting a `list` in the `cols` argument.
+
 #### BUG FIXES
 
 1. The new quote rules handles this single field `"Our Stock Screen Delivers an Israeli Software Company (MNDO, CTCH)<\/a> SmallCapInvestor.com - Thu, May 19, 2011 10:02 AM EDT<\/cite><\/div>Yesterday in \""Google, But for Finding

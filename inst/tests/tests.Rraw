@@ -11546,6 +11546,15 @@ test(1894.12, DT[, sum(y)*..z], error="..z in j is looking for z in calling scop
 
 test(1895, getDTthreads(verbose=TRUE), output="omp_get_max_threads.*omp_get_thread_limit.*DTthreads")
 
+# FR#2695 -- setindexv to accept lists for multiple indices
+DT = data.table(a = c(3, 2, 1, 2, 3), b = c(1, 2, 1, 1, 2))
+setindexv(DT, list('a', c('a', 'b')))
+test(1896.1, indices(DT), c("a", "a__b"))
+test(1896.2, attr(attr(DT, 'index'), '__a'),
+     c(3L, 2L, 4L, 1L, 5L))
+test(1896.3, attr(attr(DT, 'index'), '__a__b'),
+     c(3L, 4L, 2L, 1L, 5L))
+
 ###################################
 #  Add new tests above this line  #
 ###################################
