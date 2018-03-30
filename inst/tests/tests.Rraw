@@ -11546,19 +11546,19 @@ test(1894.12, DT[, sum(y)*..z], error="..z in j is looking for z in calling scop
 
 test(1895, getDTthreads(verbose=TRUE), output="omp_get_max_threads.*omp_get_thread_limit.*DTthreads")
 
-utf8_strings <- c("\u00e7ile", "fa\u00e7ile", "El. pa\u00c5\u00a1tas", "\u00a1tas", "\u00de")
-latin1_strings <- iconv(utf8_strings, from = "UTF-8", to = "latin1")
-# 1e7 length character should be large enough to trigger the garbage collecting
-DT <- data.table(x = rep(latin1_strings, 0.2e7), key = "x")
+# Non ascii missing protects on ENC2UTF8; issue #2674
+utf8_strings = c("\u00e7ile", "fa\u00e7ile", "El. pa\u00c5\u00a1tas", "\u00a1tas", "\u00de")
+latin1_strings = iconv(utf8_strings, from = "UTF-8", to = "latin1")
+DT = data.table(x = sample(latin1_strings, 1000, replace=TRUE), key = "x")
 test(1896.1, enc2utf8(unique(DT$x)), sort(utf8_strings, method = "radix"))
 
 # by, keyby should treat the string with different encoding as the same
-mixed_strings <- c(utf8_strings, latin1_strings)
-DT <- data.table(x = mixed_strings)
+mixed_strings = c(utf8_strings, latin1_strings)
+DT = data.table(x = mixed_strings)
 test(1896.2, DT[, .(CT = .N), keyby = x]$CT, rep(2L, 5))
 test(1896.3, DT[, uniqueN(x)], 5L)
 
-DT <- data.table(x = mixed_strings, y = c(latin1_strings, utf8_strings), z = 1)
+DT = data.table(x = mixed_strings, y = c(latin1_strings, utf8_strings), z = 1)
 test(1896.4, nrow(DT[, .N, by = .(z, x, y)]), 5L)
 test(1896.5, nrow(DT[, .N, by = .(y, x, z)]), 5L)
 test(1896.6, nrow(DT[, .N, by = .(y, z, x)]), 5L)
