@@ -85,7 +85,7 @@ if (loaded[["xts"]]) {
 }
 
 if (loaded[["gdata"]]) {
-  if (!test_xts) warning("The gdata test expects xts loaded as well since all 3 have a last() function.")
+  if (!loaded[["xts"]]) warning("The gdata test expects xts loaded as well since all 3 have a last() function.")
   x = list("a",1:2,89)
   test(6.1, xts::last(x), list(89))   # would prefer 89 here like data.table does, since "last" means the last one (never more than one) so why retain the one-item list() level?
   test(6.2, gdata::last(x), list(89))
