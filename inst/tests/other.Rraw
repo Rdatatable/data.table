@@ -5,13 +5,13 @@ if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
   warning("This is dev where with.other.packages should not be run. Instead, use a fresh R session with data.table installed. ",
           "Not doing so in dev can be the cause of both false errors and false passes.")
 }
-if (!"package:data.table" %in% search()) stop("data.table should be already attached, see usage header in inst/tests/other.Rraw")
+if (!"package:data.table" %in% search()) stop("data.table should be already attached. Usage: require(data.table); test.data.table(with.other.packages=TRUE)")
 
 test = data.table:::test
 INT = data.table:::INT
 
-pkgs = c("ggplot2", "hexbin", "plyr", "caret", "xts", "gdata", "zoo", "nlme", "bit64", "knitr", "plm", "parallel", "dtq")
-if (any(duplicated(pkgs))) stop("Internal error: pkgs has a dup")
+pkgs = c("ggplot2", "hexbin", "plyr", "caret", "xts", "gdata", "zoo", "nlme", "bit64", "knitr", "plm", "parallel")
+if (any(duplicated(pkgs))) stop("Packages defined to be loaded for integration tests in 'inst/tests/other.Rraw' contains duplicates.")
 for (s in pkgs) {
   assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(require(s, character.only=TRUE))))
   if (!loaded) cat("\n**** Other package",s,"is not installed. Tests using it will be skipped.\n\n")
@@ -165,22 +165,6 @@ if (test_parallel) {
       test(12.2, getDTthreads()==2) # User returned to multi-threaded after fork.
     }
   }
-}
-
-if (test_dtq) {
-  set.seed(5)
-  op = options("dtq.log.include"="") # unnamed environment created for other.Rraw evaluation in test.data.table()
-  DT = data.table(a = 1:10, b = letters[1:5])
-  LKP = data.table(b = letters[1:5], ratio = rnorm(5), key = "b")
-  DT2 = DT[, .(a = sum(a)), b
-           ][a > median(a), .(b, a, adj_a = a * 1.1)]
-  LKP[DT2, .(b, a, adj2_a = adj_a * ratio)]
-  tmp = DT[, {Sys.sleep(0.1); .(a)}]
-  ans = dtl()
-  test(13.1, is.data.table(ans))
-  test(13.2, nrow(ans)>0L)
-  test(13.3, ans[nrow(ans), elapsed > 0.1])
-  options(op)
 }
 
 cat("\n",ntest-nfail,"out of",ntest,"tests passed.\n")
