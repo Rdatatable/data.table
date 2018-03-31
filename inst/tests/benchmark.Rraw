@@ -166,3 +166,5 @@ test(1742.3, L[[1L]], c(27L,38L))
 test(1742.4, L[[1000000L]], c(76L, 40L))
 test(1742.5, substring(x,nchar(x)-10,nchar(x)), c("50,28,95,76","62,87,23,40"))
 
+# Add scaled-up non-ASCII forder test 1896
+
