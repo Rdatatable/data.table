@@ -223,6 +223,12 @@ Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdat
 
 10. As warned in v1.9.8 release notes below in this file (on CRAN 25 Nov 2016) it has been 1 year since then and so use of `options(datatable.old.unique.by.key=TRUE)` to restore the old default is now deprecated with warning. The new warning states that this option still works and repeats the request to pass `by=key(DT)` explicitly to `unique()`, `duplicated()`, `uniqueN()` and `anyDuplicated()` and to stop using this option. In another year, this warning will become error. Another year after that the option will be removed.
 
+11. As `set2key()` and `key2()` have been warning since v1.9.8 on CRAN Nov 2016, their warnings have now been upgraded to errors. Note that when they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental' in NEWS item 4. They will be removed in one year.
+```
+Was warning: set2key() will be deprecated in the next relase. Please use setindex() instead.
+Now error: set2key() is now deprecated. Please use setindex() instead.
+```
+
 ### Changes in v1.10.4-3  (on CRAN 20 Oct 2017)
 
 1. Fixed crash/hang on MacOS when `parallel::mclapply` is used and data.table is merely loaded, [#2418](https://github.com/Rdatatable/data.table/issues/2418). Oddly, all tests including test 1705 (which tests `mclapply` with data.table) passed fine on CRAN. It appears to be some versions of MacOS or some versions of libraries on MacOS, perhaps. Many thanks to Martin Morgan for reporting and confirming this fix works. Thanks also to @asenabouth, Joe Thorley and Danton Noriega for testing, debugging and confirming that automatic parallelism inside data.table (such as `fwrite`) works well even on these MacOS installations. See also news items below for 1.10.4-1 and 1.10.4-2.

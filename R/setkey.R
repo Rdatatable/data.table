@@ -19,24 +19,27 @@ setindexv <- function(x, cols, verbose=getOption("datatable.verbose")) {
 }
 
 set2key <- function(...) {
-  warning("set2key() will be deprecated in the next relase. Please use setindex() instead.", call.=FALSE)
-  setkey(..., physical=FALSE)
+  stop("set2key() is now deprecated. Please use setindex() instead.")
 }
 set2keyv <- function(...) {
-  warning("set2key() will be deprecated in the next relase. Please use setindex() instead.", call.=FALSE)
-  setkeyv(..., physical=FALSE)
+  stop("set2keyv() is now deprecated. Please use setindexv() instead.")
 }
+key2 <- function(x) {
+  stop("key2() is now deprecated. Please use indices() instead.")
+}
+
+
 
 setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
 {
   if (is.null(cols)) {   # this is done on a data.frame when !cedta at top of [.data.table
     if (physical) setattr(x,"sorted",NULL)
-    setattr(x,"index",NULL)  # setkey(DT,NULL) also clears secondary keys. set2key(DT,NULL) just clears secondary keys.
+    setattr(x,"index",NULL)  # setkey(DT,NULL) also clears secondary keys. setindex(DT,NULL) just clears secondary keys.
     return(invisible(x))
   }
   if (!is.data.table(x)) stop("x is not a data.table")
   if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setkey.")
-  if (physical && identical(attr(x,".data.table.locked"),TRUE)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try set2key instead. Or, set*(copy(.SD)) as a (slow) last resort.")
+  if (physical && identical(attr(x,".data.table.locked"),TRUE)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
   if (!length(cols)) {
     warning("cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
     setattr(x,"sorted",NULL)
@@ -97,12 +100,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
 }
 
 key <- function(x) attr(x,"sorted",exact=TRUE)
-key2 <- function(x) {
-  warning("key2() will be deprecated in the next relase. Please use indices() instead.", call.=FALSE)
-  ans = names(attributes(attr(x,"index",exact=TRUE)))
-  if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
-  gsub("^__","",ans)
-}
+
 indices <- function(x, vectors = FALSE) {
   ans = names(attributes(attr(x,"index",exact=TRUE)))
   if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
