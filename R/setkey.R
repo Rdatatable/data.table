@@ -28,8 +28,6 @@ key2 <- function(x) {
   stop("key2() is now deprecated. Please use indices() instead.")
 }
 
-
-
 setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
 {
   if (is.null(cols)) {   # this is done on a data.frame when !cedta at top of [.data.table
@@ -109,8 +107,6 @@ indices <- function(x, vectors = FALSE) {
     ans <- strsplit(ans, "__", fixed = TRUE)
   ans
 }
-
-get2key <- function(x, col) attr(attr(x,"index",exact=TRUE),paste("__",col,sep=""),exact=TRUE)   # work in progress, not yet exported
 
 "key<-" <- function(x,value) {
   warning("The key(x)<-value form of setkey can copy the whole table. This is due to <- in R itself. Please change to setkeyv(x,value) or setkey(x,...) which do not copy and are faster. See help('setkey'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your key<- calls.")
