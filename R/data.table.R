@@ -482,7 +482,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (is.call(onsub) && onsub[[1L]] == "eval") onsub = onsub[[2L]]
           }
           if (is.call(onsub) && as.character(onsub[[1L]]) %in% c("list", ".")) {
-            spat = paste("[ ]+(", pat, ")[ ]+", sep="")
+            spat = paste0("[ ]+(", pat, ")[ ]+")
             onsub = lapply(as.list(onsub)[-1L], function(x) gsub(spat, "\\1", deparse(x, width.cutoff=500L)))
             onsub = as.call(c(quote(c), onsub))
           }
@@ -497,11 +497,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           if (any(idx_op %in% c(0L, 6L)))
             stop("Invalid operators ", paste(this_op[idx_op==0L], collapse=","), ". Only allowed operators are ", paste(ops[1:5], collapse=""), ".")
           if (is.null(names(on))) {
-            on[idx] = if (isnull_inames) paste(on[idx], paste("V", seq_len(sum(idx)), sep=""), sep="==") else paste(on[idx], on[idx], sep="==")
+            on[idx] = if (isnull_inames) paste(on[idx], paste0("V", seq_len(sum(idx))), sep="==") else paste(on[idx], on[idx], sep="==")
           } else {
             on[idx] = paste(names(on)[idx], on[idx], sep="==")
           }
-          split = tstrsplit(on, paste("[ ]*", pat, "[ ]*", sep=""))
+          split = tstrsplit(on, paste0("[ ]*", pat, "[ ]*"))
           on = setattr(split[[2L]], 'names', split[[1L]])
           if (length(empty_idx <- which(names(on) == "")))
             names(on)[empty_idx] = on[empty_idx]
@@ -557,7 +557,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (verbose) cat("on= matches existing key, using key\n")
           } else {
             if (isTRUE(getOption("datatable.use.index"))) {
-              idxName = paste0("__", names(on), sep="", collapse="")  # TODO: wrong, no sep!
+              idxName = paste0("__", names(on), collapse="")
               xo = attr(attr(x, 'index'), idxName, exact = TRUE)
               if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
             }
@@ -742,7 +742,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     } else {
       jisvars = names(i)[-leftcols]
       tt = jisvars %chin% names(x)
-      if (length(tt)) jisvars[tt] = paste("i.",jisvars[tt],sep="")
+      if (length(tt)) jisvars[tt] = paste0("i.",jisvars[tt])
       if (length(duprightcols <- rightcols[duplicated(rightcols)])) {
         nx = c(names(x), names(x)[duprightcols])
         rightcols = chmatch2(names(x)[rightcols], nx)
@@ -866,8 +866,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             bysub = strsplit(bysub,split=",")[[1L]]
           }
           tt = grep("^[^`]+$",bysub)
-          if (length(tt)) bysub[tt] = paste("`",bysub[tt],"`",sep="")
-          bysub = parse(text=paste("list(",paste(bysub,collapse=","),")",sep=""))[[1L]]
+          if (length(tt)) bysub[tt] = paste0("`",bysub[tt],"`")
+          bysub = parse(text=paste0("list(",paste(bysub,collapse=","),")"))[[1L]]
           bysubl = as.list.default(bysub)
         }
         allbyvars = intersect(all.vars(bysub),names(x))
@@ -1208,11 +1208,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         ivars[leftcols] = names(x)[rightcols]
         w2 = chmatch(ansvars[wna], ivars)
         if (any(w2na <- is.na(w2))) {
-          ivars = paste("i.",ivars,sep="")
+          ivars = paste0("i.",ivars)
           ivars[leftcols] = names(i)[leftcols]
           w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
           if (any(w2na <- is.na(w2))) {
-            ivars[leftcols] = paste("i.",ivars[leftcols],sep="")
+            ivars[leftcols] = paste0("i.",ivars[leftcols])
             w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
             if (any(w2na <- is.na(w2))) stop("column(s) not found: ", paste(ansvars[wna][w2na],sep=", "))
           }
@@ -1385,7 +1385,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       }
       if (is.null(jvnames)) jvnames = character(length(jval)-length(bynames))
       ww = which(jvnames=="")
-      if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
+      if (any(ww)) jvnames[ww] = paste0("V",ww)
       setnames(jval, jvnames)
     }
 
@@ -1437,7 +1437,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       SDenv$.iSD = i[tt,jisvars,with=FALSE]
       for (ii in jisvars) {
         assign(ii, SDenv$.iSD[[ii]], SDenv)
-        assign(paste("i.",ii,sep=""), SDenv$.iSD[[ii]], SDenv)
+        assign(paste0("i.",ii), SDenv$.iSD[[ii]], SDenv)
       }
     }
 
@@ -1534,7 +1534,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # http://stackoverflow.com/questions/13441868/data-table-and-stratified-means
         # adding this does not compromise in speed (that is, not any lesser than without SDenv$.SD)
         # replaced SDenv$.SD to SDenv to deal with Bug #5007 reported by Ricardo (Nice catch!)
-        thisfun = paste("..FUN", funi, sep="") # Fix for #985
+        thisfun = paste0("..FUN", funi) # Fix for #985
         assign(thisfun,eval(fun, SDenv, SDenv), SDenv)  # to avoid creating function() for each column of .SD
         lockBinding(thisfun,SDenv)
         txt[[1L]] = as.name(thisfun)
@@ -1704,11 +1704,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           if (jsub[[1L]]=="list")
             for (ii in seq_along(jsub)[-1L]) {
               if (dotN(jsub[[ii]])) next; # For #5760
-              jsub[[ii]][[1L]] = as.name(paste("g", jsub[[ii]][[1L]], sep=""))
+              jsub[[ii]][[1L]] = as.name(paste0("g", jsub[[ii]][[1L]]))
               if (length(jsub[[ii]])==3L) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
             }
           else {
-            jsub[[1L]] = as.name(paste("g", jsub[[1L]], sep=""))
+            jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
             if (length(jsub)==3L) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
           }
           if (verbose) cat("GForce optimized j to '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
@@ -1804,7 +1804,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     attrs = attr(x, 'index')
     skeys = names(attributes(attrs))
     if (!is.null(skeys)) {
-      hits  = unlist(lapply(paste("__", names(x)[cols], sep=""), function(x) grep(x, skeys)))
+      hits  = unlist(lapply(paste0("__", names(x)[cols]), function(x) grep(x, skeys)))
       hits  = skeys[unique(hits)]
       for (i in seq_along(hits)) setattr(attrs, hits[i], NULL) # does by reference
     }
@@ -1832,7 +1832,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (length(bynames)+length(jvnames)!=length(ans))
       stop("Internal error: jvnames is length ",length(jvnames), " but ans is ",length(ans)," and bynames is ", length(bynames))
     ww = which(jvnames=="")
-    if (any(ww)) jvnames[ww] = paste("V",ww,sep="")
+    if (any(ww)) jvnames[ww] = paste0("V",ww)
     setattr(ans, "names", c(bynames, jvnames))
   } else {
     setnames(ans,seq_along(bynames),bynames)   # TO DO: reinvestigate bynames flowing from dogroups here and simplify
@@ -2495,7 +2495,7 @@ setnames <- function(x,old,new) {
     w = which(!is.na(m))
     if (length(w)) {
       tt[m[w]] = new[w]
-      newk = paste("__",paste(tt,collapse="__"),sep="")
+      newk = paste0("__",paste(tt,collapse="__"))
       setattr(idx, newk, attr(idx, k))
       setattr(idx, k, NULL)
     }
@@ -2623,11 +2623,11 @@ setDF <- function(x, rownames=NULL) {
       stop("All elements in argument 'x' to 'setDF' must be of same length")
     xn = names(x)
     if (is.null(xn)) {
-      setattr(x, "names", paste("V",seq_len(length(x)),sep=""))
+      setattr(x, "names", paste0("V",seq_len(length(x))))
     } else {
       idx = xn %chin% ""
       if (any(idx)) {
-        xn[idx] = paste("V", seq_along(which(idx)), sep="")
+        xn[idx] = paste0("V", seq_along(which(idx)))
         setattr(x, "names", xn)
       }
     }
@@ -2691,11 +2691,11 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       stop("All elements in argument 'x' to 'setDT' must be of same length")
     xn = names(x)
     if (is.null(xn)) {
-      setattr(x, "names", paste("V",seq_len(length(x)),sep=""))
+      setattr(x, "names", paste0("V",seq_len(length(x))))
     } else {
       idx = xn %chin% "" # names can be NA - test 1006 caught that!
       if (any(idx)) {
-        xn[idx] = paste("V", seq_along(which(idx)), sep="")
+        xn[idx] = paste0("V", seq_along(which(idx)))
         setattr(x, "names", xn)
       }
       if (check.names) setattr(x, "names", make.names(xn, unique=TRUE))

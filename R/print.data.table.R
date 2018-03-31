@@ -64,7 +64,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
   # When we depend on R 3.2.0 (Apr 2015) we can use isNamespaceLoaded() added then, instead of %chin% above
 
   # FR #5020 - add row.names = logical argument to print.data.table
-  if (isTRUE(row.names)) rownames(toprint)=paste(format(rn,right=TRUE,scientific=FALSE),":",sep="") else rownames(toprint)=rep.int("", nrow(toprint))
+  if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
   if (is.null(names(x)) || all(names(x) == ""))
     # fixes bug #97 (RF#4934) and #545 (RF#5253)
     colnames(toprint)=rep("", ncol(toprint))
@@ -78,7 +78,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     classes = vapply(x, function(col) class(col)[1L], "", USE.NAMES=FALSE)
     abbs = unname(class_abb[classes])
     if ( length(idx <- which(is.na(abbs))) )
-    abbs[idx] = paste("<", classes[idx], ">", sep="")
+    abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
   }
@@ -115,7 +115,7 @@ format.data.table <- function (x, ..., justify="none") {
     else if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
       paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 - format has to be added here...
     else
-      paste("<", class(x)[1L], ">", sep="")
+      paste0("<", class(x)[1L], ">")
   }
   # FR #1091 for pretty printing of character
   # TODO: maybe instead of doing "this is...", we could do "this ... test"?
@@ -123,7 +123,7 @@ format.data.table <- function (x, ..., justify="none") {
     trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
     if (!is.character(x) || trunc.char <= 0L) return(x)
     idx = which(nchar(x) > trunc.char)
-    x[idx] = paste(substr(x[idx], 1L, as.integer(trunc.char)), "...", sep="")
+    x[idx] = paste0(substr(x[idx], 1L, as.integer(trunc.char)), "...")
     x
   }
   do.call("cbind",lapply(x,function(col,...){
