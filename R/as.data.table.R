@@ -51,14 +51,9 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
   }
   d <- dim(x)
   nrows <- d[1L]
-  ir <- seq_len(nrows)
   ncols <- d[2L]
   ic <- seq_len(ncols)
-  dn <- dimnames(x)
-  collabs <- dn[[2L]]
-  empty <- !nzchar(collabs)
-  if (any(empty))
-    collabs[empty] <- paste("V", ic, sep = "")[empty]
+
   value <- vector("list", ncols)
   if (mode(x) == "character") {
     # fix for #745 - A long overdue SO post: http://stackoverflow.com/questions/17691050/data-table-still-converts-strings-to-factors
@@ -67,10 +62,16 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
   else {
     for (i in ic) value[[i]] <- as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
   }
-  if (length(collabs) == ncols)
-    setattr(value, "names", collabs)
-  else
-    setattr(value, "names", paste("V", ic, sep = ""))
+
+  col_labels <- dimnames(x)[[2L]]
+  if (length(col_labels) == ncols) {
+    if (any(empty <- !nzchar(col_labels)))
+      col_labels[empty] <- paste0("V", ic[empty])
+    setattr(value, "names", col_labels)
+  } else {
+    setattr(value, "names", paste0("V", ic))
+  }
+
   setattr(value,"row.names",.set_row_names(nrows))
   setattr(value,"class",c("data.table","data.frame"))
   alloc.col(value)
