@@ -12,20 +12,24 @@ INT = data.table:::INT
 
 pkgs = c("ggplot2", "hexbin", "plyr", "caret", "xts", "gdata", "zoo", "nlme", "bit64", "knitr", "plm", "parallel")
 if (any(duplicated(pkgs))) stop("Packages defined to be loaded for integration tests in 'inst/tests/other.Rraw' contains duplicates.")
-for (s in pkgs) {
-  assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(require(s, character.only=TRUE))))
-  if (!loaded) cat("\n**** Other package",s,"is not installed. Tests using it will be skipped.\n\n")
-}
+
+is.require = function(pkg) suppressWarnings(suppressMessages(isTRUE(require(pkg, character.only=TRUE, quietly=TRUE, warn.conflicts=FALSE))))
+loaded = sapply(pkgs, is.require)
+cat("\nPackages to be tested:\n\n")
+print(data.table(pkg=pkgs, loaded)[loaded==TRUE, version:=as.character(sapply(pkg, function(p) format(packageVersion(p))))][])
+cat("\n")
+print(sessionInfo())
+cat("\n")
 
 if (all(c("package:reshape","package:reshape2") %in% search())) {
   warning("Packages 'reshape' and 'reshape2' are both loaded. There have been problems before when you don't use the :: namespace prefix to disambiguate. Probably best to either remove.packages('reshape') and use reshape2 instead, or always use :: when packages mask non-generic names.")
 }
 
-if (test_ggplot2) {
+if (loaded[["ggplot2"]]) {
   DT = data.table( a=1:5, b=11:50, d=c("A","B","C","D"), f=1:5, grp=1:5 )
   test(1.1, names(print(ggplot(DT,aes(b,f))+geom_point()))[c(1,3)], c("data","plot"))
   test(1.2, DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 to reduce time needed for ggplot2 to plot
-  if (test_hexbin) {
+  if (loaded[["hexbin"]]) {
     # Test reported by C Neff on 11 Oct 2011
     test(1.3, names(print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp)))[c(1,3)], c("data","plot"))
   }
@@ -38,13 +42,13 @@ if (test_ggplot2) {
   try(graphics.off(),silent=TRUE)
 }
 
-if (test_plyr) {
+if (loaded[["plyr"]]) {
   # Test key is dropped when non-dt-aware packages (here, plyr) reorders rows of data.table.
   DT = data.table(a=1:10,b=1:2,key="a")
   test(2, arrange(DT,b), data.table(a=INT(1,3,5,7,9,2,4,6,8,10),b=INT(1,1,1,1,1,2,2,2,2,2), key=NULL))
 }
 
-if (FALSE) {  # test_reshape
+if (FALSE) {  # loaded[["reshape"]]
   # Fix for #825
   # The bug was that names(DT) changed, hence testing DT here not ans. Same fix tested next with caret, so we now just rely on the caret test.
   # When running this test on 13 Mar 2018, I noticed that reshape::cast doesn't retain the Date class and returns just numbers. So I copied
@@ -54,7 +58,7 @@ if (FALSE) {  # test_reshape
   test(3, names(DT), c("ID", "DATUM", "N", "rank"))
 }
 
-if (test_caret) {
+if (loaded[["caret"]]) {
   # Fix for #476
   # caret seems heavy (plyr, reshape2 and withr). win-builder halts at this point consistently, but we pass on Travis and locally.
   # So I put the win-builder fail down to resource issues and moved this test into test.data.table(with.other.packages=TRUE).
@@ -64,7 +68,7 @@ if (test_caret) {
   test(4, names(DT), c("x", "y"))
 }
 
-if (test_xts) {
+if (loaded[["xts"]]) {
   # xts's last returns a one row data.table ok (setDT is needed to pass strict selfrefok(), but if not, no matter, the first subsequent := heals it (if any).
   # Not true when DT is a one column data.table/data.frame, see below.
   # Potentially, we could unload and reload xts in different orders.
@@ -80,7 +84,7 @@ if (test_xts) {
   # Which was the main thrust of bug#2312 fixed in v1.8.3
 }
 
-if (test_gdata) {
+if (loaded[["gdata"]]) {
   if (!test_xts) warning("The gdata test expects xts loaded as well since all 3 have a last() function.")
   x = list("a",1:2,89)
   test(6.1, xts::last(x), list(89))   # would prefer 89 here like data.table does, since "last" means the last one (never more than one) so why retain the one-item list() level?
@@ -91,13 +95,13 @@ if (test_gdata) {
   test(6.5, data.table::last(DT), DT[3L])
 }
 
-if (test_zoo) {
+if (loaded[["zoo"]]) {
   # as.Date.IDate won't change the class if xts package loaded #1500
   x = as.IDate("2016-01-15")
   test(6, class(as.Date(x)), "Date")
 }
 
-if (test_nlme) {
+if (loaded[["nlme"]]) {
   # commented out to be consistent with base R, as #1078 and #1128 are more common cases..
   # until we can find a workaround for this, Arun disabled this one.
   # Search for "Fix for #1078" for the tests..
@@ -108,7 +112,7 @@ if (test_nlme) {
             {x=as.data.table(iris);tt=groupedData( Sepal.Length ~ Sepal.Width | Species, data=x);attr(tt,"class")=NULL;attr(tt,"FUN")=NULL;attr(tt,".internal.selfref")=NULL;tt})
 }
 
-if (test_bit64) {
+if (loaded[["bit64"]]) {
   # these don't pass UBSAN/USAN because of the overflow, so just here in other.Rraw
   test(8.1, as.character((as.integer64(2^62)-1)*2+1), "9223372036854775807")
   test(8.2, as.character((as.integer64(2^62)-1)*2+2), NA_character_, warning="integer64 overflow")
@@ -116,14 +120,14 @@ if (test_bit64) {
   test(8.4, as.character(-(as.integer64(2^62)-1)*2-2), NA_character_, warning="integer64.*flow")
 }
 
-if (test_gdata) {
+if (loaded[["gdata"]]) {
   # fix for bug #5069
   DT <- data.table(a = c('asdfasdf','asdf','asdgasdgasdgasdg','sdg'), b = runif(4,0,1))
   test(9, write.fwf(DT, f<-tempfile()), NULL)
   unlink(f)
 }
 
-if (test_knitr) {
+if (loaded[["knitr"]]) {
   # That data.table-unaware code in packages like knitr still work
   # kable in knitr v1.6 uses DF[...] syntax inside it but the user might have passed a data.table.
   # Which is fine and works thanks to cedta().
@@ -132,7 +136,7 @@ if (test_knitr) {
 }
 
 # for plm package
-if (test_plm) {
+if (loaded[["plm"]]) {
   set.seed(45L)
   x  = data.table(V1=c(1L,2L), V2=LETTERS[1:3], V3=round(rnorm(4),4), V4=1:12)
   px = pdata.frame(x, index=c("V2", "V4"), drop.index=FALSE, row.names=TRUE)
@@ -140,7 +144,7 @@ if (test_plm) {
   test(11.2, class(setDT(px)), class(x))
 }
 
-if (test_parallel) {
+if (loaded[["parallel"]]) {
   #1745 and #1727
   if (.Platform$OS.type=="windows") {
     warning("This test of auto fallback to single threaded mode when data.table is used from package parallel, does not run on Windows because 'mc.cores'>1 is not supported on Windows; i.e., parallel package isn't parallel on Windows, IIUC. Whereas data.table is parallel built-in on Windows for some functions (fwrite/fread/fsort and expanding) using OpenMP.")
@@ -168,4 +172,3 @@ if (test_parallel) {
 }
 
 cat("\n",ntest-nfail,"out of",ntest,"tests passed.\n")
-
