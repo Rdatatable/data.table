@@ -31,7 +31,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
   .SDcols,
   verbose = getOption("datatable.verbose"),                   # default: FALSE
   allow.cartesian = getOption("datatable.allow.cartesian"),   # default: FALSE
-  drop = NULL, on = NULL)
+  drop = NULL, on = NULL, bothkeycols = TRUE)
 }
 \arguments{
     \item{\dots}{ Just as \code{\dots} in \code{\link{data.frame}}. Usual recycling rules are applied to vectors of different lengths to create a list of equal length vectors.}
@@ -164,6 +164,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
         }
         See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
     }
+  \item{bothkeycols}{logical; If \code{TRUE} (default), then when \code{i} is a \code{data.table} and non-equi join operators are used or \code{roll = TRUE}, those columns will be returned from both \code{x} and \code{i}. When \code{FALSE} only the column from \code{i} will be returned, but named after the column in \code{x}, matching the behaviour prior to v1.10.5.}
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time:\cr
