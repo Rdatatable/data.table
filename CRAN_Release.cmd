@@ -24,7 +24,8 @@ grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P 
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" ./
 
 # Ensure no calls to omp_set_num_threads() [to avoid affecting other packages and base R]
-grep --exclude="./src/openmp-utils.c" omp_set_num_threads ./src/*
+# Only comments referring to it should be in openmp-utils.c
+grep omp_set_num_threads ./src/*
 
 # Ensure no calls to omp_get_max_threads() also since access should be via getDTthreads()
 grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*

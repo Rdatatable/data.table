@@ -26,7 +26,7 @@ autostart=NA
 )
 }
 \arguments{
-  \item{input}{ Either the file name to read (containing no \\n character), a shell command that pre-processes the file (e.g. \code{fread("grep blah filename"))} or the input itself as a string (containing at least one \\n), see examples. In both cases, a length 1 character string. A filename input is passed through \code{\link[base]{path.expand}} for convenience and may be a URL starting http:// or file://. }
+  \item{input}{ Either the file name to read (containing no \\n character), a shell command that pre-processes the file (e.g. \code{fread("grep blah filename"))} or the input itself as a string (containing at least one \\n), see examples. In both cases, a length 1 character string. A filename input is passed through \code{\link[base]{path.expand}} for convenience. \code{input} can also be a URL starting with http:// or file://; see Details. }
   \item{sep}{ The separator between columns. Defaults to the character in the set \code{[,\\t |;:]} that separates the sample of rows into the most number of lines with the same number of fields. Use \code{NULL} or \code{""} to specify no separator; i.e. each line a single character column like \code{base::readLines} does.}
   \item{sep2}{ The separator \emph{within} columns. A \code{list} column will be returned where each cell is a vector of values. This is much faster using less working memory than \code{strsplit} afterwards or similar techniques. For each column \code{sep2} can be different and is the first character in the same set above [\code{,\\t |;}], other than \code{sep}, that exists inside each field outside quoted regions in the sample. NB: \code{sep2} is not yet implemented. }
   \item{nrows}{ The maximum number of rows to read. Unlike \code{read.table}, you do not need to set this to an estimate of the number of rows in the file for better speed because that is already automatically determined by \code{fread} almost instantly using the large sample of lines. `nrows=0` returns the column names and typed empty columns determined by the large sample; useful for a dry run of a large file or to quickly check format consistency of a set of files before starting to read any of them. }
@@ -88,6 +88,11 @@ When \code{quote} is a single character,
   }
 
 To read fields \emph{as is} instead, use \code{quote = ""}.
+
+\bold{File Download:}
+
+When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \code{fread} detects this and \emph{downloads} the target to a temporary file (at \code{tempfile()}) before proceeding to read the file as usual. Secure URLS (ftps:// and https://) are downloaded with \code{curl::curl_download}; ftp:// and http:// paths are downloaded with \code{download.file} and \code{method} set to \code{getOption("download.file.method")}, defaulting to \code{"auto"}; and file:// is downloaded with \code{download.file} with \code{method="internal"}. NB: this implies that for file://, even files found on the current machine will be "downloaded" (i.e., hard-copied) to a temporary file. See \code{\link{download.file}} for more details.
+
 }
 \value{
     A \code{data.table} by default. A \code{data.frame} when argument \code{data.table=FALSE}; e.g. \code{options(datatable.fread.datatable=FALSE)}.
