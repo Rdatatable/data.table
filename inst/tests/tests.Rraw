@@ -11565,13 +11565,31 @@ test(1896.6, nrow(DT[, .N, by = .(y, z, x)]), 5L)
 DT = data.table(a = c(3, 2, 1, 2, 3), b = c(1, 2, 1, 1, 2))
 setindexv(DT, list('a', c('a', 'b')))
 test(1897.1, indices(DT), c("a", "a__b"))
-test(1897.2, attr(attr(DT, 'index'), '__a'), c(3L, 2L, 4L, 1L, 5L))
-test(1897.3, attr(attr(DT, 'index'), '__a__b'), c(3L, 4L, 2L, 1L, 5L))
+test(1897.2, attributes(attr(DT, 'index')),
+     list(`__a` = c(3L, 2L, 4L, 1L, 5L),
+          `__a__b` = c(3L, 4L, 2L, 1L, 5L)))
 
 test(1898.1, set2key(DT, a), error="deprecated. Please use setindex() instead.")
 test(1898.2, set2keyv(DT, "a"), error="deprecated. Please use setindexv() instead.")
 test(1898.3, key2(DT), error="deprecated. Please use indices() instead.")
 
+# index argument for fread, #2633
+DT_str = c('a,b\n3,1\n2,2\n1,1\n2,1\n3,2')
+test(1899.1, attributes(attr(fread(DT_str, index = 'a'), 'index')),
+     list(`__a` = c(3L, 2L, 4L, 1L, 5L)))
+test(1899.2, attributes(attr(fread(DT_str, index = list('a,b', c('b', 'a'), 'a')), 'index')),
+     list(`__a__b` = c(3L, 4L, 2L, 1L, 5L),
+          `__b__a` = c(3L, 4L, 1L, 2L, 5L),
+          `__a` = c(3L, 2L, 4L, 1L, 5L)))
+test(1899.3, fread(DT_str, index = 2L),
+     error = 'index argument.*character vector')
+test(1899.4, fread(DT_str, index = list('a', 1L)),
+     error = 'index argument.*character vector')
+# col.names applied before index
+test(1899.5, fread(DT_str, col.names = c('c', 'd'), index = 'a'),
+     error = 'some columns are not in the data.table')
+test(1899.6, attributes(attr(fread(DT_str, index = c('a', 'b')), 'index')),
+     list(`__a__b` = c(3L, 4L, 2L, 1L, 5L)))
 
 ###################################
 #  Add new tests above this line  #
