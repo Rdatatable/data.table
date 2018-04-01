@@ -85,6 +85,10 @@ oldOptions = options(
 
 ##########################
 
+# Set datatable.bothkeycol to be FALSE for all tests prior to 1899 to preserve old test behaviour
+old.datatable.bothkeycol = options("datatable.bothkeycol")
+options(datatable.bothkeycol = FALSE)
+
 test(1.1, tables(env=new.env()), null.data.table(), output = "No objects of class")
 test(1.2, tables(silent=TRUE), data.table(NAME="timings", NROW=3000L, NCOL=3L, MB=0, COLS=list(c("ID","time","nTest")), KEY=list(NULL)))
 
@@ -4849,13 +4853,13 @@ test(1313.30, DT[, max(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=c("b","a","c"
 dt1 <- data.table(structure(list(x = c(7L, 33L), y = structure(c(15912, 15912), class = "Date"), z = c(626550.35284, 7766.385)), .Names =
 c("x", "y", "z"), class = "data.frame", row.names = c(NA, -2L)), key = "x,y")
 dt2 <- data.table(structure(list(x = c(7L, 7L, 33L, 33L, 33L, 33L), y = structure(c(15884, 15917, 15884, 15884, 15917, 15917), class = "Date"), w = c(-0.118303, 0.141225, -0.03137, -0.02533, 0.045967, 0.043694)), .Names = c("x", "y", "w"), class = "data.frame", row.names = c(NA, -6L)), key = "x,y")
-test(1317.1, dt1[dt2, roll=TRUE, nomatch=0L, bothkeycols=FALSE], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), z=c(dt1$z[1:2], dt1$z[2]), w=c(dt2$w[2], dt2$w[5:6]), key="x,y"))
+test(1317.1, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), z=c(dt1$z[1:2], dt1$z[2]), w=c(dt2$w[2], dt2$w[5:6]), key="x,y"))
 
 
 # also test where 'i' is not sorted.
 set.seed(1L)
 dt2 <- dt2[sample(nrow(dt2))] # key should be gone
-test(1317.2, dt1[dt2, roll=TRUE, nomatch=0L, bothkeycols=FALSE], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), z=c(dt1$z[1:2], dt1$z[2]), w=c(dt2$w[1], dt2$w[c(2,6)])))
+test(1317.2, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), z=c(dt1$z[1:2], dt1$z[2]), w=c(dt2$w[1], dt2$w[c(2,6)])))
 
 
 # bug fix for #472 : "parse" in j
@@ -6272,7 +6276,7 @@ test(1468.3, foverlaps(dt2, dt1, which=TRUE), data.table(xid=1L, yid=2L))
 # Fix for #1010 (discovered while fixing #1007). Don't retain key if i had no key, but irows is sorted, and roll != FALSE... See example in #1010.
 DT = data.table(x=c(-5,5), y=1:2, key="x")
 test(1469.1, key(DT[J(c(2,0)), roll=TRUE]), NULL)
-test(1469.2, key(DT[J(c(2,0)), .(x,y), roll=TRUE, bothkeycols=FALSE]), NULL)
+test(1469.2, key(DT[J(c(2,0)), .(x,y), roll=TRUE]), NULL)
 test(1469.3, key(DT[J(c(2,0)), y, roll=TRUE, by=.EACHI]), NULL)
 test(1469.4, key(DT[J(c(2,0))]), NULL)
 test(1469.5, key(DT[SJ(c(2,0)), roll=TRUE]), "x")
@@ -6280,9 +6284,9 @@ test(1469.6, key(DT[J(c(2,0)), roll="nearest"]), NULL)
 
 # 1007 fix, dealing with Inf and -Inf correctly in rolling joins.
 DT = data.table(x=c(-Inf, 3, Inf), y=1:3, key="x")
-test(1470.1, DT[J(c(2,-Inf,5,Inf)), roll=Inf, bothkeycols=FALSE], data.table(x=c(2,-Inf,5,Inf), y=c(1L, 1:3)))
-test(1470.2, DT[J(c(2,-Inf,5,Inf)), roll=10, bothkeycols=FALSE], data.table(x=c(2,-Inf,5,Inf), y=INT(c(NA, 1, 2, 3))))
-test(1470.3, DT[SJ(c(2,-Inf,5,Inf)), roll=Inf, bothkeycols=FALSE], data.table(x=c(-Inf,2,5,Inf), y=c(1L, 1:3), key="x"))
+test(1470.1, DT[J(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(2,-Inf,5,Inf), y=c(1L, 1:3)))
+test(1470.2, DT[J(c(2,-Inf,5,Inf)), roll=10], data.table(x=c(2,-Inf,5,Inf), y=INT(c(NA, 1, 2, 3))))
+test(1470.3, DT[SJ(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf,2,5,Inf), y=c(1L, 1:3), key="x"))
 
 
 # 1006, second bug with -Inf, now that #1007 is fixed.
@@ -6912,7 +6916,7 @@ test(1540.14, DT1[DT3, lapply(.SD, function(x) x * mul),
                  by=.EACHI, on=c(y="y"), .SDcols=c("a", "b"), nomatch=0L],
              DT1.copy[DT3[, c(2,1,3), with=FALSE], lapply(.SD, function(x) x * mul),
                  by=.EACHI, .SDcols=c("a", "b"), nomatch=0L])
-test(1540.15, DT1[DT3, on=c(y="y"), roll=TRUE, bothkeycols=FALSE], DT1.copy[DT3[, c(2,1,3), with=FALSE], roll=TRUE, bothkeycols=FALSE])
+test(1540.15, DT1[DT3, on=c(y="y"), roll=TRUE], DT1.copy[DT3[, c(2,1,3), with=FALSE], roll=TRUE])
 test(1540.16, DT1[DT3, lapply(.SD, function(x) x * mul),
                  by=.EACHI, on=c(y="y"), .SDcols=c("a", "b"), roll=TRUE],
              DT1.copy[DT3[, c(2,1,3), with=FALSE], lapply(.SD, function(x) x * mul),
@@ -7995,10 +7999,10 @@ if (test_bit64) {
   dt = data.table(x=as.integer64(c(-1000, 0)), y=c(5,10))
   val = c(-1100,-900,100)
   ans = data.table(x=as.integer64(val))
-  test(1614.1, dt[.(val), roll=Inf,  on="x", bothkeycols=FALSE], ans[, y:=c(NA,5,10)])
-  test(1614.2, dt[.(val), roll=Inf, on="x", rollends=TRUE, bothkeycols=FALSE], ans[, y:=c(5,5,10)])
-  test(1614.3, dt[.(val), roll=-Inf, on="x", bothkeycols=FALSE], ans[, y:=c(5,10,NA)])
-  test(1614.4, dt[.(val), roll=-Inf, on="x", rollends=TRUE, bothkeycols=FALSE], ans[, y:=c(5,10,10)])
+  test(1614.1, dt[.(val), roll=Inf,  on="x"], ans[, y:=c(NA,5,10)])
+  test(1614.2, dt[.(val), roll=Inf, on="x", rollends=TRUE], ans[, y:=c(5,5,10)])
+  test(1614.3, dt[.(val), roll=-Inf, on="x"], ans[, y:=c(5,10,NA)])
+  test(1614.4, dt[.(val), roll=-Inf, on="x", rollends=TRUE], ans[, y:=c(5,10,10)])
 }
 
 # fix for #1571
@@ -9103,8 +9107,8 @@ Site6   chr6    3359        GeneF
 Site7   chr7    1158        GeneI
 Site8   chr4    2451        GeneO
 Site9   chr6    3367        GeneZ   ')
-test(1660.1, names(dt2[dt1, on=.(Chr, Location>=Start, Location<=End), bothkeycols=FALSE]), c(names(dt2), "Location.1", "Region"))
-test(1660.2, names(dt1[dt2, on=.(Chr, Start<=Location, End>=Location), bothkeycols=FALSE]), c(names(dt1), "Site", "Gene"))
+test(1660.1, names(dt2[dt1, on=.(Chr, Location>=Start, Location<=End)]), c(names(dt2), "Location.1", "Region"))
+test(1660.2, names(dt1[dt2, on=.(Chr, Start<=Location, End>=Location)]), c(names(dt1), "Site", "Gene"))
 
 # `names<-` should NOT modify by reference #1015
 DT = data.table(x=1, y=2)
@@ -9302,13 +9306,13 @@ dt1 = data.table(x=sample(8,20,TRUE), y=sample(8,20,TRUE), z=1:20)
 dt2 = data.table(c(2,5), c(5,7), c(2,4))
 dt3 = data.table(c(12,5), c(15,7), c(2,4))
 
-test(1682.1, dt1[dt2, .N, by=.EACHI, on=.(x>=V1, y<=V2), bothkeycols=FALSE], dt1[dt2, on=.(x>=V1, y<=V2), bothkeycols=FALSE][, .N, by=.(x,y)])
-test(1682.2, dt1[dt2, sum(z), by=.EACHI, on=.(x>=V1, y<=V2), bothkeycols=FALSE], dt1[dt2, on=.(x>=V1, y<=V2), bothkeycols=FALSE][, sum(z), by=.(x,y)])
-test(1682.3, dt1[dt2, as.numeric(median(z)), by=.EACHI, on=.(x>=V1, y<=V2), bothkeycols=FALSE], dt1[dt2, on=.(x>=V1, y<=V2), bothkeycols=FALSE][, median(z), by=.(x,y)])
-test(1682.4, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2), bothkeycols=FALSE], dt1[dt3, on=.(x>=V1, y<=V2), bothkeycols=FALSE][, .(N=sum(!is.na(z))), by=.(x,y)])
-test(1682.5, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2), nomatch=0L, bothkeycols=FALSE], dt1[dt3, on=.(x>=V1, y<=V2), nomatch=0L, bothkeycols=FALSE][, .N, by=.(x,y)])
-test(1682.6, dt1[dt2, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI, bothkeycols=FALSE], dt1[dt2, on=.(x>=V1, y<=V2), bothkeycols=FALSE][, sum(z)*V3[1L], by=.(x,y)])
-test(1682.7, dt1[dt3, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI, bothkeycols=FALSE], dt1[dt3, on=.(x>=V1, y<=V2), bothkeycols=FALSE][, sum(z)*V3[1L], by=.(x,y)])
+test(1682.1, dt1[dt2, .N, by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, .N, by=.(x,y)])
+test(1682.2, dt1[dt2, sum(z), by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, sum(z), by=.(x,y)])
+test(1682.3, dt1[dt2, as.numeric(median(z)), by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, median(z), by=.(x,y)])
+test(1682.4, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt3, on=.(x>=V1, y<=V2)][, .(N=sum(!is.na(z))), by=.(x,y)])
+test(1682.5, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2), nomatch=0L], dt1[dt3, on=.(x>=V1, y<=V2), nomatch=0L][, .N, by=.(x,y)])
+test(1682.6, dt1[dt2, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI], dt1[dt2, on=.(x>=V1, y<=V2)][, sum(z)*V3[1L], by=.(x,y)])
+test(1682.7, dt1[dt3, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI], dt1[dt3, on=.(x>=V1, y<=V2)][, sum(z)*V3[1L], by=.(x,y)])
 # add test for update operation
 idx = dt1[dt2[1], which=TRUE, on=.(x>=V1, y<=V2)]
 test(1682.8, copy(dt1)[dt2[1], z := 2L*z, by=.EACHI, on=.(x>=V1, y<=V2)], copy(dt1)[(idx), z := 2L*z])
@@ -10984,8 +10988,8 @@ test(1845.2, d3[d2, id, on = .(y >= val)], INT(1,4,7,1,3,4,6,7,9))
 # fix for non-equi join issue #1986, when d2 is 0-row data.table, thanks @ebs238 for the nice minimal example
 d1 <- data.table(a=1L, b=2L)
 d2 <- d1[0L]
-test(1846.1, d2[d1, on=.(a>a, b<b), bothkeycols=FALSE], d1)
-test(1846.2, d2[d1, on=.(a>a), bothkeycols=FALSE], data.table(a=1L, b=NA_integer_, i.b=2L))
+test(1846.1, d2[d1, on=.(a>a, b<b)], d1)
+test(1846.2, d2[d1, on=.(a>a)], data.table(a=1L, b=NA_integer_, i.b=2L))
 
 # Fix for non-equi join issue #2360.- issue in recreating new indices following non-equi binary merge
 d <- data.table(
@@ -11577,6 +11581,7 @@ test(1898.3, key2(DT), error="deprecated. Please use indices() instead.")
 # PR#2602 -- non-equi joins and roll joins columns are now returned from 
 # both data.tables in x[i]. These tests cover previous tests which expect 
 # only the column from i (named after the column from x) to be returned.
+options(datatable.bothkeycols = TRUE)
 
 # Tests 129, 130, 131 but with the roll column returned from both x and i
 TESTDT = data.table(a=3L,v=2L,key="a")  # testing 1-row table
@@ -11674,12 +11679,16 @@ d2 <- d1[0L]
 test(1899.26, d2[d1, on=.(a>a, b<b)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
 test(1899.27, d2[d1, on=.(a>a)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
 
+# Testing completed PR#2602, set datatable.bothkeycols back to FALSE (the default for now) for future tests
+options(datatable.bothkeycols=FALSE)
+
 
 ###################################
 #  Add new tests above this line  #
 ###################################
 
 options(oldOptions)  # set at top of this file
+options(old.datatable.bothkeycol)
 
 setDTthreads(0)
 plat = paste0("endian==", .Platform$endian,
