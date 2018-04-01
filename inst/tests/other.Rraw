@@ -15,7 +15,10 @@ if (any(duplicated(pkgs))) stop("Packages defined to be loaded for integration t
 
 is.require = function(pkg) suppressWarnings(suppressMessages(isTRUE(require(pkg, character.only=TRUE, quietly=TRUE, warn.conflicts=FALSE))))
 loaded = sapply(pkgs, is.require)
-cat("\nPackages to be tested:\n\n")
+
+if (sum(!loaded)) invisible(sapply(names(loaded)[!loaded], function(s) cat("\n**** Other package",s,"is not installed. Tests using it will be skipped.\n")))
+
+cat("\n")
 print(data.table(pkg=pkgs, loaded)[loaded==TRUE, version:=as.character(sapply(pkg, function(p) format(packageVersion(p))))][])
 cat("\n")
 print(sessionInfo())
