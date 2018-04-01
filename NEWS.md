@@ -23,6 +23,20 @@ This option controls whether a column of all 0's and 1's is read as `integer`, o
 
 These options are meant for temporary use to aid your migration, [#2652](https://github.com/Rdatatable/data.table/pull/2652). You are not meant to set them to the old default and then not migrate your code that is dependent on the default. Either set the argument explicitly so your code is not dependent on the default, or change the code to cope with the new default. Over the next few years we will slowly start to remove these options, warning you if you are using them, and return to a simple default. See the history of NEWS and NEWS.0 for past migrations that have, generally speaking, been successfully managed in this way. For example, at the end of NOTES for this version (below in this file) is a note about the usage of `datatable.old.unique.by.key` now warning, as you were warned it would do over a year ago. When that change was introduced, the default was changed and that option provided an option to restore the old behaviour. These `fread`/`fwrite` changes are even more cautious and not even changing the default's default yet. Giving you extra warning by way of this notice to move forward. And giving you a chance to object.
 
+3. `[.data.table`'s `bothkeycols=` argument :
+    ```
+    bothkeycols = FALSE                         # old default
+    getOption("datatable.bothkeycols", FALSE)   # this release; i.e. the same; no change yet
+    getOption("datatable.bothkeycols", TRUE)    # future release
+    ```
+This option fixes issues [#1615](https://github.com/Rdatatable/data.table/issues/1615), [#1469](https://github.com/Rdatatable/data.table/issues/1615), and related issues [#1700](https://github.com/Rdatatable/data.table/issues/1700),
+[#1807](https://github.com/Rdatatable/data.table/issues/1807),
+[#2006](https://github.com/Rdatatable/data.table/issues/2006),
+[#2307](https://github.com/Rdatatable/data.table/issues/2307),
+[#2569](https://github.com/Rdatatable/data.table/issues/2569),
+[#2595](https://github.com/Rdatatable/data.table/issues/2595), and
+[#2602](https://github.com/Rdatatable/data.table/issues/2602). When `TRUE`, any columns involved in a non-equi join operator or a rolling join operator are returned from both `data.table`'s `x[i]`. This will remove the confusion caused by the current behaviour, where only the column from `i` is returned, but with the column name `x`. Thanks to @sritchie73 for the implementation [PR#2706](https://github.com/Rdatatable/data.table/pull/2706) and to @jangorecki for feedback on the PR.
+
 #### NEW FEATURES
 
 1. `fread()`:
