@@ -11574,9 +11574,10 @@ test(1898.3, key2(DT), error="deprecated. Please use indices() instead.")
 
 # . within bquote shouldn't be swapped to list, #1912
 DT = data.table(x = 1:5, y = 6:10)
-test(1899.1, DT[ , bquote(z == .(sum(x)))], substitute(z == 15L))
+test(1899.1, DT[ , bquote(z == .(sum(x)))],
+     bquote(z == .(DT[ , sum(x)])))
 test(1899.2, DT[ , .(.(bquote(z == .(sd(x - y)))))],
-     data.table(V1 = list(substitute(z == 0))))
+     data.table(V1 = list(bquote(z == .(DT[ , sd(x - y)])))))
 
 ###################################
 #  Add new tests above this line  #

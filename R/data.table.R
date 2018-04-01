@@ -188,9 +188,7 @@ replace_dot_alias <- function(e) {
     # . alias also used within bquote, #1912
     if (e[[1L]] == 'bquote') return(e)
     if (e[[1L]] == ".") e[[1L]] = quote(list)
-    for (i in seq_along(e)[-1L]) {
-      if (!is.null(e[[i]]) && e[[i]] != 'bquote') e[[i]] = replace_dot_alias(e[[i]])
-    }
+    for (i in seq_along(e)[-1L]) if (!is.null(e[[i]])) e[[i]] = replace_dot_alias(e[[i]])
   }
   e
 }
