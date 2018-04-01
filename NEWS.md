@@ -115,6 +115,8 @@ The response has been positive ([this tweet](https://twitter.com/MattDowle/statu
     ```
 Thus, `with=` should no longer be needed in any cases. Please change to using the `..` prefix and in a few years we will start to formally deprecate and remove the `with=` parameter.  If this is well received, the `..` prefix could be expanded to symbols appearing in `i=` and `by=`, too.
 
+19. `setindexv` can now assign multiple (separate) indices by accepting a `list` in the `cols` argument.
+
 #### BUG FIXES
 
 1. The new quote rules handles this single field `"Our Stock Screen Delivers an Israeli Software Company (MNDO, CTCH)<\/a> SmallCapInvestor.com - Thu, May 19, 2011 10:02 AM EDT<\/cite><\/div>Yesterday in \""Google, But for Finding
@@ -220,6 +222,12 @@ Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdat
 9. New vignette added: _Importing data.table_ - focused on using data.table as a dependency in R packages. Answers most commonly asked questions and promote good practices.
 
 10. As warned in v1.9.8 release notes below in this file (on CRAN 25 Nov 2016) it has been 1 year since then and so use of `options(datatable.old.unique.by.key=TRUE)` to restore the old default is now deprecated with warning. The new warning states that this option still works and repeats the request to pass `by=key(DT)` explicitly to `unique()`, `duplicated()`, `uniqueN()` and `anyDuplicated()` and to stop using this option. In another year, this warning will become error. Another year after that the option will be removed.
+
+11. As `set2key()` and `key2()` have been warning since v1.9.8 on CRAN Nov 2016, their warnings have now been upgraded to errors. Note that when they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental' in NEWS item 4. They will be removed in one year.
+```
+Was warning: set2key() will be deprecated in the next relase. Please use setindex() instead.
+Now error: set2key() is now deprecated. Please use setindex() instead.
+```
 
 ### Changes in v1.10.4-3  (on CRAN 20 Oct 2017)
 
