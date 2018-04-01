@@ -1899,7 +1899,7 @@ as.matrix.data.table <- function(x, rownames, ...) {
         if (haskey(x)) { 
           rownames <- key(x) 
           if (length(rownames) > 1L) {
-            warning(sprintf("rownames is TRUE but multiple keys [%s] found for x; defaulting to first key column [%s]",
+            warning(sprintf("rownames is TRUE but multiple keys [%s] found for x; defaulting to first column x[,1]",
                             paste(rownames, collapse = ','), rownames[1L]))
             rownames <- 1L
           }
