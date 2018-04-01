@@ -11572,6 +11572,7 @@ test(1898.1, set2key(DT, a), error="deprecated. Please use setindex() instead.")
 test(1898.2, set2keyv(DT, "a"), error="deprecated. Please use setindexv() instead.")
 test(1898.3, key2(DT), error="deprecated. Please use indices() instead.")
 
+
 # Allow column to be used as rownames when converting to matrix #2702
 DT = data.table(id = letters[1:4], X = 1:4, Y = 5:8)
 mat <- matrix(1:8, ncol = 2, dimnames=list(letters[1:4], c("X", "Y")))
