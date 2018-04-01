@@ -11589,12 +11589,13 @@ test(1899.06, as.matrix(DT, -1), error="rownames is -1 which is outside the colu
 test(1899.07, as.matrix(DT, "Z"), error="Z is not a column of x")
 test(1899.08, as.matrix(DT, c(1,2)), error="rownames must be a single column in x or a vector of row names of length nrow(x)")
 test(1899.09, as.matrix(DT, complex(1)), error="rownames must be TRUE, a column index, a column name in x, or a vector of row names")
-# warnings
-test(1899.10, as.matrix(DT, NA), mat2, warning="rownames is NA, ignoring rownames")
-test(1899.11, as.matrix(DT, NULL), mat2, warning="rownames is NULL, ignoring rownames")
-test(1899.12, as.matrix(DT, FALSE), mat2, warning="rownames is FALSE, ignoring rownames")
+# values that pass through (rownames ignored)
+test(1899.10, as.matrix(DT, NA), mat2)
+test(1899.11, as.matrix(DT, NULL), mat2)
+test(1899.12, as.matrix(DT, FALSE), mat2)
+# Warnings:
 setkey(DT, id, X)
-test(1899.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys found in key(x), using first column instead")
+test(1899.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys")
 
 
 ###################################

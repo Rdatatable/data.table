@@ -1885,22 +1885,16 @@ as.matrix.data.table <- function(x, rownames, ...) {
   rn <- NULL
   rnc <- NULL
   if (!missing(rownames)) { # Convert rownames to a column index if possible
-    if (is.null(rownames)) {
-      warning("rownames is NULL, ignoring rownames")
-    } else if (length(rownames) == nrow(x)) {
+    if (length(rownames) == nrow(x)) {
       # rownames argument is a vector of row names, no column in x to drop.
       rn <- rownames
       rnc <- NULL 
-    } else if (length(rownames) != 1L) {
+    } else if (!is.null(rownames) && length(rownames) != 1L) { # vector(0) will throw an error, but NULL will pass through
       stop(sprintf("rownames must be a single column in x or a vector of row names of length nrow(x)=%d", nrow(x)))
-    } else if (is.na(rownames)) {
-      warning("rownames is NA, ignoring rownames")
-    } else if (identical(rownames, FALSE)) {
-      warning("rownames is FALSE, ignoring rownames")
-    } else if (!(is.logical(rownames) || is.character(rownames) || is.numeric(rownames))) {
+    } else if (!(is.null(rownames) || is.logical(rownames) || is.character(rownames) || is.numeric(rownames))) {
       # E.g. because rownames is some sort of object that can't be converted to a column index
       stop("rownames must be TRUE, a column index, a column name in x, or a vector of row names")
-    } else { # Handles cases where rownames is a column name, or key(x) from TRUE
+    } else if (!is.null(rownames) && !is.na(rownames) && !identical(rownames, FALSE)) { # Handles cases where rownames is a column name, or key(x) from TRUE
       if (identical(rownames, TRUE)) {
         if (haskey(x)) { 
           rownames <- key(x) 
