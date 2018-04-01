@@ -16,7 +16,13 @@ if (any(duplicated(pkgs))) stop("Packages defined to be loaded for integration t
 is.require = function(pkg) suppressWarnings(suppressMessages(isTRUE(require(pkg, character.only=TRUE, quietly=TRUE, warn.conflicts=FALSE))))
 loaded = sapply(pkgs, is.require)
 
-if (sum(!loaded)) invisible(sapply(names(loaded)[!loaded], function(s) cat("\n**** Other package",s,"is not installed. Tests using it will be skipped.\n")))
+if (sum(!loaded)) {
+  if (as.logical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_", "TRUE"))) {
+    stop(sprintf("Package suggested but not available: %s\n\nThe suggested packages are required for a complete check of data.table integration tests.\nChecking can be attempted without them by setting the environment variable _R_CHECK_FORCE_SUGGESTS_ to a false value.", paste("'", names(loaded)[!loaded], "'", sep="", collapse=", ")))
+  } else {
+    invisible(sapply(names(loaded)[!loaded], function(s) cat("\n**** Other package",s,"is not installed. Tests using it will be skipped.\n")))
+  }
+}
 
 cat("\n")
 print(data.table(pkg=pkgs, loaded)[loaded==TRUE, version:=as.character(sapply(pkg, function(p) format(packageVersion(p))))][])
