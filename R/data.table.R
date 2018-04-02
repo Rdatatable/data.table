@@ -2907,6 +2907,7 @@ isReallyReal <- function(x) {
   ## convert i to data.table with all combinations in rows.
   if(length(i) > 1L && prod(vapply(i, length, integer(1L))) > 1e4){
     ## CJ would result in more than 1e4 rows. This would be inefficient, especially memory-wise #2635
+    if (verbose) {cat("Subsetting optimization disabled because the cross-product of RHS values exceeds 1e4, causing memory problems.\n");flush.console()}
     return(NULL)
   }
   ## Care is needed with names as we construct i

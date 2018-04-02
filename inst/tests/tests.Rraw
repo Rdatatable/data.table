@@ -5866,7 +5866,7 @@ test(1437.34, DT[x %in% 0:1e5], DT)
 test(1437.35, DT[x %in% 0:99 & y %in% 0:98, verbose = TRUE], output = "Optimized subsetting")
 test(1437.36, DT[x %in% 0:99 & y %in% 0:98], DT)
 # multi column query with more than 1e4 rows in i is not optimized
-test(1437.37, DT[x %in% 0:100 & y %in% 0:101, verbose = TRUE], output = "^   x y")
+test(1437.37, DT[x %in% 0:100 & y %in% 0:101, verbose = TRUE], output = "Subsetting optimization disabled because the cross-product of RHS values exceeds 1e4, causing memory problems.")
 test(1437.38, DT[x %in% 0:100 & y %in% 0:101], DT)
 ## do extensive tests of optimized vs non-optimized queries for identical results.
 ## very much inspired by the tests for non equi joins (1641ff)
