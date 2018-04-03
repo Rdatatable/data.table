@@ -361,6 +361,7 @@ test(128, TESTDT[J(4)], data.table(a=4L,v=NA_integer_,key="a"))   # see tests 20
 test(129, TESTDT[J(4),roll=TRUE], data.table(a=4L,v=2L,key="a"))  # the i values are in the result now (which make more sense for rolling joins, the x.a can still be accessed if need be)
 test(130, TESTDT[J(4),roll=TRUE,rollends=FALSE], data.table(a=4L,v=NA_integer_,key="a"))
 test(131, TESTDT[J(-4),roll=TRUE], data.table(a=-4L,v=NA_integer_,key="a"))
+
 test(132, ncol(TESTDT[0]), 2L)
 test(133, TESTDT[0][J(3)], data.table(a=3L,v=NA_integer_,key="a")) # These need to retain key for consistency (edge cases of larger sorted i)
 
@@ -6285,7 +6286,6 @@ DT = data.table(x=c(-Inf, 3, Inf), y=1:3, key="x")
 test(1470.1, DT[J(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(2,-Inf,5,Inf), y=c(1L, 1:3)))
 test(1470.2, DT[J(c(2,-Inf,5,Inf)), roll=10], data.table(x=c(2,-Inf,5,Inf), y=INT(c(NA, 1, 2, 3))))
 test(1470.3, DT[SJ(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf,2,5,Inf), y=c(1L, 1:3), key="x"))
-
 
 # 1006, second bug with -Inf, now that #1007 is fixed.
 x <- c(-Inf, -0.1, 0, 0.1, Inf)
