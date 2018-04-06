@@ -53,7 +53,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
         curl::curl_download(input, tmpFile, mode="wb", quiet = !showProgress)
       }
       else if (str6=="ftp://" || str7== "http://" || str7=="file://") {
-        method = if (str7=="file://") "auto" else getOption("download.file.method", default="auto")
+        method = if (str7=="file://") "internal" else getOption("download.file.method", default="auto")
         # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
         download.file(input, tmpFile, method=method, mode="wb", quiet=!showProgress)
         # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"

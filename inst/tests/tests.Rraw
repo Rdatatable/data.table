@@ -11554,18 +11554,26 @@ utf8_strings = c("\u00e7ile", "fa\u00e7ile", "El. pa\u00c5\u00a1tas", "\u00a1tas
 latin1_strings = iconv(utf8_strings, from = "UTF-8", to = "latin1")
 DT = data.table(x = sample(latin1_strings, 1000, replace=TRUE), key = "x")
 test(1896.1, enc2utf8(unique(DT$x)), sort(utf8_strings, method = "radix"))
-
-# by, keyby should treat the string with different encoding as the same
+#  by, keyby should treat the string with different encoding as the same
 mixed_strings = c(utf8_strings, latin1_strings)
 DT = data.table(x = mixed_strings)
 test(1896.2, DT[, .(CT = .N), keyby = x]$CT, rep(2L, 5))
 test(1896.3, DT[, uniqueN(x)], 5L)
-
 DT = data.table(x = mixed_strings, y = c(latin1_strings, utf8_strings), z = 1)
 test(1896.4, nrow(DT[, .N, by = .(z, x, y)]), 5L)
 test(1896.5, nrow(DT[, .N, by = .(y, x, z)]), 5L)
 test(1896.6, nrow(DT[, .N, by = .(y, z, x)]), 5L)
 
+# FR#2695 -- setindexv to accept lists for multiple indices
+DT = data.table(a = c(3, 2, 1, 2, 3), b = c(1, 2, 1, 1, 2))
+setindexv(DT, list('a', c('a', 'b')))
+test(1897.1, indices(DT), c("a", "a__b"))
+test(1897.2, attr(attr(DT, 'index'), '__a'), c(3L, 2L, 4L, 1L, 5L))
+test(1897.3, attr(attr(DT, 'index'), '__a__b'), c(3L, 4L, 2L, 1L, 5L))
+
+test(1898.1, set2key(DT, a), error="deprecated. Please use setindex() instead.")
+test(1898.2, set2keyv(DT, "a"), error="deprecated. Please use setindexv() instead.")
+test(1898.3, key2(DT), error="deprecated. Please use indices() instead.")
 
 
 ###################################
