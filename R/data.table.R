@@ -1888,7 +1888,7 @@ as.matrix.data.table <- function(x, rownames, ...) {
     if (length(rownames) == nrow(x)) {
       # rownames argument is a vector of row names, no column in x to drop.
       rn <- rownames
-      rnc <- NULL 
+      rnc <- NULL
     } else if (!is.null(rownames) && length(rownames) != 1L) { # vector(0) will throw an error, but NULL will pass through
       stop(sprintf("rownames must be a single column in x or a vector of row names of length nrow(x)=%d", nrow(x)))
     } else if (!(is.null(rownames) || is.logical(rownames) || is.character(rownames) || is.numeric(rownames))) {
@@ -1896,18 +1896,18 @@ as.matrix.data.table <- function(x, rownames, ...) {
       stop("rownames must be TRUE, a column index, a column name in x, or a vector of row names")
     } else if (!is.null(rownames) && !is.na(rownames) && !identical(rownames, FALSE)) { # Handles cases where rownames is a column name, or key(x) from TRUE
       if (identical(rownames, TRUE)) {
-        if (haskey(x)) { 
-          rownames <- key(x) 
+        if (haskey(x)) {
+          rownames <- key(x)
           if (length(rownames) > 1L) {
             warning(sprintf("rownames is TRUE but multiple keys [%s] found for x; defaulting to first column x[,1]",
                             paste(rownames, collapse = ','), rownames[1L]))
             rownames <- 1L
           }
-        } else { 
+        } else {
           rownames <- 1L
         }
       }
-      if (is.character(rownames)) { 
+      if (is.character(rownames)) {
         rnc <- chmatch(rownames, names(x))
         if (is.na(rnc)) stop(rownames, " is not a column of x")
       } else { # rownames is an index already
@@ -1919,14 +1919,14 @@ as.matrix.data.table <- function(x, rownames, ...) {
   }
   # If the rownames argument has been used, and is a single column,
   # extract that column's index (rnc) and drop it from x
-  if (!is.null(rnc)) { 
+  if (!is.null(rnc)) {
     rn <- x[[rnc]]
     dm <- dim(x) - c(0, 1)
     cn <- names(x)[-rnc]
     X <- x[, .SD, .SDcols = cn]
   } else {
-    dm <- dim(x) 
-    cn <- names(x) 
+    dm <- dim(x)
+    cn <- names(x)
     X <- x
   }
   if (any(dm == 0L))
@@ -2406,7 +2406,7 @@ point <- function(to, to_idx, from, from_idx) {
       indexcols <- strsplit(index, split = "__")[[1L]][-1L]
       indexlength <- which.first(!indexcols %chin% cols) - 1L
       if (is.na(indexlength)) next ## all columns are present, nothing to be done
-      reducedindex <- paste0(c("", indexcols[seq_len(indexlength)]), collapse = "__") ## the columns until the first missing form the new index
+      reducedindex <- paste0("__", indexcols[seq_len(indexlength)], collapse="") ## the columns until the first missing from the new index
       if (reducedindex %chin% indices || !indexlength) {
         ## Either reduced index already present or no columns of the original index remain.
         ## Drop the original index completely
@@ -2537,7 +2537,7 @@ setnames <- function(x,old,new) {
     w = which(!is.na(m))
     if (length(w)) {
       tt[m[w]] = new[w]
-      newk = paste0("__",paste(tt,collapse="__"))
+      newk = paste0("__",tt,collapse="")
       setattr(idx, newk, attr(idx, k))
       setattr(idx, k, NULL)
     }

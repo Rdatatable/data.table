@@ -79,7 +79,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   }
   if (!physical) {
     if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
-    setattr(attr(x,"index",exact=TRUE), paste0("__",paste(cols,collapse="__")), o)
+    setattr(attr(x,"index",exact=TRUE), paste0("__", cols, collapse=""), o)
     return(invisible(x))
   }
   setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
