@@ -5,7 +5,7 @@ shift <- function(x, n=1L, fill=NA, type=c("lag", "lead"), give.names=FALSE) {
     if (is.null(names(x))) {
       xsub = substitute(x)
       if (is.atomic(x) && is.name(xsub)) nx = deparse(xsub, 500L)
-      else nx = paste("V", if (is.atomic(x)) 1L else seq_along(x), sep="")
+      else nx = paste0("V", if (is.atomic(x)) 1L else seq_along(x))
     }
     else nx = names(x)
     setattr(ans, 'names', do.call("paste", c(CJ(nx, type, n, sorted=FALSE), sep="_")))
