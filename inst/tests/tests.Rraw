@@ -5442,7 +5442,7 @@ test(1377.8, copy(DT)[FALSE, bar:=stop("eval'd")], DT)
 # therefore, this doesn't actually test mode="wb" but close as we can get
 # NB: As of v1.10.5, fread copes ok with any number of \r before the \n
 
-test(1378.1, fread(testDir("russellCRLF.csv"))[19,`Value With Dividends`], 357.97)
+test(1378.1, fread(file=testDir("russellCRLF.csv"))[19,`Value With Dividends`], 357.97)
 
 f = paste0("file://",testDir("russellCRLF.csv"))
 # simulates a http:// request as far as file.download() and unlink() goes, without internet
