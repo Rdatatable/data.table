@@ -11576,6 +11576,30 @@ test(1898.1, set2key(DT, a), error="deprecated. Please use setindex() instead.")
 test(1898.2, set2keyv(DT, "a"), error="deprecated. Please use setindexv() instead.")
 test(1898.3, key2(DT), error="deprecated. Please use indices() instead.")
 
+# Allow column to be used as rownames when converting to matrix #2702
+DT = data.table(id = letters[1:4], X = 1:4, Y = 5:8)
+mat <- matrix(1:8, ncol = 2, dimnames=list(letters[1:4], c("X", "Y")))
+mat2 <- matrix(c(letters[1:4], 1:8), ncol=3, dimnames=list(NULL, c("id", "X", "Y")))
+mat3 <- matrix(c(letters[1:4], 1:8), ncol=3, dimnames=list(1:4, c("id", "X", "Y")))
+test(1899.01, as.matrix(DT, 1), mat)
+test(1899.02, as.matrix(DT, "id"), mat)
+test(1899.03, as.matrix(DT, TRUE), mat)
+setkey(DT, id)
+test(1899.04, as.matrix(DT, TRUE), mat)
+test(1899.05, as.matrix(DT, 1:4), mat3)
+# errors
+test(1899.06, as.matrix(DT, -1), error="rownames is -1 which is outside the column number range")
+test(1899.07, as.matrix(DT, "Z"), error="Z is not a column of x")
+test(1899.08, as.matrix(DT, c(1,2)), error="rownames must be a single column in x or a vector of row names of length nrow(x)")
+test(1899.09, as.matrix(DT, complex(1)), error="rownames must be TRUE, a column index, a column name in x, or a vector of row names")
+# values that pass through (rownames ignored)
+test(1899.10, as.matrix(DT, NA), mat2)
+test(1899.11, as.matrix(DT, NULL), mat2)
+test(1899.12, as.matrix(DT, FALSE), mat2)
+# Warnings:
+setkey(DT, id, X)
+test(1899.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys")
+
 
 ###################################
 #  Add new tests above this line  #
