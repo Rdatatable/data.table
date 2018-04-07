@@ -68,7 +68,7 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
     }
   }
   tt = vnames==""
-  if (any(tt)) vnames[tt] = paste("V", which(tt), sep = "")
+  if (any(tt)) vnames[tt] = paste0("V", which(tt))
   # so now finally we have good column names. We also will use novname later to know which were explicitly supplied in the call.
   n <- length(x)
   if (n < 1L)
@@ -99,7 +99,7 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
       if (length(namesi)==0L) namesi = rep.int("",ncol(xi))
       namesi[is.na(namesi)] = ""
       tt = namesi==""
-      if (any(tt)) namesi[tt] = paste("V", which(tt), sep = "")
+      if (any(tt)) namesi[tt] = paste0("V", which(tt))
       if (novname[i]) vnames[[i]] = namesi
       else vnames[[i]] = paste(vnames[[i]], namesi, sep=".")
     }
@@ -476,7 +476,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # on = .() is now possible, #1257
         parse_on <- function(onsub) {
           ops = c("==", "<=", "<", ">=", ">", "!=")
-          pat = paste("(", ops, ")", sep = "", collapse = "|")
+          pat = paste0("(", ops, ")", collapse="|")
           if (is.call(onsub) && onsub[[1L]] == "eval") {
             onsub = eval(onsub[[2L]], parent.frame(2L), parent.frame(2L))
             if (is.call(onsub) && onsub[[1L]] == "eval") onsub = onsub[[2L]]
