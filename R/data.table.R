@@ -1881,17 +1881,59 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 #    x
 #}
 
-
-as.matrix.data.table <- function(x,...)
-{
-  dm <- dim(x)
-  cn <- names(x)
+as.matrix.data.table <- function(x, rownames, ...) {
+  rn <- NULL
+  rnc <- NULL
+  if (!missing(rownames)) { # Convert rownames to a column index if possible
+    if (length(rownames) == nrow(x)) {
+      # rownames argument is a vector of row names, no column in x to drop.
+      rn <- rownames
+      rnc <- NULL 
+    } else if (!is.null(rownames) && length(rownames) != 1L) { # vector(0) will throw an error, but NULL will pass through
+      stop(sprintf("rownames must be a single column in x or a vector of row names of length nrow(x)=%d", nrow(x)))
+    } else if (!(is.null(rownames) || is.logical(rownames) || is.character(rownames) || is.numeric(rownames))) {
+      # E.g. because rownames is some sort of object that can't be converted to a column index
+      stop("rownames must be TRUE, a column index, a column name in x, or a vector of row names")
+    } else if (!is.null(rownames) && !is.na(rownames) && !identical(rownames, FALSE)) { # Handles cases where rownames is a column name, or key(x) from TRUE
+      if (identical(rownames, TRUE)) {
+        if (haskey(x)) { 
+          rownames <- key(x) 
+          if (length(rownames) > 1L) {
+            warning(sprintf("rownames is TRUE but multiple keys [%s] found for x; defaulting to first column x[,1]",
+                            paste(rownames, collapse = ','), rownames[1L]))
+            rownames <- 1L
+          }
+        } else { 
+          rownames <- 1L
+        }
+      }
+      if (is.character(rownames)) { 
+        rnc <- chmatch(rownames, names(x))
+        if (is.na(rnc)) stop(rownames, " is not a column of x")
+      } else { # rownames is an index already
+        if (rownames < 1L || rownames > ncol(x))
+          stop(sprintf("rownames is %d which is outside the column number range [1,ncol=%d]", rownames, ncol(x)))
+        rnc <- rownames
+      }
+    }
+  }
+  # If the rownames argument has been used, and is a single column,
+  # extract that column's index (rnc) and drop it from x
+  if (!is.null(rnc)) { 
+    rn <- x[[rnc]]
+    dm <- dim(x) - c(0, 1)
+    cn <- names(x)[-rnc]
+    X <- x[, .SD, .SDcols = cn]
+  } else {
+    dm <- dim(x) 
+    cn <- names(x) 
+    X <- x
+  }
   if (any(dm == 0L))
-    return(array(NA, dim = dm, dimnames = list(NULL, cn)))
+    return(array(NA, dim = dm, dimnames = list(rn, cn)))
   p <- dm[2L]
   n <- dm[1L]
   collabs <- as.list(cn)
-  X <- x
   class(X) <- NULL
   non.numeric <- non.atomic <- FALSE
   all.logical <- TRUE
@@ -1936,7 +1978,7 @@ as.matrix.data.table <- function(x,...)
   }
   X <- unlist(X, recursive = FALSE, use.names = FALSE)
   dim(X) <- c(n, length(X)/n)
-  dimnames(X) <- list(NULL, unlist(collabs, use.names = FALSE))
+  dimnames(X) <- list(rn, unlist(collabs, use.names = FALSE))
   X
 }
 
@@ -2907,6 +2949,7 @@ isReallyReal <- function(x) {
   ## convert i to data.table with all combinations in rows.
   if(length(i) > 1L && prod(vapply(i, length, integer(1L))) > 1e4){
     ## CJ would result in more than 1e4 rows. This would be inefficient, especially memory-wise #2635
+    if (verbose) {cat("Subsetting optimization disabled because the cross-product of RHS values exceeds 1e4, causing memory problems.\n");flush.console()}
     return(NULL)
   }
   ## Care is needed with names as we construct i
