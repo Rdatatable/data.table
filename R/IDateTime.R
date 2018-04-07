@@ -160,7 +160,7 @@ as.character.ITime <- format.ITime <- function(x, ...) {
   # Fix for #1354, so that "NA" input is handled correctly.
   if (is.na(any(neg))) res[is.na(x)] = NA
   neg = which(neg)
-  if (length(neg)) res[neg] = paste("-", res[neg], sep="")
+  if (length(neg)) res[neg] = paste0("-", res[neg])
   res
 }
 

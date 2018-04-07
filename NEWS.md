@@ -6,20 +6,20 @@
 #### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES
 
 1. `fread()`'s `na.strings=` argument :
-    ```
+    ```R
     "NA"                                      # old default
     getOption("datatable.na.strings", "NA")   # this release; i.e. the same; no change yet
     getOption("datatable.na.strings", "")     # future release
     ```
-This option controls how `,,` is read in character columns. It does not affect numeric columns which read `,,` as `NA` regardless. We would like `,,`=>`NA` for consistency with numeric types, and `,"",`=>empty string to be the standard default for `fwrite/fread` character columns so that `fread(fwrite(DT))==DT` without needing any change to any parameters. `fwrite` has never written `NA` as `"NA"` in case `"NA"` is a valid string in the data; e.g., 2 character id columns sometimes do. Instead, `fwrite` has always written `,,` by default for an `<NA>` in a character columns. The use of R's `getOption()` allows users to move forward now, using `options(datatable.fread.na.strings="")`, or restore old behaviour when the default's default is changed in future, using `options(datatable.fread.na.strings="NA")`.
+    This option controls how `,,` is read in character columns. It does not affect numeric columns which read `,,` as `NA` regardless. We would like `,,`=>`NA` for consistency with numeric types, and `,"",`=>empty string to be the standard default for `fwrite/fread` character columns so that `fread(fwrite(DT))==DT` without needing any change to any parameters. `fwrite` has never written `NA` as `"NA"` in case `"NA"` is a valid string in the data; e.g., 2 character id columns sometimes do. Instead, `fwrite` has always written `,,` by default for an `<NA>` in a character columns. The use of R's `getOption()` allows users to move forward now, using `options(datatable.fread.na.strings="")`, or restore old behaviour when the default's default is changed in future, using `options(datatable.fread.na.strings="NA")`.
 
 2. `fread()` and `fwrite()`'s `logical01=` argument :
-    ```
+    ```R
     logical01 = FALSE                         # old default
     getOption("datatable.logical01", FALSE)   # this release; i.e. the same; no change yet
     getOption("datatable.logical01", TRUE)    # future release
     ```
-This option controls whether a column of all 0's and 1's is read as `integer`, or `logical` directly to avoid needing to change the type afterwards to `logical` or use `colClasses`. `0/1` is smaller and faster than `"TRUE"/"FALSE"`, which can make a significant difference to space and time the more `logical` columns there are. When the default's default changes to `TRUE` for `fread` we do not expect much impact since all arithmetic operators that are currently receiving 0's and 1's as type `integer` (think `sum()`) but instead could receive `logical`, would return exactly the same result on the 0's and 1's as `logical` type. However, code that is manipulating column types using `is.integer` or `is.logical` on `fread`'s result, could require change. It could be painful if `DT[(logical_column)]` (i.e. `DT[logical_column==TRUE]`) changed behaviour due to `logical_column` no longer being type `logical` but `integer`. But that is not the change proposed. The change is the other way around; i.e., a previously `integer` column holding only 0's and 1's would now be type `logical`. Since it's that way around, we believe the scope for breakage is limited. We think a lot of code is converting 0/1 integer columns to logical anyway, either using `colClasses=` or afterwards with an assign. For `fwrite`, the level of breakage depends on the consumer of the output file. We believe `0/1` is a better more standard default choice to move to. See notes below about improvements to `fread`'s sampling for type guessing, and automatic rereading in the rare cases of out-of-sample type surprises.
+    This option controls whether a column of all 0's and 1's is read as `integer`, or `logical` directly to avoid needing to change the type afterwards to `logical` or use `colClasses`. `0/1` is smaller and faster than `"TRUE"/"FALSE"`, which can make a significant difference to space and time the more `logical` columns there are. When the default's default changes to `TRUE` for `fread` we do not expect much impact since all arithmetic operators that are currently receiving 0's and 1's as type `integer` (think `sum()`) but instead could receive `logical`, would return exactly the same result on the 0's and 1's as `logical` type. However, code that is manipulating column types using `is.integer` or `is.logical` on `fread`'s result, could require change. It could be painful if `DT[(logical_column)]` (i.e. `DT[logical_column==TRUE]`) changed behaviour due to `logical_column` no longer being type `logical` but `integer`. But that is not the change proposed. The change is the other way around; i.e., a previously `integer` column holding only 0's and 1's would now be type `logical`. Since it's that way around, we believe the scope for breakage is limited. We think a lot of code is converting 0/1 integer columns to logical anyway, either using `colClasses=` or afterwards with an assign. For `fwrite`, the level of breakage depends on the consumer of the output file. We believe `0/1` is a better more standard default choice to move to. See notes below about improvements to `fread`'s sampling for type guessing, and automatic rereading in the rare cases of out-of-sample type surprises.
 
 These options are meant for temporary use to aid your migration, [#2652](https://github.com/Rdatatable/data.table/pull/2652). You are not meant to set them to the old default and then not migrate your code that is dependent on the default. Either set the argument explicitly so your code is not dependent on the default, or change the code to cope with the new default. Over the next few years we will slowly start to remove these options, warning you if you are using them, and return to a simple default. See the history of NEWS and NEWS.0 for past migrations that have, generally speaking, been successfully managed in this way. For example, at the end of NOTES for this version (below in this file) is a note about the usage of `datatable.old.unique.by.key` now warning, as you were warned it would do over a year ago. When that change was introduced, the default was changed and that option provided an option to restore the old behaviour. These `fread`/`fwrite` changes are even more cautious and not even changing the default's default yet. Giving you extra warning by way of this notice to move forward. And giving you a chance to object.
 
@@ -87,13 +87,13 @@ These options are meant for temporary use to aid your migration, [#2652](https:/
 14. `uniqueN()` is now faster on logical vectors. Thanks to Hugh Parsonage for [PR#2648](https://github.com/Rdatatable/data.table/pull/2648).
     ```
     N = 1e9
-                                     was      now
+                                          was      now
     x = c(TRUE,FALSE,NA,rep(TRUE,N))
-    uniqueN(x) == 3                 5.4s    0.00s
+    uniqueN(x) == 3                      5.4s    0.00s
     x = c(TRUE,rep(FALSE,N), NA)
-    uniqueN(x,na.rm=TRUE) == 2      5.4s    0.00s
+    uniqueN(x,na.rm=TRUE) == 2           5.4s    0.00s
     x = c(rep(TRUE,N),FALSE,NA)
-    uniqueN(x) == 3                 6.7s    0.38s
+    uniqueN(x) == 3                      6.7s    0.38s
     ```
 
 15. Subsetting optimization with keys and indices is now possible for compound queries like `DT[a==1 & b==2]`, [#2472](https://github.com/Rdatatable/data.table/issues/2472).
@@ -104,16 +104,21 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
 17. `update.dev.pkg` is new function to update package from development repository, it will download package sources only when newer commit is available in repository. `data.table::update.dev.pkg()` defaults updates `data.table`, but any package can be used.
 
 18. Item 1 in NEWS for [v1.10.2](https://github.com/Rdatatable/data.table/blob/master/NEWS.md#changes-in-v1102--on-cran-31-jan-2017) on CRAN in Jan 2017 included :
-> When j is a symbol prefixed with `..` it will be looked up in calling scope and its value taken to be column names or numbers.
-> When you see the `..` prefix think one-level-up, like the directory `..` in all operating systems means the parent directory.
-> In future the `..` prefix could be made to work on all symbols apearing anywhere inside `DT[...]`.
-The response has been positive ([this tweet](https://twitter.com/MattDowle/status/967290562725359617) and [FR#2655](https://github.com/Rdatatable/data.table/issues/2655)) and so this prefix is now expanded to all symbols appearing in `j=` as a first step; e.g. :
+    > When j is a symbol prefixed with `..` it will be looked up in calling scope and its value taken to be column names or numbers.
+    > When you see the `..` prefix think one-level-up, like the directory `..` in all operating systems means the parent directory.
+    > In future the `..` prefix could be made to work on all symbols apearing anywhere inside `DT[...]`.
+    
+    The response has been positive ([this tweet](https://twitter.com/MattDowle/status/967290562725359617) and [FR#2655](https://github.com/Rdatatable/data.table/issues/2655)) and so this prefix is now expanded to all symbols appearing in `j=` as a first step; e.g. :
     ```R
     cols = "colB"
     DT[, c(..cols, "colC")]   # same as DT[, .(colB,colC)]
     DT[, -..cols]             # all columns other than colB
     ```
-Thus, `with=` should no longer be needed in any cases. Please change to using the `..` prefix and in a few years we will start to formally deprecate and remove the `with=` parameter.  If this is well received, the `..` prefix could be expanded to symbols appearing in `i=` and `by=`, too.
+    Thus, `with=` should no longer be needed in any cases. Please change to using the `..` prefix and in a few years we will start to formally deprecate and remove the `with=` parameter.  If this is well received, the `..` prefix could be expanded to symbols appearing in `i=` and `by=`, too.
+
+19. `setindexv` can now assign multiple (separate) indices by accepting a `list` in the `cols` argument.
+
+20. `as.matrix.data.table` method now has an additional `rownames` argument allowing for a single column to be used as the `rownames` after conversion to a `matrix`. Thanks to @sritchie73 for the suggestion, use cases, [#2692](https://github.com/Rdatatable/data.table/issues/2692) and implementation [PR#2702](https://github.com/Rdatatable/data.table/pull/2702) and @MichaelChirico for additional use cases.
 
 #### BUG FIXES
 
@@ -220,6 +225,12 @@ Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdat
 9. New vignette added: _Importing data.table_ - focused on using data.table as a dependency in R packages. Answers most commonly asked questions and promote good practices.
 
 10. As warned in v1.9.8 release notes below in this file (on CRAN 25 Nov 2016) it has been 1 year since then and so use of `options(datatable.old.unique.by.key=TRUE)` to restore the old default is now deprecated with warning. The new warning states that this option still works and repeats the request to pass `by=key(DT)` explicitly to `unique()`, `duplicated()`, `uniqueN()` and `anyDuplicated()` and to stop using this option. In another year, this warning will become error. Another year after that the option will be removed.
+
+11. As `set2key()` and `key2()` have been warning since v1.9.8 on CRAN Nov 2016, their warnings have now been upgraded to errors. Note that when they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental' in NEWS item 4. They will be removed in one year.
+```
+Was warning: set2key() will be deprecated in the next relase. Please use setindex() instead.
+Now error: set2key() is now deprecated. Please use setindex() instead.
+```
 
 ### Changes in v1.10.4-3  (on CRAN 20 Oct 2017)
 

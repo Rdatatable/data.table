@@ -59,7 +59,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
         # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
       }
       else if (length(grep(' ', input))) {
-        (if (.Platform$OS.type == "unix") system else shell)(paste('(', input, ') > ', tmpFile, sep=""))
+        (if (.Platform$OS.type == "unix") system else shell)(paste0('(', input, ') > ', tmpFile))
       }
       else stop("File '",input,"' does not exist; getwd()=='", getwd(), "'",
                 ". Include correct full path, or one or more spaces to consider the input a system command.")

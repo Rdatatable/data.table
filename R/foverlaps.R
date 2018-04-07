@@ -168,7 +168,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     idx = chmatch(ycols, names(origx), nomatch=0L)
     ans = .Call(CsubsetDT, origx, olaps$xid, seq_along(origx))
     if (any(idx>0L))
-      setnames(ans, names(ans)[idx], paste("i.", names(ans)[idx], sep=""))
+      setnames(ans, names(ans)[idx], paste0("i.", names(ans)[idx]))
     xcols1 = head(by.x, -2L)
     xcols2 = setdiff(names(ans), xcols1)
     ans[, (ycols) := .Call(CsubsetDT, origy, olaps$yid, chmatch(ycols, names(origy)))]

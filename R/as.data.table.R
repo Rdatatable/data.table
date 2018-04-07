@@ -35,7 +35,7 @@ as.data.table.table <- function(x, keep.rownames=FALSE, ...) {
   # Fix for bug #5408 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
   val = rev(dimnames(provideDimnames(x)))
   if (is.null(names(val)) || !any(nzchar(names(val))))
-    setattr(val, 'names', paste("V", rev(seq_along(val)), sep=""))
+    setattr(val, 'names', paste0("V", rev(seq_along(val))))
   ans <- data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x))
   setcolorder(ans, c(rev(head(names(ans), -1L)), "N"))
   ans
@@ -62,7 +62,6 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
   else {
     for (i in ic) value[[i]] <- as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
   }
-
   col_labels <- dimnames(x)[[2L]]
   if (length(col_labels) == ncols) {
     if (any(empty <- !nzchar(col_labels)))
@@ -71,7 +70,6 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
   } else {
     setattr(value, "names", paste0("V", ic))
   }
-
   setattr(value,"row.names",.set_row_names(nrows))
   setattr(value,"class",c("data.table","data.frame"))
   alloc.col(value)
@@ -93,7 +91,7 @@ as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name=
   # NULL dimnames will create integer keys, not character as in table method
   val = rev(if (is.null(dnx)) lapply(dim(x), seq.int) else dnx)
   if (is.null(names(val)) || all(!nzchar(names(val))))
-    setattr(val, 'names', paste("V", rev(seq_along(val)), sep=""))
+    setattr(val, 'names', paste0("V", rev(seq_along(val))))
   if (value.name %in% names(val))
     stop(sprintf("Argument 'value.name' should not overlap with column names in result: %s.", paste(rev(names(val)), collapse=", ")))
   N = NULL
@@ -148,7 +146,7 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
       setattr(xx, 'names', names(x)[nz])
     x = xx
   }
-  if (is.null(names(x))) setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
+  if (is.null(names(x))) setattr(x,"names",paste0("V",seq_len(length(x))))
   setattr(x,"row.names",.set_row_names(max(n)))
   setattr(x,"class",c("data.table","data.frame"))
   alloc.col(x)
