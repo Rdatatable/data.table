@@ -169,9 +169,9 @@ test.data.table()
 vi ~/.R/Makevars  # make the -O3 line active again
 
 
-###############################################
-#  R-devel with UBSAN and ASAN on too
-###############################################
+#####################################################
+#  R-devel with UBSAN, ASAN and strict-barrier on too
+#####################################################
 
 cd ~/build
 wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
@@ -180,14 +180,13 @@ tar xvf R-devel.tar.gz
 cd R-devel
 # Following R-exts#4.3.3
 
-## 64bit (normal)
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
 # For ubsan, disabled openmp otherwise gcc fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel
 # UBSAN gives direct line number under gcc but not clang it seems. clang-5.0 has been helpful too, though.
 # If use later gcc-8, add F77=gfortran-8
 # LIBS="-lpthread" otherwise ld error about DSO missing
 
-## 32bit on 64bit Ubuntu (for tracing any 32bit-only Rdevel-only problems)
+## Rarely needed: 32bit on 64bit Ubuntu for tracing any 32bit-only problems
 dpkg --add-architecture i386
 apt-get update
 apt-get install libc6:i386 libstdc++6:i386 gcc-multilib g++-multilib gfortran-multilib libbz2-dev:i386 liblzma-dev:i386 libpcre3-dev:i386 libcurl3-dev:i386 libstdc++-7-dev:i386
