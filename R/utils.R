@@ -45,7 +45,7 @@ take <- function(x, n=1L)
 "%+%" <- function(x,y)
 UseMethod("%+%")
 
-"%+%.default" <- function(x,y) paste(paste(x,collapse=","),paste(y,collapse=","),sep="")
+"%+%.default" <- function(x,y) paste0(paste(x,collapse=","),paste(y,collapse=","))
 # we often construct warning msgs with a msg followed by several items of a vector, so %+% is for convenience
 
 require_bit64 = function() {
