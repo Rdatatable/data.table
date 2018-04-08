@@ -23,7 +23,7 @@ void setSizes() {
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verbose)
 {
-  R_len_t i, j, k, rownum, ngrp, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, vlen, origIlen=0, origSDnrow=0;
+  R_len_t i, j, k, rownum, ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, vlen, origIlen=0, origSDnrow=0;
   int protecti=0;
   SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, SDall, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, listwrap, target, source, tmp;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE, recycleWarn=TRUE;
@@ -39,6 +39,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   if(!isEnvironment(env)) error("’env’ should be an environment");
   ngrp = length(starts);  // the number of groups  (nrow(groups) will be larger when by)
   ngrpcols = length(grpcols);
+  nrowgroups = length(VECTOR_ELT(groups,0));
   // fix for longstanding FR/bug, #495. E.g., DT[, c(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:v3] resulted in error.. the idea is, 1) we create .SDall, which is normally == .SD. But if extra vars are detected in jexp other than .SD, then .SD becomes a shallow copy of .SDall with only .SDcols in .SD. Since internally, we don't make a copy, changing .SDall will reflect in .SD. Hopefully this'll workout :-).
   SDall = findVar(install(".SDall"), env);
 
@@ -47,7 +48,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   for (i=0; i<ngrpcols; i++) {
     j = INTEGER(grpcols)[i]-1;
     SET_VECTOR_ELT(BY, i, allocVector(TYPEOF(VECTOR_ELT(groups, j)),
-      LENGTH(VECTOR_ELT(groups,0)) ? 1 : 0));    // This might be able to be 1 always; 0 when 'groups' are integer(0) seem sensible. #2440 was involved in the past.
+      nrowgroups ? 1 : 0)); // TODO: might be able to be 1 always but 0 when 'groups' are integer(0) seem sensible. #2440 was involved in the past.
     // Fix for #5437, by cols with attributes when also used in `j` lost the attribute.
     copyMostAttrib(VECTOR_ELT(groups, j), VECTOR_ELT(BY,i));  // not names, otherwise test 778 would fail
     SET_STRING_ELT(bynames, i, STRING_ELT(getAttrib(groups,R_NamesSymbol), j));
@@ -103,7 +104,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   if (length(iSD)!=length(jiscols)) error("length(iSD)[%d] != length(jiscols)[%d]",length(iSD),length(jiscols));
   if (length(xSD)!=length(xjiscols)) error("length(xSD)[%d] != length(xjiscols)[%d]",length(xSD),length(xjiscols));
 
-
   PROTECT(listwrap = allocVector(VECSXP, 1));
   protecti++;
   Rboolean jexpIsSymbolOtherThanSD = (isSymbol(jexp) && strcmp(CHAR(PRINTNAME(jexp)),".SD")!=0);  // test 559
@@ -136,7 +136,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       igrp = (length(grporder) && isNull(jiscols)) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : i;
     else
       igrp = (length(grporder)) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[i]-1 : i);
-    if (igrp >= 0) for (j=0; j<length(BY); j++) {    // igrp can be -1 so 'if' is important, otherwise memcpy crash
+    if (igrp>=0 && nrowgroups) for (j=0; j<length(BY); j++) {    // igrp can be -1 so 'if' is important, otherwise memcpy crash
       size = SIZEOF(VECTOR_ELT(BY,j));
       memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),  // ok use of memcpy size 1. Loop'd through columns not rows
              (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1))+igrp*size,
@@ -164,7 +164,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           error("Logical error. Type of column should have been checked by now");
         }
       }
-      grpn = 1;  // TO DO: it is anyway?
+      grpn = 1;  // it may not be 1 e.g. test 722. TODO: revisit.
+      SETLENGTH(I, grpn);
       INTEGER(I)[0] = 0;
       for (j=0; j<length(xSD); j++) {
         switch (TYPEOF(VECTOR_ELT(xSD, j))) {
@@ -189,8 +190,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       }
     } else {
       if (LOGICAL(verbose)[0]) tstart = clock();
+      SETLENGTH(I, grpn);
       if (LENGTH(order)==0) {
-        rownum = INTEGER(starts)[i]-1;
+        if (grpn) rownum = INTEGER(starts)[i]-1; else rownum = -1;  // not ternary to pass strict-barrier
         for (j=0; j<grpn; j++) INTEGER(I)[j] = rownum+j+1;
         if (rownum>=0) {
           for (j=0; j<length(SDall); j++) {
@@ -241,7 +243,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     for (j=0; j<length(xSD); j++) {
       defineVar(xknameSyms[j], VECTOR_ELT(xSD, j), env);
     }
-    SETLENGTH(I, grpn);
 
     if (LOGICAL(verbose)[0]) tstart = clock();  // call to clock() is more expensive than an 'if'
     PROTECT(jval = eval(jexp, env));
