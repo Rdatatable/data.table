@@ -67,16 +67,15 @@ SEXP uniqlist(SEXP l, SEXP order)
 }
 
 SEXP uniqlengths(SEXP x, SEXP n) {
-  SEXP ans;
-  R_len_t i, len;
-  if (TYPEOF(x) != INTSXP || length(x) < 0) error("Input argument 'x' to 'uniqlengths' must be an integer vector of length >= 0");
+  // seems very similar to rbindlist.c:uniq_lengths. TODO: centralize into common function
+  if (TYPEOF(x) != INTSXP) error("Input argument 'x' to 'uniqlengths' must be an integer vector");
   if (TYPEOF(n) != INTSXP || length(n) != 1) error("Input argument 'n' to 'uniqlengths' must be an integer vector of length 1");
-  PROTECT(ans = allocVector(INTSXP, length(x)));
-  len = length(x);
-  for (i=1; i<len; i++) {
+  R_len_t len = length(x);
+  SEXP ans = PROTECT(allocVector(INTSXP, len));
+  for (R_len_t i=1; i<len; i++) {
     INTEGER(ans)[i-1] = INTEGER(x)[i] - INTEGER(x)[i-1];
   }
-  INTEGER(ans)[len-1] = INTEGER(n)[0] - INTEGER(x)[len-1] + 1;
+  if (len>0) INTEGER(ans)[len-1] = INTEGER(n)[0] - INTEGER(x)[len-1] + 1;
   UNPROTECT(1);
   return(ans);
 }
