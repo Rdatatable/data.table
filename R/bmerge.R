@@ -90,14 +90,14 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, m
     } else if(joinTypeIdentifier %chin% typeModeCoercionI){
       ## coerce i[[lc]] to same class as x[[rc]] by mode() approach
       if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
-                            myItype, paste0("i.", icnam), myXtype, paste0("x.", xcnam))); flush.console()}
+                            myItype, paste0("i.'", icnam, "'"), myXtype, paste0("x.'", xcnam, "'"))); flush.console()}
       newval = i[[lc]]
       mode(newval) = myXtype  # retains column attributes (such as IDateTime class)
       set(i, j=lc, value=newval)
     } else if(joinTypeIdentifier %chin% typeModeCoercionX){
       ## coerce x[[rc]] to same class as i[[lc]] by mode() approach
       if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
-                            myXtype, paste0("x.", xcnam), myItype, paste0("i.", icnam))); flush.console()}
+                            myXtype, paste0("x.'", xcnam, "'"), myItype, paste0("i.'", icnam, "'"))); flush.console()}
       newval = x[[rc]]
       mode(newval) = myItype  # retains column attributes (such as IDateTime class)
       set(x, j=rc, value=newval)
@@ -105,7 +105,7 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, m
       ## coerce i[[lc]] to same class as x[[rc]] by as.newclass() approach
       converter <- match.fun(paste0("as.", myXtype))
       if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
-                            myItype, paste0("i.", icnam), myXtype, paste0("x.", xcnam))); flush.console()}
+                            myItype, paste0("i.'", icnam, "'"), myXtype, paste0("x.'", xcnam, "'"))); flush.console()}
       newval = i[[lc]]
       newval = converter(newval)
       set(i, j=lc, value=newval)
@@ -113,14 +113,14 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, m
       ## coerce x[[rc]] to same class as i[[lc]] by as.newclass() approach
       converter <- match.fun(paste0("as.", myItype))
       if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
-                            myXtype, paste0("x.", xcnam), myItype, paste0("i.", icnam))); flush.console()}
+                            myXtype, paste0("x.'", xcnam, "'"), myItype, paste0("i.'", icnam, "'"))); flush.console()}
       newval = x[[rc]]
       newval = converter(newval)
       set(x, j=rc, value=newval)
     } else if(joinTypeIdentifier %chin% c("factor==factor", "factor==character")){
       if (myItype == "character") {
         if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
-                              myItype, paste0("i.", icnam), myXtype, paste0("x.", xcnam))); flush.console()}
+                              myItype, paste0("i.'", icnam, "'"), myXtype, paste0("x.'", xcnam, "'"))); flush.console()}
         set(origi, j=lc, value=factor(origi[[lc]])) # note the use of 'origi' here - see #499 and #945
         # TO DO: we need a way to avoid copying 'value' for internal purposes
         # that would allow setting: set(i, j=lc, value=origi[[lc]]) without resulting in a copy.
@@ -148,11 +148,11 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, m
         next
       } else if(typeof(x[[rc]]) == typeof(i[[lc]])){
         warning(sprintf("Joining on columns of different class: %s (%s) and %s (%s). Join works since both columns are of the same type: %s",
-                        paste0("x.", xcnam), paste0(class(x[[rc]]), collapse = ","), paste0("i.", icnam), paste0(class(i[[lc]]), collapse = ","), typeof(x[[rc]])))
+                        paste0("x.'", xcnam, "'"), paste0(class(x[[rc]]), collapse = ","), paste0("i.'", icnam, "'"), paste0(class(i[[lc]]), collapse = ","), typeof(x[[rc]])))
         ## nothing needs to be done, Cbmerge will work because of the same types.
       } else {
         stop(sprintf("Incompatible types: %s (%s) and %s (%s)", 
-                     paste0("x.", xcnam), paste0(class(x[[rc]]), collapse = ","), paste0("i.", icnam), paste0(class(i[[lc]]), collapse = ",")))
+                     paste0("x.'", xcnam, "'"), paste0(class(x[[rc]]), collapse = ","), paste0("i.'", icnam, "'"), paste0(class(i[[lc]]), collapse = ",")))
       }
     } else {
       stop("Internal error: data.table's bmerge doesn't know how to handle joins of type ", joinTypeIdentifier, ". Please report the bug to the developers")
