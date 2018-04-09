@@ -8839,37 +8839,36 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
         else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), vals[[i]]))
       }
     })
-    ans = expr[[1L]]
-    lapply(expr[-1L], function(e) ans <<- as.call(list(quote(`&`), ans, e)))
-    ans
+    Reduce(function(x,y)call("&",x,y), expr)
   }
   check <- function(x, y, cols, ops, mult="all") {
-    expr = lapply(1:nrow(y), function(i) {
-      expr = construct(cols, as.list(y[i, cols, with=FALSE]), ops)
-    })
-    ans = lapply(expr, function(e) {
-          val = x[eval(e)]
-          if (!nrow(val)) return(val)
-          val = if (mult=="first") val[1L] else if (mult=="last") val[.N] else val
-    })
-    rbindlist(ans)
+    rbindlist(lapply(1:nrow(y), function(i) {
+      e = construct(cols, y[i, ..cols], ops)
+      val = x[eval(e)]
+      if (!nrow(val) || mult=="all")
+        val
+      else if (mult=="first")
+        val[1L]
+      else # mult=="last"
+        val[.N]
+    }))
   }
   nq <- function(x, y, cols, ops, nomatch=0L, mult="all") {
-    sd_cols = c(paste("x.", cols, sep=""), setdiff(names(x), cols))
-    ans = x[y, mget(sd_cols, as.environment(-1)), on = paste(cols, ops, cols, sep=""), allow=TRUE, nomatch=nomatch, mult=mult]
+    sd_cols = c(paste0("x.", cols), setdiff(names(x), cols))
+    ans = x[y, mget(sd_cols, as.environment(-1)), on = paste0(cols, ops, cols), allow=TRUE, nomatch=nomatch, mult=mult]
     setnames(ans, gsub("^x[.]", "", names(ans)))
     setcolorder(ans, names(x))[]
   }
   for (i in seq_along(runcmb)) {
     thiscols = runcmb[[i]]
     thisops = runops[[i]]
-    # cat("k = ", k, "\ti = ", i, "\t thiscols = [", paste(thiscols,collapse=","), "]\t thisops = [", paste(thisops,collapse=","), "]\t ", sep="")
+    # cat("k = ", k, "\ti = ", i, "\t thiscols = [", paste0(thiscols,collapse=","), "]\t thisops = [", paste0(thisops,collapse=","), "]\t ", sep="")
     ans1 = nq(x, y, thiscols, thisops, 0L, mult=mult)
     ans2 = check(x, y, thiscols, thisops, mult=mult)
-    test_no = signif(test_no+.001, 7)
-    test(test_no, all.equal(ans1,ans2,ignore.row.order=TRUE), TRUE)
-    # if (identical(all.equal(ans1,ans2,ignore.row.order=TRUE), TRUE)) cat("successful\n") else stop("failed\n")
+    test_no = test_no + .001
+    test(test_no, ans1, ans2)
   }
+  gc()  # attempt to free heap earlier for the 50 nrow(y) tables created and then rbindlist'd in check(), repeated for each of the 91 runcmb
 }
 
 if (TRUE) {  # turn off temporarily using FALSE when using valgrind, as very slow
