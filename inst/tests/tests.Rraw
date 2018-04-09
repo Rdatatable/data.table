@@ -2912,7 +2912,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
 
   # segfault of unprotected var caught with the help of address sanitizer
   set.seed(1)
-  val = sample(c(1:5, NA), 1e6L, TRUE)
+  val = sample(c(1:5, NA), 1e5L, TRUE)
   dt <- setDT(replicate(100L, val, simplify=FALSE))
   ## to ensure there's no segfault...
   ans <- melt(dt, measure.vars=names(dt), na.rm=TRUE)
