@@ -407,11 +407,11 @@ test(149, dt[J(2:3),roll=TRUE], data.table(a=c(2L,3L),b=c(1L,1L)))  # in future 
 # 150:158 test out of order factor levels in key columns (now allowed from v1.8.0)
 dt = data.table(x=factor(c("c","b","a"),levels=c("b","a","c")),y=1:3)
 setkey(dt,x)
-test(150.1, dt["b",y,verbose=TRUE], output="Coercing character column i.V1 to factor") # changed i.V1 to i.x as per FR #2693
+test(150.1, dt["b",y,verbose=TRUE], output="Coercing character column i.'V1' to factor") # changed i.V1 to i.x as per FR #2693
 test(150.2, dt["b",y], 2L)
 # from Tom's post :
 a = data.table(a=rep(1:5, 2), b=factor(letters[rep(1:5, each =2)], levels=letters[5:1]), key="b")
-test(151.1, a[J("b"),a,verbose=TRUE], output="Coercing character column i.V1 to factor") # message back to `i.V1` now. 'b' still accessible to satisfy FR #2693, checked on next line
+test(151.1, a[J("b"),a,verbose=TRUE], output="Coercing character column i.'V1' to factor") # message back to `i.V1` now. 'b' still accessible to satisfy FR #2693, checked on next line
 test(151.2, a[J("b"),a], 3:4)
 # stretch tests further, two out of order levels, one gets key'd the other not :
 a = data.table(x=factor(letters[rep(1:5, each =2)], levels=letters[5:1]),
@@ -1613,7 +1613,7 @@ test(577, CJ(x=c(1L,2L), c("a","b")), data.table(x=c(1L,1L,2L,2L),V2=c("a","b","
 # Test factor to character join when factor contains unused and reverse order levels :
 X = data.table(a=LETTERS[1:4],v=1:4,key="a")
 Y = data.table(a=factor(c("D","B"),levels=rev(LETTERS)),key="a")
-test(578, X[Y,verbose=TRUE], output="Coercing factor column i.a to character to match type of x.a")
+test(578, X[Y,verbose=TRUE], output="Coercing factor column i.'a' to character to match type of x.'a'")
 test(579, X[Y], data.table(a=c("D","B"), v=c(4L,2L)))
 
 # Test that logical i in set() returns helpful error
@@ -2912,7 +2912,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
 
   # segfault of unprotected var caught with the help of address sanitizer
   set.seed(1)
-  val = sample(c(1:5, NA), 1e6L, TRUE)
+  val = sample(c(1:5, NA), 1e5L, TRUE)
   dt <- setDT(replicate(100L, val, simplify=FALSE))
   ## to ensure there's no segfault...
   ans <- melt(dt, measure.vars=names(dt), na.rm=TRUE)
@@ -5442,7 +5442,7 @@ test(1377.8, copy(DT)[FALSE, bar:=stop("eval'd")], DT)
 # therefore, this doesn't actually test mode="wb" but close as we can get
 # NB: As of v1.10.5, fread copes ok with any number of \r before the \n
 
-test(1378.1, fread(testDir("russellCRLF.csv"))[19,`Value With Dividends`], 357.97)
+test(1378.1, fread(file=testDir("russellCRLF.csv"))[19,`Value With Dividends`], 357.97)
 
 f = paste0("file://",testDir("russellCRLF.csv"))
 # simulates a http:// request as far as file.download() and unlink() goes, without internet
@@ -5789,7 +5789,7 @@ test(1432, DT[a==b], DT[2:3])
 test(1433, DT[a %in% b], DT[c(2,3,5,6)])
 test(1434, DT[a==b+1], DT[c(1,4,6)])
 test(1435, DT[b==max(a)], DT[3])
-test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing double column i.a to integer")
+test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing double column i.'a' to integer")
 DT[,a:=factor(letters[a])]
 test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new index 'a'")
 ## test that the lookup env for RHS is correct. In internal env,notjoin is FALSE in this case.
@@ -5866,7 +5866,7 @@ test(1437.34, DT[x %in% 0:1e5], DT)
 test(1437.35, DT[x %in% 0:99 & y %in% 0:98, verbose = TRUE], output = "Optimized subsetting")
 test(1437.36, DT[x %in% 0:99 & y %in% 0:98], DT)
 # multi column query with more than 1e4 rows in i is not optimized
-test(1437.37, DT[x %in% 0:100 & y %in% 0:101, verbose = TRUE], output = "^   x y")
+test(1437.37, DT[x %in% 0:100 & y %in% 0:101, verbose = TRUE], output = "Subsetting optimization disabled because the cross-product of RHS values exceeds 1e4, causing memory problems.")
 test(1437.38, DT[x %in% 0:100 & y %in% 0:101], DT)
 ## do extensive tests of optimized vs non-optimized queries for identical results.
 ## very much inspired by the tests for non equi joins (1641ff)
@@ -11146,16 +11146,22 @@ DT = data.table(col1 = c(1,1,1, 2,2,2), col2 = c(2,2,2,1,1,1), ID = c(rep(1,3), 
 test(1863.2, DT[, lapply(.SD, var), by=ID], data.table(ID=c(1,2), col1=0, col2=0, key="ID"))
 
 # Fix the bug when keys contain non UTF8 strings #2566 #2462 #1826
-# Only on Windows platform it might fail, because other platforms use UTF8 as the native encoding.
-DT <- fread(file = testDir("issue_2566.csv"), encoding = "UTF-8")
-# `fread` return a utf-8 encoded data, we should convert x to native encoding.
-# However, we need this condition to ensure the native encoding can be used for Chinese characters.
-# Otherwise, the test will fail because the strings have been damaged.
-if (identical(enc2utf8(enc2native(DT$x)), DT$x)) DT[, x:= enc2native(x)]
-setkey(DT, x)
-test(1864.1, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
-setkey(DT, y)
-test(1864.2, DT[J("\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca"), z], 1L)
+utf8_strings = c("\u00e7ile", "fa\u00e7ile", "El. pa\u00c5\u00a1tas", "\u00a1tas", "\u00de")
+latin1_strings = iconv(utf8_strings, from = "UTF-8", to = "latin1")
+mixed_strings = c(utf8_strings, latin1_strings)
+DT1 = data.table(x = mixed_strings, y = c(latin1_strings, utf8_strings), z = 1:10)
+DT2 = copy(DT1)
+setkey(DT1, x)
+setkey(DT2, y)
+# the ans is generated by `sort(c(utf8_strings, utf8_strings), method = "radix")`
+# but we should not use radix sort in the test because it's introduced after R3.3.0
+ans = c("El. pa\u00c5\u00a1tas", "El. pa\u00c5\u00a1tas", "fa\u00e7ile", "fa\u00e7ile",
+"\u00a1tas", "\u00a1tas", "\u00de", "\u00de", "\u00e7ile", "\u00e7ile")
+test(1864.1, DT1$x, ans)
+test(1864.2, DT2$y, ans)
+ans = c(1L, 6L, 2L, 7L, 3L, 8L, 4L, 9L, 5L, 10L)
+test(1864.3, DT1[c(utf8_strings, latin1_strings), z], c(ans, ans))
+test(1864.4, DT2[c(utf8_strings, latin1_strings), z], c(ans, ans))
 
 # memory exception under asan if there's an extra comma out-of-sample, #2523
 data = rep("a,b,c,d,e,f,g", 2100)
@@ -11550,7 +11556,11 @@ test(1895, getDTthreads(verbose=TRUE), output="omp_get_max_threads.*omp_get_thre
 utf8_strings = c("\u00e7ile", "fa\u00e7ile", "El. pa\u00c5\u00a1tas", "\u00a1tas", "\u00de")
 latin1_strings = iconv(utf8_strings, from = "UTF-8", to = "latin1")
 DT = data.table(x = sample(latin1_strings, 1000, replace=TRUE), key = "x")
-test(1896.1, enc2utf8(unique(DT$x)), sort(utf8_strings, method = "radix"))
+# The ans below is generated by `sort(utf8_strings, method = "radix")` on R (>= 3.3.0).
+# Note that you should generally avoid to call `sort(., method = "radix")` in `data.table`'s test
+# because `data.table` could be used on any R version that is equal or larger than 3.1.0.
+ans = c("El. pa\u00c5\u00a1tas", "fa\u00e7ile", "\u00a1tas", "\u00de", "\u00e7ile")
+test(1896.1, enc2utf8(unique(DT$x)), ans)
 #  by, keyby should treat the string with different encoding as the same
 mixed_strings = c(utf8_strings, latin1_strings)
 DT = data.table(x = mixed_strings)
@@ -11572,270 +11582,30 @@ test(1898.1, set2key(DT, a), error="deprecated. Please use setindex() instead.")
 test(1898.2, set2keyv(DT, "a"), error="deprecated. Please use setindexv() instead.")
 test(1898.3, key2(DT), error="deprecated. Please use indices() instead.")
 
-## test type coercion in joins (#2592)
-dt1 <- data.table(intCol = 1L:10L,
-                  doubleCol = as.numeric(1:10), ## only 1:10 will be integer
-                  realDoubleCol = seq(0.5, 5, by = 0.5),
-                  boolCol = c(rep(FALSE, 9), TRUE),
-                  charCol = letters[1L:10L],
-                  factCol = factor(letters[1L:10L]),
-                  nonStCol = as.POSIXct("2017-01-01") + 1:10) ## class is c("POSIXct", "POSIXt")
-dt2 <- data.table(intCol = 1L:5L,
-                  doubleCol = as.numeric(1:5), ## only 1:5 will be integer
-                  realDoubleCol = seq(0.5, 2.5, by = 0.5),
-                  boolCol = TRUE,
-                  charCol = letters[1L:5L],
-                  factCol = factor(letters[1L:5L]),
-                  nonStCol = as.POSIXct("2017-01-01") + 1:5) ## class is c("POSIXct", "POSIXt")
-if ("package:bit64" %in% search()) {
-  dt1[, int64Col := as.integer64(c(1:9, 3e10))]
-  dt2[, int64Col := as.integer64(c(1:4, 3e9))]
-}
-## no coercion when types match
-test(1899.1, 
-     nrow(dt1[dt2, on = "boolCol==boolCol"]), nrow(dt2),
-     warning = NULL)
-test(1899.2, 
-     nrow(dt1[dt2, on = "intCol==intCol"]), nrow(dt2),
-     warning = NULL)
-test(1899.3, 
-     nrow(dt1[dt2, on = "doubleCol==doubleCol"]), nrow(dt2),
-     warning = NULL)
-test(1899.4, 
-     nrow(dt1[dt2, on = "realDoubleCol==realDoubleCol"]), nrow(dt2),
-     warning = NULL)
-test(1899.5, 
-     nrow(dt1[dt2, on = "charCol==charCol"]), nrow(dt2),
-     warning = NULL)
-test(1899.6, 
-     nrow(dt1[dt2, on = "factCol==factCol"]), nrow(dt2),
-     warning = NULL)
-if ("package:bit64" %in% search()) {
-  test(1899.7, 
-       nrow(dt1[dt2, on = "int64Col==int64Col"]), nrow(dt2),
-       warning = NULL)
-}
-## error on incompatible types
-test(1899.8, 
-     dt1[dt2, on = "boolCol==intCol"],
-     error = "Incompatible types: x.boolCol (logical) and i.intCol (integer)")
-test(1899.9, 
-     dt1[dt2, on = "boolCol==doubleCol"],
-     error = "Incompatible types: x.boolCol (logical) and i.doubleCol (numeric)")
-test(1899.11, 
-     dt1[dt2, on = "boolCol==realDoubleCol"],
-     error = "Incompatible types: x.boolCol (logical) and i.realDoubleCol (numeric)")
-test(1899.12, 
-     dt1[dt2, on = "boolCol==charCol"],
-     error = "Incompatible types: x.boolCol (logical) and i.charCol (character)")
-test(1899.13, 
-     dt1[dt2, on = "boolCol==factCol"],
-     error = "Incompatible types: x.boolCol (logical) and i.factCol (factor)")
-test(1899.14, 
-     dt1[dt2, on = "intCol==charCol"],
-     error = "Incompatible types: x.intCol (integer) and i.charCol (character)")
-test(1899.15, 
-     dt1[dt2, on = "intCol==factCol"],
-     error = "Incompatible types: x.intCol (integer) and i.factCol (factor)")
-test(1899.16, 
-     dt1[dt2, on = "doubleCol==charCol"],
-     error = "Incompatible types: x.doubleCol (numeric) and i.charCol (character)")
-test(1899.17, 
-     dt1[dt2, on = "realDoubleCol==charCol"],
-     error = "Incompatible types: x.realDoubleCol (numeric) and i.charCol (character)")
-test(1899.18, 
-     dt1[dt2, on = "doubleCol==factCol"],
-     error = "Incompatible types: x.doubleCol (numeric) and i.factCol (factor)")
-test(1899.19, 
-     dt1[dt2, on = "realDoubleCol==factCol"],
-     error = "Incompatible types: x.realDoubleCol (numeric) and i.factCol (factor)")
-test(1899.21, 
-     dt1[dt2, on = "charCol==boolCol"],
-     error = "Incompatible types: x.charCol (character) and i.boolCol (logical)")
-test(1899.22, 
-     dt1[dt2, on = "charCol==intCol"],
-     error = "Incompatible types: x.charCol (character) and i.intCol (integer)")
-test(1899.23, 
-     dt1[dt2, on = "charCol==doubleCol"],
-     error = "Incompatible types: x.charCol (character) and i.doubleCol (numeric)")
-test(1899.24, 
-     dt1[dt2, on = "charCol==realDoubleCol"],
-     error = "Incompatible types: x.charCol (character) and i.realDoubleCol (numeric)")
-test(1899.25, 
-     dt1[dt2, on = "factCol==boolCol"],
-     error = "Incompatible types: x.factCol (factor) and i.boolCol (logical)")
-test(1899.26, 
-     dt1[dt2, on = "factCol==intCol"],
-     error = "Incompatible types: x.factCol (factor) and i.intCol (integer)")
-test(1899.27, 
-     dt1[dt2, on = "factCol==doubleCol"],
-     error = "Incompatible types: x.factCol (factor) and i.doubleCol (numeric)")
-test(1899.28, 
-     dt1[dt2, on = "factCol==realDoubleCol"],
-     error = "Incompatible types: x.factCol (factor) and i.realDoubleCol (numeric)")
-if ("package:bit64" %in% search()) {
-  test(1899.29, 
-       dt1[dt2, on = "boolCol==int64Col"],
-       error = "Incompatible types: x.boolCol (logical) and i.int64Col (integer64)")
-  test(1899.31, 
-       dt1[dt2, on = "charCol==int64Col"],
-       error = "Incompatible types: x.charCol (character) and i.int64Col (integer64)")
-  test(1899.32, 
-       dt1[dt2, on = "factCol==int64Col"],
-       error = "Incompatible types: x.factCol (factor) and i.int64Col (integer64)")
-  test(1899.33, 
-       dt1[dt2, on = "int64Col==charCol"],
-       error = "Incompatible types: x.int64Col (integer64) and i.charCol (character)")
-  test(1899.34, 
-       dt1[dt2, on = "int64Col==factCol"],
-       error = "Incompatible types: x.int64Col (integer64) and i.factCol (factor)")
-}
-## correct behaviour on other types.
-## 4 checks:
-## - correct warning
-## - correct type of the coerced columns in i and x
-## - correct number of rows in the join
-cols <- c("boolCol", "intCol", "doubleCol", "realDoubleCol", "charCol", "factCol", "nonStCol")
-if ("package:bit64" %in% search()) {
-  cols <- c(cols, "int64Col")
-}
-cols <- c(paste0("x.", cols), paste0("i.", cols)) ## make sure that all columns from x and i are in the result
-test(1899.35, 
-     result <- dt1[dt2, cols, on = "intCol==boolCol", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "intCol==boolCol", with = FALSE, nomatch = 0L],
-     output = "Coercing logical column i.boolCol to integer to match type of x.intCol.")
-test(1899.36, class(result$i.boolCol), "integer")
-test(1899.37, class(result$x.intCol),  "integer")
-test(1899.38, nrow(result), 5L)
-test(1899.39, 
-     result <- dt1[dt2, cols, on = "intCol==doubleCol", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "intCol==doubleCol", with = FALSE, nomatch = 0L],
-     output = "Coercing numeric column i.doubleCol to integer to match type of x.intCol.")
-test(1899.41, class(result$i.doubleCol), "integer")
-test(1899.42, class(result$x.intCol),    "integer")
-test(1899.43, nrow(result), 5L)
-test(1899.44, 
-     result <- dt1[dt2, cols, on = "intCol==realDoubleCol", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "intCol==realDoubleCol", with = FALSE, nomatch = 0L],
-     output = "Coercing integer column x.intCol to numeric to match type of i.realDoubleCol.")
-test(1899.45, class(result$i.realDoubleCol), "numeric")
-test(1899.46, class(result$x.intCol),        "integer") ## coercion of x columns is only for the join. The original type is returned.
-test(1899.47, nrow(result), 2L)
-test(1899.48, 
-     result <- dt1[dt2, cols, on = "doubleCol==boolCol", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "doubleCol==boolCol", with = FALSE, nomatch = 0L],
-     output = "Coercing logical column i.boolCol to numeric to match type of x.doubleCol.")
-test(1899.49, class(result$i.boolCol),   "numeric")
-test(1899.51, class(result$x.doubleCol), "numeric")
-test(1899.52, nrow(result), 5L)
-test(1899.53, 
-     result <- dt1[dt2, cols, on = "realDoubleCol==boolCol", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "realDoubleCol==boolCol", with = FALSE, nomatch = 0L],
-     output = "Coercing logical column i.boolCol to numeric to match type of x.realDoubleCol.")
-test(1899.54, class(result$i.boolCol),   "numeric")
-test(1899.55, class(result$x.doubleCol), "numeric")
-test(1899.56, nrow(result), 5L)
-test(1899.57, 
-     result <- dt1[dt2, cols, on = "doubleCol==intCol", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "doubleCol==intCol", with = FALSE, nomatch = 0L],
-     output = "Coercing integer column i.intCol to numeric to match type of x.doubleCol.")
-test(1899.58, class(result$i.intCol),    "numeric")
-test(1899.59, class(result$x.doubleCol), "numeric")
-test(1899.61, nrow(result), 5L)
-test(1899.62, 
-     result <- dt1[dt2, cols, on = "realDoubleCol==intCol", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "realDoubleCol==intCol", with = FALSE, nomatch = 0L],
-     output = "Coercing integer column i.intCol to numeric to match type of x.realDoubleCol.")
-test(1899.63, class(result$i.intCol),        "numeric")
-test(1899.64, class(result$x.realDoubleCol), "numeric")
-test(1899.65, nrow(result), 5L)
-test(1899.66, 
-     result <- dt1[dt2, cols, on = "charCol==factCol", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "charCol==factCol", with = FALSE, nomatch = 0L],
-     output = "Coercing factor column i.factCol to character to match type of x.charCol.")
-test(1899.67, class(result$i.factCol), "character")
-test(1899.68, class(result$x.charCol), "character")
-test(1899.69, nrow(result), 5L)
-test(1899.71, 
-     result <- dt1[dt2, cols, on = "factCol==charCol", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "factCol==charCol", with = FALSE, nomatch = 0L],
-     output = "Coercing character column i.charCol to factor to match type of x.factCol.")
-test(1899.72, class(result$i.charCol), "factor")
-test(1899.73, class(result$x.factCol), "factor")
-test(1899.74, nrow(result), 5L)
-if ("package:bit64" %in% search()) {
-  test(1899.75, 
-       result <- dt1[dt2, cols, on = "intCol==int64Col", with = FALSE, nomatch = 0L, verbose = TRUE],
-       dt1[dt2, cols, on = "intCol==int64Col", with = FALSE, nomatch = 0L],
-       output = "Coercing integer64 column i.int64Col to integer to match type of x.intCol.",
-       warning = "NAs produced by integer overflow")
-  test(1899.76, class(result$i.int64Col), "integer")
-  test(1899.77, class(result$x.intCol),   "integer")
-  test(1899.78, nrow(result), 4L)
-  test(1899.79, 
-       result <- dt1[dt2, cols, on = "doubleCol==int64Col", with = FALSE, nomatch = 0L, verbose = TRUE],
-       dt1[dt2, cols, on = "doubleCol==int64Col", with = FALSE, nomatch = 0L],
-       output = "Coercing integer64 column i.int64Col to numeric to match type of x.doubleCol.")
-  test(1899.81, class(result$i.int64Col),  "numeric")
-  test(1899.82, class(result$x.doubleCol), "numeric")
-  test(1899.83, nrow(result), 4L)
-  test(1899.84, 
-       result <- dt1[dt2, cols, on = "realDoubleCol==int64Col", with = FALSE, nomatch = 0L, verbose = TRUE],
-       dt1[dt2, cols, on = "realDoubleCol==int64Col", with = FALSE, nomatch = 0L],
-       output = "Coercing integer64 column i.int64Col to numeric to match type of x.realDoubleCol.")
-  test(1899.85, class(result$i.int64Col), "numeric")
-  test(1899.86, class(result$x.realDoubleCol), "numeric")
-  test(1899.87, nrow(result), 4L)
-  test(1899.88, 
-       result <- dt1[dt2, cols, on = "int64Col==boolCol", with = FALSE, nomatch = 0L, verbose = TRUE],
-       dt1[dt2, cols, on = "int64Col==boolCol", with = FALSE, nomatch = 0L],
-       output = "Coercing logical column i.boolCol to integer64 to match type of x.int64Col.")
-  test(1899.89, class(result$i.boolCol),  "integer64")
-  test(1899.91, class(result$x.int64Col), "integer64")
-  test(1899.92, nrow(result), 5L)
-  test(1899.93, 
-       result <- dt1[dt2, cols, on = "int64Col==intCol", with = FALSE, nomatch = 0L, verbose = TRUE],
-       dt1[dt2, cols, on = "int64Col==intCol", with = FALSE, nomatch = 0L],
-       output = "Coercing integer column i.intCol to integer64 to match type of x.int64Col.")
-  test(1899.94, class(result$i.intCol),   "integer64")
-  test(1899.95, class(result$x.int64Col), "integer64")
-  test(1899.96, nrow(result), 5L)
-  test(1899.97, 
-       result <- dt1[dt2, cols, on = "int64Col==doubleCol", with = FALSE, nomatch = 0L, verbose = TRUE],
-       dt1[dt2, cols, on = "int64Col==doubleCol", with = FALSE, nomatch = 0L],
-       output = "Coercing numeric column i.doubleCol to integer64 to match type of x.int64Col.")
-  test(1899.98, class(result$i.doubleCol), "integer64")
-  test(1899.99, class(result$x.int64Col),  "integer64")
-  test(1899.101, nrow(result), 5L)
-  test(1899.102, 
-       result <- dt1[dt2, cols, on = "int64Col==realDoubleCol", with = FALSE, nomatch = 0L, verbose = TRUE],
-       dt1[dt2, cols, on = "int64Col==realDoubleCol", with = FALSE, nomatch = 0L],
-       output = "Coercing integer64 column x.int64Col to numeric to match type of i.realDoubleCol.")
-  test(1899.103, class(result$i.realDoubleCol), "numeric")
-  test(1899.104, class(result$x.int64Col),      "integer64") ## coercion of x columns is only for the join. The original type is returned.
-  test(1899.105, nrow(result), 2L)
-}
-## correct behaviour if non-standard types are involved:
-test(1899.106, 
-     nrow(dt1[dt2, on = "nonStCol==nonStCol"]), nrow(dt2),
-     warning = NULL)
-test(1899.107, 
-     result <- dt1[dt2, cols, on = "nonStCol==doubleCol", with = FALSE, nomatch = 0L],
-     dt1[dt2, cols, on = "nonStCol==doubleCol", with = FALSE, nomatch = 0L],
-     warning = "Joining on columns of different class: x.nonStCol (POSIXct,POSIXt) and i.doubleCol (numeric). Join works since both columns are of the same type: double")
-test(1899.108, class(result$i.doubleCol), "numeric")
-test(1899.109, class(result$x.nonStCol),  c("POSIXct", "POSIXt"))
-test(1899.111, nrow(result),  0L)
-test(1899.112, 
-     result <- dt1[dt2, cols, on = "nonStCol==intCol", with = FALSE, nomatch = 0L],
-     error = "Incompatible types: x.nonStCol (POSIXct,POSIXt) and i.intCol (integer)")
-test(1899.113,
-     result <- dt1[dt2, cols, on = "doubleCol==nonStCol", with = FALSE, nomatch = 0L],
-     dt1[dt2, cols, on = "doubleCol==nonStCol", with = FALSE, nomatch = 0L],
-     warning = "Joining on columns of different class: x.doubleCol (numeric) and i.nonStCol (POSIXct,POSIXt). Join works since both columns are of the same type: double")
-test(1899.114, class(result$i.nonStCol),  c("POSIXct", "POSIXt"))
-test(1899.115, class(result$x.doubleCol), "numeric")
-test(1899.116, nrow(result),  0L)
+# Allow column to be used as rownames when converting to matrix #2702
+DT = data.table(id = letters[1:4], X = 1:4, Y = 5:8)
+mat <- matrix(1:8, ncol = 2, dimnames=list(letters[1:4], c("X", "Y")))
+mat2 <- matrix(c(letters[1:4], 1:8), ncol=3, dimnames=list(NULL, c("id", "X", "Y")))
+mat3 <- matrix(c(letters[1:4], 1:8), ncol=3, dimnames=list(1:4, c("id", "X", "Y")))
+test(1899.01, as.matrix(DT, 1), mat)
+test(1899.02, as.matrix(DT, "id"), mat)
+test(1899.03, as.matrix(DT, TRUE), mat)
+setkey(DT, id)
+test(1899.04, as.matrix(DT, TRUE), mat)
+test(1899.05, as.matrix(DT, 1:4), mat3)
+# errors
+test(1899.06, as.matrix(DT, -1), error="rownames is -1 which is outside the column number range")
+test(1899.07, as.matrix(DT, "Z"), error="Z is not a column of x")
+test(1899.08, as.matrix(DT, c(1,2)), error="rownames must be a single column in x or a vector of row names of length nrow(x)")
+test(1899.09, as.matrix(DT, complex(1)), error="rownames must be TRUE, a column index, a column name in x, or a vector of row names")
+# values that pass through (rownames ignored)
+test(1899.10, as.matrix(DT, NA), mat2)
+test(1899.11, as.matrix(DT, NULL), mat2)
+test(1899.12, as.matrix(DT, FALSE), mat2)
+# Warnings:
+setkey(DT, id, X)
+test(1899.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys")
+
 
 ###################################
 #  Add new tests above this line  #
