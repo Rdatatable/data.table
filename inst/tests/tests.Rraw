@@ -8830,28 +8830,30 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
     expr = lapply(seq_along(cols), function(i) {
       GT_or_LT = ops[i]==">" || ops[i]=="<"
       if (inherits(vals[[i]], "integer64")) {
-        if (is.na.integer64(vals[[i]])) if (GT_or_LT) quote(integer(0)) else as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
+        if (is.na.integer64(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
         else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), as.integer(vals[[i]])))
         # don't know how to construct a call with int64 -- vals[[i]] gets converted to NAN
       } else {
-        if (is.nan(vals[[i]])) if (GT_or_LT) quote(integer(0)) else as.call(list(quote(is.nan), as.name(cols[[i]])))
-        else if (is_only_na(vals[[i]])) if (GT_or_LT) quote(integer(0)) else as.call(list(quote(is_only_na), as.name(cols[[i]])))
+        if (is.nan(vals[[i]])) if (GT_or_LT) quote(logical(0)) else as.call(list(quote(is.nan), as.name(cols[[i]])))
+        else if (is_only_na(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is_only_na), as.name(cols[[i]])))
         else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), vals[[i]]))
       }
     })
     Reduce(function(x,y)call("&",x,y), expr)
   }
   check <- function(x, y, cols, ops, mult="all") {
-    rbindlist(lapply(1:nrow(y), function(i) {
+    # gather just row numbers here and then select all rows once afterwards, rather than rbindlist
+    rowNums = unlist(lapply(1:nrow(y), function(i) {
       e = construct(cols, y[i, ..cols], ops)
-      val = x[eval(e)]
-      if (!nrow(val) || mult=="all")
-        val
+      rowNums = which(with(x, eval(e)))  # raw expression, isolated from both [.data.table overhead and subset optimization
+      if (!length(rowNums) || mult=="all")
+        rowNums
       else if (mult=="first")
-        val[1L]
+        rowNums[1L]
       else # mult=="last"
-        val[.N]
+        rowNums[length(rowNums)]
     }))
+    x[rowNums]
   }
   nq <- function(x, y, cols, ops, nomatch=0L, mult="all") {
     sd_cols = c(paste0("x.", cols), setdiff(names(x), cols))
@@ -8868,7 +8870,7 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
     test_no = test_no + .001
     test(test_no, ans1, ans2)
   }
-  gc()  # attempt to free heap earlier for the 50 nrow(y) tables created and then rbindlist'd in check(), repeated for each of the 91 runcmb
+  gc()  # no longer needed but left in place just in case, no harm
 }
 
 if (TRUE) {  # turn off temporarily using FALSE when using valgrind, as very slow
