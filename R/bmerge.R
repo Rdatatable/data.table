@@ -10,83 +10,152 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, m
   # Important that i is already passed in as a shallow copy, due to these coercions for factors.
   # i.e. bmerge(i<-shallow(i),...)
   # The caller ([.data.table) then uses the coerced columns to build the output
-
   # careful to only plonk syntax (full column) on i from now on (otherwise i would change)
   # TO DO: enforce via .internal.shallow attribute and expose shallow() to users
   # This is why shallow() is very importantly internal only, currently.
-
+  
+  # In contrast, x is not passed as shallow, but is shallow copied inside bmerge. 
+  # This allows for coercion of column types for the join, 
+  # but the calling function only sees the original column types of x
+  # careful to only plonk syntax (full column) on x from now on (otherwise x would change)
+  
+  x     = shallow(x)
   origi = shallow(i)      # Needed for factor to factor/character joins, to recover the original levels
                           # Otherwise, types of i join columns are anyways promoted to match x's
                           # types (with warning or verbose)
   resetifactor = NULL     # Keep track of any factor to factor/character join cols (only time we keep orig)
+  
+  ## function to determine type of columns. Important not to use typeof since integer and factor have same type (integer)
+  getClass <- function(x){
+    out <- class(x)
+    if(length(out) > 1) out <- "other"
+    if(!out %chin% c("logical", "integer", "numeric", "character", "factor", "integer64")) out <- "other"
+    if(out == "numeric"){
+      if(isReallyReal(x)) out <- "realNumeric" ## otherwise, it can be coerced to integer without problems
+    }
+    return(out)
+  }
+  ## The following column types throw an error when joined together. Column in x is on the left of ==
+  typeErrorClasses = c("logical==integer", "logical==numeric", "logical==realNumeric", "logical==character", "logical==factor", "logical==integer64",
+                       "integer==character", "integer==factor",
+                       "numeric==character", "numeric==factor",
+                       "realNumeric==character", "realNumeric==factor",
+                       "character==logical", "character==integer", "character==numeric", "character==realNumeric", "character==integer64",
+                       "factor==logical", "factor==integer", "factor==numeric", "factor==realNumeric", "factor==integer64",
+                       "integer64==character", "integer64==factor")
+  ## The following column types need no specific treatment when joined together
+  typeNoTreatment = c("logical==logical", "integer==integer", 
+                      "numeric==numeric", "numeric==realNumeric",
+                      "realNumeric==numeric", "realNumeric==realNumeric",
+                      "character==character", ## factor == factor needs treatment to consolidate levels
+                      "integer64==integer64"
+                      )
+  ## The following column types need simple coercion of the column in i by setting the mode(i[[lc]]) <- "newclass", 
+  ## where newclass is the class on the left of == 
+  typeModeCoercionI = c("integer==logical", "integer==numeric", ## not for realNumeric!!
+                        "numeric==logical", "numeric==integer",
+                        "realNumeric==logical", "realNumeric==integer")
+  ## The following column types need simple coercion of the column in x by setting the mode(x[[rc]]) <- "newclass", 
+  ## where newclass is the class on the rigth of == 
+  typeModeCoercionX = c("integer==realNumeric")
+  ## The following column types need coercion of the column in i by calling as.newclass(i[[lc]]), 
+  ## where newclass is the class on the left of ==
+  typeCastCoercionI = c("integer==integer64", "numeric==integer64", "realNumeric==integer64",
+                        "integer64==logical", "integer64==integer", "integer64==numeric",
+                        "character==factor")
+  ## The following column types need coercion of the column in x by calling as.newclass(x[[rc]]), 
+  ## where newclass is the class on the right of ==
+  typeCastCoercionX = c("integer64==realNumeric")
+  
   for (a in seq_along(leftcols)) {
-    # This loop is simply to support joining factor columns
+    # This loop does the following:
+    # - check that join columns have compatible types
+    # - do type coercions if necessary
+    # - special support for joining factor columns
     # Note that if i is keyed, if this coerces, i's key gets dropped and the key may not be retained
     lc = leftcols[a]   # i   # TO DO: rename left and right to i and x
     rc = rightcols[a]  # x
     icnam = names(i)[lc]
     xcnam = names(x)[rc]
-    if (is.character(x[[rc]])) {
-      if (is.character(i[[lc]])) next
-      if (!is.factor(i[[lc]]))
-        stop("x.'",xcnam,"' is a character column being joined to i.'",icnam,"' which is type '",typeof(i[[lc]]),"'. Character columns must join to factor or character columns.")
-      if (verbose) cat("Coercing factor column i.'",icnam,"' to character to match type of x.'",xcnam,"'.\n",sep="")
-      set(i,j=lc,value=as.character(i[[lc]]))
-      # no longer copies all of i, thanks to shallow() and :=/set
+    myXclass = getClass(x[[rc]])
+    myIclass = getClass(i[[lc]])
+    myXtype = if(myXclass == "realNumeric") "numeric" else myXclass
+    myItype = if(myIclass == "realNumeric") "numeric" else myIclass
+    joinTypeIdentifier = paste0(myXclass, "==", myIclass)
+    if(joinTypeIdentifier %chin% typeNoTreatment){
       next
-    }
-    if (is.factor(x[[rc]])) {
-      if (is.character(i[[lc]])) {
-        if (verbose) cat("Coercing character column i.'",icnam,"' to factor to match type of x.'",xcnam,"'. If possible please change x.'",xcnam,"' to character. Character columns are now preferred in joins.\n",sep="")
+    } else if(joinTypeIdentifier %chin% typeErrorClasses){
+      stop(sprintf("Incompatible types: %s (%s) and %s (%s)", 
+                   paste0("x.", xcnam), myXtype, paste0("i.", icnam), myItype))
+    } else if(joinTypeIdentifier %chin% typeModeCoercionI){
+      ## coerce i[[lc]] to same class as x[[rc]] by mode() approach
+      if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
+                            myItype, paste0("i.", icnam), myXtype, paste0("x.", xcnam))); flush.console()}
+      newval = i[[lc]]
+      mode(newval) = myXtype  # retains column attributes (such as IDateTime class)
+      set(i, j=lc, value=newval)
+    } else if(joinTypeIdentifier %chin% typeModeCoercionX){
+      ## coerce x[[rc]] to same class as i[[lc]] by mode() approach
+      if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
+                            myXtype, paste0("x.", xcnam), myItype, paste0("i.", icnam))); flush.console()}
+      newval = x[[rc]]
+      mode(newval) = myItype  # retains column attributes (such as IDateTime class)
+      set(x, j=rc, value=newval)
+    } else if(joinTypeIdentifier %chin% typeCastCoercionI){
+      ## coerce i[[lc]] to same class as x[[rc]] by as.newclass() approach
+      converter <- match.fun(paste0("as.", myXtype))
+      if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
+                            myItype, paste0("i.", icnam), myXtype, paste0("x.", xcnam))); flush.console()}
+      newval = i[[lc]]
+      newval = converter(newval)
+      set(i, j=lc, value=newval)
+    } else if(joinTypeIdentifier %chin% typeCastCoercionX){
+      ## coerce x[[rc]] to same class as i[[lc]] by as.newclass() approach
+      converter <- match.fun(paste0("as.", myItype))
+      if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
+                            myXtype, paste0("x.", xcnam), myItype, paste0("i.", icnam))); flush.console()}
+      newval = x[[rc]]
+      newval = converter(newval)
+      set(x, j=rc, value=newval)
+    } else if(joinTypeIdentifier %chin% c("factor==factor", "factor==character")){
+      if (myItype == "character") {
+        if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
+                              myItype, paste0("i.", icnam), myXtype, paste0("x.", xcnam))); flush.console()}
         set(origi, j=lc, value=factor(origi[[lc]])) # note the use of 'origi' here - see #499 and #945
         # TO DO: we need a way to avoid copying 'value' for internal purposes
         # that would allow setting: set(i, j=lc, value=origi[[lc]]) without resulting in a copy.
         # until then using 'val <- origi[[lc]]' below to avoid another copy.
-      } else {
-        if (!is.factor(i[[lc]]))
-          stop("x.'",xcnam,"' is a factor column being joined to i.'",icnam,"' which is type '",typeof(i[[lc]]),"'. Factor columns must join to factor or character columns.")
       }
+      # levels of factors have to be treated properly when coercing
       # Retain original levels of i's factor columns in factor to factor joins (important when NAs,
       # see tests 687 and 688).
       # Moved it outside of 'else' to fix #499 and #945.
       resetifactor = c(resetifactor,lc)
-      if (roll!=0.0 && a==length(leftcols)) stop("Attempting roll join on factor column x.",names(x)[rc],". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns <strike>NA</strike> <new>0</new> for missing chars in x (rather than some integer greater than existing). Note roll!=0.0 is ok in this 0 special floating point case e.g. as.double(FALSE)==0.0 is ok, and "nearest"!=0.0 is also true.
+      if (roll!=0.0 && a==length(leftcols)) stop("Attempting roll join on factor column x.",xcnam,". Only integer, double or character colums may be roll joined.")   # because the chmatch on next line returns <strike>NA</strike> <new>0</new> for missing chars in x (rather than some integer greater than existing). Note roll!=0.0 is ok in this 0 special floating point case e.g. as.double(FALSE)==0.0 is ok, and "nearest"!=0.0 is also true.
       val = origi[[lc]] # note: using 'origi' here because set(..., value = .) always copies '.', we need a way to avoid it in internal cases.
       lx = levels(x[[rc]])
       li = levels(val)
       newfactor = chmatch(li, lx, nomatch=0L)[val] # fix for #945, a hacky solution for now.
       levels(newfactor) = lx
       class(newfactor) = "factor"
-      set(i, j=lc, value=newfactor)
-      # COMMENT BELOW IS NOT TRUE ANYMORE... had to change nomatch to 0L to take care of case where 'NA' occurs as a separate value... See #945.
-      # <OUTDATED> NAs can be produced by this level match, in which case the C code (it knows integer value NA)
-      # can skip over the lookup. It's therefore important we pass NA rather than 0 to the C code.
-    }
-    # Fix for #1108.
-    # TODO: clean this code up...
-    # NOTE: bit64::is.double(int64) returns FALSE.. but base::is.double returns TRUE
-    is.int64 <- function(x) inherits(x, 'integer64')
-    is.strictlydouble <- function(x) !is.int64(x) && is.double(x)
-    if (is.integer(x[[rc]]) && (base::is.double(i[[lc]]) || is.logical(i[[lc]]))) {
-      # TO DO: add warning if reallyreal about loss of precision
-      # or could coerce in binary search on the fly, at cost
-      if (verbose) cat("Coercing ", typeof(i[[lc]])," column i.'",icnam,"' to integer to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
-      newval = i[[lc]]
-      if (is.int64(newval))
-        newval = as.integer(newval)
-      else mode(newval) = "integer"  # retains column attributes (such as IDateTime class)
-      set(i, j=lc, value=newval)
-    } else if (is.int64(x[[rc]]) && (is.integer(i[[lc]]) || is.logical(i[[lc]]) || is.strictlydouble(i[[lc]]) )) {
-      if (verbose) cat("Coercing ",typeof(i[[lc]])," column i.'",icnam,"' to double to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
-      newval = bit64::as.integer64(i[[lc]])
-      set(i, j=lc, value=newval)
-    } else if (is.strictlydouble(x[[rc]]) && (is.integer(i[[lc]]) || is.logical(i[[lc]]) || is.int64(i[[lc]]) )) {
-      if (verbose) cat("Coercing ",typeof(i[[lc]])," column i.'",icnam,"' to double to match type of x.'",xcnam,"'. Please avoid coercion for efficiency.\n",sep="")
-      newval = i[[lc]]
-      if (is.int64(newval))
-        newval = as.numeric(newval)
-      else mode(newval) = "double"
-      set(i, j=lc, value=newval)
+      set(i, j=lc, value=newfactor)      
+    } else if(myIclass == "other" || myXclass == "other"){
+      ## at least one column has a non-standard class, e.g. POSIXct.
+      ## join will work if 
+      ## - both columns have exactly the same class
+      ## - typeof(x[[rc]]) == typeof(i[[lc]]) with a warning
+      if(all(class(x[[rc]]) == class(i[[lc]]))){
+        next
+      } else if(typeof(x[[rc]]) == typeof(i[[lc]])){
+        warning(sprintf("Joining on columns of different class: %s (%s) and %s (%s). Join works since both columns are of the same type: %s",
+                        paste0("x.", xcnam), paste0(class(x[[rc]]), collapse = ","), paste0("i.", icnam), paste0(class(i[[lc]]), collapse = ","), typeof(x[[rc]])))
+        ## nothing needs to be done, Cbmerge will work because of the same types.
+      } else {
+        stop(sprintf("Incompatible types: %s (%s) and %s (%s)", 
+                     paste0("x.", xcnam), paste0(class(x[[rc]]), collapse = ","), paste0("i.", icnam), paste0(class(i[[lc]]), collapse = ",")))
+      }
+    } else {
+      stop("Internal error: data.table's bmerge doesn't know how to handle joins of type ", joinTypeIdentifier, ". Please report the bug to the developers")
     }
   }
   if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...");flush.console()}
