@@ -5789,7 +5789,7 @@ test(1432, DT[a==b], DT[2:3])
 test(1433, DT[a %in% b], DT[c(2,3,5,6)])
 test(1434, DT[a==b+1], DT[c(1,4,6)])
 test(1435, DT[b==max(a)], DT[3])
-test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing numeric column i.'a' to integer")
+test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing double column i.'a' to integer")
 DT[,a:=factor(letters[a])]
 test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new index 'a'")
 ## test that the lookup env for RHS is correct. In internal env,notjoin is FALSE in this case.

@@ -25,47 +25,55 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, m
                           # types (with warning or verbose)
   resetifactor = NULL     # Keep track of any factor to factor/character join cols (only time we keep orig)
   
-  ## function to determine type of columns. Important not to use typeof since integer and factor have same type (integer)
+  ## function to determine type of columns. 
+  ## Important not to use typeof() since integer and factor have same type (integer)
+  ## important to test for is.double instead of is.numeric because of bug with IDate (test 346)
   getClass <- function(x){
-    out <- class(x)
+    if(is.logical(x))                 out <- "logical"
+    else if(is.integer(x))            out <- "integer"
+    else if(base::is.double(x)){ ## base::is.double(integer64) is TRUE, while bit64::is.double(integer64) is FALSE!
+      if(inherits(x, "integer64"))    out <- "integer64" ## is.numeric returns TRUE on integer64 columns
+      ## distinguish integer values with storage mode double from real numeric 
+      ## values that can't be coerced to integer without loss of precision
+      else if(isReallyReal(x))        out <- "realDouble"
+      else out <- "double"}
+    else if(is.character(x))          out <- "character"
+    else if(is.factor(x))             out <- "factor"
+    else out <- "other" ## whatever it is, it is not a standard type
     if(length(out) > 1) out <- "other"
-    if(!out %chin% c("logical", "integer", "numeric", "character", "factor", "integer64")) out <- "other"
-    if(out == "numeric"){
-      if(isReallyReal(x)) out <- "realNumeric" ## otherwise, it can be coerced to integer without problems
-    }
     return(out)
   }
   ## The following column types throw an error when joined together. Column in x is on the left of ==
-  typeErrorClasses = c("logical==integer", "logical==numeric", "logical==realNumeric", "logical==character", "logical==factor", "logical==integer64",
+  typeErrorClasses = c("logical==integer", "logical==double", "logical==realDouble", "logical==character", "logical==factor", "logical==integer64",
                        "integer==character", "integer==factor",
-                       "numeric==character", "numeric==factor",
-                       "realNumeric==character", "realNumeric==factor",
-                       "character==logical", "character==integer", "character==numeric", "character==realNumeric", "character==integer64",
-                       "factor==logical", "factor==integer", "factor==numeric", "factor==realNumeric", "factor==integer64",
+                       "double==character", "double==factor",
+                       "realDouble==character", "realDouble==factor",
+                       "character==logical", "character==integer", "character==double", "character==realDouble", "character==integer64",
+                       "factor==logical", "factor==integer", "factor==double", "factor==realDouble", "factor==integer64",
                        "integer64==character", "integer64==factor")
   ## The following column types need no specific treatment when joined together
   typeNoTreatment = c("logical==logical", "integer==integer", 
-                      "numeric==numeric", "numeric==realNumeric",
-                      "realNumeric==numeric", "realNumeric==realNumeric",
+                      "double==double", "double==realDouble",
+                      "realDouble==double", "realDouble==realDouble",
                       "character==character", ## factor == factor needs treatment to consolidate levels
                       "integer64==integer64"
                       )
   ## The following column types need simple coercion of the column in i by setting the mode(i[[lc]]) <- "newclass", 
   ## where newclass is the class on the left of == 
-  typeModeCoercionI = c("integer==logical", "integer==numeric", ## not for realNumeric!!
-                        "numeric==logical", "numeric==integer",
-                        "realNumeric==logical", "realNumeric==integer")
+  typeModeCoercionI = c("integer==logical", "integer==double", ## not for realDouble!!
+                        "double==logical", "double==integer",
+                        "realDouble==logical", "realDouble==integer")
   ## The following column types need simple coercion of the column in x by setting the mode(x[[rc]]) <- "newclass", 
   ## where newclass is the class on the rigth of == 
-  typeModeCoercionX = c("integer==realNumeric")
+  typeModeCoercionX = c("integer==realDouble")
   ## The following column types need coercion of the column in i by calling as.newclass(i[[lc]]), 
   ## where newclass is the class on the left of ==
-  typeCastCoercionI = c("integer==integer64", "numeric==integer64", "realNumeric==integer64",
-                        "integer64==logical", "integer64==integer", "integer64==numeric",
+  typeCastCoercionI = c("integer==integer64", "double==integer64", "realDouble==integer64",
+                        "integer64==logical", "integer64==integer", "integer64==double",
                         "character==factor")
   ## The following column types need coercion of the column in x by calling as.newclass(x[[rc]]), 
   ## where newclass is the class on the right of ==
-  typeCastCoercionX = c("integer64==realNumeric")
+  typeCastCoercionX = c("integer64==realDouble")
   
   for (a in seq_along(leftcols)) {
     # This loop does the following:
@@ -79,8 +87,8 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, m
     xcnam = names(x)[rc]
     myXclass = getClass(x[[rc]])
     myIclass = getClass(i[[lc]])
-    myXtype = if(myXclass == "realNumeric") "numeric" else myXclass
-    myItype = if(myIclass == "realNumeric") "numeric" else myIclass
+    myXtype = if(myXclass == "realDouble") "double" else myXclass
+    myItype = if(myIclass == "realDouble") "double" else myIclass
     joinTypeIdentifier = paste0(myXclass, "==", myIclass)
     if(joinTypeIdentifier %chin% typeNoTreatment){
       next
