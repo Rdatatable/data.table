@@ -407,11 +407,11 @@ test(149, dt[J(2:3),roll=TRUE], data.table(a=c(2L,3L),b=c(1L,1L)))  # in future 
 # 150:158 test out of order factor levels in key columns (now allowed from v1.8.0)
 dt = data.table(x=factor(c("c","b","a"),levels=c("b","a","c")),y=1:3)
 setkey(dt,x)
-test(150.1, dt["b",y,verbose=TRUE], output="Coercing character column i.'V1' to factor") # changed i.V1 to i.x as per FR #2693
+test(150.1, dt["b",y,verbose=TRUE], output="Coercing character column i.V1 to factor") # changed i.V1 to i.x as per FR #2693
 test(150.2, dt["b",y], 2L)
 # from Tom's post :
 a = data.table(a=rep(1:5, 2), b=factor(letters[rep(1:5, each =2)], levels=letters[5:1]), key="b")
-test(151.1, a[J("b"),a,verbose=TRUE], output="Coercing character column i.'V1' to factor") # message back to `i.V1` now. 'b' still accessible to satisfy FR #2693, checked on next line
+test(151.1, a[J("b"),a,verbose=TRUE], output="Coercing character column i.V1 to factor") # message back to `i.V1` now. 'b' still accessible to satisfy FR #2693, checked on next line
 test(151.2, a[J("b"),a], 3:4)
 # stretch tests further, two out of order levels, one gets key'd the other not :
 a = data.table(x=factor(letters[rep(1:5, each =2)], levels=letters[5:1]),
@@ -1613,7 +1613,7 @@ test(577, CJ(x=c(1L,2L), c("a","b")), data.table(x=c(1L,1L,2L,2L),V2=c("a","b","
 # Test factor to character join when factor contains unused and reverse order levels :
 X = data.table(a=LETTERS[1:4],v=1:4,key="a")
 Y = data.table(a=factor(c("D","B"),levels=rev(LETTERS)),key="a")
-test(578, X[Y,verbose=TRUE], output="Coercing factor column i.'a' to character to match type of x.'a'")
+test(578, X[Y,verbose=TRUE], output="Coercing factor column i.a to character to match type of x.a")
 test(579, X[Y], data.table(a=c("D","B"), v=c(4L,2L)))
 
 # Test that logical i in set() returns helpful error
@@ -5789,7 +5789,7 @@ test(1432, DT[a==b], DT[2:3])
 test(1433, DT[a %in% b], DT[c(2,3,5,6)])
 test(1434, DT[a==b+1], DT[c(1,4,6)])
 test(1435, DT[b==max(a)], DT[3])
-test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing double column i.'a' to integer")
+test(1436, DT[a==2,verbose=TRUE], DT[c(2,5)], output="Coercing double column i.a to integer")
 DT[,a:=factor(letters[a])]
 test(1437, DT[a==factor("b"),verbose=TRUE], DT[c(2,5)], output="Creating new index 'a'")
 ## test that the lookup env for RHS is correct. In internal env,notjoin is FALSE in this case.
