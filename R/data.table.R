@@ -760,7 +760,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (is.null(leftcols)) { # Keep all columns for non-equi / roll joins with no equi keys
       jisvars = names(i)
       tt = jisvars %chin% names(x)
-      if (length(tt)) jisvars[tt] = paste("i.",jisvars[tt],sep="")
+      if (length(tt)) jisvars[tt] = paste0("i.",jisvars[tt])
       nx = names(x)
       ansvars = make.unique(c(nx, jisvars))
       icols = seq_along(i)
@@ -1237,7 +1237,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         ivars = names(i)
         w2 = chmatch(ansvars[wna], ivars)
         if (any(w2na <- is.na(w2))) {
-          ivars = paste("i.",ivars,sep="")
+          ivars = paste0("i.",ivars)
           w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
         }
         icols = w2
