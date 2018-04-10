@@ -148,7 +148,8 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, m
       class(newfactor) = "factor"
       set(i, j=lc, value=newfactor)      
     } else if(myIclass == "other" || myXclass == "other"){
-      ## at least one column has a non-standard class, e.g. POSIXct.
+      ## very unlikely case
+      ## at least one column is neither integer, double, character or factor.
       ## join will work if 
       ## - both columns have exactly the same class
       ## - typeof(x[[rc]]) == typeof(i[[lc]]) with a warning
@@ -160,7 +161,7 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, m
         ## nothing needs to be done, Cbmerge will work because of the same types.
       } else {
         stop(sprintf("Incompatible types: %s (%s) and %s (%s)", 
-                     paste0("x.'", xcnam, "'"), paste0(class(x[[rc]]), collapse = ","), paste0("i.'", icnam, "'"), paste0(class(i[[lc]]), collapse = ",")))
+                     paste0("x.", xcnam), paste0(class(x[[rc]]), collapse = ","), paste0("i.", icnam), paste0(class(i[[lc]]), collapse = ",")))
       }
     } else {
       stop("Internal error: data.table's bmerge doesn't know how to handle joins of type ", joinTypeIdentifier, ". Please report the bug to the developers")
