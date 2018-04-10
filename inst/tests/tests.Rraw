@@ -11628,8 +11628,8 @@ test(1900.6, attributes(attr(fread(DT_str, index = c('a', 'b')), 'index')),
 
 # . within bquote shouldn't be swapped to list, #1912
 DT = data.table(x = 1:5, y = 6:10)
-test(1901.1, DT[ , bquote(z == .(sum(x)))],  bquote(z == .(DT[ , sum(x)])))
-test(1901.2, DT[ , .(.(bquote(z == .(sd(x - y)))))],  data.table(V1 = list(bquote(z == .(DT[ , sd(x - y)])))))
+test(1901.1, DT[, bquote(z==.(sum(x)))],  bquote(z==.(DT[, sum(x)])))
+test(1901.2, DT[, .(.(bquote(z==.(sd(x-y)))))],  data.table(V1=list(bquote(z==.(DT[, sd(x-y)])))))
 
 ###################################
 #  Add new tests above this line  #
