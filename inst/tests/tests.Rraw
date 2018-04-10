@@ -11736,6 +11736,12 @@ d2 <- d1[0L]
 test(1902.27, d2[d1, on=.(a>a, b<b)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
 test(1902.28, d2[d1, on=.(a>a)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
 
+# New test required to maintain code coverage - does i. prefix work in j where there are 
+# only non-equi / roll join columns in on?
+d1 <- data.table(id=c("X", "Y", "Z"), val1 = 1:3)
+d2 <- data.table(id=c("a", "b", "c"), val2 = 1:3)
+test(1902.29, d1[d2, on = .(val1 > val2), .(i.id)], data.table(i.id=c("a", "a", "b", "c")))
+
 # Testing completed PR#2602, set datatable.bothkeycols back to FALSE (the default for now) for future tests
 options(datatable.bothkeycols=FALSE)
 
