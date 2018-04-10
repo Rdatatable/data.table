@@ -416,14 +416,15 @@ static SEXP fast_order(SEXP dt, R_len_t byArg, R_len_t handleSorted) {
 }
 
 static SEXP uniq_lengths(SEXP v, R_len_t n) {
-
-  R_len_t i, nv=length(v);
+  R_len_t nv=length(v);
   SEXP ans = PROTECT(allocVector(INTSXP, nv));
-  for (i=1; i<nv; i++) {
+  for (R_len_t i=1; i<nv; i++) {
     INTEGER(ans)[i-1] = INTEGER(v)[i] - INTEGER(v)[i-1];
   }
-  // last value
-  INTEGER(ans)[nv-1] = n - INTEGER(v)[nv-1] + 1;
+  if (nv>0) {
+    // last value
+    INTEGER(ans)[nv-1] = n - INTEGER(v)[nv-1] + 1;
+  }
   UNPROTECT(1);
   return(ans);
 }
@@ -631,7 +632,6 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
 
   // check for factor, get max types, and when usenames=TRUE get the answer 'names' and column indices for proper reordering.
   preprocess(l, usenames, fill, &data);
-  fnames   = VECTOR_ELT(data.ans_ptr, 0);
   if (usenames) findices = VECTOR_ELT(data.ans_ptr, 1);
   protecti = data.protecti;   // TODO very ugly and doesn't seem right. Assign items to list instead, perhaps.
   if (data.n_rows == 0 && data.n_cols == 0) {
@@ -642,6 +642,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
     error("Total rows in the list is %lld which is larger than the maximum number of rows, currently %d",
           (long long)data.n_rows, INT32_MAX);
   }
+  fnames = VECTOR_ELT(data.ans_ptr, 0);
   if (isidcol) {
     fnames = PROTECT(add_idcol(fnames, idcol, data.n_cols));
     protecti++;

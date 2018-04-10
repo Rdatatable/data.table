@@ -33,7 +33,15 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (!isInteger(o)) error("o is not an integer vector");
   if (!isInteger(f)) error("f is not an integer vector");
   if (!isInteger(l)) error("l is not an integer vector");
-  if (!isInteger(irowsArg) && !isNull(irowsArg)) error("irowsArg is not an integer vector");
+  if (isNull(irowsArg)) {
+    irows = NULL;
+    irowslen = -1;
+  }
+  else if (isInteger(irowsArg)) {
+    irows = INTEGER(irowsArg);
+    irowslen = LENGTH(irowsArg);
+  }
+  else error("irowsArg is neither an integer vector nor NULL");
   ngrp = LENGTH(l);
   if (LENGTH(f) != ngrp) error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp);
   grpn=0;
@@ -63,8 +71,6 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (length(tt) && INTEGER(tt)[0]!=maxgrpn) error("Internal error: o's maxgrpn mismatches recalculated maxgrpn");
   oo = INTEGER(o);
   ff = INTEGER(f);
-  irows = INTEGER(irowsArg);
-  if (!isNull(irowsArg)) irowslen = length(irowsArg);
 
   SEXP ans = PROTECT( eval(jsub, env) );
   // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.

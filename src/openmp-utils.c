@@ -41,12 +41,12 @@ SEXP getDTthreads_R(SEXP verbose) {
   // verbose checked at R level
   if (!isLogical(verbose) || LENGTH(verbose)!=1 || INTEGER(verbose)[0]==NA_LOGICAL) error("'verbose' must be TRUE or FALSE");
   if (LOGICAL(verbose)[0]) {
-    #ifdef _OPENMP
     Rprintf("omp_get_max_threads() = %d\n", omp_get_max_threads());
     Rprintf("omp_get_thread_limit() = %d\n", omp_get_thread_limit()); // can be INT_MAX meaning unlimited
     Rprintf("DTthreads = %d\n", DTthreads);
-    #else
-    Rprintf("This installation of data.table has not been compiled with OpenMP support.\n");
+    #ifndef _OPENMP
+      Rprintf("This installation of data.table has not been compiled with OpenMP support.\n");
+      // the omp_ functions used above are defined in myomp.h to be 1 in this case
     #endif
   }
   return ScalarInteger(getDTthreads());
