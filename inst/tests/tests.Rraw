@@ -2916,7 +2916,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
 
   # segfault of unprotected var caught with the help of address sanitizer
   set.seed(1)
-  val = sample(c(1:5, NA), 1e6L, TRUE)
+  val = sample(c(1:5, NA), 1e5L, TRUE)
   dt <- setDT(replicate(100L, val, simplify=FALSE))
   ## to ensure there's no segfault...
   ans <- melt(dt, measure.vars=names(dt), na.rm=TRUE)
@@ -8834,46 +8834,47 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
     expr = lapply(seq_along(cols), function(i) {
       GT_or_LT = ops[i]==">" || ops[i]=="<"
       if (inherits(vals[[i]], "integer64")) {
-        if (is.na.integer64(vals[[i]])) if (GT_or_LT) quote(integer(0)) else as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
+        if (is.na.integer64(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
         else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), as.integer(vals[[i]])))
         # don't know how to construct a call with int64 -- vals[[i]] gets converted to NAN
       } else {
-        if (is.nan(vals[[i]])) if (GT_or_LT) quote(integer(0)) else as.call(list(quote(is.nan), as.name(cols[[i]])))
-        else if (is_only_na(vals[[i]])) if (GT_or_LT) quote(integer(0)) else as.call(list(quote(is_only_na), as.name(cols[[i]])))
+        if (is.nan(vals[[i]])) if (GT_or_LT) quote(logical(0)) else as.call(list(quote(is.nan), as.name(cols[[i]])))
+        else if (is_only_na(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is_only_na), as.name(cols[[i]])))
         else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), vals[[i]]))
       }
     })
-    ans = expr[[1L]]
-    lapply(expr[-1L], function(e) ans <<- as.call(list(quote(`&`), ans, e)))
-    ans
+    Reduce(function(x,y)call("&",x,y), expr)
   }
   check <- function(x, y, cols, ops, mult="all") {
-    expr = lapply(1:nrow(y), function(i) {
-      expr = construct(cols, as.list(y[i, cols, with=FALSE]), ops)
-    })
-    ans = lapply(expr, function(e) {
-          val = x[eval(e)]
-          if (!nrow(val)) return(val)
-          val = if (mult=="first") val[1L] else if (mult=="last") val[.N] else val
-    })
-    rbindlist(ans)
+    # gather just row numbers here and then select all rows once afterwards, rather than rbindlist
+    rowNums = unlist(lapply(1:nrow(y), function(i) {
+      e = construct(cols, y[i, ..cols], ops)
+      rowNums = which(with(x, eval(e)))  # raw expression, isolated from both [.data.table overhead and subset optimization
+      if (!length(rowNums) || mult=="all")
+        rowNums
+      else if (mult=="first")
+        rowNums[1L]
+      else # mult=="last"
+        rowNums[length(rowNums)]
+    }))
+    x[rowNums]
   }
   nq <- function(x, y, cols, ops, nomatch=0L, mult="all") {
-    sd_cols = c(paste("x.", cols, sep=""), setdiff(names(x), cols))
-    ans = x[y, mget(sd_cols, as.environment(-1)), on = paste(cols, ops, cols, sep=""), allow=TRUE, nomatch=nomatch, mult=mult]
+    sd_cols = c(paste0("x.", cols), setdiff(names(x), cols))
+    ans = x[y, mget(sd_cols, as.environment(-1)), on = paste0(cols, ops, cols), allow=TRUE, nomatch=nomatch, mult=mult]
     setnames(ans, gsub("^x[.]", "", names(ans)))
     setcolorder(ans, names(x))[]
   }
   for (i in seq_along(runcmb)) {
     thiscols = runcmb[[i]]
     thisops = runops[[i]]
-    # cat("k = ", k, "\ti = ", i, "\t thiscols = [", paste(thiscols,collapse=","), "]\t thisops = [", paste(thisops,collapse=","), "]\t ", sep="")
+    # cat("k = ", k, "\ti = ", i, "\t thiscols = [", paste0(thiscols,collapse=","), "]\t thisops = [", paste0(thisops,collapse=","), "]\t ", sep="")
     ans1 = nq(x, y, thiscols, thisops, 0L, mult=mult)
     ans2 = check(x, y, thiscols, thisops, mult=mult)
-    test_no = signif(test_no+.001, 7)
-    test(test_no, all.equal(ans1,ans2,ignore.row.order=TRUE), TRUE)
-    # if (identical(all.equal(ans1,ans2,ignore.row.order=TRUE), TRUE)) cat("successful\n") else stop("failed\n")
+    test_no = test_no + .001
+    test(test_no, ans1, ans2)
   }
+  gc()  # no longer needed but left in place just in case, no harm
 }
 
 if (TRUE) {  # turn off temporarily using FALSE when using valgrind, as very slow
@@ -11579,8 +11580,9 @@ test(1896.6, nrow(DT[, .N, by = .(y, z, x)]), 5L)
 DT = data.table(a = c(3, 2, 1, 2, 3), b = c(1, 2, 1, 1, 2))
 setindexv(DT, list('a', c('a', 'b')))
 test(1897.1, indices(DT), c("a", "a__b"))
-test(1897.2, attr(attr(DT, 'index'), '__a'), c(3L, 2L, 4L, 1L, 5L))
-test(1897.3, attr(attr(DT, 'index'), '__a__b'), c(3L, 4L, 2L, 1L, 5L))
+test(1897.2, attributes(attr(DT, 'index')),
+     list(`__a` = c(3L, 2L, 4L, 1L, 5L),
+          `__a__b` = c(3L, 4L, 2L, 1L, 5L)))
 
 test(1898.1, set2key(DT, a), error="deprecated. Please use setindex() instead.")
 test(1898.2, set2keyv(DT, "a"), error="deprecated. Please use setindexv() instead.")
@@ -11610,6 +11612,29 @@ test(1899.12, as.matrix(DT, FALSE), mat2)
 setkey(DT, id, X)
 test(1899.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys")
 
+# index argument for fread, #2633
+DT_str = c('a,b\n3,1\n2,2\n1,1\n2,1\n3,2')
+test(1900.1, attributes(attr(fread(DT_str, index = 'a'), 'index')),
+     list(`__a` = c(3L, 2L, 4L, 1L, 5L)))
+test(1900.2, attributes(attr(fread(DT_str, index = list('a,b', c('b', 'a'), 'a')), 'index')),
+     list(`__a__b` = c(3L, 4L, 2L, 1L, 5L),
+          `__b__a` = c(3L, 4L, 1L, 2L, 5L),
+          `__a` = c(3L, 2L, 4L, 1L, 5L)))
+test(1900.3, fread(DT_str, index = 2L),
+     error = 'index argument.*character vector')
+test(1900.4, fread(DT_str, index = list('a', 1L)),
+     error = 'index argument.*character vector')
+# col.names applied before index
+test(1900.5, fread(DT_str, col.names = c('c', 'd'), index = 'a'),
+     error = 'some columns are not in the data.table')
+test(1900.6, attributes(attr(fread(DT_str, index = c('a', 'b')), 'index')),
+     list(`__a__b` = c(3L, 4L, 2L, 1L, 5L)))
+
+# . within bquote shouldn't be swapped to list, #1912
+DT = data.table(x = 1:5, y = 6:10)
+test(1901.1, DT[, bquote(z==.(sum(x)))],  bquote(z==.(DT[, sum(x)])))
+test(1901.2, DT[, .(.(bquote(z==.(sd(x-y)))))],  data.table(V1=list(bquote(z==.(DT[, sd(x-y)])))))
+
 # PR#2602 -- non-equi joins and roll joins columns are now returned from 
 # both data.tables in x[i]. These tests cover previous tests which expect 
 # only the column from i (named after the column from x) to be returned.
@@ -11617,40 +11642,40 @@ options(datatable.bothkeycols = TRUE)
 
 # Tests 129, 130, 131 but with the roll column returned from both x and i
 TESTDT = data.table(a=3L,v=2L,key="a")  # testing 1-row table
-test(1900.01, TESTDT[J(4),roll=TRUE], data.table(a=3L,v=2L,V1=4L,key="a"))
-test(1900.02, TESTDT[J(4),roll=TRUE,rollends=FALSE], data.table(a=NA_integer_,v=NA_integer_,V1=4L,key="a"))
-test(1900.03, TESTDT[J(-4),roll=TRUE], data.table(a=NA_integer_,v=NA_integer_,V1=-4L,key="a")) 
+test(1902.01, TESTDT[J(4),roll=TRUE], data.table(a=3L,v=2L,V1=4L,key="a"))
+test(1902.02, TESTDT[J(4),roll=TRUE,rollends=FALSE], data.table(a=NA_integer_,v=NA_integer_,V1=4L,key="a"))
+test(1902.03, TESTDT[J(-4),roll=TRUE], data.table(a=NA_integer_,v=NA_integer_,V1=-4L,key="a")) 
 
 # Tests 148 and 149 with the roll column returned from both x and i
 dt = data.table(a=c(1L,4L,5L), b=1:3, key="a")
-test(1900.04, dt[CJ(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L),V1=c(2L,3L),key="a"))
-test(1900.05, dt[J(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L),V1=c(2L,3L)))
+test(1902.04, dt[CJ(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L),V1=c(2L,3L),key="a"))
+test(1902.05, dt[J(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L),V1=c(2L,3L)))
 
 # Test 917 with roll column returned from both x and i
 X = data.table(id=2001:2004, uid=c(1001,1002,1001,1001), state=factor(c('CA','CA','CA','MA')), ts=c(51,52,53,54), key='state,uid,ts')
 Y = data.table(id=3001:3004, uid=c(1001,1003,1002,1001), state=factor(c('CA','CA','CA','CA')), ts=c(51,57,59,59), key='state,uid,ts')
-test(1900.06, X[Y,roll=TRUE], data.table(id=INT(2001,2003,2002,NA), uid=c(1001,1001,1002,1003), state=factor('CA'), ts=c(51,53,52,NA), i.id=INT(3001,3004,3003,3002), i.ts=c(51,59,59,57), key='state,uid,ts'))
+test(1902.06, X[Y,roll=TRUE], data.table(id=INT(2001,2003,2002,NA), uid=c(1001,1001,1002,1003), state=factor('CA'), ts=c(51,53,52,NA), i.id=INT(3001,3004,3003,3002), i.ts=c(51,59,59,57), key='state,uid,ts'))
 
 # Test 1317.1 with roll column returned from both x and i
 dt1 <- data.table(structure(list(x = c(7L, 33L), y = structure(c(15912, 15912), class = "Date"), z = c(626550.35284, 7766.385)), .Names =
 c("x", "y", "z"), class = "data.frame", row.names = c(NA, -2L)), key = "x,y")
 dt2 <- data.table(structure(list(x = c(7L, 7L, 33L, 33L, 33L, 33L), y = structure(c(15884, 15917, 15884, 15884, 15917, 15917), class = "Date"), w = c(-0.118303, 0.141225, -0.03137, -0.02533, 0.045967, 0.043694)), .Names = c("x", "y", "w"), class = "data.frame", row.names = c(NA, -6L)), key = "x,y")
-test(1900.07, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-26", "2013-07-26", "2013-07-26")), z=c(dt1$z[1:2], dt1$z[2]), i.y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), w=c(dt2$w[2], dt2$w[5:6]), key="x,y"))
+test(1902.07, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-26", "2013-07-26", "2013-07-26")), z=c(dt1$z[1:2], dt1$z[2]), i.y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), w=c(dt2$w[2], dt2$w[5:6]), key="x,y"))
 
 # Test 1317.2 with roll column returned from both x and i
 set.seed(1L)
 dt2 <- dt2[sample(nrow(dt2))] # key should be gone
-test(1900.08, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-26", "2013-07-26", "2013-07-26")), z=c(dt1$z[1:2], dt1$z[2]), i.y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), w=c(dt2$w[1], dt2$w[c(2,6)])))
+test(1902.08, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-26", "2013-07-26", "2013-07-26")), z=c(dt1$z[1:2], dt1$z[2]), i.y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), w=c(dt2$w[1], dt2$w[c(2,6)])))
 
 # Test 1469.2 with roll column returned from both x and i
 DT = data.table(x=c(-5,5), y=1:2, key="x")
-test(1900.09, key(DT[J(c(2,0)), .(V1,y), roll=TRUE]), NULL)
+test(1902.09, key(DT[J(c(2,0)), .(V1,y), roll=TRUE]), NULL)
 
 # Test 1470.1, 1470.2, 1470.3 with roll column returned from both x and i
 DT = data.table(x=c(-Inf, 3, Inf), y=1:3, key="x")
-test(1900.10, DT[J(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf, -Inf, 3, Inf), y=c(1L, 1:3), V1=c(2,-Inf,5,Inf)))
-test(1900.11, DT[J(c(2,-Inf,5,Inf)), roll=10], data.table(x=c(NA, -Inf, 3, Inf), y=INT(c(NA, 1, 2, 3)), V1=c(2,-Inf,5,Inf)))
-test(1900.12, DT[SJ(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf, -Inf, 3, Inf), y=c(1L, 1:3), V1=c(-Inf,2,5,Inf), key="x"))
+test(1902.10, DT[J(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf, -Inf, 3, Inf), y=c(1L, 1:3), V1=c(2,-Inf,5,Inf)))
+test(1902.11, DT[J(c(2,-Inf,5,Inf)), roll=10], data.table(x=c(NA, -Inf, 3, Inf), y=INT(c(NA, 1, 2, 3)), V1=c(2,-Inf,5,Inf)))
+test(1902.12, DT[SJ(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf, -Inf, 3, Inf), y=c(1L, 1:3), V1=c(-Inf,2,5,Inf), key="x"))
 
 # Test 1540.15 with roll column returned from both x and i
 set.seed(45L)
@@ -11661,16 +11686,16 @@ DT3 = rbindlist(list(DT2, list(x="d", y=7L, mul=100L)))
 DT3 = DT3[sample(nrow(DT3))]
 DT1.copy = copy(DT1)
 setkey(DT1.copy, y)
-test(1900.13, DT1[DT3, on=c(y="y"), roll=TRUE], DT1.copy[DT3[, c(2,1,3), with=FALSE], roll=TRUE][,c(1:4,6,5,7)])
+test(1902.13, DT1[DT3, on=c(y="y"), roll=TRUE], DT1.copy[DT3[, c(2,1,3), with=FALSE], roll=TRUE][,c(1:4,6,5,7)])
 
 # Tests 1614.1, 1614.2, 1614.3, and 1614.4 with roll column returned from both x and i
 if (test_bit64) {
   dt = data.table(x=as.integer64(c(-1000, 0)), y=c(5,10))
   val = c(-1100,-900,100)
-  test(1900.14, dt[.(val), roll=Inf,  on="x"], data.table(x=as.integer64(c(NA,-1000,0)), y=c(NA,5,10), V1=as.integer64(val)))
-  test(1900.15, dt[.(val), roll=Inf, on="x", rollends=TRUE], data.table(x=as.integer64(c(-1000,-1000,0)), y=c(5,5,10), V1=as.integer64(val)))
-  test(1900.16, dt[.(val), roll=-Inf, on="x"], data.table(x=as.integer64(c(-1000,0,NA)), y=c(5,10,NA), V1=as.integer64(val)))
-  test(1900.17, dt[.(val), roll=-Inf, on="x", rollends=TRUE], data.table(x=as.integer64(c(-1000,0,0)), y=c(5,10,10), V1=as.integer64(val)))
+  test(1902.14, dt[.(val), roll=Inf,  on="x"], data.table(x=as.integer64(c(NA,-1000,0)), y=c(NA,5,10), V1=as.integer64(val)))
+  test(1902.15, dt[.(val), roll=Inf, on="x", rollends=TRUE], data.table(x=as.integer64(c(-1000,-1000,0)), y=c(5,5,10), V1=as.integer64(val)))
+  test(1902.16, dt[.(val), roll=-Inf, on="x"], data.table(x=as.integer64(c(-1000,0,NA)), y=c(5,10,NA), V1=as.integer64(val)))
+  test(1902.17, dt[.(val), roll=-Inf, on="x", rollends=TRUE], data.table(x=as.integer64(c(-1000,0,0)), y=c(5,10,10), V1=as.integer64(val)))
 }
 
 # Tests 1660.1 and 1660.2 with non-equi join columns returned from both x and i
@@ -11688,8 +11713,8 @@ Site6   chr6    3359        GeneF
 Site7   chr7    1158        GeneI
 Site8   chr4    2451        GeneO
 Site9   chr6    3367        GeneZ   ')
-test(1900.18, names(dt2[dt1, on=.(Chr, Location>=Start, Location<=End)]), c(names(dt2), "Start", "End", "Region"))
-test(1900.19, names(dt1[dt2, on=.(Chr, Start<=Location, End>=Location)]), c(names(dt1), "Site", "Location", "Gene"))
+test(1902.18, names(dt2[dt1, on=.(Chr, Location>=Start, Location<=End)]), c(names(dt2), "Start", "End", "Region"))
+test(1902.19, names(dt1[dt2, on=.(Chr, Start<=Location, End>=Location)]), c(names(dt1), "Site", "Location", "Gene"))
 
 # Tests 1682.1, 1682.2, 1682.3, 1682.4, 1682.5, 1682.6, and 1682.7 with 
 # non-equi join columns returned from both x and i.
@@ -11697,19 +11722,19 @@ set.seed(45L)
 dt1 = data.table(x=sample(8,20,TRUE), y=sample(8,20,TRUE), z=1:20)
 dt2 = data.table(c(2,5), c(5,7), c(2,4))
 dt3 = data.table(c(12,5), c(15,7), c(2,4))
-test(1900.19, dt1[dt2, .N, by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, .N, by=.(x=V1,y=V2)])
-test(1900.20, dt1[dt2, sum(z), by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, sum(z), by=.(x=V1,y=V2)])
-test(1900.21, dt1[dt2, as.numeric(median(z)), by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, median(z), by=.(x=V1,y=V2)])
-test(1900.22, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt3, on=.(x>=V1, y<=V2)][, .(N=sum(!is.na(z))), by=.(x=V1,y=V2)])
-test(1900.23, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2), nomatch=0L], dt1[dt3, on=.(x>=V1, y<=V2), nomatch=0L][, .N, by=.(x=V1,y=V2)])
-test(1900.24, dt1[dt2, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI], dt1[dt2, on=.(x>=V1, y<=V2)][, sum(z)*V3[1L], by=.(x=V1,y=V2)])
-test(1900.25, dt1[dt3, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI], dt1[dt3, on=.(x>=V1, y<=V2)][, sum(z)*V3[1L], by=.(x=V1,y=V2)])
+test(1902.20, dt1[dt2, .N, by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, .N, by=.(x=V1,y=V2)])
+test(1902.21, dt1[dt2, sum(z), by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, sum(z), by=.(x=V1,y=V2)])
+test(1902.22, dt1[dt2, as.numeric(median(z)), by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, median(z), by=.(x=V1,y=V2)])
+test(1902.23, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt3, on=.(x>=V1, y<=V2)][, .(N=sum(!is.na(z))), by=.(x=V1,y=V2)])
+test(1902.24, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2), nomatch=0L], dt1[dt3, on=.(x>=V1, y<=V2), nomatch=0L][, .N, by=.(x=V1,y=V2)])
+test(1902.25, dt1[dt2, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI], dt1[dt2, on=.(x>=V1, y<=V2)][, sum(z)*V3[1L], by=.(x=V1,y=V2)])
+test(1902.26, dt1[dt3, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI], dt1[dt3, on=.(x>=V1, y<=V2)][, sum(z)*V3[1L], by=.(x=V1,y=V2)])
 
 # Tests for 1846.1 and 1846.2 with non-equi join columns returned from both x and i
 d1 <- data.table(a=1L, b=2L)
 d2 <- d1[0L]
-test(1900.26, d2[d1, on=.(a>a, b<b)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
-test(1900.27, d2[d1, on=.(a>a)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
+test(1902.27, d2[d1, on=.(a>a, b<b)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
+test(1902.28, d2[d1, on=.(a>a)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
 
 # Testing completed PR#2602, set datatable.bothkeycols back to FALSE (the default for now) for future tests
 options(datatable.bothkeycols=FALSE)
