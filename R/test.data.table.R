@@ -71,8 +71,8 @@ compactprint <- function(DT, topn=2L) {
 INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 
 memory_usage = function() {
-  # returns RSS memory occupied by current R process in MB rounded to 2 decimale places
-  round(as.numeric(system(sprintf("ps -o rss %s | tail -1", Sys.getpid()), intern=TRUE)) / (1024^2), 2)
+  # returns RSS memory occupied by current R process in MB rounded to 2 decimale places, ps already returns KB
+  round(as.numeric(system(sprintf("ps -o rss %s | tail -1", Sys.getpid()), intern=TRUE)) / 1024, 2)
 }
 
 test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
