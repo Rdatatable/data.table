@@ -144,12 +144,15 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     out = capture.output(print(x <<- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
   }
   if (memtest) {
+    # workaround for test 432.1: options(datatable.alloccol=NULL)
+    if (trick.null.alloccol<-is.null(getOption("datatable.alloccol"))) old.alloccol=options(datatable.alloccol=1024L)
     psmem = memory_usage()
     dtmem = as.data.table(gc(), keep.rownames=TRUE)
     setnames(dtmem, c("cells","used","usedmb","gctrigger","gctriggermb","maxused","maxusedmb"))
     dtmem = dcast(dtmem, . ~ cells, value.var=setdiff(names(dtmem), "cells"))
     dtmem[, c("testtimestamp","testnum","psmem",".") := list(timestamp, num, psmem, NULL)]
     fwrite(dtmem, "memtest.csv", append=TRUE) # allow to compare with historical runs
+    if (trick.null.alloccol) options(old.alloccol)
   }
   fail = FALSE
   if (length(warning) != length(actual.warns)) {
