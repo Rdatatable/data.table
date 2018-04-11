@@ -35,6 +35,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   assign("started.at", proc.time(), envir=env)
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
   assign("timings", data.table( ID = seq_len(3000L), time=0.0, nTest=0L ), envir=env)   # test timings aggregated to integer id
+  assign("memtest", as.logical(Sys.getenv("TEST_DATA_TABLE_MEMTEST", "FALSE")), envir=env)
   # It doesn't matter that 3000L is far larger than needed for other and benchmark.
   if(isTRUE(silent)){
     try(sys.source(fn,envir=env), silent=silent)  # nocov
@@ -69,6 +70,11 @@ compactprint <- function(DT, topn=2L) {
 
 INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 
+memory_usage = function() {
+  # returns RSS memory occupied by current R process in MB rounded to 2 decimale places
+  round(as.numeric(system(sprintf("ps -o rss %s | tail -1", Sys.getpid()), intern=TRUE)) / (1024^2), 2)
+}
+
 test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
@@ -91,6 +97,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     assign("ntest", get("ntest", parent.frame()) + 1L, parent.frame(), inherits=TRUE)   # bump number of tests run
     lasttime = get("lasttime", parent.frame())
     timings = get("timings", parent.frame())
+    memtest = get("memtest", parent.frame())
     time = nTest = NULL  # to avoid 'no visible binding' note
     on.exit( {
        now = proc.time()[3]
@@ -127,11 +134,22 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     actual.err <<- conditionMessage(e)
     e
   }
+  if (memtest) {
+    timestamp = as.numeric(Sys.time())
+  }
   if (is.null(output)) {
     x = tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
   } else {
     out = capture.output(print(x <<- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
+  }
+  if (memtest) {
+    psmem = memory_usage()
+    dtmem = as.data.table(gc(), keep.rownames=TRUE)
+    setnames(dtmem, c("cells","used","usedmb","gctrigger","gctriggermb","maxused","maxusedmb"))
+    dtmem = dcast(dtmem, . ~ cells, value.var=setdiff(names(dtmem), "cells"))
+    dtmem[, c("testtimestamp","testnum","psmem",".") := list(timestamp, num, psmem, NULL)]
+    fwrite(dtmem, "memtest.csv", append=TRUE) # allow to compare with historical runs
   }
   fail = FALSE
   if (length(warning) != length(actual.warns)) {
