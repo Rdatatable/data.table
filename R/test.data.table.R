@@ -36,7 +36,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
   assign("timings", data.table( ID = seq_len(3000L), time=0.0, nTest=0L ), envir=env)   # test timings aggregated to integer id
   assign("memtest", as.logical(Sys.getenv("TEST_DATA_TABLE_MEMTEST", "FALSE")), envir=env)
-  assign("inittime", as.integer(Sys.time), envir=env) # keep measures from various test.data.table runs
+  assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
   # It doesn't matter that 3000L is far larger than needed for other and benchmark.
   if(isTRUE(silent)){
     try(sys.source(fn,envir=env), silent=silent)  # nocov
