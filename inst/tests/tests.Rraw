@@ -11260,8 +11260,8 @@ test(1869.7, fread(testDir("onecol4096.csv"), verbose=TRUE)[c(1,2,245,246,249,25
              output = "Copying file in RAM.*file is very unusual.*one single column, ends with 2 or more end-of-line.*and is a multiple of 4096")
 
 # better colname detection by comparing potential column names to the whole sample not just the first row of the sample, #2526
-test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,300L,500L), V3=c(200L,400L,600L)))
-test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,NA,500L), V3=c(NA,NA,600L)))
+test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(A=NA, "100"=c(300L,500L), "200"=c(400L,600L)))
+test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(A=NA, "100"=c(NA,500L), V3=c(NA,600L)))
 test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA,3.4)))
 
 # nrows= now ignores errors after those nrows as expected and skip= determines first row for sure, #1267
@@ -11630,6 +11630,11 @@ test(1900.6, attributes(attr(fread(DT_str, index = c('a', 'b')), 'index')),
 DT = data.table(x = 1:5, y = 6:10)
 test(1901.1, DT[, bquote(z==.(sum(x)))],  bquote(z==.(DT[, sum(x)])))
 test(1901.2, DT[, .(.(bquote(z==.(sd(x-y)))))],  data.table(V1=list(bquote(z==.(DT[, sd(x-y)])))))
+
+# logical01 caused column names not be detected if logical column determines it, #2735
+test(1902.1, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=FALSE), data.table(V1=1:3, A=INT(0,0,1), B=1L))
+test(1902.2, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=TRUE), data.table(V1=1:3, A=c(FALSE,FALSE,TRUE), B=TRUE))
+
 
 ###################################
 #  Add new tests above this line  #
