@@ -36,6 +36,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
   assign("timings", data.table( ID = seq_len(3000L), time=0.0, nTest=0L ), envir=env)   # test timings aggregated to integer id
   assign("memtest", as.logical(Sys.getenv("TEST_DATA_TABLE_MEMTEST", "FALSE")), envir=env)
+  assign("inittime", as.integer(Sys.time), envir=env) # keep measures from various test.data.table runs
   # It doesn't matter that 3000L is far larger than needed for other and benchmark.
   if(isTRUE(silent)){
     try(sys.source(fn,envir=env), silent=silent)  # nocov
@@ -70,9 +71,22 @@ compactprint <- function(DT, topn=2L) {
 
 INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 
-memory_usage = function() {
-  # returns RSS memory occupied by current R process in MB rounded to 2 decimale places, ps already returns KB
-  round(as.numeric(system(sprintf("ps -o rss %s | tail -1", Sys.getpid()), intern=TRUE)) / 1024, 2)
+ps_mem = function() {
+  if (!identical(.Platform$OS.type, "unix")) {
+    warning("data.table internal function 'ps_mem' is designed to work only on Linux, please upgrade your OS and re-run.")
+    ans = NA_real_
+  } else {
+    ans = round(as.numeric(system(sprintf("ps -o rss %s | tail -1", Sys.getpid()), intern=TRUE)) / 1024, 1)
+  }
+  # returns RSS memory occupied by current R process in MB rounded to 1 decimal places (as in gc), ps already returns KB
+  c("PS_rss"=ans)
+}
+
+gc_mem = function() {
+  # gc reported memory in MB
+  m = apply(gc()[, c(2L, 4L, 6L)], 2L, sum)
+  names(m) = c("GC_used", "GC_gc_trigger", "GC_max_used")
+  m
 }
 
 test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
@@ -98,6 +112,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     lasttime = get("lasttime", parent.frame())
     timings = get("timings", parent.frame())
     memtest = get("memtest", parent.frame())
+    inittime = get("inittime", parent.frame())
     time = nTest = NULL  # to avoid 'no visible binding' note
     on.exit( {
        now = proc.time()[3]
@@ -144,15 +159,8 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     out = capture.output(print(x <<- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
   }
   if (memtest) {
-    # workaround for test 432.1: options(datatable.alloccol=NULL)
-    if (trick.null.alloccol<-is.null(getOption("datatable.alloccol"))) old.alloccol=options(datatable.alloccol=1024L)
-    psmem = memory_usage()
-    dtmem = as.data.table(gc(), keep.rownames=TRUE)
-    setnames(dtmem, c("cells","used","usedmb","gctrigger","gctriggermb","maxused","maxusedmb"))
-    dtmem = dcast(dtmem, . ~ cells, value.var=setdiff(names(dtmem), "cells"))
-    dtmem[, c("testtimestamp","testnum","psmem",".") := list(timestamp, num, psmem, NULL)]
-    fwrite(dtmem, "memtest.csv", append=TRUE) # allow to compare with historical runs
-    if (trick.null.alloccol) options(old.alloccol)
+    mem = as.data.frame(as.list(c(inittime=inittime, timestamp=timestamp, test=num, ps_mem(), gc_mem())))
+    fwrite(mem, "memtest.csv", append=TRUE)
   }
   fail = FALSE
   if (length(warning) != length(actual.warns)) {
