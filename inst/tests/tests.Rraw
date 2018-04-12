@@ -10650,10 +10650,11 @@ test(1779.2, uniqueN(lt)==1L)
 # some random 1e6 timestamps old defaults vs new methods UTC
 intpx = function(x) as.integer(as.POSIXct(x, origin = "1970-01-01", tz = "UTC"))
 set.seed(1)
-i = sample(seq(intpx("2014-10-12"), intpx("2015-10-12")), 1e5, TRUE)
+i = sample(intpx("2015-10-12")-intpx("2014-10-12"), 1e6, TRUE) + intpx("2014-10-12")
 p = as.POSIXct(i, origin = "1970-01-01", tz = "UTC")
 test(1779.3, identical(as.ITime.default(p), as.ITime(p)))
 test(1779.4, identical(as.IDate.default(p), as.IDate(p)))
+
 # test for non-UTC
 p = as.POSIXct(i, origin = "1970-01-01", tz = "Asia/Hong_Kong")
 test(1779.5, identical(as.ITime.default(p), as.ITime(p)))
@@ -11647,6 +11648,23 @@ DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that include
 if ((x<-timings[,sum(nTest)]) != ntest) warning("Timings count mismatch:",x,"vs",ntest)
 cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
 print(DT, class=FALSE)
+if (memtest) {
+  ..inittime = inittime
+  m = fread("memtest.csv")[inittime==..inittime]
+  if (nrow(m)) {
+    png("memtest.png")
+    p = par(mfrow=c(3,2))
+    m[, plot(test, PS_rss, pch=18, xlab="test num", ylab="mem MB", main="ps -o rss R")]
+    m[, plot(timestamp, PS_rss, type="l", xlab="timestamp", ylab="mem MB", main="ps -o rss R")]
+    m[, plot(test, GC_used, pch=18, xlab="test num", ylab="mem MB", main="gc used")]
+    m[, plot(timestamp, GC_used, type="l", xlab="timestamp", ylab="mem MB", main="gc used")]
+    m[, plot(test, GC_max_used, pch=18, xlab="test num", ylab="mem MB", main="gc max used")]
+    m[, plot(timestamp, GC_max_used, type="l", xlab="timestamp", ylab="mem MB", main="gc max used")]
+    par(p)
+  } else {
+    warning("test.data.table runs with memory testing but did not collect any memory statistics.")
+  }
+}
 if (nfail > 0) {
   if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
   cat("\r")
