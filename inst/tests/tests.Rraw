@@ -5878,8 +5878,8 @@ DT <- data.table(intCol    = sample(c(1:3, NA), n, replace = TRUE),
                  doubleCol = sample(c(1.86, 1000.345, 2.346, NA, NaN), n, replace = TRUE),
                  boolCol   = sample(c(TRUE, FALSE, NA), n, replace = TRUE),
                  charCol   = sample(c(LETTERS[1:3], NA), n, replace = TRUE),
-                 groupCol  = sort(sample(c("a", "b", "c"), n, replace = TRUE)) ## sort is important to test #2713
-                 )
+                 groupCol  = sample(c("a", "b", "c"), n, replace = TRUE),
+                 sortedGroupCol = c(rep(1L, floor(n/3)), rep(2L, floor(n/3)), rep(3L, ceiling(n/3)))) ## sorted grouping column is important to test #2713
 if (test_bit64) DT[, int64Col := as.integer64(sample(1:3, n, replace = TRUE))]
 ## get list with unique values excluding NA
 vals <- lapply(DT, function(x) {out <- unique(x); out[!is.na(out)]})
@@ -5916,7 +5916,7 @@ all[, query := gsub("&missing$", "", gsub("missing&", "", query))]
 jQueries <- c(".(test = intCol + doubleCol, test2 = paste0(boolCol, charCol))",
               "c('test1', 'test2') := list(pmax(intCol, doubleCol), !boolCol)")
 ## define example 'by' values
-bys <- c("groupCol", character(0))
+bys <- c("groupCol", "sortedGroupCol", character(0))
 ## test each query string
 test_no <- 1437.0039
 for(t in seq_len(nrow(all))){
