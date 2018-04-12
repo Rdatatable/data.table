@@ -10650,11 +10650,10 @@ test(1779.2, uniqueN(lt)==1L)
 # some random 1e6 timestamps old defaults vs new methods UTC
 intpx = function(x) as.integer(as.POSIXct(x, origin = "1970-01-01", tz = "UTC"))
 set.seed(1)
-i = sample(intpx("2015-10-12")-intpx("2014-10-12"), 1e6, TRUE) + intpx("2014-10-12")
+i = sample(intpx("2015-10-12")-intpx("2014-10-12"), 1e5, TRUE) + intpx("2014-10-12")
 p = as.POSIXct(i, origin = "1970-01-01", tz = "UTC")
 test(1779.3, identical(as.ITime.default(p), as.ITime(p)))
 test(1779.4, identical(as.IDate.default(p), as.IDate(p)))
-
 # test for non-UTC
 p = as.POSIXct(i, origin = "1970-01-01", tz = "Asia/Hong_Kong")
 test(1779.5, identical(as.ITime.default(p), as.ITime(p)))
