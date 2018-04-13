@@ -72,18 +72,22 @@ compactprint <- function(DT, topn=2L) {
 INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 
 ps_mem = function() {
+  # nocov start
   cmd = sprintf("ps -o rss %s | tail -1", Sys.getpid())
   ans = tryCatch(as.numeric(system(cmd, intern=TRUE)), error=function(e) NA_real_)
   stopifnot(length(ans)==1L) # extra check if other OSes would not handle 'tail -1' properly for some reason
   # returns RSS memory occupied by current R process in MB rounded to 1 decimal places (as in gc), ps already returns KB
   c("PS_rss"=round(ans / 1024, 1))
+  # nocov end
 }
 
 gc_mem = function() {
+  # nocov start
   # gc reported memory in MB
   m = apply(gc()[, c(2L, 4L, 6L)], 2L, sum)
   names(m) = c("GC_used", "GC_gc_trigger", "GC_max_used")
   m
+  # nocov end
 }
 
 test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
@@ -147,7 +151,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     e
   }
   if (memtest) {
-    timestamp = as.numeric(Sys.time())
+    timestamp = as.numeric(Sys.time())   # nocov
   }
   if (is.null(output)) {
     x = tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)
@@ -156,8 +160,8 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     out = capture.output(print(x <<- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
   }
   if (memtest) {
-    mem = as.list(c(inittime=inittime, timestamp=timestamp, test=num, ps_mem(), gc_mem()))
-    fwrite(mem, "memtest.csv", append=TRUE)
+    mem = as.list(c(inittime=inittime, timestamp=timestamp, test=num, ps_mem(), gc_mem()))   # nocov
+    fwrite(mem, "memtest.csv", append=TRUE)                                                  # nocov
   }
   fail = FALSE
   if (length(warning) != length(actual.warns)) {
