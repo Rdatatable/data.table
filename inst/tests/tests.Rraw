@@ -2912,7 +2912,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
 
   # segfault of unprotected var caught with the help of address sanitizer
   set.seed(1)
-  val = sample(c(1:5, NA), 1e5L, TRUE)
+  val = sample(c(1:5, NA), 1e4L, TRUE)
   dt <- setDT(replicate(100L, val, simplify=FALSE))
   ## to ensure there's no segfault...
   ans <- melt(dt, measure.vars=names(dt), na.rm=TRUE)
@@ -3627,7 +3627,7 @@ test(1149.2, forderv(numeric(0)), integer(0))
 
 # test uniqlengths
 set.seed(45)
-x <- sample(c(NA_integer_, 1:1e5), 1e7, TRUE)
+x <- sample(c(NA_integer_, 1:1e4), 1e6, TRUE)
 ox <- forderv(x)
 o1 <- uniqlist(list(x), ox)
 test(1151.1, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o1, length(x)))
@@ -7121,8 +7121,8 @@ test(1548.1, unique(unlist(lapply(ans1, Encoding))), "unknown")
 test(1548.2, unique(unlist(lapply(ans2, Encoding))), "UTF-8")
 
 # #1167 print.data.table row id in non-scientific notation
-DT <- data.table(a = rep(1:5,3*1e6), b = rep(letters[1:3],5*1e6))
-test(1549, capture.output(print(DT)), c("          a b", "       1: 1 a", "       2: 2 b", "       3: 3 c", "       4: 4 a", "       5: 5 b", "      ---    ", "14999996: 1 b", "14999997: 2 c", "14999998: 3 a", "14999999: 4 b", "15000000: 5 c"))
+DT <- data.table(a = rep(1:5,3*1e5), b = rep(letters[1:3],5*1e5))
+test(1549, capture.output(print(DT)), c("         a b", "      1: 1 a", "      2: 2 b", "      3: 3 c", "      4: 4 a", "      5: 5 b", "     ---    ", "1499996: 1 b", "1499997: 2 c", "1499998: 3 a", "1499999: 4 b", "1500000: 5 c"))
 rm(DT)
 
 # PR by @dselivanov
@@ -7640,17 +7640,20 @@ test(1588.1, dt[f %in% 3:4], dt[3:4])
 test(1588.2, dt[f == 3], dt[3])
 
 # encoding issue in forder
-x <- "fa\xE7ile"
-Encoding(x)
-Encoding(x) <- "latin1"
-xx <- iconv(x, "latin1", "UTF-8")
-y = sample(c(x,xx), 10, TRUE)
-oy = if (length(oy <- forderv(y))) oy else seq_along(y)
-test(1590.4, oy, order(y))
-Encoding(xx) = "unknown"
-y = sample(c(x,xx), 10, TRUE)
-oy = if (length(oy <- forderv(y))) oy else seq_along(y)
-test(1590.5, oy, order(y))
+# test escaped when memory statistics are collected due to #2746
+if (!memtest) {
+  x <- "fa\xE7ile"
+  Encoding(x)
+  Encoding(x) <- "latin1"
+  xx <- iconv(x, "latin1", "UTF-8")
+  y = sample(c(x,xx), 10, TRUE)
+  oy = if (length(oy <- forderv(y))) oy else seq_along(y)
+  test(1590.4, oy, order(y))
+  Encoding(xx) = "unknown"
+  y = sample(c(x,xx), 10, TRUE)
+  oy = if (length(oy <- forderv(y))) oy else seq_along(y)
+  test(1590.5, oy, order(y))
+}
 
 # #1432 test
 list_1 = list(a = c(44,47), dens = c(2331,1644))
@@ -10649,7 +10652,7 @@ test(1779.2, uniqueN(lt)==1L)
 # some random 1e6 timestamps old defaults vs new methods UTC
 intpx = function(x) as.integer(as.POSIXct(x, origin = "1970-01-01", tz = "UTC"))
 set.seed(1)
-i = sample(seq(intpx("2014-10-12"), intpx("2015-10-12")), 1e6, TRUE)
+i = sample(intpx("2015-10-12")-intpx("2014-10-12"), 1e5, TRUE) + intpx("2014-10-12")
 p = as.POSIXct(i, origin = "1970-01-01", tz = "UTC")
 test(1779.3, identical(as.ITime.default(p), as.ITime(p)))
 test(1779.4, identical(as.IDate.default(p), as.IDate(p)))
@@ -11669,6 +11672,27 @@ DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that include
 if ((x<-timings[,sum(nTest)]) != ntest) warning("Timings count mismatch:",x,"vs",ntest)
 cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
 print(DT, class=FALSE)
+if (memtest) {
+  ..inittime = inittime
+  m = fread("memtest.csv")[inittime==..inittime]
+  if (nrow(m)) {
+    ps_na = all(is.na(m[["PS_rss"]])) # OS with no 'ps -o rss R' support
+    png("memtest.png")
+    p = par(mfrow=c(if (ps_na) 2 else 3, 2))
+    if (!ps_na) {
+      m[, plot(test, PS_rss, pch=18, xlab="test num", ylab="mem MB", main="ps -o rss R")]
+      m[, plot(timestamp, PS_rss, type="l", xlab="timestamp", ylab="mem MB", main="ps -o rss R")]
+    }
+    m[, plot(test, GC_used, pch=18, xlab="test num", ylab="mem MB", main="gc used")]
+    m[, plot(timestamp, GC_used, type="l", xlab="timestamp", ylab="mem MB", main="gc used")]
+    m[, plot(test, GC_max_used, pch=18, xlab="test num", ylab="mem MB", main="gc max used")]
+    m[, plot(timestamp, GC_max_used, type="l", xlab="timestamp", ylab="mem MB", main="gc max used")]
+    par(p)
+    dev.off()
+  } else {
+    warning("test.data.table runs with memory testing but did not collect any memory statistics.")
+  }
+}
 if (nfail > 0) {
   if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
   cat("\r")

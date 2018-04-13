@@ -127,6 +127,8 @@ test-r-release-vanilla: # check minimal installation, no suggested deps, no vign
   dependencies:
   - mirror-packages
   - build
+  variables:
+    TEST_DATA_TABLE_MEMTEST: "TRUE"
   script:
     - mkdir -p bus/$CI_BUILD_NAME
     - Rscript -e 'source(Sys.getenv("CI_TOOLS")); if (length(pkgs<-packages.dcf("DESCRIPTION"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
