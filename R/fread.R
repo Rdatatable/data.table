@@ -82,14 +82,20 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   if (skip=="__auto__") skip=-1L   # skip="string" so long as "string" is not "__auto__". Best conveys to user something is automatic there (than -1 or NA).
   if (is.double(skip)) skip = as.integer(skip)
   stopifnot(is.null(na.strings) || is.character(na.strings))
-  tt = grep("^ +$", na.strings)
+  tt = grep("^\\s+$", na.strings)
   if (length(tt)) {
-    warning('na.strings contains some blank strings. They have been removed. strip.white=TRUE (default) together with na.strings="" turns any number of spaces into NA in string columns')
-    na.strings = na.strings[-tt]
-  }
-  tt = which(substring(na.strings,1L,1L)==" " || substring(na.strings, nn<-nchar(na.strings), nn)==" ")
-  if (length(tt))  {
-    stop("Some values of na.strings start or end with a space. Please remove the spaces. First one is '", na.strings[tt[1L]], "'")
+    msg = paste0('na.strings[', tt[1], ']=="',na.strings[tt[1L]],'" consists only of whitespace, ignoring. ')
+    if (strip.white) {
+      if (any(na.strings=="")) {
+        warning(msg, 'strip.white==TRUE (default) and "" is present in na.strings, so any number of spaces in string columns will already be read as <NA>.')
+      } else {
+        warning(msg, 'Since strip.white=TRUE (default), use na.strings="" to specify that any number of spaces in a string column should be read as <NA>.')
+      }
+      na.strings = na.strings[-tt]
+    } else {
+      stop(msg, 'But strip.white=FALSE. Use strip.white=TRUE (default) together with na.strings="" to turn any number of spaces in string columns into <NA>')
+    }
+    # whitespace at the beginning or end of na.strings is checked at C level and is an error there; test 1804
   }
   warnings2errors = getOption("warn") >= 2
   ans = .Call(CfreadR,input,sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
