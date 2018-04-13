@@ -269,11 +269,12 @@ static inline bool end_of_field(const char *ch) {
 }
 
 
-static inline const char *end_NA_string(const char *fieldStart) {
+static inline const char *end_NA_string(const char *start) {
+  // start should be at the beginning of any potential NA string, after leading whitespace skipped by caller
   const char* const* nastr = NAstrings;
-  const char *mostConsumed = fieldStart; // tests 1550* includes both 'na' and 'nan' in nastrings. Don't stop after 'na' if 'nan' can be consumed too.
+  const char *mostConsumed = start; // tests 1550* includes both 'na' and 'nan' in nastrings. Don't stop after 'na' if 'nan' can be consumed too.
   if (nastr) while (*nastr) {
-    const char *ch1 = fieldStart;
+    const char *ch1 = start;
     const char *ch2 = *nastr;
     while (*ch1==*ch2 && *ch2!='\0') { ch1++; ch2++; }
     if (*ch2=='\0' && ch1>mostConsumed) mostConsumed=ch1;
@@ -1029,7 +1030,8 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
       if (end_of_field(ch)) break;
       skip_white(&ch);
       if (end_of_field(ch)) break;
-      ch = end_NA_string(fieldStart);
+      ch = end_NA_string(fieldStart);  // fieldStart here is correct (already after skip_white above); fun[]() may have part processed field so not ch
+      skip_white(&ch);
       if (end_of_field(ch)) break;
       ch = fieldStart;
       if (tmpType[field]==CT_STRING) {
@@ -1600,8 +1602,6 @@ int freadMain(freadMainArgs _args) {
     else if (jump0size*10*2 < sz) nJumps=10;
     // *2 to get a good spacing. We don't want overlaps resulting in double counting.
   }
-  nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
-  if (nrowLimit<INT64_MAX) nJumps=1; // when nrowLimit supplied by user, no jumps (not even at the end) and single threaded
   if (verbose) {
     DTPRINT("  Number of sampling jump points = %d because ", nJumps);
     if (nrowLimit<INT64_MAX) DTPRINT("nrow limit (%llu) supplied\n", (llu)nrowLimit);
@@ -1609,6 +1609,8 @@ int freadMain(freadMainArgs _args) {
     else DTPRINT("(%llu bytes from row 1 to eof) / (2 * %llu jump0size) == %llu\n",
                  (llu)sz, (llu)jump0size, (llu)(sz/(2*jump0size)));
   }
+  nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
+  if (nrowLimit<INT64_MAX) nJumps=1; // when nrowLimit supplied by user, no jumps (not even at the end) and single threaded
 
   sampleLines = 0;
   double sumLen=0.0, sumLenSq=0.0;
@@ -1679,8 +1681,8 @@ int freadMain(freadMainArgs _args) {
     bool bumped=false;
     detect_types(&ch, tmpType, ncol, &bumped);
     if (sampleLines>0) for (int j=0; j<ncol; j++) {
-      if (tmpType[j]==CT_STRING && type[j]>type0 && type[j]<CT_STRING) {
-        // >type0 can only happen if the column is not all blank
+      if (tmpType[j]==CT_STRING && type[j]<CT_STRING) {
+        // includes an all-blank column with a string at the top; e.g. test 1870.1 and 1870.2
         args.header=true;
         if (verbose) DTPRINT("  'header' determined to be true due to column %d containing a string on row 1 and a lower type (%s) in the rest of the %d sample rows\n",
                              j+1, typeName[type[j]], sampleLines);
@@ -2117,7 +2119,7 @@ int freadMain(freadMainArgs _args) {
             if (absType<CT_STRING && absType>CT_DROP/*Field() too*/) {
               skip_white(&tch);
               const char *afterSpace = tch;
-              tch = end_NA_string(fieldStart);
+              tch = end_NA_string(tch);
               skip_white(&tch);
               if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
               if (*tch==quote) { quoted=true; tch++; }
@@ -2393,8 +2395,8 @@ int freadMain(freadMainArgs _args) {
       tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, (llu)allocnrow, ncol, DTbytes/(1024.0*1024*1024), (llu)DTi, 100.0*DTi/allocnrow);
     thRead/=nth; thPush/=nth;
     double thWaiting = tReread-tAlloc-thRead-thPush;
-    DTPRINT("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (%d rows) using %d threads\n",
-            tReread-tAlloc, 100.0*(tReread-tAlloc)/tTot, nJumps, nSwept, (double)chunkBytes/(1024*1024), (int)(chunkBytes/meanLineLen), nth);
+    DTPRINT("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %d rows) using %d threads\n",
+            tReread-tAlloc, 100.0*(tReread-tAlloc)/tTot, nJumps, nSwept, (double)chunkBytes/(1024*1024), (int)(DTi/nJumps), nth);
     DTPRINT("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n", thRead, 100.0*thRead/tTot, buffGrown);
     DTPRINT("   + %8.3fs (%3.0f%%) Transpose\n", thPush, 100.0*thPush/tTot);
     DTPRINT("   + %8.3fs (%3.0f%%) Waiting\n", thWaiting, 100.0*thWaiting/tTot);
