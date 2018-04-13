@@ -72,14 +72,11 @@ compactprint <- function(DT, topn=2L) {
 INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 
 ps_mem = function() {
-  if (!identical(.Platform$OS.type, "unix")) {
-    warning("data.table internal function 'ps_mem' is designed to work only on Linux, please upgrade your OS and re-run.")
-    ans = NA_real_
-  } else {
-    ans = round(as.numeric(system(sprintf("ps -o rss %s | tail -1", Sys.getpid()), intern=TRUE)) / 1024, 1)
-  }
+  cmd = sprintf("ps -o rss %s | tail -1", Sys.getpid())
+  ans = tryCatch(as.numeric(system(cmd, intern=TRUE)), error=function(e) NA_real_)
+  stopifnot(length(ans)==1L) # extra check if other OSes would not handle 'tail -1' properly for some reason
   # returns RSS memory occupied by current R process in MB rounded to 1 decimal places (as in gc), ps already returns KB
-  c("PS_rss"=ans)
+  c("PS_rss"=round(ans / 1024, 1))
 }
 
 gc_mem = function() {
@@ -159,7 +156,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     out = capture.output(print(x <<- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
   }
   if (memtest) {
-    mem = as.data.frame(as.list(c(inittime=inittime, timestamp=timestamp, test=num, ps_mem(), gc_mem())))
+    mem = as.list(c(inittime=inittime, timestamp=timestamp, test=num, ps_mem(), gc_mem()))
     fwrite(mem, "memtest.csv", append=TRUE)
   }
   fail = FALSE

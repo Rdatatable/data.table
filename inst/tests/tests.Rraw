@@ -7639,6 +7639,7 @@ test(1588.1, dt[f %in% 3:4], dt[3:4])
 test(1588.2, dt[f == 3], dt[3])
 
 # encoding issue in forder
+# test escaped when memory statistics are collected due to #2746
 if (!memtest) {
   x <- "fa\xE7ile"
   Encoding(x)
@@ -11651,15 +11652,19 @@ if (memtest) {
   ..inittime = inittime
   m = fread("memtest.csv")[inittime==..inittime]
   if (nrow(m)) {
+    ps_na = all(is.na(m[["PS_rss"]])) # OS with no 'ps -o rss R' support
     png("memtest.png")
-    p = par(mfrow=c(3,2))
-    m[, plot(test, PS_rss, pch=18, xlab="test num", ylab="mem MB", main="ps -o rss R")]
-    m[, plot(timestamp, PS_rss, type="l", xlab="timestamp", ylab="mem MB", main="ps -o rss R")]
+    p = par(mfrow=c(if (ps_na) 2 else 3, 2))
+    if (!ps_na) {
+      m[, plot(test, PS_rss, pch=18, xlab="test num", ylab="mem MB", main="ps -o rss R")]
+      m[, plot(timestamp, PS_rss, type="l", xlab="timestamp", ylab="mem MB", main="ps -o rss R")]
+    }
     m[, plot(test, GC_used, pch=18, xlab="test num", ylab="mem MB", main="gc used")]
     m[, plot(timestamp, GC_used, type="l", xlab="timestamp", ylab="mem MB", main="gc used")]
     m[, plot(test, GC_max_used, pch=18, xlab="test num", ylab="mem MB", main="gc max used")]
     m[, plot(timestamp, GC_max_used, type="l", xlab="timestamp", ylab="mem MB", main="gc max used")]
     par(p)
+    dev.off()
   } else {
     warning("test.data.table runs with memory testing but did not collect any memory statistics.")
   }
