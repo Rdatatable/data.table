@@ -11631,21 +11631,27 @@ DT = data.table(x = 1:5, y = 6:10)
 test(1901.1, DT[, bquote(z==.(sum(x)))],  bquote(z==.(DT[, sum(x)])))
 test(1901.2, DT[, .(.(bquote(z==.(sd(x-y)))))],  data.table(V1=list(bquote(z==.(DT[, sd(x-y)])))))
 
+# check quote rule detection logic, #2744
+src = '"C\\\\D"\nAB\\x20CD\\n\n"\\"one\\", \\\'two\\\', three"\n"\\r\\t\\v\\a\\b\\071\\uABCD"\n'
+test(1902, fread(src, verbose=TRUE),
+           data.table("C\\\\D"=c("AB\\x20CD\\n", "\\\"one\\\", \\'two\\', three", "\\r\\t\\v\\a\\b\\071\\uABCD")),
+           output="Quote rule picked = 1")
+           
 # logical01 caused column names not be detected if logical column determines it, #2735
-test(1902.1, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=FALSE), data.table(V1=1:3, A=INT(0,0,1), B=1L))
-test(1902.2, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=TRUE), data.table(V1=1:3, A=c(FALSE,FALSE,TRUE), B=TRUE))
+test(1903.1, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=FALSE), data.table(V1=1:3, A=INT(0,0,1), B=1L))
+test(1903.2, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=TRUE), data.table(V1=1:3, A=c(FALSE,FALSE,TRUE), B=TRUE))
 
 # whitespace around NA, and verbose output for small files, #2697
 txt = 'A,   B,    C\n17,  34, 2.3\n3.,  NA,   1\nNA ,  2, NA \n0,0.1,0'
-test(1903.1, fread(txt, na.strings="NA", verbose=TRUE),
+test(1904.1, fread(txt, na.strings="NA", verbose=TRUE),
   ans <- data.table(A=c(17,3,NA,0), B=c(34,NA,2,0.1), C=c(2.3,1.0,NA,0.0)),
   output = c("Number of sampling jump points = 1 because.*Reading 1 chunks \\(0 swept\\) of 1.000MB \\(each chunk 4 rows\\) using 1 thread.*Rereading 0 columns"))
-test(1903.2, fread(txt, na.strings=c("NA", " ")), ans, warning='na.strings\\[2\\]==" " consists only of whitespace, ignoring. Since strip.white=TRUE.*use.*"".*<NA>')
-test(1903.3, fread(txt, na.strings=c("NA", "")), ans)
-test(1903.4, fread(txt, na.strings=c("NA", "", " ")), ans, warning='na.strings\\[3\\]==" ".*only.*whitespace.*will already be read as <NA>')
-test(1903.5, fread(txt, na.strings=c("NA", " "), strip.white=FALSE), error='na.strings\\[2\\]==" ".*only.*whitespace.*But strip.white=FALSE')
+test(1904.2, fread(txt, na.strings=c("NA", " ")), ans, warning='na.strings\\[2\\]==" " consists only of whitespace, ignoring. Since strip.white=TRUE.*use.*"".*<NA>')
+test(1904.3, fread(txt, na.strings=c("NA", "")), ans)
+test(1904.4, fread(txt, na.strings=c("NA", "", " ")), ans, warning='na.strings\\[3\\]==" ".*only.*whitespace.*will already be read as <NA>')
+test(1904.5, fread(txt, na.strings=c("NA", " "), strip.white=FALSE), error='na.strings\\[2\\]==" ".*only.*whitespace.*But strip.white=FALSE')
 setnames(ans, c("A","   B","    C"))
-test(1903.6, fread(txt, na.strings="NA", strip.white=FALSE), ans)  # whitespace around NA strings is always stripped regardless of strip.white; just column names affected here
+test(1904.6, fread(txt, na.strings="NA", strip.white=FALSE), ans)  # whitespace around NA strings is always stripped regardless of strip.white; just column names affected here
 
 
 ###################################
