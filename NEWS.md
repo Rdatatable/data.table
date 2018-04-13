@@ -203,9 +203,7 @@ Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdat
 
 38. Fixed a bug on Windows that `data.table` may break if the garbage collecting was triggered when sorting a large number of non-ASCII characters. Thanks to @shrektan for reporting and fixing [PR#2678](https://github.com/Rdatatable/data.table/pull/2678),  [#2674](https://github.com/Rdatatable/data.table/issues/2674).
 
-39. Internal aliasing of `.` to `list` was over-aggressive in applying `list` even when `.` was intended within `bquote`, [#1912](https://github.com/Rdatatable/data.table/issues/1912). Thanks @MichaelChirico for reporting/filing and @ecoRoland for suggesting and testing a fix. 
-
-40. Using 'by' when joining is now returning the correct result, where it used to return wrong entries in the grouping column(s) [#2591](https://github.com/Rdatatable/data.table/issues/2591). Thanks to @sritchie73 and @cathine for reporting and to @MarkusBonsch for fixing.
+39. Internal aliasing of `.` to `list` was over-aggressive in applying `list` even when `.` was intended within `bquote`, [#1912](https://github.com/Rdatatable/data.table/issues/1912). Thanks @MichaelChirico for reporting/filing and @ecoRoland for suggesting and testing a fix.
 
 #### NOTES
 
