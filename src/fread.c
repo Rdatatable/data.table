@@ -1440,7 +1440,7 @@ int freadMain(freadMainArgs _args) {
     int topNumLines=0;        // the most number of lines with the same number of fields, so far
     int topNumFields=1;       // how many fields that was, to resolve ties
     char topSep=127;          // which sep that was, by default 127 (ascii del) means no sep i.e. single-column input (1 field)
-    int topQuoteRule=0;       // which quote rule that was
+    int topQuoteRule=-1;      // which quote rule that was
     int topNmax=1;            // for that sep and quote rule, what was the max number of columns (just for fill=true)
                               //   (when fill=true, the max is usually the header row and is the longest but there are more
                               //    lines of fewer)
@@ -1479,6 +1479,8 @@ int freadMain(freadMainArgs _args) {
         }
         if (numFields[0]==-1) continue;
         if (firstJumpEnd==NULL) firstJumpEnd=ch;  // if this wins (doesn't get updated), it'll be single column input
+        // Even if numFields[i]==1 for all sep/QR combos, we still want to know which quote rule was able to parse the input correctly
+        if (topQuoteRule<0) topQuoteRule = quoteRule;
         bool updated=false;
         int nmax=0;
 
@@ -1511,6 +1513,7 @@ int freadMain(freadMainArgs _args) {
       }
     }
     if (!firstJumpEnd) STOP("Internal error: no sep won");
+    if (topQuoteRule < 0) STOP("Quote rule never updated");
     quoteRule = topQuoteRule;
     sep = topSep;
     whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
@@ -2203,7 +2206,7 @@ int freadMain(freadMainArgs _args) {
           myNrow = 0;               // discard my buffer
         }
         else if (headPos!=thisJumpStart) {
-          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, headPos, thisJumpStart, sof);
+          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
         }
         else {

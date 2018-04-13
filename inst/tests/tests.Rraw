@@ -11631,6 +11631,13 @@ DT = data.table(x = 1:5, y = 6:10)
 test(1901.1, DT[, bquote(z==.(sum(x)))],  bquote(z==.(DT[, sum(x)])))
 test(1901.2, DT[, .(.(bquote(z==.(sd(x-y)))))],  data.table(V1=list(bquote(z==.(DT[, sd(x-y)])))))
 
+# check quote rule detection logic, #2744
+src = '"C\\\\D"\nAB\\x20CD\\n\n"\\"one\\", \\\'two\\\', three"\n"\\r\\t\\v\\a\\b\\071\\uABCD"\n'
+test(1902, fread(src, verbose=TRUE),
+           data.table("C\\\\D"=c("AB\\x20CD\\n", "\\\"one\\\", \\'two\\', three", "\\r\\t\\v\\a\\b\\071\\uABCD")),
+           output="Quote rule picked = 1")
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
