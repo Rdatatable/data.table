@@ -5882,7 +5882,8 @@ DT <- data.table(intCol    = sample(c(1:3, NA), n, replace = TRUE),
                  doubleCol = sample(c(1.86, 1000.345, 2.346, NA, NaN), n, replace = TRUE),
                  boolCol   = sample(c(TRUE, FALSE, NA), n, replace = TRUE),
                  charCol   = sample(c(LETTERS[1:3], NA), n, replace = TRUE),
-                 groupCol  = sample(c("a", "b", "c"), n, replace = TRUE))
+                 groupCol  = sample(c("a", "b", "c"), n, replace = TRUE),
+                 sortedGroupCol = c(rep(1L, floor(n/3)), rep(2L, floor(n/3)), rep(3L, ceiling(n/3)))) ## sorted grouping column is important to test #2713
 if (test_bit64) DT[, int64Col := as.integer64(sample(1:3, n, replace = TRUE))]
 ## get list with unique values excluding NA
 vals <- lapply(DT, function(x) {out <- unique(x); out[!is.na(out)]})
@@ -5919,7 +5920,7 @@ all[, query := gsub("&missing$", "", gsub("missing&", "", query))]
 jQueries <- c(".(test = intCol + doubleCol, test2 = paste0(boolCol, charCol))",
               "c('test1', 'test2') := list(pmax(intCol, doubleCol), !boolCol)")
 ## define example 'by' values
-bys <- c("groupCol", character(0))
+bys <- c("groupCol", "sortedGroupCol", character(0))
 ## test each query string
 test_no <- 1437.0039
 for(t in seq_len(nrow(all))){
@@ -6581,7 +6582,7 @@ if (test_bit64) {
   x = c("12345678901234", rep("NA", 178), "a")
   y = sample(letters, length(x), TRUE)
   ll = paste(x,y, sep=",", collapse="\n")
-  test(1500.3, fread(ll, na=NULL),
+  test(1500.3, fread(ll, na.strings=NULL),
       data.table(V1=x, V2=y))
 
   x = c("12345678901234", rep("NA", 178), "0.5")
@@ -10702,8 +10703,8 @@ DT = data.table(V1=rep(1234L, 128), V2=5678L, V3=9012L, V4=3456L, V5=7890L, V6="
 DT[1, 1] = 11234L
 test(1803.2, fread(f), DT)
 
-test(1804.1, fread("A,B\n", na.strings=" NA"), error="NAstring .* has whitespace")
-test(1804.2, fread("A,B\n", na.strings="NA\t"), error="NAstring .* has whitespace")
+test(1804.1, fread("A,B\n", na.strings=" NA"), error="NAstring .* has whitespace at the beginning or end")
+test(1804.2, fread("A,B\n", na.strings="NA\t"), error="NAstring .* has whitespace at the beginning or end")
 test(1805, fread("A\n", verbose=TRUE), data.table(A=logical()), output="text input (not a filename)")
 test(1806, fread('"A,B,C\n1,2,3\n4,5,6'), data.table('"A'=c(1L,4L), B=c(2L,5L), C=c(3L,6L)))
 test(1807, fread('A,B,"C\nD",E'), data.table(A=logical(), B=logical(), "C\nD"=logical(), E=logical()))
@@ -11264,8 +11265,8 @@ test(1869.7, fread(testDir("onecol4096.csv"), verbose=TRUE)[c(1,2,245,246,249,25
              output = "Copying file in RAM.*file is very unusual.*one single column, ends with 2 or more end-of-line.*and is a multiple of 4096")
 
 # better colname detection by comparing potential column names to the whole sample not just the first row of the sample, #2526
-test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,300L,500L), V3=c(200L,400L,600L)))
-test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,NA,500L), V3=c(NA,NA,600L)))
+test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(A=NA, "100"=c(300L,500L), "200"=c(400L,600L)))
+test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(A=NA, "100"=c(NA,500L), V3=c(NA,600L)))
 test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA,3.4)))
 
 # nrows= now ignores errors after those nrows as expected and skip= determines first row for sure, #1267
@@ -11635,6 +11636,31 @@ DT = data.table(x = 1:5, y = 6:10)
 test(1901.1, DT[, bquote(z==.(sum(x)))],  bquote(z==.(DT[, sum(x)])))
 test(1901.2, DT[, .(.(bquote(z==.(sd(x-y)))))],  data.table(V1=list(bquote(z==.(DT[, sd(x-y)])))))
 
+# check quote rule detection logic, #2744
+src = '"C\\\\D"\nAB\\x20CD\\n\n"\\"one\\", \\\'two\\\', three"\n"\\r\\t\\v\\a\\b\\071\\uABCD"\n'
+test(1902, fread(src, verbose=TRUE),
+           data.table("C\\\\D"=c("AB\\x20CD\\n", "\\\"one\\\", \\'two\\', three", "\\r\\t\\v\\a\\b\\071\\uABCD")),
+           output="Quote rule picked = 1")
+           
+# logical01 caused column names not be detected if logical column determines it, #2735
+test(1903.1, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=FALSE), data.table(V1=1:3, A=INT(0,0,1), B=1L))
+test(1903.2, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=TRUE), data.table(V1=1:3, A=c(FALSE,FALSE,TRUE), B=TRUE))
+
+# whitespace around NA, and verbose output for small files, #2697
+txt = 'A,   B,    C\n17,  34, 2.3\n3.,  NA,   1\nNA ,  2, NA \n0,0.1,0'
+test(1904.1, fread(txt, na.strings="NA", verbose=TRUE),
+  ans <- data.table(A=c(17,3,NA,0), B=c(34,NA,2,0.1), C=c(2.3,1.0,NA,0.0)),
+  output = c("Number of sampling jump points = 1 because.*Reading 1 chunks \\(0 swept\\) of 1.000MB \\(each chunk 4 rows\\) using 1 thread.*Rereading 0 columns"))
+test(1904.2, fread(txt, na.strings=c("NA", " ")), ans, warning='na.strings\\[2\\]==" " consists only of whitespace, ignoring. Since strip.white=TRUE.*use.*"".*<NA>')
+test(1904.3, fread(txt, na.strings=c("NA", "")), ans)
+test(1904.4, fread(txt, na.strings=c("NA", "", " ")), ans, warning='na.strings\\[3\\]==" ".*only.*whitespace.*will already be read as <NA>')
+test(1904.5, fread(txt, na.strings=c("NA", " "), strip.white=FALSE), error='na.strings\\[2\\]==" ".*only.*whitespace.*But strip.white=FALSE')
+setnames(ans, c("A","   B","    C"))
+test(1904.6, fread(txt, na.strings="NA", strip.white=FALSE), ans)  # whitespace around NA strings is always stripped regardless of strip.white; just column names affected here
+
+#
+# gap in test number for now to avoid merge conflicts. Matt will remove gap when PR merged.
+#
 # PR#2602 -- non-equi joins and roll joins columns are now returned from 
 # both data.tables in x[i]. These tests cover previous tests which expect 
 # only the column from i (named after the column from x) to be returned.
@@ -11642,40 +11668,40 @@ options(datatable.bothkeycols = TRUE)
 
 # Tests 129, 130, 131 but with the roll column returned from both x and i
 TESTDT = data.table(a=3L,v=2L,key="a")  # testing 1-row table
-test(1902.01, TESTDT[J(4),roll=TRUE], data.table(a=3L,v=2L,V1=4L,key="a"))
-test(1902.02, TESTDT[J(4),roll=TRUE,rollends=FALSE], data.table(a=NA_integer_,v=NA_integer_,V1=4L,key="a"))
-test(1902.03, TESTDT[J(-4),roll=TRUE], data.table(a=NA_integer_,v=NA_integer_,V1=-4L,key="a")) 
+test(1999.01, TESTDT[J(4),roll=TRUE], data.table(a=3L,v=2L,V1=4L,key="a"))
+test(1999.02, TESTDT[J(4),roll=TRUE,rollends=FALSE], data.table(a=NA_integer_,v=NA_integer_,V1=4L,key="a"))
+test(1999.03, TESTDT[J(-4),roll=TRUE], data.table(a=NA_integer_,v=NA_integer_,V1=-4L,key="a")) 
 
 # Tests 148 and 149 with the roll column returned from both x and i
 dt = data.table(a=c(1L,4L,5L), b=1:3, key="a")
-test(1902.04, dt[CJ(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L),V1=c(2L,3L),key="a"))
-test(1902.05, dt[J(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L),V1=c(2L,3L)))
+test(1999.04, dt[CJ(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L),V1=c(2L,3L),key="a"))
+test(1999.05, dt[J(2:3),roll=TRUE], data.table(a=c(1L,1L),b=c(1L,1L),V1=c(2L,3L)))
 
 # Test 917 with roll column returned from both x and i
 X = data.table(id=2001:2004, uid=c(1001,1002,1001,1001), state=factor(c('CA','CA','CA','MA')), ts=c(51,52,53,54), key='state,uid,ts')
 Y = data.table(id=3001:3004, uid=c(1001,1003,1002,1001), state=factor(c('CA','CA','CA','CA')), ts=c(51,57,59,59), key='state,uid,ts')
-test(1902.06, X[Y,roll=TRUE], data.table(id=INT(2001,2003,2002,NA), uid=c(1001,1001,1002,1003), state=factor('CA'), ts=c(51,53,52,NA), i.id=INT(3001,3004,3003,3002), i.ts=c(51,59,59,57), key='state,uid,ts'))
+test(1999.06, X[Y,roll=TRUE], data.table(id=INT(2001,2003,2002,NA), uid=c(1001,1001,1002,1003), state=factor('CA'), ts=c(51,53,52,NA), i.id=INT(3001,3004,3003,3002), i.ts=c(51,59,59,57), key='state,uid,ts'))
 
 # Test 1317.1 with roll column returned from both x and i
 dt1 <- data.table(structure(list(x = c(7L, 33L), y = structure(c(15912, 15912), class = "Date"), z = c(626550.35284, 7766.385)), .Names =
 c("x", "y", "z"), class = "data.frame", row.names = c(NA, -2L)), key = "x,y")
 dt2 <- data.table(structure(list(x = c(7L, 7L, 33L, 33L, 33L, 33L), y = structure(c(15884, 15917, 15884, 15884, 15917, 15917), class = "Date"), w = c(-0.118303, 0.141225, -0.03137, -0.02533, 0.045967, 0.043694)), .Names = c("x", "y", "w"), class = "data.frame", row.names = c(NA, -6L)), key = "x,y")
-test(1902.07, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-26", "2013-07-26", "2013-07-26")), z=c(dt1$z[1:2], dt1$z[2]), i.y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), w=c(dt2$w[2], dt2$w[5:6]), key="x,y"))
+test(1999.07, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-26", "2013-07-26", "2013-07-26")), z=c(dt1$z[1:2], dt1$z[2]), i.y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), w=c(dt2$w[2], dt2$w[5:6]), key="x,y"))
 
 # Test 1317.2 with roll column returned from both x and i
 set.seed(1L)
 dt2 <- dt2[sample(nrow(dt2))] # key should be gone
-test(1902.08, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-26", "2013-07-26", "2013-07-26")), z=c(dt1$z[1:2], dt1$z[2]), i.y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), w=c(dt2$w[1], dt2$w[c(2,6)])))
+test(1999.08, dt1[dt2, roll=TRUE, nomatch=0L], data.table(x=c(7L,33L,33L), y=as.Date(c("2013-07-26", "2013-07-26", "2013-07-26")), z=c(dt1$z[1:2], dt1$z[2]), i.y=as.Date(c("2013-07-31", "2013-07-31", "2013-07-31")), w=c(dt2$w[1], dt2$w[c(2,6)])))
 
 # Test 1469.2 with roll column returned from both x and i
 DT = data.table(x=c(-5,5), y=1:2, key="x")
-test(1902.09, key(DT[J(c(2,0)), .(V1,y), roll=TRUE]), NULL)
+test(1999.09, key(DT[J(c(2,0)), .(V1,y), roll=TRUE]), NULL)
 
 # Test 1470.1, 1470.2, 1470.3 with roll column returned from both x and i
 DT = data.table(x=c(-Inf, 3, Inf), y=1:3, key="x")
-test(1902.10, DT[J(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf, -Inf, 3, Inf), y=c(1L, 1:3), V1=c(2,-Inf,5,Inf)))
-test(1902.11, DT[J(c(2,-Inf,5,Inf)), roll=10], data.table(x=c(NA, -Inf, 3, Inf), y=INT(c(NA, 1, 2, 3)), V1=c(2,-Inf,5,Inf)))
-test(1902.12, DT[SJ(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf, -Inf, 3, Inf), y=c(1L, 1:3), V1=c(-Inf,2,5,Inf), key="x"))
+test(1999.10, DT[J(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf, -Inf, 3, Inf), y=c(1L, 1:3), V1=c(2,-Inf,5,Inf)))
+test(1999.11, DT[J(c(2,-Inf,5,Inf)), roll=10], data.table(x=c(NA, -Inf, 3, Inf), y=INT(c(NA, 1, 2, 3)), V1=c(2,-Inf,5,Inf)))
+test(1999.12, DT[SJ(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf, -Inf, 3, Inf), y=c(1L, 1:3), V1=c(-Inf,2,5,Inf), key="x"))
 
 # Test 1540.15 with roll column returned from both x and i
 set.seed(45L)
@@ -11686,16 +11712,16 @@ DT3 = rbindlist(list(DT2, list(x="d", y=7L, mul=100L)))
 DT3 = DT3[sample(nrow(DT3))]
 DT1.copy = copy(DT1)
 setkey(DT1.copy, y)
-test(1902.13, DT1[DT3, on=c(y="y"), roll=TRUE], DT1.copy[DT3[, c(2,1,3), with=FALSE], roll=TRUE][,c(1:4,6,5,7)])
+test(1999.13, DT1[DT3, on=c(y="y"), roll=TRUE], DT1.copy[DT3[, c(2,1,3), with=FALSE], roll=TRUE][,c(1:4,6,5,7)])
 
 # Tests 1614.1, 1614.2, 1614.3, and 1614.4 with roll column returned from both x and i
 if (test_bit64) {
   dt = data.table(x=as.integer64(c(-1000, 0)), y=c(5,10))
   val = c(-1100,-900,100)
-  test(1902.14, dt[.(val), roll=Inf,  on="x"], data.table(x=as.integer64(c(NA,-1000,0)), y=c(NA,5,10), V1=as.integer64(val)))
-  test(1902.15, dt[.(val), roll=Inf, on="x", rollends=TRUE], data.table(x=as.integer64(c(-1000,-1000,0)), y=c(5,5,10), V1=as.integer64(val)))
-  test(1902.16, dt[.(val), roll=-Inf, on="x"], data.table(x=as.integer64(c(-1000,0,NA)), y=c(5,10,NA), V1=as.integer64(val)))
-  test(1902.17, dt[.(val), roll=-Inf, on="x", rollends=TRUE], data.table(x=as.integer64(c(-1000,0,0)), y=c(5,10,10), V1=as.integer64(val)))
+  test(1999.14, dt[.(val), roll=Inf,  on="x"], data.table(x=as.integer64(c(NA,-1000,0)), y=c(NA,5,10), V1=as.integer64(val)))
+  test(1999.15, dt[.(val), roll=Inf, on="x", rollends=TRUE], data.table(x=as.integer64(c(-1000,-1000,0)), y=c(5,5,10), V1=as.integer64(val)))
+  test(1999.16, dt[.(val), roll=-Inf, on="x"], data.table(x=as.integer64(c(-1000,0,NA)), y=c(5,10,NA), V1=as.integer64(val)))
+  test(1999.17, dt[.(val), roll=-Inf, on="x", rollends=TRUE], data.table(x=as.integer64(c(-1000,0,0)), y=c(5,10,10), V1=as.integer64(val)))
 }
 
 # Tests 1660.1 and 1660.2 with non-equi join columns returned from both x and i
@@ -11713,8 +11739,8 @@ Site6   chr6    3359        GeneF
 Site7   chr7    1158        GeneI
 Site8   chr4    2451        GeneO
 Site9   chr6    3367        GeneZ   ')
-test(1902.18, names(dt2[dt1, on=.(Chr, Location>=Start, Location<=End)]), c(names(dt2), "Start", "End", "Region"))
-test(1902.19, names(dt1[dt2, on=.(Chr, Start<=Location, End>=Location)]), c(names(dt1), "Site", "Location", "Gene"))
+test(1999.18, names(dt2[dt1, on=.(Chr, Location>=Start, Location<=End)]), c(names(dt2), "Start", "End", "Region"))
+test(1999.19, names(dt1[dt2, on=.(Chr, Start<=Location, End>=Location)]), c(names(dt1), "Site", "Location", "Gene"))
 
 # Tests 1682.1, 1682.2, 1682.3, 1682.4, 1682.5, 1682.6, and 1682.7 with 
 # non-equi join columns returned from both x and i.
@@ -11722,25 +11748,25 @@ set.seed(45L)
 dt1 = data.table(x=sample(8,20,TRUE), y=sample(8,20,TRUE), z=1:20)
 dt2 = data.table(c(2,5), c(5,7), c(2,4))
 dt3 = data.table(c(12,5), c(15,7), c(2,4))
-test(1902.20, dt1[dt2, .N, by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, .N, by=.(x=V1,y=V2)])
-test(1902.21, dt1[dt2, sum(z), by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, sum(z), by=.(x=V1,y=V2)])
-test(1902.22, dt1[dt2, as.numeric(median(z)), by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, median(z), by=.(x=V1,y=V2)])
-test(1902.23, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt3, on=.(x>=V1, y<=V2)][, .(N=sum(!is.na(z))), by=.(x=V1,y=V2)])
-test(1902.24, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2), nomatch=0L], dt1[dt3, on=.(x>=V1, y<=V2), nomatch=0L][, .N, by=.(x=V1,y=V2)])
-test(1902.25, dt1[dt2, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI], dt1[dt2, on=.(x>=V1, y<=V2)][, sum(z)*V3[1L], by=.(x=V1,y=V2)])
-test(1902.26, dt1[dt3, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI], dt1[dt3, on=.(x>=V1, y<=V2)][, sum(z)*V3[1L], by=.(x=V1,y=V2)])
+test(1999.20, dt1[dt2, .N, by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, .N, by=.(x=V1,y=V2)])
+test(1999.21, dt1[dt2, sum(z), by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, sum(z), by=.(x=V1,y=V2)])
+test(1999.22, dt1[dt2, as.numeric(median(z)), by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt2, on=.(x>=V1, y<=V2)][, median(z), by=.(x=V1,y=V2)])
+test(1999.23, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2)], dt1[dt3, on=.(x>=V1, y<=V2)][, .(N=sum(!is.na(z))), by=.(x=V1,y=V2)])
+test(1999.24, dt1[dt3, .N, by=.EACHI, on=.(x>=V1, y<=V2), nomatch=0L], dt1[dt3, on=.(x>=V1, y<=V2), nomatch=0L][, .N, by=.(x=V1,y=V2)])
+test(1999.25, dt1[dt2, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI], dt1[dt2, on=.(x>=V1, y<=V2)][, sum(z)*V3[1L], by=.(x=V1,y=V2)])
+test(1999.26, dt1[dt3, on=.(x>=V1, y<=V2), sum(z)*V3, by=.EACHI], dt1[dt3, on=.(x>=V1, y<=V2)][, sum(z)*V3[1L], by=.(x=V1,y=V2)])
 
 # Tests for 1846.1 and 1846.2 with non-equi join columns returned from both x and i
 d1 <- data.table(a=1L, b=2L)
 d2 <- d1[0L]
-test(1902.27, d2[d1, on=.(a>a, b<b)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
-test(1902.28, d2[d1, on=.(a>a)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
+test(1999.27, d2[d1, on=.(a>a, b<b)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
+test(1999.28, d2[d1, on=.(a>a)], data.table(a=NA_integer_, b=NA_integer_, i.a=1L, i.b=2L))
 
 # New test required to maintain code coverage - does i. prefix work in j where there are 
 # only non-equi / roll join columns in on?
 d1 <- data.table(id=c("X", "Y", "Z"), val1 = 1:3)
 d2 <- data.table(id=c("a", "b", "c"), val2 = 1:3)
-test(1902.29, d1[d2, on = .(val1 > val2), .(i.id)], data.table(i.id=c("a", "a", "b", "c")))
+test(1999.29, d1[d2, on = .(val1 > val2), .(i.id)], data.table(i.id=c("a", "a", "b", "c")))
 
 # Testing completed PR#2602, set datatable.bothkeycols back to FALSE (the default for now) for future tests
 options(datatable.bothkeycols=FALSE)

@@ -65,7 +65,7 @@ This option fixes issues [#1615](https://github.com/Rdatatable/data.table/issues
     * Detecting whether a very long input string is a file name or data is now much faster, [#2531](https://github.com/Rdatatable/data.table/issues/2531). Many thanks to @javrucebo for the detailed report, benchmarks and suggestions.
     * A column of `TRUE/FALSE`s is ok, as well as `True/False`s and `true/false`s, but mixing styles (e.g. `TRUE/false`) is not and will be read as type `character`.
     * New argument `index` to parallel the existing `key` argument for applying secondary orderings out of the box for convenience, [#2633](https://github.com/Rdatatable/data.table/issues/2633).
-    * Many thanks to @yaakovfeldman, Guillermo Ponce, Arun Srinivasan, Hugh Parsonage, Mark Klik, Pasha Stetsenko, Mahyar K, Tom Crockett, @cnoelke, @qinjs, @etienne-s, Mark Danese, Avraham Adler, @franknarf1, @MichaelChirico, @tdhock, Luke Tierney for testing dev and reporting these regressions before release to CRAN: #2070, #2073, #2087, #2091, #2107, #2118, #2092, #1888, #2123, #2167, #2194, #2238, #2228, #1464, #2201, #2287, #2299, #2285, #2251, #2347, #2222, #2352, #2246, #2370, #2371, #2404, #2196, #2322, #2453, #2446, #2464, #2457, #1895, #2481, #2499, #2516, #2520, #2512, #2523, #2542, #2526, #2518, #2515, #1671, #2267, #2561, #2625, #2265, #2548, #2535
+    * Many thanks to @yaakovfeldman, Guillermo Ponce, Arun Srinivasan, Hugh Parsonage, Mark Klik, Pasha Stetsenko, Mahyar K, Tom Crockett, @cnoelke, @qinjs, @etienne-s, Mark Danese, Avraham Adler, @franknarf1, @MichaelChirico, @tdhock, Luke Tierney for testing dev and reporting these regressions before release to CRAN: #2070, #2073, #2087, #2091, #2107, #2118, #2092, #1888, #2123, #2167, #2194, #2238, #2228, #1464, #2201, #2287, #2299, #2285, #2251, #2347, #2222, #2352, #2246, #2370, #2371, #2404, #2196, #2322, #2453, #2446, #2464, #2457, #1895, #2481, #2499, #2516, #2520, #2512, #2523, #2542, #2526, #2518, #2515, #1671, #2267, #2561, #2625, #2265, #2548, #2535, #2744, #2735, #2697
 
 2. `fwrite()`:
     * empty strings are now always quoted (`,"",`) to distinguish them from `NA` which by default is still empty (`,,`) but can be changed using `na=` as before. If `na=` is provided and `quote=` is the default `'auto'` then `quote=` is set to `TRUE` so that if the `na=` value occurs in the data, it can be distinguished from `NA`. Thanks to Ethan Welty for the request [#2214](https://github.com/Rdatatable/data.table/issues/2214) and Pasha for the code change and tests, [#2215](https://github.com/Rdatatable/data.table/issues/2215).
@@ -122,7 +122,7 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
     > When j is a symbol prefixed with `..` it will be looked up in calling scope and its value taken to be column names or numbers.
     > When you see the `..` prefix think one-level-up, like the directory `..` in all operating systems means the parent directory.
     > In future the `..` prefix could be made to work on all symbols apearing anywhere inside `DT[...]`.
-    
+
     The response has been positive ([this tweet](https://twitter.com/MattDowle/status/967290562725359617) and [FR#2655](https://github.com/Rdatatable/data.table/issues/2655)) and so this prefix is now expanded to all symbols appearing in `j=` as a first step; e.g. :
     ```R
     cols = "colB"
@@ -206,7 +206,7 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
 
 34. Fixed cases where the result of `merge.data.table()` would contain duplicate column names if `by.x` was also in `names(y)`.
 `merge.data.table()` gains the `no.dups` argument (default TRUE) to match the correpsonding patched behaviour in `base:::merge.data.frame()`. Now, when `by.x` is also in `names(y)` the column name from `y` has the corresponding `suffixes` added to it. `by.x` remains unchanged for backwards compatibility reasons.
-In addition, where duplicate column names arise anyway (i.e. `suffixes = c("", "")`) `merge.data.table()` will now throw a warning to match the behaviour of `base:::merge.data.frame()`. 
+In addition, where duplicate column names arise anyway (i.e. `suffixes = c("", "")`) `merge.data.table()` will now throw a warning to match the behaviour of `base:::merge.data.frame()`.
 Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdatatable/data.table/pull/2631) and [PR#2653](https://github.com/Rdatatable/data.table/pull/2653)
 
 35. `CJ()` now fails with proper error message when results would exceed max integer, [#2636](https://github.com/Rdatatable/data.table/issues/2636).
@@ -217,7 +217,7 @@ Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdat
 
 38. Fixed a bug on Windows that `data.table` may break if the garbage collecting was triggered when sorting a large number of non-ASCII characters. Thanks to @shrektan for reporting and fixing [PR#2678](https://github.com/Rdatatable/data.table/pull/2678),  [#2674](https://github.com/Rdatatable/data.table/issues/2674).
 
-39. Internal aliasing of `.` to `list` was over-aggressive in applying `list` even when `.` was intended within `bquote`, [#1912](https://github.com/Rdatatable/data.table/issues/1912). Thanks @MichaelChirico for reporting/filing and @ecoRoland for suggesting and testing a fix. 
+39. Internal aliasing of `.` to `list` was over-aggressive in applying `list` even when `.` was intended within `bquote`, [#1912](https://github.com/Rdatatable/data.table/issues/1912). Thanks @MichaelChirico for reporting/filing and @ecoRoland for suggesting and testing a fix.
 
 #### NOTES
 
