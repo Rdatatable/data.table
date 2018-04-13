@@ -1597,8 +1597,6 @@ int freadMain(freadMainArgs _args) {
     else if (jump0size*10*2 < sz) nJumps=10;
     // *2 to get a good spacing. We don't want overlaps resulting in double counting.
   }
-  nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
-  if (nrowLimit<INT64_MAX) nJumps=1; // when nrowLimit supplied by user, no jumps (not even at the end) and single threaded
   if (verbose) {
     DTPRINT("  Number of sampling jump points = %d because ", nJumps);
     if (nrowLimit<INT64_MAX) DTPRINT("nrow limit (%llu) supplied\n", (llu)nrowLimit);
@@ -1606,6 +1604,8 @@ int freadMain(freadMainArgs _args) {
     else DTPRINT("(%llu bytes from row 1 to eof) / (2 * %llu jump0size) == %llu\n",
                  (llu)sz, (llu)jump0size, (llu)(sz/(2*jump0size)));
   }
+  nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
+  if (nrowLimit<INT64_MAX) nJumps=1; // when nrowLimit supplied by user, no jumps (not even at the end) and single threaded
 
   sampleLines = 0;
   double sumLen=0.0, sumLenSq=0.0;
@@ -2390,8 +2390,8 @@ int freadMain(freadMainArgs _args) {
       tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, (llu)allocnrow, ncol, DTbytes/(1024.0*1024*1024), (llu)DTi, 100.0*DTi/allocnrow);
     thRead/=nth; thPush/=nth;
     double thWaiting = tReread-tAlloc-thRead-thPush;
-    DTPRINT("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (%d rows) using %d threads\n",
-            tReread-tAlloc, 100.0*(tReread-tAlloc)/tTot, nJumps, nSwept, (double)chunkBytes/(1024*1024), (int)(chunkBytes/meanLineLen), nth);
+    DTPRINT("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %d rows) using %d threads\n",
+            tReread-tAlloc, 100.0*(tReread-tAlloc)/tTot, nJumps, nSwept, (double)chunkBytes/(1024*1024), (int)(DTi/nJumps), nth);
     DTPRINT("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n", thRead, 100.0*thRead/tTot, buffGrown);
     DTPRINT("   + %8.3fs (%3.0f%%) Transpose\n", thPush, 100.0*thPush/tTot);
     DTPRINT("   + %8.3fs (%3.0f%%) Waiting\n", thWaiting, 100.0*thWaiting/tTot);
