@@ -11637,8 +11637,8 @@ test(1902.2, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=TRUE), data.table(V1
 
 # whitespace around NA, and verbose output for small files, #2697
 txt = 'A,   B,    C\n17,  34, 2.3\n3.,  NA,   1\nNA ,  2, NA \n0,0.1,0'
-test(1903.1, fread(txt, verbose=TRUE),
-             output = c("Number of sampling jump points = 1 because.*Reading 1 chunks \\(0 swept\\) of 1.000MB \\(each chunk 4 rows\\) using 1 thread"))
+test(1903, fread(txt, verbose=TRUE), data.table(A=c(17,3,NA,0), B=c(34,NA,2,0.1), C=c(2.3,1.0,NA,0.0)),
+           output = c("Number of sampling jump points = 1 because.*Reading 1 chunks \\(0 swept\\) of 1.000MB \\(each chunk 4 rows\\) using 1 thread.*Rereading 0 columns"))
 
 
 ###################################

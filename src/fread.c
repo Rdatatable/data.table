@@ -269,11 +269,12 @@ static inline bool end_of_field(const char *ch) {
 }
 
 
-static inline const char *end_NA_string(const char *fieldStart) {
+static inline const char *end_NA_string(const char *start) {
+  // start should be at the beginning of any potential NA string, after leading whitespace skipped by caller
   const char* const* nastr = NAstrings;
-  const char *mostConsumed = fieldStart; // tests 1550* includes both 'na' and 'nan' in nastrings. Don't stop after 'na' if 'nan' can be consumed too.
+  const char *mostConsumed = start; // tests 1550* includes both 'na' and 'nan' in nastrings. Don't stop after 'na' if 'nan' can be consumed too.
   if (nastr) while (*nastr) {
-    const char *ch1 = fieldStart;
+    const char *ch1 = start;
     const char *ch2 = *nastr;
     while (*ch1==*ch2 && *ch2!='\0') { ch1++; ch2++; }
     if (*ch2=='\0' && ch1>mostConsumed) mostConsumed=ch1;
@@ -1029,7 +1030,8 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
       if (end_of_field(ch)) break;
       skip_white(&ch);
       if (end_of_field(ch)) break;
-      ch = end_NA_string(fieldStart);
+      ch = end_NA_string(fieldStart);  // fieldStart here is correct (already after skip_white above); fun[]() may have part processed field so not ch
+      skip_white(&ch);
       if (end_of_field(ch)) break;
       ch = fieldStart;
       if (tmpType[field]==CT_STRING) {
@@ -2114,7 +2116,7 @@ int freadMain(freadMainArgs _args) {
             if (absType<CT_STRING && absType>CT_DROP/*Field() too*/) {
               skip_white(&tch);
               const char *afterSpace = tch;
-              tch = end_NA_string(fieldStart);
+              tch = end_NA_string(tch);
               skip_white(&tch);
               if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
               if (*tch==quote) { quoted=true; tch++; }
