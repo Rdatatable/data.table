@@ -1522,7 +1522,10 @@ int freadMain(freadMainArgs _args) {
             }
           }
           if ((thisBlockLines>topNumLines && lastncol>1) ||   // more lines wins even if fewer fields so long as number of fields>=2
-              (thisBlockLines==topNumLines && lastncol>topNumFields && (topNumFields<=1 || sep!=' '))) {
+              (thisBlockLines==topNumLines &&
+               lastncol>topNumFields &&
+               (quoteRule<2 || quoteRule<=topQuoteRule) &&  // for test 1834 where every line contains a correctly quoted field contain sep
+               (topNumFields<=1 || sep!=' '))) {
             topNumLines = thisBlockLines;
             topNumFields = lastncol;
             topSep = sep;
@@ -1539,6 +1542,7 @@ int freadMain(freadMainArgs _args) {
     }
     if (!firstJumpEnd) {
       // no sep won, so single column input
+      if (verbose) DTPRINT("  No sep and quote rule found a block of 2x2 or greater. Single column input.\n");
       topNumFields = 1;
       ASSERT(topSep==127, "Single column input has topSep=%d", topSep);
       sep = topSep;

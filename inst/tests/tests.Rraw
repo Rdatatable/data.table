@@ -7792,7 +7792,7 @@ test(1607, wide[, id := .I], data.table(resp = 1:5, id = 1:5))
 
 # better fix for #1462, + improved error message (if this better fix fails)
 # no need for quote="" and sep="\t"..
-test(1608, dim(fread(testDir('issue_1462_fread_quotes.txt'), header=FALSE)), c(4L, 224L))
+test(1608, dim(fread(testDir('issue_1462_fread_quotes.txt'), header=FALSE)), c(4L, 224L), warning="resolved improper quoting")
 
 # fix for #1164
 test(1609, fread(testDir("issue_1164_json.txt")), data.table(json1='{""f1"":""value1"",""f2"":""double quote escaped with a backslash [ \\"" ]""}', string1="string field"))
@@ -10305,7 +10305,8 @@ test(1754, fread(testDir("allchar.csv"))[c(1,2,17575,17576),col2], c("AAN","BAN"
 test(1755, fread(testDir("unescaped.csv"), logical01=TRUE),
   data.table(No     =c(FALSE,TRUE),
              Comment=c('he said:"wonderful."', 'The problem is: reading table, and also "a problem, yes." keep going on.'),
-             Type   =c('A','A')))
+             Type   =c('A','A')),
+  warning="resolved improper quoting" )
 
 # test duplicated colClasses
 txt = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
@@ -10725,7 +10726,7 @@ test(1803.2, fread(f), DT)
 test(1804.1, fread("A,B\n", na.strings=" NA"), error="NAstring .* has whitespace at the beginning or end")
 test(1804.2, fread("A,B\n", na.strings="NA\t"), error="NAstring .* has whitespace at the beginning or end")
 test(1805, fread("A\n", verbose=TRUE), data.table(A=logical()), output="text input (not a filename)")
-test(1806, fread('"A,B,C\n1,2,3\n4,5,6'), data.table('"A'=c(1L,4L), B=c(2L,5L), C=c(3L,6L)))
+test(1806, fread('"A,B,C\n1,2,3\n4,5,6'), data.table('"A'=c(1L,4L), B=c(2L,5L), C=c(3L,6L)), warning="resolved improper quoting")
 test(1807, fread('A,B,"C\nD",E'), data.table(A=logical(), B=logical(), "C\nD"=logical(), E=logical()))
 test(1808.1, fread("A,B\r1,2\r3,4"), data.table(A=c(1L,3L),B=c(2L,4L)))
 test(1808.2, fread("A,B\r1,2\r3,4\r"), data.table(A=c(1L,3L),B=c(2L,4L)))
@@ -10964,7 +10965,7 @@ test(1839.6, fread(txt, sep=""), data.table("DECLARATION OF INDEPENDENCE"=lines[
 txt = 'a,b\n ab,cd,ce\n abcdef\n hjkli \n'  # now auto detected as ncol 1 anyway
 test(1840.1, fread(txt), data.table("a,b" = c("ab,cd,ce","abcdef","hjkli")))
 write('a,b\n ab,cd,ce\nabc,def \n hj,kli  ', f<-tempfile())  # write to file to generate \r\n line ending on Windows, test 1840.6 below
-test(1840.2, fread(f), data.table(a=logical(), b=logical()), warning="Stopped early on line 2.*discarded.*<<ab,cd,ce>>")
+test(1840.2, fread(f), data.table("abc"="hj", "def"="kli"))
 test(1840.3, fread(f, sep=NA), error="!is.na(sep) is not TRUE")
 test(1840.4, fread(f, sep=NA_character_), error="!is.na(sep) is not TRUE")
 test(1840.5, fread(f, sep=""), ans<-data.table("a,b"=c("ab,cd,ce","abc,def","hj,kli")))
@@ -11290,8 +11291,8 @@ test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA
 
 # nrows= now ignores errors after those nrows as expected and skip= determines first row for sure, #1267
 txt = "V1, V2, V3\n2,3,4\nV4, V5, V6, V7\n4,5,6,7\n8,9,10,11\n"
-test(1871.1, fread(txt), ans <- data.table(V4=INT(4,8), V5=INT(5,9), V6=INT(6,10), V7=INT(7,11)))
-test(1871.2, fread(txt, skip=2), ans)
+test(1871.1, fread(txt), data.table(V1=2L, V2=3L, V3=4L), warning="Stopped early on line 3. Expected 3 fields but found 4.*First discarded.*V4, V5")
+test(1871.2, fread(txt, skip=2), ans<-data.table(V4=INT(4,8), V5=INT(5,9), V6=INT(6,10), V7=INT(7,11)))
 test(1871.3, fread(txt, skip=2, nrow=1), ans[1,])
 test(1871.4, fread(txt, skip=2, nrow=3), ans)
 test(1871.5, fread(txt, skip=3), ans <- data.table(V1=INT(4,8), V2=INT(5,9), V3=INT(6,10), V4=INT(7,11)))
@@ -11481,11 +11482,11 @@ test(1880.3, any(duplicated(names(joined))), TRUE)
 DT = data.table(A=rep("abc", 10000), B="def")
 DT[110, A:='"a"b']
 fwrite(DT, f<-tempfile(), quote=FALSE)
-test(1881.1, ans<-fread(f), DT, warning='Found and resolved improper quoting. First healed line 111: <<"a"b,def>>')
+test(1881.1, ans<-fread(f), DT, warning='Found and resolved improper quoting out-of-sample. First healed line 111: <<"a"b,def>>')
 test(1881.2, ans[110,A], '"a"b')  # double-check the value of interest directly
 cat("(10000 rows)\n", file=f, append=TRUE)
 test(1881.3, fread(f), DT, warning=c('Discarded single-line footer: <<(10000 rows)>>',
-                                     'Found and resolved improper quoting. First healed line 111: <<"a"b,def>>'))
+                                     'Found and resolved improper quoting out-of-sample. First healed line 111: <<"a"b,def>>'))
 unlink(f)
 
 # CJ will should fail with proper error message, #2636
