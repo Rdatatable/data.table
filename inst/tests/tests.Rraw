@@ -7172,21 +7172,23 @@ for(k in seq_along(nastrings)) {
 
 # FR #568
 str = "a,b\n1.5,\"at the 5\" end of the gene.\""
-test(1551.1, fread(str), data.table(a = 1.5, b = "at the 5\" end of the gene."))
+test(1551.1, fread(str), data.table(a = 1.5, b = "at the 5\" end of the gene."), warning=w<-"resolved improper quoting")
 #1256
 str = "x,y\nx1,\"oops\" y1\n"
-test(1551.2, fread(str), data.table(x = "x1", y = "\"oops\" y1"))
+test(1551.2, fread(str), data.table(x = "x1", y = "\"oops\" y1"), warning=w)
 str = "x,y\nx1,\"oops\" y1"
-test(1551.3, fread(str), data.table(x = "x1", y = "\"oops\" y1"))
+test(1551.3, fread(str), data.table(x = "x1", y = "\"oops\" y1"), warning=w)
 #1077
 str = '2,3\n""foo,bar'
-test(1551.4, fread(str), data.table(V1=c("2","\"\"foo"), V2=c("3","bar")))
+test(1551.4, fread(str), data.table(V1=c("2","\"\"foo"), V2=c("3","bar")), warning=w)
 #1079
 str = 'L1\tsome\tunquoted\tstuff\nL2\tsome\t"half" quoted\tstuff\nL3\tthis\t"should work"\tok though'
-test(1551.5, fread(str), data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "should work"), stuff = c("stuff", "ok though")))
+test(1551.5, fread(str),
+  data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "should work"), stuff = c("stuff", "ok though")),
+  warning = w)
 #1095
 rhs = read.table(testDir("issue_1095_fread.txt"), sep=",", comment.char="", stringsAsFactors=FALSE, quote="", strip.white=TRUE)
-test(1551.6, fread(testDir("issue_1095_fread.txt"), logical01=FALSE), setDT(rhs))
+test(1551.6, fread(testDir("issue_1095_fread.txt"), logical01=FALSE), setDT(rhs), warning=w)
 
 # FR #1314 rest of na.strings issue
 str = "a,b,c,d\n#N/A,+1,5.5,FALSE\n#N/A,5,6.6,TRUE\n#N/A,+1,#N/A,-999\n#N/A,#N/A,-999,FALSE\n#N/A,1,NA,TRUE"
@@ -7458,14 +7460,14 @@ test(1577.3, levels(X$b), character(0))
 
 # FR #530, skip blank lines
 input = "Header not 2 columns\n\n1,3\n2,4"
-test(1578.0, fread(input), data.table(V1=1:2, V2=3:4))
+test(1578.1, fread(input), data.table(V1=1:2, V2=3:4))
 input = "a,b\n\n1,3\n2,4"
-test(1578.1, fread(input), data.table(a=logical(), b=logical()), warning="Stopped early on line 2[.].*First discarded.*<<1,3>>")
-test(1578.2, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
-input = "a,b\n\n\n1,3\n2,4"
+test(1578.2, fread(input), data.table(V1=1:2, V2=3:4))  # the block of 2x2 dominates the one line with sep in auto-removed header section
 test(1578.3, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
-input = "a,b\n\n\n1,3\n\n2,4\n\n"
+input = "a,b\n\n\n1,3\n2,4"
 test(1578.4, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
+input = "a,b\n\n\n1,3\n\n2,4\n\n"
+test(1578.5, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 
 f = testDir("530_fread.txt")
 test(1578.5, fread(f, skip=47L), data.table(a=logical(), b=logical()), warning="Stopped early.*discarded.*<<1,3>>")

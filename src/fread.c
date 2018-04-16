@@ -1504,13 +1504,17 @@ int freadMain(freadMainArgs _args) {
           while (ch<eof && ++thisRow<jumpLines) {
             const char *lineStart = ch;  // TODO: prevStart can come from here
             int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
-            if (thisncol<0) { /*numFields[0]=-1;*/ break; }  // invalid file with this sep and quote rule; abort
+            if (thisncol==0 && skipEmptyLines) while ( ch<eof && thisncol==0 ) { lineStart=ch; thisncol=countfields(&ch); }
+            if (thisncol<0) break;  // invalid file with this sep and quote rule; abort
             if (thisncol==lastncol) {
               thisBlockLines++;
               continue;
             }
             if ((lastncol>1 && thisBlockLines>1) || !skipAuto) break;
-            while (ch<eof && thisncol==0) thisncol = countfields(&ch);
+            while (ch<eof && thisncol==0) {
+              lineStart = ch;
+              thisncol = countfields(&ch);
+            }
             if (thisncol>0) {
               lastncol = thisncol;
               thisBlockLines = 1;
