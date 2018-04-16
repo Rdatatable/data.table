@@ -1492,19 +1492,20 @@ int freadMain(freadMainArgs _args) {
             }
           }
         } else {
-
-          int thisRow=0;
+          const char *prevLineStart=ch, *lineStart=ch;
           int lastncol = countfields(&ch);
           if (lastncol<0) continue;  // -1 means it's invalid file with this sep and quote rule
           ASSERT(lastncol>0, "Internal error: first non-empty row should always be at least one field; %c %d", sep, quoteRule);
-          const char *thisBlockStart=pos;
+          const char *thisBlockStart=lineStart;
+          const char *thisBlockPrevStart = NULL;
           //int nrowBlock=0;
           int thisBlockLines=1;
-
+          int thisRow=0;
           while (ch<eof && ++thisRow<jumpLines) {
-            const char *lineStart = ch;  // TODO: prevStart can come from here
+            // prevLine`const char lineStart = ch, *thisBlockPrevStart = ch;  // TODO: prevStart can come from here
+            prevLineStart=lineStart; lineStart=ch;
             int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
-            if (thisncol==0 && skipEmptyLines) while ( ch<eof && thisncol==0 ) { lineStart=ch; thisncol=countfields(&ch); }
+            if (thisncol==0 && skipEmptyLines) while ( ch<eof && thisncol==0 ) { prevLineStart=NULL; lineStart=ch; thisncol=countfields(&ch); }
             if (thisncol<0) break;  // invalid file with this sep and quote rule; abort
             if (thisncol==lastncol) {
               thisBlockLines++;
@@ -1512,12 +1513,13 @@ int freadMain(freadMainArgs _args) {
             }
             if ((lastncol>1 && thisBlockLines>1) || !skipAuto) break;
             while (ch<eof && thisncol==0) {
-              lineStart = ch;
+              prevLineStart=NULL; lineStart=ch;
               thisncol = countfields(&ch);
             }
             if (thisncol>0) {
               lastncol = thisncol;
               thisBlockLines = 1;
+              thisBlockPrevStart = prevLineStart;
               thisBlockStart = lineStart;
             }
           }
@@ -1532,6 +1534,7 @@ int freadMain(freadMainArgs _args) {
             topQuoteRule = quoteRule;
             firstJumpEnd = ch;
             topStart = thisBlockStart;
+            prevStart = thisBlockPrevStart; // only used when line prior to contiguous block has a wrong number of column names to be filled
             if (verbose) {
               DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep);
               DTPRINT("  with %d lines of %d fields using quote rule %d\n", topNumLines, topNumFields, topQuoteRule);
@@ -1550,17 +1553,16 @@ int freadMain(freadMainArgs _args) {
       // choose quote rule 0 or 1 based on for which 100 rows gets furthest into file
       firstJumpEnd = pos;  // initialize at the begining so that first > works
       for (quoteRule=0; quoteRule<=1; quoteRule++) {
-        int thisRow = 0;
-        while (ch<eof && ++thisRow<jumpLines) {
-          int thisncol = countfields(&ch);
-          if (thisncol<0) break;  // invalid file; but can't imagine how this would happen in this case
-        }
+        int thisRow=0, thisncol=0;
+        ch = pos;
+        while (ch<eof && ++thisRow<jumpLines && (thisncol=countfields(&ch))>=0) {};
+        if (thisncol<0) continue;  // invalid file; e.g. unescaped quote inside quoted field
         if (ch > firstJumpEnd) {
           firstJumpEnd = ch;
           topQuoteRule = quoteRule;
         }
       }
-      ASSERT(topQuoteRule>=0 || firstJumpEnd, "Internal error: single column input did not choose quote rule: %d %d", topQuoteRule, sep);
+      if (!firstJumpEnd) STOP("Single column input contains invalid quotes. Self healing only possible when ncol>1");
     }
 
 
@@ -1725,7 +1727,6 @@ int freadMain(freadMainArgs _args) {
       // leave pos on the first populated line; that is start of data
       ch = pos;
     } else {
-      // TODO: find prevStart
       ch = pos = topStart;
     }
   }
