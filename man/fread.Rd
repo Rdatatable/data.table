@@ -9,7 +9,7 @@
    `fread` is for \emph{regular} delimited files; i.e., where every row has the same number of columns. In future, secondary separator (\code{sep2}) may be specified \emph{within} each column. Such columns will be read as type \code{list} where each cell is itself a vector.
 }
 \usage{
-fread(input, file, sep="auto", sep2="auto", dec=".", quote="\"",
+fread(input, file, text=NULL, sep="auto", sep2="auto", dec=".", quote="\"",
 nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"),  # due to change to ""; see NEWS
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose", FALSE),
@@ -28,12 +28,13 @@ autostart=NA
 }
 \arguments{
   \item{input}{ Either the file name to read (containing no \\n character), a shell command that pre-processes the file (e.g. \code{fread("grep blah filename"))} or the input itself as a string (containing at least one \\n), see examples. In both cases, a length 1 character string. A filename input is passed through \code{\link[base]{path.expand}} for convenience. \code{input} can also be a URL starting with http:// or file://; see Details. }
+  \item{file}{ File path, useful when we want to ensure that no shell commands will be executed. File path can also be provided to \code{input} argument. }
+  \item{text}{As in \code{\link[utils]{read.table}}, the input itself as a string. Useful if the algorithm to determine whether \code{input} is a file is expensive.}
   \item{sep}{ The separator between columns. Defaults to the character in the set \code{[,\\t |;:]} that separates the sample of rows into the most number of lines with the same number of fields. Use \code{NULL} or \code{""} to specify no separator; i.e. each line a single character column like \code{base::readLines} does.}
   \item{sep2}{ The separator \emph{within} columns. A \code{list} column will be returned where each cell is a vector of values. This is much faster using less working memory than \code{strsplit} afterwards or similar techniques. For each column \code{sep2} can be different and is the first character in the same set above [\code{,\\t |;}], other than \code{sep}, that exists inside each field outside quoted regions in the sample. NB: \code{sep2} is not yet implemented. }
   \item{nrows}{ The maximum number of rows to read. Unlike \code{read.table}, you do not need to set this to an estimate of the number of rows in the file for better speed because that is already automatically determined by \code{fread} almost instantly using the large sample of lines. `nrows=0` returns the column names and typed empty columns determined by the large sample; useful for a dry run of a large file or to quickly check format consistency of a set of files before starting to read any of them. }
   \item{header}{ Does the first data line contain column names? Defaults according to whether every non-empty field on the first data line is type character. If so, or TRUE is supplied, any empty column names are given a default name. }
   \item{na.strings}{ A character vector of strings which are to be interpreted as \code{NA} values. By default, \code{",,"} for columns of all types, including type `character` is read as \code{NA} for consistency. \code{,"",} is unambiguous and read as an empty string. To read \code{,NA,} as \code{NA}, set \code{na.strings="NA"}. To read \code{,,} as blank string \code{""}, set \code{na.strings=NULL}. When they occur in the file, the strings in \code{na.strings} should not appear quoted since that is how the string literal \code{,"NA",} is distinguished from \code{,NA,}, for example, when \code{na.strings="NA"}. }
-  \item{file}{ File path, useful when we want to ensure that no shell commands will be executed. File path can also be provided to \code{input} argument. }
   \item{stringsAsFactors}{ Convert all character columns to factors? }
   \item{verbose}{ Be chatty and report timings? }
   \item{skip}{ If 0 (default) start on the first line and from there finds the first row with a consistent number of columns. This automatically avoids irregular header information before the column names row. \code{skip>0} means ignore the first \code{skip} rows manually. \code{skip="string"} searches for \code{"string"} in the file (e.g. a substring of the column names row) and starts on that line (inspired by read.xls in package gdata). }

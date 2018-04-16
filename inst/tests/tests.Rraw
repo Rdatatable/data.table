@@ -9529,6 +9529,8 @@ if (.Platform$OS.type=="unix") {
   test(1703.1, fread(cmd), data.table(a=4L, b=2L))
   test(1703.2, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
   unlink(f)
+  # Test 'text' argument
+  test(1703.4, x=fread(text = "https://example.com,A\na,b"), data.table(`https://example.com`='a', A='b'))
 }
 
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
@@ -11640,7 +11642,7 @@ src = '"C\\\\D"\nAB\\x20CD\\n\n"\\"one\\", \\\'two\\\', three"\n"\\r\\t\\v\\a\\b
 test(1902, fread(src, verbose=TRUE),
            data.table("C\\\\D"=c("AB\\x20CD\\n", "\\\"one\\\", \\'two\\', three", "\\r\\t\\v\\a\\b\\071\\uABCD")),
            output="Quote rule picked = 1")
-           
+
 # logical01 caused column names not be detected if logical column determines it, #2735
 test(1903.1, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=FALSE), data.table(V1=1:3, A=INT(0,0,1), B=1L))
 test(1903.2, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=TRUE), data.table(V1=1:3, A=c(FALSE,FALSE,TRUE), B=TRUE))

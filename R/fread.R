@@ -1,5 +1,5 @@
 
-fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings=getOption("datatable.na.strings","NA"),stringsAsFactors=FALSE,verbose=getOption("datatable.verbose",FALSE),skip="__auto__",select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64","integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL, showProgress=interactive(), data.table=getOption("datatable.fread.datatable",TRUE), nThread=getDTthreads(), logical01=getOption("datatable.logical01", FALSE), autostart=NA)
+fread <- function(input="",file,text=NULL,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings=getOption("datatable.na.strings","NA"),stringsAsFactors=FALSE,verbose=getOption("datatable.verbose",FALSE),skip="__auto__",select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64","integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL, showProgress=interactive(), data.table=getOption("datatable.fread.datatable",TRUE), nThread=getDTthreads(), logical01=getOption("datatable.logical01", FALSE), autostart=NA)
 {
   if (is.null(sep)) sep="\n"         # C level knows that \n means \r\n on Windows, for example
   else {
@@ -29,6 +29,9 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
     if (!file.exists(file)) stop("File '",file,"' does not exist.")
     if (isTRUE(file.info(file)$isdir)) stop("File '",file,"' is a directory. Not yet implemented.") # dir.exists() requires R v3.2+, #989
     input = file
+  } else if (!is.null(text)) {
+    if (!identical(input, "")) stop("You can provide 'input=' or 'text=', not both.")
+    input = text
   } else {
     if (!is.character(input) || length(input)!=1L) {
       stop("'input' must be a single character string containing a file name, a system command containing at least one space, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or, the input data itself containing at least one \\n or \\r")
