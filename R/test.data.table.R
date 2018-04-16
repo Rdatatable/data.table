@@ -127,6 +127,8 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     # console output is captured. \r seems especially prone to not being auto flushed. The downside is that the last 13
     # lines output are filled with the last 13 "running test num" lines rather than the last error output, but that's
     # better than the dev-time-lost when it crashes and it actually crashed much later than the last test number visible.
+  } else {
+    memtest = FALSE
   }
 
   if (!missing(error) && !missing(y)) stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")

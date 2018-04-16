@@ -1429,6 +1429,7 @@ int freadMain(freadMainArgs _args) {
     int nseps;
     char seps[]=",|;\t ";  // default seps in order of preference. See ?fread.
                            // seps[] not *seps for writeability (http://stackoverflow.com/a/164258/403310)
+    char topSep=127;       // which sep 'wins' top place (see top* below). By default 127 (ascii del) means no sep i.e. single-column input (1 field)
     if (args.sep == '\0') {
       if (verbose) DTPRINT("  Detecting sep automatically ...\n");
       nseps = (int) strlen(seps);
@@ -1436,16 +1437,17 @@ int freadMain(freadMainArgs _args) {
       seps[0] = args.sep;
       seps[1] = '\0';
       nseps = 1;
+      //topSep = args.sep;
       if (verbose) DTPRINT("  Using supplied sep '%s'\n", args.sep=='\t' ? "\\t" : seps);
     }
-
     int topNumLines=0;        // the most number of lines with the same number of fields, so far
     int topNumFields=1;       // how many fields that was, to resolve ties
-    char topSep=127;          // which sep that was, by default 127 (ascii del) means no sep i.e. single-column input (1 field)
     int topQuoteRule=-1;      // which quote rule that was
-    int topNmax=1;            // for that sep and quote rule, what was the max number of columns (just for fill=true)
+    // int topNmax=1;            // for that sep and quote rule, what was the max number of columns (just for fill=true)
                               //   (when fill=true, the max is usually the header row and is the longest but there are more
                               //    lines of fewer)
+    // bool topNeedsFill=true;
+    const char *topStart=NULL;
 
     // We will scan the input line-by-line (at most 100+1 lines; "+1"
     // covers the header row, at this stage we don't know if it's present), and
@@ -1457,42 +1459,228 @@ int freadMain(freadMainArgs _args) {
     // `numLines` has the number of lines in each group. There is always a lot
     // of unused space at the end of these vectors. They are only jumpLines+1 big
     // for the worst case that no adjacent lines have the same number of fields.
-    int numFields[jumpLines+1];
-    int numLines[jumpLines+1];
-    for (int s=0; s<nseps; s++) {
-      sep = seps[s];
-      whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));  // 0 means both ' ' and '\t' to be skipped
-      for (quoteRule=0; quoteRule<4; quoteRule++) {  // quote rule in order of preference
+    //int numFields[jumpLines+1];
+    //int numLines[jumpLines+1];
+    for (quoteRule=0; quoteRule<4; quoteRule++) {  // quote rule in order of preference
+      for (int s=0; s<nseps; s++) {
+        sep = seps[s];
+        whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));  // 0 means both ' ' and '\t' to be skipped
         ch = pos;
         // if (verbose) DTPRINT("  Trying sep='%c' with quoteRule %d ...\n", sep, quoteRule);
-        for (int i=0; i<=jumpLines; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
-        int i=-1; // The slot we're counting the currently contiguous consistent ncol
-        int thisLine=0, lastncol=-1;
-        while (ch<eof && thisLine++<jumpLines) {
-          int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
-          if (thisncol<0) { numFields[0]=-1; break; }  // invalid file with this sep and quote rule; abort
-          if (thisncol!=lastncol) {
-            if (!skipAuto && i==0) break;  // biggest contiguous group always starting on the line skip= landed on
-            // else new contiguous consistent ncol started
-            numFields[++i]=thisncol;
-            lastncol=thisncol;
+        //DELETE ... for (int i=0; i<=jumpLines; i++) { numFields[i]=0; numLines[i]=0; } // clear VLAs
+        //DELETE ... int i=-1; // The slot we're counting the currently contiguous consistent ncol
+
+        if (fill) {
+          if (quoteRule>1) continue;  // turn off self-healing quote rules when filling
+          bool updated = false;
+          int thisRow = 0;
+          while (ch<eof && ++thisRow<jumpLines) {   // TODO: rename 'jumpLines' to 'jumpRows'
+            int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
+            if (thisncol<0) break;             // invalid file with this sep and quote rule
+            if (thisncol>topNumFields) {
+              topNumFields = thisncol;
+              topSep = sep;
+              topQuoteRule = quoteRule;
+              updated = true;
+            }
           }
-          numLines[i]++;
+          if (updated) {
+            firstJumpEnd = ch;  // to know how many bytes jump 0 is, for nrow estimate later
+            if (verbose) {
+              DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep);
+              DTPRINT("  with %d fields on row %d using quote rule %d\n", topNumFields, thisRow, topQuoteRule);
+            }
+          }
+        } else {
+
+          int thisRow=0;
+          int lastncol = countfields(&ch);
+          if (lastncol<0) continue;  // -1 means it's invalid file with this sep and quote rule
+          ASSERT(lastncol>0, "Internal error: first non-empty row should always be at least one field; %c %d", sep, quoteRule);
+          const char *thisBlockStart=pos;
+          //int nrowBlock=0;
+          int thisBlockLines=1;
+
+          while (ch<eof && ++thisRow<jumpLines) {
+            const char *lineStart = ch;  // TODO: prevStart can come from here
+            int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
+            if (thisncol<0) { /*numFields[0]=-1;*/ break; }  // invalid file with this sep and quote rule; abort
+            if (thisncol==lastncol) {
+              thisBlockLines++;
+              continue;
+            }
+            if ((lastncol>1 && thisBlockLines>1) || !skipAuto) break;
+            while (ch<eof && thisncol==0) thisncol = countfields(&ch);
+            if (thisncol>0) {
+              lastncol = thisncol;
+              thisBlockLines = 1;
+              thisBlockStart = lineStart;
+            }
+          }
+          if ((thisBlockLines>topNumLines && lastncol>1) ||   // more lines wins even if fewer fields so long as number of fields>=2
+              (thisBlockLines==topNumLines && lastncol>topNumFields && (topNumFields<=1 || sep!=' '))) {
+            topNumLines = thisBlockLines;
+            topNumFields = lastncol;
+            topSep = sep;
+            topQuoteRule = quoteRule;
+            firstJumpEnd = ch;
+            topStart = thisBlockStart;
+            if (verbose) {
+              DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep);
+              DTPRINT("  with %d lines of %d fields using quote rule %d\n", topNumLines, topNumFields, topQuoteRule);
+            }
+          }
         }
-        if (numFields[0]==-1) continue;
+      }
+    }
+    if (!firstJumpEnd) {
+      // no sep won, so single column input
+      topNumFields = 1;
+      ASSERT(topSep==127, "Single column input has topSep=%d", topSep);
+      sep = topSep;
+      // no self healing quote rules, as we don't have >1 field to disambiguate
+      // choose quote rule 0 or 1 based on for which 100 rows gets furthest into file
+      firstJumpEnd = pos;  // initialize at the begining so that first > works
+      for (quoteRule=0; quoteRule<=1; quoteRule++) {
+        int thisRow = 0;
+        while (ch<eof && ++thisRow<jumpLines) {
+          int thisncol = countfields(&ch);
+          if (thisncol<0) break;  // invalid file; but can't imagine how this would happen in this case
+        }
+        if (ch > firstJumpEnd) {
+          firstJumpEnd = ch;
+          topQuoteRule = quoteRule;
+        }
+      }
+      ASSERT(topQuoteRule>=0 || firstJumpEnd, "Internal error: single column input did not choose quote rule: %d %d", topQuoteRule, sep);
+    }
+
+
+          //topNeedsFill = needsFill;
+          // topNmax = nmax;  // TODO: DELETE topNmax!!   //numFields[i];
+          //while (--i>=0) if (numFields[i]>topNmax) topNmax = numFields[i];  // for fill=true to know ncol
+  /*        firstJumpEnd = ch;  // So that after the header we know how many bytes jump point 0 is
+          updated = true;
+
+
+              } else if (!skipAuto) {
+                break;  // biggest contiguous group always starting on the line skip= landed on
+              }
+              // else new contiguous consistent ncol started
+              numFields[++i]=thisncol;
+
+              lastncol = thisncol;
+              thisBlockLines = 1;
+              thisBlock = lineStart;
+            }
+            if (++numLines[i]>1 && numFields[i]>1 && firstBlock==NULL) {
+              firstBlock=thisBlock;
+            }
+        }
+ */
+        /*
+        if (numFields[0]==-1) continue; // if any line failed (outside biggest contiguous block) then don't choose this sep or quote rule
         if (firstJumpEnd==NULL) firstJumpEnd=ch;  // if this wins (doesn't get updated), it'll be single column input
         // Even if numFields[i]==1 for all sep/QR combos, we still want to know which quote rule was able to parse the input correctly
         if (topQuoteRule<0) topQuoteRule = quoteRule;
         bool updated=false;
-        int nmax=0;
 
+        // numLines and numFields now holds profile of first 100 lines
+        int nmax=0;
+        // choose the sep and quote rule ... has the largest contiguous block that reached the end of the first 100 lines
+        if (!fill) {
+          // ... for which the first contiguous block with ncol>1 and nrow>1 is maximised
+          int wm=0, tt=0;
+          while (tt<=i) {
+            if (numFields[tt]>1 && numLines[tt]>1) {
+              wm=tt;
+              break;
+            }
+            tt++;
+          }
+          i=wm;
+          nmax = numFields[i];
+          updated =
+            nmax > 1 &&  //topNumFields &&
+            (numLines[i]>topNumLines ||
+             (numLines[i]==topNumLines && nmax>topNumFields && (topNumFields<=1 || sep!=' ')));
+        } else {
+          if (quoteRule > 1) continue; // turn off self-healing quote rules when filling
+          // maybe choose the least i; i.e. the quote rule which has the least number of different contiguous blocks
+          nmax = numFields[0];
+          int tt = 1;
+          while (tt<=i) if (numFields[tt]>nmax) { nmax=numFields[tt]; }
+          updated = nmax>topNumFields;
+        }
+        */
+
+        // find the max(numFields). Header row. Does it reach the end?
+        /*
+        int iend = i;
+        int wm = i;
+        int nmax = numFields[i];
+        while (--i>=0) if (numFields[i]>=nmax) { wm=i; nmax=numFields[i]; }
+        i = wm;
+        int oklinesafter = 0;
+        while (i<=iend && numFields[i]<=nmax) {oklinesafter += numLines[i]; i++; }
+        bool needsFill= i>wm+1;
+        */
+
+        //if (nmax > 1 &&  //topNumFields &&
+        //    (numLines[i]>topNumLines ||
+        //     (numLines[i]==topNumLines && nmax>topNumFields && (topNumFields<=1 || sep!=' '))))  {
+/*
+        if (updated) {
+          topNumLines = numLines[i];
+          topNumFields = nmax;
+          topSep = sep;
+          topQuoteRule = quoteRule;
+          //topNeedsFill = needsFill;
+          // topNmax = nmax;  // TODO: DELETE topNmax!!   //numFields[i];
+          //while (--i>=0) if (numFields[i]>topNmax) topNmax = numFields[i];  // for fill=true to know ncol
+          firstJumpEnd = ch;  // So that after the header we know how many bytes jump point 0 is
+          updated = true;
+        }
+*/
+/*
+   //     while (ch<eof && *ch<33) ch++;  // skip whitespace (if any) after first 100 lines
+   //     if (ch==eof) {
+          if (i>0 && numFields[i]==0) i--;  // blank lines at the end of file
+          if (i>0 && numLines[i]==1) {
+            // skip one-line footer in short files with under 100 lines
+            i--;
+            if (i>0 && numFields[i]==0) {
+              i--;  // blank lines before footer
+            }
+          }
+          */
+        /*} else {
+          // Normally thisLine==jumpLines
+          // otherwise if (thisLines<jumpLines) we may have reached a blank line causing thisLines<jumpLines; e.g. test 977
+        }*/
+/*
+        if (numFields[i]>1 &&
+            (numLines[i]>topNumLines ||
+             (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=' '))) {     // && sep!=topSep
+            //                                                            ^^ test 1555.4
+          topNumLines = numLines[i];
+          topNumFields = numFields[i];
+          topSep = sep;
+          topQuoteRule = quoteRule;
+          topNmax = numFields[i];
+          while (--i>=0) if (numFields[i]>topNmax) topNmax = numFields[i];  // for fill=true to know ncol
+          firstJumpEnd = ch;  // So that after the header we know how many bytes jump point 0 is
+          updated = true;
+        }
+*/
+        /*
         i = -1;
         while (numLines[++i]) {
           if (numFields[i] > nmax) nmax=numFields[i];  // for fill=true to know max number of columns
           // if (verbose) DTPRINT("numLines[i]=%d, topNumLines=%d, numFields[i]=%d, topNumFields=%d\n",
           //                       numLines[i], topNumLines, numFields[i], topNumFields);
           if ( numFields[i]>1 &&
-              (numLines[i]>1 || (/*blank line after single line*/numFields[i+1]==0)) &&
+              //  (numLines[i]>1 || (blank line after single linenumFields[i+1]==0)) &&
               ((numLines[i]>topNumLines) ||   // most number of consistent ncol wins
                (numLines[i]==topNumLines && numFields[i]>topNumFields && sep!=topSep && sep!=' '))) {
                //                                       ^ ties in numLines resolved by numFields (more fields win)
@@ -1508,34 +1696,51 @@ int freadMain(freadMainArgs _args) {
             // updated flag is just to print once.
           }
         }
-        if (verbose && updated) {
-          DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep);
-          DTPRINT("  with %d lines of %d fields using quote rule %d\n", topNumLines, topNumFields, topQuoteRule);
-        }
-      }
-    }
-    if (!firstJumpEnd) STOP("Internal error: no sep won");
-    if (topQuoteRule < 0) STOP("Quote rule never updated");
+        */
+        //if (verbose && updated) {
+        //  DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep);
+        //  DTPRINT("  with %d lines of %d fields using quote rule %d\n", topNumLines, topNumFields, topQuoteRule);
+        //}
+
+    // if (!firstJumpEnd) STOP("Internal error: no sep won");
+    // if (topQuoteRule < 0) STOP("Quote rule never updated");
     quoteRule = topQuoteRule;
+    if (quoteRule>1) {
+      DTWARN("Found and resolved improper quoting in first %d rows.", jumpLines);
+      // TODO: include line number and text in warning, somehow. Could loop again with the standard quote rule to find the line that fails.
+    }
     sep = topSep;
     whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
-    ch = pos;
+    ncol = topNumFields;  //Nmax;
+
+    if (fill || !skipAuto || sep==127) {
+      // leave pos on the first populated line; that is start of data
+      ch = pos;
+    } else {
+      // TODO: find prevStart
+      ch = pos = topStart;
+    }
+  }
+ /*
     if (fill || !skipAuto) {
       // start input from first populated line, already pos.
-      ncol = topNmax;
+      ch = pos;
     } else {
       // find the top line with the consistent number of fields.  There might be irregular banner lines above it (skip="auto")
       ncol = topNumFields;
-      int thisLine=-1;
-      while (ch<eof && ++thisLine<jumpLines) {
-        const char *lastLineStart = ch;
-        int tt = countfields(&ch);
-        if (tt==ncol) { ch=pos=lastLineStart; row1line+=thisLine; break; }
-        else prevStart = (tt>0 ? lastLineStart : NULL);
-      }
+      ch = pos = firstBlock;
+      // TODO warning about removing header
+
+      //int thisLine=-1;
+      //while (ch<eof && ++thisLine<jumpLines) {
+      //  const char *lastLineStart = ch;
+      //  int tt = countfields(&ch);
+      //  if (tt==ncol) { ch=pos=lastLineStart; row1line+=thisLine; break; }
+      //  else prevStart = (tt>0 ? lastLineStart : NULL);
+      //}
     }
-  }
-  // For standard regular separated files, we're now on the first byte of the file.
+  }*/
+
   if (ncol<1 || row1line<1) STOP("Internal error: ncol==%d line==%d after detecting sep, ncol and first line", ncol, row1line);
   int tt = countfields(&ch);
   ch = pos; // move back to start of line since countfields() moved to next
@@ -1701,7 +1906,7 @@ int freadMain(freadMainArgs _args) {
     if (verbose) DTPRINT("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names.", tt);
     if (tt<ncol) {
       autoFirstColName = (tt==ncol-1);
-      DTWARN("Detected %d column names but the data has %d columns (i.e. an invalid file format). Added %d extra default column name%s\n", tt, ncol, ncol-tt,
+      DTWARN("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column name%s\n", tt, ncol, ncol-tt,
              autoFirstColName ? " for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file." : "s at the end.");
     } else if (tt>ncol) {
       if (fill) STOP("Internal error: fill=true but there is a previous row which should already have been filled.");
@@ -2379,7 +2584,7 @@ int freadMain(freadMainArgs _args) {
     }
   }
   if (quoteRuleBumpedCh!=NULL && quoteRuleBumpedCh<headPos) {
-    DTWARN("Found and resolved improper quoting. First healed line %llu: <<%s>>", (llu)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
+    DTWARN("Found and resolved improper quoting out-of-sample. First healed line %llu: <<%s>>", (llu)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
   }
 
   if (verbose) {
