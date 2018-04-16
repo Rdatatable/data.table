@@ -9534,6 +9534,10 @@ if (.Platform$OS.type=="unix") {
   # errors
   test(1703.5, x=fread(input = "A,B", text = "A,B"), error="You can provide 'input=' or 'text=', not both.")
   test(1703.6, x=fread(file = "A,B", text = "A,B"), error="You can provide 'file=' or 'text=', not both.")
+  # Zero-length text
+  test(1703.7, x=fread(text = character(0)), y=data.table())
+  # Multi-length text
+  text(1703.8, x=fread(text = c("A B", "C D"), sep = " ", data.table=FALSE), y=read.table(text = c("A B", "C D"), as.is = TRUE, header = TRUE))
 }
 
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
