@@ -7105,7 +7105,7 @@ test(1545.32, .shallow(x1, cols = c("a1", "a2", "a3"), retain.key=TRUE), .shallo
 
 
 # test for #1234
-df1 = df2 = data.frame(cats = rep(c('', ' ',  'meow'), 5))
+df1 = df2 = data.frame(cats = rep(c('', ' ',  'meow'), 5), stringsAsFactors = TRUE)
 df2[grep("^[ ]*$", df2$cats), "cats"] = NA_integer_
 test(1546, set(df1, grep("^[ ]*$", df1$cats), 1L, NA_integer_), df2)
 
