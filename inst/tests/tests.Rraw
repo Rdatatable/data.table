@@ -9531,6 +9531,9 @@ if (.Platform$OS.type=="unix") {
   unlink(f)
   # Test 'text' argument
   test(1703.4, x=fread(text = "https://example.com,A\na,b"), data.table(`https://example.com`='a', A='b'))
+  # errors
+  test(1703.5, x=fread(input = "A,B", text = "A,B"), error="You can provide 'input=' or 'text=', not both.")
+  test(1703.6, x=fread(file = "A,B", text = "A,B"), error="You can provide 'file=' or 'text=', not both.")
 }
 
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
