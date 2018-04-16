@@ -26,6 +26,7 @@ fread <- function(input="",file,text=NULL,sep="auto",sep2="auto",dec=".",quote="
   stopifnot(nThread>=1L)
   if (!missing(file)) {
     if (!identical(input, "")) stop("You can provide 'input=' or 'file=', not both.")
+    if (!is.null(text)) stop("You can provide 'file=' or 'text=', not both.")
     if (!file.exists(file)) stop("File '",file,"' does not exist.")
     if (isTRUE(file.info(file)$isdir)) stop("File '",file,"' is a directory. Not yet implemented.") # dir.exists() requires R v3.2+, #989
     input = file
