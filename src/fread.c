@@ -1472,23 +1472,25 @@ int freadMain(freadMainArgs _args) {
 
         if (fill) {
           if (quoteRule>1) continue;  // turn off self-healing quote rules when filling
-          bool updated = false;
           int thisRow = 0;
+          int firstRowNcol = countfields(&ch);  // maximize first row numfields, so long as rest of file parses ok too
+          int thisncol = 0, maxncol = firstRowNcol;
           while (ch<eof && ++thisRow<jumpLines) {   // TODO: rename 'jumpLines' to 'jumpRows'
-            int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
-            if (thisncol<0) break;             // invalid file with this sep and quote rule
-            if (thisncol>topNumFields) {
-              topNumFields = thisncol;
-              topSep = sep;
-              topQuoteRule = quoteRule;
-              updated = true;
-            }
+            thisncol = countfields(&ch);
+            if (thisncol<0) break;
+            if (thisncol>maxncol) maxncol=thisncol;
           }
-          if (updated) {
+          if (thisncol<0) continue;
+          //if (firstRowNcol >= maxncol &&
+          //    firstRowNcol > topNumFields) {
+          if (firstRowNcol>1 && maxncol>topNumFields) {
+            topNumFields = maxncol; //firstRowNcol;
+            topSep = sep;
+            topQuoteRule = quoteRule;
             firstJumpEnd = ch;  // to know how many bytes jump 0 is, for nrow estimate later
             if (verbose) {
               DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep);
-              DTPRINT("  with %d fields on row %d using quote rule %d\n", topNumFields, thisRow, topQuoteRule);
+              DTPRINT("  with %d fields using quote rule %d\n", topNumFields, quoteRule);
             }
           }
         } else {
