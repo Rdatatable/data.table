@@ -24,7 +24,8 @@ grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P 
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" ./
 
 # Ensure no calls to omp_set_num_threads() [to avoid affecting other packages and base R]
-grep --exclude="./src/openmp-utils.c" omp_set_num_threads ./src/*
+# Only comments referring to it should be in openmp-utils.c
+grep omp_set_num_threads ./src/*
 
 # Ensure no calls to omp_get_max_threads() also since access should be via getDTthreads()
 grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*
@@ -146,6 +147,7 @@ test.data.table()
 #  valgrind
 ###############################################
 
+# TODO: compile R with --with-valgrind-instrumentation=2 too as per R-exts$4.3.2
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
 R --vanilla CMD INSTALL data.table_1.10.5.tar.gz
 R -d "valgrind --tool=memcheck --leak-check=full --show-leak-kinds=definite" --vanilla
@@ -154,6 +156,7 @@ require(bit64)
 test.data.table()
 
 gctorture(TRUE)   # very very slow, though. Don't run with suggests tests.
+gctorture2(step=100)
 test.data.table()
 
 # Investigated and ignore :
@@ -168,9 +171,9 @@ test.data.table()
 vi ~/.R/Makevars  # make the -O3 line active again
 
 
-###############################################
-#  R-devel with UBSAN and ASAN on too
-###############################################
+#####################################################
+#  R-devel with UBSAN, ASAN and strict-barrier on too
+#####################################################
 
 cd ~/build
 wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
@@ -179,11 +182,13 @@ tar xvf R-devel.tar.gz
 cd R-devel
 # Following R-exts#4.3.3
 
-## 64bit (normal)
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
-##
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
+# For ubsan, disabled openmp otherwise gcc fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel
+# UBSAN gives direct line number under gcc but not clang it seems. clang-5.0 has been helpful too, though.
+# If use later gcc-8, add F77=gfortran-8
+# LIBS="-lpthread" otherwise ld error about DSO missing
 
-## 32bit on 64bit Ubuntu (for tracing any 32bit-only Rdevel-only problems)
+## Rarely needed: 32bit on 64bit Ubuntu for tracing any 32bit-only problems
 dpkg --add-architecture i386
 apt-get update
 apt-get install libc6:i386 libstdc++6:i386 gcc-multilib g++-multilib gfortran-multilib libbz2-dev:i386 liblzma-dev:i386 libpcre3-dev:i386 libcurl3-dev:i386 libstdc++-7-dev:i386
@@ -191,12 +196,7 @@ sudo apt-get purge libcurl4-openssl-dev    # cannot coexist, it seems
 sudo apt-get install libcurl4-openssl-dev:i386
 cd ~/build/32bit/R-devel
 ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --without-readline --without-x CC="gcc -m32" CXX="g++ -m32" F77="gfortran -m32" FC=${F77} OBJC=${CC} LDFLAGS="-L/usr/local/lib" LIBnn=lib LIBS="-lpthread" CFLAGS="-O0 -g -Wall -pedantic"
-##
 
-# For ubsan, disabled openmp otherwise gcc fails in R's distance.c:256 error: ‘*.Lubsan_data0’ not specified in enclosing parallel
-# UBSAN gives direct line number under gcc but not clang it seems. clang-5.0 has been helpful too, though.
-# If use later gcc-8, add F77=gfortran-8
-# LIBS="-lpthread" otherwise ld error about DSO missing
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 Rdevel CMD INSTALL data.table_1.10.5.tar.gz

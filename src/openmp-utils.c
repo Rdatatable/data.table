@@ -22,14 +22,33 @@ static int DTthreads = 0;
 
 int getDTthreads() {
 #ifdef _OPENMP
-  int ans = DTthreads == 0 ? omp_get_max_threads() : MIN(DTthreads, omp_get_max_threads());
-  return MAX(1, ans);
+  int ans = omp_get_max_threads();
+  if (ans>1024) {
+    warning("omp_get_max_threads() has returned %d. This is unreasonably large. Applying hard limit of 1024. Please check OpenMP environment variables and other packages using OpenMP to see where this very large number has come from. Try getDTthreads(verbose=TRUE).", ans);
+    // to catch INT_MAX for example, which may be the case if user or another package has called omp_set_num_threads(omp_get_thread_limit())
+    // 1024 is a reasonable hard limit based on a comfortable margin above the most number of CPUs in one server I have heard about
+    ans=1024;
+  }
+  if (DTthreads>0 && DTthreads<ans) ans = DTthreads;
+  if (ans<1) ans=1;
+  return ans;
 #else
   return 1;
 #endif
 }
 
-SEXP getDTthreads_R() {
+SEXP getDTthreads_R(SEXP verbose) {
+  // verbose checked at R level
+  if (!isLogical(verbose) || LENGTH(verbose)!=1 || INTEGER(verbose)[0]==NA_LOGICAL) error("'verbose' must be TRUE or FALSE");
+  if (LOGICAL(verbose)[0]) {
+    Rprintf("omp_get_max_threads() = %d\n", omp_get_max_threads());
+    Rprintf("omp_get_thread_limit() = %d\n", omp_get_thread_limit()); // can be INT_MAX meaning unlimited
+    Rprintf("DTthreads = %d\n", DTthreads);
+    #ifndef _OPENMP
+      Rprintf("This installation of data.table has not been compiled with OpenMP support.\n");
+      // the omp_ functions used above are defined in myomp.h to be 1 in this case
+    #endif
+  }
   return ScalarInteger(getDTthreads());
 }
 
@@ -41,18 +60,13 @@ SEXP setDTthreads(SEXP threads) {
   }
   int old = DTthreads;
   DTthreads = INTEGER(threads)[0];
-#ifdef _OPENMP
-  if (omp_get_max_threads() < omp_get_thread_limit()) {
-    if (DTthreads==0) {
-      // for example after test 1705 has auto switched to single-threaded for parallel's fork,
-      // we want to return to multi-threaded.
-      // omp_set_num_threads() sets the value returned by omp_get_max_threads()
-      omp_set_num_threads(omp_get_thread_limit());
-    } else if (DTthreads > omp_get_max_threads()) {
-      omp_set_num_threads( MIN(DTthreads, omp_get_thread_limit()) );
-    }
-  }
-#endif
+
+  // Do not call omp_set_num_threads() here, and particularly not to omp_get_thread_limit()
+  // which is likely INT_MAX (unlimited). Any calls to omp_set_num_threads() affect other
+  // packages and R itself too which has some OpenMP usage. Instead we set our own DTthreads
+  // static global variable, read that from getDTthreads() and ensure num_threads(getDTthreads())
+  // directive is always present via the grep in CRAN_Release.cmd.
+
   return ScalarInteger(old);
 }
 
