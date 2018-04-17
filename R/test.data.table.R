@@ -128,7 +128,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     # lines output are filled with the last 13 "running test num" lines rather than the last error output, but that's
     # better than the dev-time-lost when it crashes and it actually crashed much later than the last test number visible.
   } else {
-    memtest = FALSE
+    memtest = FALSE   # nocov
   }
 
   if (!missing(error) && !missing(y)) stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")
