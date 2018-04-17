@@ -10,6 +10,8 @@ init:
 install:
   ps: Bootstrap
 
+skip_branch_with_pr: true
+
 environment:
   global:
     CRAN: http://cloud.r-project.org/
