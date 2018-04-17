@@ -1,5 +1,5 @@
-rollmean <- function(x, k, fill=NA_real_) {
-    ans = .Call(Crollmean, x, as.integer(k), fill, PACKAGE="data.table")
-    ans
+rollmean <- function(x, n, fill=NA) {
+  ans = .Call(Crollmean, x, as.integer(n), as.double(fill), PACKAGE="data.table")
+  ans
 }
 
