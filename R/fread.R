@@ -1,5 +1,5 @@
 
-fread <- function(input="",file,text=NULL,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings=getOption("datatable.na.strings","NA"),stringsAsFactors=FALSE,verbose=getOption("datatable.verbose",FALSE),skip="__auto__",select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64","integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL, showProgress=interactive(), data.table=getOption("datatable.fread.datatable",TRUE), nThread=getDTthreads(), logical01=getOption("datatable.logical01", FALSE), autostart=NA)
+fread <- function(input="",file,text,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings=getOption("datatable.na.strings","NA"),stringsAsFactors=FALSE,verbose=getOption("datatable.verbose",FALSE),skip="__auto__",select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64","integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL, showProgress=interactive(), data.table=getOption("datatable.fread.datatable",TRUE), nThread=getDTthreads(), logical01=getOption("datatable.logical01", FALSE), autostart=NA)
 {
   if (is.null(sep)) sep="\n"         # C level knows that \n means \r\n on Windows, for example
   else {
@@ -26,11 +26,11 @@ fread <- function(input="",file,text=NULL,sep="auto",sep2="auto",dec=".",quote="
   stopifnot(nThread>=1L)
   if (!missing(file)) {
     if (!identical(input, "")) stop("You can provide 'input=' or 'file=', not both.")
-    if (!is.null(text)) stop("You can provide 'file=' or 'text=', not both.")
+    if (!missing(text)) stop("You can provide 'file=' or 'text=', not both.")
     if (!file.exists(file)) stop("File '",file,"' does not exist.")
     if (isTRUE(file.info(file)$isdir)) stop("File '",file,"' is a directory. Not yet implemented.") # dir.exists() requires R v3.2+, #989
     input = file
-  } else if (!is.null(text)) {
+  } else if (!missing(text)) {
     if (!identical(input, "")) stop("You can provide 'input=' or 'text=', not both.")
     if (!is.character(text)) stop("'text' had type ", typeof(text), ", but must be character.")
     if (!length(text)) return(data.table())

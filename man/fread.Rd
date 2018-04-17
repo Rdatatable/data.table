@@ -9,7 +9,7 @@
    `fread` is for \emph{regular} delimited files; i.e., where every row has the same number of columns. In future, secondary separator (\code{sep2}) may be specified \emph{within} each column. Such columns will be read as type \code{list} where each cell is itself a vector.
 }
 \usage{
-fread(input, file, text=NULL, sep="auto", sep2="auto", dec=".", quote="\"",
+fread(input, file, text, sep="auto", sep2="auto", dec=".", quote="\"",
 nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"),  # due to change to ""; see NEWS
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose", FALSE),
