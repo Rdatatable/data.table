@@ -1448,6 +1448,7 @@ int freadMain(freadMainArgs _args) {
                               //    lines of fewer)
     // bool topNeedsFill=true;
     const char *topStart=NULL;
+    int topSkip=0;
 
     // We will scan the input line-by-line (at most 100+1 lines; "+1"
     // covers the header row, at this stage we don't know if it's present), and
@@ -1507,7 +1508,7 @@ int freadMain(freadMainArgs _args) {
             // prevLine`const char lineStart = ch, *thisBlockPrevStart = ch;  // TODO: prevStart can come from here
             prevLineStart=lineStart; lineStart=ch;
             int thisncol = countfields(&ch);   // using this sep and quote rule; moves ch to start of next line
-            if (thisncol==0 && skipEmptyLines) while ( ch<eof && thisncol==0 ) { prevLineStart=NULL; lineStart=ch; thisncol=countfields(&ch); }
+            if (thisncol==0 && skipEmptyLines) while ( ch<eof && thisncol==0 ) { prevLineStart=NULL; lineStart=ch; thisRow++; thisncol=countfields(&ch); }
             if (thisncol<0) break;  // invalid file with this sep and quote rule; abort
             if (thisncol==lastncol) {
               thisBlockLines++;
@@ -1515,7 +1516,7 @@ int freadMain(freadMainArgs _args) {
             }
             if ((lastncol>1 && thisBlockLines>1) || !skipAuto) break;
             while (ch<eof && thisncol==0) {
-              prevLineStart=NULL; lineStart=ch;
+              prevLineStart=NULL; lineStart=ch; thisRow++;
               thisncol = countfields(&ch);
             }
             if (thisncol>0) {
@@ -1537,6 +1538,8 @@ int freadMain(freadMainArgs _args) {
             firstJumpEnd = ch;
             topStart = thisBlockStart;
             prevStart = thisBlockPrevStart; // only used when line prior to contiguous block has a wrong number of column names to be filled
+            topSkip = thisRow-thisBlockLines;
+            if (topSkip<0) topSkip=0;  // inelegant but will do for now to pass single row input such as test 890
             if (verbose) {
               DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep);
               DTPRINT("  with %d lines of %d fields using quote rule %d\n", topNumLines, topNumFields, topQuoteRule);
@@ -1730,6 +1733,7 @@ int freadMain(freadMainArgs _args) {
       ch = pos;
     } else {
       ch = pos = topStart;
+      row1line += topSkip;
     }
   }
  /*
