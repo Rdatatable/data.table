@@ -35,46 +35,136 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, m
       if(inherits(x, "integer64"))    out <- "integer64" ## is.numeric returns TRUE on integer64 columns
       ## distinguish integer values with storage mode double from real numeric 
       ## values that can't be coerced to integer without loss of precision
-      else if(isReallyReal(x))        out <- "realDouble"
-      else out <- "double"}
+      else if(isReallyReal(x))        out <- "reallyDouble"
+      else                            out <- "intAsDouble"
+    }
     else if(is.character(x))          out <- "character"
     else if(is.factor(x))             out <- "factor"
-    else out <- "other" ## whatever it is, it is not a standard type
-    if(length(out) > 1) out <- "other"
+    else                              out <- "other"
     return(out)
   }
-  ## The following column types throw an error when joined together. Column in x is on the left of ==
-  typeErrorClasses = c("logical==integer", "logical==double", "logical==realDouble", "logical==character", "logical==factor", "logical==integer64",
-                       "integer==character", "integer==factor",
-                       "double==character", "double==factor",
-                       "realDouble==character", "realDouble==factor",
-                       "character==logical", "character==integer", "character==double", "character==realDouble", "character==integer64",
-                       "factor==logical", "factor==integer", "factor==double", "factor==realDouble", "factor==integer64",
-                       "integer64==character", "integer64==factor")
-  ## The following column types need no specific treatment when joined together
-  typeNoTreatment = c("logical==logical", "integer==integer", 
-                      "double==double", "double==realDouble",
-                      "realDouble==double", "realDouble==realDouble",
-                      "character==character", ## factor == factor needs treatment to consolidate levels
-                      "integer64==integer64"
-                      )
-  ## The following column types need simple coercion of the column in i by setting the mode(i[[lc]]) <- "newclass", 
-  ## where newclass is the class on the left of == 
-  typeModeCoercionI = c("integer==logical", "integer==double", ## not for realDouble!!
-                        "double==logical", "double==integer",
-                        "realDouble==logical", "realDouble==integer")
-  ## The following column types need simple coercion of the column in x by setting the mode(x[[rc]]) <- "newclass", 
-  ## where newclass is the class on the rigth of == 
-  typeModeCoercionX = c("integer==realDouble")
-  ## The following column types need coercion of the column in i by calling as.newclass(i[[lc]]), 
-  ## where newclass is the class on the left of ==
-  typeCastCoercionI = c("integer==integer64", "double==integer64", "realDouble==integer64",
-                        "integer64==logical", "integer64==integer", "integer64==double",
-                        "character==factor")
-  ## The following column types need coercion of the column in x by calling as.newclass(x[[rc]]), 
-  ## where newclass is the class on the right of ==
-  typeCastCoercionX = c("integer64==realDouble")
   
+  ## function or coercing a vector to a new type. Depending on the source and target type,
+  ## different coercion strategies are used.
+  coerceClass <- function(x, to){
+    sourceType <- getClass(x)
+    ## reallyDouble and intAsDouble are the same here:
+    if(sourceType %chin% c("reallyDouble", "intAsDouble")) sourceType <- "double"
+    if(sourceType == to) return(x) ## nothing to be done
+    if(!to %chin% c("logical", "integer", "double", "character", "factor", "integer64")) 
+      stop("Invalid 'to' argument: ", to)
+    if(sourceType == "other")
+      stop("type coercion not supported for this type: ", paste0(class(x), collapse = ","))
+    if(sourceType %chin% c("logical", "integer", "double") &
+       to         %chin% c("logical", "integer", "double")){
+      ## for these classes, we can do mode coercion to retain other class attributes, e.g. IDate
+      ## identical types have been caught above
+      out       <- x
+      mode(out) <- to
+    }
+    else {
+      ## we need as.'to'() conversion
+      converter <- match.fun(paste0("as.", to))
+      out       <- converter(x)
+    }
+    return(out)
+  }
+  
+  ## Establish a lookup table with coercion strategies for each pair of types.
+  ## Coercion strategies can be one of the following:
+  ##------------------|-----------------------------------------------------
+  ## y (yes):         | no coercion necessary, types match
+  ##------------------|-----------------------------------------------------
+  ## e (error):       | throw an error because of incompatible types
+  ##------------------|-----------------------------------------------------
+  ## ci (coercion i): | coerce the column in i to the type of the column in x
+  ##------------------|-----------------------------------------------------
+  ## ciw:             | same as above, but with warning.
+  ##------------------|-----------------------------------------------------
+  ## cx (coercion x): | coerce the column in x to the type of the column in i
+  ##------------------|-----------------------------------------------------
+  ## cxw:             | same as above, but with warning.
+  ##------------------|-----------------------------------------------------
+  ## rows mark the column type in i, columns the column type in x
+  ## possible types are: logical, integer, intAsDouble, reallyDouble, character, factor, integer64
+  allTypes <- c("logical", "integer", "intAsDouble", "reallyDouble", "character", "factor", "integer64", "other")
+  ct <- matrix(data = NA_character_, nrow = length(allTypes), ncol = length(allTypes), 
+               dimnames = list(allTypes, allTypes))
+  
+  ct["logical",      "logical"] = "y"
+  ct["integer",      "logical"] = "e"
+  ct["intAsDouble",  "logical"] = "e"
+  ct["reallyDouble", "logical"] = "e"
+  ct["character",    "logical"] = "e"
+  ct["factor",       "logical"] = "e"
+  ct["integer64",    "logical"] = "e"
+  ct["other",        "logical"] = "e"
+  
+  ct["logical",      "integer"] = "ci"
+  ct["integer",      "integer"] = "y"
+  ct["intAsDouble",  "integer"] = "ci"
+  ct["reallyDouble", "integer"] = "cx"
+  ct["character",    "integer"] = "e"
+  ct["factor",       "integer"] = "e"
+  ct["integer64",    "integer"] = "ci"
+  ct["other",        "integer"] = "e"
+  
+  ct["logical",      "intAsDouble"] = "ci"
+  ct["integer",      "intAsDouble"] = "ci"
+  ct["intAsDouble",  "intAsDouble"] = "y"
+  ct["reallyDouble", "intAsDouble"] = "y"
+  ct["character",    "intAsDouble"] = "e"
+  ct["factor",       "intAsDouble"] = "e"
+  ct["integer64",    "intAsDouble"] = "ci"
+  ct["other",        "intAsDouble"] = "e"
+  
+  ct["logical",      "reallyDouble"] = "ci"
+  ct["integer",      "reallyDouble"] = "ci"
+  ct["intAsDouble",  "reallyDouble"] = "y"
+  ct["reallyDouble", "reallyDouble"] = "y"
+  ct["character",    "reallyDouble"] = "e"
+  ct["factor",       "reallyDouble"] = "e"
+  ct["integer64",    "reallyDouble"] = "ci"
+  ct["other",        "reallyDouble"] = "e"
+  
+  ct["logical",      "character"] = "e"
+  ct["integer",      "character"] = "e"
+  ct["intAsDouble",  "character"] = "e"
+  ct["reallyDouble", "character"] = "e"
+  ct["character",    "character"] = "y"
+  ct["factor",       "character"] = "ci"
+  ct["integer64",    "character"] = "e"
+  ct["other",        "character"] = "e"
+  
+  ct["logical",      "factor"] = "e"
+  ct["integer",      "factor"] = "e"
+  ct["intAsDouble",  "factor"] = "e"
+  ct["reallyDouble", "factor"] = "e"
+  ct["character",    "factor"] = "ci"
+  ct["factor",       "factor"] = "y"
+  ct["integer64",    "factor"] = "e"
+  ct["other",        "factor"] = "e"
+  
+  ct["logical",      "integer64"] = "ci"
+  ct["integer",      "integer64"] = "ci"
+  ct["intAsDouble",  "integer64"] = "ci"
+  ct["reallyDouble", "integer64"] = "cx"
+  ct["character",    "integer64"] = "e"
+  ct["factor",       "integer64"] = "e"
+  ct["integer64",    "integer64"] = "y"
+  ct["other",        "integer64"] = "e"
+  
+  ct["logical",      "other"] = "e"
+  ct["integer",      "other"] = "e"
+  ct["intAsDouble",  "other"] = "e"
+  ct["reallyDouble", "other"] = "e"
+  ct["character",    "other"] = "e"
+  ct["factor",       "other"] = "e"
+  ct["integer64",    "other"] = "e"
+  ct["other",        "other"] = "e"
+  
+  if(anyNA(ct)) stop("Type coercion table ct incomplete.")
+
   for (a in seq_along(leftcols)) {
     # This loop does the following:
     # - check that join columns have compatible types
@@ -87,53 +177,59 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, m
     xcnam = names(x)[rc]
     myXclass = getClass(x[[rc]])
     myIclass = getClass(i[[lc]])
-    myXtype = if(myXclass == "realDouble") "double" else myXclass
-    myItype = if(myIclass == "realDouble") "double" else myIclass
-    joinTypeIdentifier = paste0(myXclass, "==", myIclass)
-    if(joinTypeIdentifier %chin% typeNoTreatment){
-      next
-    } else if(joinTypeIdentifier %chin% typeErrorClasses){
+    myXtype  = myXclass
+    if(myXtype %chin% c("intAsDouble", "reallyDouble")) myXtype = "double"
+    if(myXtype == "other") myXtype = paste0(class(x[[rc]]), collapse = ",")
+    myItype  = myIclass
+    if(myItype %chin% c("intAsDouble", "reallyDouble")) myItype = "double"
+    if(myItype == "other") myItype = paste0(class(i[[lc]]), collapse = ",")
+    coercionStrategy <- ct[myIclass, myXclass]
+
+    if(coercionStrategy == "y"){
+      ## nothing to be done, but no 'next' since the factor related stuff below needs to be executed
+    } 
+    else if(coercionStrategy == "e"){
       stop(sprintf("Incompatible types: %s (%s) and %s (%s)", 
                    paste0("x.", xcnam), myXtype, paste0("i.", icnam), myItype))
-    } else if(joinTypeIdentifier %chin% typeModeCoercionI){
-      ## coerce i[[lc]] to same class as x[[rc]] by mode() approach
+    } 
+    else if(coercionStrategy %chin% c("ci", "ciw")){
+      ## coerce i[[lc]] to same class as x[[rc]]
       if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
-                            myItype, paste0("i.'", icnam, "'"), myXtype, paste0("x.'", xcnam, "'"))); flush.console()}
-      newval = i[[lc]]
-      mode(newval) = myXtype  # retains column attributes (such as IDateTime class)
-      set(i, j=lc, value=newval)
-    } else if(joinTypeIdentifier %chin% typeModeCoercionX){
-      ## coerce x[[rc]] to same class as i[[lc]] by mode() approach
-      if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
-                            myXtype, paste0("x.'", xcnam, "'"), myItype, paste0("i.'", icnam, "'"))); flush.console()}
-      newval = x[[rc]]
-      mode(newval) = myItype  # retains column attributes (such as IDateTime class)
-      set(x, j=rc, value=newval)
-    } else if(joinTypeIdentifier %chin% typeCastCoercionI){
-      ## coerce i[[lc]] to same class as x[[rc]] by as.newclass() approach
-      converter <- match.fun(paste0("as.", myXtype))
-      if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
-                            myItype, paste0("i.'", icnam, "'"), myXtype, paste0("x.'", xcnam, "'"))); flush.console()}
-      newval = i[[lc]]
-      newval = converter(newval)
-      set(i, j=lc, value=newval)
-    } else if(joinTypeIdentifier %chin% typeCastCoercionX){
-      ## coerce x[[rc]] to same class as i[[lc]] by as.newclass() approach
-      converter <- match.fun(paste0("as.", myItype))
-      if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
-                            myXtype, paste0("x.'", xcnam, "'"), myItype, paste0("i.'", icnam, "'"))); flush.console()}
-      newval = x[[rc]]
-      newval = converter(newval)
-      set(x, j=rc, value=newval)
-    } else if(joinTypeIdentifier %chin% c("factor==factor", "factor==character")){
-      if (myItype == "character") {
-        if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
-                              myItype, paste0("i.'", icnam, "'"), myXtype, paste0("x.'", xcnam, "'"))); flush.console()}
-        set(origi, j=lc, value=factor(origi[[lc]])) # note the use of 'origi' here - see #499 and #945
+                                myItype, paste0("i.'", icnam, "'"), myXtype, paste0("x.'", xcnam, "'"))); flush.console()}
+      if(coercionStrategy == "ciw"){
+        warning(sprintf("Coercing %s column %s to %s to match type of %s.", 
+                        myItype, paste0("i.'", icnam, "'"), myXtype, paste0("x.'", xcnam, "'")))
+      }
+      if(myXtype == "factor"){
+        ## special treatment due to factor levels, see #499 and #945
+        newval = coerceClass(origi[[lc]], to = myXtype) ## will do mode() coercion if possible to retain attributes
+        set(origi, j=lc, value=newval)
         # TO DO: we need a way to avoid copying 'value' for internal purposes
         # that would allow setting: set(i, j=lc, value=origi[[lc]]) without resulting in a copy.
         # until then using 'val <- origi[[lc]]' below to avoid another copy.
+      } else {
+        newval = coerceClass(i[[lc]], to = myXtype) ## will do mode() coercion if possible to retain attributes
+        set(i, j=lc, value=newval)
       }
+      myItype = myXtype
+    } 
+    else if(coercionStrategy %chin% c("cx", "cxw")){
+      ## coerce x[[rc]] to same class as i[[lc]]
+      if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
+                            myXtype, paste0("x.'", xcnam, "'"), myItype, paste0("i.'", icnam, "'"))); flush.console()}
+      if(coercionStrategy == "cxw"){
+        warning(sprintf("Coercing %s column %s to %s to match type of %s.", 
+                        myXtype, paste0("x.'", xcnam, "'"), myItype, paste0("i.'", icnam, "'")))
+      }
+      newval = coerceClass(x[[rc]], to = myItype) ## will do mode() coercion if possible to retain attributes
+      set(x, j=rc, value=newval)
+      myXtype = myItype
+    } 
+    else stop("Internal error in bmerge: unknown type coercion strategy.")
+    
+    ## now take care about factor columns.
+    if(myXtype == "factor"){
+      if(myItype != "factor") stop("Internal error in bmerge: at this point, myItype should be factor.")
       # levels of factors have to be treated properly when coercing
       # Retain original levels of i's factor columns in factor to factor joins (important when NAs,
       # see tests 687 and 688).
@@ -146,25 +242,7 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, m
       newfactor = chmatch(li, lx, nomatch=0L)[val] # fix for #945, a hacky solution for now.
       levels(newfactor) = lx
       class(newfactor) = "factor"
-      set(i, j=lc, value=newfactor)      
-    } else if(myIclass == "other" || myXclass == "other"){
-      ## very unlikely case
-      ## at least one column is neither integer, double, character or factor.
-      ## join will work if 
-      ## - both columns have exactly the same class
-      ## - typeof(x[[rc]]) == typeof(i[[lc]]) with a warning
-      if(all(class(x[[rc]]) == class(i[[lc]]))){
-        next
-      } else if(typeof(x[[rc]]) == typeof(i[[lc]])){
-        warning(sprintf("Joining on columns of different class: %s (%s) and %s (%s). Join works since both columns are of the same type: %s",
-                        paste0("x.'", xcnam, "'"), paste0(class(x[[rc]]), collapse = ","), paste0("i.'", icnam, "'"), paste0(class(i[[lc]]), collapse = ","), typeof(x[[rc]])))
-        ## nothing needs to be done, Cbmerge will work because of the same types.
-      } else {
-        stop(sprintf("Incompatible types: %s (%s) and %s (%s)", 
-                     paste0("x.", xcnam), paste0(class(x[[rc]]), collapse = ","), paste0("i.", icnam), paste0(class(i[[lc]]), collapse = ",")))
-      }
-    } else {
-      stop("Internal error: data.table's bmerge doesn't know how to handle joins of type ", joinTypeIdentifier, ". Please report the bug to the developers")
+      set(i, j=lc, value=newfactor) 
     }
   }
   if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...");flush.console()}
