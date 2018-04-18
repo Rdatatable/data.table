@@ -11,6 +11,10 @@ warnings_are_errors: true
 r_check_args: ""
 # empty r_check_args to turn off --as-cran (on by default) as that can be slow
 
+branches:
+  only:
+    - "master"
+
 bioc_packages:
   - IRanges
   - GenomicRanges
