@@ -3958,13 +3958,18 @@ test(1215,
    fread('N_ID VISIT_DATE REQ_URL REQType\n175931 2013-03-08T23:40:30 http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU 2'),
    data.table(N_ID=175931L, VISIT_DATE="2013-03-08T23:40:30", REQ_URL='http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU', REQType=2L)
 )
-test(1216.1, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n'),
+test(1261.1, identical('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n',  # \ before "c checked to be superfluous, an aside in #2755
+                       'A,B,C\n1.2,Foo"Bar,"a"b"c"d"\nfo"o,bar,"b,az""\n'))
+test(1216.2, fread('A,B,C\n1.2,Foo"Bar,"a"b"c"d"\nfo"o,bar,"b,az""\n'),
          data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("a\"b\"c\"d", "b,az\"")),
          warning=w<-"resolved improper quoting")
-test(1216.2, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,az""\n'),
+test(1216.3, fread('A,B,C\n1.2,Foo"Bar,"a"b\\"c"d"\nfo"o,bar,"b,az""\n'),
+         data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("a\"b\\\"c\"d", "b,az\"")),
+         warning=w)
+test(1216.4, fread('A,B,C\n1.2,Foo"Bar,"a"b"c"d""\nfo"o,bar,"b,az""\n'),
          data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("a\"b\"c\"d\"", "b,az\"")),
          warning=w)
-test(1216.3, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,"az""\n'),
+test(1216.5, fread('A,B,C\n1.2,Foo"Bar,"a"b"c"d""\nfo"o,bar,"b,"az""\n'),
          data.table(A=c('1.2','fo"o'), B=c('Foo"Bar','bar'),C=c('a"b"c"d"','b,"az"')),
          warning=w)
 test(1217, fread('"One,Two","Three",Four\n12,3,4\n56,7,8\n'),  # quoted column names including the separator
@@ -11687,6 +11692,15 @@ test(1905.3, fread("A;B;C\n;D\nE", sep=";", header=FALSE, fill=TRUE),
              data.table(V1=c("A","","E"), V2=c("B","D",""), V3=c("C","","")))
 test(1905.4, fread("A;B;C\nD\n;E", sep=";", header=FALSE, fill=TRUE),
              data.table(V1=c("A","D",""), V2=c("B","","E"), V3=c("C","","")))
+
+# using rarer field separator without quoting, aside in #2755
+# the self-healing rules aren't perfect, which is why they need to warn when used and nudge towards reliable usage
+txt = 'A|B|C\n1|"hello", said Joe|14" pizza\n2|""howdy""|easy"\n3|\"as"|"""pie"\n'
+test(1906.1, fread(txt),
+  data.table(A=1:3, B=c('"hello", said Joe', '"howdy"', 'as'), C=c('14" pizza', 'easy"', '""pie')),
+  warning='Found and resolved improper quoting.*If the fields are not quoted.*separator does not appear within any field.*try quote="" to avoid this warning')
+test(1906.2, fread(txt, quote=""),
+  data.table(A=1:3, B=c('"hello", said Joe', '""howdy""', '"as"'), C=c('14" pizza', 'easy"', '"""pie"')))
 
 
 ###################################

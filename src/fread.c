@@ -1550,7 +1550,7 @@ int freadMain(freadMainArgs _args) {
 
     quoteRule = topQuoteRule;
     if (quoteRule>1) {
-      DTWARN("Found and resolved improper quoting in first %d rows.", jumpLines);
+      DTWARN("Found and resolved improper quoting in first %d rows. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning.", jumpLines);
       // TODO: include line number and text in warning. Could loop again with the standard quote rule to find the line that fails.
     }
     sep = topSep;
@@ -2409,7 +2409,7 @@ int freadMain(freadMainArgs _args) {
     }
   }
   if (quoteRuleBumpedCh!=NULL && quoteRuleBumpedCh<headPos) {
-    DTWARN("Found and resolved improper quoting out-of-sample. First healed line %llu: <<%s>>", (llu)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
+    DTWARN("Found and resolved improper quoting out-of-sample. First healed line %llu: <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning.", (llu)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
   }
 
   if (verbose) {
