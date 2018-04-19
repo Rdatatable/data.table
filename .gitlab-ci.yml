@@ -111,7 +111,7 @@ test-r-devel-cran: # R-devel CRAN check
     - RDscript -e 'source(Sys.getenv("CI_TOOLS")); if (length(pkgs<-packages.dcf("DESCRIPTION", "all"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
     - cd bus/$CI_BUILD_NAME
     - Rscript -e 'file.copy(download.packages("data.table", repos=file.path("file:",normalizePath("../build/cran")))[,2], ".")'
-    - RD CMD check --as-cran --no-manual $(ls -1t data.table_*.tar.gz | head -n 1) # remove --no-manual when own image provided
+    - RD CMD check --as-cran --ignore-vignettes --no-manual $(ls -1t data.table_*.tar.gz | head -n 1) # remove --no-manual when own image provided
   artifacts:
     expire_in: 2 weeks
     when: always
