@@ -98,6 +98,9 @@ grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAtt
 cd
 R
 cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently gcc-7) as CRAN does
+saf = options()$stringsAsFactors
+options(stringsAsFactors=!saf)    # check tests (that might be run by user) are insensitive to option, #2718
+cc()
 q("no")
 R CMD build data.table
 R CMD check data.table_1.10.1.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran

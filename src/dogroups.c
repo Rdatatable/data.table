@@ -132,10 +132,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
              (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(jiscols)[j]-1))+i*size,
              size);
     }
-    if (LOGICAL(on)[0])
-      igrp = (length(grporder) && isNull(jiscols)) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : i;
-    else
-      igrp = (length(grporder)) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : (isNull(jiscols) ? INTEGER(starts)[i]-1 : i);
+    // igrp determines the start of the current group in rows of dt (0 based).
+    // if jiscols is not null, we have a by = .EACHI, so the start is exactly i.
+    // Otherwise, igrp needs to be determined from starts, potentially taking care about the order if present.
+    igrp = !isNull(jiscols) ? i : (length(grporder) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : INTEGER(starts)[i]-1);
     if (igrp>=0 && nrowgroups) for (j=0; j<length(BY); j++) {    // igrp can be -1 so 'if' is important, otherwise memcpy crash
       size = SIZEOF(VECTOR_ELT(BY,j));
       memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),  // ok use of memcpy size 1. Loop'd through columns not rows
