@@ -242,15 +242,25 @@ forder <- function(x, ..., na.last=TRUE, decreasing=FALSE)
 
 fsort <- function(x, decreasing = FALSE, na.last = FALSE, internal=FALSE, verbose=FALSE, ...)
 {
-  if (typeof(x)=="double" && !decreasing && !na.last) {
-    if (internal) stop("Internal code should not be being called on type double")
-    return(.Call(Cfsort, x, verbose))
-  } else {
+  containsNAs <- FALSE
+  if (typeof(x)=="double" && !decreasing) {
+    containsNAs <- anyNA(x) ## just do this if all other conditions are met since it is relatively expensive
+  }
+  if(typeof(x)=="double" && !decreasing && !containsNAs){
+      if (internal) stop("Internal code should not be being called on type double")
+      return(.Call(Cfsort, x, verbose))
+  }
+  else {
     # fsort is now exported for testing. Trying to head off complaints "it's slow on integer"
     # The only places internally we use fsort internally (3 calls, all on integer) have had internal=TRUE added for now.
     # TODO: implement integer and character in Cfsort and remove this branch and warning
-    if (!internal) warning("Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Invoking relatively inefficient sort using order first.")
-    o = forderv(x, order=!decreasing, na.last=na.last)
+    if (!internal){
+      if(typeof(x) != "double") warning("Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Invoking relatively inefficient sort using order first.")
+      if(decreasing)  warning("New parallel sort has not been implemented for decreasing=TRUE so far. Invoking relatively inefficient sort using order first.")
+      if(containsNAs) warning("New parallel sort has not been implemented for vectors containing NA values so far. Invoking relatively inefficient sort using order first.")
+    }
+    orderArg = if(decreasing) -1 else 1
+    o = forderv(x, order=orderArg, na.last=na.last)
     return( if (length(o)) x[o] else x )   # TO DO: document this shortcut for already-sorted
   }
 }
