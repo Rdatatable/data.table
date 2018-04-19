@@ -11500,6 +11500,19 @@ test(1887, na.omit(DT, invert = TRUE), DT_out)
 
 x = runif(1e4)
 test(1888, fsort(x), base::sort(x))
+test(1888.1, fsort(x, decreasing = TRUE), base::sort(x, decreasing = TRUE),
+             warning = "New parallel sort has not been implemented for decreasing=TRUE so far. Invoking relatively inefficient sort using order first.")
+x <- c(x, NA_real_)
+test(1888.2, fsort(x, na.last = TRUE), base::sort(x, na.last = TRUE),
+             warning = "New parallel sort has not been implemented for na.last=TRUE so far. Invoking relatively inefficient sort using order first.")
+test(1888.3, fsort(x, na.last = FALSE), base::sort(x, na.last = FALSE))
+test(1888.4, fsort(x, decreasing = TRUE, na.last = TRUE), base::sort(x, decreasing = TRUE, na.last = TRUE),
+             warning = c("New parallel sort has not been implemented for decreasing=TRUE so far. Invoking relatively inefficient sort using order first.",
+             "New parallel sort has not been implemented for na.last=TRUE so far. Invoking relatively inefficient sort using order first."))
+x <- as.integer(x)
+test(1888.5, fsort(x), base::sort(x, na.last = FALSE),
+             warning = "Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Invoking relatively inefficient sort using order first.")
+
 
 # doubling of savetl buffer (currently starts with 100)
 x = as.character(as.hexmode(1:1000))
