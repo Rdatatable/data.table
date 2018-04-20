@@ -9538,6 +9538,9 @@ if (.Platform$OS.type=="unix") {
   test(1703.7, x=fread(text = character(0)), y=data.table())
   # Multi-length text
   test(1703.8, x=fread(text = c("A B", "C D"), sep = " ", data.table=FALSE), y=read.table(text = c("A B", "C D"), as.is = TRUE, header = TRUE))
+  # test error if length>1 character passed to input, not text:
+  test(1703.9, x=fread(c("foo", "bar", "baz")), error="must be a single character string")
+
 }
 
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
