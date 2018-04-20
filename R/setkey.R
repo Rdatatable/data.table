@@ -255,9 +255,9 @@ fsort <- function(x, decreasing = FALSE, na.last = FALSE, internal=FALSE, verbos
     # The only places internally we use fsort internally (3 calls, all on integer) have had internal=TRUE added for now.
     # TODO: implement integer and character in Cfsort and remove this branch and warning
     if (!internal){
-      if(typeof(x) != "double") warning("Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Invoking relatively inefficient sort using order first.")
-      if(decreasing)  warning("New parallel sort has not been implemented for decreasing=TRUE so far. Invoking relatively inefficient sort using order first.")
-      if(containsNAs) warning("New parallel sort has not been implemented for vectors containing NA values so far. Invoking relatively inefficient sort using order first.")
+      if(typeof(x) != "double") warning("Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Using one thread.")
+      if(decreasing)  warning("New parallel sort has not been implemented for decreasing=TRUE so far. Using one thread.")
+      if(containsNAs) warning("New parallel sort has not been implemented for vectors containing NA values so far. Using one thread.")
     }
     orderArg = if(decreasing) -1 else 1
     o = forderv(x, order=orderArg, na.last=na.last)
