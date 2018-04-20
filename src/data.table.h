@@ -153,4 +153,4 @@ int getDTthreads();
 void avoid_openmp_hang_within_fork();
 
 // roll.c
-SEXP rollmean(SEXP obj, SEXP k, SEXP fill);
+SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP verboseArg);
