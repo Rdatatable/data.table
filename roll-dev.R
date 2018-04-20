@@ -5,9 +5,7 @@ replicate(50, cat("=============================================================
 #ans = rollmean(d, c(3), verbose=T)
 #as.data.table(ans)
 
-d[, paste0("R",1:4) := rollmean(.SD, c(3, 4)), .SDcols=c("V1","V2")
-  ][, paste0("TTR",1:4) := vrunMean(.SD, c(3, 4)), .SDcols=c("V1","V2")
-    ][]
+d[, paste0("R",1:4) := rollmean(.SD, c(3, 4)), .SDcols=c("V1","V2")][]
 
 # ---- lets see how it compare to others rollmean
 
