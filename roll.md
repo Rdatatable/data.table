@@ -41,27 +41,6 @@ for (i in x)
     }
 ```
 
-## potential optimizations
-
-- [ ] cache biggest window - subset of i as vector
-
-wv - subset of i for biggest window size, not summed
-
-```
-for (i in x) {
-  rangek = range(k)
-  wv = i[1:rangek[2]]
-  for (m in 1:length(i)) {
-    if (m < rangek[1]) next
-    wv = c(vw[-1], i[m])
-    for (j in k) {
-      w = sum(tail(wv,j))
-      ans[m] = w / j
-    }
-  }
-}   
-```
-
 ## validation
 
 - [ ] validate against zoo (already in suggested dependency)
