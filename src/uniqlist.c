@@ -16,7 +16,6 @@ SEXP uniqlist(SEXP l, SEXP order)
   R_len_t i, j, nrow, ncol, len, thisi, previ, isize=1000;
 
   int *iidx = Calloc(isize, int); // for 'idx'
-  int *n_iidx; // to catch allocation errors using Realloc!
   ncol = length(l);
   nrow = length(VECTOR_ELT(l,0));
   len = 1;
@@ -54,9 +53,8 @@ SEXP uniqlist(SEXP l, SEXP order)
     }
     if (!b) iidx[len++] = i+1;
     if (len >= isize) {
-      isize = 1.1*isize*nrow/i;
-      n_iidx = Realloc(iidx, isize, int);
-      if (n_iidx != NULL) iidx = n_iidx; else error("Error in reallocating memory in 'uniqlist'\n");
+      isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));
+      iidx = Realloc(iidx, isize, int);
     }
   }
   PROTECT(ans = allocVector(INTSXP, len));
@@ -137,7 +135,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
   if (nrows==0) return(allocVector(INTSXP, 0));
   R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;
-  R_len_t *ptr, *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen;
+  R_len_t *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen;
   R_len_t ngrps = length(grps), *i64 = Calloc(ncols, R_len_t);
   if (ngrps==0) error("Internal error: nrows[%d]>0 but ngrps==0", nrows);
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
@@ -212,10 +210,8 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
       rlen += INTEGER(resetvals)[++resetctr];
     }
     if (nansgrp >= ansgrpsize) {
-      ansgrpsize = 1.1*ansgrpsize*nrows/i;
-      ptr = Realloc(ansgrp, ansgrpsize, int);
-      if (ptr != NULL) ansgrp = ptr;
-      else error("Error in reallocating memory in 'nestedid'\n");
+      ansgrpsize = MIN(nrows, (size_t)(1.1*(double)ansgrpsize*((double)nrows/i)));
+      ansgrp = Realloc(ansgrp, ansgrpsize, int);
     }
     for (int j=0; j<grplen; j++) {
       ians[byorder ? INTEGER(order)[igrps[i]-1+j]-1 : igrps[i]-1+j] = tmp+1;
