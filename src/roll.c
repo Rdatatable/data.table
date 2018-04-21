@@ -3,7 +3,7 @@
 
 SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align) {
   
-  R_len_t i=0, j, m, nx, nk, xrows, protecti=0;
+  R_len_t i=0, j, m, nx, nk, xrows, thisk, protecti=0;
   SEXP x, tmp=R_NilValue, this, ans, thisfill;
   double w;
   enum {RIGHT, CENTER, LEFT} salign = RIGHT;
@@ -44,15 +44,16 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align) {
       this = AS_NUMERIC(VECTOR_ELT(x, i));                              // extract column/vector from data.table/list
       xrows = length(this);                                             // for list input each vector can have different length
       for (j=0; j<nk; j++) {                                            // loop over multiple windows
+        thisk = INTEGER(k)[j];                                          // current window size
         if (debug) Rprintf("DEBUG: rollmean.c: col %d: win %d\n", i, j);
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows));   // allocate answer vector for this column-window
         w = 0.;                                                         // reset window's sum
         for (m=0; m<xrows; m++) {                                       // loop over observations in column
           if (debug) Rprintf("DEBUG: rollmean.c: col %d: win %d: row %d\n", i, j, m);
           w += REAL(this)[m];                                           // add current row to window sum        
-          if (m - INTEGER(k)[j] >= 0) w -= REAL(this)[m-INTEGER(k)[j]]; // remove row from window sum that is outside of the window already
-          if (m < INTEGER(k)[j] - 1) REAL(tmp)[m] = REAL(thisfill)[0];  // fill NA
-          else REAL(tmp)[m] = w / INTEGER(k)[j];                        // calculate rollmean for a row
+          if (m - thisk >= 0) w -= REAL(this)[m-thisk];                 // remove row from window sum that is outside of the window already
+          if (m < thisk - 1) REAL(tmp)[m] = REAL(thisfill)[0];          // fill NA
+          else REAL(tmp)[m] = w / thisk;                                // calculate rollmean for a row
           if (debug) Rprintf("DEBUG: rollmean.c: col %d: win %d: row %d: ans: %8.3f\n", i, j, m, REAL(tmp)[m]);
         }
         copyMostAttrib(this, tmp);
