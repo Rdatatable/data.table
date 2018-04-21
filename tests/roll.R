@@ -90,6 +90,27 @@ NULL
 #### adaptive window
 NULL
 
+## edge cases
+
+#### length(x)==0
+NULL
+#### length(n)==0
+NULL
+#### n==0
+NULL
+#### n<0
+NULL
+#### n[[1L]]>0 && n[[2L]]<0
+NULL
+#### n[[1L]]==n[[2L]]
+NULL
+#### n>length(x)
+NULL
+#### n==length(x)
+NULL
+#### n>length(x[[1L]]) && n<length(x[[2L]])
+NULL
+
 ## validation
 
 #### against zoo

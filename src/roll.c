@@ -7,9 +7,9 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align) {
   SEXP x, tmp=R_NilValue, this, ans, thisfill;
   double w;
   enum {RIGHT, CENTER, LEFT} salign = RIGHT;
-  Rboolean debug = 0; // hard switch here for dev only
+  Rboolean debug = 0;                                                 // debug messages hard switch
   
-  if (!length(obj)) return(obj); // NULL, list()
+  if (!length(obj)) return(obj);                                      // NULL, list()
   if (isVectorAtomic(obj)) {
     x = allocVector(VECSXP, 1);
     SET_VECTOR_ELT(x, 0, obj);
@@ -28,9 +28,8 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align) {
 
   nx = length(x); nk = length(k);
   i = 0;
-  while(i < nk && INTEGER(k)[i] >= 0) i++;                            // TODO
-  if (i != nk)
-    error("n must be non-negative integer values (>= 0)");
+  while(i < nk && INTEGER(k)[i] >= 0) i++;                            // check that all window values non-negative
+  if (i != nk) error("n must be non-negative integer values (>= 0)");
   ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;            // allocate list to keep results
 
   thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
