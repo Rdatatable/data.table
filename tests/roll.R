@@ -1,5 +1,5 @@
 ## this file will be migrated to inst/tests/tests.Rraw when branch will be ready to merge
-
+library(data.table)
 test = function(num, x, y) stopifnot(all.equal(x, y))
 
 ## rolling features
