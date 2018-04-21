@@ -24,7 +24,7 @@ rollmean(x, n, fill=NA)
 }
 
 \examples{
-rollmean(1:16, 4)
+rollmean(as.double(1:16), c(3, 4))
 }
 \seealso{
   \code{\link{data.table}}
