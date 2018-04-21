@@ -110,6 +110,10 @@ NULL
 NULL
 #### n>length(x[[1L]]) && n<length(x[[2L]])
 NULL
+#### n==Inf
+NULL
+#### n==c(5, Inf)
+NULL
 
 ## validation
 

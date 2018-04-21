@@ -2,14 +2,14 @@
 #include <Rdefines.h>
 
 SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align) {
-
+  
   R_len_t i=0, j, m, nx, nk, xrows, protecti=0;
   SEXP x, tmp=R_NilValue, this, ans, thisfill;
   double w;
   enum {RIGHT, CENTER, LEFT} salign = RIGHT;
-  Rboolean debug = 0;                                                 // debug messages hard switch
+  Rboolean debug = 0;                                                   // temporary debug messages switch
   
-  if (!length(obj)) return(obj);                                      // NULL, list()
+  if (!length(obj)) return(obj);                                        // NULL, list()
   if (isVectorAtomic(obj)) {
     x = allocVector(VECSXP, 1);
     SET_VECTOR_ELT(x, 0, obj);
@@ -20,25 +20,28 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align) {
     error("Internal error: n must be integer");
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
-
+  
   if (!strcmp(CHAR(STRING_ELT(align, 0)), "right"))  salign = RIGHT;
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center")) salign = CENTER;
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) salign = LEFT;
   else error("Internal error: invalid align argument in rolling function, should have been caught before. Please report.");
-
+  
   nx = length(x); nk = length(k);
   i = 0;
-  while(i < nk && INTEGER(k)[i] >= 0) i++;                            // check that all window values non-negative
-  if (i != nk) error("n must be non-negative integer values (>= 0)");
-  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;            // allocate list to keep results
-
+  while (i < nk && INTEGER(k)[i] >= 0) i++;
+  if (i != nk) error("n must be non-negative integer values (>= 0)");   // check that all window values non-negative
+  i = 0;
+  while (i < nx && (isReal(VECTOR_ELT(x, i)) || isInteger(VECTOR_ELT(x, i)))) i++;
+  if (i != nx) error("x must be list of 'double' types");               // check that every column is double/integer type
+  
+  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;              // allocate list to keep results
+  
   thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
-
+  
   if (salign == RIGHT) {                                                // align right scenario
     for (i=0; i<nx; i++) {                                              // loop over columns
       if (debug) Rprintf("DEBUG: rollmean.c: col %d\n", i);
-      this  = VECTOR_ELT(x, i);                                         // extract column/vector from data.table/list
-      if (!isReal(this)) error("rolling functions accepts only 'double' type.");
+      this = AS_NUMERIC(VECTOR_ELT(x, i));                              // extract column/vector from data.table/list
       xrows = length(this);                                             // for list input each vector can have different length
       for (j=0; j<nk; j++) {                                            // loop over multiple windows
         if (debug) Rprintf("DEBUG: rollmean.c: col %d: win %d\n", i, j);
@@ -54,13 +57,12 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align) {
         }
         copyMostAttrib(this, tmp);
       }
-    }  
+    }
   } else if (salign == CENTER) {                                        // align center scenario
     error("align 'center' not yet implemented");
   } else if (salign == LEFT) {                                          // align left scenario
     error("align 'left' not yet implemented");
   }
-  
   UNPROTECT(protecti);
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
 }
