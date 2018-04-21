@@ -51,18 +51,37 @@ expected = list(
   c(rep(NA_real_,2), seq(1,1.75,0.25))
 )
 test(9999.6, ans, expected)
-#ans = rollmean(d, 3, align="center")
+#ans = rollmean(d, 3, align="center") # x even, n odd
 #expected = list(
-#  c(rep(NA_real_,2), seq(1,2.5,0.5)),
-#  c(rep(NA_real_,2), seq(1,1.75,0.25))
+#  c(NA_real_, seq(1,2.5,0.5), NA_real_),
+#  c(NA_real_, seq(1,1.75,0.25), NA_real_)
 #)
 #test(9999.7, ans, expected)
-#ans = rollmean(d, 3, align="left")
+#ans = rollmean(d, 4, align="center") # x even, n even
 #expected = list(
-#  c(rep(NA_real_,2), seq(1,2.5,0.5)),
-#  c(rep(NA_real_,2), seq(1,1.75,0.25))
+#  c(NA_real_, seq(1.25,2.25,0.5), rep(NA_real_,2)),
+#  c(NA_real_, seq(1.125,1.625,0.25), rep(NA_real_,2))
 #)
 #test(9999.8, ans, expected)
+#de = rbind(d, data.table(3.5, 2.25))
+#ans = rollmean(de, 3, align="center") # x odd, n odd
+#expected = list(
+#  c(NA_real_, seq(1,3,0.5), NA_real_),
+#  c(NA_real_, seq(1,2,0.25), NA_real_)
+#)
+#test(9999.9, ans, expected)
+#ans = rollmean(de, 4, align="center") # x odd, n even
+#expected = list(
+#  c(NA_real_, seq(1.25,2.75,0.5), rep(NA_real_,2)),
+#  c(NA_real_, seq(1.125,1.875,0.25), rep(NA_real_,2))
+#)
+#test(9999.10, ans, expected)
+#ans = rollmean(d, 3, align="left")
+#expected = list(
+#  c(seq(1,2.5,0.5), rep(NA_real_,2)),
+#  c(seq(1,1.75,0.25), rep(NA_real_,2))
+#)
+#test(9999.11, ans, expected)
 
 #### handling NAs
 NULL
