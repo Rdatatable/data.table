@@ -1,7 +1,7 @@
 ## this file will be migrated to inst/tests/tests.Rraw when branch will be ready to merge
 if (!interactive()) {
   library(data.table)
-  test = function(num, x, y) stopifnot(all.equal(x, y))
+  test = data.table:::test
 }
 
 ## rolling features
