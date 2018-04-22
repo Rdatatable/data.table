@@ -97,8 +97,8 @@ test(9999.99, rollmean(numeric(0), 2), numeric(0))
 test(9999.99, rollmean(list(1:3, numeric()), 2), list(c(NA_real_, 1.5, 2.5), numeric(0)))
 
 #### length(n)==0
-test(9999.99, rollmean(1:3, integer()), error="n must be non 0 length integer vector or list")
-test(9999.99, rollmean(list(1:3, 2:4), integer()), error="n must be non 0 length integer vector or list")
+test(9999.99, rollmean(1:3, integer()), error="n must be non 0 length")
+test(9999.99, rollmean(list(1:3, 2:4), integer()), error="n must be non 0 length")
 
 #### n==0
 test(9999.99, rollmean(1:3, c(2,0)), list(c(NA_real_, 1.5, 2.5), rep(NaN, 3)))

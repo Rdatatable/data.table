@@ -9,8 +9,8 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptive) {
   enum {RIGHT, CENTER, LEFT} salign = RIGHT;
   Rboolean debug = 0;                                                   // temporary debug messages switch
   
-  if (!length(obj)) return(obj);                                        // NULL, list()
-  if (isVectorAtomic(obj)) {
+  if (!length(obj)) return(obj);                                        // empty input: NULL, list()
+  if (isVectorAtomic(obj)) {                                            // wrap atomic vector into list()
     x = allocVector(VECSXP, 1);
     SET_VECTOR_ELT(x, 0, obj);
   } else {
@@ -33,20 +33,23 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptive) {
     error("Internal error: invalid align argument in rolling function, should have been caught before. Please report.");
 
   if (!isLogical(adaptive) || length(adaptive) != 1 || LOGICAL(adaptive)[0] == NA_LOGICAL)
-    error("adaptive must be logical TRUE/FALSE.");
+    error("adaptive must be logical TRUE/FALSE");
 
-  nx = length(x);  
-  i = 0;                                                                // check that every column is double/integer type
+  nx = length(x);
+  i = 0;                                                                  // check that every column is double/integer type
   while (i < nx && (isReal(VECTOR_ELT(x, i)) || isInteger(VECTOR_ELT(x, i)))) i++;
   if (i != nx)
     error("x must be list, data.frame or data.table of numeric types");
 
+  nk = length(k);
+  if (nk == 0)                                                            // check that window is not empty
+    error("n must be non 0 length integer vector or list");
+
   if (!LOGICAL(adaptive)[0]) {                                            // validating n input for adaptive=FALSE
-    nk = length(k);
-    if (nk == 0)                                                          // check that window is not empty
-      error("n must be non 0 length integer vector or list");
+    if (isNewList(k))
+      error("n must be integer, list is accepted only if adaptive=TRUE");
     //TODO move R's n=as.integer(n) to C
-    if (!isInteger(k))                                                    // check that k is integer vector, not a list
+    if (!isInteger(k))                                                    // check that k is integer vector
       error("Internal error: n must be integer");
     i = 0;                                                                // check that all window values non-negative
     while (i < nk && INTEGER(k)[i] >= 0) i++;
@@ -56,16 +59,16 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptive) {
     if (isVectorAtomic(k)) {                                              // if not-list then wrap into list
       kl = allocVector(VECSXP, 1);
       SET_VECTOR_ELT(kl, 0, k);
+      nk = 1;
     } else {
       kl = k;
     }
-    nk = length(kl);
-    //TODO // check that every k list element is integer vector same length as x
+    //TODO // check that every k list element is integer vector same length as x - push down to for loop
   } else {
     error("Internal error: invalid adaptive argument in rolling function, should have been caught before. Please report.");
   }
   
-  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;              // allocate list to keep results
+  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;                // allocate list to keep results
   
   thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
 
