@@ -93,27 +93,49 @@ NULL
 ## edge cases
 
 #### length(x)==0
-NULL
+test(9999.99, rollmean(numeric(0), 2), numeric(0))
+test(9999.99, rollmean(list(1:3, numeric()), 2), list(c(NA_real_, 1.5, 2.5), numeric(0)))
+
 #### length(n)==0
-NULL
+test(9999.99, rollmean(1:3, integer()), error="n must be non 0 length integer vector or list")
+test(9999.99, rollmean(list(1:3, 2:4), integer()), error="n must be non 0 length integer vector or list")
+
 #### n==0
-NULL
+test(9999.99, rollmean(1:3, c(2,0)), list(c(NA_real_, 1.5, 2.5), rep(NaN, 3)))
+test(9999.99, rollmean(list(1:3, 2:4), 0), list(rep(NaN, 3), rep(NaN, 3)))
+
 #### n<0
-NULL
+test(9999.99, rollmean(1:3, -2), error="n must be non-negative integer values")
+
 #### n[[1L]]>0 && n[[2L]]<0
-NULL
+test(9999.99, rollmean(1:3, c(2, -2)), error="n must be non-negative integer values")
+
 #### n[[1L]]==n[[2L]]
-NULL
+test(9999.99, rollmean(1:3, c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5)))
+test(9999.99, rollmean(list(1:3, 4:6), c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5), c(NA_real_, 4.5, 5.5), c(NA_real_, 4.5, 5.5)))
+
 #### n>length(x)
-NULL
+test(9999.99, rollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
+
 #### n==length(x)
-NULL
-#### n>length(x[[1L]]) && n<length(x[[2L]])
-NULL
+test(9999.99, rollmean(list(1:3, 4:6), 3), list(c(NA_real_, NA_real_, 2), c(NA_real_, NA_real_, 5)))
+
+#### n<length(x[[1L]]) && n>length(x[[2L]])
+test(9999.99, rollmean(list(1:5, 1:2), 3), list(c(NA_real_, NA_real_, 2, 3, 4), c(NA_real_, NA_real_)))
+
+#### length(x)==1 && n==1
+test(9999.99, rollmean(5, 1), 5)
+test(9999.99, rollmean(list(1, 10, 5), 1), list(1, 10, 5))
+
+#### length(x)==1 && n==2
+test(9999.99, rollmean(5, 2), NA_real_)
+test(9999.99, rollmean(list(1, 10, 5), 2), list(NA_real_, NA_real_, NA_real_))
+
 #### n==Inf
-NULL
+test(9999.99, rollmean(1:5, Inf), error="n must be non-negative integer values", warning="NAs introduced by coercion to integer range")
+
 #### n==c(5, Inf)
-NULL
+test(9999.99, rollmean(1:5, c(5, Inf)), error="n must be non-negative integer values", warning="NAs introduced by coercion to integer range")
 
 ## validation
 
