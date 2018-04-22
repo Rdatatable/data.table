@@ -1,7 +1,7 @@
 #include "data.table.h"
 #include <Rdefines.h>
 
-SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align) {
+SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptive) {
   
   R_len_t i=0, j, m, nx, nk, xrows, thisk, protecti=0;
   SEXP x, tmp=R_NilValue, this, ans, thisfill;
@@ -14,18 +14,24 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align) {
     x = allocVector(VECSXP, 1);
     SET_VECTOR_ELT(x, 0, obj);
   } else x = obj;
+
   if (!isNewList(x))
     error("x must be a list, data.frame or data.table");
+
   if (!isInteger(k))
     error("Internal error: n must be integer");
+
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
-  
+
   if (!strcmp(CHAR(STRING_ELT(align, 0)), "right"))  salign = RIGHT;
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center")) salign = CENTER;
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) salign = LEFT;
   else error("Internal error: invalid align argument in rolling function, should have been caught before. Please report.");
-  
+
+  if (!isLogical(adaptive) || length(adaptive) != 1 || LOGICAL(adaptive)[0] == NA_LOGICAL)
+    error("adaptive must be logical TRUE/FALSE.");
+
   nx = length(x); nk = length(k);
   i = 0;
   while (i < nk && INTEGER(k)[i] >= 0) i++;
@@ -37,32 +43,36 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align) {
   ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;              // allocate list to keep results
   
   thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
-  
-  if (salign == RIGHT) {                                                // align right scenario
-    for (i=0; i<nx; i++) {                                              // loop over columns
-      if (debug) Rprintf("DEBUG: rollmean.c: col %d\n", i);
-      this = AS_NUMERIC(VECTOR_ELT(x, i));                              // extract column/vector from data.table/list
-      xrows = length(this);                                             // for list input each vector can have different length
-      for (j=0; j<nk; j++) {                                            // loop over multiple windows
-        thisk = INTEGER(k)[j];                                          // current window size
-        if (debug) Rprintf("DEBUG: rollmean.c: col %d: win %d\n", i, j);
-        SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows));   // allocate answer vector for this column-window
-        w = 0.;                                                         // reset window's sum
-        for (m=0; m<xrows; m++) {                                       // loop over observations in column
-          if (debug) Rprintf("DEBUG: rollmean.c: col %d: win %d: row %d\n", i, j, m);
-          w += REAL(this)[m];                                           // add current row to window sum        
-          if (m - thisk >= 0) w -= REAL(this)[m-thisk];                 // remove row from window sum that is outside of the window already
-          if (m < thisk - 1) REAL(tmp)[m] = REAL(thisfill)[0];          // fill NA
-          else REAL(tmp)[m] = w / thisk;                                // calculate rollmean for a row
-          if (debug) Rprintf("DEBUG: rollmean.c: col %d: win %d: row %d: ans: %8.3f\n", i, j, m, REAL(tmp)[m]);
+
+  if (!LOGICAL(adaptive)[0]) {
+    if (salign == RIGHT) {                                                // align right scenario
+      for (i=0; i<nx; i++) {                                              // loop over columns
+        if (debug) Rprintf("DEBUG: rollmean.c: col %d\n", i);
+        this = AS_NUMERIC(VECTOR_ELT(x, i));                              // extract column/vector from data.table/list ***AS_NUMERIC handles integer type here
+        xrows = length(this);                                             // for list input each vector can have different length
+        for (j=0; j<nk; j++) {                                            // loop over multiple windows
+          thisk = INTEGER(k)[j];                                          // current window size
+          if (debug) Rprintf("DEBUG: rollmean.c: col %d: win %d\n", i, j);
+          SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows));   // allocate answer vector for this column-window
+          w = 0.;                                                         // reset window's sum
+          for (m=0; m<xrows; m++) {                                       // loop over observations in column
+            if (debug) Rprintf("DEBUG: rollmean.c: col %d: win %d: row %d\n", i, j, m);
+            w += REAL(this)[m];                                           // add current row to window sum
+            if (m - thisk >= 0) w -= REAL(this)[m-thisk];                 // remove row from window sum that is outside of the window already
+            if (m < thisk - 1) REAL(tmp)[m] = REAL(thisfill)[0];          // fill NA
+            else REAL(tmp)[m] = w / thisk;                                // calculate rollmean for a row
+            if (debug) Rprintf("DEBUG: rollmean.c: col %d: win %d: row %d: ans: %8.3f\n", i, j, m, REAL(tmp)[m]);
+          }
+          copyMostAttrib(this, tmp);
         }
-        copyMostAttrib(this, tmp);
       }
+    } else if (salign == CENTER) {                                        // align center scenario
+      error("align 'center' not yet implemented");
+    } else if (salign == LEFT) {                                          // align left scenario
+      error("align 'left' not yet implemented");
     }
-  } else if (salign == CENTER) {                                        // align center scenario
-    error("align 'center' not yet implemented");
-  } else if (salign == LEFT) {                                          // align left scenario
-    error("align 'left' not yet implemented");
+  } else if (LOGICAL(adaptive)[0]) {
+    error("adaptive TRUE not yet implemented");
   }
   UNPROTECT(protecti);
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
