@@ -374,6 +374,7 @@ table(avail[deps,"Repository"])
 length(deps)
 old = 0
 new = 0
+if (basename(.libPaths()[1]) != "revdeplib") stop("Must start R with exports as above")
 for (p in deps) {
    fn = paste0(p, "_", avail[p,"Version"], ".tar.gz")
    if (!file.exists(fn) ||
@@ -401,6 +402,7 @@ for (p in deps) {
    f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
    system(paste0("mv ",f," ",f,"_TEMP"))
 }
+system("ls *.tar.gz")
 system("rm *.tar.gz")
 for (p in deps) {
    f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
@@ -481,12 +483,14 @@ system("R CMD INSTALL ~/GitHub/data.table/data.table_1.10.5.tar.gz")
 run()
 
 # Investigate and fix the fails ...
+find . -name 00check.log -exec grep -H -B 20 "Status:.*ERROR" {} \;
+find . -name 00check.log | grep -E 'AFM|easycsv|...|optiSel|xgboost' | xargs grep -H . > /tmp/out.log
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 more <failing_package>.Rcheck/00check.log
 R CMD check <failing_package>.tar.gz
 R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
 R CMD check <failing_package>.tar.gz
-ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check
+ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check &
 
 # Warning: replacing previous import robustbase::sigma by stats::sigma when loading VIM
 # Reinstalling robustbase fixed this warning. Even though it was up to date, reinstalling made a difference.
