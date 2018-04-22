@@ -316,19 +316,20 @@ sudo apt-get -y install htop
 sudo apt-get -y install r-base r-base-dev
 sudo apt-get -y build-dep r-base-dev
 sudo apt-get -y build-dep qpdf
-sudo apt-get -y build-dep r-cran-rgl
+sudo apt-get -y install aptitude
+sudo aptitude build-dep r-cran-rgl   # leads to libglu1-mesa-dev
 sudo apt-get -y build-dep r-cran-rmpi
 sudo apt-get -y build-dep r-cran-cairodevice
 sudo apt-get -y build-dep r-cran-tkrplot
 sudo apt-get -y install libcurl4-openssl-dev    # needed by devtools
 sudo apt-get -y install xorg-dev x11-common libgdal-dev libproj-dev mysql-client libcairo2-dev libglpk-dev
-sudo apt-get -y install texlive texlive-latex-extra texlive-bibtex-extra texlive-science texinfo texlive-fonts-extra latex-xcolor
+sudo apt-get -y install texlive texlive-latex-extra texlive-bibtex-extra texlive-science texinfo texlive-fonts-extra
 sudo apt-get -y install libv8-dev
 sudo apt-get -y install gsl-bin libgsl0-dev
 sudo apt-get -y install libgtk2.0-dev netcdf-bin
 sudo apt-get -y install libcanberra-gtk-module
 sudo apt-get -y install git
-sudo apt-get -y install openjdk-7-jdk
+sudo apt-get -y install openjdk-8-jdk
 sudo apt-get -y install libnetcdf-dev udunits-bin libudunits2-dev
 sudo apt-get -y install tk8.6-dev
 sudo apt-get -y install clustalo  # for package LowMACA
@@ -342,6 +343,9 @@ sudo apt-get -y install libmpfr-dev
 sudo apt-get -y install bwidget
 sudo apt-get -y install librsvg2-dev  # for rsvg
 sudo apt-get -y install libboost-all-dev libboost-locale-dev  # for textTinyR
+sudo apt-get -y install libsndfile1-dev  # for seewave
+sudo apt-get -y install libpoppler-cpp-dev  # for pdftools
+sudo apt-get -y install libapparmor-dev  # for sys
 sudo R CMD javareconf
 # ENDIF
 
@@ -472,9 +476,9 @@ run = function(all=FALSE) {
   #                                 ^^ must be && and not ; otherwise wait doesn't wait
 }
 
+# ** ensure latest version installed into revdeplib **
+system("R CMD INSTALL ~/GitHub/data.table/data.table_1.10.5.tar.gz")
 run()
-system("R CMD INSTALL ~/data.table_1.10.4.tar.gz")      # ** ensure latest version installed into revdeplib **
-
 
 # Investigate and fix the fails ...
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
