@@ -21,7 +21,7 @@ adaptive=is.list(n))
     \code{"right"}, following rows \code{"left"} or centered
     \code{"center"}, default \code{"right"}. }
   \item{na.rm}{ logical, should missing values be removed when
-    calculating window, default \code{FALSE}.
+    calculating window, default \code{FALSE}. }.
   \item{adaptive}{ logical, should adaptive rolling function be
     calculated, default \code{is.list(n)}. }
 }
@@ -42,6 +42,7 @@ adaptive=is.list(n))
 
 \examples{
 rollmean(1:16, c(3, 4))
+# see tests/roll.R for now
 }
 \seealso{
   \code{\link{shift}}, \code{\link{data.table}}
