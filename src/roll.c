@@ -20,21 +20,6 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptive) {
   if (!isNewList(x))
     error("x must be a list, data.frame or data.table");
 
-  if (length(fill) != 1)
-    error("fill must be a vector of length 1");
-
-  if (!strcmp(CHAR(STRING_ELT(align, 0)), "right"))
-    salign = RIGHT;
-  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center"))
-    salign = CENTER;
-  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left"))
-    salign = LEFT;
-  else
-    error("Internal error: invalid align argument in rolling function, should have been caught before. Please report.");
-
-  if (!isLogical(adaptive) || length(adaptive) != 1 || LOGICAL(adaptive)[0] == NA_LOGICAL)
-    error("adaptive must be logical TRUE/FALSE");
-
   nx = length(x);
   i = 0;                                                                  // check that every column is double/integer type
   while (i < nx && (isReal(VECTOR_ELT(x, i)) || isInteger(VECTOR_ELT(x, i)))) i++;
@@ -43,11 +28,14 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptive) {
 
   nk = length(k);
   if (nk == 0)                                                            // check that window is not empty
-    error("n must be non 0 length integer vector or list");
+    error("n must be non 0 length");
+
+  if (!isLogical(adaptive) || length(adaptive) != 1 || LOGICAL(adaptive)[0] == NA_LOGICAL)
+    error("adaptive must be logical TRUE/FALSE");
 
   if (!LOGICAL(adaptive)[0]) {                                            // validating n input for adaptive=FALSE
     if (isNewList(k))
-      error("n must be integer, list is accepted only if adaptive TRUE");
+      error("n must be integer, list is accepted for adaptive TRUE");
     //TODO move R's n=as.integer(n) to C
     if (!isInteger(k))                                                    // check that k is integer vector
       error("n must be integer");
@@ -68,10 +56,20 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptive) {
     while (i < nk && isInteger(VECTOR_ELT(kl, i))) i++;
     if (i != nk)
       error("n must be list of integer vectors when adaptive TRUE");
-  } else {
-    error("Internal error: invalid adaptive argument in rolling function, should have been caught before. Please report.");
   }
   
+  if (length(fill) != 1)
+    error("fill must be a vector of length 1");
+
+  if (!strcmp(CHAR(STRING_ELT(align, 0)), "right"))
+    salign = RIGHT;
+  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center"))
+    salign = CENTER;
+  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left"))
+    salign = LEFT;
+  else
+    error("Internal error: invalid align argument in rolling function, should have been caught before. Please report.");
+    
   ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;                // allocate list to keep results
   
   thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
@@ -96,19 +94,19 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptive) {
           copyMostAttrib(this, tmp);
         }
       }
-    } else if (salign == CENTER) {                                        // align center scenario
-      error("align 'center' not yet implemented");
     } else if (salign == LEFT) {                                          // align left scenario
       error("align 'left' not yet implemented");
+    } else if (salign == CENTER) {                                        // align center scenario
+      error("align 'center' not yet implemented");
     }
   } else if (LOGICAL(adaptive)[0]) {                                      // adaptive=TRUE
     error("adaptive TRUE not yet implemented");
     if (salign == RIGHT) {                                                // align right scenario
       //TODO // check that every k list element is integer vector same length as x - push down to for loop
-    } else if (salign == CENTER) {                                        // align center scenario
-      error("align 'center' not yet implemented");
     } else if (salign == LEFT) {                                          // align left scenario
       error("align 'left' not yet implemented");
+    } else if (salign == CENTER) {                                        // align center scenario
+      error("align 'center' not yet implemented");
     }
   }
   

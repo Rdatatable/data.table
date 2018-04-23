@@ -6,31 +6,40 @@
 \alias{rollmean}
 \title{Rolling functions}
 \description{
-  \code{rollmean} in dev so far.
+  \code{rollmean} rolling mean (or \emph{moving average}).
 }
 
 \usage{
-rollmean(x, n, fill=NA, align=c("right", "center", "left"), adaptive=FALSE)
+rollmean(x, n, fill=NA, align=c("right", "left", "center"),
+adaptive=is.list(n))
 }
 \arguments{
-  \item{x}{ A vector, list, data.frame or data.table. }
-  \item{n}{ Non-negative integer vector. }
-  \item{fill}{ Value to pad by. }
-  \item{align}{ Align character, default \code{"right"}. }
+  \item{x}{ vector, list, data.frame or data.table of numeric fields. }
+  \item{n}{ integer vector or list of integer vectors, window size. }
+  \item{fill}{ numeric, value to pad by, default \code{NA}. }
+  \item{align}{ character, define if window frame covers preceding rows
+    \code{"right"}, following rows \code{"left"} or centered
+      \code{"center"}, default \code{"right"}. }
   \item{adaptive}{ logical, should adaptive rolling function be
-    calculated, default \code{FALSE}. }
+    calculated, default to \code{is.list(n)}. }
 }
 \details{
-  \code{roll*} functions accepts vectors, lists, data.frames or data.tables. It always returns a list except when the input is a \code{vector} and \code{length(n) == 1} in which case a \code{vector} is returned, for convenience. This is so that it can be used conveniently within data.table's syntax.
+  \code{roll*} functions accepts vectors, lists, data.frames or
+  data.tables. It always returns a list except when the input is a
+  \code{vector} and \code{length(n) == 1} in which case a \code{vector}
+  is returned, for convenience. This is so that it can be used
+  conveniently within data.table's syntax. 
 
-  Argument \code{n} allows multiple values.
+  Argument \code{n} allows multiple values and if \code{adaptive==TRUE}
+  then it expects a list, each list element can be integer vector of
+  window sizes corresponding to each row-column from \code{x}.
 }
 \value{
   A list or a vector.
 }
 
 \examples{
-rollmean(as.double(1:16), c(3, 4))
+rollmean(1:16, c(3, 4))
 }
 \seealso{
   \code{\link{shift}}, \code{\link{data.table}}
