@@ -6,7 +6,7 @@
 \alias{rollmean}
 \title{Rolling functions}
 \description{
-  \code{rollmean} rolling mean (or \emph{moving average}).
+  Rolling mean (or \emph{moving average}) for now.
 }
 
 \usage{
