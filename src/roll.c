@@ -47,10 +47,10 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptive) {
 
   if (!LOGICAL(adaptive)[0]) {                                            // validating n input for adaptive=FALSE
     if (isNewList(k))
-      error("n must be integer, list is accepted only if adaptive=TRUE");
+      error("n must be integer, list is accepted only if adaptive TRUE");
     //TODO move R's n=as.integer(n) to C
     if (!isInteger(k))                                                    // check that k is integer vector
-      error("Internal error: n must be integer");
+      error("n must be integer");
     i = 0;                                                                // check that all window values non-negative
     while (i < nk && INTEGER(k)[i] >= 0) i++;
     if (i != nk)
@@ -63,7 +63,11 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptive) {
     } else {
       kl = k;
     }
-    //TODO // check that every k list element is integer vector same length as x - push down to for loop
+    //TODO move R's n=as.integer(n) to C
+    i = 0;                                                                  // check that every column is integer type
+    while (i < nk && isInteger(VECTOR_ELT(kl, i))) i++;
+    if (i != nk)
+      error("n must be list of integer vectors when adaptive TRUE");
   } else {
     error("Internal error: invalid adaptive argument in rolling function, should have been caught before. Please report.");
   }
@@ -100,6 +104,7 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptive) {
   } else if (LOGICAL(adaptive)[0]) {                                      // adaptive=TRUE
     error("adaptive TRUE not yet implemented");
     if (salign == RIGHT) {                                                // align right scenario
+      //TODO // check that every k list element is integer vector same length as x - push down to for loop
     } else if (salign == CENTER) {                                        // align center scenario
       error("align 'center' not yet implemented");
     } else if (salign == LEFT) {                                          // align left scenario
