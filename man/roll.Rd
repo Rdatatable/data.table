@@ -6,7 +6,7 @@
 \alias{rollmean}
 \title{Rolling functions}
 \description{
-  Rolling mean (or \emph{moving average}) for now.
+  Rolling functions to calculate aggregates on sliding window.
 }
 
 \usage{
@@ -27,19 +27,34 @@ adaptive=is.list(n))
 }
 \details{
   \code{roll*} functions accepts vectors, lists, data.frames or
-  data.tables. It always returns a list except when the input is a
+  data.tables. They always returns a list except when the input is a
   \code{vector} and \code{length(n) == 1} in which case a \code{vector}
   is returned, for convenience. This is so that it can be used
   conveniently within data.table's syntax. 
 
-  Argument \code{n} allows multiple values and if \code{adaptive==TRUE}
-  then it expects a list, each list element can be integer vector of
-  window sizes corresponding to each row-column from \code{x}.
+  Argument \code{n} allows multiple values and if \code{adaptive ==
+    TRUE} then it expects a list, each list element can be integer
+  vector of window sizes corresponding to each row-column from \code{x}.
 }
 \value{
   A list or a vector.
 }
-
+\note{
+  Users coming from most popular package for rolling function \code{zoo}
+  might expect following difference in data.table implementation.
+  \itemize{
+    \item{ rollmean will always return same length of results as provided
+    input.}
+    \item{ fill by default \code{NA}. }
+    \item( fill supports accept only constant values, no support for
+    \emph{na.locf} or other functions. }
+    \item{ align by default "right". }
+    \item{ integers always coerced to double (also for rollsum,
+    rollprod, rollmin, rollmax).  }
+    \item{ when \code{adaptive==TRUE} \code{n} can be vector same length as \code{x}, or list
+    of such vectors. }
+  }
+}
 \examples{
 rollmean(1:16, c(3, 4))
 # see tests/roll.R for now
