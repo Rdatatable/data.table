@@ -190,7 +190,7 @@ integration: # merging all artifacts so multiple deploy jobs can build same repo
     - linux
   only:
     - gl-ci-upgrade
-    - master
+    - roll
   image: docker.io/jangorecki/r-builder
   dependencies:
   - mirror-packages
@@ -248,7 +248,7 @@ pages:
     - linux
   only:
     - gl-ci-upgrade
-    - master
+    - roll
   image: docker.io/ubuntu
   dependencies:
   - integration
