@@ -10,7 +10,7 @@
 }
 
 \usage{
-rollmean(x, n, fill=NA, align=c("right", "left", "center"),
+rollmean(x, n, fill=NA, align=c("right", "left", "center"), na.rm=FALSE,
 adaptive=is.list(n))
 }
 \arguments{
@@ -19,9 +19,11 @@ adaptive=is.list(n))
   \item{fill}{ numeric, value to pad by, default \code{NA}. }
   \item{align}{ character, define if window frame covers preceding rows
     \code{"right"}, following rows \code{"left"} or centered
-      \code{"center"}, default \code{"right"}. }
+    \code{"center"}, default \code{"right"}. }
+  \item{na.rm}{ logical, should missing values be removed when
+    calculating window, default \code{FALSE}.
   \item{adaptive}{ logical, should adaptive rolling function be
-    calculated, default to \code{is.list(n)}. }
+    calculated, default \code{is.list(n)}. }
 }
 \details{
   \code{roll*} functions accepts vectors, lists, data.frames or

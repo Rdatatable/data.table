@@ -84,9 +84,42 @@ test(9999.6, ans, expected)
 #test(9999.11, ans, expected)
 
 #### handling NAs
-NULL
+d[c(2L, 5L), V1:=NA][4:6, V2:=NA]
+ans = rollmean(d, 2:3)
+expected = list(rep(NA_real_, 6), rep(NA_real_, 6), c(NA, 0.875, 1.125, rep(NA, 3)), c(NA, NA, 1, rep(NA, 3)))
+test(9999.99, ans, expected)
+ans = rollmean(d, 2:3, na.rm=TRUE)
+expected = list(c(NA, 0.5, 1.5, 1.75, 2, 3), c(NA, NA, 1, 1.75, 1.75, 2.5), c(NA, 0.875, 1.125, 1.25, NaN, NaN), c(NA, NA, 1, 1.125, 1.25, NaN))
+test(9999.99, ans, expected)
+
 #### fill constant
-NULL
+test(9999.99, rollmean(1:5, 4, fill=0), c(0, 0, 0, 2.5, 3.5))
+test(9999.99, rollmean(1:5, 4, fill=-5), c(-5, -5, -5, 2.5, 3.5))
+test(9999.99, rollmean(1:5, 4, fill=100), c(100, 100, 100, 2.5, 3.5))
+test(9999.99, rollmean(1:5, 4, fill=Inf), c(Inf, Inf, Inf, 2.5, 3.5))
+test(9999.99, rollmean(1:5, 4, fill=NaN), c(NaN, NaN, NaN, 2.5, 3.5))
+
+# these are the tests that waiting for na.rm=FALSE and ISNAN to be resolved
+# for na.rm=FALSE they can now produce incorrect result
+# still it is consistent to zoo::rollmean
+# it was reported and confirmed as bug on 2018-04-23
+#test(9999.99, rollmean(c(1L, NA, 3L, 4L, 5L), 4, fill=0), c(0, 0, 0, NA, NA))
+#test(9999.99, rollmean(c(1L, NA, 3L, 4L, 5L), 2, fill=0), c(0, 0, 0, NA, NA))
+#x = c(1L, NA, 3L, 4L, 5L)
+# bad
+#rollmean(x, 2, fill=0)
+#zoo::rollmean(x, 2, fill=0, align="right")
+#zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=FALSE)
+# good
+#rollmean(x, 2, fill=0, na.rm=TRUE)
+#zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=TRUE)
+# bad
+#rollmean(x, 2, fill=NA)
+#zoo::rollapply(x, 2, mean, fill=NA, align="right")
+# good
+#rollmean(x, 2, fill=NA, na.rm=TRUE)
+#zoo::rollapply(x, 2, mean, fill=NA, align="right", na.rm=TRUE)
+
 #### adaptive window
 NULL
 
@@ -137,6 +170,27 @@ test(9999.99, rollmean(1:5, Inf), error="n must be non-negative integer values",
 #### n==c(5, Inf)
 test(9999.99, rollmean(1:5, c(5, Inf)), error="n must be non-negative integer values", warning="NAs introduced by coercion to integer range")
 
+#### is.complex(n)
+#rollmean(1:5, 3i)
+
+#### is.character(n)
+#rollmean(1:5, "a")
+
+#### is.factor(n)
+#rollmean(1:5, as.factor("a"))
+
+#### !adaptive && is.list(n)
+#rollmean(11:15, list(1:5), adaptive=FALSE)
+
+#### adaptive && is.integer(n)
+#rollmean(11:15, 1:5, adaptive=TRUE)
+
+#### adaptive && is.integer(n) && length(n)!=length(x)
+#rollmean(11:15, 1:5, adaptive=TRUE)
+
+#### adaptive && is.list(n) && length(n[[1L]])!=length(x)
+#rollmean(11:15, list(1:4), adaptive=TRUE)
+
 ## validation
 
 #### against zoo
@@ -160,6 +214,27 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   test(9999.60, rollmean(x, 51), zoo::rollmean(x, 51, fill=NA, align="right"))
   #test(9999.61, rollmean(x, 51, align="center"), zoo::rollmean(x, 51, fill=NA))
   #test(9999.62, rollmean(x, 51, align="left"), zoo::rollmean(x, 51, fill=NA, align="left"))
+
+  #### na.rm FALSE
+  d = as.data.table(list(1:6/2, 3:8/4))
+  d[c(2L, 5L), V1:=NA][4:6, V2:=NA]
+  ans = rollmean(d, 2:3)
+  expected = list(
+    zoo::rollmean(d[[1L]], 2L, fill=NA, align="right"),
+    zoo::rollmean(d[[1L]], 3L, fill=NA, align="right"),
+    zoo::rollmean(d[[2L]], 2L, fill=NA, align="right"),
+    zoo::rollmean(d[[2L]], 3L, fill=NA, align="right")
+  )
+  test(9999.99, ans, expected)
+  #### na.rm TRUE
+  ans = rollmean(d, 2:3, na.rm=TRUE)
+  expected = list(
+    zoo::rollapply(d[[1L]], 2L, mean, na.rm=TRUE, fill=NA, align="right"),
+    zoo::rollapply(d[[1L]], 3L, mean, na.rm=TRUE, fill=NA, align="right"),
+    zoo::rollapply(d[[2L]], 2L, mean, na.rm=TRUE, fill=NA, align="right"),
+    zoo::rollapply(d[[2L]], 3L, mean, na.rm=TRUE, fill=NA, align="right")
+  )
+  test(9999.99, ans, expected)
 
 }
 
