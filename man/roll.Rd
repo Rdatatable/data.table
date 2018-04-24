@@ -33,8 +33,8 @@ adaptive=is.list(n))
   conveniently within data.table's syntax. 
 
   Argument \code{n} allows multiple values and if \code{adaptive ==
-    TRUE} then it expects a list, each list element can be integer
-  vector of window sizes corresponding to each row-column from \code{x}.
+    TRUE} then it expects a list, each list element must be integer
+  vector of window size for every \code{column[row]} from \code{x}.
 }
 \value{
   A list or a vector.
@@ -54,10 +54,10 @@ adaptive=is.list(n))
       when having \code{NA} values. }
     \item{ integers always coerced to double (also for rollsum,
       rollprod, rollmin, rollmax).  }
-    \item{ when \code{adaptive==FALSE} (default) then \code{n} can be
-      only numeric vector, list is not accepted. }
-    \item{ when \code{adaptive==TRUE} \code{n} can be vector same length
-      as \code{x}, or list of such vectors. }
+    \item{ when \code{adaptive==FALSE} (default) then \code{n} must be a
+      numeric vector, list is not accepted. }
+    \item{ when \code{adaptive==TRUE} then \code{n} must be vector
+      length equal to \code{nrow(x)}, or list of such vectors. }
   }
 }
 \examples{
