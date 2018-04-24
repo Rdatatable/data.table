@@ -40,15 +40,18 @@ adaptive=is.list(n))
   A list or a vector.
 }
 \note{
-  Users coming from most popular package for rolling function \code{zoo}
-  might expect following difference in data.table implementation.
+  Users coming from most popular package for rolling functions
+  \code{zoo} might expect following difference in data.table
+  implementation.
   \itemize{
     \item{ rollmean will always return same length of results as provided
       input. }
     \item{ fill by default \code{NA}. }
-    \item{ fill supports accept only constant values, no support for
+    \item{ fill accept only constant values, no support for
       \emph{na.locf} or other functions. }
     \item{ align by default "right". }
+    \item{ \code{na.rm} is respected, no need to use \code{rollapply}
+      when having \code{NA} values. }
     \item{ integers always coerced to double (also for rollsum,
       rollprod, rollmin, rollmax).  }
     \item{ when \code{adaptive==FALSE} (default) then \code{n} can be
