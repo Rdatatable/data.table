@@ -100,13 +100,6 @@ test(9999.99, rollmean(1:5, 4, fill=100), c(100, 100, 100, 2.5, 3.5))
 test(9999.99, rollmean(1:5, 4, fill=Inf), c(Inf, Inf, Inf, 2.5, 3.5))
 test(9999.99, rollmean(1:5, 4, fill=NaN), c(NaN, NaN, NaN, 2.5, 3.5))
 
-# cannot compare to zoo::rollmean zoo:1.8-1 because of bug in handling NA in input, reported and confirmed on 2018-04-23
-x = c(1L, NA, 3L, 4L, 5L)
-test(9999.99, rollmean(x, 2, fill=0), zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=FALSE))
-test(9999.99, rollmean(x, 2, fill=0, na.rm=TRUE), zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=TRUE))
-test(9999.99, rollmean(x, 2, fill=NA), zoo::rollapply(x, 2, mean, fill=NA, align="right"))
-test(9999.99, rollmean(x, 2, fill=NA, na.rm=TRUE), zoo::rollapply(x, 2, mean, fill=NA, align="right", na.rm=TRUE))
-
 #### adaptive window
 NULL
 
@@ -202,16 +195,17 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   #test(9999.61, rollmean(x, 51, align="center"), zoo::rollmean(x, 51, fill=NA))
   #test(9999.62, rollmean(x, 51, align="left"), zoo::rollmean(x, 51, fill=NA, align="left"))
 
+  #### na.rm / fill
+  x = c(1L, NA, 3L, 4L, 5L)
+  test(9999.99, rollmean(x, 2, fill=0), zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=FALSE))
+  test(9999.99, rollmean(x, 2, fill=0, na.rm=TRUE), zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=TRUE))
+  test(9999.99, rollmean(x, 2, fill=NA), zoo::rollapply(x, 2, mean, fill=NA, align="right"))
+  test(9999.99, rollmean(x, 2, fill=NA, na.rm=TRUE), zoo::rollapply(x, 2, mean, fill=NA, align="right", na.rm=TRUE))
+  
   #### na.rm FALSE
   d = as.data.table(list(1:6/2, 3:8/4))
   d[c(2L, 5L), V1:=NA][4:6, V2:=NA]
   ans = rollmean(d, 2:3)
-  #unexpected = list(
-  #  zoo::rollmean(d[[1L]], 2L, fill=NA, align="right"),
-  #  zoo::rollmean(d[[1L]], 3L, fill=NA, align="right"),
-  #  zoo::rollmean(d[[2L]], 2L, fill=NA, align="right"),
-  #  zoo::rollmean(d[[2L]], 3L, fill=NA, align="right")
-  #) # reported on 2018-04-23 with zoo 1.8-1
   expected = list(
     zoo::rollapply(d[[1L]], 2L, mean, fill=NA, align="right"),
     zoo::rollapply(d[[1L]], 3L, mean, fill=NA, align="right"),
