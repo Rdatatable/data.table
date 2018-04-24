@@ -21,7 +21,7 @@ adaptive=is.list(n))
     \code{"right"}, following rows \code{"left"} or centered
     \code{"center"}, default \code{"right"}. }
   \item{na.rm}{ logical, should missing values be removed when
-    calculating window, default \code{FALSE}. }.
+    calculating window, default \code{FALSE}. }
   \item{adaptive}{ logical, should adaptive rolling function be
     calculated, default \code{is.list(n)}. }
 }
@@ -44,15 +44,17 @@ adaptive=is.list(n))
   might expect following difference in data.table implementation.
   \itemize{
     \item{ rollmean will always return same length of results as provided
-    input.}
+      input. }
     \item{ fill by default \code{NA}. }
-    \item( fill supports accept only constant values, no support for
-    \emph{na.locf} or other functions. }
+    \item{ fill supports accept only constant values, no support for
+      \emph{na.locf} or other functions. }
     \item{ align by default "right". }
     \item{ integers always coerced to double (also for rollsum,
-    rollprod, rollmin, rollmax).  }
-    \item{ when \code{adaptive==TRUE} \code{n} can be vector same length as \code{x}, or list
-    of such vectors. }
+      rollprod, rollmin, rollmax).  }
+    \item{ when \code{adaptive==FALSE} (default) then \code{n} can be
+      only numeric vector, list is not accepted. }
+    \item{ when \code{adaptive==TRUE} \code{n} can be vector same length
+      as \code{x}, or list of such vectors. }
   }
 }
 \examples{
