@@ -84,11 +84,11 @@ test(9999.6, ans, expected)
 #test(9999.11, ans, expected)
 
 #### handling NAs
-#d = as.data.table(list(1:6/2, 3:8/4))
-#d[c(2L, 5L), V1:=NA][4:6, V2:=NA]
-#ans = rollmean(d, 2:3)
-#expected = list(c(NA, NA, NA, 1.75, NA, NA), rep(NA_real_, 6), c(NA, 0.875, 1.125, rep(NA, 3)), c(NA, NA, 1, rep(NA, 3)))
-#test(9999.99, ans, expected)
+d = as.data.table(list(1:6/2, 3:8/4))
+d[c(2L, 5L), V1:=NA][4:6, V2:=NA]
+ans = rollmean(d, 2:3)
+expected = list(c(NA, NA, NA, 1.75, NA, NA), rep(NA_real_, 6), c(NA, 0.875, 1.125, NA, NA, NA), c(NA, NA, 1, NA, NA, NA))
+test(9999.99, ans, expected)
 ans = rollmean(d, 2:3, na.rm=TRUE)
 expected = list(c(NA, 0.5, 1.5, 1.75, 2, 3), c(NA, NA, 1, 1.75, 1.75, 2.5), c(NA, 0.875, 1.125, 1.25, NaN, NaN), c(NA, NA, 1, 1.125, 1.25, NaN))
 test(9999.99, ans, expected)
@@ -100,26 +100,12 @@ test(9999.99, rollmean(1:5, 4, fill=100), c(100, 100, 100, 2.5, 3.5))
 test(9999.99, rollmean(1:5, 4, fill=Inf), c(Inf, Inf, Inf, 2.5, 3.5))
 test(9999.99, rollmean(1:5, 4, fill=NaN), c(NaN, NaN, NaN, 2.5, 3.5))
 
-# these are the tests that waiting for na.rm=FALSE and ISNAN to be resolved
-# for na.rm=FALSE they can now produce incorrect result
-# still it is consistent to zoo::rollmean
-# it was reported and confirmed as bug on 2018-04-23
-#test(9999.99, rollmean(c(1L, NA, 3L, 4L, 5L), 4, fill=0), c(0, 0, 0, NA, NA))
-#test(9999.99, rollmean(c(1L, NA, 3L, 4L, 5L), 2, fill=0), c(0, 0, 0, NA, NA))
-#x = c(1L, NA, 3L, 4L, 5L)
-# bad
-#rollmean(x, 2, fill=0)
-#zoo::rollmean(x, 2, fill=0, align="right")
-#zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=FALSE)
-# good
-#rollmean(x, 2, fill=0, na.rm=TRUE)
-#zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=TRUE)
-# bad
-#rollmean(x, 2, fill=NA)
-#zoo::rollapply(x, 2, mean, fill=NA, align="right")
-# good
-#rollmean(x, 2, fill=NA, na.rm=TRUE)
-#zoo::rollapply(x, 2, mean, fill=NA, align="right", na.rm=TRUE)
+# cannot compare to zoo::rollmean zoo:1.8-1 because of bug in handling NA in input, reported and confirmed on 2018-04-23
+x = c(1L, NA, 3L, 4L, 5L)
+test(9999.99, rollmean(x, 2, fill=0), zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=FALSE))
+test(9999.99, rollmean(x, 2, fill=0, na.rm=TRUE), zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=TRUE))
+test(9999.99, rollmean(x, 2, fill=NA), zoo::rollapply(x, 2, mean, fill=NA, align="right"))
+test(9999.99, rollmean(x, 2, fill=NA, na.rm=TRUE), zoo::rollapply(x, 2, mean, fill=NA, align="right", na.rm=TRUE))
 
 #### adaptive window
 NULL
@@ -219,20 +205,20 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   #### na.rm FALSE
   d = as.data.table(list(1:6/2, 3:8/4))
   d[c(2L, 5L), V1:=NA][4:6, V2:=NA]
-  #ans = rollmean(d, 2:3)
+  ans = rollmean(d, 2:3)
   #unexpected = list(
   #  zoo::rollmean(d[[1L]], 2L, fill=NA, align="right"),
   #  zoo::rollmean(d[[1L]], 3L, fill=NA, align="right"),
   #  zoo::rollmean(d[[2L]], 2L, fill=NA, align="right"),
   #  zoo::rollmean(d[[2L]], 3L, fill=NA, align="right")
   #) # reported on 2018-04-23 with zoo 1.8-1
-  #expected = list(
-  #  zoo::rollapply(d[[1L]], 2L, mean, fill=NA, align="right"),
-  #  zoo::rollapply(d[[1L]], 3L, mean, fill=NA, align="right"),
-  #  zoo::rollapply(d[[2L]], 2L, mean, fill=NA, align="right"),
-  #  zoo::rollapply(d[[2L]], 3L, mean, fill=NA, align="right")
-  #)
-  #test(9999.99, ans, expected)
+  expected = list(
+    zoo::rollapply(d[[1L]], 2L, mean, fill=NA, align="right"),
+    zoo::rollapply(d[[1L]], 3L, mean, fill=NA, align="right"),
+    zoo::rollapply(d[[2L]], 2L, mean, fill=NA, align="right"),
+    zoo::rollapply(d[[2L]], 3L, mean, fill=NA, align="right")
+  )
+  test(9999.99, ans, expected)
   #### na.rm TRUE
   ans = rollmean(d, 2:3, na.rm=TRUE)
   expected = list(
@@ -246,3 +232,14 @@ if (requireNamespace("zoo", quietly=TRUE)) {
 }
 
 #### adaptive window against https://stackoverflow.com/a/21368246/2490497
+
+if (benchmark<-FALSE) {
+  library(microbenchmark)
+  library(data.table)
+  x = rnorm(1e7)
+  n = 1e4
+  microbenchmark(times = 10,
+                 rollmean(x, n, na.rm=TRUE),
+                 rollmean(x, n))
+  # no difference in na.rm T/F cause push down branching to loop
+}
