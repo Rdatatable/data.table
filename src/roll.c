@@ -93,6 +93,8 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP adaptive)
               if (m < thisk - 1) REAL(tmp)[m] = REAL(thisfill)[0];        // fill NA
               else REAL(tmp)[m] = w / thisk;                              // calculate rollmean for a row
             }
+            // extra check if NA to raise error instead of incorrect answer, see comment above near `w += ...`
+            if (ISNAN(w)) warning("Missing values has been propagated while they should not, warning for development only\n");
             copyMostAttrib(this, tmp);
           }
         }
