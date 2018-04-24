@@ -25,7 +25,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
 
   if (!strcmp(CHAR(STRING_ELT(type, 0)), "lag"))  stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "lead")) stype = LEAD;
-  else error("Internal error: invalid type for shift(), should have been caught before. Please report to datatable-help");
+  else error("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker");
 
   nx = length(x); nk = length(k);
   i=0;

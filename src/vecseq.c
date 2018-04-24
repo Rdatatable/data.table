@@ -19,14 +19,14 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
   reslen = 0;
   for (i=0; i<LENGTH(len); i++) {
     if (INT_MAX-reslen < INTEGER(len)[i])
-      error("Join results in more than 2^31 rows (internal vecseq reached physical limit). Very likely misspecified join. Check for duplicate key values in i each of which join to the same group in x over and over again. If that's ok, try by=.EACHI to run j for each group to avoid the large allocation. Otherwise, please search for this error message in the FAQ, Wiki, Stack Overflow and datatable-help for advice.");
+      error("Join results in more than 2^31 rows (internal vecseq reached physical limit). Very likely misspecified join. Check for duplicate key values in i each of which join to the same group in x over and over again. If that's ok, try by=.EACHI to run j for each group to avoid the large allocation. Otherwise, please search for this error message in the FAQ, Wiki, Stack Overflow and data.table issue tracker for advice.");
     reslen += INTEGER(len)[i];
   }
   if (!isNull(clamp)) {
     if (!isNumeric(clamp) || LENGTH(clamp)!=1) error("clamp must be a double vector length 1");
     limit = REAL(clamp)[0];
     if (limit<0) error("clamp must be positive");
-    if (reslen>limit) error("Join results in %d rows; more than %d = nrow(x)+nrow(i). Check for duplicate key values in i each of which join to the same group in x over and over again. If that's ok, try by=.EACHI to run j for each group to avoid the large allocation. If you are sure you wish to proceed, rerun with allow.cartesian=TRUE. Otherwise, please search for this error message in the FAQ, Wiki, Stack Overflow and datatable-help for advice.", reslen, (int)limit);
+    if (reslen>limit) error("Join results in %d rows; more than %d = nrow(x)+nrow(i). Check for duplicate key values in i each of which join to the same group in x over and over again. If that's ok, try by=.EACHI to run j for each group to avoid the large allocation. If you are sure you wish to proceed, rerun with allow.cartesian=TRUE. Otherwise, please search for this error message in the FAQ, Wiki, Stack Overflow and data.table issue tracker for advice.", reslen, (int)limit);
   }
   ans = PROTECT(allocVector(INTSXP, reslen));
   k = 0;
