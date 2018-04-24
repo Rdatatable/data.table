@@ -237,26 +237,29 @@ if (benchmark<-FALSE) {
   # commented to not raise warning on cran check
   #pkgs = c("microbenchmark","TTR","caTools","RollingWindow","data.table")
   #if (all(sapply(pkgs, requireNamespace, quietly=TRUE))) {
-  #  nx = 1e7
+  #  nx = 1e8
   #  n = 1e4
   #  x = rnorm(nx)
   #  microbenchmark::microbenchmark(
-  #    times = 10,
+  #    times = 10, check=function(x) all(sapply(x[-1L], function(xx) all.equal(x[[1L]], xx))),
   #    TTR = TTR::runMean(x, n),
-  #    caTools = caTools::runmean(x, n, endrule="NA", align="right"),
+  #    caTools = caTools::runmean(x, n, alg="fast", endrule="NA", align="right"),
   #    RollingWindow = RollingWindow::RollingMean(x, n)[,1L],
   #    data.table = data.table::rollmean(x, n)
-  #  )
+  #    #, RcppRoll = RcppRoll::roll_mean(x, n, na.rm=FALSE, fill=NA, align="right")
+  #    #, rollapply = zoo::rollapply(x, n, mean, na.rm=FALSE, fill=NA, align="right")
+  #  ) -> mb
+  #  print(mb)
   #}
 
   #library(data.table)
-  x=rnorm(1e7)
+  x=rnorm(1e8)
   setDTthreads(1)
-  system.time(ans1<-rollmean(x, 1:2*100))
-  setDTthreads(2)
-  system.time(ans2<-rollmean(x, 1:2*100))
+  system.time(ans1<-rollmean(x, 1:10*100))
+  setDTthreads(10)
+  system.time(ans2<-rollmean(x, 1:10*100))
   all.equal(ans1, ans2)
   rm(ans1, ans2)
-  gc()
+  invisible(gc())
 
 }
