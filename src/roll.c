@@ -1,13 +1,43 @@
 #include "data.table.h"
 #include <Rdefines.h>
 
+static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk, SEXP thisfill, SEXP narm) {
+  // only for adaptive=FALSE at the moment due to thisk scalar here
+  double w, nc;
+  R_len_t m;
+
+  w = 0.;                                                       // reset window's sum
+  nc = 0;
+  for (m=0; m<xrows; m++) {                                     // loop over observations in column
+    if (ISNAN(REAL(this)[m])) nc++;
+    else w += REAL(this)[m];                                    // add only non-NA to window sum
+    if (m - thisk >= 0) {
+      if (ISNAN(REAL(this)[m-thisk])) nc--;
+      else w -= REAL(this)[m-thisk];                            // remove only non-NA from window sum
+    }
+    if (m < thisk - 1) REAL(tmp)[m] = REAL(thisfill)[0];        // fill NA
+    else {
+      if (nc == 0) REAL(tmp)[m] = w / thisk;                    // calculate mean
+      else if (nc > 0) {
+        if (LOGICAL(narm)[0]) REAL(tmp)[m] = w / (thisk - nc);  // calculate mean if NA present
+        else REAL(tmp)[m] = NA_REAL;                            // NA present and na.rm=FALSE result NA
+      }
+      else if (nc == thisk) {                                   // all values in window are NA
+        if (LOGICAL(narm)[0]) REAL(tmp)[m] = R_NaN;             // for mean(NA, na.rm=T) result NaN
+        else REAL(tmp)[m] = NA_REAL;                            // for mean(NA, na.rm=F) result NA
+      }
+    }
+  }
+  copyMostAttrib(this, tmp);
+  
+  return tmp;
+}
+
 SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP adaptive) {
   
-  R_len_t i=0, j, m, nx, nk, nc, xrows, thisk, protecti=0;
+  R_len_t i=0, j, nx, nk, xrows, protecti=0;
   SEXP x, kl, tmp=R_NilValue, this, ans, thisfill;
-  double w;
   enum {RIGHT, CENTER, LEFT} salign = RIGHT;
-  //Rboolean debug = 0;                                                     // temporary debug messages switch
   
   if (!length(obj)) return(obj);                                          // empty input: NULL, list()
   if (isVectorAtomic(obj)) {                                              // wrap atomic vector into list()
@@ -82,32 +112,13 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP adaptive)
       for (i=0; i<nx; i++) {                                            // loop over columns
         this = AS_NUMERIC(VECTOR_ELT(x, i));                            // extract column/vector from data.table/list
         xrows = length(this);                                           // for list input each vector can have different length
-        for (j=0; j<nk; j++) {                                          // loop over multiple windows
-          thisk = INTEGER(k)[j];                                        // current window size
-          SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows)); // allocate answer vector for this column-window
-          w = 0.;                                                       // reset window's sum
-          nc = 0;
-          for (m=0; m<xrows; m++) {                                     // loop over observations in column
-            if (ISNAN(REAL(this)[m])) nc += 1;
-            else w += REAL(this)[m];                                    // add only non-NA to window sum
-            if (m - thisk >= 0) {
-              if (ISNAN(REAL(this)[m-thisk])) nc -= 1;
-              else w -= REAL(this)[m-thisk];                            // remove only non-NA from window sum
-            }
-            if (m < thisk - 1) REAL(tmp)[m] = REAL(thisfill)[0];        // fill NA
-            else {
-              if (nc == 0) REAL(tmp)[m] = w / thisk;                    // calculate mean
-              else if (nc > 0) {
-                if (LOGICAL(narm)[0]) REAL(tmp)[m] = w / (thisk - nc);  // calculate mean if NA present
-                else REAL(tmp)[m] = NA_REAL;                            // NA present and na.rm=FALSE result NA
-              }
-              else if (nc == thisk) {                                   // all values in window are NA
-                if (LOGICAL(narm)[0]) REAL(tmp)[m] = R_NaN;             // for mean(NA, na.rm=T) result NaN
-                else REAL(tmp)[m] = NA_REAL;                            // for mean(NA, na.rm=F) result NA
-              }
-            }
+        #pragma omp parallel num_threads(MIN(getDTthreads(), nk))
+        {
+          #pragma omp for schedule(dynamic)
+          for (j=0; j<nk; j++) {                                          // loop over multiple windows
+            SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows)); // allocate answer vector for this column-window
+            rollmeanVectorRaw(tmp, this, xrows, INTEGER(k)[j], thisfill, narm);
           }
-          copyMostAttrib(this, tmp);
         }
       }
     } else if (salign == LEFT) {                                        // align left scenario
@@ -125,7 +136,7 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP adaptive)
     } else if (salign == CENTER) {                                      // align center scenario
       error("align 'center' not yet implemented");
     }
-  }
+ }
   
   UNPROTECT(protecti);
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;

@@ -234,12 +234,29 @@ if (requireNamespace("zoo", quietly=TRUE)) {
 #### adaptive window against https://stackoverflow.com/a/21368246/2490497
 
 if (benchmark<-FALSE) {
-  library(microbenchmark)
-  library(data.table)
-  x = rnorm(1e7)
-  n = 1e4
-  microbenchmark(times = 10,
-                 rollmean(x, n, na.rm=TRUE),
-                 rollmean(x, n))
-  # no difference in na.rm T/F cause push down branching to loop
+  # commented to not raise warning on cran check
+  #pkgs = c("microbenchmark","TTR","caTools","RollingWindow","data.table")
+  #if (all(sapply(pkgs, requireNamespace, quietly=TRUE))) {
+  #  nx = 1e7
+  #  n = 1e4
+  #  x = rnorm(nx)
+  #  microbenchmark::microbenchmark(
+  #    times = 10,
+  #    TTR = TTR::runMean(x, n),
+  #    caTools = caTools::runmean(x, n, endrule="NA", align="right"),
+  #    RollingWindow = RollingWindow::RollingMean(x, n)[,1L],
+  #    data.table = data.table::rollmean(x, n)
+  #  )
+  #}
+
+  #library(data.table)
+  x=rnorm(1e7)
+  setDTthreads(1)
+  system.time(ans1<-rollmean(x, 1:2*100))
+  setDTthreads(2)
+  system.time(ans2<-rollmean(x, 1:2*100))
+  all.equal(ans1, ans2)
+  rm(ans1, ans2)
+  gc()
+
 }
