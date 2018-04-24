@@ -68,7 +68,7 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP adaptive)
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left"))
     salign = LEFT;
   else
-    error("Internal error: invalid align argument in rolling function, should have been caught before. Please report.");
+    error("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker.");
 
   if (!isLogical(narm) || length(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL)
     error("na.rm must be TRUE or FALSE");
