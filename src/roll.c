@@ -1,30 +1,46 @@
 #include "data.table.h"
 #include <Rdefines.h>
 
-static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk, SEXP thisfill, SEXP narm) {
-  // only for adaptive=FALSE at the moment due to thisk scalar here
-  double w, nc;
+static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk, double thisfill, Rboolean narm, Rboolean hasna) {
+  // only for adaptive=FALSE at the moment due to thisk scalar R_len_t
+  double w = 0.;
   R_len_t m;
+  Rboolean hasna_ = 0;
 
-  w = 0.;                                                       // reset window's sum
-  nc = 0;
-  for (m=0; m<xrows; m++) {                                     // loop over observations in column
-    if (ISNAN(REAL(this)[m])) nc++;
-    else w += REAL(this)[m];                                    // add only non-NA to window sum
-    if (m - thisk >= 0) {
-      if (ISNAN(REAL(this)[m-thisk])) nc--;
-      else w -= REAL(this)[m-thisk];                            // remove only non-NA from window sum
+  if (hasna==1) hasna_ = 1;                          // cannot simply if (hasna) because NA is -2147483648
+  else {                                             // if (hasna==NA_LOGICAL || hasna==0): default assume no NA
+    for (m=0; m<xrows; m++) {                        // loop over observations in column
+      w += REAL(this)[m];                            // add current row to window sum
+      if (m >= thisk) w -= REAL(this)[m-thisk];      // remove leaving row from window sum
+      if (m + 1 < thisk) REAL(tmp)[m] = thisfill;    // fill partial window
+      else REAL(tmp)[m] = w / thisk;                 // calculate mean
     }
-    if (m < thisk - 1) REAL(tmp)[m] = REAL(thisfill)[0];        // fill NA
-    else {
-      if (nc == 0) REAL(tmp)[m] = w / thisk;                    // calculate mean
-      else if (nc > 0) {
-        if (LOGICAL(narm)[0]) REAL(tmp)[m] = w / (thisk - nc);  // calculate mean if NA present
-        else REAL(tmp)[m] = NA_REAL;                            // NA present and na.rm=FALSE result NA
+    if (ISNAN(w)) {                                  // if NA in input then setup re-run flag
+      if (hasna==0) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
+      w = 0.;
+      hasna_ = 1;
+    }
+  }
+  if (hasna_) {                                                   // hasna_ is non-NA so no `==` check required
+    R_len_t nc = 0;
+    for (m=0; m<xrows; m++) {                                     // loop over observations in column
+      if (ISNAN(REAL(this)[m])) nc++;                             // increment NA count in current window
+      else w += REAL(this)[m];                                    // add only non-NA to window sum
+      if (m >= thisk) {
+        if (ISNAN(REAL(this)[m-thisk])) nc--;                     // decrement NA count in current window
+        else w -= REAL(this)[m-thisk];                            // remove only non-NA from window sum
       }
-      else if (nc == thisk) {                                   // all values in window are NA
-        if (LOGICAL(narm)[0]) REAL(tmp)[m] = R_NaN;             // for mean(NA, na.rm=T) result NaN
-        else REAL(tmp)[m] = NA_REAL;                            // for mean(NA, na.rm=F) result NA
+      if (m + 1 < thisk) REAL(tmp)[m] = thisfill;                 // fill partial window
+      else {
+        if (nc == 0) REAL(tmp)[m] = w / thisk;                    // calculate mean
+        else if (nc == thisk) {                                   // all values in window are NA
+          if (narm) REAL(tmp)[m] = R_NaN;                         // for mean(NA, na.rm=T) result NaN
+          else REAL(tmp)[m] = NA_REAL;                            // for mean(NA, na.rm=F) result NA
+        }
+        else {                                                    // some values in window are NA
+          if (narm) REAL(tmp)[m] = w / (thisk - nc);              // calculate mean if NA present
+          else REAL(tmp)[m] = NA_REAL;                            // NA present and na.rm=FALSE result NA
+        }
       }
     }
   }
@@ -33,7 +49,7 @@ static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk,
   return tmp;
 }
 
-SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP adaptive) {
+SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive) {
   
   R_len_t i=0, j, nx, nk, xrows, protecti=0;
   SEXP x, kl, tmp=R_NilValue, this, ans, thisfill;
@@ -102,8 +118,14 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP adaptive)
 
   if (!isLogical(narm) || length(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL)
     error("na.rm must be TRUE or FALSE");
+
+  if (!isLogical(hasna) || length(hasna)!=1)
+    error("hasNA must be TRUE, FALSE or NA");
   
-  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;                // allocate list to keep results
+  if (LOGICAL(hasna)[0]==FALSE && LOGICAL(narm)[0])
+    error("using hasNA FALSE and na.rm TRUE does not make sense, if you know there are NA value use hasNA TRUE, otherwise leave it as default NA");
+  
+  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;              // allocate list to keep results
   
   thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
   
@@ -117,7 +139,7 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP adaptive)
           #pragma omp for schedule(dynamic)
           for (j=0; j<nk; j++) {                                          // loop over multiple windows
             SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows)); // allocate answer vector for this column-window
-            rollmeanVectorRaw(tmp, this, xrows, INTEGER(k)[j], thisfill, narm);
+            rollmeanVectorRaw(tmp, this, xrcows, INTEGER(k)[j], REAL(thisfill)[0], LOGICAL(narm)[0], LOGICAL(hasna)[0]);
           }
         }
       }

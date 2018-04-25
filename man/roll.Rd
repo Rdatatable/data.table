@@ -10,8 +10,8 @@
 }
 
 \usage{
-rollmean(x, n, fill=NA, align=c("right", "left", "center"), na.rm=FALSE,
-adaptive=is.list(n))
+rollmean(x, n, fill=NA, align=c("right", "left", "center"),
+na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric fields. }
@@ -22,6 +22,9 @@ adaptive=is.list(n))
     \code{"center"}, default \code{"right"}. }
   \item{na.rm}{ logical, should missing values be removed when
     calculating window, default \code{FALSE}. }
+  \item{hasNA}{ logical, if it is known that \code{x} contains \code{NA}
+    then setting to \code{TRUE} can give some speed up, default
+    \code{NA}. }
   \item{adaptive}{ logical, should adaptive rolling function be
     calculated, default \code{is.list(n)}. }
 }

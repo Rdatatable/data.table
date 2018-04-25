@@ -3,6 +3,7 @@ if (!interactive()) {
   library(data.table)
   test = data.table:::test
 }
+oldDTthreads = setDTthreads(1)
 
 ## rolling features
 
@@ -18,7 +19,8 @@ test(9999.1, ans, expected)
 #### multiple windows at once
 ans = rollmean(d[, .(V1)], c(3, 4))
 expected = list(
-  c(rep(NA_real_,2), seq(1,2.5,0.5)), c(rep(NA_real_,3), seq(1.25,2.25,0.5))
+  c(rep(NA_real_,2), seq(1,2.5,0.5)),
+  c(rep(NA_real_,3), seq(1.25,2.25,0.5))
 )
 test(9999.2, ans, expected)
 
@@ -101,7 +103,6 @@ test(9999.99, rollmean(1:5, 4, fill=Inf), c(Inf, Inf, Inf, 2.5, 3.5))
 test(9999.99, rollmean(1:5, 4, fill=NaN), c(NaN, NaN, NaN, 2.5, 3.5))
 
 #### adaptive window
-NULL
 
 ## edge cases
 
@@ -231,19 +232,19 @@ if (benchmark<-FALSE) {
   # commented to not raise warning on cran check
   #pkgs = c("microbenchmark","TTR","caTools","RollingWindow","data.table")
   #if (all(sapply(pkgs, requireNamespace, quietly=TRUE))) {
-  #  nx = 1e8
-  #  n = 1e4
+  #  set.seed(100)
+  #  nx = 1e2
+  #  n = 1e1
   #  x = rnorm(nx)
   #  microbenchmark::microbenchmark(
-  #    times = 10, check=function(x) all(sapply(x[-1L], function(xx) all.equal(x[[1L]], xx))),
+  #    times=10, check=function(x) all(sapply(x[-1L], function(xx) isTRUE(all.equal(x[[1L]], xx)))),
   #    TTR = TTR::runMean(x, n),
   #    caTools = caTools::runmean(x, n, alg="fast", endrule="NA", align="right"),
   #    RollingWindow = RollingWindow::RollingMean(x, n)[,1L],
   #    data.table = data.table::rollmean(x, n)
-  #    #, RcppRoll = RcppRoll::roll_mean(x, n, na.rm=FALSE, fill=NA, align="right")
-  #    #, rollapply = zoo::rollapply(x, n, mean, na.rm=FALSE, fill=NA, align="right")
-  #  ) -> mb
-  #  print(mb)
+  #    , RcppRoll = RcppRoll::roll_mean(x, n, na.rm=FALSE, fill=NA, align="right")
+  #    , zoo = zoo::rollmean(x, n, fill=NA, align="right")
+  #  )
   #}
 
   #library(data.table)
@@ -257,3 +258,5 @@ if (benchmark<-FALSE) {
   invisible(gc())
 
 }
+
+setDTthreads(oldDTthreads)
