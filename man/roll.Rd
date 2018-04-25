@@ -3,14 +3,14 @@
 \alias{rolling}
 \alias{sliding}
 \alias{moving}
-\alias{rollmean}
+\alias{frollmean}
 \title{Rolling functions}
 \description{
   Rolling functions to calculate aggregates on sliding window.
 }
 
 \usage{
-rollmean(x, n, fill=NA, align=c("right", "left", "center"),
+frollmean(x, n, fill=NA, align=c("right", "left", "center"),
 na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
 }
 \arguments{
@@ -47,7 +47,7 @@ na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
   \code{zoo} might expect following difference in data.table
   implementation.
   \itemize{
-    \item{ rollmean will always return same length of results as provided
+    \item{ rolling function will always return same length of results as provided
       input. }
     \item{ fill by default \code{NA}. }
     \item{ fill accept only constant values, no support for
@@ -64,7 +64,7 @@ na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
   }
 }
 \examples{
-rollmean(1:16, c(3, 4))
+frollmean(1:16, c(3, 4))
 # see tests/roll.R for now
 }
 \seealso{

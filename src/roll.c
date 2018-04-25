@@ -139,7 +139,7 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP hasna, SE
           #pragma omp for schedule(dynamic)
           for (j=0; j<nk; j++) {                                          // loop over multiple windows
             SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows)); // allocate answer vector for this column-window
-            rollmeanVectorRaw(tmp, this, xrcows, INTEGER(k)[j], REAL(thisfill)[0], LOGICAL(narm)[0], LOGICAL(hasna)[0]);
+            rollmeanVectorRaw(tmp, this, xrows, INTEGER(k)[j], REAL(thisfill)[0], LOGICAL(narm)[0], LOGICAL(hasna)[0]);
           }
         }
       }
