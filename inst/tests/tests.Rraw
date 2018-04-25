@@ -5476,6 +5476,10 @@ f = paste("file://",testDir("russellCRCRLF.csv"),sep="")
 test(1378.3, fread(f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
 #====================================
 
+# easycsv uses a getOption("datatable.showProgress") which is now defunct, i.e. NULL
+# so test use of this option does not now raise an error
+test(1378.4, x=fread("A,B\n1,3\n2,4", showProgress=getOption("datatable.showProgress")), y=fread("A,B\n1,3\n2,4"))
+
 oldv = options(datatable.fread.datatable = FALSE)
 test(1379.1, fread("A,B\n1,3\n2,4\n"), data.frame(A=1:2,B=3:4))
 test(1379.2, fread("A,B\n1,3\n2,4\n",data.table=TRUE), data.table(A=1:2,B=3:4))
