@@ -76,6 +76,7 @@ SEXP fsort();
 SEXP inrange();
 SEXP between();
 SEXP hasOpenMP();
+SEXP uniqueNlogical();
 
 // .Externals
 SEXP fastmean();
@@ -154,6 +155,7 @@ R_CallMethodDef callMethods[] = {
 {"Cinrange", (DL_FUNC) &inrange, -1},
 {"Cbetween", (DL_FUNC) &between, -1},
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
+{"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
 {NULL, NULL, 0}
 };
 
@@ -234,6 +236,11 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_POSIXct =   PRINTNAME(install("POSIXct"));
   char_nanotime =  PRINTNAME(install("nanotime"));
   char_starts =    PRINTNAME(sym_starts = install("starts"));
+  char_lens =      PRINTNAME(install("lens"));
+  char_indices =   PRINTNAME(install("indices"));
+  char_allLen1 =   PRINTNAME(install("allLen1"));
+  char_allGrp1 =   PRINTNAME(install("allGrp1"));
+
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
     error("PRINTNAME(install(\"integer64\")) has returned %s not %s",
@@ -248,6 +255,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   // look odd (and devs in future might be tempted to remove them). Avoiding passing install() to API calls
   // keeps the code neat and readable. Also see grep's added to CRAN_Release.cmd to find such calls.
   sym_sorted  = install("sorted");
+  sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
 

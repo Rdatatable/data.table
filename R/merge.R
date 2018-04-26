@@ -1,7 +1,9 @@
 merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
-               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
+               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
   if (!sort %in% c(TRUE, FALSE))
     stop("Argument 'sort' should be logical TRUE/FALSE")
+  if (!no.dups %in% c(TRUE, FALSE))
+    stop("Argument 'no.dups' should be logical TRUE/FALSE")
   if (!is.data.table(y)) {
     y = as.data.table(y)
     if (missing(by) && missing(by.x)) {
@@ -48,11 +50,17 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
   end = setdiff(names(y), by.y)
   dupnames = intersect(start, end)
   if (length(dupnames)) {
-    start[chmatch(dupnames, start, 0L)] = paste(dupnames, suffixes[1L], sep="")
-    end[chmatch(dupnames, end, 0L)] = paste(dupnames, suffixes[2L], sep="")
+    start[chmatch(dupnames, start, 0L)] = paste0(dupnames, suffixes[1L])
+    end[chmatch(dupnames, end, 0L)] = paste0(dupnames, suffixes[2L])
+  }
+  # If no.dups = TRUE we also need to added the suffix to columns in y
+  # that share a name with by.x
+  dupkeyx = intersect(by.x, end)
+  if (no.dups && length(dupkeyx)) {
+    end[chmatch(dupkeyx, end, 0L)] = paste0(dupkeyx, suffixes[2L])
   }
 
-  dt = y[x,nomatch = if (all.x) NA else 0,on=by,allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
+  dt = y[x,nomatch = if (all.x) NA else 0L,on=by,allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
 
   if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed
     # Perhaps not very commonly used, so not a huge deal that the join is redone here.
@@ -78,6 +86,15 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
   if (nrow(dt) > 0L) {
     setkeyv(dt, if (sort) by.x else NULL)
   }
+
+  # Throw warning if there are duplicate column names in 'dt' (i.e. if
+  # `suffixes=c("","")`, to match behaviour in base:::merge.data.frame)
+  resultdupnames <- names(dt)[duplicated(names(dt))]
+  if (length(resultdupnames)) {
+    warning("column names ", paste0("'", resultdupnames, "'", collapse=", "),
+            " are duplicated in the result")
+  }
+
   # merge resets class, #1378. X[Y] is quite clear that X is being *subset* by Y,
   # makes sense to therefore retain X's class, unlike `merge`. Hard to tell what
   # class to retain for *full join* for example.

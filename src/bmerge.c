@@ -35,7 +35,7 @@ static double roll, rollabs;
 static Rboolean rollToNearest=FALSE;
 #define XIND(i) (xo ? xo[(i)]-1 : i)
 
-void bmerge_r(int xlow, int xupp, int ilow, int iupp, int col, int thisgrp, int lowmax, int uppmax);
+void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax);
 
 SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
   int xN, iN, protecti=0;
@@ -142,11 +142,12 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   // isorted arg
   o = NULL;
   if (!LOGICAL(isorted)[0]) {
-    SEXP order = PROTECT(int_vec_init(length(icolsArg), 1)); // rep(1L, length(icolsArg))
-    SEXP oSxp = PROTECT(forder(i, icolsArg, PROTECT(ScalarLogical(FALSE)),
-              PROTECT(ScalarLogical(TRUE)), order, PROTECT(ScalarLogical(FALSE))));
-    UNPROTECT(3); // The 3 logicals in line above. TODO - split head of forder into C-level callable
-    protecti += 2;   // order and oSxp
+    SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg)));
+    protecti++;
+    for (int j=0; j<LENGTH(order); j++) INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
+    SEXP oSxp = PROTECT(forder(i, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
+    protecti++;
+    // TODO - split head of forder into C-level callable
     if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
   }
 
@@ -183,10 +184,10 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   SET_VECTOR_ELT(ans, 3, allLen1Arg);
   SET_VECTOR_ELT(ans, 4, allGrp1Arg);
   SET_STRING_ELT(ansnames, 0, char_starts);  // changed from mkChar to char_ to pass the grep in CRAN_Release.cmd
-  SET_STRING_ELT(ansnames, 1, mkChar("lens"));
-  SET_STRING_ELT(ansnames, 2, mkChar("indices"));
-  SET_STRING_ELT(ansnames, 3, mkChar("allLen1"));
-  SET_STRING_ELT(ansnames, 4, mkChar("allGrp1"));
+  SET_STRING_ELT(ansnames, 1, char_lens);
+  SET_STRING_ELT(ansnames, 2, char_indices);
+  SET_STRING_ELT(ansnames, 3, char_allLen1);
+  SET_STRING_ELT(ansnames, 4, char_allGrp1);
   setAttrib(ans, R_NamesSymbol, ansnames);
   if (nqmaxgrp > 1 && mult == ALL) {
     Free(retFirst);
@@ -207,16 +208,6 @@ static union {
 
 static int mid, tmplow, tmpupp;  // global to save them being added to recursive stack. Maybe optimizer would do this anyway.
 static SEXP ic, xc;
-
-// If we find a non-ASCII, non-NA, non-UTF8 encoding, we try to convert it to UTF8. That is, marked non-ascii/non-UTF8 encodings will always be checked in UTF8 locale. This seems to be the best fix I could think of to put the encoding issues to rest..
-// Since the if-statement will fail with the first condition check in "normal" ASCII cases, there shouldn't be huge penalty issues for default setup.
-// Fix for #66, #69, #469 and #1293
-// TODO: compare 1.9.6 performance with 1.9.7 with huge number of ASCII strings.
-SEXP ENC2UTF8(SEXP s) {
-  if (!IS_ASCII(s) && s != NA_STRING && !IS_UTF8(s))
-    s = mkCharCE(translateCharUTF8(s), CE_UTF8);
-  return (s);
-}
 
 void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax)
 // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column

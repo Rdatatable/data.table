@@ -15,7 +15,8 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   mult = match.arg(mult)
   if (type == "equal")
     stop("type = 'equal' is not implemented yet. But note that this is just the same as a normal data.table join y[x, ...], unless you are also interested in setting 'minoverlap / maxgap' arguments. But those arguments are not implemented yet as well.")
-  if (maxgap > 0L || minoverlap > 1L)
+  # if (maxgap > 0L || minoverlap > 1L) # for future implementation
+  if (maxgap != 0L || minoverlap != 1L)
     stop("maxgap and minoverlap arguments are not yet implemented.")
   if (is.null(by.y))
     stop("'y' must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) first, see ?setkey. Also check the examples in ?foverlaps.")
@@ -37,9 +38,9 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     stop("A non-empty vector of column names is required for by.y")
   if (!identical(by.y, key(y)[seq_along(by.y)]))
     stop("The first ", length(by.y), " columns of y's key is not identical to the columns specified in by.y.")
-  if (any(is.na(chmatch(by.x, names(x)))))
+  if (anyNA(chmatch(by.x, names(x))))
     stop("Elements listed in 'by.x' must be valid names in data.table 'x'")
-  if (any(is.na(chmatch(by.y, names(y)))))
+  if (anyNA(chmatch(by.y, names(y))))
     stop("Elements listed in 'by.y' must be valid names in data.table 'y'")
   if (anyDuplicated(by.x) || anyDuplicated(by.y))
     stop("Duplicate columns are not allowed in overlap joins. This may change in the future.")
@@ -59,6 +60,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     stop("The last two columns in by.y should correspond to the 'start' and 'end' intervals in data.table 'y' and must be integer/numeric type.")
   if ( any(y[[yintervals[2L]]] - y[[yintervals[1L]]] < 0L) )
     stop("All entries in column ", yintervals[1L], " should be <= corresponding entries in column ", yintervals[2L], " in data.table 'y'")
+
   ## see NOTES below:
   yclass = c(class(y[[yintervals[1L]]]), class(y[[yintervals[2L]]]))
   isdouble = FALSE; isposix = FALSE
@@ -104,10 +106,10 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
               end = yintervals[2L], any =,
               within =, equal = yintervals)
   call = construct(head(ynames, -2L), uycols, type)
-  if (verbose) {last.started.at=proc.time()[3];cat("unique() + setkey() operations done in ...");flush.console()}
+  if (verbose) {last.started.at=proc.time();cat("unique() + setkey() operations done in ...");flush.console()}
   uy = unique(y[, eval(call)])
-  setkey(uy)[, `:=`(lookup = list(list(integer(0))), type_lookup = list(list(integer(0))), count=0L, type_count=0L)]
-  if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+  setkey(uy)[, `:=`(lookup = list(list(integer(0L))), type_lookup = list(list(integer(0L))), count=0L, type_count=0L)]
+  if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   matches <- function(ii, xx, del, ...) {
     cols = setdiff(names(xx), del)
     xx = .shallow(xx, cols, retain.key = FALSE)
@@ -117,7 +119,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   }
   indices <- function(x, y, intervals, ...) {
     if (type == "start") {
-      sidx = eidx = matches(x, y, intervals[2L], rollends=c(FALSE,FALSE), ...) ## TODO: eidx can be set to integer(0)
+      sidx = eidx = matches(x, y, intervals[2L], rollends=c(FALSE,FALSE), ...) ## TODO: eidx can be set to integer(0L)
     } else if (type == "end") {
       eidx = sidx = matches(x, y, intervals[1L], rollends=c(FALSE,FALSE), ...) ## TODO: sidx can be set to integer(0)
     } else {
@@ -129,12 +131,14 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   # nomatch has no effect here, just for passing arguments consistently to `bmerge`
   .Call(Clookup, uy, nrow(y), indices(uy, y, yintervals, nomatch=0L, roll=roll), maxgap, minoverlap, mult, type, verbose)
   if (maxgap == 0L && minoverlap == 1L) {
-    iintervals = tail(names(x), 2L)
-    if (verbose) {last.started.at=proc.time()[3];cat("binary search(es) done in ...");flush.console()}
+    # iintervals = tail(names(x), 2L)    # iintervals not yet used so commented out for now
+    if (verbose) {last.started.at=proc.time();cat("binary search(es) done in ...");flush.console()}
     xmatches = indices(uy, x, xintervals, nomatch=0L, roll=roll)
-    if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console}
+    if (verbose) {cat(timetaken(last.started.at),"\n");flush.console()}
     olaps = .Call(Coverlaps, uy, xmatches, mult, type, nomatch, verbose)
-  } else if (maxgap == 0L && minoverlap > 1L) {
+  }
+  # nocov start
+  else if (maxgap == 0L && minoverlap > 1L) {
     stop("Not yet implemented")
   } else if (maxgap > 0L && minoverlap == 1L) {
     stop("Not yet implemented")
@@ -143,9 +147,12 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
       warning("maxgap > minoverlap. maxgap will have no effect here.")
     stop("Not yet implemented")
   }
+  # nocov end
+
   setDT(olaps)
   setnames(olaps, c("xid", "yid"))
   yid = NULL  # for 'no visible binding for global variable' from R CMD check on i clauses below
+
   # if (type == "any") setorder(olaps) # at times the combine operation may not result in sorted order
   # CsubsetDT bug has been fixed by Matt. So back to using it! Should improve subset substantially.
   if (which) {
@@ -161,7 +168,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     idx = chmatch(ycols, names(origx), nomatch=0L)
     ans = .Call(CsubsetDT, origx, olaps$xid, seq_along(origx))
     if (any(idx>0L))
-      setnames(ans, names(ans)[idx], paste("i.", names(ans)[idx], sep=""))
+      setnames(ans, names(ans)[idx], paste0("i.", names(ans)[idx]))
     xcols1 = head(by.x, -2L)
     xcols2 = setdiff(names(ans), xcols1)
     ans[, (ycols) := .Call(CsubsetDT, origy, olaps$yid, chmatch(ycols, names(origy)))]

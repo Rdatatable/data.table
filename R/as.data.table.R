@@ -16,7 +16,7 @@ as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ..
   if (is.matrix(x)) {
     return(as.data.table.matrix(x, ...))
   }
-  tt = deparse(substitute(x))[1]
+  tt = deparse(substitute(x))[1L]
   nm = names(x)
   # FR #2356 - transfer names of named vector as "rn" column if required
   if (!identical(keep.rownames, FALSE) & !is.null(nm))
@@ -35,9 +35,9 @@ as.data.table.table <- function(x, keep.rownames=FALSE, ...) {
   # Fix for bug #5408 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
   val = rev(dimnames(provideDimnames(x)))
   if (is.null(names(val)) || !any(nzchar(names(val))))
-    setattr(val, 'names', paste("V", rev(seq_along(val)), sep=""))
+    setattr(val, 'names', paste0("V", rev(seq_along(val))))
   ans <- data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x))
-  setcolorder(ans, c(rev(head(names(ans), -1)), "N"))
+  setcolorder(ans, c(rev(head(names(ans), -1L)), "N"))
   ans
 }
 
@@ -51,14 +51,9 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
   }
   d <- dim(x)
   nrows <- d[1L]
-  ir <- seq_len(nrows)
   ncols <- d[2L]
   ic <- seq_len(ncols)
-  dn <- dimnames(x)
-  collabs <- dn[[2L]]
-  empty <- !nzchar(collabs)
-  if (any(empty))
-    collabs[empty] <- paste("V", ic, sep = "")[empty]
+
   value <- vector("list", ncols)
   if (mode(x) == "character") {
     # fix for #745 - A long overdue SO post: http://stackoverflow.com/questions/17691050/data-table-still-converts-strings-to-factors
@@ -67,10 +62,14 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
   else {
     for (i in ic) value[[i]] <- as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
   }
-  if (length(collabs) == ncols)
-    setattr(value, "names", collabs)
-  else
-    setattr(value, "names", paste("V", ic, sep = ""))
+  col_labels <- dimnames(x)[[2L]]
+  if (length(col_labels) == ncols) {
+    if (any(empty <- !nzchar(col_labels)))
+      col_labels[empty] <- paste0("V", ic[empty])
+    setattr(value, "names", col_labels)
+  } else {
+    setattr(value, "names", paste0("V", ic))
+  }
   setattr(value,"row.names",.set_row_names(nrows))
   setattr(value,"class",c("data.table","data.frame"))
   alloc.col(value)
@@ -92,7 +91,7 @@ as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name=
   # NULL dimnames will create integer keys, not character as in table method
   val = rev(if (is.null(dnx)) lapply(dim(x), seq.int) else dnx)
   if (is.null(names(val)) || all(!nzchar(names(val))))
-    setattr(val, 'names', paste("V", rev(seq_along(val)), sep=""))
+    setattr(val, 'names', paste0("V", rev(seq_along(val))))
   if (value.name %in% names(val))
     stop(sprintf("Argument 'value.name' should not overlap with column names in result: %s.", paste(rev(names(val)), collapse=", ")))
   N = NULL
@@ -100,7 +99,7 @@ as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name=
   if (isTRUE(na.rm))
     ans = ans[!is.na(N)]
   setnames(ans, "N", value.name)
-  dims = rev(head(names(ans), -1))
+  dims = rev(head(names(ans), -1L))
   setcolorder(ans, c(dims, value.name))
   if (isTRUE(sorted))
     setkeyv(ans, dims)
@@ -133,7 +132,7 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
         # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
         if (!n[i] && mn)
           warning("Item ", i, " is of size 0 but maximum size is ", mn, ", therefore recycled with 'NA'")
-        else if (n[i] && mn %% n[i] != 0)
+        else if (n[i] && mn %% n[i] != 0L)
           warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
         x[[i]] = rep(x[[i]], length.out=mn)
       }
@@ -147,7 +146,7 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
       setattr(xx, 'names', names(x)[nz])
     x = xx
   }
-  if (is.null(names(x))) setattr(x,"names",paste("V",seq_len(length(x)),sep=""))
+  if (is.null(names(x))) setattr(x,"names",paste0("V",seq_len(length(x))))
   setattr(x,"row.names",.set_row_names(max(n)))
   setattr(x,"class",c("data.table","data.frame"))
   alloc.col(x)

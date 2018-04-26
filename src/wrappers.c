@@ -8,13 +8,15 @@
 
 SEXP setattrib(SEXP x, SEXP name, SEXP value)
 {
-  if (TYPEOF(name) != STRSXP) error("Attribute name must be of type character");
-  if ( !isNewList(x) &&
-       strcmp(CHAR(STRING_ELT(name, 0)), "class") == 0 &&
-       isString(value) && (strcmp(CHAR(STRING_ELT(value, 0)), "data.table") == 0 ||
-       strcmp(CHAR(STRING_ELT(value, 0)), "data.frame") == 0) )
+  if (!isString(name) || LENGTH(name)!=1) error("Attribute name must be a character vector of length 1");
+  if (!isNewList(x) &&
+      strcmp(CHAR(STRING_ELT(name,0)),"class")==0 &&
+      isString(value) && LENGTH(value)>0 &&
+      (strcmp(CHAR(STRING_ELT(value, 0)),"data.table")==0 || strcmp(CHAR(STRING_ELT(value,0)),"data.frame")==0) ) {
     error("Internal structure doesn't seem to be a list. Can't set class to be 'data.table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' methods instead.");
-  if (isLogical(x) && x == ScalarLogical(TRUE)) {  // ok not to protect this ScalarLogical() as not assigned or passed
+  }
+  if (isLogical(x) && LENGTH(x)==1 &&
+      (x==ScalarLogical(TRUE) || x==ScalarLogical(FALSE) || x==ScalarLogical(NA_LOGICAL))) {  // R's internal globals, #1281
     x = PROTECT(duplicate(x));
     setAttrib(x, name, MAYBE_REFERENCED(value) ? duplicate(value) : value);
     UNPROTECT(1);
@@ -112,7 +114,7 @@ SEXP dim(SEXP x)
         type2char(TYPEOF(x)));
   }
 
-  SEXP ans = allocVector(INTSXP, 2);
+  SEXP ans = PROTECT(allocVector(INTSXP, 2));
   if(length(x) == 0) {
     INTEGER(ans)[0] = 0;
     INTEGER(ans)[1] = 0;
@@ -121,8 +123,7 @@ SEXP dim(SEXP x)
     INTEGER(ans)[0] = length(VECTOR_ELT(x, 0));
     INTEGER(ans)[1] = length(x);
   }
-
+  UNPROTECT(1);
   return ans;
 }
-
 

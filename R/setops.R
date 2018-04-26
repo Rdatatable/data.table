@@ -121,7 +121,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
   stopifnot(is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order), is.numeric(tolerance))
   if (!is.data.table(target) || !is.data.table(current)) stop("'target' and 'current' must be both data.tables")
 
-  msg = character(0)
+  msg = character(0L)
   # init checks that detect high level all.equal
   if (nrow(current) != nrow(target)) msg = "Different number of rows"
   if (ncol(current) != ncol(target)) msg = c(msg, "Different number of columns")
@@ -139,9 +139,9 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
   targetModes = vapply_1c(target, mode)
   currentModes = vapply_1c(current,  mode)
   if (any( d<-(targetModes!=currentModes) )) {
-    w = head(which(d),3)
+    w = head(which(d),3L)
     return(paste0("Datasets have different column modes. First 3: ",paste(
-     paste(names(targetModes)[w],"(",paste(targetModes[w],currentModes[w],sep="!="),")",sep="")
+     paste0(names(targetModes)[w],"(",paste(targetModes[w],currentModes[w],sep="!="),")")
             ,collapse=" ")))
   }
 
@@ -153,9 +153,9 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     if (length(targetTypes) != length(currentTypes))
       stop("Internal error: ncol(current)==ncol(target) was checked above")
     if (any( d<-(targetTypes != currentTypes))) {
-      w = head(which(d),3)
+      w = head(which(d),3L)
       return(paste0("Datasets have different column classes. First 3: ",paste(
-     paste(names(targetTypes)[w],"(",paste(targetTypes[w],currentTypes[w],sep="!="),")",sep="")
+     paste0(names(targetTypes)[w],"(",paste(targetTypes[w],currentTypes[w],sep="!="),")")
             ,collapse=" ")))
     }
   }

@@ -28,7 +28,7 @@ trim <- function(x) {
 }
 
 # take (I don't see it being used anywhere)
-take <- function(x, n=1)
+take <- function(x, n=1L)
 {
   # returns the head of head, without the last n observations
   # convenient when inlining expressions
@@ -45,7 +45,7 @@ take <- function(x, n=1)
 "%+%" <- function(x,y)
 UseMethod("%+%")
 
-"%+%.default" <- function(x,y) paste(paste(x,collapse=","),paste(y,collapse=","),sep="")
+"%+%.default" <- function(x,y) paste0(paste(x,collapse=","),paste(y,collapse=","))
 # we often construct warning msgs with a msg followed by several items of a vector, so %+% is for convenience
 
 require_bit64 = function() {
@@ -68,4 +68,6 @@ vapply_1b <- function (x, fun, ..., use.names = TRUE) {
 vapply_1i <- function (x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
 }
+
+more = function(f) system(paste("more",f))    # nocov  (just a dev helper)
 

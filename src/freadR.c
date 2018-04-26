@@ -121,19 +121,17 @@ SEXP freadR(
   if (isReal(nrowLimitArg)) {
     if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0) args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
   } else {
-    if (INTEGER(nrowLimitArg)[0]>=0) args.nrowLimit = (int64_t)INTEGER(nrowLimitArg)[0];
+    if (INTEGER(nrowLimitArg)[0]>=1) args.nrowLimit = (int64_t)INTEGER(nrowLimitArg)[0];
   }
 
   args.logical01 = LOGICAL(logical01Arg)[0];
-  args.skipNrow=0;
+  args.skipNrow=-1;
   args.skipString=NULL;
   if (isString(skipArg)) {
     args.skipString = CHAR(STRING_ELT(skipArg,0));  // LENGTH==1 was checked at R level
-  } else if (isReal(skipArg)) {
-    if (R_FINITE(REAL(skipArg)[0]) && REAL(skipArg)[0]>0.0) args.skipNrow = (uint64_t)REAL(skipArg)[0];
   } else if (isInteger(skipArg)) {
-    if (INTEGER(skipArg)[0]>0) args.skipNrow = (uint64_t)INTEGER(skipArg)[0];
-  } else error("skip must be a single positive numeric (integer or double), or a string to search for");
+    args.skipNrow = (int64_t)INTEGER(skipArg)[0];
+  } else error("Internal error: skip not integer or string in freadR.c");
 
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
     error("'na.strings' is type '%s'.  Must be either NULL or a character vector.", type2char(TYPEOF(NAstringsArg)));
@@ -202,9 +200,9 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       if (colNames[i].len<=0) {
         char buff[12];
         sprintf(buff,"V%d",i+1);
-        this = mkChar(buff);
+        this = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
       } else {
-        this = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);
+        this = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
       }
       SET_STRING_ELT(colNamesSxp, i, this);
     }
@@ -329,8 +327,9 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     if (ndrop==0) {
       setAttrib(DT,R_NamesSymbol,colNamesSxp);  // colNames mkChar'd in userOverride step
     } else {
-      SEXP tt;
-      setAttrib(DT, R_NamesSymbol, tt = allocVector(STRSXP, ncol-ndrop));
+      SEXP tt = PROTECT(allocVector(STRSXP, ncol-ndrop));
+      setAttrib(DT, R_NamesSymbol, tt);
+      UNPROTECT(1); // tt; now that it's safely a member of protected object
       for (int i=0,resi=0; i<ncol; i++) if (type[i]!=CT_DROP) {
         SET_STRING_ELT(tt,resi++,STRING_ELT(colNamesSxp,i));
       }
@@ -355,10 +354,14 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     int typeChanged = (type[i] > 0) && (newDT || TYPEOF(col) != typeSxp[type[i]] || oldIsInt64 != newIsInt64);
     int nrowChanged = (allocNrow != dtnrows);
     if (typeChanged || nrowChanged) {
-      SEXP thiscol = typeChanged ? allocVector(typeSxp[type[i]], allocNrow)
+      SEXP thiscol = typeChanged ? allocVector(typeSxp[type[i]], allocNrow)  // no need to PROTECT, passed immediately to SET_VECTOR_ELT, see R-exts 5.9.1
                                  : growVector(col, allocNrow);
-      SET_VECTOR_ELT(DT,resi,thiscol);     // no need to PROTECT thiscol, see R-exts 5.9.1
-      if (type[i]==CT_INT64) setAttrib(thiscol, R_ClassSymbol, ScalarString(char_integer64));
+      SET_VECTOR_ELT(DT,resi,thiscol);
+      if (type[i]==CT_INT64) {
+        SEXP tt = PROTECT(ScalarString(char_integer64));
+        setAttrib(thiscol, R_ClassSymbol, tt);
+        UNPROTECT(1);
+      }
       SET_TRUELENGTH(thiscol, allocNrow);
       DTbytes += SIZEOF(thiscol)*allocNrow;
     }
@@ -419,9 +422,8 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
           for (int i=0; i<nRows; i++) {
             int strLen = source->len;
             if (strLen) {
-              SEXP thisStr = strLen<0 ? NA_STRING : mkCharLenCE(anchor + source->off, strLen, ienc);
               // stringLen == INT_MIN => NA, otherwise not a NAstring was checked inside fread_mean
-              SET_STRING_ELT(dest, DTi+i, thisStr);
+              SET_STRING_ELT(dest, DTi+i, strLen<0 ? NA_STRING : mkCharLenCE(anchor + source->off, strLen, ienc));
             } // else dest was already initialized with R_BlankString by allocVector()
             source += cnt8;
           }
@@ -522,8 +524,7 @@ void progress(int p, int eta) {
   }
 }
 
-
-void STOP(const char *format, ...) {
+void __halt(bool warn, const char *format, ...) {
   // Solves: http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
   // TODO: always include fnam in the STOP message. For log files etc.
   va_list args;
@@ -531,22 +532,13 @@ void STOP(const char *format, ...) {
   char msg[2000];
   vsnprintf(msg, 2000, format, args);
   va_end(args);
-  freadCleanup();
-  error("%s", msg);
+  freadCleanup(); // this closes mmp hence why we just copied substrings from mmp to msg[] first since mmp is now invalid
+  if (warn) warning("%s", msg);  // include "%s" because data in msg might include '%'
+  else error("%s", msg);
 }
-
-void freadLastWarning(const char *format, ...) {
-  va_list args;
-  va_start(args, format);
-  static char msg[2000];
-  vsnprintf(msg, 2000, format, args);
-  va_end(args);
-  freadCleanup();
-  warning(msg);
-}
-
 
 void prepareThreadContext(ThreadLocalFreadParsingContext *ctx) {}
 void postprocessBuffer(ThreadLocalFreadParsingContext *ctx) {}
 void orderBuffer(ThreadLocalFreadParsingContext *ctx) {}
 void freeThreadContext(ThreadLocalFreadParsingContext *ctx) {}
+

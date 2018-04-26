@@ -1,3 +1,5 @@
+# nocov start
+
 .onLoad <- function(libname, pkgname) {
   # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
 
@@ -7,9 +9,9 @@
   ss = body(tt)
   if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
   prefix = if (!missing(pkgname)) "data.table::" else ""  # R provides the arguments when it calls .onLoad, I don't in dev/test
-  if (!length(grep("data.table",ss[[2]]))) {
-    ss = ss[c(1,NA,2:length(ss))]
-    ss[[2]] = parse(text=paste("if (!identical(class(..1),'data.frame')) for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,"data.table(...)) }",sep=""))[[1]]
+  if (!length(grep("data.table",ss[[2L]]))) {
+    ss = ss[c(1L, NA, 2L:length(ss))]
+    ss[[2L]] = parse(text=paste0("if (!identical(class(..1),'data.frame')) for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,"data.table(...)) }"))[[1]]
     body(tt)=ss
     (unlockBinding)("cbind.data.frame",baseenv())
     assign("cbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
@@ -18,15 +20,18 @@
   tt = base::rbind.data.frame
   ss = body(tt)
   if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
-  if (!length(grep("data.table",ss[[2]]))) {
-    ss = ss[c(1,NA,2:length(ss))]
-    ss[[2]] = parse(text=paste("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }",sep=""))[[1]] # fix for #4995
+  if (!length(grep("data.table",ss[[2L]]))) {
+    ss = ss[c(1L, NA, 2L:length(ss))]
+    ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #4995
     body(tt)=ss
     (unlockBinding)("rbind.data.frame",baseenv())
     assign("rbind.data.frame",tt,envir=asNamespace("base"),inherits=FALSE)
     lockBinding("rbind.data.frame",baseenv())
   }
   # Set options for the speed boost in v1.8.0 by avoiding 'default' arg of getOption(,default=)
+  # In fread and fwrite we have moved back to using getOption's default argument since it is unlikely fread and fread will be called in a loop many times, plus they
+  # are relatively heavy functions where the overhead in getOption() would not be noticed.  It's only really [.data.table where getOption default bit.
+  # Improvement to base::getOption() now submitted (100x; 5s down to 0.05s):  https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17394
   opts = c("datatable.verbose"="FALSE",            # datatable.<argument name>
        "datatable.nomatch"="NA_integer_",      # datatable.<argument name>
        "datatable.optimize"="Inf",             # datatable.<argument name>
@@ -40,16 +45,13 @@
        "datatable.dfdispatchwarn"="TRUE",                   # not a function argument
        "datatable.warnredundantby"="TRUE",                  # not a function argument
        "datatable.alloccol"="1024L",           # argument 'n' of alloc.col. Over-allocate 1024 spare column slots
-       "datatable.integer64"="'integer64'",    # datatable.<argument name>    integer64|double|character
        "datatable.auto.index"="TRUE",          # DT[col=="val"] to auto add index so 2nd time faster
        "datatable.use.index"="TRUE",           # global switch to address #1422
-       "datatable.fread.datatable"="TRUE",
        "datatable.prettyprint.char" = NULL,     # FR #1091
-       "datatable.old.unique.by.key" = "FALSE", # TODO: warn 1 year, remove after 2 years
-       "datatable.logical01" = "TRUE"           # fwrite/fread to revert to FALSE. TODO: warn in next release and remove after 1 year
+       "datatable.old.unique.by.key" = "FALSE"  # TODO: change warnings in duplicated.R to error on or after Jan 2019 then remove in Jan 2020.
        )
   for (i in setdiff(names(opts),names(options()))) {
-    eval(parse(text=paste("options(",i,"=",opts[i],")",sep="")))
+    eval(parse(text=paste0("options(",i,"=",opts[i],")")))
   }
 
   if (!is.null(getOption("datatable.old.bywithoutby")))
@@ -65,11 +67,10 @@
   # There's also a NOTE: Package startup functions should not change the search path.
   # Therefore, removed. Users will need to make sure reshape2 isn't loaded, or loaded behind data.table on search()
 
-  # Test R behaviour ...
-
-  x = 1:3
+  # Test R behaviour that changed in v3.1 and is now depended on
+  x = 1L:3L
   y = list(x)
-  .R.listCopiesNamed <<- (address(x) != address(y[[1]]))   # FALSE from R 3.1
+  if (address(x) != address(y[[1L]])) stop("Unexpected base R behaviour: list(x) has copied x")
 
   DF = data.frame(a=1:3, b=4:6)
   add1 = address(DF$a)
@@ -77,26 +78,25 @@
   names(DF) = c("A","B")
   add3 = address(DF$A)
   add4 = address(DF$B)
-  .R.assignNamesCopiesAll <<- add1 != add3                 # FALSE from R 3.1
-  if ((add1 == add3) != (add2 == add4)) stop("If one column is copied surely the other should be as well, when checking .R.assignNamesCopiesAll")
+  if (add1!=add3 || add2!=add4) stop("Unexpected base R behaviour: names<- has copied column contents")
 
   DF = data.frame(a=1:3, b=4:6)
   add1 = address(DF$a)
-  add2 = address(DF)
-  DF[2,"b"] = 7  # changed b but not a
-  add3 = address(DF$a)
-  add4 = address(DF)
-  .R.subassignCopiesOthers <<- add1 != add3                # FALSE from R 3.1
-  .R.subassignCopiesVecsxp <<- add2 != add4                # currently TRUE in R 3.1, but could feasibly change
+  add2 = address(DF$b)
+  add3 = address(DF)
+  DF[2L, "b"] = 7  # changed b but not a
+  add4 = address(DF$a)
+  add5 = address(DF$b)
+  add6 = address(DF)
+  if (add2==add5) stop("Unexpected base R behaviour: DF[2,2]<- did not copy column 2 which was assigned to")
+  if (add1!=add4) stop("Unexpected base R behaviour: DF[2,2]<- copied the first column which was not assigned to, too")
+
+  if (add3==add6) warning("Unexpected base R behaviour: DF[2,2]<- has not copied address(DF)")
+  # R could feasibly in future not copy DF's vecsxp in this case. If that changes in R, we'd like to know via the warning
+  # because tests will likely break too. The warning will quickly tell R-core and us why, so we can then update.
 
   invisible()
 }
-
-# Switch on these variables instead of getRversion(). Set to TRUE just to create them as a single logical. They are set by .onLoad() above.
-.R.listCopiesNamed = TRUE
-.R.assignNamesCopiesAll = TRUE
-.R.subassignCopiesOthers = TRUE
-.R.subassignCopiesVecsxp = TRUE
 
 getRversion <- function(...) stop("Reminder to data.table developers: don't use getRversion() internally. Add a behaviour test to .onLoad instead.")
 # 1) using getRversion() wasted time when R3.0.3beta was released without the changes we expected in getRversion()>"3.0.2".
@@ -109,3 +109,5 @@ getRversion <- function(...) stop("Reminder to data.table developers: don't use 
   # So 'detach' doesn't find datatable.so, as it looks by default for data.table.so
   library.dynam.unload("datatable", libpath)
 }
+
+# nocov end

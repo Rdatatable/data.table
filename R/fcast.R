@@ -97,7 +97,7 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
 dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
   if (!is.data.table(data)) stop("'data' must be a data.table.")
   drop = as.logical(rep(drop, length.out=2L))
-  if (any(is.na(drop))) stop("'drop' must be logical TRUE/FALSE")
+  if (anyNA(drop)) stop("'drop' must be logical TRUE/FALSE")
   lvals = value_vars(value.var, names(data))
   valnames = unique(unlist(lvals))
   lvars = check_formula(formula, names(data), valnames)
@@ -149,8 +149,8 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
     errmsg = "Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately."
     if (is.null(fill)) {
-      fill.default <- suppressWarnings(dat[0][, eval(fun.call)])
-      # tryCatch(fill.default <- dat[0][, eval(fun.call)], error = function(x) stop(errmsg, call.=FALSE))
+      fill.default <- suppressWarnings(dat[0L][, eval(fun.call)])
+      # tryCatch(fill.default <- dat[0L][, eval(fun.call)], error = function(x) stop(errmsg, call.=FALSE))
       if (nrow(fill.default) != 1L) stop(errmsg, call.=FALSE)
     }
     if (!any(valnames %chin% varnames)) {

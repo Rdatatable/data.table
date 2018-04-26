@@ -109,11 +109,9 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   lookup = VECTOR_ELT(ux, uxcols-4);
   type_lookup = VECTOR_ELT(ux, uxcols-3);
   for (i=0; i<uxrows; i++) {
-    vv = allocVector(INTSXP, len1[i]);
-    SET_VECTOR_ELT(lookup, i, vv);
+    SET_VECTOR_ELT(lookup, i, vv=allocVector(INTSXP, len1[i]));
     if (type != WITHIN) {
-      vv = allocVector(INTSXP, len2[i]);
-      SET_VECTOR_ELT(type_lookup, i, vv);
+      SET_VECTOR_ELT(type_lookup, i, vv=allocVector(INTSXP, len2[i]));
     }
   }
   pass2 = clock() - start;
@@ -301,10 +299,8 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   // ans[0] is the the position of 'query' and ans[1] is that of 'subject'
   // allocate f1__ and f2__ and assign 'nomatch' to f2__
   ans = PROTECT(allocVector(VECSXP, 2));
-  f1__ = allocVector(INTSXP, totlen);
-  SET_VECTOR_ELT(ans, 0, f1__);
-  f2__ = allocVector(INTSXP, totlen);
-  SET_VECTOR_ELT(ans, 1, f2__);
+  SET_VECTOR_ELT(ans, 0, f1__=allocVector(INTSXP, totlen));
+  SET_VECTOR_ELT(ans, 1, f2__=allocVector(INTSXP, totlen));
   thislen=0;
   start = clock();
 

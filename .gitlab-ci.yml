@@ -19,8 +19,8 @@ mirror-packages:
   script:
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
     # mirror R dependencies
-    - Rscript -e 'source(Sys.getenv("CI_TOOLS")); mirror.packages(packages.dcf("DESCRIPTION", "all"), repos=c(Sys.getenv("CRAN_MIRROR"), Sys.getenv("BIOC_MIRROR")), repodir="bus/mirror-packages/cran")'
-    #- Rscript -e 'source(Sys.getenv("CI_TOOLS")); mirror.packages(type="win.binary", packages.dcf("DESCRIPTION", "all"), repos=c(Sys.getenv("CRAN_MIRROR"), Sys.getenv("BIOC_MIRROR")), repodir="bus/mirror-packages/cran")'
+    - Rscript -e 'source(Sys.getenv("CI_TOOLS")); mirror.packages(packages.dcf(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), "all"), repos=c(Sys.getenv("CRAN_MIRROR"), Sys.getenv("BIOC_MIRROR"), repos.dcf("inst/tests/tests-DESCRIPTION")), repodir="bus/mirror-packages/cran")'
+    #- Rscript -e 'source(Sys.getenv("CI_TOOLS")); mirror.packages(type="win.binary", packages.dcf(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), "all"), repos=c(Sys.getenv("CRAN_MIRROR"), Sys.getenv("BIOC_MIRROR"), repos.dcf("inst/tests/tests-DESCRIPTION")), repodir="bus/mirror-packages/cran")'
   artifacts:
     expire_in: 2 weeks
     paths:
@@ -36,16 +36,17 @@ build:
   script:
     - Rscript -e 'install.packages("knitr", repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
     - rm -r bus
+    - echo "Revision:" $CI_BUILD_REF >> ./DESCRIPTION
     - R CMD build .
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
     - mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib/.
-    - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/build/cran"), addFiles=TRUE)'
+    - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/build/cran"), addFiles=TRUE, fields="Revision")'
   artifacts:
     expire_in: 2 weeks
     paths:
       - bus
 
-test-r-release: # R-release most comprehensive tests, force all suggests
+test-r-release: # R-release most comprehensive tests, force all suggests, also integration tests
   stage: test
   tags:
     - linux
@@ -54,13 +55,14 @@ test-r-release: # R-release most comprehensive tests, force all suggests
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     OPENBLAS_MAIN_FREE: "1"
+    TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
   image: docker.io/jangorecki/r-builder
   dependencies:
   - mirror-packages
   - build
   script:
     - mkdir -p bus/$CI_BUILD_NAME
-    - Rscript -e 'source(Sys.getenv("CI_TOOLS")); if (length(pkgs<-packages.dcf("DESCRIPTION", "all"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
+    - Rscript -e 'source(Sys.getenv("CI_TOOLS")); if (length(pkgs<-packages.dcf(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), "all"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
     - cd bus/$CI_BUILD_NAME
     - Rscript -e 'file.copy(download.packages("data.table", repos=file.path("file:",normalizePath("../build/cran")))[,2], ".")'
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
@@ -109,7 +111,7 @@ test-r-devel-cran: # R-devel CRAN check
     - RDscript -e 'source(Sys.getenv("CI_TOOLS")); if (length(pkgs<-packages.dcf("DESCRIPTION", "all"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
     - cd bus/$CI_BUILD_NAME
     - Rscript -e 'file.copy(download.packages("data.table", repos=file.path("file:",normalizePath("../build/cran")))[,2], ".")'
-    - RD CMD check --as-cran --no-manual $(ls -1t data.table_*.tar.gz | head -n 1) # remove --no-manual when own image provided
+    - RD CMD check --as-cran --ignore-vignettes --no-manual $(ls -1t data.table_*.tar.gz | head -n 1) # remove --no-manual when own image provided
   artifacts:
     expire_in: 2 weeks
     when: always
@@ -125,6 +127,8 @@ test-r-release-vanilla: # check minimal installation, no suggested deps, no vign
   dependencies:
   - mirror-packages
   - build
+  variables:
+    TEST_DATA_TABLE_MEMTEST: "TRUE"
   script:
     - mkdir -p bus/$CI_BUILD_NAME
     - Rscript -e 'source(Sys.getenv("CI_TOOLS")); if (length(pkgs<-packages.dcf("DESCRIPTION"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'

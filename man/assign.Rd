@@ -27,7 +27,7 @@ set(x, i = NULL, j, value)
 \item{i}{ Optional. Indicates the rows on which the values must be updated with. If not provided, implies \emph{all rows}. The \code{:=} form is more powerful as it allows \emph{subsets} and \code{joins} based add/update columns by reference. See \code{Details}.
 
     In \code{set}, only integer type is allowed in \code{i} indicating which rows \code{value} should be assigned to. \code{NULL} represents all rows more efficiently than creating a vector such as \code{1:nrow(x)}. }
-\item{j}{ Column name(s) (character) or number(s) (integer) to be assigned \code{value} when column(s) already exist, and only column name(s) if they are to be added newly. }
+\item{j}{ Column name(s) (character) or number(s) (integer) to be assigned \code{value} when column(s) already exist, and only column name(s) if they are to be created. }
 \item{value}{ A list of replacement values to assign by reference to \code{x[i, j]}. }
 }
 \details{
@@ -99,6 +99,30 @@ DT["A", b := 0L, on = "a"]  # ad-hoc update of column b for group "A" using
 setkey(DT, a)
 DT["A", b := 0L]            # binary search for group "A" and set column b using keys
 DT["B", f := mean(d)]       # subassign to new column, NA initialized
+
+# Adding multiple columns
+## by name
+DT[ , c('sin_d', 'log_e', 'cos_d') :=
+   .(sin(d), log(e), cos(d))]
+## by patterned name
+DT[ , paste(c('sin', 'cos'), 'b', sep = '_') :=
+   .(sin(b), cos(b))]
+## using lapply & .SD
+DT[ , paste0('tan_', c('b', 'd', 'e')) :=
+   lapply(.SD, tan), .SDcols = c('b', 'd', 'e')]
+## using forced evaluation to disambguate a vector of names
+##   and overwrite existing columns with their squares
+sq_cols = c('b', 'd', 'e')
+DT[ , (sq_cols) := lapply(.SD, `^`, 2L), .SDcols = sq_cols]
+## by integer (NB: for robustness, it is not recommended
+##   to use explicit integers to update/define columns)
+DT[ , c(2L, 3L, 4L) := .(sqrt(b), sqrt(d), sqrt(e))]
+## by implicit integer
+DT[ , grep('a$', names(DT)) := tolower(a)]
+## by implicit integer, using forced evaluation
+sq_col_idx = grep('d$', names(DT))
+DT[ , (sq_col_idx) := lapply(.SD, dnorm),
+   .SDcols = sq_col_idx]
 
 \dontrun{
 # Speed example ...

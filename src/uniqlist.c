@@ -16,7 +16,6 @@ SEXP uniqlist(SEXP l, SEXP order)
   R_len_t i, j, nrow, ncol, len, thisi, previ, isize=1000;
 
   int *iidx = Calloc(isize, int); // for 'idx'
-  int *n_iidx; // to catch allocation errors using Realloc!
   ncol = length(l);
   nrow = length(VECTOR_ELT(l,0));
   len = 1;
@@ -54,9 +53,8 @@ SEXP uniqlist(SEXP l, SEXP order)
     }
     if (!b) iidx[len++] = i+1;
     if (len >= isize) {
-      isize = 1.1*isize*nrow/i;
-      n_iidx = Realloc(iidx, isize, int);
-      if (n_iidx != NULL) iidx = n_iidx; else error("Error in reallocating memory in 'uniqlist'\n");
+      isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));
+      iidx = Realloc(iidx, isize, int);
     }
   }
   PROTECT(ans = allocVector(INTSXP, len));
@@ -67,16 +65,15 @@ SEXP uniqlist(SEXP l, SEXP order)
 }
 
 SEXP uniqlengths(SEXP x, SEXP n) {
-  SEXP ans;
-  R_len_t i, len;
-  if (TYPEOF(x) != INTSXP || length(x) < 0) error("Input argument 'x' to 'uniqlengths' must be an integer vector of length >= 0");
+  // seems very similar to rbindlist.c:uniq_lengths. TODO: centralize into common function
+  if (TYPEOF(x) != INTSXP) error("Input argument 'x' to 'uniqlengths' must be an integer vector");
   if (TYPEOF(n) != INTSXP || length(n) != 1) error("Input argument 'n' to 'uniqlengths' must be an integer vector of length 1");
-  PROTECT(ans = allocVector(INTSXP, length(x)));
-  len = length(x);
-  for (i=1; i<len; i++) {
+  R_len_t len = length(x);
+  SEXP ans = PROTECT(allocVector(INTSXP, len));
+  for (R_len_t i=1; i<len; i++) {
     INTEGER(ans)[i-1] = INTEGER(x)[i] - INTEGER(x)[i-1];
   }
-  INTEGER(ans)[len-1] = INTEGER(n)[0] - INTEGER(x)[len-1] + 1;
+  if (len>0) INTEGER(ans)[len-1] = INTEGER(n)[0] - INTEGER(x)[len-1] + 1;
   UNPROTECT(1);
   return(ans);
 }
@@ -138,7 +135,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
   if (nrows==0) return(allocVector(INTSXP, 0));
   R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;
-  R_len_t *ptr, *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen;
+  R_len_t *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen;
   R_len_t ngrps = length(grps), *i64 = Calloc(ncols, R_len_t);
   if (ngrps==0) error("Internal error: nrows[%d]>0 but ngrps==0", nrows);
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
@@ -213,10 +210,8 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
       rlen += INTEGER(resetvals)[++resetctr];
     }
     if (nansgrp >= ansgrpsize) {
-      ansgrpsize = 1.1*ansgrpsize*nrows/i;
-      ptr = Realloc(ansgrp, ansgrpsize, int);
-      if (ptr != NULL) ansgrp = ptr;
-      else error("Error in reallocating memory in 'nestedid'\n");
+      ansgrpsize = MIN(nrows, (size_t)(1.1*(double)ansgrpsize*((double)nrows/i)));
+      ansgrp = Realloc(ansgrp, ansgrpsize, int);
     }
     for (int j=0; j<grplen; j++) {
       ians[byorder ? INTEGER(order)[igrps[i]-1+j]-1 : igrps[i]-1+j] = tmp+1;
@@ -228,3 +223,28 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   UNPROTECT(1);
   return(ans);
 }
+
+SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
+  // single pass; short-circuit and return as soon as all 3 values are found
+  if (!isLogical(x)) error("x is not a logical vector");
+  if (!isLogical(narmArg) || length(narmArg)!=1 || INTEGER(narmArg)[0]==NA_INTEGER) error("na.rm must be TRUE or FALSE");
+  bool narm = LOGICAL(narmArg)[0]==1;
+  const R_xlen_t n = xlength(x);
+  if (n==0)
+    return ScalarInteger(0);  // empty vector
+  Rboolean first = LOGICAL(x)[0];
+  R_xlen_t i=0;
+  while (++i<n && LOGICAL(x)[i]==first);
+  if (i==n)
+    return ScalarInteger(first==NA_INTEGER && narm ? 0 : 1); // all one value
+  Rboolean second = LOGICAL(x)[i];
+  // we've found 2 different values (first and second). Which one didn't we find? Then just look for that.
+  // NA_LOGICAL == INT_MIN checked in init.c
+  const int third = (first+second == 1) ? NA_LOGICAL : ( first+second == INT_MIN ? TRUE : FALSE );
+  if (third==NA_LOGICAL && narm)
+    return ScalarInteger(2);  // TRUE and FALSE found before any NA, but na.rm=TRUE so we're done
+  while (++i<n) if (LOGICAL(x)[i]==third)
+    return ScalarInteger(3-narm);
+  return ScalarInteger(2-(narm && third!=NA_LOGICAL));
+}
+
