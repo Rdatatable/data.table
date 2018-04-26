@@ -1,5 +1,8 @@
-frollmean <- function(x, n, fill=NA, align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n)) {
+frollmean <- function(x, n, fill=NA, exact=TRUE, align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n)) {
   align = match.arg(align)
-  ans = .Call(Crollmean, x, as.integer(n), fill, align, na.rm, hasNA, adaptive)
+  # n type handling to be moved to C
+  if (is.double(n)) n = as.integer(n)
+  else if (is.list(n)) stopifnot(sapply(n, inherits, "integer"))
+  ans = .Call(Crollmean, x, n, fill, exact, align, na.rm, hasNA, adaptive)
   ans
 }

@@ -115,14 +115,14 @@ test(9999.99, frollmean(1:3, integer()), error="n must be non 0 length")
 test(9999.99, frollmean(list(1:3, 2:4), integer()), error="n must be non 0 length")
 
 #### n==0
-test(9999.99, frollmean(1:3, c(2,0)), list(c(NA_real_, 1.5, 2.5), rep(NaN, 3)))
-test(9999.99, frollmean(list(1:3, 2:4), 0), list(rep(NaN, 3), rep(NaN, 3)))
+test(9999.99, frollmean(1:3, c(2,0)), error="n must be positive integer values")
+test(9999.99, frollmean(list(1:3, 2:4), 0), error="n must be positive integer values")
 
 #### n<0
-test(9999.99, frollmean(1:3, -2), error="n must be non-negative integer values")
+test(9999.99, frollmean(1:3, -2), error="n must be positive integer values")
 
 #### n[[1L]]>0 && n[[2L]]<0
-test(9999.99, frollmean(1:3, c(2, -2)), error="n must be non-negative integer values")
+test(9999.99, frollmean(1:3, c(2, -2)), error="n must be positive integer values")
 
 #### n[[1L]]==n[[2L]]
 test(9999.99, frollmean(1:3, c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5)))
@@ -228,8 +228,8 @@ if (requireNamespace("zoo", quietly=TRUE)) {
 
 #### adaptive window against https://stackoverflow.com/a/21368246/2490497
 
-if (benchmark<-FALSE) {
-  # commented to not raise warning on cran check
+if (dev_and_benchmark_area<-FALSE) {
+  ## commented to not raise warning on cran check
   #pkgs = c("microbenchmark","TTR","caTools","RollingWindow","data.table")
   #if (all(sapply(pkgs, requireNamespace, quietly=TRUE))) {
   #  set.seed(100)
@@ -242,11 +242,12 @@ if (benchmark<-FALSE) {
   #    caTools = caTools::runmean(x, n, alg="fast", endrule="NA", align="right"),
   #    RollingWindow = RollingWindow::RollingMean(x, n)[,1L],
   #    data.table = data.table::frollmean(x, n)
-  #    , RcppRoll = RcppRoll::roll_mean(x, n, na.rm=FALSE, fill=NA, align="right")
-  #    , zoo = zoo::rollmean(x, n, fill=NA, align="right")
+  #    #, RcppRoll = RcppRoll::roll_mean(x, n, na.rm=FALSE, fill=NA, align="right")
+  #    #, zoo = zoo::rollmean(x, n, fill=NA, align="right")
   #  )
   #}
 
+  ## openmp
   #library(data.table)
   x=rnorm(1e8)
   setDTthreads(1)
@@ -257,6 +258,114 @@ if (benchmark<-FALSE) {
   rm(ans1, ans2)
   invisible(gc())
 
+  ## hasNA TRUE / FALSE
+  #library(data.table)
+  set.seed(108)
+  nx = 1e9
+  n = 1e4
+  nas = 1e5
+  x1 = rnorm(nx)
+  x2 = rnorm(nx)
+  x1n = copy(x1)
+  x1n[sample(nx, nas)] = NA
+  x2n = copy(x2)
+  x2n[sample(nx, nas)] = NA
+    
+  system.time(frollmean(x1, n, hasNA=TRUE))
+  system.time(frollmean(x2, n))
+  system.time(frollmean(x1n, n, hasNA=TRUE))
+  system.time(frollmean(x2n, n))
+
+  ## adaptive TRUE FALSE
+  #https://stackoverflow.com/questions/21368245/adaptive-moving-average-top-performance-in-r/21368246#21368246
+  f = function(x, n, na.rm=FALSE) {
+    nx = length(x)
+    stopifnot(nx==length(n))
+    ans = vector("double", nx)[NA]
+    for (i in seq_along(x))
+      if (i >= n[i]) ans[i] = mean(x[(i-n[i]+1):i], na.rm=na.rm)
+    ans
+  }
+  wmapply = function(x, width, FUN = NULL, ...){
+    FUN <- match.fun(FUN)
+    SEQ1 <- 1:length(x)
+    SEQ1[SEQ1 <  width] <- NA_integer_
+    SEQ2 <- lapply(SEQ1, function(i) if(!is.na(i)) (i - (width[i]-1)):i)
+    OUT <- lapply(SEQ2, function(i) if(!is.null(i)) FUN(x[i], ...) else NA_real_)
+    return(base:::simplify2array(OUT, higher = TRUE))
+  }
+  #cc(F)
+  #set.seed(108)
+  #x = rnorm(1e2)#sample(c(1:10,4:8,2:4)*3/2, 200000, TRUE)
+  #n = sample(3:10, length(x), TRUE)
+  #ans1 <- f(x, n)
+  #ans2 <- wmapply(x, n, mean)
+  
+  ## ## exact TRUE / FALSE
+  ## set.seed(108)
+  ## x = rnorm(1e6, 1000, 50)
+  ## n = 1e5
+  ## ans1 <- zoo::rollmean(x, n, fill=NA, align="right")
+  ## ans2 <- zoo::rollapply(x, n, mean, fill=NA, align="right")
+  ## system.time(ans3 <- frollmean(x, n, exact=FALSE))
+  ## system.time(ans4 <- frollmean(x, n, exact=TRUE))
+  ## format(sum(ans1-ans2, na.rm=TRUE), scientific=FALSE)
+  ## format(sum(ans1-ans3, na.rm=TRUE), scientific=FALSE)
+  ## format(sum(ans1-ans4, na.rm=TRUE), scientific=FALSE)
+  ## format(sum(ans3-ans4, na.rm=TRUE), scientific=FALSE)
+  
+  ## check.roundoff = function(x, n) {
+  ##   l = list(
+  ##     zoo = zoo::rollmean(x, n, fill=NA, align="right"),
+  ##     ttr = TTR::runMean(x, n),
+  ##     catools_e = caTools::runmean(x, n, alg="exact", endrule="NA", align="right"),
+  ##     catools = caTools::runmean(x, n, alg="fast", endrule="NA", align="right"),
+  ##     rcpproll = RcppRoll::roll_mean(x, n, na.rm=FALSE, fill=NA, align="right"),
+  ##     rollingw = RollingWindow::RollingMean(x, n)[,1L],
+  ##     dt_e = frollmean(x, n, exact=TRUE),
+  ##     dt = frollmean(x, n, exact=FALSE)
+  ##   )
+  ##   f = function(x, y) format(sum(abs(x - y), na.rm=TRUE), scientific=FALSE)
+  ##   m = matrix(nrow=length(l), ncol=length(l), dimnames=list(names(l), names(l)))
+  ##   for (i in 1:length(l))
+  ##     for (j in 1:length(l))
+  ##       m[i, j] = f(l[[1L]], l[[2L]])
+  ##   res = cbind(
+  ##     all.equal = sapply(l[-1L], function(x) isTRUE(all.equal(x, l[[1L]]))),
+  ##     identical = sapply(l[-1L], function(x) identical(x, l[[1L]]))
+  ##   )
+  ##   rownames(res) = names(l[-1L])
+  ##   list(res, m)
+  ## }
+  ## cc(F)
+  ## n=k=5
+  ## x = rep(100/3,30)
+  ## d=1e10
+  ## x[5] = d;     
+  ## x[13] = d; 
+  ## x[14] = d*d; 
+  ## x[15] = d*d*d; 
+  ## x[16] = d*d*d*d; 
+  ## x[17] = d*d*d*d*d; 
+  ## a = caTools::runmean(x, k, alg="fast")
+  ## c = caTools::runmean(x, k, alg="exact")
+  ## ans1 <- zoo::rollmean(x, n, fill=NA, align="right")
+  ## ans2 <- zoo::rollapply(x, n, mean, fill=NA, align="right")
+  ## system.time(ans3 <- frollmean(x, n, exact=FALSE))
+  ## system.time(ans4 <- frollmean(x, n, exact=TRUE))
+  ## format(sum(ans1-a, na.rm=TRUE), scientific=FALSE)
+  ## format(sum(ans1-c, na.rm=TRUE), scientific=FALSE)
+  ## format(sum(ans3-a, na.rm=TRUE), scientific=FALSE)
+  ## format(sum(ans4-c, na.rm=TRUE), scientific=FALSE)
+  ## ans3
+  ## a
+  ## c
+  ## format(sum(ans1-ans4, na.rm=TRUE), scientific=FALSE)
+  ## format(sum(c-ans4, na.rm=TRUE), scientific=FALSE)
+  
+  ## x = 1:100; n = 10;
+  ## check.roundoff(x, n)
+  
 }
 
 setDTthreads(oldDTthreads)

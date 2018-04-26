@@ -1,27 +1,83 @@
 #include "data.table.h"
 #include <Rdefines.h>
+        
+#define ROUNDOFF_ERR(x, y, sumxy) ((((x)>(y))==((x)>-(y))) ? (y)-((sumxy)-(x)) : (x)-((sumxy)-(y)))
 
-static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk, double thisfill, Rboolean narm, Rboolean hasna) {
-  // only for adaptive=FALSE at the moment due to thisk scalar R_len_t
+static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk, SEXP thiskl, double thisfill, Rboolean exact, Rboolean narm, Rboolean hasna, Rboolean adaptive) {
   double w = 0.;
   R_len_t m;
   Rboolean hasna_ = 0;
 
-  if (hasna==1) hasna_ = 1;                          // cannot simply if (hasna) because NA is -2147483648
+  if (hasna==1) hasna_ = 1;                          // cannot use if (hasna) because NA is allowed here
   else {                                             // if (hasna==NA_LOGICAL || hasna==0): default assume no NA
-    for (m=0; m<xrows; m++) {                        // loop over observations in column
-      w += REAL(this)[m];                            // add current row to window sum
-      if (m >= thisk) w -= REAL(this)[m-thisk];      // remove leaving row from window sum
-      if (m + 1 < thisk) REAL(tmp)[m] = thisfill;    // fill partial window
-      else REAL(tmp)[m] = w / thisk;                 // calculate mean
+    if (!adaptive) {                                 // non-adaptive: window is scalar
+      if (!exact) {                                  // fast version, not care on roundoff error
+        for (m=0; m<xrows; m++) {                    // loop over observations in column
+          w += REAL(this)[m];                        // add current row to window sum
+          if (m < thisk-1) REAL(tmp)[m] = thisfill;  // fill partial window
+          else {
+            if (m >= thisk) w -= REAL(this)[m-thisk];// remove leaving row from window sum
+            REAL(tmp)[m] = w / thisk;                // calculate mean
+          }
+        }
+      } else {                                        // exact TRUE: adjust roundoff error
+        double we = 0., e = 0.;                       // we: window with error, e: error
+        for (m=0; m<xrows; m++) {                     // loop over observations in column
+          we = w + REAL(this)[m];                     // window with error
+          e = ROUNDOFF_ERR(w, REAL(this)[m], we);     // calculate error
+          //Rprintf("row %d, +e %8.15f, w %8.3f, this[coming] %8.3f\n", m+1, e, w, REAL(this)[m]);
+          w = we + e;                ;                // add corrected current row to window sum
+          if (m < thisk-1) REAL(tmp)[m] = thisfill;   // fill partial window
+          else {
+            if (m >= thisk) {
+              we = w - REAL(this)[m-thisk];           // window with error
+              e = ROUNDOFF_ERR(w, -REAL(this)[m-thisk], we); // calculate error
+              //Rprintf("row %d, -e %8.15f, w %8.3f, this[leaving] %8.3f\n", m+1, e, w, REAL(this)[m-thisk]);
+              w = we + e;                             // remove corrected leaving row from window sum
+            }
+            //Rprintf("row %d, w %8.3f\n", m+1, w);
+            REAL(tmp)[m] = w / thisk;                 // calculate mean
+          }
+        }
+      }
+    } else {                                           // adaptive TRUE: variable window size
+      R_len_t thiskl_, lastkl_, s;
+      if (length(thiskl) != xrows) error("length of integer vector in 'n' is not equal to length of column in 'x', for adaptive TRUE those has to be equal");
+      if (INTEGER(thiskl)[0]==0) error("window size 0 in from  not yet handled in adaptive");
+      for (m=0; m<xrows; m++) {                        // loop over observations in column
+        thiskl_ = INTEGER(thiskl)[m];
+        w += REAL(this)[m];                            // add current row to window sum
+        if (m + 1 < thiskl_) REAL(tmp)[m] = thisfill;    // fill partial window
+        else {
+          lastkl_ = INTEGER(thiskl)[m-1];
+          R_len_t diffkl_ = thiskl_ - lastkl_;
+          //Rprintf("row %d, window %d, prev window %d, diff %d\n", m+1, thiskl_, lastkl_, diffkl_);
+          if (diffkl_ > 1) {
+            for (s=0; s<diffkl_-1; s++) {
+              //Rprintf("row %d, diff %d, adding row %d\n", m+1, diffkl_, m-thiskl_+1+s+1);
+              w += REAL(this)[m-thiskl_+1+s];
+            }
+          } else if (diffkl_ < 1) {
+            for (s=0; s<1-diffkl_; s++) {
+              //Rprintf("row %d, diff %d, removing row %d\n", m+1, diffkl_, m-thiskl_-s+1);
+              w -= REAL(this)[m-thiskl_-s];
+            }
+          } else {
+            //Rprintf("row %d, diff %d, no add no remove\n", m+1, diffkl_);
+            // diffkl_ == 1: do not add or remove from window
+          }
+          REAL(tmp)[m] = w / thiskl_;                 // calculate mean
+        }
+      }
     }
-    if (ISNAN(w)) {                                  // if NA in input then setup re-run flag
+    if (ISNAN(w)) {                                  // if NA in input then set re-run flag
       if (hasna==0) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
       w = 0.;
       hasna_ = 1;
     }
   }
   if (hasna_) {                                                   // hasna_ is non-NA so no `==` check required
+    if (adaptive) error("hasNA and adaptive not yet implemented");
     R_len_t nc = 0;
     for (m=0; m<xrows; m++) {                                     // loop over observations in column
       if (ISNAN(REAL(this)[m])) nc++;                             // increment NA count in current window
@@ -49,7 +105,7 @@ static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk,
   return tmp;
 }
 
-SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive) {
+SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive) {
   
   R_len_t i=0, j, nx, nk, xrows, protecti=0;
   SEXP x, kl, tmp=R_NilValue, this, ans, thisfill;
@@ -86,9 +142,9 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP hasna, SE
     if (!isInteger(k))                                                    // check that k is integer vector
       error("n must be integer");
     i = 0;                                                                // check that all window values non-negative
-    while (i < nk && INTEGER(k)[i] >= 0) i++;
+    while (i < nk && INTEGER(k)[i] > 0) i++;
     if (i != nk)
-      error("n must be non-negative integer values (>= 0)");
+      error("n must be positive integer values (> 0)");
   } else if (LOGICAL(adaptive)[0]) {                                      // validating n input for adaptive=TRUE
     if (isVectorAtomic(k)) {                                              // if not-list then wrap into list
       kl = allocVector(VECSXP, 1);
@@ -116,6 +172,9 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP hasna, SE
   else
     error("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker.");
 
+  if (!isLogical(exact) || length(exact)!=1 || LOGICAL(exact)[0]==NA_LOGICAL)
+    error("exact must be TRUE or FALSE");
+  
   if (!isLogical(narm) || length(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL)
     error("na.rm must be TRUE or FALSE");
 
@@ -123,42 +182,28 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP narm, SEXP hasna, SE
     error("hasNA must be TRUE, FALSE or NA");
   
   if (LOGICAL(hasna)[0]==FALSE && LOGICAL(narm)[0])
-    error("using hasNA FALSE and na.rm TRUE does not make sense, if you know there are NA value use hasNA TRUE, otherwise leave it as default NA");
-  
+    error("using hasNA FALSE and na.rm TRUE does not make sense, if you know there are NA values use hasNA TRUE, otherwise leave it as default NA");
+    
   ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;              // allocate list to keep results
   
   thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
+
+  if (salign == LEFT) error("align 'left' not yet implemented");
+  else if (salign == CENTER) error("align 'center' not yet implemented");
   
-  if (!LOGICAL(adaptive)[0]) {                                          // adaptive=FALSE
-    if (salign == RIGHT) {                                              // align right scenario
-      for (i=0; i<nx; i++) {                                            // loop over columns
-        this = AS_NUMERIC(VECTOR_ELT(x, i));                            // extract column/vector from data.table/list
-        xrows = length(this);                                           // for list input each vector can have different length
-        #pragma omp parallel num_threads(MIN(getDTthreads(), nk))
-        {
-          #pragma omp for schedule(dynamic)
-          for (j=0; j<nk; j++) {                                          // loop over multiple windows
-            SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows)); // allocate answer vector for this column-window
-            rollmeanVectorRaw(tmp, this, xrows, INTEGER(k)[j], REAL(thisfill)[0], LOGICAL(narm)[0], LOGICAL(hasna)[0]);
-          }
-        }
+  for (i=0; i<nx; i++) {                                            // loop over columns
+    //adaptive TODO check that every k list element is integer vector same length as x
+    this = AS_NUMERIC(VECTOR_ELT(x, i));                            // extract column/vector from data.table/list
+    xrows = length(this);                                           // for list input each vector can have different length
+    #pragma omp parallel num_threads(MIN(getDTthreads(), nk))
+    {
+      #pragma omp for schedule(dynamic)
+      for (j=0; j<nk; j++) {                                          // loop over multiple windows
+        SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows)); // allocate answer vector for this column-window
+        rollmeanVectorRaw(tmp, this, xrows, INTEGER(k)[j], VECTOR_ELT(kl, j), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], LOGICAL(hasna)[0], LOGICAL(adaptive)[0]);
       }
-    } else if (salign == LEFT) {                                        // align left scenario
-      error("align 'left' not yet implemented");
-    } else if (salign == CENTER) {                                      // align center scenario
-      error("align 'center' not yet implemented");
     }
-  } else if (LOGICAL(adaptive)[0]) {                                      // adaptive=TRUE
-    error("adaptive TRUE not yet implemented");
-    if (salign == RIGHT) {                                              // align right scenario
-      error("align 'right' not yet implemented");
-      //TODO // check that every k list element is integer vector same length as x - push down to for loop
-    } else if (salign == LEFT) {                                        // align left scenario
-      error("align 'left' not yet implemented");
-    } else if (salign == CENTER) {                                      // align center scenario
-      error("align 'center' not yet implemented");
-    }
- }
+  }
   
   UNPROTECT(protecti);
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
