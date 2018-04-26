@@ -1,4 +1,4 @@
-frollmean <- function(x, n, fill=NA, exact=TRUE, align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n)) {
+frollmean <- function(x, n, fill=NA, exact=FALSE, align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n)) {
   align = match.arg(align)
   # n type handling to be moved to C
   if (is.double(n)) n = as.integer(n)

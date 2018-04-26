@@ -10,8 +10,8 @@
 }
 
 \usage{
-frollmean(x, n, fill=NA, exact=TRUE, align=c("right", "left", "center"),
-na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
+frollmean(x, n, fill=NA, exact=FALSE, align=c("right", "left",
+"center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric fields. }
@@ -19,7 +19,7 @@ na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
   \item{fill}{ numeric, value to pad by, default \code{NA}. }
   \item{exact}{ logical, (at the current moment does not have effect)
     should be floating point rounding error be taking into account, see
-    references for more information, default \code{TRUE}. }
+    references for more information, default \code{FALSE}. }
   \item{align}{ character, define if window frame covers preceding rows
     \code{"right"}, following rows \code{"left"} or centered
     \code{"center"}, default \code{"right"}. }
