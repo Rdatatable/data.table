@@ -10941,7 +10941,9 @@ unlink(f)
 
 test(1836, fread('1,2,"3,a"\n4,5,"6,b"'), data.table(V1=c(1L,4L), V2=c(2L,5L), V3=c("3,a","6,b")))   # 2196
 
-test(1837, fread('v1,v2,v3,v4,v5\n1,2,3,4,5', select=-1), error="out of range.*Consider drop= instead")  #2423
+test(1837.1, fread('v1,v2,v3,v4,v5\n1,2,3,4,5', select=-1), error="negative but should be in the range.*Consider drop= for column exclusion")  #2423 and #2782
+test(1837.2, fread('v1,v2,v3,v4,v5\n1,2,3,4,5', select=0), error="select = 0.*has no meaning")
+test(1837.3, fread('v1,v2,v3,v4,v5\n1,2,3,4,5', select=6), error="too large for this table, which only has")
 
 test(1838, fread("default payment next month\n0.5524\n0.2483\n0.1157\n"), data.table("default payment next month"=c(0.5524,0.2483,0.1157)))  #2322
 
@@ -11715,7 +11717,6 @@ test(1906.1, fread(txt),
   warning='Found and resolved improper quoting.*If the fields are not quoted.*separator does not appear within any field.*try quote="" to avoid this warning')
 test(1906.2, fread(txt, quote=""),
   data.table(A=1:3, B=c('"hello", said Joe', '""howdy""', '"as"'), C=c('14" pizza', 'easy"', '"""pie"')))
-
 
 ###################################
 #  Add new tests above this line  #

@@ -47,9 +47,9 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
       # either a download or a system command, both to temp file
       tmpFile = tempfile()
       on.exit(unlink(tmpFile), add=TRUE)
-      str6 = substring(input,1,6)   # avoid grepl() for #2531
-      str7 = substring(input,1,7)
-      str8 = substring(input,1,8)
+      str6 = substring(input,1L,6L)   # avoid grepl() for #2531
+      str7 = substring(input,1L,7L)
+      str8 = substring(input,1L,8L)
       if (str7=="ftps://" || str8=="https://") {
         if (!requireNamespace("curl", quietly = TRUE))
             stop("Input URL requires https:// connection for which fread() requires 'curl' package, but cannot be found. Please install curl using 'install.packages('curl')'.")
@@ -87,7 +87,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   stopifnot(is.null(na.strings) || is.character(na.strings))
   tt = grep("^\\s+$", na.strings)
   if (length(tt)) {
-    msg = paste0('na.strings[', tt[1], ']=="',na.strings[tt[1L]],'" consists only of whitespace, ignoring. ')
+    msg = paste0('na.strings[', tt[1L], ']=="',na.strings[tt[1L]],'" consists only of whitespace, ignoring. ')
     if (strip.white) {
       if (any(na.strings=="")) {
         warning(msg, 'strip.white==TRUE (default) and "" is present in na.strings, so any number of spaces in string columns will already be read as <NA>.')
