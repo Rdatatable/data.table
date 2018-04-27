@@ -301,70 +301,28 @@ if (dev_and_benchmark_area<-FALSE) {
   #ans1 <- f(x, n)
   #ans2 <- wmapply(x, n, mean)
   
-  ## ## exact TRUE / FALSE
-  ## set.seed(108)
-  ## x = rnorm(1e6, 1000, 50)
-  ## n = 1e5
-  ## ans1 <- zoo::rollmean(x, n, fill=NA, align="right")
-  ## ans2 <- zoo::rollapply(x, n, mean, fill=NA, align="right")
-  ## system.time(ans3 <- frollmean(x, n, exact=FALSE))
-  ## system.time(ans4 <- frollmean(x, n, exact=TRUE))
-  ## format(sum(ans1-ans2, na.rm=TRUE), scientific=FALSE)
-  ## format(sum(ans1-ans3, na.rm=TRUE), scientific=FALSE)
-  ## format(sum(ans1-ans4, na.rm=TRUE), scientific=FALSE)
-  ## format(sum(ans3-ans4, na.rm=TRUE), scientific=FALSE)
-  
-  ## check.roundoff = function(x, n) {
-  ##   l = list(
-  ##     zoo = zoo::rollmean(x, n, fill=NA, align="right"),
-  ##     ttr = TTR::runMean(x, n),
-  ##     catools_e = caTools::runmean(x, n, alg="exact", endrule="NA", align="right"),
-  ##     catools = caTools::runmean(x, n, alg="fast", endrule="NA", align="right"),
-  ##     rcpproll = RcppRoll::roll_mean(x, n, na.rm=FALSE, fill=NA, align="right"),
-  ##     rollingw = RollingWindow::RollingMean(x, n)[,1L],
-  ##     dt_e = frollmean(x, n, exact=TRUE),
-  ##     dt = frollmean(x, n, exact=FALSE)
-  ##   )
-  ##   f = function(x, y) format(sum(abs(x - y), na.rm=TRUE), scientific=FALSE)
-  ##   m = matrix(nrow=length(l), ncol=length(l), dimnames=list(names(l), names(l)))
-  ##   for (i in 1:length(l))
-  ##     for (j in 1:length(l))
-  ##       m[i, j] = f(l[[1L]], l[[2L]])
-  ##   res = cbind(
-  ##     all.equal = sapply(l[-1L], function(x) isTRUE(all.equal(x, l[[1L]]))),
-  ##     identical = sapply(l[-1L], function(x) identical(x, l[[1L]]))
-  ##   )
-  ##   rownames(res) = names(l[-1L])
-  ##   list(res, m)
-  ## }
-  ## cc(F)
-  ## n=k=5
-  ## x = rep(100/3,30)
-  ## d=1e10
-  ## x[5] = d;     
-  ## x[13] = d; 
-  ## x[14] = d*d; 
-  ## x[15] = d*d*d; 
-  ## x[16] = d*d*d*d; 
-  ## x[17] = d*d*d*d*d; 
-  ## a = caTools::runmean(x, k, alg="fast")
-  ## c = caTools::runmean(x, k, alg="exact")
-  ## ans1 <- zoo::rollmean(x, n, fill=NA, align="right")
-  ## ans2 <- zoo::rollapply(x, n, mean, fill=NA, align="right")
-  ## system.time(ans3 <- frollmean(x, n, exact=FALSE))
-  ## system.time(ans4 <- frollmean(x, n, exact=TRUE))
-  ## format(sum(ans1-a, na.rm=TRUE), scientific=FALSE)
-  ## format(sum(ans1-c, na.rm=TRUE), scientific=FALSE)
-  ## format(sum(ans3-a, na.rm=TRUE), scientific=FALSE)
-  ## format(sum(ans4-c, na.rm=TRUE), scientific=FALSE)
-  ## ans3
-  ## a
-  ## c
-  ## format(sum(ans1-ans4, na.rm=TRUE), scientific=FALSE)
-  ## format(sum(c-ans4, na.rm=TRUE), scientific=FALSE)
-  
-  ## x = 1:100; n = 10;
-  ## check.roundoff(x, n)
+  ## # exact TRUE / FALSE
+  ## rsummean = function(x, n) {ans=rep(NA_real_, nx<-length(x)); for(i in n:nx) ans[i]=sum(x[(i-n+1):i])/n; ans}
+  ## rmean = function(x, n) {ans=rep(NA_real_, nx<-length(x)); for(i in n:nx) ans[i]=mean(x[(i-n+1):i]); ans}
+  ## dtmean = function(x, n) sapply(n:length(x), function(i) as.data.table(list(x[(i-n+1):i]))[, mean(V1)]) # no api to data.table fastmean, so `[` required
+  ## nx = 200
+  ## x = rnorm(nx, sd=30) + abs(seq(nx)-nx/4)
+  ## n = 196
+  ## l = list(
+  ##   caTools_R = caTools::runmean(x, n, alg="R", endrule="NA", align="right"),
+  ##   caTools_fast = caTools::runmean(x, n, alg="fast", endrule="NA", align="right"),
+  ##   caTools_C = caTools::runmean(x, n, alg="C", endrule="NA", align="right"),
+  ##   caTools_exact = caTools::runmean(x, n, alg="exact", endrule="NA", align="right"),
+  ##   datatable = frollmean(x, n, exact=FALSE),
+  ##   datatable_exact = frollmean(x, n, exact=TRUE),
+  ##   datatable_fmean = dtmean(x, n),
+  ##   zoo_R_mean = zoo::rollapply(x, n, (mean), fill=NA, align="right"),
+  ##   R_sum_mean = rsummean(x, n),
+  ##   R_mean = rmean(x, n)
+  ## )
+  ## ll = lapply(l, tail, 5)
+  ## validate = which(names(ll)=="R_mean")
+  ## sapply(ll[-validate], function(x) format(sum(abs(x-ll[[validate]])), scientific=FALSE))
   
 }
 

@@ -1,32 +1,64 @@
 #include "data.table.h"
 #include <Rdefines.h>
         
-//#define ROUNDOFF_ERR(x, y, sumxy) ((((x)>(y))==((x)>-(y))) ? (y)-((sumxy)-(x)) : (x)-((sumxy)-(y)))
+#define ROUNDOFF_ERR(x, y, sumxy) ((((x)>(y))==((x)>-(y))) ? (y)-((sumxy)-(x)) : (x)-((sumxy)-(y)))
 
 static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk, SEXP thiskl, double thisfill, Rboolean exact, Rboolean narm, Rboolean hasna, Rboolean adaptive) {
-  double w = 0., we = 0.;
+  double w = 0., e1 = 0., e2 = 0.;
   R_len_t m;
   Rboolean hasna_ = 0;
 
   if (hasna==1) hasna_ = 1;                          // cannot use if (hasna) because NA is allowed here
   else {                                             // if (hasna==NA_LOGICAL || hasna==0): default assume no NA
     if (!adaptive) {                                 // non-adaptive: window is scalar
-      for (m=0; m<xrows; m++) {                    // loop over observations in column
-        w += REAL(this)[m];                        // add current row to window sum
-        if (m < thisk-1) REAL(tmp)[m] = thisfill;  // fill partial window
-        else {
-          if (m >= thisk) w -= REAL(this)[m-thisk];// remove leaving row from window sum
-          REAL(tmp)[m] = w / thisk;                // calculate mean
-          if (exact) {                             // roundoff error correction
-            we += REAL(this)[m] - REAL(tmp)[m];
-            Rprintf("row %d this %8.3f ans %8.3f we %8.3f\n", m+1, REAL(this)[m], REAL(tmp)[m], we);
-            if (m >= thisk + thisk - 1) {
-              we -= REAL(this)[m-thisk] - REAL(tmp)[m-thisk];
-              Rprintf("row %d this[m-thisk] %8.3f ans[m-thisk+1] %8.3f ans[m-thisk] %8.3f ans[m-thisk+1] %8.3f we %8.3f\n", m+1, REAL(this)[m-thisk], REAL(tmp)[m-thisk-1], REAL(tmp)[m-thisk], REAL(tmp)[m-thisk+1], we);
-            }
-            REAL(tmp)[m] += we / thisk;
+      if (!exact) {
+        for (m=0; m<xrows; m++) {                    // loop over observations in column
+          w += REAL(this)[m];                        // add current row to window sum
+          if (m < thisk-1) REAL(tmp)[m] = thisfill;  // fill partial window
+          else {
+            if (m >= thisk) w -= REAL(this)[m-thisk];// remove leaving row from window sum
+            REAL(tmp)[m] = w / thisk;                // calculate mean
           }
         }
+      } else if (exact) {                             // roundoff error correction
+        error("exact TRUE is not yet implemented");
+        for (m=0; m<xrows; m++) {                    // loop over observations in column
+          e1 = ROUNDOFF_ERR(REAL(this)[m], w, w+REAL(this)[m]);
+          w += REAL(this)[m];                        // add current row to window sum
+          if (m < thisk-1) REAL(tmp)[m] = thisfill;  // fill partial window
+          else {
+            if (m >= thisk) {
+              e2 = ROUNDOFF_ERR(-REAL(this)[m-thisk], w, w-REAL(this)[m-thisk]);
+              w -= REAL(this)[m-thisk];// remove leaving row from window sum
+            }
+            //Rprintf("row %d e1 %8.15f e2 %8.15f\n", m+1, e1, e2);
+            REAL(tmp)[m] = (w+e1+e2) / thisk;                // calculate mean
+          }
+        }
+        for (m=0; m<xrows; m++) {
+          REAL(tmp)[m] += ;
+        }
+        /*double *we;
+        we = malloc(xrows * sizeof (double));
+        for (m=0; m<xrows; m++) {                    // loop over observations in column
+          if (m > 0) we[m] = REAL(this)[m] - w;
+          w += REAL(this)[m];                        // add current row to window sum
+          if (m < thisk-1) REAL(tmp)[m] = thisfill;  // fill partial window
+          else {
+            if (m >= thisk) {
+              we[m] = REAL(this)[m-thisk] - w;
+              w -= REAL(this)[m-thisk];// remove leaving row from window sum
+            }
+            REAL(tmp)[m] = w / thisk;                // calculate mean
+          }
+        }
+        we += REAL(this)[m] - REAL(tmp)[m];
+        Rprintf("row %d this %8.3f ans %8.3f we %8.3f\n", m+1, REAL(this)[m], REAL(tmp)[m], we);
+        if (m >= thisk + thisk - 1) {
+          we -= REAL(this)[m-thisk] - REAL(tmp)[m-thisk];
+          Rprintf("row %d this[m-thisk] %8.3f ans[m-thisk+1] %8.3f ans[m-thisk] %8.3f ans[m-thisk+1] %8.3f we %8.3f\n", m+1, REAL(this)[m-thisk], REAL(tmp)[m-thisk-1], REAL(tmp)[m-thisk], REAL(tmp)[m-thisk+1], we);
+        }
+        REAL(tmp)[m] += we / thisk;*/
       }
     } else {                                           // adaptive TRUE: variable window size
       R_len_t thiskl_, lastkl_, s;
