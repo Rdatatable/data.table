@@ -1,42 +1,30 @@
 #include "data.table.h"
 #include <Rdefines.h>
         
-#define ROUNDOFF_ERR(x, y, sumxy) ((((x)>(y))==((x)>-(y))) ? (y)-((sumxy)-(x)) : (x)-((sumxy)-(y)))
+//#define ROUNDOFF_ERR(x, y, sumxy) ((((x)>(y))==((x)>-(y))) ? (y)-((sumxy)-(x)) : (x)-((sumxy)-(y)))
 
 static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk, SEXP thiskl, double thisfill, Rboolean exact, Rboolean narm, Rboolean hasna, Rboolean adaptive) {
-  double w = 0.;
+  double w = 0., we = 0.;
   R_len_t m;
   Rboolean hasna_ = 0;
 
   if (hasna==1) hasna_ = 1;                          // cannot use if (hasna) because NA is allowed here
   else {                                             // if (hasna==NA_LOGICAL || hasna==0): default assume no NA
     if (!adaptive) {                                 // non-adaptive: window is scalar
-      if (!exact) {                                  // fast version, not care on roundoff error
-        for (m=0; m<xrows; m++) {                    // loop over observations in column
-          w += REAL(this)[m];                        // add current row to window sum
-          if (m < thisk-1) REAL(tmp)[m] = thisfill;  // fill partial window
-          else {
-            if (m >= thisk) w -= REAL(this)[m-thisk];// remove leaving row from window sum
-            REAL(tmp)[m] = w / thisk;                // calculate mean
-          }
-        }
-      } else {                                        // exact TRUE: adjust roundoff error
-        double we = 0., e = 0.;                       // we: window with error, e: error
-        for (m=0; m<xrows; m++) {                     // loop over observations in column
-          we = w + REAL(this)[m];                     // window with error
-          e = ROUNDOFF_ERR(w, REAL(this)[m], we);     // calculate error
-          //Rprintf("row %d, +e %8.15f, w %8.3f, this[coming] %8.3f\n", m+1, e, w, REAL(this)[m]);
-          w = we + e;                ;                // add corrected current row to window sum
-          if (m < thisk-1) REAL(tmp)[m] = thisfill;   // fill partial window
-          else {
-            if (m >= thisk) {
-              we = w - REAL(this)[m-thisk];           // window with error
-              e = ROUNDOFF_ERR(w, -REAL(this)[m-thisk], we); // calculate error
-              //Rprintf("row %d, -e %8.15f, w %8.3f, this[leaving] %8.3f\n", m+1, e, w, REAL(this)[m-thisk]);
-              w = we + e;                             // remove corrected leaving row from window sum
+      for (m=0; m<xrows; m++) {                    // loop over observations in column
+        w += REAL(this)[m];                        // add current row to window sum
+        if (m < thisk-1) REAL(tmp)[m] = thisfill;  // fill partial window
+        else {
+          if (m >= thisk) w -= REAL(this)[m-thisk];// remove leaving row from window sum
+          REAL(tmp)[m] = w / thisk;                // calculate mean
+          if (exact) {                             // roundoff error correction
+            we += REAL(this)[m] - REAL(tmp)[m];
+            Rprintf("row %d this %8.3f ans %8.3f we %8.3f\n", m+1, REAL(this)[m], REAL(tmp)[m], we);
+            if (m >= thisk + thisk - 1) {
+              we -= REAL(this)[m-thisk] - REAL(tmp)[m-thisk];
+              Rprintf("row %d this[m-thisk] %8.3f ans[m-thisk+1] %8.3f ans[m-thisk] %8.3f ans[m-thisk+1] %8.3f we %8.3f\n", m+1, REAL(this)[m-thisk], REAL(tmp)[m-thisk-1], REAL(tmp)[m-thisk], REAL(tmp)[m-thisk+1], we);
             }
-            //Rprintf("row %d, w %8.3f\n", m+1, w);
-            REAL(tmp)[m] = w / thisk;                 // calculate mean
+            REAL(tmp)[m] += we / thisk;
           }
         }
       }
