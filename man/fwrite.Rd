@@ -16,7 +16,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   logicalAsInt = logical01,  # deprecated
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(),
-  showProgress = interactive(),
+  showProgress = getOption("datatable.showProgress", interactive()),
   verbose = getOption("datatable.verbose", FALSE))
 }
 \arguments{

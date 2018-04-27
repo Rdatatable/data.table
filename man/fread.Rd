@@ -19,7 +19,7 @@ col.names,
 check.names=FALSE, encoding="unknown",
 strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE,
 key=NULL, index=NULL,
-showProgress=NULL,
+showProgress=getOption("datatable.showProgress", interactive()),
 data.table=getOption("datatable.fread.datatable", TRUE),
 nThread=getDTthreads(),
 logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
@@ -51,7 +51,7 @@ autostart=NA
   \item{blank.lines.skip}{\code{logical}, default is \code{FALSE}. If \code{TRUE} blank lines in the input are ignored.}
   \item{key}{Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{index}{ Character vector or list of character vectors of one or more column names which is passed to \code{\link{setindexv}}. As with \code{key}, comma-separated notation like \code{index="x,y,z"} is accepted for convenience. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
-  \item{showProgress}{ \code{TRUE} displays progress on the console if the ETA is greater than 3 seconds. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. If \code{NULL}, the default, it will be set internally to \code{interactive()}.}
+  \item{showProgress}{ \code{TRUE} displays progress on the console if the ETA is greater than 3 seconds. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
   \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. }
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{logical01}{If TRUE a column containing only 0s and 1s will be read as logical, otherwise as integer.}
