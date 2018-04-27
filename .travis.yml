@@ -22,6 +22,7 @@ bioc_packages:
 r_packages:
   - covr
   - drat
+  - devtools  # explicitly named temp fix for #2801
 
 before_script:
   - echo "Revision:" $TRAVIS_COMMIT >> ./DESCRIPTION

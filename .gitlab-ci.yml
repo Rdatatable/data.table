@@ -216,7 +216,7 @@ integration: # merging all artifacts so multiple deploy jobs can build same repo
     - cp -R bus/mirror-packages/cran bus/$CI_BUILD_NAME/
     - mkdir -p bus/$CI_BUILD_NAME/cran/library bus/$CI_BUILD_NAME/cran/doc
     - mv $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib
-    - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran"), addFiles=TRUE)'
+    - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran"), fields="Revision", addFiles=TRUE)'
     # install all pkgs to render html and double check successful installation of all devel packages
     - mkdir -p /tmp/opencran/library /tmp/opencran/doc/html
     - Rscript -e 'install.packages("data.table", dependencies=TRUE, lib="/tmp/opencran/library", repos=file.path("file:",normalizePath("bus/integration/cran")), INSTALL_opts="--html", quiet=TRUE)'

@@ -146,7 +146,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else error("Internal error: invalid value for 'mult'. Please report to datatable-help");
+  else error("Internal error: invalid value for 'mult'. please report to data.table issue tracker");
   // integer64
   for (int j=0; j<ncols; j++) {
     class = getAttrib(VECTOR_ELT(l, INTEGER(cols)[j]-1), R_ClassSymbol);

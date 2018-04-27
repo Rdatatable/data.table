@@ -781,18 +781,18 @@ SEXP gfirst(SEXP x) {
 }
 
 SEXP gtail(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, gtail is only implemented for n=1. This should have been caught before. Please report to datatable-help.");
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, gtail is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.");
   return (glast(x));
 }
 
 SEXP ghead(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, ghead is only implemented for n=1. This should have been caught before. Please report to datatable-help.");
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, ghead is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.");
   return (gfirst(x));
 }
 
 SEXP gnthvalue(SEXP x, SEXP valArg) {
 
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. Please report to datatable-help.");
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.");
   R_len_t i,k, val=INTEGER(valArg)[0];
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;

@@ -408,6 +408,7 @@ for (p in deps) {
   f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
   system(paste0("mv ",f,"_TEMP ",f))
 }
+system("ls *.tar.gz | wc -l")
 
 status = function(which="both") {
   if (which=="both") {

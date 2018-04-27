@@ -74,7 +74,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
   else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "dense")) ties = DENSE;
   else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "sequence")) ties = SEQUENCE;
   // else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "runlength")) ties = RUNLENGTH;
-  else error("Internal error: invalid ties.method for frankv(), should have been caught before. Please report to datatable-help");
+  else error("Internal error: invalid ties.method for frankv(), should have been caught before. please report to data.table issue tracker");
   n = length(xorderArg);
   ans = (ties == MEAN) ? PROTECT(allocVector(REALSXP, n)) : PROTECT(allocVector(INTSXP, n));
   if (n > 0) {

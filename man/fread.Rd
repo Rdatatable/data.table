@@ -19,7 +19,7 @@ col.names,
 check.names=FALSE, encoding="unknown",
 strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE,
 key=NULL, index=NULL,
-showProgress=interactive(),
+showProgress=getOption("datatable.showProgress", interactive()),
 data.table=getOption("datatable.fread.datatable", TRUE),
 nThread=getDTthreads(),
 logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
@@ -117,7 +117,7 @@ Background :\cr
 
 finagler = "to get or achieve by guile or manipulation" \url{http://dictionary.reference.com/browse/finagler}
 }
-\seealso{ \code{\link[utils]{read.csv}}, \code{\link[base]{url}}, \code{\link[base]{Sys.setlocale}}
+\seealso{ \code{\link[utils:read.table]{read.csv}}, \code{\link[base:connections]{url}}, \code{\link[base:locales]{Sys.setlocale}}
 }
 \examples{
 \dontrun{
