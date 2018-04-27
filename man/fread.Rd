@@ -19,7 +19,7 @@ col.names,
 check.names=FALSE, encoding="unknown",
 strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE,
 key=NULL, index=NULL,
-showProgress=interactive(),
+showProgress=getOption("datatable.showProgress", interactive()),
 data.table=getOption("datatable.fread.datatable", TRUE),
 nThread=getDTthreads(),
 logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
