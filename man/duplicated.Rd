@@ -52,7 +52,7 @@ In version \code{< 1.9.8} default was \code{key(x)}.}
 \details{
 Because data.tables are usually sorted by key, tests for duplication are
 especially quick when only the keyed columns are considered. Unlike
-\code{\link[base]{unique.data.frame}}, \code{paste} is not used to ensure
+\code{\link[base:unique]{unique.data.frame}}, \code{paste} is not used to ensure
 equality of floating point data. It is instead accomplished directly and is
 therefore quite fast. data.table provides \code{\link{setNumericRounding}} to
 handle cases where limitations in floating point representation is undesirable.
