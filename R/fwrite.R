@@ -6,7 +6,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
            logicalAsInt=logical01,
            dateTimeAs = c("ISO","squash","epoch","write.csv"),
            buffMB=8, nThread=getDTthreads(),
-           showProgress=interactive(),
+           showProgress=getOption("datatable.showProgress", interactive()),
            verbose=getOption("datatable.verbose", FALSE)) {
   isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
   na = as.character(na[1L]) # fix for #1725
