@@ -1,14 +1,12 @@
 #include "data.table.h"
 #include <Rdefines.h>
-        
-#define ROUNDOFF_ERR(x, y, sumxy) ((((x)>(y))==((x)>-(y))) ? (y)-((sumxy)-(x)) : (x)-((sumxy)-(y)))
 
 static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk, SEXP thiskl, double thisfill, Rboolean exact, Rboolean narm, Rboolean hasna, Rboolean adaptive) {
-  double w = 0., e1 = 0., e2 = 0.;
+  double w = 0.;
   R_len_t m;
   Rboolean hasna_ = 0;
 
-  if (hasna==1) hasna_ = 1;                          // cannot use if (hasna) because NA is allowed here
+  if (hasna==1) hasna_ = 1;                          // cannot use if (hasna) because NA is MIN_INT so TRUE
   else {                                             // if (hasna==NA_LOGICAL || hasna==0): default assume no NA
     if (!adaptive) {                                 // non-adaptive: window is scalar
       if (!exact) {
@@ -20,75 +18,57 @@ static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk,
             REAL(tmp)[m] = w / thisk;                // calculate mean
           }
         }
-      } else if (exact) {                             // roundoff error correction
-        error("exact TRUE is not yet implemented");
+      } else { // exact==TRUE                        // roundoff error correction, correction as in fastmean and base R but not identical
+        R_len_t i;
+        double s, t;
         for (m=0; m<xrows; m++) {                    // loop over observations in column
-          e1 = ROUNDOFF_ERR(REAL(this)[m], w, w+REAL(this)[m]);
-          w += REAL(this)[m];                        // add current row to window sum
+          s = 0.;
+          t = 0.;
           if (m < thisk-1) REAL(tmp)[m] = thisfill;  // fill partial window
           else {
-            if (m >= thisk) {
-              e2 = ROUNDOFF_ERR(-REAL(this)[m-thisk], w, w-REAL(this)[m-thisk]);
-              w -= REAL(this)[m-thisk];// remove leaving row from window sum
+            for (i=m-thisk+1; i<=m; i++) s += REAL(this)[i];
+            s /= thisk;
+            if(R_FINITE(s)) {
+              for (i=m-thisk+1; i<=m; i++) t += (REAL(this)[i] - s);
             }
-            //Rprintf("row %d e1 %8.15f e2 %8.15f\n", m+1, e1, e2);
-            REAL(tmp)[m] = (w+e1+e2) / thisk;                // calculate mean
+            s += t/thisk;
           }
+          REAL(tmp)[m] = s;
         }
-        //for (m=0; m<xrows; m++) {
-        //  REAL(tmp)[m] += ;
-        //}
-        /*double *we;
-        we = malloc(xrows * sizeof (double));
-        for (m=0; m<xrows; m++) {                    // loop over observations in column
-          if (m > 0) we[m] = REAL(this)[m] - w;
-          w += REAL(this)[m];                        // add current row to window sum
-          if (m < thisk-1) REAL(tmp)[m] = thisfill;  // fill partial window
-          else {
-            if (m >= thisk) {
-              we[m] = REAL(this)[m-thisk] - w;
-              w -= REAL(this)[m-thisk];// remove leaving row from window sum
-            }
-            REAL(tmp)[m] = w / thisk;                // calculate mean
-          }
-        }
-        we += REAL(this)[m] - REAL(tmp)[m];
-        Rprintf("row %d this %8.3f ans %8.3f we %8.3f\n", m+1, REAL(this)[m], REAL(tmp)[m], we);
-        if (m >= thisk + thisk - 1) {
-          we -= REAL(this)[m-thisk] - REAL(tmp)[m-thisk];
-          Rprintf("row %d this[m-thisk] %8.3f ans[m-thisk+1] %8.3f ans[m-thisk] %8.3f ans[m-thisk+1] %8.3f we %8.3f\n", m+1, REAL(this)[m-thisk], REAL(tmp)[m-thisk-1], REAL(tmp)[m-thisk], REAL(tmp)[m-thisk+1], we);
-        }
-        REAL(tmp)[m] += we / thisk;*/
       }
     } else {                                           // adaptive TRUE: variable window size
-      if (exact) error("exact TRUE is not yet implemented");
-      R_len_t thiskl_, lastkl_, diffkl_, s;
-      if (length(thiskl) != xrows) error("length of integer vector in 'n' is not equal to length of column in 'x', for adaptive TRUE those has to be equal");
-      for (m=0; m<xrows; m++) {                        // loop over observations in column
-        thiskl_ = INTEGER(thiskl)[m];
-        w += REAL(this)[m];                            // add current row to window sum
-        if (m + 1 < thiskl_) REAL(tmp)[m] = thisfill;    // fill partial window
-        else {
-          lastkl_ = INTEGER(thiskl)[m-1];
-          diffkl_ = thiskl_ - lastkl_;
-          //Rprintf("row %d, window %d, prev window %d, diff %d\n", m+1, thiskl_, lastkl_, diffkl_);
-          if (diffkl_ > 1) {
-            for (s=0; s<diffkl_-1; s++) {
-              //Rprintf("row %d, diff %d (so adding %d), adding row %d, value %8.3f\n", m+1, diffkl_, diffkl_-1, m-thiskl_+s+1+1, REAL(this)[m-thiskl_+s+1]);
-              w += REAL(this)[m-thiskl_+s+1];
+      if (!exact) {
+        Rprintf("adaptive rolling functions suffers badly from floating point rounding error, consider using exact TRUE");
+        R_len_t thiskl_, lastkl_, diffkl_, s;
+        if (length(thiskl) != xrows) error("length of integer vector in 'n' is not equal to length of column in 'x', for adaptive TRUE those has to be equal");
+        for (m=0; m<xrows; m++) {                        // loop over observations in column
+          thiskl_ = INTEGER(thiskl)[m];
+          w += REAL(this)[m];                            // add current row to window sum
+          if (m + 1 < thiskl_) REAL(tmp)[m] = thisfill;    // fill partial window
+          else {
+            lastkl_ = INTEGER(thiskl)[m-1];
+            diffkl_ = thiskl_ - lastkl_;
+            //Rprintf("row %d, window %d, prev window %d, diff %d\n", m+1, thiskl_, lastkl_, diffkl_);
+            if (diffkl_ > 1) {
+              for (s=0; s<diffkl_-1; s++) {
+                //Rprintf("row %d, diff %d (so adding %d), adding row %d, value %8.3f\n", m+1, diffkl_, diffkl_-1, m-thiskl_+s+1+1, REAL(this)[m-thiskl_+s+1]);
+                w += REAL(this)[m-thiskl_+s+1];
+              }
+            } else if (diffkl_ < 1) {
+              for (s=0; s<-diffkl_+1; s++) {
+                if (m-thiskl_-s < 0) continue;
+                //Rprintf("row %d, diff %d (so removing %d), removing row %d, value %8.3f\n", m+1, diffkl_, -diffkl_+1, m-thiskl_-s+1, REAL(this)[m-thiskl_-s]);
+                w -= REAL(this)[m-thiskl_-s];
+              }
+            } else {
+              //Rprintf("row %d, diff %d, no add no remove\n", m+1, diffkl_);
+              // diffkl_ == 1: do not add or remove from window
             }
-          } else if (diffkl_ < 1) {
-            for (s=0; s<-diffkl_+1; s++) {
-              if (m-thiskl_-s < 0) continue;
-              //Rprintf("row %d, diff %d (so removing %d), removing row %d, value %8.3f\n", m+1, diffkl_, -diffkl_+1, m-thiskl_-s+1, REAL(this)[m-thiskl_-s]);
-              w -= REAL(this)[m-thiskl_-s];
-            }
-          } else {
-            //Rprintf("row %d, diff %d, no add no remove\n", m+1, diffkl_);
-            // diffkl_ == 1: do not add or remove from window
+            REAL(tmp)[m] = w / thiskl_;                 // calculate mean
           }
-          REAL(tmp)[m] = w / thiskl_;                 // calculate mean
         }
+      } else { // exact==TRUE
+        error("adaptive and exact not yet implemented");
       }
     }
     if (ISNAN(w)) {                                  // if NA in input then set re-run flag
@@ -99,27 +79,68 @@ static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk,
   }
   if (hasna_) {                                                   // hasna_ is non-NA so no `==` check required
     if (adaptive) error("hasNA and adaptive not yet implemented");
-    if (exact) error("exact TRUE is not yet implemented");
+    if (exact) error("hasNA and exact not yet implemented");
     R_len_t nc = 0;
-    for (m=0; m<xrows; m++) {                                     // loop over observations in column
-      if (ISNAN(REAL(this)[m])) nc++;                             // increment NA count in current window
-      else w += REAL(this)[m];                                    // add only non-NA to window sum
-      if (m >= thisk) {
-        if (ISNAN(REAL(this)[m-thisk])) nc--;                     // decrement NA count in current window
-        else w -= REAL(this)[m-thisk];                            // remove only non-NA from window sum
-      }
-      if (m + 1 < thisk) REAL(tmp)[m] = thisfill;                 // fill partial window
-      else {
-        if (nc == 0) REAL(tmp)[m] = w / thisk;                    // calculate mean
-        else if (nc == thisk) {                                   // all values in window are NA
-          if (narm) REAL(tmp)[m] = R_NaN;                         // for mean(NA, na.rm=T) result NaN
-          else REAL(tmp)[m] = NA_REAL;                            // for mean(NA, na.rm=F) result NA
+    if (!exact) {
+      for (m=0; m<xrows; m++) {                                     // loop over observations in column
+        if (ISNAN(REAL(this)[m])) nc++;                             // increment NA count in current window
+        else w += REAL(this)[m];                                    // add only non-NA to window sum
+        if (m >= thisk) {
+          if (ISNAN(REAL(this)[m-thisk])) nc--;                     // decrement NA count in current window
+          else w -= REAL(this)[m-thisk];                            // remove only non-NA from window sum
         }
-        else {                                                    // some values in window are NA
-          if (narm) REAL(tmp)[m] = w / (thisk - nc);              // calculate mean if NA present
-          else REAL(tmp)[m] = NA_REAL;                            // NA present and na.rm=FALSE result NA
+        if (m + 1 < thisk) REAL(tmp)[m] = thisfill;                 // fill partial window
+        else {
+          if (nc == 0) REAL(tmp)[m] = w / thisk;                    // calculate mean
+          else if (nc == thisk) {                                   // all values in window are NA
+            if (narm) REAL(tmp)[m] = R_NaN;                         // for mean(NA, na.rm=T) result NaN
+            else REAL(tmp)[m] = NA_REAL;                            // for mean(NA, na.rm=F) result NA
+          }
+          else {                                                    // some values in window are NA
+            if (narm) REAL(tmp)[m] = w / (thisk - nc);              // calculate mean if NA present
+            else REAL(tmp)[m] = NA_REAL;                            // NA present and na.rm=FALSE result NA
+          }
         }
       }
+    } else { // exact==TRUE // fastmean/base R floating point error correction
+      error("hasNA and exact not yet implemented");
+      /*R_len_t i;
+      double s, t;
+      for (m=0; m<xrows; m++) {                                     // loop over observations in column
+        if (ISNAN(REAL(this)[m])) nc++;                             // increment NA count in current window
+        else w += REAL(this)[m];                                    // add only non-NA to window sum
+        if (m >= thisk) {
+          if (ISNAN(REAL(this)[m-thisk])) nc--;                     // decrement NA count in current window
+          else w -= REAL(this)[m-thisk];                            // remove only non-NA from window sum
+        }
+        if (m + 1 < thisk) REAL(tmp)[m] = thisfill;                 // fill partial window
+        else {
+          if (nc == 0) REAL(tmp)[m] = w / thisk;                    // calculate mean
+          else if (nc == thisk) {                                   // all values in window are NA
+            if (narm) REAL(tmp)[m] = R_NaN;                         // for mean(NA, na.rm=T) result NaN
+            else REAL(tmp)[m] = NA_REAL;                            // for mean(NA, na.rm=F) result NA
+          }
+          else {                                                    // some values in window are NA
+            if (narm) REAL(tmp)[m] = w / (thisk - nc);              // calculate mean if NA present
+            else REAL(tmp)[m] = NA_REAL;                            // NA present and na.rm=FALSE result NA
+          }
+        }
+      for (m=0; m<xrows; m++) {                    // loop over observations in column
+        s = 0.;
+        t = 0.;
+        if (m < thisk-1) REAL(tmp)[m] = thisfill;  // fill partial window
+        else {
+          for (i=m-thisk+1; i<=m; i++) {
+            s += REAL(this)[i];
+          }
+          s /= thisk;
+          if(R_FINITE((double) s)) {
+            for (i=m-thisk+1; i<=m; i++) t += (REAL(this)[i] - s);
+          }
+          s += t/thisk;
+        }
+        REAL(tmp)[m] = (double) s;
+        }*/
     }
   }
   copyMostAttrib(this, tmp);

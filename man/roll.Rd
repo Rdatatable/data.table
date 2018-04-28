@@ -18,7 +18,7 @@ frollmean(x, n, fill=NA, exact=FALSE, align=c("right", "left",
   \item{n}{ integer vector or list of integer vectors, window size. }
   \item{fill}{ numeric, value to pad by, default \code{NA}. }
   \item{exact}{ logical, (at the current moment does not have effect)
-    should be floating point rounding error be taking into account, see
+    should be floating point rounding error be corrected, see
     references for more information, default \code{FALSE}. }
   \item{align}{ character, define if window frame covers preceding rows
     \code{"right"}, following rows \code{"left"} or centered
@@ -41,6 +41,10 @@ frollmean(x, n, fill=NA, exact=FALSE, align=c("right", "left",
   Argument \code{n} allows multiple values and if \code{adaptive ==
     TRUE} then it expects a list, each list element must be integer
   vector of window size for every \code{column[row]} from \code{x}.
+
+  Argument \code{exact} will make rolling functions to perform extra
+  computation for floating point rounding error correction. Currently
+  this argument was not yet (well) implemented.
 }
 \value{
   A list or a vector.

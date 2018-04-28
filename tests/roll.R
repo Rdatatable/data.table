@@ -146,10 +146,10 @@ test(9999.99, frollmean(5, 2), NA_real_)
 test(9999.99, frollmean(list(1, 10, 5), 2), list(NA_real_, NA_real_, NA_real_))
 
 #### n==Inf
-test(9999.99, frollmean(1:5, Inf), error="n must be non-negative integer values", warning="NAs introduced by coercion to integer range")
+test(9999.99, frollmean(1:5, Inf), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
 
 #### n==c(5, Inf)
-test(9999.99, frollmean(1:5, c(5, Inf)), error="n must be non-negative integer values", warning="NAs introduced by coercion to integer range")
+test(9999.99, frollmean(1:5, c(5, Inf)), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
 
 #### is.complex(n)
 #frollmean(1:5, 3i)
@@ -305,6 +305,7 @@ if (dev_and_benchmark_area<-FALSE) {
   system.time(ans3<-frollmean(x, list(n)))
   all.equal(ans1, ans2)
   all.equal(ans1, ans3)
+  
   identical(ans1, ans3)
   cbind(x, n, ans1, ans3)
   NULL
