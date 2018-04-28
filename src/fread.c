@@ -1895,10 +1895,12 @@ int freadMain(freadMainArgs _args) {
     rowSize4 += (size[j] & 4);
     rowSize8 += (size[j] & 8);
     if (type[j]==CT_DROP) { ndrop++; continue; }
-    if (type[j]<tmpType[j])
-      STOP("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' which will lose accuracy. " \
+    if (type[j]<tmpType[j]) {
+      if (verbose) DTPRINT("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' which will lose accuracy. " \
            "If this was intended, please coerce to the lower type afterwards. Only overrides to a higher type are permitted.",
            j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
+      type[j] = tmpType[j];
+    }
     nUserBumped += type[j]>tmpType[j];
     if (type[j] == CT_STRING) nStringCols++; else nNonStringCols++;
   }
