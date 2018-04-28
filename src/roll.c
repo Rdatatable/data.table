@@ -64,7 +64,6 @@ static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk,
       if (exact) error("exact TRUE is not yet implemented");
       R_len_t thiskl_, lastkl_, s;
       if (length(thiskl) != xrows) error("length of integer vector in 'n' is not equal to length of column in 'x', for adaptive TRUE those has to be equal");
-      if (INTEGER(thiskl)[0]==0) error("window size 0 in from  not yet handled in adaptive");
       for (m=0; m<xrows; m++) {                        // loop over observations in column
         thiskl_ = INTEGER(thiskl)[m];
         w += REAL(this)[m];                            // add current row to window sum
