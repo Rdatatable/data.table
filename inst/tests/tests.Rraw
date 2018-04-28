@@ -11723,6 +11723,11 @@ fwrite(example, file = (f<-tempfile()))
 test(1907, fread(f), example)
 unlink(f)
 
+# Print topn rows properly when class=TRUE (#2803)
+observed <- capture.output(print(data.table(x = seq_len(6L)), topn = 2L, class = TRUE))
+expected <- c("        x", "    <int>", " 1:     1", " 2:     2", "---      ", " 5:     5", " 6:     6")
+test(1908, observed, expected)
+
 
 ###################################
 #  Add new tests above this line  #
