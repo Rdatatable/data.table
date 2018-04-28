@@ -286,7 +286,7 @@ if (dev_and_benchmark_area<-FALSE) {
       if (i >= n[i]) ans[i] = mean(x[(i-n[i]+1):i], na.rm=na.rm)
     ans
   }
-  wmapply = function(x, width, FUN = NULL, ...){
+  wmapply = function(x, width, FUN = mean, ...){
     FUN <- match.fun(FUN)
     SEQ1 <- 1:length(x)
     SEQ1[SEQ1 <  width] <- NA_integer_
@@ -294,12 +294,21 @@ if (dev_and_benchmark_area<-FALSE) {
     OUT <- lapply(SEQ2, function(i) if(!is.null(i)) FUN(x[i], ...) else NA_real_)
     return(base:::simplify2array(OUT, higher = TRUE))
   }
-  #cc(F)
-  #set.seed(108)
-  #x = rnorm(1e2)#sample(c(1:10,4:8,2:4)*3/2, 200000, TRUE)
-  #n = sample(3:10, length(x), TRUE)
-  #ans1 <- f(x, n)
-  #ans2 <- wmapply(x, n, mean)
+  cc(F)
+  set.seed(108)
+  x = c(1:4,2:5,4:6,5)
+  #plot(x, type="l")
+  n = sample(3:10, length(x), TRUE)
+  ans1 = f(x, n)
+  ans2 = wmapply(x, n)
+  ans3 = frollmean(x, list(n))
+  all.equal(ans1, ans2)
+  all.equal(round(ans1,4), round(ans3,4))
+  format(sum(abs(ans1-ans3), na.rm=TRUE), scientific=FALSE)
+  ans1
+  round(ans3, 4)
+  
+  NULL
   
   ## # exact TRUE / FALSE
   ## rsummean = function(x, n) {ans=rep(NA_real_, nx<-length(x)); for(i in n:nx) ans[i]=sum(x[(i-n+1):i])/n; ans}

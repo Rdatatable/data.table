@@ -35,9 +35,9 @@ static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk,
             REAL(tmp)[m] = (w+e1+e2) / thisk;                // calculate mean
           }
         }
-        for (m=0; m<xrows; m++) {
-          REAL(tmp)[m] += ;
-        }
+        //for (m=0; m<xrows; m++) {
+        //  REAL(tmp)[m] += ;
+        //}
         /*double *we;
         we = malloc(xrows * sizeof (double));
         for (m=0; m<xrows; m++) {                    // loop over observations in column
@@ -62,7 +62,7 @@ static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk,
       }
     } else {                                           // adaptive TRUE: variable window size
       if (exact) error("exact TRUE is not yet implemented");
-      R_len_t thiskl_, lastkl_, s;
+      R_len_t thiskl_, lastkl_, diffkl_, s;
       if (length(thiskl) != xrows) error("length of integer vector in 'n' is not equal to length of column in 'x', for adaptive TRUE those has to be equal");
       for (m=0; m<xrows; m++) {                        // loop over observations in column
         thiskl_ = INTEGER(thiskl)[m];
@@ -70,20 +70,20 @@ static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk,
         if (m + 1 < thiskl_) REAL(tmp)[m] = thisfill;    // fill partial window
         else {
           lastkl_ = INTEGER(thiskl)[m-1];
-          R_len_t diffkl_ = thiskl_ - lastkl_;
-          //Rprintf("row %d, window %d, prev window %d, diff %d\n", m+1, thiskl_, lastkl_, diffkl_);
+          diffkl_ = thiskl_ - lastkl_;
+          Rprintf("row %d, window %d, prev window %d, diff %d\n", m+1, thiskl_, lastkl_, diffkl_);
           if (diffkl_ > 1) {
             for (s=0; s<diffkl_-1; s++) {
-              //Rprintf("row %d, diff %d, adding row %d\n", m+1, diffkl_, m-thiskl_+1+s+1);
-              w += REAL(this)[m-thiskl_+1+s];
+              Rprintf("row %d, diff %d, adding row %d, value %8.3f\n", m+1, diffkl_, m-thiskl_+s+1+1, REAL(this)[m-thiskl_+s+1]);
+              w += REAL(this)[m-thiskl_+s+1];
             }
           } else if (diffkl_ < 1) {
             for (s=0; s<1-diffkl_; s++) {
-              //Rprintf("row %d, diff %d, removing row %d\n", m+1, diffkl_, m-thiskl_-s+1);
+              Rprintf("row %d, diff %d, removing row %d, value %8.3f\n", m+1, diffkl_, m-thiskl_-s+1, REAL(this)[m-thiskl_-s]);
               w -= REAL(this)[m-thiskl_-s];
             }
           } else {
-            //Rprintf("row %d, diff %d, no add no remove\n", m+1, diffkl_);
+            Rprintf("row %d, diff %d, no add no remove\n", m+1, diffkl_);
             // diffkl_ == 1: do not add or remove from window
           }
           REAL(tmp)[m] = w / thiskl_;                 // calculate mean
