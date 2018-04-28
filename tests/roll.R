@@ -296,18 +296,17 @@ if (dev_and_benchmark_area<-FALSE) {
   }
   cc(F)
   set.seed(108)
-  x = c(1:4,2:5,4:6,5)
+  x = rnorm(10)#c(1:4,2:5,4:6,5)
+  #x = sample(1e6)
   #plot(x, type="l")
   n = sample(3:10, length(x), TRUE)
-  ans1 = f(x, n)
-  ans2 = wmapply(x, n)
-  ans3 = frollmean(x, list(n))
+  system.time(ans1<-f(x, n))
+  system.time(ans2<-wmapply(x, n))
+  system.time(ans3<-frollmean(x, list(n)))
   all.equal(ans1, ans2)
-  all.equal(round(ans1,4), round(ans3,4))
-  format(sum(abs(ans1-ans3), na.rm=TRUE), scientific=FALSE)
-  ans1
-  round(ans3, 4)
-  
+  all.equal(ans1, ans3)
+  identical(ans1, ans3)
+  cbind(x, n, ans1, ans3)
   NULL
   
   ## # exact TRUE / FALSE

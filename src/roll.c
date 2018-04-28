@@ -71,19 +71,20 @@ static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk,
         else {
           lastkl_ = INTEGER(thiskl)[m-1];
           diffkl_ = thiskl_ - lastkl_;
-          Rprintf("row %d, window %d, prev window %d, diff %d\n", m+1, thiskl_, lastkl_, diffkl_);
+          //Rprintf("row %d, window %d, prev window %d, diff %d\n", m+1, thiskl_, lastkl_, diffkl_);
           if (diffkl_ > 1) {
             for (s=0; s<diffkl_-1; s++) {
-              Rprintf("row %d, diff %d, adding row %d, value %8.3f\n", m+1, diffkl_, m-thiskl_+s+1+1, REAL(this)[m-thiskl_+s+1]);
+              //Rprintf("row %d, diff %d (so adding %d), adding row %d, value %8.3f\n", m+1, diffkl_, diffkl_-1, m-thiskl_+s+1+1, REAL(this)[m-thiskl_+s+1]);
               w += REAL(this)[m-thiskl_+s+1];
             }
           } else if (diffkl_ < 1) {
-            for (s=0; s<1-diffkl_; s++) {
-              Rprintf("row %d, diff %d, removing row %d, value %8.3f\n", m+1, diffkl_, m-thiskl_-s+1, REAL(this)[m-thiskl_-s]);
+            for (s=0; s<-diffkl_+1; s++) {
+              if (m-thiskl_-s < 0) continue;
+              //Rprintf("row %d, diff %d (so removing %d), removing row %d, value %8.3f\n", m+1, diffkl_, -diffkl_+1, m-thiskl_-s+1, REAL(this)[m-thiskl_-s]);
               w -= REAL(this)[m-thiskl_-s];
             }
           } else {
-            Rprintf("row %d, diff %d, no add no remove\n", m+1, diffkl_);
+            //Rprintf("row %d, diff %d, no add no remove\n", m+1, diffkl_);
             // diffkl_ == 1: do not add or remove from window
           }
           REAL(tmp)[m] = w / thiskl_;                 // calculate mean
