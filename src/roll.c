@@ -61,6 +61,7 @@ static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk,
         REAL(tmp)[m] += we / thisk;*/
       }
     } else {                                           // adaptive TRUE: variable window size
+      if (exact) error("exact TRUE is not yet implemented");
       R_len_t thiskl_, lastkl_, s;
       if (length(thiskl) != xrows) error("length of integer vector in 'n' is not equal to length of column in 'x', for adaptive TRUE those has to be equal");
       if (INTEGER(thiskl)[0]==0) error("window size 0 in from  not yet handled in adaptive");
@@ -98,6 +99,7 @@ static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk,
   }
   if (hasna_) {                                                   // hasna_ is non-NA so no `==` check required
     if (adaptive) error("hasNA and adaptive not yet implemented");
+    if (exact) error("exact TRUE is not yet implemented");
     R_len_t nc = 0;
     for (m=0; m<xrows; m++) {                                     // loop over observations in column
       if (ISNAN(REAL(this)[m])) nc++;                             // increment NA count in current window
@@ -126,6 +128,13 @@ static SEXP rollmeanVectorRaw(SEXP tmp, SEXP this, R_len_t xrows, R_len_t thisk,
 }
 
 SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive) {
+
+  /*
+    Ideally this function should be generic `roll()`
+    accepting function name as argument and base on
+    that redirecting to appropriate `roll*VectorRaw()`.
+    This will greatly reduce repetition.
+   */
   
   R_len_t i=0, j, nx, nk, xrows, protecti=0;
   SEXP x, kl, tmp=R_NilValue, this, ans, thisfill;
@@ -210,7 +219,7 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SE
 
   if (salign == LEFT) error("align 'left' not yet implemented");
   else if (salign == CENTER) error("align 'center' not yet implemented");
-  
+
   for (i=0; i<nx; i++) {                                            // loop over columns
     //adaptive TODO check that every k list element is integer vector same length as x
     this = AS_NUMERIC(VECTOR_ELT(x, i));                            // extract column/vector from data.table/list
