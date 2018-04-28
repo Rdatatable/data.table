@@ -1236,9 +1236,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   syms = syms[ substring(syms,1L,2L)==".." ]
   syms = syms[ substring(syms,3L,3L)!="." ]  # exclude ellipsis
   for (sym in syms) {
+    if (sym %chin% names(x)) {
+      # if "..x" exists as column name, use column, for backwards compatibility; e.g. package socialmixr in rev dep checks #2779
+      next
+      # TODO in future, as warned in NEWS item for v1.11.0 :
+      # warning(sym," in j is looking for ",getName," in calling scope, but a column '", sym, "' exists. Column names should not start with ..")
+    }
     getName = substring(sym, 3L)
-    if (sym %chin% names(x))
-      stop(sym," in j is looking for ",getName," in calling scope, but a column '", sym, "' exists. Column names should not start with ..")
     if (!exists(getName, parent.frame()))
       stop("Variable '",getName,"' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter.")
     assign(sym, get(getName, parent.frame()), SDenv)

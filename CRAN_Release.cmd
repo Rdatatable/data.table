@@ -359,7 +359,7 @@ R
 .libPaths()   # should be just 2 items: revdeplib and the base R package library
 update.packages(ask=FALSE)
 # if package not found on mirror, try manually a different one:
-install.packages("MIAmaxent", repos="http://cloud.r-project.org/")
+install.packages("<pkg>", repos="http://cloud.r-project.org/")
 update.packages(ask=FALSE)   # a repeat sometimes does more, keep repeating until none
 
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
