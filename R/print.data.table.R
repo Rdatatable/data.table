@@ -84,7 +84,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
   }
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (printdots) {
-    toprint = rbind(head(toprint, topn), "---"="", tail(toprint, topn))
+    toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
     rownames(toprint) = format(rownames(toprint), justify="right")
     if (col.names == "none") {
       cut_top(print(toprint, right=TRUE, quote=quote))
