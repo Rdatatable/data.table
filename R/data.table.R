@@ -2239,20 +2239,21 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
     old = cols
     cols = chmatch(cols, names(object), nomatch=0L)
     if (any(cols==0L))
-      stop("Columns ", paste(old[cols==0L], collapse=","),
-        " doesn't exist in the input data.table")
+      stop("Columns ", paste(old[cols==0L], collapse=","), " doesn't exist in the input data.table")
   }
   cols = as.integer(cols)
   ix = .Call(Cdt_na, object, cols)
   # forgot about invert with no NA case, #2660
   if (invert) {
-    if (all(ix)) object[0L]
+    if (all(ix))
+      object
     else
       .Call(CsubsetDT, object, which_(ix, bool = TRUE), seq_along(object))
   } else {
     if (any(ix))
       .Call(CsubsetDT, object, which_(ix, bool = FALSE), seq_along(object))
-    else object
+    else
+      object
   }
 }
 

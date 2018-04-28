@@ -346,6 +346,8 @@ sudo apt-get -y install libboost-all-dev libboost-locale-dev  # for textTinyR
 sudo apt-get -y install libsndfile1-dev  # for seewave
 sudo apt-get -y install libpoppler-cpp-dev  # for pdftools
 sudo apt-get -y install libapparmor-dev  # for sys
+sudo apt-get -y install libmagick++-dev  # for magick
+sudo apt-get -y install libjq-dev libprotoc-dev libprotobuf-dev and protobuf-compiler   # for protolite
 sudo R CMD javareconf
 # ENDIF
 
