@@ -11714,6 +11714,12 @@ test(1906.1, fread(txt),
 test(1906.2, fread(txt, quote=""),
   data.table(A=1:3, B=c('"hello", said Joe', '""howdy""', '"as"'), C=c('14" pizza', 'easy"', '"""pie"')))
 
+# Issue #2395 : text field containing too many newlines
+example <- data.table(column1 = 1:3, column2 = c("text", "text\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nmany new lines\n\n\n\n\n\n", "text"))
+fwrite(example, file = (f<-tempfile()))
+test(1907, fread(f), example)
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
