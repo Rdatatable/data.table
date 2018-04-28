@@ -1,5 +1,5 @@
 
-fread <- function(input="",file,text,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings=getOption("datatable.na.strings","NA"),stringsAsFactors=FALSE,verbose=getOption("datatable.verbose",FALSE),skip="__auto__",select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64","integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL, showProgress=interactive(), data.table=getOption("datatable.fread.datatable",TRUE), nThread=getDTthreads(), logical01=getOption("datatable.logical01", FALSE), autostart=NA)
+fread <- function(input="",file,text,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings=getOption("datatable.na.strings","NA"),stringsAsFactors=FALSE,verbose=getOption("datatable.verbose",FALSE),skip="__auto__",select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64","integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL, showProgress=getOption("datatable.showProgress",interactive()), data.table=getOption("datatable.fread.datatable",TRUE), nThread=getDTthreads(), logical01=getOption("datatable.logical01", FALSE), autostart=NA)
 {
   if (is.null(sep)) sep="\n"         # C level knows that \n means \r\n on Windows, for example
   else {
@@ -55,9 +55,9 @@ fread <- function(input="",file,text,sep="auto",sep2="auto",dec=".",quote="\"",n
       # either a download or a system command, both to temp file
       tmpFile = tempfile()
       on.exit(unlink(tmpFile), add=TRUE)
-      str6 = substring(input,1,6)   # avoid grepl() for #2531
-      str7 = substring(input,1,7)
-      str8 = substring(input,1,8)
+      str6 = substring(input,1L,6L)   # avoid grepl() for #2531
+      str7 = substring(input,1L,7L)
+      str8 = substring(input,1L,8L)
       if (str7=="ftps://" || str8=="https://") {
         if (!requireNamespace("curl", quietly = TRUE))
             stop("Input URL requires https:// connection for which fread() requires 'curl' package, but cannot be found. Please install curl using 'install.packages('curl')'.")
@@ -95,7 +95,7 @@ fread <- function(input="",file,text,sep="auto",sep2="auto",dec=".",quote="\"",n
   stopifnot(is.null(na.strings) || is.character(na.strings))
   tt = grep("^\\s+$", na.strings)
   if (length(tt)) {
-    msg = paste0('na.strings[', tt[1], ']=="',na.strings[tt[1L]],'" consists only of whitespace, ignoring. ')
+    msg = paste0('na.strings[', tt[1L], ']=="',na.strings[tt[1L]],'" consists only of whitespace, ignoring. ')
     if (strip.white) {
       if (any(na.strings=="")) {
         warning(msg, 'strip.white==TRUE (default) and "" is present in na.strings, so any number of spaces in string columns will already be read as <NA>.')

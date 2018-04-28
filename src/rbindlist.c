@@ -253,7 +253,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
           // it's a collision, not a match, so iterate to a new spot
           idx = (idx + 1) % data.M;
         }
-        if (h[idx] == NULL) error("internal hash error, please report to datatable-help");
+        if (h[idx] == NULL) error("internal hash error, please report to data.table issue tracker");
       }
     }
 
@@ -288,7 +288,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
           // it's a collision, not a match, so iterate to a new spot
           idx = (idx + 1) % data.M;
         }
-        if (h[idx] == NULL) error("internal hash error, please report to datatable-help");
+        if (h[idx] == NULL) error("internal hash error, please report to data.table issue tracker");
       }
     }
   }
@@ -311,7 +311,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
           // it's a collision, not a match, so iterate to a new spot
           idx = (idx + 1) % data.M;
         }
-        if (h[idx] == NULL) error("internal hash error, please report to datatable-help");
+        if (h[idx] == NULL) error("internal hash error, please report to data.table issue tracker");
       }
     }
   }
@@ -714,7 +714,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
           SET_VECTOR_ELT(factorLevels, jj, levels); jj++;
           if (isOrdered(thiscol)) isRowOrdered[resi] = TRUE;
         } else {
-          if (TYPEOF(thiscol) != STRSXP) error("Internal logical error in rbindlist.c (not STRSXP), please report to datatable-help.");
+          if (TYPEOF(thiscol) != STRSXP) error("Internal logical error in rbindlist.c (not STRSXP), please report to data.table issue tracker.");
           for (r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
 
           // if this column is going to be a factor, add column to factorLevels
@@ -728,19 +728,19 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
         }
         break;
       case VECSXP :
-        if (TYPEOF(thiscol) != VECSXP) error("Internal logical error in rbindlist.c (not VECSXP), please report to datatable-help.");
+        if (TYPEOF(thiscol) != VECSXP) error("Internal logical error in rbindlist.c (not VECSXP), please report to data.table issue tracker.");
         for (r=0; r<thislen; r++)
           SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thiscol,r));
         break;
       case CPLXSXP : // #1659 fix
-        if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. Please report to datatable-help.");
+        if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. please report to data.table issue tracker.");
         for (r=0; r<thislen; r++)
           COMPLEX(target)[ansloc+r] = COMPLEX(thiscol)[r];
         break;
       case REALSXP:
       case INTSXP:
       case LGLSXP:
-        if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. Please report to datatable-help.");
+        if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. please report to data.table issue tracker.");
         memcpy((char *)DATAPTR(target) + ansloc * SIZEOF(thiscol),
              (char *)DATAPTR(thiscol),
              thislen * SIZEOF(thiscol));

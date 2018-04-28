@@ -11,6 +11,10 @@ warnings_are_errors: true
 r_check_args: ""
 # empty r_check_args to turn off --as-cran (on by default) as that can be slow
 
+branches:
+  only:
+    - "master"
+
 bioc_packages:
   - IRanges
   - GenomicRanges
@@ -18,6 +22,7 @@ bioc_packages:
 r_packages:
   - covr
   - drat
+  - devtools  # explicitly named temp fix for #2801
 
 before_script:
   - echo "Revision:" $TRAVIS_COMMIT >> ./DESCRIPTION

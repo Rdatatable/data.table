@@ -16,14 +16,14 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all"))  mult = ALL;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else error("Internal error: invalid value for 'mult'; this should have been caught before. Please report to datatable-help");
+  else error("Internal error: invalid value for 'mult'; this should have been caught before. please report to data.table issue tracker");
 
   if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "any"))  type = ANY;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "within")) type = WITHIN;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "start")) type = START;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "end")) type = END;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "equal")) type = EQUAL;
-  else error("Internal error: invalid value for 'type'; this should have been caught before. Please report to datatable-help");
+  else error("Internal error: invalid value for 'type'; this should have been caught before. please report to data.table issue tracker");
 
   // For reference: uxcols-1 = type_count, uxcols-2 = count, uxcols-3 = type_lookup, uxcols-4 = lookup
   // first pass: calculate lengths first
@@ -210,14 +210,14 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all"))  mult = ALL;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else error("Internal error: invalid value for 'mult'; this should have been caught before. Please report to datatable-help");
+  else error("Internal error: invalid value for 'mult'; this should have been caught before. please report to data.table issue tracker");
 
   if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "any"))  type = ANY;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "within")) type = WITHIN;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "start")) type = START;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "end")) type = END;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "equal")) type = EQUAL;
-  else error("Internal error: invalid value for 'type'; this should have been caught before. Please report to datatable-help");
+  else error("Internal error: invalid value for 'type'; this should have been caught before. please report to data.table issue tracker");
 
   // As a first pass get the final length, so that we can allocate up-front and not deal with Calloc + Realloc + size calculation hassle
   // Checked the time for this loop on realisitc data (81m reads) and took 0.27 seconds! No excuses ;).

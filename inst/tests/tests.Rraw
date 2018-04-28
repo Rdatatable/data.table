@@ -2771,8 +2771,8 @@ unlink(f)                          # that file can be removed after error
 test(1010.7, !file.exists(f))
 
 # detection of unescaped quotes, quote rule 3
-test(1011, fread('A,B\n"aa",1\n"bb,2\n"cc",3\n'), data.table(A=c('aa', '"bb', 'cc'), B=1:3))
-test(1012, fread('A,B\n"aa",1\n"bb"",2\n"cc",3\n'), data.table(A=c("aa", "bb\"", "cc"), B=1:3))
+test(1011, fread('A,B\n"aa",1\n"bb,2\n"cc",3\n'), data.table(A=c('aa', '"bb', 'cc'), B=1:3), warning=w<-"resolved improper quoting")
+test(1012, fread('A,B\n"aa",1\n"bb"",2\n"cc",3\n'), data.table(A=c("aa", "bb\"", "cc"), B=1:3), warning=w)
 
 # integer64 control to fread
 test(1013, fread("A,B\n123,123\n", integer64="integer"), error="integer64='%s' which isn't 'integer64'|'double'|'numeric'|'character'")
@@ -3958,12 +3958,20 @@ test(1215,
    fread('N_ID VISIT_DATE REQ_URL REQType\n175931 2013-03-08T23:40:30 http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU 2'),
    data.table(N_ID=175931L, VISIT_DATE="2013-03-08T23:40:30", REQ_URL='http://aaa.com/rest/api2.do?api=getSetMobileSession&data={"imei":"60893ZTE-CN13cd","appkey":"android_client","content":"Z0JiRA0qPFtWM3BYVltmcx5MWF9ZS0YLdW1ydXoqPycuJS8idXdlY3R0TGBtU', REQType=2L)
 )
-test(1216.1, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n'),
-         data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("a\"b\"c\"d", "b,az\"")))
-test(1216.2, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,az""\n'),
-         data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("a\"b\"c\"d\"", "b,az\"")))
-test(1216.3, fread('A,B,C\n1.2,Foo"Bar,"a"b\"c"d""\nfo"o,bar,"b,"az""\n'),
-         data.table(A=c('1.2','fo"o'), B=c('Foo"Bar','bar'),C=c('a"b"c"d"','b,"az"')))
+test(1261.1, identical('A,B,C\n1.2,Foo"Bar,"a"b\"c"d"\nfo"o,bar,"b,az""\n',  # \ before "c checked to be superfluous, an aside in #2755
+                       'A,B,C\n1.2,Foo"Bar,"a"b"c"d"\nfo"o,bar,"b,az""\n'))
+test(1216.2, fread('A,B,C\n1.2,Foo"Bar,"a"b"c"d"\nfo"o,bar,"b,az""\n'),
+         data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("a\"b\"c\"d", "b,az\"")),
+         warning=w<-"resolved improper quoting")
+test(1216.3, fread('A,B,C\n1.2,Foo"Bar,"a"b\\"c"d"\nfo"o,bar,"b,az""\n'),
+         data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("a\"b\\\"c\"d", "b,az\"")),
+         warning=w)
+test(1216.4, fread('A,B,C\n1.2,Foo"Bar,"a"b"c"d""\nfo"o,bar,"b,az""\n'),
+         data.table(A = c("1.2", "fo\"o"), B = c("Foo\"Bar", "bar"), C = c("a\"b\"c\"d\"", "b,az\"")),
+         warning=w)
+test(1216.5, fread('A,B,C\n1.2,Foo"Bar,"a"b"c"d""\nfo"o,bar,"b,"az""\n'),
+         data.table(A=c('1.2','fo"o'), B=c('Foo"Bar','bar'),C=c('a"b"c"d"','b,"az"')),
+         warning=w)
 test(1217, fread('"One,Two","Three",Four\n12,3,4\n56,7,8\n'),  # quoted column names including the separator
          data.table("One,Two"=c(12L,56L),Three=c(3L,7L),Four=c(4L,8L)))
 
@@ -4925,7 +4933,7 @@ test(1323, fread('col1,col2\n5,"4\n3"'), data.table(col1=5L, col2="4\n3"))  # no
 test(1324, fread('A,B,C\n1,4,"foo"\n2,5,"bar'), data.table(A=1:2,B=4:5,C=c('foo','"bar')))
 test(1325, fread('A,B,C\n1,4,"foo"\n2,5,"bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar')))
 test(1326, fread('A,B,C\n1,4,"foo"\n2,5,bar"'), data.table(A=1:2,B=4:5,C=c("foo",'bar"')))
-test(1327, fread('A,B,C\n1,4,"foo"\n2,5,""bar""'), data.table(A=1:2,B=4:5,C=c("foo",'"bar"')))
+test(1327, fread('A,B,C\n1,4,"foo"\n2,5,""bar""'), data.table(A=1:2,B=4:5,C=c("foo",'"bar"')), warning="resolved improper quoting")
 cat('A,B\n2,"Joe \\",Bloggs"', file = f<-tempfile())
 test(1328, fread(f), data.table(A=2L, B='Joe \\",Bloggs'))
 cat('A,B\n2,"Joe \\",Bloggs"\n', file = f<-tempfile())
@@ -4951,13 +4959,27 @@ cat('A,B,C,D,E,F
 "TX",77406,"business analyst\\\\\\\\\\\\\\","the boeing co","",""
 "CA",94116,"na\\none","retired","",""
 ', file = f<-tempfile())   # aside: notice the \\ before n of none as well
-test(1336.1, fread(f), data.table(A = c("12", "TX", "CA"), B = c(0L, 77406L, 94116L), C = c("teacher private nfp\\\\\\\\\"", "business analyst\\\\\\\\\\\\\\", "na\\none"), D = c("\"jacoleman high school", "the boeing co", "retired"), E = NA, F = NA))
+test(1336.1, fread(f),
+  data.table(A = c("12", "TX", "CA"),
+             B = c(0L, 77406L, 94116L),
+             C = c("teacher private nfp\\\\\\\\\"", "business analyst\\\\\\\\\\\\\\", "na\\none"),
+             D = c("\"jacoleman high school", "the boeing co", "retired"),
+             E = NA,
+             F = NA),
+  warning="resolved improper quoting")
 cat('A,B,C,D,E,F
 "12",0,"teacher private nfp\\\\\\\\"","jacoleman high school","",""
 "TX",77406,"business analyst\\\\\\\\\\\\\\","the boeing co","",""
 "CA",94116,"na\\none","retired","",""
 ', file = f)
-test(1336.2, fread(f), data.table(A=c("12","TX","CA"), B=c(0L,77406L,94116L),C=c('teacher private nfp\\\\\\\\"','business analyst\\\\\\\\\\\\\\','na\\none'), D=c('jacoleman high school','the boeing co','retired'),E=NA,F=NA))
+test(1336.2, fread(f),
+  data.table(A=c("12","TX","CA"),
+             B=c(0L,77406L,94116L),
+             C=c('teacher private nfp\\\\\\\\"','business analyst\\\\\\\\\\\\\\','na\\none'),
+             D=c('jacoleman high school','the boeing co','retired'),
+             E=NA,
+             F=NA),
+  warning="resolved improper quoting")
 unlink(f)
 
 # file names ending with \ (quite common)
@@ -6012,8 +6034,9 @@ test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input wor
 test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist; getwd()==")
 
 # Test for #802
-test(1453, fread(testDir("fread_line_error.csv")), fread(testDir("fread_line_error.csv"), nrow=11),
-           warning="Stopped.*line 12. Expected 24 fields but found 47.*First discarded non-empty line: <<31,3-0-7 4:1:7.5 HVV,")
+test(1453, fread(testDir("fread_line_error.csv"))[c(1,.N), c("V1","V24")],
+           data.table(V1=INT(3,32), V24=c(".Q8_2_0W_8_1_7_L-4-U-5_1YSV-S-3-5.X",".U5_5_8H_7_6_0_U-5-J-7_2GNY-J-3-5.X")),
+           warning=c("resolved improper quoting", "Stopped.*line 12. Expected 24 fields but found 47.*First discarded non-empty line: <<31,3-0-7 4:1:7.5 HVV,"))
 # TODO: add comment=="#".   Ensure only after last field is observed.
 
 # no-sep-found => sep="\n", use case for this in #738
@@ -7105,7 +7128,7 @@ test(1545.32, .shallow(x1, cols = c("a1", "a2", "a3"), retain.key=TRUE), .shallo
 
 
 # test for #1234
-df1 = df2 = data.frame(cats = rep(c('', ' ',  'meow'), 5))
+df1 = df2 = data.frame(cats = rep(c('', ' ',  'meow'), 5), stringsAsFactors = TRUE)
 df2[grep("^[ ]*$", df2$cats), "cats"] = NA_integer_
 test(1546, set(df1, grep("^[ ]*$", df1$cats), 1L, NA_integer_), df2)
 
@@ -7154,21 +7177,23 @@ for(k in seq_along(nastrings)) {
 
 # FR #568
 str = "a,b\n1.5,\"at the 5\" end of the gene.\""
-test(1551.1, fread(str), data.table(a = 1.5, b = "at the 5\" end of the gene."))
+test(1551.1, fread(str), data.table(a = 1.5, b = "at the 5\" end of the gene."), warning=w<-"resolved improper quoting")
 #1256
 str = "x,y\nx1,\"oops\" y1\n"
-test(1551.2, fread(str), data.table(x = "x1", y = "\"oops\" y1"))
+test(1551.2, fread(str), data.table(x = "x1", y = "\"oops\" y1"), warning=w)
 str = "x,y\nx1,\"oops\" y1"
-test(1551.3, fread(str), data.table(x = "x1", y = "\"oops\" y1"))
+test(1551.3, fread(str), data.table(x = "x1", y = "\"oops\" y1"), warning=w)
 #1077
 str = '2,3\n""foo,bar'
-test(1551.4, fread(str), data.table(V1=c("2","\"\"foo"), V2=c("3","bar")))
+test(1551.4, fread(str), data.table(V1=c("2","\"\"foo"), V2=c("3","bar")), warning=w)
 #1079
 str = 'L1\tsome\tunquoted\tstuff\nL2\tsome\t"half" quoted\tstuff\nL3\tthis\t"should work"\tok though'
-test(1551.5, fread(str), data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "should work"), stuff = c("stuff", "ok though")))
+test(1551.5, fread(str),
+  data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "should work"), stuff = c("stuff", "ok though")),
+  warning = w)
 #1095
 rhs = read.table(testDir("issue_1095_fread.txt"), sep=",", comment.char="", stringsAsFactors=FALSE, quote="", strip.white=TRUE)
-test(1551.6, fread(testDir("issue_1095_fread.txt"), logical01=FALSE), setDT(rhs))
+test(1551.6, fread(testDir("issue_1095_fread.txt"), logical01=FALSE), setDT(rhs), warning=w)
 
 # FR #1314 rest of na.strings issue
 str = "a,b,c,d\n#N/A,+1,5.5,FALSE\n#N/A,5,6.6,TRUE\n#N/A,+1,#N/A,-999\n#N/A,#N/A,-999,FALSE\n#N/A,1,NA,TRUE"
@@ -7440,14 +7465,14 @@ test(1577.3, levels(X$b), character(0))
 
 # FR #530, skip blank lines
 input = "Header not 2 columns\n\n1,3\n2,4"
-test(1578.0, fread(input), data.table(V1=1:2, V2=3:4))
+test(1578.1, fread(input), data.table(V1=1:2, V2=3:4))
 input = "a,b\n\n1,3\n2,4"
-test(1578.1, fread(input), data.table(a=logical(), b=logical()), warning="Stopped early on line 2[.].*First discarded.*<<1,3>>")
-test(1578.2, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
-input = "a,b\n\n\n1,3\n2,4"
+test(1578.2, fread(input), data.table(V1=1:2, V2=3:4))  # the block of 2x2 dominates the one line with sep in auto-removed header section
 test(1578.3, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
-input = "a,b\n\n\n1,3\n\n2,4\n\n"
+input = "a,b\n\n\n1,3\n2,4"
 test(1578.4, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
+input = "a,b\n\n\n1,3\n\n2,4\n\n"
+test(1578.5, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 
 f = testDir("530_fread.txt")
 test(1578.5, fread(f, skip=47L), data.table(a=logical(), b=logical()), warning="Stopped early.*discarded.*<<1,3>>")
@@ -7640,20 +7665,17 @@ test(1588.1, dt[f %in% 3:4], dt[3:4])
 test(1588.2, dt[f == 3], dt[3])
 
 # encoding issue in forder
-# test escaped when memory statistics are collected due to #2746
-if (!memtest) {
-  x <- "fa\xE7ile"
-  Encoding(x)
-  Encoding(x) <- "latin1"
-  xx <- iconv(x, "latin1", "UTF-8")
-  y = sample(c(x,xx), 10, TRUE)
-  oy = if (length(oy <- forderv(y))) oy else seq_along(y)
-  test(1590.4, oy, order(y))
-  Encoding(xx) = "unknown"
-  y = sample(c(x,xx), 10, TRUE)
-  oy = if (length(oy <- forderv(y))) oy else seq_along(y)
-  test(1590.5, oy, order(y))
-}
+x <- "fa\xE7ile"
+Encoding(x)
+Encoding(x) <- "latin1"
+xx <- iconv(x, "latin1", "UTF-8")
+y = sample(c(x,xx), 10, TRUE)
+oy = if (length(oy <- forderv(y))) oy else seq_along(y)
+test(1590.4, oy, order(y))
+Encoding(xx) = "unknown"
+y = sample(c(x,xx), 10, TRUE)
+oy = if (length(oy <- forderv(y))) oy else seq_along(y)
+test(1590.5, oy, order(y))
 
 # #1432 test
 list_1 = list(a = c(44,47), dens = c(2331,1644))
@@ -7763,7 +7785,7 @@ DT = data.table(x=rep(c("b","a","c"),each=3), y=c(1,3,6), v=1:9)
 test(1605, DT[order(-x, "D")], error="Column 2 is length 1 which differs")
 
 # fix for #1503, fread's fill argument polishing
-test(1606, fread("2\n1,a,b", fill=TRUE), data.table(V1=2:1, V2=c("","a"), V3=c("","b")))
+test(1606, fread("2,\n1,a,b", fill=TRUE), data.table(V1=2:1, V2=c("","a"), V3=c("","b")))
 
 # fix for #1476
 dt = data.table(resp=c(1:5))
@@ -7772,7 +7794,7 @@ test(1607, wide[, id := .I], data.table(resp = 1:5, id = 1:5))
 
 # better fix for #1462, + improved error message (if this better fix fails)
 # no need for quote="" and sep="\t"..
-test(1608, dim(fread(testDir('issue_1462_fread_quotes.txt'), header=FALSE)), c(4L, 224L))
+test(1608, dim(fread(testDir('issue_1462_fread_quotes.txt'), header=FALSE)), c(4L, 224L), warning="resolved improper quoting")
 
 # fix for #1164
 test(1609, fread(testDir("issue_1164_json.txt")), data.table(json1='{""f1"":""value1"",""f2"":""double quote escaped with a backslash [ \\"" ]""}', string1="string field"))
@@ -10297,7 +10319,8 @@ test(1754, fread(testDir("allchar.csv"))[c(1,2,17575,17576),col2], c("AAN","BAN"
 test(1755, fread(testDir("unescaped.csv"), logical01=TRUE),
   data.table(No     =c(FALSE,TRUE),
              Comment=c('he said:"wonderful."', 'The problem is: reading table, and also "a problem, yes." keep going on.'),
-             Type   =c('A','A')))
+             Type   =c('A','A')),
+  warning="resolved improper quoting" )
 
 # test duplicated colClasses
 txt = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
@@ -10717,7 +10740,7 @@ test(1803.2, fread(f), DT)
 test(1804.1, fread("A,B\n", na.strings=" NA"), error="NAstring .* has whitespace at the beginning or end")
 test(1804.2, fread("A,B\n", na.strings="NA\t"), error="NAstring .* has whitespace at the beginning or end")
 test(1805, fread("A\n", verbose=TRUE), data.table(A=logical()), output="text input (not a filename)")
-test(1806, fread('"A,B,C\n1,2,3\n4,5,6'), data.table('"A'=c(1L,4L), B=c(2L,5L), C=c(3L,6L)))
+test(1806, fread('"A,B,C\n1,2,3\n4,5,6'), data.table('"A'=c(1L,4L), B=c(2L,5L), C=c(3L,6L)), warning="resolved improper quoting")
 test(1807, fread('A,B,"C\nD",E'), data.table(A=logical(), B=logical(), "C\nD"=logical(), E=logical()))
 test(1808.1, fread("A,B\r1,2\r3,4"), data.table(A=c(1L,3L),B=c(2L,4L)))
 test(1808.2, fread("A,B\r1,2\r3,4\r"), data.table(A=c(1L,3L),B=c(2L,4L)))
@@ -10926,7 +10949,9 @@ unlink(f)
 
 test(1836, fread('1,2,"3,a"\n4,5,"6,b"'), data.table(V1=c(1L,4L), V2=c(2L,5L), V3=c("3,a","6,b")))   # 2196
 
-test(1837, fread('v1,v2,v3,v4,v5\n1,2,3,4,5', select=-1), error="out of range.*Consider drop= instead")  #2423
+test(1837.1, fread('v1,v2,v3,v4,v5\n1,2,3,4,5', select=-1), error="negative but should be in the range.*Consider drop= for column exclusion")  #2423 and #2782
+test(1837.2, fread('v1,v2,v3,v4,v5\n1,2,3,4,5', select=0), error="select = 0.*has no meaning")
+test(1837.3, fread('v1,v2,v3,v4,v5\n1,2,3,4,5', select=6), error="too large for this table, which only has")
 
 test(1838, fread("default payment next month\n0.5524\n0.2483\n0.1157\n"), data.table("default payment next month"=c(0.5524,0.2483,0.1157)))  #2322
 
@@ -10956,7 +10981,7 @@ test(1839.6, fread(txt, sep=""), data.table("DECLARATION OF INDEPENDENCE"=lines[
 txt = 'a,b\n ab,cd,ce\n abcdef\n hjkli \n'  # now auto detected as ncol 1 anyway
 test(1840.1, fread(txt), data.table("a,b" = c("ab,cd,ce","abcdef","hjkli")))
 write('a,b\n ab,cd,ce\nabc,def \n hj,kli  ', f<-tempfile())  # write to file to generate \r\n line ending on Windows, test 1840.6 below
-test(1840.2, fread(f), data.table(a=logical(), b=logical()), warning="Stopped early on line 2.*discarded.*<<ab,cd,ce>>")
+test(1840.2, fread(f), data.table("ab"=c("abc","hj"), "cd"=c("def","kli"), "ce"=NA), warning="Detected 3 column names but the data has 2.*Filling.*automatically")
 test(1840.3, fread(f, sep=NA), error="!is.na(sep) is not TRUE")
 test(1840.4, fread(f, sep=NA_character_), error="!is.na(sep) is not TRUE")
 test(1840.5, fread(f, sep=""), ans<-data.table("a,b"=c("ab,cd,ce","abc,def","hj,kli")))
@@ -11282,8 +11307,8 @@ test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA
 
 # nrows= now ignores errors after those nrows as expected and skip= determines first row for sure, #1267
 txt = "V1, V2, V3\n2,3,4\nV4, V5, V6, V7\n4,5,6,7\n8,9,10,11\n"
-test(1871.1, fread(txt), ans <- data.table(V4=INT(4,8), V5=INT(5,9), V6=INT(6,10), V7=INT(7,11)))
-test(1871.2, fread(txt, skip=2), ans)
+test(1871.1, fread(txt), data.table(V1=2L, V2=3L, V3=4L), warning="Stopped early on line 3. Expected 3 fields but found 4.*First discarded.*V4, V5")
+test(1871.2, fread(txt, skip=2), ans<-data.table(V4=INT(4,8), V5=INT(5,9), V6=INT(6,10), V7=INT(7,11)))
 test(1871.3, fread(txt, skip=2, nrow=1), ans[1,])
 test(1871.4, fread(txt, skip=2, nrow=3), ans)
 test(1871.5, fread(txt, skip=3), ans <- data.table(V1=INT(4,8), V2=INT(5,9), V3=INT(6,10), V4=INT(7,11)))
@@ -11473,11 +11498,11 @@ test(1880.3, any(duplicated(names(joined))), TRUE)
 DT = data.table(A=rep("abc", 10000), B="def")
 DT[110, A:='"a"b']
 fwrite(DT, f<-tempfile(), quote=FALSE)
-test(1881.1, ans<-fread(f), DT, warning='Found and resolved improper quoting. First healed line 111: <<"a"b,def>>')
+test(1881.1, ans<-fread(f), DT, warning='Found and resolved improper quoting out-of-sample. First healed line 111: <<"a"b,def>>')
 test(1881.2, ans[110,A], '"a"b')  # double-check the value of interest directly
 cat("(10000 rows)\n", file=f, append=TRUE)
 test(1881.3, fread(f), DT, warning=c('Discarded single-line footer: <<(10000 rows)>>',
-                                     'Found and resolved improper quoting. First healed line 111: <<"a"b,def>>'))
+                                     'Found and resolved improper quoting out-of-sample. First healed line 111: <<"a"b,def>>'))
 unlink(f)
 
 # CJ will should fail with proper error message, #2636
@@ -11490,7 +11515,7 @@ test(1882.3, CJ(v, v, v), error="Cross product of elements provided to CJ() woul
 test(1883, fread(testDir("SA2-by-DJZ.csv"), verbose=TRUE, header=FALSE)[c(1,2,1381,.N),],
            data.table(V1=c("Goulburn","","",""), V2=c("110018063","110018064","0&&&&&&&&","0@@@@@@@@"), V3=INT(3499,812,250796,7305367), V4=NA),
            warning='Stopped early on line 1394.*First discarded non-empty line: <<"Dataset: 2011 Census of Population and Housing">>',
-           output="0.000s.*Rereading 0 columns")
+           output="Rereading 0 columns")
 
 # sep=NULL with quoted fields, #2548
 test(1884, fread('"A","B"\n', sep=NULL), data.table('"A","B"'=logical()))
@@ -11512,6 +11537,19 @@ test(1887, na.omit(DT, invert = TRUE), DT_out)
 
 x = runif(1e4)
 test(1888, fsort(x), base::sort(x))
+test(1888.1, fsort(x, decreasing = TRUE), base::sort(x, decreasing = TRUE),
+             warning = "New parallel sort has not been implemented for decreasing=TRUE.*one thread")
+x <- c(x, NA_real_)
+test(1888.2, fsort(x, na.last = TRUE), base::sort(x, na.last = TRUE),
+             warning = "New parallel sort has not been implemented for vectors containing NA values so far.*Using one thread")
+test(1888.3, fsort(x, na.last = FALSE), base::sort(x, na.last = FALSE),
+             warning = "New parallel sort has not been implemented for vectors containing NA values so far.*Using one thread")
+test(1888.4, fsort(x, decreasing = TRUE, na.last = TRUE), base::sort(x, decreasing = TRUE, na.last = TRUE),
+             warning = "New parallel sort has not been implemented for decreasing=TRUE so far.*Using one thread")
+x <- as.integer(x)
+test(1888.5, fsort(x), base::sort(x, na.last = FALSE),
+             warning = "Input is not a vector of type double. New parallel sort has only been done for double vectors so far.*Using one thread")
+
 
 # doubling of savetl buffer (currently starts with 100)
 x = as.character(as.hexmode(1:1000))
@@ -11668,6 +11706,30 @@ test(1904.4, fread(txt, na.strings=c("NA", "", " ")), ans, warning='na.strings\\
 test(1904.5, fread(txt, na.strings=c("NA", " "), strip.white=FALSE), error='na.strings\\[2\\]==" ".*only.*whitespace.*But strip.white=FALSE')
 setnames(ans, c("A","   B","    C"))
 test(1904.6, fread(txt, na.strings="NA", strip.white=FALSE), ans)  # whitespace around NA strings is always stripped regardless of strip.white; just column names affected here
+
+# should respect sep= when it is supplied, #2666
+test(1905.1, fread("A;B;C\nD\nE;F", sep=";", header=FALSE, fill=TRUE),
+             data.table(V1=c("A","D","E"), V2=c("B","","F"), V3=c("C","","")))
+test(1905.2, fread("A;B;C\nD\nE", sep=";", header=FALSE, fill=TRUE),
+             data.table(V1=c("A","D","E"), V2=c("B","",""), V3=c("C","","")))
+test(1905.3, fread("A;B;C\n;D\nE", sep=";", header=FALSE, fill=TRUE),
+             data.table(V1=c("A","","E"), V2=c("B","D",""), V3=c("C","","")))
+test(1905.4, fread("A;B;C\nD\n;E", sep=";", header=FALSE, fill=TRUE),
+             data.table(V1=c("A","D",""), V2=c("B","","E"), V3=c("C","","")))
+
+# using rarer field separator without quoting, aside in #2755
+# the self-healing rules aren't perfect, which is why they need to warn when used and nudge towards reliable usage
+txt = 'A|B|C\n1|"hello", said Joe|14" pizza\n2|""howdy""|easy"\n3|\"as"|"""pie"\n'
+test(1906.1, fread(txt),
+  data.table(A=1:3, B=c('"hello", said Joe', '"howdy"', 'as'), C=c('14" pizza', 'easy"', '""pie')),
+  warning='Found and resolved improper quoting.*If the fields are not quoted.*separator does not appear within any field.*try quote="" to avoid this warning')
+test(1906.2, fread(txt, quote=""),
+  data.table(A=1:3, B=c('"hello", said Joe', '""howdy""', '"as"'), C=c('14" pizza', 'easy"', '"""pie"')))
+
+# Issue #2395 : text field containing too many newlines
+example <- data.table(column1 = 1:3, column2 = c("text", "text\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nmany new lines\n\n\n\n\n\n", "text"))
+fwrite(example, file = (f<-tempfile()))
+test(1907, fread(f), example)
 
 
 ###################################

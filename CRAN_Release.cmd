@@ -98,6 +98,9 @@ grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAtt
 cd
 R
 cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently gcc-7) as CRAN does
+saf = options()$stringsAsFactors
+options(stringsAsFactors=!saf)    # check tests (that might be run by user) are insensitive to option, #2718
+cc()
 q("no")
 R CMD build data.table
 R CMD check data.table_1.10.1.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
@@ -313,19 +316,20 @@ sudo apt-get -y install htop
 sudo apt-get -y install r-base r-base-dev
 sudo apt-get -y build-dep r-base-dev
 sudo apt-get -y build-dep qpdf
-sudo apt-get -y build-dep r-cran-rgl
+sudo apt-get -y install aptitude
+sudo aptitude build-dep r-cran-rgl   # leads to libglu1-mesa-dev
 sudo apt-get -y build-dep r-cran-rmpi
 sudo apt-get -y build-dep r-cran-cairodevice
 sudo apt-get -y build-dep r-cran-tkrplot
 sudo apt-get -y install libcurl4-openssl-dev    # needed by devtools
 sudo apt-get -y install xorg-dev x11-common libgdal-dev libproj-dev mysql-client libcairo2-dev libglpk-dev
-sudo apt-get -y install texlive texlive-latex-extra texlive-bibtex-extra texlive-science texinfo texlive-fonts-extra latex-xcolor
+sudo apt-get -y install texlive texlive-latex-extra texlive-bibtex-extra texlive-science texinfo texlive-fonts-extra
 sudo apt-get -y install libv8-dev
 sudo apt-get -y install gsl-bin libgsl0-dev
 sudo apt-get -y install libgtk2.0-dev netcdf-bin
 sudo apt-get -y install libcanberra-gtk-module
 sudo apt-get -y install git
-sudo apt-get -y install openjdk-7-jdk
+sudo apt-get -y install openjdk-8-jdk
 sudo apt-get -y install libnetcdf-dev udunits-bin libudunits2-dev
 sudo apt-get -y install tk8.6-dev
 sudo apt-get -y install clustalo  # for package LowMACA
@@ -339,6 +343,9 @@ sudo apt-get -y install libmpfr-dev
 sudo apt-get -y install bwidget
 sudo apt-get -y install librsvg2-dev  # for rsvg
 sudo apt-get -y install libboost-all-dev libboost-locale-dev  # for textTinyR
+sudo apt-get -y install libsndfile1-dev  # for seewave
+sudo apt-get -y install libpoppler-cpp-dev  # for pdftools
+sudo apt-get -y install libapparmor-dev  # for sys
 sudo R CMD javareconf
 # ENDIF
 
@@ -361,68 +368,71 @@ biocLite()   # keep repeating until returns with nothing left to do
 # biocLite("BiocUpgrade")
 # This error means it's up to date: "Bioconductor version 3.4 cannot be upgraded with R version 3.3.2"
 
-avail = available.packages(repos=c(getOption("repos"), BiocInstaller::biocinstallRepos()[["BioCsoft"]]))
+avail = available.packages(repos=biocinstallRepos())   # includes CRAN at the end from getOption("repos")
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
 table(avail[deps,"Repository"])
 length(deps)
 old = 0
 new = 0
+if (basename(.libPaths()[1]) != "revdeplib") stop("Must start R with exports as above")
 for (p in deps) {
-   fn = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-   if (!file.exists(fn) ||
-       identical(tryCatch(packageVersion(p), error=function(e)FALSE), FALSE) ||
-       packageVersion(p) != avail[p,"Version"]) {
-     system(paste0("rm -f ", p, "*.tar.gz"))  # Remove previous *.tar.gz.  -f to be silent if not there (i.e. first time seeing this package)
-     system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version)
-     if (!length(grep("bioc",avail[p,"Repository"]))) {
-       install.packages(p, dependencies=TRUE)  # To install its dependencies really.
-     } else {
-       biocLite(p,suppressUpdates=TRUE)        # To install its dependencies really.
-     }
-     download.packages(p, destdir="~/build/revdeplib", contriburl=avail[p,"Repository"])   # So R CMD check can run on these
-     if (!file.exists(fn)) stop("Still does not exist!:", fn)
-     new = new+1
-   } else {
-     old = old+1
-   }
+  fn = paste0(p, "_", avail[p,"Version"], ".tar.gz")
+  if (!file.exists(fn) ||
+      identical(tryCatch(packageVersion(p), error=function(e)FALSE), FALSE) ||
+      packageVersion(p) != avail[p,"Version"]) {
+    system(paste0("rm -f ", p, "*.tar.gz"))  # Remove previous *.tar.gz.  -f to be silent if not there (i.e. first time seeing this package)
+    system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version)
+
+    install.packages(p, repos=biocinstallRepos(), dependencies=TRUE)    # again, bioc repos includes CRAN here
+    # To install its dependencies. The package itsef is installed superfluously here because the tar.gz will be passed to R CMD check.
+    # Not using biocLite() because it does not download dependencies and does not appear to pass dependencies= on.
+
+    download.packages(p, destdir="~/build/revdeplib", contriburl=avail[p,"Repository"])   # So R CMD check can run on these
+    if (!file.exists(fn)) stop("Still does not exist!:", fn)
+    new = new+1
+  } else {
+    old = old+1
+  }
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 table(avail[deps,"Repository"])
 
 # To identify and remove the tar.gz no longer needed :
 for (p in deps) {
-   f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-   system(paste0("mv ",f," ",f,"_TEMP"))
+  f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
+  system(paste0("mv ",f," ",f,"_TEMP"))
 }
+system("ls *.tar.gz")
 system("rm *.tar.gz")
 for (p in deps) {
-   f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-   system(paste0("mv ",f,"_TEMP ",f))
+  f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
+  system(paste0("mv ",f,"_TEMP ",f))
 }
+system("ls *.tar.gz | wc -l")
 
 status = function(which="both") {
   if (which=="both") {
-     cat("CRAN:\n"); status("cran")
-     cat("BIOC:\n"); status("bioc")
-     cat("Oldest 00check.log (to check no old stale ones somehow missed):\n")
-     system("find . -name '00check.log' | xargs ls -lt | tail -1")
-     cat("\n")
-     if (file.exists("/tmp/started.flag")) {
-       system("ls -lrt /tmp/*.flag")
-       tt = as.POSIXct(file.info(c("/tmp/started.flag","/tmp/finished.flag"))$ctime)
-       if (is.na(tt[2])) tt[2] = Sys.time()
-       print(diff(tt))
-     }
-     return(invisible())
+    cat("CRAN:\n"); status("cran")
+    cat("BIOC:\n"); status("bioc")
+    cat("Oldest 00check.log (to check no old stale ones somehow missed):\n")
+    system("find . -name '00check.log' | xargs ls -lt | tail -1")
+    cat("\n")
+    if (file.exists("/tmp/started.flag")) {
+      system("ls -lrt /tmp/*.flag")
+      tt = as.POSIXct(file.info(c("/tmp/started.flag","/tmp/finished.flag"))$ctime)
+      if (is.na(tt[2])) tt[2] = Sys.time()
+      print(diff(tt))
+    }
+    return(invisible())
   }
   if (which=="cran") deps = deps[-grep("bioc",avail[deps,"Repository"])]
   if (which=="bioc") deps = deps[grep("bioc",avail[deps,"Repository"])]
   x = unlist(sapply(deps, function(x) {
     fn = paste0("./",x,".Rcheck/00check.log")
     if (file.exists(fn)) {
-       v = suppressWarnings(system(paste0("grep 'Status:' ",fn), intern=TRUE))
-       if (!length(v)) return("RUNNING")
-       return(substring(v,9))
+      v = suppressWarnings(system(paste0("grep 'Status:' ",fn), intern=TRUE))
+      if (!length(v)) return("RUNNING")
+      return(substring(v,9))
     }
     if (file.exists(paste0("./",x,".Rcheck"))) return("RUNNING")
     return("NOT STARTED")
@@ -450,15 +460,18 @@ run = function(all=FALSE) {
   numtgz = as.integer(system("ls -1 *.tar.gz | wc -l", intern=TRUE))
   stopifnot(numtgz==length(deps))
   cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
-  if (!all) {
-    x = sapply(paste0("./",deps,".Rcheck"), file.exists)
-    x = deps[!x]
-    if (!length(x)) { cat("All package checks have already run. To rerun all: run(all=TRUE).\n"); return(); }
-    cat("Running checks for",length(x),"packages\n")
-    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | parallel R CMD check")
-  } else {
+  if (all) {
     cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | parallel R CMD check"
-    # apx 2.5 hrs for 313 packages on my 4 cpu laptop with 8 threads
+    # apx 7.5 hrs for 582 packages on my 4 cpu laptop with 8 threads
+  } else {
+    x = sapply(deps, function(p) {
+      if (!file.exists(paste0("./",p,".Rcheck"))) return(TRUE)
+      fn = paste0("./",p,".Rcheck/00check.log")
+      length(suppressWarnings(system(paste0("grep -E 'Status:.*(ERROR|WARNING)' ",fn), intern=TRUE)))>0L
+    })
+    x = deps[x]
+    cat("Running",length(x),"packages that have no status (no .Rcheck directory) or are in ERROR or WARNING status\n")
+    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | parallel R CMD check")
   }
   cat("Command:",cmd,"\n")
   if (as.integer(system("ps -a | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
@@ -469,17 +482,19 @@ run = function(all=FALSE) {
   #                                 ^^ must be && and not ; otherwise wait doesn't wait
 }
 
+# ** ensure latest version installed into revdeplib **
+system("R CMD INSTALL ~/GitHub/data.table/data.table_1.10.5.tar.gz")
 run()
-system("R CMD INSTALL ~/data.table_1.10.4.tar.gz")      # ** ensure latest version installed into revdeplib **
-
 
 # Investigate and fix the fails ...
+find . -name 00check.log -exec grep -H -B 20 "Status:.*ERROR" {} \;
+find . -name 00check.log | grep -E 'AFM|easycsv|...|optiSel|xgboost' | xargs grep -H . > /tmp/out.log
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 more <failing_package>.Rcheck/00check.log
 R CMD check <failing_package>.tar.gz
 R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
 R CMD check <failing_package>.tar.gz
-ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check
+ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check &
 
 # Warning: replacing previous import robustbase::sigma by stats::sigma when loading VIM
 # Reinstalling robustbase fixed this warning. Even though it was up to date, reinstalling made a difference.
@@ -504,6 +519,6 @@ Close milestone
 ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
 
 Submit message template:
-Have rechecked the 339 CRAN packages using data.table.
+Have rechecked the 471 CRAN + 111 Bioc packages using data.table.
 Either ok or have liaised with maintainers in advance.
 
