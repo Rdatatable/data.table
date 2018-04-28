@@ -11594,7 +11594,9 @@ test(1894.9, DT[, sum(z)*..z], error="Variable 'z' is not found in calling scope
 z = 3L
 test(1894.11, DT[, sum(z)*..z], 72L)
 setnames(DT, "z", "..z")
-test(1894.12, DT[, sum(y)*..z], error="..z in j is looking for z in calling scope, but a column '..z' exists. Column names should not start with ..")
+test(1894.12, DT[, sum(y)*..z], INT(105,120,135))  # TODO warning/error in future as per NEWS item in v1.11.0
+rm(z)
+test(1894.13, DT[, sum(y)*..z], INT(105,120,135))  # TODO warning/error in future as per NEWS item in v1.11.0
 
 test(1895, getDTthreads(verbose=TRUE), output="omp_get_max_threads.*omp_get_thread_limit.*DTthreads")
 
