@@ -225,6 +225,8 @@ Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdat
 
 40. Attempt to allocate a wildly large amount of RAM (16EB) when grouping by key and there are close to 2 billion 1-row groups, [#2777](https://github.com/Rdatatable/data.table/issues/2777). Thanks to @jsams for the detailed report.
 
+41. Fix a bug that `print(dt, class=TRUE)` shows only `topn - 1` rows. Thanks to @heavywatal for reporting [#2803]((https://github.com/Rdatatable/data.table/issues/2803) and filing [PR#2804]((https://github.com/Rdatatable/data.table/pull/2804).
+
 
 #### NOTES
 
