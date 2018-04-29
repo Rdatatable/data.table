@@ -145,7 +145,9 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         if (!len1[i]) continue;
         vv = VECTOR_ELT(lookup, i);
         tt = VECTOR_ELT(type_lookup, i);
-        INTEGER(tt)[0] = INTEGER(vv)[0];
+        if (length(tt) && length(vv)) {            // length check added by Matt to avoid SEGV in #2767
+          INTEGER(tt)[0] = INTEGER(vv)[0];
+        }
       }
       break;
 
@@ -154,7 +156,9 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         if (!len1[i]) continue;
         vv = VECTOR_ELT(lookup, i);
         tt = VECTOR_ELT(type_lookup, i);
-        INTEGER(tt)[0] = INTEGER(vv)[len1[i]-1];
+        if (length(tt) && length(vv)>=len1[i]) {   // length check added by Matt to avoid SEGV in #2767
+          INTEGER(tt)[0] = INTEGER(vv)[len1[i]-1];
+        }
       }
 
     case ALL :
