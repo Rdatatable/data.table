@@ -3474,7 +3474,7 @@ test(1134.2, DT[, {a := 1L; NULL}], error="You have wrapped.*which is ok.*Consid
 test(1134.3, DT[, {b := 2L}, by=x], DT2[, b:=2L, by=x])
 test(1134.3, DT[, {b := 2L; sum(val)}, by=x], error="You have wrapped.*which is ok.*Consider")
 
-# FR #2693 and Gabor's suggestions from here: http://r.789695.n4.nabble.com/Problem-with-FAQ-2-8-tt4668878.html (correcting software according to FAQ 2.8)
+# FR #2693 and Gabor's suggestions on datatable-help "Problem with FAQ 2.8"
 d1 <- data.table(id1 = c(1L, 2L, 2L, 3L), val = 1:4, key = "id1")
 d2 <- data.table(id2 = c(1L, 2L, 4L), val2 = c(11, 12, 14),key = "id2")
 d3 <- copy(d2)

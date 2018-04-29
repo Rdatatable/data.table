@@ -11,7 +11,7 @@
 
    It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that accept \emph{only} \code{data.frame}s.
 
-   Type \code{vignette(package="data.table")} to get started. The \href{../doc/datatable-intro.html}{Introduction to data.table} vignette introduces \code{data.table}'s \code{x[i, j, by]} syntax and is a good place to start. If you have read the vignettes and the help page below, please feel free to ask questions on Stack Overflow \href{http://stackoverflow.com/questions/tagged/data.table}{data.table tag} or on \href{http://r.789695.n4.nabble.com/datatable-help-f2315188.html}{datatable-help} mailing list. To report a bug please type: \code{bug.report(package = "data.table")}.
+   Type \code{vignette(package="data.table")} to get started. The \href{../doc/datatable-intro.html}{Introduction to data.table} vignette introduces \code{data.table}'s \code{x[i, j, by]} syntax and is a good place to start. If you have read the vignettes and the help page below, please read the \href{https://github.com/Rdatatable/data.table/wiki/Support}{data.table support guide}.
 
    Please check the \href{https://github.com/Rdatatable/data.table/wiki}{homepage} for up to the minute live NEWS.
 

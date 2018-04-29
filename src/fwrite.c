@@ -850,7 +850,7 @@ void fwriteMain(fwriteMainArgs args)
             // section which may not happen if the master thread has been interrupted. Rather than
             // seeing failed=TRUE and falling through to free() and close() as intended.
             // Could register a finalizer to free() and close() perhaps :
-            // http://r.789695.n4.nabble.com/checking-user-interrupts-in-C-code-tp2717528p2717722.html
+            // [r-devel] http://r.789695.n4.nabble.com/checking-user-interrupts-in-C-code-tp2717528p2717722.html
             // Conclusion for now: do not provide ability to interrupt.
             // write() errors and malloc() fails will be caught and cleaned up properly, however.
           }
