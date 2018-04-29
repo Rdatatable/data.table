@@ -422,8 +422,9 @@ status = function(which="both") {
     if (file.exists("/tmp/started.flag")) {
       system("ls -lrt /tmp/*.flag")
       tt = as.POSIXct(file.info(c("/tmp/started.flag","/tmp/finished.flag"))$ctime)
-      if (is.na(tt[2])) tt[2] = Sys.time()
-      print(diff(tt))
+      if (is.na(tt[2])) { tt[2] = Sys.time(); cat("Has been running for "); }
+      else cat("Ran for ");
+      cat(round(diff(as.numeric(tt))/60, 1), "mins\n")
     }
     return(invisible())
   }
@@ -480,8 +481,7 @@ run = function(all=FALSE) {
   cat("Proceed? (ctrl-c or enter)\n")
   scan(quiet=TRUE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
-  system(paste(cmd,">/dev/null 2>&1 && touch /tmp/finished.flag"),wait=FALSE)
-  #                                 ^^ must be && and not ; otherwise wait doesn't wait
+  system(paste("((",cmd,">/dev/null 2>&1); touch /tmp/finished.flag)"), wait=FALSE)
 }
 
 # ** ensure latest version installed into revdeplib **
