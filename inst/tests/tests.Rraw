@@ -5941,7 +5941,10 @@ jQueries <- c(".(test = intCol + doubleCol, test2 = paste0(boolCol, charCol))",
 ## define example 'by' values
 bys <- c("groupCol", "sortedGroupCol", character(0))
 ## test each query string
-test_no <- 1437.0039
+
+test_no <- 1438.0000
+if (.Machine$sizeof.pointer>4) {  # temporarily disabled for 32bit, #2767
+
 for(t in seq_len(nrow(all))){
   ## test the query with missing j
   thisQuery <- all$query[t]
@@ -5971,14 +5974,17 @@ for(t in seq_len(nrow(all))){
     }
   }
 }
+
+}
 options("datatable.optimize" = oldOpt) ## restore to default
 
+
 # fread dec=',' e.g. France
-test(1438, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1L is not TRUE")
-test(1439, fread("A;B\n8;2,34\n", dec="1"), data.table(A=8L, B="2,34"))
-test(1440, fread("A;B\n8;2,34\n", dec=","), data.table(A=8L, B=2.34))
-test(1441, fread("A;B\n1;2,34\n", sep=".", dec="."), error="sep == dec ('.') is not allowed")
-test(1442, fread("A;B\n1;2,34\n", dec=",", sep=","), error="sep == dec (',') is not allowed")
+test(1439, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1L is not TRUE")
+test(1440, fread("A;B\n8;2,34\n", dec="1"), data.table(A=8L, B="2,34"))
+test(1441, fread("A;B\n8;2,34\n", dec=","), data.table(A=8L, B=2.34))
+test(1442, fread("A;B\n1;2,34\n", sep=".", dec="."), error="sep == dec ('.') is not allowed")
+test(1443, fread("A;B\n1;2,34\n", dec=",", sep=","), error="sep == dec (',') is not allowed")
 
 # sep=".", issue #502
 input = paste( paste("192.168.4.", 1:10, sep=""), collapse="\n")
@@ -8900,7 +8906,11 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
   gc()  # no longer needed but left in place just in case, no harm
 }
 
-if (TRUE) {  # turn off temporarily using FALSE when using valgrind, as very slow
+if (.Machine$sizeof.pointer>4) {
+
+  # temporarily off due to hitting 2GB limit on 32bit, #2767
+  # turn off temporarily using FALSE when using valgrind, too, as very slow
+
   set.seed(1509611616L)
   # this fixed seed is to test branch bmerge.c:433 for consistent coverage, issue #2346
   # 2nd pass with random seed too removed as taking too long, contributing towards win-builder/cran limits
