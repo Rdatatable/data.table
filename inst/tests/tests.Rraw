@@ -8906,6 +8906,11 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
   gc()  # no longer needed but left in place just in case, no harm
 }
 
+dt1 = nq_fun(400L)
+dt2 = nq_fun(50L)
+x = na.omit(dt1)
+y = na.omit(dt2)
+
 if (.Machine$sizeof.pointer>4) {
 
   # temporarily off due to hitting 2GB limit on 32bit, #2767
@@ -8914,11 +8919,6 @@ if (.Machine$sizeof.pointer>4) {
   set.seed(1509611616L)
   # this fixed seed is to test branch bmerge.c:433 for consistent coverage, issue #2346
   # 2nd pass with random seed too removed as taking too long, contributing towards win-builder/cran limits
-
-  dt1 = nq_fun(400L)
-  dt2 = nq_fun(50L)
-  x = na.omit(dt1)
-  y = na.omit(dt2)
 
   # without NAs in x and i
   nqjoin_test(x, y, 1L, 1641, mult="all")
