@@ -104,7 +104,6 @@ Background :\cr
 \url{https://cran.r-project.org/doc/manuals/R-data.html}\cr
 \url{http://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}\cr
 \url{http://www.biostat.jhsph.edu/~rpeng/docs/R-large-tables.html}\cr
-\url{http://r.789695.n4.nabble.com/Re-Memory-Experimentation-Rule-of-Thumb-10-15-Times-the-Memory-tp831940.html}\cr
 \url{http://www.cerebralmastication.com/2009/11/loading-big-data-into-r/}\cr
 \url{http://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}\cr
 \url{http://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}\cr
