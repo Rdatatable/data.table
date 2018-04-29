@@ -5355,35 +5355,37 @@ mults=c("all", "first", "last")
 maxgap=0L; minoverlap=1L
 verbose=FALSE; which=TRUE
 test_no = 1372.0
+load(testDir("test1372.Rdata"))  # ans. Saved results to avoid loading GenomicRanges
 set.seed(123)
-n1 = max(50L, sample(1e2L, 1, FALSE))
-n2 = max(50L, sample(1e2L, 1, FALSE))
-N = max(100L, sample(1e3L, 1, FALSE))
-i1 = sample(N, n1, TRUE)
-i2 = sample(N, n1, TRUE)
-start = pmin(i1,i2)
-end = pmax(i1,i2)
-chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
-i = setDT(list(chr=chr, start=start, end=end))
-i1 = sample(N, n2, TRUE)
-i2 = sample(N, n2, TRUE)
-start = pmin(i1,i2)
-end = pmax(i1,i2)
-chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
-x = setDT(list(chr=chr, start=start, end=end))
-setkey(x); setkey(i)
-load(testDir("test1372.Rdata"))  # ans. Saved results to save loading GenomicRanges
 this = 1L
-for (type in types) {
-  for (mult in mults) {
-    # data.table overlap join
-    nomatch = ifelse(mult == "all", 0L, NA_integer_)
-    thisans = foverlaps(i, x, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
-    # ans[[this]] contains fo(gr(i), gr(x), type=type, select=mult)
-    test_no = test_no+.01
-    # cat("test =", test_no, ", i = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
-    test(test_no, thisans, ans[[this]])
-    this = this+1L
+for (run in 1:3) {
+  n1 = max(50L, sample(1e2L, 1, FALSE))
+  n2 = max(50L, sample(1e2L, 1, FALSE))
+  N = max(100L, sample(1e3L, 1, FALSE))
+  i1 = sample(N, n1, TRUE)
+  i2 = sample(N, n1, TRUE)
+  start = pmin(i1,i2)
+  end = pmax(i1,i2)
+  chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
+  i = setDT(list(chr=chr, start=start, end=end))
+  i1 = sample(N, n2, TRUE)
+  i2 = sample(N, n2, TRUE)
+  start = pmin(i1,i2)
+  end = pmax(i1,i2)
+  chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
+  x = setDT(list(chr=chr, start=start, end=end))
+  setkey(x); setkey(i)
+  for (type in types) {
+    for (mult in mults) {
+      # data.table overlap join
+      nomatch = ifelse(mult == "all", 0L, NA_integer_)
+      thisans = foverlaps(i, x, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
+      # ans[[this]] contains fo(gr(i), gr(x), type=type, select=mult)
+      test_no = test_no+.01
+      # cat("test =", test_no, ", run = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
+      test(test_no, thisans, ans[[this]])
+      this = this+1L
+    }
   }
 }
 
