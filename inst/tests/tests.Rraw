@@ -2597,8 +2597,9 @@ test(955, fread(input, colClasses=list(character="C",double="A")), data.table(A=
 test(956, fread(input, colClasses=list(character=2:3,double="A")), data.table(A=c(1.0,2.0),B=c("foo","bar"),C=c("3.140","6.28000")))
 test(957, fread(input, colClasses=list(character=1:3)), data.table(A=c("01","002"),B=c("foo","bar"),C=c("3.140","6.28000")))
 test(958, fread(input, colClasses="character"), data.table(A=c("01","002"),B=c("foo","bar"),C=c("3.140","6.28000")))
-test(959.1, fread(input, colClasses=c("character","double","numeric")),
-            error = "Attempt.*column 2 <<B>>.*inherent.*'string'.*down to.*'float64'")
+test(959.1, fread(input, colClasses=c("character","double","numeric"), verbose=TRUE),
+            data.table(A=c("01","002"), B=c("foo","bar"), C=c(3.14,6.28)),
+            output = "Attempt.*column 2 <<B>>.*inherent.*'string'.*down to.*'float64'")
 test(959.2, fread(input, colClasses=c("character",NA,"numeric")),
             data.table(A=c("01","002"),B=c("foo","bar"),C=c(3.14,6.28)))
 test(960, fread(input, colClasses=c("character","double")),
