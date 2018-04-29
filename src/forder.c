@@ -86,7 +86,7 @@ static void gsfree() {
 /*
    icount originally copied from do_radixsort in src/main/sort.c @ rev 51389. Then reworked here again in forder.c in v1.8.11
    base::sort.list(method="radix") turns out not to be a radix sort, but a counting sort, and we like it.
-   See http://r.789695.n4.nabble.com/method-radix-in-sort-list-isn-t-actually-a-radix-sort-tp3309470p3309470.html
+   See r-devel post: http://r.789695.n4.nabble.com/method-radix-in-sort-list-isn-t-actually-a-radix-sort-tp3309470p3309470.html
    Main changes :
    1. Negatives are fine. Btw, wish raised for simple change to base R : https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=15644
    2. Doesn't cummulate through 0's for speed in repeated calls of sparse counts by saving memset back to 0 of many 0
@@ -460,7 +460,7 @@ unsigned long long dtwiddle(void *p, int i, int order)
    /* 1. NA twiddled to all bits 0, sorts first.  R's value 1954 cleared.
       2. NaN twiddled to set just bit 13, sorts immediately after NA. 13th bit to be
          consistent with "quiet" na bit but any bit outside last 2 bytes would do.
-         (ref: http://r.789695.n4.nabble.com/Question-re-NA-NaNs-in-R-td4685014.html)
+         (ref r-devel post: http://r.789695.n4.nabble.com/Question-re-NA-NaNs-in-R-td4685014.html)
       3. This also normalises a difference between NA on 32bit R (bit 13 set) and 64bit R (bit 13 not set)
       4. -Inf twiddled to : 0 sign, exponent all 0, mantissa all 1, sorts after NaN
       5. +Inf twiddled to : 1 sign, exponent all 1, mantissa all 0, sorts last since finite

@@ -7,7 +7,6 @@ Restore test 1339 (balanced embedded quotes, see ?fread already updated).
 Confirm: http://stackoverflow.com/questions/23833294/data-tablefread-doesnt-like-missing-values-in-first-column
 construct test and investigate skip for completeness here: http://stackoverflow.com/questions/22086780/data-table-fread-error
 http://stackoverflow.com/questions/22229109/r-data-table-fread-command-how-to-read-large-files-with-irregular-separators
-http://r.789695.n4.nabble.com/Odd-problem-using-fread-to-read-in-a-csv-file-no-data-just-headers-tp4686302.html
 And even more diagnostics to verbose=true so we can see where crashes are.
 Detect and coerce dates and times. By searching for - and :, and dateTtime etc, or R's own method or fasttime. POSIXct default, for microseconds? : http://stackoverflow.com/questions/14056370/cast-string-to-idatetime
 Add as.colClasses to fread.R after return from C level (e.g. for colClasses "Date", although as slow as read.csv via character)
@@ -22,8 +21,6 @@ Column all 0 and 1 treated as logical?
 Just one "NA" current default but empty in future when numerics handle NA string variants directly.
 ---
 Secondary separator for list() columns, such as columns 11 and 12 in BED (no need for strsplit).
-Add LaF comparison.
-as.read.table=true/false option.  Or fread.table and fread.csv (see http://r.789695.n4.nabble.com/New-function-fread-in-v1-8-7-tp4653745p4654194.html).
 *****/
 
 #define NUT  NUMTYPE+2  // +1 for "numeric" alias for "double"; +1 for CLASS fallback using as.class() at R level afterwards
