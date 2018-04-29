@@ -67,8 +67,7 @@ sugg = c(
   "bit64",          # if big integers are detected in file, fread reads them as bit64::integer64 if installed (warning if not)
   "xts",            # we have xts methods in R/xts.R
   "nanotime",       # fwrite looks for the 'nanotime' class name at C level (but we have our own writer in C, though)
-  "chron",          # we have chron methods in R/IDateTime.R
-  "GenomicRanges"   # test 1372 checks foverlaps against GenomicRanges' result and is needed for coverage of ijoin.c
+  "chron"           # we have chron methods in R/IDateTime.R
   # zoo             # In DESCRIPTION:Suggests otherwise R CMD check warning: '::' or ':::' import not declared from: 'zoo'; it is tested in other.Rraw though
   # reshape2        # In DESCRIPTION:Suggests otherwise same R CMD check warning. See fmelt.R line 1 refers to reshape2 depending on R 3.0.0, but now we do too,
 )                   # perhaps something can be improved now. dcast and melt methods for data.table are tested directly here in main without needing reshape2 loaded.
@@ -4429,7 +4428,7 @@ if (test_bit64) {
   x = as.integer64(2)^(0:62)
   x = sample(c(x,-x,0))
   if (!inherits(try(bit64::order(x),silent=TRUE), "try-error"))  # if for old version of bit64
-      test(1271, forderv(x), bit64::order(x)) # because GenomicRanges replaces this order
+    test(1271, forderv(x), bit64::order(x))
   DT = data.table( a=as.integer64(2)^45 + 1:3, b=1:6 )
   test(1272, DT[,sum(b),by=a], data.table(a=DT$a[1:3], V1=INT(5,7,9)))
   test(1273, unique(DT, by="a"), DT[1:3])
@@ -5335,58 +5334,56 @@ test(1371.2, foverlaps(x, y, by.y=1:3, type="any"), error="The first 3 columns o
 setkey(y, chr, start, end)
 setnames(y, c("chr", "pos1", "pos2", "val"))
 setcolorder(y, c("chr", "val", "pos1", "pos2"))
-ans1 = foverlaps(x, y, type="any", by.x=c("chr", "start", "end"), by.y=c("chr", "pos1", "pos2"), which=TRUE, nomatch=0L)
 test(1371.3, foverlaps(x,y,by.x=1:3, nomatch=0L), data.table(chr=x$chr[2:5], y[c(2,3,3,3), -1, with=FALSE], x[2:5, 2:3, with=FALSE]))
-if (test_GenomicRanges) {
-  # this branch tests the result is the same as GenomicRanges. This branch alone covers about 50% of ijoin.c
-  gr <- function(x) {
-    GRanges(Rle(x[[1]]), IRanges(start=x[[2]], end=x[[3]]))
-  }
-  fo <- function(gr1, gr2, ...) {
-    olaps = findOverlaps(gr1, gr2, ...)
-    if (is.vector(olaps)) return(olaps)
-    ans = setDT(list(xid=queryHits(olaps), yid=subjectHits(olaps)))
-    setorder(ans)
-    ans
-  }
-  test(1371.4, setorder(ans1), fo(gr(x), gr(y[, c(1,3,4), with=FALSE]), type="any", select="all"))
-
-  runs = 3L # repeat 3 times..
-  types=c("any", "within", "start", "end")
-  mults=c("all", "first", "last")
-  maxgap=0L; minoverlap=1L
-  verbose=FALSE; which=TRUE
-  test_no <- 1372.0
-  for (run in seq_len(runs)) {
-    n1 = max(50L, sample(1e2L, 1, FALSE))
-    n2 = max(50L, sample(1e2L, 1, FALSE))
-    N = max(100L, sample(1e3L, 1, FALSE))
-
-    i1 = sample(N, n1, TRUE)
-    i2 = sample(N, n1, TRUE)
-    start = pmin(i1,i2)
-    end = pmax(i1,i2)
-    chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
-    i = setDT(list(chr=chr, start=start, end=end))
-
-    i1 = sample(N, n2, TRUE)
-    i2 = sample(N, n2, TRUE)
-    start = pmin(i1,i2)
-    end = pmax(i1,i2)
-    chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
-    x = setDT(list(chr=chr, start=start, end=end))
-    setkey(x); setkey(i)
-    for (type in types) {
-      for (mult in mults) {
-        # data.table overlap join
-        nomatch = ifelse(mult == "all", 0L, NA_integer_)
-        ans1 = foverlaps(i, x, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
-        ans2 = fo(gr(i), gr(x), type=type, select=mult)
-        test_no = signif(test_no+.01, 7)
-        # cat("test =", test_no, ", i = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
-        test(test_no, ans1, ans2)
-      }
-    }
+test(1371.4, foverlaps(x, y, type="any", by.x=c("chr", "start", "end"), by.y=c("chr", "pos1", "pos2"), which=TRUE, nomatch=0L),
+             data.table(xid=2:5, yid=INT(2,3,3,3)))
+# 1371.4 same as :
+#   fo(gr(x), gr(y[, c(1,3,4), with=FALSE]), type="any", select="all")
+# where :
+#   gr <- function(x) {
+#     GRanges(Rle(x[[1]]), IRanges(start=x[[2]], end=x[[3]]))
+#   }
+#   fo <- function(gr1, gr2, ...) {
+#     olaps = findOverlaps(gr1, gr2, ...)
+#     if (is.vector(olaps)) return(olaps)
+#     ans = setDT(list(xid=queryHits(olaps), yid=subjectHits(olaps)))
+#     setorder(ans)
+#     ans
+#   }
+types=c("any", "within", "start", "end")
+mults=c("all", "first", "last")
+maxgap=0L; minoverlap=1L
+verbose=FALSE; which=TRUE
+test_no = 1372.0
+set.seed(123)
+n1 = max(50L, sample(1e2L, 1, FALSE))
+n2 = max(50L, sample(1e2L, 1, FALSE))
+N = max(100L, sample(1e3L, 1, FALSE))
+i1 = sample(N, n1, TRUE)
+i2 = sample(N, n1, TRUE)
+start = pmin(i1,i2)
+end = pmax(i1,i2)
+chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
+i = setDT(list(chr=chr, start=start, end=end))
+i1 = sample(N, n2, TRUE)
+i2 = sample(N, n2, TRUE)
+start = pmin(i1,i2)
+end = pmax(i1,i2)
+chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
+x = setDT(list(chr=chr, start=start, end=end))
+setkey(x); setkey(i)
+load(testDir("test1372.Rdata"))  # ans. Saved results to save loading GenomicRanges
+this = 1L
+for (type in types) {
+  for (mult in mults) {
+    # data.table overlap join
+    nomatch = ifelse(mult == "all", 0L, NA_integer_)
+    thisans = foverlaps(i, x, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
+    # ans[[this]] contains fo(gr(i), gr(x), type=type, select=mult)
+    test_no = test_no+.01
+    # cat("test =", test_no, ", i = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
+    test(test_no, thisans, ans[[this]])
+    this = this+1L
   }
 }
 
