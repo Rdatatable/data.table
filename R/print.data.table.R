@@ -25,13 +25,13 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     if (length(SYS) <= 2L ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
         ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) &&
           as.character(thisSYS) %chin% mimicsAutoPrint ) )  {
-      return(invisible())
+      return(invisible(x))
       # is.symbol() temp fix for #1758.
     }
   }
   if (!is.numeric(nrows)) nrows = 100L
   if (!is.infinite(nrows)) nrows = as.integer(nrows)
-  if (nrows <= 0L) return(invisible())   # ability to turn off printing
+  if (nrows <= 0L) return(invisible(x))   # ability to turn off printing
   if (!is.numeric(topn)) topn = 5L
   topnmiss = missing(topn)
   topn = max(as.integer(topn),1L)
@@ -47,7 +47,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
        cat("Null data.table (0 rows and 0 cols)\n")  # See FAQ 2.5 and NEWS item in v1.8.9
     else
        cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1L)"s",": ",paste(head(names(x),6L),collapse=","),if(ncol(x)>6L)"...","\n",sep="")
-    return(invisible())
+    return(invisible(x))
   }
   if ((topn*2+1)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
     toprint = rbind(head(x, topn), tail(x, topn))
@@ -91,7 +91,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     } else {
       print(toprint, right=TRUE, quote=quote)
     }
-    return(invisible())
+    return(invisible(x))
   }
   if (nrow(toprint)>20L && col.names == "auto")
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
@@ -102,7 +102,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
   } else {
     print(toprint, right=TRUE, quote=quote)
   }
-  invisible()
+  invisible(x)
 }
 
 format.data.table <- function (x, ..., justify="none") {
