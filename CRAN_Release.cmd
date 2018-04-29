@@ -95,16 +95,15 @@ grep ScalarString *.c
 # If a PROTECT is not needed then a comment is added explaining why and including "PROTECT" in the comment to pass this grep
 grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
-cd
 R
 cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently gcc-7) as CRAN does
 saf = options()$stringsAsFactors
 options(stringsAsFactors=!saf)    # check tests (that might be run by user) are insensitive to option, #2718
-cc()
+test.data.table()
 q("no")
-R CMD build data.table
-R CMD check data.table_1.10.1.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
-R CMD INSTALL data.table_1.10.1.tar.gz
+R CMD build .
+R CMD check data.table_1.10.5.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
+R CMD INSTALL data.table_1.10.5.tar.gz
 R
 require(data.table)
 test.data.table()
@@ -128,6 +127,7 @@ make
 alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
+cd ~/GitHub/data.table
 R310 CMD INSTALL ./data.table_1.10.5.tar.gz
 R310
 require(data.table)
@@ -199,18 +199,20 @@ sudo apt-get purge libcurl4-openssl-dev    # cannot coexist, it seems
 sudo apt-get install libcurl4-openssl-dev:i386
 cd ~/build/32bit/R-devel
 ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --without-readline --without-x CC="gcc -m32" CXX="g++ -m32" F77="gfortran -m32" FC=${F77} OBJC=${CC} LDFLAGS="-L/usr/local/lib" LIBnn=lib LIBS="-lpthread" CFLAGS="-O0 -g -Wall -pedantic"
+##
 
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
+cd ~/GitHub/data.table
 Rdevel CMD INSTALL data.table_1.10.5.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
 # them so should be passed through to here
 Rdevel
-install.packages("bit64")  # important to run tests using integer64
+install.packages(c("bit64","xts","nanotime","chron"), repos="http://cloud.r-project.org")  # important to run all tests
 # Skip compatibility tests with other Suggests packages; unlikely UBSAN/ASAN problems there.
 require(data.table)
-require(bit64)
-test.data.table()     # slower than usual of course due to UBSAN and ASAN. Too slow to run R CMD check.
+test.data.table()     # slower than usual, naturally, due to UBSAN and ASAN. Too slow to run R CMD check.
+for (i in 1:10) test.data.table()  # last resort: try several runs; e.g a few tests generate data with a non-fixed random seed
 # Throws /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those: https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
 q("no")
 
