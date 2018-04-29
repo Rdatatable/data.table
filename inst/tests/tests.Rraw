@@ -7476,10 +7476,10 @@ input = "a,b\n\n\n1,3\n\n2,4\n\n"
 test(1578.5, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 
 f = testDir("530_fread.txt")
-test(1578.5, fread(f, skip=47L, verbose=TRUE), data.table(V1=1:2, V2=3:4), output="Positioned on line 48 starting: <<a,b>>")
-test(1578.6, fread(f, skip=49L), data.table(V1=1:2, V2=3:4))
-test(1578.7, fread(f, skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
-test(1578.8, fread(f, skip=48L), data.table(V1=1:2, V2=3:4))  # start on blank line 49 and skip="auto" to first data row on line 50
+test(1578.6, fread(f, skip=47L, verbose=TRUE), data.table(V1=1:2, V2=3:4), output="Positioned on line 48 starting: <<a,b>>")
+test(1578.7, fread(f, skip=49L), data.table(V1=1:2, V2=3:4))
+test(1578.8, fread(f, skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
+test(1578.9, fread(f, skip=48L), data.table(V1=1:2, V2=3:4))  # start on blank line 49 and skip="auto" to first data row on line 50
 
 # gforce optimisations
 dt = data.table(x  = sample(letters, 300, TRUE),
