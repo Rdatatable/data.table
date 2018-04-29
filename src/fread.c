@@ -1351,7 +1351,6 @@ int freadMain(freadMainArgs _args) {
   //*********************************************************************************************
   const char *pos = sof;   // Location where the actual data in the file begins
   int row1line = 1;        // The line number where the data starts. Normally row 1 is column names and row1line ends up == 2.
-  bool skipAuto = true;
   {
   ch = pos;
   if (verbose) DTPRINT("[05] Skipping initial rows if needed\n");
@@ -1369,14 +1368,12 @@ int freadMain(freadMainArgs _args) {
     if (verbose) DTPRINT("Found skip='%s' on line %llu. Taking this to be header row or first row of data.\n",
                          args.skipString, (llu)row1line);
     ch = pos;
-    skipAuto = false;
   }
   else if (args.skipNrow >= 0) {
     // Skip the first `skipNrow` lines of input, including 0 to force the first line to be the start
     while (ch<eof && row1line<=args.skipNrow) row1line+=(*ch++=='\n');
     if (ch>=eof) STOP("skip=%llu but the input only has %llu line%s", (llu)args.skipNrow, (llu)row1line, row1line>1?"s":"");
     pos = ch;
-    skipAuto = false;
   }
 
   // skip blank input at the start
@@ -1491,7 +1488,7 @@ int freadMain(freadMainArgs _args) {
               thisBlockLines++;
               continue;
             }
-            if ((lastncol>1 && thisBlockLines>1) || !skipAuto) break;  // found and finished the first 2x2 (or bigger) block
+            if (lastncol>1 && thisBlockLines>1) break;  // found and finished the first 2x2 (or bigger) block
             while (ch<eof && thisncol==0) {
               prevLineStart=NULL; lineStart=ch; thisRow++;
               thisncol = countfields(&ch);
@@ -1553,7 +1550,7 @@ int freadMain(freadMainArgs _args) {
     sep = topSep;
     whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
     ncol = topNumFields;
-    if (fill || !skipAuto || sep==127) {
+    if (fill || sep==127) {
       // leave pos on the first populated line; that is start of data
       ch = pos;
     } else {
@@ -1718,7 +1715,7 @@ int freadMain(freadMainArgs _args) {
     }
   }
 
-  if (args.header==NA_BOOL8 && prevStart!=NULL && skipAuto) {
+  if (args.header==NA_BOOL8 && prevStart!=NULL) {
     // The first data row matches types in the row after that, and user didn't override default auto detection.
     // Maybe previous line (if there is one, prevStart!=NULL) contains column names but there are too few (which is why it didn't become the first data row).
     ch = prevStart;

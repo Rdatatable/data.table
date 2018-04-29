@@ -7476,10 +7476,10 @@ input = "a,b\n\n\n1,3\n\n2,4\n\n"
 test(1578.5, fread(input, blank.lines.skip=TRUE), data.table( a=1:2,  b=3:4))
 
 f = testDir("530_fread.txt")
-test(1578.5, fread(f, skip=47L), data.table(a=logical(), b=logical()), warning="Stopped early.*discarded.*<<1,3>>")
-test(1578.6, fread(f, skip=49L), data.table(V1=1:2, V2=3:4))
-test(1578.7, fread(f, skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
-test(1578.8, fread(f, skip=48L), data.table(V1=1:2, V2=3:4))  # start on blank line 49 and skip="auto" to first data row on line 50
+test(1578.6, fread(f, skip=47L, verbose=TRUE), data.table(V1=1:2, V2=3:4), output="Positioned on line 48 starting: <<a,b>>")
+test(1578.7, fread(f, skip=49L), data.table(V1=1:2, V2=3:4))
+test(1578.8, fread(f, skip=47L, blank.lines.skip=TRUE), data.table(a=1:2, b=3:4))
+test(1578.9, fread(f, skip=48L), data.table(V1=1:2, V2=3:4))  # start on blank line 49 and skip="auto" to first data row on line 50
 
 # gforce optimisations
 dt = data.table(x  = sample(letters, 300, TRUE),
@@ -11730,6 +11730,18 @@ unlink(f)
 observed <- capture.output(print(data.table(x = seq_len(6L)), topn = 2L, class = TRUE))
 expected <- c("        x", "    <int>", " 1:     1", " 2:     2", "---      ", " 5:     5", " 6:     6")
 test(1908, observed, expected)
+
+# skip= is now consistent as if the file started on that line.
+# Found via rev dep checking (package PhenotypeSimulator), #2786. It is still a breaking change that PhenotypeSimulator will need to accomodate please.
+test(1909.1, names(ans<-fread(testDir("genotypes_genome.txt"), skip="Samples:", sep=" ", colClasses="character")),
+             c("V1","Samples:"),
+             warning="Detected 1 column name.*but the data has 2 columns.*Added 1 extra default column name for the first column")
+test(1909.2, ans$V1, c("POP1:","POP1:","POP1:"))
+test(1909.3, nchar(ans[["Samples:"]]), INT(3287,3287,3287))
+test(1909.4, names(ans<-fread(testDir("genotypes_genome.txt"), skip="POP1:", sep=" ", colClasses="character", header=FALSE)),
+             c("V1","V2"))
+test(1909.5, ans$V1, c("POP1:","POP1:","POP1:"))
+test(1909.6, nchar(ans$V2), INT(3287,3287,3287))
 
 
 ###################################
