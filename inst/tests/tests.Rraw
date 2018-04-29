@@ -3633,6 +3633,8 @@ o1 <- uniqlist(list(x), ox)
 test(1151.1, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o1, length(x)))
 o1 <- uniqlist(list(x))
 test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o1, length(x)))
+rm(list=c("x","ox","o1"))
+gc()
 
 # #5190 fix - grouping with .SDcols gave "symbol not subsettable error" - consequence of FR #4979 implementation
 dt = data.table(grp = sample(letters[1:3],20, replace = TRUE), v1 = rnorm(20), v2 = rnorm(20))
@@ -4729,6 +4731,8 @@ test(1298, as.integer(TRUE), 1L)
 upc_table = data.table(upc=1:100000, upc_ver_uc=rep(c(1,2), times=50000), is_PL=rep(c(TRUE, FALSE, FALSE, TRUE), each=25000), product_module_code=rep(1:4, times=25000), ignore.column=2:100001)
 test(1299, upc_table[, .N, by=list(upc, upc_ver_uc)][,max(N)], 1L)  # all size 1 groups
 test(1300, upc_table[, list(is_PL, product_module_code), keyby=list(upc, upc_ver_uc)][,upc[1:3]], 1:3L)   # was warning "internal TRUE value has been modified"
+rm(list="upc_table")
+gc()
 
 # Same test but for singleton small integers which r-devel also plan to globalise internally.
 DT = data.table(a=1:6, b=0:1)
@@ -9929,6 +9933,8 @@ test(1739.4, readLines(f), c("A,B",paste(dtsCh,dtsCh,sep=",")))
 test(1739.5, readLines(f), readLines(g))
 unlink(f)
 unlink(g)
+rm(list=c("dtsCh","dts"))
+gc()
 
 # dateTimeAs
 DT = data.table(
@@ -11091,6 +11097,8 @@ DT = data.table(1:1e6)
 L = vector("list", 2148)
 for (i in seq_along(L)) L[[i]] = DT   # many references to the same DT to avoid actually using large RAM for this test
 test(1850, rbindlist(L), error="Total rows in the list is 2148000000 which is larger than the maximum number of rows, currently 2147483647")
+rm(list=c("L","DT"))
+gc()
 
 # by=.EACHI missings to list columns, #2300
 dt = data.table(a=factor(1:5, levels=1:10), b=as.list(letters[1:5]))
@@ -11551,11 +11559,12 @@ x <- as.integer(x)
 test(1888.5, fsort(x), base::sort(x, na.last = FALSE),
              warning = "Input is not a vector of type double. New parallel sort has only been done for double vectors so far.*Using one thread")
 
-
 # doubling of savetl buffer (currently starts with 100)
 x = as.character(as.hexmode(1:1000))
 for (i in x) assign(i, 1L)
 test(1889, chmatch(x,x), 1:1000)
+rm(list=x)
+gc()
 
 # test DT$.<- in a data.table-unaware package
 DT = data.table(A=1:5)
