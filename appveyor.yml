@@ -16,7 +16,7 @@ environment:
   global:
     CRAN: http://cloud.r-project.org/
     WARNINGS_ARE_ERRORS: 1
-    USE_RTOOLS: true
+#     USE_RTOOLS: true   # Matt turned off 30 Apr. Don't think we need this. The r_install in build_script use CRAN binaries, iiuc.
     R_CHECK_ARGS: --no-manual
 # R_CHECK_ARGS specified in order to turn off --as-cran (on by default) as that can be slow
     R_ARCH: x64
