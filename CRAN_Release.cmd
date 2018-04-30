@@ -150,12 +150,12 @@ test.data.table()
 #  valgrind
 ###############################################
 
-# TODO: compile R with --with-valgrind-instrumentation=2 too as per R-exts$4.3.2
+# TODO: use R-devel instead with --with-valgrind-instrumentation=2 too as per R-exts$4.3.2
+
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
 R --vanilla CMD INSTALL data.table_1.10.5.tar.gz
-R -d "valgrind --tool=memcheck --leak-check=full --show-leak-kinds=definite" --vanilla
+R -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite" --vanilla
 require(data.table)
-require(bit64)
 test.data.table()
 
 gctorture(TRUE)   # very very slow, though. Don't run with suggests tests.
