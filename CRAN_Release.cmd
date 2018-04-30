@@ -109,7 +109,15 @@ require(data.table)
 test.data.table()
 test.data.table(verbose=TRUE)  # since main.R no longer tests verbose mode
 
-# Upload to win-builder, both release and dev
+# Test C locale doesn't break test suite (#2771)
+echo LC_ALL=C > ~/.Renviron
+R
+Sys.getlocale()=="C"
+q("no")
+R CMD check data.table_1.10.5.tar.gz
+rm ~/.Renviron
+
+# Upload to win-builder: release, dev & old-release
 
 
 ###############################################

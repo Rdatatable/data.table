@@ -7674,18 +7674,48 @@ dt = data.table(i=1:10, f=as.factor(1:10))
 test(1588.1, dt[f %in% 3:4], dt[3:4])
 test(1588.2, dt[f == 3], dt[3])
 
-# encoding issue in forder
-x <- "fa\xE7ile"
-Encoding(x)
-Encoding(x) <- "latin1"
-xx <- iconv(x, "latin1", "UTF-8")
-y = sample(c(x,xx), 10, TRUE)
-oy = if (length(oy <- forderv(y))) oy else seq_along(y)
-test(1590.4, oy, order(y))
-Encoding(xx) = "unknown"
-y = sample(c(x,xx), 10, TRUE)
-oy = if (length(oy <- forderv(y))) oy else seq_along(y)
-test(1590.5, oy, order(y))
+# data.table::forderv is encoding-aware and independent of locale
+# [ Aside: data.table needs to be independent of locale because keys/indexes depend on a sort order. If a data.table is stored on disk with a key
+#   created in a locale-sensitive order and then loaded by another R session in a different locale, the ability to re-use existing sortedness
+#   will break because the order would depend on the locale. Which is why data.table is deliberately C-locale only. For consistency and simpler
+#   internals for robustness to reduce the change of errors and to avoid that class of bug. It would be possible to have locale-sensitive keys
+#   and indexes but we've, so far, decided not to, for those reasons. ]
+# base::order is encoding-aware and locale-sensitive, tested here
+# R is usually started in the regional non-C locale; e.g. en_US.UTF-8 for Matt and en_IN for Jan, #2771
+# This test 1590 tests both data.table and base R in the default locale and C locale too
+# Note that data.table operates consistently independent of locale, but it's R that changes and is sensitive to it.
+oldlocale = Sys.getlocale()
+ctype = Sys.getlocale("LC_CTYPE")
+collate = Sys.getlocale("LC_COLLATE")
+# We could use LC_ALL, too, but the idea was to focus on the minimal parts of LC_ALL directly.
+# The user may have changed locale from the default, so we desire here to precisely return these two
+# locale settings to their values before this test (which might feasibly not be the default).
+if (ctype==collate && ctype!="C") {
+  # normally true; e.g. R CMD check, CRAN etc, unless user manually started R in C-locale
+  x1 = "fa\xE7ile"
+  Encoding(x1) = "latin1"
+  x2 = iconv(x1, "latin1", "UTF-8")
+  test(1590.1, forderv(c(x2,x1,x1,x2)), integer())  # integer() means input is already sorted
+  test(1590.2, base::order(c(x2,x1,x1,x2)), 1:4)
+  Encoding(x2) = "unknown"
+  test(1590.3, forderv(c(x2,x1,x1,x2)), integer())
+  test(1590.4, base::order(c(x2,x1,x1,x2)), 1:4)
+}
+Sys.setlocale("LC_CTYPE","C")
+Sys.setlocale("LC_COLLATE","C")
+# Same as Set.locale("LC_ALL","C") but done like this because it's not possible to return LC_ALL to previous state (only to default)
+# Both LC_CTYPE and LC_COLLATE need to be set (as more normally done with LC_ALL) before base::order changes behaviour in test 1590.6 and 1590.8
+x1 = "fa\xE7ile"
+Encoding(x1) = "latin1"
+x2 = iconv(x1, "latin1", "UTF-8")
+test(1590.5, forderv(c(x2,x1,x1,x2)), integer())         # same consistent result from data.table (good for our needs)
+test(1590.6, base::order(c(x2,x1,x1,x2)), INT(1,4,2,3))  # different result in base R under C locale
+Encoding(x2) = "unknown"
+test(1590.7, forderv(c(x2,x1,x1,x2)), INT(1,4,2,3))      # same consistent result from data.table (good for our needs)
+test(1590.8, base::order(c(x2,x1,x1,x2)), INT(2,3,1,4))  # different result again; base R is encoding-sensitive when in C-locale
+Sys.setlocale("LC_CTYPE", ctype)
+Sys.setlocale("LC_COLLATE", collate)
+test(1590.9, Sys.getlocale(), oldlocale)  # checked restored locale fully back to how it was before this test
 
 # #1432 test
 list_1 = list(a = c(44,47), dens = c(2331,1644))
