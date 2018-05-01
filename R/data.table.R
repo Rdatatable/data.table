@@ -1243,8 +1243,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       # warning(sym," in j is looking for ",getName," in calling scope, but a column '", sym, "' exists. Column names should not start with ..")
     }
     getName = substring(sym, 3L)
-    if (!exists(getName, parent.frame()))
+    if (!exists(getName, parent.frame())) {
+      if (exists(sym, parent.frame())) next  # user did 'manual' prefix; i.e. variable in calling scope has .. prefix
       stop("Variable '",getName,"' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter.")
+    }
     assign(sym, get(getName, parent.frame()), SDenv)
   }
 

@@ -11646,6 +11646,10 @@ setnames(DT, "z", "..z")
 test(1894.12, DT[, sum(y)*..z], INT(105,120,135))  # TODO warning/error in future as per NEWS item in v1.11.0
 rm(z)
 test(1894.13, DT[, sum(y)*..z], INT(105,120,135))  # TODO warning/error in future as per NEWS item in v1.11.0
+setnames(DT, "..z", "z")
+test(1894.14, DT[, sum(y)*..z], error="Variable 'z' is not found in calling scope")
+..z = 4L
+test(1894.15, DT[, sum(y)*..z], 60L)  # 'manual' prefix (we have recommended in the past) still works, for now.
 
 test(1895, getDTthreads(verbose=TRUE), output="omp_get_max_threads.*omp_get_thread_limit.*DTthreads")
 
