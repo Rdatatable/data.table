@@ -77,9 +77,9 @@ test_that("generate dt", { expect_true(nrow(gen()) == 100) })
 test_that("aggregate dt", { expect_true(nrow(aggr(gen())) < 100) })
 ```
 
-## Dealing with undefined global variables
+## Dealing with "undefined global functions or variables"
 
-Use of Non-Standard Evaluation mechanism is not well recognised by R package check. This results into following NOTEs in package check:
+`data.table`'s use of Non-Standard Evaluation (especially on the left-hand side of `:=`) is not well-recognised by `R CMD check`. This results `NOTE`s like the following during package check:
 ```
 * checking R code for possible problems ... NOTE
 aggr: no visible binding for global variable 'grp'
@@ -88,7 +88,9 @@ gen: no visible binding for global variable 'id'
 Undefined global functions or variables:
 grp id
 ```
-Easiest way to deal with it is to predefine those variables and set them to NULL, eventually adding comment (see function `gen`). When possible you can also use character vector instead of symbols (see function `aggr`). Functions from above example would then look like:
+
+The easiest way to deal with this is to pre-define those variables and set them to `NULL`, eventually adding comment (as was done in the function `gen` above). When possible, you can also use a character vector instead of symbols (as in `aggr`). The functions from above example would then look like:
+
 ```r
 gen = function (n = 100L) {
   id = grp = NULL # due to NSE notes in R CMD check
@@ -105,7 +107,14 @@ aggr = function (x) {
   x[, .N, by = "grp"]
 }
 ```
-If you don't mind having `id` and `grp` registered as variables globally in your package namespace you can use `?globalVariables`. Be aware these notes does not have any impact on the code and functionality, if you are not going to publish your package you may simply want to ignore them.
+
+The case for `:=` is slightly different, because `:=` is interpreted as a function in the above code; so instead of registering `:=` as `NULL`, you must register it as a function, e.g.:
+
+```
+`:=` = function(...) NULL
+```
+
+If you don't mind having `id` and `grp` registered as variables globally in your package namespace you can use `?globalVariables`. Be aware that these notes do not have any impact on the code or its functionality; if you are not going to publish your package, you may simply choose to ignore them.
 
 ## Troubleshooting
 
