@@ -1,67 +1,16 @@
-//#include "roll.h"
-#include "data.table.h"
-#include <Rdefines.h>
+#include "roll.h"
 
-/*typedef union
-{
-    bool value;
-    bool na;
-    } boolna;*/
-
-
-//#define warning printf
-
-//#define Rprintf printf
-/*
-// NA but not NaN
-int R_IsNA(double x)
-{
-    if (isnan(x)) {
-	ieee_double y;
-	y.value = x;
-	return (y.word[lw] == 1954);
-    }
-    return 0;
-}
-
-// NaN but not NA
-int R_IsNaN(double x)
-{
-    if (isnan(x)) {
-	ieee_double y;
-	y.value = x;
-	return (y.word[lw] != 1954);
-    }
-    return 0;
-}
-*/
-//#include <R.h>
-
-//#define NAND R_NaN
-//#define NA_FLOAT64 NA_REAL
-
-//static const double NAND = (double)NAN;
-//static const double INFD = (double)INFINITY;
-//static double NA_FLOAT64 = NA_FLOAT64_I64;
-
-void rollmeanVector(double x[], int nx, double ans[], int k, double fill, bool exact, bool narm, bool hasna, bool nahasna) {
-  Rprintf("rollmeanVector starting");
+void rollmeanVector(double x[], uint_fast64_t nx, double ans[], int k, double fill, bool exact, bool narm, bool hasna, bool nahasna) {
   double w = 0.; // running window sum
   bool truehasna = hasna; // flag to re-run if NAs detected
-  _Bool verbose = 1;
 
   if (!truehasna) {
     if (!exact) {
-      Rprintf("for (uint_fast64_t, ...)\n");
-      for (int i=0; i<nx; i++) {  // loop over observations in column
+      for (uint_fast64_t i=0; i<nx; i++) {  // loop over observations in column
         w += x[i];                          // add current row to window sum
-        if (i < k-1) {
-          if (verbose) Rprintf("rollmeanVector partial, filling with %8.3f", fill);
-          ans[i] = fill;         // fill partial window
-        }
+        if (i < k-1) ans[i] = fill;         // fill partial window
         else {
           if (i >= k) w -= x[i-k];          // remove leaving row from window sum
-          if (verbose) Rprintf("rollmeanVector window sum %8.3f, size %d", w, k);
           ans[i] = w / k;                   // calculate mean
         }
       }
@@ -69,7 +18,7 @@ void rollmeanVector(double x[], int nx, double ans[], int k, double fill, bool e
     
     }
     if (ISNAN(w)) { // ISNAN translate to C
-      if (nahasna==0) warning("hasNA FALSE was used but NA values are present in input (or overflow?), re-running rolling function with extra care for NAs");
+      if (nahasna==0) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
       w = 0.;
       truehasna = 1;
     }
@@ -77,7 +26,7 @@ void rollmeanVector(double x[], int nx, double ans[], int k, double fill, bool e
   if (truehasna) {
     if (!exact) {
       int nc = 0;                               // NA counter within running window
-      for (int i=0; i<nx; i++) {      // loop over observations in column
+      for (uint_fast64_t i=0; i<nx; i++) {      // loop over observations in column
         if (ISNAN(x[i])) nc++;                  // increment NA count in current window
         else w += x[i];                         // add only non-NA to window sum
         if (i >= k) {
@@ -103,7 +52,7 @@ void rollmeanVector(double x[], int nx, double ans[], int k, double fill, bool e
   }
 }
 
-void rollmeanVectorAdaptive(double x[], int nx, double ans[], int k[], double fill, bool exact, bool narm, bool hasna, bool nahasna) {
+void rollmeanVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[], double fill, bool exact, bool narm, bool hasna, bool nahasna) {
   double w = 0.; // running window sum
   bool truehasna = hasna; // flag to re-run if NAs detected
   int thisk, lastk, diffk;
@@ -111,7 +60,7 @@ void rollmeanVectorAdaptive(double x[], int nx, double ans[], int k[], double fi
   if (!truehasna) {
     if (!exact) {
       // move to rollmean when ans allocation is done:      if (length(thiskl) != xrows) error("length of integer vector in 'n' is not equal to length of column in 'x', for adaptive TRUE those has to be equal");
-      for (int i=0; i<nx; i++) {                        // loop over observations in column
+      for (uint_fast64_t i=0; i<nx; i++) {                        // loop over observations in column
         thisk = k[i];
         w += x[i];                            // add current row to window sum
         if (i + 1 < thisk) ans[i] = fill;    // fill partial window

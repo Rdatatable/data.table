@@ -1,7 +1,4 @@
-//#include "roll.h"
-//#include "rollR.h"
-#include "data.table.h"
-#include <Rdefines.h>
+#include "rollR.h"
 
 SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive) {
 
@@ -100,20 +97,14 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SE
   if (salign == LEFT) error("align 'left' not yet implemented");
   else if (salign == CENTER) error("align 'center' not yet implemented");
 
-  //SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows)); // allocate answer vector for this column-window
-  bool verbose=1;
-  if (nx==1 && nk==1) {                                               // shortcut for scalar input, no omp overhead
-    if (verbose) Rprintf("openmp pragma skipped for single column single window\n");
+  if (nx==1 && nk==1) {
     this = AS_NUMERIC(VECTOR_ELT(x, 0));
     xrows = length(this);
-    if (verbose) Rprintf("calling SET_VECTOR_ELT(..., allocVector(...))\n");
     SET_VECTOR_ELT(ans, 0, tmp=allocVector(REALSXP, xrows)); // allocate answer vector for single column-window
-    if (verbose) Rprintf("calling rollmeanVector\n");
-    if (!adaptive) rollmeanVector(REAL(this), xrows, REAL(tmp), INTEGER(k)[0], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+    //if (!adaptive)
+    rollmeanVector(REAL(this), xrows, REAL(tmp), INTEGER(k)[0], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
     //else rollmeanVectorAdaptive(REAL(VECTOR_ELT(x, 0)), xrows, REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
-    if (verbose) Rprintf("rolling finished\n");
   } else {
-    //if (verbose) Rprintf("openmp pragma to be used on max %d threads\n", getDTthreads());
     for (i=0; i<nx; i++) {                                            // loop over columns
       this = AS_NUMERIC(VECTOR_ELT(x, i));                            // extract column/vector from data.table/list
       xrows = length(this);                                           // for list input each vector can have different length
@@ -122,8 +113,10 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SE
         #pragma omp for schedule(dynamic)
         for (j=0; j<nk; j++) {                                          // loop over multiple windows
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows)); // allocate answer vector for this column-window
-          if (!adaptive) rollmeanVector(REAL(this), xrows, REAL(tmp), INTEGER(k)[j], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
-          else rollmeanVectorAdaptive(REAL(this), xrows, REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+          // this was making segfaults:
+          //if (!adaptive)
+          rollmeanVector(REAL(this), xrows, REAL(tmp), INTEGER(k)[j], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+          //else rollmeanVectorAdaptive(REAL(this), xrows, REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
         }
       }
     }
