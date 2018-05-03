@@ -5,8 +5,6 @@
 \alias{as.ITime}
 \alias{IDateTime}
 \alias{as.character.ITime}
-\alias{as.chron.IDate}
-\alias{as.chron.ITime}
 \alias{as.Date.IDate}
 \alias{as.IDate.Date}
 \alias{as.IDate.default}
@@ -54,13 +52,11 @@ as.IDate(x, ...)
 \method{as.IDate}{Date}(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)
-\method{as.chron}{IDate}(x, time = NULL, \dots)
 \method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), \ldots)
 
 as.ITime(x, ...)
 \method{as.ITime}{default}(x, \dots)
 \method{as.POSIXct}{ITime}(x, tz = "UTC", date = as.Date(Sys.time()), \dots)
-\method{as.chron}{ITime}(x, date = NULL, \dots)
 \method{as.character}{ITime}(x, \dots)
 \method{format}{ITime}(x, \dots)
 
@@ -108,8 +104,7 @@ hours. Because \code{ITime} is stored in seconds, you can add it to a
 \code{POSIXct} object, but you should not add it to a \code{Date}
 object.
 
-Conversions to and from \code{Date}, \code{POSIXct}, and \code{chron}
-formats are provided.
+Conversions to and from \code{Date} and \code{POSIXct} formats are provided.
 
 \code{ITime} does not account for time zones. When converting
 \code{ITime} and \code{IDate} to POSIXct with \code{as.POSIXct}, a time
@@ -219,16 +214,6 @@ as.POSIXct(af$itime) # uses today's date
 (seqdates <- seq(as.IDate("2001-01-01"), as.IDate("2001-08-03"), by = "3 weeks"))
 round(seqdates, "months")
 
-if (require(chron)) {
-    as.chron(as.IDate("2000-01-01"))
-    as.chron(as.ITime("10:45"))
-    as.chron(as.IDate("2000-01-01"), as.ITime("10:45"))
-    as.chron(as.ITime("10:45"), as.IDate("2000-01-01"))
-    as.ITime(chron(times = "11:01:01"))
-    IDateTime(chron("12/31/98","10:45:00"))
-}
-
 }
 \keyword{utilities}
-\keyword{chron}
 

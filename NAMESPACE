@@ -112,7 +112,6 @@ S3method(na.omit, data.table)
 export(as.IDate,as.ITime,IDateTime)
 export(second,minute,hour,yday,wday,mday,week,isoweek,month,quarter,year)
 
-export(as.chron.IDate, as.chron.ITime)
 export(as.Date.IDate) # workaround for zoo bug, see #1500
 
 S3method("[", ITime)
