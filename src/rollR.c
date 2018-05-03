@@ -9,7 +9,7 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SE
     This will greatly reduce repetition.
    */
   
-  R_len_t i=0, j, nx, nk, xrows, protecti=0;
+  R_len_t i=0, j, nx, nk, protecti=0;
   SEXP x, kl, tmp=R_NilValue, this, ans, thisfill;
   enum {RIGHT, CENTER, LEFT} salign = RIGHT;
   
@@ -25,6 +25,7 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SE
     error("x must be a list, data.frame or data.table");
 
   nx = length(x);
+  
   i = 0;                                                                  // check that every column is double/integer type
   while (i < nx && (isReal(VECTOR_ELT(x, i)) || isInteger(VECTOR_ELT(x, i)))) i++;
   if (i != nx)
@@ -90,33 +91,38 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SE
   if (LOGICAL(hasna)[0]==FALSE && LOGICAL(narm)[0])
     error("using hasNA FALSE and na.rm TRUE does not make sense, if you know there are NA values use hasNA TRUE, otherwise leave it as default NA");
     
-  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;              // allocate list to keep results
-  
   thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
 
   if (salign == LEFT) error("align 'left' not yet implemented");
   else if (salign == CENTER) error("align 'center' not yet implemented");
 
-  if (nx==1 && nk==1) {
+  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;         // allocate list to keep results
+  uint_fast64_t xrows[nx-1];                                       // to not recalculate `length(x[[i]])` we store it in extra array
+  for (i=0; i<nx; i++) {
+    xrows[i] = length(VECTOR_ELT(x, i));                           // for list input each vector can have different length
+    for (j=0; j<nk; j++) {
+      SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, xrows[i])); // allocate answer vector for this column-window
+    }
+  }
+
+  if (nx==1 && nk==1) {                                               // no need to init openmp for single thread call
     this = AS_NUMERIC(VECTOR_ELT(x, 0));
-    xrows = length(this);
-    SET_VECTOR_ELT(ans, 0, tmp=allocVector(REALSXP, xrows)); // allocate answer vector for single column-window
+    tmp = VECTOR_ELT(ans, 0);
     //if (!adaptive)
-    rollmeanVector(REAL(this), xrows, REAL(tmp), INTEGER(k)[0], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
-    //else rollmeanVectorAdaptive(REAL(VECTOR_ELT(x, 0)), xrows, REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+    rollmeanVector(REAL(this), xrows[0], REAL(tmp), INTEGER(k)[0], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+    //else rollmeanVectorAdaptive(REAL(this), xrows[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
   } else {
     for (i=0; i<nx; i++) {                                            // loop over columns
       this = AS_NUMERIC(VECTOR_ELT(x, i));                            // extract column/vector from data.table/list
-      xrows = length(this);                                           // for list input each vector can have different length
       #pragma omp parallel num_threads(MIN(getDTthreads(), nk))
       {
         #pragma omp for schedule(dynamic)
         for (j=0; j<nk; j++) {                                          // loop over multiple windows
-          SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows)); // allocate answer vector for this column-window
+          tmp = VECTOR_ELT(ans, i*nk+j);
           // this was making segfaults:
           //if (!adaptive)
-          rollmeanVector(REAL(this), xrows, REAL(tmp), INTEGER(k)[j], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
-          //else rollmeanVectorAdaptive(REAL(this), xrows, REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+          rollmeanVector(REAL(this), xrows[i], REAL(tmp), INTEGER(k)[j], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+          //else rollmeanVectorAdaptive(REAL(this), xrows[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
         }
       }
     }
