@@ -5,6 +5,8 @@
 
 #### BUG FIXES
 
+1. `test.data.table()` created/overwrote variable `x` in `.GlobalEnv`, [#2828](https://github.com/Rdatatable/data.table/issues/2828); i.e. a modification of user's workspace which is not allowed. Thanks to @etienne-s for reporting.
+
 #### NOTES
 
 
