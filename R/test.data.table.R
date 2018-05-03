@@ -159,7 +159,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     x = tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
   } else {
-    out = capture.output(print(x <<- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
+    out = capture.output(print(x <- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
   }
   if (memtest) {
     mem = as.list(c(inittime=inittime, timestamp=timestamp, test=num, ps_mem(), gc_mem()))   # nocov

@@ -212,12 +212,11 @@ cd ~/build/32bit/R-devel
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 cd ~/GitHub/data.table
-Rdevel CMD INSTALL data.table_1.10.5.tar.gz
+Rdevel CMD INSTALL data.table_1.11.1.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
 # them so should be passed through to here
 Rdevel
-install.packages(c("bit64","xts","nanotime","chron"), repos="http://cloud.r-project.org")  # important to run all tests
-# Skip compatibility tests with other Suggests packages; unlikely UBSAN/ASAN problems there.
+install.packages(c("bit64","xts","nanotime","chron"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
 require(data.table)
 test.data.table()     # slower than usual, naturally, due to UBSAN and ASAN. Too slow to run R CMD check.
 for (i in 1:10) test.data.table()  # last resort: try several runs; e.g a few tests generate data with a non-fixed random seed
