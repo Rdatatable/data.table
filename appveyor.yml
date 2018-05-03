@@ -7,8 +7,8 @@ init:
         Invoke-WebRequest http://raw.github.com/krlmlr/r-appveyor/master/scripts/appveyor-tool.ps1 -OutFile "..\appveyor-tool.ps1"
         Import-Module '..\appveyor-tool.ps1'
 
-#install:   # don't think this is needed, is it CSS for the vignettes which no longer used. Turning off to see what breaks.
-#  ps: Bootstrap
+install:   # this is needed.  Don't remove it. Don't know what it does, though.  It is not Bootstrap CSS it seems.
+  ps: Bootstrap
 
 skip_branch_with_pr: true
 
