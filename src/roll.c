@@ -1,6 +1,6 @@
 #include "roll.h"
 
-void rollmeanVector(double x[], int nx, double ans[], int k, double fill, bool exact, bool narm, bool hasna, bool nahasna) {
+void rollmeanVector(double x[], uint_fast64_t nx, double ans[], int k, double fill, bool exact, bool narm, bool hasna, bool nahasna) {
   double w = 0.; // running window sum
   bool truehasna = hasna; // flag to re-run if NAs detected
 
@@ -52,7 +52,7 @@ void rollmeanVector(double x[], int nx, double ans[], int k, double fill, bool e
   }
 }
 
-void rollmeanVectorAdaptive(double x[], int nx, double ans[], int k[], double fill, bool exact, bool narm, bool hasna, bool nahasna) {
+void rollmeanVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[], double fill, bool exact, bool narm, bool hasna, bool nahasna) {
   double w = 0.; // running window sum
   bool truehasna = hasna; // flag to re-run if NAs detected
   int thisk, lastk, diffk;
