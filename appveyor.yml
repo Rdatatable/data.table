@@ -28,7 +28,7 @@ environment:
 
   - R_VERSION: release  # the single Windows.zip binary (both 32bit/64bit) that users following dev version of installation instructions should click
 
-#  - R_VERSION: devel   # temporarily off while we address #2820 due to change in R-devel May 1st 2018
+  - R_VERSION: devel
 
 before_build:
   - cmd: ECHO no Revision metadata added to DESCRIPTION

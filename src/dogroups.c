@@ -23,7 +23,7 @@ void setSizes() {
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verbose)
 {
-  R_len_t i, j, k, rownum, ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, vlen, origIlen=0, origSDnrow=0;
+  R_len_t i, j, k, rownum, ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, vlen, origIlen=0, origSDnrow=0, maxGrpSize=0;
   int protecti=0;
   SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, SDall, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, listwrap, target, source, tmp;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE, recycleWarn=TRUE;
@@ -31,8 +31,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
 
   if (!isInteger(order)) error("Internal error: order not integer vector");
-  //if (TYPEOF(starts) != INTSXP) error("Internal error: starts not integer");
-  //if (TYPEOF(lens) != INTSXP) error("Internal error: lens not integer");
+  if (TYPEOF(starts) != INTSXP) error("Internal error: starts not integer");
+  if (TYPEOF(lens) != INTSXP) error("Internal error: lens not integer");
   // starts can now be NA (<0): if (INTEGER(starts)[0]<0 || INTEGER(lens)[0]<0) error("starts[1]<0 or lens[1]<0");
   if (!isNull(jiscols) && LENGTH(order) && !LOGICAL(on)[0]) error("Internal error: jiscols not NULL but o__ has length");
   if (!isNull(xjiscols) && LENGTH(order) && !LOGICAL(on)[0]) error("Internal error: xjiscols not NULL but o__ has length");
@@ -65,7 +65,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   GRP = findVar(install(".GRP"), env);
   iSD = findVar(install(".iSD"), env);  // 1-row and possibly no cols (if no i variables are used via JIS)
   xSD = findVar(install(".xSD"), env);
-  I = findVar(install(".I"), env);
+  for (R_len_t i=0; i<LENGTH(lens); i++) {
+    if (INTEGER(lens)[i] > maxGrpSize) maxGrpSize = INTEGER(lens)[i];
+  }
+  defineVar(install(".I"), I = allocVector(INTSXP, maxGrpSize), env);
+  R_LockBinding(install(".I"), env);
 
   dtnames = getAttrib(dt, R_NamesSymbol); // added here to fix #4990 - `:=` did not issue recycling warning during "by"
   // fetch rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
