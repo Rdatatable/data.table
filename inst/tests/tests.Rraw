@@ -66,8 +66,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 sugg = c(
   "bit64",          # if big integers are detected in file, fread reads them as bit64::integer64 if installed (warning if not)
   "xts",            # we have xts methods in R/xts.R
-  "nanotime",       # fwrite looks for the 'nanotime' class name at C level (but we have our own writer in C, though)
-  "chron"           # we have chron methods in R/IDateTime.R
+  "nanotime"        # fwrite looks for the 'nanotime' class name at C level (but we have our own writer in C, though)
   # zoo             # In DESCRIPTION:Suggests otherwise R CMD check warning: '::' or ':::' import not declared from: 'zoo'; it is tested in other.Rraw though
   # reshape2        # In DESCRIPTION:Suggests otherwise same R CMD check warning. See fmelt.R line 1 refers to reshape2 depending on R 3.0.0, but now we do too,
 )                   # perhaps something can be improved now. dcast and melt methods for data.table are tested directly here in main without needing reshape2 loaded.
@@ -7799,17 +7798,6 @@ test(1601.2, tryCatch(merge(data.table(a=1),data.table(NULL), by="a"), warning =
 test(1601.3, tryCatch(merge(data.table(NULL),data.table(a=1), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'x' argument is 0 columns data.table.")
 test(1601.4, tryCatch(merge(data.table(NULL),data.table(NULL), by="a"), warning = function(w) w$message), "You are trying to join data.tables where 'x' and 'y' arguments are 0 columns data.table.")
 
-# migrate `chron` dependency to Suggests #1558
-dd = as.IDate("2016-02-28")
-tt = as.ITime("03:04:43")
-if (test_chron) {
-  test(1602.1, as.chron.IDate(dd), chron::as.chron(as.Date(dd)))
-  test(1602.2, class(as.chron.ITime(tt)), "times")
-} else {
-  test(1602.3, as.chron.IDate(dd), error = "Install suggested `chron` package to use `as.chron.IDate` function.")
-  test(1602.4, as.chron.ITime(tt), error = "Install suggested `chron` package to use `as.chron.ITime` function.")
-}
-
 # fix for #1549
 d1 <- data.table(v1=1:2,x=x)
 d2 <- data.table(v1=3:4)
@@ -11805,7 +11793,9 @@ options(oldOptions)  # set at top of this file
 setDTthreads(0)
 plat = paste0("endian==", .Platform$endian,
               ", sizeof(long double)==", .Machine$sizeof.longdouble,
-              ", sizeof(pointer)==", .Machine$sizeof.pointer)
+              ", sizeof(pointer)==", .Machine$sizeof.pointer,
+              ", TZ=", Sys.timezone(),
+              ", locale='", Sys.getlocale(), "'")
 DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
 if ((x<-timings[,sum(nTest)]) != ntest) warning("Timings count mismatch:",x,"vs",ntest)
 cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
