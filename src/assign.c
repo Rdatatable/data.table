@@ -145,11 +145,9 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   // NEW: cols argument to specify the columns to shallow copy on. If NULL, all columns.
   // called from alloccol where n is checked carefully, or from shallow() at R level
   // where n is set to truelength (i.e. a shallow copy only with no size change)
-  SEXP newdt, names, newnames;
   R_len_t i,l;
   int protecti=0;
-  PROTECT(newdt = allocVector(VECSXP, n));   // to do, use growVector here?
-  protecti++;
+  SEXP newdt = PROTECT(allocVector(VECSXP, n)); protecti++;   // to do, use growVector here?
   //copyMostAttrib(dt, newdt);   // including class
   DUPLICATE_ATTRIB(newdt, dt);
   // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
@@ -157,9 +155,8 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   //        so that the next change knows to duplicate.
   //        Does copyMostAttrib duplicate each attrib or does it point? It seems to point, hence DUPLICATE_ATTRIB
   //        for now otherwise example(merge.data.table) fails (since attr(d4,"sorted") gets written by setnames).
-  names = getAttrib(dt, R_NamesSymbol);
-  PROTECT(newnames = allocVector(STRSXP, n));
-  protecti++;
+  SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
+  SEXP newnames = PROTECT(allocVector(STRSXP, n)); protecti++;
   if (isNull(cols)) {
     l = LENGTH(dt);
     for (i=0; i<l; i++) SET_VECTOR_ELT(newdt, i, VECTOR_ELT(dt,i));
@@ -479,7 +476,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       if (  MAYBE_SHARED(thisvalue) ||  // set() protects the NAMED of atomic vectors from .Call setting arguments to 2 by wrapping with list
          (TYPEOF(values)==VECSXP && i>LENGTH(values)-1) || // recycled RHS would have columns pointing to others, #185.
          (TYPEOF(values)!=VECSXP && i>0) // assigning the same values to a second column. Have to ensure a copy #2540
-         ) { 
+         ) {
         if (verbose) {
           if (length(values)==length(cols)) {
             // usual branch
