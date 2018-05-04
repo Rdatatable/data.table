@@ -1,12 +1,13 @@
 \name{roll}
 \alias{roll}
+\alias{froll}
 \alias{rolling}
 \alias{sliding}
 \alias{moving}
 \alias{frollmean}
 \title{Rolling functions}
 \description{
-  Rolling functions to calculate aggregates on sliding window.
+  Fast rolling functions to calculate aggregates on sliding window.
 }
 
 \usage{
@@ -15,7 +16,8 @@ frollmean(x, n, fill=NA, exact=FALSE, align=c("right", "left",
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric fields. }
-  \item{n}{ integer vector or list of integer vectors, window size. }
+  \item{n}{ integer vector, for adaptive rolling function also list of
+    integer vectors, window size. }
   \item{fill}{ numeric, value to pad by, default \code{NA}. }
   \item{exact}{ logical, (at the current moment does not have effect)
     should be floating point rounding error be corrected, see
@@ -32,15 +34,15 @@ frollmean(x, n, fill=NA, exact=FALSE, align=c("right", "left",
     calculated, default \code{is.list(n)}. }
 }
 \details{
-  \code{roll*} functions accepts vectors, lists, data.frames or
+  \code{froll*} functions accepts vectors, lists, data.frames or
   data.tables. They always returns a list except when the input is a
-  \code{vector} and \code{length(n) == 1} in which case a \code{vector}
+  \code{vector} and \code{length(n)==1} in which case a \code{vector}
   is returned, for convenience. This is so that it can be used
   conveniently within data.table's syntax. 
 
-  Argument \code{n} allows multiple values and if \code{adaptive ==
-    TRUE} then it expects a list, each list element must be integer
-  vector of window size for every \code{column[row]} from \code{x}.
+  Argument \code{n} allows multiple values and if \code{adaptive==TRUE}
+  then it expects a list, each list element must be integer vector of
+  window size for every \code{column[row]} from \code{x}.
 
   Argument \code{exact} will make rolling functions to perform extra
   computation for floating point rounding error correction. Currently
@@ -62,8 +64,8 @@ frollmean(x, n, fill=NA, exact=FALSE, align=c("right", "left",
     \item{ align by default "right". }
     \item{ \code{na.rm} is respected, no need to use \code{rollapply}
       when having \code{NA} values. }
-    \item{ integers always coerced to double (also for rollsum,
-      rollprod, rollmin, rollmax).  }
+    \item{ integers always coerced to double, also for \code{frollsum},
+      \code{frollprod}, \code{frollmin}, \code{frollmax}. }
     \item{ when \code{adaptive==FALSE} (default) then \code{n} must be a
       numeric vector, list is not accepted. }
     \item{ when \code{adaptive==TRUE} then \code{n} must be vector
