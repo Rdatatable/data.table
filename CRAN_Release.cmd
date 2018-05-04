@@ -216,7 +216,7 @@ Rdevel CMD INSTALL data.table_1.11.1.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
 # them so should be passed through to here
 Rdevel
-install.packages(c("bit64","xts","nanotime","chron"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
+install.packages(c("bit64","xts","nanotime"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
 require(data.table)
 test.data.table()     # slower than usual, naturally, due to UBSAN and ASAN. Too slow to run R CMD check.
 for (i in 1:10) test.data.table()  # last resort: try several runs; e.g a few tests generate data with a non-fixed random seed
@@ -303,7 +303,6 @@ R CMD build --no-build-vignettes data.table
 # R CMD check requires many packages in Suggests. Too long under emulation. Instead run data.table's test suite directly
 R
 options(repos = "http://cran.stat.ucla.edu")
-install.packages("chron")  # takes a minute or so to start download and install.
 install.packages("bit64")  # important to test data.table with integer64 on big endian
 q("no")
 R CMD INSTALL data.table_1.9.5.tar.gz

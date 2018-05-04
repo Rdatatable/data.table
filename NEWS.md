@@ -9,6 +9,7 @@
 
 #### NOTES
 
+1. `as.chron` methods for `IDate` and `ITime` have been removed, [#2825](https://github.com/Rdatatable/data.table/issues/2825). `as.chron` still works since `IDate` inherits from `Date`. We are not sure why we had specific methods in the first place. It may have been from a time when `IDate` did not inherit from `Date`, perhaps. Note that we don't use `chron` ourselves in our own work.
 
 ### Changes in v1.11.0  (on CRAN 1 May 2018)
 
