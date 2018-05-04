@@ -103,6 +103,22 @@ test(9999.99, frollmean(1:5, 4, fill=Inf), c(Inf, Inf, Inf, 2.5, 3.5))
 test(9999.99, frollmean(1:5, 4, fill=NaN), c(NaN, NaN, NaN, 2.5, 3.5))
 
 #### adaptive window
+ref = function(x, n, na.rm=FALSE) {
+  stopifnot((nx<-length(x))==length(n))
+  ans = rep(NA_real_, nx)
+  for (i in seq_along(x))
+    if (i >= n[i]) ans[i] = mean(x[(i-n[i]+1):i], na.rm=na.rm)
+  ans
+}
+x = c(1:4,2:5,4:6,5L)
+n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
+#plot(x, type="l")
+#lines(n, col="red")
+ans1 = ref(x, n)
+ans2 = frollmean(x, list(n))
+ans3 = frollmean(x, n, adaptive=TRUE)
+#all.equal(ans1, ans2)
+#all.equal(ans1, ans3)
 
 ## edge cases
 
@@ -275,40 +291,6 @@ if (dev_and_benchmark_area<-FALSE) {
   system.time(frollmean(x2, n))
   system.time(frollmean(x1n, n, hasNA=TRUE))
   system.time(frollmean(x2n, n))
-
-  ## adaptive TRUE FALSE
-  #https://stackoverflow.com/questions/21368245/adaptive-moving-average-top-performance-in-r/21368246#21368246
-  f = function(x, n, na.rm=FALSE) {
-    nx = length(x)
-    stopifnot(nx==length(n))
-    ans = vector("double", nx)[NA]
-    for (i in seq_along(x))
-      if (i >= n[i]) ans[i] = mean(x[(i-n[i]+1):i], na.rm=na.rm)
-    ans
-  }
-  wmapply = function(x, width, FUN = mean, ...){
-    FUN <- match.fun(FUN)
-    SEQ1 <- 1:length(x)
-    SEQ1[SEQ1 <  width] <- NA_integer_
-    SEQ2 <- lapply(SEQ1, function(i) if(!is.na(i)) (i - (width[i]-1)):i)
-    OUT <- lapply(SEQ2, function(i) if(!is.null(i)) FUN(x[i], ...) else NA_real_)
-    return(base:::simplify2array(OUT, higher = TRUE))
-  }
-  cc(F)
-  set.seed(108)
-  x = rnorm(10)#c(1:4,2:5,4:6,5)
-  #x = sample(1e6)
-  #plot(x, type="l")
-  n = sample(3:10, length(x), TRUE)
-  system.time(ans1<-f(x, n))
-  system.time(ans2<-wmapply(x, n))
-  system.time(ans3<-frollmean(x, list(n)))
-  all.equal(ans1, ans2)
-  all.equal(ans1, ans3)
-  
-  identical(ans1, ans3)
-  cbind(x, n, ans1, ans3)
-  NULL
   
   ## # exact TRUE / FALSE
   ## rsummean = function(x, n) {ans=rep(NA_real_, nx<-length(x)); for(i in n:nx) ans[i]=sum(x[(i-n+1):i])/n; ans}
