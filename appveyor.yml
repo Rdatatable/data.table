@@ -28,7 +28,7 @@ environment:
 
   - R_VERSION: release  # the single Windows.zip binary (both 32bit/64bit) that users following dev version of installation instructions should click
 
-  - R_VERSION: devel
+#  - R_VERSION: devel   # temporarily off due to #2767 `memory exhausted` on both 32bit and 64bit, R-devel only
 
 before_build:
   - cmd: ECHO no Revision metadata added to DESCRIPTION
