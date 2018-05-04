@@ -102,8 +102,8 @@ options(stringsAsFactors=!saf)    # check tests (that might be run by user) are 
 test.data.table()
 q("no")
 R CMD build .
-R CMD check data.table_1.10.5.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
-R CMD INSTALL data.table_1.10.5.tar.gz
+R CMD check data.table_1.11.1.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
+R CMD INSTALL data.table_1.11.1.tar.gz
 R
 require(data.table)
 test.data.table()
@@ -114,7 +114,7 @@ echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.10.5.tar.gz
+R CMD check data.table_1.11.1.tar.gz
 rm ~/.Renviron
 
 # Upload to win-builder: release, dev & old-release
@@ -136,7 +136,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.10.5.tar.gz
+R310 CMD INSTALL ./data.table_1.11.1.tar.gz
 R310
 require(data.table)
 test.data.table()
@@ -148,7 +148,7 @@ test.data.table()
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.10.5.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.11.1.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -161,7 +161,7 @@ test.data.table()
 # TODO: use R-devel instead with --with-valgrind-instrumentation=2 too as per R-exts$4.3.2
 
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-R --vanilla CMD INSTALL data.table_1.10.5.tar.gz
+R --vanilla CMD INSTALL data.table_1.11.1.tar.gz
 R -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite" --vanilla
 require(data.table)
 test.data.table()
@@ -227,7 +227,7 @@ q("no")
 make clean
 ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp CC="gcc -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
 make
-Rdevel CMD INSTALL data.table_1.10.5.tar.gz
+Rdevel CMD INSTALL data.table_1.11.1.tar.gz
 install.packages("bit64")
 require(bit64)
 require(data.table)
@@ -493,7 +493,7 @@ run = function(all=FALSE) {
 }
 
 # ** ensure latest version installed into revdeplib **
-system("R CMD INSTALL ~/GitHub/data.table/data.table_1.10.5.tar.gz")
+system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.1.tar.gz")
 run()
 
 # Investigate and fix the fails ...
