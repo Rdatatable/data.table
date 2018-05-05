@@ -153,9 +153,8 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
   // find total length
   RLEN size = 0;
   R_len_t len = LENGTH(factorLevels), n, i, j;
-  SEXP elem;
   for (i = 0; i < len; ++i) {
-    elem = VECTOR_ELT(factorLevels, i);
+    SEXP elem = VECTOR_ELT(factorLevels, i);
     n = LENGTH(elem);
     size += n;
     /* for (j = 0; j < n; ++j) { */
@@ -183,7 +182,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
   R_len_t uniqlen = 0;
   // we insert in opposite order because it's more convenient later to choose first of the duplicates
   for (i = len-1; i >= 0; --i) {
-    elem = VECTOR_ELT(factorLevels, i);
+    SEXP elem = VECTOR_ELT(factorLevels, i);
     n = LENGTH(elem);
     for (j = n-1; j >= 0; --j) {
       idx = data.hash(elem, j, &data);
@@ -209,7 +208,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
     }
   }
 
-  SEXP finalLevels = PROTECT(allocVector(STRSXP, uniqlen));
+  SEXP finalLevels = PROTECT(allocVector(STRSXP, uniqlen)); // UNPROTECTed at the end of this function
   R_len_t counter = 0;
   if (*factorType == 2) {
     int *locs = (int *)R_alloc(len, sizeof(int));
@@ -221,8 +220,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
     SEXP tmp;
     for (i = 0; i < len; ++i) {
       if (!isRowOrdered[i]) continue;
-
-      elem = VECTOR_ELT(factorLevels, i);
+      SEXP elem = VECTOR_ELT(factorLevels, i);
       n = LENGTH(elem);
       for (j = locs[i]; j < n; ++j) {
         idx = data.hash(elem, j, &data);
@@ -261,8 +259,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
     Rboolean record;
     for (i = 0; i < len; ++i) {
       if (isRowOrdered[i]) continue;
-
-      elem = VECTOR_ELT(factorLevels, i);
+      SEXP elem = VECTOR_ELT(factorLevels, i);
       n = LENGTH(elem);
       for (j = 0; j < n; ++j) {
         idx = data.hash(elem, j, &data);
@@ -296,7 +293,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
  normalFactor:
   if (*factorType == 1) {
     for (i = 0; i < len; ++i) {
-      elem = VECTOR_ELT(factorLevels, i);
+      SEXP elem = VECTOR_ELT(factorLevels, i);
       n = LENGTH(elem);
       for (j = 0; j < n; ++j) {
         idx = data.hash(elem, j, &data);
@@ -318,7 +315,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
 
   // CleanHashTable(&data);   No longer needed now we use R_alloc(). But the hash table approach
   // will be removed completely at some point.
-
+  UNPROTECT(1); // finalLevels
   return finalLevels;
 }
 
@@ -611,7 +608,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
   struct preprocessData data;
   Rboolean usenames, fill, to_copy = FALSE, coerced=FALSE, isidcol = !isNull(idcol);
   SEXP fnames = R_NilValue, findices = R_NilValue, f_ind = R_NilValue, ans, lf, li, target, thiscol, levels;
-  SEXP factorLevels = R_NilValue, finalFactorLevels;
+  SEXP factorLevels = R_NilValue;
   R_len_t protecti=0;
 
   // first level of error checks
@@ -755,7 +752,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
       }
     }
     if (data.is_factor[j]) {
-      finalFactorLevels = combineFactorLevels(factorLevels, &(data.is_factor[j]), isRowOrdered);
+      SEXP finalFactorLevels = PROTECT(combineFactorLevels(factorLevels, &(data.is_factor[j]), isRowOrdered));
       SEXP factorLangSxp = PROTECT(lang3(install(data.is_factor[j] == 1 ? "factor" : "ordered"),
                          target, finalFactorLevels));
       SET_VECTOR_ELT(ans, j+isidcol, eval(factorLangSxp, R_GlobalEnv));
