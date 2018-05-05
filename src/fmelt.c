@@ -5,33 +5,30 @@
 
 // generate from 1 to n (a simple fun for melt, vecseq is convenient from R due to SEXP inputs)
 SEXP seq_int(int n, int start) {
-  SEXP ans = R_NilValue;
-  int i;
-  if (n <= 0) return(ans);
-  PROTECT(ans = allocVector(INTSXP, n));
-  for (i=0; i<n; i++) INTEGER(ans)[i] = start+i;
+  if (n <= 0) return(R_NilValue);
+  SEXP ans = PROTECT(allocVector(INTSXP, n));
+  for (int i=0; i<n; i++) INTEGER(ans)[i] = start+i;
   UNPROTECT(1);
   return(ans);
 }
 
 // very specific "set_diff" for integers
 SEXP set_diff(SEXP x, int n) {
-  SEXP ans, xmatch;
-  int i, j = 0;
   if (TYPEOF(x) != INTSXP) error("'x' must be an integer");
   if (n <= 0) error("'n' must be a positive integer");
-  xmatch = match(x, seq_int(n, 1), 0); // took a while to realise: matches vec against x - thanks to comment from Matthew in assign.c!
-
+  SEXP table = PROTECT(seq_int(n, 1));       // TODO: using match to 1:n seems odd here, why use match at all
+  SEXP xmatch = PROTECT(match(x, table, 0)); // Old comment:took a while to realise: matches vec against x - thanks to comment from Matt in assign.c!
   int *buf = (int *) R_alloc(n, sizeof(int));
-  for (i=0; i<n; i++) {
+  int j=0;
+  for (int i=0; i<n; i++) {
     if (INTEGER(xmatch)[i] == 0) {
       buf[j++] = i+1;
     }
   }
   n = j;
-  PROTECT(ans = allocVector(INTSXP, n));
+  SEXP ans = PROTECT(allocVector(INTSXP, n));
   if (n) memcpy(INTEGER(ans), buf, sizeof(int) * n); // sizeof is of type size_t - no integer overflow issues
-  UNPROTECT(1);
+  UNPROTECT(3);
   return(ans);
 }
 
@@ -166,7 +163,8 @@ static SEXP unlist_(SEXP xint) {
 SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
   int i, ncol=LENGTH(DT), targetcols=0, protecti=0, u=0, v=0;
   SEXP thiscol, idcols = R_NilValue, valuecols = R_NilValue, tmp, tmp2, booltmp, unqtmp, ans;
-  SEXP dtnames = getAttrib(DT, R_NamesSymbol);
+  SEXP dtnames = PROTECT(getAttrib(DT, R_NamesSymbol));  // PROTECT for rchk
+  protecti++;
 
   if (isNull(id) && isNull(measure)) {
     for (i=0; i<ncol; i++) {
@@ -490,11 +488,11 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   if (data->lvalues == 1) {
     thisvaluecols = VECTOR_ELT(data->valuecols, 0);
     // tmp fix for #1055
-    thisnames = PROTECT(allocVector(STRSXP, length(thisvaluecols)));
+    thisnames = PROTECT(allocVector(STRSXP, length(thisvaluecols))); protecti++;
     for (i=0; i<length(thisvaluecols); i++) {
       SET_STRING_ELT(thisnames, i, STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1));
     }
-    matchvals = PROTECT(match(thisnames, thisnames, 0));
+    matchvals = PROTECT(match(thisnames, thisnames, 0)); protecti++;
     if (data->narm) {
       for (j=0; j<data->lmax; j++) {
         thislen = length(VECTOR_ELT(data->naidx, j));
@@ -511,7 +509,6 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       }
       nlevels = data->lmax;
     }
-    UNPROTECT(2); // matchvals, thisnames
   } else {
     if (data->narm) {
       for (j=0; j<data->lmax; j++) {
@@ -529,12 +526,11 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       nlevels = data->lmax;
     }
   }
-  SEXP tmp = PROTECT(mkString("factor"));
+  SEXP tmp = PROTECT(mkString("factor")); protecti++;
   setAttrib(target, R_ClassSymbol, tmp);
-  UNPROTECT(1);  // tmp
   cnt = 0;
   if (data->lvalues == 1) {
-    levels = PROTECT(allocVector(STRSXP, nlevels));
+    levels = PROTECT(allocVector(STRSXP, nlevels)); protecti++;
     thisvaluecols = VECTOR_ELT(data->valuecols, 0); // levels will be column names
     for (i=0; i<data->lmax; i++) {
       if (data->narm) {
@@ -542,13 +538,14 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       }
       SET_STRING_ELT(levels, cnt++, STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1));
     }
-  } else levels = PROTECT(coerceVector(seq_int(nlevels, 1), STRSXP)); // generate levels = 1:nlevels
+  } else {
+    SEXP tt = PROTECT(seq_int(nlevels, 1)); protecti++;      // generate levels = 1:nlevels
+    levels = PROTECT(coerceVector(tt, STRSXP)); protecti++;  // tt PROTECTED for rchk
+  }
   // base::unique is fast on vectors, and the levels on variable columns are usually small
-  SEXP uniqueLangSxp = PROTECT(lang2(install("unique"), levels));
-  tmp = PROTECT(eval(uniqueLangSxp, R_GlobalEnv));
+  SEXP uniqueLangSxp = PROTECT(lang2(install("unique"), levels)); protecti++;
+  tmp = PROTECT(eval(uniqueLangSxp, R_GlobalEnv)); protecti++;
   setAttrib(target, R_LevelsSymbol, tmp);
-  UNPROTECT(1); // tmp
-  UNPROTECT(2); // levels, uniqueLangSxp
   if (!varfactor) SET_VECTOR_ELT(ansvars, 0, asCharacterFactor(target));
   UNPROTECT(protecti);
   return(ansvars);

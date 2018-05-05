@@ -39,7 +39,6 @@ static int8_t *type;
 static int8_t *size;
 static int ncol = 0;
 static int64_t dtnrows = 0;
-static int protecti=0;
 static _Bool verbose = 0;
 static _Bool warningsAreErrors = 0;
 
@@ -74,7 +73,6 @@ SEXP freadR(
   warningsAreErrors = LOGICAL(warnings2errorsArg)[0];
 
   freadMainArgs args;
-  protecti=0;
   ncol = 0;
   dtnrows = 0;
   const char *ch, *ch2;
@@ -178,20 +176,20 @@ SEXP freadR(
 
   DT = R_NilValue; // created by callback
   freadMain(args);
-  UNPROTECT(protecti);
+  if (DT!=R_NilValue) UNPROTECT(1);  // DT is allocated in allocateDT. See notes there.
   return DT;
 }
 
 
 _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 {
+  int protecti = 0;
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
   if (typeSize[CT_BOOL8_N]!=1) STOP("Internal error: typeSize[CT_BOOL8_N] != 1");
   if (typeSize[CT_STRING]!=8) STOP("Internal error: typeSize[CT_STRING] != 1");
   colNamesSxp = R_NilValue;
   if (colNames!=NULL) {
-    colNamesSxp = PROTECT(allocVector(STRSXP, ncol));
-    protecti++;
+    colNamesSxp = PROTECT(allocVector(STRSXP, ncol)); protecti++;
     for (int i=0; i<ncol; i++) {
       SEXP this;
       if (colNames[i].len<=0) {
@@ -205,10 +203,10 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     }
   }
   if (length(colClassesSxp)) {
-    SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT));
+    SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT)); protecti++;
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
     if (isString(colClassesSxp)) {
-      SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT, FALSE));
+      SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT, FALSE)); protecti++;
       if (LENGTH(colClassesSxp)==1) {
         signed char newType = typeEnum[INTEGER(typeEnum_idx)[0]-1];
         if (newType == CT_DROP) STOP("colClasses='drop' is not permitted; i.e. to drop all columns and load nothing");
@@ -222,11 +220,10 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         STOP("colClasses is an unnamed character vector but its length is %d. Must be length 1 or ncol (%d in this case) when unnamed. To specify types for a subset of columns you can either name the items with the column names or pass list() format to colClasses using column names or column numbers. See examples in ?fread.",
               LENGTH(colClassesSxp), ncol);
       }
-      UNPROTECT(1);  // typeEnum_idx
     } else {
       if (!isNewList(colClassesSxp)) STOP("CfreadR: colClasses is not type list");
       if (!length(getAttrib(colClassesSxp, R_NamesSymbol))) STOP("CfreadR: colClasses is type list but has no names");
-      SEXP typeEnum_idx = PROTECT(chmatch(getAttrib(colClassesSxp, R_NamesSymbol), typeRName_sxp, NUT, FALSE));
+      SEXP typeEnum_idx = PROTECT(chmatch(getAttrib(colClassesSxp, R_NamesSymbol), typeRName_sxp, NUT, FALSE)); protecti++;
       for (int i=0; i<LENGTH(colClassesSxp); i++) {
         SEXP items;
         signed char thisType = typeEnum[INTEGER(typeEnum_idx)[i]-1];
@@ -238,7 +235,8 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         }
         SEXP itemsInt;
         if (isString(items)) itemsInt = PROTECT(chmatch(items, colNamesSxp, NA_INTEGER, FALSE));
-        else itemsInt = PROTECT(coerceVector(items, INTSXP));
+        else                 itemsInt = PROTECT(coerceVector(items, INTSXP));
+        // UNPROTECTed directly just after this for loop. No protecti++ here is correct.
         for (int j=0; j<LENGTH(items); j++) {
           int k = INTEGER(itemsInt)[j];
           if (k==NA_INTEGER) {
@@ -252,12 +250,10 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
             // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
           }
         }
-        UNPROTECT(1); // itemsInt
+        UNPROTECT(1); // UNPROTECTing itemsInt inside loop to save protection stack
       }
       for (int i=0; i<ncol; i++) if (type[i]<0) type[i] *= -1;  // undo sign; was used to detect duplicates
-      UNPROTECT(1);  // typeEnum_idx
     }
-    UNPROTECT(1); // typeRName_sxp
   }
   if (readInt64As != CT_INT64) {
     for (int i=0; i<ncol; i++) if (type[i]==CT_INT64) type[i] = readInt64As;
@@ -265,7 +261,8 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   if (length(dropSxp)) {
     SEXP itemsInt;
     if (isString(dropSxp)) itemsInt = PROTECT(chmatch(dropSxp, colNamesSxp, NA_INTEGER, FALSE));
-    else itemsInt = PROTECT(coerceVector(dropSxp, INTSXP));
+    else                   itemsInt = PROTECT(coerceVector(dropSxp, INTSXP));
+    protecti++;
     for (int j=0; j<LENGTH(itemsInt); j++) {
       int k = INTEGER(itemsInt)[j];
       if (k==NA_INTEGER) {
@@ -283,14 +280,11 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         }
       }
     }
-    UNPROTECT(1); // itemsInt
   } else if (length(selectSxp)) {
     SEXP tt;
-    int nprot = 0;
     if (isString(selectSxp)) {
       // invalid cols check part of #1445 moved here (makes sense before reading the file)
-      tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER, FALSE));
-      nprot++;
+      tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER, FALSE)); protecti++;
       for (int i=0; i<length(selectSxp); i++) if (INTEGER(tt)[i]==NA_INTEGER)
         DTWARN("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
     } else tt = selectSxp;
@@ -307,8 +301,8 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       if (type[i]<0) type[i] *= -1;
       else type[i]=CT_DROP;
     }
-    UNPROTECT(nprot);
   }
+  UNPROTECT(protecti);
   return true;
 }
 
@@ -321,8 +315,9 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
   if (newDT) {
     ncol = ncolArg;
     dtnrows = allocNrow;
-    DT=PROTECT(allocVector(VECSXP,ncol-ndrop));  // safer to leave over allocation to alloc.col on return in fread.R
-    protecti++;
+    DT = PROTECT(allocVector(VECSXP,ncol-ndrop));
+    // no protecti++ here. See notes at the end of this function.
+    // over-allocation is left to alloc.col on return in fread.R
     if (ndrop==0) {
       setAttrib(DT,R_NamesSymbol,colNamesSxp);  // colNames mkChar'd in userOverride step
     } else {
@@ -367,6 +362,15 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     resi++;
   }
   dtnrows = allocNrow;
+
+  // rchk on CRAN check page will note there is no UNPROTECT here. This is correct.
+  // ------------------------------------------------------------------------------
+  // This allocateDT function is called from freadMean. freadMain is in fread.c which is a C file independent
+  // of R (it is shared with pydatatable) and contains no R-API calls. freadMain opens the csv file, detects
+  // ncols and types, calls back to this allocateDT function and then continues to populate DT before
+  // returning back to freadR higher up in this file, which is where the UNPROTECT happens.
+  // NB: rchk will note this on CRAN check page
+
   return DTbytes;
 }
 
