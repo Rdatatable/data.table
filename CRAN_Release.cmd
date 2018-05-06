@@ -108,6 +108,8 @@ R
 require(data.table)
 test.data.table()
 test.data.table(verbose=TRUE)  # since main.R no longer tests verbose mode
+gctorture2(step=50)
+system.time(test.data.table())
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron

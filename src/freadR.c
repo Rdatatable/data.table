@@ -17,7 +17,6 @@ Post from patricknik on 5 Jan re ""b"" in a field. And Aykut Firat on email.
 Save repeated ch<eof checking in main read step. Last line might still be tricky if last line has no eol.
 Test using at least "grep read.table ...Rtrunk/tests/
 Look for any non-alpha-numeric characters in the output and try each of them. That way can handle bell character as well and save testing separators which aren't there.
-Column all 0 and 1 treated as logical?
 Just one "NA" current default but empty in future when numerics handle NA string variants directly.
 ---
 Secondary separator for list() columns, such as columns 11 and 12 in BED (no need for strsplit).
@@ -31,10 +30,10 @@ static int  typeEnum[NUT] =    {CT_DROP, CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_
 static colType readInt64As=CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
-static SEXP colNamesSxp;
 static SEXP colClassesSxp;
 static cetype_t ienc = CE_NATIVE;
 static SEXP DT;
+static SEXP colNamesSxp;
 static int8_t *type;
 static int8_t *size;
 static int ncol = 0;
@@ -177,19 +176,19 @@ SEXP freadR(
   DT = R_NilValue; // created by callback
   freadMain(args);
   if (DT!=R_NilValue) UNPROTECT(1);  // DT is allocated in allocateDT. See notes there.
+  if (colNamesSxp!=R_NilValue) UNPROTECT(1);  // allocated in userOverride() and then used in allocateDT()
   return DT;
 }
 
-
 _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 {
-  int protecti = 0;
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
   if (typeSize[CT_BOOL8_N]!=1) STOP("Internal error: typeSize[CT_BOOL8_N] != 1");
   if (typeSize[CT_STRING]!=8) STOP("Internal error: typeSize[CT_STRING] != 1");
   colNamesSxp = R_NilValue;
   if (colNames!=NULL) {
-    colNamesSxp = PROTECT(allocVector(STRSXP, ncol)); protecti++;
+    colNamesSxp = PROTECT(allocVector(STRSXP, ncol));
+    // no protecti++ and no UNPROTECT inside userOverride because it's used in allocateDT().
     for (int i=0; i<ncol; i++) {
       SEXP this;
       if (colNames[i].len<=0) {
@@ -203,10 +202,10 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     }
   }
   if (length(colClassesSxp)) {
-    SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT)); protecti++;
+    SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT));
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
     if (isString(colClassesSxp)) {
-      SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT, FALSE)); protecti++;
+      SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT, FALSE));
       if (LENGTH(colClassesSxp)==1) {
         signed char newType = typeEnum[INTEGER(typeEnum_idx)[0]-1];
         if (newType == CT_DROP) STOP("colClasses='drop' is not permitted; i.e. to drop all columns and load nothing");
@@ -220,10 +219,11 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         STOP("colClasses is an unnamed character vector but its length is %d. Must be length 1 or ncol (%d in this case) when unnamed. To specify types for a subset of columns you can either name the items with the column names or pass list() format to colClasses using column names or column numbers. See examples in ?fread.",
               LENGTH(colClassesSxp), ncol);
       }
+      UNPROTECT(1); // typeEnum_idx
     } else {
       if (!isNewList(colClassesSxp)) STOP("CfreadR: colClasses is not type list");
       if (!length(getAttrib(colClassesSxp, R_NamesSymbol))) STOP("CfreadR: colClasses is type list but has no names");
-      SEXP typeEnum_idx = PROTECT(chmatch(getAttrib(colClassesSxp, R_NamesSymbol), typeRName_sxp, NUT, FALSE)); protecti++;
+      SEXP typeEnum_idx = PROTECT(chmatch(getAttrib(colClassesSxp, R_NamesSymbol), typeRName_sxp, NUT, FALSE));
       for (int i=0; i<LENGTH(colClassesSxp); i++) {
         SEXP items;
         signed char thisType = typeEnum[INTEGER(typeEnum_idx)[i]-1];
@@ -253,7 +253,9 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         UNPROTECT(1); // UNPROTECTing itemsInt inside loop to save protection stack
       }
       for (int i=0; i<ncol; i++) if (type[i]<0) type[i] *= -1;  // undo sign; was used to detect duplicates
+      UNPROTECT(1);  // typeEnum_idx
     }
+    UNPROTECT(1);  // typeRName_sxp
   }
   if (readInt64As != CT_INT64) {
     for (int i=0; i<ncol; i++) if (type[i]==CT_INT64) type[i] = readInt64As;
@@ -262,7 +264,6 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     SEXP itemsInt;
     if (isString(dropSxp)) itemsInt = PROTECT(chmatch(dropSxp, colNamesSxp, NA_INTEGER, FALSE));
     else                   itemsInt = PROTECT(coerceVector(dropSxp, INTSXP));
-    protecti++;
     for (int j=0; j<LENGTH(itemsInt); j++) {
       int k = INTEGER(itemsInt)[j];
       if (k==NA_INTEGER) {
@@ -280,14 +281,17 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         }
       }
     }
+    UNPROTECT(1); // itemsInt
   } else if (length(selectSxp)) {
     SEXP tt;
     if (isString(selectSxp)) {
       // invalid cols check part of #1445 moved here (makes sense before reading the file)
-      tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER, FALSE)); protecti++;
+      tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER, FALSE));
       for (int i=0; i<length(selectSxp); i++) if (INTEGER(tt)[i]==NA_INTEGER)
         DTWARN("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
-    } else tt = selectSxp;
+    } else {
+      tt = PROTECT(selectSxp); // harmless superfluous PROTECT, for ease of balancing
+    }
     for (int i=0; i<LENGTH(tt); i++) {
       int k = isInteger(tt) ? INTEGER(tt)[i] : (int)REAL(tt)[i];
       if (k == NA_INTEGER) continue;
@@ -301,8 +305,8 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       if (type[i]<0) type[i] *= -1;
       else type[i]=CT_DROP;
     }
+    UNPROTECT(1); // tt
   }
-  UNPROTECT(protecti);
   return true;
 }
 
