@@ -383,32 +383,30 @@ static SEXP fast_order(SEXP dt, R_len_t byArg, R_len_t handleSorted) {
   R_len_t i, protecti=0;
   SEXP ans, by=R_NilValue, retGrp, sortStr, order, na, starts;
 
-  retGrp  = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(retGrp)[0]  = TRUE;
-  sortStr = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(sortStr)[0] = FALSE;
-  na      = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(na)[0] = FALSE;
+  retGrp  = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(retGrp)[0]  = TRUE;   protecti++;
+  sortStr = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(sortStr)[0] = FALSE;  protecti++;
+  na      = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(na)[0] = FALSE;       protecti++;
 
   if (byArg) {
-    by    = PROTECT(allocVector(INTSXP, byArg));
-    order = PROTECT(allocVector(INTSXP, byArg));
+    by    = PROTECT(allocVector(INTSXP, byArg));                           protecti++;
+    order = PROTECT(allocVector(INTSXP, byArg));                           protecti++;
     for (i=0; i<byArg; i++) {
       INTEGER(by)[i] = i+1;
       INTEGER(order)[i] = 1;
     }
-    UNPROTECT(5);
   } else {
-    order = PROTECT(allocVector(INTSXP, 1)); INTEGER(order)[0] = 1;
-    UNPROTECT(4);
+    order = PROTECT(allocVector(INTSXP, 1)); INTEGER(order)[0] = 1;        protecti++;
   }
-  ans = PROTECT(forder(dt, by, retGrp, sortStr, order, na)); protecti++;
+  ans = PROTECT(forder(dt, by, retGrp, sortStr, order, na));               protecti++;
   if (!length(ans) && handleSorted != 0) {
-    starts = getAttrib(ans, sym_starts);
+    starts = PROTECT(getAttrib(ans, sym_starts));                          protecti++;
     // if cols are already sorted, 'forder' gives integer(0), got to replace it with 1:.N
-    ans = PROTECT(allocVector(INTSXP, length(VECTOR_ELT(dt, 0)))); protecti++;
+    ans = PROTECT(allocVector(INTSXP, length(VECTOR_ELT(dt, 0))));         protecti++;
     for (i=0; i<length(ans); i++) INTEGER(ans)[i] = i+1;
     // TODO: for loop appears redundant because length(ans)==0 due to if (!length(ans)) above
     setAttrib(ans, sym_starts, starts);
   }
-  UNPROTECT(protecti); // ans
+  UNPROTECT(protecti);
   return(ans);
 }
 
