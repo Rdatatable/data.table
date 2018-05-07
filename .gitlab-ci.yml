@@ -56,6 +56,7 @@ test-r-release: # R-release most comprehensive tests, force all suggests, also i
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     OPENBLAS_MAIN_FREE: "1"
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
+    TEST_DATA_TABLE_MEMTEST: "TRUE"
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   dependencies:
   - mirror-packages
