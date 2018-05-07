@@ -1,4 +1,4 @@
-test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, skip=0) {
+test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE) {
   if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
@@ -31,7 +31,6 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   assign("nfail", 0L, envir=env)
   assign("ntest", 0L, envir=env)
   assign("whichfail", NULL, envir=env)
-  assign("skip", skip, envir=env)
   setDTthreads(2) # explicitly limit to 2 so as not to breach CRAN policy (but tests are small so should not use more than 2 anyway)
   assign("started.at", proc.time(), envir=env)
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
@@ -108,7 +107,6 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   # 4) test that a query generates exactly 2 warnings, that they are both the correct warning messages, and that the result is the one expected
   .test.data.table = exists("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
   if (.test.data.table) {
-    if (num<get("skip", parent.frame())) return(invisible())  # for use in dev with torture
     nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
     whichfail = get("whichfail", parent.frame())
     assign("ntest", get("ntest", parent.frame()) + 1L, parent.frame(), inherits=TRUE)   # bump number of tests run
