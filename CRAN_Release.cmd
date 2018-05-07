@@ -201,21 +201,24 @@ print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.ti
 
 
 ###############################################
-#  valgrind (see R-exts$4.3.2)
+#  valgrind in R-devel (see R-exts$4.3.2)
 ###############################################
 
-cd ~/build/R-devel
-make clean
+cd ~/build
+rm -rf R-devel    # easiest way to remove ASAN from compiled packages in R-devel/library
+                  # to avoid "ASan runtime does not come first in initial library list" error; no need for LD_PRELOAD
+tar xvf R-devel.tar.gz
+cd R-devel
 ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --with-valgrind-instrumentation=1 CC="gcc" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
 Rdevel CMD INSTALL data.table_1.11.1.tar.gz
-export LD_PRELOAD=/usr/lib/gcc/x86_64-linux-gnu/7/libasan.so
 Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)
 print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
+# 3m require; 62m test
 
 # Investigated and ignore :
 # Tests 648 and 1262 (see their comments) have single precision issues under valgrind that don't occur on CRAN, even Solaris.
