@@ -1329,7 +1329,7 @@ test(470, DT[,baz:=x], data.table(a=1:3,b=4:6,foo=list(),bar=list(1,"a",3.14),ba
 DT = data.table(a=1:4,b=5:8)
 test(471, DT[,foo:=list("a",2:3)], data.table(a=1:4,b=5:8,foo=list("a",2:3,"a",2:3)))
 # Test recycling singleton list
-DT[,foo:=NULL]
+if (ncol(DT)==3L) DT[,foo:=NULL] # else don't warn here under torture with skip= such that test 471 didn't run
 test(472, DT[,foo:=list(list(2:3))], data.table(a=1:4,b=5:8,foo=list(2:3,2:3,2:3,2:3)))
 
 # Test adding new column with a recycled factor, #1691
@@ -1483,22 +1483,23 @@ test(525.1, set(DT,j="b",value=9:11), data.table(a=1:3, b=9:11, foo=INT(NA,7,NA)
 test(525.2, set(DT,NULL,"b",12:14), data.table(a=1:3, b=12:14, foo=INT(NA,7,NA)))  # plonk syntax via NULL i
 
 # NEW ADDITIONAL TESTS FOR set() - bug #2077 - for using set to add columns by reference
+# were tests 1096.1-4
 DT1 <- data.table(x = 1, y = 1:10, fac = sample(LETTERS[1:3], 10, replace = TRUE)) # from SO
 DT2 <- copy(DT1)
 mul=c(5.3,2.8)
 for (j in seq_along(mul)) set(DT1, i=NULL, j=paste("dot", j, sep=""), mul[j]*DT1[[j]])
 DT2[, `:=`(dot1=5.3*x, dot2=2.8*y)]
-test(1096.1, DT1, DT2)
+test(529.1, DT1, DT2)
 set(DT1, i=NULL, j="dot2", value=NULL) # remove "dot2"
-test(1096.2, DT1, DT2[, list(x,y,fac, dot1)])
+test(529.2, DT1, DT2[, list(x,y,fac, dot1)])
 DT2[, dot2 := NULL][5:9, `:=`(bla1 = 0L, x = 3L, bla2 = 2L)]
 set(DT1, i=5:9, j=c("bla1", "x", "bla2"), value=list(0L, 3L, 2L))
-test(1096.3, DT1, DT2) # more testing with many columns including existing columns
-test(1096.4, set(DT1, i=NULL, j=7L, value=5L), error="Item 1 of column numbers in j is 7 which is outside range.*1.*6.*Use column names instead in j to add new columns.")
+test(529.3, DT1, DT2) # more testing with many columns including existing columns
+test(529.4, set(DT1, i=NULL, j=7L, value=5L), error="Item 1 of column numbers in j is 7 which is outside range.*1.*6.*Use column names instead in j to add new columns.")
 
 # Test that data.frame incompability is fixed, came to light in Feb 2012
 DT = data.table(name=c('a','b','c'), value=1:3)
-test(526, base::droplevels(DT[ name != 'a' ]), data.table(name=c('b','c'),value=2:3))   # base:: because we'll implement a fast droplevels, too.
+test(530, base::droplevels(DT[ name != 'a' ]), data.table(name=c('b','c'),value=2:3))   # base:: because we'll implement a fast droplevels, too.
 
 # Test that .set_row_names() is maintained on .SD for each group
 DT = data.table(a=INT(1,1,2,2,2,3,3,3,3),b=1:9)
@@ -1946,7 +1947,7 @@ test(707, rbindlist(list(DT1,DT2)), rbind(DT1,DT2))
 # Test := adding column after a setnames of all column names (which [,list(x)] does), #2146
 DT = data.table(x=1:5)[,list(x)]
 test(713, DT[,y:=5], data.table(x=1:5,y=5))
-setnames(DT,c("A","B"))
+if (ncol(DT)==2L) setnames(DT,c("A","B")) # else don't stop under torture with skip= such that test 713 was not run
 test(714, DT[,z:=6:10], data.table(A=1:5,B=5,z=6:10))
 
 # Test J alias is now removed outside DT[...] from v1.8.7 (to resolve rJava::J conflict)
@@ -11782,6 +11783,10 @@ test(1909.4, names(ans<-fread(testDir("genotypes_genome.txt"), skip="POP1:", sep
              c("V1","V2"))
 test(1909.5, ans$V1, c("POP1:","POP1:","POP1:"))
 test(1909.6, nchar(ans$V2), INT(3287,3287,3287))
+
+# possible regression suggested in PR#2843
+DT = data.table(x=1:10, y=1:2)
+test(1910, DT[, v:=cumsum(x), by="y"], data.table(x=1:10, y=1:2, v=INT(1,2,4,6,9,12,16,20,25,30)))
 
 
 ###################################

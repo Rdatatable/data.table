@@ -108,6 +108,8 @@ R
 require(data.table)
 test.data.table()
 test.data.table(verbose=TRUE)  # since main.R no longer tests verbose mode
+gctorture2(step=50)
+system.time(test.data.table())
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
@@ -170,6 +172,8 @@ cd R-devel
 # UBSAN gives direct line number under gcc but not clang it seems. clang-5.0 has been helpful too, though.
 # If use later gcc-8, add F77=gfortran-8
 # LIBS="-lpthread" otherwise ld error about DSO missing
+# -fno-sanitize=float-divide-by-zero, otherwise /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those:
+#   https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
 
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
@@ -179,10 +183,11 @@ Rdevel CMD INSTALL data.table_1.11.1.tar.gz
 Rdevel
 install.packages(c("bit64","xts","nanotime"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
 require(data.table)
-test.data.table()     # slower than usual, naturally, due to UBSAN and ASAN. Too slow to run R CMD check.
+test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
 for (i in 1:10) test.data.table()  # try several runs; e.g a few tests generate data with a non-fixed random seed
-# Throws /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those: https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
-q("no")
+# gctorture(TRUE)      # very slow, many days
+gctorture2(step=100)   # [12-18hrs] under ASAN, UBSAN and --strict-barrier
+print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
 
 ## In case want to ever try again with 32bit on 64bit Ubuntu for tracing any 32bit-only problems
 ## dpkg --add-architecture i386
@@ -203,16 +208,14 @@ cd ~/build/R-devel
 make clean
 ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --with-valgrind-instrumentation=1 CC="gcc" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
 make
-
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
 Rdevel CMD INSTALL data.table_1.11.1.tar.gz
 export LD_PRELOAD=/usr/lib/gcc/x86_64-linux-gnu/7/libasan.so
 Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
-# gctorture(TRUE)      # very very slow.
-# gctorture2(step=100)   # 1h 26m
+# gctorture(TRUE)      # very slow, many days
+# gctorture2(step=100)
 print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
-# Running test id 1437.0331      Error : protect(): protection stack overflow
 
 # Investigated and ignore :
 # Tests 648 and 1262 (see their comments) have single precision issues under valgrind that don't occur on CRAN, even Solaris.
