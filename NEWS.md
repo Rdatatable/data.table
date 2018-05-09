@@ -1,7 +1,14 @@
 
 **If you are viewing this file on CRAN, please check latest news on GitHub [here](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).**
 
-### Changes in v1.11.1 (in development)
+### Changes in v1.11.3  (in development)
+
+#### BUG FIXES
+
+#### NOTES
+
+
+### Changes in v1.11.2  (on CRAN 8 May 2018)
 
 1. `test.data.table()` created/overwrote variable `x` in `.GlobalEnv`, [#2828](https://github.com/Rdatatable/data.table/issues/2828); i.e. a modification of user's workspace which is not allowed. Thanks to @etienne-s for reporting.
 
