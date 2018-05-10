@@ -2193,9 +2193,12 @@ int freadMain(freadMainArgs _args) {
                     j+1, colNames[j].len, colNamesAnchor + colNames[j].off,
                     typeName[abs(joldType)], typeName[abs(thisType)],
                     (int)(tch-fieldStart), fieldStart, (llu)(ctx.DTi+myNrow));
-                  typeBumpMsg = (char*) realloc(typeBumpMsg, typeBumpMsgSize + (size_t)len + 1);
-                  strcpy(typeBumpMsg+typeBumpMsgSize, temp);
-                  typeBumpMsgSize += (size_t)len;
+                  if (len > 1000) len = 1000;
+                  if (len > 0) {
+                    typeBumpMsg = (char*) realloc(typeBumpMsg, typeBumpMsgSize + (size_t)len + 1);
+                    strcpy(typeBumpMsg+typeBumpMsgSize, temp);
+                    typeBumpMsgSize += (size_t)len;
+                  }
                 }
                 nTypeBump++;
                 if (joldType>0) nTypeBumpCols++;
