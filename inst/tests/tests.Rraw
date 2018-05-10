@@ -11788,6 +11788,11 @@ test(1909.6, nchar(ans$V2), INT(3287,3287,3287))
 DT = data.table(x=1:10, y=1:2)
 test(1910, DT[, v:=cumsum(x), by="y"], data.table(x=1:10, y=1:2, v=INT(1,2,4,6,9,12,16,20,25,30)))
 
+# testing issue #2829 (assigning to 0 rows)
+DT = data.table(COL_INT = 1L, COL_INT_2 = 5L)
+test(1911, 
+     DT[COL_INT == 0L, c("COL_INT", "NEW_COL"):=list(COL_INT_2, "Test")],
+     data.table(COL_INT = 1L, COL_INT_2 = 5L, NEW_COL = NA_character_))
 
 ###################################
 #  Add new tests above this line  #
