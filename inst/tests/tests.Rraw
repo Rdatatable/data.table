@@ -11790,9 +11790,12 @@ test(1910, DT[, v:=cumsum(x), by="y"], data.table(x=1:10, y=1:2, v=INT(1,2,4,6,9
 
 # testing issue #2829 (assigning to 0 rows)
 DT = data.table(COL_INT = 1L, COL_INT_2 = 5L)
-test(1911, 
+test(1911.1, 
      DT[COL_INT == 0L, c("COL_INT", "NEW_COL"):=list(COL_INT_2, "Test")],
      data.table(COL_INT = 1L, COL_INT_2 = 5L, NEW_COL = NA_character_))
+test(1911.2, 
+     DT[, COL_INT := integer(0)],
+     error = "RHS of assignment to existing column 'COL_INT' is zero length but not NULL.*")
 
 ###################################
 #  Add new tests above this line  #
