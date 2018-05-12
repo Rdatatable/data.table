@@ -4,7 +4,8 @@
 ### Changes in v1.11.3  (in development)
 
 #### BUG FIXES
-1. Fixed bug where assignment with 0 matching rows threw error [#2829](https://github.com/Rdatatable/data.table/issues/2829). Thanks to @cguill95 for reporting and to @MarkusBonsch for fixing.
+1. Empty RHS of := is no longer an error when the i clause returns no rows to assign to anyway, [#2829](https://github.com/Rdatatable/data.table/issues/2829). Thanks to @cguill95 for reporting and to @MarkusBonsch for fixing.
+
 #### NOTES
 
 

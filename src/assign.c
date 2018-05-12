@@ -409,11 +409,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     else colnam = STRING_ELT(newcolnames,coln-length(names));
     if (coln+1 <= oldncol && isNull(thisvalue)) continue;  // delete existing column(s) afterwards, near end of this function
     if (vlen<1 && nrow>0) {
-      if (coln+1 <= oldncol) { 
-        if(numToDo > 0){ //fixes #2829
+      if (coln+1 <= oldncol && numToDo > 0) { // numToDo > 0 fixes #2829, see test 1911
           error("RHS of assignment to existing column '%s' is zero length but not NULL. If you intend to delete the column use NULL. Otherwise, the RHS must have length > 0; e.g., NA_integer_. If you are trying to change the column type to be an empty list column then, as with all column type changes, provide a full length RHS vector such as vector('list',nrow(DT)); i.e., 'plonk' in the new column.", CHAR(STRING_ELT(names,coln)));
-        }
-      } else if (TYPEOF(thisvalue)!=VECSXP) {  // list() is ok for new columns
+      } else if (coln+1 > oldncol && TYPEOF(thisvalue)!=VECSXP) {  // list() is ok for new columns
         newcolnum = coln-length(names);
         if (newcolnum<0 || newcolnum>=length(newcolnames))
           error("Internal logical error. length(newcolnames)=%d, length(names)=%d, coln=%d", length(newcolnames), length(names), coln);
