@@ -5,6 +5,8 @@
 
 #### BUG FIXES
 
+1. Empty RHS of := is no longer an error when the i clause returns no rows to assign to anyway, [#2829](https://github.com/Rdatatable/data.table/issues/2829). Thanks to @cguill95 for reporting and to @MarkusBonsch for fixing.
+
 #### NOTES
 
 
