@@ -7,6 +7,7 @@
 
 #### NOTES
 
+1. `hour`, `minute`, and `second` datetime utility functions use integer arithmetic when the input is already (explicitly) UTC-based `POSIXct` for 4-10x speedup vs. using `as.POSIXlt`.
 
 ### Changes in v1.11.2  (on CRAN 8 May 2018)
 
