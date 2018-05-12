@@ -255,7 +255,7 @@ as.ITime.times <- function(x, ...) {
 # if we know the object is in UTC, can calculate the hour much faster
 second  <- function(x) {
   if (inherits(x, 'POSIXct') && attr(x, 'tzone') == 'UTC') {
-    as.integer(unclass(x) %% 60L)
+    as.integer(x) %% 60L
   } else {
     as.integer(as.POSIXlt(x)$sec)
   }
@@ -263,7 +263,7 @@ second  <- function(x) {
 minute  <- function(x) {
   if (inherits(x, 'POSIXct') && attr(x, 'tzone') == 'UTC') {
     #ever-so-slightly faster than x %% 3600 %/% 60
-    as.integer(unclass(x) %/% 60L %% 60L)
+    as.integer(x) %/% 60L %% 60L
   } else {
     as.POSIXlt(x)$min
   }
@@ -271,7 +271,7 @@ minute  <- function(x) {
 hour <- function(x) {
   if (inherits(x, 'POSIXct') && attr(x, 'tzone') == 'UTC') {
     #ever-so-slightly faster than x %% 86400 %/% 3600
-    as.integer(unclass(x) %/% 3600L %% 24L)
+    as.integer(x) %/% 3600L %% 24L
   } else {
     as.POSIXlt(x)$hour
   }
