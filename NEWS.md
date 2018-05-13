@@ -7,6 +7,8 @@
 
 1. Empty RHS of := is no longer an error when the i clause returns no rows to assign to anyway, [#2829](https://github.com/Rdatatable/data.table/issues/2829). Thanks to @cguill95 for reporting and to @MarkusBonsch for fixing.
 
+2. `as.ITime` methods gain ability to control how fractional seconds are dealt with through the `ms` argument. The bug was that `as.ITime.times` was `round`ing while all other methods were truncating with `as.integer`. Both functions have valid use cases, hence the option. Closes [#2870](https://github.com/Rdatatable/data.table/issues/2870); thanks to @rossholmberg for filing.  
+
 #### NOTES
 
 
