@@ -41,8 +41,7 @@ chgroup(x)
 
 # N is set small here (1e5) because CRAN runs all examples and tests every night, to catch
 # any problems early as R itself changes and other packages run.
-# The comments here apply when N has been changed to 1e8
-# and were run on 2018-05-13 with R 3.5.0 and data.table 1.11.2.
+# The comments here apply when N has been changed to 1e8 and were run on 2018-05-13 with R 3.5.0 and data.table 1.11.2.
 N = 1e5
 
 u = as.character(as.hexmode(1:10000))
@@ -53,11 +52,9 @@ system.time(a <- match(x,y))               #  4.6s
 system.time(b <- chmatch(x,y))             #  1.8s
 identical(a,b)
 
-
 system.time(a <- x \%in\% y)               #  4.5s
 system.time(b <- x \%chin\% y)             #  1.7s
 identical(a,b)
-
 
 # Different example with more unique strings ...
 u = as.character(as.hexmode(1:(N/10)))
