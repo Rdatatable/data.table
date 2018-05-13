@@ -48,7 +48,7 @@ N = 1e5
 u = as.character(as.hexmode(1:10000))
 y = sample(u,N,replace=TRUE)
 x = sample(u)
-                                           #  With N=1e7 ...
+                                           #  With N=1e8 ...
 system.time(a <- match(x,y))               #  4.6s
 system.time(b <- chmatch(x,y))             #  1.8s
 identical(a,b)
