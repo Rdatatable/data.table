@@ -15,7 +15,7 @@ mirror-packages:
   stage: dependencies
   tags:
     - linux
-  image: docker.io/jangorecki/r-base-dev
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
   script:
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
     # mirror R dependencies
@@ -30,7 +30,7 @@ build:
   stage: build
   tags:
     - linux
-  image: docker.io/jangorecki/r-builder
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   dependencies:
   - mirror-packages
   script:
@@ -56,7 +56,8 @@ test-r-release: # R-release most comprehensive tests, force all suggests, also i
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     OPENBLAS_MAIN_FREE: "1"
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
-  image: docker.io/jangorecki/r-builder
+    TEST_DATA_TABLE_MEMTEST: "TRUE"
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   dependencies:
   - mirror-packages
   - build
@@ -76,7 +77,7 @@ test-r-release-cran: # R-release CRAN check
   stage: test
   tags:
     - linux
-  image: docker.io/jangorecki/r-builder
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
@@ -99,7 +100,7 @@ test-r-devel-cran: # R-devel CRAN check
   stage: test
   tags:
     - linux
-  image: docker.io/jangorecki/drd-pkg # image could be replaced with ubuntu-based builder, this one is based on rocker/drd which is debian
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-devel
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
@@ -108,10 +109,10 @@ test-r-devel-cran: # R-devel CRAN check
   - build
   script:
     - mkdir -p bus/$CI_BUILD_NAME
-    - RDscript -e 'source(Sys.getenv("CI_TOOLS")); if (length(pkgs<-packages.dcf("DESCRIPTION", "all"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
+    - Rscript -e 'source(Sys.getenv("CI_TOOLS")); if (length(pkgs<-packages.dcf("DESCRIPTION", "all"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
     - cd bus/$CI_BUILD_NAME
     - Rscript -e 'file.copy(download.packages("data.table", repos=file.path("file:",normalizePath("../build/cran")))[,2], ".")'
-    - RD CMD check --as-cran --ignore-vignettes --no-manual $(ls -1t data.table_*.tar.gz | head -n 1) # remove --no-manual when own image provided
+    - R CMD check --as-cran --ignore-vignettes --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
   artifacts:
     expire_in: 2 weeks
     when: always
@@ -123,7 +124,7 @@ test-r-release-vanilla: # check minimal installation, no suggested deps, no vign
   stage: test
   tags:
     - linux
-  image: docker.io/jangorecki/r-base-dev
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
   dependencies:
   - mirror-packages
   - build
@@ -145,7 +146,7 @@ test-r-3.1.0-cran:
   stage: test
   tags:
     - linux
-  image: docker.io/jangorecki/r-3.1.0
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.1.0
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
@@ -155,10 +156,10 @@ test-r-3.1.0-cran:
   script:
     - mkdir -p bus/$CI_BUILD_NAME
     - curl -O $CI_TOOLS
-    - R3script -e 'source("packages.R"); if (length(pkgs<-packages.dcf("DESCRIPTION", "all"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
+    - Rscript -e 'source("packages.R"); if (length(pkgs<-packages.dcf("DESCRIPTION", "all"))) install.packages(pkgs, repos=file.path("file:",normalizePath("bus/mirror-packages/cran")))'
     - cd bus/$CI_BUILD_NAME
-    - R3script -e 'file.copy(download.packages("data.table", repos=file.path("file:",normalizePath("../build/cran")))[,2], ".")'
-    - R3 CMD check --no-manual --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
+    - Rscript -e 'file.copy(download.packages("data.table", repos=file.path("file:",normalizePath("../build/cran")))[,2], ".")'
+    - R CMD check --no-manual --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
   artifacts:
     expire_in: 2 weeks
     when: always
@@ -191,7 +192,7 @@ integration: # merging all artifacts so multiple deploy jobs can build same repo
   only:
     - gl-ci-upgrade
     - master
-  image: docker.io/jangorecki/r-builder
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   dependencies:
   - mirror-packages
   - build
@@ -249,7 +250,7 @@ pages:
   only:
     - gl-ci-upgrade
     - master
-  image: docker.io/ubuntu
+  image: ubuntu
   dependencies:
   - integration
   script:

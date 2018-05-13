@@ -32,7 +32,7 @@ chgroup(x)
 \value{
     As \code{match} and \code{\%in\%}. \code{chorder} and \code{chgroup} return an integer index vector.
 }
-\seealso{ \code{\link[base]{match}}, \code{\link{\%in\%}}, \code{\link[fastmatch]{fmatch}}
+\seealso{ \code{\link[base]{match}}, \code{\link{\%in\%}}
 }
 \note{ The name \code{charmatch} was taken by \code{\link[base]{charmatch}}, hence \code{chmatch}.
 }
@@ -48,28 +48,16 @@ N = 1e5
 u = as.character(as.hexmode(1:10000))
 y = sample(u,N,replace=TRUE)
 x = sample(u)
-                                           #  With N=1e8 ...
+                                           #  With N=1e7 ...
 system.time(a <- match(x,y))               #  4.6s
 system.time(b <- chmatch(x,y))             #  1.8s
 identical(a,b)
-\dontrun{
-  library(fastmatch)
-  print(system.time(c <- fmatch(x,y)))     #  1.25s   Builds and caches hash
-  print(system.time(c <- fmatch(x,y)))     #  0.00s  Uses hash
-  identical(a,c)
-}
+
 
 system.time(a <- x \%in\% y)               #  4.5s
 system.time(b <- x \%chin\% y)             #  1.7s
 identical(a,b)
-\dontrun{
-  match <- fmatch                          # fmatch is drop in replacement
-  print(system.time(c <- match(x,y)))      #  0.00s
-  print(system.time(c <- x \%in\% y))      #  4.36s   \%in\% still prefers base::match
-  # Anyone know how to get \%in\% to use fmatch (without masking \%in\% too)?
-  rm(match)
-  identical(a,c)
-}
+
 
 # Different example with more unique strings ...
 u = as.character(as.hexmode(1:(N/10)))
@@ -78,12 +66,5 @@ x = sample(u,N,replace=TRUE)
 system.time(a <- match(x,y))               # 46s
 system.time(b <- chmatch(x,y))             # 16s
 identical(a,b)
-\dontrun{
-  print(system.time(c <- fmatch(x,y)))     #  9.3s
-  print(system.time(c <- fmatch(x,y)))     #  4.4s
-  identical(a,c)
-}
-
 }
 \keyword{ data }
-

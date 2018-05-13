@@ -121,7 +121,7 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
       x[[i]] = vector("list", nr)
       next
     }
-    if (nrows[i]==0L) stop("Item ",i," has no length. Provide at least one item (such as NA, NA_integer_ etc) to be repeated to match the ",nr," rows in the longest column. Or, all columns can be 0 length, for insert()ing rows into.")
+    if (nrows[i]==0L) stop("Item ",i," has no length. Provide at least one item (such as NA, NA_integer_ etc) to be repeated to match the ",nr," row", if (nr > 1L) "s", " in the longest column. Or, all columns can be 0 length, for insert()ing rows into.")
     # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
     if (nr%%nrows[i] != 0L) warning("Item ", i, " is of size ", nrows[i], " but maximum size is ", nr, " (recycled leaving remainder of ", nr%%nrows[i], " items)")
     if (is.data.frame(xi)) {   # including data.table
@@ -1504,11 +1504,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     }
     # TO DO: allow secondary keys to be stored, then we see if our by matches one, if so use it, and no need to sort again. TO DO: document multiple keys.
   }
-  alloc = if (length(len__)) seq_len(max(len__)) else 0L
-  SDenv$.I = alloc
   if (length(xcols)) {
-    #  TODO add: if (length(alloc)==nrow(x)) stop("There is no need to deep copy x in this case")
-    SDenv$.SDall = .Call(CsubsetDT,x,alloc,xcols)    # must be deep copy when largest group is a subset
+    #  TODO add: if (max(len__)==nrow) stop("There is no need to deep copy x in this case")
+    #  TODO move down to dogroup.c, too.
+    SDenv$.SDall = .Call(CsubsetDT, x, if (length(len__)) seq_len(max(len__)) else 0L, xcols)  # must be deep copy when largest group is a subset
     if (xdotcols) setattr(SDenv$.SDall, 'names', ansvars[xcolsAns]) # now that we allow 'x.' prefix in 'j', #2313 bug fix - [xcolsAns]
     SDenv$.SD = if (!length(othervars)) SDenv$.SDall else shallow(SDenv$.SDall, setdiff(ansvars, othervars))
   }
@@ -1523,7 +1522,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   lockBinding(".SDall",SDenv)
   lockBinding(".N",SDenv)
   lockBinding(".GRP",SDenv)
-  lockBinding(".I",SDenv)
   lockBinding(".iSD",SDenv)
 
   GForce = FALSE

@@ -31,8 +31,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
 
   if (!isInteger(order)) error("Internal error: order not integer vector");
-  //if (TYPEOF(starts) != INTSXP) error("Internal error: starts not integer");
-  //if (TYPEOF(lens) != INTSXP) error("Internal error: lens not integer");
+  if (TYPEOF(starts) != INTSXP) error("Internal error: starts not integer");
+  if (TYPEOF(lens) != INTSXP) error("Internal error: lens not integer");
   // starts can now be NA (<0): if (INTEGER(starts)[0]<0 || INTEGER(lens)[0]<0) error("starts[1]<0 or lens[1]<0");
   if (!isNull(jiscols) && LENGTH(order) && !LOGICAL(on)[0]) error("Internal error: jiscols not NULL but o__ has length");
   if (!isNull(xjiscols) && LENGTH(order) && !LOGICAL(on)[0]) error("Internal error: xjiscols not NULL but o__ has length");
@@ -41,9 +41,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   ngrpcols = length(grpcols);
   nrowgroups = length(VECTOR_ELT(groups,0));
   // fix for longstanding FR/bug, #495. E.g., DT[, c(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:v3] resulted in error.. the idea is, 1) we create .SDall, which is normally == .SD. But if extra vars are detected in jexp other than .SD, then .SD becomes a shallow copy of .SDall with only .SDcols in .SD. Since internally, we don't make a copy, changing .SDall will reflect in .SD. Hopefully this'll workout :-).
-  SDall = findVar(install(".SDall"), env);
+  SDall = PROTECT(findVar(install(".SDall"), env)); protecti++;  // PROTECT for rchk
 
-  defineVar(sym_BY, BY = allocVector(VECSXP, ngrpcols), env);
+  defineVar(sym_BY, BY = PROTECT(allocVector(VECSXP, ngrpcols)), env); protecti++;  // PROTECT for rchk
   bynames = PROTECT(allocVector(STRSXP, ngrpcols));  protecti++;   // TO DO: do we really need bynames, can we assign names afterwards in one step?
   for (i=0; i<ngrpcols; i++) {
     j = INTEGER(grpcols)[i]-1;
@@ -61,13 +61,18 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols))) error("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]",length(bynames),length(groups),length(grpcols));
   // TO DO: check this check above.
 
-  N = findVar(install(".N"), env);
-  GRP = findVar(install(".GRP"), env);
-  iSD = findVar(install(".iSD"), env);  // 1-row and possibly no cols (if no i variables are used via JIS)
-  xSD = findVar(install(".xSD"), env);
-  I = findVar(install(".I"), env);
+  N =   PROTECT(findVar(install(".N"), env));   protecti++; // PROTECT for rchk
+  GRP = PROTECT(findVar(install(".GRP"), env)); protecti++;
+  iSD = PROTECT(findVar(install(".iSD"), env)); protecti++; // 1-row and possibly no cols (if no i variables are used via JIS)
+  xSD = PROTECT(findVar(install(".xSD"), env)); protecti++;
+  R_len_t maxGrpSize = 0;
+  for (R_len_t i=0; i<LENGTH(lens); i++) {
+    if (INTEGER(lens)[i] > maxGrpSize) maxGrpSize = INTEGER(lens)[i];
+  }
+  defineVar(install(".I"), I = PROTECT(allocVector(INTSXP, maxGrpSize)), env); protecti++;
+  R_LockBinding(install(".I"), env);
 
-  dtnames = getAttrib(dt, R_NamesSymbol); // added here to fix #4990 - `:=` did not issue recycling warning during "by"
+  dtnames = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++; // added here to fix #4990 - `:=` did not issue recycling warning during "by"
   // fetch rownames of .SD.  rownames[1] is set to -thislen for each group, in case .SD is passed to
   // non data.table aware package that uses rownames
   for (s = ATTRIB(SDall); s != R_NilValue && TAG(s)!=R_RowNamesSymbol; s = CDR(s));
@@ -78,7 +83,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 
   // fetch names of .SD and prepare symbols. In case they are copied-on-write by user assigning to those variables
   // using <- in j (which is valid, useful and tested), they are repointed to the .SD cols for each group.
-  names = getAttrib(SDall, R_NamesSymbol);
+  names = PROTECT(getAttrib(SDall, R_NamesSymbol)); protecti++;
   if (length(names) != length(SDall)) error("length(names)!=length(SD)");
   SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(SEXP));
   for(i = 0; i < length(SDall); i++) {

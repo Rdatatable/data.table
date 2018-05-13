@@ -102,19 +102,21 @@ options(stringsAsFactors=!saf)    # check tests (that might be run by user) are 
 test.data.table()
 q("no")
 R CMD build .
-R CMD check data.table_1.10.5.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
-R CMD INSTALL data.table_1.10.5.tar.gz
+R CMD check data.table_1.11.1.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
+R CMD INSTALL data.table_1.11.1.tar.gz
 R
 require(data.table)
 test.data.table()
 test.data.table(verbose=TRUE)  # since main.R no longer tests verbose mode
+gctorture2(step=50)
+system.time(test.data.table())
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.10.5.tar.gz
+R CMD check data.table_1.11.1.tar.gz
 rm ~/.Renviron
 
 # Upload to win-builder: release, dev & old-release
@@ -136,50 +138,22 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.10.5.tar.gz
+R310 CMD INSTALL ./data.table_1.11.1.tar.gz
 R310
 require(data.table)
 test.data.table()
 
 
-###############################################
-#  Compiles from source when OpenMP is disabled
-###############################################
+############################################
+#  Check compiles ok when OpenMP is disabled
+############################################
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.10.5.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.11.1.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
-
-
-###############################################
-#  valgrind
-###############################################
-
-# TODO: use R-devel instead with --with-valgrind-instrumentation=2 too as per R-exts$4.3.2
-
-vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-R --vanilla CMD INSTALL data.table_1.10.5.tar.gz
-R -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite" --vanilla
-require(data.table)
-test.data.table()
-
-gctorture(TRUE)   # very very slow, though. Don't run with suggests tests.
-gctorture2(step=100)
-test.data.table()
-
-# Investigated and ignore :
-# Tests 648 and 1262 (see their comments) have single precision issues under valgrind that don't occur on CRAN, even Solaris.
-# Ignore all "set address range perms" warnings :
-#   http://stackoverflow.com/questions/13558067/what-does-this-valgrind-warning-mean-warning-set-address-range-perms
-# Ignore heap summaries around test 1705 and 1707/1708 due to the fork() test opening/closing, I guess.
-# Tests 1729.4, 1729.8, 1729.11, 1729.13 again have precision issues under valgrind only.
-# Leaks for tests 1738.5, 1739.3 but no data.table .c lines are flagged, rather libcairo.so
-#   and libfontconfig.so via GEMetricInfo and GEStrWidth in libR.so
-
-vi ~/.R/Makevars  # make the -O3 line active again
 
 
 #####################################################
@@ -198,43 +172,64 @@ cd R-devel
 # UBSAN gives direct line number under gcc but not clang it seems. clang-5.0 has been helpful too, though.
 # If use later gcc-8, add F77=gfortran-8
 # LIBS="-lpthread" otherwise ld error about DSO missing
-
-## Rarely needed: 32bit on 64bit Ubuntu for tracing any 32bit-only problems
-dpkg --add-architecture i386
-apt-get update
-apt-get install libc6:i386 libstdc++6:i386 gcc-multilib g++-multilib gfortran-multilib libbz2-dev:i386 liblzma-dev:i386 libpcre3-dev:i386 libcurl3-dev:i386 libstdc++-7-dev:i386
-sudo apt-get purge libcurl4-openssl-dev    # cannot coexist, it seems
-sudo apt-get install libcurl4-openssl-dev:i386
-cd ~/build/32bit/R-devel
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --without-readline --without-x CC="gcc -m32" CXX="g++ -m32" F77="gfortran -m32" FC=${F77} OBJC=${CC} LDFLAGS="-L/usr/local/lib" LIBnn=lib LIBS="-lpthread" CFLAGS="-O0 -g -Wall -pedantic"
-##
+# -fno-sanitize=float-divide-by-zero, otherwise /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those:
+#   https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
 
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 cd ~/GitHub/data.table
 Rdevel CMD INSTALL data.table_1.11.1.tar.gz
-# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
-# them so should be passed through to here
+# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel
 install.packages(c("bit64","xts","nanotime"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
 require(data.table)
-test.data.table()     # slower than usual, naturally, due to UBSAN and ASAN. Too slow to run R CMD check.
-for (i in 1:10) test.data.table()  # last resort: try several runs; e.g a few tests generate data with a non-fixed random seed
-# Throws /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those: https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
-q("no")
-
-# Rebuild without ASAN/UBSAN and test again under torture
-make clean
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp CC="gcc -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
-make
-Rdevel CMD INSTALL data.table_1.10.5.tar.gz
-install.packages("bit64")
-require(bit64)
-require(data.table)
-test.data.table()  # just quick re-check
-gctorture2(step=100)    # 1h 26m
+test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
+for (i in 1:10) test.data.table()  # try several runs; e.g a few tests generate data with a non-fixed random seed
+# gctorture(TRUE)      # very slow, many days
+gctorture2(step=100)   # [12-18hrs] under ASAN, UBSAN and --strict-barrier
 print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
-# Running test id 1437.0331      Error : protect(): protection stack overflow
+
+## In case want to ever try again with 32bit on 64bit Ubuntu for tracing any 32bit-only problems
+## dpkg --add-architecture i386
+## apt-get update
+## apt-get install libc6:i386 libstdc++6:i386 gcc-multilib g++-multilib gfortran-multilib libbz2-dev:i386 liblzma-dev:i386 libpcre3-dev:i386 libcurl3-dev:i386 libstdc++-7-dev:i386
+## sudo apt-get purge libcurl4-openssl-dev    # cannot coexist, it seems
+## sudo apt-get install libcurl4-openssl-dev:i386
+## cd ~/build/32bit/R-devel
+## ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --without-readline --without-x CC="gcc -m32" CXX="g++ -m32" F77="gfortran -m32" FC=${F77} OBJC=${CC} LDFLAGS="-L/usr/local/lib" LIBnn=lib LIBS="-lpthread" CFLAGS="-O0 -g -Wall -pedantic"
+##
+
+
+###############################################
+#  valgrind in R-devel (see R-exts$4.3.2)
+###############################################
+
+cd ~/build
+rm -rf R-devel    # easiest way to remove ASAN from compiled packages in R-devel/library
+                  # to avoid "ASan runtime does not come first in initial library list" error; no need for LD_PRELOAD
+tar xvf R-devel.tar.gz
+cd R-devel
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --with-valgrind-instrumentation=1 CC="gcc" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
+make
+cd ~/GitHub/data.table
+vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
+Rdevel CMD INSTALL data.table_1.11.1.tar.gz
+Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
+# gctorture(TRUE)      # very slow, many days
+# gctorture2(step=100)
+print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
+# 3m require; 62m test
+
+# Investigated and ignore :
+# Tests 648 and 1262 (see their comments) have single precision issues under valgrind that don't occur on CRAN, even Solaris.
+# Ignore all "set address range perms" warnings :
+#   http://stackoverflow.com/questions/13558067/what-does-this-valgrind-warning-mean-warning-set-address-range-perms
+# Ignore heap summaries around test 1705 and 1707/1708 due to the fork() test opening/closing, I guess.
+# Tests 1729.4, 1729.8, 1729.11, 1729.13 again have precision issues under valgrind only.
+# Leaks for tests 1738.5, 1739.3 but no data.table .c lines are flagged, rather libcairo.so
+#   and libfontconfig.so via GEMetricInfo and GEStrWidth in libR.so
+
+vi ~/.R/Makevars  # make the -O3 line active again
 
 
 #############################################################################
@@ -243,28 +238,28 @@ print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.ti
 There are some things to overcome to achieve compile without USE_RINTERNALS, though.
 
 
-###############################################
-#  Single precision e.g. CRAN's Solaris Sparc
-###############################################
-
+########################################################################
+#  Single precision e.g. CRAN's Solaris-Sparc when it was alive on CRAN.
+#  Not Solaris-x86 which is still on CRAN and easier.
+########################################################################
+#
 # Adding --disable-long-double (see R-exts) in the same configure as ASAN/UBSAN fails.  Hence separately.
-
-cd ~/build
-rm -rf R-devel    # 'make clean' isn't enough: results in link error, oddly.
-tar xvf R-devel.tar.gz
-cd R-devel
-./configure CC="gcc -std=gnu99" CFLAGS="-O0 -g -Wall -pedantic -ffloat-store -fexcess-precision=standard" --without-recommended-packages --disable-byte-compiled-packages --disable-long-double
-make
-Rdevel
-install.packages("bit64")
-q("no")
-Rdevel CMD INSTALL ~/data.table_1.9.9.tar.gz
-Rdevel
-.Machine$sizeof.longdouble   # check 0
-require(data.table)
-require(bit64)
-test.data.table()
-q("no")
+## cd ~/build
+## rm -rf R-devel    # 'make clean' isn't enough: results in link error, oddly.
+## tar xvf R-devel.tar.gz
+## cd R-devel
+## ./configure CC="gcc -std=gnu99" CFLAGS="-O0 -g -Wall -pedantic -ffloat-store -fexcess-precision=standard" --without-recommended-packages --disable-byte-compiled-packages --disable-long-double
+## make
+## Rdevel
+## install.packages("bit64")
+## q("no")
+## Rdevel CMD INSTALL ~/data.table_1.9.9.tar.gz
+## Rdevel
+## .Machine$sizeof.longdouble   # check 0
+## require(data.table)
+## require(bit64)
+## test.data.table()
+## q("no")
 
 
 ###############################################
@@ -493,7 +488,7 @@ run = function(all=FALSE) {
 }
 
 # ** ensure latest version installed into revdeplib **
-system("R CMD INSTALL ~/GitHub/data.table/data.table_1.10.5.tar.gz")
+system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.1.tar.gz")
 run()
 
 # Investigate and fix the fails ...
@@ -517,9 +512,15 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CM
 Bump versions in DESCRIPTION and NEWS (without 'on CRAN date' text as that's not yet known) to even release number
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
 R CMD build .
-R CMD check --as-cran data.table_1.11.0.tar.gz   # install.packages("xml2") first to check the 150 URLs in NEWS.md under --as-cran, then remove xml2 again
+R CMD check --as-cran data.table_1.11.2.tar.gz   # install.packages("xml2") first to check the 150 URLs in NEWS.md under --as-cran, then remove xml2 again
 Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
-Submit to CRAN
+Submit to CRAN. Message template :
+-----
+475 CRAN + 111 BIOC rev deps checked ok.
+9 CRAN packages will break : easycsv, fst, iml, PhenotypeSimulator, popEpi, sdcMicro, SIRItoGTFS, SpaDES.core, splitstackshape
+The maintainers have been contacted; some may have updated already.
+Thanks and best, Matt
+-----
 1. Bump version in DESCRIPTION to next odd number
 2. Add new heading in NEWS for the next dev version. Add "(on CRAN date)" on the released heading if already accepted.
 3. Bump 3 version numbers in Makefile
@@ -528,10 +529,4 @@ Bump dev badge on homepage
 Cross fingers accepted first time. If not, push changes to devel and backport locally
 Close milestone
 ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
-
-Submission message template:
-475 CRAN + 111 BIOC rev deps checked ok.
-9 CRAN packages will break : easycsv, fst, iml, PhenotypeSimulator, popEpi, sdcMicro, SIRItoGTFS, SpaDES.core, splitstackshape
-The maintainers have been contacted; some may have updated already.
-Thanks and best, Matt
 
