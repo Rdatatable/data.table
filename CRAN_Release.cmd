@@ -178,13 +178,13 @@ cd R-devel
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 cd ~/GitHub/data.table
-Rdevel CMD INSTALL data.table_1.11.1.tar.gz
+Rdevel CMD INSTALL data.table_1.11.3.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel
 install.packages(c("bit64","xts","nanotime"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
 require(data.table)
 test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
-for (i in 1:10) test.data.table()  # try several runs; e.g a few tests generate data with a non-fixed random seed
+for (i in 1:100) if (!test.data.table()) break  # try several runs; e.g a few tests generate data with a non-fixed random seed
 # gctorture(TRUE)      # very slow, many days
 gctorture2(step=100)   # [12-18hrs] under ASAN, UBSAN and --strict-barrier
 print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
@@ -213,7 +213,7 @@ cd R-devel
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-Rdevel CMD INSTALL data.table_1.11.1.tar.gz
+Rdevel CMD INSTALL data.table_1.11.3.tar.gz
 Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)

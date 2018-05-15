@@ -220,7 +220,13 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
 *   4) Could do it other ways but may as well go to C now as we were going to
 *       do that anyway
 */
+
+#ifndef ALTREP
+#define ALTREP(x) 0  // for R<3.5.0
+#endif
+
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
+  int nprotect=0;
   if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows)));
   if (!length(x)) return(x);  // return empty list
 
@@ -230,17 +236,20 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   check_idx(rows, length(VECTOR_ELT(x,0)), &ansn, &any0orNA, &orderedSubset);
 
   if (!isInteger(cols)) error("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols)));
+  if (ALTREP(cols)) { cols = PROTECT(duplicate(cols)); nprotect++; }
+  if (ALTREP(rows)) { rows = PROTECT(duplicate(rows)); nprotect++; }
   for (int i=0; i<LENGTH(cols); i++) {
     int this = INTEGER(cols)[i];
     if (this<1 || this>LENGTH(x)) error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
   }
-  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+64));  // just do alloc.col directly, eventually alloc.col can be deprecated.
+  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+64)); nprotect++;  // just do alloc.col directly, eventually alloc.col can be deprecated.
   copyMostAttrib(x, ans);  // other than R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
                // so includes row.names (oddly, given other dims aren't) and "sorted", dealt with below
   SET_TRUELENGTH(ans, LENGTH(ans));
   SETLENGTH(ans, LENGTH(cols));
   for (int i=0; i<LENGTH(cols); i++) {
     SEXP source, target;
+    if (ALTREP(VECTOR_ELT(x, INTEGER(cols)[i]-1))) error("DT contains an altrep");
     target = PROTECT(allocVector(TYPEOF(source=VECTOR_ELT(x, INTEGER(cols)[i]-1)), ansn));
     SETLENGTH(target, ansn);
     SET_TRUELENGTH(target, ansn);
@@ -267,27 +276,24 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
         subsetVectorRaw(target, VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, any0orNA);
     }
   }
-  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+64));
+  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+64)); nprotect++;
   SET_TRUELENGTH(tmp, LENGTH(tmp));
   SETLENGTH(tmp, LENGTH(cols));
   setAttrib(ans, R_NamesSymbol, tmp);
   subsetVectorRaw(tmp, getAttrib(x, R_NamesSymbol), cols, /*any0orNA=*/FALSE);
-  UNPROTECT(1);
 
-  tmp = PROTECT(allocVector(INTSXP, 2));
+  tmp = PROTECT(allocVector(INTSXP, 2)); nprotect++;
   INTEGER(tmp)[0] = NA_INTEGER;
   INTEGER(tmp)[1] = -ansn;
   setAttrib(ans, R_RowNamesSymbol, tmp);  // The contents of tmp must be set before being passed to setAttrib(). setAttrib looks at tmp value and copies it in the case of R_RowNamesSymbol. Caused hard to track bug around 28 Sep 2014.
-  UNPROTECT(1);
 
   // clear any index that was copied over by copyMostAttrib() above, e.g. #1760 and #1734 (test 1678)
   setAttrib(ans, sym_index, R_NilValue);
   // but maintain key if ordered subset
   SEXP key = getAttrib(x, sym_sorted);
   if (length(key)) {
-    SEXP in = PROTECT(chmatch(key,getAttrib(ans,R_NamesSymbol), 0, TRUE)); // (nomatch ignored when in=TRUE)
+    SEXP in = PROTECT(chmatch(key,getAttrib(ans,R_NamesSymbol), 0, TRUE)); nprotect++; // (nomatch ignored when in=TRUE)
     int i = 0;  while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
-    UNPROTECT(1);
     // i is now the keylen that can be kept. 2 lines above much easier in C than R
     if (i==0) {
       setAttrib(ans, sym_sorted, R_NilValue);
@@ -301,7 +307,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   }
   setAttrib(ans, install(".data.table.locked"), R_NilValue);
   setselfref(ans);
-  UNPROTECT(1);
+  UNPROTECT(nprotect);
   return ans;
 }
 
