@@ -275,7 +275,7 @@ if (dev_and_benchmark_area<-FALSE) {
     memgb = as.numeric(system("awk '/MemTotal/ {print $2}' /proc/meminfo", intern=TRUE))/(1024^2)
     if (memgb > 20) {
       x = rnorm(2.5e9, 100, 20)
-      ans = sapply(10^(1:6), function(n) {message("doing", n); system.time(frollmean(x=x, n=n))})
+      ans = sapply(10^(1:6), function(n) {message("doing ", n); system.time(frollmean(x=x, n=n))})
     }
   }
   

@@ -101,9 +101,7 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
         if (xlength(VECTOR_ELT(kl, j))!=xrows[0])                   // check that length of integer vectors in n list match to xrows[0] ([0] and not [i] because there is above check for equal xrows)
           error("Length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'.");
       }
-      Rprintf("before allocVector(, bigint)\n");
       SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, xrows[i])); // allocate answer vector for this column-window
-      Rprintf("after allocVector(, bigint)\n");
     }
   }
 
