@@ -265,7 +265,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   )
   test(9999.99, ans, expected)
 
-} else stop("zoo package is currently required for testing, install it and re-run tests")
+}
 
 #### adaptive window against https://stackoverflow.com/a/21368246/2490497
 
