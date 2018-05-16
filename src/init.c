@@ -78,7 +78,7 @@ SEXP inrange();
 SEXP between();
 SEXP hasOpenMP();
 SEXP uniqueNlogical();
-SEXP rollmean();
+SEXP rollfun();
 
 // .Externals
 SEXP fastmean();
@@ -159,7 +159,7 @@ R_CallMethodDef callMethods[] = {
 {"Cbetween", (DL_FUNC) &between, -1},
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
-{"Crollmean", (DL_FUNC) &rollmean, -1},
+{"Crollfun", (DL_FUNC) &rollfun, -1},
 {NULL, NULL, 0}
 };
 

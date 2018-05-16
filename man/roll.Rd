@@ -5,6 +5,7 @@
 \alias{sliding}
 \alias{moving}
 \alias{frollmean}
+\alias{frollsum}
 \title{Rolling functions}
 \description{
   Fast rolling functions to calculate aggregates on sliding window.
@@ -12,6 +13,8 @@
 
 \usage{
 frollmean(x, n, fill=NA, exact=FALSE, align=c("right", "left",
+"center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
+frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
 "center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
 }
 \arguments{

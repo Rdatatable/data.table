@@ -192,32 +192,40 @@ test(9999.99, frollmean(1:5, c(5, Inf)), error="n must be positive integer value
 
 #### against zoo
 if (requireNamespace("zoo", quietly=TRUE)) {
-  set.seed(5)
+  set.seed(108)
 
   #### align
   x = rnorm(1e3) # x even, n even
   test(9999.51, frollmean(x, 50), zoo::rollmean(x, 50, fill=NA, align="right"))
+  test(9999.51, frollsum(x, 50), zoo::rollsum(x, 50, fill=NA, align="right"))
   #test(9999.52, frollmean(x, 50, align="center"), zoo::rollmean(x, 50, fill=NA))
   #test(9999.53, frollmean(x, 50, align="left"), zoo::rollmean(x, 50, fill=NA, align="left"))
   x = rnorm(1e3+1) # x odd, n even
   test(9999.54, frollmean(x, 50), zoo::rollmean(x, 50, fill=NA, align="right"))
+  test(9999.54, frollsum(x, 50), zoo::rollsum(x, 50, fill=NA, align="right"))
   #test(9999.55, frollmean(x, 50, align="center"), zoo::rollmean(x, 50, fill=NA))
   #test(9999.56, frollmean(x, 50, align="left"), zoo::rollmean(x, 50, fill=NA, align="left"))
   x = rnorm(1e3) # x even, n odd
   test(9999.57, frollmean(x, 51), zoo::rollmean(x, 51, fill=NA, align="right"))
+  test(9999.57, frollsum(x, 51), zoo::rollsum(x, 51, fill=NA, align="right"))
   #test(9999.58, frollmean(x, 51, align="center"), zoo::rollmean(x, 51, fill=NA))
   #test(9999.59, frollmean(x, 51, align="left"), zoo::rollmean(x, 51, fill=NA, align="left"))
   x = rnorm(1e3+1) # x odd, n odd
   test(9999.60, frollmean(x, 51), zoo::rollmean(x, 51, fill=NA, align="right"))
+  test(9999.60, frollsum(x, 51), zoo::rollsum(x, 51, fill=NA, align="right"))
   #test(9999.61, frollmean(x, 51, align="center"), zoo::rollmean(x, 51, fill=NA))
   #test(9999.62, frollmean(x, 51, align="left"), zoo::rollmean(x, 51, fill=NA, align="left"))
 
   #### na.rm / fill
   x = c(1L, NA, 3L, 4L, 5L)
   test(9999.99, frollmean(x, 2, fill=0), zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=FALSE))
+  test(9999.99, as.integer(frollsum(x, 2, fill=0)), zoo::rollapply(x, 2, sum, fill=0, align="right", na.rm=FALSE))
   test(9999.99, frollmean(x, 2, fill=0, na.rm=TRUE), zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=TRUE))
+  test(9999.99, as.integer(frollsum(x, 2, fill=0, na.rm=TRUE)), zoo::rollapply(x, 2, sum, fill=0, align="right", na.rm=TRUE))
   test(9999.99, frollmean(x, 2, fill=NA), zoo::rollapply(x, 2, mean, fill=NA, align="right"))
+  test(9999.99, as.integer(frollsum(x, 2, fill=NA)), zoo::rollapply(x, 2, sum, fill=NA, align="right"))
   test(9999.99, frollmean(x, 2, fill=NA, na.rm=TRUE), zoo::rollapply(x, 2, mean, fill=NA, align="right", na.rm=TRUE))
+  test(9999.99, as.integer(frollsum(x, 2, fill=NA, na.rm=TRUE)), zoo::rollapply(x, 2, sum, fill=NA, align="right", na.rm=TRUE))
   
   #### na.rm FALSE
   d = as.data.table(list(1:6/2, 3:8/4))
@@ -230,6 +238,15 @@ if (requireNamespace("zoo", quietly=TRUE)) {
     zoo::rollapply(d[[2L]], 3L, mean, fill=NA, align="right")
   )
   test(9999.99, ans, expected)
+  ans = frollsum(d, 2:3)
+  expected = list(
+    zoo::rollapply(d[[1L]], 2L, sum, fill=NA, align="right"),
+    zoo::rollapply(d[[1L]], 3L, sum, fill=NA, align="right"),
+    zoo::rollapply(d[[2L]], 2L, sum, fill=NA, align="right"),
+    zoo::rollapply(d[[2L]], 3L, sum, fill=NA, align="right")
+  )
+  test(9999.99, ans, expected)
+
   #### na.rm TRUE
   ans = frollmean(d, 2:3, na.rm=TRUE)
   expected = list(
@@ -239,8 +256,16 @@ if (requireNamespace("zoo", quietly=TRUE)) {
     zoo::rollapply(d[[2L]], 3L, mean, na.rm=TRUE, fill=NA, align="right")
   )
   test(9999.99, ans, expected)
+  ans = frollsum(d, 2:3, na.rm=TRUE)
+  expected = list(
+    zoo::rollapply(d[[1L]], 2L, sum, na.rm=TRUE, fill=NA, align="right"),
+    zoo::rollapply(d[[1L]], 3L, sum, na.rm=TRUE, fill=NA, align="right"),
+    zoo::rollapply(d[[2L]], 2L, sum, na.rm=TRUE, fill=NA, align="right"),
+    zoo::rollapply(d[[2L]], 3L, sum, na.rm=TRUE, fill=NA, align="right")
+  )
+  test(9999.99, ans, expected)
 
-}
+} else stop("zoo package is currently required for testing, install it and re-run tests")
 
 #### adaptive window against https://stackoverflow.com/a/21368246/2490497
 

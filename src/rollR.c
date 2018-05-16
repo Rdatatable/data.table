@@ -1,17 +1,11 @@
 #include "rollR.h"
 
-SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive) {
+SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive) {
 
-  /*
-    Ideally this function should be generic `roll()`
-    accepting function name as argument and base on
-    that redirecting to appropriate `roll*Vector()`.
-    This will greatly reduce repetition.
-   */
-  
   R_len_t i=0, j, nx, nk, protecti=0;
   SEXP x, kl, tmp=R_NilValue, this, ans, thisfill;
   enum {RIGHT, CENTER, LEFT} salign = RIGHT;
+  enum {MEAN, SUM} sfun = MEAN;
   
   if (!length(obj)) return(obj);                                          // empty input: NULL, list()
   if (isVectorAtomic(obj)) {                                              // wrap atomic vector into list()
@@ -85,7 +79,7 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SE
     error("hasNA must be TRUE, FALSE or NA");
 
   bool hasnatf, nahasna; // decode once, pass extra flag if hasNA was neither TRUE/FALSE but NA so no SEXP passed to roll*Vector()
-  nahasna = (LOGICAL(hasna)[0]==NA_LOGICAL) ? 1 : 0; // this is actually used only to raise warning if hasNA was FALSE but NA were present, if hasNA was NA then silent re-run happens
+  nahasna = (LOGICAL(hasna)[0]==NA_LOGICAL) ? 1 : 0; // this is actually used only to raise warning if hasNA was FALSE but NA were present, if hasNA was NA then silent re-run happens // warning is currently disabled
   hasnatf = (LOGICAL(hasna)[0]==0 || nahasna==1) ? 0 : 1; // we do not want NA here, instead of one variable T/F/NA we pass two T/F variables
   
   if (LOGICAL(hasna)[0]==FALSE && LOGICAL(narm)[0])
@@ -111,11 +105,27 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SE
     }
   }
 
+  if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean"))
+    sfun = MEAN;
+  else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum"))
+    sfun = SUM;
+  else
+    error("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker.");
+
+
   if (nx==1 && nk==1) {                                               // no need to init openmp for single thread call
     this = AS_NUMERIC(VECTOR_ELT(x, 0));
     tmp = VECTOR_ELT(ans, 0);
-    if (!LOGICAL(adaptive)[0]) rollmeanVector(REAL(this), xrows[0], REAL(tmp), INTEGER(k)[0], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
-    else rollmeanVectorAdaptive(REAL(this), xrows[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+    switch (sfun) {
+      case MEAN :
+        if (!LOGICAL(adaptive)[0]) rollmeanVector(REAL(this), xrows[0], REAL(tmp), INTEGER(k)[0], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+        else rollmeanVectorAdaptive(REAL(this), xrows[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+        break;
+      case SUM :
+        if (!LOGICAL(adaptive)[0]) rollsumVector(REAL(this), xrows[0], REAL(tmp), INTEGER(k)[0], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+        else rollsumVectorAdaptive(REAL(this), xrows[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+        break;
+    }
   } else {
     for (i=0; i<nx; i++) {                                            // loop over columns
       this = AS_NUMERIC(VECTOR_ELT(x, i));                            // extract column/vector from data.table/list
@@ -124,8 +134,16 @@ SEXP rollmean(SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SE
         #pragma omp for schedule(dynamic)
         for (j=0; j<nk; j++) {                                          // loop over multiple windows
           tmp = VECTOR_ELT(ans, i*nk+j);
-          if (!LOGICAL(adaptive)[0]) rollmeanVector(REAL(this), xrows[i], REAL(tmp), INTEGER(k)[j], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
-          else rollmeanVectorAdaptive(REAL(this), xrows[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+          switch (sfun) {
+            case MEAN :
+              if (!LOGICAL(adaptive)[0]) rollmeanVector(REAL(this), xrows[i], REAL(tmp), INTEGER(k)[j], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+              else rollmeanVectorAdaptive(REAL(this), xrows[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+              break;
+            case SUM :
+              if (!LOGICAL(adaptive)[0]) rollsumVector(REAL(this), xrows[i], REAL(tmp), INTEGER(k)[j], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+              else rollsumVectorAdaptive(REAL(this), xrows[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+              break;
+          }
         }
       }
     }
