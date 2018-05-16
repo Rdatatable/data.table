@@ -7,7 +7,7 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   enum {RIGHT, CENTER, LEFT} salign = RIGHT;
   enum {MEAN, SUM} sfun = MEAN;
   
-  if (!length(obj)) return(obj);                                          // empty input: NULL, list()
+  if (!xlength(obj)) return(obj);                                          // empty input: NULL, list()
   if (isVectorAtomic(obj)) {                                              // wrap atomic vector into list()
     x = PROTECT(allocVector(VECSXP, 1)); protecti++;
     SET_VECTOR_ELT(x, 0, obj);
@@ -93,15 +93,17 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;         // allocate list to keep results
   uint_fast64_t xrows[nx-1];                                       // to not recalculate `length(x[[i]])` we store it in extra array
   for (i=0; i<nx; i++) {
-    xrows[i] = length(VECTOR_ELT(x, i));                           // for list input each vector can have different length
+    xrows[i] = xlength(VECTOR_ELT(x, i));                           // for list input each vector can have different length
     for (j=0; j<nk; j++) {
       if (LOGICAL(adaptive)[0]) {                                  // extra input validation
         if (i > 0 && (xrows[i]!=xrows[i-1]))                       // variable length list input not allowed for adaptive roll
           error("Adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame. If you want to call rolling function on list having variable length of elements call it for each field separately.");
-        if (length(VECTOR_ELT(kl, j))!=xrows[0])                   // check that length of integer vectors in n list match to xrows[0] ([0] and not [i] because there is above check for equal xrows)
-          error("Length of integer vector(s) provided as list to 'n' argument must have equal length to number of observations provided in 'x'.");
+        if (xlength(VECTOR_ELT(kl, j))!=xrows[0])                   // check that length of integer vectors in n list match to xrows[0] ([0] and not [i] because there is above check for equal xrows)
+          error("Length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'.");
       }
+      Rprintf("before allocVector(, bigint)\n");
       SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, xrows[i])); // allocate answer vector for this column-window
+      Rprintf("after allocVector(, bigint)\n");
     }
   }
 
@@ -111,7 +113,6 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
     sfun = SUM;
   else
     error("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker.");
-
 
   if (nx==1 && nk==1) {                                               // no need to init openmp for single thread call
     this = AS_NUMERIC(VECTOR_ELT(x, 0));
