@@ -106,19 +106,55 @@ void rollmeanVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[],
   }
 }
 
+// - [ ] hasna + nahasna -> int (-1, 0, 1)
+// - [ ] int align (-1, 0, 1)
+// - [ ] 3 loops instead of 1, less nested `if`s, easier to plug `align`
+
 void rollsumVector(double x[], uint_fast64_t nx, double ans[], int k, double fill, bool exact, bool narm, bool hasna, bool nahasna) {
   double w = 0.; // running window sum
   bool truehasna = hasna; // flag to re-run if NAs detected
 
+  int align=1;
+  uint_fast64_t w1, w2, si;                // window indexes, shift iterator
+  if (align > 0) {                         // right
+    w1 = k;
+    w2 = nx;
+    si = 0;
+  } else if (align < 0) {                  // left
+    w1 = 0;
+    w2 = nx-k;
+    si = 0;
+  } else {                                 // center
+    w1 = k/2;
+    w2 = nx-(k/2);
+    si = 0;
+  }
+  
   if (!truehasna) {
     if (!exact) {
-      for (uint_fast64_t i=0; i<nx; i++) {  // loop over observations in column
-        w += x[i];                          // add current row to window sum
-        if (i < k-1) ans[i] = fill;         // fill partial window
-        else {
-          if (i >= k) w -= x[i-k];          // remove leaving row from window sum
-          ans[i] = w;                       // calculate sum
-        }
+      for (uint_fast64_t i=0; i<w1; i++) {  // loop over obs, potentially incomplete window from left
+        w += x[i];                             // add current row to window sum
+        ans[i+si] = w;                         // fill answer vector
+        Rprintf("loop1: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, NA_REAL, x[i], i+si, w);
+      }
+      
+      // extra single i=w1, and loop from w1+1 ?? to avoid: `if (i >= w1) w -= x[i-w1]` inside biggest loop
+      //w += x[w1];
+      //ans[w1] = w;                            // full window, so no fill, but nothing to remove yet
+      // this could be merged into upper loop? as we do not fill NA there now, we do it later in separate loop, measure speed and adjust
+      //Rprintf("expr1: iter %lu, x.in %8.3f, ans idx %lu, w %8.3f\n", w1, x[w1], w1, w);
+      
+      for (uint_fast64_t i=w1; i<w2; i++) { // loop over obs, complete window
+        w -= x[i-w1];                         // remove leaving row from window sum
+        w += x[i];                            // add current row to window sum
+        ans[i+si] = w;                        // fill answer vector
+        Rprintf("loop2: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, x[i-w1], x[i], i+si, w);
+      }
+      
+      for (uint_fast64_t i=w2; i<nx; i++) {   // loop over obs, potentially incomplete window from right
+        w -= x[i-w1];                         // remove leaving row from window sum
+        ans[i+si] = w;                        // fill answer vector
+        Rprintf("loop3: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, x[i-w1], NA_REAL, i+si, w);
       }
     } else { // exact==TRUE
     
@@ -128,6 +164,13 @@ void rollsumVector(double x[], uint_fast64_t nx, double ans[], int k, double fil
       // warning/print not thread safe
       w = 0.;
       truehasna = 1;
+    } else {                                  // fill partial window, could be an option
+      for (uint_fast64_t i=0; i<(w1-1); i++) {             // fill for align right/center
+        ans[i+si] = fill;
+      }
+      for (uint_fast64_t i=w2; i<nx; i++) {   // fill for align left/center
+        ans[i+si] = fill;
+      }
     }
   }
   if (truehasna) {
