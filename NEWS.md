@@ -216,7 +216,7 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
 
 27. `setnames` of whole table when original table had `NA` names skipped replacing those, [#2475](https://github.com/Rdatatable/data.table/issues/2475). Thanks to @franknarf1 and [BenoitLondon on StackOverflow](https://stackoverflow.com/questions/47228836/) for the report and @MichaelChirico for fixing.
 
-28. CJ() works with multiple empty vectors now [#2511](https://github.com/Rdatatable/data.table/issues/2511). Thanks to @MarkusBonsch for fixing.
+28. `CJ()` works with multiple empty vectors now [#2511](https://github.com/Rdatatable/data.table/issues/2511). Thanks to @MarkusBonsch for fixing.
 
 29. `:=` assignment of one vector to two or more columns, e.g. `DT[, c("x", "y") := 1:10]`, failed to copy the `1:10` data causing errors later if and when those columns were updated by reference, [#2540](https://github.com/Rdatatable/data.table/issues/2540). This is an old issue ([#185](https://github.com/Rdatatable/data.table/issues/185)) that had been fixed but reappeared when code was refactored. Thanks to @patrickhowerter for the detailed report with reproducible example and to @MarkusBonsch for fixing and strengthening tests so it doesn't reappear again.
 
