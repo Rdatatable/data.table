@@ -135,7 +135,7 @@ void rollsumVector(double x[], uint_fast64_t nx, double ans[], int k, double fil
       for (uint_fast64_t i=0; i<w1; i++) {  // loop over obs, potentially incomplete window from left
         w += x[i];                             // add current row to window sum
         ans[i+si] = w;                         // fill answer vector
-        Rprintf("loop1: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, NA_REAL, x[i], i+si, w);
+        //        Rprintf("loop1: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, NA_REAL, x[i], i+si, w);
       }
       
       // extra single i=w1, and loop from w1+1 ?? to avoid: `if (i >= w1) w -= x[i-w1]` inside biggest loop
@@ -148,13 +148,13 @@ void rollsumVector(double x[], uint_fast64_t nx, double ans[], int k, double fil
         w -= x[i-w1];                         // remove leaving row from window sum
         w += x[i];                            // add current row to window sum
         ans[i+si] = w;                        // fill answer vector
-        Rprintf("loop2: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, x[i-w1], x[i], i+si, w);
+        //        Rprintf("loop2: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, x[i-w1], x[i], i+si, w);
       }
       
       for (uint_fast64_t i=w2; i<nx; i++) {   // loop over obs, potentially incomplete window from right
         w -= x[i-w1];                         // remove leaving row from window sum
         ans[i+si] = w;                        // fill answer vector
-        Rprintf("loop3: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, x[i-w1], NA_REAL, i+si, w);
+        //        Rprintf("loop3: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, x[i-w1], NA_REAL, i+si, w);
       }
     } else { // exact==TRUE
     
