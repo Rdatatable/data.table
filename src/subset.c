@@ -221,10 +221,6 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
 *       do that anyway
 */
 
-#ifndef ALTREP
-#define ALTREP(x) 0  // for R<3.5.0
-#endif
-
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   int nprotect=0;
   if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows)));
@@ -249,7 +245,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   SETLENGTH(ans, LENGTH(cols));
   for (int i=0; i<LENGTH(cols); i++) {
     SEXP source, target;
-    if (ALTREP(VECTOR_ELT(x, INTEGER(cols)[i]-1))) error("DT contains an altrep");
+    if (ALTREP(VECTOR_ELT(x, INTEGER(cols)[i]-1))) error("Internal error: DT contains an altrep");
     target = PROTECT(allocVector(TYPEOF(source=VECTOR_ELT(x, INTEGER(cols)[i]-1)), ansn));
     SETLENGTH(target, ansn);
     SET_TRUELENGTH(target, ansn);
