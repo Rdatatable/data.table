@@ -11797,6 +11797,15 @@ test(1911.2,
      DT[, COL_INT := integer(0)],
      error = "RHS of assignment to existing column 'COL_INT' is zero length but not NULL.*")
 
+# create index even if key present, by setting attribute #2883
+DT = data.table(1:5, 1:5)
+setkey(DT)
+setindex(DT)
+test(1912.1, indices(DT, vectors=TRUE), list(c("V1","V2")))
+setindex(DT, NULL)
+setindex(DT, V1)
+test(1912.2, indices(DT, vectors=TRUE), list(c("V1")))
+
 ###################################
 #  Add new tests above this line  #
 ###################################

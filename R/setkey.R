@@ -56,13 +56,22 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
 
   ## determine, whether key is already present:
   if (identical(key(x),cols)) {
-    ## key is present, nothing needs to be done
+    if (!physical) {
+      ## create index as integer() because already sorted by those columns
+      if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
+      setattr(attr(x,"index",exact=TRUE), paste0("__", cols, collapse=""), integer())
+    }
     return(invisible(x))
   } else if(identical(head(key(x), length(cols)), cols)){
-    ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
-    setattr(x,"sorted",cols)
+    if (!physical) {
+      ## create index as integer() because already sorted by those columns
+      if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
+      setattr(attr(x,"index",exact=TRUE), paste0("__", cols, collapse=""), integer())
+    } else {
+      ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
+      setattr(x,"sorted",cols)
+    }
     return(invisible(x))
-    ## maybe additional speedup can be achieved if part of the key is already present?
   }
 
   if (".xi" %chin% names(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")

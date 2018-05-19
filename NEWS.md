@@ -9,6 +9,7 @@
 
 #### NOTES
 
+1. Setting indices on columns which are part of key will now create those indices, just by setting index to `integer()` which is compact replacement of `1:n` we use as index on sorted columns.
 
 ### Changes in v1.11.2  (on CRAN 8 May 2018)
 
