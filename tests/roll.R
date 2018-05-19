@@ -53,37 +53,37 @@ expected = list(
   c(rep(NA_real_,2), seq(1,1.75,0.25))
 )
 test(9999.6, ans, expected)
-#ans = frollmean(d, 3, align="center") # x even, n odd
-#expected = list(
-#  c(NA_real_, seq(1,2.5,0.5), NA_real_),
-#  c(NA_real_, seq(1,1.75,0.25), NA_real_)
-#)
-#test(9999.7, ans, expected)
-#ans = frollmean(d, 4, align="center") # x even, n even
-#expected = list(
-#  c(NA_real_, seq(1.25,2.25,0.5), rep(NA_real_,2)),
-#  c(NA_real_, seq(1.125,1.625,0.25), rep(NA_real_,2))
-#)
-#test(9999.8, ans, expected)
-#de = rbind(d, data.table(3.5, 2.25))
-#ans = frollmean(de, 3, align="center") # x odd, n odd
-#expected = list(
-#  c(NA_real_, seq(1,3,0.5), NA_real_),
-#  c(NA_real_, seq(1,2,0.25), NA_real_)
-#)
-#test(9999.9, ans, expected)
-#ans = frollmean(de, 4, align="center") # x odd, n even
-#expected = list(
-#  c(NA_real_, seq(1.25,2.75,0.5), rep(NA_real_,2)),
-#  c(NA_real_, seq(1.125,1.875,0.25), rep(NA_real_,2))
-#)
-#test(9999.10, ans, expected)
-#ans = frollmean(d, 3, align="left")
-#expected = list(
-#  c(seq(1,2.5,0.5), rep(NA_real_,2)),
-#  c(seq(1,1.75,0.25), rep(NA_real_,2))
-#)
-#test(9999.11, ans, expected)
+ans = frollmean(d, 3, align="center") # x even, n odd
+expected = list(
+  c(NA_real_, seq(1,2.5,0.5), NA_real_),
+  c(NA_real_, seq(1,1.75,0.25), NA_real_)
+)
+test(9999.7, ans, expected)
+ans = frollmean(d, 4, align="center") # x even, n even
+expected = list(
+  c(NA_real_, seq(1.25,2.25,0.5), rep(NA_real_,2)),
+  c(NA_real_, seq(1.125,1.625,0.25), rep(NA_real_,2))
+)
+test(9999.8, ans, expected)
+de = rbind(d, data.table(3.5, 2.25))
+ans = frollmean(de, 3, align="center") # x odd, n odd
+expected = list(
+  c(NA_real_, seq(1,3,0.5), NA_real_),
+  c(NA_real_, seq(1,2,0.25), NA_real_)
+)
+test(9999.9, ans, expected)
+ans = frollmean(de, 4, align="center") # x odd, n even
+expected = list(
+  c(NA_real_, seq(1.25,2.75,0.5), rep(NA_real_,2)),
+  c(NA_real_, seq(1.125,1.875,0.25), rep(NA_real_,2))
+)
+test(9999.10, ans, expected)
+ans = frollmean(d, 3, align="left")
+expected = list(
+  c(seq(1,2.5,0.5), rep(NA_real_,2)),
+  c(seq(1,1.75,0.25), rep(NA_real_,2))
+)
+test(9999.11, ans, expected)
 
 #### handling NAs
 d = as.data.table(list(1:6/2, 3:8/4))
@@ -156,10 +156,18 @@ test(9999.99, frollmean(list(1:5, 1:2), 3), list(c(NA_real_, NA_real_, 2, 3, 4),
 #### length(x)==1 && n==1
 test(9999.99, frollmean(5, 1), 5)
 test(9999.99, frollmean(list(1, 10, 5), 1), list(1, 10, 5))
+test(9999.99, frollmean(5, 1, align="left"), 5)
+test(9999.99, frollmean(list(1, 10, 5), 1, align="left"), list(1, 10, 5))
+test(9999.99, frollmean(5, 1, align="center"), 5)
+test(9999.99, frollmean(list(1, 10, 5), 1, align="center"), list(1, 10, 5))
 
 #### length(x)==1 && n==2
 test(9999.99, frollmean(5, 2), NA_real_)
 test(9999.99, frollmean(list(1, 10, 5), 2), list(NA_real_, NA_real_, NA_real_))
+test(9999.99, frollmean(5, 2, align="left"), NA_real_)
+test(9999.99, frollmean(list(1, 10, 5), 2, align="left"), list(NA_real_, NA_real_, NA_real_))
+test(9999.99, frollmean(5, 2, align="center"), NA_real_)
+test(9999.99, frollmean(list(1, 10, 5), 2, align="center"), list(NA_real_, NA_real_, NA_real_))
 
 #### n==Inf
 test(9999.99, frollmean(1:5, Inf), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
@@ -195,26 +203,26 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   set.seed(108)
 
   #### align
-  x = rnorm(1e3) # x even, n even
-  test(9999.51, frollmean(x, 50), zoo::rollmean(x, 50, fill=NA, align="right"))
-  test(9999.51, frollsum(x, 50), zoo::rollsum(x, 50, fill=NA, align="right"))
-  #test(9999.52, frollmean(x, 50, align="center"), zoo::rollmean(x, 50, fill=NA))
-  #test(9999.53, frollmean(x, 50, align="left"), zoo::rollmean(x, 50, fill=NA, align="left"))
-  x = rnorm(1e3+1) # x odd, n even
-  test(9999.54, frollmean(x, 50), zoo::rollmean(x, 50, fill=NA, align="right"))
-  test(9999.54, frollsum(x, 50), zoo::rollsum(x, 50, fill=NA, align="right"))
-  #test(9999.55, frollmean(x, 50, align="center"), zoo::rollmean(x, 50, fill=NA))
-  #test(9999.56, frollmean(x, 50, align="left"), zoo::rollmean(x, 50, fill=NA, align="left"))
-  x = rnorm(1e3) # x even, n odd
-  test(9999.57, frollmean(x, 51), zoo::rollmean(x, 51, fill=NA, align="right"))
-  test(9999.57, frollsum(x, 51), zoo::rollsum(x, 51, fill=NA, align="right"))
-  #test(9999.58, frollmean(x, 51, align="center"), zoo::rollmean(x, 51, fill=NA))
-  #test(9999.59, frollmean(x, 51, align="left"), zoo::rollmean(x, 51, fill=NA, align="left"))
-  x = rnorm(1e3+1) # x odd, n odd
-  test(9999.60, frollmean(x, 51), zoo::rollmean(x, 51, fill=NA, align="right"))
-  test(9999.60, frollsum(x, 51), zoo::rollsum(x, 51, fill=NA, align="right"))
-  #test(9999.61, frollmean(x, 51, align="center"), zoo::rollmean(x, 51, fill=NA))
-  #test(9999.62, frollmean(x, 51, align="left"), zoo::rollmean(x, 51, fill=NA, align="left"))
+  x = rnorm(1e3); n = 50 # x even, n even
+  test(9999.51, frollmean(x, n), zoo::rollmean(x, n, fill=NA, align="right"))
+  test(9999.51, frollsum(x, n), zoo::rollsum(x, n, fill=NA, align="right"))
+  test(9999.52, frollmean(x, n, align="center"), zoo::rollmean(x, n, fill=NA))
+  test(9999.53, frollmean(x, n, align="left"), zoo::rollmean(x, n, fill=NA, align="left"))
+  x = rnorm(1e3+1); n = 50 # x odd, n even
+  test(9999.54, frollmean(x, n), zoo::rollmean(x, n, fill=NA, align="right"))
+  test(9999.54, frollsum(x, n), zoo::rollsum(x, n, fill=NA, align="right"))
+  test(9999.55, frollmean(x, n, align="center"), zoo::rollmean(x, n, fill=NA))
+  test(9999.56, frollmean(x, n, align="left"), zoo::rollmean(x, n, fill=NA, align="left"))
+  x = rnorm(1e3); n = 51 # x even, n odd
+  test(9999.57, frollmean(x, n), zoo::rollmean(x, n, fill=NA, align="right"))
+  test(9999.57, frollsum(x, n), zoo::rollsum(x, n, fill=NA, align="right"))
+  test(9999.58, frollmean(x, n, align="center"), zoo::rollmean(x, n, fill=NA))
+  test(9999.59, frollmean(x, n, align="left"), zoo::rollmean(x, n, fill=NA, align="left"))
+  x = rnorm(1e3+1); n = 51 # x odd, n odd
+  test(9999.60, frollmean(x, n), zoo::rollmean(x, n, fill=NA, align="right"))
+  test(9999.60, frollsum(x, n), zoo::rollsum(x, n, fill=NA, align="right"))
+  test(9999.61, frollmean(x, n, align="center"), zoo::rollmean(x, n, fill=NA))
+  test(9999.62, frollmean(x, n, align="left"), zoo::rollmean(x, n, fill=NA, align="left"))
 
   #### na.rm / fill
   x = c(1L, NA, 3L, 4L, 5L)

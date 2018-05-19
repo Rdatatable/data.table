@@ -1,13 +1,10 @@
 #include "rollR.h"
 
 SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive) {
+  int protecti=0;
 
-  R_len_t i=0, j, nx, nk, protecti=0;
-  SEXP x, kl, tmp=R_NilValue, this, ans, thisfill;
-  enum {RIGHT, CENTER, LEFT} salign = RIGHT;
-  enum {MEAN, SUM} sfun = MEAN;
-  
-  if (!xlength(obj)) return(obj);                                          // empty input: NULL, list()
+  if (!xlength(obj)) return(obj);                                         // empty input: NULL, list()
+  SEXP x;
   if (isVectorAtomic(obj)) {                                              // wrap atomic vector into list()
     x = PROTECT(allocVector(VECSXP, 1)); protecti++;
     SET_VECTOR_ELT(x, 0, obj);
@@ -18,27 +15,26 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   if (!isNewList(x))
     error("x must be a list, data.frame or data.table");
 
-  nx = length(x);
-  
-  i = 0;                                                                  // check that every column is double/integer type
+  R_len_t i=0, nx=length(x);                                          // check that every column is double/integer type
   while (i < nx && (isReal(VECTOR_ELT(x, i)) || isInteger(VECTOR_ELT(x, i)))) i++;
   if (i != nx)
     error("x must be list, data.frame or data.table of numeric types");
 
-  nk = length(k);
+  R_len_t nk=length(k);
   if (nk == 0)                                                            // check that window is not empty
     error("n must be non 0 length");
 
   if (!isLogical(adaptive) || length(adaptive) != 1 || LOGICAL(adaptive)[0] == NA_LOGICAL)
     error("adaptive must be logical TRUE or FALSE");
 
+  SEXP kl; // this is used only for adaptive but compiler wants this to be initialized always
   if (!LOGICAL(adaptive)[0]) {                                            // validating n input for adaptive=FALSE
     if (isNewList(k))
       error("n must be integer, list is accepted for adaptive TRUE");
     //TODO move R's n=as.integer(n) to C
     if (!isInteger(k))                                                    // check that k is integer vector
       error("n must be integer");
-    i = 0;                                                                // check that all window values non-negative
+    R_len_t i=0;                                                                // check that all window values non-negative
     while (i < nk && INTEGER(k)[i] > 0) i++;
     if (i != nk)
       error("n must be positive integer values (> 0)");
@@ -51,7 +47,7 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
       kl = k;
     }
     //TODO move R's n=as.integer(n) to C
-    i = 0;                                                                // check that every column is integer type
+    R_len_t i=0;                                                                // check that every column is integer type
     while (i < nk && isInteger(VECTOR_ELT(kl, i))) i++;
     if (i != nk)
       error("n must be list of integer vectors when adaptive TRUE");
@@ -60,12 +56,13 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
 
+  int ialign;
   if (!strcmp(CHAR(STRING_ELT(align, 0)), "right"))
-    salign = RIGHT;
+    ialign = 1;
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center"))
-    salign = CENTER;
+    ialign = 0;
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left"))
-    salign = LEFT;
+    ialign = -1;
   else
     error("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker.");
 
@@ -84,27 +81,27 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   
   if (LOGICAL(hasna)[0]==FALSE && LOGICAL(narm)[0])
     error("using hasNA FALSE and na.rm TRUE does not make sense, if you know there are NA values use hasNA TRUE, otherwise leave it as default NA");
-    
+
+  SEXP thisfill;  
   thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
 
-  if (salign == LEFT) error("align 'left' not yet implemented");
-  else if (salign == CENTER) error("align 'center' not yet implemented");
-
-  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;         // allocate list to keep results
-  uint_fast64_t xrows[nx-1];                                       // to not recalculate `length(x[[i]])` we store it in extra array
-  for (i=0; i<nx; i++) {
-    xrows[i] = xlength(VECTOR_ELT(x, i));                           // for list input each vector can have different length
-    for (j=0; j<nk; j++) {
-      if (LOGICAL(adaptive)[0]) {                                  // extra input validation
-        if (i > 0 && (xrows[i]!=xrows[i-1]))                       // variable length list input not allowed for adaptive roll
+  SEXP ans;
+  ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;              // allocate list to keep results
+  uint_fast64_t xrows[nx-1];                                            // to not recalculate `length(x[[i]])` we store it in extra array
+  for (R_len_t i=0; i<nx; i++) {
+    xrows[i] = xlength(VECTOR_ELT(x, i));                               // for list input each vector can have different length
+    for (R_len_t j=0; j<nk; j++) {
+      if (LOGICAL(adaptive)[0]) {                                       // extra input validation
+        if (i > 0 && (xrows[i]!=xrows[i-1]))                            // variable length list input not allowed for adaptive roll
           error("Adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame. If you want to call rolling function on list having variable length of elements call it for each field separately.");
-        if (xlength(VECTOR_ELT(kl, j))!=xrows[0])                   // check that length of integer vectors in n list match to xrows[0] ([0] and not [i] because there is above check for equal xrows)
+        if (xlength(VECTOR_ELT(kl, j))!=xrows[0])                       // check that length of integer vectors in n list match to xrows[0] ([0] and not [i] because there is above check for equal xrows)
           error("Length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'.");
       }
-      SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, xrows[i])); // allocate answer vector for this column-window
+      SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, xrows[i]));      // allocate answer vector for this column-window
     }
   }
 
+  enum {MEAN, SUM} sfun;
   if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean"))
     sfun = MEAN;
   else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum"))
@@ -112,39 +109,40 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   else
     error("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker.");
 
-  if (nx==1 && nk==1) {                                               // no need to init openmp for single thread call
+  SEXP this, tmp;
+  if (nx==1 && nk==1) {                                                 // no need to init openmp for single thread call
     this = AS_NUMERIC(VECTOR_ELT(x, 0));
     tmp = VECTOR_ELT(ans, 0);
     switch (sfun) {
       case MEAN :
-        if (!LOGICAL(adaptive)[0]) rollmeanVector(REAL(this), xrows[0], REAL(tmp), INTEGER(k)[0], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+        if (!LOGICAL(adaptive)[0]) rollmeanVector(REAL(this), xrows[0], REAL(tmp), INTEGER(k)[0], ialign, REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
         else rollmeanVectorAdaptive(REAL(this), xrows[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
         break;
       case SUM :
-        if (!LOGICAL(adaptive)[0]) rollsumVector(REAL(this), xrows[0], REAL(tmp), INTEGER(k)[0], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+        if (!LOGICAL(adaptive)[0]) rollsumVector(REAL(this), xrows[0], REAL(tmp), INTEGER(k)[0], ialign, REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
         else rollsumVectorAdaptive(REAL(this), xrows[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
         break;
     }
   } else {
-    for (i=0; i<nx; i++) {                                            // loop over columns
-      this = AS_NUMERIC(VECTOR_ELT(x, i));                            // extract column/vector from data.table/list
+    for (R_len_t i=0; i<nx; i++) {                                      // loop over columns
+      this = AS_NUMERIC(VECTOR_ELT(x, i));                              // extract column/vector from data.table/list
       #pragma omp parallel num_threads(MIN(getDTthreads(), nk))
       {
         #pragma omp for schedule(dynamic)
-        for (j=0; j<nk; j++) {                                          // loop over multiple windows
-          tmp = VECTOR_ELT(ans, i*nk+j);
+        for (R_len_t j=0; j<nk; j++) {                                   // loop over multiple windows
+          tmp = VECTOR_ELT(ans, i*nk+j); // tmp is SEXP, this is probably not parallel safe
           switch (sfun) {
             case MEAN :
-              if (!LOGICAL(adaptive)[0]) rollmeanVector(REAL(this), xrows[i], REAL(tmp), INTEGER(k)[j], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+              if (!LOGICAL(adaptive)[0]) rollmeanVector(REAL(this), xrows[i], REAL(tmp), INTEGER(k)[j], ialign, REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
               else rollmeanVectorAdaptive(REAL(this), xrows[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
               break;
             case SUM :
-              if (!LOGICAL(adaptive)[0]) rollsumVector(REAL(this), xrows[i], REAL(tmp), INTEGER(k)[j], REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+              if (!LOGICAL(adaptive)[0]) rollsumVector(REAL(this), xrows[i], REAL(tmp), INTEGER(k)[j], ialign, REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
               else rollsumVectorAdaptive(REAL(this), xrows[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
               break;
           }
-        }
-      }
+        } // end of pragma omp for schedule
+      } // end of pragma omp parallel num_threads
     }
   }
   

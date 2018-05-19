@@ -13,9 +13,9 @@
 
 \usage{
 frollmean(x, n, fill=NA, exact=FALSE, align=c("right", "left",
-"center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
+  "center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
 frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
-"center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
+  "center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric fields. }
