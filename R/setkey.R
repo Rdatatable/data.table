@@ -51,7 +51,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     # remove backticks from cols
     cols <- gsub("`", "", cols)
     miss = !(cols %in% colnames(x))
-    if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
+    if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
   }
 
   ## determine, whether key is already present:
@@ -319,7 +319,7 @@ setorderv <- function(x, cols, order=1L, na.last=FALSE)
     # remove backticks from cols
     cols <- gsub("`", "", cols)
     miss = !(cols %in% colnames(x))
-    if (any(miss)) stop("some columns are not in the data.table: " %+% cols[miss])
+    if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
   }
   if (".xi" %in% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
