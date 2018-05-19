@@ -9,6 +9,7 @@
 
 #### NOTES
 
+1. Added a simple typo checker to `i` for convenience -- attempting to subset on `variable` when the column is actually called `Variable` will still error, but the error message will helpfully identify similarly-spelled columns in the process, [#2887](https://github.com/Rdatatable/data.table/issues/2887). This is somewhat experimental and we look forward to community feedback to improve this. 
 
 ### Changes in v1.11.2  (on CRAN 8 May 2018)
 
