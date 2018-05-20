@@ -131,7 +131,7 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
     if (iverbose>0) Rprintf("rollfun: multiple window or columns entering parallel execution\n");
     for (R_len_t i=0; i<nx; i++) {                                      // loop over columns
       this = AS_NUMERIC(VECTOR_ELT(x, i));                              // extract column/vector from data.table/list
-      #pragma omp parallel num_threads(MIN(getDTthreads(), nx))
+      #pragma omp parallel num_threads(iverbose==0 ? MIN(getDTthreads(), nx) : 1)
       {
         #pragma omp for schedule(dynamic)
         for (R_len_t j=0; j<nk; j++) {                                   // loop over multiple windows
