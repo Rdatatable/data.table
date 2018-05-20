@@ -1,6 +1,6 @@
 #include "roll.h"
 
-void rollmeanVector(double x[], uint_fast64_t nx, double ans[], int k, int align, double fill, bool exact, bool narm, bool hasna, bool nahasna) {
+void rollmeanVector(double x[], uint_fast64_t nx, double ans[], int k, int align, double fill, bool exact, bool narm, int hasna) {
   bool verbose = 0; // only for dev as this fun is called from parallel region so no Rprintf allowed
 
   uint_fast64_t si =                       // align shift for ans index
@@ -8,7 +8,7 @@ void rollmeanVector(double x[], uint_fast64_t nx, double ans[], int k, int align
     align < 0 ? -k+1 :                     // align left
     -floor(k/2);                           // align center
   double w = 0.;                           // running window sum
-  bool truehasna = hasna;                  // flag to re-run if NAs detected
+  bool truehasna = hasna>0;                // flag to re-run if NAs detected
   if (!truehasna) {
     if (!exact) {
       int w1 = nx < k ? nx : k;            // window width might be longer than column length
@@ -38,7 +38,7 @@ void rollmeanVector(double x[], uint_fast64_t nx, double ans[], int k, int align
     
     }
     if (ISNAN(w)) { // ISNAN translate to C
-      //if (nahasna==0) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
+      //if (hasna==-1) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
       // warning/print not thread safe
       w = 0.;
       truehasna = 1;
@@ -80,9 +80,9 @@ void rollmeanVector(double x[], uint_fast64_t nx, double ans[], int k, int align
   }
 }
 
-void rollmeanVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[], double fill, bool exact, bool narm, bool hasna, bool nahasna) {
+void rollmeanVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[], double fill, bool exact, bool narm, int hasna) {
   double w = 0.; // running window sum
-  bool truehasna = hasna; // flag to re-run if NAs detected
+  bool truehasna = hasna>0; // flag to re-run if NAs detected
   int thisk, lastk, diffk;
 
   if (!truehasna) {
@@ -118,7 +118,7 @@ void rollmeanVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[],
     
     }
     if (ISNAN(w)) { // ISNAN translate to C
-      //if (nahasna==0) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
+      //if (hasna==-1) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
       // warning/print not thread safe
       w = 0.;
       truehasna = 1;
@@ -133,7 +133,7 @@ void rollmeanVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[],
   }
 }
 
-void rollsumVector(double x[], uint_fast64_t nx, double ans[], int k, int align, double fill, bool exact, bool narm, bool hasna, bool nahasna) {
+void rollsumVector(double x[], uint_fast64_t nx, double ans[], int k, int align, double fill, bool exact, bool narm, int hasna) {
   bool verbose = 0; // only for dev as this fun is called from parallel region so no Rprintf allowed
 
   uint_fast64_t si =                       // align shift for ans index
@@ -141,7 +141,7 @@ void rollsumVector(double x[], uint_fast64_t nx, double ans[], int k, int align,
     align < 0 ? -k+1 :                     // align left
     -floor(k/2);                           // align center
   double w = 0.;                           // running window sum
-  bool truehasna = hasna;                  // flag to re-run if NAs detected
+  bool truehasna = hasna>0;                // flag to re-run if NAs detected
   if (!truehasna) {
     if (!exact) {
       for (uint_fast64_t i=0; i<k; i++) {  // loop over obs, potentially incomplete window from left
@@ -170,7 +170,7 @@ void rollsumVector(double x[], uint_fast64_t nx, double ans[], int k, int align,
     
     }
     if (ISNAN(w)) { // ISNAN translate to C
-      //if (nahasna==0) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
+      //if (hasna==-1) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
       // warning/print not thread safe
       w = 0.;
       truehasna = 1;
@@ -212,9 +212,9 @@ void rollsumVector(double x[], uint_fast64_t nx, double ans[], int k, int align,
   }
 }
 
-void rollsumVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[], double fill, bool exact, bool narm, bool hasna, bool nahasna) {
+void rollsumVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[], double fill, bool exact, bool narm, int hasna) {
   double w = 0.; // running window sum
-  bool truehasna = hasna; // flag to re-run if NAs detected
+  bool truehasna = hasna>0; // flag to re-run if NAs detected
   int thisk, lastk, diffk;
 
   if (!truehasna) {
@@ -249,7 +249,7 @@ void rollsumVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[], 
     
     }
     if (ISNAN(w)) { // ISNAN translate to C
-      //if (nahasna==0) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
+      //if (hasna==-1) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
       // warning/print not thread safe
       w = 0.;
       truehasna = 1;

@@ -75,12 +75,13 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   if (!isLogical(hasna) || length(hasna)!=1)
     error("hasNA must be TRUE, FALSE or NA");
 
-  bool hasnatf, nahasna; // decode once, pass extra flag if hasNA was neither TRUE/FALSE but NA so no SEXP passed to roll*Vector()
-  nahasna = (LOGICAL(hasna)[0]==NA_LOGICAL) ? 1 : 0; // this is actually used only to raise warning if hasNA was FALSE but NA were present, if hasNA was NA then silent re-run happens // warning is currently disabled
-  hasnatf = (LOGICAL(hasna)[0]==0 || nahasna==1) ? 0 : 1; // we do not want NA here, instead of one variable T/F/NA we pass two T/F variables
-  
   if (LOGICAL(hasna)[0]==FALSE && LOGICAL(narm)[0])
     error("using hasNA FALSE and na.rm TRUE does not make sense, if you know there are NA values use hasNA TRUE, otherwise leave it as default NA");
+
+  int ihasna =                          // plain C tri-state boolean as integer
+    LOGICAL(hasna)[0]==NA_LOGICAL ? 0 : // hasna NA, default, no info about NA
+    LOGICAL(hasna)[0]==TRUE ? 1 :       // hasna TRUE, might be some NAs
+    -1;                                 // hasna FALSE, there should be no NAs
 
   SEXP thisfill;  
   thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
@@ -115,12 +116,12 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
     tmp = VECTOR_ELT(ans, 0);
     switch (sfun) {
       case MEAN :
-        if (!LOGICAL(adaptive)[0]) rollmeanVector(REAL(this), xrows[0], REAL(tmp), INTEGER(k)[0], ialign, REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
-        else rollmeanVectorAdaptive(REAL(this), xrows[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+        if (!LOGICAL(adaptive)[0]) rollmeanVector(REAL(this), xrows[0], REAL(tmp), INTEGER(k)[0], ialign, REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], ihasna);
+        else rollmeanVectorAdaptive(REAL(this), xrows[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], ihasna);
         break;
       case SUM :
-        if (!LOGICAL(adaptive)[0]) rollsumVector(REAL(this), xrows[0], REAL(tmp), INTEGER(k)[0], ialign, REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
-        else rollsumVectorAdaptive(REAL(this), xrows[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+        if (!LOGICAL(adaptive)[0]) rollsumVector(REAL(this), xrows[0], REAL(tmp), INTEGER(k)[0], ialign, REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], ihasna);
+        else rollsumVectorAdaptive(REAL(this), xrows[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], ihasna);
         break;
     }
   } else {
@@ -133,12 +134,12 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
           tmp = VECTOR_ELT(ans, i*nk+j); // tmp is SEXP, this is probably not parallel safe
           switch (sfun) {
             case MEAN :
-              if (!LOGICAL(adaptive)[0]) rollmeanVector(REAL(this), xrows[i], REAL(tmp), INTEGER(k)[j], ialign, REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
-              else rollmeanVectorAdaptive(REAL(this), xrows[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+              if (!LOGICAL(adaptive)[0]) rollmeanVector(REAL(this), xrows[i], REAL(tmp), INTEGER(k)[j], ialign, REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], ihasna);
+              else rollmeanVectorAdaptive(REAL(this), xrows[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], ihasna);
               break;
             case SUM :
-              if (!LOGICAL(adaptive)[0]) rollsumVector(REAL(this), xrows[i], REAL(tmp), INTEGER(k)[j], ialign, REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
-              else rollsumVectorAdaptive(REAL(this), xrows[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], hasnatf, nahasna);
+              if (!LOGICAL(adaptive)[0]) rollsumVector(REAL(this), xrows[i], REAL(tmp), INTEGER(k)[j], ialign, REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], ihasna);
+              else rollsumVectorAdaptive(REAL(this), xrows[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), REAL(thisfill)[0], LOGICAL(exact)[0], LOGICAL(narm)[0], ihasna);
               break;
           }
         } // end of pragma omp for schedule
