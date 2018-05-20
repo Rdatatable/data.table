@@ -71,18 +71,18 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
 
   SEXP ans, this, tmp;
   ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;         // allocate list to keep results
-  uint_fast64_t xrows[nx-1];                                            // to not recalculate `length(x[[i]])` we store it in extra array
+  uint_fast64_t inx[nx-1];                                            // to not recalculate `length(x[[i]])` we store it in extra array
   if (iverbose>0) Rprintf("rollfun: allocating memory for results\n");
   for (R_len_t i=0; i<nx; i++) {
-    xrows[i] = xlength(VECTOR_ELT(x, i));                               // for list input each vector can have different length
+    inx[i] = xlength(VECTOR_ELT(x, i));                               // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
       if (badaptive) {                                       // extra input validation
-        if (i > 0 && (xrows[i]!=xrows[i-1]))                            // variable length list input not allowed for adaptive roll
+        if (i > 0 && (inx[i]!=inx[i-1]))                            // variable length list input not allowed for adaptive roll
           error("Adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame. If you want to call rolling function on list having variable length of elements call it for each field separately.");
-        if (xlength(VECTOR_ELT(kl, j))!=xrows[0])                       // check that length of integer vectors in n list match to xrows[0] ([0] and not [i] because there is above check for equal xrows)
+        if (xlength(VECTOR_ELT(kl, j))!=inx[0])                       // check that length of integer vectors in n list match to xrows[0] ([0] and not [i] because there is above check for equal xrows)
           error("Length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'.");
       }
-      SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, xrows[i]));      // allocate answer vector for this column-window
+      SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, inx[i]));      // allocate answer vector for this column-window
       // array of pointer to 'tmp'
     }
     // array of pointer to 'this'
@@ -93,7 +93,7 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) sfun = SUM;
   else error("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker.");
 
-  int* ik = INTEGER(k);
+  int* ik = INTEGER(k); // confirm this will not use DATAPTR
   
   int ialign;
   if (!strcmp(CHAR(STRING_ELT(align, 0)), "right")) ialign = 1;
@@ -119,12 +119,12 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
     tmp = VECTOR_ELT(ans, 0);
     switch (sfun) {
       case MEAN :
-        if (!badaptive) rollmeanVector(REAL(this), xrows[0], REAL(tmp), ik[0], ialign, dfill, bexact, bnarm, ihasna, iverbose);
-        else rollmeanVectorAdaptive(REAL(this), xrows[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), dfill, bexact, bnarm, ihasna, iverbose);
+        if (!badaptive) rollmeanVector(REAL(this), inx[0], REAL(tmp), ik[0], ialign, dfill, bexact, bnarm, ihasna, iverbose);
+        else rollmeanVectorAdaptive(REAL(this), inx[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), dfill, bexact, bnarm, ihasna, iverbose);
         break;
       case SUM :
-        if (!badaptive) rollsumVector(REAL(this), xrows[0], REAL(tmp), ik[0], ialign, dfill, bexact, bnarm, ihasna, iverbose);
-        else rollsumVectorAdaptive(REAL(this), xrows[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), dfill, bexact, bnarm, ihasna, iverbose);
+        if (!badaptive) rollsumVector(REAL(this), inx[0], REAL(tmp), ik[0], ialign, dfill, bexact, bnarm, ihasna, iverbose);
+        else rollsumVectorAdaptive(REAL(this), inx[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), dfill, bexact, bnarm, ihasna, iverbose);
         break;
     }
   } else {
@@ -138,12 +138,12 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
           tmp = VECTOR_ELT(ans, i*nk+j); // tmp is SEXP, this is probably not parallel safe
           switch (sfun) {
             case MEAN :
-              if (!badaptive) rollmeanVector(REAL(this), xrows[i], REAL(tmp), ik[j], ialign, dfill, bexact, bnarm, ihasna, iverbose);
-              else rollmeanVectorAdaptive(REAL(this), xrows[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), dfill, bexact, bnarm, ihasna, iverbose);
+              if (!badaptive) rollmeanVector(REAL(this), inx[i], REAL(tmp), ik[j], ialign, dfill, bexact, bnarm, ihasna, iverbose);
+              else rollmeanVectorAdaptive(REAL(this), inx[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), dfill, bexact, bnarm, ihasna, iverbose);
               break;
             case SUM :
-              if (!badaptive) rollsumVector(REAL(this), xrows[i], REAL(tmp), ik[j], ialign, dfill, bexact, bnarm, ihasna, iverbose);
-              else rollsumVectorAdaptive(REAL(this), xrows[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), dfill, bexact, bnarm, ihasna, iverbose);
+              if (!badaptive) rollsumVector(REAL(this), inx[i], REAL(tmp), ik[j], ialign, dfill, bexact, bnarm, ihasna, iverbose);
+              else rollsumVectorAdaptive(REAL(this), inx[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), dfill, bexact, bnarm, ihasna, iverbose);
               break;
           }
         } // end of pragma omp for schedule
