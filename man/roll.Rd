@@ -13,9 +13,9 @@
 
 \usage{
 frollmean(x, n, fill=NA, exact=FALSE, align=c("right", "left",
-  "center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
+  "center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n), verbose=FALSE)
 frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
-  "center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n))
+  "center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n), verbose=FALSE)
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric fields. }
@@ -35,6 +35,8 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
     \code{NA}. }
   \item{adaptive}{ logical, should adaptive rolling function be
     calculated, default \code{is.list(n)}. }
+  \item{verbose}{ logical or numeric, coerced to interger, positive
+    value prints verbose messages, and turns off parallel support. }
 }
 \details{
   \code{froll*} functions accepts vectors, lists, data.frames or
