@@ -2554,7 +2554,7 @@ setnames <- function(x,old,new) {
   invisible(x)
 }
 
-setcolorder <- function(x, neworder)
+setcolorder <- function(x, neworder=NULL)
 {
   if (is.null(neworder)) {
     keys = key(x)
