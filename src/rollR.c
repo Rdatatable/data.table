@@ -1,6 +1,6 @@
 #include "rollR.h"
 
-SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive, SEXP verbose) {
+SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP partial, SEXP narm, SEXP hasna, SEXP adaptive, SEXP verbose) {
   int protecti=0;
   int iverbose = INTEGER(verbose)[0];
   
@@ -58,6 +58,9 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
 
+  if (!isLogical(partial) || length(partial)!=1 || LOGICAL(partial)[0]==NA_LOGICAL)
+    error("partial must be TRUE or FALSE");
+  
   if (!isLogical(exact) || length(exact)!=1 || LOGICAL(exact)[0]==NA_LOGICAL)
     error("exact must be TRUE or FALSE");
   
@@ -104,6 +107,8 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   SEXP thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
   double dfill = REAL(thisfill)[0];
 
+  bool bpartial = LOGICAL(partial)[0];
+  
   bool bexact = LOGICAL(exact)[0];
   
   bool bnarm = LOGICAL(narm)[0];
@@ -119,11 +124,11 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
     tmp = VECTOR_ELT(ans, 0);
     switch (sfun) {
       case MEAN :
-        if (!badaptive) rollmeanVector(REAL(this), inx[0], REAL(tmp), ik[0], ialign, dfill, bexact, bnarm, ihasna, iverbose);
+        if (!badaptive) rollmeanVector(REAL(this), inx[0], REAL(tmp), ik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
         else rollmeanVectorAdaptive(REAL(this), inx[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), dfill, bexact, bnarm, ihasna, iverbose);
         break;
       case SUM :
-        if (!badaptive) rollsumVector(REAL(this), inx[0], REAL(tmp), ik[0], ialign, dfill, bexact, bnarm, ihasna, iverbose);
+        if (!badaptive) rollsumVector(REAL(this), inx[0], REAL(tmp), ik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
         else rollsumVectorAdaptive(REAL(this), inx[0], REAL(tmp), INTEGER(VECTOR_ELT(kl, 0)), dfill, bexact, bnarm, ihasna, iverbose);
         break;
     }
@@ -138,11 +143,11 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
           tmp = VECTOR_ELT(ans, i*nk+j); // tmp is SEXP, this is probably not parallel safe
           switch (sfun) {
             case MEAN :
-              if (!badaptive) rollmeanVector(REAL(this), inx[i], REAL(tmp), ik[j], ialign, dfill, bexact, bnarm, ihasna, iverbose);
+              if (!badaptive) rollmeanVector(REAL(this), inx[i], REAL(tmp), ik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
               else rollmeanVectorAdaptive(REAL(this), inx[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), dfill, bexact, bnarm, ihasna, iverbose);
               break;
             case SUM :
-              if (!badaptive) rollsumVector(REAL(this), inx[i], REAL(tmp), ik[j], ialign, dfill, bexact, bnarm, ihasna, iverbose);
+              if (!badaptive) rollsumVector(REAL(this), inx[i], REAL(tmp), ik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
               else rollsumVectorAdaptive(REAL(this), inx[i], REAL(tmp), INTEGER(VECTOR_ELT(kl, j)), dfill, bexact, bnarm, ihasna, iverbose);
               break;
           }

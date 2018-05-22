@@ -1,6 +1,6 @@
 #include "roll.h"
 
-void rollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool exact, bool narm, int hasna, int verbose) {
+void rollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool exact, bool narm, int hasna, int verbose) {
 
   uint_fast64_t si =                       // align shift for ans index
     align > 0 ? 0 :                        // align right
@@ -40,7 +40,7 @@ void rollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align, 
       if (verbose>0 && hasna==-1) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
       w = 0.;
       truehasna = 1;
-    } else {                                     // fill partial window, could be an option
+    } else if (!partial) {                       // fill partial window
       for (uint_fast64_t i=0; i<(k-1); i++) {    // fill for align right/center
         if (i >= -si) ans[i+si] = fill;          // fill answer vector
       }
@@ -131,7 +131,7 @@ void rollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, do
   }
 }
 
-void rollsumVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool exact, bool narm, int hasna, int verbose) {
+void rollsumVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool exact, bool narm, int hasna, int verbose) {
   uint_fast64_t si =                       // align shift for ans index
     align > 0 ? 0 :                        // align right
     align < 0 ? -k+1 :                     // align left
@@ -170,7 +170,7 @@ void rollsumVector(double *x, uint_fast64_t nx, double *ans, int k, int align, d
       if (verbose>0 && hasna==-1) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
       w = 0.;
       truehasna = 1;
-    } else {                                     // fill partial window, could be an option
+    } else if (!partial) {                       // fill partial window
       for (uint_fast64_t i=0; i<(k-1); i++) {    // fill for align right/center
         if (i >= -si) ans[i+si] = fill;          // fill answer vector
       }

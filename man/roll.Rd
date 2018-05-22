@@ -13,9 +13,11 @@
 
 \usage{
 frollmean(x, n, fill=NA, exact=FALSE, align=c("right", "left",
-  "center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n), verbose=FALSE)
+  "center"), partial=FALSE, na.rm=FALSE, hasNA=NA, adaptive=is.list(n),
+  verbose=FALSE)
 frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
-  "center"), na.rm=FALSE, hasNA=NA, adaptive=is.list(n), verbose=FALSE)
+  "center"), partial=FALSE, na.rm=FALSE, hasNA=NA, adaptive=is.list(n),
+  verbose=FALSE)
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric fields. }
@@ -28,6 +30,9 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
   \item{align}{ character, define if window frame covers preceding rows
     \code{"right"}, following rows \code{"left"} or centered
     \code{"center"}, default \code{"right"}. }
+  \item{partial}{ logical, should partial window width be also
+    calculated, if \code{TRUE} then \code{fill} argument is ignored,
+    default \code{FALSE}. }
   \item{na.rm}{ logical, should missing values be removed when
     calculating window, default \code{FALSE}. }
   \item{hasNA}{ logical, if it is known that \code{x} contains \code{NA}
