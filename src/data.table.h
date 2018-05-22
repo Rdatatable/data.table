@@ -153,10 +153,10 @@ int getDTthreads();
 void avoid_openmp_hang_within_fork();
 
 // roll.c
-void rollmeanVector(double x[], uint_fast64_t nx, double ans[], int k, int align, double fill, bool exact, bool narm, int hasna, int verbose);
-void rollmeanVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[], double fill, bool exact, bool narm, int hasna, int verbose);
-void rollsumVector(double x[], uint_fast64_t nx, double ans[], int k, int align, double fill, bool exact, bool narm, int hasna, int verbose);
-void rollsumVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[], double fill, bool exact, bool narm, int hasna, int verbose);
+void rollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool exact, bool narm, int hasna, int verbose);
+void rollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, int verbose);
+void rollsumVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool exact, bool narm, int hasna, int verbose);
+void rollsumVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, int verbose);
 
 // rollR.c
 SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);

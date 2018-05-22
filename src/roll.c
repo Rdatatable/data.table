@@ -1,6 +1,6 @@
 #include "roll.h"
 
-void rollmeanVector(double x[], uint_fast64_t nx, double ans[], int k, int align, double fill, bool exact, bool narm, int hasna, int verbose) {
+void rollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool exact, bool narm, int hasna, int verbose) {
 
   uint_fast64_t si =                       // align shift for ans index
     align > 0 ? 0 :                        // align right
@@ -78,7 +78,7 @@ void rollmeanVector(double x[], uint_fast64_t nx, double ans[], int k, int align
   }
 }
 
-void rollmeanVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[], double fill, bool exact, bool narm, int hasna, int verbose) {
+void rollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, int verbose) {
   double w = 0.; // running window sum
   bool truehasna = hasna>0; // flag to re-run if NAs detected
   int thisk, lastk, diffk;
@@ -131,7 +131,7 @@ void rollmeanVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[],
   }
 }
 
-void rollsumVector(double x[], uint_fast64_t nx, double ans[], int k, int align, double fill, bool exact, bool narm, int hasna, int verbose) {
+void rollsumVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool exact, bool narm, int hasna, int verbose) {
   uint_fast64_t si =                       // align shift for ans index
     align > 0 ? 0 :                        // align right
     align < 0 ? -k+1 :                     // align left
@@ -208,7 +208,7 @@ void rollsumVector(double x[], uint_fast64_t nx, double ans[], int k, int align,
   }
 }
 
-void rollsumVectorAdaptive(double x[], uint_fast64_t nx, double ans[], int k[], double fill, bool exact, bool narm, int hasna, int verbose) {
+void rollsumVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, int verbose) {
   double w = 0.; // running window sum
   bool truehasna = hasna>0; // flag to re-run if NAs detected
   int thisk, lastk, diffk;
