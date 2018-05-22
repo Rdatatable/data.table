@@ -11790,12 +11790,51 @@ test(1910, DT[, v:=cumsum(x), by="y"], data.table(x=1:10, y=1:2, v=INT(1,2,4,6,9
 
 # testing issue #2829 (assigning to 0 rows)
 DT = data.table(COL_INT = 1L, COL_INT_2 = 5L)
-test(1911.1, 
+test(1911.1,
      DT[COL_INT == 0L, c("COL_INT", "NEW_COL"):=list(COL_INT_2, "Test")],
      data.table(COL_INT = 1L, COL_INT_2 = 5L, NEW_COL = NA_character_))
-test(1911.2, 
+test(1911.2,
      DT[, COL_INT := integer(0)],
      error = "RHS of assignment to existing column 'COL_INT' is zero length but not NULL.*")
+
+# gc race with altrep in R-devel May 2018, #2866 & #2767, PR#2882
+# This runs with 2 threads in the test suite on CRAN and AppVeyor etc.
+# 2 threads are sufficient to fail before the fix.
+N = 20
+DF = data.frame(a=rnorm(N),
+                b=factor(rbinom(N,5,prob=0.5),1:5,letters[1:5]),
+                c=factor(rbinom(N,5,prob=0.5),1:5,letters[1:5]))
+DT = setDT(DF)  # setDT required since data.table() already expanded altrep's
+before = sum(gc()[, 2])
+fff = function(aref) {
+  ff = lapply(1:5, function(i) {
+    DT[,list(sumA=sum(get(aref))),by=b][,c:=letters[i]]
+  })
+  return(rbindlist(ff))
+}
+for(i in 1:100) {
+  f = fff("a")
+  rm("f")
+}
+gc()  # extra gc() (i.e. two including the one on next line) seems to reduce `after`
+      # from 29.7 to 27.2 (exactly `before`). Keeping the extra gc() as no harm.
+after = sum(gc()[, 2])
+test(1912.1, after < before + 10)  # 10MB very wide margin. With the gc race, heap usage grew much more which is all we're testing here (no blow up).
+#
+before = sum(gc()[, 2])
+fff = function(aref) {
+  DT = setDT(data.frame(a=1:N, b=1:N, c=1:N, d=1:N, e=1:N, f=1:N, g=1:N, h=1:N)) # 1:N creates altrep. A few of them too to tickle (the fixed) race.
+  lapply(1:5, function(i) {
+    DT[,list(sumA=sum(get(aref))),by=b][,c:=letters[i]]
+  })
+}
+for(i in 1:100) {
+  fff("a")
+}
+gc()
+after = sum(gc()[, 2])
+test(1912.2, after < before + 10)
+
 
 ###################################
 #  Add new tests above this line  #
