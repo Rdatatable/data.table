@@ -83,9 +83,9 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
           error("Length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'.");
       }
       SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, inx[i]));      // allocate answer vector for this column-window
-      // array of pointer to 'tmp'
+      // TODO array of pointer to 'tmp'
     }
-    // array of pointer to 'this'
+    // TODO array of pointer to 'this'
   }
 
   enum {MEAN, SUM} sfun;
@@ -93,7 +93,7 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) sfun = SUM;
   else error("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker.");
 
-  int* ik = INTEGER(k); // confirm this will not use DATAPTR
+  int* ik = INTEGER(k); // to confirm this will not use R's DATAPTR
   
   int ialign;
   if (!strcmp(CHAR(STRING_ELT(align, 0)), "right")) ialign = 1;
@@ -128,7 +128,7 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
         break;
     }
   } else {
-    if (iverbose>0) Rprintf("rollfun: multiple window or columns entering parallel execution\n");
+    if (iverbose>0) Rprintf("rollfun: multiple window or columns entering parallel execution, but actually single threaded due to active verbose\n");
     for (R_len_t i=0; i<nx; i++) {                                      // loop over columns
       this = AS_NUMERIC(VECTOR_ELT(x, i));                              // extract column/vector from data.table/list
       #pragma omp parallel num_threads(iverbose==0 ? MIN(getDTthreads(), nx) : 1)

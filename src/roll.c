@@ -10,7 +10,8 @@ void rollmeanVector(double x[], uint_fast64_t nx, double ans[], int k, int align
   bool truehasna = hasna>0;                // flag to re-run if NAs detected
   if (!truehasna) {
     if (!exact) {
-      int w1 = nx < k ? nx : k; // this can be handled in rollR.c            // window width might be longer than column length
+      // TODO same for rollsum
+      int w1 = nx < k ? nx : k;            // window width might be longer than column length, should not override k unless we merge `fill` loops here
       for (uint_fast64_t i=0; i<w1; i++) { // loop over obs, potentially incomplete window from left
         w += x[i];                         // add current row to window sum
         if (i >= -si) {
