@@ -245,7 +245,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   SETLENGTH(ans, LENGTH(cols));
   for (int i=0; i<LENGTH(cols); i++) {
     SEXP source, target;
-    if (ALTREP(VECTOR_ELT(x, INTEGER(cols)[i]-1))) error("Internal error in subset.c: column %d is an ALTREP vector. Please see NEWS item 1 in v1.11.4 and report this as a bug.", INTEGER(cols)[i]);
+    if (ALTREP(VECTOR_ELT(x, INTEGER(cols)[i]-1))) error("Internal error in subset.c: column %d is an ALTREP vector. Please see NEWS item 2 in v1.11.4 and report this as a bug.", INTEGER(cols)[i]);
     target = PROTECT(allocVector(TYPEOF(source=VECTOR_ELT(x, INTEGER(cols)[i]-1)), ansn));
     SETLENGTH(target, ansn);
     SET_TRUELENGTH(target, ansn);
