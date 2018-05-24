@@ -11835,6 +11835,14 @@ gc()
 after = sum(gc()[, 2])
 test(1912.2, after < before + 10)
 
+# fread returns NULL with warning on empty file
+f = tempfile()
+file.create(f)
+test(1913.1, fread(f), NULL, warning = 'File.*size 0')
+test(1913.2, fread(file = f), NULL, warning = 'File.*size 0')
+# trigger download for last instance of warning
+test(1913.3, fread(paste0('file://', f)), NULL, warning = 'File.*size 0')
+unlink(f)
 
 ###################################
 #  Add new tests above this line  #

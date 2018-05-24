@@ -97,7 +97,7 @@ When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \c
 
 }
 \value{
-    A \code{data.table} by default. A \code{data.frame} when argument \code{data.table=FALSE}; e.g. \code{options(datatable.fread.datatable=FALSE)}.
+    A \code{data.table} by default. A \code{data.frame} when argument \code{data.table=FALSE}; e.g. \code{options(datatable.fread.datatable=FALSE)}. \code{NULL} if the target is empty.
 }
 \references{
 Background :\cr
