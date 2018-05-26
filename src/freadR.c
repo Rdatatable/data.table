@@ -175,7 +175,7 @@ SEXP freadR(
   // === end extras ===
 
   RCHK = PROTECT(allocVector(VECSXP, 2));
-  // see kalibera/rchk#9 and issue #2865.  To avoid rchk false positives.
+  // see kalibera/rchk#9 and Rdatatable/data.table#2865.  To avoid rchk false positives.
   // allocateDT() assigns DT to position 0. userOverride() assigns colNamesSxp to position 1; colNamesSxp is used in allocateDT()
   freadMain(args);
   UNPROTECT(1);

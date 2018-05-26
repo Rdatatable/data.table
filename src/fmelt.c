@@ -289,7 +289,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
 }
 
 struct processData {
-  SEXP RCHK;  // a 2 item list holding vars (result of checkVars) and naidx. PROTECTed up in fmelt so that preprocess() doesn't need to PROTECT to pass rchk, #2865
+  SEXP RCHK;  // a 2 item list holding vars (result of checkVars) and naidx. PROTECTed up in fmelt so that preprocess() doesn't need to PROTECT. To pass rchk, #2865
   SEXP idcols, valuecols, naidx; // convenience pointers into RCHK[0][0], RCHK[0][1] and RCHK[1] respectively
   int lids, lvalues, lmax, lmin, totlen, nrow;
   int *isfactor, *leach, *isidentical;
