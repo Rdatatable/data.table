@@ -68,24 +68,24 @@ static Rboolean sortStr = TRUE;                                     // TRUE for 
 #define N_SMALL 200                                                 // replaced n < 200 with n < N_SMALL. Easier to change later
 #define N_RANGE 100000                                              // range limit for counting sort. UPDATE: should be less than INT_MAX (see setRange for details)
 
-static void growstack(int newlen) {
-  if (newlen==0) newlen=100000;                                   // no link to icount range restriction, just 100,000 seems a good minimum at 0.4MB.
-  if (newlen>gsmaxalloc) newlen=gsmaxalloc;
+static void growstack(uint64_t newlen) {
+  if (newlen==0) newlen=100000;                                     // no link to icount range restriction, just 100,000 seems a good minimum at 0.4MB.
+  if (newlen>gsmaxalloc) newlen=gsmaxalloc;                         // gsmaxalloc is type int so newlen can now be cast to int ok
   gs[flip] = realloc(gs[flip], newlen*sizeof(int));
-  if (gs[flip] == NULL) Error("Failed to realloc working memory stack to %d*4bytes (flip=%d)", newlen, flip);
+  if (gs[flip] == NULL) Error("Failed to realloc working memory stack to %d*4bytes (flip=%d)", (int)newlen, flip);
   gsalloc[flip] = newlen;
 }
 
 static void push(int x) {
   if (!stackgrps || x==0) return;
-  if (gsalloc[flip] == gsngrp[flip]) growstack(gsngrp[flip]*2);
+  if (gsalloc[flip] == gsngrp[flip]) growstack((uint64_t)(gsngrp[flip])*2);
   gs[flip][gsngrp[flip]++] = x;
   if (x > gsmax[flip]) gsmax[flip] = x;
 }
 
 static void mpush(int x, int n) {
   if (!stackgrps || x==0) return;
-  if (gsalloc[flip] < gsngrp[flip]+n) growstack((gsngrp[flip]+n)*2);
+  if (gsalloc[flip] < gsngrp[flip]+n) growstack(((uint64_t)(gsngrp[flip])+n)*2);
   for (int i=0; i<n; i++) gs[flip][gsngrp[flip]++] = x;
   if (x > gsmax[flip]) gsmax[flip] = x;
 }
@@ -94,7 +94,7 @@ static void flipflop() {
   flip = 1-flip;
   gsngrp[flip] = 0;
   gsmax[flip] = 0;
-  if (gsalloc[flip] < gsalloc[1-flip]) growstack(gsalloc[1-flip]*2);
+  if (gsalloc[flip] < gsalloc[1-flip]) growstack((uint64_t)(gsalloc[1-flip])*2);
 }
 
 #ifdef TIMING_ON
