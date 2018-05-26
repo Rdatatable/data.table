@@ -24,17 +24,17 @@ static SEXP *cradix_xtmp = NULL; static int cradix_xtmp_alloc = 0;
 static int *csort_otmp=NULL; static int csort_otmp_alloc=0;
 static SEXP *ustr = NULL; static int ustr_alloc = 0; static int ustr_n = 0;
 
-#define Error(...) do {onexit(); error(__VA_ARGS__);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
+#define Error(...) do {cleanup(); error(__VA_ARGS__);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
 #undef warning
 #define warning(...) Do not use warning in this file                // since it can be turned to error via warn=2
 /* Using OS realloc() in this file to benefit from (often) in-place realloc() to save copy
  * We have to trap on exit anyway to call savetl_end().
  * NB: R_alloc() would be more convenient (fails within) and robust (auto free) but there is no R_realloc(). Implementing R_realloc() would be an alloc and copy, iiuc.
  *     Calloc/Realloc needs to be Free'd, even before error() [R-exts$6.1.2]. An oom within Calloc causes a previous Calloc to leak so Calloc would still needs to be trapped anyway.
- * Therefore, using <<if (!malloc()) Error("helpful context msg")>> approach to onexit() on error.
+ * Therefore, using <<if (!malloc()) Error("helpful context msg")>> approach to cleanup() on error.
  */
 
-static void onexit() {
+static void cleanup() {
   free(gs[0]); gs[0] = NULL;
   free(gs[1]); gs[1] = NULL;
   flip = 0;
@@ -1359,7 +1359,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     setAttrib(ans, sym_maxgrpn, ScalarInteger(gsmax[flip]));
   }
 
-  onexit();
+  cleanup();
   UNPROTECT(n_protect);
   return ans;
 }
