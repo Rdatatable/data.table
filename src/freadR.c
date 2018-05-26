@@ -32,6 +32,7 @@ static SEXP selectSxp;
 static SEXP dropSxp;
 static SEXP colClassesSxp;
 static cetype_t ienc = CE_NATIVE;
+static SEXP RCHK;
 static SEXP DT;
 static SEXP colNamesSxp;
 static int8_t *type;
@@ -173,10 +174,11 @@ SEXP freadR(
   else STOP("encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'", tt);
   // === end extras ===
 
-  DT = R_NilValue; // created by callback
+  RCHK = PROTECT(allocVector(VECSXP, 2));
+  // see kalibera/rchk#9 and issue #2865.  To avoid rchk false positives.
+  // allocateDT() assigns DT to position 0. userOverride() assigns colNamesSxp to position 1; colNamesSxp is used in allocateDT()
   freadMain(args);
-  if (DT!=R_NilValue) UNPROTECT(1);  // DT is allocated in allocateDT. See notes there.
-  if (colNamesSxp!=R_NilValue) UNPROTECT(1);  // allocated in userOverride() and then used in allocateDT()
+  UNPROTECT(1);
   return DT;
 }
 
@@ -187,8 +189,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   if (typeSize[CT_STRING]!=8) STOP("Internal error: typeSize[CT_STRING] != 1");
   colNamesSxp = R_NilValue;
   if (colNames!=NULL) {
-    colNamesSxp = PROTECT(allocVector(STRSXP, ncol));
-    // no protecti++ and no UNPROTECT inside userOverride because it's used in allocateDT().
+    SET_VECTOR_ELT(RCHK, 1, colNamesSxp=allocVector(STRSXP, ncol));
     for (int i=0; i<ncol; i++) {
       SEXP this;
       if (colNames[i].len<=0) {
@@ -319,9 +320,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
   if (newDT) {
     ncol = ncolArg;
     dtnrows = allocNrow;
-    DT = PROTECT(allocVector(VECSXP,ncol-ndrop));
-    // no protecti++ here. See notes at the end of this function.
-    // over-allocation is left to alloc.col on return in fread.R
+    SET_VECTOR_ELT(RCHK, 0, DT=allocVector(VECSXP,ncol-ndrop));
     if (ndrop==0) {
       setAttrib(DT,R_NamesSymbol,colNamesSxp);  // colNames mkChar'd in userOverride step
     } else {
@@ -366,15 +365,6 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     resi++;
   }
   dtnrows = allocNrow;
-
-  // rchk on CRAN check page will note there is no UNPROTECT here. This is correct.
-  // ------------------------------------------------------------------------------
-  // This allocateDT function is called from freadMean. freadMain is in fread.c which is a C file independent
-  // of R (it is shared with pydatatable) and contains no R-API calls. freadMain opens the csv file, detects
-  // ncols and types, calls back to this allocateDT function and then continues to populate DT before
-  // returning back to freadR higher up in this file, which is where the UNPROTECT happens.
-  // NB: rchk will note this on CRAN check page
-
   return DTbytes;
 }
 
