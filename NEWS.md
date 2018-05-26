@@ -1,7 +1,16 @@
 
 **If you are viewing this file on CRAN, please check latest news on GitHub [here](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).**
 
-### Changes in v1.11.3  (in development)
+### Changes in v1.11.5  (in development)
+
+#### NEW FEATURES
+
+#### BUG FIXES
+
+#### NEWS
+
+
+### Changes in v1.11.4
 
 1. Empty RHS of `:=` is no longer an error when the `i` clause returns no rows to assign to anyway, [#2829](https://github.com/Rdatatable/data.table/issues/2829). Thanks to @cguill95 for reporting and to @MarkusBonsch for fixing.
 
