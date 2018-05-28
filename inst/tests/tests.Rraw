@@ -7677,48 +7677,53 @@ dt = data.table(i=1:10, f=as.factor(1:10))
 test(1588.1, dt[f %in% 3:4], dt[3:4])
 test(1588.2, dt[f == 3], dt[3])
 
-# data.table::forderv is encoding-aware and independent of locale
-# [ Aside: data.table needs to be independent of locale because keys/indexes depend on a sort order. If a data.table is stored on disk with a key
+# data.table operates consistently independent of locale, but it's R that changes and is sensitive to it.
+#   Because keys/indexes depend on a sort order. If a data.table is stored on disk with a key
 #   created in a locale-sensitive order and then loaded by another R session in a different locale, the ability to re-use existing sortedness
 #   will break because the order would depend on the locale. Which is why data.table is deliberately C-locale only. For consistency and simpler
 #   internals for robustness to reduce the change of errors and to avoid that class of bug. It would be possible to have locale-sensitive keys
-#   and indexes but we've, so far, decided not to, for those reasons. ]
-# base::order is encoding-aware and locale-sensitive, tested here
-# R is usually started in the regional non-C locale; e.g. en_US.UTF-8 for Matt and en_IN for Jan, #2771
-# This test 1590 tests both data.table and base R in the default locale and C locale too
-# Note that data.table operates consistently independent of locale, but it's R that changes and is sensitive to it.
+#   and indexes but we've, so far, decided not to, for those reasons.
+# R is usually started in the regional non-C locale; e.g. en_US.UTF-8 for Matt, en_IN for Jan (#2771) and English_United States.1252 on Windows in US (#2856)
 oldlocale = Sys.getlocale()
 ctype = Sys.getlocale("LC_CTYPE")
 collate = Sys.getlocale("LC_COLLATE")
-# We could use LC_ALL, too, but the idea was to focus on the minimal parts of LC_ALL directly.
-# The user may have changed locale from the default, so we desire here to precisely return these two
-# locale settings to their values before this test (which might feasibly not be the default).
-if (ctype==collate && ctype!="C") {
-  # normally true; e.g. R CMD check, CRAN etc, unless user manually started R in C-locale
-  x1 = "fa\xE7ile"
-  Encoding(x1) = "latin1"
-  x2 = iconv(x1, "latin1", "UTF-8")
-  test(1590.1, forderv(c(x2,x1,x1,x2)), integer())  # integer() means input is already sorted
-  test(1590.2, base::order(c(x2,x1,x1,x2)), 1:4)
-  Encoding(x2) = "unknown"
-  test(1590.3, forderv(c(x2,x1,x1,x2)), integer())
-  test(1590.4, base::order(c(x2,x1,x1,x2)), 1:4)
-}
 Sys.setlocale("LC_CTYPE","C")
 Sys.setlocale("LC_COLLATE","C")
 # Same as Set.locale("LC_ALL","C") but done like this because it's not possible to return LC_ALL to previous state (only to default)
-# Both LC_CTYPE and LC_COLLATE need to be set (as more normally done with LC_ALL) before base::order changes behaviour in test 1590.6 and 1590.8
+# Both LC_CTYPE and LC_COLLATE need to be set (as more normally done with LC_ALL) before base::order changes behaviour in test 1590.4 and 1590.7
 x1 = "fa\xE7ile"
 Encoding(x1) = "latin1"
 x2 = iconv(x1, "latin1", "UTF-8")
-test(1590.5, forderv(c(x2,x1,x1,x2)), integer())         # same consistent result from data.table (good for our needs)
-test(1590.6, base::order(c(x2,x1,x1,x2)), INT(1,4,2,3))  # different result in base R under C locale
+test(1590.1, identical(x1,x2))
+test(1590.2, x1==x2)
+test(1590.3, forderv(    c(x2,x1,x1,x2)), integer())     # desirable consistent result given data.table's needs
+test(1590.4, base::order(c(x2,x1,x1,x2)), INT(1,4,2,3))  # different result in base R under C locale even though identical(x1,x2)
 Encoding(x2) = "unknown"
-test(1590.7, forderv(c(x2,x1,x1,x2)), INT(1,4,2,3))      # same consistent result from data.table (good for our needs)
-test(1590.8, base::order(c(x2,x1,x1,x2)), INT(2,3,1,4))  # different result again; base R is encoding-sensitive when in C-locale
+test(1590.5, x1!=x2)
+test(1590.6, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
+test(1590.7, base::order(c(x2,x1,x1,x2)), INT(2,3,1,4))  # different result; base R is encoding-sensitive in C-locale
 Sys.setlocale("LC_CTYPE", ctype)
 Sys.setlocale("LC_COLLATE", collate)
-test(1590.9, Sys.getlocale(), oldlocale)  # checked restored locale fully back to how it was before this test
+test(1590.8, Sys.getlocale(), oldlocale)  # checked restored locale fully back to how it was before this test
+# Now test default locale on all platforms: Windows-1252 on AppVeyor and win-builder, UTF-8 on Linux, and users running test.data.table() in their locale
+x1 = "fa\xE7ile"
+Encoding(x1) = "latin1"
+x2 = iconv(x1, "latin1", "UTF-8")
+test(1590.9, identical(x1,x2))
+test(1590.11, x1==x2)
+test(1590.12, forderv(    c(x2,x1,x1,x2)), integer())
+test(1590.13, base::order(c(x2,x1,x1,x2)), 1:4)
+Encoding(x2) = "unknown"
+if (x1==x2) {
+  # Linux and Mac where locale is usually UTF8
+  # NB: x1==x2 is a condition in base R, independent of data.table
+  test(1590.14, forderv(    c(x2,x1,x1,x2)), integer())
+  test(1590.15, base::order(c(x2,x1,x1,x2)), 1:4)
+} else {
+  # Windows-1252, #2856
+  test(1590.16, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))
+  test(1590.17, base::order(c(x2,x1,x1,x2)), INT(1,4,2,3))
+}
 
 # #1432 test
 list_1 = list(a = c(44,47), dens = c(2331,1644))
@@ -10920,8 +10925,8 @@ test(1830.6, identical(
   fread("E\n0e0\n#DIV/0!\n#VALUE!\n#NULL!\n#NAME?\n#NUM!\n#REF!\n#N/A\n1e0\n"),
   data.table(E=c(0, NaN, NaN, NA, NA, NA, NA, NA, 1))))
 test(1830.7, identical(
-  fread("F\n1.1\n+1.333333333333333\n5.9e320\n45609E11\n-00890.e-003\n"),
-  data.table(F=c(1.1, 1.333333333333333, 5.9e320, 45609e11, -890e-3))))
+  fread("F\n1.1\n+1.333333333333333\n5.9e300\n45609E11\n-00890.e-003\n"),
+  data.table(F=c(1.1, 1.333333333333333, 5.9e300, 45609e11, -890e-3))))
 test(1830.8, identical(
   fread("G\n0.000000000000000000000000000000000000000000000000000000000000449548\n"),
   data.table(G=c(4.49548e-61))))
@@ -11793,12 +11798,194 @@ test(1910, DT[, v:=cumsum(x), by="y"], data.table(x=1:10, y=1:2, v=INT(1,2,4,6,9
 
 # testing issue #2829 (assigning to 0 rows)
 DT = data.table(COL_INT = 1L, COL_INT_2 = 5L)
-test(1911.1, 
+test(1911.1,
      DT[COL_INT == 0L, c("COL_INT", "NEW_COL"):=list(COL_INT_2, "Test")],
      data.table(COL_INT = 1L, COL_INT_2 = 5L, NEW_COL = NA_character_))
-test(1911.2, 
+test(1911.2,
      DT[, COL_INT := integer(0)],
      error = "RHS of assignment to existing column 'COL_INT' is zero length but not NULL.*")
+
+# gc race with altrep in R-devel May 2018, #2866 & #2767, PR#2882
+# This runs with 2 threads in the test suite on CRAN and AppVeyor etc.
+# 2 threads are sufficient to fail before the fix.
+N = 20
+DF = data.frame(a=rnorm(N),
+                b=factor(rbinom(N,5,prob=0.5),1:5,letters[1:5]),
+                c=factor(rbinom(N,5,prob=0.5),1:5,letters[1:5]))
+DT = setDT(DF)  # setDT required since data.table() already expanded altrep's
+before = sum(gc()[, 2])
+fff = function(aref) {
+  ff = lapply(1:5, function(i) {
+    DT[,list(sumA=sum(get(aref))),by=b][,c:=letters[i]]
+  })
+  return(rbindlist(ff))
+}
+for(i in 1:100) {
+  f = fff("a")
+  rm("f")
+}
+gc()  # extra gc() (i.e. two including the one on next line) seems to reduce `after`
+      # from 29.7 to 27.2 (exactly `before`). Keeping the extra gc() as no harm.
+after = sum(gc()[, 2])
+test(1912.1, after < before + 10)  # 10MB very wide margin. With the gc race, heap usage grew much more which is all we're testing here (no blow up).
+#
+before = sum(gc()[, 2])
+fff = function(aref) {
+  DT = setDT(data.frame(a=1:N, b=1:N, c=1:N, d=1:N, e=1:N, f=1:N, g=1:N, h=1:N)) # 1:N creates altrep. A few of them too to tickle (the fixed) race.
+  lapply(1:5, function(i) {
+    DT[,list(sumA=sum(get(aref))),by=b][,c:=letters[i]]
+  })
+}
+for(i in 1:100) {
+  fff("a")
+}
+gc()
+after = sum(gc()[, 2])
+test(1912.2, after < before + 10)
+
+# BEGIN port of old testthat tests, #2740.  Issue numbers may be from R-forge.
+#
+# test-data.frame-like.R (merge, subset, transform)")
+#
+# `x` columns are valid, #1299
+d1 <- data.table(x=c(1,3,8), y1=rnorm(3), key="x")
+d2 <- data.table(x=c(3,8,10), y2=rnorm(3), key="x")
+ans1 <- merge(d1, d2, by="x")
+ans2 <- cbind(d1[2:3], y2=d2[1:2]$y2)
+setkey(ans2, x)
+test(1913.1, ans1, ans2)
+#
+# `xkey` column names are valid in merge, #1299
+d1 <- data.table(xkey=c(1,3,8), y1=rnorm(3), key="xkey")
+d2 <- data.table(xkey=c(3,8,10), y2=rnorm(3), key="xkey")
+ans2 <- cbind(d1[2:3], y2=d2[1:2]$y2)
+setkey(ans2, xkey)
+test(1913.2, merge(d1, d2, by="xkey"), ans2)
+#
+# one column merges work, #1241
+dt <- data.table(a=rep(1:2,each=3), b=1:6, key="a")
+y <- data.table(a=c(0,1), bb=c(10,11), key="a")
+test(1913.3, merge(y, dt), data.table(a=1L, bb=11, b=1:3, key="a"))
+test(1913.4, merge(y, dt, all=TRUE),
+             data.table(a=rep(c(0L,1L,2L),c(1,3,3)),
+                        bb=rep(c(10,11,NA_real_),c(1,3,3)),
+                        b=c(NA_integer_,1:6), key="a"))
+#
+# y with only a key column
+y <- data.table(a=c(0,1), key="a")
+test(1913.5, merge(y,dt), data.table(a=1L, b=1:3, key="a"))
+test(1913.6, merge(y, dt, all=TRUE), data.table(a=rep(c(0L,1L,2L),c(1,3,3)), b=c(NA_integer_,1:6), key="a"))
+#
+# merging data.tables is almost like merging data.frames
+d1 <- data.table(a=sample(letters, 10), b=sample(1:100, 10), key='a')
+d2 <- data.table(a=d1$a, b=sample(1:50, 10), c=rnorm(10), key='a')
+dtm <- merge(d1, d2, by='a', suffixes=c(".xx", ".yy"))
+dtm.df <- as.data.frame(dtm)
+dfm <- merge(as.data.frame(d1), as.data.frame(d2), by='a', suffixes=c('.xx', '.yy'))
+test(1913.7, unname(dtm.df), unname(dfm))
+test(1913.8, colnames(dtm), colnames(dfm))
+#
+## merge and auto-increment columns in y[x]
+## merging tables that have common column names that end in *.1 gets
+## tricky, because the y[x] mojo does some magic to increment the *.1
+## in the x (I think) and keep *.1 in the y
+x <- data.table(a=letters[1:10], b=1:10, b.1=1:10 * 10, key="a")
+y <- data.table(a=letters[1:10], b=letters[11:20], b.1=rnorm(10), key="a")
+M <- merge(x, y)
+m <- merge(as.data.frame(x), as.data.frame(y), by="a")
+test(1913.9, is.data.table(M) && !is.data.table(m))
+test(1913.11, all(names(M) %in% union(names(M), names(m))))
+for (name in names(m)) {
+  test(1913.12, M[[name]], m[[name]])
+}
+#
+# Original example that smoked out the bug
+M <- data.table(a=letters[1:10], b=1:10)
+m <- as.data.frame(M)
+ms <- lapply(1:3, function(x) data.table(a=letters[1:10], b=1:10 * 10^x))
+for (i in 1:3) {
+  M <- merge(M, ms[[i]], by='a', suffixes=c("", sprintf(".%d", i)))
+}
+for (i in 1:3) {
+  m <- merge(m, as.data.frame(ms[[i]]), by='a', suffixes=c("", sprintf(".%d", i)))
+}
+test(1913.13, is.data.table(M) && !is.data.table(m))
+test(1913.14, all(names(M) %in% union(names(M), names(m))))
+for (name in names(m)) {
+  test(1913.15, M[[name]], m[[name]])
+}
+#
+# simple subset maintains keys
+dt <- data.table(a=sample(c('a', 'b', 'c'), 20, replace=TRUE),
+                 b=sample(c('a', 'b', 'c'), 20, replace=TRUE),
+                 c=sample(20), key='a')
+sub <- subset(dt, a == 'b')
+test(1913.16, key(dt), key(sub))
+#
+# subset using 'select' maintains key appropriately"
+dt <- data.table(a=sample(c('a', 'b', 'c'), 20, replace=TRUE),
+                 b=sample(c('a', 'b', 'c'), 20, replace=TRUE),
+                 c=sample(20), key=c('a', 'b'))
+sub.1 <- subset(dt, a == 'a', select=c('c', 'b', 'a'))
+test(1913.17, key(sub.1), key(dt)) # reordering columns
+sub.2 <- subset(dt, a == 'a', select=c('a', 'c'))
+test(1913.18, key(sub.2), 'a')     # selected columns are prefix of key
+sub.3 <- subset(dt, a == 'a', select=c('b', 'c'))
+test(1913.19, is.null(key(sub.3))) # selected columns do not from a key prefix
+sub.4 <- subset(dt, a == 'cc')
+test(1913.21, nrow(sub.4), 0L)
+test(1913.22, is.null(key(sub.4)))
+#
+# transform maintains keys
+dt <- data.table(a=sample(c('a', 'b', 'c'), 20, replace=TRUE),
+                 b=sample(c('a', 'b', 'c'), 20, replace=TRUE),
+                 c=sample(20), key=c('a', 'b'))
+t1 <- transform(dt, d=c+4)
+test(1913.23, key(t1), key(dt))
+test(1913.24, t1$d, dt$c + 4)  # transform was successful
+t2 <- transform(dt, d=c+4, a=sample(c('x', 'y', 'z'), 20, replace=TRUE))
+test(1913.25, is.null(key(t2)))  # transforming a key column nukes the key
+## This is probably not necessary, but let's just check that transforming
+## a key column doesn't twist around the rows in the result.
+for (col in c('b', 'c')) {
+  test(1913.26, t2[[col]], dt[[col]])  # mutating-key-transform maintains other columns
+}
+#
+# tests-S4.R (S4 Compatability)
+#
+suppressWarnings(setClass("Data.Table", contains="data.table"))  # suppress 'Created a package name, ‘2018-05-26 06:14:43.444’, when none found'
+suppressWarnings(setClass("S4Composition", representation(data="data.table")))
+# data.table can be a parent class"
+ids <- sample(letters[1:3], 10, replace=TRUE)
+scores <- rnorm(10)
+dt <- data.table(id=ids, score=scores)
+dt.s4 <- new("Data.Table", data.table(id=ids, score=scores))
+test(1914.1, isS4(dt.s4))
+test(1914.2, inherits(dt.s4, 'data.table'))
+## pull out data from S4 as.list, and compare to list from dt
+dt.s4.list <- dt.s4@.Data
+names(dt.s4.list) <- names(dt.s4)
+test(1914.3, dt.s4.list, as.list(dt))  # Underlying data not identical
+# simple S4 conversion-isms work
+df = data.frame(a=sample(letters, 10), b=1:10)
+dt = as.data.table(df)
+test(1914.4, identical(as(df, 'data.table'), dt))
+test(1914.5, identical(as(dt, 'data.frame'), df))
+# data.table can be used in an S4 slot
+dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
+dt.comp <- new("S4Composition", data=dt)
+test(1914.6, dt.comp@data, dt)
+# S4 methods dispatch properly on data.table slots"
+dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
+dt.comp <- new("S4Composition", data=dt)
+setGeneric("dtGet", function(x, what) standardGeneric("dtGet"))
+setMethod("dtGet", c(x="S4Composition", what="missing"), function(x, what){x@data})
+setMethod("dtGet", c(x="S4Composition", what="ANY"), function(x, what) {x@data[[what]]})
+test(1914.7, dtGet(dt.comp), dt)  # actually
+test(1914.8, identical(dtGet(dt.comp, 1), dt[[1]]))
+test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
+# END port of old testthat tests
+
 
 ###################################
 #  Add new tests above this line  #
@@ -11811,7 +11998,8 @@ plat = paste0("endian==", .Platform$endian,
               ", sizeof(long double)==", .Machine$sizeof.longdouble,
               ", sizeof(pointer)==", .Machine$sizeof.pointer,
               ", TZ=", suppressWarnings(Sys.timezone()),
-              ", locale='", Sys.getlocale(), "'")
+              ", locale='", Sys.getlocale(), "'",
+              ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'")
 DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
 if ((x<-timings[,sum(nTest)]) != ntest) warning("Timings count mismatch:",x,"vs",ntest)
 cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")

@@ -20,7 +20,7 @@ rm -rf ./data.table.Rcheck
 # tests.Rraw in particular have failed CRAN Solaris (only) due to this.
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" ./
 
-# No unicode either?! Put these tests in DtNonAsciiTests package. Trying this again to see what happens now that Solaris is dead. Tests 1864.1 and 1864.2
+# Unicode is now ok. This unicode in tests.Rraw is passing on CRAN.
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" ./
 
 # Ensure no calls to omp_set_num_threads() [to avoid affecting other packages and base R]
@@ -95,6 +95,7 @@ grep ScalarString *.c
 # If a PROTECT is not needed then a comment is added explaining why and including "PROTECT" in the comment to pass this grep
 grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
+cd ~/GitHub/data.table
 R
 cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently gcc-7) as CRAN does
 saf = options()$stringsAsFactors
@@ -102,21 +103,21 @@ options(stringsAsFactors=!saf)    # check tests (that might be run by user) are 
 test.data.table()
 q("no")
 R CMD build .
-R CMD check data.table_1.11.1.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
-R CMD INSTALL data.table_1.11.1.tar.gz
+R CMD check data.table_1.11.3.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
+R CMD INSTALL data.table_1.11.3.tar.gz
 R
 require(data.table)
 test.data.table()
-test.data.table(verbose=TRUE)  # since main.R no longer tests verbose mode
+test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
 gctorture2(step=50)
-system.time(test.data.table())
+system.time(test.data.table())  # apx 75min
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.11.1.tar.gz
+R CMD check data.table_1.11.3.tar.gz
 rm ~/.Renviron
 
 # Upload to win-builder: release, dev & old-release
@@ -138,7 +139,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.11.1.tar.gz
+R310 CMD INSTALL ./data.table_1.11.3.tar.gz
 R310
 require(data.table)
 test.data.table()
@@ -150,7 +151,7 @@ test.data.table()
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.11.1.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.11.3.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -178,13 +179,13 @@ cd R-devel
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 cd ~/GitHub/data.table
-Rdevel CMD INSTALL data.table_1.11.1.tar.gz
+Rdevel CMD INSTALL data.table_1.11.3.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel
 install.packages(c("bit64","xts","nanotime"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
 require(data.table)
 test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
-for (i in 1:10) test.data.table()  # try several runs; e.g a few tests generate data with a non-fixed random seed
+for (i in 1:100) if (!test.data.table()) break  # try several runs; e.g a few tests generate data with a non-fixed random seed
 # gctorture(TRUE)      # very slow, many days
 gctorture2(step=100)   # [12-18hrs] under ASAN, UBSAN and --strict-barrier
 print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
@@ -213,7 +214,7 @@ cd R-devel
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-Rdevel CMD INSTALL data.table_1.11.1.tar.gz
+Rdevel CMD INSTALL data.table_1.11.3.tar.gz
 Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)
@@ -512,7 +513,7 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CM
 Bump versions in DESCRIPTION and NEWS (without 'on CRAN date' text as that's not yet known) to even release number
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
 R CMD build .
-R CMD check --as-cran data.table_1.11.2.tar.gz   # install.packages("xml2") first to check the 150 URLs in NEWS.md under --as-cran, then remove xml2 again
+R CMD check --as-cran data.table_1.11.4.tar.gz   # install.packages("xml2") first to check the 150 URLs in NEWS.md under --as-cran, then remove xml2 again
 Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
 Submit to CRAN. Message template :
 -----

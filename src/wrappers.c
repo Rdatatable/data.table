@@ -98,8 +98,28 @@ SEXP copyNamedInList(SEXP x)
 
   if (TYPEOF(x) != VECSXP) error("x isn't a VECSXP");
   for (int i=0; i<LENGTH(x); i++) {
-    if (MAYBE_REFERENCED(VECTOR_ELT(x, i))) {
-      SET_VECTOR_ELT(x, i, duplicate(VECTOR_ELT(x,i)));
+    SEXP col = VECTOR_ELT(x, i);
+    if (MAYBE_REFERENCED(col) || ALTREP(col)) {
+      SET_VECTOR_ELT(x, i, duplicate(col));
+    }
+  }
+  return R_NilValue;
+}
+
+SEXP expandAltRep(SEXP x)
+{
+  // used by setDT to ensure altrep vectors in columns are expanded. Such altrep objects typically come from tests or demos, since
+  // the sequence 1:n does not occur in real-world data as a column, very often.
+  // Note that data.table() calls copyNamedInList() (above) which has the side-effect of expanding altrep vectors too.
+  // We need regular expanded columns in data.table because `:=` relies on that, for example.
+  // At R level (for example [.data.table) we use and benefit from altrep vectors very much. It's just as columns that we expand them.
+  // See extensive discussion in issue #2866
+
+  if (TYPEOF(x) != VECSXP) error("x isn't a VECSXP");
+  for (int i=0; i<LENGTH(x); i++) {
+    SEXP col = VECTOR_ELT(x,i);
+    if (ALTREP(col)) {
+      SET_VECTOR_ELT(x, i, duplicate(col));
     }
   }
   return R_NilValue;

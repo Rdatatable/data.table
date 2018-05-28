@@ -2776,6 +2776,7 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       assign(as.character(name[[3L]]), x, k, inherits=FALSE)
     }
   }
+  .Call(CexpandAltRep, x)  # issue#2866 and PR#2882
   invisible(x)
 }
 

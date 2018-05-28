@@ -123,7 +123,7 @@ check.copy <- function(job, repodir="bus/integration/cran"){
   dir.create(job.checks<-file.path(repodir, "web", "checks", pkg<-"data.table", job), recursive=TRUE);
   os = plat(job)
   from = file.path("bus", sprintf("%s/%s.Rcheck", job, pkg))
-  current.rout = c("main.Rout","main.Rout.fail","testthat.Rout","testthat.Rout.fail","knitr.Rout","knitr.Rout.fail","memtest.csv","memtest.png")
+  current.rout = c("main.Rout","main.Rout.fail","knitr.Rout","knitr.Rout.fail","memtest.csv","memtest.png")
   if (os=="Windows") {
     dir.create(file.path(job.checks, "tests_i386"), showWarnings=FALSE)
     dir.create(file.path(job.checks, "tests_x64"), showWarnings=FALSE)
@@ -159,7 +159,7 @@ check.index <- function(pkg, jobs, repodir="bus/integration/cran") {
     paste(na.omit(links), collapse=", ")
   }
   routs = lapply(jobs, function(job) {
-    current.rout = c("main.Rout.fail","testthat.Rout.fail","knitr.Rout.fail")
+    current.rout = c("main.Rout.fail","knitr.Rout.fail")
     os = plat(job)
     if (os=="Windows") {
       rout32 = file.path("tests_i386", current.rout)
