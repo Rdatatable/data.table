@@ -9,7 +9,7 @@
 
 #### NEW FEATURES
 
-1. `setcolorder(DT)` without further arguments now defaults to ordering by keys, remaining index columns, then preserving the order of the remaining columns. Thanks to @jsams for the PR.
+1. `setcolorder(DT)` without further arguments now defaults to ordering by keys, then preserving the order of the remaining columns, [#2895](https://github.com/Rdatatable/data.table/issues/2895). Thanks to @jsams for the PR.
 
 #### NOTES
 

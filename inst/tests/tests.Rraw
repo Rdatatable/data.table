@@ -1421,12 +1421,6 @@ test(498.3, setcolorder(DT, 1:4), error = "x has only")
 # Test where neworder=NULL, thus ordered by key and index columns
 DT = data.table(a = 1:3, b = 2:4, c = 3:5, d = 4:6, key="b")
 test(498.4, names(setcolorder(DT)), c("b", "a", "c", "d"))
-setindex(DT, c)
-test(498.5, names(setcolorder(DT)), c("b", "c", "a", "d"))
-setindex(DT, d, a)
-test(498.6, names(setcolorder(DT)), c("b", "c", "d", "a"))
-setindex(DT, c, b)
-test(498.7, names(setcolorder(DT)), c("b", "c", "d", "a"))
 
 # test first group listens to nomatch when j uses join inherited scope.
 x <- data.table(x=c(1,3,8),x1=10:12, key="x")

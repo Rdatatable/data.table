@@ -2554,17 +2554,8 @@ setnames <- function(x,old,new) {
   invisible(x)
 }
 
-setcolorder <- function(x, neworder=NULL)
+setcolorder <- function(x, neworder=key(x))
 {
-  if (is.null(neworder)) {
-    keys = key(x)
-	if (is.null(indices(x))) {
-		indcs = c()
-	} else {
-		indcs = unique(setdiff(do.call(c, indices(x, vectors=T)), keys))
-	}
-    neworder = c(keys, indcs, setdiff(names(x), c(keys, indcs)))
-  }
   if (any(duplicated(neworder))) stop("neworder contains duplicates")
   # if (!is.data.table(x)) stop("x is not a data.table")
   if (length(neworder) != length(x)) {
