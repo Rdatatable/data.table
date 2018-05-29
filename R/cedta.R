@@ -34,7 +34,7 @@ cedta <- function(n=2L) {
     (nsname == "base"  && all(c("FUN", "X") %in% ls(parent.frame(n)))  ) || # lapply
     (nsname %chin% cedta.pkgEvalsUserCode && any(sapply(sys.calls(), function(x) is.name(x[[1L]]) && (x[[1L]]=="eval" || x[[1L]]=="evalq")))) ||
     nsname %chin% cedta.override ||
-    identical(TRUE, tryCatch(get(".datatable.aware",asNamespace(nsname),inherits=FALSE),error=function(e)NULL))
+    isTRUE(asNamespace(nsname)$.datatable.aware)
   if (!ans && getOption("datatable.verbose")) {
     cat("cedta decided '",nsname,"' wasn't data.table aware. Call stack with [[1L]] applied:\n",sep="")
     print(sapply(sys.calls(), "[[", 1L))
