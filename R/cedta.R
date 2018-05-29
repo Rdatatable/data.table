@@ -29,7 +29,7 @@ cedta <- function(n=2L) {
   nsname = getNamespaceName(te)
   ans = nsname == "data.table" ||
     "data.table" %chin% names(getNamespaceImports(te)) ||
-    (paste0("package:",nsname) %chin% search() && "data.table" %chin% getNamespace(nsname)$.Depends) ||
+    "data.table" %chin% getNamespace(nsname)$.Depends ||
     (nsname == "utils" && exists("debugger.look",parent.frame(n+1L))) ||
     (nsname == "base"  && all(c("FUN", "X") %chin% ls(parent.frame(n)))  ) || # lapply
     (nsname %chin% cedta.pkgEvalsUserCode && any(sapply(sys.calls(), function(x) is.name(x[[1L]]) && (x[[1L]]=="eval" || x[[1L]]=="evalq")))) ||
