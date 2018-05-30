@@ -30,8 +30,8 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
     if (is.na(file_info$size)) stop("File '",file,"' does not exist or is non-readable.")
     if (isTRUE(file_info$isdir)) stop("File '",file,"' is a directory. Not yet implemented.") # dir.exists() requires R v3.2+, #989
     if (!file_info$size) {
-      warning("File '", file, "' has size 0. Returning NULL")
-      return(NULL)
+      warning("File '", file, "' has size 0. Returning a NULL data.table")
+      return(data.table(NULL))
     }
     input = file
   } else {
@@ -45,8 +45,8 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
       if (!is.na(file_info$size)) {
         if (isTRUE(file_info$isdir)) stop("File '",input,"' is a directory. Not yet implemented.")
         if (!file_info$size) {
-          warning("File '", input, "' has size 0. Returning NULL")
-          return(NULL)
+          warning("File '", input, "' has size 0. Returning a NULL data.table")
+          return(data.table(NULL))
         }
       } else {
         if (substring(input,1L,1L)==" ") {
@@ -76,8 +76,8 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
                   ". Include correct full path, or one or more spaces to consider the input a system command.")
         input = tmpFile  # the file name
         if (!file.info(input)$size) {
-          warning("File '", input, "' has size 0. Returning NULL")
-          return(NULL)
+          warning("File '", input, "' has size 0. Returning a NULL data.table")
+          return(data.table(NULL))
         }
       }
     }
