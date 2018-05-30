@@ -33,7 +33,7 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   if (!badaptive) {                                             // validating n input for adaptive=FALSE
     if (isNewList(k))
       error("n must be integer, list is accepted for adaptive TRUE");
-    //TODO move R's n=as.integer(n) to C, maybe we can use AS_INTEGER???
+    //TODO move R's n=as.integer(n) to C
     if (!isInteger(k))                                          // check that k is integer vector
       error("n must be integer");
     R_len_t i=0;                                                // check that all window values positive
@@ -77,8 +77,8 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
 
   SEXP ans;
   ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;      // allocate list to keep results
-  double* ptrans[(nx-1)*nk+(nk-1)];                             // pointers to answer columns // any tools to verify that correct length was used???
-  double* this[nx-1];                                           // pointers to source columns
+  double* dans[(nx-1)*nk+(nk-1)];                               // pointers to answer columns
+  double* dx[nx-1];                                             // pointers to source columns
   uint_fast64_t inx[nx-1];                                      // to not recalculate `length(x[[i]])` we store it in extra array
   if (iverbose>0) Rprintf("rollfun: allocating memory for results\n");
   for (R_len_t i=0; i<nx; i++) {
@@ -91,9 +91,9 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
           error("Length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'.");
       }
       SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, inx[i]));// allocate answer vector for this column-window
-      ptrans[i*nk+j] = REAL(VECTOR_ELT(ans, i*nk+j));
+      dans[i*nk+j] = REAL(VECTOR_ELT(ans, i*nk+j));
     }
-    this[i] = REAL(AS_NUMERIC(VECTOR_ELT(x, i)));               // can AS_NUMERIC stays here??? it wraps to coerceVector, it simplifies a lot when some of the columns are integer type
+    dx[i] = REAL(AS_NUMERIC(VECTOR_ELT(x, i)));
   }
 
   enum {MEAN, SUM} sfun;
@@ -109,8 +109,8 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) ialign = -1;
   else error("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker.");
 
-  SEXP thisfill = PROTECT(coerceVector(fill, REALSXP)); protecti++; // do we need to construct SEXP here??? we dont use thisfill other than in a line below
-  double dfill = REAL(thisfill)[0];
+  SEXP rdfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
+  double dfill = REAL(rdfill)[0];
 
   bool bpartial = LOGICAL(partial)[0];
   bool bexact = LOGICAL(exact)[0];
@@ -125,12 +125,12 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
     if (iverbose>0) Rprintf("rollfun: single window and single column, skipping parallel execution\n");
     switch (sfun) {
       case MEAN :
-        if (!badaptive) rollmeanVector(this[0], inx[0], ptrans[0], ik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
-        else rollmeanVectorAdaptive(this[0], inx[0], ptrans[0], ikl[0], dfill, bexact, bnarm, ihasna, iverbose);
+        if (!badaptive) rollmeanVector(dx[0], inx[0], dans[0], ik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
+        else rollmeanVectorAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bexact, bnarm, ihasna, iverbose);
         break;
       case SUM :
-        if (!badaptive) rollsumVector(this[0], inx[0], ptrans[0], ik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
-        else rollsumVectorAdaptive(this[0], inx[0], ptrans[0], ikl[0], dfill, bexact, bnarm, ihasna, iverbose);
+        if (!badaptive) rollsumVector(dx[0], inx[0], dans[0], ik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
+        else rollsumVectorAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bexact, bnarm, ihasna, iverbose);
         break;
     }
   } else {
@@ -142,12 +142,12 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
         for (R_len_t j=0; j<nk; j++) {                          // loop over multiple windows
           switch (sfun) {
             case MEAN :
-              if (!badaptive) rollmeanVector(this[i], inx[i], ptrans[i*nk+j], ik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
-              else rollmeanVectorAdaptive(this[i], inx[i], ptrans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, iverbose);
+              if (!badaptive) rollmeanVector(dx[i], inx[i], dans[i*nk+j], ik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
+              else rollmeanVectorAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, iverbose);
               break;
             case SUM :
-              if (!badaptive) rollsumVector(this[i], inx[i], ptrans[i*nk+j], ik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
-              else rollsumVectorAdaptive(this[i], inx[i], ptrans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, iverbose);
+              if (!badaptive) rollsumVector(dx[i], inx[i], dans[i*nk+j], ik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
+              else rollsumVectorAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, iverbose);
               break;
           }
         } // end of pragma omp for schedule
