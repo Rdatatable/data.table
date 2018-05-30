@@ -135,11 +135,11 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
     }
   } else {
     if (iverbose>0) Rprintf("rollfun: multiple window or columns, entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n");
-    for (R_len_t i=0; i<nx; i++) {                              // loop over columns
-      #pragma omp parallel num_threads(iverbose==0 ? MIN(getDTthreads(), nx) : 1)
-      {
-        #pragma omp for schedule(dynamic)
-        for (R_len_t j=0; j<nk; j++) {                          // loop over multiple windows
+    #pragma omp parallel num_threads(iverbose==0 ? MIN(getDTthreads(), nx*nk) : 1)
+    {
+      #pragma omp for schedule(auto) collapse(2)
+      for (R_len_t i=0; i<nx; i++) {                              // loop over multiple columns
+        for (R_len_t j=0; j<nk; j++) {                            // loop over multiple windows
           switch (sfun) {
             case MEAN :
               if (!badaptive) rollmeanVector(dx[i], inx[i], dans[i*nk+j], ik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
@@ -150,9 +150,9 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
               else rollsumVectorAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, iverbose);
               break;
           }
-        } // end of pragma omp for schedule
-      } // end of pragma omp parallel num_threads
-    }
+        } // end of j-windows loop
+      } // end of i-columns loop
+    } // end of omp parallel region
   }
   
   UNPROTECT(protecti);
