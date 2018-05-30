@@ -352,6 +352,7 @@ sudo apt-get -y install libpoppler-cpp-dev  # for pdftools
 sudo apt-get -y install libapparmor-dev  # for sys
 sudo apt-get -y install libmagick++-dev  # for magick
 sudo apt-get -y install libjq-dev libprotoc-dev libprotobuf-dev and protobuf-compiler   # for protolite
+sudo apt-get -y install python-dev  # for PythonInR
 sudo R CMD javareconf
 # ENDIF
 
@@ -359,7 +360,7 @@ cd ~/build/revdeplib/
 export R_LIBS=~/build/revdeplib/
 export R_LIBS_SITE=none
 export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
-R
+R350
 .libPaths()   # should be just 2 items: revdeplib and the base R package library
 update.packages(ask=FALSE)
 # if package not found on mirror, try manually a different one:
@@ -418,13 +419,16 @@ system("ls *.tar.gz | wc -l")
 
 status = function(which="both") {
   if (which=="both") {
+    cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
     cat("CRAN:\n"); status("cran")
     cat("BIOC:\n"); status("bioc")
     cat("Oldest 00check.log (to check no old stale ones somehow missed):\n")
     system("find . -name '00check.log' | xargs ls -lt | tail -1")
     cat("\n")
+    tt = length(system('ps -aux | grep "parallel.*R CMD check"', intern=TRUE))>2L
+    cat("parallel R CMD check is ", if(tt)"" else "not ", "running\n",sep="")
     if (file.exists("/tmp/started.flag")) {
-      system("ls -lrt /tmp/*.flag")
+      # system("ls -lrt /tmp/*.flag")
       tt = as.POSIXct(file.info(c("/tmp/started.flag","/tmp/finished.flag"))$ctime)
       if (is.na(tt[2])) { tt[2] = Sys.time(); cat("Has been running for "); }
       else cat("Ran for ");
@@ -458,49 +462,63 @@ status = function(which="both") {
       "RUNNING :",sprintf("%3d",length(r)),":",paste(sort(names(x)[r])),"\n",
       if (length(ns)==0) "\n" else paste0("NOT STARTED (first 20 of ",length(ns),") : ",paste(sort(names(x)[head(ns,20)]),collapse="|"),"\n")
       )
+  assign(paste0(".fail.",which), c(sort(names(x)[e]), sort(names(x)[w])), envir=.GlobalEnv)
   invisible()
 }
 
 status()
 
-run = function(all=FALSE) {
+run = function(which=c("cran.fail","bioc.fail","both.fail","rerun.all")) {
+  if (length(which)>1) which = which[1L]
+  cat("which==",which,"\n", sep="")
   numtgz = as.integer(system("ls -1 *.tar.gz | wc -l", intern=TRUE))
   stopifnot(numtgz==length(deps))
   cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
-  if (all) {
-    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | parallel R CMD check"
+  if (which=="rerun.all") {
+    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | parallel ~/build/R-3.5.0/bin/R CMD check"
+    cat("WIPE ALL CHECKS:",cmd,"\n")
+    cat("Proceed? (ctrl-c or enter)\n")
+    scan(quiet=TRUE)
     # apx 7.5 hrs for 582 packages on my 4 cpu laptop with 8 threads
   } else {
-    x = sapply(deps, function(p) {
-      if (!file.exists(paste0("./",p,".Rcheck"))) return(TRUE)
-      fn = paste0("./",p,".Rcheck/00check.log")
-      length(suppressWarnings(system(paste0("grep -E 'Status:.*(ERROR|WARNING)' ",fn), intern=TRUE)))>0L
-    })
-    x = deps[x]
-    cat("Running",length(x),"packages that have no status (no .Rcheck directory) or are in ERROR or WARNING status\n")
-    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | parallel R CMD check")
+    x = deps[!file.exists(paste0("./",p,".Rcheck"))]  # always those that haven't run
+    if (which %in% c("cran.fail","both.fail")) x = union(x, .fail.cran)  # .fail written to .GlobalEnv by status()
+    if (which %in% c("bioc.fail","both.fail")) x = union(x, .fail.bioc)
+    cat("Running",length(x),"packages:", paste(x), "\n")
+    cat("Proceed? (ctrl-c or enter)\n")
+    scan(quiet=TRUE)
+    for (i in x) system(paste0("rm -rf ./",i,".Rcheck"))
+    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | parallel ~/build/R-3.5.0/bin/R CMD check")
   }
-  cat("Command:",cmd,"\n")
   if (as.integer(system("ps -a | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
-  cat("Proceed? (ctrl-c or enter)\n")
-  scan(quiet=TRUE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
   system(paste("((",cmd,">/dev/null 2>&1); touch /tmp/finished.flag)"), wait=FALSE)
 }
 
 # ** ensure latest version installed into revdeplib **
-system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.1.tar.gz")
+system("~/build/R-3.5.0/bin/R CMD INSTALL ~/GitHub/data.table/data.table_1.11.5.tar.gz")
 run()
+
+out = function(fnam="~/fail.log") {
+  x = c(.fail.cran, .fail.bioc)
+  cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
+  cat(paste(x,collapse=" "), "\n")
+  cat("", file=fnam)
+  for (i in x) {
+    system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))
+    cat("\n\n", file=fnam, append=TRUE)
+  }
+}
 
 # Investigate and fix the fails ...
 find . -name 00check.log -exec grep -H -B 20 "Status:.*ERROR" {} \;
 find . -name 00check.log | grep -E 'AFM|easycsv|...|optiSel|xgboost' | xargs grep -H . > /tmp/out.log
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 more <failing_package>.Rcheck/00check.log
-R CMD check <failing_package>.tar.gz
-R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
-R CMD check <failing_package>.tar.gz
-ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check &
+R350 CMD check <failing_package>.tar.gz
+R350 CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
+R350 CMD check <failing_package>.tar.gz
+ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel ~/build/R-3.5.0/bin/R CMD check &
 
 # Warning: replacing previous import robustbase::sigma by stats::sigma when loading VIM
 # Reinstalling robustbase fixed this warning. Even though it was up to date, reinstalling made a difference.
