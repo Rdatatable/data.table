@@ -11988,6 +11988,9 @@ test(1915.1, fread(f), data.table(NULL), warning = 'File.*size 0')
 test(1915.2, fread(file = f), data.table(NULL), warning = 'File.*size 0')
 # trigger download for last instance of warning
 test(1915.3, fread(paste0('file://', f)), data.table(NULL), warning = 'File.*size 0')
+test(1915.4, fread(f, data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
+test(1915.5, fread(file = f, data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
+test(1915.6, fread(paste0('file://', f), data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
 unlink(f)
 
 #fwrite creates a file or does nothing, as appropriate, also #2898
