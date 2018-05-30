@@ -54,7 +54,7 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
     if (i != nk)
       error("n must be list of integer vectors when adaptive TRUE");
   }
-  int* ikl[nk-1];                                               // pointers to adaptive window width
+  int* ikl[nk];                                                 // pointers to adaptive window width
   if (badaptive)
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
   
@@ -77,9 +77,9 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
 
   SEXP ans;
   ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;      // allocate list to keep results
-  double* dans[(nx-1)*nk+(nk-1)];                               // pointers to answer columns
-  double* dx[nx-1];                                             // pointers to source columns
-  uint_fast64_t inx[nx-1];                                      // to not recalculate `length(x[[i]])` we store it in extra array
+  double* dans[nx*nk];                                          // pointers to answer columns
+  double* dx[nx];                                               // pointers to source columns
+  uint_fast64_t inx[nx];                                        // to not recalculate `length(x[[i]])` we store it in extra array
   if (iverbose>0) Rprintf("rollfun: allocating memory for results\n");
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
