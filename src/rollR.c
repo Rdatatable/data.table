@@ -30,7 +30,6 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   bool badaptive = LOGICAL(adaptive)[0];
   
   SEXP kl = R_NilValue;                                         // holds adaptive window width, if doing adaptive roll fun
-  int* ikl[nk-1];                                               // pointers to adaptive window width
   if (!badaptive) {                                             // validating n input for adaptive=FALSE
     if (isNewList(k))
       error("n must be integer, list is accepted for adaptive TRUE");
@@ -54,8 +53,10 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
     while (i < nk && isInteger(VECTOR_ELT(kl, i))) i++;
     if (i != nk)
       error("n must be list of integer vectors when adaptive TRUE");
-    for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
   }
+  int* ikl[nk-1];                                               // pointers to adaptive window width
+  if (badaptive)
+    for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
   
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
