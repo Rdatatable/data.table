@@ -52,9 +52,11 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     eol = "\n"  # Rprintf() is used at C level which knows inside it to output \r\n on Windows. Otherwise extra \r is output.
   }
   if (ncol(x) == 0L && file != "") {
-    # should cover append = TRUE case as well
     if (file.exists(file)) {
-      warning("Input has no columns; doing nothing.")
+      warning("Input has no columns; doing nothing.",
+              if (!append)
+                paste("\nIf you intended to overwrite the file at",
+                      file, "with an empty one, please use file.remove first."))
       return(invisible())
     } else {
       warning("Input has no columns; creating an empty file at '", file, "' and exiting.")

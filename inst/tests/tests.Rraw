@@ -11996,9 +11996,11 @@ unlink(f)
 #fwrite creates a file or does nothing, as appropriate, also #2898
 DT = data.table(NULL)
 f = tempfile()
-test(1915.4, fwrite(DT, f), NULL, warning = 'no columns; creating an empty file')
-# above test created a file; now test behavior when file exists
-test(1915.5, fwrite(DT, f), NULL, warning = 'no columns; doing nothing')
+test(1915.7, fwrite(DT, f), NULL, warning = 'no columns; creating an empty file')
+## above test created a file; now test behavior when file exists
+test(1915.8, fwrite(DT, f), NULL, warning = 'no columns; doing nothing.*file.remove')
+## slightly different behavior if append = TRUE
+test(1915.9, fwrite(DT, f, append = TRUE), NULL, warning = 'doing nothing.$')
 
 ###################################
 #  Add new tests above this line  #
