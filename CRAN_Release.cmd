@@ -404,16 +404,16 @@ for (p in deps) {
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 table(avail[deps,"Repository"])
 
-# To identify and remove the tar.gz no longer needed :
+# Remove the tar.gz no longer needed :
+system("ls *.tar.gz | wc -l")
 for (p in deps) {
-  f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-  system(paste0("mv ",f," ",f,"_TEMP"))
-}
-system("ls *.tar.gz")
-system("rm *.tar.gz")
-for (p in deps) {
-  f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-  system(paste0("mv ",f,"_TEMP ",f))
+  f = paste0(p, "_", avail[p,"Version"], ".tar.gz")  # keep this one
+  all = system(paste0("ls ",p,"_*.tar.gz"), intern=TRUE)
+  old = all[all!=f]
+  for (i in old) {
+    cat("Removing",i,"because",f,"is newer\n")
+    system(paste0("rm ",i))
+  }
 }
 system("ls *.tar.gz | wc -l")
 
@@ -503,7 +503,7 @@ out = function(fnam="~/fail.log") {
   x = c(.fail.cran, .fail.bioc)
   cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
   cat(paste(x,collapse=" "), "\n")
-  cat("", file=fnam)
+  cat(capture.output(sessionInfo()), "\n\n", file=fnam, sep="\n")
   for (i in x) {
     system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))
     cat("\n\n", file=fnam, append=TRUE)
