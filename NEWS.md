@@ -9,6 +9,8 @@
 
 #### NOTES
 
+1. `split.data.table` function has been exported so can be directly accessed without need to use method dispatch mechanism. Closes [#2920](https://github.com/Rdatatable/data.table/issues/2920).
+
 
 ### Changes in v1.11.4  (on CRAN 27 May 2018)
 
