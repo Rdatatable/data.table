@@ -353,6 +353,7 @@ sudo apt-get -y install libapparmor-dev  # for sys
 sudo apt-get -y install libmagick++-dev  # for magick
 sudo apt-get -y install libjq-dev libprotoc-dev libprotobuf-dev and protobuf-compiler   # for protolite
 sudo apt-get -y install python-dev  # for PythonInR
+sudo apt-get -y install gdal-bin libgeos-dev  # for rgdal/raster tested via lidR
 sudo R CMD javareconf
 # ENDIF
 
@@ -387,12 +388,13 @@ for (p in deps) {
   if (!file.exists(fn) ||
       identical(tryCatch(packageVersion(p), error=function(e)FALSE), FALSE) ||
       packageVersion(p) != avail[p,"Version"]) {
-    system(paste0("rm -f ", p, "*.tar.gz"))  # Remove previous *.tar.gz.  -f to be silent if not there (i.e. first time seeing this package)
-    system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version)
+    system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version) to move its status() to not yet run
 
     install.packages(p, repos=biocinstallRepos(), dependencies=TRUE)    # again, bioc repos includes CRAN here
     # To install its dependencies. The package itsef is installed superfluously here because the tar.gz will be passed to R CMD check.
     # Not using biocLite() because it does not download dependencies and does not appear to pass dependencies= on.
+    # If we did download.packages() first and then passed that tar.gz to install.packages(), repos= is set to NULL when installing from
+    # local file, so dependencies=TRUE wouldn't know where to get the dependencies. Hence usig install.packages first with repos= set.
 
     download.packages(p, destdir="~/build/revdeplib", contriburl=avail[p,"Repository"])   # So R CMD check can run on these
     if (!file.exists(fn)) stop("Still does not exist!:", fn)
@@ -413,6 +415,12 @@ for (p in deps) {
   for (i in old) {
     cat("Removing",i,"because",f,"is newer\n")
     system(paste0("rm ",i))
+  }
+  all = system("ls *.tar.gz", intern=TRUE)
+  all = sapply(strsplit(all, split="_"),'[',1)
+  for (i in all[!all %in% deps]) {
+    cat("Removing",i,"because it", if (!i %in% rownames(avail)) "has been removed from CRAN/Bioconductor" else "no longer uses data.table")
+    system(paste0("rm ",i,"_*.tar.gz"))
   }
 }
 system("ls *.tar.gz | wc -l")
@@ -468,7 +476,7 @@ status = function(which="both") {
 
 status()
 
-run = function(which=c("cran.fail","bioc.fail","both.fail","rerun.all")) {
+run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.all")) {
   if (length(which)>1) which = which[1L]
   cat("which==",which,"\n", sep="")
   numtgz = as.integer(system("ls -1 *.tar.gz | wc -l", intern=TRUE))
@@ -481,7 +489,7 @@ run = function(which=c("cran.fail","bioc.fail","both.fail","rerun.all")) {
     scan(quiet=TRUE)
     # apx 7.5 hrs for 582 packages on my 4 cpu laptop with 8 threads
   } else {
-    x = deps[!file.exists(paste0("./",p,".Rcheck"))]  # always those that haven't run
+    x = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # always those that haven't run
     if (which %in% c("cran.fail","both.fail")) x = union(x, .fail.cran)  # .fail written to .GlobalEnv by status()
     if (which %in% c("bioc.fail","both.fail")) x = union(x, .fail.bioc)
     cat("Running",length(x),"packages:", paste(x), "\n")
@@ -509,6 +517,9 @@ out = function(fnam="~/fail.log") {
     cat("\n\n", file=fnam, append=TRUE)
   }
 }
+
+emails = gsub(">$","",gsub(".*<","", sapply(.fail.bioc, maintainer)))
+cat(emails,sep=";")
 
 # Investigate and fix the fails ...
 find . -name 00check.log -exec grep -H -B 20 "Status:.*ERROR" {} \;
