@@ -10,9 +10,11 @@ as.IDate.default <- function(x, ..., tz = attr(x, "tzone")) {
   as.IDate(as.Date(x, tz = tz, ...))
 }
 
-as.IDate.numeric <- function(x, ...) {
-  structure(as.integer(x), class=c("IDate","Date"))
-}
+# as.IDate.numeric <- function(x, ...) {
+#   structure(as.integer(x), class=c("IDate","Date"))
+# }
+
+as.IDate.numeric <- function(x, origin = "1970-01-01", ...) as.IDate(origin, ...) + x
 
 as.IDate.Date <- function(x, ...) {
   structure(as.integer(x), class=c("IDate","Date"))

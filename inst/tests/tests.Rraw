@@ -11981,6 +11981,12 @@ setMethod("dtGet", c(x="S4Composition", what="ANY"), function(x, what) {x@data[[
 test(1914.7, dtGet(dt.comp), dt)  # actually
 test(1914.8, identical(dtGet(dt.comp, 1), dt[[1]]))
 test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
+
+### testing issue #2880 ("origin" not being ignored by as.IDate.numeric)
+test(1915.1, as.IDate(1000, origin = "1930-01-01"), as.IDate("1932-09-27"))
+# test backward compatibility 
+test(1915.2, as.IDate(1000), as.IDate("1972-09-27"))
+
 # END port of old testthat tests
 
 

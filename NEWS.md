@@ -7,6 +7,8 @@
 
 #### BUG FIXES
 
+1. `as.IDate.numeric` no longer ignores "origin". [#2880](https://github.com/Rdatatable/data.table/issues/2880)
+
 #### NOTES
 
 
