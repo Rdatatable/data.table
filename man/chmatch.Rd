@@ -39,10 +39,11 @@ chgroup(x)
 \examples{
 # Please type 'example(chmatch)' to run this and see timings on your machine
 
-# N is set small here (1e5) because CRAN runs all examples and tests every night, to catch
-# any problems early as R itself changes and other packages run.
-# The comments here apply when N has been changed to 1e8 and were run on 2018-05-13 with R 3.5.0 and data.table 1.11.2.
 N = 1e5
+# N is small here (1e5) to reduce runtime because every day CRAN runs all example sections in all
+# manual pages (as well as the package's test suite) using latest R-devel to catch problems early.
+# The comments here apply when N has been changed to 1e8. Timings were run on 2018-05-13 with
+# R 3.5.0 and data.table 1.11.2.
 
 u = as.character(as.hexmode(1:10000))
 y = sample(u,N,replace=TRUE)

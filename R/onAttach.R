@@ -2,7 +2,7 @@
 
 .onAttach <- function(libname, pkgname) {
   # Runs when attached to search() path such as by library() or require()
-  if (interactive()) {
+  if (!interactive()) return()
   v = packageVersion("data.table")
   d = read.dcf(system.file("DESCRIPTION", package="data.table"), fields = c("Packaged", "Built", "Revision"))
   if (is.na(d[1L])) {
@@ -17,16 +17,11 @@
       g = ""
   }
   dev = as.integer(v[1L, 3L]) %% 2L == 1L  # version number odd => dev
-  packageStartupMessage(sprintf("data.table %s%s", v,
-                                if(dev) sprintf(" IN DEVELOPMENT built %s%s", d, g) else ""))
+  packageStartupMessage("data.table ", v, if(dev)paste0(" IN DEVELOPMENT built ",d,g), "  Latest news: http://r-datatable.com")
   if (dev && (Sys.Date() - as.Date(d))>28)
     packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********")
   if (!.Call(ChasOpenMP))
-    packageStartupMessage("**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode. If this is a Mac, please ensure you are using R>=3.4.0 and have installed the MacOS binary package from CRAN: see ?install.packages, the 'type=' argument and the 'Binary packages' section. If you compiled from source, please reinstall and precisely follow the installation instructions on the data.table homepage. This warning message should not occur on Windows or Linux. If it does and you've followed the installation instructions on the data.table homepage, please file a GitHub issue.\n**********")
-  packageStartupMessage('  The fastest way to learn (by data.table authors): https://www.datacamp.com/courses/data-analysis-the-data-table-way')
-  packageStartupMessage('  Documentation: ?data.table, example(data.table) and browseVignettes("data.table")')
-  packageStartupMessage('  Release notes, videos and slides: http://r-datatable.com')
-  }
+    packageStartupMessage("**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode. If this is a Mac, please ensure you are using R>=3.4.0 and have followed our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. This warning message should not occur on Windows or Linux. If it does, please file a GitHub issue.\n**********")
 }
 
 dcf.lib = function(pkg, field){

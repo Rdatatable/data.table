@@ -20,16 +20,20 @@ SEXP reorder(SEXP x, SEXP order)
         error("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table.", i+1, length(v), nrow);
       if (SIZEOF(v) > maxSize)
         maxSize=SIZEOF(v);
+      if (ALTREP(v)) SET_VECTOR_ELT(x,i,duplicate(v));  // expand compact vector in place, ready for reordering by reference
     }
   } else {
     if (SIZEOF(x)!=4 && SIZEOF(x)!=8)
       error("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported", type2char(TYPEOF(x)));
+    if (ALTREP(x)) error("Internal error in reorder.c: cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4 and report this as a bug.");
     maxSize = SIZEOF(x);
     nrow = length(x);
     ncol = 1;
   }
   if (!isInteger(order)) error("order must be an integer vector");
   if (length(order) != nrow) error("nrow(x)[%d]!=length(order)[%d]",nrow,length(order));
+  int nprotect = 0;
+  if (ALTREP(order)) { order=PROTECT(duplicate(order)); nprotect++; }  // TODO: how to fetch range of ALTREP compact vector
 
   R_len_t start = 0;
   while (start<nrow && INTEGER(order)[start] == start+1) start++;
@@ -100,6 +104,7 @@ SEXP reorder(SEXP x, SEXP order)
     // size_t, otherwise #5305 (integer overflow in memcpy)
   }
   for (int i=0; i<nth; i++) free(tmp[i]);
+  UNPROTECT(nprotect);
   return(R_NilValue);
 }
 
@@ -136,5 +141,4 @@ SEXP setrev(SEXP x) {
   Free(tmp);
   return(R_NilValue);
 }
-
 
