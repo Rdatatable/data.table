@@ -591,9 +591,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         setnames(i, orignames[leftcols])
         setattr(i, 'sorted', names(i)) # since 'x' has key set, this'll always be sorted
       }
-      io = if (missing(on)) haskey(i) else identical(unname(on), head(key(i), length(on)))
-      i = .shallow(i, retain.key = io)
-      ans = bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
+      i = .shallow(i, retain.key = TRUE)
+      ans = bmerge(i, x, leftcols, rightcols, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
       # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this
       # 'setorder', as there's another 'setorder' in generating 'irows' below...
       if (length(ans$indices)) setorder(setDT(ans[1L:3L]), indices)
@@ -1308,7 +1307,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if ( (keylen>len || chk) && !.Call(CisOrderedSubset, irows, nrow(x))) {
           keylen = if (!chk) len else 0L # fix for #1268
         }
-        if (keylen && ((is.data.table(i) && haskey(i)) || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
+        ## check key on i as well!
+        ichk = is.data.table(i) && haskey(i) ## make sure, i has key at all
+        if(ichk) ichk = (head(key(i), length(leftcols)) == names(i)[leftcols]) ## make sure, i has the correct key
+        if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
           setattr(ans,"sorted",head(key(x),keylen))
       }
       setattr(ans, "class", class(x)) # fix for #5296

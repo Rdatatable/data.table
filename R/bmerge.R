@@ -1,9 +1,8 @@
 
-bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose)
+bmerge <- function(i, x, leftcols, rightcols, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose)
 {
   # TO DO: rename leftcols to icols, rightcols to xcols
-  # NB: io is currently just TRUE or FALSE for whether i is keyed
-  # TO DO: io and xo could be moved inside Cbmerge
+  # TO DO: xo could be moved inside Cbmerge
   # bmerge moved to be separate function now that list() doesn't copy in R
   # types of i join columns are promoted to match x's types (with warning or verbose)
 
@@ -89,9 +88,10 @@ bmerge <- function(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, m
       set(i, j=lc, value=newval)
     }
   }
+  ## after all modifications of i, check if i has a proper key on all leftcols
+  io <- identical(leftcols, head(chmatch(key(i), names(i)), length(leftcols)))
   if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...");flush.console()}
-  ans = .Call(Cbmerge, i, x, as.integer(leftcols), as.integer(rightcols), io<-haskey(i), xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
-  # NB: io<-haskey(i) necessary for test 579 where the := above change the factor to character and remove i's key
+  ans = .Call(Cbmerge, i, x, as.integer(leftcols), as.integer(rightcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
   if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
 
   # in the caller's shallow copy,  see comment at the top of this function for usage

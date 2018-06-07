@@ -20,6 +20,7 @@
 
 4. Around 1 billion very small groups (of size 1 or 2 rows) could result in `"Failed to realloc working memory"` even when plenty of memory is available, [#2777](https://github.com/Rdatatable/data.table/issues/2777). Thanks once again to @jsams for the detailed report as a follow up to bug fix 40 in v1.11.0.
 
+5. Fixed regression that was introduced by PR [#2389](https://github.com/Rdatatable/data.table/pull/2389). The PR introduced partial key retainment on := assigns. This broke the joining logic that assumed implicitely that assigning always destroys keys completely. As a result, join and subset results were wrong when matching character to factor columns with existing keys. [#2881](https://github.com/Rdatatable/data.table/issues/2881). Thanks to @ddong63 for reporting and to @MarkusBonsch for fixing. 
 
 ### Changes in v1.11.2  (on CRAN 8 May 2018)
 

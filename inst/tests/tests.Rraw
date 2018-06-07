@@ -11983,6 +11983,17 @@ test(1914.8, identical(dtGet(dt.comp, 1), dt[[1]]))
 test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
 # END port of old testthat tests
 
+## Testing issue #2881: wrong bmerge result if 
+## - character gets coerced to factor and 
+## - i is keyed 
+## - and level order in i is different from x
+iris <- data.table(iris)
+iris$grp <- c('A', 'B')
+iris[, Species1 := factor(Species, levels = c('setosa', 'versicolor', 'virginica'), labels = c('setosa', 'versicolor', 'Virginica'))]
+iSorted = data.table(Species1 = c('setosa', 'Virginica'), grp = 'B', key = c("grp", "Species1"))
+i <- setkey(copy(iSorted),NULL)
+test(1915, iris[iSorted, on = c("grp==grp", 'Species1==Species1')],
+           iris[i, on = c("grp==grp", 'Species1==Species1')])
 
 ###################################
 #  Add new tests above this line  #
