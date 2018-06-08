@@ -104,21 +104,23 @@ test(9999.99, frollmean(1:5, 4, fill=Inf), c(Inf, Inf, Inf, 2.5, 3.5))
 test(9999.99, frollmean(1:5, 4, fill=NaN), c(NaN, NaN, NaN, 2.5, 3.5))
 
 #### adaptive window
-ref = function(x, n, na.rm=FALSE) {
+ref = function(x, n, na.rm=FALSE, fill=NA) {
   stopifnot((nx<-length(x))==length(n))
   ans = rep(NA_real_, nx)
-  for (i in seq_along(x))
+  for (i in seq_along(x)) {
     if (i >= n[i]) ans[i] = mean(x[(i-n[i]+1):i], na.rm=na.rm)
+    else ans[i] = as.double(fill)
+  }
   ans
 }
-ref2 = function(x, n) {
+ref2 = function(x, n, fill=NA) {
   stopifnot((nx<-length(x))==length(n))
   cs = cumsum(x)
   ans = rep(NA_real_, nx)
   for (i in seq_along(cs)) {
     if (i == n[i]) ans[i] = cs[i]/n[i]
     else if (i > n[i]) ans[i] = (cs[i]-cs[i-n[i]])/n[i]
-    else ans[i] = NA_real_
+    else ans[i] = as.double(fill)
   }
   ans
 }
@@ -132,6 +134,18 @@ ans3 = frollmean(x, list(n), exact=TRUE, verbose=0)
 cbind(x,ans1, ans2, ans3)
 all.equal(ans1, ans2)
 all.equal(ans1, ans3)
+
+#### adaptive fill
+x = c(1:4,2:5,4:6,5L)
+n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
+ans1 = ref(x, n, fill=150)
+ans2 = frollmean(x, list(n), exact=FALSE, fill=150)
+ans3 = frollmean(x, list(n), exact=TRUE, fill=150)
+ans4 = ref2(x, n, fill=150)
+cbind(x, ans1, ans2, ans3, ans4)
+all.equal(ans1, ans2)
+all.equal(ans1, ans3)
+all.equal(ans1, ans4)
 
 #### adaptive exact - slow loops
 x = c(1:3, 1e9L, 2:5, 5e9L, 4:6)
