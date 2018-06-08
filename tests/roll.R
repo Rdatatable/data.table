@@ -111,15 +111,65 @@ ref = function(x, n, na.rm=FALSE) {
     if (i >= n[i]) ans[i] = mean(x[(i-n[i]+1):i], na.rm=na.rm)
   ans
 }
+ref2 = function(x, n) {
+  stopifnot((nx<-length(x))==length(n))
+  cs = cumsum(x)
+  ans = rep(NA_real_, nx)
+  for (i in seq_along(cs)) {
+    if (i == n[i]) ans[i] = cs[i]/n[i]
+    else if (i > n[i]) ans[i] = (cs[i]-cs[i-n[i]])/n[i]
+    else ans[i] = NA_real_
+  }
+  ans
+}
 x = c(1:4,2:5,4:6,5L)
 n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
 #plot(x, type="l")
 #lines(n, col="red")
 ans1 = ref(x, n)
-ans2 = frollmean(x, list(n))
-ans3 = frollmean(x, n, adaptive=TRUE)
-#all.equal(ans1, ans2)
-#all.equal(ans1, ans3)
+#ans2 = frollmean(x, list(n), verbose=1)
+#ans3 = frollmean(x, n, adaptive=TRUE, verbose=1)
+ans2 = frollmean(x, list(n), exact=TRUE, verbose=0)
+ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE, verbose=0)
+print(ans1)
+print(ans2)
+print(ans3)
+# partial not yet implemented
+all.equal(ans1[!is.na(ans1)], ans2[!is.na(ans1)])
+all.equal(ans1[!is.na(ans1)], ans3[!is.na(ans1)])
+
+#### adaptive exact - slow loops
+x = c(1:3, 1e9L, 2:5, 5e9L, 4:6)
+n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
+ans1 = ref(x, n)
+ans2 = frollmean(x, list(n), exact=FALSE, verbose=0)
+ans3 = frollmean(x, list(n), exact=TRUE, verbose=0)
+ans4 = ref2(x, n)
+cbind(ans1, ans2, ans3, ans4)
+format(ans1-ans2, scientific=F)
+format(ans1-ans3, scientific=F)
+format(ans1-ans4, scientific=F)
+
+x=sample(c(rnorm(1e3, 1e2), rnorm(1e1, 1e9)))
+n = sample(1:20, length(x), TRUE)
+ans1 = ref(x, n)
+ans2 = frollmean(x, list(n), exact=FALSE, verbose=0)
+ans3 = frollmean(x, list(n), exact=TRUE, verbose=0)
+ans4 = ref2(x, n)
+format(sum(abs(ans1-ans2), na.rm=T), scientific=F)
+format(sum(abs(ans1-ans3), na.rm=T), scientific=F)
+format(sum(abs(ans1-ans4), na.rm=T), scientific=F)
+
+x=sample(c(rnorm(1e6, 1e2), rnorm(1e1, 1e9)))
+n = sample(100:2000, length(x), TRUE)
+system.time(ans1 <- ref(x, n))
+system.time(ans2 <- frollmean(x, list(n), exact=FALSE, verbose=0))
+system.time(ans3 <- frollmean(x, list(n), exact=TRUE, verbose=0))
+system.time(ans4 <- ref2(x, n))
+format(sum(abs(ans1-ans2), na.rm=T), scientific=F)
+format(sum(abs(ans1-ans3), na.rm=T), scientific=F)
+format(sum(abs(ans1-ans4), na.rm=T), scientific=F)
+
 
 ## edge cases
 
