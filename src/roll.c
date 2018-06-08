@@ -119,48 +119,46 @@ void rollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align, 
 
 void rollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, int verbose) {
   bool truehasna = hasna>0; // flag to re-run if NAs detected
-  bool partial=0; //TODO
   long double w = 0.0;
   
   if (!truehasna) {
-    if (!exact) {
-      // adaptive roll fun implementation using cumsum
+    if (!exact) { // exact==FALSE adaptive roll fun implementation using cumsum
       long double w = 0.0;
       double cs[nx];
       for (uint_fast64_t i=0; i<nx; i++) {
         w += x[i];
         cs[i] = (double) w;
       }
-      if (R_FINITE((double) w)) {
+      if (R_FINITE((double) w)) { // no need to calc this if NAs detected as will re-calc using truehasna==TRUE
         #pragma omp parallel num_threads(verbose==0 ? MIN(getDTthreads(), nx) : 1)
         {
           #pragma omp for schedule(static)
           for (uint_fast64_t i=0; i<nx; i++) {
             if (i+1 == k[i]) ans[i] = cs[i]/k[i];
             else if (i+1 > k[i]) ans[i] = (cs[i]-cs[i-k[i]])/k[i];
-            else ans[i] = NA_REAL;
+            else ans[i] = fill;
           }
         } // end of parallel region
       }
-    } else { // exact==TRUE
-      // adaptive roll fun implementation using loop, slow
+    } else { // exact==TRUE adaptive roll fun implementation using loop for each observation
       #pragma omp parallel num_threads(verbose==0 ? MIN(getDTthreads(), nx) : 1)
       {
         #pragma omp for schedule(static)
         for (uint_fast64_t i=0; i<nx; i++) {
-          long double w = 0.0;
-          for (int j=1-k[i]; j<=0; j++) {
-            if (i>=-j) w += x[i+j];
-          }
-          ans[i] = ((double) w) / k[i];
-          //if (verbose>2) Rprintf("loop: ans[%lu] = %8.3f\n", i, w/k[i]);
-          //if (verbose>1) Rprintf("loop: i %lu, k[i] %d, i.ans %lu, w %8.3f, ans %8.3f\n", i, k[i], i, w, w/k[i]);
-          if (R_FINITE((double) w)) {
-            long double t = 0.0;
-            for (int j=-k[i]+1; j<=0; j++) {
-              if (i>=-j) t += x[i+j] - ans[i];
+          if (i+1 < k[i]) ans[i] = fill;
+          else {
+            long double w = 0.0;
+            for (int j=1-k[i]; j<=0; j++) {
+              w += x[i+j];
             }
-            ans[i] += ((double) t) / k[i];
+            ans[i] = ((double) w) / k[i];
+            if (R_FINITE((double) w)) {
+              long double t = 0.0;
+              for (int j=-k[i]+1; j<=0; j++) {
+                t += x[i+j] - ans[i];
+              }
+              ans[i] += ((double) t) / k[i];
+            }
           }
         }
       } // end of parallel region
@@ -170,20 +168,11 @@ void rollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, do
       // warning/print not thread safe
       w = 0.0;
       truehasna = 1;
-    } else if (!partial) {                                      // fill partial window
-      /*for (uint_fast64_t i=0; i<(k-1); i++) {                   // fill for align right/center
-        if (i >= -si) ans[i+si] = fill;                         // fill answer vector
-      }
-      for (uint_fast64_t i=nx; i<(nx-si); i++) {                // fill for align left/center
-        ans[i+si] = fill;                                       // fill answer 
-        }*/
     }
   }
   if (truehasna) {
     if (!exact) {
-      
     } else { // exact==TRUE
-      
     }
   }
 }

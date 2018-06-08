@@ -6,8 +6,9 @@ froll <- function(fun, x, n, fill=NA, exact=FALSE, align=c("right", "left", "cen
   else if (is.list(n)) stopifnot(sapply(n, inherits, "integer"))
   # verbose int only during dev, later on logical
   verbose = as.integer(verbose)
-  # this will probably need to stay here, unless there `missing` function in C
-  if (partial && !missing(fill)) stop("Using 'partial' TRUE and passing 'fill' does not make sense. Argument 'fill' is meant to be used when rolling window is not yet in expected width. Argument 'partial' TRUE asks to write results even when rolling window is not yet in fully expected width.")
+  # both below checks needs to be moved to C
+  if (partial && !identical(fill, NA)) stop("Using 'partial' TRUE and passing 'fill' does not make sense. Argument 'fill' is meant to be used when rolling window is not yet in expected width. Argument 'partial' TRUE asks to write results even when rolling window is not yet in fully expected width.")
+  if (partial && adaptive) stop("Partial is not implemented for adaptive=TRUE.")
   ans = .Call(Crollfun, fun, x, n, fill, exact, align, partial, na.rm, hasNA, adaptive, verbose)
   ans
 }
