@@ -179,6 +179,13 @@ format(sum(abs(ans1-ans2), na.rm=T), scientific=F)
 format(sum(abs(ans1-ans3), na.rm=T), scientific=F)
 format(sum(abs(ans1-ans4), na.rm=T), scientific=F)
 
+#### adaptive limitations
+test(9999.99, frollmean(1:2, list(1:2), partial=FALSE), c(1, 1.5))
+test(9999.99, frollmean(1:2, list(1:2), partial=TRUE), error="using adaptive TRUE and partial TRUE is not implemented")
+test(9999.99, frollmean(1:2, list(1:2), align="right"), c(1, 1.5))
+test(9999.99, frollmean(1:2, list(1:2), align="center"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
+test(9999.99, frollmean(1:2, list(1:2), align="left"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
+
 
 ## edge cases
 

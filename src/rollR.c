@@ -63,6 +63,9 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
 
   if (!isLogical(partial) || length(partial)!=1 || LOGICAL(partial)[0]==NA_LOGICAL)
     error("partial must be TRUE or FALSE");
+
+  if (LOGICAL(partial)[0]==TRUE && badaptive)
+    error("using adaptive TRUE and partial TRUE is not implemented");
   
   if (!isLogical(exact) || length(exact)!=1 || LOGICAL(exact)[0]==NA_LOGICAL)
     error("exact must be TRUE or FALSE");
@@ -75,6 +78,15 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   if (LOGICAL(hasna)[0]==FALSE && LOGICAL(narm)[0])
     error("using hasNA FALSE and na.rm TRUE does not make sense, if you know there are NA values use hasNA TRUE, otherwise leave it as default NA");
 
+  int ialign;                                                   // decode align to integer
+  if (!strcmp(CHAR(STRING_ELT(align, 0)), "right")) ialign = 1;
+  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center")) ialign = 0;
+  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) ialign = -1;
+  else error("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker.");
+
+  if (badaptive && ialign!=1)
+    error("using adaptive TRUE and align argument different than 'right' is not implemented");
+  
   SEXP ans;
   ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;      // allocate list to keep results
   double* dans[nx*nk];                                          // pointers to answer columns
@@ -103,12 +115,6 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
 
   int* ik = INTEGER(k);                                         // pointer to non-adaptive window width, still can be vector when doing multiple windows
   
-  int ialign;                                                   // decode align to integer
-  if (!strcmp(CHAR(STRING_ELT(align, 0)), "right")) ialign = 1;
-  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center")) ialign = 0;
-  else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) ialign = -1;
-  else error("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker.");
-
   SEXP rdfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
   double dfill = REAL(rdfill)[0];
 
