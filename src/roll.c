@@ -126,7 +126,7 @@ void rollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, do
       long double w = 0.0;
       double cs[nx];
       for (uint_fast64_t i=0; i<nx; i++) {
-        w += x[i];
+        w += x[i]; // na.rm==TRUE just by `if (ISNAN(x[i])) w += x[i]` ??, na.rm==FALSE ??
         cs[i] = (double) w;
       }
       if (R_FINITE((double) w)) { // no need to calc this if NAs detected as will re-calc using truehasna==TRUE
@@ -148,14 +148,14 @@ void rollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, do
           if (i+1 < k[i]) ans[i] = fill;
           else {
             long double w = 0.0;
-            for (int j=1-k[i]; j<=0; j++) {
+            for (int j=1-k[i]; j<=0; j++) { // na.rm=TRUE by adding `if (ISNAN(x[i+j]) { w += x[i+j]; localk++}`, if localk==0 then NaN, same in roundoff correction, na.rm=F already handled by populated properly
               w += x[i+j];
             }
             ans[i] = ((double) w) / k[i];
-            if (R_FINITE((double) w)) {
+            if (R_FINITE((double) w)) { // NA might have been propagated
               long double t = 0.0;
               for (int j=-k[i]+1; j<=0; j++) {
-                t += x[i+j] - ans[i];
+                t += x[i+j] - ans[i]; // roundoff correction
               }
               ans[i] += ((double) t) / k[i];
             }

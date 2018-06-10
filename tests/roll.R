@@ -126,14 +126,14 @@ ref2 = function(x, n, fill=NA) {
 }
 x = c(1:4,2:5,4:6,5L)
 n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
-#plot(x, type="l")
-#lines(n, col="red")
 ans1 = ref(x, n)
 ans2 = frollmean(x, list(n), exact=FALSE, verbose=0)
 ans3 = frollmean(x, list(n), exact=TRUE, verbose=0)
-cbind(x,ans1, ans2, ans3)
+ans4 = ref2(x, n)
+cbind(x, ans1, ans2, ans3, ans4)
 all.equal(ans1, ans2)
 all.equal(ans1, ans3)
+all.equal(ans1, ans4)
 
 #### adaptive fill
 x = c(1:4,2:5,4:6,5L)
@@ -147,7 +147,7 @@ all.equal(ans1, ans2)
 all.equal(ans1, ans3)
 all.equal(ans1, ans4)
 
-#### adaptive exact - slow loops
+#### adaptive exact
 x = c(1:3, 1e9L, 2:5, 5e9L, 4:6)
 n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
 ans1 = ref(x, n)
@@ -178,6 +178,22 @@ system.time(ans4 <- ref2(x, n))
 format(sum(abs(ans1-ans2), na.rm=T), scientific=F)
 format(sum(abs(ans1-ans3), na.rm=T), scientific=F)
 format(sum(abs(ans1-ans4), na.rm=T), scientific=F)
+
+#### adaptive na.rm
+x = c(1:4,NA,2:5,NA,4:6,NA,5L)
+n = c(2L, 2L, 2L, 5L, 3L, 4L, 5L, 1L, 2L, 1L, 2L, 4L, 3L, 6L, 3L)
+ans1 = ref(x, n)
+ans2 = frollmean(x, list(n), exact=FALSE, verbose=0)
+ans3 = frollmean(x, list(n), exact=TRUE, verbose=0)
+ans4 = ref2(x, n)
+cbind(x, n, ans1, ans2, ans3, ans4)
+all.equal(ans1, ans2)
+all.equal(ans1, ans3)
+all.equal(ans1, ans4)
+ans1 = ref(x, n, na.rm=TRUE)
+ans2 = frollmean(x, list(n), exact=FALSE, na.rm=TRUE, verbose=0)
+ans3 = frollmean(x, list(n), exact=TRUE, na.rm=TRUE, verbose=0)
+cbind(x, n, ans1, ans2, ans3)
 
 #### adaptive limitations
 test(9999.99, frollmean(1:2, list(1:2), partial=FALSE), c(1, 1.5))

@@ -115,7 +115,7 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
 
   int* ik = INTEGER(k);                                         // pointer to non-adaptive window width, still can be vector when doing multiple windows
   
-  SEXP rdfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
+  SEXP rdfill = PROTECT(coerceVector(fill, REALSXP)); protecti++; // TODO might not need SEXP here
   double dfill = REAL(rdfill)[0];
 
   bool bpartial = LOGICAL(partial)[0];
