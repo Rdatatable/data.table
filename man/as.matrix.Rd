@@ -12,18 +12,21 @@ of the columns in the \code{data.table} as the \code{matrix} \code{rownames}.
 \arguments{
 \item{x}{a \code{data.table}}
 \item{rownames}{optional, one of the following specifications of the row names:
-\enumerate{
-\item If \code{length(rownames) == length(nrow(x))} then \code{rownames} itself
-will be assigned as the row names of the returned matrix.
-\item If \code{rownames} is a length-1 character or numeric vector,
-this specifies the column name or column index to use as
-the row names in the returned \code{matrix}.
-\item If \code{rownames=TRUE}, then the first column of \code{x}
-is used, unless \code{x} has a key and that key is a single column in which
-case \code{key(x)} will be assigned as the row names of the returned matrix.
-}
-}
-Note that if \code{length(rownames) == nrow(x) == 1} then the first specification above takes precedence, so \code{as.matrix(data.table("a", "b", "c"), rownames = 2)} is a 3-column matrix with row name \code{2}, not a 2-column matrix with row name \code{b}.}
+  \enumerate{
+    \item If \code{length(rownames) == length(nrow(x))} then \code{rownames} itself
+    will be assigned as the row names of the returned matrix.
+    \item If \code{rownames} is a length-1 character or numeric vector,
+    this specifies the column name or column index to use as
+    the row names in the returned \code{matrix}.
+    \item If \code{rownames=TRUE}, then the first column of \code{x}
+    is used, unless \code{x} has a key and that key is a single column in which
+    case \code{key(x)} will be assigned as the row names of the returned matrix.
+  }
+  N.B. if \code{length(rownames) == nrow(x) == 1} then the first specification
+  above takes precedence, so
+  \code{as.matrix(data.table("a", "b", "c"), rownames = 2)}
+  is a 3-column matrix with row name \code{2},
+  not a 2-column matrix with row name \code{b}.}
 \item{\dots}{additional arguments to be passed to or from methods.}
 }
 
