@@ -7,6 +7,8 @@
 
 #### BUG FIXES
 
+1. `as.ITime.character` now properly handle NA when attempting to detect proper format from non-NA values in vector. Thanks @polyjian for reporting, closes [#2940](https://github.com/Rdatatable/data.table/issues/2940).
+
 #### NOTES
 
 

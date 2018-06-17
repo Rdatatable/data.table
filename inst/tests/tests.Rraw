@@ -11983,6 +11983,9 @@ test(1914.8, identical(dtGet(dt.comp, 1), dt[[1]]))
 test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
 # END port of old testthat tests
 
+# as.ITime.character bug for NA handling #2940
+test(1915, as.ITime(c('xxx', '10:43')), structure(c(NA, 38580L), class = "ITime"))
+
 
 ###################################
 #  Add new tests above this line  #
