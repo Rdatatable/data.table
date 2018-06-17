@@ -2,7 +2,9 @@
 
 SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP partial, SEXP narm, SEXP hasna, SEXP adaptive, SEXP verbose) {
   int protecti=0;
-  int iverbose = INTEGER(verbose)[0];
+  if (!isLogical(verbose) || length(verbose)!=1 || LOGICAL(verbose)[0]==NA_LOGICAL)
+    error("verbose must be TRUE or FALSE");
+  bool bverbose = LOGICAL(verbose)[0];
   
   if (!xlength(obj)) return(obj);                               // empty input: NULL, list()
   SEXP x;                                                       // holds input data as list
@@ -92,7 +94,7 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
   double* dans[nx*nk];                                          // pointers to answer columns
   double* dx[nx];                                               // pointers to source columns
   uint_fast64_t inx[nx];                                        // to not recalculate `length(x[[i]])` we store it in extra array
-  if (iverbose>0) Rprintf("rollfun: allocating memory for results\n");
+  if (bverbose) Rprintf("rollfun: allocating memory for results\n");
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
@@ -128,32 +130,32 @@ SEXP rollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP
     -1;                                                         // hasna FALSE, there should be no NAs
 
   if (nx==1 && nk==1) {                                         // no need to init openmp for single thread call
-    if (iverbose>0) Rprintf("rollfun: single window and single column, skipping parallel execution\n");
+    if (bverbose) Rprintf("rollfun: single window and single column, skipping parallel execution\n");
     switch (sfun) {
       case MEAN :
-        if (!badaptive) rollmeanVector(dx[0], inx[0], dans[0], ik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
-        else rollmeanVectorAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bexact, bnarm, ihasna, iverbose);
+        if (!badaptive) rollmeanVector(dx[0], inx[0], dans[0], ik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
+        else rollmeanVectorAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bexact, bnarm, ihasna, bverbose);
         break;
       case SUM :
-        if (!badaptive) rollsumVector(dx[0], inx[0], dans[0], ik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
-        else rollsumVectorAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bexact, bnarm, ihasna, iverbose);
+        if (!badaptive) rollsumVector(dx[0], inx[0], dans[0], ik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
+        else rollsumVectorAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bexact, bnarm, ihasna, bverbose);
         break;
     }
   } else {
-    if (iverbose>0) Rprintf("rollfun: multiple window or columns, entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n");
-    #pragma omp parallel num_threads(iverbose==0 ? MIN(getDTthreads(), nx*nk) : 1)
+    if (bverbose>0) Rprintf("rollfun: multiple window or columns, entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n");
+    #pragma omp parallel num_threads(bverbose ? 1 : MIN(getDTthreads(), nx*nk))
     {
       #pragma omp for schedule(auto) collapse(2)
       for (R_len_t i=0; i<nx; i++) {                              // loop over multiple columns
         for (R_len_t j=0; j<nk; j++) {                            // loop over multiple windows
           switch (sfun) {
             case MEAN :
-              if (!badaptive) rollmeanVector(dx[i], inx[i], dans[i*nk+j], ik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
-              else rollmeanVectorAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, iverbose);
+              if (!badaptive) rollmeanVector(dx[i], inx[i], dans[i*nk+j], ik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
+              else rollmeanVectorAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, bverbose);
               break;
             case SUM :
-              if (!badaptive) rollsumVector(dx[i], inx[i], dans[i*nk+j], ik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, iverbose);
-              else rollsumVectorAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, iverbose);
+              if (!badaptive) rollsumVector(dx[i], inx[i], dans[i*nk+j], ik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
+              else rollsumVectorAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, bverbose);
               break;
           }
         } // end of j-windows loop
