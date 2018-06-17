@@ -1887,12 +1887,17 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 #    x
 #}
 
-as.matrix.data.table <- function(x, rownames, ...) {
+as.matrix.data.table <- function(x, rownames, rownames.literal=FALSE, ...) {
   rn <- NULL
   rnc <- NULL
   if (!missing(rownames)) { # Convert rownames to a column index if possible
-    if (length(rownames) == nrow(x)) {
+    if (length(rownames) == nrow(x) && nrow(x) > 1) {
       # rownames argument is a vector of row names, no column in x to drop.
+      rn <- rownames
+      rnc <- NULL
+    } else if (length(rownames) == nrow(x) && nrow(x) == 1 && isTRUE(rownames.literal)) {
+      # When x has a single row, the user may still want to supply vector of rownames, 
+      # but we need to distinguish from the case when the rownames is a column of x.
       rn <- rownames
       rnc <- NULL
     } else if (!is.null(rownames) && length(rownames) != 1L) { # vector(0) will throw an error, but NULL will pass through
