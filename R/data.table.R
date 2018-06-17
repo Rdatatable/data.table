@@ -1887,7 +1887,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 #    x
 #}
 
-as.matrix.data.table <- function(x, rownames, ...) {
+as.matrix.data.table <- function(x, rownames, rownames.literal=FALSE, ...) {
   rn <- NULL
   rnc <- NULL
   if (!missing(rownames)) { # Convert rownames to a column index if possible
@@ -1895,7 +1895,7 @@ as.matrix.data.table <- function(x, rownames, ...) {
       # rownames argument is a vector of row names, no column in x to drop.
       rn <- rownames
       rnc <- NULL
-    } else if (length(rownames) == nrow(x) && nrow(x) == 1 && is.character(rownames) && !(rownames %in% colnames(x))) {
+    } else if (nrow(x) == 1 && isTRUE(rownames.literal)) {
       # When x has a single row, the user may still want to supply vector of rownames, 
       # but we need to distinguish from the case when the rownames is a column of x.
       rn <- rownames

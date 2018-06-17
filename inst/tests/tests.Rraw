@@ -11706,7 +11706,7 @@ test(1899.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple k
 mat4 <- matrix(c("a", 1, 5), nrow=1, dimnames=list(c("x"), c("id", "X", "Y")))
 test(1899.14, as.matrix(DT[1,], 1), mat[1,,drop=FALSE])
 test(1899.15, as.matrix(DT[1,], "id"), mat[1,,drop=FALSE])
-test(1899.16, as.matrix(DT[1,], "x"), mat4) # "x" not a column in DT, so use "x" as the rownames
+test(1899.16, as.matrix(DT[1,], "x", rownames.literal=TRUE), mat4) # "x" not a column in DT, so use "x" as the rownames
 
 # index argument for fread, #2633
 DT_str = c('a,b\n3,1\n2,2\n1,1\n2,1\n3,2')
