@@ -33,7 +33,15 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (!isInteger(o)) error("o is not an integer vector");
   if (!isInteger(f)) error("f is not an integer vector");
   if (!isInteger(l)) error("l is not an integer vector");
-  if (!isInteger(irowsArg) && !isNull(irowsArg)) error("irowsArg is not an integer vector");
+  if (isNull(irowsArg)) {
+    irows = NULL;
+    irowslen = -1;
+  }
+  else if (isInteger(irowsArg)) {
+    irows = INTEGER(irowsArg);
+    irowslen = LENGTH(irowsArg);
+  }
+  else error("irowsArg is neither an integer vector nor NULL");
   ngrp = LENGTH(l);
   if (LENGTH(f) != ngrp) error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp);
   grpn=0;
@@ -63,8 +71,6 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (length(tt) && INTEGER(tt)[0]!=maxgrpn) error("Internal error: o's maxgrpn mismatches recalculated maxgrpn");
   oo = INTEGER(o);
   ff = INTEGER(f);
-  irows = INTEGER(irowsArg);
-  if (!isNull(irowsArg)) irowslen = length(irowsArg);
 
   SEXP ans = PROTECT( eval(jsub, env) );
   // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.
@@ -775,18 +781,18 @@ SEXP gfirst(SEXP x) {
 }
 
 SEXP gtail(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, gtail is only implemented for n=1. This should have been caught before. Please report to datatable-help.");
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, gtail is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.");
   return (glast(x));
 }
 
 SEXP ghead(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, ghead is only implemented for n=1. This should have been caught before. Please report to datatable-help.");
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, ghead is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.");
   return (gfirst(x));
 }
 
 SEXP gnthvalue(SEXP x, SEXP valArg) {
 
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. Please report to datatable-help.");
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.");
   R_len_t i,k, val=INTEGER(valArg)[0];
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;

@@ -25,13 +25,13 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     if (length(SYS) <= 2L ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
         ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) &&
           as.character(thisSYS) %chin% mimicsAutoPrint ) )  {
-      return(invisible())
+      return(invisible(x))
       # is.symbol() temp fix for #1758.
     }
   }
   if (!is.numeric(nrows)) nrows = 100L
   if (!is.infinite(nrows)) nrows = as.integer(nrows)
-  if (nrows <= 0L) return(invisible())   # ability to turn off printing
+  if (nrows <= 0L) return(invisible(x))   # ability to turn off printing
   if (!is.numeric(topn)) topn = 5L
   topnmiss = missing(topn)
   topn = max(as.integer(topn),1L)
@@ -47,7 +47,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
        cat("Null data.table (0 rows and 0 cols)\n")  # See FAQ 2.5 and NEWS item in v1.8.9
     else
        cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1L)"s",": ",paste(head(names(x),6L),collapse=","),if(ncol(x)>6L)"...","\n",sep="")
-    return(invisible())
+    return(invisible(x))
   }
   if ((topn*2+1)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
     toprint = rbind(head(x, topn), tail(x, topn))
@@ -64,7 +64,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
   # When we depend on R 3.2.0 (Apr 2015) we can use isNamespaceLoaded() added then, instead of %chin% above
 
   # FR #5020 - add row.names = logical argument to print.data.table
-  if (isTRUE(row.names)) rownames(toprint)=paste(format(rn,right=TRUE,scientific=FALSE),":",sep="") else rownames(toprint)=rep.int("", nrow(toprint))
+  if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
   if (is.null(names(x)) || all(names(x) == ""))
     # fixes bug #97 (RF#4934) and #545 (RF#5253)
     colnames(toprint)=rep("", ncol(toprint))
@@ -78,20 +78,20 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     classes = vapply(x, function(col) class(col)[1L], "", USE.NAMES=FALSE)
     abbs = unname(class_abb[classes])
     if ( length(idx <- which(is.na(abbs))) )
-    abbs[idx] = paste("<", classes[idx], ">", sep="")
+    abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
   }
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (printdots) {
-    toprint = rbind(head(toprint, topn), "---"="", tail(toprint, topn))
+    toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
     rownames(toprint) = format(rownames(toprint), justify="right")
     if (col.names == "none") {
       cut_top(print(toprint, right=TRUE, quote=quote))
     } else {
       print(toprint, right=TRUE, quote=quote)
     }
-    return(invisible())
+    return(invisible(x))
   }
   if (nrow(toprint)>20L && col.names == "auto")
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
@@ -102,7 +102,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
   } else {
     print(toprint, right=TRUE, quote=quote)
   }
-  invisible()
+  invisible(x)
 }
 
 format.data.table <- function (x, ..., justify="none") {
@@ -115,7 +115,7 @@ format.data.table <- function (x, ..., justify="none") {
     else if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
       paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 - format has to be added here...
     else
-      paste("<", class(x)[1L], ">", sep="")
+      paste0("<", class(x)[1L], ">")
   }
   # FR #1091 for pretty printing of character
   # TODO: maybe instead of doing "this is...", we could do "this ... test"?
@@ -123,7 +123,7 @@ format.data.table <- function (x, ..., justify="none") {
     trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
     if (!is.character(x) || trunc.char <= 0L) return(x)
     idx = which(nchar(x) > trunc.char)
-    x[idx] = paste(substr(x[idx], 1L, as.integer(trunc.char)), "...", sep="")
+    x[idx] = paste0(substr(x[idx], 1L, as.integer(trunc.char)), "...")
     x
   }
   do.call("cbind",lapply(x,function(col,...){

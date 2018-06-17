@@ -141,7 +141,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
   if (any( d<-(targetModes!=currentModes) )) {
     w = head(which(d),3L)
     return(paste0("Datasets have different column modes. First 3: ",paste(
-     paste(names(targetModes)[w],"(",paste(targetModes[w],currentModes[w],sep="!="),")",sep="")
+     paste0(names(targetModes)[w],"(",paste(targetModes[w],currentModes[w],sep="!="),")")
             ,collapse=" ")))
   }
 
@@ -155,7 +155,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     if (any( d<-(targetTypes != currentTypes))) {
       w = head(which(d),3L)
       return(paste0("Datasets have different column classes. First 3: ",paste(
-     paste(names(targetTypes)[w],"(",paste(targetTypes[w],currentTypes[w],sep="!="),")",sep="")
+     paste0(names(targetTypes)[w],"(",paste(targetTypes[w],currentTypes[w],sep="!="),")")
             ,collapse=" ")))
     }
   }

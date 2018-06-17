@@ -112,6 +112,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
 
   SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));
+  int nprotect = 1;
   double *ans = REAL(ansVec);
   // allocate early in case fails if not enough RAM
   // TODO: document this is much cheaper than a copy followed by in-place.
@@ -126,6 +127,8 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   R_xlen_t lastBatchSize = xlength(x) - (nBatch-1)*batchSize;
   // could be that lastBatchSize == batchSize when i) xlength(x) is multiple of nBatch
   // and ii) for small vectors with just one batch
+
+  if (ALTREP(x)) { x = PROTECT(duplicate(x)); nprotect++; }
 
   t[1] = wallclock();
   double mins[nBatch], maxs[nBatch];
@@ -305,8 +308,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     Rprintf("%d: %.3f (%4.1f%%)\n", i, t[i]-t[i-1], 100.*(t[i]-t[i-1])/tot);
   }
 
-  UNPROTECT(1);
+  UNPROTECT(nprotect);
   return(ansVec);
 }
-
 

@@ -79,7 +79,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   }
   if (!physical) {
     if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
-    setattr(attr(x,"index",exact=TRUE), paste("__",paste(cols,collapse="__"),sep=""), o)
+    setattr(attr(x,"index",exact=TRUE), paste0("__", cols, collapse=""), o)
     return(invisible(x))
   }
   setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
@@ -242,15 +242,25 @@ forder <- function(x, ..., na.last=TRUE, decreasing=FALSE)
 
 fsort <- function(x, decreasing = FALSE, na.last = FALSE, internal=FALSE, verbose=FALSE, ...)
 {
-  if (typeof(x)=="double" && !decreasing && !na.last) {
-    if (internal) stop("Internal code should not be being called on type double")
-    return(.Call(Cfsort, x, verbose))
-  } else {
+  containsNAs <- FALSE
+  if (typeof(x)=="double" && !decreasing) {
+    containsNAs <- anyNA(x) ## just do this if all other conditions are met since it is relatively expensive
+  }
+  if(typeof(x)=="double" && !decreasing && !containsNAs){
+      if (internal) stop("Internal code should not be being called on type double")
+      return(.Call(Cfsort, x, verbose))
+  }
+  else {
     # fsort is now exported for testing. Trying to head off complaints "it's slow on integer"
     # The only places internally we use fsort internally (3 calls, all on integer) have had internal=TRUE added for now.
     # TODO: implement integer and character in Cfsort and remove this branch and warning
-    if (!internal) warning("Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Invoking relatively inefficient sort using order first.")
-    o = forderv(x, order=!decreasing, na.last=na.last)
+    if (!internal){
+      if(typeof(x) != "double") warning("Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Using one thread.")
+      if(decreasing)  warning("New parallel sort has not been implemented for decreasing=TRUE so far. Using one thread.")
+      if(containsNAs) warning("New parallel sort has not been implemented for vectors containing NA values so far. Using one thread.")
+    }
+    orderArg = if(decreasing) -1 else 1
+    o = forderv(x, order=orderArg, na.last=na.last)
     return( if (length(o)) x[o] else x )   # TO DO: document this shortcut for already-sorted
   }
 }
@@ -313,8 +323,7 @@ setorderv <- function(x, cols, order=1L, na.last=FALSE)
   if (length(o)) {
     .Call(Creorder, x, o)
     if (is.data.frame(x) & !is.data.table(x)) {
-      .Call(Creorder, rn <- rownames(x), o)
-      setattr(x, 'row.names', rn)
+      setattr(x, 'row.names', rownames(x)[o])
     }
     setattr(x, 'sorted', NULL) # if 'forderv' is not 0-length, it means order has changed. So, set key to NULL, else retain key.
     setattr(x, 'index', NULL)  # remove secondary keys too. These could be reordered and retained, but simpler and faster to remove
@@ -385,7 +394,7 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
   if (is.null(vnames <- names(l)))
     vnames = vector("character", length(l))
   if (any(tt <- vnames == "")) {
-    vnames[tt] = paste("V", which(tt), sep="")
+    vnames[tt] = paste0("V", which(tt))
     setattr(l, "names", vnames)
   }
   l <- alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
