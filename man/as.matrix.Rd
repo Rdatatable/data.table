@@ -7,7 +7,7 @@ Converts a \code{data.table} into a \code{matrix}, optionally using one
 of the columns in the \code{data.table} as the \code{matrix} \code{rownames}.
 }
 \usage{
-\method{as.matrix}{data.table}(x, rownames, ...)}
+\method{as.matrix}{data.table}(x, rownames, rownames.literal, ...)}
 
 \arguments{
 \item{x}{a \code{data.table}}
@@ -17,6 +17,11 @@ the \code{rownames} in the returned \code{matrix}. If \code{TRUE} the
 single column, otherwise the first column in the \code{data.table} will
 be used. Alternative a vector of length \code{nrow(x)} to assign as the
 row names of the returned \code{matrix}.}
+\item{rownames.literal}{optional, when x is a \code{data.table} that has
+only a single row, set \code{rownames.literal} to \code{TRUE} if you want
+to use the vector supplied to the \code{rownames} argument as the row 
+names of the returned \code{matrix} instead of looking for \code{rownames}
+as a column of \code{x}.}
 \item{\dots}{additional arguments to be passed to or from methods.}
 }
 

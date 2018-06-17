@@ -7,6 +7,8 @@
 
 #### BUG FIXES
 
+1. Passing a column to use as the rownames to `as.matrix.data.table()` now works when the input `data.table` has a single row, [#2930](https://github.com/Rdatatable/data.table/issues/2930). Thanks to @malcook for reporting, @sritchie73 for fixing, and @HughParsonage for feedback  
+
 #### NOTES
 
 
