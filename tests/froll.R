@@ -38,6 +38,39 @@ ans = frollmean(d[["V1"]], 3)
 expected = c(rep(NA_real_,2), seq(1,2.5,0.5))
 test(9999.4, ans, expected)
 
+#### in x integer converted to double
+di = data.table(real=1:10/2, int=1:10)
+ans = frollmean(di, 3)
+expected = list(
+  c(rep(NA_real_,2), seq(1,4.5,0.5)),
+  c(rep(NA_real_,2), seq(2,9,1))
+)
+test(9999.99, ans, expected)
+
+#### in n double converted to integer
+x = 1:3/2
+n = 2
+test(9999.99, frollmean(x, n), c(NA, 0.75, 1.25))
+n = list(c(2L,1L,2L), c(2,1,2))
+# TODO: test(9999.99, frollmean(x, n), c(NA, 0.75, 1.25))
+
+#### error on unsupported type
+dx = data.table(real=1:10/2, char=letters[1:10])
+test(9999.99, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
+dx = data.table(real=1:10/2, fact=factor(letters[1:10]))
+test(9999.99, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
+dx = data.table(real=1:10/2, logi=logical(10))
+test(9999.99, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
+dx = data.table(real=1:10/2, list=rep(list(NA), 10))
+test(9999.99, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
+x = letters[1:10]
+test(9999.99, frollmean(x, 3), error="x must be of type numeric")
+x = 1:10/2
+test(9999.99, frollmean(x, "a"), error="n must be integer")
+test(9999.99, frollmean(x, factor("a")), error="n must be integer")
+test(9999.99, frollmean(x, TRUE), error="n must be integer")
+# TODO test(9999.99, frollmean(x, list(NA)), error="n must be integer")
+
 #### various length list vectors
 l = list(1:6/2, 3:10/4)
 ans = frollmean(l, c(3, 4))
@@ -105,7 +138,7 @@ test(9999.99, frollmean(1:5, 4, fill=NaN), c(NaN, NaN, NaN, 2.5, 3.5))
 
 #### adaptive window
 x = rnorm(1e3)
-n = rep(n, 1e3) # pseudo adaptive
+n = rep(20L, 1e3) # pseudo adaptive
 test(9999.99, frollmean(x, n[1L]), frollmean(x, n, adaptive = TRUE)) # n auto wrapped in list
 test(9999.99, frollmean(x, n[1L]), frollmean(x, list(n))) # n list so adaptive to TRUE
 ama = function(x, n, na.rm=FALSE, fill=NA) {
@@ -139,11 +172,9 @@ ans2 = frollmean(x, list(n))
 test(9999.99, ans1, ans2)
 
 x = data.table(x=x, y=x/2) # multiple columns and multiple windows
-n = list(n, n+1L)
-ans1 = list(ama(x[[1L]], n[[1L]]), ama(x[[1L]], n[[2L]]), ama(x[[2L]], n[[1L]]), ama(x[[2L]], n[[2L]]))
-ans2 = frollmean(x, n, adaptive=TRUE)
-str(ans2) # TODO bug! to many columns
-test(9999.99, ans1[[4]], ans2[[4]])
+ln = list(n, n+1L)
+ans1 = list(ama(x[[1L]], ln[[1L]]), ama(x[[1L]], ln[[2L]]), ama(x[[2L]], ln[[1L]]), ama(x[[2L]], ln[[2L]]))
+ans2 = frollmean(x, ln, adaptive=TRUE)
 test(9999.99, ans1, ans2)
 
 #### adaptive fill

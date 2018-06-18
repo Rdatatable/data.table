@@ -10,19 +10,28 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
   SEXP x;                                                       // holds input data as list
   if (isVectorAtomic(obj)) {                                    // wrap atomic vector into list
     x = PROTECT(allocVector(VECSXP, 1)); protecti++;
-    SET_VECTOR_ELT(x, 0, obj);
+    if (isReal(obj)) {
+      SET_VECTOR_ELT(x, 0, obj);
+    } else if (isInteger(obj)) {
+      SET_VECTOR_ELT(x, 0, coerceVector(obj, REALSXP));         // this dont have to be protected because 'x' is already is protected?
+    } else {
+      error("x must be of type numeric");
+    }
   } else {
-    x = obj;
+    R_len_t nobj=length(obj);
+    x = PROTECT(allocVector(VECSXP, nobj)); protecti++;
+    for (R_len_t i=0; i<nobj; i++) {
+      if (isReal(VECTOR_ELT(obj, i))) {
+        SET_VECTOR_ELT(x, i, VECTOR_ELT(obj, i));
+      } else if (isInteger(VECTOR_ELT(obj, i))) {               // coerce integer types to double
+        SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(obj, i), REALSXP)); // this dont have to be protected because 'x' is already is protected?
+      } else {
+        error("x must be list, data.frame or data.table of numeric types");
+      }
+    }
   }
-
-  if (!isNewList(x))
-    error("x must be a list, data.frame or data.table");
-
-  R_len_t i=0, nx=length(x);                                    // check that every column is double/integer type, it will be coerced to double from integer anyway
-  while (i < nx && (isReal(VECTOR_ELT(x, i)) || isInteger(VECTOR_ELT(x, i)))) i++;
-  if (i != nx)
-    error("x must be list, data.frame or data.table of numeric types");
-
+  R_len_t nx=length(x);
+  
   R_len_t nk=length(k);
   if (nk == 0)                                                  // check that window is non zero length
     error("n must be non 0 length");
@@ -107,7 +116,7 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
       SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, inx[i]));// allocate answer vector for this column-window
       dans[i*nk+j] = REAL(VECTOR_ELT(ans, i*nk+j));
     }
-    dx[i] = REAL(AS_NUMERIC(VECTOR_ELT(x, i)));
+    dx[i] = REAL(VECTOR_ELT(x, i));
   }
 
   enum {MEAN, SUM} sfun;
