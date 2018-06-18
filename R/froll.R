@@ -4,7 +4,7 @@ froll <- function(fun, x, n, fill=NA, exact=FALSE, align=c("right", "left", "cen
   # n type handling to be moved to C
   if (is.double(n)) n = as.integer(n)
   else if (is.list(n)) stopifnot(sapply(n, inherits, "integer"))
-  ans = .Call(Crollfun, fun, x, n, fill, exact, align, partial, na.rm, hasNA, adaptive, verbose)
+  ans = .Call(Cfrollfun, fun, x, n, fill, exact, align, partial, na.rm, hasNA, adaptive, verbose)
   ans
 }
 

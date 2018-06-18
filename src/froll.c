@@ -1,6 +1,6 @@
-#include "roll.h"
+#include "froll.h"
 
-void rollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool exact, bool narm, int hasna, bool verbose) {
+void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool exact, bool narm, int hasna, bool verbose) {
 
   uint_fast64_t si =                                            // align shift for ans index
     align > 0 ? 0 :                                             // align right
@@ -117,7 +117,7 @@ void rollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align, 
   }
 }
 
-void rollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, bool verbose) {
+void frollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, bool verbose) {
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
   
@@ -247,7 +247,7 @@ void rollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, do
   } // end of truehasna
 }
 
-void rollsumVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool exact, bool narm, int hasna, bool verbose) {
+void frollsumVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool exact, bool narm, int hasna, bool verbose) {
   uint_fast64_t si =
     align > 0 ? 0 :
     align < 0 ? -k+1 :
@@ -364,7 +364,7 @@ void rollsumVector(double *x, uint_fast64_t nx, double *ans, int k, int align, d
   }
 }
 
-void rollsumVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, bool verbose) {
+void frollsumVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, bool verbose) {
   double w = 0.;
   bool truehasna = hasna>0;
   int thisk, lastk, diffk;

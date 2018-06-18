@@ -159,7 +159,7 @@ R_CallMethodDef callMethods[] = {
 {"Cbetween", (DL_FUNC) &between, -1},
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
-{"Crollfun", (DL_FUNC) &rollfun, -1},
+{"Cfrollfun", (DL_FUNC) &frollfun, -1},
 {NULL, NULL, 0}
 };
 
