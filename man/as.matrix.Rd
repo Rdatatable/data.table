@@ -7,7 +7,7 @@ Converts a \code{data.table} into a \code{matrix}, optionally using one
 of the columns in the \code{data.table} as the \code{matrix} \code{rownames}.
 }
 \usage{
-\method{as.matrix}{data.table}(x, rownames, rownames.literal=FALSE, ...)}
+\method{as.matrix}{data.table}(x, rownames, rownames.literal=FALSE, \dots)}
 
 \arguments{
 \item{x}{a \code{data.table}}
