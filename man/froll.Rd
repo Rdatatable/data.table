@@ -56,9 +56,8 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
 
   Argument \code{exact} will make rolling functions to perform extra
   computation for floating point rounding error correction. This is useful
-  mostly when when input data has some far outlier. In some edge cases
-  \exact{TRUE} might result in bigger rounding error than \code{TRUE},
-  see examples.
+  mostly when when input data has distant outlier. This feature is not yet
+  implemented.
   
   Adaptive rolling functions are special cases where for each single
   observation own rolling window width has to be calculated. It is
