@@ -141,6 +141,7 @@ test(9999.99, frollmean(1:5, 4, fill=NaN), c(NaN, NaN, NaN, 2.5, 3.5))
 #### fill coercion
 test(9999.99, frollmean(1:3, 2, fill=0), c(0, 1.5, 2.5))
 test(9999.99, frollmean(1:3, 2, fill=0L), c(0, 1.5, 2.5))
+test(9999.99, frollmean(1:3, 2, fill=NA_integer_), c(NA_real_, 1.5, 2.5))
 test(9999.99, frollmean(1:3, 2, fill=1:2), error="fill must be a vector of length 1")
 test(9999.99, frollmean(1:3, 2, fill=NA), c(NA_real_, 1.5, 2.5))
 test(9999.99, frollmean(1:3, 2, fill=TRUE), error="fill must be numeric")

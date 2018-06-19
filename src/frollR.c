@@ -145,7 +145,11 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
   
   double dfill;
   if (isInteger(fill)) {
-    dfill = (double)INTEGER(fill)[0];
+    if (INTEGER(fill)[0]==NA_LOGICAL) {
+      dfill = NA_REAL;
+    } else {
+      dfill = (double)INTEGER(fill)[0];
+    }
   } else if (isReal(fill)) {
     dfill = REAL(fill)[0];
   } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL){
