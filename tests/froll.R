@@ -138,6 +138,17 @@ test(9999.99, frollmean(1:5, 4, fill=100), c(100, 100, 100, 2.5, 3.5))
 test(9999.99, frollmean(1:5, 4, fill=Inf), c(Inf, Inf, Inf, 2.5, 3.5))
 test(9999.99, frollmean(1:5, 4, fill=NaN), c(NaN, NaN, NaN, 2.5, 3.5))
 
+#### fill coercion
+test(9999.99, frollmean(1:3, 2, fill=0), c(0, 1.5, 2.5))
+test(9999.99, frollmean(1:3, 2, fill=0L), c(0, 1.5, 2.5))
+test(9999.99, frollmean(1:3, 2, fill=1:2), error="fill must be a vector of length 1")
+test(9999.99, frollmean(1:3, 2, fill=NA), c(NA_real_, 1.5, 2.5))
+test(9999.99, frollmean(1:3, 2, fill=TRUE), error="fill must be numeric")
+test(9999.99, frollmean(1:3, 2, fill=FALSE), error="fill must be numeric")
+test(9999.99, frollmean(1:3, 2, fill="a"), error="fill must be numeric")
+test(9999.99, frollmean(1:3, 2, fill=factor("a")), error="fill must be numeric")
+test(9999.99, frollmean(1:3, 2, fill=list(NA)), error="fill must be numeric")
+
 #### adaptive window
 x = rnorm(1e3)
 n = rep(20L, 1e3) # pseudo adaptive

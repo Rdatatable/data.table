@@ -86,9 +86,6 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
   if (badaptive)
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
   
-  if (length(fill) != 1)
-    error("fill must be a vector of length 1");
-
   if (!isLogical(partial) || length(partial)!=1 || LOGICAL(partial)[0]==NA_LOGICAL)
     error("partial must be TRUE or FALSE");
 
@@ -143,9 +140,20 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
 
   int* iik = INTEGER(ik);                                       // pointer to non-adaptive window width, still can be vector when doing multiple windows
   
-  SEXP rdfill = PROTECT(coerceVector(fill, REALSXP)); protecti++; // TODO might not need SEXP here
-  double dfill = REAL(rdfill)[0];
-
+  if (length(fill) != 1)
+    error("fill must be a vector of length 1");
+  
+  double dfill;
+  if (isInteger(fill)) {
+    dfill = (double)INTEGER(fill)[0];
+  } else if (isReal(fill)) {
+    dfill = REAL(fill)[0];
+  } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL){
+    dfill = NA_REAL;
+  } else {
+    error("fill must be numeric");
+  }
+  
   bool bpartial = LOGICAL(partial)[0];
   bool bexact = LOGICAL(exact)[0];
   bool bnarm = LOGICAL(narm)[0];
