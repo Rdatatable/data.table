@@ -52,7 +52,7 @@ x = 1:3/2
 n = 2
 test(9999.99, frollmean(x, n), c(NA, 0.75, 1.25))
 n = list(c(2L,1L,2L), c(2,1,2))
-test(9999.99, frollmean(x, n), list(c(NA, 1, 1.25), c(NA, 1, 1.25)))
+test(9999.99, frollmean(x, n, adaptive=TRUE), list(c(NA, 1, 1.25), c(NA, 1, 1.25)))
 
 #### error on unsupported type
 dx = data.table(real=1:10/2, char=letters[1:10])
@@ -69,8 +69,9 @@ x = 1:10/2
 test(9999.99, frollmean(x, "a"), error="n must be integer")
 test(9999.99, frollmean(x, factor("a")), error="n must be integer")
 test(9999.99, frollmean(x, TRUE), error="n must be integer")
-test(9999.99, frollmean(x, list(NA)), error="n must be integer vector or list of integer vectors")
-test(9999.99, frollmean(x, list(c(1:5,1:5), NA)), error="n must be integer vector or list of integer vectors")
+test(9999.99, frollmean(x, list(1:10)), error="n must be integer, list is accepted for adaptive TRUE")
+test(9999.99, frollmean(x, list(NA), adaptive=TRUE), error="n must be integer vector or list of integer vectors")
+test(9999.99, frollmean(x, list(c(1:5,1:5), NA), adaptive=TRUE), error="n must be integer vector or list of integer vectors")
 
 #### various length list vectors
 l = list(1:6/2, 3:10/4)
@@ -140,8 +141,8 @@ test(9999.99, frollmean(1:5, 4, fill=NaN), c(NaN, NaN, NaN, 2.5, 3.5))
 #### adaptive window
 x = rnorm(1e3)
 n = rep(20L, 1e3) # pseudo adaptive
-test(9999.99, frollmean(x, n[1L]), frollmean(x, n, adaptive = TRUE)) # n auto wrapped in list
-test(9999.99, frollmean(x, n[1L]), frollmean(x, list(n))) # n list so adaptive to TRUE
+test(9999.99, frollmean(x, n[1L]), frollmean(x, n, adaptive=TRUE)) # n auto wrapped in list
+test(9999.99, frollmean(x, n[1L]), frollmean(x, list(n), adaptive=TRUE))
 ama = function(x, n, na.rm=FALSE, fill=NA) {
   # adaptive moving average in R
   stopifnot((nx<-length(x))==length(n))
@@ -169,7 +170,7 @@ fastama = function(x, n, na.rm, fill=NA) {
 x = c(1:4,2:5,4:6,5L)
 n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
 ans1 = ama(x, n)
-ans2 = frollmean(x, list(n))
+ans2 = frollmean(x, list(n), adaptive=TRUE)
 test(9999.99, ans1, ans2)
 
 x = data.table(x=x, y=x/2) # multiple columns and multiple windows
@@ -182,8 +183,8 @@ test(9999.99, ans1, ans2)
 x = c(1:4,2:5,4:6,5L)
 n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
 ans1 = ama(x, n, fill=150)
-ans2 = frollmean(x, list(n), exact=FALSE, fill=150)
-ans3 = frollmean(x, list(n), exact=TRUE, fill=150)
+ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE, fill=150)
+ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE, fill=150)
 test(9999.99, ans1, ans2)
 test(9999.99, ans1, ans3)
 
@@ -191,13 +192,13 @@ test(9999.99, ans1, ans3)
 x = c(1:4,NA,2:5,NA,4:6,NA,5L)
 n = c(2L, 2L, 2L, 5L, 3L, 4L, 5L, 1L, 2L, 1L, 2L, 4L, 3L, 6L, 3L)
 ans1 = ama(x, n)
-ans2 = frollmean(x, list(n), exact=FALSE)
-ans3 = frollmean(x, list(n), exact=TRUE)
+ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
+ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
 test(9999.99, ans1, ans2)
 test(9999.99, ans1, ans3)
 ans1 = ama(x, n, na.rm=TRUE)
-ans2 = frollmean(x, list(n), exact=FALSE, na.rm=TRUE)
-ans3 = frollmean(x, list(n), exact=TRUE, na.rm=TRUE)
+ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE, na.rm=TRUE)
+ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE, na.rm=TRUE)
 test(9999.99, ans1, ans2)
 test(9999.99, ans1, ans3)
 #### TODO test 5e9 vector where 3e9 are NAs to confirm uint_fast64_t running NA counter
@@ -208,19 +209,19 @@ if (FALSE) {
 }
 
 #### adaptive limitations
-test(9999.99, frollmean(1:2, list(1:2), partial=FALSE), c(1, 1.5))
-test(9999.99, frollmean(1:2, list(1:2), partial=TRUE), error="using adaptive TRUE and partial TRUE is not implemented")
-test(9999.99, frollmean(1:2, list(1:2), align="right"), c(1, 1.5))
-test(9999.99, frollmean(1:2, list(1:2), align="center"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
-test(9999.99, frollmean(1:2, list(1:2), align="left"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
-test(9999.99, frollmean(list(1:2, 1:3), list(1:2)), error="Adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame. If you want to call rolling function on list having variable length of elements call it for each field separately.")
+test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, partial=FALSE), c(1, 1.5))
+test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, partial=TRUE), error="using adaptive TRUE and partial TRUE is not implemented")
+test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, align="right"), c(1, 1.5))
+test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, align="center"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
+test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, align="left"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
+test(9999.99, frollmean(list(1:2, 1:3), list(1:2), adaptive=TRUE), error="Adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame. If you want to call rolling function on list having variable length of elements call it for each field separately.")
 
 #### adaptive exact
 x = c(1:3, 1e9L, 2:5, 5e9, 4:6)
 n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
 ans1 = ama(x, n)
-ans2 = frollmean(x, list(n), exact=FALSE)
-ans3 = frollmean(x, list(n), exact=TRUE)
+ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
+ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
 ans4 = fastama(x, n)
 cbind(ans1, ans2, ans3, ans4)
 format(ans1-ans2, scientific=F)
@@ -230,8 +231,8 @@ format(ans1-ans4, scientific=F)
 x = sample(c(rnorm(1e3, 1e2), rnorm(1e1, 1e9)))
 n = sample(1:20, length(x), TRUE)
 ans1 = ama(x, n)
-ans2 = frollmean(x, list(n), exact=FALSE)
-ans3 = frollmean(x, list(n), exact=TRUE)
+ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
+ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
 ans4 = fastama(x, n)
 anserr = list(
   froll_exact_f = ans1-ans2,
@@ -244,8 +245,8 @@ format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
 x = sample(c(rnorm(1e6, 1e2), rnorm(1e1, 1e9)))
 n = sample(100:2000, length(x), TRUE)
 system.time(ans1 <- ama(x, n))
-system.time(ans2 <- frollmean(x, list(n), exact=FALSE))
-system.time(ans3 <- frollmean(x, list(n), exact=TRUE))
+system.time(ans2 <- frollmean(x, n, adaptive=TRUE, exact=FALSE))
+system.time(ans3 <- frollmean(x, n, adaptive=TRUE, exact=TRUE))
 system.time(ans4 <- fastama(x, n))
 anserr = list(
   froll_exact_f = ans1-ans2,
@@ -257,8 +258,8 @@ format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
 x = sample(rnorm(1e5, 1e7, 5e6))
 n = sample(10:100, length(x), TRUE)
 ans1 = ama(x, n)
-ans2 = frollmean(x, list(n), exact=FALSE)
-ans3 = frollmean(x, list(n), exact=TRUE)
+ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
+ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
 ans4 = fastama(x, n)
 anserr = list(
   froll_exact_f = ans1-ans2,

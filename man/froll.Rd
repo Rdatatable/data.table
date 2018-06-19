@@ -13,10 +13,10 @@
 
 \usage{
 frollmean(x, n, fill=NA, exact=FALSE, align=c("right", "left",
-  "center"), partial=FALSE, na.rm=FALSE, hasNA=NA, adaptive=is.list(n),
+  "center"), partial=FALSE, na.rm=FALSE, hasNA=NA, adaptive=FALSE,
   verbose=getOption("datatable.verbose"))
 frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
-  "center"), partial=FALSE, na.rm=FALSE, hasNA=NA, adaptive=is.list(n),
+  "center"), partial=FALSE, na.rm=FALSE, hasNA=NA, adaptive=FALSE,
   verbose=getOption("datatable.verbose"))
 }
 \arguments{
@@ -37,7 +37,7 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
   \item{hasNA}{ logical, if it is known that \code{x} contains \code{NA}
     then setting to \code{TRUE} will speed up, default \code{NA}. }
   \item{adaptive}{ logical, should adaptive rolling function be
-    calculated, default \code{is.list(n)}. See details below. }
+    calculated, default \code{FALSE}. See details below. }
   \item{verbose}{ logical, default \code{getOption("datatable.verbose")},
     \code{TRUE} turns on status and information messages to the console, 
     it also disable parallel processing. }
@@ -65,8 +65,8 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
   \itemize{
     \item{ \code{align} only \code{"right"}. }
     \item{ \code{partial} only \code{FALSE}. }
-    \item{ if list is passed to \code{x} then all list vectors must have
-      equal length. }
+    \item{ if list of integer vectors is passed to \code{x} then all
+      list vectors must have equal length. }
   }
 }
 \value{
