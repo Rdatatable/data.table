@@ -52,7 +52,7 @@ x = 1:3/2
 n = 2
 test(9999.99, frollmean(x, n), c(NA, 0.75, 1.25))
 n = list(c(2L,1L,2L), c(2,1,2))
-# TODO: test(9999.99, frollmean(x, n), c(NA, 0.75, 1.25))
+test(9999.99, frollmean(x, n), list(c(NA, 1, 1.25), c(NA, 1, 1.25)))
 
 #### error on unsupported type
 dx = data.table(real=1:10/2, char=letters[1:10])
@@ -69,7 +69,8 @@ x = 1:10/2
 test(9999.99, frollmean(x, "a"), error="n must be integer")
 test(9999.99, frollmean(x, factor("a")), error="n must be integer")
 test(9999.99, frollmean(x, TRUE), error="n must be integer")
-# TODO test(9999.99, frollmean(x, list(NA)), error="n must be integer")
+test(9999.99, frollmean(x, list(NA)), error="n must be integer vector or list of integer vectors")
+test(9999.99, frollmean(x, list(c(1:5,1:5), NA)), error="n must be integer vector or list of integer vectors")
 
 #### various length list vectors
 l = list(1:6/2, 3:10/4)

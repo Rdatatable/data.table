@@ -40,30 +40,47 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
     error("adaptive must be logical TRUE or FALSE");
   bool badaptive = LOGICAL(adaptive)[0];
   
+  SEXP ik = R_NilValue;                                         // holds integer window width, if doing non-adaptive roll fun
   SEXP kl = R_NilValue;                                         // holds adaptive window width, if doing adaptive roll fun
   if (!badaptive) {                                             // validating n input for adaptive=FALSE
     if (isNewList(k))
       error("n must be integer, list is accepted for adaptive TRUE");
-    //TODO move R's n=as.integer(n) to C
-    if (!isInteger(k))                                          // check that k is integer vector
+    
+    if (isInteger(k)) {                                        // check that k is integer vector
+      ik = k;
+    } else if (isReal(k)) {                                    // if n is double then convert to integer
+      ik = PROTECT(coerceVector(k, INTSXP)); protecti++;
+    } else {
       error("n must be integer");
+    }
+    
     R_len_t i=0;                                                // check that all window values positive
-    while (i < nk && INTEGER(k)[i] > 0) i++;
+    while (i < nk && INTEGER(ik)[i] > 0) i++;
     if (i != nk)
       error("n must be positive integer values (> 0)");
   } else if (badaptive) {                                       // validating n input for adaptive=TRUE
     if (isVectorAtomic(k)) {                                    // if not-list then wrap into list
       kl = PROTECT(allocVector(VECSXP, 1)); protecti++;
-      SET_VECTOR_ELT(kl, 0, k);
+      if (isInteger(k)) {                                       // check that k is integer vector
+        SET_VECTOR_ELT(kl, 0, k);
+      } else if (isReal(k)) {                                   // if n is double then convert to integer
+        SET_VECTOR_ELT(kl, 0, coerceVector(k, INTSXP));
+      } else {
+        error("n must be integer vector or list of integer vectors");
+      }
       nk = 1;
     } else {
-      kl = k;
+      kl = PROTECT(allocVector(VECSXP, nk)); protecti++;
+      for (R_len_t i=0; i<nk; i++) {
+        if (isInteger(VECTOR_ELT(k, i))) {
+          SET_VECTOR_ELT(kl, i, VECTOR_ELT(k, i));
+        } else if (isReal(VECTOR_ELT(k, i))) {                  // coerce double types to integer
+          SET_VECTOR_ELT(kl, i, coerceVector(VECTOR_ELT(k, i), INTSXP));
+        } else {
+          error("n must be integer vector or list of integer vectors");
+        }
+      }
     }
-    //TODO move R's n=as.integer(n) to C
-    R_len_t i=0;                                                // check that every column is integer type
-    while (i < nk && isInteger(VECTOR_ELT(kl, i))) i++;
-    if (i != nk)
-      error("n must be list of integer vectors when adaptive TRUE");
   }
   int* ikl[nk];                                                 // pointers to adaptive window width
   if (badaptive)
@@ -124,7 +141,7 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
   else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) sfun = SUM;
   else error("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker.");
 
-  int* ik = INTEGER(k);                                         // pointer to non-adaptive window width, still can be vector when doing multiple windows
+  int* iik = INTEGER(ik);                                       // pointer to non-adaptive window width, still can be vector when doing multiple windows
   
   SEXP rdfill = PROTECT(coerceVector(fill, REALSXP)); protecti++; // TODO might not need SEXP here
   double dfill = REAL(rdfill)[0];
@@ -142,11 +159,11 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
     if (bverbose) Rprintf("rollfun: single window and single column, skipping parallel execution\n");
     switch (sfun) {
       case MEAN :
-        if (!badaptive) frollmeanVector(dx[0], inx[0], dans[0], ik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
+        if (!badaptive) frollmeanVector(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
         else frollmeanVectorAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bexact, bnarm, ihasna, bverbose);
         break;
       case SUM :
-        if (!badaptive) frollsumVector(dx[0], inx[0], dans[0], ik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
+        if (!badaptive) frollsumVector(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
         else frollsumVectorAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bexact, bnarm, ihasna, bverbose);
         break;
     }
@@ -159,11 +176,11 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
         for (R_len_t j=0; j<nk; j++) {                            // loop over multiple windows
           switch (sfun) {
             case MEAN :
-              if (!badaptive) frollmeanVector(dx[i], inx[i], dans[i*nk+j], ik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
+              if (!badaptive) frollmeanVector(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
               else frollmeanVectorAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, bverbose);
               break;
             case SUM :
-              if (!badaptive) frollsumVector(dx[i], inx[i], dans[i*nk+j], ik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
+              if (!badaptive) frollsumVector(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
               else frollsumVectorAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, bverbose);
               break;
           }
