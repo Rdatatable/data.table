@@ -82,7 +82,7 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
       }
     }
   }
-  int* ikl[nk];                                                 // pointers to adaptive window width
+  uint_fast64_t* ikl[nk];                                       // pointers to adaptive window width
   if (badaptive)
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
   

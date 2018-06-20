@@ -154,9 +154,9 @@ void avoid_openmp_hang_within_fork();
 
 // froll.c
 void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool exact, bool narm, int hasna, bool verbose);
-void frollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, bool verbose);
+void frollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, uint_fast64_t *k, double fill, bool exact, bool narm, int hasna, bool verbose);
 void frollsumVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool exact, bool narm, int hasna, bool verbose);
-void frollsumVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, bool verbose);
+void frollsumVectorAdaptive(double *x, uint_fast64_t nx, double *ans, uint_fast64_t *k, double fill, bool exact, bool narm, int hasna, bool verbose);
 
 // frollR.c
 SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP partial, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
