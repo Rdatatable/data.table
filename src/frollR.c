@@ -13,7 +13,7 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
     if (isReal(obj)) {
       SET_VECTOR_ELT(x, 0, obj);
     } else if (isInteger(obj)) {
-      SET_VECTOR_ELT(x, 0, coerceVector(obj, REALSXP));         // this dont have to be protected because 'x' is already is protected?
+      SET_VECTOR_ELT(x, 0, coerceVector(obj, REALSXP));
     } else {
       error("x must be of type numeric");
     }
@@ -24,7 +24,7 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
       if (isReal(VECTOR_ELT(obj, i))) {
         SET_VECTOR_ELT(x, i, VECTOR_ELT(obj, i));
       } else if (isInteger(VECTOR_ELT(obj, i))) {               // coerce integer types to double
-        SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(obj, i), REALSXP)); // this dont have to be protected because 'x' is already is protected?
+        SET_VECTOR_ELT(x, i, coerceVector(VECTOR_ELT(obj, i), REALSXP));
       } else {
         error("x must be list, data.frame or data.table of numeric types");
       }
