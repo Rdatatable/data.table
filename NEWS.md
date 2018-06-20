@@ -7,7 +7,7 @@
 
 #### BUG FIXES
 
-1. `gmin` and `gmax` no longer fail on _ordered_ factors, for which these operations are indeed meaningful, [#1947](https://github.com/Rdatatable/data.table/issues/1947#issuecomment-398212372). Thanks to @mcieslik-mctp for identifying and @mbacou for the nudge. 
+1. `gmin` and `gmax` no longer fail on _ordered_ factors, for which these operations are indeed meaningful, [#1947](https://github.com/Rdatatable/data.table/issues/1947). Thanks to @mcieslik-mctp for identifying and @mbacou for the nudge. 
 
 #### NOTES
 

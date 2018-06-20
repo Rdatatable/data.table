@@ -11984,33 +11984,33 @@ test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
 # END port of old testthat tests
 
 # min/max work for _ordered_ factors (not unordered)
-DT <- data.table(
-  V1=factor(rep(c("a","b"), 10), levels=c("a", "b")),
-  V2=rep(c("c","d", "e", "f"), 5)
-)
+lev = letters[1:5]
+DT <- CJ(
+  V2 = letters[6:8],
+  V1 = factor(lev)
+)[-c(4:6, 10:12)]
+setkey(DT, NULL)
 test(1915.1, DT[ , min(V1)], error = 'not meaningful for factors')
 test(1915.2, DT[ , max(V1)], error = 'not meaningful for factors')
 
 ## confirming base functionality works
 DT[ , V1 := as.ordered(V1)]
 test(1915.3, DT[ , min(V1)],
-     structure(1L, .Label = c("a", "b"), class = c("ordered", "factor")))
+     structure(1L, .Label = lev, class = c("ordered", "factor")))
 test(1914.4, DT[ , max(V1)],
-     structure(2L, .Label = c("a", "b"), class = c("ordered", "factor")))
+     structure(5L, .Label = lev, class = c("ordered", "factor")))
 
 ## make sure GForce is activated
 old_optim = options(datatable.optimize = Inf)
 test(1914.5, DT[ , min(V1), by = V2],
      data.table(
-       V2 = c("c", "d", "e", "f"),
-       V1 = structure(c(1L, 2L, 1L, 2L), .Label = c("a", "b"),
-                      class = c("ordered", "factor"))
+       V2 = c("f", "g", "h"),
+       V1 = structure(1:3, .Label = lev, class = c("ordered", "factor"))
      ))
 test(1914.6, DT[ , max(V1), by = V2],
      data.table(
-       V2 = c("c", "d", "e", "f"),
-       V1 = structure(c(1L, 2L, 1L, 2L), .Label = c("a", "b"),
-                      class = c("ordered", "factor"))
+       V2 = c("f", "g", "h"),
+       V1 = structure(3:5, .Label = lev, class = c("ordered", "factor"))
      ))
 options(datatable.optimize = old_optim$datatable.optimize)
 
