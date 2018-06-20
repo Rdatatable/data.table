@@ -6,7 +6,7 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
     align > 0 ? 0 :                                             // align right
     align < 0 ? -k+1 :                                          // align left
     -floor(k/2);                                                // align center
-  double w = 0.;                                                // running window aggregate
+  double w = 0.; //TODO use long double?                        // running window aggregate
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   if (!truehasna) {
     if (!exact) {
@@ -33,7 +33,29 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
         if (verbose) Rprintf("loop3: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, x[i-k], NA_REAL, i+si, w);
       }
     } else { // exact==TRUE
-
+      #pragma omp parallel num_threads(verbose ? 1 : MIN(getDTthreads(), nx))
+      {
+        #pragma omp for schedule(static)
+        for (uint_fast64_t i=0; i<nx; i++) {                    // loop on every observation
+          long double w = 0.;
+          int wk = 0, w0 = (k-1)>i ? -i : 1-k;                  // for partial window sub-loop from 0 to support partial=TRUE  
+          for (int j=w0; j<=0; j++) {                           // sub-loop on window width
+            w += x[i+j];                                        // sum of window for particular observation
+            wk++;
+          }
+          ans[i] = ((double) w) / wk;                           // fun of window for particular observation
+          if (verbose) Rprintf("ans[%lu] before correction %8.3f, wk %d\n", i, ans[i], wk);
+          if (R_FINITE((double) w)) {                           // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
+            long double t = 0.0;                                // roundoff corrector
+            for (int j=1-wk; j<=0; j++) {                       // sub-loop on window width
+              t += x[i+j] - ans[i];                             // measure difference of obs in sub-loop to calculated fun for obs
+            }
+            if (verbose) Rprintf("ans[%lu] roundoff          %8.15f\n", i, t);
+            ans[i] += ((double) t) / wk;                        // adjust calculated fun with roundoff correction
+          }
+          if (verbose) Rprintf("ans[%lu]  after correction %8.3f\n", i, ans[i]);
+        }
+      } // end of parallel region
     }
     if (ISNAN(w)) {
       if (verbose && hasna==-1) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
@@ -149,13 +171,13 @@ void frollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, d
             for (int j=1-k[i]; j<=0; j++) {                     // sub-loop on window width
               w += x[i+j];                                      // sum of window for particular observation
             }
-            ans[i] = ((double) w) / k[i];                       // mean of window for particular observation
+            ans[i] = ((double) w) / k[i];                       // fun of window for particular observation
             if (R_FINITE((double) w)) {                         // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
               long double t = 0.0;                              // roundoff corrector
               for (int j=-k[i]+1; j<=0; j++) {                  // sub-loop on window width
-                t += x[i+j] - ans[i];                           // measure difference of obs in sub-loop to calculated mean for obs
+                t += x[i+j] - ans[i];                           // measure difference of obs in sub-loop to calculated fun for obs
               }
-              ans[i] += ((double) t) / k[i];                    // adjust calculated mean with roundoff correction
+              ans[i] += ((double) t) / k[i];                    // adjust calculated fun with roundoff correction
             }
           }
         }
@@ -232,7 +254,7 @@ void frollmeanVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, d
                 thisk = 0;
                 for (int j=-k[i]+1; j<=0; j++) {                // sub-loop over window for each observation
                   if (!ISNAN(x[i+j])) {                         // hard skip NAs here, there should be no thisk==0 case here as R_FINITE(ans[i]) check would filter that out
-                    t += x[i+j] - ans[i];                       // measure difference of obs in sub-loop to calculated mean for obs
+                    t += x[i+j] - ans[i];                       // measure difference of obs in sub-loop to calculated fun for obs
                     thisk++;                                    // window width after removing NAs
                   }
                   else if (verbose && !narm) error("That should not happen as R_FINITE(ans[i]) should filter out this loop iteration, please report\n");

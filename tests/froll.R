@@ -8,35 +8,54 @@ oldDTthreads = setDTthreads(1)
 
 ## rolling features
 
+#### atomic vectors input and single window returns atomic vectors
+x = 1:6/2
+ans1 = frollmean(x, 3)
+ans2 = frollmean(x, 3, exact=TRUE)
+expected = c(rep(NA_real_,2), seq(1,2.5,0.5))
+test(9999.4, ans1, expected)
+test(9999.4, ans2, expected)
+
+#### TODO: partial tests
+x = 1:6/2
+ans1 = frollmean(x, 3, partial=TRUE)
+ans2 = frollmean(x, 3, partial=TRUE, exact=TRUE, verbose=F)
+expected = c(0.5, 0.75, seq(1,2.5,0.5))
+#all.equal(zoo::rollapply(x, 3, "mean", partial=TRUE, align="right"), expected)
+cbind(x, ans1, ans2, expected)
+#test(9999.4, ans1, expected)
+#test(9999.4, ans2, expected)
+
 #### multiple columns at once
 d = as.data.table(list(1:6/2, 3:8/4))
-ans = frollmean(d, 3)
+ans1 = frollmean(d, 3)
+ans2 = frollmean(d, 3, exact=TRUE)
 expected = list(
   c(rep(NA_real_,2), seq(1,2.5,0.5)),
   c(rep(NA_real_,2), seq(1,1.75,0.25))
 )
-test(9999.1, ans, expected)
+test(9999.1, ans1, expected)
+test(9999.1, ans2, expected)
 
 #### multiple windows at once
-ans = frollmean(d[, .(V1)], c(3, 4))
+ans1 = frollmean(d[, .(V1)], c(3, 4))
+ans2 = frollmean(d[, .(V1)], c(3, 4), exact=TRUE)
 expected = list(
   c(rep(NA_real_,2), seq(1,2.5,0.5)),
   c(rep(NA_real_,3), seq(1.25,2.25,0.5))
 )
-test(9999.2, ans, expected)
+test(9999.1, ans1, expected)
+test(9999.1, ans2, expected)
 
 #### multiple columns and multiple windows at once
-ans = frollmean(d, c(3, 4))
+ans1 = frollmean(d, c(3, 4))
+ans2 = frollmean(d, c(3, 4), exact=TRUE)
 expected = list(
   c(rep(NA_real_,2), seq(1,2.5,0.5)), c(rep(NA_real_,3), seq(1.25,2.25,0.5)),
   c(rep(NA_real_,2), seq(1,1.75,0.25)), c(rep(NA_real_,3), seq(1.125,1.625,0.25))
 )
-test(9999.3, ans, expected)
-
-#### atomic vectors input and single window returns atomic vectors
-ans = frollmean(d[["V1"]], 3)
-expected = c(rep(NA_real_,2), seq(1,2.5,0.5))
-test(9999.4, ans, expected)
+test(9999.1, ans1, expected)
+test(9999.1, ans2, expected)
 
 #### in x integer converted to double
 di = data.table(real=1:10/2, int=1:10)
@@ -368,6 +387,8 @@ test(9999.99, frollmean(1:5, c(5, Inf)), error="n must be positive integer value
 
 #### adaptive && is.list(n) && length(n[[1L]])!=length(x)
 #frollmean(11:15, list(1:4), adaptive=TRUE)
+
+#### x has NaN, Inf, -Inf
 
 ## validation
 
