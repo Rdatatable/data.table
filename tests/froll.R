@@ -101,6 +101,28 @@ expected = list(
 )
 test(9999.5, ans, expected)
 
+#### exact
+set.seed(108)
+x = rnorm(2e1, 1e7, 5e6)
+n = 6
+ans0 = c(NA, NA, NA, NA, NA, 10588854.474946646, 11174501.220515575, 
+         11744524.527118236, 12575718.532952301, 12591284.933966648, 11911999.546961114, 
+         12016824.709133139, 11159660.083969306, 9842135.174718013, 8582474.3737904355, 
+         9306433.6523586009, 10455415.397822529, 9255957.3975770641, 9753074.5216819532, 
+         10497199.922122546) # dput(zoo::rollapply(x, n, "mean", align="right", fill=NA), control="digits17")
+ans1 = frollmean(x, n)
+ans2 = frollmean(x, n, exact=TRUE)
+anserr = list(
+  froll_exact_f = ans0-ans1,
+  froll_exact_t = ans0-ans2
+)
+if (interactive()) {
+  format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
+  sprintf("exact=F has %.3f bigger roundoff", do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE)))
+}
+test(9999.99, do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE)) > 1)
+# TODO document for very small `c(rnorm(1e1), ...)` AND relatively big window n=10 vector exact=T might have bigger roundoff!
+
 #### align: right/center/left
 ans = frollmean(d, 3, align="right") # default
 expected = list(
