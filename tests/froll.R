@@ -16,16 +16,6 @@ expected = c(rep(NA_real_,2), seq(1,2.5,0.5))
 test(9999.4, ans1, expected)
 test(9999.4, ans2, expected)
 
-#### TODO: partial tests
-x = 1:6/2
-ans1 = frollmean(x, 3, partial=TRUE)
-ans2 = frollmean(x, 3, partial=TRUE, exact=TRUE, verbose=F)
-expected = c(0.5, 0.75, seq(1,2.5,0.5))
-#all.equal(zoo::rollapply(x, 3, "mean", partial=TRUE, align="right"), expected)
-cbind(x, ans1, ans2, expected)
-#test(9999.4, ans1, expected)
-#test(9999.4, ans2, expected)
-
 #### multiple columns at once
 d = as.data.table(list(1:6/2, 3:8/4))
 ans1 = frollmean(d, 3)
@@ -100,6 +90,14 @@ expected = list(
   c(rep(NA_real_,2), seq(1,2.25,0.25)), c(rep(NA_real_,3), seq(1.125,2.125,0.25))
 )
 test(9999.5, ans, expected)
+
+#### partial
+x = 1:6/2
+ans1 = frollmean(x, 3, partial=TRUE)
+ans2 = frollmean(x, 3, partial=TRUE, exact=TRUE)
+expected = c(0.5, 0.75, seq(1,2.5,0.5))
+test(9999.4, ans1, expected)
+#TODO: test(9999.4, ans2, expected)
 
 #### exact
 set.seed(108)

@@ -10,11 +10,12 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   if (!truehasna) {
     if (!exact) {
+      // TODO benchmark alt impl exact=F: tmp<-cumsum(x); (tmp-shift(tmp, k))/k
       int wk = nx < k ? nx : k;                                 // window width might be longer than column length, could not override k unless we merge `fill` loops here
       for (uint_fast64_t i=0; i<wk; i++) {                      // loop over obs, potentially incomplete window from left
         w += x[i];                                              // add current row to window aggregate
         if (i >= -si) {
-          ans[i+si] = w / wk;                                   // rollfun to answer vector
+          ans[i+si] = w / (i+1);                                 // rollfun to answer vector
           //if (verbose) Rprintf("loop1: ans[%lu] = %8.3f\n", i+si, w/wk);
         }
         if (verbose) Rprintf("loop1: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, NA_REAL, x[i], i+si, w);
