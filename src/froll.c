@@ -15,7 +15,7 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
       for (uint_fast64_t i=0; i<wk; i++) {                      // loop over obs, potentially incomplete window from left
         w += x[i];                                              // add current row to window aggregate
         if (i >= -si) {
-          ans[i+si] = w / (i+1);                                 // rollfun to answer vector
+          ans[i+si] = w / (i+1);                                // rollfun to answer vector
           //if (verbose) Rprintf("loop1: ans[%lu] = %8.3f\n", i+si, w/wk);
         }
         if (verbose) Rprintf("loop1: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, NA_REAL, x[i], i+si, w);
@@ -39,22 +39,40 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
         #pragma omp for schedule(static)
         for (uint_fast64_t i=0; i<nx; i++) {                    // loop on every observation
           long double w = 0.;
-          int wk = 0, w0 = (k-1)>i ? -i : 1-k;                  // for partial window sub-loop from 0 to support partial=TRUE  
-          for (int j=w0; j<=0; j++) {                           // sub-loop on window width
-            w += x[i+j];                                        // sum of window for particular observation
-            wk++;
+          int w0, wn, wk = 0;                                   // for partial window sub-loop from 0 to support partial=TRUE
+          if (align > 0) {                                      // align right
+            w0 = (k-1)>i ? -i : 1-k;
+            wn = 0;
+          } else if (align < 0) {                               // align left
+            w0 = 0;
+            wn = nx-i < k-1 ? nx-i: k-1;
+          } else {                                              // align center
+            if (k % 2) {                                        // k is odd
+              w0 = (floor(k/2))>i ? -((int) i) : -floor(k/2);
+              wn = nx-i<=k-floor(k/2) ? nx-i-1 : floor(k/2);
+            } else {                                            // k is even
+              w0 = (floor(k/2))>i ? -((int) i) : -floor(k/2)+1;
+              wn = nx-i<=k-floor(k/2) ? nx-i-1 : k-floor(k/2);
+            }
           }
+          wk = wn-w0+1;
+          if (verbose) Rprintf("i %lu w0 %d wn %d, w(%d,%d)\n", i, w0, wn, ((int) i)+w0, ((int) i)+wn);
+          for (int j=w0; j<=wn; j++) {                          // sub-loop on window width
+            w += x[i+j];                                        // sum of window for particular observation
+          }
+          if (verbose) Rprintf("i %lu w %.3f wk %d\n", i, ((double) w), wk);
           ans[i] = ((double) w) / wk;                           // fun of window for particular observation
-          if (verbose) Rprintf("ans[%lu] before correction %8.3f, wk %d\n", i, ans[i], wk);
-          if (R_FINITE((double) w)) {                           // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
+          
+          //if (verbose) Rprintf("ans[%lu] before correction %8.3f, wk %d\n", i-si, ans[i-si], wk);
+          /*if (FALSE && R_FINITE((double) w)) {                           // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
             long double t = 0.0;                                // roundoff corrector
             for (int j=1-wk; j<=0; j++) {                       // sub-loop on window width
-              t += x[i+j] - ans[i];                             // measure difference of obs in sub-loop to calculated fun for obs
+              t += x[i+j] - ans[i-si];                             // measure difference of obs in sub-loop to calculated fun for obs
             }
-            if (verbose) Rprintf("ans[%lu] roundoff          %8.15f\n", i, t);
-            ans[i] += ((double) t) / wk;                        // adjust calculated fun with roundoff correction
-          }
-          if (verbose) Rprintf("ans[%lu]  after correction %8.3f\n", i, ans[i]);
+            if (verbose) Rprintf("ans[%lu] roundoff          %8.15f\n", i-si, t);
+            ans[i-si] += ((double) t) / wk;                        // adjust calculated fun with roundoff correction
+          }*/
+          //if (verbose) Rprintf("ans[%lu]  after correction %8.3f\n", i-si, ans[i-si]);
         }
       } // end of parallel region
     }
@@ -64,6 +82,7 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
       truehasna = 1;
     } else if (!partial) {                                      // fill partial window
       for (uint_fast64_t i=0; i<(k-1); i++) {                   // fill for align right/center
+        // put -si to i loop
         if (i >= -si) ans[i+si] = fill;                         // fill answer vector
       }
       for (uint_fast64_t i=nx; i<(nx-si); i++) {                // fill for align left/center

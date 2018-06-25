@@ -97,7 +97,7 @@ ans1 = frollmean(x, 3, partial=TRUE)
 ans2 = frollmean(x, 3, partial=TRUE, exact=TRUE)
 expected = c(0.5, 0.75, seq(1,2.5,0.5))
 test(9999.4, ans1, expected)
-#TODO: test(9999.4, ans2, expected)
+test(9999.4, ans2, expected)
 
 #### exact
 set.seed(108)
@@ -115,50 +115,76 @@ anserr = list(
   froll_exact_t = ans0-ans2
 )
 if (interactive()) {
-  format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
-  sprintf("exact=F has %.3f bigger roundoff", do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE)))
+  print(format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE))
+  print(sprintf("exact=F has %.3f bigger roundoff", do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE))))
+  invisible()
 }
-test(9999.99, do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE)) > 1)
-# TODO document for very small `c(rnorm(1e1), ...)` AND relatively big window n=10 vector exact=T might have bigger roundoff!
+test(9999.99, do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE)) > 1) # test that roundoff exact=F/exact=T is > 1
 
 #### align: right/center/left
-ans = frollmean(d, 3, align="right") # default
+d = as.data.table(list(1:6/2, 3:8/4))
+ans1 = frollmean(d, 3, align="right") # default
+ans2 = frollmean(d, 3, align="right", exact=TRUE)
 expected = list(
   c(rep(NA_real_,2), seq(1,2.5,0.5)),
   c(rep(NA_real_,2), seq(1,1.75,0.25))
 )
-test(9999.6, ans, expected)
-ans = frollmean(d, 3, align="center") # x even, n odd
+test(9999.6, ans1, expected)
+test(9999.6, ans2, expected)
+ans1 = frollmean(d, 3, align="center") # x even, n odd
+ans2 = frollmean(d, 3, align="center", exact=TRUE)
 expected = list(
   c(NA_real_, seq(1,2.5,0.5), NA_real_),
   c(NA_real_, seq(1,1.75,0.25), NA_real_)
 )
-test(9999.7, ans, expected)
-ans = frollmean(d, 4, align="center") # x even, n even
+test(9999.6, ans1, expected)
+test(9999.6, ans2, expected)
+ans1 = frollmean(d, 4, align="center") # x even, n even
+ans2 = frollmean(d, 4, align="center", exact=TRUE)
 expected = list(
   c(NA_real_, seq(1.25,2.25,0.5), rep(NA_real_,2)),
   c(NA_real_, seq(1.125,1.625,0.25), rep(NA_real_,2))
 )
-test(9999.8, ans, expected)
+test(9999.8, ans1, expected)
+test(9999.8, ans2, expected)
 de = rbind(d, data.table(3.5, 2.25))
-ans = frollmean(de, 3, align="center") # x odd, n odd
+ans1 = frollmean(de, 3, align="center") # x odd, n odd
+ans2 = frollmean(de, 3, align="center", exact=TRUE)
 expected = list(
   c(NA_real_, seq(1,3,0.5), NA_real_),
   c(NA_real_, seq(1,2,0.25), NA_real_)
 )
-test(9999.9, ans, expected)
-ans = frollmean(de, 4, align="center") # x odd, n even
+test(9999.9, ans1, expected)
+test(9999.9, ans2, expected)
+ans1 = frollmean(de, 4, align="center") # x odd, n even
+ans2 = frollmean(de, 4, align="center", exact=TRUE)
 expected = list(
   c(NA_real_, seq(1.25,2.75,0.5), rep(NA_real_,2)),
   c(NA_real_, seq(1.125,1.875,0.25), rep(NA_real_,2))
 )
-test(9999.10, ans, expected)
-ans = frollmean(d, 3, align="left")
+test(9999.10, ans1, expected)
+test(9999.10, ans2, expected)
+ans1 = frollmean(d, 3, align="left")
+ans2 = frollmean(d, 3, align="left", exact=TRUE)
 expected = list(
   c(seq(1,2.5,0.5), rep(NA_real_,2)),
   c(seq(1,1.75,0.25), rep(NA_real_,2))
 )
-test(9999.11, ans, expected)
+test(9999.11, ans1, expected)
+test(9999.11, ans2, expected)
+
+#### partial align
+## TODO
+#### TODO: loop3 in exact=F might have incomplete window from right when align="left"/"center", window `wk` does not seems to be adjusted there, add test
+
+ans1 = frollmean(d, 4, align="center", partial=TRUE) # x even, n even
+ans2 = frollmean(d, 4, align="center", exact=TRUE, partial=TRUE)
+expected = list(
+  c(1, seq(1.25,2.25,0.5), 2.5, 2.75),
+  c(1, seq(1.125,1.625,0.25), 1.75, 1.875)
+)
+# TODO: test(9999.8, ans1, expected)
+test(9999.8, ans2, expected)
 
 #### handling NAs
 d = as.data.table(list(1:6/2, 3:8/4))
@@ -217,7 +243,16 @@ fastama = function(x, n, na.rm, fill=NA) {
   }
   ans
 }
-
+ma = function(x, n, na.rm) {
+  if (!missing(na.rm)) stop("very fast moving average implemented in R does not handle NAs, input having NAs will result in incorrect answer so not even try to compare to it")
+  stopifnot(length(n)==1L)
+  nx = length(x)
+  cs = cumsum(x)
+  scs = data.table::shift(cs, n)
+  scs[n] = 0
+  ans = as.double((cs-scs)/n)
+  ans
+} # add to benchmark for non adaptive
 x = c(1:4,2:5,4:6,5L)
 n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
 ans1 = ama(x, n)
@@ -423,11 +458,13 @@ if (requireNamespace("zoo", quietly=TRUE)) {
     for (fun in c("mean","sum")) {
       for (align in c("right","center","left")) {
         for (na.rm in c(FALSE, TRUE)) {
-          for (partial in c(FALSE)) { # TODO partial TRUE
-            num <<- num + num.step
-            test(num,
-                 froll(fun, x, n, align=align, na.rm=na.rm, partial=partial),
-                 drollapply(x, n, FUN=fun, fill=NA, align=align, na.rm=na.rm, partial=partial))
+          for (partial in c(FALSE)) { # TODO TRUE
+            for (exact in c(FALSE)) { # TODO TRUE
+              num <<- num + num.step
+              test(num,
+                   froll(fun, x, n, align=align, na.rm=na.rm, partial=partial, exact=exact),
+                   drollapply(x, n, FUN=fun, fill=NA, align=align, na.rm=na.rm, partial=partial))
+            }
           }
         }
       }
