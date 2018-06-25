@@ -216,15 +216,14 @@ expected = list(
 )
 test(9999.10, ans1, expected)
 test(9999.10, ans2, expected)
-ans1 = frollmean(d[[1]], 3, align="left", partial=TRUE)
-ans2 = frollmean(d[[1]], 3, align="left", exact=TRUE, partial=TRUE, verbose=T)
+ans1 = frollmean(d, 3, align="left", partial=TRUE)
+ans2 = frollmean(d, 3, align="left", exact=TRUE, partial=TRUE)
 expected = list(
   c(seq(1,2.5,0.5), 2.75, 3),
   c(seq(1,1.75,0.25), 1.875, 2)
-)[[1]]
+)
 test(9999.11, ans1, expected)
-#TODO: test(9999.11, ans2, expected)
-#as.data.table(list(d[[1]], 3, ans1, ans2))
+test(9999.11, ans2, expected)
 
 #### partial align na.rm
 ## TODO

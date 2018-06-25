@@ -42,7 +42,7 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
             wn = 0;
           } else if (align < 0) {                               // align left
             w0 = 0;
-            wn = nx-i < k-1 ? nx-i: k-1;
+            wn = nx-i <= k-1 ? nx-i-1: k-1;
           } else {                                              // align center
             if (k % 2) {                                        // k is odd
               w0 = (floor(k/2))>i ? -((int) i) : -floor(k/2);
