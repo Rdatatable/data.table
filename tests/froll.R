@@ -100,6 +100,7 @@ test(9999.4, ans1, expected)
 test(9999.4, ans2, expected)
 
 #### exact
+### TODO changing exact=F double w to long double w makes this test equal, implement roundoff for exact=T and re-test
 set.seed(108)
 x = rnorm(2e1, 1e7, 5e6)
 n = 6
@@ -497,13 +498,13 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   set.seed(108)
 
   zoo_compare = function(x, n) {
-    num.step = 0.001
-    #### fun, align, na.rm, partial
+    num.step = 0.0001
+    #### fun, align, na.rm, partial, exact
     drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
     for (fun in c("mean","sum")) {
       for (align in c("right","center","left")) {
         for (na.rm in c(FALSE, TRUE)) {
-          for (partial in c(FALSE)) { # TODO TRUE
+          for (partial in c(FALSE)) { # TODO partial=TRUE + na.rm=TRUE
             for (exact in c(FALSE)) { # TODO TRUE
               num <<- num + num.step
               test(num,
@@ -515,7 +516,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
       }
     }
   }
-  num = 9999.0
+  num = 9999.9
   ## no NA
   x = rnorm(1e3); n = 50 # x even, n even
   zoo_compare(x, n)
@@ -535,6 +536,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   x = c(rep(NA, 60), rnorm(1e3+1), rep(NA, 60)); n = 51
   zoo_compare(x, n)
   ## random NA
+  if (test.na.rm.now <- TRUE) {
   makeNA = function(x, ratio=0.1) {id=sample(length(x), as.integer(length(x) * ratio)); x[id]=NA; x}
   x = makeNA(rnorm(1e3)); n = 50
   zoo_compare(x, n)
@@ -544,6 +546,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   zoo_compare(x, n)
   x = makeNA(rnorm(1e3+1)); n = 51
   zoo_compare(x, n)
+  }
   rm(num)
   
   ## test vs partial / fill combinations in zoo
@@ -643,6 +646,31 @@ if (requireNamespace("zoo", quietly=TRUE)) {
 
 if (dev_and_benchmark_area<-FALSE) {
 
+  # test exact=F no NA switch from double to long double
+  set.seed(108)
+  N = 5e6
+  x = rnorm(N, 1e3, 5e2)
+  n = N^(1/3)
+  ans0 = zoo::rollapply(x, n, "mean", align="right", fill=NA) # saveRDS(ans0, "zoo_rollmean_rnorm_5e6_1e3_5e2.rds") # ans0 = readRDS("zoo_rollmean_rnorm_5e6_1e3_5e2.rds")
+  system.time(ans1 <- frollmean(x, n))
+  # double w: 0.043
+  # long double w: 0.037, 0.026
+  system.time(ans2 <- frollmean(x, rep(n, N), exact=TRUE, adaptive=TRUE))
+  # 2.079
+  # adaptive: 4.425, 1.753
+  anserr = list(
+    froll_exact_f = ans0-ans1,
+    froll_exact_t = ans0-ans2
+  )
+  format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
+  sprintf("exact=F has %.3f bigger roundoff", do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE)))
+  # double w:
+  # long double w:
+  
+  # time
+  
+  # roundoff
+  
   if (.Platform$OS.type=="unix") {
     memgb = as.numeric(system("awk '/MemTotal/ {print $2}' /proc/meminfo", intern=TRUE))/(1024^2)
     if (memgb > 20) {
