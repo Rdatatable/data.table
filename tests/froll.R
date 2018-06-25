@@ -173,18 +173,61 @@ expected = list(
 test(9999.11, ans1, expected)
 test(9999.11, ans2, expected)
 
-#### partial align
-## TODO
-#### TODO: loop3 in exact=F might have incomplete window from right when align="left"/"center", window `wk` does not seems to be adjusted there, add test
-
+#### partian align
+d = as.data.table(list(1:6/2, 3:8/4))
+ans1 = frollmean(d, 3, align="right", partial=TRUE)
+ans2 = frollmean(d, 3, align="right", exact=TRUE, partial=TRUE)
+expected = list(
+  c(0.5, 0.75, seq(1,2.5,0.5)),
+  c(0.75, 0.875, seq(1,1.75,0.25))
+)
+test(9999.6, ans1, expected)
+test(9999.6, ans2, expected)
+ans1 = frollmean(d, 3, align="center", partial=TRUE) # x even, n odd
+ans2 = frollmean(d, 3, align="center", exact=TRUE, partial=TRUE)
+expected = list(
+  c(0.75, seq(1,2.5,0.5), 2.75),
+  c(0.875, seq(1,1.75,0.25), 1.875)
+)
+test(9999.6, ans1, expected)
+test(9999.6, ans2, expected)
 ans1 = frollmean(d, 4, align="center", partial=TRUE) # x even, n even
 ans2 = frollmean(d, 4, align="center", exact=TRUE, partial=TRUE)
 expected = list(
   c(1, seq(1.25,2.25,0.5), 2.5, 2.75),
   c(1, seq(1.125,1.625,0.25), 1.75, 1.875)
 )
-# TODO: test(9999.8, ans1, expected)
+test(9999.8, ans1, expected)
 test(9999.8, ans2, expected)
+de = rbind(d, data.table(3.5, 2.25))
+ans1 = frollmean(de, 3, align="center", partial=TRUE) # x odd, n odd
+ans2 = frollmean(de, 3, align="center", exact=TRUE, partial=TRUE)
+expected = list(
+  c(0.75, seq(1,3,0.5), 3.25),
+  c(0.875, seq(1,2,0.25), 2.125)
+)
+test(9999.9, ans1, expected)
+test(9999.9, ans2, expected)
+ans1 = frollmean(de, 4, align="center", partial=TRUE) # x odd, n even
+ans2 = frollmean(de, 4, align="center", exact=TRUE, partial=TRUE)
+expected = list(
+  c(1, seq(1.25,2.75,0.5), 3, 3.25),
+  c(1, seq(1.125,1.875,0.25), 2, 2.125)
+)
+test(9999.10, ans1, expected)
+test(9999.10, ans2, expected)
+ans1 = frollmean(d[[1]], 3, align="left", partial=TRUE)
+ans2 = frollmean(d[[1]], 3, align="left", exact=TRUE, partial=TRUE, verbose=T)
+expected = list(
+  c(seq(1,2.5,0.5), 2.75, 3),
+  c(seq(1,1.75,0.25), 1.875, 2)
+)[[1]]
+test(9999.11, ans1, expected)
+#TODO: test(9999.11, ans2, expected)
+#as.data.table(list(d[[1]], 3, ans1, ans2))
+
+#### partial align na.rm
+## TODO
 
 #### handling NAs
 d = as.data.table(list(1:6/2, 3:8/4))
@@ -387,6 +430,9 @@ test(9999.99, frollmean(list(1:3, 4:6), 3), list(c(NA_real_, NA_real_, 2), c(NA_
 
 #### n<length(x[[1L]]) && n>length(x[[2L]])
 test(9999.99, frollmean(list(1:5, 1:2), 3), list(c(NA_real_, NA_real_, 2, 3, 4), c(NA_real_, NA_real_)))
+
+#### n==1
+#TODO align
 
 #### length(x)==1 && n==1
 test(9999.99, frollmean(5, 1), 5)

@@ -16,22 +16,19 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
         w += x[i];                                              // add current row to window aggregate
         if (i >= -si) {
           ans[i+si] = w / (i+1);                                // rollfun to answer vector
-          //if (verbose) Rprintf("loop1: ans[%lu] = %8.3f\n", i+si, w/wk);
         }
-        if (verbose) Rprintf("loop1: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, NA_REAL, x[i], i+si, w);
+        if (verbose) Rprintf("loop1: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f, wk %d, do.ans %d\n", i, NA_REAL, x[i], i+si, w, i+1, ((int)((bool)(i>=-si))));
       }
       for (uint_fast64_t i=k; i<nx; i++) {                      // loop over obs, complete window
         w -= x[i-k];                                            // remove leaving row from window aggregate
         w += x[i];                                              // add current row to window aggregate
         ans[i+si] = w / k;                                      // rollfun to answer vector
-        //if (verbose) Rprintf("loop2: ans[%lu] = %8.3f\n", i+si, w/k);
-        if (verbose) Rprintf("loop2: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, x[i-k], x[i], i+si, w);
+        if (verbose) Rprintf("loop2: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f, wk %d\n", i, x[i-k], x[i], i+si, w, k);
       }
       for (uint_fast64_t i=nx; i<(nx-si); i++) {                // loop over obs, potentially incomplete window from right, skipped for align=right
         w -= x[i-k];                                            // remove leaving row from window aggregate
-        ans[i+si] = w / k;                                      // rollfun to answer vector
-        //if (verbose) Rprintf("loop3: ans[%lu] = %8.3f\n", i+si, w/k);
-        if (verbose) Rprintf("loop3: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, x[i-k], NA_REAL, i+si, w);
+        ans[i+si] = w / (k-(i-nx+1));                           // rollfun to answer vector
+        if (verbose) Rprintf("loop3: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f, wk %d\n", i, x[i-k], NA_REAL, i+si, w, k-(i-nx+1));
       }
     } else { // exact==TRUE
       #pragma omp parallel num_threads(verbose ? 1 : MIN(getDTthreads(), nx))
@@ -62,7 +59,7 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
           }
           if (verbose) Rprintf("i %lu w %.3f wk %d\n", i, ((double) w), wk);
           ans[i] = ((double) w) / wk;                           // fun of window for particular observation
-          
+          //TODO roundoff correction
           //if (verbose) Rprintf("ans[%lu] before correction %8.3f, wk %d\n", i-si, ans[i-si], wk);
           /*if (FALSE && R_FINITE((double) w)) {                           // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
             long double t = 0.0;                                // roundoff corrector
@@ -77,7 +74,10 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
       } // end of parallel region
     }
     if (ISNAN(w)) {
-      if (verbose && hasna==-1) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
+      if (verbose) {
+        if (hasna==-1) Rprintf("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs\n");
+        else Rprintf("NA values are present in input, re-running rolling function with extra care for NAs\n");
+      }
       w = 0.;
       truehasna = 1;
     } else if (!partial) {                                      // fill partial window
