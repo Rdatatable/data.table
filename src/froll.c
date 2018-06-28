@@ -30,7 +30,7 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
         ans[i+si] = w / (k-(i-nx+1));                           // rollfun to answer vector
         if (verbose) Rprintf("loop3: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f, wk %d\n", i, x[i-k], NA_REAL, i+si, w, k-(i-nx+1));
       }
-    } else { // exact==TRUE
+    } else { // exact==TRUE // this branch is really messy and should be cleaned up before re-using as template!
       #pragma omp parallel num_threads(verbose ? 1 : MIN(getDTthreads(), nx))
       {
         #pragma omp for schedule(static)
@@ -61,14 +61,14 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
           ans[i] = ((double) w) / wk;                           // fun of window for particular observation
           //TODO roundoff correction
           //if (verbose) Rprintf("ans[%lu] before correction %8.3f, wk %d\n", i-si, ans[i-si], wk);
-          /*if (FALSE && R_FINITE((double) w)) {                           // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
+          if (R_FINITE((double) w)) {                           // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
             long double t = 0.0;                                // roundoff corrector
-            for (int j=1-wk; j<=0; j++) {                       // sub-loop on window width
-              t += x[i+j] - ans[i-si];                             // measure difference of obs in sub-loop to calculated fun for obs
+            for (int j=w0; j<=wn; j++) {                        // sub-loop on window width
+              t += x[i+j] - ans[i];                             // measure difference of obs in sub-loop to calculated fun for obs
             }
             if (verbose) Rprintf("ans[%lu] roundoff          %8.15f\n", i-si, t);
-            ans[i-si] += ((double) t) / wk;                        // adjust calculated fun with roundoff correction
-          }*/
+            ans[i] += ((double) t) / wk;                        // adjust calculated fun with roundoff correction
+          }
           //if (verbose) Rprintf("ans[%lu]  after correction %8.3f\n", i-si, ans[i-si]);
         }
       } // end of parallel region
