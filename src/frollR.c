@@ -172,11 +172,11 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
     switch (sfun) {
       case MEAN :
         if (!badaptive) {
-          if (!bexact) frollmeanVector(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bpartial, bnarm, ihasna, bverbose);
-          else frollmeanExactVector(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bpartial, bnarm, ihasna, bverbose);
+          if (!bexact) frollmean(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bpartial, bnarm, ihasna, bverbose);
+          else frollmeanExact(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bpartial, bnarm, ihasna, bverbose);
         } else {
-          if (!bexact) frollmeanAdaptiveVector(dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
-          else frollmeanExactAdaptiveVector(dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
+          if (!bexact) frollmeanAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
+          else frollmeanExactAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
         }
         break;
       case SUM :
@@ -197,11 +197,11 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
           switch (sfun) {
             case MEAN :
               if (!badaptive) {
-                if (!bexact) frollmeanVector(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bpartial, bnarm, ihasna, bverbose);
-                else frollmeanExactVector(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bpartial, bnarm, ihasna, bverbose);
+                if (!bexact) frollmean(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bpartial, bnarm, ihasna, bverbose);
+                else frollmeanExact(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bpartial, bnarm, ihasna, bverbose);
               } else {
-                if (!bexact) frollmeanAdaptiveVector(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
-                else frollmeanExactAdaptiveVector(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
+                if (!bexact) frollmeanAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
+                else frollmeanExactAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
               }
               break;
             case SUM :

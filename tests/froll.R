@@ -1,5 +1,6 @@
 ## this file will be migrated to inst/tests/tests.Rraw when branch will be ready to merge
-if (!interactive()) {
+cc.used = all(sapply(c("test","froll"), exists))
+if (!interactive() && !cc.used) {
   library(data.table)
   test = data.table:::test
   froll = data.table:::froll
@@ -773,3 +774,4 @@ if (dev_and_benchmark_area<-FALSE) {
 }
 
 setDTthreads(oldDTthreads)
+cat("froll unit tests successfully passed\n")

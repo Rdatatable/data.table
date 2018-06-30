@@ -1,6 +1,15 @@
 #include "froll.h"
 
-void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool narm, int hasna, bool verbose) {
+/* fast rolling functions
+ * exact=F: sliding window adding/removing in/out of sliding window of observations
+ * exact=T: recalculate whole mean for each observation, roundoff correction is adjusted
+ * adaptive=F: sliding window is constant value
+ * adaptive=T: sliding window is defined for every single observation
+ */
+
+/* fast rolling mean */
+
+void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool narm, int hasna, bool verbose) {
   uint_fast64_t si =                                            // align shift for ans index
     align > 0 ? 0 :                                             // align right
     align < 0 ? -k+1 :                                          // align left
@@ -110,13 +119,14 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
   }
 }
 
-void frollmeanExactVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool narm, int hasna, bool verbose) {
+void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool narm, int hasna, bool verbose) {
   uint_fast64_t si =                                            // align shift for ans index
     align > 0 ? 0 :                                             // align right
     align < 0 ? -k+1 :                                          // align left
     -floor(k/2);                                                // align center
   long double w = 0.;                                           // running window aggregate
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
+  // TODO add  || !narm to this branch as it can be handled without special care, add tests
   if (!truehasna) {
     #pragma omp parallel num_threads(verbose ? 1 : MIN(getDTthreads(), nx))
     {
@@ -180,7 +190,7 @@ void frollmeanExactVector(double *x, uint_fast64_t nx, double *ans, int k, int a
   }
 }
 
-void frollmeanAdaptiveVector(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+void frollmeanAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
   
@@ -244,7 +254,7 @@ void frollmeanAdaptiveVector(double *x, uint_fast64_t nx, double *ans, int *k, d
   } // end of truehasna
 }
 
-void frollmeanExactAdaptiveVector(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+void frollmeanExactAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
   
@@ -321,6 +331,8 @@ void frollmeanExactAdaptiveVector(double *x, uint_fast64_t nx, double *ans, int 
     } // end of parallel region
   } // end of truehasna
 }
+
+/* fast rolling sum */
 
 void frollsumVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool exact, bool narm, int hasna, bool verbose) {
   uint_fast64_t si =

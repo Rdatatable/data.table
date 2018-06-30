@@ -153,10 +153,10 @@ int getDTthreads();
 void avoid_openmp_hang_within_fork();
 
 // froll.c
-void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool narm, int hasna, bool verbose);
-void frollmeanExactVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool narm, int hasna, bool verbose);
-void frollmeanAdaptiveVector(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void frollmeanExactAdaptiveVector(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool narm, int hasna, bool verbose);
+void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool narm, int hasna, bool verbose);
+void frollmeanAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void frollmeanExactAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
 void frollsumVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool exact, bool narm, int hasna, bool verbose);
 void frollsumVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, bool verbose);
 
