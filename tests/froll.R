@@ -120,13 +120,12 @@ if (interactive()) {
   invisible()
 }
 # froll_exact_f
-## roundoff above
+## roundoff above code
 ### double: "0.00000001490116"
-### long double: ""
-## timing 1e8, 1e3
+### long double: "0.000000007450581"
+## timing 1e8, 1e3: system.time(ans1 <- frollmean(x, n))
 ### double: 0.716
-### long double: 
-#system.time(ans1 <- frollmean(x, n))
+### long double: 0.688
 test(9999.99, do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE)) > 1) # test that roundoff exact=F/exact=T is > 1
 
 #### align: right/center/left
