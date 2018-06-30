@@ -6,7 +6,7 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
     align > 0 ? 0 :                                             // align right
     align < 0 ? -k+1 :                                          // align left
     -floor(k/2);                                                // align center
-  double w = 0.; //TODO use long double?                        // running window aggregate
+  long double w = 0.;                                           // running window aggregate
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   if (!truehasna) {
     if (!exact) {
@@ -15,20 +15,20 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
       for (uint_fast64_t i=0; i<wk; i++) {                      // loop over obs, potentially incomplete window from left
         w += x[i];                                              // add current row to window aggregate
         if (i >= -si) {
-          ans[i+si] = w / (i+1);                                // rollfun to answer vector
+          ans[i+si] = (double) w / (i+1);                       // rollfun to answer vector
         }
-        if (verbose) Rprintf("loop1: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f, wk %d, do.ans %d\n", i, NA_REAL, x[i], i+si, w, i+1, ((int)((bool)(i>=-si))));
+        if (verbose) Rprintf("loop1: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f, wk %d, do.ans %d\n", i, NA_REAL, x[i], i+si, (double) w, i+1, ((int)((bool)(i>=-si))));
       }
       for (uint_fast64_t i=k; i<nx; i++) {                      // loop over obs, complete window
         w -= x[i-k];                                            // remove leaving row from window aggregate
         w += x[i];                                              // add current row to window aggregate
-        ans[i+si] = w / k;                                      // rollfun to answer vector
-        if (verbose) Rprintf("loop2: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f, wk %d\n", i, x[i-k], x[i], i+si, w, k);
+        ans[i+si] = (double) w / k;                             // rollfun to answer vector
+        if (verbose) Rprintf("loop2: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f, wk %d\n", i, x[i-k], x[i], i+si, (double) w, k);
       }
       for (uint_fast64_t i=nx; i<(nx-si); i++) {                // loop over obs, potentially incomplete window from right, skipped for align=right
         w -= x[i-k];                                            // remove leaving row from window aggregate
-        ans[i+si] = w / (k-(i-nx+1));                           // rollfun to answer vector
-        if (verbose) Rprintf("loop3: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f, wk %d\n", i, x[i-k], NA_REAL, i+si, w, k-(i-nx+1));
+        ans[i+si] = (double) w / (k-(i-nx+1));                  // rollfun to answer vector
+        if (verbose) Rprintf("loop3: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f, wk %d\n", i, x[i-k], NA_REAL, i+si, (double) w, k-(i-nx+1));
       }
     } else { // exact==TRUE // this branch is really messy and should be cleaned up before re-using as template!
       #pragma omp parallel num_threads(verbose ? 1 : MIN(getDTthreads(), nx))
@@ -73,7 +73,7 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
         }
       } // end of parallel region
     }
-    if (ISNAN(w)) {
+    if (ISNAN((double) w)) {
       if (verbose) {
         if (hasna==-1) Rprintf("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs\n");
         else Rprintf("NA values are present in input, re-running rolling function with extra care for NAs\n");
@@ -98,52 +98,52 @@ void frollmeanVector(double *x, uint_fast64_t nx, double *ans, int k, int align,
         if (ISNAN(x[i])) nc++;                                  // increment NA count in current window
         else w += x[i];                                         // add only non-NA to window aggregate
         if (i >= -si) {
-          if (nc == 0) ans[i+si] = w / wk;                      // rollfun to answer vector
+          if (nc == 0) ans[i+si] = (double) w / wk;             // rollfun to answer vector
           else if (nc == wk) {                                  // all values in window are NA
             if (narm) ans[i+si] = R_NaN;                        // expected output for fun(NA, na.rm=T)
             else ans[i+si] = NA_REAL;                           // expected output for fun(NA, na.rm=F)
           }
           else {                                                // some values in window are NA
-            if (narm) ans[i+si] = w / (wk - nc);                // rollfun to answer vector when NA present
+            if (narm) ans[i+si] = (double) w / (wk - nc);       // rollfun to answer vector when NA present
             else ans[i+si] = NA_REAL;                           // NA present and na.rm=FALSE result NA
           }
           //if (verbose) Rprintf("loop1: ans[%lu] = %8.3f\n", i+si, w/wk);
         }
-        if (verbose) Rprintf("loop1: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, NA_REAL, x[i], i+si, w);
+        if (verbose) Rprintf("loop1: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, NA_REAL, x[i], i+si, (double) w);
       }
       for (uint_fast64_t i=k; i<nx; i++) {                      // loop over obs, complete window
         if (ISNAN(x[i])) nc++;                                  // increment NA count in current window
         else w += x[i];                                         // add only non-NA to window aggregate
         if (ISNAN(x[i-k])) nc--;                                // decrement NA count in current window
         else w -= x[i-k];                                       // remove only non-NA from window aggregate
-        if (nc == 0) ans[i+si] = w / k;                         // rollfun to answer vector when no NAs
+        if (nc == 0) ans[i+si] = (double) w / k;                // rollfun to answer vector when no NAs
         else if (nc == k) {                                     // all values in window are NA
           if (narm) ans[i+si] = R_NaN;                          // expected output for fun(NA, na.rm=T)
           else ans[i+si] = NA_REAL;                             // expected output for fun(NA, na.rm=F)
         }
         else {                                                  // some values in window are NA
-          if (narm) ans[i+si] = w / (k - nc);                   // rollfun to answer vector when NA present
+          if (narm) ans[i+si] = (double) w / (k - nc);          // rollfun to answer vector when NA present
           else ans[i+si] = NA_REAL;                             // NA present and na.rm=FALSE result NA
         }
         //if (verbose) Rprintf("loop2: ans[%lu] = %8.3f\n", i+si, w/k);
-        if (verbose) Rprintf("loop2: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, x[i-k], x[i], i+si, w);
+        if (verbose) Rprintf("loop2: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, x[i-k], x[i], i+si, (double) w);
       }
       for (uint_fast64_t i=nx; i<(nx-si); i++) {                // loop over obs, potentially incomplete window from right, skipped for align=right
         if (ISNAN(x[i-k])) nc--;                                // decrement NA count in current window
         else w -= x[i-k];                                       // remove only non-NA from window aggregate
-        if (nc == 0) ans[i+si] = w / k;                         // rollfun to answer vector when no NAs
+        if (nc == 0) ans[i+si] = (double) w / k;                // rollfun to answer vector when no NAs
         else if (nc == k) {                                     // all values in window are NA
           if (narm) ans[i+si] = R_NaN;                          // expected output for fun(NA, na.rm=T)
           else ans[i+si] = NA_REAL;                             // expected output for fun(NA, na.rm=F)
         }
         else {                                                  // some values in window are NA
-          if (narm) ans[i+si] = w / (k - nc);                   // rollfun to answer vector when NA present
+          if (narm) ans[i+si] = (double) w / (k - nc);          // rollfun to answer vector when NA present
           else ans[i+si] = NA_REAL;                             // NA present and na.rm=FALSE result NA
         }
         //if (verbose) Rprintf("loop3: ans[%lu] = %8.3f\n", i+si, w/k);
-        if (verbose) Rprintf("loop3: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, x[i-k], NA_REAL, i+si, w);
+        if (verbose) Rprintf("loop3: i %lu, x- %8.3f, x+ %8.3f, i.ans %lu, w %8.3f\n", i, x[i-k], NA_REAL, i+si, (double) w);
       }
-      if (ISNAN(w)) {
+      if (ISNAN((double) w)) {
         error("internal error: NAs should be handled at this point");
       } else if (!partial) {                                    // fill partial window
         for (uint_fast64_t i=0; i<(k-1); i++) {                 // fill for align right/center

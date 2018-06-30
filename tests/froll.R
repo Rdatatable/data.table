@@ -100,7 +100,6 @@ test(9999.4, ans1, expected)
 test(9999.4, ans2, expected)
 
 #### exact
-### TODO changing exact=F double w to long double w makes this test equal, implement roundoff for exact=T and re-test
 set.seed(108)
 x = rnorm(2e1, 1e7, 5e6)
 n = 6
@@ -120,9 +119,14 @@ if (interactive()) {
   print(sprintf("exact=F has %.3f bigger roundoff", do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE))))
   invisible()
 }
-#     froll_exact_f      froll_exact_t 
-#"0.00000001490116" "0.00000000000000" 
-#[1] "exact=F has Inf bigger roundoff"
+# froll_exact_f
+## roundoff above
+### double: "0.00000001490116"
+### long double: ""
+## timing 1e8, 1e3
+### double: 0.716
+### long double: 
+#system.time(ans1 <- frollmean(x, n))
 test(9999.99, do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE)) > 1) # test that roundoff exact=F/exact=T is > 1
 
 #### align: right/center/left
