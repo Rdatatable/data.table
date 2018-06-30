@@ -171,12 +171,20 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
     if (bverbose) Rprintf("rollfun: single window and single column, skipping parallel execution\n");
     switch (sfun) {
       case MEAN :
-        if (!badaptive) frollmeanVector(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
-        else frollmeanVectorAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bexact, bnarm, ihasna, bverbose);
+        if (!badaptive) {
+          if (!bexact) frollmeanVector(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bpartial, bnarm, ihasna, bverbose);
+          else frollmeanExactVector(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bpartial, bnarm, ihasna, bverbose);
+        } else {
+          if (!bexact) frollmeanAdaptiveVector(dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
+          else frollmeanExactAdaptiveVector(dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
+        }
         break;
       case SUM :
-        if (!badaptive) frollsumVector(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
-        else frollsumVectorAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bexact, bnarm, ihasna, bverbose);
+        if (!badaptive) {
+          frollsumVector(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
+        } else {
+          frollsumVectorAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bexact, bnarm, ihasna, bverbose);
+        }
         break;
     }
   } else {
@@ -188,12 +196,20 @@ SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEX
         for (R_len_t j=0; j<nk; j++) {                            // loop over multiple windows
           switch (sfun) {
             case MEAN :
-              if (!badaptive) frollmeanVector(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
-              else frollmeanVectorAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, bverbose);
+              if (!badaptive) {
+                if (!bexact) frollmeanVector(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bpartial, bnarm, ihasna, bverbose);
+                else frollmeanExactVector(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bpartial, bnarm, ihasna, bverbose);
+              } else {
+                if (!bexact) frollmeanAdaptiveVector(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
+                else frollmeanExactAdaptiveVector(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
+              }
               break;
             case SUM :
-              if (!badaptive) frollsumVector(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
-              else frollsumVectorAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, bverbose);
+              if (!badaptive) {
+                frollsumVector(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
+              } else {
+                frollsumVectorAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, bverbose);
+              }
               break;
           }
         } // end of j-windows loop
