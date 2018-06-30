@@ -120,6 +120,9 @@ if (interactive()) {
   print(sprintf("exact=F has %.3f bigger roundoff", do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE))))
   invisible()
 }
+#     froll_exact_f      froll_exact_t 
+#"0.00000001490116" "0.00000000000000" 
+#[1] "exact=F has Inf bigger roundoff"
 test(9999.99, do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE)) > 1) # test that roundoff exact=F/exact=T is > 1
 
 #### align: right/center/left
