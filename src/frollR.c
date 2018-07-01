@@ -1,6 +1,6 @@
 #include "frollR.h"
 
-SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP partial, SEXP narm, SEXP hasna, SEXP adaptive, SEXP verbose) {
+SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP partial, SEXP narm, SEXP hasna, SEXP adaptive, SEXP verbose) {
   int protecti=0;
   if (!isLogical(verbose) || length(verbose)!=1 || LOGICAL(verbose)[0]==NA_LOGICAL)
     error("verbose must be TRUE or FALSE");

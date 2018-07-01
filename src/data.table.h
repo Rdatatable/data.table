@@ -161,4 +161,4 @@ void frollsumVector(double *x, uint_fast64_t nx, double *ans, int k, int align, 
 void frollsumVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, bool verbose);
 
 // frollR.c
-SEXP frollfun(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP partial, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
+SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP partial, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
