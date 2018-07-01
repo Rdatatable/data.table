@@ -92,14 +92,6 @@ expected = list(
 )
 test(9999.5, ans, expected)
 
-#### partial
-x = 1:6/2
-ans1 = frollmean(x, 3, partial=TRUE)
-ans2 = frollmean(x, 3, partial=TRUE, exact=TRUE)
-expected = c(0.5, 0.75, seq(1,2.5,0.5))
-test(9999.4, ans1, expected)
-test(9999.4, ans2, expected)
-
 #### exact
 set.seed(108)
 x = rnorm(2e1, 1e7, 5e6)
@@ -130,121 +122,170 @@ if (interactive()) {
 test(9999.99, do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE)) > 1) # test that roundoff exact=F/exact=T is > 1
 
 #### align: right/center/left
-d = as.data.table(list(1:6/2, 3:8/4))
+d = as.data.table(list(1:8/2, 3:10/4))
+ans1 = frollmean(d, 5, align="right") # default
+ans2 = frollmean(d, 5, align="right", exact=TRUE)
+expected = list(
+  c(rep(NA_real_,4), seq(1.5,3,0.5)),
+  c(rep(NA_real_,4), seq(1.25,2,0.25))
+)
+test(9999.6, ans1, expected)
+test(9999.6, ans2, expected)
+ans1 = frollmean(d, 5, align="center") # x even, n odd
+ans2 = frollmean(d, 5, align="center", exact=TRUE)
+expected = list(
+  c(rep(NA_real_, 2), seq(1.5,3,0.5), rep(NA_real_, 2)),
+  c(rep(NA_real_, 2), seq(1.25,2,0.25), rep(NA_real_, 2))
+)
+test(9999.6, ans1, expected)
+test(9999.6, ans2, expected)
+ans1 = frollmean(d, 6, align="center") # x even, n even
+ans2 = frollmean(d, 6, align="center", exact=TRUE)
+expected = list(
+  c(rep(NA_real_, 2), seq(1.75,2.75,0.5), rep(NA_real_,3)),
+  c(rep(NA_real_, 2), seq(1.375,1.875,0.25), rep(NA_real_,3))
+)
+test(9999.8, ans1, expected)
+test(9999.8, ans2, expected)
+de = rbind(d, data.table(4.5, 2.75))
+ans1 = frollmean(de, 5, align="center") # x odd, n odd
+ans2 = frollmean(de, 5, align="center", exact=TRUE)
+expected = list(
+  c(rep(NA_real_, 2), seq(1.5,3.5,0.5), rep(NA_real_, 2)),
+  c(rep(NA_real_, 2), seq(1.25,2.25,0.25), rep(NA_real_, 2))
+)
+test(9999.9, ans1, expected)
+test(9999.9, ans2, expected)
+ans1 = frollmean(de, 6, align="center") # x odd, n even
+ans2 = frollmean(de, 6, align="center", exact=TRUE)
+expected = list(
+  c(rep(NA_real_, 2), seq(1.75,3.25,0.5), rep(NA_real_,3)),
+  c(rep(NA_real_, 2), seq(1.375,2.125,0.25), rep(NA_real_,3))
+)
+test(9999.10, ans1, expected)
+test(9999.10, ans2, expected)
+ans1 = frollmean(d, 5, align="left")
+ans2 = frollmean(d, 5, align="left", exact=TRUE)
+expected = list(
+  c(seq(1.5,3,0.5), rep(NA_real_,4)),
+  c(seq(1.25,2,0.25), rep(NA_real_,4))
+)
+test(9999.11, ans1, expected)
+test(9999.11, ans2, expected)
+
+#### handling NAs align na.rm
+d = as.data.table(list(1:8/2, 3:10/4))
+d[c(2L, 7L), "V1" := NA][c(1:2,8L), "V2" := NA]
 ans1 = frollmean(d, 3, align="right") # default
 ans2 = frollmean(d, 3, align="right", exact=TRUE)
 expected = list(
-  c(rep(NA_real_,2), seq(1,2.5,0.5)),
-  c(rep(NA_real_,2), seq(1,1.75,0.25))
+  c(rep(NA_real_,4), seq(2,2.5,0.5), rep(NA_real_, 2)),
+  c(rep(NA_real_,4), seq(1.5,2,0.25), rep(NA_real_, 1))
 )
 test(9999.6, ans1, expected)
 test(9999.6, ans2, expected)
+ans1 = frollmean(d, 3, align="right", na.rm=TRUE)
+#ans2 = frollmean(d, 3, align="right", exact=TRUE, na.rm=TRUE)
+expected = list(
+  c(rep(NA_real_,2), 1, 1.75, 2, 2.5, 2.75, 3.5),
+  c(rep(NA_real_,2), 1.25, 1.375, 1.5, 1.75, 2, 2.125)
+)
+test(9999.6, ans1, expected)
+#test(9999.6, ans2, expected)
 ans1 = frollmean(d, 3, align="center") # x even, n odd
 ans2 = frollmean(d, 3, align="center", exact=TRUE)
 expected = list(
-  c(NA_real_, seq(1,2.5,0.5), NA_real_),
-  c(NA_real_, seq(1,1.75,0.25), NA_real_)
+  c(rep(NA_real_,3), seq(2,2.5,0.5), rep(NA_real_, 3)),
+  c(rep(NA_real_,3), seq(1.5,2,0.25), rep(NA_real_, 2))
 )
 test(9999.6, ans1, expected)
 test(9999.6, ans2, expected)
+ans1 = frollmean(d, 3, align="center", na.rm=TRUE) # x even, n odd
+#ans2 = frollmean(d, 3, align="center", exact=TRUE, na.rm=TRUE)
+expected = list(
+  c(rep(NA_real_,1), 1, 1.75, 2, 2.5, 2.75, 3.5, rep(NA_real_,1)),
+  c(rep(NA_real_,1), 1.25, 1.375, 1.5, 1.75, 2, 2.125, rep(NA_real_,1))
+)
+test(9999.6, ans1, expected)
+#test(9999.6, ans2, expected)
 ans1 = frollmean(d, 4, align="center") # x even, n even
 ans2 = frollmean(d, 4, align="center", exact=TRUE)
 expected = list(
-  c(NA_real_, seq(1.25,2.25,0.5), rep(NA_real_,2)),
-  c(NA_real_, seq(1.125,1.625,0.25), rep(NA_real_,2))
+  c(rep(NA_real_,3), 2.25, rep(NA_real_, 4)),
+  c(rep(NA_real_,3), 1.625, 1.875, rep(NA_real_, 3))
 )
 test(9999.8, ans1, expected)
 test(9999.8, ans2, expected)
-de = rbind(d, data.table(3.5, 2.25))
+ans1 = frollmean(d, 4, align="center", na.rm=TRUE) # x even, n even
+#ans2 = frollmean(d, 4, align="center", exact=TRUE, na.rm=TRUE)
+expected = list(
+  c(rep(NA_real_,1), 4/3, 2, 2.25, 2.5, 9.5/3, rep(NA_real_,2)),
+  c(rep(NA_real_,1), 1.375, 1.5, 1.625, 1.875, 2, rep(NA_real_,2))
+)
+test(9999.8, ans1, expected)
+#test(9999.8, ans2, expected)
+de = rbind(d, data.table(4.5, 2.75))
 ans1 = frollmean(de, 3, align="center") # x odd, n odd
 ans2 = frollmean(de, 3, align="center", exact=TRUE)
 expected = list(
-  c(NA_real_, seq(1,3,0.5), NA_real_),
-  c(NA_real_, seq(1,2,0.25), NA_real_)
+  c(rep(NA_real_,3), 2, 2.5, rep(NA_real_, 4)),
+  c(rep(NA_real_,3), 1.5, 1.75, 2, rep(NA_real_, 3))
 )
 test(9999.9, ans1, expected)
 test(9999.9, ans2, expected)
+ans1 = frollmean(de, 3, align="center", na.rm=TRUE) # x odd, n odd
+#ans2 = frollmean(de, 3, align="center", exact=TRUE, na.rm=TRUE)
+expected = list(
+  c(rep(NA_real_,1), 1, 1.75, 2, 2.5, 2.75, 3.5, 4.25, rep(NA_real_,1)),
+  c(rep(NA_real_,1), 1.25, 1.375, 1.5, 1.75, 2, 2.125, 2.5, rep(NA_real_,1))
+)
+test(9999.9, ans1, expected)
+#test(9999.9, ans2, expected)
 ans1 = frollmean(de, 4, align="center") # x odd, n even
 ans2 = frollmean(de, 4, align="center", exact=TRUE)
 expected = list(
-  c(NA_real_, seq(1.25,2.75,0.5), rep(NA_real_,2)),
-  c(NA_real_, seq(1.125,1.875,0.25), rep(NA_real_,2))
+  c(rep(NA_real_, 3), 2.25, rep(NA_real_,5)),
+  c(rep(NA_real_, 3), 1.625, 1.875, rep(NA_real_,4))
 )
 test(9999.10, ans1, expected)
 test(9999.10, ans2, expected)
+ans1 = frollmean(de, 4, align="center", na.rm=TRUE) # x odd, n even
+#ans2 = frollmean(de, 4, align="center", exact=TRUE, na.rm=TRUE)
+expected = list(
+  c(rep(NA_real_, 1), 4/3, 2, 2.25, 2.5, 9.5/3, 11.5/3, rep(NA_real_,2)),
+  c(rep(NA_real_, 1), 1.375, 1.5, 1.625, 1.875, 2, 7/3, rep(NA_real_,2))
+)
+test(9999.10, ans1, expected)
+#test(9999.10, ans2, expected)
 ans1 = frollmean(d, 3, align="left")
 ans2 = frollmean(d, 3, align="left", exact=TRUE)
 expected = list(
-  c(seq(1,2.5,0.5), rep(NA_real_,2)),
-  c(seq(1,1.75,0.25), rep(NA_real_,2))
+  c(rep(NA_real_, 2), 2, 2.5, rep(NA_real_,4)),
+  c(rep(NA_real_, 2), 1.5, 1.75, 2, rep(NA_real_,3))
 )
 test(9999.11, ans1, expected)
 test(9999.11, ans2, expected)
-
-#### partian align
-d = as.data.table(list(1:6/2, 3:8/4))
-ans1 = frollmean(d, 3, align="right", partial=TRUE)
-ans2 = frollmean(d, 3, align="right", exact=TRUE, partial=TRUE)
+ans1 = frollmean(d, 3, align="left", na.rm=TRUE)
+#ans2 = frollmean(d, 3, align="left", exact=TRUE, na.rm=TRUE)
 expected = list(
-  c(0.5, 0.75, seq(1,2.5,0.5)),
-  c(0.75, 0.875, seq(1,1.75,0.25))
-)
-test(9999.6, ans1, expected)
-test(9999.6, ans2, expected)
-ans1 = frollmean(d, 3, align="center", partial=TRUE) # x even, n odd
-ans2 = frollmean(d, 3, align="center", exact=TRUE, partial=TRUE)
-expected = list(
-  c(0.75, seq(1,2.5,0.5), 2.75),
-  c(0.875, seq(1,1.75,0.25), 1.875)
-)
-test(9999.6, ans1, expected)
-test(9999.6, ans2, expected)
-ans1 = frollmean(d, 4, align="center", partial=TRUE) # x even, n even
-ans2 = frollmean(d, 4, align="center", exact=TRUE, partial=TRUE)
-expected = list(
-  c(1, seq(1.25,2.25,0.5), 2.5, 2.75),
-  c(1, seq(1.125,1.625,0.25), 1.75, 1.875)
-)
-test(9999.8, ans1, expected)
-test(9999.8, ans2, expected)
-de = rbind(d, data.table(3.5, 2.25))
-ans1 = frollmean(de, 3, align="center", partial=TRUE) # x odd, n odd
-ans2 = frollmean(de, 3, align="center", exact=TRUE, partial=TRUE)
-expected = list(
-  c(0.75, seq(1,3,0.5), 3.25),
-  c(0.875, seq(1,2,0.25), 2.125)
-)
-test(9999.9, ans1, expected)
-test(9999.9, ans2, expected)
-ans1 = frollmean(de, 4, align="center", partial=TRUE) # x odd, n even
-ans2 = frollmean(de, 4, align="center", exact=TRUE, partial=TRUE)
-expected = list(
-  c(1, seq(1.25,2.75,0.5), 3, 3.25),
-  c(1, seq(1.125,1.875,0.25), 2, 2.125)
-)
-test(9999.10, ans1, expected)
-test(9999.10, ans2, expected)
-ans1 = frollmean(d, 3, align="left", partial=TRUE)
-ans2 = frollmean(d, 3, align="left", exact=TRUE, partial=TRUE)
-expected = list(
-  c(seq(1,2.5,0.5), 2.75, 3),
-  c(seq(1,1.75,0.25), 1.875, 2)
+  c(1, 1.75, 2, 2.5, 2.75, 3.5, rep(NA_real_,2)),
+  c(1.25, 1.375, 1.5, 1.75, 2, 2.125, rep(NA_real_,2))
 )
 test(9999.11, ans1, expected)
-test(9999.11, ans2, expected)
-
-#### partial align na.rm
-## TODO
-
-#### handling NAs
+#test(9999.11, ans2, expected)
+#### handling NAs for NaN output also
 d = as.data.table(list(1:6/2, 3:8/4))
 d[c(2L, 5L), V1:=NA][4:6, V2:=NA]
-ans = frollmean(d, 2:3)
+ans1 = frollmean(d, 2:3)
+ans2 = frollmean(d, 2:3, exact=TRUE)
 expected = list(c(NA, NA, NA, 1.75, NA, NA), rep(NA_real_, 6), c(NA, 0.875, 1.125, NA, NA, NA), c(NA, NA, 1, NA, NA, NA))
-test(9999.99, ans, expected)
-ans = frollmean(d, 2:3, na.rm=TRUE)
+test(9999.99, ans1, expected)
+test(9999.99, ans2, expected)
+ans1 = frollmean(d, 2:3, na.rm=TRUE)
+#Sans2 = frollmean(d, 2:3, exact=TRUE, na.rm=TRUE)
 expected = list(c(NA, 0.5, 1.5, 1.75, 2, 3), c(NA, NA, 1, 1.75, 1.75, 2.5), c(NA, 0.875, 1.125, 1.25, NaN, NaN), c(NA, NA, 1, 1.125, 1.25, NaN))
-test(9999.99, ans, expected)
+test(9999.99, ans1, expected)
+#test(9999.99, ans2, expected)
 
 #### fill constant
 test(9999.99, frollmean(1:5, 4, fill=0), c(0, 0, 0, 2.5, 3.5))
@@ -264,6 +305,86 @@ test(9999.99, frollmean(1:3, 2, fill=FALSE), error="fill must be numeric")
 test(9999.99, frollmean(1:3, 2, fill="a"), error="fill must be numeric")
 test(9999.99, frollmean(1:3, 2, fill=factor("a")), error="fill must be numeric")
 test(9999.99, frollmean(1:3, 2, fill=list(NA)), error="fill must be numeric")
+
+## edge cases
+
+#### length(x)==0
+test(9999.99, frollmean(numeric(0), 2), numeric(0))
+test(9999.99, frollmean(list(1:3, numeric()), 2), list(c(NA_real_, 1.5, 2.5), numeric(0)))
+
+#### length(n)==0
+test(9999.99, frollmean(1:3, integer()), error="n must be non 0 length")
+test(9999.99, frollmean(list(1:3, 2:4), integer()), error="n must be non 0 length")
+
+#### n==0
+test(9999.99, frollmean(1:3, c(2,0)), error="n must be positive integer values")
+test(9999.99, frollmean(list(1:3, 2:4), 0), error="n must be positive integer values")
+
+#### n<0
+test(9999.99, frollmean(1:3, -2), error="n must be positive integer values")
+
+#### n[[1L]]>0 && n[[2L]]<0
+test(9999.99, frollmean(1:3, c(2, -2)), error="n must be positive integer values")
+
+#### n[[1L]]==n[[2L]]
+test(9999.99, frollmean(1:3, c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5)))
+test(9999.99, frollmean(list(1:3, 4:6), c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5), c(NA_real_, 4.5, 5.5), c(NA_real_, 4.5, 5.5)))
+
+#### n>length(x)
+test(9999.99, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
+
+#### n==length(x)
+test(9999.99, frollmean(list(1:3, 4:6), 3), list(c(NA_real_, NA_real_, 2), c(NA_real_, NA_real_, 5)))
+
+#### n<length(x[[1L]]) && n>length(x[[2L]])
+test(9999.99, frollmean(list(1:5, 1:2), 3), list(c(NA_real_, NA_real_, 2, 3, 4), c(NA_real_, NA_real_)))
+
+#### n==1
+#TODO align
+
+#### length(x)==1 && n==1
+test(9999.99, frollmean(5, 1), 5)
+test(9999.99, frollmean(list(1, 10, 5), 1), list(1, 10, 5))
+test(9999.99, frollmean(5, 1, align="left"), 5)
+test(9999.99, frollmean(list(1, 10, 5), 1, align="left"), list(1, 10, 5))
+test(9999.99, frollmean(5, 1, align="center"), 5)
+test(9999.99, frollmean(list(1, 10, 5), 1, align="center"), list(1, 10, 5))
+test(9999.99, frollsum(5, 1), 5)
+test(9999.99, frollsum(list(1, 10, 5), 1), list(1, 10, 5))
+test(9999.99, frollsum(5, 1, align="left"), 5)
+test(9999.99, frollsum(list(1, 10, 5), 1, align="left"), list(1, 10, 5))
+test(9999.99, frollsum(5, 1, align="center"), 5)
+test(9999.99, frollsum(list(1, 10, 5), 1, align="center"), list(1, 10, 5))
+
+#### length(x)==1 && n==2
+test(9999.99, frollmean(5, 2), NA_real_)
+test(9999.99, frollmean(list(1, 10, 5), 2), list(NA_real_, NA_real_, NA_real_))
+test(9999.99, frollmean(5, 2, align="left"), NA_real_)
+test(9999.99, frollmean(list(1, 10, 5), 2, align="left"), list(NA_real_, NA_real_, NA_real_))
+test(9999.99, frollmean(5, 2, align="center"), NA_real_)
+test(9999.99, frollmean(list(1, 10, 5), 2, align="center"), list(NA_real_, NA_real_, NA_real_))
+test(9999.99, frollsum(5, 2), NA_real_)
+test(9999.99, frollsum(list(1, 10, 5), 2), list(NA_real_, NA_real_, NA_real_))
+test(9999.99, frollsum(5, 2, align="left"), NA_real_)
+test(9999.99, frollsum(list(1, 10, 5), 2, align="left"), list(NA_real_, NA_real_, NA_real_))
+test(9999.99, frollsum(5, 2, align="center"), NA_real_)
+test(9999.99, frollsum(list(1, 10, 5), 2, align="center"), list(NA_real_, NA_real_, NA_real_))
+
+#### n==Inf
+test(9999.99, frollmean(1:5, Inf), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
+
+#### n==c(5, Inf)
+test(9999.99, frollmean(1:5, c(5, Inf)), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
+
+#### is.complex(n)
+#frollmean(1:5, 3i)
+
+#### is.character(n)
+#frollmean(1:5, "a")
+
+#### is.factor(n)
+#frollmean(1:5, as.factor("a"))
+
 
 #### adaptive window
 x = rnorm(1e3)
@@ -345,8 +466,6 @@ if (FALSE) {
 }
 
 #### adaptive limitations
-test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, partial=FALSE), c(1, 1.5))
-test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, partial=TRUE), error="using adaptive TRUE and partial TRUE is not implemented")
 test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, align="right"), c(1, 1.5))
 test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, align="center"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
 test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, align="left"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
@@ -404,85 +523,7 @@ anserr = list(
 )
 format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
 
-
-## edge cases
-
-#### length(x)==0
-test(9999.99, frollmean(numeric(0), 2), numeric(0))
-test(9999.99, frollmean(list(1:3, numeric()), 2), list(c(NA_real_, 1.5, 2.5), numeric(0)))
-
-#### length(n)==0
-test(9999.99, frollmean(1:3, integer()), error="n must be non 0 length")
-test(9999.99, frollmean(list(1:3, 2:4), integer()), error="n must be non 0 length")
-
-#### n==0
-test(9999.99, frollmean(1:3, c(2,0)), error="n must be positive integer values")
-test(9999.99, frollmean(list(1:3, 2:4), 0), error="n must be positive integer values")
-
-#### n<0
-test(9999.99, frollmean(1:3, -2), error="n must be positive integer values")
-
-#### n[[1L]]>0 && n[[2L]]<0
-test(9999.99, frollmean(1:3, c(2, -2)), error="n must be positive integer values")
-
-#### n[[1L]]==n[[2L]]
-test(9999.99, frollmean(1:3, c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5)))
-test(9999.99, frollmean(list(1:3, 4:6), c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5), c(NA_real_, 4.5, 5.5), c(NA_real_, 4.5, 5.5)))
-
-#### n>length(x)
-test(9999.99, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
-
-#### n==length(x)
-test(9999.99, frollmean(list(1:3, 4:6), 3), list(c(NA_real_, NA_real_, 2), c(NA_real_, NA_real_, 5)))
-
-#### n<length(x[[1L]]) && n>length(x[[2L]])
-test(9999.99, frollmean(list(1:5, 1:2), 3), list(c(NA_real_, NA_real_, 2, 3, 4), c(NA_real_, NA_real_)))
-
-#### n==1
-#TODO align
-
-#### length(x)==1 && n==1
-test(9999.99, frollmean(5, 1), 5)
-test(9999.99, frollmean(list(1, 10, 5), 1), list(1, 10, 5))
-test(9999.99, frollmean(5, 1, align="left"), 5)
-test(9999.99, frollmean(list(1, 10, 5), 1, align="left"), list(1, 10, 5))
-test(9999.99, frollmean(5, 1, align="center"), 5)
-test(9999.99, frollmean(list(1, 10, 5), 1, align="center"), list(1, 10, 5))
-test(9999.99, frollsum(5, 1), 5)
-test(9999.99, frollsum(list(1, 10, 5), 1), list(1, 10, 5))
-test(9999.99, frollsum(5, 1, align="left"), 5)
-test(9999.99, frollsum(list(1, 10, 5), 1, align="left"), list(1, 10, 5))
-test(9999.99, frollsum(5, 1, align="center"), 5)
-test(9999.99, frollsum(list(1, 10, 5), 1, align="center"), list(1, 10, 5))
-
-#### length(x)==1 && n==2
-test(9999.99, frollmean(5, 2), NA_real_)
-test(9999.99, frollmean(list(1, 10, 5), 2), list(NA_real_, NA_real_, NA_real_))
-test(9999.99, frollmean(5, 2, align="left"), NA_real_)
-test(9999.99, frollmean(list(1, 10, 5), 2, align="left"), list(NA_real_, NA_real_, NA_real_))
-test(9999.99, frollmean(5, 2, align="center"), NA_real_)
-test(9999.99, frollmean(list(1, 10, 5), 2, align="center"), list(NA_real_, NA_real_, NA_real_))
-test(9999.99, frollsum(5, 2), NA_real_)
-test(9999.99, frollsum(list(1, 10, 5), 2), list(NA_real_, NA_real_, NA_real_))
-test(9999.99, frollsum(5, 2, align="left"), NA_real_)
-test(9999.99, frollsum(list(1, 10, 5), 2, align="left"), list(NA_real_, NA_real_, NA_real_))
-test(9999.99, frollsum(5, 2, align="center"), NA_real_)
-test(9999.99, frollsum(list(1, 10, 5), 2, align="center"), list(NA_real_, NA_real_, NA_real_))
-
-#### n==Inf
-test(9999.99, frollmean(1:5, Inf), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
-
-#### n==c(5, Inf)
-test(9999.99, frollmean(1:5, c(5, Inf)), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
-
-#### is.complex(n)
-#frollmean(1:5, 3i)
-
-#### is.character(n)
-#frollmean(1:5, "a")
-
-#### is.factor(n)
-#frollmean(1:5, as.factor("a"))
+## edge cases adaptive
 
 #### !adaptive && is.list(n)
 #frollmean(11:15, list(1:5), adaptive=FALSE)
@@ -503,21 +544,22 @@ test(9999.99, frollmean(1:5, c(5, Inf)), error="n must be positive integer value
 #### against zoo
 if (requireNamespace("zoo", quietly=TRUE)) {
   set.seed(108)
-
+  drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
   zoo_compare = function(x, n) {
     num.step = 0.0001
-    #### fun, align, na.rm, partial, exact
-    drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
+    #### fun, align, na.rm, exact
     for (fun in c("mean")) { # ,"sum"
       for (align in c("right","center","left")) {
         for (na.rm in c(FALSE, TRUE)) {
-          for (partial in c(FALSE)) { # TODO partial=TRUE + na.rm=TRUE
-            for (exact in c(FALSE)) { # TODO TRUE for sum
-              num <<- num + num.step
-              test(num,
-                   froll(fun, x, n, align=align, na.rm=na.rm, partial=partial, exact=exact),
-                   drollapply(x, n, FUN=fun, fill=NA, align=align, na.rm=na.rm, partial=partial))
-            }
+          for (exact in c(FALSE)) { # TODO TRUE for sum
+            num <<- num + num.step
+            eval(substitute(
+              test(.num,
+                   froll(.fun, x, n, align=.align, na.rm=.na.rm, exact=.exact),
+                   drollapply(x, n, FUN=.fun, fill=NA, align=.align, na.rm=.na.rm)),
+              
+              list(.num=num, .fun=fun, .align=align, .na.rm=na.rm, .exact=exact)
+            ))
           }
         }
       }
@@ -555,13 +597,6 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   zoo_compare(x, n)
   }
   rm(num)
-  
-  ## test vs partial / fill combinations in zoo
-  #drollapply = function(...) as.double(zoo::rollapply(...))
-  #drollapply(c(NA, 1:5, NA), 2, "sum", align="right", fill=0, partial=F, na.rm=F)
-  #drollapply(c(NA, 1:5, NA), 2, "sum", align="right", fill=0, partial=T, na.rm=F)
-  #drollapply(c(NA, 1:5, NA), 2, "sum", align="right", fill=0, partial=F, na.rm=T)
-  #drollapply(c(NA, 1:5, NA), 2, "sum", align="right", fill=0, partial=T, na.rm=T)
   
   #### na.rm / fill
   x = as.double(c(1L, NA, 3L, 4L, 5L))
@@ -652,7 +687,10 @@ if (requireNamespace("zoo", quietly=TRUE)) {
 #### adaptive window against https://stackoverflow.com/a/21368246/2490497
 
 if (dev_and_benchmark_area<-FALSE) {
-
+  
+  # TODO benchmark alt C impl exact=F: tmp<-cumsum(x); (tmp-shift(tmp, k))/k
+  # if faster than current sliding window add add to api
+  
   # test exact=F no NA switch from double to long double
   set.seed(108)
   N = 1e5
