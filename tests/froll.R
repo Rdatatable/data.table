@@ -107,18 +107,6 @@ anserr = list(
   froll_exact_f = ans0-ans1,
   froll_exact_t = ans0-ans2
 )
-if (interactive()) {
-  print(format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE))
-  print(sprintf("exact=F has %.3f bigger roundoff", do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE))))
-  invisible()
-}
-# froll_exact_f
-## roundoff above code
-### double: "0.00000001490116"
-### long double: "0.000000007450581"
-## timing 1e8, 1e3: system.time(ans1 <- frollmean(x, n))
-### double: 0.716
-### long double: 0.688
 test(9999.99, do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE)) > 1) # test that roundoff exact=F/exact=T is > 1
 
 #### align: right/center/left
@@ -185,13 +173,13 @@ expected = list(
 test(9999.6, ans1, expected)
 test(9999.6, ans2, expected)
 ans1 = frollmean(d, 3, align="right", na.rm=TRUE)
-#ans2 = frollmean(d, 3, align="right", exact=TRUE, na.rm=TRUE)
+ans2 = frollmean(d, 3, align="right", exact=TRUE, na.rm=TRUE)
 expected = list(
   c(rep(NA_real_,2), 1, 1.75, 2, 2.5, 2.75, 3.5),
   c(rep(NA_real_,2), 1.25, 1.375, 1.5, 1.75, 2, 2.125)
 )
 test(9999.6, ans1, expected)
-#test(9999.6, ans2, expected)
+test(9999.6, ans2, expected)
 ans1 = frollmean(d, 3, align="center") # x even, n odd
 ans2 = frollmean(d, 3, align="center", exact=TRUE)
 expected = list(
@@ -201,13 +189,13 @@ expected = list(
 test(9999.6, ans1, expected)
 test(9999.6, ans2, expected)
 ans1 = frollmean(d, 3, align="center", na.rm=TRUE) # x even, n odd
-#ans2 = frollmean(d, 3, align="center", exact=TRUE, na.rm=TRUE)
+ans2 = frollmean(d, 3, align="center", exact=TRUE, na.rm=TRUE)
 expected = list(
   c(rep(NA_real_,1), 1, 1.75, 2, 2.5, 2.75, 3.5, rep(NA_real_,1)),
   c(rep(NA_real_,1), 1.25, 1.375, 1.5, 1.75, 2, 2.125, rep(NA_real_,1))
 )
 test(9999.6, ans1, expected)
-#test(9999.6, ans2, expected)
+test(9999.6, ans2, expected)
 ans1 = frollmean(d, 4, align="center") # x even, n even
 ans2 = frollmean(d, 4, align="center", exact=TRUE)
 expected = list(
@@ -217,13 +205,13 @@ expected = list(
 test(9999.8, ans1, expected)
 test(9999.8, ans2, expected)
 ans1 = frollmean(d, 4, align="center", na.rm=TRUE) # x even, n even
-#ans2 = frollmean(d, 4, align="center", exact=TRUE, na.rm=TRUE)
+ans2 = frollmean(d, 4, align="center", exact=TRUE, na.rm=TRUE)
 expected = list(
   c(rep(NA_real_,1), 4/3, 2, 2.25, 2.5, 9.5/3, rep(NA_real_,2)),
   c(rep(NA_real_,1), 1.375, 1.5, 1.625, 1.875, 2, rep(NA_real_,2))
 )
 test(9999.8, ans1, expected)
-#test(9999.8, ans2, expected)
+test(9999.8, ans2, expected)
 de = rbind(d, data.table(4.5, 2.75))
 ans1 = frollmean(de, 3, align="center") # x odd, n odd
 ans2 = frollmean(de, 3, align="center", exact=TRUE)
@@ -234,13 +222,13 @@ expected = list(
 test(9999.9, ans1, expected)
 test(9999.9, ans2, expected)
 ans1 = frollmean(de, 3, align="center", na.rm=TRUE) # x odd, n odd
-#ans2 = frollmean(de, 3, align="center", exact=TRUE, na.rm=TRUE)
+ans2 = frollmean(de, 3, align="center", exact=TRUE, na.rm=TRUE)
 expected = list(
   c(rep(NA_real_,1), 1, 1.75, 2, 2.5, 2.75, 3.5, 4.25, rep(NA_real_,1)),
   c(rep(NA_real_,1), 1.25, 1.375, 1.5, 1.75, 2, 2.125, 2.5, rep(NA_real_,1))
 )
 test(9999.9, ans1, expected)
-#test(9999.9, ans2, expected)
+test(9999.9, ans2, expected)
 ans1 = frollmean(de, 4, align="center") # x odd, n even
 ans2 = frollmean(de, 4, align="center", exact=TRUE)
 expected = list(
@@ -250,13 +238,13 @@ expected = list(
 test(9999.10, ans1, expected)
 test(9999.10, ans2, expected)
 ans1 = frollmean(de, 4, align="center", na.rm=TRUE) # x odd, n even
-#ans2 = frollmean(de, 4, align="center", exact=TRUE, na.rm=TRUE)
+ans2 = frollmean(de, 4, align="center", exact=TRUE, na.rm=TRUE)
 expected = list(
   c(rep(NA_real_, 1), 4/3, 2, 2.25, 2.5, 9.5/3, 11.5/3, rep(NA_real_,2)),
   c(rep(NA_real_, 1), 1.375, 1.5, 1.625, 1.875, 2, 7/3, rep(NA_real_,2))
 )
 test(9999.10, ans1, expected)
-#test(9999.10, ans2, expected)
+test(9999.10, ans2, expected)
 ans1 = frollmean(d, 3, align="left")
 ans2 = frollmean(d, 3, align="left", exact=TRUE)
 expected = list(
@@ -266,13 +254,13 @@ expected = list(
 test(9999.11, ans1, expected)
 test(9999.11, ans2, expected)
 ans1 = frollmean(d, 3, align="left", na.rm=TRUE)
-#ans2 = frollmean(d, 3, align="left", exact=TRUE, na.rm=TRUE)
+ans2 = frollmean(d, 3, align="left", exact=TRUE, na.rm=TRUE)
 expected = list(
   c(1, 1.75, 2, 2.5, 2.75, 3.5, rep(NA_real_,2)),
   c(1.25, 1.375, 1.5, 1.75, 2, 2.125, rep(NA_real_,2))
 )
 test(9999.11, ans1, expected)
-#test(9999.11, ans2, expected)
+test(9999.11, ans2, expected)
 #### handling NAs for NaN output also
 d = as.data.table(list(1:6/2, 3:8/4))
 d[c(2L, 5L), V1:=NA][4:6, V2:=NA]
@@ -282,10 +270,10 @@ expected = list(c(NA, NA, NA, 1.75, NA, NA), rep(NA_real_, 6), c(NA, 0.875, 1.12
 test(9999.99, ans1, expected)
 test(9999.99, ans2, expected)
 ans1 = frollmean(d, 2:3, na.rm=TRUE)
-#Sans2 = frollmean(d, 2:3, exact=TRUE, na.rm=TRUE)
+ans2 = frollmean(d, 2:3, exact=TRUE, na.rm=TRUE)
 expected = list(c(NA, 0.5, 1.5, 1.75, 2, 3), c(NA, NA, 1, 1.75, 1.75, 2.5), c(NA, 0.875, 1.125, 1.25, NaN, NaN), c(NA, NA, 1, 1.125, 1.25, NaN))
 test(9999.99, ans1, expected)
-#test(9999.99, ans2, expected)
+test(9999.99, ans2, expected)
 
 #### fill constant
 test(9999.99, frollmean(1:5, 4, fill=0), c(0, 0, 0, 2.5, 3.5))
