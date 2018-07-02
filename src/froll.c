@@ -3,7 +3,7 @@
 /* TODO
  * consider turning align branch: if (align < 1) { ... } into macro or inline function
  * benchmark alt C impl exact=F: `tmp<-cumsum(x); (tmp-shift(tmp, k))/k` # if faster than current then add to api
- * exact=T measure speed penaulty of volatile truehasna, maybe better is to let faster loop finish and re-run after
+ * exact=T measure speed penaulty of volatile truehasna `if (narm && truehasna) continue`, maybe better is to let faster loop finish and re-run after
  */
 
 /* fast rolling functions
@@ -107,26 +107,21 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, 
       #pragma omp for schedule(static)
       // adjusted i, TODO test for edge case
       for (uint_fast64_t i=k-1; i<nx; i++) {                    // loop on every observation
-        // todo measure performance impact, maybe better to let it finish and re-run after? optimistic scenario when no-NAs, depends on speed impact
-        if (narm && truehasna) continue;                       // if NAs detected no point to continue
+        if (narm && truehasna) continue;                        // if NAs detected no point to continue
         long double w = 0.;
         for (int j=-k+1; j<=0; j++) {                           // sub-loop on window width
           w += x[i+j];                                          // sum of window for particular observation
         }
-        if (verbose) Rprintf("i %lu w %.3f k %d\n", i, ((double) w), k);
-        ans[i] = ((double) w) / k;                           // fun of window for particular observation
-        if (verbose) Rprintf("ans[%lu] before correction %8.3f, k %d\n", i, ans[i], k);
+        ans[i] = ((double) w) / k;                              // fun of window for particular observation
         if (R_FINITE((double) w)) {                             // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
           long double t = 0.0;                                  // accumulate roundoff error
-          for (int j=-k+1; j<=0; j++) {                        // sub-loop on window width
-            t += x[i+j] - ans[i];                             // measure difference of obs in sub-loop to calculated fun for obs
+          for (int j=-k+1; j<=0; j++) {                         // sub-loop on window width
+            t += x[i+j] - ans[i];                               // measure difference of obs in sub-loop to calculated fun for obs
           }
-          if (verbose) Rprintf("ans[%lu] roundoff          %8.15f\n", i, t);
           ans[i] += ((double) t) / k;                           // adjust calculated rollfun with roundoff correction
         } else {
           truehasna = 1;                                        // NAs detected for this window, set flag so rest of windows will not be re-run
         }
-        if (verbose) Rprintf("ans[%lu]  after correction %8.3f\n", i, ans[i]);
       }
     } // end of parallel region
     if (truehasna && verbose) {
@@ -154,23 +149,19 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, 
           if (ISNAN(x[i+j])) nc++;                              // increment NA count in current window
           else w += x[i+j];                                     // add observation to current window
         }
-        //if (verbose) Rprintf("i %lu w %.3f wk %d\n", i, ((double) w), k);
         ans[i] = nc==k ? R_NaN : ((double) w) / (k - nc);       // rollfun answer before error correction, handle all NA input
-        if (verbose) Rprintf("ans[%lu] before correction %8.3f, k %d\n", i, ans[i], k);
         long double t = 0.0;                                    // accumulate roundoff error
         if (nc == 0) {                                          // no NAs in current window
           for (int j=-k+1; j<=0; j++) {                           // sub-loop on window width
             t += x[i+j] - ans[i];                               // measure roundoff for each obs in window
           }
           ans[i] += ((double) t) / k;                           // adjust calculated fun with roundoff correction
-          if (verbose) Rprintf("ans[%lu] roundoff          %8.15f\n", i, t);
         } else if (nc < k) {
           for (int j=-k+1; j<=0; j++) {                           // sub-loop on window width
             if (!ISNAN(x[i+j])) t += x[i+j] - ans[i];           // measure roundoff for each obs in window
           }
           ans[i] += ((double) t) / (k - nc);                    // adjust calculated fun with roundoff correction
         }
-        if (verbose) Rprintf("ans[%lu]  after correction %8.3f\n", i, ans[i]);
       }
     } // end of parallel region
   }
