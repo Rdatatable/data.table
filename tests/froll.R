@@ -328,7 +328,12 @@ test(9999.99, frollmean(list(1:3, 4:6), 3), list(c(NA_real_, NA_real_, 2), c(NA_
 test(9999.99, frollmean(list(1:5, 1:2), 3), list(c(NA_real_, NA_real_, 2, 3, 4), c(NA_real_, NA_real_)))
 
 #### n==1
-#TODO align
+test(9999.99, frollmean(1:4, 1), as.double(1:4))
+test(9999.99, frollmean(1:4, 1, exact=TRUE), as.double(1:4))
+test(9999.99, frollmean(1:4, 1, align="center"), as.double(1:4))
+test(9999.99, frollmean(1:4, 1, align="center", exact=TRUE), as.double(1:4))
+test(9999.99, frollmean(1:4, 1, align="left"), as.double(1:4))
+test(9999.99, frollmean(1:4, 1, align="left", exact=TRUE), as.double(1:4))
 
 #### length(x)==1 && n==1
 test(9999.99, frollmean(5, 1), 5)
@@ -365,14 +370,11 @@ test(9999.99, frollmean(1:5, Inf), error="n must be positive integer values", wa
 test(9999.99, frollmean(1:5, c(5, Inf)), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
 
 #### is.complex(n)
-#frollmean(1:5, 3i)
-
+test(9999.99, frollmean(1:5, 3i), error="n must be integer")
 #### is.character(n)
-#frollmean(1:5, "a")
-
+test(9999.99, frollmean(1:5, "a"), error="n must be integer")
 #### is.factor(n)
-#frollmean(1:5, as.factor("a"))
-
+test(9999.99, frollmean(1:5, as.factor("a")), error="n must be integer")
 
 #### adaptive window
 x = rnorm(1e3)
@@ -402,16 +404,6 @@ fastama = function(x, n, na.rm, fill=NA) {
   }
   ans
 }
-ma = function(x, n, na.rm) {
-  if (!missing(na.rm)) stop("very fast moving average implemented in R does not handle NAs, input having NAs will result in incorrect answer so not even try to compare to it")
-  stopifnot(length(n)==1L)
-  nx = length(x)
-  cs = cumsum(x)
-  scs = data.table::shift(cs, n)
-  scs[n] = 0
-  ans = as.double((cs-scs)/n)
-  ans
-} # add to benchmark for non adaptive
 x = c(1:4,2:5,4:6,5L)
 n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
 ans1 = ama(x, n)
@@ -460,56 +452,58 @@ test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, align="left"), error="using ada
 test(9999.99, frollmean(list(1:2, 1:3), list(1:2), adaptive=TRUE), error="Adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame. If you want to call rolling function on list having variable length of elements call it for each field separately.")
 
 #### adaptive exact
-x = c(1:3, 1e9L, 2:5, 5e9, 4:6)
-n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
-ans1 = ama(x, n)
-ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
-ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
-ans4 = fastama(x, n)
-cbind(ans1, ans2, ans3, ans4)
-format(ans1-ans2, scientific=F)
-format(ans1-ans3, scientific=F)
-format(ans1-ans4, scientific=F)
-
-x = sample(c(rnorm(1e3, 1e2), rnorm(1e1, 1e9)))
-n = sample(1:20, length(x), TRUE)
-ans1 = ama(x, n)
-ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
-ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
-ans4 = fastama(x, n)
-anserr = list(
-  froll_exact_f = ans1-ans2,
-  froll_exact_t = ans1-ans3,
-  fastama = ans1-ans4
-)
-format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
-# as of now exact=TRUE has bigger roundoff TODO
-
-x = sample(c(rnorm(1e6, 1e2), rnorm(1e1, 1e9)))
-n = sample(100:2000, length(x), TRUE)
-system.time(ans1 <- ama(x, n))
-system.time(ans2 <- frollmean(x, n, adaptive=TRUE, exact=FALSE))
-system.time(ans3 <- frollmean(x, n, adaptive=TRUE, exact=TRUE))
-system.time(ans4 <- fastama(x, n))
-anserr = list(
-  froll_exact_f = ans1-ans2,
-  froll_exact_t = ans1-ans3,
-  fastama = ans1-ans4
-)
-format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
-
-x = sample(rnorm(1e5, 1e7, 5e6))
-n = sample(10:100, length(x), TRUE)
-ans1 = ama(x, n)
-ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
-ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
-ans4 = fastama(x, n)
-anserr = list(
-  froll_exact_f = ans1-ans2,
-  froll_exact_t = ans1-ans3,
-  fastama = ans1-ans4
-)
-format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
+if (FALSE) {
+  x = c(1:3, 1e9L, 2:5, 5e9, 4:6)
+  n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
+  ans1 = ama(x, n)
+  ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
+  ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
+  ans4 = fastama(x, n)
+  cbind(ans1, ans2, ans3, ans4)
+  format(ans1-ans2, scientific=F)
+  format(ans1-ans3, scientific=F)
+  format(ans1-ans4, scientific=F)
+  
+  x = sample(c(rnorm(1e3, 1e2), rnorm(1e1, 1e9)))
+  n = sample(1:20, length(x), TRUE)
+  ans1 = ama(x, n)
+  ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
+  ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
+  ans4 = fastama(x, n)
+  anserr = list(
+    froll_exact_f = ans1-ans2,
+    froll_exact_t = ans1-ans3,
+    fastama = ans1-ans4
+  )
+  format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
+  # as of now exact=TRUE has bigger roundoff TODO
+  
+  x = sample(c(rnorm(1e6, 1e2), rnorm(1e1, 1e9)))
+  n = sample(100:2000, length(x), TRUE)
+  system.time(ans1 <- ama(x, n))
+  system.time(ans2 <- frollmean(x, n, adaptive=TRUE, exact=FALSE))
+  system.time(ans3 <- frollmean(x, n, adaptive=TRUE, exact=TRUE))
+  system.time(ans4 <- fastama(x, n))
+  anserr = list(
+    froll_exact_f = ans1-ans2,
+    froll_exact_t = ans1-ans3,
+    fastama = ans1-ans4
+  )
+  format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
+  
+  x = sample(rnorm(1e5, 1e7, 5e6))
+  n = sample(10:100, length(x), TRUE)
+  ans1 = ama(x, n)
+  ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
+  ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
+  ans4 = fastama(x, n)
+  anserr = list(
+    froll_exact_f = ans1-ans2,
+    froll_exact_t = ans1-ans3,
+    fastama = ans1-ans4
+  )
+  format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
+}
 
 ## edge cases adaptive
 
@@ -525,8 +519,6 @@ format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
 #### adaptive && is.list(n) && length(n[[1L]])!=length(x)
 #frollmean(11:15, list(1:4), adaptive=TRUE)
 
-#### x has NaN, Inf, -Inf
-
 ## validation
 
 #### against zoo
@@ -539,7 +531,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
     for (fun in c("mean")) { # ,"sum"
       for (align in c("right","center","left")) {
         for (na.rm in c(FALSE, TRUE)) {
-          for (exact in c(FALSE)) { # TODO TRUE for sum
+          for (exact in c(FALSE, TRUE)) {
             num <<- num + num.step
             eval(substitute(
               test(.num,
