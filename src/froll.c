@@ -4,6 +4,9 @@
  * consider turning align branch: if (align < 1) { ... } into macro or inline function
  * benchmark alt C impl exact=F: `tmp<-cumsum(x); (tmp-shift(tmp, k))/k` # if faster than current then add to api
  * exact=T measure speed penaulty of volatile truehasna `if (narm && truehasna) continue`, maybe better is to let faster loop finish and re-run after
+ * document that behavior of NaN is different than base R and is always interpreted as NA because of https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
+ * document that infinite values are handled only for exact=T
+ * support error handling, even non-stop, or run exact=T from exact=F when Inf detected to never produce incorrect answer silently
  */
 
 /* fast rolling functions
@@ -43,10 +46,10 @@ void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, doubl
       w += x[i];                                                // add current row to sliding window
       ans[i] = (double) w / k;                                  // rollfun to answer vector
     }
-    if (ISNAN((double) w)) {
+    if (!R_FINITE((double) w)) {
       if (verbose) {
-        if (hasna==-1) Rprintf("hasNA FALSE was used but NA values are present in input, re-running frollfun with extra care for NAs\n");
-        else Rprintf("NA values are present in input, re-running frollfun with extra care for NAs\n");
+        if (hasna==-1) Rprintf("hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, re-running frollfun with extra care for NAs\n");
+        else Rprintf("NA (or other non-finite) value(s) are present in input, re-running frollfun with extra care for NAs\n");
       }
       w = 0.;
       truehasna = 1;
@@ -73,6 +76,9 @@ void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, doubl
       if (nc == 0) ans[i] = (double) w / k;                     // no NAs in sliding window for present observation
       else if (nc == k) ans[i] = narm ? R_NaN : NA_REAL;        // all values in window are NA, expected output for fun(NA, na.rm=T/F)
       else ans[i] = narm ? (double) w / (k - nc) : NA_REAL;     // some values in window are NA
+    }
+    if (!R_FINITE((double) w) && verbose) {
+      Rprintf("infinite value(s) are present in input, default frollfun function does not handle infinite values, use exact=TRUE\n");
     }
   }
   if (align < 1) {                                              // align center or left
@@ -105,7 +111,6 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, 
     #pragma omp parallel num_threads(verbose ? 1 : MIN(getDTthreads(), nx)) shared(truehasna)
     {
       #pragma omp for schedule(static)
-      // adjusted i, TODO test for edge case
       for (uint_fast64_t i=k-1; i<nx; i++) {                    // loop on every observation
         if (narm && truehasna) continue;                        // if NAs detected no point to continue
         long double w = 0.;
@@ -116,6 +121,7 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, 
         if (R_FINITE((double) w)) {                             // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
           long double t = 0.0;                                  // accumulate roundoff error
           for (int j=-k+1; j<=0; j++) {                         // sub-loop on window width
+            // todo replace ans[i] with long double
             t += x[i+j] - ans[i];                               // measure difference of obs in sub-loop to calculated fun for obs
           }
           ans[i] += ((double) t) / k;                           // adjust calculated rollfun with roundoff correction
@@ -126,11 +132,11 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, 
     } // end of parallel region
     if (truehasna && verbose) {
       if (narm) {
-        if (hasna==-1) Rprintf("hasNA FALSE was used but NA values are present in input, re-running frollfunExact with extra care for NAs\n");
-        else Rprintf("NA values are present in input, re-running rolling function with extra care for NAs\n");
+        if (hasna==-1) Rprintf("hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, re-running frollfunExact with extra care for NAs\n");
+        else Rprintf("NA (or other non-finite) value(s) are present in input, re-running rolling function with extra care for NAs\n");
       } else {
-        if (hasna==-1) Rprintf("hasNA FALSE was used but NA values are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n");
-        else Rprintf("NA values are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n");
+        if (hasna==-1) Rprintf("hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n");
+        else Rprintf("NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n");
       }
     }
   }
@@ -141,7 +147,6 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, 
     #pragma omp parallel num_threads(verbose ? 1 : MIN(getDTthreads(), nx))
     {
       #pragma omp for schedule(static)
-      // adjusted i, TODO test for edge case
       for (uint_fast64_t i=k-1; i<nx; i++) {                    // loop on every observation
         long double w = 0.;
         int nc = 0;                                             // NA counter within sliding window
@@ -152,12 +157,12 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, 
         ans[i] = nc==k ? R_NaN : ((double) w) / (k - nc);       // rollfun answer before error correction, handle all NA input
         long double t = 0.0;                                    // accumulate roundoff error
         if (nc == 0) {                                          // no NAs in current window
-          for (int j=-k+1; j<=0; j++) {                           // sub-loop on window width
+          for (int j=-k+1; j<=0; j++) {                         // sub-loop on window width
             t += x[i+j] - ans[i];                               // measure roundoff for each obs in window
           }
           ans[i] += ((double) t) / k;                           // adjust calculated fun with roundoff correction
         } else if (nc < k) {
-          for (int j=-k+1; j<=0; j++) {                           // sub-loop on window width
+          for (int j=-k+1; j<=0; j++) {                         // sub-loop on window width
             if (!ISNAN(x[i+j])) t += x[i+j] - ans[i];           // measure roundoff for each obs in window
           }
           ans[i] += ((double) t) / (k - nc);                    // adjust calculated fun with roundoff correction
@@ -171,6 +176,13 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, 
     for (uint_fast64_t i=nx-k_; i<nx; i++) ans[i] = fill;       // fill from right side
   }
 }
+
+/* fast adaptive rolling mean
+ * when no info on NA (hasNA argument) then assume no NAs run faster version
+ * adaptive rollmean implemented as cumsum first pass,  align="right"
+ * if NAs detected re-run rollmean implemented as sliding window with NA support
+ * apply shift if align!="right"
+ */
 
 void frollmeanAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
@@ -195,7 +207,7 @@ void frollmeanAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double 
     }
     if (!R_FINITE((double) w)) {                                // update truehasna flag if NAs detected
       if (verbose) {
-        if (hasna==-1) warning("hasNA FALSE was used but NA values are present in input, re-running rolling function with extra care for NAs");
+        if (hasna==-1) warning("hasNA FALSE was used but NA values are present in input, re-running function with extra care for NAs");
         else Rprintf("NAs detected, re-running rolling function with extra care for NAs\n");
       }
       w = 0.0;

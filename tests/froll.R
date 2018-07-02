@@ -295,38 +295,28 @@ test(9999.99, frollmean(1:3, 2, fill=factor("a")), error="fill must be numeric")
 test(9999.99, frollmean(1:3, 2, fill=list(NA)), error="fill must be numeric")
 
 ## edge cases
-
 #### length(x)==0
 test(9999.99, frollmean(numeric(0), 2), numeric(0))
 test(9999.99, frollmean(list(1:3, numeric()), 2), list(c(NA_real_, 1.5, 2.5), numeric(0)))
-
 #### length(n)==0
 test(9999.99, frollmean(1:3, integer()), error="n must be non 0 length")
 test(9999.99, frollmean(list(1:3, 2:4), integer()), error="n must be non 0 length")
-
 #### n==0
 test(9999.99, frollmean(1:3, c(2,0)), error="n must be positive integer values")
 test(9999.99, frollmean(list(1:3, 2:4), 0), error="n must be positive integer values")
-
 #### n<0
 test(9999.99, frollmean(1:3, -2), error="n must be positive integer values")
-
 #### n[[1L]]>0 && n[[2L]]<0
 test(9999.99, frollmean(1:3, c(2, -2)), error="n must be positive integer values")
-
 #### n[[1L]]==n[[2L]]
 test(9999.99, frollmean(1:3, c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5)))
 test(9999.99, frollmean(list(1:3, 4:6), c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5), c(NA_real_, 4.5, 5.5), c(NA_real_, 4.5, 5.5)))
-
 #### n>length(x)
 test(9999.99, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
-
 #### n==length(x)
 test(9999.99, frollmean(list(1:3, 4:6), 3), list(c(NA_real_, NA_real_, 2), c(NA_real_, NA_real_, 5)))
-
 #### n<length(x[[1L]]) && n>length(x[[2L]])
 test(9999.99, frollmean(list(1:5, 1:2), 3), list(c(NA_real_, NA_real_, 2, 3, 4), c(NA_real_, NA_real_)))
-
 #### n==1
 test(9999.99, frollmean(1:4, 1), as.double(1:4))
 test(9999.99, frollmean(1:4, 1, exact=TRUE), as.double(1:4))
@@ -334,7 +324,6 @@ test(9999.99, frollmean(1:4, 1, align="center"), as.double(1:4))
 test(9999.99, frollmean(1:4, 1, align="center", exact=TRUE), as.double(1:4))
 test(9999.99, frollmean(1:4, 1, align="left"), as.double(1:4))
 test(9999.99, frollmean(1:4, 1, align="left", exact=TRUE), as.double(1:4))
-
 #### length(x)==1 && n==1
 test(9999.99, frollmean(5, 1), 5)
 test(9999.99, frollmean(list(1, 10, 5), 1), list(1, 10, 5))
@@ -348,7 +337,6 @@ test(9999.99, frollsum(5, 1, align="left"), 5)
 test(9999.99, frollsum(list(1, 10, 5), 1, align="left"), list(1, 10, 5))
 test(9999.99, frollsum(5, 1, align="center"), 5)
 test(9999.99, frollsum(list(1, 10, 5), 1, align="center"), list(1, 10, 5))
-
 #### length(x)==1 && n==2
 test(9999.99, frollmean(5, 2), NA_real_)
 test(9999.99, frollmean(list(1, 10, 5), 2), list(NA_real_, NA_real_, NA_real_))
@@ -362,19 +350,51 @@ test(9999.99, frollsum(5, 2, align="left"), NA_real_)
 test(9999.99, frollsum(list(1, 10, 5), 2, align="left"), list(NA_real_, NA_real_, NA_real_))
 test(9999.99, frollsum(5, 2, align="center"), NA_real_)
 test(9999.99, frollsum(list(1, 10, 5), 2, align="center"), list(NA_real_, NA_real_, NA_real_))
-
 #### n==Inf
 test(9999.99, frollmean(1:5, Inf), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
-
 #### n==c(5, Inf)
 test(9999.99, frollmean(1:5, c(5, Inf)), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
-
 #### is.complex(n)
 test(9999.99, frollmean(1:5, 3i), error="n must be integer")
 #### is.character(n)
 test(9999.99, frollmean(1:5, "a"), error="n must be integer")
 #### is.factor(n)
 test(9999.99, frollmean(1:5, as.factor("a")), error="n must be integer")
+
+#### non-finite values (NA, NaN, Inf, -Inf)
+ma = function(x, n, na.rm=FALSE, nan.rm=FALSE) {
+  if (!is.double(x)) x = as.double(x)
+  if (!is.integer(n)) n = as.integer(n)
+  ans = rep(NA_real_, nx<-length(x))
+  if (nan.rm) x[is.nan(x)] = NA_real_ # exact=F consistency due to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
+  for (i in n:nx) ans[i]=mean(x[(i-n+1):i], na.rm=na.rm)
+  ans
+}
+n = 4
+x = 1:16
+x[5] = NaN
+test(9999.99, identical(frollmean(x, n), ma(x, n, nan.rm=TRUE)))
+test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
+x[6] = NA
+test(9999.99, identical(frollmean(x, n), ma(x, n, nan.rm=TRUE)))
+test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
+#### test inconsistency of NaN-NA order is consistent to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
+x[5] = NA
+x[6] = NaN
+test(9999.99, identical(frollmean(x, n), ma(x, n, nan.rm=TRUE)))
+test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
+x[5] = Inf
+#test(9999.99, identical(frollmean(x, n), ma(x, n, nan.rm=TRUE)))
+ma(x, n, nan.rm=TRUE)
+test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
+x[6] = -Inf
+#test(9999.99, identical(frollmean(x, n), ma(x, n, nan.rm=TRUE)))
+ma(x, n, nan.rm=TRUE)
+test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
+x[5:7] = c(NA, Inf, -Inf)
+#test(9999.99, identical(frollmean(x, n), ma(x, n, nan.rm=TRUE)))
+ma(x, n, nan.rm=TRUE)
+test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 
 #### adaptive window
 x = rnorm(1e3)
