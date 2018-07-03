@@ -1,17 +1,16 @@
 #include "froll.h"
 
-/* TODO
+/* fast rolling functions
+ * exact=F: sliding window adding/removing in/out of sliding window of observations
+ * exact=T: recalculate whole mean for each observation, roundoff correction is adjusted, also support for NaN and Inf
+ * adaptive=F: window width is constant value
+ * adaptive=T: window width is defined for every single observation
+ *
+ * TODO:
  * consider turning align branch: if (align < 1) { ... } into macro or inline function
  * benchmark alt C impl exact=F: `tmp<-cumsum(x); (tmp-shift(tmp, k))/k` # if faster than current then add to api
  * exact=T measure speed penaulty of volatile truehasna `if (narm && truehasna) continue`, maybe better is to let faster loop finish and re-run after
  * support error handling, even non-stop, or run exact=T from exact=F when Inf detected to never produce incorrect answer silently
- */
-
-/* fast rolling functions
- * exact=F: sliding window adding/removing in/out of sliding window of observations
- * exact=T: recalculate whole mean for each observation, roundoff correction is adjusted
- * adaptive=F: sliding window is constant value
- * adaptive=T: sliding window is defined for every single observation
  */
 
 /* fast rolling mean
@@ -111,19 +110,19 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, 
       #pragma omp for schedule(static)
       for (uint_fast64_t i=k-1; i<nx; i++) {                    // loop on every observation
         if (narm && truehasna) continue;                        // if NAs detected no point to continue
-        long double w = 0.;
+        long double w = 0.0;
         for (int j=-k+1; j<=0; j++) {                           // sub-loop on window width
           w += x[i+j];                                          // sum of window for particular observation
         }
-        ans[i] = ((double) w) / k;                              // fun of window for particular observation
         if (R_FINITE((double) w)) {                             // no need to calc roundoff correction if NAs detected as will re-call all below in truehasna==1
-          long double t = 0.0;                                  // accumulate roundoff error
+          long double res = w / k;                              // keep results as long double for intermediate processing
+          long double err = 0.0;                                // roundoff corrector
           for (int j=-k+1; j<=0; j++) {                         // sub-loop on window width
-            // todo replace ans[i] with long double
-            t += x[i+j] - ans[i];                               // measure difference of obs in sub-loop to calculated fun for obs
+            err += x[i+j] - res;                                // measure difference of obs in sub-loop to calculated fun for obs
           }
-          ans[i] += ((double) t) / k;                           // adjust calculated rollfun with roundoff correction
+          ans[i] = (double) (res + (err / k));                  // adjust calculated rollfun with roundoff correction
         } else {
+          if (!narm) ans[i] = (double) (w / k);                 // NAs should be propagated
           truehasna = 1;                                        // NAs detected for this window, set flag so rest of windows will not be re-run
         }
       }
@@ -146,24 +145,26 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, 
     {
       #pragma omp for schedule(static)
       for (uint_fast64_t i=k-1; i<nx; i++) {                    // loop on every observation
-        long double w = 0.;
+        long double w = 0.0;
         int nc = 0;                                             // NA counter within sliding window
         for (int j=-k+1; j<=0; j++) {                           // sub-loop on window width
           if (ISNAN(x[i+j])) nc++;                              // increment NA count in current window
           else w += x[i+j];                                     // add observation to current window
         }
-        ans[i] = nc==k ? R_NaN : ((double) w) / (k - nc);       // rollfun answer before error correction, handle all NA input
-        long double t = 0.0;                                    // accumulate roundoff error
+        long double res = w / k;                                // keep results as long double for intermediate processing
+        long double err = 0.0;                                  // roundoff corrector
         if (nc == 0) {                                          // no NAs in current window
           for (int j=-k+1; j<=0; j++) {                         // sub-loop on window width
-            t += x[i+j] - ans[i];                               // measure roundoff for each obs in window
+            err += x[i+j] - res;                                // measure roundoff for each obs in window
           }
-          ans[i] += ((double) t) / k;                           // adjust calculated fun with roundoff correction
+          ans[i] = (double) (res + (err / k));                  // adjust calculated fun with roundoff correction
         } else if (nc < k) {
           for (int j=-k+1; j<=0; j++) {                         // sub-loop on window width
-            if (!ISNAN(x[i+j])) t += x[i+j] - ans[i];           // measure roundoff for each obs in window
+            if (!ISNAN(x[i+j])) err += x[i+j] - res;            // measure roundoff for each non-NA obs in window
           }
-          ans[i] += ((double) t) / (k - nc);                    // adjust calculated fun with roundoff correction
+          ans[i] = (double) (res + (err / (k - nc)));           // adjust calculated fun with roundoff correction
+        } else {                                                // nc == k
+          ans[i] = R_NaN;                                       // all values NAs and narm so produce expected values
         }
       }
     } // end of parallel region
@@ -233,10 +234,10 @@ void frollmeanAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double 
             ans[i] = (cn[i] - cn[i-k[i]])>0 ? NA_REAL : (cs[i]-cs[i-k[i]])/k[i];
           }
         } else if (i+1 == k[i]) {                               // window width equal to observation position in vector
-          int thisk = k[i] - ((int) cn[i]);                     // window width after taking NAs into account
+          int thisk = k[i] - ((int) cn[i]);                     // window width taking NAs into account
           ans[i] = thisk==0 ? R_NaN : cs[i]/thisk;              // handle all obs NAs and na.rm=TRUE
         } else if (i+1 > k[i]) {                                // window width smaller than observation position in vector
-          int thisk = k[i] - ((int) (cn[i] - cn[i-k[i]]));      // window width after taking NAs into account
+          int thisk = k[i] - ((int) (cn[i] - cn[i-k[i]]));      // window width taking NAs into account
           ans[i] = thisk==0 ? R_NaN : (cs[i]-cs[i-k[i]])/thisk; // handle all obs NAs and na.rm=TRUE
         }
       }
@@ -310,7 +311,7 @@ void frollmeanExactAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, do
               if (!ISNAN(x[i+j])) err += x[i+j] - res;          // measure roundoff for each obs in window
             }
             ans[i] = (double) (res + (err / (k[i] - nc)));      // adjust calculated fun with roundoff correction
-          } else if (nc == k[i]) {
+          } else {                                              // nc == k[i]
             ans[i] = R_NaN;                                     // this branch assume narm so R_NaN always here
           }
         }
