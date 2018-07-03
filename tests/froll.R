@@ -444,7 +444,7 @@ test(9999.99, ans1, ans3)
 #### TODO test 5e9 vector where 3e9 are NAs to confirm uint_fast64_t running NA counter
 if (FALSE) {
   #x = sample(c(rnorm(2e9), rep(NA_real_, 3e9)))
-  #n = sample(c(1e3, 1e4, 1e5), length(x))
+  #n = sample(c(1e3, 1e4, 1e5), length(x), TRUE)
   #ans = frollmean(x, list(n), adaptive=TRUE)
 }
 
@@ -544,9 +544,11 @@ test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
 
 ## validation
 
+set.seed(108)
+makeNA = function(x, ratio=0.1) {id=sample(length(x), as.integer(length(x) * ratio)); x[id]=NA; x}
+num = 9999.9
 #### against zoo
 if (requireNamespace("zoo", quietly=TRUE)) {
-  set.seed(108)
   drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
   zoo_compare = function(x, n) {
     num.step = 0.0001
@@ -568,7 +570,6 @@ if (requireNamespace("zoo", quietly=TRUE)) {
       }
     }
   }
-  num = 9999.9
   ## no NA
   x = rnorm(1e3); n = 50 # x even, n even
   zoo_compare(x, n)
@@ -588,8 +589,6 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   x = c(rep(NA, 60), rnorm(1e3+1), rep(NA, 60)); n = 51
   zoo_compare(x, n)
   ## random NA
-  if (test.na.rm.now <- TRUE) {
-  makeNA = function(x, ratio=0.1) {id=sample(length(x), as.integer(length(x) * ratio)); x[id]=NA; x}
   x = makeNA(rnorm(1e3)); n = 50
   zoo_compare(x, n)
   x = makeNA(rnorm(1e3+1)); n = 50
@@ -598,128 +597,66 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   zoo_compare(x, n)
   x = makeNA(rnorm(1e3+1)); n = 51
   zoo_compare(x, n)
+}
+#### adaptive moving average compare
+afun = function(fun, x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
+  # adaptive moving average in R
+  stopifnot((nx<-length(x))==length(n))
+  ans = rep(NA_real_, nx)
+  if (nf.rm) x[!is.finite(x)] = NA_real_
+  FUN = match.fun(fun)
+  for (i in seq_along(x)) {
+    ans[i] = if (i >= n[i])
+      FUN(x[(i-n[i]+1):i], na.rm=na.rm)
+    else as.double(fill)
   }
-  rm(num)
-  
-  #### na.rm / fill
-  x = as.double(c(1L, NA, 3L, 4L, 5L))
-  test(9999.99, frollmean(x, 2, fill=0), zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=FALSE))
-  #test(9999.99, frollsum(x, 2, fill=0), zoo::rollapply(x, 2, sum, fill=0, align="right", na.rm=FALSE))
-  test(9999.99, frollmean(x, 2, fill=0, na.rm=TRUE), zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=TRUE))
-  #test(9999.99, frollsum(x, 2, fill=0, na.rm=TRUE), zoo::rollapply(x, 2, sum, fill=0, align="right", na.rm=TRUE))
-  test(9999.99, frollmean(x, 2, fill=NA), zoo::rollapply(x, 2, mean, fill=NA, align="right"))
-  #test(9999.99, frollsum(x, 2, fill=NA), zoo::rollapply(x, 2, sum, fill=NA, align="right"))
-  test(9999.99, frollmean(x, 2, fill=NA, na.rm=TRUE), zoo::rollapply(x, 2, mean, fill=NA, align="right", na.rm=TRUE))
-  #test(9999.99, frollsum(x, 2, fill=NA, na.rm=TRUE), zoo::rollapply(x, 2, sum, fill=NA, align="right", na.rm=TRUE))
-  
-  #### na.rm FALSE
-  d = as.data.table(list(1:6/2, 3:8/4))
-  d[c(2L, 5L), V1:=NA][4:6, V2:=NA]
-  ans = frollmean(d, 2:3)
-  expected = list(
-    zoo::rollapply(d[[1L]], 2L, mean, fill=NA, align="right"),
-    zoo::rollapply(d[[1L]], 3L, mean, fill=NA, align="right"),
-    zoo::rollapply(d[[2L]], 2L, mean, fill=NA, align="right"),
-    zoo::rollapply(d[[2L]], 3L, mean, fill=NA, align="right")
-  )
-  test(9999.99, ans, expected)
-
-  #ans = frollsum(d, 2:3)
-  #expected = list(
-  #  zoo::rollapply(d[[1L]], 2L, sum, fill=NA, align="right"),
-  #  zoo::rollapply(d[[1L]], 3L, sum, fill=NA, align="right"),
-  #  zoo::rollapply(d[[2L]], 2L, sum, fill=NA, align="right"),
-  #  zoo::rollapply(d[[2L]], 3L, sum, fill=NA, align="right")
-  #)
-  #test(9999.99, ans, expected)
-
-  ans = frollmean(d, 2:3, align="center")
-  expected = list(
-    zoo::rollapply(d[[1L]], 2L, mean, fill=NA),
-    zoo::rollapply(d[[1L]], 3L, mean, fill=NA),
-    zoo::rollapply(d[[2L]], 2L, mean, fill=NA),
-    zoo::rollapply(d[[2L]], 3L, mean, fill=NA)
-  )
-  test(9999.99, ans, expected)
-  
-  #ans = frollsum(d, 2:3, align="center")
-  #expected = list(
-  #  zoo::rollapply(d[[1L]], 2L, sum, fill=NA),
-  #  zoo::rollapply(d[[1L]], 3L, sum, fill=NA),
-  #  zoo::rollapply(d[[2L]], 2L, sum, fill=NA),
-  #  zoo::rollapply(d[[2L]], 3L, sum, fill=NA)
-  #)
-  #test(9999.99, ans, expected)
-  ans = frollmean(d, 2:3, align="left")
-  expected = list(
-    zoo::rollapply(d[[1L]], 2L, mean, fill=NA, align="left"),
-    zoo::rollapply(d[[1L]], 3L, mean, fill=NA, align="left"),
-    zoo::rollapply(d[[2L]], 2L, mean, fill=NA, align="left"),
-    zoo::rollapply(d[[2L]], 3L, mean, fill=NA, align="left")
-  )
-  test(9999.99, ans, expected)
-  ##ans = frollsum(d, 2:3, align="left")
-  #expected = list(
-  #  zoo::rollapply(d[[1L]], 2L, sum, fill=NA, align="left"),
-  #  zoo::rollapply(d[[1L]], 3L, sum, fill=NA, align="left"),
-  #  zoo::rollapply(d[[2L]], 2L, sum, fill=NA, align="left"),
-  #  zoo::rollapply(d[[2L]], 3L, sum, fill=NA, align="left")
-  #)
-  #test(9999.99, ans, expected)
-  
-  #### na.rm TRUE
-  ans = frollmean(d, 2:3, na.rm=TRUE)
-  expected = list(
-    zoo::rollapply(d[[1L]], 2L, mean, na.rm=TRUE, fill=NA, align="right"),
-    zoo::rollapply(d[[1L]], 3L, mean, na.rm=TRUE, fill=NA, align="right"),
-    zoo::rollapply(d[[2L]], 2L, mean, na.rm=TRUE, fill=NA, align="right"),
-    zoo::rollapply(d[[2L]], 3L, mean, na.rm=TRUE, fill=NA, align="right")
-  )
-  test(9999.99, ans, expected)
-  #ans = frollsum(d, 2:3, na.rm=TRUE)
-  #expected = list(
-  #  zoo::rollapply(d[[1L]], 2L, sum, na.rm=TRUE, fill=NA, align="right"),
-  #  zoo::rollapply(d[[1L]], 3L, sum, na.rm=TRUE, fill=NA, align="right"),
-  #  zoo::rollapply(d[[2L]], 2L, sum, na.rm=TRUE, fill=NA, align="right"),
-  #  zoo::rollapply(d[[2L]], 3L, sum, na.rm=TRUE, fill=NA, align="right")
-  #)
-  #test(9999.99, ans, expected)
-
-  ## adaptive moving average compare
-  afun = function(fun, x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
-    # adaptive moving average in R
-    stopifnot((nx<-length(x))==length(n))
-    ans = rep(NA_real_, nx)
-    if (nf.rm) x[!is.finite(x)] = NA_real_
-    FUN = match.fun(fun)
-    for (i in seq_along(x)) {
-      ans[i] = if (i >= n[i])
-        FUN(x[(i-n[i]+1):i], na.rm=na.rm)
-      else as.double(fill)
-    }
-    ans
-  }
-  afun_compare = function(x, n) {
-    num.step = 0.0001
-    #### fun, na.rm, exact
-    for (fun in c("mean")) { # ,"sum"
-      for (na.rm in c(FALSE, TRUE)) {
-        for (exact in c(FALSE, TRUE)) {
-          num <<- num + num.step
-          eval(substitute(
-            test(.num,
-                 froll(.fun, x, n, na.rm=.na.rm, exact=.exact),
-                 afun(.fun, x, n, fill=NA, na.rm=.na.rm, nf.rm=!.exact)),
-            list(.num=num, .fun=fun, .na.rm=na.rm, .exact=exact)
-          ))
-        }
+  ans
+}
+afun_compare = function(x, n) {
+  num.step = 0.0001
+  #### fun, na.rm, exact
+  for (fun in c("mean")) { # ,"sum"
+    for (na.rm in c(FALSE, TRUE)) {
+      for (exact in c(FALSE, TRUE)) {
+        num <<- num + num.step
+        eval(substitute(
+          test(.num,
+               froll(.fun, x, n, na.rm=.na.rm, exact=.exact, adaptive=TRUE),
+               afun(.fun, x, n, fill=NA, na.rm=.na.rm, nf.rm=!.exact)),
+          list(.num=num, .fun=fun, .na.rm=na.rm, .exact=exact)
+        ))
       }
     }
   }
-  
 }
-
-#### adaptive window against https://stackoverflow.com/a/21368246/2490497
+#### no NA
+x = rnorm(1e3); n = sample(50, length(x), TRUE) # x even, n even
+afun_compare(x, n)
+x = rnorm(1e3+1); n = sample(50, length(x), TRUE) # x odd, n even
+afun_compare(x, n)
+x = rnorm(1e3); n = sample(51, length(x), TRUE) # x even, n odd
+afun_compare(x, n)
+x = rnorm(1e3+1); n = sample(51, length(x), TRUE) # x odd, n odd
+afun_compare(x, n)
+#### leading and trailing NAs
+x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = c(rep(NA, 60), rnorm(1e3+1), rep(NA, 60)); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = c(rep(NA, 60), rnorm(1e3), rep(NA, 60)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = c(rep(NA, 60), rnorm(1e3+1), rep(NA, 60)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+#### random NA
+x = makeNA(rnorm(1e3)); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3+1)); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3+1)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+rm(num)
 
 if (dev_and_benchmark_area<-FALSE) {
   
