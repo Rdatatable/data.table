@@ -96,30 +96,43 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
 }
 \examples{
 d = as.data.table(list(1:6/2, 3:8/4))
-
 # rollmean of single vector and single window
 frollmean(d[, V1], 3)
-
 # multiple columns at once
 frollmean(d, 3)
-
 # multiple windows at once
 frollmean(d[, .(V1)], c(3, 4))
-
 # multiple columns and multiple windows at once
 frollmean(d, c(3, 4))
+## three above are embarrassingly parallel using openmp
 
-# floating point roundoff correction
-x = c(1:10) # no outliers
-n = 3
-exact_f = frollmean(x, n)
-exact_t = frollmean(x, n, exact=TRUE)
-format(sum(abs(exact_f-exact_t), na.rm=TRUE), scientific=FALSE)
-x = c(1:5, 1e9L, 7:10) # one outlier in the middle
-n = 3
-exact_f = frollmean(x, n)
-exact_t = frollmean(x, n, exact=TRUE)
-format(sum(abs(exact_f-exact_t), na.rm=TRUE), scientific=FALSE)
+# performance vs exactness
+set.seed(108)
+x = sample(c(rnorm(1e3, 1e6, 5e5), 5e9, 5e-9))
+n = 15
+ma = function(x, n, na.rm=FALSE, nf.rm=FALSE) {
+  ans = rep(NA_real_, nx<-length(x))
+  for (i in n:nx) ans[i] = mean(x[(i-n+1):i], na.rm=na.rm)
+  ans
+}
+fastma = function(x, n, na.rm) {
+  if (!missing(na.rm)) stop("NAs are unsupported, wrongly propagated by cumsum")
+  cs = cumsum(x)
+  scs = shift(cs, n)
+  scs[n] = 0
+  as.double((cs-scs)/n)
+}
+system.time(ans1<-ma(x, n))
+system.time(ans2<-fastma(x, n))
+system.time(ans3<-frollmean(x, n, exact=TRUE)) # parallel using openmp again
+system.time(ans4<-frollmean(x, n))
+anserr = list(
+  froll_exact_f = ans4-ans1,
+  froll_exact_t = ans3-ans1,
+  fastma = ans2-ans1
+)
+errs = sapply(lapply(anserr, abs), sum, na.rm=TRUE)
+sapply(errs, format, scientific=FALSE) # roundoff
 }
 \seealso{
   \code{\link{shift}}, \code{\link{data.table}}
