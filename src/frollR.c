@@ -123,9 +123,9 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
     for (R_len_t j=0; j<nk; j++) {
       if (badaptive) {                                          // extra input validation
         if (i > 0 && (inx[i]!=inx[i-1]))                        // variable length list input not allowed for adaptive roll
-          error("Adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame. If you want to call rolling function on list having variable length of elements call it for each field separately.");
+          error("adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame; If you want to call rolling function on list having variable length of elements call it for each field separately");
         if (xlength(VECTOR_ELT(kl, j))!=inx[0])                 // check that length of integer vectors in n list match to xrows[0] ([0] and not [i] because there is above check for equal xrows)
-          error("Length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'.");
+          error("length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'");
       }
       SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, inx[i]));// allocate answer vector for this column-window
       dans[i*nk+j] = REAL(VECTOR_ELT(ans, i*nk+j));

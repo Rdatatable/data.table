@@ -360,6 +360,8 @@ test(9999.99, frollmean(1:5, 3i), error="n must be integer")
 test(9999.99, frollmean(1:5, "a"), error="n must be integer")
 #### is.factor(n)
 test(9999.99, frollmean(1:5, as.factor("a")), error="n must be integer")
+#### is.list(n)
+test(9999.99, frollmean(1:5, list(1:5)), error="n must be integer, list is accepted for adaptive TRUE")
 
 #### non-finite values (NA, NaN, Inf, -Inf)
 ma = function(x, n, na.rm=FALSE, nan.rm=FALSE) {
@@ -397,50 +399,46 @@ ma(x, n, nan.rm=TRUE)
 test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 
 #### adaptive window
+ama = function(x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
+  # adaptive moving average in R
+  stopifnot((nx<-length(x))==length(n))
+  if (nf.rm) x[!is.finite(x)] = NA_real_
+  ans = rep(NA_real_, nx)
+  for (i in seq_along(x)) {
+    ans[i] = if (i >= n[i])
+      mean(x[(i-n[i]+1):i], na.rm=na.rm)
+    else as.double(fill)
+  }
+  ans
+}
+
 x = rnorm(1e3)
 n = rep(20L, 1e3) # pseudo adaptive
 test(9999.99, frollmean(x, n[1L]), frollmean(x, n, adaptive=TRUE)) # n auto wrapped in list
 test(9999.99, frollmean(x, n[1L]), frollmean(x, list(n), adaptive=TRUE))
-ama = function(x, n, na.rm=FALSE, fill=NA) {
-  # adaptive moving average in R
-  stopifnot((nx<-length(x))==length(n))
-  ans = rep(NA_real_, nx)
-  for (i in seq_along(x)) {
-    if (i >= n[i]) ans[i] = mean(x[(i-n[i]+1):i], na.rm=na.rm)
-    else ans[i] = as.double(fill)
-  }
-  ans
-}
-fastama = function(x, n, na.rm, fill=NA) {
-  if (!missing(na.rm)) stop("fast adaptive moving average implemented in R does not handle NAs, input having NAs will result in incorrect answer so not even try to compare to it")
-  # fast implementation of adaptive moving average in R, in case of NAs incorrect answer
-  stopifnot((nx<-length(x))==length(n))
-  cs = cumsum(x)
-  ans = rep(NA_real_, nx)
-  for (i in seq_along(cs)) {
-    if (i == n[i]) ans[i] = cs[i]/n[i]
-    else if (i > n[i]) ans[i] = (cs[i]-cs[i-n[i]])/n[i]
-    else ans[i] = as.double(fill)
-  }
-  ans
-}
+test(9999.99, frollmean(x, n[1L]), frollmean(x, n, exact=TRUE, adaptive=TRUE))
+
 x = c(1:4,2:5,4:6,5L)
 n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
 ans1 = ama(x, n)
 ans2 = frollmean(x, list(n), adaptive=TRUE)
+ans3 = frollmean(x, list(n), exact=TRUE, adaptive=TRUE)
 test(9999.99, ans1, ans2)
+test(9999.99, ans1, ans3)
 
 x = data.table(x=x, y=x/2) # multiple columns and multiple windows
 ln = list(n, n+1L)
 ans1 = list(ama(x[[1L]], ln[[1L]]), ama(x[[1L]], ln[[2L]]), ama(x[[2L]], ln[[1L]]), ama(x[[2L]], ln[[2L]]))
 ans2 = frollmean(x, ln, adaptive=TRUE)
+ans3 = frollmean(x, ln, exact=TRUE, adaptive=TRUE)
 test(9999.99, ans1, ans2)
+test(9999.99, ans1, ans3)
 
 #### adaptive fill
 x = c(1:4,2:5,4:6,5L)
 n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
 ans1 = ama(x, n, fill=150)
-ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE, fill=150)
+ans2 = frollmean(x, n, adaptive=TRUE, fill=150)
 ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE, fill=150)
 test(9999.99, ans1, ans2)
 test(9999.99, ans1, ans3)
@@ -449,13 +447,13 @@ test(9999.99, ans1, ans3)
 x = c(1:4,NA,2:5,NA,4:6,NA,5L)
 n = c(2L, 2L, 2L, 5L, 3L, 4L, 5L, 1L, 2L, 1L, 2L, 4L, 3L, 6L, 3L)
 ans1 = ama(x, n)
-ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
-ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
+ans2 = frollmean(x, n, adaptive=TRUE)
+ans3 = frollmean(x, n, exact=TRUE, adaptive=TRUE)
 test(9999.99, ans1, ans2)
 test(9999.99, ans1, ans3)
 ans1 = ama(x, n, na.rm=TRUE)
-ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE, na.rm=TRUE)
-ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE, na.rm=TRUE)
+ans2 = frollmean(x, n, na.rm=TRUE, adaptive=TRUE)
+ans3 = frollmean(x, n, na.rm=TRUE, exact=TRUE, adaptive=TRUE)
 test(9999.99, ans1, ans2)
 test(9999.99, ans1, ans3)
 #### TODO test 5e9 vector where 3e9 are NAs to confirm uint_fast64_t running NA counter
@@ -469,75 +467,95 @@ if (FALSE) {
 test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, align="right"), c(1, 1.5))
 test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, align="center"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
 test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, align="left"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
-test(9999.99, frollmean(list(1:2, 1:3), list(1:2), adaptive=TRUE), error="Adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame. If you want to call rolling function on list having variable length of elements call it for each field separately.")
+test(9999.99, frollmean(list(1:2, 1:3), list(1:2), adaptive=TRUE), error="adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame. If you want to call rolling function on list having variable length of elements call it for each field separately")
 
 #### adaptive exact
-if (FALSE) {
-  x = c(1:3, 1e9L, 2:5, 5e9, 4:6)
-  n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
-  ans1 = ama(x, n)
-  ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
-  ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
-  ans4 = fastama(x, n)
-  cbind(ans1, ans2, ans3, ans4)
-  format(ans1-ans2, scientific=F)
-  format(ans1-ans3, scientific=F)
-  format(ans1-ans4, scientific=F)
-  
-  x = sample(c(rnorm(1e3, 1e2), rnorm(1e1, 1e9)))
-  n = sample(1:20, length(x), TRUE)
-  ans1 = ama(x, n)
-  ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
-  ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
-  ans4 = fastama(x, n)
-  anserr = list(
-    froll_exact_f = ans1-ans2,
-    froll_exact_t = ans1-ans3,
-    fastama = ans1-ans4
-  )
-  format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
-  # as of now exact=TRUE has bigger roundoff TODO
-  
-  x = sample(c(rnorm(1e6, 1e2), rnorm(1e1, 1e9)))
-  n = sample(100:2000, length(x), TRUE)
-  system.time(ans1 <- ama(x, n))
-  system.time(ans2 <- frollmean(x, n, adaptive=TRUE, exact=FALSE))
-  system.time(ans3 <- frollmean(x, n, adaptive=TRUE, exact=TRUE))
-  system.time(ans4 <- fastama(x, n))
-  anserr = list(
-    froll_exact_f = ans1-ans2,
-    froll_exact_t = ans1-ans3,
-    fastama = ans1-ans4
-  )
-  format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
-  
-  x = sample(rnorm(1e5, 1e7, 5e6))
-  n = sample(10:100, length(x), TRUE)
-  ans1 = ama(x, n)
-  ans2 = frollmean(x, n, adaptive=TRUE, exact=FALSE)
-  ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
-  ans4 = fastama(x, n)
-  anserr = list(
-    froll_exact_f = ans1-ans2,
-    froll_exact_t = ans1-ans3,
-    fastama = ans1-ans4
-  )
-  format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
+fastama = function(x, n, na.rm, fill=NA) {
+  if (!missing(na.rm)) stop("fast adaptive moving average implemented in R does not handle NAs, input having NAs will result in incorrect answer so not even try to compare to it")
+  # fast implementation of adaptive moving average in R, in case of NAs incorrect answer
+  stopifnot((nx<-length(x))==length(n))
+  cs = cumsum(x)
+  ans = rep(NA_real_, nx)
+  for (i in seq_along(cs)) {
+    ans[i] = if (i == n[i])
+      cs[i]/n[i]
+    else if (i > n[i])
+      (cs[i]-cs[i-n[i]])/n[i]
+    else as.double(fill)
+  }
+  ans
 }
+x = c(1:3, 1e9L, 2:5, 5e9, 4:6)
+n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
+ans1 = ama(x, n)
+ans2 = frollmean(x, n, adaptive=TRUE)
+ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
+ans4 = fastama(x, n)
+test(9999.99, ans1, ans2)
+test(9999.99, ans1, ans3)
+test(9999.99, ans1, ans4)
+
+x = sample(c(rnorm(1e3, 1e2), rnorm(1e1, 1e9, 1e2), abs(rnorm(1e1, 1e-9, 1e-2))))
+n = sample(1:20, length(x), TRUE)
+ans1 = ama(x, n)
+ans2 = frollmean(x, n, adaptive=TRUE)
+ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
+ans4 = fastama(x, n)
+anserr = list(
+  froll_exact_f = ans1-ans2,
+  froll_exact_t = ans1-ans3,
+  fastama = ans1-ans4
+)
+errs = lapply(lapply(anserr, abs), sum, na.rm=TRUE)
+test(9999.99, errs[["froll_exact_t"]] < errs[["froll_exact_f"]])
+test(9999.99, errs[["froll_exact_t"]] < errs[["fastama"]])
+
+x = sample(c(1:100, 5e9, 5e-9))
+n = sample(1:10, length(x), TRUE)
+ans1 = ama(x, n)
+ans2 = frollmean(x, n, adaptive=TRUE)
+ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
+ans4 = fastama(x, n)
+anserr = list(
+  froll_exact_f = ans1-ans2,
+  froll_exact_t = ans1-ans3,
+  fastama = ans1-ans4
+)
+errs = lapply(lapply(anserr, abs), sum, na.rm=TRUE)
+test(9999.99, errs[["froll_exact_t"]] < errs[["froll_exact_f"]])
+test(9999.99, errs[["froll_exact_t"]] < errs[["fastama"]])
 
 ## edge cases adaptive
+#### is.integer(n)
+test(9999.99, frollmean(1:5, 1:5, adaptive=TRUE), seq(1,3,0.5))
+#### is.integer(n) && length(n)!=length(x)
+test(9999.99, frollmean(1:10, 1:5, adaptive=TRUE), error="length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'")
+#### is.list(n) && length(n[[1L]])!=length(x)
+test(9999.99, frollmean(1:10, list(1:5), adaptive=TRUE), error="length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'")
 
-#### !adaptive && is.list(n)
-#frollmean(11:15, list(1:5), adaptive=FALSE)
-
-#### adaptive && is.integer(n)
-#frollmean(11:15, 1:5, adaptive=TRUE)
-
-#### adaptive && is.integer(n) && length(n)!=length(x)
-#frollmean(11:15, 1:5, adaptive=TRUE)
-
-#### adaptive && is.list(n) && length(n[[1L]])!=length(x)
-#frollmean(11:15, list(1:4), adaptive=TRUE)
+#### non-finite values (NA, NaN, Inf, -Inf)
+n = c(4,1,4,5,5,4,6,5,4,4,2,3,4,3,2,4)
+x = 1:16
+x[5] = NaN
+test(9999.99, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
+test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
+x[6] = NA
+test(9999.99, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
+test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
+#### test inconsistency of NaN-NA order is consistent to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
+x[5] = NA
+x[6] = NaN
+test(9999.99, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
+test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
+x[5] = Inf
+test(9999.99, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
+test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
+x[6] = -Inf
+test(9999.99, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
+test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
+x[5:7] = c(NA, Inf, -Inf)
+test(9999.99, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
+test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
 
 ## validation
 
@@ -682,6 +700,38 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   )
   test(9999.99, ans, expected)
 
+  ## adaptive moving average compare
+  afun = function(fun, x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
+    # adaptive moving average in R
+    stopifnot((nx<-length(x))==length(n))
+    ans = rep(NA_real_, nx)
+    if (nf.rm) x[!is.finite(x)] = NA_real_
+    FUN = match.fun(fun)
+    for (i in seq_along(x)) {
+      ans[i] = if (i >= n[i])
+        FUN(x[(i-n[i]+1):i], na.rm=na.rm)
+      else as.double(fill)
+    }
+    ans
+  }
+  afun_compare = function(x, n) {
+    num.step = 0.0001
+    #### fun, na.rm, exact
+    for (fun in c("mean")) { # ,"sum"
+      for (na.rm in c(FALSE, TRUE)) {
+        for (exact in c(FALSE, TRUE)) {
+          num <<- num + num.step
+          eval(substitute(
+            test(.num,
+                 froll(.fun, x, n, na.rm=.na.rm, exact=.exact),
+                 afun(.fun, x, n, fill=NA, na.rm=.na.rm, nf.rm=!.exact)),
+            list(.num=num, .fun=fun, .na.rm=na.rm, .exact=exact)
+          ))
+        }
+      }
+    }
+  }
+  
 }
 
 #### adaptive window against https://stackoverflow.com/a/21368246/2490497
@@ -808,6 +858,35 @@ if (dev_and_benchmark_area<-FALSE) {
   ## ll = lapply(l, tail, 5)
   ## validate = which(names(ll)=="R_mean")
   ## sapply(ll[-validate], function(x) format(sum(abs(x-ll[[validate]])), scientific=FALSE))
+  
+  ## adaptive moving average R
+  ama = function(x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
+    # adaptive moving average in R
+    stopifnot((nx<-length(x))==length(n))
+    if (nf.rm) x[!is.finite(x)] = NA_real_
+    ans = rep(NA_real_, nx)
+    for (i in seq_along(x)) {
+      ans[i] = if (i >= n[i])
+        mean(x[(i-n[i]+1):i], na.rm=na.rm)
+      else as.double(fill)
+    }
+    ans
+  }
+  fastama = function(x, n, na.rm, fill=NA) {
+    if (!missing(na.rm)) stop("fast adaptive moving average implemented in R does not handle NAs, input having NAs will result in incorrect answer so not even try to compare to it")
+    # fast implementation of adaptive moving average in R, in case of NAs incorrect answer
+    stopifnot((nx<-length(x))==length(n))
+    cs = cumsum(x)
+    ans = rep(NA_real_, nx)
+    for (i in seq_along(cs)) {
+      ans[i] = if (i == n[i])
+        cs[i]/n[i]
+      else if (i > n[i])
+        (cs[i]-cs[i-n[i]])/n[i]
+      else as.double(fill)
+    }
+    ans
+  }
   
 }
 
