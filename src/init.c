@@ -78,7 +78,7 @@ SEXP inrange();
 SEXP between();
 SEXP hasOpenMP();
 SEXP uniqueNlogical();
-SEXP rollfun();
+SEXP frollfunR();
 
 // .Externals
 SEXP fastmean();
