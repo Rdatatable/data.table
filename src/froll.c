@@ -37,11 +37,11 @@ void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, doubl
       ans[i] = fill;                                            // answers are fill for partial window
     }
     w += x[i];                                                  // i==k-1
-    ans[i] = (double) w / k;                                    // first full sliding window, non-fill rollfun answer
+    ans[i] = (double) (w / k);                                  // first full sliding window, non-fill rollfun answer
     for (uint_fast64_t i=k; i<nx; i++) {                        // loop over obs, complete window
       w -= x[i-k];                                              // remove leaving row from sliding window
       w += x[i];                                                // add current row to sliding window
-      ans[i] = (double) w / k;                                  // rollfun to answer vector
+      ans[i] = (double) (w / k);                                // rollfun to answer vector
     }
     if (!R_FINITE((double) w)) {
       if (verbose) {
@@ -62,17 +62,17 @@ void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, doubl
     }
     if (R_FINITE(x[i])) w += x[i];                              // i==k-1
     else nc++;
-    if (nc == 0) ans[i] = (double) w / k;                       // no NAs in first full window
+    if (nc == 0) ans[i] = (double) (w / k);                     // no NAs in first full window
     else if (nc == k) ans[i] = narm ? R_NaN : NA_REAL;          // all values in sliding window are NA, expected output for fun(NA, na.rm=T/F)
-    else ans[i] = narm ? (double) w / (k - nc) : NA_REAL;       // some values in window are NA
+    else ans[i] = narm ? (double) (w / (k - nc)) : NA_REAL;     // some values in window are NA
     for (uint_fast64_t i=k; i<nx; i++) {                        // loop over obs, complete window
       if (R_FINITE(x[i])) w += x[i];                            // add only finite to window aggregate
       else nc++;                                                // increment NA count in current window
       if (R_FINITE(x[i-k])) w -= x[i-k];                        // remove only finite from window aggregate
       else nc--;                                                // decrement NA count in current window
-      if (nc == 0) ans[i] = (double) w / k;                     // no NAs in sliding window for present observation
+      if (nc == 0) ans[i] = (double) (w / k);                   // no NAs in sliding window for present observation
       else if (nc == k) ans[i] = narm ? R_NaN : NA_REAL;        // all values in window are NA, expected output for fun(NA, na.rm=T/F)
-      else ans[i] = narm ? (double) w / (k - nc) : NA_REAL;     // some values in window are NA
+      else ans[i] = narm ? (double) (w / (k - nc)) : NA_REAL;   // some values in window are NA
     }
     if (!R_FINITE((double) w) && verbose) {
       Rprintf("infinite value(s) are present in input, default frollfun function does not handle infinite values, use exact=TRUE\n");

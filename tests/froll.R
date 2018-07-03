@@ -663,46 +663,6 @@ if (dev_and_benchmark_area<-FALSE) {
   # TODO benchmark alt C impl exact=F: tmp<-cumsum(x); (tmp-shift(tmp, k))/k
   # if faster than current sliding window add add to api
   
-  # test exact=F no NA switch from double to long double
-  set.seed(108)
-  N = 1e5
-  x = rnorm(N, 1e3, 5e2)
-  n = N^(1/3)
-  ans0 = zoo::rollapply(x, n, (mean), align="right", fill=NA) # saveRDS(ans0, "zoo_rollmean_rnorm_5e6_1e3_5e2.rds") # ans0 = readRDS("zoo_rollmean_rnorm_5e6_1e3_5e2.rds")
-  fastma = function(x, n, na.rm) {
-    if (!missing(na.rm)) stop("very fast moving average implemented in R does not handle NAs, input having NAs will result in incorrect answer so not even try to compare to it")
-    stopifnot(length(n)==1L)
-    nx = length(x)
-    cs = cumsum(x)
-    scs = data.table::shift(cs, n)
-    scs[n] = 0
-    ans = as.double((cs-scs)/n)
-    ans
-  } # add to benchmark for non adaptive
-  ma = function(x, n) {ans=rep(NA_real_, nx<-length(x)); for(i in n:nx) ans[i]=mean(x[(i-n+1):i]); ans}
-  system.time(ans3 <- fastma(x, n))
-  system.time(ans4 <- ma(x, n))
-  system.time(ans1 <- frollmean(x, n))
-  # double w: 0.027
-  # long double w: 
-  system.time(ans2 <- frollmean(x, n, exact=TRUE))
-  # 1.738
-  anserr = list(
-    ma = ans0-ans4,
-    fastma = ans0-ans3,
-    froll_exact_f = ans0-ans1,
-    froll_exact_t = ans0-ans2
-  )
-  format(sapply(lapply(anserr, abs), sum, na.rm=TRUE), scientific=FALSE)
-  sapply(lapply(anserr, abs), sum, na.rm=TRUE) / sum(ans0, na.rm=TRUE)
-  sprintf("exact=F has %.3f bigger roundoff", do.call("/", lapply(lapply(anserr[names(anserr) %like% "froll"], abs), sum, na.rm=TRUE)))
-  # double w: 1/1
-  # long double w:
-  
-  # time
-  
-  # roundoff
-  
   if (.Platform$OS.type=="unix") {
     memgb = as.numeric(system("awk '/MemTotal/ {print $2}' /proc/meminfo", intern=TRUE))/(1024^2)
     if (memgb > 20) {
