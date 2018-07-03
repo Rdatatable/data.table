@@ -110,7 +110,7 @@ frollmean(d, c(3, 4))
 set.seed(108)
 x = sample(c(rnorm(1e3, 1e6, 5e5), 5e9, 5e-9))
 n = 15
-ma = function(x, n, na.rm=FALSE, nf.rm=FALSE) {
+ma = function(x, n, na.rm=FALSE) {
   ans = rep(NA_real_, nx<-length(x))
   for (i in n:nx) ans[i] = mean(x[(i-n+1):i], na.rm=na.rm)
   ans
