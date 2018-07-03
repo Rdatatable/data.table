@@ -59,20 +59,20 @@ void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, doubl
     int nc = 0;                                                 // NA counter within sliding window
     int i;                                                      // iterator declared here because it is being used after foor loop
     for (i=0; i<k-1; i++) {                                     // loop over leading observation, all partial window
-      if (ISNAN(x[i])) nc++;                                    // increment NA count in current window
-      else w += x[i];                                           // add only non-NA to window aggregate
+      if (R_FINITE(x[i])) w += x[i];                            // add only finite values to window aggregate
+      else nc++;                                                // increment NA count in current window
       ans[i] = fill;                                            // partial window fill all
     }
-    if (ISNAN(x[i])) nc++;                                      // i==k-1
-    else w += x[i];
+    if (R_FINITE(x[i])) w += x[i];                              // i==k-1
+    else nc++;
     if (nc == 0) ans[i] = (double) w / k;                       // no NAs in first full window
     else if (nc == k) ans[i] = narm ? R_NaN : NA_REAL;          // all values in sliding window are NA, expected output for fun(NA, na.rm=T/F)
     else ans[i] = narm ? (double) w / (k - nc) : NA_REAL;       // some values in window are NA
     for (uint_fast64_t i=k; i<nx; i++) {                        // loop over obs, complete window
-      if (ISNAN(x[i])) nc++;                                    // increment NA count in current window
-      else w += x[i];                                           // add only non-NA to window aggregate
-      if (ISNAN(x[i-k])) nc--;                                  // decrement NA count in current window
-      else w -= x[i-k];                                         // remove only non-NA from window aggregate
+      if (R_FINITE(x[i])) w += x[i];                            // add only finite to window aggregate
+      else nc++;                                                // increment NA count in current window
+      if (R_FINITE(x[i-k])) w -= x[i-k];                        // remove only finite from window aggregate
+      else nc--;                                                // decrement NA count in current window
       if (nc == 0) ans[i] = (double) w / k;                     // no NAs in sliding window for present observation
       else if (nc == k) ans[i] = narm ? R_NaN : NA_REAL;        // all values in window are NA, expected output for fun(NA, na.rm=T/F)
       else ans[i] = narm ? (double) w / (k - nc) : NA_REAL;     // some values in window are NA
@@ -217,8 +217,8 @@ void frollmeanAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double 
     uint_fast64_t nc = 0;                                       // running NA counter
     uint_fast64_t cn[nx];                                       // cumulative NA counter, used the same way as cumsum
     for (uint_fast64_t i=0; i<nx; i++) {                        // loop over observations
-      if (!R_FINITE(x[i])) nc++;                                // increment NA counter
-      else w += x[i];                                           // add observation to running sum
+      if (R_FINITE(x[i])) w += x[i];                            // add observation to running sum
+      else nc++;                                                // increment non-finite counter
       cs[i] = (double) w;                                       // cumsum, na.rm=TRUE always, NAs handled using cum NA counter
       cn[i] = nc;                                               // cum NA counter
     }

@@ -364,38 +364,35 @@ test(9999.99, frollmean(1:5, as.factor("a")), error="n must be integer")
 test(9999.99, frollmean(1:5, list(1:5)), error="n must be integer, list is accepted for adaptive TRUE")
 
 #### non-finite values (NA, NaN, Inf, -Inf)
-ma = function(x, n, na.rm=FALSE, nan.rm=FALSE) {
+ma = function(x, n, na.rm=FALSE, nf.rm=FALSE) {
   if (!is.double(x)) x = as.double(x)
   if (!is.integer(n)) n = as.integer(n)
   ans = rep(NA_real_, nx<-length(x))
-  if (nan.rm) x[is.nan(x)] = NA_real_ # exact=F consistency due to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
+  if (nf.rm) x[!is.finite(x)] = NA_real_ # exact=F consistency due to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
   for (i in n:nx) ans[i]=mean(x[(i-n+1):i], na.rm=na.rm)
   ans
 }
 n = 4
 x = 1:16
 x[5] = NaN
-test(9999.99, identical(frollmean(x, n), ma(x, n, nan.rm=TRUE)))
+test(9999.99, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
 test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 x[6] = NA
-test(9999.99, identical(frollmean(x, n), ma(x, n, nan.rm=TRUE)))
+test(9999.99, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
 test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 #### test inconsistency of NaN-NA order is consistent to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
 x[5] = NA
 x[6] = NaN
-test(9999.99, identical(frollmean(x, n), ma(x, n, nan.rm=TRUE)))
+test(9999.99, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
 test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 x[5] = Inf
-#test(9999.99, identical(frollmean(x, n), ma(x, n, nan.rm=TRUE)))
-ma(x, n, nan.rm=TRUE)
+test(9999.99, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
 test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 x[6] = -Inf
-#test(9999.99, identical(frollmean(x, n), ma(x, n, nan.rm=TRUE)))
-ma(x, n, nan.rm=TRUE)
+test(9999.99, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
 test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 x[5:7] = c(NA, Inf, -Inf)
-#test(9999.99, identical(frollmean(x, n), ma(x, n, nan.rm=TRUE)))
-ma(x, n, nan.rm=TRUE)
+test(9999.99, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
 test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 
 #### adaptive window
