@@ -157,8 +157,10 @@ void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, doubl
 void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
 void frollmeanAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
 void frollmeanExactAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void frollsumVector(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool partial, bool exact, bool narm, int hasna, bool verbose);
-void frollsumVectorAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool exact, bool narm, int hasna, bool verbose);
+//void frollsum(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
+//void frollsumExact(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
+//void frollsumAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+//void frollsumExactAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
 
 // frollR.c
-SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP partial, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
+SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);

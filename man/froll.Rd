@@ -13,10 +13,10 @@
 
 \usage{
 frollmean(x, n, fill=NA, exact=FALSE, align=c("right", "left",
-  "center"), partial=FALSE, na.rm=FALSE, hasNA=NA, adaptive=FALSE,
+  "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
   verbose=getOption("datatable.verbose"))
 frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
-  "center"), partial=FALSE, na.rm=FALSE, hasNA=NA, adaptive=FALSE,
+  "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
   verbose=getOption("datatable.verbose"))
 }
 \arguments{
@@ -29,11 +29,9 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
   \item{align}{ character, define if window frame covers preceding rows
     \code{"right"}, following rows \code{"left"} or centered
     \code{"center"}, default \code{"right"}. }
-  \item{partial}{ logical, should partial window width be also
-    calculated, if \code{TRUE} then \code{fill} argument is ignored,
-    default \code{FALSE}. }
   \item{na.rm}{ logical, should missing values be removed when
-    calculating window, default \code{FALSE}. }
+    calculating window, default \code{FALSE}. For details on handling
+    other non finite values see details below. }
   \item{hasNA}{ logical, if it is known that \code{x} contains \code{NA}
     then setting to \code{TRUE} will speed up, default \code{NA}. }
   \item{adaptive}{ logical, should adaptive rolling function be
@@ -50,21 +48,23 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
   conveniently within data.table's syntax.
 
   Argument \code{n} allows multiple values to calculate multiple rolling
-  windows or if \code{adaptive==TRUE} then it expects a list, each list
+  windows or if \code{adaptive=TRUE} then it expects a list, each list
   element must be integer vector of window size corresponding to every
   \code{column[row]} from \code{x}.
 
   Argument \code{exact} will make rolling functions to perform extra
   computation for floating point rounding error correction. This is useful
-  mostly when when input data has distant outlier. This feature is not yet
-  implemented.
+  mostly when when input data has distant outlier.
+  
+  When \code{exact=FALSE} is used then any \code{NaN, +Inf, -Inf} is
+  treated as \code{NA}. For precise handling of non-finite values use
+  \code{exact=TRUE}.
   
   Adaptive rolling functions are special cases where for each single
   observation own rolling window width has to be calculated. It is
   currently implemented with following limitations:
   \itemize{
     \item{ \code{align} only \code{"right"}. }
-    \item{ \code{partial} only \code{FALSE}. }
     \item{ if list of integer vectors is passed to \code{x} then all
       list vectors must have equal length. }
   }
@@ -75,7 +75,7 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
 }
 \note{
   Users coming from most popular package for rolling functions
-  \code{zoo} might expect following difference in data.table
+  \code{zoo} might expect following difference in \code{data.table}
   implementation.
   \itemize{
     \item{ rolling function will always return same length of results
@@ -87,10 +87,11 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
     \item{ \code{na.rm} is respected, no need to use \code{frollapply}
       when having \code{NA} values. }
     \item{ integers are always coerced to double. }
-    \item{ when \code{adaptive==FALSE} (default) then \code{n} must be a
+    \item{ when \code{adaptive=FALSE} (default) then \code{n} must be a
       numeric vector, list is not accepted. }
-    \item{ when \code{adaptive==TRUE} then \code{n} must be vector
+    \item{ when \code{adaptive=TRUE} then \code{n} must be vector
       length equal to \code{nrow(x)}, or list of such vectors. }
+    \item{ there is no \code{partial} window support. }
   }
 }
 \examples{

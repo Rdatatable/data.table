@@ -1,6 +1,6 @@
 #include "frollR.h"
 
-SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP partial, SEXP narm, SEXP hasna, SEXP adaptive, SEXP verbose) {
+SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive, SEXP verbose) {
   int protecti=0;
   if (!isLogical(verbose) || length(verbose)!=1 || LOGICAL(verbose)[0]==NA_LOGICAL)
     error("verbose must be TRUE or FALSE");
@@ -86,12 +86,6 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
   if (badaptive)
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
   
-  if (!isLogical(partial) || length(partial)!=1 || LOGICAL(partial)[0]==NA_LOGICAL)
-    error("partial must be TRUE or FALSE");
-
-  if (LOGICAL(partial)[0]==TRUE && badaptive)
-    error("using adaptive TRUE and partial TRUE is not implemented");
-  
   if (!isLogical(exact) || length(exact)!=1 || LOGICAL(exact)[0]==NA_LOGICAL)
     error("exact must be TRUE or FALSE");
   
@@ -158,7 +152,6 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
     error("fill must be numeric");
   }
   
-  bool bpartial = LOGICAL(partial)[0];
   bool bexact = LOGICAL(exact)[0];
   bool bnarm = LOGICAL(narm)[0];
   
@@ -181,9 +174,11 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
         break;
       case SUM :
         if (!badaptive) {
-          frollsumVector(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
+          //if (!bexact) frollsum(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bnarm, ihasna, bverbose);
+          //else frollsumExact(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bnarm, ihasna, bverbose);
         } else {
-          frollsumVectorAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bexact, bnarm, ihasna, bverbose);
+          //if (!bexact) frollsumAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
+          //else frollsumExactAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
         }
         break;
     }
@@ -206,9 +201,11 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
               break;
             case SUM :
               if (!badaptive) {
-                frollsumVector(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bpartial, bexact, bnarm, ihasna, bverbose);
+                //if (!bexact) frollsum(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
+                //else frollsumExact(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
               } else {
-                frollsumVectorAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bexact, bnarm, ihasna, bverbose);
+                //if (!bexact) frollsumAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
+                //else frollsumExactAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
               }
               break;
           }

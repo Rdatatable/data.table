@@ -331,12 +331,6 @@ test(9999.99, frollmean(5, 1, align="left"), 5)
 test(9999.99, frollmean(list(1, 10, 5), 1, align="left"), list(1, 10, 5))
 test(9999.99, frollmean(5, 1, align="center"), 5)
 test(9999.99, frollmean(list(1, 10, 5), 1, align="center"), list(1, 10, 5))
-test(9999.99, frollsum(5, 1), 5)
-test(9999.99, frollsum(list(1, 10, 5), 1), list(1, 10, 5))
-test(9999.99, frollsum(5, 1, align="left"), 5)
-test(9999.99, frollsum(list(1, 10, 5), 1, align="left"), list(1, 10, 5))
-test(9999.99, frollsum(5, 1, align="center"), 5)
-test(9999.99, frollsum(list(1, 10, 5), 1, align="center"), list(1, 10, 5))
 #### length(x)==1 && n==2
 test(9999.99, frollmean(5, 2), NA_real_)
 test(9999.99, frollmean(list(1, 10, 5), 2), list(NA_real_, NA_real_, NA_real_))
@@ -344,12 +338,6 @@ test(9999.99, frollmean(5, 2, align="left"), NA_real_)
 test(9999.99, frollmean(list(1, 10, 5), 2, align="left"), list(NA_real_, NA_real_, NA_real_))
 test(9999.99, frollmean(5, 2, align="center"), NA_real_)
 test(9999.99, frollmean(list(1, 10, 5), 2, align="center"), list(NA_real_, NA_real_, NA_real_))
-test(9999.99, frollsum(5, 2), NA_real_)
-test(9999.99, frollsum(list(1, 10, 5), 2), list(NA_real_, NA_real_, NA_real_))
-test(9999.99, frollsum(5, 2, align="left"), NA_real_)
-test(9999.99, frollsum(list(1, 10, 5), 2, align="left"), list(NA_real_, NA_real_, NA_real_))
-test(9999.99, frollsum(5, 2, align="center"), NA_real_)
-test(9999.99, frollsum(list(1, 10, 5), 2, align="center"), list(NA_real_, NA_real_, NA_real_))
 #### n==Inf
 test(9999.99, frollmean(1:5, Inf), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
 #### n==c(5, Inf)
@@ -616,13 +604,13 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   #### na.rm / fill
   x = as.double(c(1L, NA, 3L, 4L, 5L))
   test(9999.99, frollmean(x, 2, fill=0), zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=FALSE))
-  test(9999.99, frollsum(x, 2, fill=0), zoo::rollapply(x, 2, sum, fill=0, align="right", na.rm=FALSE))
+  #test(9999.99, frollsum(x, 2, fill=0), zoo::rollapply(x, 2, sum, fill=0, align="right", na.rm=FALSE))
   test(9999.99, frollmean(x, 2, fill=0, na.rm=TRUE), zoo::rollapply(x, 2, mean, fill=0, align="right", na.rm=TRUE))
-  test(9999.99, frollsum(x, 2, fill=0, na.rm=TRUE), zoo::rollapply(x, 2, sum, fill=0, align="right", na.rm=TRUE))
+  #test(9999.99, frollsum(x, 2, fill=0, na.rm=TRUE), zoo::rollapply(x, 2, sum, fill=0, align="right", na.rm=TRUE))
   test(9999.99, frollmean(x, 2, fill=NA), zoo::rollapply(x, 2, mean, fill=NA, align="right"))
-  test(9999.99, frollsum(x, 2, fill=NA), zoo::rollapply(x, 2, sum, fill=NA, align="right"))
+  #test(9999.99, frollsum(x, 2, fill=NA), zoo::rollapply(x, 2, sum, fill=NA, align="right"))
   test(9999.99, frollmean(x, 2, fill=NA, na.rm=TRUE), zoo::rollapply(x, 2, mean, fill=NA, align="right", na.rm=TRUE))
-  test(9999.99, frollsum(x, 2, fill=NA, na.rm=TRUE), zoo::rollapply(x, 2, sum, fill=NA, align="right", na.rm=TRUE))
+  #test(9999.99, frollsum(x, 2, fill=NA, na.rm=TRUE), zoo::rollapply(x, 2, sum, fill=NA, align="right", na.rm=TRUE))
   
   #### na.rm FALSE
   d = as.data.table(list(1:6/2, 3:8/4))
@@ -636,14 +624,14 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   )
   test(9999.99, ans, expected)
 
-  ans = frollsum(d, 2:3)
-  expected = list(
-    zoo::rollapply(d[[1L]], 2L, sum, fill=NA, align="right"),
-    zoo::rollapply(d[[1L]], 3L, sum, fill=NA, align="right"),
-    zoo::rollapply(d[[2L]], 2L, sum, fill=NA, align="right"),
-    zoo::rollapply(d[[2L]], 3L, sum, fill=NA, align="right")
-  )
-  test(9999.99, ans, expected)
+  #ans = frollsum(d, 2:3)
+  #expected = list(
+  #  zoo::rollapply(d[[1L]], 2L, sum, fill=NA, align="right"),
+  #  zoo::rollapply(d[[1L]], 3L, sum, fill=NA, align="right"),
+  #  zoo::rollapply(d[[2L]], 2L, sum, fill=NA, align="right"),
+  #  zoo::rollapply(d[[2L]], 3L, sum, fill=NA, align="right")
+  #)
+  #test(9999.99, ans, expected)
 
   ans = frollmean(d, 2:3, align="center")
   expected = list(
@@ -654,14 +642,14 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   )
   test(9999.99, ans, expected)
   
-  ans = frollsum(d, 2:3, align="center")
-  expected = list(
-    zoo::rollapply(d[[1L]], 2L, sum, fill=NA),
-    zoo::rollapply(d[[1L]], 3L, sum, fill=NA),
-    zoo::rollapply(d[[2L]], 2L, sum, fill=NA),
-    zoo::rollapply(d[[2L]], 3L, sum, fill=NA)
-  )
-  test(9999.99, ans, expected)
+  #ans = frollsum(d, 2:3, align="center")
+  #expected = list(
+  #  zoo::rollapply(d[[1L]], 2L, sum, fill=NA),
+  #  zoo::rollapply(d[[1L]], 3L, sum, fill=NA),
+  #  zoo::rollapply(d[[2L]], 2L, sum, fill=NA),
+  #  zoo::rollapply(d[[2L]], 3L, sum, fill=NA)
+  #)
+  #test(9999.99, ans, expected)
   ans = frollmean(d, 2:3, align="left")
   expected = list(
     zoo::rollapply(d[[1L]], 2L, mean, fill=NA, align="left"),
@@ -670,14 +658,14 @@ if (requireNamespace("zoo", quietly=TRUE)) {
     zoo::rollapply(d[[2L]], 3L, mean, fill=NA, align="left")
   )
   test(9999.99, ans, expected)
-  ans = frollsum(d, 2:3, align="left")
-  expected = list(
-    zoo::rollapply(d[[1L]], 2L, sum, fill=NA, align="left"),
-    zoo::rollapply(d[[1L]], 3L, sum, fill=NA, align="left"),
-    zoo::rollapply(d[[2L]], 2L, sum, fill=NA, align="left"),
-    zoo::rollapply(d[[2L]], 3L, sum, fill=NA, align="left")
-  )
-  test(9999.99, ans, expected)
+  ##ans = frollsum(d, 2:3, align="left")
+  #expected = list(
+  #  zoo::rollapply(d[[1L]], 2L, sum, fill=NA, align="left"),
+  #  zoo::rollapply(d[[1L]], 3L, sum, fill=NA, align="left"),
+  #  zoo::rollapply(d[[2L]], 2L, sum, fill=NA, align="left"),
+  #  zoo::rollapply(d[[2L]], 3L, sum, fill=NA, align="left")
+  #)
+  #test(9999.99, ans, expected)
   
   #### na.rm TRUE
   ans = frollmean(d, 2:3, na.rm=TRUE)
@@ -688,14 +676,14 @@ if (requireNamespace("zoo", quietly=TRUE)) {
     zoo::rollapply(d[[2L]], 3L, mean, na.rm=TRUE, fill=NA, align="right")
   )
   test(9999.99, ans, expected)
-  ans = frollsum(d, 2:3, na.rm=TRUE)
-  expected = list(
-    zoo::rollapply(d[[1L]], 2L, sum, na.rm=TRUE, fill=NA, align="right"),
-    zoo::rollapply(d[[1L]], 3L, sum, na.rm=TRUE, fill=NA, align="right"),
-    zoo::rollapply(d[[2L]], 2L, sum, na.rm=TRUE, fill=NA, align="right"),
-    zoo::rollapply(d[[2L]], 3L, sum, na.rm=TRUE, fill=NA, align="right")
-  )
-  test(9999.99, ans, expected)
+  #ans = frollsum(d, 2:3, na.rm=TRUE)
+  #expected = list(
+  #  zoo::rollapply(d[[1L]], 2L, sum, na.rm=TRUE, fill=NA, align="right"),
+  #  zoo::rollapply(d[[1L]], 3L, sum, na.rm=TRUE, fill=NA, align="right"),
+  #  zoo::rollapply(d[[2L]], 2L, sum, na.rm=TRUE, fill=NA, align="right"),
+  #  zoo::rollapply(d[[2L]], 3L, sum, na.rm=TRUE, fill=NA, align="right")
+  #)
+  #test(9999.99, ans, expected)
 
   ## adaptive moving average compare
   afun = function(fun, x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
