@@ -51,7 +51,7 @@ DT[V1 %in% v & V2 %in% v & V3 %in% v & V4 %in% v, verbose=TRUE]
 
 # subset: index aware benchmarking
 
-For convinience `data.table` automatically builds index on fields you are doing subset data. It will add some overhead to first subset on particular fields but greatly reduce time to query those columns in subsequent runs. When measuring speed best way is to measure index creation and query using index separately. Having such timings it is easy to decide what is the optimal strategy for your use case.  
+For convenience `data.table` automatically builds an index on fields you use to subset data. It will add some overhead to first subset on particular fields but greatly reduces time to query those columns in subsequent runs. When measuring speed, the best way is to measure index creation and query using an index separately. Having such timings it is easy to decide what is the optimal strategy for your use case.  
 To control usage of index use following options:  
 
 ```r
