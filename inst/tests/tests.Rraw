@@ -11983,6 +11983,9 @@ test(1914.8, identical(dtGet(dt.comp, 1), dt[[1]]))
 test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
 # END port of old testthat tests
 
+# unit tests for #2169 which was already fixed in ec05f8b/src/fwrite.c#L59
+test(1915.1, fwrite(data.table(foo = c(NA, TRUE, FALSE)), logical01 = TRUE, na = 'EMPTY'), output=c("\"foo\"","EMPTY","1","0")) # this might need to be changed after #2964 will be solved
+test(1915.2, fwrite(data.table(foo = c(NA, TRUE, FALSE)), logical01 = TRUE), output=c("foo","","1","0"))
 
 ###################################
 #  Add new tests above this line  #
