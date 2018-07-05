@@ -94,20 +94,34 @@ test(9999.5, ans, expected)
 
 #### exact
 set.seed(108)
-x = rnorm(2e1, 1e7, 5e6)
-n = 6
-ans0 = c(NA, NA, NA, NA, NA, 10588854.474946646, 11174501.220515575, 
-         11744524.527118236, 12575718.532952301, 12591284.933966648, 11911999.546961114, 
-         12016824.709133139, 11159660.083969306, 9842135.174718013, 8582474.3737904355, 
-         9306433.6523586009, 10455415.397822529, 9255957.3975770641, 9753074.5216819532, 
-         10497199.922122546) # dput(zoo::rollapply(x, n, "mean", align="right", fill=NA), control="digits17")
-ans1 = frollmean(x, n)
-ans2 = frollmean(x, n, exact=TRUE)
+x = sample(c(rnorm(1e3, 1e6, 5e5), 5e9, 5e-9))
+n = 15
+ma = function(x, n, na.rm=FALSE) {
+  ans = rep(NA_real_, nx<-length(x))
+  for (i in n:nx) ans[i] = mean(x[(i-n+1):i], na.rm=na.rm)
+  ans
+}
+fastma = function(x, n, na.rm) {
+  if (!missing(na.rm)) stop("NAs are unsupported, wrongly propagated by cumsum")
+  cs = cumsum(x)
+  scs = shift(cs, n)
+  scs[n] = 0
+  as.double((cs-scs)/n)
+}
+ans1 = ma(x, n)
+ans2 = fastma(x, n)
+ans3 = frollmean(x, n, exact=TRUE)
+ans4 = frollmean(x, n)
 anserr = list(
-  froll_exact_f = ans0-ans1,
-  froll_exact_t = ans0-ans2
+  froll_exact_f = ans4-ans1,
+  froll_exact_t = ans3-ans1,
+  fastma = ans2-ans1
 )
-test(9999.99, do.call("/", lapply(lapply(anserr, abs), sum, na.rm=TRUE)) > 1) # test that roundoff exact=F/exact=T is > 1
+errs = sapply(lapply(anserr, abs), sum, na.rm=TRUE)
+test(9999.99, errs[["froll_exact_t"]]==0)
+test(9999.99, errs[["froll_exact_f"]]>errs[["froll_exact_t"]])
+test(9999.99, errs[["fastma"]]>errs[["froll_exact_t"]])
+test(9999.99, errs[["fastma"]]>errs[["froll_exact_f"]])
 
 #### align: right/center/left
 d = as.data.table(list(1:8/2, 3:10/4))
@@ -541,6 +555,74 @@ test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
 x[5:7] = c(NA, Inf, -Inf)
 test(9999.99, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
 test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
+
+## test verbose messages
+x = 1:10
+n = 3
+test(9999.99, frollmean(x, n, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmean: running for input length 10, window 3, align 1, hasna 0, narm 0"))
+test(9999.99, frollmean(list(x, x+1), n, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 2x1",
+  "frollfunR: 2 column(s) and 1 window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollmean: running for input length 10, window 3, align 1, hasna 0, narm 0",
+  "frollmean: running for input length 10, window 3, align 1, hasna 0, narm 0"))
+test(9999.99, frollmean(x, c(n, n+1), verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x2",
+  "frollfunR: 1 column(s) and 2 window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollmean: running for input length 10, window 3, align 1, hasna 0, narm 0",
+  "frollmean: running for input length 10, window 4, align 1, hasna 0, narm 0"))
+test(9999.99, frollmean(list(x, x+1), c(n, n+1), verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 2x2",
+  "frollfunR: 2 column(s) and 2 window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollmean: running for input length 10, window 3, align 1, hasna 0, narm 0",
+  "frollmean: running for input length 10, window 4, align 1, hasna 0, narm 0"))
+test(9999.99, frollmean(x, n, exact=TRUE, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmeanExact: running for input length 10, window 3, align 1, hasna 0, narm 0"))
+test(9999.99, frollmean(x, n, align="center", verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmean: running for input length 10, window 3, align 0, hasna 0, narm 0",
+  "frollmean: align 0, shift answer by -1"))
+test(9999.99, frollmean(x, n, align="left", verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmean: running for input length 10, window 3, align -1, hasna 0, narm 0",
+  "frollmean: align -1, shift answer by -2"))
+nn = c(1:4,2:3,1:4)
+test(9999.99, frollmean(x, nn, adaptive=TRUE, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmeanAdaptive: running for input length 10, hasna 0, narm 0"))
+test(9999.99, frollmean(x, nn, exact=TRUE, adaptive=TRUE, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmeanExactAdaptive: running for input length 10, hasna 0, narm 0"))
+
+x[8] = NA
+test(9999.99, frollmean(x, n, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmean: running for input length 10, window 3, align 1, hasna 0, narm 0",
+  "frollmean: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"))
+test(9999.99, frollmean(x, n, exact=TRUE, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmeanExact: running for input length 10, window 3, align 1, hasna 0, narm 0",
+  "frollmeanExact: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run"))
+test(9999.99, frollmean(x, nn, adaptive=TRUE, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmeanAdaptive: running for input length 10, hasna 0, narm 0",
+  "frollmeanAdaptive: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"))
+test(9999.99, frollmean(x, nn, exact=TRUE, adaptive=TRUE, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmeanExactAdaptive: running for input length 10, hasna 0, narm 0",
+  "frollmeanExactAdaptive: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run"))
 
 ## validation
 

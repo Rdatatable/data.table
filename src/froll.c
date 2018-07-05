@@ -23,11 +23,11 @@
 
 void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
   if (nx < k) {                                                 // if window width bigger than input just return vector of fill values
-    if (verbose) Rprintf("frollfun window width longer than input vector, returning all NA vector\n");
+    if (verbose) Rprintf("%s: window width longer than input vector, returning all NA vector\n", __func__);
     for (int i=0; i<nx; i++) ans[i] = fill;
     return;
   }
-  if (verbose) Rprintf("frollfun running for input length %lu, window %d, align %d, hasna %d\n", nx, k, align, hasna);
+  if (verbose) Rprintf("%s: running for input length %lu, window %d, align %d, hasna %d, narm %d\n", __func__, nx, k, align, hasna, (int) narm);
   long double w = 0.;                                           // sliding window aggregate
   bool truehasna = hasna>0;                                     // flag to re-run with NA support if NAs detected
   if (!truehasna) {
@@ -45,8 +45,8 @@ void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, doubl
     }
     if (!R_FINITE((double) w)) {
       if (verbose) {
-        if (hasna==-1) Rprintf("hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, re-running frollfun with extra care for NAs\n");
-        else Rprintf("NA (or other non-finite) value(s) are present in input, re-running frollfun with extra care for NAs\n");
+        if (hasna==-1) Rprintf("%s: hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+        else Rprintf("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
       }
       w = 0.;
       truehasna = 1;
@@ -77,6 +77,7 @@ void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, doubl
   }
   if (align < 1) {                                              // align center or left
     int k_ = align==-1 ? k-1 : floor(k/2);                      // offset to shift
+    if (verbose) Rprintf("%s: align %d, shift answer by %d\n", __func__, align, -k_);
     memcpy((char *)ans, (char *)ans + (k_*sizeof(double)), (nx-k_)*sizeof(double)); // apply shift to achieve expected align
     for (uint_fast64_t i=nx-k_; i<nx; i++) ans[i] = fill;       // fill from right side
   }
@@ -92,11 +93,11 @@ void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, doubl
 
 void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
   if (nx < k) {                                                 // if window width bigger than input just return vector of fill values
-    if (verbose) Rprintf("frollfunExact window width longer than input vector, returning all NA vector\n");
+    if (verbose) Rprintf("%s: window width longer than input vector, returning all NA vector\n", __func__);
     for (int i=0; i<nx; i++) ans[i] = fill;
     return;
   }
-  if (verbose) Rprintf("frollfunExact running for input length %lu, window %d, align %d, hasna %d\n", nx, k, align, hasna);
+  if (verbose) Rprintf("%s: running for input length %lu, window %d, align %d, hasna %d, narm %d\n", __func__, nx, k, align, hasna, (int) narm);
   volatile bool truehasna = hasna>0;                            // flag to re-run with NA support if NAs detected, volatile to be used from parallel region
   if (!truehasna || !narm) {
     for (int i=0; i<k-1; i++) {                                 // fill partial window
@@ -126,11 +127,11 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, 
     } // end of parallel region
     if (truehasna && verbose) {
       if (narm) {
-        if (hasna==-1) Rprintf("hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, re-running frollfunExact with extra care for NAs\n");
-        else Rprintf("NA (or other non-finite) value(s) are present in input, re-running frollfunExact with extra care for NAs\n");
+        if (hasna==-1) Rprintf("%s: hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+        else Rprintf("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
       } else {
-        if (hasna==-1) Rprintf("hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n");
-        else Rprintf("NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n");
+        if (hasna==-1) Rprintf("%s: hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n", __func__);
+        else Rprintf("%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n", __func__);
       }
     }
   }
@@ -168,6 +169,7 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, 
   }
   if (align < 1) {                                              // align center or left
     int k_ = align==-1 ? k-1 : floor(k/2);                      // offset to shift
+    if (verbose) Rprintf("%s: align %d, shift answer by %d\n", __func__, align, -k_);
     memcpy((char *)ans, (char *)ans + (k_*sizeof(double)), (nx-k_)*sizeof(double)); // apply shift to achieve expected align
     for (uint_fast64_t i=nx-k_; i<nx; i++) ans[i] = fill;       // fill from right side
   }
@@ -181,6 +183,7 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, 
  */
 
 void frollmeanAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+  if (verbose) Rprintf("%s: running for input length %lu, hasna %d, narm %d\n", __func__, nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
   // TODO measure speed of cs as long double
@@ -202,8 +205,8 @@ void frollmeanAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double 
       } // end of parallel region
     } else {                                                    // update truehasna flag if NAs detected
       if (verbose) {
-        if (hasna==-1) Rprintf("hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, re-running frollfunAdaptive with extra care for NAs\n");
-        else Rprintf("NA (or other non-finite) value(s) are present in input, re-running frollfunAdaptive with extra care for NAs\n");
+        if (hasna==-1) Rprintf("%s: hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n, __func__");
+        else Rprintf("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
       }
       w = 0.0;
       truehasna = 1;
@@ -243,6 +246,7 @@ void frollmeanAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double 
 }
 
 void frollmeanExactAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+  if (verbose) Rprintf("%s: running for input length %lu, hasna %d, narm %d\n", __func__, nx, hasna, (int) narm);
   volatile bool truehasna = hasna>0;                            // flag to re-run if NAs detected
   
   if (!truehasna || !narm) {
@@ -273,11 +277,11 @@ void frollmeanExactAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, do
     } // end of parallel region
     if (truehasna && verbose) {
       if (narm) {
-        if (hasna==-1) Rprintf("hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, re-running frollfunExactAdaptive with extra care for NAs\n");
-        else Rprintf("NA (or other non-finite) value(s) are present in input, re-running frollfunExactAdaptive with extra care for NAs\n");
+        if (hasna==-1) Rprintf("%s: hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+        else Rprintf("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
       } else {
-        if (hasna==-1) Rprintf("hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n");
-        else Rprintf("NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n");
+        if (hasna==-1) Rprintf("%s: hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n", __func__);
+        else Rprintf("%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n", __func__);
       }
     }
   }

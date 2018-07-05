@@ -111,7 +111,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
   double* dans[nx*nk];                                          // pointers to answer columns
   double* dx[nx];                                               // pointers to source columns
   uint_fast64_t inx[nx];                                        // to not recalculate `length(x[[i]])` we store it in extra array
-  if (bverbose) Rprintf("rollfun: allocating memory for results\n");
+  if (bverbose) Rprintf("frollfunR: allocating memory for results %dx%d\n", nx, nk);
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
@@ -161,7 +161,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
     -1;                                                         // hasna FALSE, there should be no NAs
 
   if (nx==1 && nk==1) {                                         // no need to init openmp for single thread call
-    if (bverbose) Rprintf("rollfun: single window and single column, skipping parallel execution\n");
+    if (bverbose) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped\n");
     switch (sfun) {
       case MEAN :
         if (!badaptive) {
@@ -183,7 +183,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
         break;
     }
   } else {
-    if (bverbose>0) Rprintf("rollfun: multiple window or columns, entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n");
+    if (bverbose>0) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
     #pragma omp parallel num_threads(bverbose ? 1 : MIN(getDTthreads(), nx*nk))
     {
       #pragma omp for schedule(auto) collapse(2)
