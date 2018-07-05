@@ -10,7 +10,7 @@
  * consider turning align branch: if (align < 1) { ... } into macro or inline function
  * benchmark alt C impl exact=F: `tmp<-cumsum(x); (tmp-shift(tmp, k))/k` # if faster than current then add to api
  * exact=T measure speed penaulty of volatile truehasna `if (narm && truehasna) continue`, maybe better is to let faster loop finish and re-run after
- * support error handling, even non-stop, or run exact=T from exact=F when Inf detected to never produce incorrect answer silently
+ * consider support error handling, even non-stop.
  */
 
 /* fast rolling mean
@@ -73,9 +73,6 @@ void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, doubl
       if (nc == 0) ans[i] = (double) (w / k);                   // no NAs in sliding window for present observation
       else if (nc == k) ans[i] = narm ? R_NaN : NA_REAL;        // all values in window are NA, expected output for fun(NA, na.rm=T/F)
       else ans[i] = narm ? (double) (w / (k - nc)) : NA_REAL;   // some values in window are NA
-    }
-    if (!R_FINITE((double) w) && verbose) {
-      Rprintf("infinite value(s) are present in input, default frollfun function does not handle infinite values, use exact=TRUE\n");
     }
   }
   if (align < 1) {                                              // align center or left
