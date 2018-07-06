@@ -161,7 +161,10 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
     -1;                                                         // hasna FALSE, there should be no NAs
 
   if (nx==1 && nk==1) {                                         // no need to init openmp for single thread call
-    if (bverbose) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped\n");
+    if (bverbose) {
+      if (!bexact) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped\n");
+      else Rprintf("frollfunR: single column and single window, parallel processing by multiple answers vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe\n");
+    }
     switch (sfun) {
       case MEAN :
         if (!badaptive) {
@@ -183,8 +186,11 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
         break;
     }
   } else {
-    if (bverbose>0) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
-    #pragma omp parallel num_threads(bverbose ? 1 : MIN(getDTthreads(), nx*nk))
+    if (bverbose>0) {
+      if (!bexact) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
+      else Rprintf("frollfunR: %d column(s) and %d window(s), parallel processing by multiple answers vectors skipped because 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
+    }
+    #pragma omp parallel num_threads((bverbose || bexact) ? 1 : MIN(getDTthreads(), nx*nk))
     {
       #pragma omp for schedule(auto) collapse(2)
       for (R_len_t i=0; i<nx; i++) {                              // loop over multiple columns

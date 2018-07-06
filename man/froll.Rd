@@ -24,8 +24,11 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
   \item{n}{ integer vector, for adaptive rolling function also list of
     integer vectors, rolling window size. }
   \item{fill}{ numeric, value to pad by, default \code{NA}. }
-  \item{exact}{ logical, default \code{FALSE}, should floating point
-    rounding error be corrected, see details for more information. }
+  \item{exact}{ logical, default \code{FALSE}. When set to \code{TRUE}
+    then slower algorithm is used. It suffers less from floating point
+    rounding error, perform extra pass to adjust rounding error
+    correction and carefully handle all non-finite values. If available
+    it will use multiple cores. See details for more information. }
   \item{align}{ character, define if window frame covers preceding rows
     \code{"right"}, following rows \code{"left"} or centered
     \code{"center"}, default \code{"right"}. }
@@ -37,7 +40,7 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
   \item{adaptive}{ logical, should adaptive rolling function be
     calculated, default \code{FALSE}. See details below. }
   \item{verbose}{ logical, default \code{getOption("datatable.verbose")},
-    \code{TRUE} turns on status and information messages to the console, 
+    \code{TRUE} turns on status and information messages to the console,
     it also disable parallel processing. }
 }
 \details{
@@ -52,22 +55,27 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
   element must be integer vector of window size corresponding to every
   \code{column[row]} from \code{x}.
 
-  Argument \code{exact} will make rolling functions to perform extra
-  computation for floating point rounding error correction. This is useful
-  mostly when when input data has distant outlier.
-  
   When \code{exact=FALSE} is used then any \code{NaN, +Inf, -Inf} is
   treated as \code{NA}. For precise handling of non-finite values use
   \code{exact=TRUE}.
-  
+  Argument \code{exact} will make rolling functions to perform extra
+  computation for floating point rounding error correction. This is useful
+  mostly when when input data has distant outlier. It also handles
+  \code{NaN, +Inf, -Inf} consistently to base R.
+
   Adaptive rolling functions are special cases where for each single
-  observation own rolling window width has to be calculated. It is
-  currently implemented with following limitations:
+  observation has own corresponding rolling window width. Due to the logic
+  of that function following restrictions apply:
   \itemize{
     \item{ \code{align} only \code{"right"}. }
     \item{ if list of integer vectors is passed to \code{x} then all
       list vectors must have equal length. }
   }
+
+  Unless \code{TRUE} functions are computed in parallel when they are run
+  for multiple columns or multiple windows width, see examples. In case of
+  \code{TRUE} multiple columns/windows are computed sequentially because
+  every single \emph{exact} rolling function is already parallelized.
 }
 \value{
   A list except when the input is a \code{vector} and
@@ -89,7 +97,7 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
     \item{ integers are always coerced to double. }
     \item{ when \code{adaptive=FALSE} (default) then \code{n} must be a
       numeric vector, list is not accepted. }
-    \item{ when \code{adaptive=TRUE} then \code{n} must be vector
+    \item{ when \code{adaptive=TRUE} then \code{n} must be vector of
       length equal to \code{nrow(x)}, or list of such vectors. }
     \item{ there is no \code{partial} window support. }
   }

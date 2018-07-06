@@ -624,6 +624,21 @@ test(9999.99, frollmean(x, nn, exact=TRUE, adaptive=TRUE, verbose=TRUE), output=
   "frollmeanExactAdaptive: running for input length 10, hasna 0, narm 0",
   "frollmeanExactAdaptive: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run"))
 
+d = as.data.table(list(1:10/2, 10:1/4))
+test(9999.99, frollmean(d[,1], 3, exact=TRUE, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answers vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollmeanExact: running for input length 10, window 3, align 1, hasna 0, narm 0"
+))
+test(9999.99, frollmean(d, 3:4, exact=TRUE, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 2x2",
+  "frollfunR: 2 column(s) and 2 window(s), parallel processing by multiple answers vectors skipped because 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollmeanExact: running for input length 10, window 3, align 1, hasna 0, narm 0",
+  "frollmeanExact: running for input length 10, window 4, align 1, hasna 0, narm 0",
+  "frollmeanExact: running for input length 10, window 3, align 1, hasna 0, narm 0",
+  "frollmeanExact: running for input length 10, window 4, align 1, hasna 0, narm 0"
+))
+
 ## validation
 
 set.seed(108)
