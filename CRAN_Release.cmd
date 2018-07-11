@@ -361,7 +361,7 @@ cd ~/build/revdeplib/
 export R_LIBS=~/build/revdeplib/
 export R_LIBS_SITE=none
 export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
-R350
+R
 .libPaths()   # should be just 2 items: revdeplib and the base R package library
 update.packages(ask=FALSE)
 # if package not found on mirror, try manually a different one:
@@ -419,7 +419,7 @@ for (p in deps) {
   all = system("ls *.tar.gz", intern=TRUE)
   all = sapply(strsplit(all, split="_"),'[',1)
   for (i in all[!all %in% deps]) {
-    cat("Removing",i,"because it", if (!i %in% rownames(avail)) "has been removed from CRAN/Bioconductor" else "no longer uses data.table")
+    cat("Removing",i,"because it", if (!i %in% rownames(avail)) "has been removed from CRAN/Bioconductor\n" else "no longer uses data.table\n")
     system(paste0("rm ",i,"_*.tar.gz"))
   }
 }
@@ -526,9 +526,9 @@ find . -name 00check.log -exec grep -H -B 20 "Status:.*ERROR" {} \;
 find . -name 00check.log | grep -E 'AFM|easycsv|...|optiSel|xgboost' | xargs grep -H . > /tmp/out.log
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 more <failing_package>.Rcheck/00check.log
-R350 CMD check <failing_package>.tar.gz
-R350 CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
-R350 CMD check <failing_package>.tar.gz
+R CMD check <failing_package>.tar.gz
+R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
+R CMD check <failing_package>.tar.gz
 ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel ~/build/R-3.5.0/bin/R CMD check &
 
 # Warning: replacing previous import robustbase::sigma by stats::sigma when loading VIM
