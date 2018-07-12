@@ -449,11 +449,11 @@ ans
 
 #### {.bs-callout .bs-callout-info}
 
-* All we did was to change `by` to `keyby`. This automatically orders the result by the grouping variables in increasing order. Note that `keyby()` is applied after performing the operation, i.e., on the computed result.
+* All we did was to change `by` to `keyby`. This automatically orders the result by the grouping variables in increasing order. In fact, due to the internal implementation of `by` first requiring a sort before recovering the original table's order, `keyby` is typically faster than `by` because it doesn't require this second step.
 
-**Keys:** Actually `keyby` does a little more than *just ordering*. It also *sets a key* after ordering by setting an `attribute` called `sorted`. But we'll learn more about `keys` in the *Keys and fast binary search based subset* vignette.
+**Keys:** Actually `keyby` does a little more than *just ordering*. It also *sets a key* after ordering by setting an `attribute` called `sorted`. 
 
-For now, all you have to know is that you can use `keyby` to automatically order the result by the columns specified in `by`.
+We'll learn more about `keys` in the *Keys and fast binary search based subset* vignette; for now, all you have to know is that you can use `keyby` to automatically order the result by the columns specified in `by`.
 
 ### c) Chaining
 
