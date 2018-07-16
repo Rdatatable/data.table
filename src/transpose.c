@@ -16,7 +16,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
   if (!isLogical(ignoreArg) || LOGICAL(ignoreArg)[0] == NA_LOGICAL)
     error("ignore.empty should be logical TRUE/FALSE.");
   if (length(fill) != 1)
-    error("fill must be NULL or length=1 vector.");
+    error("fill must be a length-1 vector.");
   R_len_t ln = LENGTH(l);
   Rboolean ignore = LOGICAL(ignoreArg)[0];
 
