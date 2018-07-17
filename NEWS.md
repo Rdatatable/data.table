@@ -5,6 +5,8 @@
 
 #### NEW FEATURES
 
+1. `CJ()` now auto-names its inputs exactly as `data.table()` does, [#1596](https://github.com/Rdatatable/data.table/issues/1596). Code that relies on `V1`, `V2`, ... naming will no longer work as expected. Thanks @franknarf1 for the suggestion.
+
 #### BUG FIXES
 
 #### NOTES

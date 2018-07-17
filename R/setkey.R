@@ -390,13 +390,8 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
   }
   setattr(l, "row.names", .set_row_names(length(l[[1L]])))
   setattr(l, "class", c("data.table", "data.frame"))
+  setattr(l, "names", name_dots(...)$vnames)
 
-  if (is.null(vnames <- names(l)))
-    vnames = vector("character", length(l))
-  if (any(tt <- vnames == "")) {
-    vnames[tt] = paste0("V", which(tt))
-    setattr(l, "names", vnames)
-  }
   l <- alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
   if (sorted) {
     if (!dups) setattr(l, 'sorted', names(l))

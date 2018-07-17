@@ -71,3 +71,32 @@ vapply_1i <- function (x, fun, ..., use.names = TRUE) {
 
 more = function(f) system(paste("more",f))    # nocov  (just a dev helper)
 
+# helper used to auto-name columns in data.table(x, y) as x, y (and similar)
+#   from the original comment in data.table.R:
+#     Intention here is that data.table(X,Y) will automatically put X and Y
+#     as the column names.  For longer expressions, name the arguments to
+#     data.table(). But in a call to [.data.table, wrap in list() e.g.
+#     DT[,list(a=mean(v),b=foobarzoo(zang))] will get the col names
+#   naming of unnested matrices still handled by data.table()
+name_dots <- function(...) {
+  dot_sub <- as.list(substitute(list(...)))[-1L]
+  vnames = names(dot_sub)
+  l = list(...)
+  if (is.null(vnames)) vnames = rep.int("", length(l))
+  vnames[is.na(vnames)] = ""
+  novname = vnames==""
+  if (any(idx <- !novname)) {
+    if (any(vnames[idx] == ".SD")) stop("A column may not be called .SD. That has special meaning.")
+  }
+  for (i in which(novname)) {
+    # if (ncol(as.data.table(x[[i]])) <= 1) { # cbind call in test 230 fails if I write ncol(as.data.table(eval(tt[[i]], parent.frame()))) <= 1, no idea why... (keep this for later even though all tests pass with ncol(.).. because base uses as.data.frame(.))
+    if (is.null(ncol(l[[i]]))) {
+      if ((tmp <- deparse(dot_sub[[i]])[1L]) == make.names(tmp))
+        vnames[i] <- tmp
+    }
+  }
+  still_empty = vnames==""
+  if (any(still_empty)) vnames[still_empty] = paste0("V", which(still_empty))
+  list(vnames = vnames,
+       novname = novname)
+}
