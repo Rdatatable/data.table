@@ -354,6 +354,7 @@ sudo apt-get -y install libmagick++-dev  # for magick
 sudo apt-get -y install libjq-dev libprotoc-dev libprotobuf-dev and protobuf-compiler   # for protolite
 sudo apt-get -y install python-dev  # for PythonInR
 sudo apt-get -y install gdal-bin libgeos-dev  # for rgdal/raster tested via lidR
+sudo apt-get build-dep r-cran-rsymphony   # for Rsymphony: coinor-libcgl-dev coinor-libclp-dev coinor-libcoinutils-dev coinor-libosi-dev coinor-libsymphony-dev
 sudo R CMD javareconf
 # ENDIF
 
@@ -371,7 +372,6 @@ update.packages(ask=FALSE)   # a repeat sometimes does more, keep repeating unti
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
 # Ensure no library() call in .Rprofile, such as library(bit64)
 source("http://bioconductor.org/biocLite.R")
-biocLite()
 biocLite()   # keep repeating until returns with nothing left to do
 # biocLite("BiocUpgrade")
 # This error means it's up to date: "Bioconductor version 3.4 cannot be upgraded with R version 3.3.2"
@@ -430,6 +430,7 @@ status = function(which="both") {
     cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
     cat("CRAN:\n"); status("cran")
     cat("BIOC:\n"); status("bioc")
+    cat("TOTAL    :", length(deps), "\n\n")
     cat("Oldest 00check.log (to check no old stale ones somehow missed):\n")
     system("find . -name '00check.log' | xargs ls -lt | tail -1")
     cat("\n")
@@ -468,7 +469,7 @@ status = function(which="both") {
       "OK      :",sprintf("%3d",length(ok)),"\n",
       "TOTAL   :",length(e)+length(w)+length(n)+length(ok),"/",length(deps),"\n",
       "RUNNING :",sprintf("%3d",length(r)),":",paste(sort(names(x)[r])),"\n",
-      if (length(ns)==0) "\n" else paste0("NOT STARTED (first 20 of ",length(ns),") : ",paste(sort(names(x)[head(ns,20)]),collapse="|"),"\n")
+      if (length(ns)==0) "\n" else paste0("NOT STARTED (first 20 of ",length(ns),") : ",paste(sort(names(x)[head(ns,20)]),collapse="|"),"\n\n")
       )
   assign(paste0(".fail.",which), c(sort(names(x)[e]), sort(names(x)[w])), envir=.GlobalEnv)
   invisible()
@@ -477,26 +478,28 @@ status = function(which="both") {
 status()
 
 run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.all")) {
+  cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
   if (length(which)>1) which = which[1L]
-  cat("which==",which,"\n", sep="")
+  cat("which == ",which,"\n", sep="")
   numtgz = as.integer(system("ls -1 *.tar.gz | wc -l", intern=TRUE))
   stopifnot(numtgz==length(deps))
-  cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
   if (which=="rerun.all") {
-    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | parallel ~/build/R-3.5.0/bin/R CMD check"
+    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | parallel R CMD check"
     cat("WIPE ALL CHECKS:",cmd,"\n")
     cat("Proceed? (ctrl-c or enter)\n")
     scan(quiet=TRUE)
     # apx 7.5 hrs for 582 packages on my 4 cpu laptop with 8 threads
   } else {
     x = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # always those that haven't run
-    if (which %in% c("cran.fail","both.fail")) x = union(x, .fail.cran)  # .fail written to .GlobalEnv by status()
-    if (which %in% c("bioc.fail","both.fail")) x = union(x, .fail.bioc)
+    if (which %in% c("cran.fail","both.fail"))      x = union(x, .fail.cran)  # .fail written to .GlobalEnv by status()
+    else if (which %in% c("bioc.fail","both.fail")) x = union(x, .fail.bioc)
+    else if (which != "not.started")                x = which   # one package
+    if (length(x)==0) { cat("No packages to run\n"); return(invisible()); }
     cat("Running",length(x),"packages:", paste(x), "\n")
     cat("Proceed? (ctrl-c or enter)\n")
     scan(quiet=TRUE)
     for (i in x) system(paste0("rm -rf ./",i,".Rcheck"))
-    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | parallel ~/build/R-3.5.0/bin/R CMD check")
+    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | parallel R CMD check")
   }
   if (as.integer(system("ps -a | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
@@ -504,7 +507,7 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
 }
 
 # ** ensure latest version installed into revdeplib **
-system("~/build/R-3.5.0/bin/R CMD INSTALL ~/GitHub/data.table/data.table_1.11.5.tar.gz")
+system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.5.tar.gz")
 run()
 
 out = function(fnam="~/fail.log") {
@@ -529,7 +532,7 @@ more <failing_package>.Rcheck/00check.log
 R CMD check <failing_package>.tar.gz
 R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
 R CMD check <failing_package>.tar.gz
-ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel ~/build/R-3.5.0/bin/R CMD check &
+ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check &
 
 # Warning: replacing previous import robustbase::sigma by stats::sigma when loading VIM
 # Reinstalling robustbase fixed this warning. Even though it was up to date, reinstalling made a difference.
