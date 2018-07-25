@@ -484,7 +484,8 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
   numtgz = as.integer(system("ls -1 *.tar.gz | wc -l", intern=TRUE))
   stopifnot(numtgz==length(deps))
   if (which=="rerun.all") {
-    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | parallel R CMD check"
+    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | TZ='UTC' parallel R CMD check"
+    # TZ='UTC' because some packages have failed locally for me but not on CRAN or for their maintainer, due to sensitivity of tests to timezone
     cat("WIPE ALL CHECKS:",cmd,"\n")
     cat("Proceed? (ctrl-c or enter)\n")
     scan(quiet=TRUE)
@@ -499,7 +500,7 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
     cat("Proceed? (ctrl-c or enter)\n")
     scan(quiet=TRUE)
     for (i in x) system(paste0("rm -rf ./",i,".Rcheck"))
-    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | parallel R CMD check")
+    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | TZ='UTC' parallel R CMD check")
   }
   if (as.integer(system("ps -a | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
@@ -529,10 +530,10 @@ find . -name 00check.log -exec grep -H -B 20 "Status:.*ERROR" {} \;
 find . -name 00check.log | grep -E 'AFM|easycsv|...|optiSel|xgboost' | xargs grep -H . > /tmp/out.log
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 more <failing_package>.Rcheck/00check.log
-R CMD check <failing_package>.tar.gz
+TZ='UTC' R CMD check <failing_package>.tar.gz
 R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
-R CMD check <failing_package>.tar.gz
-ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check &
+TZ='UTC' R CMD check <failing_package>.tar.gz
+ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' parallel R CMD check &
 
 # Warning: replacing previous import robustbase::sigma by stats::sigma when loading VIM
 # Reinstalling robustbase fixed this warning. Even though it was up to date, reinstalling made a difference.
