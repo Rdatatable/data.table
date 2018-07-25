@@ -430,7 +430,7 @@ status = function(which="both") {
     cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
     cat("CRAN:\n"); status("cran")
     cat("BIOC:\n"); status("bioc")
-    cat("TOTAL    :", length(deps), "\n\n")
+    cat("TOTAL          :", length(deps), "\n\n")
     cat("Oldest 00check.log (to check no old stale ones somehow missed):\n")
     system("find . -name '00check.log' | xargs ls -lt | tail -1")
     cat("\n")
@@ -468,8 +468,9 @@ status = function(which="both") {
       "NOTE    :",sprintf("%3d",length(n)),"\n",  #":",paste(sort(names(x)[n])),"\n",
       "OK      :",sprintf("%3d",length(ok)),"\n",
       "TOTAL   :",length(e)+length(w)+length(n)+length(ok),"/",length(deps),"\n",
-      "RUNNING :",sprintf("%3d",length(r)),":",paste(sort(names(x)[r])),"\n",
-      if (length(ns)==0) "\n" else paste0("NOT STARTED (first 20 of ",length(ns),") : ",paste(sort(names(x)[head(ns,20)]),collapse="|"),"\n\n")
+      if (length(r))  paste0("RUNNING       : ",paste(sort(names(x)[r]),collapse=" "),"\n"),
+      if (length(ns)) paste0("NOT STARTED   : ",paste(sort(names(x)[head(ns,20)]),collapse=" "), if(length(ns)>20)paste(" +",length(ns)-20,"more"), "\n"),
+      "\n"
       )
   assign(paste0(".fail.",which), c(sort(names(x)[e]), sort(names(x)[w])), envir=.GlobalEnv)
   invisible()
@@ -491,10 +492,13 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
     scan(quiet=TRUE)
     # apx 7.5 hrs for 582 packages on my 4 cpu laptop with 8 threads
   } else {
-    x = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # always those that haven't run
-    if (which %in% c("cran.fail","both.fail"))      x = union(x, .fail.cran)  # .fail written to .GlobalEnv by status()
-    else if (which %in% c("bioc.fail","both.fail")) x = union(x, .fail.bioc)
-    else if (which != "not.started")                x = which   # one package
+    if (!which %in% c("not.started","cran.fail","bioc.fail","both.fail")) {
+      x = which   # one package manually
+    } else {
+      x = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # always those that haven't run
+      if (which %in% c("cran.fail","both.fail")) x = union(x, .fail.cran)  # .fail.* were written to .GlobalEnv by status()
+      if (which %in% c("bioc.fail","both.fail")) x = union(x, .fail.bioc)
+    }
     if (length(x)==0) { cat("No packages to run\n"); return(invisible()); }
     cat("Running",length(x),"packages:", paste(x), "\n")
     cat("Proceed? (ctrl-c or enter)\n")
@@ -502,7 +506,7 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
     for (i in x) system(paste0("rm -rf ./",i,".Rcheck"))
     cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | TZ='UTC' parallel R CMD check")
   }
-  if (as.integer(system("ps -a | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
+  if (as.integer(system("ps -e | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
   system(paste("((",cmd,">/dev/null 2>&1); touch /tmp/finished.flag)"), wait=FALSE)
 }
