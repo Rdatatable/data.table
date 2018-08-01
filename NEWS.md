@@ -9,6 +9,7 @@
 
 #### NOTES
 
+1. Softened the tone of column-type-mismatch-on-assignment warning message to be friendlier. Thanks to @sarahbeeysian on Twitter for voicing this.
 
 ### Changes in v1.11.4  (on CRAN 27 May 2018)
 
