@@ -4685,7 +4685,7 @@ test(1294.2,  dt[, a := 1.5]$a, rep(1L, 3L), warning="Coerced 'double' RHS to 'i
 test(1294.3,  dt[, a := NA]$a, rep(NA_integer_, 3L))
 test(1294.4,  dt[, a := "a"]$a, rep(NA_integer_, 3L),
               warning=c("NAs introduced by coercion",
-                        "Coerced 'character' RHS to 'integer' to match the column's type.*please"))
+                        "Coerced 'character' RHS to 'integer' to match the column's type.*common pitfall"))
 test(1294.5,  dt[, a := list(list(1))]$a, rep(1L, 3L), warning="Coerced 'list' RHS to 'integer' to match the column's type")
 test(1294.6,  dt[, a := list(1L)]$a, rep(1L, 3L))
 test(1294.7,  dt[, a := list(1)]$a, rep(1L, 3L))
@@ -4694,7 +4694,7 @@ test(1294.9,  dt[, b := 1L]$b, rep(1,3))
 test(1294.10, dt[, b := NA]$b, rep(NA_real_,3))
 test(1294.11, dt[, b := "bla"]$b, rep(NA_real_, 3),
               warning=c("NAs introduced by coercion",
-                        "Coerced 'character' RHS to 'double' to match the column's type.*please"))
+                        "Coerced 'character' RHS to 'double' to match the column's type.*common pitfall"))
 test(1294.12, dt[, b := list(list(1))]$b, rep(1,3), warning="Coerced 'list' RHS to 'double' to match the column's type")
 test(1294.13, dt[, b := TRUE]$b, rep(1,3), warning="Coerced 'logical' RHS to 'double' to match the column's type")
 test(1294.14, dt[, b := list(1)]$b, rep(1,3))
