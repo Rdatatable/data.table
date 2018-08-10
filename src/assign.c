@@ -281,7 +281,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key, index, a, assignedNames, indexNames;
   SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
   Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, isDataTable=FALSE;
-  char *s1, *s2, *s3, *s4, *s5;
   const char *c1, *tc1, *tc2;
   int *buf, k=0, newKeyLength, indexNo;
   size_t size; // must be size_t otherwise overflow later in memcpy
@@ -593,21 +592,34 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
           if (isString(targetcol) && isFactor(thisvalue)) {
             PROTECT(RHS = asCharacterFactor(thisvalue));
             protecti++;
-            if (verbose) Rprintf("Coerced factor to character to match the column's type (coercion is inefficient)\n");   // TO DO:  datatable.pedantic would turn this into warning
+            if (verbose) Rprintf("Coerced factor RHS to character to match the column's type. Avoid this coercion if possible, for efficiency, by creating RHS as type character.\n");
+            // TO DO: datatable.pedantic could turn this into warning
           } else {
             PROTECT(RHS = coerceVector(thisvalue,TYPEOF(targetcol)));
             protecti++;
+            char *s1 = (char *)type2char(TYPEOF(targetcol));
+            char *s2 = (char *)type2char(TYPEOF(thisvalue));
             // FR #2551, added test for equality between RHS and thisvalue to not provide the warning when length(thisvalue) == 1
-            if ( length(thisvalue) == 1 && TYPEOF(RHS) != VECSXP && TYPEOF(thisvalue) != VECSXP && (
-               (isReal(thisvalue) && isInteger(targetcol) && REAL(thisvalue)[0] == INTEGER(RHS)[0]) ||
-              (isLogical(thisvalue) && LOGICAL(thisvalue)[0] == NA_LOGICAL) ||
-                   (isReal(RHS) && isInteger(thisvalue)) )) {
-                ;
+            if ( length(thisvalue)==1 && TYPEOF(RHS)!=VECSXP && TYPEOF(thisvalue)!=VECSXP && (
+                 ( isReal(thisvalue) && isInteger(targetcol) && REAL(thisvalue)[0]==INTEGER(RHS)[0] ) ||   // DT[,intCol:=4] rather than DT[,intCol:=4L]
+                 ( isLogical(thisvalue) && LOGICAL(thisvalue)[0] == NA_LOGICAL ) ||                        // DT[,intCol:=NA]
+                 ( isReal(targetcol) && isInteger(thisvalue) ) )) {
+              if (verbose) Rprintf("Coerced length-1 RHS from %s to %s to match column's type.%s If this assign is happening a lot inside a loop, in particular via set(), then it may be worth avoiding this coercion by using R's type postfix on the value being assigned; e.g. typeof(0) vs typeof(0L), and typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_).\n", s2, s1,
+                                    isInteger(targetcol) && isReal(thisvalue) ? "No precision was lost. " : "");
+              // TO DO: datatable.pedantic could turn this into warning
+            } else {
+              if (isReal(thisvalue) && isInteger(targetcol)) {
+                int w = INTEGER(isReallyReal(thisvalue))[0];  // first fraction present (1-based), 0 if none
+                if (w>0) {
+                  warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.",
+                          coln+1, CHAR(STRING_ELT(names, coln)), w, REAL(thisvalue)[w-1], INTEGER(RHS)[w-1]);
+                } else {
+                  warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). The RHS values contain no fractions so would be more efficiently created as integer. Consider using R's 'L' postfix (typeof(0L) vs typeof(0)) to create constants as integer and avoid this warning. Wrapping the RHS with as.integer() will avoid this warning too but it's better if possible to create the RHS as integer in the first place so that the cost of the coercion can be avoided.", coln+1, CHAR(STRING_ELT(names, coln)));
+                }
               } else {
-              s1 = (char *)type2char(TYPEOF(targetcol));
-              s2 = (char *)type2char(TYPEOF(thisvalue));
-              if (isReal(thisvalue)) s3="; may have truncated precision"; else s3="";
-              warning("Coerced '%s' RHS to '%s' to match the column's type%s. Either change the target column ['%s'] to '%s' first (by creating a new '%s' vector length %d (nrows of entire table) and assign that; i.e. 'replace' column), or coerce RHS to '%s' (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your intent clear and for speed. Or, set the column type correctly up front when you create the table and stick to it, please.", s2, s1, s3, CHAR(STRING_ELT(names, coln)), s2, s2, LENGTH(VECTOR_ELT(dt,0)), s1);
+                warning("Coerced %s RHS to %s to match the type of the target column (column %d named '%s'). If the target column's type %s is correct, it's best for efficiency to avoid the coercion and create the RHS as type %s. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.%s() to avoid this warning, but that will still perform the coercion. If the target column's type is not correct, it's best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type) over the top of it; e.g. DT[, `%s`:=as.%s(`%s`)]. If the RHS of := has nrow(DT) elements then the assignment is called a column plonk and is the way to change a column's type. Column types can be observed with sapply(DT,typeof).",
+                s2, s1, coln+1, CHAR(STRING_ELT(names, coln)), s1, s1, s1, CHAR(STRING_ELT(names, coln)), s2, CHAR(STRING_ELT(names, coln)));
+              }
             }
           }
         }
@@ -674,7 +686,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       if (!*tc1) error("Internal error: index name ends with trailing __");
       // check the position of the first appearance of an assigned column in the index.
       // the new index will be truncated to this position.
-      s4 = (char*) malloc(strlen(c1) + 3);
+      char *s4 = (char*) malloc(strlen(c1) + 3);
       if(s4 == NULL){
         error("Internal error: Couldn't allocate memory for s4.");
       }
@@ -684,7 +696,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       newKeyLength = strlen(c1);
       for(int i = 0; i < xlength(assignedNames); i++){
         tc2 = CHAR(STRING_ELT(assignedNames, i));
-        s5 = (char*) malloc(strlen(tc2) + 5); //4 * '_' + \0
+        char *s5 = (char*) malloc(strlen(tc2) + 5); //4 * '_' + \0
         if(s5 == NULL){
           free(s4);
           error("Internal error: Couldn't allocate memory for s5.");
