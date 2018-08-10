@@ -9,7 +9,28 @@
 
 #### NOTES
 
-1. Softened the tone of column-type-mismatch-on-assignment warning message to be friendlier. Thanks to @sarahbeeysian on Twitter for voicing this.
+1. The type coercion warning message has been improved, [#2989](https://github.com/Rdatatable/data.table/pull/2989). Thanks to @sarahbeeysian on [Twitter](https://twitter.com/sarahbeeysian/status/1021359529789775872) for highlighting. For example, given the follow statements:
+```
+  DT = data.table(id=1:3)
+  DT[2, id:="foo"]
+```
+the warning message has changed from :
+```
+  Coerced character RHS to integer to match the column's type. Either change the target column ['id'] to character first (by creating a new character vector length 3 (nrows of entire table) and assign that; i.e. 'replace' column), or coerce RHS to integer (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your intent clear and for speed. Or, set the column type correctly up front when you create the table and stick to it, please.
+```
+to :
+```
+  Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If the target column's type integer is correct, it's best for efficiency to avoid the coercion and create the RHS as type integer. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.integer() to avoid this warning, but that will still perform the coercion. If the target column's type is not correct, it's best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type) over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has nrow(DT) elements, then the assignment is called a column plonk and is the way to change a column's type. Column types can be observed with print(x,class=TRUE) and sapply(x,class).
+```
+
+Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
+```
+  DT = data.table(v=1:3)
+  DT[2, v:=3.14]
+  Warning message:
+    Coerced double RHS to integer to match the type of the target column (column 1 named 'v'). One or more RHS values contain fractions which have been lost; e.g. item 1 with value 3.140000 has been truncated to 3.
+```
+
 
 ### Changes in v1.11.4  (on CRAN 27 May 2018)
 
