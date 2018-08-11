@@ -33,9 +33,9 @@ vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.integer
 warning, but that will still perform the coercion. If the target column's type is not correct, it's
 best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in
 fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type)
-over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has nrow(DT) elements, then
+over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has nrow(DT) elements then
 the assignment is called a column plonk and is the way to change a column's type. Column types can be
-observed with sapply(x,typeof).
+observed with sapply(DT,typeof).
 ```
 
 Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
