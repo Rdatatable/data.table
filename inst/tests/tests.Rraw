@@ -11983,6 +11983,16 @@ test(1914.8, identical(dtGet(dt.comp, 1), dt[[1]]))
 test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
 # END port of old testthat tests
 
+str = "Sepal.Length,Sepal.Width,Petal.Length,Petal.Width,Species
+5.1,3.5,1.4,0.2,setosa
+4.9,3,1.4,0.2,setosa
+4.7,3.2,1.3,0.2,setosa
+4.6,3.1,1.5,0.2,setosa
+5,3.6,1.4,0.2,setosa"
+test(1915, fread(str, select = c(5, 1, 3)),
+     data.table(Species = c("setosa", "setosa", "setosa", "setosa", "setosa"),
+                Sepal.Length = c(5.1, 4.9, 4.7, 4.6, 5),
+                Petal.Length = c(1.4, 1.4, 1.3, 1.5, 1.4)))
 
 ###################################
 #  Add new tests above this line  #
