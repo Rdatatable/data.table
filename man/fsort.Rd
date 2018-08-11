@@ -2,7 +2,7 @@
 \alias{fsort}
 \title{Fast parallel sort}
 \description{
-  Similar to \code{base::sort} but parallel. Experimental.
+  Similar to \code{base::sort} but fast using parallelism. Experimental.
 }
 
 \usage{
@@ -17,7 +17,13 @@ fsort(x, decreasing = FALSE, na.last = FALSE, internal=FALSE, verbose=FALSE, ...
   \item{...}{ Not sure yet. Should be consistent with base R.}
 }
 \details{
-  Returns the input in sorted order. Fast using parallelism.
+  Process will raise error if \code{x} contains negative values.
+  Unless \code{x} is already sorted \code{fsort} will redirect processing to slower single threaded \emph{order} followed by \emph{subset} in following cases:
+  \itemize{
+    \item{data type other than \emph{double} (\emph{numeric})}
+    \item{data having \code{NA}s}
+    \item{\code{decreasing==FALSE}}
+  }
 }
 \value{
   The input in sorted order.
