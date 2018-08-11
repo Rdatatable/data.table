@@ -11998,6 +11998,12 @@ test(1915, fread(str, select = c(5, 1, 3)),
 test(1916.1, fwrite(data.table(foo = c(NA, TRUE, FALSE)), logical01 = TRUE, na = 'EMPTY'), output=c("\"foo\"","EMPTY","1","0")) # this might need to be changed after #2964 will be solved
 test(1916.2, fwrite(data.table(foo = c(NA, TRUE, FALSE)), logical01 = TRUE), output=c("foo","","1","0"))
 
+# #732 prefixes i., x. works during join and by=.EACHI
+dta <- data.table(idx=1:3, vala=4:6, key="idx")
+dtb <- data.table(idx=c(1,4), valb=c(10,11), key="idx")
+test(1917.1, dta[dtb, list(x.idx, sum(valb)), by=.EACHI], data.table(idx = c(1L, 4L), x.idx = c(1L, NA), V2 = c(10, 11)))
+test(1917.2, dta[dtb, list(sum(x.vala), sum(i.valb)), by=.EACHI], data.table(idx = c(1L, 4L), V1 = c(4L, NA_integer_), V2 = c(10, 11)))
+
 
 ###################################
 #  Add new tests above this line  #
