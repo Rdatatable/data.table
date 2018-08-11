@@ -11994,6 +11994,11 @@ test(1915, fread(str, select = c(5, 1, 3)),
                 Sepal.Length = c(5.1, 4.9, 4.7, 4.6, 5),
                 Petal.Length = c(1.4, 1.4, 1.3, 1.5, 1.4)))
 
+# unit tests for #2169 which was already fixed in ec05f8b/src/fwrite.c#L59
+test(1916.1, fwrite(data.table(foo = c(NA, TRUE, FALSE)), logical01 = TRUE, na = 'EMPTY'), output=c("\"foo\"","EMPTY","1","0")) # this might need to be changed after #2964 will be solved
+test(1916.2, fwrite(data.table(foo = c(NA, TRUE, FALSE)), logical01 = TRUE), output=c("foo","","1","0"))
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
