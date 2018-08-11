@@ -7,7 +7,7 @@
 
 #### BUG FIXES
 
-1. `select` in `fread` respects the supplied order when it's given as an `integer`/`numeric`-as-integer, [#2986](https://github.com/Rdatatable/data.table/issues/2986). Thanks @privefl for raising the issue.
+1. `fread` now respects the order of columns passed to `select=` when column numbers are used, [#2986](https://github.com/Rdatatable/data.table/issues/2986). It already respected the order when column names are used. Thanks @privefl for raising the issue.
 
 #### NOTES
 
