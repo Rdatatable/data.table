@@ -12020,6 +12020,9 @@ test(1918.5, DT[, min(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(
 test(1918.6, DT[, max(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(3:5, .Label=lev, class=c("ordered", "factor"))))
 options(old)
 
+# as.ITime.character bug for NA handling #2940
+test(1919, as.ITime(c('xxx', '10:43')), structure(c(NA, 38580L), class = "ITime"))
+
 ###################################
 #  Add new tests above this line  #
 ###################################
