@@ -240,13 +240,10 @@ forder <- function(x, ..., na.last=TRUE, decreasing=FALSE)
   o
 }
 
-fsort <- function(x, decreasing = FALSE, na.last = FALSE, internal=FALSE, verbose=FALSE, ...)
+fsort <- function(x, decreasing=FALSE, na.last=FALSE, internal=FALSE, verbose=FALSE, ...)
 {
   containsNAs <- FALSE
-  if (typeof(x)=="double" && !decreasing) {
-    containsNAs <- anyNA(x) ## just do this if all other conditions are met since it is relatively expensive
-  }
-  if(typeof(x)=="double" && !decreasing && !containsNAs){
+  if (typeof(x)=="double" && !decreasing && !(containsNAs<-anyNA(x))) {
       if (internal) stop("Internal code should not be being called on type double")
       return(.Call(Cfsort, x, verbose))
   }
@@ -255,13 +252,13 @@ fsort <- function(x, decreasing = FALSE, na.last = FALSE, internal=FALSE, verbos
     # The only places internally we use fsort internally (3 calls, all on integer) have had internal=TRUE added for now.
     # TODO: implement integer and character in Cfsort and remove this branch and warning
     if (!internal){
-      if(typeof(x) != "double") warning("Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Using one thread.")
-      if(decreasing)  warning("New parallel sort has not been implemented for decreasing=TRUE so far. Using one thread.")
-      if(containsNAs) warning("New parallel sort has not been implemented for vectors containing NA values so far. Using one thread.")
+      if (typeof(x)!="double") warning("Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Using one thread.")
+      if (decreasing)  warning("New parallel sort has not been implemented for decreasing=TRUE so far. Using one thread.")
+      if (containsNAs) warning("New parallel sort has not been implemented for vectors containing NA values so far. Using one thread.")
     }
-    orderArg = if(decreasing) -1 else 1
+    orderArg = if (decreasing) -1 else 1
     o = forderv(x, order=orderArg, na.last=na.last)
-    return( if (length(o)) x[o] else x )   # TO DO: document this shortcut for already-sorted
+    return( if (length(o)) x[o] else x )
   }
 }
 

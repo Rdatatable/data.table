@@ -133,7 +133,7 @@ as.ITime.character <- function(x, format, ...) {
     new <- strptime(x[w], format = f, ...)
     nna <- !is.na(new)
     if (any(nna)) {
-      y[ w[nna] ] <- new
+      y[ w[nna] ] <- new[nna]
       w <- w[!nna]
     }
   }
