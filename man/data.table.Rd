@@ -80,7 +80,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
     The expression `.()` is a \emph{shorthand} alias to \code{list()}; they both mean the same. (An exception is made for the use of \code{.()} within a call to \code{\link{bquote}}, where \code{.()} is left unchanged.) As long as \code{j} returns a \code{list}, each element of the list becomes a column in the resulting \code{data.table}. This is the default \emph{enhanced} mode.
 
-    When \code{with=FALSE}, \code{j} can be a vector of column names or positions to select (as in \code{data.frame}), or a logical vector with length \code{ncol(x)} defining columns to select. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled.
+    When \code{j} is a vector of column names or positions to select (as in \code{data.frame}). There is no need to use \code{with=FALSE} anymore. In case of using logical vector with length \code{ncol(x)} defining columns to select \code{with=FALSE} is still necessary. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled.
 
     \emph{Advanced:} \code{j} also allows the use of special \emph{read-only} symbols: \code{\link{.SD}}, \code{\link{.N}}, \code{\link{.I}}, \code{\link{.GRP}}, \code{\link{.BY}}.
 
@@ -110,9 +110,9 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
     \item{keyby}{ Same as \code{by}, but with an additional \code{setkey()} run on the \code{by} columns of the result, for convenience. It is common practice to use `keyby=` routinely when you wish the result to be sorted.}
 
-    \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables.
+    \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. In case of overlapping variables names inside dataset and in parent scope you can use double dot prefix \code{..cols} to explicitly refer to `\code{cols} variable parent scope and not from your dataset.
 
-        When \code{with=FALSE} \code{j} is a character vector of column names, a numeric/logical vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is often useful in \code{data.table} to select columns dynamically. Note that \code{x[, cols, with=FALSE]} is equivalent to \code{x[, .SD, .SDcols=cols]}.}
+        When \code{j} is a character vector of column names, a numeric vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is not necessary anymore to select columns dynamically. Note that \code{x[, cols]} is equivalent to \code{x[, ..cols]} and to \code{x[, cols, with=FALSE]} and to \code{x[, .SD, .SDcols=cols]}.}
 
     \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{0} means no rows will be returned for that row of \code{i}. Use \code{options(datatable.nomatch=0)} to change the default value (used when \code{nomatch} is not supplied).}
 
@@ -225,8 +225,8 @@ column called \code{"keep"} containing \code{TRUE} and this is correct behaviour
 \seealso{ \code{\link{special-symbols}}, \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{setorder}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}}, \code{\link{unique.data.table}}, \code{\link{copy}}, \code{\link{:=}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{rbindlist}}, \code{\link{setNumericRounding}}, \code{\link{datatable-optimize}}, \code{\link{fsetdiff}}, \code{\link{funion}}, \code{\link{fintersect}}, \code{\link{fsetequal}}, \code{\link{anyDuplicated}}, \code{\link{uniqueN}}, \code{\link{rowid}}, \code{\link{rleid}}, \code{\link{na.omit}}, \code{\link{frank}} }
 \examples{
 \dontrun{
-example(data.table)  # to run these examples at the prompt}
-
+example(data.table)  # to run these examples at the prompt
+}
 DF = data.frame(x=rep(c("b","a","c"),each=3), y=c(1,3,6), v=1:9)
 DT = data.table(x=rep(c("b","a","c"),each=3), y=c(1,3,6), v=1:9)
 DF
@@ -266,9 +266,9 @@ DT[2:3, .(sv=sum(v))]          # same, but return data.table with column sv
 DT[2:5, cat(v, "\n")]          # just for j's side effect
 
 # select columns the data.frame way
-DT[, 2, with=FALSE]            # 2nd column, returns a data.table always
-colNum = 2
-DT[, colNum, with=FALSE]       # same, equivalent to DT[, .SD, .SDcols=colNum]
+DT[, 2]                        # 2nd column, returns a data.table always
+colNum = 2                     # to refer vars in `j` from the outside of data use `..` prefix
+DT[, ..colNum]                 # same, equivalent to DT[, .SD, .SDcols=colNum]
 DT[["v"]]                      # same as DT[, v] but much faster
 
 # grouping operations - j and by
@@ -424,8 +424,12 @@ if (interactive()) {
 
   # keep up to date with latest stable version on CRAN
   update.packages()
-
-  # get the latest devel version (compiled binary for Windows available -- no tools needed)
+  
+  # get the latest devel version
+  update.dev.pkg()
+  # compiled devel binary for Windows available -- no Rtools needed
+  update.dev.pkg(repo="https://Rdatatable.github.io/data.table")
+  # read more at:
   # https://github.com/Rdatatable/data.table/wiki/Installation
 }
 }}
