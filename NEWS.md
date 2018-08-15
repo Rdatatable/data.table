@@ -7,7 +7,6 @@
 
 #### BUG FIXES
 
-
 1. `fread` now respects the order of columns passed to `select=` when column numbers are used, [#2986](https://github.com/Rdatatable/data.table/issues/2986). It already respected the order when column names are used. Thanks @privefl for raising the issue.
 
 2. `gmin` and `gmax` no longer fail on _ordered_ factors, [#1947](https://github.com/Rdatatable/data.table/issues/1947). Thanks to @mcieslik-mctp for identifying and @mbacou for the nudge.
