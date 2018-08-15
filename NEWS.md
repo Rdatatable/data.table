@@ -13,7 +13,7 @@
 
 3. `as.ITime.character` now properly handles NA when attempting to detect the format of non-NA values in vector. Thanks @polyjian for reporting, closes [#2940](https://github.com/Rdatatable/data.table/issues/2940).
 
-4. Passing a column to use as the rownames to `as.matrix.data.table()` now works when the input `data.table` has a single row, [#2930](https://github.com/Rdatatable/data.table/issues/2930). Thanks to @malcook for reporting, @sritchie73 for fixing, and @HughParsonage and @jangorecki for feedback.  
+4. `as.matrix.data.table()` gains an additional argument, `rownames.values`, that allows the user to supply their own vector of rownames to use in the returned matrix. This deprecates this functionality previously available through the `rownames` argument, which will now throw a warning suggesting to use `rownames.values` instead, and in future releases will throw an error. Additionally, passing a column to use as the `rownames` to `as.matrix.data.table()` now works when the input `data.table` has a single row and closes [#2930](https://github.com/Rdatatable/data.table/issues/2930). Thanks to @malcook for reporting, @sritchie73 for fixing, and @HughParsonage, @jangorecki, and @mattdowle for feedback.   
 
 #### NOTES
 

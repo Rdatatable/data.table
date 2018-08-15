@@ -7,7 +7,7 @@ Converts a \code{data.table} into a \code{matrix}, optionally using one
 of the columns in the \code{data.table} as the \code{matrix} \code{rownames}.
 }
 \usage{
-\method{as.matrix}{data.table}(x, rownames, rownames.literal=FALSE, \dots)}
+\method{as.matrix}{data.table}(x, rownames, rownames.values, \dots)}
 
 \arguments{
 \item{x}{a \code{data.table}}
@@ -15,13 +15,9 @@ of the columns in the \code{data.table} as the \code{matrix} \code{rownames}.
 the \code{rownames} in the returned \code{matrix}. If \code{TRUE} the
 \code{\link{key}} of the \code{data.table} will be used if it is a 
 single column, otherwise the first column in the \code{data.table} will
-be used. Alternative a vector of length \code{nrow(x)} to assign as the
-row names of the returned \code{matrix}.}
-\item{rownames.literal}{logical, optional, when \code{x} is a 
-\code{data.table} that has only a single row, set \code{rownames.literal} 
-to \code{TRUE} if you want to use the vector supplied to the \code{rownames} 
-argument as the row names of the returned \code{matrix} instead of looking 
-for \code{rownames} as a column of \code{x}.}
+be used.}
+\item{rownames.values}{optional, a vector of values to use as the 
+\code{rownames} in the returned \code{matrix}.}
 \item{\dots}{additional arguments to be passed to or from methods.}
 }
 

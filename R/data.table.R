@@ -1887,24 +1887,30 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 #    x
 #}
 
-as.matrix.data.table <- function(x, rownames, rownames.literal=FALSE, ...) {
+as.matrix.data.table <- function(x, rownames, rownames.values, ...) {
   rn <- NULL
   rnc <- NULL
-  if (!missing(rownames)) { # Convert rownames to a column index if possible
+  if (!missing(rownames) && !missing(rownames.values) && !is.null(rownames) && !is.null(rownames.values)) {
+    stop("rownames and rownames.value cannot both be used at the same time")
+  } else if (!missing(rownames.values) && !is.null(rownames.values)) { # user provided vector of rownames
+    if (length(rownames.values) != nrow(x)) {
+      stop(sprintf("rownames.values must be a vector of row names of length nrow(x)=%d", nrow(x)))
+    }
+    rn <- rownames.values
+    rnc <- NULL
+  } else if (!missing(rownames)) { # Convert rownames to a column index if possible
+    if (length(rownames) > 1 && length(rownames) == nrow(x)) {
+      warning("length(rownames) > 1 is deprecated. rownames.values should be used in the future when supplying your own vector of row names")
+    }
     if (length(rownames) == nrow(x) && nrow(x) > 1) {
       # rownames argument is a vector of row names, no column in x to drop.
       rn <- rownames
       rnc <- NULL
-    } else if (length(rownames) == nrow(x) && nrow(x) == 1 && isTRUE(rownames.literal)) {
-      # When x has a single row, the user may still want to supply vector of rownames, 
-      # but we need to distinguish from the case when the rownames is a column of x.
-      rn <- rownames
-      rnc <- NULL
     } else if (!is.null(rownames) && length(rownames) != 1L) { # vector(0) will throw an error, but NULL will pass through
-      stop(sprintf("rownames must be a single column in x or a vector of row names of length nrow(x)=%d", nrow(x)))
+      stop("rownames must be a single column in x")
     } else if (!(is.null(rownames) || is.logical(rownames) || is.character(rownames) || is.numeric(rownames))) {
       # E.g. because rownames is some sort of object that can't be converted to a column index
-      stop("rownames must be TRUE, a column index, a column name in x, or a vector of row names")
+      stop("rownames must be TRUE, a column index, or a column name in x")
     } else if (!is.null(rownames) && !is.na(rownames) && !identical(rownames, FALSE)) { # Handles cases where rownames is a column name, or key(x) from TRUE
       if (identical(rownames, TRUE)) {
         if (haskey(x)) {
