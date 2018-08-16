@@ -227,7 +227,7 @@ SEXP gmin(SEXP x, SEXP narm)
 {
   if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
   if (!isVectorAtomic(x)) error("GForce min can only be applied to columns, not .SD or similar. To find min of all items in a list such as .SD, either add the prefix base::min(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'");
-  if (inherits(x, "factor")) error("min is not meaningful for factors.");
+  if (inherits(x, "factor") && !inherits(x, "ordered")) error("min is not meaningful for factors.");
   R_len_t i, ix, thisgrp=0;
   int n = (irowslen == -1) ? length(x) : irowslen;
   //clock_t start = clock();
@@ -343,7 +343,7 @@ SEXP gmax(SEXP x, SEXP narm)
 {
   if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
   if (!isVectorAtomic(x)) error("GForce max can only be applied to columns, not .SD or similar. To find max of all items in a list such as .SD, either add the prefix base::max(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,max),by=,.SDcols=]'");
-  if (inherits(x, "factor")) error("max is not meaningful for factors.");
+  if (inherits(x, "factor") && !inherits(x, "ordered")) error("max is not meaningful for factors.");
   R_len_t i, ix, thisgrp=0;
   int n = (irowslen == -1) ? length(x) : irowslen;
   //clock_t start = clock();

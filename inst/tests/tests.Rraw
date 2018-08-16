@@ -857,16 +857,16 @@ test(299.03, truelength(DT)>length(DT))   # the := over-allocated, by 100 by def
 # FR #2551 - old 299.3 and 299.5 are changed to include length(RHS) > 1 to issue the warning
 DT[,c:=rep(42L,.N)] # plonk
 test(299.04, DT, data.table(a=1:3, c=42L))
-test(299.05, DT[2:3,c:=c(42, 42)], data.table(a=1:3,c=42L), warning="Coerced 'double' RHS to 'integer' to match the column's type.*length 3 [(]nrows of entire table[)]")
+test(299.05, DT[2:3,c:=c(42, 42)], data.table(a=1:3,c=42L), warning="Coerced double RHS to integer.*column 2 named 'c'.*RHS.*no fractions.*more efficiently.*integer.*Consider.*L")
 # FR #2551 - length(RHS) = 1 - no warning for type conversion
 test(299.06, DT[2,c:=42], data.table(a=1:3,c=42L))
 # also see tests 302 and 303.  (Ok, new test file for fast assign would be tidier).
 test(299.07, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
-test(299.08, DT[2:3,c:=c(42,0)], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'double' RHS to 'logical' to match the column's type.*length 3 [(]nrows of entire table[)]")
+test(299.08, DT[2:3,c:=c(42,0)], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced double RHS to logical.*column 2 named 'c'.*If the target column's type logical is correct")
 # FR #2551 is now changed to fit in / fix bug #5442. Stricter warnings are in place now. Check tests 1294.1-34 below.
-test(299.09, DT[2,c:=42], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'double' RHS to 'logical' to match")
-test(299.11, DT[2,c:=42L], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'integer' RHS to 'logical' to match")
-test(299.12, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=FALSE), warning="Coerced 'integer' RHS to 'logical' to match the column's type.*length 3 [(]nrows of entire table[)]")
+test(299.09, DT[2,c:=42], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced double RHS to logical to match")
+test(299.11, DT[2,c:=42L], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced integer RHS to logical to match")
+test(299.12, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=FALSE), warning="Coerced integer RHS to logical to match the type of the target column.*If the target column's type logical is correct")
 
 
 # Test bug fix #1468, combining i and by.
@@ -958,7 +958,7 @@ test(335, DT[,2:1]<-NULL, error="Attempt to assign to column")
 
 DT = data.table(a=1:2, b=1:6)
 test(336, DT[,z:=a/b], data.table(a=1:2,b=1:6,z=(1:2)/(1:6)))
-test(337, DT[3:4,z:=a*b], data.table(a=1:2,b=1:6,z=c(1,1,3,8,1/5,2/6)), warning="Coerced 'integer' RHS to 'double' to match the colum")
+test(337, DT[3:4,z:=a*b], data.table(a=1:2,b=1:6,z=c(1,1,3,8,1/5,2/6)), warning="Coerced integer RHS to double to match")
 
 
 # test eval of LHS of := (using with=FALSE gives a warning here from v1.9.3)
@@ -1015,7 +1015,7 @@ test(355, DT[11:2010,f:=newlevels], data.table(f=factor(c(rep("000",10),newlevel
 DT = data.table(f=c("a","b"),x=1:4)
 # Test coercing factor to character column
 test(355.5, DT[3,f:=factor("foo")], data.table(f=c("a","b","foo","b"),x=1:4))
-test(355.6, DT[4,f:=factor("bar"),verbose=TRUE], data.table(f=c("a","b","foo","bar"),x=1:4), output="Coerced factor to character to match the column")
+test(355.6, DT[4,f:=factor("bar"),verbose=TRUE], data.table(f=c("a","b","foo","bar"),x=1:4), output="Coerced factor RHS to character to match the column")
 
 
 # See datatable-help post and NEWS item for 1.6.7
@@ -2235,7 +2235,7 @@ test(836, DT[,a:=as.integer(a)], data.table(a=INT(-1,0,1)))
 test(837, DT[,a:=cbind(1,2)], data.table(a=c(1L,2L,1L)),
           warning=c("2 column matrix RHS of := will be treated as one vector",
                     "Supplied 2 items to be assigned to 3 items.*recycled",
-                    "Coerced 'double' RHS to 'integer' to match the column's type"))
+                    "Coerced double RHS to integer to match.*column 1 named 'a'.*values contain no fractions"))
 DT = data.table(a=1:3,b=1:6)
 test(838, DT[,c:=scale(b), by=a][,c:=as.integer(1000*c)], data.table(a=1:3,b=1:6,c=rep(as.integer(1000*scale(1:2)), each=3)))
 
@@ -4681,38 +4681,38 @@ test(1293, ans1, ans2)
 dt <- data.table(a=1:3, b=c(7,8,9), c=c(TRUE, NA, FALSE), d=as.list(4:6), e=c("a", "b", "c"))
 
 test(1294.1,  dt[, a := 1]$a, rep(1L, 3L))
-test(1294.2,  dt[, a := 1.5]$a, rep(1L, 3L), warning="Coerced 'double' RHS to 'integer' to match the column's type")
+test(1294.2,  dt[, a := 1.5]$a, rep(1L, 3L), warning="Coerced double RHS to integer.*column 1 named 'a'.*fractions which have been lost; e.g. item 1 with value 1.5.* truncated to 1.")
 test(1294.3,  dt[, a := NA]$a, rep(NA_integer_, 3L))
 test(1294.4,  dt[, a := "a"]$a, rep(NA_integer_, 3L),
               warning=c("NAs introduced by coercion",
-                        "Coerced 'character' RHS to 'integer' to match the column's type.*please"))
-test(1294.5,  dt[, a := list(list(1))]$a, rep(1L, 3L), warning="Coerced 'list' RHS to 'integer' to match the column's type")
+                        "Coerced character RHS to integer.*create the RHS as type integer.*with as.integer.. to avoid this warning.*DT., `a`:=as.character.`a`.*"))
+test(1294.5,  dt[, a := list(list(1))]$a, rep(1L, 3L), warning="Coerced list RHS to integer to match.*column 1 named 'a'")
 test(1294.6,  dt[, a := list(1L)]$a, rep(1L, 3L))
 test(1294.7,  dt[, a := list(1)]$a, rep(1L, 3L))
-test(1294.8,  dt[, a := TRUE]$a, rep(1L, 3L), warning="Coerced 'logical' RHS to 'integer' to match the column's type")
+test(1294.8,  dt[, a := TRUE]$a, rep(1L, 3L), warning="Coerced logical RHS to integer")
 test(1294.9,  dt[, b := 1L]$b, rep(1,3))
 test(1294.10, dt[, b := NA]$b, rep(NA_real_,3))
 test(1294.11, dt[, b := "bla"]$b, rep(NA_real_, 3),
               warning=c("NAs introduced by coercion",
-                        "Coerced 'character' RHS to 'double' to match the column's type.*please"))
-test(1294.12, dt[, b := list(list(1))]$b, rep(1,3), warning="Coerced 'list' RHS to 'double' to match the column's type")
-test(1294.13, dt[, b := TRUE]$b, rep(1,3), warning="Coerced 'logical' RHS to 'double' to match the column's type")
+                        "Coerced character RHS to double to match.*column 2 named 'b'.*DT[, `b`:=as.character(`b`)]"))
+test(1294.12, dt[, b := list(list(1))]$b, rep(1,3), warning="Coerced list RHS to double")
+test(1294.13, dt[, b := TRUE]$b, rep(1,3), warning="Coerced logical RHS to double")
 test(1294.14, dt[, b := list(1)]$b, rep(1,3))
-test(1294.15, dt[, c := 1]$c, rep(TRUE, 3), warning="Coerced 'double' RHS to 'logical' to match the column's type")
-test(1294.16, dt[, c := 1L]$c, rep(TRUE, 3), warning="Coerced 'integer' RHS to 'logical' to match the column's type")
+test(1294.15, dt[, c := 1]$c, rep(TRUE, 3), warning="Coerced double RHS to logical")
+test(1294.16, dt[, c := 1L]$c, rep(TRUE, 3), warning="Coerced integer RHS to logical")
 test(1294.17, dt[, c := NA]$c, rep(NA, 3))
-test(1294.18, dt[, c := list(1)]$c, rep(TRUE, 3), warning="Coerced 'double' RHS to 'logical' to match the column's type")
-test(1294.19, dt[, c := list(list(1))]$c, rep(TRUE, 3), warning="Coerced 'list' RHS to 'logical' to match the column's type")
-test(1294.20, dt[, c := "bla"]$c, rep(NA, 3), warning="Coerced 'character' RHS to 'logical' to match the column's type")
-test(1294.21, dt[, d := 1]$d, rep(list(1), 3), warning="Coerced 'double' RHS to 'list' to match the column's type")
-test(1294.22, dt[, d := 1L]$d, rep(list(1L), 3), warning="Coerced 'integer' RHS to 'list' to match the column's type")
-test(1294.23, dt[, d := TRUE]$d, rep(list(TRUE), 3), warning="Coerced 'logical' RHS to 'list' to match the column's type")
-test(1294.24, dt[, d := "bla"]$d, rep(list("bla"), 3), warning="Coerced 'character' RHS to 'list' to match the column's type")
+test(1294.18, dt[, c := list(1)]$c, rep(TRUE, 3), warning="Coerced double RHS to logical")
+test(1294.19, dt[, c := list(list(1))]$c, rep(TRUE, 3), warning="Coerced list RHS to logical")
+test(1294.20, dt[, c := "bla"]$c, rep(NA, 3), warning="Coerced character RHS to logical")
+test(1294.21, dt[, d := 1]$d, rep(list(1), 3), warning="Coerced double RHS to list")
+test(1294.22, dt[, d := 1L]$d, rep(list(1L), 3), warning="Coerced integer RHS to list")
+test(1294.23, dt[, d := TRUE]$d, rep(list(TRUE), 3), warning="Coerced logical RHS to list")
+test(1294.24, dt[, d := "bla"]$d, rep(list("bla"), 3), warning="Coerced character RHS to list")
 test(1294.25, dt[, d := list(list(1))]$d, rep(list(1), 3))
-test(1294.26, dt[, e := 1]$e, rep("1", 3), warning="Coerced 'double' RHS to 'character' to match the column's type")
-test(1294.27, dt[, e := 1L]$e, rep("1", 3), warning="Coerced 'integer' RHS to 'character' to match the column's type")
-test(1294.28, dt[, e := TRUE]$e, rep("TRUE", 3), warning="Coerced 'logical' RHS to 'character' to match the column's type")
-test(1294.29, dt[, e := list(list(1))]$e, rep("1", 3), warning="Coerced 'list' RHS to 'character' to match the column's type")
+test(1294.26, dt[, e := 1]$e, rep("1", 3), warning="Coerced double RHS to character")
+test(1294.27, dt[, e := 1L]$e, rep("1", 3), warning="Coerced integer RHS to character")
+test(1294.28, dt[, e := TRUE]$e, rep("TRUE", 3), warning="Coerced logical RHS to character")
+test(1294.29, dt[, e := list(list(1))]$e, rep("1", 3), warning="Coerced list RHS to character")
 test(1294.30, dt[, e := "bla"]$e, rep("bla", 3))
 test(1294.31, dt[, e := list("bla2")]$e, rep("bla2", 3))
 
@@ -6718,19 +6718,19 @@ test(1513, setkey(as.data.table(X), a), setDT(X, key="a"))
 
 # Adding tests for `isReallyReal`
 x = as.numeric(sample(10))
-test(1514.1, isReallyReal(x), FALSE)
+test(1514.1, isReallyReal(x), 0L)
 x = as.numeric(sample(c(1:5, NA)))
-test(1514.2, isReallyReal(x), FALSE) # NAs are handled properly
-x = as.numeric(sample(c(1:2, NaN, NA)))
-test(1514.3, isReallyReal(x), TRUE)
-x = as.numeric(sample(c(1:2, Inf, NA)))
-test(1514.4, isReallyReal(x), TRUE)
-x = as.numeric(sample(c(1:2, -Inf, NA)))
-test(1514.5, isReallyReal(x), TRUE)
-x = as.numeric(runif(2))
-test(1514.6, isReallyReal(x), TRUE)
+test(1514.2, isReallyReal(x), 0L) # NAs in numeric can be coerced to integer NA without loss
+x = c(1:2, NaN, NA)
+test(1514.3, isReallyReal(x), 3L)
+x = c(1:2, Inf, NA)
+test(1514.4, isReallyReal(x), 3L)
+x = c(1:2, -Inf, NA)
+test(1514.5, isReallyReal(x), 3L)
+x = runif(2)
+test(1514.6, isReallyReal(x), 1L)
 x = numeric()
-test(1514.7, isReallyReal(x), FALSE)
+test(1514.7, isReallyReal(x), 0L)
 test(1514.8, isReallyReal(9L), error="x must be of type double")
 
 # #1091
@@ -11690,17 +11690,25 @@ setkey(DT, id)
 test(1899.04, as.matrix(DT, TRUE), mat)
 test(1899.05, as.matrix(DT, 1:4), mat3)
 # errors
-test(1899.06, as.matrix(DT, -1), error="rownames is -1 which is outside the column number range")
-test(1899.07, as.matrix(DT, "Z"), error="Z is not a column of x")
-test(1899.08, as.matrix(DT, c(1,2)), error="rownames must be a single column in x or a vector of row names of length nrow(x)")
-test(1899.09, as.matrix(DT, complex(1)), error="rownames must be TRUE, a column index, a column name in x, or a vector of row names")
+test(1899.06, as.matrix(DT, -1), error="as.integer(rownames)==-1 which is outside the column number range")
+test(1899.07, as.matrix(DT, "Z"), error="'Z' is not a column of x")
+test(1899.08, as.matrix(DT, c(1,2)), error="length(rownames)==2 but nrow(DT)==4. The rownames argument specifies a single column name or number. Consider rownames.value= instead.")
+test(1899.09, as.matrix(DT, complex(1)), error="as.integer(rownames)==0 which is outside the column number range [1,ncol=3].")
 # values that pass through (rownames ignored)
 test(1899.10, as.matrix(DT, NA), mat2)
 test(1899.11, as.matrix(DT, NULL), mat2)
 test(1899.12, as.matrix(DT, FALSE), mat2)
 # Warnings:
 setkey(DT, id, X)
-test(1899.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys")
+test(1899.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but key has multiple columns")
+
+# Check handling of cases where the data.table only has 1 row, raised by Issue #2930:
+mat4 <- matrix(c("a", 1, 5), nrow=1, dimnames=list(c("x"), c("id", "X", "Y")))
+test(1899.14, as.matrix(DT[1,], 1), mat[1,,drop=FALSE])
+test(1899.15, as.matrix(DT[1,], "id"), mat[1,,drop=FALSE])
+test(1899.16, as.matrix(DT[1,], rownames.value="x"), mat4)
+test(1899.17, as.matrix(DT[1,], rownames.value=c("x", "y")), error="length(rownames.value)==2 but should be nrow(x)==1")
+test(1899.18, as.matrix(DT, rownames=TRUE, rownames.value=1:nrow(DT)), error="rownames and rownames.value cannot both be used at the same time")
 
 # index argument for fread, #2633
 DT_str = c('a,b\n3,1\n2,2\n1,1\n2,1\n3,2')
@@ -11983,17 +11991,55 @@ test(1914.8, identical(dtGet(dt.comp, 1), dt[[1]]))
 test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
 # END port of old testthat tests
 
-## Testing issue #2881: wrong bmerge result if 
-## - character gets coerced to factor and 
-## - i is keyed 
-## - and level order in i is different from x
-iris <- data.table(iris)
-iris$grp <- c('A', 'B')
-iris[, Species1 := factor(Species, levels = c('setosa', 'versicolor', 'virginica'), labels = c('setosa', 'versicolor', 'Virginica'))]
-iSorted = data.table(Species1 = c('setosa', 'Virginica'), grp = 'B', key = c("grp", "Species1"))
-i <- setkey(copy(iSorted),NULL)
-test(1915, iris[iSorted, on = c("grp==grp", 'Species1==Species1')],
+str = "Sepal.Length,Sepal.Width,Petal.Length,Petal.Width,Species
+5.1,3.5,1.4,0.2,setosa
+4.9,3,1.4,0.2,setosa
+4.7,3.2,1.3,0.2,setosa
+4.6,3.1,1.5,0.2,setosa
+5,3.6,1.4,0.2,setosa"
+test(1915, fread(str, select = c(5, 1, 3)),
+     data.table(Species = c("setosa", "setosa", "setosa", "setosa", "setosa"),
+                Sepal.Length = c(5.1, 4.9, 4.7, 4.6, 5),
+                Petal.Length = c(1.4, 1.4, 1.3, 1.5, 1.4)))
+
+# unit tests for #2169 which was already fixed in ec05f8b/src/fwrite.c#L59
+test(1916.1, fwrite(data.table(foo = c(NA, TRUE, FALSE)), logical01 = TRUE, na = 'EMPTY'), output=c("\"foo\"","EMPTY","1","0")) # this might need to be changed after #2964 will be solved
+test(1916.2, fwrite(data.table(foo = c(NA, TRUE, FALSE)), logical01 = TRUE), output=c("foo","","1","0"))
+
+# #732 prefixes i., x. works during join and by=.EACHI
+dta <- data.table(idx=1:3, vala=4:6, key="idx")
+dtb <- data.table(idx=c(1,4), valb=c(10,11), key="idx")
+test(1917.1, dta[dtb, list(x.idx, sum(valb)), by=.EACHI], data.table(idx = c(1L, 4L), x.idx = c(1L, NA), V2 = c(10, 11)))
+test(1917.2, dta[dtb, list(sum(x.vala), sum(i.valb)), by=.EACHI], data.table(idx = c(1L, 4L), V1 = c(4L, NA_integer_), V2 = c(10, 11)))
+
+# min/max work for _ordered_ factors, #1947
+lev = letters[1:5]
+DT = CJ(V2=letters[6:8], V1=factor(lev))[-c(4:6, 10:12)]
+setkey(DT, NULL)
+test(1918.1, DT[, min(V1)], error='not meaningful for factors')
+test(1918.2, DT[, max(V1)], error='not meaningful for factors')
+## confirming base functionality works
+DT[ , V1:=as.ordered(V1)]
+test(1918.3, DT[, min(V1)], structure(1L, .Label = lev, class = c("ordered", "factor")))
+test(1918.4, DT[, max(V1)], structure(5L, .Label = lev, class = c("ordered", "factor")))
+## make sure GForce is activated
+old = options(datatable.optimize = Inf)
+test(1918.5, DT[, min(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(1:3, .Label=lev, class=c("ordered", "factor"))))
+test(1918.6, DT[, max(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(3:5, .Label=lev, class=c("ordered", "factor"))))
+options(old)
+
+# as.ITime.character bug for NA handling #2940
+test(1919, as.ITime(c('xxx', '10:43')), structure(c(NA, 38580L), class = "ITime"))
+
+# wrong bmerge result if character gets coerced to factor, i is keyed, and level order in i is different from x, #2881
+iris = data.table(iris)
+iris$grp = c('A', 'B')
+iris[, Species1 := factor(Species, levels=c('setosa','versicolor','virginica'), labels=c('setosa','versicolor','Virginica'))]
+iSorted = data.table(Species1 = c('setosa','Virginica'), grp='B', key=c("grp","Species1"))
+i = setkey(copy(iSorted),NULL)
+test(1920, iris[iSorted, on = c("grp==grp", 'Species1==Species1')],
            iris[i, on = c("grp==grp", 'Species1==Species1')])
+
 
 ###################################
 #  Add new tests above this line  #
