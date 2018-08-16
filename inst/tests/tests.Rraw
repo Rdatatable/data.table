@@ -11688,7 +11688,7 @@ test(1899.02, as.matrix(DT, "id"), mat)
 test(1899.03, as.matrix(DT, TRUE), mat)
 setkey(DT, id)
 test(1899.04, as.matrix(DT, TRUE), mat)
-test(1899.05, as.matrix(DT, 1:4), mat3, warning="deprecated")
+test(1899.05, as.matrix(DT, 1:4), mat3)
 # errors
 test(1899.06, as.matrix(DT, -1), error="rownames is -1 which is outside the column number range")
 test(1899.07, as.matrix(DT, "Z"), error="Z is not a column of x")

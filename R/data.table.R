@@ -1899,9 +1899,10 @@ as.matrix.data.table <- function(x, rownames, rownames.values, ...) {
     rn <- rownames.values
     rnc <- NULL
   } else if (!missing(rownames)) { # Convert rownames to a column index if possible
-    if (length(rownames) > 1 && length(rownames) == nrow(x)) {
-      warning("length(rownames) > 1 is deprecated. rownames.values should be used in the future when supplying your own vector of row names")
-    }
+    # TODO: uncomment in next release, then change to stop() in the release after that
+    #if (length(rownames) > 1 && length(rownames) == nrow(x)) { 
+    #  warning("length(rownames) > 1 is deprecated. rownames.values should be used in the future when supplying your own vector of row names")
+    #}
     if (length(rownames) == nrow(x) && nrow(x) > 1) {
       # rownames argument is a vector of row names, no column in x to drop.
       rn <- rownames
