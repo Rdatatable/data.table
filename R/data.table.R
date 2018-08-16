@@ -1887,60 +1887,51 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 #    x
 #}
 
-as.matrix.data.table <- function(x, rownames, rownames.values, ...) {
-  rn <- NULL
-  rnc <- NULL
-  if (!missing(rownames) && !missing(rownames.values) && !is.null(rownames) && !is.null(rownames.values)) {
-    stop("rownames and rownames.value cannot both be used at the same time")
-  } else if (!missing(rownames.values) && !is.null(rownames.values)) { # user provided vector of rownames
-    if (length(rownames.values) != nrow(x)) {
-      stop(sprintf("rownames.values must be a vector of row names of length nrow(x)=%d", nrow(x)))
-    }
-    rn <- rownames.values
-    rnc <- NULL
-  } else if (!missing(rownames)) { # Convert rownames to a column index if possible
-    # TODO: uncomment in next release, then change to stop() in the release after that
-    #if (length(rownames) > 1 && length(rownames) == nrow(x)) { 
-    #  warning("length(rownames) > 1 is deprecated. rownames.values should be used in the future when supplying your own vector of row names")
-    #}
-    if (length(rownames) == nrow(x) && nrow(x) > 1) {
-      # rownames argument is a vector of row names, no column in x to drop.
-      rn <- rownames
-      rnc <- NULL
-    } else if (!is.null(rownames) && length(rownames) != 1L) { # vector(0) will throw an error, but NULL will pass through
-      stop("rownames must be a single column in x")
-    } else if (!(is.null(rownames) || is.logical(rownames) || is.character(rownames) || is.numeric(rownames))) {
-      # E.g. because rownames is some sort of object that can't be converted to a column index
-      stop("rownames must be TRUE, a column index, or a column name in x")
-    } else if (!is.null(rownames) && !is.na(rownames) && !identical(rownames, FALSE)) { # Handles cases where rownames is a column name, or key(x) from TRUE
-      if (identical(rownames, TRUE)) {
-        if (haskey(x)) {
-          rownames <- key(x)
-          if (length(rownames) > 1L) {
-            warning(sprintf("rownames is TRUE but multiple keys [%s] found for x; defaulting to first column x[,1]",
-                            paste(rownames, collapse = ','), rownames[1L]))
-            rownames <- 1L
-          }
-        } else {
-          rownames <- 1L
+as.matrix.data.table <- function(x, rownames=NULL, rownames.value=NULL, ...) {
+  # rownames = the rownames column (most common usage)
+  if (!is.null(rownames)) {
+    if (!is.null(rownames.value)) stop("rownames and rownames.value cannot both be used at the same time")
+    if (length(rownames)>1L) {
+      # TODO in future as warned in NEWS for 1.11.6:
+      #   warning("length(rownames)>1 is deprecated. Please use rownames.value= instead")
+      if (length(rownames)!=nrow(x))
+        stop(sprintf("length(rownames)==%d but nrow(DT)==%d. The rownames argument specifies a single column name or number. Consider rownames.value= instead.",
+                     length(rownames), nrow(x)))
+      rownames.value = rownames
+      rownames = NULL
+    } else if (length(rownames)==0L) {
+      stop(sprintf("length(rownames)==0 but should be a single column name or number, or NULL"))
+    } else {
+      if (isTRUE(rownames)) {
+        if (length(key(x))>1L) {
+          warning(sprintf("rownames is TRUE but key has multiple columns [%s]; taking first column x[,1] as rownames", paste(key(x), collapse=',')))
         }
+        rownames = if (length(key(x))==1L) chmatch(key(x),names(x)) else 1L
       }
-      if (is.character(rownames)) {
-        rnc <- chmatch(rownames, names(x))
-        if (is.na(rnc)) stop(rownames, " is not a column of x")
-      } else { # rownames is an index already
-        if (rownames < 1L || rownames > ncol(x))
-          stop(sprintf("rownames is %d which is outside the column number range [1,ncol=%d]", rownames, ncol(x)))
-        rnc <- rownames
+      else if (is.logical(rownames) || is.na(rownames)) {
+        # FALSE, NA, NA_character_ all mean the same as NULL
+        rownames = NULL
+      }
+      else if (is.character(rownames)) {
+        w = chmatch(rownames, names(x))
+        if (is.na(w)) stop("'", rownames, "' is not a column of x")
+        rownames = w
+      }
+      else { # rownames is a column number already
+        rownames <- as.integer(rownames)
+        if (is.na(rownames) || rownames<1L || rownames>ncol(x))
+          stop(sprintf("as.integer(rownames)==%d which is outside the column number range [1,ncol=%d].", rownames, ncol(x)))
       }
     }
+  } else if (!is.null(rownames.value)) {
+    if (length(rownames.value)!=nrow(x))
+      stop(sprintf("length(rownames.value)==%d but should be nrow(x)==%d", length(rownames.value), nrow(x)))
   }
-  # If the rownames argument has been used, and is a single column,
-  # extract that column's index (rnc) and drop it from x
-  if (!is.null(rnc)) {
-    rn <- x[[rnc]]
+  if (!is.null(rownames)) {
+    # extract that column and drop it.
+    rownames.value <- x[[rownames]]
     dm <- dim(x) - c(0, 1)
-    cn <- names(x)[-rnc]
+    cn <- names(x)[-rownames]
     X <- x[, .SD, .SDcols = cn]
   } else {
     dm <- dim(x)
@@ -1948,7 +1939,7 @@ as.matrix.data.table <- function(x, rownames, rownames.values, ...) {
     X <- x
   }
   if (any(dm == 0L))
-    return(array(NA, dim = dm, dimnames = list(rn, cn)))
+    return(array(NA, dim = dm, dimnames = list(rownames.value, cn)))
   p <- dm[2L]
   n <- dm[1L]
   collabs <- as.list(cn)
@@ -1996,7 +1987,7 @@ as.matrix.data.table <- function(x, rownames, rownames.values, ...) {
   }
   X <- unlist(X, recursive = FALSE, use.names = FALSE)
   dim(X) <- c(n, length(X)/n)
-  dimnames(X) <- list(rn, unlist(collabs, use.names = FALSE))
+  dimnames(X) <- list(rownames.value, unlist(collabs, use.names = FALSE))
   X
 }
 

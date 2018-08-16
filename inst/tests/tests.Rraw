@@ -11690,26 +11690,25 @@ setkey(DT, id)
 test(1899.04, as.matrix(DT, TRUE), mat)
 test(1899.05, as.matrix(DT, 1:4), mat3)
 # errors
-test(1899.06, as.matrix(DT, -1), error="rownames is -1 which is outside the column number range")
-test(1899.07, as.matrix(DT, "Z"), error="Z is not a column of x")
-test(1899.08, as.matrix(DT, c(1,2)), error="rownames must be a single column in x")
-test(1899.09, as.matrix(DT, complex(1)), error="rownames must be TRUE, a column index, or a column name in x")
+test(1899.06, as.matrix(DT, -1), error="as.integer(rownames)==-1 which is outside the column number range")
+test(1899.07, as.matrix(DT, "Z"), error="'Z' is not a column of x")
+test(1899.08, as.matrix(DT, c(1,2)), error="length(rownames)==2 but nrow(DT)==4. The rownames argument specifies a single column name or number. Consider rownames.value= instead.")
+test(1899.09, as.matrix(DT, complex(1)), error="as.integer(rownames)==0 which is outside the column number range [1,ncol=3].")
 # values that pass through (rownames ignored)
 test(1899.10, as.matrix(DT, NA), mat2)
 test(1899.11, as.matrix(DT, NULL), mat2)
 test(1899.12, as.matrix(DT, FALSE), mat2)
 # Warnings:
 setkey(DT, id, X)
-test(1899.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys")
+test(1899.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but key has multiple columns")
 
 # Check handling of cases where the data.table only has 1 row, raised by Issue #2930:
 mat4 <- matrix(c("a", 1, 5), nrow=1, dimnames=list(c("x"), c("id", "X", "Y")))
 test(1899.14, as.matrix(DT[1,], 1), mat[1,,drop=FALSE])
 test(1899.15, as.matrix(DT[1,], "id"), mat[1,,drop=FALSE])
-# Check that rownames.values works:
-test(1899.16, as.matrix(DT[1,], rownames.values="x"), mat4) # "x" not a column in DT, so use "x" as the 
-test(1899.17, as.matrix(DT[1,], rownames.values=c("x", "y")), error="rownames.values must be a vector of row names of length nrow(x)")
-test(1899.18, as.matrix(DT, rownames=TRUE, rownames.values=1:nrow(DT)), error="rownames and rownames.value cannot both be used at the same time")
+test(1899.16, as.matrix(DT[1,], rownames.value="x"), mat4)
+test(1899.17, as.matrix(DT[1,], rownames.value=c("x", "y")), error="length(rownames.value)==2 but should be nrow(x)==1")
+test(1899.18, as.matrix(DT, rownames=TRUE, rownames.value=1:nrow(DT)), error="rownames and rownames.value cannot both be used at the same time")
 
 # index argument for fread, #2633
 DT_str = c('a,b\n3,1\n2,2\n1,1\n2,1\n3,2')
