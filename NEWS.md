@@ -7,9 +7,58 @@
 
 #### BUG FIXES
 
+1. `fread` now respects the order of columns passed to `select=` when column numbers are used, [#2986](https://github.com/Rdatatable/data.table/issues/2986). It already respected the order when column names are used. Thanks @privefl for raising the issue.
+
+2. `gmin` and `gmax` no longer fail on _ordered_ factors, [#1947](https://github.com/Rdatatable/data.table/issues/1947). Thanks to @mcieslik-mctp for identifying and @mbacou for the nudge.
+
+3. `as.ITime.character` now properly handles NA when attempting to detect the format of non-NA values in vector. Thanks @polyjian for reporting, closes [#2940](https://github.com/Rdatatable/data.table/issues/2940).
+
+4. `as.matrix(DT, rownames="id")` now works when `DT` has a single row, [#2930](https://github.com/Rdatatable/data.table/issues/2930). Thanks to @malcook for reporting and @sritchie73 for fixing. The root cause was the dual meaning of the `rownames=` argument: i) a single column name/number (most common), or ii) rowname values length 1 for the single row. For clarity and safety, `rownames.value=` has been added. Old usage (i.e. `length(rownames)>1`) continues to work for now but will issue a warning in a future release, and then error in a release after that.
+
+5. Fixed regression in v1.11.0 (May 2018) caused by PR [#2389](https://github.com/Rdatatable/data.table/pull/2389) which introduced partial key retainment on `:=` assigns. This broke the joining logic that assumed implicitly that assigning always drops keys completely. Consequently, join and subset results could be wrong when matching character to factor columns with existing keys, [#2881](https://github.com/Rdatatable/data.table/issues/2881). Thanks to @ddong63 for reporting and to @MarkusBonsch for fixing. Missing test added to ensure this doesn't arise again.
+
+6. `as.IDate.numeric` no longer ignores "origin", [#2880](https://github.com/Rdatatable/data.table/issues/2880). Thanks to David Arenburg for reporting and fixing.
+
 #### NOTES
 
-1. `split.data.table` function has been exported so can be directly accessed without need to use method dispatch mechanism. Closes [#2920](https://github.com/Rdatatable/data.table/issues/2920).
+1. The type coercion warning message has been improved, [#2989](https://github.com/Rdatatable/data.table/pull/2989). Thanks to @sarahbeeysian on [Twitter](https://twitter.com/sarahbeeysian/status/1021359529789775872) for highlighting. For example, given the follow statements:
+```
+  DT = data.table(id=1:3)
+  DT[2, id:="foo"]
+```
+the warning message has changed from :
+```
+Coerced character RHS to integer to match the column's type. Either change the target column ['id'] to
+character first (by creating a new character vector length 3 (nrows of entire table) and assign that;
+i.e. 'replace' column), or coerce RHS to integer (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your
+intent clear and for speed. Or, set the column type correctly up front when you create the table and
+stick to it, please.
+```
+to :
+```
+Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If the
+target column's type integer is correct, it's best for efficiency to avoid the coercion and create the
+RHS as type integer. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA)
+vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.integer() to avoid this
+warning, but that will still perform the coercion. If the target column's type is not correct, it's
+best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in
+fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type)
+over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has nrow(DT) elements then
+the assignment is called a column plonk and is the way to change a column's type. Column types can be
+observed with sapply(DT,typeof).
+```
+
+Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
+```
+DT = data.table(v=1:3)
+DT[2, v:=3.14]
+Warning message:
+  Coerced double RHS to integer to match the type of the target column (column 1 named 'v'). One or
+  more RHS values contain fractions which have been lost; e.g. item 1 with value 3.140000 has been
+  truncated to 3.
+```
+
+2. `split.data.table` method is now exported, [#2920](https://github.com/Rdatatable/data.table/issues/2920). But we don't recommend it because `split` copies all the pieces into new memory.
 
 
 ### Changes in v1.11.4  (on CRAN 27 May 2018)
