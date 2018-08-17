@@ -12040,6 +12040,10 @@ i = setkey(copy(iSorted),NULL)
 test(1920, iris[iSorted, on = c("grp==grp", 'Species1==Species1')],
            iris[i, on = c("grp==grp", 'Species1==Species1')])
 
+# origin= ignored by as.IDate.numeric(), #2880
+test(1921.1, as.IDate(1000, origin = "1930-01-01"), as.IDate("1932-09-27"))
+test(1921.2, as.IDate(1000), as.IDate("1972-09-27"))
+
 
 ###################################
 #  Add new tests above this line  #
