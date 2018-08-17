@@ -147,7 +147,7 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   if (!is.null(select)) {
     # fix for #1445
     if (is.numeric(select)) {
-      reorder = if (length(o <- forderv(select))) o else seq_along(select)
+      reorder = frank(select)
     } else {
       reorder = select[select %chin% names(ans)]
       # any missing columns are warning about in fread.c and skipped
