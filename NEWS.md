@@ -5,7 +5,7 @@
 
 #### NEW FEATURES
 
-1. `fread` errors on empty files are downgraded to warnings, and instead return a `NULL` `data.table`, [#2898](https://github.com/Rdatatable/data.table/issues/2898). This improves compatibility with, e.g., using `fread` + `rbindlist` on a directory in which some files may be empty, since `rbindlist` already skips `NULL` elements. For compatibility, `fwrite` on such a `data.table` now warns instead of erroring.
+1. `fread` now reads empty input as a null-data.table with warning, rather than error, [#2898](https://github.com/Rdatatable/data.table/issues/2898). Convenient when using `fread` + `rbindlist` on a directory in which some files may be empty. For consistency, `fwrite(null.data.table())` now warns instead of error, too.
 
 #### BUG FIXES
 
