@@ -12031,6 +12031,16 @@ options(old)
 # as.ITime.character bug for NA handling #2940
 test(1919, as.ITime(c('xxx', '10:43')), structure(c(NA, 38580L), class = "ITime"))
 
+# wrong bmerge result if character gets coerced to factor, i is keyed, and level order in i is different from x, #2881
+iris = data.table(iris)
+iris$grp = c('A', 'B')
+iris[, Species1 := factor(Species, levels=c('setosa','versicolor','virginica'), labels=c('setosa','versicolor','Virginica'))]
+iSorted = data.table(Species1 = c('setosa','Virginica'), grp='B', key=c("grp","Species1"))
+i = setkey(copy(iSorted),NULL)
+test(1920, iris[iSorted, on = c("grp==grp", 'Species1==Species1')],
+           iris[i, on = c("grp==grp", 'Species1==Species1')])
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
