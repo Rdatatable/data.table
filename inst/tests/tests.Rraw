@@ -2389,10 +2389,9 @@ unlink(f)
 # All the unlinks and using a new file each time are to work around apparent Windows issues it seems when writing, appending
 # rereading (possibly via the MapViewOfFile) the same file that has just been appended to. These apparent issues have only
 # showed up on winbuilder so far, so might be in combination with the D: tempdir() there; perhaps D: is on a network drive or something.
-cat("",file=f<-tempfile()); test(885, fread(f), error="empty"); unlink(f)
 test(885.1, fread(""), error="empty")
 test(885.2, fread(), error="empty")
-cat("", file=f<-tempfile()); test(885.3, fread(f), error="File is empty:"); unlink(f)
+cat("", file=f<-tempfile()); test(885.3, fread(f), data.table(NULL), warning="size 0. Returning a NULL data.table"); unlink(f)
 cat(" ", file=f<-tempfile()); test(885.4, fread(f), error="either empty.*whitespace.*or skip has"); unlink(f)
 test(885.5, fread(" "), error="space")
 test(886, fread("\n"), error="empty")
@@ -9132,7 +9131,7 @@ test(1658.26, fwrite(ok_dt, qmethod=c("double", "double")), error="length(qmetho
 test(1658.27, fwrite(ok_dt, col.names="foobar"), error="isLOGICAL(col.names)")
 
 # null data table (no columns)
-test(1658.28, fwrite(data.table(a=1)[NULL,]), error="ncol(x) > 0L is not TRUE")
+test(1658.28, fwrite(data.table(NULL)), NULL, warning="Nothing to write")
 
 # 0.0 written as 0, but TODO #2398, probably related to the 2 lines after l==0 missing coverage in writeFloat64
 test(1658.29, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="id,v\nA,1.1\nB,0\nC,9.9")
@@ -12043,6 +12042,27 @@ test(1920, iris[iSorted, on = c("grp==grp", 'Species1==Species1')],
 # origin= ignored by as.IDate.numeric(), #2880
 test(1921.1, as.IDate(1000, origin = "1930-01-01"), as.IDate("1932-09-27"))
 test(1921.2, as.IDate(1000), as.IDate("1972-09-27"))
+
+# fread returns data.table(NULL) with warning on empty file, #2898
+f = tempfile()
+file.create(f)
+test(1922.1, fread(f), data.table(NULL), warning = 'File.*size 0')
+test(1922.2, fread(file = f), data.table(NULL), warning = 'File.*size 0')
+# trigger download for last instance of warning
+test(1922.3, fread(paste0('file://', f)), data.table(NULL), warning = 'File.*size 0')
+test(1922.4, fread(f, data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
+test(1922.5, fread(file = f, data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
+test(1922.6, fread(paste0('file://', f), data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
+unlink(f)
+
+#fwrite creates a file or does nothing, as appropriate, also #2898
+DT = data.table(NULL)
+f = tempfile()
+test(1922.7, fwrite(DT, f), NULL, warning = 'no columns; creating an empty file')
+## above test created a file; now test behavior when file exists
+test(1922.8, fwrite(DT, f), NULL, warning = 'no columns; doing nothing.*file.remove')
+## slightly different behavior if append = TRUE
+test(1922.9, fwrite(DT, f, append = TRUE), NULL, warning = 'doing nothing.$')
 
 
 ###################################

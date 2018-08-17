@@ -5,6 +5,8 @@
 
 #### NEW FEATURES
 
+1. For convenience when using `rbindlist(lapply(files,fread))` and some `files` are empty, `fread` now reads empty input as a null-data.table with warning, rather than error, [#2898](https://github.com/Rdatatable/data.table/issues/2898). For consistency, `fwrite(data.table(NULL))` now creates an empty file and warns, instead of error, too.
+
 #### BUG FIXES
 
 1. `fread` now respects the order of columns passed to `select=` when column numbers are used, [#2986](https://github.com/Rdatatable/data.table/issues/2986). It already respected the order when column names are used. Thanks @privefl for raising the issue.
@@ -70,7 +72,6 @@ Warning message:
 3. Tests 1590.3 & 1590.4 now pass when users run `test.data.table()` on Windows, [#2856](https://github.com/Rdatatable/data.table/pull/2856). Thanks to Avraham Adler for reporting. Those tests were passing on AppVeyor, win-builder and CRAN's Windows because `R CMD check` sets `LC_COLLATE=C` as documented in R-exts$1.3.1, whereas by default on Windows `LC_COLLATE` is usually a regional Windows-1252 dialect such as `English_United States.1252`.
 
 4. Around 1 billion very small groups (of size 1 or 2 rows) could result in `"Failed to realloc working memory"` even when plenty of memory is available, [#2777](https://github.com/Rdatatable/data.table/issues/2777). Thanks once again to @jsams for the detailed report as a follow up to bug fix 40 in v1.11.0.
-
 
 ### Changes in v1.11.2  (on CRAN 8 May 2018)
 
