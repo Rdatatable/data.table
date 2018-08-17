@@ -2391,6 +2391,7 @@ unlink(f)
 # showed up on winbuilder so far, so might be in combination with the D: tempdir() there; perhaps D: is on a network drive or something.
 test(885.1, fread(""), error="empty")
 test(885.2, fread(), error="empty")
+cat("", file=f<-tempfile()); test(885.3, fread(f), data.table(NULL), warning="empty"); unlink(f)
 cat(" ", file=f<-tempfile()); test(885.4, fread(f), error="either empty.*whitespace.*or skip has"); unlink(f)
 test(885.5, fread(" "), error="space")
 test(886, fread("\n"), error="empty")
