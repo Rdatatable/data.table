@@ -26,7 +26,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
   nThread = as.integer(nThread)
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
   # validate arguments
-  stopifnot(is.list(x), ncol(x) > 0L,
+  stopifnot(is.list(x),
     identical(quote,"auto") || identical(quote,FALSE) || identical(quote,TRUE),
     is.character(sep) && length(sep)==1L && nchar(sep) == 1L,
     is.character(sep2) && length(sep2)==3L && nchar(sep2[2L])==1L,
@@ -50,6 +50,19 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     nThread = 1L
     showProgress = FALSE
     eol = "\n"  # Rprintf() is used at C level which knows inside it to output \r\n on Windows. Otherwise extra \r is output.
+  }
+  if (ncol(x) == 0L && file != "") {
+    if (file.exists(file)) {
+      warning("Input has no columns; doing nothing.",
+              if (!append)
+                paste("\nIf you intended to overwrite the file at",
+                      file, "with an empty one, please use file.remove first."))
+      return(invisible())
+    } else {
+      warning("Input has no columns; creating an empty file at '", file, "' and exiting.")
+      file.create(file)
+      return(invisible())
+    }
   }
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
           row.names, col.names, logical01, dateTimeAs, buffMB, nThread,
