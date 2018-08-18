@@ -35,7 +35,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   which.first = data.table:::which.first
   which.last = data.table:::which.last
   trim = data.table:::trim
-  `%+%.default` = data.table:::`%+%.default`
   .shallow = data.table:::.shallow
   getdots = data.table:::getdots
   as.ITime.default = data.table:::as.ITime.default
@@ -6870,8 +6869,7 @@ dt2 = as.data.table(dt1); setattr(dt2, 'sorted', NULL)
 test(1533.1, setkeyv(dt1, character(0)), dt2, warning = "cols is a character vector")
 test(1533.2, setkeyv(dt1, "x", verbose=TRUE), setkey(dt2, x), output = "forder took")
 
-# coverage for %+% and trim
-test(1534, `%+%.default`(1:5, 6:10), "1,2,3,4,56,7,8,9,10")
+# coverage for internal trim, test 1534 removed as custom %+% has been removed
 test(1535.1, trim("  abcde "), "abcde")
 test(1535.2, trim("  abcde"), "abcde")
 test(1535.3, trim("abcde "), "abcde")
@@ -12063,6 +12061,15 @@ test(1922.7, fwrite(DT, f), NULL, warning = 'no columns; creating an empty file'
 test(1922.8, fwrite(DT, f), NULL, warning = 'no columns; doing nothing.*file.remove')
 ## slightly different behavior if append = TRUE
 test(1922.9, fwrite(DT, f, append = TRUE), NULL, warning = 'doing nothing.$')
+
+# create index even if key present by setting attribute, #2883
+DT = data.table(1:5, 1:5)
+setkey(DT)
+setindex(DT)
+test(1923.1, indices(DT, vectors=TRUE), list(c("V1","V2")))
+setindex(DT, NULL)
+setindex(DT, V1)
+test(1923.2, indices(DT, vectors=TRUE), list(c("V1")))
 
 
 ###################################

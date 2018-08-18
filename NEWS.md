@@ -62,6 +62,8 @@ Warning message:
 
 2. `split.data.table` method is now properly exported, [#2920](https://github.com/Rdatatable/data.table/issues/2920). But we don't recommend it because `split` copies all the pieces into new memory.
 
+3. Setting indices on columns which are part of the key will now create those indices.
+
 
 ### Changes in v1.11.4  (on CRAN 27 May 2018)
 
