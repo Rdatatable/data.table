@@ -591,9 +591,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         setnames(i, orignames[leftcols])
         setattr(i, 'sorted', names(i)) # since 'x' has key set, this'll always be sorted
       }
-      io = if (missing(on)) haskey(i) else identical(unname(on), head(key(i), length(on)))
-      i = .shallow(i, retain.key = io)
-      ans = bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
+      i = .shallow(i, retain.key = TRUE)
+      ans = bmerge(i, x, leftcols, rightcols, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
       # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this
       # 'setorder', as there's another 'setorder' in generating 'irows' below...
       if (length(ans$indices)) setorder(setDT(ans[1L:3L]), indices)
@@ -1145,7 +1144,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           m[is.na(m)] = ncol(x)+seq_len(length(newnames))
           cols = as.integer(m)
           if ((ok<-selfrefok(x,verbose))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
-            warning("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or been created manually using structure() or similar). Avoid key<-, names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. Also, in R<=v3.0.2, list(DT1,DT2) copied the entire DT1 and DT2 (R's list() used to copy named objects); please upgrade to R>v3.0.2 if that is biting. If this message doesn't help, please report to data.table issue tracker so the root cause can be fixed.")
+            warning("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid key<-, names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
           if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
             DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
             n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
@@ -1308,7 +1307,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if ( (keylen>len || chk) && !.Call(CisOrderedSubset, irows, nrow(x))) {
           keylen = if (!chk) len else 0L # fix for #1268
         }
-        if (keylen && ((is.data.table(i) && haskey(i)) || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
+        ## check key on i as well!
+        ichk = is.data.table(i) && haskey(i) ## make sure, i has key at all
+        if(ichk) ichk = (head(key(i), length(leftcols)) == names(i)[leftcols]) ## make sure, i has the correct key
+        if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
           setattr(ans,"sorted",head(key(x),keylen))
       }
       setattr(ans, "class", class(x)) # fix for #5296
@@ -1887,48 +1889,51 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 #    x
 #}
 
-as.matrix.data.table <- function(x, rownames, ...) {
-  rn <- NULL
-  rnc <- NULL
-  if (!missing(rownames)) { # Convert rownames to a column index if possible
-    if (length(rownames) == nrow(x)) {
-      # rownames argument is a vector of row names, no column in x to drop.
-      rn <- rownames
-      rnc <- NULL
-    } else if (!is.null(rownames) && length(rownames) != 1L) { # vector(0) will throw an error, but NULL will pass through
-      stop(sprintf("rownames must be a single column in x or a vector of row names of length nrow(x)=%d", nrow(x)))
-    } else if (!(is.null(rownames) || is.logical(rownames) || is.character(rownames) || is.numeric(rownames))) {
-      # E.g. because rownames is some sort of object that can't be converted to a column index
-      stop("rownames must be TRUE, a column index, a column name in x, or a vector of row names")
-    } else if (!is.null(rownames) && !is.na(rownames) && !identical(rownames, FALSE)) { # Handles cases where rownames is a column name, or key(x) from TRUE
-      if (identical(rownames, TRUE)) {
-        if (haskey(x)) {
-          rownames <- key(x)
-          if (length(rownames) > 1L) {
-            warning(sprintf("rownames is TRUE but multiple keys [%s] found for x; defaulting to first column x[,1]",
-                            paste(rownames, collapse = ','), rownames[1L]))
-            rownames <- 1L
-          }
-        } else {
-          rownames <- 1L
+as.matrix.data.table <- function(x, rownames=NULL, rownames.value=NULL, ...) {
+  # rownames = the rownames column (most common usage)
+  if (!is.null(rownames)) {
+    if (!is.null(rownames.value)) stop("rownames and rownames.value cannot both be used at the same time")
+    if (length(rownames)>1L) {
+      # TODO in future as warned in NEWS for 1.11.6:
+      #   warning("length(rownames)>1 is deprecated. Please use rownames.value= instead")
+      if (length(rownames)!=nrow(x))
+        stop(sprintf("length(rownames)==%d but nrow(DT)==%d. The rownames argument specifies a single column name or number. Consider rownames.value= instead.",
+                     length(rownames), nrow(x)))
+      rownames.value = rownames
+      rownames = NULL
+    } else if (length(rownames)==0L) {
+      stop(sprintf("length(rownames)==0 but should be a single column name or number, or NULL"))
+    } else {
+      if (isTRUE(rownames)) {
+        if (length(key(x))>1L) {
+          warning(sprintf("rownames is TRUE but key has multiple columns [%s]; taking first column x[,1] as rownames", paste(key(x), collapse=',')))
         }
+        rownames = if (length(key(x))==1L) chmatch(key(x),names(x)) else 1L
       }
-      if (is.character(rownames)) {
-        rnc <- chmatch(rownames, names(x))
-        if (is.na(rnc)) stop(rownames, " is not a column of x")
-      } else { # rownames is an index already
-        if (rownames < 1L || rownames > ncol(x))
-          stop(sprintf("rownames is %d which is outside the column number range [1,ncol=%d]", rownames, ncol(x)))
-        rnc <- rownames
+      else if (is.logical(rownames) || is.na(rownames)) {
+        # FALSE, NA, NA_character_ all mean the same as NULL
+        rownames = NULL
+      }
+      else if (is.character(rownames)) {
+        w = chmatch(rownames, names(x))
+        if (is.na(w)) stop("'", rownames, "' is not a column of x")
+        rownames = w
+      }
+      else { # rownames is a column number already
+        rownames <- as.integer(rownames)
+        if (is.na(rownames) || rownames<1L || rownames>ncol(x))
+          stop(sprintf("as.integer(rownames)==%d which is outside the column number range [1,ncol=%d].", rownames, ncol(x)))
       }
     }
+  } else if (!is.null(rownames.value)) {
+    if (length(rownames.value)!=nrow(x))
+      stop(sprintf("length(rownames.value)==%d but should be nrow(x)==%d", length(rownames.value), nrow(x)))
   }
-  # If the rownames argument has been used, and is a single column,
-  # extract that column's index (rnc) and drop it from x
-  if (!is.null(rnc)) {
-    rn <- x[[rnc]]
+  if (!is.null(rownames)) {
+    # extract that column and drop it.
+    rownames.value <- x[[rownames]]
     dm <- dim(x) - c(0, 1)
-    cn <- names(x)[-rnc]
+    cn <- names(x)[-rownames]
     X <- x[, .SD, .SDcols = cn]
   } else {
     dm <- dim(x)
@@ -1936,7 +1941,7 @@ as.matrix.data.table <- function(x, rownames, ...) {
     X <- x
   }
   if (any(dm == 0L))
-    return(array(NA, dim = dm, dimnames = list(rn, cn)))
+    return(array(NA, dim = dm, dimnames = list(rownames.value, cn)))
   p <- dm[2L]
   n <- dm[1L]
   collabs <- as.list(cn)
@@ -1984,7 +1989,7 @@ as.matrix.data.table <- function(x, rownames, ...) {
   }
   X <- unlist(X, recursive = FALSE, use.names = FALSE)
   dim(X) <- c(n, length(X)/n)
-  dimnames(X) <- list(rn, unlist(collabs, use.names = FALSE))
+  dimnames(X) <- list(rownames.value, unlist(collabs, use.names = FALSE))
   X
 }
 
@@ -2776,6 +2781,7 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       assign(as.character(name[[3L]]), x, k, inherits=FALSE)
     }
   }
+  .Call(CexpandAltRep, x)  # issue#2866 and PR#2882
   invisible(x)
 }
 
