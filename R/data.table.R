@@ -2559,7 +2559,7 @@ setnames <- function(x,old,new) {
   invisible(x)
 }
 
-setcolorder <- function(x, neworder)
+setcolorder <- function(x, neworder=key(x))
 {
   if (any(duplicated(neworder))) stop("neworder contains duplicates")
   # if (!is.data.table(x)) stop("x is not a data.table")
