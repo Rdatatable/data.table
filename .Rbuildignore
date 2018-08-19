@@ -14,6 +14,10 @@
 ^\.Rhistory$
 ^data\.table_.*\.tar\.gz$
 ^cc\.R$
+^ci\.R$
+^publish\.R$
 ^Makefile$
 ^NEWS.0.md$
-
+^bus$
+^Dockerfile$
+^Dockerfile\.in$

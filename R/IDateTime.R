@@ -10,8 +10,14 @@ as.IDate.default <- function(x, ..., tz = attr(x, "tzone")) {
   as.IDate(as.Date(x, tz = tz, ...))
 }
 
-as.IDate.numeric <- function(x, ...) {
-  structure(as.integer(x), class=c("IDate","Date"))
+as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
+  if (origin=="1970-01-01") {
+    # standard epoch
+    structure(as.integer(x), class=c("IDate","Date"))
+  } else {
+    # only call expensive as.IDate.character if we have to
+    as.IDate(origin, ...) + as.integer(x)
+  }
 }
 
 as.IDate.Date <- function(x, ...) {
@@ -133,7 +139,7 @@ as.ITime.character <- function(x, format, ...) {
     new <- strptime(x[w], format = f, ...)
     nna <- !is.na(new)
     if (any(nna)) {
-      y[ w[nna] ] <- new
+      y[ w[nna] ] <- new[nna]
       w <- w[!nna]
     }
   }
@@ -204,7 +210,7 @@ unique.ITime <- function(x, ...) {
 }
 
 # create a data.table with IDate and ITime columns
-#   should work for most date/time formats like chron or POSIXct
+#   should work for most date/time formats like POSIXct
 
 IDateTime <- function(x, ...) UseMethod("IDateTime")
 IDateTime.default <- function(x, ...) {
@@ -232,28 +238,6 @@ as.POSIXct.ITime <- function(x, tz = "UTC", date = as.Date(Sys.time()), ...) {
 
 as.POSIXlt.ITime <- function(x, ...) {
   as.POSIXlt(as.POSIXct(x, ...))
-}
-
-# chron support
-
-as.chron.IDate <- function(x, time = NULL, ...) {
-  if(!requireNamespace("chron", quietly = TRUE)) stop("Install suggested `chron` package to use `as.chron.IDate` function.") else {
-    if (!is.null(time)) {
-      chron::chron(dates. = chron::as.chron(as.Date(x)), times. = chron::as.chron(time))
-    } else {
-      chron::chron(dates. = chron::as.chron(as.Date(x)))
-    }
-  }
-}
-
-as.chron.ITime <- function(x, date = NULL, ...) {
-  if(!requireNamespace("chron", quietly = TRUE)) stop("Install suggested `chron` package to use `as.chron.ITime` function.") else {
-    if (!is.null(date)) {
-      chron::chron(dates. = chron::as.chron(as.Date(date)), times. = chron::as.chron(x))
-    } else {
-      chron::chron(times. = as.character(x))
-    }
-  }
 }
 
 as.ITime.times <- function(x, ...) {

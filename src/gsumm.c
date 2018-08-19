@@ -227,7 +227,7 @@ SEXP gmin(SEXP x, SEXP narm)
 {
   if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
   if (!isVectorAtomic(x)) error("GForce min can only be applied to columns, not .SD or similar. To find min of all items in a list such as .SD, either add the prefix base::min(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'");
-  if (inherits(x, "factor")) error("min is not meaningful for factors.");
+  if (inherits(x, "factor") && !inherits(x, "ordered")) error("min is not meaningful for factors.");
   R_len_t i, ix, thisgrp=0;
   int n = (irowslen == -1) ? length(x) : irowslen;
   //clock_t start = clock();
@@ -343,7 +343,7 @@ SEXP gmax(SEXP x, SEXP narm)
 {
   if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
   if (!isVectorAtomic(x)) error("GForce max can only be applied to columns, not .SD or similar. To find max of all items in a list such as .SD, either add the prefix base::max(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,max),by=,.SDcols=]'");
-  if (inherits(x, "factor")) error("max is not meaningful for factors.");
+  if (inherits(x, "factor") && !inherits(x, "ordered")) error("max is not meaningful for factors.");
   R_len_t i, ix, thisgrp=0;
   int n = (irowslen == -1) ? length(x) : irowslen;
   //clock_t start = clock();
@@ -781,18 +781,18 @@ SEXP gfirst(SEXP x) {
 }
 
 SEXP gtail(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, gtail is only implemented for n=1. This should have been caught before. Please report to datatable-help.");
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, gtail is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.");
   return (glast(x));
 }
 
 SEXP ghead(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, ghead is only implemented for n=1. This should have been caught before. Please report to datatable-help.");
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, ghead is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.");
   return (gfirst(x));
 }
 
 SEXP gnthvalue(SEXP x, SEXP valArg) {
 
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. Please report to datatable-help.");
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.");
   R_len_t i,k, val=INTEGER(valArg)[0];
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;

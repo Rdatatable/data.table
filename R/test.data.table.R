@@ -36,6 +36,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
   assign("timings", data.table( ID = seq_len(3000L), time=0.0, nTest=0L ), envir=env)   # test timings aggregated to integer id
   assign("memtest", as.logical(Sys.getenv("TEST_DATA_TABLE_MEMTEST", "FALSE")), envir=env)
+  assign("filename", fn, envir=env)
   assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
   # It doesn't matter that 3000L is far larger than needed for other and benchmark.
   if(isTRUE(silent)){
@@ -74,7 +75,7 @@ INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 ps_mem = function() {
   # nocov start
   cmd = sprintf("ps -o rss %s | tail -1", Sys.getpid())
-  ans = tryCatch(as.numeric(system(cmd, intern=TRUE)), error=function(e) NA_real_)
+  ans = tryCatch(as.numeric(system(cmd, intern=TRUE, ignore.stderr=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
   stopifnot(length(ans)==1L) # extra check if other OSes would not handle 'tail -1' properly for some reason
   # returns RSS memory occupied by current R process in MB rounded to 1 decimal places (as in gc), ps already returns KB
   c("PS_rss"=round(ans / 1024, 1))
@@ -114,6 +115,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     timings = get("timings", parent.frame())
     memtest = get("memtest", parent.frame())
     inittime = get("inittime", parent.frame())
+    filename = get("filename", parent.frame())
     time = nTest = NULL  # to avoid 'no visible binding' note
     on.exit( {
        now = proc.time()[3]
@@ -128,7 +130,8 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     # lines output are filled with the last 13 "running test num" lines rather than the last error output, but that's
     # better than the dev-time-lost when it crashes and it actually crashed much later than the last test number visible.
   } else {
-    memtest = FALSE   # nocov
+    memtest = FALSE          # nocov
+    filename = NA_character_ # nocov
   }
 
   if (!missing(error) && !missing(y)) stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")
@@ -159,11 +162,11 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
     x = tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
   } else {
-    out = capture.output(print(x <<- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
+    out = capture.output(print(x <- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
   }
   if (memtest) {
-    mem = as.list(c(inittime=inittime, timestamp=timestamp, test=num, ps_mem(), gc_mem()))   # nocov
-    fwrite(mem, "memtest.csv", append=TRUE)                                                  # nocov
+    mem = as.list(c(inittime=inittime, filename=basename(filename), timestamp=timestamp, test=num, ps_mem(), gc_mem())) # nocov
+    fwrite(mem, "memtest.csv", append=TRUE)                                                                   # nocov
   }
   fail = FALSE
   if (length(warning) != length(actual.warns)) {

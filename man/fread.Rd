@@ -19,7 +19,7 @@ col.names,
 check.names=FALSE, encoding="unknown",
 strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE,
 key=NULL, index=NULL,
-showProgress=interactive(),
+showProgress=getOption("datatable.showProgress", interactive()),
 data.table=getOption("datatable.fread.datatable", TRUE),
 nThread=getDTthreads(),
 logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
@@ -71,7 +71,7 @@ autostart=NA
   \item{key}{Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{index}{ Character vector or list of character vectors of one or more column names which is passed to \code{\link{setindexv}}. As with \code{key}, comma-separated notation like \code{index="x,y,z"} is accepted for convenience. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{showProgress}{ \code{TRUE} displays progress on the console if the ETA is greater than 3 seconds. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
-  \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. }
+  \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. The default for this argument can be changed with \code{options(datatable.fread.datatable=FALSE)}.}
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{logical01}{If TRUE a column containing only 0s and 1s will be read as logical, otherwise as integer.}
   \item{autostart}{ Deprecated and ignored with warning. Please use \code{skip} instead. }
@@ -116,14 +116,13 @@ When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \c
 
 }
 \value{
-    A \code{data.table} by default. A \code{data.frame} when argument \code{data.table=FALSE}; e.g. \code{options(datatable.fread.datatable=FALSE)}.
+    A \code{data.table} by default, otherwise a \code{data.frame} when argument \code{data.table=FALSE}.
 }
 \references{
 Background :\cr
 \url{https://cran.r-project.org/doc/manuals/R-data.html}\cr
 \url{http://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}\cr
 \url{http://www.biostat.jhsph.edu/~rpeng/docs/R-large-tables.html}\cr
-\url{http://r.789695.n4.nabble.com/Re-Memory-Experimentation-Rule-of-Thumb-10-15-Times-the-Memory-tp831940.html}\cr
 \url{http://www.cerebralmastication.com/2009/11/loading-big-data-into-r/}\cr
 \url{http://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}\cr
 \url{http://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}\cr
@@ -136,7 +135,7 @@ Background :\cr
 
 finagler = "to get or achieve by guile or manipulation" \url{http://dictionary.reference.com/browse/finagler}
 }
-\seealso{ \code{\link[utils]{read.csv}}, \code{\link[base]{url}}, \code{\link[base]{Sys.setlocale}}
+\seealso{ \code{\link[utils:read.table]{read.csv}}, \code{\link[base:connections]{url}}, \code{\link[base:locales]{Sys.setlocale}}
 }
 \examples{
 \dontrun{

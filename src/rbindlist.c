@@ -153,9 +153,8 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
   // find total length
   RLEN size = 0;
   R_len_t len = LENGTH(factorLevels), n, i, j;
-  SEXP elem;
   for (i = 0; i < len; ++i) {
-    elem = VECTOR_ELT(factorLevels, i);
+    SEXP elem = VECTOR_ELT(factorLevels, i);
     n = LENGTH(elem);
     size += n;
     /* for (j = 0; j < n; ++j) { */
@@ -183,7 +182,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
   R_len_t uniqlen = 0;
   // we insert in opposite order because it's more convenient later to choose first of the duplicates
   for (i = len-1; i >= 0; --i) {
-    elem = VECTOR_ELT(factorLevels, i);
+    SEXP elem = VECTOR_ELT(factorLevels, i);
     n = LENGTH(elem);
     for (j = n-1; j >= 0; --j) {
       idx = data.hash(elem, j, &data);
@@ -209,7 +208,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
     }
   }
 
-  SEXP finalLevels = PROTECT(allocVector(STRSXP, uniqlen));
+  SEXP finalLevels = PROTECT(allocVector(STRSXP, uniqlen)); // UNPROTECTed at the end of this function
   R_len_t counter = 0;
   if (*factorType == 2) {
     int *locs = (int *)R_alloc(len, sizeof(int));
@@ -221,8 +220,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
     SEXP tmp;
     for (i = 0; i < len; ++i) {
       if (!isRowOrdered[i]) continue;
-
-      elem = VECTOR_ELT(factorLevels, i);
+      SEXP elem = VECTOR_ELT(factorLevels, i);
       n = LENGTH(elem);
       for (j = locs[i]; j < n; ++j) {
         idx = data.hash(elem, j, &data);
@@ -253,7 +251,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
           // it's a collision, not a match, so iterate to a new spot
           idx = (idx + 1) % data.M;
         }
-        if (h[idx] == NULL) error("internal hash error, please report to datatable-help");
+        if (h[idx] == NULL) error("internal hash error, please report to data.table issue tracker");
       }
     }
 
@@ -261,8 +259,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
     Rboolean record;
     for (i = 0; i < len; ++i) {
       if (isRowOrdered[i]) continue;
-
-      elem = VECTOR_ELT(factorLevels, i);
+      SEXP elem = VECTOR_ELT(factorLevels, i);
       n = LENGTH(elem);
       for (j = 0; j < n; ++j) {
         idx = data.hash(elem, j, &data);
@@ -288,7 +285,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
           // it's a collision, not a match, so iterate to a new spot
           idx = (idx + 1) % data.M;
         }
-        if (h[idx] == NULL) error("internal hash error, please report to datatable-help");
+        if (h[idx] == NULL) error("internal hash error, please report to data.table issue tracker");
       }
     }
   }
@@ -296,7 +293,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
  normalFactor:
   if (*factorType == 1) {
     for (i = 0; i < len; ++i) {
-      elem = VECTOR_ELT(factorLevels, i);
+      SEXP elem = VECTOR_ELT(factorLevels, i);
       n = LENGTH(elem);
       for (j = 0; j < n; ++j) {
         idx = data.hash(elem, j, &data);
@@ -311,14 +308,14 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
           // it's a collision, not a match, so iterate to a new spot
           idx = (idx + 1) % data.M;
         }
-        if (h[idx] == NULL) error("internal hash error, please report to datatable-help");
+        if (h[idx] == NULL) error("internal hash error, please report to data.table issue tracker");
       }
     }
   }
 
   // CleanHashTable(&data);   No longer needed now we use R_alloc(). But the hash table approach
   // will be removed completely at some point.
-
+  UNPROTECT(1); // finalLevels
   return finalLevels;
 }
 
@@ -386,32 +383,30 @@ static SEXP fast_order(SEXP dt, R_len_t byArg, R_len_t handleSorted) {
   R_len_t i, protecti=0;
   SEXP ans, by=R_NilValue, retGrp, sortStr, order, na, starts;
 
-  retGrp  = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(retGrp)[0]  = TRUE;
-  sortStr = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(sortStr)[0] = FALSE;
-  na      = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(na)[0] = FALSE;
+  retGrp  = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(retGrp)[0]  = TRUE;   protecti++;
+  sortStr = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(sortStr)[0] = FALSE;  protecti++;
+  na      = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(na)[0] = FALSE;       protecti++;
 
   if (byArg) {
-    by    = PROTECT(allocVector(INTSXP, byArg));
-    order = PROTECT(allocVector(INTSXP, byArg));
+    by    = PROTECT(allocVector(INTSXP, byArg));                           protecti++;
+    order = PROTECT(allocVector(INTSXP, byArg));                           protecti++;
     for (i=0; i<byArg; i++) {
       INTEGER(by)[i] = i+1;
       INTEGER(order)[i] = 1;
     }
-    UNPROTECT(5);
   } else {
-    order = PROTECT(allocVector(INTSXP, 1)); INTEGER(order)[0] = 1;
-    UNPROTECT(4);
+    order = PROTECT(allocVector(INTSXP, 1)); INTEGER(order)[0] = 1;        protecti++;
   }
-  ans = PROTECT(forder(dt, by, retGrp, sortStr, order, na)); protecti++;
+  ans = PROTECT(forder(dt, by, retGrp, sortStr, order, na));               protecti++;
   if (!length(ans) && handleSorted != 0) {
-    starts = getAttrib(ans, sym_starts);
+    starts = PROTECT(getAttrib(ans, sym_starts));                          protecti++;
     // if cols are already sorted, 'forder' gives integer(0), got to replace it with 1:.N
-    ans = PROTECT(allocVector(INTSXP, length(VECTOR_ELT(dt, 0)))); protecti++;
+    ans = PROTECT(allocVector(INTSXP, length(VECTOR_ELT(dt, 0))));         protecti++;
     for (i=0; i<length(ans); i++) INTEGER(ans)[i] = i+1;
     // TODO: for loop appears redundant because length(ans)==0 due to if (!length(ans)) above
     setAttrib(ans, sym_starts, starts);
   }
-  UNPROTECT(protecti); // ans
+  UNPROTECT(protecti);
   return(ans);
 }
 
@@ -611,7 +606,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
   struct preprocessData data;
   Rboolean usenames, fill, to_copy = FALSE, coerced=FALSE, isidcol = !isNull(idcol);
   SEXP fnames = R_NilValue, findices = R_NilValue, f_ind = R_NilValue, ans, lf, li, target, thiscol, levels;
-  SEXP factorLevels = R_NilValue, finalFactorLevels;
+  SEXP factorLevels = R_NilValue;
   R_len_t protecti=0;
 
   // first level of error checks
@@ -714,7 +709,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
           SET_VECTOR_ELT(factorLevels, jj, levels); jj++;
           if (isOrdered(thiscol)) isRowOrdered[resi] = TRUE;
         } else {
-          if (TYPEOF(thiscol) != STRSXP) error("Internal logical error in rbindlist.c (not STRSXP), please report to datatable-help.");
+          if (TYPEOF(thiscol) != STRSXP) error("Internal logical error in rbindlist.c (not STRSXP), please report to data.table issue tracker.");
           for (r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
 
           // if this column is going to be a factor, add column to factorLevels
@@ -728,19 +723,19 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
         }
         break;
       case VECSXP :
-        if (TYPEOF(thiscol) != VECSXP) error("Internal logical error in rbindlist.c (not VECSXP), please report to datatable-help.");
+        if (TYPEOF(thiscol) != VECSXP) error("Internal logical error in rbindlist.c (not VECSXP), please report to data.table issue tracker.");
         for (r=0; r<thislen; r++)
           SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thiscol,r));
         break;
       case CPLXSXP : // #1659 fix
-        if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. Please report to datatable-help.");
+        if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. please report to data.table issue tracker.");
         for (r=0; r<thislen; r++)
           COMPLEX(target)[ansloc+r] = COMPLEX(thiscol)[r];
         break;
       case REALSXP:
       case INTSXP:
       case LGLSXP:
-        if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. Please report to datatable-help.");
+        if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. please report to data.table issue tracker.");
         memcpy((char *)DATAPTR(target) + ansloc * SIZEOF(thiscol),
              (char *)DATAPTR(thiscol),
              thislen * SIZEOF(thiscol));
@@ -755,7 +750,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
       }
     }
     if (data.is_factor[j]) {
-      finalFactorLevels = combineFactorLevels(factorLevels, &(data.is_factor[j]), isRowOrdered);
+      SEXP finalFactorLevels = PROTECT(combineFactorLevels(factorLevels, &(data.is_factor[j]), isRowOrdered));
       SEXP factorLangSxp = PROTECT(lang3(install(data.is_factor[j] == 1 ? "factor" : "ordered"),
                          target, finalFactorLevels));
       SET_VECTOR_ELT(ans, j+isidcol, eval(factorLangSxp, R_GlobalEnv));

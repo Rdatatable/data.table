@@ -15,13 +15,10 @@ branches:
   only:
     - "master"
 
-bioc_packages:
-  - IRanges
-  - GenomicRanges
-
 r_packages:
   - covr
   - drat
+  - devtools  # explicitly named temp fix for #2801
 
 before_script:
   - echo "Revision:" $TRAVIS_COMMIT >> ./DESCRIPTION

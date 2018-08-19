@@ -76,7 +76,7 @@ versions - \code{<=1.8.10} and \code{>= 1.9.0}.
 
 In \code{data.table} versions \code{<= 1.8.10}, for columns of type \code{integer},
 the sort is attempted with the very fast \code{"radix"} method in
-\code{\link[base]{sort.list}}. If that fails, the sort reverts to the default
+\code{\link[base:order]{sort.list}}. If that fails, the sort reverts to the default
 method in \code{\link[base]{order}}. For character vectors, \code{data.table}
 takes advantage of R's internal global string cache and implements a very efficient
 order, also exported as \code{\link{chorder}}.
@@ -136,7 +136,7 @@ supported, in particular ordered factors (where the levels are not in
 alphabetic order).
 }
 \seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{J}},
-\code{\link[base]{sort.list}}, \code{\link{copy}}, \code{\link{setDT}},
+\code{\link[base:order]{sort.list}}, \code{\link{copy}}, \code{\link{setDT}},
 \code{\link{setDF}}, \code{\link{set}} \code{\link{:=}}, \code{\link{setorder}},
 \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}},
 \code{\link{chorder}}, \code{\link{setNumericRounding}}

@@ -50,6 +50,10 @@ typedef R_xlen_t RLEN;
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
 
+#ifndef ALTREP
+#define ALTREP(x) 0  // for R<3.5.0, see issue #2866 and grep for "ALTREP" to see comments where it's used
+#endif
+
 // init.c
 void setSizes();
 SEXP char_integer64;
@@ -91,6 +95,7 @@ unsigned long long i64twiddle(void *p, int i, int order);
 unsigned long long (*twiddle)(void *, int, int);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 bool need2utf8(SEXP x, int n);
+SEXP isReallyReal(SEXP);
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
