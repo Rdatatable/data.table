@@ -215,8 +215,8 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
           seq_along(select)
         }
 #
-    if (is.numeric(select)) {
-      reorder = frank(select)
+#    if (is.numeric(select)) {
+#      reorder = frank(select)
 # master
     } else {
       reorder = select[select %chin% names(ans)]
