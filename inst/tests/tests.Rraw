@@ -12074,6 +12074,16 @@ setindex(DT, NULL)
 setindex(DT, V1)
 test(1923.2, indices(DT, vectors=TRUE), list(c("V1")))
 
+# Column typo checks, #2887
+DT = data.table(varname = 1)
+test(1924.1, DT[var_name==1], error='not found\\. Perhaps you intended.*varname')
+test(1924.2, DT[variable==1], error='Object.*not found among')
+test(1924.3, DT[varname+'a'], error='non-numeric argument')
+DT[, VAR_NAME:=2]
+test(1924.4, DT[var_name==1], error='Perhaps you intended.*varname, VAR_NAME')
+DT = setDT(lapply(integer(50), function(...) numeric(1L)))
+test(1924.5, DT[V==0], error='Perhaps you intended.*V1.*V5 or 45 more')
+
 
 ###################################
 #  Add new tests above this line  #

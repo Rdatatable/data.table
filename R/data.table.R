@@ -200,6 +200,22 @@ replace_dot_alias <- function(e) {
   x
 }
 
+.checkTypos = function(err, ref) {
+  if (grepl('object.*not found', err$message)) {
+    used = gsub(".*object '([^']+)'.*", "\\1", err$message)
+    found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
+    if (length(found)) {
+      stop(sprintf("Object '%s' not found. Perhaps you intended %s%s", used, paste(head(found,5L),collapse=", "),
+           if (length(found)<=5L) "" else paste(" or",length(found)-5L,"more")))
+    } else {
+      stop(sprintf("Object '%s' not found amongst %s%s", used, paste(head(ref,5L),collapse=', '),
+           if (length(ref)<=5L) "" else paste(" and",length(ref)-5L,"more")))
+    }
+  } else {
+    stop(err$message, call.=FALSE)
+  }
+}
+
 # A (relatively) fast (uses DT grouping) wrapper for matching two vectors, BUT:
 # it behaves like 'pmatch' but only the 'exact' matching part. That is, a value in
 # 'x' is matched to 'table' only once. No index will be present more than once.
@@ -429,8 +445,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         nomatch <- 0L
         mult <- "all"
     }
-    else if (!is.name(isub)) i = eval(.massagei(isub), x, parent.frame())
-    else {
+    else if (!is.name(isub)) {
+      i = tryCatch(eval(.massagei(isub), x, parent.frame()),
+                   error = function(e) .checkTypos(e, names(x)))
+    } else {
       # isub is a single symbol name such as B in DT[B]
       i = try(eval(isub, parent.frame(), parent.frame()), silent=TRUE)
       if (inherits(i,"try-error")) {

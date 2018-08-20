@@ -9,6 +9,8 @@
 
 2. `setcolorder(DT)` without further arguments now defaults to moving the key columns to be first, [#2895](https://github.com/Rdatatable/data.table/issues/2895). Thanks to @jsams for the PR.
 
+3. Attempting to subset on `col` when the column is actually called `Col` will still error, but the error message will helpfully suggest similarly-spelled columns, [#2887](https://github.com/Rdatatable/data.table/issues/2887). This is experimental, applies just to `i` currently, and we look forward to feedback. Thanks to Michael Chirico for the suggestion and PR.
+
 #### BUG FIXES
 
 1. `fread` now respects the order of columns passed to `select=` when column numbers are used, [#2986](https://github.com/Rdatatable/data.table/issues/2986). It already respected the order when column names are used. Thanks @privefl for raising the issue.
