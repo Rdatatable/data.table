@@ -203,16 +203,17 @@ replace_dot_alias <- function(e) {
 .checkTypos = function(err, ref) {
   if (grepl('object.*not found', err$message)) {
     used = gsub(".*object '([^']+)'.*", "\\1", err$message)
-    found = agrep(used, ref, value = TRUE, ignore.case = TRUE, fixed = TRUE)
+    found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
     if (length(found)) {
-      stop("Object '", used, "' not found. Perhaps you ",
-           sprintf("intended one of: [%s]",
-                   paste(found, collapse = ', ')))
+      stop(sprintf("Object '%s' not found. Perhaps you intended %s%s", used, paste(head(found,5L),collapse=", "),
+           if (length(found)<=5L) "" else paste(" or",length(found)-5L,"more")))
     } else {
-      stop("Object '", used, "' not found among: ",
-           sprintf("[%s]", paste(ref, collapse = ', ')))
+      stop(sprintf("Object '%s' not found amongst %s%s", used, paste(head(ref,5L),collapse=', '),
+           if (length(ref)<=5L) "" else paste(" and",length(ref)-5L,"more")))
     }
-  } else stop(err$message, call. = FALSE)
+  } else {
+    stop(err$message, call.=FALSE)
+  }
 }
 
 # A (relatively) fast (uses DT grouping) wrapper for matching two vectors, BUT:
