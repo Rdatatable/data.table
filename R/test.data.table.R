@@ -75,7 +75,7 @@ INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 ps_mem = function() {
   # nocov start
   cmd = sprintf("ps -o rss %s | tail -1", Sys.getpid())
-  ans = tryCatch(as.numeric(system(cmd, intern=TRUE)), error=function(e) NA_real_)
+  ans = tryCatch(as.numeric(system(cmd, intern=TRUE, ignore.stderr=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
   stopifnot(length(ans)==1L) # extra check if other OSes would not handle 'tail -1' properly for some reason
   # returns RSS memory occupied by current R process in MB rounded to 1 decimal places (as in gc), ps already returns KB
   c("PS_rss"=round(ans / 1024, 1))
