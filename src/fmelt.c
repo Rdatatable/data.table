@@ -289,8 +289,9 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
 }
 
 struct processData {
-  SEXP idcols, valuecols, naidx;
-  int lids, lvalues, lmax, lmin, protecti, totlen, nrow;
+  SEXP RCHK;  // a 2 item list holding vars (result of checkVars) and naidx. PROTECTed up in fmelt so that preprocess() doesn't need to PROTECT. To pass rchk, #2865
+  SEXP idcols, valuecols, naidx; // convenience pointers into RCHK[0][0], RCHK[0][1] and RCHK[1] respectively
+  int lids, lvalues, lmax, lmin, totlen, nrow;
   int *isfactor, *leach, *isidentical;
   SEXPTYPE *maxtype;
   Rboolean narm;
@@ -301,15 +302,14 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
   SEXP vars,tmp,thiscol;
   SEXPTYPE type;
   int i,j;
-  data->lmax = 0; data->lmin = 0; data->protecti = 0, data->totlen = 0, data->nrow = length(VECTOR_ELT(DT, 0));
-  vars = checkVars(DT, id, measure, verbose);
-  data->idcols = PROTECT(VECTOR_ELT(vars, 0)); data->protecti++;
-  data->valuecols = PROTECT(VECTOR_ELT(vars, 1)); data->protecti++;
+  data->lmax = 0; data->lmin = 0; data->totlen = 0; data->nrow = length(VECTOR_ELT(DT, 0));
+  SET_VECTOR_ELT(data->RCHK, 0, vars = checkVars(DT, id, measure, verbose));
+  data->idcols = VECTOR_ELT(vars, 0);
+  data->valuecols = VECTOR_ELT(vars, 1);
   data->lids = length(data->idcols);
   data->lvalues = length(data->valuecols);
   data->narm = narm;
   if (length(valnames) != data->lvalues) {
-    UNPROTECT(data->protecti);
     if (isNewList(measure)) error("When 'measure.vars' is a list, 'value.name' must be a character vector of length =1 or =length(measure.vars).");
     else error("When 'measure.vars' is either not specified or a character/integer vector, 'value.name' must be a character vector of length =1.");
   }
@@ -346,15 +346,14 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
     }
   }
   if (data->narm) {
-    data->naidx = PROTECT(allocVector(VECSXP, data->lmax));
-    data->protecti++;
+    SET_VECTOR_ELT(data->RCHK, 1, data->naidx = allocVector(VECSXP, data->lmax));
   }
 }
 
 SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, struct processData *data) {
 
   int i, j, k, protecti=0, counter=0, thislen=0;
-  SEXP tmp, seqcols, thiscol, thisvaluecols, target, ansvals, thisidx=R_NilValue, flevels, clevels;
+  SEXP seqcols, thiscol, thisvaluecols, target, ansvals, thisidx=R_NilValue, flevels, clevels;
   Rboolean coerced=FALSE, thisfac=FALSE, copyattr = FALSE, thisvalfactor;
   size_t size;
   for (i=0; i<data->lvalues; i++) {
@@ -369,7 +368,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
   if (data->narm) {
     seqcols = PROTECT(seq_int(data->lvalues, 1)); protecti++;
     for (i=0; i<data->lmax; i++) {
-      tmp = PROTECT(allocVector(VECSXP, data->lvalues));
+      SEXP tmp = PROTECT(allocVector(VECSXP, data->lvalues));
       for (j=0; j<data->lvalues; j++) {
         if (i < data->leach[j]) {
           thisvaluecols = VECTOR_ELT(data->valuecols, j);
@@ -379,9 +378,10 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         }
       }
       tmp = PROTECT(dt_na(tmp, seqcols));
-      SET_VECTOR_ELT(data->naidx, i, which(tmp, FALSE));
-      UNPROTECT(2); // tmp
-      data->totlen += length(VECTOR_ELT(data->naidx, i));
+      SEXP w;
+      SET_VECTOR_ELT(data->naidx, i, w=which(tmp, FALSE));
+      data->totlen += length(w);
+      UNPROTECT(2); // tmp twice
     }
   } else data->totlen = data->nrow * data->lmax;
   flevels = PROTECT(allocVector(VECSXP, data->lmax)); protecti++;
@@ -638,11 +638,8 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
 }
 
 SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP varnames, SEXP valnames, SEXP narmArg, SEXP verboseArg) {
-
-  int i, ncol, protecti=0;
   SEXP dtnames, ansvals, ansvars, ansids, ansnames, ans;
   Rboolean narm=FALSE, verbose=FALSE;
-  struct processData data;
 
   if (!isNewList(DT)) error("Input is not of type VECSXP, expected a data.table, data.frame or list");
   if (!isLogical(valfactor)) error("Argument 'value.factor' should be logical TRUE/FALSE");
@@ -651,7 +648,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   if (!isString(varnames)) error("Argument 'variable.name' must be a character vector");
   if (!isString(valnames)) error("Argument 'value.name' must be a character vector");
   if (!isLogical(verboseArg)) error("Argument 'verbose' should be logical TRUE/FALSE");
-  ncol = LENGTH(DT);
+  int ncol = LENGTH(DT);
   if (!ncol) {
     if (verbose) Rprintf("ncol(data) is 0. Nothing to melt. Returning original data.table.");
     return(DT);
@@ -661,8 +658,10 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   if (LOGICAL(narmArg)[0] == TRUE) narm = TRUE;
   if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
 
+  struct processData data;
+  int protecti=0;
+  data.RCHK = PROTECT(allocVector(VECSXP, 2)); protecti++;
   preprocess(DT, id, measure, varnames, valnames, narm, verbose, &data);
-  protecti = data.protecti;
   // edge case no measure.vars
   if (!data.lmax) {
     ans = shallowwrapper(DT, data.idcols);
@@ -674,20 +673,20 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
 
     // populate 'ans'
     ans = PROTECT(allocVector(VECSXP, data.lids+1+data.lvalues)); protecti++; // 1 is for variable column
-    for (i=0; i<data.lids; i++) {
+    for (int i=0; i<data.lids; i++) {
       SET_VECTOR_ELT(ans, i, VECTOR_ELT(ansids, i));
     }
     SET_VECTOR_ELT(ans, data.lids, VECTOR_ELT(ansvars, 0));
-    for (i=0; i<data.lvalues; i++) {
+    for (int i=0; i<data.lvalues; i++) {
       SET_VECTOR_ELT(ans, data.lids+1+i, VECTOR_ELT(ansvals, i));
     }
     // fill in 'ansnames'
     ansnames = PROTECT(allocVector(STRSXP, data.lids+1+data.lvalues)); protecti++;
-    for (i=0; i<data.lids; i++) {
+    for (int i=0; i<data.lids; i++) {
       SET_STRING_ELT(ansnames, i, STRING_ELT(dtnames, INTEGER(data.idcols)[i]-1));
     }
     SET_STRING_ELT(ansnames, data.lids, STRING_ELT(varnames, 0));
-    for (i=0; i<data.lvalues; i++) {
+    for (int i=0; i<data.lvalues; i++) {
       SET_STRING_ELT(ansnames, data.lids+1+i, STRING_ELT(valnames, i));
     }
     setAttrib(ans, R_NamesSymbol, ansnames);

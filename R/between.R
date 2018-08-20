@@ -25,7 +25,7 @@ inrange <- function(x,lower,upper,incbounds=TRUE) {
   if (verbose) {last.started.at=proc.time();cat("forderv(query) took ... ");flush.console()}
   xo = forderv(query)
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-  ans = bmerge(shallow(subject), query, 1L:2L, c(1L,1L), FALSE, xo,
+  ans = bmerge(shallow(subject), query, 1L:2L, c(1L,1L), xo,
       0, c(FALSE, TRUE), 0L, "all", ops, integer(0L),
       1L, verbose) # fix for #1819, turn on verbose messages
   options(datatable.verbose=FALSE)

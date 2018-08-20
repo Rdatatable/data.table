@@ -20,7 +20,7 @@ rm -rf ./data.table.Rcheck
 # tests.Rraw in particular have failed CRAN Solaris (only) due to this.
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" ./
 
-# No unicode either?! Put these tests in DtNonAsciiTests package. Trying this again to see what happens now that Solaris is dead. Tests 1864.1 and 1864.2
+# Unicode is now ok. This unicode in tests.Rraw is passing on CRAN.
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" ./
 
 # Ensure no calls to omp_set_num_threads() [to avoid affecting other packages and base R]
@@ -95,6 +95,7 @@ grep ScalarString *.c
 # If a PROTECT is not needed then a comment is added explaining why and including "PROTECT" in the comment to pass this grep
 grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
+cd ~/GitHub/data.table
 R
 cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently gcc-7) as CRAN does
 saf = options()$stringsAsFactors
@@ -102,21 +103,21 @@ options(stringsAsFactors=!saf)    # check tests (that might be run by user) are 
 test.data.table()
 q("no")
 R CMD build .
-R CMD check data.table_1.11.1.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
-R CMD INSTALL data.table_1.11.1.tar.gz
+R CMD check data.table_1.11.3.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
+R CMD INSTALL data.table_1.11.3.tar.gz
 R
 require(data.table)
 test.data.table()
-test.data.table(verbose=TRUE)  # since main.R no longer tests verbose mode
+test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
 gctorture2(step=50)
-system.time(test.data.table())
+system.time(test.data.table())  # apx 75min
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.11.1.tar.gz
+R CMD check data.table_1.11.3.tar.gz
 rm ~/.Renviron
 
 # Upload to win-builder: release, dev & old-release
@@ -138,7 +139,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.11.1.tar.gz
+R310 CMD INSTALL ./data.table_1.11.3.tar.gz
 R310
 require(data.table)
 test.data.table()
@@ -150,7 +151,7 @@ test.data.table()
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.11.1.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.11.3.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -178,13 +179,13 @@ cd R-devel
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 cd ~/GitHub/data.table
-Rdevel CMD INSTALL data.table_1.11.1.tar.gz
+Rdevel CMD INSTALL data.table_1.11.3.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel
 install.packages(c("bit64","xts","nanotime"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
 require(data.table)
 test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
-for (i in 1:10) test.data.table()  # try several runs; e.g a few tests generate data with a non-fixed random seed
+for (i in 1:100) if (!test.data.table()) break  # try several runs; e.g a few tests generate data with a non-fixed random seed
 # gctorture(TRUE)      # very slow, many days
 gctorture2(step=100)   # [12-18hrs] under ASAN, UBSAN and --strict-barrier
 print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
@@ -213,7 +214,7 @@ cd R-devel
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-Rdevel CMD INSTALL data.table_1.11.1.tar.gz
+Rdevel CMD INSTALL data.table_1.11.3.tar.gz
 Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)
@@ -351,6 +352,9 @@ sudo apt-get -y install libpoppler-cpp-dev  # for pdftools
 sudo apt-get -y install libapparmor-dev  # for sys
 sudo apt-get -y install libmagick++-dev  # for magick
 sudo apt-get -y install libjq-dev libprotoc-dev libprotobuf-dev and protobuf-compiler   # for protolite
+sudo apt-get -y install python-dev  # for PythonInR
+sudo apt-get -y install gdal-bin libgeos-dev  # for rgdal/raster tested via lidR
+sudo apt-get build-dep r-cran-rsymphony   # for Rsymphony: coinor-libcgl-dev coinor-libclp-dev coinor-libcoinutils-dev coinor-libosi-dev coinor-libsymphony-dev
 sudo R CMD javareconf
 # ENDIF
 
@@ -368,7 +372,6 @@ update.packages(ask=FALSE)   # a repeat sometimes does more, keep repeating unti
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
 # Ensure no library() call in .Rprofile, such as library(bit64)
 source("http://bioconductor.org/biocLite.R")
-biocLite()
 biocLite()   # keep repeating until returns with nothing left to do
 # biocLite("BiocUpgrade")
 # This error means it's up to date: "Bioconductor version 3.4 cannot be upgraded with R version 3.3.2"
@@ -385,12 +388,13 @@ for (p in deps) {
   if (!file.exists(fn) ||
       identical(tryCatch(packageVersion(p), error=function(e)FALSE), FALSE) ||
       packageVersion(p) != avail[p,"Version"]) {
-    system(paste0("rm -f ", p, "*.tar.gz"))  # Remove previous *.tar.gz.  -f to be silent if not there (i.e. first time seeing this package)
-    system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version)
+    system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version) to move its status() to not yet run
 
     install.packages(p, repos=biocinstallRepos(), dependencies=TRUE)    # again, bioc repos includes CRAN here
     # To install its dependencies. The package itsef is installed superfluously here because the tar.gz will be passed to R CMD check.
     # Not using biocLite() because it does not download dependencies and does not appear to pass dependencies= on.
+    # If we did download.packages() first and then passed that tar.gz to install.packages(), repos= is set to NULL when installing from
+    # local file, so dependencies=TRUE wouldn't know where to get the dependencies. Hence usig install.packages first with repos= set.
 
     download.packages(p, destdir="~/build/revdeplib", contriburl=avail[p,"Repository"])   # So R CMD check can run on these
     if (!file.exists(fn)) stop("Still does not exist!:", fn)
@@ -402,28 +406,38 @@ for (p in deps) {
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 table(avail[deps,"Repository"])
 
-# To identify and remove the tar.gz no longer needed :
+# Remove the tar.gz no longer needed :
+system("ls *.tar.gz | wc -l")
 for (p in deps) {
-  f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-  system(paste0("mv ",f," ",f,"_TEMP"))
-}
-system("ls *.tar.gz")
-system("rm *.tar.gz")
-for (p in deps) {
-  f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-  system(paste0("mv ",f,"_TEMP ",f))
+  f = paste0(p, "_", avail[p,"Version"], ".tar.gz")  # keep this one
+  all = system(paste0("ls ",p,"_*.tar.gz"), intern=TRUE)
+  old = all[all!=f]
+  for (i in old) {
+    cat("Removing",i,"because",f,"is newer\n")
+    system(paste0("rm ",i))
+  }
+  all = system("ls *.tar.gz", intern=TRUE)
+  all = sapply(strsplit(all, split="_"),'[',1)
+  for (i in all[!all %in% deps]) {
+    cat("Removing",i,"because it", if (!i %in% rownames(avail)) "has been removed from CRAN/Bioconductor\n" else "no longer uses data.table\n")
+    system(paste0("rm ",i,"_*.tar.gz"))
+  }
 }
 system("ls *.tar.gz | wc -l")
 
 status = function(which="both") {
   if (which=="both") {
+    cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
     cat("CRAN:\n"); status("cran")
     cat("BIOC:\n"); status("bioc")
+    cat("TOTAL          :", length(deps), "\n\n")
     cat("Oldest 00check.log (to check no old stale ones somehow missed):\n")
     system("find . -name '00check.log' | xargs ls -lt | tail -1")
     cat("\n")
+    tt = length(system('ps -aux | grep "parallel.*R CMD check"', intern=TRUE))>2L
+    cat("parallel R CMD check is ", if(tt)"" else "not ", "running\n",sep="")
     if (file.exists("/tmp/started.flag")) {
-      system("ls -lrt /tmp/*.flag")
+      # system("ls -lrt /tmp/*.flag")
       tt = as.POSIXct(file.info(c("/tmp/started.flag","/tmp/finished.flag"))$ctime)
       if (is.na(tt[2])) { tt[2] = Sys.time(); cat("Has been running for "); }
       else cat("Ran for ");
@@ -454,52 +468,76 @@ status = function(which="both") {
       "NOTE    :",sprintf("%3d",length(n)),"\n",  #":",paste(sort(names(x)[n])),"\n",
       "OK      :",sprintf("%3d",length(ok)),"\n",
       "TOTAL   :",length(e)+length(w)+length(n)+length(ok),"/",length(deps),"\n",
-      "RUNNING :",sprintf("%3d",length(r)),":",paste(sort(names(x)[r])),"\n",
-      if (length(ns)==0) "\n" else paste0("NOT STARTED (first 20 of ",length(ns),") : ",paste(sort(names(x)[head(ns,20)]),collapse="|"),"\n")
+      if (length(r))  paste0("RUNNING       : ",paste(sort(names(x)[r]),collapse=" "),"\n"),
+      if (length(ns)) paste0("NOT STARTED   : ",paste(sort(names(x)[head(ns,20)]),collapse=" "), if(length(ns)>20)paste(" +",length(ns)-20,"more"), "\n"),
+      "\n"
       )
+  assign(paste0(".fail.",which), c(sort(names(x)[e]), sort(names(x)[w])), envir=.GlobalEnv)
   invisible()
 }
 
 status()
 
-run = function(all=FALSE) {
+run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.all")) {
+  cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
+  if (length(which)>1) which = which[1L]
+  cat("which == ",which,"\n", sep="")
   numtgz = as.integer(system("ls -1 *.tar.gz | wc -l", intern=TRUE))
   stopifnot(numtgz==length(deps))
-  cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
-  if (all) {
-    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | parallel R CMD check"
+  if (which=="rerun.all") {
+    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | TZ='UTC' parallel R CMD check"
+    # TZ='UTC' because some packages have failed locally for me but not on CRAN or for their maintainer, due to sensitivity of tests to timezone
+    cat("WIPE ALL CHECKS:",cmd,"\n")
+    cat("Proceed? (ctrl-c or enter)\n")
+    scan(quiet=TRUE)
     # apx 7.5 hrs for 582 packages on my 4 cpu laptop with 8 threads
   } else {
-    x = sapply(deps, function(p) {
-      if (!file.exists(paste0("./",p,".Rcheck"))) return(TRUE)
-      fn = paste0("./",p,".Rcheck/00check.log")
-      length(suppressWarnings(system(paste0("grep -E 'Status:.*(ERROR|WARNING)' ",fn), intern=TRUE)))>0L
-    })
-    x = deps[x]
-    cat("Running",length(x),"packages that have no status (no .Rcheck directory) or are in ERROR or WARNING status\n")
-    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | parallel R CMD check")
+    if (!which %in% c("not.started","cran.fail","bioc.fail","both.fail")) {
+      x = which   # one package manually
+    } else {
+      x = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # always those that haven't run
+      if (which %in% c("cran.fail","both.fail")) x = union(x, .fail.cran)  # .fail.* were written to .GlobalEnv by status()
+      if (which %in% c("bioc.fail","both.fail")) x = union(x, .fail.bioc)
+    }
+    if (length(x)==0) { cat("No packages to run\n"); return(invisible()); }
+    cat("Running",length(x),"packages:", paste(x), "\n")
+    cat("Proceed? (ctrl-c or enter)\n")
+    scan(quiet=TRUE)
+    for (i in x) system(paste0("rm -rf ./",i,".Rcheck"))
+    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | TZ='UTC' parallel R CMD check")
   }
-  cat("Command:",cmd,"\n")
-  if (as.integer(system("ps -a | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
-  cat("Proceed? (ctrl-c or enter)\n")
-  scan(quiet=TRUE)
+  if (as.integer(system("ps -e | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
   system(paste("((",cmd,">/dev/null 2>&1); touch /tmp/finished.flag)"), wait=FALSE)
 }
 
 # ** ensure latest version installed into revdeplib **
-system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.1.tar.gz")
+system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.5.tar.gz")
 run()
+
+out = function(fnam="~/fail.log") {
+  x = c(.fail.cran, .fail.bioc)
+  cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
+  cat(paste(x,collapse=" "), "\n")
+  cat(capture.output(sessionInfo()), "\n\n", file=fnam, sep="\n")
+  for (i in x) {
+    system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))
+    cat("\n\n", file=fnam, append=TRUE)
+  }
+}
+
+emails = gsub(">$","",gsub(".*<","", sapply(.fail.bioc, maintainer)))
+cat(emails,sep=";")
 
 # Investigate and fix the fails ...
 find . -name 00check.log -exec grep -H -B 20 "Status:.*ERROR" {} \;
 find . -name 00check.log | grep -E 'AFM|easycsv|...|optiSel|xgboost' | xargs grep -H . > /tmp/out.log
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 more <failing_package>.Rcheck/00check.log
-R CMD check <failing_package>.tar.gz
+TZ='UTC' R CMD check <failing_package>.tar.gz
 R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
-R CMD check <failing_package>.tar.gz
-ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check &
+TZ='UTC' R CMD check <failing_package>.tar.gz
+ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' parallel R CMD check &
 
 # Warning: replacing previous import robustbase::sigma by stats::sigma when loading VIM
 # Reinstalling robustbase fixed this warning. Even though it was up to date, reinstalling made a difference.
@@ -512,7 +550,7 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CM
 Bump versions in DESCRIPTION and NEWS (without 'on CRAN date' text as that's not yet known) to even release number
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
 R CMD build .
-R CMD check --as-cran data.table_1.11.2.tar.gz   # install.packages("xml2") first to check the 150 URLs in NEWS.md under --as-cran, then remove xml2 again
+R CMD check --as-cran data.table_1.11.4.tar.gz   # install.packages("xml2") first to check the 150 URLs in NEWS.md under --as-cran, then remove xml2 again
 Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
 Submit to CRAN. Message template :
 -----

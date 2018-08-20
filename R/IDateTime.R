@@ -10,8 +10,14 @@ as.IDate.default <- function(x, ..., tz = attr(x, "tzone")) {
   as.IDate(as.Date(x, tz = tz, ...))
 }
 
-as.IDate.numeric <- function(x, ...) {
-  structure(as.integer(x), class=c("IDate","Date"))
+as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
+  if (origin=="1970-01-01") {
+    # standard epoch
+    structure(as.integer(x), class=c("IDate","Date"))
+  } else {
+    # only call expensive as.IDate.character if we have to
+    as.IDate(origin, ...) + as.integer(x)
+  }
 }
 
 as.IDate.Date <- function(x, ...) {
@@ -139,7 +145,7 @@ as.ITime.character <- function(x, format, ...) {
     new <- strptime(x[w], format = f, ...)
     nna <- !is.na(new)
     if (any(nna)) {
-      y[ w[nna] ] <- new
+      y[ w[nna] ] <- new[nna]
       w <- w[!nna]
     }
   }
