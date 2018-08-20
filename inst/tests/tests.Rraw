@@ -12084,6 +12084,24 @@ test(1924.4, DT[var_name==1], error='Perhaps you intended.*varname, VAR_NAME')
 DT = setDT(lapply(integer(50), function(...) numeric(1L)))
 test(1924.5, DT[V==0], error='Perhaps you intended.*V1.*V5 or 45 more')
 
+# test suite of as.ITime methods (subsumes #2870)
+s = c('1970-01-01 00:00:00.1234', '2005-10-12 09:45:32.84')
+x = as.POSIXlt(s, tz = 'UTC')
+test(1925.01, as.ITime(x),               structure(c(0L, 35132L), class="ITime"))
+test(1925.02, as.ITime(x, ms='nearest'), structure(c(0L, 35133L), class="ITime"))
+test(1925.03, as.ITime(x, ms='ceil'),    structure(c(1L, 35133L), class="ITime"))
+test(1925.04, as.ITime(x, ms='foo'),     error='Valid options for ms')
+test(1925.05, as.ITime(s),               as.ITime(x))
+n = as.numeric(x)
+test(1925.06, as.ITime(n),               as.ITime(x))
+test(1925.07, as.ITime(n, ms='nearest'), as.ITime(x, ms='nearest'))
+test(1925.08, as.ITime(n, ms='ceil'),    as.ITime(x, ms='ceil'))
+test(1925.09, as.ITime(as.POSIXct(x)),   as.ITime(x))
+x = structure(c(12.345, 67.890)/86400, class='times')
+test(1925.10, as.ITime(x),               structure(c(12L, 67L), class="ITime"))
+test(1925.11, as.ITime(x, ms='nearest'), structure(c(12L, 68L), class="ITime"))
+test(1925.12, as.ITime(x, ms='ceil'),    structure(c(13L, 68L), class="ITime"))
+
 
 ###################################
 #  Add new tests above this line  #

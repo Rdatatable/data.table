@@ -109,21 +109,27 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
 as.ITime <- function(x, ...) UseMethod("as.ITime")
 
 as.ITime.default <- function(x, ...) {
-  as.ITime(as.POSIXlt(x, ...))
+  as.ITime(as.POSIXlt(x, ...), ...)
 }
 
 as.ITime.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
-  if (tz %in% c("UTC", "GMT")) as.ITime(unclass(x), ...) else as.ITime(as.POSIXlt(x, tz = tz, ...))
+  if (tz %in% c("UTC", "GMT")) as.ITime(unclass(x), ...) else as.ITime(as.POSIXlt(x, tz = tz, ...), ...)
 }
 
-as.ITime.numeric <- function(x, ...) {
-  structure(as.integer(x) %% 86400L, class = "ITime")
+as.ITime.numeric <- function(x, ms = 'truncate', ...) {
+  secs = switch(ms,
+                'truncate' = as.integer(x),
+                'nearest' = as.integer(round(x)),
+                'ceil' = as.integer(ceiling(x)),
+                stop("Valid options for ms are 'truncate', ",
+                     "'nearest', and 'ceil'."))
+  structure(secs %% 86400L, class = "ITime")
 }
 
 as.ITime.character <- function(x, format, ...) {
   x <- unclass(x)
-  if (!missing(format)) return(as.ITime(strptime(x, format = format, ...)))
+  if (!missing(format)) return(as.ITime(strptime(x, format = format, ...), ...))
   # else allow for mixed formats, such as test 1189 where seconds are caught despite varying format
   y <- strptime(x, format = "%H:%M:%OS", ...)
   w <- which(is.na(y))
@@ -143,12 +149,29 @@ as.ITime.character <- function(x, format, ...) {
       w <- w[!nna]
     }
   }
-  return(as.ITime(y))
+  return(as.ITime(y, ...))
 }
 
-as.ITime.POSIXlt <- function(x, ...) {
-  structure(with(x, as.integer(sec) + min * 60L + hour * 3600L),
+as.ITime.POSIXlt <- function(x, ms = 'truncate', ...) {
+  secs = switch(ms,
+                'truncate' = as.integer(x$sec),
+                'nearest' = as.integer(round(x$sec)),
+                'ceil' = as.integer(ceiling(x$sec)),
+                stop("Valid options for ms are 'truncate', ",
+                     "'nearest', and 'ceil'."))
+  structure(with(x, secs + min * 60L + hour * 3600L),
         class = "ITime")
+}
+
+as.ITime.times <- function(x, ms = 'truncate', ...) {
+  secs <- 86400 * (unclass(x) %% 1)
+  secs = switch(ms,
+                'truncate' = as.integer(secs),
+                'nearest' = as.integer(round(secs)),
+                'ceil' = as.integer(ceiling(secs)),
+                stop("Valid options for ms are 'truncate', ",
+                     "'nearest', and 'ceil'."))
+  structure(secs, class = "ITime")
 }
 
 as.character.ITime <- format.ITime <- function(x, ...) {
@@ -238,14 +261,6 @@ as.POSIXct.ITime <- function(x, tz = "UTC", date = as.Date(Sys.time()), ...) {
 
 as.POSIXlt.ITime <- function(x, ...) {
   as.POSIXlt(as.POSIXct(x, ...))
-}
-
-as.ITime.times <- function(x, ...) {
-  x <- unclass(x)
-  daypart <- x - floor(x)
-  secs <- as.integer(round(daypart * 86400))
-  structure(secs,
-        class = "ITime")
 }
 
 ###################################################################

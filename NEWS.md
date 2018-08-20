@@ -25,6 +25,8 @@
 
 6. `as.IDate.numeric` no longer ignores "origin", [#2880](https://github.com/Rdatatable/data.table/issues/2880). Thanks to David Arenburg for reporting and fixing.
 
+7. `as.ITime.times` was rounding fractional seconds while other methods were truncating, [#2870](https://github.com/Rdatatable/data.table/issues/2870). The `as.ITime` method gains `ms=` taking `"truncate"` (default), `"nearest"` and `"ceil"`. Thanks to @rossholmberg for reporting and Michael Chirico for fixing.
+
 #### NOTES
 
 1. The type coercion warning message has been improved, [#2989](https://github.com/Rdatatable/data.table/pull/2989). Thanks to @sarahbeeysian on [Twitter](https://twitter.com/sarahbeeysian/status/1021359529789775872) for highlighting. For example, given the follow statements:
