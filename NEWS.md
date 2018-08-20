@@ -25,7 +25,7 @@
 
 6. `as.IDate.numeric` no longer ignores "origin", [#2880](https://github.com/Rdatatable/data.table/issues/2880). Thanks to David Arenburg for reporting and fixing.
 
-2. `as.ITime` methods gain ability to control how fractional seconds are dealt with through the `ms` argument. The bug was that `as.ITime.times` was `round`ing while all other methods were truncating with `as.integer`. Both functions have valid use cases, hence the option. Closes [#2870](https://github.com/Rdatatable/data.table/issues/2870); thanks to @rossholmberg for filing.  
+7. `as.ITime.times` was rounding fractional seconds while other methods were truncating, [#2870](https://github.com/Rdatatable/data.table/issues/2870). The `as.ITime` method gains `ms=` taking `"truncate"` (default), `"nearest"` and `"ceil"`. Thanks to @rossholmberg for reporting and Michael Chirico for fixing.
 
 #### NOTES
 
