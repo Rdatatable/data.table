@@ -27,7 +27,7 @@
 
 7. `as.ITime.times` was rounding fractional seconds while other methods were truncating, [#2870](https://github.com/Rdatatable/data.table/issues/2870). The `as.ITime` method gains `ms=` taking `"truncate"` (default), `"nearest"` and `"ceil"`. Thanks to @rossholmberg for reporting and Michael Chirico for fixing.
 
-8. Fix `fwrite` output for POSIXct datetimes, reported by @mdzorn in [#2995](https://github.com/Rdatatable/data.table/issues/2995). 
+8. `fwrite()` now writes POSIXct dates after 2038 correctly, [#2995](https://github.com/Rdatatable/data.table/issues/2995). Thanks to Manfred Zorn for reporting and Philippe Chataignon for the PR fixing it.
 
 #### NOTES
 
