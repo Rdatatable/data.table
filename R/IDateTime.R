@@ -273,9 +273,30 @@ as.POSIXlt.ITime <- function(x, ...) {
 #   lubridate routines do not return integer values.
 ###################################################################
 
-second  <- function(x) as.integer(as.POSIXlt(x)$sec)
-minute  <- function(x) as.POSIXlt(x)$min
-hour    <- function(x) as.POSIXlt(x)$hour
+second  <- function(x) {
+  if (inherits(x,'POSIXct') && identical(attr(x,'tzone'),'UTC')) {
+    # if we know the object is in UTC, can calculate the hour much faster
+    as.integer(x) %% 60L
+  } else {
+    as.integer(as.POSIXlt(x)$sec)
+  }
+}
+minute  <- function(x) {
+  if (inherits(x,'POSIXct') && identical(attr(x,'tzone'),'UTC')) {
+    # ever-so-slightly faster than x %% 3600L %/% 60L
+    as.integer(x) %/% 60L %% 60L
+  } else {
+    as.POSIXlt(x)$min
+  }
+}
+hour <- function(x) {
+  if (inherits(x,'POSIXct') && identical(attr(x,'tzone'),'UTC')) {
+    # ever-so-slightly faster than x %% 86400L %/% 3600L
+    as.integer(x) %/% 3600L %% 24L
+  } else {
+    as.POSIXlt(x)$hour
+  }
+}
 yday    <- function(x) as.POSIXlt(x)$yday + 1L
 wday    <- function(x) (unclass(as.IDate(x)) + 4L) %% 7L + 1L
 mday    <- function(x) as.POSIXlt(x)$mday
