@@ -11,7 +11,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
   isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
   na = as.character(na[1L]) # fix for #1725
   if (missing(qmethod)) qmethod = qmethod[1L]
-  if (missing(dateTimeAs)) dateTimeAs = dateTimeAs[1L]
+  if (missing(dateTimeAs)) { dateTimeAs = dateTimeAs[1L] }
   else if (length(dateTimeAs)>1L) stop("dateTimeAs must be a single string")
   dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
   if (is.na(dateTimeAs)) stop("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")

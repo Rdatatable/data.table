@@ -235,7 +235,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (!cedta()) {
     # Fix for #5070 (to do)
     Nargs = nargs() - (!missing(drop))
-    ans = if (Nargs<3L) `[.data.frame`(x,i)  # drop ignored anyway by DF[i]
+    ans = if (Nargs<3L) { `[.data.frame`(x,i) }  # drop ignored anyway by DF[i]
         else if (missing(drop)) `[.data.frame`(x,i,j)
         else `[.data.frame`(x,i,j,drop)
     # added is.data.table(ans) check to fix bug #5069
@@ -482,8 +482,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (is.character(i)) {
       isnull_inames = TRUE
       i = data.table(V1=i)   # for user convenience; e.g. DT["foo"] without needing DT[.("foo")]
-    } else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) i = as.data.table(i[[1L]])
-    else if (identical(class(i),"data.frame")) i = as.data.table(i)   # TO DO: avoid these as.data.table() and use a flag instead
+    } else if (identical(class(i),"list") && length(i)==1L && is.data.frame(i[[1L]])) { i = as.data.table(i[[1L]]) }
+    else if (identical(class(i),"data.frame")) { i = as.data.table(i) }   # TO DO: avoid these as.data.table() and use a flag instead
     else if (identical(class(i),"list")) {
       isnull_inames = is.null(names(i))
       i = as.data.table(i)
@@ -706,16 +706,16 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
       if (is.logical(i)) {
         if (length(i)==1L  # to avoid unname copy when length(i)==nrow (normal case we don't want to slow down)
-          && isTRUE(unname(i))) irows=i=NULL  # unname() for #2152 - length 1 named logical vector.
+          && isTRUE(unname(i))) { irows=i=NULL }  # unname() for #2152 - length 1 named logical vector.
         # NULL is efficient signal to avoid creating 1:nrow(x) but still return all rows, fixes #1249
 
-        else if (length(i)<=1L) irows=i=integer(0L)
+        else if (length(i)<=1L) { irows=i=integer(0L) }
         # FALSE, NA and empty. All should return empty data.table. The NA here will be result of expression,
         # where for consistency of edge case #1252 all NA to be removed. If NA is a single NA symbol, it
         # was auto converted to NA_integer_ higher up for ease of use and convenience. We definitely
         # don't want base R behaviour where DF[NA,] returns an entire copy filled with NA everywhere.
 
-        else if (length(i)==nrow(x)) irows=i=which(i)
+        else if (length(i)==nrow(x)) { irows=i=which(i) }
         # The which() here auto removes NA for convenience so user doesn't need to remember "!is.na() & ..."
         # Also this which() is for consistenty of DT[colA>3,which=TRUE] and which(DT[,colA>3])
         # Assigning to 'i' here as well to save memory, #926.
@@ -1127,9 +1127,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         }
         av = all.vars(jsub,TRUE)
         if (!is.atomic(lhs)) stop("LHS of := must be a symbol, or an atomic vector (column names or positions).")
-        if (is.character(lhs))
+        if (is.character(lhs)) {
           m = chmatch(lhs,names(x))
-        else if (is.numeric(lhs)) {
+        } else if (is.numeric(lhs)) {
           m = as.integer(lhs)
           if (any(m<1L | ncol(x)<m)) stop("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
           lhs = names(x)[m]
@@ -2362,7 +2362,7 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
   by.or.keyby = if (join) "by" else c("by"[!sorted], "keyby"[sorted])[1L]
   dtq[[by.or.keyby]] = substitute( # retain order, for `join` and `sorted` it will use order of `i` data.table instead of `keyby`.
     .expr,
-    list(.expr = if(join) as.name(".EACHI") else if (flatten) by else .by)
+    list(.expr = if(join) {as.name(".EACHI")} else if (flatten) by else .by)
   )
   dtq[[".SDcols"]] = if (keep.by) names(x) else setdiff(names(x), if (flatten) by else .by)
   if (join) dtq[["on"]] = if (flatten) by else .by
@@ -2376,11 +2376,12 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
         if (!flatten) tmp[[.by]] else tmp[, list(.nm.tech.split=paste(unlist(lapply(.SD, as.character)), collapse = ".")), by=by, .SDcols=by]$.nm.tech.split
       ))
   # handle nested split
-  if (flatten || length(by) == 1L) return(
-    lapply(lapply(ll, setattr, '.data.table.locked', NULL), setDT) # alloc.col could handle DT in list as done in: c9c4ff80bdd4c600b0c4eff23b207d53677176bd
-  ) else if (length(by) > 1L) return(
+  if (flatten || length(by) == 1L) {
+    lapply(lapply(ll, setattr, '.data.table.locked', NULL), setDT)
+    # alloc.col could handle DT in list as done in: c9c4ff80bdd4c600b0c4eff23b207d53677176bd
+  } else if (length(by) > 1L) {
     lapply(ll, split.data.table, drop=drop, by=by[-1L], sorted=sorted, keep.by=keep.by, flatten=flatten)
-  )
+  }
 }
 
 # TO DO, add more warnings e.g. for by.data.table(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
@@ -2646,7 +2647,7 @@ chgroup <- function(x) {
 }
 
 rbindlist <- function(l, use.names=fill, fill=FALSE, idcol=NULL) {
-  if (identical(idcol, FALSE)) idcol = NULL
+  if (identical(idcol, FALSE)) { idcol = NULL }
   else if (!is.null(idcol)) {
     if (isTRUE(idcol)) idcol = ".id"
     if (!is.character(idcol)) stop("idcol must be a logical or character vector of length 1. If logical TRUE the id column will named '.id'.")

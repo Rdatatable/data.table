@@ -2,7 +2,7 @@ setkey <- function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE
 {
   if (is.character(x)) stop("x may no longer be the character name of the data.table. The possibility was undocumented and has been removed.")
   cols = as.character(substitute(list(...))[-1L])
-  if (!length(cols)) cols=colnames(x)
+  if (!length(cols)) { cols=colnames(x) }
   else if (identical(cols,"NULL")) cols=NULL
   setkeyv(x, cols, verbose=verbose, physical=physical)
 }
