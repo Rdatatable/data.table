@@ -31,7 +31,7 @@ fsetequal(x, y)
 
 			\item{\code{fsetdiff} will return \code{max(0, xn-yn)} copies of that row.}
 
-			\item{\code{funion} will return xn+yn copies of that row.}}
+			\item{\code{funion} will return \code{xn+yn} copies of that row.}}
 		}
 }
 \details{
