@@ -15,10 +15,6 @@ branches:
   only:
     - "master"
 
-bioc_packages:
-  - IRanges
-  - GenomicRanges
-
 r_packages:
   - covr
   - drat

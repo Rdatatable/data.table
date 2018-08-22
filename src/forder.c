@@ -13,41 +13,79 @@ static int gsalloc[2] = {0};                                        // allocated
 static int gsngrp[2] = {0};                                         // used
 static int gsmax[2] = {0};                                          // max grpn so far
 static int gsmaxalloc = 0;                                          // max size of stack, set by forder to nrows
-static Rboolean stackgrps = TRUE;                                   // switched off for last column when not needed by setkey
-static Rboolean sortStr = TRUE;                                     // TRUE for setkey, FALSE for by=
+static void *xsub = NULL;                                           // allocated by forder; local function arguments named xsub point into it
 static int *newo = NULL;                                            // used by forder and [i|d|c]sort to reorder order. not needed if length(by)==1
+static int *otmp = NULL; static int otmp_alloc = 0;
+static void *xtmp = NULL; static int xtmp_alloc = 0;                // TO DO: save xtmp if possible, see allocs in forder
+static void *radix_xsub = NULL; static size_t radix_xsub_alloc = 0;
+static int *cradix_counts = NULL; static int cradix_counts_alloc = 0;
+static int maxlen = 1;
+static SEXP *cradix_xtmp = NULL; static int cradix_xtmp_alloc = 0;
+static int *csort_otmp=NULL; static int csort_otmp_alloc=0;
+static SEXP *ustr = NULL; static int ustr_alloc = 0; static int ustr_n = 0;
+
+#define Error(...) do {cleanup(); error(__VA_ARGS__);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
+#undef warning
+#define warning(...) Do not use warning in this file                // since it can be turned to error via warn=2
+/* Using OS realloc() in this file to benefit from (often) in-place realloc() to save copy
+ * We have to trap on exit anyway to call savetl_end().
+ * NB: R_alloc() would be more convenient (fails within) and robust (auto free) but there is no R_realloc(). Implementing R_realloc() would be an alloc and copy, iiuc.
+ *     Calloc/Realloc needs to be Free'd, even before error() [R-exts$6.1.2]. An oom within Calloc causes a previous Calloc to leak so Calloc would still needs to be trapped anyway.
+ * Therefore, using <<if (!malloc()) Error("helpful context msg")>> approach to cleanup() on error.
+ */
+
+static void cleanup() {
+  free(gs[0]); gs[0] = NULL;
+  free(gs[1]); gs[1] = NULL;
+  flip = 0;
+  gsalloc[0] = gsalloc[1] = 0;
+  gsngrp[0] = gsngrp[1] = 0;
+  gsmax[0] = gsmax[1] = 0;
+  gsmaxalloc = 0;
+
+  free(xsub);             xsub=NULL;
+  free(newo);             newo=NULL;
+  free(otmp);             otmp=NULL;             otmp_alloc=0;
+  free(xtmp);             xtmp=NULL;             xtmp_alloc=0;
+  free(radix_xsub);       radix_xsub=NULL;       radix_xsub_alloc=0;
+  free(cradix_counts);    cradix_counts=NULL;    cradix_counts_alloc=0;
+  maxlen = 1;
+  free(cradix_xtmp);      cradix_xtmp=NULL;      cradix_xtmp_alloc=0;   // TO DO: reuse xtmp
+  free(csort_otmp);       csort_otmp=NULL;       csort_otmp_alloc=0;
+
+  for(int i=0; i<ustr_n; i++)
+    SET_TRUELENGTH(ustr[i],0);
+  free(ustr);             ustr=NULL;             ustr_alloc=0; ustr_n=0;
+  savetl_end();  // Restore R's own usage of tl. Must run after the for loop above since only CHARSXP which had tl>0 (R's usage) are stored there.
+}
 
 static int nalast = -1;                                             // =1, 0, -1 for TRUE, NA, FALSE respectively. Value rewritten inside forder().
                                                                     // note that na.last=NA (0) removes NAs, not retains them.
 static int order = 1;                                               // =1, -1 for ascending and descending order respectively
+static Rboolean stackgrps = TRUE;                                   // switched off for last column when not needed by setkey
+static Rboolean sortStr = TRUE;                                     // TRUE for setkey, FALSE for by=
 
 #define N_SMALL 200                                                 // replaced n < 200 with n < N_SMALL. Easier to change later
 #define N_RANGE 100000                                              // range limit for counting sort. UPDATE: should be less than INT_MAX (see setRange for details)
 
-#define Error(...) do {savetl_end(); error(__VA_ARGS__);} while(0)  // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
-#undef warning
-#define warning(...) Do not use warning in this file                // since it can be turned to error via warn=2
-/* use malloc/realloc (not Calloc/Realloc) so we can trap errors
-and call savetl_end() before the error(). */
-
-static void growstack(int newlen) {
-  if (newlen==0) newlen=100000;                                   // no link to icount range restriction, just 100,000 seems a good minimum at 0.4MB.
-  if (newlen>gsmaxalloc) newlen=gsmaxalloc;
+static void growstack(uint64_t newlen) {
+  if (newlen==0) newlen=100000;                                     // no link to icount range restriction, just 100,000 seems a good minimum at 0.4MB.
+  if (newlen>gsmaxalloc) newlen=gsmaxalloc;                         // gsmaxalloc is type int so newlen can now be cast to int ok
   gs[flip] = realloc(gs[flip], newlen*sizeof(int));
-  if (gs[flip] == NULL) Error("Failed to realloc working memory stack to %d*4bytes (flip=%d)", newlen, flip);
+  if (gs[flip] == NULL) Error("Failed to realloc working memory stack to %d*4bytes (flip=%d)", (int)newlen, flip);
   gsalloc[flip] = newlen;
 }
 
 static void push(int x) {
   if (!stackgrps || x==0) return;
-  if (gsalloc[flip] == gsngrp[flip]) growstack(gsngrp[flip]*2);
+  if (gsalloc[flip] == gsngrp[flip]) growstack((uint64_t)(gsngrp[flip])*2);
   gs[flip][gsngrp[flip]++] = x;
   if (x > gsmax[flip]) gsmax[flip] = x;
 }
 
 static void mpush(int x, int n) {
   if (!stackgrps || x==0) return;
-  if (gsalloc[flip] < gsngrp[flip]+n) growstack((gsngrp[flip]+n)*2);
+  if (gsalloc[flip] < gsngrp[flip]+n) growstack(((uint64_t)(gsngrp[flip])+n)*2);
   for (int i=0; i<n; i++) gs[flip][gsngrp[flip]++] = x;
   if (x > gsmax[flip]) gsmax[flip] = x;
 }
@@ -56,17 +94,7 @@ static void flipflop() {
   flip = 1-flip;
   gsngrp[flip] = 0;
   gsmax[flip] = 0;
-  if (gsalloc[flip] < gsalloc[1-flip]) growstack(gsalloc[1-flip]*2);
-}
-
-static void gsfree() {
-  free(gs[0]); free(gs[1]);
-  gs[0] = NULL; gs[1]= NULL;
-  flip = 0;
-  gsalloc[0] = gsalloc[1] = 0;
-  gsngrp[0] = gsngrp[1] = 0;
-  gsmax[0] = gsmax[1] = 0;
-  gsmaxalloc = 0;
+  if (gsalloc[flip] < gsalloc[1-flip]) growstack((uint64_t)(gsalloc[1-flip])*2);
 }
 
 #ifdef TIMING_ON
@@ -86,7 +114,7 @@ static void gsfree() {
 /*
    icount originally copied from do_radixsort in src/main/sort.c @ rev 51389. Then reworked here again in forder.c in v1.8.11
    base::sort.list(method="radix") turns out not to be a radix sort, but a counting sort, and we like it.
-   See http://r.789695.n4.nabble.com/method-radix-in-sort-list-isn-t-actually-a-radix-sort-tp3309470p3309470.html
+   See r-devel post: http://r.789695.n4.nabble.com/method-radix-in-sort-list-isn-t-actually-a-radix-sort-tp3309470p3309470.html
    Main changes :
    1. Negatives are fine. Btw, wish raised for simple change to base R : https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=15644
    2. Doesn't cummulate through 0's for speed in repeated calls of sparse counts by saving memset back to 0 of many 0
@@ -248,10 +276,7 @@ static unsigned int radixcounts[8][257] = {{0}};                            // 4
 static int skip[8];
 /* global because iradix and iradix_r interact and are called repetitively.
    counts are set back to 0 after each use, to benefit from skipped radix. */
-static void *radix_xsub=NULL;
-static size_t radix_xsuballoc=0;
 
-static int *otmp=NULL, otmp_alloc=0;
 static void alloc_otmp(int n) {
   if (otmp_alloc >= n) return;
   otmp = (int *)realloc(otmp, n * sizeof(int));
@@ -259,7 +284,6 @@ static void alloc_otmp(int n) {
   otmp_alloc = n;
 }
 
-static void *xtmp=NULL; int xtmp_alloc=0;                                   // TO DO: save xtmp if possible, see allocs in forder
 static void alloc_xtmp(int n) {                                             // TO DO: currently always the largest type (double) but
                                       // could be int if that's all that's needed
   if (xtmp_alloc >= n) return;
@@ -328,13 +352,13 @@ static void iradix(int *x, int *o, int n)
     o[--thiscounts[thisx]] = i+1;
   }
 
-  if (radix_xsuballoc < maxgrpn) {
+  if (radix_xsub_alloc < maxgrpn) {
     // The largest group according to the first non-skipped radix, so could be big (if radix is needed on first column)
     // TO DO: could include extra bits to divide the first radix up more. Often the MSD has groups in just 0-4 out of 256.
     // free'd at the end of forder once we're done calling iradix repetitively
     radix_xsub = (int *)realloc(radix_xsub, maxgrpn*sizeof(double));    // realloc(NULL) == malloc
     if (!radix_xsub) Error("Failed to realloc working memory %d*8bytes (xsub in iradix), radix=%d", maxgrpn, radix);
-    radix_xsuballoc = maxgrpn;
+    radix_xsub_alloc = maxgrpn;
   }
 
   alloc_otmp(maxgrpn);   // TO DO: can we leave this to forder and remove these calls??
@@ -460,7 +484,7 @@ unsigned long long dtwiddle(void *p, int i, int order)
    /* 1. NA twiddled to all bits 0, sorts first.  R's value 1954 cleared.
       2. NaN twiddled to set just bit 13, sorts immediately after NA. 13th bit to be
          consistent with "quiet" na bit but any bit outside last 2 bytes would do.
-         (ref: http://r.789695.n4.nabble.com/Question-re-NA-NaNs-in-R-td4685014.html)
+         (ref r-devel post: http://r.789695.n4.nabble.com/Question-re-NA-NaNs-in-R-td4685014.html)
       3. This also normalises a difference between NA on 32bit R (bit 13 set) and 64bit R (bit 13 not set)
       4. -Inf twiddled to : 0 sign, exponent all 0, mantissa all 1, sorts after NaN
       5. +Inf twiddled to : 1 sign, exponent all 1, mantissa all 0, sorts last since finite
@@ -577,13 +601,13 @@ static void dradix(unsigned char *x, int *o, int n)
     o[ --thiscounts[((unsigned char *)&thisx)[RADIX_BYTE]] ] = i+1;
   }
 
-  if (radix_xsuballoc < maxgrpn) {                                            // TO DO: centralize this alloc
+  if (radix_xsub_alloc < maxgrpn) {                                            // TO DO: centralize this alloc
     // The largest group according to the first non-skipped radix, so could be big (if radix is needed on first column)
     // TO DO: could include extra bits to divide the first radix up more. Often the MSD has groups in just 0-4 out of 256.
     // free'd at the end of forder once we're done calling iradix repetitively
     radix_xsub = (double *)realloc(radix_xsub, maxgrpn*sizeof(double));  // realloc(NULL) == malloc
     if (!radix_xsub) Error("Failed to realloc working memory %d*8bytes (xsub in dradix), radix=%d", maxgrpn, radix);
-    radix_xsuballoc = maxgrpn;
+    radix_xsub_alloc = maxgrpn;
   }
 
   alloc_otmp(maxgrpn);   // TO DO: leave to forder and remove these calls?
@@ -705,12 +729,6 @@ static void dradix_r(unsigned char *xsub, int *osub, int n, int radix)
 // TO DO?: dcount. Find step size, then range = (max-min)/step and proceed as icount. Many fixed precision floats (such as prices)
 // may be suitable. Fixed precision such as 1.10, 1.15, 1.20, 1.25, 1.30 ... do use all bits so dradix skipping may not help.
 
-static int *cradix_counts = NULL;
-static int cradix_counts_alloc = 0;
-static int maxlen = 1;
-static SEXP *cradix_xtmp = NULL;
-static int cradix_xtmp_alloc = 0;
-
 int StrCmp2(SEXP x, SEXP y) {    // same as StrCmp but also takes into account 'na.last' argument.
   if (x == y) return 0;                   // same cached pointer (including NA_STRING==NA_STRING)
   if (x == NA_STRING) return nalast;      // if x=NA, nalast=1 ? then x > y else x < y (Note: nalast == 0 is already taken care of in 'csorted', won't be 0 here)
@@ -794,9 +812,6 @@ static void cradix_r(SEXP *xsub, int n, int radix)
   if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
 }
 
-static SEXP *ustr = NULL;
-static int ustr_alloc = 0, ustr_n = 0;
-
 static void cgroup(SEXP *x, int *o, int n)
 // As icount :
 //   Places the ordering into o directly, overwriting whatever was there
@@ -845,7 +860,6 @@ static void cgroup(SEXP *x, int *o, int n)
   ustr_n = 0;
 }
 
-static int *csort_otmp=NULL, csort_otmp_alloc=0;
 static void alloc_csort_otmp(int n) {
   if (csort_otmp_alloc >= n) return;
   csort_otmp = (int *)realloc(csort_otmp, n * sizeof(int));
@@ -1203,13 +1217,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   TEND(0)
 
   int maxgrpn = gsmax[flip];   // biggest group in the first column
-  void *xsub = NULL;           // local to forder
   int (*f)(); void (*g)();
 
   if (length(by)>1 && gsngrp[flip]<n) {
     xsub = (void *)malloc(maxgrpn * sizeof(double));    // double is the largest type, 8
     if (xsub==NULL) Error("Couldn't allocate xsub in forder, requested %d * %d bytes.", maxgrpn, sizeof(double));
-    newo = (int *)malloc(maxgrpn * sizeof(int));        // global variable, used by isort, dsort, sort and cgroup
+    newo = (int *)malloc(maxgrpn * sizeof(int));        // used by isort, dsort, sort and cgroup
     if (newo==NULL) Error("Couldn't allocate newo in forder, requested %d * %d bytes.", maxgrpn, sizeof(int));
   }
   TEND(1)  // should be negligible time to malloc even large blocks, but time it anyway to be sure
@@ -1326,12 +1339,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 #endif
 
   if (!sortStr && ustr_n!=0) Error("Internal error: at the end of forder sortStr==FALSE but ustr_n!=0 [%d]", ustr_n);
-  for(int i=0; i<ustr_n; i++)
-    SET_TRUELENGTH(ustr[i],0);
-  maxlen = 1;  // reset global. Minimum needed to count "" and NA
-  ustr_n = 0;
-  savetl_end();
-  free(ustr);                ustr=NULL;          ustr_alloc=0;
 
   if (isSorted) {
     // the o vector created earlier could be avoided in this case if we only create it when isSorted becomes FALSE
@@ -1352,16 +1359,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     setAttrib(ans, sym_maxgrpn, ScalarInteger(gsmax[flip]));
   }
 
-  gsfree();
-  free(radix_xsub);          radix_xsub=NULL;    radix_xsuballoc=0;
-  free(xsub); free(newo);    xsub=newo=NULL;
-  free(xtmp);                xtmp=NULL;          xtmp_alloc=0;
-  free(otmp);                otmp=NULL;          otmp_alloc=0;
-  free(csort_otmp);          csort_otmp=NULL;    csort_otmp_alloc=0;
-
-  free(cradix_counts);       cradix_counts=NULL; cradix_counts_alloc=0;
-  free(cradix_xtmp);         cradix_xtmp=NULL;   cradix_xtmp_alloc=0;   // TO DO: use xtmp already got
-
+  cleanup();
   UNPROTECT(n_protect);
   return ans;
 }
@@ -1452,13 +1450,13 @@ SEXP isReallyReal(SEXP x) {
   if (!isReal(x))
     error("x must be of type double.");
   n = length(x);
-  ans = PROTECT(allocVector(LGLSXP, 1));
+  ans = PROTECT(allocVector(INTSXP, 1));
   while (i<n &&
       ( ISNA(REAL(x)[i]) ||
       ( R_FINITE(REAL(x)[i]) && REAL(x)[i] == (int)(REAL(x)[i])))) {
     i++;
   }
-  LOGICAL(ans)[0] = (i<n);
+  INTEGER(ans)[0] = (i<n ? i+1 : 0);
   UNPROTECT(1);
   return(ans);
 }

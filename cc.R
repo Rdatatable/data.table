@@ -2,14 +2,20 @@
 # For data.table dev
 #
 # In ~/.Rprofile add 2 lines :
-# Sys.setenv(CC_DIR=path.expand("~/GitHub/data.table"))
-# source(paste0(Sys.getenv("CC_DIR"),"/cc.R"))
+# Sys.setenv(CC_DIR=path.expand("~/git/data.table"))
+# source(file.path(Sys.getenv("CC_DIR"), "cc.R"))
 #
 # Normal usage :
 # $ R
 # > cc()
 # # change some files
 # > cc()
+# # compile, reload but not test
+# > cc(F)
+# # clean, compile, reload but not test
+# > cc(F, T)
+# # clean, compile using specific version, reload but not test
+# > cc(F, T, CC="gcc-8")
 #
 # To debug C level :
 # $ R -d gdb
@@ -31,7 +37,8 @@ sourceDir <- function(path=getwd(), trace = TRUE, ...) {
   if(trace) cat("\n")
 }
 
-cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) {
+cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR"), CC="gcc") {
+  stopifnot(is.character(CC), length(CC)==1L, !is.na(CC), nzchar(CC))
   gc()
 
   xx = try(getDLLRegisteredRoutines("datatable",TRUE), silent=TRUE)
@@ -53,9 +60,9 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) 
   cat(getwd(),"\n")
   if (clean) system("rm *.o *.so")
   if (debug) {
-    ret = system("MAKEFLAGS='-j CC=gcc PKG_CFLAGS=-fno-openmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c")
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-fno-openmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c", CC))
   } else {
-    ret = system("MAKEFLAGS='-j CC=gcc CFLAGS=-fopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic' R CMD SHLIB -o data.table.so *.c")
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-fopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic' R CMD SHLIB -o data.table.so *.c", CC))
     # TODO add -Wextra too?
   }
   if (ret) return()

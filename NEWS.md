@@ -1,7 +1,103 @@
 
 **If you are viewing this file on CRAN, please check latest news on GitHub [here](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).**
 
-### Changes in v1.10.5  ( in development )
+### Changes in v1.11.5  (in development)
+
+#### NEW FEATURES
+
+1. For convenience when using `rbindlist(lapply(files,fread))` and some `files` are empty, `fread` now reads empty input as a null-data.table with warning, rather than error, [#2898](https://github.com/Rdatatable/data.table/issues/2898). For consistency, `fwrite(data.table(NULL))` now creates an empty file and warns, instead of error, too.
+
+2. `setcolorder(DT)` without further arguments now defaults to moving the key columns to be first, [#2895](https://github.com/Rdatatable/data.table/issues/2895). Thanks to @jsams for the PR.
+
+3. Attempting to subset on `col` when the column is actually called `Col` will still error, but the error message will helpfully suggest similarly-spelled columns, [#2887](https://github.com/Rdatatable/data.table/issues/2887). This is experimental, applies just to `i` currently, and we look forward to feedback. Thanks to Michael Chirico for the suggestion and PR.
+
+#### BUG FIXES
+
+1. `fread` now respects the order of columns passed to `select=` when column numbers are used, [#2986](https://github.com/Rdatatable/data.table/issues/2986). It already respected the order when column names are used. Thanks @privefl for raising the issue.
+
+2. `gmin` and `gmax` no longer fail on _ordered_ factors, [#1947](https://github.com/Rdatatable/data.table/issues/1947). Thanks to @mcieslik-mctp for identifying and @mbacou for the nudge.
+
+3. `as.ITime.character` now properly handles NA when attempting to detect the format of non-NA values in vector. Thanks @polyjian for reporting, closes [#2940](https://github.com/Rdatatable/data.table/issues/2940).
+
+4. `as.matrix(DT, rownames="id")` now works when `DT` has a single row, [#2930](https://github.com/Rdatatable/data.table/issues/2930). Thanks to @malcook for reporting and @sritchie73 for fixing. The root cause was the dual meaning of the `rownames=` argument: i) a single column name/number (most common), or ii) rowname values length 1 for the single row. For clarity and safety, `rownames.value=` has been added. Old usage (i.e. `length(rownames)>1`) continues to work for now but will issue a warning in a future release, and then error in a release after that.
+
+5. Fixed regression in v1.11.0 (May 2018) caused by PR [#2389](https://github.com/Rdatatable/data.table/pull/2389) which introduced partial key retainment on `:=` assigns. This broke the joining logic that assumed implicitly that assigning always drops keys completely. Consequently, join and subset results could be wrong when matching character to factor columns with existing keys, [#2881](https://github.com/Rdatatable/data.table/issues/2881). Thanks to @ddong63 for reporting and to @MarkusBonsch for fixing. Missing test added to ensure this doesn't arise again.
+
+6. `as.IDate.numeric` no longer ignores "origin", [#2880](https://github.com/Rdatatable/data.table/issues/2880). Thanks to David Arenburg for reporting and fixing.
+
+7. `as.ITime.times` was rounding fractional seconds while other methods were truncating, [#2870](https://github.com/Rdatatable/data.table/issues/2870). The `as.ITime` method gains `ms=` taking `"truncate"` (default), `"nearest"` and `"ceil"`. Thanks to @rossholmberg for reporting and Michael Chirico for fixing.
+
+8. `fwrite()` now writes POSIXct dates after 2038 correctly, [#2995](https://github.com/Rdatatable/data.table/issues/2995). Thanks to Manfred Zorn for reporting and Philippe Chataignon for the PR fixing it.
+
+#### NOTES
+
+1. The type coercion warning message has been improved, [#2989](https://github.com/Rdatatable/data.table/pull/2989). Thanks to @sarahbeeysian on [Twitter](https://twitter.com/sarahbeeysian/status/1021359529789775872) for highlighting. For example, given the follow statements:
+```
+  DT = data.table(id=1:3)
+  DT[2, id:="foo"]
+```
+the warning message has changed from :
+```
+Coerced character RHS to integer to match the column's type. Either change the target column ['id'] to
+character first (by creating a new character vector length 3 (nrows of entire table) and assign that;
+i.e. 'replace' column), or coerce RHS to integer (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your
+intent clear and for speed. Or, set the column type correctly up front when you create the table and
+stick to it, please.
+```
+to :
+```
+Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If the
+target column's type integer is correct, it's best for efficiency to avoid the coercion and create the
+RHS as type integer. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA)
+vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.integer() to avoid this
+warning, but that will still perform the coercion. If the target column's type is not correct, it's
+best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in
+fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type)
+over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has nrow(DT) elements then
+the assignment is called a column plonk and is the way to change a column's type. Column types can be
+observed with sapply(DT,typeof).
+```
+
+Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
+```
+DT = data.table(v=1:3)
+DT[2, v:=3.14]
+Warning message:
+  Coerced double RHS to integer to match the type of the target column (column 1 named 'v'). One or
+  more RHS values contain fractions which have been lost; e.g. item 1 with value 3.140000 has been
+  truncated to 3.
+```
+
+2. `split.data.table` method is now properly exported, [#2920](https://github.com/Rdatatable/data.table/issues/2920). But we don't recommend it because `split` copies all the pieces into new memory.
+
+3. Setting indices on columns which are part of the key will now create those indices.
+
+4. `hour`, `minute`, and `second` utility functions use integer arithmetic when the input is already (explicitly) UTC-based `POSIXct` for 4-10x speedup vs. using `as.POSIXlt`.
+
+
+### Changes in v1.11.4  (on CRAN 27 May 2018)
+
+1. Empty RHS of `:=` is no longer an error when the `i` clause returns no rows to assign to anyway, [#2829](https://github.com/Rdatatable/data.table/issues/2829). Thanks to @cguill95 for reporting and to @MarkusBonsch for fixing.
+
+2. Fixed runaway memory usage with R-devel (R > 3.5.0), [#2882](https://github.com/Rdatatable/data.table/pull/2882). Thanks to many people but in particular to Trang Nguyen for making the breakthrough reproducible example, Paul Bailey for liaising, and Luke Tierney for then pinpointing the issue. It was caused by an interaction of two or more data.table threads operating on new compact vectors in the ALTREP framework, such as the sequence `1:n`. This interaction could result in R's garbage collector turning off, and hence the memory explosion. Problems may occur in R 3.5.0 too but we were only able to reproduce in R > 3.5.0. The R code in data.table's implementation benefits from ALTREP (`for` loops in R no longer allocate their range vector input, for example) but are not so appropriate as data.table columns. Sequences such as `1:n` are common in test data but not very common in real-world datasets. Therefore, there is no need for data.table to support columns which are ALTREP compact sequences. The `data.table()` function already expanded compact vectors (by happy accident) but `setDT()` did not (it now does). If, somehow, a compact vector still reaches the internal parallel regions, a helpful error will now be generated. If this happens, please report it as a bug.
+
+3. Tests 1590.3 & 1590.4 now pass when users run `test.data.table()` on Windows, [#2856](https://github.com/Rdatatable/data.table/pull/2856). Thanks to Avraham Adler for reporting. Those tests were passing on AppVeyor, win-builder and CRAN's Windows because `R CMD check` sets `LC_COLLATE=C` as documented in R-exts$1.3.1, whereas by default on Windows `LC_COLLATE` is usually a regional Windows-1252 dialect such as `English_United States.1252`.
+
+4. Around 1 billion very small groups (of size 1 or 2 rows) could result in `"Failed to realloc working memory"` even when plenty of memory is available, [#2777](https://github.com/Rdatatable/data.table/issues/2777). Thanks once again to @jsams for the detailed report as a follow up to bug fix 40 in v1.11.0.
+
+
+### Changes in v1.11.2  (on CRAN 8 May 2018)
+
+1. `test.data.table()` created/overwrote variable `x` in `.GlobalEnv`, [#2828](https://github.com/Rdatatable/data.table/issues/2828); i.e. a modification of user's workspace which is not allowed. Thanks to @etienne-s for reporting.
+
+2. `as.chron` methods for `IDate` and `ITime` have been removed, [#2825](https://github.com/Rdatatable/data.table/issues/2825). `as.chron` still works since `IDate` inherits from `Date`. We are not sure why we had specific methods in the first place. It may have been from a time when `IDate` did not inherit from `Date`, perhaps. Note that we don't use `chron` ourselves in our own work.
+
+3. Fixed `SETLENGTH() cannot be applied to an ALTVEC object` starting in R-devel (R 3.6.0) on 1 May 2018, a few hours after 1.11.0 was accepted on CRAN, [#2820](https://github.com/Rdatatable/data.table/issues/2820). Many thanks to Luke Tierney for pinpointing the problem.
+
+4. Fixed some rare memory faults in `fread()` and `rbindlist()` found with `gctorture2()` and [`rchk`](https://github.com/kalibera/rchk), [#2841](https://github.com/Rdatatable/data.table/issues/2841).
+
+
+### Changes in v1.11.0  (on CRAN 1 May 2018)
 
 #### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES
 
@@ -134,7 +230,7 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
     DT[, c(..cols, "colC")]   # same as DT[, .(colB,colC)]
     DT[, -..cols]             # all columns other than colB
     ```
-    Thus, `with=` should no longer be needed in any cases. Please change to using the `..` prefix and in a few years we will start to formally deprecate and remove the `with=` parameter.  If this is well received, the `..` prefix could be expanded to symbols appearing in `i=` and `by=`, too.
+    Thus, `with=` should no longer be needed in any cases. Please change to using the `..` prefix and over the next few years we will start to formally deprecate and remove the `with=` parameter.  If this is well received, the `..` prefix could be expanded to symbols appearing in `i=` and `by=`, too. Note that column names should not now start with `..`. If a symbol `..var` is used in `j=` but `..var` exists as a column name, the column still takes precedence, for backwards compatibility. Over the next few years, data.table will start issuing warnings/errors when it sees column names starting with `..`. This affects one CRAN package out of 475 using data.table, so we do not believe this restriction to be unreasonable. Our main focus here which we believe `..` achieves is to resolve the more common ambiguity when `var` is in calling scope and `var` is a column name too. Further, we have not forgotten that in the past we recommended prefixing the variable in calling scope with `..` yourself. If you did that and `..var` exists in calling scope, that still works, provided neither `var` exists in calling scope nor `..var` exists as a column name. Please now remove the `..` prefix on `..var` in calling scope to tidy this up. In future data.table will start to warn/error on such usage.
 
 19. `setindexv` can now assign multiple (separate) indices by accepting a `list` in the `cols` argument.
 
@@ -197,7 +293,7 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
 
 27. `setnames` of whole table when original table had `NA` names skipped replacing those, [#2475](https://github.com/Rdatatable/data.table/issues/2475). Thanks to @franknarf1 and [BenoitLondon on StackOverflow](https://stackoverflow.com/questions/47228836/) for the report and @MichaelChirico for fixing.
 
-28. CJ() works with multiple empty vectors now [#2511](https://github.com/Rdatatable/data.table/issues/2511). Thanks to @MarkusBonsch for fixing.
+28. `CJ()` works with multiple empty vectors now [#2511](https://github.com/Rdatatable/data.table/issues/2511). Thanks to @MarkusBonsch for fixing.
 
 29. `:=` assignment of one vector to two or more columns, e.g. `DT[, c("x", "y") := 1:10]`, failed to copy the `1:10` data causing errors later if and when those columns were updated by reference, [#2540](https://github.com/Rdatatable/data.table/issues/2540). This is an old issue ([#185](https://github.com/Rdatatable/data.table/issues/185)) that had been fixed but reappeared when code was refactored. Thanks to @patrickhowerter for the detailed report with reproducible example and to @MarkusBonsch for fixing and strengthening tests so it doesn't reappear again.
 
@@ -225,6 +321,8 @@ Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdat
 39. Internal aliasing of `.` to `list` was over-aggressive in applying `list` even when `.` was intended within `bquote`, [#1912](https://github.com/Rdatatable/data.table/issues/1912). Thanks @MichaelChirico for reporting/filing and @ecoRoland for suggesting and testing a fix.
 
 40. Attempt to allocate a wildly large amount of RAM (16EB) when grouping by key and there are close to 2 billion 1-row groups, [#2777](https://github.com/Rdatatable/data.table/issues/2777). Thanks to @jsams for the detailed report.
+
+41. Fix a bug that `print(dt, class=TRUE)` shows only `topn - 1` rows. Thanks to @heavywatal for reporting [#2803](https://github.com/Rdatatable/data.table/issues/2803) and filing [PR#2804](https://github.com/Rdatatable/data.table/pull/2804).
 
 
 #### NOTES
@@ -257,7 +355,9 @@ Was warning: set2key() will be deprecated in the next relase. Please use setinde
 Now error: set2key() is now deprecated. Please use setindex() instead.
 ```
 
-12. The option `datatable.showProgress` is no longer set to a default value when the package is loaded. Instead, the `default=` argument of `getOption` is used by both `fwrite` and `fread`. The default is the result of `interactive()` at the time of the call. Using `getOption` in this way is intended to be more helpful to users looking at `args(fread)` and `?fread`. 
+12. The option `datatable.showProgress` is no longer set to a default value when the package is loaded. Instead, the `default=` argument of `getOption` is used by both `fwrite` and `fread`. The default is the result of `interactive()` at the time of the call. Using `getOption` in this way is intended to be more helpful to users looking at `args(fread)` and `?fread`.
+
+13. `print.data.table()` invisibly returns its first argument instead of `NULL`. This behavior is compatible with the standard `print.data.frame()` and tibble's `print.tbl_df()`. Thanks to @heavywatal for [PR#2807](https://github.com/Rdatatable/data.table/pull/2807)
 
 
 ### Changes in v1.10.4-3  (on CRAN 20 Oct 2017)

@@ -20,7 +20,7 @@ rm -rf ./data.table.Rcheck
 # tests.Rraw in particular have failed CRAN Solaris (only) due to this.
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P -n "[\x80-\xFF]" ./
 
-# No unicode either?! Put these tests in DtNonAsciiTests package. Trying this again to see what happens now that Solaris is dead. Tests 1864.1 and 1864.2
+# Unicode is now ok. This unicode in tests.Rraw is passing on CRAN.
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" ./
 
 # Ensure no calls to omp_set_num_threads() [to avoid affecting other packages and base R]
@@ -95,22 +95,32 @@ grep ScalarString *.c
 # If a PROTECT is not needed then a comment is added explaining why and including "PROTECT" in the comment to pass this grep
 grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
-cd
+cd ~/GitHub/data.table
 R
 cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently gcc-7) as CRAN does
 saf = options()$stringsAsFactors
 options(stringsAsFactors=!saf)    # check tests (that might be run by user) are insensitive to option, #2718
-cc()
+test.data.table()
 q("no")
-R CMD build data.table
-R CMD check data.table_1.10.1.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
-R CMD INSTALL data.table_1.10.1.tar.gz
+R CMD build .
+R CMD check data.table_1.11.3.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
+R CMD INSTALL data.table_1.11.3.tar.gz
 R
 require(data.table)
 test.data.table()
-test.data.table(verbose=TRUE)  # since main.R no longer tests verbose mode
+test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
+gctorture2(step=50)
+system.time(test.data.table())  # apx 75min
 
-# Upload to win-builder, both release and dev
+# Test C locale doesn't break test suite (#2771)
+echo LC_ALL=C > ~/.Renviron
+R
+Sys.getlocale()=="C"
+q("no")
+R CMD check data.table_1.11.3.tar.gz
+rm ~/.Renviron
+
+# Upload to win-builder: release, dev & old-release
 
 
 ###############################################
@@ -128,50 +138,23 @@ make
 alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
-R310 CMD INSTALL ./data.table_1.10.5.tar.gz
+cd ~/GitHub/data.table
+R310 CMD INSTALL ./data.table_1.11.3.tar.gz
 R310
 require(data.table)
 test.data.table()
 
 
-###############################################
-#  Compiles from source when OpenMP is disabled
-###############################################
+############################################
+#  Check compiles ok when OpenMP is disabled
+############################################
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.10.5.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.11.3.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
-
-
-###############################################
-#  valgrind
-###############################################
-
-# TODO: compile R with --with-valgrind-instrumentation=2 too as per R-exts$4.3.2
-vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-R --vanilla CMD INSTALL data.table_1.10.5.tar.gz
-R -d "valgrind --tool=memcheck --leak-check=full --show-leak-kinds=definite" --vanilla
-require(data.table)
-require(bit64)
-test.data.table()
-
-gctorture(TRUE)   # very very slow, though. Don't run with suggests tests.
-gctorture2(step=100)
-test.data.table()
-
-# Investigated and ignore :
-# Tests 648 and 1262 (see their comments) have single precision issues under valgrind that don't occur on CRAN, even Solaris.
-# Ignore all "set address range perms" warnings :
-#   http://stackoverflow.com/questions/13558067/what-does-this-valgrind-warning-mean-warning-set-address-range-perms
-# Ignore heap summaries around test 1705 and 1707/1708 due to the fork() test opening/closing, I guess.
-# Tests 1729.4, 1729.8, 1729.11, 1729.13 again have precision issues under valgrind only.
-# Leaks for tests 1738.5, 1739.3 but no data.table .c lines are flagged, rather libcairo.so
-#   and libfontconfig.so via GEMetricInfo and GEStrWidth in libR.so
-
-vi ~/.R/Makevars  # make the -O3 line active again
 
 
 #####################################################
@@ -190,42 +173,64 @@ cd R-devel
 # UBSAN gives direct line number under gcc but not clang it seems. clang-5.0 has been helpful too, though.
 # If use later gcc-8, add F77=gfortran-8
 # LIBS="-lpthread" otherwise ld error about DSO missing
-
-## Rarely needed: 32bit on 64bit Ubuntu for tracing any 32bit-only problems
-dpkg --add-architecture i386
-apt-get update
-apt-get install libc6:i386 libstdc++6:i386 gcc-multilib g++-multilib gfortran-multilib libbz2-dev:i386 liblzma-dev:i386 libpcre3-dev:i386 libcurl3-dev:i386 libstdc++-7-dev:i386
-sudo apt-get purge libcurl4-openssl-dev    # cannot coexist, it seems
-sudo apt-get install libcurl4-openssl-dev:i386
-cd ~/build/32bit/R-devel
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --without-readline --without-x CC="gcc -m32" CXX="g++ -m32" F77="gfortran -m32" FC=${F77} OBJC=${CC} LDFLAGS="-L/usr/local/lib" LIBnn=lib LIBS="-lpthread" CFLAGS="-O0 -g -Wall -pedantic"
+# -fno-sanitize=float-divide-by-zero, otherwise /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those:
+#   https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
 
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
-Rdevel CMD INSTALL data.table_1.10.5.tar.gz
-# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with
-# them so should be passed through to here
+cd ~/GitHub/data.table
+Rdevel CMD INSTALL data.table_1.11.3.tar.gz
+# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel
-install.packages("bit64")  # important to run tests using integer64
-# Skip compatibility tests with other Suggests packages; unlikely UBSAN/ASAN problems there.
+install.packages(c("bit64","xts","nanotime"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
 require(data.table)
-require(bit64)
-test.data.table()     # slower than usual of course due to UBSAN and ASAN. Too slow to run R CMD check.
-# Throws /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those: https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
-q("no")
-
-# Rebuild without ASAN/UBSAN and test again under torture
-make clean
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp CC="gcc -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
-make
-Rdevel CMD INSTALL data.table_1.10.5.tar.gz
-install.packages("bit64")
-require(bit64)
-require(data.table)
-test.data.table()  # just quick re-check
-gctorture2(step=100)    # 1h 26m
+test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
+for (i in 1:100) if (!test.data.table()) break  # try several runs; e.g a few tests generate data with a non-fixed random seed
+# gctorture(TRUE)      # very slow, many days
+gctorture2(step=100)   # [12-18hrs] under ASAN, UBSAN and --strict-barrier
 print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
-# Running test id 1437.0331      Error : protect(): protection stack overflow
+
+## In case want to ever try again with 32bit on 64bit Ubuntu for tracing any 32bit-only problems
+## dpkg --add-architecture i386
+## apt-get update
+## apt-get install libc6:i386 libstdc++6:i386 gcc-multilib g++-multilib gfortran-multilib libbz2-dev:i386 liblzma-dev:i386 libpcre3-dev:i386 libcurl3-dev:i386 libstdc++-7-dev:i386
+## sudo apt-get purge libcurl4-openssl-dev    # cannot coexist, it seems
+## sudo apt-get install libcurl4-openssl-dev:i386
+## cd ~/build/32bit/R-devel
+## ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --without-readline --without-x CC="gcc -m32" CXX="g++ -m32" F77="gfortran -m32" FC=${F77} OBJC=${CC} LDFLAGS="-L/usr/local/lib" LIBnn=lib LIBS="-lpthread" CFLAGS="-O0 -g -Wall -pedantic"
+##
+
+
+###############################################
+#  valgrind in R-devel (see R-exts$4.3.2)
+###############################################
+
+cd ~/build
+rm -rf R-devel    # easiest way to remove ASAN from compiled packages in R-devel/library
+                  # to avoid "ASan runtime does not come first in initial library list" error; no need for LD_PRELOAD
+tar xvf R-devel.tar.gz
+cd R-devel
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --with-valgrind-instrumentation=1 CC="gcc" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
+make
+cd ~/GitHub/data.table
+vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
+Rdevel CMD INSTALL data.table_1.11.3.tar.gz
+Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
+# gctorture(TRUE)      # very slow, many days
+# gctorture2(step=100)
+print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
+# 3m require; 62m test
+
+# Investigated and ignore :
+# Tests 648 and 1262 (see their comments) have single precision issues under valgrind that don't occur on CRAN, even Solaris.
+# Ignore all "set address range perms" warnings :
+#   http://stackoverflow.com/questions/13558067/what-does-this-valgrind-warning-mean-warning-set-address-range-perms
+# Ignore heap summaries around test 1705 and 1707/1708 due to the fork() test opening/closing, I guess.
+# Tests 1729.4, 1729.8, 1729.11, 1729.13 again have precision issues under valgrind only.
+# Leaks for tests 1738.5, 1739.3 but no data.table .c lines are flagged, rather libcairo.so
+#   and libfontconfig.so via GEMetricInfo and GEStrWidth in libR.so
+
+vi ~/.R/Makevars  # make the -O3 line active again
 
 
 #############################################################################
@@ -234,28 +239,28 @@ print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.ti
 There are some things to overcome to achieve compile without USE_RINTERNALS, though.
 
 
-###############################################
-#  Single precision e.g. CRAN's Solaris Sparc
-###############################################
-
+########################################################################
+#  Single precision e.g. CRAN's Solaris-Sparc when it was alive on CRAN.
+#  Not Solaris-x86 which is still on CRAN and easier.
+########################################################################
+#
 # Adding --disable-long-double (see R-exts) in the same configure as ASAN/UBSAN fails.  Hence separately.
-
-cd ~/build
-rm -rf R-devel    # 'make clean' isn't enough: results in link error, oddly.
-tar xvf R-devel.tar.gz
-cd R-devel
-./configure CC="gcc -std=gnu99" CFLAGS="-O0 -g -Wall -pedantic -ffloat-store -fexcess-precision=standard" --without-recommended-packages --disable-byte-compiled-packages --disable-long-double
-make
-Rdevel
-install.packages("bit64")
-q("no")
-Rdevel CMD INSTALL ~/data.table_1.9.9.tar.gz
-Rdevel
-.Machine$sizeof.longdouble   # check 0
-require(data.table)
-require(bit64)
-test.data.table()
-q("no")
+## cd ~/build
+## rm -rf R-devel    # 'make clean' isn't enough: results in link error, oddly.
+## tar xvf R-devel.tar.gz
+## cd R-devel
+## ./configure CC="gcc -std=gnu99" CFLAGS="-O0 -g -Wall -pedantic -ffloat-store -fexcess-precision=standard" --without-recommended-packages --disable-byte-compiled-packages --disable-long-double
+## make
+## Rdevel
+## install.packages("bit64")
+## q("no")
+## Rdevel CMD INSTALL ~/data.table_1.9.9.tar.gz
+## Rdevel
+## .Machine$sizeof.longdouble   # check 0
+## require(data.table)
+## require(bit64)
+## test.data.table()
+## q("no")
 
 
 ###############################################
@@ -294,7 +299,6 @@ R CMD build --no-build-vignettes data.table
 # R CMD check requires many packages in Suggests. Too long under emulation. Instead run data.table's test suite directly
 R
 options(repos = "http://cran.stat.ucla.edu")
-install.packages("chron")  # takes a minute or so to start download and install.
 install.packages("bit64")  # important to test data.table with integer64 on big endian
 q("no")
 R CMD INSTALL data.table_1.9.5.tar.gz
@@ -346,6 +350,11 @@ sudo apt-get -y install libboost-all-dev libboost-locale-dev  # for textTinyR
 sudo apt-get -y install libsndfile1-dev  # for seewave
 sudo apt-get -y install libpoppler-cpp-dev  # for pdftools
 sudo apt-get -y install libapparmor-dev  # for sys
+sudo apt-get -y install libmagick++-dev  # for magick
+sudo apt-get -y install libjq-dev libprotoc-dev libprotobuf-dev and protobuf-compiler   # for protolite
+sudo apt-get -y install python-dev  # for PythonInR
+sudo apt-get -y install gdal-bin libgeos-dev  # for rgdal/raster tested via lidR
+sudo apt-get build-dep r-cran-rsymphony   # for Rsymphony: coinor-libcgl-dev coinor-libclp-dev coinor-libcoinutils-dev coinor-libosi-dev coinor-libsymphony-dev
 sudo R CMD javareconf
 # ENDIF
 
@@ -357,13 +366,12 @@ R
 .libPaths()   # should be just 2 items: revdeplib and the base R package library
 update.packages(ask=FALSE)
 # if package not found on mirror, try manually a different one:
-install.packages("MIAmaxent", repos="http://cloud.r-project.org/")
+install.packages("<pkg>", repos="http://cloud.r-project.org/")
 update.packages(ask=FALSE)   # a repeat sometimes does more, keep repeating until none
 
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
 # Ensure no library() call in .Rprofile, such as library(bit64)
 source("http://bioconductor.org/biocLite.R")
-biocLite()
 biocLite()   # keep repeating until returns with nothing left to do
 # biocLite("BiocUpgrade")
 # This error means it's up to date: "Bioconductor version 3.4 cannot be upgraded with R version 3.3.2"
@@ -380,12 +388,13 @@ for (p in deps) {
   if (!file.exists(fn) ||
       identical(tryCatch(packageVersion(p), error=function(e)FALSE), FALSE) ||
       packageVersion(p) != avail[p,"Version"]) {
-    system(paste0("rm -f ", p, "*.tar.gz"))  # Remove previous *.tar.gz.  -f to be silent if not there (i.e. first time seeing this package)
-    system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version)
+    system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version) to move its status() to not yet run
 
     install.packages(p, repos=biocinstallRepos(), dependencies=TRUE)    # again, bioc repos includes CRAN here
     # To install its dependencies. The package itsef is installed superfluously here because the tar.gz will be passed to R CMD check.
     # Not using biocLite() because it does not download dependencies and does not appear to pass dependencies= on.
+    # If we did download.packages() first and then passed that tar.gz to install.packages(), repos= is set to NULL when installing from
+    # local file, so dependencies=TRUE wouldn't know where to get the dependencies. Hence usig install.packages first with repos= set.
 
     download.packages(p, destdir="~/build/revdeplib", contriburl=avail[p,"Repository"])   # So R CMD check can run on these
     if (!file.exists(fn)) stop("Still does not exist!:", fn)
@@ -397,31 +406,42 @@ for (p in deps) {
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 table(avail[deps,"Repository"])
 
-# To identify and remove the tar.gz no longer needed :
+# Remove the tar.gz no longer needed :
+system("ls *.tar.gz | wc -l")
 for (p in deps) {
-  f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-  system(paste0("mv ",f," ",f,"_TEMP"))
-}
-system("ls *.tar.gz")
-system("rm *.tar.gz")
-for (p in deps) {
-  f = paste0(p, "_", avail[p,"Version"], ".tar.gz")
-  system(paste0("mv ",f,"_TEMP ",f))
+  f = paste0(p, "_", avail[p,"Version"], ".tar.gz")  # keep this one
+  all = system(paste0("ls ",p,"_*.tar.gz"), intern=TRUE)
+  old = all[all!=f]
+  for (i in old) {
+    cat("Removing",i,"because",f,"is newer\n")
+    system(paste0("rm ",i))
+  }
+  all = system("ls *.tar.gz", intern=TRUE)
+  all = sapply(strsplit(all, split="_"),'[',1)
+  for (i in all[!all %in% deps]) {
+    cat("Removing",i,"because it", if (!i %in% rownames(avail)) "has been removed from CRAN/Bioconductor\n" else "no longer uses data.table\n")
+    system(paste0("rm ",i,"_*.tar.gz"))
+  }
 }
 system("ls *.tar.gz | wc -l")
 
 status = function(which="both") {
   if (which=="both") {
+    cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
     cat("CRAN:\n"); status("cran")
     cat("BIOC:\n"); status("bioc")
+    cat("TOTAL          :", length(deps), "\n\n")
     cat("Oldest 00check.log (to check no old stale ones somehow missed):\n")
     system("find . -name '00check.log' | xargs ls -lt | tail -1")
     cat("\n")
+    tt = length(system('ps -aux | grep "parallel.*R CMD check"', intern=TRUE))>2L
+    cat("parallel R CMD check is ", if(tt)"" else "not ", "running\n",sep="")
     if (file.exists("/tmp/started.flag")) {
-      system("ls -lrt /tmp/*.flag")
+      # system("ls -lrt /tmp/*.flag")
       tt = as.POSIXct(file.info(c("/tmp/started.flag","/tmp/finished.flag"))$ctime)
-      if (is.na(tt[2])) tt[2] = Sys.time()
-      print(diff(tt))
+      if (is.na(tt[2])) { tt[2] = Sys.time(); cat("Has been running for "); }
+      else cat("Ran for ");
+      cat(round(diff(as.numeric(tt))/60, 1), "mins\n")
     }
     return(invisible())
   }
@@ -448,53 +468,76 @@ status = function(which="both") {
       "NOTE    :",sprintf("%3d",length(n)),"\n",  #":",paste(sort(names(x)[n])),"\n",
       "OK      :",sprintf("%3d",length(ok)),"\n",
       "TOTAL   :",length(e)+length(w)+length(n)+length(ok),"/",length(deps),"\n",
-      "RUNNING :",sprintf("%3d",length(r)),":",paste(sort(names(x)[r])),"\n",
-      if (length(ns)==0) "\n" else paste0("NOT STARTED (first 20 of ",length(ns),") : ",paste(sort(names(x)[head(ns,20)]),collapse="|"),"\n")
+      if (length(r))  paste0("RUNNING       : ",paste(sort(names(x)[r]),collapse=" "),"\n"),
+      if (length(ns)) paste0("NOT STARTED   : ",paste(sort(names(x)[head(ns,20)]),collapse=" "), if(length(ns)>20)paste(" +",length(ns)-20,"more"), "\n"),
+      "\n"
       )
+  assign(paste0(".fail.",which), c(sort(names(x)[e]), sort(names(x)[w])), envir=.GlobalEnv)
   invisible()
 }
 
 status()
 
-run = function(all=FALSE) {
+run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.all")) {
+  cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
+  if (length(which)>1) which = which[1L]
+  cat("which == ",which,"\n", sep="")
   numtgz = as.integer(system("ls -1 *.tar.gz | wc -l", intern=TRUE))
   stopifnot(numtgz==length(deps))
-  cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
-  if (all) {
-    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | parallel R CMD check"
+  if (which=="rerun.all") {
+    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | TZ='UTC' parallel R CMD check"
+    # TZ='UTC' because some packages have failed locally for me but not on CRAN or for their maintainer, due to sensitivity of tests to timezone
+    cat("WIPE ALL CHECKS:",cmd,"\n")
+    cat("Proceed? (ctrl-c or enter)\n")
+    scan(quiet=TRUE)
     # apx 7.5 hrs for 582 packages on my 4 cpu laptop with 8 threads
   } else {
-    x = sapply(deps, function(p) {
-      if (!file.exists(paste0("./",p,".Rcheck"))) return(TRUE)
-      fn = paste0("./",p,".Rcheck/00check.log")
-      length(suppressWarnings(system(paste0("grep -E 'Status:.*(ERROR|WARNING)' ",fn), intern=TRUE)))>0L
-    })
-    x = deps[x]
-    cat("Running",length(x),"packages that have no status (no .Rcheck directory) or are in ERROR or WARNING status\n")
-    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | parallel R CMD check")
+    if (!which %in% c("not.started","cran.fail","bioc.fail","both.fail")) {
+      x = which   # one package manually
+    } else {
+      x = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # always those that haven't run
+      if (which %in% c("cran.fail","both.fail")) x = union(x, .fail.cran)  # .fail.* were written to .GlobalEnv by status()
+      if (which %in% c("bioc.fail","both.fail")) x = union(x, .fail.bioc)
+    }
+    if (length(x)==0) { cat("No packages to run\n"); return(invisible()); }
+    cat("Running",length(x),"packages:", paste(x), "\n")
+    cat("Proceed? (ctrl-c or enter)\n")
+    scan(quiet=TRUE)
+    for (i in x) system(paste0("rm -rf ./",i,".Rcheck"))
+    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | TZ='UTC' parallel R CMD check")
   }
-  cat("Command:",cmd,"\n")
-  if (as.integer(system("ps -a | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
-  cat("Proceed? (ctrl-c or enter)\n")
-  scan(quiet=TRUE)
+  if (as.integer(system("ps -e | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
-  system(paste(cmd,">/dev/null 2>&1 && touch /tmp/finished.flag"),wait=FALSE)
-  #                                 ^^ must be && and not ; otherwise wait doesn't wait
+  system(paste("((",cmd,">/dev/null 2>&1); touch /tmp/finished.flag)"), wait=FALSE)
 }
 
 # ** ensure latest version installed into revdeplib **
-system("R CMD INSTALL ~/GitHub/data.table/data.table_1.10.5.tar.gz")
+system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.5.tar.gz")
 run()
+
+out = function(fnam="~/fail.log") {
+  x = c(.fail.cran, .fail.bioc)
+  cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
+  cat(paste(x,collapse=" "), "\n")
+  cat(capture.output(sessionInfo()), "\n\n", file=fnam, sep="\n")
+  for (i in x) {
+    system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))
+    cat("\n\n", file=fnam, append=TRUE)
+  }
+}
+
+emails = gsub(">$","",gsub(".*<","", sapply(.fail.bioc, maintainer)))
+cat(emails,sep=";")
 
 # Investigate and fix the fails ...
 find . -name 00check.log -exec grep -H -B 20 "Status:.*ERROR" {} \;
 find . -name 00check.log | grep -E 'AFM|easycsv|...|optiSel|xgboost' | xargs grep -H . > /tmp/out.log
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 more <failing_package>.Rcheck/00check.log
-R CMD check <failing_package>.tar.gz
+TZ='UTC' R CMD check <failing_package>.tar.gz
 R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
-R CMD check <failing_package>.tar.gz
-ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CMD check &
+TZ='UTC' R CMD check <failing_package>.tar.gz
+ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' parallel R CMD check &
 
 # Warning: replacing previous import robustbase::sigma by stats::sigma when loading VIM
 # Reinstalling robustbase fixed this warning. Even though it was up to date, reinstalling made a difference.
@@ -504,21 +547,24 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | parallel R CM
 #  Release to CRAN
 ###############################################
 
-Bump versions in DESCRIPTION and NEWS to even release number
-Do not push to GitHub. Prevents even a slim possibility of user getting premature version. install_github() should only ever fetch odd releases at all times. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
-R CMD build data.table
-R CMD check --as-cran data.table_1.10.4.tar.gz   # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
-Resubmit to winbuilder (both R-release and R-devel)
-Submit to CRAN
-Bump version in DESCRIPTION to next ODD dev version
-Add new heading in NEWS for the next dev version
-Push to GitHub so dev can continue
+Bump versions in DESCRIPTION and NEWS (without 'on CRAN date' text as that's not yet known) to even release number
+DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
+R CMD build .
+R CMD check --as-cran data.table_1.11.4.tar.gz   # install.packages("xml2") first to check the 150 URLs in NEWS.md under --as-cran, then remove xml2 again
+Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
+Submit to CRAN. Message template :
+-----
+475 CRAN + 111 BIOC rev deps checked ok.
+9 CRAN packages will break : easycsv, fst, iml, PhenotypeSimulator, popEpi, sdcMicro, SIRItoGTFS, SpaDES.core, splitstackshape
+The maintainers have been contacted; some may have updated already.
+Thanks and best, Matt
+-----
+1. Bump version in DESCRIPTION to next odd number
+2. Add new heading in NEWS for the next dev version. Add "(on CRAN date)" on the released heading if already accepted.
+3. Bump 3 version numbers in Makefile
+Push to GitHub so dev can continue. Commit message format "1.11.0 submitted to CRAN. Bump to 1.11.1"
 Bump dev badge on homepage
 Cross fingers accepted first time. If not, push changes to devel and backport locally
 Close milestone
 ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
-
-Submit message template:
-Have rechecked the 471 CRAN + 111 Bioc packages using data.table.
-Either ok or have liaised with maintainers in advance.
 

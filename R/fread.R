@@ -4,7 +4,7 @@ fread <- function(input="",file,text,sep="auto",sep2="auto",dec=".",quote="\"",n
   if (is.null(sep)) sep="\n"         # C level knows that \n means \r\n on Windows, for example
   else {
     stopifnot( length(sep)==1L, !is.na(sep), is.character(sep) )
-    if (sep=="") sep="\n"             # meaning readLines behaviour. The 3 values (NULL, "" or "\n") are equivalent.
+    if (sep=="") { sep="\n" }         # meaning readLines behaviour. The 3 values (NULL, "" or "\n") are equivalent.
     else if (sep=="auto") sep=""      # sep=="" at C level means auto sep
     else stopifnot( nchar(sep)==1L )  # otherwise an actual character to use as sep
   }
@@ -27,8 +27,14 @@ fread <- function(input="",file,text,sep="auto",sep2="auto",dec=".",quote="\"",n
   if (!missing(file)) {
     if (!identical(input, "")) stop("You can provide 'input=' or 'file=', not both.")
     if (!missing(text)) stop("You can provide 'file=' or 'text=', not both.")
-    if (!file.exists(file)) stop("File '",file,"' does not exist.")
-    if (isTRUE(file.info(file)$isdir)) stop("File '",file,"' is a directory. Not yet implemented.") # dir.exists() requires R v3.2+, #989
+    file_info = file.info(file)
+    if (is.na(file_info$size)) stop("File '",file,"' does not exist or is non-readable.")
+    if (isTRUE(file_info$isdir)) stop("File '",file,"' is a directory. Not yet implemented.") # dir.exists() requires R v3.2+, #989
+    if (!file_info$size) {
+      warning(sprintf("File '%s' has size 0. Returning a NULL %s.",
+                      file, if (data.table) 'data.table' else 'data.frame'))
+      return(if (data.table) data.table(NULL) else data.frame(NULL))
+    }
     input = file
   } else if (!missing(text)) {
     if (!identical(input, "")) stop("You can provide 'input=' or 'text=', not both.")
@@ -46,35 +52,48 @@ fread <- function(input="",file,text,sep="auto",sep2="auto",dec=".",quote="\"",n
     }
     if ( input == "" || length(grep('\\n|\\r', input)) ) {
       # input is data itself containing at least one \n or \r
-    } else if (file.exists(input)) {
-      if (isTRUE(file.info(input)$isdir)) stop("File '",input,"' is a directory. Not yet implemented.")
     } else {
-      if (substring(input,1L,1L)==" ") {
-        stop("Input argument is not a file name and contains no \\n or \\r, but starts with a space. Please remove the leading space.")
-      }
-      # either a download or a system command, both to temp file
-      tmpFile = tempfile()
-      on.exit(unlink(tmpFile), add=TRUE)
-      str6 = substring(input,1L,6L)   # avoid grepl() for #2531
-      str7 = substring(input,1L,7L)
-      str8 = substring(input,1L,8L)
-      if (str7=="ftps://" || str8=="https://") {
-        if (!requireNamespace("curl", quietly = TRUE))
+      file_info = file.info(input)
+      if (!is.na(file_info$size)) {
+        if (isTRUE(file_info$isdir)) stop("File '",input,"' is a directory. Not yet implemented.")
+        if (!file_info$size) {
+          warning(sprintf("File '%s' has size 0. Returning a NULL %s.",
+                          input, if (data.table) 'data.table' else 'data.frame'))
+          return(if (data.table) data.table(NULL) else data.frame(NULL))
+        }
+      } else {
+        if (substring(input,1L,1L)==" ") {
+          stop("Input argument is not a file name and contains no \\n or \\r, but starts with a space. Please remove the leading space.")
+        }
+        # either a download or a system command, both to temp file
+        tmpFile = tempfile()
+        on.exit(unlink(tmpFile), add=TRUE)
+        str6 = substring(input,1L,6L)   # avoid grepl() for #2531
+        str7 = substring(input,1L,7L)
+        str8 = substring(input,1L,8L)
+        if (str7=="ftps://" || str8=="https://") {
+          if (!requireNamespace("curl", quietly = TRUE))
             stop("Input URL requires https:// connection for which fread() requires 'curl' package, but cannot be found. Please install curl using 'install.packages('curl')'.")
-        curl::curl_download(input, tmpFile, mode="wb", quiet = !showProgress)
+          curl::curl_download(input, tmpFile, mode="wb", quiet = !showProgress)
+        }
+        else if (str6=="ftp://" || str7== "http://" || str7=="file://") {
+          method = if (str7=="file://") "internal" else getOption("download.file.method", default="auto")
+          # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
+          download.file(input, tmpFile, method=method, mode="wb", quiet=!showProgress)
+          # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
+        }
+        else if (length(grep(' ', input))) {
+          (if (.Platform$OS.type == "unix") system else shell)(paste0('(', input, ') > ', tmpFile))
+        }
+        else stop("File '",input,"' does not exist; getwd()=='", getwd(), "'",
+                  ". Include correct full path, or one or more spaces to consider the input a system command.")
+        input = tmpFile  # the file name
+        if (!file.info(input)$size) {
+          warning(sprintf("File '%s' has size 0. Returning a NULL %s.",
+                          input, if (data.table) 'data.table' else 'data.frame'))
+          return(if (data.table) data.table(NULL) else data.frame(NULL))
+        }
       }
-      else if (str6=="ftp://" || str7== "http://" || str7=="file://") {
-        method = if (str7=="file://") "internal" else getOption("download.file.method", default="auto")
-        # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
-        download.file(input, tmpFile, method=method, mode="wb", quiet=!showProgress)
-        # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
-      }
-      else if (length(grep(' ', input))) {
-        (if (.Platform$OS.type == "unix") system else shell)(paste0('(', input, ') > ', tmpFile))
-      }
-      else stop("File '",input,"' does not exist; getwd()=='", getwd(), "'",
-                ". Include correct full path, or one or more spaces to consider the input a system command.")
-      input = tmpFile  # the file name
     }
   }
   if (!missing(autostart)) warning("'autostart' is now deprecated and ignored. Consider skip='string' or skip=n");
@@ -139,7 +158,7 @@ fread <- function(input="",file,text,sep="auto",sep2="auto",dec=".",quote="\"",n
   if (!is.null(select)) {
     # fix for #1445
     if (is.numeric(select)) {
-      reorder = if (length(o <- forderv(select))) o else seq_along(select)
+      reorder = frank(select)
     } else {
       reorder = select[select %chin% names(ans)]
       # any missing columns are warning about in fread.c and skipped

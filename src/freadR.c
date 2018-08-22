@@ -7,7 +7,6 @@ Restore test 1339 (balanced embedded quotes, see ?fread already updated).
 Confirm: http://stackoverflow.com/questions/23833294/data-tablefread-doesnt-like-missing-values-in-first-column
 construct test and investigate skip for completeness here: http://stackoverflow.com/questions/22086780/data-table-fread-error
 http://stackoverflow.com/questions/22229109/r-data-table-fread-command-how-to-read-large-files-with-irregular-separators
-http://r.789695.n4.nabble.com/Odd-problem-using-fread-to-read-in-a-csv-file-no-data-just-headers-tp4686302.html
 And even more diagnostics to verbose=true so we can see where crashes are.
 Detect and coerce dates and times. By searching for - and :, and dateTtime etc, or R's own method or fasttime. POSIXct default, for microseconds? : http://stackoverflow.com/questions/14056370/cast-string-to-idatetime
 Add as.colClasses to fread.R after return from C level (e.g. for colClasses "Date", although as slow as read.csv via character)
@@ -18,12 +17,9 @@ Post from patricknik on 5 Jan re ""b"" in a field. And Aykut Firat on email.
 Save repeated ch<eof checking in main read step. Last line might still be tricky if last line has no eol.
 Test using at least "grep read.table ...Rtrunk/tests/
 Look for any non-alpha-numeric characters in the output and try each of them. That way can handle bell character as well and save testing separators which aren't there.
-Column all 0 and 1 treated as logical?
 Just one "NA" current default but empty in future when numerics handle NA string variants directly.
 ---
 Secondary separator for list() columns, such as columns 11 and 12 in BED (no need for strsplit).
-Add LaF comparison.
-as.read.table=true/false option.  Or fread.table and fread.csv (see http://r.789695.n4.nabble.com/New-function-fread-in-v1-8-7-tp4653745p4654194.html).
 *****/
 
 #define NUT  NUMTYPE+2  // +1 for "numeric" alias for "double"; +1 for CLASS fallback using as.class() at R level afterwards
@@ -34,15 +30,15 @@ static int  typeEnum[NUT] =    {CT_DROP, CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_
 static colType readInt64As=CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
-static SEXP colNamesSxp;
 static SEXP colClassesSxp;
 static cetype_t ienc = CE_NATIVE;
+static SEXP RCHK;
 static SEXP DT;
+static SEXP colNamesSxp;
 static int8_t *type;
 static int8_t *size;
 static int ncol = 0;
 static int64_t dtnrows = 0;
-static int protecti=0;
 static _Bool verbose = 0;
 static _Bool warningsAreErrors = 0;
 
@@ -77,7 +73,6 @@ SEXP freadR(
   warningsAreErrors = LOGICAL(warnings2errorsArg)[0];
 
   freadMainArgs args;
-  protecti=0;
   ncol = 0;
   dtnrows = 0;
   const char *ch, *ch2;
@@ -179,12 +174,13 @@ SEXP freadR(
   else STOP("encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'", tt);
   // === end extras ===
 
-  DT = R_NilValue; // created by callback
+  RCHK = PROTECT(allocVector(VECSXP, 2));
+  // see kalibera/rchk#9 and Rdatatable/data.table#2865.  To avoid rchk false positives.
+  // allocateDT() assigns DT to position 0. userOverride() assigns colNamesSxp to position 1; colNamesSxp is used in allocateDT()
   freadMain(args);
-  UNPROTECT(protecti);
+  UNPROTECT(1);
   return DT;
 }
-
 
 _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 {
@@ -193,8 +189,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   if (typeSize[CT_STRING]!=8) STOP("Internal error: typeSize[CT_STRING] != 1");
   colNamesSxp = R_NilValue;
   if (colNames!=NULL) {
-    colNamesSxp = PROTECT(allocVector(STRSXP, ncol));
-    protecti++;
+    SET_VECTOR_ELT(RCHK, 1, colNamesSxp=allocVector(STRSXP, ncol));
     for (int i=0; i<ncol; i++) {
       SEXP this;
       if (colNames[i].len<=0) {
@@ -225,7 +220,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         STOP("colClasses is an unnamed character vector but its length is %d. Must be length 1 or ncol (%d in this case) when unnamed. To specify types for a subset of columns you can either name the items with the column names or pass list() format to colClasses using column names or column numbers. See examples in ?fread.",
               LENGTH(colClassesSxp), ncol);
       }
-      UNPROTECT(1);  // typeEnum_idx
+      UNPROTECT(1); // typeEnum_idx
     } else {
       if (!isNewList(colClassesSxp)) STOP("CfreadR: colClasses is not type list");
       if (!length(getAttrib(colClassesSxp, R_NamesSymbol))) STOP("CfreadR: colClasses is type list but has no names");
@@ -241,7 +236,8 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         }
         SEXP itemsInt;
         if (isString(items)) itemsInt = PROTECT(chmatch(items, colNamesSxp, NA_INTEGER, FALSE));
-        else itemsInt = PROTECT(coerceVector(items, INTSXP));
+        else                 itemsInt = PROTECT(coerceVector(items, INTSXP));
+        // UNPROTECTed directly just after this for loop. No protecti++ here is correct.
         for (int j=0; j<LENGTH(items); j++) {
           int k = INTEGER(itemsInt)[j];
           if (k==NA_INTEGER) {
@@ -255,12 +251,12 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
             // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
           }
         }
-        UNPROTECT(1); // itemsInt
+        UNPROTECT(1); // UNPROTECTing itemsInt inside loop to save protection stack
       }
       for (int i=0; i<ncol; i++) if (type[i]<0) type[i] *= -1;  // undo sign; was used to detect duplicates
       UNPROTECT(1);  // typeEnum_idx
     }
-    UNPROTECT(1); // typeRName_sxp
+    UNPROTECT(1);  // typeRName_sxp
   }
   if (readInt64As != CT_INT64) {
     for (int i=0; i<ncol; i++) if (type[i]==CT_INT64) type[i] = readInt64As;
@@ -268,7 +264,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   if (length(dropSxp)) {
     SEXP itemsInt;
     if (isString(dropSxp)) itemsInt = PROTECT(chmatch(dropSxp, colNamesSxp, NA_INTEGER, FALSE));
-    else itemsInt = PROTECT(coerceVector(dropSxp, INTSXP));
+    else                   itemsInt = PROTECT(coerceVector(dropSxp, INTSXP));
     for (int j=0; j<LENGTH(itemsInt); j++) {
       int k = INTEGER(itemsInt)[j];
       if (k==NA_INTEGER) {
@@ -289,14 +285,14 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     UNPROTECT(1); // itemsInt
   } else if (length(selectSxp)) {
     SEXP tt;
-    int nprot = 0;
     if (isString(selectSxp)) {
       // invalid cols check part of #1445 moved here (makes sense before reading the file)
       tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER, FALSE));
-      nprot++;
       for (int i=0; i<length(selectSxp); i++) if (INTEGER(tt)[i]==NA_INTEGER)
         DTWARN("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
-    } else tt = selectSxp;
+    } else {
+      tt = PROTECT(selectSxp); // harmless superfluous PROTECT, for ease of balancing
+    }
     for (int i=0; i<LENGTH(tt); i++) {
       int k = isInteger(tt) ? INTEGER(tt)[i] : (int)REAL(tt)[i];
       if (k == NA_INTEGER) continue;
@@ -310,7 +306,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       if (type[i]<0) type[i] *= -1;
       else type[i]=CT_DROP;
     }
-    UNPROTECT(nprot);
+    UNPROTECT(1); // tt
   }
   return true;
 }
@@ -324,8 +320,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
   if (newDT) {
     ncol = ncolArg;
     dtnrows = allocNrow;
-    DT=PROTECT(allocVector(VECSXP,ncol-ndrop));  // safer to leave over allocation to alloc.col on return in fread.R
-    protecti++;
+    SET_VECTOR_ELT(RCHK, 0, DT=allocVector(VECSXP,ncol-ndrop));
     if (ndrop==0) {
       setAttrib(DT,R_NamesSymbol,colNamesSxp);  // colNames mkChar'd in userOverride step
     } else {
