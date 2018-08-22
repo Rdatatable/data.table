@@ -20,7 +20,7 @@
 fintersect(x, y, all = FALSE)
 fsetdiff(x, y, all = FALSE)
 funion(x, y, all = FALSE)
-fsetequal(x, y)
+fsetequal(x, y, all = TRUE)
 }
 \arguments{
 	\item{x,y}{\code{data.table}s.}
@@ -31,8 +31,11 @@ fsetequal(x, y)
 
 			\item{\code{fsetdiff} will return \code{max(0, xn-yn)} copies of that row.}
 
-			\item{\code{funion} will return xn+yn copies of that row.}}
+			\item{\code{funion} will return \code{xn+yn} copies of that row.}
+			
+			\item{\code{fsetequal} will return \code{FALSE} unless \code{xn == yn}.}
 		}
+	}
 }
 \details{
   Columns of type \code{complex} and \code{list} are not supported except for \code{funion}.
@@ -47,6 +50,7 @@ fsetequal(x, y)
 }
 \examples{
 x = data.table(c(1,2,2,2,3,4,4))
+x2 = data.table(c(1,2,3,4)) # same set of rows as x
 y = data.table(c(2,3,4,4,4,5))
 fintersect(x, y)            # intersect
 fintersect(x, y, all=TRUE)  # intersect all
@@ -54,6 +58,7 @@ fsetdiff(x, y)              # except
 fsetdiff(x, y, all=TRUE)    # except all
 funion(x, y)                # union
 funion(x, y, all=TRUE)      # union all
-fsetequal(x, y)             # setequal
+fsetequal(x, x2, all=FALSE) # setequal
+fsetequal(x, x2)            # setequal all
 }
 \keyword{ data }
