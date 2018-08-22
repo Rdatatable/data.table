@@ -38,7 +38,7 @@ fread <- function(input="",file,text,sep="auto",sep2="auto",dec=".",quote="\"",n
     input = file
   } else if (!missing(text)) {
     if (!identical(input, "")) stop("You can provide 'input=' or 'text=', not both.")
-    if (!is.character(text)) stop("'text' had type ", typeof(text), ", but must be character.")
+    if (!is.character(text)) stop("'text=' is type ", typeof(text), " but must be character.")
     if (!length(text)) return(data.table())
     if (length(text) > 1L) {
       # Choose an unusual line-ending to avoid
