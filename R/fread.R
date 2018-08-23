@@ -1,5 +1,5 @@
 
-fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings=getOption("datatable.na.strings","NA"),stringsAsFactors=FALSE,verbose=getOption("datatable.verbose",FALSE),skip="__auto__",select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64","integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL, showProgress=getOption("datatable.showProgress",interactive()), data.table=getOption("datatable.fread.datatable",TRUE), nThread=getDTthreads(), logical01=getOption("datatable.logical01", FALSE), autostart=NA)
+fread <- function(input="",file=NULL,text=NULL,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings=getOption("datatable.na.strings","NA"),stringsAsFactors=FALSE,verbose=getOption("datatable.verbose",FALSE),skip="__auto__",select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64","integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL, showProgress=getOption("datatable.showProgress",interactive()), data.table=getOption("datatable.fread.datatable",TRUE), nThread=getDTthreads(), logical01=getOption("datatable.logical01", FALSE), autostart=NA)
 {
   if (is.null(sep)) sep="\n"         # C level knows that \n means \r\n on Windows, for example
   else {
@@ -24,14 +24,29 @@ fread <- function(input="",file,sep="auto",sep2="auto",dec=".",quote="\"",nrows=
   stopifnot(is.numeric(nThread) && length(nThread)==1L)
   nThread=as.integer(nThread)
   stopifnot(nThread>=1L)
-  if (!missing(file)) {
+  if (!is.null(text)) {
+    if (!identical(input, "")) stop("You can provide 'input=' or 'text=', not both.")
+    if (!is.null(file)) stop("You can provide 'file=' or 'text=', not both.")
+    if (!is.character(text)) stop("'text=' is type ", typeof(text), " but must be character.")
+    if (!length(text)) return(data.table())
+    if (length(text) > 1L) {
+      tmpFile = tempfile()
+      on.exit(unlink(tmpFile), add=TRUE)
+      cat(text, file=tmpFile, sep="\n")  # avoid paste0() which could create a new very long single string in R's memory
+      input = tmpFile
+    } else {
+      # avoid creating a tempfile() for single strings, which can be done a lot; e.g. in the test suite.
+      input = text
+    }
+    text = NULL
+  }
+  else if (!is.null(file)) {
     if (!identical(input, "")) stop("You can provide 'input=' or 'file=', not both.")
     file_info = file.info(file)
     if (is.na(file_info$size)) stop("File '",file,"' does not exist or is non-readable.")
     if (isTRUE(file_info$isdir)) stop("File '",file,"' is a directory. Not yet implemented.") # dir.exists() requires R v3.2+, #989
     if (!file_info$size) {
-      warning(sprintf("File '%s' has size 0. Returning a NULL %s.",
-                      file, if (data.table) 'data.table' else 'data.frame'))
+      warning(sprintf("File '%s' has size 0. Returning a NULL %s.", file, if (data.table) 'data.table' else 'data.frame'))
       return(if (data.table) data.table(NULL) else data.frame(NULL))
     }
     input = file

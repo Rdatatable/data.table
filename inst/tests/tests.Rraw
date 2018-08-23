@@ -9146,7 +9146,7 @@ test(1658.29, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="i
 # logical NA as "NA" when logical01=TRUE, instead of the default na="" which writes all types including <NA> in character column as ,, consistently.
 test(1658.30, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="\"id\",\"bool\"\n1,1\n2,NA\n3,0")
 
-# POSIXct 
+# POSIXct
 test(1658.31, fwrite(data.table(D = as.POSIXct(seq.Date(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
     output="D\n2038-01-19T00:00:00Z\n2038-01-20T00:00:00Z")
 
@@ -9599,7 +9599,21 @@ if (.Platform$OS.type=="unix") {
   test(1703.1, fread(cmd), data.table(a=4L, b=2L))
   test(1703.2, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
   unlink(f)
+  # Test 'text' argument
+  test(1703.3, fread(text="https://example.com,A\na,b"), data.table(`https://example.com`='a', A='b'))
+  # errors
+  test(1703.4, fread(input="A,B", text="A,B"), error="You can provide 'input=' or 'text=', not both.")
+  test(1703.5, fread(file="A,B",  text="A,B"), error="You can provide 'file=' or 'text=', not both.")
+  test(1703.6, fread(input="A,B", file="A,B"), error="You can provide 'input=' or 'file=', not both.")
+  test(1703.7, fread(text=1),                  error="'text=' is type double but must be character")
+  # Zero-length text
+  test(1703.8, fread(text = character(0)), data.table())
+  # Multi-length text
+  test(1703.9, fread(text=c("A B","C D"), sep=" ", data.table=FALSE), y=read.table(text=c("A B","C D"), as.is=TRUE, header=TRUE))
+  # test error if length>1 character passed to input, not text:
+  test(1703.11, x=fread(c("foo","bar","baz")), error="must be a single character string")
 }
+test(1703.12, fread("."), error="File '.' is a directory. Not yet implemented.")
 
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
 # as used by package popEpi in its tests
