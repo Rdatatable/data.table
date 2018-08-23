@@ -11,7 +11,7 @@
 
 3. Attempting to subset on `col` when the column is actually called `Col` will still error, but the error message will helpfully suggest similarly-spelled columns, [#2887](https://github.com/Rdatatable/data.table/issues/2887). This is experimental, applies just to `i` currently, and we look forward to feedback. Thanks to Michael Chirico for the suggestion and PR.
 
-4. `fread()` gains `text=` for inputs which are known to be a character vector of literal data as per `utils::read.table(text=)`, [#1423](https://github.com/Rdatatable/data.table/issues/1423). Thanks to Douglas Clark for the request and Hugh Parsonage for the PR. The general purpose first argument (`input=`) continues to accept single strings of data (e.g. `fread("A,B\n1,2\n3,4")`) and there is no plan to change that. Only `text=` accepts multi-line character vectors, such as created by `readLines()`.
+4. `fread()` gains `text=` for inputs which are known to be a character vector of literal data as per `utils::read.table(text=)`, [#1423](https://github.com/Rdatatable/data.table/issues/1423). Thanks to Douglas Clark for the request and Hugh Parsonage for the PR. The general purpose first argument (`input=`) continues to accept single strings of data (e.g. `fread("A,B\n1,2\n3,4")`) and there is no plan to change that. `text=` accepts multi-line character vectors, such as created by `readLines()`. You may wish to use `text=` for security when that data is provided by your user, to avoid the possibility of the provided data being interpretted as a system command by `input=`. Further, we may in future add `cmd=` and require `cmd=` to be used as the only way to run a system command from `fread()`; feedback welcome.
 
 #### BUG FIXES
 

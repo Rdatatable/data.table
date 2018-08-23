@@ -9594,18 +9594,18 @@ if (.Platform$OS.type=="unix") {
   test(1703.2, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
   unlink(f)
   # Test 'text' argument
-  test(1703.3, x=fread(text = "https://example.com,A\na,b"), data.table(`https://example.com`='a', A='b'))
+  test(1703.3, fread(text="https://example.com,A\na,b"), data.table(`https://example.com`='a', A='b'))
   # errors
-  test(1703.4, x=fread(input="A,B", text="A,B"), error="You can provide 'input=' or 'text=', not both.")
-  test(1703.5, x=fread(file="A,B",  text="A,B"), error="You can provide 'file=' or 'text=', not both.")
-  test(1703.6, x=fread(input="A,B", file="A,B"), error="You can provide 'input=' or 'file=', not both.")
-  test(1703.7, fread(text=1), error="'text=' is type double but must be character")
+  test(1703.4, fread(input="A,B", text="A,B"), error="You can provide 'input=' or 'text=', not both.")
+  test(1703.5, fread(file="A,B",  text="A,B"), error="You can provide 'file=' or 'text=', not both.")
+  test(1703.6, fread(input="A,B", file="A,B"), error="You can provide 'input=' or 'file=', not both.")
+  test(1703.7, fread(text=1),                  error="'text=' is type double but must be character")
   # Zero-length text
-  test(1703.8, x=fread(text = character(0)), y=data.table())
+  test(1703.8, fread(text = character(0)), data.table())
   # Multi-length text
-  test(1703.9, x=fread(text = c("A B", "C D"), sep = " ", data.table=FALSE), y=read.table(text = c("A B", "C D"), as.is = TRUE, header = TRUE))
+  test(1703.9, fread(text=c("A B","C D"), sep=" ", data.table=FALSE), y=read.table(text=c("A B","C D"), as.is=TRUE, header=TRUE))
   # test error if length>1 character passed to input, not text:
-  test(1703.11, x=fread(c("foo", "bar", "baz")), error="must be a single character string")
+  test(1703.11, x=fread(c("foo","bar","baz")), error="must be a single character string")
 }
 test(1703.12, fread("."), error="File '.' is a directory. Not yet implemented.")
 
