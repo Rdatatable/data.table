@@ -6042,7 +6042,7 @@ test(1451.6, ans1[c(3,3)], fans2(DT, c("V3", "V3")))        # using duplicate co
 test(1451.7, shallow(DT, integer(0)), null.data.table())    # length-0 input work as intended as well.
 test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input work as intended as well.
 
-test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist; getwd()==")
+test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist.*getwd")
 
 # Test for #802
 test(1453, fread(testDir("fread_line_error.csv"))[c(1,.N), c("V1","V24")],
@@ -12127,6 +12127,8 @@ test(1925.10, as.ITime(x),               structure(c(12L, 67L), class="ITime"))
 test(1925.11, as.ITime(x, ms='nearest'), structure(c(12L, 68L), class="ITime"))
 test(1925.12, as.ITime(x, ms='ceil'),    structure(c(13L, 68L), class="ITime"))
 
+test(1936.1, fread("A,B\n1,3\n2,4", autostart=1), data.table(A=1:2, B=3:4), warning="autostart.*deprecated.*Consider skip")
+if (.Platform$OS.type == "unix") test(1936.2, is.data.table(fread("ls .")))
 
 ###################################
 #  Add new tests above this line  #

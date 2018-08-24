@@ -31,22 +31,12 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
     if (!length(text)) return(data.table())
     if (length(text) > 1L) {
       cat(text, file=(tmpFile<-tempfile()), sep="\n")  # avoid paste0() which could create a new very long single string in R's memory
-      input = tmpFile
+      file = tmpFile
       on.exit(unlink(tmpFile), add=TRUE)
     } else {
       # avoid creating a tempfile() for single strings, which can be done a lot; e.g. in the test suite.
       input = text
     }
-  }
-  else if (!is.null(file)) {
-    file_info = file.info(file)
-    if (is.na(file_info$size)) stop("File '",file,"' does not exist or is non-readable.")
-    if (isTRUE(file_info$isdir)) stop("File '",file,"' is a directory. Not yet implemented.") # dir.exists() requires R v3.2+, #989
-    if (!file_info$size) {
-      warning(sprintf("File '%s' has size 0. Returning a NULL %s.", file, if (data.table) 'data.table' else 'data.frame'))
-      return(if (data.table) data.table(NULL) else data.frame(NULL))
-    }
-    input = file
   }
   else if (is.null(cmd)) {
     if (!is.character(input) || length(input)!=1L) {
@@ -55,55 +45,54 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
     if (input=="" || length(grep('\\n|\\r', input))) {
       # input is data itself containing at least one \n or \r
     } else {
-      file_info = file.info(input)
-      if (!is.na(file_info$size)) {
-        if (isTRUE(file_info$isdir)) stop("File '",input,"' is a directory. Not yet implemented.")
-        if (!file_info$size) {
-          warning(sprintf("File '%s' has size 0. Returning a NULL %s.",
-                          input, if (data.table) 'data.table' else 'data.frame'))
-          return(if (data.table) data.table(NULL) else data.frame(NULL))
-        }
-      } else {
-        if (substring(input,1L,1L)==" ") {
-          stop("Input argument is not a file name and contains no \\n or \\r, but starts with a space. Please remove the leading space.")
-        }
-        str6 = substring(input,1L,6L)   # avoid grepl() for #2531
-        str7 = substring(input,1L,7L)
-        str8 = substring(input,1L,8L)
-        if (str7=="ftps://" || str8=="https://") {
-          if (!requireNamespace("curl", quietly = TRUE))
-            stop("Input URL requires https:// connection for which fread() requires 'curl' package, but cannot be found. Please install curl using 'install.packages('curl')'.")
-          curl::curl_download(input, tmpFile<-tempfile(), mode="wb", quiet = !showProgress)
-          input = tmpFile
-          on.exit(unlink(tmpFile), add=TRUE)
-        }
-        else if (str6=="ftp://" || str7== "http://" || str7=="file://") {
-          method = if (str7=="file://") "internal" else getOption("download.file.method", default="auto")
-          # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
-          download.file(input, tmpFile<-tempfile(), method=method, mode="wb", quiet=!showProgress)
-          # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
-          input = tmpFile
-          on.exit(unlink(tmpFile), add=TRUE)
-        }
-        else if (length(grep(' ', input))) {
-          if (input_literal) cmd = input
-          else stop("input= looks like a system command but has been constructed with paste (or similar) or passed in via a variable. Feasibly, this could be an attacker passing a system command to your code (via your GUI or API) when you're expecting a file name or some literal data. For security and clarity please use cmd=, text= or file=. See NEWS file for v1.11.6 for more information.")
-        }
-        else stop("File '",input,"' does not exist; getwd()=='", getwd(), "'",
-                  ". Include correct full path, or one or more spaces to consider the input a system command.")
-        if (!file.info(input)$size) {
-          # put this at C level
-          warning(sprintf("File '%s' has size 0. Returning a NULL %s.",
-                          input, if (data.table) 'data.table' else 'data.frame'))
-          return(if (data.table) data.table(NULL) else data.frame(NULL))
-        }
+      if (substring(input,1L,1L)==" ") {
+        stop("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
+      }
+      str6 = substring(input,1L,6L)   # avoid grepl() for #2531
+      str7 = substring(input,1L,7L)
+      str8 = substring(input,1L,8L)
+      if (str7=="ftps://" || str8=="https://") {
+        # nocov start
+        if (!requireNamespace("curl", quietly = TRUE))
+          stop("Input URL requires https:// connection for which fread() requires 'curl' package, but cannot be found. Please install curl using 'install.packages('curl')'.")
+        curl::curl_download(input, tmpFile<-tempfile(), mode="wb", quiet = !showProgress)
+        file = tmpFile
+        on.exit(unlink(tmpFile), add=TRUE)
+        # nocov end
+      }
+      else if (str6=="ftp://" || str7== "http://" || str7=="file://") {
+        # nocov start
+        method = if (str7=="file://") "internal" else getOption("download.file.method", default="auto")
+        # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
+        download.file(input, tmpFile<-tempfile(), method=method, mode="wb", quiet=!showProgress)
+        # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
+        file = tmpFile
+        on.exit(unlink(tmpFile), add=TRUE)
+        # nocov end
+      }
+      else if (length(grep(' ', input))) {
+        if (input_literal) cmd = input
+        else stop("input= looks like a system command but has been constructed with paste (or similar) or passed in via a variable. Feasibly, this could be an attacker passing a system command to your code (via your GUI or API) when you're expecting a file name or some literal data. For security and clarity please use cmd=, text= or file=. See NEWS file for v1.11.6 for more information.")
+      }
+      else {
+        file = input
       }
     }
   }
   if (!is.null(cmd)) {
     (if (.Platform$OS.type == "unix") system else shell)(paste0('(', cmd, ') > ', tmpFile<-tempfile()))
-    input = tmpFile
+    file = tmpFile
     on.exit(unlink(tmpFile), add=TRUE)
+  }
+  if (!is.null(file)) {
+    file_info = file.info(file)
+    if (is.na(file_info$size)) stop("File '",file,"' does not exist or is non-readable. getwd()=='", getwd(), "'")
+    if (isTRUE(file_info$isdir)) stop("File '",file,"' is a directory. Not yet implemented.") # dir.exists() requires R v3.2+, #989
+    if (!file_info$size) {
+      warning(sprintf("File '%s' has size 0. Returning a NULL %s.", file, if (data.table) 'data.table' else 'data.frame'))
+      return(if (data.table) data.table(NULL) else data.frame(NULL))
+    }
+    input = file
   }
   if (!missing(autostart)) warning("'autostart' is now deprecated and ignored. Consider skip='string' or skip=n");
   if (is.logical(colClasses)) {
