@@ -11,7 +11,19 @@
 
 3. Attempting to subset on `col` when the column is actually called `Col` will still error, but the error message will helpfully suggest similarly-spelled columns, [#2887](https://github.com/Rdatatable/data.table/issues/2887). This is experimental, applies just to `i` currently, and we look forward to feedback. Thanks to Michael Chirico for the suggestion and PR.
 
-4. `fread()` gains `text=` for inputs which are known to be a character vector of literal data as per `read.table(text=)`, [#1423](https://github.com/Rdatatable/data.table/issues/1423). Thanks to Douglas Clark for the request and Hugh Parsonage for the PR. The general purpose first argument (`input=`) continues to accept single strings of data (e.g. `fread("A,B\n1,2\n3,4")`) and there is no plan to change that. `text=` accepts multi-line character vectors (such as created by `readLines()`) which `input=` does not. You may also wish to use `text=` for security when the input is provided by your user, to avoid the possibility of the user-provided data being interpreted as a system command by `input=`. Further, we may in future add `cmd=` and require `cmd=` to be used as the only way to run a system command from `fread()`; feedback sought.
+4. `fread()` has always accepted literal data (e.g. `fread("A,B\n1,2\n3,4")`) and now it gains explicit `text=`; e.g. `fread(text="A,B\n1,2\n3,4")`. Unlike the first general purpose `input=` argument, the `text=` argument accepts multi-line input; e.g. `fread(text=c("A,B","1,2","3,4"))`, [#1423](https://github.com/Rdatatable/data.table/issues/1423). Thanks to Douglas Clark for the request and Hugh Parsonage for the PR.
+
+5. `fread()` has always accepted system commands (e.g. `fread("grep blah file.txt")`) for convenience. It now gains explicit `cmd=` too; e.g. `fread(cmd="grep blah file.txt")`. However, when user-provided data is passed on to `fread` (via some GUI or API that you provide to your users) there is a security concern that a hacker could enter a system command instead of a file name, and `fread` could run it. Therefore, `cmd=` must now be used in order to run a command. Other than in common usage of a literal string constant (i.e. not a variable and not an expression) where there is no security concern.
+```
+   fread(aFileName)                     # if aFileName is not a file name but a command, fread no longer runs the command.
+   fread(someText)                      # if someText is not some text but a command, fread no longer runs the command.
+   fread("grep blah file.txt")          # command is a literal string constant appearing in your code and is safe; still works and is common usage.
+   x = "grep blah file.txt"
+   fread(x)                             # no longer runs command. fread(cmd=x) is now needed.
+   y = "blah"
+   fread(paste("grep",y,"file.txt"))    # no longer runs command. fread(cmd=paste("grep",y,"file.txt")) is now needed.
+```
+Owing to the security nature of this change, there is no option provided to restore old behaviour.
 
 #### BUG FIXES
 

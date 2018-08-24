@@ -3326,7 +3326,7 @@ if (.Platform$OS.type == "unix") {
       x2 = try(fread(paste('grep -v 3 ', f, sep="")), silent = TRUE)
       if(is.data.table(x2)) test(1105, x1[a != 3], x2)
   } else {
-      test(1105, x1[a != 3], fread(paste('grep -v 3 ', f, sep="")))
+      test(1105, x1[a != 3], fread(cmd=paste('grep -v 3 ', f, sep="")))
   }
 } else {
   # x2 <- fread(paste('more ', f, sep=""))
@@ -9596,15 +9596,16 @@ test(1702.4, isoweek(isotest$input_date), isotest$expected_output)
 if (.Platform$OS.type=="unix") {
   cat("a,b\n4,2", file=f<-tempfile())
   cmd <- sprintf("cat %s", f)
-  test(1703.1, fread(cmd), data.table(a=4L, b=2L))
+  test(1703.0, fread(cmd), error="input= looks like a system command.*please use cmd=")
+  test(1703.1, fread(cmd=cmd), data.table(a=4L, b=2L))
   test(1703.2, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
   unlink(f)
   # Test 'text' argument
   test(1703.3, fread(text="https://example.com,A\na,b"), data.table(`https://example.com`='a', A='b'))
   # errors
-  test(1703.4, fread(input="A,B", text="A,B"), error="You can provide 'input=' or 'text=', not both.")
-  test(1703.5, fread(file="A,B",  text="A,B"), error="You can provide 'file=' or 'text=', not both.")
-  test(1703.6, fread(input="A,B", file="A,B"), error="You can provide 'input=' or 'file=', not both.")
+  test(1703.4, fread(input="A,B", text="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
+  test(1703.5, fread(file="A,B",  text="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
+  test(1703.6, fread(input="A,B", file="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
   test(1703.7, fread(text=1),                  error="'text=' is type double but must be character")
   # Zero-length text
   test(1703.8, fread(text = character(0)), data.table())
