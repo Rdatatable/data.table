@@ -2,7 +2,7 @@
 fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",dec=".",quote="\"",nrows=Inf,header="auto",na.strings=getOption("datatable.na.strings","NA"),stringsAsFactors=FALSE,verbose=getOption("datatable.verbose",FALSE),skip="__auto__",select=NULL,drop=NULL,colClasses=NULL,integer64=getOption("datatable.integer64","integer64"), col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL, showProgress=getOption("datatable.showProgress",interactive()), data.table=getOption("datatable.fread.datatable",TRUE), nThread=getDTthreads(), logical01=getOption("datatable.logical01", FALSE), autostart=NA)
 {
   if (missing(input)+is.null(file)+is.null(text)+is.null(cmd) < 3L) stop("Used more than one of the arguments input=, file=, text= and cmd=.")
-  input_literal = identical(class(substitute(input)), "character")  # to allow commands in input= iff literal character constant (not variable, not expression). See news v1.11.6.
+  input_has_vars = length(all.vars(substitute(input)))>0L  # see news for v1.11.6
   if (is.null(sep)) sep="\n"         # C level knows that \n means \r\n on Windows, for example
   else {
     stopifnot( length(sep)==1L, !is.na(sep), is.character(sep) )
@@ -71,8 +71,8 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
         # nocov end
       }
       else if (length(grep(' ', input))) {
-        if (input_literal) cmd = input
-        else stop("input= looks like a system command but has been constructed with paste (or similar) or passed in via a variable. Feasibly, this could be an attacker passing a system command to your code (via your GUI or API) when you're expecting a file name or some literal data. For security and clarity please use cmd=, text= or file=. See NEWS file for v1.11.6 for more information.")
+        cmd = input
+        if (input_has_vars) warning("Taking input= as system command ('",cmd,"'). A variable has been used: please use fread(cmd=...). See NEWS for v1.11.6 for more information.")
       }
       else {
         file = input

@@ -9596,7 +9596,7 @@ test(1702.4, isoweek(isotest$input_date), isotest$expected_output)
 if (.Platform$OS.type=="unix") {
   cat("a,b\n4,2", file=f<-tempfile())
   cmd <- sprintf("cat %s", f)
-  test(1703.0, fread(cmd), error="input= looks like a system command.*please use cmd=")
+  test(1703.0, fread(cmd), data.table(a=4L, b=2L), warning="please use fread(cmd=...)")
   test(1703.1, fread(cmd=cmd), data.table(a=4L, b=2L))
   test(1703.2, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
   unlink(f)
@@ -12175,7 +12175,7 @@ if (nfail > 0) {
        " Search inst/tests/tests.Rraw for test number",s2,paste(whichfail,collapse=", "),".")
   # important to stop() here, so that 'R CMD check' fails
 }
-cat(plat,"\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
+cat(plat,"\n\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
 # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
 # stale due to not updating yet since a fix in R-devel, for example.
 
