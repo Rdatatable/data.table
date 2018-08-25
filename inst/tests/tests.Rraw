@@ -1,7 +1,9 @@
 
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
-  if ("package:data.table" %in% search())
-    stop("This is dev but installed data.table is loaded as well. Please unload it to prevent potential conflicts in dev.")
+  if (!identical(suppressWarnings(packageDescription("data.table")), NA)) {
+    remove.packages("data.table")
+    stop("This is dev mode but data.table was installed. Uninstalled it. Please q() this R session and try cc() again. The installed namespace causes problems in dev mode for the S4 tests.\n")
+  }
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
 } else {
@@ -11985,7 +11987,7 @@ for (col in c('b', 'c')) {
 #
 suppressWarnings(setClass("Data.Table", contains="data.table"))  # suppress 'Created a package name, ‘2018-05-26 06:14:43.444’, when none found'
 suppressWarnings(setClass("S4Composition", representation(data="data.table")))
-# data.table can be a parent class"
+# data.table can be a parent class
 ids <- sample(letters[1:3], 10, replace=TRUE)
 scores <- rnorm(10)
 dt <- data.table(id=ids, score=scores)
@@ -12014,6 +12016,8 @@ setMethod("dtGet", c(x="S4Composition", what="ANY"), function(x, what) {x@data[[
 test(1914.7, dtGet(dt.comp), dt)  # actually
 test(1914.8, identical(dtGet(dt.comp, 1), dt[[1]]))
 test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
+removeClass("Data.Table")   # so that test 1914.2 passes on the second run of cc() in dev
+removeClass("S4Composition")
 # END port of old testthat tests
 
 str = "Sepal.Length,Sepal.Width,Petal.Length,Petal.Width,Species
