@@ -72,7 +72,7 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
       }
       else if (length(grep(' ', input))) {
         cmd = input
-        if (input_has_vars) warning("Taking input= as system command ('",cmd,"'). A variable has been used: please use fread(cmd=...). See NEWS for v1.11.6 for more information.")
+        if (input_has_vars) warning("Taking input= as system command ('",cmd,"'). A variable has been used: please use fread(cmd=...). See NEWS for v1.11.6 for more information. Aside: in production systems it is highly recommended to set options(warn=2) to turn warnings into errors.")
       }
       else {
         file = input
