@@ -12136,10 +12136,10 @@ if (.Platform$OS.type == "unix") test(1936.2, is.data.table(fread("ls .")))
 
 # add helpful warning to %between%
 d <- data.table(A=1:10, B = 3)
-test(1937.1, d[A %between% c(B,B+1)], data.table(A = 3L, B = 3),
-     warning = 'RHS has length().*Perhaps you meant')
-test(1937.2, d[A %between% B], data.table(A = 3L, B = 3),
-     warning = 'greater than 2. The first')
+test(1937.1, d[A %between% c(B,B+1)],
+     error = 'RHS has length().*Perhaps you meant')
+test(1937.2, d[A %between% B],
+     error = 'length 2. The first')
 
 ###################################
 #  Add new tests above this line  #

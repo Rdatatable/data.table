@@ -13,14 +13,14 @@ between <- function(x,lower,upper,incbounds=TRUE) {
 
 # %between% is vectorised, #534.
 "%between%" <- function(x, y) {
-  if (length(y) > 2L) {
+  if ((l <- length(y)) != 2L) {
     ysub = substitute(y)
-    warning("RHS has length() greater than 2. ",
-            if (is.call(ysub) && ysub[[1L]] == 'c')
-              sprintf("Perhaps you meant %s? ",
-                      capture.output(print(`[[<-`(ysub, 1L, quote(list))))),
-            "The first element should be the lower bound(s); ",
-            "the second element should be the upper bound(s).")
+    stop("RHS has length() ", l, "; expecting length 2. ",
+         if (is.call(ysub) && ysub[[1L]] == 'c')
+           sprintf("Perhaps you meant %s? ",
+                   capture.output(print(`[[<-`(ysub, 1L, quote(list))))),
+         "The first element should be the lower bound(s); ",
+         "the second element should be the upper bound(s).")
   }
   between(x, y[[1L]], y[[2L]], incbounds=TRUE)
 }
