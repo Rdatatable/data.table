@@ -12134,12 +12134,16 @@ test(1925.12, as.ITime(x, ms='ceil'),    structure(c(13L, 68L), class="ITime"))
 test(1936.1, fread("A,B\n1,3\n2,4", autostart=1), data.table(A=1:2, B=3:4), warning="autostart.*deprecated.*Consider skip")
 if (.Platform$OS.type == "unix") test(1936.2, is.data.table(fread("ls .")))
 
-# add helpful warning to %between%
-d <- data.table(A=1:10, B = 3)
-test(1937.1, d[A %between% c(B,B+1)],
-     error = 'RHS has length().*Perhaps you meant')
-test(1937.2, d[A %between% B],
-     error = 'length 2. The first')
+# add helpful error to %between%
+DT = data.table(A=1:10, B=3)
+test(1937.1, DT[A %between% c(B,B+1)], error='RHS has length().*Perhaps you meant')
+test(1937.2, DT[A %between% B],        error='length 2. The first')
+
+# that fwrite'ing a list to a file works (it broke in dev 1.11.5 and was caught before release), PR#3017
+test(1938.1, fwrite(list(1:3)), NULL, output="1\n2\n3")    # never broke
+test(1938.2, fwrite(list(1:3), file=f<-tempfile()), NULL)  # just adding file= was what broke in dev just when x is list and not data.table|frame
+test(1939.3, readLines(f), as.character(1:3))
+unlink(f)
 
 ###################################
 #  Add new tests above this line  #

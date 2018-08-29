@@ -51,7 +51,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     showProgress = FALSE
     eol = "\n"  # Rprintf() is used at C level which knows inside it to output \r\n on Windows. Otherwise extra \r is output.
   }
-  if (ncol(x) == 0L && file != "") {
+  if (NCOL(x)==0L && file!="") {
     if (file.exists(file)) {
       warning("Input has no columns; doing nothing.",
               if (!append)
