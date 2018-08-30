@@ -9598,7 +9598,7 @@ test(1702.4, isoweek(isotest$input_date), isotest$expected_output)
 if (.Platform$OS.type=="unix") {
   cat("a,b\n4,2", file=f<-tempfile())
   cmd <- sprintf("cat %s", f)
-  test(1703.0, grep("Please use fread.cmd=.*security concern.*Please read item 5 in the NEWS file for v1.11.6", capture.output(fread(cmd), type="message")), 1L)
+  test(1703.0, grep("Please use fread.cmd=.*security concern.*Please read item 5 in the NEWS file for v1.11.6", tryCatch(fread(cmd), message=function(m) m[["message"]])), 1L)
   test(1703.1, fread(cmd=cmd), data.table(a=4L, b=2L))
   test(1703.2, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
   unlink(f)
