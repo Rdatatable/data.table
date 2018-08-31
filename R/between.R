@@ -12,7 +12,18 @@ between <- function(x,lower,upper,incbounds=TRUE) {
 }
 
 # %between% is vectorised, #534.
-"%between%" <- function(x, y) between(x, y[[1L]], y[[2L]], incbounds=TRUE)
+"%between%" <- function(x, y) {
+  if ((l <- length(y)) != 2L) {
+    ysub = substitute(y)
+    stop("RHS has length() ", l, "; expecting length 2. ",
+         if (is.call(ysub) && ysub[[1L]] == 'c')
+           sprintf("Perhaps you meant %s? ",
+                   capture.output(print(`[[<-`(ysub, 1L, quote(list))))),
+         "The first element should be the lower bound(s); ",
+         "the second element should be the upper bound(s).")
+  }
+  between(x, y[[1L]], y[[2L]], incbounds=TRUE)
+}
 # If we want non inclusive bounds with %between%, just +1 to the left, and -1 to the right (assuming integers)
 
 # issue FR #707
@@ -25,7 +36,7 @@ inrange <- function(x,lower,upper,incbounds=TRUE) {
   if (verbose) {last.started.at=proc.time();cat("forderv(query) took ... ");flush.console()}
   xo = forderv(query)
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-  ans = bmerge(shallow(subject), query, 1L:2L, c(1L,1L), FALSE, xo,
+  ans = bmerge(shallow(subject), query, 1L:2L, c(1L,1L), xo,
       0, c(FALSE, TRUE), 0L, "all", ops, integer(0L),
       1L, verbose) # fix for #1819, turn on verbose messages
   options(datatable.verbose=FALSE)

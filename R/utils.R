@@ -41,13 +41,6 @@ take <- function(x, n=1L)
 }
 # TODO: Implement take as UseMethod. Specific methods for each type.
 
-# plus
-"%+%" <- function(x,y)
-UseMethod("%+%")
-
-"%+%.default" <- function(x,y) paste0(paste(x,collapse=","),paste(y,collapse=","))
-# we often construct warning msgs with a msg followed by several items of a vector, so %+% is for convenience
-
 require_bit64 = function() {
   # called in fread and print when they see integer64 columns are present
   if (!requireNamespace("bit64",quietly=TRUE))

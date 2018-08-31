@@ -5,12 +5,84 @@
 
 #### NEW FEATURES
 
-1. `CJ()` now auto-names its inputs exactly as `data.table()` does, [#1596](https://github.com/Rdatatable/data.table/issues/1596). Code that relies on `V1`, `V2`, ... naming will no longer work as expected. Thanks @franknarf1 for the suggestion.
+1. For convenience when using `rbindlist(lapply(files,fread))` and some `files` are empty, `fread` now reads empty input as a null-data.table with warning, rather than error, [#2898](https://github.com/Rdatatable/data.table/issues/2898). For consistency, `fwrite(data.table(NULL))` now creates an empty file and warns, instead of error, too.
+
+2. `setcolorder(DT)` without further arguments now defaults to moving the key columns to be first, [#2895](https://github.com/Rdatatable/data.table/issues/2895). Thanks to @jsams for the PR.
+
+3. Attempting to subset on `col` when the column is actually called `Col` will still error, but the error message will helpfully suggest similarly-spelled columns, [#2887](https://github.com/Rdatatable/data.table/issues/2887). This is experimental, applies just to `i` currently, and we look forward to feedback. Thanks to Michael Chirico for the suggestion and PR.
+
+4. `fread()` has always accepted literal data (e.g. `fread("A,B\n1,2\n3,4")`) and now it gains explicit `text=`; e.g. `fread(text="A,B\n1,2\n3,4")`. Unlike the first general purpose `input=` argument, the `text=` argument accepts multi-line input; e.g. `fread(text=c("A,B","1,2","3,4"))`, [#1423](https://github.com/Rdatatable/data.table/issues/1423). Thanks to Douglas Clark for the request and Hugh Parsonage for the PR.
+
+5. `fread()` has always accepted system commands (e.g. `fread("grep blah file.txt")`). It now gains explicit `cmd=` too (`fread(cmd="grep blah file.txt")`). If and only if `input=` is a system command, and a variable was used to hold that command (`fread(someCommand)`, not `fread("the command")` which is a literal string constant) or a variable is used to construct it (`fread(paste("grep",variable,"file.txt"))`), a message is now printed suggesting `cmd=`. This is to inform all users that there is a potential security concern if you are i) creating apps, and ii) your app takes input from a public user who could be malicious, and iii) input from the malicious user (such as a filename) is passed by your app to `fread()`, and iv) your app in not running in a protected environment. If all 4 conditions hold then the malicious user could provide a system command instead of a filename which `fread()` would run and that would be a problem. If the app is not running in a protected environment (e.g. app is running as root) then this could do damage or obtain data you did not intend. Public facing apps should be running with limited operating system permission so that any breach from any source is contained. We agree with [Linus Torvald's advice](https://lkml.org/lkml/2017/11/21/356) on this which boils down to: "when addressing security concerns the first step is do no harm, just inform". If you aren't creating apps or apis that could have a malicious user then there is no risk but we can't distinguish you so we have to inform everyone. Messages can be suppressed with `suppressMessages()` or you can change to use `cmd=` at your leisure. Passing system commands to `fread()` continues to be recommended and encouraged and is widely used; e.g. via the techniques gathered together in the book [Data Science at the Command Line](https://www.datascienceatthecommandline.com/). A `warning()` is too strong because best-practice for production systems is to set `options(warn=2)` to tolerate no warnings. Such production systems have no user input and so there is no security risk; we don't want to do harm by breaking production systems via a `warning()` which gets turned into an error by `options(warn=2)`. Now that we have informed all users, we request feedback. There are 3 options for future releases: i) remove the message, ii) leave the message in place, iii) upgrade the message to warning and then eventually error. The default choice is the middle one: leave the message in place.
+
+6. `CJ()` now auto-names its inputs exactly as `data.table()` does, [#1596](https://github.com/Rdatatable/data.table/issues/1596). Code that relies on `V1`, `V2`, ... naming will no longer work as expected. Thanks @franknarf1 for the suggestion.
 
 #### BUG FIXES
 
+1. `fread` now respects the order of columns passed to `select=` when column numbers are used, [#2986](https://github.com/Rdatatable/data.table/issues/2986). It already respected the order when column names are used. Thanks @privefl for raising the issue.
+
+2. `gmin` and `gmax` no longer fail on _ordered_ factors, [#1947](https://github.com/Rdatatable/data.table/issues/1947). Thanks to @mcieslik-mctp for identifying and @mbacou for the nudge.
+
+3. `as.ITime.character` now properly handles NA when attempting to detect the format of non-NA values in vector. Thanks @polyjian for reporting, closes [#2940](https://github.com/Rdatatable/data.table/issues/2940).
+
+4. `as.matrix(DT, rownames="id")` now works when `DT` has a single row, [#2930](https://github.com/Rdatatable/data.table/issues/2930). Thanks to @malcook for reporting and @sritchie73 for fixing. The root cause was the dual meaning of the `rownames=` argument: i) a single column name/number (most common), or ii) rowname values length 1 for the single row. For clarity and safety, `rownames.value=` has been added. Old usage (i.e. `length(rownames)>1`) continues to work for now but will issue a warning in a future release, and then error in a release after that.
+
+5. Fixed regression in v1.11.0 (May 2018) caused by PR [#2389](https://github.com/Rdatatable/data.table/pull/2389) which introduced partial key retainment on `:=` assigns. This broke the joining logic that assumed implicitly that assigning always drops keys completely. Consequently, join and subset results could be wrong when matching character to factor columns with existing keys, [#2881](https://github.com/Rdatatable/data.table/issues/2881). Thanks to @ddong63 for reporting and to @MarkusBonsch for fixing. Missing test added to ensure this doesn't arise again.
+
+6. `as.IDate.numeric` no longer ignores "origin", [#2880](https://github.com/Rdatatable/data.table/issues/2880). Thanks to David Arenburg for reporting and fixing.
+
+7. `as.ITime.times` was rounding fractional seconds while other methods were truncating, [#2870](https://github.com/Rdatatable/data.table/issues/2870). The `as.ITime` method gains `ms=` taking `"truncate"` (default), `"nearest"` and `"ceil"`. Thanks to @rossholmberg for reporting and Michael Chirico for fixing.
+
+8. `fwrite()` now writes POSIXct dates after 2038 correctly, [#2995](https://github.com/Rdatatable/data.table/issues/2995). Thanks to Manfred Zorn for reporting and Philippe Chataignon for the PR fixing it.
+
+9. `fsetequal` gains the `all` argument to make it consistent with the other set operator functions `funion`, `fsetdiff` and `fintersect` [#2968](https://github.com/Rdatatable/data.table/issues/2968). When `all = FALSE` `fsetequal` will treat rows as elements in a set when checking whether two `data.tables` are equal (i.e. duplicate rows will be ignored). For now the default value is `all = TRUE` for backwards compatibility, but this will be changed to `all = FALSE` in a future release to make it consistent with the other set operation functions. Thanks to @franknarf1 for reporting and @sritchie73 for fixing.
+
 #### NOTES
 
+1. The type coercion warning message has been improved, [#2989](https://github.com/Rdatatable/data.table/pull/2989). Thanks to @sarahbeeysian on [Twitter](https://twitter.com/sarahbeeysian/status/1021359529789775872) for highlighting. For example, given the follow statements:
+```
+  DT = data.table(id=1:3)
+  DT[2, id:="foo"]
+```
+the warning message has changed from :
+```
+Coerced character RHS to integer to match the column's type. Either change the target column ['id'] to
+character first (by creating a new character vector length 3 (nrows of entire table) and assign that;
+i.e. 'replace' column), or coerce RHS to integer (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your
+intent clear and for speed. Or, set the column type correctly up front when you create the table and
+stick to it, please.
+```
+to :
+```
+Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If the
+target column's type integer is correct, it's best for efficiency to avoid the coercion and create the
+RHS as type integer. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA)
+vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.integer() to avoid this
+warning, but that will still perform the coercion. If the target column's type is not correct, it's
+best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in
+fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type)
+over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has nrow(DT) elements then
+the assignment is called a column plonk and is the way to change a column's type. Column types can be
+observed with sapply(DT,typeof).
+```
+
+Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
+```
+DT = data.table(v=1:3)
+DT[2, v:=3.14]
+Warning message:
+  Coerced double RHS to integer to match the type of the target column (column 1 named 'v'). One or
+  more RHS values contain fractions which have been lost; e.g. item 1 with value 3.140000 has been
+  truncated to 3.
+```
+
+2. `split.data.table` method is now properly exported, [#2920](https://github.com/Rdatatable/data.table/issues/2920). But we don't recommend it because `split` copies all the pieces into new memory.
+
+3. Setting indices on columns which are part of the key will now create those indices.
+
+4. `hour`, `minute`, and `second` utility functions use integer arithmetic when the input is already (explicitly) UTC-based `POSIXct` for 4-10x speedup vs. using `as.POSIXlt`.
+
+5. Error added for incorrect usage of `%between%`, with some helpful diagnostic hints, [#3014](https://github.com/Rdatatable/data.table/issues/3014). Thanks @peterlittlejohn for offering his user experience and providing the impetus. 
 
 ### Changes in v1.11.4  (on CRAN 27 May 2018)
 
