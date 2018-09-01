@@ -6809,7 +6809,7 @@ y = c(5, 8, 8, 4)
 old = options(datatable.CJ.names=FALSE)
 test(1525.1, CJ(x, y, unique=TRUE), CJ(V1=c(1,2), V2=c(4,5,8)))
 options(datatable.CJ.names=TRUE)
-test(1525.1, CJ(x, y, unique=TRUE), CJ( x=c(1,2),  y=c(4,5,8)))
+test(1525.2, CJ(x, y, unique=TRUE), CJ( x=c(1,2),  y=c(4,5,8)))
 options(old)
 
 # `key` argument fix for `setDT` when input is already a `data.table`,  #1169
