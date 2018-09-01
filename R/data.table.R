@@ -49,31 +49,20 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   .Call(CcopyNamedInList,x)   # to maintain pre-Rv3.1.0 behaviour, for now. See test 548.2. TODO: revist
   # TODO Something strange with NAMED on components of `...` to investigate. Or, just port data.table() to C.
 
-  # fix for #5377 - data.table(null list, data.frame and data.table) should return null data.table. Simple fix: check all scenarios here at the top.
-  if (identical(x, list(NULL)) || identical(x, list(list())) ||
-      identical(x, list(data.frame(NULL))) || identical(x, list(data.table(NULL)))) return( null.data.table() )
-  tt <- as.list(substitute(list(...)))[-1L]  # Intention here is that data.table(X,Y) will automatically put X and Y as the column names.  For longer expressions, name the arguments to data.table(). But in a call to [.data.table, wrap in list() e.g. DT[,list(a=mean(v),b=foobarzoo(zang))] will get the col names
-  vnames = names(tt)
-  if (is.null(vnames)) vnames = rep.int("",length(x))
-  vnames[is.na(vnames)] = ""
-  novname = vnames==""
-  if (any(!novname)) {
-    if (any(vnames[!novname] == ".SD")) stop("A column may not be called .SD. That has special meaning.")
-  }
-  for (i in which(novname)) {
-    # if (ncol(as.data.table(x[[i]])) <= 1) { # cbind call in test 230 fails if I write ncol(as.data.table(eval(tt[[i]], parent.frame()))) <= 1, no idea why... (keep this for later even though all tests pass with ncol(.).. because base uses as.data.frame(.))
-    if (is.null(ncol(x[[i]]))) {
-      if ((tmp <- deparse(tt[[i]])[1L]) == make.names(tmp))
-        vnames[i] <- tmp
-    }
-  }
-  tt = vnames==""
-  if (any(tt)) vnames[tt] = paste0("V", which(tt))
-  # so now finally we have good column names. We also will use novname later to know which were explicitly supplied in the call.
   n <- length(x)
   if (n < 1L)
     return( null.data.table() )
-  if (length(vnames) != n) stop("logical error in vnames")
+  # fix for #5377 - data.table(null list, data.frame and data.table) should return null data.table. Simple fix: check all scenarios here at the top.
+  if (identical(x, list(NULL)) || identical(x, list(list())) ||
+      identical(x, list(data.frame(NULL))) || identical(x, list(data.table(NULL)))) return( null.data.table() )
+  nd = name_dots(...)
+  vnames = nd$vnames
+  # We will use novname later to know which were explicitly supplied in the call.
+  novname = nd$novname
+  if (length(vnames) != n) stop("logical error in vnames")   # nocov
+  # cast to a list to facilitate naming of columns with dimension --
+  #   unlist() at the end automatically handles the need to "push" names
+  #   to accommodate the "new" columns
   vnames <- as.list.default(vnames)
   nrows = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
   numcols = integer(n)         # the ncols of each of the inputs (e.g. if inputs contain matrix or data.table)

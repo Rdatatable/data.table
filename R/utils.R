@@ -64,3 +64,25 @@ vapply_1i <- function (x, fun, ..., use.names = TRUE) {
 
 more = function(f) system(paste("more",f))    # nocov  (just a dev helper)
 
+# helper used to auto-name columns in data.table(x,y) as c("x","y"), CJ(x,y) and similar
+# naming of unnested matrices still handled by data.table()
+name_dots <- function(...) {
+  dot_sub <- as.list(substitute(list(...)))[-1L]
+  vnames = names(dot_sub)
+  if (is.null(vnames)) {
+    vnames = rep.int("", length(dot_sub))
+    novname = rep.int(TRUE, length(dot_sub))
+  } else {
+    vnames[is.na(vnames)] = ""
+    if (any(vnames==".SD")) stop("A column may not be called .SD. That has special meaning.")
+    novname = vnames==""
+  }
+  for (i in which(novname)) {
+    if ((tmp <- deparse(dot_sub[[i]])[1L]) == make.names(tmp))
+      vnames[i] = tmp
+  }
+  still_empty = vnames==""
+  if (any(still_empty)) vnames[still_empty] = paste0("V", which(still_empty))
+  list(vnames=vnames, novname=novname)
+}
+
