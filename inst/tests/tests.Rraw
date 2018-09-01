@@ -1,7 +1,9 @@
-
+require(methods)
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
-  if ("package:data.table" %in% search())
-    stop("This is dev but installed data.table is loaded as well. Please unload it to prevent potential conflicts in dev.")
+  if (!identical(suppressWarnings(packageDescription("data.table")), NA)) {
+    remove.packages("data.table")
+    stop("This is dev mode but data.table was installed. Uninstalled it. Please q() this R session and try cc() again. The installed namespace causes problems in dev mode for the S4 tests.\n")
+  }
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
 } else {
@@ -1717,7 +1719,7 @@ DT$time1 <- Sys.time()         # recycle via *tmp*
 DT$time2 <- rep(Sys.time(), 5) # plonk via *tmp*
 DT[,time3:=Sys.time()]         # recycle
 DT[,time4:=rep(Sys.time(),5)]  # plonk
-test(625, all(sapply(DT,methods::is,"POSIXct")[-1]))
+test(625, all(sapply(DT,is,"POSIXct")[-1]))
 
 # unique on ITime doesn't lose attributes, #1719
 t = as.ITime(strptime(c("09:10:00","09:11:00","09:11:00","09:12:00"),"%H:%M:%S"))
@@ -2710,7 +2712,11 @@ test(995, DT[CJ(c(5,3), c(5,1), sorted=FALSE)], OUT)
 # CJ with ordered factor
 xx <- factor(letters[1:2], ordered=TRUE)
 yy <- sample(2)
-test(996, CJ(xx, yy), setkey(data.table(rep(xx, each=2), rep(base::sort.int(yy), 2))))
+old = options(datatable.CJ.names=FALSE)
+test(996.1, CJ(xx, yy), setkey(data.table(rep(xx, each=2), rep(base::sort.int(yy), 2))))
+options(datatable.CJ.names=TRUE)
+test(996.2, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2), yy = rep(base::sort.int(yy), 2))))
+options(old)
 
 # That CJ orders NA consistently with setkey and historically, now it doesn't use setkey.
 # NA must always come first in data.table throughout, since binary search relies on that internally.
@@ -3326,7 +3332,7 @@ if (.Platform$OS.type == "unix") {
       x2 = try(fread(paste('grep -v 3 ', f, sep="")), silent = TRUE)
       if(is.data.table(x2)) test(1105, x1[a != 3], x2)
   } else {
-      test(1105, x1[a != 3], fread(paste('grep -v 3 ', f, sep="")))
+      test(1105, x1[a != 3], fread(cmd=paste('grep -v 3 ', f, sep="")))
   }
 } else {
   # x2 <- fread(paste('more ', f, sep=""))
@@ -6042,7 +6048,7 @@ test(1451.6, ans1[c(3,3)], fans2(DT, c("V3", "V3")))        # using duplicate co
 test(1451.7, shallow(DT, integer(0)), null.data.table())    # length-0 input work as intended as well.
 test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input work as intended as well.
 
-test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist; getwd()==")
+test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist.*getwd")
 
 # Test for #802
 test(1453, fread(testDir("fread_line_error.csv"))[c(1,.N), c("V1","V24")],
@@ -6800,7 +6806,11 @@ test(1524, ans1, ans2)
 # 'unique =' argument for CJ, #1148
 x = c(1, 2, 1)
 y = c(5, 8, 8, 4)
-test(1525, CJ(x, y, unique=TRUE), CJ(c(1,2), c(4,5,8)))
+old = options(datatable.CJ.names=FALSE)
+test(1525.1, CJ(x, y, unique=TRUE), CJ(V1=c(1,2), V2=c(4,5,8)))
+options(datatable.CJ.names=TRUE)
+test(1525.2, CJ(x, y, unique=TRUE), CJ( x=c(1,2),  y=c(4,5,8)))
+options(old)
 
 # `key` argument fix for `setDT` when input is already a `data.table`,  #1169
 DT <- data.table(A = 1:4, B = 5:8)
@@ -8247,6 +8257,12 @@ if (test_bit64) {
   test(1626.75, fsetequal(x, y), FALSE)
   test(1626.76, fsetequal(dt[c(2:3,3L)], dt[c(2:3,3L)]), TRUE)
 }
+# fix for #2968 fsetequal with all = FALSE should treat rows as set elements
+x = data.table(c(1,2,2,2,3,4,4), c(1,1,1,3,3,3,3))
+x2 = unique(x)
+y = data.table(c(2,3,4,4,4,5), c(1,1,2,3,3,3))
+test(1626.77, fsetequal(x, x2, all = FALSE), TRUE)
+test(1626.78, fsetequal(x, y, all = FALSE), FALSE)
 
 # fix for #1087 and #1465
 test(1627, charToRaw(names(fread(testDir("issue_1087_utf8_bom.csv")))[1L]), as.raw(97L))
@@ -9140,6 +9156,10 @@ test(1658.29, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="i
 # logical NA as "NA" when logical01=TRUE, instead of the default na="" which writes all types including <NA> in character column as ,, consistently.
 test(1658.30, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="\"id\",\"bool\"\n1,1\n2,NA\n3,0")
 
+# POSIXct
+test(1658.31, fwrite(data.table(D = as.POSIXct(seq.Date(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
+    output="D\n2038-01-19T00:00:00Z\n2038-01-20T00:00:00Z")
+
 ## End fwrite tests
 
 # tests for #679, inrange(), FR #707
@@ -9586,10 +9606,25 @@ test(1702.4, isoweek(isotest$input_date), isotest$expected_output)
 if (.Platform$OS.type=="unix") {
   cat("a,b\n4,2", file=f<-tempfile())
   cmd <- sprintf("cat %s", f)
-  test(1703.1, fread(cmd), data.table(a=4L, b=2L))
+  test(1703.0, grep("Please use fread.cmd=.*security concern.*Please read item 5 in the NEWS file for v1.11.6", tryCatch(fread(cmd), message=function(m) m[["message"]])), 1L)
+  test(1703.1, fread(cmd=cmd), data.table(a=4L, b=2L))
   test(1703.2, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
   unlink(f)
+  # Test 'text' argument
+  test(1703.3, fread(text="https://example.com,A\na,b"), data.table(`https://example.com`='a', A='b'))
+  # errors
+  test(1703.4, fread(input="A,B", text="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
+  test(1703.5, fread(file="A,B",  text="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
+  test(1703.6, fread(input="A,B", file="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
+  test(1703.7, fread(text=1),                  error="'text=' is type double but must be character")
+  # Zero-length text
+  test(1703.8, fread(text = character(0)), data.table())
+  # Multi-length text
+  test(1703.9, fread(text=c("A B","C D"), sep=" ", data.table=FALSE), y=read.table(text=c("A B","C D"), as.is=TRUE, header=TRUE))
+  # test error if length>1 character passed to input, not text:
+  test(1703.11, x=fread(c("foo","bar","baz")), error="must be a single character string")
 }
+test(1703.12, fread("."), error="File '.' is a directory. Not yet implemented.")
 
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
 # as used by package popEpi in its tests
@@ -11359,7 +11394,7 @@ for (i in 100:1) {
 # miscellaneous missing tests uncovered by CodeCov difference
 #   in the process of PR #2573
 ## data.table cannot recycle complicated types
-short_s4_col = methods::getClass("MethodDefinition")
+short_s4_col = getClass("MethodDefinition")
 test(1872.1, data.table(a = 1:4, short_s4_col), error = 'problem recycling.*try a simpler type')
 ## i must be a data.table when on is specified
 DT = data.table(a = 1:3)
@@ -11960,7 +11995,7 @@ for (col in c('b', 'c')) {
 #
 suppressWarnings(setClass("Data.Table", contains="data.table"))  # suppress 'Created a package name, ‘2018-05-26 06:14:43.444’, when none found'
 suppressWarnings(setClass("S4Composition", representation(data="data.table")))
-# data.table can be a parent class"
+# data.table can be a parent class
 ids <- sample(letters[1:3], 10, replace=TRUE)
 scores <- rnorm(10)
 dt <- data.table(id=ids, score=scores)
@@ -11989,6 +12024,8 @@ setMethod("dtGet", c(x="S4Composition", what="ANY"), function(x, what) {x@data[[
 test(1914.7, dtGet(dt.comp), dt)  # actually
 test(1914.8, identical(dtGet(dt.comp, 1), dt[[1]]))
 test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
+removeClass("Data.Table")   # so that test 1914.2 passes on the second run of cc() in dev
+removeClass("S4Composition")
 # END port of old testthat tests
 
 str = "Sepal.Length,Sepal.Width,Petal.Length,Petal.Width,Species
@@ -12074,6 +12111,50 @@ setindex(DT, NULL)
 setindex(DT, V1)
 test(1923.2, indices(DT, vectors=TRUE), list(c("V1")))
 
+# Column typo checks, #2887
+DT = data.table(varname = 1)
+test(1924.1, DT[var_name==1], error='not found\\. Perhaps you intended.*varname')
+test(1924.2, DT[variable==1], error='Object.*not found among')
+test(1924.3, DT[varname+'a'], error='non-numeric argument')
+DT[, VAR_NAME:=2]
+test(1924.4, DT[var_name==1], error='Perhaps you intended.*varname, VAR_NAME')
+DT = setDT(lapply(integer(50), function(...) numeric(1L)))
+test(1924.5, DT[V==0], error='Perhaps you intended.*V1.*V5 or 45 more')
+
+# test suite of as.ITime methods (subsumes #2870)
+s = c('1970-01-01 00:00:00.1234', '2005-10-12 09:45:32.84')
+x = as.POSIXlt(s, tz = 'UTC')
+test(1925.01, as.ITime(x),               structure(c(0L, 35132L), class="ITime"))
+test(1925.02, as.ITime(x, ms='nearest'), structure(c(0L, 35133L), class="ITime"))
+test(1925.03, as.ITime(x, ms='ceil'),    structure(c(1L, 35133L), class="ITime"))
+test(1925.04, as.ITime(x, ms='foo'),     error='Valid options for ms')
+test(1925.05, as.ITime(s),               as.ITime(x))
+n = as.numeric(x)
+test(1925.06, as.ITime(n),               as.ITime(x))
+test(1925.07, as.ITime(n, ms='nearest'), as.ITime(x, ms='nearest'))
+test(1925.08, as.ITime(n, ms='ceil'),    as.ITime(x, ms='ceil'))
+test(1925.09, as.ITime(as.POSIXct(x)),   as.ITime(x))
+x = structure(c(12.345, 67.890)/86400, class='times')
+test(1925.10, as.ITime(x),               structure(c(12L, 67L), class="ITime"))
+test(1925.11, as.ITime(x, ms='nearest'), structure(c(12L, 68L), class="ITime"))
+test(1925.12, as.ITime(x, ms='ceil'),    structure(c(13L, 68L), class="ITime"))
+
+test(1936.1, fread("A,B\n1,3\n2,4", autostart=1), data.table(A=1:2, B=3:4), warning="autostart.*deprecated.*Consider skip")
+if (.Platform$OS.type == "unix") test(1936.2, is.data.table(fread("ls .")))
+
+# add helpful error to %between%
+DT = data.table(A=1:10, B=3)
+test(1937.1, DT[A %between% c(B,B+1)], error='RHS has length().*Perhaps you meant')
+test(1937.2, DT[A %between% B],        error='length 2. The first')
+
+# that fwrite'ing a list to a file works (it broke in dev 1.11.5 and was caught before release), PR#3017
+test(1938.1, fwrite(list(1:3)), NULL, output="1\n2\n3")    # never broke
+test(1938.2, fwrite(list(1:3), file=f<-tempfile()), NULL)  # just adding file= was what broke in dev just when x is list and not data.table|frame
+test(1939.3, readLines(f), as.character(1:3))
+unlink(f)
+
+test(1940, data.table(A=1:3, .SD=4:6), error=".SD.*has special meaning")
+
 
 ###################################
 #  Add new tests above this line  #
@@ -12120,7 +12201,7 @@ if (nfail > 0) {
        " Search inst/tests/tests.Rraw for test number",s2,paste(whichfail,collapse=", "),".")
   # important to stop() here, so that 'R CMD check' fails
 }
-cat(plat,"\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
+cat(plat,"\n\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
 # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
 # stale due to not updating yet since a fix in R-devel, for example.
 
