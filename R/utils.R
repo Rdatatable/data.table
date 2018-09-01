@@ -64,3 +64,5 @@ vapply_1i <- function (x, fun, ..., use.names = TRUE) {
 
 more = function(f) system(paste("more",f))    # nocov  (just a dev helper)
 
+XOR <- function(x, y) if (anyNA(x)) NA else if (x) !y else y
+
