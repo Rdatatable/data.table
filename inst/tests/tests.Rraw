@@ -12153,6 +12153,9 @@ test(1938.2, fwrite(list(1:3), file=f<-tempfile()), NULL)  # just adding file= w
 test(1939.3, readLines(f), as.character(1:3))
 unlink(f)
 
+test(1940, data.table(A=1:3, .SD=4:6), error=".SD.*has special meaning")
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################

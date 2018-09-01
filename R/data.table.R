@@ -59,7 +59,7 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   vnames = nd$vnames
   # We will use novname later to know which were explicitly supplied in the call.
   novname = nd$novname
-  if (length(vnames) != n) stop("logical error in vnames")
+  if (length(vnames) != n) stop("logical error in vnames")   # nocov
   # cast to a list to facilitate naming of columns with dimension --
   #   unlist() at the end automatically handles the need to "push" names
   #   to accommodate the "new" columns
