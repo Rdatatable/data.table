@@ -7,7 +7,7 @@
   # Commented as a character string so this message is retained and seen by anyone who types data.table:::.onLoad
   tt = base::cbind.data.frame
   ss = body(tt)
-  if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
+  if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
   prefix = if (!missing(pkgname)) "data.table::" else ""  # R provides the arguments when it calls .onLoad, I don't in dev/test
   if (!length(grep("data.table",ss[[2L]]))) {
     ss = ss[c(1L, NA, 2L:length(ss))]
@@ -19,7 +19,7 @@
   }
   tt = base::rbind.data.frame
   ss = body(tt)
-  if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
+  if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
   if (!length(grep("data.table",ss[[2L]]))) {
     ss = ss[c(1L, NA, 2L:length(ss))]
     ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #4995
