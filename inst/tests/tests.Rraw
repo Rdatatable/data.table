@@ -6738,7 +6738,7 @@ x = runif(2)
 test(1514.6, isReallyReal(x), 1L)
 x = numeric()
 test(1514.7, isReallyReal(x), 0L)
-test(1514.8, isReallyReal(9L), error="x must be of type double")
+test(1514.8, isReallyReal(9L), 0L)
 
 # #1091
 old.option = getOption("datatable.prettyprint.char")

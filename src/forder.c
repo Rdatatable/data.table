@@ -1445,18 +1445,20 @@ SEXP isOrderedSubset(SEXP x, SEXP nrow)
 */
 
 SEXP isReallyReal(SEXP x) {
-  int n, i=0;
-  SEXP ans;
-  if (!isReal(x))
-    error("x must be of type double.");
-  n = length(x);
-  ans = PROTECT(allocVector(INTSXP, 1));
-  while (i<n &&
-      ( ISNA(REAL(x)[i]) ||
-      ( R_FINITE(REAL(x)[i]) && REAL(x)[i] == (int)(REAL(x)[i])))) {
-    i++;
+  SEXP ans = PROTECT(allocVector(INTSXP, 1));
+  INTEGER(ans)[0] = 0;
+  // return 0 (FALSE) when not type double, or is type double but contains integers
+  // used to error if not passed type double but this needed extra is.double() calls in calling R code
+  // which needed a repeat of the argument. Hence simpler and more robust to return 0 when not type double.
+  if (isReal(x)) {
+    int n=length(x), i=0;
+    while (i<n &&
+        ( ISNA(REAL(x)[i]) ||
+        ( R_FINITE(REAL(x)[i]) && REAL(x)[i] == (int)(REAL(x)[i])))) {
+      i++;
+    }
+    if (i<n) INTEGER(ans)[0] = i+1;  // return the location of first element which is really real; i.e. not an integer
   }
-  INTEGER(ans)[0] = (i<n ? i+1 : 0);
   UNPROTECT(1);
   return(ans);
 }

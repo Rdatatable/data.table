@@ -2940,27 +2940,13 @@ isReallyReal <- function(x) {
       if (length(RHS) != nrow(x)) stop("RHS of ", operator, " is length ",length(RHS)," which is not 1 or nrow (",nrow(x),"). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead.")
       return(NULL) # DT[colA == colB] regular element-wise vector scan
     }
-
-    # fringe cases, #1361.
-    # re-direct all non-matching mode cases to base R, as data.table's binary
-    # search based join is strict in types. #957 and #961.
-    if (is.integer(x[[col]]) && is.double(RHS) && isReallyReal(RHS)) {
+    if ( (is.integer(x[[col]]) && isReallyReal(RHS)) ||
+         (is.factor(x[[col]])+is.factor(RHS) == 1L) ||
+         (is.character(x[[col]])+is.character(RHS) == 1L) ) {
+      # re-direct all non-matching mode cases to base R, as data.table's binary
+      # search based join is strict in types. #957, #961 and #1361
       return(NULL)
     }
-    if (is.integer(RHS) && is.double(x[[col]]) && isReallyReal(x[[col]])) {
-      return(NULL)
-    }
-
-    if (XOR(is.factor(x[[col]]),
-            is.factor(RHS))) {
-      return(NULL)
-    }
-    if (XOR(is.character(x[[col]]),
-            is.character(RHS))) {
-      return(NULL)
-    }
-
-
     if(is.character(x[[col]]) && !operator %chin% c("==", "%in%", "%chin%")) return(NULL) ## base R allows for non-equi operators on character columns, but these can't be optimized.
     if (!operator %chin% c("%in%", "%chin%")) {
       # addional requirements for notjoin and NA values. Behaviour is different for %in%, %chin% compared to other operators

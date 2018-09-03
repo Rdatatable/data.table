@@ -86,6 +86,3 @@ name_dots <- function(...) {
   list(vnames=vnames, novname=novname)
 }
 
-XOR <- function(x, y) if (anyNA(x)) NA else if (x) !y else y
-
-
