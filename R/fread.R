@@ -72,7 +72,9 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
       }
       else if (length(grep(' ', input))) {
         cmd = input
-        if (input_has_vars) message("Taking input= as a system command ('",cmd,"') and a variable has been used in the expression passed to `input=`. Please use fread(cmd=...). There is a security concern if you are creating an app, and that app could have a malicious user, and the app is not running in a secure envionment (e.g. the app is running as root). Please read item 5 in the NEWS file for v1.11.6 for more information.")
+        if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
+          message("Taking input= as a system command ('",cmd,"') and a variable has been used in the expression passed to `input=`. Please use fread(cmd=...). There is a security concern if you are creating an app, and the app could have a malicious user, and the app is not running in a secure envionment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.")
+        }
       }
       else {
         file = input

@@ -9613,25 +9613,31 @@ test(1702.4, isoweek(isotest$input_date), isotest$expected_output)
 if (.Platform$OS.type=="unix") {
   cat("a,b\n4,2", file=f<-tempfile())
   cmd <- sprintf("cat %s", f)
+  old = options(datatable.fread.input.cmd.message = TRUE)
   test(1703.0, grep("Please use fread.cmd=.*security concern.*Please read item 5 in the NEWS file for v1.11.6", tryCatch(fread(cmd), message=function(m) m[["message"]])), 1L)
-  test(1703.1, fread(cmd=cmd), data.table(a=4L, b=2L))
-  test(1703.2, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
+  old = options(datatable.fread.input.cmd.message = NULL)  # when option is missing as it is by default, then TRUE
+  test(1703.1, grep("security concern", tryCatch(fread(cmd), message=function(m) m[["message"]])), 1L)
+  old = options(datatable.fread.input.cmd.message = FALSE)
+  test(1703.2, tryCatch(fread(cmd), message=stop), data.table(a=4L, b=2L))
+  options(old)
+  test(1703.3, fread(cmd=cmd), data.table(a=4L, b=2L))
+  test(1703.4, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
   unlink(f)
   # Test 'text' argument
-  test(1703.3, fread(text="https://example.com,A\na,b"), data.table(`https://example.com`='a', A='b'))
+  test(1703.5, fread(text="https://example.com,A\na,b"), data.table(`https://example.com`='a', A='b'))
   # errors
-  test(1703.4, fread(input="A,B", text="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
-  test(1703.5, fread(file="A,B",  text="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
-  test(1703.6, fread(input="A,B", file="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
-  test(1703.7, fread(text=1),                  error="'text=' is type double but must be character")
+  test(1703.6, fread(input="A,B", text="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
+  test(1703.7, fread(file="A,B",  text="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
+  test(1703.8, fread(input="A,B", file="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
+  test(1703.9, fread(text=1),                  error="'text=' is type double but must be character")
   # Zero-length text
-  test(1703.8, fread(text = character(0)), data.table())
+  test(1703.11, fread(text = character(0)), data.table())
   # Multi-length text
-  test(1703.9, fread(text=c("A B","C D"), sep=" ", data.table=FALSE), y=read.table(text=c("A B","C D"), as.is=TRUE, header=TRUE))
+  test(1703.12, fread(text=c("A B","C D"), sep=" ", data.table=FALSE), y=read.table(text=c("A B","C D"), as.is=TRUE, header=TRUE))
   # test error if length>1 character passed to input, not text:
-  test(1703.11, x=fread(c("foo","bar","baz")), error="must be a single character string")
+  test(1703.13, x=fread(c("foo","bar","baz")), error="must be a single character string")
 }
-test(1703.12, fread("."), error="File '.' is a directory. Not yet implemented.")
+test(1703.14, fread("."), error="File '.' is a directory. Not yet implemented.")
 
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
 # as used by package popEpi in its tests
