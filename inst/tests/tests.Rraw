@@ -7688,6 +7688,8 @@ test(1588.4, dt[i == 3], dt[3])
 # test for reallyReal RHS
 test(1588.5, dt[i == 3.5], dt[0L])
 test(1588.6, dt[2.4 == 3.5], dt[0L])
+dt = data.table(ch=letters[1:6])
+test(1588.7, dt[ch>"c"], dt[4:6])  # coverage of a return(NULL) in .prepareFastSubset
 
 # data.table operates consistently independent of locale, but it's R that changes and is sensitive to it.
 #   Because keys/indexes depend on a sort order. If a data.table is stored on disk with a key
