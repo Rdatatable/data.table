@@ -2682,7 +2682,7 @@ test(989, unique(dt, by='C'), dt[!duplicated(df[, 'C'])])
 test(990, unique(dt, by=c('B', 'C')), dt[!duplicated(df[, c('B', 'C')])])
 test(991, unique(dt, by=NULL), dt[!duplicated(df)])
 test(991.1, unique(dt, by=4), error="'by' value 4 out of range.*1,3")
-test(991.2, unique(dt, by=c(1,3.1)), error="'by' is type 'double' but one or more items in it are not whole integers")
+test(991.2, unique(dt, by=c(1,3.1)), error="'by' is type 'double' and one or more items in it are not whole integers")
 test(991.3, unique(dt, by=2:3), dt[!duplicated(df[,c('B','C')])])
 test(991.4, unique(dt, by=c('C','D','E')), error="'by' contains 'D' which is not a column name")
 
@@ -6738,7 +6738,7 @@ x = runif(2)
 test(1514.6, isReallyReal(x), 1L)
 x = numeric()
 test(1514.7, isReallyReal(x), 0L)
-test(1514.8, isReallyReal(9L), error="x must be of type double")
+test(1514.8, isReallyReal(9L), 0L)
 
 # #1091
 old.option = getOption("datatable.prettyprint.char")
@@ -7683,6 +7683,13 @@ test(1587, fread(text, key="y"), setDT(fread(text), key="y"))
 dt = data.table(i=1:10, f=as.factor(1:10))
 test(1588.1, dt[f %in% 3:4], dt[3:4])
 test(1588.2, dt[f == 3], dt[3])
+test(1588.3, dt[3 == f], dt[3])
+test(1588.4, dt[i == 3], dt[3])
+# test for reallyReal RHS
+test(1588.5, dt[i == 3.5], dt[0L])
+test(1588.6, dt[2.4 == 3.5], dt[0L])
+dt = data.table(ch=letters[1:6])
+test(1588.7, dt[ch>"c"], dt[4:6])  # coverage of a return(NULL) in .prepareFastSubset
 
 # data.table operates consistently independent of locale, but it's R that changes and is sensitive to it.
 #   Because keys/indexes depend on a sort order. If a data.table is stored on disk with a key

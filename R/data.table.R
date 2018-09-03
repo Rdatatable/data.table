@@ -2940,12 +2940,11 @@ isReallyReal <- function(x) {
       if (length(RHS) != nrow(x)) stop("RHS of ", operator, " is length ",length(RHS)," which is not 1 or nrow (",nrow(x),"). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead.")
       return(NULL) # DT[colA == colB] regular element-wise vector scan
     }
-    if ((is.integer(x[[col]]) && is.double(RHS) && isReallyReal(RHS)) ||
-        (mode(x[[col]]) != mode(RHS) &&
-         !(class(x[[col]]) %in% c("character", "factor") && class(RHS) %in% c("character", "factor"))) ||
-        (is.factor(x[[col]]) && !is.factor(RHS) && mode(RHS)=="numeric") ) { # fringe case, #1361. TODO: cleaner way of doing these checks.
+    if ( (is.integer(x[[col]]) && isReallyReal(RHS)) ||
+         (is.factor(x[[col]])+is.factor(RHS) == 1L) ||
+         (is.character(x[[col]])+is.character(RHS) == 1L) ) {
       # re-direct all non-matching mode cases to base R, as data.table's binary
-      # search based join is strict in types. #957 and #961.
+      # search based join is strict in types. #957, #961 and #1361
       return(NULL)
     }
     if(is.character(x[[col]]) && !operator %chin% c("==", "%in%", "%chin%")) return(NULL) ## base R allows for non-equi operators on character columns, but these can't be optimized.

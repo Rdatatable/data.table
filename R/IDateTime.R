@@ -71,8 +71,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
     return(e1)
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
     stop("difftime objects may not be added to IDate. Use plain integer instead of difftime.")
-  if ( (storage.mode(e1)=="double" && isReallyReal(e1)) ||
-       (storage.mode(e2)=="double" && isReallyReal(e2)) ) {
+  if (isReallyReal(e1) || isReallyReal(e2)) {
     return(`+.Date`(e1,e2))
     # IDate doesn't support fractional days; revert to base Date
   }
@@ -90,7 +89,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
     stop("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))
     stop("difftime objects may not be subtracted from IDate. Use plain integer instead of difftime.")
-  if ( storage.mode(e2)=="double" && isReallyReal(e2) ) {
+  if ( isReallyReal(e2) ) {
     return(`-.Date`(as.Date(e1),as.Date(e2)))
     # IDate doesn't support fractional days so revert to base Date
   }

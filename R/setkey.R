@@ -191,8 +191,8 @@ forderv <- function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.la
       if (anyNA(w)) stop("'by' contains '",by[is.na(w)][1],"' which is not a column name")
       by = w
     }
-    else if (typeof(by)=="double" && isReallyReal(by)) {
-      stop("'by' is type 'double' but one or more items in it are not whole integers")
+    else if (isReallyReal(by)) {
+      stop("'by' is type 'double' and one or more items in it are not whole integers")
     }
     by = as.integer(by)
     if ( (length(order) != 1L && length(order) != length(by)) || any(!order %in% c(1L, -1L)) )
