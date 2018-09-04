@@ -27,7 +27,7 @@ autostart=NA
 )
 }
 \arguments{
-  \item{input}{ A single character string. The value is inspected and deferred to either \code{file=} (if there is no \\n character present), \code{text=} (if at least one \\n is present) or \code{cmd=} (if a literal string value containing no \\n and at least one space). Exactly one of \code{input=}, \code{file=}, \code{text=}, or \code{cmd=} should be used in the same call. }
+  \item{input}{ A single character string. The value is inspected and deferred to either \code{file=} (if no \\n present), \code{text=} (if at least one \\n is present) or \code{cmd=} (if no \\n is present, at least one space is present, and it isn't a file name). Exactly one of \code{input=}, \code{file=}, \code{text=}, or \code{cmd=} should be used in the same call. }
   \item{file}{ File name in working directory, path to file (passed through \code{\link[base]{path.expand}} for convenience), or a URL starting http://, file://, etc.  }
   \item{text}{ The input data itself as a character vector of one or more lines, for example as returned by \code{readLines()}. }
   \item{cmd}{ A shell command that pre-processes the file; e.g. \code{fread(cmd=paste("grep",word,"filename")}. }

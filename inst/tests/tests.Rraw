@@ -9635,9 +9635,12 @@ if (.Platform$OS.type=="unix") {
   # Multi-length text
   test(1703.12, fread(text=c("A B","C D"), sep=" ", data.table=FALSE), y=read.table(text=c("A B","C D"), as.is=TRUE, header=TRUE))
   # test error if length>1 character passed to input, not text:
-  test(1703.13, x=fread(c("foo","bar","baz")), error="must be a single character string")
+  test(1703.13, fread(c("foo","bar","baz")), error="must be a single character string")
+  cat("a,b\n8,4", file=f<-tempfile("has space"))
+  test(1704.14, fread(f), data.table(a=8L, b=4L))  # if file with space exists, the file name takes precedence not command
+  unlink(f)
 }
-test(1703.14, fread("."), error="File '.' is a directory. Not yet implemented.")
+test(1703.15, fread("."), error="File '.' is a directory. Not yet implemented.")
 
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
 # as used by package popEpi in its tests
