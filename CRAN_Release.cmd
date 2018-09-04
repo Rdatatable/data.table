@@ -378,6 +378,8 @@ biocLite()   # keep repeating until returns with nothing left to do
 
 avail = available.packages(repos=biocinstallRepos())   # includes CRAN at the end from getOption("repos")
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
+exclude = c("TCGAbiolinks")   # takes loo long: https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
+deps = deps[-match(exclude, deps)]
 table(avail[deps,"Repository"])
 length(deps)
 old = 0
@@ -404,7 +406,7 @@ for (p in deps) {
   }
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
-table(avail[deps,"Repository"])
+length(deps)
 
 # Remove the tar.gz no longer needed :
 system("ls *.tar.gz | wc -l")
@@ -424,6 +426,7 @@ for (p in deps) {
   }
 }
 system("ls *.tar.gz | wc -l")
+length(deps)
 
 status = function(which="both") {
   if (which=="both") {
@@ -513,7 +516,7 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
 
 # ** ensure latest version installed into revdeplib **
 system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.5.tar.gz")
-run()
+run("rerun.all")
 
 out = function(fnam="~/fail.log") {
   x = c(.fail.cran, .fail.bioc)
