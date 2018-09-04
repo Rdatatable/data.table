@@ -19,8 +19,8 @@ dcast <- function(data, formula, fun.aggregate = NULL, ..., margins = NULL,
 
 check_formula <- function(formula, varnames, valnames) {
   if (is.character(formula)) formula = as.formula(formula)
-  if (class(formula) != "formula" || length(formula) != 3L)
-    stop("Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + b ~ c.")
+  if (!inherits(formula, "formula") || length(formula) != 3L)
+    stop("Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + b ~ c.")  # nocov; couldn't find a way to construct a test formula with length!=3L
   vars = all.vars(formula)
   vars = vars[!vars %chin% c(".", "...")]
   allvars = c(vars, valnames)

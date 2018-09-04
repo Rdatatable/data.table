@@ -1,7 +1,9 @@
-
+require(methods)
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
-  if ("package:data.table" %in% search())
-    stop("This is dev but installed data.table is loaded as well. Please unload it to prevent potential conflicts in dev.")
+  if (!identical(suppressWarnings(packageDescription("data.table")), NA)) {
+    remove.packages("data.table")
+    stop("This is dev mode but data.table was installed. Uninstalled it. Please q() this R session and try cc() again. The installed namespace causes problems in dev mode for the S4 tests.\n")
+  }
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
 } else {
@@ -35,7 +37,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   which.first = data.table:::which.first
   which.last = data.table:::which.last
   trim = data.table:::trim
-  `%+%.default` = data.table:::`%+%.default`
   .shallow = data.table:::.shallow
   getdots = data.table:::getdots
   as.ITime.default = data.table:::as.ITime.default
@@ -857,16 +858,16 @@ test(299.03, truelength(DT)>length(DT))   # the := over-allocated, by 100 by def
 # FR #2551 - old 299.3 and 299.5 are changed to include length(RHS) > 1 to issue the warning
 DT[,c:=rep(42L,.N)] # plonk
 test(299.04, DT, data.table(a=1:3, c=42L))
-test(299.05, DT[2:3,c:=c(42, 42)], data.table(a=1:3,c=42L), warning="Coerced 'double' RHS to 'integer' to match the column's type.*length 3 [(]nrows of entire table[)]")
+test(299.05, DT[2:3,c:=c(42, 42)], data.table(a=1:3,c=42L), warning="Coerced double RHS to integer.*column 2 named 'c'.*RHS.*no fractions.*more efficiently.*integer.*Consider.*L")
 # FR #2551 - length(RHS) = 1 - no warning for type conversion
 test(299.06, DT[2,c:=42], data.table(a=1:3,c=42L))
 # also see tests 302 and 303.  (Ok, new test file for fast assign would be tidier).
 test(299.07, DT[,c:=rep(FALSE,nrow(DT))], data.table(a=1:3,c=FALSE))  # replace c column with logical
-test(299.08, DT[2:3,c:=c(42,0)], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'double' RHS to 'logical' to match the column's type.*length 3 [(]nrows of entire table[)]")
+test(299.08, DT[2:3,c:=c(42,0)], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced double RHS to logical.*column 2 named 'c'.*If the target column's type logical is correct")
 # FR #2551 is now changed to fit in / fix bug #5442. Stricter warnings are in place now. Check tests 1294.1-34 below.
-test(299.09, DT[2,c:=42], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'double' RHS to 'logical' to match")
-test(299.11, DT[2,c:=42L], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced 'integer' RHS to 'logical' to match")
-test(299.12, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=FALSE), warning="Coerced 'integer' RHS to 'logical' to match the column's type.*length 3 [(]nrows of entire table[)]")
+test(299.09, DT[2,c:=42], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced double RHS to logical to match")
+test(299.11, DT[2,c:=42L], data.table(a=1:3,c=c(FALSE,TRUE,FALSE)), warning="Coerced integer RHS to logical to match")
+test(299.12, DT[2:3,c:=c(0L, 0L)], data.table(a=1:3,c=FALSE), warning="Coerced integer RHS to logical to match the type of the target column.*If the target column's type logical is correct")
 
 
 # Test bug fix #1468, combining i and by.
@@ -958,7 +959,7 @@ test(335, DT[,2:1]<-NULL, error="Attempt to assign to column")
 
 DT = data.table(a=1:2, b=1:6)
 test(336, DT[,z:=a/b], data.table(a=1:2,b=1:6,z=(1:2)/(1:6)))
-test(337, DT[3:4,z:=a*b], data.table(a=1:2,b=1:6,z=c(1,1,3,8,1/5,2/6)), warning="Coerced 'integer' RHS to 'double' to match the colum")
+test(337, DT[3:4,z:=a*b], data.table(a=1:2,b=1:6,z=c(1,1,3,8,1/5,2/6)), warning="Coerced integer RHS to double to match")
 
 
 # test eval of LHS of := (using with=FALSE gives a warning here from v1.9.3)
@@ -1015,7 +1016,7 @@ test(355, DT[11:2010,f:=newlevels], data.table(f=factor(c(rep("000",10),newlevel
 DT = data.table(f=c("a","b"),x=1:4)
 # Test coercing factor to character column
 test(355.5, DT[3,f:=factor("foo")], data.table(f=c("a","b","foo","b"),x=1:4))
-test(355.6, DT[4,f:=factor("bar"),verbose=TRUE], data.table(f=c("a","b","foo","bar"),x=1:4), output="Coerced factor to character to match the column")
+test(355.6, DT[4,f:=factor("bar"),verbose=TRUE], data.table(f=c("a","b","foo","bar"),x=1:4), output="Coerced factor RHS to character to match the column")
 
 
 # See datatable-help post and NEWS item for 1.6.7
@@ -1418,6 +1419,9 @@ DT = data.table(a = 1:3, b = 2:4, c = 3:5)
 test(498.1, names(setcolorder(DT, "b")), c("b", "a", "c"))
 test(498.2, names(setcolorder(DT, c(2, 3))), c("a", "c", "b"))
 test(498.3, setcolorder(DT, 1:4), error = "x has only")
+# Test where neworder=NULL, thus ordered by key and index columns
+DT = data.table(a = 1:3, b = 2:4, c = 3:5, d = 4:6, key="b")
+test(498.4, names(setcolorder(DT)), c("b", "a", "c", "d"))
 
 # test first group listens to nomatch when j uses join inherited scope.
 x <- data.table(x=c(1,3,8),x1=10:12, key="x")
@@ -1715,7 +1719,7 @@ DT$time1 <- Sys.time()         # recycle via *tmp*
 DT$time2 <- rep(Sys.time(), 5) # plonk via *tmp*
 DT[,time3:=Sys.time()]         # recycle
 DT[,time4:=rep(Sys.time(),5)]  # plonk
-test(625, all(sapply(DT,methods::is,"POSIXct")[-1]))
+test(625, all(sapply(DT,is,"POSIXct")[-1]))
 
 # unique on ITime doesn't lose attributes, #1719
 t = as.ITime(strptime(c("09:10:00","09:11:00","09:11:00","09:12:00"),"%H:%M:%S"))
@@ -2235,7 +2239,7 @@ test(836, DT[,a:=as.integer(a)], data.table(a=INT(-1,0,1)))
 test(837, DT[,a:=cbind(1,2)], data.table(a=c(1L,2L,1L)),
           warning=c("2 column matrix RHS of := will be treated as one vector",
                     "Supplied 2 items to be assigned to 3 items.*recycled",
-                    "Coerced 'double' RHS to 'integer' to match the column's type"))
+                    "Coerced double RHS to integer to match.*column 1 named 'a'.*values contain no fractions"))
 DT = data.table(a=1:3,b=1:6)
 test(838, DT[,c:=scale(b), by=a][,c:=as.integer(1000*c)], data.table(a=1:3,b=1:6,c=rep(as.integer(1000*scale(1:2)), each=3)))
 
@@ -2389,10 +2393,9 @@ unlink(f)
 # All the unlinks and using a new file each time are to work around apparent Windows issues it seems when writing, appending
 # rereading (possibly via the MapViewOfFile) the same file that has just been appended to. These apparent issues have only
 # showed up on winbuilder so far, so might be in combination with the D: tempdir() there; perhaps D: is on a network drive or something.
-cat("",file=f<-tempfile()); test(885, fread(f), error="empty"); unlink(f)
 test(885.1, fread(""), error="empty")
 test(885.2, fread(), error="empty")
-cat("", file=f<-tempfile()); test(885.3, fread(f), error="File is empty:"); unlink(f)
+cat("", file=f<-tempfile()); test(885.3, fread(f), data.table(NULL), warning="size 0. Returning a NULL data.table"); unlink(f)
 cat(" ", file=f<-tempfile()); test(885.4, fread(f), error="either empty.*whitespace.*or skip has"); unlink(f)
 test(885.5, fread(" "), error="space")
 test(886, fread("\n"), error="empty")
@@ -2679,7 +2682,7 @@ test(989, unique(dt, by='C'), dt[!duplicated(df[, 'C'])])
 test(990, unique(dt, by=c('B', 'C')), dt[!duplicated(df[, c('B', 'C')])])
 test(991, unique(dt, by=NULL), dt[!duplicated(df)])
 test(991.1, unique(dt, by=4), error="'by' value 4 out of range.*1,3")
-test(991.2, unique(dt, by=c(1,3.1)), error="'by' is type 'double' but one or more items in it are not whole integers")
+test(991.2, unique(dt, by=c(1,3.1)), error="'by' is type 'double' and one or more items in it are not whole integers")
 test(991.3, unique(dt, by=2:3), dt[!duplicated(df[,c('B','C')])])
 test(991.4, unique(dt, by=c('C','D','E')), error="'by' contains 'D' which is not a column name")
 
@@ -2709,7 +2712,11 @@ test(995, DT[CJ(c(5,3), c(5,1), sorted=FALSE)], OUT)
 # CJ with ordered factor
 xx <- factor(letters[1:2], ordered=TRUE)
 yy <- sample(2)
-test(996, CJ(xx, yy), setkey(data.table(rep(xx, each=2), rep(base::sort.int(yy), 2))))
+old = options(datatable.CJ.names=FALSE)
+test(996.1, CJ(xx, yy), setkey(data.table(rep(xx, each=2), rep(base::sort.int(yy), 2))))
+options(datatable.CJ.names=TRUE)
+test(996.2, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2), yy = rep(base::sort.int(yy), 2))))
+options(old)
 
 # That CJ orders NA consistently with setkey and historically, now it doesn't use setkey.
 # NA must always come first in data.table throughout, since binary search relies on that internally.
@@ -3325,7 +3332,7 @@ if (.Platform$OS.type == "unix") {
       x2 = try(fread(paste('grep -v 3 ', f, sep="")), silent = TRUE)
       if(is.data.table(x2)) test(1105, x1[a != 3], x2)
   } else {
-      test(1105, x1[a != 3], fread(paste('grep -v 3 ', f, sep="")))
+      test(1105, x1[a != 3], fread(cmd=paste('grep -v 3 ', f, sep="")))
   }
 } else {
   # x2 <- fread(paste('more ', f, sep=""))
@@ -4681,38 +4688,38 @@ test(1293, ans1, ans2)
 dt <- data.table(a=1:3, b=c(7,8,9), c=c(TRUE, NA, FALSE), d=as.list(4:6), e=c("a", "b", "c"))
 
 test(1294.1,  dt[, a := 1]$a, rep(1L, 3L))
-test(1294.2,  dt[, a := 1.5]$a, rep(1L, 3L), warning="Coerced 'double' RHS to 'integer' to match the column's type")
+test(1294.2,  dt[, a := 1.5]$a, rep(1L, 3L), warning="Coerced double RHS to integer.*column 1 named 'a'.*fractions which have been lost; e.g. item 1 with value 1.5.* truncated to 1.")
 test(1294.3,  dt[, a := NA]$a, rep(NA_integer_, 3L))
 test(1294.4,  dt[, a := "a"]$a, rep(NA_integer_, 3L),
               warning=c("NAs introduced by coercion",
-                        "Coerced 'character' RHS to 'integer' to match the column's type.*please"))
-test(1294.5,  dt[, a := list(list(1))]$a, rep(1L, 3L), warning="Coerced 'list' RHS to 'integer' to match the column's type")
+                        "Coerced character RHS to integer.*create the RHS as type integer.*with as.integer.. to avoid this warning.*DT., `a`:=as.character.`a`.*"))
+test(1294.5,  dt[, a := list(list(1))]$a, rep(1L, 3L), warning="Coerced list RHS to integer to match.*column 1 named 'a'")
 test(1294.6,  dt[, a := list(1L)]$a, rep(1L, 3L))
 test(1294.7,  dt[, a := list(1)]$a, rep(1L, 3L))
-test(1294.8,  dt[, a := TRUE]$a, rep(1L, 3L), warning="Coerced 'logical' RHS to 'integer' to match the column's type")
+test(1294.8,  dt[, a := TRUE]$a, rep(1L, 3L), warning="Coerced logical RHS to integer")
 test(1294.9,  dt[, b := 1L]$b, rep(1,3))
 test(1294.10, dt[, b := NA]$b, rep(NA_real_,3))
 test(1294.11, dt[, b := "bla"]$b, rep(NA_real_, 3),
               warning=c("NAs introduced by coercion",
-                        "Coerced 'character' RHS to 'double' to match the column's type.*please"))
-test(1294.12, dt[, b := list(list(1))]$b, rep(1,3), warning="Coerced 'list' RHS to 'double' to match the column's type")
-test(1294.13, dt[, b := TRUE]$b, rep(1,3), warning="Coerced 'logical' RHS to 'double' to match the column's type")
+                        "Coerced character RHS to double to match.*column 2 named 'b'.*DT[, `b`:=as.character(`b`)]"))
+test(1294.12, dt[, b := list(list(1))]$b, rep(1,3), warning="Coerced list RHS to double")
+test(1294.13, dt[, b := TRUE]$b, rep(1,3), warning="Coerced logical RHS to double")
 test(1294.14, dt[, b := list(1)]$b, rep(1,3))
-test(1294.15, dt[, c := 1]$c, rep(TRUE, 3), warning="Coerced 'double' RHS to 'logical' to match the column's type")
-test(1294.16, dt[, c := 1L]$c, rep(TRUE, 3), warning="Coerced 'integer' RHS to 'logical' to match the column's type")
+test(1294.15, dt[, c := 1]$c, rep(TRUE, 3), warning="Coerced double RHS to logical")
+test(1294.16, dt[, c := 1L]$c, rep(TRUE, 3), warning="Coerced integer RHS to logical")
 test(1294.17, dt[, c := NA]$c, rep(NA, 3))
-test(1294.18, dt[, c := list(1)]$c, rep(TRUE, 3), warning="Coerced 'double' RHS to 'logical' to match the column's type")
-test(1294.19, dt[, c := list(list(1))]$c, rep(TRUE, 3), warning="Coerced 'list' RHS to 'logical' to match the column's type")
-test(1294.20, dt[, c := "bla"]$c, rep(NA, 3), warning="Coerced 'character' RHS to 'logical' to match the column's type")
-test(1294.21, dt[, d := 1]$d, rep(list(1), 3), warning="Coerced 'double' RHS to 'list' to match the column's type")
-test(1294.22, dt[, d := 1L]$d, rep(list(1L), 3), warning="Coerced 'integer' RHS to 'list' to match the column's type")
-test(1294.23, dt[, d := TRUE]$d, rep(list(TRUE), 3), warning="Coerced 'logical' RHS to 'list' to match the column's type")
-test(1294.24, dt[, d := "bla"]$d, rep(list("bla"), 3), warning="Coerced 'character' RHS to 'list' to match the column's type")
+test(1294.18, dt[, c := list(1)]$c, rep(TRUE, 3), warning="Coerced double RHS to logical")
+test(1294.19, dt[, c := list(list(1))]$c, rep(TRUE, 3), warning="Coerced list RHS to logical")
+test(1294.20, dt[, c := "bla"]$c, rep(NA, 3), warning="Coerced character RHS to logical")
+test(1294.21, dt[, d := 1]$d, rep(list(1), 3), warning="Coerced double RHS to list")
+test(1294.22, dt[, d := 1L]$d, rep(list(1L), 3), warning="Coerced integer RHS to list")
+test(1294.23, dt[, d := TRUE]$d, rep(list(TRUE), 3), warning="Coerced logical RHS to list")
+test(1294.24, dt[, d := "bla"]$d, rep(list("bla"), 3), warning="Coerced character RHS to list")
 test(1294.25, dt[, d := list(list(1))]$d, rep(list(1), 3))
-test(1294.26, dt[, e := 1]$e, rep("1", 3), warning="Coerced 'double' RHS to 'character' to match the column's type")
-test(1294.27, dt[, e := 1L]$e, rep("1", 3), warning="Coerced 'integer' RHS to 'character' to match the column's type")
-test(1294.28, dt[, e := TRUE]$e, rep("TRUE", 3), warning="Coerced 'logical' RHS to 'character' to match the column's type")
-test(1294.29, dt[, e := list(list(1))]$e, rep("1", 3), warning="Coerced 'list' RHS to 'character' to match the column's type")
+test(1294.26, dt[, e := 1]$e, rep("1", 3), warning="Coerced double RHS to character")
+test(1294.27, dt[, e := 1L]$e, rep("1", 3), warning="Coerced integer RHS to character")
+test(1294.28, dt[, e := TRUE]$e, rep("TRUE", 3), warning="Coerced logical RHS to character")
+test(1294.29, dt[, e := list(list(1))]$e, rep("1", 3), warning="Coerced list RHS to character")
 test(1294.30, dt[, e := "bla"]$e, rep("bla", 3))
 test(1294.31, dt[, e := list("bla2")]$e, rep("bla2", 3))
 
@@ -6041,7 +6048,7 @@ test(1451.6, ans1[c(3,3)], fans2(DT, c("V3", "V3")))        # using duplicate co
 test(1451.7, shallow(DT, integer(0)), null.data.table())    # length-0 input work as intended as well.
 test(1451.8, shallow(DT, character(0)), null.data.table())  # length-0 input work as intended as well.
 
-test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist; getwd()==")
+test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist.*getwd")
 
 # Test for #802
 test(1453, fread(testDir("fread_line_error.csv"))[c(1,.N), c("V1","V24")],
@@ -6718,20 +6725,20 @@ test(1513, setkey(as.data.table(X), a), setDT(X, key="a"))
 
 # Adding tests for `isReallyReal`
 x = as.numeric(sample(10))
-test(1514.1, isReallyReal(x), FALSE)
+test(1514.1, isReallyReal(x), 0L)
 x = as.numeric(sample(c(1:5, NA)))
-test(1514.2, isReallyReal(x), FALSE) # NAs are handled properly
-x = as.numeric(sample(c(1:2, NaN, NA)))
-test(1514.3, isReallyReal(x), TRUE)
-x = as.numeric(sample(c(1:2, Inf, NA)))
-test(1514.4, isReallyReal(x), TRUE)
-x = as.numeric(sample(c(1:2, -Inf, NA)))
-test(1514.5, isReallyReal(x), TRUE)
-x = as.numeric(runif(2))
-test(1514.6, isReallyReal(x), TRUE)
+test(1514.2, isReallyReal(x), 0L) # NAs in numeric can be coerced to integer NA without loss
+x = c(1:2, NaN, NA)
+test(1514.3, isReallyReal(x), 3L)
+x = c(1:2, Inf, NA)
+test(1514.4, isReallyReal(x), 3L)
+x = c(1:2, -Inf, NA)
+test(1514.5, isReallyReal(x), 3L)
+x = runif(2)
+test(1514.6, isReallyReal(x), 1L)
 x = numeric()
-test(1514.7, isReallyReal(x), FALSE)
-test(1514.8, isReallyReal(9L), error="x must be of type double")
+test(1514.7, isReallyReal(x), 0L)
+test(1514.8, isReallyReal(9L), 0L)
 
 # #1091
 old.option = getOption("datatable.prettyprint.char")
@@ -6799,7 +6806,11 @@ test(1524, ans1, ans2)
 # 'unique =' argument for CJ, #1148
 x = c(1, 2, 1)
 y = c(5, 8, 8, 4)
-test(1525, CJ(x, y, unique=TRUE), CJ(c(1,2), c(4,5,8)))
+old = options(datatable.CJ.names=FALSE)
+test(1525.1, CJ(x, y, unique=TRUE), CJ(V1=c(1,2), V2=c(4,5,8)))
+options(datatable.CJ.names=TRUE)
+test(1525.2, CJ(x, y, unique=TRUE), CJ( x=c(1,2),  y=c(4,5,8)))
+options(old)
 
 # `key` argument fix for `setDT` when input is already a `data.table`,  #1169
 DT <- data.table(A = 1:4, B = 5:8)
@@ -6871,8 +6882,7 @@ dt2 = as.data.table(dt1); setattr(dt2, 'sorted', NULL)
 test(1533.1, setkeyv(dt1, character(0)), dt2, warning = "cols is a character vector")
 test(1533.2, setkeyv(dt1, "x", verbose=TRUE), setkey(dt2, x), output = "forder took")
 
-# coverage for %+% and trim
-test(1534, `%+%.default`(1:5, 6:10), "1,2,3,4,56,7,8,9,10")
+# coverage for internal trim, test 1534 removed as custom %+% has been removed
 test(1535.1, trim("  abcde "), "abcde")
 test(1535.2, trim("  abcde"), "abcde")
 test(1535.3, trim("abcde "), "abcde")
@@ -7673,6 +7683,13 @@ test(1587, fread(text, key="y"), setDT(fread(text), key="y"))
 dt = data.table(i=1:10, f=as.factor(1:10))
 test(1588.1, dt[f %in% 3:4], dt[3:4])
 test(1588.2, dt[f == 3], dt[3])
+test(1588.3, dt[3 == f], dt[3])
+test(1588.4, dt[i == 3], dt[3])
+# test for reallyReal RHS
+test(1588.5, dt[i == 3.5], dt[0L])
+test(1588.6, dt[2.4 == 3.5], dt[0L])
+dt = data.table(ch=letters[1:6])
+test(1588.7, dt[ch>"c"], dt[4:6])  # coverage of a return(NULL) in .prepareFastSubset
 
 # data.table operates consistently independent of locale, but it's R that changes and is sensitive to it.
 #   Because keys/indexes depend on a sort order. If a data.table is stored on disk with a key
@@ -8247,6 +8264,12 @@ if (test_bit64) {
   test(1626.75, fsetequal(x, y), FALSE)
   test(1626.76, fsetequal(dt[c(2:3,3L)], dt[c(2:3,3L)]), TRUE)
 }
+# fix for #2968 fsetequal with all = FALSE should treat rows as set elements
+x = data.table(c(1,2,2,2,3,4,4), c(1,1,1,3,3,3,3))
+x2 = unique(x)
+y = data.table(c(2,3,4,4,4,5), c(1,1,2,3,3,3))
+test(1626.77, fsetequal(x, x2, all = FALSE), TRUE)
+test(1626.78, fsetequal(x, y, all = FALSE), FALSE)
 
 # fix for #1087 and #1465
 test(1627, charToRaw(names(fread(testDir("issue_1087_utf8_bom.csv")))[1L]), as.raw(97L))
@@ -9132,13 +9155,17 @@ test(1658.26, fwrite(ok_dt, qmethod=c("double", "double")), error="length(qmetho
 test(1658.27, fwrite(ok_dt, col.names="foobar"), error="isLOGICAL(col.names)")
 
 # null data table (no columns)
-test(1658.28, fwrite(data.table(a=1)[NULL,]), error="ncol(x) > 0L is not TRUE")
+test(1658.28, fwrite(data.table(NULL)), NULL, warning="Nothing to write")
 
 # 0.0 written as 0, but TODO #2398, probably related to the 2 lines after l==0 missing coverage in writeFloat64
 test(1658.29, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="id,v\nA,1.1\nB,0\nC,9.9")
 
 # logical NA as "NA" when logical01=TRUE, instead of the default na="" which writes all types including <NA> in character column as ,, consistently.
 test(1658.30, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="\"id\",\"bool\"\n1,1\n2,NA\n3,0")
+
+# POSIXct
+test(1658.31, fwrite(data.table(D = as.POSIXct(seq.Date(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
+    output="D\n2038-01-19T00:00:00Z\n2038-01-20T00:00:00Z")
 
 ## End fwrite tests
 
@@ -9586,10 +9613,31 @@ test(1702.4, isoweek(isotest$input_date), isotest$expected_output)
 if (.Platform$OS.type=="unix") {
   cat("a,b\n4,2", file=f<-tempfile())
   cmd <- sprintf("cat %s", f)
-  test(1703.1, fread(cmd), data.table(a=4L, b=2L))
-  test(1703.2, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
+  old = options(datatable.fread.input.cmd.message = TRUE)
+  test(1703.0, grep("Please use fread.cmd=.*security concern.*Please read item 5 in the NEWS file for v1.11.6", tryCatch(fread(cmd), message=function(m) m[["message"]])), 1L)
+  old = options(datatable.fread.input.cmd.message = NULL)  # when option is missing as it is by default, then TRUE
+  test(1703.1, grep("security concern", tryCatch(fread(cmd), message=function(m) m[["message"]])), 1L)
+  old = options(datatable.fread.input.cmd.message = FALSE)
+  test(1703.2, tryCatch(fread(cmd), message=stop), data.table(a=4L, b=2L))
+  options(old)
+  test(1703.3, fread(cmd=cmd), data.table(a=4L, b=2L))
+  test(1703.4, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
   unlink(f)
+  # Test 'text' argument
+  test(1703.5, fread(text="https://example.com,A\na,b"), data.table(`https://example.com`='a', A='b'))
+  # errors
+  test(1703.6, fread(input="A,B", text="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
+  test(1703.7, fread(file="A,B",  text="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
+  test(1703.8, fread(input="A,B", file="A,B"), error="Used more than one of the arguments input=, file=, text= and cmd=")
+  test(1703.9, fread(text=1),                  error="'text=' is type double but must be character")
+  # Zero-length text
+  test(1703.11, fread(text = character(0)), data.table())
+  # Multi-length text
+  test(1703.12, fread(text=c("A B","C D"), sep=" ", data.table=FALSE), y=read.table(text=c("A B","C D"), as.is=TRUE, header=TRUE))
+  # test error if length>1 character passed to input, not text:
+  test(1703.13, x=fread(c("foo","bar","baz")), error="must be a single character string")
 }
+test(1703.14, fread("."), error="File '.' is a directory. Not yet implemented.")
 
 # Ensure all.equal respects 'check.attributes' w.r.t. column names. As testthat::check_equivalent relies on this
 # as used by package popEpi in its tests
@@ -11359,7 +11407,7 @@ for (i in 100:1) {
 # miscellaneous missing tests uncovered by CodeCov difference
 #   in the process of PR #2573
 ## data.table cannot recycle complicated types
-short_s4_col = methods::getClass("MethodDefinition")
+short_s4_col = getClass("MethodDefinition")
 test(1872.1, data.table(a = 1:4, short_s4_col), error = 'problem recycling.*try a simpler type')
 ## i must be a data.table when on is specified
 DT = data.table(a = 1:3)
@@ -11690,17 +11738,25 @@ setkey(DT, id)
 test(1899.04, as.matrix(DT, TRUE), mat)
 test(1899.05, as.matrix(DT, 1:4), mat3)
 # errors
-test(1899.06, as.matrix(DT, -1), error="rownames is -1 which is outside the column number range")
-test(1899.07, as.matrix(DT, "Z"), error="Z is not a column of x")
-test(1899.08, as.matrix(DT, c(1,2)), error="rownames must be a single column in x or a vector of row names of length nrow(x)")
-test(1899.09, as.matrix(DT, complex(1)), error="rownames must be TRUE, a column index, a column name in x, or a vector of row names")
+test(1899.06, as.matrix(DT, -1), error="as.integer(rownames)==-1 which is outside the column number range")
+test(1899.07, as.matrix(DT, "Z"), error="'Z' is not a column of x")
+test(1899.08, as.matrix(DT, c(1,2)), error="length(rownames)==2 but nrow(DT)==4. The rownames argument specifies a single column name or number. Consider rownames.value= instead.")
+test(1899.09, as.matrix(DT, complex(1)), error="as.integer(rownames)==0 which is outside the column number range [1,ncol=3].")
 # values that pass through (rownames ignored)
 test(1899.10, as.matrix(DT, NA), mat2)
 test(1899.11, as.matrix(DT, NULL), mat2)
 test(1899.12, as.matrix(DT, FALSE), mat2)
 # Warnings:
 setkey(DT, id, X)
-test(1899.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but multiple keys")
+test(1899.13, as.matrix(DT, TRUE), mat, warning="rownames is TRUE but key has multiple columns")
+
+# Check handling of cases where the data.table only has 1 row, raised by Issue #2930:
+mat4 <- matrix(c("a", 1, 5), nrow=1, dimnames=list(c("x"), c("id", "X", "Y")))
+test(1899.14, as.matrix(DT[1,], 1), mat[1,,drop=FALSE])
+test(1899.15, as.matrix(DT[1,], "id"), mat[1,,drop=FALSE])
+test(1899.16, as.matrix(DT[1,], rownames.value="x"), mat4)
+test(1899.17, as.matrix(DT[1,], rownames.value=c("x", "y")), error="length(rownames.value)==2 but should be nrow(x)==1")
+test(1899.18, as.matrix(DT, rownames=TRUE, rownames.value=1:nrow(DT)), error="rownames and rownames.value cannot both be used at the same time")
 
 # index argument for fread, #2633
 DT_str = c('a,b\n3,1\n2,2\n1,1\n2,1\n3,2')
@@ -11952,7 +12008,7 @@ for (col in c('b', 'c')) {
 #
 suppressWarnings(setClass("Data.Table", contains="data.table"))  # suppress 'Created a package name, ‘2018-05-26 06:14:43.444’, when none found'
 suppressWarnings(setClass("S4Composition", representation(data="data.table")))
-# data.table can be a parent class"
+# data.table can be a parent class
 ids <- sample(letters[1:3], 10, replace=TRUE)
 scores <- rnorm(10)
 dt <- data.table(id=ids, score=scores)
@@ -11981,7 +12037,136 @@ setMethod("dtGet", c(x="S4Composition", what="ANY"), function(x, what) {x@data[[
 test(1914.7, dtGet(dt.comp), dt)  # actually
 test(1914.8, identical(dtGet(dt.comp, 1), dt[[1]]))
 test(1914.9, identical(dtGet(dt.comp, 'b'), dt$b))
+removeClass("Data.Table")   # so that test 1914.2 passes on the second run of cc() in dev
+removeClass("S4Composition")
 # END port of old testthat tests
+
+str = "Sepal.Length,Sepal.Width,Petal.Length,Petal.Width,Species
+5.1,3.5,1.4,0.2,setosa
+4.9,3,1.4,0.2,setosa
+4.7,3.2,1.3,0.2,setosa
+4.6,3.1,1.5,0.2,setosa
+5,3.6,1.4,0.2,setosa"
+test(1915, fread(str, select = c(5, 1, 3)),
+     data.table(Species = c("setosa", "setosa", "setosa", "setosa", "setosa"),
+                Sepal.Length = c(5.1, 4.9, 4.7, 4.6, 5),
+                Petal.Length = c(1.4, 1.4, 1.3, 1.5, 1.4)))
+
+# unit tests for #2169 which was already fixed in ec05f8b/src/fwrite.c#L59
+test(1916.1, fwrite(data.table(foo = c(NA, TRUE, FALSE)), logical01 = TRUE, na = 'EMPTY'), output=c("\"foo\"","EMPTY","1","0")) # this might need to be changed after #2964 will be solved
+test(1916.2, fwrite(data.table(foo = c(NA, TRUE, FALSE)), logical01 = TRUE), output=c("foo","","1","0"))
+
+# #732 prefixes i., x. works during join and by=.EACHI
+dta <- data.table(idx=1:3, vala=4:6, key="idx")
+dtb <- data.table(idx=c(1,4), valb=c(10,11), key="idx")
+test(1917.1, dta[dtb, list(x.idx, sum(valb)), by=.EACHI], data.table(idx = c(1L, 4L), x.idx = c(1L, NA), V2 = c(10, 11)))
+test(1917.2, dta[dtb, list(sum(x.vala), sum(i.valb)), by=.EACHI], data.table(idx = c(1L, 4L), V1 = c(4L, NA_integer_), V2 = c(10, 11)))
+
+# min/max work for _ordered_ factors, #1947
+lev = letters[1:5]
+DT = CJ(V2=letters[6:8], V1=factor(lev))[-c(4:6, 10:12)]
+setkey(DT, NULL)
+test(1918.1, DT[, min(V1)], error='not meaningful for factors')
+test(1918.2, DT[, max(V1)], error='not meaningful for factors')
+## confirming base functionality works
+DT[ , V1:=as.ordered(V1)]
+test(1918.3, DT[, min(V1)], structure(1L, .Label = lev, class = c("ordered", "factor")))
+test(1918.4, DT[, max(V1)], structure(5L, .Label = lev, class = c("ordered", "factor")))
+## make sure GForce is activated
+old = options(datatable.optimize = Inf)
+test(1918.5, DT[, min(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(1:3, .Label=lev, class=c("ordered", "factor"))))
+test(1918.6, DT[, max(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(3:5, .Label=lev, class=c("ordered", "factor"))))
+options(old)
+
+# as.ITime.character bug for NA handling #2940
+test(1919, as.ITime(c('xxx', '10:43')), structure(c(NA, 38580L), class = "ITime"))
+
+# wrong bmerge result if character gets coerced to factor, i is keyed, and level order in i is different from x, #2881
+iris = data.table(iris)
+iris$grp = c('A', 'B')
+iris[, Species1 := factor(Species, levels=c('setosa','versicolor','virginica'), labels=c('setosa','versicolor','Virginica'))]
+iSorted = data.table(Species1 = c('setosa','Virginica'), grp='B', key=c("grp","Species1"))
+i = setkey(copy(iSorted),NULL)
+test(1920, iris[iSorted, on = c("grp==grp", 'Species1==Species1')],
+           iris[i, on = c("grp==grp", 'Species1==Species1')])
+
+# origin= ignored by as.IDate.numeric(), #2880
+test(1921.1, as.IDate(1000, origin = "1930-01-01"), as.IDate("1932-09-27"))
+test(1921.2, as.IDate(1000), as.IDate("1972-09-27"))
+
+# fread returns data.table(NULL) with warning on empty file, #2898
+f = tempfile()
+file.create(f)
+test(1922.1, fread(f), data.table(NULL), warning = 'File.*size 0')
+test(1922.2, fread(file = f), data.table(NULL), warning = 'File.*size 0')
+# trigger download for last instance of warning
+test(1922.3, fread(paste0('file://', f)), data.table(NULL), warning = 'File.*size 0')
+test(1922.4, fread(f, data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
+test(1922.5, fread(file = f, data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
+test(1922.6, fread(paste0('file://', f), data.table = FALSE), data.frame(NULL), warning = 'File.*size 0')
+unlink(f)
+
+#fwrite creates a file or does nothing, as appropriate, also #2898
+DT = data.table(NULL)
+f = tempfile()
+test(1922.7, fwrite(DT, f), NULL, warning = 'no columns; creating an empty file')
+## above test created a file; now test behavior when file exists
+test(1922.8, fwrite(DT, f), NULL, warning = 'no columns; doing nothing.*file.remove')
+## slightly different behavior if append = TRUE
+test(1922.9, fwrite(DT, f, append = TRUE), NULL, warning = 'doing nothing.$')
+
+# create index even if key present by setting attribute, #2883
+DT = data.table(1:5, 1:5)
+setkey(DT)
+setindex(DT)
+test(1923.1, indices(DT, vectors=TRUE), list(c("V1","V2")))
+setindex(DT, NULL)
+setindex(DT, V1)
+test(1923.2, indices(DT, vectors=TRUE), list(c("V1")))
+
+# Column typo checks, #2887
+DT = data.table(varname = 1)
+test(1924.1, DT[var_name==1], error='not found\\. Perhaps you intended.*varname')
+test(1924.2, DT[variable==1], error='Object.*not found among')
+test(1924.3, DT[varname+'a'], error='non-numeric argument')
+DT[, VAR_NAME:=2]
+test(1924.4, DT[var_name==1], error='Perhaps you intended.*varname, VAR_NAME')
+DT = setDT(lapply(integer(50), function(...) numeric(1L)))
+test(1924.5, DT[V==0], error='Perhaps you intended.*V1.*V5 or 45 more')
+
+# test suite of as.ITime methods (subsumes #2870)
+s = c('1970-01-01 00:00:00.1234', '2005-10-12 09:45:32.84')
+x = as.POSIXlt(s, tz = 'UTC')
+test(1925.01, as.ITime(x),               structure(c(0L, 35132L), class="ITime"))
+test(1925.02, as.ITime(x, ms='nearest'), structure(c(0L, 35133L), class="ITime"))
+test(1925.03, as.ITime(x, ms='ceil'),    structure(c(1L, 35133L), class="ITime"))
+test(1925.04, as.ITime(x, ms='foo'),     error='Valid options for ms')
+test(1925.05, as.ITime(s),               as.ITime(x))
+n = as.numeric(x)
+test(1925.06, as.ITime(n),               as.ITime(x))
+test(1925.07, as.ITime(n, ms='nearest'), as.ITime(x, ms='nearest'))
+test(1925.08, as.ITime(n, ms='ceil'),    as.ITime(x, ms='ceil'))
+test(1925.09, as.ITime(as.POSIXct(x)),   as.ITime(x))
+x = structure(c(12.345, 67.890)/86400, class='times')
+test(1925.10, as.ITime(x),               structure(c(12L, 67L), class="ITime"))
+test(1925.11, as.ITime(x, ms='nearest'), structure(c(12L, 68L), class="ITime"))
+test(1925.12, as.ITime(x, ms='ceil'),    structure(c(13L, 68L), class="ITime"))
+
+test(1936.1, fread("A,B\n1,3\n2,4", autostart=1), data.table(A=1:2, B=3:4), warning="autostart.*deprecated.*Consider skip")
+if (.Platform$OS.type == "unix") test(1936.2, is.data.table(fread("ls .")))
+
+# add helpful error to %between%
+DT = data.table(A=1:10, B=3)
+test(1937.1, DT[A %between% c(B,B+1)], error='RHS has length().*Perhaps you meant')
+test(1937.2, DT[A %between% B],        error='length 2. The first')
+
+# that fwrite'ing a list to a file works (it broke in dev 1.11.5 and was caught before release), PR#3017
+test(1938.1, fwrite(list(1:3)), NULL, output="1\n2\n3")    # never broke
+test(1938.2, fwrite(list(1:3), file=f<-tempfile()), NULL)  # just adding file= was what broke in dev just when x is list and not data.table|frame
+test(1939.3, readLines(f), as.character(1:3))
+unlink(f)
+
+test(1940, data.table(A=1:3, .SD=4:6), error=".SD.*has special meaning")
 
 
 ###################################
@@ -12029,7 +12214,7 @@ if (nfail > 0) {
        " Search inst/tests/tests.Rraw for test number",s2,paste(whichfail,collapse=", "),".")
   # important to stop() here, so that 'R CMD check' fails
 }
-cat(plat,"\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
+cat(plat,"\n\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
 # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
 # stale due to not updating yet since a fix in R-devel, for example.
 

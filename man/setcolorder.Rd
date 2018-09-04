@@ -9,11 +9,11 @@
 }
 
 \usage{
-setcolorder(x, neworder)
+setcolorder(x, neworder=key(x))
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
-  \item{neworder}{ Character vector of the new column name ordering. May also be column numbers. If \code{length(neworder) < length(x)}, the specified columns are moved in order to the "front" of \code{x}. }
+  \item{neworder}{ Character vector of the new column name ordering. May also be column numbers. If \code{length(neworder) < length(x)}, the specified columns are moved in order to the "front" of \code{x}. By default, \code{setcolorder} without a specified \code{neworder} moves the key columns in order to the "front" of \code{x}. }
 }
 \details{
   To reorder \code{data.table} columns, the idiomatic way is to use \code{setcolorder(x, neworder)}, instead of doing \code{x <- x[, neworder, with=FALSE]}. This is because the latter makes an entire copy of the \code{data.table}, which maybe unnecessary in most situations. \code{setcolorder} also allows column numbers instead of names for \code{neworder} argument, although we recommend using names as a good programming practice.
