@@ -262,6 +262,17 @@ There are some things to overcome to achieve compile without USE_RINTERNALS, tho
 ## test.data.table()
 ## q("no")
 
+########################################################################
+#  rchk : https://github.com/kalibera/rchk
+########################################################################
+cd ~/build/rchk/trunk
+echo 'install.packages("~/GitHub/data.table/data.table_1.11.5.tar.gz",repos=NULL)' | ./bin/R --slave
+../scripts/check_package.sh data.table
+cat packages/lib/data.table/libs/*check
+# keep running and rerunning locally until all problems cease.
+#   rchk has an internal stack which can exhaust. Clearing the current set of problems (e.g. as displayed
+#   on CRAN) is not sufficient because new problems can be found because it didn't get that far before.
+#   hence repeating locally until clear is necessary.
 
 ###############################################
 #  QEMU to emulate big endian

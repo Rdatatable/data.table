@@ -351,10 +351,9 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
 }
 
 SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, struct processData *data) {
-
-  int i, j, k, protecti=0, counter=0, thislen=0;
-  SEXP seqcols, thiscol, thisvaluecols, target, ansvals, thisidx=R_NilValue, flevels, clevels;
-  Rboolean coerced=FALSE, thisfac=FALSE, copyattr = FALSE, thisvalfactor;
+  int i, j, k, counter=0, thislen=0;
+  SEXP thisvaluecols, ansvals, thisidx=R_NilValue, flevels;
+  Rboolean copyattr = FALSE, thisvalfactor;
   size_t size;
   for (i=0; i<data->lvalues; i++) {
     thisvaluecols = VECTOR_ELT(data->valuecols, i);
@@ -366,7 +365,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
     }
   }
   if (data->narm) {
-    seqcols = PROTECT(seq_int(data->lvalues, 1)); protecti++;
+    SEXP seqcols = PROTECT(seq_int(data->lvalues, 1));
     for (i=0; i<data->lmax; i++) {
       SEXP tmp = PROTECT(allocVector(VECSXP, data->lvalues));
       for (j=0; j<data->lvalues; j++) {
@@ -383,25 +382,30 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
       data->totlen += length(w);
       UNPROTECT(2); // tmp twice
     }
-  } else data->totlen = data->nrow * data->lmax;
-  flevels = PROTECT(allocVector(VECSXP, data->lmax)); protecti++;
+    UNPROTECT(1);  // seqcols
+  } else {
+    data->totlen = data->nrow * data->lmax;
+  }
+  flevels = PROTECT(allocVector(VECSXP, data->lmax));
   Rboolean *isordered = (Rboolean *)R_alloc(data->lmax, sizeof(Rboolean));
-  ansvals = PROTECT(allocVector(VECSXP, data->lvalues)); protecti++;
+  ansvals = PROTECT(allocVector(VECSXP, data->lvalues));
   for (i=0; i<data->lvalues; i++) {
     thisvalfactor = (data->maxtype[i] == VECSXP) ? FALSE : valfactor;
-    SET_VECTOR_ELT(ansvals, i, target=allocVector(data->maxtype[i], data->totlen) );
+    SEXP target = PROTECT(allocVector(data->maxtype[i], data->totlen)); // to keep rchk happy
+    SET_VECTOR_ELT(ansvals, i, target);
+    UNPROTECT(1);  // still protected by virtue of being member of protected ansval.
     thisvaluecols = VECTOR_ELT(data->valuecols, i);
     counter = 0; copyattr = FALSE;
     for (j=0; j<data->lmax; j++) {
-      thiscol = (j < data->leach[i]) ? VECTOR_ELT(DT, INTEGER(thisvaluecols)[j]-1)
+      int thisprotecti = 0;
+      SEXP thiscol = (j < data->leach[i]) ? VECTOR_ELT(DT, INTEGER(thisvaluecols)[j]-1)
                        : allocNAVector(data->maxtype[i], data->nrow);
       if (!copyattr && data->isidentical[i] && !data->isfactor[i]) {
         copyMostAttrib(thiscol, target);
         copyattr = TRUE;
       }
       if (TYPEOF(thiscol) != TYPEOF(target) && (data->maxtype[i] == VECSXP || !isFactor(thiscol))) {
-        thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));
-        coerced = TRUE;
+        thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));  thisprotecti++;
       }
       if (data->narm) {
         thisidx = VECTOR_ELT(data->naidx, j);
@@ -421,8 +425,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         if (data->isfactor[i]) {
           if (isFactor(thiscol)) {
             SET_VECTOR_ELT(flevels, j, getAttrib(thiscol, R_LevelsSymbol));
-            thiscol = PROTECT(asCharacterFactor(thiscol));
-            thisfac = TRUE;
+            thiscol = PROTECT(asCharacterFactor(thiscol));  thisprotecti++;
             isordered[j] = isOrdered(thiscol);
           } else SET_VECTOR_ELT(flevels, j, thiscol);
         }
@@ -460,21 +463,16 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         default : error("Unknown column type '%s' for column '%s'.", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1)));
       }
       if (data->narm) counter += thislen;
-      if (coerced) {
-        UNPROTECT(1); coerced = FALSE;
-      }
-      if (thisfac) {
-        UNPROTECT(1); thisfac = FALSE;
-      }
+      UNPROTECT(thisprotecti);  // inside inner loop (note that it's double loop) so as to limit use of protection stack
     }
     if (thisvalfactor && data->isfactor[i] && TYPEOF(target) != VECSXP) {
-      clevels = combineFactorLevels(flevels, &(data->isfactor[i]), isordered);
+      SEXP clevels = PROTECT(combineFactorLevels(flevels, &(data->isfactor[i]), isordered));
       SEXP factorLangSxp = PROTECT(lang3(install(data->isfactor[i] == 1 ? "factor" : "ordered"), target, clevels));
       SET_VECTOR_ELT(ansvals, i, eval(factorLangSxp, R_GlobalEnv));
       UNPROTECT(2);  // clevels, factorLangSxp
     }
   }
-  UNPROTECT(protecti);
+  UNPROTECT(2);  // flevels, ansvals. Not using two protection counters (protecti and thisprotecti) to keep rchk happy.
   return(ansvals);
 }
 
@@ -653,13 +651,12 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     if (verbose) Rprintf("ncol(data) is 0. Nothing to melt. Returning original data.table.");
     return(DT);
   }
-  dtnames = getAttrib(DT, R_NamesSymbol);
+  dtnames = PROTECT(getAttrib(DT, R_NamesSymbol));
+  int protecti=1;
   if (isNull(dtnames)) error("names(data) is NULL. Please report to data.table-help");
   if (LOGICAL(narmArg)[0] == TRUE) narm = TRUE;
   if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
-
   struct processData data;
-  int protecti=0;
   data.RCHK = PROTECT(allocVector(VECSXP, 2)); protecti++;
   preprocess(DT, id, measure, varnames, valnames, narm, verbose, &data);
   // edge case no measure.vars
