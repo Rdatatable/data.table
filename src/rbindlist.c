@@ -804,7 +804,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
 SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
 
   R_len_t i, j, k, nx, li, si, oi;
-  SEXP dt, l, ans, order, start, lens, grpid, index;
+  SEXP dt, ans, order, start, lens, grpid, index;
   if (TYPEOF(nomatch) != INTSXP || length(nomatch) != 1) error("'nomatch' must be an integer of length 1");
   if (!length(x) || isNull(x)) return(allocVector(INTSXP, 0));
   if (TYPEOF(x) != STRSXP) error("'x' must be a character vector");
@@ -817,12 +817,14 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
   }
   if (TYPEOF(table) != STRSXP) error("'table' must be a character vector");
   // Done with special cases. On to the real deal.
-  l = PROTECT(allocVector(VECSXP, 2));
-  SET_VECTOR_ELT(l, 0, x);
-  SET_VECTOR_ELT(l, 1, table);
-
-  UNPROTECT(1); // l
-  dt = PROTECT(unlist2(l));
+  {
+    // start new scope to ensure tt is used just here
+    SEXP tt = PROTECT(allocVector(VECSXP, 2));
+    SET_VECTOR_ELT(tt, 0, x);
+    SET_VECTOR_ELT(tt, 1, table);
+    dt = PROTECT(unlist2(tt));
+    UNPROTECT(1);
+  }
 
   // order - first time
   order = PROTECT(fast_order(dt, 2, 1));
