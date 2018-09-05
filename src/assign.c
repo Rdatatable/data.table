@@ -35,7 +35,7 @@ void setselfref(SEXP x) {
   // Called from C only, not R level, so returns void.
   setAttrib(x, SelfRefSymbol, p=R_MakeExternalPtr(
     R_NilValue,                  // for identical() to return TRUE. identical() doesn't look at tag and prot
-    getAttrib(x, R_NamesSymbol), // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
+    PROTECT(getAttrib(x, R_NamesSymbol)),  // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
     PROTECT(R_MakeExternalPtr(   // to avoid an infinite loop in object.size(), if prot=x here
       x,                         // to know if this data.table has been copied by key<-, attr<-, names<-, etc.
       R_NilValue,                // this tag and prot currently unused
@@ -43,7 +43,7 @@ void setselfref(SEXP x) {
     ))
   ));
   R_RegisterCFinalizerEx(p, finalizer, FALSE);
-  UNPROTECT(1);  // The PROTECT above is needed by --enable-strict-barrier (it seems, iiuc)
+  UNPROTECT(2);
 
 /*
   *  base::identical doesn't check prot and tag of EXTPTR, just that the ptr itself is the
