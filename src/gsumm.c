@@ -233,9 +233,10 @@ SEXP gmin(SEXP x, SEXP narm)
   //clock_t start = clock();
   SEXP ans;
   if (grpn != n) error("grpn [%d] != length(x) [%d] in gmin", grpn, n);
+  int protecti=0;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP:
-    ans = PROTECT(allocVector(INTSXP, ngrp));
+    ans = PROTECT(allocVector(INTSXP, ngrp)); protecti++;
     if (!LOGICAL(narm)[0]) {
       for (i=0; i<ngrp; i++) INTEGER(ans)[i] = INT_MAX;
       for (i=0; i<n; i++) {
@@ -256,8 +257,7 @@ SEXP gmin(SEXP x, SEXP narm)
       for (i=0; i<ngrp; i++) {
         if (INTEGER(ans)[i] == NA_INTEGER) {
           warning("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base");
-          UNPROTECT(1);
-          ans = PROTECT(coerceVector(ans, REALSXP));
+          ans = PROTECT(coerceVector(ans, REALSXP)); protecti++;
           for (i=0; i<ngrp; i++) {
             if (ISNA(REAL(ans)[i])) REAL(ans)[i] = R_PosInf;
           }
@@ -267,7 +267,7 @@ SEXP gmin(SEXP x, SEXP narm)
     }
     break;
   case STRSXP:
-    ans = PROTECT(allocVector(STRSXP, ngrp));
+    ans = PROTECT(allocVector(STRSXP, ngrp)); protecti++;
     if (!LOGICAL(narm)[0]) {
       for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, R_BlankString);
       for (i=0; i<n; i++) {
@@ -302,7 +302,7 @@ SEXP gmin(SEXP x, SEXP narm)
     }
     break;
   case REALSXP:
-    ans = PROTECT(allocVector(REALSXP, ngrp));
+    ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
     if (!LOGICAL(narm)[0]) {
       for (i=0; i<ngrp; i++) REAL(ans)[i] = R_PosInf;
       for (i=0; i<n; i++) {
@@ -333,7 +333,7 @@ SEXP gmin(SEXP x, SEXP narm)
     error("Type '%s' not supported by GForce min (gmin). Either add the prefix base::min(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
-  UNPROTECT(1);
+  UNPROTECT(protecti);  // ans + maybe 1 coerced ans
   // Rprintf("this gmin took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
   return(ans);
 }
@@ -353,10 +353,10 @@ SEXP gmax(SEXP x, SEXP narm)
   // TODO rework gmax in the same way as gmin and remove this *update
   char *update = (char *)R_alloc(ngrp, sizeof(char));
   for (int i=0; i<ngrp; i++) update[i] = 0;
-
+  int protecti=0;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP:
-    ans = PROTECT(allocVector(INTSXP, ngrp));
+    ans = PROTECT(allocVector(INTSXP, ngrp)); protecti++;
     for (i=0; i<ngrp; i++) INTEGER(ans)[i] = 0;
     if (!LOGICAL(narm)[0]) { // simple case - deal in a straightforward manner first
       for (i=0; i<n; i++) {
@@ -387,8 +387,7 @@ SEXP gmax(SEXP x, SEXP narm)
       for (i=0; i<ngrp; i++) {
         if (update[i] != 1)  {// equivalent of INTEGER(ans)[thisgrp] == NA_INTEGER
           warning("No non-missing values found in at least one group. Coercing to numeric type and returning 'Inf' for such groups to be consistent with base");
-          UNPROTECT(1);
-          ans = PROTECT(coerceVector(ans, REALSXP));
+          ans = PROTECT(coerceVector(ans, REALSXP)); protecti++;
           for (i=0; i<ngrp; i++) {
             if (update[i] != 1) REAL(ans)[i] = -R_PosInf;
           }
@@ -398,7 +397,7 @@ SEXP gmax(SEXP x, SEXP narm)
     }
     break;
   case STRSXP:
-    ans = PROTECT(allocVector(STRSXP, ngrp));
+    ans = PROTECT(allocVector(STRSXP, ngrp)); protecti++;
     for (i=0; i<ngrp; i++) SET_STRING_ELT(ans, i, mkChar(""));
     if (!LOGICAL(narm)[0]) { // simple case - deal in a straightforward manner first
       for (i=0; i<n; i++) {
@@ -435,7 +434,7 @@ SEXP gmax(SEXP x, SEXP narm)
     }
     break;
   case REALSXP:
-    ans = PROTECT(allocVector(REALSXP, ngrp));
+    ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
     for (i=0; i<ngrp; i++) REAL(ans)[i] = 0;
     if (!LOGICAL(narm)[0]) {
       for (i=0; i<n; i++) {
@@ -477,7 +476,7 @@ SEXP gmax(SEXP x, SEXP narm)
     error("Type '%s' not supported by GForce max (gmax). Either add the prefix base::max(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
-  UNPROTECT(1);
+  UNPROTECT(protecti);
   // Rprintf("this gmax took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
   return(ans);
 }
