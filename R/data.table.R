@@ -2934,18 +2934,17 @@ isReallyReal <- function(x) {
     if(col %chin% names(i)) return(NULL) ## repeated appearance of the same column not suported (e.g. DT[x < 3 & x < 5])
     ## now check the RHS of stub
     RHS = eval(stub[[3L]], x, enclos)
-    if (is.null(RHS)) return(NULL)
-    # fix for #961
-    if (is.list(RHS)) RHS = as.character(RHS)
-    if (length(RHS) != 1 && !operator %chin% c("%in%", "%chin%")){
+    if (is.list(RHS)) RHS = as.character(RHS)  # fix for #961
+    if (length(RHS) != 1L && !operator %chin% c("%in%", "%chin%")){
       if (length(RHS) != nrow(x)) stop("RHS of ", operator, " is length ",length(RHS)," which is not 1 or nrow (",nrow(x),"). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %in% instead.")
       return(NULL) # DT[colA == colB] regular element-wise vector scan
     }
-    if ( (is.integer(x[[col]]) && isReallyReal(RHS)) ||
-         (is.factor(x[[col]])+is.factor(RHS) == 1L) ||
-         (is.character(x[[col]])+is.character(RHS) == 1L) ) {
-      # re-direct all non-matching mode cases to base R, as data.table's binary
+    if ( mode(x[[col]]) != mode(RHS) ||                # mode() so that doubleLHS/integerRHS and integerLHS/doubleRHS!isReallyReal are optimized (both sides mode 'numeric')
+         is.factor(x[[col]])+is.factor(RHS) == 1L ||   # but factor is also mode 'numeric' so treat that separately
+         is.integer(x[[col]]) && isReallyReal(RHS) ) { # and if RHS contains fractions then don't optimize that as bmerge truncates the fractions to match to the target integer type
+      # re-direct non-matching type cases to base R, as data.table's binary
       # search based join is strict in types. #957, #961 and #1361
+      # the mode() checks also deals with NULL since mode(NULL)=="NULL" and causes this return, as one CRAN package (eplusr 0.9.1) relies on
       return(NULL)
     }
     if(is.character(x[[col]]) && !operator %chin% c("==", "%in%", "%chin%")) return(NULL) ## base R allows for non-equi operators on character columns, but these can't be optimized.
