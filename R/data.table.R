@@ -2934,6 +2934,7 @@ isReallyReal <- function(x) {
     if(col %chin% names(i)) return(NULL) ## repeated appearance of the same column not suported (e.g. DT[x < 3 & x < 5])
     ## now check the RHS of stub
     RHS = eval(stub[[3L]], x, enclos)
+    if (is.null(RHS)) return(NULL)
     # fix for #961
     if (is.list(RHS)) RHS = as.character(RHS)
     if (length(RHS) != 1 && !operator %chin% c("%in%", "%chin%")){
