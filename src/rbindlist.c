@@ -804,34 +804,30 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
 SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
 
   R_len_t i, j, k, nx, li, si, oi;
-  SEXP dt, ans, order, start, lens, grpid, index;
   if (TYPEOF(nomatch) != INTSXP || length(nomatch) != 1) error("'nomatch' must be an integer of length 1");
   if (!length(x) || isNull(x)) return(allocVector(INTSXP, 0));
   if (TYPEOF(x) != STRSXP) error("'x' must be a character vector");
   nx=length(x);
   if (!length(table) || isNull(table)) {
-    ans = PROTECT(allocVector(INTSXP, nx));
+    SEXP ans = PROTECT(allocVector(INTSXP, nx));
     for (i=0; i<nx; i++) INTEGER(ans)[i] = INTEGER(nomatch)[0];
     UNPROTECT(1);
     return(ans);
   }
   if (TYPEOF(table) != STRSXP) error("'table' must be a character vector");
   // Done with special cases. On to the real deal.
-  {
-    // start new scope to ensure tt is used just here
-    SEXP tt = PROTECT(allocVector(VECSXP, 2));
-    SET_VECTOR_ELT(tt, 0, x);
-    SET_VECTOR_ELT(tt, 1, table);
-    dt = PROTECT(unlist2(tt));
-    UNPROTECT(1);
-  }
+
+  SEXP tt = PROTECT(allocVector(VECSXP, 2));
+  SET_VECTOR_ELT(tt, 0, x);
+  SET_VECTOR_ELT(tt, 1, table);
+  SEXP dt = PROTECT(unlist2(tt));
 
   // order - first time
-  order = PROTECT(fast_order(dt, 2, 1));
-  start = getAttrib(order, sym_starts);
-  lens  = PROTECT(uniq_lengths(start, length(order))); // length(order) = nrow(dt)
-  grpid = VECTOR_ELT(dt, 1);
-  index = VECTOR_ELT(dt, 2);
+  SEXP order = PROTECT(fast_order(dt, 2, 1));
+  SEXP start = getAttrib(order, sym_starts);
+  SEXP lens  = PROTECT(uniq_lengths(start, length(order))); // length(order) = nrow(dt)
+  SEXP grpid = VECTOR_ELT(dt, 1);
+  SEXP index = VECTOR_ELT(dt, 2);
 
   // replace dt[1], we don't need it anymore
   k=0;
@@ -842,12 +838,11 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
     k += j;
   }
   // order - again
-  UNPROTECT(2); // order, lens
   order = PROTECT(fast_order(dt, 2, 1));
   start = getAttrib(order, sym_starts);
   lens  = PROTECT(uniq_lengths(start, length(order)));
 
-  ans = PROTECT(allocVector(INTSXP, nx));
+  SEXP ans = PROTECT(allocVector(INTSXP, nx));
   k = 0;
   for (i=0; i<length(lens); i++) {
     li = INTEGER(lens)[i];
@@ -856,7 +851,7 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
     if (oi > nx-1) continue;
     INTEGER(ans)[oi] = (li == 2) ? INTEGER(index)[INTEGER(order)[si+1]-1]+1 : INTEGER(nomatch)[0];
   }
-  UNPROTECT(4); // order, lens, ans
+  UNPROTECT(7);
   return(ans);
 }
 
