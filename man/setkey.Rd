@@ -108,7 +108,7 @@ you add, remove or reorder columns in a few months time, a \code{setkey} by colu
 number will then refer to a different column, possibly returning incorrect results
 with no warning. (A similar concept exists in SQL, where \code{"select * from ..."}
 is considered poor programming style when a robust, maintainable system is
-required.)  If you really wish to use column numbers, it's possible but
+required.)  If you really wish to use column numbers, it is possible but
 deliberately a little harder; e.g., \code{setkeyv(DT,colnames(DT)[1:2])}.
 }
 \value{
