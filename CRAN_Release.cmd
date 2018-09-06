@@ -140,7 +140,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.11.3.tar.gz
+R310 CMD INSTALL ./data.table_1.11.5.tar.gz
 R310
 require(data.table)
 test.data.table()
@@ -152,10 +152,12 @@ test.data.table()
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.11.3.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.11.5.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
+# revert ~/.R/Makevars
+R CMD build .
 
 
 #####################################################
@@ -274,6 +276,7 @@ cat packages/lib/data.table/libs/*check
 #   rchk has an internal stack which can exhaust. Clearing the current set of problems (e.g. as displayed
 #   on CRAN) is not sufficient because new problems can be found because it didn't get that far before.
 #   hence repeating locally until clear is necessary.
+
 
 ###############################################
 #  QEMU to emulate big endian
