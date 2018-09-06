@@ -61,9 +61,9 @@ compactprint <- function(DT, topn=2L) {
              " Types=", makeString(substring(sapply(DT, typeof), 1L, 3L)),
              " Classes=", makeString(tt), "]")
   if (nrow(DT)) {
-    print(copy(DT)[,(cn):=""], topn=topn)
+    print(copy(DT)[,(cn):="",verbose=FALSE], topn=topn, class=FALSE)
   } else {
-    print(DT)  # "Empty data.table (0 rows) of <ncol> columns ...
+    print(DT, class=FALSE)  # "Empty data.table (0 rows) of <ncol> columns ...
     if (ncol(DT)) cat(cn,"\n")
   }
   invisible()

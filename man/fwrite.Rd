@@ -15,7 +15,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   logical01 = getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
   logicalAsInt = logical01,  # deprecated
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
-  buffMB = 8L, nThread = getDTthreads(),
+  buffMB = 8L, nThread = getDTthreads(verbose),
   showProgress = getOption("datatable.showProgress", interactive()),
   verbose = getOption("datatable.verbose", FALSE))
 }

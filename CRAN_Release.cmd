@@ -12,6 +12,7 @@ q("no")
 # Ensure latest version of R otherwise problems with CRAN not finding dependents that depend on latest R
 # e.g. mirror may have been disabled in sources.list when upgrading ubuntu
 
+cd ~/GitHub/data.table
 rm ./src/*.so
 rm ./src/*.o
 rm -rf ./data.table.Rcheck
@@ -76,7 +77,6 @@ grep mkChar.*Scalar *.c
 grep alloc.*mkChar *.c
 grep Scalar.*mkChar *.c
 grep "getAttrib.*mk" *.c   # use sym_* in getAttrib calls
-grep "PROTECT *( *getAttrib" *.c  # attributes are already protected
 grep "\"starts\"" *.c     --exclude init.c
 grep "setAttrib(" *.c      # scan all setAttrib calls manually as a double-check
 grep "install(" *.c       --exclude init.c   # TODO: perhaps in future pre-install all constants
@@ -95,7 +95,7 @@ grep ScalarString *.c
 # If a PROTECT is not needed then a comment is added explaining why and including "PROTECT" in the comment to pass this grep
 grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
-cd ~/GitHub/data.table
+cd ..
 R
 cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently gcc-7) as CRAN does
 saf = options()$stringsAsFactors
@@ -103,22 +103,23 @@ options(stringsAsFactors=!saf)    # check tests (that might be run by user) are 
 test.data.table()
 q("no")
 R CMD build .
-R CMD check data.table_1.11.3.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
-R CMD INSTALL data.table_1.11.3.tar.gz
-R
-require(data.table)
-test.data.table()
-test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
-gctorture2(step=50)
-system.time(test.data.table())  # apx 75min
+R CMD check data.table_1.11.5.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
+R CMD INSTALL data.table_1.11.5.tar.gz
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.11.3.tar.gz
+R CMD check data.table_1.11.5.tar.gz
 rm ~/.Renviron
+
+R
+require(data.table)
+test.data.table()
+test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
+gctorture2(step=50)
+system.time(test.data.table())  # apx 75min
 
 # Upload to win-builder: release, dev & old-release
 

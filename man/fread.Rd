@@ -21,7 +21,7 @@ strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE,
 key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress", interactive()),
 data.table=getOption("datatable.fread.datatable", TRUE),
-nThread=getDTthreads(),
+nThread=getDTthreads(verbose),
 logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
 autostart=NA
 )

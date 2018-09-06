@@ -2329,7 +2329,7 @@ test(867, names(ans2<-DT[,list(name1=sum(v),name2=sum(w)),by="a,b"]), c("a","b",
 test(868, ans1, ans2)
 # and related to setnames, too
 DT = data.table(a=1:3,b=1:6,key="a")
-test(869, DT[J(2,42,84),print(.SD),by=.EACHI], output=c("   b", "1: 2", "2: 5", "Empty data.table (0 rows) of 3 cols: a,V2,V3"))
+test(869, DT[J(2,42,84),print(.SD),by=.EACHI], output="   b\n.*1.*2\n2:.*5.*Empty data.table.*of 3 cols: a,V2,V3")  # .* for when verbose mode
 
 # Test setnames with duplicate colnames
 DT = data.table(a=1:3,b=4:6,b=7:9)
@@ -2416,7 +2416,7 @@ for (ne in seq_along(eols)) {
   headDT = head(DT,nr)[,seq_len(if (nc==0) ncol(DT) else nc),with=FALSE]
   if (nr==0) for (j in seq_len(ncol(headDT))) set(headDT,j=j,value=logical())  # when read back in empty cols are the lowest type (logical)
   f = tempfile()
-  lines = capture.output(fwrite(headDT))
+  lines = capture.output(fwrite(headDT, verbose=FALSE))
   cat(paste(lines,collapse=eol), file=f, sep="")  # so last line abruptly ends (missing last eol) to test that, otherwise could just pass eol to fwrite
   # on unix we simulate Windows too. On Windows \n will write \r\n (and \r\n will write \r\r\n)
   testIDtail = nr/100 + nc/1000 + ne/10000
@@ -9145,8 +9145,6 @@ DT = data.table(A=c(2L,NA,3L), B=c(NA,4:5))
 test(1658.23, fwrite(DT), output='A,B\n2,\n,4\n3,5')
 test(1658.24, fwrite(DT, na="NA", verbose=TRUE), output='Writing column names.*"A","B".*2,NA\nNA,4\n3,5')
 
-options(oldverbose)
-
 # wrong argument types
 test(1658.23, fwrite(ok_dt, 1), error="is.character\\(file\\).*not TRUE")
 test(1658.24, fwrite(ok_dt, quote=123), error="identical\\(quote.*auto.*FALSE.*TRUE")
@@ -9161,11 +9159,13 @@ test(1658.28, fwrite(data.table(NULL)), NULL, warning="Nothing to write")
 test(1658.29, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="id,v\nA,1.1\nB,0\nC,9.9")
 
 # logical NA as "NA" when logical01=TRUE, instead of the default na="" which writes all types including <NA> in character column as ,, consistently.
-test(1658.30, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="\"id\",\"bool\"\n1,1\n2,NA\n3,0")
+test(1658.31, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="\"id\",\"bool\"\n1,1\n2,NA\n3,0")
 
 # POSIXct
-test(1658.31, fwrite(data.table(D = as.POSIXct(seq.Date(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
+test(1658.32, fwrite(data.table(D = as.POSIXct(seq.Date(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
     output="D\n2038-01-19T00:00:00Z\n2038-01-20T00:00:00Z")
+
+options(oldverbose)
 
 ## End fwrite tests
 
@@ -10350,9 +10350,9 @@ if (test_bit64) {
 
 # for completeness, added test for NA problem to close #1837.
 DT = data.table(x=NA)
-test(1751.1, capture.output(fwrite(DT)), c("x",""))
-test(1751.2, capture.output(fwrite(DT,na="")), c("x",""))
-test(1751.3, capture.output(fwrite(DT,na="NA")), c("\"x\"","NA"))
+test(1751.1, capture.output(fwrite(DT, verbose=FALSE)), c("x",""))
+test(1751.2, capture.output(fwrite(DT,na="",verbose=FALSE)), c("x",""))
+test(1751.3, capture.output(fwrite(DT,na="NA",verbose=FALSE)), c("\"x\"","NA"))
 test(1751.4, fread({fwrite(DT, f<-tempfile());f}), DT)  # the important thing
 unlink(f)
 
@@ -11656,7 +11656,7 @@ test(1891.4, fread("A,B,C\n1,foo,bar\n2", fill=TRUE, na.strings="NA"), data.tabl
 # preserving "" and NA_character_, #2214
 DT = data.table(chr = c(NA, "", "a"), num = c(NA, NA, 2L))
 test(1892.1, fread({fwrite(DT,f<-tempfile());f}, na.strings=""), DT); unlink(f)
-test(1892.2, capture.output(fwrite(DT)), c("chr,num", ",", "\"\"," , "a,2"))
+test(1892.2, capture.output(fwrite(DT, verbose=FALSE)), c("chr,num", ",", "\"\"," , "a,2"))
 test(1892.3, fread('A,B\n1,"foo"\n2,\n3,""\n', na.strings="")$B, c("foo", NA, ""))  # for issue #2217
 
 # print(DT) should print NA in character columns using <NA> like base R to distinguish from "" and "NA"
@@ -12056,8 +12056,10 @@ test(1915, fread(str, select = c(5, 1, 3)),
                 Petal.Length = c(1.4, 1.4, 1.3, 1.5, 1.4)))
 
 # unit tests for #2169 which was already fixed in ec05f8b/src/fwrite.c#L59
-test(1916.1, fwrite(data.table(foo = c(NA, TRUE, FALSE)), logical01 = TRUE, na = 'EMPTY'), output=c("\"foo\"","EMPTY","1","0")) # this might need to be changed after #2964 will be solved
-test(1916.2, fwrite(data.table(foo = c(NA, TRUE, FALSE)), logical01 = TRUE), output=c("foo","","1","0"))
+test(1916.1, fwrite(data.table(foo=c(NA, TRUE, FALSE)), logical01=TRUE, na='EMPTY', verbose=FALSE),
+             output=c("\"foo\"","EMPTY","1","0")) # this might need to be changed after #2964 will be solved
+test(1916.2, fwrite(data.table(foo=c(NA, TRUE, FALSE)), logical01=TRUE, verbose=FALSE),
+             output=c("foo","","1","0"))
 
 # #732 prefixes i., x. works during join and by=.EACHI
 dta <- data.table(idx=1:3, vala=4:6, key="idx")
