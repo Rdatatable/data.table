@@ -19,7 +19,7 @@ frankv(x, cols=seq_along(x), order=1L, na.last=TRUE,
 
 }
 \arguments{
-  \item{x}{ A vector, or list with all it's elements identical in length or data.frame or data.table. }
+  \item{x}{ A vector, or list with all its elements identical in length or data.frame or data.table. }
   \item{...}{ Only for lists, data.frames and data.tables. The columns to calculate ranks based on. Do not quote column names. If ... is missing, all columns are considered by default. To sort by a column in descending order prefix a "-", e.g., frank(x, a, -b, c). The -b works when b is of type character as well.}
   \item{cols}{ A character vector of column names (or numbers) of x, to which obtain ranks for. }
   \item{order}{ An integer vector with only possible values of 1 and -1, corresponding to ascending and descending order. The length of order must be either 1 or equal to that of cols. If length(order) == 1, it's recycled to length(cols). }

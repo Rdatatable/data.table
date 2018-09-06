@@ -47,7 +47,7 @@ by. Do not add \code{"-"} here. Use \code{order} argument instead.}
 \code{length(order) == 1}, it's recycled to \code{length(cols)}. }
 \item{na.last}{logical. If \code{TRUE}, missing values in the data are placed
 last; if \code{FALSE}, they are placed first; if \code{NA} they are removed.
-\code{na.last=NA} is valid only for \code{x[order(., na.last)]} and it's
+\code{na.last=NA} is valid only for \code{x[order(., na.last)]} and its
 default is \code{TRUE}. \code{setorder} and \code{setorderv} only accept
 TRUE/FALSE with default \code{FALSE}.}
 }
@@ -94,7 +94,7 @@ for you -- which can happen on servers/services since the locale comes from the 
 was started in. By contrast, \code{"america" < "BRAZIL"} is always false in \code{data.table} regardless of the way your R session was started.
 
 If \code{setorder} results in reordering of the rows of a keyed \code{data.table},
-then it's key will be set to \code{NULL}.
+then its key will be set to \code{NULL}.
 }
 \value{
 The input is modified by reference, and returned (invisibly) so it can be used
