@@ -20,7 +20,7 @@ based on the columns (and column order) provided. It reorders the table
 
 Also \code{x[order(.)]} is now optimised internally to use data.table's fast
 order. data.table always reorders in "C-locale" (see Details). To sort by session
-locale, use \code{x[base::order(.)]}. 
+locale, use \code{x[base::order(.)]}.
 
 \code{bit64::integer64} type is also supported for reordering rows of a
 \code{data.table}.
@@ -44,7 +44,7 @@ by. Do not add \code{"-"} here. Use \code{order} argument instead.}
 \item{order}{ An integer vector with only possible values of \code{1} and
 \code{-1}, corresponding to ascending and descending order. The length of
 \code{order} must be either \code{1} or equal to that of \code{cols}. If
-\code{length(order) == 1}, it's recycled to \code{length(cols)}. }
+\code{length(order) == 1}, it is recycled to \code{length(cols)}. }
 \item{na.last}{logical. If \code{TRUE}, missing values in the data are placed
 last; if \code{FALSE}, they are placed first; if \code{NA} they are removed.
 \code{na.last=NA} is valid only for \code{x[order(., na.last)]} and its
@@ -71,13 +71,13 @@ sets the \code{sorted} attribute.
 \code{na.last} argument, by default, is \code{FALSE} for \code{setorder} and
 \code{setorderv} to be consistent with \code{data.table}'s \code{setkey} and
 is \code{TRUE} for \code{x[order(.)]} to be consistent with \code{base::order}.
-Only \code{x[order(.)]} can have \code{na.last = NA} as it's a subset operation
+Only \code{x[order(.)]} can have \code{na.last = NA} as it is a subset operation
 as opposed to \code{setorder} or \code{setorderv} which reorders the data.table
 by reference.
 
 \code{data.table} always reorders in "C-locale".
 As a consequence, the ordering may be different to that obtained by \code{base::order}.
-In English locales, for example, sorting is case-sensitive in C-locale. 
+In English locales, for example, sorting is case-sensitive in C-locale.
 Thus, sorting \code{c("c", "a", "B")} returns \code{c("B", "a", "c")} in \code{data.table}
  but \code{c("a", "B", "c")} in \code{base::order}. Note this makes no difference in most cases
 of data; both return identical results on ids where only upper-case or lower-case letters are present (\code{"AB123" < "AC234"}
