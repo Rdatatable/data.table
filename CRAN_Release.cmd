@@ -182,7 +182,7 @@ cd R-devel
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 cd ~/GitHub/data.table
-Rdevel CMD INSTALL data.table_1.11.3.tar.gz
+Rdevel CMD INSTALL data.table_1.11.5.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel
 install.packages(c("bit64","xts","nanotime"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
@@ -568,11 +568,11 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' para
 Bump versions in DESCRIPTION and NEWS (without 'on CRAN date' text as that's not yet known) to even release number
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
 R CMD build .
-R CMD check --as-cran data.table_1.11.4.tar.gz   # install.packages("xml2") first to check the 150 URLs in NEWS.md under --as-cran, then remove xml2 again
+R CMD check --as-cran data.table_1.11.6.tar.gz   # install.packages("xml2") first to check the 150 URLs in NEWS.md under --as-cran, then remove xml2 again
 Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
 Submit to CRAN. Message template :
 -----
-475 CRAN + 111 BIOC rev deps checked ok.
+543 CRAN + 134 BIOC rev deps checked ok.
 9 CRAN packages will break : easycsv, fst, iml, PhenotypeSimulator, popEpi, sdcMicro, SIRItoGTFS, SpaDES.core, splitstackshape
 The maintainers have been contacted; some may have updated already.
 Thanks and best, Matt
@@ -580,8 +580,8 @@ Thanks and best, Matt
 1. Bump version in DESCRIPTION to next odd number
 2. Add new heading in NEWS for the next dev version. Add "(on CRAN date)" on the released heading if already accepted.
 3. Bump 3 version numbers in Makefile
-Push to GitHub so dev can continue. Commit message format "1.11.0 submitted to CRAN. Bump to 1.11.1"
-Bump dev badge on homepage
+Push to GitHub so dev can continue. Commit message format "1.11.6 submitted to CRAN. Bump to 1.11.7"
+Bump dev number text in homepage banner
 Cross fingers accepted first time. If not, push changes to devel and backport locally
 Close milestone
 ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
