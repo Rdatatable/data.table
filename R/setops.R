@@ -67,7 +67,8 @@ fintersect <- function(x, y, all=FALSE) {
     jn.on = c(".seqn",setdiff(names(x),".seqn"))
     x[y, .SD, .SDcols=setdiff(names(x),".seqn"), nomatch=0L, on=jn.on]
   } else {
-    x[funique(y), nomatch=0L, on=names(x), mult="first"]
+    z = funique(y)  # fixes #3034. When .. prefix in i= is implemented (TODO), this can be x[funique(..y), on=, multi=]
+    x[z, nomatch=0L, on=names(x), mult="first"]
   }
 }
 
@@ -115,7 +116,7 @@ fsetequal <- function(x, y, all=TRUE) {
   if (!all) {
     x = funique(x)
     y = funique(y)
-  } 
+  }
   isTRUE(all.equal.data.table(x, y, check.attributes = FALSE, ignore.row.order = TRUE))
 }
 

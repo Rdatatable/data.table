@@ -12173,6 +12173,10 @@ unlink(f)
 
 test(1940, data.table(A=1:3, .SD=4:6), error=".SD.*has special meaning")
 
+# fintersect column name internal conflict of 'y', #3034
+test(1941.1, fintersect(data.table(y=1), data.table(y=2)), data.table(y=numeric()))
+test(1941.2, fintersect(data.table(y=1), data.table(y=1)), data.table(y=1))
+
 
 ###################################
 #  Add new tests above this line  #
