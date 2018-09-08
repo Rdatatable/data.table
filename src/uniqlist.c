@@ -22,39 +22,80 @@ SEXP uniqlist(SEXP l, SEXP order)
   iidx[0] = 1; // first row is always the first of the first group
   byorder = INTEGER(order)[0] != -1;
   // Using MISSING() does not seem stable under windows. Always having arguments passed in seems a good idea anyway.
-  thisi = byorder ? INTEGER(order)[0]-1 : 0;
-  for (i=1; i<nrow; i++) {
-    previ = thisi;
-    thisi = byorder ? INTEGER(order)[i]-1 : i;
-    j = ncol;  // the last column varies the most frequently so check that first and work backwards
-    b = TRUE;
-    while (--j>=0 && b) {
-      v=VECTOR_ELT(l,j);
-      switch (TYPEOF(v)) {
-      case INTSXP : case LGLSXP :  // NA_INTEGER==NA_LOGICAL checked in init.c
-        b=INTEGER(v)[thisi]==INTEGER(v)[previ]; break;
-      case STRSXP :
-        // fix for #469, when key is set, duplicated calls uniqlist, where encoding
-        // needs to be taken care of.
-        b=ENC2UTF8(STRING_ELT(v,thisi))==ENC2UTF8(STRING_ELT(v,previ)); break;  // marked non-utf8 encodings are converted to utf8 so as to match properly when inputs are of different encodings.
-      case REALSXP :
-        ulv = (unsigned long long *)REAL(v);
-        b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
-        if (!b) {
-          class = getAttrib(v, R_ClassSymbol);
-          twiddle = (isString(class) && STRING_ELT(class, 0)==char_integer64) ? &i64twiddle : &dtwiddle;
-          b = twiddle(ulv, thisi, 1) == twiddle(ulv, previ, 1);
-        }
-        break;
-        // TO DO: store previ twiddle call, but it'll need to be vector since this is in a loop through columns. Hopefully the first == will short circuit most often
-      default :
-        error("Type '%s' not supported", type2char(TYPEOF(v)));
+
+  if (ncol==1 && !byorder) {
+    // e.g. by=key(DT)[1]
+
+#define COMPARE1                                                                 \
+      prev = *vd;                                                                \
+      for (int i=1; i<nrow; i++) {                                               \
+        this = *++vd;                                                            \
+        if (this!=prev
+#define COMPARE2                                                                 \
+                        ) {                                                      \
+          iidx[len++] = i+1;                                                     \
+          if (len>=isize) {                                                      \
+            isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));     \
+            iidx = Realloc(iidx, isize, int);                                    \
+          }                                                                      \
+        }                                                                        \
+        prev = this;                                                             \
       }
+
+    SEXP v = VECTOR_ELT(l,0);
+    switch(TYPEOF(v)) {
+    case INTSXP : case LGLSXP : {
+      int *vd=INTEGER(v), prev, this;
+      COMPARE1 COMPARE2
+    } break;
+    case STRSXP : {
+      SEXP *vd=DATAPTR(v), prev, this;
+      COMPARE1 && ENC2UTF8(this)!=ENC2UTF8(prev) COMPARE2   // but most of the time there are equal, so ENC2UTF8 doesn't need to be called
+    } break;
+    case REALSXP : {
+      uint64_t *vd=(uint64_t *)REAL(v), prev, this;
+      COMPARE1 COMPARE2
+    } break;
+    default :
+      error("Type '%s' not supported", type2char(TYPEOF(v)));
     }
-    if (!b) iidx[len++] = i+1;
-    if (len >= isize) {
-      isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));
-      iidx = Realloc(iidx, isize, int);
+  } else {
+    thisi = byorder ? INTEGER(order)[0]-1 : 0;
+    for (i=1; i<nrow; i++) {
+      previ = thisi;
+      thisi = byorder ? INTEGER(order)[i]-1 : i;
+      j = ncol;  // the last column varies the most frequently so check that first and work backwards
+      b = TRUE;
+      while (--j>=0 && b) {
+        v=VECTOR_ELT(l,j);
+        switch (TYPEOF(v)) {
+        case INTSXP : case LGLSXP :  // NA_INTEGER==NA_LOGICAL checked in init.c
+          b=INTEGER(v)[thisi]==INTEGER(v)[previ]; break;
+        case STRSXP :
+          // fix for #469, when key is set, duplicated calls uniqlist, where encoding
+          // needs to be taken care of.
+          b=ENC2UTF8(STRING_ELT(v,thisi))==ENC2UTF8(STRING_ELT(v,previ)); break;  // marked non-utf8 encodings are converted to utf8 so as to match properly when inputs are of different encodings.
+        case REALSXP :
+          ulv = (unsigned long long *)REAL(v);
+          b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
+          if (!b) {
+            class = getAttrib(v, R_ClassSymbol);
+            twiddle = (isString(class) && STRING_ELT(class, 0)==char_integer64) ? &i64twiddle : &dtwiddle;
+            b = twiddle(ulv, thisi, 1) == twiddle(ulv, previ, 1);
+          }
+          break;
+          // TO DO: store previ twiddle call, but it'll need to be vector since this is in a loop through columns. Hopefully the first == will short circuit most often
+        default :
+          error("Type '%s' not supported", type2char(TYPEOF(v)));
+        }
+      }
+      if (!b) {
+        iidx[len++] = i+1;
+        if (len >= isize) {
+          isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));
+          iidx = Realloc(iidx, isize, int);
+        }
+      }
     }
   }
   PROTECT(ans = allocVector(INTSXP, len));
