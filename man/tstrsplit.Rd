@@ -12,7 +12,7 @@ tstrsplit(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE)
 }
 \arguments{
 	\item{x}{The vector to split (and transpose).}
-  \item{...}{ All the arguments to be passed to \code{strsplit}. }
+  \item{...}{ All the arguments to be passed to \code{\link[base]{strsplit}}. }
   \item{fill}{ Default is \code{NA}. It is used to fill shorter list elements so as to return each element of the transposed result of equal lengths. }
   \item{type.convert}{\code{TRUE} calls \code{\link{type.convert}} with \code{as.is=TRUE} on the columns.}
   \item{keep}{Specify indices corresponding to just those list elements to retain in the transposed result. Default is to return all.}
