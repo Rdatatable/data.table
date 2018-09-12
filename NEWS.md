@@ -39,6 +39,8 @@
 
 10. `fintersect` failed on tables with a column called `y`, [#3034](https://github.com/Rdatatable/data.table/issues/3034). Thanks to Maxim Nazarov for reporting.
 
+11. Compilation fails in AIX because NAN and INFINITY macros definition in AIX make them not constant literals, [#3043](https://github.com/Rdatatable/data.table/pull/3043). Thanks to Ayappan for reporting and fixing.
+
 #### NOTES
 
 1. The type coercion warning message has been improved, [#2989](https://github.com/Rdatatable/data.table/pull/2989). Thanks to @sarahbeeysian on [Twitter](https://twitter.com/sarahbeeysian/status/1021359529789775872) for highlighting. For example, given the follow statements:
