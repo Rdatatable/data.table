@@ -75,10 +75,12 @@ static freadMainArgs args;  // global for use by DTPRINT
 const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "string"};
 int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         8      };
 
-// NAN and INFINITY constants are float, so cast to double once up front.
+// In AIX, NAN and INFINITY don't qualify as constant literals. Refer: PR #3043
+// So we assign them through below init function.
 static double NAND;
 static double INFD;
 
+// NAN and INFINITY constants are float, so cast to double once up front.
 void init() {
   NAND = (double)NAN;
   INFD = (double)INFINITY;
