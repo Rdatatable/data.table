@@ -50,11 +50,15 @@ SEXP uniqlist(SEXP l, SEXP order)
     } break;
     case STRSXP : {
       SEXP *vd=DATAPTR(v), prev, this;
-      COMPARE1 && ENC2UTF8(this)!=ENC2UTF8(prev) COMPARE2   // but most of the time there are equal, so ENC2UTF8 doesn't need to be called
+      COMPARE1 && ENC2UTF8(this)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
     } break;
     case REALSXP : {
       uint64_t *vd=(uint64_t *)REAL(v), prev, this;
-      COMPARE1 COMPARE2
+      if (getNumericRounding_C()==0 /*default*/ || inherits(v, "integer64")) {
+        COMPARE1 COMPARE2
+      } else {
+        COMPARE1 && dtwiddle(&this, 0, 1)!=dtwiddle(&prev, 0, 1) COMPARE2
+      }
     } break;
     default :
       error("Type '%s' not supported", type2char(TYPEOF(v)));
