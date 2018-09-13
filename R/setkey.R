@@ -111,9 +111,18 @@ key <- function(x) attr(x,"sorted",exact=TRUE)
 indices <- function(x, vectors = FALSE) {
   ans = names(attributes(attr(x,"index",exact=TRUE)))
   if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
-  ans <- gsub("^__","",ans)
+  ans <- gsub("^__","",ans)     # the leading __ is internal only, so remove that in result
   if (isTRUE(vectors))
     ans <- strsplit(ans, "__", fixed = TRUE)
+  ans
+}
+
+getindex <- function(x, name) {
+  # name can be "col", or "col1__col2", or c("col1","col2")
+  ans = attr(attr(x, 'index'), paste0("__",name,collapse=""), exact=TRUE)
+  if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) {
+    stop("Internal error: index '",name,"' exists but is invalid")
+  }
   ans
 }
 

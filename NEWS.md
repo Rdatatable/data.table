@@ -17,6 +17,8 @@
 
 6. New `options(datatable.CJ.names=TRUE)` changes `CJ()` to auto-name its inputs exactly as `data.table()` does, [#1596](https://github.com/Rdatatable/data.table/issues/1596). Thanks @franknarf1 for the suggestion. Current default is `FALSE`; i.e. no change. The option's default will be changed to `TRUE` in v1.12.0 and then eventually the option will be removed. Any code that depends on `CJ(x,y)$V1` will need to be changed to `CJ(x,y)$x` and is more akin to a bug fix due to the inconsistency with `data.table()`.
 
+7. If an appropriate index exists, `keyby=` will now use it. For example, given `setindex(DT,colA,colB)`, both `DT[,j,keyby=colA]` (a leading subset of the index columns) and `DT[,j,keyby=.(colA,colB)]` will use it but not `DT[,j,keyby=.(colB,colA)]`. The option `options(datatable.use.index=FALSE)` will turn this feature off. Please always use `keyby=` unless you wish to retain the order of groups by first-appearance order (in which case use `by=`).
+
 #### BUG FIXES
 
 1. `fread` now respects the order of columns passed to `select=` when column numbers are used, [#2986](https://github.com/Rdatatable/data.table/issues/2986). It already respected the order when column names are used. Thanks @privefl for raising the issue.
