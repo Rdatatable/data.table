@@ -54,7 +54,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   maxgrpn = 0;
   if (LENGTH(o)) {
     isunsorted = 1; // for gmedian
-    for (int g=0, *od=INTEGER(o), *fd=INTEGER(f); g<ngrp; g++) {   // R API outside should help for very many small groups, pr#3045
+    for (int g=0, *od=INTEGER(o), *fd=INTEGER(f); g<ngrp; g++) {   // R API outside should help when very many small groups, pr#3045
       int *this = od + fd[g]-1;
       for (int j=0; j<grpsize[g]; j++)  grp[ this[j]-1 ] = g;
       if (grpsize[g]>maxgrpn) maxgrpn = grpsize[g];  // recalculate (may as well since looping anyway) and check below
@@ -101,33 +101,46 @@ SEXP gsum(SEXP x, SEXP narmArg)
   long double *s = calloc(ngrp, sizeof(long double));
   if (!s) error("Unable to allocate %d * %d bytes for gsum", ngrp, sizeof(long double));
   switch(TYPEOF(x)) {
-  case LGLSXP: case INTSXP:
-    for (int i=0; i<n; i++) {
-      int thisgrp = grp[i];
-      int ix = (irowslen == -1) ? i : irows[i]-1;
-      if(INTEGER(x)[ix] == NA_INTEGER) {
-        if (!narm) s[thisgrp] = NA_REAL;  // Let NA_REAL propogate from here. R_NaReal is IEEE.
-        continue;
+  case LGLSXP: case INTSXP: {
+    int *xd = INTEGER(x);
+    if (irowslen==-1) {
+      for (int i=0, *g=grp; i<n; i++) {
+        if (*xd==NA_INTEGER) {
+          if (!narm) s[*g] = NA_REAL;  // Let NA_REAL propogate from here (this is gforce, so no break here). R_NaReal is IEEE
+          g++; xd++;
+          continue;
+        }
+        s[*g++] += *xd++;     // no under/overflow here, s is long double (like base)
       }
-      s[thisgrp] += INTEGER(x)[ix];  // no under/overflow here, s is long double (like base)
+    } else {
+      for (int i=0, *g=grp; i<n; i++) {
+        int this = xd[irows[i]-1];
+        if (this==NA_INTEGER) {
+          if (!narm) s[*g] = NA_REAL;
+          g++;
+          continue;
+        }
+        s[*g++] += this;
+      }
     }
     ans = PROTECT(allocVector(INTSXP, ngrp));
+    xd = INTEGER(ans);
     for (int i=0; i<ngrp; i++) {
       if (s[i] > INT_MAX || s[i] < INT_MIN) {
         warning("Group %d summed to more than type 'integer' can hold so the result has been coerced to 'numeric' automatically, for convenience.", i+1);
         UNPROTECT(1);
         ans = PROTECT(allocVector(REALSXP, ngrp));
-        for (i=0; i<ngrp; i++) REAL(ans)[i] = (double)s[i];
+        double *tt = REAL(ans);
+        for (i=0; i<ngrp; i++) tt[i] = (double)s[i];
         break;
       } else if (ISNA(s[i])) {
-        INTEGER(ans)[i] = NA_INTEGER;
+        xd[i] = NA_INTEGER;
       } else {
-        INTEGER(ans)[i] = (int)s[i];
+        xd[i] = (int)s[i];
       }
-    }
+    }}
     break;
-  case REALSXP:
-    ans = PROTECT(allocVector(REALSXP, ngrp));
+  case REALSXP: {
     double *xd = REAL(x);                                // now-slower R API with altrep, outside
     if (irowslen==-1) {
       for (int i=0, *g=grp; i<n; i++) {
@@ -141,12 +154,13 @@ SEXP gsum(SEXP x, SEXP narmArg)
         s[*g++] += this;
       }
     }
+    ans = PROTECT(allocVector(REALSXP, ngrp));
     xd = REAL(ans);
     for (int i=0; i<ngrp; i++) {
       if (s[i] > DBL_MAX) xd[i] = R_PosInf;
       else if (s[i] < -DBL_MAX) xd[i] = R_NegInf;
       else xd[i] = (double)s[i];
-    }
+    }}
     break;
   default:
     free(s);
