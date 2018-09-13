@@ -26,7 +26,6 @@ static union {
 #endif
 
 SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
-  int i, j, g, *this;
   // clock_t start = clock();
   if (TYPEOF(env) != ENVSXP) error("env is not an environment");
   // The type of jsub is pretty flexbile in R, so leave checking to eval() below.
@@ -46,7 +45,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (LENGTH(f) != ngrp) error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp);
   grpn=0;
   grpsize = INTEGER(l);
-  for (i=0; i<ngrp; i++) grpn+=grpsize[i];
+  for (int i=0; i<ngrp; i++) grpn+=grpsize[i];
   if (LENGTH(o) && LENGTH(o)!=grpn) error("o has length %d but sum(l)=%d", LENGTH(o), grpn);
 
   grp = (int *)R_alloc(grpn, sizeof(int));
@@ -55,15 +54,15 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   maxgrpn = 0;
   if (LENGTH(o)) {
     isunsorted = 1; // for gmedian
-    for (g=0; g<ngrp; g++) {
-      this = INTEGER(o) + INTEGER(f)[g]-1;
-      for (j=0; j<grpsize[g]; j++)  grp[ this[j]-1 ] = g;
+    for (int g=0, *od=INTEGER(o), *fd=INTEGER(f); g<ngrp; g++) {   // R API outside should help when very many small groups, pr#3045
+      int *this = od + fd[g]-1;
+      for (int j=0; j<grpsize[g]; j++)  grp[ this[j]-1 ] = g;
       if (grpsize[g]>maxgrpn) maxgrpn = grpsize[g];  // recalculate (may as well since looping anyway) and check below
     }
   } else {
-    for (g=0; g<ngrp; g++) {
-      this = grp + INTEGER(f)[g]-1;
-      for (j=0; j<grpsize[g]; j++)  this[j] = g;
+    for (int g=0, *fd=INTEGER(f); g<ngrp; g++) {
+      int *this = grp + fd[g]-1;
+      for (int j=0; j<grpsize[g]; j++)  this[j] = g;
       if (grpsize[g]>maxgrpn) maxgrpn = grpsize[g];  // needed for #2046 and #2111 when maxgrpn attribute is not attached to empty o
     }
   }
@@ -89,58 +88,80 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
 
 // long double usage here results in test 648 being failed when running with valgrind
 // http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
-SEXP gsum(SEXP x, SEXP narm)
+SEXP gsum(SEXP x, SEXP narmArg)
 {
-  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
+  const bool narm = LOGICAL(narmArg)[0];
   if (!isVectorAtomic(x)) error("GForce sum can only be applied to columns, not .SD or similar. To sum all items in a list such as .SD, either add the prefix base::sum(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,sum),by=,.SDcols=]'");
   if (inherits(x, "factor")) error("sum is not meaningful for factors.");
-  int i, ix, thisgrp;
-  int n = (irowslen == -1) ? length(x) : irowslen;
+  const int n = (irowslen == -1) ? length(x) : irowslen;
   //clock_t start = clock();
   SEXP ans;
   if (grpn != n) error("grpn [%d] != length(x) [%d] in gsum", grpn, n);
   long double *s = calloc(ngrp, sizeof(long double));
   if (!s) error("Unable to allocate %d * %d bytes for gsum", ngrp, sizeof(long double));
   switch(TYPEOF(x)) {
-  case LGLSXP: case INTSXP:
-    for (i=0; i<n; i++) {
-      thisgrp = grp[i];
-      ix = (irowslen == -1) ? i : irows[i]-1;
-      if(INTEGER(x)[ix] == NA_INTEGER) {
-        if (!LOGICAL(narm)[0]) s[thisgrp] = NA_REAL;  // Let NA_REAL propogate from here. R_NaReal is IEEE.
-        continue;
+  case LGLSXP: case INTSXP: {
+    int *xd = INTEGER(x);
+    if (irowslen==-1) {
+      for (int i=0, *g=grp; i<n; i++) {
+        if (*xd==NA_INTEGER) {
+          if (!narm) s[*g] = NA_REAL;  // Let NA_REAL propogate from here (this is gforce, so no break here). R_NaReal is IEEE
+          g++; xd++;
+          continue;
+        }
+        s[*g++] += *xd++;     // no under/overflow here, s is long double (like base)
       }
-      s[thisgrp] += INTEGER(x)[ix];  // no under/overflow here, s is long double (like base)
+    } else {
+      for (int i=0, *g=grp; i<n; i++) {
+        int this = xd[irows[i]-1];
+        if (this==NA_INTEGER) {
+          if (!narm) s[*g] = NA_REAL;
+          g++;
+          continue;
+        }
+        s[*g++] += this;
+      }
     }
     ans = PROTECT(allocVector(INTSXP, ngrp));
-    for (i=0; i<ngrp; i++) {
+    xd = INTEGER(ans);
+    for (int i=0; i<ngrp; i++) {
       if (s[i] > INT_MAX || s[i] < INT_MIN) {
         warning("Group %d summed to more than type 'integer' can hold so the result has been coerced to 'numeric' automatically, for convenience.", i+1);
         UNPROTECT(1);
         ans = PROTECT(allocVector(REALSXP, ngrp));
-        for (i=0; i<ngrp; i++) REAL(ans)[i] = (double)s[i];
+        double *tt = REAL(ans);
+        for (i=0; i<ngrp; i++) tt[i] = (double)s[i];
         break;
       } else if (ISNA(s[i])) {
-        INTEGER(ans)[i] = NA_INTEGER;
+        xd[i] = NA_INTEGER;
       } else {
-        INTEGER(ans)[i] = (int)s[i];
+        xd[i] = (int)s[i];
       }
     }
-    break;
-  case REALSXP:
+  } break;
+  case REALSXP: {
+    double *xd = REAL(x);                                // now-slower R API with altrep, outside
+    if (irowslen==-1) {
+      for (int i=0, *g=grp; i<n; i++) {
+        if (narm && ISNAN(*xd)) {g++; xd++; continue;}   // narm first and leave to branch prediction
+        s[*g++] += *xd++;                                // accumulate in long-double like base. Let NA propogate when !narm
+      }
+    } else {
+      for (int i=0, *g=grp; i<n; i++) {
+        double this = xd[irows[i]-1];
+        if (narm && ISNAN(this)) {g++; continue;}
+        s[*g++] += this;
+      }
+    }
     ans = PROTECT(allocVector(REALSXP, ngrp));
-    for (i=0; i<n; i++) {
-      thisgrp = grp[i];
-      ix = (irowslen == -1) ? i : irows[i]-1;
-      if(ISNAN(REAL(x)[ix]) && LOGICAL(narm)[0]) continue;  // else let NA_REAL propogate from here
-      s[thisgrp] += REAL(x)[ix];  // done in long double, like base
+    xd = REAL(ans);
+    for (int i=0; i<ngrp; i++) {
+      if (s[i] > DBL_MAX) xd[i] = R_PosInf;
+      else if (s[i] < -DBL_MAX) xd[i] = R_NegInf;
+      else xd[i] = (double)s[i];
     }
-    for (i=0; i<ngrp; i++) {
-      if (s[i] > DBL_MAX) REAL(ans)[i] = R_PosInf;
-      else if (s[i] < -DBL_MAX) REAL(ans)[i] = R_NegInf;
-      else REAL(ans)[i] = (double)s[i];
-    }
-    break;
+  } break;
   default:
     free(s);
     error("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
@@ -155,7 +176,7 @@ SEXP gsum(SEXP x, SEXP narm)
 SEXP gmean(SEXP x, SEXP narm)
 {
   SEXP ans;
-  int i, ix, protecti=0, thisgrp, n;
+  int protecti=0;
   //clock_t start = clock();
   if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
   if (!isVectorAtomic(x)) error("GForce mean can only be applied to columns, not .SD or similar. Likely you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table.");
@@ -165,9 +186,10 @@ SEXP gmean(SEXP x, SEXP narm)
     switch(TYPEOF(ans)) {
     case LGLSXP: case INTSXP:
       ans = PROTECT(coerceVector(ans, REALSXP)); protecti++;
-    case REALSXP:
-      for (i=0; i<ngrp; i++) REAL(ans)[i] /= grpsize[i];  // let NA propogate
-      break;
+    case REALSXP: {
+      double *xd = REAL(ans);
+      for (int i=0; i<ngrp; i++) *xd++ /= grpsize[i];  // let NA propogate
+    } break;
     default :
       error("Internal error: gsum returned type '%s'. typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x)));
     }
@@ -175,7 +197,7 @@ SEXP gmean(SEXP x, SEXP narm)
     return(ans);
   }
   // na.rm=TRUE.  Similar to gsum, but we need to count the non-NA as well for the divisor
-  n = (irowslen == -1) ? length(x) : irowslen;
+  const int n = (irowslen == -1) ? length(x) : irowslen;
   if (grpn != n) error("grpn [%d] != length(x) [%d] in gsum", grpn, n);
 
   long double *s = calloc(ngrp, sizeof(long double));
@@ -186,18 +208,18 @@ SEXP gmean(SEXP x, SEXP narm)
 
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP:
-    for (i=0; i<n; i++) {
-      thisgrp = grp[i];
-      ix = (irowslen == -1) ? i : irows[i]-1;
+    for (int i=0; i<n; i++) {
+      int thisgrp = grp[i];
+      int ix = (irowslen == -1) ? i : irows[i]-1;
       if(INTEGER(x)[ix] == NA_INTEGER) continue;
       s[thisgrp] += INTEGER(x)[ix];  // no under/overflow here, s is long double
       c[thisgrp]++;
     }
     break;
   case REALSXP:
-    for (i=0; i<n; i++) {
-      thisgrp = grp[i];
-      ix = (irowslen == -1) ? i : irows[i]-1;
+    for (int i=0; i<n; i++) {
+      int thisgrp = grp[i];
+      int ix = (irowslen == -1) ? i : irows[i]-1;
       if (ISNAN(REAL(x)[ix])) continue;
       s[thisgrp] += REAL(x)[ix];
       c[thisgrp]++;
@@ -208,7 +230,7 @@ SEXP gmean(SEXP x, SEXP narm)
     error("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
   }
   ans = PROTECT(allocVector(REALSXP, ngrp));
-  for (i=0; i<ngrp; i++) {
+  for (int i=0; i<ngrp; i++) {
     if (c[i]==0) { REAL(ans)[i] = R_NaN; continue; }  // NaN to follow base::mean
     s[i] /= c[i];
     if (s[i] > DBL_MAX) REAL(ans)[i] = R_PosInf;
