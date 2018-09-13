@@ -1472,7 +1472,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 
   } else {
     # Find the groups, using 'byval' ...
-    if (missing(by)) stop("Internal error, by is missing")
+    if (missing(by)) stop("Internal error: by= is missing")   # nocov
 
     if (length(byval) && length(byval[[1L]])) {
       if (!bysameorder && identical(byindex,FALSE)) {
