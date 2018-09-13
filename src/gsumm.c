@@ -54,14 +54,14 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   maxgrpn = 0;
   if (LENGTH(o)) {
     isunsorted = 1; // for gmedian
-    for (int g=0; g<ngrp; g++) {
-      int *this = INTEGER(o) + INTEGER(f)[g]-1;
+    for (int g=0, *od=INTEGER(o), *fd=INTEGER(f); g<ngrp; g++) {   // R API outside should help for very many small groups, pr#3045
+      int *this = od + fd[g]-1;
       for (int j=0; j<grpsize[g]; j++)  grp[ this[j]-1 ] = g;
       if (grpsize[g]>maxgrpn) maxgrpn = grpsize[g];  // recalculate (may as well since looping anyway) and check below
     }
   } else {
-    for (int g=0; g<ngrp; g++) {
-      int *this = grp + INTEGER(f)[g]-1;
+    for (int g=0, *fd=INTEGER(f); g<ngrp; g++) {
+      int *this = grp + fd[g]-1;
       for (int j=0; j<grpsize[g]; j++)  this[j] = g;
       if (grpsize[g]>maxgrpn) maxgrpn = grpsize[g];  // needed for #2046 and #2111 when maxgrpn attribute is not attached to empty o
     }
