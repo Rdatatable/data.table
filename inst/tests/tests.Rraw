@@ -12188,16 +12188,22 @@ test(1942.2, DT[,sum(v),keyby=id1,verbose=TRUE], data.table(id1=c("D","A","C"), 
 setindex(DT,id2)
 test(1942.3, DT[,sum(v),keyby=id2,verbose=TRUE], data.table(id2=INT(3,9,2), V1=INT(6,6,3), key="id2"), output="Finding groups using uniqlist on index 'id2")
 setindex(DT,id3)
+oldnr = getNumericRounding()  # TODO: return old
+setNumericRounding(0)
 test(1942.4, DT[,sum(v),keyby=id3,verbose=TRUE], data.table(id3=c(3.4, 9.1, 3.3), V1=INT(4,7,4), key="id3"), output="Finding groups using uniqlist on index 'id3'")
+setNumericRounding(1)
+test(1942.5, DT[,sum(v),keyby=id3,verbose=TRUE], data.table(id3=c(3.4, 9.1, 3.3), V1=INT(4,7,4), key="id3"), output="Finding groups using uniqlist on index 'id3'")
+setNumericRounding(oldnr)
 setindex(DT, NULL)
-test(1942.5, indices(DT), NULL)
+test(1942.6, indices(DT), NULL)
 setindex(DT,id1,id2)
-test(1942.6, DT[,sum(v),keyby=id1,verbose=TRUE], data.table(id1=c("D","A","C"), V1=INT(1,6,8), key="id1"), output="Finding groups using uniqlist on index 'id1__id2'")
-test(1942.7, DT[,sum(v),keyby=.(id1,id2),verbose=TRUE], data.table(id1=c("A","C","C","D"), id2=INT(9,2,3,3), V1=INT(6,3,5,1), key="id1,id2"), output="Finding groups using uniqlist on index 'id1__id2'")
-test(1942.8, DT[,sum(v),keyby=.(id2,id1),verbose=TRUE], data.table(id2=INT(2,3,3,9), id1=c("C","C","D","A"), V1=INT(3,5,1,6), key="id2,id1"), output="Finding groups using forderv")
+test(1942.7, DT[,sum(v),keyby=id1,verbose=TRUE], data.table(id1=c("D","A","C"), V1=INT(1,6,8), key="id1"), output="Finding groups using uniqlist on index 'id1__id2'")
+test(1942.8, DT[,sum(v),keyby=.(id1,id2),verbose=TRUE], data.table(id1=c("A","C","C","D"), id2=INT(9,2,3,3), V1=INT(6,3,5,1), key="id1,id2"), output="Finding groups using uniqlist on index 'id1__id2'")
+test(1942.9, DT[,sum(v),keyby=.(id2,id1),verbose=TRUE], data.table(id2=INT(2,3,3,9), id1=c("C","C","D","A"), V1=INT(3,5,1,6), key="id2,id1"), output="Finding groups using forderv")
 options(datatable.use.index=FALSE)
-test(1942.9, DT[,sum(v),keyby=id1,verbose=TRUE], data.table(id1=c("D","A","C"), V1=INT(1,6,8), key="id1"), output="Finding groups using forderv")
+test(1942.11, DT[,sum(v),keyby=id1,verbose=TRUE], data.table(id1=c("D","A","C"), V1=INT(1,6,8), key="id1"), output="Finding groups using forderv")
 options(old)
+
 
 ###################################
 #  Add new tests above this line  #

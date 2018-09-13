@@ -121,7 +121,7 @@ getindex <- function(x, name) {
   # name can be "col", or "col1__col2", or c("col1","col2")
   ans = attr(attr(x, 'index'), paste0("__",name,collapse=""), exact=TRUE)
   if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) {
-    stop("Internal error: index '",name,"' exists but is invalid")
+    stop("Internal error: index '",name,"' exists but is invalid")   # nocov
   }
   ans
 }

@@ -1511,10 +1511,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           if (verbose) {cat("Finding groups using uniqlist on key ... ");flush.console()}
           f__ = uniqlist(byval)
         } else {
-          if (!is.character(byindex) || length(byindex)!=1L) stop("Internal error: byindex not the index name")
+          if (!is.character(byindex) || length(byindex)!=1L) stop("Internal error: byindex not the index name")  # nocov
           if (verbose) {cat("Finding groups using uniqlist on index '", byindex, "' ... ", sep="");flush.console()}
           o__ = getindex(x, byindex)
-          if (is.null(o__)) stop("Internal error: byindex not found")
+          if (is.null(o__)) stop("Internal error: byindex not found")  # nocov
           f__ = uniqlist(byval, order=o__)
         }
         if (verbose) {
