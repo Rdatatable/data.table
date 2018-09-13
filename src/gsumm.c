@@ -138,8 +138,8 @@ SEXP gsum(SEXP x, SEXP narmArg)
       } else {
         xd[i] = (int)s[i];
       }
-    }}
-    break;
+    }
+  } break;
   case REALSXP: {
     double *xd = REAL(x);                                // now-slower R API with altrep, outside
     if (irowslen==-1) {
@@ -160,8 +160,8 @@ SEXP gsum(SEXP x, SEXP narmArg)
       if (s[i] > DBL_MAX) xd[i] = R_PosInf;
       else if (s[i] < -DBL_MAX) xd[i] = R_NegInf;
       else xd[i] = (double)s[i];
-    }}
-    break;
+    }
+  } break;
   default:
     free(s);
     error("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
@@ -176,7 +176,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
 SEXP gmean(SEXP x, SEXP narm)
 {
   SEXP ans;
-  int i, ix, protecti=0, thisgrp, n;
+  int protecti=0;
   //clock_t start = clock();
   if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
   if (!isVectorAtomic(x)) error("GForce mean can only be applied to columns, not .SD or similar. Likely you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table.");
@@ -186,9 +186,10 @@ SEXP gmean(SEXP x, SEXP narm)
     switch(TYPEOF(ans)) {
     case LGLSXP: case INTSXP:
       ans = PROTECT(coerceVector(ans, REALSXP)); protecti++;
-    case REALSXP:
-      for (i=0; i<ngrp; i++) REAL(ans)[i] /= grpsize[i];  // let NA propogate
-      break;
+    case REALSXP: {
+      double *xd = REAL(ans);
+      for (int i=0; i<ngrp; i++) *xd++ /= grpsize[i];  // let NA propogate
+    } break;
     default :
       error("Internal error: gsum returned type '%s'. typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x)));
     }
@@ -196,7 +197,7 @@ SEXP gmean(SEXP x, SEXP narm)
     return(ans);
   }
   // na.rm=TRUE.  Similar to gsum, but we need to count the non-NA as well for the divisor
-  n = (irowslen == -1) ? length(x) : irowslen;
+  const int n = (irowslen == -1) ? length(x) : irowslen;
   if (grpn != n) error("grpn [%d] != length(x) [%d] in gsum", grpn, n);
 
   long double *s = calloc(ngrp, sizeof(long double));
@@ -207,18 +208,18 @@ SEXP gmean(SEXP x, SEXP narm)
 
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP:
-    for (i=0; i<n; i++) {
-      thisgrp = grp[i];
-      ix = (irowslen == -1) ? i : irows[i]-1;
+    for (int i=0; i<n; i++) {
+      int thisgrp = grp[i];
+      int ix = (irowslen == -1) ? i : irows[i]-1;
       if(INTEGER(x)[ix] == NA_INTEGER) continue;
       s[thisgrp] += INTEGER(x)[ix];  // no under/overflow here, s is long double
       c[thisgrp]++;
     }
     break;
   case REALSXP:
-    for (i=0; i<n; i++) {
-      thisgrp = grp[i];
-      ix = (irowslen == -1) ? i : irows[i]-1;
+    for (int i=0; i<n; i++) {
+      int thisgrp = grp[i];
+      int ix = (irowslen == -1) ? i : irows[i]-1;
       if (ISNAN(REAL(x)[ix])) continue;
       s[thisgrp] += REAL(x)[ix];
       c[thisgrp]++;
@@ -229,7 +230,7 @@ SEXP gmean(SEXP x, SEXP narm)
     error("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
   }
   ans = PROTECT(allocVector(REALSXP, ngrp));
-  for (i=0; i<ngrp; i++) {
+  for (int i=0; i<ngrp; i++) {
     if (c[i]==0) { REAL(ans)[i] = R_NaN; continue; }  // NaN to follow base::mean
     s[i] /= c[i];
     if (s[i] > DBL_MAX) REAL(ans)[i] = R_PosInf;
