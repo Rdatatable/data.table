@@ -455,7 +455,7 @@ SEXP setNumericRounding(SEXP droundArg)
 // init.c has initial call with default of 2
 {
   if (!isInteger(droundArg) || LENGTH(droundArg)!=1) error("Must an integer or numeric vector length 1");
-  if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2) error("Must be 2 (default) or 1 or 0");
+  if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2) error("Must be 2, 1 or 0");
   dround = INTEGER(droundArg)[0];
   dmask1 = dround ? 1 << (8*dround-1) : 0;
   dmask2 = 0xffffffffffffffff << dround*8;
@@ -465,6 +465,12 @@ SEXP setNumericRounding(SEXP droundArg)
 SEXP getNumericRounding()
 {
   return ScalarInteger(dround);
+}
+
+int getNumericRounding_C()
+// for use in uniqlist.c
+{
+  return dround;
 }
 
 static union {

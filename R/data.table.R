@@ -566,8 +566,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             if (verbose) cat("on= matches existing key, using key\n")
           } else {
             if (isTRUE(getOption("datatable.use.index"))) {
-              idxName = paste0("__", names(on), collapse="")
-              xo = attr(attr(x, 'index'), idxName, exact = TRUE)
+              xo = getindex(x, names(on))
               if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
             }
             if (is.null(xo)) {
@@ -879,10 +878,23 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           bysubl = as.list.default(bysub)
         }
         allbyvars = intersect(all.vars(bysub),names(x))
+        orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause). Similar but better than is.sorted(f__)
+        bysameorder = byindex = FALSE
+        if (all(vapply_1b(bysubl, is.name))) {
+          bysameorder = orderedirows && haskey(x) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
+          if (!bysameorder && !missing(keyby) && isTRUE(getOption("datatable.use.index"))) {
+            tt = paste0(allbyvars, collapse="__")
+            w = which.first(substring(indices(x),1L,nchar(tt)) == tt)  # substring to avoid the overhead of grep
+            if (!is.na(w)) {
+              byindex = indices(x)[w]
+              if (!length(getindex(x, byindex))) {
+                if (verbose) cat("by index '", byindex, "' but that index has 0 length. Ignoring.\n", sep="")
+                byindex=FALSE
+              }
+            }
+          }
+        }
 
-        orderedirows = .Call(CisOrderedSubset, irows, nrow(x))  # TRUE when irows is NULL (i.e. no i clause)
-        # orderedirows = is.sorted(f__)
-        bysameorder = orderedirows && haskey(x) && all(vapply_1b(bysubl,is.name)) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
         if (is.null(irows))
           if (is.call(bysub) && length(bysub) == 3L && bysub[[1L]] == ":" && is.name(bysub[[2L]]) && is.name(bysub[[3L]])) {
             byval = eval(bysub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame())
@@ -1460,10 +1472,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 
   } else {
     # Find the groups, using 'byval' ...
-    if (missing(by)) stop("Internal error, by is missing")
+    if (missing(by)) stop("Internal error: by= is missing")   # nocov
 
     if (length(byval) && length(byval[[1L]])) {
-      if (!bysameorder) {
+      if (!bysameorder && identical(byindex,FALSE)) {
         if (verbose) {last.started.at=proc.time();cat("Finding groups using forderv ... ");flush.console()}
         o__ = forderv(byval, sort=!missing(keyby), retGrp=TRUE)
         # The sort= argument is called sortStr at C level. It's just about saving the sort of unique strings at
@@ -1494,8 +1506,17 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         }
         if (!orderedirows && !length(o__)) o__ = seq_len(xnrow)  # temp fix.  TODO: revist orderedirows
       } else {
-        if (verbose) {last.started.at=proc.time();cat("Finding groups using uniqlist ... ");flush.console()}
-        f__ = uniqlist(byval)
+        if (verbose) last.started.at=proc.time();
+        if (bysameorder) {
+          if (verbose) {cat("Finding groups using uniqlist on key ... ");flush.console()}
+          f__ = uniqlist(byval)
+        } else {
+          if (!is.character(byindex) || length(byindex)!=1L) stop("Internal error: byindex not the index name")  # nocov
+          if (verbose) {cat("Finding groups using uniqlist on index '", byindex, "' ... ", sep="");flush.console()}
+          o__ = getindex(x, byindex)
+          if (is.null(o__)) stop("Internal error: byindex not found")  # nocov
+          f__ = uniqlist(byval, order=o__)
+        }
         if (verbose) {
           cat(timetaken(last.started.at),"\n")
           last.started.at=proc.time()
