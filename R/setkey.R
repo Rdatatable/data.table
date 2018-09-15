@@ -81,7 +81,8 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   }
   if (!is.character(cols) || length(cols)<1L) stop("'cols' should be character at this point in setkey")
   if (verbose) {
-    tt = system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
+    tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
+    # suppress needed for tests 644 and 645 in verbose mode
     cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
   } else {
     o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)
@@ -94,7 +95,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
   if (length(o)) {
     if (verbose) {
-      tt = system.time(.Call(Creorder,x,o))
+      tt = suppressMessages(system.time(.Call(Creorder,x,o)))
       cat("reorder took", tt["user.self"]+tt["sys.self"], "sec\n")
     } else {
       .Call(Creorder,x,o)
