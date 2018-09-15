@@ -9614,9 +9614,9 @@ if (.Platform$OS.type=="unix") {
   cat("a,b\n4,2", file=f<-tempfile())
   cmd <- sprintf("cat %s", f)
   old = options(datatable.fread.input.cmd.message = TRUE)
-  test(1703.0, grep("Please use fread.cmd=.*security concern.*Please read item 5 in the NEWS file for v1.11.6", tryCatch(fread(cmd), message=function(m) m[["message"]])), 1L)
+  test(1703.0, fread(cmd), ans<-data.table(a=4L, b=2L), message="Please use fread.cmd=.*security concern.*Please read item 5 in the NEWS file for v1.11.6")
   old = options(datatable.fread.input.cmd.message = NULL)  # when option is missing as it is by default, then TRUE
-  test(1703.1, grep("security concern", tryCatch(fread(cmd), message=function(m) m[["message"]])), 1L)
+  test(1703.1, fread(cmd), ans, message="security concern")
   old = options(datatable.fread.input.cmd.message = FALSE)
   test(1703.2, tryCatch(fread(cmd), message=stop), data.table(a=4L, b=2L))
   options(old)
