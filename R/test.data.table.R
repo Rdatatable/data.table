@@ -91,7 +91,7 @@ gc_mem = function() {
   # nocov end
 }
 
-test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
+test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
@@ -158,11 +158,13 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL) {
   if (memtest) {
     timestamp = as.numeric(Sys.time())   # nocov
   }
-  if (is.null(output)) {
+  if (is.null(output) && is.null(message)) {
     x = tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
   } else {
-    out = capture.output(print(x <- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
+    if (!is.null(output) && !is.null(message)) stop("test() accepts output= or message= but not both because capture.output() does not accept both")
+    out = capture.output(print(x <- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)), type=if(!is.null(output))"output"else"message")
+    if (is.null(output)) output=message  # now that we've captured the message, just treat it as if output
   }
   if (memtest) {
     mem = as.list(c(inittime=inittime, filename=basename(filename), timestamp=timestamp, test=num, ps_mem(), gc_mem())) # nocov
