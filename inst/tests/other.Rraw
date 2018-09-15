@@ -50,7 +50,7 @@ if (loaded[["ggplot2"]]) {
   # without as.POSIXct() there is a message but if it gets solved and goes away in future then i) don't fail and ii) restore
   #   test without as.POSIXct needed and without message
   # test(1.4, print(DT[,qplot(idate,itime)])$ranges,
-              message="Don't know how to automatically pick scale for object of type ITime. Defaulting to continuous")
+  #           message="Don't know how to automatically pick scale for object of type ITime. Defaulting to continuous")
 
   test(1.5, print(DT[,qplot(idate,as.POSIXct(itime,tzone=""))])$ranges, print(qplot(idate,as.POSIXct(itime,tzone=""),data=DT))$ranges)
   try(graphics.off(),silent=TRUE)

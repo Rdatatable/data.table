@@ -117,6 +117,7 @@ rm ~/.Renviron
 R
 require(data.table)
 test.data.table()
+test.data.table(with.other.packages=TRUE)
 test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
 gctorture2(step=50)
 system.time(test.data.table())  # apx 75min
