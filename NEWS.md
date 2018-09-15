@@ -90,7 +90,9 @@ Warning message:
 
 4. `hour`, `minute`, and `second` utility functions use integer arithmetic when the input is already (explicitly) UTC-based `POSIXct` for 4-10x speedup vs. using `as.POSIXlt`.
 
-5. Error added for incorrect usage of `%between%`, with some helpful diagnostic hints, [#3014](https://github.com/Rdatatable/data.table/issues/3014). Thanks @peterlittlejohn for offering his user experience and providing the impetus. 
+5. Error added for incorrect usage of `%between%`, with some helpful diagnostic hints, [#3014](https://github.com/Rdatatable/data.table/issues/3014). Thanks @peterlittlejohn for offering his user experience and providing the impetus.
+
+6. `data.table`'s dependency has been moved forward from R 3.1.0 (Apr 2014) to R 3.2.2 (Aug 2015; i.e. 3 years old). We keep this dependency as old as possible for as long as possible as requested by users in managed environments. We continually test against this old version of R as well as R-release and R-devel. This bump is necessary to use `capture.output()` with `type=` which was added in R 3.2.2.
 
 
 ### Changes in v1.11.4  (on CRAN 27 May 2018)

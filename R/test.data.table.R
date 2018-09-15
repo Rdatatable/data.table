@@ -166,13 +166,13 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
       if (!is.null(message)) stop("test() accepts output= or message= but not both because capture.output() does not accept both")  # nocov
       out = capture.output(print(x <- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
     } else {
-      out = capture.output(x <- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler), type="message")
+      out = capture.output(x <- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler), type="message")  # R >= 3.2.2 (Aug 2015) when type= was added
       output = message  # now that we've captured the message, just treat it as if output
     }
   }
   if (memtest) {
     mem = as.list(c(inittime=inittime, filename=basename(filename), timestamp=timestamp, test=num, ps_mem(), gc_mem())) # nocov
-    fwrite(mem, "memtest.csv", append=TRUE)                                                                   # nocov
+    fwrite(mem, "memtest.csv", append=TRUE)                                                                             # nocov
   }
   fail = FALSE
   if (length(warning) != length(actual.warns)) {

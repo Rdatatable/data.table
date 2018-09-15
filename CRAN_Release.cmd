@@ -87,7 +87,7 @@ grep mkChar *.c            # see comment in bmerge.c about passing this grep. I'
 # ScalarLogical in R now returns R's global TRUE from R 3.1.0; Apr 2014. Before that it allocated.
 # Aside: ScalarInteger may return globals for small integers in future version of R.
 grep ScalarInteger *.c   # Check all Scalar* either PROTECTed, return-ed or passed to setAttrib.
-grep ScalarLogical *.c   # Now we depend on 3.1.0, check ScalarLogical is NOT PROTECTed.
+grep ScalarLogical *.c   # Now we depend on 3.1.0+, check ScalarLogical is NOT PROTECTed.
 grep ScalarString *.c
 
 # Inspect missing PROTECTs
@@ -125,23 +125,23 @@ system.time(test.data.table())  # apx 75min
 
 
 ###############################################
-#  R 3.1.0 (stated dependency)
+#  R 3.2.2 (stated dependency)
 ###############################################
 
 ### ONE TIME BUILD
 sudo apt-get -y build-dep r-base
 cd ~/build
-wget http://cran.stat.ucla.edu/src/base/R-3/R-3.1.0.tar.gz
-tar xvf R-3.1.0.tar.gz
-cd R-3.1.0
+wget http://cran.stat.ucla.edu/src/base/R-3/R-3.2.2.tar.gz
+tar xvf R-3.2.2.tar.gz
+cd R-3.2.2
 ./configure --without-recommended-packages
 make
-alias R310=~/build/R-3.1.0/bin/R
+alias R322=~/build/R-3.2.2/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.11.5.tar.gz
-R310
+R322 CMD INSTALL ./data.table_1.11.5.tar.gz
+R322
 require(data.table)
 test.data.table()
 

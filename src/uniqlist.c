@@ -62,7 +62,7 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case STRSXP : {
-      SEXP *vd=DATAPTR(v), prev, this;
+      SEXP *vd=(SEXP *)DATAPTR(v), prev, this;   // TODO: tried to replace DATAPTR here but (SEXP *)&STRING_ELT(v,0) results in lvalue required as unary ‘&’ operand
       if (via_order) {
         COMPARE1_VIA_ORDER && ENC2UTF8(this)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
       } else {
@@ -185,7 +185,7 @@ SEXP rleid(SEXP l, SEXP cols)
         //               So == pointers is ok given that check
         break;
       case REALSXP : {
-        long long *ll = (long long *)DATAPTR(v);
+        long long *ll = (long long *)REAL(v);
         b = ll[i]==ll[i-1]; }
         // 8 bytes of bits are identical. For real (no rounding currently) and integer64
         // long long == 8 bytes checked in init.c
@@ -263,7 +263,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
           break;
         case REALSXP:
           twiddle = i64[j] ? &i64twiddle : &dtwiddle;
-          b = twiddle(DATAPTR(v), thisi, 1) >= twiddle(DATAPTR(v), previ, 1);
+          b = twiddle(REAL(v), thisi, 1) >= twiddle(REAL(v), previ, 1);
           break;
         default:
           error("Type '%s' not supported", type2char(TYPEOF(v)));
