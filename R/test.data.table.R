@@ -155,20 +155,20 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     actual.err <<- conditionMessage(e)
     e
   }
+  actual.msgs = NULL
+  mHandler = function(m) {
+    actual.msgs <<- c(actual.msgs, conditionMessage(m))
+    m
+  }
   if (memtest) {
     timestamp = as.numeric(Sys.time())   # nocov
   }
-  if (is.null(output) && is.null(message)) {
-    x = tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)
+  if (is.null(output)) {
+    x = suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
+    # Thanks to tryCatch2 by Jan here : https://github.com/jangorecki/logR/blob/master/R/logR.R#L21
   } else {
-    if (!is.null(output)) {
-      if (!is.null(message)) stop("test() accepts output= or message= but not both because capture.output() does not accept both")  # nocov
-      out = capture.output(print(x <- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
-    } else {
-      out = capture.output(x <- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler), type="message")  # R >= 3.2.2 (Aug 2015) when type= was added
-      output = message  # now that we've captured the message, just treat it as if output
-    }
+    out = capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
   }
   if (memtest) {
     mem = as.list(c(inittime=inittime, filename=basename(filename), timestamp=timestamp, test=num, ps_mem(), gc_mem())) # nocov
@@ -212,7 +212,26 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
       # nocov end
     }
   }
-
+  if (length(message) != length(actual.msgs)) {
+    # nocov start
+    cat("Test",num,"produced",length(actual.msgs),"messages but expected",length(message),"\n")
+    cat(paste("Expected:",message), sep="\n")
+    cat(paste("Observed:",actual.msgs), sep="\n")
+    fail = TRUE
+    # nocov end
+  } else {
+    # the expected message occurred and, if more than 1 message, in the expected order
+    for (i in seq_along(message)) {
+      if (!string_match(message[i], actual.msgs[i])) {
+        # nocov start
+        cat("Test",num,"didn't produce the correct message:\n")
+        cat("Expected: ", message[i], "\n")
+        cat("Observed: ", actual.msgs[i], "\n")
+        fail = TRUE
+        # nocov end
+      }
+    }
+  }
   if (!fail && !length(error) && length(output)) {
     if (out[length(out)] == "NULL") out = out[-length(out)]
     out = paste(out, collapse="\n")

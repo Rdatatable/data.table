@@ -125,23 +125,23 @@ system.time(test.data.table())  # apx 75min
 
 
 ###############################################
-#  R 3.2.2 (stated dependency)
+#  R 3.1.0 (stated dependency)
 ###############################################
 
 ### ONE TIME BUILD
 sudo apt-get -y build-dep r-base
 cd ~/build
-wget http://cran.stat.ucla.edu/src/base/R-3/R-3.2.2.tar.gz
-tar xvf R-3.2.2.tar.gz
-cd R-3.2.2
+wget http://cran.stat.ucla.edu/src/base/R-3/R-3.1.0.tar.gz
+tar xvf R-3.1.0.tar.gz
+cd R-3.1.0
 ./configure --without-recommended-packages
 make
-alias R322=~/build/R-3.2.2/bin/R
+alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R322 CMD INSTALL ./data.table_1.11.5.tar.gz
-R322
+R310 CMD INSTALL ./data.table_1.11.5.tar.gz
+R310
 require(data.table)
 test.data.table()
 
@@ -269,6 +269,8 @@ There are some things to overcome to achieve compile without USE_RINTERNALS, tho
 #  rchk : https://github.com/kalibera/rchk
 ########################################################################
 cd ~/build/rchk/trunk
+. ../scripts/config.inc
+. ../scripts/cmpconfig.inc
 echo 'install.packages("~/GitHub/data.table/data.table_1.11.5.tar.gz",repos=NULL)' | ./bin/R --slave
 ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
