@@ -9618,9 +9618,9 @@ if (.Platform$OS.type=="unix") {
   old = options(datatable.fread.input.cmd.message = NULL)  # when option is missing as it is by default, then TRUE
   test(1703.1, fread(cmd), ans, message="security concern")
   old = options(datatable.fread.input.cmd.message = FALSE)
-  test(1703.2, tryCatch(fread(cmd), message=stop), data.table(a=4L, b=2L))
+  test(1703.2, tryCatch(fread(cmd), message=stop), ans)
   options(old)
-  test(1703.3, fread(cmd=cmd), data.table(a=4L, b=2L))
+  test(1703.3, fread(cmd=cmd), ans)
   test(1703.4, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
   unlink(f)
   # Test 'text' argument

@@ -144,75 +144,59 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
   xsub = substitute(x)
   ysub = substitute(y)
 
-  actual.warns = NULL
+  actual = list("warning"=NULL, "error"=NULL, "message"=NULL)
   wHandler = function(w) {
     # Thanks to: https://stackoverflow.com/a/4947528/403310
-    actual.warns <<- c(actual.warns, conditionMessage(w))
+    actual$warning <<- c(actual$warning, conditionMessage(w))
     invokeRestart("muffleWarning")
   }
-  actual.err = NULL
   eHandler = function(e) {
-    actual.err <<- conditionMessage(e)
+    actual$error <<- conditionMessage(e)
     e
+  }
+  mHandler = function(m) {
+    actual$message <<- c(actual$message, conditionMessage(m))
+    m
   }
   if (memtest) {
     timestamp = as.numeric(Sys.time())   # nocov
   }
-  if (is.null(output) && is.null(message)) {
-    x = tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)
+  if (is.null(output)) {
+    x = suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
+    # Thanks to tryCatch2 by Jan here : https://github.com/jangorecki/logR/blob/master/R/logR.R#L21
   } else {
-    if (!is.null(output)) {
-      if (!is.null(message)) stop("test() accepts output= or message= but not both because capture.output() does not accept both")  # nocov
-      out = capture.output(print(x <- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)))
-    } else {
-      out = capture.output(x <- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler), type="message")  # R >= 3.2.2 (Aug 2015) when type= was added
-      output = message  # now that we've captured the message, just treat it as if output
-    }
+    out = capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
   }
   if (memtest) {
     mem = as.list(c(inittime=inittime, filename=basename(filename), timestamp=timestamp, test=num, ps_mem(), gc_mem())) # nocov
     fwrite(mem, "memtest.csv", append=TRUE)                                                                             # nocov
   }
   fail = FALSE
-  if (length(warning) != length(actual.warns)) {
-    # nocov start
-    cat("Test",num,"produced",length(actual.warns),"warnings but expected",length(warning),"\n")
-    cat(paste("Expected:",warning), sep="\n")
-    cat(paste("Observed:",actual.warns), sep="\n")
-    fail = TRUE
-    # nocov end
-  } else {
-    # the expected warning occurred and, if more than 1 warning, in the expected order
-    for (i in seq_along(warning)) {
-      if (!string_match(warning[i], actual.warns[i])) {
-        # nocov start
-        cat("Test",num,"didn't produce the correct warning:\n")
-        cat("Expected: ", warning[i], "\n")
-        cat("Observed: ", actual.warns[i], "\n")
-        fail = TRUE
-        # nocov end
+  for (type in c("warning","error","message")) {
+    observed = actual[[type]]
+    expected = get(type)
+    if (length(expected) != length(observed)) {
+      # nocov start
+      cat("Test ",num," produced ",length(observed)," ",type,"s but expected ",length(expected),"\n",sep="")
+      cat(paste("Expected:",expected), sep="\n")
+      cat(paste("Observed:",observed), sep="\n")
+      fail = TRUE
+      # nocov end
+    } else {
+      # the expected type occurred and, if more than 1 of that type, in the expected order
+      for (i in seq_along(expected)) {
+        if (!string_match(expected[i], observed[i])) {
+          # nocov start
+          cat("Test",num,"didn't produce the correct",type,":\n")
+          cat("Expected:", expected[i], "\n")
+          cat("Observed:", observed[i], "\n")
+          fail = TRUE
+          # nocov end
+        }
       }
     }
   }
-  if (length(error) != length(actual.err)) {
-    # nocov start
-    cat("Test",num," ")
-    if (length(error)) cat("had no error but expected error: ", error, "\n")
-    else cat("should not fail but failed with error: ", actual.err, "\n")
-    fail = TRUE
-    # nocov end
-  } else if (length(error)) {
-    if (!string_match(error, actual.err)) {
-      # nocov start
-      cat("Test",num,"didn't produce the correct error:\n")
-      cat("Expected: ", error, "\n")
-      cat("Observed: ", actual.err, "\n")
-      fail = TRUE
-      # nocov end
-    }
-  }
-
   if (!fail && !length(error) && length(output)) {
     if (out[length(out)] == "NULL") out = out[-length(out)]
     out = paste(out, collapse="\n")
