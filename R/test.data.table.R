@@ -162,7 +162,8 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     x = tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
   } else {
-    if (!is.null(output) && !is.null(message)) stop("test() accepts output= or message= but not both because capture.output() does not accept both")
+    if (!is.null(output) && !is.null(message))
+      stop("test() accepts output= or message= but not both because capture.output() does not accept both")  # nocov
     out = capture.output(print(x <- tryCatch(withCallingHandlers(x, warning=wHandler), error=eHandler)), type=if(!is.null(output))"output"else"message")
     if (is.null(output)) output=message  # now that we've captured the message, just treat it as if output
   }
