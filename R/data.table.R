@@ -238,7 +238,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (is.character(roll)) {
     if (roll!="nearest") stop("roll is '",roll,"' (type character). Only valid character value is 'nearest'.")
   } else {
-    roll = if (isTRUE(roll)) +Inf else as.double(roll)
+    roll = if (is.logical(roll) && roll) +Inf else as.double(roll)
   }
   force(rollends)
   if (!is.logical(rollends)) stop("rollends must be a logical vector")
@@ -249,8 +249,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (!is.na(nomatch) && nomatch!=0L) stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
   nomatch = as.integer(nomatch)
   if (!is.logical(which) || length(which)>1L) stop("'which' must be a logical vector length 1. Either FALSE, TRUE or NA.")
-  if ((isTRUE(which)||is.na(which)) && !missing(j)) stop("'which' is ",which," (meaning return row numbers) but 'j' is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
-  if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
+  if ({is.na(which) || which} && !missing(j)) stop("'which' is ",which," (meaning return row numbers) but 'j' is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
+  if (nomatch==0L && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
   .global$print=""
   if (missing(i) && missing(j)) {
     # ...[] == oops at console, forgot print(...)
@@ -629,7 +629,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           # Fix for #1092 and #1074
           # TODO: implement better version of "any"/"all"/"which" to avoid
           # unnecessary construction of logical vectors
-          if (identical(nomatch, 0L) && allLen1) irows = irows[irows != 0L]
+          if (nomatch==0L && allLen1) irows = irows[irows != 0L]
         } else {
           if (length(xo) && missing(on))
             stop("Cannot by=.EACHI when joining to a secondary key, yet")
