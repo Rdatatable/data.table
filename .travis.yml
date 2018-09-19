@@ -18,13 +18,14 @@ r_check_args: ""
 r_packages:
   - covr
   - drat
+  - rmarkdown
   - devtools  # explicitly named temp fix for #2801
 
 before_script:
   - echo "Revision:" $TRAVIS_COMMIT >> ./DESCRIPTION
 
 after_success:
-  - travis_wait Rscript -e 'library(covr);codecov()'
+  # - travis_wait Rscript -e 'library(covr);codecov()'
   - test $TRAVIS_REPO_SLUG == "Rdatatable/data.table" && test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && bash deploy.sh
 
 notifications:
