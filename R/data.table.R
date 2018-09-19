@@ -526,7 +526,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           stop("Column(s) [", paste(names(on)[nacols], collapse=","), "] not found in x")
         }
         leftcols  = chmatch(unname(on), names(i))
-        if (anyNA(nacols)) {
+        if (anyNA(leftcols)) {
           nacols <- which(is.na(leftcols))
           stop("Column(s) [", paste(unname(on)[nacols], collapse=","), "] not found in i")
         }
