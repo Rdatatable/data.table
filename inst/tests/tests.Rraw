@@ -4725,7 +4725,7 @@ test(1294.31, dt[, e := list("bla2")]$e, rep("bla2", 3))
 
 # FR #5357, when LHS evaluates to integer(0), provide warning and return dt, not an error.
 dt = data.table(a = 1:5, b1 = 1:5, b2 = 1:5)
-test(1295, dt[, grep("c", names(d)) := NULL], dt, warning="length(LHS)==0; no columns to delete or assign RHS to")
+test(1295, dt[, grep("c", names(dt)) := NULL], dt, warning="length(LHS)==0; no columns to delete or assign RHS to")
 
 # Updating logical column in one-row DT (corruption of new R 3.1 internal globals for TRUE, FALSE and NA)
 DT = data.table(a=1:6, b=c(TRUE,FALSE))
