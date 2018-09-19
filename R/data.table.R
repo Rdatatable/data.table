@@ -363,7 +363,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (!missing(i)) {
     xo = NULL
     isub = substitute(i)
-    if (identical(isub, NA)) {
+    if (is.logical(isub) && length(isub) == 1L && anyNA(isub)) {
       # only possibility *isub* can be NA (logical) is the symbol NA itself; i.e. DT[NA]
       # replace NA in this case with NA_integer_ as that's almost surely what user intended to
       # return a single row with NA in all columns. (DT[0] returns an empty table, with correct types.)
@@ -1140,7 +1140,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           # updates by reference to existing columns
           cols = as.integer(m)
           newnames=NULL
-          if (identical(irows, integer())) {
+          if (is.integer(irows) && !length(irows)) {
             # Empty integer() means no rows e.g. logical i with only FALSE and NA
             # got converted to empty integer() by the which() above
             # Short circuit and do-nothing since columns already exist. If some don't
