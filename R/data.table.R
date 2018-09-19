@@ -1141,7 +1141,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           m = chmatch(lhs,names(x))
         } else if (is.numeric(lhs)) {
           m = as.integer(lhs)
-          if (length(m) && min(m)<1L || max(m)>ncol(x)) stop("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
+          if (length(m) && {min(m)<1L || max(m)>ncol(x)}) stop("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
           lhs = names(x)[m]
         } else
           stop("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
