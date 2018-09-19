@@ -231,7 +231,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (!missing(i) & is.data.table(ans)) setkey(ans,NULL)  # See test 304
     return(ans)
   }
-  if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
+  if (mult != "all" && mult != "first" && mult != "last") stop("mult argument can only be 'first','last' or 'all'")
   missingroll = missing(roll)
   missingwith = missing(with)
   if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
@@ -282,9 +282,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     jsub = replace_dot_alias(substitute(j))
     root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
     if (root == ":" ||
-        (root %chin% c("-","!") && is.call(jsub[[2L]]) && jsub[[2L]][[1L]]=="(" && is.call(jsub[[2L]][[2L]]) && jsub[[2L]][[2L]][[1L]]==":") ||
-        ( (!length(av<-all.vars(jsub)) || all(substring(av,1L,2L)=="..")) &&
-          root %chin% c("","c","paste","paste0","-","!") &&
+        ({root == "-" || root == "!"} && is.call(jsub[[2L]]) && jsub[[2L]][[1L]]=="(" && is.call(jsub[[2L]][[2L]]) && jsub[[2L]][[2L]][[1L]]==":") ||
+        ( (!length(av<-all.vars(jsub)) || all(substr(av,1L,2L)=="..")) &&
+          {root == "" || root == "c" || root == "paste" || root == "paste0" || root == "-" || root == "!"} &&
           missing(by) )) {   # test 763. TODO: likely that !missing(by) iff with==TRUE (so, with can be removed)
       # When no variable names (i.e. symbols) occur in j, scope doesn't matter because there are no symbols to find.
       # If variable names do occur, but they are all prefixed with .., then that means look up in calling scope.
@@ -1727,8 +1727,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           #   1) head/tail(x, 1) or 2) x[n], n>0
           ans = cond && length(q)==3L &&
             length(q3 <- q[[3L]])==1L && is.numeric(q3) && (
-              (as.character(q1) %chin% c("head", "tail") && q3==1L) ||
-                (as.character(q1) %chin% "[" && q3 > 0) )
+              ({q1c <- as.character(q1)} == "head" || q1c =="tail" && q3==1L) ||
+                (q1c == "[" && q3 > 0) )
           if (is.na(ans)) ans=FALSE
           ans
         }
@@ -2968,8 +2968,8 @@ isReallyReal <- function(x) {
       # the mode() checks also deals with NULL since mode(NULL)=="NULL" and causes this return, as one CRAN package (eplusr 0.9.1) relies on
       return(NULL)
     }
-    if(is.character(x[[col]]) && !operator %chin% c("==", "%in%", "%chin%")) return(NULL) ## base R allows for non-equi operators on character columns, but these can't be optimized.
-    if (!operator %chin% c("%in%", "%chin%")) {
+    if (is.character(x[[col]]) && operator != "==" && operator != "%in%" && operator != "%chin%") return(NULL) ## base R allows for non-equi operators on character columns, but these can't be optimized.
+    if (operator != "%in%" && operator != "%chin%") {
       # addional requirements for notjoin and NA values. Behaviour is different for %in%, %chin% compared to other operators
       # RHS is of length=1 or n
       if (any_na(as_list(RHS))) {
