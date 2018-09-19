@@ -317,7 +317,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         ..syms = av
       }
     } else if (is.name(jsub)) {
-      if (substring(jsub, 1L, 2L) == "..") stop("Internal error:  DT[, ..var] should be dealt with by the branch above now.")
+      if (substr(jsub, 1L, 2L) == "..") stop("Internal error:  DT[, ..var] should be dealt with by the branch above now.")
       if (!with && !exists(as.character(jsub), where=parent.frame()))
         stop("Variable '",jsub,"' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.")
     }
@@ -1136,7 +1136,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           lhs = names(x)[m]
         } else
           stop("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
-        if (all(!is.na(m))) {
+        if (!anyNA(m)) {
           # updates by reference to existing columns
           cols = as.integer(m)
           newnames=NULL
@@ -1216,11 +1216,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         w[xdotprefixvals] = chmatch(ansvars[xdotprefixvals], xdotprefix)
         xdotcols = TRUE
       }
-      if (!any(wna <- is.na(w))) {
+      if (!anyNA(w)) {
         xcols = w
         xcolsAns = seq_along(ansvars)
         icols = icolsAns = integer()
       } else {
+        wna <- is.na(w)
         if (!length(leftcols)) stop("column(s) not found: ", paste(ansvars[wna],collapse=", "))
         xcols = w[!wna]
         xcolsAns = which(!wna)
