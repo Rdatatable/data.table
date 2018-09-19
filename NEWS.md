@@ -1,7 +1,16 @@
 
 **If you are viewing this file on CRAN, please check latest news on GitHub [here](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).**
 
-### Changes in v1.11.5  (in development)
+### Changes in v1.11.7  (in development)
+
+#### NEW FEATURES
+
+#### BUG FIXES
+
+#### NOTES
+
+
+### Changes in v1.11.6  (on CRAN 19 Aug 2018)
 
 #### NEW FEATURES
 
