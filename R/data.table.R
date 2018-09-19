@@ -1733,7 +1733,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           #   1) head/tail(x, 1) or 2) x[n], n>0
           ans = cond && length(q)==3L &&
             length(q3 <- q[[3L]])==1L && is.numeric(q3) && (
-              ({q1c <- as.character(q1)} == "head" || q1c =="tail" && q3==1L) ||
+              ({{q1c <- as.character(q1)} == "head" || q1c =="tail"} && q3==1L) ||
                 (q1c == "[" && q3 > 0) )
           if (is.na(ans)) ans=FALSE
           ans
