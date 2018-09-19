@@ -521,11 +521,15 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         ops = on_ops[[2L]]
         # TODO: collect all '==' ops first to speeden up Cnestedid
         rightcols = chmatch(names(on), names(x))
-        if (length(nacols <- which(is.na(rightcols))))
+        if (anyNA(rightcols)) {
+          nacols <- which(is.na(rightcols))
           stop("Column(s) [", paste(names(on)[nacols], collapse=","), "] not found in x")
+        }
         leftcols  = chmatch(unname(on), names(i))
-        if (length(nacols <- which(is.na(leftcols))))
+        if (anyNA(nacols)) {
+          nacols <- which(is.na(leftcols))
           stop("Column(s) [", paste(unname(on)[nacols], collapse=","), "] not found in i")
+        }
         # figure out the columns on which to compute groups on
         non_equi = which.first(ops != 1L) # 1 is "==" operator
         if (!is.na(non_equi)) {
