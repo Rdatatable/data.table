@@ -1046,7 +1046,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             ansvals = if (colm) setdiff(seq_along(names(x)), c(as.integer(.SDcols), which(names(x) %chin% bynames))) else as.integer(.SDcols)
           } else {
             if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
-            if (anyNA(.SDcols) || any(!.SDcols %chin% names(x))) stop("Some items of .SDcols are not column names (or are NA)")
+            if (anyNA(.SDcols) || !all(.SDcols %chin% names(x))) stop("Some items of .SDcols are not column names (or are NA)")
             if (colm) ansvars = setdiff(setdiff(names(x), .SDcols), bynames) else ansvars = .SDcols
             # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
             ansvals = chmatch(ansvars, names(x))
