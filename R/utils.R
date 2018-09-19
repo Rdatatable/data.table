@@ -86,3 +86,19 @@ name_dots <- function(...) {
   list(vnames=vnames, novname=novname)
 }
 
+not_all_same_sign <- function(x) {
+  length(x) > 1L && {
+    if (anyNA(x1 <- x[1L])) {
+      return(NA)
+    }
+    if (x1 == 0) {
+      min(x) < 0 || max(x) > 0
+    } else if (x1 > 0) {
+      min(x) <= 0
+    } else {
+      max(x) >= 0 
+    }
+  }
+}
+
+

@@ -1044,8 +1044,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             ansvars = names(x)[ansvals]
           } else if (is.numeric(.SDcols)) {
             # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
-            if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
-            if (anyNA(.SDcols) || any(abs(.SDcols)>ncol(x)) || any(abs(.SDcols)<1L)) stop(".SDcols is numeric but out of bounds (or NA)")
+            if (not_all_same_sign(.SDcols)) stop(".SDcols is numeric but has both +ve and -ve indices")
+            if (anyNA(.SDcols)) stop(".SDcols contains NA")
+            if (max(abs(.SDcols))>ncol(x) || min(abs(.SDcols))<1L) stop(".SDcols is numeric but out of bounds")
             if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
             ansvals = if (colm) setdiff(seq_along(names(x)), c(as.integer(.SDcols), which(names(x) %chin% bynames))) else as.integer(.SDcols)
           } else {
@@ -1136,7 +1137,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           m = chmatch(lhs,names(x))
         } else if (is.numeric(lhs)) {
           m = as.integer(lhs)
-          if (any(m<1L | ncol(x)<m)) stop("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
+          if (min(m)<1L || max(m)>ncol(x)) stop("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
           lhs = names(x)[m]
         } else
           stop("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
