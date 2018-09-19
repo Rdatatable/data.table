@@ -884,7 +884,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           bysameorder = orderedirows && haskey(x) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
           if (!bysameorder && !missing(keyby) && isTRUE(getOption("datatable.use.index"))) {
             tt = paste0(allbyvars, collapse="__")
-            w = which.first(substring(indices(x),1L,nchar(tt)) == tt)  # substring to avoid the overhead of grep
+            w = which.first(substr(indices(x),1L,nchar(tt)) == tt)  # substr to avoid the overhead of grep
             if (!is.na(w)) {
               byindex = indices(x)[w]
               if (!length(getindex(x, byindex))) {
@@ -1251,8 +1251,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   }
 
   syms = all.vars(jsub)
-  syms = syms[ substring(syms,1L,2L)==".." ]
-  syms = syms[ substring(syms,3L,3L)!="." ]  # exclude ellipsis
+  syms = syms[ substr(syms,1L,2L)==".." ]
+  syms = syms[ substr(syms,3L,3L)!="." ]  # exclude ellipsis
   for (sym in syms) {
     if (sym %chin% names(x)) {
       # if "..x" exists as column name, use column, for backwards compatibility; e.g. package socialmixr in rev dep checks #2779
@@ -1721,8 +1721,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           if (dotN(q)) return(TRUE) # For #5760
           cond = is.call(q) && as.character(q1 <- q[[1L]]) %chin% gfuns && !is.call(q[[2L]])
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
-          ans  = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L)))
-          if (identical(ans, TRUE)) return(ans)
+          ans  = cond && (length(q)==2L || names(q)[3L] == "na.rm" || identical("na",substr(names(q)[3L], 1L, 2L)))
+          if (!is.na(ans) && ans) return(ans)
           # otherwise there must be three arguments, and only in two cases --
           #   1) head/tail(x, 1) or 2) x[n], n>0
           ans = cond && length(q)==3L &&
@@ -1887,7 +1887,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (length(expr)==2L)  # no parameters passed to mean, so defaults of trim=0 and na.rm=FALSE
     return(call(".External",quote(Cfastmean),expr[[2L]], FALSE))
     # return(call(".Internal",expr))  # slightly faster than .External, but R now blocks .Internal in coerce.c from apx Sep 2012
-  if (length(expr)==3L && identical("na",substring(names(expr)[3L], 1L, 2L)))   # one parameter passed to mean()
+  if (length(expr)==3L && identical("na",substr(names(expr)[3L], 1L, 2L)))   # one parameter passed to mean()
     return(call(".External",quote(Cfastmean),expr[[2L]], expr[[3L]]))  # faster than .Call
   assign("nomeanopt",TRUE,parent.frame())
   expr  # e.g. trim is not optimized, just na.rm
