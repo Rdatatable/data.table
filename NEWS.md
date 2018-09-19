@@ -10,7 +10,7 @@
 #### NOTES
 
 
-### Changes in v1.11.6  (on CRAN 19 Aug 2018)
+### Changes in v1.11.6  (on CRAN 19 Sep 2018)
 
 #### NEW FEATURES
 
