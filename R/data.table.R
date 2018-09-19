@@ -1044,14 +1044,18 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             ansvars = names(x)[ansvals]
           } else if (is.numeric(.SDcols)) {
             # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
+            if (length(.SDcols)) {
             if (not_all_same_sign(.SDcols)) stop(".SDcols is numeric but has both +ve and -ve indices")
             if (anyNA(.SDcols)) stop(".SDcols contains NA")
             if (max(abs(.SDcols))>ncol(x) || min(abs(.SDcols))<1L) stop(".SDcols is numeric but out of bounds")
+            }
             if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
             ansvals = if (colm) setdiff(seq_along(names(x)), c(as.integer(.SDcols), which(names(x) %chin% bynames))) else as.integer(.SDcols)
           } else {
             if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
+            if (length(.SDcols)) {
             if (anyNA(.SDcols) || !all(.SDcols %chin% names(x))) stop("Some items of .SDcols are not column names (or are NA)")
+            }
             if (colm) ansvars = setdiff(setdiff(names(x), .SDcols), bynames) else ansvars = .SDcols
             # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
             ansvals = chmatch(ansvars, names(x))
@@ -1137,7 +1141,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           m = chmatch(lhs,names(x))
         } else if (is.numeric(lhs)) {
           m = as.integer(lhs)
-          if (min(m)<1L || max(m)>ncol(x)) stop("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
+          if (length(m) && min(m)<1L || max(m)>ncol(x)) stop("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
           lhs = names(x)[m]
         } else
           stop("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
