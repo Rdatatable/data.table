@@ -10259,9 +10259,10 @@ test(1750.19, uniqueN({
 # entries in `by` / `sets` not exists in data.table
 test(1750.20, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","stat"), sets=list(c("color"), character()), id=TRUE), error = "object 'stat' not found")
 test(1750.21, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color"), "stat"), id=TRUE), error = "Columns used in 'sets' but not present in 'by': stat")
-test(1750.22, groupingsets(dt, j = .(a=sum(a)), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE), error = "object 'a' not found")
+test(1750.22, exists("notexist"), FALSE)  # https://github.com/Rdatatable/data.table/issues/3055#issuecomment-423364960
+test(1750.23, groupingsets(dt, j = .(a=sum(notexist)), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE), error = "object 'notexist' not found")
 # update by ref `:=` forbidden
-test(1750.23,
+test(1750.24,
   groupingsets(dt, j = sum_value := sum(value), by = c("color","year","status"), sets=list(c("color"), character())),
   error = "Expression passed to grouping sets function must not update by reference."
 )
