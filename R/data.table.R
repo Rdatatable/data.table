@@ -1239,7 +1239,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         ivars = names(i)
         ivars[leftcols] = names(x)[rightcols]
         w2 = chmatch(ansvars[wna], ivars)
-        if (anyNA(w2)) 
+        if (anyNA(w2)) {
           w2na <- is.na(w2)
           ivars = paste0("i.",ivars)
           ivars[leftcols] = names(i)[leftcols]
