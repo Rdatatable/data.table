@@ -1,11 +1,11 @@
 frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
   ties.method = match.arg(ties.method)
-  if (!length(na.last)) stop('length(na.last) = 0')
   if (length(na.last) != 1L) {
+    if (!length(na.last)) stop('length(na.last) = 0')
     warning("length(na.last) > 1, only the first element will be used")
     na.last = na.last[1L]
   }
-  keep = (na.last == "keep")
+  keep = {na.last == "keep"}
   na.last = as.logical(na.last)
   as_list <- function(x) {
     xx = vector("list", 1L)
@@ -27,7 +27,7 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
   x = .shallow(x, cols) # shallow copy even if list..
   setDT(x)
   cols = seq_along(cols)
-  if (is.na(na.last)) {
+  if (anyNA(na.last)) {
     set(x, j = "..na_prefix..", value = is_na(x, cols))
     order = if (length(order) == 1L) c(1L, rep(order, length(cols))) else c(1L, order)
     cols = c(ncol(x), cols)
@@ -41,7 +41,7 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
     cols = c(cols, ncol(x))
   }
   xorder  = forderv(x, by=cols, order=order, sort=TRUE, retGrp=TRUE,
-        na.last=if (identical(na.last, FALSE)) na.last else TRUE)
+        na.last=anyNA(na.list) || na.last )
   xstart  = attr(xorder, 'starts')
   xsorted = FALSE
   if (!length(xorder)) {
@@ -58,10 +58,10 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
   )
   # take care of na.last="keep"
   V1 = NULL # for R CMD CHECK warning
-  if (isTRUE(keep)) {
-    ans = (setDT(as_list(ans))[which_(nas, TRUE), V1 := NA])[[1L]]
-  } else if (is.na(na.last)) {
+  if (anyNA(na.last)) {
     ans = ans[which_(nas, FALSE)]
+  } else if (keep) {
+    ans = (setDT(as_list(ans))[which_(nas, TRUE), V1 := NA])[[1L]]
   }
   ans
 }
