@@ -56,6 +56,8 @@
 
 12. The introduction of altrep in R 3.5.0 caused some performance regressions of about 20% in some cases, [#2962](https://github.com/Rdatatable/data.table/issues/2962). Investigating this led to some improvements to grouping which are faster than before R 3.5.0 in some cases. Thanks to Nikolay S. for reporting. The work to accomodate altrep is not complete but it is better and it is highly recommended to upgrade to this update.
 
+13. Fixed 7 memory faults thanks to CRAN's [`rchk`](https://github.com/kalibera/rchk) tool by Tomas Kalibera, [#3033](https://github.com/Rdatatable/data.table/pull/3033).
+
 #### NOTES
 
 1. The type coercion warning message has been improved, [#2989](https://github.com/Rdatatable/data.table/pull/2989). Thanks to @sarahbeeysian on [Twitter](https://twitter.com/sarahbeeysian/status/1021359529789775872) for highlighting. For example, given the follow statements:
