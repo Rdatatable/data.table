@@ -41,7 +41,7 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
     cols = c(cols, ncol(x))
   }
   xorder  = forderv(x, by=cols, order=order, sort=TRUE, retGrp=TRUE,
-        na.last=anyNA(na.list) || na.last )
+        na.last=anyNA(na.last) || na.last )
   xstart  = attr(xorder, 'starts')
   xsorted = FALSE
   if (!length(xorder)) {
