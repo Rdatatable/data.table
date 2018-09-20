@@ -246,11 +246,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (length(rollends)==1L) rollends=rep.int(rollends,2L)
   # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
   missingnomatch = missing(nomatch)
-  if (!is.na(nomatch) && nomatch!=0L) stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
+  if (!anyNA(nomatch) && nomatch!=0L) stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
   nomatch = as.integer(nomatch)
   if (!is.logical(which) || length(which)>1L) stop("'which' must be a logical vector length 1. Either FALSE, TRUE or NA.")
-  if ({is.na(which) || which} && !missing(j)) stop("'which' is ",which," (meaning return row numbers) but 'j' is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
-  if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
+  if ({anyNA(which) || which} && !missing(j)) stop("'which' is ",which," (meaning return row numbers) but 'j' is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
+  if (!anyNA(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
   .global$print=""
   if (missing(i) && missing(j)) {
     # ...[] == oops at console, forgot print(...)
@@ -503,8 +503,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           this_op[idx] = "=="
           this_op = unlist(this_op, use.names=FALSE)
           idx_op = match(this_op, ops, nomatch=0L)
-          if (any(idx_op %in% c(0L, 6L)))
+          if (min(idx_op) == 0L)
             stop("Invalid operators ", paste(this_op[idx_op==0L], collapse=","), ". Only allowed operators are ", paste(ops[1:5], collapse=""), ".")
+          if (max(idx_op) == 6L)
+            stop("Invalid operators ", paste(this_op[idx_op==6L], collapse=","), ". Only allowed operators are ", paste(ops[1:5], collapse=""), ".")
           if (is.null(names(on))) {
             on[idx] = if (isnull_inames) paste(on[idx], paste0("V", seq_len(sum(idx))), sep="==") else paste(on[idx], on[idx], sep="==")
           } else {
@@ -1042,13 +1044,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           if (is.logical(.SDcols)) {
             ansvals = which_(rep(.SDcols, length.out=length(x)), !colm)
             ansvars = names(x)[ansvals]
-          } else if (is.numeric(.SDcols)) {
-            # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
+          } else if (is.numeric(.SDcols)) {            
             if (length(.SDcols)) {
-            if (not_all_same_sign(.SDcols)) stop(".SDcols is numeric but has both +ve and -ve indices")
-            if (anyNA(.SDcols)) stop(".SDcols contains NA")
-            if (max(abs(.SDcols))>ncol(x) || min(abs(.SDcols))<1L) stop(".SDcols is numeric but out of bounds")
+              if (not_all_same_sign(.SDcols)) stop(".SDcols is numeric but has both +ve and -ve indices")
+              if (anyNA(.SDcols)) stop(".SDcols contains NA")
+              if (max(abs(.SDcols))>ncol(x) || min(abs(.SDcols))<1L) stop(".SDcols is numeric but out of bounds")
             }
+            # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
             if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
             ansvals = if (colm) setdiff(seq_along(names(x)), c(as.integer(.SDcols), which(names(x) %chin% bynames))) else as.integer(.SDcols)
           } else {
@@ -1201,7 +1203,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
                 if (is.character(j)) {
                   if (length(j)!=1L) stop("L[[i]][,:=] syntax only valid when i is length 1, but it's length %d",length(j))
                   j = match(j, names(k))
-                  if (is.na(j)) stop("Item '",origj,"' not found in names of list")
+                  if (anyNA(j)) stop("Item '",origj,"' not found in names of list")
                 }
                 .Call(Csetlistelt,k,as.integer(j), x)
               } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
@@ -1286,7 +1288,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       # TO DO: port more of this to C
       ans = vector("list", length(ansvars))
       if (length(i) && length(icols)) {
-        if (allLen1 && allGrp1 && (is.na(nomatch) || !any(f__==0L))) {   # nomatch=0 should drop rows in i that have no match
+        if (allLen1 && allGrp1 && (anyNA(nomatch) || !any(f__==0L))) {   # nomatch=0 should drop rows in i that have no match
           for (s in seq_along(icols)) {
             target = icolsAns[s]
             source = icols[s]
@@ -1329,7 +1331,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       setattr(ans, "names", ansvars)
       if (haskey(x)) {
         keylen = which.first(!key(x) %chin% ansvars)-1L
-        if (is.na(keylen)) keylen = length(key(x))
+        if (anyNA(keylen)) keylen = length(key(x))
         len = length(rightcols)
         # fix for #1268, #1704, #1766 and #1823
         chk = if (len && !missing(on)) !identical(head(key(x), len), names(on)) else FALSE
@@ -1732,14 +1734,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           cond = is.call(q) && as.character(q1 <- q[[1L]]) %chin% gfuns && !is.call(q[[2L]])
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
           ans  = cond && (length(q)==2L || names(q)[3L] == "na.rm" || identical("na",substr(names(q)[3L], 1L, 2L)))
-          if (!is.na(ans) && ans) return(ans)
+          if (!anyNA(ans) && ans) return(ans)
           # otherwise there must be three arguments, and only in two cases --
           #   1) head/tail(x, 1) or 2) x[n], n>0
           ans = cond && length(q)==3L &&
             length(q3 <- q[[3L]])==1L && is.numeric(q3) && (
               ({{q1c <- as.character(q1)} == "head" || q1c =="tail"} && q3==1L) ||
                 (q1c == "[" && q3 > 0) )
-          if (is.na(ans)) ans=FALSE
+          if (anyNA(ans)) ans=FALSE
           ans
         }
         if (jsub[[1L]]=="list") {
@@ -1948,18 +1950,18 @@ as.matrix.data.table <- function(x, rownames=NULL, rownames.value=NULL, ...) {
         }
         rownames = if (length(key(x))==1L) chmatch(key(x),names(x)) else 1L
       }
-      else if (is.logical(rownames) || is.na(rownames)) {
+      else if (is.logical(rownames) || anyNA(rownames)) {
         # FALSE, NA, NA_character_ all mean the same as NULL
         rownames = NULL
       }
       else if (is.character(rownames)) {
         w = chmatch(rownames, names(x))
-        if (is.na(w)) stop("'", rownames, "' is not a column of x")
+        if (anyNA(w)) stop("'", rownames, "' is not a column of x")
         rownames = w
       }
       else { # rownames is a column number already
         rownames <- as.integer(rownames)
-        if (is.na(rownames) || rownames<1L || rownames>ncol(x))
+        if (anyNA(rownames) || rownames<1L || rownames>ncol(x))
           stop(sprintf("as.integer(rownames)==%d which is outside the column number range [1,ncol=%d].", rownames, ncol(x)))
       }
     }
@@ -2280,7 +2282,7 @@ any_na <- function(x, by=seq_along(x)) .Call(CanyNA, x, by)
 na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE, ...) {
   # compare to stats:::na.omit.data.frame
   if (!cedta()) return(NextMethod())
-  if ( !missing(invert) && is.na(as.logical(invert)) )
+  if ( !missing(invert) && anyNA(as.logical(invert)) )
     stop("Argument 'invert' must be logical TRUE/FALSE")
   if (is.character(cols)) {
     old = cols
