@@ -1410,7 +1410,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 
       # Fix for #813 and #758. Ex: DT[c(FALSE, FALSE), list(integer(0L), y)]
       # where DT = data.table(x=1:2, y=3:4) should return an empty data.table!!
-      if (!is.null(irows) && (identical(irows, integer(0L)) || all(irows %in% 0L))) ## TODO: any way to not check all 'irows' values?
+      if (!is.null(irows) && {identical(irows, integer(0L)) || {min(irows) == 0L && max(irows) == 0L}}) ## TODO: any way to not check all 'irows' values?
         if (is.atomic(jval)) jval = jval[0L] else jval = lapply(jval, `[`, 0L)
       if (is.atomic(jval)) {
         setattr(jval,"names",NULL)
@@ -2079,7 +2079,7 @@ tail.data.table <- function(x, n=6L, ...) {
     # We can now mix existing columns and new columns
   } else {
     if (!is.numeric(j)) stop("j must be vector of column name or positions")
-    if (any(j>ncol(x))) stop("Attempt to assign to column position greater than ncol(x). Create the column by name, instead. This logic intends to catch (most likely) user errors.")
+    if (max(j)>ncol(x)) stop("Attempt to assign to column position greater than ncol(x). Create the column by name, instead. This logic intends to catch (most likely) user errors.")
     cols = as.integer(j)  # for convenience e.g. to convert 1 to 1L
     newnames = NULL
   }
