@@ -1,13 +1,15 @@
 
 **If you are viewing this file on CRAN, please check latest news on GitHub [here](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).**
 
-### Changes in v1.11.7  (in development)
+### Changes in v1.11.7  (in development; to be 1.12.0)
 
 #### NEW FEATURES
 
 #### BUG FIXES
 
 #### NOTES
+
+1. The option `datatable.CJ.names` is now TRUE by default as per NEWS item 6 in v1.11.6 (see below). This option will be removed in v1.13.0.
 
 
 ### Changes in v1.11.6  (on CRAN 19 Sep 2018)
