@@ -1239,14 +1239,17 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         ivars = names(i)
         ivars[leftcols] = names(x)[rightcols]
         w2 = chmatch(ansvars[wna], ivars)
-        if (any(w2na <- is.na(w2))) {
+        if (anyNA(w2)) 
+          w2na <- is.na(w2)
           ivars = paste0("i.",ivars)
           ivars[leftcols] = names(i)[leftcols]
           w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
-          if (any(w2na <- is.na(w2))) {
+
+          if (anyNA(w2)) {
+            w2na <- is.na(w2)
             ivars[leftcols] = paste0("i.",ivars[leftcols])
             w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
-            if (any(w2na <- is.na(w2))) stop("column(s) not found: ", paste(ansvars[wna][w2na],sep=", "))
+            if (anyNA(w2)) stop("column(s) not found: ", paste(ansvars[wna][is.na(w2)],sep=", "))
           }
         }
         icols = w2
@@ -1410,7 +1413,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
 
       # Fix for #813 and #758. Ex: DT[c(FALSE, FALSE), list(integer(0L), y)]
       # where DT = data.table(x=1:2, y=3:4) should return an empty data.table!!
-      if (!is.null(irows) && {identical(irows, integer(0L)) || {min(irows) == 0L && max(irows) == 0L}}) ## TODO: any way to not check all 'irows' values?
+      if (!is.null(irows) && {identical(irows, integer(0L)) || {!anyNA(irows) && min(irows) == 0L && max(irows) == 0L}}) ## TODO: any way to not check all 'irows' values?
         if (is.atomic(jval)) jval = jval[0L] else jval = lapply(jval, `[`, 0L)
       if (is.atomic(jval)) {
         setattr(jval,"names",NULL)
