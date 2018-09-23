@@ -7,6 +7,8 @@
 
 #### BUG FIXES
 
+1. A bug that produces warnings in key checking when joining two data.tables is fixed, [#3061](https://github.com/Rdatatable/data.table/issues/3061). Thanks to @renkun-ken for reporting and the PR.
+
 #### NOTES
 
 1. The option `datatable.CJ.names` is now TRUE by default as per NEWS item 6 in v1.11.6 (see below). This option will be removed in v1.13.0.
