@@ -12205,7 +12205,7 @@ options(datatable.use.index=FALSE)
 test(1942.11, DT[,sum(v),keyby=id1,verbose=TRUE], data.table(id1=c("D","A","C"), V1=INT(1,6,8), key="id1"), output="Finding groups using forderv")
 options(old)
 
-# merge warning: longer object length is not a multiple of shorter object length (#3061)
+# merge warning: longer object length is not a multiple of shorter object length, #3061
 DT1 <- data.table(
   id = c("A", "A", "A", "A", "A"),
   date = c(19900321L, 19901231L, 19901231L, 19901231L, 19901231L),
@@ -12220,7 +12220,11 @@ DT2 <- data.table(
   key = c("id", "date", "period"))
 test(1943.1, (ans<-DT1[DT2])[,1:4], DT1)                         # ok before
 test(1943.2, DT1[DT2, on=c("id","date","period")], ans)          # ok before
-test(1943.3, DT1[DT2, on=c("id","date","period","year")], ans)   # no warning #3061 (longer object length is not a multiple)
+test(1943.3, DT1[DT2, on=c("id","date","period","year")], ans)   # no warning (longer object length is not a multiple)
+DT1 = data.table(id=c("A","A","A"), date=1:3, val=7:9, key="id,date")
+DT2 = data.table(id=c("A","A","A"), date=1:3, date2=3:1, key="id,date")
+test(1943.4, DT1[DT2, on=c("id",date="date2")],
+             data.table(id="A", date=3:1, val=9:7, i.date=1:3))  # was invalidly keyed by id,date in 1.11.6
 
 
 ###################################
