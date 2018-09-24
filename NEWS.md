@@ -1,17 +1,11 @@
 
 **If you are viewing this file on CRAN, please check latest news on GitHub [here](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).**
 
-### Changes in v1.11.7  (in development; to be 1.12.0)
-
-#### NEW FEATURES
+### Changes in v1.11.7  (in development)
 
 #### BUG FIXES
 
 1. v1.11.6 introduced a bug where joining two keyed tables using `on=` to columns not forming a leading subset of `key(i)` could result in an invalidly keyed result, [#3061](https://github.com/Rdatatable/data.table/issues/3061). Subsequent queries on the result could then return incorrect results. A warning `longer object length is not a multiple of shorter object length` could also occur. Thanks to @renkun-ken for reporting and the PR.
-
-#### NOTES
-
-1. The option `datatable.CJ.names` is now TRUE by default as per NEWS item 6 in v1.11.6 (see below). This option will be removed in v1.13.0.
 
 
 ### Changes in v1.11.6  (on CRAN 19 Sep 2018)

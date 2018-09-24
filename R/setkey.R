@@ -406,7 +406,7 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
   }
   setattr(l, "row.names", .set_row_names(length(l[[1L]])))
   setattr(l, "class", c("data.table", "data.frame"))
-  if (getOption("datatable.CJ.names", TRUE)) {  # added as FALSE in v1.11.6. Defaul TRUE in v1.12.0. TODO: remove in v1.13.0
+  if (getOption("datatable.CJ.names", FALSE)) {  # added as FALSE in v1.11.6. TODO: default TRUE in v1.12.0, remove in v1.13.0
     vnames = name_dots(...)$vnames
   } else {
     if (is.null(vnames <- names(l))) vnames = paste0("V", seq_len(length(l)))
