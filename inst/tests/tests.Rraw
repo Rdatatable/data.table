@@ -1218,7 +1218,7 @@ DT[1,a:="A"]
 test(428, DT, data.table(a=factor(c("A","Z","A","Z")),b=1:4))
 DT[1,a:=2L]
 test(429, DT, data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
-test(430, DT[1,1]<- 3L, NA_integer_, warning="RHS contains 3 which is outside the levels range.*1,2.*of column 1, NAs generated")
+test(430, DT[1,1]<- 3L, 3L, warning="RHS contains 3 which is outside the levels range.*1,2.*of column 1, NAs generated")
 test(431, DT[1,1:=4L], data.table(a=factor(c(NA,"Z","A","Z")),b=1:4), warning="RHS contains 4 which is outside the levels range.*1,2.*of column 1, NAs generated")
 
 
