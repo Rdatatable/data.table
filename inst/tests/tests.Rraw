@@ -1,4 +1,5 @@
 require(methods)
+Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)  # Check && and || using only length-1 logicals
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if (!identical(suppressWarnings(packageDescription("data.table")), NA)) {
     remove.packages("data.table")
