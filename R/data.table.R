@@ -991,7 +991,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           jvnames = gsub("^[.](N|I|GRP|BY)$","\\1",as.character(jsub))
           # jsub is list()ed after it's eval'd inside dogroups.
         }
-      } else if (is.call(jsub) && as.character(jsub[[1L]]) %chin% c("list",".")) {
+      } else if (is.call(jsub) && as.character(jsub[[1L]])[[1L]] %chin% c("list",".")) {
         jsub[[1L]] = quote(list)
         jsubl = as.list.default(jsub)  # TO DO: names(jsub) and names(jsub)="" seem to work so make use of that
         if (length(jsubl)>1L) {
