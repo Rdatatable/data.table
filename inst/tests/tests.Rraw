@@ -6216,7 +6216,7 @@ if (test_xts) {
   dt_xt = as.data.table(xt)
   xt_dt = as.xts.data.table(dt)
   test(1465.1, all.equal(dt, dt_xt, check.attributes = FALSE))
-  if (packageVersion("xts") <= "0.11-1" && nzchar(Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_"))) {
+  if (packageVersion("xts") > "0.11-1" && nzchar(Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_"))) {
     test(1465.2, xt, xt_dt)
   }
   # POSIXct index
@@ -6225,7 +6225,7 @@ if (test_xts) {
   dt_xt = as.data.table(xt)
   xt_dt = as.xts.data.table(dt)
   test(1465.3, all.equal(dt, dt_xt, check.attributes = FALSE))
-  if (packageVersion("xts") <= "0.11-1" && nzchar(Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_"))) {
+  if (packageVersion("xts") > "0.11-1" && nzchar(Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_"))) {
     test(1465.4, xt, xt_dt)
   }
   # index types returned from to.period
