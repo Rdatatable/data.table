@@ -12226,6 +12226,19 @@ DT2 = data.table(id=c("A","A","A"), date=1:3, date2=3:1, key="id,date")
 test(1943.4, DT1[DT2, on=c("id",date="date2")],
              data.table(id="A", date=3:1, val=9:7, i.date=1:3))  # was invalidly keyed by id,date in 1.11.6
 
+# keyby index where subset is present, #3062
+DT = data.table(group=rep(c("A","B"),times=c(2,3)), flag=c(1,0,1,0,1), x=1:5)
+test(1944.1, DT[flag == 1 & group == "B", sum(x)], 8L)   # creates index
+test(1944.2, indices(DT), "group__flag")
+test(1944.3, DT[flag == 1, sum(x), keyby = group],       # should not use index because i subset is present; index squashing not yet implemented
+             data.table(group=c("A","B"), V1=INT(1,8), key="group"))
+set.seed(123)
+N = 10
+DT = data.table(group = rbinom(N, 5, 0.5), x = 1:N, flag = rbinom(N, 1, 0.9))
+test(1944.4, DT[flag == 1 & group == 1, x], 6L)
+test(1944.5, indices(DT), "group__flag")
+test(1944.6, DT[flag == 1, sum(x), keyby = group], data.table(group=1:4, V1=INT(6,3,18,17), key="group"))
+
 
 ###################################
 #  Add new tests above this line  #

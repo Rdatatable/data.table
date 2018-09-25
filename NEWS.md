@@ -5,7 +5,9 @@
 
 #### BUG FIXES
 
-1. v1.11.6 introduced a bug where joining two keyed tables using `on=` to columns not forming a leading subset of `key(i)` could result in an invalidly keyed result, [#3061](https://github.com/Rdatatable/data.table/issues/3061). Subsequent queries on the result could then return incorrect results. A warning `longer object length is not a multiple of shorter object length` could also occur. Thanks to @renkun-ken for reporting and the PR.
+1. Joining two keyed tables using `on=` to columns not forming a leading subset of `key(i)` could result in an invalidly keyed result, [#3061](https://github.com/Rdatatable/data.table/issues/3061). Subsequent queries on the result could then return incorrect results. A warning `longer object length is not a multiple of shorter object length` could also occur. Thanks to @renkun-ken for reporting and the PR.
+
+2. `keyby=` on columns for which an index exists now uses the index (new feature 7 in v1.11.6 below) but if an `i` subset is present in the same query then it could segfault, [#3062](https://github.com/Rdatatable/data.table/issues/3062). Again thanks to @renkun-ken for reporting.
 
 
 ### Changes in v1.11.6  (on CRAN 19 Sep 2018)
