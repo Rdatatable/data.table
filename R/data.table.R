@@ -882,7 +882,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         bysameorder = byindex = FALSE
         if (all(vapply_1b(bysubl, is.name))) {
           bysameorder = orderedirows && haskey(x) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
-          if (!bysameorder && !missing(keyby) && isTRUE(getOption("datatable.use.index"))) {
+          # either bysameorder or byindex can be true but not both. TODO: better name for bysameorder might be bykeyx
+          if (!bysameorder && !missing(keyby) && !length(irows) && isTRUE(getOption("datatable.use.index"))) {
+            # TODO: could be allowed if length(irows)>1 but then the index would need to be squashed for use by uniqlist, #3062
             tt = paste0(allbyvars, collapse="__")
             w = which.first(substring(indices(x),1L,nchar(tt)) == tt)  # substring to avoid the overhead of grep
             if (!is.na(w)) {
