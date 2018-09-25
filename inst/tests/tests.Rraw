@@ -6208,7 +6208,7 @@ test(1464.13, rleidv(DT, 1:2), ans<-INT(1,2,3,4,5,6,6,6,7,8,8,9,10,11,12,13,14,1
 test(1464.14, rleidv(DT, 2:1), ans)
 test(1464.15, rleidv(DT, c(3,1)), INT(1,1,2,2,3,4,5,5,6,7,8,9,10,11,12,13,14,15,16,17))
 
-if (test_xts && {nzchar(Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_")) || packageVersion("xts") > "0.11-1"}) {
+if (test_xts && {!nzchar(Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_")) || packageVersion("xts") > "0.11-1"}) {
   # data.table-xts conversion #882
   # Date index
   dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
