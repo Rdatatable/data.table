@@ -184,7 +184,8 @@ replace_dot_alias <- function(e) {
 
 .massagei <- function(x) {
   # J alias for list as well in i, just if the first symbol
-  if (is.call(x) && as.character(x[[1L]]) %chin% c("J","."))
+  # if x = substitute(base::order) then as.character(x[[1L]]) == c("::", "base", "order")
+  if (is.call(x) && as.character(x[[1L]])[[1L]] %chin% c("J","."))
     x[[1L]] = quote(list)
   x
 }
@@ -1555,7 +1556,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   lockBinding(".iSD",SDenv)
 
   GForce = FALSE
-  if ( getOption("datatable.optimize")>=1 && (is.call(jsub) || (is.name(jsub) && as.character(jsub) %chin% c(".SD",".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
+  if ( getOption("datatable.optimize")>=1 && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[[1L]] %chin% c(".SD",".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
     # Optimization to reduce overhead of calling lapply over and over for each group
     ansvarsnew = setdiff(ansvars, othervars)
     oldjsub = jsub
