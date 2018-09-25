@@ -9,6 +9,7 @@
 
 2. `keyby=` on columns for which an index exists now uses the index (new feature 7 in v1.11.6 below) but if an `i` subset is present in the same query then it could segfault, [#3062](https://github.com/Rdatatable/data.table/issues/3062). Again thanks to @renkun-ken for reporting.
 
+3. Assignments of variables to factor columns are now certain to not alter the original variable [#2984](https://github.com/Rdatatable/data.table/issues/2984). Thanks to @radfordneal for reporting and @MarkusBonsch for fixing.
 
 ### Changes in v1.11.6  (on CRAN 19 Sep 2018)
 

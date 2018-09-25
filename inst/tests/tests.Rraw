@@ -12239,6 +12239,13 @@ test(1944.4, DT[flag == 1 & group == 1, x], 6L)
 test(1944.5, indices(DT), "group__flag")
 test(1944.6, DT[flag == 1, sum(x), keyby = group], data.table(group=1:4, V1=INT(6,3,18,17), key="group"))
 
+## tests for issue #2984
+DT <- data.table(a = factor(c("A", "Z")), b = 1:4)
+c <- 3L
+DT[1, a:=c]
+test(1945.1, c, 3L)
+DT[2,1]<- c 
+test(1945.2, c, 3L)
 
 ###################################
 #  Add new tests above this line  #
