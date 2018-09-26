@@ -1720,26 +1720,15 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "first", "tail", "[") # added .N for #5760
         .ok <- function(q) {
           if (dotN(q)) return(TRUE) # For #5760
-          # cond = is.call(q) && as.character(q1 <- q[[1L]]) %chin% gfuns && !is.call(q[[2L]])
-          cond = FALSE  # unless:
-          if (is.call(q)) {
-            q1c  = as.character(q[[1L]])
-            if (length(q1c) == 1L && q1c %chin% gfuns) {
-              cond = !is.call(q[[2L]])
-            }
-          }
+          cond = is.call(q) && length(q1c <- as.character(q[[1L]]))==1L && q1c %chin% gfuns && !is.call(q[[2L]])
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
           ans  = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L)))
           if (identical(ans, TRUE)) return(ans)
           # otherwise there must be three arguments, and only in two cases --
           #   1) head/tail(x, 1) or 2) x[n], n>0
-          ans = cond && length(q)==3L &&
-            length(q3 <- q[[3L]])==1L && is.numeric(q3) && (
-              # Since cond = TRUE here, and can only be TRUE
-              # if length(q1c) == 1, there's no need to check
-              # length(q1c) == 1 again.
-              (q1c %chin% c("head", "tail") && q3==1L) ||
-                (q1c %chin% "[" && q3 > 0) )
+          ans = cond && length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
+            # Since cond==TRUE here, and can only be TRUE if length(q1c)==1, there's no need to check length(q1c)==1 again.
+            ( (q1c %chin% c("head", "tail") && q3==1L) || (q1c %chin% "[" && q3>0L) )
           if (is.na(ans)) ans=FALSE
           ans
         }
