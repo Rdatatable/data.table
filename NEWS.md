@@ -9,6 +9,10 @@
 
 2. `keyby=` on columns for which an index exists now uses the index (new feature 7 in v1.11.6 below) but if an `i` subset is present in the same query then it could segfault, [#3062](https://github.com/Rdatatable/data.table/issues/3062). Again thanks to @renkun-ken for reporting.
 
+#### NOTES
+
+1. The test suite now turns on R's new _R_CHECK_LENGTH_1_LOGIC2_ to catch when internal use of `&&` or `||` encounter arguments of length more than one. Thanks to Hugh Parsonage for finding and fixing the problems caught by this.
+
 
 ### Changes in v1.11.6  (on CRAN 19 Sep 2018)
 
