@@ -1,4 +1,11 @@
 require(methods)
+
+# From R 3.6.0 onwards, we can check that && and || are using only length-1 logicals (in the test suite)
+# rather than relying on x && y being equivalent to x[[1L]] && y[[1L]]  silently.
+orig__R_CHECK_LENGTH_1_LOGIC2_ <- Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_", unset = NA_character_)
+Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
+# This environment variable is restored to its previous state (including not defined) at the end of this file
+
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if (!identical(suppressWarnings(packageDescription("data.table")), NA)) {
     remove.packages("data.table")
@@ -6207,7 +6214,11 @@ test(1464.13, rleidv(DT, 1:2), ans<-INT(1,2,3,4,5,6,6,6,7,8,8,9,10,11,12,13,14,1
 test(1464.14, rleidv(DT, 2:1), ans)
 test(1464.15, rleidv(DT, c(3,1)), INT(1,1,2,2,3,4,5,5,6,7,8,9,10,11,12,13,14,15,16,17))
 
-if (test_xts) {
+if (test_xts &&
+     # package xts also has an issue with a && clause.  To avoid the tests failing due to this
+     # package we only test xts when not checking OR if the package version has incremented
+     # (either because my diagnosis was incorrect or the bug was fixed)
+    {!nzchar(Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_")) || packageVersion("xts") > "0.11-1"}) {
   # data.table-xts conversion #882
   # Date index
   dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
@@ -12301,4 +12312,8 @@ if (nfail > 0) {
 cat(plat,"\n\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
 # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
 # stale due to not updating yet since a fix in R-devel, for example.
-
+if (is.na(orig__R_CHECK_LENGTH_1_LOGIC2_)) {
+  Sys.unsetenv("_R_CHECK_LENGTH_1_LOGIC2_")
+} else {
+  Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_)
+}

@@ -184,7 +184,8 @@ replace_dot_alias <- function(e) {
 
 .massagei <- function(x) {
   # J alias for list as well in i, just if the first symbol
-  if (is.call(x) && as.character(x[[1L]]) %chin% c("J","."))
+  # if x = substitute(base::order) then as.character(x[[1L]]) == c("::", "base", "order")
+  if (is.call(x) && as.character(x[[1L]])[[1L]] %chin% c("J","."))
     x[[1L]] = quote(list)
   x
 }
@@ -992,7 +993,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           jvnames = gsub("^[.](N|I|GRP|BY)$","\\1",as.character(jsub))
           # jsub is list()ed after it's eval'd inside dogroups.
         }
-      } else if (is.call(jsub) && as.character(jsub[[1L]]) %chin% c("list",".")) {
+      } else if (is.call(jsub) && as.character(jsub[[1L]])[[1L]] %chin% c("list",".")) {
         jsub[[1L]] = quote(list)
         jsubl = as.list.default(jsub)  # TO DO: names(jsub) and names(jsub)="" seem to work so make use of that
         if (length(jsubl)>1L) {
@@ -1557,7 +1558,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   lockBinding(".iSD",SDenv)
 
   GForce = FALSE
-  if ( getOption("datatable.optimize")>=1 && (is.call(jsub) || (is.name(jsub) && as.character(jsub) %chin% c(".SD",".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
+  if ( getOption("datatable.optimize")>=1 && (is.call(jsub) || (is.name(jsub) && as.character(jsub)[[1L]] %chin% c(".SD",".N"))) ) {  # Ability to turn off if problems or to benchmark the benefit
     # Optimization to reduce overhead of calling lapply over and over for each group
     ansvarsnew = setdiff(ansvars, othervars)
     oldjsub = jsub
@@ -1606,8 +1607,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         jsub = as.call(c(quote(list), lapply(ansvarsnew, as.name)))
         jvnames = ansvarsnew
       }
-    } else {
-      if ( length(jsub) == 3L && (jsub[[1L]] == "[" || jsub[[1L]] == "head" || jsub[[1L]] == "tail") && jsub[[2L]] == ".SD" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N") ) {
+    } else if (length(as.character(jsub[[1L]])) == 1L) {  # Else expect problems with <jsub[[1L]] == >
+      if (length(jsub) == 3L && (jsub[[1L]] == "[" || jsub[[1L]] == "head" || jsub[[1L]] == "tail") && jsub[[2L]] == ".SD" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N") ) {
         # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
         jsub = as.call(c(quote(list), lapply(ansvarsnew, function(x) { jsub[[2L]] = as.name(x); jsub })))
         jvnames = ansvarsnew
@@ -1634,7 +1635,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # Fix for #744. Don't use 'i' in for-loops. It masks the 'i' from the input!!
         for (i_ in 2L:length(jsubl)) {
           this = jsub[[i_]]
-          if (is.name(this)) {
+          if (is.name(this)) {  # no need to check length(this)==1L; is.name() returns single TRUE or FALSE (documented); can't have a vector of names
             if (this == ".SD") { # optimise '.SD' alone
               any_SD = TRUE
               jsubl[[i_]] = lapply(ansvarsnew, as.name)
@@ -1712,7 +1713,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (getOption("datatable.optimize")>=2 && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
       if (!length(ansvars) && !use.I) {
         GForce = FALSE
-        if ( (is.name(jsub) && jsub == ".N") || (is.call(jsub) && length(jsub)==2L && jsub[[1L]] == "list" && jsub[[2L]] == ".N") ) {
+        if ( (is.name(jsub) && jsub == ".N") || (is.call(jsub) && length(jsub)==2L && length(as.character(jsub[[1L]])) && as.character(jsub[[1L]])[1L] == "list" && length(as.character(jsub[[2L]])) && as.character(jsub[[2L]])[1L] == ".N") ) {
           GForce = TRUE
           if (verbose) cat("GForce optimized j to '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
         }
@@ -1721,16 +1722,15 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "first", "tail", "[") # added .N for #5760
         .ok <- function(q) {
           if (dotN(q)) return(TRUE) # For #5760
-          cond = is.call(q) && as.character(q1 <- q[[1L]]) %chin% gfuns && !is.call(q[[2L]])
+          cond = is.call(q) && length(q1c <- as.character(q[[1L]]))==1L && q1c %chin% gfuns && !is.call(q[[2L]])
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
           ans  = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L)))
           if (identical(ans, TRUE)) return(ans)
           # otherwise there must be three arguments, and only in two cases --
           #   1) head/tail(x, 1) or 2) x[n], n>0
-          ans = cond && length(q)==3L &&
-            length(q3 <- q[[3L]])==1L && is.numeric(q3) && (
-              (as.character(q1) %chin% c("head", "tail") && q3==1L) ||
-                (as.character(q1) %chin% "[" && q3 > 0) )
+          ans = cond && length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
+            # Since cond==TRUE here, and can only be TRUE if length(q1c)==1, there's no need to check length(q1c)==1 again.
+            ( (q1c %chin% c("head", "tail") && q3==1L) || (q1c %chin% "[" && q3>0L) )
           if (is.na(ans)) ans=FALSE
           ans
         }
