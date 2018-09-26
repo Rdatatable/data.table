@@ -1633,7 +1633,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         # Fix for #744. Don't use 'i' in for-loops. It masks the 'i' from the input!!
         for (i_ in 2L:length(jsubl)) {
           this = jsub[[i_]]
-          if (length(this) == 1L && is.name(this)) {
+          if (is.name(this)) {  # no need to check length(this)==1L; is.name() returns single TRUE or FALSE (documented); can't have a vector of names
             if (this == ".SD") { # optimise '.SD' alone
               any_SD = TRUE
               jsubl[[i_]] = lapply(ansvarsnew, as.name)
