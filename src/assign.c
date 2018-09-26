@@ -575,7 +575,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             protecti++;
             // silence warning on singleton NAs
             if (INTEGER(RHS)[0] != NA_INTEGER) warning("Coerced '%s' RHS to 'integer' to match the factor column's underlying type. Character columns are now recommended (can be in keys), or coerce RHS to integer or character first.", type2char(TYPEOF(thisvalue)));
-          } else RHS = thisvalue;
+          } else {
+            // make sure to copy thisvalue. May be modified below. See #2984
+            RHS = PROTECT(duplicate(thisvalue));
+            protecti++;
+          }
           for (j=0; j<length(RHS); j++) {
             if ( (INTEGER(RHS)[j]<1 || INTEGER(RHS)[j]>LENGTH(targetlevels))
                  && INTEGER(RHS)[j] != NA_INTEGER) {
