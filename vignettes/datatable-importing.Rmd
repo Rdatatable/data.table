@@ -29,7 +29,7 @@ It is very easy to use `data.table` as a dependency due to the fact that `data.t
 
 ## `DESCRIPTION` file {DESCRIPTION}
 
-The first place to define a dependency in a package is the `DESCRIPTION` file. Most commonly, you will need to add `data.table` under the `Imports:` field. Doing so will necessitate an installation of `data.table` before your package can compile/install. As mentioned above, no other packages will be installed because `data.table` does not have any dependencies of its own. You can also specify the minimal required version of a dependency; for example, if your package is using the `fwrite` function, which was introduced in `data.table` in version 1.9.8, you should incorporate this as `Imports: data.table (>= 1.9.8)`. This way you can ensure that the version of `data.table` installed is 1.9.8 or later before your users will be able to install your package. Besides the `Imports:` field, you can also use `Depends: data.table`; we discourage this approach because it forces the end users of your package to use `data.table`.
+The first place to define a dependency in a package is the `DESCRIPTION` file. Most commonly, you will need to add `data.table` under the `Imports:` field. Doing so will necessitate an installation of `data.table` before your package can compile/install. As mentioned above, no other packages will be installed because `data.table` does not have any dependencies of its own. You can also specify the minimal required version of a dependency; for example, if your package is using the `fwrite` function, which was introduced in `data.table` in version 1.9.8, you should incorporate this as `Imports: data.table (>= 1.9.8)`. This way you can ensure that the version of `data.table` installed is 1.9.8 or later before your users will be able to install your package. Besides the `Imports:` field, you can also use `Depends: data.table` but we strongly discourage this approach (and may disallow it in future) because this loads `data.table` into your user's workspace; i.e. it enables `data.table` functionality in your user's scripts without them requesting that. `Imports:` is the proper way to use `data.table` within your package without inflicting `data.table` on your user. In fact, we hope the `Depends:` field is eventually deprecated in R since this is true for all packages.
 
 ## `NAMESPACE` file {NAMESPACE}
 
@@ -84,7 +84,7 @@ test_that("aggregate dt", { expect_true(nrow(aggr(gen())) < 100) })
 
 ## Dealing with "undefined global functions or variables"
 
-`data.table`'s use of Non-Standard Evaluation (especially on the left-hand side of `:=`) is not well-recognised by `R CMD check`. This results in `NOTE`s like the following during package check:
+`data.table`'s use of R's deferred evaluation (especially on the left-hand side of `:=`) is not well-recognised by `R CMD check`. This results in `NOTE`s like the following during package check:
 
 ```
 * checking R code for possible problems ... NOTE
@@ -169,13 +169,13 @@ Some users ([e.g.](https://github.com/Rdatatable/data.table/issues/2341)) may pr
 
 In this case, the un-exported function `[.data.table` will revert to calling `[.data.frame` as a safeguard since `data.table` has no way of knowing that the parent package is aware it's attempting to make calls against the syntax of `data.table`'s query API (which could lead to unexpected behavior as the structure of calls to `[.data.frame` and `[.data.table` fundamentally differ, e.g. the latter has many more arguments).
 
-If this is anyway your preferred approach to package development, please define `.datatable.aware = TRUE` anywhere in your R source code (no need to export). This let's `data.table` know that you as a package developer have designed your code to intentionally rely on `data.table` functionality even though it may not be obvious from inspecting your `NAMESPACE` file.
+If this is anyway your preferred approach to package development, please define `.datatable.aware = TRUE` anywhere in your R source code (no need to export). This tells `data.table` that you as a package developer have designed your code to intentionally rely on `data.table` functionality even though it may not be obvious from inspecting your `NAMESPACE` file.
 
 `data.table` determines on the fly whether the calling function is aware it's tapping into `data.table` with the internal `cedta` function (**C**alling **E**nvironment is **D**ata **T**able **A**ware), which, beyond checking `the `?getNamespaceImports` for your package, also checks the existence of this variable (among other things).
 
 ## Further information on dependencies
 
-For more canonical documentation of defining packages dependency check the official manual: [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html) 
+For more canonical documentation of defining packages dependency check the official manual: [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html)
 
 ## Importing from non-R Applications {non-r-API}
 
