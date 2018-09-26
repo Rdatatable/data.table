@@ -11,17 +11,20 @@ SEXP uniqlist(SEXP l, SEXP order)
   // (maximum length the number of rows) and the length returned in anslen.
   // No NA in order which is guaranteed since internal-only. Used at R level internally (Cuniqlist) but is not and should not be exported.
   // DONE: ans is now grown
+  if (!isNewList(l)) error("Internal error: uniqlist has not been passed a list of columns");
+  R_len_t ncol = length(l);
+  R_len_t nrow = length(VECTOR_ELT(l,0));
+  if (!isInteger(order)) error("Internal error: uniqlist has been passed a non-integer order");
+  if (LENGTH(order)<1) error("Internal error: uniqlist has been passed a length-0 order");
+  if (LENGTH(order)>1 && LENGTH(order)!=nrow) error("Internal error: uniqlist has been passed length(order)==%d but nrow==%d", LENGTH(order), nrow);
+  bool via_order = INTEGER(order)[0] != -1;  // has an ordering vector been passed in that we have to hop via? Don't use MISSING() here as it appears unstable on Windows
+
   unsigned long long *ulv; // for numeric check speed-up
   SEXP v, ans, class;
-  R_len_t i, j, nrow, ncol, len, thisi, previ, isize=1000;
-
+  R_len_t i, j, len, thisi, previ, isize=1000;
   int *iidx = Calloc(isize, int); // for 'idx'
-  ncol = length(l);
-  nrow = length(VECTOR_ELT(l,0));
   len = 1;
   iidx[0] = 1; // first row is always the first of the first group
-  bool via_order = INTEGER(order)[0] != -1;  // has an ordering vector been passed in that we have to hop via?
-  // Using MISSING() does not seem stable under windows. Always having arguments passed in seems a good idea anyway.
 
   if (ncol==1) {
 

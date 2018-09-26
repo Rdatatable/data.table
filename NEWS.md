@@ -5,7 +5,17 @@
 
 #### BUG FIXES
 
-1. v1.11.6 introduced a bug where joining two keyed tables using `on=` to columns not forming a leading subset of `key(i)` could result in an invalidly keyed result, [#3061](https://github.com/Rdatatable/data.table/issues/3061). Subsequent queries on the result could then return incorrect results. A warning `longer object length is not a multiple of shorter object length` could also occur. Thanks to @renkun-ken for reporting and the PR.
+1. Joining two keyed tables using `on=` to columns not forming a leading subset of `key(i)` could result in an invalidly keyed result, [#3061](https://github.com/Rdatatable/data.table/issues/3061). Subsequent queries on the result could then return incorrect results. A warning `longer object length is not a multiple of shorter object length` could also occur. Thanks to @renkun-ken for reporting and the PR.
+
+2. `keyby=` on columns for which an index exists now uses the index (new feature 7 in v1.11.6 below) but if an `i` subset is present in the same query then it could segfault, [#3062](https://github.com/Rdatatable/data.table/issues/3062). Again thanks to @renkun-ken for reporting.
+
+3. Assigning an out-of-range integer to an item in a factor column (a rare operation) correctly created an `NA` in that spot with warning, but now no longer also corrupts the variable being assigned, [#2984](https://github.com/Rdatatable/data.table/issues/2984). Thanks to @radfordneal for reporting and @MarkusBonsch for fixing. Assigning a string which is missing from the factor levels continues to automatically append the string to the factor levels.
+
+4. Assigning a sequence to a column using base R methods (e.g. `DT[["foo"]] = 1:10`) could cause subsetting to fail with `Internal error in subset.c: column <n> is an ALTREP vector`, [#3051](https://github.com/Rdatatable/data.table/issues/3051). Thanks to Michel Lang for reporting.
+
+#### NOTES
+
+1. The test suite now turns on R's new _R_CHECK_LENGTH_1_LOGIC2_ to catch when internal use of `&&` or `||` encounter arguments of length more than one. Thanks to Hugh Parsonage for finding and fixing the problems caught by this.
 
 
 ### Changes in v1.11.6  (on CRAN 19 Sep 2018)
