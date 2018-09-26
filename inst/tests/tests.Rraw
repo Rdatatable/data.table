@@ -12242,10 +12242,10 @@ test(1944.6, DT[flag == 1, sum(x), keyby = group], data.table(group=1:4, V1=INT(
 # assigning an int greater than length(levels) corruption of int, #2984
 DT <- data.table(a = factor(c("A", "Z")), b = 1:4)
 c <- 3L
-DT[1, a:=c]
-test(1945.1, c, 3L)
-DT[2,1]<- c
+test(1945.1, DT[1, a:=c][1,a], factor(NA, levels=c("A","Z")), warning="RHS.*outside the levels range.*NAs generated")
 test(1945.2, c, 3L)
+test(1945.3, DT[2,1] <- c, 3L, warning="RHS.*outside the levels range.*NAs generated")
+test(1945.4, c, 3L)
 
 # subset a data.table containing an altrep derived from ]<-, ]]<- etc, #3051
 DT = data.table(A=1:6, B=1:3)
