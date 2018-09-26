@@ -29,7 +29,7 @@ export(rleid)
 export(rleidv)
 export(rowid)
 export(rowidv)
-export(as.xts.data.table)
+
 export(uniqueN)
 export(setDTthreads, getDTthreads)
 # set operators
@@ -89,17 +89,18 @@ S3method(within, data.table)
 S3method(is.na, data.table)
 S3method(format, data.table)
 S3method(Ops, data.table)
-
 S3method(anyDuplicated, data.table)
 
-export(split.data.table)
 S3method(split, data.table)
 export(melt)
-export(melt.data.table)
-S3method(melt, data.table)
+if(getRversion() >= "3.6.0") S3method(reshape2::melt, data.table) else S3method(melt, data.table)
 export(dcast)
-export(dcast.data.table)
 S3method(dcast, data.table)
+if(getRversion() >= "3.6.0") {
+  S3method(xts::as.xts, data.table)
+} else {
+  export(as.xts.data.table)
+}
 
 import(utils)
 S3method(update, dev.pkg)
@@ -113,14 +114,12 @@ S3method(na.omit, data.table)
 export(as.IDate,as.ITime,IDateTime)
 export(second,minute,hour,yday,wday,mday,week,isoweek,month,quarter,year)
 
-export(as.Date.IDate) # workaround for zoo bug, see #1500
-
 S3method("[", ITime)
 S3method("+", IDate)
 S3method("-", IDate)
 S3method(as.character, ITime)
 S3method(as.data.frame, ITime)
-S3method(as.Date, IDate)
+if(getRversion() >= "3.6.0") S3method(zoo::as.Date, IDate) else S3method(as.Date, IDate)  # workaround for zoo bug, see #1500
 S3method(as.IDate, Date)
 S3method(as.IDate, POSIXct)
 S3method(as.IDate, default)
