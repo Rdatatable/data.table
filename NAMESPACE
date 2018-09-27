@@ -105,7 +105,8 @@ S3method(na.omit, data.table)
 
 S3method(as.data.table, xts)
 if(getRversion() >= "3.6.0") {
-  S3method(xts::as.xts, data.table)  # delayed registration (new in R-devel)
+  export(as.xts.data.table)          # fails in R-devel if not exported too, but I don't understand why
+  S3method(xts::as.xts, data.table)  # delayed registration (new in R-devel)  -- shouldn't this also export as.xts.data.table for us?
 } else {
   export(as.xts.data.table)
 }
