@@ -14,7 +14,7 @@ Authors@R: c(
   person("Hugh","Parsonage",  role="ctb"))
 Depends: R (>= 3.1.0)
 Imports: methods
-Suggests: bit64, curl, knitr, xts, nanotime, zoo, reshape2
+Suggests: bit64, curl, knitr, xts, nanotime, zoo
 Description: Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns, friendly and fast character-separated-value read/write. Offers a natural and flexible syntax, for faster development.
 License: MPL-2.0 | file LICENSE
 URL: http://r-datatable.com
