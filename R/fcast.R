@@ -14,10 +14,12 @@ dcast <- function(data, formula, fun.aggregate = NULL, ..., margins = NULL,
     UseMethod("dcast", data)
   else {
     # reshape2::dcast is not generic so we have to call it explicitly. See comments at the top of fmelt.R too.
+    # nocov start
     ns = tryCatch(getNamespace("reshape2"), error=function(e)
          stop("The dcast generic in data.table has been passed a ",class(data)[1L]," (not a data.table) but the reshape2 package is not installed to process this type. Please either install reshape2 and try again, or pass a data.table to dcast instead."))
     ns$dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
              subset = subset, fill = fill, value.var = value.var)
+    # nocov end
   }
 }
 
