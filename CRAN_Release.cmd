@@ -173,7 +173,8 @@ cd ~/build
 wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
 rm -rf R-devel
 tar xvf R-devel.tar.gz
-cd R-devel
+mv R-devel R-devel-strict
+cd R-devel-strict    # important to change directory name before building not after because the path is baked into the build, iiuc
 # Following R-exts#4.3.3
 
 ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
@@ -185,11 +186,11 @@ cd R-devel
 #   https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
 
 make
-alias Rdevel='~/build/R-devel/bin/R --vanilla'
+alias Rdevel-strict='~/build/R-devel-strict/bin/R --vanilla'
 cd ~/GitHub/data.table
-Rdevel CMD INSTALL data.table_1.11.7.tar.gz
+Rdevel-strict CMD INSTALL data.table_1.11.8.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
-Rdevel
+Rdevel-strict
 install.packages(c("bit64","xts","nanotime"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
 require(data.table)
 test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
@@ -384,17 +385,18 @@ cd ~/build/revdeplib/
 export R_LIBS=~/build/revdeplib/
 export R_LIBS_SITE=none
 export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
-R
+Rdevel
 .libPaths()   # should be just 2 items: revdeplib and the base R package library
+options(repos = c("CRAN"=c("http://cloud.r-project.org")))
 update.packages(ask=FALSE)
 # if package not found on mirror, try manually a different one:
-install.packages("<pkg>", repos="http://cloud.r-project.org/")
+install.packages("<pkg>", repos="http://cran.stat.ucla.edu/")
 update.packages(ask=FALSE)   # a repeat sometimes does more, keep repeating until none
 
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
 # Ensure no library() call in .Rprofile, such as library(bit64)
 source("http://bioconductor.org/biocLite.R")
-biocLite()   # keep repeating until returns with nothing left to do
+biocLite()   # keep repeating until returns with nothing left to do.   Note: huge number of updates under R-devel (I assume that's false)
 # biocLite("BiocUpgrade")
 # This error means it's up to date: "Bioconductor version 3.4 cannot be upgraded with R version 3.3.2"
 
