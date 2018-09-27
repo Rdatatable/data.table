@@ -101,20 +101,22 @@ cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently
 saf = options()$stringsAsFactors
 options(stringsAsFactors=!saf)    # check tests (that might be run by user) are insensitive to option, #2718
 test.data.table()
+install.packages("xml2")   # to check the 150 URLs in NEWS.md under --as-cran below
 q("no")
 R CMD build .
-R CMD check data.table_1.11.5.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
-R CMD INSTALL data.table_1.11.5.tar.gz
+R CMD check data.table_1.11.7.tar.gz --as-cran
+R CMD INSTALL data.table_1.11.7.tar.gz
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.11.5.tar.gz
+R CMD check data.table_1.11.7.tar.gz
 rm ~/.Renviron
 
 R
+remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
 require(data.table)
 test.data.table()
 test.data.table(with.other.packages=TRUE)
@@ -141,7 +143,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.11.5.tar.gz
+R310 CMD INSTALL ./data.table_1.11.7.tar.gz
 R310
 require(data.table)
 test.data.table()
@@ -153,13 +155,15 @@ test.data.table()
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.11.5.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.11.7.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
-# revert ~/.R/Makevars
+q("no")
+vi ~/.R/Makevars
+# revert change above
 R CMD build .
-
+R CMD check data.table_1.11.7.tar.gz
 
 #####################################################
 #  R-devel with UBSAN, ASAN and strict-barrier on too
@@ -183,7 +187,7 @@ cd R-devel
 make
 alias Rdevel='~/build/R-devel/bin/R --vanilla'
 cd ~/GitHub/data.table
-Rdevel CMD INSTALL data.table_1.11.5.tar.gz
+Rdevel CMD INSTALL data.table_1.11.7.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel
 install.packages(c("bit64","xts","nanotime"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
@@ -272,7 +276,7 @@ There are some things to overcome to achieve compile without USE_RINTERNALS, tho
 cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
-echo 'install.packages("~/GitHub/data.table/data.table_1.11.5.tar.gz",repos=NULL)' | ./bin/R --slave
+echo 'install.packages("~/GitHub/data.table/data.table_1.11.7.tar.gz",repos=NULL)' | ./bin/R --slave
 ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
 # keep running and rerunning locally until all problems cease.
@@ -533,7 +537,7 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
 }
 
 # ** ensure latest version installed into revdeplib **
-system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.5.tar.gz")
+system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.7.tar.gz")
 run("rerun.all")
 
 out = function(fnam="~/fail.log") {
@@ -571,7 +575,7 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' para
 Bump versions in DESCRIPTION and NEWS (without 'on CRAN date' text as that's not yet known) to even release number
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
 R CMD build .
-R CMD check --as-cran data.table_1.11.6.tar.gz   # install.packages("xml2") first to check the 150 URLs in NEWS.md under --as-cran, then remove xml2 again
+R CMD check --as-cran data.table_1.11.8.tar.gz
 Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
 Submit to CRAN. Message template :
 -----
@@ -583,7 +587,7 @@ Thanks and best, Matt
 1. Bump version in DESCRIPTION to next odd number
 2. Add new heading in NEWS for the next dev version. Add "(on CRAN date)" on the released heading if already accepted.
 3. Bump 3 version numbers in Makefile
-Push to GitHub so dev can continue. Commit message format "1.11.6 submitted to CRAN. Bump to 1.11.7"
+Push to GitHub so dev can continue. Commit message format "1.11.8 submitted to CRAN. Bump to 1.11.9"
 Bump dev number text in homepage banner
 Cross fingers accepted first time. If not, push changes to devel and backport locally
 Close milestone

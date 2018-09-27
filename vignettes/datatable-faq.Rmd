@@ -469,7 +469,7 @@ Several reasons:
 
 ## I don't have a `key` on a large table, but grouping is still really quick. Why is that?
 
-data.table uses radix sorting. This is significantly faster than other sort algorithms. See [our presentations](http://user2015.math.aau.dk/presentations/234.pdf) on [our homepage](https://github.com/Rdatatable/data.table/wiki) for more information.
+data.table uses radix sorting. This is significantly faster than other sort algorithms. See [our presentations](https://github.com/Rdatatable/data.table/wiki/Presentations) for more information, in particular from useR!2015 Denmark.
 
 This is also one reason why `setkey()` is quick.
 
