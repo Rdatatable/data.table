@@ -10173,35 +10173,35 @@ dt <- data.table(
   amount = sample(1:5, n, TRUE),
   value = sample(c(3, 3.5, 2.5, 2), n, TRUE)
 )
-test(1750.1, # empty input gets grand total only when asked in `sets` with `character()`
+test(1750.01, # empty input gets grand total only when asked in `sets` with `character()`
   groupingsets(dt[0L], j = sum(value), by = c("color","year","status"), sets=list(c("color"))),
   data.table(color=character(), year=as.Date(NA)[-1L], status=factor(), V1=numeric())
 )
-test(1750.2, # empty input gets grand total non-NA, if asked.  Was affected by as.factor(NA) in R 2.15.0
+test(1750.02, # empty input gets grand total non-NA, if asked.  Was affected by as.factor(NA) in R 2.15.0
   groupingsets(dt[0L], j = sum(value), by = c("color","year","status"), sets=list(c("color"), character())),
   data.table(color=NA_character_, year=as.Date(NA), status=as.factor(NA), V1=0)
 )
-test(1750.3, # empty input non-NA grand total, also retain classes and aggregation level
+test(1750.03, # empty input non-NA grand total, also retain classes and aggregation level
   groupingsets(dt[0L], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE),
   data.table(grouping=7L, color=NA_character_, year=as.Date(NA), status=as.factor(NA), amount=0L, value=0)
 )
-test(1750.4, # `sets=list()` produces 0 nrow, for grand total use `set=list(character())` - test at top
+test(1750.04, # `sets=list()` produces 0 nrow, for grand total use `set=list(character())` - test at top
   nrow(groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=list(), id=TRUE)),
   0L
 )
-test(1750.5, # `by` must have unique column names
+test(1750.05, # `by` must have unique column names
   groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status","year"), .SDcols=c("amount","value"), sets=list("year"), id=TRUE),
   error = "Argument 'by' must have unique column names"
 )
-test(1750.6, # 0 ncol `x`
+test(1750.06, # 0 ncol `x`
   groupingsets(data.table(), j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=list(c("year")), id=TRUE),
   error = "Argument 'x' is 0 column data.table, no measure to apply grouping over."
 )
-test(1750.7, # 0 length `by`, must also use `sets=list()`, so 0L rows result
+test(1750.07, # 0 length `by`, must also use `sets=list()`, so 0L rows result
   nrow(groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = character(), .SDcols=c("amount","value"), sets=list(), id=TRUE)),
   0L
 )
-test(1750.8, all( # for any single value from dataset there should be always same aggregate result on any level of grouping
+test(1750.08, all( # for any single value from dataset there should be always same aggregate result on any level of grouping
   sapply(seq_len(nrow(dt)), function(i) uniqueN(
     groupingsets(dt[i], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character())),
     by=c("amount","value")
@@ -10209,7 +10209,7 @@ test(1750.8, all( # for any single value from dataset there should be always sam
 ), TRUE)
 # all grouping id matches in all totals
 r = groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character()), id=TRUE)
-test(1750.9, uniqueN(
+test(1750.09, uniqueN(
   r[, lapply(.SD, sum), by = "grouping", .SDcols = c("cnt","amount","value")],
   by = c("cnt","amount","value")
 ), 1L)
@@ -10271,9 +10271,9 @@ test(1750.19, uniqueN({
 }, by = c("cnt","amount","value")
 ), 1L, warning = "Double counting is going to happen")
 # entries in `by` / `sets` not exists in data.table
-test(1750.20, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","stat"), sets=list(c("color"), character()), id=TRUE), error = "object 'stat' not found")
-test(1750.21, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color"), "stat"), id=TRUE), error = "Columns used in 'sets' but not present in 'by': stat")
-test(1750.22, exists("notexist"), FALSE)  # https://github.com/Rdatatable/data.table/issues/3055#issuecomment-423364960
+test(1750.20, exists("notexist"), FALSE)  # https://github.com/Rdatatable/data.table/issues/3055#issuecomment-423364960
+test(1750.21, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","notexist"), sets=list(c("color"), character()), id=TRUE), error = "object 'notexist' not found")
+test(1750.22, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color"), "stat"), id=TRUE), error = "Columns used in 'sets' but not present in 'by': stat")
 test(1750.23, groupingsets(dt, j = .(a=sum(notexist)), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE), error = "object 'notexist' not found")
 # update by ref `:=` forbidden
 test(1750.24,
