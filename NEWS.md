@@ -29,10 +29,10 @@
 2. Some namespace changes have been made with respect to melt, dcast and xts. No change is expected but if you do have any trouble, please file an issue.
 
 3. `split.data.table` was exported in v1.11.6 in addition to being registered using `S3method(split, data.table)`. The export has been removed again. It had been added because a user said they found it difficult to find, [#2920](https://github.com/Rdatatable/data.table/issues/2920). But S3 methods are not normally exported explicitly by packages. The proper way to access the `split.data.table` method is to call `split(DT)` where `DT` is a `data.table`. The generic (`base::split` in this case) then dispatches to the `split.data.table` method. v1.11.6 was not on CRAN very long (under 1 week) so we think it's better to revert this change quickly. To know what methods exist, R provides the `methods()` function.
-```
-methods(split)               # all the methods for the split generic
-methods(class="data.table")  # all the generics that data.table has a method for (47 currently)
-```
+    ```R
+    methods(split)               # all the methods for the split generic
+    methods(class="data.table")  # all the generics that data.table has a method for (47 currently)
+    ```
 
 
 ### Changes in v1.11.6  (on CRAN 19 Sep 2018)
@@ -84,41 +84,41 @@ methods(class="data.table")  # all the generics that data.table has a method for
 #### NOTES
 
 1. The type coercion warning message has been improved, [#2989](https://github.com/Rdatatable/data.table/pull/2989). Thanks to @sarahbeeysian on [Twitter](https://twitter.com/sarahbeeysian/status/1021359529789775872) for highlighting. For example, given the follow statements:
-```
-  DT = data.table(id=1:3)
-  DT[2, id:="foo"]
-```
+    ```R
+    DT = data.table(id=1:3)
+    DT[2, id:="foo"]
+    ```
 the warning message has changed from :
-```
-Coerced character RHS to integer to match the column's type. Either change the target column ['id'] to
-character first (by creating a new character vector length 3 (nrows of entire table) and assign that;
-i.e. 'replace' column), or coerce RHS to integer (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your
-intent clear and for speed. Or, set the column type correctly up front when you create the table and
-stick to it, please.
-```
+    ```
+    Coerced character RHS to integer to match the column's type. Either change the target column ['id'] to
+    character first (by creating a new character vector length 3 (nrows of entire table) and assign that;
+    i.e. 'replace' column), or coerce RHS to integer (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your
+    intent clear and for speed. Or, set the column type correctly up front when you create the table and
+    stick to it, please.
+    ```
 to :
-```
-Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If the
-target column's type integer is correct, it's best for efficiency to avoid the coercion and create the
-RHS as type integer. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA)
-vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.integer() to avoid this
-warning, but that will still perform the coercion. If the target column's type is not correct, it's
-best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in
-fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type)
-over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has nrow(DT) elements then
-the assignment is called a column plonk and is the way to change a column's type. Column types can be
-observed with sapply(DT,typeof).
-```
+    ```
+    Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If the
+    target column's type integer is correct, it's best for efficiency to avoid the coercion and create the
+    RHS as type integer. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA)
+    vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.integer() to avoid this
+    warning, but that will still perform the coercion. If the target column's type is not correct, it's
+    best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in
+    fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type)
+    over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has nrow(DT) elements then
+    the assignment is called a column plonk and is the way to change a column's type. Column types can be
+    observed with sapply(DT,typeof).
+    ```
 
 Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
-```
-DT = data.table(v=1:3)
-DT[2, v:=3.14]
-Warning message:
-  Coerced double RHS to integer to match the type of the target column (column 1 named 'v'). One or
-  more RHS values contain fractions which have been lost; e.g. item 1 with value 3.140000 has been
-  truncated to 3.
-```
+    ```R
+    DT = data.table(v=1:3)
+    DT[2, v:=3.14]
+    Warning message:
+      Coerced double RHS to integer to match the type of the target column (column 1 named 'v'). One or
+      more RHS values contain fractions which have been lost; e.g. item 1 with value 3.140000 has been
+      truncated to 3.
+    ```
 
 2. `split.data.table` method is now properly exported, [#2920](https://github.com/Rdatatable/data.table/issues/2920). But we don't recommend it because `split` copies all the pieces into new memory.
 
@@ -402,10 +402,10 @@ Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdat
 10. As warned in v1.9.8 release notes below in this file (on CRAN 25 Nov 2016) it has been 1 year since then and so use of `options(datatable.old.unique.by.key=TRUE)` to restore the old default is now deprecated with warning. The new warning states that this option still works and repeats the request to pass `by=key(DT)` explicitly to `unique()`, `duplicated()`, `uniqueN()` and `anyDuplicated()` and to stop using this option. In another year, this warning will become error. Another year after that the option will be removed.
 
 11. As `set2key()` and `key2()` have been warning since v1.9.8 on CRAN Nov 2016, their warnings have now been upgraded to errors. Note that when they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental' in NEWS item 4. They will be removed in one year.
-```
-Was warning: set2key() will be deprecated in the next relase. Please use setindex() instead.
-Now error: set2key() is now deprecated. Please use setindex() instead.
-```
+    ```
+    Was warning: set2key() will be deprecated in the next relase. Please use setindex() instead.
+    Now error: set2key() is now deprecated. Please use setindex() instead.
+    ```
 
 12. The option `datatable.showProgress` is no longer set to a default value when the package is loaded. Instead, the `default=` argument of `getOption` is used by both `fwrite` and `fread`. The default is the result of `interactive()` at the time of the call. Using `getOption` in this way is intended to be more helpful to users looking at `args(fread)` and `?fread`.
 
