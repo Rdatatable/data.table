@@ -28,6 +28,12 @@
 
 2. Some namespace changes have been made with respect to melt, dcast and xts. No change is expected but if you do have any trouble, please file an issue.
 
+3. `split.data.table` was exported in v1.11.6 in addition to being registered using `S3method(split, data.table)`. The export has been removed again. It had been added because a user said they found it difficult to find, [#2920](https://github.com/Rdatatable/data.table/issues/2920). But S3 methods are not normally exported explicitly by packages. The proper way to access the `split.data.table` method is to call `split(DT)` where `DT` is a `data.table`. The generic (`base::split` in this case) then dispatches to the `split.data.table` method. v1.11.6 was not on CRAN very long (under 1 week) so we think it's better to revert this change quickly. To know what methods exist, R provides the `methods()` function.
+```
+methods(split)               # all the methods for the split generic
+methods(class="data.table")  # all the generics that data.table has a method for (47 currently)
+```
+
 
 ### Changes in v1.11.6  (on CRAN 19 Sep 2018)
 
