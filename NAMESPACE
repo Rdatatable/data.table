@@ -90,10 +90,18 @@ S3method(Ops, data.table)
 S3method(anyDuplicated, data.table)
 S3method(split, data.table)
 
-export(melt)
-S3method(melt, data.table)
 export(dcast)
 S3method(dcast, data.table)
+export(dcast.data.table)
+# exported too because if reshape2 is higher on search path, dcast(DT) will not dispatch since reshape2::dcast is not generic. So users
+# and many packges on CRAN call the exported function dcast.data.table() directly. See #3082.
+
+export(melt)
+S3method(melt, data.table)
+export(melt.data.table)
+# method exported too for consistency with dcast.data.table. Can never remember which one is generic in reshape2 and which one
+# isn't. By now too much user code relies on melt.data.table being exported.
+
 
 import(utils)
 S3method(update, dev.pkg)
