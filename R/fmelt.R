@@ -4,8 +4,17 @@
 # couldn't then install data.table in R 3.1 even if they only needed melt.data.table. The other reason is that
 # reshape2::dcast is not generic (see that method in fcast.R).
 melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
-  UseMethod("melt", data)
-  # if data is not data.table and reshape2 is installed, this will still dispatch to reshape2's method
+  if (is.data.table(data)) {
+    UseMethod("melt", data)
+    # if data is not data.table and reshape2 is installed, this won't dispatch to reshape2's method;
+    # CRAN package edarf and others fail without the else branch
+  } else {
+    # nocov start
+    ns = tryCatch(getNamespace("reshape2"), error=function(e)
+         stop("The melt generic in data.table has been passed a ",class(data)[1L]," (not a data.table) but the reshape2 package is not installed to process this type. Please either install reshape2 and try again, or pass a data.table to melt instead."))
+    ns$melt(data, ..., na.rm=na.rm, value.name=value.name)
+    # nocov end
+  }
 }
 
 patterns <- function(..., cols=character(0L)) {
