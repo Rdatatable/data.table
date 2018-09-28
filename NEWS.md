@@ -88,7 +88,7 @@
     DT = data.table(id=1:3)
     DT[2, id:="foo"]
     ```
-the warning message has changed from :
+    the warning message has changed from :<br>
     ```
     Coerced character RHS to integer to match the column's type. Either change the target column ['id'] to
     character first (by creating a new character vector length 3 (nrows of entire table) and assign that;
@@ -96,7 +96,7 @@ the warning message has changed from :
     intent clear and for speed. Or, set the column type correctly up front when you create the table and
     stick to it, please.
     ```
-to :
+    to :<br>
     ```
     Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If the
     target column's type integer is correct, it's best for efficiency to avoid the coercion and create the
@@ -109,8 +109,7 @@ to :
     the assignment is called a column plonk and is the way to change a column's type. Column types can be
     observed with sapply(DT,typeof).
     ```
-
-Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
+    Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
     ```R
     DT = data.table(v=1:3)
     DT[2, v:=3.14]
