@@ -24,7 +24,9 @@
 
 #### NOTES
 
-1. The test suite now turns on R's new _R_CHECK_LENGTH_1_LOGIC2_ to catch when internal use of `&&` or `||` encounter arguments of length more than one. Thanks to Hugh Parsonage for finding and fixing the problems caught by this.
+1. The test suite now turns on R's new _R_CHECK_LENGTH_1_LOGIC2_ to catch when internal use of `&&` or `||` encounter arguments of length more than one. Thanks to Hugh Parsonage for implementing and fixing the problems caught by this.
+
+2. Some namespace changes have been made with respect to melt, dcast and xts. No change is expected but if you do have any trouble, please file an issue.
 
 
 ### Changes in v1.11.6  (on CRAN 19 Sep 2018)
