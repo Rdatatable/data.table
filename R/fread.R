@@ -56,7 +56,7 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
       if (str7=="ftps://" || str8=="https://") {
         # nocov start
         if (!requireNamespace("curl", quietly = TRUE))
-          stop("Input URL requires https:// connection for which fread() requires 'curl' package, but cannot be found. Please install curl using 'install.packages('curl')'.")
+          stop("Input URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
         curl::curl_download(input, tmpFile<-tempfile(), mode="wb", quiet = !showProgress)
         file = tmpFile
         on.exit(unlink(tmpFile), add=TRUE)
@@ -74,7 +74,7 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
       }
       else if (ext2==".gz" || ext3==".bz2") {
         if (!requireNamespace("R.utils", quietly = TRUE))
-          stop("To read gz and bz2 files directly, fread() requires 'R.utils' package, but cannot be found. Please install R.utils using 'install.packages('R.utils')'.")
+          stop("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
         if (ext2==".gz") { ext="gz";  FUN=gzfile; }
         else             { ext="bz2"; FUN=bzfile; }
         R.utils::decompressFile(input, tmpFile<-tempfile(), ext=ext, FUN=FUN, remove=FALSE)
