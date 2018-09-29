@@ -378,6 +378,7 @@ sudo apt-get -y install libjq-dev libprotoc-dev libprotobuf-dev and protobuf-com
 sudo apt-get -y install python-dev  # for PythonInR
 sudo apt-get -y install gdal-bin libgeos-dev  # for rgdal/raster tested via lidR
 sudo apt-get build-dep r-cran-rsymphony   # for Rsymphony: coinor-libcgl-dev coinor-libclp-dev coinor-libcoinutils-dev coinor-libosi-dev coinor-libsymphony-dev
+sudo apt-get -y install libtesseract-dev libleptonica-dev tesseract-ocr-eng   # for tesseract
 sudo R CMD javareconf
 # ENDIF
 
@@ -385,7 +386,7 @@ cd ~/build/revdeplib/
 export R_LIBS=~/build/revdeplib/
 export R_LIBS_SITE=none
 export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
-Rdevel
+R
 .libPaths()   # should be just 2 items: revdeplib and the base R package library
 options(repos = c("CRAN"=c("http://cloud.r-project.org")))
 update.packages(ask=FALSE)
@@ -522,7 +523,8 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
     if (!which %in% c("not.started","cran.fail","bioc.fail","both.fail")) {
       x = which   # one package manually
     } else {
-      x = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # always those that haven't run
+      x = NULL
+      if (which=="not.started") x = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # those that haven't run
       if (which %in% c("cran.fail","both.fail")) x = union(x, .fail.cran)  # .fail.* were written to .GlobalEnv by status()
       if (which %in% c("bioc.fail","both.fail")) x = union(x, .fail.bioc)
     }
@@ -539,7 +541,7 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
 }
 
 # ** ensure latest version installed into revdeplib **
-system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.7.tar.gz")
+system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.9.tar.gz")
 run("rerun.all")
 
 out = function(fnam="~/fail.log") {
