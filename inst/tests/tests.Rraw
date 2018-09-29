@@ -74,7 +74,8 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 sugg = c(
   "bit64",          # if big integers are detected in file, fread reads them as bit64::integer64 if installed (warning if not)
   "xts",            # we have xts methods in R/xts.R
-  "nanotime"        # fwrite looks for the 'nanotime' class name at C level (but we have our own writer in C, though)
+  "nanotime",       # fwrite looks for the 'nanotime' class name at C level (but we have our own writer in C, though)
+  "R.utils"         # for fread to accept .gz and .bz2 files directly
   # zoo             # In DESCRIPTION:Suggests otherwise R CMD check warning: '::' or ':::' import not declared from: 'zoo'; it is tested in other.Rraw though
   # reshape2        # In DESCRIPTION:Suggests otherwise same R CMD check warning. See fmelt.R line 1 refers to reshape2 depending on R 3.0.0, but now we do too,
 )                   # perhaps something can be improved now. dcast and melt methods for data.table are tested directly here in main without needing reshape2 loaded.
@@ -10407,7 +10408,7 @@ test(1753.4, fread(testDir("issue_2051.csv"))[2,grep("^Our.*tool$",COLUMN50)], 1
 # setnames(dt,paste0("col",1:2))
 # fwrite(dt,"allchar.csv")
 # fwrite(dt,"allchar.csv",append=TRUE)
-test(1754, fread(testDir("allchar.csv"))[c(1,2,17575,17576),col2], c("AAN","BAN","YZZ","ZZZ"))
+if (test_R.utils) test(1754, fread(testDir("allchar.csv.gz"))[c(1,2,17575,17576),col2], c("AAN","BAN","YZZ","ZZZ"))
 
 # unescaped embedded quotes from here: http://stackoverflow.com/questions/42939866/fread-multiple-separators-in-a-string
 test(1755, fread(testDir("unescaped.csv"), logical01=TRUE),
@@ -10426,9 +10427,11 @@ test(1756.4, fread(txt, colClasses=list('numeric'=c(1,3),'character'=2)),
 test(1756.5, fread(txt, colClasses=list('numeric'=c(1,2),'character'=2)), error="Column 'B' appears more than once")
 
 # Windows \r\n line endings when using multiple threads and detecting type within quoted fields, #2087
-test(1757, fread(testDir("winallquoted.csv"))[c(1,2,4998,4999)],
+if (test_R.utils) {
+  test(1757, fread(testDir("winallquoted.csv.bz2"))[c(1,2,4998,4999)],
            data.table(station_id=2L, bikes_available=c(2L,2L,11L,11L), docks_available=c(25L,25L,16L,16L),
            time=c("2013/08/29 12:06:01","2013/08/29 12:07:01","2013/09/02 08:48:01","2013/09/02 08:50:01")))
+}
 
 test(1758, sapply(fread("A,B\n,"),class), c(A="logical",B="logical"))
 
@@ -10494,10 +10497,12 @@ test(1767, dt[x == val], data.table(x=1, y="a"))
 options(op)
 
 # fread sampling overlap and reaching end early on small files with varying line lengths, #2157
-test(1768, fread(testDir("issue_2157_sampling_overlap.txt"))[,c("X1","X2","X7","X8")],
+if (test_R.utils) {
+  test(1768, fread(testDir("issue_2157_sampling_overlap.txt.gz"))[,c("X1","X2","X7","X8")],
            output="X1 X2.*1: ABCD021917 NA.*678.0000.*2:.*1314: ABCD032617.*732.9818")
-test(1769, fread(testDir("issue_2157_sampling_reached_eof_early.txt"))[,c("X1","X2","X10","X11")],
+  test(1769, fread(testDir("issue_2157_sampling_reached_eof_early.txt.bz2"))[,c("X1","X2","X10","X11")],
            output="X1 X2.*1:.*6.00.*2: 2005-08-15.*1228: 2017-05-10  0 -112186.00 500")
+}
 
 # Test unbounded strstr() (in particular when fileSize is exactly 64k on Windows), #2201
 ff = file(f<-tempfile(), open="wb")
@@ -11018,12 +11023,14 @@ test(1833, fread('V1,V2\n5,6', select = NULL),
 # Every line in the first 100 has a quoted field containing sep, so the quote rule was being
 #   bumped to 3 (now fixed not to) which gave rise to nextGoodLine struggling later.
 # The file is not finished with \n either, but that's not an issue.
-test(1834.1, dim(DT<-fread(testDir("grr.csv"), header=FALSE)), INT(2839, 12))
-test(1834.2, DT[c(1,2,.N-1,.N), c(1,2,11,12)],
-             data.table(V1="AAAAAAAAAA",
-                        V2=c("AAAAAAAA","AAAAAAAAAA","AAAAAAAAAA","AAAAAAAAAA"),
-                        V11=c("AAAAAAAAAAAAAAAA","","AAAAAAAAAA","AAAA"),
-                        V12=c("AAAAAAAAAAAAA","","AAAAAAA","AAA")))
+if (test_R.utils) {
+  test(1834.1, dim(DT<-fread(testDir("grr.csv.gz"), header=FALSE)), INT(2839, 12))
+  test(1834.2, DT[c(1,2,.N-1,.N), c(1,2,11,12)],
+               data.table(V1="AAAAAAAAAA",
+                          V2=c("AAAAAAAA","AAAAAAAAAA","AAAAAAAAAA","AAAAAAAAAA"),
+                          V11=c("AAAAAAAAAAAAAAAA","","AAAAAAAAAA","AAAA"),
+                          V12=c("AAAAAAAAAAAAA","","AAAAAAA","AAA")))
+}
 
 # Create a file to test a sample jump being skipped due to format error. It will fail later in the read step because
 # this is a real error. Currently have not constructed an error for which nextGoodLine looks good, but in fact is not.
