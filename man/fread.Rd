@@ -227,6 +227,9 @@ table(sapply(DT,class))
 # Reads URLs directly :
 fread("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
 
+# Decompresses .gz and .bz2 automatically :
+fread("http://stat-computing.org/dataexpo/2009/2008.csv.bz2")
+
 }
 
 # Reads text input directly :

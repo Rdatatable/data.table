@@ -5,6 +5,8 @@
 
 #### NEW FEATURES
 
+1. `fread()` can now read a remote compressed file in one step; `fread("https://domain.org/file.csv.bz2")`. The `file=` argument now supports `.gz` and `.bz2` too; i.e. `fread(file="file.csv.gz")` works now where only `fread("file.csv.gz")` worked in 1.11.8.
+
 #### BUG FIXES
 
 #### NOTES

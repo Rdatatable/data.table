@@ -55,7 +55,8 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
         # nocov start
         if (!requireNamespace("curl", quietly = TRUE))
           stop("Input URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
-        curl::curl_download(input, tmpFile<-tempfile(), mode="wb", quiet = !showProgress)
+        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)))  # retain .gz extension in temp filename so it knows to be decompressed further below
+        curl::curl_download(input, tmpFile, mode="wb", quiet = !showProgress)
         file = tmpFile
         on.exit(unlink(tmpFile), add=TRUE)
         # nocov end
@@ -64,7 +65,8 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
         # nocov start
         method = if (str7=="file://") "internal" else getOption("download.file.method", default="auto")
         # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
-        download.file(input, tmpFile<-tempfile(), method=method, mode="wb", quiet=!showProgress)
+        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)))
+        download.file(input, tmpFile, method=method, mode="wb", quiet=!showProgress)
         # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
         file = tmpFile
         on.exit(unlink(tmpFile), add=TRUE)
@@ -78,17 +80,6 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
       }
       else {
         file = input   # filename
-        ext2 = substring(file, nchar(file)-2L, nchar(file))   # last 3 characters ".gz"
-        ext3 = substring(file, nchar(file)-3L, nchar(file))   # last 4 characters ".bz2"
-        if (ext2==".gz" || ext3==".bz2") {
-          if (!requireNamespace("R.utils", quietly = TRUE))
-            stop("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
-          if (ext2==".gz") { ext="gz";  FUN=gzfile; }
-          else             { ext="bz2"; FUN=bzfile; }
-          R.utils::decompressFile(file, tmpFile<-tempfile(), ext=ext, FUN=FUN, remove=FALSE)
-          file = tmpFile
-          on.exit(unlink(tmpFile), add=TRUE)
-        }
       }
     }
   }
@@ -104,6 +95,16 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
     if (!file_info$size) {
       warning(sprintf("File '%s' has size 0. Returning a NULL %s.", file, if (data.table) 'data.table' else 'data.frame'))
       return(if (data.table) data.table(NULL) else data.frame(NULL))
+    }
+    ext2 = substring(file, nchar(file)-2L, nchar(file))   # last 3 characters ".gz"
+    ext3 = substring(file, nchar(file)-3L, nchar(file))   # last 4 characters ".bz2"
+    if (ext2==".gz" || ext3==".bz2") {
+      if (!requireNamespace("R.utils", quietly = TRUE))
+        stop("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
+      FUN = if (ext2==".gz") gzfile else bzfile
+      R.utils::decompressFile(file, decompFile<-tempfile(), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
+      file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
+      on.exit(unlink(decompFile), add=TRUE)
     }
     input = file
   }
