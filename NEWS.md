@@ -14,7 +14,7 @@
 
 #### NEW FEATURES
 
-1. `fread()` can now read `.gz` and `.bz2` files directly; e.g. `fread("file.csv.gz")`. It uses `R.utils::decompressFile` to decompress to a `tempfile()` which is then read by `fread()` in the usual way. For greater speed on large RAM servers, it is recommended to set `TEMPDIR` to `/dev/shm` to use ramdisk for temporary file; see `?tempdir`. Reading a remote compressed file in one step will be supported in the next version; i.e. `fread("http://domain.org/file.csv.bz2")`.
+1. `fread()` can now read `.gz` and `.bz2` files directly: `fread("file.csv.gz")`, [#717](https://github.com/Rdatatable/data.table/issues/717) [#3058](https://github.com/Rdatatable/data.table/issues/3058). It uses `R.utils::decompressFile` to decompress to a `tempfile()` which is then read by `fread()` in the usual way. For greater speed on large-RAM servers, it is recommended to use ramdisk for temporary files by setting `TEMPDIR` to `/dev/shm`; see `?tempdir`. The decompressed temporary file is removed as soon as `fread` completes even if there is an error reading the file. Reading a remote compressed file in one step will be supported in the next version; e.g. `fread("http://domain.org/file.csv.bz2")`.
 
 #### BUG FIXES
 
