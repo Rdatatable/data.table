@@ -51,6 +51,8 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
       str6 = substring(input,1L,6L)   # avoid grepl() for #2531
       str7 = substring(input,1L,7L)
       str8 = substring(input,1L,8L)
+      ext2 = substring(input,nchar(input)-2L,nchar(input))   # last 3 characters ".gz"
+      ext3 = substring(input,nchar(input)-3L,nchar(input))   # last 4 characters ".bz2"
       if (str7=="ftps://" || str8=="https://") {
         # nocov start
         if (!requireNamespace("curl", quietly = TRUE))
@@ -69,6 +71,15 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
         file = tmpFile
         on.exit(unlink(tmpFile), add=TRUE)
         # nocov end
+      }
+      else if (ext2==".gz" || ext3==".bz2") {
+        if (!requireNamespace("R.utils", quietly = TRUE))
+          stop("To read gz and bz2 files directly, fread() requires 'R.utils' package, but cannot be found. Please install R.utils using 'install.packages('R.utils')'.")
+        if (ext2==".gz") { ext="gz";  FUN=gzfile; }
+        else             { ext="bz2"; FUN=bzfile; }
+        R.utils::decompressFile(input, tmpFile<-tempfile(), ext=ext, FUN=FUN, remove=FALSE)
+        file = tmpFile
+        on.exit(unlink(tmpFile), add=TRUE)
       }
       else if (length(grep(' ', input)) && !file.exists(input)) {  # file name or path containing spaces is not a command
         cmd = input

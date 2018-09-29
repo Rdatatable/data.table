@@ -12,6 +12,10 @@
 
 ### Changes in v1.11.8
 
+#### NEW FEATURES
+
+1. `fread()` can now read `.gz` and `.bz2` files directly; e.g. `fread("file.csv.gz")`. It uses `R.utils::decompressFile` to decompress to a `tempfile()` which is then read by `fread()` in the usual way. For greater speed on large RAM servers, it is recommended to set `TEMPDIR` to `/dev/shm` to use ramdisk for temporary file; see `?tempdir`. Reading a remote compressed file in one step will be supported in the next version; i.e. `fread("http://domain.org/file.csv.bz2")`.
+
 #### BUG FIXES
 
 1. Joining two keyed tables using `on=` to columns not forming a leading subset of `key(i)` could result in an invalidly keyed result, [#3061](https://github.com/Rdatatable/data.table/issues/3061). Subsequent queries on the result could then return incorrect results. A warning `longer object length is not a multiple of shorter object length` could also occur. Thanks to @renkun-ken for reporting and the PR.
