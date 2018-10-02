@@ -2,12 +2,18 @@
 
 .onLoad <- function(libname, pkgname) {
   # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
+  if (identical(tools::checkMD5sums("data.table"), FALSE)) {
+    # checkMD5sums outputs messages using cat() and returns NA when MD5 file is not available. The MD5 file is included in the
+    # binary builds that CRAN produces.
+    stop("This data.table installation appears to be faulty. Please close all R sessions and reinstall data.table.")
+    # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
+  }
 
   "Please read FAQ 2.23 (vignette('datatable-faq')) which explains in detail why data.table adds one for loop to the start of base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
   # Commented as a character string so this message is retained and seen by anyone who types data.table:::.onLoad
   tt = base::cbind.data.frame
   ss = body(tt)
-  if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
+  if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
   prefix = if (!missing(pkgname)) "data.table::" else ""  # R provides the arguments when it calls .onLoad, I don't in dev/test
   if (!length(grep("data.table",ss[[2L]]))) {
     ss = ss[c(1L, NA, 2L:length(ss))]
@@ -19,7 +25,7 @@
   }
   tt = base::rbind.data.frame
   ss = body(tt)
-  if (class(ss)!="{") ss = as.call(c(as.name("{"), ss))
+  if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
   if (!length(grep("data.table",ss[[2L]]))) {
     ss = ss[c(1L, NA, 2L:length(ss))]
     ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #4995

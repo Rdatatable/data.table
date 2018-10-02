@@ -15,8 +15,8 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   logical01 = getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
   logicalAsInt = logical01,  # deprecated
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
-  buffMB = 8L, nThread = getDTthreads(),
-  showProgress = interactive(),
+  buffMB = 8L, nThread = getDTthreads(verbose),
+  showProgress = getOption("datatable.showProgress", interactive()),
   verbose = getOption("datatable.verbose", FALSE))
 }
 \arguments{
@@ -58,7 +58,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
 \code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
 }
 \seealso{
-  \code{\link{setDTthreads}}, \code{\link{fread}}, \code{\link[utils]{write.csv}}, \code{\link[utils]{write.table}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
+  \code{\link{setDTthreads}}, \code{\link{fread}}, \code{\link[utils:write.table]{write.csv}}, \code{\link[utils:write.table]{write.table}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
 }
 \references{
   \url{http://howardhinnant.github.io/date_algorithms.html}\cr

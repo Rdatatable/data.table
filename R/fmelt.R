@@ -1,9 +1,20 @@
-# Add melt generic, don't import reshape2 as it requires R >= 3.0.0.
+
+# melt is generic in reshape2 which is good (unlike dcast) but we still don't import reshape2 because reshape2's
+# dependency on R 3.1 could change in a future release of reshape2. Say it started to depend on R 3.3. Users of data.table
+# couldn't then install data.table in R 3.1 even if they only needed melt.data.table. The other reason is that
+# reshape2::dcast is not generic (see that method in fcast.R).
 melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
-  if (is.data.table(data))
+  if (is.data.table(data)) {
     UseMethod("melt", data)
-  else
-    reshape2::melt(data, ..., na.rm=na.rm, value.name=value.name)
+    # if data is not data.table and reshape2 is installed, this won't dispatch to reshape2's method;
+    # CRAN package edarf and others fail without the else branch
+  } else {
+    # nocov start
+    ns = tryCatch(getNamespace("reshape2"), error=function(e)
+         stop("The melt generic in data.table has been passed a ",class(data)[1L]," (not a data.table) but the reshape2 package is not installed to process this type. Please either install reshape2 and try again, or pass a data.table to melt instead."))
+    ns$melt(data, ..., na.rm=na.rm, value.name=value.name)
+    # nocov end
+  }
 }
 
 patterns <- function(..., cols=character(0L)) {

@@ -658,7 +658,7 @@
     ```
     where `top` is a non-join column in `Y`; i.e., join inherited column. Thanks to many, especially eddi, Sadao Milberg and Gabor Grothendieck for extended discussions. Closes [#538](https://github.com/Rdatatable/data.table/issues/538).
 
-2. Accordingly, `X[Y, j]` now does what `X[Y][, j]` did. To return the old behaviour: `options(datatable.old.bywithoutby=TRUE)`. This is a temporary option to aid migration and will be removed in future. See [this](http://r.789695.n4.nabble.com/changing-data-table-by-without-by-syntax-to-require-a-quot-by-quot-td4664770.html), [this](http://stackoverflow.com/questions/16093289/data-table-join-and-j-expression-unexpected-behavior) and [this](http://stackoverflow.com/a/16222108/403310) post for discussions and motivation.
+2. Accordingly, `X[Y, j]` now does what `X[Y][, j]` did. To return the old behaviour: `options(datatable.old.bywithoutby=TRUE)`. This is a temporary option to aid migration and will be removed in future. See [this](http://stackoverflow.com/questions/16093289/data-table-join-and-j-expression-unexpected-behavior) and [this](http://stackoverflow.com/a/16222108/403310) post for discussions and motivation.
 
   3. `Overlap joins` ([#528](https://github.com/Rdatatable/data.table/issues/528)) is now here, finally!! Except for `type="equal"` and `maxgap` and `minoverlap` arguments, everything else is implemented. Check out `?foverlaps` and the examples there on its usage. This is a major feature addition to `data.table`.
 
@@ -756,13 +756,13 @@
     DT[, list(.N, mean(y), sum(y)), by=x] # 1.9.3+ - will use GForce.
     ```
 
-  23. `setDF` is now implemented. It accepts a data.table and converts it to data.frame by reference, [#338](https://github.com/Rdatatable/data.table/issues/338). Thanks to canneff for the discussion [here](http://r.789695.n4.nabble.com/Is-there-any-overhead-to-converting-back-and-forth-from-a-data-table-to-a-data-frame-td4688332.html) on data.table mailing list.
+  23. `setDF` is now implemented. It accepts a data.table and converts it to data.frame by reference, [#338](https://github.com/Rdatatable/data.table/issues/338). Thanks to canneff for the discussion on data.table mailing list.
 
   24. `.I` gets named as `I` (instead of `.I`) wherever possible, similar to `.N`, [#344](https://github.com/Rdatatable/data.table/issues/344).
 
-  25. `setkey` on `.SD` is now an error, rather than warnings for each group about rebuilding the key. The new error is similar to when attempting to use `:=` in a `.SD` subquery: `".SD is locked. Using set*() functions on .SD is reserved for possible future use; a tortuously flexible way to modify the original data by group."`  Thanks to Ron Hylton for highlighting the issue on datatable-help [here](http://r.789695.n4.nabble.com/data-table-is-asking-for-help-tp4692080.html).
+  25. `setkey` on `.SD` is now an error, rather than warnings for each group about rebuilding the key. The new error is similar to when attempting to use `:=` in a `.SD` subquery: `".SD is locked. Using set*() functions on .SD is reserved for possible future use; a tortuously flexible way to modify the original data by group."` Thanks to Ron Hylton for highlighting the issue on datatable-help.
 
-  26. Looping calls to `unique(DT)` such as in `DT[,unique(.SD),by=group]` is now faster by avoiding internal overhead of calling `[.data.table`. Thanks again to Ron Hylton for highlighting in the [same thread](http://r.789695.n4.nabble.com/data-table-is-asking-for-help-tp4692080.html). His example is reduced from 28 sec to 9 sec, with identical results.
+  26. Looping calls to `unique(DT)` such as in `DT[,unique(.SD),by=group]` is now faster by avoiding internal overhead of calling `[.data.table`. Thanks again to Ron Hylton for highlighting on datatable-help. His example is reduced from 28 sec to 9 sec, with identical results.
 
   27. Following `gsum` and `gmean`, now `gmin` and `gmax` from GForce are also implemented. Closes part of [#523](https://github.com/Rdatatable/data.table/issues/523). Benchmarks are also provided.
     ```R
@@ -1017,7 +1017,7 @@
     ```
     Thanks to Alex for reporting [here on SO](http://stackoverflow.com/questions/14541959/expression-syntax-for-data-table-in-r).
 
-  30.  `x[J(2), a]`, where `a` is the key column sees `a` in `j`, #2693 and FAQ 2.8. Also, `x[J(2)]` automatically names the columns from `i` using the key columns of `x`. In cases where the key columns of `x` and `i` are identical, i's columns can be referred to by using `i.name`; e.g., `x[J(2), i.a]`. Thanks to mnel and Gabor for the discussion [here](http://r.789695.n4.nabble.com/Problem-with-FAQ-2-8-tt4668878.html).
+  30.  `x[J(2), a]`, where `a` is the key column sees `a` in `j`, #2693 and FAQ 2.8. Also, `x[J(2)]` automatically names the columns from `i` using the key columns of `x`. In cases where the key columns of `x` and `i` are identical, i's columns can be referred to by using `i.name`; e.g., `x[J(2), i.a]`. Thanks to mnel and Gabor for the discussion on datatable-help.
 
   31.  `print.data.table` gains `row.names`, default=TRUE. When FALSE, the row names (along with the :) are not printed, #5020. Thanks to Frank Erickson.
 
@@ -1312,8 +1312,7 @@
 
   *  rbind, cbind and merge on data.table should now work in packages that Import but do not
      Depend on data.table. Many thanks to a patch to .onLoad from Ken Williams, and related
-     posts from Victor Kryukov :
-	   http://r.789695.n4.nabble.com/Import-problem-with-data-table-in-packages-tp4665958.html
+     posts from Victor Kryukov on datatable-help.
 
   *  Mixing adding and updating into one DT[, `:=`(existingCol=...,newCol=...), by=...] now works
      without error or segfault, #2778 and #2528. Many thanks to Arunkumar Srinivasan for reporting
@@ -1766,9 +1765,8 @@ USER VISIBLE CHANGES
         an alias yourself. J() will continue to work *inside* DT[...] as documented.
 
     *   DT[,LHS:=RHS,...] no longer prints DT. This implements #2128 "Try again to get
-        DT[i,j:=value] to return invisibly". Thanks to discussions here :
+        DT[i,j:=value] to return invisibly". Thanks to discussion here :
             http://stackoverflow.com/questions/11359553/how-to-suppress-output-when-using-in-r-data-table
-            http://r.789695.n4.nabble.com/Avoiding-print-when-using-tp4643076.html
         FAQs 2.21 and 2.22 have been updated.
 
     *   DT[] now returns DT rather than an error that either i or j must be supplied.

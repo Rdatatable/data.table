@@ -12,15 +12,21 @@ dcast <- function(data, formula, fun.aggregate = NULL, ..., margins = NULL,
       subset = NULL, fill = NULL, value.var = guess(data)) {
   if (is.data.table(data))
     UseMethod("dcast", data)
-  else
-    reshape2::dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
-      subset = subset, fill = fill, value.var = value.var)
+  else {
+    # reshape2::dcast is not generic so we have to call it explicitly. See comments at the top of fmelt.R too.
+    # nocov start
+    ns = tryCatch(getNamespace("reshape2"), error=function(e)
+         stop("The dcast generic in data.table has been passed a ",class(data)[1L]," (not a data.table) but the reshape2 package is not installed to process this type. Please either install reshape2 and try again, or pass a data.table to dcast instead."))
+    ns$dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
+             subset = subset, fill = fill, value.var = value.var)
+    # nocov end
+  }
 }
 
 check_formula <- function(formula, varnames, valnames) {
   if (is.character(formula)) formula = as.formula(formula)
-  if (class(formula) != "formula" || length(formula) != 3L)
-    stop("Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + b ~ c.")
+  if (!inherits(formula, "formula") || length(formula) != 3L)
+    stop("Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + b ~ c.")  # nocov; couldn't find a way to construct a test formula with length!=3L
   vars = all.vars(formula)
   vars = vars[!vars %chin% c(".", "...")]
   allvars = c(vars, valnames)

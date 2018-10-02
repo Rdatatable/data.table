@@ -29,7 +29,6 @@ export(rleid)
 export(rleidv)
 export(rowid)
 export(rowidv)
-export(as.xts.data.table)
 export(uniqueN)
 export(setDTthreads, getDTthreads)
 # set operators
@@ -68,7 +67,6 @@ S3method(as.data.table, ordered)
 S3method(as.data.table, Date)
 S3method(as.data.table, ITime)
 S3method(as.data.table, table)
-S3method(as.data.table, xts)
 S3method(as.data.table, default)
 S3method(as.data.frame, data.table)
 S3method(as.list, data.table)
@@ -76,7 +74,6 @@ S3method(as.matrix, data.table)
 #S3method(cbind, data.table)
 #S3method(rbind, data.table)
 export(.rbind.data.table)
-S3method(split, data.table)
 S3method(dim, data.table)
 S3method(dimnames, data.table)
 S3method("dimnames<-", data.table)
@@ -90,15 +87,21 @@ S3method(within, data.table)
 S3method(is.na, data.table)
 S3method(format, data.table)
 S3method(Ops, data.table)
-
 S3method(anyDuplicated, data.table)
+S3method(split, data.table)
+
+export(dcast)
+S3method(dcast, data.table)
+export(dcast.data.table)
+# exported too because if reshape2 is higher on search path, dcast(DT) will not dispatch since reshape2::dcast is not generic. So users
+# and many packges on CRAN call the exported function dcast.data.table() directly. See #3082.
 
 export(melt)
-export(melt.data.table)
 S3method(melt, data.table)
-export(dcast)
-export(dcast.data.table)
-S3method(dcast, data.table)
+export(melt.data.table)
+# method exported too for consistency with dcast.data.table. Can never remember which one is generic in reshape2 and which one
+# isn't. By now too much user code relies on melt.data.table being exported.
+
 
 import(utils)
 S3method(update, dev.pkg)
@@ -108,19 +111,25 @@ S3method(head, data.table)
 import(stats)
 S3method(na.omit, data.table)
 
+S3method(as.data.table, xts)
+if(getRversion() >= "3.6.0") {
+  export(as.xts.data.table)          # fails in R-devel if not exported too, but I don't understand why
+  S3method(xts::as.xts, data.table)  # delayed registration (new in R-devel)  -- shouldn't this also export as.xts.data.table for us?
+} else {
+  export(as.xts.data.table)
+}
+
 # IDateTime support:
 export(as.IDate,as.ITime,IDateTime)
 export(second,minute,hour,yday,wday,mday,week,isoweek,month,quarter,year)
-
-export(as.chron.IDate, as.chron.ITime)
-export(as.Date.IDate) # workaround for zoo bug, see #1500
 
 S3method("[", ITime)
 S3method("+", IDate)
 S3method("-", IDate)
 S3method(as.character, ITime)
 S3method(as.data.frame, ITime)
-S3method(as.Date, IDate)
+S3method(as.Date, IDate)   # note that zoo::as.Date masks base::as.Date. Both generic.
+export(as.Date.IDate)      # workaround for zoo bug, see #1500. Removing this export causes CI pipeline to fail on others.Rraw test 6, but I can't reproduce locally.
 S3method(as.IDate, Date)
 S3method(as.IDate, POSIXct)
 S3method(as.IDate, default)

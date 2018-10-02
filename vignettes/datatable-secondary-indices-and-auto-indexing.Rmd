@@ -276,9 +276,9 @@ flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", on = c("origin", "dest"
 
 ## 3. Auto indexing
 
-First we looked at how to fast subset using binary search using *keys*. Then we figured out that we could improve performance even further and have more cleaner syntax by using secondary indices. What could be better than that? The answer is to optimise *native R syntax* to use secondary indices internally so that we can have the same performance without having to use newer syntax.
+First we looked at how to fast subset using binary search using *keys*. Then we figured out that we could improve performance even further and have more cleaner syntax by using secondary indices. 
 
-That is what *auto indexing* does. At the moment, it is only implemented for binary operators `==` and `%in%`. And it only works with a single column at the moment as well. An index is automatically created *and* saved as an attribute. That is, unlike the `on` argument which computes the index on the fly each time, a secondary index is created here. 
+That is what *auto indexing* does. At the moment, it is only implemented for binary operators `==` and `%in%`. An index is automatically created *and* saved as an attribute. That is, unlike the `on` argument which computes the index on the fly each time (unless one already exists), a secondary index is created here. 
 
 Let's start by creating a data.table big enough to highlight the advantage.
 
@@ -320,8 +320,8 @@ system.time(dt[x %in% 1989:2012])
 
 # 
 
-In the future, we plan to extend auto indexing to expressions involving more than one column. Also we are working on extending binary search to work with more binary operators like `<`, `<=`, `>` and `>=`. Once done, it would be straightforward to extend it to these operators as well. 
+In recent version we extended auto indexing to expressions involving more than one column (combined with `&` operator). In the future, we plan to extend binary search to work with more binary operators like `<`, `<=`, `>` and `>=`.  
 
-We will extend fast *subsets* using keys and secondary indices to *joins* in the next vignette, *"Joins and rolling joins"*.
+We will discuss fast *subsets* using keys and secondary indices to *joins* in the next vignette, *"Joins and rolling joins"*.
 
 ***
