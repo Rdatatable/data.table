@@ -600,7 +600,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       }                
       io = if (missing(on)) haskey(i) else identical(unname(on), head(key(i), length(on)))
       i = .shallow(i, retain.key = io)
-      ans = bmerge(i, x, leftcols, rightcols, io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
+      ans = bmerge(i, x, leftcols, rightcols, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
       # Fix for #1615, #1700 and related issues - keep columns used for non-equi joins from both x and i.
       # keep copies of the full leftcols and rightcols which are needed if by = .EACHI is also used.
       allleftcols = leftcols
