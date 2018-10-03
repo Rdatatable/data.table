@@ -217,7 +217,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   .Call(Cchmatch2, x, table, as.integer(nomatch)) # this is in 'rbindlist.c' for now.
 }
 
-"[.data.table" <- function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
+"[.data.table" <- function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, bothkeycols=getOption("datatable.bothkeycols"))
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -597,9 +597,29 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
         setnames(i, orignames[leftcols])
         setattr(i, 'sorted', names(i)) # since 'x' has key set, this'll always be sorted
-      }
-      i = .shallow(i, retain.key = TRUE)
+      }                
+      io = if (missing(on)) haskey(i) else identical(unname(on), head(key(i), length(on)))
+      i = .shallow(i, retain.key = io)
       ans = bmerge(i, x, leftcols, rightcols, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
+      # Fix for #1615, #1700 and related issues - keep columns used for non-equi joins from both x and i.
+      # keep copies of the full leftcols and rightcols which are needed if by = .EACHI is also used.
+      allleftcols = leftcols
+      allrightcols = rightcols
+      # Drop any non-equi join columns from leftcols and rightcols so they are kept from both x and i
+      if (!missing(on) && bothkeycols && !is.na(non_equi)) {
+        leftcols = leftcols[ops == 1]  # ops > 1 where there is a non-equi opertor
+        rightcols = rightcols[ops == 1]
+      }
+      # Do the same for rolling joins. The column used for the roll is always the last key column
+      if (roll != 0 && bothkeycols) { 
+        leftcols = leftcols[-length(leftcols)]
+        rightcols = rightcols[-length(rightcols)]
+      }
+      # If there are only non-equi / roll keys then leftcols and rightcols become integer(0), 
+      # which is used as a switch to keep only columns in x. Use NULL instead to signify 
+      # keeping all columns in both x and i. 
+      if (!length(leftcols)) leftcols = NULL
+      if (!length(rightcols)) rightcols = NULL
       # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this
       # 'setorder', as there's another 'setorder' in generating 'irows' below...
       if (length(ans$indices)) setorder(setDT(ans[1L:3L]), indices)
@@ -743,7 +763,16 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (missing(j)) {
     # missing(by)==TRUE was already checked above before dealing with i
     if (!length(x)) return(null.data.table())
-    if (!length(leftcols)) {
+    if (is.null(leftcols)) { # Keep all columns for non-equi / roll joins with no equi keys
+      jisvars = names(i)
+      tt = jisvars %chin% names(x)
+      if (length(tt)) jisvars[tt] = paste0("i.",jisvars[tt])
+      nx = names(x)
+      ansvars = make.unique(c(nx, jisvars))
+      icols = seq_along(i)
+      icolsAns = seq.int(length(nx)+1, length.out=ncol(i))
+      xcols = xcolsAns = seq_along(x)
+    } else if (!length(leftcols)) { 
       ansvars = nx = names(x)
       jisvars = character()
       xcols = xcolsAns = seq_along(x)
@@ -1223,6 +1252,17 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         xcols = w
         xcolsAns = seq_along(ansvars)
         icols = icolsAns = integer()
+      } else if (is.null(leftcols)) {
+        xcols = w[!wna]
+        xcolsAns = which(!wna)
+        ivars = names(i)
+        w2 = chmatch(ansvars[wna], ivars)
+        if (any(w2na <- is.na(w2))) {
+          ivars = paste0("i.",ivars)
+          w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
+        }
+        icols = w2
+        icolsAns = which(wna)
       } else {
         if (!length(leftcols)) stop("column(s) not found: ", paste(ansvars[wna],collapse=", "))
         xcols = w[!wna]
@@ -1245,6 +1285,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       }
     }
   }  # end of  if !missing(j)
+  
+  # Restore full leftcols and rightcols now that we have kept non-equi
+  # and rolling join columns from both x and i.
+  if (!identical(leftcols, integer(0L))) leftcols = allleftcols
+  if (!identical(rightcols, integer(0L))) rightcols = allrightcols
 
   SDenv = new.env(parent=parent.frame())
   # taking care of warnings for posixlt type, #646

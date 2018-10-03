@@ -5,7 +5,21 @@
 
 #### NEW FEATURES
 
-1. `fread()` can now read a remote compressed file in one step; `fread("https://domain.org/file.csv.bz2")`. The `file=` argument now supports `.gz` and `.bz2` too; i.e. `fread(file="file.csv.gz")` works now where only `fread("file.csv.gz")` worked in 1.11.8.
+1. `[.data.table` gains `bothkeycols=` argument :
+    ```
+    getOption("datatable.bothkeycols", FALSE)   # this release; i.e. the same; no change yet
+    getOption("datatable.bothkeycols", TRUE)    # future release
+    ```
+This option fixes issues [#1615](https://github.com/Rdatatable/data.table/issues/1615), [#1469](https://github.com/Rdatatable/data.table/issues/1615), and related issues [#1700](https://github.com/Rdatatable/data.table/issues/1700),
+[#1807](https://github.com/Rdatatable/data.table/issues/1807),
+[#2006](https://github.com/Rdatatable/data.table/issues/2006),
+[#2307](https://github.com/Rdatatable/data.table/issues/2307),
+[#2569](https://github.com/Rdatatable/data.table/issues/2569),
+[#2595](https://github.com/Rdatatable/data.table/issues/2595), and
+[#2602](https://github.com/Rdatatable/data.table/issues/2602). When `TRUE`, any columns involved in a non-equi join operator or a rolling join operator are returned from both `data.table`'s `x[i]`. This will remove the confusion caused by the current behaviour, where only the column from `i` is returned, but with the column name `x`. Thanks to @sritchie73 for the implementation [PR#2706](https://github.com/Rdatatable/data.table/pull/2706) and to many for feedback on the PR.
+
+2. `fread()` can now read a remote compressed file in one step; `fread("https://domain.org/file.csv.bz2")`. The `file=` argument now supports `.gz` and `.bz2` too; i.e. `fread(file="file.csv.gz")` works now where only `fread("file.csv.gz")` worked in 1.11.8.
+
 
 #### BUG FIXES
 
