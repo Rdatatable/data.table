@@ -2526,7 +2526,7 @@ setattr <- function(x,name,value) {
   invisible(x)
 }
 
-setnames <- function(x,old,new) {
+setnames <- function(x,old,new,skip_absent=FALSE) {
   # Sets by reference, maintains truelength, no copy of table at all.
   # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
   # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
@@ -2562,6 +2562,9 @@ setnames <- function(x,old,new) {
       if (any(duplicated(old))) stop("Some duplicates exist in 'old': ", paste(old[duplicated(old)],collapse=","))
       i = chmatch(old,names(x))
       if (anyNA(i)) stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
+########################
+      if (skip_absent == TRUE){ w <- old %chin% names(x); setnames(x, old = old[w], new = new[w]); i = i[w] }
+########################
       if (any(tt<-!is.na(chmatch(old,names(x)[-i])))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ",paste(old[tt],collapse=","))
     }
     if (length(new)!=length(i)) stop("'old' is length ",length(i)," but 'new' is length ",length(new))
