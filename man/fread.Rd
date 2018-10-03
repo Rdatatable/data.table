@@ -174,7 +174,7 @@ if(all(sapply(c("sqldf", "ff"), requireNamespace, quietly = TRUE))) {
   identical(DF1,within(as.data.frame(FFDF),d<-as.character(d)))
 }
 
-# Scaling up \dots
+# Scaling up ...
 l = vector("list",10)
 for (i in 1:10) l[[i]] = DT
 DTbig = rbindlist(l)

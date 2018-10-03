@@ -82,7 +82,7 @@ dcast(DT, v1 + v2 ~ v3, drop=FALSE)          # all missing combinations of both 
 dcast(DT, v1 + v2 ~ v3, drop=c(FALSE, TRUE)) # all missing combinations of only LHS
 dcast(DT, v1 + v2 ~ v3, drop=c(TRUE, FALSE)) # all missing combinations of only RHS
 
-# using . and \dots
+# using . and ...
 DT <- data.table(v1 = rep(1:2, each = 6),
                  v2 = rep(rep(1:3, 2), each = 2),
                  v3 = rep(1:2, 6),

@@ -56,12 +56,12 @@ setnames(DT, -2, c("a", "b"))      # NEW FR #1443, allows -ve indices in 'old' a
 
 DT = data.table(a=1:3, b=4:6)
 f = function(\dots) {
-    # \dots
+    # ...
     setattr(DT,"myFlag",TRUE)  # by reference
-    # \dots
+    # ...
     localDT = copy(DT)
     setattr(localDT,"myFlag2",TRUE)
-    # \dots
+    # ...
     invisible()
 }
 f()
