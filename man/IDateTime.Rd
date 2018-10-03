@@ -58,7 +58,7 @@ as.ITime(x, ...)
 \method{as.ITime}{default}(x, \dots)
 \method{as.ITime}{POSIXlt}(x, ms = 'truncate', ...)
 
-\method{as.POSIXct}{ITime}(x, tz = "UTC", date = as.Date(Sys.time()), \dots)
+\method{as.POSIXct}{ITime}(x, tz = "UTC", date = Sys.Date(), \dots)
 \method{as.character}{ITime}(x, \dots)
 \method{format}{ITime}(x, \dots)
 
