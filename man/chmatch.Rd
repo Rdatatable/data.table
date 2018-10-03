@@ -48,7 +48,7 @@ N = 1e5
 u = as.character(as.hexmode(1:10000))
 y = sample(u,N,replace=TRUE)
 x = sample(u)
-                                           #  With N=1e8 ...
+                                           #  With N=1e8 \dots
 system.time(a <- match(x,y))               #  4.6s
 system.time(b <- chmatch(x,y))             #  1.8s
 identical(a,b)
@@ -57,7 +57,7 @@ system.time(a <- x \%in\% y)               #  4.5s
 system.time(b <- x \%chin\% y)             #  1.7s
 identical(a,b)
 
-# Different example with more unique strings ...
+# Different example with more unique strings \dots
 u = as.character(as.hexmode(1:(N/10)))
 y = sample(u,N,replace=TRUE)
 x = sample(u,N,replace=TRUE)

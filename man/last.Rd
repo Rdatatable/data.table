@@ -6,12 +6,12 @@ Returns the last item of a vector or list, or the last row of a data.frame or
 data.table.
 }
 \usage{
-last(x, ...)
+last(x, \dots)
 }
 \arguments{
 \item{x}{ A vector, list, data.frame or data.table. Otherwise the S3 method of
 \code{xts::last} is deployed. }
-\item{...}{ Not applicable for \code{data.table::last}. Any arguments here are
+\item{\dots}{ Not applicable for \code{data.table::last}. Any arguments here are
 passed through to \code{xts::last}. }
 }
 % \details{

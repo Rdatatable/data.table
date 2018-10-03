@@ -26,11 +26,11 @@ memory efficient.
 
 }
 \usage{
-\method{duplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...)
+\method{duplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), \dots)
 
-\method{unique}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...)
+\method{unique}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), \dots)
 
-\method{anyDuplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...)
+\method{anyDuplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), \dots)
 
 uniqueN(x, by=if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE)
 }
