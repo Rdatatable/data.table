@@ -28,7 +28,7 @@ autostart=NA
 }
 \arguments{
   \item{input}{ A single character string. The value is inspected and deferred to either \code{file=} (if no \\n present), \code{text=} (if at least one \\n is present) or \code{cmd=} (if no \\n is present, at least one space is present, and it isn't a file name). Exactly one of \code{input=}, \code{file=}, \code{text=}, or \code{cmd=} should be used in the same call. }
-  \item{file}{ File name in working directory, path to file (passed through \code{\link[base]{path.expand}} for convenience), or a URL starting http://, file://, etc.  }
+  \item{file}{ File name in working directory, path to file (passed through \code{\link[base]{path.expand}} for convenience), or a URL starting http://, file://, etc. Compressed files ending \code{.gz} and \code{.bz2} are supported if the \code{R.utils} package is installed. }
   \item{text}{ The input data itself as a character vector of one or more lines, for example as returned by \code{readLines()}. }
   \item{cmd}{ A shell command that pre-processes the file; e.g. \code{fread(cmd=paste("grep",word,"filename")}. }
   \item{sep}{ The separator between columns. Defaults to the character in the set \code{[,\\t |;:]} that separates the sample of rows into the most number of lines with the same number of fields. Use \code{NULL} or \code{""} to specify no separator; i.e. each line a single character column like \code{base::readLines} does.}
@@ -226,6 +226,9 @@ table(sapply(DT,class))
 
 # Reads URLs directly :
 fread("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
+
+# Decompresses .gz and .bz2 automatically :
+fread("http://stat-computing.org/dataexpo/2009/2008.csv.bz2")
 
 }
 

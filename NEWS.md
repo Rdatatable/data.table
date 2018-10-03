@@ -1,13 +1,48 @@
 
 **If you are viewing this file on CRAN, please check latest news on GitHub [here](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).**
 
-### Changes in v1.11.7  (in development)
+### Changes in v1.11.9 (to be v1.12.0)
+
+#### NEW FEATURES
+
+1. `fread()` can now read a remote compressed file in one step; `fread("https://domain.org/file.csv.bz2")`. The `file=` argument now supports `.gz` and `.bz2` too; i.e. `fread(file="file.csv.gz")` works now where only `fread("file.csv.gz")` worked in 1.11.8.
+
+#### BUG FIXES
+
+1. Providing an `i` subset expression when attempting to delete a column correctly failed with helpful error, but when the column was missing too created a new column full of `NULL` values, [#3089](https://github.com/Rdatatable/data.table/issues/3089). Thanks to Michael Chirico for reporting.
+
+#### NOTES
+
+1. When data.table first loads it now checks the DLL's MD5. This is to detect installation issues on Windows when you upgrade and i) the DLL is in use by another R session and ii) the CRAN source version > CRAN binary binary which happens just after a new release (R prompts users to install from source until the CRAN binary is available). This situation can lead to a state where the package's new R code calls old C code in the old DLL; [R#17478](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478), [#3056](https://github.com/Rdatatable/data.table/issues/3056). This broken state can persist until, hopefully, you experience a strange error caused by the mismatch. Otherwise, wrong results may occur silently. This situation applies to any R package with compiled code not just data.table, is Windows-only, and is long-standing. It has only recently been understood as it typically only occurs during the few days after each new release until binaries are available on CRAN. Thanks to Gabor Csardi for the suggestion to use `tools::checkMD5sums()`.
+
+
+### Changes in v1.11.8
+
+#### NEW FEATURES
+
+1. `fread()` can now read `.gz` and `.bz2` files directly: `fread("file.csv.gz")`, [#717](https://github.com/Rdatatable/data.table/issues/717) [#3058](https://github.com/Rdatatable/data.table/issues/3058). It uses `R.utils::decompressFile` to decompress to a `tempfile()` which is then read by `fread()` in the usual way. For greater speed on large-RAM servers, it is recommended to use ramdisk for temporary files by setting `TEMPDIR` to `/dev/shm`; see `?tempdir`. The decompressed temporary file is removed as soon as `fread` completes even if there is an error reading the file. Reading a remote compressed file in one step will be supported in the next version; e.g. `fread("http://domain.org/file.csv.bz2")`.
 
 #### BUG FIXES
 
 1. Joining two keyed tables using `on=` to columns not forming a leading subset of `key(i)` could result in an invalidly keyed result, [#3061](https://github.com/Rdatatable/data.table/issues/3061). Subsequent queries on the result could then return incorrect results. A warning `longer object length is not a multiple of shorter object length` could also occur. Thanks to @renkun-ken for reporting and the PR.
 
 2. `keyby=` on columns for which an index exists now uses the index (new feature 7 in v1.11.6 below) but if an `i` subset is present in the same query then it could segfault, [#3062](https://github.com/Rdatatable/data.table/issues/3062). Again thanks to @renkun-ken for reporting.
+
+3. Assigning an out-of-range integer to an item in a factor column (a rare operation) correctly created an `NA` in that spot with warning, but now no longer also corrupts the variable being assigned, [#2984](https://github.com/Rdatatable/data.table/issues/2984). Thanks to @radfordneal for reporting and @MarkusBonsch for fixing. Assigning a string which is missing from the factor levels continues to automatically append the string to the factor levels.
+
+4. Assigning a sequence to a column using base R methods (e.g. `DT[["foo"]] = 1:10`) could cause subsetting to fail with `Internal error in subset.c: column <n> is an ALTREP vector`, [#3051](https://github.com/Rdatatable/data.table/issues/3051). Thanks to Michel Lang for reporting.
+
+#### NOTES
+
+1. The test suite now turns on R's new _R_CHECK_LENGTH_1_LOGIC2_ to catch when internal use of `&&` or `||` encounter arguments of length more than one. Thanks to Hugh Parsonage for implementing and fixing the problems caught by this.
+
+2. Some namespace changes have been made with respect to melt, dcast and xts. No change is expected but if you do have any trouble, please file an issue.
+
+3. `split.data.table` was exported in v1.11.6 in addition to being registered using `S3method(split, data.table)`. The export has been removed again. It had been added because a user said they found it difficult to find, [#2920](https://github.com/Rdatatable/data.table/issues/2920). But S3 methods are not normally exported explicitly by packages. The proper way to access the `split.data.table` method is to call `split(DT)` where `DT` is a `data.table`. The generic (`base::split` in this case) then dispatches to the `split.data.table` method. v1.11.6 was not on CRAN very long (under 1 week) so we think it's better to revert this change quickly. To know what methods exist, R provides the `methods()` function.
+    ```R
+    methods(split)               # all the methods for the split generic
+    methods(class="data.table")  # all the generics that data.table has a method for (47 currently)
+    ```
 
 
 ### Changes in v1.11.6  (on CRAN 19 Sep 2018)
@@ -59,41 +94,40 @@
 #### NOTES
 
 1. The type coercion warning message has been improved, [#2989](https://github.com/Rdatatable/data.table/pull/2989). Thanks to @sarahbeeysian on [Twitter](https://twitter.com/sarahbeeysian/status/1021359529789775872) for highlighting. For example, given the follow statements:
-```
-  DT = data.table(id=1:3)
-  DT[2, id:="foo"]
-```
-the warning message has changed from :
-```
-Coerced character RHS to integer to match the column's type. Either change the target column ['id'] to
-character first (by creating a new character vector length 3 (nrows of entire table) and assign that;
-i.e. 'replace' column), or coerce RHS to integer (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your
-intent clear and for speed. Or, set the column type correctly up front when you create the table and
-stick to it, please.
-```
-to :
-```
-Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If the
-target column's type integer is correct, it's best for efficiency to avoid the coercion and create the
-RHS as type integer. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA)
-vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.integer() to avoid this
-warning, but that will still perform the coercion. If the target column's type is not correct, it's
-best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in
-fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type)
-over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has nrow(DT) elements then
-the assignment is called a column plonk and is the way to change a column's type. Column types can be
-observed with sapply(DT,typeof).
-```
-
-Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
-```
-DT = data.table(v=1:3)
-DT[2, v:=3.14]
-Warning message:
-  Coerced double RHS to integer to match the type of the target column (column 1 named 'v'). One or
-  more RHS values contain fractions which have been lost; e.g. item 1 with value 3.140000 has been
-  truncated to 3.
-```
+    ```R
+    DT = data.table(id=1:3)
+    DT[2, id:="foo"]
+    ```
+    the warning message has changed from :<br>
+    ```
+    Coerced character RHS to integer to match the column's type. Either change the target column ['id']
+    to character first (by creating a new character vector length 3 (nrows of entire table) and assign
+    that; i.e. 'replace' column), or coerce RHS to integer (e.g. 1L, NA_[real|integer]_, as.*, etc) to
+    make your intent clear and for speed. Or, set the column type correctly up front when you create the
+    table and stick to it, please.
+    ```
+    to :<br>
+    ```
+    Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If the
+    target column's type integer is correct, it's best for efficiency to avoid the coercion and create
+    the RHS as type integer. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and
+    typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_). Wrapping the RHS with as.integer() will avoid
+    this warning but still perform the coercion. If the target column's type is not correct, it is best
+    to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in
+    fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type)
+    over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has nrow(DT) elements then
+    the assignment is called a column plonk and is the way to change a column's type. Column types can be
+    observed with sapply(DT,typeof).
+    ```
+    Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
+    ```R
+    DT = data.table(v=1:3)
+    DT[2, v:=3.14]
+    Warning message:
+      Coerced double RHS to integer to match the type of the target column (column 1 named 'v'). One or
+      more RHS values contain fractions which have been lost; e.g. item 1 with value 3.140000 has been
+      truncated to 3.
+    ```
 
 2. `split.data.table` method is now properly exported, [#2920](https://github.com/Rdatatable/data.table/issues/2920). But we don't recommend it because `split` copies all the pieces into new memory.
 
@@ -377,10 +411,10 @@ Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdat
 10. As warned in v1.9.8 release notes below in this file (on CRAN 25 Nov 2016) it has been 1 year since then and so use of `options(datatable.old.unique.by.key=TRUE)` to restore the old default is now deprecated with warning. The new warning states that this option still works and repeats the request to pass `by=key(DT)` explicitly to `unique()`, `duplicated()`, `uniqueN()` and `anyDuplicated()` and to stop using this option. In another year, this warning will become error. Another year after that the option will be removed.
 
 11. As `set2key()` and `key2()` have been warning since v1.9.8 on CRAN Nov 2016, their warnings have now been upgraded to errors. Note that when they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental' in NEWS item 4. They will be removed in one year.
-```
-Was warning: set2key() will be deprecated in the next relase. Please use setindex() instead.
-Now error: set2key() is now deprecated. Please use setindex() instead.
-```
+    ```
+    Was warning: set2key() will be deprecated in the next relase. Please use setindex() instead.
+    Now error: set2key() is now deprecated. Please use setindex() instead.
+    ```
 
 12. The option `datatable.showProgress` is no longer set to a default value when the package is loaded. Instead, the `default=` argument of `getOption` is used by both `fwrite` and `fread`. The default is the result of `interactive()` at the time of the call. Using `getOption` in this way is intended to be more helpful to users looking at `args(fread)` and `?fread`.
 
