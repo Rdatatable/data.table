@@ -217,7 +217,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   .Call(Cchmatch2, x, table, as.integer(nomatch)) # this is in 'rbindlist.c' for now.
 }
 
-"[.data.table" <- function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, bothkeycols=getOption("datatable.bothkeycols"))
+"[.data.table" <- function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, old.nonequi=getOption("datatable.old.nonequi"))
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -597,7 +597,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
         setnames(i, orignames[leftcols])
         setattr(i, 'sorted', names(i)) # since 'x' has key set, this'll always be sorted
-      }                
+      }
       io = if (missing(on)) haskey(i) else identical(unname(on), head(key(i), length(on)))
       i = .shallow(i, retain.key = io)
       ans = bmerge(i, x, leftcols, rightcols, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
@@ -606,18 +606,28 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       allleftcols = leftcols
       allrightcols = rightcols
       # Drop any non-equi join columns from leftcols and rightcols so they are kept from both x and i
-      if (!missing(on) && bothkeycols && !is.na(non_equi)) {
-        leftcols = leftcols[ops == 1]  # ops > 1 where there is a non-equi opertor
-        rightcols = rightcols[ops == 1]
+      if (!missing(on) && !is.na(non_equi)) {
+        .opt = getOption("datatable.old.nonequi")
+        if (identical(.opt, "warning")) {
+          warning("datatatble.old.nonequi=='warning' occurs in on=", call.=TRUE)
+        } else if (identical(.opt, FALSE)) {
+          leftcols = leftcols[ops == 1]  # ops > 1 where there is a non-equi opertor
+          rightcols = rightcols[ops == 1]
+        }
       }
       # Do the same for rolling joins. The column used for the roll is always the last key column
-      if (roll != 0 && bothkeycols) { 
-        leftcols = leftcols[-length(leftcols)]
-        rightcols = rightcols[-length(rightcols)]
+      if (roll != 0) {
+        .opt = getOption("datatable.old.nonequi")
+        if (identical(.opt, "warning")) {
+          warning("datatatble.old.nonequi=='warning' occurs in roll=", call.=TRUE)
+        } else if (identical(.opt, FALSE)) {
+          leftcols = leftcols[-length(leftcols)]
+          rightcols = rightcols[-length(rightcols)]
+        }
       }
-      # If there are only non-equi / roll keys then leftcols and rightcols become integer(0), 
-      # which is used as a switch to keep only columns in x. Use NULL instead to signify 
-      # keeping all columns in both x and i. 
+      # If there are only non-equi / roll keys then leftcols and rightcols become integer(0),
+      # which is used as a switch to keep only columns in x. Use NULL instead to signify
+      # keeping all columns in both x and i.
       if (!length(leftcols)) leftcols = NULL
       if (!length(rightcols)) rightcols = NULL
       # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this
@@ -772,7 +782,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       icols = seq_along(i)
       icolsAns = seq.int(length(nx)+1, length.out=ncol(i))
       xcols = xcolsAns = seq_along(x)
-    } else if (!length(leftcols)) { 
+    } else if (!length(leftcols)) {
       ansvars = nx = names(x)
       jisvars = character()
       xcols = xcolsAns = seq_along(x)
@@ -1285,7 +1295,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       }
     }
   }  # end of  if !missing(j)
-  
+
   # Restore full leftcols and rightcols now that we have kept non-equi
   # and rolling join columns from both x and i.
   if (!identical(leftcols, integer(0L))) leftcols = allleftcols

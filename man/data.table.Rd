@@ -31,8 +31,8 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
   .SDcols,
   verbose = getOption("datatable.verbose"),                   # default: FALSE
   allow.cartesian = getOption("datatable.allow.cartesian"),   # default: FALSE
-  drop = NULL, on = NULL, 
-  bothkeycols = getOption("datatable.bothkeycols")            # default: FALSE    
+  drop = NULL, on = NULL,
+  old.nonequi = getOption("datatable.old.nonequi")            # default: TRUE
   )
 }
 \arguments{
@@ -166,7 +166,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
         }
         See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
     }
-  \item{bothkeycols}{When \code{TRUE}, \code{i} is a \code{data.table}, and non-equi join operators are used or \code{roll = TRUE}, those columns will be returned from both \code{x} and \code{i}. When \code{FALSE} only the column from \code{i} will be returned, but named after the column in \code{x}, matching the behaviour prior to v1.10.5.}
+  \item{old.nonequi}{ New migration argument added in v1.12.0. Default \code{TRUE} preserves old unpopular behaviour of not including both columns from \code{x} and \code{i} which have been non-equi joined. Here "non-equi" refers both to non-equi in \code{on=} and the last join column of \code{roll=} too. When \code{FALSE}, new behaviour is invoked which adds extra columns in the result and also no longer names the non-equi column data from \code{i} with the name from \code{x}, as users have consistently requested. The value \code{"warning"} performs old behaviour but warns for every non-equi usage in your code so you can find this usage and check them. Since the same column name in the result now contains different data, it is important to use the \code{"warning"} feature and check every usage of non-equi \code{on=} and \code{roll=} in your code, before setting the option to \code{FALSE}. }
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time:\cr
@@ -427,7 +427,7 @@ if (interactive()) {
 
   # keep up to date with latest stable version on CRAN
   update.packages()
-  
+
   # get the latest devel version
   update.dev.pkg()
   # compiled devel binary for Windows available -- no Rtools needed
