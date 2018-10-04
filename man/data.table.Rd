@@ -18,7 +18,7 @@
    Tip: one of the \emph{quickest} ways to learn the features is to type \code{example(data.table)} and study the output at the prompt.
 }
 \usage{
-data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
+data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
 
 \method{[}{data.table}(x, i, j, by, keyby, with = TRUE,
   nomatch = getOption("datatable.nomatch"),                   # default: NA_integer_
@@ -64,7 +64,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
             \item{If not, \code{x} \emph{must be keyed}. Key can be set using \code{\link{setkey}}. If \code{i} is also keyed, then first \emph{key} column of \code{i} is matched against first \emph{key} column of \code{x}, second against second, etc..
 
-            If \code{i} is not keyed, then first column of \code{i} is matched against first \emph{key} column of \code{x}, second column of \code{i} against second \emph{key} column of \code{x}, etc...
+            If \code{i} is not keyed, then first column of \code{i} is matched against first \emph{key} column of \code{x}, second column of \code{i} against second \emph{key} column of \code{x}, etc\ldots
 
             This is summarised in code as \code{min(length(key(x)), if (haskey(i)) length(key(i)) else ncol(i))}.}
         }
