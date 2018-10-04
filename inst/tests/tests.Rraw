@@ -12278,24 +12278,7 @@ DT = data.table(A=1:5)
 test(1947.1, DT[A<0, c('A','B'):=.(NULL, A)], error="When deleting columns, i should not be provided")
 test(1947.2, DT, data.table(A=1:5))
 
-## tests for #2931
-DT <- data.table(id = 1:3, `counts(a>=0)` = 1:3, sameName = 1:3)
-i <- data.table(idi = 1:3, `  weirdName>=` = 1:3, sameName = 1:3)
-## test white spaces around operator
-test(1948.1, DT[i, on = "id >= idi"], DT[i, on = "id>=idi"])
-test(1948.2, DT[i, on = "id>= idi"], DT[i, on = "id>=idi"])
-test(1948.3, DT[i, on = "id >=idi"], DT[i, on = "id>=idi"])
-## test column names containing operators
-test(1948.4, setnames(DT[i, on = "id>=`  weirdName>=`"], c("id","counts(a>=0)", "sameName", "  weirdName>=", "i.sameName")), 
-     DT[i, on = "id>=idi"])
-test(1948.5, setnames(DT[i, on = "id>=`  weirdName>=`"], c("id","counts(a>=0)", "sameName", "  weirdName>=", "i.sameName")), 
-     DT[i, on = "id>=idi"])
-test(1948.6, setnames(DT[i, on = "id >= `  weirdName>=`"], c("id","counts(a>=0)", "sameName", "  weirdName>=", "i.sameName")),
-     DT[i, on = "id>=idi"])
-test(1948.7, setnames(DT[i, on = "`counts(a>=0)`==`  weirdName>=`"], c("id","counts(a>=0)", "sameName", "  weirdName>=", "i.sameName")), 
-     DT[i, on = "id==idi"])
-## mixed example
-test(1948.8, DT[i, on = c( id = "idi", "sameName", "`counts(a>=0)`==`  weirdName>=`")], DT[i, on = "id==idi", c("id", "counts(a>=0)", "sameName")])
+
 
 ###################################
 #  Add new tests above this line  #
