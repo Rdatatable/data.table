@@ -1,5 +1,5 @@
 
-bmerge <- function(i, x, leftcols, rightcols, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose)
+bmerge <- function(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops, verbose)
 {
   # TO DO: rename leftcols to icols, rightcols to xcols
   # TO DO: xo could be moved inside Cbmerge
@@ -90,6 +90,65 @@ bmerge <- function(i, x, leftcols, rightcols, xo, roll, rollends, nomatch, mult,
   }
   ## after all modifications of i, check if i has a proper key on all leftcols
   io <- identical(leftcols, head(chmatch(key(i), names(i)), length(leftcols)))
+  
+  ## after all modifications of x, check if x has a proper key on all rightcols.
+  ## If not, calculate the order. Also for non-equi joins, the order must be calculated.
+  non_equi = which.first(ops != 1L) # 1 is "==" operator
+  if (is.na(non_equi)) {
+    # equi join. use existing key (#1825) or existing secondary index (#1439)
+    if (identical(rightcols, head(chmatch(key(x), names(x)), length(rightcols)))) {
+      xo = integer(0L)
+      if (verbose) cat("on= matches existing key, using key\n")
+    } else {
+      xo <- NULL
+      if (isTRUE(getOption("datatable.use.index"))) {
+        xo = getindex(x, names(x)[rightcols])
+        if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
+      }
+      if (is.null(xo)) {
+        if (verbose) {last.started.at=proc.time(); flush.console()}
+        xo = forderv(x, by = rightcols)
+        if (verbose) {cat("Calculated ad hoc index in",timetaken(last.started.at),"\n"); flush.console()}
+        # TODO: use setindex() instead, so it's cached for future reuse
+      }
+    }
+    ## these vaiables are only needed for non-equi joins. Set them to default.
+    nqgrp <- integer(0)
+    nqmaxgrp <- 1L
+  } else {
+    # non-equi operators present.. investigate groups..
+    nqgrp <- integer(0)
+    nqmaxgrp <- 1L
+    if (verbose) cat("Non-equi join operators detected ... \n")
+    if (roll != FALSE) stop("roll is not implemented for non-equi joins yet.")
+    if (verbose) {last.started.at=proc.time();cat("  forder took ... ");flush.console()}
+    # TODO: could check/reuse secondary indices, but we need 'starts' attribute as well!
+    xo = forderv(x, rightcols, retGrp=TRUE)
+    if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+    xg = attr(xo, 'starts')
+    resetcols = head(rightcols, non_equi-1L)
+    if (length(resetcols)) {
+      # TODO: can we get around having to reorder twice here?
+      # or at least reuse previous order?
+      if (verbose) {last.started.at=proc.time();cat("  Generating group lengths ... ");flush.console()}
+      resetlen = attr(forderv(x, resetcols, retGrp=TRUE), 'starts')
+      resetlen = .Call(Cuniqlengths, resetlen, nrow(x))
+      if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+    } else resetlen = integer(0L)
+    if (verbose) {last.started.at=proc.time();cat("  Generating non-equi group ids ... ");flush.console()}
+    nqgrp = .Call(Cnestedid, x, rightcols[non_equi:length(rightcols)], xo, xg, resetlen, mult)
+    if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+    if (length(nqgrp)) nqmaxgrp = max(nqgrp) # fix for #1986, when 'x' is 0-row table max(.) returns -Inf.
+    if (nqmaxgrp > 1L) { # got some non-equi join work to do
+      if ("_nqgrp_" %in% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
+      if (verbose) {last.started.at=proc.time();cat("  Recomputing forder with non-equi ids ... ");flush.console()}
+      set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
+      xo = forderv(nqx, c(ncol(nqx), rightcols))
+      if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+    } else nqgrp = integer(0L)
+    if (verbose) cat("  Found", nqmaxgrp, "non-equi group(s) ...\n")
+  }
+  
   if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...");flush.console()}
   ans = .Call(Cbmerge, i, x, as.integer(leftcols), as.integer(rightcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
   if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
@@ -102,6 +161,8 @@ bmerge <- function(i, x, leftcols, rightcols, xo, roll, rollends, nomatch, mult,
     if (haskey(origi))
       setattr(i, 'sorted', key(origi))
   }
+  ## add xo for further use
+  ans$xo <- xo
   return(ans)
 }
 
