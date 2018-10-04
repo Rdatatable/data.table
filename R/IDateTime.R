@@ -250,8 +250,8 @@ as.POSIXct.IDate <- function(x, tz = "UTC", time = 0, ...) {
   as.POSIXct(as.POSIXlt(x, ...), tz, ...) + time
 }
 
-as.POSIXct.ITime <- function(x, tz = "UTC", date = as.Date(Sys.time()), ...) {
-  if (missing(date) && any(class(tz) %in% c("Date", "IDate", "POSIXt", "dates"))) {
+as.POSIXct.ITime <- function(x, tz = "UTC", date = Sys.Date(), ...) {
+  if (missing(date) && inherits(tz, c("Date", "IDate", "POSIXt", "dates"))) {
     date <- tz # allows you to use date as the 2nd argument
     tz <- "UTC"
   }

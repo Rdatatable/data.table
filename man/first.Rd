@@ -6,12 +6,12 @@ Returns the first item of a vector or list, or the first row of a data.frame
 or data.table.
 }
 \usage{
-first(x, ...)
+first(x, \dots)
 }
 \arguments{
 \item{x}{ A vector, list, data.frame or data.table. Otherwise the S3 method
 of \code{xts::first} is deployed. }
-\item{...}{ Not applicable for \code{data.table::first}. Any arguments here
+\item{\dots}{ Not applicable for \code{data.table::first}. Any arguments here
 are passed through to \code{xts::first}. }
 }
 \value{

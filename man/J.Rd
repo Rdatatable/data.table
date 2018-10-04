@@ -8,9 +8,9 @@
 }
 
 \usage{
-# DT[J(...)]                           # J() only for use inside DT[...].
-SJ(...)                                # DT[SJ(...)]
-CJ(..., sorted = TRUE, unique = FALSE)  # DT[CJ(...)]
+# DT[J(\dots)]                           # J() only for use inside DT[\dots].
+SJ(\dots)                                # DT[SJ(\dots)]
+CJ(\dots, sorted = TRUE, unique = FALSE)  # DT[CJ(\dots)]
 }
 
 \arguments{
