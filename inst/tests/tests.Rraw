@@ -87,8 +87,7 @@ for (s in sugg) {
 # Control options in case user set them. The user's values are restored at the end of this file.
 oldOptions = options(
   datatable.alloccol = 1024L,
-  datatable.print.class = FALSE,  #  This is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
-  datatable.old.nonequi = TRUE    #  To preserve tests of old behaviour prior to 1.12.0, prior to test 1899
+  datatable.print.class = FALSE  #  This is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
 )
 
 ##########################
@@ -12285,7 +12284,7 @@ test(1947.2, DT, data.table(A=1:5))
 # PR#2602 -- non-equi joins and roll joins columns are now returned from
 # both data.tables in x[i]. These tests cover previous tests which expect
 # only the column from i (named after the column from x) to be returned.
-options(datatable.old.nonequi = FALSE)
+.datatable.old.nonequi=FALSE
 
 # Tests 129, 130, 131 but with the roll column returned from both x and i
 TESTDT = data.table(a=3L,v=2L,key="a")  # testing 1-row table
@@ -12389,8 +12388,8 @@ d1 <- data.table(id=c("X", "Y", "Z"), val1 = 1:3)
 d2 <- data.table(id=c("a", "b", "c"), val2 = 1:3)
 test(1999.29, d1[d2, on = .(val1 > val2), .(i.id)], data.table(i.id=c("a", "a", "b", "c")))
 
-# Testing completed PR#2602, set datatable.old.nonequi back to TRUE (the default for now) for future tests
-options(datatable.old.nonequi=TRUE)
+# Testing completed PR#2602, set old.nonequi back to TRUE (the default for now) for future tests
+.datatable.old.nonequi=TRUE
 
 
 ###################################

@@ -5,14 +5,15 @@
 
 #### NEW FEATURES
 
-1. `[.data.table` gains `old.nonequi=` argument :
+1. `[.data.table` gains `old.nonequi=.datatable.old.nonequi` argument :
     ```
-    getOption("datatable.old.nonequi", TRUE)    # this release; i.e. no change yet; old behaviour
-    "warning"                                   # issues warning for every roll= and non-equi on= query
-    getOption("datatable.old.nonequi", FALSE)   # future release; new behaviour
+    TRUE           # this release; i.e. no change yet; old behaviour
+    "warning"      # issues warning for every roll= and non-equi on= query
+    "error"        # issues error for every roll= and non-equi on= query
+    FALSE          # future release; new behaviour
     ```
-    This option resolves frequent complaints and confusion from users regarding `roll=` and non-equi join columns, [#1615](https://github.com/Rdatatable/data.table/issues/1615), [#1700](https://github.com/Rdatatable/data.table/issues/1700), [#2006](https://github.com/Rdatatable/data.table/issues/2006), [#2569](https://github.com/Rdatatable/data.table/issues/2569) and related issues [#1469](https://github.com/Rdatatable/data.table/issues/1469), [#1807](https://github.com/Rdatatable/data.table/issues/1807), [#2307](https://github.com/Rdatatable/data.table/issues/2307), [#2595](https://github.com/Rdatatable/data.table/issues/2595), and [#2602](https://github.com/Rdatatable/data.table/issues/2602). New behaviour i) includes both sides of join columns which have been non-equi joined (so the result now has more columns) and ii) for such columns, the data from the `i` table is no longer renamed with the column from `x`. Many thanks to @sritchie73 for the implementation [PR#2706](https://github.com/Rdatatable/data.table/pull/2706) [PR#3093](https://github.com/Rdatatable/data.table/pull/3093) and to many for feedback on the PR.
-    Please set the option to `"warning"` to find all `roll=` and non-equi-`on=` usage in your code. Once you have identified and migrated all usage, you can set the option to `FALSE`.
+    This future breaking change resolves frequent complaints and confusion from users regarding `roll=` and non-equi join columns, [#1615](https://github.com/Rdatatable/data.table/issues/1615), [#1700](https://github.com/Rdatatable/data.table/issues/1700), [#2006](https://github.com/Rdatatable/data.table/issues/2006), [#2569](https://github.com/Rdatatable/data.table/issues/2569) and related issues [#1469](https://github.com/Rdatatable/data.table/issues/1469), [#1807](https://github.com/Rdatatable/data.table/issues/1807), [#2307](https://github.com/Rdatatable/data.table/issues/2307), [#2595](https://github.com/Rdatatable/data.table/issues/2595), and [#2602](https://github.com/Rdatatable/data.table/issues/2602). New behaviour i) includes both sides of join columns which have been non-equi joined (so the result now has more columns) and ii) for such columns, the data from the `i` table is no longer renamed with the column from `x`. Many thanks to @sritchie73 for the implementation [PR#2706](https://github.com/Rdatatable/data.table/pull/2706) [PR#3093](https://github.com/Rdatatable/data.table/pull/3093) and to many for feedback on the PR.
+    A few packages on CRAN and Bioconductor need to migrate. They will set `.datatable.old.nonequi=FALSE` in their namespace when they have. You can set the variable to `"warning"` or `"error"` in order to find all `roll=` and non-equi-`on=` usage in your code. Once you have identified and migrated all usage, you can set the option to `FALSE`.
     There is no change to the much more common case of equi-joined columns. For such columns, the data in `i` is still named in the result using the name from `x`.
     The default will be changed to `FALSE` in future and then the argument and option will eventually be removed; hence the `old.` prefix to convey it is a migration option.
 

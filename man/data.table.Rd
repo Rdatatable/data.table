@@ -32,7 +32,8 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
   verbose = getOption("datatable.verbose"),                   # default: FALSE
   allow.cartesian = getOption("datatable.allow.cartesian"),   # default: FALSE
   drop = NULL, on = NULL,
-  old.nonequi = getOption("datatable.old.nonequi")            # default: TRUE
+  old.nonequi = mget(".datatable.old.nonequi", envir=parent.frame(),
+                     inherits=TRUE, ifnotfound=TRUE)[[1L]]    # default: TRUE
   )
 }
 \arguments{
