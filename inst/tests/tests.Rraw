@@ -12296,6 +12296,10 @@ test(1948.7, setnames(DT[i, on = "`counts(a>=0)`==`  weirdName>=`"], c("id","cou
      DT[i, on = "id==idi"])
 ## mixed example
 test(1948.8, DT[i, on = c( id = "idi", "sameName", "`counts(a>=0)`==`  weirdName>=`")], DT[i, on = "id==idi", c("id", "counts(a>=0)", "sameName")])
+## testing for errors
+test(1948.9, DT[i, on = ""], error = "'on' contains no column name: . Each 'on' clause must contain one or two column names.")
+test(1948.11, DT[i, on = "id>=idi>=1"], error = "Found more than one operator in one 'on' statement: id>=idi>=1. Please specify a single operator.")
+test(1948.12, DT[i, on = "`id``idi`<=id"], error = "'on' contains more than 2 column names: `id``idi`<=id. Each 'on' clause must contain one or two column names.")
 
 
 ###################################
