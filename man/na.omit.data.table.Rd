@@ -9,7 +9,7 @@
 }
 
 \usage{
-\method{na.omit}{data.table}(object, cols=seq_along(object), invert=FALSE, ...)
+\method{na.omit}{data.table}(object, cols=seq_along(object), invert=FALSE, \dots)
 }
 \arguments{
   \item{object}{ A \code{data.table}. }

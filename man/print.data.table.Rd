@@ -14,7 +14,7 @@
     row.names=getOption("datatable.print.rownames"), # default: TRUE
     col.names=getOption("datatable.print.colnames"), # default: "auto"
     print.keys=getOption("datatable.print.keys"),    # default: FALSE
-    quote=FALSE,...)
+    quote=FALSE, \dots)
 }
 \arguments{
   \item{x}{ A \code{data.table}. }

@@ -8,7 +8,7 @@
 \usage{
 \method{split}{data.table}(x, f, drop = FALSE,
       by, sorted = FALSE, keep.by = TRUE, flatten = TRUE,
-      ..., verbose = getOption("datatable.verbose"))
+      \dots, verbose = getOption("datatable.verbose"))
 }
 \arguments{
   \item{x}{data.table }

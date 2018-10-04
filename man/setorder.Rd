@@ -27,14 +27,14 @@ locale, use \code{x[base::order(.)]}.
 }
 
 \usage{
-setorder(x, ..., na.last=FALSE)
+setorder(x, \dots, na.last=FALSE)
 setorderv(x, cols, order=1L, na.last=FALSE)
 # optimised to use data.table's internal fast order
 # x[order(., na.last=TRUE)]
 }
 \arguments{
 \item{x}{ A \code{data.table}. }
-\item{...}{ The columns to sort by. Do not quote column names. If \code{...}
+\item{\dots}{ The columns to sort by. Do not quote column names. If \code{\dots}
 is missing (ex: \code{setorder(x)}), \code{x} is rearranged based on all
 columns in ascending order by default. To sort by a column in descending order
 prefix a \code{"-"}, i.e., \code{setorder(x, a, -b, c)}. The \code{-b} works

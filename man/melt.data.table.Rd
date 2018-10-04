@@ -14,7 +14,7 @@ load \code{reshape2} package \emph{before} loading \code{data.table}.
 ## fast melt a data.table
 \method{melt}{data.table}(data, id.vars, measure.vars,
     variable.name = "variable", value.name = "value",
-    ..., na.rm = FALSE, variable.factor = TRUE,
+    \dots, na.rm = FALSE, variable.factor = TRUE,
     value.factor = FALSE,
     verbose = getOption("datatable.verbose"))
 }
@@ -44,7 +44,7 @@ to \code{factor}, else the molten value type is left unchanged.}
 \item{verbose}{\code{TRUE} turns on status and information messages to the
 console. Turn this on by default using \code{options(datatable.verbose=TRUE)}.
 The quantity and types of verbosity may be expanded in future.}
-\item{...}{any other arguments to be passed to/from other methods.}
+\item{\dots}{any other arguments to be passed to/from other methods.}
 }
 \details{
 If \code{id.vars} and \code{measure.vars} are both missing, all
