@@ -12278,6 +12278,12 @@ DT = data.table(A=1:5)
 test(1947.1, DT[A<0, c('A','B'):=.(NULL, A)], error="When deleting columns, i should not be provided")
 test(1947.2, DT, data.table(A=1:5))
 
+# allow nomatch=NULL to work same as nomatch=NULL #857
+d1 = data.table(a=1:3, b=2:4)
+d2 = data.table(a=2:4, b=3:5)
+test(1948.1, d1[d2, on="a", nomatch=NULL], d1[d2, on="a", nomatch=0L])
+test(1948.2, d1[d2, on="b", nomatch=NULL], d1[d2, on="b", nomatch=0L])
+test(1948.3, d1[d2, on=c("a","b"), nomatch=NULL], d1[d2, on=c("a","b"), nomatch=0L])
 
 
 ###################################
