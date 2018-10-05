@@ -12283,6 +12283,12 @@ test(1948.1, DT[,,on=A], error="When i and j are both missing, no other argument
 test(1948.2, DT[,1,on=A], error="i must be provided when on= is provided")
 test(1948.3, DT[1,,with=FALSE], error="j must be provided when with=FALSE")
 
+if (test_bit64) {
+  # explicit coverage of 2-column real case in uniqlist. Keeps coming up in codecov checks in PRs that don't touch uniqlist.c
+  DT = data.table(id=c("A","A","B","B","B"), v=as.integer64(c(1,2,3,3,4)))
+  test(1949, uniqlist(DT), INT(1,2,3,5))
+}
+
 
 ###################################
 #  Add new tests above this line  #
