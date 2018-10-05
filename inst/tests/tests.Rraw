@@ -12278,6 +12278,9 @@ DT = data.table(A=1:5)
 test(1947.1, DT[A<0, c('A','B'):=.(NULL, A)], error="When deleting columns, i should not be provided")
 test(1947.2, DT, data.table(A=1:5))
 
+# helpful error when on= is provided but not i, rather than silently ignoring on=
+test(1948.1, DT[,,on=A], error="When i and j are both missing, no other argument should be used.")
+test(1948.2, DT[,1,on=A], error="i must be provided when on= is provided")
 
 
 ###################################
