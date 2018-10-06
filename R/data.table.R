@@ -487,7 +487,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       }
       if (!missing(on)) {
         # on = .() is now possible, #1257
-        on_ops = parse_on(substitute(on), isnull_inames)
+        on_ops = .parse_on(substitute(on), isnull_inames)
         on = on_ops[[1L]]
         ops = on_ops[[2L]]
         # TODO: collect all '==' ops first to speeden up Cnestedid
@@ -3024,7 +3024,7 @@ isReallyReal <- function(x) {
 }
 
 
-parse_on <- function(onsub, isnull_inames) {
+.parse_on <- function(onsub, isnull_inames) {
   ## helper that takes the 'on' string(s) and extracts comparison operators and column names from it.
   #' @param onsub the substituted on
   #' @param isnull_inames bool; TRUE if i has no names.
@@ -3116,7 +3116,7 @@ parse_on <- function(onsub, isnull_inames) {
   }
   idx_op = match(operators, ops, nomatch=0L)
   if (any(idx_op %in% c(0L, 6L)))
-    stop("Invalid operators ", paste(operators[idx_op==0L], collapse=","), ". Only allowed operators are ", paste(ops[1:5], collapse=""), ".")
+    stop("Invalid operators ", paste(operators[idx_op %in% c(0L, 6L)], collapse=","), ". Only allowed operators are ", paste(ops[1:5], collapse=""), ".")
   ## the final on will contain the xCol as name, the iCol as value
   on <- iCols
   names(on) <- xCols

@@ -12296,10 +12296,14 @@ test(1948.7, setnames(DT[i, on = "`counts(a>=0)`==`  weirdName>=`"], c("id","cou
      DT[i, on = "id==idi"])
 ## mixed example
 test(1948.8, DT[i, on = c( id = "idi", "sameName", "`counts(a>=0)`==`  weirdName>=`")], DT[i, on = "id==idi", c("id", "counts(a>=0)", "sameName")])
+## testing 'eval' in on clause
+test(1948.9, DT[i, on = eval(eval("id<=idi"))], DT[i, on = "id<=idi"])
 ## testing for errors
-test(1948.9, DT[i, on = ""], error = "'on' contains no column name: . Each 'on' clause must contain one or two column names.")
-test(1948.11, DT[i, on = "id>=idi>=1"], error = "Found more than one operator in one 'on' statement: id>=idi>=1. Please specify a single operator.")
-test(1948.12, DT[i, on = "`id``idi`<=id"], error = "'on' contains more than 2 column names: `id``idi`<=id. Each 'on' clause must contain one or two column names.")
+test(1948.11, DT[i, on = ""], error = "'on' contains no column name: . Each 'on' clause must contain one or two column names.")
+test(1948.12, DT[i, on = "id>=idi>=1"], error = "Found more than one operator in one 'on' statement: id>=idi>=1. Please specify a single operator.")
+test(1948.13, DT[i, on = "`id``idi`<=id"], error = "'on' contains more than 2 column names: `id``idi`<=id. Each 'on' clause must contain one or two column names.")
+test(1948.14, DT[i, on = "id != idi"], error = "Invalid operators !=. Only allowed operators are ==<=<>=>.")
+test(1948.15, DT[i, on = 1L], error = "'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'.")
 
 # helpful error when on= is provided but not i, rather than silently ignoring on=
 test(1949.1, DT[,,on=A], error="When i and j are both missing, no other argument should be used.")
