@@ -269,7 +269,7 @@ We can choose if queries that do not match should return `NA` or be skipped alto
 #### -- From the previous example, subset all rows only if there's a match
 
 ```{r}
-flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", on = c("origin", "dest"), nomatch = 0L]
+flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", on = c("origin", "dest"), nomatch = NULL]
 ```
 
 * There are no flights connecting "JFK" and "XNA". Therefore, that row is skipped in the result.

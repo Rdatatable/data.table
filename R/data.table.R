@@ -247,10 +247,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (length(rollends)==1L) rollends=rep.int(rollends,2L)
   # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
   missingnomatch = missing(nomatch)
-  if (!is.na(nomatch) && nomatch!=0L) stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
+  if (is.null(nomatch)) nomatch = 0L # allow nomatch=NULL API already now, part of: https://github.com/Rdatatable/data.table/issues/857
+  if (!is.na(nomatch) && nomatch!=0L) stop("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL)")
   nomatch = as.integer(nomatch)
-  if (!is.logical(which) || length(which)>1L) stop("'which' must be a logical vector length 1. Either FALSE, TRUE or NA.")
-  if ((isTRUE(which)||is.na(which)) && !missing(j)) stop("'which' is ",which," (meaning return row numbers) but 'j' is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
+  if (!is.logical(which) || length(which)>1L) stop("which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
+  if ((isTRUE(which)||is.na(which)) && !missing(j)) stop("which==",which," (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
   if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
   .global$print=""
   if (missing(i) && missing(j)) {

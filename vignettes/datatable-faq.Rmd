@@ -352,7 +352,7 @@ Yes :
  - `i`  $\Leftrightarrow$  order by (in compound syntax)
  - `i`  $\Leftrightarrow$  having (in compound syntax)
  - `nomatch = NA`  $\Leftrightarrow$  outer join
- - `nomatch = 0L`  $\Leftrightarrow$  inner join
+ - `nomatch = NULL`  $\Leftrightarrow$  inner join
  - `mult = "first"|"last"`  $\Leftrightarrow$  N/A because SQL is inherently unordered
  - `roll = TRUE`  $\Leftrightarrow$  N/A because SQL is inherently unordered
 
