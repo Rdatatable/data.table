@@ -257,8 +257,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (missing(i) && missing(j)) {
     # ...[] == oops at console, forgot print(...)
     # or some kind of dynamic construction that has edge case of no contents inside [...]
+    if (nargs()>2L)  # 2 is minimum:  1) method name, 2) x
+      stop("When i and j are both missing, no other argument should be used. Empty [] is useful after := to have the result printed.")
     return(x)
   }
+  if (!with && missing(j)) stop("j must be provided when with=FALSE")
+  if (missing(i) && !missing(on)) stop("i must be provided when on= is provided")
   if (!missing(keyby)) {
     if (!missing(by)) stop("Provide either 'by' or 'keyby' but not both")
     by=bysub=substitute(keyby)
@@ -276,7 +280,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   notjoin = FALSE
   rightcols = leftcols = integer()
   optimizedSubset = FALSE ## flag: tells, whether a normal query was optimized into a join.
-  if (!with && missing(j)) stop("j must be provided when with=FALSE")
   ..syms = NULL
   av = NULL
   jsub = NULL

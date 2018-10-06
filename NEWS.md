@@ -7,6 +7,8 @@
 
 1. `fread()` can now read a remote compressed file in one step; `fread("https://domain.org/file.csv.bz2")`. The `file=` argument now supports `.gz` and `.bz2` too; i.e. `fread(file="file.csv.gz")` works now where only `fread("file.csv.gz")` worked in 1.11.8.
 
+2. `nomatch=NULL` now does the same as `nomatch=0L`; i.e. discards missing values silently (inner join). The default is still `nomatch=NA` (outer join) for statistical safety so that missing values are retained by default. You have to explicitly write `nomatch=NULL` to indicate to the reader of your code that you intend to discard missing values silently. .After several years have elapsed, we will start to deprecate `0L`; please start using `NULL`. [TO DO]: `nomatch=.(0)` fills with `0` instead of `NA`, [#857](https://github.com/Rdatatable/data.table/issues/857)  [TO DO] `nomatch="error"`.
+
 #### BUG FIXES
 
 1. Providing an `i` subset expression when attempting to delete a column correctly failed with helpful error, but when the column was missing too created a new column full of `NULL` values, [#3089](https://github.com/Rdatatable/data.table/issues/3089). Thanks to Michael Chirico for reporting.
@@ -15,7 +17,8 @@
 
 1. When data.table first loads it now checks the DLL's MD5. This is to detect installation issues on Windows when you upgrade and i) the DLL is in use by another R session and ii) the CRAN source version > CRAN binary binary which happens just after a new release (R prompts users to install from source until the CRAN binary is available). This situation can lead to a state where the package's new R code calls old C code in the old DLL; [R#17478](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478), [#3056](https://github.com/Rdatatable/data.table/issues/3056). This broken state can persist until, hopefully, you experience a strange error caused by the mismatch. Otherwise, wrong results may occur silently. This situation applies to any R package with compiled code not just data.table, is Windows-only, and is long-standing. It has only recently been understood as it typically only occurs during the few days after each new release until binaries are available on CRAN. Thanks to Gabor Csardi for the suggestion to use `tools::checkMD5sums()`.
 
-2. Interface for joining two datasets keeping only matching rows (also known as _INNER JOIN_) has been adjusted to support `nomatch=NULL`. Previous API `nomatch=0L` is still OK but if you write new code please use `nomatch=NULL` from now on. Related to [#857](https://github.com/Rdatatable/data.table/issues/857).
+2. When `on=` is provided but not `i=`, a helpful error is now produced rather than silently ignoring `on=`. Thanks to Dirk Eddelbuettel for the idea.
+
 
 ### Changes in v1.11.8
 

@@ -12278,12 +12278,23 @@ DT = data.table(A=1:5)
 test(1947.1, DT[A<0, c('A','B'):=.(NULL, A)], error="When deleting columns, i should not be provided")
 test(1947.2, DT, data.table(A=1:5))
 
-# allow nomatch=NULL to work same as nomatch=NULL #857
+# helpful error when on= is provided but not i, rather than silently ignoring on=
+test(1948.1, DT[,,on=A], error="When i and j are both missing, no other argument should be used.")
+test(1948.2, DT[,1,on=A], error="i must be provided when on= is provided")
+test(1948.3, DT[1,,with=FALSE], error="j must be provided when with=FALSE")
+
+if (test_bit64) {
+  # explicit coverage of 2-column real case in uniqlist. Keeps coming up in codecov checks in PRs that don't touch uniqlist.c
+  DT = data.table(id=c("A","A","B","B","B"), v=as.integer64(c(1,2,3,3,4)))
+  test(1949, uniqlist(DT), INT(1,2,3,5))
+}
+
+# allow nomatch=NULL to work same as nomatch=0L, #857
 d1 = data.table(a=1:3, b=2:4)
 d2 = data.table(a=2:4, b=3:5)
-test(1948.1, d1[d2, on="a", nomatch=NULL], d1[d2, on="a", nomatch=0L])
-test(1948.2, d1[d2, on="b", nomatch=NULL], d1[d2, on="b", nomatch=0L])
-test(1948.3, d1[d2, on=c("a","b"), nomatch=NULL], d1[d2, on=c("a","b"), nomatch=0L])
+test(1950.1, d1[d2, on="a", nomatch=NULL], d1[d2, on="a", nomatch=0L])
+test(1950.2, d1[d2, on="b", nomatch=NULL], d1[d2, on="b", nomatch=0L])
+test(1950.3, d1[d2, on=c("a","b"), nomatch=NULL], d1[d2, on=c("a","b"), nomatch=0L])
 
 
 ###################################
