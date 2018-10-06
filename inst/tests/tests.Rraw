@@ -12278,6 +12278,29 @@ DT = data.table(A=1:5)
 test(1947.1, DT[A<0, c('A','B'):=.(NULL, A)], error="When deleting columns, i should not be provided")
 test(1947.2, DT, data.table(A=1:5))
 
+# helpful error when on= is provided but not i, rather than silently ignoring on=
+test(1948.1, DT[,,on=A], error="When i and j are both missing, no other argument should be used.")
+test(1948.2, DT[,1,on=A], error="i must be provided when on= is provided")
+test(1948.3, DT[1,,with=FALSE], error="j must be provided when with=FALSE")
+
+if (test_bit64) {
+  # explicit coverage of 2-column real case in uniqlist. Keeps coming up in codecov checks in PRs that don't touch uniqlist.c
+  DT = data.table(id=c("A","A","B","B","B"), v=as.integer64(c(1,2,3,3,4)))
+  test(1949, uniqlist(DT), INT(1,2,3,5))
+}
+
+# allow nomatch=NULL to work same as nomatch=0L, #857
+d1 = data.table(a=1:3, b=2:4)
+d2 = data.table(a=2:4, b=3:5)
+test(1950.1, d1[d2, on="a", nomatch=NULL], d1[d2, on="a", nomatch=0L])
+test(1950.2, d1[d2, on="b", nomatch=NULL], d1[d2, on="b", nomatch=0L])
+test(1950.3, d1[d2, on=c("a","b"), nomatch=NULL], d1[d2, on=c("a","b"), nomatch=0L])
+test(1950.4, d1[d2, nomatch=3], error="nomatch= must be either NA or NULL .or 0 for backwards compatibility")
+
+# coverage of which= checks
+test(1951.1, d1[a==2, which=3], error="which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
+test(1951.2, d1[a==2, 2, which=TRUE], error="which==TRUE.*but j is also supplied")
+
 ## test type coercion in joins (#2592)
 dt1 <- data.table(intCol = 1L:10L,
                   doubleCol = as.numeric(1:10), ## only 1:10 will be integer
@@ -12297,101 +12320,101 @@ if ("package:bit64" %in% search()) {
   dt2[, int64Col := as.integer64(c(1:4, 3e9))]
 }
 ## no coercion when types match
-test(1950.1, 
+test(1952.1, 
      nrow(dt1[dt2, on = "boolCol==boolCol"]), nrow(dt2),
      warning = NULL)
-test(1950.2, 
+test(1952.2, 
      nrow(dt1[dt2, on = "intCol==intCol"]), nrow(dt2),
      warning = NULL)
-test(1950.3, 
+test(1952.3, 
      nrow(dt1[dt2, on = "doubleCol==doubleCol"]), nrow(dt2),
      warning = NULL)
-test(1950.4, 
+test(1952.4, 
      nrow(dt1[dt2, on = "realDoubleCol==realDoubleCol"]), nrow(dt2),
      warning = NULL)
-test(1950.5, 
+test(1952.5, 
      nrow(dt1[dt2, on = "charCol==charCol"]), nrow(dt2),
      warning = NULL)
-test(1950.6, 
+test(1952.6, 
      nrow(dt1[dt2, on = "factCol==factCol"]), nrow(dt2),
      warning = NULL)
 if ("package:bit64" %in% search()) {
-  test(1950.7, 
+  test(1952.7, 
        nrow(dt1[dt2, on = "int64Col==int64Col"]), nrow(dt2),
        warning = NULL)
 }
 ## error on incompatible types
-test(1950.8, 
+test(1952.8, 
      dt1[dt2, on = "boolCol==intCol"],
      error = "Incompatible types: x.boolCol (logical) and i.intCol (integer)")
-test(1950.9, 
+test(1952.9, 
      dt1[dt2, on = "boolCol==doubleCol"],
      error = "Incompatible types: x.boolCol (logical) and i.doubleCol (double)")
-test(1950.11, 
+test(1952.11, 
      dt1[dt2, on = "boolCol==realDoubleCol"],
      error = "Incompatible types: x.boolCol (logical) and i.realDoubleCol (double)")
-test(1950.12, 
+test(1952.12, 
      dt1[dt2, on = "boolCol==charCol"],
      error = "Incompatible types: x.boolCol (logical) and i.charCol (character)")
-test(1950.13, 
+test(1952.13, 
      dt1[dt2, on = "boolCol==factCol"],
      error = "Incompatible types: x.boolCol (logical) and i.factCol (factor)")
-test(1950.14, 
+test(1952.14, 
      dt1[dt2, on = "intCol==charCol"],
      error = "Incompatible types: x.intCol (integer) and i.charCol (character)")
-test(1950.15, 
+test(1952.15, 
      dt1[dt2, on = "intCol==factCol"],
      error = "Incompatible types: x.intCol (integer) and i.factCol (factor)")
-test(1950.16, 
+test(1952.16, 
      dt1[dt2, on = "doubleCol==charCol"],
      error = "Incompatible types: x.doubleCol (double) and i.charCol (character)")
-test(1950.17, 
+test(1952.17, 
      dt1[dt2, on = "realDoubleCol==charCol"],
      error = "Incompatible types: x.realDoubleCol (double) and i.charCol (character)")
-test(1950.18, 
+test(1952.18, 
      dt1[dt2, on = "doubleCol==factCol"],
      error = "Incompatible types: x.doubleCol (double) and i.factCol (factor)")
-test(1950.19, 
+test(1952.19, 
      dt1[dt2, on = "realDoubleCol==factCol"],
      error = "Incompatible types: x.realDoubleCol (double) and i.factCol (factor)")
-test(1950.21, 
+test(1952.21, 
      dt1[dt2, on = "charCol==boolCol"],
      error = "Incompatible types: x.charCol (character) and i.boolCol (logical)")
-test(1950.22, 
+test(1952.22, 
      dt1[dt2, on = "charCol==intCol"],
      error = "Incompatible types: x.charCol (character) and i.intCol (integer)")
-test(1950.23, 
+test(1952.23, 
      dt1[dt2, on = "charCol==doubleCol"],
      error = "Incompatible types: x.charCol (character) and i.doubleCol (double)")
-test(1950.24, 
+test(1952.24, 
      dt1[dt2, on = "charCol==realDoubleCol"],
      error = "Incompatible types: x.charCol (character) and i.realDoubleCol (double)")
-test(1950.25, 
+test(1952.25, 
      dt1[dt2, on = "factCol==boolCol"],
      error = "Incompatible types: x.factCol (factor) and i.boolCol (logical)")
-test(1950.26, 
+test(1952.26, 
      dt1[dt2, on = "factCol==intCol"],
      error = "Incompatible types: x.factCol (factor) and i.intCol (integer)")
-test(1950.27, 
+test(1952.27, 
      dt1[dt2, on = "factCol==doubleCol"],
      error = "Incompatible types: x.factCol (factor) and i.doubleCol (double)")
-test(1950.28, 
+test(1952.28, 
      dt1[dt2, on = "factCol==realDoubleCol"],
      error = "Incompatible types: x.factCol (factor) and i.realDoubleCol (double)")
 if ("package:bit64" %in% search()) {
-  test(1950.29, 
+  test(1952.29, 
        dt1[dt2, on = "boolCol==int64Col"],
        error = "Incompatible types: x.boolCol (logical) and i.int64Col (integer64)")
-  test(1950.31, 
+  test(1952.31, 
        dt1[dt2, on = "charCol==int64Col"],
        error = "Incompatible types: x.charCol (character) and i.int64Col (integer64)")
-  test(1950.32, 
+  test(1952.32, 
        dt1[dt2, on = "factCol==int64Col"],
        error = "Incompatible types: x.factCol (factor) and i.int64Col (integer64)")
-  test(1950.33, 
+  test(1952.33, 
        dt1[dt2, on = "int64Col==charCol"],
        error = "Incompatible types: x.int64Col (integer64) and i.charCol (character)")
-  test(1950.34, 
+  test(1952.34, 
        dt1[dt2, on = "int64Col==factCol"],
        error = "Incompatible types: x.int64Col (integer64) and i.factCol (factor)")
 }
@@ -12405,128 +12428,125 @@ if ("package:bit64" %in% search()) {
   cols <- c(cols, "int64Col")
 }
 cols <- c(paste0("x.", cols), paste0("i.", cols)) ## make sure that all columns from x and i are in the result
-test(1950.35, 
+test(1952.35, 
      result <- dt1[dt2, cols, on = "intCol==boolCol", with = FALSE, nomatch = 0L, verbose = TRUE],
      dt1[dt2, cols, on = "intCol==boolCol", with = FALSE, nomatch = 0L],
      output = "Coercing logical column i.'boolCol' to integer to match type of x.'intCol'.")
-test(1950.36, class(result$i.boolCol), "integer")
-test(1950.37, class(result$x.intCol),  "integer")
-test(1950.38, nrow(result), 5L)
-test(1950.39, 
+test(1952.36, class(result$i.boolCol), "integer")
+test(1952.37, class(result$x.intCol),  "integer")
+test(1952.38, nrow(result), 5L)
+test(1952.39, 
      result <- dt1[dt2, cols, on = "intCol==doubleCol", with = FALSE, nomatch = 0L, verbose = TRUE],
      dt1[dt2, cols, on = "intCol==doubleCol", with = FALSE, nomatch = 0L],
      output = "Coercing double column i.'doubleCol' to integer to match type of x.'intCol'.")
-test(1950.41, class(result$i.doubleCol), "integer")
-test(1950.42, class(result$x.intCol),    "integer")
-test(1950.43, nrow(result), 5L)
-test(1950.44, 
+test(1952.41, class(result$i.doubleCol), "integer")
+test(1952.42, class(result$x.intCol),    "integer")
+test(1952.43, nrow(result), 5L)
+test(1952.44, 
      result <- dt1[dt2, cols, on = "intCol==realDoubleCol", with = FALSE, nomatch = 0L, verbose = TRUE],
      dt1[dt2, cols, on = "intCol==realDoubleCol", with = FALSE, nomatch = 0L],
      output = "Coercing integer column x.'intCol' to double to match type of i.'realDoubleCol'.")
-test(1950.45, class(result$i.realDoubleCol), "numeric")
-test(1950.46, class(result$x.intCol),        "integer") ## coercion of x columns is only for the join. The original type is returned.
-test(1950.47, nrow(result), 2L)
-test(1950.48, 
+test(1952.45, class(result$i.realDoubleCol), "numeric")
+test(1952.46, class(result$x.intCol),        "integer") ## coercion of x columns is only for the join. The original type is returned.
+test(1952.47, nrow(result), 2L)
+test(1952.48, 
      result <- dt1[dt2, cols, on = "doubleCol==boolCol", with = FALSE, nomatch = 0L, verbose = TRUE],
      dt1[dt2, cols, on = "doubleCol==boolCol", with = FALSE, nomatch = 0L],
      output = "Coercing logical column i.'boolCol' to double to match type of x.'doubleCol'.")
-test(1950.49, class(result$i.boolCol),   "numeric")
-test(1950.51, class(result$x.doubleCol), "numeric")
-test(1950.52, nrow(result), 5L)
-test(1950.53, 
+test(1952.49, class(result$i.boolCol),   "numeric")
+test(1952.51, class(result$x.doubleCol), "numeric")
+test(1952.52, nrow(result), 5L)
+test(1952.53, 
      result <- dt1[dt2, cols, on = "realDoubleCol==boolCol", with = FALSE, nomatch = 0L, verbose = TRUE],
      dt1[dt2, cols, on = "realDoubleCol==boolCol", with = FALSE, nomatch = 0L],
      output = "Coercing logical column i.'boolCol' to double to match type of x.'realDoubleCol'.")
-test(1950.54, class(result$i.boolCol),   "numeric")
-test(1950.55, class(result$x.doubleCol), "numeric")
-test(1950.56, nrow(result), 5L)
-test(1950.57, 
+test(1952.54, class(result$i.boolCol),   "numeric")
+test(1952.55, class(result$x.doubleCol), "numeric")
+test(1952.56, nrow(result), 5L)
+test(1952.57, 
      result <- dt1[dt2, cols, on = "doubleCol==intCol", with = FALSE, nomatch = 0L, verbose = TRUE],
      dt1[dt2, cols, on = "doubleCol==intCol", with = FALSE, nomatch = 0L],
      output = "Coercing integer column i.'intCol' to double to match type of x.'doubleCol'.")
-test(1950.58, class(result$i.intCol),    "numeric")
-test(1950.59, class(result$x.doubleCol), "numeric")
-test(1950.61, nrow(result), 5L)
-test(1950.62, 
+test(1952.58, class(result$i.intCol),    "numeric")
+test(1952.59, class(result$x.doubleCol), "numeric")
+test(1952.61, nrow(result), 5L)
+test(1952.62, 
      result <- dt1[dt2, cols, on = "realDoubleCol==intCol", with = FALSE, nomatch = 0L, verbose = TRUE],
      dt1[dt2, cols, on = "realDoubleCol==intCol", with = FALSE, nomatch = 0L],
      output = "Coercing integer column i.'intCol' to double to match type of x.'realDoubleCol'.")
-test(1950.63, class(result$i.intCol),        "numeric")
-test(1950.64, class(result$x.realDoubleCol), "numeric")
-test(1950.65, nrow(result), 5L)
-test(1950.66, 
+test(1952.63, class(result$i.intCol),        "numeric")
+test(1952.64, class(result$x.realDoubleCol), "numeric")
+test(1952.65, nrow(result), 5L)
+test(1952.66, 
      result <- dt1[dt2, cols, on = "charCol==factCol", with = FALSE, nomatch = 0L, verbose = TRUE],
      dt1[dt2, cols, on = "charCol==factCol", with = FALSE, nomatch = 0L],
      output = "Coercing factor column i.'factCol' to character to match type of x.'charCol'.")
-test(1950.67, class(result$i.factCol), "character")
-test(1950.68, class(result$x.charCol), "character")
-test(1950.69, nrow(result), 5L)
-test(1950.71, 
+test(1952.67, class(result$i.factCol), "character")
+test(1952.68, class(result$x.charCol), "character")
+test(1952.69, nrow(result), 5L)
+test(1952.71, 
      result <- dt1[dt2, cols, on = "factCol==charCol", with = FALSE, nomatch = 0L, verbose = TRUE],
      dt1[dt2, cols, on = "factCol==charCol", with = FALSE, nomatch = 0L],
      output = "Coercing character column i.'charCol' to factor to match type of x.'factCol'.")
-test(1950.72, class(result$i.charCol), "factor")
-test(1950.73, class(result$x.factCol), "factor")
-test(1950.74, nrow(result), 5L)
+test(1952.72, class(result$i.charCol), "factor")
+test(1952.73, class(result$x.factCol), "factor")
+test(1952.74, nrow(result), 5L)
 if ("package:bit64" %in% search()) {
-  test(1950.75, 
+  test(1952.75, 
        result <- dt1[dt2, cols, on = "intCol==int64Col", with = FALSE, nomatch = 0L, verbose = TRUE],
        suppressWarnings(dt1[dt2, cols, on = "intCol==int64Col", with = FALSE, nomatch = 0L]),
        output = "Coercing integer64 column i.'int64Col' to integer to match type of x.'intCol'.",
        warning = "NAs produced by integer overflow")
-  test(1950.76, class(result$i.int64Col), "integer")
-  test(1950.77, class(result$x.intCol),   "integer")
-  test(1950.78, nrow(result), 4L)
-  test(1950.79, 
+  test(1952.76, class(result$i.int64Col), "integer")
+  test(1952.77, class(result$x.intCol),   "integer")
+  test(1952.78, nrow(result), 4L)
+  test(1952.79, 
        result <- dt1[dt2, cols, on = "doubleCol==int64Col", with = FALSE, nomatch = 0L, verbose = TRUE],
        dt1[dt2, cols, on = "doubleCol==int64Col", with = FALSE, nomatch = 0L],
        output = "Coercing integer64 column i.'int64Col' to double to match type of x.'doubleCol'.")
-  test(1950.81, class(result$i.int64Col),  "numeric")
-  test(1950.82, class(result$x.doubleCol), "numeric")
-  test(1950.83, nrow(result), 4L)
-  test(1950.84, 
+  test(1952.81, class(result$i.int64Col),  "numeric")
+  test(1952.82, class(result$x.doubleCol), "numeric")
+  test(1952.83, nrow(result), 4L)
+  test(1952.84, 
        result <- dt1[dt2, cols, on = "realDoubleCol==int64Col", with = FALSE, nomatch = 0L, verbose = TRUE],
        dt1[dt2, cols, on = "realDoubleCol==int64Col", with = FALSE, nomatch = 0L],
        output = "Coercing integer64 column i.'int64Col' to double to match type of x.'realDoubleCol'.")
-  test(1950.85, class(result$i.int64Col), "numeric")
-  test(1950.86, class(result$x.realDoubleCol), "numeric")
-  test(1950.87, nrow(result), 4L)
-  test(1950.88, 
+  test(1952.85, class(result$i.int64Col), "numeric")
+  test(1952.86, class(result$x.realDoubleCol), "numeric")
+  test(1952.87, nrow(result), 4L)
+  test(1952.88, 
        result <- dt1[dt2, cols, on = "int64Col==boolCol", with = FALSE, nomatch = 0L, verbose = TRUE],
        dt1[dt2, cols, on = "int64Col==boolCol", with = FALSE, nomatch = 0L],
        output = "Coercing logical column i.'boolCol' to integer64 to match type of x.'int64Col'.")
-  test(1950.89, class(result$i.boolCol),  "integer64")
-  test(1950.91, class(result$x.int64Col), "integer64")
-  test(1950.92, nrow(result), 5L)
-  test(1950.93, 
+  test(1952.89, class(result$i.boolCol),  "integer64")
+  test(1952.91, class(result$x.int64Col), "integer64")
+  test(1952.92, nrow(result), 5L)
+  test(1952.93, 
        result <- dt1[dt2, cols, on = "int64Col==intCol", with = FALSE, nomatch = 0L, verbose = TRUE],
        dt1[dt2, cols, on = "int64Col==intCol", with = FALSE, nomatch = 0L],
        output = "Coercing integer column i.'intCol' to integer64 to match type of x.'int64Col'.")
-  test(1950.94, class(result$i.intCol),   "integer64")
-  test(1950.95, class(result$x.int64Col), "integer64")
-  test(1950.96, nrow(result), 5L)
-  test(1950.97, 
+  test(1952.94, class(result$i.intCol),   "integer64")
+  test(1952.95, class(result$x.int64Col), "integer64")
+  test(1952.96, nrow(result), 5L)
+  test(1952.97, 
        result <- dt1[dt2, cols, on = "int64Col==doubleCol", with = FALSE, nomatch = 0L, verbose = TRUE],
        dt1[dt2, cols, on = "int64Col==doubleCol", with = FALSE, nomatch = 0L],
        output = "Coercing double column i.'doubleCol' to integer64 to match type of x.'int64Col'.")
-  test(1950.98, class(result$i.doubleCol), "integer64")
-  test(1950.99, class(result$x.int64Col),  "integer64")
-  test(1950.101, nrow(result), 5L)
-  test(1950.102, 
+  test(1952.98, class(result$i.doubleCol), "integer64")
+  test(1952.99, class(result$x.int64Col),  "integer64")
+  test(1952.101, nrow(result), 5L)
+  test(1952.102, 
        result <- dt1[dt2, cols, on = "int64Col==realDoubleCol", with = FALSE, nomatch = 0L, verbose = TRUE],
        dt1[dt2, cols, on = "int64Col==realDoubleCol", with = FALSE, nomatch = 0L],
        output = "Coercing integer64 column x.'int64Col' to double to match type of i.'realDoubleCol'.")
-  test(1950.103, class(result$i.realDoubleCol), "numeric")
-  test(1950.104, class(result$x.int64Col),      "integer64") ## coercion of x columns is only for the join. The original type is returned.
-  test(1950.105, nrow(result), 2L)
+  test(1952.103, class(result$i.realDoubleCol), "numeric")
+  test(1952.104, class(result$x.int64Col),      "integer64") ## coercion of x columns is only for the join. The original type is returned.
+  test(1952.105, nrow(result), 2L)
 }
 ## correct behaviour if non-standard types are involved:
 ## can only be tested for non-standard column in i because non-standard in x throws error before bmerge in forderv
-test(1950.106, dt1[dt2, on = "intCol==complexCol"], 
+test(1952.106, dt1[dt2, on = "intCol==complexCol"], 
      error = "Incompatible types: x.intCol (integer) and i.complexCol (complex)")
-
-
-
 
 
 ###################################

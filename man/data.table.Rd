@@ -114,7 +114,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
         When \code{j} is a character vector of column names, a numeric vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is not necessary anymore to select columns dynamically. Note that \code{x[, cols]} is equivalent to \code{x[, ..cols]} and to \code{x[, cols, with=FALSE]} and to \code{x[, .SD, .SDcols=cols]}.}
 
-    \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{0} means no rows will be returned for that row of \code{i}. Use \code{options(datatable.nomatch=0)} to change the default value (used when \code{nomatch} is not supplied).}
+    \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{NULL} (or \code{0} for backward compatibility) means no rows will be returned for that row of \code{i}. Use \code{options(datatable.nomatch=NULL)} to change the default value (used when \code{nomatch} is not supplied).}
 
     \item{mult}{ When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}) and \emph{multiple} rows in \code{x} match to the row in \code{i}, \code{mult} controls which are returned: \code{"all"} (default), \code{"first"} or \code{"last"}.}
 
@@ -285,7 +285,7 @@ DT[x!="b" | y!=3]              # not yet optimized, currently vector scan subset
 DT[.("b", 3), on=c("x", "y")]  # join on columns x,y of DT; uses binary search (fast)
 DT[.("b", 3), on=.(x, y)]      # same, but using on=.()
 DT[.("b", 1:2), on=c("x", "y")]             # no match returns NA
-DT[.("b", 1:2), on=.(x, y), nomatch=0]      # no match row is not returned
+DT[.("b", 1:2), on=.(x, y), nomatch=NULL]   # no match row is not returned
 DT[.("b", 1:2), on=c("x", "y"), roll=Inf]   # locf, nomatch row gets rolled by previous row
 DT[.("b", 1:2), on=.(x, y), roll=-Inf]      # nocb, nomatch row gets rolled by next row
 DT["b", sum(v*y), on="x"]                   # on rows where DT$x=="b", calculate sum(v*y)
@@ -302,7 +302,7 @@ X
 
 DT[X, on="x"]                         # right join
 X[DT, on="x"]                         # left join
-DT[X, on="x", nomatch=0]              # inner join
+DT[X, on="x", nomatch=NULL]           # inner join
 DT[!X, on="x"]                        # not join
 DT[X, on=c(y="v")]                    # join using column "y" of DT with column "v" of X
 DT[X, on="y==v"]                      # same as above (v1.9.8+)
@@ -349,7 +349,7 @@ kDT[.("a")]                           # same, .() is an alias for list()
 kDT[list("a")]                        # same
 kDT[.("a", 3)]                        # join to 2 columns
 kDT[.("a", 3:6)]                      # join 4 rows (2 missing)
-kDT[.("a", 3:6), nomatch=0]           # remove missing
+kDT[.("a", 3:6), nomatch=NULL]        # remove missing
 kDT[.("a", 3:6), roll=TRUE]           # locf rolling join
 kDT[.("a", 3:6), roll=Inf]            # same as above
 kDT[.("a", 3:6), roll=-Inf]           # nocb rolling join
