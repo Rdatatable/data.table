@@ -65,10 +65,10 @@ fintersect <- function(x, y, all=FALSE) {
     x = shallow(x)[, ".seqn" := rowidv(x)]
     y = shallow(y)[, ".seqn" := rowidv(y)]
     jn.on = c(".seqn",setdiff(names(x),".seqn"))
-    x[y, .SD, .SDcols=setdiff(names(x),".seqn"), nomatch=0L, on=jn.on]
+    x[y, .SD, .SDcols=setdiff(names(x),".seqn"), nomatch=NULL, on=jn.on]
   } else {
     z = funique(y)  # fixes #3034. When .. prefix in i= is implemented (TODO), this can be x[funique(..y), on=, multi=]
-    x[z, nomatch=0L, on=names(x), mult="first"]
+    x[z, nomatch=NULL, on=names(x), mult="first"]
   }
 }
 
