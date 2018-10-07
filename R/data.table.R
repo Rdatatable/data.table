@@ -488,40 +488,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       }
       if (!missing(on)) {
         # on = .() is now possible, #1257
-        parse_on <- function(onsub) {
-          ops = c("==", "<=", "<", ">=", ">", "!=")
-          pat = paste0("(", ops, ")", collapse="|")
-          if (is.call(onsub) && onsub[[1L]] == "eval") {
-            onsub = eval(onsub[[2L]], parent.frame(2L), parent.frame(2L))
-            if (is.call(onsub) && onsub[[1L]] == "eval") onsub = onsub[[2L]]
-          }
-          if (is.call(onsub) && as.character(onsub[[1L]]) %in% c("list", ".")) {
-            spat = paste0("[ ]+(", pat, ")[ ]+")
-            onsub = lapply(as.list(onsub)[-1L], function(x) gsub(spat, "\\1", deparse(x, width.cutoff=500L)))
-            onsub = as.call(c(quote(c), onsub))
-          }
-          on = eval(onsub, parent.frame(2L), parent.frame(2L))
-          if (!is.character(on))
-            stop("'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'.")
-          this_op = regmatches(on, gregexpr(pat, on))
-          idx = (vapply(this_op, length, 0L) == 0L)
-          this_op[idx] = "=="
-          this_op = unlist(this_op, use.names=FALSE)
-          idx_op = match(this_op, ops, nomatch=0L)
-          if (any(idx_op %in% c(0L, 6L)))
-            stop("Invalid operators ", paste(this_op[idx_op==0L], collapse=","), ". Only allowed operators are ", paste(ops[1:5], collapse=""), ".")
-          if (is.null(names(on))) {
-            on[idx] = if (isnull_inames) paste(on[idx], paste0("V", seq_len(sum(idx))), sep="==") else paste(on[idx], on[idx], sep="==")
-          } else {
-            on[idx] = paste(names(on)[idx], on[idx], sep="==")
-          }
-          split = tstrsplit(on, paste0("[ ]*", pat, "[ ]*"))
-          on = setattr(split[[2L]], 'names', split[[1L]])
-          if (length(empty_idx <- which(names(on) == "")))
-            names(on)[empty_idx] = on[empty_idx]
-          list(on = on, ops = idx_op)
-        }
-        on_ops = parse_on(substitute(on))
+        on_ops = .parse_on(substitute(on), isnull_inames)
         on = on_ops[[1L]]
         ops = on_ops[[2L]]
         # TODO: collect all '==' ops first to speeden up Cnestedid
@@ -3055,4 +3022,104 @@ isReallyReal <- function(x) {
               notjoin = notjoin
               )
          )
+}
+
+
+.parse_on <- function(onsub, isnull_inames) {
+  ## helper that takes the 'on' string(s) and extracts comparison operators and column names from it.
+  #' @param onsub the substituted on
+  #' @param isnull_inames bool; TRUE if i has no names.
+  #' @return List with two entries:
+  #'         'on' : character vector providing the column names for the join.
+  #'                Names correspond to columns in x, entries correspond to columns in i
+  #'         'ops': integer vector. Gives the indices of the operators that connect the columns in x and i.
+  ops = c("==", "<=", "<", ">=", ">", "!=")
+  pat = paste0("(", ops, ")", collapse="|")
+  if (is.call(onsub) && onsub[[1L]] == "eval") {
+    onsub = eval(onsub[[2L]], parent.frame(2L), parent.frame(2L))
+    if (is.call(onsub) && onsub[[1L]] == "eval") { onsub = onsub[[2L]] }
+  }
+  if (is.call(onsub) && as.character(onsub[[1L]]) %in% c("list", ".")) {
+    spat = paste0("[ ]+(", pat, ")[ ]+")
+    onsub = lapply(as.list(onsub)[-1L], function(x) gsub(spat, "\\1", deparse(x, width.cutoff=500L)))
+    onsub = as.call(c(quote(c), onsub))
+  }
+  on = eval(onsub, parent.frame(2L), parent.frame(2L))
+  if (!is.character(on))
+    stop("'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'.")
+  ## extract the operators and potential variable names from 'on'.
+  ## split at backticks to take care about variable names like `col1<=`.
+  pieces <- strsplit(on, "(?=[`])", perl = TRUE)
+  xCols  <- character(length(on))
+  ## if 'on' is named, the names are the xCols for sure
+  if(!is.null(names(on))){
+    xCols <- names(on)
+  }
+  iCols     <- character(length(on))
+  operators <- character(length(on))
+  ## loop over the elements and extract operators and column names.
+  for(i in seq_along(pieces)){
+    thisCols      <- character(0)
+    thisOperators <- character(0)
+    j <- 1
+    while(j <= length(pieces[[i]])){
+      if(pieces[[i]][j] == "`"){
+        ## start of a variable name with backtick.
+        thisCols <- c(thisCols, pieces[[i]][j+1])
+        j <- j+3 # +1 is the column name, +2 is delimiting "`", +3 is next relevant entry.`
+      } else {
+        ## no backtick
+        ## search for operators
+        thisOperators <- c(thisOperators,
+                           unlist(regmatches(pieces[[i]][j], gregexpr(pat, pieces[[i]][j])),
+                                  use.names = FALSE))
+        ## search for column names
+        thisCols <- c(thisCols, trimws(strsplit(pieces[[i]][j], pat)[[1]]))
+        ## there can be empty string column names because of trimws, remove them
+        thisCols <- thisCols[thisCols != ""]
+        j <- j+1
+      }
+    }
+    if (length(thisOperators) == 0) {
+      ## if no operator is given, it must be ==
+      operators[i] <- "=="
+    } else if (length(thisOperators) == 1) {
+      operators[i] <- thisOperators
+    } else {
+      ## multiple operators found in one 'on' part. Something is wrong.
+      stop("Found more than one operator in one 'on' statement: ", on[i], ". Please specify a single operator.")
+    }
+    if (length(thisCols) == 2){
+      ## two column names found, first is xCol, second is iCol for sure
+      xCols[i] <- thisCols[1]
+      iCols[i] <- thisCols[2]
+    } else if (length(thisCols) == 1){
+      ## a single column name found. Can mean different things
+      if(xCols[i] != ""){
+        ## xCol is given by names(on). thisCols must be iCol
+        iCols[i] <- thisCols[1]
+      } else if (isnull_inames){
+        ## i has no names. It will be given the names V1, V2, ... automatically.
+        ## The single column name is the x column. It will match to the ith column in i.
+        xCols[i] <- thisCols[1]
+        iCols[i] <- paste0("V", i)
+      } else {
+        ## i has names and one single column name is given by on.
+        ## This means that xCol and iCol have the same name.
+        xCols[i] <- thisCols[1]
+        iCols[i] <- thisCols[1]
+      }
+    } else if (length(thisCols) == 0){
+      stop("'on' contains no column name: ", on[i], ". Each 'on' clause must contain one or two column names.")
+    } else {
+      stop("'on' contains more than 2 column names: ", on[i], ". Each 'on' clause must contain one or two column names.")
+    }
+  }
+  idx_op = match(operators, ops, nomatch=0L)
+  if (any(idx_op %in% c(0L, 6L)))
+    stop("Invalid operators ", paste(operators[idx_op %in% c(0L, 6L)], collapse=","), ". Only allowed operators are ", paste(ops[1:5], collapse=""), ".")
+  ## the final on will contain the xCol as name, the iCol as value
+  on <- iCols
+  names(on) <- xCols
+  return(list(on = on, ops = idx_op))
 }
