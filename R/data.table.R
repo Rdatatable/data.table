@@ -3029,14 +3029,14 @@ isReallyReal <- function(x) {
   #' @param onsub the substituted on
   #' @param isnull_inames bool; TRUE if i has no names.
   #' @return List with two entries:
-  #'         'on' : character vector providing the column names for the join. 
+  #'         'on' : character vector providing the column names for the join.
   #'                Names correspond to columns in x, entries correspond to columns in i
   #'         'ops': integer vector. Gives the indices of the operators that connect the columns in x and i.
   ops = c("==", "<=", "<", ">=", ">", "!=")
   pat = paste0("(", ops, ")", collapse="|")
   if (is.call(onsub) && onsub[[1L]] == "eval") {
     onsub = eval(onsub[[2L]], parent.frame(2L), parent.frame(2L))
-    if (is.call(onsub) && onsub[[1L]] == "eval") onsub = onsub[[2L]]
+    if (is.call(onsub) && onsub[[1L]] == "eval") { onsub = onsub[[2L]] }
   }
   if (is.call(onsub) && as.character(onsub[[1L]]) %in% c("list", ".")) {
     spat = paste0("[ ]+(", pat, ")[ ]+")
@@ -3063,14 +3063,14 @@ isReallyReal <- function(x) {
     j <- 1
     while(j <= length(pieces[[i]])){
       if(pieces[[i]][j] == "`"){
-        ## start of a variable name with backtick. 
+        ## start of a variable name with backtick.
         thisCols <- c(thisCols, pieces[[i]][j+1])
         j <- j+3 # +1 is the column name, +2 is delimiting "`", +3 is next relevant entry.`
       } else {
         ## no backtick
         ## search for operators
-        thisOperators <- c(thisOperators, 
-                           unlist(regmatches(pieces[[i]][j], gregexpr(pat, pieces[[i]][j])), 
+        thisOperators <- c(thisOperators,
+                           unlist(regmatches(pieces[[i]][j], gregexpr(pat, pieces[[i]][j])),
                                   use.names = FALSE))
         ## search for column names
         thisCols <- c(thisCols, trimws(strsplit(pieces[[i]][j], pat)[[1]]))
@@ -3103,11 +3103,11 @@ isReallyReal <- function(x) {
         xCols[i] <- thisCols[1]
         iCols[i] <- paste0("V", i)
       } else {
-        ## i has names and one single column name is given by on. 
+        ## i has names and one single column name is given by on.
         ## This means that xCol and iCol have the same name.
         xCols[i] <- thisCols[1]
         iCols[i] <- thisCols[1]
-      } 
+      }
     } else if (length(thisCols) == 0){
       stop("'on' contains no column name: ", on[i], ". Each 'on' clause must contain one or two column names.")
     } else {
