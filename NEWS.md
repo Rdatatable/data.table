@@ -13,7 +13,7 @@
 
 1. Providing an `i` subset expression when attempting to delete a column correctly failed with helpful error, but when the column was missing too created a new column full of `NULL` values, [#3089](https://github.com/Rdatatable/data.table/issues/3089). Thanks to Michael Chirico for reporting.
 
-2. Variable names in backticks which included a comparison operator, e.g. `a<=colB`, caused an error when specifying this column name in the 'on' clause during a join [#3092](https://github.com/Rdatatable/data.table/issues/3092). This has been fixed. Additionally, the 'on' clause now supports white spaces around operators, e.g. on = "colA == colB". Thanks to @mt1022 for reporting and to @MarkusBonsch for fixing.
+2. Column names that look like expressions (e.g. `"a<=colB"`) caused an error when used in `on=` even when wrapped with backticks, [#3092](https://github.com/Rdatatable/data.table/issues/3092). Additionally, `on=` now supports white spaces around operators; e.g. `on = "colA == colB"`. Thanks to @mt1022 for reporting and to @MarkusBonsch for fixing.
 
 #### NOTES
 
