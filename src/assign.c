@@ -35,7 +35,7 @@ void setselfref(SEXP x) {
   // Called from C only, not R level, so returns void.
   setAttrib(x, SelfRefSymbol, p=R_MakeExternalPtr(
     R_NilValue,                  // for identical() to return TRUE. identical() doesn't look at tag and prot
-    getAttrib(x, R_NamesSymbol), // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
+    PROTECT(getAttrib(x, R_NamesSymbol)),  // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
     PROTECT(R_MakeExternalPtr(   // to avoid an infinite loop in object.size(), if prot=x here
       x,                         // to know if this data.table has been copied by key<-, attr<-, names<-, etc.
       R_NilValue,                // this tag and prot currently unused
@@ -43,7 +43,7 @@ void setselfref(SEXP x) {
     ))
   ));
   R_RegisterCFinalizerEx(p, finalizer, FALSE);
-  UNPROTECT(1);  // The PROTECT above is needed by --enable-strict-barrier (it seems, iiuc)
+  UNPROTECT(2);
 
 /*
   *  base::identical doesn't check prot and tag of EXTPTR, just that the ptr itself is the
@@ -404,6 +404,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     else
       thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
     vlen = length(thisvalue);
+    if (isNull(thisvalue) && !isNull(rows)) error("When deleting columns, i should not be provided");  // #1082, #3089
     if (coln+1 <= oldncol) colnam = STRING_ELT(names,coln);
     else colnam = STRING_ELT(newcolnames,coln-length(names));
     if (coln+1 <= oldncol && isNull(thisvalue)) continue;  // delete existing column(s) afterwards, near end of this function
@@ -415,8 +416,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         if (newcolnum<0 || newcolnum>=length(newcolnames))
           error("Internal logical error. length(newcolnames)=%d, length(names)=%d, coln=%d", length(newcolnames), length(names), coln);
         if (isNull(thisvalue)) {
-          // fix for #1082
-          if (!isNull(rows)) error("When deleting columns, i should not be provided");
           warning("Adding new column '%s' then assigning NULL (deleting it).",CHAR(STRING_ELT(newcolnames,newcolnum)));
           continue;
         }
@@ -467,7 +466,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     else
       thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
     if (TYPEOF(thisvalue)==NILSXP) {
-      if (!isNull(rows)) error("When deleting columns, i should not be provided");
+      if (!isNull(rows)) error("Internal error: earlier error 'When deleting columns, i should not be provided' did not happen.");
       anytodelete = TRUE;
       continue;   // delete column(s) afterwards, below this loop
     }
@@ -575,7 +574,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             protecti++;
             // silence warning on singleton NAs
             if (INTEGER(RHS)[0] != NA_INTEGER) warning("Coerced '%s' RHS to 'integer' to match the factor column's underlying type. Character columns are now recommended (can be in keys), or coerce RHS to integer or character first.", type2char(TYPEOF(thisvalue)));
-          } else RHS = thisvalue;
+          } else {
+            // make sure to copy thisvalue. May be modified below. See #2984
+            RHS = PROTECT(duplicate(thisvalue));
+            protecti++;
+          }
           for (j=0; j<length(RHS); j++) {
             if ( (INTEGER(RHS)[j]<1 || INTEGER(RHS)[j]>LENGTH(targetlevels))
                  && INTEGER(RHS)[j] != NA_INTEGER) {

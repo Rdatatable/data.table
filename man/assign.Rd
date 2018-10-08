@@ -10,13 +10,13 @@
 }
 \usage{
 # 1. LHS := RHS form
-# DT[i, LHS := RHS, by = ...]
-# DT[i, c("LHS1", "LHS2") := list(RHS1, RHS2), by = ...]
+# DT[i, LHS := RHS, by = \dots]
+# DT[i, c("LHS1", "LHS2") := list(RHS1, RHS2), by = \dots]
 
 # 2. Functional form
 # DT[i, `:=`(LHS1 = RHS1,
 #            LHS2 = RHS2,
-#            ...), by = ...]
+#            \dots), by = \dots]
 
 set(x, i = NULL, j, value)
 }
@@ -59,7 +59,7 @@ For additional resources, check the \href{../doc/datatable-faq.html}{FAQs vignet
 
 When \code{LHS} is a factor column and \code{RHS} is a character vector with items missing from the factor levels, the new level(s) are automatically added (by reference, efficiently), unlike base methods.
 
-Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerced to match the type of the (often small) RHS. Instead the RHS is coerced to match the type of the LHS, if necessary. Where this involves double precision values being coerced to an integer column, a warning is given (whether or not fractional data is truncated). The motivation for this is efficiency. It is best to get the column types correct up front and stick to them. Changing a column type is possible but deliberately harder: provide a whole column as the RHS. This RHS is then \emph{plonked} into that column slot and we call this \emph{plonk syntax}, or \emph{replace column syntax} if you prefer. By needing to construct a full length vector of a new type, you as the user are more aware of what is happening, and it's clearer to readers of your code that you really do intend to change the column type.
+Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerced to match the type of the (often small) RHS. Instead the RHS is coerced to match the type of the LHS, if necessary. Where this involves double precision values being coerced to an integer column, a warning is given (whether or not fractional data is truncated). The motivation for this is efficiency. It is best to get the column types correct up front and stick to them. Changing a column type is possible but deliberately harder: provide a whole column as the RHS. This RHS is then \emph{plonked} into that column slot and we call this \emph{plonk syntax}, or \emph{replace column syntax} if you prefer. By needing to construct a full length vector of a new type, you as the user are more aware of what is happening, and it is clearer to readers of your code that you really do intend to change the column type.
 
 \code{data.table}s are \emph{not} copied-on-change by \code{:=}, \code{setkey} or any of the other \code{set*} functions. See \code{\link{copy}}.
 }
@@ -125,7 +125,7 @@ DT[ , (sq_col_idx) := lapply(.SD, dnorm),
    .SDcols = sq_col_idx]
 
 \dontrun{
-# Speed example ...
+# Speed example:
 
 m = matrix(1, nrow = 2e6L, ncol = 100L)
 DF = as.data.frame(m)

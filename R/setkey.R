@@ -2,7 +2,7 @@ setkey <- function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE
 {
   if (is.character(x)) stop("x may no longer be the character name of the data.table. The possibility was undocumented and has been removed.")
   cols = as.character(substitute(list(...))[-1L])
-  if (!length(cols)) cols=colnames(x)
+  if (!length(cols)) { cols=colnames(x) }
   else if (identical(cols,"NULL")) cols=NULL
   setkeyv(x, cols, verbose=verbose, physical=physical)
 }
@@ -81,7 +81,8 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   }
   if (!is.character(cols) || length(cols)<1L) stop("'cols' should be character at this point in setkey")
   if (verbose) {
-    tt = system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
+    tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
+    # suppress needed for tests 644 and 645 in verbose mode
     cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
   } else {
     o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)
@@ -94,7 +95,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
   if (length(o)) {
     if (verbose) {
-      tt = system.time(.Call(Creorder,x,o))
+      tt = suppressMessages(system.time(.Call(Creorder,x,o)))
       cat("reorder took", tt["user.self"]+tt["sys.self"], "sec\n")
     } else {
       .Call(Creorder,x,o)
@@ -111,9 +112,18 @@ key <- function(x) attr(x,"sorted",exact=TRUE)
 indices <- function(x, vectors = FALSE) {
   ans = names(attributes(attr(x,"index",exact=TRUE)))
   if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
-  ans <- gsub("^__","",ans)
+  ans <- gsub("^__","",ans)     # the leading __ is internal only, so remove that in result
   if (isTRUE(vectors))
     ans <- strsplit(ans, "__", fixed = TRUE)
+  ans
+}
+
+getindex <- function(x, name) {
+  # name can be "col", or "col1__col2", or c("col1","col2")
+  ans = attr(attr(x, 'index'), paste0("__",name,collapse=""), exact=TRUE)
+  if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) {
+    stop("Internal error: index '",name,"' exists but is invalid")   # nocov
+  }
   ans
 }
 
@@ -191,8 +201,8 @@ forderv <- function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.la
       if (anyNA(w)) stop("'by' contains '",by[is.na(w)][1],"' which is not a column name")
       by = w
     }
-    else if (typeof(by)=="double" && isReallyReal(by)) {
-      stop("'by' is type 'double' but one or more items in it are not whole integers")
+    else if (isReallyReal(by)) {
+      stop("'by' is type 'double' and one or more items in it are not whole integers")
     }
     by = as.integer(by)
     if ( (length(order) != 1L && length(order) != length(by)) || any(!order %in% c(1L, -1L)) )
@@ -396,13 +406,14 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
   }
   setattr(l, "row.names", .set_row_names(length(l[[1L]])))
   setattr(l, "class", c("data.table", "data.frame"))
-
-  if (is.null(vnames <- names(l)))
-    vnames = vector("character", length(l))
-  if (any(tt <- vnames == "")) {
-    vnames[tt] = paste0("V", which(tt))
-    setattr(l, "names", vnames)
+  if (getOption("datatable.CJ.names", FALSE)) {  # added as FALSE in v1.11.6. TODO: default TRUE in v1.12.0, remove in v1.13.0
+    vnames = name_dots(...)$vnames
+  } else {
+    if (is.null(vnames <- names(l))) vnames = paste0("V", seq_len(length(l)))
+    else if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
   }
+  setattr(l, "names", vnames)
+
   l <- alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
   if (sorted) {
     if (!dups) setattr(l, 'sorted', names(l))

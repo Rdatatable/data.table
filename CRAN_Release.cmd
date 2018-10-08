@@ -12,6 +12,7 @@ q("no")
 # Ensure latest version of R otherwise problems with CRAN not finding dependents that depend on latest R
 # e.g. mirror may have been disabled in sources.list when upgrading ubuntu
 
+cd ~/GitHub/data.table
 rm ./src/*.so
 rm ./src/*.o
 rm -rf ./data.table.Rcheck
@@ -76,7 +77,6 @@ grep mkChar.*Scalar *.c
 grep alloc.*mkChar *.c
 grep Scalar.*mkChar *.c
 grep "getAttrib.*mk" *.c   # use sym_* in getAttrib calls
-grep "PROTECT *( *getAttrib" *.c  # attributes are already protected
 grep "\"starts\"" *.c     --exclude init.c
 grep "setAttrib(" *.c      # scan all setAttrib calls manually as a double-check
 grep "install(" *.c       --exclude init.c   # TODO: perhaps in future pre-install all constants
@@ -87,7 +87,7 @@ grep mkChar *.c            # see comment in bmerge.c about passing this grep. I'
 # ScalarLogical in R now returns R's global TRUE from R 3.1.0; Apr 2014. Before that it allocated.
 # Aside: ScalarInteger may return globals for small integers in future version of R.
 grep ScalarInteger *.c   # Check all Scalar* either PROTECTed, return-ed or passed to setAttrib.
-grep ScalarLogical *.c   # Now we depend on 3.1.0, check ScalarLogical is NOT PROTECTed.
+grep ScalarLogical *.c   # Now we depend on 3.1.0+, check ScalarLogical is NOT PROTECTed.
 grep ScalarString *.c
 
 # Inspect missing PROTECTs
@@ -95,30 +95,34 @@ grep ScalarString *.c
 # If a PROTECT is not needed then a comment is added explaining why and including "PROTECT" in the comment to pass this grep
 grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
-cd ~/GitHub/data.table
+cd ..
 R
 cc(clean=TRUE)  # to compile with -pedandic. Also use very latest gcc (currently gcc-7) as CRAN does
 saf = options()$stringsAsFactors
 options(stringsAsFactors=!saf)    # check tests (that might be run by user) are insensitive to option, #2718
 test.data.table()
+install.packages("xml2")   # to check the 150 URLs in NEWS.md under --as-cran below
 q("no")
 R CMD build .
-R CMD check data.table_1.11.3.tar.gz --as-cran    # remove.packages("xml2") first to prevent the 150 URLs in NEWS.md being pinged by --as-cran
-R CMD INSTALL data.table_1.11.3.tar.gz
-R
-require(data.table)
-test.data.table()
-test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
-gctorture2(step=50)
-system.time(test.data.table())  # apx 75min
+R CMD check data.table_1.11.7.tar.gz --as-cran
+R CMD INSTALL data.table_1.11.7.tar.gz
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.11.3.tar.gz
+R CMD check data.table_1.11.7.tar.gz
 rm ~/.Renviron
+
+R
+remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
+require(data.table)
+test.data.table()
+test.data.table(with.other.packages=TRUE)
+test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
+gctorture2(step=50)
+system.time(test.data.table())  # apx 75min
 
 # Upload to win-builder: release, dev & old-release
 
@@ -139,7 +143,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.11.3.tar.gz
+R310 CMD INSTALL ./data.table_1.11.7.tar.gz
 R310
 require(data.table)
 test.data.table()
@@ -151,11 +155,15 @@ test.data.table()
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.11.3.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.11.7.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
-
+q("no")
+vi ~/.R/Makevars
+# revert change above
+R CMD build .
+R CMD check data.table_1.11.7.tar.gz
 
 #####################################################
 #  R-devel with UBSAN, ASAN and strict-barrier on too
@@ -165,7 +173,8 @@ cd ~/build
 wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
 rm -rf R-devel
 tar xvf R-devel.tar.gz
-cd R-devel
+mv R-devel R-devel-strict
+cd R-devel-strict    # important to change directory name before building not after because the path is baked into the build, iiuc
 # Following R-exts#4.3.3
 
 ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier CC="gcc -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic" LIBS="-lpthread"
@@ -177,11 +186,11 @@ cd R-devel
 #   https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
 
 make
-alias Rdevel='~/build/R-devel/bin/R --vanilla'
+alias Rdevel-strict='~/build/R-devel-strict/bin/R --vanilla'
 cd ~/GitHub/data.table
-Rdevel CMD INSTALL data.table_1.11.3.tar.gz
+Rdevel-strict CMD INSTALL data.table_1.11.8.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
-Rdevel
+Rdevel-strict
 install.packages(c("bit64","xts","nanotime"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
 require(data.table)
 test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
@@ -261,6 +270,20 @@ There are some things to overcome to achieve compile without USE_RINTERNALS, tho
 ## require(bit64)
 ## test.data.table()
 ## q("no")
+
+########################################################################
+#  rchk : https://github.com/kalibera/rchk
+########################################################################
+cd ~/build/rchk/trunk
+. ../scripts/config.inc
+. ../scripts/cmpconfig.inc
+echo 'install.packages("~/GitHub/data.table/data.table_1.11.7.tar.gz",repos=NULL)' | ./bin/R --slave
+../scripts/check_package.sh data.table
+cat packages/lib/data.table/libs/*check
+# keep running and rerunning locally until all problems cease.
+#   rchk has an internal stack which can exhaust. Clearing the current set of problems (e.g. as displayed
+#   on CRAN) is not sufficient because new problems can be found because it didn't get that far before.
+#   hence repeating locally until clear is necessary.
 
 
 ###############################################
@@ -355,6 +378,7 @@ sudo apt-get -y install libjq-dev libprotoc-dev libprotobuf-dev and protobuf-com
 sudo apt-get -y install python-dev  # for PythonInR
 sudo apt-get -y install gdal-bin libgeos-dev  # for rgdal/raster tested via lidR
 sudo apt-get build-dep r-cran-rsymphony   # for Rsymphony: coinor-libcgl-dev coinor-libclp-dev coinor-libcoinutils-dev coinor-libosi-dev coinor-libsymphony-dev
+sudo apt-get -y install libtesseract-dev libleptonica-dev tesseract-ocr-eng   # for tesseract
 sudo R CMD javareconf
 # ENDIF
 
@@ -364,20 +388,23 @@ export R_LIBS_SITE=none
 export _R_CHECK_FORCE_SUGGESTS_=false         # in my profile so always set
 R
 .libPaths()   # should be just 2 items: revdeplib and the base R package library
+options(repos = c("CRAN"=c("http://cloud.r-project.org")))
 update.packages(ask=FALSE)
 # if package not found on mirror, try manually a different one:
-install.packages("<pkg>", repos="http://cloud.r-project.org/")
+install.packages("<pkg>", repos="http://cran.stat.ucla.edu/")
 update.packages(ask=FALSE)   # a repeat sometimes does more, keep repeating until none
 
 # Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
 # Ensure no library() call in .Rprofile, such as library(bit64)
 source("http://bioconductor.org/biocLite.R")
-biocLite()   # keep repeating until returns with nothing left to do
+biocLite()   # keep repeating until returns with nothing left to do.   Note: huge number of updates under R-devel (I assume that's false)
 # biocLite("BiocUpgrade")
 # This error means it's up to date: "Bioconductor version 3.4 cannot be upgraded with R version 3.3.2"
 
 avail = available.packages(repos=biocinstallRepos())   # includes CRAN at the end from getOption("repos")
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
+exclude = c("TCGAbiolinks")   # takes loo long: https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
+deps = deps[-match(exclude, deps)]
 table(avail[deps,"Repository"])
 length(deps)
 old = 0
@@ -404,7 +431,7 @@ for (p in deps) {
   }
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
-table(avail[deps,"Repository"])
+length(deps)
 
 # Remove the tar.gz no longer needed :
 system("ls *.tar.gz | wc -l")
@@ -424,6 +451,7 @@ for (p in deps) {
   }
 }
 system("ls *.tar.gz | wc -l")
+length(deps)
 
 status = function(which="both") {
   if (which=="both") {
@@ -495,7 +523,8 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
     if (!which %in% c("not.started","cran.fail","bioc.fail","both.fail")) {
       x = which   # one package manually
     } else {
-      x = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # always those that haven't run
+      x = NULL
+      if (which=="not.started") x = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # those that haven't run
       if (which %in% c("cran.fail","both.fail")) x = union(x, .fail.cran)  # .fail.* were written to .GlobalEnv by status()
       if (which %in% c("bioc.fail","both.fail")) x = union(x, .fail.bioc)
     }
@@ -512,8 +541,8 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
 }
 
 # ** ensure latest version installed into revdeplib **
-system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.5.tar.gz")
-run()
+system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.9.tar.gz")
+run("rerun.all")
 
 out = function(fnam="~/fail.log") {
   x = c(.fail.cran, .fail.bioc)
@@ -550,11 +579,11 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' para
 Bump versions in DESCRIPTION and NEWS (without 'on CRAN date' text as that's not yet known) to even release number
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
 R CMD build .
-R CMD check --as-cran data.table_1.11.4.tar.gz   # install.packages("xml2") first to check the 150 URLs in NEWS.md under --as-cran, then remove xml2 again
+R CMD check --as-cran data.table_1.11.8.tar.gz
 Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
 Submit to CRAN. Message template :
 -----
-475 CRAN + 111 BIOC rev deps checked ok.
+543 CRAN + 134 BIOC rev deps checked ok.
 9 CRAN packages will break : easycsv, fst, iml, PhenotypeSimulator, popEpi, sdcMicro, SIRItoGTFS, SpaDES.core, splitstackshape
 The maintainers have been contacted; some may have updated already.
 Thanks and best, Matt
@@ -562,8 +591,8 @@ Thanks and best, Matt
 1. Bump version in DESCRIPTION to next odd number
 2. Add new heading in NEWS for the next dev version. Add "(on CRAN date)" on the released heading if already accepted.
 3. Bump 3 version numbers in Makefile
-Push to GitHub so dev can continue. Commit message format "1.11.0 submitted to CRAN. Bump to 1.11.1"
-Bump dev badge on homepage
+Push to GitHub so dev can continue. Commit message format "1.11.8 submitted to CRAN. Bump to 1.11.9"
+Bump dev number text in homepage banner
 Cross fingers accepted first time. If not, push changes to devel and backport locally
 Close milestone
 ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **

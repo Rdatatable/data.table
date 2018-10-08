@@ -21,26 +21,25 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 
 cedta <- function(n=2L) {
   # Calling Environment Data Table Aware
-  te = topenv(parent.frame(n))
-  if (!isNamespace(te)) {
+  ns = topenv(parent.frame(n))
+  if (!isNamespace(ns)) {
     # e.g. DT queries at the prompt (.GlobalEnv) and knitr's eval(,envir=globalenv()) but not DF[...] inside knitr::kable v1.6
     return(TRUE)
   }
-  nsname = getNamespaceName(te)
+  nsname = getNamespaceName(ns)
   ans = nsname == "data.table" ||
-    "data.table" %chin% names(getNamespaceImports(te)) ||
-    "data.table" %chin% getNamespace(nsname)$.Depends ||
+    "data.table" %chin% names(getNamespaceImports(ns)) ||   # most common and recommended cases first for speed
     (nsname == "utils" && exists("debugger.look",parent.frame(n+1L))) ||
     (nsname == "base"  && all(c("FUN", "X") %chin% ls(parent.frame(n)))  ) || # lapply
     (nsname %chin% cedta.pkgEvalsUserCode && any(sapply(sys.calls(), function(x) is.name(x[[1L]]) && (x[[1L]]=="eval" || x[[1L]]=="evalq")))) ||
     nsname %chin% cedta.override ||
-    isTRUE(getNamespace(nsname)$.datatable.aware)
+    isTRUE(ns$.datatable.aware) ||  # As of Sep 2018: RCAS, caretEnsemble, dtplyr, rstanarm, rbokeh, CEMiTool, rqdatatable, RImmPort, BPRMeth, rlist
+    tryCatch("data.table" %chin% get(".Depends",paste("package",nsname,sep=":"),inherits=FALSE),error=function(e)FALSE)  # both ns$.Depends and get(.Depends,ns) are not sufficient
   if (!ans && getOption("datatable.verbose")) {
-    cat("cedta decided '",nsname,"' wasn't data.table aware. Call stack with [[1L]] applied:\n",sep="")
+    cat("cedta decided '",nsname,"' wasn't data.table aware. Here is call stack with [[1L]] applied:\n",sep="")
     print(sapply(sys.calls(), "[[", 1L))
     # so we can trace the namespace name that may need to be added (very unusually)
   }
   ans
 }
-
 

@@ -387,18 +387,18 @@ void writePOSIXct(double *col, int64_t row, char **pch)
   if (!isfinite(x)) {
     write_chars(na, &ch);
   } else {
-    int xi, d, t;
+    int64_t xi, d, t;
     if (x>=0) {
-      xi = (int)x;
+      xi = floor(x);
       d = xi / 86400;
       t = xi % 86400;
     } else {
       // before 1970-01-01T00:00:00Z
-      xi = (int)floor(x);
+      xi = floor(x);
       d = (xi+1)/86400 - 1;
       t = xi - d*86400;  // xi and d are both negative here; t becomes the positive number of seconds into the day
     }
-    int m = (int)((x-xi)*10000000); // 7th digit used to round up if 9
+    int m = ((x-xi)*10000000); // 7th digit used to round up if 9
     m += (m%10);  // 9 is numerical accuracy, 8 or less then we truncate to last microsecond
     m /= 10;
     write_date(d, &ch);

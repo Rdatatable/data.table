@@ -47,21 +47,23 @@
    grouping. Still experimental!
 }
 \usage{
-as.IDate(x, ...)
+as.IDate(x, \dots)
 \method{as.IDate}{default}(x, \dots, tz = attr(x, "tzone"))
 \method{as.IDate}{Date}(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)
 \method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), \ldots)
 
-as.ITime(x, ...)
+as.ITime(x, \dots)
 \method{as.ITime}{default}(x, \dots)
-\method{as.POSIXct}{ITime}(x, tz = "UTC", date = as.Date(Sys.time()), \dots)
+\method{as.ITime}{POSIXlt}(x, ms = 'truncate', \dots)
+
+\method{as.POSIXct}{ITime}(x, tz = "UTC", date = Sys.Date(), \dots)
 \method{as.character}{ITime}(x, \dots)
 \method{format}{ITime}(x, \dots)
 
-IDateTime(x, ...)
-\method{IDateTime}{default}(x, ...)
+IDateTime(x, \dots)
+\method{IDateTime}{default}(x, \dots)
 
 second(x)
 minute(x)
@@ -86,6 +88,7 @@ year(x)
   \item{date}{date object convertable with \code{as.IDate}.}
   \item{time}{time-of-day object convertable with \code{as.ITime}.}
   \item{digits}{really \code{units}; one of the units listed for rounding. May be abbreviated.}
+  \item{ms}{ For \code{as.ITime} methods, what should be done with sub-second fractions of input? Valid values are \code{'truncate'} (floor), \code{'nearest'} (round), and \code{'ceil'} (ceiling). See Details. }
 }
 \details{
 \code{IDate} is a date class derived from \code{Date}. It has the same
@@ -109,6 +112,8 @@ Conversions to and from \code{Date} and \code{POSIXct} formats are provided.
 \code{ITime} does not account for time zones. When converting
 \code{ITime} and \code{IDate} to POSIXct with \code{as.POSIXct}, a time
 zone may be specified.
+
+Inputs like \code{'2018-05-15 12:34:56.789'} are ambiguous from the perspective of an \code{ITime} object -- the method of coercion of the 789 milliseconds is controlled by the \code{ms} argument to relevant methods. The default behavior (\code{ms = 'truncate'}) is to use \code{as.integer}, which has the effect of truncating anything after the decimal. Alternatives are to round to the nearest integer (\code{ms = 'nearest'}) or to round up (\code{ms = 'ceil'}).
 
 In \code{as.POSIXct} methods for \code{ITime} and \code{IDate}, the
 second argument is required to be \code{tz} based on the generic

@@ -5,13 +5,13 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
            logical01=getOption("datatable.logical01", FALSE), # due to change to TRUE; see NEWS
            logicalAsInt=logical01,
            dateTimeAs = c("ISO","squash","epoch","write.csv"),
-           buffMB=8, nThread=getDTthreads(),
+           buffMB=8, nThread=getDTthreads(verbose),
            showProgress=getOption("datatable.showProgress", interactive()),
            verbose=getOption("datatable.verbose", FALSE)) {
   isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
   na = as.character(na[1L]) # fix for #1725
   if (missing(qmethod)) qmethod = qmethod[1L]
-  if (missing(dateTimeAs)) dateTimeAs = dateTimeAs[1L]
+  if (missing(dateTimeAs)) { dateTimeAs = dateTimeAs[1L] }
   else if (length(dateTimeAs)>1L) stop("dateTimeAs must be a single string")
   dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
   if (is.na(dateTimeAs)) stop("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
@@ -51,7 +51,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     showProgress = FALSE
     eol = "\n"  # Rprintf() is used at C level which knows inside it to output \r\n on Windows. Otherwise extra \r is output.
   }
-  if (ncol(x) == 0L && file != "") {
+  if (NCOL(x)==0L && file!="") {
     if (file.exists(file)) {
       warning("Input has no columns; doing nothing.",
               if (!append)

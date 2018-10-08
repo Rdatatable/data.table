@@ -75,9 +75,16 @@ static freadMainArgs args;  // global for use by DTPRINT
 const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "string"};
 int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         8      };
 
+// In AIX, NAN and INFINITY don't qualify as constant literals. Refer: PR #3043
+// So we assign them through below init function.
+static double NAND;
+static double INFD;
+
 // NAN and INFINITY constants are float, so cast to double once up front.
-static const double NAND = (double)NAN;
-static const double INFD = (double)INFINITY;
+void init() {
+  NAND = (double)NAN;
+  INFD = (double)INFINITY;
+}
 
 typedef struct FieldParseContext {
   // Pointer to the current parsing location
@@ -787,6 +794,7 @@ static void parse_double_extended(FieldParseContext *ctx)
   const char *ch = *(ctx->ch);
   double *target = (double*) ctx->targets[sizeof(double)];
   bool neg, quoted;
+  init();
   ch += (quoted = (*ch=='"'));
   ch += (neg = (*ch=='-')) + (*ch=='+');
 
@@ -871,6 +879,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
   double *target = (double*) ctx->targets[sizeof(double)];
   uint64_t neg;
   bool Eneg, subnormal = 0;
+  init();
   ch += (neg = (*ch=='-')) + (*ch=='+');
 
   if (ch[0]=='0' && (ch[1]=='x' || ch[1]=='X') &&

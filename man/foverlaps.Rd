@@ -10,7 +10,7 @@ Usually, \code{x} is a very large data.table with small interval ranges, and
 \code{y} is much smaller \emph{keyed} \code{data.table} with relatively larger
 interval spans. For a usage in \code{genomics}, see the examples section.
 
-NOTE: This is still under development, meaning it's stable, but some features
+NOTE: This is still under development, meaning it is stable, but some features
 are yet to be implemented. Also, some arguments and/or the function name itself
 could be changed.
 }
@@ -44,7 +44,7 @@ between these two intervals is \code{>= minoverlap}, then these two intervals ar
 considered to be overlapping. Note: This is not yet implemented.}
 \item{type}{ Default value is \code{any}. Allowed values are \code{any},
 \code{within}, \code{start}, \code{end} and \code{equal}. Note: \code{equal} is
-not yet implemented. But this is just a normal join of the type \code{y[x, ...]},
+not yet implemented. But this is just a normal join of the type \code{y[x, \dots]},
 unless you require also using \code{maxgap} and \code{minoverlap} arguments.
 
 The types shown here are identical in functionality to the function

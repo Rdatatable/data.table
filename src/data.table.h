@@ -96,6 +96,7 @@ unsigned long long (*twiddle)(void *, int, int);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 bool need2utf8(SEXP x, int n);
 SEXP isReallyReal(SEXP);
+int getNumericRounding_C();
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);

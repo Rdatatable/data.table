@@ -37,7 +37,7 @@ SEXP reorder(SEXP x, SEXP order)
 
   R_len_t start = 0;
   while (start<nrow && INTEGER(order)[start] == start+1) start++;
-  if (start==nrow) return(R_NilValue);  // input is 1:n, nothing to do
+  if (start==nrow) { UNPROTECT(nprotect); return(R_NilValue); }  // input is 1:n, nothing to do
   R_len_t end = nrow-1;
   while (INTEGER(order)[end] == end+1) end--;
   for (R_len_t i=start; i<=end; i++) {

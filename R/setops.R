@@ -65,9 +65,10 @@ fintersect <- function(x, y, all=FALSE) {
     x = shallow(x)[, ".seqn" := rowidv(x)]
     y = shallow(y)[, ".seqn" := rowidv(y)]
     jn.on = c(".seqn",setdiff(names(x),".seqn"))
-    x[y, .SD, .SDcols=setdiff(names(x),".seqn"), nomatch=0L, on=jn.on]
+    x[y, .SD, .SDcols=setdiff(names(x),".seqn"), nomatch=NULL, on=jn.on]
   } else {
-    x[funique(y), nomatch=0L, on=names(x), mult="first"]
+    z = funique(y)  # fixes #3034. When .. prefix in i= is implemented (TODO), this can be x[funique(..y), on=, multi=]
+    x[z, nomatch=NULL, on=names(x), mult="first"]
   }
 }
 
@@ -105,13 +106,17 @@ funion <- function(x, y, all=FALSE) {
   ans
 }
 
-fsetequal <- function(x, y) {
+fsetequal <- function(x, y, all=TRUE) {
   if (!is.data.table(x) || !is.data.table(y)) stop("x and y must be both data.tables")
   if (!identical(sort(names(x)), sort(names(y)))) stop("x and y must have same column names")
   if (!identical(names(x), names(y))) stop("x and y must have same column order")
   bad.type = setNames(c("raw","complex","list") %chin% c(vapply(x, typeof, FUN.VALUE = ""), vapply(y, typeof, FUN.VALUE = "")), c("raw","complex","list"))
   if (any(bad.type)) stop(sprintf("x and y must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
   if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have same column classes")
+  if (!all) {
+    x = funique(x)
+    y = funique(y)
+  }
   isTRUE(all.equal.data.table(x, y, check.attributes = FALSE, ignore.row.order = TRUE))
 }
 
