@@ -589,7 +589,7 @@ The maintainers have been contacted; some may have updated already.
 Thanks and best, Matt
 -----
 1. Bump version in DESCRIPTION to next odd number
-2. Add new heading in NEWS for the next dev version. Add "(on CRAN date)" on the released heading if already accepted.
+2. Add new heading in NEWS for the next dev version. Add "(date)" on the released heading if already accepted.
 3. Bump 3 version numbers in Makefile
 Push to GitHub so dev can continue. Commit message format "1.11.8 submitted to CRAN. Bump to 1.11.9"
 Bump dev number text in homepage banner
