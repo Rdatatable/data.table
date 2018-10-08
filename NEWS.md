@@ -1,5 +1,5 @@
 
-**If you are viewing this file on CRAN, please check latest news on GitHub [here](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better too.**
+**If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
 ### Changes in v1.11.9 (to be v1.12.0)
 
