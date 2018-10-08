@@ -12278,28 +12278,55 @@ DT = data.table(A=1:5)
 test(1947.1, DT[A<0, c('A','B'):=.(NULL, A)], error="When deleting columns, i should not be provided")
 test(1947.2, DT, data.table(A=1:5))
 
+## tests for backticks and spaces in column names of on=, #2931
+DT <- data.table(id = 1:3, `counts(a>=0)` = 1:3, sameName = 1:3)
+i <- data.table(idi = 1:3, `  weirdName>=` = 1:3, sameName = 1:3)
+## test white spaces around operator
+test(1948.1, DT[i, on = "id >= idi"], DT[i, on = "id>=idi"])
+test(1948.2, DT[i, on = "id>= idi"], DT[i, on = "id>=idi"])
+test(1948.3, DT[i, on = "id >=idi"], DT[i, on = "id>=idi"])
+## test column names containing operators
+test(1948.4, setnames(DT[i, on = "id>=`  weirdName>=`"], c("id","counts(a>=0)", "sameName", "  weirdName>=", "i.sameName")),
+     DT[i, on = "id>=idi"])
+test(1948.5, setnames(DT[i, on = "id>=`  weirdName>=`"], c("id","counts(a>=0)", "sameName", "  weirdName>=", "i.sameName")),
+     DT[i, on = "id>=idi"])
+test(1948.6, setnames(DT[i, on = "id >= `  weirdName>=`"], c("id","counts(a>=0)", "sameName", "  weirdName>=", "i.sameName")),
+     DT[i, on = "id>=idi"])
+test(1948.7, setnames(DT[i, on = "`counts(a>=0)`==`  weirdName>=`"], c("id","counts(a>=0)", "sameName", "  weirdName>=", "i.sameName")),
+     DT[i, on = "id==idi"])
+## mixed example
+test(1948.8, DT[i, on = c( id = "idi", "sameName", "`counts(a>=0)`==`  weirdName>=`")], DT[i, on = "id==idi", c("id", "counts(a>=0)", "sameName")])
+## testing 'eval' in on clause
+test(1948.9, DT[i, on = eval(eval("id<=idi"))], DT[i, on = "id<=idi"])
+## testing for errors
+test(1948.11, DT[i, on = ""], error = "'on' contains no column name: . Each 'on' clause must contain one or two column names.")
+test(1948.12, DT[i, on = "id>=idi>=1"], error = "Found more than one operator in one 'on' statement: id>=idi>=1. Please specify a single operator.")
+test(1948.13, DT[i, on = "`id``idi`<=id"], error = "'on' contains more than 2 column names: `id``idi`<=id. Each 'on' clause must contain one or two column names.")
+test(1948.14, DT[i, on = "id != idi"], error = "Invalid operators !=. Only allowed operators are ==<=<>=>.")
+test(1948.15, DT[i, on = 1L], error = "'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'.")
+
 # helpful error when on= is provided but not i, rather than silently ignoring on=
-test(1948.1, DT[,,on=A], error="When i and j are both missing, no other argument should be used.")
-test(1948.2, DT[,1,on=A], error="i must be provided when on= is provided")
-test(1948.3, DT[1,,with=FALSE], error="j must be provided when with=FALSE")
+test(1949.1, DT[,,on=A], error="When i and j are both missing, no other argument should be used.")
+test(1949.2, DT[,1,on=A], error="i must be provided when on= is provided")
+test(1949.3, DT[1,,with=FALSE], error="j must be provided when with=FALSE")
 
 if (test_bit64) {
   # explicit coverage of 2-column real case in uniqlist. Keeps coming up in codecov checks in PRs that don't touch uniqlist.c
   DT = data.table(id=c("A","A","B","B","B"), v=as.integer64(c(1,2,3,3,4)))
-  test(1949, uniqlist(DT), INT(1,2,3,5))
+  test(1950, uniqlist(DT), INT(1,2,3,5))
 }
 
 # allow nomatch=NULL to work same as nomatch=0L, #857
 d1 = data.table(a=1:3, b=2:4)
 d2 = data.table(a=2:4, b=3:5)
-test(1950.1, d1[d2, on="a", nomatch=NULL], d1[d2, on="a", nomatch=0L])
-test(1950.2, d1[d2, on="b", nomatch=NULL], d1[d2, on="b", nomatch=0L])
-test(1950.3, d1[d2, on=c("a","b"), nomatch=NULL], d1[d2, on=c("a","b"), nomatch=0L])
-test(1950.4, d1[d2, nomatch=3], error="nomatch= must be either NA or NULL .or 0 for backwards compatibility")
+test(1951.1, d1[d2, on="a", nomatch=NULL], d1[d2, on="a", nomatch=0L])
+test(1951.2, d1[d2, on="b", nomatch=NULL], d1[d2, on="b", nomatch=0L])
+test(1951.3, d1[d2, on=c("a","b"), nomatch=NULL], d1[d2, on=c("a","b"), nomatch=0L])
+test(1951.4, d1[d2, nomatch=3], error="nomatch= must be either NA or NULL .or 0 for backwards compatibility")
 
 # coverage of which= checks
-test(1951.1, d1[a==2, which=3], error="which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
-test(1951.2, d1[a==2, 2, which=TRUE], error="which==TRUE.*but j is also supplied")
+test(1952.1, d1[a==2, which=3], error="which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
+test(1952.2, d1[a==2, 2, which=TRUE], error="which==TRUE.*but j is also supplied")
 
 ## test type coercion in joins (#2592)
 dt1 <- data.table(intCol = 1L:10L,
