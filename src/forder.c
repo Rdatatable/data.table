@@ -1431,6 +1431,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     nradix += nbyte-1+(spare==0);
   }
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
+  if (verbose) Rprintf("Number of radix
 
   //for (int i=0; i<n; i++) {
   //  for (int b=0; b<nradix; b++) Rprintf("%03d  ", key[b][i]);
