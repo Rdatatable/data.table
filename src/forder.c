@@ -179,7 +179,7 @@ static void range_i64(int64_t *x, int n, int64_t *out_min, int64_t *out_max, boo
 }
 
 static void range_str(SEXP *x, int n, int64_t *out_min, int64_t *out_max, bool *out_anyna)
-// just for 1st column as wouldn't retain the first-appearance order if column 2+
+// just for 1st column as wouldn't retain the first-appearance order if column 2+.  Yes it will!, since all numbers will retain first appearance order.
 // for by= not keyby=
 // group numbers are left in truelength to be reused by part II
 {
@@ -215,6 +215,56 @@ static void range_str(SEXP *x, int n, int64_t *out_min, int64_t *out_max, bool *
     *out_max = ngroup;
   }
 }
+
+
+static void count_group(const uint8_t *x, const int n, bool *out_grouped, int *out_order, int *out_ngrp, int *out_grpsizes)
+// orders x by reference (that's ok destructively as we don't use this radix again) and writes the order into o; the o ordering is used several times by the caller.
+// the uint8_t *o limits the capability to max n=256 items (4 cache lines * 2 = 8 cache lines)
+// caller then uses x to detect groups and push those in the ordered clause.
+// don't be tempted to binsearch backwards here, have to shift anyway; many memmove would have overhead and do the same thing.
+
+// The only output need is the ordering, which is only used if not grouped.
+// with no actual histogram (or needing to zero it), this might work always!, not just for n<200
+// theres no need for all the writes of moving xtmp and otmp that insert sort does
+
+{
+  //uint8_t wgrp[256] = {0};  // which group
+  uint8_t ugrp[256];  // uninitialized is fine.  unique groups; avoids sweeping all 256 counts when very often very few of them are used (avoids degrade of counting sort), as well as maintaining first-appearance order
+  int counts[256] = {0};  // ** We can try and see if this is fast, because it's on stack it might be.  If not, then pass in my_counts as we need thread local static.
+                          // TODO TODO: these should not be on stack since they need to be initialized, and we don't need that initialization
+
+  // first item is always first of first group
+  ugrp[0] = x[0];
+  counts[x[0]] = 1;
+  int ngrp = 1;             // number of groups
+  bool grouped = true;
+
+  for (int i=1; i<n; i++) {
+    uint8_t this = x[i];
+    if (counts[this]==0) {
+      // have not seen this value before
+      ugrp[ngrp++]=this;
+    } else if (grouped && this!=x[i-1]) {
+      // seen this value before and it isn't the previous value, so data is not grouped
+      grouped=false;
+    }
+    counts[this]++;
+  }
+
+  // TODO: if we need to sort the groups,  then just insert sort the uniques, using in-place insert sort.  But then out_grouped would need to be out_need_to_reorder
+
+  out_grouped = grouped;
+  out_ngrp = ngrp;
+  for (int i=0; i<ngrp; i++) { uint8_t w=ugrp[i]; out_grpsize[i]=counts[w]; }  // no need to sweep == in caller to find groups; we already have sizes here
+  if (!grouped) {
+    // this is where the potentially random access comes in but only to at-most 256 points, each contigously
+    for (int i=0, sum=0; i<ngroup; i++) { uint8_t w=ugrp[i]; int tmp=counts[w]; counts[w]=sum; sum+=tmp; }  // prepare for forwards-assign to help cpu prefetch on next line
+    for (int i=0; i<n; i++) { uint8_t this = x[i]; out_order[counts[w]++] = i; }  // it's this second sweep through x[] that benefits from x[] being in cache from last time above, so keep it small.
+  }
+  for (int i=0; i<ngrp; i++) counts[ugrp[i]] = 0;  // ready for next time to save initializing the 256 vector
+}
+
+
 
 // x*order results in integer overflow when -1*NA, so careful to avoid that here :
 static inline int icheck(int x) {
@@ -285,8 +335,14 @@ static inline int icheck(int x) {
   return;
 }
 */
+
+
+
+
+
+
 static void insert(uint8_t *x, int n, uint8_t *o, bool *ordered)
-// orders x by reference and writes the order into o; the o ordering is used several times by the caller.
+// orders x by reference (that's ok destructively as we don't use this radix again) and writes the order into o; the o ordering is used several times by the caller.
 // the uint8_t *o limits the capability to max n=256 items (4 cache lines * 2 = 8 cache lines)
 // caller then uses x to detect groups and push those in the ordered clause.
 // don't be tempted to binsearch backwards here, have to shift anyway; many memmove would have overhead and do the same thing.
@@ -1289,7 +1345,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         for (int i=0; i<n; i++) SET_STRING_ELT(tt, i, ENC2UTF8(STRING_ELT(x, i)));
         x = tt;
       }
-      range_str(STRING_PTR(x), n, &min, &max, &anyna);   // TODO: actually sort the strings.
+      range_str(STRING_PTR(x), n, &min, &max, &anyna);
       break;
     default:
        Error("Column %d of 'by' (%d) is type '%s', not yet supported", col, INTEGER(by)[col-1], type2char(TYPEOF(x)));
@@ -1367,7 +1423,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         WRITE_KEY
       }}
       for(int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i],0);
-      free(ustr); ustr=NULL; ustr_n=0; ustr_alloc=0;   // even though ustr buffer could be reused, free now in case large and we're tight on ram
+      free(ustr); ustr=NULL; ustr_n=0; ustr_alloc=0;   // ustr could be left allocated and reused, but free now in case large and we're tight on ram
       break;
     default:
        Error("Internal error: column not supported not caught earlier");
@@ -1409,23 +1465,26 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       uint8_t my_o[256];
       int my_gs[256];  // group sizes
       int my_ng=0;        // number of groups
-      int32_t my_tmp4[256];
-      uint8_t my_tmp1[256];
+      int32_t my_tmp4[4096*32]/*needs allocating at largest grp size*/];
+      uint8_t my_tmp1[4096*32];
 
       #pragma omp for ordered schedule(dynamic)
       for (int g=0; g<gsngrp[1-flip]; g++) {     // first time this will be just 1, which is fine
         int from = g==0 ? 0 : gs[1-flip][g-1];    // need grps cummulated
         int to = gs[1-flip][g];  // non-inclusive
-        int my_n = to-from;
+        const int my_n = to-from;
         bool nested = false;
-        bool my_ordered = false;
-        uint8_t *ksub = key[radix]+from;
+        const uint8_t *ksub = key[radix]+from;
         if (my_n>=100000) {
           // 256*nth*100 (so batch approach worth it)
           nested = true;
         } else {
           nested = false;
-          if (my_n<=256) {  // TODO maybe 1024 now it's bytes not ints
+          bool grouped;
+          count_group(ksub, my_n, &grouped, int *my_order, &my_ng, &my_gs)
+
+
+          /*if (my_n<=256) {  // TODO maybe 1024 now it's bytes not ints
             insert(ksub, my_n, my_o, &my_ordered);
             int tt=0;
             my_ng=0;
@@ -1433,12 +1492,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             my_gs[my_ng++]=tt+1;
           } else {
             // counting TODO
-          }
-          if (!my_ordered) {
 
-            // reorder o   // if radix==0, this can just write the numbers directly without using my_tmp4
+          */
+          if (!grouped) {
+
+            // reorder o   // TODO: if radix==0, this can just write the numbers directly without using my_tmp4
             int *osub = o+from;
-            for (int i=0; i<my_n; i++) my_tmp4[i] = osub[my_o[i]];
+            for (int i=0; i<my_n; i++) my_tmp4[i] = osub[my_order[i]];
             memcpy(osub, my_tmp4, my_n*sizeof(int));
 
             // reorder remaining key columns (radix+1 onwards)
