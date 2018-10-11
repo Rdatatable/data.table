@@ -217,7 +217,7 @@ static void range_str(SEXP *x, int n, int64_t *out_min, int64_t *out_max, bool *
 }
 
 
-static void count_group(const uint8_t *x, const int n, bool *out_grouped, int *out_order, int *out_ngrp, int *out_grpsizes)
+static void count_group(const uint8_t *x, const int n, bool *out_grouped, int *out_order, int *out_ngrp, int *out_grpsize)
 // orders x by reference (that's ok destructively as we don't use this radix again) and writes the order into o; the o ordering is used several times by the caller.
 // the uint8_t *o limits the capability to max n=256 items (4 cache lines * 2 = 8 cache lines)
 // caller then uses x to detect groups and push those in the ordered clause.
@@ -253,13 +253,13 @@ static void count_group(const uint8_t *x, const int n, bool *out_grouped, int *o
 
   // TODO: if we need to sort the groups,  then just insert sort the uniques, using in-place insert sort.  But then out_grouped would need to be out_need_to_reorder
 
-  out_grouped = grouped;
-  out_ngrp = ngrp;
+  *out_grouped = grouped;
+  *out_ngrp = ngrp;
   for (int i=0; i<ngrp; i++) { uint8_t w=ugrp[i]; out_grpsize[i]=counts[w]; }  // no need to sweep == in caller to find groups; we already have sizes here
   if (!grouped) {
     // this is where the potentially random access comes in but only to at-most 256 points, each contigously
-    for (int i=0, sum=0; i<ngroup; i++) { uint8_t w=ugrp[i]; int tmp=counts[w]; counts[w]=sum; sum+=tmp; }  // prepare for forwards-assign to help cpu prefetch on next line
-    for (int i=0; i<n; i++) { uint8_t this = x[i]; out_order[counts[w]++] = i; }  // it's this second sweep through x[] that benefits from x[] being in cache from last time above, so keep it small.
+    for (int i=0, sum=0; i<ngrp; i++) { uint8_t w=ugrp[i]; int tmp=counts[w]; counts[w]=sum; sum+=tmp; }  // prepare for forwards-assign to help cpu prefetch on next line
+    for (int i=0; i<n; i++) { uint8_t this=x[i]; out_order[counts[this]++] = i; }  // it's this second sweep through x[] that benefits from x[] being in cache from last time above, so keep it small.
   }
   for (int i=0; i<ngrp; i++) counts[ugrp[i]] = 0;  // ready for next time to save initializing the 256 vector
 }
@@ -1462,11 +1462,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 
     #pragma omp parallel num_threads(getDTthreads())
     {
-      uint8_t my_o[256];
-      int my_gs[256];  // group sizes
-      int my_ng=0;        // number of groups
-      int32_t my_tmp4[4096*32]/*needs allocating at largest grp size*/];
-      uint8_t my_tmp1[4096*32];
+      #define STL 131072  // Single Thread Load 128KB (4096*32   bytes=128KB, int=512KB).  TODO: might be too large
+      int my_order[STL];
+      int my_gs[STL];     // group sizes, if all size 1 then STL will be full
+      int my_ng=0;        // number of groups; number of items used in my_gs
+      int my_tmp[STL];    // used to reorder ans and each key[index]
 
       #pragma omp for ordered schedule(dynamic)
       for (int g=0; g<gsngrp[1-flip]; g++) {     // first time this will be just 1, which is fine
@@ -1481,33 +1481,25 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         } else {
           nested = false;
           bool grouped;
-          count_group(ksub, my_n, &grouped, int *my_order, &my_ng, &my_gs)
-
-
-          /*if (my_n<=256) {  // TODO maybe 1024 now it's bytes not ints
-            insert(ksub, my_n, my_o, &my_ordered);
-            int tt=0;
-            my_ng=0;
-            for (int i=1; i<my_n; i++) if (ksub[i]==ksub[i-1]) tt++; else { my_gs[my_ng++]=tt+1; tt=0; }
-            my_gs[my_ng++]=tt+1;
-          } else {
-            // counting TODO
-
-          */
+          count_group(ksub, my_n, &grouped, my_order, &my_ng, my_gs);
           if (!grouped) {
-
-            // reorder o   // TODO: if radix==0, this can just write the numbers directly without using my_tmp4
+            // reorder o
             int *osub = o+from;
-            for (int i=0; i<my_n; i++) my_tmp4[i] = osub[my_order[i]];
-            memcpy(osub, my_tmp4, my_n*sizeof(int));
-
+            if (radix==0) {
+              // write the ordering directly without going via my_tmp to reorder contents of o because o just contains identity 1:n at this point
+              for (int i=0; i<my_n; i++) osub[i] = from+my_order[i];
+            } else {
+              for (int i=0; i<my_n; i++) my_tmp[i] = osub[my_order[i]];
+              memcpy(osub, my_tmp, my_n*sizeof(int));
+            }
             // reorder remaining key columns (radix+1 onwards)
             for (int i=radix+1; i<nradix; i++) {
-              ksub = key[i]+from;
-              for (int j=0; j<my_n; j++) my_tmp1[j] = ksub[my_o[j]];
-              memcpy(ksub, my_tmp1, my_n);
+              uint8_t *b = (uint8_t *)my_tmp;
+              uint8_t *ksub = key[i]+from;
+              for (int j=0; j<my_n; j++) *b++ = ksub[my_order[j]];
+              memcpy(ksub, my_tmp, my_n*1);
             }
-          } // TODO: else if radix==0,  could initialize o here.  Saving allocation of potentially very big my_tmp*
+          }
         }
 
         #pragma omp ordered
