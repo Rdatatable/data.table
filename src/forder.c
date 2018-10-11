@@ -1486,8 +1486,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             // reorder o
             int *osub = o+from;
             if (radix==0) {
-              // write the ordering directly without going via my_tmp to reorder contents of o because o just contains identity 1:n at this point
-              for (int i=0; i<my_n; i++) osub[i] = from+my_order[i];
+              // write the ordering directly (without going via my_tmp to reorder contents of o) because o just contains identity 1:n when radix==0
+              for (int i=0; i<my_n; i++) osub[i] = from+my_order[i]+1;
             } else {
               for (int i=0; i<my_n; i++) my_tmp[i] = osub[my_order[i]];
               memcpy(osub, my_tmp, my_n*sizeof(int));
