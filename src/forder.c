@@ -1463,15 +1463,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   stackgrps = TRUE;
   push(n);
   omp_set_nested(1);
+  const int STL = MIN(n, 131072);  // Single Thread Load 128KB (4096*32   bytes=128KB, int=512KB).  TODO: might be too large
   for (int radix=0; radix<nradix; radix++) {
     flipflop();
     //int *grps = gs[flip];
     stackgrps = radix<(nradix-1) || LOGICAL(retGrp)[0];  // if just ordering, we can save allocating and writing the last (and biggest) group size vector
     int tmp=gs[1-flip][0]; for (int i=1; i<gsngrp[1-flip]; i++) tmp=(gs[1-flip][i]+=tmp);   // cummulate, so we can parallelise
-
-    #pragma omp parallel num_threads(getDTthreads())
+    int nth = radix==0 ? 1 : getDTthreads();  // and we don't need 4 threads worth of thread-private VLAs (each STL big) for radix 0
+    // TODO: we don't need to start a new team for each radix.
+    #pragma omp parallel num_threads(nth)
     {
-      #define STL 131072  // Single Thread Load 128KB (4096*32   bytes=128KB, int=512KB).  TODO: might be too large
       int my_order[STL];
       int my_gs[STL];     // group sizes, if all size 1 then STL will be full
       int my_ng=0;        // number of groups; number of items used in my_gs
