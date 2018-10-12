@@ -1475,7 +1475,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     #pragma omp parallel num_threads(nth)
     {
       uint16_t my_order[STL];
-      int my_gs[STL];     // group sizes, if all size 1 then STL will be full
+      int my_gs[STL];     // group sizes, if all size 1 then STL will be full.  // TODO: can this be uint16_t too?
       uint16_t my_ng=0;        // number of groups; number of items used in my_gs
       int my_tmp[STL];         // used to reorder ans (and thus needs to be int) and the first 1/4 is used to reorder each key[index]
 
@@ -1493,13 +1493,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
           if (!grouped) {
             // reorder o
             int *osub = o+from;
-            if (radix==0) {
-              // write the ordering directly (without going via my_tmp to reorder contents of o) because o just contains identity 1:n when radix==0
-              for (int i=0; i<my_n; i++) osub[i] = from+my_order[i]+1;
-            } else {
-              for (int i=0; i<my_n; i++) my_tmp[i] = osub[my_order[i]];
-              memcpy(osub, my_tmp, my_n*sizeof(int));
-            }
+            // if (radix==0) {
+            //   // will only happen when entire input<STL, so it's not worth saving the tiny waste here at the expense of a deep branch later
+            //   // write the ordering directly (without going via my_tmp to reorder contents of o) because o just contains identity 1:n when radix==0
+            //   if (from!=0) Error("Internal error: from!=0 in radix=0 where n<=STL");
+            //   for (int i=0; i<my_n; i++) osub[i] = from+my_order[i]+1;
+            // } else {
+            // for safety (not having to get the +1 right above) and brevity, and perhaps icache efficiency, always do it the same way ...
+            for (int i=0; i<my_n; i++) my_tmp[i] = osub[my_order[i]];
+            memcpy(osub, my_tmp, my_n*sizeof(int));
+
             // reorder remaining key columns (radix+1 onwards)
             for (int i=radix+1; i<nradix; i++) {
               uint8_t *b = (uint8_t *)my_tmp;
