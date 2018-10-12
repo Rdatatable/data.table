@@ -1385,7 +1385,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     key[nradix][i] |= (uint8_t)(this & 0xff);
     // don't leave unused bits between columns; squash up the bits
     // if 1st column's range needs just 4 bits (16 values in column but we have 96 cores), left align too and take bits from 2nd column to get a better first split
-    // aside: when align==0 (e.g. maxBit=8,16,24,32), the last key[nradix][i] |= will go against 0 so could have been =
+    // aside: when align==0 (e.g. maxBit=8,16,24,32), the last key[nradix][i] |= will go against 0 so could have been =, but no worries
+    // NB: retaining group order does not retain the appearance-order in the sense that DT[,,by=] does. Because we go column-by-column, the first column values
+    //     are grouped together.   Whether we do byte-column-within-column doesn't alter this and neither does bit packing across column boundaries.
+    //     if input data is grouped-by-column (not grouped-by-row) then this grouping strategy will help a lot.
+    //     if input data is random ordering, then a consequence of grouping-by-column (whether sorted or not) is that the output ordering will not be by
+    //       row-group-appearance-order built it; the result will always have to be resorted by row number of first group item.
+    //     this was the case with the previous forder as well, which went by whole-column
+    //     So, we may as well bit-pack as done above.
+    //     Retaining apperance-order within key-byte-column is still advatangeous for when we do encounter column-grouped data (to avoid data movement); and
+    //       the ordering will be appearance-order preserving in that case.
 
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP : {  // TODO trivial LGL count
@@ -1431,7 +1440,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     nradix += nbyte-1+(spare==0);
   }
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
-  if (verbose) Rprintf("Number of radix
 
   //for (int i=0; i<n; i++) {
   //  for (int b=0; b<nradix; b++) Rprintf("%03d  ", key[b][i]);
