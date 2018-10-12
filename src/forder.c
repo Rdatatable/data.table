@@ -217,7 +217,7 @@ static void range_str(SEXP *x, int n, int64_t *out_min, int64_t *out_max, bool *
 }
 
 
-static void count_group(const uint8_t *x, const int n, bool *out_grouped, int *out_order, int *out_ngrp, int *out_grpsize)
+static void count_group(const uint8_t *x, const uint16_t n, bool *out_grouped, uint16_t *out_order, uint16_t *out_ngrp, int *out_grpsize)
 // orders x by reference (that's ok destructively as we don't use this radix again) and writes the order into o; the o ordering is used several times by the caller.
 // the uint8_t *o limits the capability to max n=256 items (4 cache lines * 2 = 8 cache lines)
 // caller then uses x to detect groups and push those in the ordered clause.
@@ -230,7 +230,7 @@ static void count_group(const uint8_t *x, const int n, bool *out_grouped, int *o
 {
   //uint8_t wgrp[256] = {0};  // which group
   uint8_t ugrp[256];  // uninitialized is fine.  unique groups; avoids sweeping all 256 counts when very often very few of them are used (avoids degrade of counting sort), as well as maintaining first-appearance order
-  int counts[256] = {0};  // ** We can try and see if this is fast, because it's on stack it might be.  If not, then pass in my_counts as we need thread local static.
+  uint16_t counts[256] = {0};  // ** We can try and see if this is fast, because it's on stack it might be.  If not, then pass in my_counts as we need thread local static.
                           // TODO TODO: these should not be on stack since they need to be initialized, and we don't need that initialization
 
   // first item is always first of first group
@@ -1463,7 +1463,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   stackgrps = TRUE;
   push(n);
   omp_set_nested(1);
-  const int STL = MIN(n, 131072);  // Single Thread Load 128KB (4096*32   bytes=128KB, int=512KB).  TODO: might be too large
+  const int STL = MIN(n, 65536);  // Single Thread Load.  Such that counts can be uint16_t. 256*2=8 cache lines; 1-byte:64KB/16 pages of 4096; 2-bytes:128KB/0.125MB
+  // TODO if we use 2-bytes for STL, then maximum can be 256^2 = 65536,  which would halve the size of the thread-private variables from int to uint16_t
   for (int radix=0; radix<nradix; radix++) {
     flipflop();
     //int *grps = gs[flip];
@@ -1473,22 +1474,19 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     // TODO: we don't need to start a new team for each radix.
     #pragma omp parallel num_threads(nth)
     {
-      int my_order[STL];
+      uint16_t my_order[STL];
       int my_gs[STL];     // group sizes, if all size 1 then STL will be full
-      int my_ng=0;        // number of groups; number of items used in my_gs
-      int my_tmp[STL];    // used to reorder ans and each key[index]
+      uint16_t my_ng=0;        // number of groups; number of items used in my_gs
+      int my_tmp[STL];         // used to reorder ans (and thus needs to be int) and the first 1/4 is used to reorder each key[index]
 
       #pragma omp for ordered schedule(dynamic)
       for (int g=0; g<gsngrp[1-flip]; g++) {     // first time this will be just 1, which is fine
         int from = g==0 ? 0 : gs[1-flip][g-1];    // need grps cummulated
         int to = gs[1-flip][g];  // non-inclusive
         const int my_n = to-from;
-        bool nested = false;
+        bool nested = true;
         const uint8_t *ksub = key[radix]+from;
-        if (my_n>=100000) {
-          // 256*nth*100 (so batch approach worth it)
-          nested = true;
-        } else {
+        if (my_n<=STL) {
           nested = false;
           bool grouped;
           count_group(ksub, my_n, &grouped, my_order, &my_ng, my_gs);
