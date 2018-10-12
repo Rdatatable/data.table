@@ -50,7 +50,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   } else {
     # remove backticks from cols
     cols <- gsub("`", "", cols)
-    miss = !(cols %in% colnames(x))
+    miss = !(cols %chin% colnames(x))
     if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
   }
 
@@ -325,10 +325,10 @@ setorderv <- function(x, cols, order=1L, na.last=FALSE)
   } else {
     # remove backticks from cols
     cols <- gsub("`", "", cols)
-    miss = !(cols %in% colnames(x))
+    miss = !(cols %chin% colnames(x))
     if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
   }
-  if (".xi" %in% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
+  if (".xi" %chin% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
     if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
