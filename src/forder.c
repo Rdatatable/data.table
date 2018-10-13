@@ -1440,6 +1440,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     nradix += nbyte-1+(spare==0);
   }
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
+  Rprintf("nradix=%d\n", nradix);
 
   //for (int i=0; i<n; i++) {
   //  for (int b=0; b<nradix; b++) Rprintf("%03d  ", key[b][i]);
@@ -1447,8 +1448,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   //}
 
   SEXP ans = PROTECT(allocVector(INTSXP, n)); n_protect++;
-  int *o = INTEGER(ans);
-  for (int i=0; i<n; i++) o[i]=i+1;  // initialize for smaller n or range where the parallel-batch doesn't happen. TODO: parallelize but low priority
+  int *ansd = INTEGER(ans);
+  for (int i=0; i<n; i++) ansd[i]=i+1;  // initialize for smaller n or range where the parallel-batch doesn't happen. TODO: parallelize but low priority
                                      // the first gather is the worst; for the first radix==0 case, the parallel-batch can just write o directly to save wasteful reordering of 1:n
 
   //int maxgrpn = gsmax[flip];   // biggest group in the first column
@@ -1465,14 +1466,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   omp_set_nested(1);
   const int STL = MIN(n, 65536);  // Single Thread Load.  Such that counts can be uint16_t. 256*2=8 cache lines; 1-byte:64KB/16 pages of 4096; 2-bytes:128KB/0.125MB
   // TODO if we use 2-bytes for STL, then maximum can be 256^2 = 65536,  which would halve the size of the thread-private variables from int to uint16_t
+  char *TMP = malloc(n*sizeof(int));
+  //size_t TMP_size = 0;
+
   for (int radix=0; radix<nradix; radix++) {
     flipflop();
     //int *grps = gs[flip];
     stackgrps = radix<(nradix-1) || LOGICAL(retGrp)[0];  // if just ordering, we can save allocating and writing the last (and biggest) group size vector
     int tmp=gs[1-flip][0]; for (int i=1; i<gsngrp[1-flip]; i++) tmp=(gs[1-flip][i]+=tmp);   // cummulate, so we can parallelise
-    int nth = radix==0 ? 1 : getDTthreads();  // and we don't need 4 threads worth of thread-private VLAs (each STL big) for radix 0
-    // TODO: we don't need to start a new team for each radix.
-    #pragma omp parallel num_threads(nth)
+
+    #pragma omp parallel num_threads( n<=STL ? 1 : getDTthreads() )  // avoid starting potentially 32 threads (each with STL temps) for small input with low range
     {
       uint16_t my_order[STL];
       int my_gs[STL];     // group sizes, if all size 1 then STL will be full.  // TODO: can this be uint16_t too?
@@ -1485,14 +1488,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         int to = gs[1-flip][g];  // non-inclusive
         const int my_n = to-from;
         bool nested = true;
-        const uint8_t *ksub = key[radix]+from;
         if (my_n<=STL) {
           nested = false;
           bool grouped;
-          count_group(ksub, my_n, &grouped, my_order, &my_ng, my_gs);
+          count_group(key[radix]+from, my_n, &grouped, my_order, &my_ng, my_gs);
           if (!grouped) {
             // reorder o
-            int *osub = o+from;
+            int *osub = ansd+from;
             // if (radix==0) {
             //   // will only happen when entire input<STL, so it's not worth saving the tiny waste here at the expense of a deep branch later
             //   // write the ordering directly (without going via my_tmp to reorder contents of o) because o just contains identity 1:n when radix==0
@@ -1503,10 +1505,15 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             for (int i=0; i<my_n; i++) my_tmp[i] = osub[my_order[i]];
             memcpy(osub, my_tmp, my_n*sizeof(int));
 
+            // TODO - instead of creating my_order at all,  just use counts and push the values to 256-write cache lines,  with contiguous-read from osub and ksub
+            //        the 256 live cache-lines is worst case;  if there are many fewer,  then only that number of write-cache lines will be written, and
+            //        save allocating and populating my_order, too.  These write-cache lines will be constained within the STL width, so should be close by in cache as well.
+            //        And if there's a good degree of grouping, there is the same contiguous-read/write benefit both ways.
+
             // reorder remaining key columns (radix+1 onwards)
-            for (int i=radix+1; i<nradix; i++) {
+            for (int remaining_radix=radix+1; remaining_radix<nradix; remaining_radix++) {
               uint8_t *b = (uint8_t *)my_tmp;
-              uint8_t *ksub = key[i]+from;
+              uint8_t *ksub = key[remaining_radix]+from;
               for (int j=0; j<my_n; j++) *b++ = ksub[my_order[j]];
               memcpy(ksub, my_tmp, my_n*1);
             }
@@ -1515,17 +1522,138 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 
         #pragma omp ordered
         {
-          if (nested) {
-            // nested parallel and batch it in chunks
+          if (!nested) {
+            newpush(my_gs, my_ng);
+          } else {
+            int nBatch = getDTthreads()*4;  // at least nth; more to reduce last-chunk-home; but not too large size we need nBatch*256 counts
+            size_t batchSize = (my_n-1)/nBatch + 1;
+            nBatch = (my_n-1)/batchSize + 1;
+            int lastBatchSize = my_n - (nBatch-1)*batchSize;
+            int *restrict counts = calloc(nBatch*256, sizeof(int));
+            // TODO:  if (!counts) Error ...
+            //Rprintf("nested batch count...\n");
 
-            // this may be the best place to write initial ordering into o[], since it's the widest random access.
+            #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
+            for (int batch=0; batch<nBatch; batch++) {
+              int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;  // could be that lastBatchSize == batchSize when i) my_n is multiple of nBatch
+              const uint8_t *tmp = key[radix] + from + batch*batchSize;
+              int *my_counts = counts + batch*256;            // TODO: type could switch from uint64 to uint32 depending on my_n>2^32; two loops
+              for (int i=0; i<my_n; i++) my_counts[*tmp++]++;
+            }
+            // TODO: grouped could be detected at this stage to avoid reordering next
+
+            //Rprintf("cumulate...\n");
+            // cumulate columnwise; parallel histogram; small so no need to parallelize
+            for (int b=0, rollSum=0; b<256; b++) {
+              int j = b;
+              for (int batch=0; batch<nBatch; batch++) {
+                int tmp = counts[j];
+                counts[j] = rollSum;
+                rollSum += tmp;
+                j += 256;  // deliberately non-contiguous here
+              }
+            }
+
+
+            // reorder o and the remaining radix bytes.
+            // if radix==0,  then we can just write directly to.  Otherwise we have to reorder existing o (and allocate a tmp for the reorder)
+            // a tmp nrow*1 byte is absolutely fine to use to reorder the key column one by one.
+            // instead of creating order and then using order, which will be wide access,  we will push the value to the right place, and reuse the counts over and over.
+            // first memcpy counts to private and then cumulate on-stack
+            // writing to 256-locations, each contiguously, will keep hop around 256 cache lines being written, but contigious read through (large) x
+            // alternatively if o was created, we would write contiguously but jump around reading from x which would be more cache-line fetches (although, read-only)
+
+            // counts are going to have to be int,  to hold the offsets into nrow.  256*4 = 16 cache lines  .   We have 4096 L2 cache lines (256 threads)
+            //if (TMP_size<my_n) {
+            //  TMP = (char *)realloc(TMP, my_n);
+            //  // TODO  if (!TMP) Error
+            //  TMP_size = my_n;
+            //}
+            //Rprintf("reorder remaining radix keys (from=%d)...\n", from);
+            for (int remaining_radix=radix+1; remaining_radix<nradix; remaining_radix++) {
+              //Rprintf("remaining radix %d...\n", remaining_radix);
+              //Rprintf("TRACE:  %p %p %d %p %p %p %p\n", source, TMP, my_n, key[0], key[1], key[2], key[3]);
+              #pragma omp parallel num_threads(getDTthreads())
+              {
+                int my_tmp_counts[256];
+                #pragma omp for schedule(dynamic)
+                for (int batch=0; batch<nBatch; batch++) {
+                  const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;
+                  memcpy(my_tmp_counts, counts+batch*256, 256*sizeof(int));  // copy to cumulate since we need to reuse orginal to reorder other cols too.
+                  const uint8_t *restrict b = key[radix]           + from + batch*batchSize;
+                  const uint8_t *restrict c = key[remaining_radix] + from + batch*batchSize;
+                  for (int i=0; i<my_n; i++) ((uint8_t *restrict)TMP)[my_tmp_counts[*b++]++] = *c++;
+                }
+              }
+              //Rprintf("memcpy TMP to source to reorder key... %p %p %d %p %p\n", source, TMP, my_n, key[0], key[1]);
+              memcpy(key[remaining_radix]+from, TMP, my_n);
+              //Rprintf("  ...finished memcpy\n");
+            }
+
+            const bool direct = false; //(radix==0);
+            if (direct) {
+              if (from!=0) Error("internal error: first nested for radix==0 but from!=0");
+            }
+            //else if (TMP_size<(my_n*sizeof(int))) {
+            //  TMP = (char *)realloc(TMP, my_n*sizeof(int));
+            //  // TODO  if (!TMP) Error
+            //  TMP_size = my_n*sizeof(int);
+            //}
+            //Rprintf("reorder o (direct=%d)...\n", direct);
+            #pragma omp parallel num_threads(getDTthreads())
+            {
+              int my_tmp_counts[256];
+              #pragma omp for schedule(dynamic)
+              for (int batch=0; batch<nBatch; batch++) {
+                const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;
+                memcpy(my_tmp_counts, counts+batch*256, 256*sizeof(int));  // copy to cumulate since we need to reuse orginal to reorder other cols too.
+                const uint8_t *restrict b = key[radix] + from + batch*batchSize;    // TODO: use restrict everywhere,  even with const too
+                if (direct) {
+                  // don't need to reorder o because o contains just 1:n. Saves allocating TMP with nrow(DT)*4 bytes and hopping wastefully via it.
+                  int k = batch*batchSize + 1;  // +1 because returned to 1-based R
+                  for (int i=0; i<my_n; i++) ansd[my_tmp_counts[*b++]++] = k++;
+                } else {
+                  int *k = ansd + from + batch*batchSize;
+                  for (int i=0; i<my_n; i++) ((int *)TMP)[my_tmp_counts[*b++]++] = *k++;
+                }
+              }
+            }
+            //Rprintf("memcpy to ansd+from (from=%d)...\n", from);
+            if (!direct) memcpy(ansd+from, TMP, my_n*sizeof(int));
+
+            // TODO: maintain group order above to minimize movement; look at grouping bool within batch and then look at first and last carry on to next batch
+            // create my_gs and my_ng from the counts matrix
+
+            /*
+            Rprintf("counts[]=\n");
+            for (int b=0; b<nBatch; b++) {
+              for (int i=0; i<10; i++) Rprintf("%03d ", counts[b*256 + i]);
+              Rprintf("... ");
+              for (int i=246; i<256; i++) Rprintf("%03d ", counts[b*256 + i]);
+              Rprintf("\n");
+            }
+            Rprintf("\n\n");
+            */
+
+            int my_gs[256];
+            int my_ng=0;
+            for (int i=1; i<256; i++) {
+              int s = counts[i] - counts[i-1];
+              if (s) my_gs[my_ng++] = s;
+            }
+            int s = my_n-counts[255];
+            if (s) my_gs[my_ng++] = s;
+            newpush(my_gs, my_ng);
+            // memset(counts, 0, nBatch*256*sizeof(int));
+            free(counts);
           }
-          newpush(my_gs, my_ng);
         }
       }
     }
   }
-
+  free(TMP);  // TODO: place in cleanup()
+  //TMP_size=0;
+  TMP = NULL;
 /*
 #ifdef TIMING_ON
   for (i=0; i<NBLOCK; i++) {

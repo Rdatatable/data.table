@@ -41,7 +41,7 @@
   opts = c("datatable.verbose"="FALSE",            # datatable.<argument name>
        "datatable.nomatch"="NA_integer_",      # datatable.<argument name>
        "datatable.optimize"="Inf",             # datatable.<argument name>
-       "datatable.print.nrows"="100L",         # datatable.<argument name>
+       "datatable.print.nrows"="20L",          # datatable.<argument name>
        "datatable.print.topn"="5L",            # datatable.<argument name>
        "datatable.print.class"="FALSE",        # for print.data.table
        "datatable.print.rownames"="TRUE",      # for print.data.table
