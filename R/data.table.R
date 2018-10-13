@@ -322,7 +322,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         ..syms = av
       }
     } else if (is.name(jsub)) {
-      if (substring(jsub, 1L, 2L) == "..") stop("Internal error:  DT[, ..var] should be dealt with by the branch above now.")
+      if (substring(jsub, 1L, 2L) == "..") stop("Internal error:  DT[, ..var] should be dealt with by the branch above now.") # nocov
       if (!with && !exists(as.character(jsub), where=parent.frame()))
         stop("Variable '",jsub,"' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.")
     }
@@ -607,7 +607,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             stop("Cannot by=.EACHI when joining to a secondary key, yet")
           # since f__ refers to xo later in grouping, so xo needs to be passed through to dogroups too.
           if (length(irows))
-            stop("Internal error. irows has length in by=.EACHI")
+            stop("Internal error. irows has length in by=.EACHI") # nocov
         }
         if (nqbyjoin) {
           irows = if (length(xo)) xo[irows] else irows
@@ -691,7 +691,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       }
     }
     if (notjoin) {
-      if (byjoin || !is.integer(irows) || is.na(nomatch)) stop("Internal error: notjoin but byjoin or !integer or nomatch==NA")
+      if (byjoin || !is.integer(irows) || is.na(nomatch)) stop("Internal error: notjoin but byjoin or !integer or nomatch==NA") # nocov
       irows = irows[irows!=0L]
       if (verbose) {last.started.at=proc.time()[3];cat("Inverting irows for notjoin done in ... ");flush.console()}
       i = irows = if (length(irows)) seq_len(nrow(x))[-irows] else NULL  # NULL meaning all rows i.e. seq_len(nrow(x))
@@ -875,7 +875,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             byval = as.list(x)[byval]
           } else byval = eval(bysub, x, parent.frame())
         else {
-          if (!is.integer(irows)) stop("Internal error: irows isn't integer")  # length 0 when i returns no rows
+          # length 0 when i returns no rows
+          if (!is.integer(irows)) stop("Internal error: irows isn't integer") # nocov
           # Passing irows as i to x[] below has been troublesome in a rare edge case.
           # irows may contain NA, 0, negatives and >nrow(x) here. That's all ok.
           # But we may need i join column values to be retained (where those rows have no match), hence we tried eval(isub)
@@ -1777,7 +1778,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (length(irows) && !isTRUE(irows) && !GForce) {
     # fix for bug #2758. TO DO: provide a better error message
     if (length(irows) > 1L && length(zo__ <- which(irows == 0)) > 0L) stop("i[", zo__[1L], "] is 0. While grouping, i=0 is allowed when it's the only value. When length(i) > 1, all i should be > 0.")
-    if (length(o__) && length(irows)!=length(o__)) stop("Internal error: length(irows)!=length(o__)")
+    if (length(o__) && length(irows)!=length(o__)) stop("Internal error: length(irows)!=length(o__)") # nocov
     o__ = if (length(o__)) irows[o__]  # better do this once up front (even though another alloc) than deep repeated branch in dogroups.c
           else irows
   } # else grporder is left bound to same o__ memory (no cost of copy)
@@ -1839,7 +1840,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     # Efficiency gain of dropping names has been successful. Ordinarily this will run.
     if (is.null(jvnames)) jvnames = character(length(ans)-length(bynames))
     if (length(bynames)+length(jvnames)!=length(ans))
-      stop("Internal error: jvnames is length ",length(jvnames), " but ans is ",length(ans)," and bynames is ", length(bynames))
+      stop("Internal error: jvnames is length ",length(jvnames), " but ans is ",length(ans)," and bynames is ", length(bynames)) # nocov
     ww = which(jvnames=="")
     if (any(ww)) jvnames[ww] = paste0("V",ww)
     setattr(ans, "names", c(bynames, jvnames))
@@ -2959,7 +2960,7 @@ isReallyReal <- function(x) {
     on <- c(on, setNames(paste0(col, validOps$on[validOps$op == operator], col), col))
     ## loop continues with remainingIsub
   }
-  if (length(i) == 0L) stop("Internal error in .isFastSubsettable. Please report to data.table developers")
+  if (length(i) == 0L) stop("Internal error in .isFastSubsettable. Please report to data.table developers") # nocov
   ## convert i to data.table with all combinations in rows.
   if(length(i) > 1L && prod(vapply(i, length, integer(1L))) > 1e4){
     ## CJ would result in more than 1e4 rows. This would be inefficient, especially memory-wise #2635

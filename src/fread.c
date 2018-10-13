@@ -103,7 +103,7 @@ typedef struct FieldParseContext {
 static void Field(FieldParseContext *ctx);
 
 #define ASSERT(cond, msg, ...) \
-  if (!(cond)) STOP("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg, __LINE__, __VA_ARGS__)
+  if (!(cond)) STOP("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg, __LINE__, __VA_ARGS__) // # nocov
 
 
 
@@ -209,7 +209,7 @@ static char *typeLetter = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq
 
 static char *typesAsString(int ncol) {
   int nLetters = strlen(typeLetter);
-  if (NUMTYPE>nLetters) STOP("Internal error: NUMTYPE(%d) > nLetters(%d)", NUMTYPE, nLetters);
+  if (NUMTYPE>nLetters) STOP("Internal error: NUMTYPE(%d) > nLetters(%d)", NUMTYPE, nLetters); // # nocov
   static char str[101];
   int i=0;
   if (ncol<=100) {
@@ -1107,7 +1107,7 @@ int freadMain(freadMainArgs _args) {
 
   int64_t nrowLimit = args.nrowLimit;
   NAstrings = args.NAstrings;
-  if (NAstrings==NULL) STOP("Internal error: NAstrings is itself NULL. When empty it should be pointer to NULL.");
+  if (NAstrings==NULL) STOP("Internal error: NAstrings is itself NULL. When empty it should be pointer to NULL."); // # nocov
   any_number_like_NAstrings = false;
   blank_is_a_NAstring = false;
   // if we know there are no nastrings which are numbers (like -999999) then in the number
@@ -1187,7 +1187,7 @@ int freadMain(freadMainArgs _args) {
     sof = args.input;
     fileSize = strlen(sof);
     eof = sof+fileSize;
-    if (*eof!='\0') STOP("Internal error: last byte of character input isn't \\0");
+    if (*eof!='\0') STOP("Internal error: last byte of character input isn't \\0"); // # nocov
   }
   else if (args.filename) {
     if (verbose) DTPRINT("  Opening file %s\n", args.filename);
@@ -1483,7 +1483,7 @@ int freadMain(freadMainArgs _args) {
           const char *prevLineStart=ch, *lineStart=ch;
           int lastncol = countfields(&ch);
           if (lastncol<0) continue;  //   invalid file with this sep and quote rule, skip
-          ASSERT(lastncol>0, "Internal error: first non-empty row should always be at least one field; %c %d", sep, quoteRule);
+          ASSERT(lastncol>0, "Internal error: first non-empty row should always be at least one field; %c %d", sep, quoteRule); // # nocov
           const char *thisBlockStart=lineStart;
           const char *thisBlockPrevStart = NULL;
           int thisBlockLines=1, thisRow=0;
@@ -1569,10 +1569,10 @@ int freadMain(freadMainArgs _args) {
     }
   }
 
-  if (ncol<1 || row1line<1) STOP("Internal error: ncol==%d line==%d after detecting sep, ncol and first line", ncol, row1line);
+  if (ncol<1 || row1line<1) STOP("Internal error: ncol==%d line==%d after detecting sep, ncol and first line", ncol, row1line); // # nocov
   int tt = countfields(&ch);
   ch = pos; // move back to start of line since countfields() moved to next
-  if (!fill && tt!=ncol) STOP("Internal error: first line has field count %d but expecting %d", tt, ncol);
+  if (!fill && tt!=ncol) STOP("Internal error: first line has field count %d but expecting %d", tt, ncol); // # nocov
   if (verbose) {
     DTPRINT("  Detected %d columns on line %d. This line is either column "
             "names or first data row. Line starts as: <<%s>>\n",
@@ -1586,7 +1586,7 @@ int freadMain(freadMainArgs _args) {
     if (fileSize%4096==0) {
       const char *msg = "This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and is a multiple of 4096, too.";
       if (verbose) DTPRINT("  Copying file in RAM. %s\n", msg);
-      ASSERT(mmp_copy==NULL, "Internal error: mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.", 1/*dummy arg for macro*/);
+      ASSERT(mmp_copy==NULL, "Internal error: mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.", 1/*dummy arg for macro*/); // #nocov
       copyFile(fileSize, msg, verbose);
       pos = sof + (pos-(const char *)mmp);
       firstJumpEnd = sof + (firstJumpEnd-(const char *)mmp);
@@ -1729,15 +1729,15 @@ int freadMain(freadMainArgs _args) {
     // Maybe previous line (if there is one, prevStart!=NULL) contains column names but there are too few (which is why it didn't become the first data row).
     ch = prevStart;
     int tt = countfields(&ch);
-    if (tt==ncol) STOP("Internal error: row before first data row has the same number of fields but we're not using it.");
-    if (ch!=pos)  STOP("Internal error: ch!=pos after counting fields in the line before the first data row.");
+    if (tt==ncol) STOP("Internal error: row before first data row has the same number of fields but we're not using it."); // # nocov
+    if (ch!=pos)  STOP("Internal error: ch!=pos after counting fields in the line before the first data row."); // # nocov
     if (verbose) DTPRINT("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names.", tt);
     if (tt<ncol) {
       autoFirstColName = (tt==ncol-1);
       DTWARN("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column name%s\n", tt, ncol, ncol-tt,
              autoFirstColName ? " for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file." : "s at the end.");
     } else if (tt>ncol) {
-      if (fill) STOP("Internal error: fill=true but there is a previous row which should already have been filled.");
+      if (fill) STOP("Internal error: fill=true but there is a previous row which should already have been filled."); // # nocov
       DTWARN("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n", tt, ncol);
       fill = true;
       type =    (int8_t *)realloc(type,    (size_t)tt * sizeof(int8_t));
@@ -1813,7 +1813,7 @@ int freadMain(freadMainArgs _args) {
               (llu)allocnrow, (llu)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
       DTPRINT("  =====\n");
     } else {
-      if (sampleLines > allocnrow) STOP("Internal error: sampleLines(%llu) > allocnrow(%llu)", (llu)sampleLines, (llu)allocnrow);
+      if (sampleLines > allocnrow) STOP("Internal error: sampleLines(%llu) > allocnrow(%llu)", (llu)sampleLines, (llu)allocnrow); // # nocov
     }
   }
   if (nrowLimit < allocnrow) {
@@ -1860,7 +1860,7 @@ int freadMain(freadMainArgs _args) {
     }
     if (eol(&ch)) pos = ++ch;
     else if (*ch=='\0') pos = ch;
-    else STOP("Internal error: reading colnames ending on '%c'", *ch);
+    else STOP("Internal error: reading colnames ending on '%c'", *ch); // # nocov
     // now on first data row (row after column names)
     // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
   }
@@ -1991,7 +1991,7 @@ int freadMain(freadMainArgs _args) {
       nth = omp_get_num_threads();
       if (me!=0) {
         // should never happen
-        snprintf(internalErr, internalErrSize, "Internal error: Master thread is not thread 0 but thread %d.\n", me);
+        snprintf(internalErr, internalErrSize, "Internal error: Master thread is not thread 0 but thread %d.\n", me); // # nocov
         stopTeam = true;
       }
       myShowProgress = args.showProgress;
@@ -2246,7 +2246,7 @@ int freadMain(freadMainArgs _args) {
           myNrow = 0;               // discard my buffer
         }
         else if (headPos!=thisJumpStart) {
-          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
+          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof); // # nocov
           stopTeam = true;
         }
         else {
@@ -2326,7 +2326,7 @@ int freadMain(freadMainArgs _args) {
     }
     if (restartTeam) {
       if (verbose) DTPRINT("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n", jump0, nSwept, quoteRule);
-      ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "Internal error: team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh);
+      ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "Internal error: team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh); // # nocov
       goto read;
     }
     // else nrowLimit applied and stopped early normally
