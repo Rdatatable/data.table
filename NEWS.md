@@ -9,6 +9,8 @@
 
 2. `nomatch=NULL` now does the same as `nomatch=0L`; i.e. discards missing values silently (inner join). The default is still `nomatch=NA` (outer join) for statistical safety so that missing values are retained by default. You have to explicitly write `nomatch=NULL` to indicate to the reader of your code that you intend to discard missing values silently. After several years have elapsed, we will start to deprecate `0L`; please start using `NULL`. TO DO ... `nomatch=.(0)` fills with `0` instead of `NA`, [#857](https://github.com/Rdatatable/data.table/issues/857) and `nomatch="error"`.
 
+3. In those cases where you need to rename columns in a `DT` but the columns aren't always known, `setnames()` now contains an additional argument (`skip_absent`) to skip them if they aren't present.  For example, if you know that columns `a`, `b` and `d` are present in `DT`, but you don't know if column `c` is or isn't, then you can include `c` in `old` and if it isn't found, `setnames()` will simply skip to the next item of `old` rather than exit the function.  **Note: The default behaviour of `setnames()` has not been altered as `skip_absent` is set to `FALSE` by default.** [#3030](https://github.com/Rdatatable/data.table/issues/3030)
+
 #### BUG FIXES
 
 1. Providing an `i` subset expression when attempting to delete a column correctly failed with helpful error, but when the column was missing too created a new column full of `NULL` values, [#3089](https://github.com/Rdatatable/data.table/issues/3089). Thanks to Michael Chirico for reporting.
