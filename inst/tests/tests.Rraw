@@ -34,11 +34,9 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   setreordervec = data.table:::setreordervec
   selfrefok = data.table:::selfrefok
   setdiff_ = data.table:::setdiff_
-  is_na = data.table:::is_na
   shallow = data.table:::shallow # until exported
   chmatch2 = data.table:::chmatch2
   which_ = data.table:::which_
-  any_na = data.table:::any_na
   replace_dot_alias = data.table:::replace_dot_alias
   isReallyReal = data.table:::isReallyReal
   which.first = data.table:::which.first
@@ -5309,11 +5307,9 @@ for (i in seq_along(dt)) {
 
 
 # tests for is_na, which is equivalent of rowSums(is.na(dt)) > 0L
-# not exported yet, but we could!
-## UPDATE: also added tests for "any_na", internal version of anyNA
-## which also includes implementation for bit64::integer64, but the
-## real need is for merging factors correctly in joins, and we need
-## a fast check for NAs; can't rely on 3.1+ for anyNA.
+## UPDATE: also added tests for "any_na", which also includes implementation
+## for bit64::integer64, but the real need is for merging factors correctly in
+## joins, and we need a fast check for NAs; can't rely on 3.1+ for anyNA.
 dt = list(AA=sample(c(NA,-2:2), 50, TRUE),
                 BB=sample(c(NA,-2,-1,0,NaN,1,2,Inf,-Inf), 50, TRUE),
                 CC=sample(c(NA,letters[1:5]), 50, TRUE),
@@ -5325,21 +5321,26 @@ ans = as.list(na.omit(as.data.table(dt)))
 for (i in seq_along(dt)) {
   combn(names(dt), i, function(cols) {
     test_no = signif(test_no+.01, 7)
-    ans1 = is_na(dt[cols])
+    ans1 = is_na(dt, cols)
     ans2 = rowSums(is.na(as.data.table(dt[cols]))) > 0L
     test(test_no, ans1, ans2)
+    test_no = signif(test_no+.01, 7)
+    test(test_no, is_na(dt, names(dt) %in% cols),
+                  is_na(dt, which(names(dt) %in% cols)))
 
     # update: tests for any_na
     test_no = signif(test_no+.01, 7)
-    test(test_no, any_na(dt[cols]), TRUE)
+    test(test_no, any_na(dt, cols), TRUE)
     test_no = signif(test_no+.01, 7)
-    test(test_no, any_na(ans[cols]), FALSE)
+    test(test_no, any_na(ans, cols), FALSE)
+    test_no = signif(test_no+.01, 7)
+    test(test_no, any_na(dt, names(dt) %in% cols),
+                  any_na(dt, which(names(dt) %in% cols)))
     TRUE
   })
 }
-## The function is_na now gains a "by" argument where we can specify the columns. Tests have not been added for that yet.
-## However, I've added tests for 'na.omit.data.table' that uses this internally. So we don't have to add tests here again.
-## See tests 1394.*
+## See 1394.* (na.omit.data.table) for further tests which call is_na()
+## internally
 
 # extensive testing of overlap joins:
 
