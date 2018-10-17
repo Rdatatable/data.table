@@ -2,6 +2,12 @@
 
 .onLoad <- function(libname, pkgname) {
   # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
+  if (identical(tools::checkMD5sums("data.table"), FALSE)) {
+    # checkMD5sums outputs messages using cat() and returns NA when MD5 file is not available. The MD5 file is included in the
+    # binary builds that CRAN produces.
+    stop("This data.table installation appears to be faulty. Please close all R sessions and reinstall data.table.")
+    # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
+  }
 
   "Please read FAQ 2.23 (vignette('datatable-faq')) which explains in detail why data.table adds one for loop to the start of base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
   # Commented as a character string so this message is retained and seen by anyone who types data.table:::.onLoad

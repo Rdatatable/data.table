@@ -6,8 +6,8 @@
   In \code{data.table}, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory which is as large as one column. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function that \code{data.table} provides.
 }
 \usage{
-setnames(x,old,new,skip_absent=FALSE)
 setattr(x,name,value)
+setnames(x,old,new,skip_absent=FALSE)
 }
 \arguments{
   \item{x}{ \code{setnames} accepts \code{data.frame} and \code{data.table}. \code{setattr} accepts any input; e.g, list, columns of a \code{data.frame} or \code{data.table}. }
@@ -17,6 +17,7 @@ setattr(x,name,value)
   \item{new}{ Optional. New column names, must be the same length as columns provided to \code{old} argument. }
   \item{skip_absent}{ Skips cases where there is no match in \code{old}.  Set to \code{FALSE} by default. Switch flag to \code{TRUE} to activate. }
 }
+
 \details{
 
   \code{setnames} operates on \code{data.table} and \code{data.frame} not other types like \code{list} and \code{vector}. It can be used to change names \emph{by name} with built-in checks and warnings (e.g., if any old names are missing or appear more than once).
@@ -63,7 +64,7 @@ DT <- data.table(x = 1:3, y = 4:6, z = 7:9)
 setnames(DT, -2, c("a", "b"))      # NEW FR #1443, allows -ve indices in 'old' argument
 
 DT = data.table(a=1:3, b=4:6)
-f = function(...) {
+f = function(\dots) {
     # ...
     setattr(DT,"myFlag",TRUE)  # by reference
     # ...
@@ -78,4 +79,3 @@ attr(DT,"myFlag2")  # NULL
 
 }
 \keyword{ data }
-

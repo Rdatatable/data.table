@@ -1,7 +1,33 @@
+**If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
-**If you are viewing this file on CRAN, please check latest news on GitHub [here](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).**
+### Changes in v1.11.9 (to be v1.12.0)
 
-### Changes in v1.11.7  (in development)
+#### NEW FEATURES
+
+1. In those cases where you need to rename columns in a `DT` but the columns aren't always known, `setnames()` now contains an additional argument (`skip_absent`) to skip them if they aren't present.  For example, if you know that columns `a`, `b` and `d` are present in `DT`, but you don't know if column `c` is or isn't, then you can include `c` in `old` and if it isn't found, `setnames()` will simply skip to the next item of `old` rather than exit the function.  **Note: The default behaviour of `setnames()` has not been altered as `skip_absent` is set to `FALSE` by default.** [#3030](https://github.com/Rdatatable/data.table/issues/3030)
+
+2. `fread()` can now read a remote compressed file in one step; `fread("https://domain.org/file.csv.bz2")`. The `file=` argument now supports `.gz` and `.bz2` too; i.e. `fread(file="file.csv.gz")` works now where only `fread("file.csv.gz")` worked in 1.11.8.
+
+3. `nomatch=NULL` now does the same as `nomatch=0L`; i.e. discards missing values silently (inner join). The default is still `nomatch=NA` (outer join) for statistical safety so that missing values are retained by default. You have to explicitly write `nomatch=NULL` to indicate to the reader of your code that you intend to discard missing values silently. After several years have elapsed, we will start to deprecate `0L`; please start using `NULL`. TO DO ... `nomatch=.(0)` fills with `0` instead of `NA`, [#857](https://github.com/Rdatatable/data.table/issues/857) and `nomatch="error"`.
+
+#### BUG FIXES
+
+1. Providing an `i` subset expression when attempting to delete a column correctly failed with helpful error, but when the column was missing too created a new column full of `NULL` values, [#3089](https://github.com/Rdatatable/data.table/issues/3089). Thanks to Michael Chirico for reporting.
+
+2. Column names that look like expressions (e.g. `"a<=colB"`) caused an error when used in `on=` even when wrapped with backticks, [#3092](https://github.com/Rdatatable/data.table/issues/3092). Additionally, `on=` now supports white spaces around operators; e.g. `on = "colA == colB"`. Thanks to @mt1022 for reporting and to @MarkusBonsch for fixing.
+
+#### NOTES
+
+1. When data.table first loads it now checks the DLL's MD5. This is to detect installation issues on Windows when you upgrade and i) the DLL is in use by another R session and ii) the CRAN source version > CRAN binary binary which happens just after a new release (R prompts users to install from source until the CRAN binary is available). This situation can lead to a state where the package's new R code calls old C code in the old DLL; [R#17478](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478), [#3056](https://github.com/Rdatatable/data.table/issues/3056). This broken state can persist until, hopefully, you experience a strange error caused by the mismatch. Otherwise, wrong results may occur silently. This situation applies to any R package with compiled code not just data.table, is Windows-only, and is long-standing. It has only recently been understood as it typically only occurs during the few days after each new release until binaries are available on CRAN. Thanks to Gabor Csardi for the suggestion to use `tools::checkMD5sums()`.
+
+2. When `on=` is provided but not `i=`, a helpful error is now produced rather than silently ignoring `on=`. Thanks to Dirk Eddelbuettel for the idea.
+
+
+### Changes in v1.11.8  (30 Sep 2018)
+
+#### NEW FEATURES
+
+1. `fread()` can now read `.gz` and `.bz2` files directly: `fread("file.csv.gz")`, [#717](https://github.com/Rdatatable/data.table/issues/717) [#3058](https://github.com/Rdatatable/data.table/issues/3058). It uses `R.utils::decompressFile` to decompress to a `tempfile()` which is then read by `fread()` in the usual way. For greater speed on large-RAM servers, it is recommended to use ramdisk for temporary files by setting `TEMPDIR` to `/dev/shm`; see `?tempdir`. The decompressed temporary file is removed as soon as `fread` completes even if there is an error reading the file. Reading a remote compressed file in one step will be supported in the next version; e.g. `fread("http://domain.org/file.csv.bz2")`.
 
 #### BUG FIXES
 
@@ -13,26 +39,36 @@
 
 4. Assigning a sequence to a column using base R methods (e.g. `DT[["foo"]] = 1:10`) could cause subsetting to fail with `Internal error in subset.c: column <n> is an ALTREP vector`, [#3051](https://github.com/Rdatatable/data.table/issues/3051). Thanks to Michel Lang for reporting.
 
+#### NOTES
 
-### Changes in v1.11.6  (on CRAN 19 Sep 2018)
+1. The test suite now turns on R's new _R_CHECK_LENGTH_1_LOGIC2_ to catch when internal use of `&&` or `||` encounter arguments of length more than one. Thanks to Hugh Parsonage for implementing and fixing the problems caught by this.
+
+2. Some namespace changes have been made with respect to melt, dcast and xts. No change is expected but if you do have any trouble, please file an issue.
+
+3. `split.data.table` was exported in v1.11.6 in addition to being registered using `S3method(split, data.table)`. The export has been removed again. It had been added because a user said they found it difficult to find, [#2920](https://github.com/Rdatatable/data.table/issues/2920). But S3 methods are not normally exported explicitly by packages. The proper way to access the `split.data.table` method is to call `split(DT)` where `DT` is a `data.table`. The generic (`base::split` in this case) then dispatches to the `split.data.table` method. v1.11.6 was not on CRAN very long (1 week) so we think it's better to revert this change quickly. To know what methods exist, R provides the `methods()` function.
+    ```R
+    methods(split)               # all the methods for the split generic
+    methods(class="data.table")  # all the generics that data.table has a method for (47 currently)
+    ```
+
+
+### Changes in v1.11.6  (19 Sep 2018)
 
 #### NEW FEATURES
 
-1. In those cases where you need to rename columns in a `DT` but the columns aren't always known, `setnames()` now contains an additional argument (`skip_absent`) to skip them if they aren't present.  For example, if you know that columns `a`, `b` and `d` are present in `DT`, but you don't know if column `c` is or isn't, then you can include `c` in `old` and if it isn't found, `setnames()` will simply skip to the next item of `old` rather than exit the function.  **Note: The default behaviour of `setnames()` has not been altered as `skip_absent` is set to `FALSE` by default.** [#3030](https://github.com/Rdatatable/data.table/issues/3030)
+1. For convenience when some of the files in `fnams` are empty in `rbindlist(lapply(fnams,fread))`, `fread` now reads empty input as a null-data.table with warning rather than error, [#2898](https://github.com/Rdatatable/data.table/issues/2898). For consistency, `fwrite(data.table(NULL))` now creates an empty file and warns instead of error, too.
 
-2. For convenience when some of the files in `fnams` are empty in `rbindlist(lapply(fnams,fread))`, `fread` now reads empty input as a null-data.table with warning rather than error, [#2898](https://github.com/Rdatatable/data.table/issues/2898). For consistency, `fwrite(data.table(NULL))` now creates an empty file and warns instead of error, too.
+2. `setcolorder(DT)` without further arguments now defaults to moving the key columns to be first, [#2895](https://github.com/Rdatatable/data.table/issues/2895). Thanks to @jsams for the PR.
 
-3. `setcolorder(DT)` without further arguments now defaults to moving the key columns to be first, [#2895](https://github.com/Rdatatable/data.table/issues/2895). Thanks to @jsams for the PR.
+3. Attempting to subset on `col` when the column is actually called `Col` will still error, but the error message will helpfully suggest similarly-spelled columns, [#2887](https://github.com/Rdatatable/data.table/issues/2887). This is experimental, applies just to `i` currently, and we look forward to feedback. Thanks to Michael Chirico for the suggestion and PR.
 
-4. Attempting to subset on `col` when the column is actually called `Col` will still error, but the error message will helpfully suggest similarly-spelled columns, [#2887](https://github.com/Rdatatable/data.table/issues/2887). This is experimental, applies just to `i` currently, and we look forward to feedback. Thanks to Michael Chirico for the suggestion and PR.
+4. `fread()` has always accepted literal data; e.g. `fread("A,B\n1,2\n3,4")`. It now gains explicit `text=`; e.g. `fread(text="A,B\n1,2\n3,4")`. Unlike the first general purpose `input=` argument, the `text=` argument accepts multi-line input; e.g. `fread(text=c("A,B","1,2","3,4"))`, [#1423](https://github.com/Rdatatable/data.table/issues/1423). Thanks to Douglas Clark for the request and Hugh Parsonage for the PR.
 
-5. `fread()` has always accepted literal data; e.g. `fread("A,B\n1,2\n3,4")`. It now gains explicit `text=`; e.g. `fread(text="A,B\n1,2\n3,4")`. Unlike the first general purpose `input=` argument, the `text=` argument accepts multi-line input; e.g. `fread(text=c("A,B","1,2","3,4"))`, [#1423](https://github.com/Rdatatable/data.table/issues/1423). Thanks to Douglas Clark for the request and Hugh Parsonage for the PR.
+5. `fread()` has always accepted system commands; e.g. `fread("grep blah file.txt")`. It now gains explicit `cmd=`; e.g. `fread(cmd="grep blah file.txt")`. Further, if and only if `input=` is a system command and a variable was used to hold that command (`fread(someCommand)` not `fread("grep blah file.txt")`) or a variable is used to construct it (`fread(paste("grep",variable,"file.txt"))`), a message is now printed suggesting `cmd=`. This is to inform all users that there is a potential security concern if you are i) creating apps, and ii) your app takes input from a public user who could be malicious, and iii) input from the malicious user (such as a filename) is passed by your app to `fread()`, and iv) your app in not running in a protected environment. If all 4 conditions hold then the malicious user could provide a system command instead of a filename which `fread()` would run, and that would be a problem too. If the app is not running in a protected environment (e.g. app is running as root) then this could do damage or obtain data you did not intend. Public facing apps should be running with limited operating system permission so that any breach from any source is contained. We agree with [Linus Torvald's advice](https://lkml.org/lkml/2017/11/21/356) on this which boils down to: "when addressing security concerns the first step is do no harm, just inform". If you aren't creating apps or apis that could have a malicious user then there is no risk but we can't distinguish you so we have to inform everyone. Please change to `fread(cmd=...)` at your leisure. The new message can be suppressed with `options(datatable.fread.input.cmd.message=FALSE)`. Passing system commands to `fread()` continues to be recommended and encouraged and is widely used; e.g. via the techniques gathered together in the book [Data Science at the Command Line](https://www.datascienceatthecommandline.com/). A `warning()` is too strong because best-practice for production systems is to set `options(warn=2)` to tolerate no warnings. Such production systems have no user input and so there is no security risk; we don't want to do harm by breaking production systems via a `warning()` which gets turned into an error by `options(warn=2)`. Now that we have informed all users, we request feedback. There are 3 options for future releases: i) remove the message, ii) leave the message in place, iii) upgrade the message to warning and then eventually error. The default choice is the middle one: leave the message in place.
 
-6. `fread()` has always accepted system commands; e.g. `fread("grep blah file.txt")`. It now gains explicit `cmd=`; e.g. `fread(cmd="grep blah file.txt")`. Further, if and only if `input=` is a system command and a variable was used to hold that command (`fread(someCommand)` not `fread("grep blah file.txt")`) or a variable is used to construct it (`fread(paste("grep",variable,"file.txt"))`), a message is now printed suggesting `cmd=`. This is to inform all users that there is a potential security concern if you are i) creating apps, and ii) your app takes input from a public user who could be malicious, and iii) input from the malicious user (such as a filename) is passed by your app to `fread()`, and iv) your app in not running in a protected environment. If all 4 conditions hold then the malicious user could provide a system command instead of a filename which `fread()` would run, and that would be a problem too. If the app is not running in a protected environment (e.g. app is running as root) then this could do damage or obtain data you did not intend. Public facing apps should be running with limited operating system permission so that any breach from any source is contained. We agree with [Linus Torvald's advice](https://lkml.org/lkml/2017/11/21/356) on this which boils down to: "when addressing security concerns the first step is do no harm, just inform". If you aren't creating apps or apis that could have a malicious user then there is no risk but we can't distinguish you so we have to inform everyone. Please change to `fread(cmd=...)` at your leisure. The new message can be suppressed with `options(datatable.fread.input.cmd.message=FALSE)`. Passing system commands to `fread()` continues to be recommended and encouraged and is widely used; e.g. via the techniques gathered together in the book [Data Science at the Command Line](https://www.datascienceatthecommandline.com/). A `warning()` is too strong because best-practice for production systems is to set `options(warn=2)` to tolerate no warnings. Such production systems have no user input and so there is no security risk; we don't want to do harm by breaking production systems via a `warning()` which gets turned into an error by `options(warn=2)`. Now that we have informed all users, we request feedback. There are 3 options for future releases: i) remove the message, ii) leave the message in place, iii) upgrade the message to warning and then eventually error. The default choice is the middle one: leave the message in place.
+6. New `options(datatable.CJ.names=TRUE)` changes `CJ()` to auto-name its inputs exactly as `data.table()` does, [#1596](https://github.com/Rdatatable/data.table/issues/1596). Thanks @franknarf1 for the suggestion. Current default is `FALSE`; i.e. no change. The option's default will be changed to `TRUE` in v1.12.0 and then eventually the option will be removed. Any code that depends on `CJ(x,y)$V1` will need to be changed to `CJ(x,y)$x` and is more akin to a bug fix due to the inconsistency with `data.table()`.
 
-7. New `options(datatable.CJ.names=TRUE)` changes `CJ()` to auto-name its inputs exactly as `data.table()` does, [#1596](https://github.com/Rdatatable/data.table/issues/1596). Thanks @franknarf1 for the suggestion. Current default is `FALSE`; i.e. no change. The option's default will be changed to `TRUE` in v1.12.0 and then eventually the option will be removed. Any code that depends on `CJ(x,y)$V1` will need to be changed to `CJ(x,y)$x` and is more akin to a bug fix due to the inconsistency with `data.table()`.
-
-8. If an appropriate index exists, `keyby=` will now use it. For example, given `setindex(DT,colA,colB)`, both `DT[,j,keyby=colA]` (a leading subset of the index columns) and `DT[,j,keyby=.(colA,colB)]` will use the index, but not `DT[,j,keyby=.(colB,colA)]`. The option `options(datatable.use.index=FALSE)` will turn this feature off. Please always use `keyby=` unless you wish to retain the order of groups by first-appearance order (in which case use `by=`). Also, both `keyby=` and `by=` already used the key where possible but are now faster when using just the first column of the key. As usual, setting `verbose=TRUE` either per-query or globally using `options(datatable.verbose=TRUE)` will report what's being done internally.
+7. If an appropriate index exists, `keyby=` will now use it. For example, given `setindex(DT,colA,colB)`, both `DT[,j,keyby=colA]` (a leading subset of the index columns) and `DT[,j,keyby=.(colA,colB)]` will use the index, but not `DT[,j,keyby=.(colB,colA)]`. The option `options(datatable.use.index=FALSE)` will turn this feature off. Please always use `keyby=` unless you wish to retain the order of groups by first-appearance order (in which case use `by=`). Also, both `keyby=` and `by=` already used the key where possible but are now faster when using just the first column of the key. As usual, setting `verbose=TRUE` either per-query or globally using `options(datatable.verbose=TRUE)` will report what's being done internally.
 
 #### BUG FIXES
 
@@ -65,41 +101,40 @@
 #### NOTES
 
 1. The type coercion warning message has been improved, [#2989](https://github.com/Rdatatable/data.table/pull/2989). Thanks to @sarahbeeysian on [Twitter](https://twitter.com/sarahbeeysian/status/1021359529789775872) for highlighting. For example, given the follow statements:
-```
-  DT = data.table(id=1:3)
-  DT[2, id:="foo"]
-```
-the warning message has changed from :
-```
-Coerced character RHS to integer to match the column's type. Either change the target column ['id'] to
-character first (by creating a new character vector length 3 (nrows of entire table) and assign that;
-i.e. 'replace' column), or coerce RHS to integer (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your
-intent clear and for speed. Or, set the column type correctly up front when you create the table and
-stick to it, please.
-```
-to :
-```
-Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If the
-target column's type integer is correct, it's best for efficiency to avoid the coercion and create the
-RHS as type integer. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA)
-vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.integer() to avoid this
-warning, but that will still perform the coercion. If the target column's type is not correct, it's
-best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in
-fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type)
-over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has nrow(DT) elements then
-the assignment is called a column plonk and is the way to change a column's type. Column types can be
-observed with sapply(DT,typeof).
-```
-
-Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
-```
-DT = data.table(v=1:3)
-DT[2, v:=3.14]
-Warning message:
-  Coerced double RHS to integer to match the type of the target column (column 1 named 'v'). One or
-  more RHS values contain fractions which have been lost; e.g. item 1 with value 3.140000 has been
-  truncated to 3.
-```
+    ```R
+    DT = data.table(id=1:3)
+    DT[2, id:="foo"]
+    ```
+    the warning message has changed from :<br>
+    ```
+    Coerced character RHS to integer to match the column's type. Either change the target column ['id']
+    to character first (by creating a new character vector length 3 (nrows of entire table) and assign
+    that; i.e. 'replace' column), or coerce RHS to integer (e.g. 1L, NA_[real|integer]_, as.*, etc) to
+    make your intent clear and for speed. Or, set the column type correctly up front when you create the
+    table and stick to it, please.
+    ```
+    to :<br>
+    ```
+    Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If the
+    target column's type integer is correct, it's best for efficiency to avoid the coercion and create
+    the RHS as type integer. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and
+    typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_). Wrapping the RHS with as.integer() will avoid
+    this warning but still perform the coercion. If the target column's type is not correct, it is best
+    to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in
+    fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type)
+    over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has nrow(DT) elements then
+    the assignment is called a column plonk and is the way to change a column's type. Column types can be
+    observed with sapply(DT,typeof).
+    ```
+    Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
+    ```R
+    DT = data.table(v=1:3)
+    DT[2, v:=3.14]
+    Warning message:
+      Coerced double RHS to integer to match the type of the target column (column 1 named 'v'). One or
+      more RHS values contain fractions which have been lost; e.g. item 1 with value 3.140000 has been
+      truncated to 3.
+    ```
 
 2. `split.data.table` method is now properly exported, [#2920](https://github.com/Rdatatable/data.table/issues/2920). But we don't recommend it because `split` copies all the pieces into new memory.
 
@@ -110,7 +145,7 @@ Warning message:
 5. Error added for incorrect usage of `%between%`, with some helpful diagnostic hints, [#3014](https://github.com/Rdatatable/data.table/issues/3014). Thanks @peterlittlejohn for offering his user experience and providing the impetus.
 
 
-### Changes in v1.11.4  (on CRAN 27 May 2018)
+### Changes in v1.11.4  (27 May 2018)
 
 1. Empty RHS of `:=` is no longer an error when the `i` clause returns no rows to assign to anyway, [#2829](https://github.com/Rdatatable/data.table/issues/2829). Thanks to @cguill95 for reporting and to @MarkusBonsch for fixing.
 
@@ -121,7 +156,7 @@ Warning message:
 4. Around 1 billion very small groups (of size 1 or 2 rows) could result in `"Failed to realloc working memory"` even when plenty of memory is available, [#2777](https://github.com/Rdatatable/data.table/issues/2777). Thanks once again to @jsams for the detailed report as a follow up to bug fix 40 in v1.11.0.
 
 
-### Changes in v1.11.2  (on CRAN 8 May 2018)
+### Changes in v1.11.2  (08 May 2018)
 
 1. `test.data.table()` created/overwrote variable `x` in `.GlobalEnv`, [#2828](https://github.com/Rdatatable/data.table/issues/2828); i.e. a modification of user's workspace which is not allowed. Thanks to @etienne-s for reporting.
 
@@ -132,7 +167,7 @@ Warning message:
 4. Fixed some rare memory faults in `fread()` and `rbindlist()` found with `gctorture2()` and [`rchk`](https://github.com/kalibera/rchk), [#2841](https://github.com/Rdatatable/data.table/issues/2841).
 
 
-### Changes in v1.11.0  (on CRAN 1 May 2018)
+### Changes in v1.11.0  (01 May 2018)
 
 #### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES
 
@@ -380,34 +415,34 @@ Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdat
 
 9. New vignette added: _Importing data.table_ - focused on using data.table as a dependency in R packages. Answers most commonly asked questions and promote good practices.
 
-10. As warned in v1.9.8 release notes below in this file (on CRAN 25 Nov 2016) it has been 1 year since then and so use of `options(datatable.old.unique.by.key=TRUE)` to restore the old default is now deprecated with warning. The new warning states that this option still works and repeats the request to pass `by=key(DT)` explicitly to `unique()`, `duplicated()`, `uniqueN()` and `anyDuplicated()` and to stop using this option. In another year, this warning will become error. Another year after that the option will be removed.
+10. As warned in v1.9.8 release notes below in this file (25 Nov 2016) it has been 1 year since then and so use of `options(datatable.old.unique.by.key=TRUE)` to restore the old default is now deprecated with warning. The new warning states that this option still works and repeats the request to pass `by=key(DT)` explicitly to `unique()`, `duplicated()`, `uniqueN()` and `anyDuplicated()` and to stop using this option. In another year, this warning will become error. Another year after that the option will be removed.
 
-11. As `set2key()` and `key2()` have been warning since v1.9.8 on CRAN Nov 2016, their warnings have now been upgraded to errors. Note that when they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental' in NEWS item 4. They will be removed in one year.
-```
-Was warning: set2key() will be deprecated in the next relase. Please use setindex() instead.
-Now error: set2key() is now deprecated. Please use setindex() instead.
-```
+11. As `set2key()` and `key2()` have been warning since v1.9.8 (Nov 2016), their warnings have now been upgraded to errors. Note that when they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental' in NEWS item 4. They will be removed in one year.
+    ```
+    Was warning: set2key() will be deprecated in the next relase. Please use setindex() instead.
+    Now error: set2key() is now deprecated. Please use setindex() instead.
+    ```
 
 12. The option `datatable.showProgress` is no longer set to a default value when the package is loaded. Instead, the `default=` argument of `getOption` is used by both `fwrite` and `fread`. The default is the result of `interactive()` at the time of the call. Using `getOption` in this way is intended to be more helpful to users looking at `args(fread)` and `?fread`.
 
 13. `print.data.table()` invisibly returns its first argument instead of `NULL`. This behavior is compatible with the standard `print.data.frame()` and tibble's `print.tbl_df()`. Thanks to @heavywatal for [PR#2807](https://github.com/Rdatatable/data.table/pull/2807)
 
 
-### Changes in v1.10.4-3  (on CRAN 20 Oct 2017)
+### Changes in v1.10.4-3  (20 Oct 2017)
 
 1. Fixed crash/hang on MacOS when `parallel::mclapply` is used and data.table is merely loaded, [#2418](https://github.com/Rdatatable/data.table/issues/2418). Oddly, all tests including test 1705 (which tests `mclapply` with data.table) passed fine on CRAN. It appears to be some versions of MacOS or some versions of libraries on MacOS, perhaps. Many thanks to Martin Morgan for reporting and confirming this fix works. Thanks also to @asenabouth, Joe Thorley and Danton Noriega for testing, debugging and confirming that automatic parallelism inside data.table (such as `fwrite`) works well even on these MacOS installations. See also news items below for 1.10.4-1 and 1.10.4-2.
 
 
-### Changes in v1.10.4-2  (on CRAN 12 Oct 2017)
+### Changes in v1.10.4-2  (12 Oct 2017)
 
 1. OpenMP on MacOS is now supported by CRAN and included in CRAN's package binaries for Mac. But installing v1.10.4-1 from source on MacOS failed when OpenMP was not enabled at compile time, [#2409](https://github.com/Rdatatable/data.table/issues/2409). Thanks to Liz Macfie and @fupangpangpang for reporting. The startup message when OpenMP is not enabled has been updated.
 
 2. Two rare potential memory faults fixed, thanks to CRAN's automated use of latest compiler tools; e.g. clang-5 and gcc-7
 
 
-### Changes in v1.10.4-1  (on CRAN 09 Oct 2017)
+### Changes in v1.10.4-1  (09 Oct 2017)
 
-1. The `nanotime` v0.2.0 update on CRAN 22 June 2017 changed from `integer64` to `S4` and broke `fwrite` of `nanotime` columns. Fixed to work with `nanotime` both before and after v0.2.0.
+1. The `nanotime` v0.2.0 update (June 2017) changed from `integer64` to `S4` and broke `fwrite` of `nanotime` columns. Fixed to work with `nanotime` both before and after v0.2.0.
 
 2. Pass R-devel changes related to `deparse(,backtick=)` and `factor()`.
 
@@ -418,14 +453,14 @@ Now error: set2key() is now deprecated. Please use setindex() instead.
 5. When `fread()` and `print()` see `integer64` columns are present but package `bit64` is not installed, the warning is now displayed as intended. Thanks to a question by Santosh on r-help and forwarded by Bill Dunlap.
 
 
-### Changes in v1.10.4  (on CRAN 01 Feb 2017)
+### Changes in v1.10.4  (01 Feb 2017)
 
 #### BUG FIXES
 
 1. The new specialized `nanotime` writer in `fwrite()` type punned using `*(long long *)&REAL(column)[i]` which, strictly, is undefined behavour under C standards. It passed a plethora of tests on linux (gcc 5.4 and clang 3.8), win-builder and 6 out 10 CRAN flavours using gcc. But failed (wrong data written) with the newest version of clang (3.9.1) as used by CRAN on the failing flavors, and solaris-sparc. Replaced with the union method and added a grep to CRAN_Release.cmd.
 
 
-### Changes in v1.10.2  (on CRAN 31 Jan 2017)
+### Changes in v1.10.2  (31 Jan 2017)
 
 #### NEW FEATURES
 
@@ -474,7 +509,7 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
 3. As before, and as we can see is in common use in CRAN and Bioconductor packages using data.table, `DT[,myCols,with=FALSE]` continues to lookup `myCols` in calling scope and take its value as column names or numbers.  You can move to the new experimental convenience feature `DT[, ..myCols]` if you wish at leisure.
 
 
-### Changes in v1.10.0  (on CRAN 3 Dec 2016)
+### Changes in v1.10.0  (03 Dec 2016)
 
 #### BUG FIXES
 
@@ -506,5 +541,3 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
 
 
 ### Old news from v1.9.8 (Nov 2016) back to v1.2 (Aug 2008) has been moved to [NEWS.0.md](https://github.com/Rdatatable/data.table/blob/master/NEWS.0.md)
-
-
