@@ -2531,11 +2531,12 @@ setnames <- function(x,old,new,skip_absent=FALSE) {
       if (!is.character(old)) stop("'old' is type ",typeof(old)," but should be integer, double or character")
       if (any(duplicated(old))) stop("Some duplicates exist in 'old': ", paste(old[duplicated(old)],collapse=","))
       i = chmatch(old,names(x))
-      if (anyNA(i)){ if (isTRUE(skip_absent)){
-        w <- old %chin% names(x)
-        old = old[w]
-        new = new[w]
-        i = i[w]
+      if (anyNA(i)){
+        if (isTRUE(skip_absent)){
+          w <- old %chin% names(x)
+          old = old[w]
+          new = new[w]
+          i = i[w]
       } else {
         stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=",")) }
       }
