@@ -24,6 +24,7 @@ vignettes/*.pdf
 # object and shared objects
 *.o
 *.so
+*.dll
 
 *~
 .DS_Store
