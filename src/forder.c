@@ -129,7 +129,7 @@ static void flipflop() {
    3. Separated setRange so forder can redirect to iradix
 */
 
-static void range_i32(int32_t *x, int n, int64_t *out_min, int64_t *out_max, bool *out_anyna)  // out_* in common type
+static void range_i32(int32_t *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)  // out_* in common type
 {
   int32_t min = NA_INTEGER;
   int32_t max = NA_INTEGER;
@@ -148,15 +148,16 @@ static void range_i32(int32_t *x, int n, int64_t *out_min, int64_t *out_max, boo
   }
   *out_anyna = anyna;
   if(min==NA_INTEGER) {
-    *out_min = INT64_MIN;
-    *out_max = INT64_MIN;
+    *out_min = 0; //INT64_MIN;
+    *out_max = 0; //INT64_MIN;
   } else {
-    *out_min = min;
-    *out_max = max;
+    // map [-INT_MAX, INT_MAX] => [0, 2*INT_MAX]
+    *out_min = (uint32_t)min + (uint32_t)INT32_MAX;
+    *out_max = (uint32_t)max + (uint32_t)INT32_MAX;
   }
 }
 
-static void range_i64(int64_t *x, int n, int64_t *out_min, int64_t *out_max, bool *out_anyna)
+static void range_i64(int64_t *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
 {
   int64_t min = INT64_MIN;
   int64_t max = INT64_MIN;
@@ -174,10 +175,41 @@ static void range_i64(int64_t *x, int n, int64_t *out_min, int64_t *out_max, boo
     }
   }
   *out_anyna = anyna;
-  *out_min = min;
-  *out_max = max;
+  if(min==INT64_MIN) {
+    *out_min = 0;
+    *out_max = 0;
+  } else {
+    // map [-INT64_MAX, INT64_MAX] => [0, 2*INT64_MAX]
+    *out_min = (uint64_t)min + (uint64_t)INT64_MAX;
+    *out_max = (uint64_t)max + (uint64_t)INT64_MAX;
+  }
 }
 
+#define MIN_CHARSXP_SIZE (sizeof(VECTOR_SEXPREC)+8)
+static const uint64_t PTR_MASK = 0xffffffffffff;    // 48-bit virtual address space (1<<48 - 1); works for 32bit too.
+
+static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
+{
+  uint64_t min = 0;
+  uint64_t max = 0;
+
+  bool anyna=false;
+  int i=0;
+  while(i<n && x[i]==NA_STRING) i++;
+  if (i>0) anyna=true;
+  if (i<n) max = min = (uint64_t)x[i++] & PTR_MASK;
+  for(; i<n; i++) {
+    if (x[i]==NA_STRING) { anyna=true; continue; }  // it's possible that NA_STRING is not the smallest pointer value (TODO test, but even if true now it might change in future)
+    uint64_t tmp = (uint64_t)x[i] & PTR_MASK;
+    if (tmp>max) max=tmp;
+    else if (tmp<min) min=tmp;
+  }
+  *out_anyna = anyna;
+  *out_min = min/MIN_CHARSXP_SIZE;
+  *out_max = max/MIN_CHARSXP_SIZE;
+}
+
+/*
 static void range_str(SEXP *x, int n, int64_t *out_min, int64_t *out_max, bool *out_anyna)
 // just for 1st column as wouldn't retain the first-appearance order if column 2+.  Yes it will!, since all numbers will retain first appearance order.
 // for by= not keyby=
@@ -215,7 +247,7 @@ static void range_str(SEXP *x, int n, int64_t *out_min, int64_t *out_max, bool *
     *out_max = ngroup;
   }
 }
-
+*/
 
 static void count_group(const uint8_t *x, const uint16_t n, bool *out_grouped, uint16_t *out_order, uint16_t *out_ngrp, int *out_grpsize)
 // orders x by reference (that's ok destructively as we don't use this radix again) and writes the order into o; the o ordering is used several times by the caller.
@@ -1318,6 +1350,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   TEND(1)  // should be negligible time to malloc even large blocks, but time it anyway to be sure
 */
 
+  // here we scan each column,  so now is the time to sort unique strings,  if we are going to sort the result.
+
   int ncol=length(by);
   uint8_t *key[ncol*8];  // needs to be before loop because part II relies on part I, column-by-column. ncol*8 is maximum
   for (int i=0; i<ncol*8; i++) key[i]=NULL;
@@ -1325,7 +1359,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
   for (int col=0; col<ncol; col++) {
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
-    int64_t min, max;     // min and max of non-NA values
+    uint64_t min, max;     // min and max of non-NA values
     bool anyna;
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO trivial LGL count
@@ -1340,25 +1374,61 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       }
       break;
     case STRSXP :
-      if (need2utf8(x, n)) {
+      /*if (need2utf8(x, n)) {
+        // TODO This doesn't go on the uniques!!!  Make option to turn this off.  Or is there a way to bunch them together. Can two different pointers be the same string?!  If so, could change the index value in the key.!!
         SEXP tt = PROTECT(allocVector(STRSXP, n)); n_protect++;
         for (int i=0; i<n; i++) SET_STRING_ELT(tt, i, ENC2UTF8(STRING_ELT(x, i)));
         x = tt;
-      }
-      range_str(STRING_PTR(x), n, &min, &max, &anyna);
+      }*/
+      range_str(STRING_PTR(x), n, &min, &max, &anyna);  // after dividing by MIN_CHARSXP_SIZE
       break;
     default:
        Error("Column %d of 'by' (%d) is type '%s', not yet supported", col, INTEGER(by)[col-1], type2char(TYPEOF(x)));
     }
 
-    if (min==INT64_MIN/*all na*/ || (min==max && !anyna)) continue;  // all same value; skip column as nothing to do
-    uint64_t range = (max>=0 && min<0) ? (uint64_t)max+(uint64_t)(-min) : max-min;
+    if (min==0/*all na*/ || (min==max && !anyna)) continue;  // all same value; skip column as nothing to do
+    uint64_t range = max-min;   //(max>=0 && min<0) ? (uint64_t)max+(uint64_t)(-min) : max-min;
     range++; // always provide for the NA spot (0 offset), even if NAs aren't present (for coding brevity and robustness).
-             // TODO: could compress away NA
+             // TODO: maybe not needed if no NA in this column
              // TODO: the NA value could be placed as max if na.last=TRUE.  Deal with na.last up front in the key and then forget (TODO)
     // range 5 means 0(NA),1,2,3,4,5  (6 values)
+
+    // if we batch up the mins and maxs, then many of the batches won't contain these odd outliers. Then we can go back over the "bad batch" and remove the outliers.  Ah. but these outliers will be present in many of the batches.
+
     int maxBit=0;
     while (range) { maxBit++; range>>=1; }
+
+    if (TYPEOF(x)==STRSXP && maxBit>14) {
+      Rprintf("maxBit before gap compression=%d\n", maxBit);
+      uint64_t counts[16384] = {0};
+      uint64_t bin_min[16384] = {0};
+      uint64_t bin_max[16384] = {0};
+      int shift = maxBit-14;
+      SEXP *xd = STRING_PTR(x);
+      for(int i=0; i<n; i++) {
+        if (xd[i]==NA_STRING) continue;
+        uint64_t this = ((uint64_t)xd[i] & PTR_MASK)/MIN_CHARSXP_SIZE;
+        int bin = (this-min)>>shift;
+        if (bin_min[bin]==0) { bin_min[bin] = bin_max[bin] = this; }
+        else if (this<bin_min[bin]) bin_min[bin] = this;
+        else if (this>bin_max[bin]) bin_max[bin] = this;
+        counts[bin]++;
+      }
+      uint64_t newRange = 0;
+      for (int i=0; i<16384; i++) {
+        if (counts[i]) {
+          Rprintf("%03d %llu %llu %llu  range=%llu\n", i, counts[i], bin_min[i], bin_max[i], bin_max[i]-bin_min[i]+1);
+          newRange += bin_max[i]-bin_min[i]+1;
+        }
+      }
+      int newMaxBit=0;
+      while (newRange) { newMaxBit++; newRange>>=1; }
+      Rprintf("maxBit after gap compression=%d\n", newMaxBit);
+      if (newMaxBit < maxBit-4) {
+
+      }
+    }
+
     int nbyte = 1+(maxBit-1)/8; // the number of bytes spanned by the value
     if (spare==0) {
       spare = (8-maxBit%8)%8;   // left align to byte boundary
@@ -1369,6 +1439,14 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         spare+=8;
       }
     }
+    // TODO: count NAs rather than just bool.  Then can further optimize loops later.
+    // TODO: may uint64_t min and max, should be always. rather than difference between int64_t and uint64_t (for SEXP *)
+    /*
+    Rprintf("sizeof(SEXP)=%d, sizeof(CHARSXP)==%d, sizeof(SEXPREC)=%d, sizeof(VECTOR_SEXPREC)=%d\n",
+             sizeof(SEXP),    sizeof(CHARSXP),     sizeof(SEXPREC),    sizeof(VECTOR_SEXPREC));
+*/
+    // 8 sxpinfo + 3 * 8 (attr, next, prev) + length 8 + truelength 8 = 48
+    Rprintf("Column %d of by= has min=%llu, max=%llu, anyna=%d, range=%llu\n", col, min, max, anyna, max-min);
     min--;  // so that x-min results in 1 for the minimum; 0 is for NA
     for (int b=0; b<nbyte; b++) {
       if (key[nradix+b]==NULL)
@@ -1376,10 +1454,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     }
     // several columns could squash into 1 byte, too!  3 logical colums, for example.  TODO: add test.
     #define WRITE_KEY                                   \
-    this-=min;                                          \
+    this -= min;                                        \
     this <<= spare;                                     \
     for (int b=nbyte-1; b>0; b--) {                     \
-      key[nradix+b][i] = (uint8_t)(this & 0xff);    \
+      key[nradix+b][i] = (uint8_t)(this & 0xff);        \
       this >>= 8;                                       \
     }                                                   \
     key[nradix][i] |= (uint8_t)(this & 0xff);
@@ -1400,8 +1478,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     case INTSXP : case LGLSXP : {  // TODO trivial LGL count
       int *xd = INTEGER(x);
       for (int i=0; i<n; i++) {
-        int this = xd[i];
-        if (this==NA_INTEGER) continue;   // TODO:  separate branchless when !anyna
+        if (xd[i]==NA_INTEGER) continue;   // TODO:  separate branchless when !anyna
+        uint64_t this = (uint32_t)xd[i]+(uint32_t)INT32_MAX;
         WRITE_KEY
       }}
       break;
@@ -1409,8 +1487,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       if (inherits(x, "integer64")) {
         int64_t *xd = (int64_t *)REAL(x);
         for (int i=0; i<n; i++) {
-          int64_t this = xd[i];
-          if (this==INT64_MIN) continue;
+          if (xd[i]==INT64_MIN) continue;
+          uint64_t this = (uint64_t)xd[i] + (uint64_t)INT64_MAX;
           WRITE_KEY
         }
       } else {
@@ -1428,11 +1506,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       SEXP *xd = STRING_PTR(x);
       for (int i=0; i<n; i++) {
         if (xd[i]==NA_STRING) continue;
-        int this = -TRUELENGTH(xd[i]);
+        uint64_t this = ((uint64_t)xd[i] & PTR_MASK)/MIN_CHARSXP_SIZE;
+        int bin = (this-min)>>shift;
+        this = this - bin_min[bin];  // has already had the bin offset included
         WRITE_KEY
       }}
-      for(int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i],0);
-      free(ustr); ustr=NULL; ustr_n=0; ustr_alloc=0;   // ustr could be left allocated and reused, but free now in case large and we're tight on ram
+      // only if sorting ... for(int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i],0);
+      // free(ustr); ustr=NULL; ustr_n=0; ustr_alloc=0;   // ustr could be left allocated and reused, but free now in case large and we're tight on ram
       break;
     default:
        Error("Internal error: column not supported not caught earlier");
@@ -1651,6 +1731,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       }
     }
   }
+  //omp_set_nested(0);
   free(TMP);  // TODO: place in cleanup()
   //TMP_size=0;
   TMP = NULL;
@@ -1791,7 +1872,30 @@ SEXP isReallyReal(SEXP x) {
   return(ans);
 }
 
+SEXP binary(SEXP inx)
+// base::intToBits is close, but why does that print the result as "00 00 00 00" (raw) rather than ("0000") bits? Seems odd.
+{
+  SEXP *x = STRING_PTR(inx);
+  int n = LENGTH(inx);
+  //for (int i=0; i<5; i++) Rprintf("%p %lx %llu\n", x[i], (long)x[i], (uint64_t)x[i] & PTR_MASK);
 
+  uint64_t min = (uint64_t)x[0] & PTR_MASK;
+  for (int i=1; i<n; i++) {
+    uint64_t this = (uint64_t)x[i] & PTR_MASK;
+    if (this<min) min=this;
+  }
+  SEXP ans = PROTECT(allocVector(REALSXP, n));
+  double *ansd = REAL(ans);
+  for (int i=0; i<n; i++) {
+    uint64_t this = (uint64_t)x[i] & PTR_MASK;
+    ansd[i] = (double)((this - min)/MIN_CHARSXP_SIZE);  // 56 is sizeof(VECTOR_SEXPREC) [48] + 8 (minimum 8 byte Vcell for string)
+  }
+  UNPROTECT(1);
+  return ans;
+}
+
+
+/* old binary ...
 SEXP binary(SEXP x)
 // base::intToBits is close, but why does that print the result as "00 00 00 00" (raw) rather than ("0000") bits? Seems odd.
 {
@@ -1813,6 +1917,7 @@ SEXP binary(SEXP x)
   UNPROTECT(1);
   return ans;
 }
+*/
 
 
 /*
