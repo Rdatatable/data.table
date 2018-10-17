@@ -1,4 +1,3 @@
-
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
 ### Changes in v1.11.9 (to be v1.12.0)
@@ -7,7 +6,9 @@
 
 1. `fread()` can now read a remote compressed file in one step; `fread("https://domain.org/file.csv.bz2")`. The `file=` argument now supports `.gz` and `.bz2` too; i.e. `fread(file="file.csv.gz")` works now where only `fread("file.csv.gz")` worked in 1.11.8.
 
-2. `nomatch=NULL` now does the same as `nomatch=0L`; i.e. discards missing values silently (inner join). The default is still `nomatch=NA` (outer join) for statistical safety so that missing values are retained by default. You have to explicitly write `nomatch=NULL` to indicate to the reader of your code that you intend to discard missing values silently. After several years have elapsed, we will start to deprecate `0L`; please start using `NULL`. TO DO ... `nomatch=.(0)` fills with `0` instead of `NA`, [#857](https://github.com/Rdatatable/data.table/issues/857) and `nomatch="error"`.
+3. `nomatch=NULL` now does the same as `nomatch=0L`; i.e. discards missing values silently (inner join). The default is still `nomatch=NA` (outer join) for statistical safety so that missing values are retained by default. You have to explicitly write `nomatch=NULL` to indicate to the reader of your code that you intend to discard missing values silently. After several years have elapsed, we will start to deprecate `0L`; please start using `NULL`. TO DO ... `nomatch=.(0)` fills with `0` instead of `NA`, [#857](https://github.com/Rdatatable/data.table/issues/857) and `nomatch="error"`.
+
+4. In those cases where you need to rename columns in a `DT` but the columns aren't always known, `setnames()` now contains an additional argument (`skip_absent`) to skip them if they aren't present.  For example, if you know that columns `a`, `b` and `d` are present in `DT`, but you don't know if column `c` is or isn't, then you can include `c` in `old` and if it isn't found, `setnames()` will simply skip to the next item of `old` rather than exit the function.  **Note: The default behaviour of `setnames()` has not been altered as `skip_absent` is set to `FALSE` by default.** [#3030](https://github.com/Rdatatable/data.table/issues/3030)
 
 3. In those cases where you need to rename columns in a `DT` but the columns aren't always known, `setnames()` now contains an additional argument (`skip_absent`) to skip them if they aren't present.  For example, if you know that columns `a`, `b` and `d` are present in `DT`, but you don't know if column `c` is or isn't, then you can include `c` in `old` and if it isn't found, `setnames()` will simply skip to the next item of `old` rather than exit the function.  **Note: The default behaviour of `setnames()` has not been altered as `skip_absent` is set to `FALSE` by default.** [#3030](https://github.com/Rdatatable/data.table/issues/3030)
 
@@ -542,5 +543,3 @@ When `j` is a symbol (as in the quanteda and xgboost examples above) it will con
 
 
 ### Old news from v1.9.8 (Nov 2016) back to v1.2 (Aug 2008) has been moved to [NEWS.0.md](https://github.com/Rdatatable/data.table/blob/master/NEWS.0.md)
-
-

@@ -12328,6 +12328,11 @@ test(1951.4, d1[d2, nomatch=3], error="nomatch= must be either NA or NULL .or 0 
 test(1952.1, d1[a==2, which=3], error="which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
 test(1952.2, d1[a==2, 2, which=TRUE], error="which==TRUE.*but j is also supplied")
 
+# skip values that are not present in old, #3030
+DT <- data.table(a = 1, b = 2, d = 3)
+old <- c("a", "b", "c", "d")
+new <- c("A", "B", "C", "D") 
+test(1953, setnames(DT, old, new, skip_absent = TRUE), DT <- data.table(A = 1, B = 2, D = 3))
 
 ###################################
 #  Add new tests above this line  #

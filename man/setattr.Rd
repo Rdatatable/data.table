@@ -7,7 +7,7 @@
 }
 \usage{
 setattr(x,name,value)
-setnames(x,old,new)
+setnames(x,old,new,skip_absent=FALSE)
 }
 \arguments{
   \item{x}{ \code{setnames} accepts \code{data.frame} and \code{data.table}. \code{setattr} accepts any input; e.g, list, columns of a \code{data.frame} or \code{data.table}. }
@@ -15,7 +15,9 @@ setnames(x,old,new)
   \item{value}{ The value to assign to the attribute or \code{NULL} removes the attribute, if present. }
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, the new column names, which must be the same length as the number of columns. See examples. }
   \item{new}{ Optional. New column names, must be the same length as columns provided to \code{old} argument. }
+  \item{skip_absent}{ Skips cases where there is no match in \code{old}.  Set to \code{FALSE} by default. Switch flag to \code{TRUE} to activate. }
 }
+
 \details{
 
   \code{setnames} operates on \code{data.table} and \code{data.frame} not other types like \code{list} and \code{vector}. It can be used to change names \emph{by name} with built-in checks and warnings (e.g., if any old names are missing or appear more than once).
@@ -33,6 +35,13 @@ setnames(x,old,new)
 \seealso{ \code{\link{data.table}}, \code{\link{setkey}}, \code{\link{setorder}}, \code{\link{setcolorder}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{copy}}
 }
 \examples{
+
+DT <- data.table(a = 1, b = 2, d = 3)
+
+old <- c("a", "b", "c", "d")
+new <- c("A", "B", "C", "D")
+
+setnames(DT, old, new, skip_absent = TRUE) # check for column names in old and skip if item is absent
 
 DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies and syntax
 if (capabilities()["profmem"])     # usually memory profiling is available but just in case
@@ -70,4 +79,3 @@ attr(DT,"myFlag2")  # NULL
 
 }
 \keyword{ data }
-
