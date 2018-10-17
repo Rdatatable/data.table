@@ -18,7 +18,7 @@
 
 #### NEW FEATURES
 
-1. In those cases where you need to rename columns in a `DT` but the columns aren't always known, `setnames()` now contains an additional argument (`skip_absent`) to skip them.  The default behaviour of `setnames()` has **not** been altered as `skip_absent` is set to `FALSE` by default. [#3030](https://github.com/Rdatatable/data.table/issues/3030)
+1. In those cases where you need to rename columns in a `DT` but the columns aren't always known, `setnames()` now contains an additional argument (`skip_absent`) to skip them if they aren't present.  For example, if you know that columns `a`, `b` and `d` are present in `DT`, but you don't know if column `c` is or isn't, then you can include `c` in `old` and if it isn't found, `setnames()` will simply skip to the next item of `old` rather than exit the function.  **Note: The default behaviour of `setnames()` has not been altered as `skip_absent` is set to `FALSE` by default.** [#3030](https://github.com/Rdatatable/data.table/issues/3030)
 
 2. For convenience when some of the files in `fnams` are empty in `rbindlist(lapply(fnams,fread))`, `fread` now reads empty input as a null-data.table with warning rather than error, [#2898](https://github.com/Rdatatable/data.table/issues/2898). For consistency, `fwrite(data.table(NULL))` now creates an empty file and warns instead of error, too.
 
