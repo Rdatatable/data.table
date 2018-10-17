@@ -35,6 +35,13 @@ setattr(x,name,value)
 }
 \examples{
 
+DT <- data.table(a = 1, b = 2, d = 3)
+
+old <- c("a", "b", "c", "d")
+new <- c("A", "B", "C", "D")
+
+setnames(DT, old, new, skip_absent = TRUE) # check for column names in old and skip if item is absent
+
 DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies and syntax
 if (capabilities()["profmem"])     # usually memory profiling is available but just in case
   tracemem(DF)
