@@ -2532,7 +2532,8 @@ setnames <- function(x,old,new,skip_absent=FALSE) {
       if (any(duplicated(old))) stop("Some duplicates exist in 'old': ", paste(old[duplicated(old)],collapse=","))
       i = chmatch(old,names(x))
       if (anyNA(i)){ if (skip_absent == TRUE){
-        w <- old %chin% names(x)old = old[w]
+        w <- old %chin% names(x)
+        old = old[w]
         new = new[w]
         i = i[w]
       } else {
