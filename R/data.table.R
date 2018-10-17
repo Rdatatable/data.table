@@ -2237,11 +2237,13 @@ subset.data.table <- function (x, subset, select, ...)
 # Also called "complete.cases" in base. Unfortunately it's not a S3 generic.
 # Also handles bit64::integer64.
 is_na <- function(x, by = seq_along(x)) {
-  .Call(Cdt_na, x, col_as_int(by))
+  if (!is.integer(by)) by <- col_as_int(by)
+  .Call(Cdt_na, x, by)
 }
 
 any_na <- function(x, by = seq_along(x)) {
-  .Call(CanyNA, x, col_as_int(by))
+  if (!is.integer(by)) by <- col_as_int(by)
+  .Call(CanyNA, x, by)
 }
 
 na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE, ...) {
@@ -2249,15 +2251,8 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
   if (!cedta()) return(NextMethod())
   if ( !missing(invert) && is.na(as.logical(invert)) )
     stop("Argument 'invert' must be logical TRUE/FALSE")
-  cols <- col_as_int(cols)
-  if (is.character(cols)) {
-    old = cols
-    cols = chmatch(cols, names(object), nomatch=0L)
-    if (any(cols==0L))
-      stop("Columns ", paste(old[cols==0L], collapse=","), " doesn't exist in the input data.table")
-  }
-  cols = as.integer(cols)
-  ix = .Call(Cdt_na, object, cols)
+  if (!is.integer(cols)) cols <- col_as_int(cols)
+  ix = is_na(object, cols)
   # forgot about invert with no NA case, #2660
   if (invert) {
     if (all(ix))
