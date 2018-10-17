@@ -9,8 +9,10 @@
 }
 
 \usage{
-\method{is_na}(x, by = seq_along(x))
-\method{any_na}(x, by = seq_along(x))
+is_na(x, by = seq_along(x))
+
+any_na(x, by = seq_along(x))
+
 \method{na.omit}{data.table}(object, cols=seq_along(object), invert=FALSE, \dots)
 }
 \arguments{
