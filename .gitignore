@@ -30,6 +30,3 @@ vignettes/*.pdf
 .DS_Store
 .idea
 *.sw[op]
-inst/tests/winallquoted.csv.bz2
-inst/tests/issue_2157_sampling_reached_eof_early.txt.bz2
-testing.R
