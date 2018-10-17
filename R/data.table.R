@@ -2237,12 +2237,12 @@ subset.data.table <- function (x, subset, select, ...)
 # Also called "complete.cases" in base. Unfortunately it's not a S3 generic.
 # Also handles bit64::integer64.
 is_na <- function(x, by = seq_along(x)) {
-  if (!is.integer(by)) by <- col_as_int(by)
+  if (!is.integer(by)) by <- col_as_int(x, by)
   .Call(Cdt_na, x, by)
 }
 
 any_na <- function(x, by = seq_along(x)) {
-  if (!is.integer(by)) by <- col_as_int(by)
+  if (!is.integer(by)) by <- col_as_int(x, by)
   .Call(CanyNA, x, by)
 }
 

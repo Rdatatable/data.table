@@ -97,14 +97,14 @@ col_as_int <- function(tbl, cols) {
     }
   } else if (is.numeric(cols)) {
     cols <- as.integer(cols)
-    if (any(cols < 1L | cols > ncol(tbl))) {
+    if (any(cols < 1L | cols > length(tbl))) {
       stop("Columns specified as integer have to be in the range 1:",
-           ncol(tbl))
+           length(tbl))
     }
   } else if (is.logical(cols)) {
-    if (length(cols) != ncol(tbl)) {
+    if (length(cols) != length(tbl)) {
       stop("If columns are specified as logical vector, the input has to be ",
-           "of length ", ncol(tbl))
+           "of length ", length(tbl))
     }
     cols <- which(cols)
   } else {
