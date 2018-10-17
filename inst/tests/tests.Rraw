@@ -5311,34 +5311,52 @@ for (i in seq_along(dt)) {
 ## for bit64::integer64, but the real need is for merging factors correctly in
 ## joins, and we need a fast check for NAs; can't rely on 3.1+ for anyNA.
 dt = list(AA=sample(c(NA,-2:2), 50, TRUE),
-                BB=sample(c(NA,-2,-1,0,NaN,1,2,Inf,-Inf), 50, TRUE),
-                CC=sample(c(NA,letters[1:5]), 50, TRUE),
-                DD=sample(c(NA,-2:2), 50, TRUE),
-                EE=sample(as.logical(c(NA,-2:2)), 50, TRUE))
+          BB=sample(c(NA,-2,-1,0,NaN,1,2,Inf,-Inf), 50, TRUE),
+          CC=sample(c(NA,letters[1:5]), 50, TRUE),
+          DD=sample(c(NA,-2:2), 50, TRUE),
+          EE=sample(as.logical(c(NA,-2:2)), 50, TRUE))
 if (test_bit64) dt[["DD"]] = as.integer64(dt[["DD"]])
 test_no = 1370.0
 ans = as.list(na.omit(as.data.table(dt)))
 for (i in seq_along(dt)) {
   combn(names(dt), i, function(cols) {
-    test_no = signif(test_no+.01, 7)
+    test_no = signif(test_no+.001, 7)
     ans1 = is_na(dt, cols)
     ans2 = rowSums(is.na(as.data.table(dt[cols]))) > 0L
     test(test_no, ans1, ans2)
-    test_no = signif(test_no+.01, 7)
+    test_no = signif(test_no+.001, 7)
     test(test_no, is_na(dt, names(dt) %in% cols),
                   is_na(dt, which(names(dt) %in% cols)))
 
     # update: tests for any_na
-    test_no = signif(test_no+.01, 7)
+    test_no = signif(test_no+.001, 7)
     test(test_no, any_na(dt, cols), TRUE)
-    test_no = signif(test_no+.01, 7)
+    test_no = signif(test_no+.001, 7)
     test(test_no, any_na(ans, cols), FALSE)
-    test_no = signif(test_no+.01, 7)
+    test_no = signif(test_no+.001, 7)
     test(test_no, any_na(dt, names(dt) %in% cols),
                   any_na(dt, which(names(dt) %in% cols)))
     TRUE
   })
 }
+
+# test some erroneous input as well, mostly for col_as_int()
+test_no = signif(test_no+.001, 7)
+test(test_no, any_na(dt, TRUE), error = "the input has to be of length")
+test_no = signif(test_no+.001, 7)
+test(test_no, any_na(dt, 0L), error = "outside 1-based range")
+test_no = signif(test_no+.001, 7)
+test(test_no, any_na(dt, length(dt) + 1L), error = "outside 1-based range")
+test_no = signif(test_no+.001, 7)
+test(test_no, any_na(dt, 0.0), error = "have to be in the range")
+test_no = signif(test_no+.001, 7)
+test(test_no, any_na(dt, length(dt) + 1.0), error = "have to be in the range")
+test_no = signif(test_no+.001, 7)
+test(test_no, any_na(dt, "XX"), error = "not exist in the input")
+test_no = signif(test_no+.001, 7)
+test(test_no, any_na(dt, list("AA")),
+     error = "specified as character/numeric/logical vectors")
+
 ## See 1394.* (na.omit.data.table) for further tests which call is_na()
 ## internally
 
