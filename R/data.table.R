@@ -2235,16 +2235,21 @@ subset.data.table <- function (x, subset, select, ...)
 
 # Equivalent of 'rowSums(is.na(dt) > 0L)' but much faster and memory efficient.
 # Also called "complete.cases" in base. Unfortunately it's not a S3 generic.
-# Also handles bit64::integer64. TODO: export this?
-# For internal use only. 'by' requires integer input. No argument checks here yet.
-is_na <- function(x, by=seq_along(x)) .Call(Cdt_na, x, by)
-any_na <- function(x, by=seq_along(x)) .Call(CanyNA, x, by)
+# Also handles bit64::integer64.
+is_na <- function(x, by = seq_along(x)) {
+  .Call(Cdt_na, x, col_as_int(by))
+}
+
+any_na <- function(x, by = seq_along(x)) {
+  .Call(CanyNA, x, col_as_int(by))
+}
 
 na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE, ...) {
   # compare to stats:::na.omit.data.frame
   if (!cedta()) return(NextMethod())
   if ( !missing(invert) && is.na(as.logical(invert)) )
     stop("Argument 'invert' must be logical TRUE/FALSE")
+  cols <- col_as_int(cols)
   if (is.character(cols)) {
     old = cols
     cols = chmatch(cols, names(object), nomatch=0L)
