@@ -2251,7 +2251,6 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
   if (!cedta()) return(NextMethod())
   if ( !missing(invert) && is.na(as.logical(invert)) )
     stop("Argument 'invert' must be logical TRUE/FALSE")
-  if (!is.integer(cols)) cols <- col_as_int(cols)
   ix = is_na(object, cols)
   # forgot about invert with no NA case, #2660
   if (invert) {
