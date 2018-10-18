@@ -12346,6 +12346,9 @@ test(1953.4, data.table:::melt.data.table(DT, id.vars = 'id', measure.vars = 'a'
 # 3116 - Better error messages for missing/unmatched .SDcols
 DT = data.table(a = 1:5)
 test(1954.1, DT[ , .SD, .SDcols = NA_character_], error = 'missing at the following')
+test(1954.2, DT[ , .SD, .SDcols = NA], error = 'missing at the following')
+test(1954.3, DT[ , .SD, .SDcols = NA_real_], error = 'missing at the following')
+test(1954.4, DT[ , .SD, .SDcols = 2L], error = 'out of bounds.*1.*1.*at')
 test(1954.2, DT[ , .SD, .SDcols = 'b'], error = 'not column names')
 
 ###################################

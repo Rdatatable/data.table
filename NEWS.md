@@ -23,7 +23,7 @@
 
 2. When `on=` is provided but not `i=`, a helpful error is now produced rather than silently ignoring `on=`. Thanks to Dirk Eddelbuettel for the idea.
 
-3. Better diagnostic messaging when passing `NA` or non-existant columns to `.SDcols`, [#3116](https://github.com/Rdatatable/data.table/issues/3116). 
+3. Better diagnostic messaging when passing `NA` or non-existent columns to `.SDcols`, [#3116](https://github.com/Rdatatable/data.table/issues/3116) and [#3118](https://github.com/Rdatatable/data.table/issues/3118). 
 
 ### Changes in v1.11.8  (30 Sep 2018)
 

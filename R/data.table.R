@@ -1018,20 +1018,22 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           } else {
             .SDcols = eval(colsub, parent.frame(), parent.frame())
           }
+          if (anyNA(.SDcols))
+            stop(".SDcols missing at the following indices: ",
+                 brackify(which(is.na(.SDcols))))
           if (is.logical(.SDcols)) {
             ansvals = which_(rep(.SDcols, length.out=length(x)), !colm)
             ansvars = names(x)[ansvals]
           } else if (is.numeric(.SDcols)) {
             # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
             if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
-            if (anyNA(.SDcols) || any(abs(.SDcols)>ncol(x)) || any(abs(.SDcols)<1L)) stop(".SDcols is numeric but out of bounds (or NA)")
+            if (any(idx <- abs(.SDcols)>ncol(x) || abs(.SDcols)<1L))
+              stop(".SDcols is numeric but out of bounds [1, ",
+                   ncol(x), "] at: ", brackify(which(idx)))
             if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
             ansvals = if (colm) setdiff(seq_along(names(x)), c(as.integer(.SDcols), which(names(x) %chin% bynames))) else as.integer(.SDcols)
           } else {
             if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
-            if (anyNA(.SDcols))
-              stop(".SDcols missing at the following indices: ",
-                   brackify(which(is.na(.SDcols))))
             if (!all(idx <- .SDcols %chin% names(x)))
               stop("Some items of .SDcols are not column names: ",
                    brackify(.SDcols[!idx]))
