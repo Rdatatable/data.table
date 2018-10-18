@@ -146,10 +146,10 @@ bool freadCleanup(void)
     // may call freadCleanup(), thus resulting in an infinite loop.
     #ifdef WIN32
       if (!UnmapViewOfFile(mmp))
-        DTPRINT("System error %d unmapping view of file\n", GetLastError());      // nocov
+        DTPRINT("System error %d unmapping view of file\n", GetLastError());      // # nocov
     #else
       if (munmap(mmp, fileSize))
-        DTPRINT("System errno %d unmapping file: %s\n", errno, strerror(errno));  // nocov
+        DTPRINT("System errno %d unmapping file: %s\n", errno, strerror(errno));  // # nocov
     #endif
     mmp = NULL;
   }
