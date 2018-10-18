@@ -35,7 +35,7 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
   measure.sub = substitute(measure.vars)
   if (is.call(measure.sub) && measure.sub[[1L]] == "patterns") {
     measure.sub = as.list(measure.sub)[-1L]
-    idx = which(names(measure.sub) %in% "cols")
+    idx = which(names(measure.sub) == "cols")
     if (length(idx)) {
       cols = eval(measure.sub[["cols"]], parent.frame())
       measure.sub = measure.sub[-idx]
