@@ -1,4 +1,12 @@
 
+if (!exists("trimws", "package:base")) {
+  # trimws was new in R 3.2.0. Backport it for internal data.table use in R 3.1.0
+  trimws <- function(x) {
+    mysub <- function(re, x) sub(re, "", x, perl = TRUE)
+    mysub("[ \t\r\n]+$", mysub("^[ \t\r\n]+", x))
+  }
+}
+
 dim.data.table <- function(x)
 {
   .Call(Cdim, x)
