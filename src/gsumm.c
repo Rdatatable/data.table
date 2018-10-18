@@ -67,7 +67,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     }
   }
   SEXP tt = getAttrib(o, install("maxgrpn"));
-  if (length(tt) && INTEGER(tt)[0]!=maxgrpn) error("Internal error: o's maxgrpn mismatches recalculated maxgrpn");
+  if (length(tt) && INTEGER(tt)[0]!=maxgrpn) error("Internal error: o's maxgrpn mismatches recalculated maxgrpn"); // # nocov
   oo = INTEGER(o);
   ff = INTEGER(f);
 
@@ -191,7 +191,7 @@ SEXP gmean(SEXP x, SEXP narm)
       for (int i=0; i<ngrp; i++) *xd++ /= grpsize[i];  // let NA propogate
     } break;
     default :
-      error("Internal error: gsum returned type '%s'. typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x)));
+      error("Internal error: gsum returned type '%s'. typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x))); // # nocov
     }
     UNPROTECT(protecti);
     return(ans);
@@ -802,18 +802,18 @@ SEXP gfirst(SEXP x) {
 }
 
 SEXP gtail(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, gtail is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.");
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, gtail is only implemented for n=1. This should have been caught before. please report to data.table issue tracker."); // # nocov
   return (glast(x));
 }
 
 SEXP ghead(SEXP x, SEXP valArg) {
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, ghead is only implemented for n=1. This should have been caught before. please report to data.table issue tracker.");
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]!=1) error("Internal error, ghead is only implemented for n=1. This should have been caught before. please report to data.table issue tracker."); // # nocov
   return (gfirst(x));
 }
 
 SEXP gnthvalue(SEXP x, SEXP valArg) {
 
-  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.");
+  if (!isInteger(valArg) || LENGTH(valArg)!=1 || INTEGER(valArg)[0]<=0) error("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker."); // # nocov
   R_len_t i,k, val=INTEGER(valArg)[0];
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;

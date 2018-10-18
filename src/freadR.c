@@ -126,7 +126,7 @@ SEXP freadR(
     args.skipString = CHAR(STRING_ELT(skipArg,0));  // LENGTH==1 was checked at R level
   } else if (isInteger(skipArg)) {
     args.skipNrow = (int64_t)INTEGER(skipArg)[0];
-  } else error("Internal error: skip not integer or string in freadR.c");
+  } else error("Internal error: skip not integer or string in freadR.c"); // # nocov
 
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
     error("'na.strings' is type '%s'.  Must be either NULL or a character vector.", type2char(TYPEOF(NAstringsArg)));
@@ -185,8 +185,8 @@ SEXP freadR(
 _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 {
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
-  if (typeSize[CT_BOOL8_N]!=1) STOP("Internal error: typeSize[CT_BOOL8_N] != 1");
-  if (typeSize[CT_STRING]!=8) STOP("Internal error: typeSize[CT_STRING] != 1");
+  if (typeSize[CT_BOOL8_N]!=1) STOP("Internal error: typeSize[CT_BOOL8_N] != 1"); // # nocov
+  if (typeSize[CT_STRING]!=8) STOP("Internal error: typeSize[CT_STRING] != 1"); // # nocov
   colNamesSxp = R_NilValue;
   if (colNames!=NULL) {
     SET_VECTOR_ELT(RCHK, 1, colNamesSxp=allocVector(STRSXP, ncol));

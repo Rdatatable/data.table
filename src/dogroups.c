@@ -30,12 +30,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   size_t size; // must be size_t, otherwise bug #5305 (integer overflow in memcpy)
   clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
 
-  if (!isInteger(order)) error("Internal error: order not integer vector");
-  if (TYPEOF(starts) != INTSXP) error("Internal error: starts not integer");
-  if (TYPEOF(lens) != INTSXP) error("Internal error: lens not integer");
+  if (!isInteger(order)) error("Internal error: order not integer vector"); // # nocov
+  if (TYPEOF(starts) != INTSXP) error("Internal error: starts not integer"); // # nocov
+  if (TYPEOF(lens) != INTSXP) error("Internal error: lens not integer"); // # nocov
   // starts can now be NA (<0): if (INTEGER(starts)[0]<0 || INTEGER(lens)[0]<0) error("starts[1]<0 or lens[1]<0");
-  if (!isNull(jiscols) && LENGTH(order) && !LOGICAL(on)[0]) error("Internal error: jiscols not NULL but o__ has length");
-  if (!isNull(xjiscols) && LENGTH(order) && !LOGICAL(on)[0]) error("Internal error: xjiscols not NULL but o__ has length");
+  if (!isNull(jiscols) && LENGTH(order) && !LOGICAL(on)[0]) error("Internal error: jiscols not NULL but o__ has length"); // # nocov
+  if (!isNull(xjiscols) && LENGTH(order) && !LOGICAL(on)[0]) error("Internal error: xjiscols not NULL but o__ has length"); // # nocov
   if(!isEnvironment(env)) error("’env’ should be an environment");
   ngrp = length(starts);  // the number of groups  (nrow(groups) will be larger when by)
   ngrpcols = length(grpcols);
@@ -285,7 +285,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (isNull(target)) {
           // first time adding to new column
           if (isNull(RHS)) error("RHS is NULL when grouping :=. Makes no sense to delete a column by group. Perhaps use an empty vector instead.");
-          if (TRUELENGTH(dt) < INTEGER(lhs)[j]) error("Internal error: Trying to add new column by reference but tl is full; alloc.col should have run first at R level before getting to this point in dogroups");
+          if (TRUELENGTH(dt) < INTEGER(lhs)[j]) error("Internal error: Trying to add new column by reference but tl is full; alloc.col should have run first at R level before getting to this point in dogroups"); // # nocov
           tmp = PROTECT(allocNAVector(TYPEOF(RHS), LENGTH(VECTOR_ELT(dt,0))));
           // increment length only if the allocation passes, #1676
           SETLENGTH(dtnames, LENGTH(dtnames)+1);
@@ -455,7 +455,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   for (j=0; j<length(SDall); j++) SETLENGTH(VECTOR_ELT(SDall,j), origSDnrow);
   SETLENGTH(I, origIlen);
   if (LOGICAL(verbose)[0]) {
-    if (nblock[0] && nblock[1]) error("Internal error: block 0 [%d] and block 1 [%d] have both run", nblock[0], nblock[1]);
+    if (nblock[0] && nblock[1]) error("Internal error: block 0 [%d] and block 1 [%d] have both run", nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;
     Rprintf("\n  %s took %.3fs for %d groups\n", w ? "collecting discontiguous groups" : "memcpy contiguous groups",
                           1.0*tblock[w]/CLOCKS_PER_SEC, nblock[w]);
