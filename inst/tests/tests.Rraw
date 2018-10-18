@@ -12328,11 +12328,26 @@ test(1951.4, d1[d2, nomatch=3], error="nomatch= must be either NA or NULL .or 0 
 test(1952.1, d1[a==2, which=3], error="which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
 test(1952.2, d1[a==2, 2, which=TRUE], error="which==TRUE.*but j is also supplied")
 
+# 3106 -- melt patterns don't match any columns (and more coverage tests)
+DT = data.table(id = 1:3, a1 = rnorm(3), a2 = rnorm(3))
+test(1953.1, melt(DT, id.vars = 'id', measure.vars = patterns(a = 'a', b = 'b')),
+     error = 'Pattern not found')
+test(1953.2, melt(DT, id.vars = 'id',
+                  measure.vars = patterns(a = 'a', b = 'b', c = 'c')),
+     error = 'Patterns not found')
+
+test(1953.3, melt(DT, id.vars = 'id', measure.vars = patterns(1L)),
+     error = 'Input patterns must be of type character')
+
+setDF(DT)
+test(1953.4, data.table:::melt.data.table(DT, id.vars = 'id', measure.vars = 'a'),
+     error = "must be a data.table")
+
 # skip values that are not present in old, #3030
 DT <- data.table(a = 1, b = 2, d = 3)
 old <- c("a", "b", "c", "d")
 new <- c("A", "B", "C", "D") 
-test(1953, setnames(DT, old, new, skip_absent = TRUE), DT <- data.table(A = 1, B = 2, D = 3))
+test(1954, setnames(DT, old, new, skip_absent = TRUE), DT <- data.table(A = 1, B = 2, D = 3))
 
 ###################################
 #  Add new tests above this line  #

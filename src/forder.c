@@ -166,7 +166,7 @@ static void icount(int *x, int *o, int n)
   /* counts are set back to 0 at the end efficiently. 1e5 = 0.4MB i.e
   tiny. We'll only use the front part of it, as large as range. So it's
   just reserving space, not using it. Have defined N_RANGE to be 100000.*/
-  if (range > N_RANGE) Error("Internal error: range = %d; isorted can't handle range > %d", range, N_RANGE);
+  if (range > N_RANGE) Error("Internal error: range = %d; isorted can't handle range > %d", range, N_RANGE); // # nocov
   for(i=0; i<n; i++) {
     if (x[i] == NA_INTEGER) counts[napos]++;             // For nalast=NA case, we won't remove/skip NAs, rather set 'o' indices
     else counts[x[i]-xmin]++;                            // to 0. subset will skip them. We can't know how many NAs to skip
@@ -366,7 +366,7 @@ static void iradix(int *x, int *o, int n)
 
   nextradix = radix-1;
   while (nextradix>=0 && skip[nextradix]) nextradix--;
-  if (thiscounts[0] != 0) Error("Internal error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix);
+  if (thiscounts[0] != 0) Error("Internal error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix); // # nocov
   thiscounts[256] = n;
   itmp = 0;
   for (i=1; itmp<n && i<=256; i++) {
@@ -830,7 +830,7 @@ static void cgroup(SEXP *x, int *o, int n)
   SEXP s;
   int i, k, cumsum;
   // savetl_init() is called once at the start of forder
-  if (ustr_n != 0) Error("Internal error. ustr isn't empty when starting cgroup: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);
+  if (ustr_n != 0) Error("Internal error. ustr isn't empty when starting cgroup: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc); // # nocov
   for(i=0; i<n; i++) {
     s = x[i];
     if (TRUELENGTH(s)<0) {                   // this case first as it's the most frequent
@@ -899,7 +899,7 @@ static void csort(SEXP *x, int *o, int n)
     iinsert(csort_otmp, o, n);
   } else {
     setRange(csort_otmp, n);
-    if (range == NA_INTEGER) Error("Internal error. csort's otmp contains all-NA");
+    if (range == NA_INTEGER) Error("Internal error. csort's otmp contains all-NA"); // # nocov
     int *target = (o[0] != -1) ? newo : o;
     if (range <= N_RANGE) // && range<n)            // TO DO: calibrate(). radix was faster (9.2s "range<=10000" instead of 11.6s
       icount(csort_otmp, target, n);       // "range<=N_RANGE && range<n") for run(7) where range=N_RANGE n=10000000
@@ -1060,7 +1060,7 @@ static void isort(int *x, int *o, int n)
       for (int i=0; i<n; i++) if (x[i] == NA_INTEGER) o[i] = 0;
       push(1); push(1);
       return;
-    } else Error("Internal error: isort received n=%d. isorted should have dealt with this (e.g. as a reverse sorted vector) already",n);
+    } else Error("Internal error: isort received n=%d. isorted should have dealt with this (e.g. as a reverse sorted vector) already",n); // # nocov
   }
   if (n<N_SMALL && o[0] != -1 && nalast != 0) {                 // see comment above in iradix_r on N_SMALL=200.
     /* if not o[0] then can't just populate with 1:n here, since x is changed by ref too (so would need to be copied). */
@@ -1073,7 +1073,7 @@ static void isort(int *x, int *o, int n)
     /* Tighter range (e.g. copes better with a few abormally large values in some groups), but also, when setRange was once at
        colum level that caused an extra scan of (long) x first. 10,000 calls to setRange takes just 0.04s i.e. negligible. */
     setRange(x, n);
-    if (range==NA_INTEGER) Error("Internal error: isort passed all-NA. isorted should have caught this before this point");
+    if (range==NA_INTEGER) Error("Internal error: isort passed all-NA. isorted should have caught this before this point"); // # nocov
     int *target = (o[0] != -1) ? newo : o;
     if (range<=N_RANGE && range<=n) {                   // was range<10000 for subgroups, but 1e5 for the first column,
       icount(x, target, n);                             // tried to generalise here.  1e4 rather than 1e5 here because iterated
@@ -1092,7 +1092,7 @@ static void dsort(double *x, int *o, int n)
       for (int i=0; i<n; i++) if (is_nan(x, i)) o[i] = 0;
       push(1); push(1);
       return;
-    } Error("Internal error: dsort received n=%d. dsorted should have dealt with this (e.g. as a reverse sorted vector) already",n);
+    } Error("Internal error: dsort received n=%d. dsorted should have dealt with this (e.g. as a reverse sorted vector) already",n); // # nocov
   }
   if (n<N_SMALL && o[0] != -1 && nalast != 0) {                                  // see comment above in iradix_r re N_SMALL=200,  and isort for o[0]
     for (int i=0; i<n; i++) ((unsigned long long *)x)[i] = twiddle(x,i,order);   // have to twiddle here anyways, can't speed up default case like in isort
@@ -1217,7 +1217,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       else cgroup(xd, o, n);
       break;
     default :
-      Error("Internal error: previous default should have caught unsupported type");
+      Error("Internal error: previous default should have caught unsupported type"); // # nocov
     }
   }
   TEND(0)
@@ -1285,7 +1285,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
           case STRSXP :
             if (STRING_ELT(x, o[i]-1) == NA_STRING) { isSorted=FALSE; o[i] = 0; } break;
           default :
-            Error("Internal error: previous default should have caught unsupported type");
+            Error("Internal error: previous default should have caught unsupported type"); // # nocov
           }
         }
         i++; push(1); continue;
@@ -1344,7 +1344,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   Rprintf("Found %d groups and maxgrpn=%d\n", gsngrp[flip], gsmax[flip]);
 #endif
 
-  if (!sortStr && ustr_n!=0) Error("Internal error: at the end of forder sortStr==FALSE but ustr_n!=0 [%d]", ustr_n);
+  if (!sortStr && ustr_n!=0) Error("Internal error: at the end of forder sortStr==FALSE but ustr_n!=0 [%d]", ustr_n); // # nocov
 
   if (isSorted) {
     // the o vector created earlier could be avoided in this case if we only create it when isSorted becomes FALSE
@@ -1446,7 +1446,7 @@ SEXP isOrderedSubset(SEXP x, SEXP nrow)
     t[6+radix] += clock()-tt;
     firstTime = FALSE;
   }
-  if (firstTime) Error("Internal error: x is one repeated number so isorted should have skipped iradix, but iradix has been called and skipped all 4 radix");
+  if (firstTime) Error("Internal error: x is one repeated number so isorted should have skipped iradix, but iradix has been called and skipped all 4 radix"); // # nocov
 }
 */
 

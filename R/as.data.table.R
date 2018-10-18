@@ -92,7 +92,7 @@ as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name=
   val = rev(if (is.null(dnx)) lapply(dim(x), seq.int) else dnx)
   if (is.null(names(val)) || all(!nzchar(names(val))))
     setattr(val, 'names', paste0("V", rev(seq_along(val))))
-  if (value.name %in% names(val))
+  if (value.name %chin% names(val))
     stop(sprintf("Argument 'value.name' should not overlap with column names in result: %s.", paste(rev(names(val)), collapse=", ")))
   N = NULL
   ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N=as.vector(x))

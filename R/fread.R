@@ -12,7 +12,7 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
   }
   stopifnot( is.character(dec), length(dec)==1L, nchar(dec)==1L )
   # handle encoding, #563
-  if (length(encoding) != 1L || !encoding %in% c("unknown", "UTF-8", "Latin-1")) {
+  if (length(encoding) != 1L || !encoding %chin% c("unknown", "UTF-8", "Latin-1")) {
     stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
   isTrueFalse = function(x) isTRUE(x) || identical(FALSE, x)
@@ -160,7 +160,7 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
   if (stringsAsFactors)
     cols = which(vapply(ans, is.character, TRUE))
   else if (length(colClasses)) {
-    if (is.list(colClasses) && "factor" %in% names(colClasses))
+    if (is.list(colClasses) && "factor" %chin% names(colClasses))
       cols = colClasses[["factor"]]
     else if (is.character(colClasses) && "factor" %chin% colClasses)
       cols = which(colClasses=="factor")

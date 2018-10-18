@@ -2,8 +2,8 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
-    if ("package:data.table" %in% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
-    d = if (pkg %in% dir()) file.path(getwd(), pkg) else Sys.getenv("CC_DIR")
+    if ("package:data.table" %chin% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
+    d = if (pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("CC_DIR")
     d = file.path(d, "inst/tests")
     # nocov end
   } else {

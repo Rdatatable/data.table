@@ -59,7 +59,7 @@ fintersect <- function(x, y, all=FALSE) {
   bad.type = setNames(c("raw","complex","list") %chin% c(vapply(x, typeof, FUN.VALUE = ""), vapply(y, typeof, FUN.VALUE = "")), c("raw","complex","list"))
   if (any(bad.type)) stop(sprintf("x and y must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
   if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have same column classes")
-  if (".seqn" %in% names(x)) stop("None of the datasets to intersect should contain a column named '.seqn'")
+  if (".seqn" %chin% names(x)) stop("None of the datasets to intersect should contain a column named '.seqn'")
   if (!nrow(x) || !nrow(y)) return(x[0L])
   if (all) {
     x = shallow(x)[, ".seqn" := rowidv(x)]
@@ -80,7 +80,7 @@ fsetdiff <- function(x, y, all=FALSE) {
   bad.type = setNames(c("raw","complex","list") %chin% c(vapply(x, typeof, FUN.VALUE = ""), vapply(y, typeof, FUN.VALUE = "")), c("raw","complex","list"))
   if (any(bad.type)) stop(sprintf("x and y must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
   if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have same column classes")
-  if (".seqn" %in% names(x)) stop("None of the datasets to setdiff should contain a column named '.seqn'")
+  if (".seqn" %chin% names(x)) stop("None of the datasets to setdiff should contain a column named '.seqn'")
   if (!nrow(x)) return(x)
   if (!nrow(y)) return(if (!all) funique(x) else x)
   if (all) {
@@ -156,7 +156,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     targetTypes = vapply_1c(target, squashClass)
     currentTypes = vapply_1c(current, squashClass)
     if (length(targetTypes) != length(currentTypes))
-      stop("Internal error: ncol(current)==ncol(target) was checked above")
+      stop("Internal error: ncol(current)==ncol(target) was checked above") # nocov
     if (any( d<-(targetTypes != currentTypes))) {
       w = head(which(d),3L)
       return(paste0("Datasets have different column classes. First 3: ",paste(
@@ -185,7 +185,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
 
     # Trim any extra row.names attributes that came from some inheritence
     # Trim ".internal.selfref" as long as there is no `all.equal.externalptr` method
-    exclude.attrs = function(x, attrs = c("row.names",".internal.selfref")) x[!names(x) %in% attrs]
+    exclude.attrs = function(x, attrs = c("row.names",".internal.selfref")) x[!names(x) %chin% attrs]
     a1 = exclude.attrs(attributes(target))
     a2 = exclude.attrs(attributes(current))
     if (length(a1) != length(a2)) return(sprintf("Datasets has different number of (non-excluded) attributes: target %s, current %s", length(a1), length(a2)))
@@ -195,7 +195,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
   }
 
   if (ignore.row.order) {
-    if (".seqn" %in% names(target))
+    if (".seqn" %chin% names(target))
       stop("None of the datasets to compare should contain a column named '.seqn'")
     bad.type = setNames(c("raw","complex","list") %chin% c(vapply(current, typeof, FUN.VALUE = ""), vapply(target, typeof, FUN.VALUE = "")), c("raw","complex","list"))
     if (any(bad.type))
@@ -262,7 +262,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
       x = target[[i]]
       y = current[[i]]
       if (xor(is.factor(x),is.factor(y)))
-        return("Internal error: factor type mismatch should have been caught earlier")
+        stop("Internal error: factor type mismatch should have been caught earlier") # nocov
       cols.r = TRUE
       if (is.factor(x)) {
         if (!identical(levels(x),levels(y))) {
