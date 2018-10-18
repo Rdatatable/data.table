@@ -15,7 +15,7 @@ setnames(x,old,new,skip_absent=FALSE)
   \item{value}{ The value to assign to the attribute or \code{NULL} removes the attribute, if present. }
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, the new column names, which must be the same length as the number of columns. See examples. }
   \item{new}{ Optional. New column names, must be the same length as columns provided to \code{old} argument. }
-  \item{skip_absent}{ Skips cases where there is no match in \code{old}.  Set to \code{FALSE} by default. Switch flag to \code{TRUE} to activate. }
+  \item{skip_absent}{ Skip items in \code{old} that are missing (i.e. absent) in `names(x)`. Default \code{FALSE} halts with error if any are missing. }
 }
 
 \details{
