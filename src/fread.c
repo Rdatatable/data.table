@@ -215,9 +215,9 @@ static char *typesAsString(int ncol) {
   if (ncol<=100) {
     for (; i<ncol; i++) str[i] = typeLetter[type[i]];
   } else {
-    for (; i<80; i++) str[i] = typeLetter[type[i]];                   // nocov
-    str[i++]='.'; str[i++]='.'; str[i++]='.';                         // nocov
-    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[type[j]];  // nocov
+    for (; i<80; i++) str[i] = typeLetter[type[i]];
+    str[i++]='.'; str[i++]='.'; str[i++]='.';
+    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[type[j]];
   }
   str[i] = '\0';
   return str;
@@ -2311,7 +2311,7 @@ int freadMain(freadMainArgs _args) {
 
   if (stopTeam) {
     if (internalErr[0]!='\0') {
-      STOP("%s", internalErr);  // nocov
+      STOP("%s", internalErr);  // # nocov
     }
     stopTeam = false;
 
