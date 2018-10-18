@@ -84,7 +84,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
   if (!inherits(e1, "IDate"))
     stop("can only subtract from \"IDate\" objects")
   if (storage.mode(e1) != "integer")
-    stop("Internal error: storage mode of IDate is somehow no longer integer")
+    stop("Internal error: storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
     stop("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))

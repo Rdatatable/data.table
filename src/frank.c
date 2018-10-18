@@ -10,8 +10,8 @@ SEXP dt_na(SEXP x, SEXP cols) {
   double *dv;
   SEXP v, ans, class;
 
-  if (!isNewList(x)) error("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'", type2char(TYPEOF(x)));
-  if (!isInteger(cols)) error("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'", type2char(TYPEOF(cols)));
+  if (!isNewList(x)) error("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'", type2char(TYPEOF(x))); // # nocov
+  if (!isInteger(cols)) error("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
   for (i=0; i<LENGTH(cols); i++) {
     this = INTEGER(cols)[i];
     if (this<1 || this>LENGTH(x))
@@ -74,7 +74,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
   else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "dense")) ties = DENSE;
   else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "sequence")) ties = SEQUENCE;
   // else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "runlength")) ties = RUNLENGTH;
-  else error("Internal error: invalid ties.method for frankv(), should have been caught before. please report to data.table issue tracker");
+  else error("Internal error: invalid ties.method for frankv(), should have been caught before. please report to data.table issue tracker"); // # nocov
   n = length(xorderArg);
   ans = (ties == MEAN) ? PROTECT(allocVector(REALSXP, n)) : PROTECT(allocVector(INTSXP, n));
   if (n > 0) {
@@ -131,8 +131,8 @@ SEXP anyNA(SEXP x, SEXP cols) {
   double *dv;
   SEXP v, ans, class;
 
-  if (!isNewList(x)) error("Internal error. Argument 'x' to CanyNA is type '%s' not 'list'", type2char(TYPEOF(x)));
-  if (!isInteger(cols)) error("Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'", type2char(TYPEOF(cols)));
+  if (!isNewList(x)) error("Internal error. Argument 'x' to CanyNA is type '%s' not 'list'", type2char(TYPEOF(x))); // #nocov
+  if (!isInteger(cols)) error("Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
   for (i=0; i<LENGTH(cols); i++) {
     this = INTEGER(cols)[i];
     if (this<1 || this>LENGTH(x))

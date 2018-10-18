@@ -134,7 +134,7 @@ static void check_idx(SEXP idx, int max, /*outputs...*/int *ansLen, Rboolean *an
 // do this once up-front and reuse the result for each column
 // single cache efficient sweep so no need to go parallel (well, very low priority to go parallel)
 {
-  if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx)));
+  if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
   Rboolean anyNeg=FALSE, anyNA=FALSE, anyLess=FALSE;
   int ans=0;
   int last = INT32_MIN;
@@ -146,7 +146,7 @@ static void check_idx(SEXP idx, int max, /*outputs...*/int *ansLen, Rboolean *an
     anyLess |= this<last;
     last = this;
   }
-  if (anyNeg) error("Internal error: idx contains negatives. Should have been dealt with earlier.");
+  if (anyNeg) error("Internal error: idx contains negatives. Should have been dealt with earlier."); // # nocov
   *ansLen = ans;
   *any0orNA = ans<LENGTH(idx) || anyNA;
   *monotonic = !anyLess; // for the purpose of ordered keys, this==last is allowed
@@ -158,10 +158,11 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
   // + more precise and helpful error messages telling user exactly where the problem is (saving user debugging time)
   // + a little more efficient than negativeSubscript in src/main/subscript.c (it's private to R so we can't call it anyway)
 
-  if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx)));
-  if (!isInteger(maxArg) || length(maxArg)!=1) error("Internal error. 'maxArg' is type '%s' and length %d, should be an integer singleton", type2char(TYPEOF(maxArg)), length(maxArg));
+  if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
+  if (!isInteger(maxArg) || length(maxArg)!=1) error("Internal error. 'maxArg' is type '%s' and length %d, should be an integer singleton", type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
   int max = INTEGER(maxArg)[0];
-  if (max<0) error("Internal error. max is %d, must be >= 0.", max);  // NA also an error which'll print as INT_MIN
+  // NA also an error which'll print as INT_MIN
+  if (max<0) error("Internal error. max is %d, must be >= 0.", max); // # nocov
   int firstNegative = 0, firstPositive = 0, firstNA = 0, num0 = 0;
   for (int i=0; i<LENGTH(idx); i++) {
     int this = INTEGER(idx)[i];
@@ -205,7 +206,7 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
   int ansi = 0;
   for (int i=0; i<max; i++) if (tmp[i]==0) INTEGER(ans)[ansi++] = i+1;
   UNPROTECT(1);
-  if (ansi != max-LENGTH(idx)+num0+numDup+numBeyond) error("Internal error: ansi[%d] != max[%d]-LENGTH(idx)[%d]+num0[%d]+numDup[%d]+numBeyond[%d] in convertNegativeIdx",ansi,max,LENGTH(idx),num0,numDup,numBeyond);
+  if (ansi != max-LENGTH(idx)+num0+numDup+numBeyond) error("Internal error: ansi[%d] != max[%d]-LENGTH(idx)[%d]+num0[%d]+numDup[%d]+numBeyond[%d] in convertNegativeIdx",ansi,max,LENGTH(idx),num0,numDup,numBeyond); // # nocov
   return(ans);
 }
 
@@ -223,7 +224,7 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
 
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   int nprotect=0;
-  if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows)));
+  if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows))); // # nocov
   if (!length(x)) return(x);  // return empty list
 
   // check index once up front for 0 or NA, for branchless subsetVectorRaw
@@ -231,7 +232,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   Rboolean any0orNA=FALSE, orderedSubset=FALSE;
   check_idx(rows, length(VECTOR_ELT(x,0)), &ansn, &any0orNA, &orderedSubset);
 
-  if (!isInteger(cols)) error("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols)));
+  if (!isInteger(cols)) error("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
   if (ALTREP(cols)) { cols = PROTECT(duplicate(cols)); nprotect++; }
   if (ALTREP(rows)) { rows = PROTECT(duplicate(rows)); nprotect++; }
   for (int i=0; i<LENGTH(cols); i++) {

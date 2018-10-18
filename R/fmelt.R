@@ -42,6 +42,10 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
     } else cols = names(data)
     pats = lapply(measure.sub, eval, parent.frame())
     measure.vars = patterns(pats, cols=cols)
+    # replace with lengths when R 3.2.0 dependency arrives
+    if (length(idx <- which(sapply(measure.vars, length) == 0L)))
+      stop('Pattern', if (length(idx) > 1L) 's', ' not found: [',
+           paste(pats[idx], collapse = ', '), ']')
   }
   if (is.list(measure.vars) && length(measure.vars) > 1L) {
     meas.nm = names(measure.vars)
