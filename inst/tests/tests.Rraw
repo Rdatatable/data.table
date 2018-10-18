@@ -4,8 +4,8 @@ require(methods)
 # rather than relying on x && y being equivalent to x[[1L]] && y[[1L]]  silently.
 orig__R_CHECK_LENGTH_1_LOGIC2_ <- Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_", unset = NA_character_)
 Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
-
 # This environment variable is restored to its previous state (including not defined) at the end of this file
+
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if (!identical(suppressWarnings(packageDescription("data.table")), NA)) {
     remove.packages("data.table")
@@ -12327,6 +12327,7 @@ test(1951.4, d1[d2, nomatch=3], error="nomatch= must be either NA or NULL .or 0 
 # coverage of which= checks
 test(1952.1, d1[a==2, which=3], error="which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
 test(1952.2, d1[a==2, 2, which=TRUE], error="which==TRUE.*but j is also supplied")
+
 
 ###################################
 #  Add new tests above this line  #
