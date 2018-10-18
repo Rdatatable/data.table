@@ -1398,12 +1398,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     int maxBit=0;
     while (range) { maxBit++; range>>=1; }
 
-    if (TYPEOF(x)==STRSXP && maxBit>14) {
+    // only used for CHARSXP, but declared at this level of scope to be used later below.
+    int compressWidth = MIN(14,maxBit);
+    int numBins = 1<<compressWidth;    // 1<<14 == 16384
+    int shift = maxBit-compressWidth;
+    uint64_t *bin_min = NULL;  //[numBins] = {0}; // TODO: save this stack allocation when
+
+    if (TYPEOF(x)==STRSXP) {
       Rprintf("maxBit before gap compression=%d\n", maxBit);
-      uint64_t counts[16384] = {0};
-      uint64_t bin_min[16384] = {0};
-      uint64_t bin_max[16384] = {0};
-      int shift = maxBit-14;
+      bin_min = calloc(numBins, sizeof(uint64_t));  // TODO: if alloc fail.
+      uint64_t *bin_max = calloc(numBins, sizeof(uint64_t));
       SEXP *xd = STRING_PTR(x);
       for(int i=0; i<n; i++) {
         if (xd[i]==NA_STRING) continue;
@@ -1412,21 +1416,20 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         if (bin_min[bin]==0) { bin_min[bin] = bin_max[bin] = this; }
         else if (this<bin_min[bin]) bin_min[bin] = this;
         else if (this>bin_max[bin]) bin_max[bin] = this;
-        counts[bin]++;
       }
-      uint64_t newRange = 0;
-      for (int i=0; i<16384; i++) {
-        if (counts[i]) {
-          Rprintf("%03d %llu %llu %llu  range=%llu\n", i, counts[i], bin_min[i], bin_max[i], bin_max[i]-bin_min[i]+1);
-          newRange += bin_max[i]-bin_min[i]+1;
+      uint64_t newRange = 1;  // for the NA spot
+      for (int i=0; i<numBins; i++) {
+        if (bin_min[i]) {
+          Rprintf("%03d %llu %llu  range=%llu\n", i, bin_min[i], bin_max[i], bin_max[i]-bin_min[i]+1);
+          uint64_t tt = bin_max[i]-bin_min[i]+1;
+          bin_min[i] -= newRange;
+          newRange += tt;
         }
       }
+      free(bin_max);
       int newMaxBit=0;
       while (newRange) { newMaxBit++; newRange>>=1; }
       Rprintf("maxBit after gap compression=%d\n", newMaxBit);
-      if (newMaxBit < maxBit-4) {
-
-      }
     }
 
     int nbyte = 1+(maxBit-1)/8; // the number of bytes spanned by the value
@@ -1508,7 +1511,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         if (xd[i]==NA_STRING) continue;
         uint64_t this = ((uint64_t)xd[i] & PTR_MASK)/MIN_CHARSXP_SIZE;
         int bin = (this-min)>>shift;
-        this = this - bin_min[bin];  // has already had the bin offset included
+        this -= bin_min[bin];  // has already had the bin offset included
         WRITE_KEY
       }}
       // only if sorting ... for(int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i],0);
@@ -1518,6 +1521,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
        Error("Internal error: column not supported not caught earlier");
     }
     nradix += nbyte-1+(spare==0);
+    free(bin_min);
   }
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
   Rprintf("nradix=%d\n", nradix);
