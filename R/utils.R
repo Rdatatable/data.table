@@ -86,3 +86,10 @@ name_dots <- function(...) {
   list(vnames=vnames, novname=novname)
 }
 
+# convert a vector like c(1, 4, 3, 2) into a string like [1, 4, 3, 2]
+#   (common aggregation method for error messages)
+brackify = function(x) {
+  # arbitrary cutoff
+  if (length(x) > 20L) x = x[1:20]
+  sprintf('[%s]', paste(x, collapse = ', '))
+}

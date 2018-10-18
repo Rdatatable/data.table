@@ -12343,6 +12343,11 @@ setDF(DT)
 test(1953.4, data.table:::melt.data.table(DT, id.vars = 'id', measure.vars = 'a'),
      error = "must be a data.table")
 
+# 3116 - Better error messages for missing/unmatched .SDcols
+DT = data.table(a = 1:5)
+test(1954.1, DT[ , .SD, .SDcols = NA_character_], error = 'missing at the following')
+test(1954.2, DT[ , .SD, .SDcols = 'b'], error = 'not column names')
+
 ###################################
 #  Add new tests above this line  #
 ###################################
