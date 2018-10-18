@@ -17,7 +17,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
   if (!isNewList(x))
     error("x must be a list, data.frame or data.table");
   if (!isInteger(k))
-    error("Internal error: n must be integer");
+    error("Internal error: n must be integer"); // # nocov
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
   if (!isString(type) || length(type) != 1)
@@ -25,7 +25,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
 
   if (!strcmp(CHAR(STRING_ELT(type, 0)), "lag"))  stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "lead")) stype = LEAD;
-  else error("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker");
+  else error("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker"); // # nocov
 
   nx = length(x); nk = length(k);
   i=0;
