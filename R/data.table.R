@@ -1027,7 +1027,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           } else if (is.numeric(.SDcols)) {
             # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
             if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
-            if (any(idx <- abs(.SDcols)>ncol(x) || abs(.SDcols)<1L))
+            if (any(idx <- abs(.SDcols)>ncol(x) | abs(.SDcols)<1L))
               stop(".SDcols is numeric but out of bounds [1, ",
                    ncol(x), "] at: ", brackify(which(idx)))
             if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
