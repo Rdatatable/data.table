@@ -1442,8 +1442,20 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       Rprintf("maxBit after gap compression=%d\n", newMaxBit);
 
       if (sort) {
-        // find order of unique strings in this column, and use the ordering below when building key.
+        // !! find order of unique strings in this column, and use the ordering below when building key. !!
 
+        bool ustr[newRange] = {false};
+        // TODO: parallel  .  It's the sweep reading that benefits from parallel caches,  much better than single-threaded sweep
+        for (int i=0; i<n; i++) {
+          if (xd[i]==NA_STRING) continue;
+          uint64_t this = ((uint64_t)xd[i] & PTR_MASK)/MIN_CHARSXP_SIZE;
+          int bin = (this-min)>>shift;
+          this -= bin_min[bin];  // has already had the bin offset included
+          ustr[this] = true;  // find to update in parallel with no atomic (it's just one byte that can't be half-written
+        }
+        // now we have uniques and a mapping
+
+      }}
 
       }
     }
