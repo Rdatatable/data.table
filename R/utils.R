@@ -90,6 +90,6 @@ name_dots <- function(...) {
 #   (common aggregation method for error messages)
 brackify = function(x) {
   # arbitrary cutoff
-  if (length(x) > 20L) x = x[1:20]
+  if (length(x) > 10L) x = c(x[1:10], '...')
   sprintf('[%s]', paste(x, collapse = ', '))
 }
