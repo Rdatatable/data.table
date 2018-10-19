@@ -355,7 +355,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool
 
 
 
-static void count_group(const uint8_t *x, const uint16_t n, bool *out_grouped, uint16_t *out_order, uint16_t *out_ngrp, int *out_grpsize)
+static void count_group(const uint8_t *x, const uint16_t n, bool *out_skip, uint16_t *out_order, uint16_t *out_ngrp, int *out_grpsize)
 // orders x by reference (that's ok destructively as we don't use this radix again) and writes the order into o; the o ordering is used several times by the caller.
 // the uint8_t *o limits the capability to max n=256 items (4 cache lines * 2 = 8 cache lines)
 // caller then uses x to detect groups and push those in the ordered clause.
@@ -375,16 +375,16 @@ static void count_group(const uint8_t *x, const uint16_t n, bool *out_grouped, u
   ugrp[0] = x[0];
   counts[x[0]] = 1;
   int ngrp = 1;             // number of groups
-  bool grouped = true;
+  bool skip = true;         // if already grouped and sort=false, then can skip.  if already sorted when sort=true, then can skip
 
   for (int i=1; i<n; i++) {
     uint8_t this = x[i];
     if (counts[this]==0) {
       // have not seen this value before
       ugrp[ngrp++]=this;
-    } else if (grouped && this!=x[i-1]) {
+    } else if (skip && this!=x[i-1]) {
       // seen this value before and it isn't the previous value, so data is not grouped
-      grouped=false;
+      skip=false;
     }
     counts[this]++;
   }
@@ -392,17 +392,21 @@ static void count_group(const uint8_t *x, const uint16_t n, bool *out_grouped, u
   if (sort) {
     for (int i=1; i<ngrp; i++) {
       uint8_t tmp = ugrp[i];
-      int j = i;
-      while (--j>=0 && ugrp[j]>tmp) ugrp[j+1] = ugrp[j];
+      if (ugrp[i-1]<=tmp) continue;
+      skip=false;   // not already sorted, so can't skip
+      int j = i-1;
+      do {
+        ugrp[j+1] = ugrp[j];
+      } while (--j>=0 && ugrp[j]>tmp);
       ugrp[j+1] = tmp;
     }
     // when reverse order, the key bits already had (max-this) when writing key (could straddle byte boundaries given the spare-squashing)
   }
 
-  *out_grouped = grouped;
-  *out_ngrp = ngrp;
+  *out_skip = skip;
+  *out_ngrp = ngrp;   //  ngrp==1 => skip==true (common case important to skip efficiently here)
   for (int i=0; i<ngrp; i++) { uint8_t w=ugrp[i]; out_grpsize[i]=counts[w]; }  // no need to sweep == in caller to find groups; we already have sizes here
-  if (!grouped) {
+  if (!skip) {
     // this is where the potentially random access comes in but only to at-most 256 points, each contigously
     for (int i=0, sum=0; i<ngrp; i++) { uint8_t w=ugrp[i]; int tmp=counts[w]; counts[w]=sum; sum+=tmp; }  // prepare for forwards-assign to help cpu prefetch on next line
     for (int i=0; i<n; i++) { uint8_t this=x[i]; out_order[counts[this]++] = i; }  // it's this second sweep through x[] that benefits from x[] being in cache from last time above, so keep it small.
@@ -1313,11 +1317,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     }
 
     if (min==0/*all na*/ || (min==max && !anyna)) continue;  // all same value; skip column as nothing to do
+    min--;  // so that x-min results in 1 for the minimum; NA coded by 0. Always provide for the NA spot even if NAs aren't present for code brevity and robustness
     uint64_t range = max-min;   //(max>=0 && min<0) ? (uint64_t)max+(uint64_t)(-min) : max-min;
-    range++; // always provide for the NA spot (0 offset), even if NAs aren't present (for coding brevity and robustness).
-             // TODO: maybe not needed if no NA in this column
-             // TODO: the NA value could be placed as max if na.last=TRUE.  Deal with na.last up front in the key and then forget (TODO)
-    // range 5 means 0(NA),1,2,3,4,5  (6 values)
+    // TODO: the NA value could be placed as max if na.last=TRUE.  Deal with na.last up front in the key and then forget (TODO)
+    // "range" 5 means 0(NA),1,2,3,4,5  (6 values);  it's value 5 not 6 that determines the maxBit
 
     int maxBit=0;
     while (range) { maxBit++; range>>=1; }
@@ -1335,7 +1338,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     // TODO: may uint64_t min and max, should be always. rather than difference between int64_t and uint64_t (for SEXP *)
 
     // Rprintf("Column %d of by= has min=%llu, max=%llu, anyna=%d, range=%llu. Writing key ...\n", col, min, max, anyna, max-min);
-    min--;  // so that x-min results in 1 for the minimum; 0 is for NA
     for (int b=0; b<nbyte; b++) {
       if (key[nradix+b]==NULL)
         key[nradix+b] = calloc(n, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
@@ -1385,10 +1387,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
           WRITE_KEY
         }
       } else {
-        double *xd = REAL(x);
+        double *xd = REAL(x);                // TODO: need to compress doubles (skip bytes?) as it's too many bits for now
         for (int i=0; i<n; i++) {
           if (ISNA(xd[i])) continue;         // don't need if no-NA are known
-          int64_t this = dtwiddle(xd, i, 1);    // TODO: don't need twiddle if no negatives or NA, known from range above
+          uint64_t this = dtwiddle(xd, i, 1);    // TODO: don't need twiddle if no negatives or NA, known from range above
           WRITE_KEY
         }
       }
@@ -1464,9 +1466,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         bool nested = true;
         if (my_n<=STL) {
           nested = false;
-          bool grouped;
-          count_group(key[radix]+from, my_n, &grouped, my_order, &my_ng, my_gs);
-          if (!grouped) {
+          bool skip;
+          count_group(key[radix]+from, my_n, &skip, my_order, &my_ng, my_gs);
+          if (!skip) {
             // reorder o
             int *osub = ansd+from;
             // if (radix==0) {
