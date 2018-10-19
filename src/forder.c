@@ -174,6 +174,28 @@ static void range_i64(int64_t *x, int n, uint64_t *out_min, uint64_t *out_max, b
   }
 }
 
+static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
+{
+  uint64_t min = 0;
+  uint64_t max = 0;
+  bool anyna=false;
+  int i=0;
+  while(i<n && ISNA(x[i])) i++;
+  if (i>0) anyna=true;
+  if (i<n) { max = min = dtwiddle(x, i++, 1);}
+  for(; i<n; i++) {
+    if (ISNA(x[i])) { anyna=true; continue; }
+    uint64_t tmp = dtwiddle(x, i, 1);
+    if (tmp>max) max=tmp;
+    else if (tmp<min) min=tmp;
+  }
+  *out_anyna = anyna;
+  *out_min = min;
+  *out_max = max;
+}
+
+
+
 //#define MIN_CHARSXP_SIZE (sizeof(VECTOR_SEXPREC)+8)
 //static const uint64_t PTR_MASK = 0xffffffffffff;    // 48-bit virtual address space; works on 32bit too
 /*
@@ -200,14 +222,12 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool
 */
 
 
-/*
 int StrCmp2(SEXP x, SEXP y) {    // same as StrCmp but also takes into account 'na.last' argument.
   if (x == y) return 0;                   // same cached pointer (including NA_STRING==NA_STRING)
   if (x == NA_STRING) return nalast;      // if x=NA, nalast=1 ? then x > y else x < y (Note: nalast == 0 is already taken care of in 'csorted', won't be 0 here)
   if (y == NA_STRING) return -nalast;     // if y=NA, nalast=1 ? then y > x
   return order*strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));  // same as explanation in StrCmp
 }
-*/
 
 int StrCmp(SEXP x, SEXP y)            // also used by bmerge and chmatch
 {
@@ -393,11 +413,10 @@ static void count_group(const uint8_t *x, const uint16_t n, bool *out_grouped, u
 
 
 // x*order results in integer overflow when -1*NA, so careful to avoid that here :
-/*
+
 static inline int icheck(int x) {
   return ((nalast != 1) ? ((x != NA_INTEGER) ? x*order : x) : ((x != NA_INTEGER) ? (x*order)-1 : INT_MAX)); // if nalast==1, NAs must go last.
 }
-*/
 
 //static void icount(int *x, int *o, int n)
 /* Counting sort:
@@ -677,12 +696,12 @@ int getNumericRounding_C()
 
 static union {
   double d;
-  unsigned long long ull;
+  uint64_t ull;
   //  int i;
   //  unsigned int ui;
 } u;
 
-unsigned long long dtwiddle(void *p, int i, int order)
+uint64_t dtwiddle(void *p, int i, int order)
 {
   u.d = order*((double *)p)[i];                               // take care of 'order' right at the beginning
   if (R_FINITE(u.d)) {
@@ -700,12 +719,11 @@ unsigned long long dtwiddle(void *p, int i, int order)
       u.ull = (ISNA(u.d) ? 0 : (1ULL << 51));
       return (nalast == 1 ? ~u.ull : u.ull);
   }
-  unsigned long long mask = (u.ull & 0x8000000000000000) ?
-           0xffffffffffffffff : 0x8000000000000000;       // always flip sign bit and if negative (sign bit was set) flip other bits too
+  uint64_t mask = (u.ull & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000;  // always flip sign bit and if negative (sign bit was set) flip other bits too
   return( (u.ull ^ mask) & dmask2 );
 }
 
-unsigned long long i64twiddle(void *p, int i, int order)
+uint64_t i64twiddle(void *p, int i, int order)
 // 'order' is in effect now - ascending and descending order implemented. Default
 // case (setkey) will not be affected much because nalast != 1 and order == 1 are
 // defaults.
@@ -747,7 +765,7 @@ unsigned long long i32twiddle(void *p, int i)
 }
 */
 
-unsigned long long (*twiddle)(void *, int, int);
+uint64_t (*twiddle)(void *, int, int);
 // integer64 has NA = 0x8000000000000000. And it gives TRUE for all ISNAN(.) when '.' is -ve number.
 // So, ISNAN(.) would just provide wrong results. This was particularly an issue while implementing
 // DT[order(., na.last=NA)] where '.' is an integer64 column. Therefore, 'is_nan'. This is basically
@@ -1090,34 +1108,87 @@ static void csort_pre(SEXP *x, uint64_t n, SEXP **out_ustr, uint64_t *out_n, uin
 // For use by forder only, which now returns NULL if already sorted (hence no need for separate is.sorted).
 // TO DO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
 // These are all sequential access to x, so very quick and cache efficient.
-/*
+
 static int isorted(int *x, int n)                           // order = 1 is ascending and order=-1 is descending
 {                                                           // also takes care of na.last argument with check through 'icheck'
                                                             // Relies on NA_INTEGER==INT_MIN, checked in init.c
   int i=1,j=0;
   if (nalast == 0) {                                        // when nalast = NA,
     for (int k=0; k<n; k++) if (x[k] != NA_INTEGER) j++;
-    if (j == 0) { push(n); return(-2); }                    // all NAs ? return special value to replace all o's values with '0'
+    if (j == 0) return(-2);                                 // all NAs ? return special value to replace all o's values with '0'
     if (j != n) return(0);                                  // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
   }                                                         // no NAs  ? continue to check the rest of isorted - the same routine as usual
-  if (n<=1) { push(n); return(1); }
+  if (n<=1) return(1);
   if (icheck(x[1]) < icheck(x[0])) {
     i = 2;
     while (i<n && icheck(x[i]) < icheck(x[i-1])) i++;
-    if (i==n) { mpush(1,n); return(-1);}                    // strictly opposite to expected 'order', no ties;
+    if (i==n) return -1;                                   // strictly opposite to expected 'order', no ties;
                                                             // e.g. no more than one NA at the beginning/end (for order=-1/1)
     else return(0);
   }
-  int old = gsngrp[flip];
   int tt = 1;
   for (i=1; i<n; i++) {
-    if (icheck(x[i]) < icheck(x[i-1])) { gsngrp[flip] = old; return(0); }
-    if (x[i]==x[i-1]) tt++; else { push(tt); tt=1; }
+    if (icheck(x[i]) < icheck(x[i-1])) return(0);
+    if (x[i]==x[i-1]) tt++; else tt=1;
   }
-  push(tt);
   return(1);                                                // same as 'order', NAs at the beginning for order=1, at end for order=-1, possibly with ties
 }
-*/
+
+static int dsorted(double *x, int n)                        // order=1 is ascending and -1 is descending
+{                                                           // also accounts for nalast=0 (=NA), =1 (TRUE), -1 (FALSE) (in twiddle)
+  int i=1,j=0;
+  unsigned long long prev, this;
+  if (nalast == 0) {                                        // when nalast = NA,
+    for (int k=0; k<n; k++) if (!is_nan(x, k)) j++;
+    if (j == 0) return(-2);                                 // all NAs ? return special value to replace all o's values with '0'
+    if (j != n) return(0);                                  // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
+  }                                                         // no NAs  ? continue to check the rest of isorted - the same routine as usual
+  if (n<=1) return(1);
+  prev = twiddle(x,0,order);
+  this = twiddle(x,1,order);
+  if (this < prev) {
+    i = 2;
+    prev=this;
+    while (i<n && (this=twiddle(x,i,order)) < prev) {i++; prev=this; }
+    if (i==n) return(-1);                                   // strictly opposite of expected 'order', no ties;
+                                                            // e.g. no more than one NA at the beginning/end (for order=-1/1)
+    else return(0);                                         // TO DO: improve to be stable for ties in reverse
+  }
+  int tt = 1;
+  for (i=1; i<n; i++) {
+    this = twiddle(x,i,order);                              // TO DO: once we get past -Inf, NA and NaN at the bottom,  and +Inf at the top,
+                                                            //        the middle only need be twiddled for tolerance (worth it?)
+    if (this < prev) return(0);
+    if (this==prev) tt++; else tt=1;
+    prev = this;
+  }
+  return(1);                                                // exactly as expected in 'order' (1=increasing, -1=decreasing), possibly with ties
+}
+
+static int csorted(SEXP *x, int n)                          // order=1 is ascending and -1 is descending
+{                                                           // also accounts for nalast=0 (=NA), =1 (TRUE), -1 (FALSE)
+  int i=1, j=0, tmp;
+  if (nalast == 0) {                                        // when nalast = NA,
+    for (int k=0; k<n; k++) if (x[k] != NA_STRING) j++;
+    if (j == 0) return(-2);                                 // all NAs ? return special value to replace all o's values with '0'
+    if (j != n) return(0);                                  // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
+  }                                                         // no NAs  ? continue to check the rest of isorted - the same routine as usual
+  if (n<=1) return(1);
+  if (StrCmp2(x[1],x[0])<0) {
+    i = 2;
+    while (i<n && StrCmp2(x[i],x[i-1])<0) i++;
+    if (i==n) return(-1);                                   // strictly opposite of expected 'order', no ties;
+                                                            // e.g. no more than one NA at the beginning/end (for order=-1/1)
+    else return(0);
+  }
+  int tt = 1;
+  for (i=1; i<n; i++) {
+    tmp = StrCmp2(x[i],x[i-1]);
+    if (tmp < 0) return(0);
+    if (tmp == 0) tt++; else tt=1;
+  }
+  return(1);                                                // exactly as expected in 'order', possibly with ties
+}
 
 bool need2utf8(SEXP x, int n)
 {
@@ -1225,8 +1296,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       if (inherits(x, "integer64")) {
         range_i64((int64_t *)REAL(x), n, &min, &max, &anyna);
       } else {
-        Error("double not yet implemented because it needs to twiddle");
-        //range_d(  REAL(x), n, &min, &max, &anyna);
+        range_d(REAL(x), n, &min, &max, &anyna);
       }
       break;
     case STRSXP :
@@ -1315,13 +1385,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
           WRITE_KEY
         }
       } else {
-        error("double not yet implemented");
-        /*double *xd = REAL(x);
+        double *xd = REAL(x);
         for (int i=0; i<n; i++) {
-          if (ISNA(xd[i])) continue;          // don't need if no-NA are known
-          int64_t this = dtwiddle(xd[i]);  // TODO: don't need twiddle if no negatives or NA, known from range above
+          if (ISNA(xd[i])) continue;         // don't need if no-NA are known
+          int64_t this = dtwiddle(xd, i, 1);    // TODO: don't need twiddle if no negatives or NA, known from range above
           WRITE_KEY
-        }*/
+        }
       }
       break;
     case STRSXP : {
@@ -1611,11 +1680,9 @@ SEXP fsorted(SEXP x)
   int n = length(x);
   if (n <= 1) return(ScalarLogical(TRUE));
   if (!isVectorAtomic(x)) Error("is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level");
-  //void *xd = DATAPTR(x);
+  void *xd = DATAPTR(x);
   stackgrps = FALSE;
   order = 1;
-  Error("revisit fsorted");
-  /*
   switch(TYPEOF(x)) {
   case INTSXP : case LGLSXP :
     tmp = isorted(xd, n); break;
@@ -1626,7 +1693,6 @@ SEXP fsorted(SEXP x)
   default :
     Error("type '%s' is not yet supported", type2char(TYPEOF(x)));
   }
-  */
   return(ScalarLogical( tmp==1 ? TRUE : FALSE ));
 }
 

@@ -90,9 +90,9 @@ Rboolean isDatatable(SEXP x);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
-unsigned long long dtwiddle(void *p, int i, int order);
-unsigned long long i64twiddle(void *p, int i, int order);
-unsigned long long (*twiddle)(void *, int, int);
+uint64_t dtwiddle(void *p, int i, int order);
+uint64_t i64twiddle(void *p, int i, int order);
+uint64_t (*twiddle)(void *, int, int);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 bool need2utf8(SEXP x, int n);
 SEXP isReallyReal(SEXP);
