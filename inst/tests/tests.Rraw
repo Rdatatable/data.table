@@ -12343,6 +12343,8 @@ setDF(DT)
 test(1953.4, data.table:::melt.data.table(DT, id.vars = 'id', measure.vars = 'a'),
      error = "must be a data.table")
 
+test(1954, setDT(list(1, 1:2)), error = 'profile of input lengths')
+
 ###################################
 #  Add new tests above this line  #
 ###################################

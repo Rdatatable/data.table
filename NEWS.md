@@ -23,6 +23,7 @@
 
 2. When `on=` is provided but not `i=`, a helpful error is now produced rather than silently ignoring `on=`. Thanks to Dirk Eddelbuettel for the idea.
 
+3. `setDT` provides better diagnostic feedback on input of differing `lengths`, [#3121](https://github.com/Rdatatable/data.table/issues/3121). Thanks @chuk-yong for raising an issue which highlighted the need for this. 
 
 ### Changes in v1.11.8  (30 Sep 2018)
 

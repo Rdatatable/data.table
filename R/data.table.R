@@ -2752,8 +2752,15 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     }
     n = vapply(x, length, 0L)
     mn = max(n)
-    if (any(n<mn))
-      stop("All elements in argument 'x' to 'setDT' must be of same length")
+    if (any(idx <- n<mn)) {
+      # prevent print overload
+      tbl = sort(table(n))
+      stop("All elements in argument 'x' to 'setDT' must be of same length, ",
+           "but the profile of input lengths (length:frequency) is: ",
+           brackify(sprintf('%s:%d', names(tbl), tbl)),
+           "\nThe first entry with fewer than ", mn,
+           " entries is ", which.max(idx))
+    }
     xn = names(x)
     if (is.null(xn)) {
       setattr(x, "names", paste0("V",seq_len(length(x))))
