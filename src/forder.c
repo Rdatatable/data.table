@@ -11,17 +11,17 @@ static int *gs[2] = {NULL};                                         // gs = grou
 static int flip = 0;                                                // two vectors flip flopped: flip and 1-flip
 static int gsalloc[2] = {0};                                        // allocated stack size
 static int gsngrp[2] = {0};                                         // used
-static int gsmax[2] = {0};                                          // max grpn so far
+//static int gsmax[2] = {0};                                          // max grpn so far. No longer any need to maintain.
 static int gsmaxalloc = 0;                                          // max size of stack, set by forder to nrows
-static void *xsub = NULL;                                           // allocated by forder; local function arguments named xsub point into it
-static int *newo = NULL;                                            // used by forder and [i|d|c]sort to reorder order. not needed if length(by)==1
-static int *otmp = NULL; static int otmp_alloc = 0;
-static void *xtmp = NULL; static int xtmp_alloc = 0;                // TO DO: save xtmp if possible, see allocs in forder
-static void *radix_xsub = NULL; static size_t radix_xsub_alloc = 0;
-static int *cradix_counts = NULL; static int cradix_counts_alloc = 0;
-static int maxlen = 1;
-static SEXP *cradix_xtmp = NULL; static int cradix_xtmp_alloc = 0;
-static int *csort_otmp=NULL; static int csort_otmp_alloc=0;
+//static void *xsub = NULL;                                           // allocated by forder; local function arguments named xsub point into it
+//static int *newo = NULL;                                            // used by forder and [i|d|c]sort to reorder order. not needed if length(by)==1
+//static int *otmp = NULL; static int otmp_alloc = 0;
+//static void *xtmp = NULL; static int xtmp_alloc = 0;                // TO DO: save xtmp if possible, see allocs in forder
+//static void *radix_xsub = NULL;
+static int *cradix_counts = NULL;
+static int ustr_maxlen = 0;
+static SEXP *cradix_xtmp = NULL;
+//static int *csort_otmp=NULL; static int csort_otmp_alloc=0;
 static SEXP *ustr = NULL; static int ustr_alloc = 0; static int ustr_n = 0;
 
 #define Error(...) do {cleanup(); error(__VA_ARGS__);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
@@ -40,22 +40,21 @@ static void cleanup() {
   flip = 0;
   gsalloc[0] = gsalloc[1] = 0;
   gsngrp[0] = gsngrp[1] = 0;
-  gsmax[0] = gsmax[1] = 0;
+//  gsmax[0] = gsmax[1] = 0;
   gsmaxalloc = 0;
 
-  free(xsub);             xsub=NULL;
-  free(newo);             newo=NULL;
-  free(otmp);             otmp=NULL;             otmp_alloc=0;
-  free(xtmp);             xtmp=NULL;             xtmp_alloc=0;
-  free(radix_xsub);       radix_xsub=NULL;       radix_xsub_alloc=0;
-  free(cradix_counts);    cradix_counts=NULL;    cradix_counts_alloc=0;
-  maxlen = 1;
-  free(cradix_xtmp);      cradix_xtmp=NULL;      cradix_xtmp_alloc=0;   // TO DO: reuse xtmp
-  free(csort_otmp);       csort_otmp=NULL;       csort_otmp_alloc=0;
+//  free(xsub);             xsub=NULL;
+//  free(newo);             newo=NULL;
+//  free(otmp);             otmp=NULL;             otmp_alloc=0;
+//  free(xtmp);             xtmp=NULL;             xtmp_alloc=0;
+//  free(radix_xsub);       radix_xsub=NULL;       radix_xsub_alloc=0;
+  free(cradix_counts);    cradix_counts=NULL;
+  free(cradix_xtmp);      cradix_xtmp=NULL;
+//  free(csort_otmp);       csort_otmp=NULL;       csort_otmp_alloc=0;
 
   for(int i=0; i<ustr_n; i++)
     SET_TRUELENGTH(ustr[i],0);
-  free(ustr);             ustr=NULL;             ustr_alloc=0; ustr_n=0;
+  free(ustr);             ustr=NULL;             ustr_alloc=0; ustr_n=0; ustr_maxlen=0;
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop above since only CHARSXP which had tl>0 (R's usage) are stored there.
 }
 
@@ -86,21 +85,12 @@ static void push(int x) {
   if (!stackgrps || x==0) return;
   if (gsalloc[flip] == gsngrp[flip]) growstack((uint64_t)(gsngrp[flip])*2);
   gs[flip][gsngrp[flip]++] = x;
-  if (x > gsmax[flip]) gsmax[flip] = x;
 }
-
-static void mpush(int x, int n) {
-  if (!stackgrps || x==0) return;
-  if (gsalloc[flip] < gsngrp[flip]+n) growstack(((uint64_t)(gsngrp[flip])+n)*2);
-  for (int i=0; i<n; i++) gs[flip][gsngrp[flip]++] = x;
-  if (x > gsmax[flip]) gsmax[flip] = x;
-}
-
 
 static void flipflop() {
   flip = 1-flip;
   gsngrp[flip] = 0;
-  gsmax[flip] = 0;
+//  gsmax[flip] = 0;
   if (gsalloc[flip] < gsalloc[1-flip]) growstack((uint64_t)(gsalloc[1-flip])*2);
 }
 
@@ -184,9 +174,9 @@ static void range_i64(int64_t *x, int n, uint64_t *out_min, uint64_t *out_max, b
   }
 }
 
-#define MIN_CHARSXP_SIZE (sizeof(VECTOR_SEXPREC)+8)
-static const uint64_t PTR_MASK = 0xffffffffffff;    // 48-bit virtual address space; works on 32bit too
-
+//#define MIN_CHARSXP_SIZE (sizeof(VECTOR_SEXPREC)+8)
+//static const uint64_t PTR_MASK = 0xffffffffffff;    // 48-bit virtual address space; works on 32bit too
+/*
 static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
 {
   uint64_t min = 0;
@@ -207,48 +197,143 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool
   *out_min = min/MIN_CHARSXP_SIZE;
   *out_max = max/MIN_CHARSXP_SIZE;
 }
+*/
+
 
 /*
-static void range_str(SEXP *x, int n, int64_t *out_min, int64_t *out_max, bool *out_anyna)
-// just for 1st column as wouldn't retain the first-appearance order if column 2+.  Yes it will!, since all numbers will retain first appearance order.
-// for by= not keyby=
-// group numbers are left in truelength to be reused by part II
-{
-  bool anyna=false;
-  int ngroup=0;
-  if (ustr_n!=0) Error("Internal error: ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);
-  // savetl_init() is called once at the start of forder
-  for(int i=0; i<n; i++) {
-    SEXP s = x[i];
-    if (s==NA_STRING) {anyna=true; continue;}
-    if (TRUELENGTH(s)<0) {
-      // group number is in TRUELENGTH; seen this group before; this case most frequent so do first
-      continue;
-    }
-    if (TRUELENGTH(s)>0)   // save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
-      savetl(s);           // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
-    // now save unique SEXP separately, so we can loop through them afterwards and reset TRUELENGTH to 0.
-    if (ustr_alloc<=ustr_n) {
-      ustr_alloc = (ustr_alloc == 0) ? 10000 : ustr_alloc*2;  // 10000 = 78k of 8byte pointers. Small initial guess, negligible time to alloc.
-      if (ustr_alloc>n) ustr_alloc = n;  // clamps at n (fully unique, no dups); n passed in
-      ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
-      if (ustr == NULL) Error("Unable to realloc %d * %d bytes in cgroup", ustr_alloc, sizeof(SEXP));
-    }
-    SET_TRUELENGTH(s, -(++ngroup));
-    ustr[ustr_n++] = s;
-  }
-  *out_anyna = anyna;
-  if (ngroup==0) {
-    *out_min = INT64_MIN;
-    *out_max = INT64_MIN;
-  } else {
-    *out_min = 1;
-    *out_max = ngroup;
-  }
+int StrCmp2(SEXP x, SEXP y) {    // same as StrCmp but also takes into account 'na.last' argument.
+  if (x == y) return 0;                   // same cached pointer (including NA_STRING==NA_STRING)
+  if (x == NA_STRING) return nalast;      // if x=NA, nalast=1 ? then x > y else x < y (Note: nalast == 0 is already taken care of in 'csorted', won't be 0 here)
+  if (y == NA_STRING) return -nalast;     // if y=NA, nalast=1 ? then y > x
+  return order*strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));  // same as explanation in StrCmp
 }
 */
 
-static bool sort = false;  // false for by=, true for keyby=
+int StrCmp(SEXP x, SEXP y)            // also used by bmerge and chmatch
+{
+  if (x == y) return 0;             // same cached pointer (including NA_STRING==NA_STRING)
+  if (x == NA_STRING) return -1;    // x<y
+  if (y == NA_STRING) return 1;     // x>y
+  return strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y))); // ENC2UTF8 handles encoding issues by converting all marked non-utf8 encodings alone to utf8 first. The function could be wrapped in the first if-statement already instead of at the last stage, but this is to ensure that all-ascii cases are handled with maximum efficiency.
+  // This seems to fix the issues as far as I've checked. Will revisit if necessary.
+
+  // OLD COMMENT: can return 0 here for the same string in known and unknown encodings, good if the unknown string is in that encoding but not if not ordering is ascii only (C locale). TO DO: revisit and allow user to change to strcoll, and take account of Encoding. see comments in bmerge().  10k calls of strcmp = 0.37s, 10k calls of strcoll = 4.7s. See ?Comparison, ?Encoding, Scollate in R internals.
+
+}
+
+// TO DO: check that all unknown encodings are ascii; i.e. no non-ascii unknowns are present, and that either Latin1
+//        or UTF-8 is used by user, not both. Then error if not. If ok, then can proceed with byte level. ascii is never marked known by R, but non-ascii (i.e. knowable encoding) could be marked unknown.
+//        does R internals have is_ascii function exported?  If not, simple enough.
+
+static void cradix_r(SEXP *xsub, int n, int radix)
+// xsub is a unique set of CHARSXP, to be ordered by reference
+// First time, radix==0, and xsub==x. Then recursively moves SEXP together for L1 cache efficiency.
+// Quite different to iradix because
+//   1) x is known to be unique so fits in cache (wide random access not an issue)
+//   2) they're variable length character strings
+//   3) no need to maintain o.  Just simply reorder x. No grps or push.
+// Fortunately, UTF sorts in the same order if treated as ASCII, so we can simplify by doing it by bytes.  TO DO: confirm
+// a forwards (MSD) radix for efficiency, although more complicated
+// This part has nothing to do with truelength. The truelength stuff is to do with finding the unique strings.
+// We may be able to improve CHARSXP derefencing by submitting patch to R to make R's string cache contiguous
+// but would likely be difficult. If we strxfrm, then it'll then be contiguous and compact then anyway.
+{
+  int i, j, itmp, *thiscounts, thisgrpn=0, thisx=0;
+
+  // TO DO?: chmatch to existing sorted vector, then grow it.
+  // TO DO?: if (n<N_SMALL=200) insert sort, then loop through groups via ==
+  if (n<=1) return;
+  // TO DO: if (n<50) cinsert (continuing from radix offset into CHAR) or using StrCmp. But 256 is narrow, so quick and not too much an issue.
+
+  thiscounts = cradix_counts + radix*256;
+  for (i=0; i<n; i++) {
+    thisx = radix<LENGTH(xsub[i]) ? (unsigned char)(CHAR(xsub[i])[radix]) : 1;  // no NA_STRING present,  1 for "" (could use 0 too)
+    thiscounts[ thisx ]++;
+  }
+  if (thiscounts[thisx] == n && radix < ustr_maxlen-1) {   // this also catches when subx has shorter strings than the rest, thiscounts[0]==n and we'll recurse very quickly through to the overall maxlen with no 256 overhead each time
+    cradix_r(xsub, n, radix+1);
+    thiscounts[thisx] = 0;  // the rest must be 0 already, save the memset
+    return;
+  }
+  itmp = thiscounts[0];
+  for (i=1; i<256; i++)
+    if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);  // don't cummulate through 0s, important below
+  for (i=n-1; i>=0; i--) {
+    thisx = radix<LENGTH(xsub[i]) ? (unsigned char)(CHAR(xsub[i])[radix]) : 1;
+    j = --thiscounts[thisx];
+    cradix_xtmp[j] = xsub[i];
+  }
+  memcpy(xsub, cradix_xtmp, n*sizeof(SEXP));
+  if (radix == ustr_maxlen-1) {
+    memset(thiscounts, 0, 256*sizeof(int));
+    return;
+  }
+  if (thiscounts[0] != 0) Error("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d", thiscounts[0], radix);
+  itmp = 0;
+  for (i=1;i<256;i++) {
+    if (thiscounts[i] == 0) continue;
+    thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
+    cradix_r(xsub+itmp, thisgrpn, radix+1);
+    itmp = thiscounts[i];
+    thiscounts[i] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to clear! Also more portable for machines where 0 isn't all bits 0 (?!)
+  }
+  if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
+}
+
+
+static bool sort = false;  // false for by= (then true to get first-appearance by-row order), true for keyby= (for now; later false, then true on the result)
+
+
+
+static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
+// group numbers are left in truelength to be reused by part II
+{
+  bool anyna=false;
+  if (ustr_n!=0) Error("Internal error: ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);  // # nocov
+  if (ustr_maxlen!=0) Error("Internal error: ustr_maxlen isn't 0 when starting range_str");
+  // savetl_init() is called once at the start of forder
+  #pragma omp parallel for num_threads(getDTthreads())
+  for(int i=0; i<n; i++) {
+    SEXP s = x[i];
+    if (s==NA_STRING) {anyna=true; continue;}
+    if (TRUELENGTH(s)<0) continue;  // seen this group before.
+    #pragma omp critical
+    if (TRUELENGTH(s)>=0) {  // another thread may have set it while I was waiting, so check it again
+      if (TRUELENGTH(s)>0)   // save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
+        savetl(s);           // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
+      // now save unique SEXP separately, so i) we can loop through them afterwards and reset TRUELENGTH to 0 and ii) sort uniques when sorting too
+      if (ustr_alloc<=ustr_n) {
+        ustr_alloc = (ustr_alloc==0) ? 16384 : ustr_alloc*2;  // small initial guess, negligible time to alloc 128KB (32 pages)
+        if (ustr_alloc>n) ustr_alloc = n;  // clamp at n: fully unique, no dups
+        ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
+        if (ustr == NULL) Error("Unable to realloc %d * %d bytes in range_str", ustr_alloc, sizeof(SEXP));
+      }
+      ustr[ustr_n++] = s;
+      SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
+      if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
+    }
+  }
+  *out_anyna = anyna;
+  if (ustr_n==0) {
+    *out_min = 0;
+    *out_max = 0;
+  } else {
+    *out_min = 1;
+    *out_max = ustr_n;
+  }
+  if (sort) {
+    // TODO build key and reuse parallel order at the end
+    cradix_counts = (int *)calloc(ustr_maxlen * 256, sizeof(int));  // stack of counts
+    if (!cradix_counts) Error("Failed to alloc cradix_counts");
+    cradix_xtmp = (SEXP *)malloc(ustr_n * sizeof(SEXP));
+    if (!cradix_xtmp) Error("Failed to alloc cradix_tmp");
+    cradix_r(ustr, ustr_n, 0);  // sorts ustr in-place by reference. assumes NA_STRING not present
+    for(int i=0; i<ustr_n; i++)     // save ordering in the CHARSXP. negative so as to distinguish with R's own usage.
+      SET_TRUELENGTH(ustr[i], -i-1);
+  }
+}
+
+
 
 static void count_group(const uint8_t *x, const uint16_t n, bool *out_grouped, uint16_t *out_order, uint16_t *out_ngrp, int *out_grpsize)
 // orders x by reference (that's ok destructively as we don't use this radix again) and writes the order into o; the o ordering is used several times by the caller.
@@ -308,10 +393,11 @@ static void count_group(const uint8_t *x, const uint16_t n, bool *out_grouped, u
 
 
 // x*order results in integer overflow when -1*NA, so careful to avoid that here :
+/*
 static inline int icheck(int x) {
   return ((nalast != 1) ? ((x != NA_INTEGER) ? x*order : x) : ((x != NA_INTEGER) ? (x*order)-1 : INT_MAX)); // if nalast==1, NAs must go last.
 }
-
+*/
 
 //static void icount(int *x, int *o, int n)
 /* Counting sort:
@@ -437,12 +523,13 @@ static void insert(uint8_t *x, int n, uint8_t *o, bool *ordered)
    Recall: there are no comparisons at all in counting and radix, there is wide random access
    in each LSD radix pass, though.
 */
-
+/*
 static unsigned int radixcounts[8][257] = {{0}};                            // 4 are used for iradix, 8 for dradix and i64radix
 static int skip[8];
+*/
 /* global because iradix and iradix_r interact and are called repetitively.
    counts are set back to 0 after each use, to benefit from skipped radix. */
-
+/*
 static void alloc_otmp(int n) {
   if (otmp_alloc >= n) return;
   otmp = (int *)realloc(otmp, n * sizeof(int));
@@ -459,19 +546,20 @@ static void alloc_xtmp(int n) {                                             // T
 }
 
 static void iradix_r(int *xsub, int *osub, int n, int radix);
-
+*/
+/*
 static void iradix(int *x, int *o, int n)
-   /* As icount :
-     Places the ordering into o directly, overwriting whatever was there
-     Doesn't change x
-     Pushes group sizes onto stack */
+// As icount :
+//     Places the ordering into o directly, overwriting whatever was there
+//     Doesn't change x
+//     Pushes group sizes onto stack
 {
   int i, j, radix, nextradix, itmp, thisgrpn, maxgrpn;
   unsigned int thisx=0, shift, *thiscounts;
 
   for (i=0;i<n;i++) {
-    /* parallel histogramming pass; i.e. count occurrences of
-    0:255 in each byte.  Sequential so almost negligible. */
+    // parallel histogramming pass; i.e. count occurrences of
+    //0:255 in each byte.  Sequential so almost negligible.
     thisx = (unsigned int)(icheck(x[i])) - INT_MIN;                     // relies on overflow behaviour. And shouldn't -INT_MIN be up in iradix?
     radixcounts[0][thisx & 0xFF]++;                                     // unrolled since inside n-loop
     radixcounts[1][thisx >> 8 & 0xFF]++;
@@ -479,8 +567,8 @@ static void iradix(int *x, int *o, int n)
     radixcounts[3][thisx >> 24 & 0xFF]++;
   }
   for (radix=0; radix<4; radix++) {
-    /* any(count == n) => all radix must have been that value =>
-    last x (still thisx) was that value */
+    // any(count == n) => all radix must have been that value =>
+    //last x (still thisx) was that value
     i = thisx >> (radix*8) & 0xFF;
     skip[radix] = radixcounts[radix][i] == n;
     if (skip[radix]) radixcounts[radix][i] = 0;                         // clear it now, the other counts must be 0 already
@@ -497,9 +585,9 @@ static void iradix(int *x, int *o, int n)
   }
   for (i=radix-1; i>=0; i--) {
     if (!skip[i]) memset(radixcounts[i], 0, 257*sizeof(unsigned int));
-    /* clear the counts as we only needed the parallel pass for skip[]
-       and we're going to use radixcounts again below. Can't use parallel
-       lower counts in MSD radix, unlike LSD. */
+    // clear the counts as we only needed the parallel pass for skip[]
+    //   and we're going to use radixcounts again below. Can't use parallel
+    //   lower counts in MSD radix, unlike LSD.
   }
   thiscounts = radixcounts[radix];
   shift = radix * 8;
@@ -553,60 +641,7 @@ static void iradix(int *x, int *o, int n)
                                       // at those indices where x is NA. x[o[i]-1] because x is not
                                       // modified by reference unlike iinsert or iradix_r
 }
-
-static void iradix_r(int *xsub, int *osub, int n, int radix)
-  // xsub is a recursive offset into xsub working memory above in iradix, reordered by reference.
-  // osub is a an offset into the main answer o, reordered by reference.
-  // radix iterates 3,2,1,0
-{
-  int i, j, itmp, thisx, thisgrpn, nextradix, shift;
-  unsigned int *thiscounts;
-
-  if (n < N_SMALL) {          // N_SMALL=200 is guess based on limited testing. Needs calibrate().
-                              // Was 50 based on sum(1:50)=1275 worst -vs- 256 cummulate + 256 memset + allowance since reverse order is unlikely.
- //   iinsert(xsub, osub, n);   // when nalast==0, iinsert will be called only from within iradix.
-    return;
-  }
-
-  shift = radix*8;
-  thiscounts = radixcounts[radix];
-
-  for (i=0; i<n; i++) {
-    thisx = (unsigned int)xsub[i] - INT_MIN;                                // sequential in xsub
-    thiscounts[thisx >> shift & 0xFF]++;
-  }
-  itmp = thiscounts[0];
-  for (i=1; itmp<n && i<256; i++)
-    if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);             // don't cummulate through 0s, important below
-  for (i=n-1; i>=0; i--) {
-    thisx = ((unsigned int)xsub[i] - INT_MIN) >> shift & 0xFF;
-    j = --thiscounts[thisx];
-    otmp[j] = osub[i];
-    ((int *)xtmp)[j] = xsub[i];
-  }
-  memcpy(osub, otmp, n*sizeof(int));
-  memcpy(xsub, xtmp, n*sizeof(int));
-
-  nextradix = radix-1;
-  while (nextradix>=0 && skip[nextradix]) nextradix--;
-  // TO DO:  If nextradix==-1 AND no further columns from forder AND !retGrp, we're
-  //     done. We have o. Remember to memset thiscounts before returning.
-
-  if (thiscounts[0] != 0) Error("Logical error. thiscounts[0]=%d but should have been decremented to 0. radix=%d", thiscounts[0], radix);
-  thiscounts[256] = n;
-  itmp = 0;
-  for (i=1; itmp<n && i<=256; i++) {
-    if (thiscounts[i] == 0) continue;
-    thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
-    if (thisgrpn == 1 || nextradix==-1) {
-      push(thisgrpn);
-    } else {
-      iradix_r(xsub+itmp, osub+itmp, thisgrpn, nextradix);
-    }
-    itmp = thiscounts[i];
-    thiscounts[i] = 0;
-  }
-}
+*/
 
 
 // dradix from Arun's fastradixdouble.c
@@ -720,14 +755,12 @@ unsigned long long (*twiddle)(void *, int, int);
 Rboolean (*is_nan)(void *, int);
 size_t colSize=8;  // the size of the column type (4 or 8). Just 8 currently until iradix is merged in.
 
-static void dradix_r(uint8_t *xsub, int *osub, int n, int radix);
-
 #ifdef WORDS_BIGENDIAN
 #define RADIX_BYTE colSize-radix-1
 #else
 #define RADIX_BYTE radix
 #endif
-
+/*
 static void dradix(uint8_t *x, int *o, int n)
 {
   int i, j, radix, nextradix, itmp, thisgrpn, maxgrpn;
@@ -739,8 +772,8 @@ static void dradix(uint8_t *x, int *o, int n)
     for (radix=0; radix<colSize; radix++)
       radixcounts[radix][((unsigned char *)&thisx)[RADIX_BYTE]]++;
     // if dround==2 then radix 0 and 1 will be all 0 here and skipped.
-    /* on little endian, 0 is the least significant bits (the right)
-    / and 7 is the most including sign (the left); i.e. reversed. */
+    // on little endian, 0 is the least significant bits (the right)
+    /// and 7 is the most including sign (the left); i.e. reversed.
   }
   for (radix=0; radix<colSize; radix++) {
     i = ((unsigned char *)&thisx)[RADIX_BYTE];        // thisx is the last x after loop above
@@ -810,9 +843,9 @@ static void dradix(uint8_t *x, int *o, int n)
     for (i=0; i<n; i++) o[i] = is_nan(x, o[i]-1) ? 0 : o[i];   // nalast = 0 is dealt with separately as it just sets o to 0
                                                                // at those indices where x is NA. x[o[i]-1] because x is not
                                                                // modified by reference unlike iinsert or iradix_r
-
 }
-
+*/
+/*
 static void dinsert(unsigned long long *x, int *o, int n)
 // orders both x and o by reference in-place. Fast for small vectors, low overhead.
 // don't be tempted to binsearch backwards here, have to shift anyway; many memmove would have overhead and do the same thing
@@ -834,19 +867,20 @@ static void dinsert(unsigned long long *x, int *o, int n)
   for (i=1; i<n; i++) if (x[i]==x[i-1]) tt++; else { push(tt+1); tt=0; }
   push(tt+1);
 }
-
+*/
+/*
 static void dradix_r(unsigned char *xsub, int *osub, int n, int radix)
-  /* xsub is a recursive offset into xsub working memory above in dradix, reordered by reference.
-     osub is a an offset into the main answer o, reordered by reference.
-     dradix iterates 7,6,5,4,3,2,1,0 */
+// xsub is a recursive offset into xsub working memory above in dradix, reordered by reference.
+//     osub is a an offset into the main answer o, reordered by reference.
+//     dradix iterates 7,6,5,4,3,2,1,0
 {
   int i, j, itmp, thisgrpn, nextradix;
   unsigned int *thiscounts;
   unsigned char *p;
   if (n < 200) {
-    /* 200 is guess based on limited testing. Needs calibrate(). Was 50
-    based on sum(1:50)=1275 worst -vs- 256 cummulate + 256 memset +
-    allowance since reverse order is unlikely */
+    // 200 is guess based on limited testing. Needs calibrate(). Was 50
+    // based on sum(1:50)=1275 worst -vs- 256 cummulate + 256 memset +
+    // allowance since reverse order is unlikely
     dinsert((void *)xsub, osub, n);                                         // order=1 here because it's already taken care of in iradix
     return;
   }
@@ -898,97 +932,14 @@ static void dradix_r(unsigned char *xsub, int *osub, int n, int radix)
     thiscounts[i] = 0;
   }
 }
-
+*/
 // TO DO?: dcount. Find step size, then range = (max-min)/step and proceed as icount. Many fixed precision floats (such as prices)
 // may be suitable. Fixed precision such as 1.10, 1.15, 1.20, 1.25, 1.30 ... do use all bits so dradix skipping may not help.
 
-int StrCmp2(SEXP x, SEXP y) {    // same as StrCmp but also takes into account 'na.last' argument.
-  if (x == y) return 0;                   // same cached pointer (including NA_STRING==NA_STRING)
-  if (x == NA_STRING) return nalast;      // if x=NA, nalast=1 ? then x > y else x < y (Note: nalast == 0 is already taken care of in 'csorted', won't be 0 here)
-  if (y == NA_STRING) return -nalast;     // if y=NA, nalast=1 ? then y > x
-  return order*strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));  // same as explanation in StrCmp
-}
-
-int StrCmp(SEXP x, SEXP y)            // also used by bmerge and chmatch
-{
-  if (x == y) return 0;             // same cached pointer (including NA_STRING==NA_STRING)
-  if (x == NA_STRING) return -1;    // x<y
-  if (y == NA_STRING) return 1;     // x>y
-  return strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y))); // ENC2UTF8 handles encoding issues by converting all marked non-utf8 encodings alone to utf8 first. The function could be wrapped in the first if-statement already instead of at the last stage, but this is to ensure that all-ascii cases are handled with maximum efficiency.
-  // This seems to fix the issues as far as I've checked. Will revisit if necessary.
-
-  // OLD COMMENT: can return 0 here for the same string in known and unknown encodings, good if the unknown string is in that encoding but not if not ordering is ascii only (C locale). TO DO: revisit and allow user to change to strcoll, and take account of Encoding. see comments in bmerge().  10k calls of strcmp = 0.37s, 10k calls of strcoll = 4.7s. See ?Comparison, ?Encoding, Scollate in R internals.
-
-}
-
-// TO DO: check that all unknown encodings are ascii; i.e. no non-ascii unknowns are present, and that either Latin1
-//        or UTF-8 is used by user, not both. Then error if not. If ok, then can proceed with byte level. ascii is never marked known by R, but non-ascii (i.e. knowable encoding) could be marked unknown.
-//        does R internals have is_ascii function exported?  If not, simple enough.
-
-static void cradix_r(SEXP *xsub, int n, int radix)
-// xsub is a unique set of CHARSXP, to be ordered by reference
-// First time, radix==0, and xsub==x. Then recursively moves SEXP together for L1 cache efficiency.
-// Quite different to iradix because
-//   1) x is known to be unique so fits in cache (wide random access not an issue)
-//   2) they're variable length character strings
-//   3) no need to maintain o.  Just simply reorder x. No grps or push.
-// Fortunately, UTF sorts in the same order if treated as ASCII, so we can simplify by doing it by bytes.  TO DO: confirm
-// a forwards (MSD) radix for efficiency, although more complicated
-// This part has nothing to do with truelength. The truelength stuff is to do with finding the unique strings.
-// We may be able to improve CHARSXP derefencing by submitting patch to R to make R's string cache contiguous
-// but would likely be difficult. If we strxfrm, then it'll then be contiguous and compact then anyway.
-{
-  int i, j, itmp, *thiscounts, thisgrpn=0, thisx=0;
-  SEXP stmp;
-
-  // TO DO?: chmatch to existing sorted vector, then grow it.
-  // TO DO?: if (n<N_SMALL=200) insert sort, then loop through groups via ==
-  if (n<=1) return;
-  if (n==2) {
-    if (StrCmp(xsub[1],xsub[0])<0) { stmp=xsub[0]; xsub[0]=xsub[1]; xsub[1]=stmp; }
-    return;
-  }
-  // TO DO: if (n<50) cinsert (continuing from radix offset into CHAR) or using StrCmp. But 256 is narrow, so quick and not too much an issue.
-
-  thiscounts = cradix_counts + radix*256;
-  for (i=0; i<n; i++) {
-    thisx = xsub[i]==NA_STRING ? 0 : (radix<LENGTH(xsub[i]) ? (unsigned char)(CHAR(xsub[i])[radix]) : 1);
-    thiscounts[ thisx ]++;   // 0 for NA,  1 for ""
-  }
-  if (thiscounts[thisx] == n && radix < maxlen-1) {   // this also catches when subx has shorter strings than the rest, thiscounts[0]==n and we'll recurse very quickly through to the overall maxlen with no 256 overhead each time
-    cradix_r(xsub, n, radix+1);
-    thiscounts[thisx] = 0;  // the rest must be 0 already, save the memset
-    return;
-  }
-  itmp = thiscounts[0];
-  for (i=1; i<256; i++)
-    if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);  // don't cummulate through 0s, important below
-  for (i=n-1; i>=0; i--) {
-    thisx = xsub[i]==NA_STRING ? 0 : (radix<LENGTH(xsub[i]) ? (unsigned char)(CHAR(xsub[i])[radix]) : 1);
-    j = --thiscounts[thisx];
-    cradix_xtmp[j] = xsub[i];
-  }
-  memcpy(xsub, cradix_xtmp, n*sizeof(SEXP));
-  if (radix == maxlen-1) {
-    memset(thiscounts, 0, 256*sizeof(int));
-    return;
-  }
-  if (thiscounts[0] != 0) Error("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d", thiscounts[0], radix);
-  itmp = 0;
-  for (i=1;i<256;i++) {
-    if (thiscounts[i] == 0) continue;
-    thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
-    cradix_r(xsub+itmp, thisgrpn, radix+1);
-    itmp = thiscounts[i];
-    thiscounts[i] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to clear! Also more portable for machines where 0 isn't all bits 0 (?!)
-  }
-  if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
-}
 
 
 
-
-
+/*
 static void cgroup(SEXP *x, int *o, int n)
 // As icount :
 //   Places the ordering into o directly, overwriting whatever was there
@@ -1036,14 +987,15 @@ static void cgroup(SEXP *x, int *o, int n)
   for(i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i],0);     // The cummulate meant counts are left non zero, so reset for next time (0.00s).
   ustr_n = 0;
 }
-
+*/
+/*
 static void alloc_csort_otmp(int n) {
   if (csort_otmp_alloc >= n) return;
   csort_otmp = (int *)realloc(csort_otmp, n * sizeof(int));
   if (csort_otmp == NULL) Error("Failed to allocate working memory for csort_otmp. Requested %d * %d bytes", n, sizeof(int));
   csort_otmp_alloc = n;
 }
-
+*/
 /*static void csort(SEXP *x, int *o, int n)
 //   As icount :
 //    Places the ordering into o directly, overwriting whatever was there
@@ -1078,6 +1030,8 @@ static void alloc_csort_otmp(int n) {
   // (but cgroup needs that to keep orginal order, and cgroup saves the sort in csort_pre).
 }
 */
+
+/*
 static void csort_pre(SEXP *x, uint64_t n, SEXP **out_ustr, uint64_t *out_n, uint64_t *out_order)
 // Finds ustr and finds their order.
 // Runs once for each column (if sortStr==TRUE), then ustr is used by csort within each group
@@ -1127,7 +1081,7 @@ static void csort_pre(SEXP *x, uint64_t n, SEXP **out_ustr, uint64_t *out_n, uin
   for(i=0; i<ustr_n; i++)     // save ordering in the CHARSXP. negative so as to distinguish with R's own usage.
     SET_TRUELENGTH(ustr[i], -i-1);
 }
-
+*/
 // functions to test vectors for sortedness: isorted, dsorted and csorted
 // base:is.unsorted uses any(is.na(x)) at R level (inefficient), and returns NA in the presence of any NA.
 // Hence, here we deal with NAs in C and return true if NAs are all at the beginning (what we need in data.table).
@@ -1136,7 +1090,7 @@ static void csort_pre(SEXP *x, uint64_t n, SEXP **out_ustr, uint64_t *out_n, uin
 // For use by forder only, which now returns NULL if already sorted (hence no need for separate is.sorted).
 // TO DO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
 // These are all sequential access to x, so very quick and cache efficient.
-
+/*
 static int isorted(int *x, int n)                           // order = 1 is ascending and order=-1 is descending
 {                                                           // also takes care of na.last argument with check through 'icheck'
                                                             // Relies on NA_INTEGER==INT_MIN, checked in init.c
@@ -1163,117 +1117,7 @@ static int isorted(int *x, int n)                           // order = 1 is asce
   push(tt);
   return(1);                                                // same as 'order', NAs at the beginning for order=1, at end for order=-1, possibly with ties
 }
-
-static int dsorted(double *x, int n)                        // order=1 is ascending and -1 is descending
-{                                                           // also accounts for nalast=0 (=NA), =1 (TRUE), -1 (FALSE) (in twiddle)
-  int i=1,j=0;
-  unsigned long long prev, this;
-  if (nalast == 0) {                                        // when nalast = NA,
-    for (int k=0; k<n; k++) if (!is_nan(x, k)) j++;
-    if (j == 0) { push(n); return(-2); }                    // all NAs ? return special value to replace all o's values with '0'
-    if (j != n) return(0);                                  // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
-  }                                                         // no NAs  ? continue to check the rest of isorted - the same routine as usual
-  if (n<=1) { push(n); return(1); }
-  prev = twiddle(x,0,order);
-  this = twiddle(x,1,order);
-  if (this < prev) {
-    i = 2;
-    prev=this;
-    while (i<n && (this=twiddle(x,i,order)) < prev) {i++; prev=this; }
-    if (i==n) { mpush(1,n); return(-1);}                    // strictly opposite of expected 'order', no ties;
-                                                            // e.g. no more than one NA at the beginning/end (for order=-1/1)
-    else return(0);                                         // TO DO: improve to be stable for ties in reverse
-  }
-  int old = gsngrp[flip];
-  int tt = 1;
-  for (i=1; i<n; i++) {
-    this = twiddle(x,i,order);                              // TO DO: once we get past -Inf, NA and NaN at the bottom,  and +Inf at the top,
-                                                            //        the middle only need be twiddled for tolerance (worth it?)
-    if (this < prev) { gsngrp[flip] = old; return(0); }
-    if (this==prev) tt++; else { push(tt); tt=1; }
-    prev = this;
-  }
-  push(tt);
-  return(1);                                                // exactly as expected in 'order' (1=increasing, -1=decreasing), possibly with ties
-}
-
-static int csorted(SEXP *x, int n)                          // order=1 is ascending and -1 is descending
-{                                                           // also accounts for nalast=0 (=NA), =1 (TRUE), -1 (FALSE)
-  int i=1, j=0, tmp;
-  if (nalast == 0) {                                        // when nalast = NA,
-    for (int k=0; k<n; k++) if (x[k] != NA_STRING) j++;
-    if (j == 0) { push(n); return(-2); }                    // all NAs ? return special value to replace all o's values with '0'
-    if (j != n) return(0);                                  // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
-  }                                                         // no NAs  ? continue to check the rest of isorted - the same routine as usual
-  if (n<=1) { push(n); return(1); }
-  if (StrCmp2(x[1],x[0])<0) {
-    i = 2;
-    while (i<n && StrCmp2(x[i],x[i-1])<0) i++;
-    if (i==n) { mpush(1,n); return(-1);}                    // strictly opposite of expected 'order', no ties;
-                                                            // e.g. no more than one NA at the beginning/end (for order=-1/1)
-    else return(0);
-  }
-  int old = gsngrp[flip];
-  int tt = 1;
-  for (i=1; i<n; i++) {
-    tmp = StrCmp2(x[i],x[i-1]);
-    if (tmp < 0) { gsngrp[flip] = old; return(0); }
-    if (tmp == 0) tt++; else { push(tt); tt=1; }
-  }
-  push(tt);
-  return(1);                                                // exactly as expected in 'order', possibly with ties
-}
-/*
-static void isort(int *x, int *o, int n)
-{
-  if (n<=2) {
-    if (nalast == 0 && n == 2) {                            // nalast = 0 and n == 2 (check bottom of this file for explanation)
-      if (o[0]==-1) { o[0]=1; o[1]=2; }
-      for (int i=0; i<n; i++) if (x[i] == NA_INTEGER) o[i] = 0;
-      push(1); push(1);
-      return;
-    } else Error("Internal error: isort received n=%d. isorted should have dealt with this (e.g. as a reverse sorted vector) already",n); // # nocov
-  }
-  if (n<N_SMALL && o[0] != -1 && nalast != 0) {                 // see comment above in iradix_r on N_SMALL=200.
-    //if not o[0] then can't just populate with 1:n here, since x is changed by ref too (so would need to be copied).
-    // pushes inside too. Changes x and o by reference, so not suitable  in first column when o hasn't been populated yet
-    //   and x is the actual column in DT (hence check on o[0]).
-    if (order != 1 || nalast != -1)                     // so that default case, i.e., order=1, nalast=FALSE will not be affected (ex: `setkey`)
-      for (int i=0; i<n; i++) x[i] = icheck(x[i]);
-    iinsert(x, o, n);
-  } else {
-    // Tighter range (e.g. copes better with a few abormally large values in some groups), but also, when setRange was once at
-    // colum level that caused an extra scan of (long) x first. 10,000 calls to setRange takes just 0.04s i.e. negligible.
-    setRange(x, n);
-    if (range==NA_INTEGER) Error("Internal error: isort passed all-NA. isorted should have caught this before this point"); // # nocov
-    int *target = (o[0] != -1) ? newo : o;
-    if (range<=N_RANGE && range<=n) {                   // was range<10000 for subgroups, but 1e5 for the first column,
-      icount(x, target, n);                             // tried to generalise here.  1e4 rather than 1e5 here because iterated
-    } else {                                            // was (thisgrpn < 200 || range > 20000) then radix
-      iradix(x, target, n);                             // a short vector with large range can bite icount when iterated (BLOCK 4 and 6)
-    }
-  }
-  // TO DO: add calibrate() to init.c
-}
 */
-
-static void dsort(double *x, int *o, int n)
-{
-  if (n <= 2) {                                         // nalast = 0 and n == 2 (check bottom of this file for explanation)
-    if (nalast == 0 && n == 2) {                        // don't have to twiddle here.. at least one will be NA and 'n' WILL BE 2.
-      if (o[0]==-1) { o[0]=1; o[1]=2; }
-      for (int i=0; i<n; i++) if (is_nan(x, i)) o[i] = 0;
-      push(1); push(1);
-      return;
-    } Error("Internal error: dsort received n=%d. dsorted should have dealt with this (e.g. as a reverse sorted vector) already",n); // # nocov
-  }
-  if (n<N_SMALL && o[0] != -1 && nalast != 0) {                                  // see comment above in iradix_r re N_SMALL=200,  and isort for o[0]
-    for (int i=0; i<n; i++) ((unsigned long long *)x)[i] = twiddle(x,i,order);   // have to twiddle here anyways, can't speed up default case like in isort
-    dinsert((unsigned long long *)x, o, n);
-  } else {
-    dradix((unsigned char *)x, (o[0] != -1) ? newo : o, n);
-  }
-}
 
 bool need2utf8(SEXP x, int n)
 {
@@ -1340,8 +1184,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   }
   // if n==1, the code is left to proceed below in case one or more of the 1-row by= columns are NA and na.last=NA. Otherwise it would be easy to return now.
 
-
-
   savetl_init();   // from now on use Error not error.
 
   //order = INTEGER(orderArg)[0];
@@ -1370,6 +1212,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   int nradix=0; // the current byte we're writing this column to; might be squashing into it (spare>0)
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
   for (int col=0; col<ncol; col++) {
+    // Rprintf("Finding range of column %d ...\n", col);
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min, max;     // min and max of non-NA values
     bool anyna;
@@ -1393,7 +1236,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         for (int i=0; i<n; i++) SET_STRING_ELT(tt, i, ENC2UTF8(STRING_ELT(x, i)));
         x = tt;
       }*/
-      range_str(STRING_PTR(x), n, &min, &max, &anyna);  // after dividing by MIN_CHARSXP_SIZE
+      range_str(STRING_PTR(x), n, &min, &max, &anyna);
       break;
     default:
        Error("Column %d of 'by' (%d) is type '%s', not yet supported", col, INTEGER(by)[col-1], type2char(TYPEOF(x)));
@@ -1406,61 +1249,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
              // TODO: the NA value could be placed as max if na.last=TRUE.  Deal with na.last up front in the key and then forget (TODO)
     // range 5 means 0(NA),1,2,3,4,5  (6 values)
 
-    // if we batch up the mins and maxs, then many of the batches won't contain these odd outliers. Then we can go back over the "bad batch" and remove the outliers.  Ah. but these outliers will be present in many of the batches.
-
     int maxBit=0;
     while (range) { maxBit++; range>>=1; }
-
-    // only used for CHARSXP, but declared at this level of scope to be used later below.
-    int compressWidth = MIN(14,maxBit);
-    int numBins = 1<<compressWidth;    // 1<<14 == 16384
-    int shift = maxBit-compressWidth;
-    uint64_t *bin_min = NULL;  //[numBins] = {0}; // TODO: save this stack allocation when
-
-    if (TYPEOF(x)==STRSXP) {
-      Rprintf("maxBit before gap compression=%d\n", maxBit);
-      bin_min = calloc(numBins, sizeof(uint64_t));  // TODO: if alloc fail.
-      uint64_t *bin_max = calloc(numBins, sizeof(uint64_t));
-      SEXP *xd = STRING_PTR(x);
-      for(int i=0; i<n; i++) {
-        if (xd[i]==NA_STRING) continue;
-        uint64_t this = ((uint64_t)xd[i] & PTR_MASK)/MIN_CHARSXP_SIZE;
-        int bin = (this-min)>>shift;
-        if (bin_min[bin]==0) { bin_min[bin] = bin_max[bin] = this; }
-        else if (this<bin_min[bin]) bin_min[bin] = this;
-        else if (this>bin_max[bin]) bin_max[bin] = this;
-      }
-      uint64_t newRange = 1;  // for the NA spot
-      for (int i=0; i<numBins; i++) {
-        if (bin_min[i]) {
-          Rprintf("%03d %llu %llu  range=%llu\n", i, bin_min[i], bin_max[i], bin_max[i]-bin_min[i]+1);
-          uint64_t tt = bin_max[i]-bin_min[i]+1;
-          bin_min[i] -= newRange;
-          newRange += tt;
-        }
-      }
-      free(bin_max);
-      int newMaxBit=0;
-      uint64_t ss=newRange;
-      while (ss) { newMaxBit++; ss>>=1; }
-      Rprintf("maxBit after gap compression=%d\n", newMaxBit);
-
-      if (sort) {
-        // !! find order of unique strings in this column, and use the ordering below when building key. !!
-        // we can't use the compression here because (<<shift + min)*MIN_CHARSXP_SIZE won't recover the original pointer
-        Rprintf("yes, sorting\n");
-        str_order(xd, n,
-
-        // TODO: parallel  .  It's the sweep reading that benefits from parallel caches,  much better than single-threaded sweep
-        for (int i=0; i<ustr_n; i++) {
-          uint64_t this = ((uint64_t)ustr[i] & PTR_MASK)/MIN_CHARSXP_SIZE;
-          int bin = (this-min)>>shift;
-          this -= bin_min[bin];  // has already had the bin offset included
-          str_order[this] = ustr_order[i];
-        }
-      }
-    }
-
     int nbyte = 1+(maxBit-1)/8; // the number of bytes spanned by the value
     if (spare==0) {
       spare = (8-maxBit%8)%8;   // left align to byte boundary
@@ -1473,12 +1263,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     }
     // TODO: count NAs rather than just bool.  Then can further optimize loops later.
     // TODO: may uint64_t min and max, should be always. rather than difference between int64_t and uint64_t (for SEXP *)
-    /*
-    Rprintf("sizeof(SEXP)=%d, sizeof(CHARSXP)==%d, sizeof(SEXPREC)=%d, sizeof(VECTOR_SEXPREC)=%d\n",
-             sizeof(SEXP),    sizeof(CHARSXP),     sizeof(SEXPREC),    sizeof(VECTOR_SEXPREC));
-*/
-    // 8 sxpinfo + 3 * 8 (attr, next, prev) + length 8 + truelength 8 = 48
-    Rprintf("Column %d of by= has min=%llu, max=%llu, anyna=%d, range=%llu\n", col, min, max, anyna, max-min);
+
+    // Rprintf("Column %d of by= has min=%llu, max=%llu, anyna=%d, range=%llu. Writing key ...\n", col, min, max, anyna, max-min);
     min--;  // so that x-min results in 1 for the minimum; 0 is for NA
     for (int b=0; b<nbyte; b++) {
       if (key[nradix+b]==NULL)
@@ -1512,6 +1298,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP : {  // TODO trivial LGL count
       int *xd = INTEGER(x);
+      #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<n; i++) {
         if (xd[i]==NA_INTEGER) continue;   // TODO:  separate branchless when !anyna
         uint64_t this = (uint32_t)xd[i]+(uint32_t)INT32_MAX;
@@ -1521,6 +1308,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     case REALSXP :
       if (inherits(x, "integer64")) {
         int64_t *xd = (int64_t *)REAL(x);
+        #pragma omp parallel for num_threads(getDTthreads())
         for (int i=0; i<n; i++) {
           if (xd[i]==INT64_MIN) continue;
           uint64_t this = (uint64_t)xd[i] + (uint64_t)INT64_MAX;
@@ -1539,24 +1327,23 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     case STRSXP : {
       // use tt from above if need2utf8.  TODO optional ascii mode for data.table
       SEXP *xd = STRING_PTR(x);
+      #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<n; i++) {
         if (xd[i]==NA_STRING) continue;
-        uint64_t this = ((uint64_t)xd[i] & PTR_MASK)/MIN_CHARSXP_SIZE;
-        int bin = (this-min)>>shift;
-        this -= bin_min[bin];  // has already had the bin offset included
+        uint64_t this = -TRUELENGTH(xd[i]);
         WRITE_KEY
       }}
-      // only if sorting ... for(int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i],0);
-      // free(ustr); ustr=NULL; ustr_n=0; ustr_alloc=0;   // ustr could be left allocated and reused, but free now in case large and we're tight on ram
+      for(int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i],0);
+      free(ustr); ustr=NULL; ustr_n=0; ustr_alloc=0; ustr_maxlen=0;   // ustr could be left allocated and reused, but free now in case large and we're tight on ram
       break;
     default:
        Error("Internal error: column not supported not caught earlier");
     }
     nradix += nbyte-1+(spare==0);
-    free(bin_min);
+    // Rprintf("Written key for column %d\n", col);
   }
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
-  Rprintf("nradix=%d\n", nradix);
+  // Rprintf("nradix=%d\n", nradix);
 
   //for (int i=0; i<n; i++) {
   //  for (int b=0; b<nradix; b++) Rprintf("%03d  ", key[b][i]);
@@ -1565,6 +1352,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 
   SEXP ans = PROTECT(allocVector(INTSXP, n)); n_protect++;
   int *ansd = INTEGER(ans);
+  // Rprintf("Populating ansd\n");
   for (int i=0; i<n; i++) ansd[i]=i+1;  // initialize for smaller n or range where the parallel-batch doesn't happen. TODO: parallelize but low priority
                                      // the first gather is the worst; for the first radix==0 case, the parallel-batch can just write o directly to save wasteful reordering of 1:n
 
@@ -1586,6 +1374,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   //size_t TMP_size = 0;
 
   for (int radix=0; radix<nradix; radix++) {
+    // Rprintf("Starting radix %d...\n",radix);
     flipflop();
     //int *grps = gs[flip];
     stackgrps = radix<(nradix-1) || LOGICAL(retGrp)[0];  // if just ordering, we can save allocating and writing the last (and biggest) group size vector
@@ -1767,8 +1556,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       }
     }
   }
+  // Rprintf("Finished radix sort.\n");
   //omp_set_nested(0);
   free(TMP);  // TODO: place in cleanup()
+  for (int i=0; i<nradix; i++) {free(key[i]); key[i]=NULL;}  // TODO: place in cleanup()
   //TMP_size=0;
   TMP = NULL;
 /*
@@ -1792,6 +1583,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     SEXP tt;
     setAttrib(ans, sym_starts, tt = allocVector(INTSXP, gsngrp[flip]));
     int *ss = INTEGER(tt);
+    // Rprintf("cumulating groups...\n");
     for (int i=0, tmp=1; i<gsngrp[flip]; i++) {ss[i]=tmp; tmp+=gs[flip][i]; };
     //if (isSorted || LOGICAL(sort)[0])
     //  for (INTEGER(x)[0]=1, i=1; i<ngrp; i++) INTEGER(x)[i] = INTEGER(x)[i-1] + gs[flip][i-1];
@@ -1806,6 +1598,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 
   cleanup();
   UNPROTECT(n_protect);
+  // Rprintf("finished forder\n");
   return ans;
 }
 
@@ -1814,14 +1607,15 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 SEXP fsorted(SEXP x)
 {
   // Just checks if ordered and returns FALSE early if not (and don't return ordering if so, unlike forder).
-  int tmp,n;
-  void *xd;
-  n = length(x);
+  int tmp=1;
+  int n = length(x);
   if (n <= 1) return(ScalarLogical(TRUE));
   if (!isVectorAtomic(x)) Error("is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level");
-  xd = DATAPTR(x);
+  //void *xd = DATAPTR(x);
   stackgrps = FALSE;
   order = 1;
+  Error("revisit fsorted");
+  /*
   switch(TYPEOF(x)) {
   case INTSXP : case LGLSXP :
     tmp = isorted(xd, n); break;
@@ -1832,6 +1626,7 @@ SEXP fsorted(SEXP x)
   default :
     Error("type '%s' is not yet supported", type2char(TYPEOF(x)));
   }
+  */
   return(ScalarLogical( tmp==1 ? TRUE : FALSE ));
 }
 
@@ -1908,30 +1703,6 @@ SEXP isReallyReal(SEXP x) {
   return(ans);
 }
 
-SEXP binary(SEXP inx)
-// base::intToBits is close, but why does that print the result as "00 00 00 00" (raw) rather than ("0000") bits? Seems odd.
-{
-  SEXP *x = STRING_PTR(inx);
-  int n = LENGTH(inx);
-  //for (int i=0; i<5; i++) Rprintf("%p %lx %llu\n", x[i], (long)x[i], (uint64_t)x[i] & PTR_MASK);
-
-  uint64_t min = (uint64_t)x[0] & PTR_MASK;
-  for (int i=1; i<n; i++) {
-    uint64_t this = (uint64_t)x[i] & PTR_MASK;
-    if (this<min) min=this;
-  }
-  SEXP ans = PROTECT(allocVector(REALSXP, n));
-  double *ansd = REAL(ans);
-  for (int i=0; i<n; i++) {
-    uint64_t this = (uint64_t)x[i] & PTR_MASK;
-    ansd[i] = (double)((this - min)/MIN_CHARSXP_SIZE);  // 56 is sizeof(VECTOR_SEXPREC) [48] + 8 (minimum 8 byte Vcell for string)
-  }
-  UNPROTECT(1);
-  return ans;
-}
-
-
-/* old binary ...
 SEXP binary(SEXP x)
 // base::intToBits is close, but why does that print the result as "00 00 00 00" (raw) rather than ("0000") bits? Seems odd.
 {
@@ -1953,7 +1724,6 @@ SEXP binary(SEXP x)
   UNPROTECT(1);
   return ans;
 }
-*/
 
 
 /*
