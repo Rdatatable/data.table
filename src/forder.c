@@ -63,7 +63,6 @@ static int nalast = -1;                                             // =1, 0, -1
                                                                     // note that na.last=NA (0) removes NAs, not retains them.
 static int order = 1;                                               // =1, -1 for ascending and descending order respectively
 static Rboolean stackgrps = TRUE;                                   // switched off for last column when not needed by setkey
-static Rboolean sortStr = TRUE;                                     // TRUE for setkey, FALSE for by=
 
 #define N_SMALL 200                                                 // replaced n < 200 with n < N_SMALL. Easier to change later
 #define N_RANGE 100000                                              // range limit for counting sort. UPDATE: should be less than INT_MAX (see setRange for details)
@@ -249,6 +248,8 @@ static void range_str(SEXP *x, int n, int64_t *out_min, int64_t *out_max, bool *
 }
 */
 
+static bool sort = false;  // false for by=, true for keyby=
+
 static void count_group(const uint8_t *x, const uint16_t n, bool *out_grouped, uint16_t *out_order, uint16_t *out_ngrp, int *out_grpsize)
 // orders x by reference (that's ok destructively as we don't use this radix again) and writes the order into o; the o ordering is used several times by the caller.
 // the uint8_t *o limits the capability to max n=256 items (4 cache lines * 2 = 8 cache lines)
@@ -283,7 +284,15 @@ static void count_group(const uint8_t *x, const uint16_t n, bool *out_grouped, u
     counts[this]++;
   }
 
-  // TODO: if we need to sort the groups,  then just insert sort the uniques, using in-place insert sort.  But then out_grouped would need to be out_need_to_reorder
+  if (sort) {
+    for (int i=1; i<ngrp; i++) {
+      uint8_t tmp = ugrp[i];
+      int j = i;
+      while (--j>=0 && ugrp[j]>tmp) ugrp[j+1] = ugrp[j];
+      ugrp[j+1] = tmp;
+    }
+    // when reverse order, the key bits already had (max-this) when writing key (could straddle byte boundaries given the spare-squashing)
+  }
 
   *out_grouped = grouped;
   *out_ngrp = ngrp;
@@ -372,7 +381,7 @@ static inline int icheck(int x) {
 
 
 
-
+/*
 static void insert(uint8_t *x, int n, uint8_t *o, bool *ordered)
 // orders x by reference (that's ok destructively as we don't use this radix again) and writes the order into o; the o ordering is used several times by the caller.
 // the uint8_t *o limits the capability to max n=256 items (4 cache lines * 2 = 8 cache lines)
@@ -399,7 +408,7 @@ static void insert(uint8_t *x, int n, uint8_t *o, bool *ordered)
   }
   *ordered = !anymoved;
 }
-
+*/
 /*
   iradix is a counting sort performed forwards from MSB to LSB, with some tricks
   and short circuits building on Terdiman and Herf.
@@ -1311,7 +1320,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   if (!isLogical(retGrp) || LENGTH(retGrp)!=1 || INTEGER(retGrp)[0]==NA_LOGICAL) error("retGrp must be TRUE or FALSE");
   if (!isLogical(sortStrArg) || LENGTH(sortStrArg)!=1 || INTEGER(sortStrArg)[0]==NA_LOGICAL ) error("sortStr must be TRUE or FALSE");
   if (!isLogical(naArg) || LENGTH(naArg) != 1) error("na.last must be logical TRUE, FALSE or NA of length 1");
-  sortStr = LOGICAL(sortStrArg)[0];
+  sort = LOGICAL(sortStrArg)[0]==TRUE;
   // static global set on top...
   nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? 0 : (LOGICAL(naArg)[0] == TRUE) ? 1 : -1; // 1=TRUE, -1=FALSE, 0=NA
   gsmaxalloc = n;  // upper limit for stack size (all size 1 groups). We'll detect and avoid that limit, but if just one non-1 group (say 2), that can't be avoided.
@@ -1332,7 +1341,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 
   savetl_init();   // from now on use Error not error.
 
-  order = INTEGER(orderArg)[0];
+  //order = INTEGER(orderArg)[0];
 
   // always stack groups since we now go by byte and bytes_in_key is always > 1 ...stackgrps = length(by)>1 || LOGICAL(retGrp)[0];
 
@@ -1361,6 +1370,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min, max;     // min and max of non-NA values
     bool anyna;
+    bool sort_descending = sort && INTEGER(orderArg)[col-1]==-1;
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO trivial LGL count
       range_i32(INTEGER(x), n, &min, &max, &anyna);
@@ -1430,6 +1440,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       int newMaxBit=0;
       while (newRange) { newMaxBit++; newRange>>=1; }
       Rprintf("maxBit after gap compression=%d\n", newMaxBit);
+
+      if (sort) {
+        // find order of unique strings in this column, and use the ordering below when building key.
+
+
+      }
     }
 
     int nbyte = 1+(maxBit-1)/8; // the number of bytes spanned by the value
@@ -1476,6 +1492,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     //     So, we may as well bit-pack as done above.
     //     Retaining apperance-order within key-byte-column is still advatangeous for when we do encounter column-grouped data (to avoid data movement); and
     //       the ordering will be appearance-order preserving in that case.
+
+    // TODO: to cope with order=c(+1,-1,+1), given bit squashing, will have to do max-this when writing the key for those columns
+    // TODO:   and then it's just one sort in the insert_group
 
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP : {  // TODO trivial LGL count
