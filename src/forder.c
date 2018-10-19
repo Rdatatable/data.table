@@ -185,7 +185,7 @@ static void range_i64(int64_t *x, int n, uint64_t *out_min, uint64_t *out_max, b
 }
 
 #define MIN_CHARSXP_SIZE (sizeof(VECTOR_SEXPREC)+8)
-static const uint64_t PTR_MASK = 0xffffffffffff;    // 48-bit virtual address space (1<<48 - 1); works for 32bit too.
+static const uint64_t PTR_MASK = 0xffffffffffff;    // 48-bit virtual address space; works on 32bit too
 
 static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
 {
@@ -1078,8 +1078,8 @@ static void alloc_csort_otmp(int n) {
   // (but cgroup needs that to keep orginal order, and cgroup saves the sort in csort_pre).
 }
 */
-static void csort_pre(SEXP *x, int n)
-// Finds ustr and sorts it.
+static void csort_pre(SEXP *x, uint64_t n, SEXP **out_ustr, uint64_t *out_n, uint64_t *out_order)
+// Finds ustr and finds their order.
 // Runs once for each column (if sortStr==TRUE), then ustr is used by csort within each group
 // ustr is grown on each character column, to save sorting the same strings again if several columns contain the same strings
 {
@@ -1087,22 +1087,25 @@ static void csort_pre(SEXP *x, int n)
   int i, old_un, new_un;
   // savetl_init() is called once at the start of forder
   old_un = ustr_n;
+  // TODO: parallel
   for(i=0; i<n; i++) {
     s = x[i];
     if (TRUELENGTH(s)<0) continue;   // this case first as it's the most frequent. Already in ustr, this negative is its ordering.
+    // TODO # omp critical
+    // {
     if (TRUELENGTH(s)>0) {  // Save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
       savetl(s);          // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
       SET_TRUELENGTH(s,0);
     }
     if (ustr_alloc<=ustr_n) {
-      ustr_alloc = (ustr_alloc == 0) ? 10000 : ustr_alloc*2;  // 10000 = 78k of 8byte pointers. Small initial guess, negligible time to alloc.
-      if (ustr_alloc > old_un+n) ustr_alloc = old_un + n;
+      ustr_alloc = (ustr_alloc == 0) ? 16384 : MIN(ustr_alloc<<1, n);  // 10000 = 78k of 8byte pointers. Small initial guess, negligible time to alloc.
       ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
       if (ustr==NULL) Error("Failed to realloc ustr. Requested %d * %d bytes", ustr_alloc, sizeof(SEXP));
     }
     SET_TRUELENGTH(s, -1);  // this -1 will become its ordering later below
     ustr[ustr_n++] = s;
     if (s!=NA_STRING && LENGTH(s)>maxlen) maxlen=LENGTH(s);  // length on CHARSXP is the nchar of char * (excluding \0), and treats marked encodings as if ascii.
+    // }
   }
   new_un = ustr_n;
   if (new_un == old_un) return;  // No new strings observed, seen them all before in previous column. ustr already sufficient.
@@ -1438,25 +1441,23 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       }
       free(bin_max);
       int newMaxBit=0;
-      while (newRange) { newMaxBit++; newRange>>=1; }
+      uint64_t ss=newRange;
+      while (ss) { newMaxBit++; ss>>=1; }
       Rprintf("maxBit after gap compression=%d\n", newMaxBit);
 
       if (sort) {
         // !! find order of unique strings in this column, and use the ordering below when building key. !!
+        // we can't use the compression here because (<<shift + min)*MIN_CHARSXP_SIZE won't recover the original pointer
+        Rprintf("yes, sorting\n");
+        str_order(xd, n,
 
-        bool ustr[newRange] = {false};
         // TODO: parallel  .  It's the sweep reading that benefits from parallel caches,  much better than single-threaded sweep
-        for (int i=0; i<n; i++) {
-          if (xd[i]==NA_STRING) continue;
-          uint64_t this = ((uint64_t)xd[i] & PTR_MASK)/MIN_CHARSXP_SIZE;
+        for (int i=0; i<ustr_n; i++) {
+          uint64_t this = ((uint64_t)ustr[i] & PTR_MASK)/MIN_CHARSXP_SIZE;
           int bin = (this-min)>>shift;
           this -= bin_min[bin];  // has already had the bin offset included
-          ustr[this] = true;  // find to update in parallel with no atomic (it's just one byte that can't be half-written
+          str_order[this] = ustr_order[i];
         }
-        // now we have uniques and a mapping
-
-      }}
-
       }
     }
 
