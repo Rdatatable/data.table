@@ -6279,6 +6279,19 @@ if (test_xts) {
   dt.xts <- as.xts.data.table(dt)
   test(1663, dt.xts[1L], xts::xts(data.table(nav=100), order.by=as.Date("2014-12-31")))
 
+  # additional coverage missing uncovered in #3117
+  dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
+  xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
+  test(1465.9, as.data.table(xt, keep.rownames = FALSE), dt[ , !'index'])
+  names(xt)[1L] = 'index'
+  test(1465.10, as.data.table(xt), error = 'Input xts object should not')
+  names(xt)[1L] = 'quantity'
+  setcolorder(dt, c(3, 1, 2))
+  test(1465.11, as.xts(dt), error = 'data.table must have a time based')
+  setcolorder(dt, c(2, 3, 1))
+  dt[ , char_col := 'a']
+  test(1465.12, as.xts(dt), xt, warning = 'columns are not numeric')
+
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
 }
 
