@@ -182,7 +182,7 @@ static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, bool
   int i=0;
   while(i<n && ISNA(x[i])) i++;
   if (i>0) anyna=true;
-  if (i<n) { max = min = dtwiddle(x, i++, 1);}
+  if (i<n) { max = min = dtwiddle(x, i++, 1);}    // TODO: if we're just grouping, then we don't need to twiddle. However there are cases where we detect sortedness.
   for(; i<n; i++) {
     if (ISNA(x[i])) { anyna=true; continue; }
     uint64_t tmp = dtwiddle(x, i, 1);
@@ -304,7 +304,6 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 static bool sort = false;  // false for by= (then true to get first-appearance by-row order), true for keyby= (for now; later false, then true on the result)
 
 
-
 static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
 // group numbers are left in truelength to be reused by part II
 {
@@ -347,12 +346,13 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool
     if (!cradix_counts) Error("Failed to alloc cradix_counts");
     cradix_xtmp = (SEXP *)malloc(ustr_n * sizeof(SEXP));
     if (!cradix_xtmp) Error("Failed to alloc cradix_tmp");
-    cradix_r(ustr, ustr_n, 0);  // sorts ustr in-place by reference. assumes NA_STRING not present
+    cradix_r(ustr, ustr_n, 0);  // sorts ustr in-place by reference. assumes NA_STRING not present.  TODO: it could order ordering instead, or stack into key[]
     for(int i=0; i<ustr_n; i++)     // save ordering in the CHARSXP. negative so as to distinguish with R's own usage.
       SET_TRUELENGTH(ustr[i], -i-1);
+    free(cradix_counts); cradix_counts=NULL;
+    free(cradix_xtmp); cradix_xtmp=NULL;
   }
 }
-
 
 
 static void count_group(const uint8_t *x, const uint16_t n, bool *out_skip, uint16_t *out_order, uint16_t *out_ngrp, int *out_grpsize)
@@ -375,7 +375,7 @@ static void count_group(const uint8_t *x, const uint16_t n, bool *out_skip, uint
   ugrp[0] = x[0];
   counts[x[0]] = 1;
   int ngrp = 1;             // number of groups
-  bool skip = true;         // if already grouped and sort=false, then can skip.  if already sorted when sort=true, then can skip
+  bool skip = true;         // if already grouped and sort=false, then caller can skip.  if already sorted when sort=true, then caller can skip
 
   for (int i=1; i<n; i++) {
     uint8_t this = x[i];
@@ -1249,12 +1249,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 
   if (n==0) {
     // empty vector or 0-row DT is always sorted
-    SEXP ans = PROTECT(allocVector(INTSXP, 0));
+    SEXP ans = PROTECT(allocVector(INTSXP, 0)); n_protect++;
     if (LOGICAL(retGrp)[0]) {
       setAttrib(ans, sym_starts, allocVector(INTSXP, 0));
       setAttrib(ans, sym_maxgrpn, ScalarInteger(0));
     }
-    UNPROTECT(1);
+    UNPROTECT(n_protect);
     return ans;
   }
   // if n==1, the code is left to proceed below in case one or more of the 1-row by= columns are NA and na.last=NA. Otherwise it would be easy to return now.
@@ -1442,6 +1442,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   const int STL = MIN(n, 65536);  // Single Thread Load.  Such that counts can be uint16_t. 256*2=8 cache lines; 1-byte:64KB/16 pages of 4096; 2-bytes:128KB/0.125MB
   // TODO if we use 2-bytes for STL, then maximum can be 256^2 = 65536,  which would halve the size of the thread-private variables from int to uint16_t
   char *TMP = malloc(n*sizeof(int));
+  bool all_skipped = true;
   //size_t TMP_size = 0;
 
   for (int radix=0; radix<nradix; radix++) {
@@ -1470,6 +1471,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
           count_group(key[radix]+from, my_n, &skip, my_order, &my_ng, my_gs);
           if (!skip) {
             // reorder o
+            all_skipped = false; // ok to write from threads (naked) in this case since bool and only ever write false
             int *osub = ansd+from;
             // if (radix==0) {
             //   // will only happen when entire input<STL, so it's not worth saving the tiny waste here at the expense of a deep branch later
@@ -1508,20 +1510,60 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             int *restrict counts = calloc(nBatch*256, sizeof(int));
             // TODO:  if (!counts) Error ...
             //Rprintf("nested batch count...\n");
+            uint8_t ugrp[256];  // head(ugrp,ngrp) contain the unique values seen so far
+            bool    seen[256];  // is the value present in ugrp
+            uint8_t ngrp=0;
+            uint8_t last_seen=0;  // the last grp seen in the previous batch
+            for (int i=0; i<256; i++) seen[i]=false;
 
-            #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
+            #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads())
             for (int batch=0; batch<nBatch; batch++) {
               int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;  // could be that lastBatchSize == batchSize when i) my_n is multiple of nBatch
               const uint8_t *tmp = key[radix] + from + batch*batchSize;
               int *my_counts = counts + batch*256;            // TODO: type could switch from uint64 to uint32 depending on my_n>2^32; two loops
-              for (int i=0; i<my_n; i++) my_counts[*tmp++]++;
+              //my_counts[*tmp++]=1;
+              uint8_t my_ugrp[256];
+              uint8_t my_ngrp=0;
+              bool    my_skip=true;
+              for (int i=0; i<my_n; i++) {
+                if (my_counts[*tmp]==0) {
+                  my_ugrp[my_ngrp++] = *tmp;
+                } else if (my_skip && tmp[0]!=tmp[-1]) {
+                  my_skip=false;
+                }
+                my_counts[*tmp++]++;
+              }
+              if (!my_skip) all_skipped=false;  // outside ordered to save work in prior waiting threads; fine to update bool to false without atomic
+              #pragma omp ordered
+              {
+                for (int i=0; i<my_ngrp; i++) {
+                  if (!seen[my_ugrp[i]]) {
+                    seen[my_ugrp[i]] = true;
+                    ugrp[ngrp++] = last_seen = my_ugrp[i];
+                  } else if (all_skipped && my_ugrp[i]!=last_seen) {
+                    all_skipped=false;
+                  }
+                }
+              }
             }
-            // TODO: grouped could be detected at this stage to avoid reordering next
+
+            if (sort) {
+              for (int i=1; i<ngrp; i++) {
+                uint8_t tmp = ugrp[i];
+                if (ugrp[i-1]<=tmp) continue;
+                all_skipped=false;   // not already sorted, so can't skip
+                int j = i-1;
+                do {
+                  ugrp[j+1] = ugrp[j];
+                } while (--j>=0 && ugrp[j]>tmp);
+                ugrp[j+1] = tmp;
+              }
+            }
 
             //Rprintf("cumulate...\n");
             // cumulate columnwise; parallel histogram; small so no need to parallelize
-            for (int b=0, rollSum=0; b<256; b++) {
-              int j = b;
+            for (int b=0, rollSum=0; b<ngrp; b++) {
+              int j = ugrp[b];
               for (int batch=0; batch<nBatch; batch++) {
                 int tmp = counts[j];
                 counts[j] = rollSum;
@@ -1612,14 +1654,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             */
 
             int my_gs[256];
-            int my_ng=0;
-            for (int i=1; i<256; i++) {
-              int s = counts[i] - counts[i-1];
-              if (s) my_gs[my_ng++] = s;
+            for (int i=1; i<ngrp; i++) {
+              my_gs[i-1] = counts[ugrp[i]] - counts[ugrp[i-1]];
             }
-            int s = my_n-counts[255];
-            if (s) my_gs[my_ng++] = s;
-            newpush(my_gs, my_ng);
+            my_gs[ngrp-1] = my_n-counts[ugrp[ngrp-1]];
+            newpush(my_gs, ngrp);
             // memset(counts, 0, nBatch*256*sizeof(int));
             free(counts);
           }
@@ -1643,19 +1682,25 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 #endif
 
   if (!sortStr && ustr_n!=0) Error("Internal error: at the end of forder sortStr==FALSE but ustr_n!=0 [%d]", ustr_n); // # nocov
-
-  if (isSorted) {
+*/
+  if (all_skipped) {   // when data is already grouped or sorted, integer() returned with group sizes attached
     // the o vector created earlier could be avoided in this case if we only create it when isSorted becomes FALSE
     ans = PROTECT(allocVector(INTSXP, 0));  // Can't attach attributes to NULL
     n_protect++;
   }
-  */
+
   if (LOGICAL(retGrp)[0]) {
     SEXP tt;
     setAttrib(ans, sym_starts, tt = allocVector(INTSXP, gsngrp[flip]));
     int *ss = INTEGER(tt);
     // Rprintf("cumulating groups...\n");
-    for (int i=0, tmp=1; i<gsngrp[flip]; i++) {ss[i]=tmp; tmp+=gs[flip][i]; };
+    int maxgrpn = 0;
+    for (int i=0, tmp=1; i<gsngrp[flip]; i++) {
+      int this = gs[flip][i];
+      if (this>maxgrpn) maxgrpn=this;
+      ss[i]=tmp;
+      tmp+=this;
+    }
     //if (isSorted || LOGICAL(sort)[0])
     //  for (INTEGER(x)[0]=1, i=1; i<ngrp; i++) INTEGER(x)[i] = INTEGER(x)[i-1] + gs[flip][i-1];
     //else {
@@ -1664,7 +1709,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     //    for (i=0; i<ngrp; i++) { INTEGER(x)[i] = o[i+cumsum]; cumsum+=gs[flip][i]; }
     //    isort(INTEGER(x), ngrp);
     //}
-    //setAttrib(ans, sym_maxgrpn, ScalarInteger(gsmax[flip]));
+    setAttrib(ans, sym_maxgrpn, ScalarInteger(maxgrpn));
   }
 
   cleanup();
