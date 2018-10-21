@@ -34,6 +34,13 @@ static SEXP *ustr = NULL; static int ustr_alloc = 0; static int ustr_n = 0;
  * Therefore, using <<if (!malloc()) Error("helpful context msg")>> approach to cleanup() on error.
  */
 
+static void free_ustr() {
+  for(int i=0; i<ustr_n; i++)
+    SET_TRUELENGTH(ustr[i],0);
+  free(ustr); ustr=NULL;
+  ustr_alloc=0; ustr_n=0; ustr_maxlen=0;
+}
+
 static void cleanup() {
   free(gs[0]); gs[0] = NULL;
   free(gs[1]); gs[1] = NULL;
@@ -52,15 +59,13 @@ static void cleanup() {
   free(cradix_xtmp);      cradix_xtmp=NULL;
 //  free(csort_otmp);       csort_otmp=NULL;       csort_otmp_alloc=0;
 
-  for(int i=0; i<ustr_n; i++)
-    SET_TRUELENGTH(ustr[i],0);
-  free(ustr);             ustr=NULL;             ustr_alloc=0; ustr_n=0; ustr_maxlen=0;
+  free_ustr();
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop above since only CHARSXP which had tl>0 (R's usage) are stored there.
 }
 
 static int nalast = -1;                                             // =1, 0, -1 for TRUE, NA, FALSE respectively. Value rewritten inside forder().
                                                                     // note that na.last=NA (0) removes NAs, not retains them.
-static int order = 1;                                               // =1, -1 for ascending and descending order respectively
+static int sort = 0;                                                // 0 no sort;  or -1 descending, +1 ascending changes per column
 static Rboolean stackgrps = TRUE;                                   // switched off for last column when not needed by setkey
 
 #define N_SMALL 200                                                 // replaced n < 200 with n < N_SMALL. Easier to change later
@@ -226,7 +231,7 @@ int StrCmp2(SEXP x, SEXP y) {    // same as StrCmp but also takes into account '
   if (x == y) return 0;                   // same cached pointer (including NA_STRING==NA_STRING)
   if (x == NA_STRING) return nalast;      // if x=NA, nalast=1 ? then x > y else x < y (Note: nalast == 0 is already taken care of in 'csorted', won't be 0 here)
   if (y == NA_STRING) return -nalast;     // if y=NA, nalast=1 ? then y > x
-  return order*strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));  // same as explanation in StrCmp
+  return sort*strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));  // same as explanation in StrCmp
 }
 
 int StrCmp(SEXP x, SEXP y)            // also used by bmerge and chmatch
@@ -300,10 +305,6 @@ static void cradix_r(SEXP *xsub, int n, int radix)
   if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
 }
 
-
-static bool sort = false;  // false for by= (then true to get first-appearance by-row order), true for keyby= (for now; later false, then true on the result)
-
-
 static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
 // group numbers are left in truelength to be reused by part II
 {
@@ -342,6 +343,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool
   }
   if (sort) {
     // TODO build key and reuse parallel order at the end
+    // note that ascending/descending is not done here (always ascending here) but later in the ugrp sort
     cradix_counts = (int *)calloc(ustr_maxlen * 256, sizeof(int));  // stack of counts
     if (!cradix_counts) Error("Failed to alloc cradix_counts");
     cradix_xtmp = (SEXP *)malloc(ustr_n * sizeof(SEXP));
@@ -352,6 +354,24 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool
     free(cradix_counts); cradix_counts=NULL;
     free(cradix_xtmp); cradix_xtmp=NULL;
   }
+}
+
+static bool sort_ugrp(uint8_t *x, const uint8_t n)
+{
+  // x contains n unique bytes
+  bool skip = true;            // was it already sorted and there's nothing to do
+  const bool asc = (sort==1);  // i) store shared 'sort' in thread-local const ii) convert to bool to save branch
+  for (int i=1; i<n; i++) {
+    uint8_t tmp = x[i];
+    if (asc == (x[i-1]<tmp)) continue;  // x[i-1]==tmp doesn't happen because x is unique; ugrp[i-1]<tmp==false strictly implies ugrp[i-1]>tmp
+    skip = false;   // not already sorted, so can't skip
+    int j = i-1;
+    do {
+      x[j+1] = x[j];
+    } while (--j>=0 && asc==(x[j]>tmp));
+    x[j+1] = tmp;
+  }
+  return skip;
 }
 
 
@@ -389,19 +409,8 @@ static void count_group(const uint8_t *x, const uint16_t n, bool *out_skip, uint
     counts[this]++;
   }
 
-  if (sort) {
-    for (int i=1; i<ngrp; i++) {
-      uint8_t tmp = ugrp[i];
-      if (ugrp[i-1]<=tmp) continue;
-      skip=false;   // not already sorted, so can't skip
-      int j = i-1;
-      do {
-        ugrp[j+1] = ugrp[j];
-      } while (--j>=0 && ugrp[j]>tmp);
-      ugrp[j+1] = tmp;
-    }
-    // when reverse order, the key bits already had (max-this) when writing key (could straddle byte boundaries given the spare-squashing)
-  }
+  if (sort && !sort_ugrp(ugrp, ngrp))  // sorts ugrp by reference
+    skip=false;
 
   *out_skip = skip;
   *out_ngrp = ngrp;   //  ngrp==1 => skip==true (common case important to skip efficiently here)
@@ -419,7 +428,7 @@ static void count_group(const uint8_t *x, const uint16_t n, bool *out_skip, uint
 // x*order results in integer overflow when -1*NA, so careful to avoid that here :
 
 static inline int icheck(int x) {
-  return ((nalast != 1) ? ((x != NA_INTEGER) ? x*order : x) : ((x != NA_INTEGER) ? (x*order)-1 : INT_MAX)); // if nalast==1, NAs must go last.
+  return ((nalast != 1) ? ((x != NA_INTEGER) ? x*sort : x) : ((x != NA_INTEGER) ? (x*sort)-1 : INT_MAX)); // if nalast==1, NAs must go last.
 }
 
 //static void icount(int *x, int *o, int n)
@@ -1148,19 +1157,19 @@ static int dsorted(double *x, int n)                        // order=1 is ascend
     if (j != n) return(0);                                  // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
   }                                                         // no NAs  ? continue to check the rest of isorted - the same routine as usual
   if (n<=1) return(1);
-  prev = twiddle(x,0,order);
-  this = twiddle(x,1,order);
+  prev = twiddle(x,0,sort);
+  this = twiddle(x,1,sort);
   if (this < prev) {
     i = 2;
     prev=this;
-    while (i<n && (this=twiddle(x,i,order)) < prev) {i++; prev=this; }
+    while (i<n && (this=twiddle(x,i,sort)) < prev) {i++; prev=this; }
     if (i==n) return(-1);                                   // strictly opposite of expected 'order', no ties;
                                                             // e.g. no more than one NA at the beginning/end (for order=-1/1)
     else return(0);                                         // TO DO: improve to be stable for ties in reverse
   }
   int tt = 1;
   for (i=1; i<n; i++) {
-    this = twiddle(x,i,order);                              // TO DO: once we get past -Inf, NA and NaN at the bottom,  and +Inf at the top,
+    this = twiddle(x,i,sort);                              // TO DO: once we get past -Inf, NA and NaN at the bottom,  and +Inf at the top,
                                                             //        the middle only need be twiddled for tolerance (worth it?)
     if (this < prev) return(0);
     if (this==prev) tt++; else tt=1;
@@ -1291,7 +1300,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min, max;     // min and max of non-NA values
     bool anyna;
-    bool sort_descending = sort && INTEGER(orderArg)[col-1]==-1;
+    if (sort && INTEGER(orderArg)[col-1]==-1) sort=-1;
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO trivial LGL count
       range_i32(INTEGER(x), n, &min, &max, &anyna);
@@ -1316,7 +1325,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
        Error("Column %d of 'by' (%d) is type '%s', not yet supported", col, INTEGER(by)[col-1], type2char(TYPEOF(x)));
     }
 
-    if (min==0/*all na*/ || (min==max && !anyna)) continue;  // all same value; skip column as nothing to do
+    if (min==0/*all na*/ || (min==max && !anyna)) {
+      // all same value; skip column as nothing to do
+      if (TYPEOF(x)==STRSXP) free_ustr();
+      continue;
+    }
     min--;  // so that x-min results in 1 for the minimum; NA coded by 0. Always provide for the NA spot even if NAs aren't present for code brevity and robustness
     uint64_t range = max-min;   //(max>=0 && min<0) ? (uint64_t)max+(uint64_t)(-min) : max-min;
     // TODO: the NA value could be placed as max if na.last=TRUE.  Deal with na.last up front in the key and then forget (TODO)
@@ -1404,8 +1417,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         uint64_t this = -TRUELENGTH(xd[i]);
         WRITE_KEY
       }}
-      for(int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i],0);
-      free(ustr); ustr=NULL; ustr_n=0; ustr_alloc=0; ustr_maxlen=0;   // ustr could be left allocated and reused, but free now in case large and we're tight on ram
+      free_ustr();  // ustr could be left allocated and reused, but free now in case large and we're tight on ram
       break;
     default:
        Error("Internal error: column not supported not caught earlier");
@@ -1547,18 +1559,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
               }
             }
 
-            if (sort) {
-              for (int i=1; i<ngrp; i++) {
-                uint8_t tmp = ugrp[i];
-                if (ugrp[i-1]<=tmp) continue;
-                all_skipped=false;   // not already sorted, so can't skip
-                int j = i-1;
-                do {
-                  ugrp[j+1] = ugrp[j];
-                } while (--j>=0 && ugrp[j]>tmp);
-                ugrp[j+1] = tmp;
-              }
-            }
+            if (sort && !sort_ugrp(ugrp, ngrp))
+              all_skipped=false;
 
             //Rprintf("cumulate...\n");
             // cumulate columnwise; parallel histogram; small so no need to parallelize
@@ -1729,7 +1731,7 @@ SEXP fsorted(SEXP x)
   if (!isVectorAtomic(x)) Error("is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level");
   void *xd = DATAPTR(x);
   stackgrps = FALSE;
-  order = 1;
+  sort = 1;
   switch(TYPEOF(x)) {
   case INTSXP : case LGLSXP :
     tmp = isorted(xd, n); break;

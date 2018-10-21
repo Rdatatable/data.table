@@ -2836,7 +2836,7 @@ test(1027, as.data.table(table(DF$x, DF$y, DF$z)), tab3)
 # new, updated 14th Feb, 2015. data.table(table) now redirects to as.data.table
 test(1027.1, data.table(table(1:99)), as.data.table(table(1:99)))
 # data.table() and rbindlist() in v1.8.11 now catch and removes the dim attribute. For it on to test print catches it :
-test(1027.2, {DT<-data.table(table(1:99));setattr(DT[[1]],"dim",99L);print(DT)}, error="Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
+test(1027.2, {DT<-data.table(table(1:99));setattr(DT[[1]],"dim",99L);print(DT,nrows=100)}, error="Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
 
 # as.data.table.x where x is integer, numeric, etc...
 set.seed(45)
@@ -3106,7 +3106,7 @@ test(1087, class(DT$last.x1), "ITime")
 # print of unnamed DT with >20 <= 100 rows, #97 (RF#4934)
 DT <- data.table(x=1:25, y=letters[1:25])
 DT.unnamed <- unname(copy(DT))
-test(1094.1, capture.output(print(DT.unnamed)),
+test(1094.1, capture.output(print(DT.unnamed,nrows=100,class=FALSE)),
      c("        ", " 1:  1 a", " 2:  2 b", " 3:  3 c", " 4:  4 d",
        " 5:  5 e", " 6:  6 f", " 7:  7 g", " 8:  8 h", " 9:  9 i",
        "10: 10 j", "11: 11 k", "12: 12 l", "13: 13 m", "14: 14 n",
