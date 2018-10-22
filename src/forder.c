@@ -67,6 +67,7 @@ static int nalast = -1;                                             // =1, 0, -1
                                                                     // note that na.last=NA (0) removes NAs, not retains them.
 static int sort = 0;                                                // 0 no sort;  or -1 descending, +1 ascending changes per column
 static Rboolean stackgrps = TRUE;                                   // switched off for last column when not needed by setkey
+static bool all_skipped = true;
 
 #define N_SMALL 200                                                 // replaced n < 200 with n < N_SMALL. Easier to change later
 #define N_RANGE 100000                                              // range limit for counting sort. UPDATE: should be less than INT_MAX (see setRange for details)
@@ -263,44 +264,52 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 // We may be able to improve CHARSXP derefencing by submitting patch to R to make R's string cache contiguous
 // but would likely be difficult. If we strxfrm, then it'll then be contiguous and compact then anyway.
 {
-  int i, j, itmp, *thiscounts, thisgrpn=0, thisx=0;
-
   // TO DO?: chmatch to existing sorted vector, then grow it.
   // TO DO?: if (n<N_SMALL=200) insert sort, then loop through groups via ==
   if (n<=1) return;
   // TO DO: if (n<50) cinsert (continuing from radix offset into CHAR) or using StrCmp. But 256 is narrow, so quick and not too much an issue.
 
-  thiscounts = cradix_counts + radix*256;
-  for (i=0; i<n; i++) {
-    thisx = radix<LENGTH(xsub[i]) ? (unsigned char)(CHAR(xsub[i])[radix]) : 1;  // no NA_STRING present,  1 for "" (could use 0 too)
+  int *thiscounts = cradix_counts + radix*256;
+  const bool asc=(sort==1);
+  bool skip=true;  // else -1 desc (not 0)
+  const uint8_t start = asc?0:255;
+  uint8_t lastx = start;
+  for (int i=0; i<n; i++) {
+    uint8_t thisx = radix<LENGTH(xsub[i]) ? (uint8_t)(CHAR(xsub[i])[radix]) : 1;  // no NA_STRING present,  1 for "" (could use 0 too maybe since NA_STRING not present)
     thiscounts[ thisx ]++;
+    if (thisx!=lastx && asc==(thisx<lastx)) skip=false;
+    lastx = thisx;
   }
-  if (thiscounts[thisx] == n && radix < ustr_maxlen-1) {   // this also catches when subx has shorter strings than the rest, thiscounts[0]==n and we'll recurse very quickly through to the overall maxlen with no 256 overhead each time
+  if (thiscounts[lastx]==n && radix<ustr_maxlen-1) {   // this also catches when subx has shorter strings than the rest, thiscounts[0]==n and we'll recurse very quickly through to the overall maxlen with no 256 overhead each time
     cradix_r(xsub, n, radix+1);
-    thiscounts[thisx] = 0;  // the rest must be 0 already, save the memset
+    thiscounts[lastx] = 0;  // the rest must be 0 already, save the memset
     return;
   }
-  itmp = thiscounts[0];
-  for (i=1; i<256; i++)
-    if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);  // don't cummulate through 0s, important below
-  for (i=n-1; i>=0; i--) {
-    thisx = radix<LENGTH(xsub[i]) ? (unsigned char)(CHAR(xsub[i])[radix]) : 1;
-    j = --thiscounts[thisx];
-    cradix_xtmp[j] = xsub[i];
+  if (!skip) all_skipped = false;
+  int itmp = thiscounts[start];
+  for (int i=1; i<256; i++) {
+    int j = asc ? i : 255-i;
+    if (thiscounts[j]) thiscounts[j] = (itmp += thiscounts[j]);  // don't cummulate through 0s, important below
+  }
+
+  for (int i=n-1; i>=0; i--) {
+    uint8_t thisx = radix<LENGTH(xsub[i]) ? (uint8_t)(CHAR(xsub[i])[radix]) : 1;
+    cradix_xtmp[--thiscounts[thisx]] = xsub[i];
   }
   memcpy(xsub, cradix_xtmp, n*sizeof(SEXP));
   if (radix == ustr_maxlen-1) {
     memset(thiscounts, 0, 256*sizeof(int));
     return;
   }
-  if (thiscounts[0] != 0) Error("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d", thiscounts[0], radix);
+  if (thiscounts[start] != 0) Error("Logical error. counts[%d]=%d in cradix but should have been decremented to 0. radix=%d", start, thiscounts[start], radix);
   itmp = 0;
-  for (i=1;i<256;i++) {
-    if (thiscounts[i] == 0) continue;
-    thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
+  for (int i=1; i<256; i++) {
+    int j = asc ? i : 255-i;
+    if (thiscounts[j] == 0) continue;
+    int thisgrpn = thiscounts[j] - itmp;  // undo cummulate; i.e. diff
     cradix_r(xsub+itmp, thisgrpn, radix+1);
-    itmp = thiscounts[i];
-    thiscounts[i] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to clear! Also more portable for machines where 0 isn't all bits 0 (?!)
+    itmp = thiscounts[j];
+    thiscounts[j] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to clear! Also more portable for machines where 0 isn't all bits 0 (?!)
   }
   if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
 }
@@ -682,8 +691,8 @@ static void iradix(int *x, int *o, int n)
 
 // No rounding by default, for now. Handles #1642, #1728, #1463, #485
 static int dround = 0;
-static unsigned long long dmask1;
-static unsigned long long dmask2;
+static uint64_t dmask1;
+static uint64_t dmask2;
 
 SEXP setNumericRounding(SEXP droundArg)
 // init.c has initial call with default of 2
@@ -733,7 +742,7 @@ uint64_t dtwiddle(void *p, int i, int order)
       return (nalast == 1 ? ~u.ull : u.ull);
   }
   uint64_t mask = (u.ull & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000;  // always flip sign bit and if negative (sign bit was set) flip other bits too
-  return( (u.ull ^ mask) & dmask2 );
+  return( (u.ull ^ mask) & dmask2 );    // TODO: why not shift right to reduce range.
 }
 
 uint64_t i64twiddle(void *p, int i, int order)
@@ -1251,11 +1260,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   if (!isLogical(retGrp) || LENGTH(retGrp)!=1 || INTEGER(retGrp)[0]==NA_LOGICAL) error("retGrp must be TRUE or FALSE");
   if (!isLogical(sortStrArg) || LENGTH(sortStrArg)!=1 || INTEGER(sortStrArg)[0]==NA_LOGICAL ) error("sortStr must be TRUE or FALSE");
   if (!isLogical(naArg) || LENGTH(naArg) != 1) error("na.last must be logical TRUE, FALSE or NA of length 1");
-  sort = LOGICAL(sortStrArg)[0]==TRUE;
+  sort = LOGICAL(sortStrArg)[0]==TRUE;  // TODO: rename sortStr to just sort.  Just one argument either TRUE/FALSE, or a vector of +1|-1.
   // static global set on top...
   nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? 0 : (LOGICAL(naArg)[0] == TRUE) ? 1 : -1; // 1=TRUE, -1=FALSE, 0=NA
   gsmaxalloc = n;  // upper limit for stack size (all size 1 groups). We'll detect and avoid that limit, but if just one non-1 group (say 2), that can't be avoided.
-
+  all_skipped = true;
   if (n==0) {
     // empty vector or 0-row DT is always sorted
     SEXP ans = PROTECT(allocVector(INTSXP, 0)); n_protect++;
@@ -1291,8 +1300,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   // here we scan each column,  so now is the time to sort unique strings,  if we are going to sort the result.
 
   int ncol=length(by);
-  uint8_t *key[ncol*8];  // needs to be before loop because part II relies on part I, column-by-column. ncol*8 is maximum
-  for (int i=0; i<ncol*8; i++) key[i]=NULL;
+  uint8_t *key[ncol*8+1];  // needs to be before loop because part II relies on part I, column-by-column. ncol*8 is maximum. +1 because we check NULL after last one
+  for (int i=0; i<ncol*8+1; i++) key[i]=NULL;
   int nradix=0; // the current byte we're writing this column to; might be squashing into it (spare>0)
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
   for (int col=0; col<ncol; col++) {
@@ -1300,7 +1309,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min, max;     // min and max of non-NA values
     bool anyna;
-    if (sort && INTEGER(orderArg)[col-1]==-1) sort=-1;
+    if (sort) sort=INTEGER(orderArg)[col];  // +1 or -1
+    Rprintf("sort = %d\n", sort);
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO trivial LGL count
       range_i32(INTEGER(x), n, &min, &max, &anyna);
@@ -1339,18 +1349,24 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     while (range) { maxBit++; range>>=1; }
     int nbyte = 1+(maxBit-1)/8; // the number of bytes spanned by the value
     if (spare==0) {
-      spare = (8-maxBit%8)%8;   // left align to byte boundary
+      spare = (8-maxBit%8)%8;   // left align to byte boundary to get better first split.
     } else {
       spare -= maxBit%8;        // new spare is also how many bits to left shift
       if (spare<0) {
-        nbyte++;                // after shift, will need an extra byte
-        spare+=8;
+        if (nbyte<8) {
+          nbyte++;                // after shift, will need an extra byte
+          spare+=8;
+        } else {
+          // range takes 8 bytes so can't shift into 9th to use spare of last byte of previous column; start with a new left-aligned byte
+          nradix++;
+          spare = (8-maxBit%8)%8;
+        }
       }
     }
     // TODO: count NAs rather than just bool.  Then can further optimize loops later.
     // TODO: may uint64_t min and max, should be always. rather than difference between int64_t and uint64_t (for SEXP *)
 
-    // Rprintf("Column %d of by= has min=%llu, max=%llu, anyna=%d, range=%llu. Writing key ...\n", col, min, max, anyna, max-min);
+    // Rprintf("Column %d of by= has min=%llu, max=%llu, anyna=%d, range=%llu, nbyte=%d. Writing key ...\n", col, min, max, anyna, max-min, nbyte);
     for (int b=0; b<nbyte; b++) {
       if (key[nradix+b]==NULL)
         key[nradix+b] = calloc(n, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
@@ -1454,7 +1470,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   const int STL = MIN(n, 65536);  // Single Thread Load.  Such that counts can be uint16_t. 256*2=8 cache lines; 1-byte:64KB/16 pages of 4096; 2-bytes:128KB/0.125MB
   // TODO if we use 2-bytes for STL, then maximum can be 256^2 = 65536,  which would halve the size of the thread-private variables from int to uint16_t
   char *TMP = malloc(n*sizeof(int));
-  bool all_skipped = true;
   //size_t TMP_size = 0;
 
   for (int radix=0; radix<nradix; radix++) {
