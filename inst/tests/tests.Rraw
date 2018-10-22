@@ -4052,7 +4052,6 @@ for (i in seq_along(names(DT))) {
         })
       ))
       test(test_no, forderv(DT, by=x, order=y), with(DT, eval(ll)))
-      if (nfail>oldnfail) browser()
     })
     dim(tmp)=NULL
     list(tmp)

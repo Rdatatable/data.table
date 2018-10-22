@@ -353,7 +353,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool
   }
   if (sort) {
     // TODO build key and reuse parallel order at the end
-    // note that ascending/descending is not done here (always ascending here) but later in the ugrp sort
+    // note that ascending/descending is not done here (always ascending here) but when writing key
     cradix_counts = (int *)calloc(ustr_maxlen * 256, sizeof(int));  // stack of counts
     if (!cradix_counts) Error("Failed to alloc cradix_counts");
     cradix_xtmp = (SEXP *)malloc(ustr_n * sizeof(SEXP));
@@ -369,21 +369,20 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool
 static bool sort_ugrp(uint8_t *x, const uint8_t n)
 {
   // x contains n unique bytes
-  bool skip = true;            // was it already sorted and there's nothing to do
-  const bool asc = (sort==1);  // i) store shared 'sort' in thread-local const ii) convert to bool to save branch
+  // always ascending. desc and na.last is done when writing key because columns may cross byte boundaries
+  bool skip = true;            // was it already sorted? the caller can then skip reordering
   for (int i=1; i<n; i++) {
     uint8_t tmp = x[i];
-    if (asc == (x[i-1]<tmp)) continue;  // x[i-1]==tmp doesn't happen because x is unique; ugrp[i-1]<tmp==false strictly implies ugrp[i-1]>tmp
-    skip = false;   // not already sorted, so can't skip
+    if (tmp>x[i-1]) continue;  // x[i-1]==x[i] doesn't happen because x is unique
+    skip = false;
     int j = i-1;
     do {
       x[j+1] = x[j];
-    } while (--j>=0 && asc==(x[j]>tmp));
+    } while (--j>=0 && tmp<x[j]);
     x[j+1] = tmp;
   }
   return skip;
 }
-
 
 static void count_group(const uint8_t *x, const uint16_t n, bool *out_skip, uint16_t *out_order, uint16_t *out_ngrp, int *out_grpsize)
 // orders x by reference (that's ok destructively as we don't use this radix again) and writes the order into o; the o ordering is used several times by the caller.
@@ -414,6 +413,7 @@ static void count_group(const uint8_t *x, const uint16_t n, bool *out_skip, uint
       ugrp[ngrp++]=this;
     } else if (skip && this!=x[i-1]) {
       // seen this value before and it isn't the previous value, so data is not grouped
+      // including "skip &&" first is to avoid the != comparison
       skip=false;
     }
     counts[this]++;
@@ -1285,7 +1285,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     uint64_t min, max;     // min and max of non-NA values
     bool anyna;
     if (sort) sort=INTEGER(orderArg)[col];  // +1 or -1
-    Rprintf("sort = %d\n", sort);
+    //Rprintf("sort = %d\n", sort);
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO trivial LGL count
       range_i32(INTEGER(x), n, &min, &max, &anyna);
@@ -1323,18 +1323,20 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     int maxBit=0;
     while (range) { maxBit++; range>>=1; }
     int nbyte = 1+(maxBit-1)/8; // the number of bytes spanned by the value
+    int firstBits = maxBit - (nbyte-1)*8;  // how many bits used in most significant byte
     if (spare==0) {
-      spare = (8-maxBit%8)%8;   // left align to byte boundary to get better first split.
+      spare = 8-firstBits; // left align to byte boundary to get better first split.
     } else {
-      spare -= maxBit%8;        // new spare is also how many bits to left shift
-      if (spare<0) {
+      if (spare >= firstBits) {
+        spare -= firstBits;      // new spare is also how many bits to left shift
+      } else {
         if (nbyte<8) {
-          nbyte++;                // after shift, will need an extra byte
-          spare+=8;
+          spare += 8-firstBits;
+          nbyte++;               // after shift, will need an extra byte
         } else {
           // range takes 8 bytes so can't shift into 9th to use spare of last byte of previous column; start with a new left-aligned byte
           nradix++;
-          spare = (8-maxBit%8)%8;
+          spare = 8-firstBits;
         }
       }
     }
@@ -1380,7 +1382,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<n; i++) {
         if (xd[i]==NA_INTEGER) continue;   // TODO:  separate branchless when !anyna
-        uint64_t this = (uint32_t)xd[i]+(uint32_t)INT32_MAX;
+        uint64_t this = (uint32_t)xd[i]+(uint32_t)INT32_MAX;  // TODO  ^ 0x80000000
         WRITE_KEY
       }}
       break;
