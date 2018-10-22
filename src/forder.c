@@ -270,14 +270,14 @@ static void cradix_r(SEXP *xsub, int n, int radix)
   // TO DO: if (n<50) cinsert (continuing from radix offset into CHAR) or using StrCmp. But 256 is narrow, so quick and not too much an issue.
 
   int *thiscounts = cradix_counts + radix*256;
-  const bool asc=(sort==1);
+  //const bool asc=(sort==1);
   bool skip=true;  // else -1 desc (not 0)
-  const uint8_t start = asc?0:255;
-  uint8_t lastx = start;
+  //const uint8_t start = asc?0:255;
+  uint8_t lastx = 0;
   for (int i=0; i<n; i++) {
     uint8_t thisx = radix<LENGTH(xsub[i]) ? (uint8_t)(CHAR(xsub[i])[radix]) : 1;  // no NA_STRING present,  1 for "" (could use 0 too maybe since NA_STRING not present)
     thiscounts[ thisx ]++;
-    if (thisx!=lastx && asc==(thisx<lastx)) skip=false;
+    if (thisx<lastx) skip=false;
     lastx = thisx;
   }
   if (thiscounts[lastx]==n && radix<ustr_maxlen-1) {   // this also catches when subx has shorter strings than the rest, thiscounts[0]==n and we'll recurse very quickly through to the overall maxlen with no 256 overhead each time
@@ -286,10 +286,10 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     return;
   }
   if (!skip) all_skipped = false;
-  int itmp = thiscounts[start];
+  int itmp = thiscounts[0];
   for (int i=1; i<256; i++) {
-    int j = asc ? i : 255-i;
-    if (thiscounts[j]) thiscounts[j] = (itmp += thiscounts[j]);  // don't cummulate through 0s, important below
+    //int j = asc ? i : 255-i;
+    if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);  // don't cummulate through 0s, important below
   }
 
   for (int i=n-1; i>=0; i--) {
@@ -301,15 +301,15 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     memset(thiscounts, 0, 256*sizeof(int));
     return;
   }
-  if (thiscounts[start] != 0) Error("Logical error. counts[%d]=%d in cradix but should have been decremented to 0. radix=%d", start, thiscounts[start], radix);
+  if (thiscounts[0] != 0) Error("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d", thiscounts[0], radix);
   itmp = 0;
   for (int i=1; i<256; i++) {
-    int j = asc ? i : 255-i;
-    if (thiscounts[j] == 0) continue;
-    int thisgrpn = thiscounts[j] - itmp;  // undo cummulate; i.e. diff
+    // int j = asc ? i : 255-i;
+    if (thiscounts[i] == 0) continue;
+    int thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
     cradix_r(xsub+itmp, thisgrpn, radix+1);
-    itmp = thiscounts[j];
-    thiscounts[j] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to clear! Also more portable for machines where 0 isn't all bits 0 (?!)
+    itmp = thiscounts[i];
+    thiscounts[i] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to clear! Also more portable for machines where 0 isn't all bits 0 (?!)
   }
   if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
 }
@@ -1371,9 +1371,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       if (key[nradix+b]==NULL)
         key[nradix+b] = calloc(n, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
     }
+
+    const bool asc = (sort>=0);
     // several columns could squash into 1 byte, too!  3 logical colums, for example.  TODO: add test.
+    // due to bit squashing is reason we deal with asc|desc here rather than in the ugrp sorting
     #define WRITE_KEY                                   \
-    this -= min;                                        \
+    this = asc ? this-min : max-this;                   \
     this <<= spare;                                     \
     for (int b=nbyte-1; b>0; b--) {                     \
       key[nradix+b][i] = (uint8_t)(this & 0xff);        \
@@ -1418,7 +1421,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       } else {
         double *xd = REAL(x);                // TODO: need to compress doubles (skip bytes?) as it's too many bits for now
         for (int i=0; i<n; i++) {
-          if (ISNA(xd[i])) continue;         // don't need if no-NA are known
+          if (ISNA(xd[i])) /*TODO: write NA value either 0 or max+1*/ continue;         // don't need if no-NA are known
           uint64_t this = dtwiddle(xd, i, 1);    // TODO: don't need twiddle if no negatives or NA, known from range above
           WRITE_KEY
         }
