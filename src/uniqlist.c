@@ -20,8 +20,8 @@ SEXP uniqlist(SEXP l, SEXP order)
   bool via_order = INTEGER(order)[0] != -1;  // has an ordering vector been passed in that we have to hop via? Don't use MISSING() here as it appears unstable on Windows
 
   unsigned long long *ulv; // for numeric check speed-up
-  SEXP v, ans, class;
-  R_len_t i, j, len, thisi, previ, isize=1000;
+  SEXP v, ans;
+  R_len_t len, thisi, previ, isize=1000;
   int *iidx = Calloc(isize, int); // for 'idx'
   len = 1;
   iidx[0] = 1; // first row is always the first of the first group
@@ -83,9 +83,9 @@ SEXP uniqlist(SEXP l, SEXP order)
         }
       } else {
         if (via_order) {
-          COMPARE1_VIA_ORDER && dtwiddle(&this, 0, 1)!=dtwiddle(&prev, 0, 1) COMPARE2
+          COMPARE1_VIA_ORDER && dtwiddle(&this, 0)!=dtwiddle(&prev, 0) COMPARE2
         } else {
-          COMPARE1           && dtwiddle(&this, 0, 1)!=dtwiddle(&prev, 0, 1) COMPARE2
+          COMPARE1           && dtwiddle(&this, 0)!=dtwiddle(&prev, 0) COMPARE2
         }
       }
     } break;
@@ -95,10 +95,12 @@ SEXP uniqlist(SEXP l, SEXP order)
   } else {
     // ncol>1
     thisi = via_order ? INTEGER(order)[0]-1 : 0;
-    for (i=1; i<nrow; i++) {
+    bool *i64 = Calloc(ncol, bool);
+    for (int i=0; i<ncol; i++) i64[i] = inherits(VECTOR_ELT(l,i), "integer64");
+    for (int i=1; i<nrow; i++) {
       previ = thisi;
       thisi = via_order ? INTEGER(order)[i]-1 : i;
-      j = ncol;  // the last column varies the most frequently so check that first and work backwards
+      int j = ncol;  // the last column varies the most frequently so check that first and work backwards
       bool b = true;
       while (--j>=0 && b) {
         v=VECTOR_ELT(l,j);
@@ -112,13 +114,12 @@ SEXP uniqlist(SEXP l, SEXP order)
         case REALSXP :
           ulv = (unsigned long long *)REAL(v);
           b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
-          if (!b) {
-            class = getAttrib(v, R_ClassSymbol);
-            twiddle = (isString(class) && STRING_ELT(class, 0)==char_integer64) ? &i64twiddle : &dtwiddle;
-            b = twiddle(ulv, thisi, 1) == twiddle(ulv, previ, 1);
+          if (!b && !i64[j]) {
+            b = dtwiddle(ulv, thisi) == dtwiddle(ulv, previ);
+            // could store LHS for use next time as RHS (to save calling dtwiddle twice). However: i) there could be multiple double columns so vector of RHS would need
+            // to be stored, ii) many short-circuit early before the if (!b) anyway (negating benefit) and iii) we may not have needed LHS this time so logic would be complex.
           }
           break;
-          // TO DO: store previ twiddle call, but it'll need to be vector since this is in a loop through columns. Hopefully the first == will short circuit most often
         default :
           error("Type '%s' not supported", type2char(TYPEOF(v)));
         }
@@ -131,6 +132,7 @@ SEXP uniqlist(SEXP l, SEXP order)
         }
       }
     }
+    Free(i64);
   }
   PROTECT(ans = allocVector(INTSXP, len));
   memcpy(INTEGER(ans), iidx, sizeof(int)*len); // sizeof is of type size_t - no integer overflow issues
@@ -205,7 +207,7 @@ SEXP rleid(SEXP l, SEXP cols)
 
 SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP multArg) {
   Rboolean byorder = (length(order)>0);
-  SEXP v, ans, class;
+  SEXP v, ans;
   if (!isNewList(l) || length(l) < 1) error("Internal error: nestedid was not passed a list length 1 or more"); // # nocov
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
   if (nrows==0) return(allocVector(INTSXP, 0));
@@ -224,8 +226,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   else error("Internal error: invalid value for 'mult'. please report to data.table issue tracker"); // # nocov
   // integer64
   for (int j=0; j<ncols; j++) {
-    class = getAttrib(VECTOR_ELT(l, INTEGER(cols)[j]-1), R_ClassSymbol);
-    i64[j] = isString(class) && STRING_ELT(class, 0) == char_integer64;
+    i64[j] = inherits(VECTOR_ELT(l, INTEGER(cols)[j]-1), "integer64");
   }
   ans  = PROTECT(allocVector(INTSXP, nrows));
   int *ians = INTEGER(ans), *igrps = INTEGER(grps);
@@ -264,10 +265,11 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
         case STRSXP :
           b = ENC2UTF8(STRING_ELT(v,thisi)) == ENC2UTF8(STRING_ELT(v,previ));
           break;
-        case REALSXP:
-          twiddle = i64[j] ? &i64twiddle : &dtwiddle;
-          b = twiddle(REAL(v), thisi, 1) >= twiddle(REAL(v), previ, 1);
-          break;
+        case REALSXP: {
+          double *xd = REAL(v);
+          b = i64[j] ? ((int64_t *)xd)[thisi] >= ((int64_t *)xd)[previ] :
+                       dtwiddle(xd, thisi) >= dtwiddle(xd, previ);
+        } break;
         default:
           error("Type '%s' not supported", type2char(TYPEOF(v)));
         }

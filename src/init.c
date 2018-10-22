@@ -267,7 +267,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   avoid_openmp_hang_within_fork();
 }
 
-inline Rboolean INHERITS(SEXP x, SEXP char_) {
+inline bool INHERITS(SEXP x, SEXP char_) {
   // Thread safe inherits() by pre-calling install() above in init first then
   // passing those char_* in here for simple and fast non-API pointer compare.
   // The thread-safety aspect here is only currently actually needed for list columns in
@@ -278,11 +278,11 @@ inline Rboolean INHERITS(SEXP x, SEXP char_) {
   // ii) no attrib writes must be possible in other threads.
   SEXP class;
   if (isString(class = getAttrib(x, R_ClassSymbol))) {
-  for (int i=0; i<LENGTH(class); i++) {
-    if (STRING_ELT(class, i) == char_) return TRUE;
+    for (int i=0; i<LENGTH(class); i++) {
+      if (STRING_ELT(class, i) == char_) return true;
+    }
   }
-  }
-  return FALSE;
+  return false;
 }
 
 inline long long DtoLL(double x) {

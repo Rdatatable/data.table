@@ -188,10 +188,10 @@ static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, bool
   int i=0;
   while(i<n && ISNA(x[i])) i++;
   if (i>0) anyna=true;
-  if (i<n) { max = min = dtwiddle(x, i++, 1);}    // TODO: if we're just grouping, then we don't need to twiddle. However there are cases where we detect sortedness.
+  if (i<n) { max = min = dtwiddle(x, i++);}    // TODO: if we're just grouping, then we don't need to twiddle. However there are cases where we detect sortedness.
   for(; i<n; i++) {
     if (ISNA(x[i])) { anyna=true; continue; }
-    uint64_t tmp = dtwiddle(x, i, 1);
+    uint64_t tmp = dtwiddle(x, i);
     if (tmp>max) max=tmp;
     else if (tmp<min) min=tmp;
   }
@@ -227,13 +227,14 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool
 }
 */
 
-
+/*
 int StrCmp2(SEXP x, SEXP y) {    // same as StrCmp but also takes into account 'na.last' argument.
   if (x == y) return 0;                   // same cached pointer (including NA_STRING==NA_STRING)
   if (x == NA_STRING) return nalast;      // if x=NA, nalast=1 ? then x > y else x < y (Note: nalast == 0 is already taken care of in 'csorted', won't be 0 here)
   if (y == NA_STRING) return -nalast;     // if y=NA, nalast=1 ? then y > x
   return sort*strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));  // same as explanation in StrCmp
 }
+*/
 
 int StrCmp(SEXP x, SEXP y)            // also used by bmerge and chmatch
 {
@@ -723,9 +724,9 @@ static union {
   //  unsigned int ui;
 } u;
 
-uint64_t dtwiddle(void *p, int i, int order)
+uint64_t dtwiddle(void *p, int i)
 {
-  u.d = order*((double *)p)[i];                               // take care of 'order' right at the beginning
+  u.d = ((double *)p)[i];
   if (R_FINITE(u.d)) {
     u.ull = (u.d) ? u.ull + ((u.ull & dmask1) << 1) : 0;    // handle 0, -0 case. Fix for issues/743.
                                                             // tested on vector length 100e6. was the fastest fix (see results at the bottom of page)
@@ -745,28 +746,6 @@ uint64_t dtwiddle(void *p, int i, int order)
   return( (u.ull ^ mask) & dmask2 );    // TODO: why not shift right to reduce range.
 }
 
-uint64_t i64twiddle(void *p, int i, int order)
-// 'order' is in effect now - ascending and descending order implemented. Default
-// case (setkey) will not be affected much because nalast != 1 and order == 1 are
-// defaults.
-{
-  u.d = ((double *)p)[i];
-  u.ull ^= 0x8000000000000000;
-  if (nalast != 1) {
-    if (order != 1 && u.ull != 0) u.ull ^= 0xffffffffffffffff;
-  } else {
-    if ( (order == 1 && u.ull==0) || (order != 1) )
-      u.ull ^= 0xffffffffffffffff;
-  }
-  // another way - equivalent as above.
-  // if (order == 1) {// u.ull = 0 now means NA
-  //     if (nalast == 1 && u.ull == 0) u.ull ^= 0xffffffffffffffff;
-  // } else {
-  //     if (!(nalast != 1 && u.ull == 0)) u.ull ^= 0xffffffffffffffff;
-  // }
-  return u.ull;
-}
-
 Rboolean dnan(void *p, int i) {
   u.d = ((double *)p)[i];
   return (ISNAN(u.d));
@@ -778,15 +757,6 @@ Rboolean i64nan(void *p, int i) {
 }
 
 /*
-unsigned long long i32twiddle(void *p, int i)
-{
-  u.i = ((int *)p)[i];  // a cast of int to long would introduce 31 redundant bits after the sign bit (better to be packed together in 32)
-  unsigned int mask = -(int)(u.ui >> 31) | 0x80000000;
-  u.ui ^= mask;
-  return( u.ull );
-}
-*/
-
 uint64_t (*twiddle)(void *, int, int);
 // integer64 has NA = 0x8000000000000000. And it gives TRUE for all ISNAN(.) when '.' is -ve number.
 // So, ISNAN(.) would just provide wrong results. This was particularly an issue while implementing
@@ -794,12 +764,14 @@ uint64_t (*twiddle)(void *, int, int);
 // ISNAN(.) for double and (u.ull ^ 0x8000000000000000 == 0) for integer64.
 Rboolean (*is_nan)(void *, int);
 size_t colSize=8;  // the size of the column type (4 or 8). Just 8 currently until iradix is merged in.
-
+*/
+/*
 #ifdef WORDS_BIGENDIAN
 #define RADIX_BYTE colSize-radix-1
 #else
 #define RADIX_BYTE radix
 #endif
+*/
 /*
 static void dradix(uint8_t *x, int *o, int n)
 {
@@ -1131,6 +1103,7 @@ static void csort_pre(SEXP *x, uint64_t n, SEXP **out_ustr, uint64_t *out_n, uin
 // TO DO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
 // These are all sequential access to x, so very quick and cache efficient.
 
+/*
 static int isorted(int *x, int n)                           // order = 1 is ascending and order=-1 is descending
 {                                                           // also takes care of na.last argument with check through 'icheck'
                                                             // Relies on NA_INTEGER==INT_MIN, checked in init.c
@@ -1155,13 +1128,14 @@ static int isorted(int *x, int n)                           // order = 1 is asce
   }
   return(1);                                                // same as 'order', NAs at the beginning for order=1, at end for order=-1, possibly with ties
 }
-
+*/
+/*
 static int dsorted(double *x, int n)                        // order=1 is ascending and -1 is descending
 {                                                           // also accounts for nalast=0 (=NA), =1 (TRUE), -1 (FALSE) (in twiddle)
   int i=1,j=0;
   unsigned long long prev, this;
   if (nalast == 0) {                                        // when nalast = NA,
-    for (int k=0; k<n; k++) if (!is_nan(x, k)) j++;
+    for (int k=0; k<n; k++) if (!ISNAN(x[k])) j++;
     if (j == 0) return(-2);                                 // all NAs ? return special value to replace all o's values with '0'
     if (j != n) return(0);                                  // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
   }                                                         // no NAs  ? continue to check the rest of isorted - the same routine as usual
@@ -1186,7 +1160,8 @@ static int dsorted(double *x, int n)                        // order=1 is ascend
   }
   return(1);                                                // exactly as expected in 'order' (1=increasing, -1=decreasing), possibly with ties
 }
-
+*/
+/*
 static int csorted(SEXP *x, int n)                          // order=1 is ascending and -1 is descending
 {                                                           // also accounts for nalast=0 (=NA), =1 (TRUE), -1 (FALSE)
   int i=1, j=0, tmp;
@@ -1211,7 +1186,7 @@ static int csorted(SEXP *x, int n)                          // order=1 is ascend
   }
   return(1);                                                // exactly as expected in 'order', possibly with ties
 }
-
+*/
 bool need2utf8(SEXP x, int n)
 {
   for (int i=0; i<n; i++) if (NEED2UTF8(STRING_ELT(x, i))) return(true);
@@ -1421,8 +1396,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       } else {
         double *xd = REAL(x);                // TODO: need to compress doubles (skip bytes?) as it's too many bits for now
         for (int i=0; i<n; i++) {
-          if (ISNA(xd[i])) /*TODO: write NA value either 0 or max+1*/ continue;         // don't need if no-NA are known
-          uint64_t this = dtwiddle(xd, i, 1);    // TODO: don't need twiddle if no negatives or NA, known from range above
+          if (ISNA(xd[i])) /*TODO: write NA value either 0 or max+1*/ continue;         // don't need if no-NA are known.  TODO: deal with NaN, Inf and +Inf separately
+          uint64_t this = dtwiddle(xd, i);    // TODO: don't need twiddle if no negatives or NA, known from range above
           WRITE_KEY
         }
       }
@@ -1738,29 +1713,48 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   return ans;
 }
 
-// TODO: implement 'order' argument to 'fsorted'
-// Not touching 'fsorted' for now for "decreasing order". Passing '1' as the value of 'order' argument (checks only ascending order as before).
+
 SEXP fsorted(SEXP x)
 {
-  // Just checks if ordered and returns FALSE early if not (and don't return ordering if so, unlike forder).
-  int tmp=1;
-  int n = length(x);
+  // Just checks if ordered and returns FALSE early if not. Does not return ordering if so, unlike forder.
+  // Always increasing order with NA's first
+  const int n = length(x);
   if (n <= 1) return(ScalarLogical(TRUE));
   if (!isVectorAtomic(x)) Error("is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level");
-  void *xd = DATAPTR(x);
-  stackgrps = FALSE;
-  sort = 1;
+  int i=1;
   switch(TYPEOF(x)) {
-  case INTSXP : case LGLSXP :
-    tmp = isorted(xd, n); break;
+  case INTSXP : case LGLSXP : {
+    int *xd = INTEGER(x);
+    while (i<n && xd[i]>=xd[i-1]) i++;
+  } break;
   case REALSXP :
-    tmp = dsorted(xd, n); break;
-  case STRSXP :
-    tmp = csorted(xd, n); break;
+    if (inherits(x,"integer64")) {
+      int64_t *xd = (int64_t *)REAL(x);
+      while (i<n && xd[i]>=xd[i-1]) i++;
+    } else {
+      double *xd = REAL(x);
+      while (i<n && dtwiddle(xd,i)>=dtwiddle(xd,i-1)) i++;
+    }
+    break;
+  case STRSXP : {
+    SEXP *xd = STRING_PTR(x);
+    i = 0;
+    while (i<n && xd[i]==NA_STRING) i++;
+    bool need = NEED2UTF8(xd[i]);
+    i++; // pass over first non-NA_STRING
+    while (i<n) {
+      if (xd[i]==xd[i-1]) {i++; continue;}
+      if (xd[i]==NA_STRING) break;
+      if (!need) need = NEED2UTF8(xd[i]);
+      if ((need ? strcmp(CHAR(ENC2UTF8(xd[i])), CHAR(ENC2UTF8(xd[i-1]))) :
+                  strcmp(CHAR(xd[i]), CHAR(xd[i-1]))) < 0) break;
+      i++;
+    }
+  } break;
   default :
     Error("type '%s' is not yet supported", type2char(TYPEOF(x)));
   }
-  return(ScalarLogical( tmp==1 ? TRUE : FALSE ));
+  return ScalarLogical(i==n);
 }
 
 SEXP isOrderedSubset(SEXP x, SEXP nrow)

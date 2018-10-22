@@ -71,7 +71,7 @@ SEXP sym_index;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
-Rboolean INHERITS(SEXP x, SEXP char_);
+bool INHERITS(SEXP x, SEXP char_);
 long long DtoLL(double x);
 double LLtoD(long long x);
 double NA_INT64_D;
@@ -90,9 +90,9 @@ Rboolean isDatatable(SEXP x);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
-uint64_t dtwiddle(void *p, int i, int order);
-uint64_t i64twiddle(void *p, int i, int order);
-uint64_t (*twiddle)(void *, int, int);
+uint64_t dtwiddle(void *p, int i);
+// TODO: delete ... uint64_t i64twiddle(void *p, int i, int order);
+//                  uint64_t (*twiddle)(void *, int, int);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 bool need2utf8(SEXP x, int n);
 SEXP isReallyReal(SEXP);
