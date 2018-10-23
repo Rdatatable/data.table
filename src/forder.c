@@ -140,14 +140,13 @@ static void range_i32(int32_t *x, int n, uint64_t *out_min, uint64_t *out_max, b
     }
   }
   *out_anyna = anyna;
-  if(min==NA_INTEGER) {
-    *out_min = 0;
-    *out_max = 0;
-  } else {
-    // map [-2147483648, 2147483647] => [0, 4294967295]
-    *out_min = min ^ 0x80000000;
-    *out_max = max ^ 0x80000000;
-  }
+  //if(min==NA_INTEGER) {
+  //  *out_min = 0;
+  //  *out_max = 0;
+  //} else {
+  // map [-2147483648 (INT32_MIN), 2147483647 (INT32_MAX)] => [0, 4294967295 (UINT32_MAX)]
+  *out_min = min ^ 0x80000000u;
+  *out_max = max ^ 0x80000000u;
 }
 
 static void range_i64(int64_t *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
@@ -168,14 +167,13 @@ static void range_i64(int64_t *x, int n, uint64_t *out_min, uint64_t *out_max, b
     }
   }
   *out_anyna = anyna;
-  if(min==INT64_MIN) {
+  /*if(min==INT64_MIN) {
     *out_min = 0;
     *out_max = 0;
-  } else {
-    // map [INT64_MIN, INT64_MAX] => [0, UINT64_MAX]
-    *out_min = min ^ 0x8000000000000000;
-    *out_max = max ^ 0x8000000000000000;
-  }
+  } else {*/
+  // map [INT64_MIN, INT64_MAX] => [0, UINT64_MAX]
+  *out_min = min ^ 0x8000000000000000u;
+  *out_max = max ^ 0x8000000000000000u;
 }
 
 static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
@@ -184,11 +182,13 @@ static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, bool
   uint64_t max = 0;
   bool anyna=false;
   int i=0;
-  while(i<n && ISNA(x[i])) i++;
-  if (i>0) anyna=true;
-  if (i<n) { max = min = dtwiddle(x, i++);}    // TODO: if we're just grouping, then we don't need to twiddle. However there are cases where we detect sortedness.
+  while(i<n && !R_FINITE(x[i])) i++;
+  if (i>0) anyna=true;  // any"na" include Nan, -Inf and +Inf
+  if (i<n) { max = min = dtwiddle(x, i++);}
+  // TODO: if we're just grouping, then we don't need to twiddle. However there are cases where we detect sortedness.
+  // TODO: can we shift right any unused bytes first (would require a 2nd scan and returning the shift)
   for(; i<n; i++) {
-    if (ISNA(x[i])) { anyna=true; continue; }
+    if (!R_FINITE(x[i])) { anyna=true; continue; }
     uint64_t tmp = dtwiddle(x, i);
     if (tmp>max) max=tmp;
     else if (tmp<min) min=tmp;
@@ -1288,6 +1288,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   for (int i=0; i<ncol*8+1; i++) key[i]=NULL;
   int nradix=0; // the current byte we're writing this column to; might be squashing into it (spare>0)
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
+  bool isReal=false;
   for (int col=0; col<ncol; col++) {
     // Rprintf("Finding range of column %d ...\n", col);
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
@@ -1304,6 +1305,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         range_i64((int64_t *)REAL(x), n, &min, &max, &anyna);
       } else {
         range_d(REAL(x), n, &min, &max, &anyna);
+        isReal = true;
       }
       break;
     case STRSXP :
@@ -1325,7 +1327,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       continue;
     }
 
-    uint64_t range = max-min+1;   //(max>=0 && min<0) ? (uint64_t)max+(uint64_t)(-min) : max-min;
+    uint64_t range = max-min+1 +1/*NA*/ +isReal*3/*NaN, -Inf, +Inf*/;  //(max>=0 && min<0) ? (uint64_t)max+(uint64_t)(-min) : max-min;
     // TODO: the NA value could be placed as max if na.last=TRUE.  Deal with na.last up front in the key and then forget (TODO)
     // "range" 5 means 0(NA),1,2,3,4,5  (6 values);  it's value 5 not 6 that determines the maxBit
 
@@ -1352,7 +1354,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     // TODO: count NAs rather than just bool.  Then can further optimize loops later.
     // TODO: may uint64_t min and max, should be always. rather than difference between int64_t and uint64_t (for SEXP *)
 
-    if (nalast!=1) min--; // so that x-min results in 1 for the minimum; NA coded by 0. Always provide for the NA spot even if NAs aren't present for code brevity and robustness
+
 
     // Rprintf("Column %d of by= has min=%llu, max=%llu, anyna=%d, range=%llu, nbyte=%d. Writing key ...\n", col, min, max, anyna, max-min, nbyte);
     for (int b=0; b<nbyte; b++) {
@@ -1361,10 +1363,23 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     }
 
     const bool asc = (sort>=0);
+    uint64_t min2=min, max2=max;
+    if (nalast<1 && asc) {
+      min2--; // so that x-min results in 1 for the minimum; NA coded by 0. Always provide for the NA spot even if NAs aren't present for code brevity and robustness
+      if (isReal) min2--;  // Nan first
+    } else {
+      max2++;            // NA is max+1 so max2-this should result in 0
+      if (isReal) max2++;  // Nan last
+    }
+    if (isReal) { min2--; max2++; }  // -Inf and +Inf
+
+    const uint64_t naval = ((nalast==1) == (sort==1)) ? max+1+isReal*2 : min-1-isReal*2;
+    const uint64_t nanval = ((nalast==1) == (sort==1)) ? max+2 : min-2;  // only used when isReal
+
     // several columns could squash into 1 byte, too!  3 logical colums, for example.  TODO: add test.
     // due to bit squashing is reason we deal with asc|desc here rather than in the ugrp sorting
     #define WRITE_KEY                                   \
-    this = asc ? this-min : max-this;                   \
+    this = asc ? this-min2 : max2-this;                 \
     this <<= spare;                                     \
     for (int b=nbyte-1; b>0; b--) {                     \
       key[nradix+b][i] = (uint8_t)(this & 0xff);        \
@@ -1394,15 +1409,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       for (int i=0; i<n; i++) {
         uint64_t this=0;
         if (xd[i]==NA_INTEGER) {  // TODO: branchless if no-na
-          switch(nalast) {
-          case -1: ansd[i]=0; continue;  // unusual exclude na: na.last=NA  Exclusion is done by writing 0 into the 1-based R index
-          case  0: continue;             // standard in data.table: NA first; continue because 0 is already in the calloc'd key
-          case  1: this=max+1;           // na.last=TRUE; default in base R.  +min because -min gets done inside WRITE_KEY
-          }
+          if (nalast==-1) ansd[i]=0;
+          this = naval;
         } else {
-          //this = (uint32_t)xd[i]+(uint32_t)INT32_MAX;  // TODO  ^ 0x80000000
           this = xd[i] ^ 0x80000000u;
-          // this = xd((uint32_t *)xd)[i] ^ 0x80000000;  +(uint32_t)INT32_MAX
         }
         WRITE_KEY
       }}
@@ -1412,15 +1422,29 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         int64_t *xd = (int64_t *)REAL(x);
         #pragma omp parallel for num_threads(getDTthreads())
         for (int i=0; i<n; i++) {
-          if (xd[i]==INT64_MIN) continue;
-          uint64_t this = xd[i] ^ 0x8000000000000000;
+          uint64_t this=0;
+          if (xd[i]==INT64_MIN) {  // TODO: branchless if no-na
+            if (nalast==-1) ansd[i]=0;
+            this = naval;
+          } else {
+            this = xd[i] ^ 0x8000000000000000u;
+          }
           WRITE_KEY
         }
       } else {
         double *xd = REAL(x);                // TODO: need to compress doubles (skip bytes?) as it's too many bits for now
+        #pragma omp parallel for num_threads(getDTthreads())
         for (int i=0; i<n; i++) {
-          if (ISNA(xd[i])) /*TODO: write NA value either 0 or max+1*/ continue;         // don't need if no-NA are known.  TODO: deal with NaN, Inf and +Inf separately
-          uint64_t this = dtwiddle(xd, i);    // TODO: don't need twiddle if no negatives or NA, known from range above
+          uint64_t this=0;
+          if (!R_FINITE(xd[i])) {   //  go branchless if no-na (meaning NA, nan, -Inf, +Inf)
+            if (isinf(xd[i])) this = signbit(xd[i]) ? min-1 : max+1;
+            else {
+              if (nalast==-1) ansd[i]=0;  // for both NA and NaN
+              this = ISNA(xd[i]) ? naval : nanval;
+            }
+          } else {
+            this = dtwiddle(xd, i);    // TODO: don't need twiddle if no negatives or NA, known from range above
+          }
           WRITE_KEY
         }
       }
@@ -1432,11 +1456,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       for (int i=0; i<n; i++) {
         uint64_t this=0;
         if (xd[i]==NA_STRING) {
-          switch(nalast) {
-          case -1: ansd[i]=0; continue;
-          case  0: continue;
-          case  1: this=max+1;
-          }
+          if (nalast==-1) ansd[i]=0;
+          this = naval;
         } else {
           this = -TRUELENGTH(xd[i]);
         }
