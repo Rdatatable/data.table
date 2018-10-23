@@ -284,7 +284,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
     thiscounts[lastx] = 0;  // the rest must be 0 already, save the memset
     return;
   }
-  if (!skip) all_skipped = false;
+  //if (!skip) all_skipped = false;
   int itmp = thiscounts[0];
   for (int i=1; i<256; i++) {
     //int j = asc ? i : 255-i;
@@ -316,7 +316,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
 // group numbers are left in truelength to be reused by part II
 {
-  bool anyna=false;
+  bool anyna=false, anyneedutf8=false;
   if (ustr_n!=0) Error("Internal error: ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);  // # nocov
   if (ustr_maxlen!=0) Error("Internal error: ustr_maxlen isn't 0 when starting range_str");
   // savetl_init() is called once at the start of forder
@@ -339,9 +339,18 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool
       ustr[ustr_n++] = s;
       SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
+      if (NEED2UTF8(s)) anyneedutf8=true;
     }
   }
   *out_anyna = anyna;
+  if (anyneedutf8) {
+    // TODO:
+    // copy ustr to ustr2 via ENC2UTF8(s) on each ustr
+    // copy that to ustr3
+    // sort ustr3 by reference
+    // remove dups from ustr3, and assign truelength
+    // loop through ustr2 fetching truelength into ustr
+  }
   if (ustr_n==0) {
     *out_min = 0;
     *out_max = 0;
@@ -1309,12 +1318,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       }
       break;
     case STRSXP :
-      /*if (need2utf8(x, n)) {
-        // TODO This doesn't go on the uniques!!!  Make option to turn this off.  Or is there a way to bunch them together. Can two different pointers be the same string?!  If so, could change the index value in the key.!!
-        SEXP tt = PROTECT(allocVector(STRSXP, n)); n_protect++;
-        for (int i=0; i<n; i++) SET_STRING_ELT(tt, i, ENC2UTF8(STRING_ELT(x, i)));
-        x = tt;
-      }*/
+      // need2utf8 now happens inside range_str on the uniques
       range_str(STRING_PTR(x), n, &min, &max, &anyna);
       break;
     default:
