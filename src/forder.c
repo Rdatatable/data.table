@@ -62,8 +62,6 @@ static void cleanup() {
   free_ustr();
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop above since only CHARSXP which had tl>0 (R's usage) are stored there.
 }
-
-static int nalast = -1;                                             // =1, 0, -1 for TRUE, NA, FALSE respectively. Value rewritten inside forder().
                                                                     // note that na.last=NA (0) removes NAs, not retains them.
 static int sort = 0;                                                // 0 no sort;  or -1 descending, +1 ascending changes per column
 static Rboolean stackgrps = TRUE;                                   // switched off for last column when not needed by setkey
@@ -143,12 +141,12 @@ static void range_i32(int32_t *x, int n, uint64_t *out_min, uint64_t *out_max, b
   }
   *out_anyna = anyna;
   if(min==NA_INTEGER) {
-    *out_min = 0; //INT64_MIN;
-    *out_max = 0; //INT64_MIN;
+    *out_min = 0;
+    *out_max = 0;
   } else {
-    // map [-INT_MAX, INT_MAX] => [0, 2*INT_MAX]
-    *out_min = (uint32_t)min + (uint32_t)INT32_MAX;
-    *out_max = (uint32_t)max + (uint32_t)INT32_MAX;
+    // map [-2147483648, 2147483647] => [0, 4294967295]
+    *out_min = min ^ 0x80000000;
+    *out_max = max ^ 0x80000000;
   }
 }
 
@@ -174,9 +172,9 @@ static void range_i64(int64_t *x, int n, uint64_t *out_min, uint64_t *out_max, b
     *out_min = 0;
     *out_max = 0;
   } else {
-    // map [-INT64_MAX, INT64_MAX] => [0, 2*INT64_MAX]
-    *out_min = (uint64_t)min + (uint64_t)INT64_MAX;
-    *out_max = (uint64_t)max + (uint64_t)INT64_MAX;
+    // map [INT64_MIN, INT64_MAX] => [0, UINT64_MAX]
+    *out_min = min ^ 0x8000000000000000;
+    *out_max = max ^ 0x8000000000000000;
   }
 }
 
@@ -436,10 +434,11 @@ static void count_group(const uint8_t *x, const uint16_t n, bool *out_skip, uint
 
 
 // x*order results in integer overflow when -1*NA, so careful to avoid that here :
-
+/*
 static inline int icheck(int x) {
   return ((nalast != 1) ? ((x != NA_INTEGER) ? x*sort : x) : ((x != NA_INTEGER) ? (x*sort)-1 : INT_MAX)); // if nalast==1, NAs must go last.
 }
+*/
 
 //static void icount(int *x, int *o, int n)
 /* Counting sort:
@@ -724,6 +723,8 @@ static union {
   //  unsigned int ui;
 } u;
 
+//static int dtwiddle_nalast = -1;  // TODO: remove now it's done when writing key
+
 uint64_t dtwiddle(void *p, int i)
 {
   u.d = ((double *)p)[i];
@@ -740,7 +741,8 @@ uint64_t dtwiddle(void *p, int i)
       5. +Inf twiddled to : 1 sign, exponent all 1, mantissa all 0, sorts last since finite
          numbers are defined by not-all-1 in exponent */
       u.ull = (ISNA(u.d) ? 0 : (1ULL << 51));
-      return (nalast == 1 ? ~u.ull : u.ull);
+      return u.ull;
+      //return (nalast == 1 ? ~u.ull : u.ull);
   }
   uint64_t mask = (u.ull & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000;  // always flip sign bit and if negative (sign bit was set) flip other bits too
   return( (u.ull ^ mask) & dmask2 );    // TODO: why not shift right to reduce range.
@@ -1237,7 +1239,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   if (!isLogical(naArg) || LENGTH(naArg) != 1) error("na.last must be logical TRUE, FALSE or NA of length 1");
   sort = LOGICAL(sortStrArg)[0]==TRUE;  // TODO: rename sortStr to just sort.  Just one argument either TRUE/FALSE, or a vector of +1|-1.
   // static global set on top...
-  nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? 0 : (LOGICAL(naArg)[0] == TRUE) ? 1 : -1; // 1=TRUE, -1=FALSE, 0=NA
+  int nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
   gsmaxalloc = n;  // upper limit for stack size (all size 1 groups). We'll detect and avoid that limit, but if just one non-1 group (say 2), that can't be avoided.
   all_skipped = true;
   if (n==0) {
@@ -1251,6 +1253,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     return ans;
   }
   // if n==1, the code is left to proceed below in case one or more of the 1-row by= columns are NA and na.last=NA. Otherwise it would be easy to return now.
+
+  SEXP ans = PROTECT(allocVector(INTSXP, n)); n_protect++;
+  int *ansd = INTEGER(ans);
+  // Rprintf("Populating ansd\n");
+  for (int i=0; i<n; i++) ansd[i]=i+1;  // initialize for smaller n or range where the parallel-batch doesn't happen. TODO: parallelize but low priority
+                                     // the first gather is the worst; for the first radix==0 case, the parallel-batch can just write o directly to save wasteful reordering of 1:n
+
 
   savetl_init();   // from now on use Error not error.
 
@@ -1315,8 +1324,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       if (TYPEOF(x)==STRSXP) free_ustr();
       continue;
     }
-    min--;  // so that x-min results in 1 for the minimum; NA coded by 0. Always provide for the NA spot even if NAs aren't present for code brevity and robustness
-    uint64_t range = max-min;   //(max>=0 && min<0) ? (uint64_t)max+(uint64_t)(-min) : max-min;
+
+    uint64_t range = max-min+1;   //(max>=0 && min<0) ? (uint64_t)max+(uint64_t)(-min) : max-min;
     // TODO: the NA value could be placed as max if na.last=TRUE.  Deal with na.last up front in the key and then forget (TODO)
     // "range" 5 means 0(NA),1,2,3,4,5  (6 values);  it's value 5 not 6 that determines the maxBit
 
@@ -1342,6 +1351,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     }
     // TODO: count NAs rather than just bool.  Then can further optimize loops later.
     // TODO: may uint64_t min and max, should be always. rather than difference between int64_t and uint64_t (for SEXP *)
+
+    if (nalast!=1) min--; // so that x-min results in 1 for the minimum; NA coded by 0. Always provide for the NA spot even if NAs aren't present for code brevity and robustness
 
     // Rprintf("Column %d of by= has min=%llu, max=%llu, anyna=%d, range=%llu, nbyte=%d. Writing key ...\n", col, min, max, anyna, max-min, nbyte);
     for (int b=0; b<nbyte; b++) {
@@ -1378,11 +1389,21 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP : {  // TODO trivial LGL count
-      int *xd = INTEGER(x);
+      int32_t *xd = INTEGER(x);
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<n; i++) {
-        if (xd[i]==NA_INTEGER) continue;   // TODO:  separate branchless when !anyna
-        uint64_t this = (uint32_t)xd[i]+(uint32_t)INT32_MAX;  // TODO  ^ 0x80000000
+        uint64_t this=0;
+        if (xd[i]==NA_INTEGER) {  // TODO: branchless if no-na
+          switch(nalast) {
+          case -1: ansd[i]=0; continue;  // unusual exclude na: na.last=NA  Exclusion is done by writing 0 into the 1-based R index
+          case  0: continue;             // standard in data.table: NA first; continue because 0 is already in the calloc'd key
+          case  1: this=max+1;           // na.last=TRUE; default in base R.  +min because -min gets done inside WRITE_KEY
+          }
+        } else {
+          //this = (uint32_t)xd[i]+(uint32_t)INT32_MAX;  // TODO  ^ 0x80000000
+          this = xd[i] ^ 0x80000000u;
+          // this = xd((uint32_t *)xd)[i] ^ 0x80000000;  +(uint32_t)INT32_MAX
+        }
         WRITE_KEY
       }}
       break;
@@ -1392,7 +1413,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         #pragma omp parallel for num_threads(getDTthreads())
         for (int i=0; i<n; i++) {
           if (xd[i]==INT64_MIN) continue;
-          uint64_t this = (uint64_t)xd[i] + (uint64_t)INT64_MAX;
+          uint64_t this = xd[i] ^ 0x8000000000000000;
           WRITE_KEY
         }
       } else {
@@ -1409,8 +1430,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       SEXP *xd = STRING_PTR(x);
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<n; i++) {
-        if (xd[i]==NA_STRING) continue;
-        uint64_t this = -TRUELENGTH(xd[i]);
+        uint64_t this=0;
+        if (xd[i]==NA_STRING) {
+          switch(nalast) {
+          case -1: ansd[i]=0; continue;
+          case  0: continue;
+          case  1: this=max+1;
+          }
+        } else {
+          this = -TRUELENGTH(xd[i]);
+        }
         WRITE_KEY
       }}
       free_ustr();  // ustr could be left allocated and reused, but free now in case large and we're tight on ram
@@ -1429,11 +1458,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   //  Rprintf("\n");
   //}
 
-  SEXP ans = PROTECT(allocVector(INTSXP, n)); n_protect++;
-  int *ansd = INTEGER(ans);
-  // Rprintf("Populating ansd\n");
-  for (int i=0; i<n; i++) ansd[i]=i+1;  // initialize for smaller n or range where the parallel-batch doesn't happen. TODO: parallelize but low priority
-                                     // the first gather is the worst; for the first radix==0 case, the parallel-batch can just write o directly to save wasteful reordering of 1:n
+
 
   //int maxgrpn = gsmax[flip];   // biggest group in the first column
   /*
