@@ -17,7 +17,7 @@ setPackageName("data.table",.global)
 
 .SD = .N = .I = .GRP = .BY = .EACHI = NULL
 # These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
-# But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.`
+# But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.
 # And NULL makes it clear (to the R's mask check on loading) that they're variables not functions.
 # utils::globalVariables(c(".SD",".N")) was tried as well, but exporting seems better.
 # So even though .BY doesn't appear in this file, it should still be NULL here and exported because it's
