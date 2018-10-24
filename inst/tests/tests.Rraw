@@ -4106,7 +4106,7 @@ setkey(DT,NULL)
 test(1231, DT[, sum(b), by=a, verbose=TRUE], output="memcpy contiguous groups")
 test(1232, DT[, sum(b), by=a+1, verbose=TRUE], output="memcpy contiguous groups")
 test(1233, DT[, sum(b), by=a%%2, verbose=TRUE], output="collecting discontiguous groups")
-test(1234, DT[, sum(a), by=b, verbose=TRUE], output="collecting discontiguous groups")
+test(1234, DT[, sum(a), by=b, verbose=TRUE], output="memcpy contiguous groups") # as from v1.12.0 the grouped-ness is detected despite the groups not being in order
 setkey(DT,a)
 test(1235, DT[.(2:3),sum(b),by=.EACHI,verbose=TRUE], data.table(a=2:3,V1=c(7L,9L),key="a"), output="memcpy contiguous groups")
 test(1236, DT[.(3:2),sum(b),by=.EACHI,verbose=TRUE], data.table(a=3:2,V1=c(9L,7L)), output="memcpy contiguous groups")
@@ -4284,7 +4284,7 @@ test(1251.9, DT[base::order(x, list(-y), decreasing=TRUE)],
 # more "edge cases" to ensure we're consistent with base
 test(1251.11, DT[order("a")], DT[1L])
 test(1251.12, DT[order("b", "a")], DT[1L])
-test(1251.13, DT[order(list("b", "a"))], error = "First column being ordered is type 'list', not yet supported")
+test(1251.13, DT[order(list("b", "a"))], error = "Column 1 of by= (1) is type 'list', not yet supported")
 test(1251.14, DT[order(list("b"), list("a"))], DT[1L])
 
 ##############################################################
@@ -4912,7 +4912,7 @@ test(1319.5, DT[order(DT[, "b", with=FALSE], DT[, "a", with=FALSE])], DT[base::o
 # test to make sure old things are not modified (ridiculous, but "consistency" demands it!)
 test(1319.6, DT[order(list(DT$a))], DT[1])
 test(1319.7, DT[order(list(DT$a), list(DT$b))], DT[1])
-test(1319.8, DT[order(list(DT$a, DT$b))], error="First column being ordered is type 'list', not yet supported")
+test(1319.8, DT[order(list(DT$a, DT$b))], error="Column 1 of by= (1) is type 'list', not yet supported")
 
 # FR #703. Not so extensive testing because test 1223 already tests for everything else extensively. Only integer64 here.
 # this'll be the test for both DT[order(.)] and setorder(.) as both internally uses forder/forderv
@@ -5427,7 +5427,7 @@ DT <- data.table(x=1:5, z=5:1, key="z")
 y <- c(1,3,2,3,2)
 test(1374.1, DT[, list(x=sum(x)), by=y], data.table(y=c(1,3,2), x=c(5L, 6L, 4L)))
 y <- c(1,2,2,3,3)
-test(1374.2, DT[, list(x=sum(x)), by=y], data.table(y=c(1,2,3), x=c(5L, 7L, 3L), key="y"))
+test(1374.2, DT[, list(x=sum(x)), by=y], data.table(y=c(1,2,3), x=c(5L, 7L, 3L)))
 
 # order in i combined with := in j, updates those rows in that order
 # order in i without := in j, returns new object in that order, which is then updated

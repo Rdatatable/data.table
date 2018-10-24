@@ -1320,11 +1320,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       range_str(STRING_PTR(x), n, &min, &max, &anyna);
       break;
     default:
-       Error("Column %d of 'by' (%d) is type '%s', not yet supported", col, INTEGER(by)[col-1], type2char(TYPEOF(x)));
+       Error("Column %d of by= (%d) is type '%s', not yet supported", col+1, INTEGER(by)[col], type2char(TYPEOF(x)));
     }
 
     if (min==0/*all na*/ || (min==max && !anyna)) {
       // all same value; skip column as nothing to do
+      if (min==0 && nalast==-1) { all_skipped=false; for (int i=0; i<n; i++) ansd[i]=0; }
       if (TYPEOF(x)==STRSXP) free_ustr();
       continue;
     }
@@ -1413,7 +1414,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       for (int i=0; i<n; i++) {
         uint64_t this=0;
         if (xd[i]==NA_INTEGER) {  // TODO: branchless if no-na
-          if (nalast==-1) ansd[i]=0;
+          if (nalast==-1) {all_skipped=false; ansd[i]=0;}
           this = naval;
         } else {
           this = xd[i] ^ 0x80000000u;
@@ -1428,7 +1429,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         for (int i=0; i<n; i++) {
           uint64_t this=0;
           if (xd[i]==INT64_MIN) {  // TODO: branchless if no-na
-            if (nalast==-1) ansd[i]=0;
+            if (nalast==-1) {all_skipped=false; ansd[i]=0;}
             this = naval;
           } else {
             this = xd[i] ^ 0x8000000000000000u;
@@ -1443,7 +1444,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
           if (!R_FINITE(xd[i])) {   //  go branchless if no-na (meaning NA, nan, -Inf, +Inf)
             if (isinf(xd[i])) this = signbit(xd[i]) ? min-1 : max+1;
             else {
-              if (nalast==-1) ansd[i]=0;  // for both NA and NaN
+              if (nalast==-1) {all_skipped=false; ansd[i]=0;}  // for both NA and NaN
               this = ISNA(xd[i]) ? naval : nanval;
             }
           } else {
@@ -1460,7 +1461,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       for (int i=0; i<n; i++) {
         uint64_t this=0;
         if (xd[i]==NA_STRING) {
-          if (nalast==-1) ansd[i]=0;
+          if (nalast==-1) {all_skipped=false; ansd[i]=0;}
           this = naval;
         } else {
           this = -TRUELENGTH(xd[i]);
