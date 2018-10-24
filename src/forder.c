@@ -2,27 +2,24 @@
 // #define TIMING_ON
 
 /*
-  - Only forder() and *twiddle() functions are meant for use by other C code in data.table, hence all other functions here except forder and *twiddle are static.
-  - The static functions here make use of global variables, whose scope is limited to the same translation unit; therefore access from outside this file must be via forder and/or *twiddle only.
-  - The coding techniques deployed here are for efficiency; e.g. i) the static functions are recursive or called repetitively and we wish to minimise stack overhead, or ii) reach outside themselves to place results in the end result directly rather than returning small bits of memory.
+- Only forder() and *dtwiddle() functions are meant for use by other C code in data.table, hence all other functions here are static.
+- The coding techniques deployed here are for efficiency; e.g. i) the static functions are recursive or called repetitively and we wish to minimise
+  stack overhead, or ii) reach outside themselves to place results in the end result directly rather than returning many small pieces of memory.
 */
 
-static int *gs[2] = {NULL};                                         // gs = groupsizes e.g. 23,12,87,2,1,34,...
-static int flip = 0;                                                // two vectors flip flopped: flip and 1-flip
-static int gsalloc[2] = {0};                                        // allocated stack size
-static int gsngrp[2] = {0};                                         // used
-//static int gsmax[2] = {0};                                          // max grpn so far. No longer any need to maintain.
-static int gsmaxalloc = 0;                                          // max size of stack, set by forder to nrows
-//static void *xsub = NULL;                                           // allocated by forder; local function arguments named xsub point into it
-//static int *newo = NULL;                                            // used by forder and [i|d|c]sort to reorder order. not needed if length(by)==1
-//static int *otmp = NULL; static int otmp_alloc = 0;
-//static void *xtmp = NULL; static int xtmp_alloc = 0;                // TO DO: save xtmp if possible, see allocs in forder
-//static void *radix_xsub = NULL;
-static int *cradix_counts = NULL;
+static int *gs[2] = {NULL};          // gs = groupsizes e.g. 23,12,87,2,1,34,...
+static int flip = 0;                 // two vectors flip flopped: flip and 1-flip
+static int gsalloc[2] = {0};         // allocated stack size
+static int gsngrp[2] = {0};          // used
+static int gsmaxalloc = 0;           // max size of stack, set by forder to nrows
+static bool stackgrps = true;        // switched off for last radix (most dense final step) when group sizes aren't needed by caller
+static int  *cradix_counts = NULL;
+static SEXP *cradix_xtmp   = NULL;
+static SEXP *ustr = NULL;
+static int ustr_alloc = 0;
+static int ustr_n = 0;
 static int ustr_maxlen = 0;
-static SEXP *cradix_xtmp = NULL;
-//static int *csort_otmp=NULL; static int csort_otmp_alloc=0;
-static SEXP *ustr = NULL; static int ustr_alloc = 0; static int ustr_n = 0;
+static int sort = 0;                 // 0 no sort; -1 descending, +1 ascending
 
 #define Error(...) do {cleanup(); error(__VA_ARGS__);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
 #undef warning
@@ -47,27 +44,12 @@ static void cleanup() {
   flip = 0;
   gsalloc[0] = gsalloc[1] = 0;
   gsngrp[0] = gsngrp[1] = 0;
-//  gsmax[0] = gsmax[1] = 0;
   gsmaxalloc = 0;
-
-//  free(xsub);             xsub=NULL;
-//  free(newo);             newo=NULL;
-//  free(otmp);             otmp=NULL;             otmp_alloc=0;
-//  free(xtmp);             xtmp=NULL;             xtmp_alloc=0;
-//  free(radix_xsub);       radix_xsub=NULL;       radix_xsub_alloc=0;
-  free(cradix_counts);    cradix_counts=NULL;
-  free(cradix_xtmp);      cradix_xtmp=NULL;
-//  free(csort_otmp);       csort_otmp=NULL;       csort_otmp_alloc=0;
-
+  free(cradix_counts); cradix_counts=NULL;
+  free(cradix_xtmp);   cradix_xtmp=NULL;
   free_ustr();
-  savetl_end();  // Restore R's own usage of tl. Must run after the for loop above since only CHARSXP which had tl>0 (R's usage) are stored there.
+  savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
 }
-                                                                    // note that na.last=NA (0) removes NAs, not retains them.
-static int sort = 0;                                                // 0 no sort;  or -1 descending, +1 ascending changes per column
-static bool stackgrps = true;                                       // switched off for last column when not needed by setkey
-
-#define N_SMALL 200                                                 // replaced n < 200 with n < N_SMALL. Easier to change later
-#define N_RANGE 100000                                              // range limit for counting sort. UPDATE: should be less than INT_MAX (see setRange for details)
 
 static void growstack(uint64_t newlen) {
   if (newlen==0) newlen=4096;                                       // thus initially 4 pages since sizeof(int)==4
@@ -93,7 +75,6 @@ static void push(int x) {
 static void flipflop() {
   flip = 1-flip;
   gsngrp[flip] = 0;
-//  gsmax[flip] = 0;
   if (gsalloc[flip] < gsalloc[1-flip]) growstack((uint64_t)(gsalloc[1-flip])*2);
 }
 
@@ -110,18 +91,10 @@ static void flipflop() {
   #define TEND(i)
 #endif
 
+// range_* functions return [min,max] of the non-NAs as common uint64_t type
+// TODO parallelize
 
-/*
-   icount originally copied from do_radixsort in src/main/sort.c @ rev 51389. Then reworked here again in forder.c in v1.8.11
-   base::sort.list(method="radix") turns out not to be a radix sort, but a counting sort, and we like it.
-   See r-devel post: http://r.789695.n4.nabble.com/method-radix-in-sort-list-isn-t-actually-a-radix-sort-tp3309470p3309470.html
-   Main changes :
-   1. Negatives are fine. Btw, wish raised for simple change to base R : https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=15644
-   2. Doesn't cummulate through 0's for speed in repeated calls of sparse counts by saving memset back to 0 of many 0
-   3. Separated setRange so forder can redirect to iradix
-*/
-
-static void range_i32(int32_t *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)  // out_* in common type
+static void range_i32(int32_t *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
 {
   int32_t min = NA_INTEGER;
   int32_t max = NA_INTEGER;
@@ -138,8 +111,7 @@ static void range_i32(int32_t *x, int n, uint64_t *out_min, uint64_t *out_max, i
     }
   }
   *out_na_count = na_count;
-  // map [-2147483648(INT32_MIN==NA_INTEGER), 2147483647(INT32_MAX)] => [0, 4294967295(UINT32_MAX)]
-  *out_min = min ^ 0x80000000u;
+  *out_min = min ^ 0x80000000u;  // map [-2147483648(INT32_MIN), 2147483647(INT32_MAX)] => [0, 4294967295(UINT32_MAX)]
   *out_max = max ^ 0x80000000u;
 }
 
@@ -166,7 +138,8 @@ static void range_i64(int64_t *x, int n, uint64_t *out_min, uint64_t *out_max, i
 }
 
 static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
-// return range of finite numbers (excluding NA, NaN, -Inf, +Inf) and a count of strictly NA so caller knows if it's all NA or any NaN, Inf and -Inf are present
+// return range of finite numbers (excluding NA, NaN, -Inf, +Inf) and a count of
+// strictly NA (not NaN) so caller knows if it's all NA or any Inf|-Inf|NaN are present
 {
   uint64_t min = 0;
   uint64_t max = 0;
@@ -174,8 +147,6 @@ static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, int 
   int i=0;
   while(i<n && !R_FINITE(x[i])) { na_count+=ISNA(x[i]); i++; }
   if (i<n) { max = min = dtwiddle(x, i++);}
-  // TODO: if we're just grouping, then we don't need to twiddle. However there are cases where we detect sortedness.
-  // TODO: can we shift right any unused bytes first (would require a 2nd scan and returning the shift)
   for(; i<n; i++) {
     if (!R_FINITE(x[i])) { na_count+=ISNA(x[i]); continue; }
     uint64_t tmp = dtwiddle(x, i);
@@ -187,99 +158,48 @@ static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, int 
   *out_max = max;
 }
 
-
-
-//#define MIN_CHARSXP_SIZE (sizeof(VECTOR_SEXPREC)+8)
-//static const uint64_t PTR_MASK = 0xffffffffffff;    // 48-bit virtual address space; works on 32bit too
-/*
-static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
-{
-  uint64_t min = 0;
-  uint64_t max = 0;
-
-  bool anyna=false;
-  int i=0;
-  while(i<n && x[i]==NA_STRING) i++;
-  if (i>0) anyna=true;
-  if (i<n) max = min = (uint64_t)x[i++] & PTR_MASK;
-  for(; i<n; i++) {
-    if (x[i]==NA_STRING) { anyna=true; continue; }  // it's possible that NA_STRING is not the smallest pointer value (TODO test, but even if true now it might change in future)
-    uint64_t tmp = (uint64_t)x[i] & PTR_MASK;
-    if (tmp>max) max=tmp;
-    else if (tmp<min) min=tmp;
-  }
-  *out_anyna = anyna;
-  *out_min = min/MIN_CHARSXP_SIZE;
-  *out_max = max/MIN_CHARSXP_SIZE;
-}
-*/
-
-/*
-int StrCmp2(SEXP x, SEXP y) {    // same as StrCmp but also takes into account 'na.last' argument.
-  if (x == y) return 0;                   // same cached pointer (including NA_STRING==NA_STRING)
-  if (x == NA_STRING) return nalast;      // if x=NA, nalast=1 ? then x > y else x < y (Note: nalast == 0 is already taken care of in 'csorted', won't be 0 here)
-  if (y == NA_STRING) return -nalast;     // if y=NA, nalast=1 ? then y > x
-  return sort*strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));  // same as explanation in StrCmp
-}
-*/
-
-int StrCmp(SEXP x, SEXP y)            // also used by bmerge and chmatch
+// non-critical function also used by bmerge and chmatch
+int StrCmp(SEXP x, SEXP y)
 {
   if (x == y) return 0;             // same cached pointer (including NA_STRING==NA_STRING)
   if (x == NA_STRING) return -1;    // x<y
   if (y == NA_STRING) return 1;     // x>y
-  return strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y))); // ENC2UTF8 handles encoding issues by converting all marked non-utf8 encodings alone to utf8 first. The function could be wrapped in the first if-statement already instead of at the last stage, but this is to ensure that all-ascii cases are handled with maximum efficiency.
-  // This seems to fix the issues as far as I've checked. Will revisit if necessary.
-
-  // OLD COMMENT: can return 0 here for the same string in known and unknown encodings, good if the unknown string is in that encoding but not if not ordering is ascii only (C locale). TO DO: revisit and allow user to change to strcoll, and take account of Encoding. see comments in bmerge().  10k calls of strcmp = 0.37s, 10k calls of strcoll = 4.7s. See ?Comparison, ?Encoding, Scollate in R internals.
-
+  return strcmp(CHAR(ENC2UTF8(x)), CHAR(ENC2UTF8(y)));
 }
-
-// TO DO: check that all unknown encodings are ascii; i.e. no non-ascii unknowns are present, and that either Latin1
-//        or UTF-8 is used by user, not both. Then error if not. If ok, then can proceed with byte level. ascii is never marked known by R, but non-ascii (i.e. knowable encoding) could be marked unknown.
-//        does R internals have is_ascii function exported?  If not, simple enough.
+/* ENC2UTF8 handles encoding issues by converting all marked non-utf8 encodings alone to utf8 first. The function could be wrapped
+   in the first if-statement already instead of at the last stage, but this is to ensure that all-ascii cases are handled with maximum efficiency.
+   This seems to fix the issues as far as I've checked. Will revisit if necessary.
+   OLD COMMENT: can return 0 here for the same string in known and unknown encodings, good if the unknown string is in that encoding but not if not ordering is ascii only (C locale).
+   TO DO: revisit and allow user to change to strcoll, and take account of Encoding. see comments in bmerge().  10k calls of strcmp = 0.37s, 10k calls of strcoll = 4.7s. See ?Comparison, ?Encoding, Scollate in R internals.
+   TO DO: check that all unknown encodings are ascii; i.e. no non-ascii unknowns are present, and that either Latin1
+          or UTF-8 is used by user, not both. Then error if not. If ok, then can proceed with byte level. ascii is never marked known by R, but
+          non-ascii (i.e. knowable encoding) could be marked unknown. Does R API provide is_ascii?
+*/
 
 static void cradix_r(SEXP *xsub, int n, int radix)
 // xsub is a unique set of CHARSXP, to be ordered by reference
-// First time, radix==0, and xsub==x. Then recursively moves SEXP together for L1 cache efficiency.
+// First time, radix==0, and xsub==x. Then recursively moves SEXP together for cache efficiency.
 // Quite different to iradix because
 //   1) x is known to be unique so fits in cache (wide random access not an issue)
 //   2) they're variable length character strings
 //   3) no need to maintain o.  Just simply reorder x. No grps or push.
-// Fortunately, UTF sorts in the same order if treated as ASCII, so we can simplify by doing it by bytes.  TO DO: confirm
-// a forwards (MSD) radix for efficiency, although more complicated
-// This part has nothing to do with truelength. The truelength stuff is to do with finding the unique strings.
-// We may be able to improve CHARSXP derefencing by submitting patch to R to make R's string cache contiguous
-// but would likely be difficult. If we strxfrm, then it'll then be contiguous and compact then anyway.
 {
-  // TO DO?: chmatch to existing sorted vector, then grow it.
-  // TO DO?: if (n<N_SMALL=200) insert sort, then loop through groups via ==
   if (n<=1) return;
-  // TO DO: if (n<50) cinsert (continuing from radix offset into CHAR) or using StrCmp. But 256 is narrow, so quick and not too much an issue.
-
   int *thiscounts = cradix_counts + radix*256;
-  //const bool asc=(sort==1);
-  // delete ... bool skip=true;  // else -1 desc (not 0)
-  //const uint8_t start = asc?0:255;
-  uint8_t lastx = 0;  // TODO: remove lastx and just have thisx here.
+  uint8_t lastx = 0;  // the last x is used to test its bin
   for (int i=0; i<n; i++) {
-    uint8_t thisx = radix<LENGTH(xsub[i]) ? (uint8_t)(CHAR(xsub[i])[radix]) : 1;  // no NA_STRING present,  1 for "" (could use 0 too maybe since NA_STRING not present)
-    thiscounts[ thisx ]++;
-//    if (thisx<lastx) skip=false;
-    lastx = thisx;
+    lastx = radix<LENGTH(xsub[i]) ? (uint8_t)(CHAR(xsub[i])[radix]) : 1;  // no NA_STRING present,  1 for "" (could use 0 too maybe since NA_STRING not present)
+    thiscounts[ lastx ]++;
   }
-  if (thiscounts[lastx]==n && radix<ustr_maxlen-1) {   // this also catches when subx has shorter strings than the rest, thiscounts[0]==n and we'll recurse very quickly through to the overall maxlen with no 256 overhead each time
+  if (thiscounts[lastx]==n && radix<ustr_maxlen-1) {
     cradix_r(xsub, n, radix+1);
-    thiscounts[lastx] = 0;  // the rest must be 0 already, save the memset
+    thiscounts[lastx] = 0;  // all x same value, the rest must be 0 already, save the memset
     return;
   }
-  //if (!skip) all_skipped = false;
   int itmp = thiscounts[0];
   for (int i=1; i<256; i++) {
-    //int j = asc ? i : 255-i;
     if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);  // don't cummulate through 0s, important below
   }
-
   for (int i=n-1; i>=0; i--) {
     uint8_t thisx = radix<LENGTH(xsub[i]) ? (uint8_t)(CHAR(xsub[i])[radix]) : 1;
     cradix_xtmp[--thiscounts[thisx]] = xsub[i];
@@ -292,35 +212,34 @@ static void cradix_r(SEXP *xsub, int n, int radix)
   if (thiscounts[0] != 0) Error("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d", thiscounts[0], radix);
   itmp = 0;
   for (int i=1; i<256; i++) {
-    // int j = asc ? i : 255-i;
     if (thiscounts[i] == 0) continue;
-    int thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
+    int thisgrpn = thiscounts[i] - itmp;  // undo cumulate; i.e. diff
     cradix_r(xsub+itmp, thisgrpn, radix+1);
     itmp = thiscounts[i];
-    thiscounts[i] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to clear! Also more portable for machines where 0 isn't all bits 0 (?!)
+    thiscounts[i] = 0;  // set to 0 now since we're here, saves memset afterwards. Important to do this ready for this memory's reuse
   }
   if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
 }
 
 static void cradix(SEXP *x, int n)
 {
-  cradix_counts = (int *)calloc(ustr_maxlen*256, sizeof(int));  // stack of counts
+  cradix_counts = (int *)calloc(ustr_maxlen*256, sizeof(int));  // counts for the letters of left-aligned strings
   if (!cradix_counts) Error("Failed to alloc cradix_counts");
   cradix_xtmp = (SEXP *)malloc(ustr_n*sizeof(SEXP));
   if (!cradix_xtmp) Error("Failed to alloc cradix_tmp");
   cradix_r(x, n, 0);
   free(cradix_counts); cradix_counts=NULL;
-  free(cradix_xtmp); cradix_xtmp=NULL;
+  free(cradix_xtmp);   cradix_xtmp=NULL;
 }
 
 static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
-// group numbers are left in truelength to be reused by part II
+// group numbers are left in truelength to be fetched by WRITE_KEY
 {
   int na_count=0;
   bool anyneedutf8=false;
   if (ustr_n!=0) Error("Internal error: ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);  // # nocov
-  if (ustr_maxlen!=0) Error("Internal error: ustr_maxlen isn't 0 when starting range_str");
-  // savetl_init() is called once at the start of forder
+  if (ustr_maxlen!=0) Error("Internal error: ustr_maxlen isn't 0 when starting range_str");  // # nocov
+  // savetl_init() has already been called at the start of forder
   #pragma omp parallel for num_threads(getDTthreads())
   for(int i=0; i<n; i++) {
     SEXP s = x[i];
@@ -329,17 +248,17 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
       na_count++;
       continue;
     }
-    if (TRUELENGTH(s)<0) continue;  // seen this group before.
+    if (TRUELENGTH(s)<0) continue;  // seen this group before
     #pragma omp critical
     if (TRUELENGTH(s)>=0) {  // another thread may have set it while I was waiting, so check it again
       if (TRUELENGTH(s)>0)   // save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
         savetl(s);           // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
-      // now save unique SEXP separately, so i) we can loop through them afterwards and reset TRUELENGTH to 0 and ii) sort uniques when sorting too
+      // now save unique SEXP in ustr so i) we can loop through them afterwards and reset TRUELENGTH to 0 and ii) sort uniques when sorting too
       if (ustr_alloc<=ustr_n) {
         ustr_alloc = (ustr_alloc==0) ? 16384 : ustr_alloc*2;  // small initial guess, negligible time to alloc 128KB (32 pages)
-        if (ustr_alloc>n) ustr_alloc = n;  // clamp at n: fully unique, no dups
+        if (ustr_alloc>n) ustr_alloc = n;  // clamp at n. Reaches n when fully unique (no dups)
         ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
-        if (ustr == NULL) Error("Unable to realloc %d * %d bytes in range_str", ustr_alloc, sizeof(SEXP));
+        if (ustr==NULL) Error("Unable to realloc %d * %d bytes in range_str", ustr_alloc, sizeof(SEXP));  // # nocov
       }
       ustr[ustr_n++] = s;
       SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
@@ -348,8 +267,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
     }
   }
   *out_na_count = na_count;
-  if (ustr_n==0) {
-    // all na
+  if (ustr_n==0) {  // all na
     *out_min = 0;
     *out_max = 0;
     return;
@@ -358,7 +276,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
     SEXP ustr2 = PROTECT(allocVector(STRSXP, ustr_n));
     for (int i=0; i<ustr_n; i++) SET_STRING_ELT(ustr2, i, ENC2UTF8(ustr[i]));
     SEXP *ustr3 = (SEXP *)malloc(ustr_n * sizeof(SEXP));
-    if (!ustr3) Error("Failed to alloc ustr3 when converting strings to UTF8");
+    if (!ustr3) Error("Failed to alloc ustr3 when converting strings to UTF8");  // # nocov
     memcpy(ustr3, STRING_PTR(ustr2), ustr_n*sizeof(SEXP));
     for (int i=0; i<ustr_n; i++) {
       SEXP s = ustr3[i];
@@ -373,7 +291,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
     }
     // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
     int *tl = (int *)malloc(ustr_n * sizeof(int));
-    if (!tl) Error("Failed to alloc tl when converting strings to UTF8");
+    if (!tl) Error("Failed to alloc tl when converting strings to UTF8");  // # nocov
     SEXP *tt = STRING_PTR(ustr2);
     for (int i=0; i<ustr_n; i++) tl[i] = TRUELENGTH(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
     for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
@@ -387,9 +305,8 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
     *out_min = 1;
     *out_max = ustr_n;
     if (sort) {
-      // TODO build key and reuse parallel order at the end
-      // note that ascending/descending is not done here (always ascending here) but when writing key
-      cradix(ustr, ustr_n);  // sorts ustr in-place by reference. assumes NA_STRING not present.  TODO: it could order ordering instead, or stack into key[]
+      // that this is always ascending; descending is done in WRITE_KEY using max-this
+      cradix(ustr, ustr_n);  // sorts ustr in-place by reference. assumes NA_STRING not present.
       for(int i=0; i<ustr_n; i++)     // save ordering in the CHARSXP. negative so as to distinguish with R's own usage.
         SET_TRUELENGTH(ustr[i], -i-1);
     }
@@ -397,11 +314,12 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
   }
 }
 
-static bool sort_ugrp(uint8_t *x, const int n)   // maximum value for n is 256 which is one too big for uint8_t
+static bool sort_ugrp(uint8_t *x, const int n)
+// x contains n unique bytes; sort them in-place insert sort
+// always ascending. desc and na.last are done in WRITE_KEY because columns may cross byte boundaries
+// maximum value for n is 256 which is one too big for uint8_t, hence int n
 {
-  // x contains n unique bytes
-  // always ascending. desc and na.last is done when writing key because columns may cross byte boundaries
-  bool skip = true;            // was it already sorted? the caller can then skip reordering
+  bool skip = true;            // was x already sorted? if so, the caller can skip reordering
   for (int i=1; i<n; i++) {
     uint8_t tmp = x[i];
     if (tmp>x[i-1]) continue;  // x[i-1]==x[i] doesn't happen because x is unique
@@ -416,26 +334,16 @@ static bool sort_ugrp(uint8_t *x, const int n)   // maximum value for n is 256 w
 }
 
 static void count_group(const uint8_t *x, const int n, bool *out_skip, uint16_t *out_order, int *out_ngrp, int *out_grpsize)
-// orders x by reference (that's ok destructively as we don't use this radix again) and writes the order into o; the o ordering is used several times by the caller.
-// the uint8_t *o limits the capability to max n=256 items (4 cache lines * 2 = 8 cache lines)
-// caller then uses x to detect groups and push those in the ordered clause.
-// don't be tempted to binsearch backwards here, have to shift anyway; many memmove would have overhead and do the same thing.
-
-// The only output need is the ordering, which is only used if not grouped.
-// with no actual histogram (or needing to zero it), this might work always!, not just for n<200
-// theres no need for all the writes of moving xtmp and otmp that insert sort does
-
+// returns order and group sizes; caller uses the order to reorder subsequent radix
+// if not sorting (!sort) then whether bytes are grouped are detected and first-appearance order maintained
 {
-  //uint8_t wgrp[256] = {0};  // which group
-  uint8_t ugrp[256];  // uninitialized is fine.  unique groups; avoids sweeping all 256 counts when very often very few of them are used (avoids degrade of counting sort), as well as maintaining first-appearance order
-  uint16_t counts[256] = {0};  // ** We can try and see if this is fast, because it's on stack it might be.
-                               //    If not, then pass in my_counts as we need thread local static, which will save initialization (can minimal-reset to 0 in usual way at end)
-
-  // first item is always first of first group
-  ugrp[0] = x[0];
+  uint8_t ugrp[256];  // uninitialized is fine. unique groups; avoids sweeping all 256 counts when very often very few of them are used
+  uint16_t counts[256] = {0};  // Need to be all-0 on entry. This ={0} initialization should be fast as it's on stack. But if not then pass in my_counts
+                               // to save initialization and rely on last line of this function which resets just the non-zero's to 0
+  ugrp[0] = x[0];     // first item is always first of first group
   counts[x[0]] = 1;
-  int ngrp = 1;             // number of groups
-  bool skip = true;         // if already grouped and sort=false, then caller can skip.  if already sorted when sort=true, then caller can skip
+  int ngrp = 1;       // number of groups (items in ugrp[])
+  bool skip = true;   // i) if already grouped and sort=false then caller can skip. ii) if already sorted when sort=true then caller can skip
 
   for (int i=1; i<n; i++) {
     uint8_t this = x[i];
@@ -464,14 +372,6 @@ static void count_group(const uint8_t *x, const int n, bool *out_skip, uint16_t 
   for (int i=0; i<ngrp; i++) counts[ugrp[i]] = 0;  // ready for next time to save initializing the 256 vector
 }
 
-
-
-// x*order results in integer overflow when -1*NA, so careful to avoid that here :
-/*
-static inline int icheck(int x) {
-  return ((nalast != 1) ? ((x != NA_INTEGER) ? x*sort : x) : ((x != NA_INTEGER) ? (x*sort)-1 : INT_MAX)); // if nalast==1, NAs must go last.
-}
-*/
 
 //static void icount(int *x, int *o, int n)
 /* Counting sort:
