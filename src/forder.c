@@ -1603,7 +1603,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             //Rprintf("nested batch count...\n");
             uint8_t ugrp[256];  // head(ugrp,ngrp) contain the unique values seen so far
             bool    seen[256];  // is the value present in ugrp
-            uint8_t ngrp=0;
+            int     ngrp=0;     // max value 256 so not uint8_t
             uint8_t last_seen=0;  // the last grp seen in the previous batch.  initialized 0 is ignored
             for (int i=0; i<256; i++) seen[i]=false;
 
@@ -1614,7 +1614,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
               int *my_counts = counts + batch*256;            // TODO: type could switch from uint64 to uint32 depending on my_n>2^32; two loops
               //my_counts[*tmp++]=1;
               uint8_t my_ugrp[256];
-              uint8_t my_ngrp=0;
+              int     my_ngrp=0;  // max value 256 so not uint8_t
               bool    my_skip=true;
               for (int i=0; i<my_n; i++) {
                 if (my_counts[*tmp]==0) {
