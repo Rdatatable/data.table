@@ -121,78 +121,70 @@ static void flipflop() {
    3. Separated setRange so forder can redirect to iradix
 */
 
-static void range_i32(int32_t *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)  // out_* in common type
+static void range_i32(int32_t *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)  // out_* in common type
 {
   int32_t min = NA_INTEGER;
   int32_t max = NA_INTEGER;
-  bool anyna=false;
+  int na_count=0;
   int i=0;
   while(i<n && x[i]==NA_INTEGER) i++;
-  if (i>0) anyna = true;
+  if (i>0) na_count = i;
   if (i<n) max = min = x[i++];
   for(; i<n; i++) {
     int tmp = x[i];
     if (tmp>max) max=tmp;
     else if (tmp<min) {
-      if (tmp==NA_INTEGER) anyna=true;
+      if (tmp==NA_INTEGER) na_count++;
       else min=tmp;
     }
   }
-  *out_anyna = anyna;
-  //if(min==NA_INTEGER) {
-  //  *out_min = 0;
-  //  *out_max = 0;
-  //} else {
-  // map [-2147483648 (INT32_MIN), 2147483647 (INT32_MAX)] => [0, 4294967295 (UINT32_MAX)]
+  *out_na_count = na_count;
+  // map [-2147483648(INT32_MIN==NA_INTEGER), 2147483647(INT32_MAX)] => [0, 4294967295(UINT32_MAX)]
   *out_min = min ^ 0x80000000u;
   *out_max = max ^ 0x80000000u;
 }
 
-static void range_i64(int64_t *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
+static void range_i64(int64_t *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
 {
   int64_t min = INT64_MIN;
   int64_t max = INT64_MIN;
-  bool anyna=false;
+  int na_count=0;
   int i=0;
   while(i<n && x[i]==INT64_MIN) i++;
-  if (i>0) anyna=true;
+  if (i>0) na_count = i;
   if (i<n) max = min = x[i++];
   for(; i<n; i++) {
     int64_t tmp = x[i];
     if (tmp>max) max=tmp;
     else if (tmp<min) {
-      if (tmp==INT64_MIN) anyna=true;
+      if (tmp==INT64_MIN) na_count++;
       else min=tmp;
     }
   }
-  *out_anyna = anyna;
-  /*if(min==INT64_MIN) {
-    *out_min = 0;
-    *out_max = 0;
-  } else {*/
+  *out_na_count = na_count;
   // map [INT64_MIN, INT64_MAX] => [0, UINT64_MAX]
   *out_min = min ^ 0x8000000000000000u;
   *out_max = max ^ 0x8000000000000000u;
 }
 
-static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
+static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
+// return range of finite numbers (excluding NA, NaN, -Inf, +Inf) and a count of strictly NA so caller knows if it's all NA or any NaN, Inf and -Inf are present
 {
   uint64_t min = 0;
   uint64_t max = 0;
-  bool anyna=false;
+  int na_count = 0;
   int i=0;
-  while(i<n && !R_FINITE(x[i])) i++;
-  if (i>0) anyna=true;  // any"na" include Nan, -Inf and +Inf
+  while(i<n && !R_FINITE(x[i])) { i++; na_count+=ISNA(x[i]); }
   if (i<n) { max = min = dtwiddle(x, i++);}
   // TODO: if we're just grouping, then we don't need to twiddle. However there are cases where we detect sortedness.
   // TODO: can we shift right any unused bytes first (would require a 2nd scan and returning the shift)
   for(; i<n; i++) {
-    if (!R_FINITE(x[i])) { anyna=true; continue; }
+    if (!R_FINITE(x[i])) { na_count+=ISNA(x[i]); continue; }
     uint64_t tmp = dtwiddle(x, i);
     if (tmp>max) max=tmp;
     else if (tmp<min) min=tmp;
   }
-  *out_anyna = anyna;
+  *out_na_count = na_count;
   *out_min = min;
   *out_max = max;
 }
@@ -323,17 +315,18 @@ static void cradix(SEXP *x, int n)
   free(cradix_xtmp); cradix_xtmp=NULL;
 }
 
-static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
+static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
 // group numbers are left in truelength to be reused by part II
 {
-  bool anyna=false, anyneedutf8=false;
+  int na_count=0;
+  bool anyneedutf8=false;
   if (ustr_n!=0) Error("Internal error: ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);  // # nocov
   if (ustr_maxlen!=0) Error("Internal error: ustr_maxlen isn't 0 when starting range_str");
   // savetl_init() is called once at the start of forder
   #pragma omp parallel for num_threads(getDTthreads())
   for(int i=0; i<n; i++) {
     SEXP s = x[i];
-    if (s==NA_STRING) {anyna=true; continue;}
+    if (s==NA_STRING) {na_count++; continue;}
     if (TRUELENGTH(s)<0) continue;  // seen this group before.
     #pragma omp critical
     if (TRUELENGTH(s)>=0) {  // another thread may have set it while I was waiting, so check it again
@@ -352,7 +345,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool
       if (NEED2UTF8(s)) anyneedutf8=true;
     }
   }
-  *out_anyna = anyna;
+  *out_na_count = na_count;
   if (ustr_n==0) {
     // all na
     *out_min = 0;
@@ -1330,31 +1323,33 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     // Rprintf("Finding range of column %d ...\n", col);
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min, max;     // min and max of non-NA values
-    bool anyna;
+    int na_count=0;
     if (sort) sort=INTEGER(orderArg)[col];  // +1 or -1
     //Rprintf("sort = %d\n", sort);
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO trivial LGL count
-      range_i32(INTEGER(x), n, &min, &max, &anyna);
+      range_i32(INTEGER(x), n, &min, &max, &na_count);
       break;
     case REALSXP :
       if (inherits(x, "integer64")) {
-        range_i64((int64_t *)REAL(x), n, &min, &max, &anyna);
+        range_i64((int64_t *)REAL(x), n, &min, &max, &na_count);
       } else {
-        range_d(REAL(x), n, &min, &max, &anyna);
+        range_d(REAL(x), n, &min, &max, &na_count);
+        if (min==0 && na_count<n) { min=3; max=4; } // column contains no finite numbers and is not-all NA; create dummies to yield positive min-2 later
         isReal = true;
       }
       break;
     case STRSXP :
       // need2utf8 now happens inside range_str on the uniques
-      range_str(STRING_PTR(x), n, &min, &max, &anyna);
+      range_str(STRING_PTR(x), n, &min, &max, &na_count);
       break;
     default:
        Error("Column %d of by= (%d) is type '%s', not yet supported", col+1, INTEGER(by)[col], type2char(TYPEOF(x)));
     }
 
-    if (min==0/*all na*/ || (min==max && !anyna)) {
+    if ((min==0 && na_count==n) || (min>0 && min==max && na_count==0)) {
       // all same value; skip column as nothing to do
+      // min==0 implies na_count==n anyway for all types other than real when Inf,-Inf or NaN are present (excluded from [min,max] as well as NA)
       if (min==0 && nalast==-1) { all_skipped=false; for (int i=0; i<n; i++) ansd[i]=0; }
       if (TYPEOF(x)==STRSXP) free_ustr();
       continue;
@@ -1390,8 +1385,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 
 
 
-    //Rprintf("Column %d of by= has min=%llu, max=%llu, anyna=%d, range=%llu, nbyte=%d, maxBit=%d, firstBits=%d, spare=%d, nradix=%d, sort=%d, nalast=%d, isReal=%d. Writing key ...\n",
-    //          col, min, max, anyna, max-min, nbyte, maxBit, firstBits, spare, nradix, sort, nalast, isReal);
+    //Rprintf("Column %d of by= has min=%llu, max=%llu, na_count=%d, range=%llu, nbyte=%d, maxBit=%d, firstBits=%d, spare=%d, nradix=%d, sort=%d, nalast=%d, isReal=%d. Writing key ...\n",
+    //          col, min, max, na_count, max-min, nbyte, maxBit, firstBits, spare, nradix, sort, nalast, isReal);
     for (int b=0; b<nbyte; b++) {
       if (key[nradix+b]==NULL)
         key[nradix+b] = calloc(n, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
