@@ -10898,9 +10898,9 @@ test(1820.3, fread("name,id\nfoo,2\nbar%s"), data.table(name="foo", id=2L), warn
 # new argument for print.data.table: col.names
 #   issue #1482 / PR #1483
 DT = data.table(a = 1:21, b = 22:42)
-test(1821.1, sum(grepl("a.*b", capture.output(print(DT, col.names = "auto")))), 2L)
+test(1821.1, sum(grepl("a.*b", capture.output(print(DT, col.names = "auto", nrows=30)))), 2L)
 test(1821.2, sum(grepl("a.*b", capture.output(print(DT, col.names = "top")))), 1L)
-x = capture.output(print(DT, col.names = "none"))
+x = capture.output(print(DT, col.names = "none", nrows=30))
 test(1821.3, sum(grepl("a.*b", x)), 0L)
 test(1821.4, length(x), nrow(DT))
 test(1821.5, print(DT, col.names = "asdf"), error = "Valid options")
@@ -11112,15 +11112,15 @@ test(1843, is.sorted((0+0i)^(-3:3)), error = "type 'complex' is not yet supporte
 DT = data.table(c("a","a","a","b","b"),c(2,1,3,NA,2))
 test(1844.1, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,5))
 DT = data.table(c("a","a","a","b","b"),c(2,1,3,2,NA))
-test(1844.2, forder(DT,V1,V2,na.last=NA), INT(2,1,3,4,0))
+test(1844.2, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,4))  # prior to v1.12.0 this was 2,1,3,4,0. As long as it's the same with 0's removed, think it's ok
 # now with two NAs in that 2-group covers forder.c:forder line 1269 starting: else if (nalast == 0 && tmp==-2) {
 DT = data.table(c("a","a","a","b","b"),c(2,1,3,NA,NA))
 test(1844.3, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,0))
 DT = data.table((0+0i)^(-3:3), 7:1)
-test(1844.4, forder(DT,V1,V2), error="First column being ordered is type 'complex', not yet supported")
-test(1844.5, forder(DT,V2,V1), 7:1)  # there are no groups in the first column being sorted (V2)
+test(1844.4, forder(DT,V1,V2), error="Column 1 of by= (1) is type 'complex', not yet supported")
+test(1844.5, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'complex', not yet supported")
 DT = data.table((0+0i)^(-3:3), c(5L,5L,1L,2L,2L,2L,2L))
-test(1844.6, forder(DT,V2,V1), error="Column 2 of 'by'.*is type 'complex', not yet supported")
+test(1844.6, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'complex', not yet supported")
 
 # fix for non-equi joins issue #1991. Thanks to Henrik for the nice minimal example.
 d1 <- data.table(x = c(rep(c("b", "a", "c"), each = 3), c("a", "b")), y = c(rep(c(1, 3, 6), 3), 6, 6), id = 1:11)
