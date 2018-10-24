@@ -64,8 +64,7 @@ static void cleanup() {
 }
                                                                     // note that na.last=NA (0) removes NAs, not retains them.
 static int sort = 0;                                                // 0 no sort;  or -1 descending, +1 ascending changes per column
-static Rboolean stackgrps = TRUE;                                   // switched off for last column when not needed by setkey
-static bool all_skipped = true;
+static bool stackgrps = true;                                       // switched off for last column when not needed by setkey
 
 #define N_SMALL 200                                                 // replaced n < 200 with n < N_SMALL. Easier to change later
 #define N_RANGE 100000                                              // range limit for counting sort. UPDATE: should be less than INT_MAX (see setRange for details)
@@ -270,13 +269,13 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 
   int *thiscounts = cradix_counts + radix*256;
   //const bool asc=(sort==1);
-  bool skip=true;  // else -1 desc (not 0)
+  // delete ... bool skip=true;  // else -1 desc (not 0)
   //const uint8_t start = asc?0:255;
-  uint8_t lastx = 0;
+  uint8_t lastx = 0;  // TODO: remove lastx and just have thisx here.
   for (int i=0; i<n; i++) {
     uint8_t thisx = radix<LENGTH(xsub[i]) ? (uint8_t)(CHAR(xsub[i])[radix]) : 1;  // no NA_STRING present,  1 for "" (could use 0 too maybe since NA_STRING not present)
     thiscounts[ thisx ]++;
-    if (thisx<lastx) skip=false;
+//    if (thisx<lastx) skip=false;
     lastx = thisx;
   }
   if (thiscounts[lastx]==n && radix<ustr_maxlen-1) {   // this also catches when subx has shorter strings than the rest, thiscounts[0]==n and we'll recurse very quickly through to the overall maxlen with no 256 overhead each time
@@ -373,7 +372,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool
   }
 }
 
-static bool sort_ugrp(uint8_t *x, const uint8_t n)
+static bool sort_ugrp(uint8_t *x, const int n)   // maximum value for n is 256 which is one too big for uint8_t
 {
   // x contains n unique bytes
   // always ascending. desc and na.last is done when writing key because columns may cross byte boundaries
@@ -391,7 +390,7 @@ static bool sort_ugrp(uint8_t *x, const uint8_t n)
   return skip;
 }
 
-static void count_group(const uint8_t *x, const uint16_t n, bool *out_skip, uint16_t *out_order, uint16_t *out_ngrp, int *out_grpsize)
+static void count_group(const uint8_t *x, const int n, bool *out_skip, uint16_t *out_order, int *out_ngrp, int *out_grpsize)
 // orders x by reference (that's ok destructively as we don't use this radix again) and writes the order into o; the o ordering is used several times by the caller.
 // the uint8_t *o limits the capability to max n=256 items (4 cache lines * 2 = 8 cache lines)
 // caller then uses x to detect groups and push those in the ordered clause.
@@ -404,8 +403,8 @@ static void count_group(const uint8_t *x, const uint16_t n, bool *out_skip, uint
 {
   //uint8_t wgrp[256] = {0};  // which group
   uint8_t ugrp[256];  // uninitialized is fine.  unique groups; avoids sweeping all 256 counts when very often very few of them are used (avoids degrade of counting sort), as well as maintaining first-appearance order
-  uint16_t counts[256] = {0};  // ** We can try and see if this is fast, because it's on stack it might be.  If not, then pass in my_counts as we need thread local static.
-                          // TODO TODO: these should not be on stack since they need to be initialized, and we don't need that initialization
+  uint16_t counts[256] = {0};  // ** We can try and see if this is fast, because it's on stack it might be.
+                               //    If not, then pass in my_counts as we need thread local static, which will save initialization (can minimal-reset to 0 in usual way at end)
 
   // first item is always first of first group
   ugrp[0] = x[0];
@@ -725,17 +724,14 @@ int getNumericRounding_C()
   return dround;
 }
 
-static union {
-  double d;
-  uint64_t ull;
-  //  int i;
-  //  unsigned int ui;
-} u;
-
 //static int dtwiddle_nalast = -1;  // TODO: remove now it's done when writing key
 
 uint64_t dtwiddle(void *p, int i)
 {
+  union {     // inside for thread-safety
+    double d;
+    uint64_t ull;
+  } u;
   u.d = ((double *)p)[i];
   if (R_FINITE(u.d)) {
     u.ull = (u.d) ? u.ull + ((u.ull & dmask1) << 1) : 0;    // handle 0, -0 case. Fix for issues/743.
@@ -754,9 +750,10 @@ uint64_t dtwiddle(void *p, int i)
       //return (nalast == 1 ? ~u.ull : u.ull);
   }
   uint64_t mask = (u.ull & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000;  // always flip sign bit and if negative (sign bit was set) flip other bits too
-  return( (u.ull ^ mask) & dmask2 );    // TODO: why not shift right to reduce range.
+  return (u.ull ^ mask) & dmask2;    // TODO: why not shift right to reduce range.
 }
 
+/*
 Rboolean dnan(void *p, int i) {
   u.d = ((double *)p)[i];
   return (ISNAN(u.d));
@@ -766,6 +763,7 @@ Rboolean i64nan(void *p, int i) {
   u.d = ((double *)p)[i];
   return ((u.ull ^ 0x8000000000000000) == 0);
 }
+*/
 
 /*
 uint64_t (*twiddle)(void *, int, int);
@@ -1250,7 +1248,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   // static global set on top...
   int nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
   gsmaxalloc = n;  // upper limit for stack size (all size 1 groups). We'll detect and avoid that limit, but if just one non-1 group (say 2), that can't be avoided.
-  all_skipped = true;
+
   if (n==0) {
     // empty vector or 0-row DT is always sorted
     SEXP ans = PROTECT(allocVector(INTSXP, 0)); n_protect++;
@@ -1262,14 +1260,14 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     return ans;
   }
   // if n==1, the code is left to proceed below in case one or more of the 1-row by= columns are NA and na.last=NA. Otherwise it would be easy to return now.
+  bool all_skipped = true;
 
   SEXP ans = PROTECT(allocVector(INTSXP, n)); n_protect++;
   int *ansd = INTEGER(ans);
   // Rprintf("Populating ansd\n");
-  for (int i=0; i<n; i++) ansd[i]=i+1;  // initialize for smaller n or range where the parallel-batch doesn't happen. TODO: parallelize but low priority
+  for (int i=0; i<n; i++) ansd[i]=i+1;   // gdb 8.1.0.20180409-git hangs here, oddly
+  // initialize for smaller n or range where the parallel-batch doesn't happen. TODO: parallelize but low priority
                                      // the first gather is the worst; for the first radix==0 case, the parallel-batch can just write o directly to save wasteful reordering of 1:n
-
-
   savetl_init();   // from now on use Error not error.
 
   //order = INTEGER(orderArg)[0];
@@ -1334,6 +1332,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     uint64_t range = max-min+1 +1/*NA*/ +isReal*3/*NaN, -Inf, +Inf*/;  //(max>=0 && min<0) ? (uint64_t)max+(uint64_t)(-min) : max-min;
     // TODO: the NA value could be placed as max if na.last=TRUE.  Deal with na.last up front in the key and then forget (TODO)
     // "range" 5 means 0(NA),1,2,3,4,5  (6 values);  it's value 5 not 6 that determines the maxBit
+    // Rprintf("range=%llu  min=%llu  max=%llu\n", range, min, max);
 
     int maxBit=0;
     while (range) { maxBit++; range>>=1; }
@@ -1360,7 +1359,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
 
 
 
-    // Rprintf("Column %d of by= has min=%llu, max=%llu, anyna=%d, range=%llu, nbyte=%d. Writing key ...\n", col, min, max, anyna, max-min, nbyte);
+    //Rprintf("Column %d of by= has min=%llu, max=%llu, anyna=%d, range=%llu, nbyte=%d, maxBit=%d, firstBits=%d, spare=%d, nradix=%d, sort=%d, nalast=%d, isReal=%d. Writing key ...\n",
+    //          col, min, max, anyna, max-min, nbyte, maxBit, firstBits, spare, nradix, sort, nalast, isReal);
     for (int b=0; b<nbyte; b++) {
       if (key[nradix+b]==NULL)
         key[nradix+b] = calloc(n, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
@@ -1478,13 +1478,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
   // Rprintf("nradix=%d\n", nradix);
 
-  //for (int i=0; i<n; i++) {
-  //  for (int b=0; b<nradix; b++) Rprintf("%03d  ", key[b][i]);
-  //  Rprintf("\n");
-  //}
-
-
-
   //int maxgrpn = gsmax[flip];   // biggest group in the first column
   /*
   ngrp = gsngrp[flip];
@@ -1494,7 +1487,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   order = INTEGER(orderArg)[col-1];
   */
 
-  stackgrps = TRUE;
+  stackgrps = true;
   push(n);
   omp_set_nested(1);
   const int STL = MIN(n, 65536);  // Single Thread Load.  Such that counts can be uint16_t. 256*2=8 cache lines; 1-byte:64KB/16 pages of 4096; 2-bytes:128KB/0.125MB
@@ -1503,17 +1496,26 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   //size_t TMP_size = 0;
 
   for (int radix=0; radix<nradix; radix++) {
-    // Rprintf("Starting radix %d...\n",radix);
+    /*Rprintf("Starting radix %d...\n",radix);
+    Rprintf("with grps ..."); for (int i=0; i<gsngrp[flip]; i++) Rprintf("%d ",gs[flip][i]); Rprintf("\n");
+    for (int i=0; i<n; i++) {
+      //if (radix==0 && key[0][i]==143) {
+        Rprintf("%03d: ",i);
+        for (int b=0; b<nradix; b++) Rprintf("%03d  ", key[b][i]);
+        Rprintf("\n");
+      //}
+    }*/
+
     flipflop();
     //int *grps = gs[flip];
     stackgrps = radix<(nradix-1) || LOGICAL(retGrp)[0];  // if just ordering, we can save allocating and writing the last (and biggest) group size vector
-    int tmp=gs[1-flip][0]; for (int i=1; i<gsngrp[1-flip]; i++) tmp=(gs[1-flip][i]+=tmp);   // cummulate, so we can parallelise
+    int tmp=gs[1-flip][0]; for (int i=1; i<gsngrp[1-flip]; i++) tmp=(gs[1-flip][i]+=tmp);   // cumulate, so we can parallelise
 
     #pragma omp parallel num_threads( n<=STL ? 1 : getDTthreads() )  // avoid starting potentially 32 threads (each with STL temps) for small input with low range
     {
       uint16_t my_order[STL];
       int my_gs[STL];     // group sizes, if all size 1 then STL will be full.  // TODO: can this be uint16_t too?
-      uint16_t my_ng=0;        // number of groups; number of items used in my_gs
+      int my_ng=0;        // number of groups; number of items used in my_gs
       int my_tmp[STL];         // used to reorder ans (and thus needs to be int) and the first 1/4 is used to reorder each key[index]
 
       #pragma omp for ordered schedule(dynamic)
@@ -1521,9 +1523,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         int from = g==0 ? 0 : gs[1-flip][g-1];    // need grps cummulated
         int to = gs[1-flip][g];  // non-inclusive
         const int my_n = to-from;
-        bool nested = true;
-        if (my_n<=STL) {
-          nested = false;
+        bool nested = false;
+        if (my_n==1) {
+          my_gs[0] = 1;
+          my_ng = 1;
+        } else if (my_n<=STL) {
           bool skip;
           count_group(key[radix]+from, my_n, &skip, my_order, &my_ng, my_gs);
           if (!skip) {
@@ -1553,6 +1557,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
               memcpy(ksub, my_tmp, my_n*1);
             }
           }
+        } else {
+          nested = true;
         }
 
         #pragma omp ordered
@@ -1570,7 +1576,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             uint8_t ugrp[256];  // head(ugrp,ngrp) contain the unique values seen so far
             bool    seen[256];  // is the value present in ugrp
             uint8_t ngrp=0;
-            uint8_t last_seen=0;  // the last grp seen in the previous batch
+            uint8_t last_seen=0;  // the last grp seen in the previous batch.  initialized 0 is ignored
             for (int i=0; i<256; i++) seen[i]=false;
 
             #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads())
@@ -1635,6 +1641,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             //  TMP_size = my_n;
             //}
             //Rprintf("reorder remaining radix keys (from=%d)...\n", from);
+
+            // TODO: doesn't need to happen if skipped!! Whole point of tracking grouped/orderedness above.
             for (int remaining_radix=radix+1; remaining_radix<nradix; remaining_radix++) {
               //Rprintf("remaining radix %d...\n", remaining_radix);
               //Rprintf("TRACE:  %p %p %d %p %p %p %p\n", source, TMP, my_n, key[0], key[1], key[2], key[3]);
@@ -1665,6 +1673,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             //  TMP_size = my_n*sizeof(int);
             //}
             //Rprintf("reorder o (direct=%d)...\n", direct);
+            // TODO: doesn't need to happen if this skipped either
             #pragma omp parallel num_threads(getDTthreads())
             {
               int my_tmp_counts[256];
@@ -1708,6 +1717,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             newpush(my_gs, ngrp);
             // memset(counts, 0, nBatch*256*sizeof(int));
             free(counts);
+            // Rprintf("nested split into %d groups from=%d\n", ngrp, from);
           }
         }
       }
@@ -1889,12 +1899,13 @@ SEXP binary(SEXP x)
   int j;
   if (!isReal(x)) error("x must be type 'double'");
   SEXP ans = PROTECT(allocVector(STRSXP, LENGTH(x)));
+  uint64_t *xd = (uint64_t *)REAL(x);
   for (int i=0; i<LENGTH(x); i++) {
-    u.d = REAL(x)[i];
+    uint64_t i64 = xd[i];
     j = 0;
     for(int bit=64; bit>=1; bit--)
     {
-       buffer[j++] = '0' + (u.ull >> (bit-1) & 1);
+       buffer[j++] = '0' + (i64 >> (bit-1) & 1);
        if (bit==64 || bit==53 || bit==17 || bit==9) buffer[j++]=' ';
        //       ^sign      ^exponent  ^last 2 byte rounding
     }
