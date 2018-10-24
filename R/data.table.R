@@ -1859,10 +1859,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (verbose) {last.started.at=proc.time();cat("setkey() afterwards for keyby=.EACHI ... ");flush.console()}
     setkeyv(ans,names(ans)[seq_along(byval)])
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-  } else if (!missing(keyby) || (haskey(x) && bysameorder)) {
+  } else if (!missing(keyby) || (haskey(x) && bysameorder && (byjoin || (length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars))))))) {
     setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
   }
-  alloc.col(ans)   # TO DO: overallocate in dogroups in the first place and remove this line
+  alloc.col(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
 
 .optmean <- function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.

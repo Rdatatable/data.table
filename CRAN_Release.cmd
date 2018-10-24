@@ -188,6 +188,7 @@ cd R-devel-strict    # important to change directory name before building not af
 make
 alias Rdevel-strict='~/build/R-devel-strict/bin/R --vanilla'
 cd ~/GitHub/data.table
+## edit ~/.R/Makevars and activate "CFLAGS=-O0 -g" there to trace
 Rdevel-strict CMD INSTALL data.table_1.11.8.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel-strict
