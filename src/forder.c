@@ -312,6 +312,17 @@ static void cradix_r(SEXP *xsub, int n, int radix)
   if (itmp<n-1) cradix_r(xsub+itmp, n-itmp, radix+1);  // final group
 }
 
+static void cradix(SEXP *x, int n)
+{
+  cradix_counts = (int *)calloc(ustr_maxlen*256, sizeof(int));  // stack of counts
+  if (!cradix_counts) Error("Failed to alloc cradix_counts");
+  cradix_xtmp = (SEXP *)malloc(ustr_n*sizeof(SEXP));
+  if (!cradix_xtmp) Error("Failed to alloc cradix_tmp");
+  cradix_r(x, n, 0);
+  free(cradix_counts); cradix_counts=NULL;
+  free(cradix_xtmp); cradix_xtmp=NULL;
+}
+
 static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool *out_anyna)
 // group numbers are left in truelength to be reused by part II
 {
@@ -342,33 +353,52 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, bool
     }
   }
   *out_anyna = anyna;
-  if (anyneedutf8) {
-    // TODO:
-    // copy ustr to ustr2 via ENC2UTF8(s) on each ustr
-    // copy that to ustr3
-    // sort ustr3 by reference
-    // remove dups from ustr3, and assign truelength
-    // loop through ustr2 fetching truelength into ustr
-  }
   if (ustr_n==0) {
+    // all na
     *out_min = 0;
     *out_max = 0;
+    return;
+  }
+  if (anyneedutf8) {
+    SEXP ustr2 = PROTECT(allocVector(STRSXP, ustr_n));
+    for (int i=0; i<ustr_n; i++) SET_STRING_ELT(ustr2, i, ENC2UTF8(ustr[i]));
+    SEXP *ustr3 = (SEXP *)malloc(ustr_n * sizeof(SEXP));
+    if (!ustr3) Error("Failed to alloc ustr3 when converting strings to UTF8");
+    memcpy(ustr3, STRING_PTR(ustr2), ustr_n*sizeof(SEXP));
+    for (int i=0; i<ustr_n; i++) {
+      SEXP s = ustr3[i];
+      if (TRUELENGTH(s)>0) savetl(s);
+    }
+    cradix(ustr3, ustr_n);  // sort to detect possible duplicates after converting; e.g. two different non-utf8 map to the same utf8
+    SET_TRUELENGTH(ustr3[0], -1);
+    int o = -1;
+    for (int i=1; i<ustr_n; i++) {
+      if (ustr3[i] == ustr3[i-1]) continue;  // use the same o for duplicates
+      SET_TRUELENGTH(ustr3[i], --o);
+    }
+    // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
+    int *tl = (int *)malloc(ustr_n * sizeof(int));
+    if (!tl) Error("Failed to alloc tl when converting strings to UTF8");
+    SEXP *tt = STRING_PTR(ustr2);
+    for (int i=0; i<ustr_n; i++) tl[i] = TRUELENGTH(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
+    for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
+    for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i], tl[i]); // put back the o into ustr's tl
+    free(tl);
+    free(ustr3);
+    UNPROTECT(1);
+    *out_min = 1;
+    *out_max = -o;  // could be less than ustr_n if there are duplicates in the utf8s
   } else {
     *out_min = 1;
     *out_max = ustr_n;
-  }
-  if (sort) {
-    // TODO build key and reuse parallel order at the end
-    // note that ascending/descending is not done here (always ascending here) but when writing key
-    cradix_counts = (int *)calloc(ustr_maxlen * 256, sizeof(int));  // stack of counts
-    if (!cradix_counts) Error("Failed to alloc cradix_counts");
-    cradix_xtmp = (SEXP *)malloc(ustr_n * sizeof(SEXP));
-    if (!cradix_xtmp) Error("Failed to alloc cradix_tmp");
-    cradix_r(ustr, ustr_n, 0);  // sorts ustr in-place by reference. assumes NA_STRING not present.  TODO: it could order ordering instead, or stack into key[]
-    for(int i=0; i<ustr_n; i++)     // save ordering in the CHARSXP. negative so as to distinguish with R's own usage.
-      SET_TRUELENGTH(ustr[i], -i-1);
-    free(cradix_counts); cradix_counts=NULL;
-    free(cradix_xtmp); cradix_xtmp=NULL;
+    if (sort) {
+      // TODO build key and reuse parallel order at the end
+      // note that ascending/descending is not done here (always ascending here) but when writing key
+      cradix(ustr, ustr_n);  // sorts ustr in-place by reference. assumes NA_STRING not present.  TODO: it could order ordering instead, or stack into key[]
+      for(int i=0; i<ustr_n; i++)     // save ordering in the CHARSXP. negative so as to distinguish with R's own usage.
+        SET_TRUELENGTH(ustr[i], -i-1);
+    }
+    // else group appearance order was already saved to tl in the first pass
   }
 }
 
