@@ -4106,7 +4106,7 @@ setkey(DT,NULL)
 test(1231, DT[, sum(b), by=a, verbose=TRUE], output="memcpy contiguous groups")
 test(1232, DT[, sum(b), by=a+1, verbose=TRUE], output="memcpy contiguous groups")
 test(1233, DT[, sum(b), by=a%%2, verbose=TRUE], output="collecting discontiguous groups")
-test(1234, DT[, sum(a), by=b, verbose=TRUE], output="memcpy contiguous groups") # as from v1.12.0 the grouped-ness is detected despite the groups not being in order
+test(1234, DT[, sum(a), by=b, verbose=TRUE], output="memcpy contiguous groups") # as from v1.12.0 the out-of-order but grouped-ness is detected and utilized
 setkey(DT,a)
 test(1235, DT[.(2:3),sum(b),by=.EACHI,verbose=TRUE], data.table(a=2:3,V1=c(7L,9L),key="a"), output="memcpy contiguous groups")
 test(1236, DT[.(3:2),sum(b),by=.EACHI,verbose=TRUE], data.table(a=3:2,V1=c(9L,7L)), output="memcpy contiguous groups")

@@ -125,10 +125,9 @@ static void range_i32(int32_t *x, int n, uint64_t *out_min, uint64_t *out_max, i
 {
   int32_t min = NA_INTEGER;
   int32_t max = NA_INTEGER;
-  int na_count=0;
   int i=0;
   while(i<n && x[i]==NA_INTEGER) i++;
-  if (i>0) na_count = i;
+  int na_count = i;
   if (i<n) max = min = x[i++];
   for(; i<n; i++) {
     int tmp = x[i];
@@ -148,10 +147,9 @@ static void range_i64(int64_t *x, int n, uint64_t *out_min, uint64_t *out_max, i
 {
   int64_t min = INT64_MIN;
   int64_t max = INT64_MIN;
-  int na_count=0;
   int i=0;
   while(i<n && x[i]==INT64_MIN) i++;
-  if (i>0) na_count = i;
+  int na_count = i;
   if (i<n) max = min = x[i++];
   for(; i<n; i++) {
     int64_t tmp = x[i];
@@ -174,7 +172,7 @@ static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, int 
   uint64_t max = 0;
   int na_count = 0;
   int i=0;
-  while(i<n && !R_FINITE(x[i])) { i++; na_count+=ISNA(x[i]); }
+  while(i<n && !R_FINITE(x[i])) { na_count+=ISNA(x[i]); i++; }
   if (i<n) { max = min = dtwiddle(x, i++);}
   // TODO: if we're just grouping, then we don't need to twiddle. However there are cases where we detect sortedness.
   // TODO: can we shift right any unused bytes first (would require a 2nd scan and returning the shift)
@@ -326,7 +324,11 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
   #pragma omp parallel for num_threads(getDTthreads())
   for(int i=0; i<n; i++) {
     SEXP s = x[i];
-    if (s==NA_STRING) {na_count++; continue;}
+    if (s==NA_STRING) {
+      #pragma omp atomic update
+      na_count++;
+      continue;
+    }
     if (TRUELENGTH(s)<0) continue;  // seen this group before.
     #pragma omp critical
     if (TRUELENGTH(s)>=0) {  // another thread may have set it while I was waiting, so check it again

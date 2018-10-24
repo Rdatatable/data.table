@@ -95,8 +95,8 @@ SEXP uniqlist(SEXP l, SEXP order)
   } else {
     // ncol>1
     thisi = via_order ? INTEGER(order)[0]-1 : 0;
-    bool *i64 = Calloc(ncol, bool);
-    for (int i=0; i<ncol; i++) i64[i] = inherits(VECTOR_ELT(l,i), "integer64");
+    bool *i64 = (bool *)R_alloc(ncol, sizeof(bool));
+    for (int i=0; i<ncol; i++) i64[i] = INHERITS(VECTOR_ELT(l,i), char_integer64);
     for (int i=1; i<nrow; i++) {
       previ = thisi;
       thisi = via_order ? INTEGER(order)[i]-1 : i;
@@ -132,7 +132,6 @@ SEXP uniqlist(SEXP l, SEXP order)
         }
       }
     }
-    Free(i64);
   }
   PROTECT(ans = allocVector(INTSXP, len));
   memcpy(INTEGER(ans), iidx, sizeof(int)*len); // sizeof is of type size_t - no integer overflow issues
@@ -212,8 +211,9 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
   if (nrows==0) return(allocVector(INTSXP, 0));
   R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;
-  R_len_t *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen;
-  R_len_t ngrps = length(grps), *i64 = Calloc(ncols, R_len_t);
+  R_len_t *ansgrp = (R_len_t *)R_alloc(ansgrpsize, sizeof(R_len_t)), starts, grplen;
+  R_len_t ngrps = length(grps);
+  bool *i64 = (bool *)R_alloc(ncols, sizeof(bool));
   if (ngrps==0) error("Internal error: nrows[%d]>0 but ngrps==0", nrows); // # nocov
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
   if (!isInteger(cols) || ncols == 0)
@@ -226,7 +226,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   else error("Internal error: invalid value for 'mult'. please report to data.table issue tracker"); // # nocov
   // integer64
   for (int j=0; j<ncols; j++) {
-    i64[j] = inherits(VECTOR_ELT(l, INTEGER(cols)[j]-1), "integer64");
+    i64[j] = INHERITS(VECTOR_ELT(l, INTEGER(cols)[j]-1), char_integer64);
   }
   ans  = PROTECT(allocVector(INTSXP, nrows));
   int *ians = INTEGER(ans), *igrps = INTEGER(grps);
@@ -295,8 +295,6 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
     }
     ansgrp[tmp] = thisi;
   }
-  Free(ansgrp);
-  Free(i64);
   UNPROTECT(1);
   return(ans);
 }

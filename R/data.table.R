@@ -1461,7 +1461,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       if (!bysameorder && identical(byindex,FALSE)) {
         if (verbose) {last.started.at=proc.time();cat("Finding groups using forderv ... ");flush.console()}
         o__ = forderv(byval, sort=!missing(keyby), retGrp=TRUE)
-        # browser()
         # The sort= argument is called sortStr at C level. It's just about saving the sort of unique strings at
         # C level for efficiency (cgroup vs csort) when by= not keyby=. All other types are always sorted. Getting
         # orginal order below is the part that retains original order. Passing sort=TRUE here always won't change any
