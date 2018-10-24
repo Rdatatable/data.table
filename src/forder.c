@@ -1,12 +1,32 @@
 #include "data.table.h"
-// #define TIMING_ON
-
 /*
-- Only forder() and *dtwiddle() functions are meant for use by other C code in data.table, hence all other functions here are static.
-- The coding techniques deployed here are for efficiency; e.g. i) the static functions are recursive or called repetitively and we wish to minimise
-  stack overhead, or ii) reach outside themselves to place results in the end result directly rather than returning many small pieces of memory.
+  Originally inspired by :
+  icount in do_radixsort in src/main/sort.c @ rev 51389.
+  base::sort.list(method="radix") turns out not to be a radix sort, but a counting sort :
+    http://r.789695.n4.nabble.com/method-radix-in-sort-list-isn-t-actually-a-radix-sort-tp3309470p3309470.html
+  Wish granted for R to allow negatives (simple change) : https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=15644
+  Terdiman and Herf (LSB radix for floating point and other efficiency tricks) :
+  http://codercorner.com/RadixSortRevisited.htm
+  http://stereopsis.com/radix.html
+
+  Previous version of this version (MSB) was promoted into base R, see ?base::sort.
+  Denmark useR! presentation <link>
+  Stanford DSC presentation <link>
+  JSM presentation <link>
+  Further techniques now used here :
+    nested parallelism for skew
+    unique bins to save 256 sweeping
+    skipping when already-grouped but groups not sorted
+    flip flop group-size stack
+    reuses R's global character cache (truelength on CHARSXP)
+    columnar key for thread cache efficiency
+
+  Only forder() and dtwiddle() functions are meant for use by other C code in data.table, hence all other functions here are static.
+  The coding techniques deployed here are for efficiency. The static functions are recursive or called repetitively and we wish to minimise
+  overhead. They reach outside themselves to place results in the end result directly rather than returning many small pieces of memory.
 */
 
+// #define TIMING_ON
 static int *gs[2] = {NULL};          // gs = groupsizes e.g. 23,12,87,2,1,34,...
 static int flip = 0;                 // two vectors flip flopped: flip and 1-flip
 static int gsalloc[2] = {0};         // allocated stack size
@@ -263,7 +283,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
       ustr[ustr_n++] = s;
       SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
-      if (NEED2UTF8(s)) anyneedutf8=true;
+      if (!anyneedutf8 && NEED2UTF8(s)) anyneedutf8=true;
     }
   }
   *out_na_count = na_count;
@@ -372,258 +392,7 @@ static void count_group(const uint8_t *x, const int n, bool *out_skip, uint16_t 
   for (int i=0; i<ngrp; i++) counts[ugrp[i]] = 0;  // ready for next time to save initializing the 256 vector
 }
 
-
-//static void icount(int *x, int *o, int n)
-/* Counting sort:
-  1. Places the ordering into o directly, overwriting whatever was there
-  2. Doesn't change x
-  3. Pushes group sizes onto stack
-*/
-/*{
-  int i=0, tmp;
-  int napos = range;  // always count NA in last bucket and we'll account for nalast option in due course
-  static unsigned int counts[N_RANGE+1] = {0};                            // static is IMPORTANT, counting sort is called repetitively.
-  // counts are set back to 0 at the end efficiently. 1e5 = 0.4MB i.e
-  // tiny. We'll only use the front part of it, as large as range. So it's
-  // just reserving space, not using it. Have defined N_RANGE to be 100000.
-  if (range > N_RANGE) Error("Internal error: range = %d; isorted can't handle range > %d", range, N_RANGE);
-  for(i=0; i<n; i++) {
-    if (x[i] == NA_INTEGER) counts[napos]++;             // For nalast=NA case, we won't remove/skip NAs, rather set 'o' indices
-    else counts[x[i]-xmin]++;                            // to 0. subset will skip them. We can't know how many NAs to skip
-  }                                                        // beforehand - i.e. while allocating "ans" vector
-  // TO DO: at this point if the last count==n then it's all the same number and we can stop now.
-  // Idea from Terdiman, then improved on that by not needing to loop through counts.
-
-  tmp = 0;
-  if (nalast!=1 && counts[napos]) {
-    push(counts[napos]);
-    tmp += counts[napos];
-  }
-  int w = (order==1) ? 0 : range-1;                                   // *** BLOCK 4 ***
-  for (i=0; i<range; i++)
-  // no point in adding tmp<n && i<=range, since range includes max,
-  //   need to go to max, unlike 256 loops elsewhere in forder.c
-  {
-    if (counts[w]) {                                                    // cumulate but not through 0's. Helps resetting zeros when n<range, below.
-      push(counts[w]);
-      counts[w] = (tmp += counts[w]);
-    }
-    w += order; // order is +1 or -1
-  }
-  if (nalast==1 && counts[napos]) {
-    push(counts[napos]);
-    counts[napos] = (tmp += counts[napos]);
-  }
-  for(i=n-1; i>=0; i--) {
-    o[--counts[(x[i] == NA_INTEGER) ? napos : x[i]-xmin]] = (int)(i+1);    // This way na.last=TRUE/FALSE cases will have just a single if-check overhead.
-  }
-  if (nalast == 0)                                                        // nalast = 1, -1 are both taken care already.
-    for (i=0; i<n; i++) o[i] = (x[o[i]-1] == NA_INTEGER) ? 0 : o[i];    // nalast = 0 is dealt with separately as it just sets o to 0
-                                      // at those indices where x is NA. x[o[i]-1] because x is not modifed here.
-
-  // counts were cumulated above so leaves non zero.
-  // Faster to clear up now ready for next time.
-  if (n < range) {
-    // Many zeros in counts already. Loop through n instead,
-    // doesn't matter if we set to 0 several times on any repeats
-    counts[napos]=0;
-    for (i=0; i<n; i++) {
-      if (x[i]!=NA_INTEGER) counts[x[i]-xmin]=0;
-    }
-  } else {
-    memset(counts, 0, (range+1)*sizeof(int));                           // *** BLOCK 6 ***
-  }
-  return;
-}
-*/
-
-
-
-
-
-/*
-static void insert(uint8_t *x, int n, uint8_t *o, bool *ordered)
-// orders x by reference (that's ok destructively as we don't use this radix again) and writes the order into o; the o ordering is used several times by the caller.
-// the uint8_t *o limits the capability to max n=256 items (4 cache lines * 2 = 8 cache lines)
-// caller then uses x to detect groups and push those in the ordered clause.
-// don't be tempted to binsearch backwards here, have to shift anyway; many memmove would have overhead and do the same thing.
-{
-  bool anymoved = false;
-  o[0]=0;
-  for (int i=1; i<n; i++) {
-    o[i]=i;  // initialize with 0:(n-1)
-    uint8_t xtmp = x[i];
-    if (xtmp < x[i-1]) {
-      anymoved = true;
-      int j = i-1;
-      uint8_t otmp = i;
-      while (j>=0 && xtmp < x[j]) {
-        x[j+1] = x[j];
-        o[j+1] = o[j];
-        j--;
-      }
-      x[j+1] = xtmp;
-      o[j+1] = otmp;
-    }
-  }
-  *ordered = !anymoved;
-}
-*/
-/*
-  iradix is a counting sort performed forwards from MSB to LSB, with some tricks
-  and short circuits building on Terdiman and Herf.
-  http://codercorner.com/RadixSortRevisited.htm
-  http://stereopsis.com/radix.html
-
-  ~ Note they are LSD, but we do MSD here which is more complicated, for efficiency.
-  ~ NAs need no special treatment as NA is the most negative integer in R (checked in init.c once,
-    for efficiency) so NA naturally sort to the front.
-  ~ Using 4-pass 1-byte radix for the following reasons :
-    *  11-bit (Herf) reduces to 3-passes (3*11=33) yes, and LSD need random access
-       to o vector in each pass 1:n so reduction in passes
-    *  is good, but ...
-    *  ... Terdiman's idea to skip a radix if all values are equal occurs less the wider the
-         radix. A narrower radix benefits more from that.
-    *      That's detected here using a single 'if', an improvement on Terdiman's exposition
-         of a single loop to find if any count==n
-    *  The pass through counts bites when radix is wider, because we repetitively call this
-       iradix from fastorder forwards.
-    *  Herf's parallel histogramming is neat. In 4-pass 1-byte it needs 4*256 storage, that's
-       tiny, and can be static. 4*256 << 3*2048
-    *  4-pass 1-byte is simpler and tighter code than 3-pass 11-bit, giving modern optimizers
-       and modern CPUs a better chance. We may get
-    *  lucky anyway, if one or two of the 4-passes are skipped.
-
-   Recall: there are no comparisons at all in counting and radix, there is wide random access
-   in each LSD radix pass, though.
-*/
-/*
-static unsigned int radixcounts[8][257] = {{0}};                            // 4 are used for iradix, 8 for dradix and i64radix
-static int skip[8];
-*/
-/* global because iradix and iradix_r interact and are called repetitively.
-   counts are set back to 0 after each use, to benefit from skipped radix. */
-/*
-static void alloc_otmp(int n) {
-  if (otmp_alloc >= n) return;
-  otmp = (int *)realloc(otmp, n * sizeof(int));
-  if (otmp == NULL) Error("Failed to allocate working memory for otmp. Requested %d * %d bytes", n, sizeof(int));
-  otmp_alloc = n;
-}
-
-static void alloc_xtmp(int n) {                                             // TO DO: currently always the largest type (double) but
-                                      // could be int if that's all that's needed
-  if (xtmp_alloc >= n) return;
-  xtmp = (double *)realloc(xtmp, n * sizeof(double));
-  if (xtmp == NULL) Error("Failed to allocate working memory for xtmp. Requested %d * %d bytes", n, sizeof(double));
-  xtmp_alloc = n;
-}
-
-static void iradix_r(int *xsub, int *osub, int n, int radix);
-*/
-/*
-static void iradix(int *x, int *o, int n)
-// As icount :
-//     Places the ordering into o directly, overwriting whatever was there
-//     Doesn't change x
-//     Pushes group sizes onto stack
-{
-  int i, j, radix, nextradix, itmp, thisgrpn, maxgrpn;
-  unsigned int thisx=0, shift, *thiscounts;
-
-  for (i=0;i<n;i++) {
-    // parallel histogramming pass; i.e. count occurrences of
-    //0:255 in each byte.  Sequential so almost negligible.
-    thisx = (unsigned int)(icheck(x[i])) - INT_MIN;                     // relies on overflow behaviour. And shouldn't -INT_MIN be up in iradix?
-    radixcounts[0][thisx & 0xFF]++;                                     // unrolled since inside n-loop
-    radixcounts[1][thisx >> 8 & 0xFF]++;
-    radixcounts[2][thisx >> 16 & 0xFF]++;
-    radixcounts[3][thisx >> 24 & 0xFF]++;
-  }
-  for (radix=0; radix<4; radix++) {
-    // any(count == n) => all radix must have been that value =>
-    //last x (still thisx) was that value
-    i = thisx >> (radix*8) & 0xFF;
-    skip[radix] = radixcounts[radix][i] == n;
-    if (skip[radix]) radixcounts[radix][i] = 0;                         // clear it now, the other counts must be 0 already
-  }
-
-  radix = 3;  // MSD
-  while (radix>=0 && skip[radix]) radix--;
-  if (radix==-1) {                                                        // All radix are skipped; i.e. one number repeated n times.
-    if (nalast == 0 && x[0] == NA_INTEGER)                              // all values are identical. return 0 if nalast=0 & all NA
-      for (i=0; i<n; i++) o[i] = 0;                                   // because of 'return', have to take care of it here.
-    else for (i=0; i<n; i++) o[i] = (i+1);
-    push(n);
-    return;
-  }
-  for (i=radix-1; i>=0; i--) {
-    if (!skip[i]) memset(radixcounts[i], 0, 257*sizeof(unsigned int));
-    // clear the counts as we only needed the parallel pass for skip[]
-    //   and we're going to use radixcounts again below. Can't use parallel
-    //   lower counts in MSD radix, unlike LSD.
-  }
-  thiscounts = radixcounts[radix];
-  shift = radix * 8;
-
-  itmp = thiscounts[0];
-  maxgrpn = itmp;
-  for (i=1; itmp<n && i<256; i++) {
-    thisgrpn = thiscounts[i];
-    if (thisgrpn) {                                                     // don't cummulate through 0s, important below.
-      if (thisgrpn>maxgrpn) maxgrpn = thisgrpn;
-      thiscounts[i] = (itmp += thisgrpn);
-    }
-  }
-  for (i=n-1; i>=0; i--) {
-    thisx = ((unsigned int)(icheck(x[i])) - INT_MIN) >> shift & 0xFF;
-    o[--thiscounts[thisx]] = i+1;
-  }
-
-  if (radix_xsub_alloc < maxgrpn) {
-    // The largest group according to the first non-skipped radix, so could be big (if radix is needed on first column)
-    // TO DO: could include extra bits to divide the first radix up more. Often the MSD has groups in just 0-4 out of 256.
-    // free'd at the end of forder once we're done calling iradix repetitively
-    radix_xsub = (int *)realloc(radix_xsub, maxgrpn*sizeof(double));    // realloc(NULL) == malloc
-    if (!radix_xsub) Error("Failed to realloc working memory %d*8bytes (xsub in iradix), radix=%d", maxgrpn, radix);
-    radix_xsub_alloc = maxgrpn;
-  }
-
-  alloc_otmp(maxgrpn);   // TO DO: can we leave this to forder and remove these calls??
-  alloc_xtmp(maxgrpn);   // TO DO: doesn't need to be sizeof(double) always, see inside
-
-  nextradix = radix-1;
-  while (nextradix>=0 && skip[nextradix]) nextradix--;
-  if (thiscounts[0] != 0) Error("Internal error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix); // # nocov
-  thiscounts[256] = n;
-  itmp = 0;
-  for (i=1; itmp<n && i<=256; i++) {
-    if (thiscounts[i] == 0) continue;
-    thisgrpn = thiscounts[i] - itmp;                                    // undo cumulate; i.e. diff
-    if (thisgrpn == 1 || nextradix==-1) {
-      push(thisgrpn);
-    } else {
-      for (j=0; j<thisgrpn; j++)
-        ((int *)radix_xsub)[j] = icheck(x[o[itmp+j]-1]);            // this is why this xsub here can't be the same memory as xsub in forder.
-      iradix_r(radix_xsub, o+itmp, thisgrpn, nextradix);              // changes xsub and o by reference recursively.
-    }
-    itmp = thiscounts[i];
-    thiscounts[i] = 0;
-  }
-  if (nalast == 0)                                                        // nalast = 1, -1 are both taken care already.
-    for (i=0; i<n; i++) o[i] = (x[o[i]-1] == NA_INTEGER) ? 0 : o[i];    // nalast = 0 is dealt with separately as it just sets o to 0
-                                      // at those indices where x is NA. x[o[i]-1] because x is not
-                                      // modified by reference unlike iinsert or iradix_r
-}
-*/
-
-
-// dradix from Arun's fastradixdouble.c
-// + changed to MSD and hooked into forder framework here.
-// + replaced tolerance with rounding s.f.
-
-// No rounding by default, for now. Handles #1642, #1728, #1463, #485
-static int dround = 0;
+static int dround = 0;  // No rounding by default, for now. Handles #1642, #1728, #1463, #485
 static uint64_t dmask1;
 static uint64_t dmask2;
 
@@ -649,8 +418,8 @@ int getNumericRounding_C()
   return dround;
 }
 
-//static int dtwiddle_nalast = -1;  // TODO: remove now it's done when writing key
-
+// for signed integers it's easy: flip sign bit to swap positives and negatives; the resulting unsigned is in the right order with INT_MIN ending up as 0
+// for floating point finite you have to flip the other bits too if it was signed: http://stereopsis.com/radix.html
 uint64_t dtwiddle(void *p, int i)
 {
   union {     // inside for thread-safety
@@ -676,455 +445,6 @@ uint64_t dtwiddle(void *p, int i)
   }
   uint64_t mask = (u.ull & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000;  // always flip sign bit and if negative (sign bit was set) flip other bits too
   return (u.ull ^ mask) & dmask2;    // TODO: why not shift right to reduce range.
-}
-
-/*
-Rboolean dnan(void *p, int i) {
-  u.d = ((double *)p)[i];
-  return (ISNAN(u.d));
-}
-
-Rboolean i64nan(void *p, int i) {
-  u.d = ((double *)p)[i];
-  return ((u.ull ^ 0x8000000000000000) == 0);
-}
-*/
-
-/*
-uint64_t (*twiddle)(void *, int, int);
-// integer64 has NA = 0x8000000000000000. And it gives TRUE for all ISNAN(.) when '.' is -ve number.
-// So, ISNAN(.) would just provide wrong results. This was particularly an issue while implementing
-// DT[order(., na.last=NA)] where '.' is an integer64 column. Therefore, 'is_nan'. This is basically
-// ISNAN(.) for double and (u.ull ^ 0x8000000000000000 == 0) for integer64.
-Rboolean (*is_nan)(void *, int);
-size_t colSize=8;  // the size of the column type (4 or 8). Just 8 currently until iradix is merged in.
-*/
-/*
-#ifdef WORDS_BIGENDIAN
-#define RADIX_BYTE colSize-radix-1
-#else
-#define RADIX_BYTE radix
-#endif
-*/
-/*
-static void dradix(uint8_t *x, int *o, int n)
-{
-  int i, j, radix, nextradix, itmp, thisgrpn, maxgrpn;
-  unsigned int *thiscounts;
-  unsigned long long thisx=0;
-  // see comments in iradix for structure.  This follows the same. TO DO: merge iradix in here (almost ready)
-  for (i=0;i<n;i++) {
-    thisx = twiddle(x,i,order);
-    for (radix=0; radix<colSize; radix++)
-      radixcounts[radix][((unsigned char *)&thisx)[RADIX_BYTE]]++;
-    // if dround==2 then radix 0 and 1 will be all 0 here and skipped.
-    // on little endian, 0 is the least significant bits (the right)
-    /// and 7 is the most including sign (the left); i.e. reversed.
-  }
-  for (radix=0; radix<colSize; radix++) {
-    i = ((unsigned char *)&thisx)[RADIX_BYTE];        // thisx is the last x after loop above
-    skip[radix] = radixcounts[radix][i] == n;
-    if (skip[radix]) radixcounts[radix][i] = 0;       // clear it now, the other counts must be 0 already
-  }
-  radix = colSize-1;  // MSD
-  while (radix>=0 && skip[radix]) radix--;
-  if (radix==-1) {                                    // All radix are skipped; i.e. one number repeated n times.
-    if (nalast == 0 && is_nan(x, 0))                  // all values are identical. return 0 if nalast=0 & all NA
-      for (i=0; i<n; i++) o[i] = 0;                   // because of 'return', have to take care of it here.
-    else for (i=0; i<n; i++) o[i] = (i+1);
-    push(n);
-    return;
-  }
-  for (i=radix-1; i>=0; i--) {  // clear the lower radix counts, we only did them to know skip. will be reused within each group
-    if (!skip[i]) memset(radixcounts[i], 0, 257*sizeof(unsigned int));
-  }
-  thiscounts = radixcounts[radix];
-  itmp = thiscounts[0];
-  maxgrpn = itmp;
-  for (i=1; itmp<n && i<256; i++) {
-    thisgrpn = thiscounts[i];
-    if (thisgrpn) {  // don't cummulate through 0s, important below
-      if (thisgrpn>maxgrpn) maxgrpn = thisgrpn;
-      thiscounts[i] = (itmp += thisgrpn);
-    }
-  }
-  for (i=n-1; i>=0; i--) {
-    thisx = twiddle(x,i,order);
-    o[ --thiscounts[((unsigned char *)&thisx)[RADIX_BYTE]] ] = i+1;
-  }
-
-  if (radix_xsub_alloc < maxgrpn) {                                            // TO DO: centralize this alloc
-    // The largest group according to the first non-skipped radix, so could be big (if radix is needed on first column)
-    // TO DO: could include extra bits to divide the first radix up more. Often the MSD has groups in just 0-4 out of 256.
-    // free'd at the end of forder once we're done calling iradix repetitively
-    radix_xsub = (double *)realloc(radix_xsub, maxgrpn*sizeof(double));  // realloc(NULL) == malloc
-    if (!radix_xsub) Error("Failed to realloc working memory %d*8bytes (xsub in dradix), radix=%d", maxgrpn, radix);
-    radix_xsub_alloc = maxgrpn;
-  }
-
-  alloc_otmp(maxgrpn);   // TO DO: leave to forder and remove these calls?
-  alloc_xtmp(maxgrpn);
-
-  nextradix = radix-1;
-  while (nextradix>=0 && skip[nextradix]) nextradix--;
-  if (thiscounts[0] != 0) Error("Logical error. thiscounts[0]=%d but should have been decremented to 0. dradix=%d", thiscounts[0], radix);
-  thiscounts[256] = n;
-  itmp = 0;
-  for (i=1; itmp<n && i<=256; i++) {
-    if (thiscounts[i] == 0) continue;
-    thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
-    if (thisgrpn == 1 || nextradix==-1) {
-      push(thisgrpn);
-    } else {
-      if (colSize==4) { // ready for merging in iradix ...
-        error("Not yet used, still using iradix instead");
-        for (j=0; j<thisgrpn; j++) ((int *)radix_xsub)[j] = twiddle(x, o[itmp+j]-1, order);
-      } else for (j=0; j<thisgrpn; j++) ((unsigned long long *)radix_xsub)[j] = twiddle(x, o[itmp+j]-1, order); // this is why this xsub here can't be the same memory as xsub in forder
-      dradix_r(radix_xsub, o+itmp, thisgrpn, nextradix); // changes xsub and o by reference recursively.
-    }
-    itmp = thiscounts[i];
-    thiscounts[i] = 0;
-  }
-  if (nalast == 0)                                             // nalast = 1, -1 are both taken care already.
-    for (i=0; i<n; i++) o[i] = is_nan(x, o[i]-1) ? 0 : o[i];   // nalast = 0 is dealt with separately as it just sets o to 0
-                                                               // at those indices where x is NA. x[o[i]-1] because x is not
-                                                               // modified by reference unlike iinsert or iradix_r
-}
-*/
-/*
-static void dinsert(unsigned long long *x, int *o, int n)
-// orders both x and o by reference in-place. Fast for small vectors, low overhead.
-// don't be tempted to binsearch backwards here, have to shift anyway; many memmove would have overhead and do the same thing
-// 'dinsert' will not be called when nalast = 0 and o[0] = -1.
-{
-  int i, j, otmp, tt;
-  unsigned long long xtmp;
-  for (i=1; i<n; i++) {
-    xtmp = x[i];
-    if (xtmp < x[i-1]) {
-      j = i-1;
-      otmp = o[i];
-      while (j>=0 && xtmp < x[j]) { x[j+1] = x[j]; o[j+1] = o[j]; j--; }
-      x[j+1] = xtmp;
-      o[j+1] = otmp;
-    }
-  }
-  tt = 0;
-  for (i=1; i<n; i++) if (x[i]==x[i-1]) tt++; else { push(tt+1); tt=0; }
-  push(tt+1);
-}
-*/
-/*
-static void dradix_r(unsigned char *xsub, int *osub, int n, int radix)
-// xsub is a recursive offset into xsub working memory above in dradix, reordered by reference.
-//     osub is a an offset into the main answer o, reordered by reference.
-//     dradix iterates 7,6,5,4,3,2,1,0
-{
-  int i, j, itmp, thisgrpn, nextradix;
-  unsigned int *thiscounts;
-  unsigned char *p;
-  if (n < 200) {
-    // 200 is guess based on limited testing. Needs calibrate(). Was 50
-    // based on sum(1:50)=1275 worst -vs- 256 cummulate + 256 memset +
-    // allowance since reverse order is unlikely
-    dinsert((void *)xsub, osub, n);                                         // order=1 here because it's already taken care of in iradix
-    return;
-  }
-  thiscounts = radixcounts[radix];
-  p = xsub + RADIX_BYTE;
-  for (i=0; i<n; i++) {
-    thiscounts[*p]++;
-    p += colSize;
-  }
-  itmp = thiscounts[0];
-  for (i=1; itmp<n && i<256; i++)
-    if (thiscounts[i]) thiscounts[i] = (itmp += thiscounts[i]);             // don't cummulate through 0s, important below
-  p = xsub + (n-1)*colSize;
-  if (colSize == 4) {
-    error("Not yet used, still using iradix instead");
-    for (i=n-1; i>=0; i--) {
-      j = --thiscounts[*(p+RADIX_BYTE)];
-      otmp[j] = osub[i];
-      ((int *)xtmp)[j] = *(int *)p;
-      p -= colSize;
-    }
-  } else {
-    for (i=n-1; i>=0; i--) {
-      j = --thiscounts[*(p+RADIX_BYTE)];
-      otmp[j] = osub[i];
-      ((unsigned long long *)xtmp)[j] = *(unsigned long long *)p;
-      p -= colSize;
-    }
-  }
-  memcpy(osub, otmp, n*sizeof(int));
-  memcpy(xsub, xtmp, n*colSize);
-
-  nextradix = radix-1;
-  while (nextradix>=0 && skip[nextradix]) nextradix--;
-  // TO DO:  If nextradix==-1 and no further columns from forder,  we're done. We have o. Remember to memset thiscounts before returning.
-
-  if (thiscounts[0] != 0) Error("Logical error. thiscounts[0]=%d but should have been decremented to 0. radix=%d", thiscounts[0], radix);
-  thiscounts[256] = n;
-  itmp = 0;
-  for (i=1; itmp<n && i<=256; i++) {
-    if (thiscounts[i] == 0) continue;
-    thisgrpn = thiscounts[i] - itmp;  // undo cummulate; i.e. diff
-    if (thisgrpn == 1 || nextradix==-1) {
-      push(thisgrpn);
-    } else {
-      dradix_r(xsub + itmp*colSize, osub+itmp, thisgrpn, nextradix);
-    }
-    itmp = thiscounts[i];
-    thiscounts[i] = 0;
-  }
-}
-*/
-// TO DO?: dcount. Find step size, then range = (max-min)/step and proceed as icount. Many fixed precision floats (such as prices)
-// may be suitable. Fixed precision such as 1.10, 1.15, 1.20, 1.25, 1.30 ... do use all bits so dradix skipping may not help.
-
-
-
-
-/*
-static void cgroup(SEXP *x, int *o, int n)
-// As icount :
-//   Places the ordering into o directly, overwriting whatever was there
-//   Doesn't change x
-//   Pushes group sizes onto stack
-// Only run when sortStr==FALSE. Basically a counting sort, in first appearance order, directly.
-// Since it doesn't sort the strings, the name is cgroup.
-// there is no _pre for this.  ustr created and cleared each time.
-{
-  SEXP s;
-  int i, k, cumsum;
-  // savetl_init() is called once at the start of forder
-  if (ustr_n != 0) Error("Internal error. ustr isn't empty when starting cgroup: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc); // # nocov
-  for(i=0; i<n; i++) {
-    s = x[i];
-    if (TRUELENGTH(s)<0) {                   // this case first as it's the most frequent
-      SET_TRUELENGTH(s, TRUELENGTH(s)-1);  // use negative counts so as to detect R's own (positive) usage of tl on CHARSXP
-      continue;
-    }
-    if (TRUELENGTH(s)>0) {  // Save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
-      savetl(s);          // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
-      SET_TRUELENGTH(s,0);
-    }
-    if (ustr_alloc<=ustr_n) {
-      ustr_alloc = (ustr_alloc == 0) ? 10000 : ustr_alloc*2;  // 10000 = 78k of 8byte pointers. Small initial guess, negligible time to alloc.
-      if (ustr_alloc>n) ustr_alloc = n;
-      ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
-      if (ustr == NULL) Error("Unable to realloc %d * %d bytes in cgroup", ustr_alloc, sizeof(SEXP));
-    }
-    SET_TRUELENGTH(s, -1);
-    ustr[ustr_n++] = s;
-  }
-  // TO DO: the same string in different encodings will be considered different here. Sweep through ustr and merge counts where equal (sort needed therefore, unfortunately?, only if there are any marked encodings present)
-  cumsum = 0;
-  for(i=0; i<ustr_n; i++) {                                    // 0.000
-    push(-TRUELENGTH(ustr[i]));
-    SET_TRUELENGTH(ustr[i], cumsum += -TRUELENGTH(ustr[i]));
-  }
-  int *target = (o[0] != -1) ? newo : o;
-  for(i=n-1; i>=0; i--) {
-    s = x[i];                                            // 0.400 (page fetches on string cache)
-    SET_TRUELENGTH(s, k = TRUELENGTH(s)-1);
-    target[k] = i+1;                                     // 0.800 (random access to o)
-  }
-  for(i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i],0);     // The cummulate meant counts are left non zero, so reset for next time (0.00s).
-  ustr_n = 0;
-}
-*/
-/*
-static void alloc_csort_otmp(int n) {
-  if (csort_otmp_alloc >= n) return;
-  csort_otmp = (int *)realloc(csort_otmp, n * sizeof(int));
-  if (csort_otmp == NULL) Error("Failed to allocate working memory for csort_otmp. Requested %d * %d bytes", n, sizeof(int));
-  csort_otmp_alloc = n;
-}
-*/
-/*static void csort(SEXP *x, int *o, int n)
-//   As icount :
-//    Places the ordering into o directly, overwriting whatever was there
-//    Doesn't change x
-//    Pushes group sizes onto stack
-//   Requires csort_pre() to have created and sorted ustr already
-{
-  int i;
-  // can't use otmp, since iradix might be called here and that uses otmp (and xtmp).
-  //   alloc_csort_otmp(n) is called from forder for either n=nrow if 1st column,
-  // or n=maxgrpn if onwards columns
-  for(i=0; i<n; i++) csort_otmp[i] = (x[i] == NA_STRING) ? NA_INTEGER : -TRUELENGTH(x[i]);
-  if (nalast == 0 && n == 2) {                        // special case for nalast==0. n==1 is handled inside forder. at least 1 will be NA here
-    if (o[0] == -1) for (i=0; i<n; i++) o[i] = i+1;    // else use o from caller directly (not 1st column)
-    for (int i=0; i<n; i++) if (csort_otmp[i] == NA_INTEGER) o[i] = 0;
-    push(1); push(1);
-    return;
-  }
-  if (n < N_SMALL && nalast != 0) {                                    // TO DO: calibrate() N_SMALL=200
-    if (o[0] == -1) for (i=0; i<n; i++) o[i] = i+1;    // else use o from caller directly (not 1st column)
-    for (int i=0; i<n; i++) csort_otmp[i] = icheck(csort_otmp[i]);
-    iinsert(csort_otmp, o, n);
-  } else {
-    setRange(csort_otmp, n);
-    if (range == NA_INTEGER) Error("Internal error. csort's otmp contains all-NA"); // # nocov
-    int *target = (o[0] != -1) ? newo : o;
-    if (range <= N_RANGE) // && range<n)            // TO DO: calibrate(). radix was faster (9.2s "range<=10000" instead of 11.6s
-      icount(csort_otmp, target, n);       // "range<=N_RANGE && range<n") for run(7) where range=N_RANGE n=10000000
-    else iradix(csort_otmp, target, n);
-  }
-  // all i* push onto stack. Using their counts may be faster here than thrashing SEXP fetches over several passes as cgroup does
-  // (but cgroup needs that to keep orginal order, and cgroup saves the sort in csort_pre).
-}
-*/
-
-/*
-static void csort_pre(SEXP *x, uint64_t n, SEXP **out_ustr, uint64_t *out_n, uint64_t *out_order)
-// Finds ustr and finds their order.
-// Runs once for each column (if sortStr==TRUE), then ustr is used by csort within each group
-// ustr is grown on each character column, to save sorting the same strings again if several columns contain the same strings
-{
-  SEXP s;
-  int i, old_un, new_un;
-  // savetl_init() is called once at the start of forder
-  old_un = ustr_n;
-  // TODO: parallel
-  for(i=0; i<n; i++) {
-    s = x[i];
-    if (TRUELENGTH(s)<0) continue;   // this case first as it's the most frequent. Already in ustr, this negative is its ordering.
-    // TODO # omp critical
-    // {
-    if (TRUELENGTH(s)>0) {  // Save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
-      savetl(s);          // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
-      SET_TRUELENGTH(s,0);
-    }
-    if (ustr_alloc<=ustr_n) {
-      ustr_alloc = (ustr_alloc == 0) ? 16384 : MIN(ustr_alloc<<1, n);  // 10000 = 78k of 8byte pointers. Small initial guess, negligible time to alloc.
-      ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
-      if (ustr==NULL) Error("Failed to realloc ustr. Requested %d * %d bytes", ustr_alloc, sizeof(SEXP));
-    }
-    SET_TRUELENGTH(s, -1);  // this -1 will become its ordering later below
-    ustr[ustr_n++] = s;
-    if (s!=NA_STRING && LENGTH(s)>maxlen) maxlen=LENGTH(s);  // length on CHARSXP is the nchar of char * (excluding \0), and treats marked encodings as if ascii.
-    // }
-  }
-  new_un = ustr_n;
-  if (new_un == old_un) return;  // No new strings observed, seen them all before in previous column. ustr already sufficient.
-  // If we ever make ustr permanently held by data.table, we'll just need to make the final loop to set -i-1 before returning here.
-  // sort ustr.  TO DO: just sort new ones and merge them in.
-  // These allocs are here, to save them being in the recursive cradix_r()
-  if (cradix_counts_alloc < maxlen) {
-    cradix_counts_alloc = maxlen + 10;   // +10 to save too many reallocs
-    cradix_counts = (int *)realloc(cradix_counts, cradix_counts_alloc * 256 * sizeof(int) );  // stack of counts
-    if (!cradix_counts) Error("Failed to alloc cradix_counts");
-    memset(cradix_counts, 0, cradix_counts_alloc * 256 * sizeof(int));
-  }
-  if (cradix_xtmp_alloc < ustr_n) {
-    cradix_xtmp = (SEXP *)realloc( cradix_xtmp,  ustr_n * sizeof(SEXP) );  // TO DO: Reuse the one we have in forder. Does it need to be n length?
-    if (!cradix_xtmp) Error("Failed to alloc cradix_tmp");
-    cradix_xtmp_alloc = ustr_n;
-  }
-  cradix_r(ustr, ustr_n, 0);  // sorts ustr in-place by reference
-  for(i=0; i<ustr_n; i++)     // save ordering in the CHARSXP. negative so as to distinguish with R's own usage.
-    SET_TRUELENGTH(ustr[i], -i-1);
-}
-*/
-// functions to test vectors for sortedness: isorted, dsorted and csorted
-// base:is.unsorted uses any(is.na(x)) at R level (inefficient), and returns NA in the presence of any NA.
-// Hence, here we deal with NAs in C and return true if NAs are all at the beginning (what we need in data.table).
-// We also return -1 if x is sorted in _strictly_ reverse order; a common case we optimize in forder.
-// If a vector is in decreasing order *with ties*, then an in-place reverse (no sort) would result in instability of ties (TO DO).
-// For use by forder only, which now returns NULL if already sorted (hence no need for separate is.sorted).
-// TO DO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
-// These are all sequential access to x, so very quick and cache efficient.
-
-/*
-static int isorted(int *x, int n)                           // order = 1 is ascending and order=-1 is descending
-{                                                           // also takes care of na.last argument with check through 'icheck'
-                                                            // Relies on NA_INTEGER==INT_MIN, checked in init.c
-  int i=1,j=0;
-  if (nalast == 0) {                                        // when nalast = NA,
-    for (int k=0; k<n; k++) if (x[k] != NA_INTEGER) j++;
-    if (j == 0) return(-2);                                 // all NAs ? return special value to replace all o's values with '0'
-    if (j != n) return(0);                                  // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
-  }                                                         // no NAs  ? continue to check the rest of isorted - the same routine as usual
-  if (n<=1) return(1);
-  if (icheck(x[1]) < icheck(x[0])) {
-    i = 2;
-    while (i<n && icheck(x[i]) < icheck(x[i-1])) i++;
-    if (i==n) return -1;                                   // strictly opposite to expected 'order', no ties;
-                                                            // e.g. no more than one NA at the beginning/end (for order=-1/1)
-    else return(0);
-  }
-  int tt = 1;
-  for (i=1; i<n; i++) {
-    if (icheck(x[i]) < icheck(x[i-1])) return(0);
-    if (x[i]==x[i-1]) tt++; else tt=1;
-  }
-  return(1);                                                // same as 'order', NAs at the beginning for order=1, at end for order=-1, possibly with ties
-}
-*/
-/*
-static int dsorted(double *x, int n)                        // order=1 is ascending and -1 is descending
-{                                                           // also accounts for nalast=0 (=NA), =1 (TRUE), -1 (FALSE) (in twiddle)
-  int i=1,j=0;
-  unsigned long long prev, this;
-  if (nalast == 0) {                                        // when nalast = NA,
-    for (int k=0; k<n; k++) if (!ISNAN(x[k])) j++;
-    if (j == 0) return(-2);                                 // all NAs ? return special value to replace all o's values with '0'
-    if (j != n) return(0);                                  // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
-  }                                                         // no NAs  ? continue to check the rest of isorted - the same routine as usual
-  if (n<=1) return(1);
-  prev = twiddle(x,0,sort);
-  this = twiddle(x,1,sort);
-  if (this < prev) {
-    i = 2;
-    prev=this;
-    while (i<n && (this=twiddle(x,i,sort)) < prev) {i++; prev=this; }
-    if (i==n) return(-1);                                   // strictly opposite of expected 'order', no ties;
-                                                            // e.g. no more than one NA at the beginning/end (for order=-1/1)
-    else return(0);                                         // TO DO: improve to be stable for ties in reverse
-  }
-  int tt = 1;
-  for (i=1; i<n; i++) {
-    this = twiddle(x,i,sort);                              // TO DO: once we get past -Inf, NA and NaN at the bottom,  and +Inf at the top,
-                                                            //        the middle only need be twiddled for tolerance (worth it?)
-    if (this < prev) return(0);
-    if (this==prev) tt++; else tt=1;
-    prev = this;
-  }
-  return(1);                                                // exactly as expected in 'order' (1=increasing, -1=decreasing), possibly with ties
-}
-*/
-/*
-static int csorted(SEXP *x, int n)                          // order=1 is ascending and -1 is descending
-{                                                           // also accounts for nalast=0 (=NA), =1 (TRUE), -1 (FALSE)
-  int i=1, j=0, tmp;
-  if (nalast == 0) {                                        // when nalast = NA,
-    for (int k=0; k<n; k++) if (x[k] != NA_STRING) j++;
-    if (j == 0) return(-2);                                 // all NAs ? return special value to replace all o's values with '0'
-    if (j != n) return(0);                                  // any NAs ? return 0 = unsorted and leave it to sort routines to replace o's with 0's
-  }                                                         // no NAs  ? continue to check the rest of isorted - the same routine as usual
-  if (n<=1) return(1);
-  if (StrCmp2(x[1],x[0])<0) {
-    i = 2;
-    while (i<n && StrCmp2(x[i],x[i-1])<0) i++;
-    if (i==n) return(-1);                                   // strictly opposite of expected 'order', no ties;
-                                                            // e.g. no more than one NA at the beginning/end (for order=-1/1)
-    else return(0);
-  }
-  int tt = 1;
-  for (i=1; i<n; i++) {
-    tmp = StrCmp2(x[i],x[i-1]);
-    if (tmp < 0) return(0);
-    if (tmp == 0) tt++; else tt=1;
-  }
-  return(1);                                                // exactly as expected in 'order', possibly with ties
-}
-*/
-bool need2utf8(SEXP x, int n)
-{
-  for (int i=0; i<n; i++) if (NEED2UTF8(STRING_ELT(x, i))) return(true);
-  return(false);
 }
 
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg)
@@ -1703,11 +1023,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   return ans;
 }
 
-
 SEXP fsorted(SEXP x)
 {
   // Just checks if ordered and returns FALSE early if not. Does not return ordering if so, unlike forder.
   // Always increasing order with NA's first
+  // Similar to base:is.unsorted but accepts NA at the beginning (standard in data.table and considered sorted) rather than returning NA when NA present.
+  // TODO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
+  // These are all sequential access to x, so very quick and cache efficient. Could be parallel by checking continuity at batch boundaries.
   const int n = length(x);
   if (n <= 1) return(ScalarLogical(TRUE));
   if (!isVectorAtomic(x)) Error("is.sorted (R level) and fsorted (C level) only to be used on vectors. If needed on a list/data.table, you'll need the order anyway if not sorted, so use if (length(o<-forder(...))) for efficiency in one step, or equivalent at C level");
