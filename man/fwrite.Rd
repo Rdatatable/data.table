@@ -21,7 +21,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   verbose = getOption("datatable.verbose", FALSE))
 }
 \arguments{
-  \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}.}
+  \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}. If \code{matrix}, it gets coerced to \code{data.table} without preserving row names}
   \item{file}{Output file name. \code{""} indicates output to the console. }
   \item{append}{If \code{TRUE}, the file is opened in append mode and column names (header row) are not written.}
   \item{quote}{When \code{"auto"}, character fields, factor fields and column names will only be surrounded by double quotes when they need to be; i.e., when the field contains the separator \code{sep}, a line ending \code{\\n}, the double quote itself or (when \code{list} columns are present) \code{sep2[2]} (see \code{sep2} below). If \code{FALSE} the fields are not wrapped with quotes even if this would break the CSV due to the contents of the field. If \code{TRUE} double quotes are always included other than around numeric fields, as \code{write.csv}.}
