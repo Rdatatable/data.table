@@ -9094,6 +9094,9 @@ test(1658.28, fwrite(data.table(a=1)[NULL,]), error="ncol(x) > 0L is not TRUE")
 
 # input is of class matrix
 test(1658.29, fwrite(matrix("foo"), quote=TRUE), output='"V1"\n"foo"\n')
+test(1658.30, fwrite(matrix(1:4, nrow=2, ncol=2), quote = TRUE), output = '"V1","V2"\n1,3\n2,4\n')
+test(1658.31, fwrite(matrix(1:3, nrow=3, ncol=1), quote = TRUE), output = '"V1"\n1\n2\n3\n')
+test(1658.32, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c("ca","cb"))), quote = TRUE), output = '"ca","cb"\n1,3\n2,4\n')
 
 ## End fwrite tests
 
