@@ -6,17 +6,17 @@
 extern SEXP char_integer64;
 
 SEXP dt_na(SEXP x, SEXP cols) {
-  int i, j, n=0, this;
+  int i, j, n=0, elem;
   double *dv;
   SEXP v, ans, class;
 
   if (!isNewList(x)) error("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'", type2char(TYPEOF(x))); // # nocov
   if (!isInteger(cols)) error("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
   for (i=0; i<LENGTH(cols); i++) {
-    this = INTEGER(cols)[i];
-    if (this<1 || this>LENGTH(x))
-      error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
-    if (!n) n = length(VECTOR_ELT(x, this-1));
+    elem = INTEGER(cols)[i];
+    if (elem<1 || elem>LENGTH(x))
+      error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, elem, LENGTH(x));
+    if (!n) n = length(VECTOR_ELT(x, elem-1));
   }
   ans = PROTECT(allocVector(LGLSXP, n));
   for (i=0; i<n; i++) LOGICAL(ans)[i]=0;
@@ -127,17 +127,17 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
 
 // internal version of anyNA for data.tables
 SEXP anyNA(SEXP x, SEXP cols) {
-  int i, j, n=0, this;
+  int i, j, n=0, elem;
   double *dv;
   SEXP v, ans, class;
 
   if (!isNewList(x)) error("Internal error. Argument 'x' to CanyNA is type '%s' not 'list'", type2char(TYPEOF(x))); // #nocov
   if (!isInteger(cols)) error("Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
   for (i=0; i<LENGTH(cols); i++) {
-    this = INTEGER(cols)[i];
-    if (this<1 || this>LENGTH(x))
-      error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
-    if (!n) n = length(VECTOR_ELT(x, this-1));
+    elem = INTEGER(cols)[i];
+    if (elem<1 || elem>LENGTH(x))
+      error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, elem, LENGTH(x));
+    if (!n) n = length(VECTOR_ELT(x, elem-1));
   }
   ans = PROTECT(allocVector(LGLSXP, 1));
   LOGICAL(ans)[0]=0;
