@@ -27,8 +27,8 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
   # validate arguments
   if(is.matrix(x)){ # coerce to data.table if input object is matrix
-    x <- as.data.table(x)
     warning("x coerced from class: matrix to data.table")
+    x <- as.data.table(x)
   }
   stopifnot(is.list(x), ncol(x) > 0L,
     identical(quote,"auto") || identical(quote,FALSE) || identical(quote,TRUE),

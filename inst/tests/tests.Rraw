@@ -9092,6 +9092,9 @@ test(1658.27, fwrite(ok_dt, col.names="foobar"), error="isLOGICAL(col.names)")
 # null data table (no columns)
 test(1658.28, fwrite(data.table(a=1)[NULL,]), error="ncol(x) > 0L is not TRUE")
 
+# input is of class matrix
+test(1658.29, fwrite(matrix("foo"), quote=TRUE), output='"V1"\n"foo"\n')
+
 ## End fwrite tests
 
 # tests for #679, inrange(), FR #707
