@@ -512,14 +512,14 @@ SEXP gmedian(SEXP x, SEXP narm) {
   R_len_t i=0, j=0, k=0, imed=0, thisgrpsize=0, medianindex=0, nacount=0;
   double val = 0.0;
   Rboolean isna = FALSE, isint64 = FALSE;
-  SEXP ans, sub, class;
+  SEXP ans, sub, klass;
   void *ptr;
   int n = (irowslen == -1) ? length(x) : irowslen;
   if (grpn != n) error("grpn [%d] != length(x) [%d] in gmedian", grpn, n);
   switch(TYPEOF(x)) {
   case REALSXP:
-    class = getAttrib(x, R_ClassSymbol);
-    isint64 = (isString(class) && STRING_ELT(class, 0) == char_integer64);
+    klass = getAttrib(x, R_ClassSymbol);
+    isint64 = (isString(klass) && STRING_ELT(klass, 0) == char_integer64);
     ans = PROTECT(allocVector(REALSXP, ngrp));
     sub = PROTECT(allocVector(REALSXP, maxgrpn)); // allocate once upfront
     ptr = DATAPTR(sub);

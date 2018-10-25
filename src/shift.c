@@ -6,7 +6,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
 
   size_t size;
   R_len_t i=0, j, m, nx, nk, xrows, thisk, protecti=0;
-  SEXP x, tmp=R_NilValue, elem, ans, thisfill, class;
+  SEXP x, tmp=R_NilValue, elem, ans, thisfill, klass;
   unsigned long long *dthisfill;
   enum {LAG, LEAD} stype = LAG;
   if (!length(obj)) return(obj); // NULL, list()
@@ -57,8 +57,8 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         break;
 
       case REALSXP :
-        class = getAttrib(elem, R_ClassSymbol);
-        if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
+        klass = getAttrib(elem, R_ClassSymbol);
+        if (isString(klass) && STRING_ELT(klass, 0) == char_integer64) {
           thisfill = PROTECT(allocVector(REALSXP, 1)); protecti++;
           dthisfill = (unsigned long long *)REAL(thisfill);
           if (INTEGER(fill)[0] == NA_INTEGER)
@@ -148,8 +148,8 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         break;
 
       case REALSXP :
-        class = getAttrib(elem, R_ClassSymbol);
-        if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
+        klass = getAttrib(elem, R_ClassSymbol);
+        if (isString(klass) && STRING_ELT(klass, 0) == char_integer64) {
           thisfill = PROTECT(allocVector(REALSXP, 1)); protecti++;
           dthisfill = (unsigned long long *)REAL(thisfill);
           if (INTEGER(fill)[0] == NA_INTEGER)

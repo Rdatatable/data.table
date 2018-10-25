@@ -8,7 +8,7 @@ extern SEXP char_integer64;
 SEXP dt_na(SEXP x, SEXP cols) {
   int i, j, n=0, elem;
   double *dv;
-  SEXP v, ans, class;
+  SEXP v, ans, klass;
 
   if (!isNewList(x)) error("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'", type2char(TYPEOF(x))); // # nocov
   if (!isInteger(cols)) error("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
@@ -36,8 +36,8 @@ SEXP dt_na(SEXP x, SEXP cols) {
       for (j=0; j<n; j++) LOGICAL(ans)[j] |= (STRING_ELT(v, j) == NA_STRING);
       break;
     case REALSXP:
-      class = getAttrib(v, R_ClassSymbol);
-      if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
+      klass = getAttrib(v, R_ClassSymbol);
+      if (isString(klass) && STRING_ELT(klass, 0) == char_integer64) {
         dv = (double *)REAL(v);
         for (j=0; j<n; j++) {
           LOGICAL(ans)[j] |= (DtoLL(dv[j]) == NA_INT64_LL);   // TODO: can be == NA_INT64_D directly
