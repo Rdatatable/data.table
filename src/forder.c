@@ -394,9 +394,8 @@ static void count_group(const uint8_t *x, const int n, bool *out_skip, uint16_t 
   for (int i=0; i<ngrp; i++) counts[ugrp[i]] = 0;  // ready for next time to save initializing the 256 vector
 }
 
-static int dround = 0;  // No rounding by default, for now. Handles #1642, #1728, #1463, #485
-static uint64_t dmask1;
-static uint64_t dmask2;
+static int dround=0;      // No rounding by default, for now. Handles #1642, #1728, #1463, #485
+static uint64_t dmask=0;
 
 SEXP setNumericRounding(SEXP droundArg)
 // init.c has initial call with default of 2
@@ -404,8 +403,7 @@ SEXP setNumericRounding(SEXP droundArg)
   if (!isInteger(droundArg) || LENGTH(droundArg)!=1) error("Must an integer or numeric vector length 1");
   if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2) error("Must be 2, 1 or 0");
   dround = INTEGER(droundArg)[0];
-  dmask1 = dround ? 1 << (8*dround-1) : 0;
-  dmask2 = 0xffffffffffffffff << dround*8;
+  dmask = dround ? 1 << (8*dround-1) : 0;
   return R_NilValue;
 }
 
@@ -424,29 +422,20 @@ int getNumericRounding_C()
 // for floating point finite you have to flip the other bits too if it was signed: http://stereopsis.com/radix.html
 uint64_t dtwiddle(void *p, int i)
 {
-  union {     // inside for thread-safety
+  union {
     double d;
-    uint64_t ull;
-  } u;
+    uint64_t u64;
+  } u;  // local for thread safety
   u.d = ((double *)p)[i];
   if (R_FINITE(u.d)) {
-    u.ull = (u.d) ? u.ull + ((u.ull & dmask1) << 1) : 0;    // handle 0, -0 case. Fix for issues/743.
-                                                            // tested on vector length 100e6. was the fastest fix (see results at the bottom of page)
-  } else if (ISNAN(u.d)) {
-   /* 1. NA twiddled to all bits 0, sorts first.  R's value 1954 cleared.
-      2. NaN twiddled to set just bit 13, sorts immediately after NA. 13th bit to be
-         consistent with "quiet" na bit but any bit outside last 2 bytes would do.
-         (ref r-devel post: http://r.789695.n4.nabble.com/Question-re-NA-NaNs-in-R-td4685014.html)
-      3. This also normalises a difference between NA on 32bit R (bit 13 set) and 64bit R (bit 13 not set)
-      4. -Inf twiddled to : 0 sign, exponent all 0, mantissa all 1, sorts after NaN
-      5. +Inf twiddled to : 1 sign, exponent all 1, mantissa all 0, sorts last since finite
-         numbers are defined by not-all-1 in exponent */
-      u.ull = (ISNA(u.d) ? 0 : (1ULL << 51));
-      return u.ull;
-      //return (nalast == 1 ? ~u.ull : u.ull);
+    if (u.d==0) u.d=0; // changes -0.0 to 0.0,  issue #743
+    u.u64 ^= (u.u64 & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000; // always flip sign bit and if negative (sign bit was set) flip other bits too
+    u.u64 += (u.u64 & dmask) << 1;   // when dround==1|2, if 8th|16th bit is set, round up before chopping last 1|2 bytes
+    return u.u64 >> (dround*8);
   }
-  uint64_t mask = (u.ull & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000;  // always flip sign bit and if negative (sign bit was set) flip other bits too
-  return (u.ull ^ mask) & dmask2;    // TODO: why not shift right to reduce range.
+  if (ISNAN(u.d)) return ISNA(u.d)    ? 0 /*NA*/   : 1 /*NaN*/;  // also normalises a difference between NA on 32bit R (bit 13 set) and 64bit R (bit 13 not set)
+  if (isinf(u.d)) return signbit(u.d) ? 2 /*-Inf*/ : (0xffffffffffffffff>>(dround*8)) /*+Inf*/;
+  Error("Unknown non-finite value; not NA, NaN, -Inf or +Inf");
 }
 
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg)
@@ -521,7 +510,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min, max;     // min and max of non-NA values
     int na_count=0;
-    if (sort) sort=INTEGER(orderArg)[col];  // +1 or -1
+    if (sort) sort=INTEGER(orderArg)[col];  // +1(asc) -1(desc) 0(first-appearance)
     //Rprintf("sort = %d\n", sort);
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
@@ -562,9 +551,17 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     if (spare==0) {
       spare = 8-firstBits; // left align to byte boundary to get better first split.
     } else {
-      if (spare >= firstBits) {
-        spare -= firstBits;      // new spare is also how many bits to left shift
-      } else {
+      if (sort==0) {
+        // can't squash into previous spare as that will change first-appearance order within that radix-byte
+        //   found thanks to test 1246.55 with seed 1540402216L and added new direct test 1954
+        spare = 8-firstBits;
+        nradix++;
+      }
+      else if (spare >= firstBits) {
+        // easiest case. just left shift a few bits within these nbyte to fill the spare gap
+        spare -= firstBits;      // new spare is also how many bits to now left shift
+      }
+      else {
         if (nbyte<8) {
           spare += 8-firstBits;
           nbyte++;               // after shift, will need an extra byte
@@ -592,8 +589,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     }
     if (isReal) { min2--; max2++; }  // -Inf and +Inf  in min-1 and max+1 spots respectively
 
-    const uint64_t naval = ((nalast==1) == (sort==1)) ? max+1+isReal*2 : min-1-isReal*2;
-    const uint64_t nanval = ((nalast==1) == (sort==1)) ? max+2 : min-2;  // only used when isReal
+    const uint64_t naval = ((nalast==1) == (sort>=0)) ? max+1+isReal*2 : min-1-isReal*2;
+    const uint64_t nanval = ((nalast==1) == (sort>=0)) ? max+2 : min-2;  // only used when isReal
 
     // several columns could squash into 1 byte. due to this bit squashing is why we deal
     // with asc|desc here, otherwise it could be done in the ugrp sorting by reversing the ugrp insert sort
@@ -695,6 +692,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   char *TMP = malloc(n*sizeof(int));
 
   for (int radix=0; radix<nradix; radix++) {
+    /*Rprintf("Before radix %d ...", radix);
+    for (int i=0; i<n; i++) {
+      Rprintf("%03d: ",i);
+      for (int r=0; r<nradix; r++) Rprintf("%03d ",key[r][i]);
+      Rprintf("\n");
+    }*/
+
     flipflop();
     stackgrps = radix<(nradix-1) || LOGICAL(retGrp)[0];  // if just ordering, we can save allocating and writing the last (and biggest) group size vector
     int tmp=gs[1-flip][0]; for (int i=1; i<gsngrp[1-flip]; i++) tmp=(gs[1-flip][i]+=tmp);   // cumulate, so we can parallelize
@@ -892,6 +896,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       }
     }
   }
+  /*Rprintf("After last radix ...\n");
+  for (int i=0; i<n; i++) {
+    Rprintf("%03d: ",i);
+    for (int r=0; r<nradix; r++) Rprintf("%03d ", key[r][i]);
+    Rprintf("\n");
+  }*/
+
   omp_set_nested(0);
   free(TMP); TMP=NULL; // TMP_size=0; // TODO: place in cleanup()
   for (int i=0; i<nradix; i++) {free(key[i]); key[i]=NULL;}  // TODO: place in cleanup()
