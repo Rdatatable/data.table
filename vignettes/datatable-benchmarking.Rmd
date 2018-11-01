@@ -127,3 +127,24 @@ setindex(DT, a)
 # inside a loop prefer `setDT` instead of `data.table()`
 
 As of now `data.table()` has an overhead, thus inside loops it is preferred to use `as.data.table()` or `setDT()` on a valid list.
+
+# lazy evaluation aware benchmarking
+
+## let applications to optimize queries
+
+In languages like python which does not support _lazy evaluation_ the following two filter queries would be processed exactly the same way.
+
+```r
+DT = data.table(a=1L, b=2L)
+DT[a == 1L]
+
+col = "a"
+filter = 1L
+DT[DT[[col]] == filter]
+```
+
+R has _lazy evaluation_ feature which allows an application to investigate and optimize expressions before it gets evaluated. In above case if we filter using `DT[[col]] == filter` we are forcing to materialize whole LHS. This prevents `data.table` to optimize expression whenever it is possible and basically falls back to base R `data.frame` way of doing subset. For more information on that subject refer to [R language manual](https://cran.r-project.org/doc/manuals/r-release/R-lang.html).
+
+## force applications to finish computation
+
+The are multiple applications which are trying to be as lazy as possible. As a result you might experience that when you run a query against such solution it finishes instantly, but then printing the results takes much more time. It is because the query actually was not computed at the time of calling query but it got computed when its results were required. Because of the above you should ensure that computation took place. It is not a trivial task, the ultimate way to ensure is to dump results to disk but it adds an overhead of writing to disk which is then included in timings of a query we are benchmarking. The easy and cheap way to deal with it could be for example printing dimensions of a results (useful in grouping benchmarks), or printing first and last element (useful in sorting benchmarks).
