@@ -105,6 +105,8 @@ setDTthreads(0)    # use all available cores (default)
 getDTthreads()     # check how many cores are currently used
 ```
 
+Keep in mind that using `parallel` R package together with `data.table` will force `data.table` to use only single core. Thus it is recommended to verify cores utilization in resource monitoring tools, for example `htop`.
+
 # inside a loop prefer `set` instead of `:=`
 
 Unless you are utilizing index when doing _sub-assign by reference_ you should prefer `set` function which does not impose overhead of `[.data.table` method call.
