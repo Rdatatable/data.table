@@ -4,7 +4,7 @@ date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: true
-    number_sections: true
+    number_sections: false
 vignette: >
   %\VignetteIndexEntry{Benchmarking data.table}
   %\VignetteEngine{knitr::rmarkdown}
