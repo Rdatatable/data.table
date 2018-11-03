@@ -8292,6 +8292,9 @@ x2 = unique(x)
 y = data.table(c(2,3,4,4,4,5), c(1,1,2,3,3,3))
 test(1626.77, fsetequal(x, x2, all = FALSE), TRUE)
 test(1626.78, fsetequal(x, y, all = FALSE), FALSE)
+# unit test for #3133
+DT = data.table(A=1)
+test(1626.79, funion(DT, DT, all=TRUE), data.table(A=c(1, 1)))
 
 # fix for #1087 and #1465
 test(1627, charToRaw(names(fread(testDir("issue_1087_utf8_bom.csv")))[1L]), as.raw(97L))
