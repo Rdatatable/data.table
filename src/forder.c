@@ -1,4 +1,5 @@
 #include "data.table.h"
+#define TIMING_ON
 /*
   Inspired by :
   icount in do_radixsort in src/main/sort.c @ rev 51389.
@@ -28,7 +29,6 @@
   overhead. They reach outside themselves to place results in the end result directly rather than returning many small pieces of memory.
 */
 
-// #define TIMING_ON
 static int *gs[2] = {NULL};          // gs = groupsizes e.g. 23,12,87,2,1,34,...
 static int flip = 0;                 // two vectors flip flopped: flip and 1-flip
 static int gsalloc[2] = {0};         // allocated stack size
@@ -430,7 +430,7 @@ uint64_t dtwiddle(void *p, int i)
   if (R_FINITE(u.d)) {
     if (u.d==0) u.d=0; // changes -0.0 to 0.0,  issue #743
     u.u64 ^= (u.u64 & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000; // always flip sign bit and if negative (sign bit was set) flip other bits too
-    u.u64 += (u.u64 & dmask) << 1;   // when dround==1|2, if 8th|16th bit is set, round up before chopping last 1|2 bytes
+    u.u64 += (u.u64 & dmask) << 1/*is this shift really correct. No need to shift*/  ;   // when dround==1|2, if 8th|16th bit is set, round up before chopping last 1|2 bytes
     return u.u64 >> (dround*8);
   }
   if (ISNAN(u.d)) return ISNA(u.d)    ? 0 /*NA*/   : 1 /*NaN*/;  // also normalises a difference between NA on 32bit R (bit 13 set) and 64bit R (bit 13 not set)
@@ -441,14 +441,14 @@ uint64_t dtwiddle(void *p, int i)
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg)
 // sortStr TRUE from setkey, FALSE from by=
 {
-  /*
+
 #ifdef TIMING_ON
   memset(tblock, 0, NBLOCK*sizeof(clock_t));
   memset(nblock, 0, NBLOCK*sizeof(int));
   clock_t tstart;  // local variable to mask the global tstart for ease when timing sub funs
 #endif
   TBEG()
-  */
+
   int n_protect = 0;
 
   if (!isNewList(DT)) {
@@ -683,7 +683,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     // Rprintf("Written key for column %d\n", col);
   }
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
-  // Rprintf("nradix=%d\n", nradix);
+  Rprintf("nradix=%d\n", nradix);
 
   stackgrps = true;
   push(n);
@@ -692,12 +692,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   char *TMP = malloc(n*sizeof(int));
 
   for (int radix=0; radix<nradix; radix++) {
-    /*Rprintf("Before radix %d ...", radix);
-    for (int i=0; i<n; i++) {
-      Rprintf("%03d: ",i);
-      for (int r=0; r<nradix; r++) Rprintf("%03d ",key[r][i]);
-      Rprintf("\n");
-    }*/
 
     flipflop();
     stackgrps = radix<(nradix-1) || LOGICAL(retGrp)[0];  // if just ordering, we can save allocating and writing the last (and biggest) group size vector
@@ -769,6 +763,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             int     ngrp=0;     // max value 256 so not uint8_t
             uint8_t last_seen=0;  // the last grp seen in the previous batch.  initialized 0 is not used
             for (int i=0; i<256; i++) seen[i]=false;
+            bool skip=true;
 
             #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads())
             for (int batch=0; batch<nBatch; batch++) {
@@ -786,25 +781,26 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
                 }
                 my_counts[*tmp++]++;
               }
-              if (!my_skip) all_skipped=false;  // outside ordered to save work in prior waiting threads; fine to update bool to false without atomic
+              if (!my_skip) skip=false;  // before ordered to save work in prior waiting threads; fine to update bool to false without atomic
               #pragma omp ordered
               {
                 for (int i=0; i<my_ngrp; i++) {
                   if (!seen[my_ugrp[i]]) {
                     seen[my_ugrp[i]] = true;
                     ugrp[ngrp++] = last_seen = my_ugrp[i];
-                  } else if (all_skipped && my_ugrp[i]!=last_seen) {
-                    all_skipped=false;
+                  } else if (skip && my_ugrp[i]!=last_seen) {
+                    skip=false;
                   }
                 }
               }
             }
 
             if (sort && !sort_ugrp(ugrp, ngrp))
-              all_skipped=false;
+              skip=false;
 
             //Rprintf("cumulate...\n");
             // cumulate columnwise; parallel histogram; small so no need to parallelize
+            // don't skip this, as this gives us the group sizes in first row when skipping too
             for (int b=0, rollSum=0; b<ngrp; b++) {
               int j = ugrp[b];
               for (int batch=0; batch<nBatch; batch++) {
@@ -829,12 +825,40 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
             //   // TODO  if (!TMP) Error
             //   TMP_size = my_n;
             // }
-            // Rprintf("reorder remaining radix keys (from=%d)...\n", from);
+            if (!skip) {
+              all_skipped = false;
+              TBEG()
+              // Rprintf("reorder remaining radix keys (from=%d)...\n", from);
+              for (int remaining_radix=radix+1; remaining_radix<nradix; remaining_radix++) {
+                //Rprintf("remaining radix %d...\n", remaining_radix);
+                //Rprintf("TRACE:  %p %p %d %p %p %p %p\n", source, TMP, my_n, key[0], key[1], key[2], key[3]);
+                #pragma omp parallel num_threads(getDTthreads())
+                {
+                  int my_tmp_counts[256];
+                  #pragma omp for schedule(dynamic)
+                  for (int batch=0; batch<nBatch; batch++) {
+                    const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;
+                    memcpy(my_tmp_counts, counts+batch*256, 256*sizeof(int));  // copy to cumulate since we need to reuse orginal to reorder other cols too.
+                    const uint8_t *restrict b = key[radix]           + from + batch*batchSize;
+                    const uint8_t *restrict c = key[remaining_radix] + from + batch*batchSize;
+                    for (int i=0; i<my_n; i++) ((uint8_t *restrict)TMP)[my_tmp_counts[*b++]++] = *c++;
+                  }
+                }
+                memcpy(key[remaining_radix]+from, TMP, my_n);
+              }
 
-            // TODO: doesn't need to happen if skipped! Point of tracking grouped/orderedness above.
-            for (int remaining_radix=radix+1; remaining_radix<nradix; remaining_radix++) {
-              //Rprintf("remaining radix %d...\n", remaining_radix);
-              //Rprintf("TRACE:  %p %p %d %p %p %p %p\n", source, TMP, my_n, key[0], key[1], key[2], key[3]);
+              const bool direct = false; //(radix==0); // TODO: reinstate direct and save TMP
+              if (direct) {
+                if (from!=0) Error("internal error: first nested for radix==0 but from!=0");
+              }
+              //else if (TMP_size<(my_n*sizeof(int))) {
+              //  TMP = (char *)realloc(TMP, my_n*sizeof(int));
+              //  // TODO  if (!TMP) Error
+              //  TMP_size = my_n*sizeof(int);
+              //}
+              //Rprintf("reorder o (direct=%d)...\n", direct);
+              TEND(0)
+
               #pragma omp parallel num_threads(getDTthreads())
               {
                 int my_tmp_counts[256];
@@ -842,45 +866,20 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
                 for (int batch=0; batch<nBatch; batch++) {
                   const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;
                   memcpy(my_tmp_counts, counts+batch*256, 256*sizeof(int));  // copy to cumulate since we need to reuse orginal to reorder other cols too.
-                  const uint8_t *restrict b = key[radix]           + from + batch*batchSize;
-                  const uint8_t *restrict c = key[remaining_radix] + from + batch*batchSize;
-                  for (int i=0; i<my_n; i++) ((uint8_t *restrict)TMP)[my_tmp_counts[*b++]++] = *c++;
+                  const uint8_t *restrict b = key[radix] + from + batch*batchSize;    // TODO: use restrict everywhere,  even with const too
+                  if (direct) {
+                    // don't need to reorder o because o contains just 1:n. Saves allocating TMP with nrow(DT)*4 bytes and hopping wastefully via it.
+                    int k = batch*batchSize + 1;  // +1 because returned to 1-based R
+                    for (int i=0; i<my_n; i++) ansd[my_tmp_counts[*b++]++] = k++;
+                  } else {
+                    int *k = ansd + from + batch*batchSize;
+                    for (int i=0; i<my_n; i++) ((int *)TMP)[my_tmp_counts[*b++]++] = *k++;
+                  }
                 }
               }
-              memcpy(key[remaining_radix]+from, TMP, my_n);
+              if (!direct) memcpy(ansd+from, TMP, my_n*sizeof(int));
+              TEND(1)
             }
-
-            const bool direct = false; //(radix==0); // TODO: reinstate direct and save TMP
-            if (direct) {
-              if (from!=0) Error("internal error: first nested for radix==0 but from!=0");
-            }
-            //else if (TMP_size<(my_n*sizeof(int))) {
-            //  TMP = (char *)realloc(TMP, my_n*sizeof(int));
-            //  // TODO  if (!TMP) Error
-            //  TMP_size = my_n*sizeof(int);
-            //}
-            //Rprintf("reorder o (direct=%d)...\n", direct);
-
-            // TODO: doesn't need to happen if this skipped either
-            #pragma omp parallel num_threads(getDTthreads())
-            {
-              int my_tmp_counts[256];
-              #pragma omp for schedule(dynamic)
-              for (int batch=0; batch<nBatch; batch++) {
-                const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;
-                memcpy(my_tmp_counts, counts+batch*256, 256*sizeof(int));  // copy to cumulate since we need to reuse orginal to reorder other cols too.
-                const uint8_t *restrict b = key[radix] + from + batch*batchSize;    // TODO: use restrict everywhere,  even with const too
-                if (direct) {
-                  // don't need to reorder o because o contains just 1:n. Saves allocating TMP with nrow(DT)*4 bytes and hopping wastefully via it.
-                  int k = batch*batchSize + 1;  // +1 because returned to 1-based R
-                  for (int i=0; i<my_n; i++) ansd[my_tmp_counts[*b++]++] = k++;
-                } else {
-                  int *k = ansd + from + batch*batchSize;
-                  for (int i=0; i<my_n; i++) ((int *)TMP)[my_tmp_counts[*b++]++] = *k++;
-                }
-              }
-            }
-            if (!direct) memcpy(ansd+from, TMP, my_n*sizeof(int));
 
             int my_gs[256];
             for (int i=1; i<ngrp; i++) {
@@ -895,6 +894,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         }
       }
     }
+    Rprintf("After radix %d, ngrp=%d ...\n", radix, gsngrp[flip]);
+    if (radix==0) for (int i=0; i<gsngrp[flip]; i++) Rprintf("%d\n", gs[flip][i]);
+    /*for (int i=0; i<n; i++) {
+      Rprintf("%03d: ",i);
+      for (int r=0; r<nradix; r++) Rprintf("%03d ",key[r][i]);
+      Rprintf("\n");
+    }*/
   }
   /*Rprintf("After last radix ...\n");
   for (int i=0; i<n; i++) {
@@ -906,15 +912,17 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
   omp_set_nested(0);
   free(TMP); TMP=NULL; // TMP_size=0; // TODO: place in cleanup()
   for (int i=0; i<nradix; i++) {free(key[i]); key[i]=NULL;}  // TODO: place in cleanup()
-  /*
+
   #ifdef TIMING_ON
-    for (i=0; i<NBLOCK; i++) {
+  {
+    int last=NBLOCK-1;
+    while (last>=0 && nblock[last]==0) last--; // remove unused timing slots
+    for (int i=0; i<=last; i++) {
       Rprintf("Timing block %d = %8.3f   %8d\n", i, 1.0*tblock[i]/CLOCKS_PER_SEC, nblock[i]);
-      if (i==12) Rprintf("\n");
     }
-    Rprintf("Found %d groups and maxgrpn=%d\n", gsngrp[flip], gsmax[flip]);
+  }
   #endif
-  */
+
   if (all_skipped) {   // when data is already grouped or sorted, integer() returned with group sizes attached
     // the o vector created earlier could be avoided in this case if we only create it when isSorted becomes FALSE
     ans = PROTECT(allocVector(INTSXP, 0));  // Can't attach attributes to NULL
