@@ -616,7 +616,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           f__ = ans[[1L]]; len__ = ans[[2L]]
           allLen1 = FALSE # TODO; should this always be FALSE?
           irows = NULL # important to reset
-          if (any_na(as_list(xo))) xo = xo[!is.na(xo)]
+          if (anyNA(xo)) xo = xo[!is.na(xo)]
         }
       } else {
         # turning on mult = "first"/"last" for non-equi joins again to test..

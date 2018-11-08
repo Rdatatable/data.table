@@ -243,7 +243,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
       ans2 = target[current, roll=-tolerance, rollends=TRUE, which=TRUE, on=jn.on]
       pmin(ans1, ans2, na.rm=TRUE)
     }
-    if (any_na(as_list(ans))) {
+    if (anyNA(ans)) {
       msg = c(msg, sprintf("Dataset 'current' has rows not present in 'target'%s%s", if (target_dup || current_dup) " or present in different quantity" else "", tolerance.msg))
       return(msg)
     }
@@ -252,7 +252,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
       ans2 = current[target, roll=-tolerance, rollends=TRUE, which=TRUE, on=jn.on]
       pmin(ans1, ans2, na.rm=TRUE)
     }
-    if (any_na(as_list(ans))) {
+    if (anyNA(ans)) {
       msg = c(msg, sprintf("Dataset 'target' has rows not present in 'current'%s%s", if (target_dup || current_dup) " or present in different quantity" else "", tolerance.msg))
       return(msg)
     }
