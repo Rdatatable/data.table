@@ -2786,12 +2786,6 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   invisible(x)
 }
 
-as_list <- function(x) {
-  lx = vector("list", 1L)
-  .Call(Csetlistelt, lx, 1L, x)
-  lx
-}
-
 # FR #1353
 rowid <- function(..., prefix=NULL) {
   rowidv(list(...), prefix=prefix)
@@ -2804,7 +2798,7 @@ rowidv <- function(x, cols=seq_along(x), prefix=NULL) {
     if (!missing(cols) && !is.null(cols))
       stop("x is a single vector, non-NULL 'cols' doesn't make sense.")
     cols = 1L
-    x = as_list(x)
+    x = list(x)
   } else {
     if (!length(cols))
       stop("x is a list, 'cols' can not be on 0-length.")
@@ -2833,7 +2827,7 @@ rleidv <- function(x, cols=seq_along(x), prefix=NULL) {
     if (!missing(cols) && !is.null(cols))
       stop("x is a single vector, non-NULL 'cols' doesn't make sense.")
     cols = 1L
-    x = as_list(x)
+    x = list(x)
   } else {
     if (!length(cols))
       stop("x is a list, 'cols' can not be 0-length.")

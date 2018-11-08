@@ -7,16 +7,11 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
   }
   keep = (na.last == "keep")
   na.last = as.logical(na.last)
-  as_list <- function(x) {
-    xx = vector("list", 1L)
-    .Call(Csetlistelt, xx, 1L, x)
-    xx
-  }
   if (is.atomic(x)) {
     if (!missing(cols) && !is.null(cols))
       stop("x is a single vector, non-NULL 'cols' doesn't make sense")
     cols = 1L
-    x = as_list(x)
+    x = list(x)
   } else {
     if (!length(cols))
       stop("x is a list, 'cols' can not be 0-length")
@@ -59,7 +54,7 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
   # take care of na.last="keep"
   V1 = NULL # for R CMD CHECK warning
   if (isTRUE(keep)) {
-    ans = (setDT(as_list(ans))[which_(nas, TRUE), V1 := NA])[[1L]]
+    ans = (setDT(list(ans))[which_(nas, TRUE), V1 := NA])[[1L]]
   } else if (is.na(na.last)) {
     ans = ans[which_(nas, FALSE)]
   }
