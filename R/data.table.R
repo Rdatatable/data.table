@@ -2944,7 +2944,7 @@ isReallyReal <- function(x) {
     if (!operator %chin% c("%in%", "%chin%")) {
       # addional requirements for notjoin and NA values. Behaviour is different for %in%, %chin% compared to other operators
       # RHS is of length=1 or n
-      if (any_na(as_list(RHS))) {
+      if (anyNA(RHS)) {
         ## dt[x == NA] or dt[x <= NA] will always return empty
         notjoin = FALSE
         RHS = RHS[0L]
