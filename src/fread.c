@@ -1380,7 +1380,14 @@ int freadMain(freadMainArgs _args) {
   }
   else if (args.skipNrow >= 0) {
     // Skip the first `skipNrow` lines of input, including 0 to force the first line to be the start
-    while (ch<eof && row1line<=args.skipNrow) row1line+=(*ch++=='\n');
+    while (ch < eof && row1line <= args.skipNrow) {
+      char c = *ch++;
+      if (c == '\n' || c == '\r') {
+        ch += (ch < eof && c + ch[0] == '\n' + '\r');
+        row1line++;
+      }
+    }
+    if (ch > sof && verbose) DTPRINT("  Skipped to line %llu in the file", (llu)row1line);
     if (ch>=eof) STOP("skip=%llu but the input only has %llu line%s", (llu)args.skipNrow, (llu)row1line, row1line>1?"s":"");
     pos = ch;
   }
