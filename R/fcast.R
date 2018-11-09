@@ -195,13 +195,9 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
     } else {
       lhs_ = if (!drop[1L]) cj_uniq(lhs) else setkey(unique(lhs, by=names(lhs)))
       rhs_ = if (!drop[2L]) cj_uniq(rhs) else setkey(unique(rhs, by=names(rhs)))
-      map = vector("list", 2L)
-      .Call(Csetlistelt, map, 1L, lhs_[lhs, which=TRUE])
-      .Call(Csetlistelt, map, 2L, rhs_[rhs, which=TRUE])
+      map = list(lhs_[lhs, which=TRUE], rhs_[rhs, which=TRUE])
       setDT(map)
-      mapunique = vector("list", 2L)
-      .Call(Csetlistelt, mapunique, 1L, seq_len(nrow(lhs_)))
-      .Call(Csetlistelt, mapunique, 2L, seq_len(nrow(rhs_)))
+      mapunique = list(seq_len(nrow(lhs_)), seq_len(nrow(rhs_)))
       lhs = lhs_; rhs = rhs_
     }
     maplen = vapply_1i(mapunique, length)

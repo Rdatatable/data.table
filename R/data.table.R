@@ -1164,11 +1164,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
               if (is.list(k)) {
                 origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
                 if (is.character(j)) {
-                  if (length(j)!=1L) stop("L[[i]][,:=] syntax only valid when i is length 1, but it's length %d",length(j))
+                  if (length(j)!=1L) stop("L[[i]][,:=] syntax only valid when i is length 1, but its length is %d",length(j))
                   j = match(j, names(k))
                   if (is.na(j)) stop("Item '",origj,"' not found in names of list")
                 }
-                .Call(Csetlistelt,k,as.integer(j), x)
+                .Call(Csetlistelt,k,as.integer(j), x)  # needs to be Csetlistelt to achieve the by-reference assign
               } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
                 assign(as.character(name[[3L]]), x, k, inherits=FALSE)
               }
@@ -2589,12 +2589,10 @@ setcolorder <- function(x, neworder=key(x))
 
 set <- function(x,i=NULL,j,value)  # low overhead, loopable
 {
-  if (is.atomic(value)) {
-    # protect NAMED of atomic value from .Call's NAMED=2 by wrapping with list()
-    l = vector("list", 1L)
-    .Call(Csetlistelt,l,1L,value)  # to avoid the copy by list() in R < 3.1.0
-    value = l
-  }
+  # value used to be wrapped with list() here (using Csetlistelt to avoid list() copy with R<3.1.0) with following comment :
+  #   "protect NAMED of atomic value from .Call's NAMED=2 by wrapping with list()"
+  # Should no longer be necessary since R 3.1.0
+
   .Call(Cassign,x,i,j,NULL,value,FALSE)   #  verbose=FALSE for speed to avoid getOption()  TO DO: somehow read getOption("datatable.verbose") from C level
   invisible(x)
 }
@@ -2777,7 +2775,7 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
             stop("Item '", origj, "' not found in names of input list")
         }
       }
-      .Call(Csetlistelt,k,as.integer(j), x)
+      .Call(Csetlistelt,k,as.integer(j), x)  # needs to be Csetlistelt to achieve the by-reference assign
     } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
       assign(as.character(name[[3L]]), x, k, inherits=FALSE)
     }
