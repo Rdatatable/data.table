@@ -14,8 +14,8 @@ x = 1:6/2
 ans1 = frollmean(x, 3)
 ans2 = frollmean(x, 3, exact=TRUE)
 expected = c(rep(NA_real_,2), seq(1,2.5,0.5))
-test(9999.4, ans1, expected)
-test(9999.4, ans2, expected)
+test(9999.001, ans1, expected)
+test(9999.002, ans2, expected)
 
 #### multiple columns at once
 d = as.data.table(list(1:6/2, 3:8/4))
@@ -25,8 +25,8 @@ expected = list(
   c(rep(NA_real_,2), seq(1,2.5,0.5)),
   c(rep(NA_real_,2), seq(1,1.75,0.25))
 )
-test(9999.1, ans1, expected)
-test(9999.1, ans2, expected)
+test(9999.003, ans1, expected)
+test(9999.004, ans2, expected)
 
 #### multiple windows at once
 ans1 = frollmean(d[, .(V1)], c(3, 4))
@@ -35,8 +35,8 @@ expected = list(
   c(rep(NA_real_,2), seq(1,2.5,0.5)),
   c(rep(NA_real_,3), seq(1.25,2.25,0.5))
 )
-test(9999.1, ans1, expected)
-test(9999.1, ans2, expected)
+test(9999.005, ans1, expected)
+test(9999.006, ans2, expected)
 
 #### multiple columns and multiple windows at once
 ans1 = frollmean(d, c(3, 4))
@@ -45,8 +45,8 @@ expected = list(
   c(rep(NA_real_,2), seq(1,2.5,0.5)), c(rep(NA_real_,3), seq(1.25,2.25,0.5)),
   c(rep(NA_real_,2), seq(1,1.75,0.25)), c(rep(NA_real_,3), seq(1.125,1.625,0.25))
 )
-test(9999.1, ans1, expected)
-test(9999.1, ans2, expected)
+test(9999.007, ans1, expected)
+test(9999.008, ans2, expected)
 
 #### in x integer converted to double
 di = data.table(real=1:10/2, int=1:10)
@@ -55,33 +55,33 @@ expected = list(
   c(rep(NA_real_,2), seq(1,4.5,0.5)),
   c(rep(NA_real_,2), seq(2,9,1))
 )
-test(9999.99, ans, expected)
+test(9999.009, ans, expected)
 
 #### in n double converted to integer
 x = 1:3/2
 n = 2
-test(9999.99, frollmean(x, n), c(NA, 0.75, 1.25))
+test(9999.010, frollmean(x, n), c(NA, 0.75, 1.25))
 n = list(c(2L,1L,2L), c(2,1,2))
-test(9999.99, frollmean(x, n, adaptive=TRUE), list(c(NA, 1, 1.25), c(NA, 1, 1.25)))
+test(9999.011, frollmean(x, n, adaptive=TRUE), list(c(NA, 1, 1.25), c(NA, 1, 1.25)))
 
 #### error on unsupported type
 dx = data.table(real=1:10/2, char=letters[1:10])
-test(9999.99, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
+test(9999.012, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
 dx = data.table(real=1:10/2, fact=factor(letters[1:10]))
-test(9999.99, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
+test(9999.013, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
 dx = data.table(real=1:10/2, logi=logical(10))
-test(9999.99, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
+test(9999.014, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
 dx = data.table(real=1:10/2, list=rep(list(NA), 10))
-test(9999.99, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
+test(9999.015, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types")
 x = letters[1:10]
-test(9999.99, frollmean(x, 3), error="x must be of type numeric")
+test(9999.016, frollmean(x, 3), error="x must be of type numeric")
 x = 1:10/2
-test(9999.99, frollmean(x, "a"), error="n must be integer")
-test(9999.99, frollmean(x, factor("a")), error="n must be integer")
-test(9999.99, frollmean(x, TRUE), error="n must be integer")
-test(9999.99, frollmean(x, list(1:10)), error="n must be integer, list is accepted for adaptive TRUE")
-test(9999.99, frollmean(x, list(NA), adaptive=TRUE), error="n must be integer vector or list of integer vectors")
-test(9999.99, frollmean(x, list(c(1:5,1:5), NA), adaptive=TRUE), error="n must be integer vector or list of integer vectors")
+test(9999.017, frollmean(x, "a"), error="n must be integer")
+test(9999.018, frollmean(x, factor("a")), error="n must be integer")
+test(9999.019, frollmean(x, TRUE), error="n must be integer")
+test(9999.020, frollmean(x, list(1:10)), error="n must be integer, list is accepted for adaptive TRUE")
+test(9999.021, frollmean(x, list(NA), adaptive=TRUE), error="n must be integer vector or list of integer vectors")
+test(9999.022, frollmean(x, list(c(1:5,1:5), NA), adaptive=TRUE), error="n must be integer vector or list of integer vectors")
 
 #### various length list vectors
 l = list(1:6/2, 3:10/4)
@@ -90,7 +90,7 @@ expected = list(
   c(rep(NA_real_,2), seq(1,2.5,0.5)), c(rep(NA_real_,3), seq(1.25,2.25,0.5)),
   c(rep(NA_real_,2), seq(1,2.25,0.25)), c(rep(NA_real_,3), seq(1.125,2.125,0.25))
 )
-test(9999.5, ans, expected)
+test(9999.023, ans, expected)
 
 #### exact
 set.seed(108)
@@ -118,10 +118,10 @@ anserr = list(
   fastma = ans2-ans1
 )
 errs = sapply(lapply(anserr, abs), sum, na.rm=TRUE)
-test(9999.99, errs[["froll_exact_t"]]==0)
-test(9999.99, errs[["froll_exact_f"]]>errs[["froll_exact_t"]])
-test(9999.99, errs[["fastma"]]>errs[["froll_exact_t"]])
-test(9999.99, errs[["fastma"]]>errs[["froll_exact_f"]])
+test(9999.024, errs[["froll_exact_t"]]==0)
+test(9999.025, errs[["froll_exact_f"]]>errs[["froll_exact_t"]])
+test(9999.026, errs[["fastma"]]>errs[["froll_exact_t"]])
+test(9999.027, errs[["fastma"]]>errs[["froll_exact_f"]])
 
 #### align: right/center/left
 d = as.data.table(list(1:8/2, 3:10/4))
@@ -131,24 +131,24 @@ expected = list(
   c(rep(NA_real_,4), seq(1.5,3,0.5)),
   c(rep(NA_real_,4), seq(1.25,2,0.25))
 )
-test(9999.6, ans1, expected)
-test(9999.6, ans2, expected)
+test(9999.028, ans1, expected)
+test(9999.029, ans2, expected)
 ans1 = frollmean(d, 5, align="center") # x even, n odd
 ans2 = frollmean(d, 5, align="center", exact=TRUE)
 expected = list(
   c(rep(NA_real_, 2), seq(1.5,3,0.5), rep(NA_real_, 2)),
   c(rep(NA_real_, 2), seq(1.25,2,0.25), rep(NA_real_, 2))
 )
-test(9999.6, ans1, expected)
-test(9999.6, ans2, expected)
+test(9999.030, ans1, expected)
+test(9999.031, ans2, expected)
 ans1 = frollmean(d, 6, align="center") # x even, n even
 ans2 = frollmean(d, 6, align="center", exact=TRUE)
 expected = list(
   c(rep(NA_real_, 2), seq(1.75,2.75,0.5), rep(NA_real_,3)),
   c(rep(NA_real_, 2), seq(1.375,1.875,0.25), rep(NA_real_,3))
 )
-test(9999.8, ans1, expected)
-test(9999.8, ans2, expected)
+test(9999.032, ans1, expected)
+test(9999.033, ans2, expected)
 de = rbind(d, data.table(4.5, 2.75))
 ans1 = frollmean(de, 5, align="center") # x odd, n odd
 ans2 = frollmean(de, 5, align="center", exact=TRUE)
@@ -156,24 +156,24 @@ expected = list(
   c(rep(NA_real_, 2), seq(1.5,3.5,0.5), rep(NA_real_, 2)),
   c(rep(NA_real_, 2), seq(1.25,2.25,0.25), rep(NA_real_, 2))
 )
-test(9999.9, ans1, expected)
-test(9999.9, ans2, expected)
+test(9999.034, ans1, expected)
+test(9999.035, ans2, expected)
 ans1 = frollmean(de, 6, align="center") # x odd, n even
 ans2 = frollmean(de, 6, align="center", exact=TRUE)
 expected = list(
   c(rep(NA_real_, 2), seq(1.75,3.25,0.5), rep(NA_real_,3)),
   c(rep(NA_real_, 2), seq(1.375,2.125,0.25), rep(NA_real_,3))
 )
-test(9999.10, ans1, expected)
-test(9999.10, ans2, expected)
+test(9999.036, ans1, expected)
+test(9999.037, ans2, expected)
 ans1 = frollmean(d, 5, align="left")
 ans2 = frollmean(d, 5, align="left", exact=TRUE)
 expected = list(
   c(seq(1.5,3,0.5), rep(NA_real_,4)),
   c(seq(1.25,2,0.25), rep(NA_real_,4))
 )
-test(9999.11, ans1, expected)
-test(9999.11, ans2, expected)
+test(9999.038, ans1, expected)
+test(9999.039, ans2, expected)
 
 #### handling NAs align na.rm
 d = as.data.table(list(1:8/2, 3:10/4))
@@ -184,48 +184,48 @@ expected = list(
   c(rep(NA_real_,4), seq(2,2.5,0.5), rep(NA_real_, 2)),
   c(rep(NA_real_,4), seq(1.5,2,0.25), rep(NA_real_, 1))
 )
-test(9999.6, ans1, expected)
-test(9999.6, ans2, expected)
+test(9999.040, ans1, expected)
+test(9999.041, ans2, expected)
 ans1 = frollmean(d, 3, align="right", na.rm=TRUE)
 ans2 = frollmean(d, 3, align="right", exact=TRUE, na.rm=TRUE)
 expected = list(
   c(rep(NA_real_,2), 1, 1.75, 2, 2.5, 2.75, 3.5),
   c(rep(NA_real_,2), 1.25, 1.375, 1.5, 1.75, 2, 2.125)
 )
-test(9999.6, ans1, expected)
-test(9999.6, ans2, expected)
+test(9999.042, ans1, expected)
+test(9999.043, ans2, expected)
 ans1 = frollmean(d, 3, align="center") # x even, n odd
 ans2 = frollmean(d, 3, align="center", exact=TRUE)
 expected = list(
   c(rep(NA_real_,3), seq(2,2.5,0.5), rep(NA_real_, 3)),
   c(rep(NA_real_,3), seq(1.5,2,0.25), rep(NA_real_, 2))
 )
-test(9999.6, ans1, expected)
-test(9999.6, ans2, expected)
+test(9999.044, ans1, expected)
+test(9999.045, ans2, expected)
 ans1 = frollmean(d, 3, align="center", na.rm=TRUE) # x even, n odd
 ans2 = frollmean(d, 3, align="center", exact=TRUE, na.rm=TRUE)
 expected = list(
   c(rep(NA_real_,1), 1, 1.75, 2, 2.5, 2.75, 3.5, rep(NA_real_,1)),
   c(rep(NA_real_,1), 1.25, 1.375, 1.5, 1.75, 2, 2.125, rep(NA_real_,1))
 )
-test(9999.6, ans1, expected)
-test(9999.6, ans2, expected)
+test(9999.046, ans1, expected)
+test(9999.047, ans2, expected)
 ans1 = frollmean(d, 4, align="center") # x even, n even
 ans2 = frollmean(d, 4, align="center", exact=TRUE)
 expected = list(
   c(rep(NA_real_,3), 2.25, rep(NA_real_, 4)),
   c(rep(NA_real_,3), 1.625, 1.875, rep(NA_real_, 3))
 )
-test(9999.8, ans1, expected)
-test(9999.8, ans2, expected)
+test(9999.048, ans1, expected)
+test(9999.049, ans2, expected)
 ans1 = frollmean(d, 4, align="center", na.rm=TRUE) # x even, n even
 ans2 = frollmean(d, 4, align="center", exact=TRUE, na.rm=TRUE)
 expected = list(
   c(rep(NA_real_,1), 4/3, 2, 2.25, 2.5, 9.5/3, rep(NA_real_,2)),
   c(rep(NA_real_,1), 1.375, 1.5, 1.625, 1.875, 2, rep(NA_real_,2))
 )
-test(9999.8, ans1, expected)
-test(9999.8, ans2, expected)
+test(9999.050, ans1, expected)
+test(9999.051, ans2, expected)
 de = rbind(d, data.table(4.5, 2.75))
 ans1 = frollmean(de, 3, align="center") # x odd, n odd
 ans2 = frollmean(de, 3, align="center", exact=TRUE)
@@ -233,137 +233,137 @@ expected = list(
   c(rep(NA_real_,3), 2, 2.5, rep(NA_real_, 4)),
   c(rep(NA_real_,3), 1.5, 1.75, 2, rep(NA_real_, 3))
 )
-test(9999.9, ans1, expected)
-test(9999.9, ans2, expected)
+test(9999.052, ans1, expected)
+test(9999.053, ans2, expected)
 ans1 = frollmean(de, 3, align="center", na.rm=TRUE) # x odd, n odd
 ans2 = frollmean(de, 3, align="center", exact=TRUE, na.rm=TRUE)
 expected = list(
   c(rep(NA_real_,1), 1, 1.75, 2, 2.5, 2.75, 3.5, 4.25, rep(NA_real_,1)),
   c(rep(NA_real_,1), 1.25, 1.375, 1.5, 1.75, 2, 2.125, 2.5, rep(NA_real_,1))
 )
-test(9999.9, ans1, expected)
-test(9999.9, ans2, expected)
+test(9999.054, ans1, expected)
+test(9999.055, ans2, expected)
 ans1 = frollmean(de, 4, align="center") # x odd, n even
 ans2 = frollmean(de, 4, align="center", exact=TRUE)
 expected = list(
   c(rep(NA_real_, 3), 2.25, rep(NA_real_,5)),
   c(rep(NA_real_, 3), 1.625, 1.875, rep(NA_real_,4))
 )
-test(9999.10, ans1, expected)
-test(9999.10, ans2, expected)
+test(9999.056, ans1, expected)
+test(9999.057, ans2, expected)
 ans1 = frollmean(de, 4, align="center", na.rm=TRUE) # x odd, n even
 ans2 = frollmean(de, 4, align="center", exact=TRUE, na.rm=TRUE)
 expected = list(
   c(rep(NA_real_, 1), 4/3, 2, 2.25, 2.5, 9.5/3, 11.5/3, rep(NA_real_,2)),
   c(rep(NA_real_, 1), 1.375, 1.5, 1.625, 1.875, 2, 7/3, rep(NA_real_,2))
 )
-test(9999.10, ans1, expected)
-test(9999.10, ans2, expected)
+test(9999.058, ans1, expected)
+test(9999.059, ans2, expected)
 ans1 = frollmean(d, 3, align="left")
 ans2 = frollmean(d, 3, align="left", exact=TRUE)
 expected = list(
   c(rep(NA_real_, 2), 2, 2.5, rep(NA_real_,4)),
   c(rep(NA_real_, 2), 1.5, 1.75, 2, rep(NA_real_,3))
 )
-test(9999.11, ans1, expected)
-test(9999.11, ans2, expected)
+test(9999.060, ans1, expected)
+test(9999.061, ans2, expected)
 ans1 = frollmean(d, 3, align="left", na.rm=TRUE)
 ans2 = frollmean(d, 3, align="left", exact=TRUE, na.rm=TRUE)
 expected = list(
   c(1, 1.75, 2, 2.5, 2.75, 3.5, rep(NA_real_,2)),
   c(1.25, 1.375, 1.5, 1.75, 2, 2.125, rep(NA_real_,2))
 )
-test(9999.11, ans1, expected)
-test(9999.11, ans2, expected)
+test(9999.062, ans1, expected)
+test(9999.063, ans2, expected)
 #### handling NAs for NaN output also
 d = as.data.table(list(1:6/2, 3:8/4))
 d[c(2L, 5L), V1:=NA][4:6, V2:=NA]
 ans1 = frollmean(d, 2:3)
 ans2 = frollmean(d, 2:3, exact=TRUE)
 expected = list(c(NA, NA, NA, 1.75, NA, NA), rep(NA_real_, 6), c(NA, 0.875, 1.125, NA, NA, NA), c(NA, NA, 1, NA, NA, NA))
-test(9999.99, ans1, expected)
-test(9999.99, ans2, expected)
+test(9999.064, ans1, expected)
+test(9999.065, ans2, expected)
 ans1 = frollmean(d, 2:3, na.rm=TRUE)
 ans2 = frollmean(d, 2:3, exact=TRUE, na.rm=TRUE)
 expected = list(c(NA, 0.5, 1.5, 1.75, 2, 3), c(NA, NA, 1, 1.75, 1.75, 2.5), c(NA, 0.875, 1.125, 1.25, NaN, NaN), c(NA, NA, 1, 1.125, 1.25, NaN))
-test(9999.99, ans1, expected)
-test(9999.99, ans2, expected)
+test(9999.066, ans1, expected)
+test(9999.067, ans2, expected)
 
 #### fill constant
-test(9999.99, frollmean(1:5, 4, fill=0), c(0, 0, 0, 2.5, 3.5))
-test(9999.99, frollmean(1:5, 4, fill=-5), c(-5, -5, -5, 2.5, 3.5))
-test(9999.99, frollmean(1:5, 4, fill=100), c(100, 100, 100, 2.5, 3.5))
-test(9999.99, frollmean(1:5, 4, fill=Inf), c(Inf, Inf, Inf, 2.5, 3.5))
-test(9999.99, frollmean(1:5, 4, fill=NaN), c(NaN, NaN, NaN, 2.5, 3.5))
+test(9999.068, frollmean(1:5, 4, fill=0), c(0, 0, 0, 2.5, 3.5))
+test(9999.069, frollmean(1:5, 4, fill=-5), c(-5, -5, -5, 2.5, 3.5))
+test(9999.070, frollmean(1:5, 4, fill=100), c(100, 100, 100, 2.5, 3.5))
+test(9999.071, frollmean(1:5, 4, fill=Inf), c(Inf, Inf, Inf, 2.5, 3.5))
+test(9999.072, frollmean(1:5, 4, fill=NaN), c(NaN, NaN, NaN, 2.5, 3.5))
 
 #### fill coercion
-test(9999.99, frollmean(1:3, 2, fill=0), c(0, 1.5, 2.5))
-test(9999.99, frollmean(1:3, 2, fill=0L), c(0, 1.5, 2.5))
-test(9999.99, frollmean(1:3, 2, fill=NA_integer_), c(NA_real_, 1.5, 2.5))
-test(9999.99, frollmean(1:3, 2, fill=1:2), error="fill must be a vector of length 1")
-test(9999.99, frollmean(1:3, 2, fill=NA), c(NA_real_, 1.5, 2.5))
-test(9999.99, frollmean(1:3, 2, fill=TRUE), error="fill must be numeric")
-test(9999.99, frollmean(1:3, 2, fill=FALSE), error="fill must be numeric")
-test(9999.99, frollmean(1:3, 2, fill="a"), error="fill must be numeric")
-test(9999.99, frollmean(1:3, 2, fill=factor("a")), error="fill must be numeric")
-test(9999.99, frollmean(1:3, 2, fill=list(NA)), error="fill must be numeric")
+test(9999.073, frollmean(1:3, 2, fill=0), c(0, 1.5, 2.5))
+test(9999.074, frollmean(1:3, 2, fill=0L), c(0, 1.5, 2.5))
+test(9999.075, frollmean(1:3, 2, fill=NA_integer_), c(NA_real_, 1.5, 2.5))
+test(9999.076, frollmean(1:3, 2, fill=1:2), error="fill must be a vector of length 1")
+test(9999.077, frollmean(1:3, 2, fill=NA), c(NA_real_, 1.5, 2.5))
+test(9999.078, frollmean(1:3, 2, fill=TRUE), error="fill must be numeric")
+test(9999.079, frollmean(1:3, 2, fill=FALSE), error="fill must be numeric")
+test(9999.080, frollmean(1:3, 2, fill="a"), error="fill must be numeric")
+test(9999.081, frollmean(1:3, 2, fill=factor("a")), error="fill must be numeric")
+test(9999.082, frollmean(1:3, 2, fill=list(NA)), error="fill must be numeric")
 
 ## edge cases
 #### length(x)==0
-test(9999.99, frollmean(numeric(0), 2), numeric(0))
-test(9999.99, frollmean(list(1:3, numeric()), 2), list(c(NA_real_, 1.5, 2.5), numeric(0)))
+test(9999.083, frollmean(numeric(0), 2), numeric(0))
+test(9999.084, frollmean(list(1:3, numeric()), 2), list(c(NA_real_, 1.5, 2.5), numeric(0)))
 #### length(n)==0
-test(9999.99, frollmean(1:3, integer()), error="n must be non 0 length")
-test(9999.99, frollmean(list(1:3, 2:4), integer()), error="n must be non 0 length")
+test(9999.085, frollmean(1:3, integer()), error="n must be non 0 length")
+test(9999.086, frollmean(list(1:3, 2:4), integer()), error="n must be non 0 length")
 #### n==0
-test(9999.99, frollmean(1:3, c(2,0)), error="n must be positive integer values")
-test(9999.99, frollmean(list(1:3, 2:4), 0), error="n must be positive integer values")
+test(9999.087, frollmean(1:3, c(2,0)), error="n must be positive integer values")
+test(9999.088, frollmean(list(1:3, 2:4), 0), error="n must be positive integer values")
 #### n<0
-test(9999.99, frollmean(1:3, -2), error="n must be positive integer values")
+test(9999.089, frollmean(1:3, -2), error="n must be positive integer values")
 #### n[[1L]]>0 && n[[2L]]<0
-test(9999.99, frollmean(1:3, c(2, -2)), error="n must be positive integer values")
+test(9999.090, frollmean(1:3, c(2, -2)), error="n must be positive integer values")
 #### n[[1L]]==n[[2L]]
-test(9999.99, frollmean(1:3, c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5)))
-test(9999.99, frollmean(list(1:3, 4:6), c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5), c(NA_real_, 4.5, 5.5), c(NA_real_, 4.5, 5.5)))
+test(9999.091, frollmean(1:3, c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5)))
+test(9999.092, frollmean(list(1:3, 4:6), c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5), c(NA_real_, 4.5, 5.5), c(NA_real_, 4.5, 5.5)))
 #### n>length(x)
-test(9999.99, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
+test(9999.093, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
 #### n==length(x)
-test(9999.99, frollmean(list(1:3, 4:6), 3), list(c(NA_real_, NA_real_, 2), c(NA_real_, NA_real_, 5)))
+test(9999.094, frollmean(list(1:3, 4:6), 3), list(c(NA_real_, NA_real_, 2), c(NA_real_, NA_real_, 5)))
 #### n<length(x[[1L]]) && n>length(x[[2L]])
-test(9999.99, frollmean(list(1:5, 1:2), 3), list(c(NA_real_, NA_real_, 2, 3, 4), c(NA_real_, NA_real_)))
+test(9999.095, frollmean(list(1:5, 1:2), 3), list(c(NA_real_, NA_real_, 2, 3, 4), c(NA_real_, NA_real_)))
 #### n==1
-test(9999.99, frollmean(1:4, 1), as.double(1:4))
-test(9999.99, frollmean(1:4, 1, exact=TRUE), as.double(1:4))
-test(9999.99, frollmean(1:4, 1, align="center"), as.double(1:4))
-test(9999.99, frollmean(1:4, 1, align="center", exact=TRUE), as.double(1:4))
-test(9999.99, frollmean(1:4, 1, align="left"), as.double(1:4))
-test(9999.99, frollmean(1:4, 1, align="left", exact=TRUE), as.double(1:4))
+test(9999.096, frollmean(1:4, 1), as.double(1:4))
+test(9999.097, frollmean(1:4, 1, exact=TRUE), as.double(1:4))
+test(9999.098, frollmean(1:4, 1, align="center"), as.double(1:4))
+test(9999.099, frollmean(1:4, 1, align="center", exact=TRUE), as.double(1:4))
+test(9999.100, frollmean(1:4, 1, align="left"), as.double(1:4))
+test(9999.101, frollmean(1:4, 1, align="left", exact=TRUE), as.double(1:4))
 #### length(x)==1 && n==1
-test(9999.99, frollmean(5, 1), 5)
-test(9999.99, frollmean(list(1, 10, 5), 1), list(1, 10, 5))
-test(9999.99, frollmean(5, 1, align="left"), 5)
-test(9999.99, frollmean(list(1, 10, 5), 1, align="left"), list(1, 10, 5))
-test(9999.99, frollmean(5, 1, align="center"), 5)
-test(9999.99, frollmean(list(1, 10, 5), 1, align="center"), list(1, 10, 5))
+test(9999.102, frollmean(5, 1), 5)
+test(9999.103, frollmean(list(1, 10, 5), 1), list(1, 10, 5))
+test(9999.104, frollmean(5, 1, align="left"), 5)
+test(9999.105, frollmean(list(1, 10, 5), 1, align="left"), list(1, 10, 5))
+test(9999.106, frollmean(5, 1, align="center"), 5)
+test(9999.107, frollmean(list(1, 10, 5), 1, align="center"), list(1, 10, 5))
 #### length(x)==1 && n==2
-test(9999.99, frollmean(5, 2), NA_real_)
-test(9999.99, frollmean(list(1, 10, 5), 2), list(NA_real_, NA_real_, NA_real_))
-test(9999.99, frollmean(5, 2, align="left"), NA_real_)
-test(9999.99, frollmean(list(1, 10, 5), 2, align="left"), list(NA_real_, NA_real_, NA_real_))
-test(9999.99, frollmean(5, 2, align="center"), NA_real_)
-test(9999.99, frollmean(list(1, 10, 5), 2, align="center"), list(NA_real_, NA_real_, NA_real_))
+test(9999.108, frollmean(5, 2), NA_real_)
+test(9999.109, frollmean(list(1, 10, 5), 2), list(NA_real_, NA_real_, NA_real_))
+test(9999.110, frollmean(5, 2, align="left"), NA_real_)
+test(9999.111, frollmean(list(1, 10, 5), 2, align="left"), list(NA_real_, NA_real_, NA_real_))
+test(9999.112, frollmean(5, 2, align="center"), NA_real_)
+test(9999.113, frollmean(list(1, 10, 5), 2, align="center"), list(NA_real_, NA_real_, NA_real_))
 #### n==Inf
-test(9999.99, frollmean(1:5, Inf), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
+test(9999.114, frollmean(1:5, Inf), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
 #### n==c(5, Inf)
-test(9999.99, frollmean(1:5, c(5, Inf)), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
+test(9999.115, frollmean(1:5, c(5, Inf)), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
 #### is.complex(n)
-test(9999.99, frollmean(1:5, 3i), error="n must be integer")
+test(9999.116, frollmean(1:5, 3i), error="n must be integer")
 #### is.character(n)
-test(9999.99, frollmean(1:5, "a"), error="n must be integer")
+test(9999.117, frollmean(1:5, "a"), error="n must be integer")
 #### is.factor(n)
-test(9999.99, frollmean(1:5, as.factor("a")), error="n must be integer")
+test(9999.118, frollmean(1:5, as.factor("a")), error="n must be integer")
 #### is.list(n)
-test(9999.99, frollmean(1:5, list(1:5)), error="n must be integer, list is accepted for adaptive TRUE")
+test(9999.119, frollmean(1:5, list(1:5)), error="n must be integer, list is accepted for adaptive TRUE")
 
 #### non-finite values (NA, NaN, Inf, -Inf)
 ma = function(x, n, na.rm=FALSE, nf.rm=FALSE) {
@@ -377,25 +377,25 @@ ma = function(x, n, na.rm=FALSE, nf.rm=FALSE) {
 n = 4
 x = 1:16
 x[5] = NaN
-test(9999.99, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
+test(9999.120, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
+test(9999.121, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 x[6] = NA
-test(9999.99, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
+test(9999.122, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
+test(9999.123, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 #### test inconsistency of NaN-NA order is consistent to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
 x[5] = NA
 x[6] = NaN
-test(9999.99, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
+test(9999.124, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
+test(9999.125, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 x[5] = Inf
-test(9999.99, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
+test(9999.126, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
+test(9999.127, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 x[6] = -Inf
-test(9999.99, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
+test(9999.128, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
+test(9999.129, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 x[5:7] = c(NA, Inf, -Inf)
-test(9999.99, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-test(9999.99, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
+test(9999.130, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
+test(9999.131, identical(frollmean(x, n, exact=TRUE), ma(x, n)))
 
 #### adaptive window
 ama = function(x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
@@ -413,25 +413,25 @@ ama = function(x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
 
 x = rnorm(1e3)
 n = rep(20L, 1e3) # pseudo adaptive
-test(9999.99, frollmean(x, n[1L]), frollmean(x, n, adaptive=TRUE)) # n auto wrapped in list
-test(9999.99, frollmean(x, n[1L]), frollmean(x, list(n), adaptive=TRUE))
-test(9999.99, frollmean(x, n[1L]), frollmean(x, n, exact=TRUE, adaptive=TRUE))
+test(9999.132, frollmean(x, n[1L]), frollmean(x, n, adaptive=TRUE)) # n auto wrapped in list
+test(9999.133, frollmean(x, n[1L]), frollmean(x, list(n), adaptive=TRUE))
+test(9999.134, frollmean(x, n[1L]), frollmean(x, n, exact=TRUE, adaptive=TRUE))
 
 x = c(1:4,2:5,4:6,5L)
 n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
 ans1 = ama(x, n)
 ans2 = frollmean(x, list(n), adaptive=TRUE)
 ans3 = frollmean(x, list(n), exact=TRUE, adaptive=TRUE)
-test(9999.99, ans1, ans2)
-test(9999.99, ans1, ans3)
+test(9999.135, ans1, ans2)
+test(9999.136, ans1, ans3)
 
 x = data.table(x=x, y=x/2) # multiple columns and multiple windows
 ln = list(n, n+1L)
 ans1 = list(ama(x[[1L]], ln[[1L]]), ama(x[[1L]], ln[[2L]]), ama(x[[2L]], ln[[1L]]), ama(x[[2L]], ln[[2L]]))
 ans2 = frollmean(x, ln, adaptive=TRUE)
 ans3 = frollmean(x, ln, exact=TRUE, adaptive=TRUE)
-test(9999.99, ans1, ans2)
-test(9999.99, ans1, ans3)
+test(9999.137, ans1, ans2)
+test(9999.138, ans1, ans3)
 
 #### adaptive fill
 x = c(1:4,2:5,4:6,5L)
@@ -439,8 +439,8 @@ n = c(2L, 2L, 2L, 5L, 4L, 5L, 1L, 1L, 2L, 3L, 6L, 3L)
 ans1 = ama(x, n, fill=150)
 ans2 = frollmean(x, n, adaptive=TRUE, fill=150)
 ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE, fill=150)
-test(9999.99, ans1, ans2)
-test(9999.99, ans1, ans3)
+test(9999.139, ans1, ans2)
+test(9999.140, ans1, ans3)
 
 #### adaptive na.rm
 x = c(1:4,NA,2:5,NA,4:6,NA,5L)
@@ -448,25 +448,26 @@ n = c(2L, 2L, 2L, 5L, 3L, 4L, 5L, 1L, 2L, 1L, 2L, 4L, 3L, 6L, 3L)
 ans1 = ama(x, n)
 ans2 = frollmean(x, n, adaptive=TRUE)
 ans3 = frollmean(x, n, exact=TRUE, adaptive=TRUE)
-test(9999.99, ans1, ans2)
-test(9999.99, ans1, ans3)
+test(9999.141, ans1, ans2)
+test(9999.142, ans1, ans3)
 ans1 = ama(x, n, na.rm=TRUE)
 ans2 = frollmean(x, n, na.rm=TRUE, adaptive=TRUE)
 ans3 = frollmean(x, n, na.rm=TRUE, exact=TRUE, adaptive=TRUE)
-test(9999.99, ans1, ans2)
-test(9999.99, ans1, ans3)
-#### TODO test 5e9 vector where 3e9 are NAs to confirm uint_fast64_t running NA counter
+test(9999.143, ans1, ans2)
+test(9999.144, ans1, ans3)
+#### TODO interactive test 5e9 vector where 3e9 are NAs to confirm uint_fast64_t running NA counter
 if (FALSE) {
   #x = sample(c(rnorm(2e9), rep(NA_real_, 3e9)))
   #n = sample(c(1e3, 1e4, 1e5), length(x), TRUE)
   #ans = frollmean(x, list(n), adaptive=TRUE)
+  #test(9999.999, x, y)
 }
 
 #### adaptive limitations
-test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, align="right"), c(1, 1.5))
-test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, align="center"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
-test(9999.99, frollmean(1:2, 1:2, adaptive=TRUE, align="left"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
-test(9999.99, frollmean(list(1:2, 1:3), list(1:2), adaptive=TRUE), error="adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame. If you want to call rolling function on list having variable length of elements call it for each field separately")
+test(9999.145, frollmean(1:2, 1:2, adaptive=TRUE, align="right"), c(1, 1.5))
+test(9999.146, frollmean(1:2, 1:2, adaptive=TRUE, align="center"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
+test(9999.147, frollmean(1:2, 1:2, adaptive=TRUE, align="left"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
+test(9999.148, frollmean(list(1:2, 1:3), list(1:2), adaptive=TRUE), error="adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame. If you want to call rolling function on list having variable length of elements call it for each field separately")
 
 #### adaptive exact
 fastama = function(x, n, na.rm, fill=NA) {
@@ -490,9 +491,9 @@ ans1 = ama(x, n)
 ans2 = frollmean(x, n, adaptive=TRUE)
 ans3 = frollmean(x, n, adaptive=TRUE, exact=TRUE)
 ans4 = fastama(x, n)
-test(9999.99, ans1, ans2)
-test(9999.99, ans1, ans3)
-test(9999.99, ans1, ans4)
+test(9999.149, ans1, ans2)
+test(9999.150, ans1, ans3)
+test(9999.151, ans1, ans4)
 
 x = sample(c(rnorm(1e3, 1e2), rnorm(1e1, 1e9, 1e2), abs(rnorm(1e1, 1e-9, 1e-2))))
 n = sample(1:20, length(x), TRUE)
@@ -506,8 +507,8 @@ anserr = list(
   fastama = ans1-ans4
 )
 errs = lapply(lapply(anserr, abs), sum, na.rm=TRUE)
-test(9999.99, errs[["froll_exact_t"]] < errs[["froll_exact_f"]])
-test(9999.99, errs[["froll_exact_t"]] < errs[["fastama"]])
+test(9999.152, errs[["froll_exact_t"]] < errs[["froll_exact_f"]])
+test(9999.153, errs[["froll_exact_t"]] < errs[["fastama"]])
 
 x = sample(c(1:100, 5e9, 5e-9))
 n = sample(1:10, length(x), TRUE)
@@ -521,129 +522,129 @@ anserr = list(
   fastama = ans1-ans4
 )
 errs = lapply(lapply(anserr, abs), sum, na.rm=TRUE)
-test(9999.99, errs[["froll_exact_t"]] < errs[["froll_exact_f"]])
-test(9999.99, errs[["froll_exact_t"]] < errs[["fastama"]])
+test(9999.154, errs[["froll_exact_t"]] < errs[["froll_exact_f"]])
+test(9999.155, errs[["froll_exact_t"]] < errs[["fastama"]])
 
 ## edge cases adaptive
 #### is.integer(n)
-test(9999.99, frollmean(1:5, 1:5, adaptive=TRUE), seq(1,3,0.5))
+test(9999.156, frollmean(1:5, 1:5, adaptive=TRUE), seq(1,3,0.5))
 #### is.integer(n) && length(n)!=length(x)
-test(9999.99, frollmean(1:10, 1:5, adaptive=TRUE), error="length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'")
+test(9999.157, frollmean(1:10, 1:5, adaptive=TRUE), error="length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'")
 #### is.list(n) && length(n[[1L]])!=length(x)
-test(9999.99, frollmean(1:10, list(1:5), adaptive=TRUE), error="length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'")
+test(9999.158, frollmean(1:10, list(1:5), adaptive=TRUE), error="length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'")
 
 #### non-finite values (NA, NaN, Inf, -Inf)
 n = c(4,1,4,5,5,4,6,5,4,4,2,3,4,3,2,4)
 x = 1:16
 x[5] = NaN
-test(9999.99, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
+test(9999.159, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
+test(9999.160, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
 x[6] = NA
-test(9999.99, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
+test(9999.161, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
+test(9999.162, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
 #### test inconsistency of NaN-NA order is consistent to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
 x[5] = NA
 x[6] = NaN
-test(9999.99, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
+test(9999.163, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
+test(9999.164, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
 x[5] = Inf
-test(9999.99, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
+test(9999.165, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
+test(9999.166, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
 x[6] = -Inf
-test(9999.99, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
+test(9999.167, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
+test(9999.168, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
 x[5:7] = c(NA, Inf, -Inf)
-test(9999.99, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-test(9999.99, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
+test(9999.169, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
+test(9999.170, identical(frollmean(x, n, exact=TRUE, adaptive=TRUE), ama(x, n)))
 
 ## test verbose messages
 x = 1:10
 n = 3
-test(9999.99, frollmean(x, n, verbose=TRUE), output=c(
+test(9999.171, frollmean(x, n, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
-  "frollmean: running for input length 10, window 3, align 1, hasna 0, narm 0"))
-test(9999.99, frollmean(list(x, x+1), n, verbose=TRUE), output=c(
+  "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0"))
+test(9999.172, frollmean(list(x, x+1), n, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 2x1",
   "frollfunR: 2 column(s) and 1 window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe",
-  "frollmean: running for input length 10, window 3, align 1, hasna 0, narm 0",
-  "frollmean: running for input length 10, window 3, align 1, hasna 0, narm 0"))
-test(9999.99, frollmean(x, c(n, n+1), verbose=TRUE), output=c(
+  "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
+  "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0"))
+test(9999.173, frollmean(x, c(n, n+1), verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x2",
   "frollfunR: 1 column(s) and 2 window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe",
-  "frollmean: running for input length 10, window 3, align 1, hasna 0, narm 0",
-  "frollmean: running for input length 10, window 4, align 1, hasna 0, narm 0"))
-test(9999.99, frollmean(list(x, x+1), c(n, n+1), verbose=TRUE), output=c(
+  "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
+  "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0"))
+test(9999.174, frollmean(list(x, x+1), c(n, n+1), verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 2x2",
   "frollfunR: 2 column(s) and 2 window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe",
-  "frollmean: running for input length 10, window 3, align 1, hasna 0, narm 0",
-  "frollmean: running for input length 10, window 4, align 1, hasna 0, narm 0"))
-test(9999.99, frollmean(x, n, exact=TRUE, verbose=TRUE), output=c(
+  "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
+  "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0"))
+test(9999.175, frollmean(x, n, exact=TRUE, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollmeanExact: running for input length 10, window 3, hasna 0, narm 0"))
+test(9999.176, frollmean(x, n, align="center", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
-  "frollmeanExact: running for input length 10, window 3, align 1, hasna 0, narm 0"))
-test(9999.99, frollmean(x, n, align="center", verbose=TRUE), output=c(
-  "frollfunR: allocating memory for results 1x1",
-  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
-  "frollmean: running for input length 10, window 3, align 0, hasna 0, narm 0",
+  "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
   "frollmean: align 0, shift answer by -1"))
-test(9999.99, frollmean(x, n, align="left", verbose=TRUE), output=c(
+test(9999.177, frollmean(x, n, align="left", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
-  "frollmean: running for input length 10, window 3, align -1, hasna 0, narm 0",
+  "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
   "frollmean: align -1, shift answer by -2"))
 nn = c(1:4,2:3,1:4)
-test(9999.99, frollmean(x, nn, adaptive=TRUE, verbose=TRUE), output=c(
+test(9999.178, frollmean(x, nn, adaptive=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
-  "frollmeanAdaptive: running for input length 10, hasna 0, narm 0"))
-test(9999.99, frollmean(x, nn, exact=TRUE, adaptive=TRUE, verbose=TRUE), output=c(
+  "fadaptiverollmeanFast: running for input length 10, hasna 0, narm 0"))
+test(9999.179, frollmean(x, nn, exact=TRUE, adaptive=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
-  "frollmeanExactAdaptive: running for input length 10, hasna 0, narm 0"))
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "fadaptiverollmeanExact: running for input length 10, hasna 0, narm 0"))
 
 x[8] = NA
-test(9999.99, frollmean(x, n, verbose=TRUE), output=c(
+test(9999.180, frollmean(x, n, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
-  "frollmean: running for input length 10, window 3, align 1, hasna 0, narm 0",
-  "frollmean: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"))
-test(9999.99, frollmean(x, n, exact=TRUE, verbose=TRUE), output=c(
+  "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
+  "frollmeanFast: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"))
+test(9999.181, frollmean(x, n, exact=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
-  "frollmeanExact: running for input length 10, window 3, align 1, hasna 0, narm 0",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollmeanExact: running for input length 10, window 3, hasna 0, narm 0",
   "frollmeanExact: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run"))
-test(9999.99, frollmean(x, nn, adaptive=TRUE, verbose=TRUE), output=c(
+test(9999.182, frollmean(x, nn, adaptive=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
-  "frollmeanAdaptive: running for input length 10, hasna 0, narm 0",
-  "frollmeanAdaptive: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"))
-test(9999.99, frollmean(x, nn, exact=TRUE, adaptive=TRUE, verbose=TRUE), output=c(
+  "fadaptiverollmeanFast: running for input length 10, hasna 0, narm 0",
+  "fadaptiverollmeanFast: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"))
+test(9999.183, frollmean(x, nn, exact=TRUE, adaptive=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
-  "frollmeanExactAdaptive: running for input length 10, hasna 0, narm 0",
-  "frollmeanExactAdaptive: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run"))
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "fadaptiverollmeanExact: running for input length 10, hasna 0, narm 0",
+  "fadaptiverollmeanExact: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run"))
 
 d = as.data.table(list(1:10/2, 10:1/4))
-test(9999.99, frollmean(d[,1], 3, exact=TRUE, verbose=TRUE), output=c(
+test(9999.184, frollmean(d[,1], 3, exact=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: single column and single window, parallel processing by multiple answers vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
-  "frollmeanExact: running for input length 10, window 3, align 1, hasna 0, narm 0"
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollmeanExact: running for input length 10, window 3, hasna 0, narm 0"
 ))
-test(9999.99, frollmean(d, 3:4, exact=TRUE, verbose=TRUE), output=c(
+test(9999.185, frollmean(d, 3:4, exact=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 2x2",
-  "frollfunR: 2 column(s) and 2 window(s), parallel processing by multiple answers vectors skipped because 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
-  "frollmeanExact: running for input length 10, window 3, align 1, hasna 0, narm 0",
-  "frollmeanExact: running for input length 10, window 4, align 1, hasna 0, narm 0",
-  "frollmeanExact: running for input length 10, window 3, align 1, hasna 0, narm 0",
-  "frollmeanExact: running for input length 10, window 4, align 1, hasna 0, narm 0"
+  "frollfunR: 2 column(s) and 2 window(s), parallel processing by multiple answer vectors skipped because 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollmeanExact: running for input length 10, window 3, hasna 0, narm 0",
+  "frollmeanExact: running for input length 10, window 4, hasna 0, narm 0",
+  "frollmeanExact: running for input length 10, window 3, hasna 0, narm 0",
+  "frollmeanExact: running for input length 10, window 4, hasna 0, narm 0"
 ))
 
 ## validation
 
 set.seed(108)
 makeNA = function(x, ratio=0.1) {id=sample(length(x), as.integer(length(x) * ratio)); x[id]=NA; x}
-num = 9999.9
+num = 9999.9000
 #### against zoo
 if (requireNamespace("zoo", quietly=TRUE)) {
   drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double

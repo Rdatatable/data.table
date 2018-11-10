@@ -160,35 +160,25 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
     LOGICAL(hasna)[0]==TRUE ? 1 :                               // hasna TRUE, might be some NAs
     -1;                                                         // hasna FALSE, there should be no NAs
 
+  unsigned int ialgo = bexact;                                  // 0-fast, 1-exact
+  
   if (nx==1 && nk==1) {                                         // no need to init openmp for single thread call
     if (bverbose) {
       if (!bexact) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped\n");
-      else Rprintf("frollfunR: single column and single window, parallel processing by multiple answers vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe\n");
+      else Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe\n");
     }
     switch (sfun) {
       case MEAN :
-        if (!badaptive) {
-          if (!bexact) frollmean(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bnarm, ihasna, bverbose);
-          else frollmeanExact(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bnarm, ihasna, bverbose);
-        } else {
-          if (!bexact) frollmeanAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
-          else frollmeanExactAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
-        }
+        if (!badaptive) frollmean(ialgo, dx[0], inx[0], dans[0], iik[0], ialign, dfill, bnarm, ihasna, bverbose);
+        else fadaptiverollmean(ialgo, dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
         break;
       case SUM :
-        if (!badaptive) {
-          //if (!bexact) frollsum(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bnarm, ihasna, bverbose);
-          //else frollsumExact(dx[0], inx[0], dans[0], iik[0], ialign, dfill, bnarm, ihasna, bverbose);
-        } else {
-          //if (!bexact) frollsumAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
-          //else frollsumExactAdaptive(dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
-        }
         break;
     }
   } else {
     if (bverbose>0) {
       if (!bexact) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
-      else Rprintf("frollfunR: %d column(s) and %d window(s), parallel processing by multiple answers vectors skipped because 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
+      else Rprintf("frollfunR: %d column(s) and %d window(s), parallel processing by multiple answer vectors skipped because 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
     }
     #pragma omp parallel num_threads((bverbose || bexact) ? 1 : MIN(getDTthreads(), nx*nk))
     {
@@ -197,22 +187,10 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
         for (R_len_t j=0; j<nk; j++) {                            // loop over multiple windows
           switch (sfun) {
             case MEAN :
-              if (!badaptive) {
-                if (!bexact) frollmean(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
-                else frollmeanExact(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
-              } else {
-                if (!bexact) frollmeanAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
-                else frollmeanExactAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
-              }
+              if (!badaptive) frollmean(ialgo, dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
+              else fadaptiverollmean(ialgo, dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
               break;
             case SUM :
-              if (!badaptive) {
-                //if (!bexact) frollsum(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
-                //else frollsumExact(dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
-              } else {
-                //if (!bexact) frollsumAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
-                //else frollsumExactAdaptive(dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
-              }
               break;
           }
         } // end of j-windows loop

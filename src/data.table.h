@@ -153,14 +153,14 @@ int getDTthreads();
 void avoid_openmp_hang_within_fork();
 
 // froll.c
-void frollmean(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
-void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
-void frollmeanAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void frollmeanExactAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-//void frollsum(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
-//void frollsumExact(double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
-//void frollsumAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-//void frollsumExactAdaptive(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void frollmean(unsigned int algo, double *x, uint_fast64_t nx, double *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
+void frollmeanFast(double *x, uint_fast64_t nx, double *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, double fill, bool narm, int hasna, bool verbose);
+
+// frolladaptive.c
+void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
 
 // frollR.c
 SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
