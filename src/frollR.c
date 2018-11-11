@@ -182,7 +182,8 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
       if (!bexact) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
       else Rprintf("frollfunR: %d column(s) and %d window(s), parallel processing by multiple answer vectors skipped because 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
     }
-    #pragma omp parallel num_threads((bverbose || bexact) ? 1 : MIN(getDTthreads(), nx*nk))
+    omp_set_nested(1);
+    #pragma omp parallel num_threads(bverbose ? 1 : MIN(getDTthreads(), nx*nk))
     {
       #pragma omp for schedule(auto) collapse(2)
       for (R_len_t i=0; i<nx; i++) {                              // loop over multiple columns
@@ -198,6 +199,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
         } // end of j-windows loop
       } // end of i-columns loop
     } // end of omp parallel region
+    omp_set_nested(0);
   }
   
   UNPROTECT(protecti);
