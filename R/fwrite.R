@@ -64,6 +64,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
       return(invisible())
     }
   }
+  file <- enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
           row.names, col.names, logical01, dateTimeAs, buffMB, nThread,
           showProgress, verbose)
