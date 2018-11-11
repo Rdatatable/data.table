@@ -288,6 +288,26 @@ ans2 = frollmean(d, 2:3, exact=TRUE, na.rm=TRUE)
 expected = list(c(NA, 0.5, 1.5, 1.75, 2, 3), c(NA, NA, 1, 1.75, 1.75, 2.5), c(NA, 0.875, 1.125, 1.25, NaN, NaN), c(NA, NA, 1, 1.125, 1.25, NaN))
 test(9999.066, ans1, expected)
 test(9999.067, ans2, expected)
+#### early stopping NAs in leading k obs
+test(9999.0671, frollmean(c(1:2,NA,4:10), 4, verbose=TRUE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
+  "frollmeanFast: NA (or other non-finite) value(s) are present in input, skip non-NA attempt to run with extra care for NAs"
+))
+test(9999.0672, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE, verbose=TRUE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmeanFast: running for input length 10, window 4, hasna -1, narm 0",
+  "frollmeanFast: hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, skip non-NA attempt to run with extra care for NAs" # this could be warning but no warns from plain C code
+))
+test(9999.0673, frollmean(c(1:2,NA,4:10), 4, verbose=TRUE, align="center"), c(rep(NA_real_, 4), 5.5, 6.5, 7.5, 8.5, NA, NA), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
+  "frollmeanFast: NA (or other non-finite) value(s) are present in input, skip non-NA attempt to run with extra care for NAs",
+  "frollmean: align 0, shift answer by -2"
+))
 
 #### fill constant
 test(9999.068, frollmean(1:5, 4, fill=0), c(0, 0, 0, 2.5, 3.5))
@@ -327,6 +347,9 @@ test(9999.091, frollmean(1:3, c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 
 test(9999.092, frollmean(list(1:3, 4:6), c(2, 2)), list(c(NA_real_, 1.5, 2.5), c(NA_real_, 1.5, 2.5), c(NA_real_, 4.5, 5.5), c(NA_real_, 4.5, 5.5)))
 #### n>length(x)
 test(9999.093, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
+test(9999.0931, frollmean(list(1:3, 4:6), 4, align="center"), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
+test(9999.0932, frollmean(list(1:3, 4:6), 4, align="left"), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
+test(9999.0933, frollmean(list(1:3, 4:6), 4, verbose=TRUE), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)), output="frollmean: window width longer than input vector, returning all NA vector")
 #### n==length(x)
 test(9999.094, frollmean(list(1:3, 4:6), 3), list(c(NA_real_, NA_real_, 2), c(NA_real_, NA_real_, 5)))
 #### n<length(x[[1L]]) && n>length(x[[2L]])

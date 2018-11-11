@@ -1,7 +1,14 @@
 #include "froll.h"
 
-/* fast adaptive rolling mean routing for different algo
- * adaptive=T: window width is defined for every single observation, so length(k)==length(x)
+/* fast adaptive rolling functions
+ * routes to particular algo
+ */
+
+/* fast adaptive rolling mean - router
+ * algo = 0: fadaptiverollmeanFast
+ *   first pass cumsum based solution, second pass uses cumsum to calculate answer
+ * algo = 1: fadaptiverollmeanExact
+ *   recalculate whole mean for each observation, roundoff correction is adjusted, also support for NaN and Inf
  */
 
 void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
@@ -9,11 +16,10 @@ void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, double *a
   else if (algo==1) fadaptiverollmeanExact(x, nx, ans, k, fill, narm, hasna, verbose);
 }
 
-/* fast adaptive rolling mean
+/* fast adaptive rolling mean - fast
  * when no info on NA (hasNA argument) then assume no NAs run faster version
- * adaptive rollmean implemented as cumsum first pass, then diff cumsum by indexes `i` to `i-k[i]`, for align="right"
- * if NAs detected re-run rollmean implemented as sliding window with NA support
- * apply shift if align!="right"
+ * adaptive rollmean implemented as cumsum first pass, then diff cumsum by indexes `i` to `i-k[i]`
+ * if NAs detected re-run rollmean implemented as cumsum with NA support
  */
 
 void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
@@ -23,20 +29,21 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double *ans, int *k, dou
   // TODO measure speed of cs as long double
   double cs[nx];                                                // cumsum vector
   if (!truehasna) {
-    for (uint_fast64_t i=0; i<nx; i++) {                        // loop on every observation
+    for (uint_fast64_t i=0; i<nx; i++) {                        // loop on every observation to calculate cumsum only
       w += x[i];                                                // cumulate in long double
       cs[i] = (double) w;
     }
     if (R_FINITE((double) w)) {                                 // no need to calc this if NAs detected as will re-calc all below in truehasna==1
-#pragma omp parallel num_threads(verbose ? 1 : MIN(getDTthreads(), nx))
-{
-#pragma omp for schedule(static)
-  for (uint_fast64_t i=0; i<nx; i++) {
-    if (i+1 == k[i]) ans[i] = cs[i]/k[i];                 // current obs window width exactly same as obs position in a vector
-    else if (i+1 > k[i]) ans[i] = (cs[i]-cs[i-k[i]])/k[i];// window width smaller than position so use cumsum to calculate diff
-    else ans[i] = fill;                                   // position in a vector smaller than obs window width - partial window
-  }
-} // end of parallel region
+      int threads = MIN(getDTthreads(), nx);
+      #pragma omp parallel num_threads(threads)
+      {
+        # pragma omp for schedule(static)
+        for (uint_fast64_t i=0; i<nx; i++) {                    // loop over observations to calculate final answer
+          if (i+1 == k[i]) ans[i] = cs[i]/k[i];                 // current obs window width exactly same as obs position in a vector
+          else if (i+1 > k[i]) ans[i] = (cs[i]-cs[i-k[i]])/k[i];// window width smaller than position so use cumsum to calculate diff
+          else ans[i] = fill;                                   // position in a vector smaller than obs window width - partial window
+        }
+      } // end of parallel region
     } else {                                                    // update truehasna flag if NAs detected
       if (verbose) {
         if (hasna==-1) Rprintf("%s: hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n, __func__");
@@ -49,45 +56,53 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double *ans, int *k, dou
   if (truehasna) {
     uint_fast64_t nc = 0;                                       // running NA counter
     uint_fast64_t cn[nx];                                       // cumulative NA counter, used the same way as cumsum
-    for (uint_fast64_t i=0; i<nx; i++) {                        // loop over observations
+    for (uint_fast64_t i=0; i<nx; i++) {                        // loop over observations to calculate cumsum and cum NA counter
       if (R_FINITE(x[i])) w += x[i];                            // add observation to running sum
       else nc++;                                                // increment non-finite counter
       cs[i] = (double) w;                                       // cumsum, na.rm=TRUE always, NAs handled using cum NA counter
       cn[i] = nc;                                               // cum NA counter
     }
-#pragma omp parallel num_threads(verbose ? 1 : MIN(getDTthreads(), nx))
-{
-#pragma omp for schedule(static)
-  for (uint_fast64_t i=0; i<nx; i++) {                      // loop over observations
-    if (i+1 < k[i]) {                                       // partial window
-      ans[i] = fill;
-    } else if (!narm) {                                     // this branch reduce number of branching in narm=1 below
-      if (i+1 == k[i]) {
-        ans[i] = cn[i]>0 ? NA_REAL : cs[i]/k[i];
-      } else if (i+1 > k[i]) {
-        ans[i] = (cn[i] - cn[i-k[i]])>0 ? NA_REAL : (cs[i]-cs[i-k[i]])/k[i];
+    int threads = MIN(getDTthreads(), nx);
+    #pragma omp parallel num_threads(threads)
+    {
+      #pragma omp for schedule(static)
+      for (uint_fast64_t i=0; i<nx; i++) {                      // loop over observations to calculate final answer
+        if (i+1 < k[i]) {                                       // partial window
+          ans[i] = fill;
+        } else if (!narm) {                                     // this branch reduce number of branching in narm=1 below
+          if (i+1 == k[i]) {
+            ans[i] = cn[i]>0 ? NA_REAL : cs[i]/k[i];
+          } else if (i+1 > k[i]) {
+            ans[i] = (cn[i] - cn[i-k[i]])>0 ? NA_REAL : (cs[i]-cs[i-k[i]])/k[i];
+          }
+        } else if (i+1 == k[i]) {                               // window width equal to observation position in vector
+          int thisk = k[i] - ((int) cn[i]);                     // window width taking NAs into account, we assume single window width is int32, cum NA counter can be int64
+          ans[i] = thisk==0 ? R_NaN : cs[i]/thisk;              // handle all obs NAs and na.rm=TRUE
+        } else if (i+1 > k[i]) {                                // window width smaller than observation position in vector
+          int thisk = k[i] - ((int) (cn[i] - cn[i-k[i]]));      // window width taking NAs into account, we assume single window width is int32, cum NA counter can be int64
+          ans[i] = thisk==0 ? R_NaN : (cs[i]-cs[i-k[i]])/thisk; // handle all obs NAs and na.rm=TRUE
+        }
       }
-    } else if (i+1 == k[i]) {                               // window width equal to observation position in vector
-      int thisk = k[i] - ((int) cn[i]);                     // window width taking NAs into account
-      ans[i] = thisk==0 ? R_NaN : cs[i]/thisk;              // handle all obs NAs and na.rm=TRUE
-    } else if (i+1 > k[i]) {                                // window width smaller than observation position in vector
-      int thisk = k[i] - ((int) (cn[i] - cn[i-k[i]]));      // window width taking NAs into account
-      ans[i] = thisk==0 ? R_NaN : (cs[i]-cs[i-k[i]])/thisk; // handle all obs NAs and na.rm=TRUE
-    }
-  }
-} // end of parallel region
+    } // end of parallel region
   } // end of truehasna
 }
+
+/* fast adaptive rolling mean exact
+ * extra nested loop to calculate mean of each obs and error correction
+ * requires much more cpu
+ * uses multiple cores
+ */
 
 void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose) Rprintf("%s: running for input length %lu, hasna %d, narm %d\n", __func__, nx, hasna, (int) narm);
   volatile bool truehasna = hasna>0;                            // flag to re-run if NAs detected
   
   if (!truehasna || !narm) {
-    #pragma omp parallel num_threads(verbose ? 1 : MIN(getDTthreads(), nx)) shared(truehasna)
+    int threads = MIN(getDTthreads(), nx);
+    #pragma omp parallel num_threads(threads) shared(truehasna)
     {
-    #pragma omp for schedule(static)
-      for (uint_fast64_t i=0; i<nx; i++) {                      // loop on every observation
+      #pragma omp for schedule(static)
+      for (uint_fast64_t i=0; i<nx; i++) {                      // loop on every observation to produce final answer
         if (narm && truehasna) continue;                        // if NAs detected no point to continue
         if (i+1 < k[i]) ans[i] = fill;                          // position in a vector smaller than obs window width - partial window
         else {
@@ -120,10 +135,11 @@ void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double *ans, int *k, do
     }
   }
   if (truehasna && narm) {
-    #pragma omp parallel num_threads(verbose ? 1 : MIN(getDTthreads(), nx))
+    int threads = MIN(getDTthreads(), nx);
+    #pragma omp parallel num_threads(threads)
     {
       #pragma omp for schedule(static)
-      for (uint_fast64_t i=0; i<nx; i++) {                      // loop over observations
+      for (uint_fast64_t i=0; i<nx; i++) {                      // loop over observations to produce final answer
         if (i+1 < k[i]) ans[i] = fill;                          // partial window
         else {
           long double w = 0.0;                                  // window to accumulate values in particular window
