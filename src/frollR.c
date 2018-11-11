@@ -30,16 +30,16 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
       }
     }
   }
-  R_len_t nx=length(x);
+  R_len_t nx=length(x);                                         // number of columns to roll on
   
-  R_len_t nk=length(k);
-  if (nk == 0)                                                  // check that window is non zero length
+  if (length(k) == 0)                                           // check that window is non zero length
     error("n must be non 0 length");
 
   if (!isLogical(adaptive) || length(adaptive) != 1 || LOGICAL(adaptive)[0] == NA_LOGICAL)
     error("adaptive must be logical TRUE or FALSE");
   bool badaptive = LOGICAL(adaptive)[0];
   
+  R_len_t nk;                                                   // number of rolling windows, for adaptive might be atomic to be wrapped into list
   SEXP ik = R_NilValue;                                         // holds integer window width, if doing non-adaptive roll fun
   SEXP kl = R_NilValue;                                         // holds adaptive window width, if doing adaptive roll fun
   if (!badaptive) {                                             // validating n input for adaptive=FALSE
@@ -54,6 +54,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
       error("n must be integer");
     }
     
+    nk = length(k);
     R_len_t i=0;                                                // check that all window values positive
     while (i < nk && INTEGER(ik)[i] > 0) i++;
     if (i != nk)
@@ -70,6 +71,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
       }
       nk = 1;
     } else {
+      nk = length(k);
       kl = PROTECT(allocVector(VECSXP, nk)); protecti++;
       for (R_len_t i=0; i<nk; i++) {
         if (isInteger(VECTOR_ELT(k, i))) {
