@@ -106,6 +106,8 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
       on.exit(unlink(decompFile), add=TRUE)
     }
+    file = enc2native(file) # CfreadR cannot handle UTF-8 if that is not the native encoding, see #3078.
+
     input = file
   }
   if (!missing(autostart)) warning("'autostart' is now deprecated and ignored. Consider skip='string' or skip=n");
