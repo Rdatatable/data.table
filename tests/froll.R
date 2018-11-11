@@ -5,7 +5,7 @@ if (!interactive() && !cc.used) {
   test = data.table:::test
   froll = data.table:::froll
 }
-oldDTthreads = setDTthreads(1)
+oldDTthreads = setDTthreads(1) # mimics CRAN check, tested also on 4 cores
 
 ## rolling features
 
@@ -478,12 +478,12 @@ ans2 = frollmean(x, n, na.rm=TRUE, adaptive=TRUE)
 ans3 = frollmean(x, n, na.rm=TRUE, exact=TRUE, adaptive=TRUE)
 test(9999.143, ans1, ans2)
 test(9999.144, ans1, ans3)
-#### TODO interactive test 5e9 vector where 3e9 are NAs to confirm uint_fast64_t running NA counter
+#### interactive test 3e9 vector where 2.5e9 are NAs to confirm uint_fast64_t running NA counter
 if (FALSE) {
-  #x = sample(c(rnorm(2e9), rep(NA_real_, 3e9)))
-  #n = sample(c(1e3, 1e4, 1e5), length(x), TRUE)
-  #ans = frollmean(x, list(n), adaptive=TRUE)
-  #test(9999.999, x, y)
+  x = c(1:3e8, rep(NA_real_, 2.5e9), (3e8+1):5e8)
+  n = rep(c(rep(1e3, 1e3), rep(1e4, 1e3), rep(1e5, 1e3)), 1e6)
+  stopifnot(length(x)==3e9, length(n)==3e9)
+  #ans = frollmean(x, list(n), adaptive=TRUE) # segfault TODO
 }
 
 #### adaptive limitations
@@ -667,25 +667,26 @@ test(9999.185, frollmean(d, 3:4, exact=TRUE, verbose=TRUE), output=c(
 
 set.seed(108)
 makeNA = function(x, ratio=0.1) {id=sample(length(x), as.integer(length(x) * ratio)); x[id]=NA; x}
-num = 9999.9000
+num = 9999.5000 # book 4000 tests for zoo
 #### against zoo
 if (requireNamespace("zoo", quietly=TRUE)) {
   drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
   zoo_compare = function(x, n) {
     num.step = 0.0001
-    #### fun, align, na.rm, exact
+    #### fun, align, na.rm, fill, exact
     for (fun in c("mean")) { # ,"sum"
       for (align in c("right","center","left")) {
         for (na.rm in c(FALSE, TRUE)) {
-          for (exact in c(FALSE, TRUE)) {
-            num <<- num + num.step
-            eval(substitute(
-              test(.num,
-                   froll(.fun, x, n, align=.align, na.rm=.na.rm, exact=.exact),
-                   drollapply(x, n, FUN=.fun, fill=NA, align=.align, na.rm=.na.rm)),
-              
-              list(.num=num, .fun=fun, .align=align, .na.rm=na.rm, .exact=exact)
-            ))
+          for (fill in c(NA_real_, 0)) {
+            for (exact in c(FALSE, TRUE)) {
+              num <<- num + num.step
+              eval(substitute( # so we can have values displayed in output/log rather than variables
+                test(.num,
+                     froll(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, exact=.exact),
+                     drollapply(x, n, FUN=.fun, fill=.fill, align=.align, na.rm=.na.rm)),
+                list(.num=num, .fun=fun, .align=align, .fill=fill, .na.rm=na.rm, .exact=exact)
+              ))
+            }
           }
         }
       }
@@ -720,6 +721,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   zoo_compare(x, n)
 }
 #### adaptive moving average compare
+num = 9999.9000 # 1000 tests should be more than enough
 afun = function(fun, x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
   # adaptive moving average in R
   stopifnot((nx<-length(x))==length(n))
@@ -778,120 +780,6 @@ afun_compare(x, n)
 x = makeNA(rnorm(1e3+1)); n = sample(51, length(x), TRUE)
 afun_compare(x, n)
 rm(num)
-
-if (dev_and_benchmark_area<-FALSE) {
-  
-  # TODO benchmark alt C impl exact=F: tmp<-cumsum(x); (tmp-shift(tmp, k))/k
-  # if faster than current sliding window add add to api
-  
-  if (.Platform$OS.type=="unix") {
-    memgb = as.numeric(system("awk '/MemTotal/ {print $2}' /proc/meminfo", intern=TRUE))/(1024^2)
-    if (memgb > 20) {
-      x = rnorm(2.5e9, 100, 20)
-      ans = sapply(10^(1:6), function(n) {message("doing ", n); system.time(frollmean(x=x, n=n))})
-    }
-  }
-  
-  ## commented to not raise warning on cran check
-  #pkgs = c("microbenchmark","TTR","caTools","RollingWindow","data.table")
-  #if (all(sapply(pkgs, requireNamespace, quietly=TRUE))) {
-  #  set.seed(100)
-  #  nx = 1e2
-  #  n = 1e1
-  #  x = rnorm(nx)
-  #  microbenchmark::microbenchmark(
-  #    times=10, check=function(x) all(sapply(x[-1L], function(xx) isTRUE(all.equal(x[[1L]], xx)))),
-  #    TTR = TTR::runMean(x, n),
-  #    caTools = caTools::runmean(x, n, alg="fast", endrule="NA", align="right"),
-  #    RollingWindow = RollingWindow::RollingMean(x, n)[,1L],
-  #    data.table = data.table::frollmean(x, n)
-  #    #, RcppRoll = RcppRoll::roll_mean(x, n, na.rm=FALSE, fill=NA, align="right")
-  #    #, zoo = zoo::rollmean(x, n, fill=NA, align="right")
-  #  )
-  #}
-
-  ## openmp
-  #library(data.table)
-  x=rnorm(1e8)
-  setDTthreads(1)
-  system.time(ans1<-frollmean(x, 1:10*100))
-  setDTthreads(10)
-  system.time(ans2<-frollmean(x, 1:10*100))
-  all.equal(ans1, ans2)
-  rm(ans1, ans2)
-  invisible(gc())
-
-  ## hasNA TRUE / FALSE
-  #library(data.table)
-  set.seed(108)
-  nx = 1e9
-  n = 1e4
-  nas = 1e5
-  x1 = rnorm(nx)
-  x2 = rnorm(nx)
-  x1n = copy(x1)
-  x1n[sample(nx, nas)] = NA
-  x2n = copy(x2)
-  x2n[sample(nx, nas)] = NA
-    
-  system.time(frollmean(x1, n, hasNA=TRUE))
-  system.time(frollmean(x2, n))
-  system.time(frollmean(x1n, n, hasNA=TRUE))
-  system.time(frollmean(x2n, n))
-  
-  ## # exact TRUE / FALSE
-  ## rsummean = function(x, n) {ans=rep(NA_real_, nx<-length(x)); for(i in n:nx) ans[i]=sum(x[(i-n+1):i])/n; ans}
-  ## rmean = function(x, n) {ans=rep(NA_real_, nx<-length(x)); for(i in n:nx) ans[i]=mean(x[(i-n+1):i]); ans}
-  ## dtmean = function(x, n) sapply(n:length(x), function(i) as.data.table(list(x[(i-n+1):i]))[, mean(V1)]) # no api to data.table fastmean, so `[` required
-  ## nx = 200
-  ## x = rnorm(nx, sd=30) + abs(seq(nx)-nx/4)
-  ## n = 196
-  ## l = list(
-  ##   caTools_R = caTools::runmean(x, n, alg="R", endrule="NA", align="right"),
-  ##   caTools_fast = caTools::runmean(x, n, alg="fast", endrule="NA", align="right"),
-  ##   caTools_C = caTools::runmean(x, n, alg="C", endrule="NA", align="right"),
-  ##   caTools_exact = caTools::runmean(x, n, alg="exact", endrule="NA", align="right"),
-  ##   datatable = frollmean(x, n, exact=FALSE),
-  ##   datatable_exact = frollmean(x, n, exact=TRUE),
-  ##   datatable_fmean = dtmean(x, n),
-  ##   zoo_R_mean = zoo::rollapply(x, n, (mean), fill=NA, align="right"),
-  ##   R_sum_mean = rsummean(x, n),
-  ##   R_mean = rmean(x, n)
-  ## )
-  ## ll = lapply(l, tail, 5)
-  ## validate = which(names(ll)=="R_mean")
-  ## sapply(ll[-validate], function(x) format(sum(abs(x-ll[[validate]])), scientific=FALSE))
-  
-  ## adaptive moving average R
-  ama = function(x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
-    # adaptive moving average in R
-    stopifnot((nx<-length(x))==length(n))
-    if (nf.rm) x[!is.finite(x)] = NA_real_
-    ans = rep(NA_real_, nx)
-    for (i in seq_along(x)) {
-      ans[i] = if (i >= n[i])
-        mean(x[(i-n[i]+1):i], na.rm=na.rm)
-      else as.double(fill)
-    }
-    ans
-  }
-  fastama = function(x, n, na.rm, fill=NA) {
-    if (!missing(na.rm)) stop("fast adaptive moving average implemented in R does not handle NAs, input having NAs will result in incorrect answer so not even try to compare to it")
-    # fast implementation of adaptive moving average in R, in case of NAs incorrect answer
-    stopifnot((nx<-length(x))==length(n))
-    cs = cumsum(x)
-    ans = rep(NA_real_, nx)
-    for (i in seq_along(cs)) {
-      ans[i] = if (i == n[i])
-        cs[i]/n[i]
-      else if (i > n[i])
-        (cs[i]-cs[i-n[i]])/n[i]
-      else as.double(fill)
-    }
-    ans
-  }
-  
-}
 
 setDTthreads(oldDTthreads)
 cat("froll unit tests successfully passed\n")
