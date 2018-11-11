@@ -163,4 +163,4 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double *ans, int *k, dou
 void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double *ans, int *k, double fill, bool narm, int hasna, bool verbose);
 
 // frollR.c
-SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
+SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);

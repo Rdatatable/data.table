@@ -1,6 +1,6 @@
 #include "frollR.h"
 
-SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive, SEXP verbose) {
+SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive, SEXP verbose) {
   int protecti=0;
   if (!isLogical(verbose) || length(verbose)!=1 || LOGICAL(verbose)[0]==NA_LOGICAL)
     error("verbose must be TRUE or FALSE");
@@ -88,9 +88,6 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
   if (badaptive)
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
   
-  if (!isLogical(exact) || length(exact)!=1 || LOGICAL(exact)[0]==NA_LOGICAL)
-    error("exact must be TRUE or FALSE");
-  
   if (!isLogical(narm) || length(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL)
     error("na.rm must be TRUE or FALSE");
 
@@ -154,20 +151,23 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
     error("fill must be numeric");
   }
   
-  bool bexact = LOGICAL(exact)[0];
   bool bnarm = LOGICAL(narm)[0];
   
   int ihasna =                                                  // plain C tri-state boolean as integer
     LOGICAL(hasna)[0]==NA_LOGICAL ? 0 :                         // hasna NA, default, no info about NA
     LOGICAL(hasna)[0]==TRUE ? 1 :                               // hasna TRUE, might be some NAs
     -1;                                                         // hasna FALSE, there should be no NAs
-
-  unsigned int ialgo = bexact;                                  // 0-fast, 1-exact
+  
+  unsigned int ialgo;                                           // decode algo to integer
+  if (!strcmp(CHAR(STRING_ELT(algo, 0)), "fast")) ialgo = 0;    // fast = 0
+  else if (!strcmp(CHAR(STRING_ELT(algo, 0)), "exact")) ialgo = 1; // exact = 1
+  else error("Internal error: invalid algo argument in rolling function, should have been caught before. please report to data.table issue tracker.");
   
   if (nx==1 && nk==1) {                                         // no need to init openmp for single thread call
     if (bverbose) {
-      if (!bexact) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped\n");
-      else Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe\n");
+      if (ialgo==0) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped\n");
+      else if (ialgo==1) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe\n");
+      else error("Internal error: Unhandled algo type in frollfunR function.");
     }
     switch (sfun) {
       case MEAN :
@@ -179,8 +179,9 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP exact, SEXP align, SE
     }
   } else {
     if (bverbose>0) {
-      if (!bexact) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
-      else Rprintf("frollfunR: %d column(s) and %d window(s), parallel processing by multiple answer vectors skipped because 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
+      if (ialgo==0) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
+      else if (ialgo==1) Rprintf("frollfunR: %d column(s) and %d window(s), parallel processing by multiple answer vectors skipped because 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
+      else error("Internal error: Unhandled algo type in frollfunR function.");
     }
     omp_set_nested(1);
     int threads = bverbose ? 1 : MIN(getDTthreads(), nx*nk);

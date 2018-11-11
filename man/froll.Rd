@@ -12,11 +12,8 @@
 }
 
 \usage{
-frollmean(x, n, fill=NA, exact=FALSE, align=c("right", "left",
-  "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
-  verbose=getOption("datatable.verbose"))
-frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
-  "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
+frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
+  "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
   verbose=getOption("datatable.verbose"))
 }
 \arguments{
@@ -24,7 +21,7 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
   \item{n}{ integer vector, for adaptive rolling function also list of
     integer vectors, rolling window size. }
   \item{fill}{ numeric, value to pad by, default \code{NA}. }
-  \item{exact}{ logical, default \code{FALSE}. When set to \code{TRUE}
+  \item{algo}{ character, default \code{"fast"}. When set to \code{"exact"}
     then slower algorithm is used. It suffers less from floating point
     rounding error, perform extra pass to adjust rounding error
     correction and carefully handle all non-finite values. If available
@@ -55,10 +52,10 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
   element must be integer vector of window size corresponding to every
   \code{column[row]} from \code{x}.
 
-  When \code{exact=FALSE} is used then any \code{NaN, +Inf, -Inf} is
+  When \code{algo="fast"} is used then any \code{NaN, +Inf, -Inf} is
   treated as \code{NA}. For precise handling of non-finite values use
-  \code{exact=TRUE}.
-  Argument \code{exact} will make rolling functions to perform extra
+  \code{algo="exact"}.
+  Argument \code{algo="exact"} will make rolling functions to perform extra
   computation for floating point rounding error correction. This is useful
   mostly when when input data has distant outlier. It also handles
   \code{NaN, +Inf, -Inf} consistently to base R.
@@ -72,10 +69,9 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
       list vectors must have equal length. }
   }
 
-  Unless \code{TRUE} functions are computed in parallel when they are run
-  for multiple columns or multiple windows width, see examples. In case of
-  \code{TRUE} multiple columns/windows are computed sequentially because
-  every single \emph{exact} rolling function is already parallelized.
+  When multiple columns or multiple windows width are provided then they
+  are run in parallel. Eventually nested parallelism occurs when
+  \code{algo="exact"}, see examples.
 }
 \value{
   A list except when the input is a \code{vector} and
@@ -92,7 +88,7 @@ frollsum(x, n, fill=NA, exact=FALSE, align=c("right", "left",
     \item{ \code{fill} accept only constant values, no support for
       \emph{na.locf} or other functions. }
     \item{ \code{align} is by default \code{"right"}. }
-    \item{ \code{na.rm} is respected, no need to use \code{frollapply}
+    \item{ \code{na.rm} is respected, no need to use other function
       when having \code{NA} values. }
     \item{ integers are always coerced to double. }
     \item{ when \code{adaptive=FALSE} (default) then \code{n} must be a
@@ -132,7 +128,7 @@ fastma = function(x, n, na.rm) {
 }
 system.time(ans1<-ma(x, n))
 system.time(ans2<-fastma(x, n))
-system.time(ans3<-frollmean(x, n, exact=TRUE)) # parallel using openmp again
+system.time(ans3<-frollmean(x, n, algo="exact")) # parallel using openmp again
 system.time(ans4<-frollmean(x, n))
 anserr = list(
   froll_exact_f = ans4-ans1,
