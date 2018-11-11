@@ -27,7 +27,7 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double *ans, int *k, dou
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
   // TODO measure speed of cs as long double
-  double cs[nx];                                                // cumsum vector
+  double *cs = malloc(nx*sizeof(double));                       // cumsum vector, same as double cs[nx] but no segfault
   if (!truehasna) {
     for (uint_fast64_t i=0; i<nx; i++) {                        // loop on every observation to calculate cumsum only
       w += x[i];                                                // cumulate in long double
@@ -55,7 +55,7 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double *ans, int *k, dou
   }
   if (truehasna) {
     uint_fast64_t nc = 0;                                       // running NA counter
-    uint_fast64_t cn[nx];                                       // cumulative NA counter, used the same way as cumsum
+    uint_fast64_t *cn = malloc(nx*sizeof(uint_fast64_t));       // cumulative NA counter, used the same way as cumsum, same as uint_fast64_t cn[nx] but no segfault
     for (uint_fast64_t i=0; i<nx; i++) {                        // loop over observations to calculate cumsum and cum NA counter
       if (R_FINITE(x[i])) w += x[i];                            // add observation to running sum
       else nc++;                                                // increment non-finite counter
@@ -84,7 +84,9 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double *ans, int *k, dou
         }
       }
     } // end of parallel region
+    free(cn);
   } // end of truehasna
+  free(cs);
 }
 
 /* fast adaptive rolling mean exact

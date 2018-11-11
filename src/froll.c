@@ -171,14 +171,3 @@ void frollmeanExact(double *x, uint_fast64_t nx, double *ans, int k, double fill
     } // end of parallel region
   }
 }
-
-/* fast rolling mean - faster
- * `tmp<-cumsum(x); (tmp-shift(tmp, k))/k`
- * suffers from rounding error
- * unknown NA support yet
- * to confirm: speed and roundoff
- */
-
-void frollmeanFaster(double *x, uint_fast64_t nx, double *ans, int k, double fill, bool narm, int hasna, bool verbose) {
-  return;
-}

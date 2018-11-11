@@ -166,7 +166,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   if (nx==1 && nk==1) {                                         // no need to init openmp for single thread call
     if (bverbose) {
       if (ialgo==0) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped\n");
-      else if (ialgo==1) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe\n");
+      else if (ialgo==1) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel\n");
       else error("Internal error: Unhandled algo type in frollfunR function.");
     }
     switch (sfun) {
@@ -180,7 +180,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   } else {
     if (bverbose>0) {
       if (ialgo==0) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
-      else if (ialgo==1) Rprintf("frollfunR: %d column(s) and %d window(s), parallel processing by multiple answer vectors skipped because 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
+      else if (ialgo==1) Rprintf("frollfunR: %d column(s) and %d window(s), parallel processing by multiple answer vectors skipped because 'exact' version of rolling function will compute results in parallel\n", nx, nk);
       else error("Internal error: Unhandled algo type in frollfunR function.");
     }
     omp_set_nested(1);

@@ -604,7 +604,7 @@ test(9999.174, frollmean(list(x, x+1), c(n, n+1), verbose=TRUE), output=c(
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0"))
 test(9999.175, frollmean(x, n, algo="exact", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel",
   "frollmeanExact: running for input length 10, window 3, hasna 0, narm 0"))
 test(9999.176, frollmean(x, n, align="center", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
@@ -623,7 +623,7 @@ test(9999.178, frollmean(x, nn, adaptive=TRUE, verbose=TRUE), output=c(
   "fadaptiverollmeanFast: running for input length 10, hasna 0, narm 0"))
 test(9999.179, frollmean(x, nn, algo="exact", adaptive=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel",
   "fadaptiverollmeanExact: running for input length 10, hasna 0, narm 0"))
 
 x[8] = NA
@@ -634,7 +634,7 @@ test(9999.180, frollmean(x, n, verbose=TRUE), output=c(
   "frollmeanFast: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"))
 test(9999.181, frollmean(x, n, algo="exact", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel",
   "frollmeanExact: running for input length 10, window 3, hasna 0, narm 0",
   "frollmeanExact: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run"))
 test(9999.182, frollmean(x, nn, adaptive=TRUE, verbose=TRUE), output=c(
@@ -644,19 +644,19 @@ test(9999.182, frollmean(x, nn, adaptive=TRUE, verbose=TRUE), output=c(
   "fadaptiverollmeanFast: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"))
 test(9999.183, frollmean(x, nn, algo="exact", adaptive=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel",
   "fadaptiverollmeanExact: running for input length 10, hasna 0, narm 0",
   "fadaptiverollmeanExact: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run"))
 
 d = as.data.table(list(1:10/2, 10:1/4))
 test(9999.184, frollmean(d[,1], 3, algo="exact", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel",
   "frollmeanExact: running for input length 10, window 3, hasna 0, narm 0"
 ))
 test(9999.185, frollmean(d, 3:4, algo="exact", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 2x2",
-  "frollfunR: 2 column(s) and 2 window(s), parallel processing by multiple answer vectors skipped because 'exact' version of rolling function will compute results in parallel, but actually single threaded due to enabled verbose which is not thread safe",
+  "frollfunR: 2 column(s) and 2 window(s), parallel processing by multiple answer vectors skipped because 'exact' version of rolling function will compute results in parallel",
   "frollmeanExact: running for input length 10, window 3, hasna 0, narm 0",
   "frollmeanExact: running for input length 10, window 4, hasna 0, narm 0",
   "frollmeanExact: running for input length 10, window 3, hasna 0, narm 0",
