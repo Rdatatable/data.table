@@ -32,7 +32,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   }
   R_len_t nx=length(x);                                         // number of columns to roll on
   
-  if (length(k) == 0)                                           // check that window is non zero length
+  if (xlength(k) == 0)                                          // check that window is non zero length
     error("n must be non 0 length");
 
   if (!isLogical(adaptive) || length(adaptive) != 1 || LOGICAL(adaptive)[0] == NA_LOGICAL)

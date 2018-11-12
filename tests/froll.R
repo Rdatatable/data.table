@@ -480,10 +480,17 @@ test(9999.143, ans1, ans2)
 test(9999.144, ans1, ans3)
 #### interactive test 3e9 vector where 2.5e9 are NAs to confirm uint_fast64_t running NA counter
 if (FALSE) {
-  x = c(1:3e8, rep(NA_real_, 2.5e9), (3e8+1):5e8)
-  n = rep(c(rep(1e3, 1e3), rep(1e4, 1e3), rep(1e5, 1e3)), 1e6)
+  x = c(rep(1, 3e8), rep(NA_real_, 2.5e9), rep(1, 2e8))
+  n1 = 1e3; n2 = 1e4
+  n = c(rep(n1, 1.5e9), rep(n2, 1.5e9))
   stopifnot(length(x)==3e9, length(n)==3e9)
-  #ans = frollmean(x, list(n), adaptive=TRUE) # segfault TODO
+  ans = frollmean(x, list(n), adaptive=TRUE)
+  stopifnot(
+    all.equal(ans[1:(n1+1)], c(rep(NA_real_, n1-1), 1, 1)),
+    all.equal(ans[3e8+(-1:1)], c(1, 1, NA)),
+    all.equal(ans[2.8e9+n2+(-1:1)], c(NA_real_, 1, 1)),
+    all.equal(ans[(3e9-n2):3e9], rep(1, n2+1))
+  )
 }
 
 #### adaptive limitations
