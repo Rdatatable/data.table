@@ -45,7 +45,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
           thisk = (xrows >= INTEGER(k)[j]) ? INTEGER(k)[j] : xrows;
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(INTSXP, xrows) );
           if (xrows - INTEGER(k)[j] > 0)
-            memcpy((char *)DATAPTR(tmp)+(INTEGER(k)[j]*size),
+            memmove((char *)DATAPTR(tmp)+(INTEGER(k)[j]*size),
                  (char *)DATAPTR(elem),
                  (xrows-INTEGER(k)[j])*size);
           for (m=0; m<thisk; m++)
@@ -71,7 +71,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
           thisk = (xrows >= INTEGER(k)[j]) ? INTEGER(k)[j] : xrows;
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows) );
           if (xrows - INTEGER(k)[j] > 0) {
-            memcpy((char *)DATAPTR(tmp)+(INTEGER(k)[j]*size),
+            memmove((char *)DATAPTR(tmp)+(INTEGER(k)[j]*size),
                  (char *)DATAPTR(elem),
                  (xrows-INTEGER(k)[j])*size);
           }
@@ -88,7 +88,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
           thisk = (xrows >= INTEGER(k)[j]) ? INTEGER(k)[j] : xrows;
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(LGLSXP, xrows) );
           if (xrows - INTEGER(k)[j] > 0)
-            memcpy((char *)DATAPTR(tmp)+(INTEGER(k)[j]*size),
+            memmove((char *)DATAPTR(tmp)+(INTEGER(k)[j]*size),
                  (char *)DATAPTR(elem),
                  (xrows-INTEGER(k)[j])*size);
           for (m=0; m<thisk; m++)
@@ -136,7 +136,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
           thisk = (xrows >= INTEGER(k)[j]) ? INTEGER(k)[j] : xrows;
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(INTSXP, xrows) );
           if (xrows - INTEGER(k)[j] > 0)
-            memcpy((char *)DATAPTR(tmp),
+            memmove((char *)DATAPTR(tmp),
                  (char *)DATAPTR(elem)+(INTEGER(k)[j]*size),
                  (xrows-INTEGER(k)[j])*size);
           for (m=xrows-thisk; m<xrows; m++)
@@ -162,7 +162,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
           thisk = (xrows >= INTEGER(k)[j]) ? INTEGER(k)[j] : xrows;
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows));
           if (xrows - INTEGER(k)[j] > 0)
-            memcpy((char *)DATAPTR(tmp),
+            memmove((char *)DATAPTR(tmp),
                  (char *)DATAPTR(elem)+(INTEGER(k)[j]*size),
                  (xrows-INTEGER(k)[j])*size);
           for (m=xrows-thisk; m<xrows; m++)
@@ -177,7 +177,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
           thisk = (xrows >= INTEGER(k)[j]) ? INTEGER(k)[j] : xrows;
           SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(LGLSXP, xrows) );
           if (xrows - INTEGER(k)[j] > 0)
-            memcpy((char *)DATAPTR(tmp),
+            memmove((char *)DATAPTR(tmp),
                  (char *)DATAPTR(elem)+(INTEGER(k)[j]*size),
                  (xrows-INTEGER(k)[j])*size);
           for (m=xrows-thisk; m<xrows; m++)
