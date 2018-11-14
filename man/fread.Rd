@@ -118,7 +118,8 @@ Background :\cr
 
 finagler = "to get or achieve by guile or manipulation" \url{http://dictionary.reference.com/browse/finagler}
 }
-\seealso{ \code{\link[utils:read.table]{read.csv}}, \code{\link[base:connections]{url}}, \code{\link[base:locales]{Sys.setlocale}}
+\seealso{
+  \code{\link[utils:read.table]{read.csv}}, \code{\link[base:connections]{url}}, \code{\link[base:locales]{Sys.setlocale}}, \code{\link{setDTthreads}}, \code{\link{fwrite}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
 }
 \examples{
 \dontrun{
