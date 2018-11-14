@@ -2511,6 +2511,7 @@ setnames <- function(x,old,new,skip_absent=FALSE) {
   # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
   if (!is.data.frame(x)) stop("x is not a data.table or data.frame")
   if (length(names(x)) != length(x)) stop("dt is length ",length(dt)," but its names are length ",length(names(x)))
+  stopifnot(isTRUE(skip_absent) || identical(skip_absent,FALSE))
   if (missing(new)) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
     if (!is.character(old)) stop("Passed a vector of type '",typeof(old),"'. Needs to be type 'character'.")
@@ -2547,7 +2548,7 @@ setnames <- function(x,old,new,skip_absent=FALSE) {
           new = new[w]
           i = i[w]
         } else {
-          stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","))
+          stop("Items of 'old' not found in column names: ",paste(old[is.na(i)],collapse=","), ". Consider skip_absent=TRUE.")
         }
       }
       if (any(tt<-!is.na(chmatch(old,names(x)[-i])))) stop("Some items of 'old' are duplicated (ambiguous) in column names: ",paste(old[tt],collapse=","))
