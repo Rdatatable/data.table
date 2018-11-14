@@ -19,7 +19,8 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   # in the test suite when user runs test.data.table() from installed package AND ii) so that in dev the same
   # tests can be used but in dev they test the package in .GlobalEnv. If we used ::: throughout tests, that
   # would pick up the installed version and in dev you'd have to reinstall every time which slows down dev.
-  # NB: The string "data.table:::" should exist nowhere else in this file other than here inside this branch.
+  # NB: The string "data.table::" (which covers "data.table:::" too) should exist nowhere else in this file
+  #      other than here inside this branch.
 
   test = data.table:::test
   INT = data.table:::INT
@@ -50,11 +51,11 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   as.IDate.default = data.table:::as.IDate.default
   binary = data.table:::binary
   melt.data.table = data.table:::melt.data.table  # for test 1953.4
+  brackify = data.table:::brackify
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
   # to develop in .GlobalEnv with cc().
-  # NB: The string "data.table::" should exist nowhere else in this file other than here inside this branch.
   # This should be retained even if these packages are removed from Suggests, because the test() in this file
   # checks against a data.table result which needs the data.table one to run. Otherwise the user can be
   # sure by using :: themselves.
@@ -12388,8 +12389,8 @@ test(1956.4, DT[ , .SD, .SDcols = 2L], error = 'out of bounds.*1.*1.*at')
 test(1956.5, DT[ , .SD, .SDcols = 'b'], error = 'not column names')
 
 # added brackify to utils for #3116
-test(1957.1, data.table:::brackify(1:3), '[1, 2, 3]')
-test(1957.2, data.table:::brackify(1:11), "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ...]")
+test(1957.1, brackify(1:3), '[1, 2, 3]')
+test(1957.2, brackify(1:11), "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ...]")
 
 # misc. coverage tests in fread
 test(1958.1, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encoding' must be")
