@@ -24,6 +24,8 @@
 
 2. When `on=` is provided but not `i=`, a helpful error is now produced rather than silently ignoring `on=`. Thanks to Dirk Eddelbuettel for the idea.
 
+3. `.SDcols=` is more helpful when passed non-existent columns, [#3116](https://github.com/Rdatatable/data.table/issues/3116) and [#3118](https://github.com/Rdatatable/data.table/issues/3118). Thanks to Michael Chirico for the investigation and PR.
+
 
 ### Changes in v1.11.8  (30 Sep 2018)
 

@@ -218,7 +218,7 @@ setfactor <- function(x, cols, verbose) {
     setattr(ans, 'class', 'factor')
   }
   if (length(cols)) {
-    if (verbose) cat("Converting column(s) [", paste(names(x)[cols], collapse = ", "), "] from 'char' to 'factor'\n", sep = "")
+    if (verbose) cat("Converting column(s) ", brackify(names(x)[cols]), " from 'char' to 'factor'\n", sep = "")
     for (j in cols) set(x, j = j, value = as_factor(.subset2(x, j)))
   }
   invisible(x)
