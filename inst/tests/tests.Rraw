@@ -19,7 +19,8 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   # in the test suite when user runs test.data.table() from installed package AND ii) so that in dev the same
   # tests can be used but in dev they test the package in .GlobalEnv. If we used ::: throughout tests, that
   # would pick up the installed version and in dev you'd have to reinstall every time which slows down dev.
-  # NB: The string "data.table:::" should exist nowhere else in this file other than here inside this branch.
+  # NB: The string "data.table::" (which covers "data.table:::" too) should exist nowhere else in this file
+  #      other than here inside this branch.
 
   test = data.table:::test
   INT = data.table:::INT
@@ -50,11 +51,11 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   as.IDate.default = data.table:::as.IDate.default
   binary = data.table:::binary
   melt.data.table = data.table:::melt.data.table  # for test 1953.4
+  brackify = data.table:::brackify
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
   # to develop in .GlobalEnv with cc().
-  # NB: The string "data.table::" should exist nowhere else in this file other than here inside this branch.
   # This should be retained even if these packages are removed from Suggests, because the test() in this file
   # checks against a data.table result which needs the data.table one to run. Otherwise the user can be
   # sure by using :: themselves.
@@ -6286,6 +6287,19 @@ if (test_xts) {
   dt.xts <- as.xts.data.table(dt)
   test(1663, dt.xts[1L], xts::xts(data.table(nav=100), order.by=as.Date("2014-12-31")))
 
+  # additional coverage missing uncovered in #3117
+  dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
+  xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
+  test(1465.9, as.data.table(xt, keep.rownames = FALSE), dt[ , !'index'])
+  names(xt)[1L] = 'index'
+  test(1465.10, as.data.table(xt), error = 'Input xts object should not')
+  names(xt)[1L] = 'quantity'
+  setcolorder(dt, c(3, 1, 2))
+  test(1465.11, as.xts(dt), error = 'data.table must have a time based')
+  setcolorder(dt, c(2, 3, 1))
+  dt[ , char_col := 'a']
+  test(1465.12, as.xts(dt), xt, warning = 'columns are not numeric')
+
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
 }
 
@@ -12353,6 +12367,39 @@ test(1953.4, melt.data.table(DT, id.vars = 'id', measure.vars = 'a'),
 # appearance order of two low-cardinality columns that were squashed in pr#3124
 DT = data.table(A=INT(1,3,2,3,2), B=1:5)  # respect groups in 1st column (3's and 2's)
 test(1954, forderv(DT, sort=FALSE, retGrp=TRUE), structure(INT(1,2,4,3,5), starts=1:5, maxgrpn=1L))
+
+# skip values that are not present in old, #3030
+DT <- data.table(a=1, b=2, d=3)
+old <- c("a", "b", "c", "d")
+new <- c("A", "B", "C", "D")
+test(1955.1, setnames(DT, old, new, skip_absent=TRUE), data.table(A=1, B=2, D=3))
+test(1955.2, setnames(DT, old, new, skip_absent=0), error="is not")  # must be TRUE or FALSE
+test(1955.3, setnames(DT, "missing", "dummy", skip_absent=TRUE), DT)  # all missing
+test(1955.4, setnames(DT, c("D","missing","A"), c("dd","ignored","aa"), skip_absent=TRUE), data.table(aa=1, B=2, dd=3))  # different order with a missing
+test(1955.5, setnames(DT, "B", "bb", skip_absent=TRUE), data.table(aa=1, bb=2, dd=3)) # none missing so skip_absent not needed
+test(1955.6, setnames(DT, c("miss1","bb","miss2","dd"), c("A","B","C","D")), error="Items of 'old' not found in column names: miss1,miss2. Consider skip_absent=TRUE")
+test(1955.7, setnames(DT, c("miss1","bb","miss2","dd"), c("A","B","C","D"), skip_absent=TRUE), data.table(aa=1, B=2, D=3))
+
+# #3116 - Better error messages for missing/unmatched .SDcols
+DT = data.table(a = 1:5)
+test(1956.1, DT[, .SD, .SDcols = NA_character_], error = 'missing at the following')
+test(1956.2, DT[, .SD, .SDcols = NA], error = 'missing at the following')
+test(1956.3, DT[, .SD, .SDcols = NA_real_], error = 'missing at the following')
+test(1956.4, DT[, .SD, .SDcols = 2L], error = 'out of bounds.*1.*1.*at')
+test(1956.5, DT[, .SD, .SDcols = 'b'], error = 'not column names')
+test(1956.6, DT[, .SD, .SDcols = 3i], error = '.SDcols should be column numbers or names')
+
+# added brackify to utils for #3116
+test(1957.1, brackify(1:3), '[1, 2, 3]')
+test(1957.2, brackify(1:11), "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ...]")
+test(1957.3, fread("A,B\na,b\nc,d\n", stringsAsFactors=TRUE, verbose=TRUE), data.table(A=factor(c("a","c")), B=factor(c("b","d"))),
+             output="Converting column(s) [A, B] from 'char' to 'factor'")
+
+# misc. coverage tests in fread
+test(1958.1, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encoding' must be")
+test(1958.2, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L))
+test(1958.3, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
+test(1958.4, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
 
 
 ###################################
