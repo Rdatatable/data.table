@@ -12382,15 +12382,18 @@ test(1955.7, setnames(DT, c("miss1","bb","miss2","dd"), c("A","B","C","D"), skip
 
 # #3116 - Better error messages for missing/unmatched .SDcols
 DT = data.table(a = 1:5)
-test(1956.1, DT[ , .SD, .SDcols = NA_character_], error = 'missing at the following')
-test(1956.2, DT[ , .SD, .SDcols = NA], error = 'missing at the following')
-test(1956.3, DT[ , .SD, .SDcols = NA_real_], error = 'missing at the following')
-test(1956.4, DT[ , .SD, .SDcols = 2L], error = 'out of bounds.*1.*1.*at')
-test(1956.5, DT[ , .SD, .SDcols = 'b'], error = 'not column names')
+test(1956.1, DT[, .SD, .SDcols = NA_character_], error = 'missing at the following')
+test(1956.2, DT[, .SD, .SDcols = NA], error = 'missing at the following')
+test(1956.3, DT[, .SD, .SDcols = NA_real_], error = 'missing at the following')
+test(1956.4, DT[, .SD, .SDcols = 2L], error = 'out of bounds.*1.*1.*at')
+test(1956.5, DT[, .SD, .SDcols = 'b'], error = 'not column names')
+test(1956.6, DT[, .SD, .SDcols = 3i], error = '.SDcols should be column numbers or names')
 
 # added brackify to utils for #3116
 test(1957.1, brackify(1:3), '[1, 2, 3]')
 test(1957.2, brackify(1:11), "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ...]")
+test(1957.3, fread("A,B\na,b\nc,d\n", stringsAsFactors=TRUE, verbose=TRUE), data.table(A=factor(c("a","c")), B=factor(c("b","d"))),
+             output="Converting column(s) [A, B] from 'char' to 'factor'")
 
 # misc. coverage tests in fread
 test(1958.1, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encoding' must be")
