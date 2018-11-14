@@ -1018,8 +1018,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             .SDcols = eval(colsub, parent.frame(), parent.frame())
           }
           if (anyNA(.SDcols))
-            stop(".SDcols missing at the following indices: ",
-                 brackify(which(is.na(.SDcols))))
+            stop(".SDcols missing at the following indices: ", brackify(which(is.na(.SDcols))))
           if (is.logical(.SDcols)) {
             ansvals = which_(rep(.SDcols, length.out=length(x)), !colm)
             ansvars = names(x)[ansvals]
@@ -1027,15 +1026,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
             if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
             if (any(idx <- abs(.SDcols)>ncol(x) | abs(.SDcols)<1L))
-              stop(".SDcols is numeric but out of bounds [1, ",
-                   ncol(x), "] at: ", brackify(which(idx)))
+              stop(".SDcols is numeric but out of bounds [1, ", ncol(x), "] at: ", brackify(which(idx)))
             if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
             ansvals = if (colm) setdiff(seq_along(names(x)), c(as.integer(.SDcols), which(names(x) %chin% bynames))) else as.integer(.SDcols)
           } else {
             if (!is.character(.SDcols)) stop(".SDcols should be column numbers or names")
             if (!all(idx <- .SDcols %chin% names(x)))
-              stop("Some items of .SDcols are not column names: ",
-                   brackify(.SDcols[!idx]))
+              stop("Some items of .SDcols are not column names: ", brackify(.SDcols[!idx]))
             if (colm) ansvars = setdiff(setdiff(names(x), .SDcols), bynames) else ansvars = .SDcols
             # dups = FALSE here. DT[, .SD, .SDcols=c("x", "x")] again doesn't really help with which 'x' to keep (and if '-' which x to remove)
             ansvals = chmatch(ansvars, names(x))
