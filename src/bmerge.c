@@ -209,6 +209,12 @@ static union {
 static int mid, tmplow, tmpupp;  // global to save them being added to recursive stack. Maybe optimizer would do this anyway.
 static SEXP ic, xc;
 
+static uint64_t i64twiddle(void *p, int i)
+{
+  return ((uint64_t *)p)[i] ^ 0x8000000000000000;
+  // Always ascending and NA first (0) when used by bmerge
+}
+
 void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax)
 // col is >0 and <=ncol-1 if this range of [xlow,xupp] and [ilow,iupp] match up to but not including that column
 // lowmax=1 if xlowIn is the lower bound of this group (needed for roll)
@@ -216,7 +222,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
 // new: col starts with -1 for non-equi joins, which gathers rows from nested id group counter 'thisgrp'
 {
   int xlow=xlowIn, xupp=xuppIn, ilow=ilowIn, iupp=iuppIn, j, k, ir, lir, tmp;
-  Rboolean isInt64=FALSE;
+  bool isInt64=false;
   ir = lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
   if (o) ir = o[lir]-1;                      // ir = the actual i row if i were ordered
   if (col>-1) {
@@ -329,13 +335,14 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       if (xval.s == ival.s) tmpupp=mid; else ilow=mid;   // see above re ==
     }
     break;
-  case REALSXP :
+  case REALSXP : {
     isInt64 = INHERITS(xc, char_integer64);
-    twiddle = isInt64 ? &i64twiddle : &dtwiddle;
-    ival.ull = twiddle(DATAPTR(ic), ir, 1);
+    uint64_t (*twiddle)(void *, int) = isInt64 ? &i64twiddle : &dtwiddle;
+    // TODO: remove this last remaining use of i64twiddle. remove DATAPTR too.
+    ival.ull = twiddle(DATAPTR(ic), ir);
     while(xlow < xupp-1) {
       mid = xlow + (xupp-xlow)/2;
-      xval.ull = twiddle(DATAPTR(xc), XIND(mid), 1);
+      xval.ull = twiddle(DATAPTR(xc), XIND(mid));
       if (xval.ull<ival.ull) {
         xlow=mid;
       } else if (xval.ull>ival.ull) {
@@ -345,12 +352,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         tmpupp = mid;
         while(tmplow<xupp-1) {
           mid = tmplow + (xupp-tmplow)/2;
-          xval.ull = twiddle(DATAPTR(xc), XIND(mid), 1);
+          xval.ull = twiddle(DATAPTR(xc), XIND(mid));
           if (xval.ull == ival.ull) tmplow=mid; else xupp=mid;
         }
         while(xlow<tmpupp-1) {
           mid = xlow + (tmpupp-xlow)/2;
-          xval.ull = twiddle(DATAPTR(xc), XIND(mid), 1);
+          xval.ull = twiddle(DATAPTR(xc), XIND(mid));
           if (xval.ull == ival.ull) tmpupp=mid; else xlow=mid;
         }
         break;
@@ -380,17 +387,17 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     if (col>-1) {
       while(tmplow<iupp-1) {
         mid = tmplow + (iupp-tmplow)/2;
-        xval.ull = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid, 1 );
+        xval.ull = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid);
         if (xval.ull == ival.ull) tmplow=mid; else iupp=mid;
       }
       while(ilow<tmpupp-1) {
         mid = ilow + (tmpupp-ilow)/2;
-        xval.ull = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid, 1 );
+        xval.ull = twiddle(DATAPTR(ic), o ? o[mid]-1 : mid);
         if (xval.ull == ival.ull) tmpupp=mid; else ilow=mid;
       }
     }
     // ilow and iupp now surround the group in ic, too
-    break;
+  } break;
   default:
     error("Type '%s' not supported as key column", type2char(TYPEOF(xc)));
   }
