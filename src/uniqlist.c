@@ -31,14 +31,14 @@ SEXP uniqlist(SEXP l, SEXP order)
 #define COMPARE1                                                                 \
       prev = *vd;                                                                \
       for (int i=1; i<nrow; i++) {                                               \
-        this = *++vd;                                                            \
-        if (this!=prev
+        elem = *++vd;                                                            \
+        if (elem!=prev
 
 #define COMPARE1_VIA_ORDER                                                       \
       prev = vd[*o -1];                                                          \
       for (int i=1; i<nrow; i++) {                                               \
-        this = vd[*++o -1];                                                      \
-        if (this!=prev
+        elem = vd[*++o -1];                                                      \
+        if (elem!=prev
 
 #define COMPARE2                                                                 \
                         ) {                                                      \
@@ -48,14 +48,14 @@ SEXP uniqlist(SEXP l, SEXP order)
             iidx = Realloc(iidx, isize, int);                                    \
           }                                                                      \
         }                                                                        \
-        prev = this;                                                             \
+        prev = elem;                                                             \
       }
 
     SEXP v = VECTOR_ELT(l,0);
     int *o = INTEGER(order);  // only used when via_order is true
     switch(TYPEOF(v)) {
     case INTSXP : case LGLSXP : {
-      int *vd=INTEGER(v), prev, this;
+      int *vd=INTEGER(v), prev, elem;
       if (via_order) {
         // ad hoc by (order passed in)
         COMPARE1_VIA_ORDER COMPARE2
@@ -65,15 +65,15 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case STRSXP : {
-      SEXP *vd=(SEXP *)DATAPTR(v), prev, this;   // TODO: tried to replace DATAPTR here but (SEXP *)&STRING_ELT(v,0) results in lvalue required as unary ‘&’ operand
+      SEXP *vd=(SEXP *)DATAPTR(v), prev, elem;   // TODO: tried to replace DATAPTR here but (SEXP *)&STRING_ELT(v,0) results in lvalue required as unary ‘&’ operand
       if (via_order) {
-        COMPARE1_VIA_ORDER && ENC2UTF8(this)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
+        COMPARE1_VIA_ORDER && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
       } else {
-        COMPARE1           && ENC2UTF8(this)!=ENC2UTF8(prev) COMPARE2
+        COMPARE1           && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2
       }
     } break;
     case REALSXP : {
-      uint64_t *vd=(uint64_t *)REAL(v), prev, this;
+      uint64_t *vd=(uint64_t *)REAL(v), prev, elem;
       // grouping by integer64 makes sense (ids). grouping by float supported but a good use-case for that is harder to imagine
       if (getNumericRounding_C()==0 /*default*/ || inherits(v, "integer64")) {
         if (via_order) {
@@ -83,9 +83,9 @@ SEXP uniqlist(SEXP l, SEXP order)
         }
       } else {
         if (via_order) {
-          COMPARE1_VIA_ORDER && dtwiddle(&this, 0)!=dtwiddle(&prev, 0) COMPARE2
+          COMPARE1_VIA_ORDER && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
         } else {
-          COMPARE1           && dtwiddle(&this, 0)!=dtwiddle(&prev, 0) COMPARE2
+          COMPARE1           && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
         }
       }
     } break;
@@ -163,8 +163,8 @@ SEXP rleid(SEXP l, SEXP cols)
   if (!nrow || !ncol) return (allocVector(INTSXP, 0));
   if (!isInteger(cols) || LENGTH(cols)==0) error("cols must be an integer vector with length >= 1");
   for (int i=0; i<LENGTH(cols); i++) {
-    int this = INTEGER(cols)[i];
-    if (this<1 || this>LENGTH(l)) error("Item %d of cols is %d which is outside range of l [1,length(l)=%d]", i+1, this, LENGTH(l));
+    int elem = INTEGER(cols)[i];
+    if (elem<1 || elem>LENGTH(l)) error("Item %d of cols is %d which is outside range of l [1,length(l)=%d]", i+1, elem, LENGTH(l));
   }
   for (int i=1; i<ncol; i++) {
     if (length(VECTOR_ELT(l,i)) != nrow) error("All elements to input list must be of same length. Element [%d] has length %d != length of first element = %d.", i+1, length(VECTOR_ELT(l,i)), nrow);

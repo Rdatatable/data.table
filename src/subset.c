@@ -11,9 +11,9 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
     if (any0orNA) {
       // any 0 or NA *in idx*; if there's 0 or NA in the data that's just regular data to be copied
       for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        INTEGER(target)[ansi++] = (this==NA_INTEGER || this>max) ? NA_INTEGER : INTEGER(source)[this-1];
+        int elem = INTEGER(idx)[i];
+        if (elem==0) continue;
+        INTEGER(target)[ansi++] = (elem==NA_INTEGER || elem>max) ? NA_INTEGER : INTEGER(source)[elem-1];
         // negatives are checked before (in check_idx()) not to have reached here
         // NA_INTEGER == NA_LOGICAL is checked in init.c
       }
@@ -36,9 +36,9 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
       if (INHERITS(source, char_integer64)) naval.ll = NA_INT64_LL;
       else naval.d = NA_REAL;
       for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        REAL(target)[ansi++] = (this==NA_INTEGER || this>max) ? naval.d : REAL(source)[this-1];
+        int elem = INTEGER(idx)[i];
+        if (elem==0) continue;
+        REAL(target)[ansi++] = (elem==NA_INTEGER || elem>max) ? naval.d : REAL(source)[elem-1];
       }
     } else {
       double *vd = REAL(source);
@@ -62,9 +62,9 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
     {
       if (any0orNA) {
       for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        SET_STRING_ELT(target, ansi++, (this==NA_INTEGER || this>max) ? NA_STRING : STRING_ELT(source, this-1));
+        int elem = INTEGER(idx)[i];
+        if (elem==0) continue;
+        SET_STRING_ELT(target, ansi++, (elem==NA_INTEGER || elem>max) ? NA_STRING : STRING_ELT(source, elem-1));
       }
       } else {
       SEXP *vd = (SEXP *)DATAPTR(source);
@@ -81,9 +81,9 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
     {
       if (any0orNA) {
       for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        SET_VECTOR_ELT(target, ansi++, (this==NA_INTEGER || this>max) ? R_NilValue : VECTOR_ELT(source, this-1));
+        int elem = INTEGER(idx)[i];
+        if (elem==0) continue;
+        SET_VECTOR_ELT(target, ansi++, (elem==NA_INTEGER || elem>max) ? R_NilValue : VECTOR_ELT(source, elem-1));
       }
       } else {
       for (int i=0; i<LENGTH(idx); i++) {
@@ -95,12 +95,12 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
   case CPLXSXP :
     if (any0orNA) {
       for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        if (this==NA_INTEGER || this>max) {
+        int elem = INTEGER(idx)[i];
+        if (elem==0) continue;
+        if (elem==NA_INTEGER || elem>max) {
           COMPLEX(target)[ansi].r = NA_REAL;
           COMPLEX(target)[ansi++].i = NA_REAL;
-        } else COMPLEX(target)[ansi++] = COMPLEX(source)[this-1];
+        } else COMPLEX(target)[ansi++] = COMPLEX(source)[elem-1];
       }
     } else {
       for (int i=0; i<LENGTH(idx); i++)
@@ -110,9 +110,9 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
   case RAWSXP :
     if (any0orNA) {
       for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        RAW(target)[ansi++] = (this==NA_INTEGER || this>max) ? (Rbyte) 0 : RAW(source)[this-1];
+        int elem = INTEGER(idx)[i];
+        if (elem==0) continue;
+        RAW(target)[ansi++] = (elem==NA_INTEGER || elem>max) ? (Rbyte) 0 : RAW(source)[elem-1];
       }
     } else {
       for (int i=0; i<LENGTH(idx); i++)
@@ -139,17 +139,17 @@ static void check_idx(SEXP idx, int max, /*outputs...*/int *ansLen, Rboolean *an
   int ans=0;
   int last = INT32_MIN;
   for (int i=0; i<LENGTH(idx); i++) {
-    int this = INTEGER(idx)[i];
-    ans += (this!=0);
-    anyNeg |= this<0 && this!=NA_INTEGER;
-    anyNA |= this==NA_INTEGER || this>max;
-    anyLess |= this<last;
-    last = this;
+    int elem = INTEGER(idx)[i];
+    ans += (elem!=0);
+    anyNeg |= elem<0 && elem!=NA_INTEGER;
+    anyNA |= elem==NA_INTEGER || elem>max;
+    anyLess |= elem<last;
+    last = elem;
   }
   if (anyNeg) error("Internal error: idx contains negatives. Should have been dealt with earlier."); // # nocov
   *ansLen = ans;
   *any0orNA = ans<LENGTH(idx) || anyNA;
-  *monotonic = !anyLess; // for the purpose of ordered keys, this==last is allowed
+  *monotonic = !anyLess; // for the purpose of ordered keys, elem==last is allowed
 }
 
 // TODO - currently called from R level first. Can it be called from check_idx instead?
@@ -165,10 +165,10 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
   if (max<0) error("Internal error. max is %d, must be >= 0.", max); // # nocov
   int firstNegative = 0, firstPositive = 0, firstNA = 0, num0 = 0;
   for (int i=0; i<LENGTH(idx); i++) {
-    int this = INTEGER(idx)[i];
-    if (this==NA_INTEGER) { if (firstNA==0) firstNA = i+1;  continue; }
-    if (this==0)          { num0++;  continue; }
-    if (this>0)           { if (firstPositive==0) firstPositive=i+1; continue; }
+    int elem = INTEGER(idx)[i];
+    if (elem==NA_INTEGER) { if (firstNA==0) firstNA = i+1;  continue; }
+    if (elem==0)          { num0++;  continue; }
+    if (elem>0)           { if (firstPositive==0) firstPositive=i+1; continue; }
     if (firstNegative==0) firstNegative=i+1;
   }
   if (firstNegative==0) return(idx);  // 0's and NA can be mixed with positives, there are no negatives present, so we're done
@@ -185,17 +185,17 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
   // Maybe R needs to be rebuilt with valgrind before Calloc's Free can be matched up by valgrind?
   int firstDup = 0, numDup = 0, firstBeyond = 0, numBeyond = 0;
   for (int i=0; i<LENGTH(idx); i++) {
-    int this = -INTEGER(idx)[i];
-    if (this==0) continue;
-    if (this>max) {
+    int elem = -INTEGER(idx)[i];
+    if (elem==0) continue;
+    if (elem>max) {
       numBeyond++;
       if (firstBeyond==0) firstBeyond=i+1;
       continue;
     }
-    if (tmp[this-1]==1) {
+    if (tmp[elem-1]==1) {
       numDup++;
       if (firstDup==0) firstDup=i+1;
-    } else tmp[this-1] = 1;
+    } else tmp[elem-1] = 1;
   }
   if (numBeyond)
     warning("Item %d of i is %d but there are only %d rows. Ignoring this and %d more like it out of %d.", firstBeyond, INTEGER(idx)[firstBeyond-1], max, numBeyond-1, LENGTH(idx));
