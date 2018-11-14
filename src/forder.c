@@ -1,5 +1,4 @@
 #include "data.table.h"
-#define TIMING_ON
 /*
   Inspired by :
   icount in do_radixsort in src/main/sort.c @ rev 51389.
@@ -29,6 +28,7 @@
   overhead. They reach outside themselves to place results in the end result directly rather than returning many small pieces of memory.
 */
 
+// #define TIMING_ON
 static int *gs[2] = {NULL};          // gs = groupsizes e.g. 23,12,87,2,1,34,...
 static int flip = 0;                 // two vectors flip flopped: flip and 1-flip
 static int gsalloc[2] = {0};         // allocated stack size
@@ -683,7 +683,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     // Rprintf("Written key for column %d\n", col);
   }
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
-  Rprintf("nradix=%d\n", nradix);
+  // Rprintf("nradix=%d\n", nradix);
 
   stackgrps = true;
   push(n);
@@ -894,8 +894,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         }
       }
     }
-    Rprintf("After radix %d, ngrp=%d ...\n", radix, gsngrp[flip]);
-    if (radix==0) for (int i=0; i<gsngrp[flip]; i++) Rprintf("%d\n", gs[flip][i]);
+    //Rprintf("After radix %d, ngrp=%d ...\n", radix, gsngrp[flip]);
+    //if (radix==0) for (int i=0; i<gsngrp[flip]; i++) Rprintf("%d\n", gs[flip][i]);
     /*for (int i=0; i<n; i++) {
       Rprintf("%03d: ",i);
       for (int r=0; r<nradix; r++) Rprintf("%03d ",key[r][i]);
