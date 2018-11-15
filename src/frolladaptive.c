@@ -128,7 +128,7 @@ void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double *ans, int *k, do
     } // end of parallel region
     if (truehasna && verbose) {
       if (narm) {
-        if (hasna==-1) Rprintf("%s: hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+        if (hasna==-1) Rprintf("Internal error: %s: hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__); // this is internal because it should be already catch by `LOGICAL(hasna)[0]==FALSE && LOGICAL(narm)[0]` in frollfunR // # nocov
         else Rprintf("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
       } else {
         if (hasna==-1) Rprintf("%s: hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n", __func__);

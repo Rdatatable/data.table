@@ -387,6 +387,32 @@ test(9999.117, frollmean(1:5, "a"), error="n must be integer")
 test(9999.118, frollmean(1:5, as.factor("a")), error="n must be integer")
 #### is.list(n)
 test(9999.119, frollmean(1:5, list(1:5)), error="n must be integer, list is accepted for adaptive TRUE")
+#### verbose=NA
+test(9999.1191, frollmean(1:5, 2, verbose=NA), error="verbose must be TRUE or FALSE")
+#### adaptive=NA
+test(9999.1192, frollmean(1:5, 2, adaptive=NA), error="adaptive must be TRUE or FALSE")
+#### na.rm=NA
+test(9999.1193, frollmean(1:5, 2, na.rm=NA), error="na.rm must be TRUE or FALSE")
+#### hasNA=1
+test(9999.1194, frollmean(1:5, 2, hasNA=1), error="hasNA must be TRUE, FALSE or NA")
+#### hasNA=FALSE na.rm=TRUE
+test(9999.1195, frollmean(1:5, 2, na.rm=TRUE, hasNA=FALSE), error="using hasNA FALSE and na.rm TRUE does not make sense, if you know there are NA values use hasNA TRUE, otherwise leave it as default NA")
+#### exact na.rm=TRUE adaptive=TRUE verbose=TRUE
+test(9999.1196, frollmean(c(1:5,NA), 1:6, algo="exact", na.rm=TRUE, adaptive=TRUE, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel", 
+  "fadaptiverollmeanExact: running for input length 6, hasna 0, narm 1", 
+  "fadaptiverollmeanExact: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"
+))
+#### exact na.rm=TRUE verbose=TRUE
+test(9999.1197, frollmean(c(1:5,NA), 2, algo="exact", na.rm=TRUE, verbose=TRUE), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel", 
+  "frollmeanExact: running for input length 6, window 2, hasna 0, narm 1", 
+  "frollmeanExact: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"
+))
+#### adaptive=TRUE n=character
+test(9999.1198, frollmean(1:5, n=letters[1:5], adaptive=TRUE), error="n must be integer vector or list of integer vectors")
 
 #### non-finite values (NA, NaN, Inf, -Inf)
 ma = function(x, n, na.rm=FALSE, nf.rm=FALSE) {

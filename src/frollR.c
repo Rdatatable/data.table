@@ -36,7 +36,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     error("n must be non 0 length");
 
   if (!isLogical(adaptive) || length(adaptive) != 1 || LOGICAL(adaptive)[0] == NA_LOGICAL)
-    error("adaptive must be logical TRUE or FALSE");
+    error("adaptive must be TRUE or FALSE");
   bool badaptive = LOGICAL(adaptive)[0];
   
   R_len_t nk;                                                   // number of rolling windows, for adaptive might be atomic to be wrapped into list
@@ -100,7 +100,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   if (!strcmp(CHAR(STRING_ELT(align, 0)), "right")) ialign = 1;
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center")) ialign = 0;
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) ialign = -1;
-  else error("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker.");
+  else error("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
 
   if (badaptive && ialign!=1)
     error("using adaptive TRUE and align argument different than 'right' is not implemented");
@@ -126,10 +126,10 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     dx[i] = REAL(VECTOR_ELT(x, i));
   }
 
-  enum {MEAN, SUM} sfun;
+  enum {MEAN/*, SUM*/} sfun;
   if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean")) sfun = MEAN;
-  else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) sfun = SUM;
-  else error("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker.");
+  //else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) sfun = SUM;
+  else error("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
 
   int* iik = INTEGER(ik);                                       // pointer to non-adaptive window width, still can be vector when doing multiple windows
   
@@ -161,27 +161,25 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   unsigned int ialgo;                                           // decode algo to integer
   if (!strcmp(CHAR(STRING_ELT(algo, 0)), "fast")) ialgo = 0;    // fast = 0
   else if (!strcmp(CHAR(STRING_ELT(algo, 0)), "exact")) ialgo = 1; // exact = 1
-  else error("Internal error: invalid algo argument in rolling function, should have been caught before. please report to data.table issue tracker.");
+  else error("Internal error: invalid algo argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
   
   if (nx==1 && nk==1) {                                         // no need to init openmp for single thread call
     if (bverbose) {
       if (ialgo==0) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped\n");
       else if (ialgo==1) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel\n");
-      else error("Internal error: Unhandled algo type in frollfunR function.");
     }
     switch (sfun) {
       case MEAN :
         if (!badaptive) frollmean(ialgo, dx[0], inx[0], dans[0], iik[0], ialign, dfill, bnarm, ihasna, bverbose);
         else fadaptiverollmean(ialgo, dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
         break;
-      case SUM :
-        break;
+      //case SUM :
+      //  break;
     }
   } else {
     if (bverbose>0) {
       if (ialgo==0) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
       else if (ialgo==1) Rprintf("frollfunR: %d column(s) and %d window(s), parallel processing by multiple answer vectors skipped because 'exact' version of rolling function will compute results in parallel\n", nx, nk);
-      else error("Internal error: Unhandled algo type in frollfunR function.");
     }
     omp_set_nested(1);
     int threads = bverbose ? 1 : MIN(getDTthreads(), nx*nk);
@@ -195,8 +193,8 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
               if (!badaptive) frollmean(ialgo, dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
               else fadaptiverollmean(ialgo, dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
               break;
-            case SUM :
-              break;
+            //case SUM :
+            //  break;
           }
         } // end of j-windows loop
       } // end of i-columns loop
