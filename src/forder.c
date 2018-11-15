@@ -29,7 +29,7 @@
   overhead. They reach outside themselves to place results in the end result directly rather than returning many small pieces of memory.
 */
 
-// #define TIMING_ON
+#define TIMING_ON
 static int *gs = NULL;          // gs = groupsizes e.g. 23,12,87,2,1,34,...
 //static int flip = 0;                 // two vectors flip flopped: flip and 1-flip
 static int gsalloc = 0;         // allocated stack size
@@ -47,10 +47,12 @@ static int ustr_n = 0;
 static int ustr_maxlen = 0;
 static int sort = 0;                 // 0 no sort; -1 descending, +1 ascending
 static bool all_skipped = true;
-static char *TMP = NULL;
+static int *OTMP = NULL;
+static uint8_t *KTMP = NULL;
 static int nradix = 0;
 static uint8_t **key = NULL;
 static int *anso = NULL;
+static bool firstTime=false;
 
 #define Error(...) do {cleanup(); error(__VA_ARGS__);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
 #undef warning
@@ -80,7 +82,8 @@ static void cleanup() {
   free(cradix_counts); cradix_counts=NULL;
   free(cradix_xtmp);   cradix_xtmp=NULL;
   free_ustr();
-  free(TMP); TMP=NULL;
+  free(OTMP); OTMP=NULL;
+  free(KTMP); KTMP=NULL;
   if (key!=NULL) for (int i=0; i<nradix; i++) free(key[i]);
   free(key); key=NULL; nradix=0;
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
@@ -111,13 +114,11 @@ static void push(int *x, int n, int anchor) {
 }
 
 #ifdef TIMING_ON
-  // many calls to clock() can be expensive, hence compiled out rather than switch(verbose)
-  #include <time.h>
   #define NBLOCK 20
-  static clock_t tblock[NBLOCK], tstart;
+  static double tblock[NBLOCK];
   static int nblock[NBLOCK];
-  #define TBEG() tstart = clock();
-  #define TEND(i) tblock[i] += clock()-tstart; nblock[i]++; tstart = clock();
+  #define TBEG() double tstart = wallclock();   // tstart declared locally
+  #define TEND(i) {tblock[i] += wallclock()-tstart; nblock[i]++; tstart = wallclock();}
 #else
   #define TBEG()
   #define TEND(i)
@@ -397,9 +398,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
 {
 
 #ifdef TIMING_ON
-  memset(tblock, 0, NBLOCK*sizeof(clock_t));
+  memset(tblock, 0, NBLOCK*sizeof(double));
   memset(nblock, 0, NBLOCK*sizeof(int));
-  clock_t tstart;  // local variable to mask the global tstart for ease when timing sub funs
 #endif
   TBEG()
 
@@ -447,6 +447,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
   }
   // if n==1, the code is left to proceed below in case one or more of the 1-row by= columns are NA and na.last=NA. Otherwise it would be easy to return now.
   all_skipped = true;
+  firstTime = true;
 
   SEXP ans = PROTECT(allocVector(INTSXP, n)); n_protect++;
   anso = INTEGER(ans);
@@ -638,10 +639,14 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
     // Rprintf("Written key for column %d\n", col);
   }
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
-  // Rprintf("nradix=%d\n", nradix);
+  #ifdef TIMING_ON
+  Rprintf("nradix=%d\n", nradix);
+  #endif
+  TEND(0);
 
   if (nradix) {
-    TMP = malloc(n*sizeof(int));
+    OTMP = malloc(n*sizeof(int));
+    KTMP = malloc((nradix-1) * n * sizeof(uint8_t *));
     int old = omp_get_nested();
     omp_set_nested(1);
     radix_r(0, n-1, 0);  // top level recursive call: (from, to, byte). Nested parallelism is constrained via ordered clause.
@@ -656,7 +661,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
     int last=NBLOCK-1;
     while (last>=0 && nblock[last]==0) last--; // remove unused timing slots
     for (int i=0; i<=last; i++) {
-      Rprintf("Timing block %d = %8.3f   %8d\n", i, 1.0*tblock[i]/CLOCKS_PER_SEC, nblock[i]);
+      Rprintf("Timing block %2d = %8.3f   %8d\n", i, tblock[i], nblock[i]);
     }
   }
   #endif
@@ -743,13 +748,14 @@ void radix_r(int from, int to, int radix) {
 //      for (int g=0; g<gsngrp[1-flip]; g++) {     // first time this will be just 1; the first split will be the nested method
 //        int from = g==0 ? 0 : gs[1-flip][g-1];   // this is why grps need to be pre-cumulated
 //        int to = gs[1-flip][g];
-
+  TBEG();
   const int my_n = to-from+1;
   if (my_n==1) {
     if (retgrp) {
       int my_gs[1] = {1};
       push(my_gs, 1, from);  // from is pushed so as to flutter sort group sizes afterwards
     }
+    TEND(1);
     return;
   }
   // else // < 300 then insert sort to reinstate (but countgroup might be fast enough now using ugrp)
@@ -788,7 +794,7 @@ void radix_r(int from, int to, int radix) {
       for (int i=0; i<my_n; i++) my_tmp[counts[x[i]]++] = osub[i];
       memcpy(osub, my_tmp, my_n*sizeof(int));
 
-      // reorder remaining key columns (radix+1 onwards)
+      // reorder remaining key columns (radix+1 onwards).   This could be done in one-step too (a single pass through x[],  with a larger my_tmp
       for (int remaining_radix=radix+1; remaining_radix<nradix; remaining_radix++) {
         for (int i=0, last=0; i<ngrp; i++) { uint16_t tmp=counts[ugrp[i]]; counts[ugrp[i]]=last; last=tmp; }  // reset cumulate. When ngrp<<256, faster than memcpy
         uint8_t *b = (uint8_t *)my_tmp;
@@ -815,6 +821,7 @@ void radix_r(int from, int to, int radix) {
       }
     }
     // for (int i=0; i<ngrp; i++) counts[ugrp[i]] = 0;  // ready for next time to save initializing should the stack 256-initialization above ever be identified as too slow
+    //TEND(2)
     return;
   }
   // else parallel batches. This is called recursively but only from ordered clause below to limit excessive nestedness.
@@ -826,13 +833,14 @@ void radix_r(int from, int to, int radix) {
   int *restrict counts = calloc(nBatch*256, sizeof(int));  // TODO: this can be static (since just one-at-a-time);  as long as we copy out the first row onto stack later below.
   // TODO:  if (!counts) exit parallel and Error...
   //Rprintf("nested batch count...\n");
+  TEND(3)
   uint8_t ugrp[256];  // head(ugrp,ngrp) contain the unique values seen so far
   bool    seen[256];  // is the value present in ugrp
   int     ngrp=0;     // max value 256 so not uint8_t
   uint8_t last_seen=0;  // the last grp seen in the previous batch.  initialized 0 is not used
   for (int i=0; i<256; i++) seen[i]=false;
   bool skip=true;
-
+  TEND(4)
   #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads())
   for (int batch=0; batch<nBatch; batch++) {
     int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;  // lastBatchSize == batchSize when my_n is multiple of nBatch
@@ -862,10 +870,11 @@ void radix_r(int from, int to, int radix) {
       }
     }
   }
+  TEND(5)
 
   if (sort && !sort_ugrp(ugrp, ngrp))
     skip=false;
-
+  TEND(6)
   //Rprintf("cumulate...\n");
   // cumulate columnwise; parallel histogram; small so no need to parallelize
   // don't skip this, as this gives us the group sizes in first row when skipping too
@@ -877,6 +886,12 @@ void radix_r(int from, int to, int radix) {
       rollSum += tmp;
       j += 256;  // deliberately non-contiguous here
     }
+  }
+  TEND(7)
+
+  if (radix==0) {
+    for (int i=0; i<ngrp-1; i++) Rprintf("radix=%d  i=%d  gs=%d\n", radix, i, counts[ugrp[i+1]]-counts[ugrp[i]]);
+    Rprintf("radix=%d  i=%d  gs=%d\n", radix, ngrp-1, my_n-counts[ugrp[ngrp-1]]);
   }
 
   // reorder o and the remaining radix bytes.
@@ -895,25 +910,35 @@ void radix_r(int from, int to, int radix) {
   // }
   if (!skip) {
     all_skipped = false;
-    TBEG()
     // Rprintf("reorder remaining radix keys (from=%d)...\n", from);
-    for (int remaining_radix=radix+1; remaining_radix<nradix; remaining_radix++) {
-      //Rprintf("remaining radix %d...\n", remaining_radix);
-      //Rprintf("TRACE:  %p %p %d %p %p %p %p\n", source, TMP, my_n, key[0], key[1], key[2], key[3]);
-      #pragma omp parallel num_threads(getDTthreads())
-      {
-        int my_tmp_counts[256];
-        #pragma omp for schedule(dynamic)
-        for (int batch=0; batch<nBatch; batch++) {
-          const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;
-          memcpy(my_tmp_counts, counts+batch*256, 256*sizeof(int));  // copy to cumulate since we need to reuse orginal to reorder other cols too.
-          const uint8_t *restrict b = key[radix]           + from + batch*batchSize;
-          const uint8_t *restrict c = key[remaining_radix] + from + batch*batchSize;
-          for (int i=0; i<my_n; i++) ((uint8_t *restrict)TMP)[my_tmp_counts[*b++]++] = *c++;
-        }
+
+    const int n_rem = nradix-radix-1;   // how many radix are remaining after this one
+    #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
+    for (int batch=0; batch<nBatch; batch++) {
+      const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;
+      const uint8_t *restrict b = key[radix] + from + batch*batchSize;  // iterate through this once
+      int *restrict my_counts = counts + batch*256;    // TODO: use restrict everywhere,  even with const too
+      const int *restrict osub = anso + from + batch*batchSize;
+      const uint8_t *restrict rem_key[n_rem];
+      for (int r=0; r<n_rem; r++) rem_key[r] = key[radix+1+r] + from + batch*batchSize;
+      //if (direct) {
+      //  // don't need to reorder o because o contains just 1:n. Saves allocating TMP with nrow(DT)*4 bytes and hopping wastefully via it.
+      //  int k = batch*batchSize + 1;  // +1 because returned to 1-based R
+      //  for (int i=0; i<my_n; i++) anso[my_tmp_counts[*b++]++] = k++;
+      for (int i=0; i<my_n; i++) {
+        int dest = my_counts[*b++]++;
+        OTMP[dest] = *osub++;                                        // reorder anso
+        for (int r=0; r<n_rem; r++) KTMP[r*my_n+dest] = *rem_key[r]++;   // reorder remaining keys
       }
-      memcpy(key[remaining_radix]+from, TMP, my_n);
     }
+    TEND(8+!firstTime)
+    firstTime=false;
+    /*if (!direct)*/ memcpy(anso+from, OTMP, my_n*sizeof(int));
+    for (int r=0; r<n_rem; r++) memcpy(key[radix+1+r]+from, KTMP+r*my_n, my_n*sizeof(uint8_t));
+    //Rprintf("remaining radix %d...\n", remaining_radix);
+    //Rprintf("TRACE:  %p %p %d %p %p %p %p\n", source, TMP, my_n, key[0], key[1], key[2], key[3]);
+
+    TEND(10);
 
     //const bool direct = false; //(radix==0); // TODO: reinstate direct and save TMP
     //if (direct) {
@@ -926,30 +951,7 @@ void radix_r(int from, int to, int radix) {
     //  TMP_size = my_n*sizeof(int);
     //}
     //Rprintf("reorder o (direct=%d)...\n", direct);
-    TEND(0)
-
-    #pragma omp parallel num_threads(getDTthreads())
-    {
-      int my_tmp_counts[256];
-      #pragma omp for schedule(dynamic)
-      for (int batch=0; batch<nBatch; batch++) {
-        const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;
-        memcpy(my_tmp_counts, counts+batch*256, 256*sizeof(int));  // copy to cumulate since we need to reuse orginal to reorder other cols too.
-        const uint8_t *restrict b = key[radix] + from + batch*batchSize;    // TODO: use restrict everywhere,  even with const too
-        //if (direct) {
-        //  // don't need to reorder o because o contains just 1:n. Saves allocating TMP with nrow(DT)*4 bytes and hopping wastefully via it.
-        //  int k = batch*batchSize + 1;  // +1 because returned to 1-based R
-        //  for (int i=0; i<my_n; i++) anso[my_tmp_counts[*b++]++] = k++;
-        //} else {
-          int *k = anso + from + batch*batchSize;
-          for (int i=0; i<my_n; i++) ((int *)TMP)[my_tmp_counts[*b++]++] = *k++;
-        //}
-      }
-    }
-    /*if (!direct)*/ memcpy(anso+from, TMP, my_n*sizeof(int));
-    TEND(1)
   }
-
   // TODO could push all the size 1 groups (and maybe 2) and reduce the ngrp to just decent sizes, to just parallel through decent sizes.
   if (radix+1==nradix || ngrp==my_n) {
     if (retgrp) {
@@ -958,6 +960,7 @@ void radix_r(int from, int to, int radix) {
       my_gs[ngrp-1] = my_n - counts[ugrp[ngrp-1]];
       push(my_gs, ngrp, from); // take the time to make my_gs and push all in one go because push is omp critical. 'from' is anchor to be flutter sorted afterwards
     }
+    TEND(11)
   } else {
     #pragma omp parallel for ordered num_threads(getDTthreads())
     for (int i=0; i<ngrp; i++) {
@@ -970,9 +973,12 @@ void radix_r(int from, int to, int radix) {
         if (my_n>STL) radix_r(my_from, my_to, radix+1);  // inside ordered as a way to limit recursive nestedness; doesn't need to be ordered thanks to anchor
       }
     }
+    TEND(12)
   }
   // memset(counts, 0, nBatch*256*sizeof(int));
+
   free(counts);
+  TEND(13)
 }
 
 
