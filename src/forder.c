@@ -841,7 +841,7 @@ void radix_r(int from, int to, int radix) {
   for (int i=0; i<256; i++) seen[i]=false;
   bool skip=true;
   TEND(4)
-  #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads())
+  #pragma omp parallel for ordered num_threads(getDTthreads())
   for (int batch=0; batch<nBatch; batch++) {
     int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;  // lastBatchSize == batchSize when my_n is multiple of nBatch
     const uint8_t *tmp = key[radix] + from + batch*batchSize;
@@ -962,16 +962,17 @@ void radix_r(int from, int to, int radix) {
     }
     TEND(11)
   } else {
-    #pragma omp parallel for ordered num_threads(getDTthreads())
+    #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
     for (int i=0; i<ngrp; i++) {
       int my_from = from + counts[ugrp[i]];
       int my_to   = from + (i==(ngrp-1) ? my_n : counts[ugrp[i+1]]) - 1;
-      int my_n = my_to-my_from+1;
-      if (my_n<=STL) radix_r(my_from, my_to, radix+1); // will write to gs out-of-order (but not terribly out-of-order); this gets flutter sorted later
-      #pragma omp ordered
-      {
-        if (my_n>STL) radix_r(my_from, my_to, radix+1);  // inside ordered as a way to limit recursive nestedness; doesn't need to be ordered thanks to anchor
-      }
+      //int my_n = my_to-my_from+1;
+      //if (my_n<=STL)
+      radix_r(my_from, my_to, radix+1); // will write to gs out-of-order (but not terribly out-of-order); this gets flutter sorted later
+      //#pragma omp ordered
+      //{
+      //  if (my_n>STL) radix_r(my_from, my_to, radix+1);  // inside ordered as a way to limit recursive nestedness; doesn't need to be ordered thanks to anchor
+      //}
     }
     TEND(12)
   }
