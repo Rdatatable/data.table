@@ -368,16 +368,16 @@ static void count_group(const uint8_t *x, const int n, bool *out_skip, uint16_t 
   bool skip = true;   // i) if already grouped and sort=false then caller can skip. ii) if already sorted when sort=true then caller can skip
 
   for (int i=1; i<n; i++) {
-    uint8_t this = x[i];
-    if (counts[this]==0) {
+    uint8_t elem = x[i];
+    if (counts[elem]==0) {
       // have not seen this value before
-      ugrp[ngrp++]=this;
-    } else if (skip && this!=x[i-1]) {
+      ugrp[ngrp++]=elem;
+    } else if (skip && elem!=x[i-1]) {
       // seen this value before and it isn't the previous value, so data is not grouped
       // including "skip &&" first is to avoid the != comparison
       skip=false;
     }
-    counts[this]++;
+    counts[elem]++;
   }
 
   if (sort && !sort_ugrp(ugrp, ngrp))  // sorts ugrp by reference
@@ -389,7 +389,7 @@ static void count_group(const uint8_t *x, const int n, bool *out_skip, uint16_t 
   if (!skip) {
     // this is where the potentially random access comes in but only to at-most 256 points, each contigously
     for (int i=0, sum=0; i<ngrp; i++) { uint8_t w=ugrp[i]; int tmp=counts[w]; counts[w]=sum; sum+=tmp; }  // prepare for forwards-assign to help cpu prefetch on next line
-    for (int i=0; i<n; i++) { uint8_t this=x[i]; out_order[counts[this]++] = i; }  // it's this second sweep through x[] that benefits from x[] being in cache from last time above, so keep it small.
+    for (int i=0; i<n; i++) { uint8_t elem=x[i]; out_order[counts[elem]++] = i; }  // it's this second sweep through x[] that benefits from x[] being in cache from last time above, so keep it small.
   }
   for (int i=0; i<ngrp; i++) counts[ugrp[i]] = 0;  // ready for next time to save initializing the 256 vector
 }
@@ -584,7 +584,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       min2--; // so that x-min results in 1 for the minimum; NA coded by 0. Always provide for the NA spot even if NAs aren't present for code brevity and robustness
       if (isReal) min2--;  // Nan first
     } else {
-      max2++;            // NA is max+1 so max2-this should result in 0
+      max2++;            // NA is max+1 so max2-elem should result in 0
       if (isReal) max2++;  // Nan last
     }
     if (isReal) { min2--; max2++; }  // -Inf and +Inf  in min-1 and max+1 spots respectively
@@ -595,13 +595,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     // several columns could squash into 1 byte. due to this bit squashing is why we deal
     // with asc|desc here, otherwise it could be done in the ugrp sorting by reversing the ugrp insert sort
     #define WRITE_KEY                                   \
-    this = asc ? this-min2 : max2-this;                 \
-    this <<= spare;                                     \
+    elem = asc ? elem-min2 : max2-elem;                 \
+    elem <<= spare;                                     \
     for (int b=nbyte-1; b>0; b--) {                     \
-      key[nradix+b][i] = (uint8_t)(this & 0xff);        \
-      this >>= 8;                                       \
+      key[nradix+b][i] = (uint8_t)(elem & 0xff);        \
+      elem >>= 8;                                       \
     }                                                   \
-    key[nradix][i] |= (uint8_t)(this & 0xff);
+    key[nradix][i] |= (uint8_t)(elem & 0xff);
     // this last |= squashes the most significant bits of this column into the the spare of the previous
     // NB: retaining group order does not retain the appearance-order in the sense that DT[,,by=] does. Because we go column-by-column, the first column values
     //     are grouped together.   Whether we do byte-column-within-column doesn't alter this and neither does bit packing across column boundaries.
@@ -618,12 +618,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       int32_t *xd = INTEGER(x);
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<n; i++) {
-        uint64_t this=0;
+        uint64_t elem=0;
         if (xd[i]==NA_INTEGER) {  // TODO: go branchless if na_count==0
           if (nalast==-1) {all_skipped=false; ansd[i]=0;}
-          this = naval;
+          elem = naval;
         } else {
-          this = xd[i] ^ 0x80000000u;
+          elem = xd[i] ^ 0x80000000u;
         }
         WRITE_KEY
       }}
@@ -633,12 +633,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         int64_t *xd = (int64_t *)REAL(x);
         #pragma omp parallel for num_threads(getDTthreads())
         for (int i=0; i<n; i++) {
-          uint64_t this=0;
+          uint64_t elem=0;
           if (xd[i]==INT64_MIN) {
             if (nalast==-1) {all_skipped=false; ansd[i]=0;}
-            this = naval;
+            elem = naval;
           } else {
-            this = xd[i] ^ 0x8000000000000000u;
+            elem = xd[i] ^ 0x8000000000000000u;
           }
           WRITE_KEY
         }
@@ -646,15 +646,15 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
         double *xd = REAL(x);     // TODO: revisit double compression (skip bytes/mult by 10,100 etc) as currently it's often 6-8 bytes even for 3.14,3.15
         #pragma omp parallel for num_threads(getDTthreads())
         for (int i=0; i<n; i++) {
-          uint64_t this=0;
+          uint64_t elem=0;
           if (!R_FINITE(xd[i])) {
-            if (isinf(xd[i])) this = signbit(xd[i]) ? min-1 : max+1;
+            if (isinf(xd[i])) elem = signbit(xd[i]) ? min-1 : max+1;
             else {
               if (nalast==-1) {all_skipped=false; ansd[i]=0;}  // for both NA and NaN
-              this = ISNA(xd[i]) ? naval : nanval;
+              elem = ISNA(xd[i]) ? naval : nanval;
             }
           } else {
-            this = dtwiddle(xd, i);  // TODO: could avoid twiddle() if all positive finite which could be known from range_d.
+            elem = dtwiddle(xd, i);  // TODO: could avoid twiddle() if all positive finite which could be known from range_d.
                                      //       also R_FINITE is repeated within dtwiddle() currently, wastefully given the if() above
           }
           WRITE_KEY
@@ -665,12 +665,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
       SEXP *xd = STRING_PTR(x);
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<n; i++) {
-        uint64_t this=0;
+        uint64_t elem=0;
         if (xd[i]==NA_STRING) {
           if (nalast==-1) {all_skipped=false; ansd[i]=0;}
-          this = naval;
+          elem = naval;
         } else {
-          this = -TRUELENGTH(xd[i]);
+          elem = -TRUELENGTH(xd[i]);
         }
         WRITE_KEY
       }}
@@ -927,10 +927,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP 
     int *ss = INTEGER(tt);
     int maxgrpn = 0;
     for (int i=0, tmp=1; i<gsngrp[flip]; i++) {
-      int this = gs[flip][i];
-      if (this>maxgrpn) maxgrpn=this;
+      int elem = gs[flip][i];
+      if (elem>maxgrpn) maxgrpn=elem;
       ss[i]=tmp;
-      tmp+=this;
+      tmp+=elem;
     }
     setAttrib(ans, sym_maxgrpn, ScalarInteger(maxgrpn));
   }
@@ -990,7 +990,7 @@ SEXP isOrderedSubset(SEXP x, SEXP nrow)
 // specialized for use in [.data.table only
 // Ignores 0s but heeds NAs and any out-of-range (which result in NA)
 {
-  int i=0, last, this;
+  int i=0, last, elem;
   if (!length(x)) return(ScalarLogical(TRUE));
   if (!isInteger(x)) error("x has non-0 length but isn't an integer vector");
   if (!isInteger(nrow) || LENGTH(nrow)!=1 || INTEGER(nrow)[0]<0) error("nrow must be integer vector length 1 and >=0");
@@ -1000,11 +1000,11 @@ SEXP isOrderedSubset(SEXP x, SEXP nrow)
   last = INTEGER(x)[i];  // the first non-0
   i++;
   for (; i<LENGTH(x); i++) {
-    this = INTEGER(x)[i];
-    if (this == 0) continue;
-    if (this < last || this < 0 || this > INTEGER(nrow)[0])
+    elem = INTEGER(x)[i];
+    if (elem == 0) continue;
+    if (elem < last || elem < 0 || elem > INTEGER(nrow)[0])
       return(ScalarLogical(FALSE));
-    last = this;
+    last = elem;
   }
   return(ScalarLogical(TRUE));
 }
