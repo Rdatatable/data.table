@@ -710,11 +710,12 @@ static bool sort_ugrp(uint8_t *x, const int n)
   return skip;
 }
 
-#define STL 65535   // Single Thread Load.  Such that counts can be uint16_t (smaller for MT cache efficiency), therefore not 65536
+#define STL 529100  //65535   // Single Thread Load.  Such that counts can be uint16_t (smaller for MT cache efficiency), therefore not 65536
+
 
 static inline void count_group(
-  const uint8_t *x, const uint16_t n,                      // a set of n bytes; n<=STL
-  bool *skip, uint8_t *ugrp, int *ngrp, uint16_t *counts   // outputs to small fixed stack allocations in caller (initialized by caller)
+  const uint8_t *x, const int n,                      // a set of n bytes; n<=STL
+  bool *skip, uint8_t *ugrp, int *ngrp, int *counts   // outputs to small fixed stack allocations in caller (initialized by caller)
 ) {
   ugrp[0] = x[0];     // first item is always first of first group
   counts[x[0]] = 1;
@@ -760,7 +761,7 @@ void radix_r(int from, int to, int radix) {
   }
   // else // < 300 then insert sort to reinstate (but countgroup might be fast enough now using ugrp)
   if (my_n<=STL) {
-    uint16_t counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. If not then allocate up front
+    int counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. If not then allocate up front
                                  // and rely on last line of this function which resets just the non-zero's to 0. However, since recursive, it's tricky
                                  // to allocate upfront, which is why we're keeping it on stack like this.
     uint8_t ugrp[(my_n<256)?my_n:256];  // uninitialized is fine. unique groups; avoids sweeping all 256 counts when very often very few of them are used
@@ -796,15 +797,15 @@ void radix_r(int from, int to, int radix) {
 
       // reorder remaining key columns (radix+1 onwards).   This could be done in one-step too (a single pass through x[],  with a larger my_tmp
       for (int remaining_radix=radix+1; remaining_radix<nradix; remaining_radix++) {
-        for (int i=0, last=0; i<ngrp; i++) { uint16_t tmp=counts[ugrp[i]]; counts[ugrp[i]]=last; last=tmp; }  // reset cumulate. When ngrp<<256, faster than memcpy
+        for (int i=0, last=0; i<ngrp; i++) { int tmp=counts[ugrp[i]]; counts[ugrp[i]]=last; last=tmp; }  // reset cumulate. When ngrp<<256, faster than memcpy
         uint8_t *b = (uint8_t *)my_tmp;
         uint8_t *ksub = key[remaining_radix]+from;
         for (int i=0; i<my_n; i++) b[counts[x[i]]++] = ksub[i];
         memcpy(ksub, my_tmp, my_n*1);
       }
       if (my_n>=4096) free(my_tmp);
-      uint16_t last=0;
-      for (int i=0; i<ngrp; i++) { uint16_t tmp=counts[ugrp[i]]; counts[ugrp[i]]-=last; last=tmp; }   // reset cumulate to counts (as they were after count_group)
+      int last=0;
+      for (int i=0; i<ngrp; i++) { int tmp=counts[ugrp[i]]; counts[ugrp[i]]-=last; last=tmp; }   // reset cumulate to counts (as they were after count_group)
     }
     if (radix+1==nradix || ngrp==my_n) {
       if (retgrp) {
@@ -826,7 +827,7 @@ void radix_r(int from, int to, int radix) {
   }
   // else parallel batches. This is called recursively but only from ordered clause below to limit excessive nestedness.
 
-  int nBatch = getDTthreads()*4;  // at least nth; more to reduce last-chunk-home; but not too large size we need nBatch*256 counts
+  int nBatch = getDTthreads()*1525;  // at least nth; more to reduce last-chunk-home; but not too large size we need nBatch*256 counts
   size_t batchSize = (my_n-1)/nBatch + 1;
   nBatch = (my_n-1)/batchSize + 1;
   int lastBatchSize = my_n - (nBatch-1)*batchSize;
@@ -849,13 +850,12 @@ void radix_r(int from, int to, int radix) {
     uint8_t my_ugrp[256];
     int     my_ngrp=0;
     bool    my_skip=true;
-    for (int i=0; i<my_n; i++) {
-      if (my_counts[*tmp]==0) {
+    for (int i=0; i<my_n; i++, tmp++) {
+      if (++my_counts[*tmp]==1) {
         my_ugrp[my_ngrp++] = *tmp;
       } else if (my_skip && tmp[0]!=tmp[-1]) {
         my_skip=false;
       }
-      my_counts[*tmp++]++;
     }
     if (!my_skip) skip=false;  // before ordered to save work in prior waiting threads; fine to update bool to false without atomic
     #pragma omp ordered
@@ -878,6 +878,8 @@ void radix_r(int from, int to, int radix) {
   //Rprintf("cumulate...\n");
   // cumulate columnwise; parallel histogram; small so no need to parallelize
   // don't skip this, as this gives us the group sizes in first row when skipping too
+
+  /*
   for (int b=0, rollSum=0; b<ngrp; b++) {
     int j = ugrp[b];
     for (int batch=0; batch<nBatch; batch++) {
@@ -887,12 +889,13 @@ void radix_r(int from, int to, int radix) {
       j += 256;  // deliberately non-contiguous here
     }
   }
+  */
   TEND(7)
 
-  if (radix==0) {
-    for (int i=0; i<ngrp-1; i++) Rprintf("radix=%d  i=%d  gs=%d\n", radix, i, counts[ugrp[i+1]]-counts[ugrp[i]]);
-    Rprintf("radix=%d  i=%d  gs=%d\n", radix, ngrp-1, my_n-counts[ugrp[ngrp-1]]);
-  }
+  //if (radix==0) {
+  //  for (int i=0; i<ngrp-1; i++) Rprintf("radix=%d  i=%d  gs=%d\n", radix, i, counts[ugrp[i+1]]-counts[ugrp[i]]);
+  //  Rprintf("radix=%d  i=%d  gs=%d\n", radix, ngrp-1, my_n-counts[ugrp[ngrp-1]]);
+  //}
 
   // reorder o and the remaining radix bytes.
   // if radix==0,  then we can just write directly to.  Otherwise we have to reorder existing o (and allocate a tmp for the reorder)
@@ -912,29 +915,47 @@ void radix_r(int from, int to, int radix) {
     all_skipped = false;
     // Rprintf("reorder remaining radix keys (from=%d)...\n", from);
 
+    // counts are just raw currently, not cumulated.
     const int n_rem = nradix-radix-1;   // how many radix are remaining after this one
-    #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
-    for (int batch=0; batch<nBatch; batch++) {
-      const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;
-      const uint8_t *restrict b = key[radix] + from + batch*batchSize;  // iterate through this once
-      int *restrict my_counts = counts + batch*256;    // TODO: use restrict everywhere,  even with const too
-      const int *restrict osub = anso + from + batch*batchSize;
-      const uint8_t *restrict rem_key[n_rem];
-      for (int r=0; r<n_rem; r++) rem_key[r] = key[radix+1+r] + from + batch*batchSize;
-      //if (direct) {
-      //  // don't need to reorder o because o contains just 1:n. Saves allocating TMP with nrow(DT)*4 bytes and hopping wastefully via it.
-      //  int k = batch*batchSize + 1;  // +1 because returned to 1-based R
-      //  for (int i=0; i<my_n; i++) anso[my_tmp_counts[*b++]++] = k++;
-      for (int i=0; i<my_n; i++) {
-        int dest = my_counts[*b++]++;
-        OTMP[dest] = *osub++;                                        // reorder anso
-        for (int r=0; r<n_rem; r++) KTMP[r*my_n+dest] = *rem_key[r]++;   // reorder remaining keys
+    #pragma omp parallel num_threads(getDTthreads())
+    {
+      int *my_otmp = malloc(batchSize * sizeof(int));  // thread-private write
+      uint8_t *my_ktmp = malloc(batchSize * sizeof(uint8_t) * n_rem);
+      // TODO: if my_otmp==NULL || my_ktmp==NULL, error.
+      #pragma omp for
+      for (int batch=0; batch<nBatch; batch++) {
+        const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;
+
+        int *restrict my_counts = counts + batch*256;    // TODO: use restrict everywhere,  even with const too
+        for (int i=0, sum=0; i<ngrp; i++) { int tmp = my_counts[ugrp[i]]; my_counts[ugrp[i]]=sum; sum+=tmp; }  // cumulate this batch
+
+        const uint8_t *restrict rem_key[n_rem];
+        for (int r=0; r<n_rem; r++) rem_key[r] = key[radix+1+r] + from + batch*batchSize;
+
+        const uint8_t *restrict b = key[radix] + from + batch*batchSize;  // iterate through this once
+        for (int i=0; i<my_n; i++) {
+          int dest = my_counts[*b++]++;
+          my_otmp[dest] = from+i;   // TODO:   this is direct=true and hardcoded for now.  TODO: needs to be firstTime aware
+          for (int r=0; r<n_rem; r++) my_ktmp[r*my_n + dest] = *rem_key[r]++;   // reorder remaining keys
+        }
+
+        memcpy(anso+from+batch*batchSize, my_otmp, my_n*sizeof(int));
+        for (int r=0; r<n_rem; r++) memcpy(key[radix+1+r]+from+batch*batchSize, my_ktmp+r*my_n, my_n*sizeof(uint8_t));
+
+        // could maybe write here to the across-batch tmp
+
+        //if (direct) {
+        //  // don't need to reorder o because o contains just 1:n. Saves allocating TMP with nrow(DT)*4 bytes and hopping wastefully via it.
+        //  int k = batch*batchSize + 1;  // +1 because returned to 1-based R
+        //  for (int i=0; i<my_n; i++) anso[my_tmp_counts[*b++]++] = k++;
       }
     }
+    //OTMP[dest] = *osub++;                                        // reorder anso
+    //for (int r=0; r<n_rem; r++) KTMP[r*my_n+dest] = *rem_key[r]++;   // reorder remaining keys
     TEND(8+!firstTime)
     firstTime=false;
-    /*if (!direct)*/ memcpy(anso+from, OTMP, my_n*sizeof(int));
-    for (int r=0; r<n_rem; r++) memcpy(key[radix+1+r]+from, KTMP+r*my_n, my_n*sizeof(uint8_t));
+    ///*if (!direct)*/ memcpy(anso+from, OTMP, my_n*sizeof(int));
+    //for (int r=0; r<n_rem; r++) memcpy(key[radix+1+r]+from, KTMP+r*my_n, my_n*sizeof(uint8_t));
     //Rprintf("remaining radix %d...\n", remaining_radix);
     //Rprintf("TRACE:  %p %p %d %p %p %p %p\n", source, TMP, my_n, key[0], key[1], key[2], key[3]);
 
