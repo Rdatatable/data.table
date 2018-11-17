@@ -710,11 +710,11 @@ static bool sort_ugrp(uint8_t *x, const int n)
   return skip;
 }
 
-#define STL 65535   // Single Thread Load.  Such that counts can be uint16_t (smaller for MT cache efficiency), therefore not 65536
+#define STL 600000 // >1e8/190=526315 for now  ...  65535   // Single Thread Load.  Such that counts can be uint16_t (smaller for MT cache efficiency), therefore not 65536
 
 static inline void count_group(
   const uint8_t *restrict x, const int n,                           // a set of n bytes; n<=STL
-  bool *skip, uint8_t *ugrp, int *ngrp, uint16_t *restrict counts   // outputs to small fixed stack allocations in caller (initialized by caller)
+  bool *skip, uint8_t *ugrp, int *ngrp, uint32_t *restrict counts   // outputs to small fixed stack allocations in caller (initialized by caller)
 ) {
   ugrp[0] = x[0];     // first item is always first of first group
   counts[x[0]] = 1;
@@ -758,9 +758,9 @@ void radix_r(const int from, const int to, const int radix) {
     TEND(1);
     return;
   }
-  // else // < 300 then insert sort to reinstate (but countgroup might be fast enough now using ugrp)
+  // else if (my_n<300) then insert sort to reinstate (but countgroup might be fast enough now using ugrp) TODO
   if (my_n<=STL) {
-    uint16_t counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. If not then allocate up front
+    uint32_t counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. If not then allocate up front
                                  // and rely on last line of this function which resets just the non-zero's to 0. However, since recursive, it's tricky
                                  // to allocate upfront, which is why we're keeping it on stack like this.
     uint8_t ugrp[(my_n<256)?my_n:256];  // uninitialized is fine. unique groups; avoids sweeping all 256 counts when very often very few of them are used
@@ -834,7 +834,7 @@ void radix_r(const int from, const int to, const int radix) {
   // else parallel batches. This is called recursively but only once or maybe twice before resolving to STL branch above
 
   //int nBatch = getDTthreads()*1525;  // at least nth; more to reduce last-chunk-home; but not too large size we need nBatch*256 counts
-  int batchSize = MIN(STL, 1+my_n/getDTthreads());  // (my_n-1)/nBatch + 1;
+  int batchSize = MIN(65535/*not STL*/, 1+my_n/getDTthreads());  // (my_n-1)/nBatch + 1;
   int nBatch = (my_n-1)/batchSize + 1;
   int lastBatchSize = my_n - (nBatch-1)*batchSize;
   uint16_t *counts = calloc(nBatch*256,sizeof(uint16_t));  // TODO: this can be static (since just one-at-a-time);  as long as we copy out the first row onto stack later below.
@@ -1017,17 +1017,21 @@ void radix_r(const int from, const int to, const int radix) {
       push(my_gs, ngrp, from); // take the time to make my_gs and push all in one go because push is omp critical. 'from' is anchor to be flutter sorted afterwards
     }
     TEND(10)
-  } else {
-    #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads())
+  } 
+  // else if (ngrp==1) // TODO: just radix_r()
+  else {
+    // TODO: explicitly repeat parallel batch for any skew bins
+    #pragma omp parallel for schedule(dynamic) num_threads(MIN(ngrp, getDTthreads()))
     for (int i=0; i<ngrp; i++) {
       int my_from = from + starts[ugrp[i]];
       int my_to   = from + (i==(ngrp-1) ? my_n : starts[ugrp[i+1]]) - 1;
       //int my_n = my_to-my_from+1;
-      if (my_n<=STL) radix_r(my_from, my_to, radix+1); // will write to gs out-of-order (but not terribly out-of-order); this gets flutter sorted later
-      #pragma omp ordered
-      {
-        if (my_n>STL) radix_r(my_from, my_to, radix+1);  // inside ordered as a way to limit recursive nestedness; doesn't need to be ordered thanks to anchor
-      }
+      // if (my_n<=STL)
+      radix_r(my_from, my_to, radix+1); // if retgrp gs is written out and this will write to gs out-of-order (but not terribly out-of-order); flutter sorted later
+      //#pragma omp ordered
+      //{
+      //  if (my_n>STL) radix_r(my_from, my_to, radix+1);  // inside ordered as a way to limit recursive nestedness; doesn't need to be ordered thanks to anchor
+      //}
     }
     TEND(11)
   }
