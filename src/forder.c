@@ -712,7 +712,6 @@ static bool sort_ugrp(uint8_t *x, const int n)
 
 #define STL 65535   // Single Thread Load.  Such that counts can be uint16_t (smaller for MT cache efficiency), therefore not 65536
 
-
 static inline void count_group(
   const uint8_t *restrict x, const int n,                           // a set of n bytes; n<=STL
   bool *skip, uint8_t *ugrp, int *ngrp, uint16_t *restrict counts   // outputs to small fixed stack allocations in caller (initialized by caller)
@@ -935,28 +934,28 @@ void radix_r(const int from, const int to, const int radix) {
   // the counts are uint16_t due to STL. But the cumulate needs to be int32_t (or int64_t in future) to hold the offsets
   // If skip==true and we're already done, we still need the first row of this cummulate (diff to get total group sizes) to push() or recurse below
 
-  Rprintf("counts:\n");
-  for (int b=0; b<nBatch; b++) {
-    for (int i=0; i<256; i++) Rprintf("%d ",counts[b*256+i]);  Rprintf("\n");
-  }
+  //Rprintf("counts:\n");
+  //for (int b=0; b<nBatch; b++) {
+  //  for (int i=0; i<256; i++) { Rprintf("%d ",counts[b*256+i]);}  Rprintf("\n");
+  //}
 
-  int *starts = calloc(nBatch*ngrp, sizeof(int));
+  int *starts = calloc(nBatch*256, sizeof(int));  // keep starts the same shape and ugrp order as counts
   for (int j=0, sum=0; j<ngrp; j++) {  // iterate through columns (ngrp bytes)
     uint16_t *tmp1 = counts+ugrp[j];
-    int      *tmp2 = starts+j;
+    int      *tmp2 = starts+ugrp[j];
     for (int batch=0; batch<nBatch; batch++) {
       *tmp2 = sum;
-      tmp2 += ngrp;
+      tmp2 += 256;
       sum += *tmp1;
       tmp1 += 256;
     }
   }
   // the first row now (when diff'd) now contains the size of each group across all batches
 
-  Rprintf("starts:\n");
-  for (int b=0; b<nBatch; b++) {
-    for (int i=0; i<ngrp; i++) Rprintf("%d ",starts[b*ngrp+i]);  Rprintf("\n");
-  }
+  //Rprintf("starts:\n");
+  //for (int b=0; b<nBatch; b++) {
+  //  for (int i=0; i<256; i++) { Rprintf("%d ",starts[b*256+i]); }  Rprintf("\n");
+  //}
 
   TEND(5 + notFirst*3)
   if (!skip) {
@@ -969,14 +968,14 @@ void radix_r(const int from, const int to, const int radix) {
     #pragma omp parallel for num_threads(getDTthreads())
     for (int batch=0; batch<nBatch; batch++) {
       //const int my_from = from + batch*batchSize;
-      const int *restrict      my_starts = starts + batch*ngrp;
+      const int *restrict      my_starts = starts + batch*256;
       const uint16_t *restrict my_counts = counts + batch*256;
       const int *restrict      osub = anso + from + batch*batchSize;  // the groups sit here contiguously
       const uint8_t *restrict  byte = ugrps + batch*256;              // in appearance order always logged here in ugrps
       const int                my_ngrp = ngrps[batch];
       for (int i=0; i<my_ngrp; i++, byte++) {
         const uint16_t len = my_counts[*byte];
-        memcpy(TMP+my_starts[i], osub, len);
+        memcpy(TMP+my_starts[*byte], osub, len*sizeof(int));
         osub += len;
       }
     }
@@ -986,21 +985,20 @@ void radix_r(const int from, const int to, const int radix) {
       #pragma omp parallel for num_threads(getDTthreads())
       for (int batch=0; batch<nBatch; batch++) {
         //const int my_from = from + batch*batchSize;
-        const int *restrict      my_starts = starts + batch*ngrp;
+        const int *restrict      my_starts = starts + batch*256;
         const uint16_t *restrict my_counts = counts + batch*256;
         const uint8_t *restrict  ksub = key[radix+1+r] + from + batch*batchSize;  // the groups sit here contiguosly
         const uint8_t *restrict  byte = ugrps + batch*256;                        // in appearance order always logged here in ugrps
         const int                my_ngrp = ngrps[batch];
         for (int i=0; i<my_ngrp; i++, byte++) {
           const uint16_t len = my_counts[*byte];
-          memcpy((uint8_t *)TMP + my_starts[i], ksub, len);
+          memcpy((uint8_t *)TMP + my_starts[*byte], ksub, len);
           ksub += len;
         }
       }
       memcpy(key[radix+1+r]+from, (uint8_t *)TMP, my_n);
     }
     free(TMP);
-
   }
   TEND(6 + notFirst*3)
   notFirst = true;
@@ -1014,16 +1012,16 @@ void radix_r(const int from, const int to, const int radix) {
   if (radix+1==nradix || ngrp==my_n) {
     if (retgrp) {
       int my_gs[ngrp];
-      for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[i] - starts[i-1];
-      my_gs[ngrp-1] = my_n - starts[ngrp-1];
+      for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[ugrp[i]] - starts[ugrp[i-1]];   // use the first row of starts to get totals
+      my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
       push(my_gs, ngrp, from); // take the time to make my_gs and push all in one go because push is omp critical. 'from' is anchor to be flutter sorted afterwards
     }
     TEND(10)
   } else {
     #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
     for (int i=0; i<ngrp; i++) {
-      int my_from = from + starts[i];
-      int my_to   = from + (i==(ngrp-1) ? my_n : starts[i+1]) - 1;
+      int my_from = from + starts[ugrp[i]];
+      int my_to   = from + (i==(ngrp-1) ? my_n : starts[ugrp[i+1]]) - 1;
       //int my_n = my_to-my_from+1;
       //if (my_n<=STL)
       radix_r(my_from, my_to, radix+1); // will write to gs out-of-order (but not terribly out-of-order); this gets flutter sorted later
