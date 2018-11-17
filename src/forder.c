@@ -828,7 +828,7 @@ void radix_r(const int from, const int to, const int radix) {
       }
     }
     // for (int i=0; i<ngrp; i++) counts[ugrp[i]] = 0;  // ready for next time to save initializing should the stack 256-initialization above ever be identified as too slow
-    //TEND(2)
+    TEND(2)
     return;
   }
   // else parallel batches. This is called recursively but only once or maybe twice before resolving to STL branch above
@@ -1018,17 +1018,16 @@ void radix_r(const int from, const int to, const int radix) {
     }
     TEND(10)
   } else {
-    #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
+    #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads())
     for (int i=0; i<ngrp; i++) {
       int my_from = from + starts[ugrp[i]];
       int my_to   = from + (i==(ngrp-1) ? my_n : starts[ugrp[i+1]]) - 1;
       //int my_n = my_to-my_from+1;
-      //if (my_n<=STL)
-      radix_r(my_from, my_to, radix+1); // will write to gs out-of-order (but not terribly out-of-order); this gets flutter sorted later
-      //#pragma omp ordered
-      //{
-      //  if (my_n>STL) radix_r(my_from, my_to, radix+1);  // inside ordered as a way to limit recursive nestedness; doesn't need to be ordered thanks to anchor
-      //}
+      if (my_n<=STL) radix_r(my_from, my_to, radix+1); // will write to gs out-of-order (but not terribly out-of-order); this gets flutter sorted later
+      #pragma omp ordered
+      {
+        if (my_n>STL) radix_r(my_from, my_to, radix+1);  // inside ordered as a way to limit recursive nestedness; doesn't need to be ordered thanks to anchor
+      }
     }
     TEND(11)
   }
