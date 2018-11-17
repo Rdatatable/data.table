@@ -714,8 +714,8 @@ static bool sort_ugrp(uint8_t *x, const int n)
 
 
 static inline void count_group(
-  const uint8_t *x, const int n,                      // a set of n bytes; n<=STL
-  bool *skip, uint8_t *ugrp, int *ngrp, int *counts   // outputs to small fixed stack allocations in caller (initialized by caller)
+  const uint8_t *restrict x, const int n,                           // a set of n bytes; n<=STL
+  bool *skip, uint8_t *ugrp, int *ngrp, uint16_t *restrict counts   // outputs to small fixed stack allocations in caller (initialized by caller)
 ) {
   ugrp[0] = x[0];     // first item is always first of first group
   counts[x[0]] = 1;
@@ -894,43 +894,44 @@ void radix_r(const int from, const int to, const int radix) {
     free(my_otmp);
     free(my_ktmp);
   }
-  TEND(4 + notFist*3)  // 3 timings in this section: 4,5,6 first main split; 7,8,9 thereon
+  TEND(4 + notFirst*3)  // 3 timings in this section: 4,5,6 first main split; 7,8,9 thereon
 
-  if (skip) {
-    // Every batch was grouped.  Now see if groups occurred in order across batches; e.g. to illustrate with ordered ugrp too to make it simpler
-    // counts:                 ugrps:   ngrps:
-    // 1: 20 18  2  0  0  0    0 1 2    3
-    // 2:  0  0 17 21  5  0    2 3 4    3
-    // 3:  0  0  0  0 15 19    4 5      2
-    // If so, we are done when not sorting. And may be done when sorting too if ugrp are sorted too.
-    // If this is the case, each batch's ngrp will be << 256 (e.g. 3,3,2 in illustration above)
+  // If my_n input is grouped and ugrp is sorted too (to illustrate), status now would be :
+  // counts:                 ugrps:   ngrps:
+  // 1: 20 18  2  0  0  0    0 1 2    3
+  // 2:  0  0 17 21  5  0    2 3 4    3
+  // 3:  0  0  0  0 15 19    4 5      2
+  // If the keys within each and every batch were grouped, skip will be true.
+  // Now we test if groups occurred in order across batches (like illustration above), and if not set skip=false
 
-    skip=false;   // for now forgo this optimization, not yet implemented
-    /*
-    uint8_t ugrp[256];  // head(ugrp,ngrp) contain the unique values seen so far
-    bool    seen[256];  // is the value present in ugrp
-    int     ngrp=0;     // max value 256 so not uint8_t
-    uint8_t last_seen=0;  // the last grp seen in the previous batch.  initialized 0 is not used
-    for (int i=0; i<256; i++) seen[i]=false;
-    for (int i=0; i<my_ngrp; i++) {
+  uint8_t ugrp[256];  // head(ugrp,ngrp) will contain the unique values in appearance order
+  bool    seen[256];  // is the value present in ugrp already
+  int     ngrp=0;     // max value 256 so not uint8_t
+  uint8_t last_seen=0;  // the last grp seen in the previous batch.  initialized 0 is not used
+  for (int i=0; i<256; i++) seen[i]=false;
+  for (int batch=0; batch<nBatch; batch++) {
+    const uint8_t *restrict my_ugrp = ugrps + batch*256;
+    if (ngrp==256 && !skip) break;  // no need to carry on
+    for (int i=0; i<ngrps[batch]; i++) {
       if (!seen[my_ugrp[i]]) {
         seen[my_ugrp[i]] = true;
         ugrp[ngrp++] = last_seen = my_ugrp[i];
-      } else if (skip && my_ugrp[i]!=last_seen) {
+      } else if (skip && my_ugrp[i]!=last_seen) {   // ==last_seen would occur accross batch boundaries, like 2=>17 and 5=>15 in illustration above
         skip=false;
       }
     }
-    */
   }
-  // now cumulate counts vertically to see where groups should be placed
+
+  // If skip==true (my_n was pre-grouped) and
+  // i) sort==0 (not sorting groups) then osub and ksub don't need reordering. ugrp may happen to be sorted too but nothing special to do in that case.
+  // ii) sort==1|-1 and ugrp is already sorted then osub and ksub don't need redordering either.
 
   if (sort && !sort_ugrp(ugrp, ngrp))
     skip=false;
-  //Rprintf("cumulate...\n");
-  // cumulate columnwise; parallel histogram; small so no need to parallelize
-  // don't skip this, as this gives us the group sizes in first row when skipping too
 
-  // the counts could be uint16_t.  But the cumulate needs to be int32_t (or int64_t in future) to hold the offsets
+  // now cumulate counts vertically to see where the blocks in the batches should be placed in the result across all batches
+  // the counts are uint16_t due to STL. But the cumulate needs to be int32_t (or int64_t in future) to hold the offsets
+  // If skip==true and we're already done, we still need the first row of this cummulate (diff to get total group sizes) to push() or recurse below
   int *starts = calloc(nBatch*ngrp, sizeof(int));
   int *ans = starts;
   for (int j=0, rollSum=0; j<ngrp; j++) {  // iterate through columns (ngrp bytes)
@@ -942,11 +943,11 @@ void radix_r(const int from, const int to, const int radix) {
       offset += 256;  // deliberately non-contiguous (vertical) here through counts
     }
   }
-  // the first row now (when diff'd using ugrp) now contains the size of each group across all batches, too
+  // the first row now (when diff'd) now contains the size of each group across all batches
 
-  TEND(5 + notFist*3)
+  TEND(5 + notFirst*3)
   if (!skip) {
-    all_skipped = false;
+    all_skipped = false;   // to save testing for 1:n at the very end before returning empty to mean already-sorted.
 
     // TODO this might not need to be parallel.  Just single thread might be able to do it.
     //      time how long the first one takes. If not too bad, then definitely single-thread, because these are already nested (other than the very first big one)
@@ -961,12 +962,12 @@ void radix_r(const int from, const int to, const int radix) {
       const uint8_t *restrict  byte = ugrps + batch*256;              // in appearance order always logged here in ugrps
       const int                my_ngrp = ngrps[batch];
       for (int i=0; i<my_ngrp; i++, byte++) {
-        const uint16_t len = my_counts[byte];
+        const uint16_t len = my_counts[*byte];
         memcpy(TMP+my_starts[i], osub, len);
         osub += len;
       }
     }
-    mempcy(anso+from, TMP, my_n*sizeof(int));
+    memcpy(anso+from, TMP, my_n*sizeof(int));
 
     for (int r=0; r<n_rem; r++) {    // TODO: groups of sizeof(anso)  4 byte int currently  (in future 8).  To save team startup cost (but unlikely significant anyway)
       #pragma omp parallel for num_threads(getDTthreads())
@@ -974,22 +975,22 @@ void radix_r(const int from, const int to, const int radix) {
         //const int my_from = from + batch*batchSize;
         const int *restrict      my_starts = starts + batch*ngrp;
         const uint16_t *restrict my_counts = counts + batch*256;
-        const int *restrict      ksub = key[radix+1+r] + from + batch*batchSize;  // the groups sit here contiguosly
+        const uint8_t *restrict  ksub = key[radix+1+r] + from + batch*batchSize;  // the groups sit here contiguosly
         const uint8_t *restrict  byte = ugrps + batch*256;                        // in appearance order always logged here in ugrps
         const int                my_ngrp = ngrps[batch];
         for (int i=0; i<my_ngrp; i++, byte++) {
-          const uint16_t len = my_counts[byte];
+          const uint16_t len = my_counts[*byte];
           memcpy((uint8_t *)TMP + my_starts[i], ksub, len);
           ksub += len;
         }
       }
-      mempcy(key[radix+1+r]+from, (uint8_t *)TMP, my_n);
+      memcpy(key[radix+1+r]+from, (uint8_t *)TMP, my_n);
     }
     free(TMP);
 
   }
-  TEND(6 + notFist*3)
-  notfirst = true;
+  TEND(6 + notFirst*3)
+  notFirst = true;
 
   //if (radix==0) {
   //  for (int i=0; i<ngrp-1; i++) Rprintf("radix=%d  i=%d  gs=%d\n", radix, i, counts[ugrp[i+1]]-counts[ugrp[i]]);
