@@ -770,6 +770,7 @@ void radix_r(const int from, const int to, const int radix) {
     const uint8_t *restrict my_key = key[radix]+from;
     count_group(my_key, my_n,                // inputs
                 &skip, ugrp, &ngrp, counts); // outputs
+    // count_group deals with 'sort' flag within it.  TODO: rename sort to sort_type (or better)
     if (!skip) {
       // reorder anso and remaining radix keys
 
@@ -820,6 +821,7 @@ void radix_r(const int from, const int to, const int radix) {
       }
     } else {
       // this single thread will now descend and resolve all groups, now that the groups are close in cache
+      // **TODO**: this could skip 1s when retgrp,  and do batches of 1s when retgrp to save flutter anchors
       for (int i=0, my_from=from; i<ngrp; i++) {
         int gs = counts[ugrp[i]];
         radix_r(my_from, my_from+gs-1, radix+1);
@@ -876,7 +878,7 @@ void radix_r(const int from, const int to, const int radix) {
         const int *restrict osub = anso+my_from;
         byte = my_key;
         for (int i=0; i<my_n; i++, byte++) {
-          int dest = my_counts[*byte++]++;
+          int dest = my_counts[*byte]++;
           my_otmp[dest] = *osub++;  // wastefully copies out 1:n when radix==0, but do not optimize as unlikely worth code complexity. my_otmp is not large, for example. Use first TEND() to decide.
           for (int r=0; r<n_rem; r++) my_ktmp[r*my_n + dest] = key[radix+1+r][my_from+i];   // reorder remaining keys
         }
@@ -932,18 +934,29 @@ void radix_r(const int from, const int to, const int radix) {
   // now cumulate counts vertically to see where the blocks in the batches should be placed in the result across all batches
   // the counts are uint16_t due to STL. But the cumulate needs to be int32_t (or int64_t in future) to hold the offsets
   // If skip==true and we're already done, we still need the first row of this cummulate (diff to get total group sizes) to push() or recurse below
+
+  Rprintf("counts:\n");
+  for (int b=0; b<nBatch; b++) {
+    for (int i=0; i<256; i++) Rprintf("%d ",counts[b*256+i]);  Rprintf("\n");
+  }
+
   int *starts = calloc(nBatch*ngrp, sizeof(int));
-  int *ans = starts;
-  for (int j=0, rollSum=0; j<ngrp; j++) {  // iterate through columns (ngrp bytes)
-    int offset = ugrp[j];
+  for (int j=0, sum=0; j<ngrp; j++) {  // iterate through columns (ngrp bytes)
+    uint16_t *tmp1 = counts+ugrp[j];
+    int      *tmp2 = starts+j;
     for (int batch=0; batch<nBatch; batch++) {
-      int tmp = counts[offset];  // when batch==0, the count in the first batch (first row of count matrix)
-      *ans++ = rollSum;
-      rollSum += tmp;
-      offset += 256;  // deliberately non-contiguous (vertical) here through counts
+      *tmp2 = sum;
+      tmp2 += ngrp;
+      sum += *tmp1;
+      tmp1 += 256;
     }
   }
   // the first row now (when diff'd) now contains the size of each group across all batches
+
+  Rprintf("starts:\n");
+  for (int b=0; b<nBatch; b++) {
+    for (int i=0; i<ngrp; i++) Rprintf("%d ",starts[b*ngrp+i]);  Rprintf("\n");
+  }
 
   TEND(5 + notFirst*3)
   if (!skip) {
