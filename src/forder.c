@@ -736,21 +736,9 @@ static inline void count_group(
 }
 
 void radix_r(const int from, const int to, const int radix) {
-
-//    #pragma omp parallel num_threads( n<=STL ? 1 : getDTthreads() )  // avoid starting potentially 32 threads (each with STL temps) for small input that is ST anyway
-//    {
-//      uint16_t my_order[STL];
-//      int my_gs[STL];     // group sizes, if all size 1 then STL will be full.  TODO: can my_gs and my_ng be uint16_t too instead of int?
-//      int my_ng=0;        // number of groups; number of items used in my_gs
-//      int my_tmp[STL];    // used to reorder ans (and thus needs to be int) and the first 1/4 is used to reorder each key[index]
-
-//      #pragma omp for ordered schedule(dynamic)
-//      for (int g=0; g<gsngrp[1-flip]; g++) {     // first time this will be just 1; the first split will be the nested method
-//        int from = g==0 ? 0 : gs[1-flip][g-1];   // this is why grps need to be pre-cumulated
-//        int to = gs[1-flip][g];
   TBEG();
   const int my_n = to-from+1;
-  if (my_n==1) {
+  if (my_n==1) {  // TODO: avoid my_n==1 as adds too many anchors; batch up the 1's instead in caller (and that's only needed when retgrp anyway)
     if (retgrp) {
       int my_gs[1] = {1};
       push(my_gs, 1, from);  // from is pushed so as to flutter sort group sizes afterwards
@@ -758,8 +746,86 @@ void radix_r(const int from, const int to, const int radix) {
     TEND(1);
     return;
   }
-  // else if (my_n<300) then insert sort to reinstate (but countgroup might be fast enough now using ugrp) TODO
-  if (my_n<=STL) {
+  else if (my_n<300) {  // greater than 300 may be worth trying given size byte
+    // insert sort with some twists:
+    // i) detects if grouped; if sort==0 can then skip
+    // ii) keeps group appearance order to minimise movement, and avoid a resort afterwards to get back to first-appearance order
+    uint8_t *restrict my_key = key[radix]+from;  // safe to write as we don't use this radix again
+
+=========================================================
+    uint8_t tmp=my_key[0];
+    int i=1;
+    while (i<my_n && my_key[i]==tmp) i++;
+    if (i==my_n) {
+      // all one value; one group; nothing to do other than recurse
+      if (radix+1==nradix) {
+        if (retgrp) push(&my_n, 1, from);
+      } else {
+        radix_r(from, to, radix+1);
+      }
+      return;
+    }
+    uint8_t ugrp[MIN(my_n-i-1, 256)];  // maximum number of different bytes
+    ugrp[0] = tmp;
+    ugrp[1] = my_key[i];
+    int ngrp=2;
+    bool seen[256]={false};
+    seen[ugrp[0]] = true;
+    seen[ugrp[1]] = true;
+
+    uint16_t o[my_n];  // 16 bits to allow my_n>256.   no need to initialize
+    o[0] = 0;
+
+    bool skip = true;
+    int i=1;
+    while(i<my_n && my_key[i]>=my_key[i-1]) i++;
+    if (i<my_n) {
+      skip=false;  // it isn't
+
+    for (int i=1; i<my_n; i++) {
+      uint8_t tmp = my_key[i];
+      o[i]
+      if (tmp>=my_key[i-1]) { o[i] = i;continue;  // x[i-1]==x[i] doesn't happen because x is unique
+      skip = false;
+      int j = i-1;
+      do {
+        x[j+1] = x[j];
+      } while (--j>=0 && tmp<x[j]);
+      x[j+1] = tmp;
+  }
+  return skip;
+
+
+    static void iinsert(int *x, int *o, int n)
+/*  orders both x and o by reference in-place. Fast for small vectors, low overhead.
+  don't be tempted to binsearch backwards here, have to shift anyway;
+  many memmove would have overhead and do the same thing. */
+/*  when nalast == 0, iinsert will be called only from within iradix, where o[.] = 0
+  for x[.]=NA is already taken care of */
+{
+  int i, j, xtmp, otmp, tt;
+  for (i=1; i<n; i++) {
+    xtmp = x[i];
+    if (xtmp < x[i-1]) {
+      j = i-1;
+      otmp = o[i];
+      while (j>=0 && xtmp < x[j]) {
+        x[j+1] = x[j];
+        o[j+1] = o[j];
+        j--;
+      }
+      x[j+1] = xtmp;
+      o[j+1] = otmp;
+    }
+  }
+  tt = 0;
+  for (i=1; i<n; i++) if (x[i]==x[i-1]) tt++; else { push(tt+1); tt=0; }
+  push(tt+1);
+}
+===============================================================
+
+  }
+  else if (my_n<=STL) {
     uint32_t counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. If not then allocate up front
                                  // and rely on last line of this function which resets just the non-zero's to 0. However, since recursive, it's tricky
                                  // to allocate upfront, which is why we're keeping it on stack like this.
@@ -1017,8 +1083,8 @@ void radix_r(const int from, const int to, const int radix) {
       push(my_gs, ngrp, from); // take the time to make my_gs and push all in one go because push is omp critical. 'from' is anchor to be flutter sorted afterwards
     }
     TEND(10)
-  } 
-  // else if (ngrp==1) // TODO: just radix_r()
+  }
+  // else if (ngrp==1) // TODO: just radix_r() it
   else {
     // TODO: explicitly repeat parallel batch for any skew bins
     #pragma omp parallel for schedule(dynamic) num_threads(MIN(ngrp, getDTthreads()))
