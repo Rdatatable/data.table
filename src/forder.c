@@ -47,12 +47,12 @@ static int ustr_n = 0;
 static int ustr_maxlen = 0;
 static int sort = 0;                 // 0 no sort; -1 descending, +1 ascending
 static bool all_skipped = true;
-static int *OTMP = NULL;
-static uint8_t *KTMP = NULL;
+//static int *OTMP = NULL;
+//static uint8_t *KTMP = NULL;
 static int nradix = 0;
 static uint8_t **key = NULL;
 static int *anso = NULL;
-static bool firstTime=false;
+static bool notFirst=false;
 
 #define Error(...) do {cleanup(); error(__VA_ARGS__);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
 #undef warning
@@ -82,8 +82,8 @@ static void cleanup() {
   free(cradix_counts); cradix_counts=NULL;
   free(cradix_xtmp);   cradix_xtmp=NULL;
   free_ustr();
-  free(OTMP); OTMP=NULL;
-  free(KTMP); KTMP=NULL;
+//  free(OTMP); OTMP=NULL;
+//  free(KTMP); KTMP=NULL;
   if (key!=NULL) for (int i=0; i<nradix; i++) free(key[i]);
   free(key); key=NULL; nradix=0;
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
@@ -447,7 +447,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
   }
   // if n==1, the code is left to proceed below in case one or more of the 1-row by= columns are NA and na.last=NA. Otherwise it would be easy to return now.
   all_skipped = true;
-  firstTime = true;
+  notFirst = false;
 
   SEXP ans = PROTECT(allocVector(INTSXP, n)); n_protect++;
   anso = INTEGER(ans);
@@ -645,8 +645,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
   TEND(0);
 
   if (nradix) {
-    OTMP = malloc(n*sizeof(int));
-    KTMP = malloc((nradix-1) * n * sizeof(uint8_t *));
+    //OTMP = malloc(n*sizeof(int));
+    //KTMP = malloc((nradix-1) * n * sizeof(uint8_t *));
     int old = omp_get_nested();
     omp_set_nested(1);
     radix_r(0, n-1, 0);  // top level recursive call: (from, to, byte). Nested parallelism is constrained via ordered clause.
@@ -710,7 +710,7 @@ static bool sort_ugrp(uint8_t *x, const int n)
   return skip;
 }
 
-#define STL 529100  //65535   // Single Thread Load.  Such that counts can be uint16_t (smaller for MT cache efficiency), therefore not 65536
+#define STL 65535   // Single Thread Load.  Such that counts can be uint16_t (smaller for MT cache efficiency), therefore not 65536
 
 
 static inline void count_group(
@@ -736,7 +736,7 @@ static inline void count_group(
     *skip=false;
 }
 
-void radix_r(int from, int to, int radix) {
+void radix_r(const int from, const int to, const int radix) {
 
 //    #pragma omp parallel num_threads( n<=STL ? 1 : getDTthreads() )  // avoid starting potentially 32 threads (each with STL temps) for small input that is ST anyway
 //    {
@@ -761,14 +761,14 @@ void radix_r(int from, int to, int radix) {
   }
   // else // < 300 then insert sort to reinstate (but countgroup might be fast enough now using ugrp)
   if (my_n<=STL) {
-    int counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. If not then allocate up front
+    uint16_t counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. If not then allocate up front
                                  // and rely on last line of this function which resets just the non-zero's to 0. However, since recursive, it's tricky
                                  // to allocate upfront, which is why we're keeping it on stack like this.
     uint8_t ugrp[(my_n<256)?my_n:256];  // uninitialized is fine. unique groups; avoids sweeping all 256 counts when very often very few of them are used
     int ngrp;                           // int because it needs to hold the value 256. Could over-optimize down to uint8_t later perhaps.
     bool skip;
-    const uint8_t *x = key[radix]+from;
-    count_group(x, my_n,                     // inputs
+    const uint8_t *restrict my_key = key[radix]+from;
+    count_group(my_key, my_n,                // inputs
                 &skip, ugrp, &ngrp, counts); // outputs
     if (!skip) {
       // reorder anso and remaining radix keys
@@ -783,29 +783,34 @@ void radix_r(int from, int to, int radix) {
       // cumulate; for forwards-assign to give cpu prefetch best chance (cpu may not support prefetch backwards)
       for (int i=0, sum=0; i<ngrp; i++) { uint8_t w=ugrp[i]; int tmp=counts[w]; counts[w]=sum; sum+=tmp; }
 
-      int *osub = anso+from;
-      // if (radix==0 | direct) {  # (don't do)
-      //   // will only happen when entire input<STL, so it's not worth saving the tiny waste here at the expense of a deep branch later
-      //   // write the ordering directly (without going via my_tmp to reorder contents of o) because o just contains identity 1:n when radix==0
-      //   if (from!=0) Error("Internal error: from!=0 in radix=0 where n<=STL");
-      //   for (int i=0; i<my_n; i++) osub[i] = from+my_order[i]+1;
-      // }
-      int *my_tmp = (my_n>=1024) ? malloc(my_n*sizeof(int)) : alloca(my_n*sizeof(int));
-      // probably fast and reuses same block anyway, lets see  //STL_TMP[me][radix];.  Or could bump in ordered clause and allocate next level for the thread there.
-      for (int i=0; i<my_n; i++) my_tmp[counts[x[i]]++] = osub[i];
-      memcpy(osub, my_tmp, my_n*sizeof(int));
+      if (radix==0) {
+        // anso contains 1:n so skip reading and copying it. Only happens when entire input<STL. Saving worth the branch when user repeatedly calls a small-n small-cardinality order.
+        for (int i=0; i<my_n; i++) anso[counts[my_key[i]]++] = i+1;  // +1 as R is 1-based
+      } else {
+        int *osub = anso+from;
+        bool onheap = my_n>=1024;
+        int *TMP = onheap ? malloc(my_n*sizeof(int)) : alloca(my_n*sizeof(int));  // OS likely faster here than us. Let's see.  TODO: int=>int64_t in future
+        for (int i=0; i<my_n; i++) TMP[counts[my_key[i]]++] = osub[i];
+        memcpy(osub, TMP, my_n*sizeof(int));
+        if (onheap) free(TMP);
+      }
 
       // reorder remaining key columns (radix+1 onwards).   This could be done in one-step too (a single pass through x[],  with a larger my_tmp
-      for (int remaining_radix=radix+1; remaining_radix<nradix; remaining_radix++) {
-        for (int i=0, last=0; i<ngrp; i++) { int tmp=counts[ugrp[i]]; counts[ugrp[i]]=last; last=tmp; }  // reset cumulate. When ngrp<<256, faster than memcpy
-        uint8_t *b = (uint8_t *)my_tmp;
-        uint8_t *ksub = key[remaining_radix]+from;
-        for (int i=0; i<my_n; i++) b[counts[x[i]]++] = ksub[i];
-        memcpy(ksub, my_tmp, my_n*1);
+      //    that's how its done in the batched approach below.  Which is better?  The way here is multiple (but contiguous) passes through my_key
+      if (radix+1<nradix) {
+        bool onheap = my_n>=4096;
+        uint8_t *TMP = onheap ? malloc(my_n) : alloca(my_n);
+        for (int r=radix+1; r<nradix; r++) {
+          for (int i=0,last=0; i<ngrp; i++) { int tmp=counts[ugrp[i]]; counts[ugrp[i]]=last; last=tmp; }  // rewind cumulate. When ngrp<<256, faster than memcpy
+          uint8_t *restrict ksub = key[r]+from;
+          for (int i=0; i<my_n; i++) TMP[counts[my_key[i]]++] = ksub[i];
+          memcpy(ksub, TMP, my_n);
+        }
+        if (onheap) free(TMP);
       }
-      if (my_n>=4096) free(my_tmp);
-      int last=0;
-      for (int i=0; i<ngrp; i++) { int tmp=counts[ugrp[i]]; counts[ugrp[i]]-=last; last=tmp; }   // reset cumulate to counts (as they were after count_group)
+
+      // reset cumulate to counts (as they were after count_group)
+      for (int i=0,last=0; i<ngrp; i++) { int tmp=counts[ugrp[i]]; counts[ugrp[i]]-=last; last=tmp; }
     }
     if (radix+1==nradix || ngrp==my_n) {
       if (retgrp) {
@@ -825,168 +830,186 @@ void radix_r(int from, int to, int radix) {
     //TEND(2)
     return;
   }
-  // else parallel batches. This is called recursively but only from ordered clause below to limit excessive nestedness.
+  // else parallel batches. This is called recursively but only once or maybe twice before resolving to STL branch above
 
-  int nBatch = getDTthreads()*1525;  // at least nth; more to reduce last-chunk-home; but not too large size we need nBatch*256 counts
-  size_t batchSize = (my_n-1)/nBatch + 1;
-  nBatch = (my_n-1)/batchSize + 1;
+  //int nBatch = getDTthreads()*1525;  // at least nth; more to reduce last-chunk-home; but not too large size we need nBatch*256 counts
+  int batchSize = MIN(STL, 1+my_n/getDTthreads());  // (my_n-1)/nBatch + 1;
+  int nBatch = (my_n-1)/batchSize + 1;
   int lastBatchSize = my_n - (nBatch-1)*batchSize;
-  int *restrict counts = calloc(nBatch*256, sizeof(int));  // TODO: this can be static (since just one-at-a-time);  as long as we copy out the first row onto stack later below.
-  // TODO:  if (!counts) exit parallel and Error...
+  uint16_t *counts = calloc(nBatch*256,sizeof(uint16_t));  // TODO: this can be static (since just one-at-a-time);  as long as we copy out the first row onto stack later below.
+  uint8_t  *ugrps =  malloc(nBatch*256*sizeof(uint8_t));
+  int      *ngrps =  calloc(nBatch    ,sizeof(int));
+  // TODO:  if (!counts || !ugrps || !ngrps) Error...
   //Rprintf("nested batch count...\n");
-  TEND(3)
-  uint8_t ugrp[256];  // head(ugrp,ngrp) contain the unique values seen so far
-  bool    seen[256];  // is the value present in ugrp
-  int     ngrp=0;     // max value 256 so not uint8_t
-  uint8_t last_seen=0;  // the last grp seen in the previous batch.  initialized 0 is not used
-  for (int i=0; i<256; i++) seen[i]=false;
+
   bool skip=true;
-  TEND(4)
-  #pragma omp parallel for ordered num_threads(getDTthreads())
-  for (int batch=0; batch<nBatch; batch++) {
-    int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;  // lastBatchSize == batchSize when my_n is multiple of nBatch
-    const uint8_t *tmp = key[radix] + from + batch*batchSize;
-    int *my_counts = counts + batch*256;            // TODO: type could switch from uint64 to uint32 depending on my_n>2^32; two loops
-    uint8_t my_ugrp[256];
-    int     my_ngrp=0;
-    bool    my_skip=true;
-    for (int i=0; i<my_n; i++, tmp++) {
-      if (++my_counts[*tmp]==1) {
-        my_ugrp[my_ngrp++] = *tmp;
-      } else if (my_skip && tmp[0]!=tmp[-1]) {
-        my_skip=false;
-      }
-    }
-    if (!my_skip) skip=false;  // before ordered to save work in prior waiting threads; fine to update bool to false without atomic
-    #pragma omp ordered
-    {
-      for (int i=0; i<my_ngrp; i++) {
-        if (!seen[my_ugrp[i]]) {
-          seen[my_ugrp[i]] = true;
-          ugrp[ngrp++] = last_seen = my_ugrp[i];
-        } else if (skip && my_ugrp[i]!=last_seen) {
-          skip=false;
+  const int n_rem = nradix-radix-1;   // how many radix are remaining after this one
+  TEND(3)
+  #pragma omp parallel num_threads(getDTthreads())
+  {
+    int     *my_otmp = malloc(batchSize * sizeof(int)); // thread-private write. Move this up above and point this private restrict to it. Easier to Error alloc that way, if it's just as fast.
+    uint8_t *my_ktmp = malloc(batchSize * sizeof(uint8_t) * n_rem);
+    // TODO: if my_otmp==NULL || my_ktmp==NULL, error.
+    #pragma omp for
+    for (int batch=0; batch<nBatch; batch++) {
+      const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;  // lastBatchSize == batchSize when my_n is a multiple of batchSize
+      const int my_from = from + batch*batchSize;
+      uint16_t *restrict      my_counts = counts + batch*256;
+      uint8_t  *restrict      my_ugrp   = ugrps  + batch*256;
+      int                     my_ngrp   = 0;
+      bool                    my_skip   = true;
+      const uint8_t *restrict my_key    = key[radix] + my_from;
+      const uint8_t *restrict byte = my_key;
+      for (int i=0; i<my_n; i++, byte++) {
+        if (++my_counts[*byte]==1) {   // always true first time when i==0
+          my_ugrp[my_ngrp++] = *byte;
+        } else if (my_skip && byte[0]!=byte[-1]) {   // include 'my_skip &&' to save != comparison after it's realized this batch is not grouped
+          my_skip=false;
         }
       }
+      ngrps[batch] = my_ngrp;  // write once to this shared cache line
+      if (!my_skip) {
+        skip = false;          // naked write to this shared byte is ok because false is only value written
+        // gather this batch's anso and remaining keys. If we sorting too, urgrp is sorted later for that. Here we want to benefit from skip within batch
+        // as much as possible which is a good chance since batchSize is relatively small (STL)
+        for (int i=0, sum=0; i<my_ngrp; i++) { int tmp = my_counts[my_ugrp[i]]; my_counts[my_ugrp[i]]=sum; sum+=tmp; } // cumulate counts of this batch
+        const int *restrict osub = anso+my_from;
+        byte = my_key;
+        for (int i=0; i<my_n; i++, byte++) {
+          int dest = my_counts[*byte++]++;
+          my_otmp[dest] = *osub++;  // wastefully copies out 1:n when radix==0, but do not optimize as unlikely worth code complexity. my_otmp is not large, for example. Use first TEND() to decide.
+          for (int r=0; r<n_rem; r++) my_ktmp[r*my_n + dest] = key[radix+1+r][my_from+i];   // reorder remaining keys
+        }
+        // or could do multiple passes through my_key like in the my_n<STL approach above. Test which is better depending on if TEND() points here.
+
+        // we haven't completed all batches, so we don't know where these groups should place yet
+        // So for now we write the thread-private small now-grouped buffers back in-place. The counts and groups across all batches will be used below to move these blocks.
+        memcpy(anso+my_from, my_otmp, my_n*sizeof(int));
+        for (int r=0; r<n_rem; r++) memcpy(key[radix+1+r]+my_from, my_ktmp+r*my_n, my_n*sizeof(uint8_t));
+
+        // revert cumulate back to counts ready for vertical cumulate
+        for (int i=0, last=0; i<my_ngrp; i++) { int tmp = my_counts[my_ugrp[i]]; my_counts[my_ugrp[i]]-=last; last=tmp; }
+      }
     }
+    free(my_otmp);
+    free(my_ktmp);
   }
-  TEND(5)
+  TEND(4 + notFist*3)  // 3 timings in this section: 4,5,6 first main split; 7,8,9 thereon
+
+  if (skip) {
+    // Every batch was grouped.  Now see if groups occurred in order across batches; e.g. to illustrate with ordered ugrp too to make it simpler
+    // counts:                 ugrps:   ngrps:
+    // 1: 20 18  2  0  0  0    0 1 2    3
+    // 2:  0  0 17 21  5  0    2 3 4    3
+    // 3:  0  0  0  0 15 19    4 5      2
+    // If so, we are done when not sorting. And may be done when sorting too if ugrp are sorted too.
+    // If this is the case, each batch's ngrp will be << 256 (e.g. 3,3,2 in illustration above)
+
+    skip=false;   // for now forgo this optimization, not yet implemented
+    /*
+    uint8_t ugrp[256];  // head(ugrp,ngrp) contain the unique values seen so far
+    bool    seen[256];  // is the value present in ugrp
+    int     ngrp=0;     // max value 256 so not uint8_t
+    uint8_t last_seen=0;  // the last grp seen in the previous batch.  initialized 0 is not used
+    for (int i=0; i<256; i++) seen[i]=false;
+    for (int i=0; i<my_ngrp; i++) {
+      if (!seen[my_ugrp[i]]) {
+        seen[my_ugrp[i]] = true;
+        ugrp[ngrp++] = last_seen = my_ugrp[i];
+      } else if (skip && my_ugrp[i]!=last_seen) {
+        skip=false;
+      }
+    }
+    */
+  }
+  // now cumulate counts vertically to see where groups should be placed
 
   if (sort && !sort_ugrp(ugrp, ngrp))
     skip=false;
-  TEND(6)
   //Rprintf("cumulate...\n");
   // cumulate columnwise; parallel histogram; small so no need to parallelize
   // don't skip this, as this gives us the group sizes in first row when skipping too
 
-  /*
-  for (int b=0, rollSum=0; b<ngrp; b++) {
-    int j = ugrp[b];
+  // the counts could be uint16_t.  But the cumulate needs to be int32_t (or int64_t in future) to hold the offsets
+  int *starts = calloc(nBatch*ngrp, sizeof(int));
+  int *ans = starts;
+  for (int j=0, rollSum=0; j<ngrp; j++) {  // iterate through columns (ngrp bytes)
+    int offset = ugrp[j];
     for (int batch=0; batch<nBatch; batch++) {
-      int tmp = counts[j];
-      counts[j] = rollSum;
+      int tmp = counts[offset];  // when batch==0, the count in the first batch (first row of count matrix)
+      *ans++ = rollSum;
       rollSum += tmp;
-      j += 256;  // deliberately non-contiguous here
+      offset += 256;  // deliberately non-contiguous (vertical) here through counts
     }
   }
-  */
-  TEND(7)
+  // the first row now (when diff'd using ugrp) now contains the size of each group across all batches, too
+
+  TEND(5 + notFist*3)
+  if (!skip) {
+    all_skipped = false;
+
+    // TODO this might not need to be parallel.  Just single thread might be able to do it.
+    //      time how long the first one takes. If not too bad, then definitely single-thread, because these are already nested (other than the very first big one)
+    int *TMP = malloc(my_n * sizeof(int));
+    // TODO: if TMP==NULL Error
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (int batch=0; batch<nBatch; batch++) {
+      //const int my_from = from + batch*batchSize;
+      const int *restrict      my_starts = starts + batch*ngrp;
+      const uint16_t *restrict my_counts = counts + batch*256;
+      const int *restrict      osub = anso + from + batch*batchSize;  // the groups sit here contiguously
+      const uint8_t *restrict  byte = ugrps + batch*256;              // in appearance order always logged here in ugrps
+      const int                my_ngrp = ngrps[batch];
+      for (int i=0; i<my_ngrp; i++, byte++) {
+        const uint16_t len = my_counts[byte];
+        memcpy(TMP+my_starts[i], osub, len);
+        osub += len;
+      }
+    }
+    mempcy(anso+from, TMP, my_n*sizeof(int));
+
+    for (int r=0; r<n_rem; r++) {    // TODO: groups of sizeof(anso)  4 byte int currently  (in future 8).  To save team startup cost (but unlikely significant anyway)
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int batch=0; batch<nBatch; batch++) {
+        //const int my_from = from + batch*batchSize;
+        const int *restrict      my_starts = starts + batch*ngrp;
+        const uint16_t *restrict my_counts = counts + batch*256;
+        const int *restrict      ksub = key[radix+1+r] + from + batch*batchSize;  // the groups sit here contiguosly
+        const uint8_t *restrict  byte = ugrps + batch*256;                        // in appearance order always logged here in ugrps
+        const int                my_ngrp = ngrps[batch];
+        for (int i=0; i<my_ngrp; i++, byte++) {
+          const uint16_t len = my_counts[byte];
+          memcpy((uint8_t *)TMP + my_starts[i], ksub, len);
+          ksub += len;
+        }
+      }
+      mempcy(key[radix+1+r]+from, (uint8_t *)TMP, my_n);
+    }
+    free(TMP);
+
+  }
+  TEND(6 + notFist*3)
+  notfirst = true;
 
   //if (radix==0) {
   //  for (int i=0; i<ngrp-1; i++) Rprintf("radix=%d  i=%d  gs=%d\n", radix, i, counts[ugrp[i+1]]-counts[ugrp[i]]);
   //  Rprintf("radix=%d  i=%d  gs=%d\n", radix, ngrp-1, my_n-counts[ugrp[ngrp-1]]);
   //}
 
-  // reorder o and the remaining radix bytes.
-  // if radix==0,  then we can just write directly to.  Otherwise we have to reorder existing o (and allocate a tmp for the reorder)
-  // a tmp nrow*1 byte is fine to use to reorder the key column one by one.
-  // instead of creating order and then using order, which will be wide access,  we will push the value to the right place, and reuse the counts over and over.
-  // first memcpy counts to private and then cumulate on-stack
-  // writing to 256-locations, each contiguously, will keep hop around 256 cache lines being written, but contigious read through (large) x
-  // alternatively if o was created, we would write contiguously but jump around reading from x which would be more cache-line fetches (although, read-only)
-
-  // counts are going to have to be int,  to hold the offsets into nrow.  256*4 = 16 cache lines. We have 4096 cache lines (256 threads)
-  // if (TMP_size<my_n) {
-  //   TMP = (char *)realloc(TMP, my_n);
-  //   // TODO  if (!TMP) Error
-  //   TMP_size = my_n;
-  // }
-  if (!skip) {
-    all_skipped = false;
-    // Rprintf("reorder remaining radix keys (from=%d)...\n", from);
-
-    // counts are just raw currently, not cumulated.
-    const int n_rem = nradix-radix-1;   // how many radix are remaining after this one
-    #pragma omp parallel num_threads(getDTthreads())
-    {
-      int *my_otmp = malloc(batchSize * sizeof(int));  // thread-private write
-      uint8_t *my_ktmp = malloc(batchSize * sizeof(uint8_t) * n_rem);
-      // TODO: if my_otmp==NULL || my_ktmp==NULL, error.
-      #pragma omp for
-      for (int batch=0; batch<nBatch; batch++) {
-        const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;
-
-        int *restrict my_counts = counts + batch*256;    // TODO: use restrict everywhere,  even with const too
-        for (int i=0, sum=0; i<ngrp; i++) { int tmp = my_counts[ugrp[i]]; my_counts[ugrp[i]]=sum; sum+=tmp; }  // cumulate this batch
-
-        const uint8_t *restrict rem_key[n_rem];
-        for (int r=0; r<n_rem; r++) rem_key[r] = key[radix+1+r] + from + batch*batchSize;
-
-        const uint8_t *restrict b = key[radix] + from + batch*batchSize;  // iterate through this once
-        for (int i=0; i<my_n; i++) {
-          int dest = my_counts[*b++]++;
-          my_otmp[dest] = from+i;   // TODO:   this is direct=true and hardcoded for now.  TODO: needs to be firstTime aware
-          for (int r=0; r<n_rem; r++) my_ktmp[r*my_n + dest] = *rem_key[r]++;   // reorder remaining keys
-        }
-
-        memcpy(anso+from+batch*batchSize, my_otmp, my_n*sizeof(int));
-        for (int r=0; r<n_rem; r++) memcpy(key[radix+1+r]+from+batch*batchSize, my_ktmp+r*my_n, my_n*sizeof(uint8_t));
-
-        // could maybe write here to the across-batch tmp
-
-        //if (direct) {
-        //  // don't need to reorder o because o contains just 1:n. Saves allocating TMP with nrow(DT)*4 bytes and hopping wastefully via it.
-        //  int k = batch*batchSize + 1;  // +1 because returned to 1-based R
-        //  for (int i=0; i<my_n; i++) anso[my_tmp_counts[*b++]++] = k++;
-      }
-    }
-    //OTMP[dest] = *osub++;                                        // reorder anso
-    //for (int r=0; r<n_rem; r++) KTMP[r*my_n+dest] = *rem_key[r]++;   // reorder remaining keys
-    TEND(8+!firstTime)
-    firstTime=false;
-    ///*if (!direct)*/ memcpy(anso+from, OTMP, my_n*sizeof(int));
-    //for (int r=0; r<n_rem; r++) memcpy(key[radix+1+r]+from, KTMP+r*my_n, my_n*sizeof(uint8_t));
-    //Rprintf("remaining radix %d...\n", remaining_radix);
-    //Rprintf("TRACE:  %p %p %d %p %p %p %p\n", source, TMP, my_n, key[0], key[1], key[2], key[3]);
-
-    TEND(10);
-
-    //const bool direct = false; //(radix==0); // TODO: reinstate direct and save TMP
-    //if (direct) {
-    //  if (from!=0) Error("internal error: first nested for radix==0 but from!=0");
-    //}
-
-    //else if (TMP_size<(my_n*sizeof(int))) {
-    //  TMP = (char *)realloc(TMP, my_n*sizeof(int));
-    //  // TODO  if (!TMP) Error
-    //  TMP_size = my_n*sizeof(int);
-    //}
-    //Rprintf("reorder o (direct=%d)...\n", direct);
-  }
   // TODO could push all the size 1 groups (and maybe 2) and reduce the ngrp to just decent sizes, to just parallel through decent sizes.
   if (radix+1==nradix || ngrp==my_n) {
     if (retgrp) {
       int my_gs[ngrp];
-      for (int i=1; i<ngrp; i++) my_gs[i-1] = counts[ugrp[i]] - counts[ugrp[i-1]];
-      my_gs[ngrp-1] = my_n - counts[ugrp[ngrp-1]];
+      for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[i] - starts[i-1];
+      my_gs[ngrp-1] = my_n - starts[ngrp-1];
       push(my_gs, ngrp, from); // take the time to make my_gs and push all in one go because push is omp critical. 'from' is anchor to be flutter sorted afterwards
     }
-    TEND(11)
+    TEND(10)
   } else {
     #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
     for (int i=0; i<ngrp; i++) {
-      int my_from = from + counts[ugrp[i]];
-      int my_to   = from + (i==(ngrp-1) ? my_n : counts[ugrp[i+1]]) - 1;
+      int my_from = from + starts[i];
+      int my_to   = from + (i==(ngrp-1) ? my_n : starts[i+1]) - 1;
       //int my_n = my_to-my_from+1;
       //if (my_n<=STL)
       radix_r(my_from, my_to, radix+1); // will write to gs out-of-order (but not terribly out-of-order); this gets flutter sorted later
@@ -995,12 +1018,13 @@ void radix_r(int from, int to, int radix) {
       //  if (my_n>STL) radix_r(my_from, my_to, radix+1);  // inside ordered as a way to limit recursive nestedness; doesn't need to be ordered thanks to anchor
       //}
     }
-    TEND(12)
+    TEND(11)
   }
-  // memset(counts, 0, nBatch*256*sizeof(int));
-
   free(counts);
-  TEND(13)
+  free(starts);
+  free(ugrps);
+  free(ngrps);
+  TEND(12)
 }
 
 
