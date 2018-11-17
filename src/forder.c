@@ -89,7 +89,7 @@ static void cleanup() {
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
 }
 
-static void push(int *x, int n, int anchor) {
+static void push(const int *x, const int n, const int anchor) {
   #pragma omp critical(push)
   {
     if (gsalloc < gsngrp+n) {
@@ -127,7 +127,7 @@ static void push(int *x, int n, int anchor) {
 // range_* functions return [min,max] of the non-NAs as common uint64_t type
 // TODO parallelize
 
-static void range_i32(int32_t *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
+static void range_i32(const int32_t *x, const int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
 {
   int32_t min = NA_INTEGER;
   int32_t max = NA_INTEGER;
@@ -661,7 +661,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
     int last=NBLOCK-1;
     while (last>=0 && nblock[last]==0) last--; // remove unused timing slots
     for (int i=0; i<=last; i++) {
-      Rprintf("Timing block %2d = %8.3f   %8d\n", i, tblock[i], nblock[i]);
+      Rprintf("Timing block %2d%s = %8.3f   %8d\n", i, (i>=7&&i<=9)?"(1)":"   ", tblock[i], nblock[i]);
     }
   }
   #endif
@@ -756,6 +756,7 @@ void radix_r(const int from, const int to, const int radix) {
     while (i<my_n && my_key[i]==my_key[i-1]) i++;
     if (i==my_n) {
       // all one value; one group; nothing to do other than recurse
+      // save allocation of o etc
       if (radix+1==nradix) {
         if (retgrp) push(&my_n, 1, from);
       } else {
@@ -824,10 +825,30 @@ void radix_r(const int from, const int to, const int radix) {
 
     // my_key is now grouped (and sorted by group too if sort!=0)
     // all we have left to do is find the group sizes and either recurse or push
-==========================================
-    if(retgrp) ....   see end of next if to see what to do
-==========================================
-
+    if (radix+1==nradix && !retgrp) {
+      TEND(2);
+      return;
+    }
+    int ngrp=0, my_gs[my_n];  //TODO: could know number of groups with certainty up above
+    my_gs[ngrp]=1;
+    for (int i=1; i<my_n; i++) {
+      if (my_key[i]!=my_key[i-1]) my_gs[++ngrp] = 1;
+      else my_gs[ngrp]++;
+    }
+    ngrp++;
+    if (radix+1==nradix || ngrp==my_n) {
+      if (retgrp) {
+        push(my_gs, ngrp, from);
+      }
+      TEND(3);
+    } else {
+      for (int i=0, f=from; i<ngrp; i++) {
+        radix_r(f, f+my_gs[i]-1, radix+1);
+        f+=my_gs[i];
+      }
+      TEND(4);
+    }
+    return;
   }
   else if (radix>0 || my_n<=65535) {
     uint32_t counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. If not then allocate up front
@@ -898,7 +919,7 @@ void radix_r(const int from, const int to, const int radix) {
       }
     }
     // for (int i=0; i<ngrp; i++) counts[ugrp[i]] = 0;  // ready for next time to save initializing should the stack 256-initialization above ever be identified as too slow
-    TEND(2)
+    TEND(5)
     return;
   }
   // else parallel batches. This is called recursively but only once or maybe twice before resolving to STL branch above
@@ -915,7 +936,7 @@ void radix_r(const int from, const int to, const int radix) {
 
   bool skip=true;
   const int n_rem = nradix-radix-1;   // how many radix are remaining after this one
-  TEND(3)
+  TEND(6)
   #pragma omp parallel num_threads(getDTthreads())
   {
     int     *my_otmp = malloc(batchSize * sizeof(int)); // thread-private write. Move this up above and point this private restrict to it. Easier to Error alloc that way, if it's just as fast.
@@ -965,7 +986,7 @@ void radix_r(const int from, const int to, const int radix) {
     free(my_otmp);
     free(my_ktmp);
   }
-  TEND(4 + notFirst*3)  // 3 timings in this section: 4,5,6 first main split; 7,8,9 thereon
+  TEND(7 + notFirst*3)  // 3 timings in this section: 4,5,6 first main split; 7,8,9 thereon
 
   // If my_n input is grouped and ugrp is sorted too (to illustrate), status now would be :
   // counts:                 ugrps:   ngrps:
@@ -1027,7 +1048,7 @@ void radix_r(const int from, const int to, const int radix) {
   //  for (int i=0; i<256; i++) { Rprintf("%d ",starts[b*256+i]); }  Rprintf("\n");
   //}
 
-  TEND(5 + notFirst*3)
+  TEND(8 + notFirst*3)
   if (!skip) {
     all_skipped = false;   // to save testing for 1:n at the very end before returning empty to mean already-sorted.
 
@@ -1070,7 +1091,7 @@ void radix_r(const int from, const int to, const int radix) {
     }
     free(TMP);
   }
-  TEND(6 + notFirst*3)
+  TEND(9 + notFirst*3)
   notFirst = true;
 
   //if (radix==0) {
@@ -1086,7 +1107,7 @@ void radix_r(const int from, const int to, const int radix) {
       my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
       push(my_gs, ngrp, from); // take the time to make my_gs and push all in one go because push is omp critical. 'from' is anchor to be flutter sorted afterwards
     }
-    TEND(10)
+    TEND(13)
   }
   // else if (ngrp==1) // TODO: just radix_r() it
   else {
@@ -1103,13 +1124,13 @@ void radix_r(const int from, const int to, const int radix) {
       //  if (my_n>STL) radix_r(my_from, my_to, radix+1);  // inside ordered as a way to limit recursive nestedness; doesn't need to be ordered thanks to anchor
       //}
     }
-    TEND(11)
+    TEND(14)
   }
   free(counts);
   free(starts);
   free(ugrps);
   free(ngrps);
-  TEND(12)
+  TEND(15)
 }
 
 
