@@ -710,7 +710,7 @@ static bool sort_ugrp(uint8_t *x, const int n)
   return skip;
 }
 
-#define STL 600000 // >1e8/190=526315 for now  ...  65535   // Single Thread Load.  Such that counts can be uint16_t (smaller for MT cache efficiency), therefore not 65536
+//  TODELETE ... #define STL 600000 // >1e8/190=526315 for now  ...  65535   // Single Thread Load.  Such that counts can be uint16_t (smaller for MT cache efficiency), therefore not 65536
 
 static inline void count_group(
   const uint8_t *restrict x, const int n,                           // a set of n bytes; n<=STL
@@ -738,7 +738,8 @@ static inline void count_group(
 void radix_r(const int from, const int to, const int radix) {
   TBEG();
   const int my_n = to-from+1;
-  if (my_n==1) {  // TODO: avoid my_n==1 as adds too many anchors; batch up the 1's instead in caller (and that's only needed when retgrp anyway)
+  if (my_n==1) {  // TODO: avoid my_n==1 as i) adds too many anchors and ii) too many calls to critical inside push()
+                  //       batch up the 1's instead in caller (and that's only needed when retgrp anyway)
     if (retgrp) {
       int my_gs[1] = {1};
       push(my_gs, 1, from);  // from is pushed so as to flutter sort group sizes afterwards
@@ -749,13 +750,10 @@ void radix_r(const int from, const int to, const int radix) {
   else if (my_n<300) {  // greater than 300 may be worth trying given size byte
     // insert sort with some twists:
     // i) detects if grouped; if sort==0 can then skip
-    // ii) keeps group appearance order to minimise movement, and avoid a resort afterwards to get back to first-appearance order
+    // ii) keeps group appearance order to minimize movement and avoid a resort afterwards
     uint8_t *restrict my_key = key[radix]+from;  // safe to write as we don't use this radix again
-
-=========================================================
-    uint8_t tmp=my_key[0];
     int i=1;
-    while (i<my_n && my_key[i]==tmp) i++;
+    while (i<my_n && my_key[i]==my_key[i-1]) i++;
     if (i==my_n) {
       // all one value; one group; nothing to do other than recurse
       if (radix+1==nradix) {
@@ -765,67 +763,73 @@ void radix_r(const int from, const int to, const int radix) {
       }
       return;
     }
-    uint8_t ugrp[MIN(my_n-i-1, 256)];  // maximum number of different bytes
-    ugrp[0] = tmp;
-    ugrp[1] = my_key[i];
-    int ngrp=2;
-    bool seen[256]={false};
-    seen[ugrp[0]] = true;
-    seen[ugrp[1]] = true;
-
-    uint16_t o[my_n];  // 16 bits to allow my_n>256.   no need to initialize
-    o[0] = 0;
-
-    bool skip = true;
-    int i=1;
-    while(i<my_n && my_key[i]>=my_key[i-1]) i++;
-    if (i<my_n) {
-      skip=false;  // it isn't
-
-    for (int i=1; i<my_n; i++) {
-      uint8_t tmp = my_key[i];
-      o[i]
-      if (tmp>=my_key[i-1]) { o[i] = i;continue;  // x[i-1]==x[i] doesn't happen because x is unique
-      skip = false;
-      int j = i-1;
-      do {
-        x[j+1] = x[j];
-      } while (--j>=0 && tmp<x[j]);
-      x[j+1] = tmp;
-  }
-  return skip;
-
-
-    static void iinsert(int *x, int *o, int n)
-/*  orders both x and o by reference in-place. Fast for small vectors, low overhead.
-  don't be tempted to binsearch backwards here, have to shift anyway;
-  many memmove would have overhead and do the same thing. */
-/*  when nalast == 0, iinsert will be called only from within iradix, where o[.] = 0
-  for x[.]=NA is already taken care of */
-{
-  int i, j, xtmp, otmp, tt;
-  for (i=1; i<n; i++) {
-    xtmp = x[i];
-    if (xtmp < x[i-1]) {
-      j = i-1;
-      otmp = o[i];
-      while (j>=0 && xtmp < x[j]) {
-        x[j+1] = x[j];
-        o[j+1] = o[j];
-        j--;
+    uint16_t *o = NULL;
+    if (sort) {
+      // always ascending as desc was dealt with in WRITE_KEY
+      while(i<my_n && my_key[i]>=my_key[i-1]) i++;
+      if (i<my_n) {
+        all_skipped=false;
+        o = alloca(my_n*sizeof(uint16_t)); // 16 bits to allow my_n>256.
+        for (int j=0; j<my_n; j++) o[j] = j;
+        for(; i<my_n; i++) {
+          uint8_t ktmp = my_key[i];
+          if (ktmp>=my_key[i-1]) continue;
+          uint16_t otmp = o[i];
+          int j = i-1;
+          do {
+            my_key[j+1] = my_key[j];
+            o[j+1] = o[j];
+          } while (--j>=0 && ktmp<my_key[j]);
+          my_key[j+1] = ktmp;
+          o[j+1] = otmp;
+        }
       }
-      x[j+1] = xtmp;
-      o[j+1] = otmp;
+    } else { // sort==0 and must be careful to retain group appearance order since there is no sort afterwards to get back to appearance order
+      bool seen[256]={false};
+      seen[my_key[i-1]] = seen[my_key[i]] = true;  // first two different bytes
+      i++;
+      for(; i<my_n; i++) {
+        uint8_t ktmp = my_key[i];
+        if (ktmp==my_key[i-1]) continue;
+        if (!seen[ktmp]) { seen[ktmp]=true; continue; }
+        // different byte but we've seen it before, so this my_n can't be grouped
+        if (o==NULL) {
+          o = alloca(my_n*sizeof(uint16_t));
+          for (int j=0; j<my_n; j++) o[j] = j;
+          all_skipped=false;
+        }
+        // move this byte (that we've seen before) back to just after the last one (to group them)
+        uint16_t otmp = o[i];
+        int j = i-1;
+        do {
+          my_key[j+1] = my_key[j];
+          o[j+1] = o[j];
+        } while (--j>=0 && ktmp!=my_key[j]);
+        my_key[j+1] = ktmp;
+        o[j+1] = otmp;
+      }
     }
-  }
-  tt = 0;
-  for (i=1; i<n; i++) if (x[i]==x[i-1]) tt++; else { push(tt+1); tt=0; }
-  push(tt+1);
-}
-===============================================================
+    if (o) {
+      // reorder osub and each remaining ksub
+      int TMP[my_n];  // on stack fine since my_n<300
+      const int *restrict osub = anso+from;
+      for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
+      memcpy(anso+from, TMP, my_n*sizeof(int));
+      for (int r=radix+1; r<nradix; r++) {
+        const uint8_t *restrict ksub = key[r]+from;
+        for (int i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
+        memcpy(key[r]+from, (uint8_t *)TMP, my_n);
+      }
+    }
+
+    // my_key is now grouped (and sorted by group too if sort!=0)
+    // all we have left to do is find the group sizes and either recurse or push
+==========================================
+    if(retgrp) ....   see end of next if to see what to do
+==========================================
 
   }
-  else if (my_n<=STL) {
+  else if (radix>0 || my_n<=65535) {
     uint32_t counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. If not then allocate up front
                                  // and rely on last line of this function which resets just the non-zero's to 0. However, since recursive, it's tricky
                                  // to allocate upfront, which is why we're keeping it on stack like this.
@@ -853,11 +857,11 @@ void radix_r(const int from, const int to, const int radix) {
         // anso contains 1:n so skip reading and copying it. Only happens when entire input<STL. Saving worth the branch when user repeatedly calls a small-n small-cardinality order.
         for (int i=0; i<my_n; i++) anso[counts[my_key[i]]++] = i+1;  // +1 as R is 1-based
       } else {
-        int *osub = anso+from;
+        const int *restrict osub = anso+from;
         bool onheap = my_n>=1024;
         int *TMP = onheap ? malloc(my_n*sizeof(int)) : alloca(my_n*sizeof(int));  // OS likely faster here than us. Let's see.  TODO: int=>int64_t in future
         for (int i=0; i<my_n; i++) TMP[counts[my_key[i]]++] = osub[i];
-        memcpy(osub, TMP, my_n*sizeof(int));
+        memcpy(anso+from, TMP, my_n*sizeof(int));
         if (onheap) free(TMP);
       }
 
@@ -868,9 +872,9 @@ void radix_r(const int from, const int to, const int radix) {
         uint8_t *TMP = onheap ? malloc(my_n) : alloca(my_n);
         for (int r=radix+1; r<nradix; r++) {
           for (int i=0,last=0; i<ngrp; i++) { int tmp=counts[ugrp[i]]; counts[ugrp[i]]=last; last=tmp; }  // rewind cumulate. When ngrp<<256, faster than memcpy
-          uint8_t *restrict ksub = key[r]+from;
+          const uint8_t *restrict ksub = key[r]+from;
           for (int i=0; i<my_n; i++) TMP[counts[my_key[i]]++] = ksub[i];
-          memcpy(ksub, TMP, my_n);
+          memcpy(key[r]+from, TMP, my_n);
         }
         if (onheap) free(TMP);
       }
