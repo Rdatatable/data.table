@@ -850,7 +850,7 @@ void radix_r(const int from, const int to, const int radix) {
     }
     return;
   }
-  else if (radix>0 || my_n<=65535) {
+  else if (my_n<=65535) {
     uint32_t counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. If not then allocate up front
                                  // and rely on last line of this function which resets just the non-zero's to 0. However, since recursive, it's tricky
                                  // to allocate upfront, which is why we're keeping it on stack like this.
@@ -926,7 +926,7 @@ void radix_r(const int from, const int to, const int radix) {
 
   //int nBatch = getDTthreads()*1525;  // at least nth; more to reduce last-chunk-home; but not too large size we need nBatch*256 counts
   int batchSize = MIN(65535/*not STL*/, 1+my_n/getDTthreads());  // (my_n-1)/nBatch + 1;
-  int nBatch = (my_n-1)/batchSize + 1;
+  int nBatch = (my_n-1)/batchSize + 1;   // TODO: make this even sizes batches, a multiple of nThreads
   int lastBatchSize = my_n - (nBatch-1)*batchSize;
   uint16_t *counts = calloc(nBatch*256,sizeof(uint16_t));  // TODO: this can be static (since just one-at-a-time);  as long as we copy out the first row onto stack later below.
   uint8_t  *ugrps =  malloc(nBatch*256*sizeof(uint8_t));
@@ -1112,7 +1112,7 @@ void radix_r(const int from, const int to, const int radix) {
   // else if (ngrp==1) // TODO: just radix_r() it
   else {
     // TODO: explicitly repeat parallel batch for any skew bins
-    #pragma omp parallel for schedule(dynamic) num_threads(MIN(ngrp, getDTthreads()))
+    //#pragma omp parallel for schedule(dynamic) num_threads(MIN(ngrp, getDTthreads()))
     for (int i=0; i<ngrp; i++) {
       int my_from = from + starts[ugrp[i]];
       int my_to   = from + (i==(ngrp-1) ? my_n : starts[ugrp[i+1]]) - 1;
