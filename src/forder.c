@@ -47,8 +47,6 @@ static int ustr_n = 0;
 static int ustr_maxlen = 0;
 static int sort = 0;                 // 0 no sort; -1 descending, +1 ascending
 static bool all_skipped = true;
-//static int *OTMP = NULL;
-//static uint8_t *KTMP = NULL;
 static int nradix = 0;
 static uint8_t **key = NULL;
 static int *anso = NULL;
@@ -82,8 +80,6 @@ static void cleanup() {
   free(cradix_counts); cradix_counts=NULL;
   free(cradix_xtmp);   cradix_xtmp=NULL;
   free_ustr();
-//  free(OTMP); OTMP=NULL;
-//  free(KTMP); KTMP=NULL;
   if (key!=NULL) for (int i=0; i<nradix; i++) free(key[i]);
   free(key); key=NULL; nradix=0;
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
@@ -114,7 +110,7 @@ static void push(const int *x, const int n, const int anchor) {
 }
 
 #ifdef TIMING_ON
-  #define NBLOCK 20
+  #define NBLOCK 64
   static double tblock[NBLOCK];
   static int nblock[NBLOCK];
   #define TBEG() double tstart = wallclock();   // tstart declared locally
@@ -645,17 +641,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
   TEND(0);
 
   if (nradix) {
-    //OTMP = malloc(n*sizeof(int));
-    //KTMP = malloc((nradix-1) * n * sizeof(uint8_t *));
-    int old = omp_get_nested();
-    omp_set_nested(1);
+    //int old = omp_get_nested();
+    //omp_set_nested(1);
     radix_r(0, n-1, 0);  // top level recursive call: (from, to, byte). Nested parallelism is constrained via ordered clause.
-    omp_set_nested(old);
+    //omp_set_nested(old);
   } else {
     int my_gs[1] = {n};
     push(my_gs, 1, 0);
   }
 
+  TEND(20);
   #ifdef TIMING_ON
   {
     int last=NBLOCK-1;
@@ -747,7 +742,7 @@ void radix_r(const int from, const int to, const int radix) {
     TEND(1);
     return;
   }
-  else if (my_n<300) {  // greater than 300 may be worth trying given size byte
+  else if (my_n<=256) {
     // insert sort with some twists:
     // i) detects if grouped; if sort==0 can then skip
     // ii) keeps group appearance order to minimize movement and avoid a resort afterwards
@@ -764,25 +759,24 @@ void radix_r(const int from, const int to, const int radix) {
       }
       return;
     }
-    uint16_t *o = NULL;
+    uint8_t *o = NULL;
     if (sort) {
       // always ascending as desc was dealt with in WRITE_KEY
       while(i<my_n && my_key[i]>=my_key[i-1]) i++;
       if (i<my_n) {
         all_skipped=false;
-        o = alloca(my_n*sizeof(uint16_t)); // 16 bits to allow my_n>256.
-        for (int j=0; j<my_n; j++) o[j] = j;
+        o = (uint8_t *)alloca(my_n);
+        for (int j=0; j<i; j++) o[j] = j;
         for(; i<my_n; i++) {
           uint8_t ktmp = my_key[i];
-          if (ktmp>=my_key[i-1]) continue;
-          uint16_t otmp = o[i];
+          if (ktmp>=my_key[i-1]) {o[i]=i; continue;}
           int j = i-1;
           do {
             my_key[j+1] = my_key[j];
             o[j+1] = o[j];
           } while (--j>=0 && ktmp<my_key[j]);
           my_key[j+1] = ktmp;
-          o[j+1] = otmp;
+          o[j+1] = i;
         }
       }
     } else { // sort==0 and must be careful to retain group appearance order since there is no sort afterwards to get back to appearance order
@@ -795,24 +789,23 @@ void radix_r(const int from, const int to, const int radix) {
         if (!seen[ktmp]) { seen[ktmp]=true; continue; }
         // different byte but we've seen it before, so this my_n can't be grouped
         if (o==NULL) {
-          o = alloca(my_n*sizeof(uint16_t));
-          for (int j=0; j<my_n; j++) o[j] = j;
+          o = (uint8_t *)alloca(my_n);
+          for (int j=0; j<my_n; j++) o[j] = j; // TODO: could be saved similar to the sort case above
           all_skipped=false;
         }
         // move this byte (that we've seen before) back to just after the last one (to group them)
-        uint16_t otmp = o[i];
         int j = i-1;
         do {
           my_key[j+1] = my_key[j];
           o[j+1] = o[j];
         } while (--j>=0 && ktmp!=my_key[j]);
         my_key[j+1] = ktmp;
-        o[j+1] = otmp;
+        o[j+1] = i;
       }
     }
     if (o) {
       // reorder osub and each remaining ksub
-      int TMP[my_n];  // on stack fine since my_n<300
+      int TMP[my_n];  // on stack fine since my_n is very small (<=256)
       const int *restrict osub = anso+from;
       for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
       memcpy(anso+from, TMP, my_n*sizeof(int));
@@ -1100,37 +1093,41 @@ void radix_r(const int from, const int to, const int radix) {
   //}
 
   // TODO could push all the size 1 groups (and maybe 2) and reduce the ngrp to just decent sizes, to just parallel through decent sizes.
+
+  // take the time to make my_gs and push all in one go because push is omp critical.
+  int my_gs[ngrp];
+  for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[ugrp[i]] - starts[ugrp[i-1]];   // use the first row of starts to get totals
+  my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
+
   if (radix+1==nradix || ngrp==my_n) {
-    if (retgrp) {
-      int my_gs[ngrp];
-      for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[ugrp[i]] - starts[ugrp[i-1]];   // use the first row of starts to get totals
-      my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
-      push(my_gs, ngrp, from); // take the time to make my_gs and push all in one go because push is omp critical. 'from' is anchor to be flutter sorted afterwards
-    }
+    if (retgrp) push(my_gs, ngrp, from);  // 'from' is anchor to be flutter sorted afterwards
     TEND(13)
   }
   // else if (ngrp==1) // TODO: just radix_r() it
   else {
     // TODO: explicitly repeat parallel batch for any skew bins
-    //#pragma omp parallel for schedule(dynamic) num_threads(MIN(ngrp, getDTthreads()))
-    for (int i=0; i<ngrp; i++) {
-      int my_from = from + starts[ugrp[i]];
-      int my_to   = from + (i==(ngrp-1) ? my_n : starts[ugrp[i+1]]) - 1;
-      //int my_n = my_to-my_from+1;
-      // if (my_n<=STL)
-      radix_r(my_from, my_to, radix+1); // if retgrp gs is written out and this will write to gs out-of-order (but not terribly out-of-order); flutter sorted later
-      //#pragma omp ordered
-      //{
-      //  if (my_n>STL) radix_r(my_from, my_to, radix+1);  // inside ordered as a way to limit recursive nestedness; doesn't need to be ordered thanks to anchor
-      //}
+    bool anyBig = false;
+    for (int i=0; i<ngrp; i++) if (my_gs[i]>65535) { anyBig=true; break; }
+    if (anyBig) {
+      for (int i=0; i<ngrp; i++) {
+        int start = from + starts[ugrp[i]];
+        radix_r(start, start+my_gs[i]-1, radix+1);
+      }
+      TEND(14)
+    } else {
+      #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
+      for (int i=0; i<ngrp; i++) {
+        int start = from + starts[ugrp[i]];
+        radix_r(start, start+my_gs[i]-1, radix+1); // if retgrp gs is written out and this will write to gs out-of-order (but not terribly out-of-order); flutter sorted late
+      }
+      TEND(15)
     }
-    TEND(14)
   }
   free(counts);
   free(starts);
   free(ugrps);
   free(ngrps);
-  TEND(15)
+  TEND(16)
 }
 
 
