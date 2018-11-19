@@ -53,6 +53,7 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
   nrows <- d[1L]
   ncols <- d[2L]
   ic <- seq_len(ncols)
+  if (!ncols) return(null.data.table())
 
   value <- vector("list", ncols)
   if (mode(x) == "character") {
