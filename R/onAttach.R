@@ -41,7 +41,7 @@ dcf.repo = function(pkg, repo, field, type){
   dcf[dcf[,"Package"]==pkg, field][[1L]]
 }
 
-update.dev.pkg = function(object="data.table", repo="https://Rdatatable.github.io/data.table", field="Revision", type=getOption("pkgType"), ...){
+update.dev.pkg = function(object="data.table", repo="https://Rdatatable.gitlab.io/data.table", field="Revision", type=getOption("pkgType"), ...){
   pkg = object
   # perform package upgrade when new Revision present
   stopifnot(is.character(pkg), length(pkg)==1L, !is.na(pkg),
