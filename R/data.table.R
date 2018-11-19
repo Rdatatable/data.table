@@ -2347,7 +2347,9 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
   flatten_any = flatten && any(vapply_1b(by, function(col) is.factor(x[[col]])))
   nested_current = !flatten && is.factor(x[[.by]])
   if (!drop && (flatten_any || nested_current)) {
-    dtq[["i"]] = substitute(make.levels(x, cols=.cols, sorted=.sorted), list(.cols=if (flatten) by else .by, .sorted=sorted))
+    # create 'levs' here to avoid lexical scoping glitches, see #3151
+    levs = make.levels(x=x, cols=if (flatten) by else .by, sorted=sorted)
+    dtq[["i"]] = quote(levs)
     join = TRUE
   }
   dtq[["j"]] = substitute(
