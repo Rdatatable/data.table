@@ -9,54 +9,128 @@ SEXP uniqlist(SEXP l, SEXP order)
   // previous row. Unless, order is provided, then it also drops any previous
   // row. l must be a list of same length vectors ans is allocated first
   // (maximum length the number of rows) and the length returned in anslen.
+  // No NA in order which is guaranteed since internal-only. Used at R level internally (Cuniqlist) but is not and should not be exported.
   // DONE: ans is now grown
-  Rboolean b, byorder;
-  unsigned long long *ulv; // for numeric check speed-up
-  SEXP v, ans, class;
-  R_len_t i, j, nrow, ncol, len, thisi, previ, isize=1000;
+  if (!isNewList(l)) error("Internal error: uniqlist has not been passed a list of columns"); // # nocov
+  R_len_t ncol = length(l);
+  R_len_t nrow = length(VECTOR_ELT(l,0));
+  if (!isInteger(order)) error("Internal error: uniqlist has been passed a non-integer order"); // # nocov
+  if (LENGTH(order)<1) error("Internal error: uniqlist has been passed a length-0 order"); // # nocov
+  if (LENGTH(order)>1 && LENGTH(order)!=nrow) error("Internal error: uniqlist has been passed length(order)==%d but nrow==%d", LENGTH(order), nrow); // # nocov
+  bool via_order = INTEGER(order)[0] != -1;  // has an ordering vector been passed in that we have to hop via? Don't use MISSING() here as it appears unstable on Windows
 
+  unsigned long long *ulv; // for numeric check speed-up
+  SEXP v, ans;
+  R_len_t len, thisi, previ, isize=1000;
   int *iidx = Calloc(isize, int); // for 'idx'
-  int *n_iidx; // to catch allocation errors using Realloc!
-  ncol = length(l);
-  nrow = length(VECTOR_ELT(l,0));
   len = 1;
   iidx[0] = 1; // first row is always the first of the first group
-  byorder = INTEGER(order)[0] != -1;
-  // Using MISSING() does not seem stable under windows. Always having arguments passed in seems a good idea anyway.
-  thisi = byorder ? INTEGER(order)[0]-1 : 0;
-  for (i=1; i<nrow; i++) {
-    previ = thisi;
-    thisi = byorder ? INTEGER(order)[i]-1 : i;
-    j = ncol;  // the last column varies the most frequently so check that first and work backwards
-    b = TRUE;
-    while (--j>=0 && b) {
-      v=VECTOR_ELT(l,j);
-      switch (TYPEOF(v)) {
-      case INTSXP : case LGLSXP :  // NA_INTEGER==NA_LOGICAL checked in init.c
-        b=INTEGER(v)[thisi]==INTEGER(v)[previ]; break;
-      case STRSXP :
-        // fix for #469, when key is set, duplicated calls uniqlist, where encoding
-        // needs to be taken care of.
-        b=ENC2UTF8(STRING_ELT(v,thisi))==ENC2UTF8(STRING_ELT(v,previ)); break;  // marked non-utf8 encodings are converted to utf8 so as to match properly when inputs are of different encodings.
-      case REALSXP :
-        ulv = (unsigned long long *)REAL(v);
-        b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
-        if (!b) {
-          class = getAttrib(v, R_ClassSymbol);
-          twiddle = (isString(class) && STRING_ELT(class, 0)==char_integer64) ? &i64twiddle : &dtwiddle;
-          b = twiddle(ulv, thisi, 1) == twiddle(ulv, previ, 1);
-        }
-        break;
-        // TO DO: store previ twiddle call, but it'll need to be vector since this is in a loop through columns. Hopefully the first == will short circuit most often
-      default :
-        error("Type '%s' not supported", type2char(TYPEOF(v)));
+
+  if (ncol==1) {
+
+#define COMPARE1                                                                 \
+      prev = *vd;                                                                \
+      for (int i=1; i<nrow; i++) {                                               \
+        elem = *++vd;                                                            \
+        if (elem!=prev
+
+#define COMPARE1_VIA_ORDER                                                       \
+      prev = vd[*o -1];                                                          \
+      for (int i=1; i<nrow; i++) {                                               \
+        elem = vd[*++o -1];                                                      \
+        if (elem!=prev
+
+#define COMPARE2                                                                 \
+                        ) {                                                      \
+          iidx[len++] = i+1;                                                     \
+          if (len>=isize) {                                                      \
+            isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));     \
+            iidx = Realloc(iidx, isize, int);                                    \
+          }                                                                      \
+        }                                                                        \
+        prev = elem;                                                             \
       }
+
+    SEXP v = VECTOR_ELT(l,0);
+    int *o = INTEGER(order);  // only used when via_order is true
+    switch(TYPEOF(v)) {
+    case INTSXP : case LGLSXP : {
+      int *vd=INTEGER(v), prev, elem;
+      if (via_order) {
+        // ad hoc by (order passed in)
+        COMPARE1_VIA_ORDER COMPARE2
+      } else {
+        // e.g. by=key(DT)[1]
+        COMPARE1           COMPARE2
+      }
+    } break;
+    case STRSXP : {
+      SEXP *vd=(SEXP *)DATAPTR(v), prev, elem;   // TODO: tried to replace DATAPTR here but (SEXP *)&STRING_ELT(v,0) results in lvalue required as unary ‘&’ operand
+      if (via_order) {
+        COMPARE1_VIA_ORDER && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
+      } else {
+        COMPARE1           && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2
+      }
+    } break;
+    case REALSXP : {
+      uint64_t *vd=(uint64_t *)REAL(v), prev, elem;
+      // grouping by integer64 makes sense (ids). grouping by float supported but a good use-case for that is harder to imagine
+      if (getNumericRounding_C()==0 /*default*/ || inherits(v, "integer64")) {
+        if (via_order) {
+          COMPARE1_VIA_ORDER COMPARE2
+        } else {
+          COMPARE1           COMPARE2
+        }
+      } else {
+        if (via_order) {
+          COMPARE1_VIA_ORDER && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
+        } else {
+          COMPARE1           && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
+        }
+      }
+    } break;
+    default :
+      error("Type '%s' not supported", type2char(TYPEOF(v)));
     }
-    if (!b) iidx[len++] = i+1;
-    if (len >= isize) {
-      isize = 1.1*isize*nrow/i;
-      n_iidx = Realloc(iidx, isize, int);
-      if (n_iidx != NULL) iidx = n_iidx; else error("Error in reallocating memory in 'uniqlist'\n");
+  } else {
+    // ncol>1
+    thisi = via_order ? INTEGER(order)[0]-1 : 0;
+    bool *i64 = (bool *)R_alloc(ncol, sizeof(bool));
+    for (int i=0; i<ncol; i++) i64[i] = INHERITS(VECTOR_ELT(l,i), char_integer64);
+    for (int i=1; i<nrow; i++) {
+      previ = thisi;
+      thisi = via_order ? INTEGER(order)[i]-1 : i;
+      int j = ncol;  // the last column varies the most frequently so check that first and work backwards
+      bool b = true;
+      while (--j>=0 && b) {
+        v=VECTOR_ELT(l,j);
+        switch (TYPEOF(v)) {
+        case INTSXP : case LGLSXP :  // NA_INTEGER==NA_LOGICAL checked in init.c
+          b=INTEGER(v)[thisi]==INTEGER(v)[previ]; break;
+        case STRSXP :
+          // fix for #469, when key is set, duplicated calls uniqlist, where encoding
+          // needs to be taken care of.
+          b=ENC2UTF8(STRING_ELT(v,thisi))==ENC2UTF8(STRING_ELT(v,previ)); break;  // marked non-utf8 encodings are converted to utf8 so as to match properly when inputs are of different encodings.
+        case REALSXP :
+          ulv = (unsigned long long *)REAL(v);
+          b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
+          if (!b && !i64[j]) {
+            b = dtwiddle(ulv, thisi) == dtwiddle(ulv, previ);
+            // could store LHS for use next time as RHS (to save calling dtwiddle twice). However: i) there could be multiple double columns so vector of RHS would need
+            // to be stored, ii) many short-circuit early before the if (!b) anyway (negating benefit) and iii) we may not have needed LHS this time so logic would be complex.
+          }
+          break;
+        default :
+          error("Type '%s' not supported", type2char(TYPEOF(v)));
+        }
+      }
+      if (!b) {
+        iidx[len++] = i+1;
+        if (len >= isize) {
+          isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));
+          iidx = Realloc(iidx, isize, int);
+        }
+      }
     }
   }
   PROTECT(ans = allocVector(INTSXP, len));
@@ -67,16 +141,15 @@ SEXP uniqlist(SEXP l, SEXP order)
 }
 
 SEXP uniqlengths(SEXP x, SEXP n) {
-  SEXP ans;
-  R_len_t i, len;
-  if (TYPEOF(x) != INTSXP || length(x) < 0) error("Input argument 'x' to 'uniqlengths' must be an integer vector of length >= 0");
+  // seems very similar to rbindlist.c:uniq_lengths. TODO: centralize into common function
+  if (TYPEOF(x) != INTSXP) error("Input argument 'x' to 'uniqlengths' must be an integer vector");
   if (TYPEOF(n) != INTSXP || length(n) != 1) error("Input argument 'n' to 'uniqlengths' must be an integer vector of length 1");
-  PROTECT(ans = allocVector(INTSXP, length(x)));
-  len = length(x);
-  for (i=1; i<len; i++) {
+  R_len_t len = length(x);
+  SEXP ans = PROTECT(allocVector(INTSXP, len));
+  for (R_len_t i=1; i<len; i++) {
     INTEGER(ans)[i-1] = INTEGER(x)[i] - INTEGER(x)[i-1];
   }
-  INTEGER(ans)[len-1] = INTEGER(n)[0] - INTEGER(x)[len-1] + 1;
+  if (len>0) INTEGER(ans)[len-1] = INTEGER(n)[0] - INTEGER(x)[len-1] + 1;
   UNPROTECT(1);
   return(ans);
 }
@@ -90,8 +163,8 @@ SEXP rleid(SEXP l, SEXP cols)
   if (!nrow || !ncol) return (allocVector(INTSXP, 0));
   if (!isInteger(cols) || LENGTH(cols)==0) error("cols must be an integer vector with length >= 1");
   for (int i=0; i<LENGTH(cols); i++) {
-    int this = INTEGER(cols)[i];
-    if (this<1 || this>LENGTH(l)) error("Item %d of cols is %d which is outside range of l [1,length(l)=%d]", i+1, this, LENGTH(l));
+    int elem = INTEGER(cols)[i];
+    if (elem<1 || elem>LENGTH(l)) error("Item %d of cols is %d which is outside range of l [1,length(l)=%d]", i+1, elem, LENGTH(l));
   }
   for (int i=1; i<ncol; i++) {
     if (length(VECTOR_ELT(l,i)) != nrow) error("All elements to input list must be of same length. Element [%d] has length %d != length of first element = %d.", i+1, length(VECTOR_ELT(l,i)), nrow);
@@ -116,7 +189,7 @@ SEXP rleid(SEXP l, SEXP cols)
         //               So == pointers is ok given that check
         break;
       case REALSXP : {
-        long long *ll = (long long *)DATAPTR(v);
+        long long *ll = (long long *)REAL(v);
         b = ll[i]==ll[i-1]; }
         // 8 bytes of bits are identical. For real (no rounding currently) and integer64
         // long long == 8 bytes checked in init.c
@@ -133,14 +206,15 @@ SEXP rleid(SEXP l, SEXP cols)
 
 SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP multArg) {
   Rboolean byorder = (length(order)>0);
-  SEXP v, ans, class;
-  if (!isNewList(l) || length(l) < 1) error("Internal error: nestedid was not passed a list length 1 or more");
+  SEXP v, ans;
+  if (!isNewList(l) || length(l) < 1) error("Internal error: nestedid was not passed a list length 1 or more"); // # nocov
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
   if (nrows==0) return(allocVector(INTSXP, 0));
   R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;
-  R_len_t *ptr, *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen;
-  R_len_t ngrps = length(grps), *i64 = Calloc(ncols, R_len_t);
-  if (ngrps==0) error("Internal error: nrows[%d]>0 but ngrps==0", nrows);
+  R_len_t *ansgrp = (R_len_t *)R_alloc(ansgrpsize, sizeof(R_len_t)), starts, grplen;
+  R_len_t ngrps = length(grps);
+  bool *i64 = (bool *)R_alloc(ncols, sizeof(bool));
+  if (ngrps==0) error("Internal error: nrows[%d]>0 but ngrps==0", nrows); // # nocov
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
   if (!isInteger(cols) || ncols == 0)
     error("cols must be an integer vector of positive length");
@@ -149,11 +223,10 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else error("Internal error: invalid value for 'mult'. Please report to datatable-help");
+  else error("Internal error: invalid value for 'mult'. please report to data.table issue tracker"); // # nocov
   // integer64
   for (int j=0; j<ncols; j++) {
-    class = getAttrib(VECTOR_ELT(l, INTEGER(cols)[j]-1), R_ClassSymbol);
-    i64[j] = isString(class) && STRING_ELT(class, 0) == char_integer64;
+    i64[j] = INHERITS(VECTOR_ELT(l, INTEGER(cols)[j]-1), char_integer64);
   }
   ans  = PROTECT(allocVector(INTSXP, nrows));
   int *ians = INTEGER(ans), *igrps = INTEGER(grps);
@@ -192,10 +265,11 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
         case STRSXP :
           b = ENC2UTF8(STRING_ELT(v,thisi)) == ENC2UTF8(STRING_ELT(v,previ));
           break;
-        case REALSXP:
-          twiddle = i64[j] ? &i64twiddle : &dtwiddle;
-          b = twiddle(DATAPTR(v), thisi, 1) >= twiddle(DATAPTR(v), previ, 1);
-          break;
+        case REALSXP: {
+          double *xd = REAL(v);
+          b = i64[j] ? ((int64_t *)xd)[thisi] >= ((int64_t *)xd)[previ] :
+                       dtwiddle(xd, thisi) >= dtwiddle(xd, previ);
+        } break;
         default:
           error("Type '%s' not supported", type2char(TYPEOF(v)));
         }
@@ -213,18 +287,39 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
       rlen += INTEGER(resetvals)[++resetctr];
     }
     if (nansgrp >= ansgrpsize) {
-      ansgrpsize = 1.1*ansgrpsize*nrows/i;
-      ptr = Realloc(ansgrp, ansgrpsize, int);
-      if (ptr != NULL) ansgrp = ptr;
-      else error("Error in reallocating memory in 'nestedid'\n");
+      ansgrpsize = MIN(nrows, (size_t)(1.1*(double)ansgrpsize*((double)nrows/i)));
+      ansgrp = Realloc(ansgrp, ansgrpsize, int);
     }
     for (int j=0; j<grplen; j++) {
       ians[byorder ? INTEGER(order)[igrps[i]-1+j]-1 : igrps[i]-1+j] = tmp+1;
     }
     ansgrp[tmp] = thisi;
   }
-  Free(ansgrp);
-  Free(i64);
   UNPROTECT(1);
   return(ans);
 }
+
+SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
+  // single pass; short-circuit and return as soon as all 3 values are found
+  if (!isLogical(x)) error("x is not a logical vector");
+  if (!isLogical(narmArg) || length(narmArg)!=1 || INTEGER(narmArg)[0]==NA_INTEGER) error("na.rm must be TRUE or FALSE");
+  bool narm = LOGICAL(narmArg)[0]==1;
+  const R_xlen_t n = xlength(x);
+  if (n==0)
+    return ScalarInteger(0);  // empty vector
+  Rboolean first = LOGICAL(x)[0];
+  R_xlen_t i=0;
+  while (++i<n && LOGICAL(x)[i]==first);
+  if (i==n)
+    return ScalarInteger(first==NA_INTEGER && narm ? 0 : 1); // all one value
+  Rboolean second = LOGICAL(x)[i];
+  // we've found 2 different values (first and second). Which one didn't we find? Then just look for that.
+  // NA_LOGICAL == INT_MIN checked in init.c
+  const int third = (first+second == 1) ? NA_LOGICAL : ( first+second == INT_MIN ? TRUE : FALSE );
+  if (third==NA_LOGICAL && narm)
+    return ScalarInteger(2);  // TRUE and FALSE found before any NA, but na.rm=TRUE so we're done
+  while (++i<n) if (LOGICAL(x)[i]==third)
+    return ScalarInteger(3-narm);
+  return ScalarInteger(2-(narm && third!=NA_LOGICAL));
+}
+

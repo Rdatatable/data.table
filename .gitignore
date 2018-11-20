@@ -9,7 +9,11 @@
 data.table_*.tar.gz
 data.table.Rcheck
 
-# RStudio files
+# Emacs IDE files
+.emacs.desktop
+.emacs.desktop.lock
+
+# RStudio IDE files
 .Rproj.user
 data.table.Rproj
 
@@ -20,7 +24,9 @@ vignettes/*.pdf
 # object and shared objects
 *.o
 *.so
+*.dll
 
 *~
 .DS_Store
 .idea
+*.sw[op]

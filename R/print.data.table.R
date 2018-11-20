@@ -9,7 +9,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
                quote=FALSE, ...) {    # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
   # nrows - under this the whole (small) table is printed, unless topn is provided (100)
   # class - should column class be printed underneath column name? (FALSE)
-  if (!col.names %in% c("auto", "top", "none"))
+  if (!col.names %chin% c("auto", "top", "none"))
     stop("Valid options for col.names are 'auto', 'top', and 'none'")
   if (col.names == "none" && class)
     warning("Column classes will be suppressed when col.names is 'none'")
@@ -22,16 +22,16 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
     #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
     SYS <- sys.calls()
-    if (length(SYS) <= 2 ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
+    if (length(SYS) <= 2L ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
         ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) &&
           as.character(thisSYS) %chin% mimicsAutoPrint ) )  {
-      return(invisible())
+      return(invisible(x))
       # is.symbol() temp fix for #1758.
     }
   }
   if (!is.numeric(nrows)) nrows = 100L
   if (!is.infinite(nrows)) nrows = as.integer(nrows)
-  if (nrows <= 0L) return(invisible())   # ability to turn off printing
+  if (nrows <= 0L) return(invisible(x))   # ability to turn off printing
   if (!is.numeric(topn)) topn = 5L
   topnmiss = missing(topn)
   topn = max(as.integer(topn),1L)
@@ -39,17 +39,17 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     if (!is.null(ky <- key(x)))
     cat("Key: <", paste(ky, collapse=", "), ">\n", sep="")
     if (!is.null(ixs <- indices(x)))
-    cat("Ind", if (length(ixs) > 1) "ices" else "ex", ": <",
+    cat("Ind", if (length(ixs) > 1L) "ices" else "ex", ": <",
       paste(ixs, collapse=">, <"), ">\n", sep="")
   }
   if (nrow(x) == 0L) {
     if (length(x)==0L)
        cat("Null data.table (0 rows and 0 cols)\n")  # See FAQ 2.5 and NEWS item in v1.8.9
     else
-       cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1L)"s",": ",paste(head(names(x),6),collapse=","),if(ncol(x)>6)"...","\n",sep="")
-    return(invisible())
+       cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1L)"s",": ",paste(head(names(x),6L),collapse=","),if(ncol(x)>6L)"...","\n",sep="")
+    return(invisible(x))
   }
-  if (topn*2<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
+  if ((topn*2+1)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
     toprint = rbind(head(x, topn), tail(x, topn))
     rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
     printdots = TRUE
@@ -58,13 +58,13 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     rn = seq_len(nrow(x))
     printdots = FALSE
   }
-  toprint=format.data.table(toprint, ...)
+  toprint=format.data.table(toprint, na.encode=FALSE, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
   if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(x,inherits,"integer64"))) require_bit64()
   # When we depend on R 3.2.0 (Apr 2015) we can use isNamespaceLoaded() added then, instead of %chin% above
 
   # FR #5020 - add row.names = logical argument to print.data.table
-  if (isTRUE(row.names)) rownames(toprint)=paste(format(rn,right=TRUE,scientific=FALSE),":",sep="") else rownames(toprint)=rep.int("", nrow(toprint))
+  if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
   if (is.null(names(x)) || all(names(x) == ""))
     # fixes bug #97 (RF#4934) and #545 (RF#5253)
     colnames(toprint)=rep("", ncol(toprint))
@@ -78,20 +78,20 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     classes = vapply(x, function(col) class(col)[1L], "", USE.NAMES=FALSE)
     abbs = unname(class_abb[classes])
     if ( length(idx <- which(is.na(abbs))) )
-    abbs[idx] = paste("<", classes[idx], ">", sep="")
+    abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
   }
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (printdots) {
-    toprint = rbind(head(toprint, topn), "---"="", tail(toprint, topn))
+    toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
     rownames(toprint) = format(rownames(toprint), justify="right")
     if (col.names == "none") {
       cut_top(print(toprint, right=TRUE, quote=quote))
     } else {
       print(toprint, right=TRUE, quote=quote)
     }
-    return(invisible())
+    return(invisible(x))
   }
   if (nrow(toprint)>20L && col.names == "auto")
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
@@ -102,7 +102,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
   } else {
     print(toprint, right=TRUE, quote=quote)
   }
-  invisible()
+  invisible(x)
 }
 
 format.data.table <- function (x, ..., justify="none") {
@@ -110,10 +110,12 @@ format.data.table <- function (x, ..., justify="none") {
     stop("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
   format.item <- function(x) {
-    if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
+    if (is.null(x))  # NULL item in a list column
+      ""
+    else if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
       paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 - format has to be added here...
     else
-      paste("<", class(x)[1L], ">", sep="")
+      paste0("<", class(x)[1L], ">")
   }
   # FR #1091 for pretty printing of character
   # TODO: maybe instead of doing "this is...", we could do "this ... test"?
@@ -121,7 +123,7 @@ format.data.table <- function (x, ..., justify="none") {
     trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
     if (!is.character(x) || trunc.char <= 0L) return(x)
     idx = which(nchar(x) > trunc.char)
-    x[idx] = paste(substr(x[idx], 1L, as.integer(trunc.char)), "...", sep="")
+    x[idx] = paste0(substr(x[idx], 1L, as.integer(trunc.char)), "...")
     x
   }
   do.call("cbind",lapply(x,function(col,...){

@@ -11,14 +11,14 @@
 
    It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that accept \emph{only} \code{data.frame}s.
 
-   Type \code{vignette(package="data.table")} to get started. The \href{../doc/datatable-intro.html}{Introduction to data.table} vignette introduces \code{data.table}'s \code{x[i, j, by]} syntax and is a good place to start. If you have read the vignettes and the help page below, please feel free to ask questions on Stack Overflow \href{http://stackoverflow.com/questions/tagged/data.table}{data.table tag} or on \href{http://r.789695.n4.nabble.com/datatable-help-f2315188.html}{datatable-help} mailing list. To report a bug please type: \code{bug.report(package = "data.table")}.
+   Type \code{vignette(package="data.table")} to get started. The \href{../doc/datatable-intro.html}{Introduction to data.table} vignette introduces \code{data.table}'s \code{x[i, j, by]} syntax and is a good place to start. If you have read the vignettes and the help page below, please read the \href{https://github.com/Rdatatable/data.table/wiki/Support}{data.table support guide}.
 
    Please check the \href{https://github.com/Rdatatable/data.table/wiki}{homepage} for up to the minute live NEWS.
 
    Tip: one of the \emph{quickest} ways to learn the features is to type \code{example(data.table)} and study the output at the prompt.
 }
 \usage{
-data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
+data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
 
 \method{[}{data.table}(x, i, j, by, keyby, with = TRUE,
   nomatch = getOption("datatable.nomatch"),                   # default: NA_integer_
@@ -61,7 +61,7 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
             \item{If not, \code{x} \emph{must be keyed}. Key can be set using \code{\link{setkey}}. If \code{i} is also keyed, then first \emph{key} column of \code{i} is matched against first \emph{key} column of \code{x}, second against second, etc..
 
-            If \code{i} is not keyed, then first column of \code{i} is matched against first \emph{key} column of \code{x}, second column of \code{i} against second \emph{key} column of \code{x}, etc...
+            If \code{i} is not keyed, then first column of \code{i} is matched against first \emph{key} column of \code{x}, second column of \code{i} against second \emph{key} column of \code{x}, etc\ldots
 
             This is summarised in code as \code{min(length(key(x)), if (haskey(i)) length(key(i)) else ncol(i))}.}
         }
@@ -78,9 +78,9 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
     \item{j}{When \code{with=TRUE} (default), \code{j} is evaluated within the frame of the data.table; i.e., it sees column names as if they are variables. This allows to not just \emph{select} columns in \code{j}, but also \code{compute} on them e.g., \code{x[, a]} and \code{x[, sum(a)]} returns \code{x$a} and \code{sum(x$a)} as a vector respectively. \code{x[, .(a, b)]} and \code{x[, .(sa=sum(a), sb=sum(b))]} returns a two column data.table each, the first simply \emph{selecting} columns \code{a, b} and the second \emph{computing} their sums.
 
-    The expression `.()` is a \emph{shorthand} alias to \code{list()}; they both mean the same. As long as \code{j} returns a \code{list}, each element of the list becomes a column in the resulting \code{data.table}. This is the default \emph{enhanced} mode.
+    The expression `.()` is a \emph{shorthand} alias to \code{list()}; they both mean the same. (An exception is made for the use of \code{.()} within a call to \code{\link{bquote}}, where \code{.()} is left unchanged.) As long as \code{j} returns a \code{list}, each element of the list becomes a column in the resulting \code{data.table}. This is the default \emph{enhanced} mode.
 
-    When \code{with=FALSE}, \code{j} can be a vector of column names or positions to select (as in \code{data.frame}), or a logical vector with length \code{ncol(x)} defining columns to select. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled.
+    When \code{j} is a vector of column names or positions to select (as in \code{data.frame}). There is no need to use \code{with=FALSE} anymore. In case of using logical vector with length \code{ncol(x)} defining columns to select \code{with=FALSE} is still necessary. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled.
 
     \emph{Advanced:} \code{j} also allows the use of special \emph{read-only} symbols: \code{\link{.SD}}, \code{\link{.N}}, \code{\link{.I}}, \code{\link{.GRP}}, \code{\link{.BY}}.
 
@@ -110,11 +110,11 @@ data.table(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFacto
 
     \item{keyby}{ Same as \code{by}, but with an additional \code{setkey()} run on the \code{by} columns of the result, for convenience. It is common practice to use `keyby=` routinely when you wish the result to be sorted.}
 
-    \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables.
+    \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. In case of overlapping variables names inside dataset and in parent scope you can use double dot prefix \code{..cols} to explicitly refer to `\code{cols} variable parent scope and not from your dataset.
 
-        When \code{with=FALSE} \code{j} is a character vector of column names, a numeric/logical vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is often useful in \code{data.table} to select columns dynamically. Note that \code{x[, cols, with=FALSE]} is equivalent to \code{x[, .SD, .SDcols=cols]}.}
+        When \code{j} is a character vector of column names, a numeric vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is not necessary anymore to select columns dynamically. Note that \code{x[, cols]} is equivalent to \code{x[, ..cols]} and to \code{x[, cols, with=FALSE]} and to \code{x[, .SD, .SDcols=cols]}.}
 
-    \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{0} means no rows will be returned for that row of \code{i}. Use \code{options(datatable.nomatch=0)} to change the default value (used when \code{nomatch} is not supplied).}
+    \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{NULL} (or \code{0} for backward compatibility) means no rows will be returned for that row of \code{i}. Use \code{options(datatable.nomatch=NULL)} to change the default value (used when \code{nomatch} is not supplied).}
 
     \item{mult}{ When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}) and \emph{multiple} rows in \code{x} match to the row in \code{i}, \code{mult} controls which are returned: \code{"all"} (default), \code{"first"} or \code{"last"}.}
 
@@ -215,7 +215,6 @@ See the \code{see also} section for the several other \emph{methods} that are av
 }
 \references{
 \url{https://github.com/Rdatatable/data.table/wiki} (\code{data.table} homepage)\cr
-\url{http://crantastic.org/packages/data-table} (User reviews)\cr
 \url{http://en.wikipedia.org/wiki/Binary_search}
 }
 \note{ If \code{keep.rownames} or \code{check.names} are supplied they must be written in full because \R does not allow partial argument names after `\code{\dots}`. For example, \code{data.table(DF, keep=TRUE)} will create a
@@ -226,8 +225,8 @@ column called \code{"keep"} containing \code{TRUE} and this is correct behaviour
 \seealso{ \code{\link{special-symbols}}, \code{\link{data.frame}}, \code{\link{[.data.frame}}, \code{\link{as.data.table}}, \code{\link{setkey}}, \code{\link{setorder}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{J}}, \code{\link{SJ}}, \code{\link{CJ}}, \code{\link{merge.data.table}}, \code{\link{tables}}, \code{\link{test.data.table}}, \code{\link{IDateTime}}, \code{\link{unique.data.table}}, \code{\link{copy}}, \code{\link{:=}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{rbindlist}}, \code{\link{setNumericRounding}}, \code{\link{datatable-optimize}}, \code{\link{fsetdiff}}, \code{\link{funion}}, \code{\link{fintersect}}, \code{\link{fsetequal}}, \code{\link{anyDuplicated}}, \code{\link{uniqueN}}, \code{\link{rowid}}, \code{\link{rleid}}, \code{\link{na.omit}}, \code{\link{frank}} }
 \examples{
 \dontrun{
-example(data.table)  # to run these examples at the prompt}
-
+example(data.table)  # to run these examples at the prompt
+}
 DF = data.frame(x=rep(c("b","a","c"),each=3), y=c(1,3,6), v=1:9)
 DT = data.table(x=rep(c("b","a","c"),each=3), y=c(1,3,6), v=1:9)
 DF
@@ -267,9 +266,9 @@ DT[2:3, .(sv=sum(v))]          # same, but return data.table with column sv
 DT[2:5, cat(v, "\n")]          # just for j's side effect
 
 # select columns the data.frame way
-DT[, 2, with=FALSE]            # 2nd column, returns a data.table always
-colNum = 2
-DT[, colNum, with=FALSE]       # same, equivalent to DT[, .SD, .SDcols=colNum]
+DT[, 2]                        # 2nd column, returns a data.table always
+colNum = 2                     # to refer vars in `j` from the outside of data use `..` prefix
+DT[, ..colNum]                 # same, equivalent to DT[, .SD, .SDcols=colNum]
 DT[["v"]]                      # same as DT[, v] but much faster
 
 # grouping operations - j and by
@@ -286,7 +285,7 @@ DT[x!="b" | y!=3]              # not yet optimized, currently vector scan subset
 DT[.("b", 3), on=c("x", "y")]  # join on columns x,y of DT; uses binary search (fast)
 DT[.("b", 3), on=.(x, y)]      # same, but using on=.()
 DT[.("b", 1:2), on=c("x", "y")]             # no match returns NA
-DT[.("b", 1:2), on=.(x, y), nomatch=0]      # no match row is not returned
+DT[.("b", 1:2), on=.(x, y), nomatch=NULL]   # no match row is not returned
 DT[.("b", 1:2), on=c("x", "y"), roll=Inf]   # locf, nomatch row gets rolled by previous row
 DT[.("b", 1:2), on=.(x, y), roll=-Inf]      # nocb, nomatch row gets rolled by next row
 DT["b", sum(v*y), on="x"]                   # on rows where DT$x=="b", calculate sum(v*y)
@@ -303,7 +302,7 @@ X
 
 DT[X, on="x"]                         # right join
 X[DT, on="x"]                         # left join
-DT[X, on="x", nomatch=0]              # inner join
+DT[X, on="x", nomatch=NULL]           # inner join
 DT[!X, on="x"]                        # not join
 DT[X, on=c(y="v")]                    # join using column "y" of DT with column "v" of X
 DT[X, on="y==v"]                      # same as above (v1.9.8+)
@@ -350,7 +349,7 @@ kDT[.("a")]                           # same, .() is an alias for list()
 kDT[list("a")]                        # same
 kDT[.("a", 3)]                        # join to 2 columns
 kDT[.("a", 3:6)]                      # join 4 rows (2 missing)
-kDT[.("a", 3:6), nomatch=0]           # remove missing
+kDT[.("a", 3:6), nomatch=NULL]        # remove missing
 kDT[.("a", 3:6), roll=TRUE]           # locf rolling join
 kDT[.("a", 3:6), roll=Inf]            # same as above
 kDT[.("a", 3:6), roll=-Inf]           # nocb rolling join
@@ -409,10 +408,8 @@ dev.off()
 # using rleid, get max(y) and min of all cols in .SDcols for each consecutive run of 'v'
 DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
 
-# Follow r-help posting guide, SUPPORT is here (*not* r-help) :
-# http://stackoverflow.com/questions/tagged/data.table
-# or
-# datatable-help@lists.r-forge.r-project.org
+# Support guide and links:
+# https://github.com/Rdatatable/data.table/wiki/Support
 
 \dontrun{
 if (interactive()) {
@@ -423,13 +420,17 @@ if (interactive()) {
   vignette("datatable-reshape")
   vignette("datatable-faq")
 
-
-  test.data.table()          # over 5700 low level tests
+  test.data.table()          # over 6,000 low level tests
 
   # keep up to date with latest stable version on CRAN
   update.packages()
-  # get the latest devel (needs Rtools for windows, xcode for mac)
-  install.packages("data.table", repos = "https://Rdatatable.github.io/data.table", type = "source")
+
+  # get the latest devel version
+  update.dev.pkg()
+  # compiled devel binary for Windows available -- no Rtools needed
+  update.dev.pkg(repo="https://Rdatatable.github.io/data.table")
+  # read more at:
+  # https://github.com/Rdatatable/data.table/wiki/Installation
 }
 }}
 \keyword{ data }

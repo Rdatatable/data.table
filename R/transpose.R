@@ -3,7 +3,7 @@ transpose <- function(l, fill=NA, ignore.empty=FALSE) {
   if (is.data.table(l)) setDT(ans)
   else if (is.data.frame(l)) {
     if (is.null(names(ans)))
-      setattr(ans, "names", paste("V", seq_along(ans), sep = ""))
+      setattr(ans, "names", paste0("V", seq_along(ans)))
     setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
     setattr(ans, "class", "data.frame")
   }

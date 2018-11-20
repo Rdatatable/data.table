@@ -45,8 +45,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
   ans = PROTECT(allocVector(VECSXP, maxlen));
   anslen = (!ignore) ? ln : (ln - zerolen);
   for (i=0; i<maxlen; i++) {
-    thisi = allocVector(maxtype, anslen);
-    SET_VECTOR_ELT(ans, i, thisi);
+    SET_VECTOR_ELT(ans, i, thisi=allocVector(maxtype, anslen) );
   }
 
   // transpose

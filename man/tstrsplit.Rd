@@ -3,16 +3,16 @@
 \alias{strsplit}
 \title{strsplit and transpose the resulting list efficiently}
 \description{
-  This is equivalent to \code{transpose(strsplit(...))}. This is a convenient wrapper function to split a column using \code{strsplit} and assign the transposed result to individual columns. See examples.
+  This is equivalent to \code{transpose(strsplit(\dots))}. This is a convenient wrapper function to split a column using \code{strsplit} and assign the transposed result to individual columns. See examples.
 
 }
 
 \usage{
-tstrsplit(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE)
+tstrsplit(x, \dots, fill=NA, type.convert=FALSE, keep, names=FALSE)
 }
 \arguments{
 	\item{x}{The vector to split (and transpose).}
-  \item{...}{ All the arguments to be passed to \code{strsplit}. }
+  \item{\dots}{ All the arguments to be passed to \code{\link[base]{strsplit}}. }
   \item{fill}{ Default is \code{NA}. It is used to fill shorter list elements so as to return each element of the transposed result of equal lengths. }
   \item{type.convert}{\code{TRUE} calls \code{\link{type.convert}} with \code{as.is=TRUE} on the columns.}
   \item{keep}{Specify indices corresponding to just those list elements to retain in the transposed result. Default is to return all.}

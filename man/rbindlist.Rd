@@ -8,7 +8,7 @@
 }
 \usage{
 rbindlist(l, use.names=fill, fill=FALSE, idcol=NULL)
-# rbind(..., use.names=TRUE, fill=FALSE, idcol=NULL)
+# rbind(\dots, use.names=TRUE, fill=FALSE, idcol=NULL)
 }
 \arguments{
   \item{l}{ A list containing \code{data.table}, \code{data.frame} or \code{list} objects. At least one of the inputs should have column names set. \code{\dots} is the same but you pass the objects by name separately. }
@@ -19,13 +19,13 @@ rbindlist(l, use.names=fill, fill=FALSE, idcol=NULL)
   If input is a named list, ids are generated using them, else using integer vector from \code{1} to length of input list. See \code{examples}.}
 }
 \details{
-Each item of \code{l} can be a \code{data.table}, \code{data.frame} or \code{list}, including \code{NULL} (skipped) or an empty object (0 rows). \code{rbindlist} is most useful when there are a variable number of (potentially many) objects to stack, such as returned by \code{lapply(fileNames, fread)}. \code{rbind} however is most useful to stack two or three objects which you know in advance. \code{\dots} should contain at least one \code{data.table} for \code{rbind(...)} to call the fast method and return a \code{data.table}, whereas \code{rbindlist(l)} always returns a \code{data.table} even when stacking a plain \code{list} with a \code{data.frame}, for example.
+Each item of \code{l} can be a \code{data.table}, \code{data.frame} or \code{list}, including \code{NULL} (skipped) or an empty object (0 rows). \code{rbindlist} is most useful when there are a variable number of (potentially many) objects to stack, such as returned by \code{lapply(fileNames, fread)}. \code{rbind} however is most useful to stack two or three objects which you know in advance. \code{\dots} should contain at least one \code{data.table} for \code{rbind(\dots)} to call the fast method and return a \code{data.table}, whereas \code{rbindlist(l)} always returns a \code{data.table} even when stacking a plain \code{list} with a \code{data.frame}, for example.
 
-In versions \code{<= v1.9.2}, each item for \code{rbindlist} should have the same number of columns as the first non empty item. \code{rbind.data.table} gained a \code{fill} argument to fill missing columns with \code{NA} in \code{v1.9.2}, which allowed for \code{rbind(...)} binding unequal number of columns.
+In versions \code{<= v1.9.2}, each item for \code{rbindlist} should have the same number of columns as the first non empty item. \code{rbind.data.table} gained a \code{fill} argument to fill missing columns with \code{NA} in \code{v1.9.2}, which allowed for \code{rbind(\dots)} binding unequal number of columns.
 
 In version \code{> v1.9.2}, these functionalities were extended to \code{rbindlist} (and written entirely in C for speed). \code{rbindlist} has \code{use.names} argument, which is set to \code{FALSE} by default for backwards compatibility. It also contains \code{fill} argument as well and can bind unequal columns when set to \code{TRUE}.
 
-With these changes, the only difference between \code{rbind(...)} and \code{rbindlist(l)} is their \emph{default argument} \code{use.names}.
+With these changes, the only difference between \code{rbind(\dots)} and \code{rbindlist(l)} is their \emph{default argument} \code{use.names}.
 
 If column \code{i} of input items do not all have the same type; e.g, a \code{data.table} may be bound with a \code{list} or a column is \code{factor} while others are \code{character} types, they are coerced to the highest type (SEXPTYPE).
 

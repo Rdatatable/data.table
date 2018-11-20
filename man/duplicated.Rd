@@ -26,11 +26,11 @@ memory efficient.
 
 }
 \usage{
-\method{duplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...)
+\method{duplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), \dots)
 
-\method{unique}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...)
+\method{unique}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), \dots)
 
-\method{anyDuplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...)
+\method{anyDuplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), \dots)
 
 uniqueN(x, by=if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE)
 }
@@ -43,7 +43,7 @@ as well.}
 the reverse side, i.e., the last (or rightmost) of identical elements would
 correspond to \code{duplicated = FALSE}.}
 \item{by}{\code{character} or \code{integer} vector indicating which combinations
-of columns from \code{x} to use for uniqueness checks. By default all columns are
+of columns from \code{x} to use for uniqueness checks. By default all columns
 are being used. That was changed recently for consistency to data.frame methods.
 In version \code{< 1.9.8} default was \code{key(x)}.}
 \item{na.rm}{Logical (default is \code{FALSE}). Should missing values (including
@@ -52,7 +52,7 @@ In version \code{< 1.9.8} default was \code{key(x)}.}
 \details{
 Because data.tables are usually sorted by key, tests for duplication are
 especially quick when only the keyed columns are considered. Unlike
-\code{\link[base]{unique.data.frame}}, \code{paste} is not used to ensure
+\code{\link[base:unique]{unique.data.frame}}, \code{paste} is not used to ensure
 equality of floating point data. It is instead accomplished directly and is
 therefore quite fast. data.table provides \code{\link{setNumericRounding}} to
 handle cases where limitations in floating point representation is undesirable.

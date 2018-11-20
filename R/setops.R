@@ -59,15 +59,16 @@ fintersect <- function(x, y, all=FALSE) {
   bad.type = setNames(c("raw","complex","list") %chin% c(vapply(x, typeof, FUN.VALUE = ""), vapply(y, typeof, FUN.VALUE = "")), c("raw","complex","list"))
   if (any(bad.type)) stop(sprintf("x and y must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
   if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have same column classes")
-  if (".seqn" %in% names(x)) stop("None of the datasets to intersect should contain a column named '.seqn'")
+  if (".seqn" %chin% names(x)) stop("None of the datasets to intersect should contain a column named '.seqn'")
   if (!nrow(x) || !nrow(y)) return(x[0L])
   if (all) {
     x = shallow(x)[, ".seqn" := rowidv(x)]
     y = shallow(y)[, ".seqn" := rowidv(y)]
     jn.on = c(".seqn",setdiff(names(x),".seqn"))
-    x[y, .SD, .SDcols=setdiff(names(x),".seqn"), nomatch=0L, on=jn.on]
+    x[y, .SD, .SDcols=setdiff(names(x),".seqn"), nomatch=NULL, on=jn.on]
   } else {
-    x[funique(y), nomatch=0L, on=names(x), mult="first"]
+    z = funique(y)  # fixes #3034. When .. prefix in i= is implemented (TODO), this can be x[funique(..y), on=, multi=]
+    x[z, nomatch=NULL, on=names(x), mult="first"]
   }
 }
 
@@ -79,7 +80,7 @@ fsetdiff <- function(x, y, all=FALSE) {
   bad.type = setNames(c("raw","complex","list") %chin% c(vapply(x, typeof, FUN.VALUE = ""), vapply(y, typeof, FUN.VALUE = "")), c("raw","complex","list"))
   if (any(bad.type)) stop(sprintf("x and y must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
   if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have same column classes")
-  if (".seqn" %in% names(x)) stop("None of the datasets to setdiff should contain a column named '.seqn'")
+  if (".seqn" %chin% names(x)) stop("None of the datasets to setdiff should contain a column named '.seqn'")
   if (!nrow(x)) return(x)
   if (!nrow(y)) return(if (!all) funique(x) else x)
   if (all) {
@@ -105,13 +106,17 @@ funion <- function(x, y, all=FALSE) {
   ans
 }
 
-fsetequal <- function(x, y) {
+fsetequal <- function(x, y, all=TRUE) {
   if (!is.data.table(x) || !is.data.table(y)) stop("x and y must be both data.tables")
   if (!identical(sort(names(x)), sort(names(y)))) stop("x and y must have same column names")
   if (!identical(names(x), names(y))) stop("x and y must have same column order")
   bad.type = setNames(c("raw","complex","list") %chin% c(vapply(x, typeof, FUN.VALUE = ""), vapply(y, typeof, FUN.VALUE = "")), c("raw","complex","list"))
   if (any(bad.type)) stop(sprintf("x and y must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
   if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have same column classes")
+  if (!all) {
+    x = funique(x)
+    y = funique(y)
+  }
   isTRUE(all.equal.data.table(x, y, check.attributes = FALSE, ignore.row.order = TRUE))
 }
 
@@ -121,7 +126,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
   stopifnot(is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order), is.numeric(tolerance))
   if (!is.data.table(target) || !is.data.table(current)) stop("'target' and 'current' must be both data.tables")
 
-  msg = character(0)
+  msg = character(0L)
   # init checks that detect high level all.equal
   if (nrow(current) != nrow(target)) msg = "Different number of rows"
   if (ncol(current) != ncol(target)) msg = c(msg, "Different number of columns")
@@ -139,9 +144,9 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
   targetModes = vapply_1c(target, mode)
   currentModes = vapply_1c(current,  mode)
   if (any( d<-(targetModes!=currentModes) )) {
-    w = head(which(d),3)
+    w = head(which(d),3L)
     return(paste0("Datasets have different column modes. First 3: ",paste(
-     paste(names(targetModes)[w],"(",paste(targetModes[w],currentModes[w],sep="!="),")",sep="")
+     paste0(names(targetModes)[w],"(",paste(targetModes[w],currentModes[w],sep="!="),")")
             ,collapse=" ")))
   }
 
@@ -151,11 +156,11 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
     targetTypes = vapply_1c(target, squashClass)
     currentTypes = vapply_1c(current, squashClass)
     if (length(targetTypes) != length(currentTypes))
-      stop("Internal error: ncol(current)==ncol(target) was checked above")
+      stop("Internal error: ncol(current)==ncol(target) was checked above") # nocov
     if (any( d<-(targetTypes != currentTypes))) {
-      w = head(which(d),3)
+      w = head(which(d),3L)
       return(paste0("Datasets have different column classes. First 3: ",paste(
-     paste(names(targetTypes)[w],"(",paste(targetTypes[w],currentTypes[w],sep="!="),")",sep="")
+     paste0(names(targetTypes)[w],"(",paste(targetTypes[w],currentTypes[w],sep="!="),")")
             ,collapse=" ")))
     }
   }
@@ -180,7 +185,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
 
     # Trim any extra row.names attributes that came from some inheritence
     # Trim ".internal.selfref" as long as there is no `all.equal.externalptr` method
-    exclude.attrs = function(x, attrs = c("row.names",".internal.selfref")) x[!names(x) %in% attrs]
+    exclude.attrs = function(x, attrs = c("row.names",".internal.selfref")) x[!names(x) %chin% attrs]
     a1 = exclude.attrs(attributes(target))
     a2 = exclude.attrs(attributes(current))
     if (length(a1) != length(a2)) return(sprintf("Datasets has different number of (non-excluded) attributes: target %s, current %s", length(a1), length(a2)))
@@ -190,7 +195,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
   }
 
   if (ignore.row.order) {
-    if (".seqn" %in% names(target))
+    if (".seqn" %chin% names(target))
       stop("None of the datasets to compare should contain a column named '.seqn'")
     bad.type = setNames(c("raw","complex","list") %chin% c(vapply(current, typeof, FUN.VALUE = ""), vapply(target, typeof, FUN.VALUE = "")), c("raw","complex","list"))
     if (any(bad.type))
@@ -257,7 +262,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
       x = target[[i]]
       y = current[[i]]
       if (xor(is.factor(x),is.factor(y)))
-        return("Internal error: factor type mismatch should have been caught earlier")
+        stop("Internal error: factor type mismatch should have been caught earlier") # nocov
       cols.r = TRUE
       if (is.factor(x)) {
         if (!identical(levels(x),levels(y))) {

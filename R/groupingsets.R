@@ -10,7 +10,7 @@ rollup.data.table <- function(x, j, by, .SDcols, id = FALSE, ...) {
   if (!is.logical(id))
     stop("Argument 'id' must be logical scalar.")
   # generate grouping sets for rollup
-  sets = lapply(length(by):0, function(i) by[0:i])
+  sets = lapply(length(by):0L, function(i) by[0L:i])
   # redirect to workhorse function
   jj = substitute(j)
   groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj)
@@ -29,8 +29,8 @@ cube.data.table <- function(x, j, by, .SDcols, id = FALSE, ...) {
     stop("Argument 'id' must be logical scalar.")
   # generate grouping sets for cube - power set: http://stackoverflow.com/a/32187892/2490497
   n = length(by)
-  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
-  sets = lapply((2L^n):1, function(j) by[keepBool[j, ]])
+  keepBool = sapply(2L^(seq_len(n) - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
+  sets = lapply((2L^n):1L, function(j) by[keepBool[j, ]])
   # redirect to workhorse function
   jj = substitute(j)
   groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj)
@@ -88,7 +88,7 @@ groupingsets.data.table <- function(x, j, by, sets, .SDcols, id = FALSE, jj, ...
     setcolorder(empty, c("grouping", by, setdiff(names(empty), c("grouping", by))))
   }
   # workaround for rbindlist fill=TRUE on integer64 #1459
-  int64.cols = vapply(empty, inherits, logical(1), "integer64")
+  int64.cols = vapply(empty, inherits, logical(1L), "integer64")
   int64.cols = names(int64.cols)[int64.cols]
   if (length(int64.cols) && !requireNamespace("bit64", quietly=TRUE))
     stop("Using integer64 class columns require to have 'bit64' package installed.")

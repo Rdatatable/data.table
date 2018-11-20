@@ -25,63 +25,44 @@ chgroup(x)
 
   Strings are already cached internally by R (\code{CHARSXP}) and that is utilised by these functions. No hash table is built or cached, so the first call is the same speed as subsequent calls. Essentially, a counting sort (similar to \code{base::sort.list(x,method="radix")}, see \code{\link{setkey}}) is implemented using the (almost) unused truelength of CHARSXP as the counter. \emph{Where} R \emph{has} used truelength of CHARSXP (where a character value is shared by a variable name), the non zero truelengths are stored first and reinstated afterwards. Each of the \code{ch*} functions implements a variation on this theme. Remember that internally in R, length of a CHARSXP is the nchar of the string and DATAPTR is the string itself.
 
-  Methods that do build and cache a hash table (such as the \href{http://www.rforge.net/fastmatch}{fastmatch package}) are \emph{much} faster on subsequent calls (almost instant) but a little slower on the first. Therefore \code{chmatch} may be particularly suitable for ephemeral vectors (such as local variables in functions) or tasks that are only done once. Much depends on the length of \code{x} and \code{table}, how many unique strings each contains, and whether the position of the first match is all that is required.
+  Methods that do build and cache a hash table (such as the \href{https://cran.r-project.org/package=fastmatch}{fastmatch package}) are \emph{much} faster on subsequent calls (almost instant) but a little slower on the first. Therefore \code{chmatch} may be particularly suitable for ephemeral vectors (such as local variables in functions) or tasks that are only done once. Much depends on the length of \code{x} and \code{table}, how many unique strings each contains, and whether the position of the first match is all that is required.
 
   It may be possible to speed up fastmatch's hash table build time by using the technique in \code{data.table}, and we have suggested this to its author. If successful, fastmatch would then be fastest in all cases.
   }
 \value{
     As \code{match} and \code{\%in\%}. \code{chorder} and \code{chgroup} return an integer index vector.
 }
-\seealso{ \code{\link[base]{match}}, \code{\link{\%in\%}}, \code{\link[fastmatch]{fmatch}}
+\seealso{ \code{\link[base]{match}}, \code{\link{\%in\%}}
 }
 \note{ The name \code{charmatch} was taken by \code{\link[base]{charmatch}}, hence \code{chmatch}.
 }
 \examples{
 # Please type 'example(chmatch)' to run this and see timings on your machine
 
-# N is set small here (1e5) because CRAN runs all examples and tests every night, to catch
-# any problems early as R itself changes and other packages run.
-# The comments here apply when N has been changed to 1e7.
 N = 1e5
+# N is set small here (1e5) to reduce runtime because every day CRAN runs and checks
+# all documentation examples in addition to the package's test suite.
+# The comments here apply when N has been changed to 1e8 and were run on 2018-05-13
+# with R 3.5.0 and data.table 1.11.2.
 
 u = as.character(as.hexmode(1:10000))
 y = sample(u,N,replace=TRUE)
 x = sample(u)
-                                             #  With N=1e7 ...
-system.time(a <- match(x,y))                 #  4.8s
-system.time(b <- chmatch(x,y))               #  0.9s   Faster than 1st fmatch
+                                           #  With N=1e8 ...
+system.time(a <- match(x,y))               #  4.6s
+system.time(b <- chmatch(x,y))             #  1.8s
 identical(a,b)
-if (fastmatchloaded<-suppressWarnings(require(fastmatch))) {
-    print(system.time(c <- fmatch(x,y)))     #  2.1s   Builds and caches hash
-    print(system.time(c <- fmatch(x,y)))     #  0.00s  Uses hash
-    identical(a,c)
-}
 
-system.time(a <- x \%in\% y)                   #  4.8s
-system.time(b <- x \%chin\% y)                 #  0.9s
+system.time(a <- x \%in\% y)               #  4.5s
+system.time(b <- x \%chin\% y)             #  1.7s
 identical(a,b)
-if (fastmatchloaded) {
-    match <- fmatch                          # fmatch is drop in replacement
-    print(system.time(c <- match(x,y)))      #  0.00s
-    print(system.time(c <- x \%in\% y))        #  4.8s   \%in\% still prefers base::match
-    # Anyone know how to get \%in\% to use fmatch (without masking \%in\% too)?
-    rm(match)
-    identical(a,c)
-}
 
 # Different example with more unique strings ...
 u = as.character(as.hexmode(1:(N/10)))
 y = sample(u,N,replace=TRUE)
 x = sample(u,N,replace=TRUE)
-system.time(a <- match(x,y))                 # 34.0s
-system.time(b <- chmatch(x,y))               #  6.4s
+system.time(a <- match(x,y))               # 46s
+system.time(b <- chmatch(x,y))             # 16s
 identical(a,b)
-if (fastmatchloaded) {
-    print(system.time(c <- fmatch(x,y)))     #  7.9s
-    print(system.time(c <- fmatch(x,y)))     #  4.0s
-    identical(a,c)
-}
 }
 \keyword{ data }
-
-

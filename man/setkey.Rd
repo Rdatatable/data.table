@@ -24,10 +24,10 @@ attribute \code{sorted}). The sorted columns are the key. The key can be any
 columns in any order. The columns are sorted in ascending order always. The table
 is changed \emph{by reference} and is therefore very memory efficient.
 
-\code{setindex()} creates an index on provided columns. Index is simply an
-order of dataset by provided columns. It is being stored as \code{data.table}
-attribute so dataset can retain original order.
-See \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} vignette for more details.
+\code{setindex()} creates an index (or indices) on provided columns. This index is simply an
+order of the dataset's according to the provided columns. This order is stored as a \code{data.table}
+attribute, and the dataset retains the original order in memory.
+See the \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} vignette for more details.
 
 \code{key()} returns the \code{data.table}'s key if it exists, and \code{NULL}
 if none exist.
@@ -36,10 +36,10 @@ if none exist.
 the \code{data.table} has a key (or not).
 }
 \usage{
-setkey(x, ..., verbose=getOption("datatable.verbose"), physical = TRUE)
+setkey(x, \dots, verbose=getOption("datatable.verbose"), physical = TRUE)
 setkeyv(x, cols, verbose=getOption("datatable.verbose"), physical = TRUE)
-setindex(...)
-setindexv(...)
+setindex(\dots)
+setindexv(x, cols, verbose=getOption("datatable.verbose"))
 key(x)
 indices(x, vectors = FALSE)
 haskey(x)
@@ -50,7 +50,7 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 \item{\dots}{ The columns to sort by. Do not quote the column names. If
 \code{\dots} is missing (i.e. \code{setkey(DT)}), all the columns are used.
 \code{NULL} removes the key. }
-\item{cols}{ A character vector (only) of column names. }
+\item{cols}{ A character vector of column names. For \code{setindexv}, this can be a \code{list} of character vectors, in which case each element will be applied as an index. }
 \item{value}{ In (deprecated) \code{key<-}, a character vector (only) of column
 names.}
 \item{verbose}{ Output status and information. }
@@ -76,7 +76,7 @@ versions - \code{<=1.8.10} and \code{>= 1.9.0}.
 
 In \code{data.table} versions \code{<= 1.8.10}, for columns of type \code{integer},
 the sort is attempted with the very fast \code{"radix"} method in
-\code{\link[base]{sort.list}}. If that fails, the sort reverts to the default
+\code{\link[base:order]{sort.list}}. If that fails, the sort reverts to the default
 method in \code{\link[base]{order}}. For character vectors, \code{data.table}
 takes advantage of R's internal global string cache and implements a very efficient
 order, also exported as \code{\link{chorder}}.
@@ -106,9 +106,9 @@ If you use column numbers then bugs (possibly silent) can more easily creep into
 your code as time progresses if changes are made elsewhere in your code; e.g., if
 you add, remove or reorder columns in a few months time, a \code{setkey} by column
 number will then refer to a different column, possibly returning incorrect results
-with no warning. (A similar concept exists in SQL, where \code{"select * from ..."}
+with no warning. (A similar concept exists in SQL, where \code{"select * from \dots"}
 is considered poor programming style when a robust, maintainable system is
-required.)  If you really wish to use column numbers, it's possible but
+required.)  If you really wish to use column numbers, it is possible but
 deliberately a little harder; e.g., \code{setkeyv(DT,colnames(DT)[1:2])}.
 }
 \value{
@@ -136,7 +136,7 @@ supported, in particular ordered factors (where the levels are not in
 alphabetic order).
 }
 \seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{J}},
-\code{\link[base]{sort.list}}, \code{\link{copy}}, \code{\link{setDT}},
+\code{\link[base:order]{sort.list}}, \code{\link{copy}}, \code{\link{setDT}},
 \code{\link{setDF}}, \code{\link{set}} \code{\link{:=}}, \code{\link{setorder}},
 \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}},
 \code{\link{chorder}}, \code{\link{setNumericRounding}}

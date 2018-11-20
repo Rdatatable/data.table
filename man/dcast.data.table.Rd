@@ -3,7 +3,7 @@
 \alias{dcast}
 \title{Fast dcast for data.table}
 \description{
-  \code{dcast.data.table} is a much faster version of \code{reshape2::dcast}, but for \code{data.table}s. More importantly, it's capable of handling very large data quite efficiently in terms of memory usage in comparison to \code{reshape2::dcast}.
+  \code{dcast.data.table} is a much faster version of \code{reshape2::dcast}, but for \code{data.table}s. More importantly, it is capable of handling very large data quite efficiently in terms of memory usage in comparison to \code{reshape2::dcast}.
 
   From 1.9.6, \code{dcast} is implemented as an S3 generic in \code{data.table}. To melt or cast \code{data.table}s, it is not necessary to load \code{reshape2} any more. If you have load \code{reshape2}, do so before loading \code{data.table} to prevent unwanted masking.
 
@@ -13,7 +13,7 @@
 % \method{dcast}{data.table}
 \usage{
 \method{dcast}{data.table}(data, formula, fun.aggregate = NULL, sep = "_",
-    ..., margins = NULL, subset = NULL, fill = NULL,
+    \dots, margins = NULL, subset = NULL, fill = NULL,
     drop = TRUE, value.var = guess(data),
     verbose = getOption("datatable.verbose"))
 }
@@ -24,7 +24,7 @@
 
   \bold{NEW}: it is possible to provide a list of functions to \code{fun.aggregate}. See Examples. }
   \item{sep}{Character vector of length 1, indicating the separating character in variable names generated during casting. Default is \code{_} for backwards compatibility. }
-  \item{...}{Any other arguments that may be passed to the aggregating function.}
+  \item{\dots}{Any other arguments that may be passed to the aggregating function.}
   \item{margins}{Not implemented yet. Should take variable names to compute margins on. A value of \code{TRUE} would compute all margins.}
   \item{subset}{Specified if casting should be done on a subset of the data. Ex: \code{subset = .(col1 <= 5)} or \code{subset = .(variable != "January")}.}
   \item{fill}{Value with which to fill missing cells. If \code{fun.aggregate} is present, takes the value by applying the function on a 0-length vector.}
@@ -38,7 +38,7 @@
   \item{verbose}{Not used yet. May be dropped in the future or used to provide informative messages through the console.}
 }
 \details{
-The cast formula takes the form \code{LHS ~ RHS}, ex: \code{var1 + var2 ~ var3}. The order of entries in the formula is essential. There are two special variables: \code{.} and \code{...}. \code{.} represents no variable; \code{...} represents all variables not otherwise mentioned in \code{formula}; see Examples.
+The cast formula takes the form \code{LHS ~ RHS}, ex: \code{var1 + var2 ~ var3}. The order of entries in the formula is essential. There are two special variables: \code{.} and \code{\dots}. \code{.} represents no variable; \code{\dots} represents all variables not otherwise mentioned in \code{formula}; see Examples.
 
 \code{dcast} also allows \code{value.var} columns of type \code{list}.
 
@@ -87,7 +87,7 @@ DT <- data.table(v1 = rep(1:2, each = 6),
                  v2 = rep(rep(1:3, 2), each = 2),
                  v3 = rep(1:2, 6),
                  v4 = rnorm(6))
-dcast(DT, ... ~ v3, value.var = "v4") #same as v1 + v2 ~ v3, value.var = "v4"
+dcast(DT, \dots ~ v3, value.var = "v4") #same as v1 + v2 ~ v3, value.var = "v4"
 dcast(DT, v1 + v2 + v3 ~ ., value.var = "v4")
 
 ## for each combination of (v1, v2), add up all values of v4

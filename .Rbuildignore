@@ -3,6 +3,8 @@
 ^ISSUE_TEMPLATE\.md$
 ^CRAN_Release\.cmd$
 ^deploy\.sh$
+^\.emacs\.desktop
+^\.emacs\.desktop\.lock
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^appveyor\.yml$
@@ -12,4 +14,11 @@
 ^\.Rhistory$
 ^data\.table_.*\.tar\.gz$
 ^cc\.R$
+^ci\.R$
+^publish\.R$
 ^Makefile$
+^NEWS.0.md$
+^bus$
+^Dockerfile$
+^Dockerfile\.in$
+^.*\.dll$

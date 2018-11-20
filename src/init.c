@@ -26,6 +26,7 @@ SEXP setlistelt();
 SEXP setmutable();
 SEXP address();
 SEXP copyNamedInList();
+SEXP expandAltRep();
 SEXP fmelt();
 SEXP fcast();
 SEXP uniqlist();
@@ -76,6 +77,7 @@ SEXP fsort();
 SEXP inrange();
 SEXP between();
 SEXP hasOpenMP();
+SEXP uniqueNlogical();
 
 // .Externals
 SEXP fastmean();
@@ -104,6 +106,7 @@ R_CallMethodDef callMethods[] = {
 {"Csetmutable", (DL_FUNC) &setmutable, -1},
 {"Caddress", (DL_FUNC) &address, -1},
 {"CcopyNamedInList", (DL_FUNC) &copyNamedInList, -1},
+{"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1},
 {"Cfcast", (DL_FUNC) &fcast, -1},
 {"Cuniqlist", (DL_FUNC) &uniqlist, -1},
@@ -154,6 +157,7 @@ R_CallMethodDef callMethods[] = {
 {"Cinrange", (DL_FUNC) &inrange, -1},
 {"Cbetween", (DL_FUNC) &between, -1},
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
+{"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
 {NULL, NULL, 0}
 };
 
@@ -183,6 +187,9 @@ void attribute_visible R_init_datatable(DllInfo *info)
   if (sizeof(int64_t) != 8) error("Checking sizeof(int64_t) [%d] is 8 %s", sizeof(int64_t), msg);
   if (sizeof(signed char) != 1) error("Checking sizeof(signed char) [%d] is 1 %s", sizeof(signed char), msg);
   if (sizeof(int8_t) != 1) error("Checking sizeof(int8_t) [%d] is 1 %s", sizeof(int8_t), msg);
+  if (sizeof(uint8_t) != 1) error("Checking sizeof(uint8_t) [%d] is 1 %s", sizeof(uint8_t), msg);
+  if (sizeof(int16_t) != 2) error("Checking sizeof(int16_t) [%d] is 2 %s", sizeof(int16_t), msg);
+  if (sizeof(uint16_t) != 2) error("Checking sizeof(uint16_t) [%d] is 2 %s", sizeof(uint16_t), msg);
 
   SEXP tmp = PROTECT(allocVector(INTSXP,2));
   if (LENGTH(tmp)!=2) error("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s", LENGTH(tmp), msg);
@@ -234,6 +241,11 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_POSIXct =   PRINTNAME(install("POSIXct"));
   char_nanotime =  PRINTNAME(install("nanotime"));
   char_starts =    PRINTNAME(sym_starts = install("starts"));
+  char_lens =      PRINTNAME(install("lens"));
+  char_indices =   PRINTNAME(install("indices"));
+  char_allLen1 =   PRINTNAME(install("allLen1"));
+  char_allGrp1 =   PRINTNAME(install("allGrp1"));
+
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
     error("PRINTNAME(install(\"integer64\")) has returned %s not %s",
@@ -248,13 +260,14 @@ void attribute_visible R_init_datatable(DllInfo *info)
   // look odd (and devs in future might be tempted to remove them). Avoiding passing install() to API calls
   // keeps the code neat and readable. Also see grep's added to CRAN_Release.cmd to find such calls.
   sym_sorted  = install("sorted");
+  sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
 
   avoid_openmp_hang_within_fork();
 }
 
-inline Rboolean INHERITS(SEXP x, SEXP char_) {
+inline bool INHERITS(SEXP x, SEXP char_) {
   // Thread safe inherits() by pre-calling install() above in init first then
   // passing those char_* in here for simple and fast non-API pointer compare.
   // The thread-safety aspect here is only currently actually needed for list columns in
@@ -263,13 +276,13 @@ inline Rboolean INHERITS(SEXP x, SEXP char_) {
   // Thread safe in the limited sense of correct and intended usage :
   // i) no API call such as install() or mkChar() must be passed in.
   // ii) no attrib writes must be possible in other threads.
-  SEXP class;
-  if (isString(class = getAttrib(x, R_ClassSymbol))) {
-  for (int i=0; i<LENGTH(class); i++) {
-    if (STRING_ELT(class, i) == char_) return TRUE;
+  SEXP klass;
+  if (isString(klass = getAttrib(x, R_ClassSymbol))) {
+    for (int i=0; i<LENGTH(klass); i++) {
+      if (STRING_ELT(klass, i) == char_) return true;
+    }
   }
-  }
-  return FALSE;
+  return false;
 }
 
 inline long long DtoLL(double x) {

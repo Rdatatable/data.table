@@ -11,9 +11,9 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
     if (any0orNA) {
       // any 0 or NA *in idx*; if there's 0 or NA in the data that's just regular data to be copied
       for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        INTEGER(target)[ansi++] = (this==NA_INTEGER || this>max) ? NA_INTEGER : INTEGER(source)[this-1];
+        int elem = INTEGER(idx)[i];
+        if (elem==0) continue;
+        INTEGER(target)[ansi++] = (elem==NA_INTEGER || elem>max) ? NA_INTEGER : INTEGER(source)[elem-1];
         // negatives are checked before (in check_idx()) not to have reached here
         // NA_INTEGER == NA_LOGICAL is checked in init.c
       }
@@ -36,9 +36,9 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
       if (INHERITS(source, char_integer64)) naval.ll = NA_INT64_LL;
       else naval.d = NA_REAL;
       for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        REAL(target)[ansi++] = (this==NA_INTEGER || this>max) ? naval.d : REAL(source)[this-1];
+        int elem = INTEGER(idx)[i];
+        if (elem==0) continue;
+        REAL(target)[ansi++] = (elem==NA_INTEGER || elem>max) ? naval.d : REAL(source)[elem-1];
       }
     } else {
       double *vd = REAL(source);
@@ -62,9 +62,9 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
     {
       if (any0orNA) {
       for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        SET_STRING_ELT(target, ansi++, (this==NA_INTEGER || this>max) ? NA_STRING : STRING_ELT(source, this-1));
+        int elem = INTEGER(idx)[i];
+        if (elem==0) continue;
+        SET_STRING_ELT(target, ansi++, (elem==NA_INTEGER || elem>max) ? NA_STRING : STRING_ELT(source, elem-1));
       }
       } else {
       SEXP *vd = (SEXP *)DATAPTR(source);
@@ -81,9 +81,9 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
     {
       if (any0orNA) {
       for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        SET_VECTOR_ELT(target, ansi++, (this==NA_INTEGER || this>max) ? R_NilValue : VECTOR_ELT(source, this-1));
+        int elem = INTEGER(idx)[i];
+        if (elem==0) continue;
+        SET_VECTOR_ELT(target, ansi++, (elem==NA_INTEGER || elem>max) ? R_NilValue : VECTOR_ELT(source, elem-1));
       }
       } else {
       for (int i=0; i<LENGTH(idx); i++) {
@@ -95,12 +95,12 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
   case CPLXSXP :
     if (any0orNA) {
       for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        if (this==NA_INTEGER || this>max) {
+        int elem = INTEGER(idx)[i];
+        if (elem==0) continue;
+        if (elem==NA_INTEGER || elem>max) {
           COMPLEX(target)[ansi].r = NA_REAL;
           COMPLEX(target)[ansi++].i = NA_REAL;
-        } else COMPLEX(target)[ansi++] = COMPLEX(source)[this-1];
+        } else COMPLEX(target)[ansi++] = COMPLEX(source)[elem-1];
       }
     } else {
       for (int i=0; i<LENGTH(idx); i++)
@@ -110,9 +110,9 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
   case RAWSXP :
     if (any0orNA) {
       for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        RAW(target)[ansi++] = (this==NA_INTEGER || this>max) ? (Rbyte) 0 : RAW(source)[this-1];
+        int elem = INTEGER(idx)[i];
+        if (elem==0) continue;
+        RAW(target)[ansi++] = (elem==NA_INTEGER || elem>max) ? (Rbyte) 0 : RAW(source)[elem-1];
       }
     } else {
       for (int i=0; i<LENGTH(idx); i++)
@@ -125,7 +125,7 @@ static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orN
   return target;
 }
 
-static void check_idx(SEXP idx, int max, /*outputs...*/int *ansLen, Rboolean *any0orNA)
+static void check_idx(SEXP idx, int max, /*outputs...*/int *ansLen, Rboolean *any0orNA, Rboolean *monotonic)
 // count non-0 in idx => the length of the subset result stored in *ansLen
 // return whether any 0, NA (or >max) exist and set any0orNA if so, for branchless subsetVectorRaw
 // >max is treated as NA for consistency with [.data.frame and operations like cbind(DT[w],DT[w+1])
@@ -134,18 +134,22 @@ static void check_idx(SEXP idx, int max, /*outputs...*/int *ansLen, Rboolean *an
 // do this once up-front and reuse the result for each column
 // single cache efficient sweep so no need to go parallel (well, very low priority to go parallel)
 {
-  if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx)));
-  Rboolean anyNeg=FALSE, anyNA=FALSE;
+  if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
+  Rboolean anyNeg=FALSE, anyNA=FALSE, anyLess=FALSE;
   int ans=0;
+  int last = INT32_MIN;
   for (int i=0; i<LENGTH(idx); i++) {
-    int this = INTEGER(idx)[i];
-    ans += (this!=0);
-    anyNeg |= this<0 && this!=NA_INTEGER;
-    anyNA |= this==NA_INTEGER || this>max;
+    int elem = INTEGER(idx)[i];
+    ans += (elem!=0);
+    anyNeg |= elem<0 && elem!=NA_INTEGER;
+    anyNA |= elem==NA_INTEGER || elem>max;
+    anyLess |= elem<last;
+    last = elem;
   }
-  if (anyNeg) error("Internal error: idx contains negatives. Should have been dealt with earlier.");
+  if (anyNeg) error("Internal error: idx contains negatives. Should have been dealt with earlier."); // # nocov
   *ansLen = ans;
   *any0orNA = ans<LENGTH(idx) || anyNA;
+  *monotonic = !anyLess; // for the purpose of ordered keys, elem==last is allowed
 }
 
 // TODO - currently called from R level first. Can it be called from check_idx instead?
@@ -154,16 +158,17 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
   // + more precise and helpful error messages telling user exactly where the problem is (saving user debugging time)
   // + a little more efficient than negativeSubscript in src/main/subscript.c (it's private to R so we can't call it anyway)
 
-  if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx)));
-  if (!isInteger(maxArg) || length(maxArg)!=1) error("Internal error. 'maxArg' is type '%s' and length %d, should be an integer singleton", type2char(TYPEOF(maxArg)), length(maxArg));
+  if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
+  if (!isInteger(maxArg) || length(maxArg)!=1) error("Internal error. 'maxArg' is type '%s' and length %d, should be an integer singleton", type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
   int max = INTEGER(maxArg)[0];
-  if (max<0) error("Internal error. max is %d, must be >= 0.", max);  // NA also an error which'll print as INT_MIN
+  // NA also an error which'll print as INT_MIN
+  if (max<0) error("Internal error. max is %d, must be >= 0.", max); // # nocov
   int firstNegative = 0, firstPositive = 0, firstNA = 0, num0 = 0;
   for (int i=0; i<LENGTH(idx); i++) {
-    int this = INTEGER(idx)[i];
-    if (this==NA_INTEGER) { if (firstNA==0) firstNA = i+1;  continue; }
-    if (this==0)          { num0++;  continue; }
-    if (this>0)           { if (firstPositive==0) firstPositive=i+1; continue; }
+    int elem = INTEGER(idx)[i];
+    if (elem==NA_INTEGER) { if (firstNA==0) firstNA = i+1;  continue; }
+    if (elem==0)          { num0++;  continue; }
+    if (elem>0)           { if (firstPositive==0) firstPositive=i+1; continue; }
     if (firstNegative==0) firstNegative=i+1;
   }
   if (firstNegative==0) return(idx);  // 0's and NA can be mixed with positives, there are no negatives present, so we're done
@@ -180,17 +185,17 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
   // Maybe R needs to be rebuilt with valgrind before Calloc's Free can be matched up by valgrind?
   int firstDup = 0, numDup = 0, firstBeyond = 0, numBeyond = 0;
   for (int i=0; i<LENGTH(idx); i++) {
-    int this = -INTEGER(idx)[i];
-    if (this==0) continue;
-    if (this>max) {
+    int elem = -INTEGER(idx)[i];
+    if (elem==0) continue;
+    if (elem>max) {
       numBeyond++;
       if (firstBeyond==0) firstBeyond=i+1;
       continue;
     }
-    if (tmp[this-1]==1) {
+    if (tmp[elem-1]==1) {
       numDup++;
       if (firstDup==0) firstDup=i+1;
-    } else tmp[this-1] = 1;
+    } else tmp[elem-1] = 1;
   }
   if (numBeyond)
     warning("Item %d of i is %d but there are only %d rows. Ignoring this and %d more like it out of %d.", firstBeyond, INTEGER(idx)[firstBeyond-1], max, numBeyond-1, LENGTH(idx));
@@ -201,7 +206,7 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
   int ansi = 0;
   for (int i=0; i<max; i++) if (tmp[i]==0) INTEGER(ans)[ansi++] = i+1;
   UNPROTECT(1);
-  if (ansi != max-LENGTH(idx)+num0+numDup+numBeyond) error("Internal error: ansi[%d] != max[%d]-LENGTH(idx)[%d]+num0[%d]+numDup[%d]+numBeyond[%d] in convertNegativeIdx",ansi,max,LENGTH(idx),num0,numDup,numBeyond);
+  if (ansi != max-LENGTH(idx)+num0+numDup+numBeyond) error("Internal error: ansi[%d] != max[%d]-LENGTH(idx)[%d]+num0[%d]+numDup[%d]+numBeyond[%d] in convertNegativeIdx",ansi,max,LENGTH(idx),num0,numDup,numBeyond); // # nocov
   return(ans);
 }
 
@@ -216,28 +221,33 @@ SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
 *   4) Could do it other ways but may as well go to C now as we were going to
 *       do that anyway
 */
+
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
-  if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows)));
+  int nprotect=0;
+  if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows))); // # nocov
   if (!length(x)) return(x);  // return empty list
 
   // check index once up front for 0 or NA, for branchless subsetVectorRaw
   R_len_t ansn=0;
-  Rboolean any0orNA=FALSE;
-  check_idx(rows, length(VECTOR_ELT(x,0)), &ansn, &any0orNA);
+  Rboolean any0orNA=FALSE, orderedSubset=FALSE;
+  check_idx(rows, length(VECTOR_ELT(x,0)), &ansn, &any0orNA, &orderedSubset);
 
-  if (!isInteger(cols)) error("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols)));
+  if (!isInteger(cols)) error("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
+  if (ALTREP(cols)) { cols = PROTECT(duplicate(cols)); nprotect++; }
+  if (ALTREP(rows)) { rows = PROTECT(duplicate(rows)); nprotect++; }
   for (int i=0; i<LENGTH(cols); i++) {
     int this = INTEGER(cols)[i];
     if (this<1 || this>LENGTH(x)) error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
   }
-  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+64));  // just do alloc.col directly, eventually alloc.col can be deprecated.
+  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+64)); nprotect++;  // just do alloc.col directly, eventually alloc.col can be deprecated.
   copyMostAttrib(x, ans);  // other than R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
                // so includes row.names (oddly, given other dims aren't) and "sorted", dealt with below
   SET_TRUELENGTH(ans, LENGTH(ans));
   SETLENGTH(ans, LENGTH(cols));
   for (int i=0; i<LENGTH(cols); i++) {
-    SEXP source, target;
-    target = PROTECT(allocVector(TYPEOF(source=VECTOR_ELT(x, INTEGER(cols)[i]-1)), ansn));
+    SEXP source = VECTOR_ELT(x, INTEGER(cols)[i]-1);
+    if (ALTREP(source)) SET_VECTOR_ELT(x, INTEGER(cols)[i]-1, source=duplicate(source));
+    SEXP target = PROTECT(allocVector(TYPEOF(source), ansn));
     SETLENGTH(target, ansn);
     SET_TRUELENGTH(target, ansn);
     copyMostAttrib(source, target);
@@ -263,47 +273,45 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
         subsetVectorRaw(target, VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, any0orNA);
     }
   }
-  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+64));
+  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+64)); nprotect++;
   SET_TRUELENGTH(tmp, LENGTH(tmp));
   SETLENGTH(tmp, LENGTH(cols));
   setAttrib(ans, R_NamesSymbol, tmp);
   subsetVectorRaw(tmp, getAttrib(x, R_NamesSymbol), cols, /*any0orNA=*/FALSE);
-  UNPROTECT(1);
 
-  tmp = PROTECT(allocVector(INTSXP, 2));
+  tmp = PROTECT(allocVector(INTSXP, 2)); nprotect++;
   INTEGER(tmp)[0] = NA_INTEGER;
   INTEGER(tmp)[1] = -ansn;
   setAttrib(ans, R_RowNamesSymbol, tmp);  // The contents of tmp must be set before being passed to setAttrib(). setAttrib looks at tmp value and copies it in the case of R_RowNamesSymbol. Caused hard to track bug around 28 Sep 2014.
-  UNPROTECT(1);
 
-  // maintain key if ordered subset ...
+  // clear any index that was copied over by copyMostAttrib() above, e.g. #1760 and #1734 (test 1678)
+  setAttrib(ans, sym_index, R_NilValue);
+  // but maintain key if ordered subset
   SEXP key = getAttrib(x, sym_sorted);
   if (length(key)) {
-    SEXP in = PROTECT(chmatch(key,getAttrib(ans,R_NamesSymbol), 0, TRUE)); // (nomatch ignored when in=TRUE)
+    SEXP in = PROTECT(chmatch(key,getAttrib(ans,R_NamesSymbol), 0, TRUE)); nprotect++; // (nomatch ignored when in=TRUE)
     int i = 0;  while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
-    UNPROTECT(1);
     // i is now the keylen that can be kept. 2 lines above much easier in C than R
     if (i==0) {
       setAttrib(ans, sym_sorted, R_NilValue);
       // clear key that was copied over by copyMostAttrib() above
     } else {
-      if (isOrderedSubset(rows, PROTECT(ScalarInteger(length(VECTOR_ELT(x,0)))))) {
+      if (orderedSubset) {
         setAttrib(ans, sym_sorted, tmp=allocVector(STRSXP, i));
         for (int j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
       }
-      UNPROTECT(1);  // the ScalarInteger above. isOrderedSubset() is exposed at R level hence needs SEXP
     }
   }
   setAttrib(ans, install(".data.table.locked"), R_NilValue);
   setselfref(ans);
-  UNPROTECT(1);
+  UNPROTECT(nprotect);
   return ans;
 }
 
 SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   int ansn;
-  Rboolean any0orNA;
-  check_idx(idx, length(x), &ansn, &any0orNA);
+  Rboolean any0orNA, orderedSubset;
+  check_idx(idx, length(x), &ansn, &any0orNA, &orderedSubset);
   SEXP ans = PROTECT(allocVector(TYPEOF(x), ansn));
   SETLENGTH(ans, ansn);
   SET_TRUELENGTH(ans, ansn);
@@ -312,5 +320,4 @@ SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   UNPROTECT(1);
   return ans;
 }
-
 

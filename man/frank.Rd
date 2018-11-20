@@ -10,7 +10,7 @@
 }
 
 \usage{
-frank(x, ..., na.last=TRUE, ties.method=c("average",
+frank(x, \dots, na.last=TRUE, ties.method=c("average",
   "first", "random", "max", "min", "dense"))
 
 frankv(x, cols=seq_along(x), order=1L, na.last=TRUE,
@@ -19,17 +19,17 @@ frankv(x, cols=seq_along(x), order=1L, na.last=TRUE,
 
 }
 \arguments{
-  \item{x}{ A vector, or list with all it's elements identical in length or data.frame or data.table. }
-  \item{...}{ Only for lists, data.frames and data.tables. The columns to calculate ranks based on. Do not quote column names. If ... is missing, all columns are considered by default. To sort by a column in descending order prefix a "-", e.g., frank(x, a, -b, c). The -b works when b is of type character as well.}
-  \item{cols}{ A character vector of column names (or numbers) of x, to which obtain ranks for. }
-  \item{order}{ An integer vector with only possible values of 1 and -1, corresponding to ascending and descending order. The length of order must be either 1 or equal to that of cols. If length(order) == 1, it's recycled to length(cols). }
+  \item{x}{ A vector, or list with all its elements identical in length or \code{data.frame} or \code{data.table}. }
+  \item{\dots}{ Only for \code{list}s, \code{data.frame}s and \code{data.table}s. The columns to calculate ranks based on. Do not quote column names. If \code{\dots} is missing, all columns are considered by default. To sort by a column in descending order prefix \code{"-"}, e.g., \code{frank(x, a, -b, c)}. \code{-b} works when \code{b} is of type \code{character} as well.}
+  \item{cols}{ A \code{character} vector of column names (or numbers) of \code{x}, for which to obtain ranks. }
+  \item{order}{ An \code{integer} vector with only possible values of 1 and -1, corresponding to ascending and descending order. The length of \code{order} must be either 1 or equal to that of \code{cols}. If \code{length(order) == 1}, it is recycled to \code{length(cols)}. }
   \item{na.last}{ Control treatment of \code{NA}s. If \code{TRUE}, missing values in the data are put last; if \code{FALSE}, they are put first; if \code{NA}, they are removed; if \code{"keep"} they are kept with rank \code{NA}. }
   \item{ties.method}{ A character string specifying how ties are treated, see \code{Details}. }
 }
 \details{
   To be consistent with other \code{data.table} operations, \code{NA}s are considered identical to other \code{NA}s (and \code{NaN}s to other \code{NaN}s), unlike \code{base::rank}. Therefore, for \code{na.last=TRUE} and \code{na.last=FALSE}, \code{NA}s (and \code{NaN}s) are given identical ranks, unlike \code{\link[base]{rank}}.
 
-  \code{frank} is not limited to vectors. It accepts data.tables (and lists and data.frames) as well. It accepts unquoted column names (with names preceded with a \code{-} sign for descending order, even on character vectors), for e.g., \code{frank(DT, a, -b, c, ties.method="first")} where \code{a,b,c} are columns in \code{DT}. The equivalent in \code{frankv} is the \code{order} argument.
+  \code{frank} is not limited to vectors. It accepts \code{data.table}s (and \code{list}s and \code{data.frame}s) as well. It accepts unquoted column names (with names preceded with a \code{-} sign for descending order, even on character vectors), for e.g., \code{frank(DT, a, -b, c, ties.method="first")} where \code{a,b,c} are columns in \code{DT}. The equivalent in \code{frankv} is the \code{order} argument.
 
   In addition to the \code{ties.method} values possible using base's \code{\link[base]{rank}}, it also provides another additional argument \emph{"dense"} which returns the ranks without any gaps in the ranking. See examples.
 }

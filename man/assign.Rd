@@ -10,13 +10,13 @@
 }
 \usage{
 # 1. LHS := RHS form
-# DT[i, LHS := RHS, by = ...]
-# DT[i, c("LHS1", "LHS2") := list(RHS1, RHS2), by = ...]
+# DT[i, LHS := RHS, by = \dots]
+# DT[i, c("LHS1", "LHS2") := list(RHS1, RHS2), by = \dots]
 
 # 2. Functional form
 # DT[i, `:=`(LHS1 = RHS1,
 #            LHS2 = RHS2,
-#            ...), by = ...]
+#            \dots), by = \dots]
 
 set(x, i = NULL, j, value)
 }
@@ -27,7 +27,7 @@ set(x, i = NULL, j, value)
 \item{i}{ Optional. Indicates the rows on which the values must be updated with. If not provided, implies \emph{all rows}. The \code{:=} form is more powerful as it allows \emph{subsets} and \code{joins} based add/update columns by reference. See \code{Details}.
 
     In \code{set}, only integer type is allowed in \code{i} indicating which rows \code{value} should be assigned to. \code{NULL} represents all rows more efficiently than creating a vector such as \code{1:nrow(x)}. }
-\item{j}{ Column name(s) (character) or number(s) (integer) to be assigned \code{value} when column(s) already exist, and only column name(s) if they are to be added newly. }
+\item{j}{ Column name(s) (character) or number(s) (integer) to be assigned \code{value} when column(s) already exist, and only column name(s) if they are to be created. }
 \item{value}{ A list of replacement values to assign by reference to \code{x[i, j]}. }
 }
 \details{
@@ -59,7 +59,7 @@ For additional resources, check the \href{../doc/datatable-faq.html}{FAQs vignet
 
 When \code{LHS} is a factor column and \code{RHS} is a character vector with items missing from the factor levels, the new level(s) are automatically added (by reference, efficiently), unlike base methods.
 
-Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerced to match the type of the (often small) RHS. Instead the RHS is coerced to match the type of the LHS, if necessary. Where this involves double precision values being coerced to an integer column, a warning is given (whether or not fractional data is truncated). The motivation for this is efficiency. It is best to get the column types correct up front and stick to them. Changing a column type is possible but deliberately harder: provide a whole column as the RHS. This RHS is then \emph{plonked} into that column slot and we call this \emph{plonk syntax}, or \emph{replace column syntax} if you prefer. By needing to construct a full length vector of a new type, you as the user are more aware of what is happening, and it's clearer to readers of your code that you really do intend to change the column type.
+Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerced to match the type of the (often small) RHS. Instead the RHS is coerced to match the type of the LHS, if necessary. Where this involves double precision values being coerced to an integer column, a warning is given (whether or not fractional data is truncated). The motivation for this is efficiency. It is best to get the column types correct up front and stick to them. Changing a column type is possible but deliberately harder: provide a whole column as the RHS. This RHS is then \emph{plonked} into that column slot and we call this \emph{plonk syntax}, or \emph{replace column syntax} if you prefer. By needing to construct a full length vector of a new type, you as the user are more aware of what is happening, and it is clearer to readers of your code that you really do intend to change the column type.
 
 \code{data.table}s are \emph{not} copied-on-change by \code{:=}, \code{setkey} or any of the other \code{set*} functions. See \code{\link{copy}}.
 }
@@ -100,8 +100,32 @@ setkey(DT, a)
 DT["A", b := 0L]            # binary search for group "A" and set column b using keys
 DT["B", f := mean(d)]       # subassign to new column, NA initialized
 
+# Adding multiple columns
+## by name
+DT[ , c('sin_d', 'log_e', 'cos_d') :=
+   .(sin(d), log(e), cos(d))]
+## by patterned name
+DT[ , paste(c('sin', 'cos'), 'b', sep = '_') :=
+   .(sin(b), cos(b))]
+## using lapply & .SD
+DT[ , paste0('tan_', c('b', 'd', 'e')) :=
+   lapply(.SD, tan), .SDcols = c('b', 'd', 'e')]
+## using forced evaluation to disambguate a vector of names
+##   and overwrite existing columns with their squares
+sq_cols = c('b', 'd', 'e')
+DT[ , (sq_cols) := lapply(.SD, `^`, 2L), .SDcols = sq_cols]
+## by integer (NB: for robustness, it is not recommended
+##   to use explicit integers to update/define columns)
+DT[ , c(2L, 3L, 4L) := .(sqrt(b), sqrt(d), sqrt(e))]
+## by implicit integer
+DT[ , grep('a$', names(DT)) := tolower(a)]
+## by implicit integer, using forced evaluation
+sq_col_idx = grep('d$', names(DT))
+DT[ , (sq_col_idx) := lapply(.SD, dnorm),
+   .SDcols = sq_col_idx]
+
 \dontrun{
-# Speed example ...
+# Speed example:
 
 m = matrix(1, nrow = 2e6L, ncol = 100L)
 DF = as.data.frame(m)

@@ -8,13 +8,15 @@
 
 SEXP setattrib(SEXP x, SEXP name, SEXP value)
 {
-  if (TYPEOF(name) != STRSXP) error("Attribute name must be of type character");
-  if ( !isNewList(x) &&
-       strcmp(CHAR(STRING_ELT(name, 0)), "class") == 0 &&
-       isString(value) && (strcmp(CHAR(STRING_ELT(value, 0)), "data.table") == 0 ||
-       strcmp(CHAR(STRING_ELT(value, 0)), "data.frame") == 0) )
+  if (!isString(name) || LENGTH(name)!=1) error("Attribute name must be a character vector of length 1");
+  if (!isNewList(x) &&
+      strcmp(CHAR(STRING_ELT(name,0)),"class")==0 &&
+      isString(value) && LENGTH(value)>0 &&
+      (strcmp(CHAR(STRING_ELT(value, 0)),"data.table")==0 || strcmp(CHAR(STRING_ELT(value,0)),"data.frame")==0) ) {
     error("Internal structure doesn't seem to be a list. Can't set class to be 'data.table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' methods instead.");
-  if (isLogical(x) && x == ScalarLogical(TRUE)) {  // ok not to protect this ScalarLogical() as not assigned or passed
+  }
+  if (isLogical(x) && LENGTH(x)==1 &&
+      (x==ScalarLogical(TRUE) || x==ScalarLogical(FALSE) || x==ScalarLogical(NA_LOGICAL))) {  // R's internal globals, #1281
     x = PROTECT(duplicate(x));
     setAttrib(x, name, MAYBE_REFERENCED(value) ? duplicate(value) : value);
     UNPROTECT(1);
@@ -96,8 +98,28 @@ SEXP copyNamedInList(SEXP x)
 
   if (TYPEOF(x) != VECSXP) error("x isn't a VECSXP");
   for (int i=0; i<LENGTH(x); i++) {
-    if (MAYBE_REFERENCED(VECTOR_ELT(x, i))) {
-      SET_VECTOR_ELT(x, i, duplicate(VECTOR_ELT(x,i)));
+    SEXP col = VECTOR_ELT(x, i);
+    if (MAYBE_REFERENCED(col) || ALTREP(col)) {
+      SET_VECTOR_ELT(x, i, duplicate(col));
+    }
+  }
+  return R_NilValue;
+}
+
+SEXP expandAltRep(SEXP x)
+{
+  // used by setDT to ensure altrep vectors in columns are expanded. Such altrep objects typically come from tests or demos, since
+  // the sequence 1:n does not occur in real-world data as a column, very often.
+  // Note that data.table() calls copyNamedInList() (above) which has the side-effect of expanding altrep vectors too.
+  // We need regular expanded columns in data.table because `:=` relies on that, for example.
+  // At R level (for example [.data.table) we use and benefit from altrep vectors very much. It's just as columns that we expand them.
+  // See extensive discussion in issue #2866
+
+  if (TYPEOF(x) != VECSXP) error("x isn't a VECSXP");
+  for (int i=0; i<LENGTH(x); i++) {
+    SEXP col = VECTOR_ELT(x,i);
+    if (ALTREP(col)) {
+      SET_VECTOR_ELT(x, i, duplicate(col));
     }
   }
   return R_NilValue;
@@ -112,7 +134,7 @@ SEXP dim(SEXP x)
         type2char(TYPEOF(x)));
   }
 
-  SEXP ans = allocVector(INTSXP, 2);
+  SEXP ans = PROTECT(allocVector(INTSXP, 2));
   if(length(x) == 0) {
     INTEGER(ans)[0] = 0;
     INTEGER(ans)[1] = 0;
@@ -121,8 +143,7 @@ SEXP dim(SEXP x)
     INTEGER(ans)[0] = length(VECTOR_ELT(x, 0));
     INTEGER(ans)[1] = length(x);
   }
-
+  UNPROTECT(1);
   return ans;
 }
-
 

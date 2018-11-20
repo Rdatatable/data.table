@@ -2,14 +2,20 @@
 # For data.table dev
 #
 # In ~/.Rprofile add 2 lines :
-# Sys.setenv(CC_DIR=path.expand("~/GitHub/data.table"))
-# source(paste0(Sys.getenv("CC_DIR"),"/cc.R"))
+# Sys.setenv(CC_DIR=path.expand("~/git/data.table"))
+# source(file.path(Sys.getenv("CC_DIR"), "cc.R"))
 #
 # Normal usage :
 # $ R
 # > cc()
 # # change some files
 # > cc()
+# # compile, reload but not test
+# > cc(F)
+# # clean, compile, reload but not test
+# > cc(F, T)
+# # clean, compile using specific version, reload but not test
+# > cc(F, T, CC="gcc-8")
 #
 # To debug C level :
 # $ R -d gdb
@@ -20,6 +26,8 @@
 # c
 # test and step between R and C
 
+options(datatable.print.class = TRUE)
+
 sourceDir <- function(path=getwd(), trace = TRUE, ...) {
   # copied verbatim from example(source) in base R
   for (nm in list.files(path, pattern = "\\.[RrSsQq]$")) {
@@ -29,10 +37,9 @@ sourceDir <- function(path=getwd(), trace = TRUE, ...) {
   if(trace) cat("\n")
 }
 
-cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) {
-  suppressMessages(library(bit64))
+cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR"), CC="gcc") {
+  stopifnot(is.character(CC), length(CC)==1L, !is.na(CC), nzchar(CC))
   gc()
-  try(detach("package:data.table"),silent=TRUE)
 
   xx = try(getDLLRegisteredRoutines("datatable",TRUE), silent=TRUE)
   if (!inherits(xx, "try-error")) {
@@ -52,11 +59,11 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) 
   setwd(file.path(cc_dir,"src"))
   cat(getwd(),"\n")
   if (clean) system("rm *.o *.so")
-  # TODO add -Wextra too
   if (debug) {
-    ret = system("MAKEFLAGS='-j CC=gcc-7 CFLAGS=-std=c99\\ -Og\\ -ggdb\\ -Wall\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c")
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-fno-openmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c", CC))
   } else {
-    ret = system("MAKEFLAGS='-j CC=gcc-7 CFLAGS=-fopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic' R CMD SHLIB -o data.table.so *.c")
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-fopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic' R CMD SHLIB -o data.table.so *.c", CC))
+    # TODO add -Wextra too?
   }
   if (ret) return()
   # clang -Weverything includes -pedantic and issues many more warnings than gcc
@@ -72,15 +79,12 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR")) 
   for (i in seq_along(xx$.External))
     assign(xx$.External[[i]]$name,  xx$.External[[i]]$address, env=.GlobalEnv)
   sourceDir(paste0(cc_dir,"/R"))
+  assign("testDir", function(x)paste0(cc_dir,"/inst/tests/",x), envir=.GlobalEnv)
   .onLoad()
-  if(test)test.data.table()
+  if (test) test.data.table()
   gc()
   invisible()
 }
-
-# dummy globals for test() to work in dev
-nfail = ntest = lastnum = 0
-whichfail = NULL
 
 dd = function()cc(FALSE,debug=TRUE,clean=TRUE)
 

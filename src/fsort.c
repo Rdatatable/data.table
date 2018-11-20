@@ -112,6 +112,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
 
   SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));
+  int nprotect = 1;
   double *ans = REAL(ansVec);
   // allocate early in case fails if not enough RAM
   // TODO: document this is much cheaper than a copy followed by in-place.
@@ -126,6 +127,8 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   R_xlen_t lastBatchSize = xlength(x) - (nBatch-1)*batchSize;
   // could be that lastBatchSize == batchSize when i) xlength(x) is multiple of nBatch
   // and ii) for small vectors with just one batch
+
+  if (ALTREP(x)) { x = PROTECT(duplicate(x)); nprotect++; }
 
   t[1] = wallclock();
   double mins[nBatch], maxs[nBatch];
@@ -224,7 +227,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     // sort bins by size, largest first to minimise last-man-home
     R_xlen_t *msbCounts = counts + (nBatch-1)*(size_t)MSBsize;
     // msbCounts currently contains the ending position of each MSB (the starting location of the next) even across empty
-    if (msbCounts[MSBsize-1] != xlength(x)) error("Internal error: counts[nBatch-1][MSBsize-1] != length(x)");
+    if (msbCounts[MSBsize-1] != xlength(x)) error("Internal error: counts[nBatch-1][MSBsize-1] != length(x)"); // # nocov
     R_xlen_t *msbFrom = malloc(MSBsize*sizeof(R_xlen_t));
     int *order = malloc(MSBsize*sizeof(int));
     R_xlen_t cumSum = 0;
@@ -305,8 +308,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     Rprintf("%d: %.3f (%4.1f%%)\n", i, t[i]-t[i-1], 100.*(t[i]-t[i-1])/tot);
   }
 
-  UNPROTECT(1);
+  UNPROTECT(nprotect);
   return(ansVec);
 }
-
 

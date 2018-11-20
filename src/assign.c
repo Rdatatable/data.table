@@ -9,12 +9,12 @@ static void finalizer(SEXP p)
 {
   SEXP x;
   R_len_t n, l, tl;
-  if(!R_ExternalPtrAddr(p)) error("Internal error: finalizer hasn't received an ExternalPtr");
+  if(!R_ExternalPtrAddr(p)) error("Internal error: finalizer hasn't received an ExternalPtr"); // # nocov
   p = R_ExternalPtrTag(p);
-  if (!isString(p)) error("Internal error: finalizer's ExternalPtr doesn't see names in tag");
+  if (!isString(p)) error("Internal error: finalizer's ExternalPtr doesn't see names in tag"); // # nocov
   l = LENGTH(p);
   tl = TRUELENGTH(p);
-  if (l<0 || tl<l) error("Internal error: finalizer sees l=%d, tl=%d",l,tl);
+  if (l<0 || tl<l) error("Internal error: finalizer sees l=%d, tl=%d",l,tl); // # nocov
   n = tl-l;
   if (n==0) {
     // gc's ReleaseLargeFreeVectors() will have reduced R_LargeVallocSize by the correct amount
@@ -35,7 +35,7 @@ void setselfref(SEXP x) {
   // Called from C only, not R level, so returns void.
   setAttrib(x, SelfRefSymbol, p=R_MakeExternalPtr(
     R_NilValue,                  // for identical() to return TRUE. identical() doesn't look at tag and prot
-    getAttrib(x, R_NamesSymbol), // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
+    PROTECT(getAttrib(x, R_NamesSymbol)),  // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
     PROTECT(R_MakeExternalPtr(   // to avoid an infinite loop in object.size(), if prot=x here
       x,                         // to know if this data.table has been copied by key<-, attr<-, names<-, etc.
       R_NilValue,                // this tag and prot currently unused
@@ -43,7 +43,7 @@ void setselfref(SEXP x) {
     ))
   ));
   R_RegisterCFinalizerEx(p, finalizer, FALSE);
-  UNPROTECT(1);  // The PROTECT above is needed by --enable-strict-barrier (it seems, iiuc)
+  UNPROTECT(2);
 
 /*
   *  base::identical doesn't check prot and tag of EXTPTR, just that the ptr itself is the
@@ -114,12 +114,12 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   }
   p = R_ExternalPtrAddr(v);
   if (p==NULL) {
-    if (verbose) Rprintf(".internal.selfref ptr is NULL. This is expected and normal for a data.table loaded from disk. If not, please report to datatable-help.\n");
+    if (verbose) Rprintf(".internal.selfref ptr is NULL. This is expected and normal for a data.table loaded from disk. If not, please report to data.table issue tracker.\n");
     return -1;
   }
-  if (!isNull(p)) error("Internal error: .internal.selfref ptr is not NULL or R_NilValue");
+  if (!isNull(p)) error("Internal error: .internal.selfref ptr is not NULL or R_NilValue"); // # nocov
   tag = R_ExternalPtrTag(v);
-  if (!(isNull(tag) || isString(tag))) error("Internal error: .internal.selfref tag isn't NULL or a character vector");
+  if (!(isNull(tag) || isString(tag))) error("Internal error: .internal.selfref tag isn't NULL or a character vector"); // # nocov
   names = getAttrib(x, R_NamesSymbol);
   if (names != tag && isString(names))
     SET_TRUELENGTH(names, LENGTH(names));
@@ -145,11 +145,9 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   // NEW: cols argument to specify the columns to shallow copy on. If NULL, all columns.
   // called from alloccol where n is checked carefully, or from shallow() at R level
   // where n is set to truelength (i.e. a shallow copy only with no size change)
-  SEXP newdt, names, newnames;
   R_len_t i,l;
   int protecti=0;
-  PROTECT(newdt = allocVector(VECSXP, n));   // to do, use growVector here?
-  protecti++;
+  SEXP newdt = PROTECT(allocVector(VECSXP, n)); protecti++;   // to do, use growVector here?
   //copyMostAttrib(dt, newdt);   // including class
   DUPLICATE_ATTRIB(newdt, dt);
   // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
@@ -157,14 +155,13 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   //        so that the next change knows to duplicate.
   //        Does copyMostAttrib duplicate each attrib or does it point? It seems to point, hence DUPLICATE_ATTRIB
   //        for now otherwise example(merge.data.table) fails (since attr(d4,"sorted") gets written by setnames).
-  names = getAttrib(dt, R_NamesSymbol);
-  PROTECT(newnames = allocVector(STRSXP, n));
-  protecti++;
+  SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
+  SEXP newnames = PROTECT(allocVector(STRSXP, n)); protecti++;
   if (isNull(cols)) {
     l = LENGTH(dt);
     for (i=0; i<l; i++) SET_VECTOR_ELT(newdt, i, VECTOR_ELT(dt,i));
     if (length(names)) {
-      if (length(names) < l) error("Internal error: length(names)>0 but <length(dt)");
+      if (length(names) < l) error("Internal error: length(names)>0 but <length(dt)"); // # nocov
       for (i=0; i<l; i++) SET_STRING_ELT(newnames, i, STRING_ELT(names,i));
     }
     // else an unnamed data.table is valid e.g. unname(DT) done by ggplot2, and .SD may have its names cleared in dogroups, but shallow will always create names for data.table(NULL) which has 100 slots all empty so you can add to an empty data.table by reference ok.
@@ -191,28 +188,29 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
 
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 {
-  SEXP names, class;
+  SEXP names, klass;
   R_len_t l, tl;
   if (isNull(dt)) error("alloccol has been passed a NULL dt");
   if (TYPEOF(dt) != VECSXP) error("dt passed to alloccol isn't type VECSXP");
-  class = getAttrib(dt, R_ClassSymbol);
-  if (isNull(class)) error("dt passed to alloccol has no class attribute. Please report result of traceback() to datatable-help.");
+  klass = getAttrib(dt, R_ClassSymbol);
+  if (isNull(klass)) error("dt passed to alloccol has no class attribute. Please report result of traceback() to data.table issue tracker.");
   l = LENGTH(dt);
   names = getAttrib(dt,R_NamesSymbol);
   // names may be NULL when null.data.table() passes list() to alloccol for example.
   // So, careful to use length() on names, not LENGTH().
-  if (length(names)!=l) error("Internal error: length of names (%d) is not length of dt (%d)",length(names),l);
+  if (length(names)!=l) error("Internal error: length of names (%d) is not length of dt (%d)",length(names),l); // # nocov
   if (!selfrefok(dt,verbose))
     return shallow(dt,R_NilValue,(n>l) ? n : l);  // e.g. test 848 and 851 in R > 3.0.2
     // added (n>l) ? ... for #970, see test 1481.
   // TO DO:  test realloc names if selfrefnamesok (users can setattr(x,"name") themselves for example.
   // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
-  //    error("Internal error: tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol)));
+  //    error("Internal error: tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol))); // # nocov
 
   tl = TRUELENGTH(dt);
-  if (tl<0) error("Internal error, tl of class is marked but tl<0.");  // R <= 2.13.2 and we didn't catch uninitialized tl somehow
-  if (tl>0 && tl<l) error("Internal error, please report (including result of sessionInfo()) to datatable-help: tl (%d) < l (%d) but tl of class is marked.", tl, l);
-  if (tl>l+10000) warning("tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report this to datatable-help including the result of sessionInfo().",tl,l);
+  // R <= 2.13.2 and we didn't catch uninitialized tl somehow
+  if (tl<0) error("Internal error, tl of class is marked but tl<0."); // # nocov
+  if (tl>0 && tl<l) error("Internal error, please report (including result of sessionInfo()) to data.table issue tracker: tl (%d) < l (%d) but tl of class is marked.", tl, l); // # nocov
+  if (tl>l+10000) warning("tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't set the datatable.alloccol option to be very large, please report to data.table issue tracker including the result of sessionInfo().",tl,l);
   if (n>tl) return(shallow(dt,R_NilValue,n)); // usual case (increasing alloc)
   if (n<tl && verbose) Rprintf("Attempt to reduce allocation from %d to %d ignored. Can only increase allocation via shallow copy. Please do not use DT[...]<- or DT$someCol<-. Use := inside DT[...] instead.",tl,n);
         // otherwise the finalizer can't clear up the Large Vector heap
@@ -248,9 +246,9 @@ SEXP shallowwrapper(SEXP dt, SEXP cols) {
 // is.data.table() C-function, extracted from assign.c
 // Check if "data.table" class exists somewhere in class (#5115)
 Rboolean isDatatable(SEXP x) {
-  SEXP class = getAttrib(x, R_ClassSymbol);
-  for (int i=0; i<length(class); i++) {
-    if (strcmp(CHAR(STRING_ELT(class, i)), "data.table") == 0) return(TRUE);
+  SEXP klass = getAttrib(x, R_ClassSymbol);
+  for (int i=0; i<length(klass); i++) {
+    if (strcmp(CHAR(STRING_ELT(klass, i)), "data.table") == 0) return(TRUE);
   }
   return (FALSE);
 }
@@ -280,11 +278,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   // newcolnames : add these columns (if any)
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
-  R_len_t i, j, nrow, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
-  SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key, index, a, assignedNames, indexNames;
+  R_len_t i, j, nrow, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
+  SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, klass, tmp, colorder, key, index, a, assignedNames, indexNames;
   SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
   Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, isDataTable=FALSE;
-  char *s1, *s2, *s3, *s4, *s5;
   const char *c1, *tc1, *tc2;
   int *buf, k=0, newKeyLength, indexNo;
   size_t size; // must be size_t otherwise overflow later in memcpy
@@ -293,32 +290,33 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   if (length(bindingIsLocked) && LOGICAL(bindingIsLocked)[0])
     error(".SD is locked. Updating .SD by reference using := or set are reserved for future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, until shallow() is exported.");
 
-  class = getAttrib(dt, R_ClassSymbol);
-  if (isNull(class)) error("Input passed to assign has no class attribute. Must be a data.table or data.frame.");
+  klass = getAttrib(dt, R_ClassSymbol);
+  if (isNull(klass)) error("Input passed to assign has no class attribute. Must be a data.table or data.frame.");
   // Check if there is a class "data.table" somewhere (#5115).
   // We allow set() on data.frame too; e.g. package Causata uses set() on a data.frame in tests/testTransformationReplay.R
   // := is only allowed on a data.table. However, the ":=" = stop(...) message in data.table.R will have already
   // detected use on a data.frame before getting to this point.
-  for (i=0; i<length(class); i++) {   // There doesn't seem to be an R API interface to inherits(), but manually here isn't too bad.
-    if (strcmp(CHAR(STRING_ELT(class, i)), "data.table") == 0) break;
+  for (i=0; i<length(klass); i++) {   // There doesn't seem to be an R API interface to inherits(), but manually here isn't too bad.
+    if (strcmp(CHAR(STRING_ELT(klass, i)), "data.table") == 0) break;
   }
-  if (i<length(class))
+  if (i<length(klass))
     isDataTable = TRUE;
   else {
-    for (i=0; i<length(class); i++) {
-      if (strcmp(CHAR(STRING_ELT(class, i)), "data.frame") == 0) break;
+    for (i=0; i<length(klass); i++) {
+      if (strcmp(CHAR(STRING_ELT(klass, i)), "data.frame") == 0) break;
     }
-    if (i == length(class)) error("Input is not a data.table, data.frame or an object that inherits from either.");
+    if (i == length(klass)) error("Input is not a data.table, data.frame or an object that inherits from either.");
     isDataTable = FALSE;   // meaning data.frame from now on. Can use set() on existing columns but not add new ones because DF aren't over-allocated.
   }
   oldncol = LENGTH(dt);
   names = getAttrib(dt,R_NamesSymbol);
   if (isNull(names)) error("dt passed to assign has no names");
   if (length(names)!=oldncol)
-    error("Internal error in assign: length of names (%d) is not length of dt (%d)",length(names),oldncol);
+    error("Internal error in assign: length of names (%d) is not length of dt (%d)",length(names),oldncol); // # nocov
   if (oldncol<1) error("Cannot use := to add columns to a null data.table (no columns), currently. You can use := to add (empty) columns to a 0-row data.table (1 or more empty columns), though.");
   nrow = length(VECTOR_ELT(dt,0));
   if (isNull(rows)) {
+    numToDo = nrow;
     targetlen = nrow;
     if (verbose) Rprintf("Assigning to all %d rows\n", nrow);
     // fast way to assign to whole column, without creating 1:nrow(x) vector up in R, or here in C
@@ -331,7 +329,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     if (!isInteger(rows))
       error("i is type '%s'. Must be integer, or numeric is coerced with warning. If i is a logical subset, simply wrap with which(), and take the which() outside the loop if possible for efficiency.", type2char(TYPEOF(rows)));
     targetlen = length(rows);
-    int numToDo = 0;
+    numToDo = 0;
     for (i=0; i<targetlen; i++) {
       if ((INTEGER(rows)[i]<0 && INTEGER(rows)[i]!=NA_INTEGER) || INTEGER(rows)[i]>nrow)
         error("i[%d] is %d which is out of range [1,nrow=%d].",i+1,INTEGER(rows)[i],nrow);
@@ -407,19 +405,18 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     else
       thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
     vlen = length(thisvalue);
+    if (isNull(thisvalue) && !isNull(rows)) error("When deleting columns, i should not be provided");  // #1082, #3089
     if (coln+1 <= oldncol) colnam = STRING_ELT(names,coln);
     else colnam = STRING_ELT(newcolnames,coln-length(names));
     if (coln+1 <= oldncol && isNull(thisvalue)) continue;  // delete existing column(s) afterwards, near end of this function
     if (vlen<1 && nrow>0) {
-      if (coln+1 <= oldncol) {
+      if (coln+1 <= oldncol && numToDo > 0) { // numToDo > 0 fixes #2829, see test 1911
         error("RHS of assignment to existing column '%s' is zero length but not NULL. If you intend to delete the column use NULL. Otherwise, the RHS must have length > 0; e.g., NA_integer_. If you are trying to change the column type to be an empty list column then, as with all column type changes, provide a full length RHS vector such as vector('list',nrow(DT)); i.e., 'plonk' in the new column.", CHAR(STRING_ELT(names,coln)));
-      } else if (TYPEOF(thisvalue)!=VECSXP) {  // list() is ok for new columns
+      } else if (coln+1 > oldncol && TYPEOF(thisvalue)!=VECSXP) {  // list() is ok for new columns
         newcolnum = coln-length(names);
         if (newcolnum<0 || newcolnum>=length(newcolnames))
           error("Internal logical error. length(newcolnames)=%d, length(names)=%d, coln=%d", length(newcolnames), length(names), coln);
         if (isNull(thisvalue)) {
-          // fix for #1082
-          if (!isNull(rows)) error("When deleting columns, i should not be provided");
           warning("Adding new column '%s' then assigning NULL (deleting it).",CHAR(STRING_ELT(newcolnames,newcolnum)));
           continue;
         }
@@ -446,13 +443,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   if (length(newcolnames)) {
     oldtncol = TRUELENGTH(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
 
-    if (oldtncol<oldncol) error("Internal error, please report (including result of sessionInfo()) to datatable-help: oldtncol (%d) < oldncol (%d) but tl of class is marked.", oldtncol, oldncol);
-    if (oldtncol>oldncol+10000L) warning("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report this to datatable-help including the result of sessionInfo().",oldtncol, oldncol);
+    if (oldtncol<oldncol) error("Internal error, please report (including result of sessionInfo()) to data.table issue tracker: oldtncol (%d) < oldncol (%d) but tl of class is marked.", oldtncol, oldncol); // # nocov
+    if (oldtncol>oldncol+10000L) warning("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo().",oldtncol, oldncol);
 
     if (oldtncol < oldncol+LENGTH(newcolnames))
       error("Internal logical error. DT passed to assign has not been allocated enough column slots. l=%d, tl=%d, adding %d", oldncol, oldtncol, LENGTH(newcolnames));
     if (!selfrefnamesok(dt,verbose))
-      error("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to datatable-help.");
+      error("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to data.table issue tracker.");
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
     else if (TRUELENGTH(names) != oldtncol)
@@ -470,7 +467,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     else
       thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
     if (TYPEOF(thisvalue)==NILSXP) {
-      if (!isNull(rows)) error("When deleting columns, i should not be provided");
+      if (!isNull(rows)) error("Internal error: earlier error 'When deleting columns, i should not be provided' did not happen."); // # nocov
       anytodelete = TRUE;
       continue;   // delete column(s) afterwards, below this loop
     }
@@ -479,7 +476,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       if (  MAYBE_SHARED(thisvalue) ||  // set() protects the NAMED of atomic vectors from .Call setting arguments to 2 by wrapping with list
          (TYPEOF(values)==VECSXP && i>LENGTH(values)-1) || // recycled RHS would have columns pointing to others, #185.
          (TYPEOF(values)!=VECSXP && i>0) // assigning the same values to a second column. Have to ensure a copy #2540
-         ) { 
+         ) {
         if (verbose) {
           if (length(values)==length(cols)) {
             // usual branch
@@ -572,13 +569,17 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         } else {
           // value is either integer or numeric vector
           if (TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue))
-            error("Internal logical error. Up front checks (before starting to modify DT) didn't catch type of RHS ('%s') assigning to factor column '%s'. Please report to datatable-help.", type2char(TYPEOF(thisvalue)), CHAR(STRING_ELT(names,coln)));
+            error("Internal logical error. Up front checks (before starting to modify DT) didn't catch type of RHS ('%s') assigning to factor column '%s'. please report to data.table issue tracker.", type2char(TYPEOF(thisvalue)), CHAR(STRING_ELT(names,coln)));
           if (isReal(thisvalue) || TYPEOF(thisvalue)==LGLSXP) {
             PROTECT(RHS = coerceVector(thisvalue,INTSXP));
             protecti++;
             // silence warning on singleton NAs
             if (INTEGER(RHS)[0] != NA_INTEGER) warning("Coerced '%s' RHS to 'integer' to match the factor column's underlying type. Character columns are now recommended (can be in keys), or coerce RHS to integer or character first.", type2char(TYPEOF(thisvalue)));
-          } else RHS = thisvalue;
+          } else {
+            // make sure to copy thisvalue. May be modified below. See #2984
+            RHS = PROTECT(duplicate(thisvalue));
+            protecti++;
+          }
           for (j=0; j<length(RHS); j++) {
             if ( (INTEGER(RHS)[j]<1 || INTEGER(RHS)[j]>LENGTH(targetlevels))
                  && INTEGER(RHS)[j] != NA_INTEGER) {
@@ -595,21 +596,34 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
           if (isString(targetcol) && isFactor(thisvalue)) {
             PROTECT(RHS = asCharacterFactor(thisvalue));
             protecti++;
-            if (verbose) Rprintf("Coerced factor to character to match the column's type (coercion is inefficient)\n");   // TO DO:  datatable.pedantic would turn this into warning
+            if (verbose) Rprintf("Coerced factor RHS to character to match the column's type. Avoid this coercion if possible, for efficiency, by creating RHS as type character.\n");
+            // TO DO: datatable.pedantic could turn this into warning
           } else {
             PROTECT(RHS = coerceVector(thisvalue,TYPEOF(targetcol)));
             protecti++;
+            char *s1 = (char *)type2char(TYPEOF(targetcol));
+            char *s2 = (char *)type2char(TYPEOF(thisvalue));
             // FR #2551, added test for equality between RHS and thisvalue to not provide the warning when length(thisvalue) == 1
-            if ( length(thisvalue) == 1 && TYPEOF(RHS) != VECSXP && TYPEOF(thisvalue) != VECSXP && (
-               (isReal(thisvalue) && isInteger(targetcol) && REAL(thisvalue)[0] == INTEGER(RHS)[0]) ||
-              (isLogical(thisvalue) && LOGICAL(thisvalue)[0] == NA_LOGICAL) ||
-                   (isReal(RHS) && isInteger(thisvalue)) )) {
-                ;
+            if ( length(thisvalue)==1 && TYPEOF(RHS)!=VECSXP && TYPEOF(thisvalue)!=VECSXP && (
+                 ( isReal(thisvalue) && isInteger(targetcol) && REAL(thisvalue)[0]==INTEGER(RHS)[0] ) ||   // DT[,intCol:=4] rather than DT[,intCol:=4L]
+                 ( isLogical(thisvalue) && LOGICAL(thisvalue)[0] == NA_LOGICAL ) ||                        // DT[,intCol:=NA]
+                 ( isReal(targetcol) && isInteger(thisvalue) ) )) {
+              if (verbose) Rprintf("Coerced length-1 RHS from %s to %s to match column's type.%s If this assign is happening a lot inside a loop, in particular via set(), then it may be worth avoiding this coercion by using R's type postfix on the value being assigned; e.g. typeof(0) vs typeof(0L), and typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_).\n", s2, s1,
+                                    isInteger(targetcol) && isReal(thisvalue) ? "No precision was lost. " : "");
+              // TO DO: datatable.pedantic could turn this into warning
+            } else {
+              if (isReal(thisvalue) && isInteger(targetcol)) {
+                int w = INTEGER(isReallyReal(thisvalue))[0];  // first fraction present (1-based), 0 if none
+                if (w>0) {
+                  warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). One or more RHS values contain fractions which have been lost; e.g. item %d with value %f has been truncated to %d.",
+                          coln+1, CHAR(STRING_ELT(names, coln)), w, REAL(thisvalue)[w-1], INTEGER(RHS)[w-1]);
+                } else {
+                  warning("Coerced double RHS to integer to match the type of the target column (column %d named '%s'). The RHS values contain no fractions so would be more efficiently created as integer. Consider using R's 'L' postfix (typeof(0L) vs typeof(0)) to create constants as integer and avoid this warning. Wrapping the RHS with as.integer() will avoid this warning too but it's better if possible to create the RHS as integer in the first place so that the cost of the coercion can be avoided.", coln+1, CHAR(STRING_ELT(names, coln)));
+                }
               } else {
-              s1 = (char *)type2char(TYPEOF(targetcol));
-              s2 = (char *)type2char(TYPEOF(thisvalue));
-              if (isReal(thisvalue)) s3="; may have truncated precision"; else s3="";
-              warning("Coerced '%s' RHS to '%s' to match the column's type%s. Either change the target column ['%s'] to '%s' first (by creating a new '%s' vector length %d (nrows of entire table) and assign that; i.e. 'replace' column), or coerce RHS to '%s' (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your intent clear and for speed. Or, set the column type correctly up front when you create the table and stick to it, please.", s2, s1, s3, CHAR(STRING_ELT(names, coln)), s2, s2, LENGTH(VECTOR_ELT(dt,0)), s1);
+                warning("Coerced %s RHS to %s to match the type of the target column (column %d named '%s'). If the target column's type %s is correct, it's best for efficiency to avoid the coercion and create the RHS as type %s. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_). You can wrap the RHS with as.%s() to avoid this warning, but that will still perform the coercion. If the target column's type is not correct, it's best to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type) over the top of it; e.g. DT[, `%s`:=as.%s(`%s`)]. If the RHS of := has nrow(DT) elements then the assignment is called a column plonk and is the way to change a column's type. Column types can be observed with sapply(DT,typeof).",
+                s2, s1, coln+1, CHAR(STRING_ELT(names, coln)), s1, s1, s1, CHAR(STRING_ELT(names, coln)), s2, CHAR(STRING_ELT(names, coln)));
+              }
             }
           }
         }
@@ -673,12 +687,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         continue; // with next index
       }
       tc1 += 2; // tc1 always marks the start of a key column
-      if (!*tc1) error("Internal error: index name ends with trailing __");
+      if (!*tc1) error("Internal error: index name ends with trailing __"); // # nocov
       // check the position of the first appearance of an assigned column in the index.
       // the new index will be truncated to this position.
-      s4 = (char*) malloc(strlen(c1) + 3);
+      char *s4 = (char*) malloc(strlen(c1) + 3);
       if(s4 == NULL){
-        error("Internal error: Couldn't allocate memory for s4.");
+        error("Internal error: Couldn't allocate memory for s4."); // # nocov
       }
       memcpy(s4, c1, strlen(c1));
       memset(s4 + strlen(c1), '\0', 1);
@@ -686,10 +700,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       newKeyLength = strlen(c1);
       for(int i = 0; i < xlength(assignedNames); i++){
         tc2 = CHAR(STRING_ELT(assignedNames, i));
-        s5 = (char*) malloc(strlen(tc2) + 5); //4 * '_' + \0
+        char *s5 = (char*) malloc(strlen(tc2) + 5); //4 * '_' + \0
         if(s5 == NULL){
           free(s4);
-          error("Internal error: Couldn't allocate memory for s5.");
+          error("Internal error: Couldn't allocate memory for s5."); // # nocov
         }
         memset(s5, '_', 2);
         memset(s5 + 2, '\0', 1);
@@ -799,7 +813,7 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
   if (len<1) return;
   int slen = length(source) > len ? len : length(source); // fix for 5647. when length(source) > len, slen must be len.
   if (slen<1) return;
-  if (TYPEOF(target) != TYPEOF(source)) error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s']", type2char(TYPEOF(target)),type2char(TYPEOF(source)));
+  if (TYPEOF(target) != TYPEOF(source)) error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s']", type2char(TYPEOF(target)),type2char(TYPEOF(source))); // # nocov
   if (isNewList(source)) {
     // A list() column; i.e. target is a column of pointers to SEXPs rather than the much more common case
     // where memrecycle copies the DATAPTR data to the atomic target from the atomic source.
@@ -928,7 +942,7 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
 }
 
 void savetl_init() {
-  if (nsaved || nalloc || saveds || savedtl) error("Internal error: savetl_init checks failed (%d %d %p %p). Please report to datatable-help.", nsaved, nalloc, saveds, savedtl);
+  if (nsaved || nalloc || saveds || savedtl) error("Internal error: savetl_init checks failed (%d %d %p %p). please report to data.table issue tracker.", nsaved, nalloc, saveds, savedtl); // # nocov
   nsaved = 0;
   nalloc = 100;
   saveds = (SEXP *)malloc(nalloc * sizeof(SEXP));
@@ -974,17 +988,17 @@ void savetl_end() {
   savedtl = NULL;
 }
 
-SEXP setcharvec(SEXP x, SEXP which, SEXP new)
+SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
 {
   int w;
   if (!isString(x)) error("x must be a character vector");
   if (!isInteger(which)) error("'which' must be an integer vector");
-  if (!isString(new)) error("'new' must be a character vector");
-  if (LENGTH(new)!=LENGTH(which)) error("'new' is length %d. Should be the same as length of 'which' (%d)",LENGTH(new),LENGTH(which));
+  if (!isString(newx)) error("'new' must be a character vector");
+  if (LENGTH(newx)!=LENGTH(which)) error("'new' is length %d. Should be the same as length of 'which' (%d)",LENGTH(newx),LENGTH(which));
   for (int i=0; i<LENGTH(which); i++) {
     w = INTEGER(which)[i];
     if (w==NA_INTEGER || w<1 || w>LENGTH(x)) error("Item %d of 'which' is %d which is outside range of the length %d character vector", i+1,w,LENGTH(x));
-    SET_STRING_ELT(x, w-1, STRING_ELT(new, i));
+    SET_STRING_ELT(x, w-1, STRING_ELT(newx, i));
   }
   return R_NilValue;
 }

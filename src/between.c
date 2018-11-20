@@ -3,51 +3,51 @@
 
 static double l=0.0, u=0.0;
 
-Rboolean int_upper_closed(SEXP x, R_len_t i) {
+static Rboolean int_upper_closed(SEXP x, R_len_t i) {
   return (INTEGER(x)[i] == NA_INTEGER || (double)INTEGER(x)[i] <= u ? NA_LOGICAL : FALSE);
 }
 
-Rboolean int_upper_open(SEXP x, R_len_t i) {
+static Rboolean int_upper_open(SEXP x, R_len_t i) {
   return (INTEGER(x)[i] == NA_INTEGER || (double)INTEGER(x)[i] < u ? NA_LOGICAL : FALSE);
 }
 
-Rboolean int_lower_closed(SEXP x, R_len_t i) {
+static Rboolean int_lower_closed(SEXP x, R_len_t i) {
   return (INTEGER(x)[i] == NA_INTEGER || (double)INTEGER(x)[i] >= l ? NA_LOGICAL : FALSE);
 }
 
-Rboolean int_lower_open(SEXP x, R_len_t i) {
+static Rboolean int_lower_open(SEXP x, R_len_t i) {
   return (INTEGER(x)[i] == NA_INTEGER || (double)INTEGER(x)[i] > l ? NA_LOGICAL : FALSE);
 }
 
-Rboolean int_both_closed(SEXP x, R_len_t i) {
+static Rboolean int_both_closed(SEXP x, R_len_t i) {
   return (INTEGER(x)[i] == NA_INTEGER ? NA_LOGICAL : ((double)INTEGER(x)[i] >= l && (double)INTEGER(x)[i] <= u));
 }
 
-Rboolean int_both_open(SEXP x, R_len_t i) {
+static Rboolean int_both_open(SEXP x, R_len_t i) {
   return (INTEGER(x)[i] == NA_INTEGER ? NA_LOGICAL : ((double)INTEGER(x)[i] > l && (double)INTEGER(x)[i] < u));
 }
 
-Rboolean double_upper_closed(SEXP x, R_len_t i) {
+static Rboolean double_upper_closed(SEXP x, R_len_t i) {
   return (ISNAN(REAL(x)[i]) || REAL(x)[i] <= u ? NA_LOGICAL : FALSE);
 }
 
-Rboolean double_upper_open(SEXP x, R_len_t i) {
+static Rboolean double_upper_open(SEXP x, R_len_t i) {
   return (ISNAN(REAL(x)[i]) || REAL(x)[i] < u ? NA_LOGICAL : FALSE);
 }
 
-Rboolean double_lower_closed(SEXP x, R_len_t i) {
+static Rboolean double_lower_closed(SEXP x, R_len_t i) {
   return (ISNAN(REAL(x)[i]) || REAL(x)[i] >= l ? NA_LOGICAL : FALSE);
 }
 
-Rboolean double_lower_open(SEXP x, R_len_t i) {
+static Rboolean double_lower_open(SEXP x, R_len_t i) {
   return (ISNAN(REAL(x)[i]) || REAL(x)[i] > l ? NA_LOGICAL : FALSE);
 }
 
-Rboolean double_both_closed(SEXP x, R_len_t i) {
+static Rboolean double_both_closed(SEXP x, R_len_t i) {
   return (ISNAN(REAL(x)[i]) ? NA_LOGICAL : (REAL(x)[i] >= l && REAL(x)[i] <= u));
 }
 
-Rboolean double_both_open(SEXP x, R_len_t i) {
+static Rboolean double_both_open(SEXP x, R_len_t i) {
   return (ISNAN(REAL(x)[i]) ? NA_LOGICAL : (REAL(x)[i] > l && REAL(x)[i] < u));
 }
 
@@ -66,11 +66,18 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
   if (!isLogical(bounds) || LOGICAL(bounds)[0] == NA_LOGICAL)
     error("incbounds must be logical TRUE/FALSE.");
 
+  int nprotect = 0;
+  if (ALTREP(x))      { x     =  PROTECT(duplicate(x));      nprotect++; }
+  if (ALTREP(lower))  { lower =  PROTECT(duplicate(lower));  nprotect++; }
+  if (ALTREP(upper))  { upper =  PROTECT(duplicate(upper));  nprotect++; }
+  if (ALTREP(bounds)) { bounds = PROTECT(duplicate(bounds)); nprotect++; }
+
   // no support for int64 yet (only handling most common cases)
   // coerce to also get NA values properly
   lower = PROTECT(coerceVector(lower, REALSXP)); l = REAL(lower)[0];
   upper = PROTECT(coerceVector(upper, REALSXP)); u = REAL(upper)[0];
   ans   = PROTECT(allocVector(LGLSXP, nx));
+  nprotect += 3;
 
   if (LOGICAL(bounds)[0]) {
     fupper = isInteger(x) ? &int_upper_closed : &double_upper_closed;
@@ -99,6 +106,6 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
       for (i=0; i<nx; i++) LOGICAL(ans)[i] = fboth(x, i);
     }
   }
-  UNPROTECT(3);
+  UNPROTECT(nprotect);
   return(ans);
 }

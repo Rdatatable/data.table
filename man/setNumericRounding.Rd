@@ -22,7 +22,7 @@ approximately 11 s.f. which is plenty of digits for many cases. This is
 achieved by rounding the last 2 bytes off the significand. Other possible
 values are 1 byte rounding, or no rounding (full precision, default).
 
-It's bytes rather than bits because it's tied in with the radix sort
+It is bytes rather than bits because it is tied in with the radix sort
 algorithm for sorting numerics which sorts byte by byte. With the default
 rounding of 0 bytes, at most 8 passes are needed. With rounding of 2 bytes, at
 most 6 passes are needed (and therefore might be a tad faster).

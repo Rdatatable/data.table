@@ -7,7 +7,7 @@
 }
 \usage{
 setattr(x,name,value)
-setnames(x,old,new)
+setnames(x,old,new,skip_absent=FALSE)
 }
 \arguments{
   \item{x}{ \code{setnames} accepts \code{data.frame} and \code{data.table}. \code{setattr} accepts any input; e.g, list, columns of a \code{data.frame} or \code{data.table}. }
@@ -15,7 +15,9 @@ setnames(x,old,new)
   \item{value}{ The value to assign to the attribute or \code{NULL} removes the attribute, if present. }
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, the new column names, which must be the same length as the number of columns. See examples. }
   \item{new}{ Optional. New column names, must be the same length as columns provided to \code{old} argument. }
+  \item{skip_absent}{ Skip items in \code{old} that are missing (i.e. absent) in `names(x)`. Default \code{FALSE} halts with error if any are missing. }
 }
+
 \details{
 
   \code{setnames} operates on \code{data.table} and \code{data.frame} not other types like \code{list} and \code{vector}. It can be used to change names \emph{by name} with built-in checks and warnings (e.g., if any old names are missing or appear more than once).
@@ -34,15 +36,24 @@ setnames(x,old,new)
 }
 \examples{
 
+DT <- data.table(a = 1, b = 2, d = 3)
+
+old <- c("a", "b", "c", "d")
+new <- c("A", "B", "C", "D")
+
+setnames(DT, old, new, skip_absent = TRUE) # skips `old[3]` because `"c"` is not a column name of `DT`
+
 DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies and syntax
-try(tracemem(DF))                  # try() for R sessions opted out of memory profiling
+if (capabilities()["profmem"])     # usually memory profiling is available but just in case
+  tracemem(DF)
 colnames(DF)[1] <- "A"             # 4 shallow copies (R >= 3.1, was 4 deep copies before)
 names(DF)[1] <- "A"                # 3 shallow copies
 names(DF) <- c("A", "b")           # 1 shallow copy
 `names<-`(DF,c("A","b"))           # 1 shallow copy
 
 DT = data.table(a=1:2,b=3:4,c=5:6) # compare to data.table
-try(tracemem(DT))                  # by reference, no deep or shallow copies
+if (capabilities()["profmem"])
+  tracemem(DT)                     # by reference, no deep or shallow copies
 setnames(DT,"b","B")               # by name, no match() needed (warning if "b" is missing)
 setnames(DT,3,"C")                 # by position with warning if 3 > ncol(DT)
 setnames(DT,2:3,c("D","E"))        # multiple
@@ -53,7 +64,7 @@ DT <- data.table(x = 1:3, y = 4:6, z = 7:9)
 setnames(DT, -2, c("a", "b"))      # NEW FR #1443, allows -ve indices in 'old' argument
 
 DT = data.table(a=1:3, b=4:6)
-f = function(...) {
+f = function(\dots) {
     # ...
     setattr(DT,"myFlag",TRUE)  # by reference
     # ...
@@ -68,4 +79,3 @@ attr(DT,"myFlag2")  # NULL
 
 }
 \keyword{ data }
-

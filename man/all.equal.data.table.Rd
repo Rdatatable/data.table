@@ -9,7 +9,7 @@
 \usage{
   \method{all.equal}{data.table}(target, current, trim.levels=TRUE, check.attributes=TRUE,
     ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps),
-    ...)
+    \dots)
 }
 
 \arguments{
@@ -31,7 +31,7 @@
   }
 
   \item{ignore.row.order}{
-    A logical indicating whether or not to ignore rows order in \code{data.table}. This option requires datasets to use data types on which join can be made, so no support for \emph{list, complex, raw}, but still supports \link[bit64]{integer64}.
+    A logical indicating whether or not to ignore rows order in \code{data.table}. This option requires datasets to use data types on which join can be made, so no support for \emph{list, complex, raw}, but still supports \link[bit64:bit64-package]{integer64}.
   }
 
   \item{tolerance}{

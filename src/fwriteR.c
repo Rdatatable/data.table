@@ -208,7 +208,8 @@ SEXP fwriteR(
   args.doRowNames = LOGICAL(rowNames_Arg)[0];
   args.rowNames = NULL;
   if (args.doRowNames) {
-    SEXP rn = getAttrib(DF, R_RowNamesSymbol);
+    SEXP rn = PROTECT(getAttrib(DF, R_RowNamesSymbol));
+    protecti++;
     args.rowNames = isString(rn) ? (void *)DATAPTR(rn) : NULL;
   }
 

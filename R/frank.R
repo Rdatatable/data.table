@@ -67,7 +67,7 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
 }
 
 frank <- function(x, ..., na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
-  cols = substitute(list(...))[-1]
+  cols = substitute(list(...))[-1L]
   if (identical(as.character(cols), "NULL")) {
     cols  = NULL
     order = 1L
@@ -76,8 +76,8 @@ frank <- function(x, ..., na.last=TRUE, ties.method=c("average", "first", "rando
     order=rep(1L, length(cols))
     for (i in seq_along(cols)) {
       v=as.list(cols[[i]])
-      if (length(v) > 1 && v[[1L]] == "+") v=v[[-1L]]
-      else if (length(v) > 1 && v[[1L]] == "-") {
+      if (length(v) > 1L && v[[1L]] == "+") v=v[[-1L]]
+      else if (length(v) > 1L && v[[1L]] == "-") {
         v=v[[-1L]]
         order[i] = -1L
       }
