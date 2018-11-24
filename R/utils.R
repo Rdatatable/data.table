@@ -101,4 +101,11 @@ not_all_same_sign <- function(x) {
   }
 }
 
+# convert a vector like c(1, 4, 3, 2) into a string like [1, 4, 3, 2]
+#   (common aggregation method for error messages)
+brackify = function(x) {
+  # arbitrary cutoff
+  if (length(x) > 10L) x = c(x[1:10], '...')
+  sprintf('[%s]', paste(x, collapse = ', '))
+}
 

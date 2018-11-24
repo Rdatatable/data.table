@@ -1,6 +1,6 @@
 # is x[i] in between lower[i] and upper[i] ?
 between <- function(x,lower,upper,incbounds=TRUE) {
-  is_strictly_numeric <- function(x) is.numeric(x) && !"integer64" %in% class(x)
+  is_strictly_numeric <- function(x) is.numeric(x) && !"integer64" %chin% class(x)
   if (is_strictly_numeric(x) && is_strictly_numeric(lower) &&
     is_strictly_numeric(upper) && length(lower) == 1L && length(upper) == 1L) {
     # faster parallelised version for int/double for most common scenario

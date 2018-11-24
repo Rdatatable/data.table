@@ -32,15 +32,15 @@ At optimisation level \code{>= 1}, i.e., \code{getOption("datatable.optimize")}
 
 \itemize{
     \item The base function \code{order} is internally replaced with
-    \code{data.table}'s \emph{fast ordering}. That is, \code{DT[order(...)]}
-    gets internally optimised to \code{DT[forder(...)]}.
+    \code{data.table}'s \emph{fast ordering}. That is, \code{DT[order(\dots)]}
+    gets internally optimised to \code{DT[forder(\dots)]}.
 
     \item The expression \code{DT[, lapply(.SD, fun), by=.]} gets optimised
-    to \code{DT[, list(fun(a), fun(b), ...), by=.]} where \code{a,b, ...} are
+    to \code{DT[, list(fun(a), fun(b), \dots), by=.]} where \code{a,b, \dots} are
     columns in \code{.SD}. This improves performance tremendously.
 
     \item Similarly, the expression \code{DT[, c(.N, lapply(.SD, fun)), by=.]}
-    gets optimised to \code{DT[, list(.N, fun(a), fun(b), ...)]}. \code{.N} is
+    gets optimised to \code{DT[, list(.N, fun(a), fun(b), \dots)]}. \code{.N} is
     just for example here.
 
     \item \code{base::mean} function is internally optimised to use
@@ -89,7 +89,7 @@ At optimisation level \code{>= 3}, i.e., \code{getOption("datatable.optimize")} 
     \item "notjoin" queries, i.e. queries that start with \code{!}, are only supported if there are no \code{&} connections, e.g. \code{DT[!x==3]} is supported, but \code{DT[!x==3 & y == 4]} is not.
 }
 
-If in doubt, whether your query benefits from optimization, call it with the \code{verbose = TRUE} argument. You should see "Optimized subsetting...".
+If in doubt, whether your query benefits from optimization, call it with the \code{verbose = TRUE} argument. You should see "Optimized subsetting\ldots".
 
 \bold{Auto indexing:} In case a query is optimized, but no appropriate key or index is found, \code{data.table} automatically creates an \emph{index} on the first run. Any successive subsets on the same
 column then reuse this index to \emph{binary search} (instead of

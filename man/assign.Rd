@@ -10,13 +10,13 @@
 }
 \usage{
 # 1. LHS := RHS form
-# DT[i, LHS := RHS, by = ...]
-# DT[i, c("LHS1", "LHS2") := list(RHS1, RHS2), by = ...]
+# DT[i, LHS := RHS, by = \dots]
+# DT[i, c("LHS1", "LHS2") := list(RHS1, RHS2), by = \dots]
 
 # 2. Functional form
 # DT[i, `:=`(LHS1 = RHS1,
 #            LHS2 = RHS2,
-#            ...), by = ...]
+#            \dots), by = \dots]
 
 set(x, i = NULL, j, value)
 }
@@ -125,7 +125,7 @@ DT[ , (sq_col_idx) := lapply(.SD, dnorm),
    .SDcols = sq_col_idx]
 
 \dontrun{
-# Speed example ...
+# Speed example:
 
 m = matrix(1, nrow = 2e6L, ncol = 100L)
 DF = as.data.frame(m)

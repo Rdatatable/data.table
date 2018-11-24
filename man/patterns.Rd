@@ -12,10 +12,10 @@ and melt them into separate columns. See the \code{Efficient reshaping using
 data.tables} vignette linked below to learn more.
 }
 \usage{
-patterns(..., cols=character(0))
+patterns(\dots, cols=character(0))
 }
 \arguments{
-  \item{...}{A set of regular expression patterns.}
+  \item{\dots}{A set of regular expression patterns.}
   \item{cols}{A character vector of names to which each pattern is matched.}
 }
 \seealso{

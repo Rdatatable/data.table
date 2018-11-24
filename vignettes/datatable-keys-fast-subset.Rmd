@@ -396,12 +396,12 @@ We can choose if queries that do not match should return `NA` or be skipped alto
 #### -- From the previous example, Subset all rows only if there's a match
 
 ```{r}
-flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", nomatch = 0L]
+flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", nomatch = NULL]
 ```
 
 #### {.bs-callout .bs-callout-info}
 
-* Default value for `nomatch` is `NA`. Setting `nomatch = 0L` skips queries with no matches.
+* Default value for `nomatch` is `NA`. Setting `nomatch = NULL` skips queries with no matches.
 
 * The query “JFK”, “XNA” doesn’t match any rows in flights and therefore is skipped.
 

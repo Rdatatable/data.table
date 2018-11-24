@@ -21,3 +21,4 @@
 ^bus$
 ^Dockerfile$
 ^Dockerfile\.in$
+^.*\.dll$

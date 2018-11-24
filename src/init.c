@@ -187,6 +187,9 @@ void attribute_visible R_init_datatable(DllInfo *info)
   if (sizeof(int64_t) != 8) error("Checking sizeof(int64_t) [%d] is 8 %s", sizeof(int64_t), msg);
   if (sizeof(signed char) != 1) error("Checking sizeof(signed char) [%d] is 1 %s", sizeof(signed char), msg);
   if (sizeof(int8_t) != 1) error("Checking sizeof(int8_t) [%d] is 1 %s", sizeof(int8_t), msg);
+  if (sizeof(uint8_t) != 1) error("Checking sizeof(uint8_t) [%d] is 1 %s", sizeof(uint8_t), msg);
+  if (sizeof(int16_t) != 2) error("Checking sizeof(int16_t) [%d] is 2 %s", sizeof(int16_t), msg);
+  if (sizeof(uint16_t) != 2) error("Checking sizeof(uint16_t) [%d] is 2 %s", sizeof(uint16_t), msg);
 
   SEXP tmp = PROTECT(allocVector(INTSXP,2));
   if (LENGTH(tmp)!=2) error("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s", LENGTH(tmp), msg);
@@ -264,7 +267,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   avoid_openmp_hang_within_fork();
 }
 
-inline Rboolean INHERITS(SEXP x, SEXP char_) {
+inline bool INHERITS(SEXP x, SEXP char_) {
   // Thread safe inherits() by pre-calling install() above in init first then
   // passing those char_* in here for simple and fast non-API pointer compare.
   // The thread-safety aspect here is only currently actually needed for list columns in
@@ -273,13 +276,13 @@ inline Rboolean INHERITS(SEXP x, SEXP char_) {
   // Thread safe in the limited sense of correct and intended usage :
   // i) no API call such as install() or mkChar() must be passed in.
   // ii) no attrib writes must be possible in other threads.
-  SEXP class;
-  if (isString(class = getAttrib(x, R_ClassSymbol))) {
-  for (int i=0; i<LENGTH(class); i++) {
-    if (STRING_ELT(class, i) == char_) return TRUE;
+  SEXP klass;
+  if (isString(klass = getAttrib(x, R_ClassSymbol))) {
+    for (int i=0; i<LENGTH(klass); i++) {
+      if (STRING_ELT(klass, i) == char_) return true;
+    }
   }
-  }
-  return FALSE;
+  return false;
 }
 
 inline long long DtoLL(double x) {

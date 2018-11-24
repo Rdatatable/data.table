@@ -47,23 +47,23 @@
    grouping. Still experimental!
 }
 \usage{
-as.IDate(x, ...)
+as.IDate(x, \dots)
 \method{as.IDate}{default}(x, \dots, tz = attr(x, "tzone"))
 \method{as.IDate}{Date}(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)
 \method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), \ldots)
 
-as.ITime(x, ...)
+as.ITime(x, \dots)
 \method{as.ITime}{default}(x, \dots)
-\method{as.ITime}{POSIXlt}(x, ms = 'truncate', ...)
+\method{as.ITime}{POSIXlt}(x, ms = 'truncate', \dots)
 
-\method{as.POSIXct}{ITime}(x, tz = "UTC", date = as.Date(Sys.time()), \dots)
+\method{as.POSIXct}{ITime}(x, tz = "UTC", date = Sys.Date(), \dots)
 \method{as.character}{ITime}(x, \dots)
 \method{format}{ITime}(x, \dots)
 
-IDateTime(x, ...)
-\method{IDateTime}{default}(x, ...)
+IDateTime(x, \dots)
+\method{IDateTime}{default}(x, \dots)
 
 second(x)
 minute(x)

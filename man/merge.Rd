@@ -20,7 +20,7 @@ Set the \code{by}, or \code{by.x} and \code{by.y} arguments explicitly to overri
 \method{merge}{data.table}(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE,
 all.x = all, all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE,
 allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
-...)
+\dots)
 }
 
 \arguments{
@@ -67,8 +67,8 @@ control for providing the columns to merge on with the help of the newly impleme
 \code{by.x} and \code{by.y} arguments.
 
 For a more \code{data.table}-centric way of merging two \code{data.table}s, see
-\code{\link{[.data.table}}; e.g., \code{x[y, ...]}. See FAQ 1.12 for a detailed
-comparison of \code{merge} and \code{x[y, ...]}.
+\code{\link{[.data.table}}; e.g., \code{x[y, \dots]}. See FAQ 1.12 for a detailed
+comparison of \code{merge} and \code{x[y, \dots]}.
 
 If any column names provided to \code{by.x} also occur in \code{names(y)} but not in \code{by.y},
 then this \code{data.table} method will add the \code{suffixes} to those column names. As of

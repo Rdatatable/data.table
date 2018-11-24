@@ -9,7 +9,7 @@
 \usage{
   \method{all.equal}{data.table}(target, current, trim.levels=TRUE, check.attributes=TRUE,
     ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps),
-    ...)
+    \dots)
 }
 
 \arguments{

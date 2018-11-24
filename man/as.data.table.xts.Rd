@@ -5,7 +5,7 @@
   Efficient conversion xts to data.table.
 }
 \usage{
-\method{as.data.table}{xts}(x, keep.rownames = TRUE, ...)
+\method{as.data.table}{xts}(x, keep.rownames = TRUE, \dots)
 }
 \arguments{
 \item{x}{xts to convert to data.table}
