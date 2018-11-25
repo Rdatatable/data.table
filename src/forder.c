@@ -867,16 +867,17 @@ void radix_r(const int from, const int to, const int radix) {
         all_skipped = false; // ok to write from threads (naked) in this case since bool and only ever write false
 
         // cumulate; for forwards-assign to give cpu prefetch best chance (cpu may not support prefetch backwards)
-        for (uint_fast16_t i=0, sum=0; i<256; i++) { uint_fast16_t tmp=my_counts[i]; if (tmp==0) continue; my_counts[i]=sum; sum+=tmp; }  // skip 0 to enable reset below
+        uint16_t my_starts[256], my_starts_copy[256];
+        for (uint_fast16_t i=0, sum=0; i<256; i++) { uint_fast16_t tmp=my_counts[i]; if (tmp==0) continue; my_starts[i]=my_starts_copy[i]=sum; sum+=tmp; }  // skip 0 to enable reset below
 
         if (radix==0) {
           // anso contains 1:n so skip reading and copying it. Only happens when entire input<STL. Saving worth the branch when user repeatedly calls a small-n small-cardinality order.
-          for (uint_fast16_t i=0; i<my_n; i++) anso[my_counts[my_key[i]]++] = i+1;  // +1 as R is 1-based.  max i at this point will be STL-1 (65534), hence +1 won't overflow 16bits
+          for (uint_fast16_t i=0; i<my_n; i++) anso[my_starts[my_key[i]]++] = i+1;  // +1 as R is 1-based.  max i at this point will be STL-1 (65534), hence +1 won't overflow 16bits
         } else {
           const int *restrict osub = anso+from;
           bool onheap = my_n>=1024;
           int *TMP = onheap ? malloc(my_n*sizeof(int)) : alloca(my_n*sizeof(int));  // OS likely faster here than us. Let's see.  TODO: int=>int64_t in future
-          for (uint_fast16_t i=0; i<my_n; i++) TMP[my_counts[my_key[i]]++] = osub[i];
+          for (uint_fast16_t i=0; i<my_n; i++) TMP[my_starts[my_key[i]]++] = osub[i];
           memcpy(anso+from, TMP, my_n*sizeof(int));
           if (onheap) free(TMP);
           TEND(19)
@@ -888,9 +889,10 @@ void radix_r(const int from, const int to, const int radix) {
           bool onheap = my_n>=4096;
           uint8_t *TMP = onheap ? malloc(my_n) : alloca(my_n);
           for (int r=radix+1; r<nradix; r++) {
-            for (uint_fast16_t i=0,last=0; i<256; i++) { uint_fast16_t tmp=my_counts[i]; if (tmp==0) continue; my_counts[i]=last; last=tmp; }  // rewind ++'s to offsets
+            memcpy(my_starts, my_starts_copy, 256*sizeof(uint16_t));  // restore starting offsets
+            //for (uint_fast16_t i=0,last=0; i<256; i++) { uint_fast16_t tmp=my_counts[i]; if (tmp==0) continue; my_counts[i]=last; last=tmp; }  // rewind ++'s to offsets
             const uint8_t *restrict ksub = key[r]+from;
-            for (uint_fast16_t i=0; i<my_n; i++) TMP[my_counts[my_key[i]]++] = ksub[i];
+            for (uint_fast16_t i=0; i<my_n; i++) TMP[my_starts[my_key[i]]++] = ksub[i];
             memcpy(key[r]+from, TMP, my_n);
           }
           if (onheap) free(TMP);
@@ -898,8 +900,8 @@ void radix_r(const int from, const int to, const int radix) {
         }
 
         // reset cumulate to simple counts
-        for (uint_fast16_t i=0,last=0; i<256; i++) { uint_fast16_t tmp=my_counts[i]; if(tmp==0) continue; my_counts[i]-=last; last=tmp; }
-        TEND(21)
+        //for (uint_fast16_t i=0,last=0; i<256; i++) { uint_fast16_t tmp=my_counts[i]; if(tmp==0) continue; my_counts[i]-=last; last=tmp; }
+        //TEND(21)
       }
       if (radix+1==nradix) { // || ngrp==my_n) {
         if (retgrp) {
@@ -917,9 +919,9 @@ void radix_r(const int from, const int to, const int radix) {
           my_from+=gs;
         }
       }
-      TEND(22)
-      for (int i=0; i<256; i++) my_counts[i] = 0;  // ready for next time to save initializing should the stack 256-initialization above ever be identified as too slow
-      TEND(5)
+      TEND(21)
+      //for (int i=0; i<256; i++) my_counts[i] = 0;  // ready for next time to save initializing should the stack 256-initialization above ever be identified as too slow
+      //TEND(5)
     }
     return;
   }
