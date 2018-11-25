@@ -419,7 +419,7 @@ static const char* filesize_to_str(size_t fsize)
       }
     } else {
       snprintf(output, BUFFSIZE, "%.*f%cB (%llu bytes)",
-               ndigits, (double)fsize / (1 << shift), suffixes[i], lsize);
+               ndigits, (double)fsize / (1LL << shift), suffixes[i], lsize);
       return output;
     }
   }
