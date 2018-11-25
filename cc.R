@@ -37,7 +37,7 @@ sourceDir <- function(path=getwd(), trace = TRUE, ...) {
   if(trace) cat("\n")
 }
 
-cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR"), CC="gcc") {
+cc = function(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir=Sys.getenv("CC_DIR"), CC="gcc") {
   stopifnot(is.character(CC), length(CC)==1L, !is.na(CC), nzchar(CC))
   gc()
 
@@ -59,10 +59,11 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR"), 
   setwd(file.path(cc_dir,"src"))
   cat(getwd(),"\n")
   if (clean) system("rm *.o *.so")
+  OMP = if (omp) "" else "no-"
   if (debug) {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-fno-openmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c", CC))
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o data.table.so *.c", CC, OMP))
   } else {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-fopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic' R CMD SHLIB -o data.table.so *.c", CC))
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic' R CMD SHLIB -o data.table.so *.c", CC, OMP))
     # TODO add -Wextra too?
   }
   if (ret) return()
@@ -86,5 +87,5 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, cc_dir=Sys.getenv("CC_DIR"), 
   invisible()
 }
 
-dd = function()cc(FALSE,debug=TRUE,clean=TRUE)
+dd = function(omp=FALSE)cc(FALSE,debug=TRUE,omp=omp,clean=TRUE)
 
