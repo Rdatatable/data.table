@@ -29,7 +29,7 @@
   overhead. They reach outside themselves to place results in the end result directly rather than returning many small pieces of memory.
 */
 
-//#define TIMING_ON
+#define TIMING_ON
 static int *gs = NULL;          // gs = groupsizes e.g. 23,12,87,2,1,34,...
 //static int flip = 0;                 // two vectors flip flopped: flip and 1-flip
 static int gsalloc = 0;         // allocated stack size
@@ -919,7 +919,7 @@ void radix_r(const int from, const int to, const int radix) {
           my_from+=gs;
         }
       }
-      TEND(21)
+      //TEND(21)
       //for (int i=0; i<256; i++) my_counts[i] = 0;  // ready for next time to save initializing should the stack 256-initialization above ever be identified as too slow
       //TEND(5)
     }
