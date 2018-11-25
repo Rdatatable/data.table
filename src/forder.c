@@ -29,7 +29,7 @@
   overhead. They reach outside themselves to place results in the end result directly rather than returning many small pieces of memory.
 */
 
-#define TIMING_ON
+//#define TIMING_ON
 static int *gs = NULL;          // gs = groupsizes e.g. 23,12,87,2,1,34,...
 //static int flip = 0;                 // two vectors flip flopped: flip and 1-flip
 static int gsalloc = 0;         // allocated stack size
@@ -759,18 +759,39 @@ void radix_r(const int from, const int to, const int radix) {
       while(i<my_n && my_key[i]>=my_key[i-1]) i++;
       if (i<my_n) {
         all_skipped=false;
-        o = (uint8_t *)alloca(my_n);
-        for (int j=0; j<i; j++) o[j] = j;
-        for(; i<my_n; i++) {
-          uint8_t ktmp = my_key[i];
-          if (ktmp>=my_key[i-1]) {o[i]=i; continue;}
-          int j = i-1;
-          do {
-            my_key[j+1] = my_key[j];
-            o[j+1] = o[j];
-          } while (--j>=0 && ktmp<my_key[j]);
-          my_key[j+1] = ktmp;
-          o[j+1] = i;
+        if (radix+1==nradix) {
+          // no more keys to reorder so we can just reorder osub by reference directly and save allocating and populating o just to use it once
+          int *restrict osub = anso+from;
+          for(; i<my_n; i++) {
+            uint8_t ktmp = my_key[i];
+            if (ktmp>=my_key[i-1]) continue;
+            int     otmp = osub[i];
+            int j = i-1;
+            do {
+              my_key[j+1] = my_key[j];
+              osub[j+1] = osub[j];
+            } while (--j>=0 && ktmp<my_key[j]);
+            my_key[j+1] = ktmp;
+            osub[j+1] = otmp;
+          }
+          if (!retgrp) {
+            TEND(2)
+            return;
+          }
+        } else {
+          o = (uint8_t *)alloca(my_n);
+          for (int j=0; j<i; j++) o[j] = j;
+          for(; i<my_n; i++) {
+            uint8_t ktmp = my_key[i];
+            if (ktmp>=my_key[i-1]) {o[i]=i; continue;}
+            int j = i-1;
+            do {
+              my_key[j+1] = my_key[j];
+              o[j+1] = o[j];
+            } while (--j>=0 && ktmp<my_key[j]);
+            my_key[j+1] = ktmp;
+            o[j+1] = i;
+          }
         }
       }
     } else { // sort==0 and must be careful to retain group appearance order since there is no sort afterwards to get back to appearance order
@@ -813,7 +834,7 @@ void radix_r(const int from, const int to, const int radix) {
     // my_key is now grouped (and sorted by group too if sort!=0)
     // all we have left to do is find the group sizes and either recurse or push
     if (radix+1==nradix && !retgrp) {
-      TEND(2);
+      TEND(3)
       return;
     }
     int ngrp=0, my_gs[my_n];  //TODO: could know number of groups with certainty up above
@@ -827,14 +848,13 @@ void radix_r(const int from, const int to, const int radix) {
       if (retgrp) {
         push(my_gs, ngrp, from);
       }
-      TEND(3);
     } else {
       for (int i=0, f=from; i<ngrp; i++) {
         radix_r(f, f+my_gs[i]-1, radix+1);
         f+=my_gs[i];
       }
-      TEND(4);
     }
+    TEND(4)
     return;
   }
   else if (my_n<=65535) {    // must be storeable in uint16_t, thus 65535 and not 65536
