@@ -29,7 +29,7 @@
   overhead. They reach outside themselves to place results in the end result directly rather than returning many small pieces of memory.
 */
 
-#define TIMING_ON
+//#define TIMING_ON
 static int *gs = NULL;          // gs = groupsizes e.g. 23,12,87,2,1,34,...
 //static int flip = 0;                 // two vectors flip flopped: flip and 1-flip
 static int gsalloc = 0;         // allocated stack size
@@ -845,16 +845,91 @@ void radix_r(const int from, const int to, const int radix) {
                                  // to allocate upfront, which is why we're keeping it on stack like this.
     // uint8_t ugrp[(my_n<256)?my_n:256];  // uninitialized is fine. unique groups; avoids sweeping all 256 counts when very often very few of them are used
 
-    uint16_t *restrict my_counts = counts + omp_get_thread_num()*256;
-    uint8_t  *restrict my_ugrp   = ugrp   + omp_get_thread_num()*256;
+    //uint16_t *restrict my_counts = counts + omp_get_thread_num()*256;  // TODO:  try on stack again
+    //uint8_t  *restrict my_ugrp   = ugrp   + omp_get_thread_num()*256;
+
+    uint16_t my_counts[256] = {0};
     const uint8_t *restrict my_key = key[radix]+from;
     TEND(17)
 
+    //int ngrp = 1;          // number of groups (items in ugrp[]). Max value 256 but could be uint8_t later perhaps if 0 is understood as 1.
+    bool skip = true;      // i) if already grouped and sort=false then caller can skip, ii) if already sorted when sort=true then caller can skip
+
+    if (!sort) Error("Not yet implemented");
+
+    if (sort) {
+      my_counts[my_key[0]] = 1;
+      uint_fast16_t i=1;
+      while (skip && i<my_n) { my_counts[my_key[i]]++; skip=(my_key[i]>=my_key[i-1]); i++; }
+      while (i<my_n)         { my_counts[my_key[i]]++; i++; }  // once not-ordered is detected (likely quickly), save the >= comparison
+      TEND(18)
+      if (!skip) {
+        all_skipped = false; // ok to write from threads (naked) in this case since bool and only ever write false
+
+        // cumulate; for forwards-assign to give cpu prefetch best chance (cpu may not support prefetch backwards)
+        for (uint_fast16_t i=0, sum=0; i<256; i++) { uint_fast16_t tmp=my_counts[i]; if (tmp==0) continue; my_counts[i]=sum; sum+=tmp; }  // skip 0 to enable reset below
+
+        if (radix==0) {
+          // anso contains 1:n so skip reading and copying it. Only happens when entire input<STL. Saving worth the branch when user repeatedly calls a small-n small-cardinality order.
+          for (uint_fast16_t i=0; i<my_n; i++) anso[my_counts[my_key[i]]++] = i+1;  // +1 as R is 1-based.  max i at this point will be STL-1 (65534), hence +1 won't overflow 16bits
+        } else {
+          const int *restrict osub = anso+from;
+          bool onheap = my_n>=1024;
+          int *TMP = onheap ? malloc(my_n*sizeof(int)) : alloca(my_n*sizeof(int));  // OS likely faster here than us. Let's see.  TODO: int=>int64_t in future
+          for (uint_fast16_t i=0; i<my_n; i++) TMP[my_counts[my_key[i]]++] = osub[i];
+          memcpy(anso+from, TMP, my_n*sizeof(int));
+          if (onheap) free(TMP);
+          TEND(19)
+        }
+
+        // reorder remaining key columns (radix+1 onwards).   This could be done in one-step too (a single pass through x[],  with a larger my_tmp
+        //    that's how its done in the batched approach below.  Which is better?  The way here is multiple (but contiguous) passes through my_key
+        if (radix+1<nradix) {
+          bool onheap = my_n>=4096;
+          uint8_t *TMP = onheap ? malloc(my_n) : alloca(my_n);
+          for (int r=radix+1; r<nradix; r++) {
+            for (uint_fast16_t i=0,last=0; i<256; i++) { uint_fast16_t tmp=my_counts[i]; if (tmp==0) continue; my_counts[i]=last; last=tmp; }  // rewind ++'s to offsets
+            const uint8_t *restrict ksub = key[r]+from;
+            for (uint_fast16_t i=0; i<my_n; i++) TMP[my_counts[my_key[i]]++] = ksub[i];
+            memcpy(key[r]+from, TMP, my_n);
+          }
+          if (onheap) free(TMP);
+          TEND(20)
+        }
+
+        // reset cumulate to simple counts
+        for (uint_fast16_t i=0,last=0; i<256; i++) { uint_fast16_t tmp=my_counts[i]; if(tmp==0) continue; my_counts[i]-=last; last=tmp; }
+        TEND(21)
+      }
+      if (radix+1==nradix) { // || ngrp==my_n) {
+        if (retgrp) {
+           int my_gs[256], ngrp=0;
+           for (int i=0; i<256; i++) if (my_counts[i]) my_gs[ngrp++]=my_counts[i];
+           push(my_gs, ngrp, from);  // take the time to make my_gs and push all in one go because push is omp critical
+        }
+      } else {
+        // this single thread will now descend and resolve all groups, now that the groups are close in cache
+        // **TODO**: this could skip 1s when retgrp,  and do batches of 1s when retgrp to save flutter anchors
+        for (int i=0, my_from=from; i<256; i++) {
+          int gs = my_counts[i];
+          if (gs==0) continue;
+          radix_r(my_from, my_from+gs-1, radix+1);
+          my_from+=gs;
+        }
+      }
+      TEND(22)
+      for (int i=0; i<256; i++) my_counts[i] = 0;  // ready for next time to save initializing should the stack 256-initialization above ever be identified as too slow
+      TEND(5)
+    }
+    return;
+  }
+
+
+/*
+
     my_ugrp[0] = my_key[0];     // first item is always first of first group
     my_counts[my_key[0]] = 1;
-    int ngrp = 1;          // number of groups (items in ugrp[]). Max value 256 but could be uint8_t later perhaps if 0 is understood as 1.
-    bool skip = true;      // i) if already grouped and sort=false then caller can skip, ii) if already sorted when sort=true then caller can skip
-    for (int i=1; i<my_n; i++) {
+     for (int i=1; i<my_n; i++) {
       uint8_t elem = my_key[i];
       if (++my_counts[elem]==1) {
         // first time seen this value
@@ -935,7 +1010,7 @@ void radix_r(const int from, const int to, const int radix) {
     for (int i=0; i<ngrp; i++) my_counts[my_ugrp[i]] = 0;  // ready for next time to save initializing should the stack 256-initialization above ever be identified as too slow
     TEND(5)
     return;
-  }
+  }*/
   // else parallel batches. This is called recursively but only once or maybe twice before resolving to STL branch above
 
   //int nBatch = getDTthreads()*1525;  // at least nth; more to reduce last-chunk-home; but not too large size we need nBatch*256 counts
