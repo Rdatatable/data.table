@@ -114,7 +114,16 @@ static void push(const int *x, const int n, const int anchor) {
   static double tblock[NBLOCK];
   static int nblock[NBLOCK];
   #define TBEG() double tstart = wallclock();   // tstart declared locally
-  #define TEND(i) {tblock[i] += wallclock()-tstart; nblock[i]++; tstart = wallclock();}
+  static inline void TENDfun(int i, double tstart) {
+    double now = wallclock();
+    #pragma omp critical(TEND)
+    {
+      tblock[i] += now-tstart;
+      nblock[i]++;
+    }
+    tstart = now;
+  }
+  #define TEND(i) TENDfun(i,tstart);
 #else
   #define TBEG()
   #define TEND(i)
@@ -650,7 +659,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
     push(my_gs, 1, 0);
   }
 
-  TEND(20);
+  TEND(25);
   #ifdef TIMING_ON
   {
     int last=NBLOCK-1;
@@ -844,6 +853,8 @@ void radix_r(const int from, const int to, const int radix) {
     return;
   }
   else if (my_n<=65535) {
+    //#pragma omp master
+    //if (radix<3) Rprintf("counting clause: radix=%d, my_n=%d\n", radix, my_n);
     uint32_t counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. If not then allocate up front
                                  // and rely on last line of this function which resets just the non-zero's to 0. However, since recursive, it's tricky
                                  // to allocate upfront, which is why we're keeping it on stack like this.
@@ -851,9 +862,11 @@ void radix_r(const int from, const int to, const int radix) {
     int ngrp;                           // int because it needs to hold the value 256. Could over-optimize down to uint8_t later perhaps.
     bool skip;
     const uint8_t *restrict my_key = key[radix]+from;
+    TEND(17)
     count_group(my_key, my_n,                // inputs
                 &skip, ugrp, &ngrp, counts); // outputs
     // count_group deals with 'sort' flag within it.  TODO: rename sort to sort_type (or better)
+    TEND(18)
     if (!skip) {
       // reorder anso and remaining radix keys
 
@@ -877,6 +890,7 @@ void radix_r(const int from, const int to, const int radix) {
         for (int i=0; i<my_n; i++) TMP[counts[my_key[i]]++] = osub[i];
         memcpy(anso+from, TMP, my_n*sizeof(int));
         if (onheap) free(TMP);
+        TEND(19)
       }
 
       // reorder remaining key columns (radix+1 onwards).   This could be done in one-step too (a single pass through x[],  with a larger my_tmp
@@ -891,6 +905,7 @@ void radix_r(const int from, const int to, const int radix) {
           memcpy(key[r]+from, TMP, my_n);
         }
         if (onheap) free(TMP);
+        TEND(20)
       }
 
       // reset cumulate to counts (as they were after count_group)
