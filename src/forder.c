@@ -114,10 +114,12 @@ static void push(const int *x, const int n, const int anchor) {
   }
 }
 
+
 #ifdef TIMING_ON
   #define NBLOCK 64
   static double tblock[NBLOCK];
   static int nblock[NBLOCK];
+  static uint64_t stat[257];
   #define TBEG() double tstart = wallclock();   // tstart declared locally
   static inline void TENDfun(int i, double tstart) {
     double now = wallclock();
@@ -410,6 +412,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
 #ifdef TIMING_ON
   memset(tblock, 0, NBLOCK*sizeof(double));
   memset(nblock, 0, NBLOCK*sizeof(int));
+  memset(stat,   0, 257*sizeof(uint64_t));
 #endif
   TBEG()
 
@@ -675,8 +678,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
     for (int i=0; i<=last; i++) {
       Rprintf("Timing block %2d%s = %8.3f   %8d\n", i, (i>=7&&i<=9)?"(1)":"   ", tblock[i], nblock[i]);
     }
+    for (int i=0; i<=256; i++) {
+      if (stat[i]) Rprintf("stat[%03d]==%10zd\n", i, stat[i]);
+    }
   }
   #endif
+
 
   if (all_skipped) {   // when data is already grouped or sorted, integer() returned with group sizes attached
     // the o vector created earlier could be avoided in this case if we only create it when isSorted becomes FALSE
@@ -736,12 +743,17 @@ void radix_r(const int from, const int to, const int radix) {
     TEND(1);
     return;
   }
-  else if (my_n<=256) {
+  else if (my_n<=255) {  // 255 not 256 so loop counters can be 8-bit
     // insert sort with some twists:
     // i) detects if grouped; if sort==0 can then skip
     // ii) keeps group appearance order to minimize movement and avoid a resort afterwards
+    #ifdef TIMING_ON
+      #pragma omp atomic
+      stat[my_n]++;
+    #endif
+
     uint8_t *restrict my_key = key[radix]+from;  // safe to write as we don't use this radix again
-    int i=1;
+    uint_fast8_t i=1;
     while (i<my_n && my_key[i]==my_key[i-1]) i++;
     if (i==my_n) {
       // all one value; one group; nothing to do other than recurse
@@ -759,42 +771,24 @@ void radix_r(const int from, const int to, const int radix) {
       while(i<my_n && my_key[i]>=my_key[i-1]) i++;
       if (i<my_n) {
         all_skipped=false;
-        if (radix+1==nradix) {
-          // no more keys to reorder so we can just reorder osub by reference directly and save allocating and populating o just to use it once
-          int *restrict osub = anso+from;
-          for(; i<my_n; i++) {
-            uint8_t ktmp = my_key[i];
-            if (ktmp>=my_key[i-1]) continue;
-            int     otmp = osub[i];
-            int j = i-1;
-            do {
-              my_key[j+1] = my_key[j];
-              osub[j+1] = osub[j];
-            } while (--j>=0 && ktmp<my_key[j]);
-            my_key[j+1] = ktmp;
-            osub[j+1] = otmp;
-          }
-          if (!retgrp) {
-            TEND(2)
-            return;
-          }
-        } else {
-          o = (uint8_t *)alloca(my_n);
-          for (int j=0; j<i; j++) o[j] = j;
-          for(; i<my_n; i++) {
-            uint8_t ktmp = my_key[i];
-            if (ktmp>=my_key[i-1]) {o[i]=i; continue;}
-            int j = i-1;
-            do {
-              my_key[j+1] = my_key[j];
-              o[j+1] = o[j];
-            } while (--j>=0 && ktmp<my_key[j]);
-            my_key[j+1] = ktmp;
-            o[j+1] = i;
-          }
+        // if (radix+1==nradix) {
+        //   no more keys to reorder so we could reorder osub by reference directly and save allocating and populating o just to use it once
+        //   however, o's type is uint8_t so many moves within this max-256 vector should be faster than many moves in osub (4 byte or 8 byte ints)
+        o = (uint8_t *)alloca(my_n);
+        for (uint_fast8_t j=0; j<i; j++) o[j] = j;
+        for(; i<my_n; i++) {
+          uint8_t ktmp = my_key[i];
+          if (ktmp>=my_key[i-1]) {o[i]=i; continue;}
+          int j = i-1;
+          do {
+            my_key[j+1] = my_key[j];
+            o[j+1] = o[j];
+          } while (--j>=0 && ktmp<my_key[j]);
+          my_key[j+1] = ktmp;
+          o[j+1] = i;
         }
       }
-    } else { // sort==0 and must be careful to retain group appearance order since there is no sort afterwards to get back to appearance order
+    } else { // sort==0; be careful to retain group appearance order since there is no sort afterwards to get back to appearance order
       bool seen[256]={false};
       seen[my_key[i-1]] = seen[my_key[i]] = true;  // first two different bytes
       i++;
@@ -805,11 +799,11 @@ void radix_r(const int from, const int to, const int radix) {
         // different byte but we've seen it before, so this my_n can't be grouped
         if (o==NULL) {
           o = (uint8_t *)alloca(my_n);
-          for (int j=0; j<my_n; j++) o[j] = j; // TODO: could be saved similar to the sort case above
+          for (uint_fast8_t j=0; j<my_n; j++) o[j] = j; // TODO: could be saved similar to the sort case above
           all_skipped=false;
         }
         // move this byte (that we've seen before) back to just after the last one (to group them)
-        int j = i-1;
+        uint_fast8_t j = i-1;
         do {
           my_key[j+1] = my_key[j];
           o[j+1] = o[j];
@@ -820,13 +814,13 @@ void radix_r(const int from, const int to, const int radix) {
     }
     if (o) {
       // reorder osub and each remaining ksub
-      int TMP[my_n];  // on stack fine since my_n is very small (<=256)
+      int TMP[my_n];  // on stack fine since my_n is very small (<=255)
       const int *restrict osub = anso+from;
-      for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
+      for (uint_fast8_t i=0; i<my_n; i++) TMP[i] = osub[o[i]];
       memcpy(anso+from, TMP, my_n*sizeof(int));
       for (int r=radix+1; r<nradix; r++) {
         const uint8_t *restrict ksub = key[r]+from;
-        for (int i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
+        for (uint_fast8_t i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
         memcpy(key[r]+from, (uint8_t *)TMP, my_n);
       }
     }
@@ -834,12 +828,12 @@ void radix_r(const int from, const int to, const int radix) {
     // my_key is now grouped (and sorted by group too if sort!=0)
     // all we have left to do is find the group sizes and either recurse or push
     if (radix+1==nradix && !retgrp) {
-      TEND(3)
+      TEND(2)
       return;
     }
     int ngrp=0, my_gs[my_n];  //TODO: could know number of groups with certainty up above
     my_gs[ngrp]=1;
-    for (int i=1; i<my_n; i++) {
+    for (uint_fast8_t i=1; i<my_n; i++) {
       if (my_key[i]!=my_key[i-1]) my_gs[++ngrp] = 1;
       else my_gs[ngrp]++;
     }
@@ -854,7 +848,7 @@ void radix_r(const int from, const int to, const int radix) {
         f+=my_gs[i];
       }
     }
-    TEND(4)
+    TEND(3)
     return;
   }
   else if (my_n<=65535) {    // must be storeable in uint16_t, thus 65535 and not 65536
@@ -941,7 +935,6 @@ void radix_r(const int from, const int to, const int radix) {
       }
       //TEND(21)
       //for (int i=0; i<256; i++) my_counts[i] = 0;  // ready for next time to save initializing should the stack 256-initialization above ever be identified as too slow
-      //TEND(5)
     }
     return;
   }
