@@ -52,9 +52,6 @@ static uint8_t **key = NULL;
 static int *anso = NULL;
 static bool notFirst=false;
 
-static uint16_t *counts = NULL;
-static uint8_t  *ugrp = NULL;
-
 #define Error(...) do {cleanup(); error(__VA_ARGS__);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
 #undef warning
 #define warning(...) Do not use warning in this file                // since it can be turned to error via warn=2
@@ -85,8 +82,6 @@ static void cleanup() {
   free_ustr();
   if (key!=NULL) for (int i=0; i<nradix; i++) free(key[i]);
   free(key); key=NULL; nradix=0;
-  free(counts); counts=NULL;
-  free(ugrp); ugrp=NULL;
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
 }
 
@@ -657,9 +652,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
   #endif
   TEND(0);
 
-  counts = (uint16_t *)calloc(256*getDTthreads(), sizeof(uint16_t));
-  ugrp   = (uint8_t *) malloc(256*getDTthreads()* sizeof(uint8_t));
-
   if (nradix) {
     //int old = omp_get_nested();
     //omp_set_nested(1);
@@ -743,7 +735,7 @@ void radix_r(const int from, const int to, const int radix) {
     TEND(1);
     return;
   }
-  else if (my_n<=255) {  // 255 not 256 so loop counters can be 8-bit
+  else if (my_n<=256) {
     // insert sort with some twists:
     // i) detects if grouped; if sort==0 can then skip
     // ii) keeps group appearance order to minimize movement and avoid a resort afterwards
@@ -753,7 +745,7 @@ void radix_r(const int from, const int to, const int radix) {
     #endif
 
     uint8_t *restrict my_key = key[radix]+from;  // safe to write as we don't use this radix again
-    uint_fast8_t i=1;
+    int i=1;
     while (i<my_n && my_key[i]==my_key[i-1]) i++;
     if (i==my_n) {
       // all one value; one group; nothing to do other than recurse
@@ -775,7 +767,7 @@ void radix_r(const int from, const int to, const int radix) {
         //   no more keys to reorder so we could reorder osub by reference directly and save allocating and populating o just to use it once
         //   however, o's type is uint8_t so many moves within this max-256 vector should be faster than many moves in osub (4 byte or 8 byte ints)
         o = (uint8_t *)alloca(my_n);
-        for (uint_fast8_t j=0; j<i; j++) o[j] = j;
+        for (int j=0; j<i; j++) o[j] = j;
         for(; i<my_n; i++) {
           uint8_t ktmp = my_key[i];
           if (ktmp>=my_key[i-1]) {o[i]=i; continue;}
@@ -799,11 +791,11 @@ void radix_r(const int from, const int to, const int radix) {
         // different byte but we've seen it before, so this my_n can't be grouped
         if (o==NULL) {
           o = (uint8_t *)alloca(my_n);
-          for (uint_fast8_t j=0; j<my_n; j++) o[j] = j; // TODO: could be saved similar to the sort case above
+          for (int j=0; j<my_n; j++) o[j] = j; // TODO: could be saved similar to the sort case above
           all_skipped=false;
         }
         // move this byte (that we've seen before) back to just after the last one (to group them)
-        uint_fast8_t j = i-1;
+        int j = i-1;
         do {
           my_key[j+1] = my_key[j];
           o[j+1] = o[j];
@@ -814,13 +806,13 @@ void radix_r(const int from, const int to, const int radix) {
     }
     if (o) {
       // reorder osub and each remaining ksub
-      int TMP[my_n];  // on stack fine since my_n is very small (<=255)
+      int TMP[my_n];  // on stack fine since my_n is very small (<=256)
       const int *restrict osub = anso+from;
-      for (uint_fast8_t i=0; i<my_n; i++) TMP[i] = osub[o[i]];
+      for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
       memcpy(anso+from, TMP, my_n*sizeof(int));
       for (int r=radix+1; r<nradix; r++) {
         const uint8_t *restrict ksub = key[r]+from;
-        for (uint_fast8_t i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
+        for (int i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
         memcpy(key[r]+from, (uint8_t *)TMP, my_n);
       }
     }
@@ -833,7 +825,7 @@ void radix_r(const int from, const int to, const int radix) {
     }
     int ngrp=0, my_gs[my_n];  //TODO: could know number of groups with certainty up above
     my_gs[ngrp]=1;
-    for (uint_fast8_t i=1; i<my_n; i++) {
+    for (int i=1; i<my_n; i++) {
       if (my_key[i]!=my_key[i-1]) my_gs[++ngrp] = 1;
       else my_gs[ngrp]++;
     }
