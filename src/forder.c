@@ -843,116 +843,38 @@ void radix_r(const int from, const int to, const int radix) {
     TEND(3)
     return;
   }
-  else if (my_n<=65535) {    // must be storeable in uint16_t, thus 65535 and not 65536
+  else if (my_n<=UINT16_MAX) {    // UINT16_MAX==65535 (important not 65536)
     //#pragma omp master
     //if (radix<3) Rprintf("counting clause: radix=%d, my_n=%d\n", radix, my_n);
-    //uint16_t counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. If not then allocate up front
-                                 // and rely on last line of this function which resets just the non-zero's to 0. However, since recursive, it's tricky
-                                 // to allocate upfront, which is why we're keeping it on stack like this.
-    // uint8_t ugrp[(my_n<256)?my_n:256];  // uninitialized is fine. unique groups; avoids sweeping all 256 counts when very often very few of them are used
-
-    //uint16_t *restrict my_counts = counts + omp_get_thread_num()*256;  // TODO:  try on stack again
-    //uint8_t  *restrict my_ugrp   = ugrp   + omp_get_thread_num()*256;
-
-    uint16_t my_counts[256] = {0};
+    uint16_t my_counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. Otherwise, we have to manage
+                                    // a stack of counts anyway since this is called recursively and these counts are needed to make the recursive calls.
+                                    // This thread-private stack alloc has no chance of false sharing and gives omp and compiler best chance.
+    uint8_t *restrict my_ugrp = NULL;  // Will be allocated on stack if sort==0
     const uint8_t *restrict my_key = key[radix]+from;
-    TEND(17)
-
-    //int ngrp = 1;          // number of groups (items in ugrp[]). Max value 256 but could be uint8_t later perhaps if 0 is understood as 1.
+    int ngrp = 0;          // number of groups (items in ugrp[]). Max value 256 but could be uint8_t later perhaps if 0 is understood as 1.
     bool skip = true;      // i) if already grouped and sort=false then caller can skip, ii) if already sorted when sort=true then caller can skip
-
-    if (!sort) Error("Not yet implemented");
-
-    if (sort) {
+    TEND(17)
+    if (sort) {  // TODO: rename 'sort' to 'sort_type' or better name.  Always ascending sort here as descending was prepared in write_key
       my_counts[my_key[0]] = 1;
-      uint_fast16_t i=1;
+      int i=1;
       while (skip && i<my_n) { my_counts[my_key[i]]++; skip=(my_key[i]>=my_key[i-1]); i++; }
-      while (i<my_n)         { my_counts[my_key[i]]++; i++; }  // once not-ordered is detected (likely quickly), save the >= comparison
+      while (i<my_n)         { my_counts[my_key[i]]++; i++; }  // as soon as not-ordered is detected (likely quickly when it isn't sorted), save the >= comparison
       TEND(18)
-      if (!skip) {
-        all_skipped = false; // ok to write from threads (naked) in this case since bool and only ever write false
-
-        // cumulate; for forwards-assign to give cpu prefetch best chance (cpu may not support prefetch backwards)
-        uint16_t my_starts[256], my_starts_copy[256];
-        for (uint_fast16_t i=0, sum=0; i<256; i++) { uint_fast16_t tmp=my_counts[i]; if (tmp==0) continue; my_starts[i]=my_starts_copy[i]=sum; sum+=tmp; }  // skip 0 to enable reset below
-
-        if (radix==0) {
-          // anso contains 1:n so skip reading and copying it. Only happens when entire input<STL. Saving worth the branch when user repeatedly calls a small-n small-cardinality order.
-          for (uint_fast16_t i=0; i<my_n; i++) anso[my_starts[my_key[i]]++] = i+1;  // +1 as R is 1-based.  max i at this point will be STL-1 (65534), hence +1 won't overflow 16bits
-        } else {
-          const int *restrict osub = anso+from;
-          bool onheap = my_n>=1024;
-          int *TMP = onheap ? malloc(my_n*sizeof(int)) : alloca(my_n*sizeof(int));  // OS likely faster here than us. Let's see.  TODO: int=>int64_t in future
-          for (uint_fast16_t i=0; i<my_n; i++) TMP[my_starts[my_key[i]]++] = osub[i];
-          memcpy(anso+from, TMP, my_n*sizeof(int));
-          if (onheap) free(TMP);
-          TEND(19)
-        }
-
-        // reorder remaining key columns (radix+1 onwards).   This could be done in one-step too (a single pass through x[],  with a larger my_tmp
-        //    that's how its done in the batched approach below.  Which is better?  The way here is multiple (but contiguous) passes through my_key
-        if (radix+1<nradix) {
-          bool onheap = my_n>=4096;
-          uint8_t *TMP = onheap ? malloc(my_n) : alloca(my_n);
-          for (int r=radix+1; r<nradix; r++) {
-            memcpy(my_starts, my_starts_copy, 256*sizeof(uint16_t));  // restore starting offsets
-            //for (uint_fast16_t i=0,last=0; i<256; i++) { uint_fast16_t tmp=my_counts[i]; if (tmp==0) continue; my_counts[i]=last; last=tmp; }  // rewind ++'s to offsets
-            const uint8_t *restrict ksub = key[r]+from;
-            for (uint_fast16_t i=0; i<my_n; i++) TMP[my_starts[my_key[i]]++] = ksub[i];
-            memcpy(key[r]+from, TMP, my_n);
-          }
-          if (onheap) free(TMP);
-          TEND(20)
-        }
-
-        // reset cumulate to simple counts
-        //for (uint_fast16_t i=0,last=0; i<256; i++) { uint_fast16_t tmp=my_counts[i]; if(tmp==0) continue; my_counts[i]-=last; last=tmp; }
-        //TEND(21)
-      }
-      if (radix+1==nradix) { // || ngrp==my_n) {
-        if (retgrp) {
-           int my_gs[256], ngrp=0;
-           for (int i=0; i<256; i++) if (my_counts[i]) my_gs[ngrp++]=my_counts[i];
-           push(my_gs, ngrp, from);  // take the time to make my_gs and push all in one go because push is omp critical
-        }
-      } else {
-        // this single thread will now descend and resolve all groups, now that the groups are close in cache
-        // **TODO**: this could skip 1s when retgrp,  and do batches of 1s when retgrp to save flutter anchors
-        for (int i=0, my_from=from; i<256; i++) {
-          int gs = my_counts[i];
-          if (gs==0) continue;
-          radix_r(my_from, my_from+gs-1, radix+1);
-          my_from+=gs;
+    } else {
+      my_ugrp = (uint8_t *)alloca((my_n<256)?my_n:256); // uninitialized is fine; will use the first ngrp items
+      for (int i=0; i<my_n; i++) {
+        uint8_t elem = my_key[i];
+        if (++my_counts[elem]==1) {
+          // first time seen this value.  i==0 always does this branch
+          my_ugrp[ngrp++]=elem;
+        } else if (skip && elem!=my_key[i-1]) {   // does not happen for i==0
+          // seen this value before and it isn't the previous value, so data is not grouped
+          // including "skip &&" first is to avoid the != comparison
+          skip=false;
         }
       }
-      //TEND(21)
-      //for (int i=0; i<256; i++) my_counts[i] = 0;  // ready for next time to save initializing should the stack 256-initialization above ever be identified as too slow
+      TEND(19)
     }
-    return;
-  }
-
-
-/*
-
-    my_ugrp[0] = my_key[0];     // first item is always first of first group
-    my_counts[my_key[0]] = 1;
-     for (int i=1; i<my_n; i++) {
-      uint8_t elem = my_key[i];
-      if (++my_counts[elem]==1) {
-        // first time seen this value
-        my_ugrp[ngrp++]=elem;
-      } else if (skip && elem!=my_key[i-1]) {
-        // seen this value before and it isn't the previous value, so data is not grouped
-        // including "skip &&" first is to avoid the != comparison
-        skip=false;
-      }
-    }
-    TEND(18)
-
-    if (sort && !sort_ugrp(my_ugrp, ngrp))  // sorts ugrp by reference.   TODO: rename 'sort' to 'sort_type' or better name
-      skip=false;
-    TEND(19)
-
     if (!skip) {
       // reorder anso and remaining radix keys
 
@@ -961,67 +883,71 @@ void radix_r(const int from, const int to, const int radix) {
       // write cache lines will be active. These write-cache lines will be constrained within the STL width, so should be close by in cache, too.
       // If there is a good degree of grouping, there contiguous-read/write both ways happens automatically in this approach.
 
-      all_skipped = false; // ok to write from threads (naked) in this case since bool and only ever write false
+      all_skipped = false;  // ok to write from threads (naked) in this case since bool and only ever write false
 
-      // cumulate; for forwards-assign to give cpu prefetch best chance (cpu may not support prefetch backwards)
-      for (int i=0, sum=0; i<ngrp; i++) { uint8_t w=my_ugrp[i]; int tmp=my_counts[w]; my_counts[w]=sum; sum+=tmp; }
+      // cumulate; for forwards-assign to give cpu prefetch best chance (cpu may not support prefetch backwards).
+      uint16_t my_starts[256], my_starts_copy[256];
+      if (sort) {
+        for (int i=0, sum=0; i<256; i++) { int tmp=my_counts[i]; my_starts[i]=my_starts_copy[i]=sum; sum+=tmp; ngrp+=(tmp>0); }  // cumulate through 0's too (won't be used)
+      } else {
+        for (int i=0, sum=0; i<ngrp; i++) { uint8_t w=my_ugrp[i]; int tmp=my_counts[w]; my_starts[w]=my_starts_copy[w]=sum; sum+=tmp; }  // cumulate in ugrp appearance order
+      }
 
       if (radix==0) {
         // anso contains 1:n so skip reading and copying it. Only happens when entire input<STL. Saving worth the branch when user repeatedly calls a small-n small-cardinality order.
-        for (int i=0; i<my_n; i++) anso[my_counts[my_key[i]]++] = i+1;  // +1 as R is 1-based
+        for (int i=0; i<my_n; i++) anso[my_starts[my_key[i]]++] = i+1;  // +1 as R is 1-based. The counter could be uint_fast16_t since max i at this point will be UINT16_MAX-1 (65534), hence +1 won't overflow 16bits.  However, have chosen signed integer for counters for now, as signed probably slightly faster on most platforms from what I can gather.
       } else {
         const int *restrict osub = anso+from;
         bool onheap = my_n>=1024;
         int *TMP = onheap ? malloc(my_n*sizeof(int)) : alloca(my_n*sizeof(int));  // OS likely faster here than us. Let's see.  TODO: int=>int64_t in future
-        for (int i=0; i<my_n; i++) TMP[my_counts[my_key[i]]++] = osub[i];
+        for (int i=0; i<my_n; i++) TMP[my_starts[my_key[i]]++] = osub[i];
         memcpy(anso+from, TMP, my_n*sizeof(int));
         if (onheap) free(TMP);
-        TEND(20)
       }
+      TEND(20)
 
-      // reorder remaining key columns (radix+1 onwards).   This could be done in one-step too (a single pass through x[],  with a larger my_tmp
-      //    that's how its done in the batched approach below.  Which is better?  The way here is multiple (but contiguous) passes through my_key
+      // reorder remaining key columns (radix+1 onwards).   This could be done in one-step too (a single pass through x[],  with a larger TMP
+      //    that's how its done in the batched approach below.  Which is better?  The way here is multiple (but contiguous) passes through (one-byte) my_key
       if (radix+1<nradix) {
         bool onheap = my_n>=4096;
         uint8_t *TMP = onheap ? malloc(my_n) : alloca(my_n);
         for (int r=radix+1; r<nradix; r++) {
-          for (int i=0,last=0; i<ngrp; i++) { int tmp=my_counts[my_ugrp[i]]; my_counts[my_ugrp[i]]=last; last=tmp; }  // rewind cumulate. When ngrp<<256, faster than memcpy
+          memcpy(my_starts, my_starts_copy, 256*sizeof(uint16_t));  // restore starting offsets
+          //for (int i=0,last=0; i<256; i++) { int tmp=my_counts[i]; if (tmp==0) continue; my_counts[i]=last; last=tmp; }  // rewind ++'s to offsets
           const uint8_t *restrict ksub = key[r]+from;
-          for (int i=0; i<my_n; i++) TMP[my_counts[my_key[i]]++] = ksub[i];
+          for (int i=0; i<my_n; i++) TMP[my_starts[my_key[i]]++] = ksub[i];
           memcpy(key[r]+from, TMP, my_n);
         }
         if (onheap) free(TMP);
         TEND(21)
       }
+    }
 
-      // reset cumulate to counts (as they were after count_group)
-      for (int i=0,last=0; i<ngrp; i++) { int tmp=my_counts[my_ugrp[i]]; my_counts[my_ugrp[i]]-=last; last=tmp; }
-      TEND(22)
+    if (!retgrp && (radix+1==nradix || ngrp==my_n)) {
+      return;  // we're done. avoid allocating and populating very last group sizes for last key (used to be stackgrp=false)
+    }
+    int my_gs[ngrp];
+    if (sort) {
+      for (int i=0,j=0; i<256; i++) if (my_counts[i]) my_gs[j++]=my_counts[i];   // j ends up == ngrp
+    } else {
+      for (int i=0; i<ngrp; i++) my_gs[i]=my_counts[my_ugrp[i]];
     }
     if (radix+1==nradix || ngrp==my_n) {
-      if (retgrp) {
-         int my_gs[ngrp];
-         for (int i=0; i<ngrp; i++) my_gs[i]=my_counts[my_ugrp[i]];
-         push(my_gs, ngrp, from);  // take the time to make my_gs and push all in one go because push is omp critical
-      }
+      push(my_gs, ngrp, from);  // take the time to make my_gs and push all in one go because push is omp critical.  TODO remove comment when no longer omp critical
     } else {
       // this single thread will now descend and resolve all groups, now that the groups are close in cache
-      // **TODO**: this could skip 1s when retgrp,  and do batches of 1s when retgrp to save flutter anchors
+      // **TODO**: this could skip 1s when retgrp, and do batches of 1s when retgrp to save flutter anchors  (TODO: again - remove comment when no longer true)
       for (int i=0, my_from=from; i<ngrp; i++) {
-        int gs = my_counts[my_ugrp[i]];
-        radix_r(my_from, my_from+gs-1, radix+1);
-        my_from+=gs;
+        radix_r(my_from, my_from+my_gs[i]-1, radix+1);
+        my_from+=my_gs[i];
       }
     }
-    TEND(23)
-    for (int i=0; i<ngrp; i++) my_counts[my_ugrp[i]] = 0;  // ready for next time to save initializing should the stack 256-initialization above ever be identified as too slow
-    TEND(5)
     return;
-  }*/
+  }
   // else parallel batches. This is called recursively but only once or maybe twice before resolving to STL branch above
 
   //int nBatch = getDTthreads()*1525;  // at least nth; more to reduce last-chunk-home; but not too large size we need nBatch*256 counts
-  int batchSize = MIN(65535/*not STL*/, 1+my_n/getDTthreads());  // (my_n-1)/nBatch + 1;
+  int batchSize = MIN(UINT16_MAX, 1+my_n/getDTthreads());  // (my_n-1)/nBatch + 1;   //UINT16_MAX == 65535
   int nBatch = (my_n-1)/batchSize + 1;   // TODO: make this even sizes batches, a multiple of nThreads
   int lastBatchSize = my_n - (nBatch-1)*batchSize;
   uint16_t *counts = calloc(nBatch*256,sizeof(uint16_t));  // TODO: this can be static (since just one-at-a-time);  as long as we copy out the first row onto stack later below.
