@@ -30,15 +30,16 @@
 */
 
 //#define TIMING_ON
-static int *gs = NULL;          // gs = groupsizes e.g. 23,12,87,2,1,34,...
-//static int flip = 0;                 // two vectors flip flopped: flip and 1-flip
-static int gsalloc = 0;         // allocated stack size
-static int gsngrp = 0;          // used
-static int gsmaxalloc = 0;           // max size of stack, set by forder to nrows
-static int *anchors = NULL;
-static int anchor_alloc = 0;
-static int n_anchor = 0;
-static bool retgrp = true;           // return group sizes as well as the ordering vector?
+
+static bool retgrp = true;          // return group sizes as well as the ordering vector? If so then use gs, gsalloc and gsn :
+static int nrow = 0;                // used as group size stack allocation limit (when all groups are 1 row)
+static int *gs = NULL;              // gs = final groupsizes e.g. 23,12,87,2,1,34,...
+static int gs_alloc = 0;            // allocated size of gs
+static int gs_n = 0;                // the number of groups found so far (how much of the allocated gs is used)
+static int **gs_thread=NULL;        // each thread has a private buffer which gets flushed to the final gs appropriately
+static int *gs_thread_alloc=NULL;
+static int *gs_thread_n=NULL;
+
 static int  *cradix_counts = NULL;
 static SEXP *cradix_xtmp   = NULL;
 static SEXP *ustr = NULL;
@@ -46,6 +47,7 @@ static int ustr_alloc = 0;
 static int ustr_n = 0;
 static int ustr_maxlen = 0;
 static int sort = 0;                 // 0 no sort; -1 descending, +1 ascending
+static int nalast = 0;               // 1 (true i.e. last), 0 (false i.e. first), -1 (na i.e. remove)
 static bool all_skipped = true;
 static int nradix = 0;
 static uint8_t **key = NULL;
@@ -71,12 +73,15 @@ static void free_ustr() {
 
 static void cleanup() {
   free(gs); gs=NULL;
-  gsalloc = 0;
-  gsngrp = 0;
-  gsmaxalloc = 0;
-  free(anchors); anchors=NULL;
-  anchor_alloc = 0;
-  n_anchor = 0;
+  gs_alloc = 0;
+  gs_n = 0;
+
+  if (gs_thread!=NULL) for (int i=0; i<getDTthreads(); i++) free(gs_thread[i]);
+  free(gs_thread);       gs_thread=NULL;
+  free(gs_thread_alloc); gs_thread_alloc=NULL;
+  free(gs_thread_n);     gs_thread_n=NULL;
+
+  nrow = 0;
   free(cradix_counts); cradix_counts=NULL;
   free(cradix_xtmp);   cradix_xtmp=NULL;
   free_ustr();
@@ -85,28 +90,32 @@ static void cleanup() {
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
 }
 
-static void push(const int *x, const int n, const int anchor) {
-  #pragma omp critical(push)
-  {
-    if (gsalloc < gsngrp+n) {
-      if (gsalloc==0) gsalloc = 4096;   // initially 4 pages and then double in multiples of 4 pages
-      else gsalloc = (gsngrp+n < gsmaxalloc/3) ? (gsngrp+n)*2 : gsmaxalloc;  // /[2|3] to not overflow and 3 not 2 to avoid allocating close to gsmaxalloc
-      gs = realloc(gs, gsalloc*sizeof(int));
-      if (gs==NULL) Error("Failed to realloc working memory stack to %d*4bytes", (int)gsalloc);
-    }
-    memcpy(gs+gsngrp, x, n*sizeof(int));
-    gsngrp+=n;
-
-    if (anchor_alloc==n_anchor) {
-      if (anchor_alloc==0) anchor_alloc = 4096;
-      else anchor_alloc = (anchor_alloc < gsmaxalloc/3) ? anchor_alloc*2 : gsmaxalloc;   // TODO: rename 'gsmaxalloc' to 'nrow' since that is what it is
-      anchors = realloc(anchors, anchor_alloc*2*sizeof(int));
-      if (anchors==NULL) Error("Failed to realloc anchors to %d*8bytes", (int)anchor_alloc);
-    }
-    anchors[n_anchor*2] = anchor;
-    anchors[n_anchor*2+1] = n;
-    n_anchor++;
+static void push(const int *x, const int n) {
+  if (!retgrp) return;  // clearer to have the switch here rather than before each call
+  int me = omp_get_thread_num();
+  int newn = gs_thread_n[me] + n;
+  if (gs_thread_alloc[me] < newn) {
+    gs_thread_alloc[me] = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;  // [2|3] to not overflow and 3 not 2 to avoid allocating close to nrow (nrow groups occurs when all size 1 groups)
+    gs_thread[me] = realloc(gs_thread[me], gs_thread_alloc[me]*sizeof(int));
+    if (gs_thread[me]==NULL) Error("Failed to realloc thread private group size buffer to %d*4bytes", (int)gs_thread_alloc[me]);
   }
+  memcpy(gs_thread[me]+gs_thread_n[me], x, n*sizeof(int));
+  gs_thread_n[me] += n;
+}
+
+static void flush() {
+  if (!retgrp) return;
+  int me = omp_get_thread_num();
+  int n = gs_thread_n[me];
+  int newn = gs_n + n;
+  if (gs_alloc < newn) {
+    gs_alloc = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;
+    gs = realloc(gs, gs_alloc*sizeof(int));
+    if (gs==NULL) Error("Failed to realloc group size result to %d*4bytes", (int)gs_alloc);
+  }
+  memcpy(gs+gs_n, gs_thread[me], n*sizeof(int));
+  gs_n += n;
+  gs_thread_n[me] = 0;
 }
 
 
@@ -427,12 +436,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
   if (!length(DT)) error("DT is an empty list() of 0 columns");
   if (!isInteger(by) || !LENGTH(by)) error("DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // seq_along(x) at R level
   if (!isInteger(orderArg) || LENGTH(orderArg)!=LENGTH(by)) error("Either 'order' is not integer or its length (%d) is different to 'by's length (%d)", LENGTH(orderArg), LENGTH(by));
-  int n = length(VECTOR_ELT(DT,0));
+  nrow = length(VECTOR_ELT(DT,0));
   for (int i=0; i<LENGTH(by); i++) {
     if (INTEGER(by)[i] < 1 || INTEGER(by)[i] > length(DT))
       error("'by' value %d out of range [1,%d]", INTEGER(by)[i], length(DT));
-    if ( n != length(VECTOR_ELT(DT, INTEGER(by)[i]-1)) )
-      error("Column %d is length %d which differs from length of column 1 (%d)\n", INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), n);
+    if ( nrow != length(VECTOR_ELT(DT, INTEGER(by)[i]-1)) )
+      error("Column %d is length %d which differs from length of column 1 (%d)\n", INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
   }
 
   if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL) error("retGrp must be TRUE or FALSE");
@@ -440,10 +449,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
   if (!isLogical(sortStrArg) || LENGTH(sortStrArg)!=1 || INTEGER(sortStrArg)[0]==NA_LOGICAL ) error("sortStr must be TRUE or FALSE");
   if (!isLogical(naArg) || LENGTH(naArg) != 1) error("na.last must be logical TRUE, FALSE or NA of length 1");
   sort = LOGICAL(sortStrArg)[0]==TRUE;  // TODO: rename sortStr to just sort.  Just one argument either TRUE/FALSE, or a vector of +1|-1.
-  int nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
-  gsmaxalloc = n;  // upper limit for stack size (all size 1 groups). We'll detect and avoid that limit, but if just one non-1 group (say 2), that can't be avoided.
+  nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
 
-  if (n==0) {
+  if (nrow==0) {
     // empty vector or 0-row DT is always sorted
     SEXP ans = PROTECT(allocVector(INTSXP, 0)); n_protect++;
     if (retgrp) {
@@ -457,9 +465,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
   all_skipped = true;
   notFirst = false;
 
-  SEXP ans = PROTECT(allocVector(INTSXP, n)); n_protect++;
+  SEXP ans = PROTECT(allocVector(INTSXP, nrow)); n_protect++;
   anso = INTEGER(ans);
-  for (int i=0; i<n; i++) anso[i]=i+1;   // gdb 8.1.0.20180409-git very slow here, oddly
+  for (int i=0; i<nrow; i++) anso[i]=i+1;   // gdb 8.1.0.20180409-git very slow here, oddly
 
   savetl_init();   // from now on use Error not error
 
@@ -478,35 +486,35 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
     //Rprintf("sort = %d\n", sort);
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
-      range_i32(INTEGER(x), n, &min, &max, &na_count);
+      range_i32(INTEGER(x), nrow, &min, &max, &na_count);
       break;
     case REALSXP :
       if (inherits(x, "integer64")) {
-        range_i64((int64_t *)REAL(x), n, &min, &max, &na_count);
+        range_i64((int64_t *)REAL(x), nrow, &min, &max, &na_count);
       } else {
-        range_d(REAL(x), n, &min, &max, &na_count);
-        if (min==0 && na_count<n) { min=3; max=4; } // column contains no finite numbers and is not-all NA; create dummies to yield positive min-2 later
+        range_d(REAL(x), nrow, &min, &max, &na_count);
+        if (min==0 && na_count<nrow) { min=3; max=4; } // column contains no finite numbers and is not-all NA; create dummies to yield positive min-2 later
         isReal = true;
       }
       break;
     case STRSXP :
       // need2utf8 now happens inside range_str on the uniques
-      range_str(STRING_PTR(x), n, &min, &max, &na_count);
+      range_str(STRING_PTR(x), nrow, &min, &max, &na_count);
       break;
     default:
        Error("Column %d of by= (%d) is type '%s', not yet supported", col+1, INTEGER(by)[col], type2char(TYPEOF(x)));
     }
 
-    if ((min==0 && na_count==n) || (min>0 && min==max && na_count==0)) {
+    if ((min==0 && na_count==nrow) || (min>0 && min==max && na_count==0)) {
       // all same value; skip column as nothing to do
       // min==0 implies na_count==n anyway for all types other than real when Inf,-Inf or NaN are present (excluded from [min,max] as well as NA)
-      if (min==0 && nalast==-1) { all_skipped=false; for (int i=0; i<n; i++) anso[i]=0; }
+      if (min==0 && nalast==-1) { all_skipped=false; for (int i=0; i<nrow; i++) anso[i]=0; }
       if (TYPEOF(x)==STRSXP) free_ustr();
       continue;
     }
 
     uint64_t range = max-min+1 +1/*NA*/ +isReal*3/*NaN, -Inf, +Inf*/;
-    // Rprintf("range=%llu  min=%llu  max=%llu\n", range, min, max);
+    // Rprintf("range=%llu  min=%llu  max=%llu  na_count==%d\n", range, min, max, na_count);
 
     int maxBit=0;
     while (range) { maxBit++; range>>=1; }
@@ -539,7 +547,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
 
     for (int b=0; b<nbyte; b++) {
       if (key[nradix+b]==NULL)
-        key[nradix+b] = calloc(n, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
+        key[nradix+b] = calloc(nrow, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
     }
 
     const bool asc = (sort>=0);
@@ -553,8 +561,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
     }
     if (isReal) { min2--; max2++; }  // -Inf and +Inf  in min-1 and max+1 spots respectively
 
-    const uint64_t naval = ((nalast==1) == (sort>=0)) ? max+1+isReal*2 : min-1-isReal*2;
-    const uint64_t nanval = ((nalast==1) == (sort>=0)) ? max+2 : min-2;  // only used when isReal
+    const uint64_t naval = ((nalast==1) == asc) ? max+1+isReal*2 : min-1-isReal*2;
+    const uint64_t nanval = ((nalast==1) == asc) ? max+2 : min-2;  // only used when isReal
+    // Rprintf("asc=%d  min2=%llu  max2=%llu  naval==%llu  nanval==%llu\n", asc, min2, max2, naval, nanval);
 
     // several columns could squash into 1 byte. due to this bit squashing is why we deal
     // with asc|desc here, otherwise it could be done in the ugrp sorting by reversing the ugrp insert sort
@@ -581,7 +590,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
     case INTSXP : case LGLSXP : {
       int32_t *xd = INTEGER(x);
       #pragma omp parallel for num_threads(getDTthreads())
-      for (int i=0; i<n; i++) {
+      for (int i=0; i<nrow; i++) {
         uint64_t elem=0;
         if (xd[i]==NA_INTEGER) {  // TODO: go branchless if na_count==0
           if (nalast==-1) {all_skipped=false; anso[i]=0;}
@@ -596,7 +605,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
       if (inherits(x, "integer64")) {
         int64_t *xd = (int64_t *)REAL(x);
         #pragma omp parallel for num_threads(getDTthreads())
-        for (int i=0; i<n; i++) {
+        for (int i=0; i<nrow; i++) {
           uint64_t elem=0;
           if (xd[i]==INT64_MIN) {
             if (nalast==-1) {all_skipped=false; anso[i]=0;}
@@ -609,7 +618,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
       } else {
         double *xd = REAL(x);     // TODO: revisit double compression (skip bytes/mult by 10,100 etc) as currently it's often 6-8 bytes even for 3.14,3.15
         #pragma omp parallel for num_threads(getDTthreads())
-        for (int i=0; i<n; i++) {
+        for (int i=0; i<nrow; i++) {
           uint64_t elem=0;
           if (!R_FINITE(xd[i])) {
             if (isinf(xd[i])) elem = signbit(xd[i]) ? min-1 : max+1;
@@ -628,7 +637,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
     case STRSXP : {
       SEXP *xd = STRING_PTR(x);
       #pragma omp parallel for num_threads(getDTthreads())
-      for (int i=0; i<n; i++) {
+      for (int i=0; i<nrow; i++) {
         uint64_t elem=0;
         if (xd[i]==NA_STRING) {
           if (nalast==-1) {all_skipped=false; anso[i]=0;}
@@ -650,16 +659,19 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
   #ifdef TIMING_ON
   Rprintf("nradix=%d\n", nradix);
   #endif
+
   TEND(0);
 
+  if (retgrp) {
+    int nth = getDTthreads();
+    gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
+    gs_thread_alloc = calloc(nth, sizeof(int));
+    gs_thread_n = calloc(nth, sizeof(int));
+  }
   if (nradix) {
-    //int old = omp_get_nested();
-    //omp_set_nested(1);
-    radix_r(0, n-1, 0);  // top level recursive call: (from, to, byte). Nested parallelism is constrained via ordered clause.
-    //omp_set_nested(old);
+    radix_r(0, nrow-1, 0);  // top level recursive call: (from, to, byte)
   } else {
-    int my_gs[1] = {n};
-    push(my_gs, 1, 0);
+    push(&nrow, 1);
   }
 
   TEND(25);
@@ -685,11 +697,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
 
   if (retgrp) {
     SEXP tt;
-    setAttrib(ans, sym_starts, tt = allocVector(INTSXP, gsngrp));
+    int final_gs_n = (gs_n==0) ? gs_thread_n[0] : gs_n;
+    int *final_gs  = (gs_n==0) ? gs_thread[0] : gs;
+    setAttrib(ans, sym_starts, tt = allocVector(INTSXP, final_gs_n));
     int *ss = INTEGER(tt);
     int maxgrpn = 0;
-    for (int i=0, tmp=1; i<gsngrp; i++) {
-      int elem = gs[i];
+    for (int i=0, tmp=1; i<final_gs_n; i++) {
+      int elem = final_gs[i];
       if (elem>maxgrpn) maxgrpn=elem;
       ss[i]=tmp;
       tmp+=elem;
@@ -721,21 +735,18 @@ static bool sort_ugrp(uint8_t *x, const int n)
   return skip;
 }
 
-//  TO REINSTATE ... #define STL 600000 // >1e8/190=526315 for now  ...  65535   // Single Thread Load.  Such that counts can be uint16_t (smaller for MT cache efficiency), therefore not 65536
-
 void radix_r(const int from, const int to, const int radix) {
   TBEG();
   const int my_n = to-from+1;
   if (my_n==1) {  // TODO: avoid my_n==1 as i) adds too many anchors and ii) too many calls to critical inside push()
                   //       batch up the 1's instead in caller (and that's only needed when retgrp anyway)
-    if (retgrp) {
-      int my_gs[1] = {1};
-      push(my_gs, 1, from);  // from is pushed so as to flutter sort group sizes afterwards
-    }
+    push(&my_n, 1);
     TEND(1);
     return;
   }
   else if (my_n<=256) {
+    // if (getDTthreads()==1)
+    // Rprintf("insert clause: radix=%d, my_n=%d, from=%d, to=%d\n", radix, my_n, from, to);
     // insert sort with some twists:
     // i) detects if grouped; if sort==0 can then skip
     // ii) keeps group appearance order to minimize movement and avoid a resort afterwards
@@ -751,7 +762,7 @@ void radix_r(const int from, const int to, const int radix) {
       // all one value; one group; nothing to do other than recurse
       // save allocation of o etc
       if (radix+1==nradix) {
-        if (retgrp) push(&my_n, 1, from);
+        push(&my_n, 1);
       } else {
         radix_r(from, to, radix+1);
       }
@@ -831,9 +842,7 @@ void radix_r(const int from, const int to, const int radix) {
     }
     ngrp++;
     if (radix+1==nradix || ngrp==my_n) {
-      if (retgrp) {
-        push(my_gs, ngrp, from);
-      }
+      push(my_gs, ngrp);
     } else {
       for (int i=0, f=from; i<ngrp; i++) {
         radix_r(f, f+my_gs[i]-1, radix+1);
@@ -844,8 +853,7 @@ void radix_r(const int from, const int to, const int radix) {
     return;
   }
   else if (my_n<=UINT16_MAX) {    // UINT16_MAX==65535 (important not 65536)
-    //#pragma omp master
-    //if (radix<3) Rprintf("counting clause: radix=%d, my_n=%d\n", radix, my_n);
+    // if (getDTthreads()==1) Rprintf("counting clause: radix=%d, my_n=%d\n", radix, my_n);
     uint16_t my_counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. Otherwise, we have to manage
                                     // a stack of counts anyway since this is called recursively and these counts are needed to make the recursive calls.
                                     // This thread-private stack alloc has no chance of false sharing and gives omp and compiler best chance.
@@ -880,7 +888,7 @@ void radix_r(const int from, const int to, const int radix) {
 
       // avoid allocating and populating order vector (my_n long); we just use counts several times to push rather than pull
       // with contiguous-read from osub and ksub, 256 write live cache-lines is worst case. However, often there are many fewer ugrp and only that number of
-      // write cache lines will be active. These write-cache lines will be constrained within the STL width, so should be close by in cache, too.
+      // write cache lines will be active. These write-cache lines will be constrained within the UINT16_MAX width, so should be close by in cache, too.
       // If there is a good degree of grouping, there contiguous-read/write both ways happens automatically in this approach.
 
       all_skipped = false;  // ok to write from threads (naked) in this case since bool and only ever write false
@@ -888,13 +896,13 @@ void radix_r(const int from, const int to, const int radix) {
       // cumulate; for forwards-assign to give cpu prefetch best chance (cpu may not support prefetch backwards).
       uint16_t my_starts[256], my_starts_copy[256];
       if (sort) {
-        for (int i=0, sum=0; i<256; i++) { int tmp=my_counts[i]; my_starts[i]=my_starts_copy[i]=sum; sum+=tmp; ngrp+=(tmp>0); }  // cumulate through 0's too (won't be used)
+        for (int i=0, sum=0; i<256; i++) { int tmp=my_counts[i]; my_starts[i]=my_starts_copy[i]=sum; sum+=tmp; ngrp+=(tmp>0);}  // cumulate through 0's too (won't be used)
       } else {
         for (int i=0, sum=0; i<ngrp; i++) { uint8_t w=my_ugrp[i]; int tmp=my_counts[w]; my_starts[w]=my_starts_copy[w]=sum; sum+=tmp; }  // cumulate in ugrp appearance order
       }
 
-      if (radix==0) {
-        // anso contains 1:n so skip reading and copying it. Only happens when entire input<STL. Saving worth the branch when user repeatedly calls a small-n small-cardinality order.
+      if (radix==0 && nalast!=-1) {
+        // anso contains 1:n so skip reading and copying it. Only happens when nrow<65535. Saving worth the branch when user repeatedly calls a small-n small-cardinality order.
         for (int i=0; i<my_n; i++) anso[my_starts[my_key[i]]++] = i+1;  // +1 as R is 1-based. The counter could be uint_fast16_t since max i at this point will be UINT16_MAX-1 (65534), hence +1 won't overflow 16bits.  However, have chosen signed integer for counters for now, as signed probably slightly faster on most platforms from what I can gather.
       } else {
         const int *restrict osub = anso+from;
@@ -923,17 +931,19 @@ void radix_r(const int from, const int to, const int radix) {
       }
     }
 
-    if (!retgrp && (radix+1==nradix || ngrp==my_n)) {
-      return;  // we're done. avoid allocating and populating very last group sizes for last key (used to be stackgrp=false)
+    if (!retgrp && radix+1==nradix) {
+      return;  // we're done. avoid allocating and populating very last group sizes for last key
     }
-    int my_gs[ngrp];
+    int my_gs[ngrp==0 ? 256 : ngrp];  // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
     if (sort) {
-      for (int i=0,j=0; i<256; i++) if (my_counts[i]) my_gs[j++]=my_counts[i];   // j ends up == ngrp
+      ngrp=0;
+      for (int i=0; i<256; i++) if (my_counts[i]) my_gs[ngrp++]=my_counts[i];  // this casts from uint16_t to int32, too
     } else {
       for (int i=0; i<ngrp; i++) my_gs[i]=my_counts[my_ugrp[i]];
     }
-    if (radix+1==nradix || ngrp==my_n) {
-      push(my_gs, ngrp, from);  // take the time to make my_gs and push all in one go because push is omp critical.  TODO remove comment when no longer omp critical
+    if (radix+1==nradix) {
+      // aside: cannot be all size 1 because my_n>256 and ngrp<=256
+      push(my_gs, ngrp);  // take the time to make my_gs and push all in one go because push is omp critical.  TODO remove comment when no longer omp critical
     } else {
       // this single thread will now descend and resolve all groups, now that the groups are close in cache
       // **TODO**: this could skip 1s when retgrp, and do batches of 1s when retgrp to save flutter anchors  (TODO: again - remove comment when no longer true)
@@ -944,7 +954,7 @@ void radix_r(const int from, const int to, const int radix) {
     }
     return;
   }
-  // else parallel batches. This is called recursively but only once or maybe twice before resolving to STL branch above
+  // else parallel batches. This is called recursively but only once or maybe twice before resolving to UINT16_MAX branch above
 
   //int nBatch = getDTthreads()*1525;  // at least nth; more to reduce last-chunk-home; but not too large size we need nBatch*256 counts
   int batchSize = MIN(UINT16_MAX, 1+my_n/getDTthreads());  // (my_n-1)/nBatch + 1;   //UINT16_MAX == 65535
@@ -985,7 +995,7 @@ void radix_r(const int from, const int to, const int radix) {
       if (!my_skip) {
         skip = false;          // naked write to this shared byte is ok because false is only value written
         // gather this batch's anso and remaining keys. If we sorting too, urgrp is sorted later for that. Here we want to benefit from skip within batch
-        // as much as possible which is a good chance since batchSize is relatively small (STL)
+        // as much as possible which is a good chance since batchSize is relatively small (65535)
         for (int i=0, sum=0; i<my_ngrp; i++) { int tmp = my_counts[my_ugrp[i]]; my_counts[my_ugrp[i]]=sum; sum+=tmp; } // cumulate counts of this batch
         const int *restrict osub = anso+my_from;
         byte = my_key;
@@ -994,7 +1004,7 @@ void radix_r(const int from, const int to, const int radix) {
           my_otmp[dest] = *osub++;  // wastefully copies out 1:n when radix==0, but do not optimize as unlikely worth code complexity. my_otmp is not large, for example. Use first TEND() to decide.
           for (int r=0; r<n_rem; r++) my_ktmp[r*my_n + dest] = key[radix+1+r][my_from+i];   // reorder remaining keys
         }
-        // or could do multiple passes through my_key like in the my_n<STL approach above. Test which is better depending on if TEND() points here.
+        // or could do multiple passes through my_key like in the my_n<=65535 approach above. Test which is better depending on if TEND() points here.
 
         // we haven't completed all batches, so we don't know where these groups should place yet
         // So for now we write the thread-private small now-grouped buffers back in-place. The counts and groups across all batches will be used below to move these blocks.
@@ -1044,7 +1054,7 @@ void radix_r(const int from, const int to, const int radix) {
     skip=false;
 
   // now cumulate counts vertically to see where the blocks in the batches should be placed in the result across all batches
-  // the counts are uint16_t due to STL. But the cumulate needs to be int32_t (or int64_t in future) to hold the offsets
+  // the counts are uint16_t but the cumulate needs to be int32_t (or int64_t in future) to hold the offsets
   // If skip==true and we're already done, we still need the first row of this cummulate (diff to get total group sizes) to push() or recurse below
 
   //Rprintf("counts:\n");
@@ -1129,25 +1139,36 @@ void radix_r(const int from, const int to, const int radix) {
   my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
 
   if (radix+1==nradix || ngrp==my_n) {
-    if (retgrp) push(my_gs, ngrp, from);  // 'from' is anchor to be flutter sorted afterwards
+    push(my_gs, ngrp);
     TEND(13)
   }
   // else if (ngrp==1) // TODO: just radix_r() it
   else {
     // TODO: explicitly repeat parallel batch for any skew bins
     bool anyBig = false;
-    for (int i=0; i<ngrp; i++) if (my_gs[i]>65535) { anyBig=true; break; }
+    for (int i=0; i<ngrp; i++) if (my_gs[i]>UINT16_MAX) { anyBig=true; break; }
     if (anyBig) {
       for (int i=0; i<ngrp; i++) {
         int start = from + starts[ugrp[i]];
         radix_r(start, start+my_gs[i]-1, radix+1);
+        flush();
       }
       TEND(14)
     } else {
-      #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
-      for (int i=0; i<ngrp; i++) {
-        int start = from + starts[ugrp[i]];
-        radix_r(start, start+my_gs[i]-1, radix+1); // if retgrp gs is written out and this will write to gs out-of-order (but not terribly out-of-order); flutter sorted late
+      if (retgrp) {
+        #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads())
+        for (int i=0; i<ngrp; i++) {
+          int start = from + starts[ugrp[i]];
+          radix_r(start, start+my_gs[i]-1, radix+1);
+          #pragma omp ordered
+          flush();
+        }
+      } else {
+        #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
+        for (int i=0; i<ngrp; i++) {
+          int start = from + starts[ugrp[i]];
+          radix_r(start, start+my_gs[i]-1, radix+1);
+        }
       }
       TEND(15)
     }
