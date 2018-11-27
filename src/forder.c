@@ -15,10 +15,10 @@
   Stanford DSC presentation <link>
   JSM presentation <link>
   Techniques used :
-    nested parallelism for skew
-    finds unique bins to save 256 sweeping
+    skewed groups are split in parallel
+    finds unique bytes to save 256 sweeping
     skips already-grouped yet unsorted
-    flip flop group-size stack
+    recursive grouping for cache efficiency
     reuses R's global character cache (truelength on CHARSXP)
     compressed column can cross byte boundaries to use spare bits (e.g. 2 16-level columns in one byte)
     just the remaining part of key is reordered as the radix progresses
@@ -118,13 +118,12 @@ static void flush() {
   gs_thread_n[me] = 0;
 }
 
-
 #ifdef TIMING_ON
   #define NBLOCK 64
   static double tblock[NBLOCK];
   static int nblock[NBLOCK];
   static uint64_t stat[257];
-  #define TBEG() double tstart = wallclock();   // tstart declared locally
+  #define TBEG() double tstart = wallclock();   // tstart declared locally for thread safety
   static inline void TENDfun(int i, double tstart) {
     double now = wallclock();
     #pragma omp critical(TEND)
@@ -407,7 +406,7 @@ uint64_t dtwiddle(void *p, int i)
   Error("Unknown non-finite value; not NA, NaN, -Inf or +Inf");
 }
 
-void radix_r(int from, int to, int byte);
+void radix_r(const int from, const int to, const int radix);
 
 SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg)
 // sortGroups TRUE from setkey and regular forder, FALSE from by= for efficiency so strings don't have to be sorted and can be left in appearance order
@@ -418,8 +417,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   memset(tblock, 0, NBLOCK*sizeof(double));
   memset(nblock, 0, NBLOCK*sizeof(int));
   memset(stat,   0, 257*sizeof(uint64_t));
-#endif
   TBEG()
+#endif
 
   int n_protect = 0;
 
@@ -584,8 +583,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     //       row-group-appearance-order built it; the result will still need to be resorted by row number of first group item.
     //     this was the case with the previous forder as well, which went by whole-column
     //     So, we may as well bit-pack as done above.
-    //     Retaining apperance-order within key-byte-column is still advatangeous for when we do encounter column-grouped data (to avoid data movement); and
-    //       the ordering will be appearance-order preserving in that case.
+    //     Retaining appearance-order within key-byte-column is still advatangeous for when we do encounter column-grouped data (to avoid data movement); and
+    //       the ordering will be appearance-order preserving in that case (just at the byte level).
+    // TODO: in future we could provide an option to return 'any' group order for efficiency, which would be the byte-appearance order. But for now, the
+    //     the forder afterwards on o__[f__] (in [.data.table) is not significant.
 
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP : {
@@ -668,9 +669,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
     gs_thread_alloc = calloc(nth, sizeof(int));
     gs_thread_n = calloc(nth, sizeof(int));
+    if (!gs_thread || !gs_thread_alloc || !gs_thread_n) Error("Could not allocate (very tiny) group size thread buffers");
   }
   if (nradix) {
-    radix_r(0, nrow-1, 0);  // top level recursive call: (from, to, byte)
+    radix_r(0, nrow-1, 0);  // top level recursive call: (from, to, radix)
   } else {
     push(&nrow, 1);
   }
@@ -689,7 +691,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   }
   #endif
 
-
   if (all_skipped) {   // when data is already grouped or sorted, integer() returned with group sizes attached
     // the o vector created earlier could be avoided in this case if we only create it when isSorted becomes FALSE
     ans = PROTECT(allocVector(INTSXP, 0));  // Can't attach attributes to NULL
@@ -698,7 +699,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 
   if (retgrp) {
     SEXP tt;
-    int final_gs_n = (gs_n==0) ? gs_thread_n[0] : gs_n;
+    int final_gs_n = (gs_n==0) ? gs_thread_n[0] : gs_n;   // TODO: find a neater way to do this
     int *final_gs  = (gs_n==0) ? gs_thread[0] : gs;
     setAttrib(ans, sym_starts, tt = allocVector(INTSXP, final_gs_n));
     int *ss = INTEGER(tt);
@@ -739,8 +740,7 @@ static bool sort_ugrp(uint8_t *x, const int n)
 void radix_r(const int from, const int to, const int radix) {
   TBEG();
   const int my_n = to-from+1;
-  if (my_n==1) {  // TODO: avoid my_n==1 as i) adds too many anchors and ii) too many calls to critical inside push()
-                  //       batch up the 1's instead in caller (and that's only needed when retgrp anyway)
+  if (my_n==1) {  // minor TODO: batch up the 1's instead in caller (and that's only needed when retgrp anyway)
     push(&my_n, 1);
     TEND(1);
     return;
@@ -750,7 +750,7 @@ void radix_r(const int from, const int to, const int radix) {
     // Rprintf("insert clause: radix=%d, my_n=%d, from=%d, to=%d\n", radix, my_n, from, to);
     // insert sort with some twists:
     // i) detects if grouped; if sortType==0 can then skip
-    // ii) keeps group appearance order to minimize movement and avoid a resort afterwards
+    // ii) keeps group appearance order at byte level to minimize movement
     #ifdef TIMING_ON
       #pragma omp atomic
       stat[my_n]++;
@@ -778,6 +778,8 @@ void radix_r(const int from, const int to, const int radix) {
         // if (radix+1==nradix) {
         //   no more keys to reorder so we could reorder osub by reference directly and save allocating and populating o just to use it once
         //   however, o's type is uint8_t so many moves within this max-256 vector should be faster than many moves in osub (4 byte or 8 byte ints)
+        //   therefore still create o even even for last radix (radix+1==nradix) where no key reordering is needed
+        // }
         o = (uint8_t *)alloca(my_n);
         for (int j=0; j<i; j++) o[j] = j;
         for(; i<my_n; i++) {
@@ -793,7 +795,7 @@ void radix_r(const int from, const int to, const int radix) {
         }
       }
     } else {
-      // sort==0; retain group appearance order to hopefully benefit from skip, but there is a still a sort afterwards to get back to appearance order
+      // sortType==0; retain group appearance order to hopefully benefit from skip, but there is a still a sort afterwards to get back to appearance order
       // because columns are split into multiple bytes: retaining the byte appearance order within key-byte is not the same as retaining the order of
       // unique values within each by= column.  In other words, retaining group order at byte level here does not affect correctness, just efficiency.
       bool seen[256]={false};
@@ -803,7 +805,7 @@ void radix_r(const int from, const int to, const int radix) {
         uint8_t ktmp = my_key[i];
         if (ktmp==my_key[i-1]) continue;
         if (!seen[ktmp]) { seen[ktmp]=true; continue; }
-        // different byte but we've seen it before, so this my_n can't be grouped
+        // different byte but we've seen it before, so this my_n is not grouped
         if (o==NULL) {
           o = (uint8_t *)alloca(my_n);
           for (int j=0; j<my_n; j++) o[j] = j; // TODO: could be saved similar to the sort case above
@@ -838,14 +840,14 @@ void radix_r(const int from, const int to, const int radix) {
       TEND(2)
       return;
     }
-    int ngrp=0, my_gs[my_n];  //TODO: could know number of groups with certainty up above
+    int ngrp=0, my_gs[my_n];  //minor TODO: could know number of groups with certainty up above
     my_gs[ngrp]=1;
     for (int i=1; i<my_n; i++) {
       if (my_key[i]!=my_key[i-1]) my_gs[++ngrp] = 1;
       else my_gs[ngrp]++;
     }
     ngrp++;
-    if (radix+1==nradix || ngrp==my_n) {
+    if (radix+1==nradix || ngrp==my_n) {  // ngrp==my_n => unique groups all size 1 and we can stop recursing now
       push(my_gs, ngrp);
     } else {
       for (int i=0, f=from; i<ngrp; i++) {
@@ -861,10 +863,10 @@ void radix_r(const int from, const int to, const int radix) {
     uint16_t my_counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. Otherwise, we have to manage
                                     // a stack of counts anyway since this is called recursively and these counts are needed to make the recursive calls.
                                     // This thread-private stack alloc has no chance of false sharing and gives omp and compiler best chance.
-    uint8_t *restrict my_ugrp = NULL;  // Will be allocated on stack if sort==0
+    uint8_t *restrict my_ugrp = NULL;  // Will be allocated below on stack if sortType==0
     const uint8_t *restrict my_key = key[radix]+from;
     int ngrp = 0;          // number of groups (items in ugrp[]). Max value 256 but could be uint8_t later perhaps if 0 is understood as 1.
-    bool skip = true;      // i) if already grouped and sort=false then caller can skip, ii) if already sorted when sort=true then caller can skip
+    bool skip = true;      // i) if already _grouped_ and sortType==0 then caller can skip, ii) if already _grouped and sorted__ when sort!=0 then caller can skip too
     TEND(17)
     if (sortType!=0) {
       // Always ascending sort here (even when sortType==-1) because descending was prepared in write_key
@@ -896,7 +898,7 @@ void radix_r(const int from, const int to, const int radix) {
       // write cache lines will be active. These write-cache lines will be constrained within the UINT16_MAX width, so should be close by in cache, too.
       // If there is a good degree of grouping, there contiguous-read/write both ways happens automatically in this approach.
 
-      all_skipped = false;  // ok to write from threads (naked) in this case since bool and only ever write false
+      all_skipped = false;  // ok to write to this shared global from threads naked (i.e. lacking atomic protection) in this special case of 1 byte bool and only ever writing false
 
       // cumulate; for forwards-assign to give cpu prefetch best chance (cpu may not support prefetch backwards).
       uint16_t my_starts[256], my_starts_copy[256];
@@ -907,12 +909,16 @@ void radix_r(const int from, const int to, const int radix) {
       }
 
       if (radix==0 && nalast!=-1) {
-        // anso contains 1:n so skip reading and copying it. Only happens when nrow<65535. Saving worth the branch when user repeatedly calls a small-n small-cardinality order.
-        for (int i=0; i<my_n; i++) anso[my_starts[my_key[i]]++] = i+1;  // +1 as R is 1-based. The counter could be uint_fast16_t since max i at this point will be UINT16_MAX-1 (65534), hence +1 won't overflow 16bits.  However, have chosen signed integer for counters for now, as signed probably slightly faster on most platforms from what I can gather.
+        // anso contains 1:n so skip reading and copying it. Only happens when nrow<65535. Saving worth the branch (untested) when user repeatedly calls a small-n small-cardinality order.
+        for (int i=0; i<my_n; i++) anso[my_starts[my_key[i]]++] = i+1;  // +1 as R is 1-based.
+        // The loop counter could be uint_fast16_t since max i here will be UINT16_MAX-1 (65534), hence ++ after last iteration won't overflow 16bits. However, have chosen signed
+        // integer for counters for now, as signed probably very slightly faster than unsigned on most platforms from what I can gather.
       } else {
         const int *restrict osub = anso+from;
         bool onheap = my_n>=1024;
         int *TMP = onheap ? malloc(my_n*sizeof(int)) : alloca(my_n*sizeof(int));  // OS likely faster here than us. Let's see.  TODO: int=>int64_t in future
+        if (!TMP) Error("Failed to allocate TMP for at most 65535*4 = 0.25MB in radix_r counting. Very unlikely to occur but can be avoided. See comment in code.");
+        // TODO: this malloc/alloc can now be replaced with a fetch of upfront allocated int *restrict thread_TMP[me]
         for (int i=0; i<my_n; i++) TMP[my_starts[my_key[i]]++] = osub[i];
         memcpy(anso+from, TMP, my_n*sizeof(int));
         if (onheap) free(TMP);
@@ -924,6 +930,7 @@ void radix_r(const int from, const int to, const int radix) {
       if (radix+1<nradix) {
         bool onheap = my_n>=4096;
         uint8_t *TMP = onheap ? malloc(my_n) : alloca(my_n);
+        if (!TMP) Error("Failed to allocate TMP for at most 65535 = 0.06MB in radix_r counting. Very unlikely to occur but can be avoided. See comment in code.");
         for (int r=radix+1; r<nradix; r++) {
           memcpy(my_starts, my_starts_copy, 256*sizeof(uint16_t));  // restore starting offsets
           //for (int i=0,last=0; i<256; i++) { int tmp=my_counts[i]; if (tmp==0) continue; my_counts[i]=last; last=tmp; }  // rewind ++'s to offsets
@@ -947,11 +954,10 @@ void radix_r(const int from, const int to, const int radix) {
       for (int i=0; i<ngrp; i++) my_gs[i]=my_counts[my_ugrp[i]];
     }
     if (radix+1==nradix) {
-      // aside: cannot be all size 1 because my_n>256 and ngrp<=256
-      push(my_gs, ngrp);  // take the time to make my_gs and push all in one go because push is omp critical.  TODO remove comment when no longer omp critical
+      // aside: cannot be all size 1 (a saving used in my_n<=256 case above) because my_n>256 and ngrp<=256
+      push(my_gs, ngrp);
     } else {
       // this single thread will now descend and resolve all groups, now that the groups are close in cache
-      // **TODO**: this could skip 1s when retgrp, and do batches of 1s when retgrp to save flutter anchors  (TODO: again - remove comment when no longer true)
       for (int i=0, my_from=from; i<ngrp; i++) {
         radix_r(my_from, my_from+my_gs[i]-1, radix+1);
         my_from+=my_gs[i];
@@ -961,24 +967,22 @@ void radix_r(const int from, const int to, const int radix) {
   }
   // else parallel batches. This is called recursively but only once or maybe twice before resolving to UINT16_MAX branch above
 
-  //int nBatch = getDTthreads()*1525;  // at least nth; more to reduce last-chunk-home; but not too large size we need nBatch*256 counts
   int batchSize = MIN(UINT16_MAX, 1+my_n/getDTthreads());  // (my_n-1)/nBatch + 1;   //UINT16_MAX == 65535
-  int nBatch = (my_n-1)/batchSize + 1;   // TODO: make this even sizes batches, a multiple of nThreads
+  int nBatch = (my_n-1)/batchSize + 1;   // TODO: make nBatch a multiple of nThreads?
   int lastBatchSize = my_n - (nBatch-1)*batchSize;
-  uint16_t *counts = calloc(nBatch*256,sizeof(uint16_t));  // TODO: this can be static (since just one-at-a-time);  as long as we copy out the first row onto stack later below.
+  uint16_t *counts = calloc(nBatch*256,sizeof(uint16_t));
   uint8_t  *ugrps =  malloc(nBatch*256*sizeof(uint8_t));
   int      *ngrps =  calloc(nBatch    ,sizeof(int));
-  // TODO:  if (!counts || !ugrps || !ngrps) Error...
-  //Rprintf("nested batch count...\n");
+  if (!counts || !ugrps || !ngrps) Error("Failed to allocate parallel counts. my_n=%d, nBatch=%d", my_n, nBatch);
 
   bool skip=true;
   const int n_rem = nradix-radix-1;   // how many radix are remaining after this one
   TEND(6)
   #pragma omp parallel num_threads(getDTthreads())
   {
-    int     *my_otmp = malloc(batchSize * sizeof(int)); // thread-private write. Move this up above and point this private restrict to it. Easier to Error alloc that way, if it's just as fast.
+    int     *my_otmp = malloc(batchSize * sizeof(int)); // thread-private write
     uint8_t *my_ktmp = malloc(batchSize * sizeof(uint8_t) * n_rem);
-    // TODO: if my_otmp==NULL || my_ktmp==NULL, error.
+    // TODO: move these up above and point restrict[me] to them. Easier to Error that way if failed to alloc.
     #pragma omp for
     for (int batch=0; batch<nBatch; batch++) {
       const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;  // lastBatchSize == batchSize when my_n is a multiple of batchSize
@@ -1053,7 +1057,7 @@ void radix_r(const int from, const int to, const int radix) {
 
   // If skip==true (my_n was pre-grouped) and
   // i) sortType==0 (not sorting groups) then osub and ksub don't need reordering. ugrp may happen to be sorted too but nothing special to do in that case.
-  // ii) sortType==1|-1 and ugrp is already sorted then osub and ksub don't need redordering either.
+  // ii) sortType==1|-1 and ugrp is already sorted then osub and ksub don't need reordering either.
 
   if (sortType!=0 && !sort_ugrp(ugrp, ngrp))
     skip=false;
@@ -1061,11 +1065,6 @@ void radix_r(const int from, const int to, const int radix) {
   // now cumulate counts vertically to see where the blocks in the batches should be placed in the result across all batches
   // the counts are uint16_t but the cumulate needs to be int32_t (or int64_t in future) to hold the offsets
   // If skip==true and we're already done, we still need the first row of this cummulate (diff to get total group sizes) to push() or recurse below
-
-  //Rprintf("counts:\n");
-  //for (int b=0; b<nBatch; b++) {
-  //  for (int i=0; i<256; i++) { Rprintf("%d ",counts[b*256+i]);}  Rprintf("\n");
-  //}
 
   int *starts = calloc(nBatch*256, sizeof(int));  // keep starts the same shape and ugrp order as counts
   for (int j=0, sum=0; j<ngrp; j++) {  // iterate through columns (ngrp bytes)
@@ -1080,22 +1079,14 @@ void radix_r(const int from, const int to, const int radix) {
   }
   // the first row now (when diff'd) now contains the size of each group across all batches
 
-  //Rprintf("starts:\n");
-  //for (int b=0; b<nBatch; b++) {
-  //  for (int i=0; i<256; i++) { Rprintf("%d ",starts[b*256+i]); }  Rprintf("\n");
-  //}
-
   TEND(8 + notFirst*3)
   if (!skip) {
     all_skipped = false;   // to save testing for 1:n at the very end before returning empty to mean already-sorted.
 
-    // TODO this might not need to be parallel.  Just single thread might be able to do it.
-    //      time how long the first one takes. If not too bad, then definitely single-thread, because these are already nested (other than the very first big one)
     int *TMP = malloc(my_n * sizeof(int));
-    // TODO: if TMP==NULL Error
+    if (!TMP) Error("Unable to allocate TMP for my_n=%d items in parallel batch counting", my_n);
     #pragma omp parallel for num_threads(getDTthreads())
     for (int batch=0; batch<nBatch; batch++) {
-      //const int my_from = from + batch*batchSize;
       const int *restrict      my_starts = starts + batch*256;
       const uint16_t *restrict my_counts = counts + batch*256;
       const int *restrict      osub = anso + from + batch*batchSize;  // the groups sit here contiguously
@@ -1112,7 +1103,6 @@ void radix_r(const int from, const int to, const int radix) {
     for (int r=0; r<n_rem; r++) {    // TODO: groups of sizeof(anso)  4 byte int currently  (in future 8).  To save team startup cost (but unlikely significant anyway)
       #pragma omp parallel for num_threads(getDTthreads())
       for (int batch=0; batch<nBatch; batch++) {
-        //const int my_from = from + batch*batchSize;
         const int *restrict      my_starts = starts + batch*256;
         const uint16_t *restrict my_counts = counts + batch*256;
         const uint8_t *restrict  ksub = key[radix+1+r] + from + batch*batchSize;  // the groups sit here contiguosly
@@ -1131,28 +1121,31 @@ void radix_r(const int from, const int to, const int radix) {
   TEND(9 + notFirst*3)
   notFirst = true;
 
-  //if (radix==0) {
-  //  for (int i=0; i<ngrp-1; i++) Rprintf("radix=%d  i=%d  gs=%d\n", radix, i, counts[ugrp[i+1]]-counts[ugrp[i]]);
-  //  Rprintf("radix=%d  i=%d  gs=%d\n", radix, ngrp-1, my_n-counts[ugrp[ngrp-1]]);
-  //}
-
-  // TODO could push all the size 1 groups (and maybe 2) and reduce the ngrp to just decent sizes, to just parallel through decent sizes.
-
-  // take the time to make my_gs and push all in one go because push is omp critical.
   int my_gs[ngrp];
   for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[ugrp[i]] - starts[ugrp[i-1]];   // use the first row of starts to get totals
   my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
 
-  if (radix+1==nradix || ngrp==my_n) {
+  if (radix+1==nradix) {
+    // aside: ngrp==my_n (all size 1 groups) isn't a possible short-circuit here similar to my_n>256 case above, my_n>65535 but ngrp<=256
     push(my_gs, ngrp);
     TEND(13)
   }
-  // else if (ngrp==1) // TODO: just radix_r() it
   else {
     // TODO: explicitly repeat parallel batch for any skew bins
     bool anyBig = false;
     for (int i=0; i<ngrp; i++) if (my_gs[i]>UINT16_MAX) { anyBig=true; break; }
     if (anyBig) {
+      // Likely that they're all big. If so, each will go one-by-one and each will be parallel (case my_n>65535)
+      // If only one or a few are big, then we have skew. The not-big ones will be <65535 and will be very
+      // fast to run anyway relative to the big one(s) and the big one(s) will go in parallel. Hence dealing
+      // with skew.
+      // We could try and separate the not-big ones and do those in parallel first.  However, it's critical
+      // that the groups are flushed in order otherwise the group size final result won't be correct (i.e. it
+      // won't be aligned with anso). This consideration is independent of maintaining group appearance order.
+      // When we have skew, by design it's a special type of limited skew in that the small ones are fixed to
+      // to be small at <65535 (and hence fast anyway). In contract when they are all 'big' (>65535) but there
+      // is skew in that one or a few are significantly bigger than the others, then they'll all go one-by-one
+      // each in parallel here and they're all dealt with in parallel. There is no nestedness here.
       for (int i=0; i<ngrp; i++) {
         int start = from + starts[ugrp[i]];
         radix_r(start, start+my_gs[i]-1, radix+1);
@@ -1160,6 +1153,8 @@ void radix_r(const int from, const int to, const int radix) {
       }
       TEND(14)
     } else {
+      // all groups are <=65535 and radix_r() will handle each one single-threaded. Therefore, this time
+      // it does make sense to start a parallel team and there will be no nestedness here either.
       if (retgrp) {
         #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads())
         for (int i=0; i<ngrp; i++) {
@@ -1169,6 +1164,7 @@ void radix_r(const int from, const int to, const int radix) {
           flush();
         }
       } else {
+        // flush() is only relevant when retgrp==true so save the redundant ordered clause
         #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads())
         for (int i=0; i<ngrp; i++) {
           int start = from + starts[ugrp[i]];
