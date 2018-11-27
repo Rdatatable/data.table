@@ -46,7 +46,7 @@ static SEXP *ustr = NULL;
 static int ustr_alloc = 0;
 static int ustr_n = 0;
 static int ustr_maxlen = 0;
-static int sort = 0;                 // 0 no sort; -1 descending, +1 ascending
+static int sortType = 0;             // 0 just group; -1 descending, +1 ascending
 static int nalast = 0;               // 1 (true i.e. last), 0 (false i.e. first), -1 (na i.e. remove)
 static bool all_skipped = true;
 static int nradix = 0;
@@ -353,7 +353,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
   } else {
     *out_min = 1;
     *out_max = ustr_n;
-    if (sort) {
+    if (sortType) {
       // that this is always ascending; descending is done in WRITE_KEY using max-this
       cradix(ustr, ustr_n);  // sorts ustr in-place by reference. assumes NA_STRING not present.
       for(int i=0; i<ustr_n; i++)     // save ordering in the CHARSXP. negative so as to distinguish with R's own usage.
@@ -409,8 +409,9 @@ uint64_t dtwiddle(void *p, int i)
 
 void radix_r(int from, int to, int byte);
 
-SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SEXP naArg)
-// sortStr TRUE from setkey, FALSE from by=
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg)
+// sortGroups TRUE from setkey and regular forder, FALSE from by= for efficiency so strings don't have to be sorted and can be left in appearance order
+// when sortGroups is TRUE, ascArg contains +1/-1 for ascending/descending of each by column; when FALSE ascArg is ignored
 {
 
 #ifdef TIMING_ON
@@ -425,7 +426,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
   if (!isNewList(DT)) {
     if (!isVectorAtomic(DT)) error("Input is not either a list of columns, or an atomic vector.");
     if (!isNull(by)) error("Input is an atomic vector (not a list of columns) but by= is not NULL");
-    if (!isInteger(orderArg) || LENGTH(orderArg)!=1) error("Input is an atomic vector (not a list of columns) but order= is not a length 1 integer");
+    if (!isInteger(ascArg) || LENGTH(ascArg)!=1) error("Input is an atomic vector (not a list of columns) but ascArg= is not a length 1 integer");
     SEXP tt = PROTECT(allocVector(VECSXP, 1)); n_protect++;
     SET_VECTOR_ELT(tt, 0, DT);
     DT = tt;
@@ -435,7 +436,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
 
   if (!length(DT)) error("DT is an empty list() of 0 columns");
   if (!isInteger(by) || !LENGTH(by)) error("DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // seq_along(x) at R level
-  if (!isInteger(orderArg) || LENGTH(orderArg)!=LENGTH(by)) error("Either 'order' is not integer or its length (%d) is different to 'by's length (%d)", LENGTH(orderArg), LENGTH(by));
+  if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by)) error("Either 'ascArg' is not integer or its length (%d) is different to 'by's length (%d)", LENGTH(ascArg), LENGTH(by));
   nrow = length(VECTOR_ELT(DT,0));
   for (int i=0; i<LENGTH(by); i++) {
     if (INTEGER(by)[i] < 1 || INTEGER(by)[i] > length(DT))
@@ -446,9 +447,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
 
   if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL) error("retGrp must be TRUE or FALSE");
   retgrp = LOGICAL(retGrpArg)[0]==TRUE;
-  if (!isLogical(sortStrArg) || LENGTH(sortStrArg)!=1 || INTEGER(sortStrArg)[0]==NA_LOGICAL ) error("sortStr must be TRUE or FALSE");
+  if (!isLogical(sortGroupsArg) || LENGTH(sortGroupsArg)!=1 || INTEGER(sortGroupsArg)[0]==NA_LOGICAL ) error("sortGroups must be TRUE or FALSE");
   if (!isLogical(naArg) || LENGTH(naArg) != 1) error("na.last must be logical TRUE, FALSE or NA of length 1");
-  sort = LOGICAL(sortStrArg)[0]==TRUE;  // TODO: rename sortStr to just sort.  Just one argument either TRUE/FALSE, or a vector of +1|-1.
+  sortType = LOGICAL(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
   nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
 
   if (nrow==0) {
@@ -482,8 +483,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min, max;     // min and max of non-NA values
     int na_count=0;
-    if (sort) sort=INTEGER(orderArg)[col];  // +1(asc) -1(desc) 0(first-appearance)
-    //Rprintf("sort = %d\n", sort);
+    if (sortType) sortType=INTEGER(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
+    //Rprintf("sortType = %d\n", sortType);
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
       range_i32(INTEGER(x), nrow, &min, &max, &na_count);
@@ -523,7 +524,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
     if (spare==0) {
       spare = 8-firstBits; // left align to byte boundary to get better first split.
     } else {
-      if (sort==0) {
+      if (sortType==0) {
         // can't squash into previous spare as that will change first-appearance order within that radix-byte
         //   found thanks to test 1246.55 with seed 1540402216L and added new direct test 1954
         spare = 8-firstBits;
@@ -550,7 +551,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortStrArg, SEXP orderArg, SE
         key[nradix+b] = calloc(nrow, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
     }
 
-    const bool asc = (sort>=0);
+    const bool asc = (sortType>=0);
     uint64_t min2=min, max2=max;
     if (nalast<1 && asc) {
       min2--; // so that x-min results in 1 for the minimum; NA coded by 0. Always provide for the NA spot even if NAs aren't present for code brevity and robustness
@@ -748,7 +749,7 @@ void radix_r(const int from, const int to, const int radix) {
     // if (getDTthreads()==1)
     // Rprintf("insert clause: radix=%d, my_n=%d, from=%d, to=%d\n", radix, my_n, from, to);
     // insert sort with some twists:
-    // i) detects if grouped; if sort==0 can then skip
+    // i) detects if grouped; if sortType==0 can then skip
     // ii) keeps group appearance order to minimize movement and avoid a resort afterwards
     #ifdef TIMING_ON
       #pragma omp atomic
@@ -769,8 +770,8 @@ void radix_r(const int from, const int to, const int radix) {
       return;
     }
     uint8_t *o = NULL;
-    if (sort) {
-      // always ascending as desc was dealt with in WRITE_KEY
+    if (sortType!=0) {
+      // always ascending as desc (sortType==-1) was dealt with in WRITE_KEY
       while(i<my_n && my_key[i]>=my_key[i-1]) i++;
       if (i<my_n) {
         all_skipped=false;
@@ -791,7 +792,10 @@ void radix_r(const int from, const int to, const int radix) {
           o[j+1] = i;
         }
       }
-    } else { // sort==0; be careful to retain group appearance order since there is no sort afterwards to get back to appearance order
+    } else {
+      // sort==0; retain group appearance order to hopefully benefit from skip, but there is a still a sort afterwards to get back to appearance order
+      // because columns are split into multiple bytes: retaining the byte appearance order within key-byte is not the same as retaining the order of
+      // unique values within each by= column.  In other words, retaining group order at byte level here does not affect correctness, just efficiency.
       bool seen[256]={false};
       seen[my_key[i-1]] = seen[my_key[i]] = true;  // first two different bytes
       i++;
@@ -862,7 +866,8 @@ void radix_r(const int from, const int to, const int radix) {
     int ngrp = 0;          // number of groups (items in ugrp[]). Max value 256 but could be uint8_t later perhaps if 0 is understood as 1.
     bool skip = true;      // i) if already grouped and sort=false then caller can skip, ii) if already sorted when sort=true then caller can skip
     TEND(17)
-    if (sort) {  // TODO: rename 'sort' to 'sort_type' or better name.  Always ascending sort here as descending was prepared in write_key
+    if (sortType!=0) {
+      // Always ascending sort here (even when sortType==-1) because descending was prepared in write_key
       my_counts[my_key[0]] = 1;
       int i=1;
       while (skip && i<my_n) { my_counts[my_key[i]]++; skip=(my_key[i]>=my_key[i-1]); i++; }
@@ -895,7 +900,7 @@ void radix_r(const int from, const int to, const int radix) {
 
       // cumulate; for forwards-assign to give cpu prefetch best chance (cpu may not support prefetch backwards).
       uint16_t my_starts[256], my_starts_copy[256];
-      if (sort) {
+      if (sortType!=0) {
         for (int i=0, sum=0; i<256; i++) { int tmp=my_counts[i]; my_starts[i]=my_starts_copy[i]=sum; sum+=tmp; ngrp+=(tmp>0);}  // cumulate through 0's too (won't be used)
       } else {
         for (int i=0, sum=0; i<ngrp; i++) { uint8_t w=my_ugrp[i]; int tmp=my_counts[w]; my_starts[w]=my_starts_copy[w]=sum; sum+=tmp; }  // cumulate in ugrp appearance order
@@ -935,7 +940,7 @@ void radix_r(const int from, const int to, const int radix) {
       return;  // we're done. avoid allocating and populating very last group sizes for last key
     }
     int my_gs[ngrp==0 ? 256 : ngrp];  // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
-    if (sort) {
+    if (sortType!=0) {
       ngrp=0;
       for (int i=0; i<256; i++) if (my_counts[i]) my_gs[ngrp++]=my_counts[i];  // this casts from uint16_t to int32, too
     } else {
@@ -1047,10 +1052,10 @@ void radix_r(const int from, const int to, const int radix) {
   }
 
   // If skip==true (my_n was pre-grouped) and
-  // i) sort==0 (not sorting groups) then osub and ksub don't need reordering. ugrp may happen to be sorted too but nothing special to do in that case.
-  // ii) sort==1|-1 and ugrp is already sorted then osub and ksub don't need redordering either.
+  // i) sortType==0 (not sorting groups) then osub and ksub don't need reordering. ugrp may happen to be sorted too but nothing special to do in that case.
+  // ii) sortType==1|-1 and ugrp is already sorted then osub and ksub don't need redordering either.
 
-  if (sort && !sort_ugrp(ugrp, ngrp))
+  if (sortType!=0 && !sort_ugrp(ugrp, ngrp))
     skip=false;
 
   // now cumulate counts vertically to see where the blocks in the batches should be placed in the result across all batches
