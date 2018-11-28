@@ -29,7 +29,7 @@
   overhead. They reach outside themselves to place results in the end result directly rather than returning many small pieces of memory.
 */
 
-//#define TIMING_ON
+// #define TIMING_ON
 
 static bool retgrp = true;          // return group sizes as well as the ordering vector? If so then use gs, gsalloc and gsn :
 static int nrow = 0;                // used as group size stack allocation limit (when all groups are 1 row)
@@ -123,27 +123,25 @@ static void flush() {
 
 #ifdef TIMING_ON
   #define NBLOCK 64
-  static double tblock[NBLOCK];
-  static int nblock[NBLOCK];
+  #define MAX_NTH 256
+  static double tblock[MAX_NTH*NBLOCK];
+  static int nblock[MAX_NTH*NBLOCK];
   static uint64_t stat[257];
   #define TBEG() double tstart = wallclock();   // tstart declared locally for thread safety
-  static inline void TENDfun(int i, double tstart) {
-    double now = wallclock();
-    #pragma omp critical(TEND)
-    {
-      tblock[i] += now-tstart;
-      nblock[i]++;
-    }
-    tstart = now;
+  #define TEND(i) {  \
+    double now = wallclock(); \
+    int w = omp_get_thread_num()*NBLOCK + i; \
+    tblock[w] += now-tstart; \
+    nblock[w]++; \
+    tstart = now; \
   }
-  #define TEND(i) TENDfun(i,tstart);
 #else
   #define TBEG()
   #define TEND(i)
 #endif
 
 // range_* functions return [min,max] of the non-NAs as common uint64_t type
-// TODO parallelize
+// TODO parallelize these; not a priority according to TIMING_ON though (contiguous read with prefetch)
 
 static void range_i32(const int32_t *x, const int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
 {
@@ -417,8 +415,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 {
 
 #ifdef TIMING_ON
-  memset(tblock, 0, NBLOCK*sizeof(double));
-  memset(nblock, 0, NBLOCK*sizeof(int));
+  memset(tblock, 0, MAX_NTH*NBLOCK*sizeof(double));
+  memset(nblock, 0, MAX_NTH*NBLOCK*sizeof(int));
   memset(stat,   0, 257*sizeof(uint64_t));
   TBEG()
 #endif
@@ -470,8 +468,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 
   SEXP ans = PROTECT(allocVector(INTSXP, nrow)); n_protect++;
   anso = INTEGER(ans);
+  TEND(0)
+  #pragma omp parallel for
   for (int i=0; i<nrow; i++) anso[i]=i+1;   // gdb 8.1.0.20180409-git very slow here, oddly
-
+  TEND(1)
   savetl_init();   // from now on use Error not error
 
   int ncol=length(by);
@@ -480,6 +480,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   nradix=0; // the current byte we're writing this column to; might be squashing into it (spare>0)
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
   bool isReal=false;
+  TEND(2);
   for (int col=0; col<ncol; col++) {
     // Rprintf("Finding range of column %d ...\n", col);
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
@@ -507,7 +508,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     default:
        Error("Column %d of by= (%d) is type '%s', not yet supported", col+1, INTEGER(by)[col], type2char(TYPEOF(x)));
     }
-
+    TEND(3);
     if ((min==0 && na_count==nrow) || (min>0 && min==max && na_count==0)) {
       // all same value; skip column as nothing to do
       // min==0 implies na_count==n anyway for all types other than real when Inf,-Inf or NaN are present (excluded from [min,max] as well as NA)
@@ -658,14 +659,13 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
        Error("Internal error: column not supported not caught earlier");  // # nocov
     }
     nradix += nbyte-1+(spare==0);
+    TEND(4)
     // Rprintf("Written key for column %d\n", col);
   }
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
   #ifdef TIMING_ON
   Rprintf("nradix=%d\n", nradix);
   #endif
-
-  TEND(0);
 
   int nth = getDTthreads();
   TMP = malloc(nth*UINT16_MAX*sizeof(int));  // used by counting sort (my_n<=65536) in radix_r()
@@ -682,19 +682,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     push(&nrow, 1);
   }
 
-  TEND(25);
-  #ifdef TIMING_ON
-  {
-    int last=NBLOCK-1;
-    while (last>=0 && nblock[last]==0) last--; // remove unused timing slots
-    for (int i=0; i<=last; i++) {
-      Rprintf("Timing block %2d%s = %8.3f   %8d\n", i, (i>=7&&i<=9)?"(1)":"   ", tblock[i], nblock[i]);
-    }
-    for (int i=0; i<=256; i++) {
-      if (stat[i]) Rprintf("stat[%03d]==%10zd\n", i, stat[i]);
-    }
-  }
-  #endif
+  TEND(30);
 
   if (all_skipped) {   // when data is already grouped or sorted, integer() returned with group sizes attached
     // the o vector created earlier could be avoided in this case if we only create it when isSorted becomes FALSE
@@ -720,6 +708,26 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 
   cleanup();
   UNPROTECT(n_protect);
+  TEND(31);
+  #ifdef TIMING_ON
+  {
+    // first sum across threads
+    for (int i=0; i<NBLOCK; i++) {
+      for (int j=1; j<MAX_NTH; j++) {
+        tblock[i] += tblock[j*NBLOCK + i];
+        nblock[i] += nblock[j*NBLOCK + i];
+      }
+    }
+    int last=NBLOCK-1;
+    while (last>=0 && nblock[last]==0) last--; // remove unused timing slots
+    for (int i=0; i<=last; i++) {
+      Rprintf("Timing block %2d%s = %8.3f   %8d\n", i, (i>=16&&i<=18)?"(*)":"   ", tblock[i], nblock[i]);
+    }
+    for (int i=0; i<=256; i++) {
+      if (stat[i]) Rprintf("stat[%03d]==%10zd\n", i, stat[i]);
+    }
+  }
+  #endif
   return ans;
 }
 
@@ -747,7 +755,7 @@ void radix_r(const int from, const int to, const int radix) {
   const int my_n = to-from+1;
   if (my_n==1) {  // minor TODO: batch up the 1's instead in caller (and that's only needed when retgrp anyway)
     push(&my_n, 1);
-    TEND(1);
+    TEND(5);
     return;
   }
   else if (my_n<=256) {
@@ -757,8 +765,8 @@ void radix_r(const int from, const int to, const int radix) {
     // i) detects if grouped; if sortType==0 can then skip
     // ii) keeps group appearance order at byte level to minimize movement
     #ifdef TIMING_ON
-      #pragma omp atomic
-      stat[my_n]++;
+      // #pragma omp atomic   // turn on manually as the atomic affects timings
+      // stat[my_n]++;
     #endif
 
     uint8_t *restrict my_key = key[radix]+from;  // safe to write as we don't use this radix again
@@ -826,6 +834,7 @@ void radix_r(const int from, const int to, const int radix) {
         o[j+1] = i;
       }
     }
+    TEND(6)
     if (o) {
       // reorder osub and each remaining ksub
       int TMP[my_n];  // on stack fine since my_n is very small (<=256)
@@ -838,11 +847,10 @@ void radix_r(const int from, const int to, const int radix) {
         memcpy(key[r]+from, (uint8_t *)TMP, my_n);
       }
     }
-
+    TEND(7)
     // my_key is now grouped (and sorted by group too if sort!=0)
     // all we have left to do is find the group sizes and either recurse or push
     if (radix+1==nradix && !retgrp) {
-      TEND(2)
       return;
     }
     int ngrp=0, my_gs[my_n];  //minor TODO: could know number of groups with certainty up above
@@ -852,6 +860,7 @@ void radix_r(const int from, const int to, const int radix) {
       else my_gs[ngrp]++;
     }
     ngrp++;
+    TEND(8)
     if (radix+1==nradix || ngrp==my_n) {  // ngrp==my_n => unique groups all size 1 and we can stop recursing now
       push(my_gs, ngrp);
     } else {
@@ -860,7 +869,6 @@ void radix_r(const int from, const int to, const int radix) {
         f+=my_gs[i];
       }
     }
-    TEND(3)
     return;
   }
   else if (my_n<=UINT16_MAX) {    // UINT16_MAX==65535 (important not 65536)
@@ -872,14 +880,14 @@ void radix_r(const int from, const int to, const int radix) {
     const uint8_t *restrict my_key = key[radix]+from;
     int ngrp = 0;          // number of groups (items in ugrp[]). Max value 256 but could be uint8_t later perhaps if 0 is understood as 1.
     bool skip = true;      // i) if already _grouped_ and sortType==0 then caller can skip, ii) if already _grouped and sorted__ when sort!=0 then caller can skip too
-    TEND(17)
+    TEND(9)
     if (sortType!=0) {
       // Always ascending sort here (even when sortType==-1) because descending was prepared in write_key
       my_counts[my_key[0]] = 1;
       int i=1;
       while (skip && i<my_n) { my_counts[my_key[i]]++; skip=(my_key[i]>=my_key[i-1]); i++; }
       while (i<my_n)         { my_counts[my_key[i]]++; i++; }  // as soon as not-ordered is detected (likely quickly when it isn't sorted), save the >= comparison
-      TEND(18)
+      TEND(10)
     } else {
       my_ugrp = (uint8_t *)alloca((my_n<256)?my_n:256); // uninitialized is fine; will use the first ngrp items
       for (int i=0; i<my_n; i++) {
@@ -893,7 +901,7 @@ void radix_r(const int from, const int to, const int radix) {
           skip=false;
         }
       }
-      TEND(19)
+      TEND(11)
     }
     if (!skip) {
       // reorder anso and remaining radix keys
@@ -924,7 +932,7 @@ void radix_r(const int from, const int to, const int radix) {
         for (int i=0; i<my_n; i++) my_TMP[my_starts[my_key[i]]++] = osub[i];
         memcpy(anso+from, my_TMP, my_n*sizeof(int));
       }
-      TEND(20)
+      TEND(12)
 
       // reorder remaining key columns (radix+1 onwards).   This could be done in one-step too (a single pass through x[],  with a larger TMP
       //    that's how its done in the batched approach below.  Which is better?  The way here is multiple (but contiguous) passes through (one-byte) my_key
@@ -936,7 +944,7 @@ void radix_r(const int from, const int to, const int radix) {
           for (int i=0; i<my_n; i++) ((uint8_t *)my_TMP)[my_starts[my_key[i]]++] = ksub[i];
           memcpy(key[r]+from, my_TMP, my_n);
         }
-        TEND(21)
+        TEND(13)
       }
     }
 
@@ -950,6 +958,7 @@ void radix_r(const int from, const int to, const int radix) {
     } else {
       for (int i=0; i<ngrp; i++) my_gs[i]=my_counts[my_ugrp[i]];
     }
+    TEND(14)
     if (radix+1==nradix) {
       // aside: cannot be all size 1 (a saving used in my_n<=256 case above) because my_n>256 and ngrp<=256
       push(my_gs, ngrp);
@@ -974,7 +983,7 @@ void radix_r(const int from, const int to, const int radix) {
 
   bool skip=true;
   const int n_rem = nradix-radix-1;   // how many radix are remaining after this one
-  TEND(6)
+  TEND(15)
   #pragma omp parallel num_threads(getDTthreads())
   {
     int     *my_otmp = malloc(batchSize * sizeof(int)); // thread-private write
@@ -1024,7 +1033,7 @@ void radix_r(const int from, const int to, const int radix) {
     free(my_otmp);
     free(my_ktmp);
   }
-  TEND(7 + notFirst*3)  // 3 timings in this section: 4,5,6 first main split; 7,8,9 thereon
+  TEND(16 + notFirst*3)  // 3 timings in this section: 16,17,18 first main split; 19,20,21 thereon
 
   // If my_n input is grouped and ugrp is sorted too (to illustrate), status now would be :
   // counts:                 ugrps:   ngrps:
@@ -1076,7 +1085,7 @@ void radix_r(const int from, const int to, const int radix) {
   }
   // the first row now (when diff'd) now contains the size of each group across all batches
 
-  TEND(8 + notFirst*3)
+  TEND(17 + notFirst*3)
   if (!skip) {
     all_skipped = false;   // to save testing for 1:n at the very end before returning empty to mean already-sorted.
 
@@ -1115,7 +1124,7 @@ void radix_r(const int from, const int to, const int radix) {
     }
     free(TMP);
   }
-  TEND(9 + notFirst*3)
+  TEND(18 + notFirst*3)
   notFirst = true;
 
   int my_gs[ngrp];
@@ -1125,7 +1134,7 @@ void radix_r(const int from, const int to, const int radix) {
   if (radix+1==nradix) {
     // aside: ngrp==my_n (all size 1 groups) isn't a possible short-circuit here similar to my_n>256 case above, my_n>65535 but ngrp<=256
     push(my_gs, ngrp);
-    TEND(13)
+    TEND(22)
   }
   else {
     // TODO: explicitly repeat parallel batch for any skew bins
@@ -1148,7 +1157,7 @@ void radix_r(const int from, const int to, const int radix) {
         radix_r(start, start+my_gs[i]-1, radix+1);
         flush();
       }
-      TEND(14)
+      TEND(23)
     } else {
       // all groups are <=65535 and radix_r() will handle each one single-threaded. Therefore, this time
       // it does make sense to start a parallel team and there will be no nestedness here either.
@@ -1168,14 +1177,14 @@ void radix_r(const int from, const int to, const int radix) {
           radix_r(start, start+my_gs[i]-1, radix+1);
         }
       }
-      TEND(15)
+      TEND(24)
     }
   }
   free(counts);
   free(starts);
   free(ugrps);
   free(ngrps);
-  TEND(16)
+  TEND(25)
 }
 
 
