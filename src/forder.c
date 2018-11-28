@@ -39,6 +39,7 @@ static int gs_n = 0;                // the number of groups found so far (how mu
 static int **gs_thread=NULL;        // each thread has a private buffer which gets flushed to the final gs appropriately
 static int *gs_thread_alloc=NULL;
 static int *gs_thread_n=NULL;
+static int *TMP=NULL;               // UINT16_MAX*sizeof(int) for each thread; used by counting sort in radix_r()
 
 static int  *cradix_counts = NULL;
 static SEXP *cradix_xtmp   = NULL;
@@ -80,6 +81,8 @@ static void cleanup() {
   free(gs_thread);       gs_thread=NULL;
   free(gs_thread_alloc); gs_thread_alloc=NULL;
   free(gs_thread_n);     gs_thread_n=NULL;
+
+  free(TMP); TMP=NULL;
 
   nrow = 0;
   free(cradix_counts); cradix_counts=NULL;
@@ -664,8 +667,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 
   TEND(0);
 
+  int nth = getDTthreads();
+  TMP = malloc(nth*UINT16_MAX*sizeof(int));  // used by counting sort (my_n<=65536) in radix_r()
+  if (!TMP) Error("Failed to allocate TMP: nth=%d", nth);
   if (retgrp) {
-    int nth = getDTthreads();
     gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
     gs_thread_alloc = calloc(nth, sizeof(int));
     gs_thread_n = calloc(nth, sizeof(int));
@@ -901,13 +906,14 @@ void radix_r(const int from, const int to, const int radix) {
       all_skipped = false;  // ok to write to this shared global from threads naked (i.e. lacking atomic protection) in this special case of 1 byte bool and only ever writing false
 
       // cumulate; for forwards-assign to give cpu prefetch best chance (cpu may not support prefetch backwards).
-      uint16_t my_starts[256], my_starts_copy[256];
+      uint16_t my_starts[256], my_starts_copy[256];  // TODO: could be allocated up front (like my_TMP below), or are they better on stack like this?
       if (sortType!=0) {
         for (int i=0, sum=0; i<256; i++) { int tmp=my_counts[i]; my_starts[i]=my_starts_copy[i]=sum; sum+=tmp; ngrp+=(tmp>0);}  // cumulate through 0's too (won't be used)
       } else {
         for (int i=0, sum=0; i<ngrp; i++) { uint8_t w=my_ugrp[i]; int tmp=my_counts[w]; my_starts[w]=my_starts_copy[w]=sum; sum+=tmp; }  // cumulate in ugrp appearance order
       }
 
+      int *restrict my_TMP = TMP + omp_get_thread_num()*UINT16_MAX; // Allocated up front to save malloc calls which i) block internally and ii) could fail
       if (radix==0 && nalast!=-1) {
         // anso contains 1:n so skip reading and copying it. Only happens when nrow<65535. Saving worth the branch (untested) when user repeatedly calls a small-n small-cardinality order.
         for (int i=0; i<my_n; i++) anso[my_starts[my_key[i]]++] = i+1;  // +1 as R is 1-based.
@@ -915,30 +921,21 @@ void radix_r(const int from, const int to, const int radix) {
         // integer for counters for now, as signed probably very slightly faster than unsigned on most platforms from what I can gather.
       } else {
         const int *restrict osub = anso+from;
-        bool onheap = my_n>=1024;
-        int *TMP = onheap ? malloc(my_n*sizeof(int)) : alloca(my_n*sizeof(int));  // OS likely faster here than us. Let's see.  TODO: int=>int64_t in future
-        if (!TMP) Error("Failed to allocate TMP for at most 65535*4 = 0.25MB in radix_r counting. Very unlikely to occur but can be avoided. See comment in code.");
-        // TODO: this malloc/alloc can now be replaced with a fetch of upfront allocated int *restrict thread_TMP[me]
-        for (int i=0; i<my_n; i++) TMP[my_starts[my_key[i]]++] = osub[i];
-        memcpy(anso+from, TMP, my_n*sizeof(int));
-        if (onheap) free(TMP);
+        for (int i=0; i<my_n; i++) my_TMP[my_starts[my_key[i]]++] = osub[i];
+        memcpy(anso+from, my_TMP, my_n*sizeof(int));
       }
       TEND(20)
 
       // reorder remaining key columns (radix+1 onwards).   This could be done in one-step too (a single pass through x[],  with a larger TMP
       //    that's how its done in the batched approach below.  Which is better?  The way here is multiple (but contiguous) passes through (one-byte) my_key
       if (radix+1<nradix) {
-        bool onheap = my_n>=4096;
-        uint8_t *TMP = onheap ? malloc(my_n) : alloca(my_n);
-        if (!TMP) Error("Failed to allocate TMP for at most 65535 = 0.06MB in radix_r counting. Very unlikely to occur but can be avoided. See comment in code.");
         for (int r=radix+1; r<nradix; r++) {
           memcpy(my_starts, my_starts_copy, 256*sizeof(uint16_t));  // restore starting offsets
           //for (int i=0,last=0; i<256; i++) { int tmp=my_counts[i]; if (tmp==0) continue; my_counts[i]=last; last=tmp; }  // rewind ++'s to offsets
           const uint8_t *restrict ksub = key[r]+from;
-          for (int i=0; i<my_n; i++) TMP[my_starts[my_key[i]]++] = ksub[i];
-          memcpy(key[r]+from, TMP, my_n);
+          for (int i=0; i<my_n; i++) ((uint8_t *)my_TMP)[my_starts[my_key[i]]++] = ksub[i];
+          memcpy(key[r]+from, my_TMP, my_n);
         }
-        if (onheap) free(TMP);
         TEND(21)
       }
     }
