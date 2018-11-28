@@ -18,7 +18,7 @@
     skewed groups are split in parallel
     finds unique bytes to save 256 sweeping
     skips already-grouped yet unsorted
-    recursive grouping for cache efficiency
+    recursive group gathering for cache efficiency
     reuses R's global character cache (truelength on CHARSXP)
     compressed column can cross byte boundaries to use spare bits (e.g. 2 16-level columns in one byte)
     just the remaining part of key is reordered as the radix progresses
@@ -49,7 +49,6 @@ static int ustr_n = 0;
 static int ustr_maxlen = 0;
 static int sortType = 0;             // 0 just group; -1 descending, +1 ascending
 static int nalast = 0;               // 1 (true i.e. last), 0 (false i.e. first), -1 (na i.e. remove)
-static bool all_skipped = true;
 static int nradix = 0;
 static uint8_t **key = NULL;
 static int *anso = NULL;
@@ -463,13 +462,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     return ans;
   }
   // if n==1, the code is left to proceed below in case one or more of the 1-row by= columns are NA and na.last=NA. Otherwise it would be easy to return now.
-  all_skipped = true;
   notFirst = false;
 
   SEXP ans = PROTECT(allocVector(INTSXP, nrow)); n_protect++;
   anso = INTEGER(ans);
   TEND(0)
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(getDTthreads())
   for (int i=0; i<nrow; i++) anso[i]=i+1;   // gdb 8.1.0.20180409-git very slow here, oddly
   TEND(1)
   savetl_init();   // from now on use Error not error
@@ -512,7 +510,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     if ((min==0 && na_count==nrow) || (min>0 && min==max && na_count==0)) {
       // all same value; skip column as nothing to do
       // min==0 implies na_count==n anyway for all types other than real when Inf,-Inf or NaN are present (excluded from [min,max] as well as NA)
-      if (min==0 && nalast==-1) { all_skipped=false; for (int i=0; i<nrow; i++) anso[i]=0; }
+      if (min==0 && nalast==-1) { for (int i=0; i<nrow; i++) anso[i]=0; }
       if (TYPEOF(x)==STRSXP) free_ustr();
       continue;
     }
@@ -599,7 +597,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       for (int i=0; i<nrow; i++) {
         uint64_t elem=0;
         if (xd[i]==NA_INTEGER) {  // TODO: go branchless if na_count==0
-          if (nalast==-1) {all_skipped=false; anso[i]=0;}
+          if (nalast==-1) anso[i]=0;
           elem = naval;
         } else {
           elem = xd[i] ^ 0x80000000u;
@@ -614,7 +612,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
         for (int i=0; i<nrow; i++) {
           uint64_t elem=0;
           if (xd[i]==INT64_MIN) {
-            if (nalast==-1) {all_skipped=false; anso[i]=0;}
+            if (nalast==-1) anso[i]=0;
             elem = naval;
           } else {
             elem = xd[i] ^ 0x8000000000000000u;
@@ -629,7 +627,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
           if (!R_FINITE(xd[i])) {
             if (isinf(xd[i])) elem = signbit(xd[i]) ? min-1 : max+1;
             else {
-              if (nalast==-1) {all_skipped=false; anso[i]=0;}  // for both NA and NaN
+              if (nalast==-1) anso[i]=0;  // for both NA and NaN
               elem = ISNA(xd[i]) ? naval : nanval;
             }
           } else {
@@ -646,7 +644,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       for (int i=0; i<nrow; i++) {
         uint64_t elem=0;
         if (xd[i]==NA_STRING) {
-          if (nalast==-1) {all_skipped=false; anso[i]=0;}
+          if (nalast==-1) anso[i]=0;
           elem = naval;
         } else {
           elem = -TRUELENGTH(xd[i]);
@@ -682,13 +680,27 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     push(&nrow, 1);
   }
 
-  TEND(30);
+  TEND(30)
 
-  if (all_skipped) {   // when data is already grouped or sorted, integer() returned with group sizes attached
-    // the o vector created earlier could be avoided in this case if we only create it when isSorted becomes FALSE
-    ans = PROTECT(allocVector(INTSXP, 0));  // Can't attach attributes to NULL
-    n_protect++;
+  if (anso[0]==1 && anso[nrow-1]==nrow && (nrow<3 || anso[nrow/2]==nrow/2+1)) {
+    // There used to be all_skipped shared bool. But even though it was safe to update this bool to false naked (without atomic protection) :
+    // i) there were a lot of updates from deeply iterated insert, so there were a lot of writes to it and that bool likely sat on a shared cache line
+    // ii) there were a lot of places in the code which needed to remember to set all_skipped properly. It's simpler code just to test now almost instantly.
+    // Alternatively, we could try and avoid creating anso[] until it's needed, but that has similar complexity issues as (ii)
+    // Note that if nalast==-1 (remove NA) anso will contain 0's for the NAs and will be considered not-sorted.
+    bool stop = false;
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (int i=0; i<nrow; i++) {
+      if (stop) continue;
+      if (anso[i]!=i+1) stop=true;
+    }
+    if (!stop) {
+      // data is already grouped or sorted, integer() returned with group sizes attached
+      ans = PROTECT(allocVector(INTSXP, 0));  // can't attach attributes to NULL, hence an empty integer()
+      n_protect++;
+    }
   }
+  TEND(31)
 
   if (retgrp) {
     SEXP tt;
@@ -708,7 +720,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 
   cleanup();
   UNPROTECT(n_protect);
-  TEND(31);
+  TEND(32);
   #ifdef TIMING_ON
   {
     // first sum across threads
@@ -836,7 +848,6 @@ void radix_r(const int from, const int to, const int radix) {
       TEND(7)
     }
     if (!skip) {
-      all_skipped=false;  // including this line increases TEND(7) from 0.590 to 0.956 cpu time (/8th). TODO: make all_skipped thread private even though it's safe
       // reorder osub and each remaining ksub
       int TMP[my_n];  // on stack fine since my_n is very small (<=256)
       const int *restrict osub = anso+from;
@@ -911,8 +922,6 @@ void radix_r(const int from, const int to, const int radix) {
       // with contiguous-read from osub and ksub, 256 write live cache-lines is worst case. However, often there are many fewer ugrp and only that number of
       // write cache lines will be active. These write-cache lines will be constrained within the UINT16_MAX width, so should be close by in cache, too.
       // If there is a good degree of grouping, there contiguous-read/write both ways happens automatically in this approach.
-
-      all_skipped = false;  // ok to write to this shared global from threads naked (i.e. lacking atomic protection) in this special case of 1 byte bool and only ever writing false
 
       // cumulate; for forwards-assign to give cpu prefetch best chance (cpu may not support prefetch backwards).
       uint16_t my_starts[256], my_starts_copy[256];  // TODO: could be allocated up front (like my_TMP below), or are they better on stack like this?
@@ -1088,8 +1097,6 @@ void radix_r(const int from, const int to, const int radix) {
 
   TEND(18 + notFirst*3)
   if (!skip) {
-    all_skipped = false;   // to save testing for 1:n at the very end before returning empty to mean already-sorted.
-
     int *TMP = malloc(my_n * sizeof(int));
     if (!TMP) Error("Unable to allocate TMP for my_n=%d items in parallel batch counting", my_n);
     #pragma omp parallel for num_threads(getDTthreads())
