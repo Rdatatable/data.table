@@ -404,7 +404,7 @@ uint64_t dtwiddle(void *p, int i)
   }
   if (ISNAN(u.d)) return ISNA(u.d)    ? 0 /*NA*/   : 1 /*NaN*/;  // also normalises a difference between NA on 32bit R (bit 13 set) and 64bit R (bit 13 not set)
   if (isinf(u.d)) return signbit(u.d) ? 2 /*-Inf*/ : (0xffffffffffffffff>>(dround*8)) /*+Inf*/;
-  Error("Unknown non-finite value; not NA, NaN, -Inf or +Inf");
+  Error("Unknown non-finite value; not NA, NaN, -Inf or +Inf");  // # nocov
 }
 
 void radix_r(const int from, const int to, const int radix);
