@@ -188,10 +188,11 @@ cd R-devel-strict    # important to change directory name before building not af
 make
 alias Rdevel-strict='~/build/R-devel-strict/bin/R --vanilla'
 cd ~/GitHub/data.table
+## edit ~/.R/Makevars and activate "CFLAGS=-O0 -g" there to trace
 Rdevel-strict CMD INSTALL data.table_1.11.8.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel-strict
-install.packages(c("bit64","xts","nanotime"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
+install.packages(c("bit64","xts","nanotime","R.utils"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
 require(data.table)
 test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
 for (i in 1:100) if (!test.data.table()) break  # try several runs; e.g a few tests generate data with a non-fixed random seed
@@ -589,7 +590,7 @@ The maintainers have been contacted; some may have updated already.
 Thanks and best, Matt
 -----
 1. Bump version in DESCRIPTION to next odd number
-2. Add new heading in NEWS for the next dev version. Add "(on CRAN date)" on the released heading if already accepted.
+2. Add new heading in NEWS for the next dev version. Add "(date)" on the released heading if already accepted.
 3. Bump 3 version numbers in Makefile
 Push to GitHub so dev can continue. Commit message format "1.11.8 submitted to CRAN. Bump to 1.11.9"
 Bump dev number text in homepage banner

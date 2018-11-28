@@ -2,8 +2,8 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
-    if ("package:data.table" %in% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
-    d = if (pkg %in% dir()) file.path(getwd(), pkg) else Sys.getenv("CC_DIR")
+    if ("package:data.table" %chin% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
+    d = if (pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("CC_DIR")
     d = file.path(d, "inst/tests")
     # nocov end
   } else {
@@ -212,7 +212,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
   }
   if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
     y = try(y,TRUE)
-    if (identical(x,y)) return(invisible())
+    if (identical(x,y)) return(invisible(TRUE))
     all.equal.result = TRUE
     if (is.data.table(x) && is.data.table(y)) {
       if (!selfrefok(x) || !selfrefok(y)) {
@@ -230,12 +230,12 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
         setattr(yc,"row.names",NULL)
         setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
         setattr(yc,"index",NULL)
-        if (identical(xc,yc) && identical(key(x),key(y))) return(invisible())  # check key on original x and y because := above might have cleared it on xc or yc
+        if (identical(xc,yc) && identical(key(x),key(y))) return(invisible(TRUE))  # check key on original x and y because := above might have cleared it on xc or yc
         if (isTRUE(all.equal.result<-all.equal(xc,yc)) && identical(key(x),key(y)) &&
-          identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return(invisible())
+          identical(vapply_1c(xc,typeof), vapply_1c(yc,typeof))) return(invisible(TRUE))
       }
     }
-    if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y,check.names=!isTRUE(y))) && typeof(x)==typeof(y)) return(invisible())
+    if (is.atomic(x) && is.atomic(y) && isTRUE(all.equal.result<-all.equal(x,y,check.names=!isTRUE(y))) && typeof(x)==typeof(y)) return(invisible(TRUE))
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     # nocov start
     if (!fail) {
@@ -255,6 +255,6 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
     # nocov end
   }
-  invisible()
+  invisible(!fail)
 }
 

@@ -25,7 +25,7 @@ tables <- function(mb=TRUE, order.col="NAME", width=80,
     if (index) set(info_i, , "INDICES", list(list(indices(DT))))
     info_i
   }))
-  if (!order.col %in% names(info)) stop("order.col='",order.col,"' not a column name of info")
+  if (!order.col %chin% names(info)) stop("order.col='",order.col,"' not a column name of info")
   info = info[base::order(info[[order.col]])]  # base::order to maintain locale ordering of table names
   if (!silent) {
     # prettier printing on console

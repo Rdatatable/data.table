@@ -12,7 +12,7 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
   }
   stopifnot( is.character(dec), length(dec)==1L, nchar(dec)==1L )
   # handle encoding, #563
-  if (length(encoding) != 1L || !encoding %in% c("unknown", "UTF-8", "Latin-1")) {
+  if (length(encoding) != 1L || !encoding %chin% c("unknown", "UTF-8", "Latin-1")) {
     stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
   isTrueFalse = function(x) isTRUE(x) || identical(FALSE, x)
@@ -280,7 +280,7 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
 # Not used
 setfactor <- function(x, cols, verbose) {
   if (length(cols)) {
-    if (verbose) cat("Converting column(s) [", paste(names(x)[cols], collapse = ", "), "] from 'char' to 'factor'\n", sep = "")
+    if (verbose) cat("Converting column(s) ", brackify(names(x)[cols]), " from 'char' to 'factor'\n", sep = "")
     for (j in cols) set(x, j = j, value = as_factor(.subset2(x, j)))
   }
   invisible(x)

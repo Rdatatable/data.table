@@ -13,7 +13,7 @@ last <- function(x, ...) {
     tail(x, n = 1L, ...)
   } else {
     # fix with suggestion from Joshua, #1347
-    if (!"package:xts" %in% search()) {
+    if (!"package:xts" %chin% search()) {
       tail(x, n = 1L, ...)
     } else xts::last(x, ...) # UseMethod("last") doesn't find xts's methods, not sure what I did wrong.
   }
@@ -30,7 +30,7 @@ first <- function(x, ...) {
     head(x, n = 1L, ...)
   } else {
     # fix with suggestion from Joshua, #1347
-    if (!"package:xts" %in% search()) {
+    if (!"package:xts" %chin% search()) {
       head(x, n = 1L, ...)
     } else xts::first(x, ...)
   }
