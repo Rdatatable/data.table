@@ -29,7 +29,7 @@
   overhead. They reach outside themselves to place results in the end result directly rather than returning many small pieces of memory.
 */
 
-// #define TIMING_ON
+#define TIMING_ON
 
 static bool retgrp = true;          // return group sizes as well as the ordering vector? If so then use gs, gsalloc and gsn :
 static int nrow = 0;                // used as group size stack allocation limit (when all groups are 1 row)
@@ -770,44 +770,31 @@ void radix_r(const int from, const int to, const int radix) {
     #endif
 
     uint8_t *restrict my_key = key[radix]+from;  // safe to write as we don't use this radix again
-    int i=1;
-    while (i<my_n && my_key[i]==my_key[i-1]) i++;
-    if (i==my_n) {
-      // all one value; one group; nothing to do other than recurse
-      // save allocation of o etc
-      if (radix+1==nradix) {
-        push(&my_n, 1);
-      } else {
-        radix_r(from, to, radix+1);
-      }
-      return;
-    }
-    uint8_t *o = NULL;
+    uint8_t o[my_n];
+    // if last key (i.e. radix+1==nradix) there are no more keys to reorder so we could reorder osub by reference directly and save allocating and populating o just
+    // to use it once. However, o's type is uint8_t so many moves within this max-256 vector should be faster than many moves in osub (4 byte or 8 byte ints).
+    bool skip = true;
     if (sortType!=0) {
       // always ascending as desc (sortType==-1) was dealt with in WRITE_KEY
-      while(i<my_n && my_key[i]>=my_key[i-1]) i++;
-      if (i<my_n) {
-        all_skipped=false;
-        // if (radix+1==nradix) {
-        //   no more keys to reorder so we could reorder osub by reference directly and save allocating and populating o just to use it once
-        //   however, o's type is uint8_t so many moves within this max-256 vector should be faster than many moves in osub (4 byte or 8 byte ints)
-        //   therefore still create o even even for last radix (radix+1==nradix) where no key reordering is needed
-        // }
-        o = (uint8_t *)alloca(my_n);
-        for (int j=0; j<i; j++) o[j] = j;
-        for(; i<my_n; i++) {
+      int start = 1;
+      while (start<my_n && my_key[start]>=my_key[start-1]) start++;
+      if (start<my_n) {
+        for (int i=0; i<start; i++) o[i]=i;  // always sets o[0]=0 at least
+        skip = false;
+        for(int i=start; i<my_n; i++) {
           uint8_t ktmp = my_key[i];
-          if (ktmp>=my_key[i-1]) {o[i]=i; continue;}
-          int j = i-1;
-          do {
-            my_key[j+1] = my_key[j];
-            o[j+1] = o[j];
-          } while (--j>=0 && ktmp<my_key[j]);
-          my_key[j+1] = ktmp;
-          o[j+1] = i;
+          int j=i-1;
+          while (j>=0 && ktmp<my_key[j]) j--;
+          if (j<i-1) {
+            memmove(my_key+j+2, my_key+j+1, i-1-j);
+            memmove(o+j+2, o+j+1, i-1-j);
+            my_key[j+1] = ktmp;
+          }
+          o[j+1] = o[j];  // initializes o[i]=i too
         }
       }
-    } else {
+      TEND(6)
+    } /*else {
       // sortType==0; retain group appearance order to hopefully benefit from skip, but there is a still a sort afterwards to get back to appearance order
       // because columns are split into multiple bytes: retaining the byte appearance order within key-byte is not the same as retaining the order of
       // unique values within each by= column.  In other words, retaining group order at byte level here does not affect correctness, just efficiency.
@@ -833,21 +820,21 @@ void radix_r(const int from, const int to, const int radix) {
         my_key[j+1] = ktmp;
         o[j+1] = i;
       }
-    }
-    TEND(6)
-    if (o) {
+    }*/
+    if (!skip) {
+      all_skipped=false;   // TODO including this line doubles TEND(7) from 0.590 to 0.956 !  Due to cache line sharing I guess.  !!Make it thread private!!
       // reorder osub and each remaining ksub
       int TMP[my_n];  // on stack fine since my_n is very small (<=256)
       const int *restrict osub = anso+from;
       for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
-      memcpy(anso+from, TMP, my_n*sizeof(int));
+      memcpy((int *restrict)(anso+from), TMP, my_n*sizeof(int));
       for (int r=radix+1; r<nradix; r++) {
         const uint8_t *restrict ksub = key[r]+from;
         for (int i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
-        memcpy(key[r]+from, (uint8_t *)TMP, my_n);
+        memcpy((uint8_t *restrict)(key[r]+from), (uint8_t *)TMP, my_n);
       }
+      TEND(7)
     }
-    TEND(7)
     // my_key is now grouped (and sorted by group too if sort!=0)
     // all we have left to do is find the group sizes and either recurse or push
     if (radix+1==nradix && !retgrp) {
