@@ -1,5 +1,4 @@
 #include "data.table.h"
-#include <alloca.h>
 /*
   Inspired by :
   icount in do_radixsort in src/main/sort.c @ rev 51389.
@@ -40,6 +39,7 @@ static int **gs_thread=NULL;        // each thread has a private buffer which ge
 static int *gs_thread_alloc=NULL;
 static int *gs_thread_n=NULL;
 static int *TMP=NULL;               // UINT16_MAX*sizeof(int) for each thread; used by counting sort in radix_r()
+static uint8_t *UGRP=NULL;          // 256 bytes for each thread; used by counting sort in radix_r() when sortType==0 (byte appearance order)
 
 static int  *cradix_counts = NULL;
 static SEXP *cradix_xtmp   = NULL;
@@ -82,6 +82,7 @@ static void cleanup() {
   free(gs_thread_n);     gs_thread_n=NULL;
 
   free(TMP); TMP=NULL;
+  free(UGRP); UGRP=NULL;
 
   nrow = 0;
   free(cradix_counts); cradix_counts=NULL;
@@ -666,8 +667,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   #endif
 
   int nth = getDTthreads();
-  TMP = malloc(nth*UINT16_MAX*sizeof(int));  // used by counting sort (my_n<=65536) in radix_r()
-  if (!TMP) Error("Failed to allocate TMP: nth=%d", nth);
+  TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
+  UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
+  if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) Error("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d", nth);
   if (retgrp) {
     gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
     gs_thread_alloc = calloc(nth, sizeof(int));
@@ -888,7 +890,8 @@ void radix_r(const int from, const int to, const int radix) {
     uint16_t my_counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. Otherwise, we have to manage
                                     // a stack of counts anyway since this is called recursively and these counts are needed to make the recursive calls.
                                     // This thread-private stack alloc has no chance of false sharing and gives omp and compiler best chance.
-    uint8_t *restrict my_ugrp = NULL;  // Will be allocated below on stack if sortType==0
+    uint8_t *restrict my_ugrp = UGRP + omp_get_thread_num()*256;  // uninitialized is fine; will use the first ngrp items. Only used if sortType==0
+    // TODO: ensure my_counts, my_grp and my_tmp below are cache line aligned on both Linux and Windows.
     const uint8_t *restrict my_key = key[radix]+from;
     int ngrp = 0;          // number of groups (items in ugrp[]). Max value 256 but could be uint8_t later perhaps if 0 is understood as 1.
     bool skip = true;      // i) if already _grouped_ and sortType==0 then caller can skip, ii) if already _grouped and sorted__ when sort!=0 then caller can skip too
@@ -901,7 +904,6 @@ void radix_r(const int from, const int to, const int radix) {
       while (i<my_n)         { my_counts[my_key[i]]++; i++; }  // as soon as not-ordered is detected (likely quickly when it isn't sorted), save the >= comparison
       TEND(11)
     } else {
-      my_ugrp = (uint8_t *)alloca((my_n<256)?my_n:256); // uninitialized is fine; will use the first ngrp items
       for (int i=0; i<my_n; i++) {
         uint8_t elem = my_key[i];
         if (++my_counts[elem]==1) {
@@ -924,7 +926,8 @@ void radix_r(const int from, const int to, const int radix) {
       // If there is a good degree of grouping, there contiguous-read/write both ways happens automatically in this approach.
 
       // cumulate; for forwards-assign to give cpu prefetch best chance (cpu may not support prefetch backwards).
-      uint16_t my_starts[256], my_starts_copy[256];  // TODO: could be allocated up front (like my_TMP below), or are they better on stack like this?
+      uint16_t my_starts[256], my_starts_copy[256];
+      // TODO: could be allocated up front (like my_TMP below), or are they better on stack like this? TODO: allocating up front would provide to cache-align them.
       if (sortType!=0) {
         for (int i=0, sum=0; i<256; i++) { int tmp=my_counts[i]; my_starts[i]=my_starts_copy[i]=sum; sum+=tmp; ngrp+=(tmp>0);}  // cumulate through 0's too (won't be used)
       } else {
