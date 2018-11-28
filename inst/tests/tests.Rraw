@@ -12401,6 +12401,16 @@ test(1958.2, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L
 test(1958.3, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
 test(1958.4, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
 
+# Skip should work with all types of newlines #3006
+eols = c("\n", "\r\n", "\r", "\n\r")
+for (i in 1:4) {
+  eol = eols[i]
+  src = paste(c("A", "B", "...", ",,,,,", "c1,c2,c3", "1,2,3"), collapse=eol)
+  test(1959 + (i*0.1), fread(text=src, skip=4), data.table(c1=1L, c2=2L, c3=3L))
+}
+test(1959.5, fread("A\n\nB\n\nC\n1\n", skip=2), data.table(B=c("", "C", "1")))
+test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=1L, C=2L))
+
 
 ###################################
 #  Add new tests above this line  #
