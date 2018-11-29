@@ -264,7 +264,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (missing(i) && missing(j)) {
     # ...[] == oops at console, forgot print(...)
     # or some kind of dynamic construction that has edge case of no contents inside [...]
-    if (nargs()>2L)  # 2 is minimum:  1) method name, 2) x
+    if (!is.null(names(sys.call())))   # not using nargs() as it considers DT[,] to have 3 arguments, #3163
       stop("When i and j are both missing, no other argument should be used. Empty [] is useful after := to have the result printed.")
     return(x)
   }
