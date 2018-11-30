@@ -9476,6 +9476,7 @@ test(1686.2, DT[, .(V1=A,B)], DT[, c(.(get("A")), .SD), .SDcols="B"])
 # tests for first
 test(1687.1, first(1:5), 1L)
 test(1687.2, first(data.table(x=1:5, y=6:10)), data.table(x=1L, y=6L))
+test(1687.3, first(integer(0L)), integer(0L))
 
 if (test_bit64) {
   # fix for #1385 and part of #1459
@@ -12437,9 +12438,95 @@ test(1960.6, duplicated(data.table(NULL)), logical(0L))
 test(1960.7, unique(DT, incomparables = TRUE),
      error = 'not used (yet)')
 test(1960.8, unique(DT, fromLast = TRUE),
-     data.table(x = c(1, 2, 3)))
+     data.table(x = c(1, 2, 3), key = 'x'))
 
 test(1960.9, anyDuplicated(DT, by = NULL), 2L)
+
+## uniqlist.R
+test(1960.10, uniqlist(1:5),
+     error = 'not type list')
+test(1960.11, uniqlist(list()), list(0L))
+
+## merge.R
+DT1 = data.table(a = 1:3, V = 'a')
+DT2 = data.table(a = 2:4, V = 'b')
+test(1960.12, merge(DT1, DT2, sort = 1+3i),
+     error = 'should be logical TRUE/FALSE')
+test(1960.13, merge(DT1, DT2, no.dups = 1+3i),
+     error = 'should be logical TRUE/FALSE')
+setDF(DT2)
+test(1960.14, merge(DT1, DT2),
+     data.table(a = integer(0), V = character(0)))
+setkey(DT1, a)
+test(1960.15, merge(DT1, DT2),
+     data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'))
+test(1960.16, merge(DT1, DT2, by.x = 'a', by.y = c('a', 'V')),
+     error = 'must be of same length')
+test(1960.17, merge(DT1, DT2, by = 'V', by.x = 'a', by.y = 'a'),
+     data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'),
+     warning = 'Supplied both.*argument will be ignored')
+test(1960.18, merge(DT1, DT2, by.x = 'z', by.y = 'a'),
+     error = 'Elements listed in `by.x`')
+test(1960.19, merge(DT1, DT2, by.x = 'a', by.y = 'z'),
+     error = 'Elements listed in `by.y`')
+test(1960.20, merge(DT1, DT2, by = character(0L)),
+     error = 'non-empty vector of column names')
+test(1960.21, merge(DT1, DT2, by = 'z'),
+     error = 'must be valid column names in x and y')
+
+## frank.R
+x = c(1, 1, 2, 5, 4, 3, 4, NA, 6)
+test(1960.22, frankv(x, na.last = logical(0L)),
+     error = 'length(na.last) = 0')
+test(1960.23, frankv(x, na.last = c(TRUE, FALSE)),
+     c(1.5, 1.5, 3, 7, 5.5, 4, 5.5, 9, 8),
+     warning = 'only the first element will be used')
+test(1960.24, frankv(x, cols = 'y'),
+     error = 'x is a single vector')
+test(1960.25, frankv(list(x), cols = integer(0L)),
+     error = "x is a list, 'cols' can not be 0-length")
+f = frankv(list(x), ties.method = 'random')
+test(1960.26,
+     length(f) == 9L && identical(f[c(3:4, 6L, 8:9)], c(3L, 7L, 4L, 9L, 8L)) &&
+       all(f[1:2] %in% c(1L, 2L)) && all(f[c(5L, 7L)] %in% c(5L, 6L)))
+f = frankv(list(x), ties.method = 'random', na.last = NA)
+test(1960.27,
+     length(f) == 8L && identical(f[c(3:4, 6L, 8L)], c(3L, 7L, 4L, 8L)) &&
+       all(f[1:2] %in% c(1L, 2L)) && all(f[c(5L, 7L)] %in% c(5L, 6L)))
+
+test(1960.28, frank(x, cols = 'NULL'),
+     c(1.5, 1.5, 3, 7, 5.5, 4, 5.5, 9, 8))
+test(1960.29, frank(data.table(x = x), +x),
+     c(1.5, 1.5, 3, 7, 5.5, 4, 5.5, 9, 8))
+
+## setkey.R
+DT = data.table(a = 3:1)
+test(1960.30, setkey('DT', a),
+     error = 'x may no longer be the character name')
+setDF(DT)
+test(1960.31, setkeyv(DT, 'a'),
+     error = 'x is not a data.table')
+setDT(DT)
+test(1960.32, setkeyv(DT, 1L),
+     error = 'cols is not a character vector')
+test(1960.33, setkeyv(DT, ''),
+     error = 'cols is the empty string')
+test(1960.34, setkeyv(DT, c('a', '')),
+     error = 'cols contains some blanks')
+setkey(DT, a)
+test(1960.35, {setkeyv(DT, character(0L)); key(DT)}, NULL,
+     warning = 'cols is a character vector of zero length')
+test(1960.36, any(grepl('already ordered', capture.output(setkey(DT, a, verbose = TRUE)))))
+setnames(DT, '.xi')
+setkey(DT, NULL)
+test(1960.37, setkey(DT, .xi),
+     error = "x contains a column called '.xi'")
+DT = data.table(a = 1+3i)
+test(1960.38, setkey(DT, a),
+     error = "Column 'a' is type 'complex'")
+
+test(1960.39, is.sorted(3:1, by = 'x'),
+     error = 'x is vector but')
 
 ###################################
 #  Add new tests above this line  #

@@ -79,7 +79,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
     if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
   }
-  if (!is.character(cols) || length(cols)<1L) stop("'cols' should be character at this point in setkey")
+  if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
   if (verbose) {
     tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
     # suppress needed for tests 644 and 645 in verbose mode
