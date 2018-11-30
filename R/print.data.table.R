@@ -9,7 +9,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
                quote=FALSE, ...) {    # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
   # nrows - under this the whole (small) table is printed, unless topn is provided (100)
   # class - should column class be printed underneath column name? (FALSE)
-  if (!col.names %in% c("auto", "top", "none"))
+  if (!col.names %chin% c("auto", "top", "none"))
     stop("Valid options for col.names are 'auto', 'top', and 'none'")
   if (col.names == "none" && class)
     warning("Column classes will be suppressed when col.names is 'none'")

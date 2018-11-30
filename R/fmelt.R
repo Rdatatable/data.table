@@ -35,13 +35,17 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
   measure.sub = substitute(measure.vars)
   if (is.call(measure.sub) && measure.sub[[1L]] == "patterns") {
     measure.sub = as.list(measure.sub)[-1L]
-    idx = which(names(measure.sub) %in% "cols")
+    idx = which(names(measure.sub) == "cols")
     if (length(idx)) {
       cols = eval(measure.sub[["cols"]], parent.frame())
       measure.sub = measure.sub[-idx]
     } else cols = names(data)
     pats = lapply(measure.sub, eval, parent.frame())
     measure.vars = patterns(pats, cols=cols)
+    # replace with lengths when R 3.2.0 dependency arrives
+    if (length(idx <- which(sapply(measure.vars, length) == 0L)))
+      stop('Pattern', if (length(idx) > 1L) 's', ' not found: [',
+           paste(pats[idx], collapse = ', '), ']')
   }
   if (is.list(measure.vars) && length(measure.vars) > 1L) {
     meas.nm = names(measure.vars)

@@ -30,7 +30,7 @@ check_formula <- function(formula, varnames, valnames) {
   vars = all.vars(formula)
   vars = vars[!vars %chin% c(".", "...")]
   allvars = c(vars, valnames)
-  if (any(allvars %in% varnames[duplicated(varnames)]))
+  if (any(allvars %chin% varnames[duplicated(varnames)]))
     stop('data.table to cast must have unique column names')
   ans = deparse_formula(as.list(formula)[-1L], varnames, allvars)
 }
@@ -56,7 +56,7 @@ value_vars <- function(value.var, varnames) {
     value.var = list(value.var)
   value.var = lapply(value.var, unique)
   valnames = unique(unlist(value.var))
-  iswrong = which(!valnames %in% varnames)
+  iswrong = which(!valnames %chin% varnames)
   if (length(iswrong))
     stop("value.var values [", paste(value.var[iswrong], collapse=", "), "] are not found in 'data'.")
   value.var
@@ -65,9 +65,9 @@ value_vars <- function(value.var, varnames) {
 aggregate_funs <- function(funs, vals, sep="_", ...) {
   if (is.call(funs) && funs[[1L]] == "eval")
     funs = eval(funs[[2L]], parent.frame(2L), parent.frame(2L))
-  if (is.call(funs) && as.character(funs[[1L]]) %in% c("c", "list"))
+  if (is.call(funs) && as.character(funs[[1L]]) %chin% c("c", "list"))
     funs = lapply(as.list(funs)[-1L], function(x) {
-      if (is.call(x) && as.character(x[[1L]]) %in% c("c", "list")) as.list(x)[-1L] else x
+      if (is.call(x) && as.character(x[[1L]]) %chin% c("c", "list")) as.list(x)[-1L] else x
     })
   else funs = list(funs)
   if (length(funs) != length(vals)) {
@@ -121,11 +121,11 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
   setattr(lvars, 'names', c("lhs", "rhs"))
   # Have to take care of duplicate names, and provide names for expression columns properly.
   varnames = make.unique(vapply_1c(unlist(lvars), all.vars, max.names=1L), sep=sep)
-  dupidx = which(valnames %in% varnames)
+  dupidx = which(valnames %chin% varnames)
   if (length(dupidx)) {
     dups = valnames[dupidx]
     valnames = tail(make.unique(c(varnames, valnames)), -length(varnames))
-    lvals = lapply(lvals, function(x) { x[x %in% dups] = valnames[dupidx]; x })
+    lvals = lapply(lvals, function(x) { x[x %chin% dups] = valnames[dupidx]; x })
   }
   lhsnames = head(varnames, length(lvars$lhs))
   rhsnames = tail(varnames, -length(lvars$lhs))

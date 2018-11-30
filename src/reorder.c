@@ -25,7 +25,7 @@ SEXP reorder(SEXP x, SEXP order)
   } else {
     if (SIZEOF(x)!=4 && SIZEOF(x)!=8)
       error("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported", type2char(TYPEOF(x)));
-    if (ALTREP(x)) error("Internal error in reorder.c: cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4 and report this as a bug.");
+    if (ALTREP(x)) error("Internal error in reorder.c: cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4 and report this as a bug."); // # nocov
     maxSize = SIZEOF(x);
     nrow = length(x);
     ncol = 1;

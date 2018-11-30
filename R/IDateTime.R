@@ -26,7 +26,7 @@ as.IDate.Date <- function(x, ...) {
 
 as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
-  if (tz %in% c("UTC", "GMT"))
+  if (tz %chin% c("UTC", "GMT"))
     structure(as.integer(x) %/% 86400L, class=c("IDate","Date"))
   else
     as.IDate(as.Date(x, tz = tz, ...))
@@ -84,7 +84,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
   if (!inherits(e1, "IDate"))
     stop("can only subtract from \"IDate\" objects")
   if (storage.mode(e1) != "integer")
-    stop("Internal error: storage mode of IDate is somehow no longer integer")
+    stop("Internal error: storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
     stop("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))
@@ -113,7 +113,7 @@ as.ITime.default <- function(x, ...) {
 
 as.ITime.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
-  if (tz %in% c("UTC", "GMT")) as.ITime(unclass(x), ...) else as.ITime(as.POSIXlt(x, tz = tz, ...), ...)
+  if (tz %chin% c("UTC", "GMT")) as.ITime(unclass(x), ...) else as.ITime(as.POSIXlt(x, tz = tz, ...), ...)
 }
 
 as.ITime.numeric <- function(x, ms = 'truncate', ...) {
