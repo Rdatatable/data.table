@@ -6190,7 +6190,6 @@ val = runif(1)
 test(1463.33, shift(val, 2L), NA_real_)
 test(1463.34, shift(val, 2L, type="lead"), NA_real_)
 
-test(1463.35, shift(1:5, -1L), error="n must be non-negative integer")
 test(1463.36, shift(1:5, 1L, fill=c(1:2)), error="fill must be a vector of length")
 
 # add tests for date and factor?
@@ -12416,6 +12415,28 @@ for (i in 1:4) {
 test(1959.5, fread("A\n\nB\n\nC\n1\n", skip=2), data.table(B=c("", "C", "1")))
 test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=1L, C=2L))
 
+# positive and negative values for shift, #1708
+DT = data.table(x = 1:10, y = 10:1)
+
+test(1960.1, shift(DT$x, -1), c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA))
+test(1960.2, shift(DT$x, -1, type = 'lead'),
+     c(NA, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L))
+test(1960.3, shift(DT$x, -1, fill = 0L),
+     c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 0L))
+test(1960.4, shift(DT$x, -1, give.names = TRUE),
+     structure(c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA),
+     .Names = c("V1_lag_-1", NA, NA, NA, NA, NA, NA, NA, NA, NA)))
+test(1960.5, shift(DT$x, -1:1),
+     list(c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA), 1:10,
+          c(NA, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)))
+test(1960.6, shift(DT, -1),
+     list(c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA),
+          c(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L, NA)))
+test(1960.7, shift(DT, -1:1),
+     list(c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA), 1:10,
+          c(NA, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L),
+          c(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L, NA), 10:1,
+          c(NA, 10L, 9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L)))
 
 ###################################
 #  Add new tests above this line  #
