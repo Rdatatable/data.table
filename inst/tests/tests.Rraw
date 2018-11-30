@@ -2998,10 +2998,10 @@ test(1057, print(DT, digits=2, big.mark=","), output="   x         y logy\n1: a 
 
 # bug #2758 fix - segfault with zeros in i and factors in by
 x <- data.table(letters=letters[1:5], factor=factor(letters[1:5]), number=1:5)
-test(1058, x[c(0, 3), list(letters, number), by=factor], error="While grouping, i=0 is allowed")
-test(1059, x[c(3, 0), list(letters, number), by=factor], error="While grouping, i=0 is allowed")
-test(1060, x[c(0, 3), number:=5L, by=factor], error="While grouping, i=0 is allowed")
-test(1061, x[c(0, 3), number:=5L], data.table(letters=letters[1:5], factor=factor(letters[1:5]), number=c(1:2,5L,4:5)))
+test(1058, x[c(0, 3), list(letters, number), by=factor], ans<-x[3,c(2,1,3)])
+test(1059, x[c(3, 0), list(letters, number), by=factor], ans)
+test(1060, x[c(0, 3), number:=5L, by=factor], ans<-data.table(letters=letters[1:5], factor=factor(letters[1:5]), number=c(1:2,5L,4:5)))
+test(1061, x[c(0, 3), number:=5L], ans)
 
 # bug #2440 fix - seqfault when j refers to grouping variable when results are empty
 DT = data.table(x=rep(c("a","b"),each=3),v=c(42,42,42,4,5,6))
