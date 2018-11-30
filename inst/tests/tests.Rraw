@@ -52,6 +52,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   binary = data.table:::binary
   melt.data.table = data.table:::melt.data.table  # for test 1953.4
   brackify = data.table:::brackify
+  guess = data.table:::guess
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -10218,7 +10219,7 @@ test(1750.05, # `by` must have unique column names
 )
 test(1750.06, # 0 ncol `x`
   groupingsets(data.table(), j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=list(c("year")), id=TRUE),
-  error = "Argument 'x' is 0 column data.table, no measure to apply grouping over."
+  error = "Argument 'x' is a 0-column data.table; no measure to apply grouping over."
 )
 test(1750.07, # 0 length `by`, must also use `sets=list()`, so 0L rows result
   nrow(groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = character(), .SDcols=c("amount","value"), sets=list(), id=TRUE)),
@@ -10277,7 +10278,7 @@ test(1750.16,
 sets = list("color", c("color","year","status","year","status"), "year", character())
 test(1750.17,
   groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE),
-  error = "Character vectors in 'sets' list must not have duplicated column names within single grouping set."
+  error = "Character vectors in 'sets' list must not have duplicated column names within a single grouping set."
 )
 # duplicate entries in `sets` - double counting - actually aggregate `grouping!=5L` (not double counted) to compare to double counted values on `grouping==5L`, as double counting is expected results for this unexpected usage
 sets = list("year", c("color","year"), "year", character())
@@ -12527,6 +12528,150 @@ test(1960.38, setkey(DT, a),
 
 test(1960.39, is.sorted(3:1, by = 'x'),
      error = 'x is vector but')
+
+DT = data.table(a = 3:1)
+test(1960.40, forderv(DT, sort = FALSE, retGrp = FALSE),
+     error = 'At least one of retGrp or sort must be TRUE')
+test(1960.41, forderv(DT, na.last = logical(0L)),
+     error = 'length(na.last) = 0')
+test(1960.41, forderv(DT, na.last = c(TRUE, FALSE)), 3:1,
+     warning = 'length(na.last) > 1, only')
+test(1960.41, forderv(DT$a, by = 'a'),
+     error = 'x is a single vector, non-NULL')
+test(1960.42, forderv(DT$a, order = 2L),
+     error = 'x is a single vector, length(order)')
+test(1960.43, forderv(DT$a, order = c(1L, -1L)),
+     error = 'x is a single vector, length(order)')
+test(1960.44, forderv(DT, order = c(1L, -1L)),
+     error = 'x is a list, length(order)')
+test(1960.45, forderv(DT, order = 2L),
+     error = 'x is a list, length(order)')
+
+setDF(DT)
+test(1960.46, forder(DT), error = 'x must be a data.table')
+setDT(DT)
+test(1960.47, forder(DT[ , 0L]), error = 'Attempting to order a 0-column')
+test(1960.48, forder(DT, decreasing = NA), error = 'must be logical TRUE')
+test(1960.59, forder(DT, decreasing = 1.4), error = 'must be logical TRUE')
+test(1960.60, forder(DT, NULL), NULL)
+test(1960.61, forder(DT), NULL)
+test(1960.62, forder(DT, ), NULL)
+
+test(1960.63, fsort(as.double(DT$a), internal = TRUE),
+     error = 'Internal code should not be being called on type double')
+
+l = as.list(DT)
+test(1960.64, setorder(l, a), error = 'x must be a data.frame or data.table')
+test(1960.65, setorder(DT, NULL), data.table(a = 3:1))
+test(1960.66, setorder(DT, +a), data.table(a = 1:3))
+
+DT = data.table(a = 3:1)
+test(1960.67, setorderv(DT, NULL), data.table(a = 3:1))
+test(1960.68, setorderv(l, 'a'), error = 'x must be a data.frame or data.table')
+test(1960.69, setorderv(DT, 5L),
+     error = 'cols is not a character vector')
+test(1960.70, setorderv(DT, character(0L)), data.table(a = 3:1),
+     warning = 'cols is a character vector of zero length')
+test(1960.71, setorderv(DT, c('a', '')), error = 'cols contains some blanks')
+
+DT = data.table(a = c(1, 1, 2), b = c(2, 1, 3))
+test(1960.72, setorderv(copy(DT)),
+     data.table(a = c(1, 1, 2), b = c(1, 2, 3)))
+test(1960.73, setorderv(DT, 'c'), error = 'some columns are not in the data.table')
+setnames(DT, 1L, '.xi')
+test(1960.74, setorderv(DT, 'b'), error = "x contains a column called '.xi'")
+test(1960.75, setorderv(data.table(a = 1+3i), 'a'),
+     error = "Column 'a' is type 'complex'")
+
+## groupingsets.R
+DT = data.table(
+  color = c("yellow", "red", "green", "red", "green", "red",
+            "yellow", "yellow", "green", "green", "green", "yellow",
+            "red", "yellow", "red", "green", "yellow", "red", "yellow",
+            "red", "green", "yellow", "green", "green"),
+  year = structure(c(15340, 15340, 14975, 15706, 15706, 15340,
+                     16436, 15340, 15340, 14975, 16436, 15706,
+                     16436, 15340, 14975, 14975, 16071, 15340,
+                     15706, 16071, 15706, 15340, 16436, 16071), class = "Date"),
+  status = structure(c(4L, 3L, 4L, 3L, 2L, 1L, 3L, 4L, 4L, 3L, 4L, 4L,
+                       4L, 4L, 1L, 3L, 3L, 2L, 1L, 2L, 3L, 4L, 2L, 4L),
+                     .Label = c("active", "archived", "inactive", "removed"),
+                     class = "factor"),
+  amount = c(1L, 4L, 2L, 3L, 1L, 5L, 1L, 1L, 4L, 2L, 3L, 1L,
+             5L, 4L, 2L, 2L, 4L, 3L, 3L, 2L, 4L, 4L, 1L, 2L),
+  value = c(2.5, 2, 3, 3, 2.5, 3.5, 2.5, 3.5, 3, 2.5, 3.5, 2.5, 2,
+            2.5, 3, 3, 3, 3, 3, 3, 2, 2.5, 3, 3)
+)
+setDF(DT)
+test(1960.76, rollup(DT), error = 'no applicable method')
+test(1960.77, data.table:::rollup.data.table(DT),
+     error = 'must be a data.table object')
+setDT(DT)
+test(1960.78, rollup(DT, by = 3L), error = "'by' must be a character vector")
+test(1960.79, rollup(DT, by = 'color', id = 3L), error = "'id' must be a logical scalar")
+
+setDF(DT)
+test(1960.80, cube(DT), error = 'no applicable method')
+test(1960.81, data.table:::cube.data.table(DT), error = 'must be a data.table object')
+setDT(DT)
+test(1960.82, rollup(DT, by = 3L), error = "'by' must be a character vector")
+test(1960.83, rollup(DT, by = 'color', id = 3L), error = "'id' must be a logical scalar")
+
+setDF(DT)
+test(1960.84, groupingsets(DT), error = 'no applicable method')
+test(1960.85, data.table:::groupingsets.data.table(DT), error = 'must be a data.table object')
+setDT(DT)
+setnames(DT, 2L, 'color')
+test(1960.86, groupingsets(DT), error = 'Input data.table must not contain duplicate')
+setnames(DT, 2L, 'year')
+test(1960.87, groupingsets(DT, by = logical(1L)),
+     error = "'by' must be a character vector")
+test(1960.88, groupingsets(DT, by = 'color', sets = 5L),
+     error = "'sets' must be a list of character vectors")
+test(1960.89, groupingsets(DT, by = 'color', sets = list(5L)),
+     error = "'sets' must be a list of character vectors")
+test(1960.90, groupingsets(DT, by = 'color', sets = list('year', 'status'), id = 3L),
+     error = "'id' must be a logical scalar")
+setnames(DT, 1L, 'grouping')
+test(1960.91, groupingsets(DT, by = c('color', 'status'),
+                           sets = list('color', 'status'), id = TRUE),
+     error = "data.table must not have a column named 'grouping'")
+setnames(DT, 1L, 'color')
+### test case when j leads to "shell" data.table being atomic
+test(1960.92, groupingsets(DT[ , .(amount, value)], j = 5, by = character(0L),
+                           sets = list(character()), id=TRUE),
+     data.table(grouping = c(NA_integer_, NA_integer_), V1 = c(5, 5)))
+test(1960.93, groupingsets(DT, j = c(list(grouping=.N), lapply(.SD, sum)),
+                           by = c("color", "year","status"), id = TRUE,
+                           sets = list("color", c("year","status"), character())),
+     error = "'j' expression must not evaluate to column named 'grouping'")
+
+## fcast.R
+DT = data.table('(all)' = 1)
+test(1960.94, guess(DT), '(all)')
+setnames(DT, 'V')
+test(1960.95, guess(DT), 'V',
+     message = 'Using.*value column.*override')
+setDF(DT)
+test(1960.96, data.table:::dcast.data.table(DT),
+     error = 'must be a data.table')
+setDT(DT)
+test(1960.97, dcast(DT, a ~ a, drop = NA),
+     error = 'must be logical TRUE/FALSE')
+DT = data.table(a = c(1, 1, 2, 2), b = list(1, 2, 3, 4), c = c(4, 4, 2, 2))
+test(1960.98, dcast(DT, a ~ b, value.var = 'b'),
+     error = 'Columns specified in formula can not be of type list')
+test(1960.99, dcast(DT[0L, ], a ~ c, value.var = 'b'),
+     error = 'Can not cast an empty data.table')
+test(1960.100, dcast(DT, a ~ c, value.var = 'b'),
+     data.table(a = c(1, 2), `2` = c(0L, 2L), `4` = c(2L, 0L), key = 'a'),
+     message = 'Aggregate function missing')
+
+## IDateTime.R
+x = as.IDate('2018-08-01')
+test(1960.101, `+`(x), x)
+test(1960.102, x + 1.4, structure(17745.4, class = "Date"))
+test(1960.103, x + x, error = 'binary + is not defined')
 
 ###################################
 #  Add new tests above this line  #

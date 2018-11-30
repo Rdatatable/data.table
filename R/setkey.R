@@ -219,7 +219,7 @@ forder <- function(x, ..., na.last=TRUE, decreasing=FALSE)
   if (ncol(x) == 0L) stop("Attempting to order a 0-column data.table.")
   if (is.na(decreasing) || !is.logical(decreasing)) stop("'decreasing' must be logical TRUE or FALSE")
   cols = substitute(list(...))[-1L]
-  if (identical(as.character(cols),"NULL") || !length(cols)) return(NULL) # to provide the same output as base::order
+  if (identical(as.character(cols),"NULL") || !length(cols) || (length(cols) == 1L && !nzchar(cols))) return(NULL) # to provide the same output as base::order
   ans = x
   order = rep(1L, length(cols))
   if (length(cols)) {
@@ -310,6 +310,7 @@ setorder <- function(x, ..., na.last=FALSE)
 
 setorderv <- function(x, cols, order=1L, na.last=FALSE)
 {
+  if (missing(cols)) cols = colnames(x)
   if (is.null(cols)) return(x)
   if (!is.data.frame(x)) stop("x must be a data.frame or data.table")
   na.last = as.logical(na.last)
@@ -320,20 +321,16 @@ setorderv <- function(x, cols, order=1L, na.last=FALSE)
     return(x)
   }
   if (!all(nzchar(cols))) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
-  if (!length(cols)) {
-    cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
-  } else {
-    # remove backticks from cols
-    cols <- gsub("`", "", cols)
-    miss = !(cols %chin% colnames(x))
-    if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
-  }
+  # remove backticks from cols
+  cols <- gsub("`", "", cols)
+  miss = !(cols %chin% colnames(x))
+  if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
   if (".xi" %chin% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
     if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
   }
-  if (!is.character(cols) || length(cols)<1L) stop("'cols' should be character at this point in setkey.")
+  if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
 
   o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
   if (length(o)) {
