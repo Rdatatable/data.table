@@ -12438,6 +12438,11 @@ test(1960.7, shift(DT, -1:1),
           c(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L, NA), 10:1,
           c(NA, 10L, 9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L)))
 
+## some coverage tests for good measure
+test(1960.8, shift(DT$x, type = 'some_other_type'),
+     error = 'should be one of "lag"')
+test(1960.9, shift(c(1+3i, 2-1i)), error = 'Unsupported type')
+
 ###################################
 #  Add new tests above this line  #
 ###################################

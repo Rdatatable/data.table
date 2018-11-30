@@ -20,8 +20,9 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
     error("Internal error: n must be integer"); // # nocov
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
+  // the following two errors should be caught by match.arg() at the R level
   if (!isString(type) || length(type) != 1)
-    error("type must be a character vector of length 1");
+    error("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker"); // # nocov
 
   if (!strcmp(CHAR(STRING_ELT(type, 0)), "lag")) stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "lead")) stype = LEAD;
