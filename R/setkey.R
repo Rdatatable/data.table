@@ -308,9 +308,8 @@ setorder <- function(x, ..., na.last=FALSE)
   setorderv(x, cols, order, na.last)
 }
 
-setorderv <- function(x, cols, order=1L, na.last=FALSE)
+setorderv <- function(x, cols = colnames(x), order=1L, na.last=FALSE)
 {
-  if (missing(cols)) cols = colnames(x)
   if (is.null(cols)) return(x)
   if (!is.data.frame(x)) stop("x must be a data.frame or data.table")
   na.last = as.logical(na.last)
