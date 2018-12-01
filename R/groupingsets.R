@@ -76,7 +76,10 @@ groupingsets.data.table <- function(x, j, by, sets, .SDcols, id = FALSE, jj, ...
     empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
   } else {
     empty = if (length(.SDcols)) x[0L, eval(jj), .SDcols=.SDcols] else x[0L, eval(jj)]
-    if (!is.data.table(empty)) empty = setDT(list(empty)) # improve after #648, see comment in aggr.set
+    if (!is.data.table(empty)) {
+      if (length(empty)>0) empty = empty[0L] # fix for #3173 when no grouping and j constant
+      empty = setDT(list(empty)) # improve after #648, see comment in aggregate.set
+    }
   }
   if (id && "grouping" %chin% names(empty)) # `j` could have been evaluated to `grouping` field
     stop("When using `id=TRUE` the 'j' expression must not evaluate to column named 'grouping'.")

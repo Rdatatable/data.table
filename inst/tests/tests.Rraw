@@ -12419,6 +12419,28 @@ for (i in 1:4) {
 test(1959.5, fread("A\n\nB\n\nC\n1\n", skip=2), data.table(B=c("", "C", "1")))
 test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=1L, C=2L))
 
+# edge case in groupingsets #3173
+DT = data.table(
+  color = c("yellow", "red", "green", "red", "green", "red",
+            "yellow", "yellow", "green", "green", "green", "yellow",
+            "red", "yellow", "red", "green", "yellow", "red", "yellow",
+            "red", "green", "yellow", "green", "green"),
+  year = structure(c(15340, 15340, 14975, 15706, 15706, 15340,
+                     16436, 15340, 15340, 14975, 16436, 15706,
+                     16436, 15340, 14975, 14975, 16071, 15340,
+                     15706, 16071, 15706, 15340, 16436, 16071), class = "Date"),
+  status = structure(c(4L, 3L, 4L, 3L, 2L, 1L, 3L, 4L, 4L, 3L, 4L, 4L,
+                       4L, 4L, 1L, 3L, 3L, 2L, 1L, 2L, 3L, 4L, 2L, 4L),
+                     .Label = c("active", "archived", "inactive", "removed"),
+                     class = "factor"),
+  amount = c(1L, 4L, 2L, 3L, 1L, 5L, 1L, 1L, 4L, 2L, 3L, 1L,
+             5L, 4L, 2L, 2L, 4L, 3L, 3L, 2L, 4L, 4L, 1L, 2L),
+  value = c(2.5, 2, 3, 3, 2.5, 3.5, 2.5, 3.5, 3, 2.5, 3.5, 2.5, 2,
+            2.5, 3, 3, 3, 3, 3, 3, 2, 2.5, 3, 3)
+)
+ans = groupingsets(DT[ , .(amount, value)], j = 5, by = character(0L), sets = list(character()), id=TRUE)
+test(1961, ans, data.table(grouping=0L, V1=5))
+
 
 ###################################
 #  Add new tests above this line  #
