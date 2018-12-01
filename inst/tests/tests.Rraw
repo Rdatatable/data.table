@@ -2963,11 +2963,14 @@ test(1041, rbindlist(l), data.table(i1=factor(letters[1:5]),val=1:5))
 
 # negative indexing in *i* leads to crash/wrong aggregates when dogroups is called. bug #2697
 DT = data.table(x = c(1,2,3,4,5), group = c(1,1,2,2,3))
-test(1042, DT[-5, mean(x), by = group], data.table(group=c(1,2), V1=c(1.5, 3.5)))
+test(1042.1, DT[-5, mean(x), by = group], data.table(group=c(1,2), V1=c(1.5, 3.5)))
 # Test when abs(negative index) > nrow(dt) - should warn
-test(1042.1, DT[-10], DT, warning="Item 1 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 1.")
-test(1042.2, DT[c(-5, -10), mean(x), by = group], data.table(group=c(1,2),V1=c(1.5,3.5)), warning="Item 2 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 2.")
-test(1043, DT[c(1, -5)], error="Cannot mix positives and negatives.")
+test(1042.2, DT[-10], DT, warning="Item 1 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 1.")
+test(1042.3, DT[c(-5, -10), mean(x), by = group], data.table(group=c(1,2),V1=c(1.5,3.5)), warning="Item 2 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 2.")
+test(1042.4, DT[c(-5, -4, -5)], DT[1:3], warning="Item 3 of i is -5 which removes that item but that has occurred before. Ignoring this dup and 0 other dup")
+test(1042.5, DT[c(-5, -4, -5, -5, -4)], DT[1:3], warning="Item 3 of i is -5 which removes that item but that has occurred before. Ignoring this dup and 2 other dup")
+test(1043.1, DT[c(1, -5)], error="Item 2 of i is -5 and item 1 is 1. Cannot mix positives and negatives.")
+test(1043.2, DT[c(-1, NA)], error="Item 1 of i is -1 and item 2 is NA. Cannot mix negatives and NA.")
 
 # crash (floating point exception), when assigning null data.table() to multiple cols, #4731
 DT = data.table(x=1:5,y=6:10)
@@ -2998,10 +3001,10 @@ test(1057, print(DT, digits=2, big.mark=","), output="   x         y logy\n1: a 
 
 # bug #2758 fix - segfault with zeros in i and factors in by
 x <- data.table(letters=letters[1:5], factor=factor(letters[1:5]), number=1:5)
-test(1058, x[c(0, 3), list(letters, number), by=factor], error="While grouping, i=0 is allowed")
-test(1059, x[c(3, 0), list(letters, number), by=factor], error="While grouping, i=0 is allowed")
-test(1060, x[c(0, 3), number:=5L, by=factor], error="While grouping, i=0 is allowed")
-test(1061, x[c(0, 3), number:=5L], data.table(letters=letters[1:5], factor=factor(letters[1:5]), number=c(1:2,5L,4:5)))
+test(1058, x[c(0, 3), list(letters, number), by=factor], ans<-x[3,c(2,1,3)])
+test(1059, x[c(3, 0), list(letters, number), by=factor], ans)
+test(1060, x[c(0, 3), number:=5L, by=factor], ans<-data.table(letters=letters[1:5], factor=factor(letters[1:5]), number=c(1:2,5L,4:5)))
+test(1061, x[c(0, 3), number:=5L], ans)
 
 # bug #2440 fix - seqfault when j refers to grouping variable when results are empty
 DT = data.table(x=rep(c("a","b"),each=3),v=c(42,42,42,4,5,6))
