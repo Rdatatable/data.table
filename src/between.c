@@ -10,7 +10,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
   if (nu != 1 && nu != nx)
     error("length(upper) (%d) must be either 1 or length(x) (%d)", nu, nx);
   if (!isLogical(bounds) || LOGICAL(bounds)[0] == NA_LOGICAL)
-    error("incbounds must be logical TRUE/FALSE.");
+    error("incbounds must be logical TRUE/FALSE.");  // # nocov
 
   int nprotect = 0;
   bool integer=true;
