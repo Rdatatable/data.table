@@ -12670,6 +12670,30 @@ test(1960.101, `+`(x), x)
 test(1960.102, x + 1.4, structure(17745.4, class = "Date"))
 test(1960.103, x + x, error = 'binary + is not defined')
 
+test(1960.104, `-`(x), error = 'unary - is not defined')
+test(1960.105, x - 1.4, structure(17742.6, class = "Date"))
+
+y = as.ITime('543210', format = '%S%M%H')
+test(1960.106, y, structure(37974L, class = "ITime"))
+test(1960.107, capture.output(print(y)), '[1] "10:32:54"')
+test(1960.108, rep(y, 2L), structure(c(37974L, 37974L), class = "ITime"))
+test(1960.109, as.POSIXlt(y),
+     structure(list(sec = 54, min = 32L, hour = 10L, mday = 1L, mon = 11L,
+                    year = 118L, wday = 6L, yday = 334L, isdst = 0L),
+               class = c("POSIXlt", "POSIXt"), tzone = "UTC"))
+
+test(1960.110, as.POSIXct(x, y),
+     structure(1533119574, tzone = "UTC", class = c("POSIXct", "POSIXt")))
+test(1960.111, as.POSIXct(x, tz = ''),
+     structure(1533081600, tzone = "UTC", class = c("POSIXct", "POSIXt")))
+
+z = .POSIXct(3725, 'UTC')
+test(1960.112, second(z), 5L)
+test(1960.113, minute(z), 2L)
+test(1960.114, hour(z), 1L)
+
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
