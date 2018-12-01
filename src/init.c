@@ -47,7 +47,7 @@ SEXP binary();
 SEXP chmatch2();
 SEXP subsetDT();
 SEXP subsetVector();
-SEXP convertNegativeIdx();
+SEXP convertNegAndZeroIdx();
 SEXP frank();
 SEXP dt_na();
 SEXP lookup();
@@ -127,7 +127,7 @@ R_CallMethodDef callMethods[] = {
 {"Cchmatch2", (DL_FUNC) &chmatch2, -1},
 {"CsubsetDT", (DL_FUNC) &subsetDT, -1},
 {"CsubsetVector", (DL_FUNC) &subsetVector, -1},
-{"CconvertNegativeIdx", (DL_FUNC) &convertNegativeIdx, -1},
+{"CconvertNegAndZeroIdx", (DL_FUNC) &convertNegAndZeroIdx, -1},
 {"Cfrank", (DL_FUNC) &frank, -1},
 {"Cdt_na", (DL_FUNC) &dt_na, -1},
 {"Clookup", (DL_FUNC) &lookup, -1},
