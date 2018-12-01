@@ -89,21 +89,22 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
     fboth  = isInteger(x) ? &int_both_open  : &double_both_open;
   }
 
+  int *restrict ansp = LOGICAL(ans);
   if ( ISNAN(REAL(lower)[0]) ) {
     if ( ISNAN(REAL(upper)[0]) ) {
       #pragma omp parallel for num_threads(getDTthreads())
-      for (i=0; i<nx; i++) LOGICAL(ans)[i] = NA_LOGICAL;
+      for (i=0; i<nx; i++) ansp[i] = NA_LOGICAL;
     } else {
       #pragma omp parallel for num_threads(getDTthreads())
-      for (i=0; i<nx; i++) LOGICAL(ans)[i] = fupper(x, i);
+      for (i=0; i<nx; i++) ansp[i] = fupper(x, i);
     }
   } else {
     if ( ISNAN(REAL(upper)[0]) ) {
       #pragma omp parallel for num_threads(getDTthreads())
-      for (i=0; i<nx; i++) LOGICAL(ans)[i] = flower(x, i);
+      for (i=0; i<nx; i++) ansp[i] = flower(x, i);
     } else {
       #pragma omp parallel for num_threads(getDTthreads())
-      for (i=0; i<nx; i++) LOGICAL(ans)[i] = fboth(x, i);
+      for (i=0; i<nx; i++) ansp[i] = fboth(x, i);
     }
   }
   UNPROTECT(nprotect);
