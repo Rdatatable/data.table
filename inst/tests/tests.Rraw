@@ -12643,7 +12643,7 @@ setnames(DT, 1L, 'color')
 ### test case when j leads to "shell" data.table being atomic
 test(1960.92, groupingsets(DT[ , .(amount, value)], j = 5, by = character(0L),
                            sets = list(character()), id=TRUE),
-     data.table(grouping = c(NA_integer_, NA_integer_), V1 = c(5, 5)))
+     data.table(grouping = c(NA_integer_, 0L), V1 = c(5, 5)))
 test(1960.93, groupingsets(DT, j = c(list(grouping=.N), lapply(.SD, sum)),
                            by = c("color", "year","status"), id = TRUE,
                            sets = list("color", c("year","status"), character())),
