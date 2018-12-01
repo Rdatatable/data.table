@@ -81,7 +81,7 @@ static void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     PARLOOP(0)
   } break;
   default :
-    error("Internal error: column type '%s' not supported by data.table subset. All known types are supported so please report as bug.", type2char(TYPEOF(source)));
+    error("Internal error: column type '%s' not supported by data.table subset. All known types are supported so please report as bug.", type2char(TYPEOF(source)));  // # nocov
   }
 }
 
@@ -202,7 +202,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
     if (countBeyond)
       warning("Item %d of i is %d but there are only %d rows. Ignoring this and %d more like it out of %d.", firstBeyond, idxp[firstBeyond-1], max, countBeyond-1, n);
     if (countDup)
-      warning("Item %d of i is %d which removes that item but that has occurred before. Ignoring this dup and %d other dups out of %d.", firstDup, idxp[firstDup-1], countDup-1, n);
+      warning("Item %d of i is %d which removes that item but that has occurred before. Ignoring this dup and %d other dups.", firstDup, idxp[firstDup-1], countDup-1);
     int ansn = max-countRemoved;
     ans = PROTECT(allocVector(INTSXP, ansn));
     int *ansp = INTEGER(ans);
@@ -294,10 +294,7 @@ SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   bool anyNA=false, orderedSubset=false;
   int nprotect=0;
   if (check_idx(idx, length(x), &anyNA, &orderedSubset) != NULL) {
-    SEXP max = PROTECT(ScalarInteger(length(x))); nprotect++;
-    idx = PROTECT(convertNegAndZeroIdx(idx, max, ScalarLogical(TRUE))); nprotect++;
-    const char *err = check_idx(idx, length(x), &anyNA, &orderedSubset);
-    if (err!=NULL) error(err);
+    error("Internal error: CsubsetVector is internal-use-only but has received negatives, zeros or out-of-range");  // # nocov
   }
   SEXP ans = PROTECT(allocVector(TYPEOF(x), length(idx))); nprotect++;
   copyMostAttrib(x, ans);
