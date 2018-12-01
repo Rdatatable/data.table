@@ -1,11 +1,16 @@
 # is x[i] in between lower[i] and upper[i] ?
 between <- function(x,lower,upper,incbounds=TRUE) {
-  is_strictly_numeric <- function(x) is.numeric(x) && !"integer64" %chin% class(x)
-  if (is_strictly_numeric(x) && is_strictly_numeric(lower) &&
-    is_strictly_numeric(upper) && length(lower) == 1L && length(upper) == 1L) {
-    # faster parallelised version for int/double for most common scenario
+  if (is.logical(x)) stop("between has been passed a column of type logical")
+  if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
+  if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
+  is_strictly_numeric <- function(x) is.numeric(x) && !inherits(x, "integer64")
+  if (is_strictly_numeric(x) && is_strictly_numeric(lower) && is_strictly_numeric(upper)) {
+    # faster parallelised version for int/double.
+    # Cbetween supports length(lower)==1 (recycled) and (from v1.12.0) length(lower)==length(x).
+    # length(upper) can be 1 or length(x) independently of lower
     .Call(Cbetween, x, lower, upper, incbounds)
   } else {
+    # now just for character input. TODO: support character between in Cbetween and remove this branch
     if(incbounds) x>=lower & x<=upper
     else x>lower & x<upper
   }
