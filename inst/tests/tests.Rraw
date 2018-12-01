@@ -12634,63 +12634,59 @@ test(1960.91, groupingsets(DT, by = c('color', 'status'),
                            sets = list('color', 'status'), id = TRUE),
      error = "data.table must not have a column named 'grouping'")
 setnames(DT, 1L, 'color')
-### test case when j leads to "shell" data.table being atomic
-test(1960.92, groupingsets(DT[ , .(amount, value)], j = 5, by = character(0L),
-                           sets = list(character()), id=TRUE),
-     data.table(grouping = c(NA_integer_, 0L), V1 = c(5, 5)))
-test(1960.93, groupingsets(DT, j = c(list(grouping=.N), lapply(.SD, sum)),
+test(1960.92, groupingsets(DT, j = c(list(grouping=.N), lapply(.SD, sum)),
                            by = c("color", "year","status"), id = TRUE,
                            sets = list("color", c("year","status"), character())),
      error = "'j' expression must not evaluate to column named 'grouping'")
 
 ## fcast.R
 DT = data.table('(all)' = 1)
-test(1960.94, guess(DT), '(all)')
+test(1960.93, guess(DT), '(all)')
 setnames(DT, 'V')
-test(1960.95, guess(DT), 'V',
+test(1960.94, guess(DT), 'V',
      message = 'Using.*value column.*override')
 setDF(DT)
-test(1960.96, data.table:::dcast.data.table(DT),
+test(1960.95, data.table:::dcast.data.table(DT),
      error = 'must be a data.table')
 setDT(DT)
-test(1960.97, dcast(DT, a ~ a, drop = NA),
+test(1960.96, dcast(DT, a ~ a, drop = NA),
      error = 'must be logical TRUE/FALSE')
 DT = data.table(a = c(1, 1, 2, 2), b = list(1, 2, 3, 4), c = c(4, 4, 2, 2))
-test(1960.98, dcast(DT, a ~ b, value.var = 'b'),
+test(1960.97, dcast(DT, a ~ b, value.var = 'b'),
      error = 'Columns specified in formula can not be of type list')
-test(1960.99, dcast(DT[0L, ], a ~ c, value.var = 'b'),
+test(1960.98, dcast(DT[0L, ], a ~ c, value.var = 'b'),
      error = 'Can not cast an empty data.table')
-test(1960.100, dcast(DT, a ~ c, value.var = 'b'),
+test(1960.99, dcast(DT, a ~ c, value.var = 'b'),
      data.table(a = c(1, 2), `2` = c(0L, 2L), `4` = c(2L, 0L), key = 'a'),
      message = 'Aggregate function missing')
 
 ## IDateTime.R
 x = as.IDate('2018-08-01')
-test(1960.101, `+`(x), x)
-test(1960.102, x + 1.4, structure(17745.4, class = "Date"))
-test(1960.103, x + x, error = 'binary + is not defined')
+test(1960.100, `+`(x), x)
+test(1960.101, x + 1.4, structure(17745.4, class = "Date"))
+test(1960.102, x + x, error = 'binary + is not defined')
 
-test(1960.104, `-`(x), error = 'unary - is not defined')
-test(1960.105, x - 1.4, structure(17742.6, class = "Date"))
+test(1960.103, `-`(x), error = 'unary - is not defined')
+test(1960.104, x - 1.4, structure(17742.6, class = "Date"))
 
 y = as.ITime('543210', format = '%S%M%H')
-test(1960.106, y, structure(37974L, class = "ITime"))
-test(1960.107, capture.output(print(y)), '[1] "10:32:54"')
-test(1960.108, rep(y, 2L), structure(c(37974L, 37974L), class = "ITime"))
-test(1960.109, as.POSIXlt(y),
+test(1960.105, y, structure(37974L, class = "ITime"))
+test(1960.106, capture.output(print(y)), '[1] "10:32:54"')
+test(1960.107, rep(y, 2L), structure(c(37974L, 37974L), class = "ITime"))
+test(1960.108, as.POSIXlt(y),
      structure(list(sec = 54, min = 32L, hour = 10L, mday = 1L, mon = 11L,
                     year = 118L, wday = 6L, yday = 334L, isdst = 0L),
                class = c("POSIXlt", "POSIXt"), tzone = "UTC"))
 
-test(1960.110, as.POSIXct(x, y),
+test(1960.109, as.POSIXct(x, y),
      structure(1533119574, tzone = "UTC", class = c("POSIXct", "POSIXt")))
-test(1960.111, as.POSIXct(x, tz = ''),
+test(1960.110, as.POSIXct(x, tz = ''),
      structure(1533081600, tzone = "UTC", class = c("POSIXct", "POSIXt")))
 
 z = .POSIXct(3725, 'UTC')
-test(1960.112, second(z), 5L)
-test(1960.113, minute(z), 2L)
-test(1960.114, hour(z), 1L)
+test(1960.111, second(z), 5L)
+test(1960.112, minute(z), 2L)
+test(1960.113, hour(z), 1L)
 
 
 
