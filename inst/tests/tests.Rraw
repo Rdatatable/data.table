@@ -12354,6 +12354,34 @@ test(1953.4, melt.data.table(DT, id.vars = 'id', measure.vars = 'a'),
 DT = data.table(A=INT(1,3,2,3,2), B=1:5)  # respect groups in 1st column (3's and 2's)
 test(1954, forderv(DT, sort=FALSE, retGrp=TRUE), structure(INT(1,2,4,3,5), starts=1:5, maxgrpn=1L))
 
+# fread can handle file name in native and utf-8 encoding, #3078, pr#3141
+if (.Platform$OS.type=="windows") {
+  f = tempfile("\u00f6"); cat("3.14", file = f);
+  fn = enc2native(f); f8 = enc2utf8(f);
+  data.table:::test(1960.1, fread(fn), data.table(V1=3.14));
+  data.table:::test(1960.2, fread(f8), data.table(V1=3.14));
+  unlink(c(fn, f8))
+}
+
+# fwrite can handle file names and paths in native and utf-8 encoding, #3078, pr#3141
+if (.Platform$OS.type=="windows") {
+  DT = data.table("a"); pth = tempdir();
+  f = "\u00f6.csv"; fp = file.path(pth, f);
+  fpn = enc2native(fp); fp8 = enc2utf8(fp);
+  fwrite(DT, fpn);
+  data.table:::test(1961.1, list.files(path = pth, pattern = "\\.csv$"), f);
+  unlink(c(fp, file.path(pth, "\u00c3\u00b6.csv")));
+  fwrite(DT, fp8);
+  data.table:::test(1961.2, list.files(path = pth, pattern = "\\.csv$"), f);
+  unlink(c(fp, file.path(pth, "\u00c3\u00b6.csv")));
+  p = file.path(pth, "\u00fc"); dir.create(p); f = tempfile(tmpdir = p);
+  data.table:::test(1961.3, fwrite(DT, enc2native(f)), NULL)
+  unlink(f);
+  data.table:::test(1961.4, fwrite(DT, enc2utf8(f)), NULL)
+  unlink(p, recursive = TRUE)
+}
+
+
 
 ###################################
 #  Add new tests above this line  #
