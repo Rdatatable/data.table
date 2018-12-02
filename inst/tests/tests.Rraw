@@ -12455,8 +12455,6 @@ if (.Platform$OS.type=="windows") {
   unlink(p, recursive = TRUE)
 }
 
-
-
 ###################################
 #  Add new tests above this line  #
 ###################################
