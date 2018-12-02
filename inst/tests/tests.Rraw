@@ -19,7 +19,8 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   # in the test suite when user runs test.data.table() from installed package AND ii) so that in dev the same
   # tests can be used but in dev they test the package in .GlobalEnv. If we used ::: throughout tests, that
   # would pick up the installed version and in dev you'd have to reinstall every time which slows down dev.
-  # NB: The string "data.table:::" should exist nowhere else in this file other than here inside this branch.
+  # NB: The string "data.table::" (which covers "data.table:::" too) should exist nowhere else in this file
+  #      other than here inside this branch.
 
   test = data.table:::test
   INT = data.table:::INT
@@ -50,11 +51,11 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   as.IDate.default = data.table:::as.IDate.default
   binary = data.table:::binary
   melt.data.table = data.table:::melt.data.table  # for test 1953.4
+  brackify = data.table:::brackify
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
   # to develop in .GlobalEnv with cc().
-  # NB: The string "data.table::" should exist nowhere else in this file other than here inside this branch.
   # This should be retained even if these packages are removed from Suggests, because the test() in this file
   # checks against a data.table result which needs the data.table one to run. Otherwise the user can be
   # sure by using :: themselves.
@@ -2962,11 +2963,14 @@ test(1041, rbindlist(l), data.table(i1=factor(letters[1:5]),val=1:5))
 
 # negative indexing in *i* leads to crash/wrong aggregates when dogroups is called. bug #2697
 DT = data.table(x = c(1,2,3,4,5), group = c(1,1,2,2,3))
-test(1042, DT[-5, mean(x), by = group], data.table(group=c(1,2), V1=c(1.5, 3.5)))
+test(1042.1, DT[-5, mean(x), by = group], data.table(group=c(1,2), V1=c(1.5, 3.5)))
 # Test when abs(negative index) > nrow(dt) - should warn
-test(1042.1, DT[-10], DT, warning="Item 1 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 1.")
-test(1042.2, DT[c(-5, -10), mean(x), by = group], data.table(group=c(1,2),V1=c(1.5,3.5)), warning="Item 2 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 2.")
-test(1043, DT[c(1, -5)], error="Cannot mix positives and negatives.")
+test(1042.2, DT[-10], DT, warning="Item 1 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 1.")
+test(1042.3, DT[c(-5, -10), mean(x), by = group], data.table(group=c(1,2),V1=c(1.5,3.5)), warning="Item 2 of i is -10 but there are only 5 rows. Ignoring this and 0 more like it out of 2.")
+test(1042.4, DT[c(-5, -4, -5)], DT[1:3], warning="Item 3 of i is -5 which removes that item but that has occurred before. Ignoring this dup and 0 other dup")
+test(1042.5, DT[c(-5, -4, -5, -5, -4)], DT[1:3], warning="Item 3 of i is -5 which removes that item but that has occurred before. Ignoring this dup and 2 other dup")
+test(1043.1, DT[c(1, -5)], error="Item 2 of i is -5 and item 1 is 1. Cannot mix positives and negatives.")
+test(1043.2, DT[c(-1, NA)], error="Item 1 of i is -1 and item 2 is NA. Cannot mix negatives and NA.")
 
 # crash (floating point exception), when assigning null data.table() to multiple cols, #4731
 DT = data.table(x=1:5,y=6:10)
@@ -2997,10 +3001,10 @@ test(1057, print(DT, digits=2, big.mark=","), output="   x         y logy\n1: a 
 
 # bug #2758 fix - segfault with zeros in i and factors in by
 x <- data.table(letters=letters[1:5], factor=factor(letters[1:5]), number=1:5)
-test(1058, x[c(0, 3), list(letters, number), by=factor], error="While grouping, i=0 is allowed")
-test(1059, x[c(3, 0), list(letters, number), by=factor], error="While grouping, i=0 is allowed")
-test(1060, x[c(0, 3), number:=5L, by=factor], error="While grouping, i=0 is allowed")
-test(1061, x[c(0, 3), number:=5L], data.table(letters=letters[1:5], factor=factor(letters[1:5]), number=c(1:2,5L,4:5)))
+test(1058, x[c(0, 3), list(letters, number), by=factor], ans<-x[3,c(2,1,3)])
+test(1059, x[c(3, 0), list(letters, number), by=factor], ans)
+test(1060, x[c(0, 3), number:=5L, by=factor], ans<-data.table(letters=letters[1:5], factor=factor(letters[1:5]), number=c(1:2,5L,4:5)))
+test(1061, x[c(0, 3), number:=5L], ans)
 
 # bug #2440 fix - seqfault when j refers to grouping variable when results are empty
 DT = data.table(x=rep(c("a","b"),each=3),v=c(42,42,42,4,5,6))
@@ -6286,6 +6290,19 @@ if (test_xts) {
   dt.xts <- as.xts.data.table(dt)
   test(1663, dt.xts[1L], xts::xts(data.table(nav=100), order.by=as.Date("2014-12-31")))
 
+  # additional coverage missing uncovered in #3117
+  dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
+  xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
+  test(1465.9, as.data.table(xt, keep.rownames = FALSE), dt[ , !'index'])
+  names(xt)[1L] = 'index'
+  test(1465.10, as.data.table(xt), error = 'Input xts object should not')
+  names(xt)[1L] = 'quantity'
+  setcolorder(dt, c(3, 1, 2))
+  test(1465.11, as.xts(dt), error = 'data.table must have a time based')
+  setcolorder(dt, c(2, 3, 1))
+  dt[ , char_col := 'a']
+  test(1465.12, as.xts(dt), xt, warning = 'columns are not numeric')
+
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
 }
 
@@ -9525,7 +9542,6 @@ test(1693.7, month(t), 8L)
 test(1693.8, quarter(t), 3L)
 test(1693.9, year(t), 2016L)
 
-
 # fix for #1740 - sub-assigning NAs for factors
 dt = data.table(x = 1:5, y = factor(c("","a","b","a", "")), z = 5:9)
 ans = data.table(x = 1:5, y = factor(c(NA,"a","b","a", NA)), z = 5:9)
@@ -9534,24 +9550,34 @@ test(1694.0, dt[y=="", y := NA], ans)
 # more tests for between()
 x = c(NaN, NA, 1, 5, -Inf, Inf)
 test(1695.1, x %between% c(3, 7), c(NA, NA, FALSE, TRUE, FALSE, FALSE))
-test(1695.2, x %between% c(NA, 7), c(NA, NA, NA, NA, NA, FALSE))
-test(1695.3, x %between% c(3, NA), c(NA, NA, FALSE, NA, FALSE, NA))
-test(1695.4, x %between% c(NA, NA), rep(NA, 6L))
-
+test(1695.2, x %between% c(NA, 7), c(NA, NA, TRUE, TRUE, TRUE, FALSE))
+test(1695.3, x %between% c(3, NA), c(NA, NA, FALSE, TRUE, FALSE, TRUE))
+test(1695.4, x %between% c(NA, NA), c(NA, NA, TRUE, TRUE, TRUE,TRUE))
+test(1695.5, x %between% c(NA_real_, NA_real_), c(NA, NA, TRUE, TRUE, TRUE,TRUE))
+test(1695.6, x %between% list(c(1,2,3,4,5,6), 10),  c(NA, NA, FALSE, TRUE, FALSE, FALSE))
 x = c(NA, 1L, 5L)
-test(1695.5, x %between% c(3, 7), c(NA, FALSE, TRUE))
-test(1695.6, x %between% c(NA, 7), c(NA, NA, NA))
-test(1695.7, x %between% c(3, NA), c(NA, FALSE, NA))
-test(1695.8, x %between% c(NA, NA), rep(NA, 3L))
-
+test(1695.7, x %between% c(3, 7), c(NA, FALSE, TRUE))
+test(1695.8, x %between% c(NA, 7), c(NA, TRUE, TRUE))
+test(1695.9, x %between% c(3, NA), c(NA, FALSE, TRUE))
+test(1695.11, x %between% c(NA, NA), c(NA, TRUE, TRUE))
 x = rep(NA_integer_, 3)
-test(1695.9, x %between% c(3, 7), rep(NA, 3L))
-test(1695.10, x %between% c(NA, 7), rep(NA, 3L))
-test(1695.11, x %between% c(3, NA), rep(NA, 3L))
-test(1695.12, x %between% c(NA, NA), rep(NA, 3L))
-
+test(1695.12, x %between% c(3, 7), rep(NA, 3L))
+test(1695.13, x %between% c(NA, 7), rep(NA, 3L))
+test(1695.14, x %between% c(3, NA), rep(NA, 3L))
+test(1695.15, x %between% c(NA, NA), rep(NA, 3L))
 x = integer(0)
-test(1695.13, x %between% c(3, 7), logical(0))
+test(1695.16, x %between% c(3, 7), logical(0))
+test(1695.17, TRUE %between% c(3, 7), error="between has been x of type logical")
+x = c("foo","bar","paz")
+test(1695.18, between(x, "bag", "fog"), c(FALSE, TRUE, FALSE))
+test(1695.19, between(x, c("b","f","a"), "q"), c(TRUE, FALSE, TRUE))
+test(1695.20, between(x, c("foo","baq","bar"), "paz", incbounds=TRUE), c(TRUE, TRUE, TRUE))
+test(1695.21, between(x, c("foo","baq","bar"), "paz", incbounds=FALSE), c(FALSE, TRUE, FALSE))
+x = c(3.14, 3.20, -42, Inf)
+test(1695.22, between(x, c(3,4,-60,5), c(3.14,10,-30,Inf)), c(TRUE,FALSE,TRUE,TRUE))
+test(1695.23, between(x, c(3,4,-60,5), c(3.14,10,-30,Inf), incbounds=FALSE), c(FALSE,FALSE,TRUE,FALSE))
+test(1695.24, between(x, c(3,4,-60), 99), error="length(lower) (3) must be either 1 or length(x) (4)")
+test(1695.25, between(x, c(3,4,-60,5), c(99,98)), error="length(upper) (2) must be either 1 or length(x) (4)")
 
 # test for #1819, verbose message for bmerge
 old_opt = getOption("datatable.verbose")
@@ -12313,9 +12339,14 @@ test(1948.14, DT[i, on = "id != idi"], error = "Invalid operators !=. Only allow
 test(1948.15, DT[i, on = 1L], error = "'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'.")
 
 # helpful error when on= is provided but not i, rather than silently ignoring on=
+DT = data.table(A=1:3)
 test(1949.1, DT[,,on=A], error="When i and j are both missing, no other argument should be used.")
 test(1949.2, DT[,1,on=A], error="i must be provided when on= is provided")
-test(1949.3, DT[1,,with=FALSE], error="j must be provided when with=FALSE")
+test(1949.3, DT[on=A], error="When i and j are both missing, no other argument should be used.")
+test(1949.4, DT[,on=A], error="When i and j are both missing, no other argument should be used.")
+test(1949.5, DT[1,,with=FALSE], error="j must be provided when with=FALSE")
+test(1949.6, DT[], output="A.*1.*2.*3")   # no error
+test(1949.7, DT[,], output="A.*1.*2.*3")  # no error, #3163
 
 if (test_bit64) {
   # explicit coverage of 2-column real case in uniqlist. Keeps coming up in codecov checks in PRs that don't touch uniqlist.c
@@ -12353,6 +12384,49 @@ test(1953.4, melt.data.table(DT, id.vars = 'id', measure.vars = 'a'),
 # appearance order of two low-cardinality columns that were squashed in pr#3124
 DT = data.table(A=INT(1,3,2,3,2), B=1:5)  # respect groups in 1st column (3's and 2's)
 test(1954, forderv(DT, sort=FALSE, retGrp=TRUE), structure(INT(1,2,4,3,5), starts=1:5, maxgrpn=1L))
+
+# skip values that are not present in old, #3030
+DT <- data.table(a=1, b=2, d=3)
+old <- c("a", "b", "c", "d")
+new <- c("A", "B", "C", "D")
+test(1955.1, setnames(DT, old, new, skip_absent=TRUE), data.table(A=1, B=2, D=3))
+test(1955.2, setnames(DT, old, new, skip_absent=0), error="is not")  # must be TRUE or FALSE
+test(1955.3, setnames(DT, "missing", "dummy", skip_absent=TRUE), DT)  # all missing
+test(1955.4, setnames(DT, c("D","missing","A"), c("dd","ignored","aa"), skip_absent=TRUE), data.table(aa=1, B=2, dd=3))  # different order with a missing
+test(1955.5, setnames(DT, "B", "bb", skip_absent=TRUE), data.table(aa=1, bb=2, dd=3)) # none missing so skip_absent not needed
+test(1955.6, setnames(DT, c("miss1","bb","miss2","dd"), c("A","B","C","D")), error="Items of 'old' not found in column names: miss1,miss2. Consider skip_absent=TRUE")
+test(1955.7, setnames(DT, c("miss1","bb","miss2","dd"), c("A","B","C","D"), skip_absent=TRUE), data.table(aa=1, B=2, D=3))
+
+# #3116 - Better error messages for missing/unmatched .SDcols
+DT = data.table(a = 1:5)
+test(1956.1, DT[, .SD, .SDcols = NA_character_], error = 'missing at the following')
+test(1956.2, DT[, .SD, .SDcols = NA], error = 'missing at the following')
+test(1956.3, DT[, .SD, .SDcols = NA_real_], error = 'missing at the following')
+test(1956.4, DT[, .SD, .SDcols = 2L], error = 'out of bounds.*1.*1.*at')
+test(1956.5, DT[, .SD, .SDcols = 'b'], error = 'not column names')
+test(1956.6, DT[, .SD, .SDcols = 3i], error = '.SDcols should be column numbers or names')
+
+# added brackify to utils for #3116
+test(1957.1, brackify(1:3), '[1, 2, 3]')
+test(1957.2, brackify(1:11), "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ...]")
+test(1957.3, fread("A,B\na,b\nc,d\n", stringsAsFactors=TRUE, verbose=TRUE), data.table(A=factor(c("a","c")), B=factor(c("b","d"))),
+             output="Converting column(s) [A, B] from 'char' to 'factor'")
+
+# misc. coverage tests in fread
+test(1958.1, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encoding' must be")
+test(1958.2, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L))
+test(1958.3, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
+test(1958.4, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
+
+# Skip should work with all types of newlines #3006
+eols = c("\n", "\r\n", "\r", "\n\r")
+for (i in 1:4) {
+  eol = eols[i]
+  src = paste(c("A", "B", "...", ",,,,,", "c1,c2,c3", "1,2,3"), collapse=eol)
+  test(1959 + (i*0.1), fread(text=src, skip=4), data.table(c1=1L, c2=2L, c3=3L))
+}
+test(1959.5, fread("A\n\nB\n\nC\n1\n", skip=2), data.table(B=c("", "C", "1")))
+test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=1L, C=2L))
 
 # fread can handle file name in native and utf-8 encoding, #3078, pr#3141
 if (.Platform$OS.type=="windows") {

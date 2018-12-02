@@ -191,15 +191,15 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   if (colNames!=NULL) {
     SET_VECTOR_ELT(RCHK, 1, colNamesSxp=allocVector(STRSXP, ncol));
     for (int i=0; i<ncol; i++) {
-      SEXP this;
+      SEXP elem;
       if (colNames[i].len<=0) {
         char buff[12];
         sprintf(buff,"V%d",i+1);
-        this = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
+        elem = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
       } else {
-        this = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
+        elem = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
       }
-      SET_STRING_ELT(colNamesSxp, i, this);
+      SET_STRING_ELT(colNamesSxp, i, elem);
     }
   }
   if (length(colClassesSxp)) {

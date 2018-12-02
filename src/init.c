@@ -47,7 +47,7 @@ SEXP binary();
 SEXP chmatch2();
 SEXP subsetDT();
 SEXP subsetVector();
-SEXP convertNegativeIdx();
+SEXP convertNegAndZeroIdx();
 SEXP frank();
 SEXP dt_na();
 SEXP lookup();
@@ -127,7 +127,7 @@ R_CallMethodDef callMethods[] = {
 {"Cchmatch2", (DL_FUNC) &chmatch2, -1},
 {"CsubsetDT", (DL_FUNC) &subsetDT, -1},
 {"CsubsetVector", (DL_FUNC) &subsetVector, -1},
-{"CconvertNegativeIdx", (DL_FUNC) &convertNegativeIdx, -1},
+{"CconvertNegAndZeroIdx", (DL_FUNC) &convertNegAndZeroIdx, -1},
 {"Cfrank", (DL_FUNC) &frank, -1},
 {"Cdt_na", (DL_FUNC) &dt_na, -1},
 {"Clookup", (DL_FUNC) &lookup, -1},
@@ -276,10 +276,10 @@ inline bool INHERITS(SEXP x, SEXP char_) {
   // Thread safe in the limited sense of correct and intended usage :
   // i) no API call such as install() or mkChar() must be passed in.
   // ii) no attrib writes must be possible in other threads.
-  SEXP class;
-  if (isString(class = getAttrib(x, R_ClassSymbol))) {
-    for (int i=0; i<LENGTH(class); i++) {
-      if (STRING_ELT(class, i) == char_) return true;
+  SEXP klass;
+  if (isString(klass = getAttrib(x, R_ClassSymbol))) {
+    for (int i=0; i<LENGTH(klass); i++) {
+      if (STRING_ELT(klass, i) == char_) return true;
     }
   }
   return false;
