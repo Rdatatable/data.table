@@ -22,7 +22,7 @@
 
 4. `fread(..., skip=)` now skips non-standard `\r` and `\n\r` line endings properly again, [#3006](https://github.com/Rdatatable/data.table/issues/3006). Standard line endings (`\n` Linux/Mac and `\r\n` Windows) were skipped ok. Thanks to @brattono and @tbrycekelly for providing reproducible examples, and @st-pasha for fixing.
 
-5. `cube` function will now produce expected order of results. Thanks to @Henrik-P for reporting. Closes [#3179](https://github.com/Rdatatable/data.table/issues/3179).
+5. `cube()` will now produce expected order of results, [#3179](https://github.com/Rdatatable/data.table/issues/3179). Thanks to @Henrik-P for reporting.
 
 #### NOTES
 
