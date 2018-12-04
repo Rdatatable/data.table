@@ -10335,7 +10335,7 @@ test(1750.32,
 sets = local({
   by=c("color","year","status")
   n = length(by)
-  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
+  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=((2L^n)/(2L*k)), times=k))
   lapply((2L^n):1, function(j) by[keepBool[j, ]])
 })
 test(1750.33,
@@ -10345,7 +10345,7 @@ test(1750.33,
 sets = local({
   by=c("year","status")
   n = length(by)
-  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
+  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=((2L^n)/(2L*k)), times=k))
   lapply((2L^n):1, function(j) by[keepBool[j, ]])
 })
 test(1750.34,
@@ -12427,6 +12427,24 @@ for (i in 1:4) {
 }
 test(1959.5, fread("A\n\nB\n\nC\n1\n", skip=2), data.table(B=c("", "C", "1")))
 test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=1L, C=2L))
+
+# order of cube results consistent to postgresql docs #3179
+set.seed(1)
+d <- data.table(a = rep(1:2, each = 8),
+                b = rep(1:2, each = 4),
+                c = rep(1:2, each = 2),
+                val = sample(0:1, 16, replace = TRUE))
+cb = cube(d, j= sum(val), by = c("a", "b", "c"), id=TRUE)
+gs = groupingsets(d, j = sum(val), by = c("a", "b", "c"),
+               sets = list(c("a", "b", "c"),
+                           c("a", "b"     ),
+                           c("a",      "c"),
+                           c("a"          ),
+                           c(     "b", "c"),
+                           c(     "b"     ),
+                           c(          "c"),
+                           character()), id=TRUE)
+test(1963, cb, gs)
 
 
 ###################################
