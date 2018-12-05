@@ -18,7 +18,7 @@
 
 3. Unmatched `patterns` in `measure.vars` fail early and with feedback, [#3106](https://github.com/Rdatatable/data.table/issues/3092).
 
-4. `split.data.table` failed if `x` had an "x" factor column, closes [#3151](https://github.com/Rdatatable/data.table/issues/3151). Thanks to @tdeenes for reporting and fixing. Tests added.
+4. `split.data.table()` failed if `DT` had a factor column named `"x"`, [#3151](https://github.com/Rdatatable/data.table/issues/3151). Thanks to @tdeenes for reporting and fixing.
 
 #### NOTES
 
