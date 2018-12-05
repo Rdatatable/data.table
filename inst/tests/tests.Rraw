@@ -53,6 +53,10 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   melt.data.table = data.table:::melt.data.table  # for test 1953.4
   brackify = data.table:::brackify
   guess = data.table:::guess
+  rollup.data.table = data.table:::rollup.data.table
+  cube.data.table = data.table:::cube.data.table
+  groupingsets.data.table = data.table:::groupingsets.data.table
+  dcast.data.table = data.table:::dcast.data.table
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -12636,12 +12640,11 @@ test(1962.75, setorderv(data.table(a = 1+3i), 'a'),
      error = "Column 'a' is type 'complex'")
 setDF(DT)
 test(1962.76, rollup(DT), error = 'no applicable method')
-test(1962.77, data.table:::rollup.data.table(DT),
-     error = 'must be a data.table object')
+test(1962.77, rollup.data.table(DT), error = 'must be a data.table object')
 test(1962.78, cube(DT), error = 'no applicable method')
-test(1962.79, data.table:::cube.data.table(DT), error = 'must be a data.table object')
+test(1962.79, cube.data.table(DT), error = 'must be a data.table object')
 test(1962.80, groupingsets(DT), error = 'no applicable method')
-test(1962.81, data.table:::groupingsets.data.table(DT), error = 'must be a data.table object')
+test(1962.81, groupingsets.data.table(DT), error = 'must be a data.table object')
 setDT(DT)
 test(1962.82, rollup(DT, by = 3L), error = "'by' must be a character vector")
 test(1962.83, rollup(DT, by = 'color', id = 3L), error = "'id' must be a logical scalar")
@@ -12675,8 +12678,7 @@ setnames(DT, 'V')
 test(1962.94, guess(DT), 'V',
      message = 'Using.*value column.*override')
 setDF(DT)
-test(1962.95, data.table:::dcast.data.table(DT),
-     error = 'must be a data.table')
+test(1962.95, dcast.data.table(DT), error = 'must be a data.table')
 setDT(DT)
 test(1962.96, dcast(DT, a ~ a, drop = NA),
      error = 'must be logical TRUE/FALSE')
