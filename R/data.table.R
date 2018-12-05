@@ -690,11 +690,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         else stop("i evaluates to a logical vector length ", length(i), " but there are ", nrow(x), " rows. Recycling of logical i is no longer allowed as it hides more bugs than is worth the rare convenience. Explicitly use rep(...,length=.N) if you really need to recycle.")
       } else {
         irows = as.integer(i)  # e.g. DT[c(1,3)] and DT[c(-1,-3)] ok but not DT[c(1,-3)] (caught as error)
-        irows = .Call(CconvertNegativeIdx, irows, nrow(x)) # simplifies logic from here on (can assume positive subscripts)
-                                   # maintains Arun's fix for #2697 (test 1042)
-                                   # efficient in C with more detailed messages
-                                   # falls through quickly (no R level allocs) if no negatives
-                                   # minor TO DO: can we merge this with check_idx in fcast.c/subset ?
+        irows = .Call(CconvertNegAndZeroIdx, irows, nrow(x), is.null(jsub) || root!=":=")  # last argument is allowOverMax (NA when selecting, error when assigning)
+        # simplifies logic from here on: can assume positive subscripts (no zeros)
+        # maintains Arun's fix for #2697 (test 1042)
+        # efficient in C with more detailed helpful messages when user mixes positives and negatives
+        # falls through quickly (no R level allocs) if all items are within range [1,max] with no zeros or negatives
+        # minor TO DO: can we merge this with check_idx in fcast.c/subset ?
       }
     }
     if (notjoin) {
@@ -1789,8 +1790,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   grporder = o__
   # for #971, added !GForce. if (GForce) we do it much more (memory) efficiently than subset of order vector below.
   if (length(irows) && !isTRUE(irows) && !GForce) {
-    # fix for bug #2758. TO DO: provide a better error message
-    if (length(irows) > 1L && length(zo__ <- which(irows == 0)) > 0L) stop("i[", zo__[1L], "] is 0. While grouping, i=0 is allowed when it's the only value. When length(i) > 1, all i should be > 0.")
+    # any zeros in irows were removed by convertNegAndZeroIdx earlier above; no need to check for zeros again. Test 1058-1061 check case #2758.
     if (length(o__) && length(irows)!=length(o__)) stop("Internal error: length(irows)!=length(o__)") # nocov
     o__ = if (length(o__)) irows[o__]  # better do this once up front (even though another alloc) than deep repeated branch in dogroups.c
           else irows

@@ -29,7 +29,7 @@ cube.data.table <- function(x, j, by, .SDcols, id = FALSE, ...) {
     stop("Argument 'id' must be logical scalar.")
   # generate grouping sets for cube - power set: http://stackoverflow.com/a/32187892/2490497
   n = length(by)
-  keepBool = sapply(2L^(seq_len(n) - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
+  keepBool = sapply(2L^(seq_len(n)-1L), function(k) rep(c(FALSE, TRUE), times=k, each=((2L^n)/(2L*k))))
   sets = lapply((2L^n):1L, function(j) by[keepBool[j, ]])
   # redirect to workhorse function
   jj = substitute(j)
@@ -76,7 +76,10 @@ groupingsets.data.table <- function(x, j, by, sets, .SDcols, id = FALSE, jj, ...
     empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
   } else {
     empty = if (length(.SDcols)) x[0L, eval(jj), .SDcols=.SDcols] else x[0L, eval(jj)]
-    if (!is.data.table(empty)) empty = setDT(list(empty)) # improve after #648, see comment in aggr.set
+    if (!is.data.table(empty)) {
+      if (length(empty)>0) empty = empty[0L] # fix for #3173 when no grouping and j constant
+      empty = setDT(list(empty)) # improve after #648, see comment in aggregate.set
+    }
   }
   if (id && "grouping" %chin% names(empty)) # `j` could have been evaluated to `grouping` field
     stop("When using `id=TRUE` the 'j' expression must not evaluate to column named 'grouping'.")
