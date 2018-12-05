@@ -12,6 +12,8 @@
 
 4. `NA` in `between`'s `lower` and `upper` are now taken as missing bounds and return `TRUE` rather than than `NA`. This is now documented.
 
+5. `.SDcols` in `[.data.table` now accepts `patterns`, similar to the existing usage in `melt.data.table`, for filtering columns according to a pattern, concisely and dynamically, [#1878](https://github.com/Rdatatable/data.table/issues/1878). Thanks to many people for pushing for this and @MichaelChirico for ultimately filing the PR. See `?data.table` for full details and examples. 
+
 #### BUG FIXES
 
 1. Providing an `i` subset expression when attempting to delete a column correctly failed with helpful error, but when the column was missing too created a new column full of `NULL` values, [#3089](https://github.com/Rdatatable/data.table/issues/3089). Thanks to Michael Chirico for reporting.
