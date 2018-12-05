@@ -8901,6 +8901,10 @@ dt = data.table(x=rexp(100),y=rep(LETTERS[1:10], 10))
 dtL = split(dt, by = "y")
 test(1639.140, dim(dtL[[1]][, x2 := -x]), c(10L,3L))
 test(1639.141, all(sapply(dtL, truelength) > 1000))
+# test if split does not have scoping issues if one of the variables is 'x' #3151
+dt <- data.table(x = factor("a"), y = 1)
+test(1639.142, x = split(dt, by = "x"), y = list(a = dt))
+test(1639.143, x = split(dt, by = "y"), y = list(`1` = dt))
 
 # allow x's cols (specifically x's join cols) to be referred to using 'x.' syntax
 # patch for #1615. Note that I specifically have not implemented x[y, aa, on=c(aa="bb")]
