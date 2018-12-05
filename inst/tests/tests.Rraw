@@ -12470,6 +12470,19 @@ gs = groupingsets(d, j = sum(val), by = c("a", "b", "c"),
                            character()), id=TRUE)
 test(1961, cb, gs)
 
+# tests 1962 & 1963 reserved for other PRs
+
+# 0 column data.table should not have rownames, #3149
+M0 = matrix(1:6, nrow=3, ncol=2, dimnames=list(rows=paste0("id",1:3), cols=c("v1","v2")))
+M = M0[,integer(0)]
+DT = as.data.table(M)
+test(1964.1, rownames(DT), character(0))
+test(1964.2, colnames(DT), character(0))
+M = M0[integer(0),, drop=FALSE]
+DT = as.data.table(M)
+test(1964.3, rownames(DT), character(0))
+test(1964.4, colnames(DT), c("v1","v2"))
+
 
 ###################################
 #  Add new tests above this line  #
