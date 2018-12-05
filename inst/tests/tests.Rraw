@@ -9542,7 +9542,6 @@ test(1693.7, month(t), 8L)
 test(1693.8, quarter(t), 3L)
 test(1693.9, year(t), 2016L)
 
-
 # fix for #1740 - sub-assigning NAs for factors
 dt = data.table(x = 1:5, y = factor(c("","a","b","a", "")), z = 5:9)
 ans = data.table(x = 1:5, y = factor(c(NA,"a","b","a", NA)), z = 5:9)
@@ -9551,24 +9550,34 @@ test(1694.0, dt[y=="", y := NA], ans)
 # more tests for between()
 x = c(NaN, NA, 1, 5, -Inf, Inf)
 test(1695.1, x %between% c(3, 7), c(NA, NA, FALSE, TRUE, FALSE, FALSE))
-test(1695.2, x %between% c(NA, 7), c(NA, NA, NA, NA, NA, FALSE))
-test(1695.3, x %between% c(3, NA), c(NA, NA, FALSE, NA, FALSE, NA))
-test(1695.4, x %between% c(NA, NA), rep(NA, 6L))
-
+test(1695.2, x %between% c(NA, 7), c(NA, NA, TRUE, TRUE, TRUE, FALSE))
+test(1695.3, x %between% c(3, NA), c(NA, NA, FALSE, TRUE, FALSE, TRUE))
+test(1695.4, x %between% c(NA, NA), c(NA, NA, TRUE, TRUE, TRUE,TRUE))
+test(1695.5, x %between% c(NA_real_, NA_real_), c(NA, NA, TRUE, TRUE, TRUE,TRUE))
+test(1695.6, x %between% list(c(1,2,3,4,5,6), 10),  c(NA, NA, FALSE, TRUE, FALSE, FALSE))
 x = c(NA, 1L, 5L)
-test(1695.5, x %between% c(3, 7), c(NA, FALSE, TRUE))
-test(1695.6, x %between% c(NA, 7), c(NA, NA, NA))
-test(1695.7, x %between% c(3, NA), c(NA, FALSE, NA))
-test(1695.8, x %between% c(NA, NA), rep(NA, 3L))
-
+test(1695.7, x %between% c(3, 7), c(NA, FALSE, TRUE))
+test(1695.8, x %between% c(NA, 7), c(NA, TRUE, TRUE))
+test(1695.9, x %between% c(3, NA), c(NA, FALSE, TRUE))
+test(1695.11, x %between% c(NA, NA), c(NA, TRUE, TRUE))
 x = rep(NA_integer_, 3)
-test(1695.9, x %between% c(3, 7), rep(NA, 3L))
-test(1695.10, x %between% c(NA, 7), rep(NA, 3L))
-test(1695.11, x %between% c(3, NA), rep(NA, 3L))
-test(1695.12, x %between% c(NA, NA), rep(NA, 3L))
-
+test(1695.12, x %between% c(3, 7), rep(NA, 3L))
+test(1695.13, x %between% c(NA, 7), rep(NA, 3L))
+test(1695.14, x %between% c(3, NA), rep(NA, 3L))
+test(1695.15, x %between% c(NA, NA), rep(NA, 3L))
 x = integer(0)
-test(1695.13, x %between% c(3, 7), logical(0))
+test(1695.16, x %between% c(3, 7), logical(0))
+test(1695.17, TRUE %between% c(3, 7), error="between has been x of type logical")
+x = c("foo","bar","paz")
+test(1695.18, between(x, "bag", "fog"), c(FALSE, TRUE, FALSE))
+test(1695.19, between(x, c("b","f","a"), "q"), c(TRUE, FALSE, TRUE))
+test(1695.20, between(x, c("foo","baq","bar"), "paz", incbounds=TRUE), c(TRUE, TRUE, TRUE))
+test(1695.21, between(x, c("foo","baq","bar"), "paz", incbounds=FALSE), c(FALSE, TRUE, FALSE))
+x = c(3.14, 3.20, -42, Inf)
+test(1695.22, between(x, c(3,4,-60,5), c(3.14,10,-30,Inf)), c(TRUE,FALSE,TRUE,TRUE))
+test(1695.23, between(x, c(3,4,-60,5), c(3.14,10,-30,Inf), incbounds=FALSE), c(FALSE,FALSE,TRUE,FALSE))
+test(1695.24, between(x, c(3,4,-60), 99), error="length(lower) (3) must be either 1 or length(x) (4)")
+test(1695.25, between(x, c(3,4,-60,5), c(99,98)), error="length(upper) (2) must be either 1 or length(x) (4)")
 
 # test for #1819, verbose message for bmerge
 old_opt = getOption("datatable.verbose")
@@ -10326,7 +10335,7 @@ test(1750.32,
 sets = local({
   by=c("color","year","status")
   n = length(by)
-  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
+  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=((2L^n)/(2L*k)), times=k))
   lapply((2L^n):1, function(j) by[keepBool[j, ]])
 })
 test(1750.33,
@@ -10336,7 +10345,7 @@ test(1750.33,
 sets = local({
   by=c("year","status")
   n = length(by)
-  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
+  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=((2L^n)/(2L*k)), times=k))
   lapply((2L^n):1, function(j) by[keepBool[j, ]])
 })
 test(1750.34,
@@ -12419,7 +12428,7 @@ for (i in 1:4) {
 test(1959.5, fread("A\n\nB\n\nC\n1\n", skip=2), data.table(B=c("", "C", "1")))
 test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=1L, C=2L))
 
-# edge case in groupingsets #3173
+# empty set with constant j, #3173
 DT = data.table(
   color = c("yellow", "red", "green", "red", "green", "red",
             "yellow", "yellow", "green", "green", "green", "yellow",
@@ -12439,7 +12448,25 @@ DT = data.table(
             2.5, 3, 3, 3, 3, 3, 3, 2, 2.5, 3, 3)
 )
 ans = groupingsets(DT[ , .(amount, value)], j = 5, by = character(0L), sets = list(character()), id=TRUE)
-test(1961, ans, data.table(grouping=0L, V1=5))
+test(1960, ans, data.table(grouping=0L, V1=5))
+
+# order of cube results consistent to postgresql docs, #3179
+set.seed(1)
+d <- data.table(a = rep(1:2, each = 8),
+                b = rep(1:2, each = 4),
+                c = rep(1:2, each = 2),
+                val = sample(0:1, 16, replace = TRUE))
+cb = cube(d, j= sum(val), by = c("a", "b", "c"), id=TRUE)
+gs = groupingsets(d, j = sum(val), by = c("a", "b", "c"),
+               sets = list(c("a", "b", "c"),
+                           c("a", "b"     ),
+                           c("a",      "c"),
+                           c("a"          ),
+                           c(     "b", "c"),
+                           c(     "b"     ),
+                           c(          "c"),
+                           character()), id=TRUE)
+test(1961, cb, gs)
 
 
 ###################################

@@ -29,7 +29,7 @@ cube.data.table <- function(x, j, by, .SDcols, id = FALSE, ...) {
     stop("Argument 'id' must be logical scalar.")
   # generate grouping sets for cube - power set: http://stackoverflow.com/a/32187892/2490497
   n = length(by)
-  keepBool = sapply(2L^(seq_len(n) - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
+  keepBool = sapply(2L^(seq_len(n)-1L), function(k) rep(c(FALSE, TRUE), times=k, each=((2L^n)/(2L*k))))
   sets = lapply((2L^n):1L, function(j) by[keepBool[j, ]])
   # redirect to workhorse function
   jj = substitute(j)
