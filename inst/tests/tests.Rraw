@@ -12468,10 +12468,13 @@ gs = groupingsets(d, j = sum(val), by = c("a", "b", "c"),
                            character()), id=TRUE)
 test(1961, cb, gs)
 
-# #3185 -- .SDcols = integer(0L) completes gracefully
+# #3185 -- .SDcols = integer(0L) errors until broader handling
+#   of empty .SDcols is addressed
 DT = data.table(a = 1:10)
-test(1962.1, DT[ , .SD, .SDcols = integer(0L)], data.table(NULL))
-test(1962.2, DT[ , .SD, .SDcols = character(0L)], data.table(NULL))
+test(1962.1, DT[ , .SD, .SDcols = integer(0L)],
+     error = 'Empty .SDcols is not yet supported')
+test(1962.2, DT[ , .SD, .SDcols = character(0L)],
+     error = 'Empty .SDcols is not yet supported')
 
 # #1878 -- patterns API in .SDcols
 library(data.table)
@@ -12494,13 +12497,11 @@ test(1963.1, DT[ , lapply(.SD, sum), .SDcols = patterns('^V')],
      data.table(V1 = -6.3, V2 = -6.5, V3 = 1.3, V4 = 3.4, V5 = -0.9,
                 V6 = -1.6, V7 = -2, V8 = -0.4, V9 = 6.1, V10 = -1.8))
 # multiple pattens --> intersection of patterns
-test(1963.2, DT[ , lapply(.SD, sum), .SDcols = patterns('^V[0-4]', '^V[5-9]')],
-     data.table(NULL))
-test(1963.3, DT[ , lapply(.SD, sum), .SDcols = patterns('^V[02468]', '^V[48]')],
+test(1963.2, DT[ , lapply(.SD, sum), .SDcols = patterns('^V[02468]', '^V[48]')],
      data.table(V4 = 3.4, V8 = -0.4))
 
 # also with !/- inversion
-test(1963.4, DT[ , lapply(.SD, sum), .SDcols = !patterns('^c|i')],
+test(1963.3, DT[ , lapply(.SD, sum), .SDcols = !patterns('^c|i')],
      data.table(V1 = -6.3, V2 = -6.5, V3 = 1.3, V4 = 3.4, V5 = -0.9,
                 V6 = -1.6, V7 = -2, V8 = -0.4, V9 = 6.1, V10 = -1.8))
 

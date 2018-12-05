@@ -1023,7 +1023,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
               .SDcols = eval(colsub, parent.frame(), parent.frame())
             }
           }
-          if (!length(.SDcols)) return(null.data.table())
+          if (!length(.SDcols)) stop("Empty .SDcols is not yet supported.")
           if (anyNA(.SDcols))
             stop(".SDcols missing at the following indices: ", brackify(which(is.na(.SDcols))))
           if (is.logical(.SDcols)) {

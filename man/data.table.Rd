@@ -146,8 +146,6 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
     Inversion (column dropping instead of keeping) can be accomplished be prepending the argument with \code{!} or \code{-} (there's no difference between these), e.g. \code{.SDcols = !c('x', 'y')}.
 
     Finally, you can filter columns to include in \code{.SD} according to regular expressions via \code{.SDcols=patterns(regex1, regex2, ...)}. The included columns will be the \emph{intersection} of the columns identified by each pattern; pattern unions can easily be specified with \code{|} in a regex. You can also invert a pattern as usual with \code{.SDcols = !patterns(...)}.
-
-    Empty \code{.SDcols} will return an empty \code{data.table}.
 }
   \item{verbose}{ \code{TRUE} turns on status and information messages to the console. Turn this on by default using \code{options(datatable.verbose=TRUE)}. The quantity and types of verbosity may be expanded in future.
 
