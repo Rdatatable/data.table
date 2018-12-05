@@ -26,6 +26,8 @@
 
 3. `.SDcols=` is more helpful when passed non-existent columns, [#3116](https://github.com/Rdatatable/data.table/issues/3116) and [#3118](https://github.com/Rdatatable/data.table/issues/3118). Thanks to Michael Chirico for the investigation and PR.
 
+4. `update.dev.pkg()` gains `type=` to specify if update should be made from binaries, sources or both. [#3148](https://github.com/Rdatatable/data.table/issues/3148). Thanks to Reino Bruner for the detailed suggestions.
+
 
 ### Changes in v1.11.8  (30 Sep 2018)
 
@@ -55,7 +57,6 @@
     methods(class="data.table")  # all the generics that data.table has a method for (47 currently)
     ```
 
-4. `update.dev.pkg` now gains `type` argument so user can specify if update should be made from binaries, sources or both. Closes [#3148](https://github.com/Rdatatable/data.table/issues/3148).
 
 ### Changes in v1.11.6  (19 Sep 2018)
 
