@@ -10332,25 +10332,27 @@ test(1750.32,
   groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=sets, id=TRUE)
 )
 # cube
-sets = local({
-  by=c("color","year","status")
-  n = length(by)
-  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=((2L^n)/(2L*k)), times=k))
-  lapply((2L^n):1, function(j) by[keepBool[j, ]])
-})
 test(1750.33,
   cube(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE),
-  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
+  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"),
+               sets = list(c("color", "year", "status"),
+                           c("color", "year"),
+                           c("color", "status"),
+                           "color",
+                           c("year", "status"),
+                           "year",
+                           "status",
+                           character(0)),
+               id = TRUE)
 )
-sets = local({
-  by=c("year","status")
-  n = length(by)
-  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=((2L^n)/(2L*k)), times=k))
-  lapply((2L^n):1, function(j) by[keepBool[j, ]])
-})
 test(1750.34,
   cube(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), id=TRUE),
-  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=sets, id=TRUE)
+  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"),
+               sets = list(c("year","status"),
+                           "year",
+                           "status",
+                           character(0)),
+               id = TRUE)
 )
 # grouping sets with integer64
 if (test_bit64) {
