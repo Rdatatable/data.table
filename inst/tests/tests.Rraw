@@ -9544,7 +9544,6 @@ test(1693.7, month(t), 8L)
 test(1693.8, quarter(t), 3L)
 test(1693.9, year(t), 2016L)
 
-
 # fix for #1740 - sub-assigning NAs for factors
 dt = data.table(x = 1:5, y = factor(c("","a","b","a", "")), z = 5:9)
 ans = data.table(x = 1:5, y = factor(c(NA,"a","b","a", NA)), z = 5:9)
@@ -9553,24 +9552,34 @@ test(1694.0, dt[y=="", y := NA], ans)
 # more tests for between()
 x = c(NaN, NA, 1, 5, -Inf, Inf)
 test(1695.1, x %between% c(3, 7), c(NA, NA, FALSE, TRUE, FALSE, FALSE))
-test(1695.2, x %between% c(NA, 7), c(NA, NA, NA, NA, NA, FALSE))
-test(1695.3, x %between% c(3, NA), c(NA, NA, FALSE, NA, FALSE, NA))
-test(1695.4, x %between% c(NA, NA), rep(NA, 6L))
-
+test(1695.2, x %between% c(NA, 7), c(NA, NA, TRUE, TRUE, TRUE, FALSE))
+test(1695.3, x %between% c(3, NA), c(NA, NA, FALSE, TRUE, FALSE, TRUE))
+test(1695.4, x %between% c(NA, NA), c(NA, NA, TRUE, TRUE, TRUE,TRUE))
+test(1695.5, x %between% c(NA_real_, NA_real_), c(NA, NA, TRUE, TRUE, TRUE,TRUE))
+test(1695.6, x %between% list(c(1,2,3,4,5,6), 10),  c(NA, NA, FALSE, TRUE, FALSE, FALSE))
 x = c(NA, 1L, 5L)
-test(1695.5, x %between% c(3, 7), c(NA, FALSE, TRUE))
-test(1695.6, x %between% c(NA, 7), c(NA, NA, NA))
-test(1695.7, x %between% c(3, NA), c(NA, FALSE, NA))
-test(1695.8, x %between% c(NA, NA), rep(NA, 3L))
-
+test(1695.7, x %between% c(3, 7), c(NA, FALSE, TRUE))
+test(1695.8, x %between% c(NA, 7), c(NA, TRUE, TRUE))
+test(1695.9, x %between% c(3, NA), c(NA, FALSE, TRUE))
+test(1695.11, x %between% c(NA, NA), c(NA, TRUE, TRUE))
 x = rep(NA_integer_, 3)
-test(1695.9, x %between% c(3, 7), rep(NA, 3L))
-test(1695.10, x %between% c(NA, 7), rep(NA, 3L))
-test(1695.11, x %between% c(3, NA), rep(NA, 3L))
-test(1695.12, x %between% c(NA, NA), rep(NA, 3L))
-
+test(1695.12, x %between% c(3, 7), rep(NA, 3L))
+test(1695.13, x %between% c(NA, 7), rep(NA, 3L))
+test(1695.14, x %between% c(3, NA), rep(NA, 3L))
+test(1695.15, x %between% c(NA, NA), rep(NA, 3L))
 x = integer(0)
-test(1695.13, x %between% c(3, 7), logical(0))
+test(1695.16, x %between% c(3, 7), logical(0))
+test(1695.17, TRUE %between% c(3, 7), error="between has been x of type logical")
+x = c("foo","bar","paz")
+test(1695.18, between(x, "bag", "fog"), c(FALSE, TRUE, FALSE))
+test(1695.19, between(x, c("b","f","a"), "q"), c(TRUE, FALSE, TRUE))
+test(1695.20, between(x, c("foo","baq","bar"), "paz", incbounds=TRUE), c(TRUE, TRUE, TRUE))
+test(1695.21, between(x, c("foo","baq","bar"), "paz", incbounds=FALSE), c(FALSE, TRUE, FALSE))
+x = c(3.14, 3.20, -42, Inf)
+test(1695.22, between(x, c(3,4,-60,5), c(3.14,10,-30,Inf)), c(TRUE,FALSE,TRUE,TRUE))
+test(1695.23, between(x, c(3,4,-60,5), c(3.14,10,-30,Inf), incbounds=FALSE), c(FALSE,FALSE,TRUE,FALSE))
+test(1695.24, between(x, c(3,4,-60), 99), error="length(lower) (3) must be either 1 or length(x) (4)")
+test(1695.25, between(x, c(3,4,-60,5), c(99,98)), error="length(upper) (2) must be either 1 or length(x) (4)")
 
 # test for #1819, verbose message for bmerge
 old_opt = getOption("datatable.verbose")
@@ -10328,7 +10337,7 @@ test(1750.32,
 sets = local({
   by=c("color","year","status")
   n = length(by)
-  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
+  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=((2L^n)/(2L*k)), times=k))
   lapply((2L^n):1, function(j) by[keepBool[j, ]])
 })
 test(1750.33,
@@ -10338,7 +10347,7 @@ test(1750.33,
 sets = local({
   by=c("year","status")
   n = length(by)
-  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
+  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=((2L^n)/(2L*k)), times=k))
   lapply((2L^n):1, function(j) by[keepBool[j, ]])
 })
 test(1750.34,
@@ -12421,172 +12430,7 @@ for (i in 1:4) {
 test(1959.5, fread("A\n\nB\n\nC\n1\n", skip=2), data.table(B=c("", "C", "1")))
 test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=1L, C=2L))
 
-# coverage tests
-## duplicated.R
-opt = options("datatable.old.unique.by.key" = TRUE)
-DT = data.table(x = c(1, 1, 3, 2), key = 'x')
-test(1960.1, duplicated(DT), c(FALSE, TRUE, FALSE, FALSE),
-     warning = 'deprecated option')
-test(1960.2, anyDuplicated(DT), 2L,
-     warning = 'deprecated option')
-options("datatable.old.unique.by.key" = opt$datatable.old.unique.by.key)
-
-test(1960.3, duplicated(DT, fromLast = NA),
-     error = 'must be TRUE or FALSE')
-test(1960.4, duplicated(DT, by = -1L),
-     error = 'Integer values between 1 and ncol')
-test(1960.5, duplicated(DT, by = 'y'),
-     error = 'by specifies column names that do not exist')
-test(1960.6, duplicated(data.table(NULL)), logical(0L))
-
-test(1960.7, unique(DT, incomparables = TRUE),
-     error = 'not used (yet)')
-test(1960.8, unique(DT, fromLast = TRUE),
-     data.table(x = c(1, 2, 3), key = 'x'))
-
-test(1960.9, anyDuplicated(DT, by = NULL), 2L)
-
-## uniqlist.R
-test(1960.10, uniqlist(1:5),
-     error = 'not type list')
-test(1960.11, uniqlist(list()), list(0L))
-
-## merge.R
-DT1 = data.table(a = 1:3, V = 'a')
-DT2 = data.table(a = 2:4, V = 'b')
-test(1960.12, merge(DT1, DT2, sort = 1+3i),
-     error = 'should be logical TRUE/FALSE')
-test(1960.13, merge(DT1, DT2, no.dups = 1+3i),
-     error = 'should be logical TRUE/FALSE')
-setDF(DT2)
-test(1960.14, merge(DT1, DT2),
-     data.table(a = integer(0), V = character(0)))
-setkey(DT1, a)
-test(1960.15, merge(DT1, DT2),
-     data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'))
-test(1960.16, merge(DT1, DT2, by.x = 'a', by.y = c('a', 'V')),
-     error = 'must be of same length')
-test(1960.17, merge(DT1, DT2, by = 'V', by.x = 'a', by.y = 'a'),
-     data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'),
-     warning = 'Supplied both.*argument will be ignored')
-test(1960.18, merge(DT1, DT2, by.x = 'z', by.y = 'a'),
-     error = 'Elements listed in `by.x`')
-test(1960.19, merge(DT1, DT2, by.x = 'a', by.y = 'z'),
-     error = 'Elements listed in `by.y`')
-test(1960.20, merge(DT1, DT2, by = character(0L)),
-     error = 'non-empty vector of column names')
-test(1960.21, merge(DT1, DT2, by = 'z'),
-     error = 'must be valid column names in x and y')
-
-## frank.R
-x = c(1, 1, 2, 5, 4, 3, 4, NA, 6)
-test(1960.22, frankv(x, na.last = logical(0L)),
-     error = 'length(na.last) = 0')
-test(1960.23, frankv(x, na.last = c(TRUE, FALSE)),
-     c(1.5, 1.5, 3, 7, 5.5, 4, 5.5, 9, 8),
-     warning = 'only the first element will be used')
-test(1960.24, frankv(x, cols = 'y'),
-     error = 'x is a single vector')
-test(1960.25, frankv(list(x), cols = integer(0L)),
-     error = "x is a list, 'cols' can not be 0-length")
-f = frankv(list(x), ties.method = 'random')
-test(1960.26,
-     length(f) == 9L && identical(f[c(3:4, 6L, 8:9)], c(3L, 7L, 4L, 9L, 8L)) &&
-       all(f[1:2] %in% c(1L, 2L)) && all(f[c(5L, 7L)] %in% c(5L, 6L)))
-f = frankv(list(x), ties.method = 'random', na.last = NA)
-test(1960.27,
-     length(f) == 8L && identical(f[c(3:4, 6L, 8L)], c(3L, 7L, 4L, 8L)) &&
-       all(f[1:2] %in% c(1L, 2L)) && all(f[c(5L, 7L)] %in% c(5L, 6L)))
-
-test(1960.28, frank(x, cols = 'NULL'),
-     c(1.5, 1.5, 3, 7, 5.5, 4, 5.5, 9, 8))
-test(1960.29, frank(data.table(x = x), +x),
-     c(1.5, 1.5, 3, 7, 5.5, 4, 5.5, 9, 8))
-
-## setkey.R
-DT = data.table(a = 3:1)
-test(1960.30, setkey('DT', a),
-     error = 'x may no longer be the character name')
-setDF(DT)
-test(1960.31, setkeyv(DT, 'a'),
-     error = 'x is not a data.table')
-setDT(DT)
-test(1960.32, setkeyv(DT, 1L),
-     error = 'cols is not a character vector')
-test(1960.33, setkeyv(DT, ''),
-     error = 'cols is the empty string')
-test(1960.34, setkeyv(DT, c('a', '')),
-     error = 'cols contains some blanks')
-setkey(DT, a)
-test(1960.35, {setkeyv(DT, character(0L)); key(DT)}, NULL,
-     warning = 'cols is a character vector of zero length')
-test(1960.36, any(grepl('already ordered', capture.output(setkey(DT, a, verbose = TRUE)))))
-setnames(DT, '.xi')
-setkey(DT, NULL)
-test(1960.37, setkey(DT, .xi),
-     error = "x contains a column called '.xi'")
-DT = data.table(a = 1+3i)
-test(1960.38, setkey(DT, a),
-     error = "Column 'a' is type 'complex'")
-
-test(1960.39, is.sorted(3:1, by = 'x'),
-     error = 'x is vector but')
-
-DT = data.table(a = 3:1)
-test(1960.40, forderv(DT, sort = FALSE, retGrp = FALSE),
-     error = 'At least one of retGrp or sort must be TRUE')
-test(1960.41, forderv(DT, na.last = logical(0L)),
-     error = 'length(na.last) = 0')
-test(1960.41, forderv(DT, na.last = c(TRUE, FALSE)), 3:1,
-     warning = 'length(na.last) > 1, only')
-test(1960.41, forderv(DT$a, by = 'a'),
-     error = 'x is a single vector, non-NULL')
-test(1960.42, forderv(DT$a, order = 2L),
-     error = 'x is a single vector, length(order)')
-test(1960.43, forderv(DT$a, order = c(1L, -1L)),
-     error = 'x is a single vector, length(order)')
-test(1960.44, forderv(DT, order = c(1L, -1L)),
-     error = 'x is a list, length(order)')
-test(1960.45, forderv(DT, order = 2L),
-     error = 'x is a list, length(order)')
-
-setDF(DT)
-test(1960.46, forder(DT), error = 'x must be a data.table')
-setDT(DT)
-test(1960.47, forder(DT[ , 0L]), error = 'Attempting to order a 0-column')
-test(1960.48, forder(DT, decreasing = NA), error = 'must be logical TRUE')
-test(1960.59, forder(DT, decreasing = 1.4), error = 'must be logical TRUE')
-test(1960.60, forder(DT, NULL), NULL)
-test(1960.61, forder(DT), NULL)
-test(1960.62, forder(DT, ), NULL)
-
-test(1960.63, fsort(as.double(DT$a), internal = TRUE),
-     error = 'Internal code should not be being called on type double')
-
-l = as.list(DT)
-test(1960.64, setorder(l, a), error = 'x must be a data.frame or data.table')
-test(1960.65, setorder(DT, NULL), data.table(a = 3:1))
-test(1960.66, setorder(DT, +a), data.table(a = 1:3))
-
-DT = data.table(a = 3:1)
-test(1960.67, setorderv(DT, NULL), data.table(a = 3:1))
-test(1960.68, setorderv(l, 'a'), error = 'x must be a data.frame or data.table')
-test(1960.69, setorderv(DT, 5L),
-     error = 'cols is not a character vector')
-test(1960.70, setorderv(DT, character(0L)), data.table(a = 3:1),
-     warning = 'cols is a character vector of zero length')
-test(1960.71, setorderv(DT, c('a', '')), error = 'cols contains some blanks')
-
-DT = data.table(a = c(1, 1, 2), b = c(2, 1, 3))
-test(1960.72, setorderv(copy(DT)),
-     data.table(a = c(1, 1, 2), b = c(1, 2, 3)))
-test(1960.73, setorderv(DT, 'c'), error = 'some columns are not in the data.table')
-setnames(DT, 1L, '.xi')
-test(1960.74, setorderv(DT, 'b'), error = "x contains a column called '.xi'")
-test(1960.75, setorderv(data.table(a = 1+3i), 'a'),
-     error = "Column 'a' is type 'complex'")
-
-## groupingsets.R
+# empty set with constant j, #3173
 DT = data.table(
   color = c("yellow", "red", "green", "red", "green", "red",
             "yellow", "yellow", "green", "green", "green", "yellow",
@@ -12605,89 +12449,273 @@ DT = data.table(
   value = c(2.5, 2, 3, 3, 2.5, 3.5, 2.5, 3.5, 3, 2.5, 3.5, 2.5, 2,
             2.5, 3, 3, 3, 3, 3, 3, 2, 2.5, 3, 3)
 )
+ans = groupingsets(DT[ , .(amount, value)], j = 5, by = character(0L), sets = list(character()), id=TRUE)
+test(1960, ans, data.table(grouping=0L, V1=5))
+
+# order of cube results consistent to postgresql docs, #3179
+set.seed(1)
+d <- data.table(a = rep(1:2, each = 8),
+                b = rep(1:2, each = 4),
+                c = rep(1:2, each = 2),
+                val = sample(0:1, 16, replace = TRUE))
+cb = cube(d, j= sum(val), by = c("a", "b", "c"), id=TRUE)
+gs = groupingsets(d, j = sum(val), by = c("a", "b", "c"),
+               sets = list(c("a", "b", "c"),
+                           c("a", "b"     ),
+                           c("a",      "c"),
+                           c("a"          ),
+                           c(     "b", "c"),
+                           c(     "b"     ),
+                           c(          "c"),
+                           character()), id=TRUE)
+test(1961, cb, gs)
+
+# coverage tests
+## duplicated.R
+opt = options("datatable.old.unique.by.key" = TRUE)
+DT = data.table(x = c(1, 1, 3, 2), key = 'x')
+test(1962.01, duplicated(DT), c(FALSE, TRUE, FALSE, FALSE),
+     warning = 'deprecated option')
+test(1962.02, anyDuplicated(DT), 2L,
+     warning = 'deprecated option')
+options("datatable.old.unique.by.key" = opt$datatable.old.unique.by.key)
+
+test(1962.03, duplicated(DT, fromLast = NA),
+     error = 'must be TRUE or FALSE')
+test(1962.04, duplicated(DT, by = -1L),
+     error = 'Integer values between 1 and ncol')
+test(1962.05, duplicated(DT, by = 'y'),
+     error = 'by specifies column names that do not exist')
+test(1962.06, duplicated(data.table(NULL)), logical(0L))
+
+test(1962.07, unique(DT, incomparables = TRUE),
+     error = 'not used (yet)')
+test(1962.08, unique(DT, fromLast = TRUE),
+     data.table(x = c(1, 2, 3), key = 'x'))
+
+test(1962.09, anyDuplicated(DT, by = NULL), 2L)
+
+## uniqlist.R
+test(1962.10, uniqlist(1:5),
+     error = 'not type list')
+test(1962.11, uniqlist(list()), list(0L))
+
+## merge.R
+DT1 = data.table(a = 1:3, V = 'a')
+DT2 = data.table(a = 2:4, V = 'b')
+test(1962.12, merge(DT1, DT2, sort = 1+3i),
+     error = 'should be logical TRUE/FALSE')
+test(1962.13, merge(DT1, DT2, no.dups = 1+3i),
+     error = 'should be logical TRUE/FALSE')
+setDF(DT2)
+test(1962.14, merge(DT1, DT2),
+     data.table(a = integer(0), V = character(0)))
+setkey(DT1, a)
+test(1962.15, merge(DT1, DT2),
+     data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'))
+test(1962.16, merge(DT1, DT2, by.x = 'a', by.y = c('a', 'V')),
+     error = 'must be of same length')
+test(1962.17, merge(DT1, DT2, by = 'V', by.x = 'a', by.y = 'a'),
+     data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'),
+     warning = 'Supplied both.*argument will be ignored')
+test(1962.18, merge(DT1, DT2, by.x = 'z', by.y = 'a'),
+     error = 'Elements listed in `by.x`')
+test(1962.19, merge(DT1, DT2, by.x = 'a', by.y = 'z'),
+     error = 'Elements listed in `by.y`')
+test(1962.20, merge(DT1, DT2, by = character(0L)),
+     error = 'non-empty vector of column names')
+test(1962.21, merge(DT1, DT2, by = 'z'),
+     error = 'must be valid column names in x and y')
+
+## frank.R
+x = c(1, 1, 2, 5, 4, 3, 4, NA, 6)
+test(1962.22, frankv(x, na.last = logical(0L)),
+     error = 'length(na.last) = 0')
+test(1962.23, frankv(x, na.last = c(TRUE, FALSE)),
+     c(1.5, 1.5, 3, 7, 5.5, 4, 5.5, 9, 8),
+     warning = 'only the first element will be used')
+test(1962.24, frankv(x, cols = 'y'),
+     error = 'x is a single vector')
+test(1962.25, frankv(list(x), cols = integer(0L)),
+     error = "x is a list, 'cols' can not be 0-length")
+f = frankv(list(x), ties.method = 'random')
+test(1962.26,
+     length(f) == 9L && identical(f[c(3:4, 6L, 8:9)], c(3L, 7L, 4L, 9L, 8L)) &&
+       all(f[1:2] %in% c(1L, 2L)) && all(f[c(5L, 7L)] %in% c(5L, 6L)))
+f = frankv(list(x), ties.method = 'random', na.last = NA)
+test(1962.27,
+     length(f) == 8L && identical(f[c(3:4, 6L, 8L)], c(3L, 7L, 4L, 8L)) &&
+       all(f[1:2] %in% c(1L, 2L)) && all(f[c(5L, 7L)] %in% c(5L, 6L)))
+
+test(1962.28, frank(x, cols = 'NULL'),
+     c(1.5, 1.5, 3, 7, 5.5, 4, 5.5, 9, 8))
+test(1962.29, frank(data.table(x = x), +x),
+     c(1.5, 1.5, 3, 7, 5.5, 4, 5.5, 9, 8))
+
+## setkey.R
+DT = data.table(a = 3:1)
+test(1962.30, setkey('DT', a),
+     error = 'x may no longer be the character name')
 setDF(DT)
-test(1960.76, rollup(DT), error = 'no applicable method')
-test(1960.77, data.table:::rollup.data.table(DT),
-     error = 'must be a data.table object')
-test(1960.78, cube(DT), error = 'no applicable method')
-test(1960.79, data.table:::cube.data.table(DT), error = 'must be a data.table object')
-test(1960.80, groupingsets(DT), error = 'no applicable method')
-test(1960.81, data.table:::groupingsets.data.table(DT), error = 'must be a data.table object')
+test(1962.31, setkeyv(DT, 'a'),
+     error = 'x is not a data.table')
 setDT(DT)
-test(1960.82, rollup(DT, by = 3L), error = "'by' must be a character vector")
-test(1960.83, rollup(DT, by = 'color', id = 3L), error = "'id' must be a logical scalar")
-test(1960.84, rollup(DT, by = 3L), error = "'by' must be a character vector")
-test(1960.85, rollup(DT, by = 'color', id = 3L), error = "'id' must be a logical scalar")
+test(1962.32, setkeyv(DT, 1L),
+     error = 'cols is not a character vector')
+test(1962.33, setkeyv(DT, ''),
+     error = 'cols is the empty string')
+test(1962.34, setkeyv(DT, c('a', '')),
+     error = 'cols contains some blanks')
+setkey(DT, a)
+test(1962.35, {setkeyv(DT, character(0L)); key(DT)}, NULL,
+     warning = 'cols is a character vector of zero length')
+test(1962.36, any(grepl('already ordered', capture.output(setkey(DT, a, verbose = TRUE)))))
+setnames(DT, '.xi')
+setkey(DT, NULL)
+test(1962.37, setkey(DT, .xi),
+     error = "x contains a column called '.xi'")
+DT = data.table(a = 1+3i)
+test(1962.38, setkey(DT, a),
+     error = "Column 'a' is type 'complex'")
+
+test(1962.39, is.sorted(3:1, by = 'x'),
+     error = 'x is vector but')
+
+DT = data.table(a = 3:1)
+test(1962.40, forderv(DT, sort = FALSE, retGrp = FALSE),
+     error = 'At least one of retGrp or sort must be TRUE')
+test(1962.41, forderv(DT, na.last = logical(0L)),
+     error = 'length(na.last) = 0')
+test(1962.41, forderv(DT, na.last = c(TRUE, FALSE)), 3:1,
+     warning = 'length(na.last) > 1, only')
+test(1962.41, forderv(DT$a, by = 'a'),
+     error = 'x is a single vector, non-NULL')
+test(1962.42, forderv(DT$a, order = 2L),
+     error = 'x is a single vector, length(order)')
+test(1962.43, forderv(DT$a, order = c(1L, -1L)),
+     error = 'x is a single vector, length(order)')
+test(1962.44, forderv(DT, order = c(1L, -1L)),
+     error = 'x is a list, length(order)')
+test(1962.45, forderv(DT, order = 2L),
+     error = 'x is a list, length(order)')
+
+setDF(DT)
+test(1962.46, forder(DT), error = 'x must be a data.table')
+setDT(DT)
+test(1962.47, forder(DT[ , 0L]), error = 'Attempting to order a 0-column')
+test(1962.48, forder(DT, decreasing = NA), error = 'must be logical TRUE')
+test(1962.59, forder(DT, decreasing = 1.4), error = 'must be logical TRUE')
+test(1962.60, forder(DT, NULL), NULL)
+test(1962.61, forder(DT), NULL)
+test(1962.62, forder(DT, ), NULL)
+
+test(1962.63, fsort(as.double(DT$a), internal = TRUE),
+     error = 'Internal code should not be being called on type double')
+
+l = as.list(DT)
+test(1962.64, setorder(l, a), error = 'x must be a data.frame or data.table')
+test(1962.65, setorder(DT, NULL), data.table(a = 3:1))
+test(1962.66, setorder(DT, +a), data.table(a = 1:3))
+
+DT = data.table(a = 3:1)
+test(1962.67, setorderv(DT, NULL), data.table(a = 3:1))
+test(1962.68, setorderv(l, 'a'), error = 'x must be a data.frame or data.table')
+test(1962.69, setorderv(DT, 5L),
+     error = 'cols is not a character vector')
+test(1962.70, setorderv(DT, character(0L)), data.table(a = 3:1),
+     warning = 'cols is a character vector of zero length')
+test(1962.71, setorderv(DT, c('a', '')), error = 'cols contains some blanks')
+
+DT = data.table(a = c(1, 1, 2), b = c(2, 1, 3))
+test(1962.72, setorderv(copy(DT)),
+     data.table(a = c(1, 1, 2), b = c(1, 2, 3)))
+test(1962.73, setorderv(DT, 'c'), error = 'some columns are not in the data.table')
+setnames(DT, 1L, '.xi')
+test(1962.74, setorderv(DT, 'b'), error = "x contains a column called '.xi'")
+test(1962.75, setorderv(data.table(a = 1+3i), 'a'),
+     error = "Column 'a' is type 'complex'")
+setDF(DT)
+test(1962.76, rollup(DT), error = 'no applicable method')
+test(1962.77, data.table:::rollup.data.table(DT),
+     error = 'must be a data.table object')
+test(1962.78, cube(DT), error = 'no applicable method')
+test(1962.79, data.table:::cube.data.table(DT), error = 'must be a data.table object')
+test(1962.80, groupingsets(DT), error = 'no applicable method')
+test(1962.81, data.table:::groupingsets.data.table(DT), error = 'must be a data.table object')
+setDT(DT)
+test(1962.82, rollup(DT, by = 3L), error = "'by' must be a character vector")
+test(1962.83, rollup(DT, by = 'color', id = 3L), error = "'id' must be a logical scalar")
+test(1962.84, rollup(DT, by = 3L), error = "'by' must be a character vector")
+test(1962.85, rollup(DT, by = 'color', id = 3L), error = "'id' must be a logical scalar")
 setnames(DT, 2L, 'color')
-test(1960.86, groupingsets(DT), error = 'Input data.table must not contain duplicate')
+test(1962.86, groupingsets(DT), error = 'Input data.table must not contain duplicate')
 setnames(DT, 2L, 'year')
-test(1960.87, groupingsets(DT, by = logical(1L)),
+test(1962.87, groupingsets(DT, by = logical(1L)),
      error = "'by' must be a character vector")
-test(1960.88, groupingsets(DT, by = 'color', sets = 5L),
+test(1962.88, groupingsets(DT, by = 'color', sets = 5L),
      error = "'sets' must be a list of character vectors")
-test(1960.89, groupingsets(DT, by = 'color', sets = list(5L)),
+test(1962.89, groupingsets(DT, by = 'color', sets = list(5L)),
      error = "'sets' must be a list of character vectors")
-test(1960.90, groupingsets(DT, by = 'color', sets = list('year', 'status'), id = 3L),
+test(1962.90, groupingsets(DT, by = 'color', sets = list('year', 'status'), id = 3L),
      error = "'id' must be a logical scalar")
 setnames(DT, 1L, 'grouping')
-test(1960.91, groupingsets(DT, by = c('color', 'status'),
+test(1962.91, groupingsets(DT, by = c('color', 'status'),
                            sets = list('color', 'status'), id = TRUE),
      error = "data.table must not have a column named 'grouping'")
 setnames(DT, 1L, 'color')
-test(1960.92, groupingsets(DT, j = c(list(grouping=.N), lapply(.SD, sum)),
+test(1962.92, groupingsets(DT, j = c(list(grouping=.N), lapply(.SD, sum)),
                            by = c("color", "year","status"), id = TRUE,
                            sets = list("color", c("year","status"), character())),
      error = "'j' expression must not evaluate to column named 'grouping'")
 
 ## fcast.R
 DT = data.table('(all)' = 1)
-test(1960.93, guess(DT), '(all)')
+test(1962.93, guess(DT), '(all)')
 setnames(DT, 'V')
-test(1960.94, guess(DT), 'V',
+test(1962.94, guess(DT), 'V',
      message = 'Using.*value column.*override')
 setDF(DT)
-test(1960.95, data.table:::dcast.data.table(DT),
+test(1962.95, data.table:::dcast.data.table(DT),
      error = 'must be a data.table')
 setDT(DT)
-test(1960.96, dcast(DT, a ~ a, drop = NA),
+test(1962.96, dcast(DT, a ~ a, drop = NA),
      error = 'must be logical TRUE/FALSE')
 DT = data.table(a = c(1, 1, 2, 2), b = list(1, 2, 3, 4), c = c(4, 4, 2, 2))
-test(1960.97, dcast(DT, a ~ b, value.var = 'b'),
+test(1962.97, dcast(DT, a ~ b, value.var = 'b'),
      error = 'Columns specified in formula can not be of type list')
-test(1960.98, dcast(DT[0L, ], a ~ c, value.var = 'b'),
+test(1962.98, dcast(DT[0L, ], a ~ c, value.var = 'b'),
      error = 'Can not cast an empty data.table')
-test(1960.99, dcast(DT, a ~ c, value.var = 'b'),
+test(1962.99, dcast(DT, a ~ c, value.var = 'b'),
      data.table(a = c(1, 2), `2` = c(0L, 2L), `4` = c(2L, 0L), key = 'a'),
      message = 'Aggregate function missing')
 
 ## IDateTime.R
 x = as.IDate('2018-08-01')
-test(1960.100, `+`(x), x)
-test(1960.101, x + 1.4, structure(17745.4, class = "Date"))
-test(1960.102, x + x, error = 'binary + is not defined')
+test(1962.100, `+`(x), x)
+test(1962.101, x + 1.4, structure(17745.4, class = "Date"))
+test(1962.102, x + x, error = 'binary + is not defined')
 
-test(1960.103, `-`(x), error = 'unary - is not defined')
-test(1960.104, x - 1.4, structure(17742.6, class = "Date"))
+test(1962.103, `-`(x), error = 'unary - is not defined')
+test(1962.104, x - 1.4, structure(17742.6, class = "Date"))
 
 y = as.ITime('543210', format = '%S%M%H')
-test(1960.105, y, structure(37974L, class = "ITime"))
-test(1960.106, capture.output(print(y)), '[1] "10:32:54"')
-test(1960.107, rep(y, 2L), structure(c(37974L, 37974L), class = "ITime"))
-test(1960.108, as.POSIXlt(y),
+test(1962.105, y, structure(37974L, class = "ITime"))
+test(1962.106, capture.output(print(y)), '[1] "10:32:54"')
+test(1962.107, rep(y, 2L), structure(c(37974L, 37974L), class = "ITime"))
+test(1962.108, as.POSIXlt(y),
      structure(list(sec = 54, min = 32L, hour = 10L, mday = 1L, mon = 11L,
                     year = 118L, wday = 6L, yday = 334L, isdst = 0L),
                class = c("POSIXlt", "POSIXt"), tzone = "UTC"))
 
-test(1960.109, as.POSIXct(x, y),
+test(1962.109, as.POSIXct(x, y),
      structure(1533119574, tzone = "UTC", class = c("POSIXct", "POSIXt")))
-test(1960.110, as.POSIXct(x, tz = ''),
+test(1962.110, as.POSIXct(x, tz = ''),
      structure(1533081600, tzone = "UTC", class = c("POSIXct", "POSIXt")))
 
 z = .POSIXct(3725, 'UTC')
-test(1960.111, second(z), 5L)
-test(1960.112, minute(z), 2L)
-test(1960.113, hour(z), 1L)
-
+test(1962.111, second(z), 5L)
+test(1962.112, minute(z), 2L)
+test(1962.113, hour(z), 1L)
 
 
 ###################################
