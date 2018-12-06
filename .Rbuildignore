@@ -22,3 +22,6 @@
 ^Dockerfile$
 ^Dockerfile\.in$
 ^.*\.dll$
+^rdatatable\.png$
+^rdatatable\.svg$
+

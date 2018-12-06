@@ -8309,6 +8309,9 @@ x2 = unique(x)
 y = data.table(c(2,3,4,4,4,5), c(1,1,2,3,3,3))
 test(1626.77, fsetequal(x, x2, all = FALSE), TRUE)
 test(1626.78, fsetequal(x, y, all = FALSE), FALSE)
+# unit test for #3133
+DT = data.table(A=1)
+test(1626.79, funion(DT, DT, all=TRUE), data.table(A=c(1, 1)))
 
 # fix for #1087 and #1465
 test(1627, charToRaw(names(fread(testDir("issue_1087_utf8_bom.csv")))[1L]), as.raw(97L))
@@ -8901,6 +8904,10 @@ dt = data.table(x=rexp(100),y=rep(LETTERS[1:10], 10))
 dtL = split(dt, by = "y")
 test(1639.140, dim(dtL[[1]][, x2 := -x]), c(10L,3L))
 test(1639.141, all(sapply(dtL, truelength) > 1000))
+# test if split does not have scoping issues if one of the variables is 'x' #3151
+dt <- data.table(x = factor("a"), y = 1)
+test(1639.142, x = split(dt, by = "x"), y = list(a = dt))
+test(1639.143, x = split(dt, by = "y"), y = list(`1` = dt))
 
 # allow x's cols (specifically x's join cols) to be referred to using 'x.' syntax
 # patch for #1615. Note that I specifically have not implemented x[y, aa, on=c(aa="bb")]
@@ -9205,6 +9212,12 @@ test(1658.32, fwrite(data.table(D = as.POSIXct(seq.Date(as.Date("2038-01-19"), a
     output="D\n2038-01-19T00:00:00Z\n2038-01-20T00:00:00Z")
 
 options(oldverbose)
+
+# input is of class matrix
+test(1658.33, fwrite(matrix("foo"), quote=TRUE), output='"V1"\n"foo"', message = "x being coerced from class: matrix to data.table")
+test(1658.34, fwrite(matrix(1:4, nrow=2, ncol=2), quote = TRUE), output = '"V1","V2"\n1,3\n2,4', message = "x being coerced from class: matrix to data.table")
+test(1658.35, fwrite(matrix(1:3, nrow=3, ncol=1), quote = TRUE), output = '"V1"\n1\n2\n3', message = "x being coerced from class: matrix to data.table")
+test(1658.36, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c("ca","cb"))), quote = TRUE), output = '"ca","cb"\n1,3\n2,4', message = "x being coerced from class: matrix to data.table")
 
 ## End fwrite tests
 
@@ -10332,25 +10345,27 @@ test(1750.32,
   groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=sets, id=TRUE)
 )
 # cube
-sets = local({
-  by=c("color","year","status")
-  n = length(by)
-  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
-  lapply((2L^n):1, function(j) by[keepBool[j, ]])
-})
 test(1750.33,
   cube(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE),
-  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
+  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"),
+               sets = list(c("color", "year", "status"),
+                           c("color", "year"),
+                           c("color", "status"),
+                           "color",
+                           c("year", "status"),
+                           "year",
+                           "status",
+                           character(0)),
+               id = TRUE)
 )
-sets = local({
-  by=c("year","status")
-  n = length(by)
-  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
-  lapply((2L^n):1, function(j) by[keepBool[j, ]])
-})
 test(1750.34,
   cube(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), id=TRUE),
-  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=sets, id=TRUE)
+  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"),
+               sets = list(c("year","status"),
+                           "year",
+                           "status",
+                           character(0)),
+               id = TRUE)
 )
 # grouping sets with integer64
 if (test_bit64) {
@@ -12428,32 +12443,85 @@ for (i in 1:4) {
 test(1959.5, fread("A\n\nB\n\nC\n1\n", skip=2), data.table(B=c("", "C", "1")))
 test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=1L, C=2L))
 
-# fread can handle file name in native and utf-8 encoding, #3078, pr#3141
-if (.Platform$OS.type=="windows") {
-  f = tempfile("\u00f6"); cat("3.14", file = f);
-  fn = enc2native(f); f8 = enc2utf8(f);
-  data.table:::test(1960.1, fread(fn), data.table(V1=3.14));
-  data.table:::test(1960.2, fread(f8), data.table(V1=3.14));
-  unlink(c(fn, f8))
-}
+# empty set with constant j, #3173
+DT = data.table(
+  color = c("yellow", "red", "green", "red", "green", "red",
+            "yellow", "yellow", "green", "green", "green", "yellow",
+            "red", "yellow", "red", "green", "yellow", "red", "yellow",
+            "red", "green", "yellow", "green", "green"),
+  year = structure(c(15340, 15340, 14975, 15706, 15706, 15340,
+                     16436, 15340, 15340, 14975, 16436, 15706,
+                     16436, 15340, 14975, 14975, 16071, 15340,
+                     15706, 16071, 15706, 15340, 16436, 16071), class = "Date"),
+  status = structure(c(4L, 3L, 4L, 3L, 2L, 1L, 3L, 4L, 4L, 3L, 4L, 4L,
+                       4L, 4L, 1L, 3L, 3L, 2L, 1L, 2L, 3L, 4L, 2L, 4L),
+                     .Label = c("active", "archived", "inactive", "removed"),
+                     class = "factor"),
+  amount = c(1L, 4L, 2L, 3L, 1L, 5L, 1L, 1L, 4L, 2L, 3L, 1L,
+             5L, 4L, 2L, 2L, 4L, 3L, 3L, 2L, 4L, 4L, 1L, 2L),
+  value = c(2.5, 2, 3, 3, 2.5, 3.5, 2.5, 3.5, 3, 2.5, 3.5, 2.5, 2,
+            2.5, 3, 3, 3, 3, 3, 3, 2, 2.5, 3, 3)
+)
+ans = groupingsets(DT[ , .(amount, value)], j = 5, by = character(0L), sets = list(character()), id=TRUE)
+test(1960, ans, data.table(grouping=0L, V1=5))
 
-# fwrite can handle file names and paths in native and utf-8 encoding, #3078, pr#3141
+# order of cube results consistent to postgresql docs, #3179
+set.seed(1)
+d <- data.table(a = rep(1:2, each = 8),
+                b = rep(1:2, each = 4),
+                c = rep(1:2, each = 2),
+                val = sample(0:1, 16, replace = TRUE))
+cb = cube(d, j= sum(val), by = c("a", "b", "c"), id=TRUE)
+gs = groupingsets(d, j = sum(val), by = c("a", "b", "c"),
+               sets = list(c("a", "b", "c"),
+                           c("a", "b"     ),
+                           c("a",      "c"),
+                           c("a"          ),
+                           c(     "b", "c"),
+                           c(     "b"     ),
+                           c(          "c"),
+                           character()), id=TRUE)
+test(1961, cb, gs)
+
+# tests 1962 & 1963 reserved for other PRs
+
+# 0 column data.table should not have rownames, #3149
+M0 = matrix(1:6, nrow=3, ncol=2, dimnames=list(rows=paste0("id",1:3), cols=c("v1","v2")))
+M = M0[,integer(0)]
+DT = as.data.table(M)
+test(1964.1, rownames(DT), character(0))
+test(1964.2, colnames(DT), character(0))
+M = M0[integer(0),, drop=FALSE]
+DT = as.data.table(M)
+test(1964.3, rownames(DT), character(0))
+test(1964.4, colnames(DT), c("v1","v2"))
+
+test(1965, setDT(list(1, 1:2)), error = 'profile of input lengths')   #3121
+
+# fread/fwrite file name in native and utf-8 encoding, #3078
 if (.Platform$OS.type=="windows") {
-  DT = data.table("a"); pth = tempdir();
-  f = "\u00f6.csv"; fp = file.path(pth, f);
-  fpn = enc2native(fp); fp8 = enc2utf8(fp);
-  fwrite(DT, fpn);
-  data.table:::test(1961.1, list.files(path = pth, pattern = "\\.csv$"), f);
-  unlink(c(fp, file.path(pth, "\u00c3\u00b6.csv")));
-  fwrite(DT, fp8);
-  data.table:::test(1961.2, list.files(path = pth, pattern = "\\.csv$"), f);
-  unlink(c(fp, file.path(pth, "\u00c3\u00b6.csv")));
-  p = file.path(pth, "\u00fc"); dir.create(p); f = tempfile(tmpdir = p);
-  data.table:::test(1961.3, fwrite(DT, enc2native(f)), NULL)
-  unlink(f);
-  data.table:::test(1961.4, fwrite(DT, enc2utf8(f)), NULL)
+  f = tempfile("\u00f6"); cat("3.14", file = f)
+  fn = enc2native(f); f8 = enc2utf8(f)
+  test(1966.1, fread(fn), data.table(V1=3.14))
+  test(1966.2, fread(f8), data.table(V1=3.14))
+  unlink(c(fn, f8))
+  
+  DT = data.table("a"); pth = tempdir()
+  f = "\u00f6.csv"; fp = file.path(pth, f)
+  fpn = enc2native(fp); fp8 = enc2utf8(fp)
+  fwrite(DT, fpn)
+  test(1966.3, list.files(path = pth, pattern = "\\.csv$"), f)
+  unlink(c(fp, file.path(pth, "\u00c3\u00b6.csv")))
+  fwrite(DT, fp8)
+  test(1966.4, list.files(path = pth, pattern = "\\.csv$"), f)
+  unlink(c(fp, file.path(pth, "\u00c3\u00b6.csv")))
+  p = file.path(pth, "\u00fc"); dir.create(p); f = tempfile(tmpdir = p)
+  test(1966.5, fwrite(DT, enc2native(f)), NULL)
+  unlink(f)
+  test(1966.6, fwrite(DT, enc2utf8(f)), NULL)
   unlink(p, recursive = TRUE)
 }
+
 
 ###################################
 #  Add new tests above this line  #
