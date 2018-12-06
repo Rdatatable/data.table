@@ -2349,7 +2349,9 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
   flatten_any = flatten && any(vapply_1b(by, function(col) is.factor(x[[col]])))
   nested_current = !flatten && is.factor(x[[.by]])
   if (!drop && (flatten_any || nested_current)) {
-    dtq[["i"]] = substitute(make.levels(x, cols=.cols, sorted=.sorted), list(.cols=if (flatten) by else .by, .sorted=sorted))
+    # create 'levs' here to avoid lexical scoping glitches, see #3151
+    levs = make.levels(x=x, cols=if (flatten) by else .by, sorted=sorted)
+    dtq[["i"]] = quote(levs)
     join = TRUE
   }
   dtq[["j"]] = substitute(
@@ -2766,9 +2768,15 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       stop("Column ", i, " is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
     }
     n = vapply(x, length, 0L)
-    mn = max(n)
-    if (any(n<mn))
-      stop("All elements in argument 'x' to 'setDT' must be of same length")
+    n_range = range(n)
+    if (n_range[1L] != n_range[2L]) {
+      tbl = sort(table(n))
+      stop("All elements in argument 'x' to 'setDT' must be of same length, ",
+           "but the profile of input lengths (length:frequency) is: ",
+           brackify(sprintf('%s:%d', names(tbl), tbl)),
+           "\nThe first entry with fewer than ", n_range[2L],
+           " entries is ", which.max(n<n_range[2L]))
+    }
     xn = names(x)
     if (is.null(xn)) {
       setattr(x, "names", paste0("V",seq_len(length(x))))
@@ -2780,7 +2788,7 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       }
       if (check.names) setattr(x, "names", make.names(xn, unique=TRUE))
     }
-    setattr(x,"row.names",.set_row_names(max(n)))
+    setattr(x,"row.names",.set_row_names(n_range[2L]))
     setattr(x,"class",c("data.table","data.frame"))
     alloc.col(x)
   } else {

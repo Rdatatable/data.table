@@ -8314,6 +8314,9 @@ x2 = unique(x)
 y = data.table(c(2,3,4,4,4,5), c(1,1,2,3,3,3))
 test(1626.77, fsetequal(x, x2, all = FALSE), TRUE)
 test(1626.78, fsetequal(x, y, all = FALSE), FALSE)
+# unit test for #3133
+DT = data.table(A=1)
+test(1626.79, funion(DT, DT, all=TRUE), data.table(A=c(1, 1)))
 
 # fix for #1087 and #1465
 test(1627, charToRaw(names(fread(testDir("issue_1087_utf8_bom.csv")))[1L]), as.raw(97L))
@@ -8906,6 +8909,10 @@ dt = data.table(x=rexp(100),y=rep(LETTERS[1:10], 10))
 dtL = split(dt, by = "y")
 test(1639.140, dim(dtL[[1]][, x2 := -x]), c(10L,3L))
 test(1639.141, all(sapply(dtL, truelength) > 1000))
+# test if split does not have scoping issues if one of the variables is 'x' #3151
+dt <- data.table(x = factor("a"), y = 1)
+test(1639.142, x = split(dt, by = "x"), y = list(a = dt))
+test(1639.143, x = split(dt, by = "y"), y = list(`1` = dt))
 
 # allow x's cols (specifically x's join cols) to be referred to using 'x.' syntax
 # patch for #1615. Note that I specifically have not implemented x[y, aa, on=c(aa="bb")]
@@ -9210,6 +9217,12 @@ test(1658.32, fwrite(data.table(D = as.POSIXct(seq.Date(as.Date("2038-01-19"), a
     output="D\n2038-01-19T00:00:00Z\n2038-01-20T00:00:00Z")
 
 options(oldverbose)
+
+# input is of class matrix
+test(1658.33, fwrite(matrix("foo"), quote=TRUE), output='"V1"\n"foo"', message = "x being coerced from class: matrix to data.table")
+test(1658.34, fwrite(matrix(1:4, nrow=2, ncol=2), quote = TRUE), output = '"V1","V2"\n1,3\n2,4', message = "x being coerced from class: matrix to data.table")
+test(1658.35, fwrite(matrix(1:3, nrow=3, ncol=1), quote = TRUE), output = '"V1"\n1\n2\n3', message = "x being coerced from class: matrix to data.table")
+test(1658.36, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c("ca","cb"))), quote = TRUE), output = '"ca","cb"\n1,3\n2,4', message = "x being coerced from class: matrix to data.table")
 
 ## End fwrite tests
 
@@ -10338,25 +10351,27 @@ test(1750.32,
   groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=sets, id=TRUE)
 )
 # cube
-sets = local({
-  by=c("color","year","status")
-  n = length(by)
-  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=((2L^n)/(2L*k)), times=k))
-  lapply((2L^n):1, function(j) by[keepBool[j, ]])
-})
 test(1750.33,
   cube(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE),
-  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=sets, id=TRUE)
+  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"),
+               sets = list(c("color", "year", "status"),
+                           c("color", "year"),
+                           c("color", "status"),
+                           "color",
+                           c("year", "status"),
+                           "year",
+                           "status",
+                           character(0)),
+               id = TRUE)
 )
-sets = local({
-  by=c("year","status")
-  n = length(by)
-  keepBool = sapply(2L^(1:n - 1L), function(k) rep(c(FALSE, TRUE), each=((2L^n)/(2L*k)), times=k))
-  lapply((2L^n):1, function(j) by[keepBool[j, ]])
-})
 test(1750.34,
   cube(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), id=TRUE),
-  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"), sets=sets, id=TRUE)
+  groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("year","status"), .SDcols=c("amount","value"),
+               sets = list(c("year","status"),
+                           "year",
+                           "status",
+                           character(0)),
+               id = TRUE)
 )
 # grouping sets with integer64
 if (test_bit64) {
@@ -12733,6 +12748,20 @@ test(1962.109, second(z), 5L)
 test(1962.110, minute(z), 2L)
 test(1962.111, hour(z), 1L)
 
+# tests 1962 & 1963 reserved for other PRs
+
+# 0 column data.table should not have rownames, #3149
+M0 = matrix(1:6, nrow=3, ncol=2, dimnames=list(rows=paste0("id",1:3), cols=c("v1","v2")))
+M = M0[,integer(0)]
+DT = as.data.table(M)
+test(1964.1, rownames(DT), character(0))
+test(1964.2, colnames(DT), character(0))
+M = M0[integer(0),, drop=FALSE]
+DT = as.data.table(M)
+test(1964.3, rownames(DT), character(0))
+test(1964.4, colnames(DT), c("v1","v2"))
+
+test(1965, setDT(list(1, 1:2)), error = 'profile of input lengths')   #3121
 
 ###################################
 #  Add new tests above this line  #
