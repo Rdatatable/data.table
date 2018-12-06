@@ -3,6 +3,7 @@
 .RData
 .Rhistory
 .Rapp.history
+Rplots.pdf
 
 # Package build process
 *-Ex.R

@@ -10,7 +10,9 @@
 
 3. `setnames()` gains `skip_absent` to skip names in `old` that aren't present, [#3030](https://github.com/Rdatatable/data.table/issues/3030). By default `FALSE` so that it is still an error, as before, to attempt to change a column name that is not present. Thanks to @MusTheDataGuy for the suggestion and the PR.
 
-4. `fwrite()` now accepts `matrix`, (#2613)[https://github.com/Rdatatable/data.table/issues/2613]. Thanks to Michael Chirico for the suggestion and Felipe Parages for implementing. For now matrix input is converted to data.table (which can be costly) before writing. 
+4. `NA` in `between`'s `lower` and `upper` are now taken as missing bounds and return `TRUE` rather than than `NA`. This is now documented.
+
+5. `fwrite()` now accepts `matrix`, (#2613)[https://github.com/Rdatatable/data.table/issues/2613]. Thanks to Michael Chirico for the suggestion and Felipe Parages for implementing. For now matrix input is converted to data.table (which can be costly) before writing. 
 
 #### BUG FIXES
 
@@ -18,7 +20,15 @@
 
 2. Column names that look like expressions (e.g. `"a<=colB"`) caused an error when used in `on=` even when wrapped with backticks, [#3092](https://github.com/Rdatatable/data.table/issues/3092). Additionally, `on=` now supports white spaces around operators; e.g. `on = "colA == colB"`. Thanks to @mt1022 for reporting and to @MarkusBonsch for fixing.
 
-3. Unmatched `patterns` in `measure.vars` fail early and with feedback, [#3106](https://github.com/Rdatatable/data.table/issues/3092).
+3. Unmatched `patterns` in `measure.vars` fail early and with feedback, [#3106](https://github.com/Rdatatable/data.table/issues/3106).
+
+4. `fread(..., skip=)` now skips non-standard `\r` and `\n\r` line endings properly again, [#3006](https://github.com/Rdatatable/data.table/issues/3006). Standard line endings (`\n` Linux/Mac and `\r\n` Windows) were skipped ok. Thanks to @brattono and @tbrycekelly for providing reproducible examples, and @st-pasha for fixing.
+
+5. `cube()` will now produce expected order of results, [#3179](https://github.com/Rdatatable/data.table/issues/3179). Thanks to @Henrik-P for reporting.
+
+6. `groupingsets()` groups by empty column set and constant value in `j`, [#3173](https://github.com/Rdatatable/data.table/issues/3173).
+
+7. `split.data.table()` failed if `DT` had a factor column named `"x"`, [#3151](https://github.com/Rdatatable/data.table/issues/3151). Thanks to @tdeenes for reporting and fixing.
 
 #### NOTES
 
@@ -27,6 +37,8 @@
 2. When `on=` is provided but not `i=`, a helpful error is now produced rather than silently ignoring `on=`. Thanks to Dirk Eddelbuettel for the idea.
 
 3. `.SDcols=` is more helpful when passed non-existent columns, [#3116](https://github.com/Rdatatable/data.table/issues/3116) and [#3118](https://github.com/Rdatatable/data.table/issues/3118). Thanks to Michael Chirico for the investigation and PR.
+
+4. `update.dev.pkg()` gains `type=` to specify if update should be made from binaries, sources or both. [#3148](https://github.com/Rdatatable/data.table/issues/3148). Thanks to Reino Bruner for the detailed suggestions.
 
 
 ### Changes in v1.11.8  (30 Sep 2018)
@@ -44,6 +56,8 @@
 3. Assigning an out-of-range integer to an item in a factor column (a rare operation) correctly created an `NA` in that spot with warning, but now no longer also corrupts the variable being assigned, [#2984](https://github.com/Rdatatable/data.table/issues/2984). Thanks to @radfordneal for reporting and @MarkusBonsch for fixing. Assigning a string which is missing from the factor levels continues to automatically append the string to the factor levels.
 
 4. Assigning a sequence to a column using base R methods (e.g. `DT[["foo"]] = 1:10`) could cause subsetting to fail with `Internal error in subset.c: column <n> is an ALTREP vector`, [#3051](https://github.com/Rdatatable/data.table/issues/3051). Thanks to Michel Lang for reporting.
+
+5. `as.data.table` `matrix` method now properly handles rownames for 0 column data.table output. Thanks @mllg for reporting. Closes [#3149](https://github.com/Rdatatable/data.table/issues/3149).
 
 #### NOTES
 

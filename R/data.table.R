@@ -264,7 +264,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (missing(i) && missing(j)) {
     # ...[] == oops at console, forgot print(...)
     # or some kind of dynamic construction that has edge case of no contents inside [...]
-    if (nargs()>2L)  # 2 is minimum:  1) method name, 2) x
+    if (!is.null(names(sys.call())))   # not using nargs() as it considers DT[,] to have 3 arguments, #3163
       stop("When i and j are both missing, no other argument should be used. Empty [] is useful after := to have the result printed.")
     return(x)
   }
@@ -690,11 +690,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         else stop("i evaluates to a logical vector length ", length(i), " but there are ", nrow(x), " rows. Recycling of logical i is no longer allowed as it hides more bugs than is worth the rare convenience. Explicitly use rep(...,length=.N) if you really need to recycle.")
       } else {
         irows = as.integer(i)  # e.g. DT[c(1,3)] and DT[c(-1,-3)] ok but not DT[c(1,-3)] (caught as error)
-        irows = .Call(CconvertNegativeIdx, irows, nrow(x)) # simplifies logic from here on (can assume positive subscripts)
-                                   # maintains Arun's fix for #2697 (test 1042)
-                                   # efficient in C with more detailed messages
-                                   # falls through quickly (no R level allocs) if no negatives
-                                   # minor TO DO: can we merge this with check_idx in fcast.c/subset ?
+        irows = .Call(CconvertNegAndZeroIdx, irows, nrow(x), is.null(jsub) || root!=":=")  # last argument is allowOverMax (NA when selecting, error when assigning)
+        # simplifies logic from here on: can assume positive subscripts (no zeros)
+        # maintains Arun's fix for #2697 (test 1042)
+        # efficient in C with more detailed helpful messages when user mixes positives and negatives
+        # falls through quickly (no R level allocs) if all items are within range [1,max] with no zeros or negatives
+        # minor TO DO: can we merge this with check_idx in fcast.c/subset ?
       }
     }
     if (notjoin) {
@@ -1464,11 +1465,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       if (!bysameorder && identical(byindex,FALSE)) {
         if (verbose) {last.started.at=proc.time();cat("Finding groups using forderv ... ");flush.console()}
         o__ = forderv(byval, sort=!missing(keyby), retGrp=TRUE)
-        # The sort= argument is called sortStr at C level. It's just about saving the sort of unique strings at
-        # C level for efficiency (cgroup vs csort) when by= not keyby=. All other types are always sorted. Getting
-        # orginal order below is the part that retains original order. Passing sort=TRUE here always won't change any
-        # result at all (tested and confirmed to double check), it'll just make by= slower when there's a large
-        # number of unique strings. It must be TRUE when keyby= though, since the key is just marked afterwards.
+        # The sort= argument is called sortGroups at C level. It's primarily for saving the sort of unique strings at
+        # C level for efficiency when by= not keyby=. Other types also retain appearance order, but at byte level to
+        # minimize data movement and benefit from skipping subgroups which happen to be grouped but not sorted. This byte
+        # appearance order is not the same as the order of group values within by= columns, so the 2nd forder below is
+        # still needed to get the group appearance order. Always passing sort=TRUE above won't change any result at all
+        # (tested and confirmed), it'll just make by= slower. It must be TRUE when keyby= though since the key is just
+        # marked afterwards.
         # forderv() returns empty integer() if already ordered to save allocating 1:xnrow
         bysameorder = orderedirows && !length(o__)
         if (verbose) {
@@ -1787,8 +1790,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   grporder = o__
   # for #971, added !GForce. if (GForce) we do it much more (memory) efficiently than subset of order vector below.
   if (length(irows) && !isTRUE(irows) && !GForce) {
-    # fix for bug #2758. TO DO: provide a better error message
-    if (length(irows) > 1L && length(zo__ <- which(irows == 0)) > 0L) stop("i[", zo__[1L], "] is 0. While grouping, i=0 is allowed when it's the only value. When length(i) > 1, all i should be > 0.")
+    # any zeros in irows were removed by convertNegAndZeroIdx earlier above; no need to check for zeros again. Test 1058-1061 check case #2758.
     if (length(o__) && length(irows)!=length(o__)) stop("Internal error: length(irows)!=length(o__)") # nocov
     o__ = if (length(o__)) irows[o__]  # better do this once up front (even though another alloc) than deep repeated branch in dogroups.c
           else irows
@@ -2347,7 +2349,9 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
   flatten_any = flatten && any(vapply_1b(by, function(col) is.factor(x[[col]])))
   nested_current = !flatten && is.factor(x[[.by]])
   if (!drop && (flatten_any || nested_current)) {
-    dtq[["i"]] = substitute(make.levels(x, cols=.cols, sorted=.sorted), list(.cols=if (flatten) by else .by, .sorted=sorted))
+    # create 'levs' here to avoid lexical scoping glitches, see #3151
+    levs = make.levels(x=x, cols=if (flatten) by else .by, sorted=sorted)
+    dtq[["i"]] = quote(levs)
     join = TRUE
   }
   dtq[["j"]] = substitute(
