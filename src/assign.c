@@ -188,12 +188,12 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
 
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 {
-  SEXP names, class;
+  SEXP names, klass;   // klass not class at request of pydatatable because class is reserved word in C++, PR #3129
   R_len_t l, tl;
   if (isNull(dt)) error("alloccol has been passed a NULL dt");
   if (TYPEOF(dt) != VECSXP) error("dt passed to alloccol isn't type VECSXP");
-  class = getAttrib(dt, R_ClassSymbol);
-  if (isNull(class)) error("dt passed to alloccol has no class attribute. Please report result of traceback() to data.table issue tracker.");
+  klass = getAttrib(dt, R_ClassSymbol);
+  if (isNull(klass)) error("dt passed to alloccol has no class attribute. Please report result of traceback() to data.table issue tracker.");
   l = LENGTH(dt);
   names = getAttrib(dt,R_NamesSymbol);
   // names may be NULL when null.data.table() passes list() to alloccol for example.
@@ -246,9 +246,9 @@ SEXP shallowwrapper(SEXP dt, SEXP cols) {
 // is.data.table() C-function, extracted from assign.c
 // Check if "data.table" class exists somewhere in class (#5115)
 Rboolean isDatatable(SEXP x) {
-  SEXP class = getAttrib(x, R_ClassSymbol);
-  for (int i=0; i<length(class); i++) {
-    if (strcmp(CHAR(STRING_ELT(class, i)), "data.table") == 0) return(TRUE);
+  SEXP klass = getAttrib(x, R_ClassSymbol);
+  for (int i=0; i<length(klass); i++) {
+    if (strcmp(CHAR(STRING_ELT(klass, i)), "data.table") == 0) return(TRUE);
   }
   return (FALSE);
 }
@@ -279,7 +279,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
   R_len_t i, j, nrow, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
-  SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, class, tmp, colorder, key, index, a, assignedNames, indexNames;
+  SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, klass, tmp, colorder, key, index, a, assignedNames, indexNames;
   SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
   Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, isDataTable=FALSE;
   const char *c1, *tc1, *tc2;
@@ -290,22 +290,22 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   if (length(bindingIsLocked) && LOGICAL(bindingIsLocked)[0])
     error(".SD is locked. Updating .SD by reference using := or set are reserved for future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, until shallow() is exported.");
 
-  class = getAttrib(dt, R_ClassSymbol);
-  if (isNull(class)) error("Input passed to assign has no class attribute. Must be a data.table or data.frame.");
+  klass = getAttrib(dt, R_ClassSymbol);
+  if (isNull(klass)) error("Input passed to assign has no class attribute. Must be a data.table or data.frame.");
   // Check if there is a class "data.table" somewhere (#5115).
   // We allow set() on data.frame too; e.g. package Causata uses set() on a data.frame in tests/testTransformationReplay.R
   // := is only allowed on a data.table. However, the ":=" = stop(...) message in data.table.R will have already
   // detected use on a data.frame before getting to this point.
-  for (i=0; i<length(class); i++) {   // There doesn't seem to be an R API interface to inherits(), but manually here isn't too bad.
-    if (strcmp(CHAR(STRING_ELT(class, i)), "data.table") == 0) break;
+  for (i=0; i<length(klass); i++) {   // There doesn't seem to be an R API interface to inherits(), but manually here isn't too bad.
+    if (strcmp(CHAR(STRING_ELT(klass, i)), "data.table") == 0) break;
   }
-  if (i<length(class))
+  if (i<length(klass))
     isDataTable = TRUE;
   else {
-    for (i=0; i<length(class); i++) {
-      if (strcmp(CHAR(STRING_ELT(class, i)), "data.frame") == 0) break;
+    for (i=0; i<length(klass); i++) {
+      if (strcmp(CHAR(STRING_ELT(klass, i)), "data.frame") == 0) break;
     }
-    if (i == length(class)) error("Input is not a data.table, data.frame or an object that inherits from either.");
+    if (i == length(klass)) error("Input is not a data.table, data.frame or an object that inherits from either.");
     isDataTable = FALSE;   // meaning data.frame from now on. Can use set() on existing columns but not add new ones because DF aren't over-allocated.
   }
   oldncol = LENGTH(dt);
@@ -988,17 +988,17 @@ void savetl_end() {
   savedtl = NULL;
 }
 
-SEXP setcharvec(SEXP x, SEXP which, SEXP new)
+SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
 {
   int w;
   if (!isString(x)) error("x must be a character vector");
   if (!isInteger(which)) error("'which' must be an integer vector");
-  if (!isString(new)) error("'new' must be a character vector");
-  if (LENGTH(new)!=LENGTH(which)) error("'new' is length %d. Should be the same as length of 'which' (%d)",LENGTH(new),LENGTH(which));
+  if (!isString(newx)) error("'new' must be a character vector");
+  if (LENGTH(newx)!=LENGTH(which)) error("'new' is length %d. Should be the same as length of 'which' (%d)",LENGTH(newx),LENGTH(which));
   for (int i=0; i<LENGTH(which); i++) {
     w = INTEGER(which)[i];
     if (w==NA_INTEGER || w<1 || w>LENGTH(x)) error("Item %d of 'which' is %d which is outside range of the length %d character vector", i+1,w,LENGTH(x));
-    SET_STRING_ELT(x, w-1, STRING_ELT(new, i));
+    SET_STRING_ELT(x, w-1, STRING_ELT(newx, i));
   }
   return R_NilValue;
 }
