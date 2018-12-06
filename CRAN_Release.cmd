@@ -185,6 +185,9 @@ cd R-devel-strict    # important to change directory name before building not af
 # -fno-sanitize=float-divide-by-zero, otherwise /0 errors on R's summary.c (tests 648 and 1185.2) but ignore those:
 #   https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16000
 
+# without ubsan, openmp can be on :
+./configure --without-recommended-packages --disable-byte-compiled-packages --enable-strict-barrier CC="gcc -fsanitize=address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer" CFLAGS="-O0 -g -Wall -pedantic"
+
 make
 alias Rdevel-strict='~/build/R-devel-strict/bin/R --vanilla'
 cd ~/GitHub/data.table
