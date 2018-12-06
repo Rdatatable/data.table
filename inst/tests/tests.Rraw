@@ -9213,6 +9213,12 @@ test(1658.32, fwrite(data.table(D = as.POSIXct(seq.Date(as.Date("2038-01-19"), a
 
 options(oldverbose)
 
+# input is of class matrix
+test(1658.33, fwrite(matrix("foo"), quote=TRUE), output='"V1"\n"foo"', message = "x being coerced from class: matrix to data.table")
+test(1658.34, fwrite(matrix(1:4, nrow=2, ncol=2), quote = TRUE), output = '"V1","V2"\n1,3\n2,4', message = "x being coerced from class: matrix to data.table")
+test(1658.35, fwrite(matrix(1:3, nrow=3, ncol=1), quote = TRUE), output = '"V1"\n1\n2\n3', message = "x being coerced from class: matrix to data.table")
+test(1658.36, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c("ca","cb"))), quote = TRUE), output = '"ca","cb"\n1,3\n2,4', message = "x being coerced from class: matrix to data.table")
+
 ## End fwrite tests
 
 # tests for #679, inrange(), FR #707
