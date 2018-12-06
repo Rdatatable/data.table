@@ -40,6 +40,8 @@
 
 4. `update.dev.pkg()` gains `type=` to specify if update should be made from binaries, sources or both. [#3148](https://github.com/Rdatatable/data.table/issues/3148). Thanks to Reino Bruner for the detailed suggestions.
 
+5. `setDT()` improves feedback when passed a ragged list (i.e. where all columns in the list are not the same length), [#3121](https://github.com/Rdatatable/data.table/issues/3121). Thanks @chuk-yong for highlighting.
+
 
 ### Changes in v1.11.8  (30 Sep 2018)
 

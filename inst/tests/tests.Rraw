@@ -12496,6 +12496,8 @@ DT = as.data.table(M)
 test(1964.3, rownames(DT), character(0))
 test(1964.4, colnames(DT), c("v1","v2"))
 
+test(1965, setDT(list(1, 1:2)), error = 'profile of input lengths')   #3121
+
 
 ###################################
 #  Add new tests above this line  #
