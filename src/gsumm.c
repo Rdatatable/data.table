@@ -55,14 +55,14 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (LENGTH(o)) {
     isunsorted = 1; // for gmedian
     for (int g=0, *od=INTEGER(o), *fd=INTEGER(f); g<ngrp; g++) {   // R API outside should help when very many small groups, pr#3045
-      int *this = od + fd[g]-1;
-      for (int j=0; j<grpsize[g]; j++)  grp[ this[j]-1 ] = g;
+      int *elem = od + fd[g]-1;
+      for (int j=0; j<grpsize[g]; j++)  grp[ elem[j]-1 ] = g;
       if (grpsize[g]>maxgrpn) maxgrpn = grpsize[g];  // recalculate (may as well since looping anyway) and check below
     }
   } else {
     for (int g=0, *fd=INTEGER(f); g<ngrp; g++) {
-      int *this = grp + fd[g]-1;
-      for (int j=0; j<grpsize[g]; j++)  this[j] = g;
+      int *elem = grp + fd[g]-1;
+      for (int j=0; j<grpsize[g]; j++)  elem[j] = g;
       if (grpsize[g]>maxgrpn) maxgrpn = grpsize[g];  // needed for #2046 and #2111 when maxgrpn attribute is not attached to empty o
     }
   }
@@ -114,13 +114,13 @@ SEXP gsum(SEXP x, SEXP narmArg)
       }
     } else {
       for (int i=0, *g=grp; i<n; i++) {
-        int this = xd[irows[i]-1];
-        if (this==NA_INTEGER) {
+        int elem = xd[irows[i]-1];
+        if (elem==NA_INTEGER) {
           if (!narm) s[*g] = NA_REAL;
           g++;
           continue;
         }
-        s[*g++] += this;
+        s[*g++] += elem;
       }
     }
     ans = PROTECT(allocVector(INTSXP, ngrp));
@@ -149,9 +149,9 @@ SEXP gsum(SEXP x, SEXP narmArg)
       }
     } else {
       for (int i=0, *g=grp; i<n; i++) {
-        double this = xd[irows[i]-1];
-        if (narm && ISNAN(this)) {g++; continue;}
-        s[*g++] += this;
+        double elem = xd[irows[i]-1];
+        if (narm && ISNAN(elem)) {g++; continue;}
+        s[*g++] += elem;
       }
     }
     ans = PROTECT(allocVector(REALSXP, ngrp));
@@ -512,14 +512,14 @@ SEXP gmedian(SEXP x, SEXP narm) {
   R_len_t i=0, j=0, k=0, imed=0, thisgrpsize=0, medianindex=0, nacount=0;
   double val = 0.0;
   Rboolean isna = FALSE, isint64 = FALSE;
-  SEXP ans, sub, class;
+  SEXP ans, sub, klass;
   void *ptr;
   int n = (irowslen == -1) ? length(x) : irowslen;
   if (grpn != n) error("grpn [%d] != length(x) [%d] in gmedian", grpn, n);
   switch(TYPEOF(x)) {
   case REALSXP:
-    class = getAttrib(x, R_ClassSymbol);
-    isint64 = (isString(class) && STRING_ELT(class, 0) == char_integer64);
+    klass = getAttrib(x, R_ClassSymbol);
+    isint64 = (isString(klass) && STRING_ELT(klass, 0) == char_integer64);
     ans = PROTECT(allocVector(REALSXP, ngrp));
     sub = PROTECT(allocVector(REALSXP, maxgrpn)); // allocate once upfront
     ptr = DATAPTR(sub);

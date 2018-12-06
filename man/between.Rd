@@ -8,7 +8,8 @@
 Intended for use in \code{i} in \code{[.data.table}.
 
 \code{between} is equivalent to \code{x >= lower & x <= upper} when
-\code{incbounds=TRUE}, or \code{x > lower & y < upper} when \code{FALSE}.
+\code{incbounds=TRUE}, or \code{x > lower & y < upper} when \code{FALSE}. With a caveat that
+\code{NA} in \code{lower} or \code{upper} are taken as a missing bound and return \code{TRUE} not \code{NA}.
 
 \code{inrange} checks whether each value in \code{x} is in between any of
 the intervals provided in \code{lower,upper}.
@@ -24,28 +25,24 @@ x \%inrange\% y
 \item{x}{ Any orderable vector, i.e., those with relevant methods for
 \code{`<=`}, such as \code{numeric}, \code{character}, \code{Date}, etc. in
 case of \code{between} and a numeric vector in case of \code{inrange}.}
-\item{lower}{ Lower range bound.}
-\item{upper}{ Upper range bound.}
+\item{lower}{ Lower range bound. Either length 1 or same length as \code{x}.}
+\item{upper}{ Upper range bound. Either length 1 or same length as \code{x}.}
 \item{y}{ A length-2 \code{vector} or \code{list}, with \code{y[[1]]}
 interpreted as \code{lower} and \code{y[[2]]} as \code{upper}.}
 \item{incbounds}{ \code{TRUE} means inclusive bounds, i.e., [lower,upper].
 \code{FALSE} means exclusive bounds, i.e., (lower,upper).
-
 It is set to \code{TRUE} by default for infix notations.}
 }
 \details{
 
-From \code{v1.9.8+}, \code{between} is vectorised. \code{lower} and
-\code{upper} are recycled to \code{length(x)} if necessary.
-
-\emph{non-equi} joins were recently implemented in \code{v1.9.8}. It extends
+\emph{non-equi} joins were implemented in \code{v1.9.8}. They extend
 binary search based joins in \code{data.table} to other binary operators
 including \code{>=, <=, >, <}. \code{inrange} makes use of this new
 functionality and performs a range join.
 
 }
 \value{
-Logical vector as the same length as \code{x} with value \code{TRUE} for those
+Logical vector the same length as \code{x} with value \code{TRUE} for those
 that lie within the specified range.
 }
 \note{ Current implementation does not make use of ordered keys for
