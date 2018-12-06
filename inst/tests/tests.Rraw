@@ -12748,7 +12748,7 @@ test(1962.109, second(z), 5L)
 test(1962.110, minute(z), 2L)
 test(1962.111, hour(z), 1L)
 
-# tests 1962 & 1963 reserved for other PRs
+# test 1963 reserved for another PR
 
 # 0 column data.table should not have rownames, #3149
 M0 = matrix(1:6, nrow=3, ncol=2, dimnames=list(rows=paste0("id",1:3), cols=c("v1","v2")))
