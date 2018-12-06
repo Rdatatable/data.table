@@ -12728,11 +12728,10 @@ test(1962.97, dcast(DT, a ~ c, value.var = 'b'),
 ## IDateTime.R
 x = as.IDate('2018-08-01')
 test(1962.98, `+`(x), x)
-test(1962.99, x + 1.4, structure(17745.4, class = "Date"))
+test(1962.99, all.equal(x+1.4, structure(17745.4, class = "Date")))
 test(1962.100, x + x, error = 'binary + is not defined')
-
 test(1962.101, `-`(x), error = 'unary - is not defined')
-test(1962.102, x - 1.4, structure(17742.6, class = "Date"))
+test(1962.102, all.equal(x-1.4, structure(17742.6, class = "Date")))
 
 y = as.ITime('543210', format = '%S%M%H')
 test(1962.103, y, structure(37974L, class = "ITime"))
