@@ -293,19 +293,25 @@ test(9999.0671, frollmean(c(1:2,NA,4:10), 4, verbose=TRUE), c(rep(NA_real_, 6), 
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
-  "frollmeanFast: NA (or other non-finite) value(s) are present in input, skip non-NA attempt to run with extra care for NAs"
+  "frollmeanFast: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs"
 ))
 test(9999.0672, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE, verbose=TRUE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
   "frollmeanFast: running for input length 10, window 4, hasna -1, narm 0",
-  "frollmeanFast: hasNA FALSE was used but NA (or other non-finite) value(s) are present in input, skip non-NA attempt to run with extra care for NAs" # this could be warning but no warns from plain C code
-))
-test(9999.0673, frollmean(c(1:2,NA,4:10), 4, verbose=TRUE, align="center"), c(rep(NA_real_, 4), 5.5, 6.5, 7.5, 8.5, NA, NA), output=c(
+  "frollmeanFast: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs"
+), warning="hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning")
+test(9999.0673, ans<-frollmean(c(1:2,NA,4:10), 2, hasNA=FALSE, verbose=TRUE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), output=c(
+  "frollfunR: allocating memory for results 1x1",
+  "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
+  "frollmeanFast: running for input length 10, window 2, hasna -1, narm 0",
+  "frollmeanFast: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"
+), warning="hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning")
+test(9999.0674, frollmean(c(1:2,NA,4:10), 4, verbose=TRUE, align="center"), c(rep(NA_real_, 4), 5.5, 6.5, 7.5, 8.5, NA, NA), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: single column and single window, parallel processing by multiple answer vectors skipped",
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
-  "frollmeanFast: NA (or other non-finite) value(s) are present in input, skip non-NA attempt to run with extra care for NAs",
+  "frollmeanFast: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs",
   "frollmean: align 0, shift answer by -2"
 ))
 
@@ -695,6 +701,10 @@ test(9999.185, frollmean(d, 3:4, algo="exact", verbose=TRUE), output=c(
   "frollmeanExact: running for input length 10, window 3, hasna 0, narm 0",
   "frollmeanExact: running for input length 10, window 4, hasna 0, narm 0"
 ))
+
+## test warnings
+test(9999.186, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning")
+test(9999.187, frollmean(c(1:2,NA,4:10), 2, hasNA=FALSE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning")
 
 ## validation
 

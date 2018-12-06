@@ -107,7 +107,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   
   SEXP ans;
   ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;      // allocate list to keep results
-  double* dans[nx*nk];                                          // pointers to answer columns
+  double_ans_t dans[nx*nk];                                     // answer columns as array of double_ans_t struct
   double* dx[nx];                                               // pointers to source columns
   uint_fast64_t inx[nx];                                        // to not recalculate `length(x[[i]])` we store it in extra array
   if (bverbose) Rprintf("frollfunR: allocating memory for results %dx%d\n", nx, nk);
@@ -121,9 +121,9 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
           error("length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'");
       }
       SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, inx[i]));// allocate answer vector for this column-window
-      dans[i*nk+j] = REAL(VECTOR_ELT(ans, i*nk+j));
+      dans[i*nk+j] = ((double_ans_t) { .ans=REAL(VECTOR_ELT(ans, i*nk+j)), .status=0, .message="\0" });
     }
-    dx[i] = REAL(VECTOR_ELT(x, i));
+    dx[i] = REAL(VECTOR_ELT(x, i));                             // assign source columns to C pointers
   }
 
   enum {MEAN/*, SUM*/} sfun;
@@ -170,8 +170,8 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     }
     switch (sfun) {
       case MEAN :
-        if (!badaptive) frollmean(ialgo, dx[0], inx[0], dans[0], iik[0], ialign, dfill, bnarm, ihasna, bverbose);
-        else fadaptiverollmean(ialgo, dx[0], inx[0], dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
+        if (!badaptive) frollmean(ialgo, dx[0], inx[0], &dans[0], iik[0], ialign, dfill, bnarm, ihasna, bverbose);
+        else fadaptiverollmean(ialgo, dx[0], inx[0], &dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
         break;
       //case SUM :
       //  break;
@@ -182,16 +182,16 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       else if (ialgo==1) Rprintf("frollfunR: %d column(s) and %d window(s), parallel processing by multiple answer vectors skipped because 'exact' version of rolling function will compute results in parallel\n", nx, nk);
     }
     omp_set_nested(1);
-    int threads = bverbose ? 1 : MIN(getDTthreads(), nx*nk);
+    const int threads = bverbose ? 1 : MIN(getDTthreads(), nx*nk);
     #pragma omp parallel num_threads(threads)
     {
       #pragma omp for schedule(auto) collapse(2)
-      for (R_len_t i=0; i<nx; i++) {                              // loop over multiple columns
-        for (R_len_t j=0; j<nk; j++) {                            // loop over multiple windows
+      for (R_len_t i=0; i<nx; i++) {                            // loop over multiple columns
+        for (R_len_t j=0; j<nk; j++) {                          // loop over multiple windows
           switch (sfun) {
             case MEAN :
-              if (!badaptive) frollmean(ialgo, dx[i], inx[i], dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
-              else fadaptiverollmean(ialgo, dx[i], inx[i], dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
+              if (!badaptive) frollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
+              else fadaptiverollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
               break;
             //case SUM :
             //  break;
@@ -200,6 +200,20 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       } // end of i-columns loop
     } // end of omp parallel region
     omp_set_nested(0);
+  }
+  
+  for (R_len_t i=0; i<nx; i++) {                                // raise errors and warnings, as of now messages are not being produced and stdout is printed in live not carried in ans_t
+    for (R_len_t j=0; j<nk; j++) {
+      if (dans[i*nk+j].status == 3) {
+        error(dans[i*nk+j].message[3]);                         // # nocov becase only errors we can currently have from low level C function is failed malloc
+      } else if (dans[i*nk+j].status == 2) {
+        warning(dans[i*nk+j].message[2]);
+      } else if (dans[i*nk+j].status == 1) {
+        //message(dans[i*nk+j].message[1]);                     // no messages yet in C functions, need to check R API for that
+      } else if (dans[i*nk+j].status == 1) {
+        //Rprintf(dans[i*nk+j].message[0]);                     // console output can be printed here instead of 'live' so parallel stuff can run even when verbose=T
+      }
+    }
   }
   
   UNPROTECT(protecti);
