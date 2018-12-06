@@ -11709,6 +11709,11 @@ test(1888.4, fsort(x, decreasing = TRUE, na.last = TRUE), base::sort(x, decreasi
 x <- as.integer(x)
 test(1888.5, fsort(x), base::sort(x, na.last = FALSE),
              warning = "Input is not a vector of type double. New parallel sort has only been done for double vectors so far.*Using one thread")
+x = runif(1e6)
+test(1888.6, y<-fsort(x,verbose=TRUE), output="nth=.*Top 5 MSB counts")
+test(1888.7, !base::is.unsorted(y))
+test(1888.8, fsort(x,verbose=1), error="verbose must be TRUE or FALSE")
+rm(x)
 
 # doubling of savetl buffer (currently starts with 100)
 x = as.character(as.hexmode(1:1000))
@@ -12770,7 +12775,7 @@ if (.Platform$OS.type=="windows") {
   test(1966.1, fread(fn), data.table(V1=3.14))
   test(1966.2, fread(f8), data.table(V1=3.14))
   unlink(c(fn, f8))
-  
+
   DT = data.table("a"); pth = tempdir()
   f = "\u00f6.csv"; fp = file.path(pth, f)
   fpn = enc2native(fp); fp8 = enc2utf8(fp)
