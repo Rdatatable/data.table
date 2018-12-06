@@ -12763,6 +12763,31 @@ test(1964.4, colnames(DT), c("v1","v2"))
 
 test(1965, setDT(list(1, 1:2)), error = 'profile of input lengths')   #3121
 
+# fread/fwrite file name in native and utf-8 encoding, #3078
+if (.Platform$OS.type=="windows") {
+  f = tempfile("\u00f6"); cat("3.14", file = f)
+  fn = enc2native(f); f8 = enc2utf8(f)
+  test(1966.1, fread(fn), data.table(V1=3.14))
+  test(1966.2, fread(f8), data.table(V1=3.14))
+  unlink(c(fn, f8))
+  
+  DT = data.table("a"); pth = tempdir()
+  f = "\u00f6.csv"; fp = file.path(pth, f)
+  fpn = enc2native(fp); fp8 = enc2utf8(fp)
+  fwrite(DT, fpn)
+  test(1966.3, list.files(path = pth, pattern = "\\.csv$"), f)
+  unlink(c(fp, file.path(pth, "\u00c3\u00b6.csv")))
+  fwrite(DT, fp8)
+  test(1966.4, list.files(path = pth, pattern = "\\.csv$"), f)
+  unlink(c(fp, file.path(pth, "\u00c3\u00b6.csv")))
+  p = file.path(pth, "\u00fc"); dir.create(p); f = tempfile(tmpdir = p)
+  test(1966.5, fwrite(DT, enc2native(f)), NULL)
+  unlink(f)
+  test(1966.6, fwrite(DT, enc2utf8(f)), NULL)
+  unlink(p, recursive = TRUE)
+}
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
