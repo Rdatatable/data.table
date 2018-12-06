@@ -4,11 +4,11 @@ rollup <- function(x, ...) {
 rollup.data.table <- function(x, j, by, .SDcols, id = FALSE, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stop("Argument 'x' must be data.table object")
+    stop("Argument 'x' must be a data.table object")
   if (!is.character(by))
-    stop("Argument 'by' must be character vector of column names used in grouping.")
+    stop("Argument 'by' must be a character vector of column names used in grouping.")
   if (!is.logical(id))
-    stop("Argument 'id' must be logical scalar.")
+    stop("Argument 'id' must be a logical scalar.")
   # generate grouping sets for rollup
   sets = lapply(length(by):0L, function(i) by[0L:i])
   # redirect to workhorse function
@@ -22,11 +22,11 @@ cube <- function(x, ...) {
 cube.data.table <- function(x, j, by, .SDcols, id = FALSE, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stop("Argument 'x' must be data.table object")
+    stop("Argument 'x' must be a data.table object")
   if (!is.character(by))
-    stop("Argument 'by' must be character vector of column names used in grouping.")
+    stop("Argument 'by' must be a character vector of column names used in grouping.")
   if (!is.logical(id))
-    stop("Argument 'id' must be logical scalar.")
+    stop("Argument 'id' must be a logical scalar.")
   # generate grouping sets for cube - power set: http://stackoverflow.com/a/32187892/2490497
   n = length(by)
   keepBool = sapply(2L^(seq_len(n)-1L), function(k) rep(c(FALSE, TRUE), times=k, each=((2L^n)/(2L*k))))
@@ -42,26 +42,26 @@ groupingsets <- function(x, ...) {
 groupingsets.data.table <- function(x, j, by, sets, .SDcols, id = FALSE, jj, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stop("Argument 'x' must be data.table object")
+    stop("Argument 'x' must be a data.table object")
   if (ncol(x) < 1L)
-    stop("Argument 'x' is 0 column data.table, no measure to apply grouping over.")
-  if (length(names(x)) != uniqueN(names(x)))
-    stop("data.table must not contains duplicate column names.")
+    stop("Argument 'x' is a 0-column data.table; no measure to apply grouping over.")
+  if (anyDuplicated(names(x)) > 0L)
+    stop("Input data.table must not contain duplicate column names.")
   if (!is.character(by))
-    stop("Argument 'by' must be character vector of column names used in grouping.")
-  if (length(by) != uniqueN(by))
+    stop("Argument 'by' must be a character vector of column names used in grouping.")
+  if (anyDuplicated(by) > 0L)
     stop("Argument 'by' must have unique column names for grouping.")
   if (!is.list(sets) || !all(sapply(sets, is.character)))
     stop("Argument 'sets' must be a list of character vectors.")
   if (!is.logical(id))
-    stop("Argument 'id' must be logical scalar.")
+    stop("Argument 'id' must be a logical scalar.")
   # logic constraints validation
   if (!all((sets.all.by <- unique(unlist(sets))) %chin% by))
     stop(sprintf("All columns used in 'sets' argument must be in 'by' too. Columns used in 'sets' but not present in 'by': %s.", paste(setdiff(sets.all.by, by), collapse=", ")))
   if (id && "grouping" %chin% names(x))
-    stop("When using `id=TRUE` the 'x' data.table must not have column named 'grouping'.")
+    stop("When using `id=TRUE` the 'x' data.table must not have a column named 'grouping'.")
   if (!all(sapply(sets, function(x) length(x)==uniqueN(x))))
-    stop("Character vectors in 'sets' list must not have duplicated column names within single grouping set.")
+    stop("Character vectors in 'sets' list must not have duplicated column names within a single grouping set.")
   if (!identical(lapply(sets, sort), unique(lapply(sets, sort))))
     warning("Double counting is going to happen. Argument 'sets' should be unique without taking order into account, unless you really want double counting, then get used to that warning. Otherwise `sets=unique(lapply(sets, sort))` will do the trick.")
   # input arguments handling
@@ -83,7 +83,7 @@ groupingsets.data.table <- function(x, j, by, sets, .SDcols, id = FALSE, jj, ...
   }
   if (id && "grouping" %chin% names(empty)) # `j` could have been evaluated to `grouping` field
     stop("When using `id=TRUE` the 'j' expression must not evaluate to column named 'grouping'.")
-  if (length(names(empty)) != uniqueN(names(empty)))
+  if (anyDuplicated(names(empty)) > 0L)
     stop("There exists duplicated column names in the results, ensure the column passed/evaluated in `j` and those in `by` are not overlapping.")
   # adding grouping column to template - aggregation level identifier
   if (id) {
