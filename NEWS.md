@@ -16,6 +16,7 @@
 
 6. `fread()` and `fwrite()` can now handle file names in native and UTF-8 encoding, [#3078](https://github.com/Rdatatable/data.table/issues/3078). Thanks to Daniel Possenriede (@dpprdan) for reporting and fixing.
 
+7. New `frollmean` has been added to calculate _rolling mean_. Function name and arguments are experimental. Related to [#2778](https://github.com/Rdatatable/data.table/issues/2778) and ([#624](https://github.com/Rdatatable/data.table/issues/624), [#626](https://github.com/Rdatatable/data.table/issues/626), [#1855](https://github.com/Rdatatable/data.table/issues/1855)). Other rolling statistics will follow.
 
 #### BUG FIXES
 
