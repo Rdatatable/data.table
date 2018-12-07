@@ -695,7 +695,7 @@ test(9999.184, frollmean(d[,1], 3, algo="exact", verbose=TRUE), output=c(
 ))
 test(9999.185, frollmean(d, 3:4, algo="exact", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 2x2",
-  "frollfunR: 2 column(s) and 2 window(s), parallel processing by multiple answer vectors skipped because 'exact' version of rolling function will compute results in parallel",
+  "frollfunR: 2 column(s) and 2 window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe, 'exact' version of rolling function will compute results in parallel anyway as it does not print with verbose",
   "frollmeanExact: running for input length 10, window 3, hasna 0, narm 0",
   "frollmeanExact: running for input length 10, window 4, hasna 0, narm 0",
   "frollmeanExact: running for input length 10, window 3, hasna 0, narm 0",

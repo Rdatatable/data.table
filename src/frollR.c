@@ -179,7 +179,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   } else {
     if (bverbose>0) {
       if (ialgo==0) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
-      else if (ialgo==1) Rprintf("frollfunR: %d column(s) and %d window(s), parallel processing by multiple answer vectors skipped because 'exact' version of rolling function will compute results in parallel\n", nx, nk);
+      else if (ialgo==1) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe, 'exact' version of rolling function will compute results in parallel anyway as it does not print with verbose\n", nx, nk);
     }
     omp_set_nested(1);
     const int threads = bverbose ? 1 : MIN(getDTthreads(), nx*nk);
