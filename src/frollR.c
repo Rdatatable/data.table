@@ -121,7 +121,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
           error("length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'");
       }
       SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, inx[i]));// allocate answer vector for this column-window
-      dans[i*nk+j] = ((double_ans_t) { .ans=REAL(VECTOR_ELT(ans, i*nk+j)), .status=0, .message="\0" });
+      dans[i*nk+j] = ((double_ans_t) { .ans=REAL(VECTOR_ELT(ans, i*nk+j)), .status=0, .message={"\0","\0","\0","\0"} });
     }
     dx[i] = REAL(VECTOR_ELT(x, i));                             // assign source columns to C pointers
   }
