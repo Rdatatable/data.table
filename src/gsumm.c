@@ -51,23 +51,32 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   grp = (int *)R_alloc(grpn, sizeof(int));
   // global grp because the g* functions (inside jsub) share this common memory
 
-  maxgrpn = 0;
+  const int *restrict fdp = INTEGER(f);
   if (LENGTH(o)) {
     isunsorted = 1; // for gmedian
-    for (int g=0, *od=INTEGER(o), *fd=INTEGER(f); g<ngrp; g++) {   // R API outside should help when very many small groups, pr#3045
-      int *elem = od + fd[g]-1;
+    const int *restrict odp = INTEGER(o);
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (int g=0; g<ngrp; g++) {
+      const int *elem = odp + fdp[g]-1;
       for (int j=0; j<grpsize[g]; j++)  grp[ elem[j]-1 ] = g;
-      if (grpsize[g]>maxgrpn) maxgrpn = grpsize[g];  // recalculate (may as well since looping anyway) and check below
     }
   } else {
-    for (int g=0, *fd=INTEGER(f); g<ngrp; g++) {
-      int *elem = grp + fd[g]-1;
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (int g=0; g<ngrp; g++) {
+      int *elem = grp + fdp[g]-1;
       for (int j=0; j<grpsize[g]; j++)  elem[j] = g;
-      if (grpsize[g]>maxgrpn) maxgrpn = grpsize[g];  // needed for #2046 and #2111 when maxgrpn attribute is not attached to empty o
     }
   }
   SEXP tt = getAttrib(o, install("maxgrpn"));
-  if (length(tt) && INTEGER(tt)[0]!=maxgrpn) error("Internal error: o's maxgrpn mismatches recalculated maxgrpn"); // # nocov
+  if (length(tt)!=1) {
+    // seems to happen, and finding the maxgrpn is needed, but not sure why (TODO - trace)
+    // old comment to be checked: 'needed for #2046 and #2111 when maxgrpn attribute is not attached to empty o'
+    maxgrpn = 0;
+    for (int g=0; g<ngrp; g++) if (grpsize[g]>maxgrpn) maxgrpn = grpsize[g];
+  } else {
+    // && INTEGER(tt)[0]!=maxgrpn) error("Internal error: o's maxgrpn mismatches recalculated maxgrpn"); // # nocov
+    maxgrpn = INTEGER(tt)[0];
+  }
   oo = INTEGER(o);
   ff = INTEGER(f);
 
