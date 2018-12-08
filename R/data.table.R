@@ -240,8 +240,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     return(ans)
   }
   if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
-  missingroll = missing(roll)
-  missingwith = missing(with)
+  missingroll = identical(roll, FALSE)
   if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
   if (is.character(roll)) {
     if (roll!="nearest") stop("roll is '",roll,"' (type character). Only valid character value is 'nearest'.")
@@ -1437,7 +1436,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (byjoin) {
     # The groupings come instead from each row of the i data.table.
     # Much faster for a few known groups vs a 'by' for all followed by a subset
-    if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by'=.EACHI")
+    if (!is.data.table(i)) stop("logical error. i is not data.table, but mult='all' and 'by'=.EACHI")
     byval = i
     bynames = if (missing(on)) head(key(x),length(leftcols)) else names(on)
     allbyvars = NULL
@@ -1912,8 +1911,8 @@ as.matrix.data.table <- function(x, rownames=NULL, rownames.value=NULL, ...) {
       # TODO in future as warned in NEWS for 1.11.6:
       #   warning("length(rownames)>1 is deprecated. Please use rownames.value= instead")
       if (length(rownames)!=nrow(x))
-        stop(sprintf("length(rownames)==%d but nrow(DT)==%d. The rownames argument specifies a single column name or number. Consider rownames.value= instead.",
-                     length(rownames), nrow(x)))
+        stop("length(rownames)==", length(rownames), " but nrow(DT)==", nrow(x),
+             ". The rownames argument specifies a single column name or number. Consider rownames.value= instead.")
       rownames.value = rownames
       rownames = NULL
     } else if (length(rownames)==0L) {
@@ -2518,7 +2517,7 @@ setnames <- function(x,old,new,skip_absent=FALSE) {
   # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
   # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
   if (!is.data.frame(x)) stop("x is not a data.table or data.frame")
-  if (length(names(x)) != length(x)) stop("dt is length ",length(dt)," but its names are length ",length(names(x)))
+  if (length(names(x)) != length(x)) stop("dt is length ",length(x)," but its names are length ",length(names(x)))
   stopifnot(isTRUE(skip_absent) || identical(skip_absent,FALSE))
   if (missing(new)) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
@@ -2589,7 +2588,7 @@ setnames <- function(x,old,new,skip_absent=FALSE) {
 
 setcolorder <- function(x, neworder=key(x))
 {
-  if (any(duplicated(neworder))) stop("neworder contains duplicates")
+  if (anyDuplicated(neworder)) stop("neworder contains duplicates")
   # if (!is.data.table(x)) stop("x is not a data.table")
   if (length(neworder) != length(x)) {
     if (length(neworder) > length(x))

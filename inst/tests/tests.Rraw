@@ -57,6 +57,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   cube.data.table = data.table:::cube.data.table
   groupingsets.data.table = data.table:::groupingsets.data.table
   dcast.data.table = data.table:::dcast.data.table
+  all.equal.data.table = data.table:::all.equal.data.table
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -2923,8 +2924,8 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   foo = function(input, by, var) {
       melt(input, id.vars = by, measure.vars=var)
   }
-  test(1371.1, foo(DT, by="x"), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)), warning="are not all of the same type. By order of hierarchy, the molten data value column will be of type 'double'")
-  test(1371.2, foo(DT), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)),
+  test(1371.12, foo(DT, by="x"), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)), warning="are not all of the same type. By order of hierarchy, the molten data value column will be of type 'double'")
+  test(1371.22, foo(DT), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)),
                warning=c("To be consistent with reshape2's melt, id.vars and",
                          "'measure.vars'.*are not all of the same type.*Check"))
   # Fix for #1055
@@ -5223,6 +5224,18 @@ test(1364.14, setdiff_(X, Y, "b", "a"), error="When x's column ('b') is factor, 
 test(1364.15, setdiff_(X, Y, "c", "a"), error="When x's column ('c') is character, the corresponding column in y ('a') ")
 test(1364.16, setdiff_(X, Y), error="length(by.x) != length(by.y)")
 test(1364.17, setdiff_(X[, list(a)], Y[, list(a)]), data.table(a=c(1,2)))
+setDF(X)
+test(1364.18, setdiff_(X, Y), error = 'x and y must both be data.tables')
+setDT(X)
+setDF(Y)
+test(1364.19, setdiff_(X, Y), error = 'x and y must both be data.tables')
+setDT(Y)
+test(1364.21, setdiff_(X[0L], Y), X[0L])
+test(1364.22, setdiff_(X, Y, by.x = 'f'), error = 'by.x value [f] not present')
+test(1364.23, setdiff_(X, Y, by.x = c('f', 'g')), error = 'by.x values [f, g] not present')
+test(1364.24, setdiff_(X, Y[0L], by.x = 'a'),
+     data.table(a = c(1, 3, 2), b = factor(c(1L, 3L, 2L)),
+                c = c("1", "3", "2"), d = c(1L, 3L, 2L), e = c(1L, 5L, 7L)))
 
 # not join along with by=.EACHI, #604
 DT <- data.table(A=c(1,1,1,2,2,2,2,3,3,4,5,5))[, `:=`(B=as.integer(A), C=c("c", "e", "a", "d"), D=factor(c("c", "e", "a", "d")), E=1:12)]
@@ -5365,7 +5378,7 @@ y = data.table(chr=c("Chr1", "Chr1", "Chr2"), start=c(1, 15,1), end=c(4, 18, 55)
 # no by.x and by.y error
 test(1371.1, foverlaps(x, y, type="any"), error="'y' must be keyed (i.e., sorted, and, marked as sorted).")
 setkey(y, chr, end, start)
-test(1371.2, foverlaps(x, y, by.y=1:3, type="any"), error="The first 3 columns of y's key is not identical to the columns specified in by.y.")
+test(1371.2, foverlaps(x, y, by.y=1:3, type="any"), error="The first 3 columns of y's key must be identical to the columns specified in by.y.")
 setkey(y, chr, start, end)
 setnames(y, c("chr", "pos1", "pos2", "val"))
 setcolorder(y, c("chr", "val", "pos1", "pos2"))
@@ -8109,6 +8122,21 @@ test(1613.573, all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), i
 test(1613.581, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = 1), all.equal(x, y, ignore.row.order = TRUE, tolerance = 1)))
 test(1613.582, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = sqrt(.Machine$double.eps)/2), all.equal(x, y, ignore.row.order = TRUE, tolerance = sqrt(.Machine$double.eps)/2)), warning = "Argument 'tolerance' was forced")
 
+test(1613.59, all.equal.data.table(1L, 2L), error = "'target' and 'current' must both be data.tables")
+test(1613.60, all.equal(data.table(1L), 2L), error = "'target' and 'current' must both be data.tables")
+DT1 <- data.table(a = 1:4, b = letters[1:4], .seqn = 5L)
+DT2 <- data.table(a = 4:1, b = letters[4:1], .seqn = 5L)
+test(1613.61, all.equal(DT1, DT2, ignore.row.order = TRUE), error = "column named '.seqn'")
+DT1[ , .seqn := NULL]
+DT2[ , .seqn := NULL]
+DT3 = DT1[c(1L, 1:3)]
+test(1613.62, grepl("'target' has duplicate rows while 'current' doesn't",
+                   all.equal(DT3, DT2, ignore.row.order = TRUE)))
+### force numeric
+DT3[ , a := a + .001]
+test(1613.63, all.equal(DT3, DT3, ignore.row.order = TRUE, tolerance = .01),
+     error = 'Duplicate rows in datasets, numeric columns and ignore.row.order')
+
 if (test_bit64) {
   # fix for #1405, handles roll with -ve int64 values properly
   dt = data.table(x=as.integer64(c(-1000, 0)), y=c(5,10))
@@ -8254,26 +8282,26 @@ test(1626.45, nrow(fsetdiff(dt[rep(1L,4)], dt[rep(1L,5)], all=TRUE)), 0L)
 dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = lapply(1:4, function(x) new.env()))
 x = dt[c(2:4,2L,2L)]
 y = dt[c(1:3,2L)]
-test(1626.46, fintersect(x, y), error = "x and y must not have unsupported column types: list")
-test(1626.47, fintersect(x, y, all=TRUE), error = "x and y must not have unsupported column types: list")
-test(1626.48, fsetdiff(x, y), error = "x and y must not have unsupported column types: list")
-test(1626.49, fsetdiff(x, y, all=TRUE), error = "x and y must not have unsupported column types: list")
-test(1626.50, funion(x, y), error = "x and y must not have unsupported column types: list")
+test(1626.46, fintersect(x, y), error = "unsupported column type found in x or y: [list]")
+test(1626.47, fintersect(x, y, all=TRUE), error = "unsupported column type found in x or y: [list]")
+test(1626.48, fsetdiff(x, y), error = "unsupported column type found in x or y: [list]")
+test(1626.49, fsetdiff(x, y, all=TRUE), error = "unsupported column type found in x or y: [list]")
+test(1626.50, funion(x, y), error = "unsupported column type found in x or y: [list]")
 test(1626.51, funion(x, y, all=TRUE), dt[c(2:4,2L,2L,1:3,2L)])
-test(1626.52, fsetequal(x, y), error = "x and y must not have unsupported column types: list")
-test(1626.53, fsetequal(dt[c(1:2,2L)], dt[c(1:2,2L)]), error = "x and y must not have unsupported column types: list")
+test(1626.52, fsetequal(x, y), error = "unsupported column type found in x or y: [list]")
+test(1626.53, fsetequal(dt[c(1:2,2L)], dt[c(1:2,2L)]), error = "unsupported column type found in x or y: [list]")
 # unsupported type in set-ops: complex, raw
 dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = as.complex(1:4), V4 = as.raw(1:4), V5 = lapply(1:4, function(x) NULL))
 x = dt[c(2:4,2L,2L)]
 y = dt[c(1:3,2L)]
-test(1626.54, fintersect(x, y), error = "x and y must not have unsupported column types: raw, complex, list")
-test(1626.55, fintersect(x, y, all=TRUE), error = "x and y must not have unsupported column types: raw, complex, list")
-test(1626.56, fsetdiff(x, y), error = "x and y must not have unsupported column types: raw, complex, list")
-test(1626.57, fsetdiff(x, y, all=TRUE), error = "x and y must not have unsupported column types: raw, complex, list")
-test(1626.58, funion(x, y), error = "x and y must not have unsupported column types: raw, complex, list")
-test(1626.59, funion(x, y, all=TRUE), error = "x and y must not have unsupported column types: raw, complex") # no 'list' here which is supported for `all=TRUE`
-test(1626.60, fsetequal(x, y), error = "x and y must not have unsupported column types: raw, complex, list")
-test(1626.61, fsetequal(dt[c(1:2,2L)], dt[c(1:2,2L)]), error = "x and y must not have unsupported column types: raw, complex, list")
+test(1626.54, fintersect(x, y), error = "unsupported column types found in x or y: [raw, complex, list]")
+test(1626.55, fintersect(x, y, all=TRUE), error = "unsupported column types found in x or y: [raw, complex, list]")
+test(1626.56, fsetdiff(x, y), error = "unsupported column types found in x or y: [raw, complex, list]")
+test(1626.57, fsetdiff(x, y, all=TRUE), error = "unsupported column types found in x or y: [raw, complex, list]")
+test(1626.58, funion(x, y), error = "unsupported column types found in x or y: [raw, complex, list]")
+test(1626.59, funion(x, y, all=TRUE), error = "unsupported column types found in x or y: [raw, complex]") # no 'list' here which is supported for `all=TRUE`
+test(1626.60, fsetequal(x, y), error = "unsupported column types found in x or y: [raw, complex, list]")
+test(1626.61, fsetequal(dt[c(1:2,2L)], dt[c(1:2,2L)]), error = "unsupported column types found in x or y: [raw, complex, list]")
 # supported types multi column test
 dt = data.table(
   V1 = 1:4,
@@ -8318,12 +8346,39 @@ test(1626.78, fsetequal(x, y, all = FALSE), FALSE)
 DT = data.table(A=1)
 test(1626.79, funion(DT, DT, all=TRUE), data.table(A=c(1, 1)))
 
+x = data.table(c(1,2,2,2,3,4,4))
+y = data.table(c(2,3,4,4,4,5))
+# with .set_ops_arg_check, these tests will also cover the similar
+#   cases of fsetdiff, funion, fsetequal
+test(1626.80, fintersect(x, y, all = 1+3i), error = "'all' should be logical")
+test(1626.81, fintersect(x, y, all = c(TRUE, FALSE)), error = 'logical of length one')
+setDF(x)
+test(1626.82, fintersect(x, y), error = 'x and y must both be data.tables')
+setDT(x)
+setDF(y)
+test(1626.83, fintersect(x, y), error = 'x and y must both be data.tables')
+setDT(y)
+y[ , b := 2]
+test(1626.84, fintersect(x, y), error = 'x and y must have the same column names')
+x[ , b := 2]
+setcolorder(x, 2:1)
+test(1626.85, fintersect(x, y), error = 'x and y must have the same column order')
+setcolorder(x, 2:1)
+x[ , b := .POSIXct(b)]
+test(1626.86, fintersect(x, y), error = 'x and y must have the same column classes')
+x[ , b := NULL]
+y[ , b := NULL]
+setnames(x, '.seqn')
+setnames(y, '.seqn')
+test(1626.87, fintersect(x, y), error = "column named '.seqn'")
+
+
 # fix for #1087 and #1465
-test(1627, charToRaw(names(fread(testDir("issue_1087_utf8_bom.csv")))[1L]), as.raw(97L))
-test(1627.1, names(fread(testDir("issue_1087_utf8_bom.csv"), verbose=TRUE))[1L], "a", output="UTF-8 byte order mark EF BB BF found")
-test(1627.2, names(fread(testDir("gb18030.txt")))[1L], "x", warning="GB-18030 encoding detected")
-test(1627.3, fread(testDir("utf16le.txt")), error="File is encoded in UTF-16")
-test(1627.4, fread(testDir("utf16be.txt")), error="File is encoded in UTF-16")
+test(1627.1, charToRaw(names(fread(testDir("issue_1087_utf8_bom.csv")))[1L]), as.raw(97L))
+test(1627.2, names(fread(testDir("issue_1087_utf8_bom.csv"), verbose=TRUE))[1L], "a", output="UTF-8 byte order mark EF BB BF found")
+test(1627.3, names(fread(testDir("gb18030.txt")))[1L], "x", warning="GB-18030 encoding detected")
+test(1627.4, fread(testDir("utf16le.txt")), error="File is encoded in UTF-16")
+test(1627.5, fread(testDir("utf16be.txt")), error="File is encoded in UTF-16")
 
 # uniqueN gains na.rm argument, #1455
 set.seed(1L)
@@ -12791,6 +12846,151 @@ if (.Platform$OS.type=="windows") {
   unlink(p, recursive = TRUE)
 }
 
+# assorted coverage tests
+## foverlaps.R
+x = data.table(start=c(5,31,22,16), end=c(8,50,25,18), val2 = 7:10)
+y = data.table(start=c(10, 20, 30), end=c(15, 35, 45), val1 = 1:3)
+setkey(y, start, end)
+setDF(y)
+test(1967.1, foverlaps(x, y), error = 'y and x must both be data.tables')
+setDT(y)
+setkey(y, start, end)
+setDF(x)
+test(1967.2, foverlaps(x, y), error = 'y and x must both be data.tables')
+setDT(x)
+test(1967.3, foverlaps(x, y, maxgap = integer(0L)),
+     error = 'maxgap must be a non-negative integer')
+test(1967.4, foverlaps(x, y, maxgap = c(3, 4)),
+     error = 'maxgap must be a non-negative integer')
+test(1967.5, foverlaps(x, y, maxgap = NA),
+     error = 'maxgap must be a non-negative integer')
+test(1967.6, foverlaps(x, y, maxgap = -5),
+     error = 'maxgap must be a non-negative integer')
+test(1967.7, foverlaps(x, y, minoverlap = integer(0L)),
+     error = 'minoverlap must be a positive integer')
+test(1967.8, foverlaps(x, y, minoverlap = c(3, 4)),
+     error = 'minoverlap must be a positive integer')
+test(1967.9, foverlaps(x, y, minoverlap = NA),
+     error = 'minoverlap must be a positive integer')
+test(1967.10, foverlaps(x, y, minoverlap = -5),
+     error = 'minoverlap must be a positive integer')
+test(1967.11, foverlaps(x, y, which = integer(0L)),
+     error = 'which must be a logical vector')
+test(1967.12, foverlaps(x, y, which = c(3, 4)),
+     error = 'which must be a logical vector')
+test(1967.13, foverlaps(x, y, which = NA),
+     error = 'which must be a logical vector')
+test(1967.14, foverlaps(x, y, nomatch = integer(0L)),
+     error = 'nomatch must either be NA or 0')
+test(1967.15, foverlaps(x, y, nomatch = c(3, 4)),
+     error = 'nomatch must either be NA or 0')
+test(1967.16, foverlaps(x, y, nomatch = 4L),
+     error = 'nomatch must either be NA or 0')
+### to be removed upon implementation
+test(1967.9999, foverlaps(x, y, type = 'equal'),
+     error = "type = 'equal' is not implemented yet")
+test(1967.18, foverlaps(x, y, by.x = 'start'),
+     error = "by.x' and 'by.y' should contain at least two")
+test(1967.19, foverlaps(x, y, by.y = 'start'),
+     error = "by.x' and 'by.y' should contain at least two")
+test(1967.20, foverlaps(x, y, by.x = c(-1L, 0L)),
+     error = "Invalid numeric value for 'by.x'")
+test(1967.21, foverlaps(x, y, by.x = c(1L, 100L)),
+     error = "Invalid numeric value for 'by.x'")
+test(1967.22, foverlaps(x, y, by.y = c(-1L, 0L)),
+     error = "Invalid numeric value for 'by.y'")
+test(1967.23, foverlaps(x, y, by.y = c(1L, 100L)),
+     error = "Invalid numeric value for 'by.y'")
+test(1967.24, foverlaps(x, y, by.x = c(1 + 3i, 2 - 1i)),
+     error = 'non-empty vector of column names or numbers is required for by.x')
+test(1967.25, foverlaps(x, y, by.y = c(1 + 3i, 2 - 1i)),
+     error = 'non-empty vector of column names or numbers is required for by.y')
+test(1967.26, foverlaps(x, y, by.x = c('start', 'END')),
+     error = "Elements listed in 'by.x' must be valid names")
+test(1967.27, foverlaps(x, y, by.x = c('start', 'start')),
+     error = 'Duplicate columns are not allowed')
+setkey(y, start, start)
+test(1967.28, foverlaps(x, y, by.y = c('start', 'start')),
+     error = 'Duplicate columns are not allowed')
+setkey(y, start, end)
+test(1967.29, foverlaps(x, y, by.x = c('start', 'end', 'val2')),
+     error = 'length(by.x) != length(by.y)')
+x[ , end := as.character(end)]
+test(1967.30, foverlaps(x, y),
+     error = 'must be integer/numeric type')
+x[ , end := as.integer(end)]
+test(1967.31, foverlaps(x, y, by.x = c('end', 'start')),
+     error = 'All entries in column end should be <= corresponding entries')
+y[ , end := as.character(end)]
+setkey(y, start, end)
+test(1967.32, foverlaps(x, y),
+     error = 'must be integer/numeric type')
+y[ , end := as.integer(end)]
+setkey(y, end, start)
+test(1967.33, foverlaps(x, y, by.x = c('start', 'end'), by.y = c('end', 'start')),
+     error = 'All entries in column end should be <= corresponding entries')
+
+## data.table.R
+test(1967.34, data.table(1:5, NULL), error = 'column or argument 2 is NULL')
+### testing branches:
+###   if (length(namesi)==0L) namesi = rep.int("",ncol(xi))
+###   if (any(tt)) namesi[tt] = paste0("V", which(tt))
+###   if (novname[i]) vnames[[i]] = namesi
+### but, on pause for now pending #3193
+### test(1967.35, data.table(1:5, matrix(6:15, nrow = 5L))
+test(1967.35, data.table(1:5, integer(0L)), error = 'Item 2 has no length')
+test(1967.36, data.table(1:5, key = 5L), error = 'must be character')
+
+x = data.table(a = 1:5)
+test(1967.37, x[mult = 'none'], error = 'mult argument can only be')
+test(1967.38, x[roll = c(3, 4)], error = 'roll must be a single')
+test(1967.39, x[roll = NA], error = 'roll must be a single')
+test(1967.40, x[roll = 'furthest'], error = 'Only valid character value')
+test(1967.41, x[rollends = 1 + 3i], error = 'rollends must be a logical')
+test(1967.42, x[rollends = rep(TRUE, 10L)], error = 'rollends must be length 1 or 2')
+test(1967.43, x[ , ..], error = 'symbol .. is invalid')
+test(1967.44, x[NULL], data.table(NULL))
+test(1967.45, x[ , NULL], NULL)
+test(1967.46, x[ , 'b' := 6:10, with = FALSE],
+     data.table(a = 1:5, b = 6:10), warning = 'with=FALSE ignored')
+test(1967.47, x[ , -1L, with = FALSE], data.table(b = 6:10))
+test(1967.48, x[ , b, .SDcols = 'a'], 6:10,
+     warning = "This j doesn't use .SD")
+test(1967.49, x[ , list(5) := 6], error = 'LHS of := must be a symbol')
+test(1967.50, x[ , 1 + 3i := 6], error = "LHS of := isn't column names")
+test(1967.51, x[ , .(5L), by = .EACHI, mult = 'all'],
+     error = 'logical error. i is not data.table')
+
+test(1967.52, as.matrix(x, rownames = 2:3),
+     error = 'length(rownames)==2 but')
+test(1967.53, as.matrix(x[0L]),
+     structure(logical(0), .Dim = c(0L, 2L), .Dimnames = list(NULL, c("a", "b"))))
+
+test(1967.54, subset(x, 5L), error = "'subset' must evaluate to logical")
+
+x = as.list(x)
+test(1967.55, setnames(x), error = 'x is not a data.table or data.frame')
+setDT(x)
+names(x) = NULL
+test(1967.56, setnames(x), error = 'dt is length 2 but its names are length 0')
+names(x) = c('a', 'b')
+test(1967.57, setnames(x, new = 'c'), error = "When 'new' is provided")
+test(1967.58, setnames(x, 1:2, c(8L, 9L)), error = "'new' is not a character")
+test(1967.59, setnames(x, -1:1, c('hey', 'you')), error = "both +ve and -ve")
+test(1967.60, setnames(x, 1+3i, 'cplx'), error = "'old' is type complex")
+test(1967.61, setnames(x, 1, c('d', 'e')), error = "'old' is length 1 but 'new'")
+
+test(1967.62, setcolorder(x, c(1, 1)), error = 'contains duplicates')
+test(1967.63, setcolorder(x, 1+3i), error = 'not a character or numeric')
+test(1967.64, setcolorder(x, 300), error = 'Column numbers in neworder out of bounds')
+
+test(1967.65, rbindlist(list(x), idcol = FALSE),
+     rbindlist(list(x)))
+test(1967.66, rbindlist(list(x), idcol = 1+3i), error = 'idcol must be a logical')
+
+### potentially altering user environment so use a strange name
+suppressWarnings(rm(`___data.table_internal_test_1967.68___`))
+test(1967.67, setDT(`___data.table_internal_test_1967.68___`), error = 'Can not find symbol')
 
 ###################################
 #  Add new tests above this line  #
