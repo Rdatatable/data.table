@@ -202,11 +202,13 @@ replace_dot_alias <- function(e) {
     used = gsub(".*object '([^']+)'.*", "\\1", err$message)
     found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
     if (length(found)) {
-      stop(sprintf("Object '%s' not found. Perhaps you intended %s%s", used, paste(head(found,5L),collapse=", "),
-           if (length(found)<=5L) "" else paste(" or",length(found)-5L,"more")))
+      stop("Object '", used, "' not found. Perhaps you intended ", used,
+           paste(head(found, 5L), collapse=", "),
+           if (length(found)<=5L) "" else paste(" or",length(found)-5L, "more"))
     } else {
-      stop(sprintf("Object '%s' not found amongst %s%s", used, paste(head(ref,5L),collapse=', '),
-           if (length(ref)<=5L) "" else paste(" and",length(ref)-5L,"more")))
+      stop("Object '", used, "' not found amongst ",
+           paste(head(ref, 5L), collapse=', '),
+           if (length(ref)<=5L) "" else paste(" and", length(ref)-5L, "more"))
     }
   } else {
     stop(err$message, call.=FALSE)
@@ -1916,11 +1918,12 @@ as.matrix.data.table <- function(x, rownames=NULL, rownames.value=NULL, ...) {
       rownames.value = rownames
       rownames = NULL
     } else if (length(rownames)==0L) {
-      stop(sprintf("length(rownames)==0 but should be a single column name or number, or NULL"))
+      stop("length(rownames)==0 but should be a single column name or number, or NULL")
     } else {
       if (isTRUE(rownames)) {
         if (length(key(x))>1L) {
-          warning(sprintf("rownames is TRUE but key has multiple columns [%s]; taking first column x[,1] as rownames", paste(key(x), collapse=',')))
+          warning("rownames is TRUE but key has multiple columns ",
+                  brackify(key(x)), "; taking first column x[,1] as rownames")
         }
         rownames = if (length(key(x))==1L) chmatch(key(x),names(x)) else 1L
       }
@@ -1936,12 +1939,14 @@ as.matrix.data.table <- function(x, rownames=NULL, rownames.value=NULL, ...) {
       else { # rownames is a column number already
         rownames <- as.integer(rownames)
         if (is.na(rownames) || rownames<1L || rownames>ncol(x))
-          stop(sprintf("as.integer(rownames)==%d which is outside the column number range [1,ncol=%d].", rownames, ncol(x)))
+          stop("as.integer(rownames)==", rownames,
+               " which is outside the column number range [1,ncol=", ncol(x), "].")
       }
     }
   } else if (!is.null(rownames.value)) {
     if (length(rownames.value)!=nrow(x))
-      stop(sprintf("length(rownames.value)==%d but should be nrow(x)==%d", length(rownames.value), nrow(x)))
+      stop("length(rownames.value)==", length(rownames.value),
+           " but should be nrow(x)==", nrow(x))
   }
   if (!is.null(rownames)) {
     # extract that column and drop it.
@@ -2320,7 +2325,7 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
   if (".ll.tech.split" %chin% names(x)) stop("column '.ll.tech.split' is reserved for split.data.table processing")
   if (".nm.tech.split" %chin% by) stop("column '.nm.tech.split' is reserved for split.data.table processing")
   if (!all(by %chin% names(x))) stop("argument 'by' must refer to data.table column names")
-  if (!all(by.atomic <- vapply_1b(by, function(.by) is.atomic(x[[.by]])))) stop(sprintf("argument 'by' must refer only to atomic type columns, classes of '%s' columns are not atomic type", paste(by[!by.atomic], collapse=", ")))
+  if (!all(by.atomic <- vapply_1b(by, function(.by) is.atomic(x[[.by]])))) stop("argument 'by' must refer only to atomic type columns, classes of ", brackify(by[!by.atomic]), " columns are not atomic type")
   # list of data.tables (flatten) or list of lists of ... data.tables
   make.levels = function(x, cols, sorted) {
     by.order = if (!sorted) x[, funique(.SD), .SDcols=cols] # remember order of data, only when not sorted=FALSE

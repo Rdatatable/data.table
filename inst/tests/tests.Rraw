@@ -8048,11 +8048,11 @@ test(1613.39, length(levels(dt1$A)) == 10L && length(levels(dt2$A)) == 5L, TRUE)
 # unsupported column types: list
 dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = lapply(1:4, function(x) new.env()))
 test(1613.40, all.equal(dt, dt), TRUE)
-test(1613.41, all.equal(dt, dt, ignore.row.order = TRUE), error = "Datasets to compare with 'ignore.row.order' must not have unsupported column types: list")
+test(1613.41, all.equal(dt, dt, ignore.row.order = TRUE), error = "Datasets to compare with 'ignore.row.order' must not have unsupported column types: [list]")
 # unsupported type in set-ops: complex, raw
 dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = as.complex(1:4), V4 = as.raw(1:4), V5 = lapply(1:4, function(x) NULL))
 test(1613.42, all.equal(dt, dt), TRUE)
-test(1613.43, all.equal(dt, dt, ignore.row.order = TRUE), error = "Datasets to compare with 'ignore.row.order' must not have unsupported column types: raw, complex, list")
+test(1613.43, all.equal(dt, dt, ignore.row.order = TRUE), error = "Datasets to compare with 'ignore.row.order' must not have unsupported column types: [raw, complex, list]")
 # supported types multi column test
 dt = data.table(
   V1 = 1:4,
@@ -8940,7 +8940,7 @@ test(1639.131, split(fdt[0L], by = "x1"), lapply(c(a=1L,b=2L,c=3L), function(i) 
 test(1639.132, split(dt[0L], by = "x1", sorted = TRUE), structure(list(), .Names = character(0)))
 test(1639.133, split(fdt[0L], by = "x1", sorted = TRUE), lapply(c(a=1L,b=2L,c=3L), function(i) data.table(x1=factor(levels = c("a","b","c")),x2=factor(levels = c("a","c","d","e")),x3=factor(levels = c("a","e","f","g","h","z")),y=numeric()))) # same as none sorted as all appended on the end in sorted order due to lack of data
 dt2 = copy(dt)[, "l" := lapply(1:12, function(i) i)] # non-atomic type to 'by' should raise error
-test(1639.134, split(dt2, by = "l"), error = "argument 'by' must refer only to atomic type columns, classes of 'l' columns are not atomic type")
+test(1639.134, split(dt2, by = "l"), error = "argument 'by' must refer only to atomic type columns, classes of [l] columns are not atomic type")
 # - [x] additional tests for names consistency with data.frame, and current examples in SO
 df = data.frame(product = c("b", "a", "b", "a"),
                 value = c(sample(1:10,4)),
@@ -10381,7 +10381,7 @@ test(1750.19, uniqueN({
 # entries in `by` / `sets` not exists in data.table
 test(1750.20, exists("notexist"), FALSE)  # https://github.com/Rdatatable/data.table/issues/3055#issuecomment-423364960
 test(1750.21, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","notexist"), sets=list(c("color"), character()), id=TRUE), error = "object 'notexist' not found")
-test(1750.22, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color"), "stat"), id=TRUE), error = "Columns used in 'sets' but not present in 'by': stat")
+test(1750.22, groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color"), "stat"), id=TRUE), error = "Columns used in 'sets' but not present in 'by': [stat]")
 test(1750.23, groupingsets(dt, j = .(a=sum(notexist)), by = c("color","year","status"), sets=list(c("color"), character()), id=TRUE), error = "object 'notexist' not found")
 # update by ref `:=` forbidden
 test(1750.24,

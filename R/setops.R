@@ -190,9 +190,9 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
       stop("None of the datasets to compare should contain a column named '.seqn'")
     bad.type = setNames(c("raw","complex","list") %chin% c(vapply(current, typeof, FUN.VALUE = ""), vapply(target, typeof, FUN.VALUE = "")), c("raw","complex","list"))
     if (any(bad.type))
-      stop(sprintf("Datasets to compare with 'ignore.row.order' must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
+      stop("Datasets to compare with 'ignore.row.order' must not have unsupported column types: ", brackify(names(bad.type)[bad.type]))
     if (between(tolerance, 0, sqrt(.Machine$double.eps), incbounds=FALSE)) {
-      warning(sprintf("Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine$double.eps)` from provided %s", format(tolerance, scientific=FALSE)))
+      warning("Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine$double.eps)` from provided ", format(tolerance, scientific=FALSE))
       tolerance = sqrt(.Machine$double.eps)
     }
     target_dup = as.logical(anyDuplicated(target))
