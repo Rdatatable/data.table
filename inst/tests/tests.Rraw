@@ -12975,7 +12975,7 @@ x = as.list(x)
 test(1967.56, setnames(x), error = 'x is not a data.table or data.frame')
 setDT(x)
 names(x) = NULL
-test(1967.57, setnames(x), error = 'dt is length 2 but its names are length 0')
+test(1967.57, setnames(x), error = 'x is length 2 but its names are length 0')
 names(x) = c('a', 'b')
 test(1967.58, setnames(x, new = 'c'), error = "When 'new' is provided")
 test(1967.59, setnames(x, 1:2, c(8L, 9L)), error = "'new' is not a character")

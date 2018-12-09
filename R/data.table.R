@@ -242,7 +242,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     return(ans)
   }
   if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
-  missingroll = identical(roll, FALSE)
+  missingroll = missing(roll)
   if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
   if (is.character(roll)) {
     if (roll!="nearest") stop("roll is '",roll,"' (type character). Only valid character value is 'nearest'.")
@@ -2522,7 +2522,7 @@ setnames <- function(x,old,new,skip_absent=FALSE) {
   # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
   # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
   if (!is.data.frame(x)) stop("x is not a data.table or data.frame")
-  if (length(names(x)) != length(x)) stop("dt is length ",length(x)," but its names are length ",length(names(x)))
+  if (length(names(x)) != length(x)) stop("x is length ",length(x)," but its names are length ",length(names(x)))
   stopifnot(isTRUE(skip_absent) || identical(skip_absent,FALSE))
   if (missing(new)) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
