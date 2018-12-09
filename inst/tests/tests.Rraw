@@ -12960,37 +12960,74 @@ test(1967.49, x[ , list(5) := 6], error = 'LHS of := must be a symbol')
 test(1967.50, x[ , 1 + 3i := 6], error = "LHS of := isn't column names")
 test(1967.51, x[ , .(5L), by = .EACHI, mult = 'all'],
      error = 'logical error. i is not data.table')
+#### to be removed following #2061
+test(1967.9999, x[1:2, by = a], error = "'by' or 'keyby' is supplied but not j")
+test(1967.52, x[1+3i], error = 'i has not evaluated to logical')
 
-test(1967.52, as.matrix(x, rownames = 2:3),
+test(1967.53, as.matrix(x, rownames = 2:3),
      error = 'length(rownames)==2 but')
-test(1967.53, as.matrix(x[0L]),
+test(1967.54, as.matrix(x[0L]),
      structure(logical(0), .Dim = c(0L, 2L), .Dimnames = list(NULL, c("a", "b"))))
 
-test(1967.54, subset(x, 5L), error = "'subset' must evaluate to logical")
+test(1967.55, subset(x, 5L), error = "'subset' must evaluate to logical")
 
 x = as.list(x)
-test(1967.55, setnames(x), error = 'x is not a data.table or data.frame')
+test(1967.56, setnames(x), error = 'x is not a data.table or data.frame')
 setDT(x)
 names(x) = NULL
-test(1967.56, setnames(x), error = 'dt is length 2 but its names are length 0')
+test(1967.57, setnames(x), error = 'dt is length 2 but its names are length 0')
 names(x) = c('a', 'b')
-test(1967.57, setnames(x, new = 'c'), error = "When 'new' is provided")
-test(1967.58, setnames(x, 1:2, c(8L, 9L)), error = "'new' is not a character")
-test(1967.59, setnames(x, -1:1, c('hey', 'you')), error = "both +ve and -ve")
-test(1967.60, setnames(x, 1+3i, 'cplx'), error = "'old' is type complex")
-test(1967.61, setnames(x, 1, c('d', 'e')), error = "'old' is length 1 but 'new'")
+test(1967.58, setnames(x, new = 'c'), error = "When 'new' is provided")
+test(1967.59, setnames(x, 1:2, c(8L, 9L)), error = "'new' is not a character")
+test(1967.60, setnames(x, -1:1, c('hey', 'you')), error = "both +ve and -ve")
+test(1967.61, setnames(x, 1+3i, 'cplx'), error = "'old' is type complex")
+test(1967.62, setnames(x, 1, c('d', 'e')), error = "'old' is length 1 but 'new'")
 
-test(1967.62, setcolorder(x, c(1, 1)), error = 'contains duplicates')
-test(1967.63, setcolorder(x, 1+3i), error = 'not a character or numeric')
-test(1967.64, setcolorder(x, 300), error = 'Column numbers in neworder out of bounds')
+test(1967.63, setcolorder(x, c(1, 1)), error = 'contains duplicates')
+test(1967.64, setcolorder(x, 1+3i), error = 'not a character or numeric')
+test(1967.65, setcolorder(x, 300), error = 'Column numbers in neworder out of bounds')
 
-test(1967.65, rbindlist(list(x), idcol = FALSE),
+test(1967.66, rbindlist(list(x), idcol = FALSE),
      rbindlist(list(x)))
-test(1967.66, rbindlist(list(x), idcol = 1+3i), error = 'idcol must be a logical')
+test(1967.67, rbindlist(list(x), idcol = 1+3i), error = 'idcol must be a logical')
 
 ### potentially altering user environment so use a strange name
 suppressWarnings(rm(`___data.table_internal_test_1967.68___`))
-test(1967.67, setDT(`___data.table_internal_test_1967.68___`), error = 'Can not find symbol')
+test(1967.68, setDT(`___data.table_internal_test_1967.68___`), error = 'Cannot find symbol')
+
+### [.data.table verbosity & non-equi-join tests
+opt = options('datatable.optimize' = 2)
+test(1967.69, x[order(a), .N, verbose = TRUE], 5L,
+     output = "i changed from 'order(...)' to 'forder(")
+setkey(x)
+test(1967.70, x[x, .N, on = 'a', verbose = TRUE], 5L,
+     output = "on= matches existing key")
+
+x = data.table(
+  i1 = c(234L, 250L, 169L, 234L, 147L, 96L, 96L, 369L, 147L, 96L),
+  i4 = c(79L, 113L, 270L, -121L, 113L, 113L, -121L, 179L, -228L, 113L)
+)
+y = data.table(
+  i1 = c(29L, 18L, 33L, 27L, 33L, 23L, 39L, 38L, 29L, 23L),
+  i4 = c(-26L, 6L, -30L, -26L, -23L, 38L, -40L, -26L, -23L, 24L)
+)
+x[ , '_nqgrp_' := 5]
+test(1967.71, x[y, on = .(i1 <= i1, i4 >= i4)], error = "'_nqgrp_' is reserved")
+x[ , '_nqgrp_' := NULL]
+test(1967.72, x[y, max(i4), on = .(i1 <= i1, i4 >= i4), verbose = TRUE], 38L,
+     output = 'Recomputing forder with non-equi.*done')
+test(1967.73, x[!y, sum(i4), on = 'i1', by = .EACHI, verbose = TRUE],
+     data.table(i1 = c(169L, 369L), V1 = c(270L, 179L)),
+     output = "not-join called with 'by=.EACHI'.*done")
+
+test(1967.74, x[!y, sum(i4), on = 'i1', verbose = TRUE], 510L,
+     output = 'Inverting irows for notjoin.*sec')
+x[ , v := 0]
+
+### hitting by = A:B branch
+test(1967.75, x[ , .(v = sum(v)), by = i1:i4], x[-10L])
+test(1967.76, x[1:5, sum(v), by = list(i5 = 1:5 %% 2L), verbose = TRUE],
+     data.table(i5 = 1:0, V1 = c(0, 0)), output = 'i clause present but columns used in by not detected')
 
 ###################################
 #  Add new tests above this line  #
