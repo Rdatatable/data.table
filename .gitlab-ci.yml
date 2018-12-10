@@ -71,12 +71,12 @@ build: # build data.table sources as tar.gz archive
   - build
   <<: *artifacts
 
-.test-linux-template: &test-linux
+.test-lin-template: &test-lin
   <<: *test
   tags:
     - linux
 
-.test-windows-template: &test-windows
+.test-win-template: &test-win
   <<: *test
   tags:
     - windows
@@ -85,13 +85,13 @@ build: # build data.table sources as tar.gz archive
     - rm -rf /tmp/$R_DIR/library && mkdir -p /tmp/$R_DIR/library
     - export R_LIBS_USER="/tmp/$R_DIR/library"
 
-.test-macosx-template: &test-macosx
+.test-osx-template: &test-osx
   <<: *test
   tags:
     - macosx
 
-test-r-release: #  most comprehensive tests, force all suggests, also integration tests
-  <<: *test-linux
+test-rel: #  most comprehensive tests, force all suggests, also integration tests
+  <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   variables: # unlike CRAN
     _R_CHECK_CRAN_INCOMING_: "FALSE"
@@ -108,8 +108,8 @@ test-r-release: #  most comprehensive tests, force all suggests, also integratio
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-r-release-vanilla: # minimal installation, no suggested deps, no vignettes or manuals, measure memory
-  <<: *test-linux
+test-rel-vanilla: # minimal installation, no suggested deps, no vignettes or manuals, measure memory
+  <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
   variables:
     TEST_DATA_TABLE_MEMTEST: "TRUE"
@@ -121,8 +121,8 @@ test-r-release-vanilla: # minimal installation, no suggested deps, no vignettes 
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-r-release-cran: # as CRAN
-  <<: *test-linux
+test-rel-cran: # as CRAN
+  <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
@@ -136,8 +136,8 @@ test-r-release-cran: # as CRAN
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-r-devel-cran: # R-devel as CRAN
-  <<: *test-linux
+test-dev-cran: # R-devel as CRAN
+  <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel
   allow_failure: true
   variables:
@@ -152,8 +152,8 @@ test-r-devel-cran: # R-devel as CRAN
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-r-3.1.0-cran: # test stated dependency on R 3.1.0 as CRAN
-  <<: *test-linux
+test-310-cran: # test stated dependency on R 3.1.0 as CRAN
+  <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-3.1.0
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
@@ -167,8 +167,8 @@ test-r-3.1.0-cran: # test stated dependency on R 3.1.0 as CRAN
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-r-release-windows: # windows test and build binaries
-  <<: *test-windows
+test-rel-win: # windows test and build binaries
+  <<: *test-win
   variables:
     R_BIN_VERSION: "3.5"
     R_DIR: "R-3.5.0"
@@ -184,8 +184,8 @@ test-r-release-windows: # windows test and build binaries
     - mv $(ls -1t data.table_*.zip | head -n 1) cran/bin/windows/contrib/$R_BIN_VERSION
     - *cleanup-src
 
-test-r-devel-windows: # R-devel on windows
-  <<: *test-windows
+test-dev-win: # R-devel on windows
+  <<: *test-win
   variables:
     R_BIN_VERSION: "3.6"
     R_DIR: "R-devel"
@@ -203,8 +203,8 @@ test-r-devel-windows: # R-devel on windows
     - mv $(ls -1t data.table_*.zip | head -n 1) cran/bin/windows/contrib/$R_BIN_VERSION
     - *cleanup-src
 
-.test-r-release-macosx: # macosx test and build binaries
-  <<: *test-macosx
+.test-rel-osx: # macosx test and build binaries
+  <<: *test-osx
   variables:
     R_BIN_VERSION: "3.5"
   script:
