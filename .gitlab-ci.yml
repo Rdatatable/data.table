@@ -229,14 +229,14 @@ integration: # merging all artifacts to produce single R repository and summarie
   dependencies:
   - mirror-packages
   - build
-  - test-r-release
-  - test-r-release-cran
-  - test-r-devel-cran
-  - test-r-release-vanilla
-  - test-r-3.1.0-cran
-  - test-r-release-windows
-  - test-r-devel-windows
-  #- test-r-release-macosx
+  - test-rel
+  - test-rel-cran
+  - test-dev-cran
+  - test-rel-vanilla
+  - test-310-cran
+  - test-rel-win
+  - test-dev-win
+  #- test-rel-osx
   variables:
     R_BIN_VERSION: "3.5"
     R_DEVEL_BIN_VERSION: "3.6"
