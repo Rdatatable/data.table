@@ -135,6 +135,7 @@ test-r-release-cran: # as CRAN
     - cd bus/$CI_BUILD_NAME
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
+    - Rscript -e 'l<-readLines("data.table.Rcheck/00check.log"); if (!identical(l[length(l)], "Status: OK")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: OK"), " but ", shQuote(toString(l[length(l)]))) else q("no")'
 
 test-r-devel-cran: # R-devel as CRAN
   <<: *test-linux
