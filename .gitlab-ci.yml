@@ -173,7 +173,7 @@ test-rel-win: # windows test and build binaries
   <<: *test-win
   variables:
     R_BIN_VERSION: "3.5"
-    R_DIR: "R-3.5.0"
+    R_DIR: "R-3.5.1"
   script:
     - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'))"
     - *copy-src
