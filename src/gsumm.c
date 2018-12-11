@@ -42,8 +42,7 @@ static int nbit(int n)
 }
 
 SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
-  // clock_t start = clock();
-  double started = wallclock();
+  // double started = wallclock();
   if (TYPEOF(env) != ENVSXP) error("env is not an environment");
   // The type of jsub is pretty flexbile in R, so leave checking to eval() below.
   if (!isInteger(o)) error("o is not an integer vector");
@@ -74,44 +73,44 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   }
 
   int nb = nbit(ngrp-1);
-  //shift = nb/2;
-  shift = MAX(nb-8,0);
+  shift = MAX(nb-8,0);   //shift = nb/2;
   mask = (1<<shift)-1;
   highSize = ((ngrp-1)>>shift) + 1;
 
   grp = (int *)R_alloc(nrow, sizeof(int));   // TODO: use malloc and made this local as not needed globally when all functions here use gather
                                              // maybe better to malloc to avoid R's heap. This grp isn't global, so it doesn't need to be R_alloc
-  const int *restrict fdp = INTEGER(f);
+  const int *restrict fp = INTEGER(f);
 
   nBatch = MIN((nrow+1)/2, getDTthreads()*2);  // 2 to reduce last-thread-home. TODO: experiment. The higher this is though, the bigger is counts[]
   batchSize = (nrow-1)/nBatch + 1;
   lastBatchSize = nrow - (nBatch-1)*batchSize;
 
-  Rprintf("ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  batchSize=%d  lastBatchSize=%d\n", ngrp, nb, shift, highSize, nBatch, batchSize, lastBatchSize);
+  //Rprintf("ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  batchSize=%d  lastBatchSize=%d\n", ngrp, nb, shift, highSize, nBatch, batchSize, lastBatchSize);
 
   // initial population of g:
   #pragma omp parallel for num_threads(getDTthreads())
   for (int g=0; g<ngrp; g++) {
-    int *elem = grp + fdp[g]-1;
+    int *elem = grp + fp[g]-1;
     for (int j=0; j<grpsize[g]; j++)  elem[j] = g;
   }
-  Rprintf("gforce initial population of grp took %.3f\n", wallclock()-started); started=wallclock();
+  //Rprintf("gforce initial population of grp took %.3f\n", wallclock()-started); started=wallclock();
   if (LENGTH(o)) {
     isunsorted = 1; // for gmedian
 
-    const int *restrict op = INTEGER(o);  // o is a permutation of 1:nrow
     // What follows is more cache-efficient version of this scattered assign :
     // for (int g=0; g<ngrp; g++) {
-    //  const int *elem = odp + fdp[g]-1;
+    //  const int *elem = op + fp[g]-1;
     //  for (int j=0; j<grpsize[g]; j++)  grp[ elem[j]-1 ] = g;
     //}
+
+    const int *restrict op = INTEGER(o);  // o is a permutation of 1:nrow
     int nb = nbit(nrow-1);
-    int shift = MAX(nb-8, 0);
+    int shift = MAX(nb-8, 0);  // TODO: experiment nb/2
     int highSize = ((nrow-1)>>shift) + 1;
-    Rprintf("When assigning grp[o] = g, highSize=%d  nb=%d  shift=%d  nBatch=%d\n", highSize, nb, shift, nBatch);
-    int *counts = calloc(nBatch*highSize, sizeof(int));  // (S_ zeros) TODO: cache-line align and make highSize a multiple of 64.  This +1 is for easier diff later
+    //Rprintf("When assigning grp[o] = g, highSize=%d  nb=%d  shift=%d  nBatch=%d\n", highSize, nb, shift, nBatch);
+    int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
     int *TMP   = malloc(nrow*2*sizeof(int));
-    if (!counts || !TMP ) error("Internal error: Failed to allocate counts, tmpO or tmpG when assigning g in gforce");
+    if (!counts || !TMP ) error("Internal error: Failed to allocate counts or TMP when assigning g in gforce");
     #pragma omp parallel for num_threads(getDTthreads())   // schedule(dynamic,1)
     for (int b=0; b<nBatch; b++) {
       const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
@@ -135,7 +134,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
         *p   = my_g[i];
       }
     }
-    Rprintf("gforce assign TMP (o,g) pairs took %.3f\n", wallclock()-started); started=wallclock();
+    //Rprintf("gforce assign TMP (o,g) pairs took %.3f\n", wallclock()-started); started=wallclock();
     #pragma omp parallel for num_threads(getDTthreads())
     for (int h=0; h<highSize; h++) {  // very important that high is first loop here
       for (int b=0; b<nBatch; b++) {
@@ -149,7 +148,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     }
     free(counts);
     free(TMP);
-    Rprintf("gforce assign TMP [ (o,g) pairs ] back to grp took %.3f\n", wallclock()-started); started=wallclock();
+    //Rprintf("gforce assign TMP [ (o,g) pairs ] back to grp took %.3f\n", wallclock()-started); started=wallclock();
   }
 
   high = (uint16_t *)R_alloc(nrow, sizeof(uint16_t));  // maybe better to malloc to avoid R's heap, but safer to R_alloc since it's done via eval()
@@ -189,14 +188,13 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     // counts is now cumulated within batch (with ending values) and we leave it that way
     // memcpy(counts + b*256, myCounts, 256*sizeof(int));  // save cumulate for later, first bucket contains position of next. For ease later in the very last batch.
   }
-  Rprintf("gforce assign high and low took %.3f\n", wallclock()-started); started=wallclock();
+  //Rprintf("gforce assign high and low took %.3f\n", wallclock()-started); started=wallclock();
 
   oo = INTEGER(o);
   ff = INTEGER(f);
-  Rprintf("gforce two INTEGERs took %.3f\n", wallclock()-started); started=wallclock();
 
   SEXP ans = PROTECT( eval(jsub, env) );
-  Rprintf("gforce eval took %.3f\n", wallclock()-started);
+  //Rprintf("gforce eval took %.3f\n", wallclock()-started);
   // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.
   if (isVectorAtomic(ans)) {
     SEXP tt = ans;
@@ -206,14 +204,13 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   }
   ngrp = 0; maxgrpn=0; irowslen = -1; isunsorted = 0;
 
-
   UNPROTECT(1);
   return(ans);
 }
 
 void *gather(void *x, size_t size, bool *anyNA)
 {
-  double started = wallclock();
+  //double started = wallclock();
   if (size==4) {
     const int *thisx = x;
     //int *restrict thisgx = gx;
@@ -245,7 +242,7 @@ void *gather(void *x, size_t size, bool *anyNA)
   } else {
     error("gather not yet implemented for size!=4");
   }
-  Rprintf("gather took %.3fs\n", wallclock()-started);
+  //Rprintf("gather took %.3fs\n", wallclock()-started);
   return gx;
 }
 
@@ -272,7 +269,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
     //int64_t *i64sum = calloc(ngrp, sizeof(int64_t));
     //if (!i64sum) error("Unable to allocate %d * %d bytes for gsum i64", ngrp, sizeof(int64_t));
     bool overflow=false;
-    double started = wallclock();
+    //double started = wallclock();
     #pragma omp parallel for num_threads(getDTthreads()) //schedule(dynamic,1)
     for (int h=0; h<highSize; h++) {   // very important that high is first loop here
       int *restrict _ans = ansp + (h<<shift);
@@ -303,7 +300,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
         }
       }
     }
-    Rprintf("gsum int took %.3f\n", wallclock()-started);
+    //Rprintf("gsum int took %.3f\n", wallclock()-started);
     if (overflow) error("overflow summing integer not yet auto-coerce");
 /*    bool stop = false;
       #pragma omp parallel for num_threads(getDTthreads())
