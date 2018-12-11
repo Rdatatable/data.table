@@ -13035,6 +13035,13 @@ test(1968.1, DT[, sum(B), by=A%%2L], error="Type 'complex' not supported by GFor
 test(1968.2, storage.mode(DT$C), "integer")
 test(1968.3, DT[, sum(C), by=A%%2L], data.table(A=c(1L,0L), V1=c(6442450941, 4294967294)),
              warning="sum.*integer column.*more than type 'integer' can hold.*coerced to 'numeric'")
+DT[3,C:=NA]
+test(1968.4, DT[, sum(C), by=A%%2L], data.table(A=c(1L,0L), V1=c(NA, 4294967294)), warning="coerced to 'numeric'")
+test(1968.5, DT[, sum(C,na.rm=TRUE), by=A%%2L], data.table(A=c(1L,0L), V1=c(4294967294, 4294967294)), warning="coerced to 'numeric'")
+DT[4,C:=NA]
+test(1968.6, DT[, sum(C,na.rm=TRUE), by=A%%2L], data.table(A=c(1L,0L), V1=c(4294967294, 2147483647)), warning="coerced to 'numeric'")
+DT[2,C:=NA]
+test(1968.7, DT[, sum(C,na.rm=TRUE), by=A%%2L], data.table(A=c(1L,0L), V1=c(4294967294, 0)), warning="coerced to 'numeric'")
 
 
 ###################################
