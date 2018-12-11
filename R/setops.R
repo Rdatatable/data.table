@@ -11,16 +11,18 @@ validate <- function(cols, dt) {
   cols = as.integer(cols)
   isna = which(!cols %in% seq_along(dt))
   if (length(isna))
-    stop(argcols, " value(s) [", paste(origcols[isna], collapse=", "), "] not present (or out of range) in ", argdt)
+    stop(argcols, " value", if (length(isna) > 1L) 's ' else ' ',
+         brackify(origcols[isna]), " not present (or out of range) in ", argdt)
   cols
 }
 
 # setdiff for data.tables, internal at the moment #547, used in not-join
 setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE) {
   if (!is.data.table(x) || !is.data.table(y)) stop("x and y must both be data.tables")
-  if (is.null(x) || !length(x)) return(x)
+  # !ncol redundant since all 0-column data.tables have 0 rows
+  if (!nrow(x)) return(x)
   by.x = validate(by.x, x)
-  if (is.null(y) || !length(y)) return(unique(x, by=by.x))
+  if (!nrow(y)) return(unique(x, by=by.x))
   by.y = validate(by.y, y)
   if (length(by.x) != length(by.y)) stop("length(by.x) != length(by.y)")
   # factor in x should've factor/character in y, and viceversa
@@ -51,15 +53,22 @@ funique <- function(x) {
   if (any(dup)) .Call(CsubsetDT, x, which_(dup, FALSE), seq_along(x)) else x
 }
 
-fintersect <- function(x, y, all=FALSE) {
+.set_ops_arg_check = function(x, y, all, .seqn = FALSE, block_list = TRUE) {
   if (!is.logical(all) || length(all) != 1L) stop("argument 'all' should be logical of length one")
-  if (!is.data.table(x) || !is.data.table(y)) stop("x and y must be both data.tables")
-  if (!identical(sort(names(x)), sort(names(y)))) stop("x and y must have same column names")
-  if (!identical(names(x), names(y))) stop("x and y must have same column order")
-  bad.type = setNames(c("raw","complex","list") %chin% c(vapply(x, typeof, FUN.VALUE = ""), vapply(y, typeof, FUN.VALUE = "")), c("raw","complex","list"))
-  if (any(bad.type)) stop(sprintf("x and y must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
-  if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have same column classes")
-  if (".seqn" %chin% names(x)) stop("None of the datasets to intersect should contain a column named '.seqn'")
+  if (!is.data.table(x) || !is.data.table(y)) stop("x and y must both be data.tables")
+  if (!identical(sort(names(x)), sort(names(y)))) stop("x and y must have the same column names")
+  if (!identical(names(x), names(y))) stop("x and y must have the same column order")
+  bad_types = c("raw", "complex", if (block_list) "list")
+  found = bad_types %chin% c(vapply(x, typeof, FUN.VALUE = ""),
+                             vapply(y, typeof, FUN.VALUE = ""))
+  if (any(found)) stop("unsupported column type", if (sum(found) > 1L) "s" else "",
+                       " found in x or y: ", brackify(bad_types[found]))
+  if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have the same column classes")
+  if (.seqn && ".seqn" %chin% names(x)) stop("None of the datasets should contain a column named '.seqn'")
+}
+
+fintersect <- function(x, y, all=FALSE) {
+  .set_ops_arg_check(x, y, all, .seqn = TRUE)
   if (!nrow(x) || !nrow(y)) return(x[0L])
   if (all) {
     x = shallow(x)[, ".seqn" := rowidv(x)]
@@ -73,14 +82,7 @@ fintersect <- function(x, y, all=FALSE) {
 }
 
 fsetdiff <- function(x, y, all=FALSE) {
-  if (!is.logical(all) || length(all) != 1L) stop("argument 'all' should be logical of length one")
-  if (!is.data.table(x) || !is.data.table(y)) stop("x and y must be both data.tables")
-  if (!identical(sort(names(x)), sort(names(y)))) stop("x and y must have same column names")
-  if (!identical(names(x), names(y))) stop("x and y must have same column order")
-  bad.type = setNames(c("raw","complex","list") %chin% c(vapply(x, typeof, FUN.VALUE = ""), vapply(y, typeof, FUN.VALUE = "")), c("raw","complex","list"))
-  if (any(bad.type)) stop(sprintf("x and y must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
-  if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have same column classes")
-  if (".seqn" %chin% names(x)) stop("None of the datasets to setdiff should contain a column named '.seqn'")
+  .set_ops_arg_check(x, y, all, .seqn = TRUE)
   if (!nrow(x)) return(x)
   if (!nrow(y)) return(if (!all) funique(x) else x)
   if (all) {
@@ -94,25 +96,14 @@ fsetdiff <- function(x, y, all=FALSE) {
 }
 
 funion <- function(x, y, all=FALSE) {
-  if (!is.logical(all) || length(all) != 1L) stop("argument 'all' should be logical of length one")
-  if (!is.data.table(x) || !is.data.table(y)) stop("x and y must be both data.tables")
-  if (!identical(sort(names(x)), sort(names(y)))) stop("x and y must have same column names")
-  if (!identical(names(x), names(y))) stop("x and y must have same column order")
-  bad.type = setNames(c("raw","complex", if(!all) "list") %chin% c(vapply(x, typeof, FUN.VALUE = ""), vapply(y, typeof, FUN.VALUE = "")), c("raw","complex", if(!all) "list"))
-  if (any(bad.type)) stop(sprintf("x and y must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
-  if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have same column classes")
+  .set_ops_arg_check(x, y, all, block_list = !all)
   ans = rbindlist(list(x, y))
   if (!all) ans = funique(ans)
   ans
 }
 
 fsetequal <- function(x, y, all=TRUE) {
-  if (!is.data.table(x) || !is.data.table(y)) stop("x and y must be both data.tables")
-  if (!identical(sort(names(x)), sort(names(y)))) stop("x and y must have same column names")
-  if (!identical(names(x), names(y))) stop("x and y must have same column order")
-  bad.type = setNames(c("raw","complex","list") %chin% c(vapply(x, typeof, FUN.VALUE = ""), vapply(y, typeof, FUN.VALUE = "")), c("raw","complex","list"))
-  if (any(bad.type)) stop(sprintf("x and y must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
-  if (!identical(lapply(x, class), lapply(y, class))) stop("x and y must have same column classes")
+  .set_ops_arg_check(x, y, all)
   if (!all) {
     x = funique(x)
     y = funique(y)
@@ -124,7 +115,7 @@ fsetequal <- function(x, y, all=TRUE) {
 
 all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attributes=TRUE, ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps), ...) {
   stopifnot(is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order), is.numeric(tolerance))
-  if (!is.data.table(target) || !is.data.table(current)) stop("'target' and 'current' must be both data.tables")
+  if (!is.data.table(target) || !is.data.table(current)) stop("'target' and 'current' must both be data.tables")
 
   msg = character(0L)
   # init checks that detect high level all.equal
@@ -199,9 +190,9 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
       stop("None of the datasets to compare should contain a column named '.seqn'")
     bad.type = setNames(c("raw","complex","list") %chin% c(vapply(current, typeof, FUN.VALUE = ""), vapply(target, typeof, FUN.VALUE = "")), c("raw","complex","list"))
     if (any(bad.type))
-      stop(sprintf("Datasets to compare with 'ignore.row.order' must not have unsupported column types: %s", paste(names(bad.type)[bad.type], collapse=", ")))
+      stop("Datasets to compare with 'ignore.row.order' must not have unsupported column types: ", brackify(names(bad.type)[bad.type]))
     if (between(tolerance, 0, sqrt(.Machine$double.eps), incbounds=FALSE)) {
-      warning(sprintf("Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine$double.eps)` from provided %s", format(tolerance, scientific=FALSE)))
+      warning("Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine$double.eps)` from provided ", format(tolerance, scientific=FALSE))
       tolerance = sqrt(.Machine$double.eps)
     }
     target_dup = as.logical(anyDuplicated(target))
