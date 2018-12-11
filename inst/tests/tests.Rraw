@@ -13029,6 +13029,14 @@ test(1967.75, x[ , .(v = sum(v)), by = i1:i4], x[-10L])
 test(1967.76, x[1:5, sum(v), by = list(i5 = 1:5 %% 2L), verbose = TRUE],
      data.table(i5 = 1:0, V1 = c(0, 0)), output = 'i clause present but columns used in by not detected')
 
+# gforce integer overflow coerce to double
+DT = data.table(A=1:5, B=-3i, C=2147483647L)
+test(1968.1, DT[, sum(B), by=A%%2L], error="Type 'complex' not supported by GForce sum (gsum). Either add the")
+test(1968.2, storage.mode(DT$C), "integer")
+test(1968.3, DT[, sum(C), by=A%%2L], data.table(A=c(1L,0L), V1=c(6442450941, 4294967294)),
+             warning="sum.*integer column.*more than type 'integer' can hold.*coerced to 'numeric'")
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################

@@ -56,7 +56,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     irows = INTEGER(irowsArg);
     irowslen = LENGTH(irowsArg);
   }
-  else error("irowsArg is neither an integer vector nor NULL");
+  else error("irowsArg is neither an integer vector nor NULL");  // # nocov
   ngrp = LENGTH(l);
   if (LENGTH(f) != ngrp) error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp);
   nrow=0;
@@ -298,7 +298,7 @@ void *gather(SEXP x, bool *anyNA)
     }
   } break;
   default :
-    error("gather implemented for INTSXP and REALSXP but not '%s'", type2char(TYPEOF(x)));
+    error("gather implemented for INTSXP and REALSXP but not '%s'", type2char(TYPEOF(x)));   // # nocov
   }
   //Rprintf("gather took %.3fs\n", wallclock()-started);
   return gx;
@@ -385,7 +385,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
               if (!narm) _ans[my_low[i]]=NA_REAL;
               continue;
             }
-            _ans[my_low[i]] += b;  // let NA_REAL propagate
+            _ans[my_low[i]] += elem;  // let NA_REAL propagate
           }
         }
       }
