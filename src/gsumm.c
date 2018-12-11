@@ -105,63 +105,51 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     //  const int *elem = odp + fdp[g]-1;
     //  for (int j=0; j<grpsize[g]; j++)  grp[ elem[j]-1 ] = g;
     //}
-
-    int _nBatch =    nBatch;             // (nrow-1)/_batchSize + 1;
-
-    int _batchSize = (nrow-1)/_nBatch + 1;          // MIN(65535, nrow/2);
-    int _lastBatchSize = nrow - (_nBatch-1)*_batchSize;
-
-    int _nb = nbit(nrow-1);
-    int _shift = _nb/2;   //MAX(_nb-8, 0);   // TODO: try more than 8, and try _nb/2 again
-    int _highSize = ((nrow-1)>>_shift) + 1;
-    int _nth = MIN(_nBatch, getDTthreads());
-
-    int *_counts = malloc(_nth*_highSize*sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64.  This +1 is for easier diff later
-    int *_tmpO   = malloc(_nth*_batchSize*sizeof(int));
-    int *_tmpG   = malloc(_nth*_batchSize*sizeof(int));
-    int *restrict _newG   = malloc(nrow*sizeof(int));
-    if (!_counts || !_tmpO || !_tmpG || !_newG) error("Internal error: Failed to allocate counts, tmpO, tmpG or newG when assigning g in gforce");
-    Rprintf("When assigning grp[o]=g, _highSize=%d  _nb=%d  _shift=%d  _nBatch=%d, _batchSize=%d  _lastBatchSize=%d  _nth=%d\n",
-            _highSize, _nb, _shift, _nBatch, _batchSize, _lastBatchSize, _nth);
-
-    #pragma omp parallel num_threads(_nth)      // TODO: could loop through g and avoid needing newG ?
-    {
-      const int me = omp_get_thread_num();
-      int *restrict my_tmpO = _tmpO + me*_batchSize;
-      int *restrict my_tmpG = _tmpG + me*_batchSize;
-      int *restrict my_counts = _counts + me*_highSize;
-      #pragma omp for  // schedule(dynamic,1)
-      for (int b=0; b<_nBatch; b++) {
-        memset(my_counts, 0, _highSize*sizeof(int));
-        const int howMany = b==_nBatch-1 ? _lastBatchSize : _batchSize;
-        const int *my_o = op + b*_batchSize;
-        const int *restrict my_g = grp + b*_batchSize;
-        for (int i=0; i<howMany; i++) {
-          const int w = (my_o[i]-1) >> _shift;
-          my_counts[w]++;
-        }
-        for (int i=0, cum=0; i<_highSize; i++) {
-          int tmp = my_counts[i];
-          my_counts[i] = cum;
-          cum += tmp;
-        }
-        for (int i=0; i<howMany; i++) {
-          const int w = (my_o[i]-1) >> _shift;   // could use my_high but may as well use my_pg since we need my_pg anyway for the lower bits next too
-          const int p = my_counts[w]++;
-          my_tmpO[p] = (int)(my_o[i]-1);
-          my_tmpG[p] = (int)(my_g[i]);
-        }
-        for (int i=0; i<howMany; i++) {
-          _newG[ my_tmpO[i] ] = my_tmpG[i];  // TODO: could write high here, and initial low.   ** If so, same in initial population when o is missing **
+    int nb = nbit(nrow-1);
+    int shift = MAX(nb-8, 0);
+    int highSize = ((nrow-1)>>shift) + 1;
+    Rprintf("When assigning grp[o] = g, highSize=%d  nb=%d  shift=%d  nBatch=%d\n", highSize, nb, shift, nBatch);
+    int *counts = calloc(nBatch*highSize, sizeof(int));  // (S_ zeros) TODO: cache-line align and make highSize a multiple of 64.  This +1 is for easier diff later
+    int *TMP   = malloc(nrow*2*sizeof(int));
+    if (!counts || !TMP ) error("Internal error: Failed to allocate counts, tmpO or tmpG when assigning g in gforce");
+    #pragma omp parallel for num_threads(getDTthreads())   // schedule(dynamic,1)
+    for (int b=0; b<nBatch; b++) {
+      const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
+      const int *my_o = op + b*batchSize;
+      int *restrict my_counts = counts + b*highSize;
+      for (int i=0; i<howMany; i++) {
+        const int w = (my_o[i]-1) >> shift;
+        my_counts[w]++;
+      }
+      for (int i=0, cum=0; i<highSize; i++) {
+        int tmp = my_counts[i];
+        my_counts[i] = cum;
+        cum += tmp;
+      }
+      const int *restrict my_g = grp + b*batchSize;
+      int *restrict my_tmp = TMP + b*2*batchSize;
+      for (int i=0; i<howMany; i++) {
+        const int w = (my_o[i]-1) >> shift;   // could use my_high but may as well use my_pg since we need my_pg anyway for the lower bits next too
+        int *p = my_tmp + 2*my_counts[w]++;
+        *p++ = my_o[i]-1;
+        *p   = my_g[i];
+      }
+    }
+    Rprintf("gforce assign TMP (o,g) pairs took %.3f\n", wallclock()-started); started=wallclock();
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (int h=0; h<highSize; h++) {  // very important that high is first loop here
+      for (int b=0; b<nBatch; b++) {
+        const int start = h==0 ? 0 : counts[ b*highSize + h - 1 ];
+        const int end   = counts[ b*highSize + h ];
+        const int *restrict p = TMP + b*2*batchSize + start*2;
+        for (int k=start; k<end; k++, p+=2) {
+          grp[p[0]] = p[1];  // TODO: could write high here, and initial low.   ** If so, same in initial population when o is missing **
         }
       }
     }
-    memcpy(grp, _newG, nrow*sizeof(int));
-    free(_counts);
-    free(_tmpO);
-    free(_tmpG);
-    free(_newG);
-    Rprintf("gforce assign tmpO and tmpG back to grp took %.3f\n", wallclock()-started); started=wallclock();
+    free(counts);
+    free(TMP);
+    Rprintf("gforce assign TMP [ (o,g) pairs ] back to grp took %.3f\n", wallclock()-started); started=wallclock();
   }
 
   high = (uint16_t *)R_alloc(nrow, sizeof(uint16_t));  // maybe better to malloc to avoid R's heap, but safer to R_alloc since it's done via eval()
