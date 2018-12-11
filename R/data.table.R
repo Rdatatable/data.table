@@ -202,11 +202,13 @@ replace_dot_alias <- function(e) {
     used = gsub(".*object '([^']+)'.*", "\\1", err$message)
     found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
     if (length(found)) {
-      stop(sprintf("Object '%s' not found. Perhaps you intended %s%s", used, paste(head(found,5L),collapse=", "),
-           if (length(found)<=5L) "" else paste(" or",length(found)-5L,"more")))
+      stop("Object '", used, "' not found. Perhaps you intended ", used,
+           paste(head(found, 5L), collapse=", "),
+           if (length(found)<=5L) "" else paste(" or",length(found)-5L, "more"))
     } else {
-      stop(sprintf("Object '%s' not found amongst %s%s", used, paste(head(ref,5L),collapse=', '),
-           if (length(ref)<=5L) "" else paste(" and",length(ref)-5L,"more")))
+      stop("Object '", used, "' not found amongst ",
+           paste(head(ref, 5L), collapse=', '),
+           if (length(ref)<=5L) "" else paste(" and", length(ref)-5L, "more"))
     }
   } else {
     stop(err$message, call.=FALSE)
@@ -241,7 +243,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   }
   if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
   missingroll = missing(roll)
-  missingwith = missing(with)
   if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
   if (is.character(roll)) {
     if (roll!="nearest") stop("roll is '",roll,"' (type character). Only valid character value is 'nearest'.")
@@ -286,7 +287,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
   rightcols = leftcols = integer()
-  optimizedSubset = FALSE ## flag: tells, whether a normal query was optimized into a join.
+  optimizedSubset = FALSE ## flag: tells whether a normal query was optimized into a join.
   ..syms = NULL
   av = NULL
   jsub = NULL
@@ -563,13 +564,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         else
           seq_len(min(length(i),length(rightcols)))
         rightcols = head(rightcols,length(leftcols))
-        xo = integer()  ## signifies 1:.N
+        xo = integer(0L)  ## signifies 1:.N
         ops = rep(1L, length(leftcols))
       }
       # Implementation for not-join along with by=.EACHI, #604
       if (notjoin && (byjoin || mult != "all")) { # mult != "all" needed for #1571 fix
         notjoin = FALSE
-        if (verbose) {last.started.at=proc.time();cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff(x,i) ...");flush.console()}
+        if (verbose) {last.started.at=proc.time();cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ...");flush.console()}
         orignames = copy(names(i))
         i = setdiff_(x, i, rightcols, leftcols) # part of #547
         if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
@@ -611,7 +612,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           if (identical(nomatch, 0L) && allLen1) irows = irows[irows != 0L]
         } else {
           if (length(xo) && missing(on))
-            stop("Cannot by=.EACHI when joining to a secondary key, yet")
+            stop("Internal error. Cannot by=.EACHI when joining to a secondary key, yet") # nocov
           # since f__ refers to xo later in grouping, so xo needs to be passed through to dogroups too.
           if (length(irows))
             stop("Internal error. irows has length in by=.EACHI") # nocov
@@ -653,7 +654,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           if(length(irows) < 1e6){
             irows = fsort(irows, internal=TRUE) ## internally, fsort on integer falls back to forderv
             } else {
-              irows = as.integer(fsort(as.numeric(irows))) ## parallelized for numeric, but overhead of type conversion
+              irows = as.integer(fsort(as.numeric(irows))) ## nocov; parallelized for numeric, but overhead of type conversion
             }
           if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
         }
@@ -1437,7 +1438,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (byjoin) {
     # The groupings come instead from each row of the i data.table.
     # Much faster for a few known groups vs a 'by' for all followed by a subset
-    if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by'=.EACHI")
+    if (!is.data.table(i)) stop("logical error. i is not data.table, but mult='all' and 'by'=.EACHI")
     byval = i
     bynames = if (missing(on)) head(key(x),length(leftcols)) else names(on)
     allbyvars = NULL
@@ -1912,16 +1913,17 @@ as.matrix.data.table <- function(x, rownames=NULL, rownames.value=NULL, ...) {
       # TODO in future as warned in NEWS for 1.11.6:
       #   warning("length(rownames)>1 is deprecated. Please use rownames.value= instead")
       if (length(rownames)!=nrow(x))
-        stop(sprintf("length(rownames)==%d but nrow(DT)==%d. The rownames argument specifies a single column name or number. Consider rownames.value= instead.",
-                     length(rownames), nrow(x)))
+        stop("length(rownames)==", length(rownames), " but nrow(DT)==", nrow(x),
+             ". The rownames argument specifies a single column name or number. Consider rownames.value= instead.")
       rownames.value = rownames
       rownames = NULL
     } else if (length(rownames)==0L) {
-      stop(sprintf("length(rownames)==0 but should be a single column name or number, or NULL"))
+      stop("length(rownames)==0 but should be a single column name or number, or NULL")
     } else {
       if (isTRUE(rownames)) {
         if (length(key(x))>1L) {
-          warning(sprintf("rownames is TRUE but key has multiple columns [%s]; taking first column x[,1] as rownames", paste(key(x), collapse=',')))
+          warning("rownames is TRUE but key has multiple columns ",
+                  brackify(key(x)), "; taking first column x[,1] as rownames")
         }
         rownames = if (length(key(x))==1L) chmatch(key(x),names(x)) else 1L
       }
@@ -1937,12 +1939,14 @@ as.matrix.data.table <- function(x, rownames=NULL, rownames.value=NULL, ...) {
       else { # rownames is a column number already
         rownames <- as.integer(rownames)
         if (is.na(rownames) || rownames<1L || rownames>ncol(x))
-          stop(sprintf("as.integer(rownames)==%d which is outside the column number range [1,ncol=%d].", rownames, ncol(x)))
+          stop("as.integer(rownames)==", rownames,
+               " which is outside the column number range [1,ncol=", ncol(x), "].")
       }
     }
   } else if (!is.null(rownames.value)) {
     if (length(rownames.value)!=nrow(x))
-      stop(sprintf("length(rownames.value)==%d but should be nrow(x)==%d", length(rownames.value), nrow(x)))
+      stop("length(rownames.value)==", length(rownames.value),
+           " but should be nrow(x)==", nrow(x))
   }
   if (!is.null(rownames)) {
     # extract that column and drop it.
@@ -2321,7 +2325,7 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
   if (".ll.tech.split" %chin% names(x)) stop("column '.ll.tech.split' is reserved for split.data.table processing")
   if (".nm.tech.split" %chin% by) stop("column '.nm.tech.split' is reserved for split.data.table processing")
   if (!all(by %chin% names(x))) stop("argument 'by' must refer to data.table column names")
-  if (!all(by.atomic <- vapply_1b(by, function(.by) is.atomic(x[[.by]])))) stop(sprintf("argument 'by' must refer only to atomic type columns, classes of '%s' columns are not atomic type", paste(by[!by.atomic], collapse=", ")))
+  if (!all(by.atomic <- vapply_1b(by, function(.by) is.atomic(x[[.by]])))) stop("argument 'by' must refer only to atomic type columns, classes of ", brackify(by[!by.atomic]), " columns are not atomic type")
   # list of data.tables (flatten) or list of lists of ... data.tables
   make.levels = function(x, cols, sorted) {
     by.order = if (!sorted) x[, funique(.SD), .SDcols=cols] # remember order of data, only when not sorted=FALSE
@@ -2518,7 +2522,7 @@ setnames <- function(x,old,new,skip_absent=FALSE) {
   # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
   # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
   if (!is.data.frame(x)) stop("x is not a data.table or data.frame")
-  if (length(names(x)) != length(x)) stop("dt is length ",length(dt)," but its names are length ",length(names(x)))
+  if (length(names(x)) != length(x)) stop("x is length ",length(x)," but its names are length ",length(names(x)))
   stopifnot(isTRUE(skip_absent) || identical(skip_absent,FALSE))
   if (missing(new)) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
@@ -2589,7 +2593,7 @@ setnames <- function(x,old,new,skip_absent=FALSE) {
 
 setcolorder <- function(x, neworder=key(x))
 {
-  if (any(duplicated(neworder))) stop("neworder contains duplicates")
+  if (anyDuplicated(neworder)) stop("neworder contains duplicates")
   # if (!is.data.table(x)) stop("x is not a data.table")
   if (length(neworder) != length(x)) {
     if (length(neworder) > length(x))
@@ -2731,7 +2735,7 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   if (is.name(name)) {
     home <- function(x, env) {
       if (identical(env, emptyenv()))
-        stop("Can not find symbol ", cname, call. = FALSE)
+        stop("Cannot find symbol ", cname, call. = FALSE)
       else if (exists(x, env, inherits=FALSE)) env
       else home(x, parent.env(env))
     }

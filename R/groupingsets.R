@@ -57,7 +57,7 @@ groupingsets.data.table <- function(x, j, by, sets, .SDcols, id = FALSE, jj, ...
     stop("Argument 'id' must be a logical scalar.")
   # logic constraints validation
   if (!all((sets.all.by <- unique(unlist(sets))) %chin% by))
-    stop(sprintf("All columns used in 'sets' argument must be in 'by' too. Columns used in 'sets' but not present in 'by': %s.", paste(setdiff(sets.all.by, by), collapse=", ")))
+    stop("All columns used in 'sets' argument must be in 'by' too. Columns used in 'sets' but not present in 'by': ", brackify(setdiff(sets.all.by, by)))
   if (id && "grouping" %chin% names(x))
     stop("When using `id=TRUE` the 'x' data.table must not have a column named 'grouping'.")
   if (!all(sapply(sets, function(x) length(x)==uniqueN(x))))
