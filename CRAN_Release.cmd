@@ -236,6 +236,8 @@ print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time
 
 # Investigated and ignore :
 # Tests 648 and 1262 (see their comments) have single precision issues under valgrind that don't occur on CRAN, even Solaris.
+# Old comment from gsumm.c ...  // long double usage here used to result in test 648 failing when run under valgrind
+                                // http://valgrind.org/docs/manual/manual-core.html#manual-core.limits"
 # Ignore all "set address range perms" warnings :
 #   http://stackoverflow.com/questions/13558067/what-does-this-valgrind-warning-mean-warning-set-address-range-perms
 # Ignore heap summaries around test 1705 and 1707/1708 due to the fork() test opening/closing, I guess.
