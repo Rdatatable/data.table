@@ -5905,10 +5905,9 @@ test(1437.17, DT[!a %chin% c("A", "B") & x == 2], DT[c(4, 5, 6)])
 test(1437.18, DT[x == 2, .(test = x+y), verbose = TRUE], output = "Optimized subsetting")
 test(1437.19, DT[x == 2, test := x+y, verbose = TRUE], output = "Optimized subsetting")
 ## optimize option level 3 is required
-oldOpt <- getOption("datatable.optimize")
-options("datatable.optimize" = 2L)
+old = options("datatable.optimize" = 2L)
 test(1437.21, DT[x == 2, verbose = TRUE], output = "^   x y")
-options("datatable.optimize" = oldOpt)
+options(old)
 test(1437.22, DT[x == 2, verbose = TRUE], output = "Optimized subsetting")
 ## NaN on right hand side is treated correctly. NA on right hand side is not reaching .prepareFastSubset, so not tested here
 DT <- data.table(x = c(1L:10L, NA_integer_, NA_integer_), y = c(1:10, NA_real_, NaN))
@@ -12996,12 +12995,13 @@ suppressWarnings(rm(`___data.table_internal_test_1967.68___`))
 test(1967.68, setDT(`___data.table_internal_test_1967.68___`), error = 'Cannot find symbol')
 
 ### [.data.table verbosity & non-equi-join tests
-opt = options('datatable.optimize' = 2)
+old = options('datatable.optimize' = 2)
 test(1967.69, x[order(a), .N, verbose = TRUE], 5L,
      output = "i changed from 'order(...)' to 'forder(")
 setkey(x)
 test(1967.70, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
+options(old)
 
 x = data.table(
   i1 = c(234L, 250L, 169L, 234L, 147L, 96L, 96L, 369L, 147L, 96L),
