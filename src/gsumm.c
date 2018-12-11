@@ -73,7 +73,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   }
 
   int nb = nbit(ngrp-1);
-  shift = MAX(nb-8,0);   //shift = nb/2;
+  shift = nb/2;   // /2 so that high and low can be uint16_t;  MAX(nb-8,0) fails on uint16_t;
   mask = (1<<shift)-1;
   highSize = ((ngrp-1)>>shift) + 1;
 
@@ -105,7 +105,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
 
     const int *restrict op = INTEGER(o);  // o is a permutation of 1:nrow
     int nb = nbit(nrow-1);
-    int shift = MAX(nb-8, 0);  // TODO: experiment nb/2
+    int shift = MAX(nb-8, 0);  // TODO: experiment nb/2.  Here it doesn't have to be /2 currently.
     int highSize = ((nrow-1)>>shift) + 1;
     //Rprintf("When assigning grp[o] = g, highSize=%d  nb=%d  shift=%d  nBatch=%d\n", highSize, nb, shift, nBatch);
     int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
