@@ -208,12 +208,12 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   return(ans);
 }
 
-void *gather(void *x, size_t size, bool *anyNA)
+void *gather(SEXP x, bool *anyNA)
 {
   //double started = wallclock();
-  if (size==4) {
-    const int *thisx = x;
-    //int *restrict thisgx = gx;
+  switch (TYPEOF(x)) {
+  case LGLSXP: case INTSXP: {
+    const int *restrict thisx = INTEGER(x);
     #pragma omp parallel for num_threads(getDTthreads())
     for (int b=0; b<nBatch; b++) {
       int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
@@ -239,15 +239,71 @@ void *gather(void *x, size_t size, bool *anyNA)
       }
       if (my_anyNA) *anyNA = true;  // naked write ok since just bool and always writing true; and no performance issue as maximum nBatch writes
     }
-  } else {
-    error("gather not yet implemented for size!=4");
+  } break;
+  case REALSXP: {
+    if (!INHERITS(x, char_integer64)) {
+      const double *restrict thisx = REAL(x);
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int b=0; b<nBatch; b++) {
+        int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
+        memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(int));
+        double *restrict my_gx = (double *)gx + b*batchSize;
+        const uint16_t *my_high = high + b*batchSize;
+        const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
+        bool my_anyNA = false;
+        if (irowslen==-1) {
+          const double *my_x = thisx + b*batchSize;
+          for (int i=0; i<howMany; i++) {
+            const double elem = my_x[i];
+            my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
+            if (ISNA(elem)) my_anyNA = true;
+          }
+        } else {
+          const int *my_x = irows + b*batchSize;
+          for (int i=0; i<howMany; i++) {
+            double elem = thisx[ my_x[i]-1 ];
+            my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
+            if (ISNA(elem)) my_anyNA = true;
+          }
+        }
+        if (my_anyNA) *anyNA = true;
+      }
+    } else {
+      const int64_t *restrict thisx = (int64_t *)REAL(x);
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int b=0; b<nBatch; b++) {
+        int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
+        memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(int));
+        int64_t *restrict my_gx = (int64_t *)gx + b*batchSize;
+        const uint16_t *my_high = high + b*batchSize;
+        const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
+        bool my_anyNA = false;
+        if (irowslen==-1) {
+          const int64_t *my_x = thisx + b*batchSize;
+          for (int i=0; i<howMany; i++) {
+            const int64_t elem = my_x[i];
+            my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
+            if (elem==INT64_MIN) my_anyNA = true;
+          }
+        } else {
+          const int *my_x = irows + b*batchSize;
+          for (int i=0; i<howMany; i++) {
+            int64_t elem = thisx[ my_x[i]-1 ];
+            my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
+            if (elem==INT64_MIN) my_anyNA = true;
+          }
+        }
+        if (my_anyNA) *anyNA = true;
+      }
+    }
+  } break;
+  default :
+    error("gather implemented for INTSXP and REALSXP but not '%s'", type2char(TYPEOF(x)));
   }
   //Rprintf("gather took %.3fs\n", wallclock()-started);
   return gx;
 }
 
-// long double usage here results in test 648 being failed when running with valgrind
-// http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
 SEXP gsum(SEXP x, SEXP narmArg)
 {
   if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
@@ -261,31 +317,38 @@ SEXP gsum(SEXP x, SEXP narmArg)
   SEXP ans;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
-    // int *xd = INTEGER(x);
-    const int *restrict gx = gather(INTEGER(x), sizeof(int), &anyNA);  // TODO: could return anyNA too
+    const int *restrict gx = gather(x, &anyNA);
     ans = PROTECT(allocVector(INTSXP, ngrp));
     int *restrict ansp = INTEGER(ans);
     memset(ansp, 0, ngrp*sizeof(int));
-    //int64_t *i64sum = calloc(ngrp, sizeof(int64_t));
-    //if (!i64sum) error("Unable to allocate %d * %d bytes for gsum i64", ngrp, sizeof(int64_t));
     bool overflow=false;
     //double started = wallclock();
-    #pragma omp parallel for num_threads(getDTthreads()) //schedule(dynamic,1)
-    for (int h=0; h<highSize; h++) {   // very important that high is first loop here
-      int *restrict _ans = ansp + (h<<shift);
-      for (int b=0; b<nBatch; b++) {
-        const int pos = counts[ b*highSize + h ];
-        const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
-        const int *my_gx = gx + b*batchSize + pos;
-        const uint16_t *my_low = low + b*batchSize + pos;
-        if (!anyNA) {   // TODO: take out before prallel loop, and repeat PARLOOP using macro, for completness just in case (e.g. K=2).
+    if (!anyNA) {
+      #pragma omp parallel for num_threads(getDTthreads()) //schedule(dynamic,1)
+      for (int h=0; h<highSize; h++) {   // very important that high is first loop here
+        int *restrict _ans = ansp + (h<<shift);
+        for (int b=0; b<nBatch; b++) {
+          const int pos = counts[ b*highSize + h ];
+          const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+          const int *my_gx = gx + b*batchSize + pos;
+          const uint16_t *my_low = low + b*batchSize + pos;
           for (int i=0; i<howMany; i++) {
             const int a = _ans[my_low[i]];
             const int b = my_gx[i];
             if ((a>0 && b>INT_MAX-a) || (a<0 && b<NA_INTEGER+1-a)) overflow=true;
             else _ans[my_low[i]] += b;  // naked by design; each thread does all of each h for all batches
           }
-        } else {
+        }
+      }
+    } else {
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int h=0; h<highSize; h++) {
+        int *restrict _ans = ansp + (h<<shift);
+        for (int b=0; b<nBatch; b++) {
+          const int pos = counts[ b*highSize + h ];
+          const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+          const int *my_gx = gx + b*batchSize + pos;
+          const uint16_t *my_low = low + b*batchSize + pos;
           for (int i=0; i<howMany; i++) {
             const int a = _ans[my_low[i]];
             if (a==NA_INTEGER) continue;
@@ -295,68 +358,75 @@ SEXP gsum(SEXP x, SEXP narmArg)
               continue;
             }
             if ((a>0 && b>INT_MAX-a) || (a<0 && b<NA_INTEGER+1-a)) overflow=true;
-            else _ans[my_low[i]] += b;  // naked by design; each thread does all of each h for all batches
+            else _ans[my_low[i]] += b;
           }
         }
       }
     }
     //Rprintf("gsum int took %.3f\n", wallclock()-started);
-    if (overflow) error("overflow summing integer not yet auto-coerce");
-/*    bool stop = false;
-      #pragma omp parallel for num_threads(getDTthreads())
-      for (int i=0; i<ngrp; i++) {
-        if (stop) continue;
-        if (i64sum[i]>INT32_MAX || (i64sum[i]<=NA_INTEGER && i64sum[i]!=INT64_MIN)) stop=true;
-      }
-      if (stop) {
+    if (overflow) {
+      UNPROTECT(1); // discard the result with overflow
       warning("The sum of an integer column for a group was more than type 'integer' can hold so the result has been coerced to 'numeric' automatically for convenience.");
       ans = PROTECT(allocVector(REALSXP, ngrp));
       double *restrict ansp = REAL(ans);
+      memset(ansp, 0, ngrp*sizeof(double));
       #pragma omp parallel for num_threads(getDTthreads())
-      for (int i=0; i<ngrp; i++) {
-        ansp[i] = i64sum[i]==INT64_MIN ? NA_REAL : (double)i64sum[i];
-      }
-    } else {
-      ans = PROTECT(allocVector(INTSXP, ngrp));
-      int *restrict ansp = INTEGER(ans);
-      if (anyNA) {
-        #pragma omp parallel for num_threads(getDTthreads())
-        for (int i=0; i<ngrp; i++) {
-          ansp[i] = i64sum[i]==INT64_MIN ? NA_INTEGER : (int)i64sum[i];
-        }
-      } else {
-        #pragma omp parallel for num_threads(getDTthreads())
-        for (int i=0; i<ngrp; i++) {
-          ansp[i] = (int)i64sum[i];
+      for (int h=0; h<highSize; h++) {
+        double *restrict _ans = ansp + (h<<shift);
+        for (int b=0; b<nBatch; b++) {
+          const int pos = counts[ b*highSize + h ];
+          const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+          const int *my_gx = gx + b*batchSize + pos;
+          const uint16_t *my_low = low + b*batchSize + pos;
+          // rare and slower so no need to switch on anyNA
+          for (int i=0; i<howMany; i++) {
+            const int elem = my_gx[i];
+            if (elem==NA_INTEGER) {
+              if (!narm) _ans[my_low[i]]=NA_REAL;
+              continue;
+            }
+            _ans[my_low[i]] += b;  // let NA_REAL propagate
+          }
         }
       }
     }
-    free(i64sum);*/
   } break;
   case REALSXP: {
-    long double *ldsum = calloc(ngrp, sizeof(long double));
-    if (!ldsum) error("Unable to allocate %d * %d bytes for gsum ld", ngrp, sizeof(long double));
-    double *xd = REAL(x);                                // now-slower R API with altrep, outside
-    if (irowslen==-1) {
-      for (int i=0, *g=grp; i<n; i++) {
-        if (narm && ISNAN(*xd)) {g++; xd++; continue;}   // narm first and leave to branch prediction
-        ldsum[*g++] += *xd++;                            // accumulate in long-double like base. Let NA propogate when !narm
+    const double *restrict gx = gather(x, &anyNA);
+    ans = PROTECT(allocVector(REALSXP, ngrp));
+    double *restrict ansp = REAL(ans);
+    memset(ansp, 0, ngrp*sizeof(double));
+    if (!narm || !anyNA) {
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int h=0; h<highSize; h++) {
+        double *restrict _ans = ansp + (h<<shift);
+        for (int b=0; b<nBatch; b++) {
+          const int pos = counts[ b*highSize + h ];
+          const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+          const double *my_gx = gx + b*batchSize + pos;
+          const uint16_t *my_low = low + b*batchSize + pos;
+          for (int i=0; i<howMany; i++) {
+            _ans[my_low[i]] += my_gx[i];  // let NA propagate when !narm
+          }
+        }
       }
     } else {
-      for (int i=0, *g=grp; i<n; i++) {
-        double elem = xd[irows[i]-1];
-        if (narm && ISNAN(elem)) {g++; continue;}
-        ldsum[*g++] += elem;
+      // narm==true and anyNA==true
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int h=0; h<highSize; h++) {
+        double *restrict _ans = ansp + (h<<shift);
+        for (int b=0; b<nBatch; b++) {
+          const int pos = counts[ b*highSize + h ];
+          const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+          const double *my_gx = gx + b*batchSize + pos;
+          const uint16_t *my_low = low + b*batchSize + pos;
+          for (int i=0; i<howMany; i++) {
+            const double elem = my_gx[i];
+            if (!ISNAN(elem)) _ans[my_low[i]] += elem;
+          }
+        }
       }
     }
-    ans = PROTECT(allocVector(REALSXP, ngrp));
-    xd = REAL(ans);
-    for (int i=0; i<ngrp; i++) {
-      if (ldsum[i] > DBL_MAX) xd[i] = R_PosInf;
-      else if (ldsum[i] < -DBL_MAX) xd[i] = R_NegInf;
-      else xd[i] = (double)ldsum[i];
-    }
-    free(ldsum);
   } break;
   default:
     error("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
