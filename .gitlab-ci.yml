@@ -261,12 +261,12 @@ integration: # merging all artifacts to produce single R repository and summarie
     - mv $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="source"), type="source", fields="Revision", addFiles=TRUE)'
     # publish binaries
-    - Rscript -e 'move.bin("test-r-release-windows", Sys.getenv("R_BIN_VERSION"), os.type="windows")'
-    - Rscript -e 'move.bin("test-r-devel-windows", Sys.getenv("R_DEVEL_BIN_VERSION"), os.type="windows", silent=TRUE)'
+    - Rscript -e 'move.bin("test-rel-win", Sys.getenv("R_BIN_VERSION"), os.type="windows")'
+    - Rscript -e 'move.bin("test-dev-win", Sys.getenv("R_DEVEL_BIN_VERSION"), os.type="windows", silent=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_BIN_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_DEVEL_BIN_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
-    #- Rscript -e 'move.bin("test-r-release-macosx", Sys.getenv("R_BIN_VERSION"), os.type="macosx")'
-    #- Rscript -e 'move.bin("test-r-devel-macosx", Sys.getenv("R_DEVEL_BIN_VERSION"), os.type="macosx", silent=TRUE)'
+    #- Rscript -e 'move.bin("test-rel-osx", Sys.getenv("R_BIN_VERSION"), os.type="macosx")'
+    #- Rscript -e 'move.bin("test-dev-osx", Sys.getenv("R_DEVEL_BIN_VERSION"), os.type="macosx", silent=TRUE)'
     #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_BIN_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
     #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_DEVEL_BIN_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
     # install all pkgs to render html and double check successful installation of all devel packages
@@ -287,7 +287,7 @@ integration: # merging all artifacts to produce single R repository and summarie
     # web/checks/$pkg/$job: 00install.out, 00check.log, *.Rout, memtest.csv, memtest.png
     - Rscript -e 'sapply(names(test.jobs), check.copy, simplify=FALSE)'
     # web/packages/$pkg/$pkg.pdf
-    - Rscript -e 'pdf.copy("data.table", "test-r-release")'
+    - Rscript -e 'pdf.copy("data.table", "test-rel")'
     # web/checks/check_results_$pkg.html
     - Rscript -e 'check.index("data.table", names(test.jobs))'
     # cleanup artifacts from other jobs
