@@ -241,6 +241,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (!missing(i) & is.data.table(ans)) setkey(ans,NULL)  # See test 304
     return(ans)
   }
+  .global$print=""
+  if (missing(i) && missing(j)) {
+    if (!is.null(names(sys.call())))   # not using nargs() as it considers DT[,] to have 3 arguments, #3163
+      stop("When i and j are both missing, no other argument should be used. Empty [] is useful after := to have the result displayed; e.g. DT[,col:=val][]")
+    return(x)
+  }
   if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
   missingroll = missing(roll)
   if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
@@ -261,14 +267,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (!is.logical(which) || length(which)>1L) stop("which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
   if ((isTRUE(which)||is.na(which)) && !missing(j)) stop("which==",which," (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
   if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
-  .global$print=""
-  if (missing(i) && missing(j)) {
-    # ...[] == oops at console, forgot print(...)
-    # or some kind of dynamic construction that has edge case of no contents inside [...]
-    if (!is.null(names(sys.call())))   # not using nargs() as it considers DT[,] to have 3 arguments, #3163
-      stop("When i and j are both missing, no other argument should be used. Empty [] is useful after := to have the result printed.")
-    return(x)
-  }
   if (!with && missing(j)) stop("j must be provided when with=FALSE")
   if (missing(i) && !missing(on)) stop("i must be provided when on= is provided")
   if (!missing(keyby)) {
@@ -1292,6 +1290,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           else ans[[target]] = ans[[target]]
         }
       } else {
+        # TODO COMMENT HERE
         for (s in seq_along(xcols)) {
           target = xcolsAns[s]
           source = xcols[s]
