@@ -141,7 +141,7 @@ test-rel-cran: # as CRAN
 test-dev-cran: # R-devel as CRAN
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel
-  allow_failure: true
+  allow_failure: false
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
@@ -191,8 +191,8 @@ test-dev-win: # R-devel on windows
   variables:
     R_BIN_VERSION: "3.6"
     R_DIR: "R-devel"
-    TEST_DATA_TABLE_MEMTEST: "TRUE"
-  allow_failure: true
+    TEST_DATA_TABLE_MEMTEST: "FALSE" # disabled as described in #3147
+  allow_failure: false
   script:
     - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'))"
     - *copy-src
