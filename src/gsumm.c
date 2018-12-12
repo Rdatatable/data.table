@@ -73,7 +73,8 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   }
 
   int nb = nbit(ngrp-1);
-  shift = nb/2;   // /2 so that high and low can be uint16_t;  MAX(nb-8,0) fails on uint16_t;
+  shift = nb/2;    // /2 so that high and low can be uint16_t, and no limit (even for nb=4) to stress-test.
+  // shift=MAX(nb-8,0); if (shift>16) shift=nb/2;     // TODO: when we have stress-test off mode, do this
   mask = (1<<shift)-1;
   highSize = ((ngrp-1)>>shift) + 1;
 
@@ -81,12 +82,16 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
                                              // maybe better to malloc to avoid R's heap. This grp isn't global, so it doesn't need to be R_alloc
   const int *restrict fp = INTEGER(f);
 
-  nBatch = MIN((nrow+1)/2, getDTthreads()*2);  // 2 to reduce last-thread-home. TODO: experiment. The higher this is though, the bigger is counts[]
-  batchSize = (nrow-1)/nBatch + 1;
+  nBatch = MIN((nrow+1)/2, getDTthreads()*2);  // *2 to reduce last-thread-home. TODO: experiment. The higher this is though, the bigger is counts[]
+  batchSize = MAX(1, (nrow-1)/nBatch);
   lastBatchSize = nrow - (nBatch-1)*batchSize;
-
-  //Rprintf("ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  batchSize=%d  lastBatchSize=%d\n", ngrp, nb, shift, highSize, nBatch, batchSize, lastBatchSize);
-
+  // We deliberate use, for example, 40 batches of just 14 rows, to stress-test tests. This strategy proved to be a good one as #3204 immediately came to light.
+  // TODO: enable stress-test mode in tests only (#3205) which can be turned off by default in release to decrease overhead on small data
+  //       if that is established to be biting (it may be fine).
+  if (nBatch<1 || batchSize<1 || lastBatchSize<1) {
+    error("Internal error: nrow=%d  ngrp=%d  nbit=%d  shift=%d  highSize=%d  nBatch=%d  batchSize=%d  lastBatchSize=%d\n",  // # nocov
+           nrow, ngrp, nb, shift, highSize, nBatch, batchSize, lastBatchSize);                                              // # nocov
+  }
   // initial population of g:
   #pragma omp parallel for num_threads(getDTthreads())
   for (int g=0; g<ngrp; g++) {
