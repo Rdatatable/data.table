@@ -723,7 +723,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (!length(x)) return(null.data.table())
     if (!length(leftcols)) {
       # basic x[i] subset, #2951
-      return( if (is.null(irows)) x else .Call(CsubsetDT, x, irows, seq_along(x)) )
+      if (is.null(irows)) return(x)   # otherwise CsubsetDT would materialize a copy
+      else                return(.Call(CsubsetDT, x, irows, seq_along(x)) )
     } else {
       jisvars = names(i)[-leftcols]
       tt = jisvars %chin% names(x)
@@ -795,6 +796,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           ansvars = j   # x. and i. prefixes may be in here, and they'll be dealt with below
           # dups = FALSE here.. even if DT[, c("x", "x"), with=FALSE], we subset only the first.. No way to tell which one the OP wants without index.
           ansvals = chmatch(ansvars, names(x))
+          if (anyNA(ansvals)) stop("column(s) not found: ", paste(ansvars[is.na(ansvals)],collapse=", "))
         }
       } else if (is.numeric(j)) {
         j = as.integer(j)
@@ -807,6 +809,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         ansvals = if (notj) setdiff(seq_along(x), j) else j
       } else stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
       if (!length(ansvals)) return(null.data.table())
+      return(.Call(CsubsetDT, x, irows, ansvals))
     } else {   # with=TRUE and byjoin could be TRUE
       bynames = NULL
       allbyvars = NULL

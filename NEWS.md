@@ -16,17 +16,18 @@
 
 6. `fread()` and `fwrite()` can now handle file names in native and UTF-8 encoding, [#3078](https://github.com/Rdatatable/data.table/issues/3078). Thanks to Daniel Possenriede (@dpprdan) for reporting and fixing.
 
-7. `DT[i]` now calls internal parallel subsetting code, [#2951](https://github.com/Rdatatable/data.table/issues/2951). Further, if `DT` has extra attributes (e.g. user defined or inherited via `as.data.table`) those attributes are now retained. Subsetting is significantly faster (as are many other operations) with factor columns rather than character.
+7. `DT[i]` and `DT[i,cols]` now call internal parallel subsetting code, [#2951](https://github.com/Rdatatable/data.table/issues/2951). Subsetting is significantly faster (as are many other operations) with factor columns rather than character.
     ```R
-    N = 2e8     # 4GB data on 4-core CPU with 16GB RAM
+    N = 2e8               # 4GB data on 4-core CPU with 16GB RAM
     DT = data.table(ID = sample(LETTERS,N,TRUE),
                     V1 = sample(5,N,TRUE),
                     V2 = runif(N))
-    w = which(DT$V1 > 3)  #  40% of rows
-                          #  v1.12.0   v1.11.8
-    system.time(DT[w])    #     0.8s      2.6s
+    w = which(DT$V1 > 3)  # 40% of rows
+                                      #  v1.12.0   v1.11.8
+    system.time(DT[w])                #     0.8s      2.6s
     DT[, ID := as.factor(ID)]
-    system.time(DT[w])    #     0.4s      2.3s
+    system.time(DT[w])                #     0.4s      2.3s
+    system.time(DT[w, c("ID","V2")])  #     0.3s      1.9s
     ```
 
 
@@ -45,6 +46,12 @@
 6. `groupingsets()` groups by empty column set and constant value in `j`, [#3173](https://github.com/Rdatatable/data.table/issues/3173).
 
 7. `split.data.table()` failed if `DT` had a factor column named `"x"`, [#3151](https://github.com/Rdatatable/data.table/issues/3151). Thanks to @tdeenes for reporting and fixing.
+
+8. `DT[i,j]` now retains user-defined or inherited attributes; e.g.
+    ```R
+    attr(datasets::BOD,"reference")                     # "A1.4, p. 270"
+    attr(as.data.table(datasets::BOD)[2],"reference")   # was NULL now "A1.4, p. 270"
+    ```
 
 #### NOTES
 
