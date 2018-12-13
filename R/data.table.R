@@ -1267,7 +1267,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           stop("Internal error: xcolAns is not 1:length(xcolAns)")   # nocov
         }
         ans = .Call(CsubsetDT, x, irows, xcols)
-        setnames(ans, ansvars)
+        setattr(ans, "names", ansvars)
       } else {
         # length(i) && length(icols)
         # TO DO: use CsubsetDT twice here and then remove this entire R level branch
