@@ -722,9 +722,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     # missing(by)==TRUE was already checked above before dealing with i
     if (!length(x)) return(null.data.table())
     if (!length(leftcols)) {
-      ansvars = nx = names(x)
-      jisvars = character()
-      xcols = xcolsAns = seq_along(x)
+      # basic x[i] subset, #2951
+      return( if (is.null(irows)) x else .Call(CsubsetDT, x, irows, seq_along(x)) )
     } else {
       jisvars = names(i)[-leftcols]
       tt = jisvars %chin% names(x)
