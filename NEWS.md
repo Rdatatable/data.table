@@ -16,6 +16,19 @@
 
 6. `fread()` and `fwrite()` can now handle file names in native and UTF-8 encoding, [#3078](https://github.com/Rdatatable/data.table/issues/3078). Thanks to Daniel Possenriede (@dpprdan) for reporting and fixing.
 
+7. `DT[i]` now calls internal parallel subsetting code, [#2951](https://github.com/Rdatatable/data.table/issues/2951). Further, if `DT` has extra attributes (e.g. user defined or inherited via `as.data.table`) those attributes are now retained. Subsetting is significantly faster (as are many other operations) with factor columns rather than character.
+    ```R
+    N = 2e8
+    DT = data.table(ID = sample(LETTERS,N,TRUE),
+                    V1 = sample(5,N,TRUE),
+                    V2 = runif(N))
+    w = which(DT$V1 > 3)  #  40% of rows
+                          #  v1.12.0   v1.11.8
+    system.time(DT[w])    #     0.8s      2.6s
+    DT[, ID := as.factor(ID)]
+    system.time(DT[w])    #     0.4s      2.3s
+    ```
+
 
 #### BUG FIXES
 

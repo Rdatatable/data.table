@@ -274,14 +274,13 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     SEXP in = PROTECT(chmatch(key,getAttrib(ans,R_NamesSymbol), 0, TRUE)); nprotect++; // (nomatch ignored when in=TRUE)
     int i = 0;  while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
     // i is now the keylen that can be kept. 2 lines above much easier in C than R
-    if (i==0) {
-      setAttrib(ans, sym_sorted, R_NilValue);
+    if (i==0 || !orderedSubset) {
       // clear key that was copied over by copyMostAttrib() above
+      setAttrib(ans, sym_sorted, R_NilValue);
     } else {
-      if (orderedSubset) {
-        setAttrib(ans, sym_sorted, tmp=allocVector(STRSXP, i));
-        for (int j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
-      }
+      // make a new key attribute; shorter if i<LENGTH(key) or same length copied so this key is safe to change by ref (setnames)
+      setAttrib(ans, sym_sorted, tmp=allocVector(STRSXP, i));
+      for (int j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
     }
   }
   setAttrib(ans, install(".data.table.locked"), R_NilValue);
