@@ -1261,9 +1261,17 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     # No grouping: 'by' = missing | NULL | character() | "" | list()
     # Considered passing a one-group to dogroups but it doesn't do the recycling of i within group, that's done here
     if (length(ansvars)) {
-      # TO DO: port more of this to C
-      ans = vector("list", length(ansvars))
-      if (length(i) && length(icols)) {
+      if (!(length(i) && length(icols))) {
+        # new in v1.12.0 to redirect to CsubsetDT in this case
+        if (!identical(xcolsAns, seq_along(xcolsAns))) {
+          stop("Internal error: xcolAns is not 1:length(xcolAns)")   # nocov
+        }
+        ans = .Call(CsubsetDT, x, irows, xcols)
+        setnames(ans, ansvars)
+      } else {
+        # length(i) && length(icols)
+        # TO DO: use CsubsetDT twice here and then remove this entire R level branch
+        ans = vector("list", length(ansvars))
         if (allLen1 && allGrp1 && (is.na(nomatch) || !any(f__==0L))) {   # nomatch=0 should drop rows in i that have no match
           for (s in seq_along(icols)) {
             target = icolsAns[s]
@@ -1279,52 +1287,52 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             ans[[target]] = .Call(CsubsetVector,i[[source]],ii)  # i.e. i[[source]][ii]
           }
         }
-      }
-      if (is.null(irows)) {
-        for (s in seq_along(xcols)) {  # xcols means non-join x columns, since join columns come from i
-          target = xcolsAns[s]
-          source = xcols[s]
-          ans[[target]] = x[[source]]
-          # Temp fix for #921 - skip COPY until after evaluating 'jval' (scroll down).
-          # Unless 'with=FALSE' - can not be expressions but just column names.
-          if (!with && address(ans[[target]]) == address(x[[source]]))
-            ans[[target]] = copy(ans[[target]])
-          else ans[[target]] = ans[[target]]
+        if (is.null(irows)) {
+          for (s in seq_along(xcols)) {  # xcols means non-join x columns, since join columns come from i
+            target = xcolsAns[s]
+            source = xcols[s]
+            ans[[target]] = x[[source]]
+            # Temp fix for #921 - skip COPY until after evaluating 'jval' (scroll down).
+            # Unless 'with=FALSE' - can not be expressions but just column names.
+            if (!with && address(ans[[target]]) == address(x[[source]]))
+              ans[[target]] = copy(ans[[target]])
+            else ans[[target]] = ans[[target]]
+          }
+        } else {
+          for (s in seq_along(xcols)) {
+            target = xcolsAns[s]
+            source = xcols[s]
+            ans[[target]] = .Call(CsubsetVector,x[[source]],irows)   # i.e. x[[source]][irows], but guaranteed new memory even for singleton logicals from R 3.1.0
+          }
         }
-      } else {
-        # TODO COMMENT HERE
-        for (s in seq_along(xcols)) {
-          target = xcolsAns[s]
-          source = xcols[s]
-          ans[[target]] = .Call(CsubsetVector,x[[source]],irows)   # i.e. x[[source]][irows], but guaranteed new memory even for singleton logicals from R 3.1.0
-        }
-      }
-      # the address==address is a temp fix for R >= 3.1.0. TO DO: allow shallow copy here, then copy only when user uses :=
-      # or set* on the result by using NAMED/REFCNT on columns, with warning if they copy. Since then, even foo = DT$b
-      # would cause the next set or := to copy that column (so the warning is needed). To tackle that, we could have our
-      # own DT.NAMED attribute, perhaps.
-      # Or keep the rule that [.data.table always returns new memory, and create view() or view= as well, maybe cleaner.
+        # the address==address is a temp fix for R >= 3.1.0. TO DO: allow shallow copy here, then copy only when user uses :=
+        # or set* on the result by using NAMED/REFCNT on columns, with warning if they copy. Since then, even foo = DT$b
+        # would cause the next set or := to copy that column (so the warning is needed). To tackle that, we could have our
+        # own DT.NAMED attribute, perhaps.
+        # Or keep the rule that [.data.table always returns new memory, and create view() or view= as well, maybe cleaner.
 
-      setattr(ans, "names", ansvars)
-      if (haskey(x)) {
-        keylen = which.first(!key(x) %chin% ansvars)-1L
-        if (is.na(keylen)) keylen = length(key(x))
-        len = length(rightcols)
-        # fix for #1268, #1704, #1766 and #1823
-        chk = if (len && !missing(on)) !identical(head(key(x), len), names(on)) else FALSE
-        if ( (keylen>len || chk) && !.Call(CisOrderedSubset, irows, nrow(x))) {
-          keylen = if (!chk) len else 0L # fix for #1268
+        setattr(ans, "names", ansvars)
+        if (haskey(x)) {
+          keylen = which.first(!key(x) %chin% ansvars)-1L
+          if (is.na(keylen)) keylen = length(key(x))
+          len = length(rightcols)
+          # fix for #1268, #1704, #1766 and #1823
+          chk = if (len && !missing(on)) !identical(head(key(x), len), names(on)) else FALSE
+          if ( (keylen>len || chk) && !.Call(CisOrderedSubset, irows, nrow(x))) {
+            keylen = if (!chk) len else 0L # fix for #1268
+          }
+          ## check key on i as well!
+          ichk = is.data.table(i) && haskey(i) &&
+                 identical(head(key(i), length(leftcols)), names(i)[leftcols]) # i has the correct key, #3061
+          if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
+            setattr(ans,"sorted",head(key(x),keylen))
         }
-        ## check key on i as well!
-        ichk = is.data.table(i) && haskey(i) &&
-               identical(head(key(i), length(leftcols)), names(i)[leftcols]) # i has the correct key, #3061
-        if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
-          setattr(ans,"sorted",head(key(x),keylen))
+        setattr(ans, "class", class(x)) # fix for #5296
+        setattr(ans, "row.names", .set_row_names(nrow(ans)))
+        alloc.col(ans)
       }
-      setattr(ans, "class", class(x)) # fix for #5296
-      setattr(ans, "row.names", .set_row_names(nrow(ans)))
 
-      if (!with || missing(j)) return(alloc.col(ans))
+      if (!with || missing(j)) return(ans)
 
       SDenv$.SDall = ans
       SDenv$.SD = if (!length(othervars)) SDenv$.SDall else shallow(SDenv$.SDall, setdiff(ansvars, othervars))

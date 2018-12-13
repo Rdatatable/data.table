@@ -18,11 +18,11 @@
 
 7. `DT[i]` and `DT[i,cols]` now call internal parallel subsetting code, [#2951](https://github.com/Rdatatable/data.table/issues/2951). Subsetting is significantly faster (as are many other operations) with factor columns rather than character.
     ```R
-    N = 2e8               # 4GB data on 4-core CPU with 16GB RAM
+    N = 2e8                           # 4GB data on 4-core CPU with 16GB RAM
     DT = data.table(ID = sample(LETTERS,N,TRUE),
                     V1 = sample(5,N,TRUE),
                     V2 = runif(N))
-    w = which(DT$V1 > 3)  # 40% of rows
+    w = which(DT$V1 > 3)              #  select 40% of rows
                                       #  v1.12.0   v1.11.8
     system.time(DT[w])                #     0.8s      2.6s
     DT[, ID := as.factor(ID)]
