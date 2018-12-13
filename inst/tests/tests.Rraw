@@ -7089,9 +7089,28 @@ if (!inherits(try(Rprofmem(NULL), silent=TRUE), "try-error")) {  # in case R not
   Rprofmem(f)
   DT[TRUE, B := B * 2] # or some in-place update
   Rprofmem(NULL)
-  test(1542, length(grep("000",readLines(f, warn=FALSE))), 2L)  # one allocation for the RHS, and one for the subset
+  test(1542.01, length(grep("000",readLines(f, warn=FALSE))), 1L)  # one allocation for the RHS, and one for the subset
   unlink(f)
 }
+# DT[TRUE] should shallow copy as v1.11.8 and earlier did (#3214); in future more will shallow copy too
+DT = data.table(id = 1:5, key="id")
+DT1 = DT[TRUE]
+test(1542.02, address(DT1)!=address(DT))
+test(1542.03, address(DT1$id)==address(DT$id))
+test(1542.04, key(DT), "id")
+test(1542.05, key(DT1), "id")
+DT1[,newCol:=6:10]
+test(1542.06, DT, data.table(id=1:5, key="id"))
+test(1542.07, DT1, data.table(id=1:5, newCol=6:10, key="id"))
+DT1[3, id:=6L]
+test(1542.08, DT1, data.table(id=INT(1,2,6,4,5), newCol=6:10))
+
+# current wrong behaviour (invalid key, #3215); root cause is the shallow exposed uniquely via DT[TRUE]
+test(1542.09, DT$id, INT(1,2,6,4,5))
+test(1542.10, key(DT), "id")
+# future correct behaviour :
+# test(1542.09, DT$id, 1:5)
+# test(1542.10, key(DT), "id")
 
 # rest of #1130 - merge doesn't copy, instead uses joins without keys.
 set.seed(1L)

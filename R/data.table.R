@@ -723,7 +723,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (!length(x)) return(null.data.table())
     if (!length(leftcols)) {
       # basic x[i] subset, #2951
-      if (is.null(irows)) return(x)   # otherwise CsubsetDT would materialize a copy
+      if (is.null(irows)) return(shallow(x))   # e.g. DT[TRUE] (#3214); otherwise CsubsetDT would materialize a deep copy
       else                return(.Call(CsubsetDT, x, irows, seq_along(x)) )
     } else {
       jisvars = names(i)[-leftcols]
@@ -1266,7 +1266,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (!identical(xcolsAns, seq_along(xcolsAns))) {
           stop("Internal error: xcolAns is not 1:length(xcolAns)")   # nocov
         }
-        ans = .Call(CsubsetDT, x, irows, xcols)
+        # Retained from old R way below (test 1542.01 checks shallow at this point)
+        # ' Temp fix for #921 - skip COPY until after evaluating 'jval' (scroll down).
+        # ' Unless 'with=FALSE' - can not be expressions but just column names.
+        ans = if (with && is.null(irows)) shallow(x, xcols) else .Call(CsubsetDT, x, irows, xcols)
         setattr(ans, "names", ansvars)
       } else {
         # length(i) && length(icols)
