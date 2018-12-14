@@ -72,7 +72,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
     stop("difftime objects may not be added to IDate. Use plain integer instead of difftime.")
   if (isReallyReal(e1) || isReallyReal(e2)) {
-    return(`+.Date`(e1,e2))
+    return(`+.Date`(e1, e2))
     # IDate doesn't support fractional days; revert to base Date
   }
   if (inherits(e1, "Date") && inherits(e2, "Date"))
@@ -89,9 +89,13 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
     stop("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))
     stop("difftime objects may not be subtracted from IDate. Use plain integer instead of difftime.")
+
   if ( isReallyReal(e2) ) {
-    return(`-.Date`(as.Date(e1),as.Date(e2)))
-    # IDate doesn't support fractional days so revert to base Date
+    # IDate deliberately doesn't support fractional days so revert to base Date
+    return(base::`-.Date`(as.Date(e1), e2))
+    # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because
+    # i) ?.Date states "Internal objects in the base package most of which are only user-visible because of the special nature of the base namespace."
+    # ii) .Date was newly exposed in R some time after 3.4.4
   }
   ans = as.integer(unclass(e1) - unclass(e2))
   if (!inherits(e2, "Date")) class(ans) = c("IDate","Date")

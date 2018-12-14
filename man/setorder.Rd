@@ -28,7 +28,7 @@ locale, use \code{x[base::order(.)]}.
 
 \usage{
 setorder(x, \dots, na.last=FALSE)
-setorderv(x, cols, order=1L, na.last=FALSE)
+setorderv(x, cols = colnames(x), order=1L, na.last=FALSE)
 # optimised to use data.table's internal fast order
 # x[order(., na.last=TRUE)]
 }
@@ -39,8 +39,7 @@ is missing (ex: \code{setorder(x)}), \code{x} is rearranged based on all
 columns in ascending order by default. To sort by a column in descending order
 prefix a \code{"-"}, i.e., \code{setorder(x, a, -b, c)}. The \code{-b} works
 when \code{b} is of type \code{character} as well. }
-\item{cols}{ A character vector of column names of \code{x}, to which to order
-by. Do not add \code{"-"} here. Use \code{order} argument instead.}
+\item{cols}{ A character vector of column names of \code{x} by which to order. By default, sorts over all columns; \code{cols = NULL} will return \code{x} untouched. Do not add \code{"-"} here. Use \code{order} argument instead.}
 \item{order}{ An integer vector with only possible values of \code{1} and
 \code{-1}, corresponding to ascending and descending order. The length of
 \code{order} must be either \code{1} or equal to that of \code{cols}. If
