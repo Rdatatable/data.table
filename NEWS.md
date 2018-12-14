@@ -10,13 +10,32 @@
 
 3. `setnames()` gains `skip_absent` to skip names in `old` that aren't present, [#3030](https://github.com/Rdatatable/data.table/issues/3030). By default `FALSE` so that it is still an error, as before, to attempt to change a column name that is not present. Thanks to @MusTheDataGuy for the suggestion and the PR.
 
-4. `NA` in `between`'s `lower` and `upper` are now taken as missing bounds and return `TRUE` rather than than `NA`. This is now documented.
+4. `NA` in `between()` and `%between%`'s `lower` and `upper` are now taken as missing bounds and return `TRUE` rather than than `NA`. This is now documented.
 
-5. `fwrite()` now accepts `matrix`, (#2613)[https://github.com/Rdatatable/data.table/issues/2613]. Thanks to Michael Chirico for the suggestion and Felipe Parages for implementing. For now matrix input is converted to data.table (which can be costly) before writing. 
+5. `shift()` now interprets negative values of `n` naturally to mean the opposite `type=`, [#1708](https://github.com/Rdatatable/data.table/issues/1708). 
+
+5. `fwrite()` now accepts `matrix`, [#2613](https://github.com/Rdatatable/data.table/issues/2613). Thanks to Michael Chirico for the suggestion and Felipe Parages for implementing. For now matrix input is converted to data.table (which can be costly) before writing. 
 
 6. `fread()` and `fwrite()` can now handle file names in native and UTF-8 encoding, [#3078](https://github.com/Rdatatable/data.table/issues/3078). Thanks to Daniel Possenriede (@dpprdan) for reporting and fixing.
 
-7. New `frollmean` has been added to calculate _rolling mean_. Function name and arguments are experimental. Related to [#2778](https://github.com/Rdatatable/data.table/issues/2778) (and [#624](https://github.com/Rdatatable/data.table/issues/624), [#626](https://github.com/Rdatatable/data.table/issues/626), [#1855](https://github.com/Rdatatable/data.table/issues/1855)). Other rolling statistics will follow.
+7. `DT[i]` and `DT[i,cols]` now call internal parallel subsetting code, [#2951](https://github.com/Rdatatable/data.table/issues/2951). Subsetting is significantly faster (as are many other operations) with factor columns rather than character.
+    ```R
+    N = 2e8                           # 4GB data on 4-core CPU with 16GB RAM
+    DT = data.table(ID = sample(LETTERS,N,TRUE),
+                    V1 = sample(5,N,TRUE),
+                    V2 = runif(N))
+    w = which(DT$V1 > 3)              #  select 40% of rows
+                                      #  v1.12.0   v1.11.8
+    system.time(DT[w])                #     0.8s      2.6s
+    DT[, ID := as.factor(ID)]
+    system.time(DT[w])                #     0.4s      2.3s
+    system.time(DT[w, c("ID","V2")])  #     0.3s      1.9s
+    ```
+    
+8. `DT[..., .SDcols=]` now accepts `patterns()`; e.g. `DT[..., .SDcols=patterns("^V")]`, for filtering columns according to a pattern (as in `melt.data.table`), [#1878](https://github.com/Rdatatable/data.table/issues/1878). Thanks to many people for pushing for this and @MichaelChirico for ultimately filing the PR. See `?data.table` for full details and examples.
+
+9. New `frollmean` has been added to calculate _rolling mean_. Function name and arguments are experimental. Related to [#2778](https://github.com/Rdatatable/data.table/issues/2778) (and [#624](https://github.com/Rdatatable/data.table/issues/624), [#626](https://github.com/Rdatatable/data.table/issues/626), [#1855](https://github.com/Rdatatable/data.table/issues/1855)). Other rolling statistics will follow.
+
 
 #### BUG FIXES
 
@@ -33,6 +52,16 @@
 6. `groupingsets()` groups by empty column set and constant value in `j`, [#3173](https://github.com/Rdatatable/data.table/issues/3173).
 
 7. `split.data.table()` failed if `DT` had a factor column named `"x"`, [#3151](https://github.com/Rdatatable/data.table/issues/3151). Thanks to @tdeenes for reporting and fixing.
+
+8. `DT[i,j]` now retains user-defined or inherited attributes; e.g.
+    ```R
+    attr(datasets::BOD,"reference")                     # "A1.4, p. 270"
+    attr(as.data.table(datasets::BOD)[2],"reference")   # was NULL now "A1.4, p. 270"
+    ```
+
+9. `fsetequal` now handles properly datasets having last column a character, closes [#2318](https://github.com/Rdatatable/data.table/issues/2318). Thanks to @pschil and @franknarf1 for reporting.
+
+10. `DT[..., .SDcols=integer(0L)]` could fail, [#3185](https://github.com/Rdatatable/data.table/issues/3185). An empty `data.table` is now returned correctly.
 
 #### NOTES
 

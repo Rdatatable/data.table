@@ -37,7 +37,7 @@ dcf.repo = function(pkg, repo, field, type){
   idx = file(file.path(contrib.url(repo, type=type),"PACKAGES"))
   on.exit(close(idx))
   dcf = read.dcf(idx, fields=c("Package",field))
-  if (!pkg %in% dcf[,"Package"]) stop(sprintf("There is no %s package in provided repository.", pkg))
+  if (!pkg %in% dcf[,"Package"]) stop("There is no ", pkg, " package in provided repository.")
   dcf[dcf[,"Package"]==pkg, field][[1L]]
 }
 
