@@ -117,7 +117,7 @@ doc.copy <- function(repodir="bus/integration/cran"){
   c(ans1, ans2)
 }
 
-plat <- function(x) if (grepl("^.*windows", x)) "Windows" else if (grepl("^.*macosx", x)) "Mac OS X" else "Linux"
+plat <- function(x) if (grepl("^.*win", x)) "Windows" else if (grepl("^.*osx", x)) "Mac OS X" else "Linux"
 
 check.copy <- function(job, repodir="bus/integration/cran"){
   dir.create(job.checks<-file.path(repodir, "web", "checks", pkg<-"data.table", job), recursive=TRUE);

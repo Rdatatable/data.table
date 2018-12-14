@@ -93,7 +93,8 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
     if (is.na(file_info$size)) stop("File '",file,"' does not exist or is non-readable. getwd()=='", getwd(), "'")
     if (isTRUE(file_info$isdir)) stop("File '",file,"' is a directory. Not yet implemented.") # dir.exists() requires R v3.2+, #989
     if (!file_info$size) {
-      warning(sprintf("File '%s' has size 0. Returning a NULL %s.", file, if (data.table) 'data.table' else 'data.frame'))
+      warning("File '", file, "' has size 0. Returning a NULL ",
+              if (data.table) 'data.table' else 'data.frame', ".")
       return(if (data.table) data.table(NULL) else data.frame(NULL))
     }
     ext2 = substring(file, nchar(file)-2L, nchar(file))   # last 3 characters ".gz"
@@ -106,6 +107,8 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
       on.exit(unlink(decompFile), add=TRUE)
     }
+    file = enc2native(file) # CfreadR cannot handle UTF-8 if that is not the native encoding, see #3078.
+
     input = file
   }
   if (!missing(autostart)) warning("'autostart' is now deprecated and ignored. Consider skip='string' or skip=n");

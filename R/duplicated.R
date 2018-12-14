@@ -2,7 +2,7 @@
 warning_oldUniqueByKey = "The deprecated option 'datatable.old.unique.by.key' is being used. Please stop using it and pass 'by=key(DT)' instead for clarity. For more information please search the NEWS file for this option."
 
 duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
-  if (!cedta()) return(NextMethod("duplicated"))
+  if (!cedta()) return(NextMethod("duplicated")) #nocov
   if (!identical(incomparables, FALSE)) {
     .NotYetUsed("incomparables != FALSE")
   }
@@ -33,7 +33,7 @@ duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq
 }
 
 unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
-  if (!cedta()) return(NextMethod("unique"))
+  if (!cedta()) return(NextMethod("unique")) # nocov
   if (!identical(incomparables, FALSE)) {
     .NotYetUsed("incomparables != FALSE")
   }
@@ -119,7 +119,7 @@ unique.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alo
 # In that sense, this anyDuplicated is *not* the same as base's - meaning it's not a different implementation
 # This is just a wrapper. That being said, it should be incredibly fast on data.tables (due to data.table's fast forder)
 anyDuplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
-  if (!cedta()) return(NextMethod("anyDuplicated"))
+  if (!cedta()) return(NextMethod("anyDuplicated")) # nocov
   if (missing(by) && isTRUE(getOption("datatable.old.unique.by.key"))) {
     by = key(x)
     warning(warning_oldUniqueByKey)

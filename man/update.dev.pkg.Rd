@@ -10,13 +10,16 @@
 }
 
 \usage{\method{update}{dev.pkg}(object="data.table",
-repo="https://Rdatatable.github.io/data.table", field="Revision", \dots)
+repo="https://Rdatatable.gitlab.io/data.table", field="Revision",
+type=getOption("pkgType"), \dots)
 }
 \arguments{
   \item{object}{ character scalar, package name. }
   \item{repo}{ character scalar, url of package devel repository. }
   \item{field}{ character scalar, metadata field to use in PACKAGES file and
     DESCRIPTION file, default \code{"Revision"}. }
+  \item{type}{ character scalar, default \code{getOption("pkgType")}, used
+    to define if package has to be installed from sources, binaries or both. }
   \item{\dots}{ passed to \code{\link[utils]{install.packages}}. }
 }
 \details{
