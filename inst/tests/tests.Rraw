@@ -6239,7 +6239,6 @@ val = runif(1)
 test(1463.33, shift(val, 2L), NA_real_)
 test(1463.34, shift(val, 2L, type="lead"), NA_real_)
 
-test(1463.35, shift(1:5, -1L), error="n must be non-negative integer")
 test(1463.36, shift(1:5, 1L, fill=c(1:2)), error="fill must be a vector of length")
 
 # add tests for date and factor?
@@ -12854,7 +12853,31 @@ test(1962.109, second(z), 5L)
 test(1962.110, minute(z), 2L)
 test(1962.111, hour(z), 1L)
 
-# test 1963 reserved for another PR
+# positive and negative values for shift, #1708
+DT = data.table(x = 1:10, y = 10:1)
+test(1963.1, shift(DT$x, -1), c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA))
+test(1963.2, shift(DT$x, -1, type = 'lead'),
+     c(NA, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L))
+test(1963.3, shift(DT$x, -1, fill = 0L),
+     c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 0L))
+test(1963.4, shift(DT$x, -1, give.names = TRUE),
+     structure(c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA),
+     .Names = c("V1_lag_-1", NA, NA, NA, NA, NA, NA, NA, NA, NA)))
+test(1963.5, shift(DT$x, -1:1),
+     list(c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA), 1:10,
+          c(NA, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)))
+test(1963.6, shift(DT, -1),
+     list(c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA),
+          c(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L, NA)))
+test(1963.7, shift(DT, -1:1),
+     list(c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA), 1:10,
+          c(NA, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L),
+          c(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L, NA), 10:1,
+          c(NA, 10L, 9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L)))
+## some coverage tests for good measure
+test(1963.8, shift(DT$x, type = 'some_other_type'),
+     error = 'should be one of "lag"')
+test(1963.9, shift(c(1+3i, 2-1i)), error = 'Unsupported type')
 
 # 0 column data.table should not have rownames, #3149
 M0 = matrix(1:6, nrow=3, ncol=2, dimnames=list(rows=paste0("id",1:3), cols=c("v1","v2")))
