@@ -154,9 +154,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
      paste0(names(targetTypes)[w],"(",paste(targetTypes[w],currentTypes[w],sep="!="),")")
             ,collapse=" ")))
     }
-  }
-
-  if (check.attributes) {
+    
     # check key
     k1 = key(target)
     k2 = key(current)
@@ -216,17 +214,27 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
           return(sprintf("Dataset 'current' has duplicate rows while 'target' doesn't%s", tolerance.msg))
       }
     }
-    jn.on = if (target_dup && current_dup) {
-      target = shallow(target)[, ".seqn" := rowidv(target)]
-      current = shallow(current)[, ".seqn" := rowidv(current)]
-      c(".seqn", setdiff(names(target), ".seqn"))
-    } else names(target)
     # handling 'tolerance' for factor cols - those `msg` will be returned only when equality with tolerance will fail
     if (any(vapply_1b(target,is.factor)) && !identical(tolerance, 0)) {
       if (!identical(tolerance, sqrt(.Machine$double.eps))) # non-default will raise error
         stop("Factor columns and ignore.row.order cannot be used with non 0 tolerance argument")
       msg = c(msg, "Using factor columns together together with ignore.row.order, this force 'tolerance' argument to 0")
       tolerance = 0
+    }
+    jn.on = copy(names(target)) # default, possible altered later on
+    char.cols = vapply_1c(target,typeof)=="character"
+    if (!identical(tolerance, 0)) { # handling character columns only for tolerance!=0
+      if (all(char.cols)) {
+        msg = c(msg, "Both datasets have character columns only, together with ignore.row.order this force 'tolerance' argument to 0, for character columns it does not have effect")
+        tolerance = 0
+      } else if (any(char.cols)) { # character col cannot be the last one during rolling join
+        jn.on = jn.on[c(which(char.cols), which(!char.cols))]
+      }
+    }
+    if (target_dup && current_dup) {
+      target = shallow(target)[, ".seqn" := rowidv(target)]
+      current = shallow(current)[, ".seqn" := rowidv(current)]
+      jn.on = c(".seqn", jn.on)
     }
     # roll join to support 'tolerance' argument, conditional to retain support for factor when tolerance=0
     ans = if (identical(tolerance, 0)) target[current, nomatch=NA, which=TRUE, on=jn.on] else {
@@ -238,6 +246,7 @@ all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attrib
       msg = c(msg, sprintf("Dataset 'current' has rows not present in 'target'%s%s", if (target_dup || current_dup) " or present in different quantity" else "", tolerance.msg))
       return(msg)
     }
+    # rolling join other way around
     ans = if (identical(tolerance, 0)) current[target, nomatch=NA, which=TRUE, on=jn.on] else {
       ans1 = current[target, roll=tolerance, rollends=TRUE, which=TRUE, on=jn.on]
       ans2 = current[target, roll=-tolerance, rollends=TRUE, which=TRUE, on=jn.on]

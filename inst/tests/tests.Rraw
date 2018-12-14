@@ -13064,6 +13064,26 @@ test(1968.6, DT[, sum(C,na.rm=TRUE), by=A%%2L], data.table(A=c(1L,0L), V1=c(4294
 DT[2,C:=NA]
 test(1968.7, DT[, sum(C,na.rm=TRUE), by=A%%2L], data.table(A=c(1L,0L), V1=c(4294967294, 0)), warning="coerced to 'numeric'")
 
+# fsetequal and last col a character #2318
+dt.1 <- data.table(Id=(1:10))
+dt.2 <- data.table(Id=(1:10))
+dt.2[1, Id:=99]
+test(1969.1, fsetequal(dt.1, dt.2), FALSE)
+dt.1[, Id := as.character(Id)]
+dt.2[, Id := as.character(Id)]
+test(1969.2, fsetequal(dt.1, dt.2), FALSE)
+x = data.table(v = "foo", a = "my string")
+y = data.table(v = "foo", a = "not my string")
+test(1969.3, fsetequal(x, y), FALSE)
+x = data.table(v = "foo", a = "my string")
+y = data.table(v = "foo", a = "not my string")
+x = rbind(x, x)
+y = rbind(y, y)
+test(1969.4, fsetequal(x, y), FALSE)
+x = rbind(x, y)
+y = rbind(y, x)
+test(1969.5, fsetequal(x, y), FALSE)
+
 
 ###################################
 #  Add new tests above this line  #
