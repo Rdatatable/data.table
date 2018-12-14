@@ -243,17 +243,19 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     if (this<1 || this>LENGTH(x)) error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
   }
   SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+64)); nprotect++;  // just do alloc.col directly, eventually alloc.col can be deprecated.
-  const int ansn = LENGTH(rows);  // has been checked not to contain zeros or negatives, so this length is the length of result
   copyMostAttrib(x, ans);  // other than R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
                // so includes row.names (oddly, given other dims aren't) and "sorted", dealt with below
   SET_TRUELENGTH(ans, LENGTH(ans));
   SETLENGTH(ans, LENGTH(cols));
+  int ansn;
   if (isNull(rows)) {
+    ansn = LENGTH(VECTOR_ELT(x, 0));
     for (int i=0; i<LENGTH(cols); i++) {
       SET_VECTOR_ELT(ans, i, duplicate(VECTOR_ELT(x, INTEGER(cols)[i]-1)));
       // materialize the column subset as we have always done for now, until REFCNT is on by default in R (TODO)
     }
   } else {
+    ansn = LENGTH(rows);  // has been checked not to contain zeros or negatives, so this length is the length of result
     for (int i=0; i<LENGTH(cols); i++) {
       SEXP source = VECTOR_ELT(x, INTEGER(cols)[i]-1);
       SEXP target;
