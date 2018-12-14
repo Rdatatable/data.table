@@ -29,6 +29,8 @@
     system.time(DT[w])                #     0.4s      2.3s
     system.time(DT[w, c("ID","V2")])  #     0.3s      1.9s
     ```
+    
+8. `DT[..., .SDcols=]` now accepts `patterns()`; e.g. `DT[..., .SDcols=patterns("^V")]`, for filtering columns according to a pattern (as in `melt.data.table`), [#1878](https://github.com/Rdatatable/data.table/issues/1878). Thanks to many people for pushing for this and @MichaelChirico for ultimately filing the PR. See `?data.table` for full details and examples.
 
 
 #### BUG FIXES
@@ -54,6 +56,8 @@
     ```
 
 9. `fsetequal` now handles properly datasets having last column a character, closes [#2318](https://github.com/Rdatatable/data.table/issues/2318). Thanks to @pschil and @franknarf1 for reporting.
+
+10. `DT[..., .SDcols=integer(0L)]` could fail, [#3185](https://github.com/Rdatatable/data.table/issues/3185). An empty `data.table` is now returned correctly.
 
 #### NOTES
 

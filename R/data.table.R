@@ -1017,8 +1017,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # .SDcols is of the format a:b
             .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame())
           } else {
-            .SDcols = eval(colsub, parent.frame(), parent.frame())
+            if (is.call(colsub) && colsub[[1L]] == "patterns") {
+              # each pattern gives a new filter condition, intersect the end result
+              .SDcols = Reduce(intersect, do_patterns(colsub, names(x)))
+            } else {
+              .SDcols = eval(colsub, parent.frame(), parent.frame())
+            }
           }
+          if (!length(.SDcols)) stop("Empty .SDcols is not yet supported.")
           if (anyNA(.SDcols))
             stop(".SDcols missing at the following indices: ", brackify(which(is.na(.SDcols))))
           if (is.logical(.SDcols)) {
