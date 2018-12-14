@@ -1263,8 +1263,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (length(ansvars)) {
       if (!(length(i) && length(icols))) {
         # new in v1.12.0 to redirect to CsubsetDT in this case
-        if (!identical(xcolsAns, seq_along(xcolsAns))) {
-          stop("Internal error: xcolAns is not 1:length(xcolAns)")   # nocov
+        if (!identical(xcolsAns, seq_along(xcolsAns)) || length(xcols)!=length(xcolsAns) || length(ansvars)!=length(xcolsAns)) {
+          stop("Internal error: xcolAns does not pass checks: ", length(xcolsAns), length(ansvars), length(xcols), paste(xcolsAns,collapse=","))   # nocov
         }
         # Retained from old R way below (test 1542.01 checks shallow at this point)
         # ' Temp fix for #921 - skip COPY until after evaluating 'jval' (scroll down).
@@ -1273,47 +1273,31 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         setattr(ans, "names", ansvars)
       } else {
         # length(i) && length(icols)
-        # TO DO: use CsubsetDT twice here and then remove this entire R level branch
-        ans = vector("list", length(ansvars))
-        if (allLen1 && allGrp1 && (is.na(nomatch) || !any(f__==0L))) {   # nomatch=0 should drop rows in i that have no match
-          for (s in seq_along(icols)) {
-            target = icolsAns[s]
-            source = icols[s]
-            ans[[target]] = i[[source]]
-            if (address(ans[[target]]) == address(i[[source]])) ans[[target]] = copy(ans[[target]])
-          }
-        } else {
-          ii = rep.int(indices__, len__) # following #1991 fix, allGrp1=FALSE always. TODO: revisit later
-          for (s in seq_along(icols)) {
-            target = icolsAns[s]
-            source = icols[s]
-            ans[[target]] = .Call(CsubsetVector,i[[source]],ii)  # i.e. i[[source]][ii]
-          }
-        }
         if (is.null(irows)) {
-          for (s in seq_along(xcols)) {  # xcols means non-join x columns, since join columns come from i
-            target = xcolsAns[s]
-            source = xcols[s]
-            ans[[target]] = x[[source]]
-            # Temp fix for #921 - skip COPY until after evaluating 'jval' (scroll down).
-            # Unless 'with=FALSE' - can not be expressions but just column names.
-            if (!with && address(ans[[target]]) == address(x[[source]]))
-              ans[[target]] = copy(ans[[target]])
-            else ans[[target]] = ans[[target]]
-          }
-        } else {
-          for (s in seq_along(xcols)) {
-            target = xcolsAns[s]
-            source = xcols[s]
-            ans[[target]] = .Call(CsubsetVector,x[[source]],irows)   # i.e. x[[source]][irows], but guaranteed new memory even for singleton logicals from R 3.1.0
-          }
+          stop("Internal error: irows is NULL when making join result at R level. Should no longer happen now we use CsubsetDT earlier.")  # nocov
+          # TODO: Make subsetDT do a shallow copy when irows is NULL (it currently copies). Then copy only when user uses := or set* on the result
+          # by using NAMED/REFCNT on columns, with warning if they copy. Since then, even foo = DT$b would cause the next set or := to copy that
+          # column (so the warning is needed). To tackle that, we could have our own DT.NAMED attribute, perhaps.
+          # Or keep the rule that [.data.table always returns new memory, and create view() or view= as well, maybe cleaner.
         }
-        # the address==address is a temp fix for R >= 3.1.0. TO DO: allow shallow copy here, then copy only when user uses :=
-        # or set* on the result by using NAMED/REFCNT on columns, with warning if they copy. Since then, even foo = DT$b
-        # would cause the next set or := to copy that column (so the warning is needed). To tackle that, we could have our
-        # own DT.NAMED attribute, perhaps.
-        # Or keep the rule that [.data.table always returns new memory, and create view() or view= as well, maybe cleaner.
+        ans = vector("list", length(ansvars))
+        ii = rep.int(indices__, len__) # following #1991 fix
+        # TODO: if (allLen1 && allGrp1 && (is.na(nomatch) || !any(f__==0L))) then ii will be 1:nrow(i)  [nomatch=0 should drop rows in i that have no match]
+        #       But rather than that complex logic here at R level to catch that and do a shallow copy for efficiency, just do the check inside CsubsetDT
+        #       to see if it passed 1:nrow(x) and then CsubsetDT should do the shallow copy safely and centrally.
+        #       That R level branch was taken out in PR #3213
 
+        # TO DO: use CsubsetDT twice here and then remove this entire R level branch
+        for (s in seq_along(icols)) {
+          target = icolsAns[s]
+          source = icols[s]
+          ans[[target]] = .Call(CsubsetVector,i[[source]],ii)  # i.e. i[[source]][ii]
+        }
+        for (s in seq_along(xcols)) {
+          target = xcolsAns[s]
+          source = xcols[s]
+          ans[[target]] = .Call(CsubsetVector,x[[source]],irows)   # i.e. x[[source]][irows], but guaranteed new memory even for singleton logicals from R 3.1.0
+        }
         setattr(ans, "names", ansvars)
         if (haskey(x)) {
           keylen = which.first(!key(x) %chin% ansvars)-1L
