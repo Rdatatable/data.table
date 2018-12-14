@@ -229,8 +229,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   if (!length(x)) return(x);  // return empty list
 
   // check index once up front for 0 or NA, for branchless subsetVectorRaw which is repeated for each column
-  bool anyNA=false, orderedSubset=false;
-  if (check_idx(rows, length(VECTOR_ELT(x,0)), &anyNA, &orderedSubset) != NULL) {
+  bool anyNA=false, orderedSubset=true;   // true for when rows==null (meaning all rows)
+  if (!isNull(rows) && check_idx(rows, length(VECTOR_ELT(x,0)), &anyNA, &orderedSubset) != NULL) {
     SEXP max = PROTECT(ScalarInteger(length(VECTOR_ELT(x,0)))); nprotect++;
     rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE))); nprotect++;
     const char *err = check_idx(rows, length(VECTOR_ELT(x,0)), &anyNA, &orderedSubset);
@@ -248,12 +248,19 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
                // so includes row.names (oddly, given other dims aren't) and "sorted", dealt with below
   SET_TRUELENGTH(ans, LENGTH(ans));
   SETLENGTH(ans, LENGTH(cols));
-  for (int i=0; i<LENGTH(cols); i++) {
-    SEXP source = VECTOR_ELT(x, INTEGER(cols)[i]-1);
-    SEXP target;
-    SET_VECTOR_ELT(ans, i, target=allocVector(TYPEOF(source), ansn));
-    copyMostAttrib(source, target);
-    subsetVectorRaw(target, source, rows, anyNA);  // parallel within column
+  if (isNull(rows)) {
+    for (int i=0; i<LENGTH(cols); i++) {
+      SET_VECTOR_ELT(ans, i, duplicate(VECTOR_ELT(x, INTEGER(cols)[i]-1)));
+      // materialize the column subset as we have always done for now, until REFCNT is on by default in R (TODO)
+    }
+  } else {
+    for (int i=0; i<LENGTH(cols); i++) {
+      SEXP source = VECTOR_ELT(x, INTEGER(cols)[i]-1);
+      SEXP target;
+      SET_VECTOR_ELT(ans, i, target=allocVector(TYPEOF(source), ansn));
+      copyMostAttrib(source, target);
+      subsetVectorRaw(target, source, rows, anyNA);  // parallel within column
+    }
   }
   SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+64)); nprotect++;
   SET_TRUELENGTH(tmp, LENGTH(tmp));
