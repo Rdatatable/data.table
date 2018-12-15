@@ -8,7 +8,7 @@
 \alias{frollsum}
 \title{Rolling functions}
 \description{
-  Fast rolling functions to calculate aggregates on sliding window.
+  Fast rolling functions to calculate aggregates on sliding window. Function name and arguments are experimental.
 }
 
 \usage{
