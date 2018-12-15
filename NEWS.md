@@ -36,6 +36,7 @@
 
 9. New `frollmean` has been added to calculate _rolling mean_. Function name and arguments are experimental. Related to [#2778](https://github.com/Rdatatable/data.table/issues/2778) (and [#624](https://github.com/Rdatatable/data.table/issues/624), [#626](https://github.com/Rdatatable/data.table/issues/626), [#1855](https://github.com/Rdatatable/data.table/issues/1855)). Other rolling statistics will follow.
 
+10. `setDTthreads()` gains `restore_after_fork=`, [#2885](https://github.com/Rdatatable/data.table/issues/2885). The default `NULL` leaves the internal option unchanged which by default is `TRUE`. `data.table` has always switched to single-threaded mode on fork. It used to restore multi-threading after a fork too but problems were reported on Mac and Intel OpenMP library (see 1.10.4 notes below). We are trying again thanks to suggestions and success reported by Kun Ren and Mark Klik in package `fst`. If you experience problems will multi threading after a fork, please restart R and call `setDTthreads(restore_after_fork=FALSE)`.
 
 #### BUG FIXES
 
