@@ -16,9 +16,8 @@
 *    avoid the deadlock/hang (#1745 and #1727) and return to prior state afterwards.
 */
 
-static int DTthreads = 0;
-// Never read directly, hence static. Always go via getDTthreads() and check that in
-// future using grep's in CRAN_Release.cmd
+static int  DTthreads = 0;             // Never read directly, hence static; always go via getDTthreads().
+static bool RestoreAfterFork = true;  // see #2885 in v1.12.0
 
 int getDTthreads() {
 #ifdef _OPENMP
@@ -44,6 +43,7 @@ SEXP getDTthreads_R(SEXP verbose) {
     Rprintf("omp_get_max_threads() = %d\n", omp_get_max_threads());
     Rprintf("omp_get_thread_limit() = %d\n", omp_get_thread_limit()); // can be INT_MAX meaning unlimited
     Rprintf("DTthreads = %d\n", DTthreads);
+    Rprintf("RestoreAfterFork = %s\n", RestoreAfterFork ? "true" : "false");
     #ifndef _OPENMP
       Rprintf("This installation of data.table has not been compiled with OpenMP support.\n");
       // the omp_ functions used above are defined in myomp.h to be 1 in this case
@@ -52,20 +52,23 @@ SEXP getDTthreads_R(SEXP verbose) {
   return ScalarInteger(getDTthreads());
 }
 
-SEXP setDTthreads(SEXP threads) {
+SEXP setDTthreads(SEXP threads, SEXP restore_after_fork) {
   if (!isInteger(threads) || length(threads) != 1 || INTEGER(threads)[0] < 0) {
     // catches NA too since NA is -ve
-    error("Argument to setDTthreads must be a single integer >= 0. \
-           Default 0 is recommended to use all CPU.");
+    error("threads= must be a single integer >= 0. Default 0 is recommended to use all CPU.");
+  }
+  if (!isNull(restore_after_fork) && !(isLogical(restore_after_fork) && LOGICAL(restore_after_fork)[0]>=0 /*not NA*/)) {
+    error("restore_after_fork= must be TRUE or FALSE. The default NULL means leave the current setting unchanged. getDTthreads(verbose=TRUE) reports the current setting.\n");
   }
   int old = DTthreads;
   DTthreads = INTEGER(threads)[0];
-
   // Do not call omp_set_num_threads() here, and particularly not to omp_get_thread_limit()
   // which is likely INT_MAX (unlimited). Any calls to omp_set_num_threads() affect other
   // packages and R itself too which has some OpenMP usage. Instead we set our own DTthreads
   // static global variable, read that from getDTthreads() and ensure num_threads(getDTthreads())
   // directive is always present via the grep in CRAN_Release.cmd.
+
+  if (!isNull(restore_after_fork)) RestoreAfterFork = LOGICAL(restore_after_fork)[0];
 
   return ScalarInteger(old);
 }
@@ -79,6 +82,8 @@ SEXP setDTthreads(SEXP threads) {
   fork completes. But now in an attempt to alleviate problems propogating (likely Intel's OpenMP only)
   we now leave data.table in single-threaded mode after parallel's fork. User can call setDTthreads(0)
   to return to multi-threaded as we do in tests on Linux.
+  [UPDATE] in v1.12.0 we're trying again to RestoreAferFork (#2285) with optional-off due to success
+           reported by Ken Run and Mark Klik in fst#110 and fst#112
 
   DO NOT call omp_set_num_threads(1) inside when_fork()!! That causes a different crash/hang on MacOS
   upon mclapply's fork even if data.table is merely loaded and neither used yet in the session nor by
@@ -90,14 +95,21 @@ SEXP setDTthreads(SEXP threads) {
   on MacOS.
 */
 
+static int pre_fork_DTthreads = 0;
+
 void when_fork() {
+  pre_fork_DTthreads = DTthreads;
   DTthreads = 1;
+}
+
+void after_fork() {
+  if (RestoreAfterFork) DTthreads = pre_fork_DTthreads;
 }
 
 void avoid_openmp_hang_within_fork() {
   // Called once on loading data.table from init.c
 #ifdef _OPENMP
-  pthread_atfork(&when_fork, NULL, NULL);
+  pthread_atfork(&when_fork, &after_fork, NULL);
 #endif
 }
 
