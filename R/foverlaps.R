@@ -12,7 +12,7 @@ foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=
   if (!length(which) || length(which) != 1L || is.na(which))
     stop("which must be a logical vector of length 1. Either TRUE/FALSE")
   if (!length(nomatch) || length(nomatch) != 1L || (!is.na(nomatch) && nomatch!=0L))
-    stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
+    stop("nomatch must either be NA or NULL")
   type = match.arg(type)
   mult = match.arg(mult)
   if (type == "equal")
