@@ -8,7 +8,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
   R_len_t i=0, j, m, nx, nk, xrows, thisk, protecti=0;
   SEXP x, tmp=R_NilValue, elem, ans, thisfill, klass;
   unsigned long long *dthisfill;
-  enum {LAG, LEAD} stype = LAG;
+  enum {LAG, LEAD/*, SHIFT, CYCLIC*/} stype = LAG; // currently SHIFT maps to LAG and CYCLIC is unimplemented (see comments in #1708)
   if (!length(obj)) return(obj); // NULL, list()
   if (isVectorAtomic(obj)) {
     x = PROTECT(allocVector(VECSXP, 1)); protecti++;
@@ -26,6 +26,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
 
   if (!strcmp(CHAR(STRING_ELT(type, 0)), "lag")) stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "lead")) stype = LEAD;
+  else if (!strcmp(CHAR(STRING_ELT(type, 0)), "shift")) stype = LAG; // when we get rid of nested if branches we can use SHIFT, for now it maps to LAG
   else error("Internal error: invalid type for shift(), should have been caught before. please report to data.table issue tracker"); // # nocov
 
   nx = length(x); nk = length(k);
