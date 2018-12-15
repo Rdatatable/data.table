@@ -5,7 +5,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   if (!isLogical(verbose) || length(verbose)!=1 || LOGICAL(verbose)[0]==NA_LOGICAL)
     error("verbose must be TRUE or FALSE");
   bool bverbose = LOGICAL(verbose)[0];
-  
+
   if (!xlength(obj)) return(obj);                               // empty input: NULL, list()
   SEXP x;                                                       // holds input data as list
   if (isVectorAtomic(obj)) {                                    // wrap atomic vector into list
@@ -31,21 +31,21 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     }
   }
   R_len_t nx=length(x);                                         // number of columns to roll on
-  
+
   if (xlength(k) == 0)                                          // check that window is non zero length
     error("n must be non 0 length");
 
   if (!isLogical(adaptive) || length(adaptive) != 1 || LOGICAL(adaptive)[0] == NA_LOGICAL)
     error("adaptive must be TRUE or FALSE");
   bool badaptive = LOGICAL(adaptive)[0];
-  
+
   R_len_t nk;                                                   // number of rolling windows, for adaptive might be atomic to be wrapped into list
   SEXP ik = R_NilValue;                                         // holds integer window width, if doing non-adaptive roll fun
   SEXP kl = R_NilValue;                                         // holds adaptive window width, if doing adaptive roll fun
   if (!badaptive) {                                             // validating n input for adaptive=FALSE
     if (isNewList(k))
       error("n must be integer, list is accepted for adaptive TRUE");
-    
+
     if (isInteger(k)) {                                        // check that k is integer vector
       ik = k;
     } else if (isReal(k)) {                                    // if n is double then convert to integer
@@ -53,7 +53,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     } else {
       error("n must be integer");
     }
-    
+
     nk = length(k);
     R_len_t i=0;                                                // check that all window values positive
     while (i < nk && INTEGER(ik)[i] > 0) i++;
@@ -87,7 +87,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   int* ikl[nk];                                                 // pointers to adaptive window width
   if (badaptive)
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
-  
+
   if (!isLogical(narm) || length(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL)
     error("na.rm must be TRUE or FALSE");
 
@@ -104,7 +104,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
 
   if (badaptive && ialign!=1)
     error("using adaptive TRUE and align argument different than 'right' is not implemented");
-  
+
   SEXP ans;
   ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;      // allocate list to keep results
   double_ans_t dans[nx*nk];                                     // answer columns as array of double_ans_t struct
@@ -131,11 +131,9 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   //else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) sfun = SUM;
   else error("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
 
-  int* iik = INTEGER(ik);                                       // pointer to non-adaptive window width, still can be vector when doing multiple windows
-  
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
-  
+
   double dfill;
   if (isInteger(fill)) {
     if (INTEGER(fill)[0]==NA_LOGICAL) {
@@ -150,19 +148,27 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   } else {
     error("fill must be numeric");
   }
-  
+
   bool bnarm = LOGICAL(narm)[0];
-  
+
   int ihasna =                                                  // plain C tri-state boolean as integer
     LOGICAL(hasna)[0]==NA_LOGICAL ? 0 :                         // hasna NA, default, no info about NA
     LOGICAL(hasna)[0]==TRUE ? 1 :                               // hasna TRUE, might be some NAs
     -1;                                                         // hasna FALSE, there should be no NAs
-  
+
   unsigned int ialgo;                                           // decode algo to integer
   if (!strcmp(CHAR(STRING_ELT(algo, 0)), "fast")) ialgo = 0;    // fast = 0
   else if (!strcmp(CHAR(STRING_ELT(algo, 0)), "exact")) ialgo = 1; // exact = 1
   else error("Internal error: invalid algo argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
-  
+
+  int* iik = NULL;
+  if (!badaptive) {
+    if (!isInteger(ik)) error("Internal error: badaptive=%d but ik is not integer", badaptive);    // # nocov
+    iik = INTEGER(ik);                                          // pointer to non-adaptive window width, still can be vector when doing multiple windows
+  } else {
+    // ik is still R_NilValue from initialization. But that's ok as it's only needed below when !badaptive.
+  }
+
   if (nx==1 && nk==1) {                                         // no need to init openmp for single thread call
     if (bverbose) {
       if (ialgo==0) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped\n");
@@ -201,7 +207,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     } // end of omp parallel region
     omp_set_nested(0);
   }
-  
+
   for (R_len_t i=0; i<nx; i++) {                                // raise errors and warnings, as of now messages are not being produced and stdout is printed in live not carried in ans_t
     for (R_len_t j=0; j<nk; j++) {
       if (dans[i*nk+j].status == 3) {
@@ -215,7 +221,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       }
     }
   }
-  
+
   UNPROTECT(protecti);
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
 }
