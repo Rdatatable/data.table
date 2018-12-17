@@ -88,6 +88,7 @@ SEXP SelfRefSymbol;
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 Rboolean isDatatable(SEXP x);
+int checkOverAlloc(SEXP x);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);

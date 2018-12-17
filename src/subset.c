@@ -242,7 +242,9 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     int this = INTEGER(cols)[i];
     if (this<1 || this>LENGTH(x)) error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
   }
-  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+64)); nprotect++;  // just do alloc.col directly, eventually alloc.col can be deprecated.
+
+  int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
+  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // just do alloc.col directly, eventually alloc.col can be deprecated.
   copyMostAttrib(x, ans);  // other than R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
                // so includes row.names (oddly, given other dims aren't) and "sorted", dealt with below
   SET_TRUELENGTH(ans, LENGTH(ans));
@@ -264,7 +266,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
       subsetVectorRaw(target, source, rows, anyNA);  // parallel within column
     }
   }
-  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+64)); nprotect++;
+  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+overAlloc)); nprotect++;
   SET_TRUELENGTH(tmp, LENGTH(tmp));
   SETLENGTH(tmp, LENGTH(cols));
   setAttrib(ans, R_NamesSymbol, tmp);
