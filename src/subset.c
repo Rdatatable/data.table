@@ -243,17 +243,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     if (this<1 || this>LENGTH(x)) error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
   }
 
-  SEXP opt = GetOption(install("datatable.alloccol"), R_NilValue);
-  if (isNull(opt))
-    error("Has getOption('datatable.alloccol') somehow become unset? It should be a number, by default 1024.");
-  if (!isInteger(opt) && !isReal(opt))
-    error("getOption('datatable.alloccol') should be a number, by default 1024. But its type is '%s'.", type2char(TYPEOF(opt)));
-  if (LENGTH(opt) != 1)
-    error("getOption('datatable.alloc') is a numeric vector ok but its length is %d. Its length should be 1.", LENGTH(opt));
-  int overAlloc = isInteger(opt) ? INTEGER(opt)[0] : (int)REAL(opt)[0];
-  if (overAlloc<0)
-    error("getOption('datatable.alloc')==%d.  It must be >=0 and not NA.", overAlloc);
-
+  int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
   SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // just do alloc.col directly, eventually alloc.col can be deprecated.
   copyMostAttrib(x, ans);  // other than R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
                // so includes row.names (oddly, given other dims aren't) and "sorted", dealt with below

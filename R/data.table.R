@@ -2475,7 +2475,7 @@ alloc.col <- function(DT, n=getOption("datatable.alloccol"), verbose=getOption("
 {
   name = substitute(DT)
   if (identical(name,quote(`*tmp*`))) stop("alloc.col attempting to modify `*tmp*`")
-  ans = .Call(Calloccolwrapper, DT, length(DT)+as.integer(eval(n)), verbose)
+  ans = .Call(Calloccolwrapper, DT, eval(n), verbose)
   if (is.name(name)) {
     name = as.character(name)
     assign(name,ans,parent.frame(),inherits=TRUE)
