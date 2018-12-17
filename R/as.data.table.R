@@ -6,7 +6,7 @@ as.data.table <-function(x, keep.rownames=FALSE, ...)
 }
 
 as.data.table.default <- function(x, ...){
-  setDT(as.data.frame(x, ...))[]
+  as.data.table(as.data.frame(x, ...)) # we cannot assume as.data.frame will do copy, thus setDT changed to as.data.table #3230
 }
 
 as.data.table.factor <- as.data.table.ordered <-
