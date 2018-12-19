@@ -1,8 +1,10 @@
-foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.y = key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=getOption("datatable.nomatch"), which = FALSE,  verbose=getOption("datatable.verbose")) {
+foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=getOption("datatable.nomatch"), which=FALSE, verbose=getOption("datatable.verbose")) {
 
   if (!is.data.table(y) || !is.data.table(x)) stop("y and x must both be data.tables. Use `setDT()` to convert list/data.frames to data.tables by reference or as.data.table() to convert to data.tables by copying.")
   maxgap = as.integer(maxgap); minoverlap = as.integer(minoverlap)
-  which = as.logical(which); nomatch = as.integer(nomatch)
+  which = as.logical(which)
+  if (is.null(nomatch)) nomatch = 0L
+  nomatch = as.integer(nomatch)
   if (!length(maxgap) || length(maxgap) != 1L || is.na(maxgap) || maxgap < 0L)
     stop("maxgap must be a non-negative integer value of length 1")
   if (!length(minoverlap) || length(minoverlap) != 1L || is.na(minoverlap) || minoverlap < 1L)
@@ -10,7 +12,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   if (!length(which) || length(which) != 1L || is.na(which))
     stop("which must be a logical vector of length 1. Either TRUE/FALSE")
   if (!length(nomatch) || length(nomatch) != 1L || (!is.na(nomatch) && nomatch!=0L))
-    stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
+    stop("nomatch must either be NA or NULL")
   type = match.arg(type)
   mult = match.arg(mult)
   if (type == "equal")
