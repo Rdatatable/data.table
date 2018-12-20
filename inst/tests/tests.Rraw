@@ -13164,10 +13164,17 @@ x = rbind(x, y)
 y = rbind(y, x)
 test(1969.5, fsetequal(x, y), FALSE)
 
-# #3185 -- .SDcols = integer(0L) errors until broader handling of empty .SDcols is addressed
-DT = data.table(a = 1:10)
-test(1970.1, DT[ , .SD, .SDcols = integer(0L)], error = 'Empty .SDcols is not yet supported')
-test(1970.2, DT[ , .SD, .SDcols = character(0L)], error = 'Empty .SDcols is not yet supported')
+# empty .SDcols, #3185 and comments in #3211
+DT = data.table(x=1:3, y=4:6)
+test(1970.1, DT[, .SD, .SDcols=integer(0L)], data.table(NULL))
+test(1970.2, DT[, .SD, .SDcols=character(0L)], data.table(NULL))
+test(1970.3, DT[, rowSums(.SD), .SDcols=integer()], numeric())
+test(1970.4, DT[, rowSums(.SD), .SDcols=character()], numeric())
+test(1970.5, DT[, z:=rowSums(.SD), .SDcols=integer()], data.table(x=1:3, y=4:6, z=NA_real_))
+test(1970.6, DT[, z:=rowSums(.SD), .SDcols=integer()], error="RHS of assignment to existing column 'z' is zero length but not NULL")
+test(1970.7, DT[, z:=NULL], data.table(x=1:3, y=4:6))
+test(1970.8, DT[, z:=rowSums(.SD), .SDcols=character()], data.table(x=1:3, y=4:6, z=NA_real_))
+test(1970.9, DT[, z:=rowSums(.SD), .SDcols=character()], error="RHS of assignment to existing column 'z' is zero length but not NULL")
 
 # .SDcols=patterns(), #1878
 DT = data.table(
