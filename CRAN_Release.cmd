@@ -582,7 +582,10 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' para
 #  Release to CRAN
 ###############################################
 
-Bump versions in DESCRIPTION and NEWS (without 'on CRAN date' text as that's not yet known) to even release number
+Bump version to even release number in 3 places :
+  1) DESCRIPTION
+  2) NEWS (without 'on CRAN date' text as that's not yet known)
+  3) dllVersion() at the end of init.c
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
 R CMD build .
 R CMD check --as-cran data.table_1.11.8.tar.gz

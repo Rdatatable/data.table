@@ -79,6 +79,7 @@ SEXP between();
 SEXP hasOpenMP();
 SEXP uniqueNlogical();
 SEXP frollfunR();
+SEXP dllVersion();
 
 // .Externals
 SEXP fastmean();
@@ -160,6 +161,7 @@ R_CallMethodDef callMethods[] = {
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
 {"CfrollfunR", (DL_FUNC) &frollfunR, -1},
+{"CdllVersion", (DL_FUNC) &dllVersion, -1},
 {NULL, NULL, 0}
 };
 
@@ -320,5 +322,9 @@ SEXP hasOpenMP() {
   #else
   return ScalarLogical(FALSE);
   #endif
+}
+
+SEXP dllVersion() {
+  return(ScalarString(mkChar("1.11.9")));
 }
 

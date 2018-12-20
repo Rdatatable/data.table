@@ -2,11 +2,16 @@
 
 .onLoad <- function(libname, pkgname) {
   # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
+  if (!exists("test.data.table", .GlobalEnv, inherits=FALSE) &&    # don't check in dev; just when package is installed
+      (dllV<-.Call(CdllVersion)) != (RV<-packageVersion("data.table"))) {
+    dll = if (.Platform$OS.type=="windows") "dll" else "so"
+    # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
+    stop("The datatable.",dll," version (",dllV,") does not match the data.table package's version (",RV,"). Please close all R sessions to release the ",toupper(dll)," and reinstall data.table in a fresh R session. The general issue that R's package installer can leave a package in a state that is apparently functional but with new R code calling old C code silently has been filed here: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Please comment there if this happens to you. This misatch between R and C code can happen with any package, not just data.table. It is just that data.table has added this check.")
+  }
   if (identical(tools::checkMD5sums("data.table"), FALSE)) {
     # checkMD5sums outputs messages using cat() and returns NA when MD5 file is not available. The MD5 file is included in the
     # binary builds that CRAN produces.
-    stop("This data.table installation appears to be faulty. Please close all R sessions and reinstall data.table.")
-    # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
+    stop("This data.table installation appears to be faulty; tools::checkMD5sums returned FALSE. Please close all R sessions and reinstall data.table.")
   }
 
   "Please read FAQ 2.23 (vignette('datatable-faq')) which explains in detail why data.table adds one for loop to the start of base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
