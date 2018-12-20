@@ -13193,6 +13193,12 @@ test(1971.2, DT[ , lapply(.SD, sum), .SDcols = patterns('^V[02468]', '^V[48]')],
 test(1971.3, DT[ , lapply(.SD, sum), .SDcols = !patterns('^c|i')],
      data.table(V1=-6.3, V2=-6.5, V3=1.3, V4=3.4, V5=-0.9, V6=-1.6, V7=-2, V8=-0.4, V9=6.1, V10=-1.8))
 
+# split.data.table now preserves attributes #2047
+dt = data.table(x=1:10, y=rep(1:2,each=5))
+setattr(dt, "a", 5)
+test(1972.1, attr(split(dt,rep(1:2,each=5))[[1]],"a"), 5)
+test(1972.2, attr(split(dt, by="y")[[1]],"a"), 5)
+
 
 ###################################
 #  Add new tests above this line  #

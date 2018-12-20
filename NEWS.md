@@ -42,6 +42,8 @@
 
 10. `setDTthreads()` gains `restore_after_fork=`, [#2885](https://github.com/Rdatatable/data.table/issues/2885). The default `NULL` leaves the internal option unchanged which by default is `TRUE`. `data.table` has always switched to single-threaded mode on fork. It used to restore multi-threading after a fork too but problems were reported on Mac and Intel OpenMP library (see 1.10.4 notes below). We are trying again thanks to suggestions and success reported by Kun Ren and Mark Klik in package `fst`. If you experience problems will multi threading after a fork, please restart R and call `setDTthreads(restore_after_fork=FALSE)`.
 
+11. `split` data.table method will now preserve attributes, closes [#2047](https://github.com/Rdatatable/data.table/issues/2047). Thanks to @caneff for reporting.
+
 #### BUG FIXES
 
 1. Providing an `i` subset expression when attempting to delete a column correctly failed with helpful error, but when the column was missing too created a new column full of `NULL` values, [#3089](https://github.com/Rdatatable/data.table/issues/3089). Thanks to Michael Chirico for reporting.
