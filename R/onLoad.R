@@ -2,7 +2,7 @@
 
 .onLoad <- function(libname, pkgname) {
   # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
-  if (!exists("test.data.table", .GlobalEnv, inherits=FALSE) &&    # don't check in dev; just when package is installed
+  if (!exists("test.data.table", .GlobalEnv, inherits=FALSE) &&    # check when installed package is loaded but skip when developing the package with cc()
       (dllV<-.Call(CdllVersion)) != (RV<-packageVersion("data.table"))) {
     dll = if (.Platform$OS.type=="windows") "dll" else "so"
     # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
