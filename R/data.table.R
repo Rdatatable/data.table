@@ -1024,7 +1024,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
               .SDcols = eval(colsub, parent.frame(), parent.frame())
             }
           }
-          if (!length(.SDcols)) stop("Empty .SDcols is not yet supported.")
           if (anyNA(.SDcols))
             stop(".SDcols missing at the following indices: ", brackify(which(is.na(.SDcols))))
           if (is.logical(.SDcols)) {
@@ -1032,7 +1031,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             ansvars = names(x)[ansvals]
           } else if (is.numeric(.SDcols)) {
             # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
-            if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
+            if (length(unique(sign(.SDcols))) > 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
             if (any(idx <- abs(.SDcols)>ncol(x) | abs(.SDcols)<1L))
               stop(".SDcols is numeric but out of bounds [1, ", ncol(x), "] at: ", brackify(which(idx)))
             if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
