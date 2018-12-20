@@ -12,7 +12,11 @@
 
 4. `NA` in `between()` and `%between%`'s `lower` and `upper` are now taken as missing bounds and return `TRUE` rather than than `NA`. This is now documented.
 
-5. `shift()` now interprets negative values of `n` naturally to mean the opposite `type=`, [#1708](https://github.com/Rdatatable/data.table/issues/1708). 
+5. `shift()` now interprets negative values of `n` to mean the opposite `type=`, [#1708](https://github.com/Rdatatable/data.table/issues/1708). When `give.names=TRUE` the result is named using a positive `n` with the appropriate `type=`. Alternatively, a new `type="shift"` names the result using a signed `n` and constant type.
+    ```R
+    shift(x, n=-5:5, give.names=TRUE)                =>  "_lead_5" ... "_lag_5"
+    shift(x, n=-5:5, type="shift", give.names=TRUE)  =>  "_shift_-5" ... "_shift_5"
+    ``` 
 
 5. `fwrite()` now accepts `matrix`, [#2613](https://github.com/Rdatatable/data.table/issues/2613). Thanks to Michael Chirico for the suggestion and Felipe Parages for implementing. For now matrix input is converted to data.table (which can be costly) before writing. 
 
