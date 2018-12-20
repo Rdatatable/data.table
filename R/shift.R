@@ -8,7 +8,17 @@ shift <- function(x, n=1L, fill=NA, type=c("lag", "lead", "shift"), give.names=F
       else nx = paste0("V", if (is.atomic(x)) 1L else seq_along(x))
     }
     else nx = names(x)
-    setattr(ans, "names", do.call("paste", c(CJ(nx, type, n, sorted=FALSE), sep="_")))
+    if (type!="shift") {
+      # flip type for negative n, #3223
+      neg = (n<0L)
+      if (type=="lead") neg[ n==0L ] = TRUE   # lead_0 should be named lag_0 for consistency
+      if (any(neg)) {
+        type = rep(type,length(n))
+        type[neg] = if (type[1L]=="lead") "lag" else "lead"
+        n[neg] = -n[neg]
+      }
+    }
+    setattr(ans, "names",  paste(rep(nx,each=length(n)), type, n, sep="_"))
   }
   ans
 }

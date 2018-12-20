@@ -12876,14 +12876,16 @@ test(1963.7, shift(DT, -1:1),
 ## some coverage tests for good measure
 test(1963.8, shift(DT$x, type = 'some_other_type'), error='should be one of.*lag.*lead')
 test(1963.9, shift(c(1+3i, 2-1i)), error = 'Unsupported type')
-test(1963.10, shift(DT, -1:1, type="shift", give.names = TRUE), # new type="shift" #3223
-     list(`x_shift_-1` = c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA),
-          x_shift_0 = 1:10, 
+test(1963.11, shift(DT, -1:1, type="shift", give.names = TRUE), # new type="shift" #3223
+     ans <- list(`x_shift_-1` = c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA),
+          x_shift_0 = 1:10,
           x_shift_1 = c(NA, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L),
           `y_shift_-1` = c(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L, NA),
           y_shift_0 = 10:1,
           y_shift_1 = c(NA, 10L, 9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L)))
-
+names(ans) <- c("x_lead_1", "x_lag_0", "x_lag_1", "y_lead_1", "y_lag_0", "y_lag_1")
+test(1963.12, shift(DT, -1:1, type="lag", give.names = TRUE), ans)
+test(1963.13, shift(DT, 1:-1, type="lead", give.names = TRUE), ans)
 
 
 # 0 column data.table should not have rownames, #3149
