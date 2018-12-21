@@ -243,8 +243,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   }
   .global$print=""
   if (missing(i) && missing(j)) {
-    if (!is.null(names(sys.call())))   # not using nargs() as it considers DT[,] to have 3 arguments, #3163
+    tt_isub = substitute(i)
+    tt_jsub = substitute(j)
+    if (!is.null(names(sys.call())) &&  # not relying on nargs() as it considers DT[,] to have 3 arguments, #3163
+        tryCatch(!is.symbol(tt_isub), error=function(e)TRUE) &&   # a symbol that inherits missingness from caller isn't missing for our purpose; test 1974
+        tryCatch(!is.symbol(tt_jsub), error=function(e)TRUE)) {
       stop("When i and j are both missing, no other argument should be used. Empty [] is useful after := to have the result displayed; e.g. DT[,col:=val][]")
+    }
     return(x)
   }
   if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
