@@ -273,7 +273,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if ((isTRUE(which)||is.na(which)) && !missing(j)) stop("which==",which," (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
   if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
   if (!with && missing(j)) stop("j must be provided when with=FALSE")
-  if (missing(i) && !missing(on)) stop("i must be provided when on= is provided")
+  if (missing(i) && !missing(on)) warning("ignoring on= because it is only relevant to i but i is not provided")
   if (!missing(keyby)) {
     if (!missing(by)) stop("Provide either 'by' or 'keyby' but not both")
     by=bysub=substitute(keyby)
