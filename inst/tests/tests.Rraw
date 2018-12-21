@@ -13206,6 +13206,16 @@ setattr(dt, "a", 5)
 test(1972.1, attr(split(dt,rep(1:2,each=5))[[1]],"a"), 5)
 test(1972.2, attr(split(dt, by="y")[[1]],"a"), 5)
 
+# select columns from i table; regression in dev caught by revdep testing, #3233
+DT = data.table(a=1:3, b=4:6, key="a")
+K = data.table(a=2:3, FOO=9L, BAR=12L)
+test(1973.1, DT[K, "FOO"], data.table(FOO=c(9L,9L)))
+test(1973.2, DT[K, "FOO", with=FALSE], data.table(FOO=c(9L,9L)))
+var = "b"
+test(1973.3, DT[K, c(var, "FOO")], c("b","FOO"))
+test(1973.4, DT[K, c(..var, "FOO")], ans<-data.table(b=5:6, FOO=9L))
+test(1973.5, DT[K, c(var, "FOO"), with=FALSE], ans)
+
 
 ###################################
 #  Add new tests above this line  #
