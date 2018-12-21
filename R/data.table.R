@@ -796,8 +796,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           ansvars = j   # x. and i. prefixes may be in here, and they'll be dealt with below
           # dups = FALSE here.. even if DT[, c("x", "x"), with=FALSE], we subset only the first.. No way to tell which one the OP wants without index.
           ansvals = chmatch(ansvars, names(x))
-          if (anyNA(ansvals)) stop("column(s) not found: ", paste(ansvars[is.na(ansvals)],collapse=", "))
+
         }
+        if (!length(ansvals)) return(null.data.table())
+        if (!anyNA(ansvals))  return(.Call(CsubsetDT, x, irows, ansvals))
+        if (!length(leftcols)) stop("column(s) not found: ", paste(ansvars[is.na(ansvals)],collapse=", "))
+        # else the NA are for join inherited scope (test 1973); leave to the R-level subsetting of i and x together further below
       } else if (is.numeric(j)) {
         j = as.integer(j)
         if (any(w<-(j>ncol(x)))) stop("Item ",which.first(w)," of j is ",j[which.first(w)]," which is outside the column number range [1,ncol=", ncol(x),"]")
@@ -807,9 +811,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (any(j<0L)) j = seq_len(ncol(x))[j]
         ansvars = names(x)[ if (notj) -j else j ]  # DT[,!"columntoexclude",with=FALSE] if a copy is needed, rather than :=NULL
         ansvals = if (notj) setdiff(seq_along(x), j) else j
-      } else stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
-      if (!length(ansvals)) return(null.data.table())
-      return(.Call(CsubsetDT, x, irows, ansvals))
+        if (!length(ansvals)) return(null.data.table())
+        return(.Call(CsubsetDT, x, irows, ansvals))
+      } else {
+        stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
+      }
     } else {   # with=TRUE and byjoin could be TRUE
       bynames = NULL
       allbyvars = NULL
