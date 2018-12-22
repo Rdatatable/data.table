@@ -53,19 +53,19 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   \code{column[row]} from \code{x}.
 
   When \code{algo="fast"} is used then any \code{NaN, +Inf, -Inf} is
-  treated as \code{NA}. For precise handling of non-finite values use
-  \code{algo="exact"}.
-  Argument \code{algo="exact"} will make rolling functions to perform extra
-  computation for floating point rounding error correction. This is useful
-  mostly when when input data has distant outlier. It also handles
-  \code{NaN, +Inf, -Inf} consistently to base R.
+  treated as \code{NA}.
+  Setting \code{algo="exact"} will make rolling functions to use
+  compute-intensive algorithm that suffers less from floating point
+  rounding error. It will additionally make extra pass to perform floating
+  point error correction. It also handles \code{NaN, +Inf, -Inf}
+  consistently to base R.
 
   Adaptive rolling functions are special cases where for each single
   observation has own corresponding rolling window width. Due to the logic
   of that function following restrictions apply:
   \itemize{
     \item{ \code{align} only \code{"right"}. }
-    \item{ if list of integer vectors is passed to \code{x} then all
+    \item{ if list of vectors is passed to \code{x} then all
       list vectors must have equal length. }
   }
 
@@ -79,7 +79,7 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
 }
 \note{
   Users coming from most popular package for rolling functions
-  \code{zoo} might expect following difference in \code{data.table}
+  \code{zoo} might expect following differences in \code{data.table}
   implementation.
   \itemize{
     \item{ rolling function will always return same length of results
