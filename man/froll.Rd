@@ -17,23 +17,23 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   verbose=getOption("datatable.verbose"))
 }
 \arguments{
-  \item{x}{ vector, list, data.frame or data.table of numeric fields. }
+  \item{x}{ vector, list, data.frame or data.table of numeric columns. }
   \item{n}{ integer vector, for adaptive rolling function also list of
     integer vectors, rolling window size. }
-  \item{fill}{ numeric, value to pad by, default \code{NA}. }
-  \item{algo}{ character, default \code{"fast"}. When set to \code{"exact"}
+  \item{fill}{ numeric, value to pad by. Default to \code{NA}. }
+  \item{algo}{ character, default \code{"fast"}. When set to \code{"exact"},
     then slower algorithm is used. It suffers less from floating point
-    rounding error, perform extra pass to adjust rounding error
-    correction and carefully handle all non-finite values. If available
+    rounding error, performs extra pass to adjust rounding error
+    correction and carefully handles all non-finite values. If available
     it will use multiple cores. See details for more information. }
-  \item{align}{ character, define if window frame covers preceding rows
-    \code{"right"}, following rows \code{"left"} or centered
-    \code{"center"}, default \code{"right"}. }
-  \item{na.rm}{ logical, should missing values be removed when
-    calculating window, default \code{FALSE}. For details on handling
-    other non finite values see details below. }
-  \item{hasNA}{ logical, if it is known that \code{x} contains \code{NA}
-    then setting to \code{TRUE} will speed up, default \code{NA}. }
+  \item{align}{ character, define if rolling window covers preceding rows
+    (\code{"right"}), following rows (\code{"left"}) or centered
+    (\code{"center"}). Default to \code{"right"}. }
+  \item{na.rm}{ logical. Should missing values be removed when
+    calculating window? Default to \code{FALSE}. For details on handling
+    other non-finite values, see details below. }
+  \item{hasNA}{ logical. If it is known that \code{x} contains \code{NA}
+    then setting to \code{TRUE} will speed up. Default to \code{NA}. }
   \item{adaptive}{ logical, should adaptive rolling function be
     calculated, default \code{FALSE}. See details below. }
   \item{verbose}{ logical, default \code{getOption("datatable.verbose")},
@@ -42,15 +42,15 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
 }
 \details{
   \code{froll*} functions accepts vectors, lists, data.frames or
-  data.tables. They always returns a list except when the input is a
+  data.tables. They always return a list except when the input is a
   \code{vector} and \code{length(n)==1} in which case a \code{vector}
-  is returned, for convenience. This is so that it can be used
-  conveniently within data.table's syntax.
+  is returned, for convenience. Thus rolling functions can be used
+  conveniently within data.table syntax.
 
-  Argument \code{n} allows multiple values to calculate multiple rolling
-  windows or if \code{adaptive=TRUE} then it expects a list, each list
-  element must be integer vector of window size corresponding to every
-  \code{column[row]} from \code{x}.
+  Argument \code{n} allows multiple values to apply rolling functions on
+  multiple window sizes. If \code{adaptive=TRUE}, then it expects a list.
+  Each list element must be integer vector of window sizes corresponding
+  to every single observation in each column.
 
   When \code{algo="fast"} is used then any \code{NaN, +Inf, -Inf} is
   treated as \code{NA}.
@@ -62,14 +62,14 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
 
   Adaptive rolling functions are special cases where for each single
   observation has own corresponding rolling window width. Due to the logic
-  of that function following restrictions apply:
+  of adaptive rolling functions, following restrictions apply:
   \itemize{
     \item{ \code{align} only \code{"right"}. }
-    \item{ if list of vectors is passed to \code{x} then all
+    \item{ if list of vectors is passed to \code{x}, then all
       list vectors must have equal length. }
   }
 
-  When multiple columns or multiple windows width are provided then they
+  When multiple columns or multiple windows width are provided, then they
   are run in parallel. Eventually nested parallelism occurs when
   \code{algo="exact"}, see examples.
 }
@@ -82,21 +82,27 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   \code{zoo} might expect following differences in \code{data.table}
   implementation.
   \itemize{
-    \item{ rolling function will always return same length of results
-      as provided input. }
-    \item{ \code{fill} by default \code{NA}. }
-    \item{ \code{fill} accept only constant values, no support for
-      \emph{na.locf} or other functions. }
-    \item{ \code{align} is by default \code{"right"}. }
-    \item{ \code{na.rm} is respected, no need to use other function
-      when having \code{NA} values. }
+    \item{ rolling function will always return result of the same length
+      as input. }
+    \item{ \code{fill} defaults to \code{NA}. }
+    \item{ \code{fill} accepts only constant values. It does not support
+      for \emph{na.locf} or other functions. }
+    \item{ \code{align} defaults to \code{"right"}. }
+    \item{ \code{na.rm} is respected, and other functions are not needed
+      when input contains \code{NA}. }
     \item{ integers are always coerced to double. }
-    \item{ when \code{adaptive=FALSE} (default) then \code{n} must be a
-      numeric vector, list is not accepted. }
-    \item{ when \code{adaptive=TRUE} then \code{n} must be vector of
+    \item{ when \code{adaptive=FALSE} (default), then \code{n} must be a
+      numeric vector. List is not accepted. }
+    \item{ when \code{adaptive=TRUE}, then \code{n} must be vector of
       length equal to \code{nrow(x)}, or list of such vectors. }
-    \item{ there is no \code{partial} window support. }
+    \item{ \code{partial} window feature is not supported, although it can
+      be accomplished by using \code{adaptive=TRUE}, see examples. }
   }
+  
+  Be aware that rolling functions operates on the physical order of input.
+  If the intent is to roll values in a vector by a logical window, for
+  example an hour, or a day, one has to ensure that there are not gaps in
+  input. For details see \href{issue Rdatatable/data.table#3241}{https://github.com/Rdatatable/data.table/issues/3241}.
 }
 \examples{
 d = as.data.table(list(1:6/2, 3:8/4))
@@ -108,7 +114,12 @@ frollmean(d, 3)
 frollmean(d[, .(V1)], c(3, 4))
 # multiple columns and multiple windows at once
 frollmean(d, c(3, 4))
-## three above are embarrassingly parallel using openmp
+## three calls above will use multiple cores when available
+
+# partial window of size 3
+an = function(n, len) c(seq.int(n), rep(n, len-n))
+n = an(3, nrow(d))
+frollmean(d, n, adaptive=TRUE)
 
 # performance vs exactness
 set.seed(108)
