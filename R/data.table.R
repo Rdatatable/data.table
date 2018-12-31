@@ -248,7 +248,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (!is.null(names(sys.call())) &&  # not relying on nargs() as it considers DT[,] to have 3 arguments, #3163
         tryCatch(!is.symbol(tt_isub), error=function(e)TRUE) &&   # a symbol that inherits missingness from caller isn't missing for our purpose; test 1974
         tryCatch(!is.symbol(tt_jsub), error=function(e)TRUE)) {
-      stop("When i and j are both missing, no other argument should be used. Empty [] is useful after := to have the result displayed; e.g. DT[,col:=val][]")
+      warning("i and j are both missing so ignoring the other arguments")
     }
     return(x)
   }

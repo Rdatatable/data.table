@@ -244,9 +244,25 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   }
 
   int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
-  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // just do alloc.col directly, eventually alloc.col can be deprecated.
-  copyMostAttrib(x, ans);  // other than R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
-               // so includes row.names (oddly, given other dims aren't) and "sorted", dealt with below
+  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here; eventually alloc.col can be deprecated.
+
+  if (length(getAttrib(x, R_ClassSymbol))==2) {
+    // standard c("data.table", "data.frame")
+    // user-defined attributes get copied as from v1.12.0
+    copyMostAttrib(x, ans);  // most means all except R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
+                             // includes row.names (oddly, given other dims aren't) and "sorted", dealt with below
+  } else {
+    //setAttrib(ans, R_ClassSymbol, getAttrib(x, R_ClassSymbol));
+    // Drop superclass attributes (by not calling copyMostAttrib) otherwise possibly now-invalid attributes could be retained. The superclass should
+    // deal with its attributes in its [ method. Possibly superclass should be dropped too and a plain c("data.table","data.frame") returned
+    // but #5296 requested retaining and tests 1228.* cover it.
+
+    SEXP tmp = PROTECT(allocVector(STRSXP, 2)); nprotect++;
+    SET_STRING_ELT(tmp, 0, mkChar("data.table"));
+    SET_STRING_ELT(tmp, 1, mkChar("data.frame"));
+    setAttrib(ans, R_ClassSymbol, tmp);
+  }
+
   SET_TRUELENGTH(ans, LENGTH(ans));
   SETLENGTH(ans, LENGTH(cols));
   int ansn;
