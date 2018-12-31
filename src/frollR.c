@@ -39,7 +39,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     error("adaptive must be TRUE or FALSE");
   bool badaptive = LOGICAL(adaptive)[0];
 
-  R_len_t nk;                                                   // number of rolling windows, for adaptive might be atomic to be wrapped into list
+  R_len_t nk = 0;                                               // number of rolling windows, for adaptive might be atomic to be wrapped into list, 0 for clang -Wall
   SEXP ik = R_NilValue;                                         // holds integer window width, if doing non-adaptive roll fun
   SEXP kl = R_NilValue;                                         // holds adaptive window width, if doing adaptive roll fun
   if (!badaptive) {                                             // validating n input for adaptive=FALSE
@@ -59,7 +59,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     while (i < nk && INTEGER(ik)[i] > 0) i++;
     if (i != nk)
       error("n must be positive integer values (> 0)");
-  } else if (badaptive) {                                       // validating n input for adaptive=TRUE
+  } else {                                                      // validating n input for adaptive=TRUE
     if (isVectorAtomic(k)) {                                    // if not-list then wrap into list
       kl = PROTECT(allocVector(VECSXP, 1)); protecti++;
       if (isInteger(k)) {                                       // check that k is integer vector
