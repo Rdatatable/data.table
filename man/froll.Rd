@@ -101,7 +101,7 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   
   Be aware that rolling functions operates on the physical order of input.
   If the intent is to roll values in a vector by a logical window, for
-  example an hour, or a day, one has to ensure that there are not gaps in
+  example an hour, or a day, one has to ensure that there are no gaps in
   input. For details see \href{issue Rdatatable/data.table#3241}{https://github.com/Rdatatable/data.table/issues/3241}.
 }
 \examples{
@@ -116,7 +116,7 @@ frollmean(d[, .(V1)], c(3, 4))
 frollmean(d, c(3, 4))
 ## three calls above will use multiple cores when available
 
-# partial window of size 3
+# partial window using adaptive rolling function
 an = function(n, len) c(seq.int(n), rep(n, len-n))
 n = an(3, nrow(d))
 frollmean(d, n, adaptive=TRUE)
