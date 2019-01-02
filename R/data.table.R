@@ -243,8 +243,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   }
   .global$print=""
   if (missing(i) && missing(j)) {
-    if (!is.null(names(sys.call())))   # not using nargs() as it considers DT[,] to have 3 arguments, #3163
-      stop("When i and j are both missing, no other argument should be used. Empty [] is useful after := to have the result displayed; e.g. DT[,col:=val][]")
+    tt_isub = substitute(i)
+    tt_jsub = substitute(j)
+    if (!is.null(names(sys.call())) &&  # not relying on nargs() as it considers DT[,] to have 3 arguments, #3163
+        tryCatch(!is.symbol(tt_isub), error=function(e)TRUE) &&   # a symbol that inherits missingness from caller isn't missing for our purpose; test 1974
+        tryCatch(!is.symbol(tt_jsub), error=function(e)TRUE)) {
+      warning("i and j are both missing so ignoring the other arguments")
+    }
     return(x)
   }
   if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
@@ -268,7 +273,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if ((isTRUE(which)||is.na(which)) && !missing(j)) stop("which==",which," (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
   if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
   if (!with && missing(j)) stop("j must be provided when with=FALSE")
-  if (missing(i) && !missing(on)) stop("i must be provided when on= is provided")
+  if (missing(i) && !missing(on)) warning("ignoring on= because it is only relevant to i but i is not provided")
   if (!missing(keyby)) {
     if (!missing(by)) stop("Provide either 'by' or 'keyby' but not both")
     by=bysub=substitute(keyby)

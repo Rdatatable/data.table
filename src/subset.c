@@ -244,9 +244,14 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   }
 
   int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
-  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // just do alloc.col directly, eventually alloc.col can be deprecated.
-  copyMostAttrib(x, ans);  // other than R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
-               // so includes row.names (oddly, given other dims aren't) and "sorted", dealt with below
+  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here; eventually alloc.col can be deprecated.
+
+  // user-defined and superclass attributes get copied as from v1.12.0
+  copyMostAttrib(x, ans);
+  // most means all except R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
+  // includes row.names (oddly, given other dims aren't) and "sorted" dealt with below
+  // class is also copied here which retains superclass name in class vector as has been the case for many years; e.g. tests 1228.* for #5296
+
   SET_TRUELENGTH(ans, LENGTH(ans));
   SETLENGTH(ans, LENGTH(cols));
   int ansn;

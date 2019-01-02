@@ -12490,10 +12490,10 @@ test(1948.15, DT[i, on = 1L], error = "'on' argument should be a named atomic ve
 
 # helpful error when on= is provided but not i, rather than silently ignoring on=
 DT = data.table(A=1:3)
-test(1949.1, DT[,,on=A], error="When i and j are both missing, no other argument should be used.")
-test(1949.2, DT[,1,on=A], error="i must be provided when on= is provided")
-test(1949.3, DT[on=A], error="When i and j are both missing, no other argument should be used.")
-test(1949.4, DT[,on=A], error="When i and j are both missing, no other argument should be used.")
+test(1949.1, DT[,,on=A], DT, warning="i and j are both missing so ignoring the other arguments")
+test(1949.2, DT[,1,on=A], DT, warning="ignoring on= because it is only relevant to i but i is not provided")
+test(1949.3, DT[on=A], DT, warning="i and j are both missing so ignoring the other arguments")
+test(1949.4, DT[,on=A], DT, warning="i and j are both missing so ignoring the other arguments")
 test(1949.5, DT[1,,with=FALSE], error="j must be provided when with=FALSE")
 test(1949.6, DT[], output="A.*1.*2.*3")   # no error
 test(1949.7, DT[,], output="A.*1.*2.*3")  # no error, #3163
@@ -13215,6 +13215,13 @@ var = "b"
 test(1973.3, DT[K, c(var, "FOO")], c("b","FOO"))
 test(1973.4, DT[K, c(..var, "FOO")], ans<-data.table(b=5:6, FOO=9L))
 test(1973.5, DT[K, c(var, "FOO"), with=FALSE], ans)
+
+# no error when j is supplied but inherits missingness from caller
+DT = data.table(a=1:3, b=4:6)
+f = function(cols) DT[,cols]
+test(1974.1, f(), output="a.*b.*3:.*6")
+f = function(cols) DT[,cols,with=FALSE]
+test(1974.2, f(), output="a.*b.*3:.*6")
 
 
 ###################################
