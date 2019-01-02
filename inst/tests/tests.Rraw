@@ -4152,9 +4152,9 @@ test(1227, data.table(id=1:3, d=strptime(c("06:02:36", "06:02:48", "07:03:12"), 
 # no longer retains class from v1.12.0 since attributes could not be valid; superclass's [ method should handle its attributes
 DT <- data.table(a=1:2,b=3:4)
 setattr(DT, "class", c("newclass", class(DT)))
-** test(1228.1, class(DT), class(DT[a>1]))
+test(1228.1, class(DT), class(DT[a>1]))
 test(1228.2, class(DT), class(DT[, list(b)]))
-** test(1228.3, class(DT), class(DT[, "b", with=FALSE]))
+test(1228.3, class(DT), class(DT[, "b", with=FALSE]))
 test(1228.4, class(DT), class(DT[, sum(b), by=a]))
 test(1228.5, class(DT), class(DT[a>1, sum(b), by=a]))
 test(1228.6, class(DT), class(DT[a>1, c:=sum(b), by=a]))

@@ -44,6 +44,13 @@
 
 11. `split` data.table method will now preserve attributes, closes [#2047](https://github.com/Rdatatable/data.table/issues/2047). Thanks to @caneff for reporting.
 
+12. `DT[i,j]` now retains user-defined and inherited attributes, [#995](https://github.com/Rdatatable/data.table/issues/995); e.g.
+    ```R
+    attr(datasets::BOD,"reference")                     # "A1.4, p. 270"
+    attr(as.data.table(datasets::BOD)[2],"reference")   # was NULL now "A1.4, p. 270"
+    ```
+    If a superclass defines attributes that may not be valid after a `[` subset then the superclass should implement its own `[` method to manage those after calling `NextMethod()`.
+
 #### BUG FIXES
 
 1. Providing an `i` subset expression when attempting to delete a column correctly failed with helpful error, but when the column was missing too created a new column full of `NULL` values, [#3089](https://github.com/Rdatatable/data.table/issues/3089). Thanks to Michael Chirico for reporting.
@@ -60,19 +67,13 @@
 
 7. `split.data.table()` failed if `DT` had a factor column named `"x"`, [#3151](https://github.com/Rdatatable/data.table/issues/3151). Thanks to @tdeenes for reporting and fixing.
 
-8. `DT[i,j]` now retains user-defined or inherited attributes; e.g.
-    ```R
-    attr(datasets::BOD,"reference")                     # "A1.4, p. 270"
-    attr(as.data.table(datasets::BOD)[2],"reference")   # was NULL now "A1.4, p. 270"
-    ```
+8. `fsetequal` now handles properly datasets having last column a character, closes [#2318](https://github.com/Rdatatable/data.table/issues/2318). Thanks to @pschil and @franknarf1 for reporting.
 
-9. `fsetequal` now handles properly datasets having last column a character, closes [#2318](https://github.com/Rdatatable/data.table/issues/2318). Thanks to @pschil and @franknarf1 for reporting.
+9. `DT[..., .SDcols=integer(0L)]` could fail, [#3185](https://github.com/Rdatatable/data.table/issues/3185). An empty `data.table` is now returned correctly.
 
-10. `DT[..., .SDcols=integer(0L)]` could fail, [#3185](https://github.com/Rdatatable/data.table/issues/3185). An empty `data.table` is now returned correctly.
+10. `as.data.table.default` method will now always copy its input, closes [#3230](https://github.com/Rdatatable/data.table/issues/3230). Thanks to @NikdAK for reporting.
 
-11. `as.data.table.default` method will now always copy its input, closes [#3230](https://github.com/Rdatatable/data.table/issues/3230). Thanks to @NikdAK for reporting.
-
-12. `DT[..., .SDcols=integer()]` failed with `.SDcols is numeric but has both +ve and -ve indices`, [#1789](https://github.com/Rdatatable/data.table/issues/1789) and [#3185](https://github.com/Rdatatable/data.table/issues/3185). It now functions as `.SDcols=character()` has done and creates an empty `.SD`. Thanks to Gabor Grothendieck and Hugh Parsonage for reporting. A related issue with empty `.SDcols` was fixed in development before release thanks to Kun Ren's testing, [#3211](https://github.com/Rdatatable/data.table/issues/3211).
+11. `DT[..., .SDcols=integer()]` failed with `.SDcols is numeric but has both +ve and -ve indices`, [#1789](https://github.com/Rdatatable/data.table/issues/1789) and [#3185](https://github.com/Rdatatable/data.table/issues/3185). It now functions as `.SDcols=character()` has done and creates an empty `.SD`. Thanks to Gabor Grothendieck and Hugh Parsonage for reporting. A related issue with empty `.SDcols` was fixed in development before release thanks to Kun Ren's testing, [#3211](https://github.com/Rdatatable/data.table/issues/3211).
 
 #### NOTES
 
