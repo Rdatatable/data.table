@@ -410,7 +410,8 @@ biocLite()   # keep repeating until returns with nothing left to do.   Note: hug
 
 avail = available.packages(repos=biocinstallRepos())   # includes CRAN at the end from getOption("repos")
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
-exclude = c("TCGAbiolinks")   # takes loo long: https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
+exclude = c("TCGAbiolinks", # takes loo long: https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
+            "facopy")       # fails for over a year and isn't getting fixed:  Error : object ‘setting.graph.attributes’ is not exported by 'namespace:DOSE'
 deps = deps[-match(exclude, deps)]
 table(avail[deps,"Repository"])
 length(deps)
