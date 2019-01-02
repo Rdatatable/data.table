@@ -20,7 +20,7 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   \item{x}{ vector, list, data.frame or data.table of numeric columns. }
   \item{n}{ integer vector, for adaptive rolling function also list of
     integer vectors, rolling window size. }
-  \item{fill}{ numeric, value to pad by. Default to \code{NA}. }
+  \item{fill}{ numeric, value to pad by. Defaults to \code{NA}. }
   \item{algo}{ character, default \code{"fast"}. When set to \code{"exact"},
     then slower algorithm is used. It suffers less from floating point
     rounding error, performs extra pass to adjust rounding error
@@ -28,12 +28,12 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
     it will use multiple cores. See details for more information. }
   \item{align}{ character, define if rolling window covers preceding rows
     (\code{"right"}), following rows (\code{"left"}) or centered
-    (\code{"center"}). Default to \code{"right"}. }
+    (\code{"center"}). Defaults to \code{"right"}. }
   \item{na.rm}{ logical. Should missing values be removed when
-    calculating window? Default to \code{FALSE}. For details on handling
+    calculating window? Defaults to \code{FALSE}. For details on handling
     other non-finite values, see details below. }
   \item{hasNA}{ logical. If it is known that \code{x} contains \code{NA}
-    then setting to \code{TRUE} will speed up. Default to \code{NA}. }
+    then setting to \code{TRUE} will speed up. Defaults to \code{NA}. }
   \item{adaptive}{ logical, should adaptive rolling function be
     calculated, default \code{FALSE}. See details below. }
   \item{verbose}{ logical, default \code{getOption("datatable.verbose")},
