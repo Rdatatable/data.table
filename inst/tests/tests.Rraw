@@ -13223,6 +13223,13 @@ test(1974.1, f(), output="a.*b.*3:.*6")
 f = function(cols) DT[,cols,with=FALSE]
 test(1974.2, f(), output="a.*b.*3:.*6")
 
+# na.rm=TRUE should remove NaN; a regression caught in dev 1.11.9 before release
+DT = data.table(id=INT(1,1,2,2,2), v=c(1.1,2.2,3.3,NaN,3.4))
+test(1975.1, DT[,sum(v),by=id], data.table(id=INT(1,2), V1=c(3.3,NaN)))
+test(1975.2, DT[,sum(v,na.rm=TRUE),by=id], data.table(id=INT(1,2), V1=c(3.3,6.7)))
+test(1975.3, DT[,mean(v),by=id], data.table(id=INT(1,2), V1=c(1.65,NaN)))
+test(1975.4, DT[,mean(v,na.rm=TRUE),by=id], data.table(id=INT(1,2), V1=c(1.65,3.35)))
+
 
 ###################################
 #  Add new tests above this line  #

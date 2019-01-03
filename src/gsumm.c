@@ -261,14 +261,14 @@ void *gather(SEXP x, bool *anyNA)
           for (int i=0; i<howMany; i++) {
             const double elem = my_x[i];
             my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
-            if (ISNA(elem)) my_anyNA = true;
+            if (ISNAN(elem)) my_anyNA = true;   // R's ISNAN includes NA; i.e. defined as C isnan with some platform specific differences (perhaps historic)
           }
         } else {
           const int *my_x = irows + b*batchSize;
           for (int i=0; i<howMany; i++) {
             double elem = thisx[ my_x[i]-1 ];
             my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
-            if (ISNA(elem)) my_anyNA = true;
+            if (ISNAN(elem)) my_anyNA = true;
           }
         }
         if (my_anyNA) *anyNA = true;
