@@ -49,6 +49,9 @@ grep "class *=" ./src/*.c    # quite a few but none global
 # Failed clang 3.9.1 -O3 due to this, I think.
 grep "&REAL" ./src/*.c
 
+# No [UN]PROTECT_PTR, #3232
+grep "PROTECT_PTR" ./src/*.c
+
 # No use of long long, instead use int64_t. TODO
 # grep "long long" ./src/*.c
 
@@ -564,10 +567,17 @@ out = function(fnam="~/fail.log") {
   }
 }
 
+# Once all issues resolved with CRAN packages, tackle long-term unfixed bioconductor packages as follows.
+# 1. Note down all error and warning bioc packages
+# 2. Revert to CRAN data.table :
+install.packages("data.table")
+run("bioc.fail")
+# 3. Email bioc maintainers again asking them to fix existing errors and warnings (usually unrelated to data.table)
 emails = gsub(">$","",gsub(".*<","", sapply(.fail.bioc, maintainer)))
 cat(emails,sep=";")
+# 4. Investigate the packages that reverting to CRAN data.table solved (diff between 1 and 2).
 
-# Investigate and fix the fails ...
+# Old commands before run() was expanded ...
 find . -name 00check.log -exec grep -H -B 20 "Status:.*ERROR" {} \;
 find . -name 00check.log | grep -E 'AFM|easycsv|...|optiSel|xgboost' | xargs grep -H . > /tmp/out.log
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
@@ -576,9 +586,6 @@ TZ='UTC' R CMD check <failing_package>.tar.gz
 R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails are really due to data.table
 TZ='UTC' R CMD check <failing_package>.tar.gz
 ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' parallel R CMD check &
-
-# Warning: replacing previous import robustbase::sigma by stats::sigma when loading VIM
-# Reinstalling robustbase fixed this warning. Even though it was up to date, reinstalling made a difference.
 
 
 ###############################################
