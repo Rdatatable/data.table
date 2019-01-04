@@ -102,7 +102,7 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   Be aware that rolling functions operates on the physical order of input.
   If the intent is to roll values in a vector by a logical window, for
   example an hour, or a day, one has to ensure that there are no gaps in
-  input. For details see \href{issue Rdatatable/data.table#3241}{https://github.com/Rdatatable/data.table/issues/3241}.
+  input. For details see \href{https://github.com/Rdatatable/data.table/issues/3241}{issue #3241}.
 }
 \examples{
 d = as.data.table(list(1:6/2, 3:8/4))
@@ -153,6 +153,6 @@ sapply(errs, format, scientific=FALSE) # roundoff
   \code{\link{shift}}, \code{\link{data.table}}
 }
 \references{
-  \href{Round-off error}{https://en.wikipedia.org/wiki/Round-off_error}
+  \href{https://en.wikipedia.org/wiki/Round-off_error}{Round-off error}
 }
 \keyword{ data }
