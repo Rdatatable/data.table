@@ -87,6 +87,8 @@
 
 5. `setDT()` improves feedback when passed a ragged list (i.e. where all columns in the list are not the same length), [#3121](https://github.com/Rdatatable/data.table/issues/3121). Thanks @chuk-yong for highlighting.
 
+6. The one and only usage of `UNPROTECT_PTR()` has been removed, [#3232](https://github.com/Rdatatable/data.table/issues/3232). Thanks to Tomas Kalibera's investigation and advice here: https://developer.r-project.org/Blog/public/2018/12/10/unprotecting-by-value/index.html
+
 
 ### Changes in v1.11.8  (30 Sep 2018)
 
