@@ -1965,7 +1965,7 @@ as.matrix.data.table <- function(x, rownames=NULL, rownames.value=NULL, ...) {
     rownames.value <- x[[rownames]]
     dm <- dim(x) - c(0, 1)
     cn <- names(x)[-rownames]
-    X <- x[, ..cn]
+    X <- x[, .SD, .SDcols = cn]
   } else {
     dm <- dim(x)
     cn <- names(x)
