@@ -386,6 +386,7 @@ sudo apt-get -y install gdal-bin libgeos-dev  # for rgdal/raster tested via lidR
 sudo apt-get build-dep r-cran-rsymphony   # for Rsymphony: coinor-libcgl-dev coinor-libclp-dev coinor-libcoinutils-dev coinor-libosi-dev coinor-libsymphony-dev
 sudo apt-get -y install libtesseract-dev libleptonica-dev tesseract-ocr-eng   # for tesseract
 sudo apt-get -y install libssl-dev libsasl2-dev
+sudo apt-get -y install biber   # for ctsem
 sudo R CMD javareconf
 # ENDIF
 
