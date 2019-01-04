@@ -13234,7 +13234,16 @@ test(1975.4, DT[,mean(v,na.rm=TRUE),by=id], data.table(id=INT(1,2), V1=c(1.65,3.
 DT = data.table(ID=INT(1,1,2,2,2), FOO=1:5, BAR=1:5)
 test(1976.1, DT[, length(rownames(.SD)), by=ID, .SDcols="FOO"], data.table(ID=1:2, V1=2:3))           # ok
 test(1976.2, DT[, {BA=1; length(rownames(.SD))}, by=ID, .SDcols="FOO"], data.table(ID=1:2, V1=2:3))   # ok
-test(1976.3, DT[, {BAR=1; length(rownames(.SD))}, by=ID, .SDcols="FOO"], data.table(ID=1:2, V1=2:3))  # BAR masks column name and affected rownames(.SD) in dev 1.11.9
+test(1976.3, DT[, {BAR=1; length(rownames(.SD))}, by=ID, .SDcols="FOO"], data.table(ID=1:2, V1=2:3))  # BAR masks column name which affected rownames(.SD) in dev 1.11.9
+
+# NA in join and remove character names too, #3245
+DT = data.table(ID=rep(c("A","B","C"),each=2), GRP=rep(1:3,each=2), X=c(1.1,2.2,3.3,4.4,5.5,6.6), key="ID")
+test(1977.1, DT["A"], data.table(ID="A", GRP=1L, X=c(1.1,2.2), key="ID"))
+test(1977.2, DT["A", -"GRP"], data.table(ID="A", X=c(1.1,2.2), key="ID"))
+test(1977.3, DT["D"], data.table(ID="D", GRP=NA_integer_, X=NA_real_, key="ID"))
+test(1977.4, DT["D", -"GRP"], data.table(ID="D", X=NA_real_, key="ID"))
+test(1977.5, DT["D", c("ID","GRP")], data.table(ID="D", GRP=NA_integer_, key="ID"))
+test(1977.6, DT[c("A","D"), c("ID","GRP")], data.table(ID=c("A","A","D"), GRP=INT(1,1,NA)))
 
 
 ###################################

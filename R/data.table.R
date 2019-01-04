@@ -801,12 +801,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           ansvars = j   # x. and i. prefixes may be in here, and they'll be dealt with below
           # dups = FALSE here.. even if DT[, c("x", "x"), with=FALSE], we subset only the first.. No way to tell which one the OP wants without index.
           ansvals = chmatch(ansvars, names(x))
-
         }
         if (!length(ansvals)) return(null.data.table())
-        if (!anyNA(ansvals))  return(.Call(CsubsetDT, x, irows, ansvals))
-        if (!length(leftcols)) stop("column(s) not found: ", paste(ansvars[is.na(ansvals)],collapse=", "))
-        # else the NA are for join inherited scope (test 1973); leave to the R-level subsetting of i and x together further below
+        if (!length(leftcols)) {
+          if (!anyNA(ansvals)) return(.Call(CsubsetDT, x, irows, ansvals))
+          else stop("column(s) not found: ", paste(ansvars[is.na(ansvals)],collapse=", "))
+        }
+        # else the NA in ansvals are for join inherited scope (test 1973), and NA could be in irows from join and data in i should be returned (test 1977)
+        #   in both cases leave to the R-level subsetting of i and x together further below
       } else if (is.numeric(j)) {
         j = as.integer(j)
         if (any(w<-(j>ncol(x)))) stop("Item ",which.first(w)," of j is ",j[which.first(w)]," which is outside the column number range [1,ncol=", ncol(x),"]")
