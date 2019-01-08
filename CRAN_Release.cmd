@@ -405,17 +405,14 @@ update.packages(ask=FALSE)
 install.packages("<pkg>", repos="http://cran.stat.ucla.edu/")
 update.packages(ask=FALSE)   # a repeat sometimes does more, keep repeating until none
 
-# Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
+# Follow: https://bioconductor.org/install
 # Ensure no library() call in .Rprofile, such as library(bit64)
-source("http://bioconductor.org/biocLite.R")
-biocLite()   # keep repeating until returns with nothing left to do.   Note: huge number of updates under R-devel (I assume that's false)
-# biocLite("BiocUpgrade")
-# This error means it's up to date: "Bioconductor version 3.4 cannot be upgraded with R version 3.3.2"
+BiocManager::install()  # rerun to confirm
+BiocManager::valid()
 
-avail = available.packages(repos=biocinstallRepos())   # includes CRAN at the end from getOption("repos")
+avail = available.packages(repos=BiocManager::repositories())  # includes CRAN at the end from getOption("repos"). And ensure latest Bioc version is in repo path here.
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
-exclude = c("TCGAbiolinks", # takes loo long: https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
-            "facopy")       # fails for over a year and isn't getting fixed:  Error : object ‘setting.graph.attributes’ is not exported by 'namespace:DOSE'
+exclude = c("TCGAbiolinks")  # takes loo long: https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
 deps = deps[-match(exclude, deps)]
 table(avail[deps,"Repository"])
 length(deps)
@@ -429,9 +426,8 @@ for (p in deps) {
       packageVersion(p) != avail[p,"Version"]) {
     system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version) to move its status() to not yet run
 
-    install.packages(p, repos=biocinstallRepos(), dependencies=TRUE)    # again, bioc repos includes CRAN here
+    install.packages(p, repos=BiocManager::repositories(), dependencies=TRUE)    # again, bioc repos includes CRAN here
     # To install its dependencies. The package itsef is installed superfluously here because the tar.gz will be passed to R CMD check.
-    # Not using biocLite() because it does not download dependencies and does not appear to pass dependencies= on.
     # If we did download.packages() first and then passed that tar.gz to install.packages(), repos= is set to NULL when installing from
     # local file, so dependencies=TRUE wouldn't know where to get the dependencies. Hence usig install.packages first with repos= set.
 
@@ -444,6 +440,7 @@ for (p in deps) {
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 length(deps)
+update.packages(repos=BiocManager::repositories())  # double-check all dependencies are latest too
 
 # Remove the tar.gz no longer needed :
 system("ls *.tar.gz | wc -l")
@@ -560,8 +557,14 @@ out = function(fnam="~/fail.log") {
   x = c(.fail.cran, .fail.bioc)
   cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
   cat(paste(x,collapse=" "), "\n")
-  cat(capture.output(sessionInfo()), "\n\n", file=fnam, sep="\n")
+  cat(capture.output(sessionInfo()), "\n", file=fnam, sep="\n")
+  cat("> BiocManager::install()\n", file=fnam, append=TRUE)
+  capture.output(BiocManager::install(), type="message", file=fnam, append=TRUE)
+  cat("> BiocManager::valid()\n", file=fnam, append=TRUE)
+  capture.output(ans<-BiocManager::valid(), type="message", file=fnam, append=TRUE)
+  cat(ans, "\n", file=fnam, append=TRUE, sep="\n")
   for (i in x) {
+    system(paste0("ls | grep '",i,".*tar.gz' >> ",fnam))
     system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))
     cat("\n\n", file=fnam, append=TRUE)
   }
