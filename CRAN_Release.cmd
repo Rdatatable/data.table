@@ -412,7 +412,7 @@ BiocManager::valid()
 
 avail = available.packages(repos=BiocManager::repositories())  # includes CRAN at the end from getOption("repos"). And ensure latest Bioc version is in repo path here.
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
-exclude = c("TCGAbiolinks")  # takes loo long: https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
+exclude = c("TCGAbiolinks")  # takes too long over 30mins: https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
 deps = deps[-match(exclude, deps)]
 table(avail[deps,"Repository"])
 length(deps)
@@ -542,7 +542,7 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
     cat("Proceed? (ctrl-c or enter)\n")
     scan(quiet=TRUE)
     for (i in x) system(paste0("rm -rf ./",i,".Rcheck"))
-    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(x,collapse="|"),"' | TZ='UTC' parallel R CMD check")
+    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(paste0(x,"_"),collapse="|"),"' | TZ='UTC' parallel R CMD check")
   }
   if (as.integer(system("ps -e | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
