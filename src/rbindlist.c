@@ -606,7 +606,6 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
   struct preprocessData data;
   Rboolean usenames, fill, to_copy = FALSE, coerced=FALSE, isidcol = !isNull(idcol);
   SEXP fnames = R_NilValue, findices = R_NilValue, f_ind = R_NilValue, ans, lf, li, target, thiscol, levels;
-  SEXP factorLevels = R_NilValue;
   R_len_t protecti=0;
 
   // first level of error checks
@@ -642,7 +641,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
     fnames = PROTECT(add_idcol(fnames, idcol, data.n_cols));
     protecti++;
   }
-  factorLevels = PROTECT(allocVector(VECSXP, data.lcount));
+  SEXP factorLevels = PROTECT(allocVector(VECSXP, data.lcount)); protecti++;
   Rboolean *isRowOrdered = (Rboolean *)R_alloc(data.lcount, sizeof(Rboolean));
   for (int i=0; i<data.lcount; i++) isRowOrdered[i] = FALSE;
 
@@ -757,7 +756,6 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
       UNPROTECT(2);  // finalFactorLevels, factorLangSxp
     }
   }
-  if (factorLevels != R_NilValue) UNPROTECT_PTR(factorLevels);
 
   // fix for #1432, + more efficient to move the logic to C
   if (isidcol) {

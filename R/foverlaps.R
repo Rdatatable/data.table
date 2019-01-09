@@ -1,8 +1,10 @@
-foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.y = key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=getOption("datatable.nomatch"), which = FALSE,  verbose=getOption("datatable.verbose")) {
+foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=getOption("datatable.nomatch"), which=FALSE, verbose=getOption("datatable.verbose")) {
 
   if (!is.data.table(y) || !is.data.table(x)) stop("y and x must both be data.tables. Use `setDT()` to convert list/data.frames to data.tables by reference or as.data.table() to convert to data.tables by copying.")
   maxgap = as.integer(maxgap); minoverlap = as.integer(minoverlap)
-  which = as.logical(which); nomatch = as.integer(nomatch)
+  which = as.logical(which)
+  if (is.null(nomatch)) nomatch = 0L
+  nomatch = as.integer(nomatch)
   if (!length(maxgap) || length(maxgap) != 1L || is.na(maxgap) || maxgap < 0L)
     stop("maxgap must be a non-negative integer value of length 1")
   if (!length(minoverlap) || length(minoverlap) != 1L || is.na(minoverlap) || minoverlap < 1L)
@@ -10,7 +12,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   if (!length(which) || length(which) != 1L || is.na(which))
     stop("which must be a logical vector of length 1. Either TRUE/FALSE")
   if (!length(nomatch) || length(nomatch) != 1L || (!is.na(nomatch) && nomatch!=0L))
-    stop("nomatch must either be NA or 0, or (ideally) NA_integer_ or 0L")
+    stop("nomatch must either be NA or NULL")
   type = match.arg(type)
   mult = match.arg(mult)
   if (type == "equal")
@@ -29,19 +31,17 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
   }
   if (is.numeric(by.y)) {
     if (any(by.y < 0L) || any(by.y > length(y)))
-      stop("Invalid numeric value for 'by.x'; it should be a vector with values 1 <= by.y <= length(y)")
+      stop("Invalid numeric value for 'by.y'; it should be a vector with values 1 <= by.y <= length(y)")
     by.y = names(y)[by.y]
   }
-  if (!length(by.x) || !is.character(by.x))
-    stop("A non-empty vector of column names is required for by.x")
-  if (!length(by.y) || !is.character(by.y))
-    stop("A non-empty vector of column names is required for by.y")
+  if (!is.character(by.x))
+    stop("A non-empty vector of column names or numbers is required for by.x")
+  if (!is.character(by.y))
+    stop("A non-empty vector of column names or numbers is required for by.y")
   if (!identical(by.y, key(y)[seq_along(by.y)]))
-    stop("The first ", length(by.y), " columns of y's key is not identical to the columns specified in by.y.")
+    stop("The first ", length(by.y), " columns of y's key must be identical to the columns specified in by.y.")
   if (anyNA(chmatch(by.x, names(x))))
     stop("Elements listed in 'by.x' must be valid names in data.table 'x'")
-  if (anyNA(chmatch(by.y, names(y))))
-    stop("Elements listed in 'by.y' must be valid names in data.table 'y'")
   if (anyDuplicated(by.x) || anyDuplicated(by.y))
     stop("Duplicate columns are not allowed in overlap joins. This may change in the future.")
   if (length(by.x) != length(by.y))
@@ -115,7 +115,7 @@ foverlaps <- function(x, y, by.x = if (!is.null(key(x))) key(x) else key(y), by.
     xx = .shallow(xx, cols, retain.key = FALSE)
     ans = bmerge(xx, ii, seq_along(xx), seq_along(xx), integer(0), mult=mult, ops=rep(1L, length(xx)), integer(0), 1L, verbose=verbose, ...)
     # vecseq part should never run here, but still...
-    if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL)
+    if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL) # nocov
   }
   indices <- function(x, y, intervals, ...) {
     if (type == "start") {

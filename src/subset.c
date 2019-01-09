@@ -229,8 +229,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   if (!length(x)) return(x);  // return empty list
 
   // check index once up front for 0 or NA, for branchless subsetVectorRaw which is repeated for each column
-  bool anyNA=false, orderedSubset=false;
-  if (check_idx(rows, length(VECTOR_ELT(x,0)), &anyNA, &orderedSubset) != NULL) {
+  bool anyNA=false, orderedSubset=true;   // true for when rows==null (meaning all rows)
+  if (!isNull(rows) && check_idx(rows, length(VECTOR_ELT(x,0)), &anyNA, &orderedSubset) != NULL) {
     SEXP max = PROTECT(ScalarInteger(length(VECTOR_ELT(x,0)))); nprotect++;
     rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE))); nprotect++;
     const char *err = check_idx(rows, length(VECTOR_ELT(x,0)), &anyNA, &orderedSubset);
@@ -242,20 +242,36 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     int this = INTEGER(cols)[i];
     if (this<1 || this>LENGTH(x)) error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
   }
-  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+64)); nprotect++;  // just do alloc.col directly, eventually alloc.col can be deprecated.
-  const int ansn = LENGTH(rows);  // has been checked not to contain zeros or negatives, so this length is the length of result
-  copyMostAttrib(x, ans);  // other than R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
-               // so includes row.names (oddly, given other dims aren't) and "sorted", dealt with below
+
+  int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
+  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here; eventually alloc.col can be deprecated.
+
+  // user-defined and superclass attributes get copied as from v1.12.0
+  copyMostAttrib(x, ans);
+  // most means all except R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
+  // includes row.names (oddly, given other dims aren't) and "sorted" dealt with below
+  // class is also copied here which retains superclass name in class vector as has been the case for many years; e.g. tests 1228.* for #5296
+
   SET_TRUELENGTH(ans, LENGTH(ans));
   SETLENGTH(ans, LENGTH(cols));
-  for (int i=0; i<LENGTH(cols); i++) {
-    SEXP source = VECTOR_ELT(x, INTEGER(cols)[i]-1);
-    SEXP target;
-    SET_VECTOR_ELT(ans, i, target=allocVector(TYPEOF(source), ansn));
-    copyMostAttrib(source, target);
-    subsetVectorRaw(target, source, rows, anyNA);  // parallel within column
+  int ansn;
+  if (isNull(rows)) {
+    ansn = LENGTH(VECTOR_ELT(x, 0));
+    for (int i=0; i<LENGTH(cols); i++) {
+      SET_VECTOR_ELT(ans, i, duplicate(VECTOR_ELT(x, INTEGER(cols)[i]-1)));
+      // materialize the column subset as we have always done for now, until REFCNT is on by default in R (TODO)
+    }
+  } else {
+    ansn = LENGTH(rows);  // has been checked not to contain zeros or negatives, so this length is the length of result
+    for (int i=0; i<LENGTH(cols); i++) {
+      SEXP source = VECTOR_ELT(x, INTEGER(cols)[i]-1);
+      SEXP target;
+      SET_VECTOR_ELT(ans, i, target=allocVector(TYPEOF(source), ansn));
+      copyMostAttrib(source, target);
+      subsetVectorRaw(target, source, rows, anyNA);  // parallel within column
+    }
   }
-  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+64)); nprotect++;
+  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+overAlloc)); nprotect++;
   SET_TRUELENGTH(tmp, LENGTH(tmp));
   SETLENGTH(tmp, LENGTH(cols));
   setAttrib(ans, R_NamesSymbol, tmp);
@@ -274,14 +290,13 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     SEXP in = PROTECT(chmatch(key,getAttrib(ans,R_NamesSymbol), 0, TRUE)); nprotect++; // (nomatch ignored when in=TRUE)
     int i = 0;  while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
     // i is now the keylen that can be kept. 2 lines above much easier in C than R
-    if (i==0) {
-      setAttrib(ans, sym_sorted, R_NilValue);
+    if (i==0 || !orderedSubset) {
       // clear key that was copied over by copyMostAttrib() above
+      setAttrib(ans, sym_sorted, R_NilValue);
     } else {
-      if (orderedSubset) {
-        setAttrib(ans, sym_sorted, tmp=allocVector(STRSXP, i));
-        for (int j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
-      }
+      // make a new key attribute; shorter if i<LENGTH(key) or same length copied so this key is safe to change by ref (setnames)
+      setAttrib(ans, sym_sorted, tmp=allocVector(STRSXP, i));
+      for (int j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
     }
   }
   setAttrib(ans, install(".data.table.locked"), R_NilValue);

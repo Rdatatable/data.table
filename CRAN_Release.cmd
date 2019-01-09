@@ -49,6 +49,9 @@ grep "class *=" ./src/*.c    # quite a few but none global
 # Failed clang 3.9.1 -O3 due to this, I think.
 grep "&REAL" ./src/*.c
 
+# No [UN]PROTECT_PTR, #3232
+grep "PROTECT_PTR" ./src/*.c
+
 # No use of long long, instead use int64_t. TODO
 # grep "long long" ./src/*.c
 
@@ -236,6 +239,8 @@ print(Sys.time()); require(data.table); print(Sys.time()); started.at<-proc.time
 
 # Investigated and ignore :
 # Tests 648 and 1262 (see their comments) have single precision issues under valgrind that don't occur on CRAN, even Solaris.
+# Old comment from gsumm.c ...  // long double usage here used to result in test 648 failing when run under valgrind
+                                // http://valgrind.org/docs/manual/manual-core.html#manual-core.limits"
 # Ignore all "set address range perms" warnings :
 #   http://stackoverflow.com/questions/13558067/what-does-this-valgrind-warning-mean-warning-set-address-range-perms
 # Ignore heap summaries around test 1705 and 1707/1708 due to the fork() test opening/closing, I guess.
@@ -383,6 +388,8 @@ sudo apt-get -y install python-dev  # for PythonInR
 sudo apt-get -y install gdal-bin libgeos-dev  # for rgdal/raster tested via lidR
 sudo apt-get build-dep r-cran-rsymphony   # for Rsymphony: coinor-libcgl-dev coinor-libclp-dev coinor-libcoinutils-dev coinor-libosi-dev coinor-libsymphony-dev
 sudo apt-get -y install libtesseract-dev libleptonica-dev tesseract-ocr-eng   # for tesseract
+sudo apt-get -y install libssl-dev libsasl2-dev
+sudo apt-get -y install biber   # for ctsem
 sudo R CMD javareconf
 # ENDIF
 
@@ -398,16 +405,14 @@ update.packages(ask=FALSE)
 install.packages("<pkg>", repos="http://cran.stat.ucla.edu/")
 update.packages(ask=FALSE)   # a repeat sometimes does more, keep repeating until none
 
-# Follow: https://bioconductor.org/install/#troubleshoot-biocinstaller
+# Follow: https://bioconductor.org/install
 # Ensure no library() call in .Rprofile, such as library(bit64)
-source("http://bioconductor.org/biocLite.R")
-biocLite()   # keep repeating until returns with nothing left to do.   Note: huge number of updates under R-devel (I assume that's false)
-# biocLite("BiocUpgrade")
-# This error means it's up to date: "Bioconductor version 3.4 cannot be upgraded with R version 3.3.2"
+BiocManager::install()  # rerun to confirm
+BiocManager::valid()
 
-avail = available.packages(repos=biocinstallRepos())   # includes CRAN at the end from getOption("repos")
+avail = available.packages(repos=BiocManager::repositories())  # includes CRAN at the end from getOption("repos"). And ensure latest Bioc version is in repo path here.
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
-exclude = c("TCGAbiolinks")   # takes loo long: https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
+exclude = c("TCGAbiolinks")  # takes loo long: https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
 deps = deps[-match(exclude, deps)]
 table(avail[deps,"Repository"])
 length(deps)
@@ -421,9 +426,8 @@ for (p in deps) {
       packageVersion(p) != avail[p,"Version"]) {
     system(paste0("rm -rf ", p, ".Rcheck"))  # Remove last check (of previous version) to move its status() to not yet run
 
-    install.packages(p, repos=biocinstallRepos(), dependencies=TRUE)    # again, bioc repos includes CRAN here
+    install.packages(p, repos=BiocManager::repositories(), dependencies=TRUE)    # again, bioc repos includes CRAN here
     # To install its dependencies. The package itsef is installed superfluously here because the tar.gz will be passed to R CMD check.
-    # Not using biocLite() because it does not download dependencies and does not appear to pass dependencies= on.
     # If we did download.packages() first and then passed that tar.gz to install.packages(), repos= is set to NULL when installing from
     # local file, so dependencies=TRUE wouldn't know where to get the dependencies. Hence usig install.packages first with repos= set.
 
@@ -436,6 +440,7 @@ for (p in deps) {
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 length(deps)
+update.packages(repos=BiocManager::repositories())  # double-check all dependencies are latest too
 
 # Remove the tar.gz no longer needed :
 system("ls *.tar.gz | wc -l")
@@ -552,17 +557,30 @@ out = function(fnam="~/fail.log") {
   x = c(.fail.cran, .fail.bioc)
   cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
   cat(paste(x,collapse=" "), "\n")
-  cat(capture.output(sessionInfo()), "\n\n", file=fnam, sep="\n")
+  cat(capture.output(sessionInfo()), "\n", file=fnam, sep="\n")
+  cat("> BiocManager::install()\n", file=fnam, append=TRUE)
+  capture.output(BiocManager::install(), type="message", file=fnam, append=TRUE)
+  cat("> BiocManager::valid()\n", file=fnam, append=TRUE)
+  capture.output(ans<-BiocManager::valid(), type="message", file=fnam, append=TRUE)
+  cat(ans, "\n", file=fnam, append=TRUE, sep="\n")
   for (i in x) {
+    system(paste0("ls | grep '",i,".*tar.gz' >> ",fnam))
     system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))
     cat("\n\n", file=fnam, append=TRUE)
   }
 }
 
+# Once all issues resolved with CRAN packages, tackle long-term unfixed bioconductor packages as follows.
+# 1. Note down all error and warning bioc packages
+# 2. Revert to CRAN data.table :
+install.packages("data.table")
+run("bioc.fail")
+# 3. Email bioc maintainers again asking them to fix existing errors and warnings (usually unrelated to data.table)
 emails = gsub(">$","",gsub(".*<","", sapply(.fail.bioc, maintainer)))
 cat(emails,sep=";")
+# 4. Investigate the packages that reverting to CRAN data.table solved (diff between 1 and 2).
 
-# Investigate and fix the fails ...
+# Old commands before run() was expanded ...
 find . -name 00check.log -exec grep -H -B 20 "Status:.*ERROR" {} \;
 find . -name 00check.log | grep -E 'AFM|easycsv|...|optiSel|xgboost' | xargs grep -H . > /tmp/out.log
 # For RxmSim: export JAVA_HOME=/usr/lib/jvm/java-8-oracle
@@ -572,15 +590,15 @@ R CMD INSTALL ~/data.table_1.9.6.tar.gz   # CRAN version to establish if fails a
 TZ='UTC' R CMD check <failing_package>.tar.gz
 ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' parallel R CMD check &
 
-# Warning: replacing previous import robustbase::sigma by stats::sigma when loading VIM
-# Reinstalling robustbase fixed this warning. Even though it was up to date, reinstalling made a difference.
-
 
 ###############################################
 #  Release to CRAN
 ###############################################
 
-Bump versions in DESCRIPTION and NEWS (without 'on CRAN date' text as that's not yet known) to even release number
+Bump version to even release number in 3 places :
+  1) DESCRIPTION
+  2) NEWS (without 'on CRAN date' text as that's not yet known)
+  3) dllVersion() at the end of init.c
 DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
 R CMD build .
 R CMD check --as-cran data.table_1.11.8.tar.gz
@@ -595,6 +613,7 @@ Thanks and best, Matt
 1. Bump version in DESCRIPTION to next odd number
 2. Add new heading in NEWS for the next dev version. Add "(date)" on the released heading if already accepted.
 3. Bump 3 version numbers in Makefile
+4. Bump dllVersion() in init.c
 Push to GitHub so dev can continue. Commit message format "1.11.8 submitted to CRAN. Bump to 1.11.9"
 Bump dev number text in homepage banner
 Cross fingers accepted first time. If not, push changes to devel and backport locally

@@ -10,13 +10,13 @@
 }
 
 \usage{
-shift(x, n=1L, fill=NA, type=c("lag", "lead"), give.names=FALSE)
+shift(x, n=1L, fill=NA, type=c("lag", "lead", "shift"), give.names=FALSE)
 }
 \arguments{
   \item{x}{ A vector, list, data.frame or data.table. }
-  \item{n}{ Non-negative integer vector denoting the offset to lead or lag the input by. To create multiple lead/lag vectors, provide multiple values to \code{n}. }
-  \item{fill}{ Value to pad by. }
-  \item{type}{ default is \code{"lag"}. The other possible value is \code{"lead"}. }
+  \item{n}{ integer vector denoting the offset by which to lead or lag the input. To create multiple lead/lag vectors, provide multiple values to \code{n}; negative values of \code{n} will "flip" the value of \code{type}, i.e., \code{n=-1} and \code{type='lead'} is the same as \code{n=1} and \code{type='lag'}. }
+  \item{fill}{ Value to use for padding when the window goes beyond the input length. }
+  \item{type}{ default is \code{"lag"} (look "backwards"). The other possible values \code{"lead"} (look "forwards") and \code{"shift"} (behave same as \code{"lag"} except given names). }
   \item{give.names}{default is \code{FALSE} which returns an unnamed list. When \code{TRUE}, names are automatically generated corresponding to \code{type} and \code{n}. }
 }
 \details{
@@ -37,6 +37,9 @@ x = 1:5
 shift(x, n=1, fill=NA, type="lag")
 # lag with n=1 and 2, and pad with 0 (returns list)
 shift(x, n=1:2, fill=0, type="lag")
+# getting a window by using positive and negative n:
+shift(x, n = -1:1)
+shift(x, n = -1:1, type = "shift", give.names = TRUE)
 
 # on data.tables
 DT = data.table(year=2010:2014, v1=runif(5), v2=1:5, v3=letters[1:5])

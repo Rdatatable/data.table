@@ -114,7 +114,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
         When \code{j} is a character vector of column names, a numeric vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is not necessary anymore to select columns dynamically. Note that \code{x[, cols]} is equivalent to \code{x[, ..cols]} and to \code{x[, cols, with=FALSE]} and to \code{x[, .SD, .SDcols=cols]}.}
 
-    \item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{NULL} (or \code{0} for backward compatibility) means no rows will be returned for that row of \code{i}. Use \code{options(datatable.nomatch=NULL)} to change the default value (used when \code{nomatch} is not supplied).}
+    \item{nomatch}{ When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{NULL} (or \code{0} for backward compatibility) means no rows will be returned for that row of \code{i}. Use \code{options(datatable.nomatch=NULL)} to change the default value (used when \code{nomatch} is not supplied).}
 
     \item{mult}{ When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}) and \emph{multiple} rows in \code{x} match to the row in \code{i}, \code{mult} controls which are returned: \code{"all"} (default), \code{"first"} or \code{"last"}.}
 
@@ -141,7 +141,11 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \item{.SDcols}{ Specifies the columns of \code{x} to be included in the special symbol \code{\link{.SD}} which stands for \code{Subset of data.table}. May be character column names or numeric positions. This is useful for speed when applying a function through a subset of (possible very many) columns; e.g., \code{DT[, lapply(.SD, sum), by="x,y", .SDcols=301:350]}.
 
-    For convenient interactive use, the form \code{startcol:endcol} is also allowed (as in \code{by}), e.g., \code{DT[, lapply(.SD, sum), by=x:y, .SDcols=a:f]}
+    For convenient interactive use, the form \code{startcol:endcol} is also allowed (as in \code{by}), e.g., \code{DT[, lapply(.SD, sum), by=x:y, .SDcols=a:f]}.
+
+    Inversion (column dropping instead of keeping) can be accomplished be prepending the argument with \code{!} or \code{-} (there's no difference between these), e.g. \code{.SDcols = !c('x', 'y')}.
+
+    Finally, you can filter columns to include in \code{.SD} according to regular expressions via \code{.SDcols=patterns(regex1, regex2, ...)}. The included columns will be the \emph{intersection} of the columns identified by each pattern; pattern unions can easily be specified with \code{|} in a regex. You can also invert a pattern as usual with \code{.SDcols = !patterns(...)}.
 }
   \item{verbose}{ \code{TRUE} turns on status and information messages to the console. Turn this on by default using \code{options(datatable.verbose=TRUE)}. The quantity and types of verbosity may be expanded in future.
 
@@ -357,16 +361,18 @@ kDT[!.("a")]                          # not join
 kDT[!"a"]                             # same
 
 # more on special symbols, see also ?"special-symbols"
-DT[.N]                                # last row
-DT[, .N]                              # total number of rows in DT
-DT[, .N, by=x]                        # number of rows in each group
-DT[, .SD, .SDcols=x:y]                # select columns 'x' and 'y'
-DT[, .SD[1]]                          # first row of all columns
-DT[, .SD[1], by=x]                    # first row of 'y' and 'v' for each group in 'x'
-DT[, c(.N, lapply(.SD, sum)), by=x]   # get rows *and* sum columns 'v' and 'y' by group
-DT[, .I[1], by=x]                     # row number in DT corresponding to each group
-DT[, grp := .GRP, by=x]               # add a group counter column
-X[, DT[.BY, y, on="x"], by=x]         # join within each group
+DT[.N]                                  # last row
+DT[, .N]                                # total number of rows in DT
+DT[, .N, by=x]                          # number of rows in each group
+DT[, .SD, .SDcols=x:y]                  # select columns 'x' through 'y'
+DT[ , .SD, .SDcols = !x:y]              # drop columns 'x' through 'y'
+DT[ , .SD, .SDcols = patterns('^[xv]')] # select columns matching '^x' or '^v'
+DT[, .SD[1]]                            # first row of all columns
+DT[, .SD[1], by=x]                      # first row of 'y' and 'v' for each group in 'x'
+DT[, c(.N, lapply(.SD, sum)), by=x]     # get rows *and* sum columns 'v' and 'y' by group
+DT[, .I[1], by=x]                       # row number in DT corresponding to each group
+DT[, grp := .GRP, by=x]                 # add a group counter column
+X[, DT[.BY, y, on="x"], by=x]           # join within each group
 
 # add/update/delete by reference (see ?assign)
 print(DT[, z:=42L])                   # add new column by reference

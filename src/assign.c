@@ -217,11 +217,24 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   return(dt);
 }
 
-SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP verbose) {
-  if (!isInteger(newncol) || length(newncol)!=1) error("n must be integer length 1. Has getOption('datatable.alloccol') somehow become unset?");
-  if (!isLogical(verbose) || length(verbose)!=1) error("verbose must be TRUE or FALSE");
+int checkOverAlloc(SEXP x)
+{
+  if (isNull(x))
+    error("Has getOption('datatable.alloccol') somehow become unset? It should be a number, by default 1024.");
+  if (!isInteger(x) && !isReal(x))
+    error("getOption('datatable.alloccol') should be a number, by default 1024. But its type is '%s'.", type2char(TYPEOF(x)));
+  if (LENGTH(x) != 1)
+    error("getOption('datatable.alloc') is a numeric vector ok but its length is %d. Its length should be 1.", LENGTH(x));
+  int ans = isInteger(x) ? INTEGER(x)[0] : (int)REAL(x)[0];
+  if (ans<0)
+    error("getOption('datatable.alloc')==%d.  It must be >=0 and not NA.", ans);
+  return ans;
+}
 
-  SEXP ans = PROTECT(alloccol(dt, INTEGER(newncol)[0], LOGICAL(verbose)[0]));
+SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
+  if (!isLogical(verbose) || length(verbose)!=1) error("verbose must be TRUE or FALSE");
+  int overAlloc = checkOverAlloc(overAllocArg);
+  SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, LOGICAL(verbose)[0]));
 
   for(R_len_t i = 0; i < LENGTH(ans); i++) {
     // clear the same excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #4890).
