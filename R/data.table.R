@@ -820,23 +820,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           j = JJ_seq[j]
         }
         if (!length(j)) return(null.data.table())
-<<<<<<< HEAD
         j = if (notj) -j else j
         ansvars = names(x)[j]  # DT[,!"columntoexclude",with=FALSE] if a copy is needed, rather than :=NULL
         ansvals = JJ_seq[j]
-      } else stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
-      if (!length(ansvals)) return(null.data.table())
-=======
-        if (any(j<0L) && any(j>0L)) stop("j mixes positives and negatives")
-        if (any(j<0L)) j = seq_len(ncol(x))[j]
-        ansvars = names(x)[ if (notj) -j else j ]  # DT[,!"columntoexclude",with=FALSE] if a copy is needed, rather than :=NULL
-        ansvals = if (notj) setdiff(seq_along(x), j) else j
         if (!length(ansvals)) return(null.data.table())
         return(.Call(CsubsetDT, x, irows, ansvals))
       } else {
         stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
       }
->>>>>>> 7a662249f1d7755179ce7ec2cddc5c3afdb6c951
     } else {   # with=TRUE and byjoin could be TRUE
       bynames = NULL
       allbyvars = NULL
@@ -2352,17 +2343,10 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
   }
   if (missing(by)) stop("Either 'by' or 'f' argument must be supplied")
   # check reserved column names during processing
-<<<<<<< HEAD
   if (".ll.tech.split" %chin% names(x)) stop("Column '.ll.tech.split' is reserved for split.data.table processing")
   if (".nm.tech.split" %chin% by) stop("Column '.nm.tech.split' is reserved for split.data.table processing")
   if (!all(by %chin% names(x))) stop("Argument 'by' must refer to column names in x")
   if (!all(by.atomic <- vapply_1b(by, function(.by) is.atomic(x[[.by]])))) stop("Argument 'by' must refer only to atomic-type columns, but the following columns are non-atomic: ", brackify(by[!by.atomic]))
-=======
-  if (".ll.tech.split" %chin% names(x)) stop("column '.ll.tech.split' is reserved for split.data.table processing")
-  if (".nm.tech.split" %chin% by) stop("column '.nm.tech.split' is reserved for split.data.table processing")
-  if (!all(by %chin% names(x))) stop("argument 'by' must refer to data.table column names")
-  if (!all(by.atomic <- vapply_1b(by, function(.by) is.atomic(x[[.by]])))) stop("argument 'by' must refer only to atomic type columns, classes of ", brackify(by[!by.atomic]), " columns are not atomic type")
->>>>>>> 7a662249f1d7755179ce7ec2cddc5c3afdb6c951
   # list of data.tables (flatten) or list of lists of ... data.tables
   make.levels = function(x, cols, sorted) {
     by.order = if (!sorted) x[, funique(.SD), .SDcols=cols] # remember order of data, only when not sorted=FALSE
