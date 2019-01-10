@@ -92,6 +92,8 @@
 
 6. The one and only usage of `UNPROTECT_PTR()` has been removed, [#3232](https://github.com/Rdatatable/data.table/issues/3232). Thanks to Tomas Kalibera's investigation and advice here: https://developer.r-project.org/Blog/public/2018/12/10/unprotecting-by-value/index.html
 
+7. `merge` method now retains class of first argument passed to method, close [#1378](https://github.com/Rdatatable/data.table/issues/1378). Thanks to @michaelquinn32 for reopening.
+
 
 ### Changes in v1.11.8  (30 Sep 2018)
 

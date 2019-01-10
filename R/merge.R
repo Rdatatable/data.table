@@ -4,6 +4,7 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     stop("Argument 'sort' should be logical TRUE/FALSE")
   if (!no.dups %in% c(TRUE, FALSE))
     stop("Argument 'no.dups' should be logical TRUE/FALSE")
+  class_x = class(x)
   if (!is.data.table(y)) {
     y = as.data.table(y)
     if (missing(by) && missing(by.x)) {
@@ -60,11 +61,11 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
     end[chmatch(dupkeyx, end, 0L)] = paste0(dupkeyx, suffixes[2L])
   }
 
-  dt = y[x,nomatch = if (all.x) NA else 0L,on=by,allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
+  dt = y[x, nomatch = if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
 
   if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed
     # Perhaps not very commonly used, so not a huge deal that the join is redone here.
-    missingyidx = y[!x,which=TRUE,on=by,allow.cartesian=allow.cartesian]
+    missingyidx = y[!x, which=TRUE, on=by, allow.cartesian=allow.cartesian]
     if (length(missingyidx)) {
       yy = y[missingyidx]
       othercolsx = setdiff(names(x), by)
@@ -95,9 +96,7 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
             " are duplicated in the result")
   }
 
-  # merge resets class, #1378. X[Y] is quite clear that X is being *subset* by Y,
-  # makes sense to therefore retain X's class, unlike `merge`. Hard to tell what
-  # class to retain for *full join* for example.
-  setattr(dt, 'class', c("data.table", "data.frame"))
+  # merge retain class of first argument that resulted dispatch to this method #1378
+  setattr(dt, "class", class_x)
   dt
 }
