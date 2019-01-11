@@ -175,6 +175,7 @@ R CMD check data.table_1.11.7.tar.gz
 cd ~/build
 wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
 rm -rf R-devel
+rm -rf R-devel-strict
 tar xvf R-devel.tar.gz
 mv R-devel R-devel-strict
 cd R-devel-strict    # important to change directory name before building not after because the path is baked into the build, iiuc
@@ -194,13 +195,13 @@ cd R-devel-strict    # important to change directory name before building not af
 make
 alias Rdevel-strict='~/build/R-devel-strict/bin/R --vanilla'
 cd ~/GitHub/data.table
-## edit ~/.R/Makevars and activate "CFLAGS=-O0 -g" there to trace
-Rdevel-strict CMD INSTALL data.table_1.11.8.tar.gz
+Rdevel-strict CMD INSTALL data.table_1.11.9.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel-strict
 install.packages(c("bit64","xts","nanotime","R.utils"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
 require(data.table)
 test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
+# If any problems, edit ~/.R/Makevars and activate "CFLAGS=-O0 -g" to trace. Rerun 'Rdevel-strict CMD INSTALL' and rerun tests.
 for (i in 1:100) if (!test.data.table()) break  # try several runs; e.g a few tests generate data with a non-fixed random seed
 # gctorture(TRUE)      # very slow, many days
 gctorture2(step=100)   # [12-18hrs] under ASAN, UBSAN and --strict-barrier
