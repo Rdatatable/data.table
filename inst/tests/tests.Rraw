@@ -12614,6 +12614,9 @@ DT = data.table(
             2.5, 3, 3, 3, 3, 3, 3, 2, 2.5, 3, 3)
 )
 ans = groupingsets(DT[ , .(amount, value)], j = 5, by = character(0L), sets = list(character()), id=TRUE)
+# this test covers #3267 as well -- internal logic here
+#   relies on an edge case of strtoi to have the same result across platforms;
+#   side-stepped that edge case internally now
 test(1960, ans, data.table(grouping=0L, V1=5))
 
 # order of cube results consistent to postgresql docs, #3179

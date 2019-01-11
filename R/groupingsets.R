@@ -107,7 +107,9 @@ groupingsets.data.table <- function(x, j, by, sets, .SDcols, id = FALSE, jj, ...
     }
     if (id) {
       # integer bit mask of aggregation levels: http://www.postgresql.org/docs/9.5/static/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE
-      set(r, j = "grouping", value = strtoi(paste(c("1", "0")[by %chin% by.set + 1L], collapse=""), base=2L))
+      # 3267: strtoi("", base = 2L) output apparently unstable across platforms
+      i_str = paste(c("1", "0")[by %chin% by.set + 1L], collapse="")
+      set(r, j = "grouping", value = if (nzchar(i_str)) strtoi(i_str, base=2L) else 0L)
     }
     if (length(int64.by.cols)) {
       # workaround for rbindlist fill=TRUE on integer64 #1459
