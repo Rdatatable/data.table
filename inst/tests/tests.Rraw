@@ -10018,7 +10018,8 @@ ans = c("V1","5.123456789e+300","-5.123456789e+300",
 #     a problem with the test mechanism itself or something else strange or unexpected
 # Exactly the same binary representation on both linux and windows (so any differences in
 # output are not because the value itself is stored differently) :
-test(1729.9, binary(DT[[1]]),
+if (capabilities()["long.double"]) {  #3258
+  test(1729.9, binary(DT[[1]]),
   c("0 11111100101 111010011010000100010111101110000100 11110100 00000100",
     "1 11111100101 111010011010000100010111101110000100 11110100 00000100",
     "0 00000001001 110000010110110001011100010100100101 00110101 01110101",
@@ -10027,6 +10028,9 @@ test(1729.9, binary(DT[[1]]),
     "0 11111110100 010111011111100101001110101100000011 01101011 10101100",
     "0 00000001010 000101000110010100110011101010000110 00111110 01010001",
     "0 11111110100 011001101011100100100011110110110000 01001110 01011101"))
+} else {
+  cat('Skipped test 1729.9 due to capabilities()["long.double"] == FALSE\n');
+}
 test(1729.11, fwrite(DT,na=""), output=ans)
 test(1729.12, write.csv(DT,row.names=FALSE,quote=FALSE), output=ans)
 DT = data.table(unlist(.Machine[c("double.eps","double.neg.eps","double.xmin","double.xmax")]))
@@ -11174,12 +11178,16 @@ test(1830.5, identical(
 test(1830.6, identical(
   fread("E\n0e0\n#DIV/0!\n#VALUE!\n#NULL!\n#NAME?\n#NUM!\n#REF!\n#N/A\n1e0\n"),
   data.table(E=c(0, NaN, NaN, NA, NA, NA, NA, NA, 1))))
-test(1830.7, identical(
-  fread("F\n1.1\n+1.333333333333333\n5.9e300\n45609E11\n-00890.e-003\n"),
-  data.table(F=c(1.1, 1.333333333333333, 5.9e300, 45609e11, -890e-3))))
-test(1830.8, identical(
-  fread("G\n0.000000000000000000000000000000000000000000000000000000000000449548\n"),
-  data.table(G=c(4.49548e-61))))
+if (capabilities()["long.double"]) {  #3258
+  test(1830.7, identical(
+    fread("F\n1.1\n+1.333333333333333\n5.9e300\n45609E11\n-00890.e-003\n"),
+    data.table(F=c(1.1, 1.333333333333333, 5.9e300, 45609e11, -890e-3))))
+  test(1830.8, identical(
+    fread("G\n0.000000000000000000000000000000000000000000000000000000000000449548\n"),
+    data.table(G=c(4.49548e-61))))
+} else {
+  cat('Skipped tests 1830.7 and 1830.8 due to capabilities()["long.double"] == FALSE\n');
+}
 
 # Test that integers just above 128 or 256 characters in length parse as strings, not as integers/floats
 # This guards against potential overflows in the count of digits
