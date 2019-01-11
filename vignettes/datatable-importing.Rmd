@@ -171,7 +171,7 @@ In this case, the un-exported function `[.data.table` will revert to calling `[.
 
 If this is anyway your preferred approach to package development, please define `.datatable.aware = TRUE` anywhere in your R source code (no need to export). This tells `data.table` that you as a package developer have designed your code to intentionally rely on `data.table` functionality even though it may not be obvious from inspecting your `NAMESPACE` file.
 
-`data.table` determines on the fly whether the calling function is aware it's tapping into `data.table` with the internal `cedta` function (**C**alling **E**nvironment is **D**ata **T**able **A**ware), which, beyond checking `the `?getNamespaceImports` for your package, also checks the existence of this variable (among other things).
+`data.table` determines on the fly whether the calling function is aware it's tapping into `data.table` with the internal `cedta` function (**C**alling **E**nvironment is **D**ata **T**able **A**ware), which, beyond checking the `?getNamespaceImports` for your package, also checks the existence of this variable (among other things).
 
 ## Further information on dependencies
 
