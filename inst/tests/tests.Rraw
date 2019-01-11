@@ -12602,7 +12602,6 @@ DT = data.table(
             2.5, 3, 3, 3, 3, 3, 3, 2, 2.5, 3, 3)
 )
 ans = groupingsets(DT[ , .(amount, value)], j = 5, by = character(0L), sets = list(character()), id=TRUE)
-# *** STILL ERRORING ON MY MACHINE... REPORT.... ***
 test(1960, ans, data.table(grouping=0L, V1=5))
 
 # order of cube results consistent to postgresql docs, #3179
@@ -13287,9 +13286,6 @@ test(1978.9, DT[ , sum(a), by = .(1, 1:2)],
 ## stop("When 'by' or 'keyby' is list() we expect something inside the brackets")
 ## test(1978.10, DT[ , sum(a), by = .()]
 
-# ** should be catching .I disallowed for grouping...
-# setnames(DT, 'c', '.I')
-# DT[ , sum(a), by = .(.I)]
 
 opt = options('datatable.optimize' = Inf)
 test(1978.11, DT[ , 1, by = .(a %% 2), verbose = TRUE],
@@ -13303,10 +13299,6 @@ test(1978.12, DT[ , g := sum(a), keyby = f, verbose = TRUE][ , sum(g)], 275L,
 
 test(1978.13, as.matrix(DT, rownames = character(0L)),
      error = 'length(rownames)==0 but should be')
-
-## ** IMPOSSIBLE BRANCH OF as.matrix.data.table? **
-## if (length(dj <- dim(xj)) == 2L && dj[2L] > 1L) {
-##    if (inherits(xj, "data.table"))
 
 test(1978.14, DT[matrix(1, 1), 1] <- 4,
      error = 'When i is a matrix in DT[i]<-value syntax')
