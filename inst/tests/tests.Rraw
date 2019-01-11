@@ -2665,9 +2665,9 @@ test(955, fread(input, colClasses=list(character="C",double="A")), data.table(A=
 test(956, fread(input, colClasses=list(character=2:3,double="A")), data.table(A=c(1.0,2.0),B=c("foo","bar"),C=c("3.140","6.28000")))
 test(957, fread(input, colClasses=list(character=1:3)), data.table(A=c("01","002"),B=c("foo","bar"),C=c("3.140","6.28000")))
 test(958, fread(input, colClasses="character"), data.table(A=c("01","002"),B=c("foo","bar"),C=c("3.140","6.28000")))
-test(959.1, fread(input, colClasses=c("character","double","numeric"), verbose=TRUE),
+test(959.1, fread(input, colClasses=c("character","double","numeric")),
             data.table(A=c("01","002"), B=c("foo","bar"), C=c(3.14,6.28)),
-            output = "Attempt.*column 2 <<B>>.*inherent.*'string'.*down to.*'float64'")
+            warning = "Attempt.*column 2 <<B>>.*inherent.*'string'.*down to.*'float64'")
 test(959.2, fread(input, colClasses=c("character",NA,"numeric")),
             data.table(A=c("01","002"),B=c("foo","bar"),C=c(3.14,6.28)))
 test(960, fread(input, colClasses=c("character","double")),
@@ -11123,7 +11123,20 @@ test(1824, fread("A,B\n2,384325987234905827340958734572934\n"), data.table(A=2L,
 test(1825.1, fread('A,B\n"1","2"', colClasses = "integer"), data.table(A=1L, B=2L))
 test(1825.2, fread('A,B\n"1","2"', colClasses = "character"), data.table(A="1", B="2"))
 test(1825.3, fread('A,B\n"1","2"', colClasses = "numeric"), data.table(A=1.0, B=2.0))
-test(1825.4, fread("A,B\n1,TRUE", colClasses=c("integer", "logical")), data.table(A=1L, B=TRUE))  #2766
+test(1825.4, fread("A,B\n1,TRUE", colClasses=c("integer", "logical")), data.table(A=1L, B=TRUE))  # 2766
+str <- "x1,x2,x3,x4,x5\n1,2,1.5,T,cc\n3,4,2.5,F,ff"                                               # 2922
+test(1825.5, fread(str),                                                                          data.table(x1=INT(1,3), x2=INT(2,4), x3=c(1.5,2.5), x4=c("T","F"), x5=c("cc","ff")))
+test(1825.6, fread(str, colClasses=c("integer","numeric","numeric","integer","character")),
+             ans<-data.table(x1=INT(1,3), x2=c(2,4),   x3=c(1.5,2.5), x4=c("T","F"), x5=c("cc","ff")),
+             warning="Attempt to override column 4 <<x4>> of inherent type 'string' down to 'int32' ignored. Only overrides to a higher type are currently supported.")
+test(1825.7, fread(str, colClasses=c("integer","numeric","numeric","logical","character")),       ans, warning="Attempt.*column 4.*'string'.*'bool8' ignored.")
+test(1825.8, fread(str, colClasses=c("integer", "numeric", "numeric", "character", "character")), ans)
+test(1825.9, fread(str, colClasses=c("integer", "NULL", "numeric", "character", "character")), data.table(x1=INT(1,3), x3=c(1.5,2.5), x4=c("T","F"), x5=c("cc","ff")))
+test(1825.11, fread(str, colClasses="NULL"), error="colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing")
+test(1825.12, fread("a,b,c\n1,2,3.0\n2,3,4.5", colClasses = c("integer", "integer", "integer")), # 2863
+              data.table(a=1:2, b=2:3, c=c(3,4.5)),
+              warning="Attempt to override column 3 <<c>> of inherent type 'float64' down to 'int32'")
+test(1825.13, fread("a,b,c\n1,2,3.0\n2,3,4.5", colClasses=list(NULL="b")), data.table(a=1:2, c=c(3,4.5)))
 
 # issue 2351
 set.seed(1)

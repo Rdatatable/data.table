@@ -1903,18 +1903,22 @@ int freadMain(freadMainArgs _args) {
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
+    if (type[j]==CT_DROP) { size[j]=0; ndrop++; continue; }
+    if (type[j]<tmpType[j]) {
+      if (strcmp(typeName[tmpType[j]], typeName[type[j]]) != 0) {
+        DTWARN("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. " \
+               "If this was intended, please coerce to the lower type afterwards.",
+               j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
+      }
+      type[j] = tmpType[j];
+      // TODO: apply overrides to lower type afterwards and warn about the loss of accuracy then (if any); e.g. "4.0" would be fine to coerce to integer with no warning since
+      // no loss of accuracy but must be read as double for now in case "4.3" occurs out of sample to know if warning about accuracy is needed afterwards.
+    }
+    nUserBumped += type[j]>tmpType[j];
     size[j] = typeSize[type[j]];
     rowSize1 += (size[j] & 1);  // only works if all sizes are powers of 2
     rowSize4 += (size[j] & 4);
     rowSize8 += (size[j] & 8);
-    if (type[j]==CT_DROP) { ndrop++; continue; }
-    if (type[j]<tmpType[j]) {
-      if (verbose) DTPRINT("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' which will lose accuracy. " \
-           "If this was intended, please coerce to the lower type afterwards. Only overrides to a higher type are permitted.",
-           j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
-      type[j] = tmpType[j];
-    }
-    nUserBumped += type[j]>tmpType[j];
     if (type[j] == CT_STRING) nStringCols++; else nNonStringCols++;
   }
   if (verbose) DTPRINT("  After %d type and %d drop user overrides : %s\n", nUserBumped, ndrop, typesAsString(ncol));
