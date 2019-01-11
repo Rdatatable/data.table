@@ -6,7 +6,6 @@ sudo apt-get update
 sudo apt-get upgrade
 R
 update.packages(ask=FALSE)
-# See here for getting R.oo to install: https://github.com/HenrikBengtsson/R.utils/issues/29
 q("no")
 
 # Ensure latest version of R otherwise problems with CRAN not finding dependents that depend on latest R
@@ -107,15 +106,15 @@ test.data.table()
 install.packages("xml2")   # to check the 150 URLs in NEWS.md under --as-cran below
 q("no")
 R CMD build .
-R CMD check data.table_1.11.7.tar.gz --as-cran
-R CMD INSTALL data.table_1.11.7.tar.gz
+R CMD check data.table_1.11.9.tar.gz --as-cran
+R CMD INSTALL data.table_1.11.9.tar.gz
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.11.7.tar.gz
+R CMD check data.table_1.11.9.tar.gz
 rm ~/.Renviron
 
 R
@@ -146,7 +145,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.11.7.tar.gz
+R310 CMD INSTALL ./data.table_1.11.9.tar.gz
 R310
 require(data.table)
 test.data.table()
@@ -158,7 +157,7 @@ test.data.table()
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.11.7.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.11.9.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -166,7 +165,7 @@ q("no")
 vi ~/.R/Makevars
 # revert change above
 R CMD build .
-R CMD check data.table_1.11.7.tar.gz
+R CMD check data.table_1.11.9.tar.gz
 
 #####################################################
 #  R-devel with UBSAN, ASAN and strict-barrier on too
@@ -202,7 +201,7 @@ install.packages(c("bit64","xts","nanotime","R.utils"), repos="http://cloud.r-pr
 require(data.table)
 test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
 # If any problems, edit ~/.R/Makevars and activate "CFLAGS=-O0 -g" to trace. Rerun 'Rdevel-strict CMD INSTALL' and rerun tests.
-for (i in 1:100) if (!test.data.table()) break  # try several runs; e.g a few tests generate data with a non-fixed random seed
+for (i in 1:10) if (!test.data.table()) break  # try several runs maybe even 100; e.g a few tests generate data with a non-fixed random seed
 # gctorture(TRUE)      # very slow, many days
 gctorture2(step=100)   # [12-18hrs] under ASAN, UBSAN and --strict-barrier
 print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
@@ -231,7 +230,7 @@ cd R-devel
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-Rdevel CMD INSTALL data.table_1.11.3.tar.gz
+Rdevel CMD INSTALL data.table_1.11.9.tar.gz
 Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)
@@ -273,7 +272,7 @@ There are some things to overcome to achieve compile without USE_RINTERNALS, tho
 ## Rdevel
 ## install.packages("bit64")
 ## q("no")
-## Rdevel CMD INSTALL ~/data.table_1.9.9.tar.gz
+## Rdevel CMD INSTALL ~/data.table_1.11.9.tar.gz
 ## Rdevel
 ## .Machine$sizeof.longdouble   # check 0
 ## require(data.table)
@@ -287,13 +286,14 @@ There are some things to overcome to achieve compile without USE_RINTERNALS, tho
 cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
-echo 'install.packages("~/GitHub/data.table/data.table_1.11.7.tar.gz",repos=NULL)' | ./bin/R --slave
+# edit ~/.R/Makevars to set CFLAGS=-O0 -g so that rchk can provide source line numbers
+echo 'install.packages("~/GitHub/data.table/data.table_1.11.9.tar.gz",repos=NULL)' | ./bin/R --slave
 ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
 # keep running and rerunning locally until all problems cease.
 #   rchk has an internal stack which can exhaust. Clearing the current set of problems (e.g. as displayed
 #   on CRAN) is not sufficient because new problems can be found because it didn't get that far before.
-#   hence repeating locally until clear is necessary.
+#   Hence repeating locally until clear is necessary.
 
 
 ###############################################

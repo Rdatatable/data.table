@@ -175,14 +175,15 @@ if (loaded[["parallel"]]) {
         setDTthreads(threads)
         invisible(mclapply(lx, function(x) fsort(x), mc.cores = mc.cores))
       }
+      threadsBefore = getDTthreads()
       f(1, 1) # was always ok
       f(2, 1) # was always ok
       f(1, 2) # was always ok
       f(2, 2) # Used to hang. Now should not because data.table auto switches to single threaded
               # Commenting out avoid_openmp_hang_within_fork() confirms this test catches catches the hang
-      test(12.1, getDTthreads()==1) # Stays in single-threaded mode after returning from mclapply's fork
+      test(12.1, getDTthreads()==threadsBefore)  # User returned to multithreaded after fork, form v1.12.0 (see news item)
       setDTthreads(2)
-      test(12.2, getDTthreads()==2) # User returned to multi-threaded after fork.
+      test(12.2, getDTthreads()==2)
     }
   }
 }
