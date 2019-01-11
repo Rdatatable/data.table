@@ -4,25 +4,31 @@
 
 #### NEW FEATURES
 
-1. `fread()` can now read a remote compressed file in one step; `fread("https://domain.org/file.csv.bz2")`. The `file=` argument now supports `.gz` and `.bz2` too; i.e. `fread(file="file.csv.gz")` works now where only `fread("file.csv.gz")` worked in 1.11.8.
+1. `setDTthreads()` gains `restore_after_fork=`, [#2885](https://github.com/Rdatatable/data.table/issues/2885). The default `NULL` leaves the internal option unchanged which by default is `TRUE`. `data.table` has always switched to single-threaded mode on fork. It used to restore multi-threading after a fork too but problems were reported on Mac and Intel OpenMP library (see 1.10.4 notes below). We are now trying again thanks to suggestions and success reported by Kun Ren and Mark Klik in package `fst`. If you experience problems with multithreading after a fork, please restart R and call `setDTthreads(restore_after_fork=FALSE)`.
 
-2. `nomatch=NULL` now does the same as `nomatch=0L` in both `DT[...]` and `foverlaps()`; i.e. discards missing values silently (inner join). The default is still `nomatch=NA` (outer join) for statistical safety so that missing values are retained by default. After several years have elapsed, we will start to deprecate `0L`; please start using `NULL`. In future `nomatch=.(0)` (note that `.()` creates a `list` type and is different to `nomatch=0`) will fill with `0` to save replacing `NA` with `0` afterwards, [#857](https://github.com/Rdatatable/data.table/issues/857).
+2. Subsetting, ordering and grouping now use more parallelism. See benchmarks [here](https://h2oai.github.io/db-benchmark/) and Matt Dowle's presentation in October 2018 on YouTube [here](https://youtu.be/Ddr8N9STSuI). These internal changes gave rise to 4 regressions which were found before release thanks to Kun Ren, [#3211](https://github.com/Rdatatable/data.table/issues/3211). He kindly volunteers to 'go-first' and runs data.table through his production systems before release. We are looking for a 'go-second' volunteer please. A request to test before release was tweeted on 17 Dec [here](https://twitter.com/MattDowle/status/1074746218645938176). As usual, all CRAN and Bioconductor packages using data.table (currently 750) have been tested against this release, [#3233](https://github.com/Rdatatable/data.table/issues/3233). There are now 8,000 tests in 13,000 lines of test code; more lines of test code than there is code. Overall coverage has increased to 94% thanks to Michael Chirico.
 
-3. `setnames()` gains `skip_absent` to skip names in `old` that aren't present, [#3030](https://github.com/Rdatatable/data.table/issues/3030). By default `FALSE` so that it is still an error, as before, to attempt to change a column name that is not present. Thanks to @MusTheDataGuy for the suggestion and the PR.
+3. New `frollmean` has been added by Jan Gorecki to calculate _rolling mean_, see `?froll` for documentation. Function name and arguments are experimental. Related to [#2778](https://github.com/Rdatatable/data.table/issues/2778) (and [#624](https://github.com/Rdatatable/data.table/issues/624), [#626](https://github.com/Rdatatable/data.table/issues/626), [#1855](https://github.com/Rdatatable/data.table/issues/1855)). Other rolling statistics will follow.
 
-4. `NA` in `between()` and `%between%`'s `lower` and `upper` are now taken as missing bounds and return `TRUE` rather than than `NA`. This is now documented.
+4. `fread()` can now read a remote compressed file in one step; `fread("https://domain.org/file.csv.bz2")`. The `file=` argument now supports `.gz` and `.bz2` too; i.e. `fread(file="file.csv.gz")` works now where only `fread("file.csv.gz")` worked in 1.11.8.
 
-5. `shift()` now interprets negative values of `n` to mean the opposite `type=`, [#1708](https://github.com/Rdatatable/data.table/issues/1708). When `give.names=TRUE` the result is named using a positive `n` with the appropriate `type=`. Alternatively, a new `type="shift"` names the result using a signed `n` and constant type.
+5. `nomatch=NULL` now does the same as `nomatch=0L` in both `DT[...]` and `foverlaps()`; i.e. discards missing values silently (inner join). The default is still `nomatch=NA` (outer join) for statistical safety so that missing values are retained by default. After several years have elapsed, we will start to deprecate `0L`; please start using `NULL`. In future `nomatch=.(0)` (note that `.()` creates a `list` type and is different to `nomatch=0`) will fill with `0` to save replacing `NA` with `0` afterwards, [#857](https://github.com/Rdatatable/data.table/issues/857).
+
+6. `setnames()` gains `skip_absent` to skip names in `old` that aren't present, [#3030](https://github.com/Rdatatable/data.table/issues/3030). By default `FALSE` so that it is still an error, as before, to attempt to change a column name that is not present. Thanks to @MusTheDataGuy for the suggestion and the PR.
+
+7. `NA` in `between()` and `%between%`'s `lower` and `upper` are now taken as missing bounds and return `TRUE` rather than than `NA`. This is now documented.
+
+8. `shift()` now interprets negative values of `n` to mean the opposite `type=`, [#1708](https://github.com/Rdatatable/data.table/issues/1708). When `give.names=TRUE` the result is named using a positive `n` with the appropriate `type=`. Alternatively, a new `type="shift"` names the result using a signed `n` and constant type.
     ```R
     shift(x, n=-5:5, give.names=TRUE)                =>  "_lead_5" ... "_lag_5"
     shift(x, n=-5:5, type="shift", give.names=TRUE)  =>  "_shift_-5" ... "_shift_5"
     ``` 
 
-5. `fwrite()` now accepts `matrix`, [#2613](https://github.com/Rdatatable/data.table/issues/2613). Thanks to Michael Chirico for the suggestion and Felipe Parages for implementing. For now matrix input is converted to data.table (which can be costly) before writing. 
+9. `fwrite()` now accepts `matrix`, [#2613](https://github.com/Rdatatable/data.table/issues/2613). Thanks to Michael Chirico for the suggestion and Felipe Parages for implementing. For now matrix input is converted to data.table (which can be costly) before writing. 
 
-6. `fread()` and `fwrite()` can now handle file names in native and UTF-8 encoding, [#3078](https://github.com/Rdatatable/data.table/issues/3078). Thanks to Daniel Possenriede (@dpprdan) for reporting and fixing.
+10. `fread()` and `fwrite()` can now handle file names in native and UTF-8 encoding, [#3078](https://github.com/Rdatatable/data.table/issues/3078). Thanks to Daniel Possenriede (@dpprdan) for reporting and fixing.
 
-7. `DT[i]` and `DT[i,cols]` now call internal parallel subsetting code, [#2951](https://github.com/Rdatatable/data.table/issues/2951). Subsetting is significantly faster (as are many other operations) with factor columns rather than character.
+11. `DT[i]` and `DT[i,cols]` now call internal parallel subsetting code, [#2951](https://github.com/Rdatatable/data.table/issues/2951). Subsetting is significantly faster (as are many other operations) with factor columns rather than character.
     ```R
     N = 2e8                           # 4GB data on 4-core CPU with 16GB RAM
     DT = data.table(ID = sample(LETTERS,N,TRUE),
@@ -36,15 +42,11 @@
     system.time(DT[w, c("ID","V2")])  #     0.3s      1.9s
     ```
     
-8. `DT[..., .SDcols=]` now accepts `patterns()`; e.g. `DT[..., .SDcols=patterns("^V")]`, for filtering columns according to a pattern (as in `melt.data.table`), [#1878](https://github.com/Rdatatable/data.table/issues/1878). Thanks to many people for pushing for this and @MichaelChirico for ultimately filing the PR. See `?data.table` for full details and examples.
+12. `DT[..., .SDcols=]` now accepts `patterns()`; e.g. `DT[..., .SDcols=patterns("^V")]`, for filtering columns according to a pattern (as in `melt.data.table`), [#1878](https://github.com/Rdatatable/data.table/issues/1878). Thanks to many people for pushing for this and @MichaelChirico for ultimately filing the PR. See `?data.table` for full details and examples.
 
-9. New `frollmean` has been added to calculate _rolling mean_, see `?froll` for documentation. Function name and arguments are experimental. Related to [#2778](https://github.com/Rdatatable/data.table/issues/2778) (and [#624](https://github.com/Rdatatable/data.table/issues/624), [#626](https://github.com/Rdatatable/data.table/issues/626), [#1855](https://github.com/Rdatatable/data.table/issues/1855)). Other rolling statistics will follow.
+13. `split` data.table method will now preserve attributes, closes [#2047](https://github.com/Rdatatable/data.table/issues/2047). Thanks to @caneff for reporting.
 
-10. `setDTthreads()` gains `restore_after_fork=`, [#2885](https://github.com/Rdatatable/data.table/issues/2885). The default `NULL` leaves the internal option unchanged which by default is `TRUE`. `data.table` has always switched to single-threaded mode on fork. It used to restore multi-threading after a fork too but problems were reported on Mac and Intel OpenMP library (see 1.10.4 notes below). We are trying again thanks to suggestions and success reported by Kun Ren and Mark Klik in package `fst`. If you experience problems will multi threading after a fork, please restart R and call `setDTthreads(restore_after_fork=FALSE)`.
-
-11. `split` data.table method will now preserve attributes, closes [#2047](https://github.com/Rdatatable/data.table/issues/2047). Thanks to @caneff for reporting.
-
-12. `DT[i,j]` now retains user-defined and inherited attributes, [#995](https://github.com/Rdatatable/data.table/issues/995); e.g.
+14. `DT[i,j]` now retains user-defined and inherited attributes, [#995](https://github.com/Rdatatable/data.table/issues/995); e.g.
     ```R
     attr(datasets::BOD,"reference")                     # "A1.4, p. 270"
     attr(as.data.table(datasets::BOD)[2],"reference")   # was NULL now "A1.4, p. 270"
@@ -74,6 +76,8 @@
 10. `as.data.table.default` method will now always copy its input, closes [#3230](https://github.com/Rdatatable/data.table/issues/3230). Thanks to @NikdAK for reporting.
 
 11. `DT[..., .SDcols=integer()]` failed with `.SDcols is numeric but has both +ve and -ve indices`, [#1789](https://github.com/Rdatatable/data.table/issues/1789) and [#3185](https://github.com/Rdatatable/data.table/issues/3185). It now functions as `.SDcols=character()` has done and creates an empty `.SD`. Thanks to Gabor Grothendieck and Hugh Parsonage for reporting. A related issue with empty `.SDcols` was fixed in development before release thanks to Kun Ren's testing, [#3211](https://github.com/Rdatatable/data.table/issues/3211).
+
+12. Multithreaded stability should be much improved with R 3.5+. Many thanks to Luke Tierney for pinpointing a memory issue with package `constellation` caused by `data.table` and his advice, [#3165](https://github.com/Rdatatable/data.table/issues/3165). Luke also added an extra check to R-devel when compiled with `--enable-strict-barrier`. The test suite is run through latest daily R-devel after every commit as usual, but now with `--enable-strict-barrier` on too via GitLab Pipelines ("Extra" badge at the top of the data.table [homepage](https://r-datatable.com)) thanks to Jan Gorecki.
 
 #### NOTES
 

@@ -9721,8 +9721,11 @@ test(1695.21, between(x, c("foo","baq","bar"), "paz", incbounds=FALSE), c(FALSE,
 x = c(3.14, 3.20, -42, Inf)
 test(1695.22, between(x, c(3,4,-60,5), c(3.14,10,-30,Inf)), c(TRUE,FALSE,TRUE,TRUE))
 test(1695.23, between(x, c(3,4,-60,5), c(3.14,10,-30,Inf), incbounds=FALSE), c(FALSE,FALSE,TRUE,FALSE))
-test(1695.24, between(x, c(3,4,-60), 99), error="length(lower) (3) must be either 1 or length(x) (4)")
-test(1695.25, between(x, c(3,4,-60,5), c(99,98)), error="length(upper) (2) must be either 1 or length(x) (4)")
+test(1695.24, between(x, c(3,4,-60), 99), error="Incompatible vector lengths: length(x)==4 length(lower)==3 length(upper)==1. Each should be either length 1 or the length of the longest")
+test(1695.25, between(x, c(3,4,-60,5), c(99,98)), error="Incompatible vector lengths: length(x)==4 length(lower)==4 length(upper)==2. Each should be either length 1 or the length of the longest")
+test(1695.26, between(0, -5:2, -2:5), c(FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE))
+test(1695.27, between(0:1, -5:2, -2:5), error="Incompatible vector lengths: length(x)==2 length(lower)==8 length(upper)==8. Each should be either length 1 or the length of the longest")
+test(1695.28, between(0, -5:2, -2:4), error="Incompatible vector lengths: length(x)==1 length(lower)==8 length(upper)==7. Each should be either length 1 or the length of the longest")
 
 # test for #1819, verbose message for bmerge
 old_opt = getOption("datatable.verbose")
@@ -11120,6 +11123,7 @@ test(1824, fread("A,B\n2,384325987234905827340958734572934\n"), data.table(A=2L,
 test(1825.1, fread('A,B\n"1","2"', colClasses = "integer"), data.table(A=1L, B=2L))
 test(1825.2, fread('A,B\n"1","2"', colClasses = "character"), data.table(A="1", B="2"))
 test(1825.3, fread('A,B\n"1","2"', colClasses = "numeric"), data.table(A=1.0, B=2.0))
+test(1825.4, fread("A,B\n1,TRUE", colClasses=c("integer", "logical")), data.table(A=1L, B=TRUE))  #2766
 
 # issue 2351
 set.seed(1)
@@ -12571,6 +12575,10 @@ test(1958.1, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encodi
 test(1958.2, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L))
 test(1958.3, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
 test(1958.4, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
+test(1958.5, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=logical(), B=logical(), C=logical()))  #2747
+test(1958.6, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=logical(), B=logical(), C=logical()))
+test(1958.7, fread('A,B,C,D\n"a,b",4,5,6\n"c,d",6,7\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(6,NA)))  # 2547
+test(1958.8, fread('A,B,C,D\n"a,b",4,5\n"c,d",6,7,8\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(NA,8)))
 
 # Skip should work with all types of newlines #3006
 eols = c("\n", "\r\n", "\r", "\n\r")
