@@ -13264,10 +13264,6 @@ test(1978.1, DT[NULL], data.table(NULL))
 test(1978.2, DT[DT, on = .(a > a), roll = TRUE],
      error = 'roll is not implemented for non-equi joins yet')
 
-## ** BUG IF -j eliminates all columns, fixed in this PR **
-#  DT[ , !c(-1), with = FALSE]
-
-## ** BUG: early exit IF notj AND j ends up empty (but notj --> should be full)
 DT[ , b := 10:1]
 test(1978.3, DT[ , -2L, with = FALSE], DT[ , .(a)])
 test(1978.4, DT[ , mean(b), by = eval(expression(a %% 2))],
@@ -13290,66 +13286,61 @@ test(1978.8, DT[ , sum(a), by = 1+3i],
 test(1978.9, DT[ , sum(a), by = .(1, 1:2)],
      error = 'The items.*list are length.*Each must be the same length')
 
-## ** BUG? ** behavior inconsistent with this error message:
-## stop("When 'by' or 'keyby' is list() we expect something inside the brackets")
-## test(1978.10, DT[ , sum(a), by = .()]
-
-
 opt = options('datatable.optimize' = Inf)
-test(1978.11, DT[ , 1, by = .(a %% 2), verbose = TRUE],
+test(1978.10, DT[ , 1, by = .(a %% 2), verbose = TRUE],
      data.table(a = c(1, 0), V1 = c(1, 1)),
      output = 'Optimization is on but left j unchanged')
 options('datatable.optimize' = opt$datatable.optimize)
 
 DT[ , f := rep(1:2, each = 5)]
-test(1978.12, DT[ , g := sum(a), keyby = f, verbose = TRUE][ , sum(g)], 275L,
+test(1978.11, DT[ , g := sum(a), keyby = f, verbose = TRUE][ , sum(g)], 275L,
      output = 'setkey() after the := with keyby=')
 
-test(1978.13, as.matrix(DT, rownames = character(0L)),
+test(1978.12, as.matrix(DT, rownames = character(0L)),
      error = 'length(rownames)==0 but should be')
 
-test(1978.14, DT[matrix(1, 1), 1] <- 4,
+test(1978.13, DT[matrix(1, 1), 1] <- 4,
      error = 'When i is a matrix in DT[i]<-value syntax')
-test(1978.15, DT[1, list(2)] <- 4,
+test(1978.14, DT[1, list(2)] <- 4,
      error = 'j must be an atomic vector')
-test(1978.16, DT[1, NA] <- 4, error = 'NA in j')
-test(1978.17, DT[1, 1 + 3i] <- 4, error = 'j must be vector of')
+test(1978.15, DT[1, NA] <- 4, error = 'NA in j')
+test(1978.16, DT[1, 1 + 3i] <- 4, error = 'j must be vector of')
 
-test(1978.18, dimnames(DT) <- 5, error = 'attempting to assign invalid object')
-test(1978.19, dimnames(DT) <- list(5, 5, 5), error = 'attempting to assign invalid object')
-test(1978.20, dimnames(DT) <- list(5, 5), error = 'data.tables do not have rownames')
-test(1978.21, dimnames(DT) <- list(NULL, 5), error = "Can't assign 1 colnames")
+test(1978.17, dimnames(DT) <- 5, error = 'attempting to assign invalid object')
+test(1978.18, dimnames(DT) <- list(5, 5, 5), error = 'attempting to assign invalid object')
+test(1978.19, dimnames(DT) <- list(5, 5), error = 'data.tables do not have rownames')
+test(1978.20, dimnames(DT) <- list(NULL, 5), error = "Can't assign 1 colnames")
 dimnames(DT) <- list(NULL, 1:5)
-test(1978.22, names(DT), paste0(1:5))
+test(1978.21, names(DT), paste0(1:5))
 
 DT = data.table(a = 1:10)
-test(1978.23, na.omit(DT, invert = 'a'), error = "'invert' must be logical")
-test(1978.24, na.omit(DT, cols = 'b'), error = "Column [b] doesn't")
-test(1978.25, na.omit(DT, cols = c('b', 'c')), error = "Columns [b, c] don't")
+test(1978.22, na.omit(DT, invert = 'a'), error = "'invert' must be logical")
+test(1978.23, na.omit(DT, cols = 'b'), error = "Column [b] doesn't")
+test(1978.24, na.omit(DT, cols = c('b', 'c')), error = "Columns [b, c] don't")
 
 ### idcol = TRUE behavior of rbindlist
-test(1978.26, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE),
+test(1978.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE),
      data.table(.id = 1:2, a = 1:2))
 
-test(1978.27, alloc.col(`*tmp*`), error = 'alloc.col attempting to modify `*tmp*`')
+test(1978.26, alloc.col(`*tmp*`), error = 'alloc.col attempting to modify `*tmp*`')
 
 DF = as.data.frame(DT)
-test(1978.28, shallow(DF), error = 'x is not a data.table')
+test(1978.27, shallow(DF), error = 'x is not a data.table')
 
-test(1978.29, split.data.table(DF), error = 'argument must be a data.table')
-test(1978.30, split(DT, by = 'a', f = 'a'),
+test(1978.28, split.data.table(DF), error = 'argument must be a data.table')
+test(1978.29, split(DT, by = 'a', f = 'a'),
      error = "passing 'f' argument together with 'by' is not allowed")
-test(1978.31, split(DT), error = "Either 'by' or 'f' argument must be supplied")
+test(1978.30, split(DT), error = "Either 'by' or 'f' argument must be supplied")
 setnames(DT, '.ll.tech.split')
-test(1978.32, split(DT, by = '.ll.tech.split'),
+test(1978.31, split(DT, by = '.ll.tech.split'),
      error = "Column '.ll.tech.split' is reserved")
 setnames(DT, '.nm.tech.split')
-test(1978.33, split(DT, by = '.nm.tech.split'),
+test(1978.32, split(DT, by = '.nm.tech.split'),
      error = "Column '.nm.tech.split' is reserved")
-test(1978.34, split(DT, by = 'a'),
+test(1978.33, split(DT, by = 'a'),
      error = "Argument 'by' must refer to column names in x")
 setnames(DT, 'a')
-test(1978.35, split(DT[1:3], by = 'a', verbose = TRUE),
+test(1978.34, split(DT[1:3], by = 'a', verbose = TRUE),
      list(`1` = data.table(a = 1L),
           `2` = data.table(a = 2L),
           `3` = data.table(a = 3L)),
@@ -13357,21 +13348,21 @@ test(1978.35, split(DT[1:3], by = 'a', verbose = TRUE),
 
 ### partially-named behavior on setDF
 l = list(a = 1:3, 4:6)
-test(1978.36, setDF(l), data.frame(a = 1:3, V1 = 4:6))
+test(1978.35, setDF(l), data.frame(a = 1:3, V1 = 4:6))
 
 ## setDT on sub-environment
 e = new.env()
 e$DF = data.frame(a = 5)
-test(1978.37, class(setDT(e$DF))[1L], 'data.table')
+test(1978.36, class(setDT(e$DF))[1L], 'data.table')
 
-test(1978.38, class(setDT(l$df))[1L],
+test(1978.37, class(setDT(l$df))[1L],
      error = 'not found in names of input list')
 
 ## rowid/rowidv
 DT = data.table(a = c(1:3, 3:1))
-test(1978.39, rowidv(DT, prefix = 5L),
+test(1978.38, rowidv(DT, prefix = 5L),
      error = 'must be NULL or a character vector')
-test(1978.40, rowidv(DT, prefix = c('hey', 'you')),
+test(1978.39, rowidv(DT, prefix = c('hey', 'you')),
      error = 'must be NULL or a character vector')
 
 ###################################
