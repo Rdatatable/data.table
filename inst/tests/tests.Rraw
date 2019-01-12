@@ -9266,13 +9266,14 @@ test(1658.8, fwrite(data.table(a=c(1:5), b=c(1:5)), quote=TRUE),
 test(1658.9, fwrite(data.table(a=c(1:3), b=c(1:3)), quote=TRUE),
             output='"a","b"\n1,1\n2,2\n3,3')
 
-# block size one bigger than number of rows
-test(1658.11, fwrite(data.table(a=c(1:3), b=c(1:3)), quote=TRUE),
-            output='"a","b"\n1,1\n2,2\n3,3')
+# fwrite output to console ignore compress
+test(1658.11, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"),
+            output='a,b\n1,1\n2,2\n3,3')
 
-# block size one less than number of rows
-test(1658.12, fwrite(data.table(a=c(1:3), b=c(1:3)), quote=TRUE),
-            output='"a","b"\n1,1\n2,2\n3,3')
+# fwrite gzipped output 
+f <- tempfile()
+test(1658.12, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"),
+            output='a,b\n1,1\n2,2\n3,3')
 
 # writing a data.frame
 test(1658.13, fwrite(data.frame(a="foo", b="bar"), quote=TRUE),
