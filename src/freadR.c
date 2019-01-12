@@ -496,7 +496,7 @@ void progress(int p, int eta) {
   // https://cran.r-project.org/bin/windows/base/rw-FAQ.html#The-console-freezes-when-my-compiled-code-is-running
 
   // No use of \r to avoid bug in RStudio, linked in the same issue #2457
-
+  // # nocov start
   static int displayed = -1;  // -1 means not yet displayed, otherwise [0,50] '=' are displayed
   static char bar[] = "================================================== ";  // 50 marks for each 2%
   if (displayed==-1) {
@@ -523,6 +523,7 @@ void progress(int p, int eta) {
     }
     R_FlushConsole();
   }
+  // # nocov end
 }
 
 void __halt(bool warn, const char *format, ...) {
