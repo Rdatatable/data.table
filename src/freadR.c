@@ -230,8 +230,12 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         signed char thisType = typeEnum[INTEGER(typeEnum_idx)[i]-1];
         items = VECTOR_ELT(colClassesSxp,i);
         if (thisType == CT_DROP) {
-          if (!isNull(dropSxp) || !isNull(selectSxp)) STOP("Can't use NULL in colClasses when select or drop is used as well.");
-          dropSxp = items;
+          if (!isNull(dropSxp) || !isNull(selectSxp)) {
+            if (dropSxp!=items) DTWARN("Ignoring the NULL item in colClasses= because select= or drop= has been used.");
+            // package damr has a nice workaround for when NULL didn't work before v1.12.0: it sets drop=col_class$`NULL`. So allow that unambiguous case with no warning.
+          } else {
+            dropSxp = items;
+          }
           continue;
         }
         SEXP itemsInt;

@@ -413,7 +413,8 @@ BiocManager::valid()
 
 avail = available.packages(repos=BiocManager::repositories())  # includes CRAN at the end from getOption("repos"). And ensure latest Bioc version is in repo path here.
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
-exclude = c("TCGAbiolinks")  # takes too long over 30mins: https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
+exclude = c("TCGAbiolinks",  # too long (>30mins): https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
+            "ctsem")         # too long (>30mins) see Ttotal on CRAN checks and warnings/errors: https://cran.r-project.org/web/checks/check_results_ctsem.html
 deps = deps[-match(exclude, deps)]
 table(avail[deps,"Repository"])
 length(deps)
