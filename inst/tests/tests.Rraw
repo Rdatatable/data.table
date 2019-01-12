@@ -9271,9 +9271,12 @@ test(1658.11, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"),
             output='a,b\n1,1\n2,2\n3,3')
 
 # fwrite gzipped output 
-f <- tempfile()
-test(1658.12, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"),
-            output='a,b\n1,1\n2,2\n3,3')
+if (.Platform$OS.type=="unix") {
+  f <- tempfile()
+  fwrite(data.table(a=c(1:3), b=c(1:3)), file=f, compress="gzip")
+  test(1658.12, system(paste("zcat", f), intern=T), output='[1] "a,b" "1,1" "2,2" "3,3"')
+  unlink(f)
+}
 
 # writing a data.frame
 test(1658.13, fwrite(data.frame(a="foo", b="bar"), quote=TRUE),
