@@ -11143,6 +11143,11 @@ test(1825.15, fread(str, colClasses=list(numeric=2, NULL=3:5), drop=1),
               data.table(x2=c(2,4), x3=c(1.5,2.5), x4=c("T","F"), x5=c("cc","ff")),
               warning="Ignoring the NULL item in colClasses= because select= or drop= has been used")   # warning because drop != colClasses$`NULL`
 test(1825.16, fread(str, colClasses=(cl<-list(numeric=2, NULL=3:5)), drop=cl$`NULL`), data.table(x1=INT(1,3), x2=c(2,4)))  # cover commit f0bd6e3
+# NULL didn't work in 1.11.0-1.11.8 so some usage exists where drop= is used to respecify the NULLs. The warning could be reintroduced in future.
+# https://github.com/Rdatatable/data.table/issues/3233#issuecomment-453674647
+test(1825.17, fread(str, colClasses=c("integer","integer","NULL","character","NULL"), drop=3), data.table(x1=INT(1,3), x2=INT(2,4), x4=c("T","F")))
+test(1825.18, fread(str, colClasses=c("integer","numeric","NULL","character","NULL"), drop=3:4), data.table(x1=INT(1,3), x2=c(2,4)))
+test(1825.19, fread(str, drop=6), data.table(x1=INT(1,3), x2=INT(2,4), x3=c(1.5,2.5), x4=c("T","F"), x5=c("cc","ff")), warning="Column number 6 (drop[1]) is out of range [1,ncol=5]")
 
 # issue 2351
 set.seed(1)

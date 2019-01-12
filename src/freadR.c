@@ -281,7 +281,10 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         if (k<1 || k>ncol) {
           DTWARN("Column number %d (drop[%d]) is out of range [1,ncol=%d]",k,j+1,ncol);
         } else {
-          if (type[k-1] == CT_DROP) STOP("Duplicates detected in drop");
+          // if (type[k-1] == CT_DROP) DTWARN("drop= contains duplicates");
+          // NULL in colClasses didn't work between 1.11.0 and 1.11.8 so people have been using drop= to re-specify the NULL columns in colClasses. Now that NULL in colClasses works
+          // from v1.12.0 there is no easy way to distinguish dups in drop= from drop overlapping with NULLs in colClasses. But it's unambiguous that it was intended to remove these
+          // columns, so no need for warning.
           type[k-1] = CT_DROP;
         }
       }
