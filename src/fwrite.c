@@ -7,6 +7,7 @@
 #include <math.h>      // isfinite, isnan
 #include <stdlib.h>    // abs
 #include <string.h>    // strlen, strerror
+
 #ifdef WIN32
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -17,6 +18,8 @@
 #define WRITE write
 #define CLOSE close
 #endif
+
+#include "zlib.h"      // for writing gzip file
 #include "myomp.h"
 #include "fwrite.h"
 
@@ -643,11 +646,14 @@ void fwriteMain(fwriteMainArgs args)
   maxLineLen += eolLen;
   if (args.verbose) DTPRINT("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
 
-  int f;
+  int f=0;
+  gzFile zf=NULL;
+  int err;
   if (*args.filename=='\0') {
     f=-1;  // file="" means write to standard output
+    args.is_gzip = false; // gzip is only for file
     // eol = "\n";  // We'll use DTPRINT which converts \n to \r\n inside it on Windows
-  } else {
+  } else if (!args.is_gzip) {
 #ifdef WIN32
     f = _open(args.filename, _O_WRONLY | _O_BINARY | _O_CREAT | (args.append ? _O_APPEND : _O_TRUNC), _S_IWRITE);
     // O_BINARY rather than O_TEXT for explicit control and speed since it seems that write() has a branch inside it
@@ -655,7 +661,6 @@ void fwriteMain(fwriteMainArgs args)
 #else
     f = open(args.filename, O_WRONLY | O_CREAT | (args.append ? O_APPEND : O_TRUNC), 0666);
     // There is no binary/text mode distinction on Linux and Mac
-#endif
     if (f == -1) {
       int erropen = errno;
       STOP(access( args.filename, F_OK ) != -1 ?
@@ -663,7 +668,23 @@ void fwriteMain(fwriteMainArgs args)
            "%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?",
            strerror(erropen), args.filename);
     }
+  } else {
+#endif
+    zf = gzopen(args.filename, "wb");
+    if (zf == NULL) {
+      int erropen = errno;
+      STOP(access( args.filename, F_OK ) != -1 ?
+           "%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?" :
+           "%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?",
+           strerror(erropen), args.filename);
+    }
+    // alloc gzip buffer : buff + 10% + 16
+    size_t buffzSize = (size_t)(1024*1024*buffMB + 1024*1024*buffMB / 10 + 16);
+    if (gzbuffer(zf, buffzSize)) {
+      STOP("Error allocate buffer for gzip file");
+    }
   }
+    
   t0=wallclock();
 
   if (args.verbose) {
@@ -683,32 +704,50 @@ void fwriteMain(fwriteMainArgs args)
     }
     for (int j=0; j<args.ncol; j++) {
       writeString(args.colNames, j, &ch);
-      if (f==-1) {
-        *ch = '\0';
-        DTPRINT(buff);
-      } else if (WRITE(f, buff, (int)(ch-buff))==-1) {  // TODO: move error check inside WRITE
-        int errwrite=errno;  // capture write errno now incase close fails with a different errno
-        close(f);
-        free(buff);
-        STOP("%s: '%s'", strerror(errwrite), args.filename);
+      if(!args.is_gzip) {
+        if (f==-1) {
+          *ch = '\0';
+          DTPRINT(buff);
+        } else if (WRITE(f, buff, (int)(ch-buff)) == -1) {  // TODO: move error check inside WRITE
+          int errwrite=errno;  // capture write errno now incase close fails with a different errno
+          CLOSE(f);
+          free(buff);
+          STOP("%s: '%s'", strerror(errwrite), args.filename);
+        }
+      } else {
+        if ((!gzwrite(zf, buff, (int)(ch-buff)))) {
+          int errwrite=gzclose(zf);
+          free(buff);
+          STOP("Error gzwrite %d: %s", errwrite, args.filename);
+        }
       }
+          
       ch = buff;  // overwrite column names at the start in case they are > 1 million bytes long
       *ch++ = args.sep;  // this sep after the last column name won't be written to the file
     }
     if (f==-1) {
       DTPRINT(args.eol);
-    } else if (WRITE(f, args.eol, eolLen)==-1) {
+    } else if (!args.is_gzip && WRITE(f, args.eol, eolLen)==-1) {
       int errwrite=errno;
-      close(f);
+      CLOSE(f);
       free(buff);
       STOP("%s: '%s'", strerror(errwrite), args.filename);
+    } else if (args.is_gzip && (!gzwrite(zf, args.eol, eolLen))) {
+      int errwrite=gzclose(zf);
+      free(buff);
+      STOP("Error gzwrite %d: %s", errwrite, args.filename);
     }
+      
   }
   free(buff);  // TODO: also to be free'd in cleanup when there's an error opening file above
   if (args.verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
     if (args.verbose) DTPRINT("No data rows present (nrow==0)\n");
-    if (f!=-1 && CLOSE(f)) STOP("%s: '%s'", strerror(errno), args.filename);
+    if (args.is_gzip) {
+      if ( (err = gzclose(zf)) ) STOP("gzclose error %d: '%s'", err, args.filename);
+    } else {
+      if (f!=-1 && CLOSE(f)) STOP("%s: '%s'", strerror(errno), args.filename);
+    }
     return;
   }
 
@@ -815,8 +854,10 @@ void fwriteMain(fwriteMainArgs args)
             // by slave threads, even when one-at-a-time. Anyway, made this single-threaded when output to console
             // to be safe (setDTthreads(1) in fwrite.R) since output to console doesn't need to be fast.
           } else {
-            if (WRITE(f, myBuff, (int)(ch-myBuff)) == -1) {
+            if (!args.is_gzip && WRITE(f, myBuff, (int)(ch-myBuff)) == -1) {
               failed=errno;
+            } else if (args.is_gzip && (!gzwrite(zf, myBuff, (int)(ch-myBuff)))) {
+              gzerror(zf, &failed);
             }
             if (myAlloc > buffSize) anyBufferGrown = true;
             int used = 100*((double)(ch-myBuff))/buffSize;  // percentage of original buffMB
@@ -873,8 +914,15 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT("\n");
     }
   }
-  if (f!=-1 && CLOSE(f) && !failed)
-    STOP("%s: '%s'", strerror(errno), args.filename);
+  
+  if (!args.is_gzip) {
+    if (f!=-1 && CLOSE(f) && !failed)
+      STOP("%s: '%s'", strerror(errno), args.filename);
+  } else {
+    if ( (err=gzclose(zf)) ) {
+      STOP("gzclose error %d: '%s'", err, args.filename);
+    }
+  }
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
