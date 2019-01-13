@@ -836,7 +836,8 @@ void fwriteMain(fwriteMainArgs args)
         // Tepid again (once at the end of each line)
         ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
         write_chars(args.eol, &ch);  // overwrite last sep with eol instead
-
+        if (failed)
+            break;
         // compress buffer if gzip
         if(args.is_gzip){
           myzbuffUsed = myzbuffSize;
