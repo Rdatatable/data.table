@@ -840,6 +840,12 @@ void fwriteMain(fwriteMainArgs args)
         if (failed)
           break; // this thread stop writing rows; fall through to clear up and STOP() below
       }
+      // compress buffer if gzip
+      if (args.is_gzip) {
+        // compress buffer if gzip
+        myzbuffUsed = myzbuffSize;
+        failed = compressbuff(myzBuff, &myzbuffUsed, myBuff, (int)(ch - myBuff));
+      }
       #pragma omp ordered
       {
         if (!failed) { // a thread ahead of me could have failed below while I was working or waiting above
@@ -848,13 +854,8 @@ void fwriteMain(fwriteMainArgs args)
             DTPRINT(myBuff);
           } else if (!args.is_gzip && WRITE(f, myBuff, (int)(ch - myBuff)) == -1) {
               failed=errno;
-          } else if (args.is_gzip) {
-              // compress buffer if gzip
-              myzbuffUsed = myzbuffSize;
-              if (failed = compressbuff(myzBuff, &myzbuffUsed, myBuff, (int)(ch - myBuff))) {}
-              else if (WRITE(f, myzBuff, (int)(myzbuffUsed)) == -1) {
-                failed=errno;
-              }
+          } else if (args.is_gzip && WRITE(f, myzBuff, (int)(myzbuffUsed)) == -1) {
+              failed=errno;
           }
           ch = myBuff;  // back to the start of my buffer ready to fill it up again
         }
