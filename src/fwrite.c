@@ -838,13 +838,6 @@ void fwriteMain(fwriteMainArgs args)
         ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
         write_chars(args.eol, &ch);  // overwrite last sep with eol instead
         if (failed)
-            break;
-        // compress buffer if gzip
-        if(args.is_gzip){
-          myzbuffUsed = myzbuffSize;
-          failed |= compressbuff(myzBuff, &myzbuffUsed, myBuff, (int)(ch - myBuff));
-        }
-        if (failed)
           break; // this thread stop writing rows; fall through to clear up and STOP() below
       }
       #pragma omp ordered
@@ -853,10 +846,15 @@ void fwriteMain(fwriteMainArgs args)
           if (f==-1) {
             *ch='\0';  // standard C string end marker so DTPRINT knows where to stop
             DTPRINT(myBuff);
-          } else if (!args.is_gzip && WRITE(f, myBuff, (int)(ch-myBuff)) == -1) {
+          } else if (!args.is_gzip && WRITE(f, myBuff, (int)(ch - myBuff)) == -1) {
               failed=errno;
-          } else if (args.is_gzip && WRITE(f, myzBuff, (int)(myzbuffUsed)) == -1) {
-              failed=errno;
+          } else if (args.is_gzip) {
+              // compress buffer if gzip
+              myzbuffUsed = myzbuffSize;
+              if (failed = compressbuff(myzBuff, &myzbuffUsed, myBuff, (int)(ch - myBuff))) {}
+              else if (WRITE(f, myzBuff, (int)(myzbuffUsed)) == -1) {
+                failed=errno;
+              }
           }
           ch = myBuff;  // back to the start of my buffer ready to fill it up again
         }
