@@ -686,51 +686,43 @@ void fwriteMain(fwriteMainArgs args)
   }
   if (args.colNames) {
     // We don't know how long this line will be.
-    // It could be (much) longer than the data row line lengths
-    // To keep things simple we'll reuse the same buffer used above for each field, and write each column name separately to the file.
-    // If multiple calls to write() is ever an issue, we'll come back to this. But very unlikely.
+    // This line must be lesser than buffer size buffSize
     char *ch = buff;
     if (args.doRowNames) {
       // Unusual: the extra blank column name when row_names are added as the first column
-      if (doQuote!=0/*'auto'(NA) or true*/) { *ch++='"'; *ch++='"'; } // to match write.csv
+      if (doQuote) {
+        *ch++='"'; *ch++='"';
+      }
       *ch++ = sep;
     }
     for (int j=0; j<args.ncol; j++) {
-      writeString(args.colNames, j, &ch);
-      if(!args.is_gzip) {
-        if (f==-1) {
-          *ch = '\0';
-          DTPRINT(buff);
-        } else if (WRITE(f, buff, (int)(ch-buff)) == -1) {  // TODO: move error check inside WRITE
-          int errwrite=errno;  // capture write errno now incase close fails with a different errno
-          CLOSE(f);
-          free(buff);
-          STOP("%s: '%s'", strerror(errwrite), args.filename);
-        }
-      } else {
-        if ((!gzwrite(zf, buff, (int)(ch-buff)))) {
-          int errwrite=gzclose(zf);
-          free(buff);
-          STOP("Error gzwrite %d: %s", errwrite, args.filename);
-        }
+      if (j>0) {
+        *ch++ = sep;
       }
-          
-      ch = buff;  // overwrite column names at the start in case they are > 1 million bytes long
-      *ch++ = args.sep;  // this sep after the last column name won't be written to the file
+      writeString(args.colNames, j, &ch);
+      if ((size_t) (ch - buff) >= buffSize) {
+        STOP("Header line too long : increase buffMB parameter");
+      }
     }
-    if (f==-1) {
-      DTPRINT(args.eol);
-    } else if (!args.is_gzip && WRITE(f, args.eol, eolLen)==-1) {
-      int errwrite=errno;
-      CLOSE(f);
-      free(buff);
-      STOP("%s: '%s'", strerror(errwrite), args.filename);
-    } else if (args.is_gzip && (!gzwrite(zf, args.eol, eolLen))) {
-      int errwrite=gzclose(zf);
-      free(buff);
-      STOP("Error gzwrite %d: %s", errwrite, args.filename);
+    write_chars(args.eol, &ch);
+    
+    if(!args.is_gzip) {
+      if (f==-1) {
+        *ch = '\0';
+        DTPRINT(buff);
+      } else if (WRITE(f, buff, (int)(ch-buff)) == -1) {  // TODO: move error check inside WRITE
+        int errwrite=errno;  // capture write errno now incase close fails with a different errno
+        CLOSE(f);
+        free(buff);
+        STOP("%s: '%s'", strerror(errwrite), args.filename);
+      }
+    } else {
+      if ((!gzwrite(zf, buff, (int)(ch-buff)))) {
+        int errwrite=gzclose(zf);
+        free(buff);
+        STOP("Error gzwrite %d: %s", errwrite, args.filename);
+      }
     }
-      
   }
   free(buff);  // TODO: also to be free'd in cleanup when there's an error opening file above
   if (args.verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
