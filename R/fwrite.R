@@ -7,7 +7,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
            dateTimeAs = c("ISO","squash","epoch","write.csv"),
            buffMB=8, nThread=getDTthreads(verbose),
            showProgress=getOption("datatable.showProgress", interactive()),
-           compress = c("none", "gzip"), 
+           compress = c("default", "none", "gzip"), 
            verbose=getOption("datatable.verbose", FALSE)
            ) {
   isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
@@ -41,7 +41,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     dec != sep,  # sep2!=dec and sep2!=sep checked at C level when we know if list columns are present
     is.character(eol) && length(eol)==1L,
     length(qmethod) == 1L && qmethod %chin% c("double", "escape"),
-    length(compress) == 1L && compress %chin% c("none", "gzip"),
+    length(compress) == 1L && compress %chin% c("default", "none", "gzip"),
     isLOGICAL(col.names), isLOGICAL(append), isLOGICAL(row.names),
     isLOGICAL(verbose), isLOGICAL(showProgress), isLOGICAL(logical01),
     length(na) == 1L, #1725, handles NULL or character(0) input
@@ -50,7 +50,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
     )
   
-  is_gzip <- compress == "gzip" || grepl("\\.gz$", file)
+  is_gzip <- compress == "gzip" || (compress == "default" && grepl("\\.gz$", file))
   
   file <- path.expand(file)  # "~/foo/bar"
   if (append && missing(col.names) && (file=="" || file.exists(file)))
@@ -81,4 +81,3 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
           showProgress, is_gzip, verbose)
   invisible()
 }
-
