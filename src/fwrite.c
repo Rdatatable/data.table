@@ -547,11 +547,53 @@ static inline void checkBuffer(
   // This checkBuffer() is called after every line.
 ) {
   if (failed) return;  // another thread already failed. Fall through and error().
-  
+
   // buffer is too small. ask to increase buffMB
   if (rowsPerBatch * myMaxLineLen >= (*myAlloc)) {
     failed = 1;
   }
+}
+
+int compressbuff(Bytef* dest, uLongf* destLen, const Bytef* source, uLong sourceLen)
+{
+    int level = Z_DEFAULT_COMPRESSION;
+    z_stream stream;
+    int err;
+    const uInt max = (uInt)-1;
+    uLong left;
+
+    left = *destLen;
+    *destLen = 0;
+
+    stream.zalloc = (alloc_func)0;
+    stream.zfree = (free_func)0;
+    stream.opaque = (voidpf)0;
+
+    //err = deflateInit(&stream, level);
+    err = deflateInit2 (&stream, level, Z_DEFLATED, 31, 8, Z_DEFAULT_STRATEGY);
+    if (err != Z_OK)
+      return err;
+
+    stream.next_out = dest;
+    stream.avail_out = 0;
+    stream.next_in = (z_const Bytef *)source;
+    stream.avail_in = 0;
+
+    do {
+        if (stream.avail_out == 0) {
+            stream.avail_out = left > (uLong)max ? max : (uInt)left;
+            left -= stream.avail_out;
+        }
+        if (stream.avail_in == 0) {
+            stream.avail_in = sourceLen > (uLong)max ? max : (uInt)sourceLen;
+            sourceLen -= stream.avail_in;
+        }
+        err = deflate(&stream, sourceLen ? Z_NO_FLUSH : Z_FINISH);
+    } while (err == Z_OK);
+
+    *destLen = stream.total_out;
+    deflateEnd(&stream);
+    return err == Z_STREAM_END ? Z_OK : err;
 }
 
 void fwriteMain(fwriteMainArgs args)
@@ -598,9 +640,16 @@ void fwriteMain(fwriteMainArgs args)
   if (buffMB<1 || buffMB>1024) STOP("buffMB=%d outside [1,1024]", buffMB);
   size_t buffSize = (size_t)1024*1024*buffMB;
   char *buff = malloc(buffSize);
-  if (!buff) STOP("Unable to allocate %dMB for line length estimation: %s", buffMB, strerror(errno));
+  if (!buff)
+    STOP("Unable to allocate %dMiB for buffer: %s", buffSize / 1024 / 1024, strerror(errno));
+  size_t zbuffSize = buffSize + buffSize/10 + 16;
+  Bytef *zbuff = malloc(zbuffSize);
+  if (!zbuff)
+    STOP("Unable to allocate %dMiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));
+  uLongf zbuffUsed = 0;
 
-  if (args.verbose) {
+  if(args.verbose) {
+    DTPRINT("\nBuff:%p size: %d zbuff:%p size: %d\n", buff, buffSize, zbuff, zbuffSize);
     DTPRINT("Column writers: ");
     if (args.ncol<=50) {
       for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
@@ -640,19 +689,19 @@ void fwriteMain(fwriteMainArgs args)
   if (args.verbose) DTPRINT("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
 
   int f=0;
-  gzFile zf=NULL;
   int err;
   if (*args.filename=='\0') {
     f=-1;  // file="" means write to standard output
     args.is_gzip = false; // gzip is only for file
     // eol = "\n";  // We'll use DTPRINT which converts \n to \r\n inside it on Windows
-  } else if (!args.is_gzip) {
+  } else {
 #ifdef WIN32
     f = _open(args.filename, _O_WRONLY | _O_BINARY | _O_CREAT | (args.append ? _O_APPEND : _O_TRUNC), _S_IWRITE);
     // O_BINARY rather than O_TEXT for explicit control and speed since it seems that write() has a branch inside it
     // to convert \n to \r\n on Windows when in text mode not not when in binary mode.
 #else
     f = open(args.filename, O_WRONLY | O_CREAT | (args.append ? O_APPEND : O_TRUNC), 0666);
+#endif
     // There is no binary/text mode distinction on Linux and Mac
 #endif
     if (f == -1) {
@@ -662,22 +711,7 @@ void fwriteMain(fwriteMainArgs args)
            "%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?",
            strerror(erropen), args.filename);
     }
-  } else {
-    zf = gzopen(args.filename, "wb");
-    if (zf == NULL) {
-      int erropen = errno;
-      STOP(access( args.filename, F_OK ) != -1 ?
-           "%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?" :
-           "%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?",
-           strerror(erropen), args.filename);
-    }
-    // alloc gzip buffer : buff + 10% + 16
-    size_t buffzSize = (size_t)(1024*1024*buffMB + 1024*1024*buffMB / 10 + 16);
-    if (gzbuffer(zf, buffzSize)) {
-      STOP("Error allocate buffer for gzip file");
-    }
   }
-    
   t0=wallclock();
 
   if (args.verbose) {
@@ -705,34 +739,34 @@ void fwriteMain(fwriteMainArgs args)
       }
     }
     write_chars(args.eol, &ch);
-    
-    if(!args.is_gzip) {
-      if (f==-1) {
-        *ch = '\0';
-        DTPRINT(buff);
-      } else if (WRITE(f, buff, (int)(ch-buff)) == -1) {  // TODO: move error check inside WRITE
-        int errwrite=errno;  // capture write errno now incase close fails with a different errno
-        CLOSE(f);
-        free(buff);
-        STOP("%s: '%s'", strerror(errwrite), args.filename);
+
+    // compress buff into zbuff
+    if(args.is_gzip){
+      zbuffUsed = zbuffSize;
+      int ret = compressbuff(zbuff, &zbuffUsed, buff, (int)(ch - buff));
+      if(ret) {
+        STOP("Compress error: %d", ret);
       }
-    } else {
-      if ((!gzwrite(zf, buff, (int)(ch-buff)))) {
-        int errwrite=gzclose(zf);
-        free(buff);
-        STOP("Error gzwrite %d: %s", errwrite, args.filename);
-      }
+      buff = zbuff;
+      ch = zbuff + zbuffUsed;
+    }
+
+    if (f==-1) {
+      *ch = '\0';
+      DTPRINT(buff);
+    } else if (WRITE(f, buff, (int)(ch-buff)) == -1) {
+      int errwrite=errno;  // capture write errno now incase close fails with a different errno
+      CLOSE(f);
+      free(buff);
+      free(zbuff);
+      STOP("%s: '%s'", strerror(errwrite), args.filename);
     }
   }
   free(buff);  // TODO: also to be free'd in cleanup when there's an error opening file above
   if (args.verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
     if (args.verbose) DTPRINT("No data rows present (nrow==0)\n");
-    if (args.is_gzip) {
-      if ( (err = gzclose(zf)) ) STOP("gzclose error %d: '%s'", err, args.filename);
-    } else {
-      if (f!=-1 && CLOSE(f)) STOP("%s: '%s'", strerror(errno), args.filename);
-    }
+    if (f!=-1 && CLOSE(f)) STOP("%s: '%s'", strerror(errno), args.filename);
     return;
   }
 
@@ -744,7 +778,7 @@ void fwriteMain(fwriteMainArgs args)
   // If we don't use all the buffer for any reasons that's ok as OS will only getch the cache lines touched.
   // So, generally the larger the better up to max filesize/nth to use all the threads. A few times
   //   smaller than that though, to achieve some load balancing across threads since schedule(dynamic).
-  
+
   if (2 * maxLineLen > buffSize) {
     STOP("Error : line length is greater than half buffer size. Increase buffMB");
   }
@@ -842,8 +876,6 @@ void fwriteMain(fwriteMainArgs args)
           } else {
             if (!args.is_gzip && WRITE(f, myBuff, (int)(ch-myBuff)) == -1) {
               failed=errno;
-            } else if (args.is_gzip && (!gzwrite(zf, myBuff, (int)(ch-myBuff)))) {
-              gzerror(zf, &failed);
             }
             if (myAlloc > buffSize) anyBufferGrown = true;
             int used = 100*((double)(ch-myBuff))/buffSize;  // percentage of original buffMB
@@ -900,14 +932,10 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT("\n");
     }
   }
-  
+
   if (!args.is_gzip) {
     if (f!=-1 && CLOSE(f) && !failed)
       STOP("%s: '%s'", strerror(errno), args.filename);
-  } else {
-    if ( (err=gzclose(zf)) ) {
-      STOP("gzclose error %d: '%s'", err, args.filename);
-    }
   }
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
