@@ -529,30 +529,8 @@ void writeCategString(void *col, int64_t row, char **pch)
   write_string(getCategString(col, row), pch);
 }
 
-
 static int failed = 0;
 static int rowsPerBatch;
-
-static inline void checkBuffer(
-  char **buffer,       // this thread's buffer
-  size_t *myAlloc,     // the size of this buffer
-  char **ch,           // the end of the last line written to the buffer by this thread
-  size_t myMaxLineLen  // the longest line seen so far by this thread
-  // Initial size for the thread's buffer is twice as big as needed for rowsPerBatch based on
-  // maxLineLen from the sample; i.e. only 50% of the buffer should be used.
-  // If we get to 75% used, we'll realloc.
-  // i.e. very cautious and grateful to the OS for not fetching untouched pages of buffer.
-  // Plus, more caution ... myMaxLineLine is tracked and if that grows we'll realloc too.
-  // Very long lines are caught up front and rowsPerBatch is set to 1 in that case.
-  // This checkBuffer() is called after every line.
-) {
-  if (failed) return;  // another thread already failed. Fall through and error().
-
-  // buffer is too small. ask to increase buffMB
-  if (rowsPerBatch * myMaxLineLen >= (*myAlloc)) {
-    failed = 1;
-  }
-}
 
 int compressbuff(Bytef* dest, uLongf* destLen, const Bytef* source, uLong sourceLen)
 {
@@ -747,37 +725,41 @@ void fwriteMain(fwriteMainArgs args)
       if(ret) {
         STOP("Compress error: %d", ret);
       }
-      buff = zbuff;
-      ch = zbuff + zbuffUsed;
     }
 
+    int errwrite = 0;
     if (f==-1) {
       *ch = '\0';
       DTPRINT(buff);
-    } else if (WRITE(f, buff, (int)(ch-buff)) == -1) {
-      int errwrite=errno;  // capture write errno now incase close fails with a different errno
+    } else if (!args.is_gzip && WRITE(f, buff, (int)(ch-buff)) == -1) {
+      errwrite=errno;  // capture write errno now incase close fails with a different errno
+    } else if (args.is_gzip && WRITE(f, zbuff, (int)zbuffUsed) == -1) {
+      errwrite=errno;
+    }
+
+    if (errwrite) {
       CLOSE(f);
       free(buff);
       free(zbuff);
       STOP("%s: '%s'", strerror(errwrite), args.filename);
     }
   }
+
   free(buff);  // TODO: also to be free'd in cleanup when there's an error opening file above
-  if (args.verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
+  free(zbuff);  // TODO: also to be free'd in cleanup when there's an error opening file above
+
+  if (args.verbose)
+    DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
-    if (args.verbose) DTPRINT("No data rows present (nrow==0)\n");
-    if (f!=-1 && CLOSE(f)) STOP("%s: '%s'", strerror(errno), args.filename);
+    if (args.verbose)
+      DTPRINT("No data rows present (nrow==0)\n");
+    if (f!=-1 && CLOSE(f))
+      STOP("%s: '%s'", strerror(errno), args.filename);
     return;
   }
 
   // Decide buffer size and rowsPerBatch for each thread
-  // Once rowsPerBatch is decided it can't be changed, but we can increase buffer size if the lines
-  // turn out to be longer than estimated from the sample.
-  // buffSize large enough to fit many lines to i) reduce calls to write() and ii) reduce thread sync points
-  // It doesn't need to be small in cache because it's written contiguously.
-  // If we don't use all the buffer for any reasons that's ok as OS will only getch the cache lines touched.
-  // So, generally the larger the better up to max filesize/nth to use all the threads. A few times
-  //   smaller than that though, to achieve some load balancing across threads since schedule(dynamic).
+  // Once rowsPerBatch is decided it can't be changed
 
   if (2 * maxLineLen > buffSize) {
     STOP("Error : line length is greater than half buffer size. Increase buffMB");
@@ -803,18 +785,21 @@ void fwriteMain(fwriteMainArgs args)
   {
     char *ch, *myBuff;               // local to each thread
     ch = myBuff = malloc(buffSize);  // each thread has its own buffer. malloc and errno are thread-safe.
-    if (myBuff==NULL) {failed=-errno;}
+
+    if (myBuff==NULL) {
+      failed=-errno;
+    }
+    size_t myzbuffSize = buffSize + buffSize/10 + 16;
+    Bytef *myzBuff = malloc(myzbuffSize);
+    uLongf myzbuffUsed = 0;
+    if (myzBuff==NULL) {
+      failed=-errno;
+    }
     // Do not rely on availability of '#omp cancel' new in OpenMP v4.0 (July 2013).
     // OpenMP v4.0 is in gcc 4.9+ (https://gcc.gnu.org/wiki/openmp) but
     // not yet in clang as of v3.8 (http://openmp.llvm.org/)
     // If not-me failed, I'll see shared 'failed', fall through loop, free my buffer
     // and after parallel section, single thread will call STOP() safely.
-
-    size_t myAlloc = buffSize;
-    size_t myMaxLineLen = maxLineLen;
-    // so we can realloc(). Should only be needed if there are very long lines that are
-    // much longer than occurred in the sample for maxLineLen; e.g. unusally long string values
-    // that didn't occur in the sample, or list columns with some very long vectors in some cells.
 
     #pragma omp single
     {
@@ -824,10 +809,10 @@ void fwriteMain(fwriteMainArgs args)
 
     #pragma omp for ordered schedule(dynamic)
     for(int64_t start=0; start<args.nrow; start+=rowsPerBatch) {
-      if (failed) continue;  // Not break. See comments above about #omp cancel
+      if (failed)
+        continue;  // Not break. See comments above about #omp cancel
       int64_t end = ((args.nrow - start)<rowsPerBatch) ? args.nrow : start + rowsPerBatch;
       for (int64_t i=start; i<end; i++) {
-        char *lineStart = ch;
         // Tepid starts here (once at beginning of each per line)
         if (args.doRowNames) {
           if (args.rowNames==NULL) {
@@ -852,14 +837,13 @@ void fwriteMain(fwriteMainArgs args)
         ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
         write_chars(args.eol, &ch);  // overwrite last sep with eol instead
 
-        // Track longest line seen so far. If we start to see longer lines than we saw in the
-        // sample, we'll realloc the buffer. The rowsPerBatch chosen based on the (very good) sample,
-        // must fit in the buffer. Can't early write and reset buffer because the
-        // file output would be out-of-order. Can't change rowsPerBatch after the 'parallel for' started.
-        size_t thisLineLen = ch-lineStart;
-        if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
-        // checkBuffer(&myBuff, &myAlloc, &ch, myMaxLineLen);
-        if (failed) break; // this thread stop writing rows; fall through to clear up and STOP() below
+        // compress buffer if gzip
+        if(args.is_gzip){
+          myzbuffUsed = myzbuffSize;
+          failed = compressbuff(myzBuff, &myzbuffUsed, myBuff, (int)(ch - myBuff));
+        }
+        if (failed)
+          break; // this thread stop writing rows; fall through to clear up and STOP() below
       }
       #pragma omp ordered
       {
@@ -867,76 +851,23 @@ void fwriteMain(fwriteMainArgs args)
           if (f==-1) {
             *ch='\0';  // standard C string end marker so DTPRINT knows where to stop
             DTPRINT(myBuff);
-            // nth==1 at this point since when file=="" (f==-1 here) fwrite.R calls setDTthreads(1)
-            // Although this ordered section is one-at-a-time it seems that calling Rprintf() here, even with a
-            // R_FlushConsole() too, causes corruptions on Windows but not on Linux. At least, as observed so
-            // far using capture.output(). Perhaps Rprintf() updates some state or allocation that cannot be done
-            // by slave threads, even when one-at-a-time. Anyway, made this single-threaded when output to console
-            // to be safe (setDTthreads(1) in fwrite.R) since output to console doesn't need to be fast.
-          } else {
-            if (!args.is_gzip && WRITE(f, myBuff, (int)(ch-myBuff)) == -1) {
+          } else if (!args.is_gzip && WRITE(f, myBuff, (int)(ch-myBuff)) == -1) {
               failed=errno;
-            }
-            if (myAlloc > buffSize) anyBufferGrown = true;
-            int used = 100*((double)(ch-myBuff))/buffSize;  // percentage of original buffMB
-            if (used > maxBuffUsedPC) maxBuffUsedPC = used;
-            double now;
-            if (me==0 && args.showProgress && (now=wallclock())>=nextTime && !failed) {
-              // See comments above inside the f==-1 clause.
-              // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
-              // master thread (me==0) and hopefully this will work on Windows. If not, user should set
-              // showProgress=FALSE until this can be fixed or removed.
-              int ETA = (int)((args.nrow-end)*((now-startTime)/end));
-              if (hasPrinted || ETA >= 2) {
-                if (args.verbose && !hasPrinted) DTPRINT("\n");
-                DTPRINT("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. "
-                        "anyBufferGrown=%s; maxBuffUsed=%d%%. ETA %d secs.      ",
-                         (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
-                         anyBufferGrown?"yes":"no", maxBuffUsedPC, ETA);
-                // TODO: use progress() as in fread
-                nextTime = now+1;
-                hasPrinted = true;
-              }
-            }
-            // May be possible for master thread (me==0) to call R_CheckUserInterrupt() here.
-            // Something like:
-            // if (me==0) {
-            //   failed = TRUE;  // inside ordered here; the slaves are before ordered and not looking at 'failed'
-            //   R_CheckUserInterrupt();
-            //   failed = FALSE; // no user interrupt so return state
-            // }
-            // But I fear the slaves will hang waiting for the master (me==0) to complete the ordered
-            // section which may not happen if the master thread has been interrupted. Rather than
-            // seeing failed=TRUE and falling through to free() and close() as intended.
-            // Could register a finalizer to free() and close() perhaps :
-            // [r-devel] http://r.789695.n4.nabble.com/checking-user-interrupts-in-C-code-tp2717528p2717722.html
-            // Conclusion for now: do not provide ability to interrupt.
-            // write() errors and malloc() fails will be caught and cleaned up properly, however.
+          } else if (args.is_gzip && WRITE(f, myzBuff, (int)(myzbuffUsed)) == -1) {
+              failed=errno;
           }
           ch = myBuff;  // back to the start of my buffer ready to fill it up again
         }
       }
     }
-    free(myBuff);
     // all threads will call this free on their buffer, even if one or more threads had malloc
     // or realloc fail. If the initial malloc failed, free(NULL) is ok and does nothing.
-  }
-  // Finished parallel region and can call R API safely now.
-  if (hasPrinted) {
-    if (!failed) {
-      // clear the progress meter
-      DTPRINT("\r                                                                       "
-              "                                                              \r");
-    } else {
-      // unless failed as we'd like to see anyBufferGrown and maxBuffUsedPC
-      DTPRINT("\n");
-    }
+    free(myBuff);
+    free(myzBuff);
   }
 
-  if (!args.is_gzip) {
-    if (f!=-1 && CLOSE(f) && !failed)
-      STOP("%s: '%s'", strerror(errno), args.filename);
-  }
+  if (f!=-1 && CLOSE(f) && !failed)
+    STOP("%s: '%s'", strerror(errno), args.filename);
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
@@ -951,4 +882,3 @@ void fwriteMain(fwriteMainArgs args)
                             nth, anyBufferGrown?"yes":"no", maxBuffUsedPC);
   return;
 }
-
