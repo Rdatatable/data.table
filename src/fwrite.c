@@ -840,7 +840,7 @@ void fwriteMain(fwriteMainArgs args)
         // compress buffer if gzip
         if(args.is_gzip){
           myzbuffUsed = myzbuffSize;
-          failed = compressbuff(myzBuff, &myzbuffUsed, myBuff, (int)(ch - myBuff));
+          failed |= compressbuff(myzBuff, &myzbuffUsed, myBuff, (int)(ch - myBuff));
         }
         if (failed)
           break; // this thread stop writing rows; fall through to clear up and STOP() below
