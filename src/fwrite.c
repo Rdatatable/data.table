@@ -842,7 +842,6 @@ void fwriteMain(fwriteMainArgs args)
       }
       // compress buffer if gzip
       if (args.is_gzip) {
-        // compress buffer if gzip
         myzbuffUsed = myzbuffSize;
         failed = compressbuff(myzBuff, &myzbuffUsed, myBuff, (int)(ch - myBuff));
       }
