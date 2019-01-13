@@ -9266,17 +9266,13 @@ test(1658.8, fwrite(data.table(a=c(1:5), b=c(1:5)), quote=TRUE),
 test(1658.9, fwrite(data.table(a=c(1:3), b=c(1:3)), quote=TRUE),
             output='"a","b"\n1,1\n2,2\n3,3')
 
-# fwrite output to console ignore compress
-test(1658.11, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"),
-            output='a,b\n1,1\n2,2\n3,3')
+# block size one bigger than number of rows
+test(1658.11, fwrite(data.table(a=c(1:3), b=c(1:3)), quote=TRUE),
+            output='"a","b"\n1,1\n2,2\n3,3')
 
-# fwrite gzipped output 
-if (.Platform$OS.type=="unix") {
-  f <- tempfile()
-  fwrite(data.table(a=c(1:3), b=c(1:3)), file=f, compress="gzip")
-  test(1658.12, system(paste("zcat", f), intern=T), output='[1] "a,b" "1,1" "2,2" "3,3"')
-  unlink(f)
-}
+# block size one less than number of rows
+test(1658.12, fwrite(data.table(a=c(1:3), b=c(1:3)), quote=TRUE),
+            output='"a","b"\n1,1\n2,2\n3,3')
 
 # writing a data.frame
 test(1658.13, fwrite(data.frame(a="foo", b="bar"), quote=TRUE),
@@ -9352,6 +9348,27 @@ test(1658.33, fwrite(matrix("foo"), quote=TRUE), output='"V1"\n.*"foo"', message
 test(1658.34, fwrite(matrix(1:4, nrow=2, ncol=2), quote = TRUE), output = '"V1","V2"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
 test(1658.35, fwrite(matrix(1:3, nrow=3, ncol=1), quote = TRUE), output = '"V1"\n.*1\n2\n3', message = "x being coerced from class: matrix to data.table")
 test(1658.36, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c("ca","cb"))), quote = TRUE), output = '"ca","cb"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
+
+# fwrite output to console ignore compress
+test(1658.37, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"),
+            output='a,b\n1,1\n2,2\n3,3')
+
+# fwrite force gzipped output
+if (.Platform$OS.type=="unix") {
+  f <- tempfile()
+  fwrite(data.table(a=c(1:3), b=c(1:3)), file=f, compress="gzip")
+  test(1658.38, system(paste("zcat", f), intern=T), output='[1] "a,b" "1,1" "2,2" "3,3"')
+  unlink(f)
+}
+
+
+# fwrite force csv output
+if (.Platform$OS.type=="unix") {
+  f <- tempfile()
+  fwrite(data.table(a=c(1:3), b=c(1:3)), file=f, compress="none")
+  test(1658.39, system(paste("cat", f), intern=T), output='[1] "a,b" "1,1" "2,2" "3,3"')
+  unlink(f)
+}
 
 ## End fwrite tests
 
