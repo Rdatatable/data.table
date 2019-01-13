@@ -18,7 +18,7 @@ some:
 
 .PHONY: clean
 clean:
-	rm -f data.table_1.11.9.tar.gz
+	rm -f data.table_1.12.1.tar.gz
 
 .PHONY: build
 build:
@@ -26,7 +26,7 @@ build:
 
 .PHONY: install
 install:
-	$(R) CMD INSTALL data.table_1.11.9.tar.gz
+	$(R) CMD INSTALL data.table_1.12.1.tar.gz
 
 .PHONY: test
 test:
@@ -34,5 +34,5 @@ test:
 
 .PHONY: check
 check:
-	$(R) CMD check data.table_1.11.9.tar.gz --as-cran --ignore-vignettes --no-stop-on-test-error
+	$(R) CMD check data.table_1.12.1.tar.gz --as-cran --ignore-vignettes --no-stop-on-test-error
 
