@@ -547,17 +547,10 @@ static inline void checkBuffer(
   // This checkBuffer() is called after every line.
 ) {
   if (failed) return;  // another thread already failed. Fall through and error().
-  size_t thresh = 0.75*(*myAlloc);
-  if ((*ch > (*buffer)+thresh) ||
-      (rowsPerBatch*myMaxLineLen > thresh )) {
-    size_t off = *ch-*buffer;
-    *myAlloc = 1.5*(*myAlloc);
-    *buffer = realloc(*buffer, *myAlloc);
-    if (*buffer==NULL) {
-      failed = -errno;    // - for malloc/realloc errno, + for write errno
-    } else {
-      *ch = *buffer+off;  // in case realloc moved the allocation
-    }
+  
+  // buffer is too small. ask to increase buffMB
+  if (rowsPerBatch * myMaxLineLen >= (*myAlloc)) {
+    failed = 1;
   }
 }
 
@@ -759,10 +752,11 @@ void fwriteMain(fwriteMainArgs args)
   // If we don't use all the buffer for any reasons that's ok as OS will only getch the cache lines touched.
   // So, generally the larger the better up to max filesize/nth to use all the threads. A few times
   //   smaller than that though, to achieve some load balancing across threads since schedule(dynamic).
-  if (maxLineLen > buffSize) buffSize=2*maxLineLen;  // A very long line; at least 1,048,576 characters (since min(buffMB)==1)
-  rowsPerBatch =
-    (10*maxLineLen > buffSize) ? 1 :  // very very long lines (100,000 characters+) each thread will just do one row at a time.
-    0.5 * buffSize/maxLineLen;        // Aim for 50% buffer usage. See checkBuffer for comments.
+  
+  if (2 * maxLineLen > buffSize) {
+    STOP("Error : line length is greater than half buffer size. Increase buffMB");
+  }
+  rowsPerBatch =  buffSize / maxLineLen / 2;
   if (rowsPerBatch > args.nrow) rowsPerBatch = args.nrow;
   int numBatches = (args.nrow-1)/rowsPerBatch + 1;
   int nth = args.nth;
@@ -838,7 +832,7 @@ void fwriteMain(fwriteMainArgs args)
         // file output would be out-of-order. Can't change rowsPerBatch after the 'parallel for' started.
         size_t thisLineLen = ch-lineStart;
         if (thisLineLen > myMaxLineLen) myMaxLineLen=thisLineLen;
-        checkBuffer(&myBuff, &myAlloc, &ch, myMaxLineLen);
+        // checkBuffer(&myBuff, &myAlloc, &ch, myMaxLineLen);
         if (failed) break; // this thread stop writing rows; fall through to clear up and STOP() below
       }
       #pragma omp ordered
