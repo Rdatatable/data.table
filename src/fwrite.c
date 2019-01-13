@@ -661,6 +661,7 @@ void fwriteMain(fwriteMainArgs args)
 #else
     f = open(args.filename, O_WRONLY | O_CREAT | (args.append ? O_APPEND : O_TRUNC), 0666);
     // There is no binary/text mode distinction on Linux and Mac
+#endif
     if (f == -1) {
       int erropen = errno;
       STOP(access( args.filename, F_OK ) != -1 ?
@@ -669,7 +670,6 @@ void fwriteMain(fwriteMainArgs args)
            strerror(erropen), args.filename);
     }
   } else {
-#endif
     zf = gzopen(args.filename, "wb");
     if (zf == NULL) {
       int erropen = errno;
