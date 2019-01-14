@@ -121,12 +121,12 @@ test-rel-vanilla: # minimal installation, no suggested deps, no vignettes or man
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-rel-cran: # as CRAN
+test-rel-lin: # currently released R on Linux
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   variables:
-    _R_CHECK_CRAN_INCOMING_: "TRUE"
-    _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_: "TRUE"           # stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   # Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
     - *copy-src
@@ -138,13 +138,13 @@ test-rel-cran: # as CRAN
     - >-
         Rscript -e 'l<-readLines("data.table.Rcheck/00check.log"); if (!identical(l[length(l)], "Status: OK")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: OK"), " but ", shQuote(toString(l[length(l)]))) else q("no")'
 
-test-dev-cran: # R-devel as CRAN
+test-dev-lin: # R-devel on Linux
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel
   allow_failure: false
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
-    _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
     - *copy-src
@@ -154,12 +154,12 @@ test-dev-cran: # R-devel as CRAN
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-310-cran: # test stated dependency on R 3.1.0 as CRAN
+test-310-lin: # test stated R dependency (3.1.0) using Linux
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-3.1.0
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
-    _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
     - *copy-src
@@ -232,10 +232,10 @@ integration: # merging all artifacts to produce single R repository and summarie
   - mirror-packages
   - build
   - test-rel
-  - test-rel-cran
-  - test-dev-cran
+  - test-rel-lin
+  - test-dev-lin
   - test-rel-vanilla
-  - test-310-cran
+  - test-310-lin
   - test-rel-win
   - test-dev-win
   #- test-rel-osx
