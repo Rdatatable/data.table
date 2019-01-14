@@ -11148,6 +11148,20 @@ test(1825.16, fread(str, colClasses=(cl<-list(numeric=2, NULL=3:5)), drop=cl$`NU
 test(1825.17, fread(str, colClasses=c("integer","integer","NULL","character","NULL"), drop=3), data.table(x1=INT(1,3), x2=INT(2,4), x4=c("T","F")))
 test(1825.18, fread(str, colClasses=c("integer","numeric","NULL","character","NULL"), drop=3:4), data.table(x1=INT(1,3), x2=c(2,4)))
 test(1825.19, fread(str, drop=6), data.table(x1=INT(1,3), x2=INT(2,4), x3=c(1.5,2.5), x4=c("T","F"), x5=c("cc","ff")), warning="Column number 6 (drop[1]) is out of range [1,ncol=5]")
+# extra tests from #3143
+DT = data.table(a = c(1.0, 2.0, 3.0, 4.0, 5.1), b = c("1", "2", "E", "4", "5"))
+fwrite(DT, f<-tempfile())
+test(1825.20, fread(f, colClasses = c(b = "integer")), DT, warning="Attempt to override.*ignored")
+DT = data.table(a = c(1.0, 2.0, 3.0, 4.0, 5.0), b = c("1", "2", "E", "4", "5"))
+fwrite(DT, f)
+test(1825.21, fread(f, colClasses = c(b = "integer")), DT[, a:=as.integer(a)], warning="Attempt to override column 2.*ignored")  # 'a' is read as integer via fwrite not via colClasses
+DT = data.table(b = c("1", "2", "E", "4", "5"))
+fwrite(DT, f)
+test(1825.22, fread(f, colClasses = c(b = "integer")), DT, warning="Attempt to override.*ignored")
+DT = data.table(a = c(1.0, 2.0, 3.0, 4.0, 5.0), b = c("1", "2", "E", "4", "5"))
+fwrite(DT, f)
+test(1825.23, fread(f, colClasses = c(a = "numeric", b = "integer")), DT, warning="Attempt to override column 2.*ignored")
+unlink(f)
 
 # issue 2351
 set.seed(1)
