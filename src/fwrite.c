@@ -577,7 +577,6 @@ int compressbuff(Bytef* dest, uLongf* destLen, const Bytef* source, uLong source
 void fwriteMain(fwriteMainArgs args)
 {
   double startTime = wallclock();
-  double nextTime = startTime+2; // start printing progress meter in 2 sec if not completed by then
   double t0 = startTime;
 
   na = args.na;
@@ -667,7 +666,6 @@ void fwriteMain(fwriteMainArgs args)
   if (args.verbose) DTPRINT("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
 
   int f=0;
-  int err;
   if (*args.filename=='\0') {
     f=-1;  // file="" means write to standard output
     args.is_gzip = false; // gzip is only for file
@@ -722,7 +720,7 @@ void fwriteMain(fwriteMainArgs args)
     // compress buff into zbuff
     if(args.is_gzip){
       zbuffUsed = zbuffSize;
-      int ret = compressbuff(zbuff, &zbuffUsed, buff, (int)(ch - buff));
+      int ret = compressbuff(zbuff, &zbuffUsed, (Bytef*)buff, (int)(ch - buff));
       if(ret) {
         STOP("Compress error: %d", ret);
       }
@@ -778,7 +776,6 @@ void fwriteMain(fwriteMainArgs args)
   t0 = wallclock();
 
   failed=0;  // static global so checkBuffer can set it. -errno for malloc or realloc fails, +errno for write fail
-  bool hasPrinted=false;
   bool anyBufferGrown=false;
   int maxBuffUsedPC=0;
 
@@ -801,12 +798,6 @@ void fwriteMain(fwriteMainArgs args)
     // not yet in clang as of v3.8 (http://openmp.llvm.org/)
     // If not-me failed, I'll see shared 'failed', fall through loop, free my buffer
     // and after parallel section, single thread will call STOP() safely.
-
-    #pragma omp single
-    {
-      nth = omp_get_num_threads();  // update nth with the actual nth (might be different than requested)
-    }
-    int me = omp_get_thread_num();
 
     #pragma omp for ordered schedule(dynamic)
     for(int64_t start=0; start<args.nrow; start+=rowsPerBatch) {
@@ -843,7 +834,7 @@ void fwriteMain(fwriteMainArgs args)
       // compress buffer if gzip
       if (args.is_gzip) {
         myzbuffUsed = myzbuffSize;
-        failed = compressbuff(myzBuff, &myzbuffUsed, myBuff, (int)(ch - myBuff));
+        failed = compressbuff(myzBuff, &myzbuffUsed, (Bytef*)myBuff, (int)(ch - myBuff));
       }
       #pragma omp ordered
       {
