@@ -547,8 +547,7 @@ int compressbuff(Bytef* dest, uLongf* destLen, const Bytef* source, uLong source
     stream.zfree = (free_func)0;
     stream.opaque = (voidpf)0;
 
-    //err = deflateInit(&stream, level);
-    err = deflateInit2 (&stream, level, Z_DEFLATED, 31, 8, Z_DEFAULT_STRATEGY);
+    err = deflateInit2(&stream, level, Z_DEFLATED, 31, 8, Z_DEFAULT_STRATEGY);
     if (err != Z_OK)
       return err;
 
