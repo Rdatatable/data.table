@@ -613,20 +613,19 @@ void fwriteMain(fwriteMainArgs args)
   int eolLen = strlen(args.eol);
   if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
 
-  int buffMB = args.buffMB;
-  if (buffMB<1 || buffMB>1024) STOP("buffMB=%d outside [1,1024]", buffMB);
-  size_t buffSize = (size_t)1024*1024*buffMB;
+  if (args.buffMB<1 || args.buffMB>1024) STOP("buffMB=%d outside [1,1024]", args.buffMB);
+  size_t buffSize = (size_t)1024*1024*args.buffMB;
   char *buff = malloc(buffSize);
   if (!buff)
-    STOP("Unable to allocate %dMiB for buffer: %s", buffSize / 1024 / 1024, strerror(errno));
+    STOP("Unable to allocate %d MiB for buffer: %s", buffSize / 1024 / 1024, strerror(errno));
   size_t zbuffSize = buffSize + buffSize/10 + 16;
   Bytef *zbuff = malloc(zbuffSize);
   if (!zbuff)
-    STOP("Unable to allocate %dMiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));
+    STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));
   uLongf zbuffUsed = 0;
 
   if(args.verbose) {
-    DTPRINT("\nBuff:%p size: %d zbuff:%p size: %d\n", buff, buffSize, zbuff, zbuffSize);
+    DTPRINT("\nBuff size: %d zbuff size: %d\n", buffSize, zbuffSize);
     DTPRINT("Column writers: ");
     if (args.ncol<=50) {
       for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
@@ -663,7 +662,11 @@ void fwriteMain(fwriteMainArgs args)
     }
   }
   maxLineLen += eolLen;
-  if (args.verbose) DTPRINT("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
+  if (args.verbose)
+    DTPRINT("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
+  if (2 * maxLineLen > buffSize) {
+    STOP("Error : max line length is greater than half buffer size. Try to increase buffMB option. Example 'buffMB = %d'\n", 2 * args.buffMB);
+  }
 
   int f=0;
   if (*args.filename=='\0') {
@@ -712,7 +715,7 @@ void fwriteMain(fwriteMainArgs args)
       }
       writeString(args.colNames, j, &ch);
       if ((size_t) (ch - buff) >= buffSize) {
-        STOP("Header line too long : increase buffMB parameter");
+        STOP("Error : header line is greater than buffer size. Try to increase buffMB option. Example 'buffMB = %d'\n", 2 * args.buffMB);
       }
     }
     write_chars(args.eol, &ch);
@@ -760,11 +763,9 @@ void fwriteMain(fwriteMainArgs args)
   // Decide buffer size and rowsPerBatch for each thread
   // Once rowsPerBatch is decided it can't be changed
 
-  if (2 * maxLineLen > buffSize) {
-    STOP("Error : line length is greater than half buffer size. Increase buffMB");
-  }
   rowsPerBatch =  buffSize / maxLineLen / 2;
   if (rowsPerBatch > args.nrow) rowsPerBatch = args.nrow;
+  if (rowsPerBatch < 1) rowsPerBatch = 1;
   int numBatches = (args.nrow-1)/rowsPerBatch + 1;
   int nth = args.nth;
   if (numBatches < nth) nth = numBatches;
@@ -776,8 +777,6 @@ void fwriteMain(fwriteMainArgs args)
   t0 = wallclock();
 
   failed=0;  // static global so checkBuffer can set it. -errno for malloc or realloc fails, +errno for write fail
-  bool anyBufferGrown=false;
-  int maxBuffUsedPC=0;
 
   #pragma omp parallel num_threads(nth)
   {
@@ -825,6 +824,10 @@ void fwriteMain(fwriteMainArgs args)
           *ch++ = sep;
           //printf("  j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
         }
+        // Test if buffer to low
+        if ( (int)(ch - myBuff) >= buffSize ) {
+          failed = -1;
+        }
         // Tepid again (once at the end of each line)
         ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
         write_chars(args.eol, &ch);  // overwrite last sep with eol instead
@@ -864,12 +867,9 @@ void fwriteMain(fwriteMainArgs args)
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
   // from the original error.
   if (failed<0) {
-    STOP("%s. One or more threads failed to malloc or realloc their private buffer. nThread=%d and initial buffMB per thread was %d.\n",
-         strerror(-failed), nth, args.buffMB);
+    STOP("Error : one or more threads failed to malloc or buffer was too small. Try to increase buffMB option. Example 'buffMB = %d'\n", 2 * args.buffMB);
   } else if (failed>0) {
     STOP("%s: '%s'", strerror(failed), args.filename);
   }
-  if (args.verbose) DTPRINT("done (actual nth=%d, anyBufferGrown=%s, maxBuffUsed=%d%%)\n",
-                            nth, anyBufferGrown?"yes":"no", maxBuffUsedPC);
   return;
 }
