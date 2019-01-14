@@ -631,4 +631,5 @@ When on CRAN :
 4. Bump 3 version numbers in Makefile
 5. Bump dllVersion() in init.c
 6. Push to master with this consistent commit message: "1.12.0 on CRAN. Bump to 1.12.1"
-7. Take the sha of git commit from above point (to be precise sha of commit that bumped version in DESCRIPTION) and run `git tag 1.12.0 34796cd1524828df9bf13a174265cb68a09fcd77`. Use even release numbers for tags. Push tags to GitHub using `git push --tags upstream`.
+7. Take sha from step 6 and run `git tag 1.12.0 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.12.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+
