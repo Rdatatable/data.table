@@ -63,8 +63,8 @@ typedef struct fwriteMainArgs
   int buffMB;             // [1-1024] default 8MB
   int nth;
   bool showProgress;
-  bool verbose;
   bool is_gzip;
+  bool verbose;
 } fwriteMainArgs;
 
 void fwriteMain(fwriteMainArgs args);
