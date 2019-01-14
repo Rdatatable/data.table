@@ -818,15 +818,13 @@ void fwriteMain(fwriteMainArgs args)
         }
         // Hot loop
         for (int j=0; j<args.ncol; j++) {
-          //printf("j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
           (args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
-          //printf("  j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
           *ch++ = sep;
-          //printf("  j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
-        }
-        // Test if buffer to low
-        if ( (int)(ch - myBuff) >= buffSize ) {
-          failed = -1;
+          // Test if buffer to low
+          if ( (int)(ch - myBuff) >= buffSize ) {
+            failed = -1;
+            break; // stop writing
+          }
         }
         // Tepid again (once at the end of each line)
         ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
