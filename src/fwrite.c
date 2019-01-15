@@ -529,6 +529,23 @@ void writeCategString(void *col, int64_t row, char **pch)
   write_string(getCategString(col, row), pch);
 }
 
+int writer_len[] = {
+  5, //&writeBool8,
+  5, //&writeBool32,
+  5, //&writeBool32AsString,
+  9, //&writeInt32,
+  19, //&writeInt64,
+  24, //&writeFloat64,
+  32, //&writeITime,
+  16, //&writeDateInt32,
+  16, //&writeDateFloat64,
+  32, //&writePOSIXct,
+  48, //&writeNanotime,
+  0, //&writeString,
+  0, //&writeCategString,
+  1024, //&writeList
+};
+
 static int failed = 0;
 static int rowsPerBatch;
 
@@ -638,6 +655,32 @@ void fwriteMain(fwriteMainArgs args)
     DTPRINT("\n");
   }
 
+  int maxHeaderLen = 0;
+  if (args.colNames) {
+    // We don't know how long this line will be.
+    // This line must be lesser than buffer size buffSize
+    if (args.doRowNames) {
+      // Unusual: the extra blank column name when row_names are added as the first column
+      if (doQuote) {
+        maxHeaderLen += 2;
+      }
+      maxHeaderLen += 1; /* for sep */
+    }
+    for (int j=0; j<args.ncol; j++) {
+      if (j>0) {
+        maxHeaderLen += 1; /* for sep */
+      }
+      maxHeaderLen += strlen(getString(args.colNames, j));
+    }
+    maxHeaderLen += eolLen; /*eol*/
+  }
+  if (args.verbose)
+    DTPRINT("maxHeaderLen=%d\n", maxHeaderLen);
+
+  if (maxHeaderLen >= buffSize) {
+    STOP("Error : header line is greater than buffer size. Try to increase buffMB option. Example 'buffMB = %d'\n",
+            (args.buffMB < maxHeaderLen ? maxHeaderLen : args.buffMB) / 1024 / 1024 + 1);
+  }
   int maxLineLen = 0;
   for (int64_t i = 0; i < args.nrow; i += args.nrow / 1000 + 1) {
       //write_string(getString(col, row), pch);
@@ -652,16 +695,18 @@ void fwriteMain(fwriteMainArgs args)
       }
 
       for (int j=0; j<args.ncol; j++) {
-          if (args.whichFun[j] == 11) { // if String
+          if (writer_len[args.whichFun[j]]) {
+              thisLineLen += writer_len[args.whichFun[j]] +
+                             2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
+          } else if (args.whichFun[j] == 11) { // if String
               thisLineLen += strlen(getString(args.columns[j], i))+
                              2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
-           } else if (args.whichFun[j] == 12) { // if Factr
+          } else if (args.whichFun[j] == 12) { // if Factor
               thisLineLen += strlen(getCategString(args.columns[j], i))+
                              2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
-           } else {
-              thisLineLen += 16; /* for numeric and dates */
-           }
+          }
       }
+      thisLineLen += eolLen;
       if (thisLineLen > maxLineLen)
           maxLineLen = thisLineLen;
   }

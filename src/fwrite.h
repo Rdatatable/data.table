@@ -37,6 +37,7 @@ typedef struct fwriteMainArgs
   // a vector of pointers to all-same-length column vectors
   void **columns;
   writer_fun_t *funs;      // a vector of writer_fun_t function pointers
+  int *writer_len;
 
   // length ncol vector containing which fun[] to use for each column
   // one byte to use 8 times less cache lines than a vector of function pointers would do
