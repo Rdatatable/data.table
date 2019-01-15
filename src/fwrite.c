@@ -609,8 +609,6 @@ void fwriteMain(fwriteMainArgs args)
   qmethodEscape = args.qmethodEscape;
   squashDateTime = args.squashDateTime;
 
-
-
   int eolLen = strlen(args.eol);
   if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
 
@@ -692,8 +690,8 @@ void fwriteMain(fwriteMainArgs args)
   // Cold section as only 1,000 rows. Speed not an issue issue here.
   // Overestimating line length is ok.
   if (args.verbose) {
-    DTPRINT("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%d args.ncol=%d\n",
-          args.doRowNames, args.rowNames, doQuote, args.nrow, args.ncol);
+    DTPRINT("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%d args.ncol=%di eolLen=%d\n",
+          args.doRowNames, args.rowNames, doQuote, args.nrow, args.ncol, eolLen);
   }
   for (int64_t i = 0; i < args.nrow; i += args.nrow / 1000 + 1) {
       int thisLineLen=0;
@@ -871,6 +869,7 @@ void fwriteMain(fwriteMainArgs args)
     uLongf myzbuffUsed = 0;
     size_t myzbuffSize = 0;
     Bytef *myzBuff;
+
     if(args.is_gzip){
       myzbuffSize = buffSize + buffSize/10 + 16;
       myzBuff = malloc(myzbuffSize);
@@ -982,7 +981,9 @@ void fwriteMain(fwriteMainArgs args)
     // all threads will call this free on their buffer, even if one or more threads had malloc
     // or realloc fail. If the initial malloc failed, free(NULL) is ok and does nothing.
     free(myBuff);
-    free(myzBuff);
+    if (args.is_gzip) {
+        free(myzBuff);
+    }
   }
 
   // Finished parallel region and can call R API safely now.
