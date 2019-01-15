@@ -543,7 +543,7 @@ int writer_len[] = {
   48, //&writeNanotime,
   0, //&writeString,
   0, //&writeCategString,
-  1024, //&writeList
+  0, //&writeList
 };
 
 static int failed = 0;
@@ -704,6 +704,10 @@ void fwriteMain(fwriteMainArgs args)
           } else if (args.whichFun[j] == 12) { // if Factor
               thisLineLen += strlen(getCategString(args.columns[j], i))+
                              2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
+          } else if (args.whichFun[j] == 13) { // if List
+              char *ch = buff;                // overwrite at the beginning of buff to be more robust > 1 million bytes
+              writeList(args.columns[j], i, &ch);
+              thisLineLen += (int)(ch-buff) + 1/*sep*/;
           }
       }
       thisLineLen += eolLen;
