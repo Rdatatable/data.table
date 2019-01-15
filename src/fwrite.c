@@ -614,6 +614,8 @@ void fwriteMain(fwriteMainArgs args)
 
   if (args.buffMB<1 || args.buffMB>1024) STOP("buffMB=%d outside [1,1024]", args.buffMB);
   size_t buffSize = (size_t)1024*1024*args.buffMB;
+  size_t buffLimit = (size_t) 9 * buffSize / 10; // buffer error if more than 90% use
+
   char *buff = malloc(buffSize);
   if (!buff)
     STOP("Unable to allocate %d MiB for buffer: %s", buffSize / 1024 / 1024, strerror(errno));
@@ -637,34 +639,39 @@ void fwriteMain(fwriteMainArgs args)
   }
 
   int maxLineLen = 0;
-  int step = args.nrow<1000 ? 100 : args.nrow/10;
-  for (int64_t start=0; start<args.nrow; start+=step) {
-    int64_t end = (args.nrow-start)<100 ? args.nrow : start+100;
-    for (int64_t i=start; i<end; i++) {
+  for (int64_t i = 0; i < args.nrow; i += args.nrow / 1000 + 1) {
+      //write_string(getString(col, row), pch);
       int thisLineLen=0;
       if (args.doRowNames) {
         if (args.rowNames) {
-          char *ch = buff;
-          writeString(args.rowNames, i, &ch);
-          thisLineLen += (int)(ch-buff);     // see comments above about restrictions/guarantees/contracts
+          thisLineLen += (int)(strlen(getString(args.rowNames, i)));
         } else {
           thisLineLen += 1+(int)log10(args.nrow);  // the width of the row number
         }
         thisLineLen += 2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
       }
+
       for (int j=0; j<args.ncol; j++) {
-        char *ch = buff;                // overwrite each field at the beginning of buff to be more robust to single fields > 1 million bytes
-        args.funs[args.whichFun[j]]( args.columns[j], i, &ch );
-        thisLineLen += (int)(ch-buff) + 1/*sep*/;        // see comments above about restrictions/guarantees/contracts
+          if (args.whichFun[j] == 11) { // if String
+              thisLineLen += strlen(getString(args.columns[j], i))+
+                             2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
+           } else if (args.whichFun[j] == 12) { // if Factr
+              thisLineLen += strlen(getCategString(args.columns[j], i))+
+                             2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
+           } else {
+              thisLineLen += 16; /* for numeric and dates */
+           }
       }
-      if (thisLineLen > maxLineLen) maxLineLen = thisLineLen;
-    }
+      if (thisLineLen > maxLineLen)
+          maxLineLen = thisLineLen;
   }
   maxLineLen += eolLen;
+
   if (args.verbose)
     DTPRINT("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
   if (2 * maxLineLen > buffSize) {
-    STOP("Error : max line length is greater than half buffer size. Try to increase buffMB option. Example 'buffMB = %d'\n", 2 * args.buffMB);
+    STOP("Error : max line length is greater than half buffer size. Try to increase buffMB option. Example 'buffMB = %d'\n",
+            2 * (args.buffMB < maxLineLen ? maxLineLen : args.buffMB) / 1024 / 1024 + 1);
   }
 
   int f=0;
