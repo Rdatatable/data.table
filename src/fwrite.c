@@ -681,7 +681,7 @@ void fwriteMain(fwriteMainArgs args)
 
   if (maxHeaderLen >= buffLimit) {
     STOP("Error : header line is greater than buffer limit. Try to increase buffMB option. Example 'buffMB = %d'\n",
-            2 * maxHeaderLen / 1024 / 1024 + 1;
+            2 * maxHeaderLen / 1024 / 1024 + 1);
   }
 
   int maxLineLen = 0;
