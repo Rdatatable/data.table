@@ -690,7 +690,7 @@ void fwriteMain(fwriteMainArgs args)
   // Cold section as only 1,000 rows. Speed not an issue issue here.
   // Overestimating line length is ok.
   if (args.verbose) {
-    DTPRINT("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%d args.ncol=%di eolLen=%d\n",
+    DTPRINT("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%d args.ncol=%d eolLen=%d\n",
           args.doRowNames, args.rowNames, doQuote, args.nrow, args.ncol, eolLen);
   }
   for (int64_t i = 0; i < args.nrow; i += args.nrow / 1000 + 1) {
@@ -839,7 +839,7 @@ void fwriteMain(fwriteMainArgs args)
   // Decide buffer size and rowsPerBatch for each thread
   // Once rowsPerBatch is decided it can't be changed
 
-  rowsPerBatch =  buffSize / maxLineLen / 2;
+  rowsPerBatch =  buffLimit / maxLineLen;
   if (rowsPerBatch > args.nrow) rowsPerBatch = args.nrow;
   if (rowsPerBatch < 1) rowsPerBatch = 1;
   int numBatches = (args.nrow-1)/rowsPerBatch + 1;
