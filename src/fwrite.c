@@ -638,8 +638,8 @@ void fwriteMain(fwriteMainArgs args)
   Bytef *zbuff;
 
   if (args.is_gzip) {
-    size_t zbuffSize = buffSize + buffSize/10 + 16;
-    Bytef *zbuff = malloc(zbuffSize);
+    zbuffSize = buffSize + buffSize/10 + 16;
+    zbuff = malloc(zbuffSize);
     if (!zbuff)
         STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));
   }
@@ -872,8 +872,8 @@ void fwriteMain(fwriteMainArgs args)
     size_t myzbuffSize = 0;
     Bytef *myzBuff;
     if(args.is_gzip){
-      size_t myzbuffSize = buffSize + buffSize/10 + 16;
-      Bytef *myzBuff = malloc(myzbuffSize);
+      myzbuffSize = buffSize + buffSize/10 + 16;
+      myzBuff = malloc(myzbuffSize);
       if (myzBuff==NULL) {
         failed=-errno;
       }
