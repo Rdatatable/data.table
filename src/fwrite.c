@@ -609,11 +609,10 @@ void fwriteMain(fwriteMainArgs args)
   qmethodEscape = args.qmethodEscape;
   squashDateTime = args.squashDateTime;
 
-  // Estimate max line length of a 1000 row sample (100 rows in 10 places).
-  // 'Estimate' even of this sample because quote='auto' may add quotes and escape embedded quotes.
-  // Buffers will be resized later if there are too many line lengths outside the sample, anyway.
-  // maxLineLen is required to determine a reasonable rowsPerBatch.
 
+
+  int eolLen = strlen(args.eol);
+  if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
 
   // alloc one buffMB here.  Keep rewriting each field to it, to sum up the size.  Restriction: one field can't be
   // greater that minimumum buffMB (1MB = 1 million characters).  Otherwise unbounded overwrite. Possible with very
@@ -625,11 +624,6 @@ void fwriteMain(fwriteMainArgs args)
   // The default buffMB is 8MB,  so it's really 8 million character limit by default. 1MB is because user might set
   // buffMB to 1, say if they have 512 CPUs or more, perhaps.
 
-  // Cold section as only 1,000 rows. Speed not an issue issue here.
-  // Overestimating line length is ok.
-  int eolLen = strlen(args.eol);
-  if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
-
   if (args.buffMB<1 || args.buffMB>1024) STOP("buffMB=%d outside [1,1024]", args.buffMB);
   size_t buffSize = (size_t)1024*1024*args.buffMB;
   size_t buffLimit = (size_t) 9 * buffSize / 10; // set buffer limit for thread = 90%
@@ -638,14 +632,19 @@ void fwriteMain(fwriteMainArgs args)
   char *buff = malloc(buffSize);
   if (!buff)
     STOP("Unable to allocate %d MiB for buffer: %s", buffSize / 1024 / 1024, strerror(errno));
-  size_t zbuffSize = buffSize + buffSize/10 + 16;
-  Bytef *zbuff = malloc(zbuffSize);
-  if (!zbuff)
-    STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));
+
+  size_t zbuffSize = 0;
   uLongf zbuffUsed = 0;
+  Bytef *zbuff;
+
+  if (args.is_gzip) {
+    size_t zbuffSize = buffSize + buffSize/10 + 16;
+    Bytef *zbuff = malloc(zbuffSize);
+    if (!zbuff)
+        STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));
+  }
 
   if(args.verbose) {
-    DTPRINT("\nBuff size: %d zbuff size: %d\n", buffSize, zbuffSize);
     DTPRINT("Column writers: ");
     if (args.ncol<=50) {
       for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
@@ -684,7 +683,14 @@ void fwriteMain(fwriteMainArgs args)
             2 * maxHeaderLen / 1024 / 1024 + 1);
   }
 
+  // Estimate max line length of a 1000 row sample (100 rows in 10 places).
+  // 'Estimate' even of this sample because quote='auto' may add quotes and escape embedded quotes.
+  // Buffers will be resized later if there are too many line lengths outside the sample, anyway.
+  // maxLineLen is required to determine a reasonable rowsPerBatch.
+
   int maxLineLen = 0;
+  // Cold section as only 1,000 rows. Speed not an issue issue here.
+  // Overestimating line length is ok.
   for (int64_t i = 0; i < args.nrow; i += args.nrow / 1000 + 1) {
       //write_string(getString(col, row), pch);
       int thisLineLen=0;
@@ -797,13 +803,17 @@ void fwriteMain(fwriteMainArgs args)
     if (errwrite) {
       CLOSE(f);
       free(buff);
-      free(zbuff);
+      if(args.is_gzip){
+        free(zbuff);
+      }
       STOP("%s: '%s'", strerror(errwrite), args.filename);
     }
   }
 
   free(buff);  // TODO: also to be free'd in cleanup when there's an error opening file above
-  free(zbuff);
+  if(args.is_gzip){
+    free(zbuff);
+  }
 
   if (args.verbose)
     DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
@@ -844,11 +854,16 @@ void fwriteMain(fwriteMainArgs args)
     if (myBuff==NULL) {
       failed=-errno;
     }
-    size_t myzbuffSize = buffSize + buffSize/10 + 16;
-    Bytef *myzBuff = malloc(myzbuffSize);
+
     uLongf myzbuffUsed = 0;
-    if (myzBuff==NULL) {
-      failed=-errno;
+    size_t myzbuffSize = 0;
+    Bytef *myzBuff;
+    if(args.is_gzip){
+      size_t myzbuffSize = buffSize + buffSize/10 + 16;
+      Bytef *myzBuff = malloc(myzbuffSize);
+      if (myzBuff==NULL) {
+        failed=-errno;
+      }
     }
     // Do not rely on availability of '#omp cancel' new in OpenMP v4.0 (July 2013).
     // OpenMP v4.0 is in gcc 4.9+ (https://gcc.gnu.org/wiki/openmp) but
