@@ -9366,7 +9366,7 @@ if (.Platform$OS.type=="unix") {
 if (.Platform$OS.type=="unix") {
   f <- tempfile()
   fwrite(data.table(a=c(1:3), b=c(1:3)), file=f, compress="none")
-  test(1658.39, system(paste("cat", f), intern=T), output='[1] "a,b" "1,1" "2,2" "3,3"')
+  test(1658.39, system(paste("cat", f), intern=TRUE), output='[1] "a,b" "1,1" "2,2" "3,3"')
   unlink(f)
 }
 
