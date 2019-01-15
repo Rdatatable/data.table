@@ -691,8 +691,11 @@ void fwriteMain(fwriteMainArgs args)
   int maxLineLen = 0;
   // Cold section as only 1,000 rows. Speed not an issue issue here.
   // Overestimating line length is ok.
+  if (args.verbose) {
+    DTPRINT("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%d args.ncol=%d\n",
+          args.doRowNames, args.rowNames, doQuote, args.nrow, args.ncol);
+  }
   for (int64_t i = 0; i < args.nrow; i += args.nrow / 1000 + 1) {
-      //write_string(getString(col, row), pch);
       int thisLineLen=0;
       if (args.doRowNames) {
         if (args.rowNames) {
@@ -704,19 +707,29 @@ void fwriteMain(fwriteMainArgs args)
       }
 
       for (int j=0; j<args.ncol; j++) {
-          if (writer_len[args.whichFun[j]]) {
-              thisLineLen += writer_len[args.whichFun[j]] +
-                             2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
-          } else if (args.whichFun[j] == 11) { // if String
-              thisLineLen += strlen(getString(args.columns[j], i))+
-                             2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
-          } else if (args.whichFun[j] == 12) { // if Factor
-              thisLineLen += strlen(getCategString(args.columns[j], i))+
-                             2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
-          } else if (args.whichFun[j] == 13) { // if List
+          int num_fun = args.whichFun[j];
+          if (writer_len[num_fun]) {
+              thisLineLen += writer_len[num_fun] + 2 * (doQuote != 0) + 1; /* 1 for sep */
+          } else if (num_fun == 11) { // if String
+              const char* ch = getString(args.columns[j], i);
+              if (ch == NULL) {
+                thisLineLen += strlen(na);
+              } else {
+                thisLineLen += strlen(ch);
+              }
+              thisLineLen +=  2 * (doQuote!=0) + 1;
+          } else if (num_fun == 12) { // if Factor
+              const char* ch = getCategString(args.columns[j], i);
+              if (ch == NULL) {
+                thisLineLen += strlen(na);
+              } else {
+                thisLineLen += strlen(ch);
+              }
+              thisLineLen +=  2 * (doQuote!=0) + 1;
+          } else if (num_fun == 13) { // if List
               char *ch = buff;                // overwrite at the beginning of buff to be more robust > 1 million bytes
               writeList(args.columns[j], i, &ch);
-              thisLineLen += (int)(ch-buff) + 1/*sep*/;
+              thisLineLen += (int)(ch-buff) + 1;
           }
       }
       thisLineLen += eolLen;
