@@ -632,7 +632,8 @@ void fwriteMain(fwriteMainArgs args)
 
   if (args.buffMB<1 || args.buffMB>1024) STOP("buffMB=%d outside [1,1024]", args.buffMB);
   size_t buffSize = (size_t)1024*1024*args.buffMB;
-  size_t buffLimit = (size_t) 9 * buffSize / 10; // buffer error if more than 90% use
+  size_t buffLimit = (size_t) 9 * buffSize / 10; // set buffer limit for thread = 90%
+  size_t buffSecure = (size_t) 5 * buffSize / 10; // maxLineLen in initial sample must be under this value
 
   char *buff = malloc(buffSize);
   if (!buff)
@@ -678,10 +679,11 @@ void fwriteMain(fwriteMainArgs args)
   if (args.verbose)
     DTPRINT("maxHeaderLen=%d\n", maxHeaderLen);
 
-  if (maxHeaderLen >= buffSize) {
-    STOP("Error : header line is greater than buffer size. Try to increase buffMB option. Example 'buffMB = %d'\n",
-            (args.buffMB < maxHeaderLen ? maxHeaderLen : args.buffMB) / 1024 / 1024 + 1);
+  if (maxHeaderLen >= buffLimit) {
+    STOP("Error : header line is greater than buffer limit. Try to increase buffMB option. Example 'buffMB = %d'\n",
+            2 * maxHeaderLen / 1024 / 1024 + 1;
   }
+
   int maxLineLen = 0;
   for (int64_t i = 0; i < args.nrow; i += args.nrow / 1000 + 1) {
       //write_string(getString(col, row), pch);
@@ -714,15 +716,15 @@ void fwriteMain(fwriteMainArgs args)
       thisLineLen += eolLen;
       if (thisLineLen > maxLineLen)
           maxLineLen = thisLineLen;
+      // stop if buffer is too low
+      if (maxLineLen >= buffSecure) {
+          STOP("Error : max line length is greater than buffer secure limit. Try to increase buffMB option. Example 'buffMB = %d'\n",
+            2 * maxLineLen / 1024 / 1024 + 1);
+      }
   }
-  maxLineLen += eolLen;
 
   if (args.verbose)
     DTPRINT("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
-  if (2 * maxLineLen > buffSize) {
-    STOP("Error : max line length is greater than half buffer size. Try to increase buffMB option. Example 'buffMB = %d'\n",
-            2 * (args.buffMB < maxLineLen ? maxLineLen : args.buffMB) / 1024 / 1024 + 1);
-  }
 
   int f=0;
   if (*args.filename=='\0') {
@@ -755,8 +757,8 @@ void fwriteMain(fwriteMainArgs args)
     if (f==-1) DTPRINT("\n");
   }
   if (args.colNames) {
-    // We don't know how long this line will be.
-    // This line must be lesser than buffer size buffSize
+    // We have tested this line length and verify that buffer was big enough
+    // So no more buffer tests
     char *ch = buff;
     if (args.doRowNames) {
       // Unusual: the extra blank column name when row_names are added as the first column
@@ -770,9 +772,6 @@ void fwriteMain(fwriteMainArgs args)
         *ch++ = sep;
       }
       writeString(args.colNames, j, &ch);
-      if ((size_t) (ch - buff) >= buffSize) {
-        STOP("Error : header line is greater than buffer size. Try to increase buffMB option. Example 'buffMB = %d'\n", 2 * args.buffMB);
-      }
     }
     write_chars(args.eol, &ch);
 
@@ -804,7 +803,7 @@ void fwriteMain(fwriteMainArgs args)
   }
 
   free(buff);  // TODO: also to be free'd in cleanup when there's an error opening file above
-  free(zbuff);  // TODO: also to be free'd in cleanup when there's an error opening file above
+  free(zbuff);
 
   if (args.verbose)
     DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
@@ -886,7 +885,7 @@ void fwriteMain(fwriteMainArgs args)
           (args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
           *ch++ = sep;
           // Test if buffer to low
-          if ( (int)(ch - myBuff) >= buffSize ) {
+          if ( (int)(ch - myBuff) >= buffLimit ) {
             failed = -1;
             break; // stop writing
           }
