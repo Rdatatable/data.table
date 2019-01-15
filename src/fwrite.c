@@ -593,6 +593,7 @@ int compressbuff(Bytef* dest, uLongf* destLen, const Bytef* source, uLong source
 void fwriteMain(fwriteMainArgs args)
 {
   double startTime = wallclock();
+  double nextTime = startTime+2; // start printing progress meter in 2 sec if not completed by then
   double t0 = startTime;
 
   na = args.na;
@@ -833,6 +834,9 @@ void fwriteMain(fwriteMainArgs args)
 
   failed=0;  // static global so checkBuffer can set it. -errno for malloc or realloc fails, +errno for write fail
 
+  bool hasPrinted=false;
+  int maxBuffUsedPC=0;
+
   #pragma omp parallel num_threads(nth)
   {
     char *ch, *myBuff;               // local to each thread
@@ -852,6 +856,12 @@ void fwriteMain(fwriteMainArgs args)
     // not yet in clang as of v3.8 (http://openmp.llvm.org/)
     // If not-me failed, I'll see shared 'failed', fall through loop, free my buffer
     // and after parallel section, single thread will call STOP() safely.
+
+    #pragma omp single
+    {
+      nth = omp_get_num_threads();  // update nth with the actual nth (might be different than requested)
+    }
+    int me = omp_get_thread_num();
 
     #pragma omp for ordered schedule(dynamic)
     for(int64_t start=0; start<args.nrow; start+=rowsPerBatch) {
@@ -903,6 +913,41 @@ void fwriteMain(fwriteMainArgs args)
           } else if (args.is_gzip && WRITE(f, myzBuff, (int)(myzbuffUsed)) == -1) {
               failed=errno;
           }
+
+          int used = 100*((double)(ch-myBuff))/buffSize;  // percentage of original buffMB
+          if (used > maxBuffUsedPC) maxBuffUsedPC = used;
+          double now;
+          if (me==0 && args.showProgress && (now=wallclock())>=nextTime && !failed) {
+            // See comments above inside the f==-1 clause.
+            // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
+            // master thread (me==0) and hopefully this will work on Windows. If not, user should set
+            // showProgress=FALSE until this can be fixed or removed.
+            int ETA = (int)((args.nrow-end)*((now-startTime)/end));
+            if (hasPrinted || ETA >= 2) {
+              if (args.verbose && !hasPrinted) DTPRINT("\n");
+              DTPRINT("\rWritten %.1f%% of %d rows in %d secs using %d thread%s. "
+                      "maxBuffUsed=%d%%. ETA %d secs.      ",
+                       (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
+                       maxBuffUsedPC, ETA);
+              // TODO: use progress() as in fread
+              nextTime = now+1;
+              hasPrinted = true;
+            }
+          }
+          // May be possible for master thread (me==0) to call R_CheckUserInterrupt() here.
+          // Something like:
+          // if (me==0) {
+          //   failed = TRUE;  // inside ordered here; the slaves are before ordered and not looking at 'failed'
+          //   R_CheckUserInterrupt();
+          //   failed = FALSE; // no user interrupt so return state
+          // }
+          // But I fear the slaves will hang waiting for the master (me==0) to complete the ordered
+          // section which may not happen if the master thread has been interrupted. Rather than
+          // seeing failed=TRUE and falling through to free() and close() as intended.
+          // Could register a finalizer to free() and close() perhaps :
+          // [r-devel] http://r.789695.n4.nabble.com/checking-user-interrupts-in-C-code-tp2717528p2717722.html
+          // Conclusion for now: do not provide ability to interrupt.
+          // write() errors and malloc() fails will be caught and cleaned up properly, however.
           ch = myBuff;  // back to the start of my buffer ready to fill it up again
         }
       }
@@ -911,6 +956,18 @@ void fwriteMain(fwriteMainArgs args)
     // or realloc fail. If the initial malloc failed, free(NULL) is ok and does nothing.
     free(myBuff);
     free(myzBuff);
+  }
+
+  // Finished parallel region and can call R API safely now.
+  if (hasPrinted) {
+    if (!failed) {
+      // clear the progress meter
+      DTPRINT("\r                                                                       "
+              "                                                              \r");
+    } else {
+      // unless failed as we'd like to see anyBufferGrown and maxBuffUsedPC
+      DTPRINT("\n");
+    }
   }
 
   if (f!=-1 && CLOSE(f) && !failed)
