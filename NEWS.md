@@ -4,6 +4,8 @@
 
 #### NEW FEATURES
 
+1. `fwrite` can now write directly gzipped csv file if `compress` option is set to `gzip` or if file ends with `".gz"` and `compress="auto". Compression, like `fwrite`, is multithreaded
+
 #### BUG FIXES
 
 #### NOTES
