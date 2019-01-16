@@ -26,6 +26,23 @@ void writeList();
 
 void write_chars(const char *source, char **dest);
 
+typedef enum {   // same order as fun[] above
+  WF_Bool8,
+  WF_Bool32,
+  WF_Bool32AsString,
+  WF_Int32,
+  WF_Int64,
+  WF_Float64,
+  WF_ITime,
+  WF_DateInt32,
+  WF_DateFloat64,
+  WF_POSIXct,
+  WF_Nanotime,
+  WF_String,
+  WF_CategString,
+  WF_List
+} WFs;
+
 typedef struct fwriteMainArgs
 {
   // Name of the file to open (a \0-terminated C string). If the file name
