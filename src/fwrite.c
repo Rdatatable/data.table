@@ -708,7 +708,7 @@ void fwriteMain(fwriteMainArgs args)
           int num_fun = args.whichFun[j];
           if (writer_len[num_fun]) {
               thisLineLen += writer_len[num_fun] + 2 * (doQuote != 0) + 1; /* 1 for sep */
-          } else if (num_fun == 11) { // if String
+          } else if (num_fun == WF_String) { // if String
               const char* ch = getString(args.columns[j], i);
               if (ch == NULL) {
                 thisLineLen += strlen(na);
@@ -716,7 +716,7 @@ void fwriteMain(fwriteMainArgs args)
                 thisLineLen += strlen(ch);
               }
               thisLineLen +=  2 * (doQuote!=0) + 1;
-          } else if (num_fun == 12) { // if Factor
+          } else if (num_fun == WF_CategString) { // if Factor
               const char* ch = getCategString(args.columns[j], i);
               if (ch == NULL) {
                 thisLineLen += strlen(na);
@@ -724,7 +724,7 @@ void fwriteMain(fwriteMainArgs args)
                 thisLineLen += strlen(ch);
               }
               thisLineLen +=  2 * (doQuote!=0) + 1;
-          } else if (num_fun == 13) { // if List
+          } else if (num_fun == WF_List) { // if List
               char *ch = buff;                // overwrite at the beginning of buff to be more robust > 1 million bytes
               writeList(args.columns[j], i, &ch);
               thisLineLen += (int)(ch-buff) + 1;
