@@ -633,7 +633,7 @@ void fwriteMain(fwriteMainArgs args)
 
   size_t zbuffSize = 0;
   uLongf zbuffUsed = 0;
-  Bytef *zbuff;
+  Bytef *zbuff = NULL;
 
   if (args.is_gzip) {
     zbuffSize = buffSize + buffSize/10 + 16;
@@ -868,7 +868,7 @@ void fwriteMain(fwriteMainArgs args)
 
     uLongf myzbuffUsed = 0;
     size_t myzbuffSize = 0;
-    Bytef *myzBuff;
+    Bytef *myzBuff = NULL;
 
     if(args.is_gzip){
       myzbuffSize = buffSize + buffSize/10 + 16;
