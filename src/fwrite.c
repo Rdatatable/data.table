@@ -546,9 +546,6 @@ int writer_len[] = {
   0, //&writeList
 };
 
-static int failed = 0;
-static int rowsPerBatch;
-
 int compressbuff(Bytef* dest, uLongf* destLen, const Bytef* source, uLong sourceLen)
 {
     int level = Z_DEFAULT_COMPRESSION;
@@ -589,6 +586,9 @@ int compressbuff(Bytef* dest, uLongf* destLen, const Bytef* source, uLong source
     deflateEnd(&stream);
     return err == Z_STREAM_END ? Z_OK : err;
 }
+
+static int failed = 0;
+static int rowsPerBatch;
 
 void fwriteMain(fwriteMainArgs args)
 {
@@ -710,19 +710,11 @@ void fwriteMain(fwriteMainArgs args)
               thisLineLen += writer_len[num_fun] + 2 * (doQuote != 0) + 1; /* 1 for sep */
           } else if (num_fun == WF_String) { // if String
               const char* ch = getString(args.columns[j], i);
-              if (ch == NULL) {
-                thisLineLen += strlen(na);
-              } else {
-                thisLineLen += strlen(ch);
-              }
+              thisLineLen += (ch == NULL) ? strlen(na) : strlen(ch);
               thisLineLen +=  2 * (doQuote!=0) + 1;
           } else if (num_fun == WF_CategString) { // if Factor
               const char* ch = getCategString(args.columns[j], i);
-              if (ch == NULL) {
-                thisLineLen += strlen(na);
-              } else {
-                thisLineLen += strlen(ch);
-              }
+              thisLineLen += (ch == NULL) ? strlen(na) : strlen(ch);
               thisLineLen +=  2 * (doQuote!=0) + 1;
           } else if (num_fun == WF_List) { // if List
               char *ch = buff;                // overwrite at the beginning of buff to be more robust > 1 million bytes
@@ -909,12 +901,28 @@ void fwriteMain(fwriteMainArgs args)
         }
         // Hot loop
         for (int j=0; j<args.ncol; j++) {
-          (args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
-          *ch++ = sep;
-          // Test if buffer to low
-          if ( (int)(ch - myBuff) >= buffLimit ) {
-            failed = -1;
-            break; // stop writing
+          int size = 0;
+          int num_fun = args.whichFun[j];
+          if (writer_len[num_fun]) {
+              size = writer_len[num_fun];
+          } else if (num_fun == WF_String) { // if String
+              const char* ch = getString(args.columns[j], i);
+              size = (ch == NULL) ? strlen(na) : strlen(ch);
+          } else if (num_fun == WF_CategString) { // if Factor
+              const char* ch = getCategString(args.columns[j], i);
+              size = (ch == NULL) ? strlen(na) : strlen(ch);
+            }
+          if (size >= buffLimit) {
+              failed = -1;
+              break;
+          } else {
+            (args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
+            *ch++ = sep;
+            // Test if buffer to low
+            if ( (int)(ch - myBuff) >= buffLimit ) {
+                failed = -1;
+                break; // stop writing
+            }
           }
         }
         // Tepid again (once at the end of each line)
