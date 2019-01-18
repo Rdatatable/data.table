@@ -13302,6 +13302,19 @@ test(1977.4, DT["D", -"GRP"], data.table(ID="D", X=NA_real_, key="ID"))
 test(1977.5, DT["D", c("ID","GRP")], data.table(ID="D", GRP=NA_integer_, key="ID"))
 test(1977.6, DT[c("A","D"), c("ID","GRP")], data.table(ID=c("A","A","D"), GRP=INT(1,1,NA)))
 
+## fread keepLeadingZeros parameter
+
+# test leading zeros in both integer and float looking numbers are converted to character when keepLeadingZeros = TRUE and leading zeros are removed when keepLeadingZeros = FALSE
+test_data_single <- "0, 00, 01, 00010, 002.01\n"
+
+test(1978.0, fread(test_data_single), data.table(0L, 0L, 1L, 10L, 2.01))
+test(1978.1, fread(test_data_single, keepLeadingZeros = FALSE), data.table(0L, 0L, 1L, 10L, 2.01))
+test(1978.2, fread(test_data_single, keepLeadingZeros = TRUE),  data.table(0L, "00","01","00010","002.01"))
+
+# converts whole column to character when keepLeadingZeros = TRUE and at least 1 value contains a leading zero
+test_data_mult <- paste0(c(sample(1:100),"0010",sample(1:100)), collapse="\n")
+test(1978.3, class(fread(test_data_mult, keepLeadingZeros = TRUE)[[1]]), "character")
+test(1978.4, class(fread(test_data_mult, keepLeadingZeros = FALSE)[[1]]), "integer")
 
 ###################################
 #  Add new tests above this line  #
