@@ -55,7 +55,6 @@ SEXP reorder(SEXP x, SEXP order)
   // enough RAM for a copy of one column (of largest type). Writes into the [start,end] subset. Outside [start,end] is wasted in that rarer case
   // to save a "-start" in the deep loop below in all cases.
   if (!TMP) error("Unable to allocate %d * %d bytes of working memory for reordering data.table", end-start+1, maxSize);
-  const int nth = getDTthreads();
 
   for (int i=0; i<ncol; i++) {
     const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
@@ -63,7 +62,7 @@ SEXP reorder(SEXP x, SEXP order)
     if (size==4) {
       const int *restrict vd = INTEGER(v);  // just DATAPTR really. Could use REAL too or any of the other types. It's the LHS's type being 4 byte that is important.
       int *restrict tmp = (int *)TMP;
-      #pragma omp parallel for num_threads(nth)
+      #pragma omp parallel for num_threads(getDTthreads())
       for (int i=start; i<=end; i++) {
         tmp[i] = vd[idx[i]-1];  // copies 4 bytes including pointers on 32bit (STRSXP and VECSXP)
       }
@@ -71,7 +70,7 @@ SEXP reorder(SEXP x, SEXP order)
     } else {
       const double *restrict vd = REAL(v);  // similarly, could use INTEGER() here.  It's the LHS's type being 8 bytes that's important.
       double *restrict tmp = (double *)TMP;
-      #pragma omp parallel for num_threads(nth)
+      #pragma omp parallel for num_threads(getDTthreads())
       for (int i=start; i<=end; i++) {
         tmp[i] = vd[idx[i]-1];  // copies 8 bytes including pointers on 64bit (STRSXP and VECSXP)
       }
