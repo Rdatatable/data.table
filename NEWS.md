@@ -10,6 +10,8 @@
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
 
+2. As promised in new feature 6 of v1.11.6 Sep 2018 (see below in this file), the `datatable.CJ.names` option's default is now `TRUE`. In v1.13.0 it will be removed.
+
 
 ### Changes in v1.12.0  (13 Jan 2019)
 
