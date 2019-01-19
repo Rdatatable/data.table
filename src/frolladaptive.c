@@ -54,7 +54,7 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *
       }
       if (verbose) Rprintf("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
       w = 0.0;
-      truehasna = 1;
+      truehasna = true;
     }
   }
   if (truehasna) {
@@ -104,10 +104,10 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *
 
 void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose) Rprintf("%s: running for input length %lu, hasna %d, narm %d\n", __func__, nx, hasna, (int) narm);
-  volatile bool truehasna = hasna>0;                            // flag to re-run if NAs detected
+  bool truehasna = hasna>0;                                   // flag to re-run if NAs detected
 
-  if (!truehasna || !narm) {                                    // narm=FALSE handled here as NAs properly propagated in exact algo
-    #pragma omp parallel num_threads(getDTthreads()) shared(truehasna)
+  if (!truehasna || !narm) {                                  // narm=FALSE handled here as NAs properly propagated in exact algo
+    #pragma omp parallel num_threads(getDTthreads())
     for (uint_fast64_t i=0; i<nx; i++) {                      // loop on every observation to produce final answer
       if (narm && truehasna) continue;                        // if NAs detected no point to continue
       if (i+1 < k[i]) ans->ans[i] = fill;                     // position in a vector smaller than obs window width - partial window
@@ -125,7 +125,7 @@ void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int 
           ans->ans[i] = (double) (res + (err / k[i]));        // adjust calculated fun with roundoff correction
         } else {
           if (!narm) ans->ans[i] = (double) (w / k[i]);       // NAs should be propagated
-          truehasna = 1;                                      // NAs detected for this window, set flag so rest of windows will not be re-run
+          truehasna = true;                                   // NAs detected for this window, set flag so rest of windows will not be re-run
         }
       }
     }

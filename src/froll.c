@@ -60,7 +60,7 @@ void frollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double
         }
         if (verbose) Rprintf("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
         w = 0.0;
-        truehasna = 1;
+        truehasna = true;
       }
     } else {                                                    // early stopping branch when NAs detected in first k obs
       if (hasna==-1) {                                          // raise warning
@@ -69,7 +69,7 @@ void frollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double
       }
       if (verbose) Rprintf("%s: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs\n", __func__);
       w = 0.0;
-      truehasna = 1;
+      truehasna = true;
     }
   }
   if (truehasna) {
@@ -105,10 +105,10 @@ void frollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double
 
 void frollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose) Rprintf("%s: running for input length %lu, window %d, hasna %d, narm %d\n", __func__, nx, k, hasna, (int) narm);
-  for (int i=0; i<k-1; i++) {                                   // fill partial window only
+  for (int i=0; i<k-1; i++) {                                 // fill partial window only
     ans->ans[i] = fill;
   }
-  volatile bool truehasna = hasna>0;                            // flag to re-run with NA support if NAs detected, volatile to be used from parallel region
+  bool truehasna = hasna>0;                                   // flag to re-run with NA support if NAs detected
   if (!truehasna || !narm) {
     #pragma omp parallel for num_threads(getDTthreads())
     for (uint_fast64_t i=k-1; i<nx; i++) {                    // loop on every observation with complete window, partial already filled in single threaded section
@@ -126,7 +126,7 @@ void frollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int k, doubl
         ans->ans[i] = (double) (res + (err / k));             // adjust calculated rollfun with roundoff correction
       } else {
         if (!narm) ans->ans[i] = (double) (w / k);            // NAs should be propagated
-        truehasna = 1;                                        // NAs detected for this window, set flag so rest of windows will not be re-run
+        truehasna = true;                                     // NAs detected for this window, set flag so rest of windows will not be re-run
       }
     }
     if (truehasna) {
