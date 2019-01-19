@@ -12,6 +12,8 @@
 
 2. As promised in new feature 6 of v1.11.6 Sep 2018 (see below in this file), the `datatable.CJ.names` option's default is now `TRUE`. In v1.13.0 it will be removed.
 
+3. v1.12.0 did not compile on Solaris 10 using Oracle Developer Studio 12.6, [#3285](https://github.com/Rdatatable/data.table/issues/3285). Many thanks to Prof Ripley for providing and testing a patch. For future reference and other package developers, a `const` variable should not be passed to OpenMP's `num_threads()` directive otherwise `left operand must be modifiable lvalue` occurs.
+
 
 ### Changes in v1.12.0  (13 Jan 2019)
 
