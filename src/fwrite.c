@@ -6,7 +6,7 @@
 #include <stdint.h>    // INT32_MIN
 #include <math.h>      // isfinite, isnan
 #include <stdlib.h>    // abs
-#include <string.h>    // strlen, strerror
+#include <string.h>    // strnlen, strerror
 
 #ifdef WIN32
 #include <sys/types.h>
@@ -609,8 +609,6 @@ void fwriteMain(fwriteMainArgs args)
   qmethodEscape = args.qmethodEscape;
   squashDateTime = args.squashDateTime;
 
-  int eolLen = strlen(args.eol);
-  if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
 
   // alloc one buffMB here.  Keep rewriting each field to it, to sum up the size.  Restriction: one field can't be
   // greater that minimumum buffMB (1MB = 1 million characters).  Otherwise unbounded overwrite. Possible with very
@@ -654,6 +652,9 @@ void fwriteMain(fwriteMainArgs args)
     DTPRINT("\n");
   }
 
+  int eolLen = strnlen(args.eol, buffLimit);
+  if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
+
   int maxHeaderLen = 0;
   if (args.colNames) {
     // We don't know how long this line will be.
@@ -669,7 +670,7 @@ void fwriteMain(fwriteMainArgs args)
       if (j>0) {
         maxHeaderLen += 1; /* for sep */
       }
-      maxHeaderLen += strlen(getString(args.colNames, j));
+      maxHeaderLen += strnlen(getString(args.colNames, j), buffLimit);
     }
     maxHeaderLen += eolLen; /*eol*/
   }
@@ -697,7 +698,7 @@ void fwriteMain(fwriteMainArgs args)
       int thisLineLen=0;
       if (args.doRowNames) {
         if (args.rowNames) {
-          thisLineLen += (int)(strlen(getString(args.rowNames, i)));
+          thisLineLen += (int)strnlen(getString(args.rowNames, i), buffLimit);
         } else {
           thisLineLen += 1+(int)log10(args.nrow);  // the width of the row number
         }
@@ -710,11 +711,11 @@ void fwriteMain(fwriteMainArgs args)
               thisLineLen += writer_len[num_fun] + 2 * (doQuote != 0) + 1; /* 1 for sep */
           } else if (num_fun == WF_String) { // if String
               const char* ch = getString(args.columns[j], i);
-              thisLineLen += (ch == NULL) ? strlen(na) : strlen(ch);
+              thisLineLen += (ch == NULL) ? strnlen(na, buffLimit) : strnlen(ch, buffLimit);
               thisLineLen +=  2 * (doQuote!=0) + 1;
           } else if (num_fun == WF_CategString) { // if Factor
               const char* ch = getCategString(args.columns[j], i);
-              thisLineLen += (ch == NULL) ? strlen(na) : strlen(ch);
+              thisLineLen += (ch == NULL) ? strnlen(na, buffLimit) : strnlen(ch, buffLimit);
               thisLineLen +=  2 * (doQuote!=0) + 1;
           } else if (num_fun == WF_List) { // if List
               char *ch = buff;                // overwrite at the beginning of buff to be more robust > 1 million bytes
@@ -907,10 +908,10 @@ void fwriteMain(fwriteMainArgs args)
               size = writer_len[num_fun];
           } else if (num_fun == WF_String) { // if String
               const char* ch = getString(args.columns[j], i);
-              size = (ch == NULL) ? strlen(na) : strlen(ch);
+              size = (ch == NULL) ? strnlen(na, buffLimit) : strnlen(ch, buffLimit);
           } else if (num_fun == WF_CategString) { // if Factor
               const char* ch = getCategString(args.columns[j], i);
-              size = (ch == NULL) ? strlen(na) : strlen(ch);
+              size = (ch == NULL) ? strnlen(na, buffLimit) : strnlen(ch, buffLimit);
             }
           if (size >= buffLimit) {
               failed = -1;
