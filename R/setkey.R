@@ -45,6 +45,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   }
   if (identical(cols,"")) stop("cols is the empty string. Use NULL to remove the key.")
   if (!all(nzchar(cols))) stop("cols contains some blanks.")
+  if (!(identical(update.index,TRUE) || identical(update.index,FALSE))) stop("update.index must be TRUE or FALSE")
   if (!length(cols)) {
     cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
   } else {
@@ -93,16 +94,27 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     return(invisible(x))
   }
   if (length(o)) {
-    if (update.index && !is.null(IDX<-attr(x,"index",exact=TRUE))) { # setkeyv capable to reorder index #1158
-      for (idx in names(attributes(IDX))) {
-        io = attr(IDX, idx, exact=TRUE)
-        if (length(io)) setattr(IDX, idx, o[io])
-      }
-    }
     if (verbose) {
+      if (!update.index) setattr(x,"index",NULL)
+      else if (!is.null(IDX<-attr(x,"index",exact=TRUE))) { # setkeyv capable to reorder index #1158
+        tt = system.time({
+          for (idx in names(attributes(IDX))) {
+            io = attr(IDX, idx, exact=TRUE)
+            setattr(IDX, idx, if (length(io)) order(o)[io] else o)
+          }
+        })
+        cat("reorder indices took", tt["user.self"]+tt["sys.self"], "sec\n")
+      }
       tt = suppressMessages(system.time(.Call(Creorder,x,o)))
       cat("reorder took", tt["user.self"]+tt["sys.self"], "sec\n")
     } else {
+      if (!update.index) setattr(x,"index",NULL)
+      else if(!is.null(IDX<-attr(x,"index",exact=TRUE))) { # setkeyv capable to reorder index #1158
+        for (idx in names(attributes(IDX))) {
+          io = attr(IDX, idx, exact=TRUE)
+          setattr(IDX, idx, if (length(io)) order(o)[io] else o)
+        }
+      }
       .Call(Creorder,x,o)
     }
   } else {
