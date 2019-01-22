@@ -1,10 +1,10 @@
-setkey <- function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE)
+setkey <- function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE, update.index=FALSE)
 {
   if (is.character(x)) stop("x may no longer be the character name of the data.table. The possibility was undocumented and has been removed.")
   cols = as.character(substitute(list(...))[-1L])
   if (!length(cols)) { cols=colnames(x) }
   else if (identical(cols,"NULL")) cols=NULL
-  setkeyv(x, cols, verbose=verbose, physical=physical)
+  setkeyv(x, cols, verbose=verbose, physical=physical, update.index=update.index)
 }
 
 # FR #1442
@@ -28,7 +28,7 @@ key2 <- function(x) {
   stop("key2() is now deprecated. Please use indices() instead.")
 }
 
-setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
+setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE, update.index=FALSE)
 {
   if (is.null(cols)) {   # this is done on a data.frame when !cedta at top of [.data.table
     if (physical) setattr(x,"sorted",NULL)
@@ -77,7 +77,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   if (".xi" %chin% names(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
+    if (!(.xi.type<-typeof(.xi)) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",.xi.type,"' which is not supported as a key column type, currently.")
   }
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
   if (verbose) {
@@ -92,8 +92,13 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     setattr(attr(x,"index",exact=TRUE), paste0("__", cols, collapse=""), o)
     return(invisible(x))
   }
-  setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
   if (length(o)) {
+    if (update.index && !is.null(IDX<-attr(x,"index",exact=TRUE))) { # setkeyv capable to reorder index #1158
+      for (idx in names(attributes(IDX))) {
+        io = attr(IDX, idx, exact=TRUE)
+        if (length(io)) setattr(IDX, idx, o[io])
+      }
+    }
     if (verbose) {
       tt = suppressMessages(system.time(.Call(Creorder,x,o)))
       cat("reorder took", tt["user.self"]+tt["sys.self"], "sec\n")

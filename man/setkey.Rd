@@ -36,8 +36,8 @@ if none exist.
 the \code{data.table} has a key (or not).
 }
 \usage{
-setkey(x, \dots, verbose=getOption("datatable.verbose"), physical = TRUE)
-setkeyv(x, cols, verbose=getOption("datatable.verbose"), physical = TRUE)
+setkey(x, \dots, verbose=getOption("datatable.verbose"), physical = TRUE, update.index = FALSE)
+setkeyv(x, cols, verbose=getOption("datatable.verbose"), physical = TRUE, update.index = FALSE)
 setindex(\dots)
 setindexv(x, cols, verbose=getOption("datatable.verbose"))
 key(x)
@@ -56,6 +56,7 @@ names.}
 \item{verbose}{ Output status and information. }
 \item{physical}{ TRUE changes the order of the data in RAM. FALSE adds a
 secondary key a.k.a. index. }
+\item{update.index}{ logical, defaults to FALSE, when TRUE it will retain indices after sorting. }
 \item{vectors}{ logical scalar default \code{FALSE}, when set to \code{TRUE}
 then list of character vectors is returned, each vector refers to one index. }
 }
