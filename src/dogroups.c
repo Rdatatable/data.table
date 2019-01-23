@@ -23,7 +23,7 @@ void setSizes() {
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verbose)
 {
-  R_len_t i, j, k, rownum, ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, r, thisansloc, grpn, thislen, igrp, vlen, origIlen=0, origSDnrow=0;
+  R_len_t i, j, k, rownum, ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp, vlen, origIlen=0, origSDnrow=0;
   int protecti=0;
   SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, listwrap, target, source, tmp;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE, recycleWarn=TRUE;
@@ -390,11 +390,16 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     for (j=0; j<ngrpcols; j++) {
       target = VECTOR_ELT(ans,j);
       source = VECTOR_ELT(groups, INTEGER(grpcols)[j]-1);  // target and source the same type by construction above
-      if (SIZEOF(target)==4) for (r=0; r<maxn; r++)
-        INTEGER(target)[ansloc+r] = INTEGER(source)[igrp];
-      else for (r=0; r<maxn; r++)
-        REAL(target)[ansloc+r] = REAL(source)[igrp];
-      // Shouldn't need SET_* to age objects here sice groups, TO DO revisit.
+      if (SIZEOF(target)==4) {
+        int *td = (int *)DATAPTR(target);
+        int *sd = (int *)DATAPTR(source);
+        for (int r=0; r<maxn; r++) td[ansloc+r] = sd[igrp];
+      } else {
+        double *td = (double *)DATAPTR(target);
+        double *sd = (double *)DATAPTR(source);
+        for (int r=0; r<maxn; r++) td[ansloc+r] = sd[igrp];
+      }
+      // Shouldn't need SET_* to age objects here since groups, TO DO revisit.
     }
     for (j=0; j<njval; j++) {
       thisansloc = ansloc;
@@ -411,16 +416,16 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         switch (TYPEOF(target)) {     // rarely called so no need to optimize this switch
         case LGLSXP :
         case INTSXP :
-          for (r=0; r<maxn; r++) INTEGER(target)[thisansloc+r] = NA_INTEGER;
+          for (int r=0; r<maxn; r++) INTEGER(target)[thisansloc+r] = NA_INTEGER;
           break;
         case REALSXP :
-          for (r=0; r<maxn; r++) REAL(target)[thisansloc+r] = NA_REAL;
+          for (int r=0; r<maxn; r++) REAL(target)[thisansloc+r] = NA_REAL;
           break;
         case STRSXP :
-          for (r=0; r<maxn; r++) SET_STRING_ELT(target,thisansloc+r,NA_STRING);
+          for (int r=0; r<maxn; r++) SET_STRING_ELT(target,thisansloc+r,NA_STRING);
           break;
         case VECSXP :
-          for (r=0; r<maxn; r++) SET_VECTOR_ELT(target,thisansloc+r,R_NilValue);
+          for (int r=0; r<maxn; r++) SET_VECTOR_ELT(target,thisansloc+r,R_NilValue);
           break;
         default:
           error("Logical error. Type of column should have been checked by now");
