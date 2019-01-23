@@ -1,10 +1,10 @@
 ## this file will be migrated to inst/tests/tests.Rraw when branch will be ready to merge
 library(data.table)
 froll = data.table:::froll
-.test.froll.failed = 0L
-test = function(...) {
-  ans = data.table:::test(...)
-  if (!ans) .test.froll.failed<<-.test.froll.failed+1L
+.test.froll.failed = numeric()
+test = function(num, ...) {
+  ans = data.table:::test(num, ...)
+  if (!ans) .test.froll.failed<<-c(.test.froll.failed, num)
   invisible(ans)
 }
 oldDTthreads = setDTthreads(1) # mimics CRAN check, tested also on 4 cores
@@ -829,4 +829,4 @@ afun_compare(x, n)
 rm(num)
 
 setDTthreads(oldDTthreads)
-if (.test.froll.failed) stop(sprintf("froll unit tests failed: %s", .test.froll.failed)) else cat("froll unit tests successfully passed\n")
+if (length(.test.froll.failed)) stop(sprintf("froll unit tests failed: %s.", paste(.test.froll.failed, collapse=", "))) else cat("froll unit tests successfully passed\n")
