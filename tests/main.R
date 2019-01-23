@@ -10,7 +10,7 @@ ans = test.data.table()  # runs the main test suite of 5,000+ tests in /inst/tes
 
 # summary
 test.data.table.summary = function(env) {
-  attach(ans_env)
+  attach(env)
   plat = paste0("endian==", .Platform$endian,
                 ", sizeof(long double)==", .Machine$sizeof.longdouble,
                 ", sizeof(pointer)==", .Machine$sizeof.pointer,
