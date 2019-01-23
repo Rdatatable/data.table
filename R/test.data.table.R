@@ -48,7 +48,9 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   options(oldenc)
   # Sys.setlocale("LC_CTYPE", oldlocale)
   setDTthreads(0)
-  invisible(env$nfail==0)
+  ans = env$nfail==0
+  attr(ans, "details") <- env
+  invisible(ans)
 }
 
 # nocov start
