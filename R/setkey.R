@@ -98,9 +98,10 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
       if (!update.index) setattr(x,"index",NULL)
       else if (!is.null(IDX<-attr(x,"index",exact=TRUE))) { # setkeyv capable to reorder index #1158
         tt = system.time({
+          oo = order(o)
           for (idx in names(attributes(IDX))) {
             io = attr(IDX, idx, exact=TRUE)
-            setattr(IDX, idx, if (length(io)) order(o)[io] else o)
+            setattr(IDX, idx, if (length(io)) oo[io] else o)
           }
         })
         cat("reorder indices took", tt["user.self"]+tt["sys.self"], "sec\n")
@@ -110,9 +111,10 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     } else {
       if (!update.index) setattr(x,"index",NULL)
       else if(!is.null(IDX<-attr(x,"index",exact=TRUE))) { # setkeyv capable to reorder index #1158
+        oo = order(o)
         for (idx in names(attributes(IDX))) {
           io = attr(IDX, idx, exact=TRUE)
-          setattr(IDX, idx, if (length(io)) order(o)[io] else o)
+          setattr(IDX, idx, if (length(io)) oo[io] else o)
         }
       }
       .Call(Creorder,x,o)
