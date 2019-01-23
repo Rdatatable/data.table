@@ -13302,4 +13302,4 @@ test(1977.6, DT[c("A","D"), c("ID","GRP")], data.table(ID=c("A","A","D"), GRP=IN
 ###################################
 
 options(oldOptions)  # set at top of this file
-setDTthreads(0)
+setDTthreads(0) # this has not been altered directly before so not sure if we should really reset it here
