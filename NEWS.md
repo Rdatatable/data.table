@@ -4,6 +4,8 @@
 
 #### NEW FEATURES
 
+1. `:=` no longer recycles too-short RHS vectors to match the length on the LHS. Like base R, there was a warning when recycling left a remainder but no warning when the LHS length was an exact multiple of the RHS length. All cases are now an error unless `length(RHS)==1` or `length(RHS)==length(LHS)`. Consistent feedback was that recycling is rarely useful and more often a bug. In rare cases where you need to recycle a length>1 vector, use `rep()` explicitly. Single values are still recycled silently as before.
+
 #### BUG FIXES
 
 #### NOTES

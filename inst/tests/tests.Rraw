@@ -1373,7 +1373,9 @@ x = list(2,"b",2.718)
 test(470, DT[,baz:=x], data.table(a=1:3,b=4:6,foo=list(),bar=list(1,"a",3.14),baz=list(2,"b",2.718)))
 # Test recycling list
 DT = data.table(a=1:4,b=5:8)
-test(471, DT[,foo:=list("a",2:3)], data.table(a=1:4,b=5:8,foo=list("a",2:3,"a",2:3)))
+test(471.1, DT[,foo:=list("a",2:3)], error="Supplied 2 items to be assigned to 4 items of column 'foo'.*recycle")
+test(471.2, names(DT), c("a","b"))  # mismatch length error was caught ok before adding column not after column added
+test(471.3, DT[,foo:=.(list("a"))], data.table(a=1:4,b=5:8,foo=list("a","a","a","a")))
 # Test recycling singleton list
 if (ncol(DT)==3L) DT[,foo:=NULL] # else don't warn here under torture with skip= such that test 471 didn't run
 test(472, DT[,foo:=list(list(2:3))], data.table(a=1:4,b=5:8,foo=list(2:3,2:3,2:3,2:3)))
@@ -1381,9 +1383,9 @@ test(472, DT[,foo:=list(list(2:3))], data.table(a=1:4,b=5:8,foo=list(2:3,2:3,2:3
 # Test adding new column with a recycled factor, #1691
 DT = data.table(a=1:4,b=5:8)
 DT[,c:=factor("a")]
-test(473, DT, data.table(a=1:4,b=5:8,c=factor(c("a","a","a","a"))))
-DT[,d:=factor(c("a","b"))]
-test(474, DT, data.table(a=1:4,b=5:8,c=factor(c("a","a","a","a")),d=factor(c("a","b","a","b"))))
+test(473.1, DT, data.table(a=1:4,b=5:8,c=factor(c("a","a","a","a"))))
+test(473.2, DT[,d:=factor(c("a","b"))], error="Supplied 2 items to be assigned to 4 items of column 'd'")
+test(474, DT[,d:=factor(c("X"))], data.table(a=1:4,b=5:8,c=factor(c("a","a","a","a")),d=factor(c("X","X","X","X"))))
 
 # Test scoping error introduced at 1.6.1, unique(DT) when key column is 'x'
 DT=data.table(x=c("a", "a", "b", "b"), y=c("a", "a", "b", "b"), key="x")
@@ -1410,9 +1412,9 @@ gc()
 test(477, DT, data.table(a=1:3,foo=c(4L,10L,6L),foo2=c(4L,5L,11L)))
 test(478, DT[,foo:=foo], DT)  # does nothing, with no warning, consistent with base R `a<-a`.
 
-# Test that recycling now works with oversized inputs and % != 0 length, both with warnings.
+# Old tests that recycling now works now moved to test error
 DT = data.table(x=1:4)
-test(479, DT[, a:=5:7], data.table(x=1:4,a=c(5:7,5L)), warning="Supplied 3 items to be assigned to 4 items of column 'a' (recycled leaving remainder of 1 items)")
+test(479, DT[, a:=5:7], error="Supplied 3 items to be assigned to 4 items of column 'a'")
 
 # Test that multiple columns can be added
 DT = data.table(x=1:4)
@@ -2070,8 +2072,8 @@ test(745, DT[,ncol(DT):=1L], data.table(c1=1:3,c2=99L,c3=1L))
 DT = data.table(a=letters[c(1:3,3L)],key="a")
 test(746, DT["a",c("new1","new2"):=list(4L, 5L)],
           data.table(a=letters[c(1:3,3L)],new1=INT(4,NA,NA,NA),new2=INT(5,NA,NA,NA),key="a"))
-test(747, DT[,new1:=4:6], data.table(a=letters[c(1:3,3L)],new1=INT(4L,5L,6L,4L),new2=INT(5,NA,NA,NA),key="a"), warning="recycled leaving remainder of 1 item")
-suppressWarnings(DT[,new1:=4:6])
+test(747.1, DT[,new1:=4:6], error="Supplied 3 items to be assigned to 4 items of column 'new1'")
+test(747.2, DT[,new1:=INT(4,5,6,4)], data.table(a=letters[c(1:3,3L)],new1=INT(4L,5L,6L,4L),new2=INT(5,NA,NA,NA),key="a"))
 test(748, DT[c("c","b"),`:=`(new3=.N,new2=sum(new1)+1L),by=.EACHI], data.table(a=letters[c(1:3,3L)],new1=INT(4,5,6,4),new2=INT(5,6,11,11),new3=INT(NA,1,2,2),key="a"))
 
 # and multiple LHS by group, #1710
@@ -2142,12 +2144,10 @@ test(770, DT[J(2:3),.BY[[1]]==b,by=.EACHI], data.table(a=INT(2,2,3,3),V1=c(TRUE,
 # A data.table RHS of := caused a crash, #2311.
 a = data.table(first=1:6, third=c(1,1,1,3,3,4), key="first")
 b = data.table(first=c(3,4,4,5,6,7,8), second=1:7, key="first")
-test(771, b[,third:=a[b,third,by=.EACHI]], b, warning="Supplied 2 items.*to 7.*recycled leaving remainder of 1 item")
-test(772, copy(b)[,third:=as.list(a[b,third,by=.EACHI])], b, warning="Supplied 2 items.*to 7.*recycled leaving remainder of 1 item")
-test(773, b[4,third[[1]]], c(1,3,3,3,4,NA,NA))
-test(774.1, b[,third:=a[b,third,mult="first"]], ans<-data.table(first=c(3,4,4,5,6,7,8), second=1:7, third=c(1,3,3,3,4,NA,NA), key="first"))
-test(774.2, b[,third:=a[b,third]], ans) # mult="first" no longer needed as from v1.9.3.  It now does what was naturally expected.
-
+test(771, b[,third:=a[b,third,by=.EACHI]], error="Supplied 2 items to be assigned to 7 items of column 'third'")
+test(772, b[,third:=as.list(a[b,third,by=.EACHI])], error="Supplied 2 items to be assigned to 7 items of column 'third'")
+test(773, b[,third:=a[b,third,mult="first"]], ans<-data.table(first=c(3,4,4,5,6,7,8), second=1:7, third=c(1,3,3,3,4,NA,NA), key="first"))
+test(774, b[,third:=a[b,third]], ans) # mult="first" no longer needed as from v1.9.3.  It now does what was naturally expected.
 
 # That names are dropped. (Names on the column vectors don't display. They increase size and aren't much use.)
 DT = data.table(a=1:3,b=LETTERS[1:3])
@@ -2302,10 +2302,9 @@ DT = data.table(a=1:3)
 DT[,a:=scale(a)]    # 1 column matrix auto treated as vector
 test(835, na.omit(DT), DT)
 test(836, DT[,a:=as.integer(a)], data.table(a=INT(-1,0,1)))
-test(837, DT[,a:=cbind(1,2)], data.table(a=c(1L,2L,1L)),
-          warning=c("2 column matrix RHS of := will be treated as one vector",
-                    "Supplied 2 items to be assigned to 3 items.*recycled",
-                    "Coerced double RHS to integer to match.*column 1 named 'a'.*values contain no fractions"))
+test(837, DT[,a:=cbind(1,2)],
+  warning = "2 column matrix RHS of := will be treated as one vector",
+  error = "Supplied 2 items to be assigned to 3 items of column 'a'")
 DT = data.table(a=1:3,b=1:6)
 test(838, DT[,c:=scale(b), by=a][,c:=as.integer(1000*c)], data.table(a=1:3,b=1:6,c=rep(as.integer(1000*scale(1:2)), each=3)))
 
@@ -2570,7 +2569,9 @@ test(915, fread(txt,sep="\n"), data.table("A;B;C|D,E"=c("1;3;4|5,6","2;4;6|8,10"
 
 # Crash bug when RHS is 0 length and := by group, fixed in 1.8.7
 DT = data.table(a=1:3,b=1:6)
-test(916, DT[,newcol:=logical(0),by=a], data.table(a=1:3,b=1:6,newcol=NA))
+test(916.1, DT[,newcol:=logical(0),by=a], error="Supplied 0 items to be assigned to group 1 of size 2 in column 'newcol'")
+test(916.2, DT, data.table(a=1:3,b=1:6))  # that newcol was not added since group 1 failed
+test(916.3, DT[,newcol:=NA,by=a], data.table(a=1:3,b=1:6,newcol=NA))
 
 # roll join error when non last join column is factor, #2450
 X = data.table(id=2001:2004, uid=c(1001,1002,1001,1001), state=factor(c('CA','CA','CA','MA')), ts=c(51,52,53,54), key='state,uid,ts')
@@ -2721,10 +2722,7 @@ setkey(dt2, "Date")
 test(980, dt1[dt2, `:=`(A=A+i.A, B=B+i.B, C=i.C)][,list(A,B,C)],
           data.table(A=INT(110,115,120,225,230,235),B=INT(330,325,320,415,410,405),C=rep(1:2,each=3)))
 DT = data.table(A=1:2,B=3:4,C=5:6)
-test(981, DT[,`:=`(D=B+4L,B=0:1,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
-          data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L)),
-          warning=c("RHS 2 is length 2.*group 1.*last 1 element.*discarded",
-                    "RHS 2 is length 2.*group 2.*last 1 element.*discarded"))
+test(981, DT[,`:=`(D=B+4L,B=0:1,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A], error="Supplied 2 items to be assigned to group 1 of size 1 in column 'B'")
 DT = data.table(A=1:2,B=3:4,C=5:6)
 test(982, DT[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
           data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L))) # Also note that G is not yet iterative. In future: c(12,14)
@@ -3540,12 +3538,18 @@ test(1131, My_Fun(), DT)
 # Test for #4957 - where `j` doesn't know `.N` when used with `lapply(.SD, function(x) ...)`
 test(1132, DT[, lapply(.SD, function(x) .N), by=ID], data.table(ID=c("A", "B", "C"), Value1=2L, Value2=2L))
 
-# Test for #4990 - `:=` does not generate recycling warning during 'by':
-DT <- data.table(x=c(1,1,1,1,1,2,2))
+# Test for #4990 - `:=` recycle error during 'by'
+DT <- data.table(x=INT(1,1,1,1,1,2,2))
 # on a new column
-test(1133.1, DT[, new := c(1,2), by=x], data.table(x=c(1,1,1,1,1,2,2), new=c(1,2,1,2,1,1,2)), warning="Supplied 2 items to be assigned to group 1 of size 5 in column 'new'")
-# on an already existing column
-test(1133.2, DT[, new := c(1,2), by=x], data.table(x=c(1,1,1,1,1,2,2), new=c(1,2,1,2,1,1,2)), warning="Supplied 2 items to be assigned to group 1 of size 5 in column 'new'")
+test(1133.1, DT[, new := c(1,2), by=x], error="Supplied 2 items to be assigned to group 1 of size 5 in column 'new'")
+test(1133.2, DT, data.table(x=INT(1,1,1,1,1,2,2)))
+# on an already existing column:
+DT[, new:=99L]
+test(1133.3, DT[, new := c(1,2), by=x],   error="Type of RHS ('double') must match LHS ('integer')")
+test(1133.4, DT[, new := c(1L,2L), by=x], error="Supplied 2 items to be assigned to group 1 of size 5 in column 'new'")
+test(1133.5, DT, data.table(x=INT(1,1,1,1,1,2,2), new=99L))
+test(1133.6, DT[, new := rep(-.GRP, .N), by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(-1,-1,-1,-1,-1,-2,-2)))
+test(1133.7, DT[, new := .N, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(5,5,5,5,5,2,2)))
 
 # Fix for FR #2496 - catch `{` in `:=` expression in `j`:
 DT <- data.table(x=c("A", "A", "B", "B"), val =1:4)
@@ -3983,9 +3987,8 @@ DT = CJ(c("Corp", "CORP"), 1:3)
 test(1190, setkey(DT), DT)   # tests no warning here from setkey, was "key rebuilt" due to inconsistent locale sorting in v1.8.10
 
 # non-exact recycling in j results.  Was caught with error in v1.8.10, now recycles with remainder and warning
-DT = data.table(a=1:2,b=1:6)
-test(1191, DT[, list(b,1:2), by=a], data.table(a=INT(1,1,1,2,2,2),b=INT(1,3,5,2,4,6),V2=INT(1,2,1,1,2,1)),
-           warning="Recycled leaving remainder of 1 item.*This warning is once only")
+DT = data.table(a=1:2, b=1:6)
+test(1191, DT[, list(b,1:2), by=a], error="Supplied 2 items for column 2 of group 1 which has 3 rows.")
 
 # that twiddle is used consistently, and tolerance has gone.
 # nice example from : http://stackoverflow.com/questions/21885290/data-table-roll-nearest-returns-multiple-results
@@ -4644,13 +4647,11 @@ test(1288.16, rbindlist(ll, fill=TRUE), error="fill=TRUE, but names of input lis
 
 # fix for #5647
 dt = data.table(x=1L, y=1:10)
-cp = copy(dt)
-test(1289.1, dt[,z := c(rep(NA, 5), y), by=x], cp[, z := c(rep(NA, 5), y[1:5])], warning="RHS 1 is length 15")
-dt = data.table(x=c(1:2), y=1:10)
-cp = copy(dt)
-test(1289.2, dt[, z := c(rep(NA, 5),y), by=x], cp[, z := rep(NA_integer_, 10)],
-             warning=c("RHS 1 is length 10.*group 1.*last 5 element.*discarded",
-                       "RHS 1 is length 10.*group 2.*last 5 element.*discarded"))
+test(1289.1, dt[, z := c(rep(NA,5), y), by=x], error="Supplied 15 items to be assigned to group 1 of size 10 in column 'z'")
+test(1289.2, names(dt), c("x","y"))
+dt = data.table(x=1:2, y=1:10)
+test(1289.3, dt[, z := c(rep(NA,5), y), by=x], error="Supplied 10 items to be assigned to group 1 of size 5 in column 'z'")
+test(1289.4, names(dt), c("x","y"))
 
 ########################################
 # Extensve testing for "duplicate" names
