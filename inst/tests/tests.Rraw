@@ -5291,21 +5291,16 @@ test(1364.24, setdiff_(X, Y[0L], by.x = 'a'),
                 c = c("1", "3", "2"), d = c(1L, 3L, 2L), e = c(1L, 5L, 7L)))
 
 # not join along with by=.EACHI, #604
-DT <- data.table(A=c(1,1,1,2,2,2,2,3,3,4,5,5))[, `:=`(B=as.integer(A), C=c("c", "e", "a", "d"), D=factor(c("c", "e", "a", "d")), E=1:12)]
+DT <- data.table(A=c(1,1,1,2,2,2,2,3,3,4,5,5))[, `:=`(B=as.integer(A), C=rep(c("c", "e", "a", "d"),3L), D=factor(rep(c("c", "e", "a", "d"),3L)), E=1:12)]
 setkey(DT, A)
-test(1365.1, suppressMessages(DT[!J(c(2,5)), sum(E), by=.EACHI]),
-            suppressMessages(DT[J(c(1,3,4)), sum(E), by=.EACHI]))
+test(1365.1, DT[!J(c(2,5)), sum(E), by=.EACHI], DT[J(c(1,3,4)), sum(E), by=.EACHI])
 setkey(DT, B)
-test(1365.2, suppressMessages(DT[!J(c(4:5)), list(.N, sum(E)), by=.EACHI]),
-            suppressMessages(DT[J(1:3), list(.N, sum(E)), by=.EACHI]))
+test(1365.2, DT[!J(c(4:5)), list(.N, sum(E)), by=.EACHI], DT[J(1:3), list(.N, sum(E)), by=.EACHI])
 setkey(DT, C)
-test(1365.3, suppressMessages(copy(DT)[!"c", f := .N, by=.EACHI]),
-            suppressMessages(copy(DT)[c("a", "d", "e"), f := .N, by=.EACHI]))
+test(1365.3, copy(DT)[!"c", f:=.N, by=.EACHI], copy(DT)[c("a","d","e"), f:=.N, by=.EACHI])
 setkey(DT, D)
-test(1365.4, suppressMessages(DT[!J(factor("c")), .N, by=.EACHI]),
-            suppressMessages(DT[J(factor(c("a", "d", "e"))), .N, by=.EACHI]))
-test(1365.5, suppressMessages(DT[!"c", lapply(.SD, sum), by=.EACHI, .SDcols=c("B", "E")]),
-            suppressMessages(DT[c("a", "d", "e"), lapply(.SD, sum), by=.EACHI, .SDcols=c("B", "E")]))
+test(1365.4, DT[!J(factor("c")), .N, by=.EACHI], DT[J(factor(c("a","d","e"))), .N, by=.EACHI])
+test(1365.5, DT[!"c", lapply(.SD, sum), by=.EACHI, .SDcols=c("B","E")], DT[c("a","d","e"), lapply(.SD, sum), by=.EACHI, .SDcols=c("B", "E")])
 
 # uniqlengths doesn't error on 0-length input
 test(1366, uniqlengths(integer(0), 0L), integer(0))
@@ -8527,7 +8522,7 @@ setindex(dt, b)
 dt[, a := as.logical(sum(a)), by = b]
 test(1632.2, names(attributes(attr(dt, 'index'))), "__b")
 dt = data.table(a = rep(TFvec, 3), b = c("x", "y", "z"))
-test(1632.3, copy(dt)[, c := !a, by=b], copy(dt)[, c := !TFvec])
+test(1632.3, copy(dt)[, c := !a, by=b], copy(dt)[, c := rep(!TFvec,3L)])
 
 # by accepts colA:colB for interactive scenarios, #1395
 dt = data.table(x=rep(1,18), y=rep(1:2, each=9), z=rep(1:3,each=6), a=rep(1:6, each=3))[, b := 6]
@@ -12344,7 +12339,7 @@ test(1919, as.ITime(c('xxx', '10:43')), structure(c(NA, 38580L), class = "ITime"
 
 # wrong bmerge result if character gets coerced to factor, i is keyed, and level order in i is different from x, #2881
 iris = data.table(iris)
-iris$grp = c('A', 'B')
+iris$grp = rep(c('A','B'), 75L)
 iris[, Species1 := factor(Species, levels=c('setosa','versicolor','virginica'), labels=c('setosa','versicolor','Virginica'))]
 iSorted = data.table(Species1 = c('setosa','Virginica'), grp='B', key=c("grp","Species1"))
 i = setkey(copy(iSorted),NULL)

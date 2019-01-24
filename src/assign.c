@@ -807,21 +807,18 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
 }
 
-/*
-static Rboolean anyNamed(SEXP x) {
-  if (MAYBE_REFERENCED(x)) return TRUE;
+static bool anyNamed(SEXP x) {
+  if (MAYBE_REFERENCED(x)) return true;
   if (isNewList(x)) for (int i=0; i<LENGTH(x); i++)
-    if (anyNamed(VECTOR_ELT(x,i))) return TRUE;
-  return FALSE;
+    if (anyNamed(VECTOR_ELT(x,i))) return true;
+  return false;
 }
-*/
 
 void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
 // like memcpy but recycles single-item source
 // 'where' a 1-based INTEGER vector subset of target to assign to, or NULL or integer()
 // assigns to target[start:start+len-1] or target[where[start:start+len-1]] where start is 0-based
 {
-  // DELETE ...int protecti=0;
   if (len<1) return;
   if (TYPEOF(target) != TYPEOF(source)) error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s']", type2char(TYPEOF(target)),type2char(TYPEOF(source))); // # nocov
   int slen = length(source);
@@ -829,8 +826,7 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
   // Internal error because the column has already been added to the DT, so length mismatch should have been caught before adding the column.
   // for 5647 this used to limit slen to len, but no longer
 
-  /*
-  TODELETE ...
+  int protecti=0;
   if (isNewList(source)) {
     // A list() column; i.e. target is a column of pointers to SEXPs rather than the much more common case
     // where memrecycle copies the DATAPTR data to the atomic target from the atomic source.
@@ -843,14 +839,12 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
     // SEXP pointed to.
     // If source is already not named (because j already created a fresh unnamed vector within a list()) we don't want to
     // duplicate unnecessarily, hence checking for named rather than duplicating always.
-    // See #481 and #1270
+    // See #481, #1270 and tests 1341.* fail without this duplicate().
     if (anyNamed(source)) {
       source = PROTECT(duplicate(source));
       protecti++;
     }
   }
-  */
-  size_t size = SIZEOF(target);
   if (!length(where)) {
     switch (TYPEOF(target)) {
     case LGLSXP: case INTSXP :
@@ -860,7 +854,7 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
         const int val = INTEGER(source)[0];
         for (int i=0; i<len; i++) td[start+i] = val;  // no R API inside loop as INTEGER has overhead (even when it's an inline function)
       } else {
-        memcpy(INTEGER(target)+start, INTEGER(source), slen*size);
+        memcpy(INTEGER(target)+start, INTEGER(source), slen*SIZEOF(target));
       }
       break;
     case REALSXP :
@@ -869,7 +863,7 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
         const double val = REAL(source)[0];
         for (int i=0; i<len; i++) td[start+i] = val;
       } else {
-        memcpy(REAL(target)+start, REAL(source), slen*size);
+        memcpy(REAL(target)+start, REAL(source), slen*SIZEOF(target));
       }
       break;
     case STRSXP :
@@ -935,7 +929,7 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       error("Unsupported type '%s'", type2char(TYPEOF(target)));
     }
   }
-  // DELETE ... UNPROTECT(protecti);
+  UNPROTECT(protecti);
 }
 
 SEXP allocNAVector(SEXPTYPE type, R_len_t n)
