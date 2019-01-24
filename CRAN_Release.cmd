@@ -106,15 +106,15 @@ test.data.table()
 install.packages("xml2")   # to check the 150 URLs in NEWS.md under --as-cran below
 q("no")
 R CMD build .
-R CMD check data.table_1.11.9.tar.gz --as-cran
-R CMD INSTALL data.table_1.11.9.tar.gz
+R CMD check data.table_1.12.1.tar.gz --as-cran
+R CMD INSTALL data.table_1.12.1.tar.gz
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.11.9.tar.gz
+R CMD check data.table_1.12.1.tar.gz
 rm ~/.Renviron
 
 R
@@ -145,7 +145,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.11.9.tar.gz
+R310 CMD INSTALL ./data.table_1.12.1.tar.gz
 R310
 require(data.table)
 test.data.table()
@@ -157,7 +157,7 @@ test.data.table()
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.11.9.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.12.1.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -165,7 +165,7 @@ q("no")
 vi ~/.R/Makevars
 # revert change above
 R CMD build .
-R CMD check data.table_1.11.9.tar.gz
+R CMD check data.table_1.12.1.tar.gz
 
 #####################################################
 #  R-devel with UBSAN, ASAN and strict-barrier on too
@@ -194,7 +194,7 @@ cd R-devel-strict    # important to change directory name before building not af
 make
 alias Rdevel-strict='~/build/R-devel-strict/bin/R --vanilla'
 cd ~/GitHub/data.table
-Rdevel-strict CMD INSTALL data.table_1.11.9.tar.gz
+Rdevel-strict CMD INSTALL data.table_1.12.1.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel-strict
 install.packages(c("bit64","xts","nanotime","R.utils"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
@@ -230,7 +230,7 @@ cd R-devel
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-Rdevel CMD INSTALL data.table_1.11.9.tar.gz
+Rdevel CMD INSTALL data.table_1.12.1.tar.gz
 Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)
@@ -272,7 +272,7 @@ There are some things to overcome to achieve compile without USE_RINTERNALS, tho
 ## Rdevel
 ## install.packages("bit64")
 ## q("no")
-## Rdevel CMD INSTALL ~/data.table_1.11.9.tar.gz
+## Rdevel CMD INSTALL ~/data.table_1.12.1.tar.gz
 ## Rdevel
 ## .Machine$sizeof.longdouble   # check 0
 ## require(data.table)
@@ -287,7 +287,7 @@ cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
 # edit ~/.R/Makevars to set CFLAGS=-O0 -g so that rchk can provide source line numbers
-echo 'install.packages("~/GitHub/data.table/data.table_1.11.9.tar.gz",repos=NULL)' | ./bin/R --slave
+echo 'install.packages("~/GitHub/data.table/data.table_1.12.1.tar.gz",repos=NULL)' | ./bin/R --slave
 ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
 # keep running and rerunning locally until all problems cease.
@@ -413,8 +413,7 @@ BiocManager::valid()
 
 avail = available.packages(repos=BiocManager::repositories())  # includes CRAN at the end from getOption("repos"). And ensure latest Bioc version is in repo path here.
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
-exclude = c("TCGAbiolinks",  # too long (>30mins): https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
-            "ctsem")         # too long (>30mins) see Ttotal on CRAN checks and warnings/errors: https://cran.r-project.org/web/checks/check_results_ctsem.html
+exclude = c("TCGAbiolinks")  # too long (>30mins): https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
 deps = deps[-match(exclude, deps)]
 table(avail[deps,"Repository"])
 length(deps)
@@ -552,7 +551,7 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
 }
 
 # ** ensure latest version installed into revdeplib **
-system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.9.tar.gz")
+system("R CMD INSTALL ~/GitHub/data.table/data.table_1.12.1.tar.gz")
 run("rerun.all")
 
 out = function(fnam="~/fail.log") {
@@ -561,10 +560,9 @@ out = function(fnam="~/fail.log") {
   cat(paste(x,collapse=" "), "\n")
   cat(capture.output(sessionInfo()), "\n", file=fnam, sep="\n")
   cat("> BiocManager::install()\n", file=fnam, append=TRUE)
-  capture.output(BiocManager::install(), type="message", file=fnam, append=TRUE)
+  cat(capture.output(BiocManager::install(), type="message"), file=fnam, sep="\n", append=TRUE)
   cat("> BiocManager::valid()\n", file=fnam, append=TRUE)
-  capture.output(ans<-BiocManager::valid(), type="message", file=fnam, append=TRUE)
-  cat(ans, "\n", file=fnam, append=TRUE, sep="\n")
+  cat(isTRUE(BiocManager::valid()), "\n\n\n", file=fnam, append=TRUE)
   for (i in x) {
     system(paste0("ls | grep '",i,".*tar.gz' >> ",fnam))
     system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))
