@@ -25,7 +25,7 @@ static void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     }                                                             \
   }
   // For small n such as 2,3,4 etc we hope OpenMP will be sensible inside it and not create a team with each thread doing just one item. Otherwise,
-  // call overhead would be too high for highly iterated calls on very small subests. TODO: test and confirm
+  // call overhead would be too high for highly iterated calls on very small subests. Timings were tested in #3175
   // Futher, we desire (currently at least) to stress-test the threaded code (especially in latest R-devel) on small data to reduce chance that bugs
   // arise only over a threshold of n.
 
