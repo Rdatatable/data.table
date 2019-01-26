@@ -10652,9 +10652,9 @@ if (getDTthreads() != 2) {
 test(1761.1, fread("1\n2\n3", fill=TRUE), data.table(V1=1:3))
 test(1761.2, fread("1\n2\n3", fill=FALSE), data.table(V1=1:3))
 
-# non-error with non-empty empty j, #2142
+# non-error with non-empty empty j, #2142 #2876
 DT = data.table(a = 1:5)
-test(1762, DT[ , {}], NULL)
+test(1762, DT[,{}], DT[,])
 
 # rbindlist empty items segfault, #2019
 x = list(list(a = 1), list(), list(a = 2))
@@ -13307,6 +13307,8 @@ set.seed(32940)
 NN=7e5; KK=4e4; TT=25
 DT = data.table( id = sample(KK, NN, TRUE), tt = sample(TT, NN, TRUE), ff = factor(sample(3, NN, TRUE)) )
 test(1978, print(DT[ , diff(ff), by = id]), error="Column 2 of item 1 has type 'factor' but has no levels; i.e. malformed.") # the print invokes rbindlist which bites
+
+
 
 
 ###################################
