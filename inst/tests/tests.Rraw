@@ -10652,7 +10652,7 @@ if (getDTthreads() != 2) {
 test(1761.1, fread("1\n2\n3", fill=TRUE), data.table(V1=1:3))
 test(1761.2, fread("1\n2\n3", fill=FALSE), data.table(V1=1:3))
 
-# non-error with non-empty empty j, #2142 #2876
+# non-error with non-empty empty j, #2142 #3313
 DT = data.table(a = 1:5)
 test(1762, DT[,{}], DT[,])
 
