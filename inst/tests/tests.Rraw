@@ -13309,8 +13309,6 @@ DT = data.table( id = sample(KK, NN, TRUE), tt = sample(TT, NN, TRUE), ff = fact
 test(1978, print(DT[ , diff(ff), by = id]), error="Column 2 of item 1 has type 'factor' but has no levels; i.e. malformed.") # the print invokes rbindlist which bites
 
 
-
-
 ###################################
 #  Add new tests above this line  #
 ###################################
