@@ -338,7 +338,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         stop("Variable '",jsub,"' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.")
     }
     if (root=="{") {
-      if (length(jsub) == 2L) {
+      if (length(jsub) == 1L) {
+        return(x)
+      } else if (length(jsub) == 2L) {
         jsub = jsub[[2L]]  # to allow {} wrapping of := e.g. [,{`:=`(...)},] [#376]
         root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
       } else if (length(jsub) > 2L && is.call(jsub[[2L]]) && jsub[[2L]][[1L]] == ":=") {
