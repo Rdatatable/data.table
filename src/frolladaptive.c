@@ -24,7 +24,7 @@ void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, double_an
  */
 
 void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
-  if (verbose) Rprintf("%s: running for input length %"PRIu64", hasna %d, narm %d\n", __func__, nx, hasna, (int) narm);
+  if (verbose) Rprintf("%s: running for input length %llu, hasna %d, narm %d\n", __func__, nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
   // TODO measure speed of cs as long double
@@ -111,7 +111,7 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *
  */
 
 void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
-  if (verbose) Rprintf("%s: running for input length %"PRIu64", hasna %d, narm %d\n", __func__, nx, hasna, (int) narm);
+  if (verbose) Rprintf("%s: running for input length %llu, hasna %d, narm %d\n", __func__, nx, hasna, (int) narm);
   volatile bool truehasna = hasna>0;                            // flag to re-run if NAs detected
   
   if (!truehasna || !narm) {                                    // narm=FALSE handled here as NAs properly propagated in exact algo
