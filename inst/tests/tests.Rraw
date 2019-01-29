@@ -13307,6 +13307,10 @@ NN=7e5; KK=4e4; TT=25
 DT = data.table( id = sample(KK, NN, TRUE), tt = sample(TT, NN, TRUE), ff = factor(sample(3, NN, TRUE)) )
 test(1978, print(DT[ , diff(ff), by = id]), error="Column 2 of item 1 has type 'factor' but has no levels; i.e. malformed.") # the print invokes rbindlist which bites
 
+# Drop Null Values from `j` list elements #1406
+DT = data.table(a = 1:3,b = letters[1:3],c = LETTERS[1:3])
+test(1979, DT[,.(a,b,if(FALSE)c)], DT[,c("a","b")])
+
 
 ###################################
 #  Add new tests above this line  #
