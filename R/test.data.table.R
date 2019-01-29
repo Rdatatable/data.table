@@ -68,7 +68,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   started.at = get("started.at", envir=env)
   whichfail = get("whichfail", envir=env)
   
-  # summary
+  # Summary. This code originally in tests.Rraw and moved up here in #3307
   plat = paste0("endian==", .Platform$endian,
                 ", sizeof(long double)==", .Machine$sizeof.longdouble,
                 ", sizeof(pointer)==", .Machine$sizeof.pointer,
