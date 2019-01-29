@@ -382,9 +382,9 @@ test(9999.111, frollmean(list(1, 10, 5), 2, align="left"), list(NA_real_, NA_rea
 test(9999.112, frollmean(5, 2, align="center"), NA_real_)
 test(9999.113, frollmean(list(1, 10, 5), 2, align="center"), list(NA_real_, NA_real_, NA_real_))
 #### n==Inf
-test(9999.114, frollmean(1:5, Inf), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
+test(9999.114, frollmean(1:5, Inf), error="n must be positive integer values", warning="NAs introduced by coercion*")
 #### n==c(5, Inf)
-test(9999.115, frollmean(1:5, c(5, Inf)), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
+test(9999.115, frollmean(1:5, c(5, Inf)), error="n must be positive integer values", warning="NAs introduced by coercion*")
 #### is.complex(n)
 test(9999.116, frollmean(1:5, 3i), error="n must be integer")
 #### is.character(n)
