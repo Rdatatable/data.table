@@ -13307,6 +13307,10 @@ NN=7e5; KK=4e4; TT=25
 DT = data.table( id = sample(KK, NN, TRUE), tt = sample(TT, NN, TRUE), ff = factor(sample(3, NN, TRUE)) )
 test(1978, print(DT[ , diff(ff), by = id]), error="Column 2 of item 1 has type 'factor' but has no levels; i.e. malformed.") # the print invokes rbindlist which bites
 
+# array name is not recognized when constructing a data table #789
+x <- as.array(1:5)
+test(1978, names(data.table(x)), "x")
+
 
 ###################################
 #  Add new tests above this line  #
