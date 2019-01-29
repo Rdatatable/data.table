@@ -1,11 +1,5 @@
 require(methods)
 
-# From R 3.6.0 onwards, we can check that && and || are using only length-1 logicals (in the test suite)
-# rather than relying on x && y being equivalent to x[[1L]] && y[[1L]]  silently.
-orig__R_CHECK_LENGTH_1_LOGIC2_ <- Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_", unset = NA_character_)
-Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
-# This environment variable is restored to its previous state (including not defined) at the end of this file
-
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if (!identical(suppressWarnings(packageDescription("data.table")), NA)) {
     remove.packages("data.table")
@@ -58,6 +52,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   groupingsets.data.table = data.table:::groupingsets.data.table
   dcast.data.table = data.table:::dcast.data.table
   all.equal.data.table = data.table:::all.equal.data.table
+  getindex = data.table:::getindex
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -13045,9 +13040,8 @@ test(1967.15, foverlaps(x, y, nomatch = c(3, 4)),
      error = 'nomatch must either be NA or NULL')
 test(1967.16, foverlaps(x, y, nomatch = 4L),
      error = 'nomatch must either be NA or NULL')
-### to be removed upon implementation
-test(1967.9999, foverlaps(x, y, type = 'equal'),
-     error = "type = 'equal' is not implemented yet")
+test(1967.17, foverlaps(x, y, type = 'equal'),
+     error = "type = 'equal' is not implemented yet")  # to be removed when implemented
 test(1967.18, foverlaps(x, y, by.x = 'start'),
      error = "by.x' and 'by.y' should contain at least two")
 test(1967.19, foverlaps(x, y, by.y = 'start'),
@@ -13117,11 +13111,11 @@ test(1967.48, x[ , b, .SDcols = 'a'], 6:10,
      warning = "This j doesn't use .SD")
 test(1967.49, x[ , list(5) := 6], error = 'LHS of := must be a symbol')
 test(1967.50, x[ , 1 + 3i := 6], error = "LHS of := isn't column names")
-test(1967.51, x[ , .(5L), by = .EACHI, mult = 'all'],
-     error = 'logical error. i is not data.table')
-#### to be removed following #2061
-test(1967.9999, x[1:2, by = a], error = "'by' or 'keyby' is supplied but not j")
-test(1967.52, x[1+3i], error = 'i has not evaluated to logical')
+test(1967.511, x[ , .(5L), by = .EACHI, mult = 'all'], error='logical error. i is not data.table')
+test(1967.512, x[1+3i], error='i has not evaluated to logical')
+test(1967.521, x[1:2, by=a], error="by= or keyby= is supplied but not j=")
+test(1967.522, x[, by=a],    error="by= or keyby= is supplied but not j=")
+test(1967.523, x[by=a],      error="by= or keyby= is supplied but not j=")
 
 test(1967.53, as.matrix(x, rownames = 2:3),
      error = 'length(rownames)==2 but')
@@ -13302,6 +13296,20 @@ test(1977.4, DT["D", -"GRP"], data.table(ID="D", X=NA_real_, key="ID"))
 test(1977.5, DT["D", c("ID","GRP")], data.table(ID="D", GRP=NA_integer_, key="ID"))
 test(1977.6, DT[c("A","D"), c("ID","GRP")], data.table(ID=c("A","A","D"), GRP=INT(1,1,NA)))
 
+# catch malformed factor in rbindlist, #3315
+set.seed(32940)
+NN=7e5; KK=4e4; TT=25
+DT = data.table( id = sample(KK, NN, TRUE), tt = sample(TT, NN, TRUE), ff = factor(sample(3, NN, TRUE)) )
+test(1978, print(DT[ , diff(ff), by = id]), error="Column 2 of item 1 has type 'factor' but has no levels; i.e. malformed.") # the print invokes rbindlist which bites
+
+# Drop Null Values from `j` list elements #1406
+DT = data.table(a = 1:3,b = letters[1:3],c = LETTERS[1:3])
+test(1979, DT[,.(a,b,if(FALSE)c)], DT[,c("a","b")])
+
+# array name is not recognized when constructing a data table #789
+x <- as.array(1:5)
+test(1980, names(data.table(x)), "x")
+
 # setkey update.index=TRUE #1158
 d1 = data.table(a=5:1,b=c(1L,3L,2L,5L,4L),c=c(2:3,1L,5L,4L))
 d2 = copy(d1)
@@ -13310,47 +13318,47 @@ setindexv(d1, c("c","b"))
 setindexv(d2, "b")
 setindexv(d2, c("c","b"))
 setkeyv(d1, "a")
-test(1978.1, indices(d1), NULL) # index removed when update.index=FALSE
+test(1981.1, indices(d1), NULL) # index removed when update.index=FALSE
 setkeyv(d2, "a", update.index=TRUE)
-test(1978.2, indices(d2, vectors=TRUE), list("b", c("c","b")))
+test(1981.2, indices(d2, vectors=TRUE), list("b", c("c","b")))
 setindexv(d1, "b")
 setindexv(d1, c("c","b"))
-test(1978.3, getindex(d1, "b"), getindex(d2, "b"))
-test(1978.4, getindex(d1, c("c","b")), getindex(d2, c("c","b")))
+test(1981.3, getindex(d1, "b"), getindex(d2, "b"))
+test(1981.4, getindex(d1, c("c","b")), getindex(d2, c("c","b")))
 d = data.table(a=1:3, b=3:1) # index retained even when update.index=FALSE because there was no re-order, so no update required, data already sorted, old test 1775.4 affected
 setindexv(d, "b")
 setkeyv(d, "a")
-test(1978.5, indices(d), "b")
+test(1981.5, indices(d), "b")
 d1 = data.table(a=c(2L,1L,3L), b=1:3) # check !length(io) branch
 d2 = copy(d1)
 setkeyv(d1, "a")
 setindexv(d1, "b")
 setindexv(d2, "b")
 setkeyv(d2, "a", update.index=TRUE)
-test(1978.6, getindex(d1, "b"), getindex(d2, "b"))
+test(1981.6, getindex(d1, "b"), getindex(d2, "b"))
 d1 = data.table(a=5:1, b=c(1:2,1:2,1L)) # indexes might not be identical due to within groups order mismatch
 d2 = copy(d1)
 setindexv(d1, "b")
 setindexv(d2, "b")
 setkeyv(d1, "a")
-test(1978.7, indices(d1), NULL) # index removed when update.index=FALSE
+test(1981.7, indices(d1), NULL) # index removed when update.index=FALSE
 setkeyv(d2, "a", update.index=TRUE)
-test(1978.8, indices(d2, vectors=TRUE), list("b"))
+test(1981.8, indices(d2, vectors=TRUE), list("b"))
 setindexv(d1, "b")
-test(1978.9, d1[getindex(d1, "b")]$b, d2[getindex(d2, "b")]$b) # indexes are not identical but they sort column "b" identically
+test(1981.9, d1[getindex(d1, "b")]$b, d2[getindex(d2, "b")]$b) # indexes are not identical but they sort column "b" identically
 d1 = data.table(a=5:1,b=c(1L,3L,2L,5L,4L),c=c(2:3,1L,5L,4L)) # some verbose branch coverage
 d2 = copy(d1)
 setindexv(d1, "b")
 setindexv(d2, "b")
 setkeyv(d1, "a")
 setindexv(d1, "b")
-test(1978.10, getindex(setkeyv(d2, "a", update.index=TRUE, verbose=TRUE), "b"), getindex(d1, "b"), output="forder took.*reorder indices took.*reorder took.*")
+test(1981.11, getindex(setkeyv(d2, "a", update.index=TRUE, verbose=TRUE), "b"), getindex(d1, "b"), output="forder took.*reorder indices took.*reorder took.*")
 d1 = data.table(a=c(2L,1L,3L), b=1:3) # some verbose branch coverage and check !length(io) branch
 d2 = copy(d1)
 setkeyv(d1, "a")
 setindexv(d1, "b")
 setindexv(d2, "b")
-test(1978.11, getindex(setkeyv(d2, "a", update.index=TRUE, verbose=TRUE), "b"), getindex(d1, "b"), output="forder took.*reorder indices took.*reorder took.*")
+test(1981.12, getindex(setkeyv(d2, "a", update.index=TRUE, verbose=TRUE), "b"), getindex(d1, "b"), output="forder took.*reorder indices took.*reorder took.*")
 
 
 ###################################
@@ -13359,50 +13367,3 @@ test(1978.11, getindex(setkeyv(d2, "a", update.index=TRUE, verbose=TRUE), "b"), 
 
 options(oldOptions)  # set at top of this file
 
-setDTthreads(0)
-plat = paste0("endian==", .Platform$endian,
-              ", sizeof(long double)==", .Machine$sizeof.longdouble,
-              ", sizeof(pointer)==", .Machine$sizeof.pointer,
-              ", TZ=", suppressWarnings(Sys.timezone()),
-              ", locale='", Sys.getlocale(), "'",
-              ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'")
-DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
-if ((x<-timings[,sum(nTest)]) != ntest) warning("Timings count mismatch:",x,"vs",ntest)
-cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
-print(DT, class=FALSE)
-if (memtest) {
-  ..inittime = inittime
-  m = fread("memtest.csv")[inittime==..inittime]
-  if (nrow(m)) {
-    ps_na = all(is.na(m[["PS_rss"]])) # OS with no 'ps -o rss R' support
-    png("memtest.png")
-    p = par(mfrow=c(if (ps_na) 2 else 3, 2))
-    if (!ps_na) {
-      m[, plot(test, PS_rss, pch=18, xlab="test num", ylab="mem MB", main="ps -o rss R")]
-      m[, plot(timestamp, PS_rss, type="l", xlab="timestamp", ylab="mem MB", main="ps -o rss R")]
-    }
-    m[, plot(test, GC_used, pch=18, xlab="test num", ylab="mem MB", main="gc used")]
-    m[, plot(timestamp, GC_used, type="l", xlab="timestamp", ylab="mem MB", main="gc used")]
-    m[, plot(test, GC_max_used, pch=18, xlab="test num", ylab="mem MB", main="gc max used")]
-    m[, plot(timestamp, GC_max_used, type="l", xlab="timestamp", ylab="mem MB", main="gc max used")]
-    par(p)
-    dev.off()
-  } else {
-    warning("test.data.table runs with memory testing but did not collect any memory statistics.")
-  }
-}
-if (nfail > 0) {
-  if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
-  cat("\r")
-  stop(nfail," error",s1," out of ",ntest," in ",timetaken(started.at)," on ",date(),". [",plat,"].",
-       " Search inst/tests/tests.Rraw for test number",s2,paste(whichfail,collapse=", "),".")
-  # important to stop() here, so that 'R CMD check' fails
-}
-cat(plat,"\n\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
-# date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
-# stale due to not updating yet since a fix in R-devel, for example.
-if (is.na(orig__R_CHECK_LENGTH_1_LOGIC2_)) {
-  Sys.unsetenv("_R_CHECK_LENGTH_1_LOGIC2_")
-} else {
-  Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_)
-}

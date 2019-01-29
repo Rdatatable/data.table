@@ -1,9 +1,11 @@
 ## this file will be migrated to inst/tests/tests.Rraw when branch will be ready to merge
-cc.used = all(sapply(c("test","froll"), exists))
-if (!interactive() && !cc.used) {
-  library(data.table)
-  test = data.table:::test
-  froll = data.table:::froll
+library(data.table)
+froll = data.table:::froll
+.test.froll.failed = numeric()
+test = function(num, ...) {
+  ans = data.table:::test(num, ...)
+  if (!ans) .test.froll.failed<<-c(.test.froll.failed, num)
+  invisible(ans)
 }
 oldDTthreads = setDTthreads(1) # mimics CRAN check, tested also on 4 cores
 
@@ -382,9 +384,9 @@ test(9999.111, frollmean(list(1, 10, 5), 2, align="left"), list(NA_real_, NA_rea
 test(9999.112, frollmean(5, 2, align="center"), NA_real_)
 test(9999.113, frollmean(list(1, 10, 5), 2, align="center"), list(NA_real_, NA_real_, NA_real_))
 #### n==Inf
-test(9999.114, frollmean(1:5, Inf), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
+test(9999.114, frollmean(1:5, Inf), error="n must be positive integer values", warning="NAs introduced by coercion*")
 #### n==c(5, Inf)
-test(9999.115, frollmean(1:5, c(5, Inf)), error="n must be positive integer values", warning="NAs introduced by coercion to integer range")
+test(9999.115, frollmean(1:5, c(5, Inf)), error="n must be positive integer values", warning="NAs introduced by coercion*")
 #### is.complex(n)
 test(9999.116, frollmean(1:5, 3i), error="n must be integer")
 #### is.character(n)
@@ -827,4 +829,4 @@ afun_compare(x, n)
 rm(num)
 
 setDTthreads(oldDTthreads)
-cat("froll unit tests successfully passed\n")
+if (length(.test.froll.failed)) stop(sprintf("froll unit tests failed: %s.", paste(.test.froll.failed, collapse=", "))) else cat("froll unit tests successfully passed\n")
