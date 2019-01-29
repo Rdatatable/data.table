@@ -36,8 +36,8 @@ if none exist.
 the \code{data.table} has a key (or not).
 }
 \usage{
-setkey(x, \dots, verbose=getOption("datatable.verbose"), physical = TRUE, update.index = FALSE)
-setkeyv(x, cols, verbose=getOption("datatable.verbose"), physical = TRUE, update.index = FALSE)
+setkey(x, \dots, verbose=getOption("datatable.verbose"), physical = TRUE, keep.indices = FALSE)
+setkeyv(x, cols, verbose=getOption("datatable.verbose"), physical = TRUE, keep.indices = FALSE)
 setindex(\dots)
 setindexv(x, cols, verbose=getOption("datatable.verbose"))
 key(x)
@@ -56,9 +56,8 @@ names.}
 \item{verbose}{ Output status and information. }
 \item{physical}{ TRUE changes the order of the data in RAM. FALSE adds a
 secondary key a.k.a. index. }
-\item{update.index}{ logical, defaults to FALSE, when TRUE it will retain indices after sorting. }
-\item{vectors}{ logical scalar default \code{FALSE}, when set to \code{TRUE}
-then list of character vectors is returned, each vector refers to one index. }
+\item{keep.indices}{ The default \code{FALSE} drops existing indices because they are not valid for the new row order. \code{TRUE} will retain existing indices by reordering them appropriately. This is more efficient than recreating the indices anew after \code{setkey}, especially for indexes of many columns and/or high cardinality. }
+\item{vectors}{ Logical scalar default \code{FALSE}, when set to \code{TRUE} then list of character vectors is returned, each vector refers to one index. }
 }
 \details{
 \code{setkey} reorders (or sorts) the rows of a data.table by the columns

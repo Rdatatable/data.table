@@ -1,10 +1,10 @@
-setkey <- function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE, update.index=FALSE)
+setkey <- function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE, keep.indices=FALSE)
 {
   if (is.character(x)) stop("x may no longer be the character name of the data.table. The possibility was undocumented and has been removed.")
   cols = as.character(substitute(list(...))[-1L])
   if (!length(cols)) { cols=colnames(x) }
   else if (identical(cols,"NULL")) cols=NULL
-  setkeyv(x, cols, verbose=verbose, physical=physical, update.index=update.index)
+  setkeyv(x, cols, verbose=verbose, physical=physical, keep.indices=keep.indices)
 }
 
 # FR #1442
@@ -28,7 +28,7 @@ key2 <- function(x) {
   stop("key2() is now deprecated. Please use indices() instead.")
 }
 
-setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE, update.index=FALSE)
+setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE, keep.indices=FALSE)
 {
   if (is.null(cols)) {   # this is done on a data.frame when !cedta at top of [.data.table
     if (physical) setattr(x,"sorted",NULL)
@@ -45,7 +45,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   }
   if (identical(cols,"")) stop("cols is the empty string. Use NULL to remove the key.")
   if (!all(nzchar(cols))) stop("cols contains some blanks.")
-  if (!(identical(update.index,TRUE) || identical(update.index,FALSE))) stop("update.index must be TRUE or FALSE")
+  if (!(identical(keep.indices,TRUE) || identical(keep.indices,FALSE))) stop("keep.indices must be TRUE or FALSE")
   if (!length(cols)) {
     cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
   } else {
@@ -95,7 +95,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   }
   if (length(o)) {
     if (verbose) {
-      if (!update.index) setattr(x,"index",NULL)
+      if (!keep.indices) setattr(x,"index",NULL)
       else if (!is.null(IDX<-attr(x,"index",exact=TRUE))) { # setkeyv capable to reorder index #1158
         tt = system.time({
           oo = order(o)
@@ -109,7 +109,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
       tt = suppressMessages(system.time(.Call(Creorder,x,o)))
       cat("reorder took", tt["user.self"]+tt["sys.self"], "sec\n")
     } else {
-      if (!update.index) setattr(x,"index",NULL)
+      if (!keep.indices) setattr(x,"index",NULL)
       else if(!is.null(IDX<-attr(x,"index",exact=TRUE))) { # setkeyv capable to reorder index #1158
         oo = order(o)
         for (idx in names(attributes(IDX))) {

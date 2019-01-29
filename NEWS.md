@@ -4,7 +4,7 @@
 
 #### NEW FEATURES
 
-1. `setkey` and `setkeyv` gains new argument `update.index`. When `TRUE` provided it will retain existing indices when sorting data.table by reordering them so they are valid for newly keyed data.table. By default argument is set to `FALSE` because of overhead (relatively small but still) related to reordering indices. Closes [#1158](https://github.com/Rdatatable/data.table/issues/1158).
+1. `setkey()` and `setkeyv()` gain `keep.indices=`, [#1158](https://github.com/Rdatatable/data.table/issues/1158). This option retains any existing indices (i.e. secondary keys) by reordering them appropriately given the new row order. This is more efficient and more convenient than creating indices anew after the `setkey()`. This option is experimental, subject to change and currently `FALSE` by default. The default may be changed to `TRUE` in future via a global option such as `datatable.keep.indices`.
 
 #### BUG FIXES
 
