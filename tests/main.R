@@ -1,4 +1,5 @@
 require(data.table)
+
 test.data.table()  # runs the main test suite of 5,000+ tests in /inst/tests/tests.Rraw
 
 # integration tests for packages excluded from Suggests in 1.10.5
@@ -10,6 +11,3 @@ if (with.other.packages) test.data.table(with.other.packages=with.other.packages
 # test.data.table(verbose=TRUE)
 # Calling it again in the past revealed some memory bugs but also verbose mode checks the verbose messages run ok
 # TO DO: check we test each verbose message at least once, instead of a full repeat of all tests
-
-
-
