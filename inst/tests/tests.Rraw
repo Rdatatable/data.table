@@ -13045,9 +13045,8 @@ test(1967.15, foverlaps(x, y, nomatch = c(3, 4)),
      error = 'nomatch must either be NA or NULL')
 test(1967.16, foverlaps(x, y, nomatch = 4L),
      error = 'nomatch must either be NA or NULL')
-### to be removed upon implementation
-test(1967.9999, foverlaps(x, y, type = 'equal'),
-     error = "type = 'equal' is not implemented yet")
+test(1967.17, foverlaps(x, y, type = 'equal'),
+     error = "type = 'equal' is not implemented yet")  # to be removed when implemented
 test(1967.18, foverlaps(x, y, by.x = 'start'),
      error = "by.x' and 'by.y' should contain at least two")
 test(1967.19, foverlaps(x, y, by.y = 'start'),
@@ -13117,11 +13116,11 @@ test(1967.48, x[ , b, .SDcols = 'a'], 6:10,
      warning = "This j doesn't use .SD")
 test(1967.49, x[ , list(5) := 6], error = 'LHS of := must be a symbol')
 test(1967.50, x[ , 1 + 3i := 6], error = "LHS of := isn't column names")
-test(1967.51, x[ , .(5L), by = .EACHI, mult = 'all'],
-     error = 'logical error. i is not data.table')
-#### to be removed following #2061
-test(1967.9999, x[1:2, by = a], error = "'by' or 'keyby' is supplied but not j")
-test(1967.52, x[1+3i], error = 'i has not evaluated to logical')
+test(1967.511, x[ , .(5L), by = .EACHI, mult = 'all'], error='logical error. i is not data.table')
+test(1967.512, x[1+3i], error='i has not evaluated to logical')
+test(1967.521, x[1:2, by=a], error="by= or keyby= is supplied but not j=")
+test(1967.522, x[, by=a],    error="by= or keyby= is supplied but not j=")
+test(1967.523, x[by=a],      error="by= or keyby= is supplied but not j=")
 
 test(1967.53, as.matrix(x, rownames = 2:3),
      error = 'length(rownames)==2 but')
