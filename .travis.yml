@@ -15,6 +15,26 @@ branches:
   only:
     - "master"
 
+r:
+  - oldrel
+  - release
+  - devel
+
+os:
+  - linux
+  - osx
+
+matrix:
+  exclude:
+    - r: devel  # exclude osx r-devel build as it is currently unstable
+      os: osx
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install llvm &&
+    export PATH="/usr/local/opt/llvm/bin:$PATH" &&
+    export LDFLAGS="-L/usr/local/opt/llvm/lib" &&
+    export CFLAGS="-I/usr/local/opt/llvm/include"; fi
+
 r_packages:
   - covr
   - drat
@@ -25,7 +45,10 @@ before_script:
 
 after_success:
   - travis_wait Rscript -e 'library(covr);codecov()'
-  - test $TRAVIS_REPO_SLUG == "Rdatatable/data.table" && test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && bash deploy.sh
+  - test $TRAVIS_REPO_SLUG == "Rdatatable/data.table" &&
+    test $TRAVIS_PULL_REQUEST == "false" &&
+    test $TRAVIS_BRANCH == "master" &&
+    bash deploy.sh
 
 notifications:
   email:
