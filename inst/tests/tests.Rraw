@@ -13336,7 +13336,7 @@ setindexv(d1, "b")
 setindexv(d2, "b")
 setkeyv(d2, "a", keep.indices=TRUE)
 test(1981.6, getindex(d1, "b"), getindex(d2, "b"))
-d1 = data.table(a=5:1, b=c(1:2,1:2,1L)) # indexes might not be identical due to within groups order mismatch
+d1 = data.table(a=5:1, b=c(1:2,1:2,1L)) # indexes must be just as if setindexv() were run after the setkey (within-group order)
 d2 = copy(d1)
 setindexv(d1, "b")
 setindexv(d2, "b")
@@ -13345,7 +13345,7 @@ test(1981.7, indices(d1), NULL) # index removed when keep.indices=FALSE
 setkeyv(d2, "a", keep.indices=TRUE)
 test(1981.8, indices(d2, vectors=TRUE), list("b"))
 setindexv(d1, "b")
-test(1981.9, d1[getindex(d1, "b")]$b, d2[getindex(d2, "b")]$b) # indexes are not identical but they sort column "b" identically
+test(1981.9, getindex(d1, "b"), getindex(d2, "b"))  # reordered index must be identical to rebuilt index
 d1 = data.table(a=5:1,b=c(1L,3L,2L,5L,4L),c=c(2:3,1L,5L,4L)) # some verbose branch coverage
 d2 = copy(d1)
 setindexv(d1, "b")
