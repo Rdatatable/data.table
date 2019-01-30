@@ -13352,13 +13352,13 @@ setindexv(d1, "b")
 setindexv(d2, "b")
 setkeyv(d1, "a")
 setindexv(d1, "b")
-test(1981.11, getindex(setkeyv(d2, "a", keep.indices=TRUE, verbose=TRUE), "b"), getindex(d1, "b"), output="forder took.*reorder indices took.*reorder took.*")
+test(1981.11, getindex(setkeyv(d2, "a", keep.indices=TRUE, verbose=TRUE), "b"), getindex(d1, "b"), output="forder took.*reorder indices took.*reorder rows took.*")
 d1 = data.table(a=c(2L,1L,3L), b=1:3) # some verbose branch coverage and check !length(io) branch
 d2 = copy(d1)
 setkeyv(d1, "a")
 setindexv(d1, "b")
 setindexv(d2, "b")
-test(1981.12, getindex(setkeyv(d2, "a", keep.indices=TRUE, verbose=TRUE), "b"), getindex(d1, "b"), output="forder took.*reorder indices took.*reorder took.*")
+test(1981.12, getindex(setkeyv(d2, "a", keep.indices=TRUE, verbose=TRUE), "b"), getindex(d1, "b"), output="forder took.*reorder indices took.*reorder rows took.*")
 
 
 ###################################

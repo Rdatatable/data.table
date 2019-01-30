@@ -81,47 +81,32 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     if (!(.xi.type<-typeof(.xi)) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",.xi.type,"' which is not supported as a key column type, currently.")
   }
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
-  if (verbose) {
-    tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
-    # suppress needed for tests 644 and 645 in verbose mode
-    cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
-  } else {
-    o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)
-  }
+  started.at = proc.time()
+  o = forderv(x, cols, sort=TRUE, retGrp=FALSE)
+  if (verbose) cat("forder took", timetaken(started.at), "\n")
   if (!physical) {
     if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
     setattr(attr(x,"index",exact=TRUE), paste0("__", cols, collapse=""), o)
     return(invisible(x))
   }
   if (length(o)) {
-    if (verbose) {
-      if (!keep.indices) setattr(x,"index",NULL)
-      else if (!is.null(IDX<-attr(x,"index",exact=TRUE))) { # setkeyv capable to reorder index #1158
-        tt = system.time({
-          oo = order(o)
-          for (idx in names(attributes(IDX))) {
-            io = attr(IDX, idx, exact=TRUE)
-            setattr(IDX, idx, if (length(io)) oo[io] else o)
-          }
-        })
-        cat("reorder indices took", tt["user.self"]+tt["sys.self"], "sec\n")
+    if (!keep.indices) setattr(x,"index",NULL)
+    else if (!is.null(IDX<-attr(x,"index",exact=TRUE))) { # setkeyv capable to reorder index #1158
+      started.at = proc.time()
+      oo = forderv(o)
+      for (idx in names(attributes(IDX))) {
+        io = attr(IDX, idx, exact=TRUE)
+        setattr(IDX, idx, if (length(io)) oo[io] else o)
       }
-      tt = suppressMessages(system.time(.Call(Creorder,x,o)))
-      cat("reorder took", tt["user.self"]+tt["sys.self"], "sec\n")
-    } else {
-      if (!keep.indices) setattr(x,"index",NULL)
-      else if(!is.null(IDX<-attr(x,"index",exact=TRUE))) { # setkeyv capable to reorder index #1158
-        oo = order(o)
-        for (idx in names(attributes(IDX))) {
-          io = attr(IDX, idx, exact=TRUE)
-          setattr(IDX, idx, if (length(io)) oo[io] else o)
-        }
-      }
-      .Call(Creorder,x,o)
+      if (verbose) cat("reorder indices took", timetaken(started.at), "\n")
     }
+    started.at = proc.time()
+    .Call(Creorder,x,o)
+    if (verbose) cat("reorder rows took", timetaken(started.at), "\n")
   } else {
-    if (verbose) cat("x is already ordered by these columns, no need to call reorder\n")
-  } # else empty integer() from forderv means x is already ordered by those cols, nothing to do.
+    # empty integer() from forderv means x is already ordered by those cols, nothing to do.
+    if (verbose) cat("x is already ordered by these columns. No need to reorder.\n")
+  }
   setattr(x,"sorted",cols)
   invisible(x)
 }
