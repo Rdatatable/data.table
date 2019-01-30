@@ -12,9 +12,11 @@
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
 
-2. As promised in new feature 6 of v1.11.6 Sep 2018 (see below in this file), the `datatable.CJ.names` option's default is now `TRUE`. In v1.13.0 it will be removed.
+2. 1.12.0 `data.table` checked itself on loading using `tools::checkMD5sums("data.table")` but this check failed under the `packrat` package manager on Windows because `packrat` appears to modify the DESCRIPTION file of packages it has snapshot, [#3329](https://github.com/Rdatatable/data.table/issues/3329). This check is now removed. The `CdllVersion` check was introduced after the `checkMD5sums()` attempt and is better (e.g. reliable on all platforms). 
 
-3. The Travis build matrix is expanded to OSX and to the R previous major and R-devel releases [#3326](https://github.com/Rdatatable/data.table/issues/3326). An OpenMP enabled compiler is required to correctly build on OSX, therefore the homebrew llvm package is installed on the Travis (OSX) machine before R CMD build is run. The OSX build on R-devel was explicitly excluded because it's currently unstable. Thanks @marcusklik for the PR.
+3. As promised in new feature 6 of v1.11.6 Sep 2018 (see below in this file), the `datatable.CJ.names` option's default is now `TRUE`. In v1.13.0 it will be removed.
+
+4. The Travis build matrix is expanded to OSX and to the R previous major and R-devel releases [#3326](https://github.com/Rdatatable/data.table/issues/3326). An OpenMP enabled compiler is required to correctly build on OSX, therefore the homebrew llvm package is installed on the Travis (OSX) machine before R CMD build is run. The OSX build on R-devel was explicitly excluded because it's currently unstable. Thanks @marcusklik for the PR.
 
 
 ### Changes in v1.12.0  (13 Jan 2019)
