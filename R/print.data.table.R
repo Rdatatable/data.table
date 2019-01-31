@@ -115,7 +115,7 @@ format.data.table <- function (x, ..., justify="none") {
     else if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
       paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 - format has to be added here...
     else
-      paste0("<", class(x)[1L], ">")
+      fmt(x)
   }
   # FR #1091 for pretty printing of character
   # TODO: maybe instead of doing "this is...", we could do "this ... test"?
@@ -148,3 +148,10 @@ shouldPrint = function(x) {
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
 cut_top = function(x) cat(capture.output(x)[-1L], sep = '\n')
 
+fmt = function(x, ...) {
+  UseMethod("fmt")
+}
+
+fmt.default = function(x) {
+  paste0("<", class(x)[1L], ">")
+}

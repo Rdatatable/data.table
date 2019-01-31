@@ -172,3 +172,6 @@ S3method(unique, ITime)
 # which.first
 # which.last
 
+# fmt generic to support custom printers
+export(fmt)
+S3method(fmt, default)
