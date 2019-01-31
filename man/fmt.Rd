@@ -6,7 +6,7 @@
     in \code{\link{print.data.table}}.
     
     The default method returns the first class of the object
-    (as returned by \code{\link{class()}}) in angle brackets
+    (as returned by \code{\link{class}}) in angle brackets
     (\dQuote{<Class>}).
 }
 \usage{
@@ -14,6 +14,7 @@
 }
 \arguments{
   \item{x}{ Anything. }
+  \item{...}{ Currently ignored. }
 }
 \value{
     A single string.
