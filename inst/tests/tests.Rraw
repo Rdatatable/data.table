@@ -13313,8 +13313,8 @@ test(1980, names(data.table(x)), "x")
 fmt.myclass <- function(x, ...) paste0("<", class(x)[1L], ":", x$id, ">")
 registerS3method("fmt", "myclass", fmt.myclass)
 DT = data.table(row = 1:2, objs = list(structure(list(id = "foo"), class = "myclass"),  structure(list(id = "bar"), class = "myclass")))
-test(1981.1, print.data.table(DT), output = "myclass:foo")
-test(1981.2, print.data.table(DT), output = "myclass:bar")
+test(1981.1, print(DT), output = "myclass:foo")
+test(1981.2, print(DT), output = "myclass:bar")
 
 ###################################
 #  Add new tests above this line  #

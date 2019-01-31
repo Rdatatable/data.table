@@ -152,6 +152,6 @@ fmt = function(x, ...) {
   UseMethod("fmt")
 }
 
-fmt.default = function(x) {
+fmt.default = function(x, ...) {
   paste0("<", class(x)[1L], ">")
 }
