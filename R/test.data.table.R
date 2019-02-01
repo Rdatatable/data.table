@@ -1,4 +1,4 @@
-test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE) {
+test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, Rraw=NULL) {
   if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
@@ -12,10 +12,15 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   }
   # for (fn in dir(d,"*.[rR]$",full=TRUE)) {  # testthat runs those
 
-  stopifnot( !(with.other.packages && benchmark) )
-  fn = if (with.other.packages) "other.Rraw"
-       else if (benchmark) "benchmark.Rraw"
-       else "tests.Rraw"
+  if (!is.null(Rraw)) {
+    stopifnot(is.character(Rraw), length(Rraw)==1L, !is.na(Rraw), nzchar(Rraw))
+    fn = Rraw
+  } else {
+    stopifnot( !(with.other.packages && benchmark) )
+    fn = if (with.other.packages) "other.Rraw"
+         else if (benchmark) "benchmark.Rraw"
+         else "tests.Rraw"
+  }
   fn = file.path(d, fn)
   if (!file.exists(fn)) stop(fn," does not exist")
 
