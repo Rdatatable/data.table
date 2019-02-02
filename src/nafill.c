@@ -1,4 +1,5 @@
 #include "data.table.h"
+#include <Rdefines.h>
 
 // ans_t *ans is not used here but can be used to track timings, messages, etc.
 void setnafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans) {
@@ -77,10 +78,20 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace) {
   bool binplace = LOGICAL(inplace)[0];
   SEXP x;
   if (isVectorAtomic(obj)) {
-    if (binplace) error("Internal error: inplace NA fill should not be called on atomic types, only lists.");  // # nocov
-    x = PROTECT(allocVector(VECSXP, 1)); protecti++;
+    if (binplace) {
+      error("'x' argument is atomic vector, in-place update is supported only for list/data.table");
+    } else if (!(isReal(obj) || isInteger(obj))) {
+      error("'x' argument must be numeric type, or list/data.table of numeric types");
+    }
+    x = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(x, 0, obj);
   } else {
+    R_len_t nobj = length(obj);
+    for (R_len_t i=0; i<nobj; i++) {
+      if (!(isReal(VECTOR_ELT(obj, i)) || isInteger(VECTOR_ELT(obj, i)))) {
+        error("'x' argument must be numeric type, or list/data.table of numeric types");
+      }
+    }
     x = obj;
   }
   R_len_t nx=length(x);
@@ -140,7 +151,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace) {
       binplace ? setnafillDouble(dx[i], inx[i], itype, dfill, &vans[i]) : nafillDouble(dx[i], inx[i], itype, dfill, &vans[i]);
       break;
     case INTSXP :
-      nafillInteger(ix[i], inx[i], itype, ifill, &vans[i]);
+      binplace ? setnafillInteger(ix[i], inx[i], itype, ifill, &vans[i]) : nafillInteger(ix[i], inx[i], itype, ifill, &vans[i]);
       break;
     }
   }
