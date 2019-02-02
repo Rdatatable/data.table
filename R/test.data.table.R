@@ -1,27 +1,34 @@
-test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, Rraw=NULL) {
-  if (exists("test.data.table",.GlobalEnv,inherits=FALSE)) {
+test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, script=NULL) {
+  if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
     if ("package:data.table" %chin% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
-    d = if (pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("CC_DIR")
-    d = file.path(d, "inst/tests")
+    rootdir = if (pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("CC_DIR")
+    subdir = file.path("inst","tests")
     # nocov end
   } else {
     # i) R CMD check and ii) user running test.data.table()
-    d = paste0(getNamespaceInfo("data.table","path"),"/tests")
+    rootdir = getNamespaceInfo("data.table","path")
+    subdir = "tests"
   }
-  # for (fn in dir(d,"*.[rR]$",full=TRUE)) {  # testthat runs those
+  fulldir = file.path(rootdir, subdir)
 
-  if (!is.null(Rraw)) {
-    stopifnot(is.character(Rraw), length(Rraw)==1L, !is.na(Rraw), nzchar(Rraw))
-    fn = Rraw
+  if (!is.null(script)) {
+    stopifnot(is.character(script), length(script)==1L, !is.na(script), nzchar(script))
+    if (!identical(basename(script), script)) {
+      subdir = dirname(script)
+      fulldir = normalizePath(subdir, mustWork=FALSE)
+      fn = basename(script)
+    } else {
+      fn = script
+    }
   } else {
     stopifnot( !(with.other.packages && benchmark) )
     fn = if (with.other.packages) "other.Rraw"
          else if (benchmark) "benchmark.Rraw"
          else "tests.Rraw"
   }
-  fn = file.path(d, fn)
+  fn = setNames(file.path(fulldir, fn), file.path(subdir, fn))
   if (!file.exists(fn)) stop(fn," does not exist")
 
   # From R 3.6.0 onwards, we can check that && and || are using only length-1 logicals (in the test suite)
@@ -36,24 +43,24 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
 
-  cat("Running",fn,"\n")
+  cat("Running", fn, "\n")
   env = new.env(parent=.GlobalEnv)
-  assign("testDir", function(x)file.path(d,x), envir=env)
+  assign("testDir", function(x) file.path(fulldir, x), envir=env)
   assign("nfail", 0L, envir=env)
   assign("ntest", 0L, envir=env)
   assign("whichfail", NULL, envir=env)
   setDTthreads(2) # explicitly limit to 2 so as not to breach CRAN policy (but tests are small so should not use more than 2 anyway)
   assign("started.at", proc.time(), envir=env)
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
-  assign("timings", data.table( ID = seq_len(3000L), time=0.0, nTest=0L ), envir=env)   # test timings aggregated to integer id
+  assign("timings", data.table( ID = seq_len(9999L), time=0.0, nTest=0L ), envir=env)   # test timings aggregated to integer id
   assign("memtest", as.logical(Sys.getenv("TEST_DATA_TABLE_MEMTEST", "FALSE")), envir=env)
   assign("filename", fn, envir=env)
   assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
   # It doesn't matter that 3000L is far larger than needed for other and benchmark.
   if(isTRUE(silent)){
-    try(sys.source(fn,envir=env), silent=silent)  # nocov
+    try(sys.source(fn, envir=env), silent=silent)  # nocov
   } else {
-    sys.source(fn,envir=env)
+    sys.source(fn, envir=env)
   }
   options(oldverbose)
   options(oldenc)
@@ -114,10 +121,10 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
     cat("\r")
     stop(nfail," error",s1," out of ",ntest," in ",timetaken(started.at)," on ",date(),". [",plat,"].",
-         " Search inst/tests/tests.Rraw for test number",s2,paste(whichfail,collapse=", "),".")
+         " Search ",names(fn)," for test number",s2,paste(whichfail,collapse=", "),".")
     # important to stop() here, so that 'R CMD check' fails
   }
-  cat(plat,"\n\nAll ",ntest," tests in inst/tests/tests.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
+  cat(plat,"\n\nAll ",ntest," tests in ",names(fn)," completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
   # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
   # stale due to not updating yet since a fix in R-devel, for example.
   
