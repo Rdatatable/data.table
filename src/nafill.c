@@ -1,5 +1,21 @@
 #include "data.table.h"
-#include <Rdefines.h>
+
+// ans_t *ans is not used here but can be used to track timings, messages, etc.
+void setnafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans) {
+  if (type==0) { // const
+    for (uint_fast64_t i=0; i<nx; i++) {
+      if (ISNA(x[i])) x[i] = fill;
+    }
+  } else if (type==1) { // locf
+    for (uint_fast64_t i=1; i<nx; i++) {
+      if (ISNA(x[i])) x[i] = x[i-1];
+    }
+  } else if (type==2) { // nocb
+    for (int_fast64_t i=nx-2; i>=0; i--) {
+      if (ISNA(x[i])) x[i] = x[i+1];
+    }
+  }
+}
 
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans) {
   if (type==0) { // const
@@ -7,45 +23,61 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, a
       ans->dbl_v[i] = ISNA(x[i]) ? fill : x[i];
     }
   } else if (type==1) { // locf
-    double last_x=NA_REAL;
-    for (uint_fast64_t i=0; i<nx; i++) {
-      ans->dbl_v[i] = ISNA(x[i]) ? last_x : x[i];
-      last_x = ans->dbl_v[i];
+    ans->dbl_v[0] = x[0];
+    for (uint_fast64_t i=1; i<nx; i++) {
+      ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i-1] : x[i];
     }
   } else if (type==2) { // nocb
-    double next_x=NA_REAL;
-    for (int_fast64_t i=nx-1; i>=0; i--) {
-      ans->dbl_v[i] = ISNA(x[i]) ? next_x : x[i];
-      next_x = ans->dbl_v[i];
+    ans->dbl_v[nx-1] = x[nx-1];
+    for (int_fast64_t i=nx-2; i>=0; i--) {
+      ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i+1] : x[i];
     }
   }
 }
+
+// ans_t *ans is not used here but can be used to track timings, messages, etc.
+void setnafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans) {
+  if (type==0) { // const
+    for (uint_fast64_t i=0; i<nx; i++) {
+      if (x[i]==NA_INTEGER) x[i] = fill;
+    }
+  } else if (type==1) { // locf
+    for (uint_fast64_t i=1; i<nx; i++) {
+      if (x[i]==NA_INTEGER) x[i] = x[i-1];
+    }
+  } else if (type==2) { // nocb
+    for (int_fast64_t i=nx-2; i>=0; i--) {
+      if (x[i]==NA_INTEGER) x[i] = x[i+1];
+    }
+  }
+}
+
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans) {
   if (type==0) { // const
     for (uint_fast64_t i=0; i<nx; i++) {
       ans->int_v[i] = x[i]==NA_INTEGER ? fill : x[i];
     }
   } else if (type==1) { // locf
-    int32_t last_x=NA_INTEGER;
-    for (uint_fast64_t i=0; i<nx; i++) {
-      ans->int_v[i] = x[i]==NA_INTEGER ? last_x : x[i];
-      last_x = ans->int_v[i];
+    ans->int_v[0] = x[0];
+    for (uint_fast64_t i=1; i<nx; i++) {
+      ans->int_v[i] = x[i]==NA_INTEGER ? ans->int_v[i-1] : x[i];
     }
   } else if (type==2) { // nocb
-    int32_t next_x=NA_INTEGER;
-    for (int_fast64_t i=nx-1; i>=0; i--) {
-      ans->int_v[i] = x[i]==NA_INTEGER ? next_x : x[i];
-      next_x = ans->int_v[i];
+    ans->int_v[nx-1] = x[nx-1];
+    for (int_fast64_t i=nx-2; i>=0; i--) {
+      ans->int_v[i] = x[i]==NA_INTEGER ? ans->int_v[i+1] : x[i];
     }
   }
 }
 
-SEXP nafillR(SEXP obj, SEXP type, SEXP fill) {
+SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace) {
   int protecti=0;
   
   if (!xlength(obj)) return(obj);
+  bool binplace = LOGICAL(inplace)[0];
   SEXP x;
   if (isVectorAtomic(obj)) {
+    if (binplace) error("Internal error: inplace NA fill should not be called on atomic types, only lists.");  // # nocov
     x = PROTECT(allocVector(VECSXP, 1)); protecti++;
     SET_VECTOR_ELT(x, 0, obj);
   } else {
@@ -53,18 +85,26 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill) {
   }
   R_len_t nx=length(x);
   
-  SEXP ans;
-  ans = PROTECT(allocVector(VECSXP, nx)); protecti++;
-  ans_t vans[nx];
   double* dx[nx];
   int32_t* ix[nx];
   uint_fast64_t inx[nx];
+  SEXP ans = R_NilValue;
+  ans_t vans[nx];
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));
-    SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(x, i)), inx[i]));
-    vans[i] = ((ans_t) { .dbl_v=REAL(VECTOR_ELT(ans, i)), .int_v=INTEGER(VECTOR_ELT(ans, i)), .status=0, .message={"\0","\0","\0","\0"} });
     dx[i] = REAL(VECTOR_ELT(x, i));
     ix[i] = INTEGER(VECTOR_ELT(x, i));
+  }
+  if (!binplace) {
+    ans = PROTECT(allocVector(VECSXP, nx)); protecti++;
+    for (R_len_t i=0; i<nx; i++) {
+      SET_VECTOR_ELT(ans, i, allocVector(TYPEOF(VECTOR_ELT(x, i)), inx[i]));
+      vans[i] = ((ans_t) { .dbl_v=REAL(VECTOR_ELT(ans, i)), .int_v=INTEGER(VECTOR_ELT(ans, i)), .status=0, .message={"\0","\0","\0","\0"} });
+    }
+  } else {
+    for (R_len_t i=0; i<nx; i++) {
+      vans[i] = ((ans_t) { .dbl_v=(double *)R_NilValue, .int_v=(int32_t *)R_NilValue, .status=0, .message={"\0","\0","\0","\0"} });
+    }
   }
   
   unsigned int itype;
@@ -93,11 +133,11 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill) {
     }
   }
   
-  #pragma omp parallel for num_threads(getDTthreads())
+  #pragma omp parallel for if (nx>1) num_threads(getDTthreads())
   for (R_len_t i=0; i<nx; i++) {
     switch (TYPEOF(VECTOR_ELT(x, i))) {
     case REALSXP :
-      nafillDouble(dx[i], inx[i], itype, dfill, &vans[i]);
+      binplace ? setnafillDouble(dx[i], inx[i], itype, dfill, &vans[i]) : nafillDouble(dx[i], inx[i], itype, dfill, &vans[i]);
       break;
     case INTSXP :
       nafillInteger(ix[i], inx[i], itype, ifill, &vans[i]);
@@ -118,5 +158,9 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill) {
   } // # nocov end
   
   UNPROTECT(protecti);
-  return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
+  if (binplace) {
+    return obj;
+  } else {
+    return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
+  }
 }

@@ -169,5 +169,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
 
 // nafill.c
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans);
+void setnafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans);
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans);
-SEXP nafillR(SEXP obj, SEXP type, SEXP fill);
+void setnafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans);
+SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace);

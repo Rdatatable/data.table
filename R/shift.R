@@ -23,11 +23,25 @@ shift <- function(x, n=1L, fill=NA, type=c("lag", "lead", "shift"), give.names=F
   ans
 }
 
-fna.fill = function(x, type=c("const","locf","nocb"), fill=NA) {
+fnafill = function(x, type=c("const","locf","nocb"), fill=NA) {
   type = match.arg(type)
   if (type!="const" && !missing(fill))
     warning("fna.fill argument 'fill' ignored, only make sense for type='const'")
   if ((is.list(x) && !all(sapply(x, is.numeric))) || (!is.list(x) && !is.numeric(x)))
     stop("'x' argument must be numeric type, or list/data.table of numeric types")
-  .Call(CnafillR, x, type, fill)
+  .Call(CnafillR, x, type, fill, FALSE)
 }
+
+setnafill = function(x, type=c("const","locf","nocb"), fill=NA) {
+  type = match.arg(type)
+  if (type!="const" && !missing(fill))
+    warning("fna.fill argument 'fill' ignored, only make sense for type='const'")
+  if (!is.list(x) || !all(sapply(x, is.numeric)))
+    stop("'x' argument must list/data.table of numeric types")
+  invisible(.Call(CnafillR, x, type, fill, TRUE))
+}
+
+#fna.locf = function(x) {
+#  stopifnot(is.double(x))
+#  .Call(Cfnalocf, x)
+#}
