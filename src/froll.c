@@ -36,7 +36,7 @@ void frollmean(unsigned int algo, double *x, uint_fast64_t nx, double_ans_t *ans
  */
 
 void frollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
-  if (verbose) Rprintf("%s: running for input length %lu, window %d, hasna %d, narm %d\n", __func__, nx, k, hasna, (int) narm);
+  if (verbose) Rprintf("%s: running for input length %llu, window %d, hasna %d, narm %d\n", __func__, nx, k, hasna, (int) narm);
   long double w = 0.0;                                          // sliding window aggregate
   bool truehasna = hasna>0;                                     // flag to re-run with NA support if NAs detected
   if (!truehasna) {
@@ -104,8 +104,8 @@ void frollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double
  */
 
 void frollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
-  if (verbose) Rprintf("%s: running for input length %lu, window %d, hasna %d, narm %d\n", __func__, nx, k, hasna, (int) narm);
-  for (int i=0; i<k-1; i++) {                                 // fill partial window only
+  if (verbose) Rprintf("%s: running for input length %llu, window %d, hasna %d, narm %d\n", __func__, nx, k, hasna, (int) narm);
+  for (int i=0; i<k-1; i++) {                                   // fill partial window only
     ans->ans[i] = fill;
   }
   bool truehasna = hasna>0;                                   // flag to re-run with NA support if NAs detected

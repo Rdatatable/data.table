@@ -242,13 +242,26 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     return(ans)
   }
   .global$print=""
+  if (!missing(keyby)) {
+    if (!missing(by)) stop("Provide either by= or keyby= but not both")
+    by=bysub=substitute(keyby)
+    # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
+  } else {
+    bysub = if (missing(by)) NULL # and leave missing(by)==TRUE
+        else substitute(by)
+  }
+  byjoin = FALSE
+  if (!missing(by)) {
+    if (missing(j)) stop("by= or keyby= is supplied but not j=")  # relatively common user error so emit this error first in preference to the 'i and j both missing' below
+    byjoin = is.symbol(bysub) && bysub==".EACHI"
+  }
   if (missing(i) && missing(j)) {
     tt_isub = substitute(i)
     tt_jsub = substitute(j)
     if (!is.null(names(sys.call())) &&  # not relying on nargs() as it considers DT[,] to have 3 arguments, #3163
         tryCatch(!is.symbol(tt_isub), error=function(e)TRUE) &&   # a symbol that inherits missingness from caller isn't missing for our purpose; test 1974
         tryCatch(!is.symbol(tt_jsub), error=function(e)TRUE)) {
-      warning("i and j are both missing so ignoring the other arguments")
+      warning("i and j are both missing so ignoring the other arguments. This warning will be upgraded to error in future.")
     }
     return(x)
   }
@@ -274,19 +287,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
   if (!with && missing(j)) stop("j must be provided when with=FALSE")
   if (missing(i) && !missing(on)) warning("ignoring on= because it is only relevant to i but i is not provided")
-  if (!missing(keyby)) {
-    if (!missing(by)) stop("Provide either 'by' or 'keyby' but not both")
-    by=bysub=substitute(keyby)
-    # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
-  } else {
-    bysub = if (missing(by)) NULL # and leave missing(by)==TRUE
-        else substitute(by)
-  }
-  byjoin = FALSE
-  if (!missing(by)) {
-    if (missing(j)) stop("'by' or 'keyby' is supplied but not j")
-    byjoin = is.symbol(bysub) && bysub==".EACHI"
-  }
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
   rightcols = leftcols = integer()

@@ -6,11 +6,17 @@
 
 #### BUG FIXES
 
+1. `rbindlist()` of a malformed factor missing levels attribute is now a helpful error rather than a cryptic error about `STRING_ELT`, [#3315](https://github.com/Rdatatable/data.table/issues/3315). Thanks to Michael Chirico for reporting.
+
 #### NOTES
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
 
-2. As promised in new feature 6 of v1.11.6 Sep 2018 (see below in this file), the `datatable.CJ.names` option's default is now `TRUE`. In v1.13.0 it will be removed.
+2. 1.12.0 `data.table` checked itself on loading using `tools::checkMD5sums("data.table")` but this check failed under the `packrat` package manager on Windows because `packrat` appears to modify the DESCRIPTION file of packages it has snapshot, [#3329](https://github.com/Rdatatable/data.table/issues/3329). This check is now removed. The `CdllVersion` check was introduced after the `checkMD5sums()` attempt and is better (e.g. reliable on all platforms). 
+
+3. As promised in new feature 6 of v1.11.6 Sep 2018 (see below in this file), the `datatable.CJ.names` option's default is now `TRUE`. In v1.13.0 it will be removed.
+
+4. The Travis build matrix is expanded to OSX and to the R previous major and R-devel releases [#3326](https://github.com/Rdatatable/data.table/issues/3326). An OpenMP enabled compiler is required to correctly build on OSX, therefore the homebrew llvm package is installed on the Travis (OSX) machine before R CMD build is run. The OSX build on R-devel was explicitly excluded because it's currently unstable. Thanks @marcusklik for the PR.
 
 3. v1.12.0 did not compile on Solaris 10 using Oracle Developer Studio 12.6, [#3285](https://github.com/Rdatatable/data.table/issues/3285). Many thanks to Prof Ripley for providing and testing a patch. For future reference and other package developers, a `const` variable should not be passed to OpenMP's `num_threads()` directive otherwise `left operand must be modifiable lvalue` occurs.
 
@@ -31,7 +37,7 @@
 
 6. `setnames()` gains `skip_absent` to skip names in `old` that aren't present, [#3030](https://github.com/Rdatatable/data.table/issues/3030). By default `FALSE` so that it is still an error, as before, to attempt to change a column name that is not present. Thanks to @MusTheDataGuy for the suggestion and the PR.
 
-7. `NA` in `between()` and `%between%`'s `lower` and `upper` are now taken as missing bounds and return `TRUE` rather than than `NA`. This is now documented.
+7. `NA` in `between()` and `%between%`'s `lower` and `upper` are now taken as missing bounds and return `TRUE` rather than `NA`. This is now documented.
 
 8. `shift()` now interprets negative values of `n` to mean the opposite `type=`, [#1708](https://github.com/Rdatatable/data.table/issues/1708). When `give.names=TRUE` the result is named using a positive `n` with the appropriate `type=`. Alternatively, a new `type="shift"` names the result using a signed `n` and constant type.
     ```R

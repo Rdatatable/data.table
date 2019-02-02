@@ -697,6 +697,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
         isRowOrdered[resi] = FALSE;
         if (isFactor(thiscol)) {
           levels = getAttrib(thiscol, R_LevelsSymbol);
+          if (isNull(levels)) error("Column %d of item %d has type 'factor' but has no levels; i.e. malformed.", j+1, i+1);
           for (r=0; r<thislen; r++)
             if (INTEGER(thiscol)[r]==NA_INTEGER)
               SET_STRING_ELT(target, ansloc+r, NA_STRING);

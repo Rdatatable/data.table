@@ -52,8 +52,8 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   Each list element must be integer vector of window sizes corresponding
   to every single observation in each column.
 
-  When \code{algo="fast"} is used then any \code{NaN, +Inf, -Inf} is
-  treated as \code{NA}.
+  When \code{algo="fast"} then \emph{on-line} algorithm is used, also
+  any \code{NaN, +Inf, -Inf} is treated as \code{NA}.
   Setting \code{algo="exact"} will make rolling functions to use
   compute-intensive algorithm that suffers less from floating point
   rounding error. It will additionally make extra pass to perform floating
