@@ -1,6 +1,7 @@
 variables:
   CRAN_MIRROR: "https://cloud.r-project.org"
-  _R_CHECK_FORCE_SUGGESTS_: "FALSE"
+  _R_CHECK_FORCE_SUGGESTS_: "false"
+  _R_CHECK_NO_STOP_ON_TEST_ERROR_: "true"
 
 stages:
   - dependencies
