@@ -23,7 +23,7 @@ setnafill(x, type=c("const","locf","nocb"), fill=NA)
   Only \emph{double} and \emph{integer} data types are currently supported.
 }
 \value{
-  A list except when the input is a \code{vector} in which case a \code{vector} is returned.
+  A list except when the input is a \code{vector} in which case a \code{vector} is returned. For \code{setnafill} the input argument is returned, updated by reference.
 }
 \examples{
 x = 1:10

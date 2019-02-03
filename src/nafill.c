@@ -75,6 +75,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace) {
   int protecti=0;
   
   if (!xlength(obj)) return(obj);
+  
   bool binplace = LOGICAL(inplace)[0];
   SEXP x;
   if (isVectorAtomic(obj)) {
@@ -156,16 +157,12 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace) {
     }
   }
   
+  bool bverbose=0; // disabled as no messages used
   for (R_len_t i=0; i<nx; i++) { // # nocov start
-    if (vans[i].status == 3) {
-      error(vans[i].message[3]);
-    } else if (vans[i].status == 2) {
-      warning(vans[i].message[2]);
-    } else if (vans[i].status == 1) {
-      //message(vans[i].message[1]);
-    } else if (vans[i].status == 1) {
-      //Rprintf(vans[i].message[0]);
-    }
+    if (bverbose && (vans[i].message[0][0] != '\0')) Rprintf(vans[i].message[0]);
+    if (vans[i].message[1][0] != '\0') REprintf(vans[i].message[1]);
+    if (vans[i].message[2][0] != '\0') warning(vans[i].message[2]);
+    if (vans[i].status == 3) error(vans[i].message[3]);
   } // # nocov end
   
   UNPROTECT(protecti);
