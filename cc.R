@@ -82,7 +82,7 @@ cc = function(test=TRUE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir=Sys.getenv
   sourceDir(paste0(cc_dir,"/R"))
   assign("testDir", function(x)paste0(cc_dir,"/inst/tests/",x), envir=.GlobalEnv)
   .onLoad()
-  if (test) test.data.table()
+  if (is.logical(test) && isTRUE(test)) test.data.table() else if (is.character(test)) test.data.table(script=test)
   gc()
   invisible()
 }

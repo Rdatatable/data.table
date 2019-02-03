@@ -9,11 +9,6 @@
     # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
     stop("The datatable.",dll," version (",dllV,") does not match the package (",RV,"). Please close all R sessions to release the old ",toupper(dll)," and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check.")
   }
-  if (identical(tools::checkMD5sums("data.table"), FALSE)) {
-    # checkMD5sums outputs messages using cat() and returns NA when MD5 file is not available. The MD5 file is included in the
-    # binary builds that CRAN produces.
-    stop("This data.table installation appears to be faulty; tools::checkMD5sums returned FALSE. Please close all R sessions and reinstall data.table.")
-  }
 
   "Please read FAQ 2.23 (vignette('datatable-faq')) which explains in detail why data.table adds one for loop to the start of base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
   # Commented as a character string so this message is retained and seen by anyone who types data.table:::.onLoad
