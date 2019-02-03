@@ -133,7 +133,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace) {
   if (itype==0) {
     if (isInteger(fill)) {
       ifill = INTEGER(fill)[0];
-      dfill = INTEGER(fill)[0]==NA_LOGICAL ? NA_REAL : (double)INTEGER(fill)[0];
+      dfill = INTEGER(fill)[0]==NA_INTEGER ? NA_REAL : (double)INTEGER(fill)[0];
     } else if (isReal(fill)) {
       ifill = ISNA(REAL(fill)[0]) ? NA_INTEGER : (int32_t)REAL(fill)[0];
       dfill = REAL(fill)[0];
