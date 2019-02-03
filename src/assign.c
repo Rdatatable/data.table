@@ -443,11 +443,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     if ((coln+1)<=oldncol && isFactor(VECTOR_ELT(dt,coln)) &&
       !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue) && !isNewList(thisvalue))  // !=INTSXP includes factor
       error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
-    if (nrow>0 && targetlen>0) {
-      if (vlen>targetlen)
-        warning("Supplied %d items to be assigned to %d items of column '%s' (%d unused)", vlen, targetlen,CHAR(colnam),vlen-targetlen);
-      else if (vlen>0 && targetlen%vlen != 0)
-        warning("Supplied %d items to be assigned to %d items of column '%s' (recycled leaving remainder of %d items).",vlen,targetlen,CHAR(colnam),targetlen%vlen);
+    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen) {
+      error("Supplied %d items to be assigned to %d items of column '%s'. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code.", vlen, targetlen,CHAR(colnam));
     }
   }
   // having now checked the inputs, from this point there should be no errors so we can now proceed to
@@ -810,23 +807,26 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
 }
 
-static Rboolean anyNamed(SEXP x) {
-  if (MAYBE_REFERENCED(x)) return TRUE;
+static bool anyNamed(SEXP x) {
+  if (MAYBE_REFERENCED(x)) return true;
   if (isNewList(x)) for (int i=0; i<LENGTH(x); i++)
-    if (anyNamed(VECTOR_ELT(x,i))) return TRUE;
-  return FALSE;
+    if (anyNamed(VECTOR_ELT(x,i))) return true;
+  return false;
 }
 
 void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
-// like memcpy but recycles source and takes care of aging
-// 'where' a 1-based INTEGER vector subset of target to assign to,  or NULL or integer()
-// assigns to target[start:start+len-1] or target[where[start:start+len-1]]  where start is 0-based
+// like memcpy but recycles single-item source
+// 'where' a 1-based INTEGER vector subset of target to assign to, or NULL or integer()
+// assigns to target[start:start+len-1] or target[where[start:start+len-1]] where start is 0-based
 {
-  int r=0, w, protecti=0;
   if (len<1) return;
-  int slen = length(source) > len ? len : length(source); // fix for 5647. when length(source) > len, slen must be len.
-  if (slen<1) return;
   if (TYPEOF(target) != TYPEOF(source)) error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s']", type2char(TYPEOF(target)),type2char(TYPEOF(source))); // # nocov
+  int slen = length(source);
+  if (slen!=1 && slen!=len) error("Internal error: recycle length error not caught earlier. slen=%d len=%d", slen, len); // # nocov
+  // Internal error because the column has already been added to the DT, so length mismatch should have been caught before adding the column.
+  // for 5647 this used to limit slen to len, but no longer
+
+  int protecti=0;
   if (isNewList(source)) {
     // A list() column; i.e. target is a column of pointers to SEXPs rather than the much more common case
     // where memrecycle copies the DATAPTR data to the atomic target from the atomic source.
@@ -839,86 +839,95 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
     // SEXP pointed to.
     // If source is already not named (because j already created a fresh unnamed vector within a list()) we don't want to
     // duplicate unnecessarily, hence checking for named rather than duplicating always.
-    // See #481 and #1270
+    // See #481, #1270 and tests 1341.* fail without this duplicate().
     if (anyNamed(source)) {
       source = PROTECT(duplicate(source));
       protecti++;
     }
   }
-  size_t size = SIZEOF(target);
   if (!length(where)) {
     switch (TYPEOF(target)) {
-    case INTSXP : case REALSXP : case LGLSXP :
+    case LGLSXP: case INTSXP :
+      if (slen==1) {
+        // recycle single items
+        int *td = INTEGER(target);
+        const int val = INTEGER(source)[0];
+        for (int i=0; i<len; i++) td[start+i] = val;  // no R API inside loop as INTEGER has overhead (even when it's an inline function)
+      } else {
+        memcpy(INTEGER(target)+start, INTEGER(source), slen*SIZEOF(target));
+      }
+      break;
+    case REALSXP :
+      if (slen==1) {
+        double *td = REAL(target);
+        const double val = REAL(source)[0];
+        for (int i=0; i<len; i++) td[start+i] = val;
+      } else {
+        memcpy(REAL(target)+start, REAL(source), slen*SIZEOF(target));
+      }
       break;
     case STRSXP :
-      for (; r<slen; r++)     // only one SET_STRING_ELT per RHS item is needed to set generations (overhead)
-        SET_STRING_ELT(target, start+r, STRING_ELT(source, r));
+      if (slen==1) {
+        const SEXP val = STRING_ELT(source, 0);
+        for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val);
+      } else {
+        const SEXP *val = STRING_PTR(source);
+        for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val[i]);
+      }
       break;
     case VECSXP :
-      for (; r<slen; r++)
-        SET_VECTOR_ELT(target, start+r, VECTOR_ELT(source, r));
-        // TO DO: if := in future could ever change a list item's contents by reference, would need to duplicate at that point
+      if (slen==1) {
+        const SEXP val = VECTOR_ELT(source, 0);
+        for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, val);
+      } else {
+        const SEXP *val = (SEXP *)DATAPTR(source);  // TODO: revisit VECTOR_PTR
+        for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, val[i]);
+      }
       break;
     default :
       error("Unsupported type '%s'", type2char(TYPEOF(target)));
-    }
-    if (slen == 1) {
-      if (size==4) for (; r<len; r++)
-        INTEGER(target)[start+r] = INTEGER(source)[0];   // copies pointer on 32bit, sizes checked in init.c
-      else for (; r<len; r++)
-        REAL(target)[start+r] = REAL(source)[0];         // copies pointer on 64bit, sizes checked in init.c
-    } else if (slen<10) {    // 10 is just a guess for when memcpy is faster. Certainly memcpy is slower when slen==1, but that's the most common case by far so not high priority to discover the optimum here. TO DO: revisit
-      if (size==4) for (; r<len; r++)
-        INTEGER(target)[start+r] = INTEGER(source)[r%slen];
-      else for (; r<len; r++)
-        REAL(target)[start+r] = REAL(source)[r%slen];
-    } else {
-      for (r=r>0?1:0; r<(len/slen); r++) {   // if the first slen were done in the switch above, convert r=slen to r=1
-        memcpy((char *)DATAPTR(target) + (start+r*slen)*size,
-             (char *)DATAPTR(source),
-             slen * size);
-      }
-      memcpy((char *)DATAPTR(target) + (start+r*slen)*size,
-           (char *)DATAPTR(source),
-           (len%slen) * size);
     }
   } else {
+    const int *wd = INTEGER(where)+start;
+    const int mask = slen==1 ? 0 : INT_MAX;
     switch (TYPEOF(target)) {
-    case INTSXP : case REALSXP : case LGLSXP :
-      break;
-    case STRSXP :
-      for (; r<slen; r++) {
-        w = INTEGER(where)[start+r]; if (w<1) continue;  // 0 or NA
-        SET_STRING_ELT(target, w-1, STRING_ELT(source, r));
+    case LGLSXP: case INTSXP : {
+      int *td = INTEGER(target);
+      const int *sd = INTEGER(source);
+      for (int i=0; i<len; i++) {
+        const int w = wd[i];
+        if (w<1) continue;  // 0 or NA
+        td[w-1] = sd[i&mask];  // i&mask is for branchless recyle when slen==1
       }
-      break;
-    case VECSXP :
-      for (; r<slen; r++) {
-        w = INTEGER(where)[start+r]; if (w<1) continue;
-        SET_VECTOR_ELT(target, w-1, VECTOR_ELT(source, r));
+    } break;
+    case REALSXP : {
+      double *td = REAL(target);
+      const double *sd = REAL(source);
+      for (int i=0; i<len; i++) {
+        const int w = wd[i];
+        if (w<1) continue;
+        td[w-1] = sd[i&mask];
       }
-      break;
+    } break;
+    case STRSXP : {
+      const SEXP *sd = STRING_PTR(source);
+      for (int i=0; i<len; i++) {
+        const int w = wd[i];
+        if (w<1) continue;
+        SET_STRING_ELT(target, w-1, sd[i&mask]);
+      }
+    } break;
+    case VECSXP : {
+      const SEXP *sd = (SEXP *)DATAPTR(source);  // TODO revisit VECTOR_PTR
+      for (int i=0; i<len; i++) {
+        const int w = wd[i];
+        if (w<1) continue;
+        SET_VECTOR_ELT(target, w-1, sd[i&mask]);
+      }
+    } break;
     default :
       error("Unsupported type '%s'", type2char(TYPEOF(target)));
     }
-    if (slen == 1) {
-      if (size==4) for (; r<len; r++) {
-        w = INTEGER(where)[start+r]; if (w<1) continue;
-        INTEGER(target)[ w-1 ] = INTEGER(source)[0];
-      } else for (; r<len; r++) {
-        w = INTEGER(where)[start+r]; if (w<1) continue;
-        REAL(target)[ w-1 ] = REAL(source)[0];
-      }
-    } else {
-      if (size==4) for (; r<len; r++) {
-        w = INTEGER(where)[start+r]; if (w<1) continue;
-        INTEGER(target)[ w-1 ] = INTEGER(source)[r%slen];
-      } else for (; r<len; r++) {
-        w = INTEGER(where)[start+r]; if (w<1) continue;
-        REAL(target)[ w-1 ] = REAL(source)[r%slen];
-      }
-    }
-    // if slen>10 it may be worth memcpy, but we'd need to first know if 'where' was a contiguous subset
   }
   UNPROTECT(protecti);
 }
