@@ -116,18 +116,20 @@ fastma = function(x, n, na.rm) {
 }
 ans1 = ma(x, n)
 ans2 = fastma(x, n)
-ans3 = frollmean(x, n, algo="exact")
-ans4 = frollmean(x, n)
+ans3 = frollmean(x, n)
+ans4 = frollmean(x, n, algo="exact")
 anserr = list(
-  froll_exact_f = ans4-ans1,
-  froll_exact_t = ans3-ans1,
-  fastma = ans2-ans1
+  fastma = ans2-ans1,
+  froll_fast = ans3-ans1,
+  froll_exact = ans4-ans1
 )
 errs = sapply(lapply(anserr, abs), sum, na.rm=TRUE)
-test(9999.024, errs[["froll_exact_t"]]==0)
-test(9999.025, errs[["froll_exact_f"]]>errs[["froll_exact_t"]])
-test(9999.026, errs[["fastma"]]>errs[["froll_exact_t"]])
-test(9999.027, errs[["fastma"]]>errs[["froll_exact_f"]])
+if (!(.Platform$OS.type=="windows" && getDTthreads()>1L)) { # windows 2+ threads rounding issue: #3346
+  test(9999.024, errs[["froll_exact"]]==0)
+  test(9999.025, errs[["froll_fast"]]>errs[["froll_exact"]])
+}
+test(9999.026, errs[["fastma"]]>errs[["froll_exact"]])
+test(9999.027, errs[["fastma"]]>errs[["froll_fast"]])
 
 #### align: right/center/left
 d = as.data.table(list(1:8/2, 3:10/4))
