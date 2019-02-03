@@ -1,4 +1,5 @@
 #include <R.h>
+#define USE_RINTERNALS
 #include <Rinternals.h>
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
