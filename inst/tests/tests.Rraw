@@ -13305,6 +13305,14 @@ test(1979, DT[,.(a,b,if(FALSE)c)], DT[,c("a","b")])
 x <- as.array(1:5)
 test(1980, names(data.table(x)), "x")
 
+# print of DT with many columns does not reorder them #3306
+d = data.table(t(1:255))
+dd = rbindlist(replicate(105, d, FALSE))
+colstring = capture.output(print(dd))[1L]
+colid = na.omit(as.integer(strsplit(cols, "V", fixed=TRUE)[[1L]]))
+test(1981.1, colid[1L], 1L)
+test(1981.2, is.unsorted(colid), FALSE)
+
 
 ###################################
 #  Add new tests above this line  #
