@@ -55,7 +55,8 @@ SEXP uniqlist(SEXP l, SEXP order)
     int *o = INTEGER(order);  // only used when via_order is true
     switch(TYPEOF(v)) {
     case INTSXP : case LGLSXP : {
-      int *vd=INTEGER(v), prev, elem;
+      const int *vd=INTEGER(v);
+      int prev, elem;
       if (via_order) {
         // ad hoc by (order passed in)
         COMPARE1_VIA_ORDER COMPARE2
@@ -65,7 +66,8 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case STRSXP : {
-      SEXP *vd=(SEXP *)CHAR(v), prev, elem;
+      const SEXP *vd=STRING_PTR(v);
+      SEXP prev, elem;
       if (via_order) {
         COMPARE1_VIA_ORDER && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
       } else {
@@ -73,7 +75,8 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case REALSXP : {
-      uint64_t *vd=(uint64_t *)REAL(v), prev, elem;
+      const uint64_t *vd=(const uint64_t *)REAL(v);
+      uint64_t prev, elem;
       // grouping by integer64 makes sense (ids). grouping by float supported but a good use-case for that is harder to imagine
       if (getNumericRounding_C()==0 /*default*/ || inherits(v, "integer64")) {
         if (via_order) {

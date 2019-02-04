@@ -614,11 +614,12 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
           counter += thislen;
         }
       } else {
-        // SET_STRING_ELT for j=0 and memcpy for j>0, WHY?
-        // From assign.c's memcrecycle - only one SET_STRING_ELT per RHS item is needed to set generations (overhead)
-        for (k=0; k<data->nrow; k++) SET_STRING_ELT(target, k, STRING_ELT(thiscol, k));
-        for (j=1; j<data->lmax; j++)
-          memcpy((char *)CHAR(target)+j*data->nrow*size, (char *)CHAR(target), data->nrow*size);
+        const SEXP *s = STRING_PTR(thiscol);  // to reduce overhead of STRING_ELT() inside loop below. Read-only hence const.
+        for (j=0; j<data->lmax; j++) {
+          for (k=0; k<data->nrow; k++) {
+            SET_STRING_ELT(target, j*data->nrow + k, s[k]);
+          }
+        }
       }
       break;
     case VECSXP :
