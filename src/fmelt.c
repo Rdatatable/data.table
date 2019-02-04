@@ -441,7 +441,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
           for (k=0; k<thislen; k++)
             REAL(target)[counter + k] = REAL(thiscol)[INTEGER(thisidx)[k]-1];
         } else {
-          memcpy((char *)DATAPTR(target)+j*data->nrow*size, (char *)DATAPTR(thiscol), data->nrow*size);
+          memcpy((char *)REAL(target)+j*data->nrow*size, (char *)REAL(thiscol), data->nrow*size);
         }
         break;
         case INTSXP :
@@ -449,7 +449,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
           for (k=0; k<thislen; k++)
             INTEGER(target)[counter + k] = INTEGER(thiscol)[INTEGER(thisidx)[k]-1];
         } else {
-          memcpy((char *)DATAPTR(target)+j*data->nrow*size, (char *)DATAPTR(thiscol), data->nrow*size);
+          memcpy((char *)INTEGER(target)+j*data->nrow*size, (char *)INTEGER(thiscol), data->nrow*size);
         }
         break;
         case LGLSXP :
@@ -457,7 +457,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
           for (k=0; k<thislen; k++)
             LOGICAL(target)[counter + k] = LOGICAL(thiscol)[INTEGER(thisidx)[k]-1];
         } else {
-          memcpy((char *)DATAPTR(target)+j*data->nrow*size, (char *)DATAPTR(thiscol), data->nrow*size);
+          memcpy((char *)LOGICAL(target)+j*data->nrow*size, (char *)LOGICAL(thiscol), data->nrow*size);
         }
         break;
         default : error("Unknown column type '%s' for column '%s'.", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1)));
@@ -573,7 +573,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
         }
       } else {
         for (j=0; j<data->lmax; j++)
-          memcpy((char *)DATAPTR(target)+j*data->nrow*size, (char *)DATAPTR(thiscol), data->nrow*size);
+          memcpy((char *)REAL(target)+j*data->nrow*size, (char *)REAL(thiscol), data->nrow*size);
       }
       break;
     case INTSXP :
@@ -587,7 +587,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
         }
       } else {
         for (j=0; j<data->lmax; j++)
-          memcpy((char *)DATAPTR(target)+j*data->nrow*size, (char *)DATAPTR(thiscol), data->nrow*size);
+          memcpy((char *)INTEGER(target)+j*data->nrow*size, (char *)INTEGER(thiscol), data->nrow*size);
       }
       break;
     case LGLSXP :
@@ -601,7 +601,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
         }
       } else {
         for (j=0; j<data->lmax; j++)
-          memcpy((char *)DATAPTR(target)+j*data->nrow*size, (char *)DATAPTR(thiscol), data->nrow*size);
+          memcpy((char *)LOGICAL(target)+j*data->nrow*size, (char *)LOGICAL(thiscol), data->nrow*size);
       }
       break;
     case STRSXP :
@@ -614,11 +614,12 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
           counter += thislen;
         }
       } else {
-        // SET_STRING_ELT for j=0 and memcpy for j>0, WHY?
-        // From assign.c's memcrecycle - only one SET_STRING_ELT per RHS item is needed to set generations (overhead)
-        for (k=0; k<data->nrow; k++) SET_STRING_ELT(target, k, STRING_ELT(thiscol, k));
-        for (j=1; j<data->lmax; j++)
-          memcpy((char *)DATAPTR(target)+j*data->nrow*size, (char *)DATAPTR(target), data->nrow*size);
+        const SEXP *s = STRING_PTR(thiscol);  // to reduce overhead of STRING_ELT() inside loop below. Read-only hence const.
+        for (j=0; j<data->lmax; j++) {
+          for (k=0; k<data->nrow; k++) {
+            SET_STRING_ELT(target, j*data->nrow + k, s[k]);
+          }
+        }
       }
       break;
     case VECSXP :
