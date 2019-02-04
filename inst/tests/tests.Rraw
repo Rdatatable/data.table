@@ -12943,14 +12943,6 @@ test(1963.7, shift(DT, -1:1),
           c(NA, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L),
           c(9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L, 1L, NA), 10:1,
           c(NA, 10L, 9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L)))
-# more detailed tests for negative shift due to #3335
-DT = data.table(a=1:5, b=as.double(1:5), c=c(TRUE,FALSE,FALSE,TRUE,TRUE), d=letters[1:5], e=as.list(1:5), f=factor(letters[1:5]))
-if (test_bit64) DT[, "g" := as.integer64(1:5)]
-test(1963.8, shift(DT, 1L, type="lag"), shift(DT, -1L, type="lead"))
-test(1963.9, shift(DT, 3L, type="lag"), shift(DT, -3L, type="lead"))
-test(1963.10, shift(DT, -1L, type="lag"), shift(DT, 1L, type="lead"))
-test(1963.11, shift(DT, -3L, type="lag"), shift(DT, 3L, type="lead"))
-
 ## some coverage tests for good measure
 test(1963.8, shift(DT$x, type = 'some_other_type'), error='should be one of.*lag.*lead')
 test(1963.9, shift(c(1+3i, 2-1i)), error = 'Unsupported type')
@@ -12964,7 +12956,13 @@ test(1963.11, shift(DT, -1:1, type="shift", give.names = TRUE), # new type="shif
 names(ans) <- c("x_lead_1", "x_lag_0", "x_lag_1", "y_lead_1", "y_lag_0", "y_lag_1")
 test(1963.12, shift(DT, -1:1, type="lag", give.names = TRUE), ans)
 test(1963.13, shift(DT, 1:-1, type="lead", give.names = TRUE), ans)
-
+# more detailed tests for negative shift due to #3335
+DT = data.table(a=1:5, b=as.double(1:5), c=c(TRUE,FALSE,FALSE,TRUE,TRUE), d=letters[1:5], e=as.list(1:5), f=factor(letters[1:5]))
+if (test_bit64) DT[, "g" := as.integer64(1:5)]
+test(1963.14, shift(DT, 1L, type="lag"), shift(DT, -1L, type="lead"))
+test(1963.15, shift(DT, 3L, type="lag"), shift(DT, -3L, type="lead"))
+test(1963.16, shift(DT, -1L, type="lag"), shift(DT, 1L, type="lead"))
+test(1963.17, shift(DT, -3L, type="lag"), shift(DT, 3L, type="lead"))
 
 # 0 column data.table should not have rownames, #3149
 M0 = matrix(1:6, nrow=3, ncol=2, dimnames=list(rows=paste0("id",1:3), cols=c("v1","v2")))
