@@ -12946,10 +12946,10 @@ test(1963.7, shift(DT, -1:1),
 # more detailed tests for negative shift due to #3335
 DT = data.table(a=1:5, b=as.double(1:5), c=c(TRUE,FALSE,FALSE,TRUE,TRUE), d=letters[1:5], e=as.list(1:5), f=factor(letters[1:5]))
 if (test_bit64) DT[, "g" := as.integer64(1:5)]
-for (i in seq_along(DT)) test(1963.80+i/1000, shift(DT, 1L, type="lag"), shift(DT, -1L, type="lead"))
-for (i in seq_along(DT)) test(1963.90+i/1000, shift(DT, 3L, type="lag"), shift(DT, -3L, type="lead"))
-for (i in seq_along(DT)) test(1963.10+i/1000, shift(DT, -1L, type="lag"), shift(DT, 1L, type="lead"))
-for (i in seq_along(DT)) test(1963.11+i/1000, shift(DT, -3L, type="lag"), shift(DT, 3L, type="lead"))
+test(1963.8, shift(DT, 1L, type="lag"), shift(DT, -1L, type="lead"))
+test(1963.9, shift(DT, 3L, type="lag"), shift(DT, -3L, type="lead"))
+test(1963.10, shift(DT, -1L, type="lag"), shift(DT, 1L, type="lead"))
+test(1963.11, shift(DT, -3L, type="lag"), shift(DT, 3L, type="lead"))
 
 ## some coverage tests for good measure
 test(1963.8, shift(DT$x, type = 'some_other_type'), error='should be one of.*lag.*lead')
