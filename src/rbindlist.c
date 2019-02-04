@@ -736,8 +736,8 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
       case INTSXP:
       case LGLSXP:
         if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. please report to data.table issue tracker.");
-        memcpy((char *)DATAPTR(target) + ansloc * SIZEOF(thiscol),
-             (char *)DATAPTR(thiscol),
+        memcpy((char *)LOGICAL(target) + ansloc * SIZEOF(thiscol),
+             (char *)LOGICAL(thiscol),
              thislen * SIZEOF(thiscol));
         break;
       default :

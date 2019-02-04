@@ -65,7 +65,7 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case STRSXP : {
-      SEXP *vd=(SEXP *)DATAPTR(v), prev, elem;   // TODO: tried to replace DATAPTR here but (SEXP *)&STRING_ELT(v,0) results in lvalue required as unary ‘&’ operand
+      SEXP *vd=(SEXP *)CHAR(v), prev, elem;
       if (via_order) {
         COMPARE1_VIA_ORDER && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
       } else {
