@@ -13309,7 +13309,12 @@ test(1980, names(data.table(x)), "x")
 d = data.table(t(1:255))
 dd = rbindlist(replicate(105, d, FALSE))
 colstring = capture.output(print(dd))[1L]
-colid = na.omit(as.integer(strsplit(cols, "V", fixed=TRUE)[[1L]]))
+colstring2 = strsplit(colstring, "V", fixed=TRUE)[[1L]]
+colstring3 = (function(x) { # trimws backport to pass R 3.1.0
+    mysub <- function(re, x) sub(re, "", x, perl = TRUE)
+    mysub("[ \t\r\n]+$", mysub("^[ \t\r\n]+", x))
+})(colstring2)
+colid = as.integer(colstring3[nzchar(colstring3)])
 test(1981.1, colid[1L], 1L)
 test(1981.2, is.unsorted(colid), FALSE)
 
