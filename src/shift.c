@@ -45,16 +45,15 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         thisk = (xrows >= thisk) ? thisk : xrows;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(INTSXP, xrows) );
         int *itmp = INTEGER(tmp);
-        size_t shiftsize = thisk*size;
-        size_t mvsize = (xrows-thisk)*size;
+        size_t tailk = xrows-thisk;
         if ((stype == LAG && INTEGER(k)[j] >= 0) || (stype == LEAD && INTEGER(k)[j] < 0)) {
           // LAG when type = 'lag' and n >= 0 _or_ type = 'lead' and n < 0
-          if (xrows - thisk > 0) memmove((char *)itmp+shiftsize, (char *)INTEGER(elem), mvsize);
+          if (tailk > 0) memmove(itmp+thisk, INTEGER(elem), tailk*size);
           for (m=0; m<thisk; m++) itmp[m] = ifill;
         } else {
           // only two possibilities left: type = 'lead', n>=0 _or_ type = 'lag', n<0
-          if (xrows - thisk > 0) memmove((char *)itmp, (char *)INTEGER(elem)+shiftsize, mvsize);
-          for (m=xrows-thisk; m<xrows; m++) itmp[m] = ifill;
+          if (tailk > 0) memmove(itmp, INTEGER(elem)+thisk, tailk*size);
+          for (m=tailk; m<xrows; m++) itmp[m] = ifill;
         }
         copyMostAttrib(elem, tmp);
         if (isFactor(elem)) setAttrib(tmp, R_LevelsSymbol, getAttrib(elem, R_LevelsSymbol));
@@ -78,14 +77,13 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         thisk = (xrows >= thisk) ? thisk : xrows;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(REALSXP, xrows) );
         double *dtmp = REAL(tmp);
-        size_t shiftsize = thisk*size;
-        size_t mvsize = (xrows-thisk)*size;
+        size_t tailk = xrows-thisk;
         if ((stype == LAG && INTEGER(k)[j] >= 0) || (stype == LEAD && INTEGER(k)[j] < 0)) {
-          if (xrows - thisk > 0) memmove((char *)dtmp+shiftsize, (char *)REAL(elem), mvsize);
+          if (tailk > 0) memmove(dtmp+thisk, REAL(elem), tailk*size);
           for (m=0; m<thisk; m++) dtmp[m] = dfill;
         } else {
-          if (xrows - thisk > 0) memmove((char *)dtmp, (char *)REAL(elem)+shiftsize, mvsize);
-          for (m=xrows-thisk; m<xrows; m++) dtmp[m] = dfill;
+          if (tailk > 0) memmove(dtmp, REAL(elem)+thisk, tailk*size);
+          for (m=tailk; m<xrows; m++) dtmp[m] = dfill;
         }
         copyMostAttrib(elem, tmp);
       }
@@ -99,14 +97,13 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         thisk = (xrows >= thisk) ? thisk : xrows;
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(LGLSXP, xrows) );
         int *ltmp = LOGICAL(tmp);
-        size_t shiftsize = thisk*size;
-        size_t mvsize = (xrows-thisk)*size;
+        size_t tailk = xrows-thisk;
         if ((stype == LAG && INTEGER(k)[j] >= 0) || (stype == LEAD && INTEGER(k)[j] < 0)) {
-          if (xrows - thisk > 0) memmove((char *)ltmp+shiftsize, (char *)LOGICAL(elem), mvsize);
+          if (tailk > 0) memmove(ltmp+thisk, LOGICAL(elem), tailk*size);
           for (m=0; m<thisk; m++) ltmp[m] = lfill;
         } else {
-          if (xrows - thisk > 0) memmove((char *)ltmp, (char *)LOGICAL(elem)+shiftsize, mvsize);
-          for (m=xrows-thisk; m<xrows; m++) ltmp[m] = lfill;
+          if (tailk > 0) memmove(ltmp, LOGICAL(elem)+thisk, tailk*size);
+          for (m=tailk; m<xrows; m++) ltmp[m] = lfill;
         }
         copyMostAttrib(elem, tmp);
       }
