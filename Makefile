@@ -28,6 +28,10 @@ build:
 install:
 	$(R) CMD INSTALL data.table_1.12.1.tar.gz
 
+.PHONY: uninstall
+uninstall:
+	$(R) CMD REMOVE data.table
+
 .PHONY: test
 test:
 	$(R) -e 'require(data.table); test.data.table()'
