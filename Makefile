@@ -30,7 +30,7 @@ install:
 
 .PHONY: uninstall
 uninstall:
-	$(R) CMD REMOVE data.table
+	$(R) CMD REMOVE data.table || true
 
 .PHONY: test
 test:
