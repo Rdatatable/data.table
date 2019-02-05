@@ -6356,6 +6356,7 @@ if (test_xts) {
   test(1465.10, as.data.table(xt), error = 'Input xts object should not')
   names(xt)[1L] = 'quantity'
   setcolorder(dt, c(3, 1, 2))
+  if (base::getRversion() < "3.6.0") as.xts = as.xts.data.table # fix for when we cannot register s3method for suggested dependency #3286
   test(1465.11, as.xts(dt), error = 'data.table must have a time based')
   setcolorder(dt, c(2, 3, 1))
   dt[ , char_col := 'a']
@@ -6363,8 +6364,6 @@ if (test_xts) {
 
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
 }
-
-
 
 # as.data.table.default #969
 ar <- array(NA, dim=c(10,4),dimnames = list(NULL,paste("col",1:4,sep="")))
