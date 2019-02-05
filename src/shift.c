@@ -2,7 +2,7 @@
 #include <Rdefines.h>
 #include <time.h>
 
-SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
+SEXP shift(SEXP obj, SEXP k_obj, SEXP fill, SEXP type) {
 
   size_t size;
   R_len_t i=0, j, m, nx, nk, xrows, thisk, protecti=0;
@@ -16,8 +16,13 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
   } else x = obj;
   if (!isNewList(x))
     error("x must be a list, data.frame or data.table");
-  if (!isInteger(k))
-    error("Internal error: n must be integer"); // # nocov
+  SEXP k=R_NilValue; // coerce to integer here rather than in R as it might crash RStudio #3354
+  if (!isInteger(k_obj)) {
+    if (!isReal(k_obj)) error("n must be integer");
+    k = PROTECT(coerceVector(k_obj, INTSXP)); protecti++;
+  } else {
+    k = k_obj;
+  }
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
   // the following two errors should be caught by match.arg() at the R level

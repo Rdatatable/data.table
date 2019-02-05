@@ -13304,6 +13304,9 @@ test(1979, DT[,.(a,b,if(FALSE)c)], DT[,c("a","b")])
 x <- as.array(1:5)
 test(1980, names(data.table(x)), "x")
 
+# this was crashing RStudio #3354
+dt = data.table( id = 1:5 , val = letters[1:5] )
+test(1981, dt[, new_col := shift(val, "lead")], error="n must be integer")
 
 ###################################
 #  Add new tests above this line  #
