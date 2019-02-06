@@ -27,12 +27,16 @@ nafill = function(x, type=c("const","locf","nocb"), fill=NA) {
   type = match.arg(type)
   if (type!="const" && !missing(fill))
     warning("argument 'fill' ignored, only make sense for type='const'")
-  .Call(CnafillR, x, type, fill, FALSE)
+  .Call(CnafillR, x, type, fill, FALSE, NULL)
 }
 
-setnafill = function(x, type=c("const","locf","nocb"), fill=NA) {
+setnafill = function(x, type=c("const","locf","nocb"), fill=NA, cols=seq_along(x)) {
   type = match.arg(type)
   if (type!="const" && !missing(fill))
     warning("argument 'fill' ignored, only make sense for type='const'")
-  invisible(.Call(CnafillR, x, type, fill, TRUE))
+  invisible(.Call(CnafillR, x, type, fill, TRUE, cols))
+}
+
+colnamesInt = function(x, cols) {
+  .Call(CcolnamesInt, x, cols)
 }

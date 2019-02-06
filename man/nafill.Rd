@@ -11,12 +11,13 @@
 }
 \usage{
 nafill(x, type=c("const","locf","nocb"), fill=NA)
-setnafill(x, type=c("const","locf","nocb"), fill=NA)
+setnafill(x, type=c("const","locf","nocb"), fill=NA, cols=seq_along(x))
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric columns. }
   \item{type}{ character, one of \emph{"const"}, \emph{"locf"} or \emph{"nocb"}. Defaults to \code{"const"}. }
   \item{fill}{ numeric or integer, value to be used to fill when \code{type=="const"}. }
+  \item{cols}{ numeric or character vector specifying columns to be updated. }
 }
 \details{
   Only \emph{double} and \emph{integer} data types are currently supported.
@@ -28,8 +29,12 @@ setnafill(x, type=c("const","locf","nocb"), fill=NA)
 x = 1:10
 x[c(1:2, 5:6, 9:10)] = NA
 nafill(x, "locf")
-dt = data.table(v1=x, v2=shift(x))
+
+dt = data.table(v1=x, v2=shift(x), v3=shift(x, -1L))
 nafill(dt, "nocb")
+
+setnafill(dt, "locf", cols=c("v2","v3"))
+dt
 }
 \seealso{
   \code{\link{shift}}, \code{\link{data.table}}

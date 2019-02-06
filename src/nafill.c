@@ -1,6 +1,45 @@
 #include "data.table.h"
 #include <Rdefines.h>
 
+SEXP colnamesInt(SEXP x, SEXP cols) {
+  if (!isNewList(x)) error("'x' argument must be data.table");
+  int protecti=0;
+  R_len_t nx = length(x);
+  SEXP ricols = R_NilValue;
+  if (isNull(cols)) { // seq_along(x)
+    ricols = PROTECT(allocVector(INTSXP, nx)); protecti++;
+    int *icols = INTEGER(ricols);
+    for (int i=0; i<nx; i++) icols[i] = i+1;
+    UNPROTECT(protecti);
+    return ricols;
+  }
+  if (length(cols)==0) { // integer(0)
+    ricols = PROTECT(allocVector(INTSXP, 0)); protecti++;
+    UNPROTECT(protecti);
+    return ricols;
+  }
+  if (isInteger(cols) || isReal(cols)) {
+    if (isInteger(cols)) {
+      ricols = cols;
+    } else if (isReal(cols)) {
+      ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
+    }
+    int *icols = INTEGER(ricols);
+    for (int i=0; i<length(ricols); i++) if ((icols[i]>nx) || (icols[i]<1)) error("'cols' argument specify non existing column(s)"); // handles NAs also
+  } else if (isString(cols)) {
+    SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
+    if (isNull(xnames)) error("'x' argument data.table has no names");
+    ricols = PROTECT(chmatch(cols, xnames, 0, FALSE)); protecti++;
+    int *icols = INTEGER(ricols);
+    for (int i=0; i<length(ricols); i++) if (icols[i]==0) error("'cols' argument specify non existing column(s)"); // handles NAs also
+  } else {
+    error("'cols' argument must be character or numeric");
+  }
+  if (any_duplicated(ricols, FALSE)) error("'cols' argument specify duplicated column(s)");
+  UNPROTECT(protecti);
+  return ricols;
+}
+
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans) {
   if (type==0) { // const
     for (uint_fast64_t i=0; i<nx; i++) {
@@ -37,13 +76,13 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
   }
 }
 
-SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace) {
+SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols) {
   int protecti=0;
   
   if (!xlength(obj)) return(obj);
   
   bool binplace = LOGICAL(inplace)[0];
-  SEXP x;
+  SEXP x = R_NilValue;
   if (isVectorAtomic(obj)) {
     if (binplace) {
       error("'x' argument is atomic vector, in-place update is supported only for list/data.table");
@@ -53,15 +92,17 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace) {
     x = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(x, 0, obj);
   } else {
-    R_len_t nobj = length(obj);
-    for (R_len_t i=0; i<nobj; i++) {
-      if (!(isReal(VECTOR_ELT(obj, i)) || isInteger(VECTOR_ELT(obj, i)))) {
+    SEXP ricols = PROTECT(colnamesInt(obj, cols)); protecti++; // nafill cols=NULL which turns into seq_along(obj)
+    x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
+    int *icols = INTEGER(ricols);
+    for (int i=0; i<length(ricols); i++) {
+      if (!(isReal(VECTOR_ELT(obj, icols[i]-1)) || isInteger(VECTOR_ELT(obj, icols[i]-1)))) {
         error("'x' argument must be numeric type, or list/data.table of numeric types");
       }
+      SET_VECTOR_ELT(x, i, VECTOR_ELT(obj, icols[i]-1));
     }
-    x = obj;
   }
-  R_len_t nx=length(x);
+  R_len_t nx = length(x);
   
   double* dx[nx];
   int32_t* ix[nx];
