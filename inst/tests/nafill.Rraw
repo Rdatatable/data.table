@@ -49,13 +49,21 @@ test(1.42, nafill(l, "nocb"), lapply(l, nafill, "nocb"))
 test(1.43, nafill(l, fill=0), lapply(l, nafill, fill=0))
 
 # inplace nafill
-x = 1:10
-test(2.01, setnafill(x, "locf"), error="in-place update is supported only for list")
 dt = data.table(V1=1:10, V2=10:1, V3=1:10/2)
 dt[c(1L,4:5,9:10), V1:=NA][c(2:3, 5:6, 10L), V2:=NA][c(1:2, 5:6, 9:10), V3:=NA]
 db = copy(dt)
-test(2.02, {setnafill(dt, fill=0); dt}, as.data.table(nafill(db, fill=0)))
+test(2.01, {setnafill(dt, fill=0); dt}, as.data.table(nafill(db, fill=0)))
 dt = copy(db)
-test(2.03, {setnafill(dt, "locf"); dt}, as.data.table(nafill(db, "locf")))
+test(2.02, {setnafill(dt, "locf"); dt}, as.data.table(nafill(db, "locf")))
 dt = copy(db)
-test(2.04, {setnafill(dt, "nocb"); dt}, as.data.table(nafill(db, "nocb")))
+test(2.03, {setnafill(dt, "nocb"); dt}, as.data.table(nafill(db, "nocb")))
+
+# exceptions test coverage
+x = 1:10
+test(3.01, nafill(x, "locf", fill=0L), nafill(x, "locf"), warning="argument 'fill' ignored")
+test(3.02, setnafill(list(copy(x)), "locf", fill=0L), setnafill(list(copy(x)), "locf"), warning="argument 'fill' ignored")
+test(3.03, setnafill(x, "locf"), error="in-place update is supported only for list")
+test(3.04, nafill(letters[1:5], fill=0), error="must be numeric type, or list/data.table")
+test(3.05, setnafill(list(letters[1:5]), fill=0), error="must be numeric type, or list/data.table")
+test(3.06, nafill(x, fill=1:2), error="fill must be a vector of length 1")
+test(3.07, nafill(x, fill="asd"), error="fill must be numeric")
