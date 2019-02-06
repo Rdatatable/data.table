@@ -1,23 +1,6 @@
 #include "data.table.h"
 #include <Rdefines.h>
 
-// ans_t *ans is not used here but can be used to track timings, messages, etc.
-void setnafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans) {
-  if (type==0) { // const
-    for (uint_fast64_t i=0; i<nx; i++) {
-      if (ISNA(x[i])) x[i] = fill;
-    }
-  } else if (type==1) { // locf
-    for (uint_fast64_t i=1; i<nx; i++) {
-      if (ISNA(x[i])) x[i] = x[i-1];
-    }
-  } else if (type==2) { // nocb
-    for (int_fast64_t i=nx-2; i>=0; i--) {
-      if (ISNA(x[i])) x[i] = x[i+1];
-    }
-  }
-}
-
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans) {
   if (type==0) { // const
     for (uint_fast64_t i=0; i<nx; i++) {
@@ -32,23 +15,6 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, a
     ans->dbl_v[nx-1] = x[nx-1];
     for (int_fast64_t i=nx-2; i>=0; i--) {
       ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i+1] : x[i];
-    }
-  }
-}
-
-// ans_t *ans is not used here but can be used to track timings, messages, etc.
-void setnafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans) {
-  if (type==0) { // const
-    for (uint_fast64_t i=0; i<nx; i++) {
-      if (x[i]==NA_INTEGER) x[i] = fill;
-    }
-  } else if (type==1) { // locf
-    for (uint_fast64_t i=1; i<nx; i++) {
-      if (x[i]==NA_INTEGER) x[i] = x[i-1];
-    }
-  } else if (type==2) { // nocb
-    for (int_fast64_t i=nx-2; i>=0; i--) {
-      if (x[i]==NA_INTEGER) x[i] = x[i+1];
     }
   }
 }
@@ -115,7 +81,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace) {
     }
   } else {
     for (R_len_t i=0; i<nx; i++) {
-      vans[i] = ((ans_t) { .dbl_v=(double *)R_NilValue, .int_v=(int32_t *)R_NilValue, .status=0, .message={"\0","\0","\0","\0"} });
+      vans[i] = ((ans_t) { .dbl_v=dx[i], .int_v=ix[i], .status=0, .message={"\0","\0","\0","\0"} });
     }
   }
   
@@ -149,10 +115,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace) {
   for (R_len_t i=0; i<nx; i++) {
     switch (TYPEOF(VECTOR_ELT(x, i))) {
     case REALSXP :
-      binplace ? setnafillDouble(dx[i], inx[i], itype, dfill, &vans[i]) : nafillDouble(dx[i], inx[i], itype, dfill, &vans[i]);
+      nafillDouble(dx[i], inx[i], itype, dfill, &vans[i]);
       break;
     case INTSXP :
-      binplace ? setnafillInteger(ix[i], inx[i], itype, ifill, &vans[i]) : nafillInteger(ix[i], inx[i], itype, ifill, &vans[i]);
+      nafillInteger(ix[i], inx[i], itype, ifill, &vans[i]);
       break;
     }
   }
