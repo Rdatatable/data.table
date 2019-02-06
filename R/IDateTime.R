@@ -13,9 +13,9 @@ as.IDate.default <- function(x, ..., tz = attr(x, "tzone")) {
 as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
   if (origin=="1970-01-01") {
     # standard epoch
-    storage.mode(x) = 'integer'
-    class(x) = c('IDate', 'Date')
-    x
+    y = as.integer(x)
+    setattr(y, "class", c("IDate", "Date"))
+    y
   } else {
     # only call expensive as.IDate.character if we have to
     as.IDate(origin, ...) + as.integer(x)
@@ -23,9 +23,9 @@ as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
 }
 
 as.IDate.Date <- function(x, ...) {
-  storage.mode(x) = 'integer'
-  class(x) = c('IDate', 'Date')
-  x
+  y = as.integer(x)
+  setattr(y, c("IDate", "Date"))
+  y
 }
 
 as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
@@ -40,9 +40,9 @@ as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
 as.IDate.IDate <- function(x, ...) x
 
 as.Date.IDate <- function(x, ...) {
-  storage.mode(x) = 'double'
-  class(x) = 'Date'
-  x
+  y = as.numeric(x)
+  setattr(y, "class", "Date")
+  y
 }
 
 mean.IDate <-
@@ -85,7 +85,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
   if (inherits(e1, "Date") && inherits(e2, "Date"))
     stop("binary + is not defined for \"IDate\" objects")
   out = as.integer(unclass(e1) + unclass(e2))
-  setattr(out, 'class', c("IDate", "Date"))
+  setattr(out, "class", c("IDate", "Date"))
   out
 }
 
@@ -137,7 +137,7 @@ as.ITime.numeric <- function(x, ms = 'truncate', ...) {
                 'ceil' = as.integer(ceiling(x)),
                 stop("Valid options for ms are 'truncate', ",
                      "'nearest', and 'ceil'.")) %% 86400L
-  setattr(secs, 'class', 'ITime')
+  setattr(secs, "class", "ITime")
   secs
 }
 
