@@ -81,6 +81,7 @@ SEXP uniqueNlogical();
 SEXP frollfunR();
 SEXP dllVersion();
 SEXP nafillR();
+SEXP colnamesInt();
 
 // .Externals
 SEXP fastmean();
