@@ -13,7 +13,9 @@ as.IDate.default <- function(x, ..., tz = attr(x, "tzone")) {
 as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
   if (origin=="1970-01-01") {
     # standard epoch
-    structure(as.integer(x), class=c("IDate","Date"))
+    storage.mode(x) = 'integer'
+    class(x) = c('IDate', 'Date')
+    x
   } else {
     # only call expensive as.IDate.character if we have to
     as.IDate(origin, ...) + as.integer(x)
@@ -21,21 +23,26 @@ as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
 }
 
 as.IDate.Date <- function(x, ...) {
-  structure(as.integer(x), class=c("IDate","Date"))
+  storage.mode(x) = 'integer'
+  class(x) = c('IDate', 'Date')
+  x
 }
 
 as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
-  if (tz %chin% c("UTC", "GMT"))
-    structure(as.integer(x) %/% 86400L, class=c("IDate","Date"))
-  else
+  if (tz %chin% c("UTC", "GMT")) {
+    out = as.integer(x) %/% 86400L
+    setattr(out, 'class',  c("IDate", "Date"))
+  } else
     as.IDate(as.Date(x, tz = tz, ...))
 }
 
 as.IDate.IDate <- function(x, ...) x
 
 as.Date.IDate <- function(x, ...) {
-  structure(as.numeric(x), class="Date")
+  storage.mode(x) = 'double'
+  class(x) = 'Date'
+  x
 }
 
 mean.IDate <-
@@ -77,7 +84,9 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
   }
   if (inherits(e1, "Date") && inherits(e2, "Date"))
     stop("binary + is not defined for \"IDate\" objects")
-  structure(as.integer(unclass(e1) + unclass(e2)), class = c("IDate", "Date"))
+  out = as.integer(unclass(e1) + unclass(e2))
+  setattr(out, 'class', c("IDate", "Date"))
+  out
 }
 
 `-.IDate` <- function (e1, e2) {
@@ -98,7 +107,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
     # ii) .Date was newly exposed in R some time after 3.4.4
   }
   ans = as.integer(unclass(e1) - unclass(e2))
-  if (!inherits(e2, "Date")) class(ans) = c("IDate","Date")
+  if (!inherits(e2, "Date")) setattr(ans, 'class', c("IDate", "Date"))
   return(ans)
 }
 
@@ -117,7 +126,8 @@ as.ITime.default <- function(x, ...) {
 
 as.ITime.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
-  if (tz %chin% c("UTC", "GMT")) as.ITime(unclass(x), ...) else as.ITime(as.POSIXlt(x, tz = tz, ...), ...)
+  if (tz %chin% c("UTC", "GMT")) as.ITime(unclass(x), ...)
+  else as.ITime(as.POSIXlt(x, tz = tz, ...), ...)
 }
 
 as.ITime.numeric <- function(x, ms = 'truncate', ...) {
@@ -126,8 +136,9 @@ as.ITime.numeric <- function(x, ms = 'truncate', ...) {
                 'nearest' = as.integer(round(x)),
                 'ceil' = as.integer(ceiling(x)),
                 stop("Valid options for ms are 'truncate', ",
-                     "'nearest', and 'ceil'."))
-  structure(secs %% 86400L, class = "ITime")
+                     "'nearest', and 'ceil'.")) %% 86400L
+  setattr(secs, 'class', 'ITime')
+  secs
 }
 
 as.ITime.character <- function(x, format, ...) {
@@ -162,8 +173,8 @@ as.ITime.POSIXlt <- function(x, ms = 'truncate', ...) {
                 'ceil' = as.integer(ceiling(x$sec)),
                 stop("Valid options for ms are 'truncate', ",
                      "'nearest', and 'ceil'."))
-  structure(with(x, secs + min * 60L + hour * 3600L),
-        class = "ITime")
+  out = with(x, secs + min * 60L + hour * 3600L)
+  setattr(out, 'class', 'ITime')
 }
 
 as.ITime.times <- function(x, ms = 'truncate', ...) {
@@ -174,7 +185,8 @@ as.ITime.times <- function(x, ms = 'truncate', ...) {
                 'ceil' = as.integer(ceiling(secs)),
                 stop("Valid options for ms are 'truncate', ",
                      "'nearest', and 'ceil'."))
-  structure(secs, class = "ITime")
+  setattr(secs, 'class', 'ITime')
+  secs
 }
 
 as.character.ITime <- format.ITime <- function(x, ...) {
@@ -217,7 +229,8 @@ print.ITime <- function(x, ...) {
 rep.ITime <- function (x, ...)
 {
   y <- rep(unclass(x), ...)
-  structure(y, class = "ITime")
+  setattr(y, 'class', 'ITime')
+  y
 }
 
 "[.ITime" <- function(x, ..., drop = TRUE)
@@ -225,7 +238,7 @@ rep.ITime <- function (x, ...)
   cl <- oldClass(x)
   class(x) <- NULL
   val <- NextMethod("[")
-  class(val) <- cl
+  setattr(val, 'class', cl)
   val
 }
 
