@@ -47,7 +47,7 @@ S3method(groupingsets, data.table)
 S3method(cube, data.table)
 S3method(rollup, data.table)
 export(frollmean)
-export(fnafill)
+export(nafill)
 export(setnafill)
 
 S3method("[", data.table)

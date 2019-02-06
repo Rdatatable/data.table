@@ -1,17 +1,16 @@
-\name{fnafill}
+\name{nafill}
+\alias{nafill}
 \alias{fill}
 \alias{setnafill}
 \alias{locf}
 \alias{nocb}
-\alias{nafill}
 \alias{na.fill}
-\alias{fnafill}
 \title{Fill missing values}
 \description{
   Fast fill missing values using constant value, \emph{last observation carried forward} or \emph{next observation carried backward}.
 }
 \usage{
-fnafill(x, type=c("const","locf","nocb"), fill=NA)
+nafill(x, type=c("const","locf","nocb"), fill=NA)
 setnafill(x, type=c("const","locf","nocb"), fill=NA)
 }
 \arguments{
@@ -28,9 +27,9 @@ setnafill(x, type=c("const","locf","nocb"), fill=NA)
 \examples{
 x = 1:10
 x[c(1:2, 5:6, 9:10)] = NA
-fnafill(x, "locf")
+nafill(x, "locf")
 dt = data.table(v1=x, v2=shift(x))
-fnafill(dt, "nocb")
+nafill(dt, "nocb")
 }
 \seealso{
   \code{\link{shift}}, \code{\link{data.table}}
