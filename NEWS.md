@@ -20,6 +20,8 @@
 
 4. The Travis build matrix is expanded to OSX and to the R previous major and R-devel releases [#3326](https://github.com/Rdatatable/data.table/issues/3326). An OpenMP enabled compiler is required to correctly build on OSX, therefore the homebrew llvm package is installed on the Travis (OSX) machine before R CMD build is run. The OSX build on R-devel was explicitly excluded because it's currently unstable. Thanks @marcusklik for the PR.
 
+5. New option `datatable.spellcheck` to turn on/off the built-in spell-checker ([#2887](https://github.com/Rdatatable/data.table/issues/2887)), [#3037](https://github.com/Rdatatable/data.table/issues/3037). The spell-checker is kept on by default (`TRUE`), but users iterating many times over `[.data.table` will experience a small performance boost on each iteration by running the more baremetal version with `datatable.spellcheck = FALSE`. See the discussion on [#3037](https://github.com/Rdatatable/data.table/issues/3037) for more details.
+
 
 ### Changes in v1.12.0  (13 Jan 2019)
 

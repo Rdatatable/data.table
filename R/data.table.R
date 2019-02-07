@@ -451,8 +451,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         mult <- "all"
     }
     else if (!is.name(isub)) {
-      i = tryCatch(eval(.massagei(isub), x, parent.frame()),
-                   error = function(e) .checkTypos(e, names(x)))
+      # turn this option off to avoid the (small) overhead of tryCatch
+      if (getOption("datatable.spellcheck")) {
+        i = tryCatch(eval(.massagei(isub), x, parent.frame()), 
+                     error = function(e) .checkTypos(e, names(x)))
+      } else i = eval(.massagei(isub), x, parent.frame())
     } else {
       # isub is a single symbol name such as B in DT[B]
       i = try(eval(isub, parent.frame(), parent.frame()), silent=TRUE)
