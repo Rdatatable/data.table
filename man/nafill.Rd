@@ -18,6 +18,7 @@ setnafill(x, type=c("const","locf","nocb"), fill=NA, cols=seq_along(x))
   \item{type}{ character, one of \emph{"const"}, \emph{"locf"} or \emph{"nocb"}. Defaults to \code{"const"}. }
   \item{fill}{ numeric or integer, value to be used to fill when \code{type=="const"}. }
   \item{cols}{ numeric or character vector specifying columns to be updated. }
+  \item{verbose}{ logical, \code{TRUE} turns on timing messages to the console. }
 }
 \details{
   Only \emph{double} and \emph{integer} data types are currently supported.

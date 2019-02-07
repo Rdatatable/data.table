@@ -101,3 +101,8 @@ test(4.18, colnamesInt(dt, character()), integer())
 test(4.19, colnamesInt(dt, numeric()), integer())
 test(4.20, colnamesInt(dt, integer()), integer())
 test(4.21, colnamesInt(dt, NULL), seq_along(dt))
+
+# verbose
+dt = data.table(a=c(1L, 2L, NA_integer_), b=c(1, 2, NA_real_))
+test(5.01, nafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
+test(5.02, setnafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")

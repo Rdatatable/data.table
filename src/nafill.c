@@ -40,7 +40,9 @@ SEXP colnamesInt(SEXP x, SEXP cols) {
   return ricols;
 }
 
-void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans) {
+void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose) {
+  double tic, toc;
+  if (verbose) tic = omp_get_wtime();
   if (type==0) { // const
     for (uint_fast64_t i=0; i<nx; i++) {
       ans->dbl_v[i] = ISNA(x[i]) ? fill : x[i];
@@ -56,9 +58,15 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, a
       ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i+1] : x[i];
     }
   }
+  if (verbose) {
+    toc = omp_get_wtime();
+    sprintf(ans->message[0], "%s: took %.3fs\n", __func__, toc-tic);
+  }
 }
 
-void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans) {
+void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose) {
+  double tic, toc;
+  if (verbose) tic = omp_get_wtime();
   if (type==0) { // const
     for (uint_fast64_t i=0; i<nx; i++) {
       ans->int_v[i] = x[i]==NA_INTEGER ? fill : x[i];
@@ -74,10 +82,17 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
       ans->int_v[i] = x[i]==NA_INTEGER ? ans->int_v[i+1] : x[i];
     }
   }
+  if (verbose) {
+    toc = omp_get_wtime();
+    sprintf(ans->message[0], "%s: took %.3fs\n", __func__, toc-tic);
+  }
 }
 
-SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols) {
+SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose) {
   int protecti=0;
+  if (!isLogical(verbose) || length(verbose)!=1 || LOGICAL(verbose)[0]==NA_LOGICAL)
+    error("verbose must be TRUE or FALSE");
+  bool bverbose = LOGICAL(verbose)[0];
   
   if (!xlength(obj)) return(obj);
   
@@ -152,25 +167,29 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols) {
     }
   }
   
+  double tic, toc;
+  if (bverbose) tic = omp_get_wtime();
   #pragma omp parallel for if (nx>1) num_threads(getDTthreads())
   for (R_len_t i=0; i<nx; i++) {
     switch (TYPEOF(VECTOR_ELT(x, i))) {
     case REALSXP :
-      nafillDouble(dx[i], inx[i], itype, dfill, &vans[i]);
+      nafillDouble(dx[i], inx[i], itype, dfill, &vans[i], bverbose);
       break;
     case INTSXP :
-      nafillInteger(ix[i], inx[i], itype, ifill, &vans[i]);
+      nafillInteger(ix[i], inx[i], itype, ifill, &vans[i], bverbose);
       break;
     }
   }
+  if (bverbose) toc = omp_get_wtime();
   
-  bool bverbose=0; // disabled as no messages used
   for (R_len_t i=0; i<nx; i++) { // # nocov start
     if (bverbose && (vans[i].message[0][0] != '\0')) Rprintf(vans[i].message[0]);
     if (vans[i].message[1][0] != '\0') REprintf(vans[i].message[1]);
     if (vans[i].message[2][0] != '\0') warning(vans[i].message[2]);
     if (vans[i].status == 3) error(vans[i].message[3]);
   } // # nocov end
+  
+  if (bverbose) Rprintf("%s: parallel processing of %d column(s) took %.3fs\n", __func__, nx, toc-tic);
   
   UNPROTECT(protecti);
   if (binplace) {
