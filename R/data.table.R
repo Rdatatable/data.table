@@ -202,7 +202,7 @@ replace_dot_alias <- function(e) {
     used = gsub(".*object '([^']+)'.*", "\\1", err$message)
     found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
     if (length(found)) {
-      stop("Object '", used, "' not found. Perhaps you intended ", used,
+      stop("Object '", used, "' not found. Perhaps you intended ",
            paste(head(found, 5L), collapse=", "),
            if (length(found)<=5L) "" else paste(" or",length(found)-5L, "more"))
     } else {
