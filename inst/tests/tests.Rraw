@@ -12387,8 +12387,8 @@ test(1924.5, DT[V==0], error='Perhaps you intended.*V1.*V5 or 45 more')
 
 ## option on/off, #3037
 options(datatable.spellcheck = FALSE)
-test(1924.1, DT[var_name==1], error='not found$')
-test(1924.2, DT[variable==1], error='not found$')
+test(1924.6, DT[var_name==1], error='not found$')
+test(1924.7, DT[variable==1], error='not found$')
 
 options(datatable.spellcheck = orig)
 
