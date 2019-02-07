@@ -437,39 +437,43 @@ ma = function(x, n, na.rm=FALSE, nf.rm=FALSE) {
   for (i in n:nx) ans[i]=mean(x[(i-n+1):i], na.rm=na.rm)
   ans
 }
-compiler_o_flag_match = function() {
-  ## escape tests for NA/NaN exactness if compiled with -O0 flag so NaN behaviour changes: #3353 needed only for .123 and .162 but few other tests might be affected on different platforms also
-  ## related to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
+## due to lack of standard way how different platforms and `-O0` / `-O3` compiler flag affects operations where NaN and NA are involved below function is meant to ignore NaN by replacing for NAN if such inconsistency was detected: #3353. Needed only for .123 and .162 but few other tests might be affected on different platforms too
+## related to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
+maybe_NaN_to_NA = local({
   x = c(NA, NaN)
   y = c(NaN, NA)
-  `&&`(
-    identical(mean(x), frollmean(x, 2L, algo="exact")[2L]),
-    identical(mean(y), frollmean(y, 2L, algo="exact")[2L])
-  )
-}
-do_NaN_NA_tests = compiler_o_flag_match()
+  ## test that always first element is returned, which is not true for -O0 where NA is consistently returned
+  ro = identical(mean(x), NA_real_) && identical(mean(y), NaN)
+  dto = identical(frollmean(x, 2L, algo="exact")[2L], NA_real_) && identical(frollmean(y, 2L, algo="exact")[2L], NaN)
+  NaN_to_NA = !(ro && dto)
+  function(x) {
+    if (NaN_to_NA) x[is.nan(x)] = NA_real_
+    x
+  }
+})
+test(9999.1199, environment(maybe_NaN_to_NA)$NaN_to_NA %in% c(TRUE, FALSE))
 n = 4
 x = 1:16
 x[5] = NaN
 test(9999.120, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-if (do_NaN_NA_tests) test(9999.121, identical(frollmean(x, n, algo="exact"), ma(x, n)))
+test(9999.121, identical(maybe_NaN_to_NA(frollmean(x, n, algo="exact")), maybe_NaN_to_NA(ma(x, n))))
 x[6] = NA
 test(9999.122, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-if (do_NaN_NA_tests) test(9999.123, identical(frollmean(x, n, algo="exact"), ma(x, n)))
+test(9999.123, identical(maybe_NaN_to_NA(frollmean(x, n, algo="exact")), maybe_NaN_to_NA(ma(x, n))))
 #### test inconsistency of NaN-NA order is consistent to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
 x[5] = NA
 x[6] = NaN
 test(9999.124, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-if (do_NaN_NA_tests) test(9999.125, identical(frollmean(x, n, algo="exact"), ma(x, n)))
+test(9999.125, identical(maybe_NaN_to_NA(frollmean(x, n, algo="exact")), maybe_NaN_to_NA(ma(x, n))))
 x[5] = Inf
 test(9999.126, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-if (do_NaN_NA_tests) test(9999.127, identical(frollmean(x, n, algo="exact"), ma(x, n)))
+test(9999.127, identical(maybe_NaN_to_NA(frollmean(x, n, algo="exact")), maybe_NaN_to_NA(ma(x, n))))
 x[6] = -Inf
 test(9999.128, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-if (do_NaN_NA_tests) test(9999.129, identical(frollmean(x, n, algo="exact"), ma(x, n)))
+test(9999.129, identical(maybe_NaN_to_NA(frollmean(x, n, algo="exact")), maybe_NaN_to_NA(ma(x, n))))
 x[5:7] = c(NA, Inf, -Inf)
 test(9999.130, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-if (do_NaN_NA_tests) test(9999.131, identical(frollmean(x, n, algo="exact"), ma(x, n)))
+test(9999.131, identical(maybe_NaN_to_NA(frollmean(x, n, algo="exact")), maybe_NaN_to_NA(ma(x, n))))
 
 #### adaptive window
 ama = function(x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
@@ -619,24 +623,24 @@ n = c(4,1,4,5,5,4,6,5,4,4,2,3,4,3,2,4)
 x = 1:16
 x[5] = NaN
 test(9999.159, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-if (do_NaN_NA_tests) test(9999.160, identical(frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)))
+test(9999.160, identical(maybe_NaN_to_NA(frollmean(x, n, algo="exact", adaptive=TRUE)), maybe_NaN_to_NA(ama(x, n))))
 x[6] = NA
 test(9999.161, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-if (do_NaN_NA_tests) test(9999.162, identical(frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)))
+test(9999.162, identical(maybe_NaN_to_NA(frollmean(x, n, algo="exact", adaptive=TRUE)), maybe_NaN_to_NA(ama(x, n))))
 #### test inconsistency of NaN-NA order is consistent to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
 x[5] = NA
 x[6] = NaN
 test(9999.163, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-if (do_NaN_NA_tests) test(9999.164, identical(frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)))
+test(9999.164, identical(maybe_NaN_to_NA(frollmean(x, n, algo="exact", adaptive=TRUE)), maybe_NaN_to_NA(ama(x, n))))
 x[5] = Inf
 test(9999.165, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-if (do_NaN_NA_tests) test(9999.166, identical(frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)))
+test(9999.166, identical(maybe_NaN_to_NA(frollmean(x, n, algo="exact", adaptive=TRUE)), maybe_NaN_to_NA(ama(x, n))))
 x[6] = -Inf
 test(9999.167, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-if (do_NaN_NA_tests) test(9999.168, identical(frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)))
+test(9999.168, identical(maybe_NaN_to_NA(frollmean(x, n, algo="exact", adaptive=TRUE)), maybe_NaN_to_NA(ama(x, n))))
 x[5:7] = c(NA, Inf, -Inf)
 test(9999.169, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-if (do_NaN_NA_tests) test(9999.170, identical(frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)))
+test(9999.170, identical(maybe_NaN_to_NA(frollmean(x, n, algo="exact", adaptive=TRUE)), maybe_NaN_to_NA(ama(x, n))))
 
 ## test verbose messages
 x = 1:10
