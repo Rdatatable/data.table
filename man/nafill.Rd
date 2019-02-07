@@ -10,8 +10,10 @@
   Fast fill missing values using constant value, \emph{last observation carried forward} or \emph{next observation carried backward}.
 }
 \usage{
-nafill(x, type=c("const","locf","nocb"), fill=NA, verbose=getOption("datatable.verbose"))
-setnafill(x, type=c("const","locf","nocb"), fill=NA, cols=seq_along(x), verbose=getOption("datatable.verbose"))
+nafill(x, type=c("const","locf","nocb"), fill=NA,
+       verbose=getOption("datatable.verbose"))
+setnafill(x, type=c("const","locf","nocb"), fill=NA, cols=seq_along(x),
+          verbose=getOption("datatable.verbose"))
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric columns. }
