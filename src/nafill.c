@@ -41,7 +41,7 @@ SEXP colnamesInt(SEXP x, SEXP cols) {
 }
 
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose) {
-  double tic, toc;
+  double tic;
   if (verbose) tic = omp_get_wtime();
   if (type==0) { // const
     for (uint_fast64_t i=0; i<nx; i++) {
@@ -58,14 +58,11 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, a
       ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i+1] : x[i];
     }
   }
-  if (verbose) {
-    toc = omp_get_wtime();
-    sprintf(ans->message[0], "%s: took %.3fs\n", __func__, toc-tic);
-  }
+  if (verbose) sprintf(ans->message[0], "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
 }
 
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose) {
-  double tic, toc;
+  double tic;
   if (verbose) tic = omp_get_wtime();
   if (type==0) { // const
     for (uint_fast64_t i=0; i<nx; i++) {
@@ -82,10 +79,7 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
       ans->int_v[i] = x[i]==NA_INTEGER ? ans->int_v[i+1] : x[i];
     }
   }
-  if (verbose) {
-    toc = omp_get_wtime();
-    sprintf(ans->message[0], "%s: took %.3fs\n", __func__, toc-tic);
-  }
+  if (verbose) sprintf(ans->message[0], "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
 }
 
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose) {
@@ -183,10 +177,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   if (bverbose) toc = omp_get_wtime();
   
   for (R_len_t i=0; i<nx; i++) { // # nocov start
-    if (bverbose && (vans[i].message[0][0] != '\0')) Rprintf(vans[i].message[0]);
-    if (vans[i].message[1][0] != '\0') REprintf(vans[i].message[1]);
-    if (vans[i].message[2][0] != '\0') warning(vans[i].message[2]);
-    if (vans[i].status == 3) error(vans[i].message[3]);
+    if (bverbose && (vans[i].message[0][0] != '\0')) Rprintf("%s: %d: %s", __func__, i, vans[i].message[0]);
+    if (vans[i].message[1][0] != '\0') REprintf("%s: %d: %s", __func__, i, vans[i].message[1]);
+    if (vans[i].message[2][0] != '\0') warning("%s: %d: %s", __func__, i, vans[i].message[2]);
+    if (vans[i].status == 3) error("%s: %d: %s", __func__, i, vans[i].message[3]);
   } // # nocov end
   
   if (bverbose) Rprintf("%s: parallel processing of %d column(s) took %.3fs\n", __func__, nx, toc-tic);

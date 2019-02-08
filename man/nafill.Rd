@@ -33,7 +33,7 @@ x = 1:10
 x[c(1:2, 5:6, 9:10)] = NA
 nafill(x, "locf")
 
-dt = data.table(v1=x, v2=shift(x), v3=shift(x, -1L))
+dt = data.table(v1=x, v2=shift(x)/2, v3=shift(x, -1L)/2)
 nafill(dt, "nocb")
 
 setnafill(dt, "locf", cols=c("v2","v3"))
