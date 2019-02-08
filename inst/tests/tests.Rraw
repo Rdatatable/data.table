@@ -13306,10 +13306,19 @@ test(1979, DT[,.(a,b,if(FALSE)c)], DT[,c("a","b")])
 x <- as.array(1:5)
 test(1980, names(data.table(x)), "x")
 
-# this was crashing RStudio #3354
+# crash when n="lead", #3354
 DT = data.table( id = 1:5 , val = letters[1:5] )
 test(1981.1, DT[, new_col := shift(val, "lead")],      error="is.numeric(n) is not TRUE")
 test(1981.2, DT[, new_col := shift(val, NA_integer_)], error="Item 1 of n is NA")
+
+# print of DT with many columns reordered them, #3306.
+DT = as.data.table(lapply(1:255, function(i)rep.int(i, 105L)))  # 105 to be enough for 'top 5 ... bottom 5' to print
+out = capture.output(print(DT))
+tt = out[grep("V",out)]
+tt = unlist(strsplit(gsub(" ","",tt), "V"))
+test(1982.1, tt[1L], "")
+tt = as.integer(tt[tt!=""])
+test(1982.2, tt, seq_along(tt))
 
 
 ###################################

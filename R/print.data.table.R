@@ -54,7 +54,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     return(invisible(x))
   }
   if ((topn*2+1)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
-    toprint = rbind(head(x, topn), tail(x, topn))
+    toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
     printdots = TRUE
   } else {
