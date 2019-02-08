@@ -13305,8 +13305,10 @@ x <- as.array(1:5)
 test(1980, names(data.table(x)), "x")
 
 # this was crashing RStudio #3354
-dt = data.table( id = 1:5 , val = letters[1:5] )
-test(1981, dt[, new_col := shift(val, "lead")], error="n must be integer")
+DT = data.table( id = 1:5 , val = letters[1:5] )
+test(1981.1, DT[, new_col := shift(val, "lead")],      error="is.numeric(n) is not TRUE")
+test(1981.2, DT[, new_col := shift(val, NA_integer_)], error="Item 1 of n is NA")
+
 
 ###################################
 #  Add new tests above this line  #

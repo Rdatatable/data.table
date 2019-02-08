@@ -1,6 +1,7 @@
 shift <- function(x, n=1L, fill=NA, type=c("lag", "lead", "shift"), give.names=FALSE) {
   type = match.arg(type)
-  ans = .Call(Cshift, x, n, fill, type)
+  stopifnot(is.numeric(n))
+  ans = .Call(Cshift, x, as.integer(n), fill, type)
   if (give.names && is.list(ans)) {
     if (is.null(names(x))) {
       xsub = substitute(x)

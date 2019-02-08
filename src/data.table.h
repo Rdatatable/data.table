@@ -166,6 +166,3 @@ void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int 
 
 // frollR.c
 SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
-
-// shift.c
-SEXP shift(SEXP obj, SEXP k_obj, SEXP fill, SEXP type);

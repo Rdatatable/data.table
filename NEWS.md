@@ -10,6 +10,8 @@
 
 1. `rbindlist()` of a malformed factor missing levels attribute is now a helpful error rather than a cryptic error about `STRING_ELT`, [#3315](https://github.com/Rdatatable/data.table/issues/3315). Thanks to Michael Chirico for reporting.
 
+2. Forgetting `type=` in `shift(val, "lead")` would segfault, [#3354](https://github.com/Rdatatable/data.table/issues/3354). A helpful error is now produced to indicate `"lead"` is being passed to `n=` rather than the intended `type=` argument. Thanks to @SymbolixAU for reporting.
+
 #### NOTES
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
