@@ -791,7 +791,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
     isint64 = (isString(klass) && STRING_ELT(klass, 0) == char_integer64);
     ans = PROTECT(allocVector(REALSXP, ngrp));
     sub = PROTECT(allocVector(REALSXP, maxgrpn)); // allocate once upfront
-    ptr = DATAPTR(sub);
+    ptr = REAL(sub);
     if (!LOGICAL(narm)[0]) {
       for (i=0; i<ngrp; i++) {
         isna = FALSE;
@@ -876,7 +876,7 @@ SEXP gmedian(SEXP x, SEXP narm) {
   case LGLSXP: case INTSXP:
     ans = PROTECT(allocVector(REALSXP, ngrp));
     sub = PROTECT(allocVector(INTSXP, maxgrpn)); // allocate once upfront
-    ptr = DATAPTR(sub);
+    ptr = INTEGER(sub);
     if (!LOGICAL(narm)[0]) {
       for (i=0; i<ngrp; i++) {
         isna = FALSE;

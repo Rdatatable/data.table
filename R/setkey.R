@@ -49,7 +49,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
   } else {
     # remove backticks from cols
-    cols <- gsub("`", "", cols)
+    cols <- gsub("`", "", cols, fixed = TRUE)
     miss = !(cols %chin% colnames(x))
     if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
   }
@@ -321,7 +321,7 @@ setorderv <- function(x, cols = colnames(x), order=1L, na.last=FALSE)
   }
   if (!all(nzchar(cols))) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
   # remove backticks from cols
-  cols <- gsub("`", "", cols)
+  cols <- gsub("`", "", cols, fixed = TRUE)
   miss = !(cols %chin% colnames(x))
   if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
   if (".xi" %chin% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
