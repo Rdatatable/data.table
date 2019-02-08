@@ -6,7 +6,6 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
 
   size_t size;
   int protecti=0;
-  //R_len_t i=0, j, m, xrows, thisk,
   SEXP x, tmp=R_NilValue, elem, ans, thisfill, klass;
   unsigned long long *dthisfill;
   enum {LAG, LEAD/*, SHIFT, CYCLIC*/} stype = LAG; // currently SHIFT maps to LAG and CYCLIC is unimplemented (see comments in #1708)
