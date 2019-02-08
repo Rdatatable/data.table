@@ -13306,6 +13306,11 @@ test(1979, DT[,.(a,b,if(FALSE)c)], DT[,c("a","b")])
 x <- as.array(1:5)
 test(1980, names(data.table(x)), "x")
 
+# this was crashing RStudio #3354
+DT = data.table( id = 1:5 , val = letters[1:5] )
+test(1981.1, DT[, new_col := shift(val, "lead")],      error="is.numeric(n) is not TRUE")
+test(1981.2, DT[, new_col := shift(val, NA_integer_)], error="Item 1 of n is NA")
+
 
 ###################################
 #  Add new tests above this line  #
