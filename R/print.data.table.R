@@ -44,10 +44,13 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
   }
   if (any(dim(x)==0L)) {
     class = if (is.data.table(x)) "table" else "frame"  # a data.frame could be passed to print.data.table() directly, #3363
-    if (all(dim(x)==0L))
+    if (all(dim(x)==0L)) {
       cat("Null data.",class," (0 rows and 0 cols)\n", sep="")  # See FAQ 2.5 and NEWS item in v1.8.9
-    else
-      cat("Empty data.",class," (", dim(x)[1L], " rows and ",length(x)," cols): ",paste(head(names(x),6L),collapse=","),if(ncol(x)>6L)"...","\n",sep="")
+    } else {
+      cat("Empty data.",class," (", dim(x)[1L], " rows and ",length(x)," cols)", sep="")
+      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="")
+      cat("\n")
+    }
     return(invisible(x))
   }
   if ((topn*2+1)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
