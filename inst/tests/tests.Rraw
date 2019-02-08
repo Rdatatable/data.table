@@ -52,6 +52,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   groupingsets.data.table = data.table:::groupingsets.data.table
   dcast.data.table = data.table:::dcast.data.table
   all.equal.data.table = data.table:::all.equal.data.table
+  print.data.table = data.table:::print.data.table
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -476,7 +477,7 @@ g <- quote( list( d ) )
 test(170, DT[,list(d)], DT[,eval(g)])
 
 DT = data.table(A=c(25L,85L,25L,25L,85L), B=c("a","a","b","c","c"), C=c(2,65,9,82,823))
-test(171.1, DT[B=="b"][A==85], output="Empty data.table (0 rows) of 3 cols: A,B,C")
+test(171.1, DT[B=="b"][A==85], output="Empty data.table (0 rows and 3 cols): A,B,C")
 test(171.2, DT[B=="b"][A==85,C], numeric())
 test(171.3, DT[ , data.table( A, C )[ A==25, C ] + data.table( A, C )[ A==85, C ], by=B ], data.table(B=c("a","c"),V1=c(67,905)))
 test(172, DT[ , list(3,data.table( A, C )[ A==25, C ] + data.table( A, C )[ A==85, C ]), by=B ], data.table(B=c("a","b","c"),V1=3,V2=c(67,NA,905)))
@@ -1669,9 +1670,10 @@ DT = data.table(a=1:3,v=1:6)
 test(581, DT[a<1,sum(v),by=a], data.table(a=integer(),V1=integer()))
 test(582, DT[a<1,sum(v),by=list(a)], data.table(a=integer(),V1=integer()))
 test(583, DT[a<1], DT[0])
-test(584, DT[a<1], output="Empty data.table (0 rows) of 2 cols: a,v")
-test(585, DT[a<1,list(v)], output="Empty data.table (0 rows) of 1 col: v")
-test(586, data.table(a=integer(),V1=integer()), output="Empty data.table (0 rows) of 2 cols: a,V1")
+test(584, DT[a<1], output="Empty data.table (0 rows and 2 cols): a,v")
+test(585, DT[a<1,list(v)], output="Empty data.table (0 rows and 1 cols): v")
+test(586.1, data.table(a=integer(),V1=integer()), output="Empty data.table (0 rows and 2 cols): a,V1")
+test(586.2, print.data.table(iris[,FALSE]), output="Empty data.frame (150 rows and 0 cols)")   #3363
 
 # Test that .N is available in by on empty table, also in #1945
 test(587, DT[a<1,list(sum(v),.N),by=a], data.table(a=integer(),V1=integer(),N=integer()))
@@ -2388,7 +2390,7 @@ test(867, names(ans2<-DT[,list(name1=sum(v),name2=sum(w)),by="a,b"]), c("a","b",
 test(868, ans1, ans2)
 # and related to setnames, too
 DT = data.table(a=1:3,b=1:6,key="a")
-test(869, DT[J(2,42,84),print(.SD),by=.EACHI], output="   b\n.*1.*2\n2:.*5.*Empty data.table.*of 3 cols: a,V2,V3")  # .* for when verbose mode
+test(869, DT[J(2,42,84),print(.SD),by=.EACHI], output="   b\n.*1.*2\n2:.*5.*Empty data.table [(]0 rows and 3 cols[)]: a,V2,V3")  # .* for when verbose mode
 
 # Test setnames with duplicate colnames
 DT = data.table(a=1:3,b=4:6,b=7:9)
@@ -3056,9 +3058,9 @@ test(1061, x[c(0, 3), number:=5L], ans)
 
 # bug #2440 fix - seqfault when j refers to grouping variable when results are empty
 DT = data.table(x=rep(c("a","b"),each=3),v=c(42,42,42,4,5,6))
-test(1062, DT[x %in% c('z'),list(x2=x),by=x], output="Empty data.table (0 rows) of 2 cols: x,x2")
-test(1063, DT[x %in% c('z'),list(vpaste=paste(v,collapse=','),x2=paste(x,x)),by=x], output="Empty data.table (0 rows) of 3 cols: x,vpaste,x2")
-test(1064, DT[integer(0), list(x2=x), by=x], output="Empty data.table (0 rows) of 2 cols: x,x2")
+test(1062, DT[x %in% c('z'),list(x2=x),by=x], output="Empty data.table (0 rows and 2 cols): x,x2")
+test(1063, DT[x %in% c('z'),list(vpaste=paste(v,collapse=','),x2=paste(x,x)),by=x], output="Empty data.table (0 rows and 3 cols): x,vpaste,x2")
+test(1064, DT[integer(0), list(x2=x), by=x], output="Empty data.table (0 rows and 2 cols): x,x2")
 
 # bug #2445 fix - := fails when subsetting yields NAs and with=FALSE
 X = data.table(A=1:3, B=1:6, key="A")
