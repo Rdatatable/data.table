@@ -13320,6 +13320,12 @@ test(1982.1, tt[1L], "")
 tt = as.integer(tt[tt!=""])
 test(1982.2, tt, seq_along(tt))
 
+# parse(text = 'list(`\\phantom{.}`)') fails, #3319
+library(data.table)
+DT <- data.table(x = 1, y = 1:5)
+setnames(DT, "x", "\\phantom{.}")
+test(1983.1, DT[, .(y = mean(y)), keyby = "\\phantom{.}"],
+     data.table(`\\phantom{.}` = 1, y = 3, key = '\\phantom{.}'))
 
 ###################################
 #  Add new tests above this line  #
