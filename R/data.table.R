@@ -862,7 +862,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         } else if (is.call(bysub) && bysub[[1L]] == ".") bysub[[1L]] = quote(list)
 
         if (mode(bysub) == "character") {
-          if (length(grep(",",bysub))) {
+          if (length(grep(",", bysub, fixed = TRUE))) {
             if (length(bysub)>1L) stop("'by' is a character vector length ",length(bysub)," but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.")
             bysub = strsplit(bysub,split=",")[[1L]]
           }
@@ -1844,7 +1844,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     attrs = attr(x, 'index')
     skeys = names(attributes(attrs))
     if (!is.null(skeys)) {
-      hits  = unlist(lapply(paste0("__", names(x)[cols]), function(x) grep(x, skeys)))
+      hits  = unlist(lapply(paste0("__", names(x)[cols]), function(x) grep(x, skeys, fixed = TRUE)))
       hits  = skeys[unique(hits)]
       for (i in seq_along(hits)) setattr(attrs, hits[i], NULL) # does by reference
     }
