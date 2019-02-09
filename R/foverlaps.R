@@ -70,10 +70,9 @@ foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=
       bits = floor(log2(.Machine$double.eps))
       2 ^ (bits + (getNumericRounding() * 8L))
     }
-    incr = 1 + dt_eps()
     isdouble = TRUE
     isposix = "POSIXct" %chin% yclass
-  } else incr = 1L # integer or Date class for example
+  }
   ## hopefully all checks are over. Now onto the actual task at hand.
   origx = x; x = shallow(x, by.x)
   origy = y; y = shallow(y, by.y)
@@ -90,15 +89,16 @@ foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=
     mcall = make_call(mcols, quote(c))
     if (type %chin% c("within", "any")) {
       mcall[[3L]] = substitute(
-        if (isposix) unclass(val)*incr # incr is okay since this won't be negative
+        # datetimes before 1970-01-01 are represented as -ve numerics, #3349
+        if (isposix) unclass(val)*(1 + sign(unclass(val))*dt_eps())
         else if (isdouble) {
           # fix for #1006 - 0.0 occurs in both start and end
           # better fix for 0.0, and other -ves. can't use 'incr'
           # hopefully this doesn't open another can of worms
           (val+dt_eps())*(1 + sign(val)*dt_eps())
         }
-        else val+incr,
-        list(val = mcall[[3L]], incr = incr))
+        else val+1L, # +1L is for integer/IDate/Date class, for examples
+        list(val = mcall[[3L]]))
     }
     make_call(c(icall, pos=mcall), quote(list))
   }
