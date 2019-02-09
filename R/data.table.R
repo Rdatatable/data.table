@@ -811,20 +811,15 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         #   in both cases leave to the R-level subsetting of i and x together further below
       } else if (is.numeric(j)) {
         j = as.integer(j)
-        JJ = ncol(x)
-        JJ_seq = seq_len(JJ)
-        if (any(w<-(j>JJ))) stop("Item ",which.first(w)," of j is ",j[which.first(w)]," which is outside the column number range [1,ncol=", ncol(x),"]")
+        if (any(w<-(j>ncol(x)))) stop("Item ",which.first(w)," of j is ",j[which.first(w)]," which is outside the column number range [1,ncol=", ncol(x),"]")
         j = j[j!=0L]
         if (any(j<0L)) {
           if (any(j>0L)) stop("j mixes positives and negatives")
-          j = JJ_seq[j]
+          j = seq_along(x)[j]  # all j are <0 here
         }
+        if (notj && length(j)) j = seq_along(x)[-j]
         if (!length(j)) return(null.data.table())
-        j = if (notj) -j else j
-        ansvars = names(x)[j]  # DT[,!"columntoexclude",with=FALSE] if a copy is needed, rather than :=NULL
-        ansvals = JJ_seq[j]
-        if (!length(ansvals)) return(null.data.table())
-        return(.Call(CsubsetDT, x, irows, ansvals))
+        return(.Call(CsubsetDT, x, irows, j))
       } else {
         stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
       }
@@ -955,7 +950,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           if (!typeof(byval[[jj]]) %chin% c("integer","logical","character","double")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
         }
         tt = vapply_1i(byval,length)
-        if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be the same length as there are rows in x (after subsetting, where applicable), i.e., (", xnrow, ").")
+        if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be length ", xnrow, "; the same length as there are rows in x (after subsetting if i is provided).")
         if (is.null(bynames)) bynames = rep.int("",length(byval))
         if (any(bynames=="")) {
           if (length(bysubl)<2L) stop("When 'by' or 'keyby' is list() we expect something inside the brackets")
@@ -2288,9 +2283,7 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
     old = cols
     cols = chmatch(cols, names(object), nomatch=0L)
     if (any(idx <- cols==0L))
-      stop("Column", if (sum(idx) > 1L) "s " else " ",
-           brackify(old[idx]), if (sum(idx) > 1L) " don't" else " doesn't",
-           "exist in the input data.table")
+      stop("Column", if (sum(idx)>1L) "s " else " ", brackify(old[idx]), if (sum(idx)>1L) " don't" else " doesn't", " exist in the input data.table")
   }
   cols = as.integer(cols)
   ix = .Call(Cdt_na, object, cols)
