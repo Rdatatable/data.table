@@ -953,7 +953,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be length ", xnrow, "; the same length as there are rows in x (after subsetting if i is provided).")
         if (is.null(bynames)) bynames = rep.int("",length(byval))
         if (any(bynames=="")) {
-          if (length(bysubl)<2L) stop("When 'by' or 'keyby' is list() we expect something inside the brackets")
           for (jj in seq_along(bynames)) {
             if (bynames[jj]=="") {
               # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
@@ -2154,7 +2153,7 @@ dimnames.data.table <- function(x) {
 
 "dimnames<-.data.table" = function (x, value)   # so that can do  colnames(dt)=<..>  as well as names(dt)=<..>
 {
-  if (!cedta()) return(`dimnames<-.data.frame`(x,value))  # won't maintain key column (if any). Revisit if ever causes a compatibility problem but don't think it's likely that packages change column names using dimnames<-. See names<-.data.table below.
+  if (!cedta()) return(`dimnames<-.data.frame`(x,value))  # nocov ; will drop key but names<-.data.table (below) is more common usage and does retain the key
   if (!is.list(value) || length(value) != 2L) stop("attempting to assign invalid object to dimnames of a data.table")
   if (!is.null(value[[1L]])) stop("data.tables do not have rownames")
   if (ncol(x) != length(value[[2L]])) stop("Can't assign ", length(value[[2L]]), " colnames to a ", ncol(x), "-column data.table")
