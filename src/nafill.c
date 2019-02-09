@@ -163,7 +163,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   
   double tic, toc;
   if (bverbose) tic = omp_get_wtime();
-  #pragma omp parallel for if (nx>1) num_threads(getDTthreads())
+  #pragma omp parallel for if (nx>1) schedule(auto) num_threads(getDTthreads())
   for (R_len_t i=0; i<nx; i++) {
     switch (TYPEOF(VECTOR_ELT(x, i))) {
     case REALSXP :
