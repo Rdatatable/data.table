@@ -1850,6 +1850,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     }
     if (!missing(keyby)) {
       cnames = as.character(bysubl)[-1L]
+      # ` added for quoting above, can be removed now. Some
+      #   extra care taken to only remove initial or final `.
+      cnames = gsub('^`|`$', '', cnames)
       if (all(cnames %chin% names(x))) {
         if (verbose) {last.started.at=proc.time();cat("setkey() after the := with keyby= ... ");flush.console()}
         setkeyv(x,cnames)  # TO DO: setkey before grouping to get memcpy benefit.

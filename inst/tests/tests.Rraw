@@ -13332,6 +13332,12 @@ DT <- data.table(x = 1, y = 1:5)
 setnames(DT, "x", "\\phantom{.}")
 test(1983.1, DT[, .(y = mean(y)), keyby = "\\phantom{.}"],
      data.table(`\\phantom{.}` = 1, y = 3, key = '\\phantom{.}'))
+     
+# keyby = 'x y' failes, #3378
+DT <- data.table(x = 1:5, y = letters[1:5])
+setnames(DT, "x", "x y")
+test(1983.2, DT[, y := "j", keyby = "x y"],
+     data.table(`x y` = 1:5, y = 'j', key = 'x y'))
 
 ###################################
 #  Add new tests above this line  #
