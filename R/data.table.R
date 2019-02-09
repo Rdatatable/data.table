@@ -202,7 +202,7 @@ replace_dot_alias <- function(e) {
     used = gsub(".*object '([^']+)'.*", "\\1", err$message)
     found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
     if (length(found)) {
-      stop("Object '", used, "' not found. Perhaps you intended ", used,
+      stop("Object '", used, "' not found. Perhaps you intended ",
            paste(head(found, 5L), collapse=", "),
            if (length(found)<=5L) "" else paste(" or",length(found)-5L, "more"))
     } else {
@@ -242,13 +242,26 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     return(ans)
   }
   .global$print=""
+  if (!missing(keyby)) {
+    if (!missing(by)) stop("Provide either by= or keyby= but not both")
+    by=bysub=substitute(keyby)
+    # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
+  } else {
+    bysub = if (missing(by)) NULL # and leave missing(by)==TRUE
+        else substitute(by)
+  }
+  byjoin = FALSE
+  if (!missing(by)) {
+    if (missing(j)) stop("by= or keyby= is supplied but not j=")  # relatively common user error so emit this error first in preference to the 'i and j both missing' below
+    byjoin = is.symbol(bysub) && bysub==".EACHI"
+  }
   if (missing(i) && missing(j)) {
     tt_isub = substitute(i)
     tt_jsub = substitute(j)
     if (!is.null(names(sys.call())) &&  # not relying on nargs() as it considers DT[,] to have 3 arguments, #3163
         tryCatch(!is.symbol(tt_isub), error=function(e)TRUE) &&   # a symbol that inherits missingness from caller isn't missing for our purpose; test 1974
         tryCatch(!is.symbol(tt_jsub), error=function(e)TRUE)) {
-      warning("i and j are both missing so ignoring the other arguments")
+      warning("i and j are both missing so ignoring the other arguments. This warning will be upgraded to error in future.")
     }
     return(x)
   }
@@ -274,19 +287,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
   if (!with && missing(j)) stop("j must be provided when with=FALSE")
   if (missing(i) && !missing(on)) warning("ignoring on= because it is only relevant to i but i is not provided")
-  if (!missing(keyby)) {
-    if (!missing(by)) stop("Provide either 'by' or 'keyby' but not both")
-    by=bysub=substitute(keyby)
-    # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
-  } else {
-    bysub = if (missing(by)) NULL # and leave missing(by)==TRUE
-        else substitute(by)
-  }
-  byjoin = FALSE
-  if (!missing(by)) {
-    if (missing(j)) stop("'by' or 'keyby' is supplied but not j")
-    byjoin = is.symbol(bysub) && bysub==".EACHI"
-  }
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
   rightcols = leftcols = integer()
@@ -813,13 +813,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         j = as.integer(j)
         if (any(w<-(j>ncol(x)))) stop("Item ",which.first(w)," of j is ",j[which.first(w)]," which is outside the column number range [1,ncol=", ncol(x),"]")
         j = j[j!=0L]
+        if (any(j<0L)) {
+          if (any(j>0L)) stop("j mixes positives and negatives")
+          j = seq_along(x)[j]  # all j are <0 here
+        }
+        if (notj && length(j)) j = seq_along(x)[-j]
         if (!length(j)) return(null.data.table())
-        if (any(j<0L) && any(j>0L)) stop("j mixes positives and negatives")
-        if (any(j<0L)) j = seq_len(ncol(x))[j]
-        ansvars = names(x)[ if (notj) -j else j ]  # DT[,!"columntoexclude",with=FALSE] if a copy is needed, rather than :=NULL
-        ansvals = if (notj) setdiff(seq_along(x), j) else j
-        if (!length(ansvals)) return(null.data.table())
-        return(.Call(CsubsetDT, x, irows, ansvals))
+        return(.Call(CsubsetDT, x, irows, j))
       } else {
         stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
       }
@@ -862,12 +862,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         } else if (is.call(bysub) && bysub[[1L]] == ".") bysub[[1L]] = quote(list)
 
         if (mode(bysub) == "character") {
-          if (length(grep(",",bysub))) {
+          if (length(grep(",", bysub, fixed = TRUE))) {
             if (length(bysub)>1L) stop("'by' is a character vector length ",length(bysub)," but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.")
             bysub = strsplit(bysub,split=",")[[1L]]
           }
-          tt = grep("^[^`]+$",bysub)
-          if (length(tt)) bysub[tt] = paste0("`",bysub[tt],"`")
+          backtick_idx = grep("^[^`]+$",bysub)
+          if (length(backtick_idx)) bysub[backtick_idx] = paste0("`",bysub[backtick_idx],"`")
+          backslash_idx = grep("\\", bysub, fixed = TRUE)
+          if (length(backslash_idx)) bysub[backslash_idx] = gsub('\\', '\\\\', bysub[backslash_idx], fixed = TRUE)
           bysub = parse(text=paste0("list(",paste(bysub,collapse=","),")"))[[1L]]
           bysubl = as.list.default(bysub)
         }
@@ -943,30 +945,29 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
               bynames = names(byval)
           }
         }
-        if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to vector or list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
+        if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
         for (jj in seq_len(length(byval))) {
           if (!typeof(byval[[jj]]) %chin% c("integer","logical","character","double")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
         }
         tt = vapply_1i(byval,length)
-        if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be same length as rows in x or number of rows returned by i (",xnrow,").")
+        if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be length ", xnrow, "; the same length as there are rows in x (after subsetting if i is provided).")
         if (is.null(bynames)) bynames = rep.int("",length(byval))
         if (any(bynames=="")) {
-          if (length(bysubl)<2L) stop("When 'by' or 'keyby' is list() we expect something inside the brackets")
           for (jj in seq_along(bynames)) {
             if (bynames[jj]=="") {
               # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
               byvars = all.vars(bysubl[[jj+1L]], functions = TRUE)
               if (length(byvars) == 1L) tt = byvars
               else {
-                tt = grep("^eval|^[^[:alpha:]. ]",byvars,invert=TRUE,value=TRUE)[1L]
-                if (!length(tt)) tt = all.vars(bysubl[[jj+1L]])[1L]
+                tt = grep("^eval|^[^[:alpha:]. ]",byvars,invert=TRUE,value=TRUE)
+                if (length(tt)) tt = tt[1L] else all.vars(bysubl[[jj+1L]])[1L]
               }
               # fix for #497
               if (length(byvars) > 1L && tt %chin% all.vars(jsub, FALSE)) {
                 bynames[jj] = deparse(bysubl[[jj+1L]])
                 if (verbose)
-                  cat("by-expression '", bynames[jj], "' is not named, and the auto-generated name '", tt, "' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", sep="")
-
+                  cat("by-expression '", bynames[jj], "' is not named, and the auto-generated name '", tt,
+                      "' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", sep="")
               }
               else bynames[jj] = tt
               # if user doesn't like this inferred name, user has to use by=list() to name the column
@@ -1842,12 +1843,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     attrs = attr(x, 'index')
     skeys = names(attributes(attrs))
     if (!is.null(skeys)) {
-      hits  = unlist(lapply(paste0("__", names(x)[cols]), function(x) grep(x, skeys)))
+      hits  = unlist(lapply(paste0("__", names(x)[cols]), function(x) grep(x, skeys, fixed = TRUE)))
       hits  = skeys[unique(hits)]
       for (i in seq_along(hits)) setattr(attrs, hits[i], NULL) # does by reference
     }
     if (!missing(keyby)) {
       cnames = as.character(bysubl)[-1L]
+      cnames = gsub('^`|`$', '', cnames)  # the wrapping backticks that were added above can be removed now, #3378
       if (all(cnames %chin% names(x))) {
         if (verbose) {last.started.at=proc.time();cat("setkey() after the := with keyby= ... ");flush.console()}
         setkeyv(x,cnames)  # TO DO: setkey before grouping to get memcpy benefit.
@@ -2054,7 +2056,7 @@ tail.data.table <- function(x, n=6L, ...) {
     isub=substitute(i)
     i = eval(.massagei(isub), x, parent.frame())
     if (is.matrix(i)) {
-      if (!missing(j)) stop("When i is matrix in DT[i]<-value syntax, it doesn't make sense to provide j")
+      if (!missing(j)) stop("When i is a matrix in DT[i]<-value syntax, it doesn't make sense to provide j")
       x = `[<-.data.frame`(x, i, value=value)
       return(alloc.col(x))
     }
@@ -2064,7 +2066,7 @@ tail.data.table <- function(x, n=6L, ...) {
     # named 'value'".  So, users have to use := for that.
   } else i = NULL          # meaning (to C code) all rows, without allocating 1L:nrow(x) vector
   if (missing(j)) j=names(x)
-  if (!is.atomic(j)) stop("j must be atomic vector, see ?is.atomic")
+  if (!is.atomic(j)) stop("j must be an atomic vector, see ?is.atomic")
   if (anyNA(j)) stop("NA in j")
   if (is.character(j)) {
     newnames = setdiff(j,names(x))
@@ -2152,10 +2154,10 @@ dimnames.data.table <- function(x) {
 
 "dimnames<-.data.table" = function (x, value)   # so that can do  colnames(dt)=<..>  as well as names(dt)=<..>
 {
-  if (!cedta()) return(`dimnames<-.data.frame`(x,value))  # won't maintain key column (if any). Revisit if ever causes a compatibility problem but don't think it's likely that packages change column names using dimnames<-. See names<-.data.table below.
+  if (!cedta()) return(`dimnames<-.data.frame`(x,value))  # nocov ; will drop key but names<-.data.table (below) is more common usage and does retain the key
   if (!is.list(value) || length(value) != 2L) stop("attempting to assign invalid object to dimnames of a data.table")
   if (!is.null(value[[1L]])) stop("data.tables do not have rownames")
-  if (ncol(x) != length(value[[2L]])) stop("can't assign",length(value[[2L]]),"colnames to a",ncol(x),"column data.table")
+  if (ncol(x) != length(value[[2L]])) stop("Can't assign ", length(value[[2L]]), " colnames to a ", ncol(x), "-column data.table")
   setnames(x,as.character(value[[2L]]))
   x  # this returned value is now shallow copied by R 3.1.0 via *tmp*. A very welcome change.
 }
@@ -2280,8 +2282,8 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
   if (is.character(cols)) {
     old = cols
     cols = chmatch(cols, names(object), nomatch=0L)
-    if (any(cols==0L))
-      stop("Columns ", paste(old[cols==0L], collapse=","), " doesn't exist in the input data.table")
+    if (any(idx <- cols==0L))
+      stop("Column", if (sum(idx)>1L) "s " else " ", brackify(old[idx]), if (sum(idx)>1L) " don't" else " doesn't", " exist in the input data.table")
   }
   cols = as.integer(cols)
   ix = .Call(Cdt_na, object, cols)
@@ -2334,12 +2336,12 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
     # same as split.data.frame - handling all exceptions, factor orders etc, in a single stream of processing was a nightmare in factor and drop consistency
     return(lapply(split(x = seq_len(nrow(x)), f = f, drop = drop, ...), function(ind) x[ind]))
   }
-  if (missing(by)) stop("you must provide 'by' or 'f' arguments")
+  if (missing(by)) stop("Either 'by' or 'f' argument must be supplied")
   # check reserved column names during processing
-  if (".ll.tech.split" %chin% names(x)) stop("column '.ll.tech.split' is reserved for split.data.table processing")
-  if (".nm.tech.split" %chin% by) stop("column '.nm.tech.split' is reserved for split.data.table processing")
-  if (!all(by %chin% names(x))) stop("argument 'by' must refer to data.table column names")
-  if (!all(by.atomic <- vapply_1b(by, function(.by) is.atomic(x[[.by]])))) stop("argument 'by' must refer only to atomic type columns, classes of ", brackify(by[!by.atomic]), " columns are not atomic type")
+  if (".ll.tech.split" %chin% names(x)) stop("Column '.ll.tech.split' is reserved for split.data.table processing")
+  if (".nm.tech.split" %chin% by) stop("Column '.nm.tech.split' is reserved for split.data.table processing")
+  if (!all(by %chin% names(x))) stop("Argument 'by' must refer to column names in x")
+  if (!all(by.atomic <- vapply_1b(by, function(.by) is.atomic(x[[.by]])))) stop("Argument 'by' must refer only to atomic-type columns, but the following columns are non-atomic: ", brackify(by[!by.atomic]))
   # list of data.tables (flatten) or list of lists of ... data.tables
   make.levels = function(x, cols, sorted) {
     by.order = if (!sorted) x[, funique(.SD), .SDcols=cols] # remember order of data, only when not sorted=FALSE
@@ -2695,7 +2697,7 @@ address <- function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
 setDF <- function(x, rownames=NULL) {
   if (!is.list(x)) stop("setDF only accepts data.table, data.frame or list of equal length as input")
-  if (any(duplicated(rownames))) stop("rownames contains duplicates")
+  if (anyDuplicated(rownames)) stop("rownames contains duplicates")
   if (is.data.table(x)) {
     # copied from as.data.frame.data.table
     if (is.null(rownames)) {

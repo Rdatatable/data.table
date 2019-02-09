@@ -18,6 +18,7 @@
 ^publish\.R$
 ^Makefile$
 ^NEWS.0.md$
+^README.md$
 ^bus$
 ^Dockerfile$
 ^Dockerfile\.in$

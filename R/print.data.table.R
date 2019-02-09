@@ -42,15 +42,19 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     cat("Ind", if (length(ixs) > 1L) "ices" else "ex", ": <",
       paste(ixs, collapse=">, <"), ">\n", sep="")
   }
-  if (nrow(x) == 0L) {
-    if (length(x)==0L)
-       cat("Null data.table (0 rows and 0 cols)\n")  # See FAQ 2.5 and NEWS item in v1.8.9
-    else
-       cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1L)"s",": ",paste(head(names(x),6L),collapse=","),if(ncol(x)>6L)"...","\n",sep="")
+  if (any(dim(x)==0L)) {
+    class = if (is.data.table(x)) "table" else "frame"  # a data.frame could be passed to print.data.table() directly, #3363
+    if (all(dim(x)==0L)) {
+      cat("Null data.",class," (0 rows and 0 cols)\n", sep="")  # See FAQ 2.5 and NEWS item in v1.8.9
+    } else {
+      cat("Empty data.",class," (", dim(x)[1L], " rows and ",length(x)," cols)", sep="")
+      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="")
+      cat("\n")
+    }
     return(invisible(x))
   }
   if ((topn*2+1)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
-    toprint = rbind(head(x, topn), tail(x, topn))
+    toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
     printdots = TRUE
   } else {

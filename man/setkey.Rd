@@ -27,7 +27,7 @@ is changed \emph{by reference} and is therefore very memory efficient.
 \code{setindex()} creates an index (or indices) on provided columns. This index is simply an
 order of the dataset's according to the provided columns. This order is stored as a \code{data.table}
 attribute, and the dataset retains the original order in memory.
-See the \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} vignette for more details.
+See the \href{vignettes/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} vignette for more details.
 
 \code{key()} returns the \code{data.table}'s key if it exists, and \code{NULL}
 if none exist.

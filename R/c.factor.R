@@ -17,7 +17,9 @@ c.factor <- function(...)
     m = match(levels(x), newlevels)
     m[as.integer(x)]
   }))
-  structure(ans, levels = newlevels, names = nm, class = "factor")
+  setattr(ans, 'levels', newlevels)
+  setattr(ans, names, nm)
+  setattr(ans, 'class', 'factor')
 }
 
 #"[.factor" <- function(x, ...)
