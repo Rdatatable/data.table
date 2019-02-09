@@ -966,8 +966,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
               if (length(byvars) > 1L && tt %chin% all.vars(jsub, FALSE)) {
                 bynames[jj] = deparse(bysubl[[jj+1L]])
                 if (verbose)
-                  cat("by-expression '", bynames[jj], "' is not named, and the auto-generated name '", tt, "' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", sep="")
-
+                  cat("by-expression '", bynames[jj], "' is not named, and the auto-generated name '", tt,
+                      "' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", sep="")
               }
               else bynames[jj] = tt
               # if user doesn't like this inferred name, user has to use by=list() to name the column
