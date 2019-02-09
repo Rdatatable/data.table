@@ -13335,10 +13335,13 @@ test(1982.2, tt, seq_along(tt))
 
 # parse(text = 'list(`\\phantom{.}`)') fails, #3319
 library(data.table)
-DT <- data.table(x = 1, y = 1:5)
+DT <- data.table(x=1, y=1:5)
 setnames(DT, "x", "\\phantom{.}")
-test(1983.1, DT[, .(y = mean(y)), keyby = "\\phantom{.}"],
-     data.table(`\\phantom{.}` = 1, y = 3, key = '\\phantom{.}'))
+test(1983.1, DT[, .(y=mean(y)), keyby="\\phantom{.}"], data.table(`\\phantom{.}`=1, y=3, key='\\phantom{.}'))
+# keyby = 'x y' fails, #3378
+DT <- data.table(x=1:5, y=letters[1:5])
+setnames(DT, "x", "x y")
+test(1983.2, DT[, y:="j", keyby="x y"], data.table(`x y`=1:5, y='j', key='x y'))
 
 # more coverage tests
 DT = data.table(a = 1:10)

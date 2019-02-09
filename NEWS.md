@@ -14,7 +14,7 @@
 
 3. Default print output (top 5 and bottom 5 rows) when ncol>255 could display the columns in the wrong order, [#3306](https://github.com/Rdatatable/data.table/issues/3306). Thanks to Kun Ren for reporting.
 
-4. Grouping `by = 'string_with_\\'` would fail, [#3319](https://github.com/Rdatatable/data.table/issues/3319). Thanks to @HughParsonage for reporting and @MichaelChirico for the fix.
+4. Grouping by unusual column names such as `by='string_with_\\'` and `keyby="x y"` could fail, [#3319](https://github.com/Rdatatable/data.table/issues/3319) and [#3378](https://github.com/Rdatatable/data.table/issues/3378). Thanks to @HughParsonage for reporting and @MichaelChirico for the fixes.
 
 #### NOTES
 

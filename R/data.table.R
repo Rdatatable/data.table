@@ -966,8 +966,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
               if (length(byvars) > 1L && tt %chin% all.vars(jsub, FALSE)) {
                 bynames[jj] = deparse(bysubl[[jj+1L]])
                 if (verbose)
-                  cat("by-expression '", bynames[jj], "' is not named, and the auto-generated name '", tt, "' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", sep="")
-
+                  cat("by-expression '", bynames[jj], "' is not named, and the auto-generated name '", tt,
+                      "' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", sep="")
               }
               else bynames[jj] = tt
               # if user doesn't like this inferred name, user has to use by=list() to name the column
@@ -1849,6 +1849,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     }
     if (!missing(keyby)) {
       cnames = as.character(bysubl)[-1L]
+      cnames = gsub('^`|`$', '', cnames)  # the wrapping backticks that were added above can be removed now, #3378
       if (all(cnames %chin% names(x))) {
         if (verbose) {last.started.at=proc.time();cat("setkey() after the := with keyby= ... ");flush.console()}
         setkeyv(x,cnames)  # TO DO: setkey before grouping to get memcpy benefit.
