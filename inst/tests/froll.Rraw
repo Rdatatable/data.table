@@ -433,10 +433,11 @@ ma = function(x, n, na.rm=FALSE, nf.rm=FALSE) {
   if (!is.double(x)) x = as.double(x)
   if (!is.integer(n)) n = as.integer(n)
   ans = rep(NA_real_, nx<-length(x))
-  if (nf.rm) x[!is.finite(x)] = NA_real_ # exact=F consistency due to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
+  if (nf.rm) x[!is.finite(x)] = NA_real_ # algo=fast consistency due to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441, actually affects also algo=exact #3353
   for (i in n:nx) ans[i]=mean(x[(i-n+1):i], na.rm=na.rm)
   ans
 }
+
 n = 4
 x = 1:16
 x[5] = NaN
@@ -444,7 +445,7 @@ test(9999.120, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
 test(9999.121, identical(frollmean(x, n, algo="exact"), ma(x, n)))
 x[6] = NA
 test(9999.122, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-test(9999.123, identical(frollmean(x, n, algo="exact"), ma(x, n)))
+test(9999.123, frollmean(x, n, algo="exact"), ma(x, n)) # use do not use identical as NaN-NA behaviour is platform/compiler specific #3353
 #### test inconsistency of NaN-NA order is consistent to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
 x[5] = NA
 x[6] = NaN
@@ -518,7 +519,7 @@ ans2 = frollmean(x, n, na.rm=TRUE, adaptive=TRUE)
 ans3 = frollmean(x, n, na.rm=TRUE, algo="exact", adaptive=TRUE)
 test(9999.143, ans1, ans2)
 test(9999.144, ans1, ans3)
-#### interactive test 3e9 vector where 2.5e9 are NAs to confirm uint_fast64_t running NA counter
+#### interactive test 3e9 vector where continuous 2.5e9 are NAs to confirm uint_fast64_t running NA counter
 if (FALSE) {
   x = c(rep(1, 3e8), rep(NA_real_, 2.5e9), rep(1, 2e8))
   n1 = 1e3; n2 = 1e4
@@ -611,7 +612,7 @@ test(9999.159, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
 test(9999.160, identical(frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)))
 x[6] = NA
 test(9999.161, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-test(9999.162, identical(frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)))
+test(9999.162, frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)) # use do not use identical as NaN-NA behaviour is platform/compiler specific #3353
 #### test inconsistency of NaN-NA order is consistent to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
 x[5] = NA
 x[6] = NaN

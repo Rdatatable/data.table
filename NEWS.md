@@ -10,6 +10,12 @@
 
 1. `rbindlist()` of a malformed factor missing levels attribute is now a helpful error rather than a cryptic error about `STRING_ELT`, [#3315](https://github.com/Rdatatable/data.table/issues/3315). Thanks to Michael Chirico for reporting.
 
+2. Forgetting `type=` in `shift(val, "lead")` would segfault, [#3354](https://github.com/Rdatatable/data.table/issues/3354). A helpful error is now produced to indicate `"lead"` is being passed to `n=` rather than the intended `type=` argument. Thanks to @SymbolixAU for reporting.
+
+3. Default print output (top 5 and bottom 5 rows) when ncol>255 could display the columns in the wrong order, [#3306](https://github.com/Rdatatable/data.table/issues/3306). Thanks to Kun Ren for reporting.
+
+4. Grouping by unusual column names such as `by='string_with_\\'` and `keyby="x y"` could fail, [#3319](https://github.com/Rdatatable/data.table/issues/3319) and [#3378](https://github.com/Rdatatable/data.table/issues/3378). Thanks to @HughParsonage for reporting and @MichaelChirico for the fixes.
+
 #### NOTES
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
@@ -18,7 +24,11 @@
 
 3. As promised in new feature 6 of v1.11.6 Sep 2018 (see below in this file), the `datatable.CJ.names` option's default is now `TRUE`. In v1.13.0 it will be removed.
 
-4. The Travis build matrix is expanded to OSX and to the R previous major and R-devel releases [#3326](https://github.com/Rdatatable/data.table/issues/3326). An OpenMP enabled compiler is required to correctly build on OSX, therefore the homebrew llvm package is installed on the Travis (OSX) machine before R CMD build is run. The OSX build on R-devel was explicitly excluded because it's currently unstable. Thanks @marcusklik for the PR.
+4. Travis CI gains OSX using homebrew llvm for OpenMP support, [#3326](https://github.com/Rdatatable/data.table/issues/3326). Thanks @marcusklik for the PR.
+
+5. Calling `data.table:::print.data.table()` directly (i.e. bypassing method dispatch by using 3 colons) and passing it a 0-column `data.frame` (not `data.table`) now works, [#3363](https://github.com/Rdatatable/data.table/pull/3363). Thanks @heavywatal for the PR.
+
+6. v1.12.0 did not compile on Solaris 10 using Oracle Developer Studio 12.6, [#3285](https://github.com/Rdatatable/data.table/issues/3285). Many thanks to Prof Ripley for providing and testing a patch. For future reference and other package developers, a `const` variable should not be passed to OpenMP's `num_threads()` directive otherwise `left operand must be modifiable lvalue` occurs.
 
 
 ### Changes in v1.12.0  (13 Jan 2019)

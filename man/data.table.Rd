@@ -11,7 +11,7 @@
 
    It is inspired by \code{A[B]} syntax in \R where \code{A} is a matrix and \code{B} is a 2-column matrix. Since a \code{data.table} \emph{is} a \code{data.frame}, it is compatible with \R functions and packages that accept \emph{only} \code{data.frame}s.
 
-   Type \code{vignette(package="data.table")} to get started. The \href{../doc/datatable-intro.html}{Introduction to data.table} vignette introduces \code{data.table}'s \code{x[i, j, by]} syntax and is a good place to start. If you have read the vignettes and the help page below, please read the \href{https://github.com/Rdatatable/data.table/wiki/Support}{data.table support guide}.
+   Type \code{vignette(package="data.table")} to get started. The \href{vignettes/datatable-intro.html}{Introduction to data.table} vignette introduces \code{data.table}'s \code{x[i, j, by]} syntax and is a good place to start. If you have read the vignettes and the help page below, please read the \href{https://github.com/Rdatatable/data.table/wiki/Support}{data.table support guide}.
 
    Please check the \href{https://github.com/Rdatatable/data.table/wiki}{homepage} for up to the minute live NEWS.
 
@@ -71,7 +71,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
         Support for \emph{non-equi} join was recently implemented, which allows for other binary operators \code{>=, >, <= and <}.
 
-        See \href{../doc/datatable-keys-fast-subset.html}{Keys and fast binary search based subset} and \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
+        See \href{vignettes/datatable-keys-fast-subset.html}{Keys and fast binary search based subset} and \href{vignettes/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
 
         \emph{Advanced:} When \code{i} is a single variable name, it is not considered an expression of column names and is instead evaluated in calling scope.
     }
@@ -88,7 +88,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \emph{Advanced:} Columns of \code{x} can now be referred to using the prefix \code{x.} and is particularly useful during joining to refer to \code{x}'s \emph{join} columns as they are otherwise masked by \code{i}'s. For example, \code{X[Y, .(x.a-i.a, b), on="a"]}.
 
-    See \href{../doc/datatable-intro.html}{Introduction to data.table} vignette and examples.}
+    See \href{vignettes/datatable-intro.html}{Introduction to data.table} vignette and examples.}
 
     \item{by}{ Column names are seen as if they are variables (as in \code{j} when \code{with=TRUE}). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{by} accepts:
 
@@ -152,7 +152,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 }
   \item{allow.cartesian}{ \code{FALSE} prevents joins that would result in more than \code{nrow(x)+nrow(i)} rows. This is usually caused by duplicate values in \code{i}'s join columns, each of which join to the same group in `x` over and over again: a \emph{misspecified} join. Usually this was not intended and the join needs to be changed. The word 'cartesian' is used loosely in this context. The traditional cartesian join is (deliberately) difficult to achieve in \code{data.table}: where every row in \code{i} joins to every row in \code{x} (a \code{nrow(x)*nrow(i)} row result). 'cartesian' is just meant in a 'large multiplicative' sense. }
 
-  \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \href{../doc/datatable-faq.html}{datatable-faq}.}
+  \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \href{vignettes/datatable-faq.html}{datatable-faq}.}
 
   \item{on}{ Indicate which columns in \code{x} should be joined with which columns in \code{i} along with the type of binary operator to join with (see non-equi joins below on this). When specified, this overrides the keys set on \code{x} and \code{i}. There are multiple ways of specifying the \code{on} argument:
         \itemize{
@@ -166,7 +166,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
             \item{For convenience during interactive scenarios, it is also possible to use \code{.()} syntax as \code{X[Y, on=.(a, b)]}.}
             \item{From v1.9.8, (non-equi) joins using binary operators \code{>=, >, <=, <} are also possible, e.g., \code{X[Y, on=c("x>=a", "y<=b")]}, or for interactive use as \code{X[Y, on=.(x>=a, y<=b)]}.}
         }
-        See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
+        See examples as well as \href{vignettes/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing}.
     }
 }
 \details{

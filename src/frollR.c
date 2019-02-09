@@ -188,23 +188,19 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       else if (ialgo==1) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe, 'exact' version of rolling function will compute results in parallel anyway as it does not print with verbose\n", nx, nk);
     }
     omp_set_nested(1);
-    const int threads = bverbose ? 1 : MIN(getDTthreads(), nx*nk);
-    #pragma omp parallel num_threads(threads)
-    {
-      #pragma omp for schedule(auto) collapse(2)
-      for (R_len_t i=0; i<nx; i++) {                            // loop over multiple columns
-        for (R_len_t j=0; j<nk; j++) {                          // loop over multiple windows
-          switch (sfun) {
-            case MEAN :
-              if (!badaptive) frollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
-              else fadaptiverollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
-              break;
-            //case SUM :
-            //  break;
-          }
-        } // end of j-windows loop
-      } // end of i-columns loop
-    } // end of omp parallel region
+    #pragma omp parallel for num_threads(bverbose ? 1 : getDTthreads()) schedule(auto) collapse(2)
+    for (R_len_t i=0; i<nx; i++) {                            // loop over multiple columns
+      for (R_len_t j=0; j<nk; j++) {                          // loop over multiple windows
+        switch (sfun) {
+          case MEAN :
+            if (!badaptive) frollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
+            else fadaptiverollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
+            break;
+          //case SUM :
+          //  break;
+        }
+      }
+    }
     omp_set_nested(0);
   }
 
