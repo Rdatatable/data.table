@@ -62,11 +62,16 @@ static void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     }
   } break;
   case VECSXP : {
-    SEXP *sp = VECTOR_PTR(source);
+    // VECTOR_PTR does exist but returns 'not safe to return vector pointer' when USE_RINTERNALS is not defined.
+    // VECTOR_DATA and LIST_POINTER exist too but call VECTOR_PTR. All are clearly not intended to be used by packages.
+    // The concern is overhead inside VECTOR_ELT() biting when called repetitively in a loop like we do here. That's why
+    // we take the R API (INTEGER()[i], REAL()[i], etc) outside loops for the simple types even when not parallel. For this
+    // type list case (VECSXP) it might be that some items are ALTREP for example, so we really should use the heavier
+    // _ELT accessor (VECTOR_ELT) inside the loop in this case.
     if (anyNA) {
-      for (int i=0; i<n; i++) { int elem = idxp[i]; SET_VECTOR_ELT(ans, i, elem==NA_INTEGER ? R_NilValue : sp[elem-1]); }
+      for (int i=0; i<n; i++) { int elem = idxp[i]; SET_VECTOR_ELT(ans, i, elem==NA_INTEGER ? R_NilValue : VECTOR_ELT(source, elem-1)); }
     } else {
-      for (int i=0; i<n; i++) {                     SET_VECTOR_ELT(ans, i, sp[idxp[i]-1]); }
+      for (int i=0; i<n; i++) {                     SET_VECTOR_ELT(ans, i, VECTOR_ELT(source, idxp[i]-1)); }
     }
   } break;
   case CPLXSXP : {
