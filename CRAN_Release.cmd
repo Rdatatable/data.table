@@ -6,7 +6,6 @@ sudo apt-get update
 sudo apt-get upgrade
 R
 update.packages(ask=FALSE)
-# See here for getting R.oo to install: https://github.com/HenrikBengtsson/R.utils/issues/29
 q("no")
 
 # Ensure latest version of R otherwise problems with CRAN not finding dependents that depend on latest R
@@ -107,15 +106,15 @@ test.data.table()
 install.packages("xml2")   # to check the 150 URLs in NEWS.md under --as-cran below
 q("no")
 R CMD build .
-R CMD check data.table_1.11.7.tar.gz --as-cran
-R CMD INSTALL data.table_1.11.7.tar.gz
+R CMD check data.table_1.12.1.tar.gz --as-cran
+R CMD INSTALL data.table_1.12.1.tar.gz
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.11.7.tar.gz
+R CMD check data.table_1.12.1.tar.gz
 rm ~/.Renviron
 
 R
@@ -146,7 +145,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.11.7.tar.gz
+R310 CMD INSTALL ./data.table_1.12.1.tar.gz
 R310
 require(data.table)
 test.data.table()
@@ -158,7 +157,7 @@ test.data.table()
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.11.7.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.12.1.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -166,7 +165,7 @@ q("no")
 vi ~/.R/Makevars
 # revert change above
 R CMD build .
-R CMD check data.table_1.11.7.tar.gz
+R CMD check data.table_1.12.1.tar.gz
 
 #####################################################
 #  R-devel with UBSAN, ASAN and strict-barrier on too
@@ -175,6 +174,7 @@ R CMD check data.table_1.11.7.tar.gz
 cd ~/build
 wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
 rm -rf R-devel
+rm -rf R-devel-strict
 tar xvf R-devel.tar.gz
 mv R-devel R-devel-strict
 cd R-devel-strict    # important to change directory name before building not after because the path is baked into the build, iiuc
@@ -194,14 +194,14 @@ cd R-devel-strict    # important to change directory name before building not af
 make
 alias Rdevel-strict='~/build/R-devel-strict/bin/R --vanilla'
 cd ~/GitHub/data.table
-## edit ~/.R/Makevars and activate "CFLAGS=-O0 -g" there to trace
-Rdevel-strict CMD INSTALL data.table_1.11.8.tar.gz
+Rdevel-strict CMD INSTALL data.table_1.12.1.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel-strict
 install.packages(c("bit64","xts","nanotime","R.utils"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
 require(data.table)
 test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
-for (i in 1:100) if (!test.data.table()) break  # try several runs; e.g a few tests generate data with a non-fixed random seed
+# If any problems, edit ~/.R/Makevars and activate "CFLAGS=-O0 -g" to trace. Rerun 'Rdevel-strict CMD INSTALL' and rerun tests.
+for (i in 1:10) if (!test.data.table()) break  # try several runs maybe even 100; e.g a few tests generate data with a non-fixed random seed
 # gctorture(TRUE)      # very slow, many days
 gctorture2(step=100)   # [12-18hrs] under ASAN, UBSAN and --strict-barrier
 print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.time()); print(timetaken(started.at))
@@ -230,7 +230,7 @@ cd R-devel
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O0 -g line active, for info on source lines with any problems
-Rdevel CMD INSTALL data.table_1.11.3.tar.gz
+Rdevel CMD INSTALL data.table_1.12.1.tar.gz
 Rdevel -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite"
 # gctorture(TRUE)      # very slow, many days
 # gctorture2(step=100)
@@ -272,7 +272,7 @@ There are some things to overcome to achieve compile without USE_RINTERNALS, tho
 ## Rdevel
 ## install.packages("bit64")
 ## q("no")
-## Rdevel CMD INSTALL ~/data.table_1.9.9.tar.gz
+## Rdevel CMD INSTALL ~/data.table_1.12.1.tar.gz
 ## Rdevel
 ## .Machine$sizeof.longdouble   # check 0
 ## require(data.table)
@@ -286,13 +286,14 @@ There are some things to overcome to achieve compile without USE_RINTERNALS, tho
 cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
-echo 'install.packages("~/GitHub/data.table/data.table_1.11.7.tar.gz",repos=NULL)' | ./bin/R --slave
+# edit ~/.R/Makevars to set CFLAGS=-O0 -g so that rchk can provide source line numbers
+echo 'install.packages("~/GitHub/data.table/data.table_1.12.1.tar.gz",repos=NULL)' | ./bin/R --slave
 ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
 # keep running and rerunning locally until all problems cease.
 #   rchk has an internal stack which can exhaust. Clearing the current set of problems (e.g. as displayed
 #   on CRAN) is not sufficient because new problems can be found because it didn't get that far before.
-#   hence repeating locally until clear is necessary.
+#   Hence repeating locally until clear is necessary.
 
 
 ###############################################
@@ -412,7 +413,7 @@ BiocManager::valid()
 
 avail = available.packages(repos=BiocManager::repositories())  # includes CRAN at the end from getOption("repos"). And ensure latest Bioc version is in repo path here.
 deps = tools::package_dependencies("data.table", db=avail, which="most", reverse=TRUE, recursive=FALSE)[[1]]
-exclude = c("TCGAbiolinks")  # takes too long over 30mins: https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
+exclude = c("TCGAbiolinks")  # too long (>30mins): https://github.com/BioinformaticsFMRP/TCGAbiolinks/issues/240
 deps = deps[-match(exclude, deps)]
 table(avail[deps,"Repository"])
 length(deps)
@@ -550,7 +551,7 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
 }
 
 # ** ensure latest version installed into revdeplib **
-system("R CMD INSTALL ~/GitHub/data.table/data.table_1.11.9.tar.gz")
+system("R CMD INSTALL ~/GitHub/data.table/data.table_1.12.1.tar.gz")
 run("rerun.all")
 
 out = function(fnam="~/fail.log") {
@@ -559,10 +560,9 @@ out = function(fnam="~/fail.log") {
   cat(paste(x,collapse=" "), "\n")
   cat(capture.output(sessionInfo()), "\n", file=fnam, sep="\n")
   cat("> BiocManager::install()\n", file=fnam, append=TRUE)
-  capture.output(BiocManager::install(), type="message", file=fnam, append=TRUE)
+  cat(capture.output(BiocManager::install(), type="message"), file=fnam, sep="\n", append=TRUE)
   cat("> BiocManager::valid()\n", file=fnam, append=TRUE)
-  capture.output(ans<-BiocManager::valid(), type="message", file=fnam, append=TRUE)
-  cat(ans, "\n", file=fnam, append=TRUE, sep="\n")
+  cat(isTRUE(BiocManager::valid()), "\n\n\n", file=fnam, append=TRUE)
   for (i in x) {
     system(paste0("ls | grep '",i,".*tar.gz' >> ",fnam))
     system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))
@@ -599,24 +599,35 @@ Bump version to even release number in 3 places :
   1) DESCRIPTION
   2) NEWS (without 'on CRAN date' text as that's not yet known)
   3) dllVersion() at the end of init.c
-DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. (Too many support problems in past before this procedure brought in.)
+DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
 R CMD build .
-R CMD check --as-cran data.table_1.11.8.tar.gz
+R CMD check --as-cran data.table_1.12.0.tar.gz
 Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
 Submit to CRAN. Message template :
------
-543 CRAN + 134 BIOC rev deps checked ok.
-9 CRAN packages will break : easycsv, fst, iml, PhenotypeSimulator, popEpi, sdcMicro, SIRItoGTFS, SpaDES.core, splitstackshape
-The maintainers have been contacted; some may have updated already.
-Thanks and best, Matt
------
-1. Bump version in DESCRIPTION to next odd number
-2. Add new heading in NEWS for the next dev version. Add "(date)" on the released heading if already accepted.
-3. Bump 3 version numbers in Makefile
-4. Bump dllVersion() in init.c
-Push to GitHub so dev can continue. Commit message format "1.11.8 submitted to CRAN. Bump to 1.11.9"
-Bump dev number text in homepage banner
-Cross fingers accepted first time. If not, push changes to devel and backport locally
-Close milestone
+------------------------------------------------------------
+Hello,
+Happy New Year and thanks for everything!
+595 CRAN + 135 BIOC rev deps checked ok
+2 already updated on CRAN in advance and should not break: behavr, maditr
+3 will break: checkmate, rENA and SpaDES.core. Maintainers aware and standing ready.
+3 newly in error/warning status on CRAN in the last day or so for non-data.table reasons: segregation, xlm, prediction
+NoLD 'additional issue' resolved
+Requests from Luke Tierney and Tomas Kalibera included, noted and thanked in NEWS.
+Best, Matt
+------------------------------------------------------------
+DO NOT commit or push to GitHub. Leave 4 files (CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
+DO NOT even use a PR. Because PRs build binaries and we don't want any binary versions of even release numbers available from anywhere other than CRAN.
+Leave milestone open with a 'final checks' issue open. Keep updating status there.
 ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
+Sleep.
+If any issues arise, backport locally. Resubmit the same even version to CRAN.
+When on CRAN :
+1. Close milestone
+2. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this CRAN_Release.cmd
+2. Bump version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
+3. Add new heading in NEWS for the next dev version. Add "(date)" on the released heading.
+4. Bump 3 version numbers in Makefile
+5. Bump dllVersion() in init.c
+6. Push to master with this consistent commit message: "1.12.0 on CRAN. Bump to 1.12.1"
+7. Take sha from step 6 and run `git tag 1.12.0 34796cd1524828df9bf13a174265cb68a09fcd77` then `git push origin 1.12.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 

@@ -23,6 +23,8 @@ environment:
 # The default for R_ARCH is i386, though, for which multiarch would just compile and test 32bit, hence setting R_ARCH to x64
     GCC_PATH: mingw_64
 # Default GCC_PATH appears to be gcc-4.6.3 which is now unsupported as from Rtools.exe v3.4.
+    _R_CHECK_NO_STOP_ON_TEST_ERROR_: true
+# continue tests even if some script failed
 
   matrix:
 

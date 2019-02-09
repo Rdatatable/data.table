@@ -18,7 +18,7 @@ loaded = sapply(pkgs, is.require)
 
 if (sum(!loaded)) {
   if (as.logical(Sys.getenv("_R_CHECK_FORCE_SUGGESTS_", "TRUE"))) {
-    stop(sprintf("Package suggested but not available: %s\n\nThe suggested packages are required for a complete check of data.table integration tests.\nChecking can be attempted without them by setting the environment variable _R_CHECK_FORCE_SUGGESTS_ to a false value.", paste("'", names(loaded)[!loaded], "'", sep="", collapse=", ")))
+    stop(sprintf("Package (extended) suggested but not available: %s\n\nThe (extended) suggested packages are required for a complete check of data.table integration tests.\nChecking can be attempted without them by setting the environment variable _R_CHECK_FORCE_SUGGESTS_ to a false value.\nList of extended suggested packages used for integration tests can be found in `system.file(file.path('tests','tests-DESCRIPTION'), package='data.table')`.", paste("'", names(loaded)[!loaded], "'", sep="", collapse=", ")))
   } else {
     invisible(sapply(names(loaded)[!loaded], function(s) cat("\n**** Other package",s,"is not installed. Tests using it will be skipped.\n")))
   }
@@ -175,14 +175,15 @@ if (loaded[["parallel"]]) {
         setDTthreads(threads)
         invisible(mclapply(lx, function(x) fsort(x), mc.cores = mc.cores))
       }
+      threadsBefore = getDTthreads()
       f(1, 1) # was always ok
       f(2, 1) # was always ok
       f(1, 2) # was always ok
       f(2, 2) # Used to hang. Now should not because data.table auto switches to single threaded
               # Commenting out avoid_openmp_hang_within_fork() confirms this test catches catches the hang
-      test(12.1, getDTthreads()==1) # Stays in single-threaded mode after returning from mclapply's fork
+      test(12.1, getDTthreads()==threadsBefore)  # User returned to multithreaded after fork, form v1.12.0 (see news item)
       setDTthreads(2)
-      test(12.2, getDTthreads()==2) # User returned to multi-threaded after fork.
+      test(12.2, getDTthreads()==2)
     }
   }
 }
@@ -190,44 +191,3 @@ if (loaded[["parallel"]]) {
 ###################################
 #  Add new tests above this line  #
 ###################################
-
-plat = paste0("endian==", .Platform$endian,
-              ", sizeof(long double)==", .Machine$sizeof.longdouble,
-              ", sizeof(pointer)==", .Machine$sizeof.pointer,
-              ", TZ=", suppressWarnings(Sys.timezone()),
-              ", locale='", Sys.getlocale(), "'")
-DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
-if ((x<-timings[,sum(nTest)]) != ntest) warning("Timings count mismatch:",x,"vs",ntest)
-cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
-print(DT, class=FALSE)
-..inittime = inittime
-if (memtest) {
-  if (file.exists(fn<-"memtest.csv") && # if no tests were run there might be no timings
-      nrow(m<-fread(fn)[inittime==..inittime])) {
-    ps_na = all(is.na(m[["PS_rss"]])) # OS with no 'ps -o rss R' support
-    png("memtest-other.png")
-    p = par(mfrow=c(if (ps_na) 2 else 3, 2))
-    if (!ps_na) {
-      m[, plot(test, PS_rss, pch=18, xlab="test num", ylab="mem MB", main="ps -o rss R")]
-      m[, plot(timestamp, PS_rss, type="l", xlab="timestamp", ylab="mem MB", main="ps -o rss R")]
-    }
-    m[, plot(test, GC_used, pch=18, xlab="test num", ylab="mem MB", main="gc used")]
-    m[, plot(timestamp, GC_used, type="l", xlab="timestamp", ylab="mem MB", main="gc used")]
-    m[, plot(test, GC_max_used, pch=18, xlab="test num", ylab="mem MB", main="gc max used")]
-    m[, plot(timestamp, GC_max_used, type="l", xlab="timestamp", ylab="mem MB", main="gc max used")]
-    par(p)
-    dev.off()
-  } else {
-    warning("test.data.table runs with memory testing but did not collect any memory statistics.", call.=FALSE)
-  }
-}
-if (nfail > 0) {
-  if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
-  cat("\r")
-  stop(nfail," error",s1," out of ",ntest," in ",timetaken(started.at)," on ",date(),". [",plat,"].",
-       " Search inst/tests/other.Rraw for test number",s2,paste(whichfail,collapse=", "),".")
-  # important to stop() here, so that 'R CMD check' fails
-}
-cat(plat,"\nAll ",ntest," tests in inst/tests/other.Rraw completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
-# date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
-# stale due to not updating yet since a fix in R-devel, for example.

@@ -202,7 +202,7 @@ replace_dot_alias <- function(e) {
     used = gsub(".*object '([^']+)'.*", "\\1", err$message)
     found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
     if (length(found)) {
-      stop("Object '", used, "' not found. Perhaps you intended ", used,
+      stop("Object '", used, "' not found. Perhaps you intended ",
            paste(head(found, 5L), collapse=", "),
            if (length(found)<=5L) "" else paste(" or",length(found)-5L, "more"))
     } else {
@@ -242,13 +242,26 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     return(ans)
   }
   .global$print=""
+  if (!missing(keyby)) {
+    if (!missing(by)) stop("Provide either by= or keyby= but not both")
+    by=bysub=substitute(keyby)
+    # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
+  } else {
+    bysub = if (missing(by)) NULL # and leave missing(by)==TRUE
+        else substitute(by)
+  }
+  byjoin = FALSE
+  if (!missing(by)) {
+    if (missing(j)) stop("by= or keyby= is supplied but not j=")  # relatively common user error so emit this error first in preference to the 'i and j both missing' below
+    byjoin = is.symbol(bysub) && bysub==".EACHI"
+  }
   if (missing(i) && missing(j)) {
     tt_isub = substitute(i)
     tt_jsub = substitute(j)
     if (!is.null(names(sys.call())) &&  # not relying on nargs() as it considers DT[,] to have 3 arguments, #3163
         tryCatch(!is.symbol(tt_isub), error=function(e)TRUE) &&   # a symbol that inherits missingness from caller isn't missing for our purpose; test 1974
         tryCatch(!is.symbol(tt_jsub), error=function(e)TRUE)) {
-      warning("i and j are both missing so ignoring the other arguments")
+      warning("i and j are both missing so ignoring the other arguments. This warning will be upgraded to error in future.")
     }
     return(x)
   }
@@ -274,19 +287,6 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
   if (!with && missing(j)) stop("j must be provided when with=FALSE")
   if (missing(i) && !missing(on)) warning("ignoring on= because it is only relevant to i but i is not provided")
-  if (!missing(keyby)) {
-    if (!missing(by)) stop("Provide either 'by' or 'keyby' but not both")
-    by=bysub=substitute(keyby)
-    # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
-  } else {
-    bysub = if (missing(by)) NULL # and leave missing(by)==TRUE
-        else substitute(by)
-  }
-  byjoin = FALSE
-  if (!missing(by)) {
-    if (missing(j)) stop("'by' or 'keyby' is supplied but not j")
-    byjoin = is.symbol(bysub) && bysub==".EACHI"
-  }
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
   rightcols = leftcols = integer()
@@ -867,12 +867,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         } else if (is.call(bysub) && bysub[[1L]] == ".") bysub[[1L]] = quote(list)
 
         if (mode(bysub) == "character") {
-          if (length(grep(",",bysub))) {
+          if (length(grep(",", bysub, fixed = TRUE))) {
             if (length(bysub)>1L) stop("'by' is a character vector length ",length(bysub)," but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.")
             bysub = strsplit(bysub,split=",")[[1L]]
           }
-          tt = grep("^[^`]+$",bysub)
-          if (length(tt)) bysub[tt] = paste0("`",bysub[tt],"`")
+          backtick_idx = grep("^[^`]+$",bysub)
+          if (length(backtick_idx)) bysub[backtick_idx] = paste0("`",bysub[backtick_idx],"`")
+          backslash_idx = grep("\\", bysub, fixed = TRUE)
+          if (length(backslash_idx)) bysub[backslash_idx] = gsub('\\', '\\\\', bysub[backslash_idx], fixed = TRUE)
           bysub = parse(text=paste0("list(",paste(bysub,collapse=","),")"))[[1L]]
           bysubl = as.list.default(bysub)
         }
@@ -1847,7 +1849,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     attrs = attr(x, 'index')
     skeys = names(attributes(attrs))
     if (!is.null(skeys)) {
-      hits  = unlist(lapply(paste0("__", names(x)[cols]), function(x) grep(x, skeys)))
+      hits  = unlist(lapply(paste0("__", names(x)[cols]), function(x) grep(x, skeys, fixed = TRUE)))
       hits  = skeys[unique(hits)]
       for (i in seq_along(hits)) setattr(attrs, hits[i], NULL) # does by reference
     }

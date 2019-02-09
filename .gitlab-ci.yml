@@ -1,6 +1,7 @@
 variables:
   CRAN_MIRROR: "https://cloud.r-project.org"
-  _R_CHECK_FORCE_SUGGESTS_: "FALSE"
+  _R_CHECK_FORCE_SUGGESTS_: "false"
+  _R_CHECK_NO_STOP_ON_TEST_ERROR_: "true"
 
 stages:
   - dependencies
@@ -90,7 +91,7 @@ build: # build data.table sources as tar.gz archive
   tags:
     - macosx
 
-test-rel: #  most comprehensive tests, force all suggests, also integration tests
+test-rel-lin: #  most comprehensive tests, force all suggests, also integration tests, using gcc -O3
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   variables: # unlike CRAN
@@ -99,6 +100,10 @@ test-rel: #  most comprehensive tests, force all suggests, also integration test
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     OPENBLAS_MAIN_FREE: "1"
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
+  before_script:
+    - mkdir -p ~/.R
+    - echo 'CFLAGS=-g -O3 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O3 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"))'
     - *copy-src
@@ -108,11 +113,15 @@ test-rel: #  most comprehensive tests, force all suggests, also integration test
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-rel-vanilla: # minimal installation, no suggested deps, no vignettes or manuals, measure memory
+test-rel-vanilla-lin: # minimal installation, no suggested deps, no vignettes or manuals, measure memory, using gcc -O0 -fno-openmp
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
   variables:
     TEST_DATA_TABLE_MEMTEST: "TRUE"
+  before_script:
+    - mkdir -p ~/.R
+    - echo 'CFLAGS=-g -O0 -fno-openmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
     - *copy-src
     - rm -r bus
@@ -121,12 +130,12 @@ test-rel-vanilla: # minimal installation, no suggested deps, no vignettes or man
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-rel-cran: # as CRAN
+test-rel-cran-lin: # currently released R on Linux
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   variables:
-    _R_CHECK_CRAN_INCOMING_: "TRUE"
-    _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_: "TRUE"           # stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   # Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
     - *copy-src
@@ -138,13 +147,13 @@ test-rel-cran: # as CRAN
     - >-
         Rscript -e 'l<-readLines("data.table.Rcheck/00check.log"); if (!identical(l[length(l)], "Status: OK")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: OK"), " but ", shQuote(toString(l[length(l)]))) else q("no")'
 
-test-dev-cran: # R-devel as CRAN
+test-dev-cran-lin: # R-devel on Linux
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel
   allow_failure: false
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
-    _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
     - *copy-src
@@ -154,12 +163,12 @@ test-dev-cran: # R-devel as CRAN
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-310-cran: # test stated dependency on R 3.1.0 as CRAN
+test-310-cran-lin: # test stated R dependency (3.1.0) using Linux
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-3.1.0
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
-    _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
     - *copy-src
@@ -231,11 +240,11 @@ integration: # merging all artifacts to produce single R repository and summarie
   dependencies:
   - mirror-packages
   - build
-  - test-rel
-  - test-rel-cran
-  - test-dev-cran
-  - test-rel-vanilla
-  - test-310-cran
+  - test-rel-lin
+  - test-rel-cran-lin
+  - test-dev-cran-lin
+  - test-rel-vanilla-lin
+  - test-310-cran-lin
   - test-rel-win
   - test-dev-win
   #- test-rel-osx
@@ -287,7 +296,7 @@ integration: # merging all artifacts to produce single R repository and summarie
     # web/checks/$pkg/$job: 00install.out, 00check.log, *.Rout, memtest.csv, memtest.png
     - Rscript -e 'sapply(names(test.jobs), check.copy, simplify=FALSE)'
     # web/packages/$pkg/$pkg.pdf
-    - Rscript -e 'pdf.copy("data.table", "test-rel")'
+    - Rscript -e 'pdf.copy("data.table", "test-rel-lin")'
     # web/checks/check_results_$pkg.html
     - Rscript -e 'check.index("data.table", names(test.jobs))'
     # cleanup artifacts from other jobs

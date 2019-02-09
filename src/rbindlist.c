@@ -692,11 +692,16 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
         // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
         // warning("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
       }
+      if (TYPEOF(target)!=STRSXP && TYPEOF(thiscol)!=TYPEOF(target)) {
+        error("Internal error in rbindlist.c: type of 'thiscol' [%s] should have already been coerced to 'target' [%s]. please report to data.table issue tracker.",
+              type2char(TYPEOF(thiscol)), type2char(TYPEOF(target)));
+      }
       switch(TYPEOF(target)) {
       case STRSXP :
         isRowOrdered[resi] = FALSE;
         if (isFactor(thiscol)) {
           levels = getAttrib(thiscol, R_LevelsSymbol);
+          if (isNull(levels)) error("Column %d of item %d has type 'factor' but has no levels; i.e. malformed.", j+1, i+1);
           for (r=0; r<thislen; r++)
             if (INTEGER(thiscol)[r]==NA_INTEGER)
               SET_STRING_ELT(target, ansloc+r, NA_STRING);
@@ -722,22 +727,21 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
         }
         break;
       case VECSXP :
-        if (TYPEOF(thiscol) != VECSXP) error("Internal logical error in rbindlist.c (not VECSXP), please report to data.table issue tracker.");
         for (r=0; r<thislen; r++)
           SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thiscol,r));
         break;
       case CPLXSXP : // #1659 fix
-        if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. please report to data.table issue tracker.");
         for (r=0; r<thislen; r++)
           COMPLEX(target)[ansloc+r] = COMPLEX(thiscol)[r];
         break;
       case REALSXP:
+        memcpy(REAL(target)+ansloc, REAL(thiscol), thislen*SIZEOF(thiscol));
+        break;
       case INTSXP:
+        memcpy(INTEGER(target)+ansloc, INTEGER(thiscol), thislen*SIZEOF(thiscol));
+        break;
       case LGLSXP:
-        if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. please report to data.table issue tracker.");
-        memcpy((char *)DATAPTR(target) + ansloc * SIZEOF(thiscol),
-             (char *)DATAPTR(thiscol),
-             thislen * SIZEOF(thiscol));
+        memcpy(LOGICAL(target)+ansloc, LOGICAL(thiscol), thislen*SIZEOF(thiscol));
         break;
       default :
         error("Unsupported column type '%s'", type2char(TYPEOF(target)));
