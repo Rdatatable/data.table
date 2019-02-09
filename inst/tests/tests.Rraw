@@ -16,43 +16,44 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   # NB: The string "data.table::" (which covers "data.table:::" too) should exist nowhere else in this file
   #      other than here inside this branch.
 
-  test = data.table:::test
-  INT = data.table:::INT
+  all.equal.data.table = data.table:::all.equal.data.table
+  any_na = data.table:::any_na
+  as.IDate.default = data.table:::as.IDate.default
+  as.ITime.default = data.table:::as.ITime.default
+  binary = data.table:::binary
+  brackify = data.table:::brackify
+  chmatch2 = data.table:::chmatch2
   compactprint = data.table:::compactprint
-  is.sorted = data.table:::is.sorted
-  forderv = data.table:::forderv
+  cube.data.table = data.table:::cube.data.table
+  dcast.data.table = data.table:::dcast.data.table
   forder = data.table:::forder
+  forderv = data.table:::forderv
+  getdots = data.table:::getdots
+  groupingsets.data.table = data.table:::groupingsets.data.table
+  guess = data.table:::guess
+  INT = data.table:::INT
+  is_na = data.table:::is_na
+  is.sorted = data.table:::is.sorted
+  isReallyReal = data.table:::isReallyReal
+  melt.data.table = data.table:::melt.data.table  # for test 1953.4
   null.data.table = data.table:::null.data.table
-  uniqlist = data.table:::uniqlist
-  uniqlengths = data.table:::uniqlengths
-  setrev = data.table:::setrev
-  setreordervec = data.table:::setreordervec
+  print.data.table = data.table:::print.data.table
+  replace_dot_alias = data.table:::replace_dot_alias
+  rollup.data.table = data.table:::rollup.data.table
   selfrefok = data.table:::selfrefok
   setdiff_ = data.table:::setdiff_
-  is_na = data.table:::is_na
+  setreordervec = data.table:::setreordervec
+  setrev = data.table:::setrev
   shallow = data.table:::shallow # until exported
-  chmatch2 = data.table:::chmatch2
+  .shallow = data.table:::.shallow
+  split.data.table = data.table:::split.data.table
+  test = data.table:::test
+  trim = data.table:::trim
+  uniqlengths = data.table:::uniqlengths
+  uniqlist = data.table:::uniqlist
   which_ = data.table:::which_
-  any_na = data.table:::any_na
-  replace_dot_alias = data.table:::replace_dot_alias
-  isReallyReal = data.table:::isReallyReal
   which.first = data.table:::which.first
   which.last = data.table:::which.last
-  trim = data.table:::trim
-  .shallow = data.table:::.shallow
-  getdots = data.table:::getdots
-  as.ITime.default = data.table:::as.ITime.default
-  as.IDate.default = data.table:::as.IDate.default
-  binary = data.table:::binary
-  melt.data.table = data.table:::melt.data.table  # for test 1953.4
-  brackify = data.table:::brackify
-  guess = data.table:::guess
-  rollup.data.table = data.table:::rollup.data.table
-  cube.data.table = data.table:::cube.data.table
-  groupingsets.data.table = data.table:::groupingsets.data.table
-  dcast.data.table = data.table:::dcast.data.table
-  all.equal.data.table = data.table:::all.equal.data.table
-  print.data.table = data.table:::print.data.table
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -9000,7 +9001,8 @@ test(1639.131, split(fdt[0L], by = "x1"), lapply(c(a=1L,b=2L,c=3L), function(i) 
 test(1639.132, split(dt[0L], by = "x1", sorted = TRUE), structure(list(), .Names = character(0)))
 test(1639.133, split(fdt[0L], by = "x1", sorted = TRUE), lapply(c(a=1L,b=2L,c=3L), function(i) data.table(x1=factor(levels = c("a","b","c")),x2=factor(levels = c("a","c","d","e")),x3=factor(levels = c("a","e","f","g","h","z")),y=numeric()))) # same as none sorted as all appended on the end in sorted order due to lack of data
 dt2 = copy(dt)[, "l" := lapply(1:12, function(i) i)] # non-atomic type to 'by' should raise error
-test(1639.134, split(dt2, by = "l"), error = "argument 'by' must refer only to atomic type columns, classes of [l] columns are not atomic type")
+test(1639.134, split(dt2, by = "l"), error = "Argument 'by' must refer only to atomic-type columns, but the following columns are non-atomic: [l]")
+
 # - [x] additional tests for names consistency with data.frame, and current examples in SO
 df = data.frame(product = c("b", "a", "b", "a"),
                 value = c(sample(1:10,4)),
@@ -9789,6 +9791,8 @@ test(1702.1, isoweek(test_cases), test_values)
 # calculating via character skirts timezone issues,
 #   but calculating from Date brings these into play, #2407
 test(1702.2, isoweek(as.Date(test_cases)), test_values)
+
+# *** OBSCURE ERROR WHEN Sys.timezone() = 'America/Argentina/Buenos_Aires' ***
 test(1702.3, isoweek(as.POSIXct(test_cases)), test_values)
 
 # 1% sample of a 400-year cycle of dates for extra robustness
@@ -9876,7 +9880,10 @@ DT = data.table(a=1:3, b=4:6, c=7:9)
 test(1717, DT[,4], error="Item 1 of j is 4 which is outside the column number range.*ncol=3")
 test(1718, DT[,0], null.data.table())
 test(1719, DT[,c(2,0,1)], data.table(b=4:6, a=1:3))
-test(1720, DT[,c(-2,2)], error="j mixes positives and negatives")
+test(1720.1, DT[,c(-2,2)], error="j mixes positives and negatives")
+test(1720.2, DT[,-2], DT[,c(1,3)])
+test(1720.3, DT[,c(-2,-3)], DT[,1])
+test(1720.4, DT[,-(1:3)], null.data.table())
 test(1721, DT[,c(1,0,5)], error="Item 3 of j is 5 which.*ncol=3")  # to check it says Item 3 even though 0 gets removed internally
 
 # Tests to ensure auto with=FALSE of ! and - only allow symbols around : (i.e. DT[,!(colB:colE)] and not any other symbol usage inside ! and -.  Thanks to Mark L #1864 and confirmed by Michael C with both tests added as-is
@@ -13332,6 +13339,78 @@ DT <- data.table(x = 1, y = 1:5)
 setnames(DT, "x", "\\phantom{.}")
 test(1983.1, DT[, .(y = mean(y)), keyby = "\\phantom{.}"],
      data.table(`\\phantom{.}` = 1, y = 3, key = '\\phantom{.}'))
+
+# more coverage tests
+DT = data.table(a = 1:10)
+test(1984.01, DT[NULL], data.table(NULL))
+test(1984.02, DT[DT, on = .(a > a), roll = TRUE], error='roll is not implemented for non-equi joins yet')
+DT[ , b := 10:1]
+test(1984.03, DT[ , -2L, with = FALSE], DT[ , .(a)])
+test(1984.04, DT[ , mean(b), by = eval(expression(a %% 2))], data.table(expression = c(1, 0), V1 = c(6, 5)))
+DT[ , c := 1:10]
+setindex(DT, c)
+test(1984.05, DT[ , sum(b), keyby = c, verbose = TRUE],
+     data.table(c = 1:10, V1 = 10:1, key = 'c'),
+     output = "by index 'c' but that index has 0 length")
+### hitting byval = eval(bysub, setattr(as.list(seq_along(xss)), ...)
+test(1984.06, DT[1:3, sum(a), by=b:c], data.table(b=10:8, c=1:3, V1=1:3))
+test(1984.07, DT[, sum(a), by=call('sin',pi)], error='must evaluate to a vector or a list of vectors')
+test(1984.08, DT[, sum(a), by=1+3i],           error='column or expression.*type complex')
+test(1984.09, DT[, sum(a), by=.(1,1:2)],       error='The items.*list are length [(]1,2[)].*Each must be length 10; .*rows in x.*after subsetting')
+old = options('datatable.optimize' = Inf)
+test(1984.10, DT[ , 1, by = .(a %% 2), verbose = TRUE],
+     data.table(a = c(1, 0), V1 = c(1, 1)),
+     output = 'Optimization is on but left j unchanged')
+options(old)
+DT[ , f := rep(1:2, each = 5)]
+test(1984.11, DT[ , g:=sum(a), keyby=f, verbose=TRUE][,sum(g)], 275L, output='setkey() after the := with keyby=')
+test(1984.12, as.matrix(DT, rownames=character(0L)), error='length(rownames)==0 but should be')
+test(1984.13, DT[matrix(1, 1), 1] <- 4, error='When i is a matrix in DT[i]<-value syntax')
+test(1984.14, DT[1, list(2)] <- 4, error='j must be an atomic vector')
+test(1984.15, DT[1, NA] <- 4, error='NA in j')
+test(1984.16, DT[1, 1+3i] <- 4, error='j must be vector of')
+test(1984.17, dimnames(DT) <- 5, error = 'attempting to assign invalid object')
+test(1984.18, dimnames(DT) <- list(5, 5, 5), error = 'attempting to assign invalid object')
+test(1984.19, dimnames(DT) <- list(5, 5), error = 'data.tables do not have rownames')
+test(1984.20, dimnames(DT) <- list(NULL, 5), error = "Can't assign 1 colnames")
+dimnames(DT) <- list(NULL, 1:5)
+test(1984.21, names(DT), paste0(1:5))
+DT = data.table(a = 1:10)
+test(1984.22, na.omit(DT, invert = 'a'), error="'invert' must be logical")
+test(1984.23, na.omit(DT, cols = 'b'), error="Column [b] doesn't")
+test(1984.24, na.omit(DT, cols = c('b', 'c')), error="Columns [b, c] don't")
+### idcol = TRUE behavior of rbindlist
+test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2, a=1:2))
+test(1984.26, alloc.col(`*tmp*`), error='alloc.col attempting to modify `*tmp*`')
+DF = as.data.frame(DT)
+test(1984.27, shallow(DF), error='x is not a data.table')
+test(1984.28, split.data.table(DF), error='argument must be a data.table')
+test(1984.29, split(DT, by='a', f='a'), error="passing 'f' argument together with 'by' is not allowed")
+test(1984.30, split(DT), error="Either 'by' or 'f' argument must be supplied")
+setnames(DT, '.ll.tech.split')
+test(1984.31, split(DT, by = '.ll.tech.split'), error="Column '.ll.tech.split' is reserved")
+setnames(DT, '.nm.tech.split')
+test(1984.32, split(DT, by = '.nm.tech.split'), error="Column '.nm.tech.split' is reserved")
+test(1984.33, split(DT, by = 'a'), error="Argument 'by' must refer to column names in x")
+setnames(DT, 'a')
+test(1984.34, split(DT[1:3], by = 'a', verbose = TRUE),
+     list(`1` = data.table(a = 1L),
+          `2` = data.table(a = 2L),
+          `3` = data.table(a = 3L)),
+     output = 'Processing split.data.table with')
+### partially-named behavior on setDF
+l = list(a = 1:3, 4:6)
+test(1984.35, setDF(l), data.frame(a=1:3, V1=4:6))
+## setDT on sub-environment
+e = new.env()
+e$DF = data.frame(a = 5)
+test(1984.36, class(setDT(e$DF))[1L], 'data.table')
+test(1984.37, class(setDT(l$df))[1L], error='not found in names of input list')
+## rowid/rowidv
+DT = data.table(a = c(1:3, 3:1))
+test(1984.38, rowidv(DT, prefix = 5L), error='must be NULL or a character vector')
+test(1984.39, rowidv(DT, prefix = c('hey','you')), error='must be NULL or a character vector')
+
 
 ###################################
 #  Add new tests above this line  #
