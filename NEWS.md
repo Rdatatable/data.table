@@ -24,9 +24,11 @@
 
 3. As promised in new feature 6 of v1.11.6 Sep 2018 (see below in this file), the `datatable.CJ.names` option's default is now `TRUE`. In v1.13.0 it will be removed.
 
-4. The Travis build matrix is expanded to OSX and to the R previous major and R-devel releases [#3326](https://github.com/Rdatatable/data.table/issues/3326). An OpenMP enabled compiler is required to correctly build on OSX, therefore the homebrew llvm package is installed on the Travis (OSX) machine before R CMD build is run. The OSX build on R-devel was explicitly excluded because it's currently unstable. Thanks @marcusklik for the PR.
+4. Travis CI gains OSX using homebrew llvm for OpenMP support, [#3326](https://github.com/Rdatatable/data.table/issues/3326). Thanks @marcusklik for the PR.
 
 5. Calling `data.table:::print.data.table()` directly (i.e. bypassing method dispatch by using 3 colons) and passing it a 0-column `data.frame` (not `data.table`) now works, [#3363](https://github.com/Rdatatable/data.table/pull/3363). Thanks @heavywatal for the PR.
+
+6. v1.12.0 did not compile on Solaris 10 using Oracle Developer Studio 12.6, [#3285](https://github.com/Rdatatable/data.table/issues/3285). Many thanks to Prof Ripley for providing and testing a patch. For future reference and other package developers, a `const` variable should not be passed to OpenMP's `num_threads()` directive otherwise `left operand must be modifiable lvalue` occurs.
 
 
 ### Changes in v1.12.0  (13 Jan 2019)
