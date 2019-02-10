@@ -1762,7 +1762,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       oldjsub = jsub
       if (jsub[[1L]]=="list") {
         for (ii in seq_along(jsub)[-1L]) {
-          this_jsub = jsub[[ii]
+          this_jsub = jsub[[ii]]
           if (dotN(this_jsub)) next; # For #5760
           # Addressing #1369, #2949 and #1974. Added is.symbol() check to handle cases where expanded function definition is used insead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
           if (is.call(this_jsub) && is.symbol(this_jsub[[1L]]) && this_jsub[[1L]]=="mean")
