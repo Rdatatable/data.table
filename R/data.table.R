@@ -1724,7 +1724,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "first", "tail", "[") # added .N for #5760
         .ok <- function(q) {
           if (dotN(q)) return(TRUE) # For #5760
-          cond = is.call(q) && length(q1c <- as.character(q[[1L]]))==1L && q1c %chin% gfuns && !is.call(q[[2L]])
+          # Need is.symbol() check. See #1369, #1974 or #2949 issues and explanation below by searching for one of these issues.
+          cond = is.call(q) && is.symbol(q[[1]]) && (q1c <- as.character(q[[1]])) %chin% gfuns && !is.call(q[[2L]])
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
           ans  = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L)))
           if (identical(ans, TRUE)) return(ans)
@@ -1761,9 +1762,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       oldjsub = jsub
       if (jsub[[1L]]=="list") {
         for (ii in seq_along(jsub)[-1L]) {
-          if (dotN(jsub[[ii]])) next; # For #5760
-          if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]]=="mean")
-            jsub[[ii]] = .optmean(jsub[[ii]])
+          this_jsub = jsub[[ii]
+          if (dotN(this_jsub)) next; # For #5760
+          # Addressing #1369, #2949 and #1974. Added is.symbol() check to handle cases where expanded function definition is used insead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
+          if (is.call(this_jsub) && is.symbol(this_jsub[[1L]]) && this_jsub[[1L]]=="mean")
+            jsub[[ii]] = .optmean(this_jsub)
         }
       } else if (jsub[[1L]]=="mean") {
         jsub = .optmean(jsub)

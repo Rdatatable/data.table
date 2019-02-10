@@ -16,6 +16,8 @@
 
 4. Grouping by unusual column names such as `by='string_with_\\'` and `keyby="x y"` could fail, [#3319](https://github.com/Rdatatable/data.table/issues/3319) and [#3378](https://github.com/Rdatatable/data.table/issues/3378). Thanks to @HughParsonage for reporting and @MichaelChirico for the fixes.
 
+6. Several issues were filed regarding limitations of `dcast.data.table` in handling `fun.aggregate` argument when the functions are not directly provided to the argument as `fun.aggregate <- list(sum, mean)` and instead are stored in a variable, e.g., `funs <- list(sum, mean)` and referred to as `fun.aggregate=funs`. This fix closes several issues [#1974](https://github.com/Rdatatable/data.table/issues/1974), [#1369](https://github.com/Rdatatable/data.table/issues/1369) and [#2949](https://github.com/Rdatatable/data.table/issues/2949). Thanks to @sunbee, @Ping2016 and @d0rg0ld for reporting.
+
 #### NOTES
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.

@@ -13414,6 +13414,28 @@ DT = data.table(a = c(1:3, 3:1))
 test(1984.38, rowidv(DT, prefix = 5L), error='must be NULL or a character vector')
 test(1984.39, rowidv(DT, prefix = c('hey','you')), error='must be NULL or a character vector')
 
+# tests for #2949, #1974 and #1369 - dcast not able to handle functions referred to by a variable
+dt = data.table(
+  x=sample(5,20,TRUE),
+  y=sample(2,20,TRUE), 
+  z=sample(letters[1:2], 20,TRUE),
+  d1 = runif(20),
+  d2=1L
+)
+myFun <- function(data, vars) {
+  mySum <- function(x) sum(x)
+  dcast.data.table(data, "x + y ~ z", value.var=vars, fun.aggregate=mySum)
+} 
+funs = list(sum, mean)
+vars = list("d1", "d2")
+test(1986.1,
+  dcast.data.table(dt, x + y ~ z, fun=funs, value.var=vars), 
+  dcast.data.table(dt, x + y ~ z, fun=list(sum, mean), value.var=vars)
+)
+test(1986.2,
+  dcast.data.table(dt, x + y ~ z, fun=sum, value.var=vars),
+  myFun(dt, vars)
+)
 
 ###################################
 #  Add new tests above this line  #

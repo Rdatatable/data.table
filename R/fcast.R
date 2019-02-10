@@ -63,13 +63,16 @@ value_vars <- function(value.var, varnames) {
 }
 
 aggregate_funs <- function(funs, vals, sep="_", ...) {
-  if (is.call(funs) && funs[[1L]] == "eval")
+  if (is.symbol(funs)) { # quick fix for #2949, #1974 and #1369
+    funs <- eval(funs, parent.frame(2L), parent.frame(2L))
+    if (is.function(funs)) funs <- list(funs)
+  } else if (is.call(funs) && funs[[1L]] == "eval")
     funs = eval(funs[[2L]], parent.frame(2L), parent.frame(2L))
-  if (is.call(funs) && as.character(funs[[1L]]) %chin% c("c", "list"))
+  if (is.call(funs) && as.character(funs[[1L]]) %chin% c("c", "list")) {
     funs = lapply(as.list(funs)[-1L], function(x) {
       if (is.call(x) && as.character(x[[1L]]) %chin% c("c", "list")) as.list(x)[-1L] else x
     })
-  else funs = list(funs)
+  } else funs = list(funs) # needed for cases as shown in test#1700.1
   if (length(funs) != length(vals)) {
     if (length(vals) == 1L)
       vals = replicate(length(funs), vals)
