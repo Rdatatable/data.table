@@ -13414,6 +13414,18 @@ DT = data.table(a = c(1:3, 3:1))
 test(1984.38, rowidv(DT, prefix = 5L), error='must be NULL or a character vector')
 test(1984.39, rowidv(DT, prefix = c('hey','you')), error='must be NULL or a character vector')
 
+# #2306, use_merge argument of as.IDate.default
+char_date = as.character(.Date(17532:17896))
+test(1985.1, as.IDate(char_date, use_lookup = TRUE), 
+     as.IDate(char_date, use_lookup = FALSE))
+test(1985.2, as.IDate(char_date, use_lookup = 'auto'), 
+     as.IDate(char_date, use_lookup = FALSE))
+
+char_time = format(.POSIXct(1549503263:1549503312, 'UTC'), '%T')
+test(1985.3, as.ITime(char_time, use_lookup = TRUE), 
+     as.ITime(char_time, use_lookup = FALSE))
+test(1985.4, as.ITime(char_time, use_lookup = 'auto'), 
+     as.ITime(char_time, use_lookup = FALSE))
 
 ###################################
 #  Add new tests above this line  #

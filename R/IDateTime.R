@@ -5,9 +5,17 @@
 
 as.IDate <- function(x, ...) UseMethod("as.IDate")
 
-as.IDate.default <- function(x, ..., tz = attr(x, "tzone")) {
+as.IDate.default <- function(x, ..., tz = attr(x, "tzone"), use_lookup = 'auto') {
   if (is.null(tz)) tz = "UTC"
-  as.IDate(as.Date(x, tz = tz, ...))
+  if (isTRUE(use_lookup) || (use_lookup == 'auto' && length(x) >= 1000L)) {
+    DT = list(input = x)
+    setDT(DT)
+    
+    lookup = unique(DT)
+    lookup[ , 'IDate' := as.IDate(as.Date(input, tz = tz, ...))]
+    lookup[DT, on = 'input']$IDate
+  } else {
+    as.IDate(as.Date(x, tz = tz, ...))
 }
 
 as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
@@ -111,8 +119,17 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
 
 as.ITime <- function(x, ...) UseMethod("as.ITime")
 
-as.ITime.default <- function(x, ...) {
-  as.ITime(as.POSIXlt(x, ...), ...)
+as.ITime.default <- function(x, ..., use_lookup = 'auto') {
+  if (isTRUE(use_lookup) || (use_lookup == 'auto' && length(x) >= 1000)) {
+    DT = list(input = x)
+    setDT(DT)
+
+    lookup = unique(DT)
+    lookup[ , 'ITime' := as.ITime(as.POSIXlt(input, ...), ...)]
+    lookup[DT, on = 'input']$ITime
+  } else {
+    as.ITime(as.POSIXlt(x, ...), ...)
+  }
 }
 
 as.ITime.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
