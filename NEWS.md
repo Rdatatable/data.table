@@ -6,6 +6,8 @@
 
 1. `:=` no longer recycles length>1 RHS vectors. There was a warning when recycling left a remainder but no warning when the LHS length was an exact multiple of the RHS length (the same behaviour as base R). Consistent feedback for several years has been that recycling is more often a bug. In rare cases where you need to recycle a length>1 vector, use `rep()` explicitly. Single values are still recycled silently as before. Early warning was given in [this tweet](https://twitter.com/MattDowle/status/1088544083499311104). The 758 CRAN and Bioconductor packages using data.table were tested and the maintainers of the 16 packages affected (2%) were consulted before going ahead, [#3310](https://github.com/Rdatatable/data.table/pull/3310).
 
+2. `as.IDate.default` and `as.ITime.default` gain `use_lookup` argument, default `'auto'`, [#2603](https://github.com/Rdatatable/data.table/issues/2603). In data sets with millions of observations, there are almost universally a much smaller number of unique dates in any given column. In this case, it is much more efficient to parse only the unique set of dates and use this as a lookup table for the full vector; `use_lookup` implements this logic. By default this is done for any conversion of at least 1,000 observations.
+
 #### BUG FIXES
 
 1. `rbindlist()` of a malformed factor missing levels attribute is now a helpful error rather than a cryptic error about `STRING_ELT`, [#3315](https://github.com/Rdatatable/data.table/issues/3315). Thanks to Michael Chirico for reporting.

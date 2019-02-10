@@ -48,14 +48,14 @@
 }
 \usage{
 as.IDate(x, \dots)
-\method{as.IDate}{default}(x, \dots, tz = attr(x, "tzone"))
+\method{as.IDate}{default}(x, \dots, tz = attr(x, "tzone"), use_lookup = 'auto')
 \method{as.IDate}{Date}(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)
 \method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), \ldots)
 
 as.ITime(x, \dots)
-\method{as.ITime}{default}(x, \dots)
+\method{as.ITime}{default}(x, \dots, use_lookup = 'auto')
 \method{as.ITime}{POSIXlt}(x, ms = 'truncate', \dots)
 
 \method{as.POSIXct}{ITime}(x, tz = "UTC", date = Sys.Date(), \dots)
@@ -85,6 +85,7 @@ year(x)
     \code{as.IDate.default}, arguments are passed to \code{as.Date}. For
     \code{as.ITime.default}, arguments are passed to \code{as.POSIXlt}.}
   \item{tz}{time zone (see \code{strptime}).}
+  \item{use_lookup}{ \code{logical}; should the parsing be done by via merge? See Details. }
   \item{date}{date object convertable with \code{as.IDate}.}
   \item{time}{time-of-day object convertable with \code{as.ITime}.}
   \item{digits}{really \code{units}; one of the units listed for rounding. May be abbreviated.}
@@ -95,6 +96,17 @@ year(x)
 internal representation as the \code{Date} class, except the storage
 mode is integer. \code{IDate} is a relatively simple wrapper, and it
 should work in almost all situations as a replacement for \code{Date}.
+
+The \code{use_merge} argument to \code{as.IDate.default} and \code{as.ITime.default} was implemented
+based on the observation that the number of unique dates/times is
+typically a small percentage of the number of total observations -- as such,
+it is inefficient to repeatedly parse the same date/time potentially thousands or
+millions of times. Instead, when \code{use_merge = TRUE}, conversion is done
+using parsing on the set of unique dates/times, which is then merged to the complete
+set of dates/times. By default, \code{use_merge = 'auto'}, in which case this method
+will be applied when \code{length(x) >= 1000} since the overhead of merging
+was found to exceed the efficiency gains of merging in small data sets. As a
+rule, the performance improves with \code{1 - uniqueN(x)/length(x)}.
 
 Functions that use \code{Date} objects generally work for
 \code{IDate} objects. This package provides specific methods for
