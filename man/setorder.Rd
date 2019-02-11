@@ -54,13 +54,13 @@ default is \code{TRUE}. \code{setorder} and \code{setorderv} only accept
 
 \code{setorder} accepts unquoted column names (with names preceded with a
 \code{-} sign for descending order) and reorders \code{data.table} rows
-\emph{by reference}, for e.g., \code{setorder(x, a, -b, c)}. We emphasize that 
+\emph{by reference}, for e.g., \code{setorder(x, a, -b, c)}. We emphasize that
 this means "descending" and not "negative" because the implementation simply
 reverses the sort order, as opposed to sorting the opposite of the input
 (which would be inefficient).
 
 Note that \code{-b} also works with columns of type \code{character} unlike
-\code{\link{base::order}}, which requires \code{-xtfrm(y)} instead (which is slow).
+\code{\link[base]{order}}, which requires \code{-xtfrm(y)} instead (which is slow).
 \code{setorderv} in turn accepts a character vector of column names and an
 integer vector of column order separately.
 
@@ -103,7 +103,7 @@ If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See
 \code{\link{copy}}.
 }
 \references{
-  \url{https://en.wikipedia.org/wiki/Radix_sort}, 
+  \url{https://en.wikipedia.org/wiki/Radix_sort},
   \url{https://medium.com/basecs/getting-to-the-root-of-sorting-with-radix-sort-f8e9240d4224}
   \url{https://www.youtube.com/watch?v=YXFI4osELGU}
 }
