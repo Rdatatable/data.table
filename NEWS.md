@@ -32,6 +32,8 @@
 
 6. v1.12.0 did not compile on Solaris 10 using Oracle Developer Studio 12.6, [#3285](https://github.com/Rdatatable/data.table/issues/3285). Many thanks to Prof Ripley for providing and testing a patch. For future reference and other package developers, a `const` variable should not be passed to OpenMP's `num_threads()` directive otherwise `left operand must be modifiable lvalue` occurs.
 
+7. `getDTthreads()` respected the `OMP_NUM_THREADS` environment variable but not `OMP_THREAD_LIMIT`, [#3300](https://github.com/Rdatatable/data.table/issues/3300). There are two very similar OpenMP functions: `omp_get_max_threads()` and `omp_get_thread_limit()`. It now calls both and chooses the minimum. Note that these environment variables should be set before the R session starts. Using the R command `Sys.setenv()` to set them is too late because the OpenMP runtime is already running by then; use `setDTthreads()` instead.
+
 
 ### Changes in v1.12.0  (13 Jan 2019)
 
