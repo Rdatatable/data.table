@@ -103,9 +103,11 @@ If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See
 \code{\link{copy}}.
 }
 \references{
-  \url{https://en.wikipedia.org/wiki/Radix_sort},
+  \url{https://en.wikipedia.org/wiki/Radix_sort}\cr
+  \url{https://en.wikipedia.org/wiki/Counting_sort}\cr
+  \url{http://stereopsis.com/radix.html}\cr
+  \url{https://codercorner.com/RadixSortRevisited.htm}\cr
   \url{https://medium.com/basecs/getting-to-the-root-of-sorting-with-radix-sort-f8e9240d4224}
-  \url{https://www.youtube.com/watch?v=YXFI4osELGU}
 }
 \seealso{
   \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}},
