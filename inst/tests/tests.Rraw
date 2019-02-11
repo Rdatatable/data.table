@@ -3757,7 +3757,6 @@ setkey(dt, x)
 test(1155.4, dt[J(NaN)], dt[is.nan(x)])
 test(1155.5, dt[J(NA_real_)], dt[is.na(x) & !is.nan(x)])
 
-
 # Fix for (usually small) memory leak when grouping, #2648.
 # Deliberate worst case: largest group (100000 rows) followed last by a small group (1 row).
 DT = data.table(A=rep(1:2,c(100000,1)), B=runif(100001))
@@ -13334,7 +13333,6 @@ tt = as.integer(tt[tt!=""])
 test(1982.2, tt, seq_along(tt))
 
 # parse(text = 'list(`\\phantom{.}`)') fails, #3319
-library(data.table)
 DT <- data.table(x=1, y=1:5)
 setnames(DT, "x", "\\phantom{.}")
 test(1983.1, DT[, .(y=mean(y)), keyby="\\phantom{.}"], data.table(`\\phantom{.}`=1, y=3, key='\\phantom{.}'))
@@ -13420,6 +13418,7 @@ y <- data.table(event="#1",s=as.POSIXct("1968-04-19 15:20:00"),e=as.POSIXct("196
 setkey(y, s, e)
 # x$s and x$e are identical (i.e., range is actually a point, but that's okay). The point is to ensure that 'x' is not within 'y'. In older versions, this will be a match because of 'incr' value being 1 + dt_eps() instead of 1-dt_eps() (because the date here is < 1970-01-01 which is a -ve numeric value internally). 1+dt_eps() should be only for +ve numerics.
 test(1985.1, nrow(foverlaps(x, y, by.x=c("s", "e"), type="within", nomatch=0L)), 0L)
+
 
 ###################################
 #  Add new tests above this line  #
