@@ -12,8 +12,8 @@ as.IDate.default <- function(x, ..., tz = attr(x, "tzone")) {
 
 as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
   if (origin=="1970-01-01") {
-    # standard epoch
-    setattr(as.integer(x), "class", c("IDate", "Date"))
+    # standard epoch; need copy() since as.integer(integer()) doesn't copy
+    setattr(copy(as.integer(x)), "class", c("IDate", "Date"))
   } else {
     # only call expensive as.IDate.character if we have to
     as.IDate(origin, ...) + as.integer(x)
