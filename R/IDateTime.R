@@ -13,7 +13,7 @@ as.IDate.default <- function(x, ..., tz = attr(x, "tzone")) {
 as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
   if (origin=="1970-01-01") {
     # standard epoch; need copy() since as.integer(integer()) doesn't copy
-    setattr(copy(as.integer(x)), "class", c("IDate", "Date"))
+    (setattr(copy(as.integer(x)), "class", c("IDate", "Date")))
   } else {
     # only call expensive as.IDate.character if we have to
     as.IDate(origin, ...) + as.integer(x)
@@ -21,13 +21,13 @@ as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
 }
 
 as.IDate.Date <- function(x, ...) {
-  setattr(as.integer(x), "class", c("IDate", "Date"))
+  (setattr(as.integer(x), "class", c("IDate", "Date")))
 }
 
 as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
   if (tz %chin% c("UTC", "GMT")) {
-    setattr(as.integer(x) %/% 86400L, "class",  c("IDate", "Date"))
+    (setattr(as.integer(x) %/% 86400L, "class",  c("IDate", "Date")))
   } else
     as.IDate(as.Date(x, tz = tz, ...))
 }
@@ -35,7 +35,7 @@ as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
 as.IDate.IDate <- function(x, ...) x
 
 as.Date.IDate <- function(x, ...) {
-  setattr(as.numeric(x), "class", "Date")
+  (setattr(as.numeric(x), "class", "Date"))
 }
 
 mean.IDate <-
@@ -77,7 +77,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
   }
   if (inherits(e1, "Date") && inherits(e2, "Date"))
     stop("binary + is not defined for \"IDate\" objects")
-  setattr(as.integer(unclass(e1) + unclass(e2)), "class", c("IDate", "Date"))
+  (setattr(as.integer(unclass(e1) + unclass(e2)), "class", c("IDate", "Date")))
 }
 
 `-.IDate` <- function (e1, e2) {
@@ -128,7 +128,7 @@ as.ITime.numeric <- function(x, ms = 'truncate', ...) {
                 'ceil' = as.integer(ceiling(x)),
                 stop("Valid options for ms are 'truncate', ",
                      "'nearest', and 'ceil'.")) %% 86400L
-  setattr(secs, "class", "ITime")
+  (setattr(secs, "class", "ITime"))
 }
 
 as.ITime.character <- function(x, format, ...) {
@@ -163,7 +163,7 @@ as.ITime.POSIXlt <- function(x, ms = 'truncate', ...) {
                 'ceil' = as.integer(ceiling(x$sec)),
                 stop("Valid options for ms are 'truncate', ",
                      "'nearest', and 'ceil'."))
-  setattr(with(x, secs + min * 60L + hour * 3600L), "class", "ITime")
+  (setattr(with(x, secs + min * 60L + hour * 3600L), "class", "ITime"))
 }
 
 as.ITime.times <- function(x, ms = 'truncate', ...) {
@@ -174,7 +174,7 @@ as.ITime.times <- function(x, ms = 'truncate', ...) {
                 'ceil' = as.integer(ceiling(secs)),
                 stop("Valid options for ms are 'truncate', ",
                      "'nearest', and 'ceil'."))
-  setattr(secs, "class", "ITime")
+  (setattr(secs, "class", "ITime"))
 }
 
 as.character.ITime <- format.ITime <- function(x, ...) {
@@ -217,7 +217,7 @@ print.ITime <- function(x, ...) {
 rep.ITime <- function (x, ...)
 {
   y <- rep(unclass(x), ...)
-  setattr(y, "class", "ITime")
+  (setattr(y, "class", "ITime"))
 }
 
 "[.ITime" <- function(x, ..., drop = TRUE)
@@ -225,12 +225,12 @@ rep.ITime <- function (x, ...)
   cl <- oldClass(x)
   class(x) <- NULL
   val <- NextMethod("[")
-  setattr(val, "class", cl)
+  (setattr(val, "class", cl))
 }
 
 unique.ITime <- function(x, ...) {
   ans = NextMethod()
-  setattr(ans, "class", "ITime")
+  (setattr(ans, "class", "ITime"))
 }
 
 # create a data.table with IDate and ITime columns
