@@ -441,25 +441,25 @@ ma = function(x, n, na.rm=FALSE, nf.rm=FALSE) {
 n = 4
 x = 1:16
 x[5] = NaN
-test(9999.120, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-test(9999.121, identical(frollmean(x, n, algo="exact"), ma(x, n)))
+test(9999.120, frollmean(x, n), ma(x, n, nf.rm=TRUE))
+test(9999.121, frollmean(x, n, algo="exact"), ma(x, n))
 x[6] = NA
-test(9999.122, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
+test(9999.122, frollmean(x, n), ma(x, n, nf.rm=TRUE))
 test(9999.123, frollmean(x, n, algo="exact"), ma(x, n)) # use do not use identical as NaN-NA behaviour is platform/compiler specific #3353
 #### test inconsistency of NaN-NA order is consistent to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
 x[5] = NA
 x[6] = NaN
-test(9999.124, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-test(9999.125, identical(frollmean(x, n, algo="exact"), ma(x, n)))
+test(9999.124, frollmean(x, n), ma(x, n, nf.rm=TRUE))
+test(9999.125, frollmean(x, n, algo="exact"), ma(x, n))
 x[5] = Inf
-test(9999.126, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-test(9999.127, identical(frollmean(x, n, algo="exact"), ma(x, n)))
+test(9999.126, frollmean(x, n), ma(x, n, nf.rm=TRUE))
+test(9999.127, frollmean(x, n, algo="exact"), ma(x, n))
 x[6] = -Inf
-test(9999.128, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-test(9999.129, identical(frollmean(x, n, algo="exact"), ma(x, n)))
+test(9999.128, frollmean(x, n), ma(x, n, nf.rm=TRUE))
+test(9999.129, frollmean(x, n, algo="exact"), ma(x, n))
 x[5:7] = c(NA, Inf, -Inf)
-test(9999.130, identical(frollmean(x, n), ma(x, n, nf.rm=TRUE)))
-test(9999.131, identical(frollmean(x, n, algo="exact"), ma(x, n)))
+test(9999.130, frollmean(x, n), ma(x, n, nf.rm=TRUE))
+test(9999.131, frollmean(x, n, algo="exact"), ma(x, n))
 
 #### adaptive window
 ama = function(x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
@@ -608,25 +608,25 @@ test(9999.158, frollmean(1:10, list(1:5), adaptive=TRUE), error="length of integ
 n = c(4,1,4,5,5,4,6,5,4,4,2,3,4,3,2,4)
 x = 1:16
 x[5] = NaN
-test(9999.159, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-test(9999.160, identical(frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)))
+test(9999.159, frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE))
+test(9999.160, frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n))
 x[6] = NA
-test(9999.161, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
+test(9999.161, frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE))
 test(9999.162, frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)) # use do not use identical as NaN-NA behaviour is platform/compiler specific #3353
 #### test inconsistency of NaN-NA order is consistent to https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17441
 x[5] = NA
 x[6] = NaN
-test(9999.163, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-test(9999.164, identical(frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)))
+test(9999.163, frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE))
+test(9999.164, frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n))
 x[5] = Inf
-test(9999.165, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-test(9999.166, identical(frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)))
+test(9999.165, frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE))
+test(9999.166, frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n))
 x[6] = -Inf
-test(9999.167, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-test(9999.168, identical(frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)))
+test(9999.167, frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE))
+test(9999.168, frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n))
 x[5:7] = c(NA, Inf, -Inf)
-test(9999.169, identical(frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE)))
-test(9999.170, identical(frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n)))
+test(9999.169, frollmean(x, n, adaptive=TRUE), ama(x, n, nf.rm=TRUE))
+test(9999.170, frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n))
 
 ## test verbose messages
 x = 1:10
