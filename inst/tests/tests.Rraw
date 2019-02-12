@@ -13419,6 +13419,14 @@ setkey(y, s, e)
 # x$s and x$e are identical (i.e., range is actually a point, but that's okay). The point is to ensure that 'x' is not within 'y'. In older versions, this will be a match because of 'incr' value being 1 + dt_eps() instead of 1-dt_eps() (because the date here is < 1970-01-01 which is a -ve numeric value internally). 1+dt_eps() should be only for +ve numerics.
 test(1985.1, nrow(foverlaps(x, y, by.x=c("s", "e"), type="within", nomatch=0L)), 0L)
 
+# colMeans grouped on empty data.table
+DT = as.data.table(mtcars)[0L]
+test(1986.1, DT[, colMeans(.SD), by=gear], data.table(gear=numeric(), V1=numeric()))
+test(1986.2, DT[, as.list(colMeans(.SD)), by=gear], cbind(DT[,"gear"],DT[,-"gear"]))
+DT = as.data.table(mtcars)[1]
+test(1986.3, DT[, colMeans(.SD), by=gear], data.table(gear=4, V1=c(21,6,160,110,3.9,2.62,16.46,0,1,4)))
+test(1986.4, DT[, as.list(colMeans(.SD)), by=gear], cbind(DT[,"gear"],DT[,-"gear"]))
+
 
 ###################################
 #  Add new tests above this line  #
