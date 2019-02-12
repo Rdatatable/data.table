@@ -280,9 +280,20 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
   }
   if (!fail && !length(error) && length(output)) {
     if (out[length(out)] == "NULL") out = out[-length(out)]
-    out = paste(out, collapse="\n")
-    output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
-    if (!string_match(output, out)) {
+    output_mismatch = FALSE
+    if (length(output)>1L && length(output)==length(out)) { # allow matching which would fail due to newline symbol in string
+      if (!all(mapply(string_match, output, out, USE.NAMES=FALSE))) {
+        output_mismatch = TRUE
+      }
+      out = paste(out, collapse="\n")
+      output = paste(output, collapse="\n")
+    } else {
+      out = paste(out, collapse="\n")
+      output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
+      if (!string_match(output, out))
+        output_mismatch = TRUE
+    }
+    if (output_mismatch) {
       # nocov start
       cat("Test",num,"didn't produce correct output:\n")
       cat("Expected: <<",gsub("\n","\\\\n",output),">>\n",sep="")  # \n printed as '\\n' so the two lines of output can be compared vertically
