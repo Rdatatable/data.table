@@ -1,4 +1,4 @@
-test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, script=NULL) {
+test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, script="tests.Rraw") {
   if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
@@ -12,6 +12,15 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
     subdir = "tests"
   }
   fulldir = file.path(rootdir, subdir)
+  
+  if (isTRUE(benchmark)) {
+    warning("'benchmark' argument is deprecated, use script='benchmark.Rraw' instead")
+    script = "benchmark.Rraw"
+  }
+  if (isTRUE(with.other.packages)) {
+    warning("'with.other.packages' argument is deprecated, use script='other.Rraw' instead")
+    script = "other.Rraw"
+  }
 
   if (!is.null(script)) {
     stopifnot(is.character(script), length(script)==1L, !is.na(script), nzchar(script))
@@ -23,10 +32,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
       fn = script
     }
   } else {
-    stopifnot( !(with.other.packages && benchmark) )
-    fn = if (with.other.packages) "other.Rraw"
-         else if (benchmark) "benchmark.Rraw"
-         else "tests.Rraw"
+    stop("'script' argument should not be NULL")
   }
   fn = setNames(file.path(fulldir, fn), file.path(subdir, fn))
   if (!file.exists(fn)) stop(fn," does not exist")
