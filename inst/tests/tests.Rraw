@@ -3757,7 +3757,6 @@ setkey(dt, x)
 test(1155.4, dt[J(NaN)], dt[is.nan(x)])
 test(1155.5, dt[J(NA_real_)], dt[is.na(x) & !is.nan(x)])
 
-
 # Fix for (usually small) memory leak when grouping, #2648.
 # Deliberate worst case: largest group (100000 rows) followed last by a small group (1 row).
 DT = data.table(A=rep(1:2,c(100000,1)), B=runif(100001))
@@ -13334,7 +13333,6 @@ tt = as.integer(tt[tt!=""])
 test(1982.2, tt, seq_along(tt))
 
 # parse(text = 'list(`\\phantom{.}`)') fails, #3319
-library(data.table)
 DT <- data.table(x=1, y=1:5)
 setnames(DT, "x", "\\phantom{.}")
 test(1983.1, DT[, .(y=mean(y)), keyby="\\phantom{.}"], data.table(`\\phantom{.}`=1, y=3, key='\\phantom{.}'))
@@ -13414,10 +13412,17 @@ DT = data.table(a = c(1:3, 3:1))
 test(1984.38, rowidv(DT, prefix = 5L), error='must be NULL or a character vector')
 test(1984.39, rowidv(DT, prefix = c('hey','you')), error='must be NULL or a character vector')
 
-# test that a copy is being made and output is printed, #3385
+# Test for #3349, foverlaps returned spurious results with POSIXct objects < 1970-01-01
+x <- data.table(val=178.41,s=as.POSIXct("1968-04-25 04:20:00"),e=as.POSIXct("1968-04-25 04:20:00"))
+y <- data.table(event="#1",s=as.POSIXct("1968-04-19 15:20:00"),e=as.POSIXct("1968-04-24 07:20:00"))
+setkey(y, s, e)
+# x$s and x$e are identical (i.e., range is actually a point, but that's okay). The point is to ensure that 'x' is not within 'y'. In older versions, this will be a match because of 'incr' value being 1 + dt_eps() instead of 1-dt_eps() (because the date here is < 1970-01-01 which is a -ve numeric value internally). 1+dt_eps() should be only for +ve numerics.
+test(1985.1, nrow(foverlaps(x, y, by.x=c("s", "e"), type="within", nomatch=0L)), 0L)
+
+# test that a copy is being made and output is printed, #3385 after revert of #3281
 x = 5L
-test(1985.1, as.IDate(x), output = '1970-01-06')
-test(1985.2, class(x), 'integer')
+test(1986.1, as.IDate(x), output = '1970-01-06')
+test(1986.2, class(x), 'integer')
 
 ###################################
 #  Add new tests above this line  #
