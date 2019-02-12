@@ -7,7 +7,7 @@
 \usage{
 test.data.table(verbose=FALSE, pkg="pkg", silent=FALSE,
                 with.other.packages=FALSE, benchmark=FALSE,
-                script=NULL)
+                script="tests.Rraw")
 }
 \arguments{
 \item{verbose}{ If \code{TRUE} sets datatable.verbose to \code{TRUE} for the duration of the tests. }
