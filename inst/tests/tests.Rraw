@@ -13428,10 +13428,10 @@ myFun <- function(data, vars) {
 } 
 funs = list(sum, mean)
 vars = list("d1", "d2")
-test(1986.1,
+test(1986.1, all.equal(check.attributes=FALSE,
   dcast.data.table(dt, x + y ~ z, fun=funs, value.var=vars), 
   dcast.data.table(dt, x + y ~ z, fun=list(sum, mean), value.var=vars)
-)
+))
 test(1986.2,
   dcast.data.table(dt, x + y ~ z, fun=sum, value.var=vars),
   myFun(dt, vars)

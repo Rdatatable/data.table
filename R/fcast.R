@@ -72,8 +72,9 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
     funs = lapply(as.list(funs)[-1L], function(x) {
       if (is.call(x) && as.character(x[[1L]]) %chin% c("c", "list")) as.list(x)[-1L] else x
     })
-  } else funs = list(funs) # needed for cases as shown in test#1700.1
-  if (length(funs) != length(vals)) {
+  } else if (is.function(funs))
+    funs = list(funs) # needed for cases as shown in test#1700.1
+  if (length(funs)>1L && length(funs) != length(vals)) {
     if (length(vals) == 1L)
       vals = replicate(length(funs), vals)
     else stop("When 'fun.aggregate' and 'value.var' are both lists, 'value.var' must be either of length =1 or =length(fun.aggregate).")
