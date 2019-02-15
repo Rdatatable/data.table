@@ -5314,8 +5314,6 @@ x = c(2147483647L, NA_integer_, -2L)
 test(1368.2, forderv(x), c(2L, 3L, 1L))
 
 # tests for frankv. testing on vectors alone so that we can compare with base::rank
-# One difference is that NAs belong to the same group, unlike base::rank. So are NaNs.
-# So, they can't be compared to base::rank, won't be identical except for ties="first", and (ties="random", na.last=NA) - should document this.
 
 # no seed set on purpose
 dt = data.table(AA=sample(c(-2:2), 50, TRUE),
@@ -13445,19 +13443,20 @@ myFun2 <- function(data, vars) {
 } 
 funs = list(sum, mean)
 vars = list("d1", "d2")
-test(1987.1,
-  names(dcast.data.table(dt, x + y ~ z, fun=funs, value.var=vars)),
-  c("x", "y", "d1_fun1_a", "d1_fun1_b", "d2_fun2_a", "d2_fun2_b")
-)
-test(1987.2,
-  dcast.data.table(dt, x + y ~ z, fun=sum, value.var=vars[[1]]),
-  myFun1(dt, vars[[1]])
-)
-test(1987.3,
-  dcast.data.table(dt, x + y ~ z, fun=list(f1=sum, first=function(x) x[1L]), value.var=vars),
-  myFun2(dt, vars)
-)
+test(1987.1, names(dcast.data.table(dt, x + y ~ z, fun=funs, value.var=vars)),
+             c("x", "y", "d1_fun1_a", "d1_fun1_b", "d2_fun2_a", "d2_fun2_b"))
+test(1987.2, dcast.data.table(dt, x + y ~ z, fun=sum, value.var=vars[[1]]),
+             myFun1(dt, vars[[1]]))
+test(1987.3, dcast.data.table(dt, x + y ~ z, fun=list(f1=sum, first=function(x) x[1L]), value.var=vars),
+             myFun2(dt, vars))
 
+# testing frankv behavior with NA/NaN; earlier tests compare consistency with base::rank,
+# but we intentionally break from base w.r.t. ranking NAs (we consider NAs to be tied, ditto NaN)
+x = data.table(r = c(6, 4, 2, NA, 1, NaN, 5, NaN, 9, 10, NA))
+test(1988.1, frankv(x, cols='r', order=1L, ties.method='average'), c(5, 3, 2, 10.5, 1, 8.5, 4, 8.5, 6, 7, 10.5))
+test(1988.2, frankv(x, cols='r', order=1L, ties.method='max'),     c(5L, 3L, 2L, 11L, 1L, 9L, 4L, 9L, 6L, 7L, 11L))
+test(1988.3, frankv(x, cols='r', order=1L, ties.method='min'),     c(5L, 3L, 2L, 10L, 1L, 8L, 4L, 8L, 6L, 7L, 10L))
+test(1988.4, frankv(x, cols='r', order=1L, ties.method='dense'),   c(5L, 3L, 2L, 9L, 1L, 8L, 4L, 8L, 6L, 7L, 9L))
 
 
 ###################################
