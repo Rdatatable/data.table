@@ -65,11 +65,12 @@ value_vars <- function(value.var, varnames) {
 aggregate_funs <- function(funs, vals, sep="_", ...) {
   if (is.call(funs) && funs[[1L]] == "eval")
     funs = eval(funs[[2L]], parent.frame(2L), parent.frame(2L))
-  if (is.call(funs) && as.character(funs[[1L]]) %chin% c("c", "list"))
+  if (is.call(funs) && as.character(funs[[1L]]) %chin% c("c", "list")) {
     funs = lapply(as.list(funs)[-1L], function(x) {
       if (is.call(x) && as.character(x[[1L]]) %chin% c("c", "list")) as.list(x)[-1L] else x
     })
-  else funs = list(funs)
+  } else funs = eval(funs, parent.frame(2L), parent.frame(2L))
+  if(is.function(funs)) funs = list(funs) # needed for cases as shown in test#1700.1
   if (length(funs) != length(vals)) {
     if (length(vals) == 1L)
       vals = replicate(length(funs), vals)
@@ -77,8 +78,7 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
   }
   only_one_fun = length(unlist(funs)) == 1L
   dots = list(...)
-  construct_funs <- function(fun, val) {
-    if (!is.list(fun)) fun = list(fun)
+  construct_funs <- function(fun, nm, val) {
     ans = vector("list", length(fun)*length(val))
     nms = vector("character", length(ans))
     k = 1L
@@ -89,14 +89,20 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
           expr = c(expr, dots)
         ans[[k]] = as.call(expr)
         # changed order of arguments here, #1153
-        nms[k] = if (only_one_fun) j else
-              paste(j, all.names(i, max.names=1L, functions=TRUE), sep=sep)
+        nms[k] = if (only_one_fun) j else paste(j, nm, sep=sep)
         k = k+1L;
       }
     }
     setattr(ans, 'names', nms)
   }
-  ans = mapply(construct_funs, funs, vals, SIMPLIFY=FALSE)
+  ans = lapply(seq_along(funs), function(i) {
+    nm <- names(funs[i])
+    if (is.null(nm) || !nzchar(nm)) {
+      nm <- all.names(funs[[i]], max.names=1L, functions=TRUE)
+    }
+    if (!length(nm)) nm <- paste0("fun", i)
+    construct_funs(funs[i], nm, vals[[i]])
+  })
   as.call(c(quote(list), unlist(ans)))
 }
 

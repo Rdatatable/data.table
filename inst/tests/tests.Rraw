@@ -13427,6 +13427,38 @@ DT = as.data.table(mtcars)[1]
 test(1986.3, DT[, colMeans(.SD), by=gear], data.table(gear=4, V1=c(21,6,160,110,3.9,2.62,16.46,0,1,4)))
 test(1986.4, DT[, as.list(colMeans(.SD)), by=gear], cbind(DT[,"gear"],DT[,-"gear"]))
 
+# tests for #2949, #1974 and #1369 - dcast not able to handle functions referred to by a variable
+dt = data.table(
+  x=sample(5,20,TRUE),
+  y=sample(2,20,TRUE), 
+  z=sample(letters[1:2], 20,TRUE),
+  d1 = runif(20),
+  d2=1L
+)
+myFun1 <- function(data, vars) {
+  mySum <- function(x) sum(x)
+  dcast.data.table(data, "x + y ~ z", value.var=vars, fun.aggregate=mySum)
+}
+myFun2 <- function(data, vars) {
+  myFuns <- list(f1=sum, first=function(x) x[1L])
+  dcast.data.table(data, "x + y ~ z", value.var=vars, fun.aggregate=myFuns)
+} 
+funs = list(sum, mean)
+vars = list("d1", "d2")
+test(1987.1,
+  names(dcast.data.table(dt, x + y ~ z, fun=funs, value.var=vars)),
+  c("x", "y", "d1_fun1_a", "d1_fun1_b", "d2_fun2_a", "d2_fun2_b")
+)
+test(1987.2,
+  dcast.data.table(dt, x + y ~ z, fun=sum, value.var=vars[[1]]),
+  myFun1(dt, vars[[1]])
+)
+test(1987.3,
+  dcast.data.table(dt, x + y ~ z, fun=list(f1=sum, first=function(x) x[1L]), value.var=vars),
+  myFun2(dt, vars)
+)
+
+
 
 ###################################
 #  Add new tests above this line  #
