@@ -16,7 +16,9 @@
 
 4. Grouping by unusual column names such as `by='string_with_\\'` and `keyby="x y"` could fail, [#3319](https://github.com/Rdatatable/data.table/issues/3319) and [#3378](https://github.com/Rdatatable/data.table/issues/3378). Thanks to @HughParsonage for reporting and @MichaelChirico for the fixes.
 
-6. Several issues were filed regarding limitations of `dcast.data.table` in handling `fun.aggregate` argument when the functions are not directly provided to the argument as `fun.aggregate <- list(sum, mean)` and instead are stored in a variable, e.g., `funs <- list(sum, mean)` and referred to as `fun.aggregate=funs`. This fix closes several issues [#1974](https://github.com/Rdatatable/data.table/issues/1974), [#1369](https://github.com/Rdatatable/data.table/issues/1369) and [#2949](https://github.com/Rdatatable/data.table/issues/2949). Thanks to @sunbee, @Ping2016 and @d0rg0ld for reporting.
+5. `foverlaps()` returned incorrect results overlapping on POSIXct objects which were <= `1970-01-01`, i.e., datetime values that were represented internally as -ve numeric values. This is now fixed. Closes [#3349](https://github.com/Rdatatable/data.table/issues/3349). Thanks to @lux5 for reporting.
+
+6. Several issues were filed regarding limitations of `dcast.data.table` in handling `fun.aggregate` argument when the functions are not directly provided to the argument as `fun.aggregate <- list(sum, mean)` and instead are stored in a variable, e.g., `funs <- list(sum, mean)` and referred to as `fun.aggregate=funs`. This fix closes several issues [#1974](https://github.com/Rdatatable/data.table/issues/1974), [#1369](https://github.com/Rdatatable/data.table/issues/1369), [#2064](https://github.com/Rdatatable/data.table/issues/2064) and [#2949](https://github.com/Rdatatable/data.table/issues/2949). Thanks to @sunbee, @Ping2016, @smidelius and @d0rg0ld for reporting.
 
 #### NOTES
 
@@ -31,6 +33,8 @@
 5. Calling `data.table:::print.data.table()` directly (i.e. bypassing method dispatch by using 3 colons) and passing it a 0-column `data.frame` (not `data.table`) now works, [#3363](https://github.com/Rdatatable/data.table/pull/3363). Thanks @heavywatal for the PR.
 
 6. v1.12.0 did not compile on Solaris 10 using Oracle Developer Studio 12.6, [#3285](https://github.com/Rdatatable/data.table/issues/3285). Many thanks to Prof Ripley for providing and testing a patch. For future reference and other package developers, a `const` variable should not be passed to OpenMP's `num_threads()` directive otherwise `left operand must be modifiable lvalue` occurs.
+
+7. `getDTthreads()` respected the `OMP_NUM_THREADS` environment variable but not `OMP_THREAD_LIMIT`, [#3300](https://github.com/Rdatatable/data.table/issues/3300). There are two very similar OpenMP functions: `omp_get_max_threads()` and `omp_get_thread_limit()`. It now calls both and chooses the minimum. Note that these environment variables should be set before the R session starts. Using the R command `Sys.setenv()` to set them is too late because the OpenMP runtime is already running by then; use `setDTthreads()` instead.
 
 
 ### Changes in v1.12.0  (13 Jan 2019)

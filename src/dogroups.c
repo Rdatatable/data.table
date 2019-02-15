@@ -443,8 +443,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       }
       if (TYPEOF(source) != TYPEOF(target))
         error("Column %d of result for group %d is type '%s' but expecting type '%s'. Column types must be consistent for each group.", j+1, i+1, type2char(TYPEOF(source)), type2char(TYPEOF(target)));
-      if (thislen!=1 && thislen!=maxn) {
-        error("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code.", thislen, j+1, i+1, grpn);
+      if (thislen!=1 && thislen!=maxn && grpn>0) {  // grpn>0 for grouping empty tables; test 1986
+        error("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code.", thislen, j+1, i+1, maxn);
       }
       memrecycle(target, R_NilValue, thisansloc, maxn, source);
     }
