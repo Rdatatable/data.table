@@ -523,7 +523,7 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
   numtgz = as.integer(system("ls -1 *.tar.gz | wc -l", intern=TRUE))
   stopifnot(numtgz==length(deps))
   if (which=="rerun.all") {
-    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | TZ='UTC' parallel R CMD check"
+    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | TZ='UTC' OMP_THREAD_LIMIT=2 parallel R CMD check"
     # TZ='UTC' because some packages have failed locally for me but not on CRAN or for their maintainer, due to sensitivity of tests to timezone
     cat("WIPE ALL CHECKS:",cmd,"\n")
     cat("Proceed? (ctrl-c or enter)\n")
@@ -543,7 +543,7 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
     cat("Proceed? (ctrl-c or enter)\n")
     scan(quiet=TRUE)
     for (i in x) system(paste0("rm -rf ./",i,".Rcheck"))
-    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(paste0(x,"_"),collapse="|"),"' | TZ='UTC' parallel R CMD check")
+    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(paste0(x,"_"),collapse="|"),"' | TZ='UTC' OMP_THREAD_LIMIT=2 parallel R CMD check")
   }
   if (as.integer(system("ps -e | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
