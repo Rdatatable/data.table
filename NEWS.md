@@ -40,6 +40,7 @@
 
 7. `getDTthreads()` respected the `OMP_NUM_THREADS` environment variable but not `OMP_THREAD_LIMIT`, [#3300](https://github.com/Rdatatable/data.table/issues/3300). There are two very similar OpenMP functions: `omp_get_max_threads()` and `omp_get_thread_limit()`. It now calls both and chooses the minimum. Note that these environment variables should be set before the R session starts. Using the R command `Sys.setenv()` to set them is too late because the OpenMP runtime is already running by then; use `setDTthreads()` instead.
 
+8. `foverlaps` provides clearer error message when interval columns are of type factor. Closes [#2645](https://github.com/Rdatatable/data.table/issues/2645). Thanks to @sritchie73 for the report.
 
 ### Changes in v1.12.0  (13 Jan 2019)
 

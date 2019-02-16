@@ -13474,6 +13474,16 @@ z = dcast.data.table(data = y, f1 ~ f2, value.var = c("v1", "v2"))
 test(1990.1, z$v1, c(800, 1400)) # shouldn't be 1400, 800 ...
 test(1990.2, forderv(z$v1), integer(0)) # is already sorted ...
 
+# foverlaps error message fix, #2645
+x <- data.table(id=1, start=1, end=5, start_f=factor(1))
+y <- data.table(id=2, start=2, end=6, start_f=factor(2))
+setkey(x, start_f, end)
+setkey(y, start, end)
+test(1991.1, foverlaps(x, y), error="must be integer/numeric type")
+setkey(x, start, end)
+setkey(y, start_f, end)
+test(1991.2, foverlaps(x, y), error="must be integer/numeric type")
+
 ###################################
 #  Add new tests above this line  #
 ###################################

@@ -52,11 +52,11 @@ foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=
     stop("y has some duplicated column name(s): ",paste(unique(names(y)[dup.y]),collapse=","),". Please remove or rename the duplicate(s) and try again.")
   xnames = by.x; xintervals = tail(xnames, 2L)
   ynames = by.y; yintervals = tail(ynames, 2L)
-  if (!storage.mode(x[[xintervals[1L]]]) %chin% c("double", "integer") || !storage.mode(x[[xintervals[2L]]]) %chin% c("double", "integer"))
+  if (!storage.mode(x[[xintervals[1L]]]) %chin% c("double", "integer") || !storage.mode(x[[xintervals[2L]]]) %chin% c("double", "integer") || is.factor(x[[xintervals[1L]]]) || is.factor(x[[xintervals[2L]]])) # adding factors to the bunch, #2645
     stop("The last two columns in by.x should correspond to the 'start' and 'end' intervals in data.table 'x' and must be integer/numeric type.")
   if ( any(x[[xintervals[2L]]] - x[[xintervals[1L]]] < 0L) )
     stop("All entries in column ", xintervals[1L], " should be <= corresponding entries in column ", xintervals[2L], " in data.table 'x'")
-  if (!storage.mode(y[[yintervals[1L]]]) %chin% c("double", "integer") || !storage.mode(y[[yintervals[2L]]]) %chin% c("double", "integer"))
+  if (!storage.mode(y[[yintervals[1L]]]) %chin% c("double", "integer") || !storage.mode(y[[yintervals[2L]]]) %chin% c("double", "integer") || is.factor(y[[yintervals[1L]]]) || is.factor(y[[yintervals[2L]]])) # adding factors to the bunch, #2645
     stop("The last two columns in by.y should correspond to the 'start' and 'end' intervals in data.table 'y' and must be integer/numeric type.")
   if ( any(y[[yintervals[2L]]] - y[[yintervals[1L]]] < 0L) )
     stop("All entries in column ", yintervals[1L], " should be <= corresponding entries in column ", yintervals[2L], " in data.table 'y'")
