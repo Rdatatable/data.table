@@ -2,6 +2,7 @@
 \alias{setkey}
 \alias{setkeyv}
 \alias{key}
+\alias{key<-}
 \alias{haskey}
 \alias{setindex}
 \alias{setindexv}
@@ -35,6 +36,7 @@ setindexv(x, cols, verbose=getOption("datatable.verbose"))
 key(x)
 indices(x, vectors = FALSE)
 haskey(x)
+key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 }
 \arguments{
 \item{x}{ A \code{data.table}. }
@@ -43,6 +45,7 @@ haskey(x)
 \item{verbose}{ Output status and information. }
 \item{physical}{ \code{TRUE} changes the order of the data in RAM. \code{FALSE} adds an index. }
 \item{vectors}{ \code{logical} scalar, default \code{FALSE}; when set to \code{TRUE}, a \code{list} of character vectors is returned, each referring to one index. }
+\item{value}{ In (deprecated) \code{key<-}, a character vector (only) of column names. }
 }
 \details{
 \code{setkey} reorders (or sorts) the rows of a \code{data.table} by the columns

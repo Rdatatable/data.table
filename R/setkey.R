@@ -117,6 +117,16 @@ getindex <- function(x, name) {
   ans
 }
 
+"key<-" <- function(x,value) {
+  .Deprecated('setkey', package = 'data.table',
+              msg = "The key(x)<-value form of setkey can copy the whole table. This is due to <- in R itself. Please change to setkeyv(x,value) or setkey(x,...) which do not copy and are faster. See help('setkey').")
+  # The returned value here from key<- is then copied by R before assigning to x, it seems. That's
+  # why we can't do anything about it without a change in R itself. If we return NULL (or invisible()) from this key<-
+  # method, the table gets set to NULL. So, although we call setkeyv(x,cols) here, and that doesn't copy, the
+  # returned value (x) then gets copied by R.
+  # So, solution is that caller has to call setkey or setkeyv directly themselves, to avoid <- dispatch and its copy.
+}
+
 haskey <- function(x) !is.null(key(x))
 
 # reverse a vector by reference (no copy)
