@@ -1860,9 +1860,11 @@ setnames(ans2,"x","V1")
 setnames(ans2,"y","V2")
 test(654, ans1, ans2)
 
+old_opt = options(datatable.optimize = 2L)
 test(656, DT[,mean(x),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
 test(657, DT[,list(mean(x)),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
 test(658, DT[,list(mean(x),mean(y)),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
+options(datatable.optimize = old_opt$datatable_optimize)
 tt = capture.output(DT[,list(mean(x),mean(y)),by=list(grp1,grp2),verbose=TRUE])
 test(659, !length(grep("Wrote less rows", tt)))  # first group is one row with this seed. Ensure we treat this as aggregate case rather than allocate too many rows.
 
@@ -2384,8 +2386,10 @@ test(864.3, rbindlist(list(data.table(logical(0),logical(0)), DT<-data.table(baz
 
 # Steve's find that setnames failed for numeric 'old' when pointing to duplicated names
 DT = data.table(a=1:3,b=1:3,v=1:6,w=1:6)
+old_opt = options(datatable.optimize = 2L)
 test(865, ans1<-DT[,{list(name1=sum(v),name2=sum(w))},by="a,b",verbose=TRUE],
           output="GForce optimized.*gsum[(]v[)], gsum[(]w[)]")  # v1.9.7 treats wrapped {} better, so this is now optimized
+options(datatable.optimize = old_opt$datatable.optimize)
 test(866, names(ans1), c("a","b","name1","name2"))
 test(867, names(ans2<-DT[,list(name1=sum(v),name2=sum(w)),by="a,b"]), c("a","b","name1","name2"))  # list names extracted here
 test(868, ans1, ans2)
