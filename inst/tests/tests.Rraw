@@ -13458,7 +13458,25 @@ test(1987.3,
   myFun2(dt, vars)
 )
 
+# Test should not segfault, #3401 fix:
+set.seed(1L)
+foo <- function(n) apply(matrix(sample(letters, 4*n, TRUE), ncol=4L), 1, paste, collapse="")
+dates <- sample(as.Date("2015-01-01"), as.Date("2018-12-31"), 300L)
+codes <- foo(2000)
+DT1 <- data.table(
+  date=sample(dates[1:100], 1e4, TRUE),
+  flight=sample(codes[1:1300], 1e4, TRUE),
+  val=runif(1e4)
+)
 
+DT2 <- data.table(
+  start=sample(dates[80:250], 1e4, TRUE),
+  end=sample(dates[100:300], 1e4, TRUE),
+  flight=sample(codes[1200:2000], 1e4, TRUE)
+)
+DT2[, c("start", "end") := .(pmin(start, end), pmax(start, end))]
+# just testing if the code runs without segfault .. 
+test(1988.1, nrow(DT1[DT2, on=.(date <= end, date >= start, flight==flight)]) > 0L, TRUE)
 
 ###################################
 #  Add new tests above this line  #
