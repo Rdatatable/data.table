@@ -6846,6 +6846,7 @@ test(1514.8, isReallyReal(9L), 0L)
 options(datatable.prettyprint.char = 5L)
 DT = data.table(x=1:2, y=c("abcdefghijk", "lmnopqrstuvwxyz"))
 test(1515.1, grep("abcde...", capture.output(print(DT))), 2L)
+options(datatable.prettyprint.char = NULL)
 
 # test 1516: chain setnames() - used while mapping source to target columns
 SRC = data.table(x=1:2, y=c("abcdefghij", "klmnopqrstuv"), z=rnorm(2))
@@ -9936,6 +9937,7 @@ test(1728.12, DT[order(x,na.last=FALSE)], DT)
 test(1728.13, DT[order(x,na.last=NA)], DT[2])  # was randomly wrong
 
 # fwrite wrong and crash on 9.9999999999999982236431605, #1847
+options(datatable.verbose = FALSE)
 test(1729.1, fwrite(data.table(V1=c(1), V2=c(9.9999999999999982236431605997495353221893310546875))),
              output="V1,V2\n1,10")
 test(1729.2, fwrite(data.table(V2=c(9.9999999999999982236431605997495353221893310546875), V1=c(1))),
