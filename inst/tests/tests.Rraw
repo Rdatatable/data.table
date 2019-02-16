@@ -13443,12 +13443,12 @@ myFun2 <- function(data, vars) {
 } 
 funs = list(sum, mean)
 vars = list("d1", "d2")
+
 test(1987.1, names(dcast.data.table(dt, x + y ~ z, fun=funs, value.var=vars)),
              c("x", "y", "d1_fun1_a", "d1_fun1_b", "d2_fun2_a", "d2_fun2_b"))
 test(1987.2, dcast.data.table(dt, x + y ~ z, fun=sum, value.var=vars[[1]]),
              myFun1(dt, vars[[1]]))
-test(1987.3, dcast.data.table(dt, x + y ~ z, fun=list(f1=sum, first=function(x) x[1L]), value.var=vars),
-             myFun2(dt, vars))
+test(1987.3, dcast.data.table(dt, x + y ~ z, fun=list(f1=sum, first=function(x) x[1L]), value.var=vars), myFun2(dt, vars))
 
 # testing frankv behavior with NA/NaN; earlier tests compare consistency with base::rank,
 # but we intentionally break from base w.r.t. ranking NAs (we consider NAs to be tied, ditto NaN)
@@ -13458,6 +13458,25 @@ test(1988.2, frankv(x, cols='r', order=1L, ties.method='max'),     c(5L, 3L, 2L,
 test(1988.3, frankv(x, cols='r', order=1L, ties.method='min'),     c(5L, 3L, 2L, 10L, 1L, 8L, 4L, 8L, 6L, 7L, 10L))
 test(1988.4, frankv(x, cols='r', order=1L, ties.method='dense'),   c(5L, 3L, 2L, 9L, 1L, 8L, 4L, 8L, 6L, 7L, 9L))
 
+# Test should not segfault, #3401 fix:
+set.seed(1L)
+foo <- function(n) apply(matrix(sample(letters, 4*n, TRUE), ncol=4L), 1, paste, collapse="")
+dates <- sample(as.Date("2015-01-01"), as.Date("2018-12-31"), 300L)
+codes <- foo(2000)
+DT1 <- data.table(
+  date=sample(dates[1:100], 1e4, TRUE),
+  flight=sample(codes[1:1300], 1e4, TRUE),
+  val=runif(1e4)
+)
+
+DT2 <- data.table(
+  start=sample(dates[80:250], 1e4, TRUE),
+  end=sample(dates[100:300], 1e4, TRUE),
+  flight=sample(codes[1200:2000], 1e4, TRUE)
+)
+DT2[, c("start", "end") := .(pmin(start, end), pmax(start, end))]
+# just testing if the code runs without segfault .. 
+test(1989.1, nrow(DT1[DT2, on=.(date <= end, date >= start, flight==flight)]) > 0L, TRUE)
 
 ###################################
 #  Add new tests above this line  #
