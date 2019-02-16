@@ -13462,6 +13462,17 @@ DT2[, c("start", "end") := .(pmin(start, end), pmax(start, end))]
 # just testing if the code runs without segfault .. 
 test(1989.1, nrow(DT1[DT2, on=.(date <= end, date >= start, flight==flight)]) > 0L, TRUE)
 
+# fix for #2202, dcast needs to rank NA with na.last=FALSE in frankv within dcast
+x = data.table(
+  f1 = structure(c(1L, 1L, 1L, 1L, NA, NA), .Label = "123456", class = "factor"),
+  f2 = structure(c(1L, 1L, 1L, 1L, 1L, 1L), .Label = "U", class = "factor"),
+  v1 = c(0,300, 600, 500, 0, 800),
+  v2 = c(0,15, 50, 30, 0, 50))
+y = x[, lapply(.SD, sum), by=.(f1,f2)]
+z = dcast.data.table(data = y, f1 ~ f2, value.var = c("v1", "v2"))
+test(1990.1, z$v1, c(800, 1400)) # shouldn't be 1400, 800 ...
+test(1990.2, forderv(z$v1), integer(0)) # is already sorted ...
+
 ###################################
 #  Add new tests above this line  #
 ###################################

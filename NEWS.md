@@ -22,6 +22,8 @@
 
 7. Fixed a minor regression in v1.12.0 that resulted in segfaults on some non-equi joins. Closes [#3401](https://github.com/Rdatatable/data.table/issues/3401). Thanks to @Gayyam for the bug report.
 
+8. `dcast.data.table` handles sorting of rows with `NA` in result correctly. Closes [#2202](https://github.com/Rdatatable/data.table/issues/2202). Thanks to @Galileo-Galilei for the report.
+
 #### NOTES
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
