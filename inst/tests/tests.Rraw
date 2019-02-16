@@ -1494,12 +1494,13 @@ test(504, dtB$k, 1:4)  # or dtB
 DT = data.table(a=1:2,b=1:4,key="a")
 test(505, DT[J(a=1,b=6),sum(i.b*b),by=.EACHI]$V1, 24)  # 24 now 'double' because i.b is 'double'
 
+# commenting these tests on 2019-02-14 after full deprecation of key<-
 # Test := after a key<-
-DT = data.table(a=3:1,b=4:6)
-test(506, key(DT)<-"a", "a", warning="can copy the whole table")
-test(508, DT, data.table(a=1:3,b=6:4,key="a"))
-test(509, DT[,b:=10L], data.table(a=1:3,b=10L,key="a"))
-test(510, DT[,c:=11L], data.table(a=1:3,b=10L,c=11L,key="a"))  # Used to be warning about invalid .internal.selfref detected and fixed. As from v1.8.3 data.table() returns a NAMED==0 object, and key<- appears not to copy that. But within functions, key<- would still copy. TO DO: add tests....
+#DT = data.table(a=3:1,b=4:6)
+#test(506, key(DT)<-"a", "a", warning="can copy the whole table")
+#test(508, DT, data.table(a=1:3,b=6:4,key="a"))
+#test(509, DT[,b:=10L], data.table(a=1:3,b=10L,key="a"))
+#test(510, DT[,c:=11L], data.table(a=1:3,b=10L,c=11L,key="a"))  # Used to be warning about invalid .internal.selfref detected and fixed. As from v1.8.3 data.table() returns a NAMED==0 object, and key<- appears not to copy that. But within functions, key<- would still copy. TO DO: add tests....
 #test(511,)
 
 # Test new functons chmatch and %chin%
