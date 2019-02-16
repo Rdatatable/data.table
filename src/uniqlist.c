@@ -298,6 +298,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
     }
     ansgrp[tmp] = thisi;
   }
+  Free(ansgrp);
   UNPROTECT(1);
   return(ans);
 }
