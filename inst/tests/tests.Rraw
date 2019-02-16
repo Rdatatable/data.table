@@ -1865,10 +1865,18 @@ setnames(ans2,"x","V1")
 setnames(ans2,"y","V2")
 test(654, ans1, ans2)
 
-options(datatable.optimize = Inf)
-test(656, DT[,mean(x),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
-test(657, DT[,list(mean(x)),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
-test(658, DT[,list(mean(x),mean(y)),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
+options(datatable.optimize = 0L)
+test(656.1, DT[ , mean(x), by=grp1, verbose=TRUE], output='(GForce FALSE)')
+test(657.1, DT[ , list(mean(x)), by=grp1, verbose=TRUE], output="(GForce FALSE)")
+test(658.3, DT[ , list(mean(x), mean(y)), by=grp1, verbose=TRUE], output="(GForce FALSE)")
+options(datatable.optimize = 1L)
+test(656.2, DT[ , mean(x), by=grp1, verbose=TRUE], output='(GForce FALSE)')
+test(657.2, DT[ , list(mean(x)), by=grp1, verbose=TRUE], output="(GForce FALSE)")
+test(658.2, DT[ , list(mean(x), mean(y)), by=grp1, verbose=TRUE], output="(GForce FALSE)")
+options(datatable.optimize = 2L)
+test(656.3, DT[ , mean(x), by=grp1, verbose=TRUE], output="GForce optimized j to.*gmean")
+test(657.3, DT[ , list(mean(x)), by=grp1, verbose=TRUE], output="GForce optimized j to.*gmean")
+test(658.3, DT[ , list(mean(x), mean(y)), by=grp1, verbose=TRUE], output="GForce optimized j to.*gmean")
 tt = capture.output(DT[,list(mean(x),mean(y)),by=list(grp1,grp2),verbose=TRUE])
 test(659, !length(grep("Wrote less rows", tt)))  # first group is one row with this seed. Ensure we treat this as aggregate case rather than allocate too many rows.
 
@@ -2390,8 +2398,12 @@ test(864.3, rbindlist(list(data.table(logical(0),logical(0)), DT<-data.table(baz
 
 # Steve's find that setnames failed for numeric 'old' when pointing to duplicated names
 DT = data.table(a=1:3,b=1:3,v=1:6,w=1:6)
+options(datatable.optimize = 0L)
+test(865.1, ans1<-DT[,{list(name1=sum(v),name2=sum(w))},by="a,b",verbose=TRUE], output="(GForce FALSE)")
+options(datatable.optimize = 1L)
+test(865.2, ans1<-DT[,{list(name1=sum(v),name2=sum(w))},by="a,b",verbose=TRUE], output="(GForce FALSE)")
 options(datatable.optimize = 2L)
-test(865, ans1<-DT[,{list(name1=sum(v),name2=sum(w))},by="a,b",verbose=TRUE],
+test(865.3, ans1<-DT[,{list(name1=sum(v),name2=sum(w))},by="a,b",verbose=TRUE],
           output="GForce optimized.*gsum[(]v[)], gsum[(]w[)]")  # v1.9.7 treats wrapped {} better, so this is now optimized
 options(datatable.optimize = Inf)
 test(866, names(ans1), c("a","b","name1","name2"))
@@ -4453,56 +4465,49 @@ unlink(f)
 #################################
 # FR #2722 optimise j=c(lapply(.SD,sum, ...)) - here any amount of such lapply(.SD, ...) can occur and in any order
 set.seed(45L)
-dt <- data.table(a=sample(2,10,TRUE), b=sample(3,10,TRUE), c=sample(4,10,TRUE), d=sample(5,10,TRUE))
+dt = data.table(a=sample(2,10,TRUE), b=sample(3,10,TRUE), c=sample(4,10,TRUE), d=sample(5,10,TRUE))
+dt2 = data.table(x=c(1,1,1,2,2,2), y=1:6)
+
+options(datatable.optimize=0L)
+# auto-naming behavior is different for no-optimization case; just check optimization is off
+test(1268.1, dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], output = 'All optimizations are turned off')
+test(1268.2, dt[, c(lapply(.SD, mean), .N), by=a, verbose=TRUE], output = 'All optimizations are turned off')
+test(1268.3, dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], output="All optimizations are turned off")
+test(1268.4, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], output="All optimizations are turned off")
+test(1268.5, dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], output="All optimizations are turned off")
+# newly added tests for #861 -- optimise, but no GForce
+test(1268.6, dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], output="All optimizations are turned off")
+# don't optimise .I in c(...)
+test(1268.7, dt2[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], output="All optimizations are turned off")
 
 options(datatable.optimize=1L)
-ans2 <- dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a]
+test(1268.8, ans1 <- dt[ , c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], output="Old mean optimization.*(GForce FALSE)")
+test(1268.9, ans2 <- dt[, c(lapply(.SD, mean), .N), by=a, verbose = TRUE], output="Old mean optimization.*GForce FALSE")
+test(1268.10, ans3 <- dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], output = 'Old mean optimization.*GForce FALSE')
+test(1268.11, ans4 <- dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose = TRUE], output="Old mean optimization.*GForce FALSE")
+test(1268.12, ans5 <- dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], output="Old mean optimization.*GForce FALSE")
+test(1268.13, ans6 <- dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], output="Old mean optimization.*GForce FALSE")
+test(1268.14, ans7 <- dt2[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], output="Old mean optimization.*GForce FALSE")
+
 options(datatable.optimize=Inf)
-test(1268.1, dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], ans2,
+test(1268.15, dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], ans1,
              output="GForce optimized j to 'list(gmean(b), gmean(c), gmean(d), gsum(b), gsum(c), gsum(d))'")
-
-options(datatable.optimize=1L)
-ans2 <- dt[, c(lapply(.SD, mean), .N), by=a]
-options(datatable.optimize=Inf)
-test(1268.2, dt[, c(lapply(.SD, mean), .N), by=a, verbose=TRUE], ans2,
+test(1268.16, dt[, c(lapply(.SD, mean), .N), by=a, verbose=TRUE], ans2,
                   output = "lapply optimization changed j from 'c(lapply(.SD, mean), .N)' to 'list(mean(b), mean(c), mean(d), .N)'")
-
-options(datatable.optimize=1L)
-ans2 <- dt[, c(list(c), lapply(.SD, mean)), by=a]
-options(datatable.optimize=Inf)
-test(1268.3, dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
+test(1268.17, dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], ans3,
              output = "lapply optimization changed j from 'c(list(c), lapply(.SD, mean))' to 'list(c, mean(b), mean(c), mean(d))")
+test(1268.18, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], ans4,
+             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
+test(1268.19, dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], ans5,
+             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
+test(1268.20, dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], ans6,
+             output = "lapply optimization changed j from 'c(list(sum(d), .I), lapply(.SD, mean))' to 'list(sum(d), .I, mean(b), mean(c), mean(d))'")
+test(1268.21, dt2[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], ans7,
+             output = "lapply optimization is on, j unchanged as 'c(.I, lapply(.SD, mean))'")
 
-test(1268.4, dt[, c(as.list(c), lapply(.SD, mean)), by=a],
+test(1268.22, dt[, c(as.list(c), lapply(.SD, mean)), by=a],
              error = "j doesn't evaluate to the same number of columns for each group")
 
-options(datatable.optimize=1L)
-ans2 <- dt[, c(sum(d), lapply(.SD, mean)), by=a]
-options(datatable.optimize=Inf)
-test(1268.5, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
-
-options(datatable.optimize=1L)
-ans2 <- dt[, c(list(sum(d)), lapply(.SD, mean)), by=a]
-options(datatable.optimize=Inf)
-test(1268.6, dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
-
-# newly added tests for #861
-# optimise, but no GForce
-options(datatable.optimize=1L)
-ans2 <- dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a]
-options(datatable.optimize=Inf)
-test(1268.7, dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "lapply optimization changed j from 'c(list(sum(d), .I), lapply(.SD, mean))' to 'list(sum(d), .I, mean(b), mean(c), mean(d))'")
-
-# don't optimise .I in c(...)
-options(datatable.optimize=1L)
-dt = data.table(x=c(1,1,1,2,2,2), y=1:6)
-ans2 <- dt[, c(.I, lapply(.SD, mean)), by=x]
-options(datatable.optimize=Inf)
-test(1268.8, dt[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], ans2,
-             output = "lapply optimization is on, j unchanged as 'c(.I, lapply(.SD, mean))'")
 
 ### FR #2722 tests end here ###
 
@@ -5949,7 +5954,7 @@ test(1437.17, DT[!a %chin% c("A", "B") & x == 2], DT[c(4, 5, 6)])
 ## queries with j are optimized (Correct results are tested extensively below)
 test(1437.18, DT[x == 2, .(test = x+y), verbose = TRUE], output = "Optimized subsetting")
 test(1437.19, DT[x == 2, test := x+y, verbose = TRUE], output = "Optimized subsetting")
-## optimize option level 3 is required
+## optimize option level 3 is required to get optimized subsetting
 options(datatable.optimize = 2L)
 test(1437.21, DT[x == 2, verbose = TRUE], output = "^   x y")
 options(datatable.optimize = Inf)
@@ -7505,12 +7510,12 @@ test(1564.3, dt[a==5, .SD][, b := 1L], data.table(a=5L, b=1L))
 
 # Fix for #1251, DT[, .N, by=a] and DT[, .(.N), by=a] uses GForce now
 dt = data.table(a=sample(3,20,TRUE), b=1:10)
+options(datatable.optimize = 0L)
+test(1565.1, ans <- dt[, .N, by=a, verbose=TRUE], output="All optimizations are turned off")
+options(datatable.optimize = 1L)
+test(1565.2, dt[ , .N, by=a, verbose=TRUE], ans, output="lapply optimization is on, j unchanged")
 options(datatable.optimize = Inf)
-ans1 = dt[, .N, by=a]
-ans2 = capture.output(dt[, .N, by=a, verbose=TRUE])
-test(1565.1, length(grep("GForce optimized j to", ans2))>0L, TRUE) # make sure GForce optimisation works
-options(datatable.optimize = 1L) # make sure result is right
-test(1565.2, ans1, dt[, .N, by=a])
+test(1565.3, dt[ , .N, by=a, verbose=TRUE], ans, output = "GForce optimized j to")
 
 # Fix for #1212
 set.seed(123)
@@ -13129,11 +13134,15 @@ suppressWarnings(rm(`___data.table_internal_test_1967.68___`))
 test(1967.68, setDT(`___data.table_internal_test_1967.68___`), error = 'Cannot find symbol')
 
 ### [.data.table verbosity & non-equi-join tests
-options('datatable.optimize' = 2)
-test(1967.69, x[order(a), .N, verbose = TRUE], 5L,
+options(datatable.optimize = 0L)
+verbose_output = capture.output(x[order(a), .N, verbose = TRUE])
+test(1967.69, !any(grepl('order optimization', verbose_output, fixed = TRUE)))
+test(1967.70, any(grepl('[1] 5', verbose_output, fixed = TRUE)))
+options('datatable.optimize' = 1L)
+test(1967.71, x[order(a), .N, verbose = TRUE], 5L,
      output = "i changed from 'order(...)' to 'forder(")
 setkey(x)
-test(1967.70, x[x, .N, on = 'a', verbose = TRUE], 5L,
+test(1967.72, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
 options(datatable.optimize = Inf)
 
@@ -13146,19 +13155,19 @@ y = data.table(
   i4 = c(-26L, 6L, -30L, -26L, -23L, 38L, -40L, -26L, -23L, 24L)
 )
 x[ , '_nqgrp_' := 5]
-test(1967.71, x[y, on = .(i1 <= i1, i4 >= i4)], error = "'_nqgrp_' is reserved")
+test(1967.73, x[y, on = .(i1 <= i1, i4 >= i4)], error = "'_nqgrp_' is reserved")
 x[ , '_nqgrp_' := NULL]
-test(1967.72, x[y, max(i4), on = .(i1 <= i1, i4 >= i4), verbose = TRUE], 38L,
+test(1967.74, x[y, max(i4), on = .(i1 <= i1, i4 >= i4), verbose = TRUE], 38L,
      output = 'Recomputing forder with non-equi.*done')
-test(1967.73, x[!y, sum(i4), on = 'i1', by = .EACHI, verbose = TRUE],
+test(1967.75, x[!y, sum(i4), on = 'i1', by = .EACHI, verbose = TRUE],
      data.table(i1 = c(169L, 369L), V1 = c(270L, 179L)),
      output = "not-join called with 'by=.EACHI'.*done")
-test(1967.74, x[!y, sum(i4), on = 'i1', verbose = TRUE], 510L,
+test(1967.76, x[!y, sum(i4), on = 'i1', verbose = TRUE], 510L,
      output = 'Inverting irows for notjoin.*sec')
 x[ , v := 0]
 ### hitting by = A:B branch
-test(1967.75, x[ , .(v = sum(v)), by = i1:i4], x[-10L])
-test(1967.76, x[1:5, sum(v), by = list(i5 = 1:5 %% 2L), verbose = TRUE],
+test(1967.77, x[ , .(v = sum(v)), by = i1:i4], x[-10L])
+test(1967.78, x[1:5, sum(v), by = list(i5 = 1:5 %% 2L), verbose = TRUE],
      data.table(i5 = 1:0, V1 = c(0, 0)), output = 'i clause present but columns used in by not detected')
 
 # gforce integer overflow coerce to double
