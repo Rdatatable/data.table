@@ -5448,15 +5448,70 @@ test(1371.4, foverlaps(x, y, type="any", by.x=c("chr", "start", "end"), by.y=c("
 #     setorder(ans)
 #     ans
 #   }
-types=c("any", "within", "start", "end")
+
+# ----- DONOT REMOVE THIS ----------------------------------------------------------------------
+# CONTAINS CODE TO REGENERATE TEST1372.RData IF NECESSARY IN THE FUTURE
+# cc(FALSE)
+# require(GenomicRanges)
+
+# gr <- function(x) {
+#   GRanges(Rle(x[[1]]), IRanges(start=x[[2]], end=x[[3]]))
+# }
+# fo <- function(gr1, gr2, ...) {
+#   olaps = findOverlaps(gr1, gr2, ...)
+#   if (is.vector(olaps)) return(olaps)
+#   ans = setDT(list(xid=queryHits(olaps), yid=subjectHits(olaps)))
+#   setorder(ans)
+#   ans
+# }
+
+# types=c("any", "within", "start", "end", "equal")
+# mults=c("all", "first", "last")
+# maxgap=-1L; minoverlap=0L
+# verbose=FALSE; which=TRUE
+# set.seed(123)
+# this = 1L
+# times = 3L
+# ans = list() # vector("list", times*length(types)*length(mults))
+# for (run in seq_len(times)) {
+#   n1 = max(50L, sample(1e2L, 1, FALSE))
+#   n2 = max(50L, sample(1e2L, 1, FALSE))
+#   N = max(100L, sample(1e3L, 1, FALSE))
+#   i1 = sample(N, n1, TRUE)
+#   i2 = sample(N, n1, TRUE)
+#   start = pmin(i1,i2)
+#   end = pmax(i1,i2)
+#   chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
+#   i = setDT(list(chr=chr, start=start, end=end))
+#   i1 = sample(N, n2, TRUE)
+#   i2 = sample(N, n2, TRUE)
+#   start = pmin(i1,i2)
+#   end = pmax(i1,i2)
+#   chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
+#   x = setDT(list(chr=chr, start=start, end=end))
+#   x_eq_idx <- sample(nrow(i), 4L)
+#   x = rbind(x, i[sample(x_eq_idx, 10L, TRUE)]) # for type='equal' matches
+#   setkey(x); setkey(i)
+#   for (type in types) {
+#     for (mult in mults) {
+#       idx <- paste(type, mult, run, sep="_")
+#       ans[[idx]] <- fo(gr(i), gr(x), type=type, select=mult)
+#       this = this+1L
+#     }
+#   }
+# }
+# save(ans, file="~/Dropbox/Public/github/Rdatatable/datatable/inst/tests/test1372-new.RData")
+# ----------------------------------------------------------------------------------------------
+types=c("any", "within", "start", "end", "equal") # add 'equal' as well
 mults=c("all", "first", "last")
-maxgap=0L; minoverlap=1L
+maxgap=-1L; minoverlap=0L # default has changed in IRanges/GenomicRanges :: findOverlaps
 verbose=FALSE; which=TRUE
 test_no = 1372.0
-load(testDir("test1372.Rdata"))  # ans. Saved results to avoid loading GenomicRanges
+load(testDir("test1372.Rdata")) # Regenerated on 17/02/2019 to include type = 'equal'. Var 'ans' has all the results saved by running GenomicRanges separately using code above, is a list with names of the format type_mult_run
 set.seed(123)
 this = 1L
-for (run in 1:3) {
+times = 3L
+for (run in seq_len(times)) {
   n1 = max(50L, sample(1e2L, 1, FALSE))
   n2 = max(50L, sample(1e2L, 1, FALSE))
   N = max(100L, sample(1e3L, 1, FALSE))
@@ -5472,16 +5527,19 @@ for (run in 1:3) {
   end = pmax(i1,i2)
   chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
   x = setDT(list(chr=chr, start=start, end=end))
+  x_eq_idx <- sample(nrow(i), 4L)
+  x = rbind(x, i[sample(x_eq_idx, 10L, TRUE)]) # for type='equal' matches
   setkey(x); setkey(i)
   for (type in types) {
     for (mult in mults) {
       # data.table overlap join
       nomatch = if(mult == "all") NULL else NA_integer_
       thisans = foverlaps(i, x, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
-      # ans[[this]] contains fo(gr(i), gr(x), type=type, select=mult)
       test_no = test_no+.01
       # cat("test =", test_no, ", run = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
-      test(test_no, thisans, ans[[this]])
+      idx = paste(type, mult, run, sep="_")
+      # ans[[idx]] contains fo(gr(i), gr(x), type=type, select=mult)
+      test(test_no, thisans, ans[[idx]])
       this = this+1L
     }
   }
@@ -6442,7 +6500,7 @@ dt2 = data.table(x=3:7, y=8:12)
 setkey(dt1)
 setkey(dt2)
 test(1473, foverlaps(dt1,dt2, which=TRUE, nomatch=NULL, type="equal"),
-           error="not implemented yet") # data.table(xid=3:5, yid=1:3)
+           data.table(xid=3:5, yid=1:3))
 
 # More tests for `frankv`, #760
 DT = data.table(x=c(4, 1, 4, NA, 1, NA, 4), y=c(1, 1, 1, 0, NA, 0, 2))
@@ -13028,8 +13086,6 @@ test(1967.15, foverlaps(x, y, nomatch = c(3, 4)),
      error = 'nomatch must either be NA or NULL')
 test(1967.16, foverlaps(x, y, nomatch = 4L),
      error = 'nomatch must either be NA or NULL')
-test(1967.17, foverlaps(x, y, type = 'equal'),
-     error = "type = 'equal' is not implemented yet")  # to be removed when implemented
 test(1967.18, foverlaps(x, y, by.x = 'start'),
      error = "by.x' and 'by.y' should contain at least two")
 test(1967.19, foverlaps(x, y, by.y = 'start'),
