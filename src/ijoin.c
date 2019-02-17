@@ -28,7 +28,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "equal")) type = EQUAL;
   else error("Internal error: invalid value for 'type'; this should have been caught before. please report to data.table issue tracker"); // # nocov
 
-  // For reference: uxcols-1 = type_count, uxcols-2 = count, uxcols-3 = type_lookup, uxcols-4 = lookupf
+  // For reference: uxcols-1 = type_count, uxcols-2 = count, uxcols-3 = type_lookup, uxcols-4 = lookup
   // first pass: calculate lengths first
   start = clock();
   len1 = (int *)INTEGER(VECTOR_ELT(ux, uxcols-2));
@@ -583,6 +583,14 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       break;
 
     case EQUAL :
+      // Debugging reference for future-me
+      // R -d lldb
+      // run -f file.R
+      // breakpoint set -f ijoin.c -l 591
+      // c (hit enter to break at line 591)
+      // n (next line)
+      // p val # for native C objects
+      // call Rf_PrintValue(val) # for SEXP objects, to print whole vector/vals
       for (i=0; i<rows; i++) {
         len = thislen;
         INTEGER(f1__)[thislen] = i+1;
