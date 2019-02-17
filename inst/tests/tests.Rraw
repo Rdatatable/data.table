@@ -13539,6 +13539,10 @@ test(1991.1, foverlaps(x, y), error="must be integer/numeric type")
 setkey(x, start, end)
 setkey(y, start_f, end)
 test(1991.2, foverlaps(x, y), error="must be integer/numeric type")
+# better error message foverlaps, #3007
+DT_x <- data.table(x1 = c(1,7,11,20), x2 = c(2,8,NA,22), xval = c("x_a","x_b","x_c","x_d"), key = c("x1","x2"))
+DT_y <- data.table(y1 = c(1,10), y2 = c(9,50), yval = c("y_a","y_b"), key = c("y1","y2"))
+test(1992.1, foverlaps(DT_x, DT_y), error="All rows with NA values")
 
 ###################################
 #  Add new tests above this line  #
