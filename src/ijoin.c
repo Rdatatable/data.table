@@ -1,7 +1,10 @@
 #include "data.table.h"
 #include <Rdefines.h>
 #include <time.h>
+// #include <signal.h> // the debugging machinery + breakpoint aidee
 
+// TODO: rewrite/simplify logic -- took me ages to understand what I wrote!!
+// TODO: benchmark and parallelise slow regions
 // TODO: implement 'lookup' for 'gaps' and 'overlaps' arguments
 SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP multArg, SEXP typeArg, SEXP verbose) {
 
@@ -22,25 +25,34 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "within")) type = WITHIN;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "start")) type = START;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "end")) type = END;
-  // TODO : re-cover when implemented
-  else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "equal")) type = EQUAL; // # nocov
+  else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "equal")) type = EQUAL;
   else error("Internal error: invalid value for 'type'; this should have been caught before. please report to data.table issue tracker"); // # nocov
 
-  // For reference: uxcols-1 = type_count, uxcols-2 = count, uxcols-3 = type_lookup, uxcols-4 = lookup
+  // For reference: uxcols-1 = type_count, uxcols-2 = count, uxcols-3 = type_lookup, uxcols-4 = lookupf
   // first pass: calculate lengths first
   start = clock();
   len1 = (int *)INTEGER(VECTOR_ELT(ux, uxcols-2));
   len2 = (int *)INTEGER(VECTOR_ELT(ux, uxcols-1));
   switch (mult) {
   case FIRST:
-    for (i=0; i<xrows; i++) {
-      for (j=from[i]; j<=to[i]; j++) {
-        len1[j-1]++;
+    switch(type) {
+    case EQUAL:
+      for (i=0; i<xrows; i++) {
+        len1[from[i]-1]++; len1[to[i]-1]++;
+        len2[from[i]-1]++; len2[to[i]-1]++;
       }
-    }
-    if (type != WITHIN) {
-      for (i=0; i<uxrows; i++)                      // TODO: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
-        if (len1[i]) len2[i] = 1;
+      break;
+    case START: case END: case ANY: case WITHIN:
+      for (i=0; i<xrows; i++) {
+        for (j=from[i]; j<=to[i]; j++) {
+          len1[j-1]++;
+        }
+      }
+      if (type != WITHIN) {
+        for (i=0; i<uxrows; i++)                      // TODO: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
+          if (len1[i]) len2[i] = 1;
+      }
+      break;
     }
     break;
 
@@ -54,7 +66,13 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         }
       }
       break;
-    case START: case END: case EQUAL: case WITHIN:
+    case EQUAL:
+      for (i=0; i<xrows; i++) {
+        len1[from[i]-1]++; len1[to[i]-1]++;
+        len2[from[i]-1]++; len2[to[i]-1]++;
+      }
+      break;
+    case START: case END: case WITHIN:
       for (i=0; i<xrows; i++) {
         for (j=from[i]; j<=to[i]; j++) {
           len1[j-1]++;
@@ -77,15 +95,12 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         }
       }
       break;
-    // TODO : re-cover when implemented
-    // # nocov start
     case EQUAL:
       for (i=0; i<xrows; i++) {
         len1[from[i]-1]++; len1[to[i]-1]++;
         len2[from[i]-1]++; len2[to[i]-1]++;
       }
       break;
-    // # nocov end
     case ANY :
       for (i=0; i<xrows; i++) {
         k = from[i];
@@ -133,15 +148,12 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
       }
     }
     break;
-  // TODO : re-cover when implemented
-  // # nocov start
   case EQUAL:
     for (i=0; i<xrows; i++) {
       INTEGER(VECTOR_ELT(lookup, from[i]-1))[idx[from[i]-1]++] = i+1;
       INTEGER(VECTOR_ELT(lookup, to[i]-1))[idx[to[i]-1]++] = i+1;
     }
     break;
-  // # nocov end
   }
   Free(idx);
   // generate type_lookup
@@ -217,6 +229,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   clock_t end1, end2, start;
   enum {ALL, FIRST, LAST} mult = ALL;
   enum {ANY, WITHIN, START, END, EQUAL} type = ANY;
+  // raise(SIGINT);
 
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all"))  mult = ALL;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
@@ -241,8 +254,6 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
         totlen += (from[i] > 0 && len2[from[i]-1]) ? len2[from[i]-1] : 1;
       break;
 
-    // TODO : re-cover when implemented
-    // # nocov start
     case EQUAL:
       for (i=0; i<rows; i++) {
         len = totlen; wlen=0, j=0, m=0;
@@ -265,7 +276,6 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           ++totlen;
       }
       break;
-    // # nocov end
 
     case ANY:
       for (i=0; i<rows; i++) {
@@ -344,8 +354,6 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       }
       break;
 
-    // TODO : re-cover when implemented
-    // # nocov start
     case EQUAL :
       for (i=0; i<rows; i++) {
         len = thislen;
@@ -381,7 +389,6 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
          }
       }
       break;
-    // # nocov end
 
     case ANY :
       for (i=0; i<rows; i++) {
@@ -469,8 +476,6 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       }
       break;
 
-    // TODO : re-cover when implemented
-    // # nocov start
     case EQUAL :
       for (i=0; i<rows; i++) {
         len = thislen;
@@ -502,7 +507,6 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
          }
       }
       break;
-    // # nocov end
 
     case ANY:
       for (i=0; i<rows; i++) {
@@ -578,8 +582,6 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
       }
       break;
 
-    // TODO : re-cover when implemented
-    // # nocov start
     case EQUAL :
       for (i=0; i<rows; i++) {
         len = thislen;
@@ -593,7 +595,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           } else if (k < to[i]) {
             tmp1 = VECTOR_ELT(lookup, k-1);
             tmp2 = VECTOR_ELT(type_lookup, to[i]-1);
-            j=len1[k-1]-1; m=len2[k-1]-1;
+            j=len1[k-1]-1; m=len2[to[i]-1]-1; // bug fix, k=from[i] but should be to[i]
             while (j>=0 && m>=0) {
               if ( INTEGER(tmp1)[j] == INTEGER(tmp2)[m] ) {
                 INTEGER(f2__)[thislen] = INTEGER(tmp1)[j];
@@ -611,7 +613,6 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
          }
       }
       break;
-    // # nocov end
 
       // OLD logic for 'any,last' which had to check for maximum for each 'i'. Better logic below.
       // for 'first' we need to just get the minimum of first non-zero-length element, but not the same case for 'last'.
