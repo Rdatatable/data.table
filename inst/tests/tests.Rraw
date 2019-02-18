@@ -13544,6 +13544,17 @@ DT_x <- data.table(x1 = c(1,7,11,20), x2 = c(2,8,NA,22), xval = c("x_a","x_b","x
 DT_y <- data.table(y1 = c(1,10), y2 = c(9,50), yval = c("y_a","y_b"), key = c("y1","y2"))
 test(1992.1, foverlaps(DT_x, DT_y), error="All rows with NA values")
 
+# foverlaps POSIXct checks #1143 + another check...
+xp <- data.frame(year = c(2006L, 2006L, 2006L), day = c(361L, 361L, 360L), 
+                 hour = c(14L, 8L, 8L), min = c(30L, 0L, 30L), val = c(0.5, 0.3, 0.4),
+                 Date = structure(c(1167229800, 1167206400, 1167121800), 
+                          class = c("POSIXct", "POSIXt"), tzone = "UTC")) ## "UTC" time zone
+setDT(xp)[, `:=`(start = Date - 1800L, end = Date + 1800L)]
+tt <- as.POSIXct(c("2006/12/27 14:23:59", "2006/12/27 16:47:59", "2006/12/27 19:12:00"), format = "%Y/%m/%d %T", tz = "Asia/Jerusalem") ## different time zone
+yp <- data.table(start = tt, end = tt, key=c("start", "end"))
+test(1993.1, foverlaps(xp, yp, nomatch = 0L, which=TRUE), data.table(xid=1L, yid=2L), warning="POSIXct interval cols have mixed timezones")
+test(1993.2, foverlaps(xp, yp, by.x=c("day", "year")), error="Some interval cols are of type POSIXct while others are not")
+
 ###################################
 #  Add new tests above this line  #
 ###################################
