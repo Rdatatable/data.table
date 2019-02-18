@@ -50,29 +50,42 @@ foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=
     stop("y has some duplicated column name(s): ",paste(unique(names(y)[dup.y]),collapse=","),". Please remove or rename the duplicate(s) and try again.")
   xnames = by.x; xintervals = tail(xnames, 2L)
   ynames = by.y; yintervals = tail(ynames, 2L)
-  if (!storage.mode(x[[xintervals[1L]]]) %chin% c("double", "integer") || !storage.mode(x[[xintervals[2L]]]) %chin% c("double", "integer") || is.factor(x[[xintervals[1L]]]) || is.factor(x[[xintervals[2L]]])) # adding factors to the bunch, #2645
+  xval1 = x[[xintervals[1L]]]; xval2 = x[[xintervals[2L]]]
+  yval1 = y[[yintervals[1L]]]; yval2 = y[[yintervals[2L]]]
+  if (!storage.mode(xval1) %chin% c("double", "integer") || !storage.mode(xval2) %chin% c("double", "integer") || is.factor(xval1) || is.factor(xval2)) # adding factors to the bunch, #2645
     stop("The last two columns in by.x should correspond to the 'start' and 'end' intervals in data.table 'x' and must be integer/numeric type.")
   isTRUEorNA <- function(x) !isFALSE(x) # x is assumed to  be logical
-  if ( isTRUEorNA(any(x[[xintervals[2L]]] - x[[xintervals[1L]]] < 0L)) ) {
+  if ( isTRUEorNA(any(xval2 - xval1 < 0L)) ) {
     # better error messages as suggested by @msummersgill in #3007. Thanks for the code too. Placing this inside so that it only runs if the general condition is satisfied. Should error anyway here.. So doesn't matter even if runs all if-statements; takes about 0.2s for anyNA check on 200 million elements .. acceptable speed for stoppage, I think, at least for now.
-    if ( anyNA(x[[xintervals[1L]]]) ) {
+    if ( anyNA(xval1) ) {
       stop("NA values in data.table 'x' start column: '", xintervals[1L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
-    } else if ( anyNA(x[[xintervals[2L]]]) ) {
+    } else if ( anyNA(xval2) ) {
       stop("NA values in data.table 'x' end column: '", xintervals[2L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
     } else stop("All entries in column ", xintervals[1L], " should be <= corresponding entries in column ", xintervals[2L], " in data.table 'x'.")
   }
-  if (!storage.mode(y[[yintervals[1L]]]) %chin% c("double", "integer") || !storage.mode(y[[yintervals[2L]]]) %chin% c("double", "integer") || is.factor(y[[yintervals[1L]]]) || is.factor(y[[yintervals[2L]]])) # adding factors to the bunch, #2645
+  if (!storage.mode(yval1) %chin% c("double", "integer") || !storage.mode(yval2) %chin% c("double", "integer") || is.factor(yval1) || is.factor(yval2)) # adding factors to the bunch, #2645
     stop("The last two columns in by.y should correspond to the 'start' and 'end' intervals in data.table 'y' and must be integer/numeric type.")
-  if ( isTRUEorNA(any(y[[yintervals[2L]]] - y[[yintervals[1L]]] < 0L) )) {
-    if ( anyNA(y[[yintervals[1L]]]) ) {
+  if ( isTRUEorNA(any(yval2 - yval1 < 0L) )) {
+    if ( anyNA(yval1) ) {
       stop("NA values in data.table 'y' start column: '", yintervals[1L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
-    } else if ( anyNA(y[[yintervals[2L]]]) ) {
+    } else if ( anyNA(yval2) ) {
       stop("NA values in data.table 'y' end column: '", yintervals[2L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
     } else stop("All entries in column ", yintervals[1L], " should be <= corresponding entries in column ", yintervals[2L], " in data.table 'y'.")
   }
-
+  # POSIXct interval cols error check
+  is.POSIXct <- function(x) inherits(x, "POSIXct")
+  posx_chk <- c(is.POSIXct(xval1), is.POSIXct(xval2), is.POSIXct(yval1), is.POSIXct(yval2))
+  if (any(posx_chk) && !all(posx_chk)) {
+    stop("Some interval cols are of type POSIXct while others are not. Please ensure all interval cols are (or are not) of POSIXct type")
+  }
+  # #1143, mismatched timezone
+  getTZ <- function(x) if (is.null(tz <- attr(x, "tzone"))) "" else tz # "" == NULL AFAICT
+  tzone_chk <- c(getTZ(xval1), getTZ(xval2), getTZ(yval1), getTZ(yval2))
+  if (any(tzone_chk != tzone_chk[1L])) {
+    warning("POSIXct interval cols have mixed timezones. Overlaps are performed on the internal numerical representation of POSIXct objects, therefore printed values may give the impression that values don't overlap but their internal representations will. Please ensure that POSIXct type interval cols have identical 'tzone' attributes to avoid confusion.")
+  }
   ## see NOTES below:
-  yclass = c(class(y[[yintervals[1L]]]), class(y[[yintervals[2L]]]))
+  yclass = c(class(yval1), class(yval2))
   isdouble = FALSE; isposix = FALSE
   if ( any(c("numeric", "POSIXct") %chin% yclass) ) {
     # next representive double > x under the given precision (48,56 or 64-bit in data.table) = x*incr

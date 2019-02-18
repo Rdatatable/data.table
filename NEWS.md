@@ -46,6 +46,8 @@
 
 9. `foverlaps` provides clearer error messages when interval columns have NA in them. Closes [#3007](https://github.com/Rdatatable/data.table/issues/3007). Thanks to @msummersgill for the report and code to integrate into foverlaps.R.
 
+10. `foverlaps` provides better error messages when one interval is POSIXct and other isn't. Also, it warns when POSIXct interval columns are not all of same timezone. Closes [#1143](https://github.com/Rdatatable/data.table/issues/1143). Thanks to @DavidArenburg for the report.
+
 ### Changes in v1.12.0  (13 Jan 2019)
 
 #### NEW FEATURES
