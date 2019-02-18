@@ -52,12 +52,24 @@ foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=
   ynames = by.y; yintervals = tail(ynames, 2L)
   if (!storage.mode(x[[xintervals[1L]]]) %chin% c("double", "integer") || !storage.mode(x[[xintervals[2L]]]) %chin% c("double", "integer") || is.factor(x[[xintervals[1L]]]) || is.factor(x[[xintervals[2L]]])) # adding factors to the bunch, #2645
     stop("The last two columns in by.x should correspond to the 'start' and 'end' intervals in data.table 'x' and must be integer/numeric type.")
-  if ( any(x[[xintervals[2L]]] - x[[xintervals[1L]]] < 0L) )
-    stop("All entries in column ", xintervals[1L], " should be <= corresponding entries in column ", xintervals[2L], " in data.table 'x'")
+  isTRUEorNA <- function(x) !isFALSE(x) # x is assumed to  be logical
+  if ( isTRUEorNA(any(x[[xintervals[2L]]] - x[[xintervals[1L]]] < 0L)) ) {
+    # better error messages as suggested by @msummersgill in #3007. Thanks for the code too. Placing this inside so that it only runs if the general condition is satisfied. Should error anyway here.. So doesn't matter even if runs all if-statements; takes about 0.2s for anyNA check on 200 million elements .. acceptable speed for stoppage, I think, at least for now.
+    if ( anyNA(x[[xintervals[1L]]]) ) {
+      stop("NA values in data.table 'x' start column: '", xintervals[1L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
+    } else if ( anyNA(x[[xintervals[2L]]]) ) {
+      stop("NA values in data.table 'x' end column: '", xintervals[2L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
+    } else stop("All entries in column ", xintervals[1L], " should be <= corresponding entries in column ", xintervals[2L], " in data.table 'x'.")
+  }
   if (!storage.mode(y[[yintervals[1L]]]) %chin% c("double", "integer") || !storage.mode(y[[yintervals[2L]]]) %chin% c("double", "integer") || is.factor(y[[yintervals[1L]]]) || is.factor(y[[yintervals[2L]]])) # adding factors to the bunch, #2645
     stop("The last two columns in by.y should correspond to the 'start' and 'end' intervals in data.table 'y' and must be integer/numeric type.")
-  if ( any(y[[yintervals[2L]]] - y[[yintervals[1L]]] < 0L) )
-    stop("All entries in column ", yintervals[1L], " should be <= corresponding entries in column ", yintervals[2L], " in data.table 'y'")
+  if ( isTRUEorNA(any(y[[yintervals[2L]]] - y[[yintervals[1L]]] < 0L) )) {
+    if ( anyNA(y[[yintervals[1L]]]) ) {
+      stop("NA values in data.table 'y' start column: '", yintervals[1L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
+    } else if ( anyNA(y[[yintervals[2L]]]) ) {
+      stop("NA values in data.table 'y' end column: '", yintervals[2L],"'. All rows with NA values in the range columns must be removed for foverlaps() to work.")
+    } else stop("All entries in column ", yintervals[1L], " should be <= corresponding entries in column ", yintervals[2L], " in data.table 'y'.")
+  }
 
   ## see NOTES below:
   yclass = c(class(y[[yintervals[1L]]]), class(y[[yintervals[2L]]]))

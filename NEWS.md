@@ -44,6 +44,8 @@
 
 8. `foverlaps` provides clearer error message when interval columns are of type factor. Closes [#2645](https://github.com/Rdatatable/data.table/issues/2645). Thanks to @sritchie73 for the report.
 
+9. `foverlaps` provides clearer error messages when interval columns have NA in them. Closes [#3007](https://github.com/Rdatatable/data.table/issues/3007). Thanks to @msummersgill for the report and code to integrate into foverlaps.R.
+
 ### Changes in v1.12.0  (13 Jan 2019)
 
 #### NEW FEATURES
