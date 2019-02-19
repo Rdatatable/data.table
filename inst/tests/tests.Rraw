@@ -9367,7 +9367,7 @@ test(1658.23, fwrite(ok_dt, 1), error="is.character\\(file\\).*not TRUE")
 test(1658.24, fwrite(ok_dt, quote=123), error="identical\\(quote.*auto.*FALSE.*TRUE")
 test(1658.25, fwrite(ok_dt, sep="..."), error="nchar(sep)")
 test(1658.26, fwrite(ok_dt, qmethod=c("double", "double")), error="length(qmethod)")
-test(1658.27, fwrite(ok_dt, col.names="foobar"), error="isLOGICAL(col.names)")
+test(1658.27, fwrite(ok_dt, col.names="foobar"), error="isTRUEorFALSE(col.names)")
 
 # null data table (no columns)
 test(1658.28, fwrite(data.table(NULL)), NULL, warning="Nothing to write")
