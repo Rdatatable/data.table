@@ -442,6 +442,7 @@ for (p in deps) {
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 length(deps)
 update.packages(repos=BiocManager::repositories())  # double-check all dependencies are latest too
+table(installed.packages()[,"Built"])  # ensure all built with this major release of R; e.g. none should have been built with R-devel
 
 # Remove the tar.gz no longer needed :
 system("ls *.tar.gz | wc -l")
