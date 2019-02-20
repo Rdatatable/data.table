@@ -1,12 +1,14 @@
 #include "frollR.h"
 
 SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive, SEXP verbose) {
-  int protecti=0;
+  int protecti = 0;
   if (!isLogical(verbose) || length(verbose)!=1 || LOGICAL(verbose)[0]==NA_LOGICAL)
     error("verbose must be TRUE or FALSE");
   bool bverbose = LOGICAL(verbose)[0];
 
   if (!xlength(obj)) return(obj);                               // empty input: NULL, list()
+  //double tic = 0;
+  //if (bverbose) tic = omp_get_wtime();
   SEXP x;                                                       // holds input data as list
   if (isVectorAtomic(obj)) {                                    // wrap atomic vector into list
     x = PROTECT(allocVector(VECSXP, 1)); protecti++;
@@ -110,7 +112,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   double_ans_t dans[nx*nk];                                     // answer columns as array of double_ans_t struct
   double* dx[nx];                                               // pointers to source columns
   uint_fast64_t inx[nx];                                        // to not recalculate `length(x[[i]])` we store it in extra array
-  if (bverbose) Rprintf("frollfunR: allocating memory for results %dx%d\n", nx, nk);
+  if (bverbose) Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
@@ -169,54 +171,34 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     // ik is still R_NilValue from initialization. But that's ok as it's only needed below when !badaptive.
   }
 
-  if (nx==1 && nk==1) {                                         // no need to init openmp for single thread call
-    if (bverbose) {
-      if (ialgo==0) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped\n");
-      else if (ialgo==1) Rprintf("frollfunR: single column and single window, parallel processing by multiple answer vectors skipped but 'exact' version of rolling function will compute results in parallel\n");
-    }
-    switch (sfun) {
+  if (bverbose) {
+    if (ialgo==0) Rprintf("%s: %d column(s) and %d window(s), if product > 1 then entering parallel execution\n", __func__, nx, nk);
+    else if (ialgo==1) Rprintf("%s: %d column(s) and %d window(s), not entering parallel execution here because algo='exact' will compute results in parallel\n", __func__, nx, nk);
+  }
+  #pragma omp parallel for if (!bverbose && ialgo==0 && nx*nk>1) schedule(auto) collapse(2) num_threads(getDTthreads()) // TODO remove !bverbose when all verbose Rprintf deferred using double_ans_t struct
+  for (R_len_t i=0; i<nx; i++) {                            // loop over multiple columns
+    for (R_len_t j=0; j<nk; j++) {                          // loop over multiple windows
+      switch (sfun) {
       case MEAN :
-        if (!badaptive) frollmean(ialgo, dx[0], inx[0], &dans[0], iik[0], ialign, dfill, bnarm, ihasna, bverbose);
-        else fadaptiverollmean(ialgo, dx[0], inx[0], &dans[0], ikl[0], dfill, bnarm, ihasna, bverbose);
+        if (!badaptive) frollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
+        else fadaptiverollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
         break;
-      //case SUM :
-      //  break;
-    }
-  } else {
-    if (bverbose>0) {
-      if (ialgo==0) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe\n", nx, nk);
-      else if (ialgo==1) Rprintf("frollfunR: %d column(s) and %d window(s), entering parallel execution, but actually single threaded due to enabled verbose which is not thread safe, 'exact' version of rolling function will compute results in parallel anyway as it does not print with verbose\n", nx, nk);
-    }
-    omp_set_nested(1);
-    #pragma omp parallel for num_threads(bverbose ? 1 : getDTthreads()) schedule(auto) collapse(2)
-    for (R_len_t i=0; i<nx; i++) {                            // loop over multiple columns
-      for (R_len_t j=0; j<nk; j++) {                          // loop over multiple windows
-        switch (sfun) {
-          case MEAN :
-            if (!badaptive) frollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
-            else fadaptiverollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
-            break;
-          //case SUM :
-          //  break;
-        }
+        //case SUM :
+        //  break;
       }
     }
-    omp_set_nested(0);
   }
-
+  
   for (R_len_t i=0; i<nx; i++) {                                // raise errors and warnings, as of now messages are not being produced and stdout is printed in live not carried in ans_t
     for (R_len_t j=0; j<nk; j++) {
-      if (dans[i*nk+j].status == 3) {
-        error(dans[i*nk+j].message[3]);                         // # nocov becase only errors we can currently have from low level C function is failed malloc
-      } else if (dans[i*nk+j].status == 2) {
-        warning(dans[i*nk+j].message[2]);
-      } else if (dans[i*nk+j].status == 1) {
-        //message(dans[i*nk+j].message[1]);                     // no messages yet in C functions, need to check R API for that
-      } else if (dans[i*nk+j].status == 1) {
-        //Rprintf(dans[i*nk+j].message[0]);                     // console output can be printed here instead of 'live' so parallel stuff can run even when verbose=T
-      }
+      if (bverbose && (dans[i*nk+j].message[0][0] != '\0')) Rprintf("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[0]); // # nococ because no stdout capture yet
+      if (dans[i*nk+j].message[1][0] != '\0') REprintf("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[1]); // # nocov because no messages yet
+      if (dans[i*nk+j].message[2][0] != '\0') warning("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[2]);
+      if (dans[i*nk+j].status == 3) error("%s: %d: %s", __func__, i*nk+j+1, dans[i*nk+j].message[3]); // # nocov because only caused by malloc
     }
   }
+  
+  //if (bverbose) Rprintf("%s: processing of %d column(s) and %d window(s) took %.3fs\n", __func__, nx, nk, omp_get_wtime()-tic); // this will be enabled in separate commit
 
   UNPROTECT(protecti);
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
