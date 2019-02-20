@@ -27,6 +27,10 @@ grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n 
 # Only comments referring to it should be in openmp-utils.c
 grep omp_set_num_threads ./src/*
 
+# Ensure no calls to omp_set_nested() as i) it's hard to fully honor OMP_THREAD_LIMIT as required by CRAN, and
+#                                        ii) a simpler non-nested approach is always preferable if possible, as has been the case so far
+grep omp_set_nested ./src/*.c
+
 # Ensure no calls to omp_get_max_threads() also since access should be via getDTthreads()
 grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*
 
