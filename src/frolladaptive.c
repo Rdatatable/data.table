@@ -12,7 +12,6 @@
  */
 
 void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
-  ans->status = 0;                                              // default status success
   if (algo==0) fadaptiverollmeanFast(x, nx, ans, k, fill, narm, hasna, verbose);
   else if (algo==1) fadaptiverollmeanExact(x, nx, ans, k, fill, narm, hasna, verbose);
 }
@@ -103,7 +102,7 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *
  */
 
 void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
-  if (verbose) Rprintf("%s: running for input length %llu, hasna %d, narm %d\n", __func__, nx, hasna, (int) narm);
+  if (verbose) Rprintf("%s: running in parallel for input length %llu, hasna %d, narm %d\n", __func__, nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                   // flag to re-run if NAs detected
 
   if (!truehasna || !narm) {                                  // narm=FALSE handled here as NAs properly propagated in exact algo

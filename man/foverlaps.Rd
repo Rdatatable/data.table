@@ -43,9 +43,7 @@ intervals \code{[a,b]} and \code{[c,d]}, where \code{a<=b} and \code{c<=d}, when
 between these two intervals is \code{>= minoverlap}, then these two intervals are
 considered to be overlapping. Note: This is not yet implemented.}
 \item{type}{ Default value is \code{any}. Allowed values are \code{any},
-\code{within}, \code{start}, \code{end} and \code{equal}. Note: \code{equal} is
-not yet implemented. But this is just a normal join of the type \code{y[x, \dots]},
-unless you require also using \code{maxgap} and \code{minoverlap} arguments.
+\code{within}, \code{start}, \code{end} and \code{equal}.
 
 The types shown here are identical in functionality to the function
 \code{findOverlaps} in the bioconductor package \code{IRanges}. Let \code{[a,b]}

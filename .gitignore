@@ -9,6 +9,8 @@ Rplots.pdf
 *-Ex.R
 data.table_*.tar.gz
 data.table.Rcheck
+# useful to source cc.r in your .Rprofile; see comments there
+.Rprofile
 
 # Emacs IDE files
 .emacs.desktop

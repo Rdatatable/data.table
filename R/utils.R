@@ -1,5 +1,17 @@
 # all non-exported / unused internal (utility) functions
 
+# R 3.5.0 made isTRUE inefficient :
+#   `is.logical(x) && length(x)==1L && !is.na(x) && x`
+# Before R 3.5.0, isTRUE was defined as simply:
+#   identical(TRUE,x)
+# which was simpler. The new definition uses 8 allocations of the length-1 intermediaries. Probably doesn't matter but might sometimes.
+# It was changed in R so that isTRUE(c(a=TRUE)) returned TRUE: https://github.com/wch/r-source/commit/828997ac6ecfb73aaa0aae9d1d0584a4ffc50881#diff-b41e3f9f1d389bb6f7a842cd5a3308b8
+# Which we don't need. We prefer simplicity and efficiency of identical().
+isTRUE        <- function(x) identical(x,TRUE)  # just as base::isTRUE before R 3.5.0. Masks base::isTRUE for internal use.
+isFALSE       <- function(x) identical(x,FALSE) # provide isFALSE before it was added in R 3.5.0; e.g. R 3.1.0 support
+isTRUEorNA    <- function(x) identical(x,TRUE) || identical(x,NA)  # also ensures x must be logical length 1
+isTRUEorFALSE <- function(x) identical(x,TRUE) || identical(x,FALSE)
+
 # which.first
 which.first <- function(x)
 {
