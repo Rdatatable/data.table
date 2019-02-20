@@ -30,7 +30,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     x <- as.data.table(x)
   }
   stopifnot(is.list(x),
-    identical(quote,"auto") || identical(quote,FALSE) || identical(quote,TRUE),
+    identical(quote,"auto") || isTRUEorFALSE(quote),
     is.character(sep) && length(sep)==1L && nchar(sep) == 1L,
     is.character(sep2) && length(sep2)==3L && nchar(sep2[2L])==1L,
     is.character(dec) && length(dec)==1L && nchar(dec) == 1L,
