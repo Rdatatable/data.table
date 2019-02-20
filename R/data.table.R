@@ -1478,7 +1478,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (missing(by)) stop("Internal error: by= is missing")   # nocov
 
     if (length(byval) && length(byval[[1L]])) {
-      if (!bysameorder && identical(byindex,FALSE)) {
+      if (!bysameorder && isFALSE(byindex)) {
         if (verbose) {last.started.at=proc.time();cat("Finding groups using forderv ... ");flush.console()}
         o__ = forderv(byval, sort=!missing(keyby), retGrp=TRUE)
         # The sort= argument is called sortGroups at C level. It's primarily for saving the sort of unique strings at
@@ -2542,7 +2542,7 @@ setnames <- function(x,old,new,skip_absent=FALSE) {
   # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
   if (!is.data.frame(x)) stop("x is not a data.table or data.frame")
   if (length(names(x)) != length(x)) stop("x is length ",length(x)," but its names are length ",length(names(x)))
-  stopifnot(isTRUE(skip_absent) || identical(skip_absent,FALSE))
+  stopifnot(isTRUEorFALSE(skip_absent))
   if (missing(new)) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
     if (!is.character(old)) stop("Passed a vector of type '",typeof(old),"'. Needs to be type 'character'.")
@@ -2679,7 +2679,7 @@ chgroup <- function(x) {
 }
 
 rbindlist <- function(l, use.names=fill, fill=FALSE, idcol=NULL) {
-  if (identical(idcol, FALSE)) { idcol = NULL }
+  if (isFALSE(idcol)) { idcol = NULL }
   else if (!is.null(idcol)) {
     if (isTRUE(idcol)) idcol = ".id"
     if (!is.character(idcol)) stop("idcol must be a logical or character vector of length 1. If logical TRUE the id column will named '.id'.")

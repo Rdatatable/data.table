@@ -54,7 +54,6 @@ foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=
   yval1 = y[[yintervals[1L]]]; yval2 = y[[yintervals[2L]]]
   if (!storage.mode(xval1) %chin% c("double", "integer") || !storage.mode(xval2) %chin% c("double", "integer") || is.factor(xval1) || is.factor(xval2)) # adding factors to the bunch, #2645
     stop("The last two columns in by.x should correspond to the 'start' and 'end' intervals in data.table 'x' and must be integer/numeric type.")
-  isTRUEorNA <- function(x) !isFALSE(x) # x is assumed to  be logical
   if ( isTRUEorNA(any(xval2 - xval1 < 0L)) ) {
     # better error messages as suggested by @msummersgill in #3007. Thanks for the code too. Placing this inside so that it only runs if the general condition is satisfied. Should error anyway here.. So doesn't matter even if runs all if-statements; takes about 0.2s for anyNA check on 200 million elements .. acceptable speed for stoppage, I think, at least for now.
     if ( anyNA(xval1) ) {
