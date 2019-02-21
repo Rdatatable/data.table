@@ -180,7 +180,7 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
 replace_dot_alias <- function(e) {
   # we don't just simply alias .=list because i) list is a primitive (faster to iterate) and ii) we test for use
   # of "list" in several places so it saves having to remember to write "." || "list" in those places
-  if (is.call(e)) {
+  if (is.call(e) && !is.function(e[[1L]])) {
     # . alias also used within bquote, #1912
     if (e[[1L]] == 'bquote') return(e)
     if (e[[1L]] == ".") e[[1L]] = quote(list)
@@ -353,7 +353,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       jsub = eval(jsub[[2L]], parent.frame(), parent.frame())  # this evals the symbol to return the dynamic expression
       if (is.expression(jsub)) jsub = jsub[[1L]]    # if expression, convert it to call
       # Note that the dynamic expression could now be := (new in v1.9.7)
-      root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
+      root = if (is.call(jsub)) {
+        jsub = replace_dot_alias(jsub)
+        as.character(jsub[[1L]])[1L]
+      } else ""
     }
     if (root == ":=") {
       allow.cartesian=TRUE   # (see #800)
