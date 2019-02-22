@@ -16,17 +16,19 @@
 *    avoid the deadlock/hang (#1745 and #1727) and return to prior state afterwards.
 */
 
-static int  DTthreads = 0;             // Never read directly, hence static; always go via getDTthreads().
+static int  DTthreads = 0;            // Never read directly, hence static; always go via getDTthreads().
 static bool RestoreAfterFork = true;  // see #2885 in v1.12.0
 
 int getDTthreads() {
 #ifdef _OPENMP
-  int ans = omp_get_max_threads();
+  int ans = MIN(omp_get_max_threads(), omp_get_thread_limit());  // #3300
   if (ans>1024) {
-    warning("omp_get_max_threads() has returned %d. This is unreasonably large. Applying hard limit of 1024. Please check OpenMP environment variables and other packages using OpenMP to see where this very large number has come from. Try getDTthreads(verbose=TRUE).", ans);
+    // # nocov start
+    warning("MIN(omp_get_max_threads(), omp_get_thread_limit()) has returned %d. This is unreasonably large. Applying hard limit of 1024. Please check OpenMP environment variables and other packages using OpenMP to see where this very large number has come from. Try getDTthreads(verbose=TRUE).", ans);
     // to catch INT_MAX for example, which may be the case if user or another package has called omp_set_num_threads(omp_get_thread_limit())
     // 1024 is a reasonable hard limit based on a comfortable margin above the most number of CPUs in one server I have heard about
     ans=1024;
+    // # nocov end
   }
   if (DTthreads>0 && DTthreads<ans) ans = DTthreads;
   if (ans<1) ans=1;

@@ -119,10 +119,11 @@ sometimes be useful before \code{:=} is used to subassign to a column by
 reference. See \code{?copy}.
 }
 \references{
-\url{http://en.wikipedia.org/wiki/Radix_sort}\cr
-\url{http://en.wikipedia.org/wiki/Counting_sort}\cr
-\url{http://cran.at.r-project.org/web/packages/bit/index.html}\cr
-\url{http://stereopsis.com/radix.html}
+  \url{https://en.wikipedia.org/wiki/Radix_sort}\cr
+  \url{https://en.wikipedia.org/wiki/Counting_sort}\cr
+  \url{http://stereopsis.com/radix.html}\cr
+  \url{https://codercorner.com/RadixSortRevisited.htm}\cr
+  \url{https://cran.r-project.org/package=bit64}
 }
 \note{ Despite its name, \code{base::sort.list(x,method="radix")} actually
 invokes a \emph{counting sort} in R, not a radix sort. See \code{do_radixsort} in

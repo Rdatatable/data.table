@@ -8,8 +8,9 @@
 
 1. `:=` no longer recycles length>1 RHS vectors. There was a warning when recycling left a remainder but no warning when the LHS length was an exact multiple of the RHS length (the same behaviour as base R). Consistent feedback for several years has been that recycling is more often a bug. In rare cases where you need to recycle a length>1 vector, use `rep()` explicitly. Single values are still recycled silently as before. Early warning was given in [this tweet](https://twitter.com/MattDowle/status/1088544083499311104). The 758 CRAN and Bioconductor packages using data.table were tested and the maintainers of the 16 packages affected (2%) were consulted before going ahead, [#3310](https://github.com/Rdatatable/data.table/pull/3310).
 
-2. `fwrite` can now write directly gzipped csv file if `compress` option is set to `gzip` or if file ends with `".gz"` and `compress="auto". Compression, like `fwrite`, is multithreaded.
+2. `foverlaps` supports `type = "equal"` now. Closes [#3416](https://github.com/Rdatatable/data.table/issues/3416). Also addresses part of [#3002](https://github.com/Rdatatable/data.table/issues/3002).
 
+3. `fwrite` can now write directly gzipped csv file if `compress` option is set to `gzip` or if file ends with `".gz"` and `compress="auto". Compression, like `fwrite`, is multithreaded.
 #### BUG FIXES
 
 1. `rbindlist()` of a malformed factor missing levels attribute is now a helpful error rather than a cryptic error about `STRING_ELT`, [#3315](https://github.com/Rdatatable/data.table/issues/3315). Thanks to Michael Chirico for reporting.
@@ -19,6 +20,14 @@
 3. Default print output (top 5 and bottom 5 rows) when ncol>255 could display the columns in the wrong order, [#3306](https://github.com/Rdatatable/data.table/issues/3306). Thanks to Kun Ren for reporting.
 
 4. Grouping by unusual column names such as `by='string_with_\\'` and `keyby="x y"` could fail, [#3319](https://github.com/Rdatatable/data.table/issues/3319) and [#3378](https://github.com/Rdatatable/data.table/issues/3378). Thanks to @HughParsonage for reporting and @MichaelChirico for the fixes.
+
+5. `foverlaps()` returned incorrect results overlapping on POSIXct objects which were <= `1970-01-01`, i.e., datetime values that were represented internally as -ve numeric values. This is now fixed. Closes [#3349](https://github.com/Rdatatable/data.table/issues/3349). Thanks to @lux5 for reporting.
+
+6. Several issues were filed regarding limitations of `dcast.data.table` in handling `fun.aggregate` argument when the functions are not directly provided to the argument as `fun.aggregate <- list(sum, mean)` and instead are stored in a variable, e.g., `funs <- list(sum, mean)` and referred to as `fun.aggregate=funs`. This fix closes several issues [#1974](https://github.com/Rdatatable/data.table/issues/1974), [#1369](https://github.com/Rdatatable/data.table/issues/1369), [#2064](https://github.com/Rdatatable/data.table/issues/2064) and [#2949](https://github.com/Rdatatable/data.table/issues/2949). Thanks to @sunbee, @Ping2016, @smidelius and @d0rg0ld for reporting.
+
+7. Fixed a minor regression in v1.12.0 that resulted in segfaults on some non-equi joins. Closes [#3401](https://github.com/Rdatatable/data.table/issues/3401). Thanks to @Gayyam for the bug report.
+
+8. `dcast.data.table` handles sorting of rows with `NA` in result correctly. Closes [#2202](https://github.com/Rdatatable/data.table/issues/2202). Thanks to @Galileo-Galilei for the report.
 
 #### NOTES
 
@@ -34,6 +43,13 @@
 
 6. v1.12.0 did not compile on Solaris 10 using Oracle Developer Studio 12.6, [#3285](https://github.com/Rdatatable/data.table/issues/3285). Many thanks to Prof Ripley for providing and testing a patch. For future reference and other package developers, a `const` variable should not be passed to OpenMP's `num_threads()` directive otherwise `left operand must be modifiable lvalue` occurs.
 
+7. `getDTthreads()` respected the `OMP_NUM_THREADS` environment variable but not `OMP_THREAD_LIMIT`, [#3300](https://github.com/Rdatatable/data.table/issues/3300). There are two very similar OpenMP functions: `omp_get_max_threads()` and `omp_get_thread_limit()`. It now calls both and chooses the minimum. Note that these environment variables should be set before the R session starts. Using the R command `Sys.setenv()` to set them is too late because the OpenMP runtime is already running by then; use `setDTthreads()` instead.
+
+8. `foverlaps` provides clearer error message when interval columns are of type factor. Closes [#2645](https://github.com/Rdatatable/data.table/issues/2645). Thanks to @sritchie73 for the report.
+
+9. `foverlaps` provides clearer error messages when interval columns have NA in them. Closes [#3007](https://github.com/Rdatatable/data.table/issues/3007). Thanks to @msummersgill for the report and code to integrate into foverlaps.R.
+
+10. `foverlaps` provides better error messages when one interval is POSIXct and other isn't. Also, it warns when POSIXct interval columns are not all of same timezone. Closes [#1143](https://github.com/Rdatatable/data.table/issues/1143). Thanks to @DavidArenburg for the report.
 
 ### Changes in v1.12.0  (13 Jan 2019)
 
