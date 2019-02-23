@@ -186,23 +186,22 @@ static void range_i64(int64_t *x, int n, uint64_t *out_min, uint64_t *out_max, i
   *out_max = max ^ 0x8000000000000000u;
 }
 
-static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
-// return range of finite numbers (excluding NA, NaN, -Inf, +Inf) and a count of
-// strictly NA (not NaN) so caller knows if it's all NA or any Inf|-Inf|NaN are present
+static void range_d(double *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, int *out_infnan_count)
+// return range of finite numbers (excluding NA, NaN, -Inf, +Inf), a count of NA and a count of Inf|-Inf|NaN
 {
-  uint64_t min = 0;
-  uint64_t max = 0;
-  int na_count = 0;
+  uint64_t min=0, max=0;
+  int na_count=0, infnan_count=0;
   int i=0;
-  while(i<n && !R_FINITE(x[i])) { na_count+=ISNA(x[i]); i++; }
+  while(i<n && !R_FINITE(x[i])) { ISNA(x[i++]) ? na_count++ : infnan_count++; }
   if (i<n) { max = min = dtwiddle(x, i++);}
   for(; i<n; i++) {
-    if (!R_FINITE(x[i])) { na_count+=ISNA(x[i]); continue; }
+    if (!R_FINITE(x[i])) { ISNA(x[i]) ? na_count++ : infnan_count++; continue; }
     uint64_t tmp = dtwiddle(x, i);
     if (tmp>max) max=tmp;
     else if (tmp<min) min=tmp;
   }
   *out_na_count = na_count;
+  *out_infnan_count = infnan_count;
   *out_min = min;
   *out_max = max;
 }
@@ -483,8 +482,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   for (int col=0; col<ncol; col++) {
     // Rprintf("Finding range of column %d ...\n", col);
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
-    uint64_t min, max;     // min and max of non-NA values
-    int na_count=0;
+    uint64_t min=0, max=0;     // min and max of non-NA finite values
+    int na_count=0, infnan_count=0;
     if (sortType) sortType=INTEGER(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
     //Rprintf("sortType = %d\n", sortType);
     switch(TYPEOF(x)) {
@@ -495,7 +494,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       if (inherits(x, "integer64")) {
         range_i64((int64_t *)REAL(x), nrow, &min, &max, &na_count);
       } else {
-        range_d(REAL(x), nrow, &min, &max, &na_count);
+        range_d(REAL(x), nrow, &min, &max, &na_count, &infnan_count);
         if (min==0 && na_count<nrow) { min=3; max=4; } // column contains no finite numbers and is not-all NA; create dummies to yield positive min-2 later
         isReal = true;
       }
@@ -508,10 +507,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
        Error("Column %d of by= (%d) is type '%s', not yet supported", col+1, INTEGER(by)[col], type2char(TYPEOF(x)));
     }
     TEND(3);
-    if ((min==0 && na_count==nrow) || (min>0 && min==max && na_count==0)) {
-      // all same value; skip column as nothing to do
-      // min==0 implies na_count==n anyway for all types other than real when Inf,-Inf or NaN are present (excluded from [min,max] as well as NA)
-      if (min==0 && nalast==-1) { for (int i=0; i<nrow; i++) anso[i]=0; }
+    if (na_count==nrow || (min>0 && min==max && na_count==0 && infnan_count==0)) {
+      // all same value; skip column as nothing to do;  [min,max] is just of finite values (excludes +Inf,-Inf,NaN and NA)
+      if (na_count==nrow && nalast==-1) { for (int i=0; i<nrow; i++) anso[i]=0; }
       if (TYPEOF(x)==STRSXP) free_ustr();
       continue;
     }
