@@ -28,6 +28,8 @@
 
 9. Sorting, grouping and finding unique values of a numeric column containing at most one finite value (such as `c(Inf,0,-Inf)`) could return incorrect results, [#3372](https://github.com/Rdatatable/data.table/issues/3372) [#3381](https://github.com/Rdatatable/data.table/issues/3381); e.g., `data.table(A=c(Inf,0,-Inf), V=1:3)[,sum(V),by=A]` would treat the 3 rows as one group. This was a regression in 1.12.0. Thanks to Nicolas Ampuero for reporting.
 
+10. Quoted expression having `:=` and dot alias in RHS now works as expected. Thanks to @franknarf1 for raising up issue on [StackOverflow](https://stackoverflow.com/questions/41228076/using-data-tables-shortcut-in-quoted-expressions) and @jangorecki for PR.
+
 #### NOTES
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
