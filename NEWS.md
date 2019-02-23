@@ -26,6 +26,8 @@
 
 8. `dcast.data.table` handles sorting of rows with `NA` in result correctly. Closes [#2202](https://github.com/Rdatatable/data.table/issues/2202). Thanks to @Galileo-Galilei for the report.
 
+9. Sorting, grouping and finding unique values of a numeric column containing at most one finite value (such as `c(Inf,0,-Inf)`) could return incorrect results, [#3372](https://github.com/Rdatatable/data.table/issues/3372) [#3381](https://github.com/Rdatatable/data.table/issues/3381); e.g., `data.table(A=c(Inf,0,-Inf), V=1:3)[,sum(V),by=A]` would treat the 3 rows as one group. This was a regression in 1.12.0. Thanks to Nicolas Ampuero for reporting.
+
 #### NOTES
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
@@ -47,6 +49,7 @@
 9. `foverlaps` provides clearer error messages when interval columns have NA in them. Closes [#3007](https://github.com/Rdatatable/data.table/issues/3007). Thanks to @msummersgill for the report and code to integrate into foverlaps.R.
 
 10. `foverlaps` provides better error messages when one interval is POSIXct and other isn't. Also, it warns when POSIXct interval columns are not all of same timezone. Closes [#1143](https://github.com/Rdatatable/data.table/issues/1143). Thanks to @DavidArenburg for the report.
+
 
 ### Changes in v1.12.0  (13 Jan 2019)
 

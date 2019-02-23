@@ -2391,7 +2391,7 @@ test(863, after < before+0.5)
 # rbindlist should look for the first non-empty data.table - New changes (from Arun). Explanation below:
 # Even if data.table is empty, as long as there are column names, they should be considered.
 # Ex: What if all data.tables are empty? What'll be the column name then?
-# If there are no names, then the first non-empty set of names will be allocated. I think this is the way to do it.. TODO: Should write to Matt about it.
+# If there are no names, then the first non-empty set of names will be allocated.
 test(864.1, rbindlist(list(data.table(foo=logical(0),bar=logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), setnames(DT, c("foo", "bar")))
 test(864.2, rbindlist(list(list(logical(0),logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), DT)
 test(864.3, rbindlist(list(data.table(logical(0),logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), setnames(DT, c("V1", "V2")))
@@ -2843,7 +2843,6 @@ DT = data.table(a=c(NA,NA,FALSE,FALSE), b=c(1,1,2,2))
 test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(NA_integer_,0L))) # sum(logical()) should be integer, not real
 
 # an fread error shouldn't hold a lock on the file on Windows
-# TODO: now that these are warnings and not errors, we need another way to trigger a STOP() inside fread.c. options(warn=2) isn't enough.
 cat('A,B\n1,2\n3\n5,6\n', file=(f<-tempfile()))
 test(1010.1, fread(f,logical01=TRUE), ans<-data.table(A=TRUE, B=2L), warning=(txt<-"Stopped early on line 3.*Expected 2 fields but found 1.*fill.*TRUE.*<<3>>"))
 test(1010.2, fread(f,logical01=TRUE), ans, warning=txt)
@@ -4101,7 +4100,7 @@ test(1221, DT[.(1),b], c("a","c","e"))
 # - But save the seed so that we can generate the same data back if any error occurs
 seed = as.integer(Sys.time()) # sample(9999L, 1L) temporary fix, because all the set.seed(.) used above makes this sample() step deterministic (always seed=9107)
 seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
-# no NaN (because it's hard to match with base::order)                             ## TODO: add tests with NaN
+# no NaN (because it's hard to match with base::order); tested below in 1988.4-8
 set.seed(seed)
 foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, sep="")
 i1 = as.integer(sample(c(-100:100), 1e3, TRUE))
@@ -4647,8 +4646,6 @@ ll <- list(list(1:3, 4:6), list(5:7, 8:10))
 test(1288.15, rbindlist(ll, fill=TRUE), error="fill=TRUE, but names of input list at position 1")
 ll <- list(list(1:3, 4:6), list(a=5:7, b=8:10))
 test(1288.16, rbindlist(ll, fill=TRUE), error="fill=TRUE, but names of input list at position 1")
-
-# TO DO: TODO: think of and add more tests for rbindlist
 
 # fix for #5647
 dt = data.table(x=1L, y=1:10)
@@ -5660,7 +5657,7 @@ test(1382.4, DT[c("c", "b"), list(id, check = any(var > 3)), nomatch=0L], data.t
 # Fix for #742 - allow.cartesian should be ignored if `i` has no duplicates.
 DT <- data.table(id=rep(letters[1:2], 2), var = rnorm(4), key="id")
 test(1383.1, DT[letters[1:3], list(var)], DT[1:5, list(var)])
-# Fix for #800 - allow.cartesian should be ignored if jsub[1L] has `:=`. TODO: maybe still warn if `i` has duplicates?
+# Fix for #800 - allow.cartesian should be ignored if jsub[1L] has `:=`.
 DT=data.table(id=c(1,1), date=c(1992,1991), value=c(4.1,4.5), key="id")
 test(1383.2, copy(DT)[DT, a:=1], DT[, a := 1])
 
@@ -6196,7 +6193,6 @@ test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist.*get
 test(1453, fread(testDir("fread_line_error.csv"))[c(1,.N), c("V1","V24")],
            data.table(V1=INT(3,32), V24=c(".Q8_2_0W_8_1_7_L-4-U-5_1YSV-S-3-5.X",".U5_5_8H_7_6_0_U-5-J-7_2GNY-J-3-5.X")),
            warning=c("resolved improper quoting", "Stopped.*line 12. Expected 24 fields but found 47.*First discarded non-empty line: <<31,3-0-7 4:1:7.5 HVV,"))
-# TODO: add comment=="#".   Ensure only after last field is observed.
 
 # no-sep-found => sep="\n", use case for this in #738
 test(1454.1, fread('"Foo"`"Bar"\n5`2\n',sep="`"), data.table(Foo=5L,Bar=2L))
@@ -6534,7 +6530,7 @@ test(1475.17, uniqueN(logical(), na.rm=TRUE),            0L)
 DT <- data.table(x = rep(1:3, each = 3), y = as.Date(seq(Sys.Date(), (Sys.Date() + 8), by = "day")))
 test(1476.1, DT[, .(y=mean(y)), x], setDT(aggregate(y ~ x, DT, mean)))
 
-# test for 'transpose' of a list, TODO: integer64 support.
+# test for 'transpose' of a list
 ll = lapply(1:12, function(x) {
   if (x <= 3) sample(10, sample(5:10, 1L))
   else if (x > 3 & x <= 6) as.numeric(sample(101:115, sample(7:12, 1L)))
@@ -7831,15 +7827,6 @@ test(1585.6, f1(testDir("536_fread_fill_3_extreme.txt"), b=TRUE), f2(testDir("53
 # no warning about bumping type. when fill=TRUE, column type detection starts at first non-empty line (which makes sense).
 test(1585.7, f1(testDir("536_fread_fill_4.txt")), f2(testDir("536_fread_fill_4.txt"))[-29,])
 test(1585.8, f1(testDir("536_fread_fill_4.txt"), b=TRUE), f2(testDir("536_fread_fill_4.txt"), b=TRUE))
-
-# TODO: add a test when fill=FALSE, but blank.lines.skip=TRUE, when the same effect should happen
-# TODO: fix and add test for cases like this:
-# a,b,c
-# 1,2,3
-# 4,5,6
-# 7,8,9,6 # extra column, but we've only detected 3 cols
-# 1,2,3
-# ...
 
 # fix for #721
 text="x,y\n1,a\n2,b\n"
@@ -9206,7 +9193,6 @@ if (.Machine$sizeof.pointer>4) {
   nqjoin_test(dt1, dt2, 2L, 1652, mult="last")
 }
 
-# TODO: add tests for nomatch=NA..
 # tested, but takes quite some time.. so commenting for now
 # nqjoin_test(x, y, 3L,1643.0)
 # nqjoin_test(dt1,dt2,3L,1652.0)
@@ -9372,7 +9358,6 @@ test(1658.27, fwrite(ok_dt, col.names="foobar"), error="isTRUEorFALSE(col.names)
 # null data table (no columns)
 test(1658.28, fwrite(data.table(NULL)), NULL, warning="Nothing to write")
 
-# 0.0 written as 0, but TODO #2398, probably related to the 2 lines after l==0 missing coverage in writeFloat64
 test(1658.29, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="id,v\nA,1.1\nB,0\nC,9.9")
 
 # logical NA as "NA" when logical01=TRUE, instead of the default na="" which writes all types including <NA> in character column as ,, consistently.
@@ -9882,8 +9867,6 @@ test(1703.15, fread("."), error="File '.' is a directory. Not yet implemented.")
 test(1704, all.equal(data.table( a=1:3, b=4:6 ), data.table( A=1:3, B=4:6 ), check.attributes=FALSE))
 
 # all.equal.data.table should consider modes equal like base R (detected via Bioc's flowWorkspace tests)
-# If strict testing is required, then use identical().
-# TODO: add strict.numeric (default FALSE) to all.equal.data.table() ?
 test(1707.1, all.equal( data.frame(a=0L), data.frame(a=0) ) )
 test(1707.2, all.equal( data.table(a=0L), data.table(a=0) ) )
 test(1708.1, !isTRUE(all.equal( data.frame(a=0L), data.frame(a=FALSE) )))
@@ -10195,7 +10178,6 @@ test(1736.3, fwrite(DT, sep2=c("",",","")), error="sep.*,.*sep2.*,.*must all be 
 test(1736.4, fwrite(DT, sep2=c("","||","")), error="nchar.*sep2.*2")
 test(1736.5, capture.output(fwrite(DT, sep='|', sep2=c("c(",",",")"), logical01=FALSE)), c("A|B|C", "1|c(1,2,3,4,5,6,7,8,9,10)|c(s,t,u,v,w)",
  "2|c(15,16,17,18)|c(1.2,2.3,3.4,3.14159265358979,-9)", "3|c(7)|c(foo,bar)", "4|c(9,10)|c(TRUE,TRUE,FALSE)"))
-# Aside: logicalAsInt tested in 1736.6 to continue to work without warning, currently. TODO: warning, deprecate and remove
 test(1736.6, capture.output(fwrite(DT, sep='|', sep2=c("{",",","}"), logicalAsInt=TRUE)),
  c("A|B|C", "1|{1,2,3,4,5,6,7,8,9,10}|{s,t,u,v,w}",
  "2|{15,16,17,18}|{1.2,2.3,3.4,3.14159265358979,-9}", "3|{7}|{foo,bar}", "4|{9,10}|{1,1,0}"))
@@ -11639,7 +11621,7 @@ DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1L,3L,6L), v=10:18)
 write.table(DT, file = (f<-tempfile()), sep = "\t")
 test(1867.14, fread(f), data.table(V1=1:9, x=DT$x, y=DT$y, v=DT$v), warning="Added 1 extra default column name")
 unlink(f)
-# test(1867.15, fread(testDir("iterations.txt"))) # #1416 TODO (trailing tabs on most but not at the beginning and a "-" intended to mean missing but taken as text column name)
+# test(1867.15, fread(testDir("iterations.txt")))
 
 # non equi joins bug fix #2313
 dt <- data.table(
@@ -11979,9 +11961,9 @@ test(1894.9, DT[, sum(z)*..z], error="Variable 'z' is not found in calling scope
 z = 3L
 test(1894.11, DT[, sum(z)*..z], 72L)
 setnames(DT, "z", "..z")
-test(1894.12, DT[, sum(y)*..z], INT(105,120,135))  # TODO warning/error in future as per NEWS item in v1.11.0
+test(1894.12, DT[, sum(y)*..z], INT(105,120,135))
 rm(z)
-test(1894.13, DT[, sum(y)*..z], INT(105,120,135))  # TODO warning/error in future as per NEWS item in v1.11.0
+test(1894.13, DT[, sum(y)*..z], INT(105,120,135))
 setnames(DT, "..z", "z")
 test(1894.14, DT[, sum(y)*..z], error="Variable 'z' is not found in calling scope")
 ..z = 4L
@@ -13491,13 +13473,20 @@ test(1987.2, dcast.data.table(dt, x + y ~ z, fun=sum, value.var=vars[[1]]),
              myFun1(dt, vars[[1]]))
 test(1987.3, dcast.data.table(dt, x + y ~ z, fun=list(f1=sum, first=function(x) x[1L]), value.var=vars), myFun2(dt, vars))
 
-# testing frankv behavior with NA/NaN; earlier tests compare consistency with base::rank,
+# testing frankv/forder behavior with NA/NaN; earlier tests compare consistency with base::rank,
 # but we intentionally break from base w.r.t. ranking NAs (we consider NAs to be tied, ditto NaN)
 x = data.table(r = c(6, 4, 2, NA, 1, NaN, 5, NaN, 9, 10, NA))
+## frankv
 test(1988.1, frankv(x, cols='r', order=1L, ties.method='average'), c(5, 3, 2, 10.5, 1, 8.5, 4, 8.5, 6, 7, 10.5))
 test(1988.2, frankv(x, cols='r', order=1L, ties.method='max'),     c(5L, 3L, 2L, 11L, 1L, 9L, 4L, 9L, 6L, 7L, 11L))
 test(1988.3, frankv(x, cols='r', order=1L, ties.method='min'),     c(5L, 3L, 2L, 10L, 1L, 8L, 4L, 8L, 6L, 7L, 10L))
 test(1988.4, frankv(x, cols='r', order=1L, ties.method='dense'),   c(5L, 3L, 2L, 9L, 1L, 8L, 4L, 8L, 6L, 7L, 9L))
+
+## forderv
+test(1988.5, forderv(x, by='r', order=1L, na.last=FALSE), c(4L, 11L, 6L, 8L, 5L, 3L, 2L, 7L, 1L, 9L, 10L))
+test(1988.6, forderv(x, by='r', order=-1L, na.last=FALSE), c(4L, 11L, 6L, 8L, 10L, 9L, 1L, 7L, 2L, 3L, 5L))
+test(1988.7, forderv(x, by='r', order=1L, na.last=TRUE), c(5L, 3L, 2L, 7L, 1L, 9L, 10L, 6L, 8L, 4L, 11L))
+test(1988.8, forderv(x, by='r', order=-1L, na.last=TRUE), c(10L, 9L, 1L, 7L, 2L, 3L, 5L, 6L, 8L, 4L, 11L))
 
 # Test should not segfault, #3401 fix:
 set.seed(1L)
@@ -13555,13 +13544,22 @@ yp <- data.table(start = tt, end = tt, key=c("start", "end"))
 test(1993.1, foverlaps(xp, yp, nomatch = 0L, which=TRUE), data.table(xid=1L, yid=2L), warning="POSIXct interval cols have mixed timezones")
 test(1993.2, foverlaps(xp, yp, by.x=c("day", "year")), error="Some interval cols are of type POSIXct while others are not")
 
+# forderv NaN,Inf and Inf when at most 1 finite value is present, #3381. These broke in v1.12.0. They pass in v1.11.8.
+test(1994.1, forderv(c(NaN, Inf, -Inf), retGrp=TRUE), structure(INT(1,3,2), starts=1:3, maxgrpn=1L))
+test(1994.2, forderv(c(-Inf, 0, Inf), retGrp=TRUE),   structure(integer(), starts=1:3, maxgrpn=1L))
+test(1994.3, forderv(c(-Inf, Inf), retGrp=TRUE),      structure(integer(), starts=1:2, maxgrpn=1L))
+test(1994.4, forderv(c(Inf, -Inf), retGrp=TRUE),      structure(2:1, starts=1:2, maxgrpn=1L))
+test(1994.5, forderv(c(0, NaN), retGrp=TRUE),         structure(2:1, starts=1:2, maxgrpn=1L))
+test(1994.6, forderv(c(NaN, 0), retGrp=TRUE),         structure(integer(), starts=1:2, maxgrpn=1L))
+test(1994.7, data.table(A=c(-Inf,21,Inf),V=1:3)[,sum(V),by=A]$V1, 1:3)
+
 # quoted `:=` expression did not replace dot with list
 d = data.table(a=1L)
 qcall = quote(b := .(2L))
-test(1994.1, d[, eval(qcall)], data.table(a=1L, b=2L))
+test(1995.1, d[, eval(qcall)], data.table(a=1L, b=2L))
 qcall = quote(b := .(.Primitive("sum")(1, 2))) # such calls can be issued by dcast
 d = data.table(a=1L)
-test(1994.2, d[, eval(qcall)], data.table(a=1L, b=3))
+test(1995.2, d[, eval(qcall)], data.table(a=1L, b=3))
 
 
 ###################################
