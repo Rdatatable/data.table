@@ -504,7 +504,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       range_str(STRING_PTR(x), nrow, &min, &max, &na_count);
       break;
     default:
-       Error("Column %d of by= (%d) is type '%s', not yet supported", col+1, INTEGER(by)[col], type2char(TYPEOF(x)));
+      Error("Column %d of by= (%d) is type '%s', not yet supported. Please use the by= argument to specify columns with types that are supported. See NEWS item in v1.12.2 for more information.",
+            col+1, INTEGER(by)[col], type2char(TYPEOF(x)));
     }
     TEND(3);
     if (na_count==nrow || (min>0 && min==max && na_count==0 && infnan_count==0)) {

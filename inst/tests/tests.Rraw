@@ -4359,7 +4359,7 @@ test(1251.9, DT[base::order(x, list(-y), decreasing=TRUE)],
 # more "edge cases" to ensure we're consistent with base
 test(1251.11, DT[order("a")], DT[1L])
 test(1251.12, DT[order("b", "a")], DT[1L])
-test(1251.13, DT[order(list("b", "a"))], error = "Column 1 of by= (1) is type 'list', not yet supported")
+test(1251.13, DT[order(list("b", "a"))], error = "Column 1 of by= [(]1[)] is type 'list', not yet supported. Please use the by=.*that are supported")
 test(1251.14, DT[order(list("b"), list("a"))], DT[1L])
 
 ##############################################################
