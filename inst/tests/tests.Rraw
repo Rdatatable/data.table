@@ -13575,6 +13575,14 @@ A2,20180103,5.0,0
 A2,20180104,5.0,0")
 test(1995.2, DT[, p1:=first(price[volume>0]), by=symbol]$p1, rep(c(11,NA), c(3,3)))
 
+# quoted `:=` expression did not replace dot with list, #3425
+d = data.table(a=1L)
+qcall = quote(b := .(2L))
+test(1996.1, d[, eval(qcall)], data.table(a=1L, b=2L))
+qcall = quote(b := .(.Primitive("sum")(1, 2))) # such calls can be issued by dcast
+d = data.table(a=1L)
+test(1996.2, d[, eval(qcall)], data.table(a=1L, b=3))
+
 
 ###################################
 #  Add new tests above this line  #
