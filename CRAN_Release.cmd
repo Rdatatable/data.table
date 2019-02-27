@@ -201,7 +201,7 @@ cd ~/GitHub/data.table
 Rdevel-strict CMD INSTALL data.table_1.12.1.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
 Rdevel-strict
-install.packages(c("bit64","xts","nanotime","R.utils"), repos="http://cloud.r-project.org")  # minimum packages needed to not skip any tests in test.data.table()
+install.packages(c("bit64","xts","nanotime","R.utils","curl","knitr"), repos="http://cloud.r-project.org")  # minimum packages needed to pass R CMD check (when not strict)
 require(data.table)
 test.data.table()      # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
 # If any problems, edit ~/.R/Makevars and activate "CFLAGS=-O0 -g" to trace. Rerun 'Rdevel-strict CMD INSTALL' and rerun tests.

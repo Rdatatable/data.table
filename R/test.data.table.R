@@ -37,6 +37,16 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
   # This environment variable is restored to its previous state (including not defined) after sourcing test script
   
+  old.sample.kind = NULL
+  if ("sample.kind" %in% names(formals(RNGkind))) {
+    # sample method changed in R 3.6 to remove bias; see #3431 for links and notes
+    # This can be removed (and 120 tests updated) if and when the oldest R version we test and support is moved up to R 3.6 (not yet released as of Feb 2019)
+    suppressWarnings(x <- eval(call("RNGkind", sample.kind="Rounding")))
+    # eval() to avoid this `R CMD check` static code analysis warning in R < 3.6 : 
+    #   possible error in 'RNGkind(sample.kind = "Rounding")': unused argument (sample.kind = "Rounding")
+    old.sample.kind = x[3L]  # user may have selected a non-default method before running test.data.table() themselves; restore their choice afterwards
+  }
+  
   oldverbose = options(datatable.verbose=verbose)
   oldenc = options(encoding="UTF-8")[[1L]]  # just for tests 708-712 on Windows
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
@@ -72,6 +82,10 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
     Sys.unsetenv("_R_CHECK_LENGTH_1_LOGIC2_")
   } else {
     Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_)
+  }
+  if (!is.null(old.sample.kind)) { 
+    eval(call("RNGkind", sample.kind = old.sample.kind))
+    # eval() to avoid `R CMD check` static code analysis warning in R < 3.6; see above
   }
   
   timings = get("timings", envir=env)
