@@ -52,6 +52,11 @@
 
 10. `foverlaps` provides better error messages when one interval is POSIXct and other isn't. Also, it warns when POSIXct interval columns are not all of same timezone. Closes [#1143](https://github.com/Rdatatable/data.table/issues/1143). Thanks to @DavidArenburg for the report.
 
+11. From v1.12.0, `unique(DT)` checks up-front the types of all the columns and will fail if any column is type `list`. Use `unique(DT, by=...)` to specify columns that are not type `list`. v1.11.8 and before would also correctly fail with the same error, but not when uniqueness had been established in prior columns (it would stop early and not look at the `list` column). Checking up-front was necessary for some internal optimizations and it's probably best to be explicit anyway. Thanks to James Lamb for reporting, [#3332](https://github.com/Rdatatable/data.table/issues/3332). The error message has been embellished :
+    ```
+    Column 2 of by= (2) is type 'list', not yet supported. Please use the by= argument to specify columns with types that are supported.
+    ```
+
 
 ### Changes in v1.12.0  (13 Jan 2019)
 

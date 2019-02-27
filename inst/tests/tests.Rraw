@@ -2585,10 +2585,9 @@ test(914, fread(txt,sep="*"), data.table("A;B;C|D,E"=c("1;3;4|5,6","2;4;6|8,10")
 test(915, fread(txt,sep="\n"), data.table("A;B;C|D,E"=c("1;3;4|5,6","2;4;6|8,10"))) # like a fast readLines
 
 # Crash bug when RHS is 0 length and := by group, fixed in 1.8.7
+# This test was changed in PR#3310 for v1.12.2 and then reverted in dev before release (#3386) back to previous behavior
 DT = data.table(a=1:3,b=1:6)
-test(916.1, DT[,newcol:=logical(0),by=a], error="Supplied 0 items to be assigned to group 1 of size 2 in column 'newcol'")
-test(916.2, DT, data.table(a=1:3,b=1:6))  # that newcol was not added since group 1 failed
-test(916.3, DT[,newcol:=NA,by=a], data.table(a=1:3,b=1:6,newcol=NA))
+test(916, DT[,newcol:=logical(0),by=a], data.table(a=1:3,b=1:6,newcol=NA))
 
 # roll join error when non last join column is factor, #2450
 X = data.table(id=2001:2004, uid=c(1001,1002,1001,1001), state=factor(c('CA','CA','CA','MA')), ts=c(51,52,53,54), key='state,uid,ts')
@@ -4360,7 +4359,7 @@ test(1251.9, DT[base::order(x, list(-y), decreasing=TRUE)],
 # more "edge cases" to ensure we're consistent with base
 test(1251.11, DT[order("a")], DT[1L])
 test(1251.12, DT[order("b", "a")], DT[1L])
-test(1251.13, DT[order(list("b", "a"))], error = "Column 1 of by= (1) is type 'list', not yet supported")
+test(1251.13, DT[order(list("b", "a"))], error = "Column 1 of by= [(]1[)] is type 'list', not yet supported. Please use the by=.*that are supported")
 test(1251.14, DT[order(list("b"), list("a"))], DT[1L])
 
 ##############################################################
@@ -13553,13 +13552,36 @@ test(1994.5, forderv(c(0, NaN), retGrp=TRUE),         structure(2:1, starts=1:2,
 test(1994.6, forderv(c(NaN, 0), retGrp=TRUE),         structure(integer(), starts=1:2, maxgrpn=1L))
 test(1994.7, data.table(A=c(-Inf,21,Inf),V=1:3)[,sum(V),by=A]$V1, 1:3)
 
-# quoted `:=` expression did not replace dot with list
+# 0 length items should not result in no-recycle error, #3386
+DT = fread("symbol,year,quarter,price
+A1,2017,1,10.0
+A1,2017,2,11.0
+A1,2017,3,12.0
+A1,2017,4,11.0
+A1,2018,1,12.0
+A1,2018,2,13.0
+A2,2017,1,10.0
+A2,2017,2,11.0
+A2,2017,3,12.0
+A2,2017,4,11.0
+A2,2018,1,12.0")
+test(1995.1, DT[, pQ4 := price[quarter==4L], by=.(symbol,year)]$pQ4, rep(c(11,NA,11,NA), c(4,2,4,1)))
+DT = fread("symbol,date,price,volume
+A1,20180102,10.0,0
+A1,20180103,10.0,0
+A1,20180104,11.0,100
+A2,20180102,5.0,0
+A2,20180103,5.0,0
+A2,20180104,5.0,0")
+test(1995.2, DT[, p1:=first(price[volume>0]), by=symbol]$p1, rep(c(11,NA), c(3,3)))
+
+# quoted `:=` expression did not replace dot with list, #3425
 d = data.table(a=1L)
 qcall = quote(b := .(2L))
-test(1995.1, d[, eval(qcall)], data.table(a=1L, b=2L))
+test(1996.1, d[, eval(qcall)], data.table(a=1L, b=2L))
 qcall = quote(b := .(.Primitive("sum")(1, 2))) # such calls can be issued by dcast
 d = data.table(a=1L)
-test(1995.2, d[, eval(qcall)], data.table(a=1L, b=3))
+test(1996.2, d[, eval(qcall)], data.table(a=1L, b=3))
 
 
 ###################################
