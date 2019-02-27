@@ -29,7 +29,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
          else "tests.Rraw"
   }
   fn = setNames(file.path(fulldir, fn), file.path(subdir, fn))
-  if (!file.exists(fn)) stop(fn," does not exist")
+  if (!file.exists(fn)) stop(fn," does not exist")   # nocov
 
   # From R 3.6.0 onwards, we can check that && and || are using only length-1 logicals (in the test suite)
   # rather than relying on x && y being equivalent to x[[1L]] && y[[1L]]  silently.
@@ -40,8 +40,8 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   old.sample.kind = NULL
   if ("sample.kind" %in% names(formals(RNGkind))) {
     # sample method changed in R 3.6 to remove bias; see #3431 for links and notes
-    # This can be removed (and 120 tests updated) if and when the oldest R version we test and support is moved up to R 3.6 (not yet released as of Feb 2019)
-    suppressWarnings(x <- eval(call("RNGkind", sample.kind="Rounding")))
+    # This can be removed (and 120 tests updated) if and when the oldest R version we test and support is moved to R 3.6
+    suppressWarnings(x <- eval(call("RNGkind", sample.kind="Rounding")))   # will be covered when R 3.6 is released
     # eval() to avoid this `R CMD check` static code analysis warning in R < 3.6 : 
     #   possible error in 'RNGkind(sample.kind = "Rounding")': unused argument (sample.kind = "Rounding")
     old.sample.kind = x[3L]  # user may have selected a non-default method before running test.data.table() themselves; restore their choice afterwards
@@ -81,10 +81,10 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   if (is.na(orig__R_CHECK_LENGTH_1_LOGIC2_)) {
     Sys.unsetenv("_R_CHECK_LENGTH_1_LOGIC2_")
   } else {
-    Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_)
+    Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_)   # nocov
   }
   if (!is.null(old.sample.kind)) { 
-    eval(call("RNGkind", sample.kind = old.sample.kind))
+    eval(call("RNGkind", sample.kind = old.sample.kind))  # will be covered when R 3.6 is released
     # eval() to avoid `R CMD check` static code analysis warning in R < 3.6; see above
   }
   
@@ -102,7 +102,9 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
                 ", locale='", Sys.getlocale(), "'",
                 ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'")
   DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
-  if ((x<-sum(timings[["nTest"]])) != ntest) warning("Timings count mismatch:",x,"vs",ntest)
+  if ((x<-sum(timings[["nTest"]])) != ntest) {
+    warning("Timings count mismatch:",x,"vs",ntest)  # nocov
+  }
   cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
   print(DT, class=FALSE)
   
@@ -132,11 +134,13 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
   
   if (nfail > 0) {
+    # nocov start
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
     cat("\r")
     stop(nfail," error",s1," out of ",ntest," in ",timetaken(started.at)," on ",date(),". [",plat,"].",
          " Search ",names(fn)," for test number",s2,paste(whichfail,collapse=", "),".")
     # important to stop() here, so that 'R CMD check' fails
+    # nocov end
   }
   cat(plat,"\n\nAll ",ntest," tests in ",names(fn)," completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
   # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
@@ -229,7 +233,8 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     filename = NA_character_ # nocov
   }
 
-  if (!missing(error) && !missing(y)) stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")
+  if (!missing(error) && !missing(y))
+    stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov
 
   string_match = function(x, y) {
     length(grep(x,y,fixed=TRUE)) ||                    # try treating x as literal first; useful for most messages containing ()[]+ characters
