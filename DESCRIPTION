@@ -33,7 +33,7 @@ Authors@R: c(
   person("Felipe","Parages",       role="ctb"),
   person("Denes","Toth",           role="ctb"),
   person("Mus","Yaramaz-David",    role="ctb"),
-  person("@ayappanec","",          role="ctb"),
+  person("Ayappan","Perumal",      role="ctb"),
   person("James","Sams",           role="ctb"),
   person("Martin","Morgan",        role="ctb"),
   person("Michael","Quinn",        role="ctb"),
