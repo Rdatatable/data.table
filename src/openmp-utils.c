@@ -21,18 +21,23 @@ static bool RestoreAfterFork = true;  // see #2885 in v1.12.0
 
 int getDTthreads() {
 #ifdef _OPENMP
-  int ans = MIN(omp_get_max_threads(), omp_get_thread_limit());  // #3300
-  if (ans>1024) {
-    // # nocov start
-    warning("MIN(omp_get_max_threads(), omp_get_thread_limit()) has returned %d. This is unreasonably large. Applying hard limit of 1024. Please check OpenMP environment variables and other packages using OpenMP to see where this very large number has come from. Try getDTthreads(verbose=TRUE).", ans);
-    // to catch INT_MAX for example, which may be the case if user or another package has called omp_set_num_threads(omp_get_thread_limit())
-    // 1024 is a reasonable hard limit based on a comfortable margin above the most number of CPUs in one server I have heard about
-    ans=1024;
-    // # nocov end
+  int ans=DTthreads;
+  if (DTthreads==0) {  // 0 represents default
+    if (omp_get_max_threads()/*OMP_NUM_THREADS*/ < omp_get_num_procs()) {
+      // max_threads() -vs- num_procs(): https://software.intel.com/en-us/forums/intel-visual-fortran-compiler-for-windows/topic/302866
+      // allow user to choose number of threads to use by setting OMP_NUM_THREADS env variable
+      // e.g. more than 50% of num_procs() without needing to call setDTthreads() at R level (useful on prod server)
+      ans = omp_get_max_threads();
+    } else {
+      ans = omp_get_num_procs()/2;  // normal recommended default; e.g. half of 8 is 4 on laptop with 4 cores. Leaves plenty of room for other processes: #3395 & #3298
+      ans = MIN(ans, omp_get_thread_limit()); // OMP_THREAD_LIMIT; CRAN sets this to 2; #3300. Often INT_MAX meaning unlimited/unset
+    }
+  } else {
+    int limit = MIN(omp_get_num_procs(),      // data.table policy is to never allow > num_procs() since we know our algos won't benefit
+                    omp_get_thread_limit());  
+    ans = MIN(ans, limit);
   }
-  if (DTthreads>0 && DTthreads<ans) ans = DTthreads;
-  if (ans<1) ans=1;
-  return ans;
+  return MAX(1,ans);
 #else
   return 1;
 #endif
@@ -42,8 +47,9 @@ SEXP getDTthreads_R(SEXP verbose) {
   // verbose checked at R level
   if (!isLogical(verbose) || LENGTH(verbose)!=1 || INTEGER(verbose)[0]==NA_LOGICAL) error("'verbose' must be TRUE or FALSE");
   if (LOGICAL(verbose)[0]) {
-    Rprintf("omp_get_max_threads() = %d\n", omp_get_max_threads());
-    Rprintf("omp_get_thread_limit() = %d\n", omp_get_thread_limit()); // can be INT_MAX meaning unlimited
+    Rprintf("omp_get_num_procs() = %d\n", omp_get_num_procs());       // not affected by env variables afaik (which we rely on)
+    Rprintf("omp_get_max_threads() = %d\n", omp_get_max_threads());   // OMP_NUM_THREADS
+    Rprintf("omp_get_thread_limit() = %d\n", omp_get_thread_limit()); // OMP_THREAD_LIMIT; often INT_MAX meaning unlimited/unset
     Rprintf("DTthreads = %d\n", DTthreads);
     Rprintf("RestoreAfterFork = %s\n", RestoreAfterFork ? "true" : "false");
     #ifndef _OPENMP
@@ -57,7 +63,7 @@ SEXP getDTthreads_R(SEXP verbose) {
 SEXP setDTthreads(SEXP threads, SEXP restore_after_fork) {
   if (!isInteger(threads) || length(threads) != 1 || INTEGER(threads)[0] < 0) {
     // catches NA too since NA is -ve
-    error("threads= must be a single integer >= 0. Default 0 is recommended to use all CPU.");
+    error("threads= must be a single integer >= 0. Default 0 is recommended to use half of the logical CPUs.");
   }
   if (!isNull(restore_after_fork) && !(isLogical(restore_after_fork) && LOGICAL(restore_after_fork)[0]>=0 /*not NA*/)) {
     error("restore_after_fork= must be TRUE or FALSE. The default NULL means leave the current setting unchanged. getDTthreads(verbose=TRUE) reports the current setting.\n");
