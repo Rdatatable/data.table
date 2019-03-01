@@ -22,7 +22,7 @@ tstrsplit <- function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   }
   # Implementing #1094, but default FALSE
   if(type.convert) ans = lapply(ans, type.convert, as.is = TRUE)
-  if (identical(names, FALSE)) return(ans)
+  if (isFALSE(names)) return(ans)
   else if (isTRUE(names)) names = paste0("V", seq_along(ans))
   if (!is.character(names))
     stop("'names' must be TRUE/FALSE or a character vector.")

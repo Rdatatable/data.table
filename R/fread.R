@@ -15,14 +15,12 @@ fread <- function(input="",file=NULL,text=NULL,cmd=NULL,sep="auto",sep2="auto",d
   if (length(encoding) != 1L || !encoding %chin% c("unknown", "UTF-8", "Latin-1")) {
     stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
-  isTrueFalse = function(x) isTRUE(x) || identical(FALSE, x)
-  isTrueFalseNA = function(x) isTRUE(x) || identical(FALSE, x) || identical(NA, x)
-  stopifnot( isTrueFalse(strip.white), isTrueFalse(blank.lines.skip), isTrueFalse(fill), isTrueFalse(showProgress),
-             isTrueFalse(stringsAsFactors), isTrueFalse(verbose), isTrueFalse(check.names), isTrueFalse(logical01) )
+  stopifnot( isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill), isTRUEorFALSE(showProgress),
+             isTRUEorFALSE(stringsAsFactors), isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01) )
   stopifnot( is.numeric(nrows), length(nrows)==1L )
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
-  stopifnot(isTrueFalseNA(header))
+  stopifnot(is.logical(header) && length(header)==1L)  # TRUE, FALSE or NA
   stopifnot(is.numeric(nThread) && length(nThread)==1L)
   nThread=as.integer(nThread)
   stopifnot(nThread>=1L)

@@ -90,9 +90,13 @@ for (s in sugg) {
 
 # Control options in case user set them. The user's values are restored at the end of this file.
 oldOptions = options(
+  datatable.optimize = Inf,
+  datatable.verbose = FALSE,
   datatable.alloccol = 1024L,
   datatable.print.class = FALSE  #  This is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
 )
+# some tests (e.g. 1066, 1293) rely on capturing output that will be garbled with small width
+if (getOption('width') < 80L) options(width = 80L)
 
 ##########################
 
@@ -1206,9 +1210,9 @@ test(416, DT[J(2)], error="the columns to join by must be specified either using
 # Test shallow copy verbose message from := adding a column, and (TO DO) only when X is NAMED.
 DT = data.table(a=1:3,b=4:6)
 test(417, alloc.col(DT,3,verbose=TRUE), DT, output="Attempt to reduce allocation from.*to 5 ignored. Can only increase allocation via shallow copy")
-old = options(datatable.alloccol=1L)
+options(datatable.alloccol=1L)
 DT = data.table(a=1:3,b=4:6)
-options(old)
+options(datatable.alloccol=1024L)
 DT2 = DT
 test(418, length(DT)==2 && truelength(DT)==3)
 DT[,c:=7L]   # uses final slot
@@ -1233,9 +1237,10 @@ test(429, DT, data.table(a=factor(c("Z","Z","A","Z")),b=1:4))
 test(430, DT[1,1]<- 3L, 3L, warning="RHS contains 3 which is outside the levels range.*1,2.*of column 1, NAs generated")
 test(431, DT[1,1:=4L], data.table(a=factor(c(NA,"Z","A","Z")),b=1:4), warning="RHS contains 4 which is outside the levels range.*1,2.*of column 1, NAs generated")
 
-old = getOption("datatable.alloccol")  # Test that unsettting datatable.alloccol is caught, #2014
-options(datatable.alloccol=NULL)   # In this =NULL case, options() in R 3.0.0 returned TRUE rather than the old value. This R bug was fixed in R 3.1.1.
-                                   # This is why getOption is called first rather than just using the result of option() like elsewhere in this test file.
+old = getOption("datatable.alloccol")  # Test that unsetting datatable.alloccol is caught, #2014
+options(datatable.alloccol=NULL) # In this =NULL case, options() in R 3.0.0 returned TRUE rather than the old value. This R bug was fixed in R 3.1.1.
+                                 # This is why getOption is called first rather than just using the result of option() like elsewhere in this test file.
+                                 # TODO: simplify this test if/when R dependency >= 3.1.1
 err1 = try(data.table(a=1:3), silent=TRUE)
 options(datatable.alloccol="1024")
 err2 = try(data.table(a=1:3), silent=TRUE)
@@ -1245,7 +1250,7 @@ options(datatable.alloccol=NA_integer_)
 err4 = try(data.table(a=1:3), silent=TRUE)
 options(datatable.alloccol=-1)
 err5 = try(data.table(a=1:3), silent=TRUE)
-options(datatable.alloccol=old)   # otherwise test() itself fails in its internals with the alloc.col error
+options(datatable.alloccol=1024L)   # otherwise test() itself fails in its internals with the alloc.col error
 test(432.1, inherits(err1,"try-error") && grep("Has getOption[(]'datatable.alloccol'[)] somehow become unset?", err1))
 test(432.2, inherits(err2,"try-error") && grep("getOption[(]'datatable.alloccol'[)] should be a number, by default 1024. But its type is 'character'.", err2))
 test(432.3, inherits(err3,"try-error") && grep("is a numeric vector ok but its length is 2. Its length should be 1.", err3))
@@ -1263,7 +1268,7 @@ options(datatable.alloccol=NA_integer_)
 err4 = try(DT[,"b"], silent=TRUE)
 options(datatable.alloccol=-1)
 err5 = try(DT[2,"b"], silent=TRUE)
-options(datatable.alloccol=old)   # otherwise test() itself fails in its internals with the alloc.col error
+options(datatable.alloccol=1024L)   # otherwise test() itself fails in its internals with the alloc.col error
 test(433.1, inherits(err1,"try-error") && grep("Has getOption[(]'datatable.alloccol'[)] somehow become unset?", err1))
 test(433.2, inherits(err2,"try-error") && grep("getOption[(]'datatable.alloccol'[)] should be a number, by default 1024. But its type is 'character'.", err2))
 test(433.3, inherits(err3,"try-error") && grep("is a numeric vector ok but its length is 2. Its length should be 1.", err3))
@@ -1861,9 +1866,18 @@ setnames(ans2,"x","V1")
 setnames(ans2,"y","V2")
 test(654, ans1, ans2)
 
-test(656, DT[,mean(x),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
-test(657, DT[,list(mean(x)),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
-test(658, DT[,list(mean(x),mean(y)),by=grp1,verbose=TRUE], output="GForce optimized j to.*gmean")
+options(datatable.optimize = 0L)
+test(656.1, DT[ , mean(x), by=grp1, verbose=TRUE], output='(GForce FALSE)')
+test(657.1, DT[ , list(mean(x)), by=grp1, verbose=TRUE], output="(GForce FALSE)")
+test(658.3, DT[ , list(mean(x), mean(y)), by=grp1, verbose=TRUE], output="(GForce FALSE)")
+options(datatable.optimize = 1L)
+test(656.2, DT[ , mean(x), by=grp1, verbose=TRUE], output='(GForce FALSE)')
+test(657.2, DT[ , list(mean(x)), by=grp1, verbose=TRUE], output="(GForce FALSE)")
+test(658.2, DT[ , list(mean(x), mean(y)), by=grp1, verbose=TRUE], output="(GForce FALSE)")
+options(datatable.optimize = 2L)
+test(656.3, DT[ , mean(x), by=grp1, verbose=TRUE], output="GForce optimized j to.*gmean")
+test(657.3, DT[ , list(mean(x)), by=grp1, verbose=TRUE], output="GForce optimized j to.*gmean")
+test(658.3, DT[ , list(mean(x), mean(y)), by=grp1, verbose=TRUE], output="GForce optimized j to.*gmean")
 tt = capture.output(DT[,list(mean(x),mean(y)),by=list(grp1,grp2),verbose=TRUE])
 test(659, !length(grep("Wrote less rows", tt)))  # first group is one row with this seed. Ensure we treat this as aggregate case rather than allocate too many rows.
 
@@ -2322,7 +2336,7 @@ l = list(data.table(a=1:3), data.table(b=4:6))
 setattr(l,"names",c("foo","bar"))
 test(846, l[["foo"]][2,d:=4], data.table(a=1:3,d=c(NA,4,NA)))
 test(847, l, list(foo=data.table(a=1:3,d=c(NA,4,NA)), bar=data.table(b=4:6)))
-old = options(datatable.alloccol=0L)
+options(datatable.alloccol=0L)
 l = list(foo=data.table(a=1:3,b=4:6),bar=data.table(c=7:9,d=10:12))   # list() doesn't copy the NAMED==0 objects here
 test(848, truelength(l[[1L]]), 2L)
 test(849, {l[[1L]][,e:=13:15]; l[[1L]]}, data.table(a=1:3,b=4:6)[,e:=13:15])
@@ -2331,7 +2345,7 @@ test(851, truelength(l[[2L]]), 2L)
 options(datatable.alloccol=1L)
 l[["bar"]][,f:=16:18]
 test(852, truelength(l[[2L]]), 4L)
-options(old)
+options(datatable.alloccol=1024L)
 # Now create the list from named objected
 DT1 = data.table(a=1:3, b=4:6)
 DT2 = data.table(c=7:9)
@@ -2378,15 +2392,21 @@ test(863, after < before+0.5)
 # rbindlist should look for the first non-empty data.table - New changes (from Arun). Explanation below:
 # Even if data.table is empty, as long as there are column names, they should be considered.
 # Ex: What if all data.tables are empty? What'll be the column name then?
-# If there are no names, then the first non-empty set of names will be allocated. I think this is the way to do it.. TODO: Should write to Matt about it.
+# If there are no names, then the first non-empty set of names will be allocated.
 test(864.1, rbindlist(list(data.table(foo=logical(0),bar=logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), setnames(DT, c("foo", "bar")))
 test(864.2, rbindlist(list(list(logical(0),logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), DT)
 test(864.3, rbindlist(list(data.table(logical(0),logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), setnames(DT, c("V1", "V2")))
 
 # Steve's find that setnames failed for numeric 'old' when pointing to duplicated names
 DT = data.table(a=1:3,b=1:3,v=1:6,w=1:6)
-test(865, ans1<-DT[,{list(name1=sum(v),name2=sum(w))},by="a,b",verbose=TRUE],
+options(datatable.optimize = 0L)
+test(865.1, ans1<-DT[,{list(name1=sum(v),name2=sum(w))},by="a,b",verbose=TRUE], output="(GForce FALSE)")
+options(datatable.optimize = 1L)
+test(865.2, ans1<-DT[,{list(name1=sum(v),name2=sum(w))},by="a,b",verbose=TRUE], output="(GForce FALSE)")
+options(datatable.optimize = 2L)
+test(865.3, ans1<-DT[,{list(name1=sum(v),name2=sum(w))},by="a,b",verbose=TRUE],
           output="GForce optimized.*gsum[(]v[)], gsum[(]w[)]")  # v1.9.7 treats wrapped {} better, so this is now optimized
+options(datatable.optimize = Inf)
 test(866, names(ans1), c("a","b","name1","name2"))
 test(867, names(ans2<-DT[,list(name1=sum(v),name2=sum(w)),by="a,b"]), c("a","b","name1","name2"))  # list names extracted here
 test(868, ans1, ans2)
@@ -2566,10 +2586,9 @@ test(914, fread(txt,sep="*"), data.table("A;B;C|D,E"=c("1;3;4|5,6","2;4;6|8,10")
 test(915, fread(txt,sep="\n"), data.table("A;B;C|D,E"=c("1;3;4|5,6","2;4;6|8,10"))) # like a fast readLines
 
 # Crash bug when RHS is 0 length and := by group, fixed in 1.8.7
+# This test was changed in PR#3310 for v1.12.2 and then reverted in dev before release (#3386) back to previous behavior
 DT = data.table(a=1:3,b=1:6)
-test(916.1, DT[,newcol:=logical(0),by=a], error="Supplied 0 items to be assigned to group 1 of size 2 in column 'newcol'")
-test(916.2, DT, data.table(a=1:3,b=1:6))  # that newcol was not added since group 1 failed
-test(916.3, DT[,newcol:=NA,by=a], data.table(a=1:3,b=1:6,newcol=NA))
+test(916, DT[,newcol:=logical(0),by=a], data.table(a=1:3,b=1:6,newcol=NA))
 
 # roll join error when non last join column is factor, #2450
 X = data.table(id=2001:2004, uid=c(1001,1002,1001,1001), state=factor(c('CA','CA','CA','MA')), ts=c(51,52,53,54), key='state,uid,ts')
@@ -2774,11 +2793,10 @@ test(995, DT[CJ(c(5,3), c(5,1), sorted=FALSE)], OUT)
 # CJ with ordered factor
 xx <- factor(letters[1:2], ordered=TRUE)
 yy <- sample(2)
-old = options(datatable.CJ.names=FALSE)
+options(datatable.CJ.names=FALSE)
 test(996.1, CJ(xx, yy), setkey(data.table(rep(xx, each=2), rep(base::sort.int(yy), 2))))
 options(datatable.CJ.names=TRUE)
 test(996.2, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2), yy = rep(base::sort.int(yy), 2))))
-options(old)
 
 # That CJ orders NA consistently with setkey and historically, now it doesn't use setkey.
 # NA must always come first in data.table throughout, since binary search relies on that internally.
@@ -2805,7 +2823,6 @@ DT = data.table(a=1:3,b=4:6,b=7:9,c=10:12)
 test(1005, rbind(DT,DT), data.table(a=rep(1:3,2),b=rep(4:6,2),b=rep(7:9,2),c=rep(10:12,2)))
 M <- mtcars
 colnames(M)[11] <- NA
-# NOTE -- this test requires having options('width') sufficiently wide
 test(1006, print(as.data.table(M), nrows=10), output="gear NA.*1: 21.0")
 
 # rbinding factor with non-factor/character
@@ -2826,7 +2843,6 @@ DT = data.table(a=c(NA,NA,FALSE,FALSE), b=c(1,1,2,2))
 test(1009, DT[,list(mean(a), sum(a)),by=b], data.table(b=c(1,2),V1=c(NA,0),V2=c(NA_integer_,0L))) # sum(logical()) should be integer, not real
 
 # an fread error shouldn't hold a lock on the file on Windows
-# TODO: now that these are warnings and not errors, we need another way to trigger a STOP() inside fread.c. options(warn=2) isn't enough.
 cat('A,B\n1,2\n3\n5,6\n', file=(f<-tempfile()))
 test(1010.1, fread(f,logical01=TRUE), ans<-data.table(A=TRUE, B=2L), warning=(txt<-"Stopped early on line 3.*Expected 2 fields but found 1.*fill.*TRUE.*<<3>>"))
 test(1010.2, fread(f,logical01=TRUE), ans, warning=txt)
@@ -4084,7 +4100,7 @@ test(1221, DT[.(1),b], c("a","c","e"))
 # - But save the seed so that we can generate the same data back if any error occurs
 seed = as.integer(Sys.time()) # sample(9999L, 1L) temporary fix, because all the set.seed(.) used above makes this sample() step deterministic (always seed=9107)
 seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
-# no NaN (because it's hard to match with base::order)                             ## TODO: add tests with NaN
+# no NaN (because it's hard to match with base::order); tested below in 1988.4-8
 set.seed(seed)
 foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, sep="")
 i1 = as.integer(sample(c(-100:100), 1e3, TRUE))
@@ -4224,10 +4240,8 @@ if (base::getRversion() < "3.3.0") {
 # Test for optimisation of 'order' to 'forder'. Copied to benchmarks.Rraw too.
 set.seed(45L)
 DT = data.table(x=sample(1e2, 1e5, TRUE), y=sample(1e2, 1e5, TRUE))
-old = options(datatable.optimize=Inf)
 test(1241, DT[order(x,-y)],       # optimized to forder()
            DT[base_order(x,-y)])  # not optimized
-options(old)
 
 DT = data.table(a=1:3, b=4:6)
 myCol = "a"
@@ -4346,7 +4360,7 @@ test(1251.9, DT[base::order(x, list(-y), decreasing=TRUE)],
 # more "edge cases" to ensure we're consistent with base
 test(1251.11, DT[order("a")], DT[1L])
 test(1251.12, DT[order("b", "a")], DT[1L])
-test(1251.13, DT[order(list("b", "a"))], error = "Column 1 of by= (1) is type 'list', not yet supported")
+test(1251.13, DT[order(list("b", "a"))], error = "Column 1 of by= [(]1[)] is type 'list', not yet supported. Please use the by=.*that are supported")
 test(1251.14, DT[order(list("b"), list("a"))], DT[1L])
 
 ##############################################################
@@ -4450,56 +4464,49 @@ unlink(f)
 #################################
 # FR #2722 optimise j=c(lapply(.SD,sum, ...)) - here any amount of such lapply(.SD, ...) can occur and in any order
 set.seed(45L)
-dt <- data.table(a=sample(2,10,TRUE), b=sample(3,10,TRUE), c=sample(4,10,TRUE), d=sample(5,10,TRUE))
+dt = data.table(a=sample(2,10,TRUE), b=sample(3,10,TRUE), c=sample(4,10,TRUE), d=sample(5,10,TRUE))
+dt2 = data.table(x=c(1,1,1,2,2,2), y=1:6)
+
+options(datatable.optimize=0L)
+# auto-naming behavior is different for no-optimization case; just check optimization is off
+test(1268.1, dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], output = 'All optimizations are turned off')
+test(1268.2, dt[, c(lapply(.SD, mean), .N), by=a, verbose=TRUE], output = 'All optimizations are turned off')
+test(1268.3, dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], output="All optimizations are turned off")
+test(1268.4, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], output="All optimizations are turned off")
+test(1268.5, dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], output="All optimizations are turned off")
+# newly added tests for #861 -- optimise, but no GForce
+test(1268.6, dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], output="All optimizations are turned off")
+# don't optimise .I in c(...)
+test(1268.7, dt2[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], output="All optimizations are turned off")
 
 options(datatable.optimize=1L)
-ans2 <- dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a]
+test(1268.8, ans1 <- dt[ , c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], output="Old mean optimization.*(GForce FALSE)")
+test(1268.9, ans2 <- dt[, c(lapply(.SD, mean), .N), by=a, verbose = TRUE], output="Old mean optimization.*GForce FALSE")
+test(1268.10, ans3 <- dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], output = 'Old mean optimization.*GForce FALSE')
+test(1268.11, ans4 <- dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose = TRUE], output="Old mean optimization.*GForce FALSE")
+test(1268.12, ans5 <- dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], output="Old mean optimization.*GForce FALSE")
+test(1268.13, ans6 <- dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], output="Old mean optimization.*GForce FALSE")
+test(1268.14, ans7 <- dt2[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], output="Old mean optimization.*GForce FALSE")
+
 options(datatable.optimize=Inf)
-test(1268.1, dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], ans2,
+test(1268.15, dt[, c(lapply(.SD, mean), lapply(.SD, sum)), by=a, verbose=TRUE], ans1,
              output="GForce optimized j to 'list(gmean(b), gmean(c), gmean(d), gsum(b), gsum(c), gsum(d))'")
-
-options(datatable.optimize=1L)
-ans2 <- dt[, c(lapply(.SD, mean), .N), by=a]
-options(datatable.optimize=Inf)
-test(1268.2, dt[, c(lapply(.SD, mean), .N), by=a, verbose=TRUE], ans2,
+test(1268.16, dt[, c(lapply(.SD, mean), .N), by=a, verbose=TRUE], ans2,
                   output = "lapply optimization changed j from 'c(lapply(.SD, mean), .N)' to 'list(mean(b), mean(c), mean(d), .N)'")
-
-options(datatable.optimize=1L)
-ans2 <- dt[, c(list(c), lapply(.SD, mean)), by=a]
-options(datatable.optimize=Inf)
-test(1268.3, dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
+test(1268.17, dt[, c(list(c), lapply(.SD, mean)), by=a, verbose=TRUE], ans3,
              output = "lapply optimization changed j from 'c(list(c), lapply(.SD, mean))' to 'list(c, mean(b), mean(c), mean(d))")
+test(1268.18, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], ans4,
+             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
+test(1268.19, dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], ans5,
+             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
+test(1268.20, dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], ans6,
+             output = "lapply optimization changed j from 'c(list(sum(d), .I), lapply(.SD, mean))' to 'list(sum(d), .I, mean(b), mean(c), mean(d))'")
+test(1268.21, dt2[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], ans7,
+             output = "lapply optimization is on, j unchanged as 'c(.I, lapply(.SD, mean))'")
 
-test(1268.4, dt[, c(as.list(c), lapply(.SD, mean)), by=a],
+test(1268.22, dt[, c(as.list(c), lapply(.SD, mean)), by=a],
              error = "j doesn't evaluate to the same number of columns for each group")
 
-options(datatable.optimize=1L)
-ans2 <- dt[, c(sum(d), lapply(.SD, mean)), by=a]
-options(datatable.optimize=Inf)
-test(1268.5, dt[, c(sum(d), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
-
-options(datatable.optimize=1L)
-ans2 <- dt[, c(list(sum(d)), lapply(.SD, mean)), by=a]
-options(datatable.optimize=Inf)
-test(1268.6, dt[, c(list(sum(d)), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "GForce optimized j to 'list(gsum(d), gmean(b), gmean(c), gmean(d))'")
-
-# newly added tests for #861
-# optimise, but no GForce
-options(datatable.optimize=1L)
-ans2 <- dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a]
-options(datatable.optimize=Inf)
-test(1268.7, dt[, c(list(sum(d), .I), lapply(.SD, mean)), by=a, verbose=TRUE], ans2,
-             output = "lapply optimization changed j from 'c(list(sum(d), .I), lapply(.SD, mean))' to 'list(sum(d), .I, mean(b), mean(c), mean(d))'")
-
-# don't optimise .I in c(...)
-options(datatable.optimize=1L)
-dt = data.table(x=c(1,1,1,2,2,2), y=1:6)
-ans2 <- dt[, c(.I, lapply(.SD, mean)), by=x]
-options(datatable.optimize=Inf)
-test(1268.8, dt[, c(.I, lapply(.SD, mean)), by=x, verbose=TRUE], ans2,
-             output = "lapply optimization is on, j unchanged as 'c(.I, lapply(.SD, mean))'")
 
 ### FR #2722 tests end here ###
 
@@ -4640,8 +4647,6 @@ test(1288.15, rbindlist(ll, fill=TRUE), error="fill=TRUE, but names of input lis
 ll <- list(list(1:3, 4:6), list(a=5:7, b=8:10))
 test(1288.16, rbindlist(ll, fill=TRUE), error="fill=TRUE, but names of input list at position 1")
 
-# TO DO: TODO: think of and add more tests for rbindlist
-
 # fix for #5647
 dt = data.table(x=1L, y=1:10)
 test(1289.1, dt[, z := c(rep(NA,5), y), by=x], error="Supplied 15 items to be assigned to group 1 of size 10 in column 'z'")
@@ -4751,7 +4756,6 @@ c(2497.94263862333,
 "fr", "fg", "fsal", "mr", "mg", "msal"), class = c("data.table",
 "data.frame"), row.names = c(NA, -2L))
 
-if (options()$width<80) options(width=80)
 ans1 = capture.output(print(DT, digits=4, row.names=FALSE))
 ans2 = c(" fisyr  er      eg      esal  fr      fg      fsal    mr      mg      msal",
          "  1995 1,3 0.01973 2330,2424 4,4 0.03931 2521,2521  5,30 0.01978 2572,4216",
@@ -5315,8 +5319,6 @@ x = c(2147483647L, NA_integer_, -2L)
 test(1368.2, forderv(x), c(2L, 3L, 1L))
 
 # tests for frankv. testing on vectors alone so that we can compare with base::rank
-# One difference is that NAs belong to the same group, unlike base::rank. So are NaNs.
-# So, they can't be compared to base::rank, won't be identical except for ties="first", and (ties="random", na.last=NA) - should document this.
 
 # no seed set on purpose
 dt = data.table(AA=sample(c(-2:2), 50, TRUE),
@@ -5443,15 +5445,70 @@ test(1371.4, foverlaps(x, y, type="any", by.x=c("chr", "start", "end"), by.y=c("
 #     setorder(ans)
 #     ans
 #   }
-types=c("any", "within", "start", "end")
+
+# ----- DONOT REMOVE THIS ----------------------------------------------------------------------
+# CONTAINS CODE TO REGENERATE TEST1372.RData IF NECESSARY IN THE FUTURE
+# cc(FALSE)
+# require(GenomicRanges)
+
+# gr <- function(x) {
+#   GRanges(Rle(x[[1]]), IRanges(start=x[[2]], end=x[[3]]))
+# }
+# fo <- function(gr1, gr2, ...) {
+#   olaps = findOverlaps(gr1, gr2, ...)
+#   if (is.vector(olaps)) return(olaps)
+#   ans = setDT(list(xid=queryHits(olaps), yid=subjectHits(olaps)))
+#   setorder(ans)
+#   ans
+# }
+
+# types=c("any", "within", "start", "end", "equal")
+# mults=c("all", "first", "last")
+# maxgap=-1L; minoverlap=0L
+# verbose=FALSE; which=TRUE
+# set.seed(123)
+# this = 1L
+# times = 3L
+# ans = list() # vector("list", times*length(types)*length(mults))
+# for (run in seq_len(times)) {
+#   n1 = max(50L, sample(1e2L, 1, FALSE))
+#   n2 = max(50L, sample(1e2L, 1, FALSE))
+#   N = max(100L, sample(1e3L, 1, FALSE))
+#   i1 = sample(N, n1, TRUE)
+#   i2 = sample(N, n1, TRUE)
+#   start = pmin(i1,i2)
+#   end = pmax(i1,i2)
+#   chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
+#   i = setDT(list(chr=chr, start=start, end=end))
+#   i1 = sample(N, n2, TRUE)
+#   i2 = sample(N, n2, TRUE)
+#   start = pmin(i1,i2)
+#   end = pmax(i1,i2)
+#   chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
+#   x = setDT(list(chr=chr, start=start, end=end))
+#   x_eq_idx <- sample(nrow(i), 4L)
+#   x = rbind(x, i[sample(x_eq_idx, 10L, TRUE)]) # for type='equal' matches
+#   setkey(x); setkey(i)
+#   for (type in types) {
+#     for (mult in mults) {
+#       idx <- paste(type, mult, run, sep="_")
+#       ans[[idx]] <- fo(gr(i), gr(x), type=type, select=mult)
+#       this = this+1L
+#     }
+#   }
+# }
+# save(ans, file="~/Dropbox/Public/github/Rdatatable/datatable/inst/tests/test1372-new.RData")
+# ----------------------------------------------------------------------------------------------
+types=c("any", "within", "start", "end", "equal") # add 'equal' as well
 mults=c("all", "first", "last")
-maxgap=0L; minoverlap=1L
+maxgap=-1L; minoverlap=0L # default has changed in IRanges/GenomicRanges :: findOverlaps
 verbose=FALSE; which=TRUE
 test_no = 1372.0
-load(testDir("test1372.Rdata"))  # ans. Saved results to avoid loading GenomicRanges
+load(testDir("test1372.Rdata")) # Regenerated on 17/02/2019 to include type = 'equal'. Var 'ans' has all the results saved by running GenomicRanges separately using code above, is a list with names of the format type_mult_run
 set.seed(123)
 this = 1L
-for (run in 1:3) {
+times = 3L
+for (run in seq_len(times)) {
   n1 = max(50L, sample(1e2L, 1, FALSE))
   n2 = max(50L, sample(1e2L, 1, FALSE))
   N = max(100L, sample(1e3L, 1, FALSE))
@@ -5467,16 +5524,19 @@ for (run in 1:3) {
   end = pmax(i1,i2)
   chr  = sort(sample(paste("Chr", 1:2, sep=""), length(start), TRUE))
   x = setDT(list(chr=chr, start=start, end=end))
+  x_eq_idx <- sample(nrow(i), 4L)
+  x = rbind(x, i[sample(x_eq_idx, 10L, TRUE)]) # for type='equal' matches
   setkey(x); setkey(i)
   for (type in types) {
     for (mult in mults) {
       # data.table overlap join
       nomatch = if(mult == "all") NULL else NA_integer_
       thisans = foverlaps(i, x, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
-      # ans[[this]] contains fo(gr(i), gr(x), type=type, select=mult)
       test_no = test_no+.01
       # cat("test =", test_no, ", run = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
-      test(test_no, thisans, ans[[this]])
+      idx = paste(type, mult, run, sep="_")
+      # ans[[idx]] contains fo(gr(i), gr(x), type=type, select=mult)
+      test(test_no, thisans, ans[[idx]])
       this = this+1L
     }
   }
@@ -5569,12 +5629,12 @@ f = paste("file://",testDir("russellCRCRLF.csv"),sep="")
 test(1378.3, fread(f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
 #====================================
 
-oldv = options(datatable.fread.datatable = FALSE)
+options(datatable.fread.datatable = FALSE)
 test(1379.1, fread("A,B\n1,3\n2,4\n"), data.frame(A=1:2,B=3:4))
 test(1379.2, fread("A,B\n1,3\n2,4\n",data.table=TRUE), data.table(A=1:2,B=3:4))
 options(datatable.fread.datatable = TRUE)
 test(1379.3, fread("A,B\n1,3\n2,4\n",data.table=FALSE), data.frame(A=1:2,B=3:4))
-options(oldv)
+options(datatable.fread.datatable = TRUE)
 
 # That that RHS of == is coerced to x's type before bmerge in auto index. Package vardpoor does this in example(linqsr)
 DT = data.table(a=c(0,0,1,1,0,0), b=1:6)  # 'a' type double here, as it is in vardpoor
@@ -5597,7 +5657,7 @@ test(1382.4, DT[c("c", "b"), list(id, check = any(var > 3)), nomatch=0L], data.t
 # Fix for #742 - allow.cartesian should be ignored if `i` has no duplicates.
 DT <- data.table(id=rep(letters[1:2], 2), var = rnorm(4), key="id")
 test(1383.1, DT[letters[1:3], list(var)], DT[1:5, list(var)])
-# Fix for #800 - allow.cartesian should be ignored if jsub[1L] has `:=`. TODO: maybe still warn if `i` has duplicates?
+# Fix for #800 - allow.cartesian should be ignored if jsub[1L] has `:=`.
 DT=data.table(id=c(1,1), date=c(1992,1991), value=c(4.1,4.5), key="id")
 test(1383.2, copy(DT)[DT, a:=1], DT[, a := 1])
 
@@ -5949,10 +6009,10 @@ test(1437.17, DT[!a %chin% c("A", "B") & x == 2], DT[c(4, 5, 6)])
 ## queries with j are optimized (Correct results are tested extensively below)
 test(1437.18, DT[x == 2, .(test = x+y), verbose = TRUE], output = "Optimized subsetting")
 test(1437.19, DT[x == 2, test := x+y, verbose = TRUE], output = "Optimized subsetting")
-## optimize option level 3 is required
-old = options("datatable.optimize" = 2L)
+## optimize option level 3 is required to get optimized subsetting
+options(datatable.optimize = 2L)
 test(1437.21, DT[x == 2, verbose = TRUE], output = "^   x y")
-options(old)
+options(datatable.optimize = Inf)
 test(1437.22, DT[x == 2, verbose = TRUE], output = "Optimized subsetting")
 ## NaN on right hand side is treated correctly. NA on right hand side is not reaching .prepareFastSubset, so not tested here
 DT <- data.table(x = c(1L:10L, NA_integer_, NA_integer_), y = c(1:10, NA_real_, NaN))
@@ -5986,7 +6046,6 @@ test(1437.38, DT[x %in% 0:100 & y %in% 0:101], DT)
 ## very much inspired by the tests for non equi joins (1641ff)
 set.seed(13545)
 n <- 1e3 ## rows of the data.table. I checked that with these rows and the seed, all queries (except for == NA) have at least one match
-oldOpt <- getOption("datatable.optimize") ## remember for restoring after the test
 ## create test DT
 DT <- data.table(intCol    = sample(c(1:3, NA), n, replace = TRUE),
                  doubleCol = sample(c(1.86, 1000.345, 2.346, NA, NaN), n, replace = TRUE),
@@ -6067,8 +6126,7 @@ for(t in seq_len(nrow(all))){
 }
 
 }
-options("datatable.optimize" = oldOpt) ## restore to default
-
+options(datatable.optimize = Inf)
 
 # fread dec=',' e.g. France
 test(1439, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1L is not TRUE")
@@ -6135,7 +6193,6 @@ test(1452, fread("notexist.csv"), error="File 'notexist.csv' does not exist.*get
 test(1453, fread(testDir("fread_line_error.csv"))[c(1,.N), c("V1","V24")],
            data.table(V1=INT(3,32), V24=c(".Q8_2_0W_8_1_7_L-4-U-5_1YSV-S-3-5.X",".U5_5_8H_7_6_0_U-5-J-7_2GNY-J-3-5.X")),
            warning=c("resolved improper quoting", "Stopped.*line 12. Expected 24 fields but found 47.*First discarded non-empty line: <<31,3-0-7 4:1:7.5 HVV,"))
-# TODO: add comment=="#".   Ensure only after last field is observed.
 
 # no-sep-found => sep="\n", use case for this in #738
 test(1454.1, fread('"Foo"`"Bar"\n5`2\n',sep="`"), data.table(Foo=5L,Bar=2L))
@@ -6439,7 +6496,7 @@ dt2 = data.table(x=3:7, y=8:12)
 setkey(dt1)
 setkey(dt2)
 test(1473, foverlaps(dt1,dt2, which=TRUE, nomatch=NULL, type="equal"),
-           error="not implemented yet") # data.table(xid=3:5, yid=1:3)
+           data.table(xid=3:5, yid=1:3))
 
 # More tests for `frankv`, #760
 DT = data.table(x=c(4, 1, 4, NA, 1, NA, 4), y=c(1, 1, 1, 0, NA, 0, 2))
@@ -6473,7 +6530,7 @@ test(1475.17, uniqueN(logical(), na.rm=TRUE),            0L)
 DT <- data.table(x = rep(1:3, each = 3), y = as.Date(seq(Sys.Date(), (Sys.Date() + 8), by = "day")))
 test(1476.1, DT[, .(y=mean(y)), x], setDT(aggregate(y ~ x, DT, mean)))
 
-# test for 'transpose' of a list, TODO: integer64 support.
+# test for 'transpose' of a list
 ll = lapply(1:12, function(x) {
   if (x <= 3) sample(10, sample(5:10, 1L))
   else if (x > 3 & x <= 6) as.numeric(sample(101:115, sample(7:12, 1L)))
@@ -6520,7 +6577,7 @@ test(1480, DT[, x := strsplit(as.character(x), " ")], data.table(x=list("a", let
 
 # #970, over-allocation issue
 a=data.frame(matrix(1,ncol=101L))
-old = options(datatable.alloccol=100L)
+options(datatable.alloccol=100L)
 ans1 = data.table(a)
 options(datatable.alloccol=101L)
 ans2 = data.table(a)
@@ -6531,7 +6588,7 @@ test(1481.2, ans3, ans1)
 options(datatable.alloccol=1L)
 ans4 = data.table(a)
 test(1481.3, ans4, ans1)
-options(old)
+options(datatable.alloccol=1024L)
 
 # #479, check := assignment in environment (actual case is when loaded from disk, but we'll just simulate a scenario here).
 ee = new.env()
@@ -6840,11 +6897,10 @@ test(1514.7, isReallyReal(x), 0L)
 test(1514.8, isReallyReal(9L), 0L)
 
 # #1091
-old.option = getOption("datatable.prettyprint.char")
 options(datatable.prettyprint.char = 5L)
 DT = data.table(x=1:2, y=c("abcdefghijk", "lmnopqrstuvwxyz"))
 test(1515.1, grep("abcde...", capture.output(print(DT))), 2L)
-options(datatable.prettyprint.char = old.option)
+options(datatable.prettyprint.char = NULL)
 
 # test 1516: chain setnames() - used while mapping source to target columns
 SRC = data.table(x=1:2, y=c("abcdefghij", "klmnopqrstuv"), z=rnorm(2))
@@ -6905,11 +6961,10 @@ test(1524, ans1, ans2)
 # 'unique =' argument for CJ, #1148
 x = c(1, 2, 1)
 y = c(5, 8, 8, 4)
-old = options(datatable.CJ.names=FALSE)
+options(datatable.CJ.names=FALSE)
 test(1525.1, CJ(x, y, unique=TRUE), CJ(V1=c(1,2), V2=c(4,5,8)))
 options(datatable.CJ.names=TRUE)
 test(1525.2, CJ(x, y, unique=TRUE), CJ( x=c(1,2),  y=c(4,5,8)))
-options(old)
 
 # `key` argument fix for `setDT` when input is already a `data.table`,  #1169
 DT <- data.table(A = 1:4, B = 5:8)
@@ -7510,13 +7565,12 @@ test(1564.3, dt[a==5, .SD][, b := 1L], data.table(a=5L, b=1L))
 
 # Fix for #1251, DT[, .N, by=a] and DT[, .(.N), by=a] uses GForce now
 dt = data.table(a=sample(3,20,TRUE), b=1:10)
-old = options(datatable.optimize = Inf)
-ans1 = dt[, .N, by=a]
-ans2 = capture.output(dt[, .N, by=a, verbose=TRUE])
-test(1565.1, length(grep("GForce optimized j to", ans2))>0L, TRUE) # make sure GForce optimisation works
-options(datatable.optimize = 1L) # make sure result is right
-test(1565.2, ans1, dt[, .N, by=a])
-options(old)
+options(datatable.optimize = 0L)
+test(1565.1, ans <- dt[, .N, by=a, verbose=TRUE], output="All optimizations are turned off")
+options(datatable.optimize = 1L)
+test(1565.2, dt[ , .N, by=a, verbose=TRUE], ans, output="lapply optimization is on, j unchanged")
+options(datatable.optimize = Inf)
+test(1565.3, dt[ , .N, by=a, verbose=TRUE], ans, output = "GForce optimized j to")
 
 # Fix for #1212
 set.seed(123)
@@ -7630,7 +7684,6 @@ if (test_bit64) {
 }
 
 # make sure gforce is on
-optim = getOption("datatable.optimize")
 options(datatable.optimize=2L)
 
 # testing gforce::gmedian
@@ -7680,7 +7733,7 @@ test(1579.22, dt[, .SD[2L], keyby=x], dt[, mysub(.SD,2L), keyby=x])
 ans = capture.output(dt[, .SD[2], by=x, verbose=TRUE])
 test(1579.23, any(grepl("GForce optimized", ans)), TRUE)
 
-options(datatable.optimize=optim)
+options(datatable.optimize = Inf)
 
 # test for #1419, rleid doesn't remove names attribute
 x = c("a"=TRUE, "b"=FALSE)
@@ -7691,7 +7744,7 @@ test(1580, nx, names(x))
 # FR #971, partly addressed (only subsets in 'i')
 # make sure GForce kicks in and the results are identical
 dt = dt[, .(x, d1, d2)]
-old = options(datatable.optimize=1L)
+options(datatable.optimize=1L)
 
 test(1581.1, ans1 <- dt[x %in% letters[15:20],
                         c(.N, lapply(.SD, sum, na.rm=TRUE),
@@ -7736,15 +7789,13 @@ options(datatable.optimize=2L)
 test(1581.11, ans2 <- dt[x %in% letters[15:20], .SD[2], by=x, verbose=TRUE],
               output = "GForce optimized j")
 test(1581.12, ans1, ans2)
-
-options(old)
+options(datatable.optimize = Inf)
 
 # handle NULL value correctly #1429
 test(1582, uniqueN(NULL), 0L)
 
 # bug fix #1461
 dt = data.table(x=c(1,1,1,2,2,2,3,3,3,4,4,4,5), y=c(NaN,1,2, 2,NaN,1, NA,NaN,2, NaN,NA,NaN, NaN))
-optim = getOption("datatable.optimize")
 # make sure gforce is on
 options(datatable.optimize=Inf)
 ans1 = suppressWarnings(dt[, base::min(y, na.rm=TRUE), by=x])
@@ -7755,8 +7806,6 @@ ans3 = suppressWarnings(dt[, base::min(y), by=x])
 ans4 = suppressWarnings(dt[, base::max(y), by=x])
 test(1583.3, dt[, min(y), by=x], ans3)
 test(1583.4, dt[, max(y), by=x], ans4)
-# restore optimisation
-options(datatable.optimize=optim)
 
 # Fixed a minor bug in fread when blank.lines.skip=TRUE
 f1 <- function(x, f=TRUE, b=FALSE) fread(x, fill=f, blank.lines.skip=b, data.table=FALSE, logical01=FALSE)
@@ -7778,15 +7827,6 @@ test(1585.6, f1(testDir("536_fread_fill_3_extreme.txt"), b=TRUE), f2(testDir("53
 # no warning about bumping type. when fill=TRUE, column type detection starts at first non-empty line (which makes sense).
 test(1585.7, f1(testDir("536_fread_fill_4.txt")), f2(testDir("536_fread_fill_4.txt"))[-29,])
 test(1585.8, f1(testDir("536_fread_fill_4.txt"), b=TRUE), f2(testDir("536_fread_fill_4.txt"), b=TRUE))
-
-# TODO: add a test when fill=FALSE, but blank.lines.skip=TRUE, when the same effect should happen
-# TODO: fix and add test for cases like this:
-# a,b,c
-# 1,2,3
-# 4,5,6
-# 7,8,9,6 # extra column, but we've only detected 3 cols
-# 1,2,3
-# ...
 
 # fix for #721
 text="x,y\n1,a\n2,b\n"
@@ -8267,11 +8307,10 @@ test(1622.2, ans1, fread(testDir("issue_1573_fill.txt"), fill=TRUE, sep=" ", na.
 test(1623, fread("~"), error="")
 
 # testing print.rownames option, #1097 (part of #1523)
-old = getOption("datatable.print.rownames")
 options(datatable.print.rownames = FALSE)
 DT <- data.table(a = 1:3)
 test(1624, capture.output(print(DT)), c(" a", " 1", " 2", " 3"))
-options(datatable.print.rownames = old)
+options(datatable.print.rownames = TRUE)
 
 # fix for #1575
 text = "colA: dataA\ncolB: dataB\ncolC: dataC\n\nColA: dataA\nColB: dataB\nColC: dataC"
@@ -8463,7 +8502,6 @@ test(1629.7, dt[0][, .SD*v1, .SDcols=v2:v3], dt[0][, .SD, .SDcols=v2:v3])
 dt2 = copy(dt)
 test(1629.8, dt2[, c("v2", "v3") := .SD*v1, .SDcols=v2:v3], dt[, .(grp, v1, v2=v2*v1, v3=v3*v1)])
 # grouping operations
-oldopts = getOption("datatable.optimize") # backup
 options(datatable.optimize = 1L) # no gforce
 test(1629.9, dt[, .SD*sum(v1), by=grp, .SDcols=v2:v3], dt[, .SD*sum(v1), by=grp][, v1 := NULL])
 ans1 = dt[, sum(v1), by=grp]
@@ -8480,7 +8518,7 @@ dt[, v4 := v1/2]
 test(1629.14, dt[, c(.(v1=v1*min(v4)), lapply(.SD, function(x) x*max(v4))), by=grp, .SDcols=v2:v3],
     dt[, .(v1=v1*min(v4), v2=v2*max(v4), v3=v3*max(v4)), by=grp])
 test(1629.15, copy(dt)[, c("a", "b", "c") := c(min(v1), lapply(.SD, function(x) max(x)*min(v1))), by=grp, .SDcols=v3:v4], copy(dt)[, c("a", "b", "c") := .(min(v1), max(v3)*min(v1), max(v4)*min(v1)), by=grp])
-options(datatable.optimize = oldopts)
+options(datatable.optimize = Inf)
 # by=.EACHI and operations with 'i'
 test(1629.16, dt[.(2:3), c(.(sum(v1)), lapply(.SD, function(x) mean(x)*min(v1))), by=.EACHI, .SDcols=v2:v3, on="grp"], dt[grp %in% 2:3, c(.(sum(v1)), lapply(.SD, function(x) mean(x)*min(v1))), by=grp, .SDcols=v2:v3])
 test(1629.17, dt[.(2:3), c(sum(v1), lapply(.SD, function(x) mean(x)*v1)), .SDcols=v2:v3, on="grp"][order(V1,v2,v3)], dt[grp %in% 2:3, c(sum(v1), lapply(.SD, function(x) mean(x)*v1)), .SDcols=v2:v3][order(V1,v2,v3)])
@@ -8562,10 +8600,10 @@ test(1637.4, dt[, data.table(b, .SD), by = cumsum(a)], data.table(cumsum=1, b=1,
 test(1637.5, dt[, data.table(a, b), by = cumsum(a)], data.table(cumsum=1, a=1, b=1))
 
 # when datatable.optimize<1, no optimisation of j should take place:
-old = options(datatable.optimize=0L)
+options(datatable.optimize=0L)
 dt = data.table(x=1:5, y=6:10, z=c(1,1,1,2,2))
 test(1638, dt[, .SD, by=z, verbose=TRUE], output="All optimizations are turned off")
-options(old)
+options(datatable.optimize=Inf)
 
 #1389 - split.data.table - big chunk of unit tests
 set.seed(123)
@@ -9155,7 +9193,6 @@ if (.Machine$sizeof.pointer>4) {
   nqjoin_test(dt1, dt2, 2L, 1652, mult="last")
 }
 
-# TODO: add tests for nomatch=NA..
 # tested, but takes quite some time.. so commenting for now
 # nqjoin_test(x, y, 3L,1643.0)
 # nqjoin_test(dt1,dt2,3L,1652.0)
@@ -9200,8 +9237,6 @@ test(1656, nrow(dt[dt, .(x.id, x.a, x.b, x.c, x.row_id, i.id, i.a, i.b, i.c, i.r
 set.seed(1L)
 dt = data.table(x=sample(3,10,TRUE), y=sample(2,10,TRUE), z=sample(5,10,TRUE))
 test(1657, dt[x %between% list(y,z)], dt[x>=y & x<=z])
-
-oldverbose = options(datatable.verbose=FALSE)
 
 # fwrite tests
 # without quoting
@@ -9318,12 +9353,11 @@ test(1658.23, fwrite(ok_dt, 1), error="is.character\\(file\\).*not TRUE")
 test(1658.24, fwrite(ok_dt, quote=123), error="identical\\(quote.*auto.*FALSE.*TRUE")
 test(1658.25, fwrite(ok_dt, sep="..."), error="nchar(sep)")
 test(1658.26, fwrite(ok_dt, qmethod=c("double", "double")), error="length(qmethod)")
-test(1658.27, fwrite(ok_dt, col.names="foobar"), error="isLOGICAL(col.names)")
+test(1658.27, fwrite(ok_dt, col.names="foobar"), error="isTRUEorFALSE(col.names)")
 
 # null data table (no columns)
 test(1658.28, fwrite(data.table(NULL)), NULL, warning="Nothing to write")
 
-# 0.0 written as 0, but TODO #2398, probably related to the 2 lines after l==0 missing coverage in writeFloat64
 test(1658.29, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="id,v\nA,1.1\nB,0\nC,9.9")
 
 # logical NA as "NA" when logical01=TRUE, instead of the default na="" which writes all types including <NA> in character column as ,, consistently.
@@ -9333,7 +9367,6 @@ test(1658.31, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=
 test(1658.32, fwrite(data.table(D = as.POSIXct(seq.Date(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
     output="D\n2038-01-19T00:00:00Z\n2038-01-20T00:00:00Z")
 
-options(oldverbose)
 
 # input is of class matrix
 test(1658.33, fwrite(matrix("foo"), quote=TRUE), output='"V1"\n.*"foo"', message = "x being coerced from class: matrix to data.table")
@@ -9599,9 +9632,7 @@ foo <- function(annot=c("a", "b")) {
   suppressWarnings(ro$dt[, flag := TRUE])
   ro
 }
-old = options(datatable.verbose=FALSE)
 test(1685, grep("dtu", capture.output(foo())), 7L)
-options(old)
 
 # fix for #1771
 test(1686.1, uniqueN(1L), 1L)
@@ -9720,12 +9751,11 @@ test(1695.27, between(0:1, -5:2, -2:5), error="Incompatible vector lengths: leng
 test(1695.28, between(0, -5:2, -2:4), error="Incompatible vector lengths: length(x)==1 length(lower)==8 length(upper)==7. Each should be either length 1 or the length of the longest")
 
 # test for #1819, verbose message for bmerge
-old_opt = getOption("datatable.verbose")
 options(datatable.verbose = TRUE)
 x = data.table(A = 10:17)
 test(1696.0, x[A %inrange% 13:14], output="bmerge")
 # restore verbosity
-options(datatable.verbose = old_opt)
+options(datatable.verbose = FALSE)
 
 # adding a test for #1825 (though it is not on timing, but correctness while
 # joining on keyed tables using 'on' argument)
@@ -9803,13 +9833,13 @@ test(1702.4, isoweek(isotest$input_date), isotest$expected_output)
 if (.Platform$OS.type=="unix") {
   cat("a,b\n4,2", file=f<-tempfile())
   cmd <- sprintf("cat %s", f)
-  old = options(datatable.fread.input.cmd.message = TRUE)
+  options(datatable.fread.input.cmd.message = TRUE)
   test(1703.0, fread(cmd), ans<-data.table(a=4L, b=2L), message="Please use fread.cmd=.*security concern.*Please read item 5 in the NEWS file for v1.11.6")
-  old = options(datatable.fread.input.cmd.message = NULL)  # when option is missing as it is by default, then TRUE
+  options(datatable.fread.input.cmd.message = NULL)  # when option is missing as it is by default, then TRUE
   test(1703.1, fread(cmd), ans, message="security concern")
-  old = options(datatable.fread.input.cmd.message = FALSE)
+  options(datatable.fread.input.cmd.message = FALSE)
   test(1703.2, tryCatch(fread(cmd), message=stop), ans)
-  options(old)
+  options(datatable.fread.input.cmd.message = NULL)
   test(1703.3, fread(cmd=cmd), ans)
   test(1703.4, fread(file=cmd), error=sprintf("File '%s' does not exist", cmd))
   unlink(f)
@@ -9837,8 +9867,6 @@ test(1703.15, fread("."), error="File '.' is a directory. Not yet implemented.")
 test(1704, all.equal(data.table( a=1:3, b=4:6 ), data.table( A=1:3, B=4:6 ), check.attributes=FALSE))
 
 # all.equal.data.table should consider modes equal like base R (detected via Bioc's flowWorkspace tests)
-# If strict testing is required, then use identical().
-# TODO: add strict.numeric (default FALSE) to all.equal.data.table() ?
 test(1707.1, all.equal( data.frame(a=0L), data.frame(a=0) ) )
 test(1707.2, all.equal( data.table(a=0L), data.table(a=0) ) )
 test(1708.1, !isTRUE(all.equal( data.frame(a=0L), data.frame(a=FALSE) )))
@@ -9950,7 +9978,7 @@ test(1728.12, DT[order(x,na.last=FALSE)], DT)
 test(1728.13, DT[order(x,na.last=NA)], DT[2])  # was randomly wrong
 
 # fwrite wrong and crash on 9.9999999999999982236431605, #1847
-oldverbose=options(datatable.verbose=FALSE)
+options(datatable.verbose = FALSE)
 test(1729.1, fwrite(data.table(V1=c(1), V2=c(9.9999999999999982236431605997495353221893310546875))),
              output="V1,V2\n1,10")
 test(1729.2, fwrite(data.table(V2=c(9.9999999999999982236431605997495353221893310546875), V1=c(1))),
@@ -9961,7 +9989,6 @@ DT = data.table(V1=c(9999999999.99, 0.00000000000000099, 0.000000000000000000000
 ans = "V1\n9999999999.99\n9.9e-16\n9e-22\n0.9\n9\n9.1\n99.9\n1e-21\n1e+29"
 test(1729.3, fwrite(DT), output=ans)
 test(1729.4, write.csv(DT,row.names=FALSE,quote=FALSE), output=ans)
-options(oldverbose)
 
 # same decimal/scientific rule (shortest format) as write.csv
 DT = data.table(V1=c(-00000.00006, -123456789.123456789,
@@ -9981,9 +10008,7 @@ DT = data.table(V1=c(-00000.00006, -123456789.123456789,
                      5.123456789e+307, -5.123456789e+307))
 test(1729.5, nrow(DT), 507L)
 
-oldverbose=options(datatable.verbose=FALSE)
-# capture.output() exact tests must not be polluted with verbosity
-
+options(datatable.verbose = FALSE) # capture.output() exact tests must not be polluted with verbosity
 x = capture.output(fwrite(DT,na="NA"))[-1]   # -1 to remove the column name V1
 y = capture.output(write.csv(DT,row.names=FALSE,quote=FALSE))[-1]
 # One mismatch that seems to be accuracy in base R's write.csv
@@ -10153,7 +10178,6 @@ test(1736.3, fwrite(DT, sep2=c("",",","")), error="sep.*,.*sep2.*,.*must all be 
 test(1736.4, fwrite(DT, sep2=c("","||","")), error="nchar.*sep2.*2")
 test(1736.5, capture.output(fwrite(DT, sep='|', sep2=c("c(",",",")"), logical01=FALSE)), c("A|B|C", "1|c(1,2,3,4,5,6,7,8,9,10)|c(s,t,u,v,w)",
  "2|c(15,16,17,18)|c(1.2,2.3,3.4,3.14159265358979,-9)", "3|c(7)|c(foo,bar)", "4|c(9,10)|c(TRUE,TRUE,FALSE)"))
-# Aside: logicalAsInt tested in 1736.6 to continue to work without warning, currently. TODO: warning, deprecate and remove
 test(1736.6, capture.output(fwrite(DT, sep='|', sep2=c("{",",","}"), logicalAsInt=TRUE)),
  c("A|B|C", "1|{1,2,3,4,5,6,7,8,9,10}|{s,t,u,v,w}",
  "2|{15,16,17,18}|{1.2,2.3,3.4,3.14159265358979,-9}", "3|{7}|{foo,bar}", "4|{9,10}|{1,1,0}"))
@@ -10265,7 +10289,7 @@ setattr(DT[[4]], "tzone", NULL)
 setattr(DT[[5]], "tzone", NULL)
 
 # format() now supports digits = 0, to display nsmall decimal places.
-old = options(digits.secs=0)
+options(digits.secs=0)
 test(1741.3, x1<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
              capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 options(digits.secs=3)
@@ -10274,13 +10298,8 @@ test(1741.4, x2<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
 options(digits.secs=6)
 test(1741.5, x3<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
              capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
-options(old)
 # check that extra digits made it into output
 test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
-
-###
-options(oldverbose)  # last capture.output(fwrite()) has happened now. TODO: tidy up and remove.
-###
 
 # fread should properly handle NA in colClasses argument #1910
 test(1743.1, sapply(fread("a,b\n3,a", colClasses=c(NA, "factor")), class), c(a="integer", b="factor"))
@@ -10674,11 +10693,11 @@ test(1765, print(IDateTime(x)), output=".*idate.*itime.*1: 2017-03-17")
 test(1766, capture.output(print(data.table(NULL))), "Null data.table (0 rows and 0 cols)")
 
 # Bug on subset of 1-row data.table when expr returns a named logical vector #2152
-op = options(datatable.auto.index=FALSE)
+options(datatable.auto.index=FALSE)
 dt = data.table(x=1, y="a")
 val = c(foo=1L)
 test(1767, dt[x == val], data.table(x=1, y="a"))
-options(op)
+options(datatable.auto.index=TRUE)
 
 # fread sampling overlap and reaching end early on small files with varying line lengths, #2157
 if (test_R.utils) {
@@ -11500,8 +11519,9 @@ test(1859, fread("A\n", nrows=0), data.table(A=logical()))  # 2512
 test(1860, fread("A,B\n "), data.table(A=logical(), B=logical()))  # 2543
 
 # That unique(DT) returns DT when there are no dups, #2013
+# #3383 fix for unique.data.table returning copy(x)
 DT = data.table(A=c(1L,1L,2L), B=c(3L,4L,4L))
-test(1861, address(unique(DT)), address(DT))
+test(1861, address(unique(DT)) != address(DT), TRUE)
 
 # New warning for deprecated old behaviour option
 setkey(DT,A)
@@ -11601,7 +11621,7 @@ DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1L,3L,6L), v=10:18)
 write.table(DT, file = (f<-tempfile()), sep = "\t")
 test(1867.14, fread(f), data.table(V1=1:9, x=DT$x, y=DT$y, v=DT$v), warning="Added 1 extra default column name")
 unlink(f)
-# test(1867.15, fread(testDir("iterations.txt"))) # #1416 TODO (trailing tabs on most but not at the beginning and a "-" intended to mean missing but taken as text column name)
+# test(1867.15, fread(testDir("iterations.txt")))
 
 # non equi joins bug fix #2313
 dt <- data.table(
@@ -11941,15 +11961,15 @@ test(1894.9, DT[, sum(z)*..z], error="Variable 'z' is not found in calling scope
 z = 3L
 test(1894.11, DT[, sum(z)*..z], 72L)
 setnames(DT, "z", "..z")
-test(1894.12, DT[, sum(y)*..z], INT(105,120,135))  # TODO warning/error in future as per NEWS item in v1.11.0
+test(1894.12, DT[, sum(y)*..z], INT(105,120,135))
 rm(z)
-test(1894.13, DT[, sum(y)*..z], INT(105,120,135))  # TODO warning/error in future as per NEWS item in v1.11.0
+test(1894.13, DT[, sum(y)*..z], INT(105,120,135))
 setnames(DT, "..z", "z")
 test(1894.14, DT[, sum(y)*..z], error="Variable 'z' is not found in calling scope")
 ..z = 4L
 test(1894.15, DT[, sum(y)*..z], 60L)  # 'manual' prefix (we have recommended in the past) still works, for now.
 
-test(1895, getDTthreads(verbose=TRUE), output="omp_get_max_threads.*omp_get_thread_limit.*DTthreads")
+test(1895, getDTthreads(verbose=TRUE), output="num_procs.*R_DATATABLE.*thread_limit.*RestoreAfterFork")
 
 # Non ascii missing protects on ENC2UTF8; issue #2674
 utf8_strings = c("\u00e7ile", "fa\u00e7ile", "El. pa\u00c5\u00a1tas", "\u00a1tas", "\u00de")
@@ -12332,10 +12352,9 @@ DT[ , V1:=as.ordered(V1)]
 test(1918.3, DT[, min(V1)], structure(1L, .Label = lev, class = c("ordered", "factor")))
 test(1918.4, DT[, max(V1)], structure(5L, .Label = lev, class = c("ordered", "factor")))
 ## make sure GForce is activated
-old = options(datatable.optimize = Inf)
+options(datatable.optimize = Inf)
 test(1918.5, DT[, min(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(1:3, .Label=lev, class=c("ordered", "factor"))))
 test(1918.6, DT[, max(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(3:5, .Label=lev, class=c("ordered", "factor"))))
-options(old)
 
 # as.ITime.character bug for NA handling #2940
 test(1919, as.ITime(c('xxx', '10:43')), structure(c(NA, 38580L), class = "ITime"))
@@ -12437,7 +12456,7 @@ setkey(DT,id)
 test(1942.1, DT[,sum(v),by=id,verbose=TRUE], data.table(id=c("A","C","D"), V1=INT(6,8,1), key="id"), output="Finding groups using uniqlist on key")
 DT = data.table(id1=c("D","A","C","A","C"), id2=INT(3,9,2,9,3), id3=c(3.4, 9.1, 3.4, 3.3, 9.1), v=1:5)
 setindex(DT,id1)
-old = options(datatable.use.index=TRUE)
+options(datatable.use.index=TRUE)
 test(1942.2, DT[,sum(v),keyby=id1,verbose=TRUE], data.table(id1=c("D","A","C"), V1=INT(1,6,8), key="id1"), output="Finding groups using uniqlist on index 'id1'")
 setindex(DT,id2)
 test(1942.3, DT[,sum(v),keyby=id2,verbose=TRUE], data.table(id2=INT(3,9,2), V1=INT(6,6,3), key="id2"), output="Finding groups using uniqlist on index 'id2")
@@ -12456,7 +12475,7 @@ test(1942.8, DT[,sum(v),keyby=.(id1,id2),verbose=TRUE], data.table(id1=c("A","C"
 test(1942.9, DT[,sum(v),keyby=.(id2,id1),verbose=TRUE], data.table(id2=INT(2,3,3,9), id1=c("C","C","D","A"), V1=INT(3,5,1,6), key="id2,id1"), output="Finding groups using forderv")
 options(datatable.use.index=FALSE)
 test(1942.11, DT[,sum(v),keyby=id1,verbose=TRUE], data.table(id1=c("D","A","C"), V1=INT(1,6,8), key="id1"), output="Finding groups using forderv")
-options(old)
+options(datatable.use.index=TRUE)
 
 # merge warning: longer object length is not a multiple of shorter object length, #3061
 DT1 <- data.table(
@@ -12676,13 +12695,13 @@ test(1961, cb, gs)
 
 # coverage tests
 ## duplicated.R
-opt = options("datatable.old.unique.by.key" = TRUE)
+options("datatable.old.unique.by.key" = TRUE)
 DT = data.table(x = c(1, 1, 3, 2), key = 'x')
 test(1962.01, duplicated(DT), c(FALSE, TRUE, FALSE, FALSE),
      warning = 'deprecated option')
 test(1962.02, anyDuplicated(DT), 2L,
      warning = 'deprecated option')
-options("datatable.old.unique.by.key" = opt$datatable.old.unique.by.key)
+options("datatable.old.unique.by.key" = FALSE)
 
 test(1962.03, duplicated(DT, fromLast = NA),
      error = 'must be TRUE or FALSE')
@@ -13050,8 +13069,6 @@ test(1967.15, foverlaps(x, y, nomatch = c(3, 4)),
      error = 'nomatch must either be NA or NULL')
 test(1967.16, foverlaps(x, y, nomatch = 4L),
      error = 'nomatch must either be NA or NULL')
-test(1967.17, foverlaps(x, y, type = 'equal'),
-     error = "type = 'equal' is not implemented yet")  # to be removed when implemented
 test(1967.18, foverlaps(x, y, by.x = 'start'),
      error = "by.x' and 'by.y' should contain at least two")
 test(1967.19, foverlaps(x, y, by.y = 'start'),
@@ -13159,13 +13176,17 @@ suppressWarnings(rm(`___data.table_internal_test_1967.68___`))
 test(1967.68, setDT(`___data.table_internal_test_1967.68___`), error = 'Cannot find symbol')
 
 ### [.data.table verbosity & non-equi-join tests
-old = options('datatable.optimize' = 2)
-test(1967.69, x[order(a), .N, verbose = TRUE], 5L,
+options(datatable.optimize = 0L)
+verbose_output = capture.output(x[order(a), .N, verbose = TRUE])
+test(1967.69, !any(grepl('order optimization', verbose_output, fixed = TRUE)))
+test(1967.70, any(grepl('[1] 5', verbose_output, fixed = TRUE)))
+options('datatable.optimize' = 1L)
+test(1967.71, x[order(a), .N, verbose = TRUE], 5L,
      output = "i changed from 'order(...)' to 'forder(")
 setkey(x)
-test(1967.70, x[x, .N, on = 'a', verbose = TRUE], 5L,
+test(1967.72, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
-options(old)
+options(datatable.optimize = Inf)
 
 x = data.table(
   i1 = c(234L, 250L, 169L, 234L, 147L, 96L, 96L, 369L, 147L, 96L),
@@ -13176,19 +13197,19 @@ y = data.table(
   i4 = c(-26L, 6L, -30L, -26L, -23L, 38L, -40L, -26L, -23L, 24L)
 )
 x[ , '_nqgrp_' := 5]
-test(1967.71, x[y, on = .(i1 <= i1, i4 >= i4)], error = "'_nqgrp_' is reserved")
+test(1967.73, x[y, on = .(i1 <= i1, i4 >= i4)], error = "'_nqgrp_' is reserved")
 x[ , '_nqgrp_' := NULL]
-test(1967.72, x[y, max(i4), on = .(i1 <= i1, i4 >= i4), verbose = TRUE], 38L,
+test(1967.74, x[y, max(i4), on = .(i1 <= i1, i4 >= i4), verbose = TRUE], 38L,
      output = 'Recomputing forder with non-equi.*done')
-test(1967.73, x[!y, sum(i4), on = 'i1', by = .EACHI, verbose = TRUE],
+test(1967.75, x[!y, sum(i4), on = 'i1', by = .EACHI, verbose = TRUE],
      data.table(i1 = c(169L, 369L), V1 = c(270L, 179L)),
      output = "not-join called with 'by=.EACHI'.*done")
-test(1967.74, x[!y, sum(i4), on = 'i1', verbose = TRUE], 510L,
+test(1967.76, x[!y, sum(i4), on = 'i1', verbose = TRUE], 510L,
      output = 'Inverting irows for notjoin.*sec')
 x[ , v := 0]
 ### hitting by = A:B branch
-test(1967.75, x[ , .(v = sum(v)), by = i1:i4], x[-10L])
-test(1967.76, x[1:5, sum(v), by = list(i5 = 1:5 %% 2L), verbose = TRUE],
+test(1967.77, x[ , .(v = sum(v)), by = i1:i4], x[-10L])
+test(1967.78, x[1:5, sum(v), by = list(i5 = 1:5 %% 2L), verbose = TRUE],
      data.table(i5 = 1:0, V1 = c(0, 0)), output = 'i clause present but columns used in by not detected')
 
 # gforce integer overflow coerce to double
@@ -13360,11 +13381,10 @@ test(1984.06, DT[1:3, sum(a), by=b:c], data.table(b=10:8, c=1:3, V1=1:3))
 test(1984.07, DT[, sum(a), by=call('sin',pi)], error='must evaluate to a vector or a list of vectors')
 test(1984.08, DT[, sum(a), by=1+3i],           error='column or expression.*type complex')
 test(1984.09, DT[, sum(a), by=.(1,1:2)],       error='The items.*list are length [(]1,2[)].*Each must be length 10; .*rows in x.*after subsetting')
-old = options('datatable.optimize' = Inf)
+options('datatable.optimize' = Inf)
 test(1984.10, DT[ , 1, by = .(a %% 2), verbose = TRUE],
      data.table(a = c(1, 0), V1 = c(1, 1)),
      output = 'Optimization is on but left j unchanged')
-options(old)
 DT[ , f := rep(1:2, each = 5)]
 test(1984.11, DT[ , g:=sum(a), keyby=f, verbose=TRUE][,sum(g)], 275L, output='setkey() after the := with keyby=')
 test(1984.12, as.matrix(DT, rownames=character(0L)), error='length(rownames)==0 but should be')
@@ -13428,6 +13448,168 @@ test(1986.2, DT[, as.list(colMeans(.SD)), by=gear], cbind(DT[,"gear"],DT[,-"gear
 DT = as.data.table(mtcars)[1]
 test(1986.3, DT[, colMeans(.SD), by=gear], data.table(gear=4, V1=c(21,6,160,110,3.9,2.62,16.46,0,1,4)))
 test(1986.4, DT[, as.list(colMeans(.SD)), by=gear], cbind(DT[,"gear"],DT[,-"gear"]))
+
+# tests for #2949, #1974 and #1369 - dcast not able to handle functions referred to by a variable
+dt = data.table(
+  x=sample(5,20,TRUE),
+  y=sample(2,20,TRUE), 
+  z=sample(letters[1:2], 20,TRUE),
+  d1 = runif(20),
+  d2=1L
+)
+myFun1 <- function(data, vars) {
+  mySum <- function(x) sum(x)
+  dcast.data.table(data, "x + y ~ z", value.var=vars, fun.aggregate=mySum)
+}
+myFun2 <- function(data, vars) {
+  myFuns <- list(f1=sum, first=function(x) x[1L])
+  dcast.data.table(data, "x + y ~ z", value.var=vars, fun.aggregate=myFuns)
+} 
+funs = list(sum, mean)
+vars = list("d1", "d2")
+
+test(1987.1, names(dcast.data.table(dt, x + y ~ z, fun=funs, value.var=vars)),
+             c("x", "y", "d1_fun1_a", "d1_fun1_b", "d2_fun2_a", "d2_fun2_b"))
+test(1987.2, dcast.data.table(dt, x + y ~ z, fun=sum, value.var=vars[[1]]),
+             myFun1(dt, vars[[1]]))
+test(1987.3, dcast.data.table(dt, x + y ~ z, fun=list(f1=sum, first=function(x) x[1L]), value.var=vars), myFun2(dt, vars))
+
+# testing frankv/forder behavior with NA/NaN; earlier tests compare consistency with base::rank,
+# but we intentionally break from base w.r.t. ranking NAs (we consider NAs to be tied, ditto NaN)
+x = data.table(r = c(6, 4, 2, NA, 1, NaN, 5, NaN, 9, 10, NA))
+## frankv
+test(1988.1, frankv(x, cols='r', order=1L, ties.method='average'), c(5, 3, 2, 10.5, 1, 8.5, 4, 8.5, 6, 7, 10.5))
+test(1988.2, frankv(x, cols='r', order=1L, ties.method='max'),     c(5L, 3L, 2L, 11L, 1L, 9L, 4L, 9L, 6L, 7L, 11L))
+test(1988.3, frankv(x, cols='r', order=1L, ties.method='min'),     c(5L, 3L, 2L, 10L, 1L, 8L, 4L, 8L, 6L, 7L, 10L))
+test(1988.4, frankv(x, cols='r', order=1L, ties.method='dense'),   c(5L, 3L, 2L, 9L, 1L, 8L, 4L, 8L, 6L, 7L, 9L))
+
+## forderv
+test(1988.5, forderv(x, by='r', order=1L, na.last=FALSE), c(4L, 11L, 6L, 8L, 5L, 3L, 2L, 7L, 1L, 9L, 10L))
+test(1988.6, forderv(x, by='r', order=-1L, na.last=FALSE), c(4L, 11L, 6L, 8L, 10L, 9L, 1L, 7L, 2L, 3L, 5L))
+test(1988.7, forderv(x, by='r', order=1L, na.last=TRUE), c(5L, 3L, 2L, 7L, 1L, 9L, 10L, 6L, 8L, 4L, 11L))
+test(1988.8, forderv(x, by='r', order=-1L, na.last=TRUE), c(10L, 9L, 1L, 7L, 2L, 3L, 5L, 6L, 8L, 4L, 11L))
+
+# Test should not segfault, #3401 fix:
+set.seed(1L)
+foo <- function(n) apply(matrix(sample(letters, 4*n, TRUE), ncol=4L), 1, paste, collapse="")
+dates <- sample(as.Date("2015-01-01"), as.Date("2018-12-31"), 300L)
+codes <- foo(2000)
+DT1 <- data.table(
+  date=sample(dates[1:100], 1e4, TRUE),
+  flight=sample(codes[1:1300], 1e4, TRUE),
+  val=runif(1e4)
+)
+
+DT2 <- data.table(
+  start=sample(dates[80:250], 1e4, TRUE),
+  end=sample(dates[100:300], 1e4, TRUE),
+  flight=sample(codes[1200:2000], 1e4, TRUE)
+)
+DT2[, c("start", "end") := .(pmin(start, end), pmax(start, end))]
+# just testing if the code runs without segfault .. 
+test(1989.1, nrow(DT1[DT2, on=.(date <= end, date >= start, flight==flight)]) > 0L, TRUE)
+
+# fix for #2202, dcast needs to rank NA with na.last=FALSE in frankv within dcast
+x = data.table(
+  f1 = structure(c(1L, 1L, 1L, 1L, NA, NA), .Label = "123456", class = "factor"),
+  f2 = structure(c(1L, 1L, 1L, 1L, 1L, 1L), .Label = "U", class = "factor"),
+  v1 = c(0,300, 600, 500, 0, 800),
+  v2 = c(0,15, 50, 30, 0, 50))
+y = x[, lapply(.SD, sum), by=.(f1,f2)]
+z = dcast.data.table(data = y, f1 ~ f2, value.var = c("v1", "v2"))
+test(1990.1, z$v1_U, c(800, 1400)) # shouldn't be 1400, 800 ...
+test(1990.2, forderv(z$v1_U), integer(0)) # is already sorted ...
+
+# foverlaps error message fix, #2645
+x <- data.table(id=1, start=1, end=5, start_f=factor(1))
+y <- data.table(id=2, start=2, end=6, start_f=factor(2))
+setkey(x, start_f, end)
+setkey(y, start, end)
+test(1991.1, foverlaps(x, y), error="must be integer/numeric type")
+setkey(x, start, end)
+setkey(y, start_f, end)
+test(1991.2, foverlaps(x, y), error="must be integer/numeric type")
+# better error message foverlaps, #3007
+DT_x <- data.table(x1 = c(1,7,11,20), x2 = c(2,8,NA,22), xval = c("x_a","x_b","x_c","x_d"), key = c("x1","x2"))
+DT_y <- data.table(y1 = c(1,10), y2 = c(9,50), yval = c("y_a","y_b"), key = c("y1","y2"))
+test(1992.1, foverlaps(DT_x, DT_y), error="All rows with NA values")
+
+# foverlaps POSIXct checks #1143 + another check...
+xp <- data.frame(year = c(2006L, 2006L, 2006L), day = c(361L, 361L, 360L), 
+                 hour = c(14L, 8L, 8L), min = c(30L, 0L, 30L), val = c(0.5, 0.3, 0.4),
+                 Date = structure(c(1167229800, 1167206400, 1167121800), 
+                          class = c("POSIXct", "POSIXt"), tzone = "UTC")) ## "UTC" time zone
+setDT(xp)[, `:=`(start = Date - 1800L, end = Date + 1800L)]
+tt <- as.POSIXct(c("2006/12/27 14:23:59", "2006/12/27 16:47:59", "2006/12/27 19:12:00"), format = "%Y/%m/%d %T", tz = "Asia/Jerusalem") ## different time zone
+yp <- data.table(start = tt, end = tt, key=c("start", "end"))
+test(1993.1, foverlaps(xp, yp, nomatch = 0L, which=TRUE), data.table(xid=1L, yid=2L), warning="POSIXct interval cols have mixed timezones")
+test(1993.2, foverlaps(xp, yp, by.x=c("day", "year")), error="Some interval cols are of type POSIXct while others are not")
+
+# forderv NaN,Inf and Inf when at most 1 finite value is present, #3381. These broke in v1.12.0. They pass in v1.11.8.
+test(1994.1, forderv(c(NaN, Inf, -Inf), retGrp=TRUE), structure(INT(1,3,2), starts=1:3, maxgrpn=1L))
+test(1994.2, forderv(c(-Inf, 0, Inf), retGrp=TRUE),   structure(integer(), starts=1:3, maxgrpn=1L))
+test(1994.3, forderv(c(-Inf, Inf), retGrp=TRUE),      structure(integer(), starts=1:2, maxgrpn=1L))
+test(1994.4, forderv(c(Inf, -Inf), retGrp=TRUE),      structure(2:1, starts=1:2, maxgrpn=1L))
+test(1994.5, forderv(c(0, NaN), retGrp=TRUE),         structure(2:1, starts=1:2, maxgrpn=1L))
+test(1994.6, forderv(c(NaN, 0), retGrp=TRUE),         structure(integer(), starts=1:2, maxgrpn=1L))
+test(1994.7, data.table(A=c(-Inf,21,Inf),V=1:3)[,sum(V),by=A]$V1, 1:3)
+
+# 0 length items should not result in no-recycle error, #3386
+DT = fread("symbol,year,quarter,price
+A1,2017,1,10.0
+A1,2017,2,11.0
+A1,2017,3,12.0
+A1,2017,4,11.0
+A1,2018,1,12.0
+A1,2018,2,13.0
+A2,2017,1,10.0
+A2,2017,2,11.0
+A2,2017,3,12.0
+A2,2017,4,11.0
+A2,2018,1,12.0")
+test(1995.1, DT[, pQ4 := price[quarter==4L], by=.(symbol,year)]$pQ4, rep(c(11,NA,11,NA), c(4,2,4,1)))
+DT = fread("symbol,date,price,volume
+A1,20180102,10.0,0
+A1,20180103,10.0,0
+A1,20180104,11.0,100
+A2,20180102,5.0,0
+A2,20180103,5.0,0
+A2,20180104,5.0,0")
+test(1995.2, DT[, p1:=first(price[volume>0]), by=symbol]$p1, rep(c(11,NA), c(3,3)))
+
+# quoted `:=` expression did not replace dot with list, #3425
+d = data.table(a=1L)
+qcall = quote(b := .(2L))
+test(1996.1, d[, eval(qcall)], data.table(a=1L, b=2L))
+qcall = quote(b := .(.Primitive("sum")(1, 2))) # such calls can be issued by dcast
+d = data.table(a=1L)
+test(1996.2, d[, eval(qcall)], data.table(a=1L, b=3))
+
+# setDTthreads; #3435
+test(1997.01, setDTthreads(NULL, percent=75), error="Provide either threads= or percent= but not both")
+test(1997.02, setDTthreads(1L, percent=75), error="Provide either threads= or percent= but not both")
+test(1997.03, setDTthreads(-1L), error="must be either NULL or a single integer >= 0")
+test(1997.04, setDTthreads(percent=101), error="should be a number between 2 and 100")
+test(1997.05, setDTthreads(percent=1), error="should be a number between 2 and 100")
+test(1997.06, setDTthreads(percent=NULL), error="but is length 0")
+test(1997.07, setDTthreads(percent=1:2), error="but is length 2")
+test(1997.08, setDTthreads(restore_after_fork=21), error="must be TRUE, FALSE, or NULL")
+old = getDTthreads()
+oldenv = Sys.getenv("R_DATATABLE_NUM_PROCS_PERCENT")
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="3.0")
+test(1997.09, setDTthreads(), old, warning="Ignoring invalid.*Please remove any.*not a digit")
+test(1997.10, getDTthreads(), old)
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="1")
+test(1997.11, setDTthreads(), old, warning="Ignoring invalid.*integer between 2 and 100")
+test(1997.12, getDTthreads(), old)
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="75")
+test(1997.13, setDTthreads(), old)
+new = getDTthreads()
+setDTthreads(percent=75)
+test(1997.14, getDTthreads(), new)
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT=oldenv)
+test(1997.15, setDTthreads(old), new)
+test(1997.16, getDTthreads(), old)
 
 
 ###################################

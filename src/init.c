@@ -268,6 +268,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
 
+  initDTthreads();
   avoid_openmp_hang_within_fork();
 }
 

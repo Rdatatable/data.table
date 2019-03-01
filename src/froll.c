@@ -12,7 +12,6 @@
  */
 
 void frollmean(unsigned int algo, double *x, uint_fast64_t nx, double_ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
-  ans->status = 0;                                              // default status success
   if (nx < k) {                                                 // if window width bigger than input just return vector of fill values
     if (verbose) Rprintf("%s: window width longer than input vector, returning all NA vector\n", __func__);
     for (int i=0; i<nx; i++) ans->ans[i] = fill;
@@ -104,7 +103,7 @@ void frollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double
  */
 
 void frollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
-  if (verbose) Rprintf("%s: running for input length %llu, window %d, hasna %d, narm %d\n", __func__, nx, k, hasna, (int) narm);
+  if (verbose) Rprintf("%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n", __func__, nx, k, hasna, (int) narm);
   for (int i=0; i<k-1; i++) {                                   // fill partial window only
     ans->ans[i] = fill;
   }

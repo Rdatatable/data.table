@@ -6,6 +6,10 @@
 
 1. `:=` no longer recycles length>1 RHS vectors. There was a warning when recycling left a remainder but no warning when the LHS length was an exact multiple of the RHS length (the same behaviour as base R). Consistent feedback for several years has been that recycling is more often a bug. In rare cases where you need to recycle a length>1 vector, use `rep()` explicitly. Single values are still recycled silently as before. Early warning was given in [this tweet](https://twitter.com/MattDowle/status/1088544083499311104). The 758 CRAN and Bioconductor packages using data.table were tested and the maintainers of the 16 packages affected (2%) were consulted before going ahead, [#3310](https://github.com/Rdatatable/data.table/pull/3310).
 
+2. `foverlaps` supports `type = "equal"` now. Closes [#3416](https://github.com/Rdatatable/data.table/issues/3416). Also addresses part of [#3002](https://github.com/Rdatatable/data.table/issues/3002).
+
+3. The number of logical CPUs used by default has been reduced from 100% to 50%. The previous 100% default was reported to cause significant slow downs when other non-trivial processes were also running: [#3395](https://github.com/Rdatatable/data.table/issues/3395), [#3298](https://github.com/Rdatatable/data.table/issues/3298). Two new optional environment variables (`R_DATATABLE_NUM_PROCS_PERCENT` & `R_DATATABLE_NUM_THREADS`) control this default. \code(setDTthreads()) gains \code{percent=} and \code{?setDTthreads} has been significantly revised. \code{getDTthreads(verbose=TRUE)} has been expanded. The environment variable `OMP_THREAD_LIMIT` is now respected ([#3300](https://github.com/Rdatatable/data.table/issues/3300)) in addition to `OMP_NUM_THREADS` as before.
+
 #### BUG FIXES
 
 1. `rbindlist()` of a malformed factor missing levels attribute is now a helpful error rather than a cryptic error about `STRING_ELT`, [#3315](https://github.com/Rdatatable/data.table/issues/3315). Thanks to Michael Chirico for reporting.
@@ -17,6 +21,16 @@
 4. Grouping by unusual column names such as `by='string_with_\\'` and `keyby="x y"` could fail, [#3319](https://github.com/Rdatatable/data.table/issues/3319) and [#3378](https://github.com/Rdatatable/data.table/issues/3378). Thanks to @HughParsonage for reporting and @MichaelChirico for the fixes.
 
 5. `foverlaps()` returned incorrect results overlapping on POSIXct objects which were <= `1970-01-01`, i.e., datetime values that were represented internally as -ve numeric values. This is now fixed. Closes [#3349](https://github.com/Rdatatable/data.table/issues/3349). Thanks to @lux5 for reporting.
+
+6. Several issues were filed regarding limitations of `dcast.data.table` in handling `fun.aggregate` argument when the functions are not directly provided to the argument as `fun.aggregate <- list(sum, mean)` and instead are stored in a variable, e.g., `funs <- list(sum, mean)` and referred to as `fun.aggregate=funs`. This fix closes several issues [#1974](https://github.com/Rdatatable/data.table/issues/1974), [#1369](https://github.com/Rdatatable/data.table/issues/1369), [#2064](https://github.com/Rdatatable/data.table/issues/2064) and [#2949](https://github.com/Rdatatable/data.table/issues/2949). Thanks to @sunbee, @Ping2016, @smidelius and @d0rg0ld for reporting.
+
+7. Fixed a minor regression in v1.12.0 that resulted in segfaults on some non-equi joins. Closes [#3401](https://github.com/Rdatatable/data.table/issues/3401). Thanks to @Gayyam for the bug report.
+
+8. `dcast.data.table` handles sorting of rows with `NA` in result correctly. Closes [#2202](https://github.com/Rdatatable/data.table/issues/2202). Thanks to @Galileo-Galilei for the report.
+
+9. Sorting, grouping and finding unique values of a numeric column containing at most one finite value (such as `c(Inf,0,-Inf)`) could return incorrect results, [#3372](https://github.com/Rdatatable/data.table/issues/3372) [#3381](https://github.com/Rdatatable/data.table/issues/3381); e.g., `data.table(A=c(Inf,0,-Inf), V=1:3)[,sum(V),by=A]` would treat the 3 rows as one group. This was a regression in 1.12.0. Thanks to Nicolas Ampuero for reporting.
+
+10. Quoted expression having `:=` and dot alias in RHS now works as expected. Thanks to @franknarf1 for raising up issue on [StackOverflow](https://stackoverflow.com/questions/41228076/using-data-tables-shortcut-in-quoted-expressions) and @jangorecki for PR.
 
 #### NOTES
 
@@ -32,7 +46,12 @@
 
 6. v1.12.0 did not compile on Solaris 10 using Oracle Developer Studio 12.6, [#3285](https://github.com/Rdatatable/data.table/issues/3285). Many thanks to Prof Ripley for providing and testing a patch. For future reference and other package developers, a `const` variable should not be passed to OpenMP's `num_threads()` directive otherwise `left operand must be modifiable lvalue` occurs.
 
-7. `getDTthreads()` respected the `OMP_NUM_THREADS` environment variable but not `OMP_THREAD_LIMIT`, [#3300](https://github.com/Rdatatable/data.table/issues/3300). There are two very similar OpenMP functions: `omp_get_max_threads()` and `omp_get_thread_limit()`. It now calls both and chooses the minimum. Note that these environment variables should be set before the R session starts. Using the R command `Sys.setenv()` to set them is too late because the OpenMP runtime is already running by then; use `setDTthreads()` instead.
+7. `foverlaps` provides clearer error messages w.r.t. factor and POSIXct interval columns, [#2645](https://github.com/Rdatatable/data.table/issues/2645) [#3007](https://github.com/Rdatatable/data.table/issues/3007) [#1143](https://github.com/Rdatatable/data.table/issues/1143). Thanks to @sritchie73, @msummersgill and @DavidArenburg for the reports.
+
+8. From v1.12.0, `unique(DT)` checks up-front the types of all the columns and will fail if any column is type `list`. Use `unique(DT, by=...)` to specify columns that are not type `list`. v1.11.8 and before would also correctly fail with the same error, but not when uniqueness had been established in prior columns (it would stop early and not look at the `list` column). Checking up-front was necessary for some internal optimizations and it's probably best to be explicit anyway. Thanks to James Lamb for reporting, [#3332](https://github.com/Rdatatable/data.table/issues/3332). The error message has been embellished :
+    ```
+    Column 2 of by= (2) is type 'list', not yet supported. Please use the by= argument to specify columns with types that are supported.
+    ```
 
 
 ### Changes in v1.12.0  (13 Jan 2019)
