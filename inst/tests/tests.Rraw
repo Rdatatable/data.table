@@ -13583,6 +13583,30 @@ qcall = quote(b := .(.Primitive("sum")(1, 2))) # such calls can be issued by dca
 d = data.table(a=1L)
 test(1996.2, d[, eval(qcall)], data.table(a=1L, b=3))
 
+# setDTthreads; #3435
+test(1997.01, setDTthreads(NULL, percent=75), error="Provide either threads= or percent= but not both")
+test(1997.02, setDTthreads(1L, percent=75), error="Provide either threads= or percent= but not both")
+test(1997.03, setDTthreads(percent=101), error="should be a number between 2 and 100")
+test(1997.04, setDTthreads(percent=1), error="should be a number between 2 and 100")
+test(1997.05, setDTthreads(percent=NULL), error="but is length 0")
+test(1997.06, setDTthreads(percent=1:2), error="but is length 2")
+old = getDTthreads()
+oldenv = Sys.getenv("R_DATATABLE_NUM_PROCS_PERCENT")
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="3.0")
+test(1997.07, setDTthreads(), old, warning="Ignoring invalid.*Please remove any.*not a digit")
+test(1997.08, getDTthreads(), old)
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="1")
+test(1997.09, setDTthreads(), old, warning="Ignoring invalid.*integer between 2 and 100")
+test(1997.10, getDTthreads(), old)
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="75")
+test(1997.11, setDTthreads(), old)
+new = getDTthreads()
+setDTthreads(percent=75)
+test(1997.12, getDTthreads(), new)
+Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT=oldenv)
+test(1997.13, setDTthreads(old), new)
+test(1997.14, getDTthreads(), old)
+
 
 ###################################
 #  Add new tests above this line  #

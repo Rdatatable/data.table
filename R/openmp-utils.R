@@ -1,5 +1,5 @@
 setDTthreads <- function(threads=NULL, restore_after_fork=NULL, percent=NULL) {
-  if (!is.null(percent)) {
+  if (!missing(percent)) {
     if (!missing(threads)) stop("Provide either threads= or percent= but not both")
     if (length(percent)!=1) stop("percent= is provided but is length ", length(percent))
     percent=as.integer(percent)
