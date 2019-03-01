@@ -38,7 +38,7 @@ void initDTthreads() {
   int ans = omp_get_num_procs();  // starting point is all logical CPUs. This is a hard limit; user cannot achieve more than this.
   if (ans<=1) {
     // covers <=0 too in case omp_get_num_procs() returns <= 0 (perhaps error, or unsupported)
-    ans = 1;
+    ans = 1;  // # nocov
   } else {
     int perc = getIntEnv("R_DATATABLE_NUM_PROCS_PERCENT", 50); // use "NUM_PROCS" to use the same name as the OpenMP function this uses
     // 50% of logical CPUs by default; half of 8 is 4 on laptop with 4 cores. Leaves plenty of room for other processes: #3395 & #3298
@@ -99,7 +99,7 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent) {
     if (!isLogical(restore_after_fork) || LOGICAL(restore_after_fork)[0]==NA_LOGICAL) {
       error("restore_after_fork= must be TRUE, FALSE, or NULL (default). getDTthreads(verbose=TRUE) reports the current setting.\n");
     }
-    RestoreAfterFork = LOGICAL(restore_after_fork)[0];
+    RestoreAfterFork = LOGICAL(restore_after_fork)[0];  // # nocov
   }
   int old = DTthreads;
   if (isNull(threads)) {
