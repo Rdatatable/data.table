@@ -59,7 +59,6 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   assign("nfail", 0L, envir=env)
   assign("ntest", 0L, envir=env)
   assign("whichfail", NULL, envir=env)
-  setDTthreads(2) # explicitly limit to 2 so as not to breach CRAN policy (but tests are small so should not use more than 2 anyway)
   assign("started.at", proc.time(), envir=env)
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
   assign("timings", data.table( ID = seq_len(9999L), time=0.0, nTest=0L ), envir=env)   # test timings aggregated to integer id
@@ -75,7 +74,6 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   options(oldverbose)
   options(oldenc)
   # Sys.setlocale("LC_CTYPE", oldlocale)
-  setDTthreads(0)
   ans = env$nfail==0
   
   if (is.na(orig__R_CHECK_LENGTH_1_LOGIC2_)) {
@@ -95,12 +93,14 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   whichfail = get("whichfail", envir=env)
   
   # Summary. This code originally in tests.Rraw and moved up here in #3307
+  # One big long line because CRAN checks output last 13 lines. One long line counts as one out of 13.
   plat = paste0("endian==", .Platform$endian,
                 ", sizeof(long double)==", .Machine$sizeof.longdouble,
                 ", sizeof(pointer)==", .Machine$sizeof.pointer,
                 ", TZ=", suppressWarnings(Sys.timezone()),
                 ", locale='", Sys.getlocale(), "'",
-                ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'")
+                ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
+                ", getDTthreads()='", paste0(capture.output(invisible(getDTthreads(verbose=TRUE))), collapse="; "), "'")
   DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
   if ((x<-sum(timings[["nTest"]])) != ntest) {
     warning("Timings count mismatch:",x,"vs",ntest)  # nocov

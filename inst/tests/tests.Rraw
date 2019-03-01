@@ -11968,7 +11968,7 @@ test(1894.14, DT[, sum(y)*..z], error="Variable 'z' is not found in calling scop
 ..z = 4L
 test(1894.15, DT[, sum(y)*..z], 60L)  # 'manual' prefix (we have recommended in the past) still works, for now.
 
-test(1895, getDTthreads(verbose=TRUE), output="omp_get_max_threads.*omp_get_thread_limit.*DTthreads")
+test(1895, getDTthreads(verbose=TRUE), output="num_procs.*R_DATATABLE.*thread_limit.*RestoreAfterFork")
 
 # Non ascii missing protects on ENC2UTF8; issue #2674
 utf8_strings = c("\u00e7ile", "fa\u00e7ile", "El. pa\u00c5\u00a1tas", "\u00a1tas", "\u00de")
