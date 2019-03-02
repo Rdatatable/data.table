@@ -160,10 +160,6 @@ S3method(split, IDate)
 S3method(unique, IDate)
 S3method(unique, ITime)
 
-
-
-# [.factor
-# c.factor
 # duplist
 # getdots
 # NCOL
