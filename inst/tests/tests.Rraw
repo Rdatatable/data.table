@@ -1501,11 +1501,10 @@ test(505, DT[J(a=1,b=6),sum(i.b*b),by=.EACHI]$V1, 24)  # 24 now 'double' because
 
 # Test := after a key<-
 DT = data.table(a=3:1,b=4:6)
-test(506, key(DT)<-"a", "a", error="can copy the whole table")
-# key <- deprecated on 2019-02-16
-#test(508, DT, data.table(a=1:3,b=6:4,key="a"))
-#test(509, DT[,b:=10L], data.table(a=1:3,b=10L,key="a"))
-#test(510, DT[,c:=11L], data.table(a=1:3,b=10L,c=11L,key="a"))  # Used to be warning about invalid .internal.selfref detected and fixed. As from v1.8.3 data.table() returns a NAMED==0 object, and key<- appears not to copy that. But within functions, key<- would still copy. TO DO: add tests....
+test(506, key(DT)<-"a", "a", warning="deprecated")
+test(508, DT, data.table(a=1:3,b=6:4,key="a"))
+test(509, DT[,b:=10L], data.table(a=1:3,b=10L,key="a"))
+test(510, DT[,c:=11L], data.table(a=1:3,b=10L,c=11L,key="a"))  # Used to be warning about invalid .internal.selfref detected and fixed. As from v1.8.3 data.table() returns a NAMED==0 object, and key<- appears not to copy that. But within functions, key<- would still copy. TO DO: add tests....
 #test(511,)
 
 # Test new functons chmatch and %chin%
@@ -11998,10 +11997,9 @@ test(1897.2, attributes(attr(DT, 'index')),
      list(`__a` = c(3L, 2L, 4L, 1L, 5L),
           `__a__b` = c(3L, 4L, 2L, 1L, 5L)))
 
-# completely removed these functions 2019-02-13
-#test(1898.1, set2key(DT, a), error="deprecated. Please use setindex() instead.")
-#test(1898.2, set2keyv(DT, "a"), error="deprecated. Please use setindexv() instead.")
-#test(1898.3, key2(DT), error="deprecated. Please use indices() instead.")
+test(1898.1, set2key(DT, a), error="deprecated. Please use setindex() instead.")
+test(1898.2, set2keyv(DT, "a"), error="deprecated. Please use setindexv() instead.")
+test(1898.3, key2(DT), error="deprecated. Please use indices() instead.")
 
 # Allow column to be used as rownames when converting to matrix #2702
 DT = data.table(id = letters[1:4], X = 1:4, Y = 5:8)

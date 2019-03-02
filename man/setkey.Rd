@@ -2,7 +2,6 @@
 \alias{setkey}
 \alias{setkeyv}
 \alias{key}
-\alias{key<-}
 \alias{haskey}
 \alias{setindex}
 \alias{setindexv}
@@ -17,10 +16,14 @@ operator that modifies input by reference is \code{\link{:=}}. Check out the
 provides.
 
 \code{setkey} sorts a \code{data.table} and marks it as sorted (with an
-attribute \code{sorted}). The sorted columns are the key. The key can be any number of columns in any order. The columns are always sorted in \emph{ascending} order. The table is changed \emph{by reference} and \code{setkey} is therefore very memory efficient.
+attribute \code{sorted}). The sorted columns are the key. The key can be any
+number of columns in any order. The columns are always sorted in \emph{ascending} order. The table
+is changed \emph{by reference} and \code{setkey} is therefore very memory efficient.
 
-\code{setindex} creates an index (or indices) on provided columns. This index is simply an ordering vector of the data set's rows according to the provided columns. For example, if the ordering of \code{x} for columns \code{i} is \code{index_i}, then the result of \code{x[index_i]} will be sorted by \code{i}. This order is stored as an attribute of the \code{data.table}, and the dataset retains the original order in memory.
-See the \href{vignettes/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} vignette for more details.
+\code{setindex} creates an index for the provided columns. This index is simply an
+ordering vector of the dataset's rows according to the provided columns. This order vector
+is stored as an attribute of the \code{data.table}, and the dataset retains the original order
+in memory. See the \href{vignettes/datatable-secondary-indices-and-auto-indexing.html}{Secondary indices and auto indexing} vignette for more details.
 
 \code{key} returns the \code{data.table}'s key if it exists, and \code{NULL}
 if none exists.
@@ -36,7 +39,6 @@ setindexv(x, cols, verbose=getOption("datatable.verbose"))
 key(x)
 indices(x, vectors = FALSE)
 haskey(x)
-key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 }
 \arguments{
 \item{x}{ A \code{data.table}. }
@@ -45,7 +47,6 @@ key(x) <- value   #  DEPRECATED, please use setkey or setkeyv instead.
 \item{verbose}{ Output status and information. }
 \item{physical}{ \code{TRUE} changes the order of the data in RAM. \code{FALSE} adds an index. }
 \item{vectors}{ \code{logical} scalar, default \code{FALSE}; when set to \code{TRUE}, a \code{list} of character vectors is returned, each referring to one index. }
-\item{value}{ In (deprecated) \code{key<-}, a character vector (only) of column names. }
 }
 \details{
 \code{setkey} reorders (or sorts) the rows of a \code{data.table} by the columns
@@ -62,8 +63,8 @@ For character vectors, \code{data.table} takes advantage of R's internal global 
 Please also use the other \code{set*} functions which modify
 objects by reference, rather than using the \code{<-} operator which results
 in copying the entire object. In earlier versions of \code{data.table}, this
-was learned through the lesson of the (long-deprecated) function \code{key<-}, 
-the predecessor to \code{setkey}. 
+was learned through the lesson of the (long-deprecated) function \code{key<-},
+the predecessor to \code{setkey}.
 
 The problem (for \code{data.table}) with the copy by \code{key<-} (other than
 being slower) is that \R doesn't maintain the over-allocated truelength, but it
@@ -81,7 +82,7 @@ you add, remove or reorder columns in a few months time, a \code{setkey} by colu
 number will then refer to a different column, possibly returning incorrect results
 with no warning. (A similar concept exists in SQL, where \code{"select * from \dots"} is considered poor programming style when a robust, maintainable system is
 required.)  If you really wish to use column numbers, it is possible but
-deliberately a little harder; e.g., \code{setkeyv(DT,colnames(DT)[1:2])}. 
+deliberately a little harder; e.g., \code{setkeyv(DT,colnames(DT)[1:2])}.
 If you wanted to use \code{\link[base]{grep}} to select key columns according to
 a pattern, note that you can just set \code{value = TRUE} to return a character vector instead of the default integer indices.
 }
@@ -126,7 +127,7 @@ DT # after
 tables()              # KEY column reports the key'd columns
 key(DT)
 keycols = c("A","B")
-setkeyv(DT,keycols) 
+setkeyv(DT,keycols)
 
 DT = data.table(A=5:1,B=letters[5:1])
 DT2 = DT              # does not copy
