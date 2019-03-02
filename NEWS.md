@@ -8,6 +8,8 @@
 
 2. `foverlaps` supports `type = "equal"` now. Closes [#3416](https://github.com/Rdatatable/data.table/issues/3416). Also addresses part of [#3002](https://github.com/Rdatatable/data.table/issues/3002).
 
+3. The number of logical CPUs used by default has been reduced from 100% to 50%. The previous 100% default was reported to cause significant slow downs when other non-trivial processes were also running: [#3395](https://github.com/Rdatatable/data.table/issues/3395), [#3298](https://github.com/Rdatatable/data.table/issues/3298). Two new optional environment variables (`R_DATATABLE_NUM_PROCS_PERCENT` & `R_DATATABLE_NUM_THREADS`) control this default. \code(setDTthreads()) gains \code{percent=} and \code{?setDTthreads} has been significantly revised. \code{getDTthreads(verbose=TRUE)} has been expanded. The environment variable `OMP_THREAD_LIMIT` is now respected ([#3300](https://github.com/Rdatatable/data.table/issues/3300)) in addition to `OMP_NUM_THREADS` as before.
+
 #### BUG FIXES
 
 1. `rbindlist()` of a malformed factor missing levels attribute is now a helpful error rather than a cryptic error about `STRING_ELT`, [#3315](https://github.com/Rdatatable/data.table/issues/3315). Thanks to Michael Chirico for reporting.
@@ -26,6 +28,10 @@
 
 8. `dcast.data.table` handles sorting of rows with `NA` in result correctly. Closes [#2202](https://github.com/Rdatatable/data.table/issues/2202). Thanks to @Galileo-Galilei for the report.
 
+9. Sorting, grouping and finding unique values of a numeric column containing at most one finite value (such as `c(Inf,0,-Inf)`) could return incorrect results, [#3372](https://github.com/Rdatatable/data.table/issues/3372) [#3381](https://github.com/Rdatatable/data.table/issues/3381); e.g., `data.table(A=c(Inf,0,-Inf), V=1:3)[,sum(V),by=A]` would treat the 3 rows as one group. This was a regression in 1.12.0. Thanks to Nicolas Ampuero for reporting.
+
+10. Quoted expression having `:=` and dot alias in RHS now works as expected. Thanks to @franknarf1 for raising up issue on [StackOverflow](https://stackoverflow.com/questions/41228076/using-data-tables-shortcut-in-quoted-expressions) and @jangorecki for PR.
+
 #### NOTES
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
@@ -40,13 +46,17 @@
 
 6. v1.12.0 did not compile on Solaris 10 using Oracle Developer Studio 12.6, [#3285](https://github.com/Rdatatable/data.table/issues/3285). Many thanks to Prof Ripley for providing and testing a patch. For future reference and other package developers, a `const` variable should not be passed to OpenMP's `num_threads()` directive otherwise `left operand must be modifiable lvalue` occurs.
 
-7. `getDTthreads()` respected the `OMP_NUM_THREADS` environment variable but not `OMP_THREAD_LIMIT`, [#3300](https://github.com/Rdatatable/data.table/issues/3300). There are two very similar OpenMP functions: `omp_get_max_threads()` and `omp_get_thread_limit()`. It now calls both and chooses the minimum. Note that these environment variables should be set before the R session starts. Using the R command `Sys.setenv()` to set them is too late because the OpenMP runtime is already running by then; use `setDTthreads()` instead.
+7. `foverlaps` provides clearer error messages w.r.t. factor and POSIXct interval columns, [#2645](https://github.com/Rdatatable/data.table/issues/2645) [#3007](https://github.com/Rdatatable/data.table/issues/3007) [#1143](https://github.com/Rdatatable/data.table/issues/1143). Thanks to @sritchie73, @msummersgill and @DavidArenburg for the reports.
 
-8. `foverlaps` provides clearer error message when interval columns are of type factor. Closes [#2645](https://github.com/Rdatatable/data.table/issues/2645). Thanks to @sritchie73 for the report.
+8. From v1.12.0, `unique(DT)` checks up-front the types of all the columns and will fail if any column is type `list`. Use `unique(DT, by=...)` to specify columns that are not type `list`. v1.11.8 and before would also correctly fail with the same error, but not when uniqueness had been established in prior columns (it would stop early and not look at the `list` column). Checking up-front was necessary for some internal optimizations and it's probably best to be explicit anyway. Thanks to James Lamb for reporting, [#3332](https://github.com/Rdatatable/data.table/issues/3332). The error message has been embellished :
+    ```
+    Column 2 of by= (2) is type 'list', not yet supported. Please use the by= argument to specify columns with types that are supported.
+    ```
 
-9. `foverlaps` provides clearer error messages when interval columns have NA in them. Closes [#3007](https://github.com/Rdatatable/data.table/issues/3007). Thanks to @msummersgill for the report and code to integrate into foverlaps.R.
+9. Reminder that note 11 in v1.11.0 (May 2018) warned that `set2key()` and `key2()` will be removed in May 2019. They have been warning since v1.9.8 (Nov 2016) and their warnings were upgraded to errors in v1.11.0 (May 2018). When they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental'.
 
-10. `foverlaps` provides better error messages when one interval is POSIXct and other isn't. Also, it warns when POSIXct interval columns are not all of same timezone. Closes [#1143](https://github.com/Rdatatable/data.table/issues/1143). Thanks to @DavidArenburg for the report.
+10. The `key(DT)<-` form of `setkey()` has been warning since at least 2012 to use `setkey()`. The warning is now stronger: `key(x)<-value is deprecated and not supported. Please change to use setkey().`. This warning will be upgraded to error in one year.
+
 
 ### Changes in v1.12.0  (13 Jan 2019)
 

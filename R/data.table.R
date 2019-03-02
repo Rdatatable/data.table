@@ -180,7 +180,7 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
 replace_dot_alias <- function(e) {
   # we don't just simply alias .=list because i) list is a primitive (faster to iterate) and ii) we test for use
   # of "list" in several places so it saves having to remember to write "." || "list" in those places
-  if (is.call(e)) {
+  if (is.call(e) && !is.function(e[[1L]])) {
     # . alias also used within bquote, #1912
     if (e[[1L]] == 'bquote') return(e)
     if (e[[1L]] == ".") e[[1L]] = quote(list)
@@ -353,7 +353,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       jsub = eval(jsub[[2L]], parent.frame(), parent.frame())  # this evals the symbol to return the dynamic expression
       if (is.expression(jsub)) jsub = jsub[[1L]]    # if expression, convert it to call
       # Note that the dynamic expression could now be := (new in v1.9.7)
-      root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
+      root = if (is.call(jsub)) {
+        jsub = replace_dot_alias(jsub)
+        as.character(jsub[[1L]])[1L]
+      } else ""
     }
     if (root == ":=") {
       allow.cartesian=TRUE   # (see #800)
@@ -1170,7 +1173,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           m[is.na(m)] = ncol(x)+seq_len(length(newnames))
           cols = as.integer(m)
           if ((ok<-selfrefok(x,verbose))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
-            warning("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid key<-, names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
+            warning("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
           if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
             DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
             n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
