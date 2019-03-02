@@ -27,17 +27,15 @@ as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
 }
 
 as.IDate.Date <- function(x, ...) {
-  x = as.integer(x)
-  class(x) = c("IDate", "Date")
-  x
+  x = as.integer(x)                 # if already integer, x will be left unchanged as the original input
+  class(x) = c("IDate", "Date")     # class()<- will copy if as.integer() did not create, and may not if it did we hope
+  x                                 # always return a new object
 }
 
 as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
   if (tz %chin% c("UTC", "GMT")) {
-    x = as.integer(x) %/% 86400L
-    class(x) = c("IDate", "Date")
-    x
+    (setattr(as.integer(x) %/% 86400L, "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
   } else
     as.IDate(as.Date(x, tz = tz, ...))
 }
