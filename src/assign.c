@@ -99,6 +99,15 @@ However, we still have problem (ii) above and it didn't pass tests involving bas
 
 We really need R itself to start setting TRUELENGTH to be the allocated length and then
 for GC to release TRUELENGTH not LENGTH.  Would really tidy this up.
+
+Moved out of ?setkey Details section in 1.12.2 (Mar 2019). Revisit this w.r.t. to recent versions of R.
+  The problem (for \code{data.table}) with the copy by \code{key<-} (other than
+  being slower) is that \R doesn't maintain the over-allocated truelength, but it
+  looks as though it has. Adding a column by reference using \code{:=} after a
+  \code{key<-} was therefore a memory overwrite and eventually a segfault; the
+  over-allocated memory wasn't really there after \code{key<-}'s copy. \code{data.table}s now have an attribute \code{.internal.selfref} to catch and warn about such copies.
+  This attribute has been implemented in a way that is friendly with
+  \code{identical()} and \code{object.size()}.
 */
 
 static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
@@ -944,7 +953,7 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
   case LGLSXP : {
     Rboolean *vd = (Rboolean *)LOGICAL(v);
     for (int i=0; i<n; i++) vd[i] = NA_LOGICAL;
-  } break; 
+  } break;
   case INTSXP : {
     int *vd = INTEGER(v);
     for (int i=0; i<n; i++) vd[i] = NA_INTEGER;

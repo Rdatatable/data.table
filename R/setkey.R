@@ -18,12 +18,12 @@ setindexv <- function(x, cols, verbose=getOption("datatable.verbose")) {
   }
 }
 
-# remove these 3 in 2021; see discussion in #3399
+# remove these 3 after May 2019; see discussion in #3399 and notes in v1.12.2. They were marked experimental after all.
 set2key <- function(...)  stop("set2key() is now deprecated. Please use setindex() instead.")
 set2keyv <- function(...) stop("set2keyv() is now deprecated. Please use setindexv() instead.")
 key2 <- function(...)     stop("key2() is now deprecated. Please use indices() instead.")
 
-# upgrade to error in 2021. Has already been warning since 2012, and stronger warning in 2019 with note in news for 1.12.2; #3399
+# upgrade to error after Mar 2020. Has already been warning since 2012, and stronger warning in Mar 2019 (note in news for 1.12.2); #3399
 "key<-" <- function(x,value) {
   warning("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future.")
   setkeyv(x,value)
