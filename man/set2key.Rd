@@ -11,7 +11,7 @@
 set2key(...)      #  DEPRECATED; helpful error since May 2018 and warning since Nov 2016
 set2keyv(...)     #  DEPRECATED; helpful error since May 2018 and warning since Nov 2016
 key2(...)         #  DEPRECATED; helpful error since May 2018 and warning since Nov 2016
-key(x) <- value   #  DEPRECATED; strong warning since Mar 2019 and softer warning since 2012
+key(x) <- value   #  warning since 2012; DEPRECATED since Mar 2019
 }
 \arguments{
 \item{\dots}{ Deprecated. }
