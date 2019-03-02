@@ -7,7 +7,7 @@ exportClasses(data.table, IDate, ITime)
 
 export(data.table, tables, setkey, setkeyv, key, "key<-", haskey, CJ, SJ, copy)
 export(setindex, setindexv, indices)
-export(set2key, set2keyv, key2) # deprecated with helpful error; remove in 2021 (discussion #3399)
+export(set2key, set2keyv, key2) # deprecated with helpful error; remove after May 2019 (see #3399)
 export(as.data.table,is.data.table,test.data.table,last,first,like,"%like%",between,"%between%",inrange,"%inrange%")
 export(timetaken)
 export(truelength, alloc.col, ":=")
