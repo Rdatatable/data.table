@@ -72,6 +72,11 @@ shift(ll, 1, type="lead")
 shift(ll, 1, type="lead", give.names=TRUE)
 shift(ll, 1:2, type="lead")
 
+# fill using first or last by group
+DT = data.table(x=1:6, g=rep(1:2, each=3))
+DT[ , shift(x, fill=x[1L]), by=g]
+DT[ , shift(x, fill=x[.N], type="lead"), by=g]
+
 }
 \seealso{
   \code{\link{data.table}}
