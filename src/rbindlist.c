@@ -1,151 +1,6 @@
 #include "data.table.h"
 #include <Rdefines.h>
-#include <stdint.h>
-// #include <signal.h> // the debugging machinery + breakpoint aidee
-// raise(SIGINT);
 
-/* Eddi's hash setup for combining factor levels appropriately - untouched from previous state (except made combineFactorLevels static) */
-
-// a simple linked list, will use this when finding global order for ordered factors
-// will keep two ints
-struct llist {
-  struct llist * next;
-  R_len_t i, j;
-};
-
-// hash table code copied from main/unique.c, specialized for our particular needs
-// as our table will just be strings
-// took out long vector ifdefs as that relied on too much base code
-// can revisit this later if there is need for more than ~1e9 length factor columns
-// UTF8 and Cache bools are not set correctly for now
-
-typedef size_t hlen;
-
-/* Hash function and equality test for keys */
-typedef struct _HashData HashData;
-
-struct _HashData {
-  int K;
-  hlen M;
-  RLEN nmax;
-  hlen (*hash)(SEXP, RLEN, HashData *);
-  int (*equal)(SEXP, RLEN, SEXP, RLEN);
-  struct llist ** HashTable;
-
-  int nomatch;
-  Rboolean useUTF8;
-  Rboolean useCache;
-};
-
-/*
-Integer keys are hashed via a random number generator
-based on Knuth's recommendations. The high order K bits
-are used as the hash code.
-
-NB: lots of this code relies on M being a power of two and
-on silent integer overflow mod 2^32.
-
-<FIXME> Integer keys are wasteful for logical and raw vectors, but
-the tables are small in that case. It would be much easier to
-implement long vectors, though.
-*/
-
-/* Currently the hash table is implemented as a (signed) integer
-array. So there are two 31-bit restrictions, the length of the
-array and the values. The values are initially NIL (-1). O-based
-indices are inserted by isDuplicated, and invalidated by setting
-to NA_INTEGER.
-*/
-
-static hlen scatter(unsigned int key, HashData *d)
-{
-  return 3141592653U * key >> (32 - d->K);
-}
-
-/* Hash CHARSXP by address. Hash values are int, For 64bit pointers,
- * we do (upper ^ lower) */
-static hlen cshash(SEXP x, RLEN indx, HashData *d)
-{
-  intptr_t z = (intptr_t) STRING_ELT(x, indx);
-  unsigned int z1 = (unsigned int)(z & 0xffffffff), z2 = 0;
-#if SIZEOF_LONG == 8
-  z2 = (unsigned int)(z/0x100000000L);
-#endif
-  return scatter(z1 ^ z2, d);
-}
-
-static hlen shash(SEXP x, RLEN indx, HashData *d)
-{
-  unsigned int k;
-  const char *p;
-  const void *vmax = vmaxget();
-  if(!d->useUTF8 && d->useCache) return cshash(x, indx, d);
-  /* Not having d->useCache really should not happen anymore. */
-  p = translateCharUTF8(STRING_ELT(x, indx));
-  k = 0;
-  while (*p++)
-    k = 11 * k + (unsigned int) *p; /* was 8 but 11 isn't a power of 2 */
-  vmaxset(vmax); /* discard any memory used by translateChar */
-  return scatter(k, d);
-}
-
-static int sequal(SEXP x, RLEN i, SEXP y, RLEN j)
-{
-  // using our function instead of copying a lot more code from base
-  return !StrCmp(STRING_ELT(x, i), STRING_ELT(y, j));
-}
-
-/*
-Choose M to be the smallest power of 2
-not less than 2*n and set K = log2(M).
-Need K >= 1 and hence M >= 2, and 2^M < 2^31-1, hence n <= 2^29.
-
-Dec 2004: modified from 4*n to 2*n, since in the worst case we have
-a 50% full table, and that is still rather efficient -- see
-R. Sedgewick (1998) Algorithms in C++ 3rd edition p.606.
-*/
-static void MKsetup(HashData *d, RLEN n)
-{
-  if(n < 0 || n >= 1073741824) /* protect against overflow to -ve */
-    error("length %d is too large for hashing", n);
-
-  size_t n2 = 2U * (size_t) n;
-  d->M = 2;
-  d->K = 1;
-  while (d->M < n2) {
-    d->M *= 2;
-    d->K++;
-  }
-  d->nmax = n;
-}
-
-#define IMAX 4294967296L
-static void HashTableSetup(HashData *d, RLEN n)
-{
-  d->hash = shash;
-  d->equal = sequal;
-  MKsetup(d, n);
-  //d->HashTable = malloc(sizeof(struct llist *) * (d->M));
-  //if (d->HashTable == NULL) error("malloc failed in rbindlist.c. This part of the code will be reworked.");
-  d->HashTable = (struct llist **)R_alloc(d->M, sizeof(struct llist *));
-  for (RLEN i = 0; i < d->M; i++) d->HashTable[i] = NULL;
-}
-/*
-static void CleanHashTable(HashData *d)
-{
-  struct llist * root, * tmp;
-
-  for (RLEN i = 0; i < d->M; ++i) {
-    root = d->HashTable[i];
-    while (root != NULL) {
-      tmp = root->next;
-      free(root);
-      root = tmp;
-    }
-  }
-  free(d->HashTable);
-}
-*/
 
 // factorType is 1 for factor and 2 for ordered
 // will simply unique normal factors and attempt to find global order for ordered ones
@@ -600,11 +455,15 @@ SEXP add_idcol(SEXP nm, SEXP idcol, int cols) {
   return (ans);
 }
 
+
+
+
+
 SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
 
-  R_len_t jj, ansloc, resi, i,j,r, idx, thislen;
+  R_len_t jj, ansloc, resi, i,j, idx, thislen;
   struct preprocessData data;
-  Rboolean usenames, fill, to_copy = FALSE, coerced=FALSE, isidcol = !isNull(idcol);
+  Rboolean to_copy = FALSE, coerced=FALSE, isidcol = !isNull(idcol);
   SEXP fnames = R_NilValue, findices = R_NilValue, f_ind = R_NilValue, ans, lf, li, target, thiscol, levels;
   R_len_t protecti=0;
 
@@ -614,14 +473,14 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
   if (!isLogical(sexp_fill) || LENGTH(sexp_fill) != 1 || LOGICAL(sexp_fill)[0] == NA_LOGICAL)
     error("fill should be TRUE or FALSE");
   if (!length(l)) return(l);
-  if (TYPEOF(l) != VECSXP) error("Input to rbindlist must be a list of data.tables");
+  if (TYPEOF(l) != VECSXP) error("Input to rbindlist must be a list of data.tables, data.frames or lists");
 
-  usenames = LOGICAL(sexp_usenames)[0];
-  fill = LOGICAL(sexp_fill)[0];
+  bool usenames = LOGICAL(sexp_usenames)[0];
+  bool fill = LOGICAL(sexp_fill)[0];
   if (fill && !usenames) {
     // override default
     warning("Resetting 'use.names' to TRUE. 'use.names' can not be FALSE when 'fill=TRUE'.\n");
-    usenames=TRUE;
+    usenames=true;
   }
 
   // check for factor, get max types, and when usenames=TRUE get the answer 'names' and column indices for proper reordering.
@@ -697,6 +556,22 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
               type2char(TYPEOF(thiscol)), type2char(TYPEOF(target)));
       }
       switch(TYPEOF(target)) {
+      case LGLSXP:
+        memcpy(LOGICAL(target)+ansloc, LOGICAL(thiscol), thislen*SIZEOF(thiscol));
+        break;
+      case INTSXP:
+        memcpy(INTEGER(target)+ansloc, INTEGER(thiscol), thislen*SIZEOF(thiscol));
+        break;
+      case REALSXP:
+        memcpy(REAL(target)+ansloc, REAL(thiscol), thislen*SIZEOF(thiscol));
+        break;
+      case CPLXSXP :
+        memcpy(COMPLEX(target)+ansloc, COMPLEX(thiscol), thislen*sizeof(Rcomplex));
+        break;
+      case VECSXP :
+        for (int r=0; r<thislen; r++)
+          SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thiscol,r));
+        break;
       case STRSXP :
         isRowOrdered[resi] = FALSE;
         if (isFactor(thiscol)) {
@@ -714,7 +589,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
           if (isOrdered(thiscol)) isRowOrdered[resi] = TRUE;
         } else {
           if (TYPEOF(thiscol) != STRSXP) error("Internal logical error in rbindlist.c (not STRSXP), please report to data.table issue tracker.");
-          for (r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
+          for (int r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
 
           // if this column is going to be a factor, add column to factorLevels
           // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
@@ -725,23 +600,6 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
           // removed 'coerced=FALSE; UNPROTECT(1)' as it resulted in a stack imbalance.
           // anyways it's taken care of after the switch. So no need here.
         }
-        break;
-      case VECSXP :
-        for (r=0; r<thislen; r++)
-          SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thiscol,r));
-        break;
-      case CPLXSXP : // #1659 fix
-        for (r=0; r<thislen; r++)
-          COMPLEX(target)[ansloc+r] = COMPLEX(thiscol)[r];
-        break;
-      case REALSXP:
-        memcpy(REAL(target)+ansloc, REAL(thiscol), thislen*SIZEOF(thiscol));
-        break;
-      case INTSXP:
-        memcpy(INTEGER(target)+ansloc, INTEGER(thiscol), thislen*SIZEOF(thiscol));
-        break;
-      case LGLSXP:
-        memcpy(LOGICAL(target)+ansloc, LOGICAL(thiscol), thislen*SIZEOF(thiscol));
         break;
       default :
         error("Unsupported column type '%s'", type2char(TYPEOF(target)));
