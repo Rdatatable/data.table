@@ -5540,6 +5540,10 @@ for (run in seq_len(times)) {
     }
   }
 }
+test(1373.91, load(testDir("test1372-1.Rdata")), c("i","x"))  # 3432
+test(1373.92, foverlaps(i, x, mult="all", type="equal", nomatch=NULL, which=TRUE),
+              data.table(xid=INT(11,35,35,45,45,45,46,46,46,46),
+                         yid=INT(20,39,40,52,53,54,55,56,57,58)))
 
 # fix for bug in address - #824
 # was temporarily disabled in issue #2619
@@ -10654,7 +10658,7 @@ test(1759, fread(testDir("alluniquechar.csv"))[c(1,2,499,500)],
 # fread should use multiple threads on single column input.
 # tests 2 threads; the very reasonable limit on CRAN
 # file needs to be reasonably large for threads to kick in (minimum chunkSize is 1MB currently)
-if (getDTthreads() != 2) {
+if (getDTthreads() == 1L) {
   cat("Test 1760 not run because this session either has no OpenMP or has been limited to one thread (e.g. under UBSAN and ASAN)\n")
 } else {
   N = if (TRUE) 2e6 else 1e9   # offline speed check
