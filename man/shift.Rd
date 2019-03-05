@@ -17,7 +17,7 @@ shift(x, n=1L, fill=NA, type=c("lag", "lead", "shift"), give.names=FALSE)
   \item{n}{ integer vector denoting the offset by which to lead or lag the input. To create multiple lead/lag vectors, provide multiple values to \code{n}; negative values of \code{n} will "flip" the value of \code{type}, i.e., \code{n=-1} and \code{type='lead'} is the same as \code{n=1} and \code{type='lag'}. }
   \item{fill}{ Value to use for padding when the window goes beyond the input length. }
   \item{type}{ default is \code{"lag"} (look "backwards"). The other possible values \code{"lead"} (look "forwards") and \code{"shift"} (behave same as \code{"lag"} except given names). }
-  \item{give.names}{default is \code{FALSE} which returns an unnamed list. When \code{TRUE}, names are automatically generated corresponding to \code{type} and \code{n}. }
+  \item{give.names}{default is \code{FALSE} which returns an unnamed list. When \code{TRUE}, names are automatically generated corresponding to \code{type} and \code{n}. If answer is an atomic vector, then the argument is ignored. }
 }
 \details{
   \code{shift} accepts vectors, lists, data.frames or data.tables. It always returns a list except when the input is a \code{vector} and \code{length(n) == 1} in which case a \code{vector} is returned, for convenience. This is so that it can be used conveniently within data.table's syntax. For example, \code{DT[, (cols) := shift(.SD, 1L), by=id]} would lag every column of \code{.SD} by 1 for each group and \code{DT[, newcol := colA + shift(colB)]} would assign the sum of two \emph{vectors} to \code{newcol}.
@@ -71,6 +71,11 @@ ll = list(1:3, letters[4:1], runif(2))
 shift(ll, 1, type="lead")
 shift(ll, 1, type="lead", give.names=TRUE)
 shift(ll, 1:2, type="lead")
+
+# fill using first or last by group
+DT = data.table(x=1:6, g=rep(1:2, each=3))
+DT[ , shift(x, fill=x[1L]), by=g]
+DT[ , shift(x, fill=x[.N], type="lead"), by=g]
 
 }
 \seealso{
