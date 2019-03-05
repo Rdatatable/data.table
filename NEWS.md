@@ -32,7 +32,7 @@
 
 10. Quoted expression having `:=` and dot alias in RHS now works as expected. Thanks to @franknarf1 for raising up issue on [StackOverflow](https://stackoverflow.com/questions/41228076/using-data-tables-shortcut-in-quoted-expressions) and @jangorecki for PR.
 
-11. Key is properly removed in an edge case not handled before, when joining a *keyed* table to a 2+ length vector wrapped in list when only single row match. Thanks to @symbalex for reporting and @franknarf1 for tiny reproducible example. Closes [#3441](https://github.com/Rdatatable/data.table/issues/3441).
+11. A join's result could be incorrectly keyed when a single nomatch occurred at the very beginning while all other values matched, [#3441](https://github.com/Rdatatable/data.table/issues/3441). The incorrect key would cause incorrect results in subsequent queries. Thanks to @symbalex for reporting and @franknarf1 for pinpointing the root cause.
 
 #### NOTES
 
