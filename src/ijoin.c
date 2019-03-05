@@ -267,7 +267,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
             if ( INTEGER(tmp1)[j] == INTEGER(tmp2)[m] ) {
               ++wlen; ++j; ++m;
             } else if ( INTEGER(tmp1)[j] > INTEGER(tmp2)[m] ) {
-              break;
+              ++m;
             } else ++j;
           }
         }
