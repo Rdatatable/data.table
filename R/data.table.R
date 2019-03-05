@@ -1333,13 +1333,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           ## check key on i as well!
           ichk = is.data.table(i) && haskey(i) &&
                  identical(head(key(i), length(leftcols)), names(i)[leftcols]) # i has the correct key, #3061
-          if (keylen && (
-            ichk || is.logical(i) || (
-              .Call(CisOrderedSubset, irows, nrow(x)) && !missingroll && ( # !missingroll fix for #3441
-                (roll == FALSE) || length(irows) == 1L
-                )
-              )
-            )) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
+          if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
             setattr(ans,"sorted",head(key(x),keylen))
         }
         setattr(ans, "class", class(x)) # fix for #5296
