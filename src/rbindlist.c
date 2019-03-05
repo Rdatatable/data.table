@@ -456,16 +456,13 @@ SEXP add_idcol(SEXP nm, SEXP idcol, int cols) {
 }
 
 
-
-
-
 SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
 
-  R_len_t jj, ansloc, resi, i,j, idx, thislen;
-  struct preprocessData data;
-  Rboolean to_copy = FALSE, coerced=FALSE, isidcol = !isNull(idcol);
-  SEXP fnames = R_NilValue, findices = R_NilValue, f_ind = R_NilValue, ans, lf, li, target, thiscol, levels;
-  R_len_t protecti=0;
+  //R_len_t jj, ansloc, resi, i,j, idx, thislen;
+  //struct preprocessData data;
+  //Rboolean to_copy = FALSE, coerced=FALSE, isidcol = !isNull(idcol);
+  //SEXP fnames = R_NilValue, findices = R_NilValue, f_ind = R_NilValue, ans, lf, li, target, thiscol, levels;
+  //R_len_t protecti=0;
 
   // first level of error checks
   if (!isLogical(sexp_usenames) || LENGTH(sexp_usenames)!=1 || LOGICAL(sexp_usenames)[0]==NA_LOGICAL)
@@ -478,10 +475,115 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
   bool usenames = LOGICAL(sexp_usenames)[0];
   bool fill = LOGICAL(sexp_fill)[0];
   if (fill && !usenames) {
-    // override default
     warning("Resetting 'use.names' to TRUE. 'use.names' can not be FALSE when 'fill=TRUE'.\n");
     usenames=true;
   }
+
+  int ncol=-1;
+  // pre-check for any errors here to save having to get cleanup right below when usenames
+  for (int i=0; i<LENGTH(l); i++) {  // length(l)>0 checked above
+    SEXP li = VECTOR_ELT(l, i);
+    if (isNull(li)) continue;
+    if (TYPEOF(li) != VECSXP) error("Item %d of input is not a data.frame, data.table or list", i+1);
+    if (!LENGTH(li)) continue;
+    if ((usenames||fill) && isNull(getAttrib(li, R_NamesSymbol)) error("When use.names=TRUE or fill=TRUE every item of the input must have column names. Item %d does not.", i+1);
+    if (ncol==-1) ncol=LENGTH(li);
+    else if (!fill && ncol!=LENGTH(li)) error("Item %d has %d columns, inconsistent with item %d which has %d columns. To fill missing columns use fill=TRUE.", i+1, LENGTH(li), first+1, ncol);
+  }
+
+  int *listmap = NULL; // each row will map the items of each list to the appropriate column in the final result
+  if (usenames) {
+    savetl_init();
+    // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
+    int nuniq=0;
+    for (int i=0; i<LENGTH(l); i++) {
+      SEXP li = VECTOR_ELT(l, i);
+      int thisncol=LENGTH(li);
+      if (isNull(li) || !LENGTH(li)) continue;
+      const SEXP *cnp = STRING_PTR(getAttrib(li, R_NamesSymbol));
+      for (int j=0; j<thisncol; j++) {
+        SEXP s = cnp[j];
+        if (TRUELNGTH(s)<0) continue;  // seen this name before
+        if (TRUELENGTH(s)>0) savetl(s);
+        SET_TRUELENGTH(s,--nuniq);
+      }
+    }
+    nuniq = -nuniq;
+    int *counts = R_alloc(nuniq, sizeof(int)); // counts of names for each colnames
+    int *maxdup = R_alloc(nuniq, sizeof(int)); // the most number of dups for any name within one colname vector
+    memset(maxdup, 0, nuniq*sizeof(int));
+    for (int i=0; i<LENGTH(l); i++) {
+      SEXP li = VECTOR_ELT(l, i);
+      int thisncol=LENGTH(li);
+      if (isNull(li) || !LENGTH(li)) continue;
+      const SEXP *cnp = STRING_PTR(getAttrib(li, R_NamesSymbol));
+      memset(counts, 0, nuniq*sizeof(int));
+      for (int j=0; j<thisncol; j++) {
+        SEXP s = cnp[j];
+        counts[ -TRUELENGTH(s)-1 ]++;
+      }
+      for (int u=0; u<nuniq; u++) {
+        if (counts[u] > maxdup[u]) maxdup[u] = counts[u];
+      }
+    }
+    ncol = 0;
+    for (int u=0; u<nuniq; u++) ncol+=maxdup[u];
+    // ncol is now the final number of columns accounting for dups, if any
+
+    // allocate a matrix:  nrows==length(list).
+    int **listmap = R_alloc(nrow*longest, sizeof(int));  // not that longest could be<ncol (ncol is the union of all names)
+
+    int *umap = R_alloc(ncol, sizeof(int));
+    int *duplink = R_alloc(ncol, sizeof(int));
+    memset(umap, 0, ncol*sizeof(int));
+    memset(duplink, 0, ncol*sizeof(int));
+    int nextcol = 0;
+
+    for (int i=whichlongest;  ... i<LENGTH(l); i++) {
+      SEXP li = VECTOR_ELT(l, i);
+      int thisncol=LENGTH(li);
+      if (isNull(li) || !LENGTH(li)) continue;
+      const SEXP *cnp = STRING_PTR(getAttrib(li, R_NamesSymbol));
+      memset(counts, 0, nunique*sizeof(int));
+      for (int j=0; j<thisncol; j++) {
+        SEXP s = cnp[j];
+        int w = -TRUELENGTH(s)-1;
+        int wi = counts[w]++; // how many dups have we seen before of this name within this item
+        for (int k=1; k<wi; k++) { w=duplink[w]; k++; }  // hop through the dups
+        if (umap[w]==0) {
+          // first time ever seen this name,
+          umap[w] = nextcol++;
+        } if (duplink[w]==0) {
+          duplink[w] = nextcol;
+          w = nextcol;
+          umap[w] = nextcol++;
+        } else {
+          w = duplink[w];
+        }
+        listmap[i,j] = umap[w];
+      }
+    }
+    // zero out our usage of tl
+    for (int i=0; i<LENGTH(l); i++) {
+      SEXP li = VECTOR_ELT(l, i);
+      int thisncol=LENGTH(li);
+      if (isNull(li) || !LENGTH(li)) continue;
+      const SEXP *cnp = STRING_PTR(getAttrib(li, R_NamesSymbol));
+      for (int j=0; j<thisncol; j++) {
+        SEXP s = cnp[j];
+        SET_TRUELENGTH(s, 0);
+      }
+    }
+    savetl_end();  // restore R's usage
+    if (nextcol != ncol) error("Internal error. nextcol!=ncol when making listmap");  // # nocov
+  }
+
+
+  // get max type for each column, and the number of rows
+
+
+
+
 
   // check for factor, get max types, and when usenames=TRUE get the answer 'names' and column indices for proper reordering.
   preprocess(l, usenames, fill, &data);
