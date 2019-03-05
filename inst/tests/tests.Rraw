@@ -13618,6 +13618,14 @@ x = 5L
 test(1998.1, as.IDate(x), output = '1970-01-06')
 test(1998.2, class(x), 'integer')
 
+# Joining a keyed table on a non-keyed table is not working sometimes #3441
+dx = data.table(id = "A", key = "id")
+di = list(c("D", "A"))
+test(1999.1, key(dx[di]), NULL)
+dx = data.table(id = 1L, key = "id")
+di = list(z=c(2L, 1L))
+test(1999.2, key(dx[di]), NULL)
+
 
 ###################################
 #  Add new tests above this line  #

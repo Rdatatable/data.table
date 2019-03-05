@@ -32,6 +32,8 @@
 
 10. Quoted expression having `:=` and dot alias in RHS now works as expected. Thanks to @franknarf1 for raising up issue on [StackOverflow](https://stackoverflow.com/questions/41228076/using-data-tables-shortcut-in-quoted-expressions) and @jangorecki for PR.
 
+11. Key is properly removed in an edge case not handled before, when joining a *keyed* table to a 2+ length vector wrapped in list when only single row match. Thanks to @symbalex for reporting and @franknarf1 for tiny reproducible example. Closes [#3441](https://github.com/Rdatatable/data.table/issues/3441).
+
 #### NOTES
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
