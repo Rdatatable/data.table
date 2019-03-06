@@ -1244,23 +1244,20 @@ SEXP fsorted(SEXP x)
   return ScalarLogical(i==n);
 }
 
-SEXP isOrderedSubset(SEXP x, SEXP nrow)
+SEXP isOrderedSubset(SEXP x, SEXP nrowArg)
 // specialized for use in [.data.table only
 // Ignores 0s but heeds NAs and any out-of-range (which result in NA)
 {
-  int i=0, last, elem;
-  if (!length(x)) return(ScalarLogical(TRUE));
-  if (!isInteger(x)) error("x has non-0 length but isn't an integer vector");
-  if (!isInteger(nrow) || LENGTH(nrow)!=1 || INTEGER(nrow)[0]<0) error("nrow must be integer vector length 1 and >=0");
-  if (LENGTH(x)<=1) return(ScalarLogical(TRUE));
-  while (i<LENGTH(x) && INTEGER(x)[i]==0) i++;
-  if (i==LENGTH(x)) return(ScalarLogical(TRUE));
-  last = INTEGER(x)[i];  // the first non-0
-  i++;
-  for (; i<LENGTH(x); i++) {
-    elem = INTEGER(x)[i];
-    if (elem == 0) continue;
-    if (elem < last || elem < 0 || elem > INTEGER(nrow)[0])
+  if (!isNull(x) && !isInteger(x)) error("x must be either NULL or an integer vector");
+  if (length(x)<=1) return(ScalarLogical(TRUE));  // a single NA when length(x)==1 is ordered (e.g. tests 128 & 130) otherwise anyNA => FALSE
+  if (!isInteger(nrowArg) || LENGTH(nrowArg)!=1) error("nrow must be integer vector length 1");
+  const int nrow = INTEGER(nrowArg)[0];
+  if (nrow<0) error("nrow==%d but must be >=0", nrow);
+  const int *xd = INTEGER(x), xlen=LENGTH(x);
+  for (int i=0, last=INT_MIN; i<xlen; ++i) {
+    int elem = xd[i];
+    if (elem==0) continue;
+    if (elem<last || elem<0/*includes NA==INT_MIN*/ || elem>nrow)
       return(ScalarLogical(FALSE));
     last = elem;
   }

@@ -403,7 +403,8 @@ sudo R CMD javareconf
 revdepr  # see top of revdep.R for this alias to put in ~/.bash_aliases
 
 # ** ensure latest version installed into revdeplib **
-system("R CMD INSTALL ~/GitHub/data.table/data.table_1.12.1.tar.gz")
+inst()
+
 status()
 run()
 run("rerun.all")
