@@ -122,10 +122,12 @@ This is very valid. The smaller time measurement is the relatively bigger noise 
 
 One of the main factor that is likely to impact timings is number of threads in your machine. In recent versions of `data.table` some of the functions has been parallelized.
 You can control how much threads you want to use with `setDTthreads`.
+Starting from 1.12.2 `data.table` uses only half of available logical cores. Unless your environment is sharing resources with other heavy processes, you should get speed-up when setting to use all available cores.
 
 ```r
-setDTthreads(0)    # use all available cores (default)
-getDTthreads()     # check how many cores are currently used
+setDTthreads(NULL) # use half of available cores
+setDTthreads(0)    # use all available cores
+getDTthreads()     # check how many cores is set
 ```
 
 Keep in mind that using `parallel` R package together with `data.table` will force `data.table` to use only single core. Thus it is recommended to verify cores utilization in resource monitoring tools, for example `htop`.
