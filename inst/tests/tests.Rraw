@@ -13454,7 +13454,7 @@ test(1986.4, DT[, as.list(colMeans(.SD)), by=gear], cbind(DT[,"gear"],DT[,-"gear
 # tests for #2949, #1974 and #1369 - dcast not able to handle functions referred to by a variable
 dt = data.table(
   x=sample(5,20,TRUE),
-  y=sample(2,20,TRUE), 
+  y=sample(2,20,TRUE),
   z=sample(letters[1:2], 20,TRUE),
   d1 = runif(20),
   d2=1L
@@ -13466,7 +13466,7 @@ myFun1 <- function(data, vars) {
 myFun2 <- function(data, vars) {
   myFuns <- list(f1=sum, first=function(x) x[1L])
   dcast.data.table(data, "x + y ~ z", value.var=vars, fun.aggregate=myFuns)
-} 
+}
 funs = list(sum, mean)
 vars = list("d1", "d2")
 
@@ -13508,7 +13508,7 @@ DT2 <- data.table(
   flight=sample(codes[1200:2000], 1e4, TRUE)
 )
 DT2[, c("start", "end") := .(pmin(start, end), pmax(start, end))]
-# just testing if the code runs without segfault .. 
+# just testing if the code runs without segfault ..
 test(1989.1, nrow(DT1[DT2, on=.(date <= end, date >= start, flight==flight)]) > 0L, TRUE)
 
 # fix for #2202, dcast needs to rank NA with na.last=FALSE in frankv within dcast
@@ -13537,9 +13537,9 @@ DT_y <- data.table(y1 = c(1,10), y2 = c(9,50), yval = c("y_a","y_b"), key = c("y
 test(1992.1, foverlaps(DT_x, DT_y), error="All rows with NA values")
 
 # foverlaps POSIXct checks #1143 + another check...
-xp <- data.frame(year = c(2006L, 2006L, 2006L), day = c(361L, 361L, 360L), 
+xp <- data.frame(year = c(2006L, 2006L, 2006L), day = c(361L, 361L, 360L),
                  hour = c(14L, 8L, 8L), min = c(30L, 0L, 30L), val = c(0.5, 0.3, 0.4),
-                 Date = structure(c(1167229800, 1167206400, 1167121800), 
+                 Date = structure(c(1167229800, 1167206400, 1167121800),
                           class = c("POSIXct", "POSIXt"), tzone = "UTC")) ## "UTC" time zone
 setDT(xp)[, `:=`(start = Date - 1800L, end = Date + 1800L)]
 tt <- as.POSIXct(c("2006/12/27 14:23:59", "2006/12/27 16:47:59", "2006/12/27 19:12:00"), format = "%Y/%m/%d %T", tz = "Asia/Jerusalem") ## different time zone
@@ -13617,6 +13617,14 @@ test(1997.16, getDTthreads(), old)
 x = 5L
 test(1998.1, as.IDate(x), output = '1970-01-06')
 test(1998.2, class(x), 'integer')
+
+# a single NA at the beginning with no other nomatch would cause incorrect key, #3441
+dx = data.table(id = "A", key = "id")
+di = list(c("D", "A"))
+test(1999.1, key(dx[di]), NULL)
+dx = data.table(id = 1L, key = "id")
+di = list(z=c(2L, 1L))
+test(1999.2, key(dx[di]), NULL)
 
 
 ###################################
