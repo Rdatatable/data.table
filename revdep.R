@@ -168,6 +168,12 @@ run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.
   system(paste("((",cmd,">/dev/null 2>&1); touch /tmp/finished.flag)"), wait=FALSE)
 }
 
+inst = function() {
+  last = system("ls -t ~/GitHub/data.table/data.table_*.tar.gz", intern=TRUE)[1L]  # latest timestamp should be dev version
+  cat("Installing",last,"...\n")
+  system(paste("R CMD INSTALL", last))
+}
+
 status()
 
 # Now R prompt is ready to fix any problems with CRAN or Bioconductor updates.
