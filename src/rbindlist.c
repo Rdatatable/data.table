@@ -606,7 +606,6 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
   struct preprocessData data;
   Rboolean usenames, fill, to_copy = FALSE, coerced=FALSE, isidcol = !isNull(idcol);
   SEXP fnames = R_NilValue, findices = R_NilValue, f_ind = R_NilValue, ans, lf, li, target, thiscol, levels;
-  SEXP factorLevels = R_NilValue;
   R_len_t protecti=0;
 
   // first level of error checks
@@ -642,7 +641,7 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
     fnames = PROTECT(add_idcol(fnames, idcol, data.n_cols));
     protecti++;
   }
-  factorLevels = PROTECT(allocVector(VECSXP, data.lcount));
+  SEXP factorLevels = PROTECT(allocVector(VECSXP, data.lcount)); protecti++;
   Rboolean *isRowOrdered = (Rboolean *)R_alloc(data.lcount, sizeof(Rboolean));
   for (int i=0; i<data.lcount; i++) isRowOrdered[i] = FALSE;
 
@@ -693,11 +692,16 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
         // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
         // warning("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
       }
+      if (TYPEOF(target)!=STRSXP && TYPEOF(thiscol)!=TYPEOF(target)) {
+        error("Internal error in rbindlist.c: type of 'thiscol' [%s] should have already been coerced to 'target' [%s]. please report to data.table issue tracker.",
+              type2char(TYPEOF(thiscol)), type2char(TYPEOF(target)));
+      }
       switch(TYPEOF(target)) {
       case STRSXP :
         isRowOrdered[resi] = FALSE;
         if (isFactor(thiscol)) {
           levels = getAttrib(thiscol, R_LevelsSymbol);
+          if (isNull(levels)) error("Column %d of item %d has type 'factor' but has no levels; i.e. malformed.", j+1, i+1);
           for (r=0; r<thislen; r++)
             if (INTEGER(thiscol)[r]==NA_INTEGER)
               SET_STRING_ELT(target, ansloc+r, NA_STRING);
@@ -723,22 +727,21 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
         }
         break;
       case VECSXP :
-        if (TYPEOF(thiscol) != VECSXP) error("Internal logical error in rbindlist.c (not VECSXP), please report to data.table issue tracker.");
         for (r=0; r<thislen; r++)
           SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thiscol,r));
         break;
       case CPLXSXP : // #1659 fix
-        if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. please report to data.table issue tracker.");
         for (r=0; r<thislen; r++)
           COMPLEX(target)[ansloc+r] = COMPLEX(thiscol)[r];
         break;
       case REALSXP:
+        memcpy(REAL(target)+ansloc, REAL(thiscol), thislen*SIZEOF(thiscol));
+        break;
       case INTSXP:
+        memcpy(INTEGER(target)+ansloc, INTEGER(thiscol), thislen*SIZEOF(thiscol));
+        break;
       case LGLSXP:
-        if (TYPEOF(thiscol) != TYPEOF(target)) error("Internal logical error in rbindlist.c, type of 'thiscol' should have already been coerced to 'target'. please report to data.table issue tracker.");
-        memcpy((char *)DATAPTR(target) + ansloc * SIZEOF(thiscol),
-             (char *)DATAPTR(thiscol),
-             thislen * SIZEOF(thiscol));
+        memcpy(LOGICAL(target)+ansloc, LOGICAL(thiscol), thislen*SIZEOF(thiscol));
         break;
       default :
         error("Unsupported column type '%s'", type2char(TYPEOF(target)));
@@ -757,7 +760,6 @@ SEXP rbindlist(SEXP l, SEXP sexp_usenames, SEXP sexp_fill, SEXP idcol) {
       UNPROTECT(2);  // finalFactorLevels, factorLangSxp
     }
   }
-  if (factorLevels != R_NilValue) UNPROTECT_PTR(factorLevels);
 
   // fix for #1432, + more efficient to move the logic to C
   if (isidcol) {

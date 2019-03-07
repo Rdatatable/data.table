@@ -6,7 +6,8 @@ exportClasses(data.table, IDate, ITime)
 ##
 
 export(data.table, tables, setkey, setkeyv, key, "key<-", haskey, CJ, SJ, copy)
-export(set2key, set2keyv, key2, setindex, setindexv, indices)
+export(setindex, setindexv, indices)
+export(set2key, set2keyv, key2) # deprecated with helpful error; remove after May 2019 (see #3399)
 export(as.data.table,is.data.table,test.data.table,last,first,like,"%like%",between,"%between%",inrange,"%inrange%")
 export(timetaken)
 export(truelength, alloc.col, ":=")
@@ -46,6 +47,7 @@ export(rollup)
 S3method(groupingsets, data.table)
 S3method(cube, data.table)
 S3method(rollup, data.table)
+export(frollmean)
 
 S3method("[", data.table)
 S3method("[<-", data.table)
@@ -112,11 +114,11 @@ import(stats)
 S3method(na.omit, data.table)
 
 S3method(as.data.table, xts)
-if(getRversion() >= "3.6.0") {
+if (getRversion() >= "3.6.0") {
   export(as.xts.data.table)          # fails in R-devel if not exported too, but I don't understand why
   S3method(xts::as.xts, data.table)  # delayed registration (new in R-devel)  -- shouldn't this also export as.xts.data.table for us?
 } else {
-  export(as.xts.data.table)
+  export(as.xts.data.table)          # this on some configuration happens to fail as.xts dispatch to dt method #3286
 }
 
 # IDateTime support:
@@ -158,10 +160,6 @@ S3method(split, IDate)
 S3method(unique, IDate)
 S3method(unique, ITime)
 
-
-
-# [.factor
-# c.factor
 # duplist
 # getdots
 # NCOL

@@ -180,7 +180,7 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
 replace_dot_alias <- function(e) {
   # we don't just simply alias .=list because i) list is a primitive (faster to iterate) and ii) we test for use
   # of "list" in several places so it saves having to remember to write "." || "list" in those places
-  if (is.call(e)) {
+  if (is.call(e) && !is.function(e[[1L]])) {
     # . alias also used within bquote, #1912
     if (e[[1L]] == 'bquote') return(e)
     if (e[[1L]] == ".") e[[1L]] = quote(list)
@@ -202,11 +202,13 @@ replace_dot_alias <- function(e) {
     used = gsub(".*object '([^']+)'.*", "\\1", err$message)
     found = agrep(used, ref, value=TRUE, ignore.case=TRUE, fixed=TRUE)
     if (length(found)) {
-      stop(sprintf("Object '%s' not found. Perhaps you intended %s%s", used, paste(head(found,5L),collapse=", "),
-           if (length(found)<=5L) "" else paste(" or",length(found)-5L,"more")))
+      stop("Object '", used, "' not found. Perhaps you intended ",
+           paste(head(found, 5L), collapse=", "),
+           if (length(found)<=5L) "" else paste(" or",length(found)-5L, "more"))
     } else {
-      stop(sprintf("Object '%s' not found amongst %s%s", used, paste(head(ref,5L),collapse=', '),
-           if (length(ref)<=5L) "" else paste(" and",length(ref)-5L,"more")))
+      stop("Object '", used, "' not found amongst ",
+           paste(head(ref, 5L), collapse=', '),
+           if (length(ref)<=5L) "" else paste(" and", length(ref)-5L, "more"))
     }
   } else {
     stop(err$message, call.=FALSE)
@@ -239,9 +241,36 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (!missing(i) & is.data.table(ans)) setkey(ans,NULL)  # See test 304
     return(ans)
   }
+<<<<<<< HEAD
   if (mult != "all" && mult != "first" && mult != "last") stop("mult argument can only be 'first','last' or 'all'")
+=======
+  .global$print=""
+  if (!missing(keyby)) {
+    if (!missing(by)) stop("Provide either by= or keyby= but not both")
+    by=bysub=substitute(keyby)
+    # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
+  } else {
+    bysub = if (missing(by)) NULL # and leave missing(by)==TRUE
+        else substitute(by)
+  }
+  byjoin = FALSE
+  if (!missing(by)) {
+    if (missing(j)) stop("by= or keyby= is supplied but not j=")  # relatively common user error so emit this error first in preference to the 'i and j both missing' below
+    byjoin = is.symbol(bysub) && bysub==".EACHI"
+  }
+  if (missing(i) && missing(j)) {
+    tt_isub = substitute(i)
+    tt_jsub = substitute(j)
+    if (!is.null(names(sys.call())) &&  # not relying on nargs() as it considers DT[,] to have 3 arguments, #3163
+        tryCatch(!is.symbol(tt_isub), error=function(e)TRUE) &&   # a symbol that inherits missingness from caller isn't missing for our purpose; test 1974
+        tryCatch(!is.symbol(tt_jsub), error=function(e)TRUE)) {
+      warning("i and j are both missing so ignoring the other arguments. This warning will be upgraded to error in future.")
+    }
+    return(x)
+  }
+  if (!mult %chin% c("first","last","all")) stop("mult argument can only be 'first','last' or 'all'")
+>>>>>>> master
   missingroll = missing(roll)
-  missingwith = missing(with)
   if (length(roll)!=1L || is.na(roll)) stop("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
   if (is.character(roll)) {
     if (roll!="nearest") stop("roll is '",roll,"' (type character). Only valid character value is 'nearest'.")
@@ -260,33 +289,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (!is.logical(which) || length(which)>1L) stop("which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
   if ((isTRUE(which)||is.na(which)) && !missing(j)) stop("which==",which," (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
   if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
-  .global$print=""
-  if (missing(i) && missing(j)) {
-    # ...[] == oops at console, forgot print(...)
-    # or some kind of dynamic construction that has edge case of no contents inside [...]
-    if (nargs()>2L)  # 2 is minimum:  1) method name, 2) x
-      stop("When i and j are both missing, no other argument should be used. Empty [] is useful after := to have the result printed.")
-    return(x)
-  }
   if (!with && missing(j)) stop("j must be provided when with=FALSE")
-  if (missing(i) && !missing(on)) stop("i must be provided when on= is provided")
-  if (!missing(keyby)) {
-    if (!missing(by)) stop("Provide either 'by' or 'keyby' but not both")
-    by=bysub=substitute(keyby)
-    # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
-  } else {
-    bysub = if (missing(by)) NULL # and leave missing(by)==TRUE
-        else substitute(by)
-  }
-  byjoin = FALSE
-  if (!missing(by)) {
-    if (missing(j)) stop("'by' or 'keyby' is supplied but not j")
-    byjoin = is.symbol(bysub) && bysub==".EACHI"
-  }
+  if (missing(i) && !missing(on)) warning("ignoring on= because it is only relevant to i but i is not provided")
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
   rightcols = leftcols = integer()
-  optimizedSubset = FALSE ## flag: tells, whether a normal query was optimized into a join.
+  optimizedSubset = FALSE ## flag: tells whether a normal query was optimized into a join.
   ..syms = NULL
   av = NULL
   jsub = NULL
@@ -349,7 +357,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       jsub = eval(jsub[[2L]], parent.frame(), parent.frame())  # this evals the symbol to return the dynamic expression
       if (is.expression(jsub)) jsub = jsub[[1L]]    # if expression, convert it to call
       # Note that the dynamic expression could now be := (new in v1.9.7)
-      root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
+      root = if (is.call(jsub)) {
+        jsub = replace_dot_alias(jsub)
+        as.character(jsub[[1L]])[1L]
+      } else ""
     }
     if (root == ":=") {
       allow.cartesian=TRUE   # (see #800)
@@ -567,13 +578,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         else
           seq_len(min(length(i),length(rightcols)))
         rightcols = head(rightcols,length(leftcols))
-        xo = integer()  ## signifies 1:.N
+        xo = integer(0L)  ## signifies 1:.N
         ops = rep(1L, length(leftcols))
       }
       # Implementation for not-join along with by=.EACHI, #604
       if (notjoin && (byjoin || mult != "all")) { # mult != "all" needed for #1571 fix
         notjoin = FALSE
-        if (verbose) {last.started.at=proc.time();cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff(x,i) ...");flush.console()}
+        if (verbose) {last.started.at=proc.time();cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ...");flush.console()}
         orignames = copy(names(i))
         i = setdiff_(x, i, rightcols, leftcols) # part of #547
         if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
@@ -615,7 +626,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           if (!is.na(nomatch) && allLen1) irows = irows[irows != 0L]
         } else {
           if (length(xo) && missing(on))
-            stop("Cannot by=.EACHI when joining to a secondary key, yet")
+            stop("Internal error. Cannot by=.EACHI when joining to a secondary key, yet") # nocov
           # since f__ refers to xo later in grouping, so xo needs to be passed through to dogroups too.
           if (length(irows))
             stop("Internal error. irows has length in by=.EACHI") # nocov
@@ -657,7 +668,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           if(length(irows) < 1e6){
             irows = fsort(irows, internal=TRUE) ## internally, fsort on integer falls back to forderv
             } else {
-              irows = as.integer(fsort(as.numeric(irows))) ## parallelized for numeric, but overhead of type conversion
+              irows = as.integer(fsort(as.numeric(irows))) ## nocov; parallelized for numeric, but overhead of type conversion
             }
           if (verbose) {cat(round(proc.time()[3]-last.started.at,3),"secs\n");flush.console()}
         }
@@ -694,11 +705,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         else stop("i evaluates to a logical vector length ", length(i), " but there are ", nrow(x), " rows. Recycling of logical i is no longer allowed as it hides more bugs than is worth the rare convenience. Explicitly use rep(...,length=.N) if you really need to recycle.")
       } else {
         irows = as.integer(i)  # e.g. DT[c(1,3)] and DT[c(-1,-3)] ok but not DT[c(1,-3)] (caught as error)
-        irows = .Call(CconvertNegativeIdx, irows, nrow(x)) # simplifies logic from here on (can assume positive subscripts)
-                                   # maintains Arun's fix for #2697 (test 1042)
-                                   # efficient in C with more detailed messages
-                                   # falls through quickly (no R level allocs) if no negatives
-                                   # minor TO DO: can we merge this with check_idx in fcast.c/subset ?
+        irows = .Call(CconvertNegAndZeroIdx, irows, nrow(x), is.null(jsub) || root!=":=")  # last argument is allowOverMax (NA when selecting, error when assigning)
+        # simplifies logic from here on: can assume positive subscripts (no zeros)
+        # maintains Arun's fix for #2697 (test 1042)
+        # efficient in C with more detailed helpful messages when user mixes positives and negatives
+        # falls through quickly (no R level allocs) if all items are within range [1,max] with no zeros or negatives
+        # minor TO DO: can we merge this with check_idx in fcast.c/subset ?
       }
     }
     if (notjoin) {
@@ -726,9 +738,9 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     # missing(by)==TRUE was already checked above before dealing with i
     if (!length(x)) return(null.data.table())
     if (!length(leftcols)) {
-      ansvars = nx = names(x)
-      jisvars = character()
-      xcols = xcolsAns = seq_along(x)
+      # basic x[i] subset, #2951
+      if (is.null(irows)) return(shallow(x))   # e.g. DT[TRUE] (#3214); otherwise CsubsetDT would materialize a deep copy
+      else                return(.Call(CsubsetDT, x, irows, seq_along(x)) )
     } else {
       jisvars = names(i)[-leftcols]
       tt = jisvars %chin% names(x)
@@ -801,17 +813,27 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           # dups = FALSE here.. even if DT[, c("x", "x"), with=FALSE], we subset only the first.. No way to tell which one the OP wants without index.
           ansvals = chmatch(ansvars, names(x))
         }
+        if (!length(ansvals)) return(null.data.table())
+        if (!length(leftcols)) {
+          if (!anyNA(ansvals)) return(.Call(CsubsetDT, x, irows, ansvals))
+          else stop("column(s) not found: ", paste(ansvars[is.na(ansvals)],collapse=", "))
+        }
+        # else the NA in ansvals are for join inherited scope (test 1973), and NA could be in irows from join and data in i should be returned (test 1977)
+        #   in both cases leave to the R-level subsetting of i and x together further below
       } else if (is.numeric(j)) {
         j = as.integer(j)
         if (any(w<-(j>ncol(x)))) stop("Item ",which.first(w)," of j is ",j[which.first(w)]," which is outside the column number range [1,ncol=", ncol(x),"]")
         j = j[j!=0L]
+        if (any(j<0L)) {
+          if (any(j>0L)) stop("j mixes positives and negatives")
+          j = seq_along(x)[j]  # all j are <0 here
+        }
+        if (notj && length(j)) j = seq_along(x)[-j]
         if (!length(j)) return(null.data.table())
-        if (any(j<0L) && any(j>0L)) stop("j mixes positives and negatives")
-        if (any(j<0L)) j = seq_len(ncol(x))[j]
-        ansvars = names(x)[ if (notj) -j else j ]  # DT[,!"columntoexclude",with=FALSE] if a copy is needed, rather than :=NULL
-        ansvals = if (notj) setdiff(seq_along(x), j) else j
-      } else stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
-      if (!length(ansvals)) return(null.data.table())
+        return(.Call(CsubsetDT, x, irows, j))
+      } else {
+        stop("When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select.") # fix for #1440.
+      }
     } else {   # with=TRUE and byjoin could be TRUE
       bynames = NULL
       allbyvars = NULL
@@ -851,12 +873,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         } else if (is.call(bysub) && bysub[[1L]] == ".") bysub[[1L]] = quote(list)
 
         if (mode(bysub) == "character") {
-          if (length(grep(",",bysub))) {
+          if (length(grep(",", bysub, fixed = TRUE))) {
             if (length(bysub)>1L) stop("'by' is a character vector length ",length(bysub)," but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.")
             bysub = strsplit(bysub,split=",")[[1L]]
           }
-          tt = grep("^[^`]+$",bysub)
-          if (length(tt)) bysub[tt] = paste0("`",bysub[tt],"`")
+          backtick_idx = grep("^[^`]+$",bysub)
+          if (length(backtick_idx)) bysub[backtick_idx] = paste0("`",bysub[backtick_idx],"`")
+          backslash_idx = grep("\\", bysub, fixed = TRUE)
+          if (length(backslash_idx)) bysub[backslash_idx] = gsub('\\', '\\\\', bysub[backslash_idx], fixed = TRUE)
           bysub = parse(text=paste0("list(",paste(bysub,collapse=","),")"))[[1L]]
           bysubl = as.list.default(bysub)
         }
@@ -932,30 +956,29 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
               bynames = names(byval)
           }
         }
-        if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to vector or list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
+        if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
         for (jj in seq_len(length(byval))) {
           if (!typeof(byval[[jj]]) %chin% c("integer","logical","character","double")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
         }
         tt = vapply_1i(byval,length)
-        if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be same length as rows in x or number of rows returned by i (",xnrow,").")
+        if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be length ", xnrow, "; the same length as there are rows in x (after subsetting if i is provided).")
         if (is.null(bynames)) bynames = rep.int("",length(byval))
         if (any(bynames=="")) {
-          if (length(bysubl)<2L) stop("When 'by' or 'keyby' is list() we expect something inside the brackets")
           for (jj in seq_along(bynames)) {
             if (bynames[jj]=="") {
               # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
               byvars = all.vars(bysubl[[jj+1L]], functions = TRUE)
               if (length(byvars) == 1L) tt = byvars
               else {
-                tt = grep("^eval|^[^[:alpha:]. ]",byvars,invert=TRUE,value=TRUE)[1L]
-                if (!length(tt)) tt = all.vars(bysubl[[jj+1L]])[1L]
+                tt = grep("^eval|^[^[:alpha:]. ]",byvars,invert=TRUE,value=TRUE)
+                if (length(tt)) tt = tt[1L] else all.vars(bysubl[[jj+1L]])[1L]
               }
               # fix for #497
               if (length(byvars) > 1L && tt %chin% all.vars(jsub, FALSE)) {
                 bynames[jj] = deparse(bysubl[[jj+1L]])
                 if (verbose)
-                  cat("by-expression '", bynames[jj], "' is not named, and the auto-generated name '", tt, "' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", sep="")
-
+                  cat("by-expression '", bynames[jj], "' is not named, and the auto-generated name '", tt,
+                      "' clashed with variable(s) in j. Therefore assigning the entire by-expression as name.\n", sep="")
               }
               else bynames[jj] = tt
               # if user doesn't like this inferred name, user has to use by=list() to name the column
@@ -1019,7 +1042,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
             # .SDcols is of the format a:b
             .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame())
           } else {
-            .SDcols = eval(colsub, parent.frame(), parent.frame())
+            if (is.call(colsub) && colsub[[1L]] == "patterns") {
+              # each pattern gives a new filter condition, intersect the end result
+              .SDcols = Reduce(intersect, do_patterns(colsub, names(x)))
+            } else {
+              .SDcols = eval(colsub, parent.frame(), parent.frame())
+            }
           }
           if (anyNA(.SDcols))
             stop(".SDcols missing at the following indices: ", brackify(which(is.na(.SDcols))))
@@ -1033,7 +1061,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
               if (max(abs(.SDcols))>ncol(x) || min(abs(.SDcols))<1L) stop(".SDcols is numeric but out of bounds")
             }
             # if .SDcols is numeric, use 'dupdiff' instead of 'setdiff'
-            if (length(unique(sign(.SDcols))) != 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
+            if (length(unique(sign(.SDcols))) > 1L) stop(".SDcols is numeric but has both +ve and -ve indices")
             if (any(idx <- abs(.SDcols)>ncol(x) | abs(.SDcols)<1L))
               stop(".SDcols is numeric but out of bounds [1, ", ncol(x), "] at: ", brackify(which(idx)))
             if (colm) ansvars = dupdiff(names(x)[-.SDcols], bynames) else ansvars = names(x)[.SDcols]
@@ -1158,7 +1186,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           m[is.na(m)] = ncol(x)+seq_len(length(newnames))
           cols = as.integer(m)
           if ((ok<-selfrefok(x,verbose))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
-            warning("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid key<-, names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
+            warning("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
           if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
             DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
             n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
@@ -1272,6 +1300,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     # No grouping: 'by' = missing | NULL | character() | "" | list()
     # Considered passing a one-group to dogroups but it doesn't do the recycling of i within group, that's done here
     if (length(ansvars)) {
+<<<<<<< HEAD
       # TO DO: port more of this to C
       ans = vector("list", length(ansvars))
       if (length(i) && length(icols)) {
@@ -1301,13 +1330,46 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           if (!with && address(ans[[target]]) == address(x[[source]]))
             ans[[target]] = copy(ans[[target]])
           else ans[[target]] = ans[[target]]
+=======
+      if (!(length(i) && length(icols))) {
+        # new in v1.12.0 to redirect to CsubsetDT in this case
+        if (!identical(xcolsAns, seq_along(xcolsAns)) || length(xcols)!=length(xcolsAns) || length(ansvars)!=length(xcolsAns)) {
+          stop("Internal error: xcolAns does not pass checks: ", length(xcolsAns), length(ansvars), length(xcols), paste(xcolsAns,collapse=","))   # nocov
+>>>>>>> master
         }
+        # Retained from old R way below (test 1542.01 checks shallow at this point)
+        # ' Temp fix for #921 - skip COPY until after evaluating 'jval' (scroll down).
+        # ' Unless 'with=FALSE' - can not be expressions but just column names.
+        ans = if (with && is.null(irows)) shallow(x, xcols) else .Call(CsubsetDT, x, irows, xcols)
+        setattr(ans, "names", ansvars)
       } else {
+        # length(i) && length(icols)
+        if (is.null(irows)) {
+          stop("Internal error: irows is NULL when making join result at R level. Should no longer happen now we use CsubsetDT earlier.")  # nocov
+          # TODO: Make subsetDT do a shallow copy when irows is NULL (it currently copies). Then copy only when user uses := or set* on the result
+          # by using NAMED/REFCNT on columns, with warning if they copy. Since then, even foo = DT$b would cause the next set or := to copy that
+          # column (so the warning is needed). To tackle that, we could have our own DT.NAMED attribute, perhaps.
+          # Or keep the rule that [.data.table always returns new memory, and create view() or view= as well, maybe cleaner.
+        }
+        ans = vector("list", length(ansvars))
+        ii = rep.int(indices__, len__) # following #1991 fix
+        # TODO: if (allLen1 && allGrp1 && (is.na(nomatch) || !any(f__==0L))) then ii will be 1:nrow(i)  [nomatch=0 should drop rows in i that have no match]
+        #       But rather than that complex logic here at R level to catch that and do a shallow copy for efficiency, just do the check inside CsubsetDT
+        #       to see if it passed 1:nrow(x) and then CsubsetDT should do the shallow copy safely and centrally.
+        #       That R level branch was taken out in PR #3213
+
+        # TO DO: use CsubsetDT twice here and then remove this entire R level branch
+        for (s in seq_along(icols)) {
+          target = icolsAns[s]
+          source = icols[s]
+          ans[[target]] = .Call(CsubsetVector,i[[source]],ii)  # i.e. i[[source]][ii]
+        }
         for (s in seq_along(xcols)) {
           target = xcolsAns[s]
           source = xcols[s]
           ans[[target]] = .Call(CsubsetVector,x[[source]],irows)   # i.e. x[[source]][irows], but guaranteed new memory even for singleton logicals from R 3.1.0
         }
+<<<<<<< HEAD
       }
       # the address==address is a temp fix for R >= 3.1.0. TO DO: allow shallow copy here, then copy only when user uses :=
       # or set* on the result by using NAMED/REFCNT on columns, with warning if they copy. Since then, even foo = DT$b
@@ -1324,17 +1386,30 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         chk = if (len && !missing(on)) !identical(head(key(x), len), names(on)) else FALSE
         if ( (keylen>len || chk) && !.Call(CisOrderedSubset, irows, nrow(x))) {
           keylen = if (!chk) len else 0L # fix for #1268
+=======
+        setattr(ans, "names", ansvars)
+        if (haskey(x)) {
+          keylen = which.first(!key(x) %chin% ansvars)-1L
+          if (is.na(keylen)) keylen = length(key(x))
+          len = length(rightcols)
+          # fix for #1268, #1704, #1766 and #1823
+          chk = if (len && !missing(on)) !identical(head(key(x), len), names(on)) else FALSE
+          if ( (keylen>len || chk) && !.Call(CisOrderedSubset, irows, nrow(x))) {
+            keylen = if (!chk) len else 0L # fix for #1268
+          }
+          ## check key on i as well!
+          ichk = is.data.table(i) && haskey(i) &&
+                 identical(head(key(i), length(leftcols)), names(i)[leftcols]) # i has the correct key, #3061
+          if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
+            setattr(ans,"sorted",head(key(x),keylen))
+>>>>>>> master
         }
-        ## check key on i as well!
-        ichk = is.data.table(i) && haskey(i) &&
-               identical(head(key(i), length(leftcols)), names(i)[leftcols]) # i has the correct key, #3061
-        if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
-          setattr(ans,"sorted",head(key(x),keylen))
+        setattr(ans, "class", class(x)) # fix for #5296
+        setattr(ans, "row.names", .set_row_names(nrow(ans)))
+        alloc.col(ans)
       }
-      setattr(ans, "class", class(x)) # fix for #5296
-      setattr(ans, "row.names", .set_row_names(nrow(ans)))
 
-      if (!with || missing(j)) return(alloc.col(ans))
+      if (!with || missing(j)) return(ans)
 
       SDenv$.SDall = ans
       SDenv$.SD = if (!length(othervars)) SDenv$.SDall else shallow(SDenv$.SDall, setdiff(ansvars, othervars))
@@ -1449,7 +1524,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   if (byjoin) {
     # The groupings come instead from each row of the i data.table.
     # Much faster for a few known groups vs a 'by' for all followed by a subset
-    if (!is.data.table(i)) stop("logicial error. i is not data.table, but mult='all' and 'by'=.EACHI")
+    if (!is.data.table(i)) stop("logical error. i is not data.table, but mult='all' and 'by'=.EACHI")
     byval = i
     bynames = if (missing(on)) head(key(x),length(leftcols)) else names(on)
     allbyvars = NULL
@@ -1474,14 +1549,16 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (missing(by)) stop("Internal error: by= is missing")   # nocov
 
     if (length(byval) && length(byval[[1L]])) {
-      if (!bysameorder && identical(byindex,FALSE)) {
+      if (!bysameorder && isFALSE(byindex)) {
         if (verbose) {last.started.at=proc.time();cat("Finding groups using forderv ... ");flush.console()}
         o__ = forderv(byval, sort=!missing(keyby), retGrp=TRUE)
-        # The sort= argument is called sortStr at C level. It's just about saving the sort of unique strings at
-        # C level for efficiency (cgroup vs csort) when by= not keyby=. All other types are always sorted. Getting
-        # orginal order below is the part that retains original order. Passing sort=TRUE here always won't change any
-        # result at all (tested and confirmed to double check), it'll just make by= slower when there's a large
-        # number of unique strings. It must be TRUE when keyby= though, since the key is just marked afterwards.
+        # The sort= argument is called sortGroups at C level. It's primarily for saving the sort of unique strings at
+        # C level for efficiency when by= not keyby=. Other types also retain appearance order, but at byte level to
+        # minimize data movement and benefit from skipping subgroups which happen to be grouped but not sorted. This byte
+        # appearance order is not the same as the order of group values within by= columns, so the 2nd forder below is
+        # still needed to get the group appearance order. Always passing sort=TRUE above won't change any result at all
+        # (tested and confirmed), it'll just make by= slower. It must be TRUE when keyby= though since the key is just
+        # marked afterwards.
         # forderv() returns empty integer() if already ordered to save allocating 1:xnrow
         bysameorder = orderedirows && !length(o__)
         if (verbose) {
@@ -1718,7 +1795,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "first", "tail", "[") # added .N for #5760
         .ok <- function(q) {
           if (dotN(q)) return(TRUE) # For #5760
-          cond = is.call(q) && length(q1c <- as.character(q[[1L]]))==1L && q1c %chin% gfuns && !is.call(q[[2L]])
+          # Need is.symbol() check. See #1369, #1974 or #2949 issues and explanation below by searching for one of these issues.
+          cond = is.call(q) && is.symbol(q[[1]]) && (q1c <- as.character(q[[1]])) %chin% gfuns && !is.call(q[[2L]])
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
           ans  = cond && (length(q)==2L || names(q)[3L] == "na.rm" || identical("na",substr(names(q)[3L], 1L, 2L)))
           if (!anyNA(ans) && ans) return(ans)
@@ -1755,9 +1833,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       oldjsub = jsub
       if (jsub[[1L]]=="list") {
         for (ii in seq_along(jsub)[-1L]) {
-          if (dotN(jsub[[ii]])) next; # For #5760
-          if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]]=="mean")
-            jsub[[ii]] = .optmean(jsub[[ii]])
+          this_jsub = jsub[[ii]]
+          if (dotN(this_jsub)) next; # For #5760
+          # Addressing #1369, #2949 and #1974. Added is.symbol() check to handle cases where expanded function definition is used insead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
+          if (is.call(this_jsub) && is.symbol(this_jsub[[1L]]) && this_jsub[[1L]]=="mean")
+            jsub[[ii]] = .optmean(this_jsub)
         }
       } else if (jsub[[1L]]=="mean") {
         jsub = .optmean(jsub)
@@ -1800,8 +1880,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
   grporder = o__
   # for #971, added !GForce. if (GForce) we do it much more (memory) efficiently than subset of order vector below.
   if (length(irows) && !isTRUE(irows) && !GForce) {
-    # fix for bug #2758. TO DO: provide a better error message
-    if (length(irows) > 1L && length(zo__ <- which(irows == 0)) > 0L) stop("i[", zo__[1L], "] is 0. While grouping, i=0 is allowed when it's the only value. When length(i) > 1, all i should be > 0.")
+    # any zeros in irows were removed by convertNegAndZeroIdx earlier above; no need to check for zeros again. Test 1058-1061 check case #2758.
     if (length(o__) && length(irows)!=length(o__)) stop("Internal error: length(irows)!=length(o__)") # nocov
     o__ = if (length(o__)) irows[o__]  # better do this once up front (even though another alloc) than deep repeated branch in dogroups.c
           else irows
@@ -1838,12 +1917,13 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     attrs = attr(x, 'index')
     skeys = names(attributes(attrs))
     if (!is.null(skeys)) {
-      hits  = unlist(lapply(paste0("__", names(x)[cols]), function(x) grep(x, skeys)))
+      hits  = unlist(lapply(paste0("__", names(x)[cols]), function(x) grep(x, skeys, fixed = TRUE)))
       hits  = skeys[unique(hits)]
       for (i in seq_along(hits)) setattr(attrs, hits[i], NULL) # does by reference
     }
     if (!missing(keyby)) {
       cnames = as.character(bysubl)[-1L]
+      cnames = gsub('^`|`$', '', cnames)  # the wrapping backticks that were added above can be removed now, #3378
       if (all(cnames %chin% names(x))) {
         if (verbose) {last.started.at=proc.time();cat("setkey() after the := with keyby= ... ");flush.console()}
         setkeyv(x,cnames)  # TO DO: setkey before grouping to get memcpy benefit.
@@ -1923,16 +2003,17 @@ as.matrix.data.table <- function(x, rownames=NULL, rownames.value=NULL, ...) {
       # TODO in future as warned in NEWS for 1.11.6:
       #   warning("length(rownames)>1 is deprecated. Please use rownames.value= instead")
       if (length(rownames)!=nrow(x))
-        stop(sprintf("length(rownames)==%d but nrow(DT)==%d. The rownames argument specifies a single column name or number. Consider rownames.value= instead.",
-                     length(rownames), nrow(x)))
+        stop("length(rownames)==", length(rownames), " but nrow(DT)==", nrow(x),
+             ". The rownames argument specifies a single column name or number. Consider rownames.value= instead.")
       rownames.value = rownames
       rownames = NULL
     } else if (length(rownames)==0L) {
-      stop(sprintf("length(rownames)==0 but should be a single column name or number, or NULL"))
+      stop("length(rownames)==0 but should be a single column name or number, or NULL")
     } else {
       if (isTRUE(rownames)) {
         if (length(key(x))>1L) {
-          warning(sprintf("rownames is TRUE but key has multiple columns [%s]; taking first column x[,1] as rownames", paste(key(x), collapse=',')))
+          warning("rownames is TRUE but key has multiple columns ",
+                  brackify(key(x)), "; taking first column x[,1] as rownames")
         }
         rownames = if (length(key(x))==1L) chmatch(key(x),names(x)) else 1L
       }
@@ -1947,13 +2028,20 @@ as.matrix.data.table <- function(x, rownames=NULL, rownames.value=NULL, ...) {
       }
       else { # rownames is a column number already
         rownames <- as.integer(rownames)
+<<<<<<< HEAD
         if (anyNA(rownames) || rownames<1L || rownames>ncol(x))
           stop(sprintf("as.integer(rownames)==%d which is outside the column number range [1,ncol=%d].", rownames, ncol(x)))
+=======
+        if (is.na(rownames) || rownames<1L || rownames>ncol(x))
+          stop("as.integer(rownames)==", rownames,
+               " which is outside the column number range [1,ncol=", ncol(x), "].")
+>>>>>>> master
       }
     }
   } else if (!is.null(rownames.value)) {
     if (length(rownames.value)!=nrow(x))
-      stop(sprintf("length(rownames.value)==%d but should be nrow(x)==%d", length(rownames.value), nrow(x)))
+      stop("length(rownames.value)==", length(rownames.value),
+           " but should be nrow(x)==", nrow(x))
   }
   if (!is.null(rownames)) {
     # extract that column and drop it.
@@ -2047,7 +2135,7 @@ tail.data.table <- function(x, n=6L, ...) {
     isub=substitute(i)
     i = eval(.massagei(isub), x, parent.frame())
     if (is.matrix(i)) {
-      if (!missing(j)) stop("When i is matrix in DT[i]<-value syntax, it doesn't make sense to provide j")
+      if (!missing(j)) stop("When i is a matrix in DT[i]<-value syntax, it doesn't make sense to provide j")
       x = `[<-.data.frame`(x, i, value=value)
       return(alloc.col(x))
     }
@@ -2057,7 +2145,7 @@ tail.data.table <- function(x, n=6L, ...) {
     # named 'value'".  So, users have to use := for that.
   } else i = NULL          # meaning (to C code) all rows, without allocating 1L:nrow(x) vector
   if (missing(j)) j=names(x)
-  if (!is.atomic(j)) stop("j must be atomic vector, see ?is.atomic")
+  if (!is.atomic(j)) stop("j must be an atomic vector, see ?is.atomic")
   if (anyNA(j)) stop("NA in j")
   if (is.character(j)) {
     newnames = setdiff(j,names(x))
@@ -2145,10 +2233,10 @@ dimnames.data.table <- function(x) {
 
 "dimnames<-.data.table" = function (x, value)   # so that can do  colnames(dt)=<..>  as well as names(dt)=<..>
 {
-  if (!cedta()) return(`dimnames<-.data.frame`(x,value))  # won't maintain key column (if any). Revisit if ever causes a compatibility problem but don't think it's likely that packages change column names using dimnames<-. See names<-.data.table below.
+  if (!cedta()) return(`dimnames<-.data.frame`(x,value))  # nocov ; will drop key but names<-.data.table (below) is more common usage and does retain the key
   if (!is.list(value) || length(value) != 2L) stop("attempting to assign invalid object to dimnames of a data.table")
   if (!is.null(value[[1L]])) stop("data.tables do not have rownames")
-  if (ncol(x) != length(value[[2L]])) stop("can't assign",length(value[[2L]]),"colnames to a",ncol(x),"column data.table")
+  if (ncol(x) != length(value[[2L]])) stop("Can't assign ", length(value[[2L]]), " colnames to a ", ncol(x), "-column data.table")
   setnames(x,as.character(value[[2L]]))
   x  # this returned value is now shallow copied by R 3.1.0 via *tmp*. A very welcome change.
 }
@@ -2273,8 +2361,8 @@ na.omit.data.table <- function (object, cols = seq_along(object), invert = FALSE
   if (is.character(cols)) {
     old = cols
     cols = chmatch(cols, names(object), nomatch=0L)
-    if (any(cols==0L))
-      stop("Columns ", paste(old[cols==0L], collapse=","), " doesn't exist in the input data.table")
+    if (any(idx <- cols==0L))
+      stop("Column", if (sum(idx)>1L) "s " else " ", brackify(old[idx]), if (sum(idx)>1L) " don't" else " doesn't", " exist in the input data.table")
   }
   cols = as.integer(cols)
   ix = .Call(Cdt_na, object, cols)
@@ -2327,12 +2415,12 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
     # same as split.data.frame - handling all exceptions, factor orders etc, in a single stream of processing was a nightmare in factor and drop consistency
     return(lapply(split(x = seq_len(nrow(x)), f = f, drop = drop, ...), function(ind) x[ind]))
   }
-  if (missing(by)) stop("you must provide 'by' or 'f' arguments")
+  if (missing(by)) stop("Either 'by' or 'f' argument must be supplied")
   # check reserved column names during processing
-  if (".ll.tech.split" %chin% names(x)) stop("column '.ll.tech.split' is reserved for split.data.table processing")
-  if (".nm.tech.split" %chin% by) stop("column '.nm.tech.split' is reserved for split.data.table processing")
-  if (!all(by %chin% names(x))) stop("argument 'by' must refer to data.table column names")
-  if (!all(by.atomic <- vapply_1b(by, function(.by) is.atomic(x[[.by]])))) stop(sprintf("argument 'by' must refer only to atomic type columns, classes of '%s' columns are not atomic type", paste(by[!by.atomic], collapse=", ")))
+  if (".ll.tech.split" %chin% names(x)) stop("Column '.ll.tech.split' is reserved for split.data.table processing")
+  if (".nm.tech.split" %chin% by) stop("Column '.nm.tech.split' is reserved for split.data.table processing")
+  if (!all(by %chin% names(x))) stop("Argument 'by' must refer to column names in x")
+  if (!all(by.atomic <- vapply_1b(by, function(.by) is.atomic(x[[.by]])))) stop("Argument 'by' must refer only to atomic-type columns, but the following columns are non-atomic: ", brackify(by[!by.atomic]))
   # list of data.tables (flatten) or list of lists of ... data.tables
   make.levels = function(x, cols, sorted) {
     by.order = if (!sorted) x[, funique(.SD), .SDcols=cols] # remember order of data, only when not sorted=FALSE
@@ -2360,7 +2448,9 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
   flatten_any = flatten && any(vapply_1b(by, function(col) is.factor(x[[col]])))
   nested_current = !flatten && is.factor(x[[.by]])
   if (!drop && (flatten_any || nested_current)) {
-    dtq[["i"]] = substitute(make.levels(x, cols=.cols, sorted=.sorted), list(.cols=if (flatten) by else .by, .sorted=sorted))
+    # create 'levs' here to avoid lexical scoping glitches, see #3151
+    levs = make.levels(x=x, cols=if (flatten) by else .by, sorted=sorted)
+    dtq[["i"]] = quote(levs)
     join = TRUE
   }
   dtq[["j"]] = substitute(
@@ -2478,7 +2568,7 @@ alloc.col <- function(DT, n=getOption("datatable.alloccol"), verbose=getOption("
 {
   name = substitute(DT)
   if (identical(name,quote(`*tmp*`))) stop("alloc.col attempting to modify `*tmp*`")
-  ans = .Call(Calloccolwrapper, DT, length(DT)+as.integer(eval(n)), verbose)
+  ans = .Call(Calloccolwrapper, DT, eval(n), verbose)
   if (is.name(name)) {
     name = as.character(name)
     assign(name,ans,parent.frame(),inherits=TRUE)
@@ -2527,8 +2617,8 @@ setnames <- function(x,old,new,skip_absent=FALSE) {
   # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
   # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
   if (!is.data.frame(x)) stop("x is not a data.table or data.frame")
-  if (length(names(x)) != length(x)) stop("dt is length ",length(dt)," but its names are length ",length(names(x)))
-  stopifnot(isTRUE(skip_absent) || identical(skip_absent,FALSE))
+  if (length(names(x)) != length(x)) stop("x is length ",length(x)," but its names are length ",length(names(x)))
+  stopifnot(isTRUEorFALSE(skip_absent))
   if (missing(new)) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
     if (!is.character(old)) stop("Passed a vector of type '",typeof(old),"'. Needs to be type 'character'.")
@@ -2598,7 +2688,7 @@ setnames <- function(x,old,new,skip_absent=FALSE) {
 
 setcolorder <- function(x, neworder=key(x))
 {
-  if (any(duplicated(neworder))) stop("neworder contains duplicates")
+  if (anyDuplicated(neworder)) stop("neworder contains duplicates")
   # if (!is.data.table(x)) stop("x is not a data.table")
   if (length(neworder) != length(x)) {
     if (length(neworder) > length(x))
@@ -2665,7 +2755,7 @@ chgroup <- function(x) {
 }
 
 rbindlist <- function(l, use.names=fill, fill=FALSE, idcol=NULL) {
-  if (identical(idcol, FALSE)) { idcol = NULL }
+  if (isFALSE(idcol)) { idcol = NULL }
   else if (!is.null(idcol)) {
     if (isTRUE(idcol)) idcol = ".id"
     if (!is.character(idcol)) stop("idcol must be a logical or character vector of length 1. If logical TRUE the id column will named '.id'.")
@@ -2686,7 +2776,7 @@ address <- function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
 setDF <- function(x, rownames=NULL) {
   if (!is.list(x)) stop("setDF only accepts data.table, data.frame or list of equal length as input")
-  if (any(duplicated(rownames))) stop("rownames contains duplicates")
+  if (anyDuplicated(rownames)) stop("rownames contains duplicates")
   if (is.data.table(x)) {
     # copied from as.data.frame.data.table
     if (is.null(rownames)) {
@@ -2740,7 +2830,7 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   if (is.name(name)) {
     home <- function(x, env) {
       if (identical(env, emptyenv()))
-        stop("Can not find symbol ", cname, call. = FALSE)
+        stop("Cannot find symbol ", cname, call. = FALSE)
       else if (exists(x, env, inherits=FALSE)) env
       else home(x, parent.env(env))
     }
@@ -2777,9 +2867,15 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       stop("Column ", i, " is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
     }
     n = vapply(x, length, 0L)
-    mn = max(n)
-    if (any(n<mn))
-      stop("All elements in argument 'x' to 'setDT' must be of same length")
+    n_range = range(n)
+    if (n_range[1L] != n_range[2L]) {
+      tbl = sort(table(n))
+      stop("All elements in argument 'x' to 'setDT' must be of same length, ",
+           "but the profile of input lengths (length:frequency) is: ",
+           brackify(sprintf('%s:%d', names(tbl), tbl)),
+           "\nThe first entry with fewer than ", n_range[2L],
+           " entries is ", which.max(n<n_range[2L]))
+    }
     xn = names(x)
     if (is.null(xn)) {
       setattr(x, "names", paste0("V",seq_len(length(x))))
@@ -2791,7 +2887,7 @@ setDT <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       }
       if (check.names) setattr(x, "names", make.names(xn, unique=TRUE))
     }
-    setattr(x,"row.names",.set_row_names(max(n)))
+    setattr(x,"row.names",.set_row_names(n_range[2L]))
     setattr(x,"class",c("data.table","data.frame"))
     alloc.col(x)
   } else {

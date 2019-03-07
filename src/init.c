@@ -47,7 +47,7 @@ SEXP binary();
 SEXP chmatch2();
 SEXP subsetDT();
 SEXP subsetVector();
-SEXP convertNegativeIdx();
+SEXP convertNegAndZeroIdx();
 SEXP frank();
 SEXP dt_na();
 SEXP lookup();
@@ -78,6 +78,8 @@ SEXP inrange();
 SEXP between();
 SEXP hasOpenMP();
 SEXP uniqueNlogical();
+SEXP frollfunR();
+SEXP dllVersion();
 
 // .Externals
 SEXP fastmean();
@@ -127,7 +129,7 @@ R_CallMethodDef callMethods[] = {
 {"Cchmatch2", (DL_FUNC) &chmatch2, -1},
 {"CsubsetDT", (DL_FUNC) &subsetDT, -1},
 {"CsubsetVector", (DL_FUNC) &subsetVector, -1},
-{"CconvertNegativeIdx", (DL_FUNC) &convertNegativeIdx, -1},
+{"CconvertNegAndZeroIdx", (DL_FUNC) &convertNegAndZeroIdx, -1},
 {"Cfrank", (DL_FUNC) &frank, -1},
 {"Cdt_na", (DL_FUNC) &dt_na, -1},
 {"Clookup", (DL_FUNC) &lookup, -1},
@@ -158,6 +160,8 @@ R_CallMethodDef callMethods[] = {
 {"Cbetween", (DL_FUNC) &between, -1},
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
+{"CfrollfunR", (DL_FUNC) &frollfunR, -1},
+{"CdllVersion", (DL_FUNC) &dllVersion, -1},
 {NULL, NULL, 0}
 };
 
@@ -264,6 +268,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
 
+  initDTthreads();
   avoid_openmp_hang_within_fork();
 }
 
@@ -318,5 +323,10 @@ SEXP hasOpenMP() {
   #else
   return ScalarLogical(FALSE);
   #endif
+}
+
+SEXP dllVersion() {
+  // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
+  return(ScalarString(mkChar("1.12.1")));
 }
 

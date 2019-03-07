@@ -99,6 +99,15 @@ However, we still have problem (ii) above and it didn't pass tests involving bas
 
 We really need R itself to start setting TRUELENGTH to be the allocated length and then
 for GC to release TRUELENGTH not LENGTH.  Would really tidy this up.
+
+Moved out of ?setkey Details section in 1.12.2 (Mar 2019). Revisit this w.r.t. to recent versions of R.
+  The problem (for \code{data.table}) with the copy by \code{key<-} (other than
+  being slower) is that \R doesn't maintain the over-allocated truelength, but it
+  looks as though it has. Adding a column by reference using \code{:=} after a
+  \code{key<-} was therefore a memory overwrite and eventually a segfault; the
+  over-allocated memory wasn't really there after \code{key<-}'s copy. \code{data.table}s now have an attribute \code{.internal.selfref} to catch and warn about such copies.
+  This attribute has been implemented in a way that is friendly with
+  \code{identical()} and \code{object.size()}.
 */
 
 static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
@@ -188,7 +197,7 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
 
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 {
-  SEXP names, klass;
+  SEXP names, klass;   // klass not class at request of pydatatable because class is reserved word in C++, PR #3129
   R_len_t l, tl;
   if (isNull(dt)) error("alloccol has been passed a NULL dt");
   if (TYPEOF(dt) != VECSXP) error("dt passed to alloccol isn't type VECSXP");
@@ -217,11 +226,24 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   return(dt);
 }
 
-SEXP alloccolwrapper(SEXP dt, SEXP newncol, SEXP verbose) {
-  if (!isInteger(newncol) || length(newncol)!=1) error("n must be integer length 1. Has getOption('datatable.alloccol') somehow become unset?");
-  if (!isLogical(verbose) || length(verbose)!=1) error("verbose must be TRUE or FALSE");
+int checkOverAlloc(SEXP x)
+{
+  if (isNull(x))
+    error("Has getOption('datatable.alloccol') somehow become unset? It should be a number, by default 1024.");
+  if (!isInteger(x) && !isReal(x))
+    error("getOption('datatable.alloccol') should be a number, by default 1024. But its type is '%s'.", type2char(TYPEOF(x)));
+  if (LENGTH(x) != 1)
+    error("getOption('datatable.alloc') is a numeric vector ok but its length is %d. Its length should be 1.", LENGTH(x));
+  int ans = isInteger(x) ? INTEGER(x)[0] : (int)REAL(x)[0];
+  if (ans<0)
+    error("getOption('datatable.alloc')==%d.  It must be >=0 and not NA.", ans);
+  return ans;
+}
 
-  SEXP ans = PROTECT(alloccol(dt, INTEGER(newncol)[0], LOGICAL(verbose)[0]));
+SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
+  if (!isLogical(verbose) || length(verbose)!=1) error("verbose must be TRUE or FALSE");
+  int overAlloc = checkOverAlloc(overAllocArg);
+  SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, LOGICAL(verbose)[0]));
 
   for(R_len_t i = 0; i < LENGTH(ans); i++) {
     // clear the same excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #4890).
@@ -430,11 +452,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     if ((coln+1)<=oldncol && isFactor(VECTOR_ELT(dt,coln)) &&
       !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue) && !isNewList(thisvalue))  // !=INTSXP includes factor
       error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
-    if (nrow>0 && targetlen>0) {
-      if (vlen>targetlen)
-        warning("Supplied %d items to be assigned to %d items of column '%s' (%d unused)", vlen, targetlen,CHAR(colnam),vlen-targetlen);
-      else if (vlen>0 && targetlen%vlen != 0)
-        warning("Supplied %d items to be assigned to %d items of column '%s' (recycled leaving remainder of %d items).",vlen,targetlen,CHAR(colnam),targetlen%vlen);
+    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen) {
+      error("Supplied %d items to be assigned to %d items of column '%s'. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code.", vlen, targetlen,CHAR(colnam));
     }
   }
   // having now checked the inputs, from this point there should be no errors so we can now proceed to
@@ -797,23 +816,27 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
 }
 
-static Rboolean anyNamed(SEXP x) {
-  if (MAYBE_REFERENCED(x)) return TRUE;
+static bool anyNamed(SEXP x) {
+  if (MAYBE_REFERENCED(x)) return true;
   if (isNewList(x)) for (int i=0; i<LENGTH(x); i++)
-    if (anyNamed(VECTOR_ELT(x,i))) return TRUE;
-  return FALSE;
+    if (anyNamed(VECTOR_ELT(x,i))) return true;
+  return false;
 }
 
 void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
-// like memcpy but recycles source and takes care of aging
-// 'where' a 1-based INTEGER vector subset of target to assign to,  or NULL or integer()
-// assigns to target[start:start+len-1] or target[where[start:start+len-1]]  where start is 0-based
+// like memcpy but recycles single-item source
+// 'where' a 1-based INTEGER vector subset of target to assign to, or NULL or integer()
+// assigns to target[start:start+len-1] or target[where[start:start+len-1]] where start is 0-based
 {
-  int r=0, w, protecti=0;
   if (len<1) return;
-  int slen = length(source) > len ? len : length(source); // fix for 5647. when length(source) > len, slen must be len.
-  if (slen<1) return;
   if (TYPEOF(target) != TYPEOF(source)) error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s']", type2char(TYPEOF(target)),type2char(TYPEOF(source))); // # nocov
+  int slen = length(source);
+  if (slen==0) return;
+  if (slen>1 && slen!=len) error("Internal error: recycle length error not caught earlier. slen=%d len=%d", slen, len); // # nocov
+  // Internal error because the column has already been added to the DT, so length mismatch should have been caught before adding the column.
+  // for 5647 this used to limit slen to len, but no longer
+
+  int protecti=0;
   if (isNewList(source)) {
     // A list() column; i.e. target is a column of pointers to SEXPs rather than the much more common case
     // where memrecycle copies the DATAPTR data to the atomic target from the atomic source.
@@ -826,86 +849,95 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
     // SEXP pointed to.
     // If source is already not named (because j already created a fresh unnamed vector within a list()) we don't want to
     // duplicate unnecessarily, hence checking for named rather than duplicating always.
-    // See #481 and #1270
+    // See #481, #1270 and tests 1341.* fail without this duplicate().
     if (anyNamed(source)) {
       source = PROTECT(duplicate(source));
       protecti++;
     }
   }
-  size_t size = SIZEOF(target);
   if (!length(where)) {
     switch (TYPEOF(target)) {
-    case INTSXP : case REALSXP : case LGLSXP :
+    case LGLSXP: case INTSXP :
+      if (slen==1) {
+        // recycle single items
+        int *td = INTEGER(target);
+        const int val = INTEGER(source)[0];
+        for (int i=0; i<len; i++) td[start+i] = val;  // no R API inside loop as INTEGER has overhead (even when it's an inline function)
+      } else {
+        memcpy(INTEGER(target)+start, INTEGER(source), slen*SIZEOF(target));
+      }
+      break;
+    case REALSXP :
+      if (slen==1) {
+        double *td = REAL(target);
+        const double val = REAL(source)[0];
+        for (int i=0; i<len; i++) td[start+i] = val;
+      } else {
+        memcpy(REAL(target)+start, REAL(source), slen*SIZEOF(target));
+      }
       break;
     case STRSXP :
-      for (; r<slen; r++)     // only one SET_STRING_ELT per RHS item is needed to set generations (overhead)
-        SET_STRING_ELT(target, start+r, STRING_ELT(source, r));
+      if (slen==1) {
+        const SEXP val = STRING_ELT(source, 0);
+        for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val);
+      } else {
+        const SEXP *val = STRING_PTR(source);
+        for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val[i]);
+      }
       break;
     case VECSXP :
-      for (; r<slen; r++)
-        SET_VECTOR_ELT(target, start+r, VECTOR_ELT(source, r));
-        // TO DO: if := in future could ever change a list item's contents by reference, would need to duplicate at that point
+      if (slen==1) {
+        const SEXP val = VECTOR_ELT(source, 0);
+        for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, val);
+      } else {
+        const SEXP *val = (SEXP *)DATAPTR(source);  // TODO: revisit VECTOR_PTR
+        for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, val[i]);
+      }
       break;
     default :
       error("Unsupported type '%s'", type2char(TYPEOF(target)));
-    }
-    if (slen == 1) {
-      if (size==4) for (; r<len; r++)
-        INTEGER(target)[start+r] = INTEGER(source)[0];   // copies pointer on 32bit, sizes checked in init.c
-      else for (; r<len; r++)
-        REAL(target)[start+r] = REAL(source)[0];         // copies pointer on 64bit, sizes checked in init.c
-    } else if (slen<10) {    // 10 is just a guess for when memcpy is faster. Certainly memcpy is slower when slen==1, but that's the most common case by far so not high priority to discover the optimum here. TO DO: revisit
-      if (size==4) for (; r<len; r++)
-        INTEGER(target)[start+r] = INTEGER(source)[r%slen];
-      else for (; r<len; r++)
-        REAL(target)[start+r] = REAL(source)[r%slen];
-    } else {
-      for (r=r>0?1:0; r<(len/slen); r++) {   // if the first slen were done in the switch above, convert r=slen to r=1
-        memcpy((char *)DATAPTR(target) + (start+r*slen)*size,
-             (char *)DATAPTR(source),
-             slen * size);
-      }
-      memcpy((char *)DATAPTR(target) + (start+r*slen)*size,
-           (char *)DATAPTR(source),
-           (len%slen) * size);
     }
   } else {
+    const int *wd = INTEGER(where)+start;
+    const int mask = slen==1 ? 0 : INT_MAX;
     switch (TYPEOF(target)) {
-    case INTSXP : case REALSXP : case LGLSXP :
-      break;
-    case STRSXP :
-      for (; r<slen; r++) {
-        w = INTEGER(where)[start+r]; if (w<1) continue;  // 0 or NA
-        SET_STRING_ELT(target, w-1, STRING_ELT(source, r));
+    case LGLSXP: case INTSXP : {
+      int *td = INTEGER(target);
+      const int *sd = INTEGER(source);
+      for (int i=0; i<len; i++) {
+        const int w = wd[i];
+        if (w<1) continue;  // 0 or NA
+        td[w-1] = sd[i&mask];  // i&mask is for branchless recyle when slen==1
       }
-      break;
-    case VECSXP :
-      for (; r<slen; r++) {
-        w = INTEGER(where)[start+r]; if (w<1) continue;
-        SET_VECTOR_ELT(target, w-1, VECTOR_ELT(source, r));
+    } break;
+    case REALSXP : {
+      double *td = REAL(target);
+      const double *sd = REAL(source);
+      for (int i=0; i<len; i++) {
+        const int w = wd[i];
+        if (w<1) continue;
+        td[w-1] = sd[i&mask];
       }
-      break;
+    } break;
+    case STRSXP : {
+      const SEXP *sd = STRING_PTR(source);
+      for (int i=0; i<len; i++) {
+        const int w = wd[i];
+        if (w<1) continue;
+        SET_STRING_ELT(target, w-1, sd[i&mask]);
+      }
+    } break;
+    case VECSXP : {
+      const SEXP *sd = (SEXP *)DATAPTR(source);  // TODO revisit VECTOR_PTR
+      for (int i=0; i<len; i++) {
+        const int w = wd[i];
+        if (w<1) continue;
+        SET_VECTOR_ELT(target, w-1, sd[i&mask]);
+      }
+    } break;
     default :
       error("Unsupported type '%s'", type2char(TYPEOF(target)));
     }
-    if (slen == 1) {
-      if (size==4) for (; r<len; r++) {
-        w = INTEGER(where)[start+r]; if (w<1) continue;
-        INTEGER(target)[ w-1 ] = INTEGER(source)[0];
-      } else for (; r<len; r++) {
-        w = INTEGER(where)[start+r]; if (w<1) continue;
-        REAL(target)[ w-1 ] = REAL(source)[0];
-      }
-    } else {
-      if (size==4) for (; r<len; r++) {
-        w = INTEGER(where)[start+r]; if (w<1) continue;
-        INTEGER(target)[ w-1 ] = INTEGER(source)[r%slen];
-      } else for (; r<len; r++) {
-        w = INTEGER(where)[start+r]; if (w<1) continue;
-        REAL(target)[ w-1 ] = REAL(source)[r%slen];
-      }
-    }
-    // if slen>10 it may be worth memcpy, but we'd need to first know if 'where' was a contiguous subset
   }
   UNPROTECT(protecti);
 }
@@ -916,20 +948,24 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
   // routinely leaves untouched items (rather than 0 or "" as allocVector does with its memset)
   // We guess that author of allocVector would have liked to initialize with NA but was prevented since memset
   // is restricted to one byte.
-  R_len_t i;
-  SEXP v;
-  PROTECT(v = allocVector(type, n));
+  SEXP v = PROTECT(allocVector(type, n));
   switch(type) {
-  // NAs are special; no need to worry about generations.
-  case INTSXP :
-  case LGLSXP :
-    for (i=0; i<n; i++) INTEGER(v)[i] = NA_INTEGER;
-    break;
-  case REALSXP :
-    for (i=0; i<n; i++) REAL(v)[i] = NA_REAL;
-    break;
+  case LGLSXP : {
+    Rboolean *vd = (Rboolean *)LOGICAL(v);
+    for (int i=0; i<n; i++) vd[i] = NA_LOGICAL;
+  } break;
+  case INTSXP : {
+    int *vd = INTEGER(v);
+    for (int i=0; i<n; i++) vd[i] = NA_INTEGER;
+  } break;
+  case REALSXP : {
+    double *vd = REAL(v);
+    for (int i=0; i<n; i++) vd[i] = NA_REAL;
+  } break;
   case STRSXP :
-    for (i=0; i<n; i++) ((SEXP *)DATAPTR(v))[i] = NA_STRING;
+    // character columns are initialized with blank string (""). So replace the all-"" with all-NA_character_
+    // Since "" and NA_character_ are global constants in R, it should be ok to not use SET_STRING_ELT here. But use it anyway for safety (revisit if proved slow)
+    for (int i=0; i<n; i++) SET_STRING_ELT(v, i, NA_STRING);
     break;
   case VECSXP :
     // list columns already have each item initialized to NULL

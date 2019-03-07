@@ -419,7 +419,7 @@ static const char* filesize_to_str(size_t fsize)
       }
     } else {
       snprintf(output, BUFFSIZE, "%.*f%cB (%llu bytes)",
-               ndigits, (double)fsize / (1 << shift), suffixes[i], lsize);
+               ndigits, (double)fsize / (1LL << shift), suffixes[i], lsize);
       return output;
     }
   }
@@ -1380,7 +1380,14 @@ int freadMain(freadMainArgs _args) {
   }
   else if (args.skipNrow >= 0) {
     // Skip the first `skipNrow` lines of input, including 0 to force the first line to be the start
-    while (ch<eof && row1line<=args.skipNrow) row1line+=(*ch++=='\n');
+    while (ch < eof && row1line <= args.skipNrow) {
+      char c = *ch++;
+      if (c == '\n' || c == '\r') {
+        ch += (ch < eof && c + ch[0] == '\n' + '\r');
+        row1line++;
+      }
+    }
+    if (ch > sof && verbose) DTPRINT("  Skipped to line %llu in the file", (llu)row1line);
     if (ch>=eof) STOP("skip=%llu but the input only has %llu line%s", (llu)args.skipNrow, (llu)row1line, row1line>1?"s":"");
     pos = ch;
   }
@@ -1896,18 +1903,22 @@ int freadMain(freadMainArgs _args) {
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
+    if (type[j]==CT_DROP) { size[j]=0; ndrop++; continue; }
+    if (type[j]<tmpType[j]) {
+      if (strcmp(typeName[tmpType[j]], typeName[type[j]]) != 0) {
+        DTWARN("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. " \
+               "If this was intended, please coerce to the lower type afterwards.",
+               j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
+      }
+      type[j] = tmpType[j];
+      // TODO: apply overrides to lower type afterwards and warn about the loss of accuracy then (if any); e.g. "4.0" would be fine to coerce to integer with no warning since
+      // no loss of accuracy but must be read as double for now in case "4.3" occurs out of sample to know if warning about accuracy is needed afterwards.
+    }
+    nUserBumped += type[j]>tmpType[j];
     size[j] = typeSize[type[j]];
     rowSize1 += (size[j] & 1);  // only works if all sizes are powers of 2
     rowSize4 += (size[j] & 4);
     rowSize8 += (size[j] & 8);
-    if (type[j]==CT_DROP) { ndrop++; continue; }
-    if (type[j]<tmpType[j]) {
-      if (verbose) DTPRINT("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' which will lose accuracy. " \
-           "If this was intended, please coerce to the lower type afterwards. Only overrides to a higher type are permitted.",
-           j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
-      type[j] = tmpType[j];
-    }
-    nUserBumped += type[j]>tmpType[j];
     if (type[j] == CT_STRING) nStringCols++; else nNonStringCols++;
   }
   if (verbose) DTPRINT("  After %d type and %d drop user overrides : %s\n", nUserBumped, ndrop, typesAsString(ncol));
@@ -1990,9 +2001,10 @@ int freadMain(freadMainArgs _args) {
     {
       nth = omp_get_num_threads();
       if (me!=0) {
-        // should never happen
-        snprintf(internalErr, internalErrSize, "Internal error: Master thread is not thread 0 but thread %d.\n", me); // # nocov
+        // # nocov start
+        snprintf(internalErr, internalErrSize, "Internal error: Master thread is not thread 0 but thread %d.\n", me);
         stopTeam = true;
+        // # nocov end
       }
       myShowProgress = args.showProgress;
     }
@@ -2243,11 +2255,13 @@ int freadMain(freadMainArgs _args) {
       #pragma omp ordered
       {
         if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered
-          myNrow = 0;               // discard my buffer
+          myNrow = 0;               // # nocov; discard my buffer
         }
         else if (headPos!=thisJumpStart) {
-          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof); // # nocov
+           // # nocov start
+          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
+          // # nocov end
         }
         else {
           ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
