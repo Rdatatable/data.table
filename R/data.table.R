@@ -44,6 +44,10 @@ null.data.table <-function() {
   setattr(ans,"row.names",.set_row_names(0L))
   alloc.col(ans)
 }
+is.null.data.table = function(x) {
+  if (!inherits(x, "data.frame")) return(FALSE)
+  ncol(x)==0L
+}
 
 data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
 {
@@ -56,13 +60,15 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   .Call(CcopyNamedInList,x)   # to maintain pre-Rv3.1.0 behaviour, for now. See test 548.2. TODO: revist
   # TODO Something strange with NAMED on components of `...` to investigate. Or, just port data.table() to C.
 
-  n <- length(x)
-  if (n < 1L)
+  if (length(x) < 1L)
     return( null.data.table() )
   # fix for #5377 - data.table(null list, data.frame and data.table) should return null data.table. Simple fix: check all scenarios here at the top.
   if (identical(x, list(NULL)) || identical(x, list(list())) ||
       identical(x, list(data.frame(NULL))) || identical(x, list(data.table(NULL)))) return( null.data.table() )
-  nd = name_dots(...)
+  # fix for #3445 - data.table(data.table(), data.table(a=integer()))
+  if (sum(null.dt<-sapply(x, is.null.data.table))) x = x[!null.dt]
+  n <- length(x)
+  nd = name_dots(..., null.dt=null.dt)
   vnames = nd$vnames
   # We will use novname later to know which were explicitly supplied in the call.
   novname = nd$novname

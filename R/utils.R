@@ -79,8 +79,9 @@ more = function(f) system(paste("more",f))    # nocov  (just a dev helper)
 
 # helper used to auto-name columns in data.table(x,y) as c("x","y"), CJ(x,y) and similar
 # naming of unnested matrices still handled by data.table()
-name_dots <- function(...) {
+name_dots <- function(..., null.dt=logical()) {
   dot_sub <- as.list(substitute(list(...)))[-1L]
+  if (sum(null.dt)) dot_sub = dot_sub[!null.dt]
   vnames = names(dot_sub)
   if (is.null(vnames)) {
     vnames = rep.int("", length(dot_sub))

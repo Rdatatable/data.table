@@ -13626,6 +13626,11 @@ dx = data.table(id = 1L, key = "id")
 di = list(z=c(2L, 1L))
 test(1999.2, key(dx[di]), NULL)
 
+# cbind of zero-row data.table with empty data.table messes up columns #3445
+test(2000.1, data.table(data.table(), data.table(a=integer())), data.table(a=integer()))
+dt = as.data.table(iris)
+test(2000.2, cbind(data.table(), dt[0]), dt[0])
+
 
 ###################################
 #  Add new tests above this line  #
