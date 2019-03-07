@@ -4,178 +4,15 @@
 
 // factorType is 1 for factor and 2 for ordered
 // will simply unique normal factors and attempt to find global order for ordered ones
-SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOrdered) {
-  // find total length
-  RLEN size = 0;
-  R_len_t len = LENGTH(factorLevels), n, i, j;
-  for (i = 0; i < len; ++i) {
-    SEXP elem = VECTOR_ELT(factorLevels, i);
-    n = LENGTH(elem);
-    size += n;
-    /* for (j = 0; j < n; ++j) { */
-    /*     if(IS_BYTES(STRING_ELT(elem, j))) { */
-    /*         data.useUTF8 = FALSE; break; */
-    /*     } */
-    /*     if(ENC_KNOWN(STRING_ELT(elem, j))) { */
-    /*         data.useUTF8 = TRUE; */
-    /*     } */
-    /*     if(!IS_CACHED(STRING_ELT(elem, j))) { */
-    /*         data.useCache = FALSE; break; */
-    /*     } */
-    /* } */
-  }
-
-  // set up hash to put duplicates in
-  HashData data;
-  data.useUTF8 = FALSE;
-  data.useCache = TRUE;
-  HashTableSetup(&data, size);
-
-  struct llist **h = data.HashTable;
-  hlen idx;
-  struct llist * pl;
-  R_len_t uniqlen = 0;
-  // we insert in opposite order because it's more convenient later to choose first of the duplicates
-  for (i = len-1; i >= 0; --i) {
-    SEXP elem = VECTOR_ELT(factorLevels, i);
-    n = LENGTH(elem);
-    for (j = n-1; j >= 0; --j) {
-      idx = data.hash(elem, j, &data);
-      while (h[idx] != NULL) {
-        pl = h[idx];
-        if (data.equal(VECTOR_ELT(factorLevels, pl->i), pl->j, elem, j))
-          break;
-        // it's a collision, not a match, so iterate to a new spot
-        idx = (idx + 1) % data.M;
-      }
-      if (data.nmax-- < 0) error("hash table is full");
-
-      pl = (struct llist *)R_alloc(1, sizeof(struct llist));
-      pl->next = NULL;
-      pl->i = i;
-      pl->j = j;
-      if (h[idx] != NULL) {
-        pl->next = h[idx];
-      } else {
-        ++uniqlen;
-      }
-      h[idx] = pl;
-    }
-  }
-
-  SEXP finalLevels = PROTECT(allocVector(STRSXP, uniqlen)); // UNPROTECTed at the end of this function
-  R_len_t counter = 0;
-  if (*factorType == 2) {
-    int *locs = (int *)R_alloc(len, sizeof(int));
-    for (int i=0; i<len; i++) locs[i] = 0;
-    // note there's a goto (!!) normalFactor below. When locs was allocated with malloc, the goto jumped over the
-    // old free() and caused leak. Now uses the safer R_alloc.  TODO - review all this logic.
-
-    R_len_t k;
-    SEXP tmp;
-    for (i = 0; i < len; ++i) {
-      if (!isRowOrdered[i]) continue;
-      SEXP elem = VECTOR_ELT(factorLevels, i);
-      n = LENGTH(elem);
-      for (j = locs[i]; j < n; ++j) {
-        idx = data.hash(elem, j, &data);
-        while (h[idx] != NULL) {
-          pl = h[idx];
-          if (data.equal(VECTOR_ELT(factorLevels, pl->i), pl->j, elem, j)) {
-            do {
-              if (!isRowOrdered[pl->i]) continue;
-
-              tmp = VECTOR_ELT(factorLevels, pl->i);
-              if (locs[pl->i] > pl->j) {
-                // failed to construct global order, need to break out of too many loops
-                // so will use goto :o
-                warning("ordered factor levels cannot be combined, going to convert to simple factor instead");
-                counter = 0;
-                *factorType = 1;
-                goto normalFactor;
-              }
-
-              for (k = locs[pl->i]; k < pl->j; ++k) {
-                SET_STRING_ELT(finalLevels, counter++, STRING_ELT(tmp, k));
-              }
-              locs[pl->i] = pl->j + 1;
-            } while ( (pl = pl->next) ); // added parenthesis to remove compiler warning 'suggest parentheses around assignment used as truth value'
-            SET_STRING_ELT(finalLevels, counter++, STRING_ELT(elem, j));
-            break;
-          }
-          // it's a collision, not a match, so iterate to a new spot
-          idx = (idx + 1) % data.M;
-        }
-        if (h[idx] == NULL) error("internal hash error, please report to data.table issue tracker");
-      }
-    }
-
-    // fill in the rest of the unordered elements
-    Rboolean record;
-    for (i = 0; i < len; ++i) {
-      if (isRowOrdered[i]) continue;
-      SEXP elem = VECTOR_ELT(factorLevels, i);
-      n = LENGTH(elem);
-      for (j = 0; j < n; ++j) {
-        idx = data.hash(elem, j, &data);
-        while (h[idx] != NULL) {
-          pl = h[idx];
-          if (data.equal(VECTOR_ELT(factorLevels, pl->i), pl->j, elem, j)) {
-            // Fixes #899. "rest" can have identical levels in
-            // more than 1 data.table.
-            if (!(pl->i == i && pl->j == j)) break;
-            record = TRUE;
-            do {
-              // if this element was in an ordered list, it's been recorded already
-              if (isRowOrdered[pl->i]) {
-                record = FALSE;
-                break;
-              }
-            } while ( (pl = pl->next) ); // added parenthesis to remove compiler warning 'suggest parentheses around assignment used as truth value'
-            if (record)
-              SET_STRING_ELT(finalLevels, counter++, STRING_ELT(elem, j));
-
-            break;
-          }
-          // it's a collision, not a match, so iterate to a new spot
-          idx = (idx + 1) % data.M;
-        }
-        if (h[idx] == NULL) error("internal hash error, please report to data.table issue tracker");
-      }
-    }
-  }
-
- normalFactor:
-  if (*factorType == 1) {
-    for (i = 0; i < len; ++i) {
-      SEXP elem = VECTOR_ELT(factorLevels, i);
-      n = LENGTH(elem);
-      for (j = 0; j < n; ++j) {
-        idx = data.hash(elem, j, &data);
-        while (h[idx] != NULL) {
-          pl = h[idx];
-          if (data.equal(VECTOR_ELT(factorLevels, pl->i), pl->j, elem, j)) {
-            if (pl->i == i && pl->j == j) {
-              SET_STRING_ELT(finalLevels, counter++, STRING_ELT(elem, j));
-            }
-            break;
-          }
-          // it's a collision, not a match, so iterate to a new spot
-          idx = (idx + 1) % data.M;
-        }
-        if (h[idx] == NULL) error("internal hash error, please report to data.table issue tracker");
-      }
-    }
-  }
-
-  // CleanHashTable(&data);   No longer needed now we use R_alloc(). But the hash table approach
-  // will be removed completely at some point.
-  UNPROTECT(1); // finalLevels
-  return finalLevels;
+SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOrdered)
+{
+  return R_NilValue;
 }
+// need to provide this for use by fmelt.c too
 
 
-/* Arun's addition and changes to incorporate 'usenames=T/F' and 'fill=T/F' arguments to rbindlist */
+/* TODO .. delete
+  Arun's addition and changes to incorporate 'usenames=T/F' and 'fill=T/F' arguments to rbindlist */
 
 /*
   l               = input list of data.tables/lists/data.frames
@@ -196,148 +33,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
   mincol          = get the minimum number of columns in an item from l. Used to check if 'fill=TRUE' is really necessary, even if set.
 */
 
-struct preprocessData {
-  SEXP ans_ptr, colname;
-  size_t n_rows, n_cols;
-  int *fn_rows, *is_factor, first, lcount, mincol, protecti;
-  SEXPTYPE *max_type;
-};
-
-static SEXP unlist2(SEXP v) {
-
-  RLEN i, j, k=0, ni, n=0;
-  SEXP ans, vi, lnames, groups, runids;
-
-  for (i=0; i<length(v); i++) n += length(VECTOR_ELT(v, i));
-  ans    = PROTECT(allocVector(VECSXP, 3));
-  lnames = PROTECT(allocVector(STRSXP, n));
-  groups = PROTECT(allocVector(INTSXP, n));
-  runids = PROTECT(allocVector(INTSXP, n));
-  for (i=0; i<length(v); i++) {
-    vi = VECTOR_ELT(v, i);
-    ni = length(vi);
-    for (j=0; j<ni; j++) {
-      SET_STRING_ELT(lnames, k + j, STRING_ELT(vi, j));
-      INTEGER(groups)[k + j] = i+1;
-      INTEGER(runids)[k + j] = j;
-    }
-    k+=j;
-  }
-  SET_VECTOR_ELT(ans, 0, lnames);
-  SET_VECTOR_ELT(ans, 1, groups);
-  SET_VECTOR_ELT(ans, 2, runids);
-  UNPROTECT(4);
-  return(ans);
-}
-
-// Don't use elsewhere. No checks are made on byArg and handleSorted
-// if handleSorted is 0, then it'll return integer(0) as such when
-// input is already sorted, like forder. if not, seq_len(nrow(dt)).
-static SEXP fast_order(SEXP dt, R_len_t byArg, R_len_t handleSorted) {
-
-  R_len_t i, protecti=0;
-  SEXP ans, by=R_NilValue, retGrp, sortStr, order, na, starts;
-
-  retGrp  = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(retGrp)[0]  = TRUE;   protecti++;
-  sortStr = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(sortStr)[0] = FALSE;  protecti++;
-  na      = PROTECT(allocVector(LGLSXP, 1)); LOGICAL(na)[0] = FALSE;       protecti++;
-
-  if (byArg) {
-    by    = PROTECT(allocVector(INTSXP, byArg));                           protecti++;
-    order = PROTECT(allocVector(INTSXP, byArg));                           protecti++;
-    for (i=0; i<byArg; i++) {
-      INTEGER(by)[i] = i+1;
-      INTEGER(order)[i] = 1;
-    }
-  } else {
-    order = PROTECT(allocVector(INTSXP, 1)); INTEGER(order)[0] = 1;        protecti++;
-  }
-  ans = PROTECT(forder(dt, by, retGrp, sortStr, order, na));               protecti++;
-  if (!length(ans) && handleSorted != 0) {
-    starts = PROTECT(getAttrib(ans, sym_starts));                          protecti++;
-    // if cols are already sorted, 'forder' gives integer(0), got to replace it with 1:.N
-    ans = PROTECT(allocVector(INTSXP, length(VECTOR_ELT(dt, 0))));         protecti++;
-    for (i=0; i<length(ans); i++) INTEGER(ans)[i] = i+1;
-    // TODO: for loop appears redundant because length(ans)==0 due to if (!length(ans)) above
-    setAttrib(ans, sym_starts, starts);
-  }
-  UNPROTECT(protecti);
-  return(ans);
-}
-
-static SEXP uniq_lengths(SEXP v, R_len_t n) {
-  R_len_t nv=length(v);
-  SEXP ans = PROTECT(allocVector(INTSXP, nv));
-  for (R_len_t i=1; i<nv; i++) {
-    INTEGER(ans)[i-1] = INTEGER(v)[i] - INTEGER(v)[i-1];
-  }
-  if (nv>0) {
-    // last value
-    INTEGER(ans)[nv-1] = n - INTEGER(v)[nv-1] + 1;
-  }
-  UNPROTECT(1);
-  return(ans);
-}
-
-static SEXP match_names(SEXP v) {
-
-  R_len_t i, j, idx, ncols, protecti=0;
-  SEXP ans, dt, lnames, ti;
-  SEXP uorder, starts, ulens, index, firstofeachgroup, origorder;
-  SEXP fnames, findices, runid, grpid;
-
-  ans    = PROTECT(allocVector(VECSXP, 2));
-  dt     = PROTECT(unlist2(v)); protecti++;
-  lnames = VECTOR_ELT(dt, 0);
-  grpid  = PROTECT(duplicate(VECTOR_ELT(dt, 1))); protecti++; // dt[1] will be reused, so backup
-  runid  = VECTOR_ELT(dt, 2);
-
-  uorder = PROTECT(fast_order(dt, 2, 1));  protecti++; // byArg alone is set, everything else is set inside fast_order
-  starts = getAttrib(uorder, sym_starts);
-  ulens  = PROTECT(uniq_lengths(starts, length(lnames))); protecti++;
-
-  // seq_len(.N) for each group
-  index = PROTECT(VECTOR_ELT(dt, 1)); protecti++; // reuse dt[1] (in 0-index coordinate), value already backed up above.
-  for (i=0; i<length(ulens); i++) {
-    for (j=0; j<INTEGER(ulens)[i]; j++)
-      INTEGER(index)[INTEGER(uorder)[INTEGER(starts)[i]-1+j]-1] = j;
-  }
-  // order again
-  uorder = PROTECT(fast_order(dt, 2, 1));  protecti++; // byArg alone is set, everything else is set inside fast_order
-  starts = getAttrib(uorder, sym_starts);
-  ulens  = PROTECT(uniq_lengths(starts, length(lnames))); protecti++;
-  ncols  = length(starts);
-  // check if order has to be changed (bysameorder = FALSE here by default - in `[.data.table` parlance)
-  firstofeachgroup = PROTECT(allocVector(INTSXP, length(starts)));
-  for (i=0; i<ncols; i++) INTEGER(firstofeachgroup)[i] = INTEGER(uorder)[INTEGER(starts)[i]-1];
-  origorder = PROTECT(fast_order(firstofeachgroup, 0, 0));
-  if (length(origorder)) {
-    reorder(starts, origorder);
-    reorder(ulens, origorder);
-  }
-  UNPROTECT(2);
-  // get fnames and findices
-  fnames   = PROTECT(allocVector(STRSXP, ncols)); protecti++;
-  findices = PROTECT(allocVector(VECSXP, ncols)); protecti++;
-  for (i=0; i<ncols; i++) {
-    idx = INTEGER(uorder)[INTEGER(starts)[i]-1]-1;
-    SET_STRING_ELT(fnames, i, STRING_ELT(lnames, idx));
-    ti = PROTECT(allocVector(INTSXP, length(v)));
-    for (j=0;j<length(v);j++) INTEGER(ti)[j]=-1; // TODO: can we eliminate this?
-    for (j=0; j<INTEGER(ulens)[i]; j++) {
-      idx = INTEGER(uorder)[INTEGER(starts)[i]-1+j]-1;
-      INTEGER(ti)[INTEGER(grpid)[idx]-1] = INTEGER(runid)[idx];
-    }
-    UNPROTECT(1);
-    SET_VECTOR_ELT(findices, i, ti);
-  }
-  UNPROTECT(protecti);
-  SET_VECTOR_ELT(ans, 0, fnames);
-  SET_VECTOR_ELT(ans, 1, findices);
-  UNPROTECT(1); // ans
-  return(ans);
-}
-
+/*
 static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preprocessData *data) {
 
   R_len_t i, j, idx;
@@ -442,9 +138,11 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
     }
   }
 }
+*/
 
 // function does c(idcol, nm), where length(idcol)=1
 // fix for #1432, + more efficient to move the logic to C
+/*
 SEXP add_idcol(SEXP nm, SEXP idcol, int cols) {
   SEXP ans = PROTECT(allocVector(STRSXP, cols+1));
   SET_STRING_ELT(ans, 0, STRING_ELT(idcol, 0));
@@ -454,7 +152,7 @@ SEXP add_idcol(SEXP nm, SEXP idcol, int cols) {
   UNPROTECT(1);
   return (ans);
 }
-
+*/
 
 SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
 
@@ -465,21 +163,20 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
   //R_len_t protecti=0;
 
   // first level of error checks
-  if (!isLogical(sexp_usenames) || LENGTH(sexp_usenames)!=1 || LOGICAL(sexp_usenames)[0]==NA_LOGICAL)
-    error("use.names should be TRUE or FALSE");
-  if (!isLogical(sexp_fill) || LENGTH(sexp_fill) != 1 || LOGICAL(sexp_fill)[0] == NA_LOGICAL)
-    error("fill should be TRUE or FALSE");
+  if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1 || LOGICAL(usenamesArg)[0]==NA_LOGICAL)
+    error("use.names= should be TRUE or FALSE");
+  if (!isLogical(fillArg) || LENGTH(fillArg) != 1 || LOGICAL(fillArg)[0] == NA_LOGICAL)
+    error("fill= should be TRUE or FALSE");
   if (!length(l)) return(l);
-  if (TYPEOF(l) != VECSXP) error("Input to rbindlist must be a list of data.tables, data.frames or lists");
-
-  bool usenames = LOGICAL(sexp_usenames)[0];
-  bool fill = LOGICAL(sexp_fill)[0];
+  if (TYPEOF(l) != VECSXP) error("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists.");
+  bool usenames = LOGICAL(usenamesArg)[0];
+  bool fill = LOGICAL(fillArg)[0];
   if (fill && !usenames) {
-    warning("Resetting 'use.names' to TRUE. 'use.names' can not be FALSE when 'fill=TRUE'.\n");
+    warning("use.names= can not be FALSE when fill is TRUE. Setting use.names=TRUE.\n");
     usenames=true;
   }
 
-  int ncol=-1;
+  int ncol=-1, first=0;
   int64_t nrow=0;
   // pre-check for any errors here to save having to get cleanup right below when usenames
   for (int i=0; i<LENGTH(l); i++) {  // length(l)>0 checked above
@@ -487,8 +184,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     if (isNull(li)) continue;
     if (TYPEOF(li) != VECSXP) error("Item %d of input is not a data.frame, data.table or list", i+1);
     if (!LENGTH(li)) continue;
-    if ((usenames||fill) && isNull(getAttrib(li, R_NamesSymbol)) error("When use.names=TRUE or fill=TRUE every item of the input must have column names. Item %d does not.", i+1);
-    if (ncol==-1) ncol=LENGTH(li);
+    if ((usenames||fill) && isNull(getAttrib(li, R_NamesSymbol))) error("When use.names=TRUE or fill=TRUE every item of the input must have column names. Item %d does not.", i+1);
+    if (ncol==-1) { ncol=LENGTH(li); first=i; }
     else if (!fill && ncol!=LENGTH(li)) error("Item %d has %d columns, inconsistent with item %d which has %d columns. To fill missing columns use fill=TRUE.", i+1, LENGTH(li), first+1, ncol);
     nrow += length(VECTOR_ELT(li,0));
   }
@@ -505,14 +202,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       const SEXP *cnp = STRING_PTR(getAttrib(li, R_NamesSymbol));
       for (int j=0; j<thisncol; j++) {
         SEXP s = cnp[j];
-        if (TRUELNGTH(s)<0) continue;  // seen this name before
+        if (TRUELENGTH(s)<0) continue;  // seen this name before
         if (TRUELENGTH(s)>0) savetl(s);
         SET_TRUELENGTH(s,--nuniq);
       }
     }
     nuniq = -nuniq;
-    int *counts = R_alloc(nuniq, sizeof(int)); // counts of names for each colnames
-    int *maxdup = R_alloc(nuniq, sizeof(int)); // the most number of dups for any name within one colname vector
+    int *counts = (int *)R_alloc(nuniq, sizeof(int)); // counts of names for each colnames
+    int *maxdup = (int *)R_alloc(nuniq, sizeof(int)); // the most number of dups for any name within one colname vector
     memset(maxdup, 0, nuniq*sizeof(int));
     for (int i=0; i<LENGTH(l); i++) {
       SEXP li = VECTOR_ELT(l, i);
@@ -529,11 +226,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       }
     }
     ncol = 0;
-    for (int u=0; u<nuniq; u++) ncol+=maxdup[u];
+    for (int u=0; u<nuniq; ++u) ncol+=maxdup[u];
     // ncol is now the final number of columns accounting for dups, if any
 
-    // allocate a matrix:  nrows==length(list).
-    int **listmap = R_alloc(nrow*longest, sizeof(int));  // not that longest could be<ncol (ncol is the union of all names)
+    // allocate a matrix:  nrows==length(list)  each entry contains which column to fetch for that final column
+    int *listMap = (int *)R_alloc(nrow*ncol, sizeof(int));
 
     int *umap = R_alloc(ncol, sizeof(int));
     int *duplink = R_alloc(ncol, sizeof(int));
@@ -845,6 +542,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
 ## of this file for a benchmark). I've retained here for now. Ultimately, will've to discuss with Matt and
 ## probably export it??
 */
+/* TODO delete ...
 SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
 
   R_len_t i, j, k, nx, li, si, oi;
@@ -898,8 +596,10 @@ SEXP chmatch2_old(SEXP x, SEXP table, SEXP nomatch) {
   UNPROTECT(7);
   return(ans);
 }
+*/
 
 // utility function used from within chmatch2
+/*
 static SEXP listlist(SEXP x) {
 
   R_len_t i,j,k, nl;
@@ -929,6 +629,8 @@ static SEXP listlist(SEXP x) {
   UNPROTECT(6);
   return(ans);
 }
+*/
+
 
 /*
 ## While chmatch2_old works great, I find it inefficient in terms of both memory (stores 2 indices over the
