@@ -15,7 +15,9 @@ SEXP selfrefokwrapper();
 SEXP truelength();
 SEXP setcharvec();
 SEXP setcolorder();
-SEXP chmatchwrapper();
+SEXP chmatch_R();
+SEXP chmatchdup_R();
+SEXP chin_R();
 SEXP freadR();
 SEXP fwriteR();
 SEXP reorder();
@@ -44,7 +46,6 @@ SEXP pointWrapper();
 SEXP setNumericRounding();
 SEXP getNumericRounding();
 SEXP binary();
-SEXP chmatch2();
 SEXP subsetDT();
 SEXP subsetVector();
 SEXP convertNegAndZeroIdx();
@@ -97,7 +98,9 @@ R_CallMethodDef callMethods[] = {
 {"Ctruelength", (DL_FUNC) &truelength, -1},
 {"Csetcharvec", (DL_FUNC) &setcharvec, -1},
 {"Csetcolorder", (DL_FUNC) &setcolorder, -1},
-{"Cchmatchwrapper", (DL_FUNC) &chmatchwrapper, -1},
+{"Cchmatch", (DL_FUNC) &chmatch_R, -1},
+{"Cchmatchdup", (DL_FUNC) &chmatchdup_R, -1},
+{"Cchin", (DL_FUNC) &chin_R, -1},
 {"CfreadR", (DL_FUNC) &freadR, -1},
 {"CfwriteR", (DL_FUNC) &fwriteR, -1},
 {"Creorder", (DL_FUNC) &reorder, -1},
@@ -126,7 +129,6 @@ R_CallMethodDef callMethods[] = {
 {"CsetNumericRounding", (DL_FUNC) &setNumericRounding, -1},
 {"CgetNumericRounding", (DL_FUNC) &getNumericRounding, -1},
 {"Cbinary", (DL_FUNC) &binary, -1},
-{"Cchmatch2", (DL_FUNC) &chmatch2, -1},
 {"CsubsetDT", (DL_FUNC) &subsetDT, -1},
 {"CsubsetVector", (DL_FUNC) &subsetVector, -1},
 {"CconvertNegAndZeroIdx", (DL_FUNC) &convertNegAndZeroIdx, -1},

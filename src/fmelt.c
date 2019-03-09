@@ -133,7 +133,7 @@ SEXP measurelist(SEXP measure, SEXP dtnames) {
   ans = PROTECT(allocVector(VECSXP, n)); protecti++;
   for (i=0; i<n; i++) {
     switch(TYPEOF(VECTOR_ELT(measure, i))) {
-      case STRSXP  : tmp = PROTECT(chmatch(VECTOR_ELT(measure, i), dtnames, 0, FALSE)); protecti++; break;
+      case STRSXP  : tmp = PROTECT(chmatch(VECTOR_ELT(measure, i), dtnames, 0)); protecti++; break;
       case REALSXP : tmp = PROTECT(coerceVector(VECTOR_ELT(measure, i), INTSXP)); protecti++; break;
       case INTSXP  : tmp = VECTOR_ELT(measure, i); break;
       default : error("Unknown 'measure.vars' type %s at index %d of list", type2char(TYPEOF(VECTOR_ELT(measure, i))), i+1);
@@ -185,7 +185,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     warning("To be consistent with reshape2's melt, id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are considered id.vars, which in this case are columns [%s]. Consider providing at least one of 'id' or 'measure' vars in future.", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
   } else if (!isNull(id) && isNull(measure)) {
     switch(TYPEOF(id)) {
-      case STRSXP  : PROTECT(tmp = chmatch(id, dtnames, 0, FALSE)); protecti++; break;
+      case STRSXP  : PROTECT(tmp = chmatch(id, dtnames, 0)); protecti++; break;
       case REALSXP : PROTECT(tmp = coerceVector(id, INTSXP)); protecti++; break;
       case INTSXP  : tmp = id; break;
       default : error("Unknown 'id.vars' type %s, must be character or integer vector", type2char(TYPEOF(id)));
@@ -214,7 +214,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
   } else if (isNull(id) && !isNull(measure)) {
     switch(TYPEOF(measure)) {
-      case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0, FALSE)); protecti++; break;
+      case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0)); protecti++; break;
       case REALSXP : tmp2 = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
       case INTSXP  : tmp2 = measure; break;
       case VECSXP  : tmp2 = PROTECT(measurelist(measure, dtnames)); protecti++; break;
@@ -250,7 +250,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
   } else if (!isNull(id) && !isNull(measure)) {
     switch(TYPEOF(id)) {
-      case STRSXP  : tmp = PROTECT(chmatch(id, dtnames, 0, FALSE)); protecti++; break;
+      case STRSXP  : tmp = PROTECT(chmatch(id, dtnames, 0)); protecti++; break;
       case REALSXP : tmp = PROTECT(coerceVector(id, INTSXP)); protecti++; break;
       case INTSXP  : tmp = id; break;
       default : error("Unknown 'id.vars' type %s, must be character or integer vector", type2char(TYPEOF(id)));
@@ -261,7 +261,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
     idcols = PROTECT(tmp); protecti++;
     switch(TYPEOF(measure)) {
-      case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0, FALSE)); protecti++; break;
+      case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0)); protecti++; break;
       case REALSXP : tmp2 = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
       case INTSXP  : tmp2 = measure; break;
       case VECSXP  : tmp2 = PROTECT(measurelist(measure, dtnames)); protecti++; break;

@@ -371,7 +371,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   }
   // FR #2077 - set able to add new cols by reference
   if (isString(cols)) {
-    PROTECT(tmp = chmatch(cols, names, 0, FALSE));
+    PROTECT(tmp = chmatch(cols, names, 0));
     protecti++;
     buf = (int *) R_alloc(length(cols), sizeof(int));
     for (i=0; i<length(cols); i++) {
@@ -657,7 +657,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   if (length(key)) {
     // if assigning to at least one key column, the key is truncated to one position before the first changed column.
     //any() and subsetVector() don't seem to be exposed by R API at C level, so this is done here long hand.
-    PROTECT(tmp = chmatch(key, assignedNames, 0, TRUE));
+    PROTECT(tmp = chin(key, assignedNames));
     protecti++;
     newKeyLength = xlength(key);
     for (i=0;i<LENGTH(tmp);i++) if (LOGICAL(tmp)[i]) {
@@ -747,7 +747,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         }
       } else if(newKeyLength < strlen(c1)){
         if(indexLength == 0 && // shortened index can be kept since it is just information on the order (see #2372)
-           LOGICAL(chmatch(mkString(s4), indexNames, 0, TRUE))[0] == 0 ){// index with shortened name not present yet
+           LOGICAL(chin(mkString(s4), indexNames))[0] == 0) {// index with shortened name not present yet
           SET_TAG(s, install(s4));
           SET_STRING_ELT(indexNames, indexNo, mkChar(s4));
           if (verbose) {
@@ -942,6 +942,43 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
   UNPROTECT(protecti);
 }
 
+void writeNA(SEXP v, const int from, const int n)
+{
+  const int to = from-1+n;  // together with <=to below with writing NA to position 2147483647 in mind
+  switch(TYPEOF(v)) {
+  case LGLSXP : {
+    Rboolean *vd = (Rboolean *)LOGICAL(v);
+    for (int i=from; i<=to; ++i) vd[i] = NA_LOGICAL;
+  } break;
+  case INTSXP : {
+    // same whether factor or not
+    int *vd = INTEGER(v);
+    for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER;
+  } break;
+  case REALSXP : {
+    if (INHERITS(getAttrib(v, R_ClassSymbol), char_integer64)) {
+      int64_t *vd = (int64_t *)REAL(v);
+      for (int i=from; i<=to; ++i) vd[i] = INT64_MIN;
+    } else {
+      double *vd = REAL(v);
+      for (int i=from; i<=to; ++i) vd[i] = NA_REAL;
+    }
+  } break;
+  case STRSXP :
+    // character columns are initialized with blank string (""). So replace the all-"" with all-NA_character_
+    // Since "" and NA_character_ are global constants in R, it should be ok to not use SET_STRING_ELT here. But use it anyway for safety (revisit if proved slow)
+    // If there's ever a way added to R API to pass NA_STRING to allocVector() to tell it to initialize with NA not "", would be great
+    for (int i=from; i<=to; ++i) SET_STRING_ELT(v, i, NA_STRING);
+    break;
+  case VECSXP :
+    // list columns already have each item initialized to NULL
+    break;
+  default :
+    error("Unsupported type '%s'", type2char(TYPEOF(v)));
+  }
+}
+
+
 SEXP allocNAVector(SEXPTYPE type, R_len_t n)
 {
   // an allocVector following with initialization to NA since a subassign to a new column using :=
@@ -949,30 +986,7 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
   // We guess that author of allocVector would have liked to initialize with NA but was prevented since memset
   // is restricted to one byte.
   SEXP v = PROTECT(allocVector(type, n));
-  switch(type) {
-  case LGLSXP : {
-    Rboolean *vd = (Rboolean *)LOGICAL(v);
-    for (int i=0; i<n; i++) vd[i] = NA_LOGICAL;
-  } break;
-  case INTSXP : {
-    int *vd = INTEGER(v);
-    for (int i=0; i<n; i++) vd[i] = NA_INTEGER;
-  } break;
-  case REALSXP : {
-    double *vd = REAL(v);
-    for (int i=0; i<n; i++) vd[i] = NA_REAL;
-  } break;
-  case STRSXP :
-    // character columns are initialized with blank string (""). So replace the all-"" with all-NA_character_
-    // Since "" and NA_character_ are global constants in R, it should be ok to not use SET_STRING_ELT here. But use it anyway for safety (revisit if proved slow)
-    for (int i=0; i<n; i++) SET_STRING_ELT(v, i, NA_STRING);
-    break;
-  case VECSXP :
-    // list columns already have each item initialized to NULL
-    break;
-  default :
-    error("Unsupported type '%s'", type2char(type));
-  }
+  writeNA(v, 0, n);
   UNPROTECT(1);
   return(v);
 }

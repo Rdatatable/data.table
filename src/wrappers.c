@@ -38,7 +38,7 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
   xchar = PROTECT(allocVector(STRSXP, nx));
   for (i=0; i<nx; i++)
     SET_STRING_ELT(xchar, i, STRING_ELT(levels, INTEGER(x)[i]-1));
-  newx = PROTECT(chmatch(xchar, ulevels, NA_INTEGER, FALSE));
+  newx = PROTECT(chmatch(xchar, ulevels, NA_INTEGER));
   for (i=0; i<nx; i++) INTEGER(x)[i] = INTEGER(newx)[i];
   setAttrib(x, R_LevelsSymbol, ulevels);
   UNPROTECT(2);

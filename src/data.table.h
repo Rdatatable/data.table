@@ -86,6 +86,7 @@ SEXP SelfRefSymbol;
 
 // assign.c
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
+void writeNA(SEXP v, const int from, const int n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 Rboolean isDatatable(SEXP x);
 int checkOverAlloc(SEXP x);
@@ -112,7 +113,8 @@ SEXP uniqlist(SEXP l, SEXP order);
 SEXP uniqlengths(SEXP x, SEXP n);
 
 // chmatch.c
-SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
+SEXP chmatch(SEXP x, SEXP table, int nomatch);
+SEXP chin(SEXP x, SEXP table);
 
 SEXP isOrderedSubset(SEXP, SEXP);
 void setselfref(SEXP);

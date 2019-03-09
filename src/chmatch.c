@@ -3,7 +3,7 @@
 #define ENC_KNOWN(x) (LEVELS(x) & 76)
 // LATIN1_MASK (1<<2) | UTF8_MASK (1<<3) | ASCII_MASK (1<<6)
 
-SEXP match_logical(SEXP table, SEXP x) {
+static SEXP match_logical(SEXP table, SEXP x) {
   R_len_t i;
   SEXP ans, m;
   ans = PROTECT(allocVector(LGLSXP, length(x)));
@@ -14,15 +14,24 @@ SEXP match_logical(SEXP table, SEXP x) {
   return(ans);
 }
 
-SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
-  R_len_t i, m;
-  SEXP ans, s;
+static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup) {
   if (!isString(x) && !isNull(x)) error("x is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(x)));
   if (!isString(table) && !isNull(table)) error("table is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(table)));
-  PROTECT(ans = allocVector(in ? LGLSXP : INTSXP,length(x))); // if fails, it fails before savetl
+  if (chin && chmatchdup) error("Internal error: either chin or chmatchdup should be true not both");
+  // allocations up front before savetl starts
+  SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, length(x)));
+  int *ansd = INTEGER(ans);
+  int *dupMap=NULL, *dupLink=NULL;
+  if (chmatchdup) {
+    dupMap  = (int *)R_alloc(length(table), sizeof(int));
+    dupLink = (int *)R_alloc(length(table), sizeof(int));
+  }
+  // end allocations
   savetl_init();
-  for (i=0; i<length(x); i++) {
-    s = STRING_ELT(x,i);
+  const SEXP *xd = STRING_PTR(x);
+  const int xlen = length(x);
+  for (int i=0; i<xlen; i++) {
+    SEXP s = STRING_ELT(x,i);
     if (s != NA_STRING && ENC_KNOWN(s) != 64) { // PREV: s != NA_STRING && !ENC_KNOWN(s) - changed to fix for bug #5159. The previous fix
                        // dealt with UNKNOWN encodings. But we could have the same string, where both are in different
                        // encodings than ASCII (ex: UTF8 and Latin1). To fix this, we'll to resort to 'match' if not ASCII.
@@ -37,7 +46,7 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
       // since match() considers the same string in different encodings as equal (but slower). See #2538 and #4818.
       savetl_end();
       UNPROTECT(1);
-      return (in ? match_logical(table, x) : match(table, x, nomatch));
+      return (chin ? match_logical(table, x) : match(table, x, nomatch));
     }
     if (TRUELENGTH(s)>0) savetl(s);
     // as from v1.8.0 we assume R's internal hash is positive. So in R < 2.14.0 we
@@ -46,36 +55,81 @@ SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in) {
     // initializes truelength to 0 from R 2.14.0.
     SET_TRUELENGTH(s,0);
   }
-  for (i=length(table)-1; i>=0; i--) {
-    s = STRING_ELT(table,i);
+  const int tablelen = length(table);
+  const SEXP *td = STRING_PTR(table);
+  int nuniq=0;
+  for (int i=0; i<tablelen; ++i) {
+    SEXP s = STRING_ELT(table,i);
     if (s != NA_STRING && ENC_KNOWN(s) != 64) { // changed !ENC_KNOWN(s) to !ASCII(s) - check above for explanation
-      for (int j=i+1; j<LENGTH(table); j++) SET_TRUELENGTH(STRING_ELT(table,j),0);  // reinstate 0 rather than leave the -i-1
+      for (int j=0; j<i; ++j) SET_TRUELENGTH(STRING_ELT(table,j),0);  // reinstate 0 rather than leave the -i-1
       savetl_end();
       UNPROTECT(1);
-      return (in ? match_logical(table, x) : match(table, x, nomatch));
+      return (chin ? match_logical(table, x) : match(table, x, nomatch));
     }
-    if (TRUELENGTH(s)>0) savetl(s);
-    SET_TRUELENGTH(s, -i-1);
+    int tl = TRUELENGTH(s);
+    if (tl>0) { savetl(s); tl=0; }
+    if (tl==0) SET_TRUELENGTH(s, -(++nuniq)); // first time seen this string in table
   }
-  if (in) {
-    for (i=0; i<length(x); i++) {
-      LOGICAL(ans)[i] = TRUELENGTH(STRING_ELT(x,i))<0;
-      // nomatch ignored for logical as base does I think
+  if (chmatchdup && nuniq<tablelen) {
+    // used to be called chmatch2 before v1.12.2. New implementation from 1.12.2 too        uniq          dups
+    // For example: A,B,C,B,D,E,A,A   =>   A(TL=1),B(2),C(3),D(4),E(5)   =>   dupMap    1  2  3  5  6 | 8  7  4
+    //                                                                        dupLink   7  8          |    6     (blank=0)
+    memset(dupMap,  0, tablelen*sizeof(int));
+    memset(dupLink, 0, tablelen*sizeof(int));
+    int dupAtEnd=tablelen;
+    for (int i=0; i<tablelen; ++i) {
+      int u = -TRUELENGTH(td[i]);  // 1-based
+      while (dupLink[u-1]) u = dupLink[u-1]-1;
+      if (dupMap[u-1]==0) dupMap[u-1]=i+1;  // first time seen this uniq
+      else {
+        dupMap[dupAtEnd-1] = i+1;
+        dupLink[u-1] = dupAtEnd--;
+      }
+    }
+    for (int i=0; i<xlen; ++i) {
+      int u = -TRUELENGTH(xd[i]);
+      if (u==0) {
+        ansd[i] = nomatch;
+      } else {
+        ansd[i] = dupMap[u-1];
+        SET_TRUELENGTH(xd[i], -dupLink[u-1]);
+        // sets to 0 after last dup matched so more dups of "a" in x than are in table will only match as many dups as there are in table
+        // we still need the 0-setting loop below because often there will be some values in table that are not matched to at all.
+      }
+    }
+  } else if (chin) {
+    for (int i=0; i<xlen; i++) {
+      ansd[i] = TRUELENGTH(xd[i])<0;
     }
   } else {
-    for (i=0; i<length(x); i++) {
-      m = TRUELENGTH(STRING_ELT(x,i));
-      INTEGER(ans)[i] = (m<0) ? -m : nomatch;
+    for (int i=0; i<xlen; i++) {
+      int m = TRUELENGTH(xd[i]);
+      ansd[i] = (m<0) ? -m : nomatch;
     }
   }
-  for (i=0; i<length(table); i++)
-    SET_TRUELENGTH(STRING_ELT(table,i),0);  // reinstate 0 rather than leave the -i-1
+  for (int i=0; i<tablelen; i++)
+    SET_TRUELENGTH(td[i], 0);  // reinstate 0 rather than leave the -i-1
   savetl_end();
   UNPROTECT(1);
   return(ans);
 }
 
-SEXP chmatchwrapper(SEXP x, SEXP table, SEXP nomatch, SEXP in) {
-  return(chmatch(x,table,INTEGER(nomatch)[0],LOGICAL(in)[0]));
+// for internal use from C :
+SEXP chmatch(SEXP x, SEXP table, int nomatch) {  // chin=  chmatchdup=
+  return chmatchMain(x, table, nomatch,             false, false);
+}
+SEXP chin(SEXP x, SEXP table) {
+  return chmatchMain(x, table, 0/*ignored*/,        true,  false);
+}
+
+// for use from internals at R level; chmatch and chin are exported too but not chmatchdup yet
+SEXP chmatch_R(SEXP x, SEXP table, SEXP nomatch) {
+  return chmatchMain(x, table, INTEGER(nomatch)[0], false, false);
+}
+SEXP chin_R(SEXP x, SEXP table) {
+  return chmatchMain(x, table, 0,                   true,  false);
+}
+SEXP chmatchdup_R(SEXP x, SEXP table, SEXP nomatch) {
+  return chmatchMain(x, table, INTEGER(nomatch)[0], false, true);
 }
 

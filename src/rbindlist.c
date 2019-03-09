@@ -190,7 +190,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     nrow += length(VECTOR_ELT(li,0));
   }
 
-  int *listmap = NULL; // each row will map the items of each list to the appropriate column in the final result
+  int *listMap=NULL; // maps each column in final result to the column of each list item
   if (usenames) {
     savetl_init();
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
@@ -230,36 +230,36 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     // ncol is now the final number of columns accounting for dups, if any
 
     // allocate a matrix:  nrows==length(list)  each entry contains which column to fetch for that final column
-    int *listMap = (int *)R_alloc(nrow*ncol, sizeof(int));
+    int *colMap = (int *)R_alloc(nrow*ncol, sizeof(int));
+    for (int i=0; i<nrow*ncol; ++i) colMap[i]=-1;
 
-    int *umap = R_alloc(ncol, sizeof(int));
-    int *duplink = R_alloc(ncol, sizeof(int));
-    memset(umap, 0, ncol*sizeof(int));
-    memset(duplink, 0, ncol*sizeof(int));
-    int nextcol = 0;
+    int *uniqMap = (int *)R_alloc(nuniq, sizeof(int)); // maps the ith unique string to the first time it occurs in the final result
+    int *dupLink = (int *)R_alloc(ncol, sizeof(int));  // if a colname has occurred before (a dup) links from the 1st to the 2nd time in the final result, 2nd to 3rd, etc
+    for (int i=0; i<ncol; ++i) dupLink[i]=-1;
+    int nextCol = 0;
 
-    for (int i=whichlongest;  ... i<LENGTH(l); i++) {
+    for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
       int thisncol=LENGTH(li);
       if (isNull(li) || !LENGTH(li)) continue;
       const SEXP *cnp = STRING_PTR(getAttrib(li, R_NamesSymbol));
-      memset(counts, 0, nunique*sizeof(int));
+      memset(counts, 0, nuniq*sizeof(int));
       for (int j=0; j<thisncol; j++) {
         SEXP s = cnp[j];
         int w = -TRUELENGTH(s)-1;
         int wi = counts[w]++; // how many dups have we seen before of this name within this item
-        for (int k=1; k<wi; k++) { w=duplink[w]; k++; }  // hop through the dups
-        if (umap[w]==0) {
+        for (int k=1; k<wi; k++) { w=dupLink[w]; k++; }  // hop through the dups
+        if (uniqMap[w]==0) {
           // first time ever seen this name,
-          umap[w] = nextcol++;
-        } if (duplink[w]==0) {
-          duplink[w] = nextcol;
-          w = nextcol;
-          umap[w] = nextcol++;
+          uniqMap[w] = nextCol++;
+        } if (dupLink[w]==0) {
+          dupLink[w] = nextCol;
+          w = nextCol;
+          uniqMap[w] = nextCol++;
         } else {
-          w = duplink[w];
+          w = dupLink[w];
         }
-        listmap[i,j] = umap[w];
+        colMap[i*ncol + uniqMap[w]] = j;
       }
     }
     // zero out our usage of tl
@@ -274,14 +274,12 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       }
     }
     savetl_end();  // restore R's usage
-    if (nextcol != ncol) error("Internal error. nextcol!=ncol when making listmap");  // # nocov
+    if (nextCol != ncol) error("Internal error. nextCol!=ncol when making colMap");  // # nocov
   }
 
 
   // get max type for each column, and the number of rows
-  if (now==0 && ncol==0) {
-    return(R_NilValue);
-  }
+  if (nrow==0 && ncol==0) return(R_NilValue);
   if (nrow>INT32_MAX) error("Total rows in the list is %lld which is larger than the maximum number of rows, currently %d", nrow, INT32_MAX);
 
   /*todelete ...
@@ -294,71 +292,73 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
   Rboolean *isRowOrdered = (Rboolean *)R_alloc(data.lcount, sizeof(Rboolean));
   for (int i=0; i<data.lcount; i++) isRowOrdered[i] = FALSE;
   */
-
+  int isidcol=0, protecti=0;
   SEXP ans = PROTECT(allocVector(VECSXP, ncol + isidcol)); protecti++; // do we need this protecti?
   SEXP tt;
   setAttrib(ans, R_NamesSymbol, tt=allocVector(STRSXP, ncol));
-
 
   // we need listmap to tell us which item to fetch for each of the final result columns, so we can go column by column
 
   for(int j=0; j<ncol; ++j) {
 
-    maxType=0;
-    thisClass = R_NilValue;
-    isFactor=false;
-    isInt64=false;
+    int maxType=0;
+    //SEXP thisClass = R_NilValue;
+    bool factor=false;
+    bool int64=false;
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
       if (isNull(li) || !LENGTH(li) || !length(VECTOR_ELT(li, 0))) continue;
-      int w = listMap[i, j];
+      int w = listMap[i*ncol + j];
       if (w==-1) continue;  // column j of final result has no input from this item (fill must be true)
       SEXP thisCol = VECTOR_ELT(li, w);
-      thisType = TYPEOF(thisCol);
+      int thisType = TYPEOF(thisCol);
       if (thisType>maxType) maxType=thisType;
-      if (isFactor(thiscol)) isFactor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
-      if (INHERITS(getAttrib(thisCol, R_ClassSymbol), char_integer64)) isInt64=true;
+      if (isFactor(thisCol)) factor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
+      if (INHERITS(getAttrib(thisCol, R_ClassSymbol), char_integer64)) int64=true;
       // TODO #705, check attributes and error if non-factor class and not identical
       // if (!data->is_factor[i] &&
       //    !R_compute_identical(thisClass, getAttrib(thiscol, R_ClassSymbol), 0) && !fill) {
       //   error("Class attributes at column %d of input list at position %d does not match with column %d of input list at position %d. Coercion of objects of class 'factor' alone is handled internally by rbind/rbindlist at the moment.", i+1, j+1, i+1, data->first+1);
       // }
     }
-    if (isFactor) maxType=INTSXP;  // any items are factors then a factor is created (could be an option)
+    if (factor) maxType=INTSXP;  // any items are factors then a factor is created (could be an option)
     SEXP target;
     SET_VECTOR_ELT(ans, j+isidcol, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
+    if (int64) setAttrib(target, R_ClassSymbol, char_integer64);
+    // TODO: if (!isFactor(thiscol)) copyMostAttrib(thiscol, target); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     int ansloc=0;
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
       if (isNull(li) || !LENGTH(li)) continue;
       const int thisnrow = length(VECTOR_ELT(li, 0));
       if (thisnrow==0) continue;
-      int w = listmap[i, j];
+      int w = listMap[i*ncol + j];
       if (w==-1) {
-        fill with NA
+        writeNA(target, ansloc, thisnrow);
       } else {
-        SEXP thiscol = VECTOR_ELT(li, w);
+        SEXP thisCol = VECTOR_ELT(li, w);
         switch(TYPEOF(target)) {
         case LGLSXP:
-          memcpy(LOGICAL(target)+ansloc, LOGICAL(thiscol), thisnrow*SIZEOF(thiscol));
+          memcpy(LOGICAL(target)+ansloc, LOGICAL(thisCol), thisnrow*SIZEOF(thisCol));
           break;
         case INTSXP:
-          memcpy(INTEGER(target)+ansloc, INTEGER(thiscol), thisnrow*SIZEOF(thiscol));
+          memcpy(INTEGER(target)+ansloc, INTEGER(thisCol), thisnrow*SIZEOF(thisCol));
           break;
         case REALSXP:
-          memcpy(REAL(target)+ansloc, REAL(thiscol), thisnrow*SIZEOF(thiscol));
+          // for integer 64 too, since types have been checked (TODO)
+          memcpy(REAL(target)+ansloc, REAL(thisCol), thisnrow*SIZEOF(thisCol));
           break;
         case CPLXSXP :
-          memcpy(COMPLEX(target)+ansloc, COMPLEX(thiscol), thisnrow*sizeof(Rcomplex));
+          memcpy(COMPLEX(target)+ansloc, COMPLEX(thisCol), thisnrow*sizeof(Rcomplex));
           break;
         case VECSXP :
           for (int r=0; r<thisnrow; r++)
-            SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thiscol,r));
+            SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thisCol,r));
           break;
         case STRSXP :
-          isRowOrdered[resi] = FALSE;
-          if (isFactor(thiscol)) {
-            levels = getAttrib(thiscol, R_LevelsSymbol);
+          //isRowOrdered[resi] = FALSE;
+          if (isFactor(thisCol)) error("factor not yet implemented");
+          /*  levels = getAttrib(thiscol, R_LevelsSymbol);
             if (isNull(levels)) error("Column %d of item %d has type 'factor' but has no levels; i.e. malformed.", j+1, i+1);
             for (r=0; r<thislen; r++)
               if (INTEGER(thiscol)[r]==NA_INTEGER)
@@ -369,17 +369,20 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
             // add levels to factorLevels
             // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
             SET_VECTOR_ELT(factorLevels, jj, levels); jj++;
-            if (isOrdered(thiscol)) isRowOrdered[resi] = TRUE;
-          } else {
-            if (TYPEOF(thiscol) != STRSXP) error("Internal logical error in rbindlist.c (not STRSXP), please report to data.table issue tracker.");
-            for (int r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
+            if (isOrdered(thisCol)) isRowOrdered[resi] = TRUE;
+          } else */
+          {
+            if (TYPEOF(thisCol) != STRSXP) error("Internal logical error in rbindlist.c (not STRSXP), please report to data.table issue tracker.");
+            for (int r=0; r<thisnrow; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thisCol,r));
 
             // if this column is going to be a factor, add column to factorLevels
             // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
+            /*
             if (data.is_factor[j]) {
               SET_VECTOR_ELT(factorLevels, jj, thiscol);
               jj++;
             }
+            */
             // removed 'coerced=FALSE; UNPROTECT(1)' as it resulted in a stack imbalance.
             // anyways it's taken care of after the switch. So no need here.
           }
@@ -393,13 +396,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
 
 
 
-    if (usenames) {
-      to_copy = TRUE;
-      f_ind   = VECTOR_ELT(findices, j);
-    } else {
-      thiscol = VECTOR_ELT(lf, j);
-      if (!isFactor(thiscol)) copyMostAttrib(thiscol, target); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
-    }
+
+   /*
     ansloc = 0;
     jj = 0; // to increment factorLevels
     resi = -1;
@@ -419,88 +417,36 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
         continue;
       }
       thiscol = VECTOR_ELT(li, idx);
-      if (thislen != length(thiscol)) error("Column %d of item %d is length %d, inconsistent with first column of that item which is length %d. rbind/rbindlist doesn't recycle as it already expects each item to be a uniform list, data.frame or data.table", j+1, i+1, length(thiscol), thislen);
+
+    */
+    // if (thislen != length(thiscol)) error("Column %d of item %d is length %d, inconsistent with first column of that item which is length %d. rbind/rbindlist doesn't recycle as it already expects each item to be a uniform list, data.frame or data.table", j+1, i+1, length(thiscol), thislen);
       // couldn't figure out a way to this outside this loop when fill = TRUE.
-      if (to_copy && !isFactor(thiscol)) {
-        copyMostAttrib(thiscol, target);
-        to_copy = FALSE;
-      }
-      resi++;  // after the first, there might be NULL or empty which are skipped, resi increments up until lcount
-      if (TYPEOF(thiscol) != TYPEOF(target) && !isFactor(thiscol)) {
-        thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));
-        coerced = TRUE;
+    //  if (to_copy && !isFactor(thiscol)) {
+    //    copyMostAttrib(thiscol, target);
+    //    to_copy = FALSE;
+    //   }
+    //  if (TYPEOF(thiscol) != TYPEOF(target) && !isFactor(thiscol)) {
+    //    thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));
+    //    coerced = TRUE;
         // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
         // warning("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
-      }
-      if (TYPEOF(target)!=STRSXP && TYPEOF(thiscol)!=TYPEOF(target)) {
-        error("Internal error in rbindlist.c: type of 'thiscol' [%s] should have already been coerced to 'target' [%s]. please report to data.table issue tracker.",
-              type2char(TYPEOF(thiscol)), type2char(TYPEOF(target)));
-      }
-      switch(TYPEOF(target)) {
-      case LGLSXP:
-        memcpy(LOGICAL(target)+ansloc, LOGICAL(thiscol), thislen*SIZEOF(thiscol));
-        break;
-      case INTSXP:
-        memcpy(INTEGER(target)+ansloc, INTEGER(thiscol), thislen*SIZEOF(thiscol));
-        break;
-      case REALSXP:
-        memcpy(REAL(target)+ansloc, REAL(thiscol), thislen*SIZEOF(thiscol));
-        break;
-      case CPLXSXP :
-        memcpy(COMPLEX(target)+ansloc, COMPLEX(thiscol), thislen*sizeof(Rcomplex));
-        break;
-      case VECSXP :
-        for (int r=0; r<thislen; r++)
-          SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thiscol,r));
-        break;
-      case STRSXP :
-        isRowOrdered[resi] = FALSE;
-        if (isFactor(thiscol)) {
-          levels = getAttrib(thiscol, R_LevelsSymbol);
-          if (isNull(levels)) error("Column %d of item %d has type 'factor' but has no levels; i.e. malformed.", j+1, i+1);
-          for (r=0; r<thislen; r++)
-            if (INTEGER(thiscol)[r]==NA_INTEGER)
-              SET_STRING_ELT(target, ansloc+r, NA_STRING);
-            else
-              SET_STRING_ELT(target, ansloc+r, STRING_ELT(levels,INTEGER(thiscol)[r]-1));
-
-          // add levels to factorLevels
-          // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
-          SET_VECTOR_ELT(factorLevels, jj, levels); jj++;
-          if (isOrdered(thiscol)) isRowOrdered[resi] = TRUE;
-        } else {
-          if (TYPEOF(thiscol) != STRSXP) error("Internal logical error in rbindlist.c (not STRSXP), please report to data.table issue tracker.");
-          for (int r=0; r<thislen; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thiscol,r));
-
-          // if this column is going to be a factor, add column to factorLevels
-          // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
-          if (data.is_factor[j]) {
-            SET_VECTOR_ELT(factorLevels, jj, thiscol);
-            jj++;
-          }
-          // removed 'coerced=FALSE; UNPROTECT(1)' as it resulted in a stack imbalance.
-          // anyways it's taken care of after the switch. So no need here.
-        }
-        break;
-      default :
-        error("Unsupported column type '%s'", type2char(TYPEOF(target)));
-      }
-      ansloc += thislen;
-      if (coerced) {
-        UNPROTECT(1);
-        coerced = FALSE;
-      }
-    }
-    if (data.is_factor[j]) {
-      SEXP finalFactorLevels = PROTECT(combineFactorLevels(factorLevels, &(data.is_factor[j]), isRowOrdered));
-      SEXP factorLangSxp = PROTECT(lang3(install(data.is_factor[j] == 1 ? "factor" : "ordered"),
-                         target, finalFactorLevels));
-      SET_VECTOR_ELT(ans, j+isidcol, eval(factorLangSxp, R_GlobalEnv));
-      UNPROTECT(2);  // finalFactorLevels, factorLangSxp
-    }
+    //  }
+    //  if (coerced) {
+    //    UNPROTECT(1);
+    //    coerced = FALSE;
+    //  }
+    // }
+    //if (data.is_factor[j]) {
+    //  SEXP finalFactorLevels = PROTECT(combineFactorLevels(factorLevels, &(data.is_factor[j]), isRowOrdered));
+    //  SEXP factorLangSxp = PROTECT(lang3(install(data.is_factor[j] == 1 ? "factor" : "ordered"),
+    //                     target, finalFactorLevels));
+    //  SET_VECTOR_ELT(ans, j+isidcol, eval(factorLangSxp, R_GlobalEnv));
+    //  UNPROTECT(2);  // finalFactorLevels, factorLangSxp
+    //}
   }
 
   // fix for #1432, + more efficient to move the logic to C
+  /*
   if (isidcol) {
     R_len_t runidx = 1, cntridx = 0;
     SEXP lnames = getAttrib(l, R_NamesSymbol);
@@ -519,7 +465,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       }
     }
   }
-
+  */
   UNPROTECT(protecti);
   return(ans);
 }
@@ -631,7 +577,6 @@ static SEXP listlist(SEXP x) {
 }
 */
 
-
 /*
 ## While chmatch2_old works great, I find it inefficient in terms of both memory (stores 2 indices over the
 ## length of x+y) and speed (2 ordering and looping over unnecesssary amount of times). So, here's
@@ -645,6 +590,7 @@ static SEXP listlist(SEXP x) {
 ## Now, it's just a matter of filling corresponding matches from x.agg's indices with y.agg's indices.
 ## BENCHMARKS ON THE BOTTOM OF THIS FILE
 */
+/*
 SEXP chmatch2(SEXP x, SEXP y, SEXP nomatch) {
 
   R_len_t i, j, k, nx, ix, iy;
@@ -688,7 +634,7 @@ SEXP chmatch2(SEXP x, SEXP y, SEXP nomatch) {
   return(ans);
 
 }
-
+*/
 /*
 ## Benchmark:
 set.seed(45L)
