@@ -175,35 +175,66 @@ SEXP rleid(SEXP l, SEXP cols) {
   }
   SEXP ans = PROTECT(allocVector(INTSXP, nrow));
   int *ians = INTEGER(ans);
-  R_len_t grp = 1;
+  int grp = 1;
   ians[0] = grp; // first row is always the first of first group
-  for (R_xlen_t i=1; i<nrow; i++) {
-    Rboolean same = TRUE;
-    int j = lencols;
-    // the last column varies the most frequently so check that first and work backwards
-    while (--j>=0 && same) {
-      SEXP jcol = VECTOR_ELT(l, icols[j]-1);
-      switch (TYPEOF(jcol)) {
-      case INTSXP : case LGLSXP :
-        same = INTEGER(jcol)[i]==INTEGER(jcol)[i-1];
-        break;
-      case STRSXP :
-        same = STRING_ELT(jcol,i)==STRING_ELT(jcol,i-1);
-        // TODO: do we want to check encodings here now that forder seems to?
-        // Old comment : forder checks no non-ascii unknown, and either UTF-8 or Latin1 but not both.
-        //               So == pointers is ok given that check
-        break;
-      case REALSXP : {
-        long long *ll = (long long *)REAL(jcol);
-        same = ll[i]==ll[i-1]; }
-        // 8 bytes of bits are identical. For real (no rounding currently) and integer64
-        // long long == 8 bytes checked in init.c
-        break;
-      default :
-        error("Type '%s' not supported", type2char(TYPEOF(jcol)));
+  if (ncol > 1) {
+    for (R_xlen_t i=1; i<nrow; i++) {
+      bool same = true;
+      int j = lencols;
+      // the last column varies the most frequently so check that first and work backwards
+      while (--j>=0 && same) {
+        SEXP jcol = VECTOR_ELT(l, icols[j]-1);
+        switch (TYPEOF(jcol)) {
+        case INTSXP : case LGLSXP :
+          same = INTEGER(jcol)[i]==INTEGER(jcol)[i-1];
+          break;
+        case STRSXP :
+          same = STRING_ELT(jcol,i)==STRING_ELT(jcol,i-1);
+          // TODO: do we want to check encodings here now that forder seems to?
+          // Old comment : forder checks no non-ascii unknown, and either UTF-8 or Latin1 but not both.
+          //               So == pointers is ok given that check
+          break;
+        case REALSXP : {
+          long long *ll = (long long *)REAL(jcol);
+          same = ll[i]==ll[i-1]; }
+          // 8 bytes of bits are identical. For real (no rounding currently) and integer64
+          // long long == 8 bytes checked in init.c
+          break;
+        default :
+          error("Type '%s' not supported", type2char(TYPEOF(jcol)));
+        }
       }
+      ians[i] = (grp+=!same);
     }
-    ians[i] = (grp+=!same);
+  } else { // we are checking only one column so we can easily takes inline R functions out of the loops
+    SEXP jcol = VECTOR_ELT(l, icols[0]-1);
+    switch (TYPEOF(jcol)) {
+    case INTSXP : case LGLSXP : {
+        int *ijcol = INTEGER(jcol);
+        for (R_xlen_t i=1; i<nrow; i++) {
+          bool same = ijcol[i]==ijcol[i-1];
+          ians[i] = (grp+=!same);
+        }
+      }
+      break;
+    case STRSXP : {
+        for (R_xlen_t i=1; i<nrow; i++) {
+          bool same = STRING_ELT(jcol,i)==STRING_ELT(jcol,i-1);
+          ians[i] = (grp+=!same);
+        }
+      }
+      break;
+    case REALSXP : {
+        long long *lljcol = (long long *)REAL(jcol);
+        for (R_xlen_t i=1; i<nrow; i++) {
+          bool same = lljcol[i]==lljcol[i-1];
+          ians[i] = (grp+=!same);
+        }
+      }
+      break;
+    default :
+      error("Type '%s' not supported", type2char(TYPEOF(jcol)));
+    }
   }
   UNPROTECT(1);
   return(ans);
