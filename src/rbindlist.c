@@ -231,11 +231,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
 
     // allocate a matrix:  nrows==length(list)  each entry contains which column to fetch for that final column
     colMap = (int *)R_alloc(LENGTH(l)*ncol, sizeof(int));
-    for (int i=0; i<nrow*ncol; ++i) colMap[i]=-1;
+    for (int i=0; i<LENGTH(l)*ncol; ++i) colMap[i]=-1;   // 0-based so use -1
 
-    int *uniqMap = (int *)R_alloc(nuniq, sizeof(int)); // maps the ith unique string to the first time it occurs in the final result
+    int *uniqMap = (int *)R_alloc(ncol, sizeof(int)); // maps the ith unique string to the first time it occurs in the final result
     int *dupLink = (int *)R_alloc(ncol, sizeof(int));  // if a colname has occurred before (a dup) links from the 1st to the 2nd time in the final result, 2nd to 3rd, etc
-    for (int i=0; i<ncol; ++i) dupLink[i]=-1;
+    for (int i=0; i<ncol; ++i) {uniqMap[i] = dupLink[i] = -1;}
     int nextCol = 0;
 
     for (int i=0; i<LENGTH(l); ++i) {
@@ -248,16 +248,16 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
         SEXP s = cnp[j];
         int w = -TRUELENGTH(s)-1;
         int wi = counts[w]++; // how many dups have we seen before of this name within this item
-        for (int k=1; k<wi; k++) { w=dupLink[w]; k++; }  // hop through the dups
-        if (uniqMap[w]==0) {
-          // first time ever seen this name,
-          uniqMap[w] = nextCol++;
-        } if (dupLink[w]==0) {
-          dupLink[w] = nextCol;
-          w = nextCol;
+        if (uniqMap[w]==-1) {
+          // first time seen this name across all items
           uniqMap[w] = nextCol++;
         } else {
-          w = dupLink[w];
+          while (wi && dupLink[w]) { w=dupLink[w]; --wi; }  // hop through the dups
+          if (wi && dupLink[w]==-1) {
+            // first time we've seen this number of dups of this name
+            w = dupLink[w] = nextCol;
+            uniqMap[w] = nextCol++;
+          }
         }
         colMap[i*ncol + uniqMap[w]] = j;
       }
