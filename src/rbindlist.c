@@ -190,7 +190,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     nrow += length(VECTOR_ELT(li,0));
   }
 
-  int *listMap=NULL; // maps each column in final result to the column of each list item
+  int *colMap=NULL; // maps each column in final result to the column of each list item
   if (usenames) {
     savetl_init();
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
@@ -230,7 +230,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     // ncol is now the final number of columns accounting for dups, if any
 
     // allocate a matrix:  nrows==length(list)  each entry contains which column to fetch for that final column
-    int *colMap = (int *)R_alloc(nrow*ncol, sizeof(int));
+    colMap = (int *)R_alloc(LENGTH(l)*ncol, sizeof(int));
     for (int i=0; i<nrow*ncol; ++i) colMap[i]=-1;
 
     int *uniqMap = (int *)R_alloc(nuniq, sizeof(int)); // maps the ith unique string to the first time it occurs in the final result
@@ -274,7 +274,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       }
     }
     savetl_end();  // restore R's usage
-    if (nextCol != ncol) error("Internal error. nextCol!=ncol when making colMap");  // # nocov
+    for (int i=0; i<LENGTH(l); ++i) {
+      for (int j=0; j<ncol; ++j) Rprintf("%2d ", colMap[i*ncol + j]);
+      Rprintf("\n");
+    }
+    //if (nextCol != ncol) error("Internal error. nextCol[%d]!=ncol[%d] when making colMap", nextCol, ncol);  // # nocov
   }
 
 
@@ -297,10 +301,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
   SEXP tt;
   setAttrib(ans, R_NamesSymbol, tt=allocVector(STRSXP, ncol));
 
-  // we need listmap to tell us which item to fetch for each of the final result columns, so we can go column by column
-
+  // colMap tells us which item to fetch for each of the final result columns, so we can stack column-by-column
   for(int j=0; j<ncol; ++j) {
-
     int maxType=0;
     //SEXP thisClass = R_NilValue;
     bool factor=false;
@@ -308,7 +310,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
       if (isNull(li) || !LENGTH(li) || !length(VECTOR_ELT(li, 0))) continue;
-      int w = listMap[i*ncol + j];
+      int w = usenames ? colMap[i*ncol + j] : j;
       if (w==-1) continue;  // column j of final result has no input from this item (fill must be true)
       SEXP thisCol = VECTOR_ELT(li, w);
       int thisType = TYPEOF(thisCol);
@@ -332,7 +334,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       if (isNull(li) || !LENGTH(li)) continue;
       const int thisnrow = length(VECTOR_ELT(li, 0));
       if (thisnrow==0) continue;
-      int w = listMap[i*ncol + j];
+      int w = usenames ? colMap[i*ncol + j] : j;
       if (w==-1) {
         writeNA(target, ansloc, thisnrow);
       } else {
