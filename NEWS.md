@@ -59,6 +59,8 @@
 
 10. The `key(DT)<-` form of `setkey()` has been warning since at least 2012 to use `setkey()`. The warning is now stronger: `key(x)<-value is deprecated and not supported. Please change to use setkey().`. This warning will be upgraded to error in one year.
 
+11. `rleid` functions now supports long vectors.
+
 
 ### Changes in v1.12.0  (13 Jan 2019)
 
