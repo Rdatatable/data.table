@@ -322,11 +322,12 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
   // colMap tells us which item to fetch for each of the final result columns, so we can stack column-by-column
   for(int j=0; j<ncol; ++j) {
     int maxType=0;
-    //SEXP thisClass = R_NilValue;
     bool factor=false;
     bool int64=false;
     bool foundName=false;
     bool anyNotStringOrFactor=false;
+    SEXP firstCol=R_NilValue;
+    int firsti=-1, firstw=-1;
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
       if (!length(li)) continue;
@@ -341,12 +342,12 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       if (thisType>maxType) maxType=thisType;
       if (isFactor(thisCol)) factor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
       else if (!isString(thisCol) && length(thisCol)) anyNotStringOrFactor=true;
-      if (INHERITS(getAttrib(thisCol, R_ClassSymbol), char_integer64)) int64=true;
-      // TODO #705, check attributes and error if non-factor class and not identical
-      // if (!data->is_factor[i] &&
-      //    !R_compute_identical(thisClass, getAttrib(thiscol, R_ClassSymbol), 0) && !fill) {
-      //   error("Class attributes at column %d of input list at position %d does not match with column %d of input list at position %d. Coercion of objects of class 'factor' alone is handled internally by rbind/rbindlist at the moment.", i+1, j+1, i+1, data->first+1);
-      // }
+      SEXP thisClass = getAttrib(thisCol, R_ClassSymbol);
+      if (INHERITS(thisClass, char_integer64)) int64=true;
+      if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
+      else if (!factor && !R_compute_identical(thisClass, getAttrib(firstCol,R_ClassSymbol), 0)) {
+        error("Class attribute on column %d of input list %d does not match with the first item for this column (column %d of input list %d).", w+1, i+1, firstw+1, firsti+1);
+      }
     }
     if (factor && anyNotStringOrFactor) error("Column %d contains a factor but not all items for the column are character or factor", j+1);
     if (maxType==0) error("Internal error: maxType==0 for result column %d", j+1);
@@ -355,7 +356,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     SEXP target;
     SET_VECTOR_ELT(ans, j+isidcol, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
     if (int64) setAttrib(target, R_ClassSymbol, char_integer64);
-    // TODO: if (!isFactor(thiscol)) copyMostAttrib(thiscol, target); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
+    if (!factor) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     int ansloc=0;
     if (factor) {
       savetl_init();
