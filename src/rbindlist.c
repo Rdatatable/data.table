@@ -8,7 +8,7 @@ SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOr
 {
   return R_NilValue;
 }
-// need to provide this for use by fmelt.c too
+// TODO TODO need to provide this for use by fmelt.c too
 
 
 /* TODO .. delete
@@ -248,7 +248,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     int *dupLink = (int *)R_alloc(ncol, sizeof(int));  // if a colname has occurred before (a dup) links from the 1st to the 2nd time in the final result, 2nd to 3rd, etc
 
     for (int i=0; i<ncol; ++i) {uniqMap[i] = dupLink[i] = -1;}
-    int nextCol = 0;
+    int nextCol=0, lastDup=ncol-1;
 
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
@@ -268,10 +268,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
             // first time seen this name across all items
             uniqMap[w] = nextCol++;
           } else {
-            while (wi && dupLink[w]) { w=dupLink[w]; --wi; }  // hop through the dups
+            while (wi && dupLink[w]>0) { w=dupLink[w]; --wi; }  // hop through the dups
             if (wi && dupLink[w]==-1) {
               // first time we've seen this number of dups of this name
-              w = dupLink[w] = nextCol;
+              w = dupLink[w] = lastDup--;
               uniqMap[w] = nextCol++;
             }
           }
@@ -359,51 +359,72 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     int ansloc=0;
     if (factor) {
       savetl_init();
-      int nlevel=0;
+      if (TRUELENGTH(NA_STRING)>0) savetl(NA_STRING);
+      SET_TRUELENGTH(NA_STRING, NA_INTEGER);
+      int nLevel=0, allocLevel=0;
+      SEXP *levelsRaw = NULL;  // growing list of SEXP pointers. Raw since managed with raw realloc.
       for (int i=0; i<LENGTH(l); ++i) {
         SEXP li = VECTOR_ELT(l, i);
         if (!length(li)) continue;
         const int thisnrow = length(VECTOR_ELT(li, 0));
         if (thisnrow==0) continue;
         int w = usenames ? colMap[i*ncol + j] : j;
-        if (w==-1) continue;
-        SEXP thisCol = VECTOR_ELT(li, w);
-        SEXP tt = isFactor(thisCol) ? getAttrib(li, R_LevelsSymbol) : thisCol;
-        const n = length(tt);
-        const SEXP *ttd = STRING_PTR(tt);
-        for (int k=0; k<n; ++k) {
-          SEXP s = ttd[k];
-          if (TRUELENGTH(s)<0) continue;  // seen this level before
-          if (TRUELENGTH(s)>0) savetl(s);
-          SET_TRUELENGTH(s,-(++nlevel));
-        }
-        if (TRULENGTH(NA_STRING)>0) savetl(NA_STRING);  // TODO: remember to reset to 0
-        SET_TRUELENGTH(NA_STRING, NA_INTEGER);
-        if (isFactor(thisCol)) {
-
-          // loop through levels.  If all i == truelength(i) then just do a memcpy
-          // otherwise create an integer map and use that
-
-          int *id = INTEGER(thisCol);
-          for (int r=0; r<thisnrow; r++)
-            int *this = ttd[id[r]-1];
-            target[asloc+r] = this==NA_INTEGER ? NA_INTEGER : tt
-
+        if (w==-1) {
+          writeNA(target, ansloc, thisnrow);
         } else {
-          SEXP sd = STRING_PTR(thisCol);
-          for (int r=0; r=thisnrow; r++) target[ansloc+r] = -TRUELENGTH(sd[r]);
+          SEXP thisCol = VECTOR_ELT(li, w);
+          SEXP thisColStr = isFactor(thisCol) ? getAttrib(thisCol, R_LevelsSymbol) : thisCol;  // if not factor then character, checked above
+          const int n = length(thisColStr);
+          const SEXP *thisColStrD = STRING_PTR(thisColStr);  // D for data
+          for (int k=0; k<n; ++k) {
+            SEXP s = thisColStrD[k];
+            if (TRUELENGTH(s)<0) continue;  // seen this level before (handles finding unique within character columns too)
+            if (TRUELENGTH(s)>0) savetl(s);
+            if (allocLevel==nLevel) {
+              // manual realloc needed because we need access to vector to clear up
+              allocLevel = allocLevel==0 ? 1024 : MAX(allocLevel+(n-k), (int)((double)allocLevel*1.2));
+              SEXP *newRaw = malloc(allocLevel * sizeof(SEXP));
+              if (newRaw==NULL) {
+                for (int k=0; k<nLevel; k++) SET_TRUELENGTH(levelsRaw[k], 0);  // if realloc failed it frees within realloc so we couldn't access it for this line
+                SET_TRUELENGTH(NA_STRING, 0);
+                savetl_end();
+                error("Unable to allocate working memory %lld bytes to hold combined factor levels for result column %d when reading item %d of item %d",
+                      allocLevel*sizeof(SEXP), j+1, w+1, i+1);
+              } else {
+                memcpy(newRaw, levelsRaw, nLevel*sizeof(SEXP));
+                free(levelsRaw);
+                levelsRaw = newRaw;
+              }
+            }
+            SET_TRUELENGTH(s,-(++nLevel));
+            levelsRaw[nLevel-1] = s;
+          }
+          int *targetd = INTEGER(target);
+          if (isFactor(thisCol)) {
+            // loop through levels. If all i == truelength(i) then just do a memcpy. Otherwise create an integer map and hop via that.
+            bool nohop = true;
+            for (int k=0; k<n; ++k) if (-TRUELENGTH(thisColStrD[k]) != k+1) { nohop=false; break; }
+            if (nohop) memcpy(targetd+ansloc, INTEGER(thisCol), thisnrow*SIZEOF(thisCol));
+            else {
+              int *id = INTEGER(thisCol);
+              for (int r=0; r<thisnrow; r++)
+                targetd[ansloc+r] = id[r]==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(thisColStrD[id[r]-1]);
+            }
+          } else {
+            SEXP *sd = STRING_PTR(thisCol);
+            for (int r=0; r<thisnrow; r++) targetd[ansloc+r] = -TRUELENGTH(sd[r]);   // uses TRUELENGTH(NA_STRING)==NA_INTEGER here
+          }
         }
+        ansloc += thisnrow;
       }
-      malloc(nlevel);
-
-
-
-
-      SEXP levels;
-      setAttrib(target, R_LevelsSymbol, levels=allocVector(STRSXP, nlevel));  // this could fail. TODO TODO catch and clean up if fail.
-
-
-
+      for (int k=0; k<nLevel; ++k) SET_TRUELENGTH(levelsRaw[k], 0);
+      SET_TRUELENGTH(NA_STRING, 0);
+      savetl_end();
+      SEXP levelsSxp;
+      setAttrib(target, R_LevelsSymbol, levelsSxp=allocVector(STRSXP, nLevel));
+      for (int k=0; k<nLevel; ++k) SET_STRING_ELT(levelsSxp, k, levelsRaw[k]);
+      free(levelsRaw);
+      setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
     } else {
       for (int i=0; i<LENGTH(l); ++i) {
         SEXP li = VECTOR_ELT(l, i);
@@ -439,36 +460,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
               SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thisCol,r));
             break;
           case STRSXP :
-            //isRowOrdered[resi] = FALSE;
-            if (isFactor(thisCol)) error("factor not yet implemented");
-            /*  levels = getAttrib(thiscol, R_LevelsSymbol);
-              if (isNull(levels)) error("Column %d of item %d has type 'factor' but has no levels; i.e. malformed.", j+1, i+1);
-              for (r=0; r<thislen; r++)
-                if (INTEGER(thiscol)[r]==NA_INTEGER)
-                  SET_STRING_ELT(target, ansloc+r, NA_STRING);
-                else
-                  SET_STRING_ELT(target, ansloc+r, STRING_ELT(levels,INTEGER(thiscol)[r]-1));
-
-              // add levels to factorLevels
-              // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
-              SET_VECTOR_ELT(factorLevels, jj, levels); jj++;
-              if (isOrdered(thisCol)) isRowOrdered[resi] = TRUE;
-            } else */
-            {
-              if (TYPEOF(thisCol) != STRSXP) error("Internal lerror in rbindlist.c (not STRSXP), please report to data.table issue tracker.");
-              for (int r=0; r<thisnrow; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thisCol,r));
-
-              // if this column is going to be a factor, add column to factorLevels
-              // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
-              /*
-              if (data.is_factor[j]) {
-                SET_VECTOR_ELT(factorLevels, jj, thiscol);
-                jj++;
-              }
-              */
-              // removed 'coerced=FALSE; UNPROTECT(1)' as it resulted in a stack imbalance.
-              // anyways it's taken care of after the switch. So no need here.
-            }
+            for (int r=0; r<thisnrow; r++)
+              SET_STRING_ELT(target, ansloc+r, STRING_ELT(thisCol,r));
             break;
           default :
             error("Unsupported column type '%s'", type2char(TYPEOF(target)));
@@ -479,55 +472,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       }
     }
 
-
-
-
-   /*
-    ansloc = 0;
-    jj = 0; // to increment factorLevels
-    resi = -1;
-    for (i=data.first; i<LENGTH(l); i++) {
-      li = VECTOR_ELT(l,i);
-      if (!length(li)) continue;  // majority of time though, each item of l is populated
-      thislen = data.fn_rows[i];
-      idx = (usenames) ? INTEGER(f_ind)[i] : j;
-      if (idx < 0) {
-        ansloc += thislen;
-        resi++;
-        if (data.is_factor[j]) {
-          isRowOrdered[resi] = FALSE;
-          SET_VECTOR_ELT(factorLevels, jj, allocNAVector(data.max_type[j], 1)); // the only level here is NA.
-          jj++;
-        }
-        continue;
-      }
-      thiscol = VECTOR_ELT(li, idx);
-
-    */
-    // if (thislen != length(thiscol)) error("Column %d of item %d is length %d, inconsistent with first column of that item which is length %d. rbind/rbindlist doesn't recycle as it already expects each item to be a uniform list, data.frame or data.table", j+1, i+1, length(thiscol), thislen);
-      // couldn't figure out a way to this outside this loop when fill = TRUE.
-    //  if (to_copy && !isFactor(thiscol)) {
-    //    copyMostAttrib(thiscol, target);
-    //    to_copy = FALSE;
-    //   }
-    //  if (TYPEOF(thiscol) != TYPEOF(target) && !isFactor(thiscol)) {
-    //    thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));
-    //    coerced = TRUE;
-        // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
-        // warning("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
-    //  }
-    //  if (coerced) {
-    //    UNPROTECT(1);
-    //    coerced = FALSE;
-    //  }
-    // }
-    //if (data.is_factor[j]) {
-    //  SEXP finalFactorLevels = PROTECT(combineFactorLevels(factorLevels, &(data.is_factor[j]), isRowOrdered));
-    //  SEXP factorLangSxp = PROTECT(lang3(install(data.is_factor[j] == 1 ? "factor" : "ordered"),
-    //                     target, finalFactorLevels));
-    //  SET_VECTOR_ELT(ans, j+isidcol, eval(factorLangSxp, R_GlobalEnv));
-    //  UNPROTECT(2);  // finalFactorLevels, factorLangSxp
-    //}
+    // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
+    // warning("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
   }
 
   // fix for #1432, + more efficient to move the logic to C

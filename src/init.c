@@ -251,6 +251,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_indices =   PRINTNAME(install("indices"));
   char_allLen1 =   PRINTNAME(install("allLen1"));
   char_allGrp1 =   PRINTNAME(install("allGrp1"));
+  char_factor =    PRINTNAME(install("factor"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes

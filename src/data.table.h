@@ -67,6 +67,7 @@ SEXP char_lens;
 SEXP char_indices;
 SEXP char_allLen1;
 SEXP char_allGrp1;
+SEXP char_factor;
 SEXP sym_sorted;
 SEXP sym_index;
 SEXP sym_BY;
