@@ -198,8 +198,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
 
   int *colMap=NULL; // maps each column in final result to the column of each list item
   if (usenames) {
-    savetl_init();
+    // here we proceed as if fill=true for brevity (because accounting for dups is tricky) and then catch any missings after this branch
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
+    savetl_init();
     int nuniq=0;
     for (int i=0; i<LENGTH(l); i++) {
       SEXP li = VECTOR_ELT(l, i);
@@ -240,13 +241,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     // ncol is now the final number of columns accounting for unique and dups across all colnames
 
     // allocate a matrix:  nrows==length(list)  each entry contains which column to fetch for that final column
-    // TODO TODO these allocs need taking up front or catching when fail to clean up tl
+    // ****** TODO TODO ****** these allocs need taking up front or catching when fail to clean up tl
     colMap = (int *)R_alloc(LENGTH(l)*ncol, sizeof(int));
     for (int i=0; i<LENGTH(l)*ncol; ++i) colMap[i]=-1;   // 0-based so use -1
-
     int *uniqMap = (int *)R_alloc(ncol, sizeof(int)); // maps the ith unique string to the first time it occurs in the final result
     int *dupLink = (int *)R_alloc(ncol, sizeof(int));  // if a colname has occurred before (a dup) links from the 1st to the 2nd time in the final result, 2nd to 3rd, etc
-
     for (int i=0; i<ncol; ++i) {uniqMap[i] = dupLink[i] = -1;}
     int nextCol=0, lastDup=ncol-1;
 
@@ -303,6 +302,24 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
   // get max type for each column, and the number of rows
   if (nrow==0 && ncol==0) return(R_NilValue);
   if (nrow>INT32_MAX) error("Total rows in the list is %lld which is larger than the maximum number of rows, currently %d", nrow, INT32_MAX);
+  if (!fill && usenames) {
+    // ensure no missings.  We already checked earlier that ncol is consistent for all list items
+    for (int i=0; i<LENGTH(l); ++i) {
+      SEXP li = VECTOR_ELT(l, i);
+      if (!length(li) || !length(getAttrib(li, R_NamesSymbol))) continue;
+      for (int j=0; j<ncol; ++j) {
+        if (colMap[i*ncol + j]==-1) {
+          int missi = i;
+          while (colMap[i*ncol + j]==-1 && i<LENGTH(l)) i++;
+          if (i==LENGTH(l)) error("Internal error: could not find the first column name not present in earlier input list");  // nocov
+          SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
+          int w = colMap[i*ncol + j];
+          const char *str = isString(s) ? CHAR(STRING_ELT(s,w)) : "";
+          error("Column %d ['%s'] of input list %d is missing in input list %d. Use fill=TRUE to fill with NA.", w+1, str, i+1, missi+1);
+        }
+      }
+    }
+  }
 
   /*todelete ...
   fnames = VECTOR_ELT(data.ans_ptr, 0);

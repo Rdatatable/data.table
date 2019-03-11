@@ -1313,9 +1313,9 @@ test(443, rbind(DT,data.table(a=4L,b=7L)), data.table(a=1:4,b=4:7))
 test(444, rbind(DT,list(b=7L,a=4L)), data.table(a=1:4,b=4:7)) # rbind should by default check row names. Don't warn here. Add clear documentation instead.
 test(445, rbind(DT,data.frame(b=7L,a=4L)), data.table(a=1:4,b=4:7))
 test(446, rbind(DT,data.table(b=7L,a=4L)), data.table(a=1:4,b=4:7))
-test(450, rbind(DT,list(c=4L,a=7L)), error="This could be because the items in the list may not ")
-test(451, rbind(DT,data.frame(c=4L,a=7L)), error="This could be because the items in the list may not ")
-test(452, rbind(DT,data.table(c=4L,a=7L)), error="This could be because the items in the list may not ")
+test(450, rbind(DT,list(c=4L,a=7L)), error=tt<-"Column 1 ['c'] of input list 2 is missing in input list 1. Use fill=TRUE to fill with NA.")
+test(451, rbind(DT,data.frame(c=4L,a=7L)), error=tt)
+test(452, rbind(DT,data.table(c=4L,a=7L)), error=tt)
 test(453, rbind(DT,list(4L,7L)), data.table(a=1:4,b=4:7))
 
 # Test new use.names argument in 1.8.0
