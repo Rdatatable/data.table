@@ -291,10 +291,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       }
     }
     savetl_end();  // restore R's usage
+
+    /* TODELETE ...
     for (int i=0; i<LENGTH(l); ++i) {
       for (int j=0; j<ncol; ++j) Rprintf("%2d ", colMap[i*ncol + j]);
       Rprintf("\n");
     }
+    */
   }
 
   // get max type for each column, and the number of rows
@@ -328,9 +331,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       if (!length(li)) continue;
       int w = usenames ? colMap[i*ncol + j] : j;
       if (w==-1) continue;  // column j of final result has no input from this item (fill must be true)
-      if (!foundName) { SEXP cn=getAttrib(li, R_NamesSymbol); SET_STRING_ELT(ansNames, j, STRING_ELT(cn, w)); foundName=true; }
+      if (!foundName) {
+        SEXP cn=getAttrib(li, R_NamesSymbol);
+        if (length(cn)) { SET_STRING_ELT(ansNames, j, STRING_ELT(cn, w)); foundName=true; }
+      }
       SEXP thisCol = VECTOR_ELT(li, w);
-      if (!length(thisCol)) continue;  // empty table should not bump type
       int thisType = TYPEOF(thisCol);
       if (thisType>maxType) maxType=thisType;
       if (isFactor(thisCol)) factor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
@@ -341,6 +346,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       //   error("Class attributes at column %d of input list at position %d does not match with column %d of input list at position %d. Coercion of objects of class 'factor' alone is handled internally by rbind/rbindlist at the moment.", i+1, j+1, i+1, data->first+1);
       // }
     }
+    if (maxType==0) error("Internal error: maxType==0 for result column %d", j+1);
     if (!foundName) { char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, j, mkChar(buff)); }
     if (factor) maxType=INTSXP;  // any items are factors then a factor is created (could be an option)
     SEXP target;
