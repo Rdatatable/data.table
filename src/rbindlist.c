@@ -326,6 +326,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     bool factor=false;
     bool int64=false;
     bool foundName=false;
+    bool anyNotStringOrFactor=false;
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
       if (!length(li)) continue;
@@ -339,6 +340,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       int thisType = TYPEOF(thisCol);
       if (thisType>maxType) maxType=thisType;
       if (isFactor(thisCol)) factor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
+      else if (!isString(thisCol) && length(thisCol)) anyNotStringOrFactor=true;
       if (INHERITS(getAttrib(thisCol, R_ClassSymbol), char_integer64)) int64=true;
       // TODO #705, check attributes and error if non-factor class and not identical
       // if (!data->is_factor[i] &&
@@ -346,6 +348,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       //   error("Class attributes at column %d of input list at position %d does not match with column %d of input list at position %d. Coercion of objects of class 'factor' alone is handled internally by rbind/rbindlist at the moment.", i+1, j+1, i+1, data->first+1);
       // }
     }
+    if (factor && anyNotStringOrFactor) error("Column %d contains a factor but not all items for the column are character or factor", j+1);
     if (maxType==0) error("Internal error: maxType==0 for result column %d", j+1);
     if (!foundName) { char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, j, mkChar(buff)); }
     if (factor) maxType=INTSXP;  // any items are factors then a factor is created (could be an option)
@@ -354,77 +357,126 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     if (int64) setAttrib(target, R_ClassSymbol, char_integer64);
     // TODO: if (!isFactor(thiscol)) copyMostAttrib(thiscol, target); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     int ansloc=0;
-    for (int i=0; i<LENGTH(l); ++i) {
-      SEXP li = VECTOR_ELT(l, i);
-      if (isNull(li) || !LENGTH(li)) continue;
-      const int thisnrow = length(VECTOR_ELT(li, 0));
-      if (thisnrow==0) continue;
-      int w = usenames ? colMap[i*ncol + j] : j;
-      if (w==-1) {
-        writeNA(target, ansloc, thisnrow);
-      } else {
+    if (factor) {
+      savetl_init();
+      int nlevel=0;
+      for (int i=0; i<LENGTH(l); ++i) {
+        SEXP li = VECTOR_ELT(l, i);
+        if (!length(li)) continue;
+        const int thisnrow = length(VECTOR_ELT(li, 0));
+        if (thisnrow==0) continue;
+        int w = usenames ? colMap[i*ncol + j] : j;
+        if (w==-1) continue;
         SEXP thisCol = VECTOR_ELT(li, w);
-        bool coerced = false;
-        if (TYPEOF(thisCol)!=TYPEOF(target)) {
-          thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target)));
-          coerced = true;
+        SEXP tt = isFactor(thisCol) ? getAttrib(li, R_LevelsSymbol) : thisCol;
+        const n = length(tt);
+        const SEXP *ttd = STRING_PTR(tt);
+        for (int k=0; k<n; ++k) {
+          SEXP s = ttd[k];
+          if (TRUELENGTH(s)<0) continue;  // seen this level before
+          if (TRUELENGTH(s)>0) savetl(s);
+          SET_TRUELENGTH(s,-(++nlevel));
         }
-        switch(TYPEOF(target)) {
-        case LGLSXP:
-          memcpy(LOGICAL(target)+ansloc, LOGICAL(thisCol), thisnrow*SIZEOF(thisCol));
-          break;
-        case INTSXP:
-          memcpy(INTEGER(target)+ansloc, INTEGER(thisCol), thisnrow*SIZEOF(thisCol));
-          break;
-        case REALSXP:
-          // for integer 64 too, since types have been checked (TODO)
-          memcpy(REAL(target)+ansloc, REAL(thisCol), thisnrow*SIZEOF(thisCol));
-          break;
-        case CPLXSXP :
-          memcpy(COMPLEX(target)+ansloc, COMPLEX(thisCol), thisnrow*sizeof(Rcomplex));
-          break;
-        case VECSXP :
+        if (TRULENGTH(NA_STRING)>0) savetl(NA_STRING);  // TODO: remember to reset to 0
+        SET_TRUELENGTH(NA_STRING, NA_INTEGER);
+        if (isFactor(thisCol)) {
+
+          // loop through levels.  If all i == truelength(i) then just do a memcpy
+          // otherwise create an integer map and use that
+
+          int *id = INTEGER(thisCol);
           for (int r=0; r<thisnrow; r++)
-            SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thisCol,r));
-          break;
-        case STRSXP :
-          //isRowOrdered[resi] = FALSE;
-          if (isFactor(thisCol)) error("factor not yet implemented");
-          /*  levels = getAttrib(thiscol, R_LevelsSymbol);
-            if (isNull(levels)) error("Column %d of item %d has type 'factor' but has no levels; i.e. malformed.", j+1, i+1);
-            for (r=0; r<thislen; r++)
-              if (INTEGER(thiscol)[r]==NA_INTEGER)
-                SET_STRING_ELT(target, ansloc+r, NA_STRING);
-              else
-                SET_STRING_ELT(target, ansloc+r, STRING_ELT(levels,INTEGER(thiscol)[r]-1));
+            int *this = ttd[id[r]-1];
+            target[asloc+r] = this==NA_INTEGER ? NA_INTEGER : tt
 
-            // add levels to factorLevels
-            // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
-            SET_VECTOR_ELT(factorLevels, jj, levels); jj++;
-            if (isOrdered(thisCol)) isRowOrdered[resi] = TRUE;
-          } else */
-          {
-            if (TYPEOF(thisCol) != STRSXP) error("Internal lerror in rbindlist.c (not STRSXP), please report to data.table issue tracker.");
-            for (int r=0; r<thisnrow; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thisCol,r));
-
-            // if this column is going to be a factor, add column to factorLevels
-            // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
-            /*
-            if (data.is_factor[j]) {
-              SET_VECTOR_ELT(factorLevels, jj, thiscol);
-              jj++;
-            }
-            */
-            // removed 'coerced=FALSE; UNPROTECT(1)' as it resulted in a stack imbalance.
-            // anyways it's taken care of after the switch. So no need here.
-          }
-          break;
-        default :
-          error("Unsupported column type '%s'", type2char(TYPEOF(target)));
+        } else {
+          SEXP sd = STRING_PTR(thisCol);
+          for (int r=0; r=thisnrow; r++) target[ansloc+r] = -TRUELENGTH(sd[r]);
         }
-        if (coerced) UNPROTECT(1);
       }
-      ansloc += thisnrow;
+      malloc(nlevel);
+
+
+
+
+      SEXP levels;
+      setAttrib(target, R_LevelsSymbol, levels=allocVector(STRSXP, nlevel));  // this could fail. TODO TODO catch and clean up if fail.
+
+
+
+    } else {
+      for (int i=0; i<LENGTH(l); ++i) {
+        SEXP li = VECTOR_ELT(l, i);
+        if (!length(li)) continue;
+        const int thisnrow = length(VECTOR_ELT(li, 0));
+        if (thisnrow==0) continue;
+        int w = usenames ? colMap[i*ncol + j] : j;
+        if (w==-1) {
+          writeNA(target, ansloc, thisnrow);
+        } else {
+          SEXP thisCol = VECTOR_ELT(li, w);
+          bool coerced = false;
+          if (TYPEOF(thisCol)!=TYPEOF(target)) {
+            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target)));
+            coerced = true;
+          }
+          switch(TYPEOF(target)) {
+          case LGLSXP:
+            memcpy(LOGICAL(target)+ansloc, LOGICAL(thisCol), thisnrow*SIZEOF(thisCol));
+            break;
+          case INTSXP:
+            memcpy(INTEGER(target)+ansloc, INTEGER(thisCol), thisnrow*SIZEOF(thisCol));
+            break;
+          case REALSXP:
+            // for integer 64 too, since types have been checked (TODO)
+            memcpy(REAL(target)+ansloc, REAL(thisCol), thisnrow*SIZEOF(thisCol));
+            break;
+          case CPLXSXP :
+            memcpy(COMPLEX(target)+ansloc, COMPLEX(thisCol), thisnrow*sizeof(Rcomplex));
+            break;
+          case VECSXP :
+            for (int r=0; r<thisnrow; r++)
+              SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thisCol,r));
+            break;
+          case STRSXP :
+            //isRowOrdered[resi] = FALSE;
+            if (isFactor(thisCol)) error("factor not yet implemented");
+            /*  levels = getAttrib(thiscol, R_LevelsSymbol);
+              if (isNull(levels)) error("Column %d of item %d has type 'factor' but has no levels; i.e. malformed.", j+1, i+1);
+              for (r=0; r<thislen; r++)
+                if (INTEGER(thiscol)[r]==NA_INTEGER)
+                  SET_STRING_ELT(target, ansloc+r, NA_STRING);
+                else
+                  SET_STRING_ELT(target, ansloc+r, STRING_ELT(levels,INTEGER(thiscol)[r]-1));
+
+              // add levels to factorLevels
+              // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
+              SET_VECTOR_ELT(factorLevels, jj, levels); jj++;
+              if (isOrdered(thisCol)) isRowOrdered[resi] = TRUE;
+            } else */
+            {
+              if (TYPEOF(thisCol) != STRSXP) error("Internal lerror in rbindlist.c (not STRSXP), please report to data.table issue tracker.");
+              for (int r=0; r<thisnrow; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thisCol,r));
+
+              // if this column is going to be a factor, add column to factorLevels
+              // changed "i" to "jj" and increment 'jj' after so as to fill only non-empty tables with levels
+              /*
+              if (data.is_factor[j]) {
+                SET_VECTOR_ELT(factorLevels, jj, thiscol);
+                jj++;
+              }
+              */
+              // removed 'coerced=FALSE; UNPROTECT(1)' as it resulted in a stack imbalance.
+              // anyways it's taken care of after the switch. So no need here.
+            }
+            break;
+          default :
+            error("Unsupported column type '%s'", type2char(TYPEOF(target)));
+          }
+          if (coerced) UNPROTECT(1);
+        }
+        ansloc += thisnrow;
+      }
     }
 
 
