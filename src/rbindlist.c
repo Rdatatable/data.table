@@ -184,9 +184,15 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     if (isNull(li)) continue;
     if (TYPEOF(li) != VECSXP) error("Item %d of input is not a data.frame, data.table or list", i+1);
     if (!LENGTH(li)) continue;
-    if ((usenames||fill) && isNull(getAttrib(li, R_NamesSymbol))) error("When use.names=TRUE or fill=TRUE every item of the input must have column names. Item %d does not.", i+1);
-    if (ncol==-1) { ncol=LENGTH(li); first=i; }
-    else if (!fill && ncol!=LENGTH(li)) error("Item %d has %d columns, inconsistent with item %d which has %d columns. To fill missing columns use fill=TRUE.", i+1, LENGTH(li), first+1, ncol);
+    //if (fill && isNull(getAttrib(li, R_NamesSymbol))) error("When fill=TRUE every item of the input must have column names. Item %d does not.", i+1);
+    if (fill) {
+      if (LENGTH(li)>ncol) ncol=LENGTH(li);  // this section initializes ncol with max ncol. ncol may be increased when usenames is accounted for further down
+    } else {
+      if (ncol==-1) { ncol=LENGTH(li); first=i; }
+      else if (ncol!=LENGTH(li)) error("Item %d has %d columns, inconsistent with item %d which has %d columns. To fill missing columns use fill=TRUE.", i+1, LENGTH(li), first+1, ncol);
+    }
+    int nNames = length(getAttrib(li, R_NamesSymbol));
+    if (nNames>0 && nNames!=LENGTH(li)) error("Item %d has %d columns but %d column names. Invalid object.", i+1, LENGTH(li), nNames);
     nrow += length(VECTOR_ELT(li,0));
   }
 
@@ -199,23 +205,26 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       SEXP li = VECTOR_ELT(l, i);
       int thisncol=LENGTH(li);
       if (isNull(li) || !LENGTH(li)) continue;
-      const SEXP *cnp = STRING_PTR(getAttrib(li, R_NamesSymbol));
+      const SEXP cn = getAttrib(li, R_NamesSymbol);
+      if (!length(cn)) continue;
+      const SEXP *cnp = STRING_PTR(cn);
       for (int j=0; j<thisncol; j++) {
         SEXP s = cnp[j];
         if (TRUELENGTH(s)<0) continue;  // seen this name before
         if (TRUELENGTH(s)>0) savetl(s);
-        SET_TRUELENGTH(s,--nuniq);
+        SET_TRUELENGTH(s,-(++nuniq));
       }
     }
-    nuniq = -nuniq;
     int *counts = (int *)R_alloc(nuniq, sizeof(int)); // counts of names for each colnames
     int *maxdup = (int *)R_alloc(nuniq, sizeof(int)); // the most number of dups for any name within one colname vector
     memset(maxdup, 0, nuniq*sizeof(int));
     for (int i=0; i<LENGTH(l); i++) {
       SEXP li = VECTOR_ELT(l, i);
-      int thisncol=LENGTH(li);
-      if (isNull(li) || !LENGTH(li)) continue;
-      const SEXP *cnp = STRING_PTR(getAttrib(li, R_NamesSymbol));
+      int thisncol=length(li);
+      if (thisncol==0) continue;
+      const SEXP cn = getAttrib(li, R_NamesSymbol);
+      if (!length(cn)) continue;
+      const SEXP *cnp = STRING_PTR(cn);
       memset(counts, 0, nuniq*sizeof(int));
       for (int j=0; j<thisncol; j++) {
         SEXP s = cnp[j];
@@ -225,49 +234,57 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
         if (counts[u] > maxdup[u]) maxdup[u] = counts[u];
       }
     }
-    ncol = 0;
-    for (int u=0; u<nuniq; ++u) ncol+=maxdup[u];
-    // ncol is now the final number of columns accounting for dups, if any
+    int ttncol = 0;
+    for (int u=0; u<nuniq; ++u) ttncol+=maxdup[u];
+    if (ttncol>ncol) ncol=ttncol;
+    // ncol is now the final number of columns accounting for unique and dups across all colnames
 
     // allocate a matrix:  nrows==length(list)  each entry contains which column to fetch for that final column
+    // TODO TODO these allocs need taking up front or catching when fail to clean up tl
     colMap = (int *)R_alloc(LENGTH(l)*ncol, sizeof(int));
     for (int i=0; i<LENGTH(l)*ncol; ++i) colMap[i]=-1;   // 0-based so use -1
 
     int *uniqMap = (int *)R_alloc(ncol, sizeof(int)); // maps the ith unique string to the first time it occurs in the final result
     int *dupLink = (int *)R_alloc(ncol, sizeof(int));  // if a colname has occurred before (a dup) links from the 1st to the 2nd time in the final result, 2nd to 3rd, etc
+
     for (int i=0; i<ncol; ++i) {uniqMap[i] = dupLink[i] = -1;}
     int nextCol = 0;
 
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
-      int thisncol=LENGTH(li);
-      if (isNull(li) || !LENGTH(li)) continue;
-      const SEXP *cnp = STRING_PTR(getAttrib(li, R_NamesSymbol));
-      memset(counts, 0, nuniq*sizeof(int));
-      for (int j=0; j<thisncol; j++) {
-        SEXP s = cnp[j];
-        int w = -TRUELENGTH(s)-1;
-        int wi = counts[w]++; // how many dups have we seen before of this name within this item
-        if (uniqMap[w]==-1) {
-          // first time seen this name across all items
-          uniqMap[w] = nextCol++;
-        } else {
-          while (wi && dupLink[w]) { w=dupLink[w]; --wi; }  // hop through the dups
-          if (wi && dupLink[w]==-1) {
-            // first time we've seen this number of dups of this name
-            w = dupLink[w] = nextCol;
+      int thisncol=length(li);
+      if (thisncol==0) continue;
+      const SEXP cn = getAttrib(li, R_NamesSymbol);
+      if (!length(cn)) {
+        for (int j=0; j<thisncol; j++) colMap[i*ncol + j] = j;
+      } else {
+        const SEXP *cnp = STRING_PTR(cn);
+        memset(counts, 0, nuniq*sizeof(int));
+        for (int j=0; j<thisncol; j++) {
+          SEXP s = cnp[j];
+          int w = -TRUELENGTH(s)-1;
+          int wi = counts[w]++; // how many dups have we seen before of this name within this item
+          if (uniqMap[w]==-1) {
+            // first time seen this name across all items
             uniqMap[w] = nextCol++;
+          } else {
+            while (wi && dupLink[w]) { w=dupLink[w]; --wi; }  // hop through the dups
+            if (wi && dupLink[w]==-1) {
+              // first time we've seen this number of dups of this name
+              w = dupLink[w] = nextCol;
+              uniqMap[w] = nextCol++;
+            }
           }
+          colMap[i*ncol + uniqMap[w]] = j;
         }
-        colMap[i*ncol + uniqMap[w]] = j;
       }
     }
     // zero out our usage of tl
     for (int i=0; i<LENGTH(l); i++) {
-      SEXP li = VECTOR_ELT(l, i);
-      int thisncol=LENGTH(li);
-      if (isNull(li) || !LENGTH(li)) continue;
-      const SEXP *cnp = STRING_PTR(getAttrib(li, R_NamesSymbol));
+      SEXP li = VECTOR_ELT(l, i), cn=getAttrib(li, R_NamesSymbol);
+      if (!length(li) || !length(cn)) continue;
+      const SEXP *cnp = STRING_PTR(cn);
+      const int thisncol = LENGTH(li);
       for (int j=0; j<thisncol; j++) {
         SEXP s = cnp[j];
         SET_TRUELENGTH(s, 0);
@@ -278,9 +295,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       for (int j=0; j<ncol; ++j) Rprintf("%2d ", colMap[i*ncol + j]);
       Rprintf("\n");
     }
-    //if (nextCol != ncol) error("Internal error. nextCol[%d]!=ncol[%d] when making colMap", nextCol, ncol);  // # nocov
   }
-
 
   // get max type for each column, and the number of rows
   if (nrow==0 && ncol==0) return(R_NilValue);
@@ -298,8 +313,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
   */
   int isidcol=0, protecti=0;
   SEXP ans = PROTECT(allocVector(VECSXP, ncol + isidcol)); protecti++; // do we need this protecti?
-  SEXP tt;
-  setAttrib(ans, R_NamesSymbol, tt=allocVector(STRSXP, ncol));
+  SEXP ansNames;
+  setAttrib(ans, R_NamesSymbol, ansNames=allocVector(STRSXP, ncol));
 
   // colMap tells us which item to fetch for each of the final result columns, so we can stack column-by-column
   for(int j=0; j<ncol; ++j) {
@@ -307,12 +322,15 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     //SEXP thisClass = R_NilValue;
     bool factor=false;
     bool int64=false;
+    bool foundName=false;
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
-      if (isNull(li) || !LENGTH(li) || !length(VECTOR_ELT(li, 0))) continue;
+      if (!length(li)) continue;
       int w = usenames ? colMap[i*ncol + j] : j;
       if (w==-1) continue;  // column j of final result has no input from this item (fill must be true)
+      if (!foundName) { SEXP cn=getAttrib(li, R_NamesSymbol); SET_STRING_ELT(ansNames, j, STRING_ELT(cn, w)); foundName=true; }
       SEXP thisCol = VECTOR_ELT(li, w);
+      if (!length(thisCol)) continue;  // empty table should not bump type
       int thisType = TYPEOF(thisCol);
       if (thisType>maxType) maxType=thisType;
       if (isFactor(thisCol)) factor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
@@ -323,6 +341,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       //   error("Class attributes at column %d of input list at position %d does not match with column %d of input list at position %d. Coercion of objects of class 'factor' alone is handled internally by rbind/rbindlist at the moment.", i+1, j+1, i+1, data->first+1);
       // }
     }
+    if (!foundName) { char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, j, mkChar(buff)); }
     if (factor) maxType=INTSXP;  // any items are factors then a factor is created (could be an option)
     SEXP target;
     SET_VECTOR_ELT(ans, j+isidcol, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
@@ -339,6 +358,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
         writeNA(target, ansloc, thisnrow);
       } else {
         SEXP thisCol = VECTOR_ELT(li, w);
+        bool coerced = false;
+        if (TYPEOF(thisCol)!=TYPEOF(target)) {
+          thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target)));
+          coerced = true;
+        }
         switch(TYPEOF(target)) {
         case LGLSXP:
           memcpy(LOGICAL(target)+ansloc, LOGICAL(thisCol), thisnrow*SIZEOF(thisCol));
@@ -374,7 +398,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
             if (isOrdered(thisCol)) isRowOrdered[resi] = TRUE;
           } else */
           {
-            if (TYPEOF(thisCol) != STRSXP) error("Internal logical error in rbindlist.c (not STRSXP), please report to data.table issue tracker.");
+            if (TYPEOF(thisCol) != STRSXP) error("Internal lerror in rbindlist.c (not STRSXP), please report to data.table issue tracker.");
             for (int r=0; r<thisnrow; r++) SET_STRING_ELT(target, ansloc+r, STRING_ELT(thisCol,r));
 
             // if this column is going to be a factor, add column to factorLevels
@@ -392,6 +416,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
         default :
           error("Unsupported column type '%s'", type2char(TYPEOF(target)));
         }
+        if (coerced) UNPROTECT(1);
       }
       ansloc += thisnrow;
     }
