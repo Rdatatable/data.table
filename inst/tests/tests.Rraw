@@ -4603,35 +4603,35 @@ test(1287, ans, data.table(Time=a$Time, demand.x=NA_real_, demand.y=a$demand, ke
 
 # more rbindlist tests - duplicate columns with "fill=TRUE"
 ll <- list(data.table(x=1, y=-1, x=-2), data.table(y=10, y=20, y=30, x=-10, a="a", b=Inf, c=factor(1)))
-test(1288.1, rbindlist(ll, use.names=TRUE, fill=FALSE), error = "Item 2 has 7 columns, inconsistent with item 1 which has 3 columns")
+test(1288.01, rbindlist(ll, use.names=TRUE, fill=FALSE), error = "Item 2 has 7 columns, inconsistent with item 1 which has 3 columns")
 # modified after fixing #725
-test(1288.2, rbindlist(ll, use.names=TRUE, fill=TRUE),
+test(1288.02, rbindlist(ll, use.names=TRUE, fill=TRUE),
     data.table(x=c(1,-10), x=c(-2, NA), y=c(-1,10), y=c(NA,20), y=c(NA,30), a=c(NA, "a"), b=c(NA, Inf), c=factor(c(NA, 1))))
 
 # check the name of output are consistent when binding two empty dts with one empy and other non-empty dt
 dt1 <- data.table(x=1:5, y=6:10)
 dt2 <- dt1[x > 5]
 setnames(dt3 <- copy(dt2), c("A", "B"))
-test(1288.3, names(rbindlist(list(dt2,dt3))), c("x", "y"))
-test(1288.4, names(rbindlist(list(dt3,dt2))), c("A", "B"))
-test(1288.5, names(rbindlist(list(dt1,dt3))), c("x", "y"))
-test(1288.6, names(rbindlist(list(dt3,dt1))), c("A", "B"))
+test(1288.03, names(rbindlist(list(dt2,dt3))), c("x", "y"))
+test(1288.04, names(rbindlist(list(dt3,dt2))), c("A", "B"))
+test(1288.05, names(rbindlist(list(dt1,dt3))), c("x", "y"))
+test(1288.06, names(rbindlist(list(dt3,dt1))), c("A", "B"))
 
 # check fix for bug #5612
 DT <- data.table(x=c(1,2,3))
-test(1288.7, rbind(DT, DT, data.table()), rbind(DT, data.table(), DT))
+test(1288.07, rbind(DT, DT, data.table()), rbind(DT, data.table(), DT))
 
 # factor on fill=TRUE with NA column..
 DT1 = data.table(A=1:3,B=letters[1:3])
 DT2 = data.table(B=letters[4:5],C=factor(1:2))
 l = list(DT1,DT2)
-test(1288.8, rbindlist(l, use.names=TRUE, fill=TRUE), data.table(A=c(1:3,NA_integer_,NA_integer_), B=letters[1:5], C=factor(c(NA,NA,NA,1,2))))
+test(1288.08, rbindlist(l, use.names=TRUE, fill=TRUE), data.table(A=c(1:3,NA_integer_,NA_integer_), B=letters[1:5], C=factor(c(NA,NA,NA,1,2))))
 
 # adding more tests after modifying for better backwards compatibility:
 # rbindlist and rbind both work fine even when certain elements of list are not named at all, as long as fill = FALSE, but use.names=TRUE errors when all names are NULL
 # when fill=TRUE NO element of the list must have NULL names.
 ll <- list(list(1:3, 4:6), list(5:7, 8:10))
-test(1288.9, rbindlist(ll), data.table(V1=c(1:3, 5:7), V2=c(4:6, 8:10)))
+test(1288.09, rbindlist(ll), data.table(V1=c(1:3, 5:7), V2=c(4:6, 8:10)))
 test(1288.10, rbindlist(ll, use.names=TRUE), error="use.names=TRUE but no item of input list has any names.")
 ll <- list(list(a=1:3, b=4:6), list(5:7, 8:10))
 test(1288.11, rbindlist(ll, use.names=TRUE), data.table(a=c(1:3, 5:7), b=c(4:6, 8:10)))
@@ -4681,16 +4681,16 @@ DT2 <- data.table(x=2L, y=4L, x=6L, x=8L, y=10L, z=12L)
 ll  <- list(x=1:2, y=3:4, x=5:6, x=7:8, y=9:10, z=11:12)
 
 # case (1)
-test(1290.1, DT[1], DT1)
-test(1290.2, DT[], DT)
-test(1290.3, DT[(TRUE)], DT)
+test(1290.01, DT[1], DT1)
+test(1290.02, DT[], DT)
+test(1290.03, DT[(TRUE)], DT)
 # case (2)
-test(1290.4, DT[, !"x", with=FALSE], as.data.table(ll[c(2,5,6)]))
-test(1290.5, DT[, !"y", with=FALSE], as.data.table(ll[c(1,3,4,6)]))
-test(1290.6, DT[, !c("x", "x"), with=FALSE], as.data.table(ll[c(2,5,6)]))
-test(1290.7, DT[, !c("y", "y"), with=FALSE], as.data.table(ll[c(1,3,4,6)]))
+test(1290.04, DT[, !"x", with=FALSE], as.data.table(ll[c(2,5,6)]))
+test(1290.05, DT[, !"y", with=FALSE], as.data.table(ll[c(1,3,4,6)]))
+test(1290.06, DT[, !c("x", "x"), with=FALSE], as.data.table(ll[c(2,5,6)]))
+test(1290.07, DT[, !c("y", "y"), with=FALSE], as.data.table(ll[c(1,3,4,6)]))
 # case (3)
-test(1290.9,  DT[, "x", with=FALSE], as.data.table(ll[1]))
+test(1290.09,  DT[, "x", with=FALSE], as.data.table(ll[1]))
 test(1290.10, DT[, "y", with=FALSE], as.data.table(ll[2]))
 test(1290.11, DT[, c("x", "x"), with=FALSE], as.data.table(ll[c(1,1)]))
 test(1290.12, DT[, c("y", "y"), with=FALSE], as.data.table(ll[c(2,2)]))
@@ -4765,17 +4765,17 @@ test(1293, ans1, ans2)
 ## Also improves upon bug fix #2551 to provide better warnings and at better places:
 dt <- data.table(a=1:3, b=c(7,8,9), c=c(TRUE, NA, FALSE), d=as.list(4:6), e=c("a", "b", "c"))
 
-test(1294.1,  dt[, a := 1]$a, rep(1L, 3L))
-test(1294.2,  dt[, a := 1.5]$a, rep(1L, 3L), warning="Coerced double RHS to integer.*column 1 named 'a'.*fractions which have been lost; e.g. item 1 with value 1.5.* truncated to 1.")
-test(1294.3,  dt[, a := NA]$a, rep(NA_integer_, 3L))
-test(1294.4,  dt[, a := "a"]$a, rep(NA_integer_, 3L),
+test(1294.01, dt[, a := 1]$a, rep(1L, 3L))
+test(1294.02, dt[, a := 1.5]$a, rep(1L, 3L), warning="Coerced double RHS to integer.*column 1 named 'a'.*fractions which have been lost; e.g. item 1 with value 1.5.* truncated to 1.")
+test(1294.03, dt[, a := NA]$a, rep(NA_integer_, 3L))
+test(1294.04, dt[, a := "a"]$a, rep(NA_integer_, 3L),
               warning=c("NAs introduced by coercion",
                         "Coerced character RHS to integer.*create the RHS as type integer.*with as.integer.. to avoid this warning.*DT., `a`:=as.character.`a`.*"))
-test(1294.5,  dt[, a := list(list(1))]$a, rep(1L, 3L), warning="Coerced list RHS to integer to match.*column 1 named 'a'")
-test(1294.6,  dt[, a := list(1L)]$a, rep(1L, 3L))
-test(1294.7,  dt[, a := list(1)]$a, rep(1L, 3L))
-test(1294.8,  dt[, a := TRUE]$a, rep(1L, 3L), warning="Coerced logical RHS to integer")
-test(1294.9,  dt[, b := 1L]$b, rep(1,3))
+test(1294.05, dt[, a := list(list(1))]$a, rep(1L, 3L), warning="Coerced list RHS to integer to match.*column 1 named 'a'")
+test(1294.06, dt[, a := list(1L)]$a, rep(1L, 3L))
+test(1294.07, dt[, a := list(1)]$a, rep(1L, 3L))
+test(1294.08, dt[, a := TRUE]$a, rep(1L, 3L), warning="Coerced logical RHS to integer")
+test(1294.09, dt[, b := 1L]$b, rep(1,3))
 test(1294.10, dt[, b := NA]$b, rep(NA_real_,3))
 test(1294.11, dt[, b := "bla"]$b, rep(NA_real_, 3),
               warning=c("NAs introduced by coercion",
@@ -6213,6 +6213,8 @@ table = rep(letters[1:3], each=2)
 test(1456.1, chmatchdup(x1, table), as.integer(c(3,1,NA,2,5,NA)))
 test(1456.2, chmatchdup(x2, table), as.integer(c(1,2,NA)))
 test(1456.3, chmatchdup(x3, table), as.integer(c(NA,1,2,NA,NA)))
+test(1457.1,   chmatchdup(c("x","x","x","x"), c("x","y","x","x","y","z")), INT(1,3,4,NA))
+test(1457.2, base::pmatch(c("x","x","x","x"), c("x","y","x","x","y","z")), INT(1,3,4,NA))
 
 # Add tests for which_
 x = sample(c(-5:5, NA), 25, TRUE)

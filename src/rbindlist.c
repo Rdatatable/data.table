@@ -2,15 +2,6 @@
 #include <Rdefines.h>
 
 
-// factorType is 1 for factor and 2 for ordered
-// will simply unique normal factors and attempt to find global order for ordered ones
-SEXP combineFactorLevels(SEXP factorLevels, int * factorType, Rboolean * isRowOrdered)
-{
-  return R_NilValue;
-}
-// TODO TODO need to provide this for use by fmelt.c too
-
-
 /* TODO .. delete
   Arun's addition and changes to incorporate 'usenames=T/F' and 'fill=T/F' arguments to rbindlist */
 
@@ -382,8 +373,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     int ansloc=0;
     if (factor) {
       savetl_init();
-      if (TRUELENGTH(NA_STRING)>0) savetl(NA_STRING);
-      SET_TRUELENGTH(NA_STRING, NA_INTEGER);
       int nLevel=0, allocLevel=0;
       SEXP *levelsRaw = NULL;  // growing list of SEXP pointers. Raw since managed with raw realloc.
       for (int i=0; i<LENGTH(l); ++i) {
@@ -416,7 +405,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
               SEXP *newRaw = malloc(allocLevel * sizeof(SEXP));
               if (newRaw==NULL) {
                 for (int k=0; k<nLevel; k++) SET_TRUELENGTH(levelsRaw[k], 0);  // if realloc failed it frees within realloc so we couldn't access it for this line
-                SET_TRUELENGTH(NA_STRING, 0);
                 savetl_end();
                 error("Unable to allocate working memory %lld bytes to hold combined factor levels for result column %d when reading item %d of item %d",
                       allocLevel*sizeof(SEXP), j+1, w+1, i+1);
@@ -442,14 +430,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
             }
           } else {
             SEXP *sd = STRING_PTR(thisColStr);
-            for (int r=0; r<thisnrow; r++) targetd[ansloc+r] = -TRUELENGTH(sd[r]);   // uses TRUELENGTH(NA_STRING)==NA_INTEGER here
+            for (int r=0; r<thisnrow; r++) targetd[ansloc+r] = sd[r]==NA_STRING ? NA_INTEGER : -TRUELENGTH(sd[r]);
           }
           if (coerced) UNPROTECT(1);
         }
         ansloc += thisnrow;
       }
       for (int k=0; k<nLevel; ++k) SET_TRUELENGTH(levelsRaw[k], 0);
-      SET_TRUELENGTH(NA_STRING, 0);
       savetl_end();
       SEXP levelsSxp;
       setAttrib(target, R_LevelsSymbol, levelsSxp=allocVector(STRSXP, nLevel));

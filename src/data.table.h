@@ -68,6 +68,7 @@ SEXP char_indices;
 SEXP char_allLen1;
 SEXP char_allGrp1;
 SEXP char_factor;
+SEXP char_ordered;
 SEXP sym_sorted;
 SEXP sym_index;
 SEXP sym_BY;
@@ -142,9 +143,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
 SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted,
                 SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg,
                 SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
-
-// rbindlist.c
-SEXP combineFactorLevels(SEXP factorLevels, int *factorType, Rboolean *isRowOrdered);
 
 // quickselect
 double dquickselect(double *x, int n, int k);

@@ -350,6 +350,71 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
   }
 }
 
+static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType, Rboolean * isRowOrdered)
+// Finds unique levels directly in one pass with no need to create hash tables. Creates integer factor
+// too in the same single pass. Previous version called factor(x, levels=unique) where x was type character
+// and needed hash table.
+// TODO keep the original factor columns as factor and use new technique in rbindlist.c. The calling
+// environments are a little difference hence postponed for now (e.g. rbindlist calls writeNA which
+// a general purpose combiner would need to know how many to write)
+// factorType is 1 for factor and 2 for ordered
+// will simply unique normal factors and attempt to find global order for ordered ones
+{
+  int maxlevels=0, nitem=length(factorLevels);
+  for (int i=0; i<nitem; ++i) {
+    SEXP this = VECTOR_ELT(factorLevels, i);
+    if (!isString(this)) error("Internal error: combineFactorLevels in fmelt.c expects all-character input");
+    maxlevels+=length(this);
+  }
+  if (!isString(target)) error("Internal error: combineFactorLevels in fmel.c expects a character target to factorize");
+  int nrow = length(target);
+  SEXP ans = PROTECT(allocVector(INTSXP, nrow));
+  SEXP *levelsRaw = (SEXP *)R_alloc(maxlevels, sizeof(SEXP));  // allocate for worst-case all-unique levels
+  int *ansd = INTEGER(ans);
+  const SEXP *targetd = STRING_PTR(target);
+  savetl_init();
+  // no alloc or any fail point until savetl_end()
+  int nlevel=0;
+  for (int i=0; i<nitem; ++i) {
+    const SEXP this = VECTOR_ELT(factorLevels, i);
+    const SEXP *thisd = STRING_PTR(this);
+    const int thisn = length(this);
+    for (int k=0; k<thisn; ++k) {
+      SEXP s = thisd[k];
+      if (s==NA_STRING) continue;  // NA shouldn't be in levels but remove it just in case
+      int tl = TRUELENGTH(s);
+      if (tl<0) continue;  // seen this level before
+      if (tl>0) savetl(s);
+      SET_TRUELENGTH(s,-(++nlevel));
+      levelsRaw[nlevel-1] = s;
+    }
+  }
+  for (int i=0; i<nrow; ++i) {
+    if (targetd[i]==NA_STRING) {
+      *ansd++ = NA_INTEGER;
+    } else {
+      int tl = TRUELENGTH(targetd[i]);
+      *ansd++ = tl<0 ? -tl : NA_INTEGER;
+    }
+  }
+  for (int i=0; i<nlevel; ++i) SET_TRUELENGTH(levelsRaw[i], 0);
+  savetl_end();
+  // now after savetl_end, we can alloc (which might fail)
+  SEXP levelsSxp;
+  setAttrib(ans, R_LevelsSymbol, levelsSxp=allocVector(STRSXP, nlevel));
+  for (int i=0; i<nlevel; ++i) SET_STRING_ELT(levelsSxp, i, levelsRaw[i]);
+  if (*factorType==2) {
+    SEXP tt;
+    setAttrib(ans, R_ClassSymbol, tt=allocVector(STRSXP, 2));
+    SET_STRING_ELT(tt, 0, char_ordered);
+    SET_STRING_ELT(tt, 1, char_factor);
+  } else {
+    setAttrib(ans, R_ClassSymbol, ScalarString(char_factor));
+  }
+  UNPROTECT(1);
+  return ans;
+}
+
 SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, struct processData *data) {
   int i, j, k, counter=0, thislen=0;
   SEXP thisvaluecols, ansvals, thisidx=R_NilValue, flevels;
@@ -466,10 +531,11 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
       UNPROTECT(thisprotecti);  // inside inner loop (note that it's double loop) so as to limit use of protection stack
     }
     if (thisvalfactor && data->isfactor[i] && TYPEOF(target) != VECSXP) {
-      SEXP clevels = PROTECT(combineFactorLevels(flevels, &(data->isfactor[i]), isordered));
-      SEXP factorLangSxp = PROTECT(lang3(install(data->isfactor[i] == 1 ? "factor" : "ordered"), target, clevels));
-      SET_VECTOR_ELT(ansvals, i, eval(factorLangSxp, R_GlobalEnv));
-      UNPROTECT(2);  // clevels, factorLangSxp
+      //SEXP clevels = PROTECT(combineFactorLevels(flevels, &(data->isfactor[i]), isordered));
+      //SEXP factorLangSxp = PROTECT(lang3(install(data->isfactor[i] == 1 ? "factor" : "ordered"), target, clevels));
+      //SET_VECTOR_ELT(ansvals, i, eval(factorLangSxp, R_GlobalEnv));
+      //UNPROTECT(2);  // clevels, factorLangSxp
+      SET_VECTOR_ELT(ansvals, i, combineFactorLevels(flevels, target, &(data->isfactor[i]), isordered));
     }
   }
   UNPROTECT(2);  // flevels, ansvals. Not using two protection counters (protecti and thisprotecti) to keep rchk happy.
