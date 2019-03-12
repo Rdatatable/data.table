@@ -68,7 +68,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     }
     int tl = TRUELENGTH(s);
     if (tl>0) { savetl(s); tl=0; }
-    if (tl==0) SET_TRUELENGTH(s, -(++nuniq)); // first time seen this string in table
+    if (tl==0) SET_TRUELENGTH(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
   }
   if (chmatchdup && nuniq<tablelen) {
     // used to be called chmatch2 before v1.12.2. New implementation from 1.12.2 too        uniq          dups
@@ -119,7 +119,7 @@ SEXP chmatch(SEXP x, SEXP table, int nomatch) {  // chin=  chmatchdup=
   return chmatchMain(x, table, nomatch,             false, false);
 }
 SEXP chin(SEXP x, SEXP table) {
-  return chmatchMain(x, table, 0/*ignored*/,        true,  false);
+  return chmatchMain(x, table, 0,                   true,  false);
 }
 
 // for use from internals at R level; chmatch and chin are exported too but not chmatchdup yet

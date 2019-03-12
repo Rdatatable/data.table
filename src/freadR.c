@@ -258,7 +258,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         UNPROTECT(1); // UNPROTECTing itemsInt inside loop to save protection stack
       }
       for (int i=0; i<ncol; i++) if (type[i]<0) type[i] *= -1;  // undo sign; was used to detect duplicates
-      UNPROTECT(2);  // typeEnum_idx (+1 for its protect of getAttrib)
+      UNPROTECT(2);  // typeEnum_idx (+1 for its protect of getAttrib which rcheck asked for iirc)
     }
     UNPROTECT(1);  // typeRName_sxp
   }
