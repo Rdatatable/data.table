@@ -131,29 +131,8 @@ static void preprocess(SEXP l, Rboolean usenames, Rboolean fill, struct preproce
 }
 */
 
-// function does c(idcol, nm), where length(idcol)=1
-// fix for #1432, + more efficient to move the logic to C
-/*
-SEXP add_idcol(SEXP nm, SEXP idcol, int cols) {
-  SEXP ans = PROTECT(allocVector(STRSXP, cols+1));
-  SET_STRING_ELT(ans, 0, STRING_ELT(idcol, 0));
-  for (int i=0; i<cols; i++) {
-    SET_STRING_ELT(ans, i+1, STRING_ELT(nm, i));
-  }
-  UNPROTECT(1);
-  return (ans);
-}
-*/
+SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
 
-SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
-
-  //todelete ... R_len_t jj, ansloc, resi, i,j, idx, thislen;
-  //struct preprocessData data;
-  //Rboolean to_copy = FALSE, coerced=FALSE, isidcol = !isNull(idcol);
-  //SEXP fnames = R_NilValue, findices = R_NilValue, f_ind = R_NilValue, ans, lf, li, target, thiscol, levels;
-  //R_len_t protecti=0;
-
-  // first level of error checks
   if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1 || LOGICAL(usenamesArg)[0]==NA_LOGICAL)
     error("use.names= should be TRUE or FALSE");
   if (!isLogical(fillArg) || LENGTH(fillArg) != 1 || LOGICAL(fillArg)[0] == NA_LOGICAL)
@@ -161,11 +140,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
   if (!length(l)) return(l);
   if (TYPEOF(l) != VECSXP) error("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists.");
   bool usenames = LOGICAL(usenamesArg)[0];
-  bool fill = LOGICAL(fillArg)[0];
+  const bool fill = LOGICAL(fillArg)[0];
   if (fill && !usenames) {
     warning("use.names= can not be FALSE when fill is TRUE. Setting use.names=TRUE.\n");
     usenames=true;
   }
+  const bool idcol = !isNull(idcolArg);
+  if (idcol && (!isString(idcolArg) || LENGTH(idcolArg)!=1)) error("Internal error: rbindlist.c idcol is not a single string");  // # nocov
 
   int ncol=0, first=0;
   int64_t nrow=0;
@@ -293,12 +274,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     }
     savetl_end();  // restore R's usage
 
-    /* TODELETE ...
+    /* to view map when debugging ...
     for (int i=0; i<LENGTH(l); ++i) {
       for (int j=0; j<ncol; ++j) Rprintf("%2d ", colMap[i*ncol + j]);
       Rprintf("\n");
-    }
-    */
+    } */
   }
 
   if (!fill && usenames) {
@@ -320,20 +300,31 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     }
   }
 
-  /*todelete ...
-  fnames = VECTOR_ELT(data.ans_ptr, 0);
-  if (isidcol) {
-    fnames = PROTECT(add_idcol(fnames, idcol, data.n_cols));
-    protecti++;
+  SEXP ans=PROTECT(allocVector(VECSXP, idcol + ncol)), ansNames;
+  setAttrib(ans, R_NamesSymbol, ansNames=allocVector(STRSXP, idcol + ncol));
+  if (idcol) {
+    SET_STRING_ELT(ansNames, 0, STRING_ELT(idcolArg, 0));
+    SEXP idval, listNames=getAttrib(l, R_NamesSymbol);
+    if (length(listNames)) {
+      SET_VECTOR_ELT(ans, 0, idval=allocVector(STRSXP, nrow));
+      for (int i=0,ansloc=0; i<LENGTH(l); ++i) {
+        SEXP li = VECTOR_ELT(l, i);
+        if (!length(li)) continue;
+        const int thisnrow = length(VECTOR_ELT(li, 0));
+        SEXP thisname = STRING_ELT(listNames, i);
+        for (int k=0; k<thisnrow; ++k) SET_STRING_ELT(idval, ansloc++, thisname);
+      }
+    } else {
+      SET_VECTOR_ELT(ans, 0, idval=allocVector(INTSXP, nrow));
+      int *idvald = INTEGER(idval);
+      for (int i=0,ansloc=0; i<LENGTH(l); ++i) {
+        SEXP li = VECTOR_ELT(l, i);
+        if (!length(li)) continue;
+        const int thisnrow = length(VECTOR_ELT(li, 0));
+        for (int k=0; k<thisnrow; ++k) idvald[ansloc++] = i+1;
+      }
+    }
   }
-  SEXP factorLevels = PROTECT(allocVector(VECSXP, data.lcount)); protecti++;
-  Rboolean *isRowOrdered = (Rboolean *)R_alloc(data.lcount, sizeof(Rboolean));
-  for (int i=0; i<data.lcount; i++) isRowOrdered[i] = FALSE;
-  */
-  int isidcol=0, protecti=0;
-  SEXP ans = PROTECT(allocVector(VECSXP, ncol + isidcol)); protecti++; // do we need this protecti?
-  SEXP ansNames;
-  setAttrib(ans, R_NamesSymbol, ansNames=allocVector(STRSXP, ncol));
 
   // colMap tells us which item to fetch for each of the final result columns, so we can stack column-by-column
   for(int j=0; j<ncol; ++j) {
@@ -351,7 +342,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       if (w==-1) continue;  // column j of final result has no input from this item (fill must be true)
       if (!foundName) {
         SEXP cn=getAttrib(li, R_NamesSymbol);
-        if (length(cn)) { SET_STRING_ELT(ansNames, j, STRING_ELT(cn, w)); foundName=true; }
+        if (length(cn)) { SET_STRING_ELT(ansNames, idcol+j, STRING_ELT(cn, w)); foundName=true; }
       }
       SEXP thisCol = VECTOR_ELT(li, w);
       int thisType = TYPEOF(thisCol);
@@ -365,12 +356,12 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
         error("Class attribute on column %d of input list %d does not match with the first item for this column (column %d of input list %d).", w+1, i+1, firstw+1, firsti+1);
       }
     }
-    // no warning for backwards compatibility ... if (factor && anyNotStringOrFactor) warning("Column %d contains a factor but not all items for the column are character or factor", j+1);
-    if (maxType==0) error("Internal error: maxType==0 for result column %d", j+1);
-    if (!foundName) { char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, j, mkChar(buff)); }
+    // in future warn ... if (factor && anyNotStringOrFactor) warning("Column %d contains a factor but not all items for the column are character or factor", idcol+j+1);
+    if (maxType==0) error("Internal error: maxType==0 for result column %d", idcol+j+1);
+    if (!foundName) { char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); }
     if (factor) maxType=INTSXP;  // any items are factors then a factor is created (could be an option)
     SEXP target;
-    SET_VECTOR_ELT(ans, j+isidcol, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
+    SET_VECTOR_ELT(ans, idcol+j, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
     if (int64) setAttrib(target, R_ClassSymbol, char_integer64);
     if (!factor) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     int ansloc=0;
@@ -410,7 +401,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
                 for (int k=0; k<nLevel; k++) SET_TRUELENGTH(levelsRaw[k], 0);  // if realloc failed it frees within realloc so we couldn't access it for this line
                 savetl_end();
                 error("Unable to allocate working memory %lld bytes to hold combined factor levels for result column %d when reading item %d of item %d",
-                      allocLevel*sizeof(SEXP), j+1, w+1, i+1);
+                      allocLevel*sizeof(SEXP), idcol+j+1, w+1, i+1);
               } else {
                 memcpy(newRaw, levelsRaw, nLevel*sizeof(SEXP));
                 free(levelsRaw);
@@ -496,29 +487,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
     // warning("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
   }
-
-  // fix for #1432, + more efficient to move the logic to C
-  /*
-  if (isidcol) {
-    R_len_t runidx = 1, cntridx = 0;
-    SEXP lnames = getAttrib(l, R_NamesSymbol);
-    if (isNull(lnames)) {
-      SET_VECTOR_ELT(ans, 0, target=allocVector(INTSXP, data.n_rows) );
-      for (i=0; i<LENGTH(l); i++) {
-        for (j=0; j<data.fn_rows[i]; j++)
-          INTEGER(target)[cntridx++] = runidx;
-        runidx++;
-      }
-    } else {
-      SET_VECTOR_ELT(ans, 0, target=allocVector(STRSXP, data.n_rows) );
-      for (i=0; i<LENGTH(l); i++) {
-        for (j=0; j<data.fn_rows[i]; j++)
-          SET_STRING_ELT(target, cntridx++, STRING_ELT(lnames, i));
-      }
-    }
-  }
-  */
-  UNPROTECT(protecti);
+  UNPROTECT(1);
   return(ans);
 }
 
