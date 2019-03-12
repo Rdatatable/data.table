@@ -79,7 +79,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     int dupAtEnd=tablelen;
     for (int i=0; i<tablelen; ++i) {
       int u = -TRUELENGTH(td[i]);  // 1-based
-      while (dupLink[u-1]) u = dupLink[u-1]-1;
+      while (dupLink[u-1]) u = dupLink[u-1];
       if (dupMap[u-1]==0) dupMap[u-1]=i+1;  // first time seen this uniq
       else {
         dupMap[dupAtEnd-1] = i+1;
@@ -87,14 +87,14 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       }
     }
     for (int i=0; i<xlen; ++i) {
-      int u = -TRUELENGTH(xd[i]);
-      if (u==0) {
-        ansd[i] = nomatch;
-      } else {
-        ansd[i] = dupMap[u-1];
-        SET_TRUELENGTH(xd[i], -dupLink[u-1]);
+      int u = TRUELENGTH(xd[i]);
+      if (u<0) {
+        ansd[i] = dupMap[-u-1];
+        SET_TRUELENGTH(xd[i], -dupLink[-u-1]);
         // sets to 0 after last dup matched so more dups of "a" in x than are in table will only match as many dups as there are in table
         // we still need the 0-setting loop below because often there will be some values in table that are not matched to at all.
+      } else {
+        ansd[i] = nomatch;
       }
     }
   } else if (chin) {

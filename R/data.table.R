@@ -772,20 +772,16 @@ replace_dot_alias <- function(e) {
       if (is.character(j)) {
         if (notj) {
           w = chmatch(j, names(x))
-          if (anyNA(w)) {
-            warning("column(s) not removed because not found: ",paste(j[is.na(w)],collapse=","))
-            w = w[!is.na(w)]
-          }
-          # changed names(x)[-w] to use 'setdiff'. Here, all instances of the column must be removed.
-          # Ex: DT <- data.table(x=1, y=2, x=3); DT[, !"x", with=FALSE] should just output 'y'.
-          # But keep 'dup cols' beause it's basically DT[, !names(DT) %chin% "x", with=FALSE] which'll subset all cols not 'x'.
-          ansvars = if (length(w)) dupdiff(names(x), names(x)[w]) else names(x)
-          ansvals = chmatchdup(ansvars, names(x))
+          if (anyNA(w)) warning("column(s) not removed because not found: ",paste(j[is.na(w)],collapse=","))
+          # all duplicates of the name in names(x) must be removed; e.g. data.table(x=1, y=2, x=3)[, !"x"] should just output 'y'.
+          w = !names(x) %chin% j
+          ansvars = names(x)[w]
+          ansvals = which(w)
         } else {
-          # once again, use 'setdiff'. Basically, unless indices are specified in `j`, we shouldn't care about duplicated columns.
-          ansvars = j   # x. and i. prefixes may be in here, and they'll be dealt with below
-          # dups = FALSE here.. even if DT[, c("x", "x"), with=FALSE], we subset only the first.. No way to tell which one the OP wants without index.
-          ansvals = chmatch(ansvars, names(x))
+          # if DT[, c("x","x")] and "x" is duplicated in names(DT), we still subset only the first. Because dups are unusual and
+          # it's more common to select the same column a few times. A syntax would be needed to distinguish these intents.
+          ansvars = j   # x. and i. prefixes may be in here, they'll result in NA and will be dealt with further below if length(leftcols)
+          ansvals = chmatch(ansvars, names(x))   # not chmatchdup()
         }
         if (!length(ansvals)) return(null.data.table())
         if (!length(leftcols)) {
