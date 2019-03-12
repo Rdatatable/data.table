@@ -176,25 +176,33 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     usenames=true;
   }
 
-  int ncol=-1, first=0;
+  int ncol=0, first=0;
   int64_t nrow=0;
   // pre-check for any errors here to save having to get cleanup right below when usenames
   for (int i=0; i<LENGTH(l); i++) {  // length(l)>0 checked above
     SEXP li = VECTOR_ELT(l, i);
     if (isNull(li)) continue;
     if (TYPEOF(li) != VECSXP) error("Item %d of input is not a data.frame, data.table or list", i+1);
-    if (!LENGTH(li)) continue;
-    //if (fill && isNull(getAttrib(li, R_NamesSymbol))) error("When fill=TRUE every item of the input must have column names. Item %d does not.", i+1);
+    const int thisncol = length(li);
+    if (!thisncol) continue;
+    // delete as now more flexible ... if (fill && isNull(getAttrib(li, R_NamesSymbol))) error("When fill=TRUE every item of the input must have column names. Item %d does not.", i+1);
     if (fill) {
-      if (LENGTH(li)>ncol) ncol=LENGTH(li);  // this section initializes ncol with max ncol. ncol may be increased when usenames is accounted for further down
+      if (thisncol>ncol) ncol=thisncol;  // this section initializes ncol with max ncol. ncol may be increased when usenames is accounted for further down
     } else {
-      if (ncol==-1) { ncol=LENGTH(li); first=i; }
-      else if (ncol!=LENGTH(li)) error("Item %d has %d columns, inconsistent with item %d which has %d columns. To fill missing columns use fill=TRUE.", i+1, LENGTH(li), first+1, ncol);
+      if (ncol==0) { ncol=thisncol; first=i; }
+      else if (thisncol!=ncol) error("Item %d has %d columns, inconsistent with item %d which has %d columns. To fill missing columns use fill=TRUE.", i+1, thisncol, first+1, ncol);
     }
     int nNames = length(getAttrib(li, R_NamesSymbol));
-    if (nNames>0 && nNames!=LENGTH(li)) error("Item %d has %d columns but %d column names. Invalid object.", i+1, LENGTH(li), nNames);
-    nrow += length(VECTOR_ELT(li,0));
+    if (nNames>0 && nNames!=thisncol) error("Item %d has %d columns but %d column names. Invalid object.", i+1, thisncol, nNames);
+    int thisnrow = length(VECTOR_ELT(li,0));
+    for (int j=1; j<thisncol; ++j) {
+      int tt = length(VECTOR_ELT(li, j));
+      if (tt!=thisnrow) error("Column %d of item %d is length %d inconsistent with the first column of that item which is length %d. rbind/rbindlist expects each item in the input list to be a uniform list, data.frame or data.table", j+1, i+1, tt, thisnrow);
+    }
+    nrow += thisnrow;
   }
+  if (nrow==0 && ncol==0) return(R_NilValue);
+  if (nrow>INT32_MAX) error("Total rows in the list is %lld which is larger than the maximum number of rows, currently %d", nrow, INT32_MAX);
 
   int *colMap=NULL; // maps each column in final result to the column of each list item
   if (usenames) {
@@ -299,9 +307,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     */
   }
 
-  // get max type for each column, and the number of rows
-  if (nrow==0 && ncol==0) return(R_NilValue);
-  if (nrow>INT32_MAX) error("Total rows in the list is %lld which is larger than the maximum number of rows, currently %d", nrow, INT32_MAX);
   if (!fill && usenames) {
     // ensure no missings.  We already checked earlier that ncol is consistent for all list items
     for (int i=0; i<LENGTH(l); ++i) {
