@@ -347,7 +347,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     bool factor=false;
     bool int64=false;
     bool foundName=false;
-    bool anyNotStringOrFactor=false;
+    //bool anyNotStringOrFactor=false;
     SEXP firstCol=R_NilValue;
     int firsti=-1, firstw=-1;
     for (int i=0; i<LENGTH(l); ++i) {
@@ -363,7 +363,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
       int thisType = TYPEOF(thisCol);
       if (thisType>maxType) maxType=thisType;
       if (isFactor(thisCol)) factor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
-      else if (!isString(thisCol) && length(thisCol)) anyNotStringOrFactor=true;
+      //else if (!isString(thisCol) && length(thisCol)) anyNotStringOrFactor=true;
       SEXP thisClass = getAttrib(thisCol, R_ClassSymbol);
       if (INHERITS(thisClass, char_integer64)) int64=true;
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
@@ -371,7 +371,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
         error("Class attribute on column %d of input list %d does not match with the first item for this column (column %d of input list %d).", w+1, i+1, firstw+1, firsti+1);
       }
     }
-    if (factor && anyNotStringOrFactor) error("Column %d contains a factor but not all items for the column are character or factor", j+1);
+    // no warning for backwards compatibility ... if (factor && anyNotStringOrFactor) warning("Column %d contains a factor but not all items for the column are character or factor", j+1);
     if (maxType==0) error("Internal error: maxType==0 for result column %d", j+1);
     if (!foundName) { char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, j, mkChar(buff)); }
     if (factor) maxType=INTSXP;  // any items are factors then a factor is created (could be an option)
@@ -396,7 +396,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
           writeNA(target, ansloc, thisnrow);
         } else {
           SEXP thisCol = VECTOR_ELT(li, w);
-          SEXP thisColStr = isFactor(thisCol) ? getAttrib(thisCol, R_LevelsSymbol) : thisCol;  // if not factor then character, checked above
+          bool coerced=false;
+          SEXP thisColStr;
+          if (isFactor(thisCol)) thisColStr = getAttrib(thisCol, R_LevelsSymbol);
+          else if (isString(thisCol)) thisColStr = thisCol;
+          else {
+            thisColStr = PROTECT(coerceVector(thisCol, STRSXP));
+            coerced=true;
+          }
           const int n = length(thisColStr);
           const SEXP *thisColStrD = STRING_PTR(thisColStr);  // D for data
           for (int k=0; k<n; ++k) {
@@ -434,9 +441,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
                 targetd[ansloc+r] = id[r]==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(thisColStrD[id[r]-1]);
             }
           } else {
-            SEXP *sd = STRING_PTR(thisCol);
+            SEXP *sd = STRING_PTR(thisColStr);
             for (int r=0; r<thisnrow; r++) targetd[ansloc+r] = -TRUELENGTH(sd[r]);   // uses TRUELENGTH(NA_STRING)==NA_INTEGER here
           }
+          if (coerced) UNPROTECT(1);
         }
         ansloc += thisnrow;
       }
