@@ -347,8 +347,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
       SEXP thisCol = VECTOR_ELT(li, w);
       int thisType = TYPEOF(thisCol);
       if (thisType>maxType) maxType=thisType;
-      if (isFactor(thisCol)) factor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
-      //else if (!isString(thisCol) && length(thisCol)) anyNotStringOrFactor=true;
+      if (isFactor(thisCol)) {
+        if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error("Column %d of input list %d has type 'factor' but has no levels; i.e. malformed.", w+1, i+1);
+        factor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
+      } //else if (!isString(thisCol) && length(thisCol)) anyNotStringOrFactor=true;
       SEXP thisClass = getAttrib(thisCol, R_ClassSymbol);
       if (INHERITS(thisClass, char_integer64)) int64=true;
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
@@ -381,7 +383,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
           SEXP thisCol = VECTOR_ELT(li, w);
           bool coerced=false;
           SEXP thisColStr;
-          if (isFactor(thisCol)) thisColStr = getAttrib(thisCol, R_LevelsSymbol);
+          if (isFactor(thisCol)) thisColStr = getAttrib(thisCol, R_LevelsSymbol);  // TODO these could fail and not clear-up tl; coerce first
           else if (isString(thisCol)) thisColStr = thisCol;
           else {
             thisColStr = PROTECT(coerceVector(thisCol, STRSXP));
