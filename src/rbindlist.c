@@ -169,6 +169,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
 
   int ncol=0, first=0;
   int64_t nrow=0;
+  bool anyNames=false;
   // pre-check for any errors here to save having to get cleanup right below when usenames
   for (int i=0; i<LENGTH(l); i++) {  // length(l)>0 checked above
     SEXP li = VECTOR_ELT(l, i);
@@ -185,6 +186,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
     }
     int nNames = length(getAttrib(li, R_NamesSymbol));
     if (nNames>0 && nNames!=thisncol) error("Item %d has %d columns but %d column names. Invalid object.", i+1, thisncol, nNames);
+    if (nNames>0) anyNames=true;
     int thisnrow = length(VECTOR_ELT(li,0));
     for (int j=1; j<thisncol; ++j) {
       int tt = length(VECTOR_ELT(li, j));
@@ -194,6 +196,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcol) {
   }
   if (nrow==0 && ncol==0) return(R_NilValue);
   if (nrow>INT32_MAX) error("Total rows in the list is %lld which is larger than the maximum number of rows, currently %d", nrow, INT32_MAX);
+  if (usenames && !anyNames) error("use.names=TRUE but no item of input list has any names");
 
   int *colMap=NULL; // maps each column in final result to the column of each list item
   if (usenames) {
