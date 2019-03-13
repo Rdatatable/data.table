@@ -606,12 +606,14 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         if (!byjoin || nqbyjoin) {
           # Really, `anyDuplicated` in base is AWESOME!
           # allow.cartesian shouldn't error if a) not-join, b) 'i' has no duplicates
+          if (verbose) {last.started.at=proc.time();cat("Constructing irows for '!byjoin || nqbyjoin' ... ");flush.console()}
           irows = if (allLen1) f__ else vecseq(f__,len__,
-            if( allow.cartesian ||
-              notjoin || # #698. When notjoin=TRUE, ignore allow.cartesian. Rows in answer will never be > nrow(x).
-              !anyDuplicated(f__, incomparables = c(0L, NA_integer_)))  # #742. If 'i' has no duplicates, ignore
-              NULL
-            else as.double(nrow(x)+nrow(i))) # rows in i might not match to x so old max(nrow(x),nrow(i)) wasn't enough. But this limit now only applies when there are duplicates present so the reason now for nrow(x)+nrow(i) is just to nail it down and be bigger than max(nrow(x),nrow(i)).
+            if (allow.cartesian ||
+                notjoin || # #698. When notjoin=TRUE, ignore allow.cartesian. Rows in answer will never be > nrow(x).
+                !anyDuplicated(f__, incomparables = c(0L, NA_integer_))) {
+              NULL # #742. If 'i' has no duplicates, ignore
+            } else as.double(nrow(x)+nrow(i))) # rows in i might not match to x so old max(nrow(x),nrow(i)) wasn't enough. But this limit now only applies when there are duplicates present so the reason now for nrow(x)+nrow(i) is just to nail it down and be bigger than max(nrow(x),nrow(i)).
+          if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
           # Fix for #1092 and #1074
           # TODO: implement better version of "any"/"all"/"which" to avoid
           # unnecessary construction of logical vectors
@@ -646,10 +648,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       if (length(xo) && length(irows)) {
         irows = xo[irows]   # TO DO: fsort here?
         if (mult=="all" && !allGrp1) { # following #1991 fix, !allGrp1 will always be TRUE. TODO: revisit.
+          if (verbose) {last.started.at=proc.time();cat("Reorder irows  for 'mult==\"all\" && !allGrp1' ... ");flush.console()}
           irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
+          if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
         }
       }
-      if(optimizedSubset){
+      if (optimizedSubset){
         ## special treatment for calls like DT[x == 3] that are transformed into DT[J(x=3), on = "x==x"]
 
         if(!.Call(CisOrderedSubset, irows, nrow(x))){
