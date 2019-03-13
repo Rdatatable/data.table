@@ -25,7 +25,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   const SEXP *xd = STRING_PTR(x);
   const int xlen = length(x);
   for (int i=0; i<xlen; i++) {
-    SEXP s = STRING_ELT(x,i);
+    SEXP s = xd[i];
     if (s != NA_STRING && ENC_KNOWN(s) != 64) { // PREV: s != NA_STRING && !ENC_KNOWN(s) - changed to fix for bug #5159. The previous fix
                        // dealt with UNKNOWN encodings. But we could have the same string, where both are in different
                        // encodings than ASCII (ex: UTF8 and Latin1). To fix this, we'll to resort to 'match' if not ASCII.
@@ -47,15 +47,15 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     // don't save the uninitialised truelengths that by chance are negative, but
     // will save if positive. Hence R >= 2.14.0 may be faster and preferred now that R
     // initializes truelength to 0 from R 2.14.0.
-    SET_TRUELENGTH(s,0);   // TODO: do we need to set to zero first??  We depend on R 3.1.0 now. TODO **********
+    SET_TRUELENGTH(s,0);   // TODO: do we need to set to zero first (we can rely on R 3.1.0 now)?
   }
   const int tablelen = length(table);
   const SEXP *td = STRING_PTR(table);
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
-    SEXP s = STRING_ELT(table,i);
+    SEXP s = td[i];
     if (s != NA_STRING && ENC_KNOWN(s) != 64) { // changed !ENC_KNOWN(s) to !ASCII(s) - check above for explanation
-      for (int j=0; j<i; ++j) SET_TRUELENGTH(STRING_ELT(table,j),0);  // reinstate 0 rather than leave the -i-1
+      for (int j=0; j<i; ++j) SET_TRUELENGTH(td[j],0);  // reinstate 0 rather than leave the -i-1
       savetl_end();
       UNPROTECT(1);
       return (chin ? match_logical(table, x) : match(table, x, nomatch));
@@ -65,49 +65,41 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     if (tl==0) SET_TRUELENGTH(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
   }
   if (chmatchdup && nuniq<tablelen) {
-    // chmatchdup is basically base::pmatch but without the partial matching part. For example :
-    // chmatchdup(c("a", "a"), c("a", "a"))   # 1,2  - the second 'a' in 'x' has a 2nd match in 'table'
-    // chmatchdup(c("a", "a"), c("a", "b"))   # 1,NA - the second one doesn't 'see' the first 'a'
-    // chmatchdup(c("a", "a"), c("a", "a.1")) # 1,NA - differs from 'pmatch' output = 1,2
+    // chmatchdup() is basically base::pmatch() but without the partial matching part. For example :
+    //   chmatchdup(c("a", "a"), c("a", "a"))   # 1,2  - the second 'a' in 'x' has a 2nd match in 'table'
+    //   chmatchdup(c("a", "a"), c("a", "b"))   # 1,NA - the second one doesn't 'see' the first 'a'
+    //   chmatchdup(c("a", "a"), c("a", "a.1")) # 1,NA - differs from 'pmatch' output = 1,2
     // used to be called chmatch2 before v1.12.2 and was in rbindlist.c. New implementation from 1.12.2 here in chmatch.c
-    // if nuniq==tablelen then there are no dups and simple chmatch is invoked to avoid these allocations etc
+    // if nuniq==tablelen then there are no dups and the simpler chmatch branch below happens instead to avoid these allocations etc
+    // see end of file for benchmark
     //                                                                                        uniq         dups
     // For example: A,B,C,B,D,E,A,A   =>   A(TL=1),B(2),C(3),D(4),E(5)   =>   dupMap    1  2  3  5  6 | 8  7  4
     //                                                                        dupLink   7  8          |    6     (blank=0)
-    int *dupMap  = (int *)calloc(tablelen, sizeof(int));
-    int *dupLink = (int *)calloc(tablelen, sizeof(int));
-    int *currDup = (int *)calloc(nuniq, sizeof(int));
-    if (!dupMap || !dupLink || !currDup) {
-      for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);  // reinstate 0 rather than leave the -i-1
+    int *counts = (int *)calloc(nuniq, sizeof(int));
+    int *map =    (int *)calloc(tablelen+nuniq, sizeof(int));  // +nuniq to store a 0 at the end of each group
+    if (!counts || !map) {
+      // # nocov start
+      for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);
       savetl_end();
       error("Failed to allocate %lld bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d", (tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
+      // # nocov end
     }
-    for (int i=0; i<nuniq; ++i) currDup[i]=i+1;
-    int dupAtEnd=tablelen;
-    for (int i=0; i<tablelen; ++i) {
-      int u = -TRUELENGTH(td[i]);  // 1-based
-      int w = currDup[u-1];
-      if (dupMap[w-1]==0) dupMap[w-1]=i+1;  // first time seen this uniq
-      else {
-        dupLink[w-1] = dupAtEnd;
-        dupMap[dupAtEnd-1] = i+1;
-        currDup[u-1] = dupAtEnd--;
-      }
-    }
+    for (int i=0; i<tablelen; ++i) counts[-TRUELENGTH(td[i])-1]++;
+    for (int i=0, sum=0; i<nuniq; ++i) { int tt=counts[i]; counts[i]=sum; sum+=tt+1; }
+    for (int i=0; i<tablelen; ++i) map[counts[-TRUELENGTH(td[i])-1]++] = i+1;           // 0 is left ending each group thanks to the calloc
+    for (int i=0, last=0; i<nuniq; ++i) {int tt=counts[i]+1; counts[i]=last; last=tt;}  // rewind counts to the beginning of each group
     for (int i=0; i<xlen; ++i) {
       int u = TRUELENGTH(xd[i]);
       if (u<0) {
-        ansd[i] = dupMap[-u-1];
-        SET_TRUELENGTH(xd[i], -dupLink[-u-1]);
-        // sets to 0 after last dup matched so more dups of "a" in x than are in table will only match as many dups as there are in table
-        // we still need the 0-setting loop below because often there will be some values in table that are not matched to at all.
-      } else {
-        ansd[i] = nomatch;
+        int w = counts[-u-1]++;
+        if (map[w]) { ansd[i]=map[w]; continue; }
+        SET_TRUELENGTH(xd[i],0); // w falls on ending 0 marker: dups used up; any more dups should return nomatch
+        // we still need the 0-setting loop at the end of this function because often there will be some values in table that are not matched to at all.
       }
+      ansd[i] = nomatch;
     }
-    free(dupMap);
-    free(dupLink);
-    free(currDup);
+    free(counts);
+    free(map);
   } else if (chin) {
     for (int i=0; i<xlen; i++) {
       ansd[i] = TRUELENGTH(xd[i])<0;
@@ -149,10 +141,10 @@ SEXP chmatchdup_R(SEXP x, SEXP table, SEXP nomatch) {
 set.seed(45L)
 x <- sample(letters, 1e6, TRUE)
 y <- sample(letters, 1e7, TRUE)
-# base::pmatch(x,y,0L) does not finish within 5 minutes
-system.time(ans1 <- .Call("Cchmatch2_old", x,y,0L)) # 2.40 seconds.  many years old
-system.time(ans2 <- .Call("Cchmatch2", x,y,0L))     # 0.17 seconds   as of 1.12.0 and in place for several years before that
-system.time(ans3 <- chmatchdup(x,y,0L))             # 0.17           no speed up in 1.12.2; goal wasn't speed but simplified code e.g. rbindlist.c down from 960 to 360 lines
-# identical(ans2,ans3); test 2000
+system.time(ans0 <- base::pmatch(x,y,0L))           # over 5 minutes as of R 3.5.3 (March 2019)
+system.time(ans1 <- .Call("Cchmatch2_old", x,y,0L)) # 2.40sec  many years old
+system.time(ans2 <- .Call("Cchmatch2", x,y,0L))     # 0.17sec  as of 1.12.0 and in place for several years before that
+system.time(ans3 <- chmatchdup(x,y,0L))             # 0.09sec  from 1.12.2; but goal wasn't speed rather simplified code; e.g. rbindlist.c down from 960 to 360 lines
+identical(ans2,ans3)  # test 2000
 */
 
