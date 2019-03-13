@@ -13635,6 +13635,12 @@ dx = data.table(id = 1L, key = "id")
 di = list(z=c(2L, 1L))
 test(1999.2, key(dx[di]), NULL)
 
+# chmatchdup test from benchmark at the bottom of chmatch.c
+set.seed(45L)
+x = sample(letters, 1e6, TRUE)
+y = sample(letters, 1e7, TRUE)
+test(2000, c(head(ans<-chmatchdup(x,y,0L)),tail(ans)), INT(65,6,15,52,98,1,999035,998289,990921,1003403,990934,1015993))
+
 
 ###################################
 #  Add new tests above this line  #

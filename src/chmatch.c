@@ -65,12 +65,12 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     if (tl==0) SET_TRUELENGTH(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
   }
   if (chmatchdup && nuniq<tablelen) {
-    // chmatchdup is basically 'pmatch' but without the partial matching part. For example :
+    // chmatchdup is basically base::pmatch but without the partial matching part. For example :
     // chmatchdup(c("a", "a"), c("a", "a"))   # 1,2  - the second 'a' in 'x' has a 2nd match in 'table'
     // chmatchdup(c("a", "a"), c("a", "b"))   # 1,NA - the second one doesn't 'see' the first 'a'
     // chmatchdup(c("a", "a"), c("a", "a.1")) # 1,NA - differs from 'pmatch' output = 1,2
     // used to be called chmatch2 before v1.12.2 and was in rbindlist.c. New implementation from 1.12.2 here in chmatch.c
-    // if nuniq==tablelen then there are no dups and simple chmatch is invoked
+    // if nuniq==tablelen then there are no dups and simple chmatch is invoked to avoid these allocations etc
     //                                                                                        uniq         dups
     // For example: A,B,C,B,D,E,A,A   =>   A(TL=1),B(2),C(3),D(4),E(5)   =>   dupMap    1  2  3  5  6 | 8  7  4
     //                                                                        dupLink   7  8          |    6     (blank=0)
@@ -86,10 +86,10 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     int dupAtEnd=tablelen;
     for (int i=0; i<tablelen; ++i) {
       int u = -TRUELENGTH(td[i]);  // 1-based
-      u = currDup[u-1];
-      if (dupMap[u-1]==0) dupMap[u-1]=i+1;  // first time seen this uniq
+      int w = currDup[u-1];
+      if (dupMap[w-1]==0) dupMap[w-1]=i+1;  // first time seen this uniq
       else {
-        dupLink[u-1] = dupAtEnd;
+        dupLink[w-1] = dupAtEnd;
         dupMap[dupAtEnd-1] = i+1;
         currDup[u-1] = dupAtEnd--;
       }
@@ -150,10 +150,9 @@ set.seed(45L)
 x <- sample(letters, 1e6, TRUE)
 y <- sample(letters, 1e7, TRUE)
 # base::pmatch(x,y,0L) does not finish within 5 minutes
-system.time(ans1 <- .Call("Cchmatch2_old", x,y,0L)) # 2.405 seconds.  many years old
-system.time(ans2 <- .Call("Cchmatch2", x,y,0L))     # 0.174 seconds   as of 1.12.0 and in place for several years before that
-identical(ans1, ans2) # TRUE
-system.time(ans3 <- chmatchdup(x,y,0L))
-# just to make sure no slow-down; the new method in 1.12.2 was to simplify code not for speed; e.g. rbindlist.c down from 960 to 360 lines
+system.time(ans1 <- .Call("Cchmatch2_old", x,y,0L)) # 2.40 seconds.  many years old
+system.time(ans2 <- .Call("Cchmatch2", x,y,0L))     # 0.17 seconds   as of 1.12.0 and in place for several years before that
+system.time(ans3 <- chmatchdup(x,y,0L))             # 0.17           no speed up in 1.12.2; goal wasn't speed but simplified code e.g. rbindlist.c down from 960 to 360 lines
+# identical(ans2,ans3); test 2000
 */
 
