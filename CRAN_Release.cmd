@@ -397,6 +397,7 @@ sudo apt-get build-dep r-cran-rsymphony   # for Rsymphony: coinor-libcgl-dev coi
 sudo apt-get -y install libtesseract-dev libleptonica-dev tesseract-ocr-eng   # for tesseract
 sudo apt-get -y install libssl-dev libsasl2-dev
 sudo apt-get -y install biber   # for ctsem
+sudo apt-get -y install libopenblas-dev  # for ivmte (+ local R build with default ./configure to pick up shared openblas)
 sudo R CMD javareconf
 # ENDIF
 
