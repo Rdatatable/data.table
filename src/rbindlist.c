@@ -262,19 +262,22 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
             if (TRUELENGTH(s)<0) continue;  // seen this level before (handles finding unique within character columns too)
             if (TRUELENGTH(s)>0) savetl(s);
             if (allocLevel==nLevel) {
-              // manual realloc needed because we need access to vector to clear up
-              allocLevel = allocLevel==0 ? 1024 : MAX(allocLevel+(n-k), (int)((double)allocLevel*1.2));
-              SEXP *newRaw = malloc(allocLevel * sizeof(SEXP));
+              // manual realloc because we need access to old memory to clear up in the event of failure to alloc (realloc frees within it in that case)
+              SEXP *newRaw = NULL;
+              if (allocLevel<INT_MAX) {
+                int64_t new=(int64_t)allocLevel+n-k+1024;  // if all remaining levels in this item haven't been seen before, plus 1024 margin in case of many very short levels
+                allocLevel= (new>(int64_t)INT_MAX) ? INT_MAX : (int)new;
+                newRaw = malloc(allocLevel * sizeof(SEXP));
+              }
               if (newRaw==NULL) {
                 for (int k=0; k<nLevel; k++) SET_TRUELENGTH(levelsRaw[k], 0);  // if realloc failed it frees within realloc so we couldn't access it for this line
                 savetl_end();
                 error("Unable to allocate working memory %lld bytes to hold combined factor levels for result column %d when reading item %d of item %d",
                       allocLevel*sizeof(SEXP), idcol+j+1, w+1, i+1);
-              } else {
-                memcpy(newRaw, levelsRaw, nLevel*sizeof(SEXP));
-                free(levelsRaw);
-                levelsRaw = newRaw;
               }
+              memcpy(newRaw, levelsRaw, nLevel*sizeof(SEXP));
+              free(levelsRaw);
+              levelsRaw = newRaw;
             }
             SET_TRUELENGTH(s,-(++nLevel));
             levelsRaw[nLevel-1] = s;
