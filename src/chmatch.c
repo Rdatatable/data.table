@@ -21,12 +21,6 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   // allocations up front before savetl starts
   SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, length(x)));
   int *ansd = INTEGER(ans);
-  int *dupMap=NULL, *dupLink=NULL;
-  if (chmatchdup) {
-    dupMap  = (int *)R_alloc(length(table), sizeof(int));
-    dupLink = (int *)R_alloc(length(table), sizeof(int));
-  }
-  // end allocations
   savetl_init();
   const SEXP *xd = STRING_PTR(x);
   const int xlen = length(x);
@@ -77,22 +71,27 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     // chmatchdup(c("a", "a"), c("a", "a.1")) # 1,NA - differs from 'pmatch' output = 1,2
     // used to be called chmatch2 before v1.12.2 and was in rbindlist.c. New implementation from 1.12.2 here in chmatch.c
     // if nuniq==tablelen then there are no dups and simple chmatch is invoked
-
-    // TODO TODO **********: allocations here will malloc and then clear-up if fail. Tidier within scope and avoids alloc up front when not needed.
-    memset(dupMap,  0, tablelen*sizeof(int));
-    memset(dupLink, 0, tablelen*sizeof(int));
     //                                                                                        uniq         dups
     // For example: A,B,C,B,D,E,A,A   =>   A(TL=1),B(2),C(3),D(4),E(5)   =>   dupMap    1  2  3  5  6 | 8  7  4
     //                                                                        dupLink   7  8          |    6     (blank=0)
+    int *dupMap  = (int *)calloc(tablelen, sizeof(int));
+    int *dupLink = (int *)calloc(tablelen, sizeof(int));
+    int *currDup = (int *)calloc(nuniq, sizeof(int));
+    if (!dupMap || !dupLink || !currDup) {
+      for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);  // reinstate 0 rather than leave the -i-1
+      savetl_end();
+      error("Failed to allocate %lld bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d", (tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
+    }
+    for (int i=0; i<nuniq; ++i) currDup[i]=i+1;
     int dupAtEnd=tablelen;
     for (int i=0; i<tablelen; ++i) {
       int u = -TRUELENGTH(td[i]);  // 1-based
-      while (dupLink[u-1]) u = dupLink[u-1];
+      u = currDup[u-1];
       if (dupMap[u-1]==0) dupMap[u-1]=i+1;  // first time seen this uniq
       else {
+        dupLink[u-1] = dupAtEnd;
         dupMap[dupAtEnd-1] = i+1;
-        dupLink[u-1] = dupAtEnd--;
-        // currentDup[u-1] = dupAtEnd--;
+        currDup[u-1] = dupAtEnd--;
       }
     }
     for (int i=0; i<xlen; ++i) {
@@ -106,6 +105,9 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
         ansd[i] = nomatch;
       }
     }
+    free(dupMap);
+    free(dupLink);
+    free(currDup);
   } else if (chin) {
     for (int i=0; i<xlen; i++) {
       ansd[i] = TRUELENGTH(xd[i])<0;
@@ -151,6 +153,7 @@ y <- sample(letters, 1e7, TRUE)
 system.time(ans1 <- .Call("Cchmatch2_old", x,y,0L)) # 2.405 seconds.  many years old
 system.time(ans2 <- .Call("Cchmatch2", x,y,0L))     # 0.174 seconds   as of 1.12.0 and in place for several years before that
 identical(ans1, ans2) # TRUE
+system.time(ans3 <- chmatchdup(x,y,0L))
 # just to make sure no slow-down; the new method in 1.12.2 was to simplify code not for speed; e.g. rbindlist.c down from 960 to 360 lines
 */
 

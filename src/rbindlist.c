@@ -143,12 +143,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
       }
     }
     savetl_end();  // restore R's usage
-
-    /* to view map when debugging ...
-    for (int i=0; i<LENGTH(l); ++i) {
-      for (int j=0; j<ncol; ++j) Rprintf("%2d ", colMap[i*ncol + j]);
-      Rprintf("\n");
-    } */
+    // to view map when debugging ...
+    // for (int i=0; i<LENGTH(l); ++i) { for (int j=0; j<ncol; ++j) Rprintf("%2d ",colMap[i*ncol + j]);  Rprintf("\n"); }
   }
 
   if (!fill && usenames) {
