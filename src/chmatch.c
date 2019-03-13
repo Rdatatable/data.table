@@ -151,5 +151,6 @@ y <- sample(letters, 1e7, TRUE)
 system.time(ans1 <- .Call("Cchmatch2_old", x,y,0L)) # 2.405 seconds.  many years old
 system.time(ans2 <- .Call("Cchmatch2", x,y,0L))     # 0.174 seconds   as of 1.12.0 and in place for several years before that
 identical(ans1, ans2) # TRUE
+# just to make sure no slow-down; the new method in 1.12.2 was to simplify code not for speed; e.g. rbindlist.c down from 960 to 360 lines
 */
 
