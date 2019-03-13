@@ -21,6 +21,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
   int ncol=0, first=0;
   int64_t nrow=0;
   bool anyNames=false;
+  int numZero=0, firstZeroCol=0, firstZeroItem=0;
   // pre-check for any errors here to save having to get cleanup right below when usenames
   for (int i=0; i<LENGTH(l); i++) {  // length(l)>0 checked above
     SEXP li = VECTOR_ELT(l, i);
@@ -41,9 +42,16 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
     int thisnrow = length(VECTOR_ELT(li,0));
     for (int j=1; j<thisncol; ++j) {
       int tt = length(VECTOR_ELT(li, j));
-      if (tt!=thisnrow) error("Column %d of item %d is length %d inconsistent with the first column of that item which is length %d. rbind/rbindlist expects each item in the input list to be a uniform list, data.frame or data.table", j+1, i+1, tt, thisnrow);
+      if (tt>0 && tt!=thisnrow) error("Column %d of item %d is length %d inconsistent with the first column of that item which is length %d. rbind/rbindlist expects each item in the input list to be a uniform list, data.frame or data.table", j+1, i+1, tt, thisnrow);
+      if (tt==0 && thisnrow>0 && numZero++==0) { firstZeroCol = j; firstZeroItem=i; }
     }
     nrow += thisnrow;
+  }
+  if (numZero) {  // #1871
+    SEXP names = getAttrib(VECTOR_ELT(l, firstZeroItem), R_NamesSymbol);
+    const char *ch = names==R_NilValue ? "" : CHAR(STRING_ELT(names, firstZeroCol));
+    warning("Column %d ['%s'] of item %d is length 0. This (and %d other%s like it) has been filled with NA to make each item uniform.",
+            firstZeroCol+1, ch, firstZeroItem+1, numZero-1, numZero==2?"":"s");
   }
   if (nrow==0 && ncol==0) return(R_NilValue);
   if (nrow>INT32_MAX) error("Total rows in the list is %lld which is larger than the maximum number of rows, currently %d", nrow, INT32_MAX);
@@ -194,7 +202,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
 
   // colMap tells us which item to fetch for each of the final result columns, so we can stack column-by-column
   for(int j=0; j<ncol; ++j) {
-    int maxType=0;
+    int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
     bool factor=false;
     bool int64=false;
     bool foundName=false;
@@ -225,7 +233,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
       }
     }
     // in future warn ... if (factor && anyNotStringOrFactor) warning("Column %d contains a factor but not all items for the column are character or factor", idcol+j+1);
-    if (maxType==0) error("Internal error: maxType==0 for result column %d", idcol+j+1);
     if (!foundName) { char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); }
     if (factor) maxType=INTSXP;  // any items are factors then a factor is created (could be an option)
     SEXP target;
@@ -243,10 +250,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
         const int thisnrow = length(VECTOR_ELT(li, 0));
         if (thisnrow==0) continue;
         int w = usenames ? colMap[i*ncol + j] : j;
-        if (w==-1) {
+        SEXP thisCol;
+        if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow);
         } else {
-          SEXP thisCol = VECTOR_ELT(li, w);
           bool coerced=false;
           SEXP thisColStr;
           if (isFactor(thisCol)) thisColStr = getAttrib(thisCol, R_LevelsSymbol);  // TODO these could fail and not clear-up tl; coerce first
@@ -315,10 +322,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
         const int thisnrow = length(VECTOR_ELT(li, 0));
         if (thisnrow==0) continue;
         int w = usenames ? colMap[i*ncol + j] : j;
-        if (w==-1) {
+        SEXP thisCol;
+        if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {
           writeNA(target, ansloc, thisnrow);
         } else {
-          SEXP thisCol = VECTOR_ELT(li, w);
           bool coerced = false;
           if (TYPEOF(thisCol)!=TYPEOF(target)) {
             thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target)));

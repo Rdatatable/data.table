@@ -4609,10 +4609,8 @@ test(1287, ans, data.table(Time=a$Time, demand.x=NA_real_, demand.y=a$demand, ke
 ll <- list(data.table(x=1, y=-1, x=-2), data.table(y=10, y=20, y=30, x=-10, a="a", b=Inf, c=factor(1)))
 test(1288.01, rbindlist(ll, use.names=TRUE, fill=FALSE), error = "Item 2 has 7 columns, inconsistent with item 1 which has 3 columns")
 # modified after fixing #725
-
-# different column order (dups were grouped)
-# test(1288.02, rbindlist(ll, use.names=TRUE, fill=TRUE),
-#    data.table(x=c(1,-10), x=c(-2, NA), y=c(-1,10), y=c(NA,20), y=c(NA,30), a=c(NA, "a"), b=c(NA, Inf), c=factor(c(NA, 1))))
+test(1288.02, rbindlist(ll, use.names=TRUE, fill=TRUE),   # dups were grouped before 1.12.2; now order of dups is retained; #3455
+    data.table(x=c(1,-10), y=c(-1,10), x=c(-2, NA), y=c(NA,20), y=c(NA,30), a=c(NA, "a"), b=c(NA, Inf), c=factor(c(NA, 1))))
 
 # check the name of output are consistent when binding two empty dts with one empy and other non-empty dt
 dt1 <- data.table(x=1:5, y=6:10)
@@ -13648,6 +13646,17 @@ test(2001.1, colnames(rbind(DT[1], DT[3])), colnames(DT))
 DT1 = data.table(a=1L, b=3L, c=5L, b=7L)
 DT2 = data.table(a=2L, b=4L, c=6L, b=8L)
 test(2001.2, rbind(DT1, DT2, use.names = TRUE), data.table(a=1:2, b=3:4, c=5:6, b=7:8))  # dup of b at the end; was a,b,b,c
+
+# rbindlist now fills NULL and empty columns with NA with warning, #1871
+test(2002.1, rbindlist( list(list(a=1L, b=2L, x=NULL), list(a=2L, b=3L, x=10L)) ),
+             data.table(a=1:2, b=2:3, x=INT(NA,10)),
+             warning="Column 3 ['x'] of item 1 is length 0. This (and 0 others like it) has been filled with NA to make each item uniform.")
+test(2002.2, rbindlist( list(list(a=1L, b=2L, x=NULL), list(a=2L, b=NULL, x=10L)) ),
+             data.table(a=1:2, b=INT(2,NA), x=INT(NA,10)),
+             warning="Column 3 ['x'] of item 1 is length 0. This (and 1 other like it) has been filled with NA to make each item uniform.")
+test(2002.3, rbindlist( list(list(a=1L, b=2L, x=NULL), list(a=2L, b=NULL, x=NULL)) ),
+             data.table(a=1:2, b=INT(2,NA), x=c(NA,NA)),
+             warning="Column 3 ['x'] of item 1 is length 0. This (and 2 others like it) has been filled with NA to make each item uniform.")
 
 
 ###################################
