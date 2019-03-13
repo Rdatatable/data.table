@@ -53,7 +53,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     // don't save the uninitialised truelengths that by chance are negative, but
     // will save if positive. Hence R >= 2.14.0 may be faster and preferred now that R
     // initializes truelength to 0 from R 2.14.0.
-    SET_TRUELENGTH(s,0);
+    SET_TRUELENGTH(s,0);   // TODO: do we need to set to zero first??  We depend on R 3.1.0 now. TODO **********
   }
   const int tablelen = length(table);
   const SEXP *td = STRING_PTR(table);
@@ -71,11 +71,19 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     if (tl==0) SET_TRUELENGTH(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
   }
   if (chmatchdup && nuniq<tablelen) {
-    // used to be called chmatch2 before v1.12.2. New implementation from 1.12.2 too        uniq          dups
-    // For example: A,B,C,B,D,E,A,A   =>   A(TL=1),B(2),C(3),D(4),E(5)   =>   dupMap    1  2  3  5  6 | 8  7  4
-    //                                                                        dupLink   7  8          |    6     (blank=0)
+    // chmatchdup is basically 'pmatch' but without the partial matching part. For example :
+    // chmatchdup(c("a", "a"), c("a", "a"))   # 1,2  - the second 'a' in 'x' has a 2nd match in 'table'
+    // chmatchdup(c("a", "a"), c("a", "b"))   # 1,NA - the second one doesn't 'see' the first 'a'
+    // chmatchdup(c("a", "a"), c("a", "a.1")) # 1,NA - differs from 'pmatch' output = 1,2
+    // used to be called chmatch2 before v1.12.2 and was in rbindlist.c. New implementation from 1.12.2 here in chmatch.c
+    // if nuniq==tablelen then there are no dups and simple chmatch is invoked
+
+    // TODO TODO **********: allocations here will malloc and then clear-up if fail. Tidier within scope and avoids alloc up front when not needed.
     memset(dupMap,  0, tablelen*sizeof(int));
     memset(dupLink, 0, tablelen*sizeof(int));
+    //                                                                                        uniq         dups
+    // For example: A,B,C,B,D,E,A,A   =>   A(TL=1),B(2),C(3),D(4),E(5)   =>   dupMap    1  2  3  5  6 | 8  7  4
+    //                                                                        dupLink   7  8          |    6     (blank=0)
     int dupAtEnd=tablelen;
     for (int i=0; i<tablelen; ++i) {
       int u = -TRUELENGTH(td[i]);  // 1-based
@@ -84,6 +92,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       else {
         dupMap[dupAtEnd-1] = i+1;
         dupLink[u-1] = dupAtEnd--;
+        // currentDup[u-1] = dupAtEnd--;
       }
     }
     for (int i=0; i<xlen; ++i) {
@@ -132,4 +141,15 @@ SEXP chin_R(SEXP x, SEXP table) {
 SEXP chmatchdup_R(SEXP x, SEXP table, SEXP nomatch) {
   return chmatchMain(x, table, INTEGER(nomatch)[0], false, true);
 }
+
+/*
+## Benchmark moved here in v1.12.2 from rbindlist.c
+set.seed(45L)
+x <- sample(letters, 1e6, TRUE)
+y <- sample(letters, 1e7, TRUE)
+# base::pmatch(x,y,0L) does not finish within 5 minutes
+system.time(ans1 <- .Call("Cchmatch2_old", x,y,0L)) # 2.405 seconds.  many years old
+system.time(ans2 <- .Call("Cchmatch2", x,y,0L))     # 0.174 seconds   as of 1.12.0 and in place for several years before that
+identical(ans1, ans2) # TRUE
+*/
 
