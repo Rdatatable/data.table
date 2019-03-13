@@ -13641,6 +13641,14 @@ x = sample(letters, 1e6, TRUE)
 y = sample(letters, 1e7, TRUE)
 test(2000, c(head(ans<-chmatchdup(x,y,0L)),tail(ans)), INT(65,6,15,52,98,1,999035,998289,990921,1003403,990934,1015993))
 
+# rbindlist use.names=TRUE returned random column order when ncol>255; #3373
+DT = setDT(replicate(300, rnorm(3L), simplify = FALSE))
+test(2001.1, colnames(rbind(DT[1], DT[3])), colnames(DT))
+# and use.names=TRUE keeps dups in original location; mentioned in #3373
+DT1 = data.table(a=1L, b=3L, c=5L, b=7L)
+DT2 = data.table(a=2L, b=4L, c=6L, b=8L)
+test(2001.2, rbind(DT1, DT2, use.names = TRUE), data.table(a=1:2, b=3:4, c=5:6, b=7:8))  # dup of b at the end; was a,b,b,c
+
 
 ###################################
 #  Add new tests above this line  #
