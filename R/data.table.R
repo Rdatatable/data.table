@@ -648,7 +648,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       if (length(xo) && length(irows)) {
         irows = xo[irows]   # TO DO: fsort here?
         if (mult=="all" && !allGrp1) { # following #1991 fix, !allGrp1 will always be TRUE. TODO: revisit.
-          if (verbose) {last.started.at=proc.time();cat("Reorder irows  for 'mult==\"all\" && !allGrp1' ... ");flush.console()}
+          if (verbose) {last.started.at=proc.time();cat("Reorder irows for 'mult==\"all\" && !allGrp1' ... ");flush.console()}
           irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
           if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
         }
