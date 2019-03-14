@@ -13657,6 +13657,14 @@ test(2002.2, rbindlist( list(list(a=1L, b=2L, x=NULL), list(a=2L, b=NULL, x=10L)
 test(2002.3, rbindlist( list(list(a=1L, b=2L, x=NULL), list(a=2L, b=NULL, x=NULL)) ),
              data.table(a=1:2, b=INT(2,NA), x=c(NA,NA)),
              warning="Column 3 ['x'] of item 1 is length 0. This (and 2 others like it) has been filled with NA to make each item uniform.")
+# tests from #1302
+test(2002.4, rbindlist( list(list(a=1L,z=list()), list(a=2L, z=list("m"))) ),
+             data.table(a=1:2, z=list(NULL, "m")),
+             warning="Column 2 ['z'] of item 1 is length 0. This (and 0 others like it) has been filled with NA")
+test(2002.5, rbindlist( list( list(a=1L, z=list("z")), list(a=2L, z=list(c("a","b"))) )),
+             data.table(a=1:2, z=list("z", c("a","b"))))
+test(2002.6, rbindlist(list( list(a=1, z=list("z",1)), list(a=2, z=list(c("a","b"))) )),
+             error="Column 2 of item 1 is length 2 inconsistent with the first column of that item which is length 1")
 
 
 ###################################
