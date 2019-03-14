@@ -13626,6 +13626,23 @@ dx = data.table(id = 1L, key = "id")
 di = list(z=c(2L, 1L))
 test(1999.2, key(dx[di]), NULL)
 
+# test the non-ASCII strings are correctly sorted on Windows, #3397
+if (.Platform$OS.type == 'windows') local({
+  lc_collate <- Sys.getlocale(c('LC_COLLATE'))
+  lc_ctype <- Sys.getlocale(c('LC_CTYPE'))
+  Sys.setlocale('LC_COLLATE', "Chinese (Simplified)_China.936")
+  Sys.setlocale('LC_CTYPE', "Chinese (Simplified)_China.936")
+  on.exit({
+    Sys.setlocale('LC_COLLATE', lc_collate)
+    Sys.setlocale('LC_CTYPE', lc_ctype)
+  }, add = TRUE)
+  x1 <- '\u501f:Cash|\u501f:\u635f\u76ca\u7c7b-\u4ea4\u6613\u8d39\u7528|\u501f:\u635f\u76ca\u7c7b-\u4ef7\u5dee\u6536\u5165|\u501f:\u635f\u76ca\u7c7b-\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca|\u8d37:\u8d44\u4ea7\u7c7b-\u516c\u5141\u4ef7\u503c\u53d8\u52a8|\u8d37:\u8d44\u4ea7\u7c7b-\u6210\u672c'
+  x2 <- '\u501f:Cash|\u501f:\u635f\u76ca\u7c7b-\u4ea4\u6613\u8d39\u7528|\u501f:\u635f\u76ca\u7c7b-\u4ef7\u5dee\u6536\u5165|\u501f:\u635f\u76ca\u7c7b-\u516c\u5141\u4ef7\u503c\u53d8\u52a8\u635f\u76ca|\u8d37:\u8d44\u4ea7\u7c7b-\u516c\u5141\u4ef7\u503c\u53d8\u52a8|\u8d37:\u8d44\u4ea7\u7c7b-\u5e94\u8ba1\u5229\u606f|\u8d37:\u8d44\u4ea7\u7c7b-\u6210\u672c'
+  x <- enc2native(c(x2, x1))
+  dt1 <- data.table(a = x, b = 1, key = 'a')
+  dt2 <- data.table(a = enc2utf8(x), b = 1, key = 'a')
+  test(2000, dt1$a, dt2$a)
+})
 
 ###################################
 #  Add new tests above this line  #
