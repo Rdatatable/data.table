@@ -268,24 +268,23 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
             SEXP s = thisColStrD[k];
             if (TRUELENGTH(s)<0) continue;  // seen this level before (handles finding unique within character columns too)
             if (TRUELENGTH(s)>0) savetl(s);
-            if (allocLevel==nLevel) {
-              SEXP *newRaw = NULL;
-              if (allocLevel<INT_MAX) {
-                int64_t new=(int64_t)allocLevel+n-k+1024; // if all remaining levels in this item haven't been seen before, plus 1024 margin in case of many very short levels
-                allocLevel= (new>(int64_t)INT_MAX) ? INT_MAX : (int)new;
-                newRaw = malloc(allocLevel * sizeof(SEXP));
+            if (allocLevel==nLevel) {       // including initial time when allocLevel==nLevel==0
+              if (allocLevel==INT_MAX) {
+                savetl_end(); error("Internal error: reached max %d unique factor levels. Please report to data.table issue tracker.", allocLevel);  // # nocov
               }
-              if (newRaw==NULL) {
+              int64_t new=(int64_t)allocLevel+n-k+1024; // if all remaining levels in this item haven't been seen before, plus 1024 margin in case of many very short levels
+              allocLevel= (new>(int64_t)INT_MAX) ? INT_MAX : (int)new;
+              SEXP *tt = (SEXP *)realloc(levelsRaw, allocLevel*sizeof(SEXP));  // first time levelsRaw==NULL and realloc==malloc in that case
+              if (tt==NULL) {
                 // # nocov start
-                for (int k=0; k<nLevel; k++) SET_TRUELENGTH(levelsRaw[k], 0); // access old memory, hence manual-realloc since realloc frees old within it if it fails
+                // C spec states that if realloc() fails the original block is left untouched; it is not freed or moved. We ...
+                for (int k=0; k<nLevel; k++) SET_TRUELENGTH(levelsRaw[k], 0);   // ... rely on that in this for loop which uses levelsRaw.
+                free(levelsRaw);
                 savetl_end();
-                error("Unable to allocate working memory %lld bytes to hold combined factor levels for result column %d when reading item %d of item %d",
-                      allocLevel*sizeof(SEXP), idcol+j+1, w+1, i+1);
+                error("Failed to allocate working memory for %d factor levels of result column %d when reading item %d of item %d", allocLevel, idcol+j+1, w+1, i+1);
                 // # nocov end
               }
-              memcpy(newRaw, levelsRaw, nLevel*sizeof(SEXP));
-              free(levelsRaw);
-              levelsRaw = newRaw;
+              levelsRaw = tt;
             }
             SET_TRUELENGTH(s,-(++nLevel));
             levelsRaw[nLevel-1] = s;

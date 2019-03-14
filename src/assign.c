@@ -2,9 +2,6 @@
 #include <Rdefines.h>
 #include <Rmath.h>
 
-static SEXP *saveds=NULL;
-static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
-
 static void finalizer(SEXP p)
 {
   SEXP x;
@@ -978,7 +975,6 @@ void writeNA(SEXP v, const int from, const int n)
   }
 }
 
-
 SEXP allocNAVector(SEXPTYPE type, R_len_t n)
 {
   // an allocVector following with initialization to NA since a subassign to a new column using :=
@@ -991,34 +987,42 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
   return(v);
 }
 
+static SEXP *saveds=NULL;
+static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
+
 void savetl_init() {
-  if (nsaved || nalloc || saveds || savedtl) error("Internal error: savetl_init checks failed (%d %d %p %p). please report to data.table issue tracker.", nsaved, nalloc, saveds, savedtl); // # nocov
+  if (nsaved || nalloc || saveds || savedtl) {
+    error("Internal error: savetl_init checks failed (%d %d %p %p). please report to data.table issue tracker.", nsaved, nalloc, saveds, savedtl); // # nocov
+  }
   nsaved = 0;
   nalloc = 100;
   saveds = (SEXP *)malloc(nalloc * sizeof(SEXP));
-  if (saveds == NULL) error("Couldn't allocate saveds in savetl_init");
   savedtl = (R_len_t *)malloc(nalloc * sizeof(R_len_t));
-  if (savedtl == NULL) {
-    free(saveds);
-    error("Couldn't allocate saveds in savetl_init");
+  if (saveds==NULL || savedtl==NULL) {
+    savetl_end();                                                        // # nocov
+    error("Failed to allocate initial %d items in savetl_init", nalloc); // # nocov
   }
 }
 
 void savetl(SEXP s)
 {
-  if (nsaved>=nalloc) {
-    nalloc *= 2;
-    char *tmp;
-    tmp = (char *)realloc(saveds, nalloc * sizeof(SEXP));
-    if (tmp == NULL) {
-      savetl_end();
-      error("Couldn't realloc saveds in savetl");
+  if (nsaved==nalloc) {
+    if (nalloc==INT_MAX) {
+      savetl_end();                                                                                                     // # nocov
+      error("Internal error: reached maximum %d items for savetl. Please report to data.table issue tracker.", nalloc); // # nocov
+    }
+    nalloc = nalloc>(INT_MAX/2) ? INT_MAX : nalloc*2;
+    char *tmp = (char *)realloc(saveds, nalloc*sizeof(SEXP));
+    if (tmp==NULL) {
+      // C spec states that if realloc() fails the original block is left untouched; it is not freed or moved. We rely on that here.
+      savetl_end();                                                      // # nocov  free(saveds) happens inside savetl_end
+      error("Failed to realloc saveds to %d items in savetl", nalloc);   // # nocov
     }
     saveds = (SEXP *)tmp;
-    tmp = (char *)realloc(savedtl, nalloc * sizeof(R_len_t));
-    if (tmp == NULL) {
-      savetl_end();
-      error("Couldn't realloc savedtl in savetl");
+    tmp = (char *)realloc(savedtl, nalloc*sizeof(R_len_t));
+    if (tmp==NULL) {
+      savetl_end();                                                      // # nocov
+      error("Failed to realloc savedtl to %d items in savetl", nalloc);  // # nocov
     }
     savedtl = (R_len_t *)tmp;
   }
@@ -1031,11 +1035,11 @@ void savetl_end() {
   // Can get called if nothing has been saved yet (nsaved==0), or even if _init() hasn't been called yet (pointers NULL). Such
   // as to clear up before error. Also, it might be that nothing needed to be saved anyway.
   for (int i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);
-  free(saveds);  // does nothing on NULL input
-  free(savedtl);
-  nsaved = nalloc = 0;
+  free(saveds);  // possible free(NULL) which is safe no-op
   saveds = NULL;
+  free(savedtl);
   savedtl = NULL;
+  nsaved = nalloc = 0;
 }
 
 SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
