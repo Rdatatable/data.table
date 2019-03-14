@@ -262,16 +262,6 @@ SEXP shallowwrapper(SEXP dt, SEXP cols) {
   } else return(shallow(dt, cols, TRUELENGTH(dt)));
 }
 
-// is.data.table() C-function, extracted from assign.c
-// Check if "data.table" class exists somewhere in class (#5115)
-Rboolean isDatatable(SEXP x) {
-  SEXP klass = getAttrib(x, R_ClassSymbol);
-  for (int i=0; i<length(klass); i++) {
-    if (strcmp(CHAR(STRING_ELT(klass, i)), "data.table") == 0) return(TRUE);
-  }
-  return (FALSE);
-}
-
 SEXP truelength(SEXP x) {
   SEXP ans;
   PROTECT(ans = allocVector(INTSXP, 1));
@@ -287,7 +277,6 @@ SEXP truelength(SEXP x) {
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
   return ScalarInteger(_selfrefok(x,FALSE,LOGICAL(verbose)[0]));
 }
-
 
 void memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
 
