@@ -13626,6 +13626,11 @@ dx = data.table(id = 1L, key = "id")
 di = list(z=c(2L, 1L))
 test(1999.2, key(dx[di]), NULL)
 
+# assign RHS list better error msg #950
+d = data.table(id=c("a","b"), f=list(function(x) x*2, function(x) x^2), key="id")
+test(2000.1, d[.("a"), f:=list(function(x) x^3)], error="RHS of assignment is not NULL.*try wrapping it in extra list.*")
+test(2000.2, d[.("a"), f:=list(list(function(x) x^3))], data.table(id=c("a","b"), f=list(function(x) x^3, function(x) x^2), key="id"))
+
 
 ###################################
 #  Add new tests above this line  #
