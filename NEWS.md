@@ -59,6 +59,8 @@
 
 10. The `key(DT)<-` form of `setkey()` has been warning since at least 2012 to use `setkey()`. The warning is now stronger: `key(x)<-value is deprecated and not supported. Please change to use setkey().`. This warning will be upgraded to error in one year.
 
+11. Running `setorder` on a keyed `data.table` will only wipe the key if there's a chance the table is no longer sorted by that key, [#3456](https://github.com/Rdatatable/data.table/issues/3456). For example, if `a` is the key of `DT`, `setorder(DT, a, -v)` will leave `DT` in ascending order by `a` and thus still keyed.
+
 
 ### Changes in v1.12.0  (13 Jan 2019)
 

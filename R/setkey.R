@@ -333,7 +333,9 @@ setorderv <- function(x, cols = colnames(x), order=1L, na.last=FALSE)
     if (is.data.frame(x) & !is.data.table(x)) {
       setattr(x, 'row.names', rownames(x)[o])
     }
-    setattr(x, 'sorted', NULL) # if 'forderv' is not 0-length, it means order has changed. So, set key to NULL, else retain key.
+    k = key(x)
+    if (!identical(head(cols, length(k)), k) || any(head(order, length(k)) < 0))
+      setattr(x, 'sorted', NULL) # if 'forderv' is not 0-length & key is not a same-ordered subset of cols, it means order has changed. So, set key to NULL, else retain key.
     setattr(x, 'index', NULL)  # remove secondary keys too. These could be reordered and retained, but simpler and faster to remove
   }
   invisible(x)

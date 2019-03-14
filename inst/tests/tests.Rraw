@@ -13626,6 +13626,20 @@ dx = data.table(id = 1L, key = "id")
 di = list(z=c(2L, 1L))
 test(1999.2, key(dx[di]), NULL)
 
+# setorder doesn't wipe key unless order is possibly changed, #3456
+DT = data.table(
+  a = rep(4:1, 1:4),
+  b = 1:10,
+  v = c(2L, 4L, 10L, 5L, 9L, 6L, 7L, 8L, 3L, 1L)
+)
+setkey(DT, a)
+setorder(DT, a, -v)
+test(2000.1, key(DT), 'a')
+setorder(DT, -a, v)
+test(2000.2, key(DT), NULL)
+setkey(DT, a, b)
+setorder(DT, b)
+test(2000.3, key(DT), NULL)
 
 ###################################
 #  Add new tests above this line  #
