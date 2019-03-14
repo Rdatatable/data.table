@@ -55,6 +55,9 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   for (int i=0; i<tablelen; ++i) {
     SEXP s = td[i];
     if (s != NA_STRING && ENC_KNOWN(s) != 64) { // changed !ENC_KNOWN(s) to !ASCII(s) - check above for explanation
+      // This branch is now covered by tests 2004.*. However, is this branch redundant? It means there were no non-ascii encodings
+      // in x since the fallback above to match() didn't happen when x was checked. If that was the case in x, then it means none of the
+      // x values can match to table anyway. Can't we just drop this branch then? (TODO)
       for (int j=0; j<i; ++j) SET_TRUELENGTH(td[j],0);  // reinstate 0 rather than leave the -i-1
       savetl_end();
       UNPROTECT(1);

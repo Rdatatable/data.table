@@ -13686,7 +13686,17 @@ test(2003.3, rbindlist(list(data.table(a=1:2), data.table(b=3:4)), fill=TRUE, us
              data.table(a=c(1:2,NA,NA), b=c(NA,NA,3:4)),
              warning="use.names= can not be FALSE when fill is TRUE. Setting use.names=TRUE")
 
-
+# chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #5159 #2538 #4818
+x1 = "fa\xE7ile"
+Encoding(x1) = "latin1"
+x2 = iconv(x1, "latin1", "UTF-8")
+test(2004.1, identical(x1,x2))
+test(2004.2, Encoding(x1)!=Encoding(x2))
+test(2004.3, chmatch(c("a",x1,"b"), x2), c(NA,1L,NA))       # x contains mixed; covers first fallback in chmatchMain
+test(2004.4, c("a",x1,"b") %chin% x2, c(FALSE,TRUE,FALSE))  # and the chin switch in the same fallback
+test(2004.5, chmatch(c("a","b"), c("b",x1)), c(NA,1L))      # x doesn't contain encodings so covers the second fallback in chmatchMain
+test(2004.6, chmatch(c("a","b"), c("b",x2)), c(NA,1L))      #   the second fallback might be redundnant though; see comments in chmatch.c
+test(2004.7, c("a","b") %in% c("b",x1,x2), c(FALSE, TRUE))  #   the second fallback might be redundnant though; see comments in chmatch.c
 
 
 ###################################
