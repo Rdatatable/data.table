@@ -13665,6 +13665,12 @@ test(2002.5, rbindlist( list( list(a=1L, z=list("z")), list(a=2L, z=list(c("a","
              data.table(a=1:2, z=list("z", c("a","b"))))
 test(2002.6, rbindlist(list( list(a=1, z=list("z",1)), list(a=2, z=list(c("a","b"))) )),
              error="Column 2 of item 1 is length 2 inconsistent with the first column of that item which is length 1")
+# tests from #3343
+DT1=list(a=NULL); setDT(DT1)
+DT2=list(a=NULL); setDT(DT2)
+test(2002.7, rbind(DT1, DT2),                 data.table(a=logical()))
+test(2002.8, rbind(A=DT1, B=DT2, idcol='id'), data.table(id=character(), a=logical()))
+test(2002.9, rbind(DT1, DT2, idcol='id'),     data.table(id=integer(), a=logical()))
 
 
 ###################################
