@@ -13672,6 +13672,15 @@ test(2002.7, rbind(DT1, DT2),                 data.table(a=logical()))
 test(2002.8, rbind(A=DT1, B=DT2, idcol='id'), data.table(id=character(), a=logical()))
 test(2002.9, rbind(DT1, DT2, idcol='id'),     data.table(id=integer(), a=logical()))
 
+#rbindlist coverage
+test(2003.1, rbindlist(list(), use.names=1), error="use.names= should be TRUE or FALSE")
+test(2003.2, rbindlist(list(), fill=1), error="fill= should be TRUE or FALSE")
+test(2003.3, rbindlist(list(data.table(a=1:2), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
+             data.table(a=c(1:2,NA,NA), b=c(NA,NA,3:4)),
+             warning="use.names= can not be FALSE when fill is TRUE. Setting use.names=TRUE")
+
+
+
 
 ###################################
 #  Add new tests above this line  #

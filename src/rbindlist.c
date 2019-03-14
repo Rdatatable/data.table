@@ -1,12 +1,12 @@
 #include "data.table.h"
 #include <Rdefines.h>
 
-SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
-
-  if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1 || LOGICAL(usenamesArg)[0]==NA_LOGICAL)
-    error("use.names= should be TRUE or FALSE");
+SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
+{
   if (!isLogical(fillArg) || LENGTH(fillArg) != 1 || LOGICAL(fillArg)[0] == NA_LOGICAL)
     error("fill= should be TRUE or FALSE");
+  if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1 || LOGICAL(usenamesArg)[0]==NA_LOGICAL)
+    error("use.names= should be TRUE or FALSE");
   if (!length(l)) return(l);
   if (TYPEOF(l) != VECSXP) error("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists.");
   bool usenames = LOGICAL(usenamesArg)[0];
@@ -269,18 +269,19 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
             if (TRUELENGTH(s)<0) continue;  // seen this level before (handles finding unique within character columns too)
             if (TRUELENGTH(s)>0) savetl(s);
             if (allocLevel==nLevel) {
-              // manual realloc because we need access to old memory to clear up in the event of failure to alloc (realloc frees within it in that case)
               SEXP *newRaw = NULL;
               if (allocLevel<INT_MAX) {
-                int64_t new=(int64_t)allocLevel+n-k+1024;  // if all remaining levels in this item haven't been seen before, plus 1024 margin in case of many very short levels
+                int64_t new=(int64_t)allocLevel+n-k+1024; // if all remaining levels in this item haven't been seen before, plus 1024 margin in case of many very short levels
                 allocLevel= (new>(int64_t)INT_MAX) ? INT_MAX : (int)new;
                 newRaw = malloc(allocLevel * sizeof(SEXP));
               }
               if (newRaw==NULL) {
-                for (int k=0; k<nLevel; k++) SET_TRUELENGTH(levelsRaw[k], 0);  // if realloc failed it frees within realloc so we couldn't access it for this line
+                // # nocov start
+                for (int k=0; k<nLevel; k++) SET_TRUELENGTH(levelsRaw[k], 0); // access old memory, hence manual-realloc since realloc frees old within it if it fails
                 savetl_end();
                 error("Unable to allocate working memory %lld bytes to hold combined factor levels for result column %d when reading item %d of item %d",
                       allocLevel*sizeof(SEXP), idcol+j+1, w+1, i+1);
+                // # nocov end
               }
               memcpy(newRaw, levelsRaw, nLevel*sizeof(SEXP));
               free(levelsRaw);
@@ -356,7 +357,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
               SET_STRING_ELT(target, ansloc+r, STRING_ELT(thisCol,r));
             break;
           default :
-            error("Unsupported column type '%s'", type2char(TYPEOF(target)));
+            error("Unsupported column type '%s'", type2char(TYPEOF(target)));  // # nocov
           }
           if (coerced) UNPROTECT(1);
         }
