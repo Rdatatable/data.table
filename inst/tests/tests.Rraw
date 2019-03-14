@@ -1313,7 +1313,7 @@ test(443, rbind(DT,data.table(a=4L,b=7L)), data.table(a=1:4,b=4:7))
 test(444, rbind(DT,list(b=7L,a=4L)), data.table(a=1:4,b=4:7)) # rbind should by default check row names. Don't warn here. Add clear documentation instead.
 test(445, rbind(DT,data.frame(b=7L,a=4L)), data.table(a=1:4,b=4:7))
 test(446, rbind(DT,data.table(b=7L,a=4L)), data.table(a=1:4,b=4:7))
-test(450, rbind(DT,list(c=4L,a=7L)), error=tt<-"Column 1 ['c'] of input list 2 is missing in input list 1. Use fill=TRUE to fill with NA.")
+test(450, rbind(DT,list(c=4L,a=7L)), error=tt<-"Column 1 ['c'] of item 2 is missing in item 1. Use fill=TRUE to fill with NA.")
 test(451, rbind(DT,data.frame(c=4L,a=7L)), error=tt)
 test(452, rbind(DT,data.table(c=4L,a=7L)), error=tt)
 test(453, rbind(DT,list(4L,7L)), data.table(a=1:4,b=4:7))
@@ -4642,7 +4642,7 @@ test(1288.11, rbindlist(ll, use.names=TRUE), data.table(a=c(1:3, 5:7), b=c(4:6, 
 ll <- list(list(1:3, 4:6), list(a=5:7, b=8:10))
 test(1288.12, rbindlist(ll, use.names=TRUE), data.table(a=c(1:3, 5:7), b=c(4:6, 8:10)))
 ll <- list(list(a=1:3, 4:6), list(5:7, b=8:10))
-test(1288.13, rbindlist(ll, use.names=TRUE), error="Column 2 ['b'] of input list 2 is missing in input list 1. Use fill=TRUE to fill with NA")
+test(1288.13, rbindlist(ll, use.names=TRUE), error="Column 2 ['b'] of item 2 is missing in item 1. Use fill=TRUE to fill with NA")
 ll <- list(list(a=1:3, 4:6), list(5:7, b=8:10))
 test(1288.14, rbindlist(ll, fill=TRUE), data.table(a=c(1:3, rep(NA_integer_,3L)), V1=c(4:6,5:7), b=c(rep(NA_integer_, 3L), 8:10)))
 ll <- list(list(1:3, 4:6), list(5:7, 8:10))
@@ -13340,7 +13340,7 @@ test(1977.6, DT[c("A","D"), c("ID","GRP")], data.table(ID=c("A","A","D"), GRP=IN
 set.seed(32940)
 NN=7e5; KK=4e4; TT=25
 DT = data.table( id = sample(KK, NN, TRUE), tt = sample(TT, NN, TRUE), ff = factor(sample(3, NN, TRUE)) )
-test(1978, print(DT[ , diff(ff), by = id]), error="Column 2 of input list 1 has type 'factor' but has no levels; i.e. malformed") # the print invokes rbindlist which bites
+test(1978, print(DT[ , diff(ff), by = id]), error="Column 2 of item 1 has type 'factor' but has no levels; i.e. malformed.") # the print invokes rbindlist which bites
 
 # Drop Null Values from `j` list elements #1406
 DT = data.table(a = 1:3,b = letters[1:3],c = LETTERS[1:3])

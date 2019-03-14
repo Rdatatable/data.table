@@ -164,11 +164,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
         if (colMap[i*ncol + j]==-1) {
           int missi = i;
           while (colMap[i*ncol + j]==-1 && i<LENGTH(l)) i++;
-          if (i==LENGTH(l)) error("Internal error: could not find the first column name not present in earlier input list");  // nocov
+          if (i==LENGTH(l)) error("Internal error: could not find the first column name not present in earlier item");  // nocov
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           int w = colMap[i*ncol + j];
           const char *str = isString(s) ? CHAR(STRING_ELT(s,w)) : "";
-          error("Column %d ['%s'] of input list %d is missing in input list %d. Use fill=TRUE to fill with NA.", w+1, str, i+1, missi+1);
+          error("Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA.", w+1, str, i+1, missi+1);
         }
       }
     }
@@ -222,14 +222,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg) {
       int thisType = TYPEOF(thisCol);
       if (thisType>maxType) maxType=thisType;
       if (isFactor(thisCol)) {
-        if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error("Column %d of input list %d has type 'factor' but has no levels; i.e. malformed.", w+1, i+1);
+        if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error("Column %d of item %d has type 'factor' but has no levels; i.e. malformed.", w+1, i+1);
         factor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
       } //else if (!isString(thisCol) && length(thisCol)) anyNotStringOrFactor=true;
       SEXP thisClass = getAttrib(thisCol, R_ClassSymbol);
       if (INHERITS(thisClass, char_integer64)) int64=true;
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
       else if (!factor && !R_compute_identical(thisClass, getAttrib(firstCol,R_ClassSymbol), 0)) {
-        error("Class attribute on column %d of input list %d does not match with the first item for this column (column %d of input list %d).", w+1, i+1, firstw+1, firsti+1);
+        error("Class attribute on column %d of item %d does not match with column %d of item %d.", w+1, i+1, firstw+1, firsti+1);
       }
     }
     // in future warn ... if (factor && anyNotStringOrFactor) warning("Column %d contains a factor but not all items for the column are character or factor", idcol+j+1);
