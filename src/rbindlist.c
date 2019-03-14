@@ -50,7 +50,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   if (numZero) {  // #1871
     SEXP names = getAttrib(VECTOR_ELT(l, firstZeroItem), R_NamesSymbol);
     const char *ch = names==R_NilValue ? "" : CHAR(STRING_ELT(names, firstZeroCol));
-    warning("Column %d ['%s'] of item %d is length 0. This (and %d other%s like it) has been filled with NA to make each item uniform.",
+    warning("Column %d ['%s'] of item %d is length 0. This (and %d other%s like it) has been filled with NA (NULL for list columns) to make each item uniform.",
             firstZeroCol+1, ch, firstZeroItem+1, numZero-1, numZero==2?"":"s");
   }
   if (nrow==0 && ncol==0) return(R_NilValue);
@@ -168,7 +168,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           int w = colMap[i*ncol + j];
           const char *str = isString(s) ? CHAR(STRING_ELT(s,w)) : "";
-          error("Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA.", w+1, str, i+1, missi+1);
+          error("Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA (NULL for list columns).", w+1, str, i+1, missi+1);
         }
       }
     }

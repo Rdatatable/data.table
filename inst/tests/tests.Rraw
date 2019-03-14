@@ -1313,7 +1313,7 @@ test(443, rbind(DT,data.table(a=4L,b=7L)), data.table(a=1:4,b=4:7))
 test(444, rbind(DT,list(b=7L,a=4L)), data.table(a=1:4,b=4:7)) # rbind should by default check row names. Don't warn here. Add clear documentation instead.
 test(445, rbind(DT,data.frame(b=7L,a=4L)), data.table(a=1:4,b=4:7))
 test(446, rbind(DT,data.table(b=7L,a=4L)), data.table(a=1:4,b=4:7))
-test(450, rbind(DT,list(c=4L,a=7L)), error=tt<-"Column 1 ['c'] of item 2 is missing in item 1. Use fill=TRUE to fill with NA.")
+test(450, rbind(DT,list(c=4L,a=7L)), error=tt<-"Column 1 ['c'] of item 2 is missing in item 1. Use fill=TRUE to fill with NA (NULL for list columns)")
 test(451, rbind(DT,data.frame(c=4L,a=7L)), error=tt)
 test(452, rbind(DT,data.table(c=4L,a=7L)), error=tt)
 test(453, rbind(DT,list(4L,7L)), data.table(a=1:4,b=4:7))
@@ -13651,13 +13651,13 @@ test(2001.2, rbind(DT1, DT2, use.names = TRUE), data.table(a=1:2, b=3:4, c=5:6, 
 # rbindlist now fills NULL and empty columns with NA with warning, #1871
 test(2002.1, rbindlist( list(list(a=1L, b=2L, x=NULL), list(a=2L, b=3L, x=10L)) ),
              data.table(a=1:2, b=2:3, x=INT(NA,10)),
-             warning="Column 3 ['x'] of item 1 is length 0. This (and 0 others like it) has been filled with NA to make each item uniform.")
+             warning="Column 3 ['x'] of item 1 is length 0. This (and 0 others like it) has been filled with NA (NULL for list columns) to make each item uniform.")
 test(2002.2, rbindlist( list(list(a=1L, b=2L, x=NULL), list(a=2L, b=NULL, x=10L)) ),
              data.table(a=1:2, b=INT(2,NA), x=INT(NA,10)),
-             warning="Column 3 ['x'] of item 1 is length 0. This (and 1 other like it) has been filled with NA to make each item uniform.")
+             warning="Column 3 ['x'] of item 1 is length 0. This (and 1 other like it) has been filled with NA (NULL for list columns) to make each item uniform.")
 test(2002.3, rbindlist( list(list(a=1L, b=2L, x=NULL), list(a=2L, b=NULL, x=NULL)) ),
              data.table(a=1:2, b=INT(2,NA), x=c(NA,NA)),
-             warning="Column 3 ['x'] of item 1 is length 0. This (and 2 others like it) has been filled with NA to make each item uniform.")
+             warning="Column 3 ['x'] of item 1 is length 0. This (and 2 others like it) has been filled with NA (NULL for list columns) to make each item uniform.")
 # tests from #1302
 test(2002.4, rbindlist( list(list(a=1L,z=list()), list(a=2L, z=list("m"))) ),
              data.table(a=1:2, z=list(NULL, "m")),
