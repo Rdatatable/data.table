@@ -13664,14 +13664,20 @@ test(2002.4, rbindlist( list(list(a=1L,z=list()), list(a=2L, z=list("m"))) ),
              warning="Column 2 ['z'] of item 1 is length 0. This (and 0 others like it) has been filled with NA")
 test(2002.5, rbindlist( list( list(a=1L, z=list("z")), list(a=2L, z=list(c("a","b"))) )),
              data.table(a=1:2, z=list("z", c("a","b"))))
-test(2002.6, rbindlist(list( list(a=1, z=list("z",1)), list(a=2, z=list(c("a","b"))) )),
+test(2002.6, rbindlist( list( list(a=1, z=list("z",1)), list(a=2, z=list(c("a","b"))) )),
              error="Column 2 of item 1 is length 2 inconsistent with the first column of that item which is length 1")
+test(2002.7, rbindlist( list(list(a=1L, z=list(list())), list(a=2L, z=list(list("m")))) ),
+             data.table(a=1:2, z=list(list(),list("m"))))
+test(2002.8, rbindlist( list(list(a=1L, z=list(list("z"))), list(a=2L, z=list(list(c("a","b"))))) ),
+             data.table(a=1:2, z=list(list("z"), list(c("a","b")))))
+test(2002.9, rbindlist( list(list(a=1L, z=list(list("z",1))), list(a=2L, z=list(list(c("a","b"))))) ),
+             data.table(a=1:2, z=list(list("z",1), list(c("a","b")))))
 # tests from #3343
 DT1=list(a=NULL); setDT(DT1)
 DT2=list(a=NULL); setDT(DT2)
-test(2002.7, rbind(DT1, DT2),                 data.table(a=logical()))
-test(2002.8, rbind(A=DT1, B=DT2, idcol='id'), data.table(id=character(), a=logical()))
-test(2002.9, rbind(DT1, DT2, idcol='id'),     data.table(id=integer(), a=logical()))
+test(2002.10, rbind(DT1, DT2),                 data.table(a=logical()))
+test(2002.11, rbind(A=DT1, B=DT2, idcol='id'), data.table(id=character(), a=logical()))
+test(2002.12, rbind(DT1, DT2, idcol='id'),     data.table(id=integer(), a=logical()))
 
 #rbindlist coverage
 test(2003.1, rbindlist(list(), use.names=1), error="use.names= should be TRUE or FALSE")
