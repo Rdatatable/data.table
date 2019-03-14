@@ -446,7 +446,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       }
     }
     if (!(isVectorAtomic(thisvalue) || isNewList(thisvalue)))  // NULL had a continue earlier above
-      error("RHS of assignment is not NULL, not an atomic vector (see ?is.atomic) and not a list column. Recall that structurally, a list column is a sequence of lists wrapped in list() or .(); if you're trying to create a list column, try wrapping it in extra list().");
+      error("RHS of assignment is not NULL, not an atomic vector (see ?is.atomic) and not a list column. Recall that structurally, a list column is a sequence of lists wrapped in list() or .(); if you're trying to create a list column, try wrapping it in an extra list().");
     if (isMatrix(thisvalue) && (j=INTEGER(getAttrib(thisvalue, R_DimSymbol))[1]) > 1)  // matrix passes above (considered atomic vector)
       warning("%d column matrix RHS of := will be treated as one vector", j);
     if ((coln+1)<=oldncol && isFactor(VECTOR_ELT(dt,coln)) &&
