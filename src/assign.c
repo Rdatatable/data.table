@@ -974,7 +974,7 @@ void writeNA(SEXP v, const int from, const int n)
     // list columns already have each item initialized to NULL
     break;
   default :
-    error("Internal error: writeNA pass a vector of type '%s'", type2char(TYPEOF(v)));
+    error("Internal error: writeNA passed a vector of type '%s'", type2char(TYPEOF(v)));  // # nocov
   }
 }
 

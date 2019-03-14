@@ -13635,9 +13635,10 @@ test(1999.2, key(dx[di]), NULL)
 
 # chmatchdup test from benchmark at the bottom of chmatch.c
 set.seed(45L)
-x = sample(letters, 1e6, TRUE)
-y = sample(letters, 1e7, TRUE)
-test(2000, c(head(ans<-chmatchdup(x,y,0L)),tail(ans)), INT(65,6,15,52,98,1,999035,998289,990921,1003403,990934,1015993))
+x = sample(letters, 1e5, TRUE)
+y = sample(letters, 1e6, TRUE)
+test(2000, c(head(ans<-chmatchdup(x,y,0L)),tail(ans)), INT(7,49,11,20,69,25,99365,100750,97596,99671,103320,99406))
+rm(list=c("x","y"))
 
 # rbindlist use.names=TRUE returned random column order when ncol>255; #3373
 DT = setDT(replicate(300, rnorm(3L), simplify = FALSE))

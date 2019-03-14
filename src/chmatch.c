@@ -17,7 +17,7 @@ static SEXP match_logical(SEXP table, SEXP x) {
 static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup) {
   if (!isString(x) && !isNull(x)) error("x is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(x)));
   if (!isString(table) && !isNull(table)) error("table is type '%s' (must be 'character' or NULL)", type2char(TYPEOF(table)));
-  if (chin && chmatchdup) error("Internal error: either chin or chmatchdup should be true not both");
+  if (chin && chmatchdup) error("Internal error: either chin or chmatchdup should be true not both");  // # nocov
   // allocations up front before savetl starts
   SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, length(x)));
   int *ansd = INTEGER(ans);
