@@ -133,7 +133,7 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
     // because R copies the original vector's tl over despite allocating length.
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(".internal.selfref prot is not itself an extptr").
-    return 0;                    // See http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
+    return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
   if (x != R_ExternalPtrAddr(prot))
     SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
   return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
@@ -263,15 +263,7 @@ SEXP shallowwrapper(SEXP dt, SEXP cols) {
 }
 
 SEXP truelength(SEXP x) {
-  SEXP ans;
-  PROTECT(ans = allocVector(INTSXP, 1));
-  if (!isNull(x)) {
-     INTEGER(ans)[0] = TRUELENGTH(x);
-  } else {
-     INTEGER(ans)[0] = 0;
-  }
-  UNPROTECT(1);
-  return(ans);
+  return ScalarInteger(isNull(x) ? 0 : TRUELENGTH(x));
 }
 
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
@@ -338,10 +330,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       error("i is type '%s'. Must be integer, or numeric is coerced with warning. If i is a logical subset, simply wrap with which(), and take the which() outside the loop if possible for efficiency.", type2char(TYPEOF(rows)));
     targetlen = length(rows);
     numToDo = 0;
+    const int *rowsd = INTEGER(rows);
     for (i=0; i<targetlen; i++) {
-      if ((INTEGER(rows)[i]<0 && INTEGER(rows)[i]!=NA_INTEGER) || INTEGER(rows)[i]>nrow)
-        error("i[%d] is %d which is out of range [1,nrow=%d].",i+1,INTEGER(rows)[i],nrow);
-      if (INTEGER(rows)[i]>=1) numToDo++;
+      if ((rowsd[i]<0 && rowsd[i]!=NA_INTEGER) || rowsd[i]>nrow)
+        error("i[%d] is %d which is out of range [1,nrow=%d].",i+1,rowsd[i],nrow);  // set() reaches here (test 2005.2); := reaches the same error in subset.c first
+      if (rowsd[i]>=1) numToDo++;
     }
     if (verbose) Rprintf("Assigning to %d row subset of %d rows\n", numToDo, nrow);
     // TODO: include in message if any rows are assigned several times (e.g. by=.EACHI with dups in i)
@@ -352,7 +345,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     }
   }
   if (!length(cols)) {
-    warning("length(LHS)==0; no columns to delete or assign RHS to.");
+    warning("length(LHS)==0; no columns to delete or assign RHS to.");   // test 1295 covers
     return(dt);
   }
   // FR #2077 - set able to add new cols by reference
@@ -375,7 +368,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     cols = tmp;
   } else {
     if (isReal(cols)) {
-      cols = PROTECT(cols = coerceVector(cols, INTSXP));
+      cols = PROTECT(coerceVector(cols, INTSXP));
       protecti++;
       warning("Coerced j from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2");
     }
@@ -384,21 +377,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   }
   if (any_duplicated(cols,FALSE)) error("Can't assign to the same column twice in the same query (duplicates detected).");
   if (!isNull(newcolnames) && !isString(newcolnames)) error("newcolnames is supplied but isn't a character vector");
-  if (isNull(values)) {
-    if (!length(cols)) {
-      warning("RHS is NULL, meaning delete columns(s). But, no columns in LHS to delete.");
-      return(dt);
-    }
-  } else {
-    if (TYPEOF(values)==VECSXP) {
-      if (length(cols)>1) {
-        if (length(values)==0) error("Supplied %d columns to be assigned an empty list (which may be an empty data.table or data.frame since they are lists too). To delete multiple columns use NULL instead. To add multiple empty list columns, use list(list()).", length(cols));
-        if (length(values)>length(cols))
-          warning("Supplied %d columns to be assigned a list (length %d) of values (%d unused)", length(cols), length(values), length(values)-length(cols));
-        else if (length(cols)%length(values) != 0)
-          warning("Supplied %d columns to be assigned a list (length %d) of values (recycled leaving remainder of %d items).",length(cols),length(values),length(cols)%length(values));
-      } // else it's a list() column being assigned to one column
-    }
+  if (TYPEOF(values)==VECSXP) {
+    if (length(cols)>1) {
+      if (length(values)==0) error("Supplied %d columns to be assigned an empty list (which may be an empty data.table or data.frame since they are lists too). To delete multiple columns use NULL instead. To add multiple empty list columns, use list(list()).", length(cols));
+      if (length(values)>1 && length(values)!=length(cols))
+        error("Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2.", length(cols), length(values));
+    } // else it's a list() column being assigned to one column
   }
   // Check all inputs :
   for (i=0; i<length(cols); i++) {
@@ -423,7 +407,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       } else if (coln+1 > oldncol && TYPEOF(thisvalue)!=VECSXP) {  // list() is ok for new columns
         newcolnum = coln-length(names);
         if (newcolnum<0 || newcolnum>=length(newcolnames))
-          error("Internal logical error. length(newcolnames)=%d, length(names)=%d, coln=%d", length(newcolnames), length(names), coln);
+          error("Internal error in assign.c: length(newcolnames)=%d, length(names)=%d, coln=%d", length(newcolnames), length(names), coln); // # nocov
         if (isNull(thisvalue)) {
           warning("Adding new column '%s' then assigning NULL (deleting it).",CHAR(STRING_ELT(newcolnames,newcolnum)));
           continue;
@@ -452,13 +436,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     if (oldtncol>oldncol+10000L) warning("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo().",oldtncol, oldncol);
 
     if (oldtncol < oldncol+LENGTH(newcolnames))
-      error("Internal logical error. DT passed to assign has not been allocated enough column slots. l=%d, tl=%d, adding %d", oldncol, oldtncol, LENGTH(newcolnames));
+      error("Internal error: DT passed to assign has not been allocated enough column slots. l=%d, tl=%d, adding %d", oldncol, oldtncol, LENGTH(newcolnames));  // # nocov
     if (!selfrefnamesok(dt,verbose))
-      error("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to data.table issue tracker.");
+      error("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to data.table issue tracker.");  // # nocov
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
     else if (TRUELENGTH(names) != oldtncol)
-      error("selfrefnames is ok but tl names [%d] != tl [%d]", TRUELENGTH(names), oldtncol);
+      error("Internal error: selfrefnames is ok but tl names [%d] != tl [%d]", TRUELENGTH(names), oldtncol);  // # nocov
     SETLENGTH(dt, oldncol+LENGTH(newcolnames));
     SETLENGTH(names, oldncol+LENGTH(newcolnames));
     for (i=0; i<LENGTH(newcolnames); i++)
@@ -483,13 +467,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
          (TYPEOF(values)!=VECSXP && i>0) // assigning the same values to a second column. Have to ensure a copy #2540
          ) {
         if (verbose) {
-          if (length(values)==length(cols)) {
-            // usual branch
-            Rprintf("RHS for item %d has been duplicated because NAMED is %d, but then is being plonked.\n", i+1, NAMED(thisvalue));
-          } else {
-            // rare branch where the lhs of := is longer than the items on the rhs of :=
-            Rprintf("RHS for item %d has been duplicated because the list of RHS values (length %d) is being recycled, but then is being plonked.\n", i+1, length(values));
-          }
+          Rprintf("RHS for item %d has been duplicated because NAMED is %d, but then is being plonked. length(values)==%d; length(cols)==%d)\n",
+                  i+1, NAMED(thisvalue), length(values), length(cols));
         }
         thisvalue = duplicate(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
       } else {
@@ -574,7 +553,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         } else {
           // value is either integer or numeric vector
           if (TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue))
-            error("Internal logical error. Up front checks (before starting to modify DT) didn't catch type of RHS ('%s') assigning to factor column '%s'. please report to data.table issue tracker.", type2char(TYPEOF(thisvalue)), CHAR(STRING_ELT(names,coln)));
+            error("Internal error: up front checks (before starting to modify DT) didn't catch type of RHS ('%s') assigning to factor column '%s'. please report to data.table issue tracker.", type2char(TYPEOF(thisvalue)), CHAR(STRING_ELT(names,coln))); // # nocov
           if (isReal(thisvalue) || TYPEOF(thisvalue)==LGLSXP) {
             PROTECT(RHS = coerceVector(thisvalue,INTSXP));
             protecti++;
@@ -707,7 +686,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         tc2 = CHAR(STRING_ELT(assignedNames, i));
         char *s5 = (char*) malloc(strlen(tc2) + 5); //4 * '_' + \0
         if(s5 == NULL){
-          free(s4);
+          free(s4);                                                  // # nocov
           error("Internal error: Couldn't allocate memory for s5."); // # nocov
         }
         memset(s5, '_', 2);
@@ -881,7 +860,7 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       }
       break;
     default :
-      error("Unsupported type '%s'", type2char(TYPEOF(target)));
+      error("Unsupported type in assign.c:memrecycle '%s' (no where)", type2char(TYPEOF(target)));  // # nocov
     }
   } else {
     const int *wd = INTEGER(where)+start;
@@ -922,7 +901,7 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       }
     } break;
     default :
-      error("Unsupported type '%s'", type2char(TYPEOF(target)));
+      error("Unsupported type in assign.c:memrecycle '%s' (where)", type2char(TYPEOF(target)));  // # nocov
     }
   }
   UNPROTECT(protecti);
