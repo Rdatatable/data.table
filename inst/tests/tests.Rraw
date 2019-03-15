@@ -13706,6 +13706,9 @@ test(2005.3, set(DT, 3L, 8i, NA), error="j is type 'complex'. Must be integer, c
 test(2005.4, set(DT, 1L, 2L, expression(x+2)), error="RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list column.")
 DT[,foo:=factor(c("a","b","c"))]
 test(2005.5, DT[2, foo:=8i], error="Can't assign to column 'foo' (type 'factor') a value of type 'complex' (not character, factor, integer or numeric)")
+test(2005.6, DT[2, a:=9, verbose=TRUE], output="Coerced length-1 RHS from double to integer to match column's type. No precision was lost. If this")
+test(2005.7, DT[2, a:=NA, verbose=TRUE], output="Coerced length-1 RHS from logical to integer to match column's type. If this")
+test(2005.8, DT[2, a:=9.9]$a, INT(1,9,3), warning="Coerced double RHS to integer.*One or more RHS values contain fractions which have been lost.*9.9.*has been truncated to 9")
 
 
 ###################################

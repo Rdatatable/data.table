@@ -23,7 +23,6 @@ SEXP fwriteR();
 SEXP reorder();
 SEXP rbindlist();
 SEXP vecseq();
-SEXP copyattr();
 SEXP setlistelt();
 SEXP setmutable();
 SEXP address();
@@ -106,7 +105,6 @@ R_CallMethodDef callMethods[] = {
 {"Creorder", (DL_FUNC) &reorder, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
-{"Ccopyattr", (DL_FUNC) &copyattr, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
 {"Csetmutable", (DL_FUNC) &setmutable, -1},
 {"Caddress", (DL_FUNC) &address, -1},
@@ -256,8 +254,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
-    error("PRINTNAME(install(\"integer64\")) has returned %s not %s",
-      type2char(TYPEOF(char_integer64)), type2char(CHARSXP));
+    error("PRINTNAME(install(\"integer64\")) has returned %s not %s", type2char(TYPEOF(char_integer64)), type2char(CHARSXP));  // # nocov
   }
 
   // create commonly used symbols, same as R_*Symbol but internal to DT
@@ -316,9 +313,9 @@ inline double LLtoD(long long x) {
   return u.d;
 }
 
-
+// # nocov start
 SEXP hasOpenMP() {
-  // Just for use by onAttach to avoid an RPRINTF from C level which isn't suppressable by CRAN
+  // Just for use by onAttach (hence nocov) to avoid an RPRINTF from C level which isn't suppressable by CRAN
   // There is now a 'grep' in CRAN_Release.cmd to detect any use of RPRINTF in init.c, which is
   // why RPRINTF is capitalized in this comment to avoid that grep.
   // TODO: perhaps .Platform or .Machine in R itself could contain whether OpenMP is available.
@@ -328,6 +325,7 @@ SEXP hasOpenMP() {
   return ScalarLogical(FALSE);
   #endif
 }
+// # nocov end
 
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056

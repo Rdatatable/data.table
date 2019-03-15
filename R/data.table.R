@@ -2410,10 +2410,6 @@ copy <- function(x) {
   alloc.col(newx)
 }
 
-copyattr <- function(from, to) {
-  .Call(Ccopyattr, from, to)
-}
-
 point <- function(to, to_idx, from, from_idx) {
   .Call(CpointWrapper, to, to_idx, from, from_idx)
 }

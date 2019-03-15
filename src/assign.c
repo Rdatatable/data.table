@@ -588,13 +588,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
             char *s1 = (char *)type2char(TYPEOF(targetcol));
             char *s2 = (char *)type2char(TYPEOF(thisvalue));
             // FR #2551, added test for equality between RHS and thisvalue to not provide the warning when length(thisvalue) == 1
-            if ( length(thisvalue)==1 && TYPEOF(RHS)!=VECSXP && TYPEOF(thisvalue)!=VECSXP && (
+            if ( length(thisvalue)==1 && TYPEOF(RHS)!=VECSXP && (
                  ( isReal(thisvalue) && isInteger(targetcol) && REAL(thisvalue)[0]==INTEGER(RHS)[0] ) ||   // DT[,intCol:=4] rather than DT[,intCol:=4L]
                  ( isLogical(thisvalue) && LOGICAL(thisvalue)[0] == NA_LOGICAL ) ||                        // DT[,intCol:=NA]
-                 ( isReal(targetcol) && isInteger(thisvalue) ) )) {
+                 ( isInteger(thisvalue) && isReal(targetcol) ) )) {
               if (verbose) Rprintf("Coerced length-1 RHS from %s to %s to match column's type.%s If this assign is happening a lot inside a loop, in particular via set(), then it may be worth avoiding this coercion by using R's type postfix on the value being assigned; e.g. typeof(0) vs typeof(0L), and typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_).\n", s2, s1,
-                                    isInteger(targetcol) && isReal(thisvalue) ? "No precision was lost. " : "");
-              // TO DO: datatable.pedantic could turn this into warning
+                                    isInteger(targetcol) && isReal(thisvalue) ? " No precision was lost." : "");
+              // TO DO: datatable.pedantic could turn this into warning. Or we could catch and avoid the coerceVector allocation ourselves using a single int.
             } else {
               if (isReal(thisvalue) && isInteger(targetcol)) {
                 int w = INTEGER(isReallyReal(thisvalue))[0];  // first fraction present (1-based), 0 if none

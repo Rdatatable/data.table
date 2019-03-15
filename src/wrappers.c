@@ -50,13 +50,6 @@ SEXP copy(SEXP x)
   return(duplicate(x));
 }
 
-SEXP copyattr(SEXP from, SEXP to)
-{
-  // for use by [.data.table to retain attribs such as "comments" when subsetting and j is missing
-  copyMostAttrib(from, to);
-  return(R_NilValue);
-}
-
 SEXP setlistelt(SEXP l, SEXP i, SEXP value)
 {
   R_len_t i2;

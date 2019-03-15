@@ -366,7 +366,7 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
     if (!isString(this)) error("Internal error: combineFactorLevels in fmelt.c expects all-character input");  // # nocov
     maxlevels+=length(this);
   }
-  if (!isString(target)) error("Internal error: combineFactorLevels in fmel.c expects a character target to factorize");  // # nocov
+  if (!isString(target)) error("Internal error: combineFactorLevels in fmelt.c expects a character target to factorize");  // # nocov
   int nrow = length(target);
   SEXP ans = PROTECT(allocVector(INTSXP, nrow));
   SEXP *levelsRaw = (SEXP *)R_alloc(maxlevels, sizeof(SEXP));  // allocate for worst-case all-unique levels
