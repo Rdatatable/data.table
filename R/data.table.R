@@ -1613,7 +1613,12 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         jvnames = ansvarsnew
       }
     } else if (length(as.character(jsub[[1L]])) == 1L) {  # Else expect problems with <jsub[[1L]] == >
-      if (length(jsub) == 3L && (jsub[[1L]] == "[" || jsub[[1L]] == "head" || jsub[[1L]] == "tail") && jsub[[2L]] == ".SD" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N") ) {
+      subopt = length(jsub) == 3L && jsub[[1L]] == "[" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
+      headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
+      firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
+      if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
+          (subopt || headopt || firstopt)) {
+        if (headopt && length(jsub)==2L) jsub[["n"]] = 6L # head-tail n=6 when missing #3462
         # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
         jsub = as.call(c(quote(list), lapply(ansvarsnew, function(x) { jsub[[2L]] = as.name(x); jsub })))
         jvnames = ansvarsnew

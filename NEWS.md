@@ -34,6 +34,11 @@
 
 11. A join's result could be incorrectly keyed when a single nomatch occurred at the very beginning while all other values matched, [#3441](https://github.com/Rdatatable/data.table/issues/3441). The incorrect key would cause incorrect results in subsequent queries. Thanks to @symbalex for reporting and @franknarf1 for pinpointing the root cause.
 
+12. `first` and `last` methods called by group inside `[.data.table` on `.SD` are now optimized to GForce. [#2030](https://github.com/Rdatatable/data.table/issues/2030). Thanks to @franknarf1 for reporting.
+
+13. `head` and `tail` methods called by group inside `[.data.table` on `.SD` now use default `n` argument. [#3462](https://github.com/Rdatatable/data.table/issues/3462).
+
+
 #### NOTES
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
