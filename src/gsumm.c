@@ -476,35 +476,40 @@ SEXP gmean(SEXP x, SEXP narm)
   if (!c) error("Unable to allocate %d * %d bytes for counts in gmean na.rm=TRUE", ngrp, sizeof(int));
 
   switch(TYPEOF(x)) {
-  case LGLSXP: case INTSXP:
+  case LGLSXP: case INTSXP: {
+    int *restrict ix = INTEGER(x);
     for (int i=0; i<n; i++) {
       int thisgrp = grp[i];
-      int ix = (irowslen == -1) ? i : irows[i]-1;
-      if(INTEGER(x)[ix] == NA_INTEGER) continue;
-      s[thisgrp] += INTEGER(x)[ix];  // no under/overflow here, s is long double
+      int xirows = (irowslen == -1) ? i : irows[i]-1;
+      if (ix[xirows] == NA_INTEGER) continue;
+      s[thisgrp] += ix[xirows];  // no under/overflow here, s is long double
       c[thisgrp]++;
     }
+  }
     break;
-  case REALSXP:
+  case REALSXP: {
+    double *restrict dx = REAL(x);
     for (int i=0; i<n; i++) {
       int thisgrp = grp[i];
-      int ix = (irowslen == -1) ? i : irows[i]-1;
-      if (ISNAN(REAL(x)[ix])) continue;
-      s[thisgrp] += REAL(x)[ix];
+      int xirows = (irowslen == -1) ? i : irows[i]-1;
+      if (ISNAN(dx[xirows])) continue;
+      s[thisgrp] += dx[xirows];
       c[thisgrp]++;
     }
+  }
     break;
   default:
     free(s); free(c);
     error("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
   }
   ans = PROTECT(allocVector(REALSXP, ngrp));
+  double *restrict dans = REAL(ans);
   for (int i=0; i<ngrp; i++) {
-    if (c[i]==0) { REAL(ans)[i] = R_NaN; continue; }  // NaN to follow base::mean
+    if (c[i]==0) { dans[i] = R_NaN; continue; }  // NaN to follow base::mean
     s[i] /= c[i];
-    if (s[i] > DBL_MAX) REAL(ans)[i] = R_PosInf;
-    else if (s[i] < -DBL_MAX) REAL(ans)[i] = R_NegInf;
-    else REAL(ans)[i] = (double)s[i];
+    if (s[i] > DBL_MAX) dans[i] = R_PosInf;
+    else if (s[i] < -DBL_MAX) dans[i] = R_NegInf;
+    else dans[i] = (double)s[i];
   }
   free(s); free(c);
   copyMostAttrib(x, ans);
