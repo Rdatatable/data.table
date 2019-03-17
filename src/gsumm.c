@@ -955,32 +955,41 @@ SEXP glast(SEXP x) {
   SEXP ans;
   if (nrow != n) error("nrow [%d] != length(x) [%d] in gtail", nrow, n);
   switch(TYPEOF(x)) {
-  case LGLSXP:
+  case LGLSXP: {
+    const int *ix = LOGICAL(x);
     ans = PROTECT(allocVector(LGLSXP, ngrp));
+    int *ians = LOGICAL(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      LOGICAL(ans)[i] = LOGICAL(x)[k];
+      ians[i] = ix[k];
     }
+  }
     break;
-  case INTSXP:
+  case INTSXP: {
+    const int *ix = INTEGER(x);
     ans = PROTECT(allocVector(INTSXP, ngrp));
+    int *ians = INTEGER(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      INTEGER(ans)[i] = INTEGER(x)[k];
+      ians[i] = ix[k];
     }
+  }
     break;
-  case REALSXP:
+  case REALSXP: {
+    const double *dx = REAL(x);
     ans = PROTECT(allocVector(REALSXP, ngrp));
+    double *dans = REAL(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      REAL(ans)[i] = REAL(x)[k];
+      dans[i] = dx[k];
     }
+  }
     break;
   case STRSXP:
     ans = PROTECT(allocVector(STRSXP, ngrp));
@@ -1017,32 +1026,41 @@ SEXP gfirst(SEXP x) {
   SEXP ans;
   if (nrow != n) error("nrow [%d] != length(x) [%d] in ghead", nrow, n);
   switch(TYPEOF(x)) {
-  case LGLSXP:
+  case LGLSXP: {
+    int const *ix = LOGICAL(x);
     ans = PROTECT(allocVector(LGLSXP, ngrp));
+    int *ians = LOGICAL(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      LOGICAL(ans)[i] = LOGICAL(x)[k];
+      ians[i] = ix[k];
     }
+  }
     break;
-  case INTSXP:
+  case INTSXP: {
+    const int *ix = INTEGER(x);
     ans = PROTECT(allocVector(INTSXP, ngrp));
+    int *ians = INTEGER(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      INTEGER(ans)[i] = INTEGER(x)[k];
+      ians[i] = ix[k];
     }
+  }
     break;
-  case REALSXP:
+  case REALSXP: {
+    const double *dx = REAL(x);
     ans = PROTECT(allocVector(REALSXP, ngrp));
+    double *dans = REAL(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      REAL(ans)[i] = REAL(x)[k];
+      dans[i] = dx[k];
     }
+  }
     break;
   case STRSXP:
     ans = PROTECT(allocVector(STRSXP, ngrp));
@@ -1088,35 +1106,44 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
   SEXP ans;
   if (nrow != n) error("nrow [%d] != length(x) [%d] in ghead", nrow, n);
   switch(TYPEOF(x)) {
-  case LGLSXP:
+  case LGLSXP: {
+    const int *ix = LOGICAL(x);
     ans = PROTECT(allocVector(LGLSXP, ngrp));
+    int *ians = LOGICAL(ans);
     for (i=0; i<ngrp; i++) {
       if (val > grpsize[i]) { LOGICAL(ans)[i] = NA_LOGICAL; continue; }
       k = ff[i]+val-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      LOGICAL(ans)[i] = LOGICAL(x)[k];
+      ians[i] = ix[k];
     }
+  }
     break;
-  case INTSXP:
+  case INTSXP: {
+    const int *ix = LOGICAL(x);
     ans = PROTECT(allocVector(INTSXP, ngrp));
+    int *ians = LOGICAL(ans);
     for (i=0; i<ngrp; i++) {
       if (val > grpsize[i]) { INTEGER(ans)[i] = NA_INTEGER; continue; }
       k = ff[i]+val-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      INTEGER(ans)[i] = INTEGER(x)[k];
+      ians[i] = ix[k];
     }
+  }
     break;
-  case REALSXP:
+  case REALSXP: {
+    const double *dx = REAL(x);
     ans = PROTECT(allocVector(REALSXP, ngrp));
+    double *dans = REAL(ans);
     for (i=0; i<ngrp; i++) {
       if (val > grpsize[i]) { REAL(ans)[i] = NA_REAL; continue; }
       k = ff[i]+val-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      REAL(ans)[i] = REAL(x)[k];
+      dans[i] = dx[k];
     }
+  }
     break;
   case STRSXP:
     ans = PROTECT(allocVector(STRSXP, ngrp));
