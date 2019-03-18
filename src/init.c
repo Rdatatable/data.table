@@ -172,6 +172,20 @@ R_ExternalMethodDef externalMethods[] = {
 {NULL, NULL, 0}
 };
 
+static void setSizes() {
+  for (int i=0; i<100; ++i) { sizes[i]=0; typeorder[i]=0; }
+  // only these types are currently allowed as column types :
+  sizes[LGLSXP] =  sizeof(int);       typeorder[LGLSXP] =  0;
+  sizes[RAWSXP] =  sizeof(Rbyte);     typeorder[RAWSXP] =  1;
+  sizes[INTSXP] =  sizeof(int);       typeorder[INTSXP] =  2;   // integer and factor
+  sizes[REALSXP] = sizeof(double);    typeorder[REALSXP] = 3;   // numeric and integer64
+  sizes[CPLXSXP] = sizeof(Rcomplex);  typeorder[CPLXSXP] = 4;
+  sizes[STRSXP] =  sizeof(SEXP *);    typeorder[STRSXP] =  5;
+  sizes[VECSXP] =  sizeof(SEXP *);    typeorder[VECSXP] =  6;   // list column
+  if (sizeof(char *)>8) error("Pointers are %d bytes, greater than 8. We have not tested on any architecture greater than 64bit yet.", sizeof(char *));
+  // One place we need the largest sizeof is the working memory malloc in reorder.c
+}
+
 void attribute_visible R_init_datatable(DllInfo *info)
 // relies on pkg/src/Makevars to mv data.table.so to datatable.so
 {
@@ -268,6 +282,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  SelfRefSymbol = install(".internal.selfref");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();

@@ -913,6 +913,9 @@ void writeNA(SEXP v, const int from, const int n)
 {
   const int to = from-1+n;  // together with <=to below with writing NA to position 2147483647 in mind
   switch(TYPEOF(v)) {
+  case RAWSXP:
+    memset(RAW(v)+from, 0, n*SIZEOF(v));
+    break;
   case LGLSXP : {
     Rboolean *vd = (Rboolean *)LOGICAL(v);
     for (int i=from; i<=to; ++i) vd[i] = NA_LOGICAL;

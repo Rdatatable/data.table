@@ -20,6 +20,7 @@ typedef R_xlen_t RLEN;
 #define IS_LATIN(x) (LEVELS(x) & 4)
 
 #define SIZEOF(x) sizes[TYPEOF(x)]
+#define TYPEORDER(x) typeorder[x]
 
 #ifdef MIN
 #undef MIN
@@ -56,7 +57,6 @@ typedef R_xlen_t RLEN;
 #endif
 
 // init.c
-void setSizes();
 SEXP char_integer64;
 SEXP char_ITime;
 SEXP char_IDate;
@@ -84,6 +84,7 @@ long long NA_INT64_LL;
 SEXP keepattr(SEXP to, SEXP from);
 SEXP growVector(SEXP x, R_len_t newlen);
 size_t sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
+size_t typeorder[100];
 SEXP SelfRefSymbol;
 
 // assign.c

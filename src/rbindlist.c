@@ -220,7 +220,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
       SEXP thisCol = VECTOR_ELT(li, w);
       int thisType = TYPEOF(thisCol);
-      if (thisType>maxType) maxType=thisType;
+      if (TYPEORDER(thisType)>TYPEORDER(maxType)) maxType=thisType;
       if (isFactor(thisCol)) {
         if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error("Column %d of item %d has type 'factor' but has no levels; i.e. malformed.", w+1, i+1);
         factor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
@@ -336,6 +336,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
             // warning("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
           }
           switch(TYPEOF(target)) {
+          case RAWSXP:
+            memcpy(RAW(target)+ansloc, RAW(thisCol), thisnrow*SIZEOF(thisCol));
+            break;
           case LGLSXP:
             memcpy(LOGICAL(target)+ansloc, LOGICAL(thisCol), thisnrow*SIZEOF(thisCol));
             break;
@@ -346,12 +349,17 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
             if (!int64) {
               memcpy(REAL(target)+ansloc, REAL(thisCol), thisnrow*SIZEOF(thisCol));
             } else {
-              int64_t *td = (int64_t *)REAL(target) + ansloc;
+              int64_t *td = (int64_t *)REAL(target) + ansloc;  // td = target data
               switch (TYPEOF(thisCol)) {
-              case LGLSXP : case INTSXP : {
-                const int *id = INTEGER(thisCol);
+              case RAWSXP: {
+                const Rbyte *sd = RAW(thisCol);  // sd = source data
                 for (int r=0; r<thisnrow; ++r)
-                  td[r] = id[r]==NA_INTEGER ? INT64_MIN : (int64_t)(id[r]);
+                  td[r] = (int64_t)(sd[r]);  // raw has no NA
+              } break;
+              case LGLSXP : case INTSXP : {
+                const int *sd = INTEGER(thisCol);
+                for (int r=0; r<thisnrow; ++r)
+                  td[r] = sd[r]==NA_INTEGER ? INT64_MIN : (int64_t)(sd[r]);
               } break;
               case REALSXP :
                 if (INHERITS(thisCol, char_integer64)) {
@@ -362,9 +370,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
                     warning("Column %d of item %d is being coerced to integer64 but contains a non-integer value (%f at position %d). Precision lost.",
                              w+1, i+1, REAL(thisCol)[firstReal-1], firstReal);
                   }
-                  double *id = REAL(thisCol);
+                  double *sd = REAL(thisCol);
                   for (int r=0; r<thisnrow; ++r)
-                    td[r] = R_FINITE(id[r]) ? (int)(id[r]) : NA_INTEGER;
+                    td[r] = R_FINITE(sd[r]) ? (int)(sd[r]) : NA_INTEGER;
                 }
                 break;
               default :

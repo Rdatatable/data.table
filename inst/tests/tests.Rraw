@@ -13710,13 +13710,18 @@ test(2005.6, DT[2, a:=9, verbose=TRUE], output="Coerced length-1 RHS from double
 test(2005.7, DT[2, a:=NA, verbose=TRUE], output="Coerced length-1 RHS from logical to integer to match column's type. If this")
 test(2005.8, DT[2, a:=9.9]$a, INT(1,9,3), warning="Coerced double RHS to integer.*One or more RHS values contain fractions which have been lost.*9.9.*has been truncated to 9")
 
-# rbindlist integer64 (#1349)
+# rbindlist raw type, #2819
+test(2006, rbindlist(list(data.table(x = as.raw(1), y=as.raw(3)), data.table(x = as.raw(2))), fill=TRUE), data.table(x=as.raw(1:2), y=as.raw(c(3,0))))
+
+# rbindlist integer64, #1349
 if (test_bit64) {
-  test(2006.1, rbindlist(list( list(a=as.integer64(1), b=3L),  list(a=2L, b=4L) )), data.table(a=as.integer64(1:2), b=3:4))
-  test(2006.2, rbindlist(list( list(a=3.4, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6),
+  test(2007.1, rbindlist(list( list(a=as.integer64(1), b=3L),  list(a=2L, b=4L) )), data.table(a=as.integer64(1:2), b=3:4))
+  test(2007.2, rbindlist(list( list(a=3.4, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6),
                warning="Column 1 of item 1 is being coerced to integer64 but contains a non-integer value [(]3.40.* at position 1[)]. Precision lost.")
-  test(2006.3, rbindlist(list( list(a=3.0, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6))
-  test(2006.4, rbindlist(list( list(b=5:6),  list(a=as.integer64(4), b=7L)), fill=TRUE), data.table(b=5:7, a=as.integer64(c(NA,NA,4))))  # tests writeNA of integer64
+  test(2007.3, rbindlist(list( list(a=3.0, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6))
+  test(2007.4, rbindlist(list( list(b=5:6),  list(a=as.integer64(4), b=7L)), fill=TRUE), data.table(b=5:7, a=as.integer64(c(NA,NA,4))))  # tests writeNA of integer64
+  test(2007.5, rbindlist(list( list(a=INT(1,NA,-2)),  list(a=as.integer64(c(3,NA))) )), data.table(a=as.integer64(c(1,NA,-2,3,NA))))   # int NAs combined with int64 NA
+  test(2007.6, rbind(data.table(a=as.raw(10), b=5L),  data.table(a=as.integer64(11), b=6L)), data.table(a=as.integer64(10:11), b=5:6))
 }
 
 
