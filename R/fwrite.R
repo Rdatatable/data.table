@@ -8,7 +8,6 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
            buffMB=8, nThread=getDTthreads(verbose),
            showProgress=getOption("datatable.showProgress", interactive()),
            verbose=getOption("datatable.verbose", FALSE)) {
-  isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
   na = as.character(na[1L]) # fix for #1725
   if (missing(qmethod)) qmethod = qmethod[1L]
   if (missing(dateTimeAs)) { dateTimeAs = dateTimeAs[1L] }
@@ -31,15 +30,15 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     x <- as.data.table(x)
   }
   stopifnot(is.list(x),
-    identical(quote,"auto") || identical(quote,FALSE) || identical(quote,TRUE),
+    identical(quote,"auto") || isTRUEorFALSE(quote),
     is.character(sep) && length(sep)==1L && nchar(sep) == 1L,
     is.character(sep2) && length(sep2)==3L && nchar(sep2[2L])==1L,
     is.character(dec) && length(dec)==1L && nchar(dec) == 1L,
     dec != sep,  # sep2!=dec and sep2!=sep checked at C level when we know if list columns are present
     is.character(eol) && length(eol)==1L,
     length(qmethod) == 1L && qmethod %chin% c("double", "escape"),
-    isLOGICAL(col.names), isLOGICAL(append), isLOGICAL(row.names),
-    isLOGICAL(verbose), isLOGICAL(showProgress), isLOGICAL(logical01),
+    isTRUEorFALSE(col.names), isTRUEorFALSE(append), isTRUEorFALSE(row.names),
+    isTRUEorFALSE(verbose), isTRUEorFALSE(showProgress), isTRUEorFALSE(logical01),
     length(na) == 1L, #1725, handles NULL or character(0) input
     is.character(file) && length(file)==1L && !is.na(file),
     length(buffMB)==1L && !is.na(buffMB) && 1L<=buffMB && buffMB<=1024,

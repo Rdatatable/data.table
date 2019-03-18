@@ -180,7 +180,7 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
 replace_dot_alias <- function(e) {
   # we don't just simply alias .=list because i) list is a primitive (faster to iterate) and ii) we test for use
   # of "list" in several places so it saves having to remember to write "." || "list" in those places
-  if (is.call(e)) {
+  if (is.call(e) && !is.function(e[[1L]])) {
     # . alias also used within bquote, #1912
     if (e[[1L]] == 'bquote') return(e)
     if (e[[1L]] == ".") e[[1L]] = quote(list)
@@ -353,7 +353,10 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       jsub = eval(jsub[[2L]], parent.frame(), parent.frame())  # this evals the symbol to return the dynamic expression
       if (is.expression(jsub)) jsub = jsub[[1L]]    # if expression, convert it to call
       # Note that the dynamic expression could now be := (new in v1.9.7)
-      root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
+      root = if (is.call(jsub)) {
+        jsub = replace_dot_alias(jsub)
+        as.character(jsub[[1L]])[1L]
+      } else ""
     }
     if (root == ":=") {
       allow.cartesian=TRUE   # (see #800)
@@ -1170,7 +1173,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           m[is.na(m)] = ncol(x)+seq_len(length(newnames))
           cols = as.integer(m)
           if ((ok<-selfrefok(x,verbose))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
-            warning("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid key<-, names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
+            warning("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
           if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
             DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
             n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
@@ -1478,7 +1481,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     if (missing(by)) stop("Internal error: by= is missing")   # nocov
 
     if (length(byval) && length(byval[[1L]])) {
-      if (!bysameorder && identical(byindex,FALSE)) {
+      if (!bysameorder && isFALSE(byindex)) {
         if (verbose) {last.started.at=proc.time();cat("Finding groups using forderv ... ");flush.console()}
         o__ = forderv(byval, sort=!missing(keyby), retGrp=TRUE)
         # The sort= argument is called sortGroups at C level. It's primarily for saving the sort of unique strings at
@@ -1724,7 +1727,8 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
         gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "first", "tail", "[") # added .N for #5760
         .ok <- function(q) {
           if (dotN(q)) return(TRUE) # For #5760
-          cond = is.call(q) && length(q1c <- as.character(q[[1L]]))==1L && q1c %chin% gfuns && !is.call(q[[2L]])
+          # Need is.symbol() check. See #1369, #1974 or #2949 issues and explanation below by searching for one of these issues.
+          cond = is.call(q) && is.symbol(q[[1]]) && (q1c <- as.character(q[[1]])) %chin% gfuns && !is.call(q[[2L]])
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
           ans  = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L)))
           if (identical(ans, TRUE)) return(ans)
@@ -1761,9 +1765,11 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       oldjsub = jsub
       if (jsub[[1L]]=="list") {
         for (ii in seq_along(jsub)[-1L]) {
-          if (dotN(jsub[[ii]])) next; # For #5760
-          if (is.call(jsub[[ii]]) && jsub[[ii]][[1L]]=="mean")
-            jsub[[ii]] = .optmean(jsub[[ii]])
+          this_jsub = jsub[[ii]]
+          if (dotN(this_jsub)) next; # For #5760
+          # Addressing #1369, #2949 and #1974. Added is.symbol() check to handle cases where expanded function definition is used insead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
+          if (is.call(this_jsub) && is.symbol(this_jsub[[1L]]) && this_jsub[[1L]]=="mean")
+            jsub[[ii]] = .optmean(this_jsub)
         }
       } else if (jsub[[1L]]=="mean") {
         jsub = .optmean(jsub)
@@ -2539,7 +2545,7 @@ setnames <- function(x,old,new,skip_absent=FALSE) {
   # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
   if (!is.data.frame(x)) stop("x is not a data.table or data.frame")
   if (length(names(x)) != length(x)) stop("x is length ",length(x)," but its names are length ",length(names(x)))
-  stopifnot(isTRUE(skip_absent) || identical(skip_absent,FALSE))
+  stopifnot(isTRUEorFALSE(skip_absent))
   if (missing(new)) {
     # for setnames(DT,new); e.g., setnames(DT,c("A","B")) where ncol(DT)==2
     if (!is.character(old)) stop("Passed a vector of type '",typeof(old),"'. Needs to be type 'character'.")
@@ -2676,7 +2682,7 @@ chgroup <- function(x) {
 }
 
 rbindlist <- function(l, use.names=fill, fill=FALSE, idcol=NULL) {
-  if (identical(idcol, FALSE)) { idcol = NULL }
+  if (isFALSE(idcol)) { idcol = NULL }
   else if (!is.null(idcol)) {
     if (isTRUE(idcol)) idcol = ".id"
     if (!is.character(idcol)) stop("idcol must be a logical or character vector of length 1. If logical TRUE the id column will named '.id'.")

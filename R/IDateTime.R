@@ -13,7 +13,13 @@ as.IDate.default <- function(x, ..., tz = attr(x, "tzone")) {
 as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
   if (origin=="1970-01-01") {
     # standard epoch
-    setattr(as.integer(x), "class", c("IDate", "Date"))
+    x = as.integer(x)
+    class(x) = c("IDate", "Date")
+    # We used to use structure() here because class(x)<- copied several times in R before v3.1.0
+    # Since R 3.1.0 improved class()<- and data.table's oldest oldest supportd R is now 3.1.0, we can use class<- again
+    # structure() contains a match() and replace for specials, which we don't need.
+    # class()<- ensures at least 1 shallow copy as appropriate is returned.
+    x
   } else {
     # only call expensive as.IDate.character if we have to
     as.IDate(origin, ...) + as.integer(x)
@@ -21,13 +27,15 @@ as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
 }
 
 as.IDate.Date <- function(x, ...) {
-  setattr(as.integer(x), "class", c("IDate", "Date"))
+  x = as.integer(x)                 # if already integer, x will be left unchanged as the original input
+  class(x) = c("IDate", "Date")     # class()<- will copy if as.integer() did not create, and may not if it did we hope
+  x                                 # always return a new object
 }
 
 as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
   if (tz %chin% c("UTC", "GMT")) {
-    setattr(as.integer(x) %/% 86400L, "class",  c("IDate", "Date"))
+    (setattr(as.integer(x) %/% 86400L, "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
   } else
     as.IDate(as.Date(x, tz = tz, ...))
 }
@@ -35,7 +43,9 @@ as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
 as.IDate.IDate <- function(x, ...) x
 
 as.Date.IDate <- function(x, ...) {
-  setattr(as.numeric(x), "class", "Date")
+  x = as.numeric(x)
+  class(x) = "Date"
+  x
 }
 
 mean.IDate <-
@@ -77,7 +87,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
   }
   if (inherits(e1, "Date") && inherits(e2, "Date"))
     stop("binary + is not defined for \"IDate\" objects")
-  setattr(as.integer(unclass(e1) + unclass(e2)), "class", c("IDate", "Date"))
+  (setattr(as.integer(unclass(e1) + unclass(e2)), "class", c("IDate", "Date")))  # () wrap to return visibly
 }
 
 `-.IDate` <- function (e1, e2) {
@@ -128,7 +138,7 @@ as.ITime.numeric <- function(x, ms = 'truncate', ...) {
                 'ceil' = as.integer(ceiling(x)),
                 stop("Valid options for ms are 'truncate', ",
                      "'nearest', and 'ceil'.")) %% 86400L
-  setattr(secs, "class", "ITime")
+  (setattr(secs, "class", "ITime")) # the %% here ^^ ensures a local copy is obtained; the truncate as.integer() may not copy
 }
 
 as.ITime.character <- function(x, format, ...) {
@@ -163,18 +173,18 @@ as.ITime.POSIXlt <- function(x, ms = 'truncate', ...) {
                 'ceil' = as.integer(ceiling(x$sec)),
                 stop("Valid options for ms are 'truncate', ",
                      "'nearest', and 'ceil'."))
-  setattr(with(x, secs + min * 60L + hour * 3600L), "class", "ITime")
+  (setattr(with(x, secs + min * 60L + hour * 3600L), "class", "ITime"))  # () wrap to return visibly
 }
 
 as.ITime.times <- function(x, ms = 'truncate', ...) {
-  secs <- 86400 * (unclass(x) %% 1)
+  secs = 86400 * (unclass(x) %% 1)
   secs = switch(ms,
                 'truncate' = as.integer(secs),
                 'nearest' = as.integer(round(secs)),
                 'ceil' = as.integer(ceiling(secs)),
                 stop("Valid options for ms are 'truncate', ",
                      "'nearest', and 'ceil'."))
-  setattr(secs, "class", "ITime")
+  (setattr(secs, "class", "ITime"))  # the first line that creates sec will create a local copy so we can use setattr() to avoid potential copy of class()<-
 }
 
 as.character.ITime <- format.ITime <- function(x, ...) {
@@ -216,21 +226,24 @@ print.ITime <- function(x, ...) {
 
 rep.ITime <- function (x, ...)
 {
-  y <- rep(unclass(x), ...)
-  setattr(y, "class", "ITime")
+  y = rep(unclass(x), ...)
+  class(y) = "ITime"   # unlass and rep could feasibly not copy, hence use class<- not setattr()
+  y
 }
 
 "[.ITime" <- function(x, ..., drop = TRUE)
 {
-  cl <- oldClass(x)
-  class(x) <- NULL
-  val <- NextMethod("[")
-  setattr(val, "class", cl)
+  cl = oldClass(x)
+  class(x) = NULL
+  val = NextMethod("[")
+  class(val) = cl
+  val
 }
 
 unique.ITime <- function(x, ...) {
   ans = NextMethod()
-  setattr(ans, "class", "ITime")
+  class(ans) = "ITime"
+  ans
 }
 
 # create a data.table with IDate and ITime columns

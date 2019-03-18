@@ -87,7 +87,6 @@ SEXP SelfRefSymbol;
 // assign.c
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 void savetl_init(), savetl(SEXP s), savetl_end();
-Rboolean isDatatable(SEXP x);
 int checkOverAlloc(SEXP x);
 
 // forder.c
@@ -151,6 +150,7 @@ double iquickselect(int *x, int n, int k);
 double wallclock();
 
 // openmp-utils.c
+void initDTthreads();
 int getDTthreads();
 void avoid_openmp_hang_within_fork();
 

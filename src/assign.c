@@ -99,6 +99,15 @@ However, we still have problem (ii) above and it didn't pass tests involving bas
 
 We really need R itself to start setting TRUELENGTH to be the allocated length and then
 for GC to release TRUELENGTH not LENGTH.  Would really tidy this up.
+
+Moved out of ?setkey Details section in 1.12.2 (Mar 2019). Revisit this w.r.t. to recent versions of R.
+  The problem (for \code{data.table}) with the copy by \code{key<-} (other than
+  being slower) is that \R doesn't maintain the over-allocated truelength, but it
+  looks as though it has. Adding a column by reference using \code{:=} after a
+  \code{key<-} was therefore a memory overwrite and eventually a segfault; the
+  over-allocated memory wasn't really there after \code{key<-}'s copy. \code{data.table}s now have an attribute \code{.internal.selfref} to catch and warn about such copies.
+  This attribute has been implemented in a way that is friendly with
+  \code{identical()} and \code{object.size()}.
 */
 
 static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
@@ -256,16 +265,6 @@ SEXP shallowwrapper(SEXP dt, SEXP cols) {
   } else return(shallow(dt, cols, TRUELENGTH(dt)));
 }
 
-// is.data.table() C-function, extracted from assign.c
-// Check if "data.table" class exists somewhere in class (#5115)
-Rboolean isDatatable(SEXP x) {
-  SEXP klass = getAttrib(x, R_ClassSymbol);
-  for (int i=0; i<length(klass); i++) {
-    if (strcmp(CHAR(STRING_ELT(klass, i)), "data.table") == 0) return(TRUE);
-  }
-  return (FALSE);
-}
-
 SEXP truelength(SEXP x) {
   SEXP ans;
   PROTECT(ans = allocVector(INTSXP, 1));
@@ -281,7 +280,6 @@ SEXP truelength(SEXP x) {
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
   return ScalarInteger(_selfrefok(x,FALSE,LOGICAL(verbose)[0]));
 }
-
 
 void memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
 
@@ -822,7 +820,8 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
   if (len<1) return;
   if (TYPEOF(target) != TYPEOF(source)) error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s']", type2char(TYPEOF(target)),type2char(TYPEOF(source))); // # nocov
   int slen = length(source);
-  if (slen!=1 && slen!=len) error("Internal error: recycle length error not caught earlier. slen=%d len=%d", slen, len); // # nocov
+  if (slen==0) return;
+  if (slen>1 && slen!=len) error("Internal error: recycle length error not caught earlier. slen=%d len=%d", slen, len); // # nocov
   // Internal error because the column has already been added to the DT, so length mismatch should have been caught before adding the column.
   // for 5647 this used to limit slen to len, but no longer
 
@@ -938,20 +937,24 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
   // routinely leaves untouched items (rather than 0 or "" as allocVector does with its memset)
   // We guess that author of allocVector would have liked to initialize with NA but was prevented since memset
   // is restricted to one byte.
-  R_len_t i;
-  SEXP v;
-  PROTECT(v = allocVector(type, n));
+  SEXP v = PROTECT(allocVector(type, n));
   switch(type) {
-  // NAs are special; no need to worry about generations.
-  case INTSXP :
-  case LGLSXP :
-    for (i=0; i<n; i++) INTEGER(v)[i] = NA_INTEGER;
-    break;
-  case REALSXP :
-    for (i=0; i<n; i++) REAL(v)[i] = NA_REAL;
-    break;
+  case LGLSXP : {
+    Rboolean *vd = (Rboolean *)LOGICAL(v);
+    for (int i=0; i<n; i++) vd[i] = NA_LOGICAL;
+  } break;
+  case INTSXP : {
+    int *vd = INTEGER(v);
+    for (int i=0; i<n; i++) vd[i] = NA_INTEGER;
+  } break;
+  case REALSXP : {
+    double *vd = REAL(v);
+    for (int i=0; i<n; i++) vd[i] = NA_REAL;
+  } break;
   case STRSXP :
-    for (i=0; i<n; i++) ((SEXP *)DATAPTR(v))[i] = NA_STRING;
+    // character columns are initialized with blank string (""). So replace the all-"" with all-NA_character_
+    // Since "" and NA_character_ are global constants in R, it should be ok to not use SET_STRING_ELT here. But use it anyway for safety (revisit if proved slow)
+    for (int i=0; i<n; i++) SET_STRING_ELT(v, i, NA_STRING);
     break;
   case VECSXP :
     // list columns already have each item initialized to NULL
