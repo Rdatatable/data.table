@@ -1735,7 +1735,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           # Need is.symbol() check. See #1369, #1974 or #2949 issues and explanation below by searching for one of these issues.
           cond = is.call(q) && is.symbol(q[[1]]) && (q1c <- as.character(q[[1]])) %chin% gfuns && !is.call(q[[2L]])
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
-          ans  = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L)))
+          ans = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1c %chin% c("head","tail")) # head-tail uses default value n=6 which as of now should not go gforce
           if (identical(ans, TRUE)) return(ans)
           # otherwise there must be three arguments, and only in two cases --
           #   1) head/tail(x, 1) or 2) x[n], n>0
