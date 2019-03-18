@@ -10,7 +10,7 @@
 
 3. The number of logical CPUs used by default has been reduced from 100% to 50%. The previous 100% default was reported to cause significant slow downs when other non-trivial processes were also running: [#3395](https://github.com/Rdatatable/data.table/issues/3395), [#3298](https://github.com/Rdatatable/data.table/issues/3298). Two new optional environment variables (`R_DATATABLE_NUM_PROCS_PERCENT` & `R_DATATABLE_NUM_THREADS`) control this default. \code(setDTthreads()) gains \code{percent=} and \code{?setDTthreads} has been significantly revised. \code{getDTthreads(verbose=TRUE)} has been expanded. The environment variable `OMP_THREAD_LIMIT` is now respected ([#3300](https://github.com/Rdatatable/data.table/issues/3300)) in addition to `OMP_NUM_THREADS` as before.
 
-4. `rbindlist` now retains the position of duplicate column names when `use.names=TRUE` [#3373](https://github.com/Rdatatable/data.table/issues/3373), and fills length 0 columns (including NULL) with NA with warning [#1871](https://github.com/Rdatatable/data.table/issues/1871). Thanks to Kun Ren for the request which arose when parsing JSON.
+4. `rbind` and `rbindlist` now retain the position of duplicate column names when `use.names=TRUE` [#3373](https://github.com/Rdatatable/data.table/issues/3373), and fill length 0 columns (including NULL) with NA with warning [#1871](https://github.com/Rdatatable/data.table/issues/1871). Thanks to Kun Ren for the request which arose when parsing JSON.
 
 #### BUG FIXES
 
@@ -36,7 +36,9 @@
 
 11. A join's result could be incorrectly keyed when a single nomatch occurred at the very beginning while all other values matched, [#3441](https://github.com/Rdatatable/data.table/issues/3441). The incorrect key would cause incorrect results in subsequent queries. Thanks to @symbalex for reporting and @franknarf1 for pinpointing the root cause.
 
-12. `rbindlist(..., use.names=TRUE)` with over 255 columns could return the columns in a random order, [#3373](https://github.com/Rdatatable/data.table/issues/3373). The contents and name of each column was correct but the order that the columns appeared in the result might not match the original input.
+12. `rbind` and `rbindlist(..., use.names=TRUE)` with over 255 columns could return the columns in a random order, [#3373](https://github.com/Rdatatable/data.table/issues/3373). The contents and name of each column was correct but the order that the columns appeared in the result might not match the original input.
+
+13. `rbind` and `rbindlist` now combine `integer64` columns together with non-`integer64` columns correctly, [#1349](https://github.com/Rdatatable/data.table/issues/1349).
 
 #### NOTES
 

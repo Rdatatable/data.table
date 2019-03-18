@@ -225,19 +225,21 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error("Column %d of item %d has type 'factor' but has no levels; i.e. malformed.", w+1, i+1);
         factor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
       } //else if (!isString(thisCol) && length(thisCol)) anyNotStringOrFactor=true;
-      SEXP thisClass = getAttrib(thisCol, R_ClassSymbol);
-      if (INHERITS(thisClass, char_integer64)) int64=true;
+      if (INHERITS(thisCol, char_integer64)) {
+        if (firsti>=0 && !length(getAttrib(firstCol, R_ClassSymbol))) { firsti=i; firstw=w; firstCol=thisCol; } // so the integer64 attribute gets copied to target below
+        int64=true;
+      }
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
-      else if (!factor && !R_compute_identical(thisClass, getAttrib(firstCol,R_ClassSymbol), 0)) {
+      else if (!factor && !int64 && !R_compute_identical(getAttrib(thisCol, R_ClassSymbol), getAttrib(firstCol,R_ClassSymbol), 0)) {
         error("Class attribute on column %d of item %d does not match with column %d of item %d.", w+1, i+1, firstw+1, firsti+1);
       }
     }
     // in future warn ... if (factor && anyNotStringOrFactor) warning("Column %d contains a factor but not all items for the column are character or factor", idcol+j+1);
     if (!foundName) { char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); }
     if (factor) maxType=INTSXP;  // any items are factors then a factor is created (could be an option)
+    if (int64 && maxType!=REALSXP) error("Internal error: column %d of result is determined to be integer64 but maxType==%d != REALSXP", j+1, maxType); // nocov
     SEXP target;
     SET_VECTOR_ELT(ans, idcol+j, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
-    if (int64) setAttrib(target, R_ClassSymbol, char_integer64);
     if (!factor) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     int ansloc=0;
     if (factor) {
@@ -324,10 +326,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         int w = usenames ? colMap[i*ncol + j] : j;
         SEXP thisCol;
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {
-          writeNA(target, ansloc, thisnrow);
+          writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
           bool coerced = false;
-          if (TYPEOF(thisCol)!=TYPEOF(target)) {
+          if (!int64 && TYPEOF(thisCol)!=TYPEOF(target)) {
             thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target)));
             coerced = true;
             // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
@@ -341,18 +343,44 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
             memcpy(INTEGER(target)+ansloc, INTEGER(thisCol), thisnrow*SIZEOF(thisCol));
             break;
           case REALSXP:
-            // for integer 64 too, since types have been checked (TODO)
-            memcpy(REAL(target)+ansloc, REAL(thisCol), thisnrow*SIZEOF(thisCol));
+            if (!int64) {
+              memcpy(REAL(target)+ansloc, REAL(thisCol), thisnrow*SIZEOF(thisCol));
+            } else {
+              int64_t *td = (int64_t *)REAL(target) + ansloc;
+              switch (TYPEOF(thisCol)) {
+              case LGLSXP : case INTSXP : {
+                const int *id = INTEGER(thisCol);
+                for (int r=0; r<thisnrow; ++r)
+                  td[r] = id[r]==NA_INTEGER ? INT64_MIN : (int64_t)(id[r]);
+              } break;
+              case REALSXP :
+                if (INHERITS(thisCol, char_integer64)) {
+                  memcpy(td, REAL(thisCol), thisnrow*SIZEOF(thisCol));
+                } else {
+                  int firstReal=0;
+                  if ((firstReal=INTEGER(isReallyReal(thisCol))[0])) {
+                    warning("Column %d of item %d is being coerced to integer64 but contains a non-integer value (%f at position %d). Precision lost.",
+                             w+1, i+1, REAL(thisCol)[firstReal-1], firstReal);
+                  }
+                  double *id = REAL(thisCol);
+                  for (int r=0; r<thisnrow; ++r)
+                    td[r] = R_FINITE(id[r]) ? (int)(id[r]) : NA_INTEGER;
+                }
+                break;
+              default :
+                error("Internal error: integer64 column has an element of type '%s'", type2char(TYPEOF(thisCol)));  // # nocov
+              }
+            }
             break;
           case CPLXSXP :
             memcpy(COMPLEX(target)+ansloc, COMPLEX(thisCol), thisnrow*sizeof(Rcomplex));
             break;
           case VECSXP :
-            for (int r=0; r<thisnrow; r++)
+            for (int r=0; r<thisnrow; ++r)
               SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thisCol,r));
             break;
           case STRSXP :
-            for (int r=0; r<thisnrow; r++)
+            for (int r=0; r<thisnrow; ++r)
               SET_STRING_ELT(target, ansloc+r, STRING_ELT(thisCol,r));
             break;
           default :

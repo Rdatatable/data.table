@@ -908,6 +908,8 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
 }
 
 void writeNA(SEXP v, const int from, const int n)
+// this is for use after allocVector() which does not initialize its result. It does write NA as you'd
+// think, other than for VECSXP which allocVector() already initializes with NULL.
 {
   const int to = from-1+n;  // together with <=to below with writing NA to position 2147483647 in mind
   switch(TYPEOF(v)) {
@@ -921,7 +923,7 @@ void writeNA(SEXP v, const int from, const int n)
     for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER;
   } break;
   case REALSXP : {
-    if (INHERITS(getAttrib(v, R_ClassSymbol), char_integer64)) {
+    if (INHERITS(v, char_integer64)) {
       int64_t *vd = (int64_t *)REAL(v);
       for (int i=from; i<=to; ++i) vd[i] = INT64_MIN;
     } else {
