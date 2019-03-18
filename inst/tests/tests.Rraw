@@ -13629,11 +13629,31 @@ test(1999.2, key(dx[di]), NULL)
 # gfirst(.SD) throws an error about not using head(.SD, n), but the latter works #2030
 DT = data.table(id = c(1L,1L,2L), v = 1:3)
 test(2000.1, DT[, first(.SD), by=id, .SDcols="v"], DT[, head(.SD, 1L), by=id])
-DT = data.table(id = c(1L,1L,2L), v = 1:3, y = 3:1)
-test(2000.2, DT[, first(.SD), by=id, .SDcols=c("v","y")], DT[, head(.SD, 1L), by=id, .SDcols=c("v","y")])
+DT = data.table(id = c(1L,1L,2L), v = 1:3, y = 3:1, z = c(TRUE, TRUE, FALSE), u = c("a","b","c"))
+test(2000.2, DT[, first(.SD), by=id, .SDcols=c("v","y","z","u")], DT[, head(.SD, 1L), by=id, .SDcols=c("v","y","z","u")])
+test(2000.3, DT[, last(.SD), by=id, .SDcols=c("v","y","z","u")], DT[, tail(.SD, 1L), by=id, .SDcols=c("v","y","z","u")])
 # ghead argument "n" is missing, with no default #3462
 DT = data.table(a=c(rep(1L, 7L), rep(2L, 5L)), b=1:12, d=12:1)
-test(2001, DT[, head(.SD), a], data.table(a=c(rep(1L, 6L), rep(2L, 5L)), b=c(1:6, 8:12), d=c(12:7, 5:1)))
+test(2001.1, DT[, head(.SD), a], data.table(a=c(rep(1L, 6L), rep(2L, 5L)), b=c(1:6, 8:12), d=c(12:7, 5:1)))
+# test(2001.2, DT[, head(b), a], data.table(a=c(rep(1L, 6L), rep(2L, 5L)), b=c(1:6, 8:12))) # TODO, requires rework of https://github.com/Rdatatable/data.table/blob/8a355cf653977752f8d39c23cf0ea6a7714851eb/R/data.table.R#L1728
+# gforce tests coverage
+if (test_bit64) {
+  DT = data.table(id=c(rep(1L,3), rep(2L, 3)), v=bit64::as.integer64(c(1:3, 4L, 5:6)))
+  test(2002.01, DT[2:6, sum(v), id], data.table(id=1:2, V1=bit64::as.integer64(c(5L,15L)))) # gather, case of int64 and irows
+}
+DT = data.table(id = c(1L,1L,2L), v = c(1i, 2i, 3i))
+test(2002.02, DT[, min(v), by=id], error="not supported by GForce min")
+test(2002.03, DT[, max(v), by=id], error="not supported by GForce max")
+test(2002.04, DT[, median(v), by=id], error="not supported by GForce median")
+test(2002.05, DT[, head(v, 1), by=id], error="not supported by GForce head")
+test(2002.06, DT[, tail(v, 1), by=id], error="not supported by GForce tail")
+test(2002.07, DT[, v[1], by=id], error="not supported by GForce subset")
+test(2002.08, DT[, sd(v), by=id], error="not supported by GForce sd")
+test(2002.09, DT[, var(v), by=id], error="not supported by GForce var")
+test(2002.10, DT[, prod(v), by=id], error="not supported by GForce prod")
+DT = data.table(id = c(1L,1L,2L,2L), v = c(1L, 2L, NA, NA))
+test(2002.11, DT[, median(v), id], data.table(id=1:2, V1=c(1.5, NA))) # median whole group has NAs
+
 
 
 ###################################

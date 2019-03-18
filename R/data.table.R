@@ -1717,7 +1717,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       else
         cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
     }
-    dotN <- function(x) if (is.name(x) && x == ".N") TRUE else FALSE # For #5760
+    dotN <- function(x) is.name(x) && x == ".N" # For #5760
     # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with
     # nomatch=0L even now.. but not switching it on yet, will deal it separately.
     if (getOption("datatable.optimize")>=2 && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
