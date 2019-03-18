@@ -13,6 +13,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   }
   fulldir = file.path(rootdir, subdir)
   
+  # nocov start
   if (isTRUE(benchmark)) {
     warning("'benchmark' argument is deprecated, use script='benchmark.Rraw' instead")
     script = "benchmark.Rraw"
@@ -21,21 +22,24 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
     warning("'with.other.packages' argument is deprecated, use script='other.Rraw' instead")
     script = "other.Rraw"
   }
+  # nocov end
 
   if (!is.null(script)) {
     stopifnot(is.character(script), length(script)==1L, !is.na(script), nzchar(script))
     if (!identical(basename(script), script)) {
+      # nocov start
       subdir = dirname(script)
       fulldir = normalizePath(subdir, mustWork=FALSE)
       fn = basename(script)
+      # nocov end
     } else {
       fn = script
     }
   } else {
-    stop("'script' argument should not be NULL")
+    stop("'script' argument should not be NULL") # nocov
   }
   fn = setNames(file.path(fulldir, fn), file.path(subdir, fn))
-  if (!file.exists(fn)) stop(fn," does not exist")
+  if (!file.exists(fn)) stop(fn," does not exist") # nocov
 
   # From R 3.6.0 onwards, we can check that && and || are using only length-1 logicals (in the test suite)
   # rather than relying on x && y being equivalent to x[[1L]] && y[[1L]]  silently.
@@ -77,7 +81,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   if (is.na(orig__R_CHECK_LENGTH_1_LOGIC2_)) {
     Sys.unsetenv("_R_CHECK_LENGTH_1_LOGIC2_")
   } else {
-    Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_)
+    Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_) # nocov
   }
   
   timings = get("timings", envir=env)
@@ -94,7 +98,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
                 ", locale='", Sys.getlocale(), "'",
                 ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'")
   DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
-  if ((x<-sum(timings[["nTest"]])) != ntest) warning("Timings count mismatch:",x,"vs",ntest)
+  if ((x<-sum(timings[["nTest"]])) != ntest) warning("Timings count mismatch:",x,"vs",ntest) # nocov
   cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
   print(DT, class=FALSE)
   
@@ -123,6 +127,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   #}
   #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
   
+  # nocov start
   if (nfail > 0) {
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
     cat("\r")
@@ -130,6 +135,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
          " Search ",names(fn)," for test number",s2,paste(whichfail,collapse=", "),".")
     # important to stop() here, so that 'R CMD check' fails
   }
+  # nocov end
   cat(plat,"\n\nAll ",ntest," tests in ",names(fn)," completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
   # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
   # stale due to not updating yet since a fix in R-devel, for example.
@@ -221,7 +227,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     filename = NA_character_ # nocov
   }
 
-  if (!missing(error) && !missing(y)) stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")
+  if (!missing(error) && !missing(y)) stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well") # nocov
 
   string_match = function(x, y) {
     length(grep(x,y,fixed=TRUE)) ||                    # try treating x as literal first; useful for most messages containing ()[]+ characters
