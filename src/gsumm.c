@@ -495,8 +495,8 @@ SEXP gmean(SEXP x, SEXP narm)
     }
     break;
   default:
-    free(s); free(c);
-    error("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x))); // # nocov because it already stops at gsum, remove nocov if gmean will support a type that gsum wont
+    free(s); free(c); // # nocov because it already stops at gsum, remove nocov if gmean will support a type that gsum wont
+    error("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x))); // # nocov
   }
   ans = PROTECT(allocVector(REALSXP, ngrp));
   for (int i=0; i<ngrp; i++) {
