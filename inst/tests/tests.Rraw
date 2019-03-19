@@ -2924,11 +2924,12 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   # reshape2 does not need to be loaded to run these.
   # We run these routinely, in dev by cc(), on Travis (coverage) and on CRAN
   set.seed(45)
+  N=18L  # increased in v1.12.2 from 6 to 18 to get NA in f_1 for coverage
   DT <- data.table(
-        i_1 = c(1:5, NA),
-        i_2 = c(NA,6,7,8,9,10),
-        f_1 = factor(sample(c(letters[1:3], NA), 6, TRUE)),
-        c_1 = sample(c(letters[1:3], NA), 6, TRUE),
+        i_1 = c(1:(N-1L), NA),
+        i_2 = c(NA,(N:(2L*N-2L))),
+        f_1 = factor(sample(c(letters[1:3], NA), N, TRUE)),
+        c_1 = sample(c(letters[1:3], NA), N, TRUE),
         d_1 = as.Date(c(1:3,NA,4:5), origin="2013-09-01"),
         d_2 = as.Date(6:1, origin="2012-01-01"))
   DT[, l_1 := DT[, list(c=list(rep(i_1, sample(5,1)))), by = i_1]$c] # generate list cols
@@ -2941,15 +2942,15 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1036, melt(DT, id=c("i_1", "i_2", "l_2"), measure=c("l_1")), ans1)
 
   # melt retains attributes if all are of same type (new)
-  ans2 = data.table(c_1=DT$c_1, variable=rep(c("d_1", "d_2"), each=6), value=as.Date(c(DT$d_1, DT$d_2)))[!is.na(value)]
+  ans2 = data.table(c_1=DT$c_1, variable=rep(c("d_1", "d_2"), each=N), value=as.Date(c(DT$d_1, DT$d_2)))[!is.na(value)]
   test(1037, melt(DT, id=4, measure=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
 
   DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
   test(1038, melt(DT2, id=1), error="Unknown column type 'complex'")
 
   # more tests
-  DT[, f_2 := factor(c("z", "a", "x", "z", "a", "a"), ordered=TRUE)]
-  DT[, id := 1:6]
+  DT[, f_2 := factor(sample(letters, N), ordered=TRUE)]
+  DT[, id := 1:N]
   ans1 = cbind(melt(DT, id="id", measure=5:6, value.name="value1"), melt(DT, id=integer(0), measure=7:8, value.name="value2")[, variable:=NULL])
   levels(ans1$variable) = as.character(1:2)
   test(1038.2, ans1, melt(DT, id="id", measure=list(5:6, 7:8)))
