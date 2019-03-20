@@ -13728,6 +13728,12 @@ if (test_bit64) {
   test(2007.6, rbind(data.table(a=as.raw(10), b=5L),  data.table(a=as.integer64(11), b=6L)), data.table(a=as.integer64(10:11), b=5:6))
 }
 
+# test for SET_STRING_ELT error with ordered factors, #3032
+DT1 = data.table(x = as.ordered(letters[c(1, 3, 5:8)]))
+DT2 = data.table(x = as.ordered(letters[c(2, 5:8)]))
+DT3 = data.table(x = as.ordered(letters[c(2, 5:8)]))
+test(2008, rbindlist(list(DT1, DT2, DT3), use.names=TRUE, fill=TRUE), data.table(x=factor(letters[c(1,3,5:8,2,5:8,2,5:8)], levels=c("a","c","e","f","g","h","b"))))
+
 
 ###################################
 #  Add new tests above this line  #
