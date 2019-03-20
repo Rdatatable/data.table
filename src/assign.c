@@ -857,6 +857,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
           memcpy(REAL(target)+start, REAL(source), slen*SIZEOF(target));
         }
       } else if (si64) {
+        error("Internal error: memrecycle source is integer64 but target is real and not integer64; target should be type integer64");  // # nocov
+        /*
         double *td = REAL(target)+start;
         if (slen==1) {
           const double val = (double)(((int64_t *)REAL(source))[0]);
@@ -864,7 +866,7 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
         } else {
           const int64_t *val = (int64_t *)REAL(source);
           for (int i=0; i<len; i++) td[i] = (double)(val[i]);
-        }
+        }*/
       } else {
         int64_t *td = (int64_t *)REAL(target)+start;
         const int mask = slen==1 ? 0 : INT_MAX;
