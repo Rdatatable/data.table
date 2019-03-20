@@ -270,8 +270,6 @@ SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
   return ScalarInteger(_selfrefok(x,FALSE,LOGICAL(verbose)[0]));
 }
 
-void memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
-
 SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP verb)
 {
   // For internal use only by := in [.data.table, and set()
@@ -788,19 +786,20 @@ static bool anyNamed(SEXP x) {
   return false;
 }
 
-void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
+static char memrecycle_message[1000];
+
+const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
 // like memcpy but recycles single-item source
 // 'where' a 1-based INTEGER vector subset of target to assign to, or NULL or integer()
 // assigns to target[start:start+len-1] or target[where[start:start+len-1]] where start is 0-based
 {
-  if (len<1) return;
-  if (TYPEOF(target) != TYPEOF(source)) error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s']", type2char(TYPEOF(target)),type2char(TYPEOF(source))); // # nocov
+  if (len<1) return NULL;
   int slen = length(source);
-  if (slen==0) return;
+  if (slen==0) return NULL;
   if (slen>1 && slen!=len) error("Internal error: recycle length error not caught earlier. slen=%d len=%d", slen, len); // # nocov
   // Internal error because the column has already been added to the DT, so length mismatch should have been caught before adding the column.
   // for 5647 this used to limit slen to len, but no longer
-
+  *memrecycle_message = '\0';
   int protecti=0;
   if (isNewList(source)) {
     // A list() column; i.e. target is a column of pointers to SEXPs rather than the much more common case
@@ -820,28 +819,89 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       protecti++;
     }
   }
-  if (!length(where)) {
+  if (!length(where)) {  // e.g. called from rbindlist with where=R_NilValue
     switch (TYPEOF(target)) {
-    case LGLSXP: case INTSXP :
+    case RAWSXP:
+      if (TYPEOF(source)!=RAWSXP) { source = PROTECT(coerceVector(source, RAWSXP)); protecti++; }
       if (slen==1) {
         // recycle single items
-        int *td = INTEGER(target);
+        Rbyte *td = RAW(target)+start;
+        const Rbyte val = RAW(source)[0];
+        for (int i=0; i<len; i++) td[i] = val;  // no R API inside loop as RAW()/INTEGER() etc have overhead even when inline functions
+      } else {
+        memcpy(RAW(target)+start, RAW(source), slen*SIZEOF(target));
+      }
+      break;
+    case LGLSXP: case INTSXP :
+      if (TYPEOF(source)!=LGLSXP && TYPEOF(source)!=INTSXP) { source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++; }
+      if (slen==1) {
+        int *td = INTEGER(target)+start;
         const int val = INTEGER(source)[0];
-        for (int i=0; i<len; i++) td[start+i] = val;  // no R API inside loop as INTEGER has overhead (even when it's an inline function)
+        for (int i=0; i<len; i++) td[i] = val;
       } else {
         memcpy(INTEGER(target)+start, INTEGER(source), slen*SIZEOF(target));
       }
       break;
-    case REALSXP :
-      if (slen==1) {
-        double *td = REAL(target);
-        const double val = REAL(source)[0];
-        for (int i=0; i<len; i++) td[start+i] = val;
+    case REALSXP : {
+      bool si64 = INHERITS(source, char_integer64);
+      bool ti64 = INHERITS(target, char_integer64);
+      if (si64 && TYPEOF(source)!=REALSXP)
+        error("Internal error: source has integer64 attribute but is type '%s' not REALSXP", type2char(TYPEOF(source))); // # nocov
+      if (si64 == ti64) {
+        if (TYPEOF(source)!=REALSXP) { source = PROTECT(coerceVector(source, REALSXP)); protecti++; }
+        if (slen==1) {
+          double *td = REAL(target)+start;
+          const double val = REAL(source)[0];
+          for (int i=0; i<len; i++) td[i] = val;
+        } else {
+          memcpy(REAL(target)+start, REAL(source), slen*SIZEOF(target));
+        }
+      } else if (si64) {
+        double *td = REAL(target)+start;
+        if (slen==1) {
+          const double val = (double)(((int64_t *)REAL(source))[0]);
+          for (int i=0; i<len; i++) td[i] = val;
+        } else {
+          const int64_t *val = (int64_t *)REAL(source);
+          for (int i=0; i<len; i++) td[i] = (double)(val[i]);
+        }
       } else {
-        memcpy(REAL(target)+start, REAL(source), slen*SIZEOF(target));
+        int64_t *td = (int64_t *)REAL(target)+start;
+        const int mask = slen==1 ? 0 : INT_MAX;
+        switch (TYPEOF(source)) {
+        case RAWSXP: {
+          const Rbyte *sd = RAW(source);  // sd = source data
+          for (int i=0; i<len; ++i) td[i] = (int64_t)(sd[i&mask]);  // raw has no NA
+        } break;
+        case LGLSXP : case INTSXP : {
+          const int *sd = INTEGER(source);
+          for (int i=0; i<len; ++i) td[i] = sd[i]==NA_INTEGER ? INT64_MIN : (int64_t)(sd[i]);
+        } break;
+        case REALSXP : {
+          int firstReal=0;
+          if ((firstReal=INTEGER(isReallyReal(source))[0])) {
+            sprintf(memrecycle_message, "coerced to integer64 but contains a non-integer value (%f at position %d); precision lost.", REAL(source)[firstReal-1], firstReal);
+          }
+          double *sd = REAL(source);
+          for (int i=0; i<len; ++i) td[i] = R_FINITE(sd[i]) ? (int)(sd[i]) : NA_INTEGER;
+        } break;
+        default :
+          error("Internal error: memrecycle integer64 column source is type '%s'", type2char(TYPEOF(source)));  // # nocov
+        }
+      }
+    } break;
+    case CPLXSXP :
+      if (TYPEOF(source)!=CPLXSXP) { source = PROTECT(coerceVector(source, CPLXSXP)); protecti++; }
+      if (slen==1) {
+        Rcomplex *td = COMPLEX(target)+start;
+        const Rcomplex val = COMPLEX(source)[0];
+        for (int i=0; i<len; ++i) td[i] = val;
+      } else {
+        memcpy(COMPLEX(target)+start, COMPLEX(source), slen*SIZEOF(target));
       }
       break;
     case STRSXP :
+      if (TYPEOF(source)!=STRSXP) { source = PROTECT(coerceVector(source, STRSXP)); protecti++; }
       if (slen==1) {
         const SEXP val = STRING_ELT(source, 0);
         for (int i=0; i<len; i++) SET_STRING_ELT(target, start+i, val);
@@ -851,6 +911,7 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       }
       break;
     case VECSXP :
+      if (TYPEOF(source)!=VECSXP) { source = PROTECT(coerceVector(source, VECSXP)); protecti++; }
       if (slen==1) {
         const SEXP val = VECTOR_ELT(source, 0);
         for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, val);
@@ -863,6 +924,8 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       error("Unsupported type in assign.c:memrecycle '%s' (no where)", type2char(TYPEOF(target)));  // # nocov
     }
   } else {
+    if (TYPEOF(target) != TYPEOF(source))
+      error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s'] in memrecycle (where)", type2char(TYPEOF(target)),type2char(TYPEOF(source))); // # nocov
     const int *wd = INTEGER(where)+start;
     const int mask = slen==1 ? 0 : INT_MAX;
     switch (TYPEOF(target)) {
@@ -905,6 +968,7 @@ void memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
     }
   }
   UNPROTECT(protecti);
+  return memrecycle_message[0] ? memrecycle_message : NULL;
 }
 
 void writeNA(SEXP v, const int from, const int n)

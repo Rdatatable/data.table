@@ -17,13 +17,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   }
   const bool idcol = !isNull(idcolArg);
   if (idcol && (!isString(idcolArg) || LENGTH(idcolArg)!=1)) error("Internal error: rbindlist.c idcol is not a single string");  // # nocov
-
   int ncol=0, first=0;
   int64_t nrow=0;
   bool anyNames=false;
   int numZero=0, firstZeroCol=0, firstZeroItem=0;
+  int *eachMax = (int *)R_alloc(LENGTH(l), sizeof(int));
   // pre-check for any errors here to save having to get cleanup right below when usenames
   for (int i=0; i<LENGTH(l); i++) {  // length(l)>0 checked above
+    eachMax[i] = 0;
     SEXP li = VECTOR_ELT(l, i);
     if (isNull(li)) continue;
     if (TYPEOF(li) != VECSXP) error("Item %d of input is not a data.frame, data.table or list", i+1);
@@ -39,13 +40,15 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     int nNames = length(getAttrib(li, R_NamesSymbol));
     if (nNames>0 && nNames!=thisncol) error("Item %d has %d columns but %d column names. Invalid object.", i+1, thisncol, nNames);
     if (nNames>0) anyNames=true;
-    int thisnrow = length(VECTOR_ELT(li,0));
-    for (int j=1; j<thisncol; ++j) {
+    int maxLen=0, whichMax=0;
+    for (int j=0; j<thisncol; ++j) { int tt=length(VECTOR_ELT(li,j)); if (tt>maxLen) { maxLen=tt; whichMax=j; } }
+    for (int j=0; j<thisncol; ++j) {
       int tt = length(VECTOR_ELT(li, j));
-      if (tt>0 && tt!=thisnrow) error("Column %d of item %d is length %d inconsistent with the first column of that item which is length %d. rbind/rbindlist expects each item in the input list to be a uniform list, data.frame or data.table", j+1, i+1, tt, thisnrow);
-      if (tt==0 && thisnrow>0 && numZero++==0) { firstZeroCol = j; firstZeroItem=i; }
+      if (tt>1 && tt!=maxLen) error("Column %d of item %d is length %d inconsistent with column %d which is length %d. Only length-1 columns are recycled.", j+1, i+1, tt, whichMax+1, maxLen);
+      if (tt==0 && maxLen>0 && numZero++==0) { firstZeroCol = j; firstZeroItem=i; }
     }
-    nrow += thisnrow;
+    eachMax[i] = maxLen;
+    nrow += maxLen;
   }
   if (numZero) {  // #1871
     SEXP names = getAttrib(VECTOR_ELT(l, firstZeroItem), R_NamesSymbol);
@@ -248,10 +251,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       int nLevel=0, allocLevel=0;
       SEXP *levelsRaw = NULL;  // growing list of SEXP pointers. Raw since managed with raw realloc.
       for (int i=0; i<LENGTH(l); ++i) {
-        SEXP li = VECTOR_ELT(l, i);
-        if (!length(li)) continue;
-        const int thisnrow = length(VECTOR_ELT(li, 0));
+        const int thisnrow = eachMax[i];
         if (thisnrow==0) continue;
+        SEXP li = VECTOR_ELT(l, i);
         int w = usenames ? colMap[i*ncol + j] : j;
         SEXP thisCol;
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
@@ -320,82 +322,16 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
     } else {
       for (int i=0; i<LENGTH(l); ++i) {
-        SEXP li = VECTOR_ELT(l, i);
-        if (!length(li)) continue;
-        const int thisnrow = length(VECTOR_ELT(li, 0));
+        const int thisnrow = eachMax[i];
         if (thisnrow==0) continue;
+        SEXP li = VECTOR_ELT(l, i);
         int w = usenames ? colMap[i*ncol + j] : j;
         SEXP thisCol;
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {
           writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
-          bool coerced = false;
-          if (!int64 && TYPEOF(thisCol)!=TYPEOF(target)) {
-            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target)));
-            coerced = true;
-            // TO DO: options(datatable.pedantic=TRUE) to issue this warning :
-            // warning("Column %d of item %d is type '%s', inconsistent with column %d of item %d's type ('%s')",j+1,i+1,type2char(TYPEOF(thiscol)),j+1,first+1,type2char(TYPEOF(target)));
-          }
-          switch(TYPEOF(target)) {
-          case RAWSXP:
-            memcpy(RAW(target)+ansloc, RAW(thisCol), thisnrow*SIZEOF(thisCol));
-            break;
-          case LGLSXP:
-            memcpy(LOGICAL(target)+ansloc, LOGICAL(thisCol), thisnrow*SIZEOF(thisCol));
-            break;
-          case INTSXP:
-            memcpy(INTEGER(target)+ansloc, INTEGER(thisCol), thisnrow*SIZEOF(thisCol));
-            break;
-          case REALSXP:
-            if (!int64) {
-              memcpy(REAL(target)+ansloc, REAL(thisCol), thisnrow*SIZEOF(thisCol));
-            } else {
-              int64_t *td = (int64_t *)REAL(target) + ansloc;  // td = target data
-              switch (TYPEOF(thisCol)) {
-              case RAWSXP: {
-                const Rbyte *sd = RAW(thisCol);  // sd = source data
-                for (int r=0; r<thisnrow; ++r)
-                  td[r] = (int64_t)(sd[r]);  // raw has no NA
-              } break;
-              case LGLSXP : case INTSXP : {
-                const int *sd = INTEGER(thisCol);
-                for (int r=0; r<thisnrow; ++r)
-                  td[r] = sd[r]==NA_INTEGER ? INT64_MIN : (int64_t)(sd[r]);
-              } break;
-              case REALSXP :
-                if (INHERITS(thisCol, char_integer64)) {
-                  memcpy(td, REAL(thisCol), thisnrow*SIZEOF(thisCol));
-                } else {
-                  int firstReal=0;
-                  if ((firstReal=INTEGER(isReallyReal(thisCol))[0])) {
-                    warning("Column %d of item %d is being coerced to integer64 but contains a non-integer value (%f at position %d). Precision lost.",
-                             w+1, i+1, REAL(thisCol)[firstReal-1], firstReal);
-                  }
-                  double *sd = REAL(thisCol);
-                  for (int r=0; r<thisnrow; ++r)
-                    td[r] = R_FINITE(sd[r]) ? (int)(sd[r]) : NA_INTEGER;
-                }
-                break;
-              default :
-                error("Internal error: integer64 column has an element of type '%s'", type2char(TYPEOF(thisCol)));  // # nocov
-              }
-            }
-            break;
-          case CPLXSXP :
-            memcpy(COMPLEX(target)+ansloc, COMPLEX(thisCol), thisnrow*sizeof(Rcomplex));
-            break;
-          case VECSXP :
-            for (int r=0; r<thisnrow; ++r)
-              SET_VECTOR_ELT(target, ansloc+r, VECTOR_ELT(thisCol,r));
-            break;
-          case STRSXP :
-            for (int r=0; r<thisnrow; ++r)
-              SET_STRING_ELT(target, ansloc+r, STRING_ELT(thisCol,r));
-            break;
-          default :
-            error("Unsupported column type '%s'", type2char(TYPEOF(target)));  // # nocov
-          }
-          if (coerced) UNPROTECT(1);
+          const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol);
+          if (ret) warning("Column %d of item %d: %s", w+1, i+1, ret);  // currently just one warning when precision is lost; e.g. assigning 3.4 to integer64
         }
         ansloc += thisnrow;
       }

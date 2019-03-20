@@ -1775,13 +1775,11 @@ t = as.ITime(strptime(c("09:10:00","09:11:00","09:11:00","09:12:00"),"%H:%M:%S")
 test(626, unique(t), t[c(1,2,4)])
 test(627, class(unique(t)), "ITime")
 
-# Test recycling list() rbind - with recent C-level changes, this seems not possible (like rbindlist)
-# old test commented.
-# test(628, rbind(data.table(a=1:3,b=5:7,c=list(1:2,1:3,1:4)), list(4L,8L,as.list(1:3))),
-#           data.table(a=c(1:3,rep(4L,3L)),b=c(5:7,rep(8L,3L)),c=list(1:2,1:3,1:4,1L,2L,3L)))
-test(628, rbind(data.table(a=1:3,b=5:7,c=list(1:2,1:3,1:4)), list(4L,8L,as.list(1:3))), error = "inconsistent with the first column of that item which is length")
+# Test recycling list() rbind; #524. This was commented out until v1.12.2 when it was reinstated in PR#3455
+test(628.1, rbind(data.table(a=1:3,b=5:7,c=list(1:2,1:3,1:4)), list(4L,8L,as.list(1:3))),
+           data.table(a=c(1:3,rep(4L,3L)),b=c(5:7,rep(8L,3L)),c=list(1:2,1:3,1:4,1L,2L,3L)))
 # Test switch in .rbind.data.table for factor columns
-test(628.5, rbind(data.table(a=1:3,b=factor(letters[1:3]),c=factor("foo")), list(4L,factor("d"),factor("bar"))),
+test(628.2, rbind(data.table(a=1:3,b=factor(letters[1:3]),c=factor("foo")), list(4L,factor("d"),factor("bar"))),
           data.table(a=1:4,b=factor(letters[1:4]),c=factor(c(rep("foo",3),"bar"), levels = c("foo", "bar"))))
 
 # Test merge with common names and all.y=TRUE, #2011
@@ -1933,7 +1931,7 @@ l = list(data.table(a=1:2, b=7:8),
 test(676, rbindlist(l[1:3]), data.table(a=1:6,b=7:12))
 test(677, rbindlist(l[c(10,1,10,2,10)]), data.table(a=1:4,b=7:10))  # NULL items ignored
 test(678, rbindlist(l[c(1,4)]), error="Item 2 has 1 columns, inconsistent with item 1 which has 2")
-test(679, rbindlist(l[c(1:2,5)]), error="Column 2 of item 3 is length 1 inconsistent with the first column of that item which is length 2.")
+test(679, rbindlist(l[c(1:2,5)]), data.table(a=c(1:4,15:16), b=c(7:10,17L,17L)))
 test(680, rbindlist(l[c(2,6)]), data.table(a=c(3,4,18,19), V2=c(9:10,20:21)))  # coerces 18 and 19 to numeric
 test(681, rbindlist(list(data.table(a=letters[1:2],b=c(1.2,1.3),c=1:2), list("c",1.4,3L), NULL, list(letters[4:6],c(1.5,1.6,1.7),4:6))),
           data.table(a=letters[1:6], b=seq(1.2,1.7,by=0.1), c=1:6))
@@ -13669,8 +13667,8 @@ test(2002.4, rbindlist( list(list(a=1L,z=list()), list(a=2L, z=list("m"))) ),
              warning="Column 2 ['z'] of item 1 is length 0. This (and 0 others like it) has been filled with NA")
 test(2002.5, rbindlist( list( list(a=1L, z=list("z")), list(a=2L, z=list(c("a","b"))) )),
              data.table(a=1:2, z=list("z", c("a","b"))))
-test(2002.6, rbindlist( list( list(a=1, z=list("z",1)), list(a=2, z=list(c("a","b"))) )),
-             error="Column 2 of item 1 is length 2 inconsistent with the first column of that item which is length 1")
+test(2002.6, rbindlist( list( list(a=1:2, z=list("z",1,"k")), list(a=2, z=list(c("a","b"))) )),
+             error="Column 1 of item 1 is length 2 inconsistent with column 2 which is length 3. Only length-1 columns are recycled.")
 test(2002.7, rbindlist( list(list(a=1L, z=list(list())), list(a=2L, z=list(list("m")))) ),
              data.table(a=1:2, z=list(list(),list("m"))))
 test(2002.8, rbindlist( list(list(a=1L, z=list(list("z"))), list(a=2L, z=list(list(c("a","b"))))) ),
@@ -13722,7 +13720,7 @@ test(2006, rbindlist(list(data.table(x = as.raw(1), y=as.raw(3)), data.table(x =
 if (test_bit64) {
   test(2007.1, rbindlist(list( list(a=as.integer64(1), b=3L),  list(a=2L, b=4L) )), data.table(a=as.integer64(1:2), b=3:4))
   test(2007.2, rbindlist(list( list(a=3.4, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6),
-               warning="Column 1 of item 1 is being coerced to integer64 but contains a non-integer value [(]3.40.* at position 1[)]. Precision lost.")
+               warning="Column 1 of item 1: coerced to integer64 but contains a non-integer value [(]3.40.* at position 1[)]; precision lost")
   test(2007.3, rbindlist(list( list(a=3.0, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6))
   test(2007.4, rbindlist(list( list(b=5:6),  list(a=as.integer64(4), b=7L)), fill=TRUE), data.table(b=5:7, a=as.integer64(c(NA,NA,4))))  # tests writeNA of integer64
   test(2007.5, rbindlist(list( list(a=INT(1,NA,-2)),  list(a=as.integer64(c(3,NA))) )), data.table(a=as.integer64(c(1,NA,-2,3,NA))))   # int NAs combined with int64 NA

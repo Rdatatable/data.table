@@ -38,7 +38,7 @@
 
 12. `rbind` and `rbindlist(..., use.names=TRUE)` with over 255 columns could return the columns in a random order, [#3373](https://github.com/Rdatatable/data.table/issues/3373). The contents and name of each column was correct but the order that the columns appeared in the result might not match the original input.
 
-13. `rbind` and `rbindlist` now combine `integer64` columns together with non-`integer64` columns correctly [#1349](https://github.com/Rdatatable/data.table/issues/1349), and support `raw` columns [#2819](https://github.com/Rdatatable/data.table/issues/2819).
+13. `rbind` and `rbindlist` now combine `integer64` columns together with non-`integer64` columns correctly [#1349](https://github.com/Rdatatable/data.table/issues/1349), support `raw` columns [#2819](https://github.com/Rdatatable/data.table/issues/2819), and recycle length-1 columns [#524](https://github.com/Rdatatable/data.table/issues/524).
 
 #### NOTES
 
