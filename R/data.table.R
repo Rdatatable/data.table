@@ -1410,6 +1410,7 @@ replace_dot_alias <- function(e) {
       setattr(jval, 'class', class(x)) # fix for #5296
       if (haskey(x) && all(key(x) %chin% names(jval)) && suppressWarnings(is.sorted(jval, by=key(x))))  # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
         setattr(jval, 'sorted', key(x))
+      for (i in seq_along(jval)) if (is.null(jval[[i]])) stop("Column ",i," of j evaluates to NULL. A NULL column is invalid.")
     }
     return(jval)
   }

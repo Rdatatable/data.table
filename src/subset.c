@@ -270,6 +270,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
     ansn = LENGTH(rows);  // has been checked not to contain zeros or negatives, so this length is the length of result
     for (int i=0; i<LENGTH(cols); i++) {
       SEXP source = VECTOR_ELT(x, INTEGER(cols)[i]-1);
+      if (isNull(source)) error("Internal error: column %d of data.table is NULL; malformed", i+1);
       SEXP target;
       SET_VECTOR_ELT(ans, i, target=allocVector(TYPEOF(source), ansn));
       copyMostAttrib(source, target);
@@ -313,9 +314,10 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
 SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   bool anyNA=false, orderedSubset=false;
   int nprotect=0;
-  if (check_idx(idx, length(x), &anyNA, &orderedSubset) != NULL) {
+  if (isNull(x))
+    error("Internal error: NULL can not be subset. It is invalid for a data.table to contain a NULL column.");      // # nocov
+  if (check_idx(idx, length(x), &anyNA, &orderedSubset) != NULL)
     error("Internal error: CsubsetVector is internal-use-only but has received negatives, zeros or out-of-range");  // # nocov
-  }
   SEXP ans = PROTECT(allocVector(TYPEOF(x), length(idx))); nprotect++;
   copyMostAttrib(x, ans);
   subsetVectorRaw(ans, x, idx, anyNA);
