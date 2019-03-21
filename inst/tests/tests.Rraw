@@ -3068,6 +3068,20 @@ Jul,36.1,26.6,22.3,17.9,7.8,106.2,106.2,0,12.3,12.3,0,271.6
 Aug,35.6,24.8,20.8,16.7,6.1,100.6,100.6,0,13.4,13.4,0,230.7
 Sep,33.5,19.4,15.7,11.9,0,100.8,100.8,0,12.7,12.7,0,174.1")
   test(1573, print(melt(DT, id.vars="month", verbose=TRUE)), output="'measure.vars' is missing.*Assigned.*are.*Record high.*1:.*Jan.*Record high.*12.8.*108:.*Sep.*sunshine hours.*174.1")
+
+  # coverage of reworked fmelt.c:getvarcols; #1754
+  # missing id satisfies data->lvalues!=1 at C level to test those branches
+  x = data.table(x1=1:2, x2=3:4, y1=5:6, y2=7:8, z1=9:10, z2=11:12)
+  test(1574.1, dim(ans<-melt(x, measure.vars=patterns("^y", "^z"))), INT(4,5))
+  test(1574.2, ans$variable, factor(c("1","1","2","2")))
+  test(1574.3, dim(ans<-melt(x, measure.vars=patterns("^y", "^z"), variable.factor=FALSE)), INT(4,5))
+  test(1574.4, ans$variable, c("1","1","2","2"))
+  x[, c("y1","z1"):=NA]
+  test(1574.5, dim(melt(x, measure.vars=patterns("^y", "^z"))), INT(4,5))
+  test(1574.6, dim(ans<-melt(x, measure.vars=patterns("^y", "^z"), na.rm=TRUE)), INT(2,5))
+  test(1574.7, ans$variable, factor(c("1","1")))
+  test(1574.8, dim(ans<-melt(x, measure.vars=patterns("^y", "^z"), na.rm=TRUE, variable.factor=FALSE)), INT(2,5))
+  test(1574.9, ans$variable, c("1","1"))
 }
 
 # sorting and grouping of Inf, -Inf, NA and NaN,  #4684, #4815 & #4883
