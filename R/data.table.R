@@ -2661,14 +2661,20 @@ chgroup <- function(x) {
   rbindlist(l, use.names, fill, idcol)
 }
 
-rbindlist <- function(l, use.names=fill, fill=FALSE, idcol=NULL) {
+rbindlist <- function(l, use.names="check", fill=FALSE, idcol=NULL) {
   if (isFALSE(idcol)) { idcol = NULL }
   else if (!is.null(idcol)) {
     if (isTRUE(idcol)) idcol = ".id"
     if (!is.character(idcol)) stop("idcol must be a logical or character vector of length 1. If logical TRUE the id column will named '.id'.")
     idcol = idcol[1L]
   }
-  # fix for #1467, quotes result in "not resolved in current namespace" error
+  miss = missing(use.names)
+  # more checking of use.names happens at C level; this is just minimal to massage 'check' to NA
+  if (identical(use.names, NA)) stop("use.names=NA invalid")  # otherwise use.names=NA could creep in an usage equivalent to use.names='check'
+  if (identical(use.names,"check")) {
+    if (!miss) stop("use.names='check' cannot be used explicitly because the value 'check' is new in v1.12.2 and subject to change. It is just meant to convey default behavior. See ?rbindlist.")
+    use.names = NA
+  }
   ans = .Call(Crbindlist, l, use.names, fill, idcol)
   if (!length(ans)) return(null.data.table())
   setDT(ans)[]

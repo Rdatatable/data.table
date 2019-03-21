@@ -1928,10 +1928,13 @@ l = list(data.table(a=1:2, b=7:8),
          data.table(b=13:14),
          list(15:16,17L),
          list(c(18,19),20:21))
-test(676, rbindlist(l[1:3]), data.table(a=1:6,b=7:12))
-test(677, rbindlist(l[c(10,1,10,2,10)]), data.table(a=1:4,b=7:10))  # NULL items ignored
+test(676.1, rbindlist(l[1:3]), ans<-data.table(a=1:6,b=7:12), warning="Column 2 [[]'V2'[]] of item 2 is missing in item 1.*Use fill=TRUE.*or use.names=FALSE")
+test(676.2, rbindlist(l[1:3], use.names=FALSE), ans)
+test(677.2, rbindlist(l[c(10,1,10,2,10)]), ans<-data.table(a=1:4,b=7:10), warning="Column 2 [[]'V2'[]] of item 4 is missing in item 2")  # NULL items ignored
+test(677.2, rbindlist(l[c(10,1,10,2,10)], use.names=FALSE), ans)
 test(678, rbindlist(l[c(1,4)]), error="Item 2 has 1 columns, inconsistent with item 1 which has 2")
-test(679, rbindlist(l[c(1:2,5)]), data.table(a=c(1:4,15:16), b=c(7:10,17L,17L)))
+test(679.1, rbindlist(l[c(1:2,5)]), ans<-data.table(a=c(1:4,15:16), b=c(7:10,17L,17L)), warning="Column 2 [[]'V2'[]] of item 2 is missing in item 1")
+test(679.2, rbindlist(l[c(1:2,5)], use.names=FALSE), ans)
 test(680, rbindlist(l[c(2,6)]), data.table(a=c(3,4,18,19), V2=c(9:10,20:21)))  # coerces 18 and 19 to numeric
 test(681, rbindlist(list(data.table(a=letters[1:2],b=c(1.2,1.3),c=1:2), list("c",1.4,3L), NULL, list(letters[4:6],c(1.5,1.6,1.7),4:6))),
           data.table(a=letters[1:6], b=seq(1.2,1.7,by=0.1), c=1:6))
@@ -2390,9 +2393,13 @@ test(863, after < before+0.5)
 # Even if data.table is empty, as long as there are column names, they should be considered.
 # Ex: What if all data.tables are empty? What'll be the column name then?
 # If there are no names, then the first non-empty set of names will be allocated.
-test(864.1, rbindlist(list(data.table(foo=logical(0),bar=logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), setnames(DT, c("foo", "bar")))
+test(864.1, rbindlist(list(data.table(foo=logical(0),bar=logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))),
+            setnames(DT, c("foo", "bar")),
+            warning="Column 1 [[]'baz'[]] of item 2 is missing in item 1.*Use fill=TRUE.*or use.names=FALSE.*v1.12.2")  # test 676 tests no warning when use.names=FALSE
 test(864.2, rbindlist(list(list(logical(0),logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), DT)
-test(864.3, rbindlist(list(data.table(logical(0),logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), setnames(DT, c("V1", "V2")))
+test(864.3, rbindlist(list(data.table(logical(0),logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))),
+            setnames(DT, c("V1", "V2")),
+            warning="Column 1 [[]'baz'[]] of item 2 is missing in item 1.*Use fill=TRUE.*or use.names=FALSE.*v1.12.2")
 
 # Steve's find that setnames failed for numeric 'old' when pointing to duplicated names
 DT = data.table(a=1:3,b=1:3,v=1:6,w=1:6)
@@ -4685,10 +4692,10 @@ test(1288.02, rbindlist(ll, use.names=TRUE, fill=TRUE),   # dups were grouped be
 dt1 <- data.table(x=1:5, y=6:10)
 dt2 <- dt1[x > 5]
 setnames(dt3 <- copy(dt2), c("A", "B"))
-test(1288.03, names(rbindlist(list(dt2,dt3))), c("x", "y"))
-test(1288.04, names(rbindlist(list(dt3,dt2))), c("A", "B"))
-test(1288.05, names(rbindlist(list(dt1,dt3))), c("x", "y"))
-test(1288.06, names(rbindlist(list(dt3,dt1))), c("A", "B"))
+test(1288.03, names(rbindlist(list(dt2,dt3), use.names=FALSE)), c("x", "y"))  # use.names=FALSE to avoid new warning in v1.12.2; PR#3455
+test(1288.04, names(rbindlist(list(dt3,dt2), use.names=FALSE)), c("A", "B"))
+test(1288.05, names(rbindlist(list(dt1,dt3), use.names=FALSE)), c("x", "y"))
+test(1288.06, names(rbindlist(list(dt3,dt1), use.names=FALSE)), c("A", "B"))
 
 # check fix for bug #5612
 DT <- data.table(x=c(1,2,3))
@@ -13749,11 +13756,11 @@ test(2002.11, rbind(A=DT1, B=DT2, idcol='id'), data.table(id=character(), a=logi
 test(2002.12, rbind(DT1, DT2, idcol='id'),     data.table(id=integer(), a=logical()))
 
 #rbindlist coverage
-test(2003.1, rbindlist(list(), use.names=1), error="use.names= should be TRUE or FALSE")
+test(2003.1, rbindlist(list(), use.names=1), error="use.names= should be TRUE, FALSE, or not used [(]\"check\" by default[)]")
 test(2003.2, rbindlist(list(), fill=1), error="fill= should be TRUE or FALSE")
 test(2003.3, rbindlist(list(data.table(a=1:2), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
              data.table(a=c(1:2,NA,NA), b=c(NA,NA,3:4)),
-             warning="use.names= can not be FALSE when fill is TRUE. Setting use.names=TRUE")
+             warning="use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE")
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #5159 #2538 #4818
 x1 = "fa\xE7ile"
@@ -13808,6 +13815,17 @@ x = NULL
 test(2009.2, DT[, .(x)], error="Column 1 of j evaluates to NULL. A NULL column is invalid.")
 test(2009.3, data.table(character(0), NULL), error="column or argument 2 is NULL")
 test(2009.4, as.data.table(list(y = character(0), x = NULL)), data.table(y=character()))
+
+# use.names=NA warning for out-of-order; https://github.com/Rdatatable/data.table/pull/3455#issuecomment-472744347
+DT1 = data.table(a=1:2, b=5:6)
+DT2 = data.table(b=7:8, a=3:4)
+test(2010.1, rbindlist(list(DT1,DT2)), ans<-data.table(a=c(1:2,7:8), b=c(5:6,3:4)),
+             warning="Column 2 [[]'a'[]] of item 2 appears in position 1 in item 1.*use.names=TRUE.*or use.names=FALSE.*v1.12.2")
+test(2010.2, rbindlist(list(DT1,DT2), use.names=FALSE), ans)
+test(2010.3, rbindlist(list(DT1,DT2), use.names=TRUE), data.table(a=1:4, b=5:8))
+test(2010.4, rbindlist(list(DT1,DT2), use.names=NA), error="use.names=NA invalid")
+test(2010.5, rbindlist(list(DT1,DT2), use.names='check'),
+             error="use.names='check' cannot be used explicitly because the value 'check' is new in v1.12.2 and subject to change. It is just meant to convey default behavior.")
 
 
 ###################################

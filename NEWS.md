@@ -12,6 +12,8 @@
 
 4. `rbind` and `rbindlist` now retain the position of duplicate column names when `use.names=TRUE` [#3373](https://github.com/Rdatatable/data.table/issues/3373), and fill length 0 columns (including NULL) with NA with warning [#1871](https://github.com/Rdatatable/data.table/issues/1871). Thanks to Kun Ren for the request which arose when parsing JSON.
 
+5. `rbindlist`'s `use.names=` default has changed from `FALSE` to `"check"`. This generates a warning if any column names are in a different order and then proceeds as if `use.names=FALSE` for backwards compatibility; i.e., stack by position not by name. The `rbind` method for data.table already sets `use.names=TRUE` (as does `rbind` for `data.frame` in base) and is clearly safer. In future, when `use.names="check"` and out-of-order column names are found, it will warn and then proceed as if `use.names=TRUE`. Eventually the default will be changed from `NA` to `TRUE`, unless user feedback is negative. To stack differently named columns together silently, it is now necessary to write `use.names=FALSE` for clarity to readers of your code. Thanks to Clayton Stanley who first raised the issue [here](http://lists.r-forge.r-project.org/pipermail/datatable-help/2014-April/002480.html).
+
 #### BUG FIXES
 
 1. `rbindlist()` of a malformed factor missing levels attribute is now a helpful error rather than a cryptic error about `STRING_ELT`, [#3315](https://github.com/Rdatatable/data.table/issues/3315). Thanks to Michael Chirico for reporting.

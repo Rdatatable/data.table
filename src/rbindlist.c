@@ -5,15 +5,15 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
 {
   if (!isLogical(fillArg) || LENGTH(fillArg) != 1 || LOGICAL(fillArg)[0] == NA_LOGICAL)
     error("fill= should be TRUE or FALSE");
-  if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1 || LOGICAL(usenamesArg)[0]==NA_LOGICAL)
-    error("use.names= should be TRUE or FALSE");
+  if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1)
+    error("use.names= should be TRUE, FALSE, or not used (\"check\" by default)");  // R levels converts "check" to NA
   if (!length(l)) return(l);
   if (TYPEOF(l) != VECSXP) error("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists.");
-  bool usenames = LOGICAL(usenamesArg)[0];
+  Rboolean usenames = LOGICAL(usenamesArg)[0];
   const bool fill = LOGICAL(fillArg)[0];
-  if (fill && !usenames) {
-    warning("use.names= can not be FALSE when fill is TRUE. Setting use.names=TRUE.\n");
-    usenames=true;
+  if (fill && usenames!=TRUE) {
+    if (usenames==FALSE) warning("use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.\n"); // else no warning if usenames==NA (default)
+    usenames=TRUE;
   }
   const bool idcol = !isNull(idcolArg);
   if (idcol && (!isString(idcolArg) || LENGTH(idcolArg)!=1)) error("Internal error: rbindlist.c idcol is not a single string");  // # nocov
@@ -58,11 +58,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   }
   if (nrow==0 && ncol==0) return(R_NilValue);
   if (nrow>INT32_MAX) error("Total rows in the list is %lld which is larger than the maximum number of rows, currently %d", nrow, INT32_MAX);
-  if (usenames && !anyNames) error("use.names=TRUE but no item of input list has any names");
+  if (usenames==TRUE && !anyNames) error("use.names=TRUE but no item of input list has any names");
 
   int *colMap=NULL; // maps each column in final result to the column of each list item
-  if (usenames) {
-    // here we proceed as if fill=true for brevity (because accounting for dups is tricky) and then catch any missings after this branch
+  if (usenames==TRUE || usenames==NA_LOGICAL) {
+    // here we proceed as if fill=true for brevity (accounting for dups is tricky) and then catch any missings after this branch
+    // when use.names==NA we also proceed here as if use.names was TRUE to save new code and then check afterwards the map is 1:ncol for every item
+    //
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
     savetl_init();
     int nuniq=0;
@@ -158,23 +160,43 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     // for (int i=0; i<LENGTH(l); ++i) { for (int j=0; j<ncol; ++j) Rprintf("%2d ",colMap[i*ncol + j]);  Rprintf("\n"); }
   }
 
-  if (!fill && usenames) {
-    // ensure no missings.  We already checked earlier that ncol is consistent for all list items
+  if (fill && usenames==NA_LOGICAL) error("Internal error: usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning.");
+  if (!fill && (usenames==TRUE || usenames==NA_LOGICAL)) {
+    // Ensure no missings in both cases, and (when usenames==NA) all columns in same order too
+    // We proceeded earlier as if fill was true, so varying ncol items will have missings here
+    const char *warnStr = usenames==NA_LOGICAL?" use.names='check' (default from v1.12.2) generates this warning and proceeds as if use.names=FALSE for backwards compatibility; TRUE in future.":"";
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
       if (!length(li) || !length(getAttrib(li, R_NamesSymbol))) continue;
       for (int j=0; j<ncol; ++j) {
-        if (colMap[i*ncol + j]==-1) {
+        const int w = colMap[i*ncol + j];
+        if (w==-1) {
           int missi = i;
           while (colMap[i*ncol + j]==-1 && i<LENGTH(l)) i++;
-          if (i==LENGTH(l)) error("Internal error: could not find the first column name not present in earlier item");  // nocov
+          if (i==LENGTH(l)) error("Internal error: could not find the first column name not present in earlier item");
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
-          int w = colMap[i*ncol + j];
-          const char *str = isString(s) ? CHAR(STRING_ELT(s,w)) : "";
-          error("Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA (NULL for list columns).", w+1, str, i+1, missi+1);
+          int w2 = colMap[i*ncol + j];
+          const char *str = isString(s) ? CHAR(STRING_ELT(s,w2)) : "";
+          (usenames==TRUE ? error : warning)(
+            "Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s",
+            w2+1, str, i+1, missi+1, warnStr );
+          i = LENGTH(l); // break from outer i loop
+          break;         // break from inner j loop
+        }
+        if (w!=j && usenames==NA_LOGICAL) {
+          SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
+          if (!isString(s) || i==0) error("Internal error: usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]", i);
+          warning("Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s",
+                  w+1, CHAR(STRING_ELT(s,w)), i+1, j+1, i, warnStr);
+          i = LENGTH(l);
+          break;
         }
       }
     }
+  }
+  if (usenames==NA_LOGICAL) {
+    usenames=FALSE;  // for backwards compatibility, see warning above which says this will change to TRUE in future
+    ncol = length(VECTOR_ELT(l, first));  // ncol was increased as if fill=true, so reduce it back given fill=false (fill==false checked above)
   }
 
   SEXP ans=PROTECT(allocVector(VECSXP, idcol + ncol)), ansNames;
