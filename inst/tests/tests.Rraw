@@ -3037,10 +3037,37 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
     test(1570.10, ans$variable[c(1,2,324,325)], tt)
   }
 
-  DT = fread(testDir("melt_1754_synth.csv"))   # more from 1754
+  # more from #1754
+  DT = fread(testDir("melt_1754_synth.csv"))
   test(1571.1, names(DT)[duplicated(names(DT))], c("smoking75","smoking80","smoking88"))
   test(1571.2, dim(ans<-melt(DT, id.vars=c("state","income","retailprice","percent_15_19","beercons"), measure=patterns("^smoking"))), INT(1326,7))
   test(1571.3, print(ans[c(1,1326)]), output="state.*income.*retailprice.*percent_15_19.*beercons.*variable.*value.*1.*9.6.*89.34.*smoking88.*smoking00.*41.6")
+
+  # more from #1754
+  DT = setDT(data.frame("Time.point" = seq(0, 6), "Time.(h)" = c(0.0, 0.5, 1.0, 3.0, 5.0, 7.0, 24.0),
+                        "NEW.ME" = runif(7), "NEW.ME" = runif(7), check.names = FALSE))
+  test(1572.1, dim(melt(DT, c("Time.point", "Time.(h)"), na.rm=TRUE)), INT(14, 4))
+  DT = setDT(data.frame("Time.point" = seq(0, 6), "Time.(h)" = c(0.0, 0.5, 1.0, 3.0, 5.0, 7.0, 24.0),
+     "NEW.ME" = runif(7), "NEW.ME" = runif(7), "NEW.ME" = runif(7), "NEW.ME" = runif(7), "NEW.ME" = runif(7),
+     "NEW.ME" = runif(7), "NEW.ME" = runif(7), "NEW.ME" = runif(7), "NEW.MER" = runif(7), "F050" = runif(7),
+     "NEW.MER" = runif(7), "F16-42-123p123C" = runif(7), "F16-42-123p123C" = runif(7), "NEW.MER" = runif(7),
+     "F16-42-123p123C" = runif(7), check.names = FALSE))
+  test(1572.2, unique(names(DT)[duplicated(names(DT))]), c("NEW.ME","NEW.MER","F16-42-123p123C"))
+  test(1572.3, dim(melt(DT, c("Time.point", "Time.(h)"), na.rm = TRUE)), INT(105,4))
+
+  # more from #1754
+  DT = fread(
+"month,Record high,Average high,Daily mean,Average low,Record low,Average precipitation,Average rainfall,Average snowfall,Average precipitation,Average rainy,Average snowy,Mean monthly sunshine hours
+Jan,12.8,-5.4,-8.9,-12.4,-33.5,73.6,28.4,45.9,15.8,4.3,13.6,99.2
+Feb,15,-3.7,-7.2,-10.6,-33.3,70.9,22.7,46.6,12.8,4,11.1,119.5
+Mar,25.9,2.4,-1.2,-4.8,-28.9,80.2,42.2,36.8,13.6,7.4,8.3,158.8
+Apr,30.1,11,7,2.9,-17.8,76.9,65.2,11.8,12.5,10.9,3,181.7
+May,34.2,19,14.5,10,-5,86.5,86.5,0.4,12.9,12.8,0.14,229.8
+Jun,34.5,23.7,19.3,14.9,1.1,87.5,87.5,0,13.8,13.8,0,250.1
+Jul,36.1,26.6,22.3,17.9,7.8,106.2,106.2,0,12.3,12.3,0,271.6
+Aug,35.6,24.8,20.8,16.7,6.1,100.6,100.6,0,13.4,13.4,0,230.7
+Sep,33.5,19.4,15.7,11.9,0,100.8,100.8,0,12.7,12.7,0,174.1")
+  test(1573, print(melt(DT, id.vars="month", verbose=TRUE)), output="'measure.vars' is missing.*Assigned.*are.*Record high.*1:.*Jan.*Record high.*12.8.*108:.*Sep.*sunshine hours.*174.1")
 }
 
 # sorting and grouping of Inf, -Inf, NA and NaN,  #4684, #4815 & #4883
