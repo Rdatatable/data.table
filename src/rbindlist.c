@@ -18,7 +18,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   const bool idcol = !isNull(idcolArg);
   if (idcol && (!isString(idcolArg) || LENGTH(idcolArg)!=1)) error("Internal error: rbindlist.c idcol is not a single string");  // # nocov
   int ncol=0, first=0;
-  int64_t nrow=0, upperBoundUniqueNames=0;
+  int64_t nrow=0, upperBoundUniqueNames=1;
   bool anyNames=false;
   int numZero=0, firstZeroCol=0, firstZeroItem=0;
   int *eachMax = (int *)R_alloc(LENGTH(l), sizeof(int));
@@ -66,7 +66,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     // here we proceed as if fill=true for brevity (accounting for dups is tricky) and then catch any missings after this branch
     // when use.names==NA we also proceed here as if use.names was TRUE to save new code and then check afterwards the map is 1:ncol for every item
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
-    SEXP *uniq = (SEXP *)malloc(upperBoundUniqueNames * sizeof(SEXP));
+    SEXP *uniq = (SEXP *)malloc(upperBoundUniqueNames * sizeof(SEXP));  // upperBoundUniqueNames was initialized with 1 to ensure this is defined (otherwise 0 when no item has names)
     if (!uniq) error("Failed to allocate upper bound of %lld unique column names [sum(lapply(l,ncol))]", upperBoundUniqueNames);
     savetl_init();
     int nuniq=0;
@@ -85,7 +85,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         SET_TRUELENGTH(s,-nuniq);
       }
     }
-    uniq = realloc(uniq, nuniq*sizeof(SEXP));  // shrink to only what we need to release the spare
+    if (nuniq>0) {
+      SEXP *tt = realloc(uniq, nuniq*sizeof(SEXP));  // shrink to only what we need to release the spare
+      if (!tt) free(uniq);  // shrink never fails; just keep codacy happy
+      uniq = tt;
+    }
     // now count the dups (if any) and how they're distributed across the items
     int *counts = (int *)calloc(nuniq, sizeof(int)); // counts of names for each colnames
     int *maxdup = (int *)calloc(nuniq, sizeof(int)); // the most number of dups for any name within one colname vector
