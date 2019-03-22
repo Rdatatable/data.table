@@ -94,7 +94,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     int *counts = (int *)calloc(nuniq, sizeof(int)); // counts of names for each colnames
     int *maxdup = (int *)calloc(nuniq, sizeof(int)); // the most number of dups for any name within one colname vector
     if (!counts || !maxdup) {
-      // # nocov begin
+      // # nocov start
       for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);
       free(uniq); free(counts); free(maxdup);
       savetl_end();
