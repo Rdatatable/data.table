@@ -252,19 +252,19 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     }
   }
 
-  // colMap tells us which item to fetch for each of the final result columns, so we can stack column-by-column
+  SEXP coercedForFactor = R_NilValue;
   for(int j=0; j<ncol; ++j) {
     int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
     bool factor=false;
     bool int64=false;
     bool foundName=false;
-    //bool anyNotStringOrFactor=false;
+    bool anyNotStringOrFactor=false;
     SEXP firstCol=R_NilValue;
     int firsti=-1, firstw=-1;
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
       if (!length(li)) continue;
-      int w = usenames ? colMap[i*ncol + j] : j;
+      int w = usenames ? colMap[i*ncol + j] : j;  // colMap tells us which item to fetch for each of the final result columns, so we can stack column-by-column
       if (w==-1) continue;  // column j of final result has no input from this item (fill must be true)
       if (!foundName) {
         SEXP cn=getAttrib(li, R_NamesSymbol);
@@ -276,7 +276,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       if (isFactor(thisCol)) {
         if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error("Column %d of item %d has type 'factor' but has no levels; i.e. malformed.", w+1, i+1);
         factor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
-      } //else if (!isString(thisCol) && length(thisCol)) anyNotStringOrFactor=true;
+      } else if (!isString(thisCol) && length(thisCol)) anyNotStringOrFactor=true;
       if (INHERITS(thisCol, char_integer64)) {
         if (firsti>=0 && !length(getAttrib(firstCol, R_ClassSymbol))) { firsti=i; firstw=w; firstCol=thisCol; } // so the integer64 attribute gets copied to target below
         int64=true;
@@ -286,7 +286,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         error("Class attribute on column %d of item %d does not match with column %d of item %d.", w+1, i+1, firstw+1, firsti+1);
       }
     }
-    // in future warn ... if (factor && anyNotStringOrFactor) warning("Column %d contains a factor but not all items for the column are character or factor", idcol+j+1);
+
     if (!foundName) { char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); }
     if (factor) maxType=INTSXP;  // any items are factors then a factor is created (could be an option)
     if (int64 && maxType!=REALSXP)
@@ -294,6 +294,22 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     SEXP target;
     SET_VECTOR_ELT(ans, idcol+j, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
     if (!factor) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
+
+    if (factor && anyNotStringOrFactor) {
+      // in future warn, or use list column instead ... warning("Column %d contains a factor but not all items for the column are character or factor", idcol+j+1);
+      // some coercing from (likely) integer/numeric to character will be needed. But this coerce can feasibly fail with out-of-memory, so we have to do it up-front
+      // before the savetl_init() because we have no hook to clean up tl if coerceVector fails.
+      if (isNull(coercedForFactor)) coercedForFactor = PROTECT(allocVector(VECSXP, LENGTH(l)));
+      for (int i=0; i<LENGTH(l); ++i) {
+        SEXP li = VECTOR_ELT(l, i);
+        int w = usenames ? colMap[i*ncol + j] : j;
+        if (w==-1) continue;
+        SEXP thisCol = VECTOR_ELT(li, w);
+        if (!isFactor(thisCol) && !isString(thisCol)) {
+          SET_VECTOR_ELT(coercedForFactor, i, coerceVector(thisCol, STRSXP));
+        }
+      }
+    }
     int ansloc=0;
     if (factor) {
       savetl_init();
@@ -308,14 +324,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow);
         } else {
-          bool coerced=false;
-          SEXP thisColStr;
-          if (isFactor(thisCol)) thisColStr = getAttrib(thisCol, R_LevelsSymbol);
-          else if (isString(thisCol)) thisColStr = thisCol;
-          else {
-            thisColStr = PROTECT(coerceVector(thisCol, STRSXP));  // TODO this could fail and not clear-up tl; coerce first or create list column without coerce
-            coerced=true;
-          }
+          SEXP thisColStr = isFactor(thisCol) ? getAttrib(thisCol, R_LevelsSymbol) : (isString(thisCol) ? thisCol : VECTOR_ELT(coercedForFactor, i));
           const int n = length(thisColStr);
           const SEXP *thisColStrD = STRING_PTR(thisColStr);  // D for data
           for (int k=0; k<n; ++k) {
@@ -358,7 +367,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
             SEXP *sd = STRING_PTR(thisColStr);
             for (int r=0; r<thisnrow; r++) targetd[ansloc+r] = sd[r]==NA_STRING ? NA_INTEGER : -TRUELENGTH(sd[r]);
           }
-          if (coerced) UNPROTECT(1);
         }
         ansloc += thisnrow;
       }
@@ -386,7 +394,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
     }
   }
-  UNPROTECT(1);
+  if (!isNull(coercedForFactor)) UNPROTECT(1);
+  UNPROTECT(1);  // ans
   return(ans);
 }
 
