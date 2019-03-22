@@ -90,10 +90,12 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     int *counts = (int *)calloc(nuniq, sizeof(int)); // counts of names for each colnames
     int *maxdup = (int *)calloc(nuniq, sizeof(int)); // the most number of dups for any name within one colname vector
     if (!counts || !maxdup) {
+      // # nocov begin
       for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);
       free(uniq); free(counts); free(maxdup);
       savetl_end();
       error("Failed to allocate nuniq=%d items working memory in rbindlist.c", nuniq);
+      // # nocov end
     }
     for (int i=0; i<LENGTH(l); i++) {
       SEXP li = VECTOR_ELT(l, i);
@@ -122,10 +124,12 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     int *uniqMap = (int *)malloc(ncol * sizeof(int)); // maps the ith unique string to the first time it occurs in the final result
     int *dupLink = (int *)malloc(ncol * sizeof(int)); // if a colname has occurred before (a dup) links from the 1st to the 2nd time in the final result, 2nd to 3rd, etc
     if (!colMapRaw || !uniqMap || !dupLink) {
+      // # nocov start
       for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);
       free(uniq); free(counts); free(colMapRaw); free(uniqMap); free(dupLink);
       savetl_end();
       error("Failed to allocate ncol=%d items working memory in rbindlist.c", ncol);
+      // # nocov end
     }
     for (int i=0; i<LENGTH(l)*ncol; ++i) colMapRaw[i]=-1;   // 0-based so use -1
     for (int i=0; i<ncol; ++i) {uniqMap[i] = dupLink[i] = -1;}
@@ -371,7 +375,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {
           writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
-          const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol);
+          const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol);  // coerces if needed within memrecycle; possibly with a no-alloc direct coerce
           if (ret) warning("Column %d of item %d: %s", w+1, i+1, ret);  // currently just one warning when precision is lost; e.g. assigning 3.4 to integer64
         }
         ansloc += thisnrow;
