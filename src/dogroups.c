@@ -3,23 +3,6 @@
 #include <fcntl.h>
 #include <time.h>
 
-void setSizes() {
-  // called by init.c
-  int i;
-  for (i=0;i<100;i++) sizes[i]=0;
-  // only these types are currently allowed as column types :
-  sizes[INTSXP] = sizeof(int);     // integer and factor
-  sizes[LGLSXP] = sizeof(int);     // logical
-  sizes[REALSXP] = sizeof(double); // numeric
-  sizes[STRSXP] = sizeof(SEXP *);  // character
-  sizes[VECSXP] = sizeof(SEXP *);  // a column itself can be a list()
-  for (i=0;i<100;i++) {
-    if (sizes[i]>8) error("Type %d is sizeof() greater than 8 bytes on this machine. We haven't tested on any architecture greater than 64bit, yet.", i);
-    // One place we need the largest sizeof (assumed to be 8 bytes) is the working memory malloc in reorder.c
-  }
-  SelfRefSymbol = install(".internal.selfref");
-}
-
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verbose)
 {
   R_len_t i, j, k, rownum, ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp, origIlen=0, origSDnrow=0;
