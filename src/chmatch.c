@@ -20,7 +20,9 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   if (chin && chmatchdup) error("Internal error: either chin or chmatchdup should be true not both");  // # nocov
   // allocations up front before savetl starts
   SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, length(x)));
+  if (!length(x)) { UNPROTECT(1); return ans; }  // no need to look at table when x is empty
   int *ansd = INTEGER(ans);
+  if (!length(table)) { const int val=(chin?0:nomatch), n=LENGTH(x); for (int i=0; i<n; ++i) ansd[i]=val; UNPROTECT(1); return ans; }
   savetl_init();
   const SEXP *xd = STRING_PTR(x);
   const int xlen = length(x);
