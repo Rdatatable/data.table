@@ -12,7 +12,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   Rboolean usenames = LOGICAL(usenamesArg)[0];
   const bool fill = LOGICAL(fillArg)[0];
   if (fill && usenames!=TRUE) {
-    if (usenames==FALSE) warning("use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.\n"); // else no warning if usenames==NA (default)
+    if (usenames==FALSE) warning("use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE."); // else no warning if usenames==NA (default)
     usenames=TRUE;
   }
   const bool idcol = !isNull(idcolArg);
@@ -255,7 +255,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   SEXP coercedForFactor = R_NilValue;
   for(int j=0; j<ncol; ++j) {
     int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
-    bool factor=false;
+    bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
+    int longestLen=0, longestW=-1, longestI=-1; // just for ordered factor
+    SEXP longestLevels=R_NilValue;              // just for ordered factor
     bool int64=false;
     bool foundName=false;
     bool anyNotStringOrFactor=false;
@@ -275,7 +277,12 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       if (TYPEORDER(thisType)>TYPEORDER(maxType)) maxType=thisType;
       if (isFactor(thisCol)) {
         if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error("Column %d of item %d has type 'factor' but has no levels; i.e. malformed.", w+1, i+1);
-        factor=true;   // TODO isOrdered(thiscol) ? 2 : 1;
+        factor = true;
+        if (isOrdered(thisCol)) {
+          orderedFactor = true;
+          int thisLen = length(getAttrib(thisCol, R_LevelsSymbol));
+          if (thisLen>longestLen) { longestLen=thisLen; longestLevels=getAttrib(thisCol, R_LevelsSymbol); /*for warnings later ...*/longestW=w; longestI=i; }
+        }
       } else if (!isString(thisCol) && length(thisCol)) anyNotStringOrFactor=true;
       if (INHERITS(thisCol, char_integer64)) {
         if (firsti>=0 && !length(getAttrib(firstCol, R_ClassSymbol))) { firsti=i; firstw=w; firstCol=thisCol; } // so the integer64 attribute gets copied to target below
@@ -288,7 +295,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     }
 
     if (!foundName) { char buff[12]; sprintf(buff,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); }
-    if (factor) maxType=INTSXP;  // any items are factors then a factor is created (could be an option)
+    if (factor) maxType=INTSXP;  // if any items are factors then a factor is created (could be an option)
     if (int64 && maxType!=REALSXP)
       error("Internal error: column %d of result is determined to be integer64 but maxType=='%s' != REALSXP", j+1, type2char(maxType)); // # nocov
     SEXP target;
@@ -301,10 +308,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       // before the savetl_init() because we have no hook to clean up tl if coerceVector fails.
       if (isNull(coercedForFactor)) coercedForFactor = PROTECT(allocVector(VECSXP, LENGTH(l)));
       for (int i=0; i<LENGTH(l); ++i) {
-        SEXP li = VECTOR_ELT(l, i);
         int w = usenames ? colMap[i*ncol + j] : j;
         if (w==-1) continue;
-        SEXP thisCol = VECTOR_ELT(li, w);
+        SEXP thisCol = VECTOR_ELT(VECTOR_ELT(l, i), w);
         if (!isFactor(thisCol) && !isString(thisCol)) {
           SET_VECTOR_ELT(coercedForFactor, i, coerceVector(thisCol, STRSXP));
         }
@@ -312,9 +318,62 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     }
     int ansloc=0;
     if (factor) {
-      savetl_init();
+      char warnStr[1000] = "";
+      savetl_init();  // no error from now (or warning given options(warn=2)) until savetl_end
       int nLevel=0, allocLevel=0;
       SEXP *levelsRaw = NULL;  // growing list of SEXP pointers. Raw since managed with raw realloc.
+      if (orderedFactor) {
+        // If all sets of ordered levels are compatible (no ambiguities or conflicts) then an ordered factor is created, otherwise regular factor.
+        // Currently the longest set of ordered levels is taken and all other ordered levels must be a compatible subset of that.
+        // e.g. c( a<c<b, z<a<c<b, a<b ) => z<a<c<b  [ the longest is the middle one, and the other two are ordered subsets of it ]
+        //      c( a<c<b, z<c<a<b, a<b ) => regular factor because it contains an ambiguity: is a<c or c<a?
+        //      c( a<c<b, c<b, 'c,b'   ) => a<c<b  because the regular factor/character items c and b exist in the ordered levels
+        //      c( a<c<b, c<b, 'c,d'   ) => a<c<b<d  'd' from non-ordered item added on the end of longest ordered levels
+        //      c( a<c<b, c<b<d<e )  => regular factor because this case isn't yet implemented. a<c<b<d<e would be possible in future (extending longest at the beginning or end)
+        const SEXP *sd = STRING_PTR(longestLevels);
+        nLevel = allocLevel = longestLen;
+        levelsRaw = (SEXP *)malloc(nLevel * sizeof(SEXP));
+        if (!levelsRaw) { savetl_end(); error("Failed to allocate working memory for %d ordered factor levels of result column %d", nLevel, idcol+j+1); }
+        for (int k=0; k<longestLen; ++k) {
+          SEXP s = sd[k];
+          if (TRUELENGTH(s)>0) savetl(s);
+          levelsRaw[k] = s;
+          SET_TRUELENGTH(s,-k-1);
+        }
+        for (int i=0; i<LENGTH(l); ++i) {
+          int w = usenames ? colMap[i*ncol + j] : j;
+          if (w==-1) continue;
+          SEXP thisCol = VECTOR_ELT(VECTOR_ELT(l, i), w);
+          if (isOrdered(thisCol)) {
+            SEXP levels = getAttrib(thisCol, R_LevelsSymbol);
+            const SEXP *levelsD = STRING_PTR(levels);
+            const int n = length(levels);
+            for (int k=0, last=0; k<n; ++k) {
+              SEXP s = levelsD[k];
+              const int tl = TRUELENGTH(s);
+              if (tl>=last) {  // if tl>=0 then also tl>=last because last<=0
+                if (tl>=0) {
+                  sprintf(warnStr,    // not direct warning as we're inside tl region
+                  "Column %d of item %d is an ordered factor but level %d ['%s'] is missing from the ordered levels from column %d of item %d. " \
+                  "Each set of ordered factor levels should be an ordered subset of the first longest. A regular factor will be created for this column.",
+                  w+1, i+1, k+1, CHAR(s), longestW+1, longestI+1);
+                } else {
+                  sprintf(warnStr,
+                  "Column %d of item %d is an ordered factor with '%s'<'%s' in its levels. But '%s'<'%s' in the ordered levels from column %d of item %d. " \
+                  "A regular factor will be created for this column due to this ambiguity.",
+                  w+1, i+1, CHAR(levelsD[k-1]), CHAR(s), CHAR(s), CHAR(levelsD[k-1]), longestW+1, longestI+1);
+                  // k>=1 (so k-1 is ok) because when k==0 last==0 and this branch wouldn't happen
+                }
+                orderedFactor=false;
+                i=LENGTH(l);  // break outer i loop
+                break;        // break inner k loop
+                // we leave the tl set for the longest levels; the regular factor will be created with the longest ordered levels first in case that useful for user
+              }
+              last = tl;  // negative ordinal; last should monotonically grow more negative if the levels are an ordered subset of the longest
+            }
+          }
+        }
+      }
       for (int i=0; i<LENGTH(l); ++i) {
         const int thisnrow = eachMax[i];
         if (thisnrow==0) continue;
@@ -340,8 +399,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
               }
               if (tt==NULL) {
                 // # nocov start
-                // C spec states that if realloc() fails the original block is left untouched; it is not freed or moved. We ...
-                for (int k=0; k<nLevel; k++) SET_TRUELENGTH(levelsRaw[k], 0);   // ... rely on that in this for loop which uses levelsRaw.
+                // C spec states that if realloc() fails (above) the original block (levelsRaw) is left untouched: it is not freed or moved. We ...
+                for (int k=0; k<nLevel; k++) SET_TRUELENGTH(levelsRaw[k], 0);   // ... rely on that in this loop which uses levelsRaw.
                 free(levelsRaw);
                 savetl_end();
                 error("Failed to allocate working memory for %d factor levels of result column %d when reading item %d of item %d", allocLevel, idcol+j+1, w+1, i+1);
@@ -354,7 +413,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           }
           int *targetd = INTEGER(target);
           if (isFactor(thisCol)) {
-            // loop through levels. If all i == truelength(i) then just do a memcpy. Otherwise create an integer map and hop via that.
+            // loop through levels. If all i == truelength(i) then just do a memcpy. Otherwise hop via the integer map.
             bool nohop = true;
             for (int k=0; k<n; ++k) if (-TRUELENGTH(thisColStrD[k]) != k+1) { nohop=false; break; }
             if (nohop) memcpy(targetd+ansloc, INTEGER(thisCol), thisnrow*SIZEOF(thisCol));
@@ -372,11 +431,19 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
       for (int k=0; k<nLevel; ++k) SET_TRUELENGTH(levelsRaw[k], 0);
       savetl_end();
+      if (warnStr[0]) warning(warnStr);  // now savetl_end() has happened it's safe to call warning (could error if options(warn=2))
       SEXP levelsSxp;
       setAttrib(target, R_LevelsSymbol, levelsSxp=allocVector(STRSXP, nLevel));
       for (int k=0; k<nLevel; ++k) SET_STRING_ELT(levelsSxp, k, levelsRaw[k]);
       free(levelsRaw);
-      setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
+      if (orderedFactor) {
+        SEXP tt;
+        setAttrib(target, R_ClassSymbol, tt=allocVector(STRSXP, 2));
+        SET_STRING_ELT(tt, 0, char_ordered);
+        SET_STRING_ELT(tt, 1, char_factor);
+      } else {
+        setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
+      }
     } else {
       for (int i=0; i<LENGTH(l); ++i) {
         const int thisnrow = eachMax[i];

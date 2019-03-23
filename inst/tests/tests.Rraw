@@ -3561,30 +3561,28 @@ test(1118, dt[, lapply(.SD, function(y) weighted.mean(y, b2, na.rm=TRUE)), by=x]
 DT <- data.table(x=5:1, y=1:5, key="y")
 test(1119, is.null(key(DT[, list(z = y, y = 1/y)])))
 
-
 ## various ordered factor rbind tests
-DT = data.table(ordered('a', levels = c('a','b','c')))
-DT1 = data.table(factor('a', levels = c('b','a','f')))
-DT2 = data.table(ordered('b', levels = c('b','d','c')))
-DT3 = data.table(c('foo', 'bar'))
-DT4 = data.table(ordered('a', levels = c('b', 'a')))
+DT1 = data.table(ordered('a', levels = c('a','b','c')))
+DT2 = data.table(factor('a', levels = c('b','a','f')))
+DT3 = data.table(ordered('b', levels = c('b','d','c')))
+DT4 = data.table(c('foo', 'bar'))
+DT5 = data.table(ordered('b', levels = c('b','a')))
+test(1120.1, rbind(DT1, DT2, DT3, DT4), ans<-data.table(factor(c('a','a','b','foo','bar'), levels = c('a','b','c','f','d', 'foo', 'bar'))),
+             warning=w<-"Column 1 of item 3.*level 2 [[]'d'[]] is missing from the ordered levels from column 1 of item 1.*regular factor")
+test(1120.2, rbindlist(list(DT1, DT2, DT3, DT4)), ans, warning=w)
+test(1121.1, rbind(DT1, DT5), ans<-data.table(factor(c('a','b'), levels = c('a','b','c'))), warning=w<-"'b'<'a'.*But 'a'<'b'.*regular factor")
+test(1121.2, rbindlist(list(DT1, DT5)), ans, warning=w)
+test(1122.1, rbind(DT2, DT2), data.table(factor(c('a','a'), levels = c('b','a','f'))))
+test(1122.2, rbindlist(list(DT2, DT2)), data.table(factor(c('a','a'), levels = c('b','a','f'))))
+test(1123.1, rbind(DT2,DT5), data.table(ordered(c('a','b'), levels=c('b','a','f'))))
+test(1123.2, rbind(DT5,DT2), data.table(ordered(c('b','a'), levels=c('b','a','f'))))
 
-# revisit ...
-# test(1120, rbind(DT, DT1, DT2, DT3), data.table(ordered(c('a','a','b', 'foo', 'bar'), levels = c('a','b','d','c','f', 'foo', 'bar'))))
-# test(1121, rbindlist(list(DT, DT1, DT2, DT3)), data.table(ordered(c('a','a','b', 'foo', 'bar'), levels = c('a','b','d','c','f', 'foo', 'bar'))))
-# test(1122, rbind(DT, DT4), data.table(factor(c('a','a'), levels = c('a','b','c'))), warning="ordered factor levels cannot be combined, going to convert to simple factor instead")
-# test(1123, rbindlist(list(DT, DT4)), data.table(factor(c('a','a'), levels = c('a','b','c'))), warning="ordered factor levels cannot be combined, going to convert to simple factor instead")
-# test(1124, rbind(DT1, DT1), data.table(factor(c('a','a'), levels = c('b','a','f'))))
-# test(1125, rbindlist(list(DT1, DT1)), data.table(factor(c('a','a'), levels = c('b','a','f'))))
-
-# coverage of rbindlist.c:289, #2346.
-# The hashing there hashes pointer address (CHARSXP) so this test attempts to use a large enough
-# sample of unique strings to generate that condition reliably to test that collision branch.
+# Old test to cover pre-PR#3455 rbindlist.c:289, #2346 (hashing CHARSXP no longer done)
 set.seed(1)
 manyChars = paste0("id",sample(99999,10000))
 DT1 = data.table(ordered(sample(manyChars, 1000), levels=sample(manyChars)))
 DT2 = data.table(factor(sample(manyChars, 1000)))
-test(1125.1, rbindlist(list(DT1,DT2))[c(1,2,.N-1,.N),as.character(V1)], c("id85645","id80957","id73436","id33445"))
+test(1125, rbindlist(list(DT1,DT2))[c(1,2,.N-1,.N),as.character(V1)], c("id85645","id80957","id73436","id33445"))
 
 ## test rbind(..., fill = TRUE)
 DT = data.table(a = 1:2, b = 1:2)
@@ -3985,25 +3983,20 @@ A <- data.table(x=factor(1), key='x')
 B <- data.table(x=factor(), key='x')
 test(1168.1, rbindlist(list(B,A)), data.table(x=factor(1)))
 
-# fix for bug #5120, it's related to rbind and factors as well - more or less similar to 1168.1 (#5355). Seems to have been fixed with that commit. Just adding test here.
+# fix for bug #5120, it's related to rbind and factors as well - more or less similar to 1168.1 (#5355).
 tmp1 <- as.data.table(structure(list(Year = 2013L, Maturity = structure(1L, .Label = c("<1",
-"1.0 - 1.5", "1.5 - 2.0", "2.0 - 2.5", "2.5 - 3.0", "3.0 - 4.0",
-"4.0 - 5.0", ">5.0"), class = "factor"), Quality = structure(2L, .Label = c(">BBB",
-"BBB", "BB", "B", "CCC", "<CCC", "NR", "CASH"), class = c("ordered",
-"factor")), Ct = 2L, Wt = 1.56, CtTotRet = 1.08, TotRet = 69.2307692307692), .Names = c("Year",
-"Maturity", "Quality", "Ct", "Wt", "CtTotRet", "TotRet"), class = c("data.table",
-"data.frame"), row.names = c(NA, -1L)))
-
+  "1.0 - 1.5", "1.5 - 2.0", "2.0 - 2.5", "2.5 - 3.0", "3.0 - 4.0",
+  "4.0 - 5.0", ">5.0"), class = "factor"), Quality = structure(2L, .Label = c(">BBB",
+  "BBB", "BB", "B", "CCC", "<CCC", "NR", "CASH"), class = c("ordered",
+  "factor")), Ct = 2L, Wt = 1.56, CtTotRet = 1.08, TotRet = 69.2307692307692), .Names = c("Year",
+  "Maturity", "Quality", "Ct", "Wt", "CtTotRet", "TotRet"), class = c("data.table",
+  "data.frame"), row.names = c(NA, -1L)))
 tmp2 <- as.data.table(structure(list(Year = 2013L, Maturity = "TOTAL", Quality = "TOTAL",
-Ct = 214L, Wt = 100.001, CtTotRet = 406.26, TotRet = 406.255937440626), .Names = c("Year",
-"Maturity", "Quality", "Ct", "Wt", "CtTotRet", "TotRet"), class = c("data.table",
-"data.frame"), row.names = c(NA, -1L)))
-
-ans <- rbind(tmp1, tmp2)
-# another ordered factor ...
-# base won't combined ordered with factor, but will combine with non-factor e.g. character and create ordered
-# what about inconsistent orderings?
-# creates ordered even though  test(1168.2, as.data.frame(ans), rbind(as.data.frame(tmp1), as.data.frame(tmp2)))
+  Ct = 214L, Wt = 100.001, CtTotRet = 406.26, TotRet = 406.255937440626), .Names = c("Year",
+  "Maturity", "Quality", "Ct", "Wt", "CtTotRet", "TotRet"), class = c("data.table",
+  "data.frame"), row.names = c(NA, -1L)))
+# "TOTAL" is added to the end of the ordered levels and ordered factor retained
+test(1168.2, as.data.frame(rbind(tmp1,tmp2)), rbind(as.data.frame(tmp1), as.data.frame(tmp2)))
 
 # checks of "" and NA_character_ ordering.
 test(1169, forderv(c(NA,"","a","NA")), INT(1,2,4,3))  # data.table does ascii ordering currently, so N comes before a
@@ -5818,11 +5811,11 @@ DT1 = data.table(A = factor(INT(7,8,7,8,7)), B = factor(6:10), C = 0)
 DT2 = data.table(D = ordered(1:5), A = factor(INT(1:2,1:2,1L)), C = 0)
 DT3 = data.table(A = factor(INT(7:8)), C = 0)
 ans = data.table(A=factor(INT(7,8,7,8,7,1,2,1,2,1,7,8), levels=c("7", "8", "1", "2")), B=factor(INT(6:10, rep(NA,7))), C=0, D=ordered(INT(rep(NA,5), 1:5, rep(NA,2))))
-# ordered ... test(1393.1, rbindlist(list(DT1, DT2, DT3), fill = TRUE), ans)
+test(1393.1, rbindlist(list(DT1, DT2, DT3), fill = TRUE), ans)
 # test for #591 (R-Forge #2491)
 ans[, ID := rep(1:3, c(5,5,2))]
 setcolorder(ans, c("ID", LETTERS[1:4]))
-# ordered ... test(1393.2, rbindlist(list(DT1, DT2, DT3), fill = TRUE, idcol="ID"), ans)
+test(1393.2, rbindlist(list(DT1, DT2, DT3), fill = TRUE, idcol="ID"), ans)
 
 # Tests for na.omit.data.table (faster version + with a 'cols=' new argument)
 col = c(1:2, NA_integer_)
@@ -13801,11 +13794,22 @@ if (test_bit64) {
   test(2007.6, rbind(data.table(a=as.raw(10), b=5L),  data.table(a=as.integer64(11), b=6L)), data.table(a=as.integer64(10:11), b=5:6))
 }
 
-# test for SET_STRING_ELT error with ordered factors, #3032
-DT1 = data.table(x = as.ordered(letters[c(1, 3, 5:8)]))
-DT2 = data.table(x = as.ordered(letters[c(2, 5:8)]))
-DT3 = data.table(x = as.ordered(letters[c(2, 5:8)]))
-test(2008, rbindlist(list(DT1, DT2, DT3), use.names=TRUE, fill=TRUE), data.table(x=factor(letters[c(1,3,5:8,2,5:8,2,5:8)], levels=c("a","c","e","f","g","h","b"))))
+# reworked ordered-factor handling in PR#3455, expanded from test for #3032
+DT1 = data.table(x = ordered(vals<-c("b","b","e","f","c","c"), levels=c("f","b","e","c")))
+DT2 = data.table(x = ordered(vals,                             levels=c("f","e","b","c")))
+DT3 = data.table(x = ordered(vals,                             levels=c("f","b","e","c","d")))
+DT4 = data.table(x = ordered(vals,                             levels=c("f","b","e","c","a","p")))
+test(2008.1, DT1$x[3] < DT1$x[5])  # e<c;  just to remind what ordered factors are
+test(2008.2, factor(DT1$x, ordered=FALSE)[3] < factor(DT1$x, ordered=FALSE)[5], NA, warning="<.*not meaningful for factors")  # base R's nice warning
+test(2008.3, rbind(DT1, DT4), data.table(x=ordered(c(vals,vals), levels=c("f","b","e","c","a","p"))))
+test(2008.4, rbind(DT1, DT2), data.table(x=factor(c(vals,vals), levels=c("f","b","e","c"))),
+             warning="Column 1 of item 2 is an ordered factor with 'e'<'b' in its levels. But 'b'<'e' in the ordered levels from column 1 of item 1.*regular factor")
+test(2008.5, rbind(DT3, DT4), data.table(x=factor(c(vals,vals), levels=c("f","b","e","c","a","p","d"))),
+             warning="Column 1 of item 1.*level 5 [[]'d'[]] is missing.*column 1 of item 2. Each set.*should be an ordered subset of the first longest.*regular factor")
+test(2008.6, rbindlist(list(DT1, DT2, DT3, DT4)), data.table(x=factor(rep(vals,4), levels=c("f","b","e","c","a","p","d"))),
+             warning="'e'<'b'.*But 'b'<'e'")
+test(2008.7, rbindlist(list(DT1, list(c("e","b")), DT1)), data.table(x=ordered(c(vals,"e","b",vals), levels=c("f","b","e","c"))))
+test(2008.8, rbindlist(list(DT1, list(c("e","foo")), DT1)), data.table(x=ordered(c(vals,"e","foo",vals), levels=c("f","b","e","c","foo"))))
 
 # segfault comparing NULL column, #2303 #2305
 DT = structure(list(NULL), names="a", class=c("data.table","data.frame"))

@@ -22,6 +22,8 @@ Each item of \code{l} can be a \code{data.table}, \code{data.frame} or \code{lis
 Columns with duplicate names are bound in the order of occurrence, similar to base. The position (column number) that each duplicate name occurs is also retained.
 
 If column \code{i} does not have the same type in each of the list items; e.g, the column is \code{integer} in item 1 while others are \code{numeric}, they are coerced to the highest type.
+
+If a column contains factors then a factor is created. If any of the factors are also ordered factors then the longest set of ordered levels are found (the first if this is tied). Then the ordered levels from each list item are checked to be an ordered subset of these longest levels. If any ambiguities are found (e.g. \code{blue<green} vs \code{green<blue}), or any ordered levels are missing from the longest, then a regular factor is created with warning. Any strings in regular factor and character columns which are missing from the longest ordered levels are added at the end.
 }
 \value{
     An unkeyed \code{data.table} containing a concatenation of all the items passed in.
