@@ -44,10 +44,6 @@ null.data.table <-function() {
   setattr(ans,"row.names",.set_row_names(0L))
   alloc.col(ans)
 }
-is.null.data.table = function(x) {
-  if (!inherits(x, "data.frame")) return(FALSE)
-  ncol(x)==0L
-}
 
 data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
 {
@@ -65,13 +61,11 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   # fix for #5377 - data.table(null list, data.frame and data.table) should return null data.table. Simple fix: check all scenarios here at the top.
   if (identical(x, list(NULL)) || identical(x, list(list())) ||
       identical(x, list(data.frame(NULL))) || identical(x, list(data.table(NULL)))) return( null.data.table() )
-  # fix for #3445 - data.table(data.table(), data.table(a=integer()))
-  if (sum(null.dt<-sapply(x, is.null.data.table))) x = x[!null.dt]
-  n <- length(x)
-  nd = name_dots(..., null.dt=null.dt)
+  nd = name_dots(...)
+  if (any(nocols<-sapply(x, NCOL)==0L)) { tt=!nocols; x=x[tt]; nd=lapply(nd,'[',tt); }  # data.table(data.table(), data.table(a=integer())), #3445
   vnames = nd$vnames
-  # We will use novname later to know which were explicitly supplied in the call.
-  novname = nd$novname
+  novname = nd$novname  # novname used later to know which were explicitly supplied in the call
+  n <- length(x)
   if (length(vnames) != n) stop("logical error in vnames")   # nocov
   # cast to a list to facilitate naming of columns with dimension --
   #   unlist() at the end automatically handles the need to "push" names

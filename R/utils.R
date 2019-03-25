@@ -6,7 +6,7 @@
 #   identical(TRUE,x)
 # See PR#3421 for timings.
 # It was changed in R so that isTRUE(c(a=TRUE)) returned TRUE: https://github.com/wch/r-source/commit/828997ac6ecfb73aaa0aae9d1d0584a4ffc50881#diff-b41e3f9f1d389bb6f7a842cd5a3308b8
-if (base::getRversion() < "3.5.0") {  
+if (base::getRversion() < "3.5.0") {
   isTRUE  = function(x) is.logical(x) && length(x)==1L && !is.na(x) && x    # backport R's new implementation of isTRUE
   isFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x) && !x   # backport isFALSE that was added in R 3.5.0
 }
@@ -79,9 +79,8 @@ more = function(f) system(paste("more",f))    # nocov  (just a dev helper)
 
 # helper used to auto-name columns in data.table(x,y) as c("x","y"), CJ(x,y) and similar
 # naming of unnested matrices still handled by data.table()
-name_dots <- function(..., null.dt=logical()) {
+name_dots <- function(...) {
   dot_sub <- as.list(substitute(list(...)))[-1L]
-  if (sum(null.dt)) dot_sub = dot_sub[!null.dt]
   vnames = names(dot_sub)
   if (is.null(vnames)) {
     vnames = rep.int("", length(dot_sub))

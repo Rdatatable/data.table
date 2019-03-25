@@ -13858,8 +13858,10 @@ if (.Platform$OS.type == 'windows') local({
 
 # cbind of zero-row data.table with empty data.table messed up columns, #3445
 test(2012.1, data.table(data.table(), data.table(a=integer())), data.table(a=integer()))
+test(2012.2, data.table(data.frame(), data.table(a=integer())), data.table(a=integer()))
+test(2012.3, data.table(data.frame(), data.frame(a=integer())), data.table(a=integer()))
 dt = as.data.table(iris)
-test(2012.2, cbind(data.table(), dt[0]), dt[0])
+test(2012.4, cbind(data.table(), dt[0]), dt[0])
 
 
 ###################################
