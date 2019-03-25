@@ -221,17 +221,6 @@ replace_dot_alias <- function(e) {
   }
 }
 
-# A (relatively) fast (uses DT grouping) wrapper for matching two vectors, BUT:
-# it behaves like 'pmatch' but only the 'exact' matching part. That is, a value in
-# 'x' is matched to 'table' only once. No index will be present more than once.
-# This should make it even clearer:
-# chmatch2(c("a", "a"), c("a", "a")) # 1,2 - the second 'a' in 'x' has a 2nd match in 'table'
-# chmatch2(c("a", "a"), c("a", "b")) # 1,NA - the second one doesn't 'see' the first 'a'
-# chmatch2(c("a", "a"), c("a", "a.1")) # 1,NA - this is where it differs from pmatch - we don't need the partial match.
-chmatch2 <- function(x, table, nomatch=NA_integer_) {
-  .Call(Cchmatch2, x, table, as.integer(nomatch)) # this is in 'rbindlist.c' for now.
-}
-
 "[.data.table" <- function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
@@ -375,14 +364,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
     }
   }
 
-  # To take care of duplicate column names properly (see chmatch2 function above `[data.table`) for description
-  dupmatch <- function(x, y, ...) {
-    if (anyDuplicated(x))
-      pmax(chmatch(x,y, ...), chmatch2(x,y,0L))
-    else chmatch(x,y)
-  }
-
-  # setdiff removes duplicate entries, which'll create issues with duplicated names. Use '%chin% instead.
+  # setdiff removes duplicate entries, which'll create issues with duplicated names. Use %chin% instead.
   dupdiff <- function(x, y) x[!x %chin% y]
 
   if (!missing(i)) {
@@ -745,7 +727,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       if (length(tt)) jisvars[tt] = paste0("i.",jisvars[tt])
       if (length(duprightcols <- rightcols[duplicated(rightcols)])) {
         nx = c(names(x), names(x)[duprightcols])
-        rightcols = chmatch2(names(x)[rightcols], nx)
+        rightcols = chmatchdup(names(x)[rightcols], nx)
         nx = make.unique(nx)
       } else nx = names(x)
       ansvars = make.unique(c(nx, jisvars))
@@ -796,20 +778,16 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       if (is.character(j)) {
         if (notj) {
           w = chmatch(j, names(x))
-          if (anyNA(w)) {
-            warning("column(s) not removed because not found: ",paste(j[is.na(w)],collapse=","))
-            w = w[!is.na(w)]
-          }
-          # changed names(x)[-w] to use 'setdiff'. Here, all instances of the column must be removed.
-          # Ex: DT <- data.table(x=1, y=2, x=3); DT[, !"x", with=FALSE] should just output 'y'.
-          # But keep 'dup cols' beause it's basically DT[, !names(DT) %chin% "x", with=FALSE] which'll subset all cols not 'x'.
-          ansvars = if (length(w)) dupdiff(names(x), names(x)[w]) else names(x)
-          ansvals = dupmatch(ansvars, names(x))
+          if (anyNA(w)) warning("column(s) not removed because not found: ",paste(j[is.na(w)],collapse=","))
+          # all duplicates of the name in names(x) must be removed; e.g. data.table(x=1, y=2, x=3)[, !"x"] should just output 'y'.
+          w = !names(x) %chin% j
+          ansvars = names(x)[w]
+          ansvals = which(w)
         } else {
-          # once again, use 'setdiff'. Basically, unless indices are specified in `j`, we shouldn't care about duplicated columns.
-          ansvars = j   # x. and i. prefixes may be in here, and they'll be dealt with below
-          # dups = FALSE here.. even if DT[, c("x", "x"), with=FALSE], we subset only the first.. No way to tell which one the OP wants without index.
-          ansvals = chmatch(ansvars, names(x))
+          # if DT[, c("x","x")] and "x" is duplicated in names(DT), we still subset only the first. Because dups are unusual and
+          # it's more common to select the same column a few times. A syntax would be needed to distinguish these intents.
+          ansvars = j   # x. and i. prefixes may be in here, they'll result in NA and will be dealt with further below if length(leftcols)
+          ansvals = chmatch(ansvars, names(x))   # not chmatchdup()
         }
         if (!length(ansvals)) return(null.data.table())
         if (!length(leftcols)) {
@@ -1025,7 +1003,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
           # over a subset of columns
 
           # all duplicate columns must be matched, because nothing is provided
-          ansvals = dupmatch(ansvars, names(x))
+          ansvals = chmatchdup(ansvars, names(x))
         } else {
           # FR #4979 - negative numeric and character indices for SDcols
           colsub = substitute(.SDcols)
@@ -1438,6 +1416,7 @@ chmatch2 <- function(x, table, nomatch=NA_integer_) {
       setattr(jval, 'class', class(x)) # fix for #5296
       if (haskey(x) && all(key(x) %chin% names(jval)) && suppressWarnings(is.sorted(jval, by=key(x))))  # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
         setattr(jval, 'sorted', key(x))
+      for (i in seq_along(jval)) if (is.null(jval[[i]])) stop("Column ",i," of j evaluates to NULL. A NULL column is invalid.")
     }
     return(jval)
   }
@@ -2438,10 +2417,6 @@ copy <- function(x) {
   alloc.col(newx)
 }
 
-copyattr <- function(from, to) {
-  .Call(Ccopyattr, from, to)
-}
-
 point <- function(to, to_idx, from, from_idx) {
   .Call(CpointWrapper, to, to_idx, from, from_idx)
 }
@@ -2658,13 +2633,19 @@ set <- function(x,i=NULL,j,value)  # low overhead, loopable
   invisible(x)
 }
 
-chmatch <- function(x,table,nomatch=NA_integer_)
-  .Call(Cchmatchwrapper,x,table,as.integer(nomatch[1L]),FALSE) # [1L] to fix #1672
+chmatch <- function(x, table, nomatch=NA_integer_)
+  .Call(Cchmatch, x, table, as.integer(nomatch[1L])) # [1L] to fix #1672
 
-"%chin%" <- function(x,table) {
-  # TO DO  if table has 'ul' then match to that
-  .Call(Cchmatchwrapper,x,table,NA_integer_,TRUE)
-}
+# chmatchdup() behaves like 'pmatch' but only the 'exact' matching part; i.e. a value in
+# 'x' is matched to 'table' only once. No index will be present more than once. For example:
+# chmatchdup(c("a", "a"), c("a", "a")) # 1,2 - the second 'a' in 'x' has a 2nd match in 'table'
+# chmatchdup(c("a", "a"), c("a", "b")) # 1,NA - the second one doesn't 'see' the first 'a'
+# chmatchdup(c("a", "a"), c("a", "a.1")) # 1,NA - this is where it differs from pmatch - we don't need the partial match.
+chmatchdup <- function(x, table, nomatch=NA_integer_)
+  .Call(Cchmatchdup, x, table, as.integer(nomatch[1L]))
+
+"%chin%" <- function(x, table)
+  .Call(Cchin, x, table)  # TO DO  if table has 'ul' then match to that
 
 chorder <- function(x) {
   o = forderv(x, sort=TRUE, retGrp=FALSE)
@@ -2677,7 +2658,6 @@ chgroup <- function(x) {
   if (length(o)) as.vector(o) else seq_along(x)  # as.vector removes the attributes
 }
 
-
 .rbind.data.table <- function(..., use.names=TRUE, fill=FALSE, idcol=NULL) {
   # See FAQ 2.23
   # Called from base::rbind.data.frame
@@ -2687,14 +2667,20 @@ chgroup <- function(x) {
   rbindlist(l, use.names, fill, idcol)
 }
 
-rbindlist <- function(l, use.names=fill, fill=FALSE, idcol=NULL) {
+rbindlist <- function(l, use.names="check", fill=FALSE, idcol=NULL) {
   if (isFALSE(idcol)) { idcol = NULL }
   else if (!is.null(idcol)) {
     if (isTRUE(idcol)) idcol = ".id"
     if (!is.character(idcol)) stop("idcol must be a logical or character vector of length 1. If logical TRUE the id column will named '.id'.")
     idcol = idcol[1L]
   }
-  # fix for #1467, quotes result in "not resolved in current namespace" error
+  miss = missing(use.names)
+  # more checking of use.names happens at C level; this is just minimal to massage 'check' to NA
+  if (identical(use.names, NA)) stop("use.names=NA invalid")  # otherwise use.names=NA could creep in an usage equivalent to use.names='check'
+  if (identical(use.names,"check")) {
+    if (!miss) stop("use.names='check' cannot be used explicitly because the value 'check' is new in v1.12.2 and subject to change. It is just meant to convey default behavior. See ?rbindlist.")
+    use.names = NA
+  }
   ans = .Call(Crbindlist, l, use.names, fill, idcol)
   if (!length(ans)) return(null.data.table())
   setDT(ans)[]
