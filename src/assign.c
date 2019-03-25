@@ -276,7 +276,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   // newcolnames : add these columns (if any)
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
-  R_len_t i, j, nrow, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
+  R_len_t i, j, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
   SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, klass, tmp, colorder, key, index, a, assignedNames, indexNames;
   SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
   Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, isDataTable=FALSE;
@@ -311,8 +311,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   if (isNull(names)) error("dt passed to assign has no names");
   if (length(names)!=oldncol)
     error("Internal error in assign: length of names (%d) is not length of dt (%d)",length(names),oldncol); // # nocov
-  if (oldncol<1) error("Cannot use := to add columns to a null data.table (no columns), currently. You can use := to add (empty) columns to a 0-row data.table (1 or more empty columns), though.");
-  nrow = length(VECTOR_ELT(dt,0));
+  if (isNull(dt)) {
+    error("data.table is NULL; malformed. A null data.table should be an empty list. typeof() should always return 'list' for data.table."); // # nocov
+    // Not possible to test because R won't permit attributes be attached to NULL (which is good and we like); warning from R 3.4.0+ tested by 944.5
+  }
+  const int nrow = LENGTH(dt) ? length(VECTOR_ELT(dt,0)) :
+                                (isNewList(values) && length(values) ? length(VECTOR_ELT(values,0)) : length(values));
+  //                            ^ when null data.table the new nrow becomes the fist column added
   if (isNull(rows)) {
     numToDo = nrow;
     targetlen = nrow;
@@ -399,19 +404,19 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     if (coln+1 <= oldncol) colnam = STRING_ELT(names,coln);
     else colnam = STRING_ELT(newcolnames,coln-length(names));
     if (coln+1 <= oldncol && isNull(thisvalue)) continue;  // delete existing column(s) afterwards, near end of this function
-    if (vlen<1 && nrow>0) {
-      if (coln+1 <= oldncol && numToDo > 0) { // numToDo > 0 fixes #2829, see test 1911
-        error("RHS of assignment to existing column '%s' is zero length but not NULL. If you intend to delete the column use NULL. Otherwise, the RHS must have length > 0; e.g., NA_integer_. If you are trying to change the column type to be an empty list column then, as with all column type changes, provide a full length RHS vector such as vector('list',nrow(DT)); i.e., 'plonk' in the new column.", CHAR(STRING_ELT(names,coln)));
-      } else if (coln+1 > oldncol && TYPEOF(thisvalue)!=VECSXP) {  // list() is ok for new columns
-        newcolnum = coln-length(names);
-        if (newcolnum<0 || newcolnum>=length(newcolnames))
-          error("Internal error in assign.c: length(newcolnames)=%d, length(names)=%d, coln=%d", length(newcolnames), length(names), coln); // # nocov
-        if (isNull(thisvalue)) {
-          warning("Adding new column '%s' then assigning NULL (deleting it).",CHAR(STRING_ELT(newcolnames,newcolnum)));
-          continue;
-        }
-        // RHS of assignment to new column is zero length but we'll use its type to create all-NA column of that type
+    //if (vlen<1 && nrow>0) {
+    if (coln+1 <= oldncol && nrow>0 && vlen<1 && numToDo>0) { // numToDo > 0 fixes #2829, see test 1911
+      error("RHS of assignment to existing column '%s' is zero length but not NULL. If you intend to delete the column use NULL. Otherwise, the RHS must have length > 0; e.g., NA_integer_. If you are trying to change the column type to be an empty list column then, as with all column type changes, provide a full length RHS vector such as vector('list',nrow(DT)); i.e., 'plonk' in the new column.", CHAR(STRING_ELT(names,coln)));
+    }
+    if (coln+1 > oldncol && TYPEOF(thisvalue)!=VECSXP) {  // list() is ok for new columns
+      newcolnum = coln-length(names);
+      if (newcolnum<0 || newcolnum>=length(newcolnames))
+        error("Internal error in assign.c: length(newcolnames)=%d, length(names)=%d, coln=%d", length(newcolnames), length(names), coln); // # nocov
+      if (isNull(thisvalue)) {
+        warning("Column '%s' does not exist to remove",CHAR(STRING_ELT(newcolnames,newcolnum)));
+        continue;
       }
+      // RHS of assignment to new column is zero length but we'll use its type to create all-NA column of that type
     }
     if (!(isVectorAtomic(thisvalue) || isNewList(thisvalue)))  // NULL had a continue earlier above
       error("RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list column.");
