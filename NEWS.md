@@ -46,7 +46,7 @@
 
 15. `melt` would error with 'factor malformed' or segfault in the presence of duplicate column names, [#1754](https://github.com/Rdatatable/data.table/issues/1754). Many thanks to @franknarf1, William Marble, wligtenberg and Toby Dylan Hocking for reproducible examples. All examples have been added to the test suite.
 
-16. Removing a column from a null data.table is now a warning rather than error, [#2355](https://github.com/Rdatatable/data.table/issues/2335). The warning about removing a column that does not exist is simpler and consistent. It is no longer an error to add a column to a null (0-column) data.table.
+16. Removing a column from a null data.table is now a warning rather than error, [#2335](https://github.com/Rdatatable/data.table/issues/2335). The warning about removing a column that does not exist is simpler and consistent. It is no longer an error to add a column to a null (0-column) data.table.
 
 #### NOTES
 
