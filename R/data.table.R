@@ -56,16 +56,16 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   .Call(CcopyNamedInList,x)   # to maintain pre-Rv3.1.0 behaviour, for now. See test 548.2. TODO: revist
   # TODO Something strange with NAMED on components of `...` to investigate. Or, just port data.table() to C.
 
-  n <- length(x)
-  if (n < 1L)
+  if (length(x) < 1L)
     return( null.data.table() )
   # fix for #5377 - data.table(null list, data.frame and data.table) should return null data.table. Simple fix: check all scenarios here at the top.
   if (identical(x, list(NULL)) || identical(x, list(list())) ||
       identical(x, list(data.frame(NULL))) || identical(x, list(data.table(NULL)))) return( null.data.table() )
   nd = name_dots(...)
+  if (any(nocols<-sapply(x, NCOL)==0L)) { tt=!nocols; x=x[tt]; nd=lapply(nd,'[',tt); }  # data.table(data.table(), data.table(a=integer())), #3445
   vnames = nd$vnames
-  # We will use novname later to know which were explicitly supplied in the call.
-  novname = nd$novname
+  novname = nd$novname  # novname used later to know which were explicitly supplied in the call
+  n <- length(x)
   if (length(vnames) != n) stop("logical error in vnames")   # nocov
   # cast to a list to facilitate naming of columns with dimension --
   #   unlist() at the end automatically handles the need to "push" names

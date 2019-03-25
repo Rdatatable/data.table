@@ -50,6 +50,8 @@
 
 17. Non-UTF8 strings were not always sorted correctly on Windows (a regression in v1.12.0), [#3397](https://github.com/Rdatatable/data.table/issues/3397) [#3451](https://github.com/Rdatatable/data.table/issues/3451). Thanks to @shrektan for reporting and fixing.
 
+18. `cbind` with a null (0-column) `data.table` now works as expected, [#3445](https://github.com/Rdatatable/data.table/issues/3445). Thanks to @mb706 for reporting.
+
 #### NOTES
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
