@@ -10,6 +10,10 @@
 
 3. The number of logical CPUs used by default has been reduced from 100% to 50%. The previous 100% default was reported to cause significant slow downs when other non-trivial processes were also running: [#3395](https://github.com/Rdatatable/data.table/issues/3395), [#3298](https://github.com/Rdatatable/data.table/issues/3298). Two new optional environment variables (`R_DATATABLE_NUM_PROCS_PERCENT` & `R_DATATABLE_NUM_THREADS`) control this default. \code(setDTthreads()) gains \code{percent=} and \code{?setDTthreads} has been significantly revised. \code{getDTthreads(verbose=TRUE)} has been expanded. The environment variable `OMP_THREAD_LIMIT` is now respected ([#3300](https://github.com/Rdatatable/data.table/issues/3300)) in addition to `OMP_NUM_THREADS` as before.
 
+4. `rbind` and `rbindlist` now retain the position of duplicate column names rather than grouping them together [#3373](https://github.com/Rdatatable/data.table/issues/3373), fill length 0 columns (including NULL) with NA with warning [#1871](https://github.com/Rdatatable/data.table/issues/1871), and recycle length-1 columns [#524](https://github.com/Rdatatable/data.table/issues/524). Thanks to Kun Ren for the requests which arose when parsing JSON.
+
+5. `rbindlist`'s `use.names=` default has changed from `FALSE` to `"check"`. This warns if the column names of each item are not identical and then proceeds as if `use.names=FALSE` for backwards compatibility; i.e., bind by column number not by column name. In future, it will warn and then proceed as if `use.names=TRUE`. Eventually the default will be changed from `NA` to `TRUE` unless user feedback is negative. The `rbind` method for `data.table` already sets `use.names=TRUE` as does `rbind` for `data.frame` in base, and is clearly safer. To stack differently named columns together silently (the previous default behavior), it is now necessary to write `use.names=FALSE` for clarity to readers of your code. Thanks to Clayton Stanley who first raised the issue [here](http://lists.r-forge.r-project.org/pipermail/datatable-help/2014-April/002480.html).
+
 #### BUG FIXES
 
 1. `rbindlist()` of a malformed factor missing levels attribute is now a helpful error rather than a cryptic error about `STRING_ELT`, [#3315](https://github.com/Rdatatable/data.table/issues/3315). Thanks to Michael Chirico for reporting.
@@ -34,7 +38,17 @@
 
 11. A join's result could be incorrectly keyed when a single nomatch occurred at the very beginning while all other values matched, [#3441](https://github.com/Rdatatable/data.table/issues/3441). The incorrect key would cause incorrect results in subsequent queries. Thanks to @symbalex for reporting and @franknarf1 for pinpointing the root cause.
 
-12. Fixed a minor regression in v1.12.0 that non-UTF8 strings may not be correctly sorted on Windows, #3397 and #3451. Thanks to @shrektan for reporting and fixing.
+12. `rbind` and `rbindlist(..., use.names=TRUE)` with over 255 columns could return the columns in a random order, [#3373](https://github.com/Rdatatable/data.table/issues/3373). The contents and name of each column was correct but the order that the columns appeared in the result might not match the original input.
+
+13. `rbind` and `rbindlist` now combine `integer64` columns together with non-`integer64` columns correctly [#1349](https://github.com/Rdatatable/data.table/issues/1349), and support `raw` columns [#2819](https://github.com/Rdatatable/data.table/issues/2819).
+
+14. `NULL` columns are caught and error appropriately rather than segfault in some cases, [#2303](https://github.com/Rdatatable/data.table/issues/2303) [#2305](https://github.com/Rdatatable/data.table/issues/2305). Thanks to Hugh Parsonage and @franknarf1 for reporting.
+
+15. `melt` would error with 'factor malformed' or segfault in the presence of duplicate column names, [#1754](https://github.com/Rdatatable/data.table/issues/1754). Many thanks to @franknarf1, William Marble, wligtenberg and Toby Dylan Hocking for reproducible examples. All examples have been added to the test suite.
+
+16. Removing a column from a null data.table is now a warning rather than error, [#2335](https://github.com/Rdatatable/data.table/issues/2335). The warning about removing a column that does not exist is simpler and consistent. It is no longer an error to add a column to a null (0-column) data.table.
+
+17. Non-UTF8 strings were not always sorted correctly on Windows (a regression in v1.12.0), [#3397](https://github.com/Rdatatable/data.table/issues/3397) [#3451](https://github.com/Rdatatable/data.table/issues/3451). Thanks to @shrektan for reporting and fixing.
 
 #### NOTES
 
