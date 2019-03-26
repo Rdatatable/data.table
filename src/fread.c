@@ -587,7 +587,13 @@ static void StrtoI32(FieldParseContext *ctx)
   // see init.c for checks of unsigned uint_fast8_t cast
   // optimizer should implement 10* as ((x<<2 + x)<<1) or (x<<3 + x<<1)
 
-  /*if (loseLeadingZeroOption)*/ while (*ch=='0') ch++;
+  uint_fast8_t cnt_leading_zeros = 0; // count of leading zero's used to determine if number should be parsed as string
+                                      // only in effect when freadMainArgs option keepLeadingZeros is set to false
+
+  while (*ch=='0') {
+    ch++;
+    if(args.keepLeadingZeros) cnt_leading_zeros++;
+  }
   // number significant figures = digits from the first non-zero onwards including trailing zeros
   uint_fast32_t sf = 0;
   while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
@@ -601,7 +607,7 @@ static void StrtoI32(FieldParseContext *ctx)
   // option to treat as integer or string with further cost.
   // if ( (acc && *start!='0' && acc<=INT32_MAX && (ch-start)<=10) ||
   //     (acc==0 && ch-start==1) ) {
-  if ((sf || ch>start) && sf<=10 && acc<=INT32_MAX) {
+  if ((sf || ch>start) && sf<=10 && acc<=INT32_MAX && (cnt_leading_zeros == 0 || (cnt_leading_zeros == 1 && sf == 0))) {
     *target = neg ? -(int32_t)acc : (int32_t)acc;
     *(ctx->ch) = ch;
   } else {
@@ -614,11 +620,17 @@ static void StrtoI64(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int64_t *target = (int64_t*) ctx->targets[sizeof(int64_t)];
-
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;
-  while (*ch=='0') ch++;
+  uint_fast8_t cnt_leading_zeros = 0; // count of leading zero's used to determine if number should be parsed as string
+                                      // only in effect when freadMainArgs option keepLeadingZeros is set to false
+
+  while (*ch=='0') {
+    ch++;
+    if(args.keepLeadingZeros) cnt_leading_zeros++;
+  }
+
   uint_fast64_t acc = 0;  // important unsigned not signed here; we now need the full unsigned range
   uint_fast8_t digit;
   uint_fast32_t sf = 0;
@@ -633,7 +645,7 @@ static void StrtoI64(FieldParseContext *ctx)
   //   and, fortunately, uint64 can hold 9999999999999999999 (19 9's) so that doesn't overflow uint64.
   //if ( (acc && *start!='0' && acc<=INT64_MAX && (ch-start)<=19) ||
   //     (acc==0 && ch-start==1) ) {
-  if ((sf || ch>start) && sf<=19 && acc<=INT64_MAX) {
+  if ((sf || ch>start) && sf<=19 && acc<=INT64_MAX && (cnt_leading_zeros == 0 || (cnt_leading_zeros == 1 && sf == 0))) {
     *target = neg ? -(int64_t)acc : (int64_t)acc;
     *(ctx->ch) = ch;
   } else {
@@ -681,9 +693,13 @@ static void parse_double_regular(FieldParseContext *ctx)
   int_fast32_t e = 0;     // the number's exponent. The value being parsed is
                           // equal to acc * pow(10,e)
   uint_fast8_t digit;     // temporary variable, holds last scanned digit.
+  uint_fast8_t cnt_leading_zeros = 0; // count of leading zero's used to determine if number should be parsed as string
+                                      // only in effect when freadMainArgs option keepLeadingZeros is set to false
 
-  // Skip leading zeros
-  while (*ch=='0') ch++;
+  while (*ch=='0') {
+    ch++;
+    if(args.keepLeadingZeros) cnt_leading_zeros++;
+  }
 
   // Read the first, integer part of the floating number (but no more than
   // FLOAT_MAX_DIGITS digits).
@@ -693,6 +709,8 @@ static void parse_double_regular(FieldParseContext *ctx)
     sflimit--;
     ch++;
   }
+
+  if ((cnt_leading_zeros==1 && *ch!=dec) || (cnt_leading_zeros > 1)) goto fail;
 
   // If maximum allowed number of digits were read, but more are present -- then
   // we will read and discard those extra digits, but only if they are followed
