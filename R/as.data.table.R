@@ -108,50 +108,70 @@ as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name=
 }
 
 as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
-  wn = sapply(x,is.null)
-  if (any(wn)) x = x[!wn]
-  if (!length(x)) return( null.data.table() )
-  # fix for #833, as.data.table.list with matrix/data.frame/data.table as a list element..
-  # TODO: move this entire logic (along with data.table() to C
-  for (i in seq_along(x)) {
-    dims = dim(x[[i]])
-    if (!is.null(dims)) {
-      ans = do.call("data.table", x)
-      setnames(ans, make.unique(names(ans)))
-      return(ans)
+  n = length(x)
+  eachnrow = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
+  eachncol = integer(n)
+  for (i in seq_len(n)) {
+    xi = x[[i]]
+    if (is.null(xi)) next    # stop("column or argument ",i," is NULL")
+    if ("POSIXlt" %chin% class(xi)) {
+      warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+      xi = x[[i]] = as.POSIXct(xi)
+    } else if (is.matrix(xi) || is.data.frame(xi)) {  # including data.table (a data.frame, too)
+      xi = x[[i]] = as.data.table(xi, keep.rownames=keep.rownames)  # we will never allow a matrix to be a column; always unpack the columns
+    } else if (is.table(xi)) {
+      xi = x[[i]] = as.data.table.table(xi, keep.rownames=keep.rownames)
+    } else if (is.function(xi)) {
+      xi = x[[i]] = list(xi)
     }
+    eachnrow[i] = NROW(xi)    # for a vector (including list() columns) returns the length
+    eachncol[i] = NCOL(xi)    # for a vector returns 1
   }
-  n = vapply(x, length, 0L)
-  mn = max(n)
-  x = copy(x)
-  idx = which(n < mn)
-  if (length(idx)) {
-    for (i in idx) {
-      # any is.null(x[[i]]) were removed above, otherwise warning when a list element is NULL
-      if (inherits(x[[i]], "POSIXlt")) {
-        warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
-        x[[i]] = as.POSIXct(x[[i]])
+  ncol = sum(eachncol)
+  if (ncol==0L) return(null.data.table())
+  nrow = max(eachnrow)
+  ans = vector("list",ncol)  # always return a new VECSXP
+  recycle = function(x, nrow) {
+    if (length(x)==nrow) return(x)
+    if (identical(x,list())) vector("list", nrow) else rep(x, length.out=nrow)
+  }
+  vnames = vector("list", n)
+  k = 1L
+  for(i in seq_len(n)) {
+    xi = x[[i]]
+    if (is.null(xi)) next
+    nm = names(x)[i]
+    if (!length(nm) || is.na(nm)) nm = ""
+    if (eachnrow[i]>1L && nrow%%eachnrow[i]!=0L)   # in future: eachnrow[i]!=nrow
+      warning("Item ", i, " has ", eachnrow[i], " rows but longest item has ", nrow, "; recycled with remainder.")
+    if (is.data.table(xi)) {   # matrix and data.frame were coerced to data.table above
+      vnames[[i]] = names(xi)  #if (nm!="" && n>1L) paste(nm, names(xi), sep=".") else names(xi)
+      for (j in seq_along(xi)) {
+        ans[[k]] = recycle(xi[[j]], nrow)
+        k=k+1L
       }
-      # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
-      if (!n[i] && mn)
-        warning("Item ", i, " is of size 0 but maximum size is ", mn, ", therefore recycled with 'NA'")
-      else if (n[i] && mn %% n[i] != 0L)
-        warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
-      x[[i]] = rep(x[[i]], length.out=mn)
+    } else {
+      vnames[[i]] = nm
+      ans[[k]] = recycle(xi, nrow)
+      k=k+1L
     }
   }
-  # fix for #842
-  if (mn > 0L) {
-    nz = which(n > 0L)
-    xx = point(vector("list", length(nz)), seq_along(nz), x, nz)
-    if (!is.null(names(x)))
-      setattr(xx, 'names', names(x)[nz])
-    x = xx
-  }
-  if (is.null(names(x))) setattr(x,"names",paste0("V",seq_len(length(x))))
-  setattr(x,"row.names",.set_row_names(max(n)))
-  setattr(x,"class",c("data.table","data.frame"))
-  alloc.col(x)
+  vnames = unlist(vnames)
+  w = which(vnames=="")
+  if (length(w)) vnames[w] = paste0("V",w)
+  setattr(ans,"names",vnames)
+  setattr(ans,"row.names",.set_row_names(nrow))
+  setattr(ans,"class",c("data.table","data.frame"))
+  alloc.col(ans)
+
+  # fix for #842.   Not sure what this is for.  Revisit in PR in 1.12.4 if needed, else remove.
+  #if (mn > 0L) {
+  #  nz = which(n > 0L)
+  #  xx = point(vector("list", length(nz)), seq_along(nz), x, nz)
+  #  if (!is.null(names(x)))
+  #    setattr(xx, 'names', names(x)[nz])
+  #  x = xx
+  #}
 }
 
 # don't retain classes before "data.frame" while converting
@@ -173,6 +193,10 @@ as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...) {
     if (is.character(keep.rownames))
       setnames(ans, 'rn', keep.rownames[1L])
     return(ans)
+  }
+  if (any(!sapply(x,is.atomic))) {
+    # a data.frame with a column that is data.frame needs to be expanded; test 2013.4
+    return(as.data.table.list(x, keep.rownames=keep.rownames, ...))
   }
   ans = copy(x)  # TO DO: change this deep copy to be shallow.
   setattr(ans,"row.names",.set_row_names(nrow(x)))

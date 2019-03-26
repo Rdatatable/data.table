@@ -47,134 +47,54 @@ null.data.table <-function() {
 
 data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
 {
-  # NOTE: It may be faster in some circumstances to create a data.table by creating a list l first, and then setattr(l,"class",c("data.table","data.frame")) at the expense of checking.
+  # NOTE: It may be faster in some circumstances for users to create a data.table by creating a list l
+  #       first, and then setattr(l,"class",c("data.table","data.frame")) and forgo checking.
   # TO DO: rewrite data.table(), one of the oldest functions here. Many people use data.table() to convert data.frame rather than
   # as.data.table which is faster; speed could be better.  Revisit how many copies are taken in for example data.table(DT1,DT2) which
   # cbind directs to.  And the nested loops for recycling lend themselves to being C level.
 
   x <- list(...)   # doesn't copy named inputs as from R >= 3.1.0 (a very welcome change)
+  if (length(x)==0L) return( null.data.table() )
+  if (length(x)==1L && (is.null(x[[1L]]) || (is.list(x[[1L]]) && length(x[[1L]])==0L))) return( null.data.table() ) #5377
   .Call(CcopyNamedInList,x)   # to maintain pre-Rv3.1.0 behaviour, for now. See test 548.2. TODO: revist
   # TODO Something strange with NAMED on components of `...` to investigate. Or, just port data.table() to C.
 
-  if (length(x) < 1L)
-    return( null.data.table() )
-  # fix for #5377 - data.table(null list, data.frame and data.table) should return null data.table. Simple fix: check all scenarios here at the top.
-  if (identical(x, list(NULL)) || identical(x, list(list())) ||
-      identical(x, list(data.frame(NULL))) || identical(x, list(data.table(NULL)))) return( null.data.table() )
-  nd = name_dots(...)
-  if (any(nocols<-sapply(x, NCOL)==0L)) { tt=!nocols; x=x[tt]; nd=lapply(nd,'[',tt); }  # data.table(data.table(), data.table(a=integer())), #3445
-  vnames = nd$vnames
-  novname = nd$novname  # novname used later to know which were explicitly supplied in the call
-  n <- length(x)
-  if (length(vnames) != n) stop("logical error in vnames")   # nocov
-  # cast to a list to facilitate naming of columns with dimension --
-  #   unlist() at the end automatically handles the need to "push" names
-  #   to accommodate the "new" columns
-  vnames <- as.list.default(vnames)
-  nrows = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
-  numcols = integer(n)         # the ncols of each of the inputs (e.g. if inputs contain matrix or data.table)
-  for (i in seq_len(n)) {
-    xi = x[[i]]
-    if (is.null(xi)) stop("column or argument ",i," is NULL")
-    if ("POSIXlt" %chin% class(xi)) {
-      warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
-      x[[i]] = as.POSIXct(xi)
-    } else if (is.matrix(xi) || is.data.frame(xi)) {  # including data.table (a data.frame, too)
-      xi = as.data.table(xi, keep.rownames=keep.rownames)       # TO DO: allow a matrix to be a column of a data.table. This could allow a key'd lookup to a matrix, not just by a single rowname vector, but by a combination of several columns. A matrix column could be stored either by row or by column contiguous in memory.
-      x[[i]] = xi
-      numcols[i] = length(xi)
-    } else if (is.table(xi)) {
-      x[[i]] = xi = as.data.table.table(xi, keep.rownames=keep.rownames)
-      numcols[i] = length(xi)
-    } else if (is.function(xi)) {
-      x[[i]] = xi = list(xi)
-    }
-    nrows[i] <- NROW(xi)    # for a vector (including list() columns) returns the length
-    if (numcols[i]>0L) {
-      namesi <- names(xi)  # works for both data.frame's, matrices and data.tables's
-      if (length(namesi)==0L) namesi = rep.int("",ncol(xi))
-      namesi[is.na(namesi)] = ""
-      tt = namesi==""
-      if (any(tt)) namesi[tt] = paste0("V", which(tt))
-      if (novname[i]) vnames[[i]] = namesi
-      else vnames[[i]] = paste(vnames[[i]], namesi, sep=".")
-    }
+  vnames = if (is.null(names(x))) character(length(x)) else names(x)
+  if (length(w<-which(vnames==""))) {
+    sub = substitute(list(...))
+    for (i in w) if (is.name(nm<-sub[[i+1L]])) vnames[i] = as.character(nm)
+    names(x) <- vnames
   }
-  nr <- max(nrows)
-  ckey = NULL
-  recycledkey = FALSE
-  for (i in seq_len(n)) {
-    xi = x[[i]]
-    if (is.data.table(xi) && haskey(xi)) {
-      if (nrows[i]<nr) recycledkey = TRUE
-      else ckey = c(ckey, key(xi))
-    }
-  }
-  for (i in which(nrows < nr)) {
-    # TO DO ... recycle in C, but not high priority as large data already regular from database or file
-    xi <- x[[i]]
-    if (identical(xi,list())) {
-      x[[i]] = vector("list", nr)
-      next
-    }
-    if (nrows[i]==0L) stop("Item ",i," has no length. Provide at least one item (such as NA, NA_integer_ etc) to be repeated to match the ",nr," row", if (nr > 1L) "s", " in the longest column. Or, all columns can be 0 length, for insert()ing rows into.")
-    # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
-    if (nr%%nrows[i] != 0L) warning("Item ", i, " is of size ", nrows[i], " but maximum size is ", nr, " (recycled leaving remainder of ", nr%%nrows[i], " items)")
-    if (is.data.frame(xi)) {   # including data.table
-      ..i = rep(seq_len(nrow(xi)), length.out = nr)
-      x[[i]] = xi[..i,,drop=FALSE]
-      next
-    }
-    if (is.atomic(xi) || is.list(xi)) {
-      # TO DO: surely use set() here, or avoid the coercion
-      x[[i]] = rep(xi, length.out = nr)
-      next
-    }
-    stop("problem recycling column ",i,", try a simpler type")
-  }
-  if (any(numcols>0L)) {
-    value = vector("list",sum(pmax(numcols,1L)))
-    k = 1L
-    for(i in seq_len(n)) {
-      if (is.list(x[[i]]) && !is.ff(x[[i]])) {
-        for(j in seq_len(length(x[[i]]))) {
-          value[[k]] = x[[i]][[j]]
-          k=k+1L
-        }
-      } else {
-        value[[k]] = x[[i]]
-        k=k+1L
-      }
-    }
-  } else {
-    value = x
-  }
-  vnames <- unlist(vnames)
-  if (check.names)   # default FALSE
-    vnames <- make.names(vnames, unique = TRUE)
-  setattr(value,"names",vnames)
-  setattr(value,"row.names",.set_row_names(nr))
-  setattr(value,"class",c("data.table","data.frame"))
+
+  # vnames = getdots()   # as.list(substitute(list(...)))[-1L]
+  # names(x) = vnames    #  getdots()  vnames   # name_dots(...)$vnames
+
+  ans = as.data.table.list(x, keep.rownames=keep.rownames)
+  if (check.names) setnames(ans, make.names(names(ans),unique=TRUE))
   if (!is.null(key)) {
     if (!is.character(key)) stop("key argument of data.table() must be character")
     if (length(key)==1L) {
       key = strsplit(key,split=",")[[1L]]
       # eg key="A,B"; a syntax only useful in key argument to data.table(), really.
     }
-    setkeyv(value,key)
+    setkeyv(ans,key)
   } else {
-     # retain key of cbind(DT1, DT2, DT3) where DT2 is keyed but not DT1. cbind calls data.table().
-     # If DT inputs with keys have been recycled then can't retain key
-     if (length(ckey)
-       && !recycledkey
-       && !any(duplicated(ckey))
-       && all(ckey %chin% names(value))
-       && !any(duplicated(names(value)[names(value) %chin% ckey])))
-       setattr(value, "sorted", ckey)
+    # retain key of cbind(DT1, DT2, DT3) where DT2 is keyed but not DT1. cbind calls data.table().
+    # If DT inputs with keys have been recycled then can't retain key
+    ckey = NULL
+    for (i in seq_along(x)) {
+      xi = x[[i]]
+      if (is.data.table(xi) && haskey(xi) && nrow(xi)==nrow(ans)) ckey=c(ckey, key(xi))
+    }
+    if (length(ckey) &&
+        !anyDuplicated(ckey) &&
+        identical(is.na(chmatchdup(c(ckey,ckey), names(ans))), rep(c(FALSE,TRUE),each=length(ckey)))) {
+      setattr(ans, "sorted", ckey)
+    }
   }
   # FR #643, setfactor is an internal function in fread.R
-  if (isTRUE(stringsAsFactors)) setfactor(value, which(vapply(value, is.character, TRUE)), FALSE)
-  alloc.col(value)  # returns a NAMED==0 object, unlike data.frame()
+  if (isTRUE(stringsAsFactors)) setfactor(ans, which(vapply(ans, is.character, TRUE)), verbose=FALSE)
+  ans
 }
 
 replace_dot_alias <- function(e) {
@@ -2196,7 +2116,7 @@ transform.data.table <- function (`_data`, ...)
   if (any(matched)) {
     if (isTRUE(attr(`_data`, ".data.table.locked", TRUE))) setattr(`_data`, ".data.table.locked", NULL) # fix for #1641
     `_data`[,inx[matched]] <- e[matched]
-    `_data` <- data.table(`_data`)
+    `_data` <- as.data.table(`_data`)
   }
   if (!all(matched)) {
     ans <- do.call("data.table", c(list(`_data`), e[!matched]))
