@@ -28,11 +28,15 @@ build:
 install:
 	$(R) CMD INSTALL data.table_1.12.1.tar.gz
 
+.PHONY: uninstall
+uninstall:
+	$(R) CMD REMOVE data.table || true
+
 .PHONY: test
 test:
 	$(R) -e 'require(data.table); test.data.table()'
 
 .PHONY: check
 check:
-	$(R) CMD check data.table_1.12.1.tar.gz --as-cran --ignore-vignettes --no-stop-on-test-error
+	_R_CHECK_CRAN_INCOMING_REMOTE_=false $(R) CMD check data.table_1.12.1.tar.gz --as-cran --ignore-vignettes --no-stop-on-test-error
 

@@ -18,14 +18,20 @@ setindexv <- function(x, cols, verbose=getOption("datatable.verbose")) {
   }
 }
 
-set2key <- function(...) {
-  stop("set2key() is now deprecated. Please use setindex() instead.")
-}
-set2keyv <- function(...) {
-  stop("set2keyv() is now deprecated. Please use setindexv() instead.")
-}
-key2 <- function(x) {
-  stop("key2() is now deprecated. Please use indices() instead.")
+# remove these 3 after May 2019; see discussion in #3399 and notes in v1.12.2. They were marked experimental after all.
+set2key <- function(...)  stop("set2key() is now deprecated. Please use setindex() instead.")
+set2keyv <- function(...) stop("set2keyv() is now deprecated. Please use setindexv() instead.")
+key2 <- function(...)     stop("key2() is now deprecated. Please use indices() instead.")
+
+# upgrade to error after Mar 2020. Has already been warning since 2012, and stronger warning in Mar 2019 (note in news for 1.12.2); #3399
+"key<-" <- function(x,value) {
+  warning("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future.")
+  setkeyv(x,value)
+  # The returned value here from key<- is then copied by R before assigning to x, it seems. That's
+  # why we can't do anything about it without a change in R itself. If we return NULL (or invisible()) from this key<-
+  # method, the table gets set to NULL. So, although we call setkeyv(x,cols) here, and that doesn't copy, the
+  # returned value (x) then gets copied by R.
+  # So, solution is that caller has to call setkey or setkeyv directly themselves, to avoid <- dispatch and its copy.
 }
 
 setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
@@ -49,7 +55,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
   } else {
     # remove backticks from cols
-    cols <- gsub("`", "", cols)
+    cols <- gsub("`", "", cols, fixed = TRUE)
     miss = !(cols %chin% colnames(x))
     if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
   }
@@ -125,16 +131,6 @@ getindex <- function(x, name) {
     stop("Internal error: index '",name,"' exists but is invalid")   # nocov
   }
   ans
-}
-
-"key<-" <- function(x,value) {
-  warning("The key(x)<-value form of setkey can copy the whole table. This is due to <- in R itself. Please change to setkeyv(x,value) or setkey(x,...) which do not copy and are faster. See help('setkey'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your key<- calls.")
-  setkeyv(x,value)
-  # The returned value here from key<- is then copied by R before assigning to x, it seems. That's
-  # why we can't do anything about it without a change in R itself. If we return NULL (or invisible()) from this key<-
-  # method, the table gets set to NULL. So, although we call setkeyv(x,cols) here, and that doesn't copy, the
-  # returned value (x) then gets copied by R.
-  # So, solution is that caller has to call setkey or setkeyv directly themselves, to avoid <- dispatch and its copy.
 }
 
 haskey <- function(x) !is.null(key(x))
@@ -321,7 +317,7 @@ setorderv <- function(x, cols = colnames(x), order=1L, na.last=FALSE)
   }
   if (!all(nzchar(cols))) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
   # remove backticks from cols
-  cols <- gsub("`", "", cols)
+  cols <- gsub("`", "", cols, fixed = TRUE)
   miss = !(cols %chin% colnames(x))
   if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
   if (".xi" %chin% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
@@ -402,7 +398,7 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
   }
   setattr(l, "row.names", .set_row_names(length(l[[1L]])))
   setattr(l, "class", c("data.table", "data.frame"))
-  if (getOption("datatable.CJ.names", FALSE)) {  # added as FALSE in v1.11.6. TODO: default TRUE in v1.12.0, remove in v1.13.0
+  if (getOption("datatable.CJ.names", TRUE)) {  # added as FALSE in v1.11.6 with NEWS item saying TRUE in v1.12.0. TODO: remove in v1.13.0
     vnames = name_dots(...)$vnames
   } else {
     if (is.null(vnames <- names(l))) vnames = paste0("V", seq_len(length(l)))

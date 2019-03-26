@@ -13,7 +13,13 @@ as.IDate.default <- function(x, ..., tz = attr(x, "tzone")) {
 as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
   if (origin=="1970-01-01") {
     # standard epoch
-    structure(as.integer(x), class=c("IDate","Date"))
+    x = as.integer(x)
+    class(x) = c("IDate", "Date")
+    # We used to use structure() here because class(x)<- copied several times in R before v3.1.0
+    # Since R 3.1.0 improved class()<- and data.table's oldest oldest supportd R is now 3.1.0, we can use class<- again
+    # structure() contains a match() and replace for specials, which we don't need.
+    # class()<- ensures at least 1 shallow copy as appropriate is returned.
+    x
   } else {
     # only call expensive as.IDate.character if we have to
     as.IDate(origin, ...) + as.integer(x)
@@ -21,21 +27,25 @@ as.IDate.numeric <- function(x, origin = "1970-01-01", ...) {
 }
 
 as.IDate.Date <- function(x, ...) {
-  structure(as.integer(x), class=c("IDate","Date"))
+  x = as.integer(x)                 # if already integer, x will be left unchanged as the original input
+  class(x) = c("IDate", "Date")     # class()<- will copy if as.integer() did not create, and may not if it did we hope
+  x                                 # always return a new object
 }
 
 as.IDate.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
-  if (tz %chin% c("UTC", "GMT"))
-    structure(as.integer(x) %/% 86400L, class=c("IDate","Date"))
-  else
+  if (tz %chin% c("UTC", "GMT")) {
+    (setattr(as.integer(x) %/% 86400L, "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
+  } else
     as.IDate(as.Date(x, tz = tz, ...))
 }
 
 as.IDate.IDate <- function(x, ...) x
 
 as.Date.IDate <- function(x, ...) {
-  structure(as.numeric(x), class="Date")
+  x = as.numeric(x)
+  class(x) = "Date"
+  x
 }
 
 mean.IDate <-
@@ -77,7 +87,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
   }
   if (inherits(e1, "Date") && inherits(e2, "Date"))
     stop("binary + is not defined for \"IDate\" objects")
-  structure(as.integer(unclass(e1) + unclass(e2)), class = c("IDate", "Date"))
+  (setattr(as.integer(unclass(e1) + unclass(e2)), "class", c("IDate", "Date")))  # () wrap to return visibly
 }
 
 `-.IDate` <- function (e1, e2) {
@@ -98,7 +108,7 @@ round.IDate <- function (x, digits=c("weeks", "months", "quarters", "years"), ..
     # ii) .Date was newly exposed in R some time after 3.4.4
   }
   ans = as.integer(unclass(e1) - unclass(e2))
-  if (!inherits(e2, "Date")) class(ans) = c("IDate","Date")
+  if (!inherits(e2, "Date")) setattr(ans, "class", c("IDate", "Date"))
   return(ans)
 }
 
@@ -117,7 +127,8 @@ as.ITime.default <- function(x, ...) {
 
 as.ITime.POSIXct <- function(x, tz = attr(x, "tzone"), ...) {
   if (is.null(tz)) tz = "UTC"
-  if (tz %chin% c("UTC", "GMT")) as.ITime(unclass(x), ...) else as.ITime(as.POSIXlt(x, tz = tz, ...), ...)
+  if (tz %chin% c("UTC", "GMT")) as.ITime(unclass(x), ...)
+  else as.ITime(as.POSIXlt(x, tz = tz, ...), ...)
 }
 
 as.ITime.numeric <- function(x, ms = 'truncate', ...) {
@@ -126,8 +137,8 @@ as.ITime.numeric <- function(x, ms = 'truncate', ...) {
                 'nearest' = as.integer(round(x)),
                 'ceil' = as.integer(ceiling(x)),
                 stop("Valid options for ms are 'truncate', ",
-                     "'nearest', and 'ceil'."))
-  structure(secs %% 86400L, class = "ITime")
+                     "'nearest', and 'ceil'.")) %% 86400L
+  (setattr(secs, "class", "ITime")) # the %% here ^^ ensures a local copy is obtained; the truncate as.integer() may not copy
 }
 
 as.ITime.character <- function(x, format, ...) {
@@ -162,19 +173,18 @@ as.ITime.POSIXlt <- function(x, ms = 'truncate', ...) {
                 'ceil' = as.integer(ceiling(x$sec)),
                 stop("Valid options for ms are 'truncate', ",
                      "'nearest', and 'ceil'."))
-  structure(with(x, secs + min * 60L + hour * 3600L),
-        class = "ITime")
+  (setattr(with(x, secs + min * 60L + hour * 3600L), "class", "ITime"))  # () wrap to return visibly
 }
 
 as.ITime.times <- function(x, ms = 'truncate', ...) {
-  secs <- 86400 * (unclass(x) %% 1)
+  secs = 86400 * (unclass(x) %% 1)
   secs = switch(ms,
                 'truncate' = as.integer(secs),
                 'nearest' = as.integer(round(secs)),
                 'ceil' = as.integer(ceiling(secs)),
                 stop("Valid options for ms are 'truncate', ",
                      "'nearest', and 'ceil'."))
-  structure(secs, class = "ITime")
+  (setattr(secs, "class", "ITime"))  # the first line that creates sec will create a local copy so we can use setattr() to avoid potential copy of class()<-
 }
 
 as.character.ITime <- format.ITime <- function(x, ...) {
@@ -204,9 +214,9 @@ as.data.frame.ITime <- function(x, ...) {
   # If user converts to POSIXct themselves, then it works for some reason.
   ans = list(x)
   # ans = list(as.POSIXct(x,tzone=""))  # ggplot2 gives "Error: Discrete value supplied to continuous scale"
-  setattr(ans,"class","data.frame")
-  setattr(ans,"row.names", .set_row_names(length(x)))
-  setattr(ans,"names","V1")
+  setattr(ans, "class", "data.frame")
+  setattr(ans, "row.names", .set_row_names(length(x)))
+  setattr(ans, "names", "V1")
   ans
 }
 
@@ -216,22 +226,23 @@ print.ITime <- function(x, ...) {
 
 rep.ITime <- function (x, ...)
 {
-  y <- rep(unclass(x), ...)
-  structure(y, class = "ITime")
+  y = rep(unclass(x), ...)
+  class(y) = "ITime"   # unlass and rep could feasibly not copy, hence use class<- not setattr()
+  y
 }
 
 "[.ITime" <- function(x, ..., drop = TRUE)
 {
-  cl <- oldClass(x)
-  class(x) <- NULL
-  val <- NextMethod("[")
-  class(val) <- cl
+  cl = oldClass(x)
+  class(x) = NULL
+  val = NextMethod("[")
+  class(val) = cl
   val
 }
 
 unique.ITime <- function(x, ...) {
   ans = NextMethod()
-  setattr(ans,"class","ITime")
+  class(ans) = "ITime"
   ans
 }
 

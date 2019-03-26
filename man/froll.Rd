@@ -25,7 +25,8 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
     then slower algorithm is used. It suffers less from floating point
     rounding error, performs extra pass to adjust rounding error
     correction and carefully handles all non-finite values. If available
-    it will use multiple cores. See details for more information. }
+    it will use multiple cores. Might not be really \emph{exact} on
+    Windows. See details for more information. }
   \item{align}{ character, define if rolling window covers preceding rows
     (\code{"right"}), following rows (\code{"left"}) or centered
     (\code{"center"}). Defaults to \code{"right"}. }
@@ -52,13 +53,14 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   Each list element must be integer vector of window sizes corresponding
   to every single observation in each column.
 
-  When \code{algo="fast"} is used then any \code{NaN, +Inf, -Inf} is
-  treated as \code{NA}.
+  When \code{algo="fast"} then \emph{on-line} algorithm is used, also
+  any \code{NaN, +Inf, -Inf} is treated as \code{NA}.
   Setting \code{algo="exact"} will make rolling functions to use
   compute-intensive algorithm that suffers less from floating point
   rounding error. It will additionally make extra pass to perform floating
   point error correction. It also handles \code{NaN, +Inf, -Inf}
-  consistently to base R.
+  consistently to base R. Although might not be really exact on
+  Windows when using multiple threads.
 
   Adaptive rolling functions are special cases where for each single
   observation has own corresponding rolling window width. Due to the logic
@@ -139,12 +141,12 @@ fastma = function(x, n, na.rm) {
 }
 system.time(ans1<-ma(x, n))
 system.time(ans2<-fastma(x, n))
-system.time(ans3<-frollmean(x, n, algo="exact")) # parallel using openmp again
-system.time(ans4<-frollmean(x, n))
+system.time(ans3<-frollmean(x, n))
+system.time(ans4<-frollmean(x, n, algo="exact"))
 anserr = list(
-  froll_exact_f = ans4-ans1,
-  froll_exact_t = ans3-ans1,
-  fastma = ans2-ans1
+  fastma = ans2-ans1,
+  froll_fast = ans3-ans1,
+  froll_exact = ans4-ans1
 )
 errs = sapply(lapply(anserr, abs), sum, na.rm=TRUE)
 sapply(errs, format, scientific=FALSE) # roundoff

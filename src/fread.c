@@ -2019,9 +2019,10 @@ int freadMain(freadMainArgs _args) {
     {
       nth = omp_get_num_threads();
       if (me!=0) {
-        // should never happen
-        snprintf(internalErr, internalErrSize, "Internal error: Master thread is not thread 0 but thread %d.\n", me); // # nocov
+        // # nocov start
+        snprintf(internalErr, internalErrSize, "Internal error: Master thread is not thread 0 but thread %d.\n", me);
         stopTeam = true;
+        // # nocov end
       }
       myShowProgress = args.showProgress;
     }
@@ -2272,11 +2273,13 @@ int freadMain(freadMainArgs _args) {
       #pragma omp ordered
       {
         if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered
-          myNrow = 0;               // discard my buffer
+          myNrow = 0;               // # nocov; discard my buffer
         }
         else if (headPos!=thisJumpStart) {
-          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof); // # nocov
+           // # nocov start
+          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
+          // # nocov end
         }
         else {
           ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.

@@ -9,11 +9,6 @@
     # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
     stop("The datatable.",dll," version (",dllV,") does not match the package (",RV,"). Please close all R sessions to release the old ",toupper(dll)," and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check.")
   }
-  if (identical(tools::checkMD5sums("data.table"), FALSE)) {
-    # checkMD5sums outputs messages using cat() and returns NA when MD5 file is not available. The MD5 file is included in the
-    # binary builds that CRAN produces.
-    stop("This data.table installation appears to be faulty; tools::checkMD5sums returned FALSE. Please close all R sessions and reinstall data.table.")
-  }
 
   "Please read FAQ 2.23 (vignette('datatable-faq')) which explains in detail why data.table adds one for loop to the start of base::cbind.data.frame and base::rbind.data.frame. If there is a better solution we will gladly change it."
   # Commented as a character string so this message is retained and seen by anyone who types data.table:::.onLoad
@@ -21,7 +16,7 @@
   ss = body(tt)
   if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
   prefix = if (!missing(pkgname)) "data.table::" else ""  # R provides the arguments when it calls .onLoad, I don't in dev/test
-  if (!length(grep("data.table",ss[[2L]]))) {
+  if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
     ss = ss[c(1L, NA, 2L:length(ss))]
     ss[[2L]] = parse(text=paste0("if (!identical(class(..1),'data.frame')) for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,"data.table(...)) }"))[[1]]
     body(tt)=ss
@@ -32,7 +27,7 @@
   tt = base::rbind.data.frame
   ss = body(tt)
   if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
-  if (!length(grep("data.table",ss[[2L]]))) {
+  if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
     ss = ss[c(1L, NA, 2L:length(ss))]
     ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #4995
     body(tt)=ss
@@ -60,7 +55,7 @@
        "datatable.auto.index"="TRUE",          # DT[col=="val"] to auto add index so 2nd time faster
        "datatable.use.index"="TRUE",           # global switch to address #1422
        "datatable.prettyprint.char" = NULL,     # FR #1091
-       "datatable.old.unique.by.key" = "FALSE"  # TODO: change warnings in duplicated.R to error on or after Jan 2019 then remove in Jan 2020.
+       "datatable.old.unique.by.key" = "FALSE"  # TODO: change warnings in duplicated.R to error on or after May 2019 then remove a year after that.
        )
   for (i in setdiff(names(opts),names(options()))) {
     eval(parse(text=paste0("options(",i,"=",opts[i],")")))

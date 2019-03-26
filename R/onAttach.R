@@ -17,7 +17,8 @@
       g = ""
   }
   dev = as.integer(v[1L, 3L]) %% 2L == 1L  # version number odd => dev
-  packageStartupMessage("data.table ", v, if(dev)paste0(" IN DEVELOPMENT built ",d,g), "  Latest news: r-datatable.com")
+  packageStartupMessage("data.table ", v, if(dev)paste0(" IN DEVELOPMENT built ",d,g),
+                        " using ", getDTthreads(verbose=FALSE), " threads (see ?getDTthreads).  Latest news: r-datatable.com")
   if (dev && (Sys.Date() - as.Date(d))>28)
     packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********")
   if (!.Call(ChasOpenMP))
@@ -56,6 +57,14 @@ update.dev.pkg = function(object="data.table", repo="https://Rdatatable.gitlab.i
               c("is up-to-date at","has been updated to")[upg+1L],
               dcf.lib(pkg, field),
               utils::packageVersion(pkg)))
+}
+
+# non-exported utility when using devel version #3272: data.table:::.git()
+.git = function(quiet=FALSE) {
+  ans = unname(read.dcf(system.file("DESCRIPTION", package="data.table"), fields="Revision")[, "Revision"])
+  if (!quiet && is.na(ans))
+    cat("Git revision is not available. Most likely data.table was installed from CRAN or local archive.\nGit revision is available when installing from our repositories 'https://Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data.table'.\n")
+  ans
 }
 
 # nocov end
