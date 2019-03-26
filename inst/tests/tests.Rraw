@@ -13875,13 +13875,13 @@ test(2013.3, DT[2], error="Column 2 ['b'] is length 4 but column 1 is length 3; 
 ## new fread keepLeadingZeros parameter in v1.12.2
 # leading zeros in both integer and float numbers are converted to character when keepLeadingZeros=TRUE
 test_data_single <- "0, 00, 01, 00010, 002.01\n"
-test(1978.0, fread(test_data_single), data.table(0L, 0L, 1L, 10L, 2.01))
-test(1978.1, fread(test_data_single, keepLeadingZeros = FALSE), data.table(0L, 0L, 1L, 10L, 2.01))
-test(1978.2, fread(test_data_single, keepLeadingZeros = TRUE),  data.table(0L, "00","01","00010","002.01"))
+test(1978.1, fread(test_data_single), data.table(0L, 0L, 1L, 10L, 2.01))
+test(1978.2, fread(test_data_single, keepLeadingZeros = FALSE), data.table(0L, 0L, 1L, 10L, 2.01))
+test(1978.3, fread(test_data_single, keepLeadingZeros = TRUE),  data.table(0L, "00","01","00010","002.01"))
 # converts whole column to character when keepLeadingZeros = TRUE and at least 1 value contains a leading zero
 test_data_mult <- paste0(c(sample(1:100),"0010",sample(1:100)), collapse="\n")
-test(1978.3, class(fread(test_data_mult, keepLeadingZeros = TRUE)[[1]]), "character")
-test(1978.4, class(fread(test_data_mult, keepLeadingZeros = FALSE)[[1]]), "integer")
+test(1978.4, class(fread(test_data_mult, keepLeadingZeros = TRUE)[[1]]), "character")
+test(1978.5, class(fread(test_data_mult, keepLeadingZeros = FALSE)[[1]]), "integer")
 
 
 ###################################
