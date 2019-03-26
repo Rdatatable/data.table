@@ -69,6 +69,7 @@ SEXP char_allLen1;
 SEXP char_allGrp1;
 SEXP char_factor;
 SEXP char_ordered;
+SEXP char_dataframe;
 SEXP sym_sorted;
 SEXP sym_index;
 SEXP sym_BY;

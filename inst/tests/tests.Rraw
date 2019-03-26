@@ -13863,6 +13863,14 @@ test(2012.3, data.table(data.frame(), data.frame(a=integer())), data.table(a=int
 dt = as.data.table(iris)
 test(2012.4, cbind(data.table(), dt[0]), dt[0])
 
+# extra validity checks in subsetDT on data.table; #3369
+DT = structure(list(a=1:3, b=NULL, c=4:6), class=c("data.table","data.frame"))
+test(2013.1, DT[2], error="Column 2 is NULL; malformed data.table")
+DT = structure(list(a=1:3, b=data.frame(foo=10:12,bar=13:15), c=4:6), class=c("data.table","data.frame"))
+test(2013.2, DT[2], error="Column 2 ['b'] is a data.frame or data.table; malformed data.table.")
+DT = structure(list(a=1:3, b=1:4, c=4:6), class=c("data.table","data.frame"))
+test(2013.3, DT[2], error="Column 2 ['b'] is length 4 but column 1 is length 3; malformed data.table.")
+
 
 ###################################
 #  Add new tests above this line  #

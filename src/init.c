@@ -265,6 +265,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_allGrp1 =   PRINTNAME(install("allGrp1"));
   char_factor =    PRINTNAME(install("factor"));
   char_ordered =   PRINTNAME(install("ordered"));
+  char_dataframe = PRINTNAME(install("data.frame"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes

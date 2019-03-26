@@ -219,6 +219,21 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
   return ans;
 }
 
+static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
+{
+  if (isNull(col)) error("Column %d is NULL; malformed data.table.", colNum);
+  if (isNewList(col) && INHERITS(col, char_dataframe)) {
+    SEXP names = getAttrib(x, R_NamesSymbol);
+    error("Column %d ['%s'] is a data.frame or data.table; malformed data.table.",
+          colNum, isNull(names)?"":CHAR(STRING_ELT(names,colNum-1)));
+  }
+  if (length(col)!=nrow) {
+    SEXP names = getAttrib(x, R_NamesSymbol);
+    error("Column %d ['%s'] is length %d but column 1 is length %d; malformed data.table.",
+          colNum, isNull(names)?"":CHAR(STRING_ELT(names,colNum-1)), length(col), nrow);
+  }
+}
+
 /*
 * subsetDT - Subsets a data.table
 * NOTE:
@@ -233,12 +248,13 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows))); // # nocov
   if (!length(x)) return(x);  // return empty list
 
+  const int nrow = length(VECTOR_ELT(x,0));
   // check index once up front for 0 or NA, for branchless subsetVectorRaw which is repeated for each column
   bool anyNA=false, orderedSubset=true;   // true for when rows==null (meaning all rows)
-  if (!isNull(rows) && check_idx(rows, length(VECTOR_ELT(x,0)), &anyNA, &orderedSubset) != NULL) {
-    SEXP max = PROTECT(ScalarInteger(length(VECTOR_ELT(x,0)))); nprotect++;
+  if (!isNull(rows) && check_idx(rows, nrow, &anyNA, &orderedSubset)!=NULL) {
+    SEXP max = PROTECT(ScalarInteger(nrow)); nprotect++;
     rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE))); nprotect++;
-    const char *err = check_idx(rows, length(VECTOR_ELT(x,0)), &anyNA, &orderedSubset);
+    const char *err = check_idx(rows, nrow, &anyNA, &orderedSubset);
     if (err!=NULL) error(err);
   }
 
@@ -261,16 +277,20 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   SETLENGTH(ans, LENGTH(cols));
   int ansn;
   if (isNull(rows)) {
-    ansn = LENGTH(VECTOR_ELT(x, 0));
+    ansn = nrow;
+    const int *colD = INTEGER(cols);
     for (int i=0; i<LENGTH(cols); i++) {
-      SET_VECTOR_ELT(ans, i, duplicate(VECTOR_ELT(x, INTEGER(cols)[i]-1)));
+      SEXP thisCol = VECTOR_ELT(x, colD[i]-1);
+      checkCol(thisCol, colD[i], nrow, x);
+      SET_VECTOR_ELT(ans, i+1, duplicate(thisCol));
       // materialize the column subset as we have always done for now, until REFCNT is on by default in R (TODO)
     }
   } else {
     ansn = LENGTH(rows);  // has been checked not to contain zeros or negatives, so this length is the length of result
+    const int *colD = INTEGER(cols);
     for (int i=0; i<LENGTH(cols); i++) {
-      SEXP source = VECTOR_ELT(x, INTEGER(cols)[i]-1);
-      if (isNull(source)) error("Internal error: column %d of data.table is NULL; malformed", i+1);
+      SEXP source = VECTOR_ELT(x, colD[i]-1);
+      checkCol(source, colD[i], nrow, x);
       SEXP target;
       SET_VECTOR_ELT(ans, i, target=allocVector(TYPEOF(source), ansn));
       copyMostAttrib(source, target);
