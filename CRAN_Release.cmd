@@ -402,6 +402,9 @@ sudo R CMD javareconf
 # ENDIF
 
 revdepr  # see top of revdep.R for this alias to put in ~/.bash_aliases
+# If warning "/usr/lib/R/library is not writable"; e.g. Matrix updated ...
+  sudo R
+  update.packages("/usr/lib/R/library")
 
 # ** ensure latest version installed into revdeplib **
 inst()
