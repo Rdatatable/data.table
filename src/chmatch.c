@@ -69,14 +69,15 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     if (tl>0) { savetl(s); tl=0; }
     if (tl==0) SET_TRUELENGTH(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
   }
-  if (chmatchdup && nuniq<tablelen) {
+  if (chmatchdup) {
     // chmatchdup() is basically base::pmatch() but without the partial matching part. For example :
     //   chmatchdup(c("a", "a"), c("a", "a"))   # 1,2  - the second 'a' in 'x' has a 2nd match in 'table'
     //   chmatchdup(c("a", "a"), c("a", "b"))   # 1,NA - the second one doesn't 'see' the first 'a'
     //   chmatchdup(c("a", "a"), c("a", "a.1")) # 1,NA - differs from 'pmatch' output = 1,2
-    // used to be called chmatch2 before v1.12.2 and was in rbindlist.c. New implementation from 1.12.2 here in chmatch.c
-    // if nuniq==tablelen then there are no dups and the simpler chmatch branch below happens instead to avoid these allocations etc
-    // see end of file for benchmark
+    // Used to be called chmatch2 before v1.12.2 and was in rbindlist.c. New implementation from 1.12.2 here in chmatch.c
+    // If nuniq==tablelen then there are no dups in table but we still need this branch because there might be dups
+    //   in x and the 2nd onwards of any dup needs to return NA
+    // See end of file for benchmark
     //                                                                                        uniq         dups
     // For example: A,B,C,B,D,E,A,A   =>   A(TL=1),B(2),C(3),D(4),E(5)   =>   dupMap    1  2  3  5  6 | 8  7  4
     //                                                                        dupLink   7  8          |    6     (blank=0)
