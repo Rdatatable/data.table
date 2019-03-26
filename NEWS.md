@@ -14,6 +14,8 @@
 
 5. `rbindlist`'s `use.names=` default has changed from `FALSE` to `"check"`. This warns if the column names of each item are not identical and then proceeds as if `use.names=FALSE` for backwards compatibility; i.e., bind by column number not by column name. In future, it will warn and then proceed as if `use.names=TRUE`. Eventually the default will be changed from `NA` to `TRUE` unless user feedback is negative. The `rbind` method for `data.table` already sets `use.names=TRUE` as does `rbind` for `data.frame` in base, and is clearly safer. To stack differently named columns together silently (the previous default behavior), it is now necessary to write `use.names=FALSE` for clarity to readers of your code. Thanks to Clayton Stanley who first raised the issue [here](http://lists.r-forge.r-project.org/pipermail/datatable-help/2014-April/002480.html).
 
+6. `fread` gains `keepLeadingZeros`, [#2999](https://github.com/Rdatatable/data.table/issues/2999). `FALSE` by default so that, as before, a field containing `001` is interpretted as the integer 1, otherwise the character string `"001"`. The default may be changed using `options(datatable.keepLeadingZeros=TRUE)`. Many thanks to @marc-outins for the PR.
+
 #### BUG FIXES
 
 1. `rbindlist()` of a malformed factor missing levels attribute is now a helpful error rather than a cryptic error about `STRING_ELT`, [#3315](https://github.com/Rdatatable/data.table/issues/3315). Thanks to Michael Chirico for reporting.
@@ -52,7 +54,7 @@
 
 18. `cbind` with a null (0-column) `data.table` now works as expected, [#3445](https://github.com/Rdatatable/data.table/issues/3445). Thanks to @mb706 for reporting.
 
-19. Subsetting does a better job of catching a malformed `data.table` with error rather than segfault. A column may not be NULL, nor may a column have columns. Thanks to a comment and reproducible example in [#3369](https://github.com/Rdatatable/data.table/issues/3369) from Drew Abbot which demonstrated subsetting a `data.table` formed by `as.data.table` when passed a `data.frame` containing columns that are `data.frame`.
+19. Subsetting does a better job of catching a malformed `data.table` with error rather than segfault. A column may not be NULL, nor may a column be an object such as a data.frame or matrix which have columns. Thanks to a comment and reproducible example in [#3369](https://github.com/Rdatatable/data.table/issues/3369) from Drew Abbot which demonstrated subsetting a `data.table` formed by `as.data.table` when passed a `data.frame` containing columns that are `data.frame`.
 
 #### NOTES
 
