@@ -13818,7 +13818,7 @@ test(2008.8, rbindlist(list(DT1, list(c("e","foo")), DT1)), data.table(x=ordered
 
 # segfault comparing NULL column, #2303 #2305
 DT = structure(list(NULL), names="a", class=c("data.table","data.frame"))
-test(2009.1, DT[a>1], error="Internal error: column 1 of data.table is NULL; malformed")
+test(2009.1, DT[a>1], error="Column 1 is NULL; malformed data.table")
 DT = null.data.table()
 x = NULL
 test(2009.2, DT[, .(x)], error="Column 1 of j evaluates to NULL. A NULL column is invalid.")
