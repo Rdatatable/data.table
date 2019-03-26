@@ -52,6 +52,8 @@
 
 18. `cbind` with a null (0-column) `data.table` now works as expected, [#3445](https://github.com/Rdatatable/data.table/issues/3445). Thanks to @mb706 for reporting.
 
+19. Subsetting does a better job of catching a malformed `data.table` with error rather than segfault. A column may not be NULL, nor may a column have columns. Thanks to a comment and reproducible example in [#3369](https://github.com/Rdatatable/data.table/issues/3369) from Drew Abbot which demonstrated subsetting a `data.table` formed by `as.data.table` when passed a `data.frame` containing columns that are `data.frame`.
+
 #### NOTES
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
