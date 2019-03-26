@@ -6294,6 +6294,7 @@ test(1456.2, chmatchdup(x2, table), as.integer(c(1,2,NA)))
 test(1456.3, chmatchdup(x3, table), as.integer(c(NA,1,2,NA,NA)))
 test(1457.1,   chmatchdup(c("x","x","x","x"), c("x","y","x","x","y","z")), INT(1,3,4,NA))
 test(1457.2, base::pmatch(c("x","x","x","x"), c("x","y","x","x","y","z")), INT(1,3,4,NA))
+test(1457.3, chmatchdup(c("x","x"), c("x","y")), INT(1,NA))
 
 # Add tests for which_
 x = sample(c(-5:5, NA), 25, TRUE)
