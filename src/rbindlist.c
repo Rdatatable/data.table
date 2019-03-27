@@ -336,6 +336,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (!levelsRaw) { savetl_end(); error("Failed to allocate working memory for %d ordered factor levels of result column %d", nLevel, idcol+j+1); }
         for (int k=0; k<longestLen; ++k) {
           SEXP s = sd[k];
+          if (s==NA_STRING) continue;
           if (TRUELENGTH(s)>0) savetl(s);
           levelsRaw[k] = s;
           SET_TRUELENGTH(s,-k-1);
@@ -388,7 +389,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           const SEXP *thisColStrD = STRING_PTR(thisColStr);  // D for data
           for (int k=0; k<n; ++k) {
             SEXP s = thisColStrD[k];
-            if (TRUELENGTH(s)<0) continue;  // seen this level before (handles finding unique within character columns too)
+            if (s==NA_STRING ||             // remove NA from levels; test 1979 found by package emil when revdep testing 1.12.2 (#3473)
+                TRUELENGTH(s)<0) continue;  // seen this level before; handles removing dups from levels as well as finding unique of character columns
             if (TRUELENGTH(s)>0) savetl(s);
             if (allocLevel==nLevel) {       // including initial time when allocLevel==nLevel==0
               SEXP *tt = NULL;
@@ -415,7 +417,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           if (isFactor(thisCol)) {
             // loop through levels. If all i == truelength(i) then just do a memcpy. Otherwise hop via the integer map.
             bool nohop = true;
-            for (int k=0; k<n; ++k) if (-TRUELENGTH(thisColStrD[k]) != k+1) { nohop=false; break; }
+            for (int k=0; k<n; ++k) {
+              SEXP s = thisColStrD[k];
+              if (s!=NA_STRING && -TRUELENGTH(s)!=k+1) { nohop=false; break; }
+            }
             if (nohop) memcpy(targetd+ansloc, INTEGER(thisCol), thisnrow*SIZEOF(thisCol));
             else {
               int *id = INTEGER(thisCol);
