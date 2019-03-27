@@ -13887,6 +13887,9 @@ test_data_mult <- paste0(c(sample(1:100),"0010",sample(1:100)), collapse="\n")
 test(1978.4, class(fread(test_data_mult, keepLeadingZeros = TRUE)[[1]]), "character")
 test(1978.5, class(fread(test_data_mult, keepLeadingZeros = FALSE)[[1]]), "integer")
 
+# rbindlist should drop NA from levels of source factors, relied on by package emil
+test(1979, levels(rbindlist( list( data.frame(a=factor("a",levels=c("a",NA),exclude=NULL)) ))$a), "a")  # the NA level should not be retained
+
 
 ###################################
 #  Add new tests above this line  #
