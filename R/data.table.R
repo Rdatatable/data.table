@@ -2360,8 +2360,8 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
     join = TRUE
   }
   dtq[["j"]] = substitute(
-    list(.ll.tech.split=list(.expr)),
-    list(.expr = if (join) quote(if(.N == 0L) .SD[0L] else .SD) else as.name(".SD")) # simplify when `nomatch` accept NULL #857 ?
+    list(.ll.tech.split=list(.expr), .ll.tech.split.names=paste(lapply(.BY, as.character), collapse=".")),
+    list(.expr = if (join) quote(if(.N == 0L) .SD[0L] else .SD) else as.name(".SD"))
   )
   by.or.keyby = if (join) "by" else c("by"[!sorted], "keyby"[sorted])[1L]
   dtq[[by.or.keyby]] = substitute( # retain order, for `join` and `sorted` it will use order of `i` data.table instead of `keyby`.
@@ -2374,11 +2374,9 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
   if (isTRUE(verbose)) cat("Processing split.data.table with: ", deparse(dtq, width.cutoff=500L), "\n", sep="")
   tmp = eval(dtq)
   # add names on list
-  setattr(ll <- tmp$.ll.tech.split,
-      "names",
-      as.character(
-        if (!flatten) tmp[[.by]] else tmp[, list(.nm.tech.split=paste(unlist(lapply(.SD, as.character)), collapse = ".")), by=by, .SDcols=by]$.nm.tech.split
-      ))
+  ll = tmp$.ll.tech.split
+  nm = tmp$.ll.tech.split.names
+  setattr(ll, "names", nm)
   # handle nested split
   if (flatten || length(by) == 1L) {
     lapply(lapply(ll, setattr, '.data.table.locked', NULL), setDT)
