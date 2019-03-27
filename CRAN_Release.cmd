@@ -128,7 +128,7 @@ test.data.table()
 test.data.table(with.other.packages=TRUE)
 test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
 gctorture2(step=50)
-system.time(test.data.table())  # apx 75min
+system.time(test.data.table())  # apx 4hrs
 
 # Upload to win-builder: release, dev & old-release
 
