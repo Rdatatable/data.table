@@ -7969,17 +7969,17 @@ x2 = iconv(x1, "latin1", "UTF-8")
 test(1590.9, identical(x1,x2))
 test(1590.11, x1==x2)
 test(1590.12, forderv(    c(x2,x1,x1,x2)), integer())
-test(1590.13, base::order(c(x2,x1,x1,x2)), 1:4)
+# don't test base R as it might change, and base is senstive to locale (tested in cran_release.cmd) ... test(1590.13, base::order(c(x2,x1,x1,x2)), 1:4)
 Encoding(x2) = "unknown"
 if (x1==x2) {
   # Linux and Mac where locale is usually UTF8
   # NB: x1==x2 is a condition in base R, independent of data.table
   test(1590.14, forderv(    c(x2,x1,x1,x2)), integer())
-  test(1590.15, base::order(c(x2,x1,x1,x2)), 1:4)
+  # don't test base ... test(1590.15, base::order(c(x2,x1,x1,x2)), 1:4)
 } else {
   # Windows-1252, #2856
   test(1590.16, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))
-  test(1590.17, base::order(c(x2,x1,x1,x2)), INT(1,4,2,3))
+  # don't test base ... test(1590.17, base::order(c(x2,x1,x1,x2)), INT(1,4,2,3))
 }
 
 # #1432 test
