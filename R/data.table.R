@@ -2379,8 +2379,13 @@ split.data.table <- function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = T
   setattr(ll, "names", nm)
   # handle nested split
   if (flatten || length(by) == 1L) {
-    lapply(lapply(ll, setattr, '.data.table.locked', NULL), setDT)
-    # alloc.col could handle DT in list as done in: c9c4ff80bdd4c600b0c4eff23b207d53677176bd
+    for (i in seq_along(ll)) { # speed up lapply(ll, setDT) #2950
+      d = ll[[i]]
+      alloc.col(d)
+      setattr(d, ".data.table.locked", NULL)
+      .Call(Csetlistelt, ll, i, d)
+    }
+    ll
   } else if (length(by) > 1L) {
     lapply(ll, split.data.table, drop=drop, by=by[-1L], sorted=sorted, keep.by=keep.by, flatten=flatten)
   }
