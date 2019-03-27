@@ -231,19 +231,19 @@ replace_dot_alias <- function(e) {
     return(ans)
   }
   .global$print=""
+  missingby = missing(by) && missing(keyby)  # for tests 359 & 590 where passing by=NULL results in data.table not vector
   if (!missing(keyby)) {
     if (!missing(by)) stop("Provide either by= or keyby= but not both")
+    if (missing(j)) { warning("Ignoring keyby= because j= is not supplied"); keyby=NULL; }
     by=bysub=substitute(keyby)
+    keyby=TRUE
     # Assign to 'by' so that by is no longer missing and we can proceed as if there were one by
   } else {
-    bysub = if (missing(by)) NULL # and leave missing(by)==TRUE
-        else substitute(by)
+    if (!missing(by) && missing(j)) { warning("Ignoring by= because j= is not supplied"); by=NULL; }
+    by=bysub= if (missing(by)) NULL else substitute(by)
+    keyby=FALSE
   }
-  byjoin = FALSE
-  if (!missing(by)) {
-    if (missing(j)) stop("by= or keyby= is supplied but not j=")  # relatively common user error so emit this error first in preference to the 'i and j both missing' below
-    byjoin = is.symbol(bysub) && bysub==".EACHI"
-  }
+  byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
   if (missing(i) && missing(j)) {
     tt_isub = substitute(i)
     tt_jsub = substitute(j)
@@ -290,7 +290,7 @@ replace_dot_alias <- function(e) {
         (root %chin% c("-","!") && is.call(jsub[[2L]]) && jsub[[2L]][[1L]]=="(" && is.call(jsub[[2L]][[2L]]) && jsub[[2L]][[2L]][[1L]]==":") ||
         ( (!length(av<-all.vars(jsub)) || all(substring(av,1L,2L)=="..")) &&
           root %chin% c("","c","paste","paste0","-","!") &&
-          missing(by) )) {   # test 763. TODO: likely that !missing(by) iff with==TRUE (so, with can be removed)
+          missingby )) {   # test 763. TODO: likely that !missingby iff with==TRUE (so, with can be removed)
       # When no variable names (i.e. symbols) occur in j, scope doesn't matter because there are no symbols to find.
       # If variable names do occur, but they are all prefixed with .., then that means look up in calling scope.
       # Automatically set with=FALSE in this case so that DT[,1], DT[,2:3], DT[,"someCol"] and DT[,c("colB","colD")]
@@ -349,7 +349,7 @@ replace_dot_alias <- function(e) {
     }
     if (root == ":=") {
       allow.cartesian=TRUE   # (see #800)
-      if (!missing(i) && !missing(keyby))
+      if (!missing(i) && keyby)
         stop(":= with keyby is only possible when i is not supplied since you can't setkey on a subset of rows. Either change keyby to by or remove i")
       if (!missingnomatch) {
         warning("nomatch isn't relevant together with :=, ignoring nomatch")
@@ -709,7 +709,7 @@ replace_dot_alias <- function(e) {
   xdotcols = FALSE
   othervars = character(0L)
   if (missing(j)) {
-    # missing(by)==TRUE was already checked above before dealing with i
+    # missingby was already checked above before dealing with i
     if (!length(x)) return(null.data.table())
     if (!length(leftcols)) {
       # basic x[i] subset, #2951
@@ -753,7 +753,7 @@ replace_dot_alias <- function(e) {
     }
 
     if (!with) {
-      # missing(by)==TRUE was already checked above before dealing with i
+      # missingby was already checked above before dealing with i
       if (is.call(jsub) && deparse(jsub[[1L]], 500L, backtick=FALSE) %chin% c("!", "-")) {  # TODO is deparse avoidable here?
         notj = TRUE
         jsub = jsub[[2L]]
@@ -809,7 +809,7 @@ replace_dot_alias <- function(e) {
       allbyvars = NULL
       if (byjoin) {
         bynames = names(x)[rightcols]
-      } else if (!missing(by)) {
+      } else if (!missingby) {
         # deal with by before j because we need byvars when j contains .SD
         # may evaluate to NULL | character() | "" | list(), likely a result of a user expression where no-grouping is one case being loop'd through
         bysubl = as.list.default(bysub)
@@ -860,7 +860,7 @@ replace_dot_alias <- function(e) {
         if (all(vapply_1b(bysubl, is.name))) {
           bysameorder = orderedirows && haskey(x) && length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars)))
           # either bysameorder or byindex can be true but not both. TODO: better name for bysameorder might be bykeyx
-          if (!bysameorder && !missing(keyby) && !length(irows) && isTRUE(getOption("datatable.use.index"))) {
+          if (!bysameorder && keyby && !length(irows) && isTRUE(getOption("datatable.use.index"))) {
             # TODO: could be allowed if length(irows)>1 but then the index would need to be squashed for use by uniqlist, #3062
             tt = paste0(allbyvars, collapse="__")
             w = which.first(substring(indices(x),1L,nchar(tt)) == tt)  # substring to avoid the overhead of grep
@@ -905,7 +905,7 @@ replace_dot_alias <- function(e) {
           # and contiguous to use xss to form .SD in dogroups than going via irows
         }
         if (!length(byval) && xnrow>0L) {
-          # see missing(by) up above for comments
+          # see missingby up above for comments
           # by could be NULL or character(0L) for example (e.g. passed in as argument in a loop of different bys)
           bysameorder = FALSE  # 1st and only group is the entire table, so could be TRUE, but FALSE to avoid
                      # a key of empty character()
@@ -1194,7 +1194,7 @@ replace_dot_alias <- function(e) {
 
     if (length(ansvars)) {
       w = ansvals
-      if (length(rightcols) && missing(by)) {
+      if (length(rightcols) && missingby) {
         w[ w %in% rightcols ] = NA
       }
       # patch for #1615. Allow 'x.' syntax. Only useful during join op when x's join col needs to be used.
@@ -1257,7 +1257,7 @@ replace_dot_alias <- function(e) {
   }
 
   # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
-  if (missing(by) || (!byjoin && !length(byval))) {
+  if (missingby || (!byjoin && !length(byval))) {
     # No grouping: 'by' = missing | NULL | character() | "" | list()
     # Considered passing a one-group to dogroups but it doesn't do the recycling of i within group, that's done here
     if (length(ansvars)) {
@@ -1376,7 +1376,7 @@ replace_dot_alias <- function(e) {
       .Call(Cassign,x,irows,cols,newnames,jval,verbose)
       return(suppPrint(x))
     }
-    if ((is.call(jsub) && is.list(jval) && jsub[[1L]] != "get" && !is.object(jval)) || !missing(by)) {
+    if ((is.call(jsub) && is.list(jval) && jsub[[1L]] != "get" && !is.object(jval)) || !missingby) {
       # is.call: selecting from a list column should return list
       # is.object: for test 168 and 168.1 (S4 object result from ggplot2::qplot). Just plain list results should result in data.table
 
@@ -1457,12 +1457,12 @@ replace_dot_alias <- function(e) {
 
   } else {
     # Find the groups, using 'byval' ...
-    if (missing(by)) stop("Internal error: by= is missing")   # nocov
+    if (missingby) stop("Internal error: by= is missing")   # nocov
 
     if (length(byval) && length(byval[[1L]])) {
       if (!bysameorder && isFALSE(byindex)) {
         if (verbose) {last.started.at=proc.time();cat("Finding groups using forderv ... ");flush.console()}
-        o__ = forderv(byval, sort=!missing(keyby), retGrp=TRUE)
+        o__ = forderv(byval, sort=keyby, retGrp=TRUE)
         # The sort= argument is called sortGroups at C level. It's primarily for saving the sort of unique strings at
         # C level for efficiency when by= not keyby=. Other types also retain appearance order, but at byte level to
         # minimize data movement and benefit from skipping subgroups which happen to be grouped but not sorted. This byte
@@ -1481,7 +1481,7 @@ replace_dot_alias <- function(e) {
         f__ = attr(o__, "starts")
         len__ = uniqlengths(f__, xnrow)
         if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-        if (!bysameorder && missing(keyby)) {
+        if (!bysameorder && !keyby) {
           # TO DO: lower this into forder.c
           if (verbose) {last.started.at=proc.time();cat("Getting back original order ... ");flush.console()}
           firstofeachgroup = o__[f__]
@@ -1832,7 +1832,7 @@ replace_dot_alias <- function(e) {
       hits  = skeys[unique(hits)]
       for (i in seq_along(hits)) setattr(attrs, hits[i], NULL) # does by reference
     }
-    if (!missing(keyby)) {
+    if (keyby) {
       cnames = as.character(bysubl)[-1L]
       cnames = gsub('^`|`$', '', cnames)  # the wrapping backticks that were added above can be removed now, #3378
       if (all(cnames %chin% names(x))) {
@@ -1862,11 +1862,11 @@ replace_dot_alias <- function(e) {
   } else {
     setnames(ans,seq_along(bynames),bynames)   # TO DO: reinvestigate bynames flowing from dogroups here and simplify
   }
-  if (byjoin && !missing(keyby) && !bysameorder) {
+  if (byjoin && keyby && !bysameorder) {
     if (verbose) {last.started.at=proc.time();cat("setkey() afterwards for keyby=.EACHI ... ");flush.console()}
     setkeyv(ans,names(ans)[seq_along(byval)])
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-  } else if (!missing(keyby) || (haskey(x) && bysameorder && (byjoin || (length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars))))))) {
+  } else if (keyby || (haskey(x) && bysameorder && (byjoin || (length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars))))))) {
     setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
   }
   alloc.col(ans)   # TODO: overallocate in dogroups in the first place and remove this line
