@@ -62,7 +62,8 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   if (identical(x, list(NULL)) || identical(x, list(list())) ||
       identical(x, list(data.frame(NULL))) || identical(x, list(data.table(NULL)))) return( null.data.table() )
   nd = name_dots(...)
-  if (any(nocols<-sapply(x, NCOL)==0L)) { tt=!nocols; x=x[tt]; nd=lapply(nd,'[',tt); }  # data.table(data.table(), data.table(a=integer())), #3445
+  myNCOL = function(x) if (is.null(x)) 0L else NCOL(x)   # tmp fix (since NCOL(NULL)==1) until PR#3471 goes ahread in v1.12.4
+  if (any(nocols<-sapply(x, myNCOL)==0L)) { tt=!nocols; x=x[tt]; nd=lapply(nd,'[',tt); }  # data.table(data.table(), data.table(a=integer())), #3445
   vnames = nd$vnames
   novname = nd$novname  # novname used later to know which were explicitly supplied in the call
   n <- length(x)
@@ -75,7 +76,7 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   numcols = integer(n)         # the ncols of each of the inputs (e.g. if inputs contain matrix or data.table)
   for (i in seq_len(n)) {
     xi = x[[i]]
-    if (is.null(xi)) stop("column or argument ",i," is NULL")
+    if (is.null(xi)) stop("Internal error: NULL item ", i," should have been removed from list above")  # nocov
     if ("POSIXlt" %chin% class(xi)) {
       warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
       x[[i]] = as.POSIXct(xi)
@@ -1410,7 +1411,8 @@ replace_dot_alias <- function(e) {
       setattr(jval, 'class', class(x)) # fix for #5296
       if (haskey(x) && all(key(x) %chin% names(jval)) && suppressWarnings(is.sorted(jval, by=key(x))))  # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
         setattr(jval, 'sorted', key(x))
-      for (i in seq_along(jval)) if (is.null(jval[[i]])) stop("Column ",i," of j evaluates to NULL. A NULL column is invalid.")
+      w = sapply(jval, is.null)
+      if (any(w)) jval = jval[,!w,with=FALSE]  # no !..w due to 'Undefined global functions or variables' note from R CMD check
     }
     return(jval)
   }
