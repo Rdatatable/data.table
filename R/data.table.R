@@ -1411,8 +1411,9 @@ replace_dot_alias <- function(e) {
       setattr(jval, 'class', class(x)) # fix for #5296
       if (haskey(x) && all(key(x) %chin% names(jval)) && suppressWarnings(is.sorted(jval, by=key(x))))  # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
         setattr(jval, 'sorted', key(x))
-      w = sapply(jval, is.null)
-      if (any(w)) jval = jval[,!w,with=FALSE]  # no !..w due to 'Undefined global functions or variables' note from R CMD check
+      # postponed to v1.12.4 because package eplusr creates a NULL column and then runs setcolorder on the result which fails if there are fewer columns
+      # w = sapply(jval, is.null)
+      # if (any(w)) jval = jval[,!w,with=FALSE]  # no !..w due to 'Undefined global functions or variables' note from R CMD check
     }
     return(jval)
   }
