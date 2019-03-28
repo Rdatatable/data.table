@@ -8,6 +8,8 @@
 
 #### NOTES
 
+1. As stated in news item 5 of v1.12.2, `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too.
+
 
 ### Changes in v1.12.2  (submitted to CRAN on 28 Mar 2019)
 

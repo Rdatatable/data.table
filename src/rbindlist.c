@@ -210,17 +210,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           snprintf(buff, 1000, "Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s",
                         w2+1, str, i+1, missi+1, extra );
           if (usenames==TRUE) error(buff);
-          if (str[0]=='\0' || (str[0]=='V' && isdigit(str[1]))) { buff[0]='\0'; continue; }  // temporarily ignore automatic column names using crude method to pass package tatoo
           i = LENGTH(l); // break from outer i loop
           break;         // break from inner j loop
         }
         if (w!=j && usenames==NA_LOGICAL) {
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           if (!isString(s) || i==0) error("Internal error: usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]", i);
-          const char *str = CHAR(STRING_ELT(s,w));
-          if (str[0]=='\0' || (str[0]=='V' && isdigit(str[1]))) continue; // see comment above w.r.t. automatic column names
           snprintf(buff, 1000, "Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s",
-                               w+1, str, i+1, j+1, i, extra);
+                               w+1, CHAR(STRING_ELT(s,w)), i+1, j+1, i, extra);
           i = LENGTH(l);
           break;
         }

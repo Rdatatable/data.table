@@ -13851,7 +13851,7 @@ test(2010.06, rbindlist(list(DT1,DT2)), ans, warning="item 2 appears in position
 options(datatable.rbindlist.check="error")
 test(2010.07, rbindlist(list(DT1,DT2)), error="item 2 appears in position 1.*See news item 5 in v1.12.2 for options to control this")
 test(2010.08, rbindlist(list(DT1,data.table(foo=7:8, a=3:4))), error="Column 1 ['foo'] of item 2 is missing in item 1")
-test(2010.09, rbindlist(list(DT1,data.table(V1=7:8, b=3:4))), ans)  # ignore automatic column names though, for now for package tatoo
+test(2010.09, rbindlist(list(DT1,data.table(V1=7:8, b=3:4))), error="Column 1 ['V1']")  # automatic column names included in message (turned to error here) from 1.12.4; see news items
 options(datatable.rbindlist.check="message")
 test(2010.10, rbindlist(list(DT1,DT2)), ans, message="item 2 appears in position 1.*See news item 5 in v1.12.2 for options to control this")
 options(datatable.rbindlist.check="none")
