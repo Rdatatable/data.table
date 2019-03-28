@@ -161,7 +161,7 @@ run = function(pkgs=NULL) {
     }
   }
   if (length(pkgs)==0) { cat("No packages to run\n"); return(invisible()); }
-  if (identical(pkgs,"_ALL_")) {
+  if (identical(pkgs,"__ALL__")) {
     cat("Running all",length(deps),"packages\n")
     filter = ""
   } else {
