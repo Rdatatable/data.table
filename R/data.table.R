@@ -547,10 +547,11 @@ replace_dot_alias <- function(e) {
         }
       } else if (is.null(xo)) {
         rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in bmerge()
-        leftcols = if (haskey(i))
+        leftcols = if (haskey(i)) {
           chmatch(head(key(i),length(rightcols)),names(i))
-        else
+        } else {
           seq_len(min(length(i),length(rightcols)))
+        }
         rightcols = head(rightcols,length(leftcols))
         xo = integer(0L)  ## signifies 1:.N
         ops = rep(1L, length(leftcols))
@@ -631,7 +632,7 @@ replace_dot_alias <- function(e) {
           irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
         }
       }
-      if(optimizedSubset){
+      if (optimizedSubset) {
         ## special treatment for calls like DT[x == 3] that are transformed into DT[J(x=3), on = "x==x"]
 
         if(!.Call(CisOrderedSubset, irows, nrow(x))){
@@ -1309,6 +1310,7 @@ replace_dot_alias <- function(e) {
             keylen = if (!chk) len else 0L # fix for #1268
           }
           ## check key on i as well!
+          ## TODO: could retain key of `i` and not just shared key of x and i: #691
           ichk = is.data.table(i) && haskey(i) &&
                  identical(head(key(i), length(leftcols)), names(i)[leftcols]) # i has the correct key, #3061
           if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
