@@ -1,5 +1,6 @@
 #include "data.table.h"
 #include <Rdefines.h>
+#include <ctype.h>   // for isdigit
 
 SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
 {
