@@ -93,7 +93,8 @@ oldOptions = options(
   datatable.optimize = Inf,
   datatable.verbose = FALSE,
   datatable.alloccol = 1024L,
-  datatable.print.class = FALSE  #  This is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
+  datatable.print.class = FALSE,  #  This is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
+  datatable.rbindlist.check = NULL
 )
 # some tests (e.g. 1066, 1293) rely on capturing output that will be garbled with small width
 if (getOption('width') < 80L) options(width = 80L)
@@ -1922,19 +1923,19 @@ test(675, DT[.(1L)], DT[1:3])
 
 # Test new rbindlist
 l = list(data.table(a=1:2, b=7:8),
-         data.table(a=3:4, 9:10),
-         data.table(5:6, 11:12),
+         data.table(a=3:4, baz=9:10),
+         data.table(foo=5:6, bar=11:12),
          data.table(b=13:14),
          list(15:16,17L),
          list(c(18,19),20:21))
-test(676.1, rbindlist(l[1:3]), ans<-data.table(a=1:6,b=7:12), warning="Column 2 [[]'V2'[]] of item 2 is missing in item 1.*Use fill=TRUE.*or use.names=FALSE")
+test(676.1, rbindlist(l[1:3]), ans<-data.table(a=1:6,b=7:12), message="Column 2 [[]'baz'[]] of item 2 is missing in item 1.*Use fill=TRUE.*or use.names=FALSE")
 test(676.2, rbindlist(l[1:3], use.names=FALSE), ans)
-test(677.2, rbindlist(l[c(10,1,10,2,10)]), ans<-data.table(a=1:4,b=7:10), warning="Column 2 [[]'V2'[]] of item 4 is missing in item 2")  # NULL items ignored
+test(677.2, rbindlist(l[c(10,1,10,2,10)]), ans<-data.table(a=1:4,b=7:10), message="Column 2 [[]'baz'[]] of item 4 is missing in item 2")  # NULL items ignored
 test(677.2, rbindlist(l[c(10,1,10,2,10)], use.names=FALSE), ans)
 test(678, rbindlist(l[c(1,4)]), error="Item 2 has 1 columns, inconsistent with item 1 which has 2")
-test(679.1, rbindlist(l[c(1:2,5)]), ans<-data.table(a=c(1:4,15:16), b=c(7:10,17L,17L)), warning="Column 2 [[]'V2'[]] of item 2 is missing in item 1")
+test(679.1, rbindlist(l[c(1:2,5)]), ans<-data.table(a=c(1:4,15:16), b=c(7:10,17L,17L)), message="Column 2 [[]'baz'[]] of item 2 is missing in item 1")
 test(679.2, rbindlist(l[c(1:2,5)], use.names=FALSE), ans)
-test(680, rbindlist(l[c(2,6)]), data.table(a=c(3,4,18,19), V2=c(9:10,20:21)))  # coerces 18 and 19 to numeric
+test(680, rbindlist(l[c(2,6)]), data.table(a=c(3,4,18,19), baz=c(9:10,20:21)))  # coerces 18 and 19 to numeric
 test(681, rbindlist(list(data.table(a=letters[1:2],b=c(1.2,1.3),c=1:2), list("c",1.4,3L), NULL, list(letters[4:6],c(1.5,1.6,1.7),4:6))),
           data.table(a=letters[1:6], b=seq(1.2,1.7,by=0.1), c=1:6))
 test(682, rbindlist(NULL), data.table(NULL))
@@ -2394,11 +2395,11 @@ test(863, after < before+0.5)
 # If there are no names, then the first non-empty set of names will be allocated.
 test(864.1, rbindlist(list(data.table(foo=logical(0),bar=logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))),
             setnames(DT, c("foo", "bar")),
-            warning="Column 1 [[]'baz'[]] of item 2 is missing in item 1.*Use fill=TRUE.*or use.names=FALSE.*v1.12.2")  # test 676 tests no warning when use.names=FALSE
+            message="Column 1 [[]'baz'[]] of item 2 is missing in item 1.*Use fill=TRUE.*or use.names=FALSE.*v1.12.2")  # test 676 tests no warning when use.names=FALSE
 test(864.2, rbindlist(list(list(logical(0),logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))), DT)
 test(864.3, rbindlist(list(data.table(logical(0),logical(0)), DT<-data.table(baz=letters[1:3],qux=4:6))),
             setnames(DT, c("V1", "V2")),
-            warning="Column 1 [[]'baz'[]] of item 2 is missing in item 1.*Use fill=TRUE.*or use.names=FALSE.*v1.12.2")
+            message="Column 1 [[]'baz'[]] of item 2 is missing in item 1.*Use fill=TRUE.*or use.names=FALSE.*v1.12.2")
 
 # Steve's find that setnames failed for numeric 'old' when pointing to duplicated names
 DT = data.table(a=1:3,b=1:3,v=1:6,w=1:6)
@@ -13835,16 +13836,32 @@ test(2009.5, DT[, .(sum(A), x)], data.table(V1=6L))
 test(2009.6, data.table(character(0), NULL), data.table(V1=character()))
 test(2009.7, as.data.table(list(y = character(0), x = NULL)), data.table(y=character()))
 
-# use.names=NA warning for out-of-order; https://github.com/Rdatatable/data.table/pull/3455#issuecomment-472744347
+# use.names="check" message|warning for out-of-order; https://github.com/Rdatatable/data.table/pull/3455#issuecomment-472744347
 DT1 = data.table(a=1:2, b=5:6)
 DT2 = data.table(b=7:8, a=3:4)
-test(2010.1, rbindlist(list(DT1,DT2)), ans<-data.table(a=c(1:2,7:8), b=c(5:6,3:4)),
-             warning="Column 2 [[]'a'[]] of item 2 appears in position 1 in item 1.*use.names=TRUE.*or use.names=FALSE.*v1.12.2")
-test(2010.2, rbindlist(list(DT1,DT2), use.names=FALSE), ans)
-test(2010.3, rbindlist(list(DT1,DT2), use.names=TRUE), data.table(a=1:4, b=5:8))
-test(2010.4, rbindlist(list(DT1,DT2), use.names=NA), error="use.names=NA invalid")
-test(2010.5, rbindlist(list(DT1,DT2), use.names='check'),
-             error="use.names='check' cannot be used explicitly because the value 'check' is new in v1.12.2 and subject to change. It is just meant to convey default behavior.")
+test(2010.01, rbindlist(list(DT1,DT2)), ans<-data.table(a=c(1:2,7:8), b=c(5:6,3:4)),
+              message="Column 2 [[]'a'[]] of item 2 appears in position 1 in item 1.*use.names=TRUE.*or use.names=FALSE.*v1.12.2")
+test(2010.02, rbindlist(list(DT1,DT2), use.names=FALSE), ans)
+test(2010.03, rbindlist(list(DT1,DT2), use.names=TRUE), data.table(a=1:4, b=5:8))
+test(2010.04, rbindlist(list(DT1,DT2), use.names=NA), error="use.names=NA invalid")
+test(2010.05, rbindlist(list(DT1,DT2), use.names='check'),
+              error="use.names='check' cannot be used explicitly because the value 'check' is new in v1.12.2 and subject to change. It is just meant to convey default behavior.")
+options(datatable.rbindlist.check="warning")
+test(2010.06, rbindlist(list(DT1,DT2)), ans, warning="item 2 appears in position 1.*See news item 5 in v1.12.2 for options to control this")
+options(datatable.rbindlist.check="error")
+test(2010.07, rbindlist(list(DT1,DT2)), error="item 2 appears in position 1.*See news item 5 in v1.12.2 for options to control this")
+test(2010.08, rbindlist(list(DT1,data.table(foo=7:8, a=3:4))), error="Column 1 ['foo'] of item 2 is missing in item 1")
+test(2010.09, rbindlist(list(DT1,data.table(V1=7:8, b=3:4))), ans)  # ignore automatic column names though, for now for package tatoo
+options(datatable.rbindlist.check="message")
+test(2010.10, rbindlist(list(DT1,DT2)), ans, message="item 2 appears in position 1.*See news item 5 in v1.12.2 for options to control this")
+options(datatable.rbindlist.check="none")
+test(2010.11, rbindlist(list(DT1,DT2)), ans)
+options(datatable.rbindlist.check="non")
+test(2010.12, rbindlist(list(DT1,DT2)), ans, warning="options()$datatable.rbindlist.check=='non' which is not 'print'|'warning'|'error'|'none'. See news item 5 in v1.12.2")
+options(datatable.rbindlist.check=2)
+test(2010.13, rbindlist(list(DT1,DT2)), ans, warning="options()$datatable.rbindlist.check is set but is not a single string. See news item 5 in v1.12.2.",
+                                             message="item 2 appears in position 1.*See news item 5 in v1.12.2 for options to control this")
+options(datatable.rbindlist.check=NULL)  # this option is set to NULL at the top of this file too where the previous user-value is remembered and restored at the end of this file
 
 # non-ASCII strings are correctly sorted on Windows, #3397
 if (.Platform$OS.type == 'windows') local({

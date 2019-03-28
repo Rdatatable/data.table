@@ -1,5 +1,6 @@
 #include "data.table.h"
 #include <Rdefines.h>
+#include <ctype.h>   // for isdigit
 
 SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
 {
@@ -191,7 +192,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   if (!fill && (usenames==TRUE || usenames==NA_LOGICAL)) {
     // Ensure no missings in both cases, and (when usenames==NA) all columns in same order too
     // We proceeded earlier as if fill was true, so varying ncol items will have missings here
-    const char *warnStr = usenames==NA_LOGICAL?" use.names='check' (default from v1.12.2) generates this warning and proceeds as if use.names=FALSE for backwards compatibility; TRUE in future.":"";
+    char buff[1001] = "";
+    const char *extra = usenames==TRUE?"":" use.names='check' (default from v1.12.2) emits this message and proceeds as if use.names=FALSE for "\
+                                          " backwards compatibility. See news item 5 in v1.12.2 for options to control this message.";
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
       if (!length(li) || !length(getAttrib(li, R_NamesSymbol))) continue;
@@ -204,20 +207,35 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           int w2 = colMap[i*ncol + j];
           const char *str = isString(s) ? CHAR(STRING_ELT(s,w2)) : "";
-          (usenames==TRUE ? error : warning)(
-            "Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s",
-            w2+1, str, i+1, missi+1, warnStr );
+          snprintf(buff, 1000, "Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s",
+                        w2+1, str, i+1, missi+1, extra );
+          if (usenames==TRUE) error(buff);
+          if (str[0]=='\0' || (str[0]=='V' && isdigit(str[1]))) { buff[0]='\0'; continue; }  // temporarily ignore automatic column names using crude method to pass package tatoo
           i = LENGTH(l); // break from outer i loop
           break;         // break from inner j loop
         }
         if (w!=j && usenames==NA_LOGICAL) {
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           if (!isString(s) || i==0) error("Internal error: usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]", i);
-          warning("Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s",
-                  w+1, CHAR(STRING_ELT(s,w)), i+1, j+1, i, warnStr);
+          const char *str = CHAR(STRING_ELT(s,w));
+          if (str[0]=='\0' || (str[0]=='V' && isdigit(str[1]))) continue; // see comment above w.r.t. automatic column names
+          snprintf(buff, 1000, "Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s",
+                               w+1, str, i+1, j+1, i, extra);
           i = LENGTH(l);
           break;
         }
+      }
+      if (buff[0]) {
+        SEXP opt = GetOption(install("datatable.rbindlist.check"), R_NilValue);
+        if (!isNull(opt) && !(isString(opt) && length(opt)==1)) {
+          warning("options()$datatable.rbindlist.check is set but is not a single string. See news item 5 in v1.12.2.");
+          opt = R_NilValue;
+        }
+        const char *o = isNull(opt) ? "message" : CHAR(STRING_ELT(opt,0));
+        if      (strcmp(o,"message")==0) { eval(PROTECT(lang2(install("message"),PROTECT(ScalarString(mkChar(buff))))), R_GlobalEnv); UNPROTECT(2); }
+        else if (strcmp(o,"warning")==0) warning(buff);
+        else if (strcmp(o,"error")==0)   error(buff);
+        else if (strcmp(o,"none")!=0)    warning("options()$datatable.rbindlist.check=='%s' which is not 'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2.", o);
       }
     }
   }
