@@ -13947,15 +13947,15 @@ if (test_bit64) {
   test(2019.01, DT[2:6, sum(v), id], data.table(id=1:2, V1=bit64::as.integer64(c(5L,15L)))) # gather, case of int64 and irows
 }
 DT = data.table(id = c(1L,1L,2L), v = c(1i, 2i, 3i))
-test(2019.02, DT[, min(v), by=id], error="not supported by GForce min")
-test(2019.03, DT[, max(v), by=id], error="not supported by GForce max")
-test(2019.04, DT[, median(v), by=id], error="not supported by GForce median")
-test(2019.05, DT[, head(v, 1), by=id], error="not supported by GForce head")
-test(2019.06, DT[, tail(v, 1), by=id], error="not supported by GForce tail")
-test(2019.07, DT[, v[1], by=id], error="not supported by GForce subset")
-test(2019.08, DT[, sd(v), by=id], error="not supported by GForce sd")
-test(2019.09, DT[, var(v), by=id], error="not supported by GForce var")
-test(2019.10, DT[, prod(v), by=id], error="not supported by GForce prod")
+test(2019.02, DT[, min(v), by=id], error="'complex' not supported by GForce min")
+test(2019.03, DT[, max(v), by=id], error="'complex' not supported by GForce max")
+test(2019.04, DT[, median(v), by=id], error="'complex' not supported by GForce median")
+test(2019.05, DT[, head(v, 1), by=id], error="'complex' not supported by GForce head")
+test(2019.06, DT[, tail(v, 1), by=id], error="'complex' not supported by GForce tail")
+test(2019.07, DT[, v[1], by=id], error="'complex' not supported by GForce subset")
+test(2019.08, DT[, sd(v), by=id], error="'complex' not supported by GForce sd")
+test(2019.09, DT[, var(v), by=id], error="'complex' not supported by GForce var")
+test(2019.10, DT[, prod(v), by=id], error="'complex' not supported by GForce prod")
 DT = data.table(id = c(1L,1L,2L,2L), v = c(1L, 2L, NA, NA))
 test(2019.11, DT[, median(v), id], data.table(id=1:2, V1=c(1.5, NA))) # median whole group has NAs
 
