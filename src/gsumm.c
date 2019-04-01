@@ -495,8 +495,8 @@ SEXP gmean(SEXP x, SEXP narm)
     }
     break;
   default:
-    free(s); free(c);
-    error("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    free(s); free(c); // # nocov because it already stops at gsum, remove nocov if gmean will support a type that gsum wont
+    error("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x))); // # nocov
   }
   ans = PROTECT(allocVector(REALSXP, ngrp));
   for (int i=0; i<ngrp; i++) {
@@ -955,32 +955,41 @@ SEXP glast(SEXP x) {
   SEXP ans;
   if (nrow != n) error("nrow [%d] != length(x) [%d] in gtail", nrow, n);
   switch(TYPEOF(x)) {
-  case LGLSXP:
+  case LGLSXP: {
+    const int *ix = LOGICAL(x);
     ans = PROTECT(allocVector(LGLSXP, ngrp));
+    int *ians = LOGICAL(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      LOGICAL(ans)[i] = LOGICAL(x)[k];
+      ians[i] = ix[k];
     }
+  }
     break;
-  case INTSXP:
+  case INTSXP: {
+    const int *ix = INTEGER(x);
     ans = PROTECT(allocVector(INTSXP, ngrp));
+    int *ians = INTEGER(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      INTEGER(ans)[i] = INTEGER(x)[k];
+      ians[i] = ix[k];
     }
+  }
     break;
-  case REALSXP:
+  case REALSXP: {
+    const double *dx = REAL(x);
     ans = PROTECT(allocVector(REALSXP, ngrp));
+    double *dans = REAL(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      REAL(ans)[i] = REAL(x)[k];
+      dans[i] = dx[k];
     }
+  }
     break;
   case STRSXP:
     ans = PROTECT(allocVector(STRSXP, ngrp));
@@ -1017,32 +1026,41 @@ SEXP gfirst(SEXP x) {
   SEXP ans;
   if (nrow != n) error("nrow [%d] != length(x) [%d] in ghead", nrow, n);
   switch(TYPEOF(x)) {
-  case LGLSXP:
+  case LGLSXP: {
+    int const *ix = LOGICAL(x);
     ans = PROTECT(allocVector(LGLSXP, ngrp));
+    int *ians = LOGICAL(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      LOGICAL(ans)[i] = LOGICAL(x)[k];
+      ians[i] = ix[k];
     }
+  }
     break;
-  case INTSXP:
+  case INTSXP: {
+    const int *ix = INTEGER(x);
     ans = PROTECT(allocVector(INTSXP, ngrp));
+    int *ians = INTEGER(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      INTEGER(ans)[i] = INTEGER(x)[k];
+      ians[i] = ix[k];
     }
+  }
     break;
-  case REALSXP:
+  case REALSXP: {
+    const double *dx = REAL(x);
     ans = PROTECT(allocVector(REALSXP, ngrp));
+    double *dans = REAL(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      REAL(ans)[i] = REAL(x)[k];
+      dans[i] = dx[k];
     }
+  }
     break;
   case STRSXP:
     ans = PROTECT(allocVector(STRSXP, ngrp));
@@ -1088,35 +1106,44 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
   SEXP ans;
   if (nrow != n) error("nrow [%d] != length(x) [%d] in ghead", nrow, n);
   switch(TYPEOF(x)) {
-  case LGLSXP:
+  case LGLSXP: {
+    const int *ix = LOGICAL(x);
     ans = PROTECT(allocVector(LGLSXP, ngrp));
+    int *ians = LOGICAL(ans);
     for (i=0; i<ngrp; i++) {
       if (val > grpsize[i]) { LOGICAL(ans)[i] = NA_LOGICAL; continue; }
       k = ff[i]+val-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      LOGICAL(ans)[i] = LOGICAL(x)[k];
+      ians[i] = ix[k];
     }
+  }
     break;
-  case INTSXP:
+  case INTSXP: {
+    const int *ix = LOGICAL(x);
     ans = PROTECT(allocVector(INTSXP, ngrp));
+    int *ians = LOGICAL(ans);
     for (i=0; i<ngrp; i++) {
       if (val > grpsize[i]) { INTEGER(ans)[i] = NA_INTEGER; continue; }
       k = ff[i]+val-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      INTEGER(ans)[i] = INTEGER(x)[k];
+      ians[i] = ix[k];
     }
+  }
     break;
-  case REALSXP:
+  case REALSXP: {
+    const double *dx = REAL(x);
     ans = PROTECT(allocVector(REALSXP, ngrp));
+    double *dans = REAL(ans);
     for (i=0; i<ngrp; i++) {
       if (val > grpsize[i]) { REAL(ans)[i] = NA_REAL; continue; }
       k = ff[i]+val-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;
-      REAL(ans)[i] = REAL(x)[k];
+      dans[i] = dx[k];
     }
+  }
     break;
   case STRSXP:
     ans = PROTECT(allocVector(STRSXP, ngrp));
@@ -1270,7 +1297,7 @@ SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
     SETLENGTH(sub, maxgrpn);
     break;
   default:
-      if (isSD) {
+      if (!isSD) {
         error("Type '%s' not supported by GForce var (gvar). Either add the prefix stats::var(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
       } else {
         error("Type '%s' not supported by GForce sd (gsd). Either add the prefix stats::sd(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));

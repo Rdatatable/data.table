@@ -133,7 +133,7 @@ SEXP measurelist(SEXP measure, SEXP dtnames) {
   ans = PROTECT(allocVector(VECSXP, n)); protecti++;
   for (i=0; i<n; i++) {
     switch(TYPEOF(VECTOR_ELT(measure, i))) {
-      case STRSXP  : tmp = PROTECT(chmatch(VECTOR_ELT(measure, i), dtnames, 0, FALSE)); protecti++; break;
+      case STRSXP  : tmp = PROTECT(chmatch(VECTOR_ELT(measure, i), dtnames, 0)); protecti++; break;
       case REALSXP : tmp = PROTECT(coerceVector(VECTOR_ELT(measure, i), INTSXP)); protecti++; break;
       case INTSXP  : tmp = VECTOR_ELT(measure, i); break;
       default : error("Unknown 'measure.vars' type %s at index %d of list", type2char(TYPEOF(VECTOR_ELT(measure, i))), i+1);
@@ -185,7 +185,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     warning("To be consistent with reshape2's melt, id.vars and measure.vars are internally guessed when both are 'NULL'. All non-numeric/integer/logical type columns are considered id.vars, which in this case are columns [%s]. Consider providing at least one of 'id' or 'measure' vars in future.", CHAR(STRING_ELT(concat(dtnames, idcols), 0)));
   } else if (!isNull(id) && isNull(measure)) {
     switch(TYPEOF(id)) {
-      case STRSXP  : PROTECT(tmp = chmatch(id, dtnames, 0, FALSE)); protecti++; break;
+      case STRSXP  : PROTECT(tmp = chmatch(id, dtnames, 0)); protecti++; break;
       case REALSXP : PROTECT(tmp = coerceVector(id, INTSXP)); protecti++; break;
       case INTSXP  : tmp = id; break;
       default : error("Unknown 'id.vars' type %s, must be character or integer vector", type2char(TYPEOF(id)));
@@ -214,7 +214,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
   } else if (isNull(id) && !isNull(measure)) {
     switch(TYPEOF(measure)) {
-      case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0, FALSE)); protecti++; break;
+      case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0)); protecti++; break;
       case REALSXP : tmp2 = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
       case INTSXP  : tmp2 = measure; break;
       case VECSXP  : tmp2 = PROTECT(measurelist(measure, dtnames)); protecti++; break;
@@ -250,7 +250,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
   } else if (!isNull(id) && !isNull(measure)) {
     switch(TYPEOF(id)) {
-      case STRSXP  : tmp = PROTECT(chmatch(id, dtnames, 0, FALSE)); protecti++; break;
+      case STRSXP  : tmp = PROTECT(chmatch(id, dtnames, 0)); protecti++; break;
       case REALSXP : tmp = PROTECT(coerceVector(id, INTSXP)); protecti++; break;
       case INTSXP  : tmp = id; break;
       default : error("Unknown 'id.vars' type %s, must be character or integer vector", type2char(TYPEOF(id)));
@@ -261,7 +261,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
     }
     idcols = PROTECT(tmp); protecti++;
     switch(TYPEOF(measure)) {
-      case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0, FALSE)); protecti++; break;
+      case STRSXP  : tmp2 = PROTECT(chmatch(measure, dtnames, 0)); protecti++; break;
       case REALSXP : tmp2 = PROTECT(coerceVector(measure, INTSXP)); protecti++; break;
       case INTSXP  : tmp2 = measure; break;
       case VECSXP  : tmp2 = PROTECT(measurelist(measure, dtnames)); protecti++; break;
@@ -348,6 +348,71 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
   if (data->narm) {
     SET_VECTOR_ELT(data->RCHK, 1, data->naidx = allocVector(VECSXP, data->lmax));
   }
+}
+
+static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType, Rboolean * isRowOrdered)
+// Finds unique levels directly in one pass with no need to create hash tables. Creates integer factor
+// too in the same single pass. Previous version called factor(x, levels=unique) where x was type character
+// and needed hash table.
+// TODO keep the original factor columns as factor and use new technique in rbindlist.c. The calling
+// environments are a little difference hence postponed for now (e.g. rbindlist calls writeNA which
+// a general purpose combiner would need to know how many to write)
+// factorType is 1 for factor and 2 for ordered
+// will simply unique normal factors and attempt to find global order for ordered ones
+{
+  int maxlevels=0, nitem=length(factorLevels);
+  for (int i=0; i<nitem; ++i) {
+    SEXP this = VECTOR_ELT(factorLevels, i);
+    if (!isString(this)) error("Internal error: combineFactorLevels in fmelt.c expects all-character input");  // # nocov
+    maxlevels+=length(this);
+  }
+  if (!isString(target)) error("Internal error: combineFactorLevels in fmelt.c expects a character target to factorize");  // # nocov
+  int nrow = length(target);
+  SEXP ans = PROTECT(allocVector(INTSXP, nrow));
+  SEXP *levelsRaw = (SEXP *)R_alloc(maxlevels, sizeof(SEXP));  // allocate for worst-case all-unique levels
+  int *ansd = INTEGER(ans);
+  const SEXP *targetd = STRING_PTR(target);
+  savetl_init();
+  // no alloc or any fail point until savetl_end()
+  int nlevel=0;
+  for (int i=0; i<nitem; ++i) {
+    const SEXP this = VECTOR_ELT(factorLevels, i);
+    const SEXP *thisd = STRING_PTR(this);
+    const int thisn = length(this);
+    for (int k=0; k<thisn; ++k) {
+      SEXP s = thisd[k];
+      if (s==NA_STRING) continue;  // NA shouldn't be in levels but remove it just in case
+      int tl = TRUELENGTH(s);
+      if (tl<0) continue;  // seen this level before
+      if (tl>0) savetl(s);
+      SET_TRUELENGTH(s,-(++nlevel));
+      levelsRaw[nlevel-1] = s;
+    }
+  }
+  for (int i=0; i<nrow; ++i) {
+    if (targetd[i]==NA_STRING) {
+      *ansd++ = NA_INTEGER;
+    } else {
+      int tl = TRUELENGTH(targetd[i]);
+      *ansd++ = tl<0 ? -tl : NA_INTEGER;
+    }
+  }
+  for (int i=0; i<nlevel; ++i) SET_TRUELENGTH(levelsRaw[i], 0);
+  savetl_end();
+  // now after savetl_end, we can alloc (which might fail)
+  SEXP levelsSxp;
+  setAttrib(ans, R_LevelsSymbol, levelsSxp=allocVector(STRSXP, nlevel));
+  for (int i=0; i<nlevel; ++i) SET_STRING_ELT(levelsSxp, i, levelsRaw[i]);
+  if (*factorType==2) {
+    SEXP tt;
+    setAttrib(ans, R_ClassSymbol, tt=allocVector(STRSXP, 2));
+    SET_STRING_ELT(tt, 0, char_ordered);
+    SET_STRING_ELT(tt, 1, char_factor);
+  } else {
+    setAttrib(ans, R_ClassSymbol, ScalarString(char_factor));
+  }
+  UNPROTECT(1);
+  return ans;
 }
 
 SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, struct processData *data) {
@@ -466,10 +531,11 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
       UNPROTECT(thisprotecti);  // inside inner loop (note that it's double loop) so as to limit use of protection stack
     }
     if (thisvalfactor && data->isfactor[i] && TYPEOF(target) != VECSXP) {
-      SEXP clevels = PROTECT(combineFactorLevels(flevels, &(data->isfactor[i]), isordered));
-      SEXP factorLangSxp = PROTECT(lang3(install(data->isfactor[i] == 1 ? "factor" : "ordered"), target, clevels));
-      SET_VECTOR_ELT(ansvals, i, eval(factorLangSxp, R_GlobalEnv));
-      UNPROTECT(2);  // clevels, factorLangSxp
+      //SEXP clevels = PROTECT(combineFactorLevels(flevels, &(data->isfactor[i]), isordered));
+      //SEXP factorLangSxp = PROTECT(lang3(install(data->isfactor[i] == 1 ? "factor" : "ordered"), target, clevels));
+      //SET_VECTOR_ELT(ansvals, i, eval(factorLangSxp, R_GlobalEnv));
+      //UNPROTECT(2);  // clevels, factorLangSxp
+      SET_VECTOR_ELT(ansvals, i, combineFactorLevels(flevels, target, &(data->isfactor[i]), isordered));
     }
   }
   UNPROTECT(2);  // flevels, ansvals. Not using two protection counters (protecti and thisprotecti) to keep rchk happy.
@@ -477,74 +543,82 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
 }
 
 SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, struct processData *data) {
-
-  int i,j,k,cnt=0,nrows=0, nlevels=0, protecti=0, thislen, zerolen=0;
-  SEXP ansvars, thisvaluecols, levels, target, matchvals, thisnames;
-
-  ansvars = PROTECT(allocVector(VECSXP, 1)); protecti++;
-  SET_VECTOR_ELT(ansvars, 0, target=allocVector(INTSXP, data->totlen) );
-  if (data->lvalues == 1) {
-    thisvaluecols = VECTOR_ELT(data->valuecols, 0);
-    // tmp fix for #1055
-    thisnames = PROTECT(allocVector(STRSXP, length(thisvaluecols))); protecti++;
-    for (i=0; i<length(thisvaluecols); i++) {
-      SET_STRING_ELT(thisnames, i, STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1));
-    }
-    matchvals = PROTECT(match(thisnames, thisnames, 0)); protecti++;
-    if (data->narm) {
-      for (j=0; j<data->lmax; j++) {
-        thislen = length(VECTOR_ELT(data->naidx, j));
-        for (k=0; k<thislen; k++)
-          INTEGER(target)[nrows + k] = INTEGER(matchvals)[j - zerolen]; // fix for #1359
-        nrows += thislen;
-        zerolen += (thislen == 0);
-      }
-      nlevels = data->lmax - zerolen;
-    } else {
-      for (j=0; j<data->lmax; j++) {
-        for (k=0; k<data->nrow; k++)
-          INTEGER(target)[data->nrow*j + k] = INTEGER(matchvals)[j];
-      }
-      nlevels = data->lmax;
-    }
-  } else {
-    if (data->narm) {
-      for (j=0; j<data->lmax; j++) {
-        thislen = length(VECTOR_ELT(data->naidx, j));
-        for (k=0; k<thislen; k++)
-          INTEGER(target)[nrows + k] = j+1;
-        nrows += thislen;
-        nlevels += (thislen != 0);
+  // reworked in PR#3455 to create character/factor directly for efficiency, and handle duplicates (#1754)
+  // data->nrow * data->lmax == data->totlen
+  SEXP ansvars=PROTECT(allocVector(VECSXP, 1));
+  int protecti=1;
+  SEXP target;
+  if (data->lvalues==1 && length(VECTOR_ELT(data->valuecols, 0)) != data->lmax)
+    error("Internal error: fmelt.c:getvarcols %d %d", length(VECTOR_ELT(data->valuecols, 0)), data->lmax);  // # nocov
+  if (!varfactor) {
+    SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
+    if (data->lvalues == 1) {
+      const int *thisvaluecols = INTEGER(VECTOR_ELT(data->valuecols, 0));
+      for (int j=0, ansloc=0; j<data->lmax; ++j) {
+        const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
+        SEXP str = STRING_ELT(dtnames, thisvaluecols[j]-1);
+        for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, str);
       }
     } else {
-      for (j=0; j<data->lmax; j++) {
-        for (k=0; k<data->nrow; k++)
-          INTEGER(target)[data->nrow*j + k] = j+1;
+      for (int j=0, ansloc=0, level=1; j<data->lmax; ++j) {
+        const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
+        if (thislen==0) continue;  // so as not to bump level
+        char buff[20];
+        sprintf(buff, "%d", level++);
+        SEXP str = PROTECT(mkChar(buff));
+        for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, str);
+        UNPROTECT(1);
       }
-      nlevels = data->lmax;
-    }
-  }
-  SEXP tmp = PROTECT(mkString("factor")); protecti++;
-  setAttrib(target, R_ClassSymbol, tmp);
-  cnt = 0;
-  if (data->lvalues == 1) {
-    levels = PROTECT(allocVector(STRSXP, nlevels)); protecti++;
-    thisvaluecols = VECTOR_ELT(data->valuecols, 0); // levels will be column names
-    for (i=0; i<data->lmax; i++) {
-      if (data->narm) {
-        if (length(VECTOR_ELT(data->naidx, i)) == 0) continue;
-      }
-      SET_STRING_ELT(levels, cnt++, STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1));
     }
   } else {
-    SEXP tt = PROTECT(seq_int(nlevels, 1)); protecti++;      // generate levels = 1:nlevels
-    levels = PROTECT(coerceVector(tt, STRSXP)); protecti++;  // tt PROTECTED for rchk
+    SET_VECTOR_ELT(ansvars, 0, target=allocVector(INTSXP, data->totlen));
+    SEXP levels;
+    int *td = INTEGER(target);
+    if (data->lvalues == 1) {
+      SEXP thisvaluecols = VECTOR_ELT(data->valuecols, 0);
+      int len = length(thisvaluecols);
+      levels = PROTECT(allocVector(STRSXP, len)); protecti++;
+      const int *vd = INTEGER(thisvaluecols);
+      for (int j=0; j<len; ++j) SET_STRING_ELT(levels, j, STRING_ELT(dtnames, vd[j]-1));
+      SEXP m = PROTECT(chmatch(levels, levels, 0)); protecti++;  // do we have any dups?
+      int numRemove = 0;  // remove dups and any for which narm and all-NA
+      int *md = INTEGER(m);
+      for (int j=0; j<len; ++j) {
+        if (md[j]!=j+1 /*dup*/ || (data->narm && length(VECTOR_ELT(data->naidx, j))==0)) { numRemove++; md[j]=0; }
+      }
+      if (numRemove) {
+        SEXP newlevels = PROTECT(allocVector(STRSXP, len-numRemove)); protecti++;
+        for (int i=0, loc=0; i<len; ++i) if (md[i]!=0) { SET_STRING_ELT(newlevels, loc++, STRING_ELT(levels, i)); }
+        m = PROTECT(chmatch(levels, newlevels, 0)); protecti++;  // budge up the gaps
+        md = INTEGER(m);
+        levels = newlevels;
+      }
+      for (int j=0, ansloc=0; j<data->lmax; ++j) {
+        const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
+        for (int k=0; k<thislen; ++k) td[ansloc++] = md[j];
+      }
+    } else {
+      int nlevel=0;
+      levels = PROTECT(allocVector(STRSXP, data->lmax)); protecti++;
+      for (int j=0, ansloc=0; j<data->lmax; ++j) {
+        const int thislen = data->narm ? length(VECTOR_ELT(data->naidx, j)) : data->nrow;
+        if (thislen==0) continue;  // so as not to bump level
+        char buff[20];
+        sprintf(buff, "%d", nlevel+1);
+        SET_STRING_ELT(levels, nlevel++, mkChar(buff));  // generate levels = 1:nlevels
+        for (int k=0; k<thislen; ++k) td[ansloc++] = nlevel;
+      }
+      if (nlevel < data->lmax) {
+        // data->narm is true and there are some all-NA items causing at least one 'if (thislen==0) continue' above
+        // shrink the levels
+        SEXP newlevels = PROTECT(allocVector(STRSXP, nlevel)); protecti++;
+        for (int i=0; i<nlevel; ++i) SET_STRING_ELT(newlevels, i, STRING_ELT(levels, i));
+        levels = newlevels;
+      }
+    }
+    setAttrib(target, R_LevelsSymbol, levels);
+    setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
   }
-  // base::unique is fast on vectors, and the levels on variable columns are usually small
-  SEXP uniqueLangSxp = PROTECT(lang2(install("unique"), levels)); protecti++;
-  tmp = PROTECT(eval(uniqueLangSxp, R_GlobalEnv)); protecti++;
-  setAttrib(target, R_LevelsSymbol, tmp);
-  if (!varfactor) SET_VECTOR_ELT(ansvars, 0, asCharacterFactor(target));
   UNPROTECT(protecti);
   return(ansvars);
 }
