@@ -8,7 +8,7 @@
 
 #### BUG FIXES
 
-1. `head` and `tail` by group were optimized but no longer require `n` to be provided (the default is n=6L), [#3462](https://github.com/Rdatatable/data.table/issues/3462).
+1. `head` and `tail` by group no longer error when `n=` is not provided (i.e. the default `n=6L` now works), [#3462](https://github.com/Rdatatable/data.table/issues/3462).
 
 #### NOTES
 
