@@ -1595,7 +1595,12 @@ replace_dot_alias <- function(e) {
         jvnames = ansvarsnew
       }
     } else if (length(as.character(jsub[[1L]])) == 1L) {  # Else expect problems with <jsub[[1L]] == >
-      if (length(jsub) == 3L && (jsub[[1L]] == "[" || jsub[[1L]] == "head" || jsub[[1L]] == "tail") && jsub[[2L]] == ".SD" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N") ) {
+      subopt = length(jsub) == 3L && jsub[[1L]] == "[" && (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
+      headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
+      firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
+      if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
+          (subopt || headopt || firstopt)) {
+        if (headopt && length(jsub)==2L) jsub[["n"]] = 6L # head-tail n=6 when missing #3462
         # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
         jsub = as.call(c(quote(list), lapply(ansvarsnew, function(x) { jsub[[2L]] = as.name(x); jsub })))
         jvnames = ansvarsnew
@@ -1694,7 +1699,7 @@ replace_dot_alias <- function(e) {
       else
         cat("lapply optimization is on, j unchanged as '",deparse(jsub,width.cutoff=200L),"'\n",sep="")
     }
-    dotN <- function(x) if (is.name(x) && x == ".N") TRUE else FALSE # For #5760
+    dotN <- function(x) is.name(x) && x == ".N" # For #5760
     # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with
     # nomatch=0L even now.. but not switching it on yet, will deal it separately.
     if (getOption("datatable.optimize")>=2 && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
@@ -1712,7 +1717,7 @@ replace_dot_alias <- function(e) {
           # Need is.symbol() check. See #1369, #1974 or #2949 issues and explanation below by searching for one of these issues.
           cond = is.call(q) && is.symbol(q[[1]]) && (q1c <- as.character(q[[1]])) %chin% gfuns && !is.call(q[[2L]])
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
-          ans  = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L)))
+          ans = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1c %chin% c("head","tail")) # head-tail uses default value n=6 which as of now should not go gforce
           if (identical(ans, TRUE)) return(ans)
           # otherwise there must be three arguments, and only in two cases --
           #   1) head/tail(x, 1) or 2) x[n], n>0
