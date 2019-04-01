@@ -1,10 +1,21 @@
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
-### Changes in v1.12.1 (in development)
+### Changes in v1.12.3  (in development)
 
 #### NEW FEATURES
 
-1. `:=` no longer recycles length>1 RHS vectors. There was a warning when recycling left a remainder but no warning when the LHS length was an exact multiple of the RHS length (the same behaviour as base R). Consistent feedback for several years has been that recycling is more often a bug. In rare cases where you need to recycle a length>1 vector, use `rep()` explicitly. Single values are still recycled silently as before. Early warning was given in [this tweet](https://twitter.com/MattDowle/status/1088544083499311104). The 758 CRAN and Bioconductor packages using data.table were tested and the maintainers of the 16 packages affected (2%) were consulted before going ahead, [#3310](https://github.com/Rdatatable/data.table/pull/3310).
+#### BUG FIXES
+
+#### NOTES
+
+1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
+
+
+### Changes in v1.12.2  (submitted to CRAN on 28 Mar 2019)
+
+#### NEW FEATURES
+
+1. `:=` no longer recycles length>1 RHS vectors. There was a warning when recycling left a remainder but no warning when the LHS length was an exact multiple of the RHS length (the same behaviour as base R). Consistent feedback for several years has been that recycling is more often a bug. In rare cases where you need to recycle a length>1 vector, please use `rep()` explicitly. Single values are still recycled silently as before. Early warning was given in [this tweet](https://twitter.com/MattDowle/status/1088544083499311104). The 774 CRAN and Bioconductor packages using data.table were tested and the maintainers of the 16 packages affected (2%) were consulted before going ahead, [#3310](https://github.com/Rdatatable/data.table/pull/3310). Upon agreement we went ahead. Many thanks to all those maintainers for already updating on CRAN, [#3347](https://github.com/Rdatatable/data.table/pull/3347).
 
 2. `foverlaps` now supports `type="equal"`, [#3416](https://github.com/Rdatatable/data.table/issues/3416) and part of [#3002](https://github.com/Rdatatable/data.table/issues/3002).
 
@@ -12,7 +23,16 @@
 
 4. `rbind` and `rbindlist` now retain the position of duplicate column names rather than grouping them together [#3373](https://github.com/Rdatatable/data.table/issues/3373), fill length 0 columns (including NULL) with NA with warning [#1871](https://github.com/Rdatatable/data.table/issues/1871), and recycle length-1 columns [#524](https://github.com/Rdatatable/data.table/issues/524). Thanks to Kun Ren for the requests which arose when parsing JSON.
 
-5. `rbindlist`'s `use.names=` default has changed from `FALSE` to `"check"`. This warns if the column names of each item are not identical and then proceeds as if `use.names=FALSE` for backwards compatibility; i.e., bind by column number not by column name. In future, it will warn and then proceed as if `use.names=TRUE`. Eventually the default will be changed from `NA` to `TRUE` unless user feedback is negative. The `rbind` method for `data.table` already sets `use.names=TRUE` as does `rbind` for `data.frame` in base, and is clearly safer. To stack differently named columns together silently (the previous default behavior), it is now necessary to write `use.names=FALSE` for clarity to readers of your code. Thanks to Clayton Stanley who first raised the issue [here](http://lists.r-forge.r-project.org/pipermail/datatable-help/2014-April/002480.html).
+5. `rbindlist`'s `use.names=` default has changed from `FALSE` to `"check"`. This emits a message if the column names of each item are not identical and then proceeds as if `use.names=FALSE` for backwards compatibility; i.e., bind by column position not by column name. The `rbind` method for `data.table` already sets `use.names=TRUE` so this change affects `rbindlist` only and not `rbind.data.table`. To stack differently named columns together silently (the previous default behavior of `rbindlist`), it is now necessary to specify `use.names=FALSE` for clarity to readers of your code. Thanks to Clayton Stanley who first raised the issue [here](http://lists.r-forge.r-project.org/pipermail/datatable-help/2014-April/002480.html). To aid pinpointing the calls to `rbindlist` that need attention, the message can be turned to error using `options(datatable.rbindlist.check="error")`. This option also accepts `"warning"`, `"message"` and `"none"`. In this release the message is suppressed for default column names (`"V[0-9]+"`); the next release will emit the message for those too. In 6 months the default will be upgraded from message to warning. There are two slightly different messages. They are helpful, include context and point to this news item :
+    ```
+    Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with
+      NA (NULL for list columns), or use.names=FALSE to ignore column names.
+      See news item 5 in v1.12.2 for options to control this message.
+
+    Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE
+      to match by column name, or use.names=FALSE to ignore column names.
+      See news item 5 in v1.12.2 for options to control this message.
+    ```
 
 6. `fread` gains `keepLeadingZeros`, [#2999](https://github.com/Rdatatable/data.table/issues/2999). By default `FALSE` so that, as before, a field containing `001` is interpretted as the integer 1, otherwise the character string `"001"`. The default may be changed using `options(datatable.keepLeadingZeros=TRUE)`. Many thanks to @marc-outins for the PR.
 
