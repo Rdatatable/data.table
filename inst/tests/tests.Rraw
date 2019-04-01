@@ -13912,6 +13912,19 @@ test(1978.5, class(fread(test_data_mult, keepLeadingZeros = FALSE)[[1]]), "integ
 # rbindlist should drop NA from levels of source factors, relied on by package emil
 test(1979, levels(rbindlist( list( data.frame(a=factor("a",levels=c("a",NA),exclude=NULL)) ))$a), "a")  # the NA level should not be retained
 
+# better save->load->set(<new column>) message, #2996
+DT = data.table(a=1:3)
+save(list="DT", file=tt<-tempfile())
+rm(DT)
+name = load(tt)
+test(1980.1, name, "DT")
+test(1980.2, DT, data.table(a=1:3))
+test(1980.3, DT[2,a:=4L], data.table(a=INT(1,4,3)))        # no error for := when existing column
+test(1980.4, set(DT,3L,1L,5L), data.table(a=INT(1,4,5)))   # no error for set() when existing column
+test(1980.5, set(DT,2L,"newCol",5L), error="either been loaded from disk.*or constructed manually.*Please run setDT.*alloc.col.*on it first")   # just set()
+test(1980.6, DT[2,newCol:=6L], data.table(a=INT(1,4,5), newCol=INT(NA,6L,NA)))  # := ok (it changes DT in caller)
+unlink(tt)
+
 
 ###################################
 #  Add new tests above this line  #
