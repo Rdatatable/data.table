@@ -4,11 +4,9 @@
 
 #### NEW FEATURES
 
-1. `first` and `last` by group are now optimized, [#2030](https://github.com/Rdatatable/data.table/issues/2030). Thanks to @franknarf1 for reporting.
-
 #### BUG FIXES
 
-1. `head` and `tail` by group no longer error when `n=` is not provided (i.e. the default `n=6L` now works), [#3462](https://github.com/Rdatatable/data.table/issues/3462).
+1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
 
 #### NOTES
 
