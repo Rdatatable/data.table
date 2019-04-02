@@ -14,7 +14,9 @@
 
 2. Adding a new column by reference using `set()` on a `data.table` loaded from binary file now give a more helpful error message, [#2996](https://github.com/Rdatatable/data.table/issues/2996). Thanks to Joseph Burling for reporting.
     ```
-    This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or alloc.col() on it first (to pre-allocate space for new columns) before adding new columns by reference to it.
+    This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed
+    manually (e.g. using structure()). Please run setDT() or alloc.col() on it first (to pre-allocate
+    space for new columns) before adding new columns by reference to it.
     ```
 
 
