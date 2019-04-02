@@ -13971,6 +13971,21 @@ test(2020.09, DT[, prod(v), by=id], error="'complex' not supported by GForce pro
 DT = data.table(id = c(1L,1L,2L,2L), v = c(1L, 2L, NA, NA))
 test(2020.10, DT[, median(v), id], data.table(id=1:2, V1=c(1.5, NA))) # median whole group has NAs
 
+# setorder can keep key if the order does not change, #3456
+DT = data.table(
+  a = rep(4:1, 1:4),
+  b = 1:10,
+  v = c(2L, 4L, 10L, 5L, 9L, 6L, 7L, 8L, 3L, 1L)
+)
+setkey(DT, a)
+setorder(DT, a, -v)
+test(2021.1, key(DT), 'a')
+setorder(DT, -a, v)
+test(2021.2, key(DT), NULL)
+setkey(DT, a, b)
+setorder(DT, b)
+test(2021.3, key(DT), NULL)
+
 
 ###################################
 #  Add new tests above this line  #
