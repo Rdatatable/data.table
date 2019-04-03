@@ -108,6 +108,8 @@ as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name=
 }
 
 as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
+  wn = sapply(x,is.null)
+  if (any(wn)) x = x[!wn]
   if (!length(x)) return( null.data.table() )
   # fix for #833, as.data.table.list with matrix/data.frame/data.table as a list element..
   # TODO: move this entire logic (along with data.table() to C
@@ -125,18 +127,17 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
   idx = which(n < mn)
   if (length(idx)) {
     for (i in idx) {
-      if (!is.null(x[[i]])) {# avoids warning when a list element is NULL
-        if (inherits(x[[i]], "POSIXlt")) {
-          warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
-          x[[i]] = as.POSIXct(x[[i]])
-        }
-        # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
-        if (!n[i] && mn)
-          warning("Item ", i, " is of size 0 but maximum size is ", mn, ", therefore recycled with 'NA'")
-        else if (n[i] && mn %% n[i] != 0L)
-          warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
-        x[[i]] = rep(x[[i]], length.out=mn)
+      # any is.null(x[[i]]) were removed above, otherwise warning when a list element is NULL
+      if (inherits(x[[i]], "POSIXlt")) {
+        warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+        x[[i]] = as.POSIXct(x[[i]])
       }
+      # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
+      if (!n[i] && mn)
+        warning("Item ", i, " is of size 0 but maximum size is ", mn, ", therefore recycled with 'NA'")
+      else if (n[i] && mn %% n[i] != 0L)
+        warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
+      x[[i]] = rep(x[[i]], length.out=mn)
     }
   }
   # fix for #842

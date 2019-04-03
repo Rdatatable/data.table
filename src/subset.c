@@ -219,6 +219,21 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax)
   return ans;
 }
 
+static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
+{
+  if (isNull(col)) error("Column %d is NULL; malformed data.table.", colNum);
+  if (isNewList(col) && INHERITS(col, char_dataframe)) {
+    SEXP names = getAttrib(x, R_NamesSymbol);
+    error("Column %d ['%s'] is a data.frame or data.table; malformed data.table.",
+          colNum, isNull(names)?"":CHAR(STRING_ELT(names,colNum-1)));
+  }
+  if (length(col)!=nrow) {
+    SEXP names = getAttrib(x, R_NamesSymbol);
+    error("Column %d ['%s'] is length %d but column 1 is length %d; malformed data.table.",
+          colNum, isNull(names)?"":CHAR(STRING_ELT(names,colNum-1)), length(col), nrow);
+  }
+}
+
 /*
 * subsetDT - Subsets a data.table
 * NOTE:
@@ -233,12 +248,13 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows))); // # nocov
   if (!length(x)) return(x);  // return empty list
 
+  const int nrow = length(VECTOR_ELT(x,0));
   // check index once up front for 0 or NA, for branchless subsetVectorRaw which is repeated for each column
   bool anyNA=false, orderedSubset=true;   // true for when rows==null (meaning all rows)
-  if (!isNull(rows) && check_idx(rows, length(VECTOR_ELT(x,0)), &anyNA, &orderedSubset) != NULL) {
-    SEXP max = PROTECT(ScalarInteger(length(VECTOR_ELT(x,0)))); nprotect++;
+  if (!isNull(rows) && check_idx(rows, nrow, &anyNA, &orderedSubset)!=NULL) {
+    SEXP max = PROTECT(ScalarInteger(nrow)); nprotect++;
     rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE))); nprotect++;
-    const char *err = check_idx(rows, length(VECTOR_ELT(x,0)), &anyNA, &orderedSubset);
+    const char *err = check_idx(rows, nrow, &anyNA, &orderedSubset);
     if (err!=NULL) error(err);
   }
 
@@ -261,15 +277,20 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   SETLENGTH(ans, LENGTH(cols));
   int ansn;
   if (isNull(rows)) {
-    ansn = LENGTH(VECTOR_ELT(x, 0));
+    ansn = nrow;
+    const int *colD = INTEGER(cols);
     for (int i=0; i<LENGTH(cols); i++) {
-      SET_VECTOR_ELT(ans, i, duplicate(VECTOR_ELT(x, INTEGER(cols)[i]-1)));
+      SEXP thisCol = VECTOR_ELT(x, colD[i]-1);
+      checkCol(thisCol, colD[i], nrow, x);
+      SET_VECTOR_ELT(ans, i, duplicate(thisCol));
       // materialize the column subset as we have always done for now, until REFCNT is on by default in R (TODO)
     }
   } else {
     ansn = LENGTH(rows);  // has been checked not to contain zeros or negatives, so this length is the length of result
+    const int *colD = INTEGER(cols);
     for (int i=0; i<LENGTH(cols); i++) {
-      SEXP source = VECTOR_ELT(x, INTEGER(cols)[i]-1);
+      SEXP source = VECTOR_ELT(x, colD[i]-1);
+      checkCol(source, colD[i], nrow, x);
       SEXP target;
       SET_VECTOR_ELT(ans, i, target=allocVector(TYPEOF(source), ansn));
       copyMostAttrib(source, target);
@@ -292,7 +313,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   // but maintain key if ordered subset
   SEXP key = getAttrib(x, sym_sorted);
   if (length(key)) {
-    SEXP in = PROTECT(chmatch(key,getAttrib(ans,R_NamesSymbol), 0, TRUE)); nprotect++; // (nomatch ignored when in=TRUE)
+    SEXP in = PROTECT(chin(key, getAttrib(ans,R_NamesSymbol))); nprotect++;
     int i = 0;  while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
     // i is now the keylen that can be kept. 2 lines above much easier in C than R
     if (i==0 || !orderedSubset) {
@@ -313,9 +334,10 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
 SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   bool anyNA=false, orderedSubset=false;
   int nprotect=0;
-  if (check_idx(idx, length(x), &anyNA, &orderedSubset) != NULL) {
+  if (isNull(x))
+    error("Internal error: NULL can not be subset. It is invalid for a data.table to contain a NULL column.");      // # nocov
+  if (check_idx(idx, length(x), &anyNA, &orderedSubset) != NULL)
     error("Internal error: CsubsetVector is internal-use-only but has received negatives, zeros or out-of-range");  // # nocov
-  }
   SEXP ans = PROTECT(allocVector(TYPEOF(x), length(idx))); nprotect++;
   copyMostAttrib(x, ans);
   subsetVectorRaw(ans, x, idx, anyNA);

@@ -4,32 +4,26 @@
 \alias{rbind}
 \title{ Makes one data.table from a list of many }
 \description{
-  Same as \code{do.call("rbind", l)} on \code{data.frame}s, but much faster. See \code{DETAILS} for more.
+  Same as \code{do.call("rbind", l)} on \code{data.frame}s, but much faster.
 }
 \usage{
-rbindlist(l, use.names=fill, fill=FALSE, idcol=NULL)
+rbindlist(l, use.names="check", fill=FALSE, idcol=NULL)
 # rbind(\dots, use.names=TRUE, fill=FALSE, idcol=NULL)
 }
 \arguments{
-  \item{l}{ A list containing \code{data.table}, \code{data.frame} or \code{list} objects. At least one of the inputs should have column names set. \code{\dots} is the same but you pass the objects by name separately. }
-  \item{use.names}{If \code{TRUE} items will be bound by matching column names. By default \code{FALSE} for \code{rbindlist} (for backwards compatibility) and \code{TRUE} for \code{rbind} (consistency with base). Columns with duplicate names are bound in the order of occurrence, similar to base. When TRUE, at least one item of the input list has to have non-null column names.}
-  \item{fill}{If \code{TRUE} fills missing columns with NAs. By default \code{FALSE}. When \code{TRUE}, \code{use.names} has to be \code{TRUE}, and all items of the input list has to have non-null column names. }
-  \item{idcol}{Generates an index column. Default (\code{NULL}) is not to. If \code{idcol=TRUE} then the column is auto named \code{.id}. Alternatively the column name can be directly provided, e.g., \code{idcol = "id"}.
-
-  If input is a named list, ids are generated using them, else using integer vector from \code{1} to length of input list. See \code{examples}.}
+  \item{l}{ A list containing \code{data.table}, \code{data.frame} or \code{list} objects. \code{\dots} is the same but you pass the objects by name separately. }
+  \item{use.names}{\code{TRUE} binds by matching column name, \code{FALSE} by position. `check` (default) warns if all items don't have the same names in the same order and then currently proceeds as if `use.names=FALSE` for backwards compatibility (\code{TRUE} in future); see news for v1.12.2.}
+  \item{fill}{\code{TRUE} fills missing columns with NAs. By default \code{FALSE}. When \code{TRUE}, \code{use.names} is set to \code{TRUE}.}
+  \item{idcol}{Creates a column in the result showing which list item those rows came from. \code{TRUE} names this column \code{".id"}. \code{idcol="file"} names this column \code{"file"}. If the input list has names, those names are the values placed in this id column, otherwise the values are an integer vector \code{1:length(l)}. See \code{examples}.}
 }
 \details{
-Each item of \code{l} can be a \code{data.table}, \code{data.frame} or \code{list}, including \code{NULL} (skipped) or an empty object (0 rows). \code{rbindlist} is most useful when there are a variable number of (potentially many) objects to stack, such as returned by \code{lapply(fileNames, fread)}. \code{rbind} however is most useful to stack two or three objects which you know in advance. \code{\dots} should contain at least one \code{data.table} for \code{rbind(\dots)} to call the fast method and return a \code{data.table}, whereas \code{rbindlist(l)} always returns a \code{data.table} even when stacking a plain \code{list} with a \code{data.frame}, for example.
+Each item of \code{l} can be a \code{data.table}, \code{data.frame} or \code{list}, including \code{NULL} (skipped) or an empty object (0 rows). \code{rbindlist} is most useful when there are an unknown number of (potentially many) objects to stack, such as returned by \code{lapply(fileNames, fread)}. \code{rbind} is most useful to stack two or three objects which you know in advance. \code{\dots} should contain at least one \code{data.table} for \code{rbind(\dots)} to call the fast method and return a \code{data.table}, whereas \code{rbindlist(l)} always returns a \code{data.table} even when stacking a plain \code{list} with a \code{data.frame}, for example.
 
-In versions \code{<= v1.9.2}, each item for \code{rbindlist} should have the same number of columns as the first non empty item. \code{rbind.data.table} gained a \code{fill} argument to fill missing columns with \code{NA} in \code{v1.9.2}, which allowed for \code{rbind(\dots)} binding unequal number of columns.
+Columns with duplicate names are bound in the order of occurrence, similar to base. The position (column number) that each duplicate name occurs is also retained.
 
-In version \code{> v1.9.2}, these functionalities were extended to \code{rbindlist} (and written entirely in C for speed). \code{rbindlist} has \code{use.names} argument, which is set to \code{FALSE} by default for backwards compatibility. It also contains \code{fill} argument as well and can bind unequal columns when set to \code{TRUE}.
+If column \code{i} does not have the same type in each of the list items; e.g, the column is \code{integer} in item 1 while others are \code{numeric}, they are coerced to the highest type.
 
-With these changes, the only difference between \code{rbind(\dots)} and \code{rbindlist(l)} is their \emph{default argument} \code{use.names}.
-
-If column \code{i} of input items do not all have the same type; e.g, a \code{data.table} may be bound with a \code{list} or a column is \code{factor} while others are \code{character} types, they are coerced to the highest type (SEXPTYPE).
-
-Note that any additional attributes that might exist on individual items of the input list would not be preserved in the result.
+If a column contains factors then a factor is created. If any of the factors are also ordered factors then the longest set of ordered levels are found (the first if this is tied). Then the ordered levels from each list item are checked to be an ordered subset of these longest levels. If any ambiguities are found (e.g. \code{blue<green} vs \code{green<blue}), or any ordered levels are missing from the longest, then a regular factor is created with warning. Any strings in regular factor and character columns which are missing from the longest ordered levels are added at the end.
 }
 \value{
     An unkeyed \code{data.table} containing a concatenation of all the items passed in.

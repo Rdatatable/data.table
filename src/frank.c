@@ -7,8 +7,6 @@ extern SEXP char_integer64;
 
 SEXP dt_na(SEXP x, SEXP cols) {
   int i, j, n=0, elem;
-  double *dv;
-  SEXP v, ans, klass;
 
   if (!isNewList(x)) error("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'", type2char(TYPEOF(x))); // # nocov
   if (!isInteger(cols)) error("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
@@ -18,10 +16,10 @@ SEXP dt_na(SEXP x, SEXP cols) {
       error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, elem, LENGTH(x));
     if (!n) n = length(VECTOR_ELT(x, elem-1));
   }
-  ans = PROTECT(allocVector(LGLSXP, n));
+  SEXP ans = PROTECT(allocVector(LGLSXP, n));
   for (i=0; i<n; i++) LOGICAL(ans)[i]=0;
   for (i=0; i<LENGTH(cols); i++) {
-    v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
+    SEXP v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
     if (!length(v) || isNewList(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip list/pairlist columns
     if (n != length(v))
       error("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d.", i+1,length(v),n);
@@ -36,9 +34,8 @@ SEXP dt_na(SEXP x, SEXP cols) {
       for (j=0; j<n; j++) LOGICAL(ans)[j] |= (STRING_ELT(v, j) == NA_STRING);
       break;
     case REALSXP:
-      klass = getAttrib(v, R_ClassSymbol);
-      if (isString(klass) && STRING_ELT(klass, 0) == char_integer64) {
-        dv = (double *)REAL(v);
+      if (INHERITS(v, char_integer64)) {
+        const double *dv = REAL(v);
         for (j=0; j<n; j++) {
           LOGICAL(ans)[j] |= (DtoLL(dv[j]) == NA_INT64_LL);   // TODO: can be == NA_INT64_D directly
         }
@@ -66,7 +63,6 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
   int i=0, j=0, k=0, n;
   int *xstart = INTEGER(xstartArg), *xlen = INTEGER(xlenArg), *xorder = INTEGER(xorderArg);
   enum {MEAN, MAX, MIN, DENSE, SEQUENCE} ties = MEAN; // RUNLENGTH
-  SEXP ans;
 
   if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "average"))  ties = MEAN;
   else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "max")) ties = MAX;
@@ -76,7 +72,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
   // else if (!strcmp(CHAR(STRING_ELT(ties_method, 0)), "runlength")) ties = RUNLENGTH;
   else error("Internal error: invalid ties.method for frankv(), should have been caught before. please report to data.table issue tracker"); // # nocov
   n = length(xorderArg);
-  ans = (ties == MEAN) ? PROTECT(allocVector(REALSXP, n)) : PROTECT(allocVector(INTSXP, n));
+  SEXP ans = (ties == MEAN) ? PROTECT(allocVector(REALSXP, n)) : PROTECT(allocVector(INTSXP, n));
   if (n > 0) {
     switch (ties) {
     case MEAN :
@@ -128,8 +124,6 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
 // internal version of anyNA for data.tables
 SEXP anyNA(SEXP x, SEXP cols) {
   int i, j, n=0, elem;
-  double *dv;
-  SEXP v, ans, class;
 
   if (!isNewList(x)) error("Internal error. Argument 'x' to CanyNA is type '%s' not 'list'", type2char(TYPEOF(x))); // #nocov
   if (!isInteger(cols)) error("Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
@@ -139,10 +133,10 @@ SEXP anyNA(SEXP x, SEXP cols) {
       error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, elem, LENGTH(x));
     if (!n) n = length(VECTOR_ELT(x, elem-1));
   }
-  ans = PROTECT(allocVector(LGLSXP, 1));
+  SEXP ans = PROTECT(allocVector(LGLSXP, 1));
   LOGICAL(ans)[0]=0;
   for (i=0; i<LENGTH(cols); i++) {
-    v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
+    SEXP v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
     if (!length(v) || isNewList(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip list/pairlist columns
     if (n != length(v))
       error("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d.", i+1,length(v),n);
@@ -161,9 +155,8 @@ SEXP anyNA(SEXP x, SEXP cols) {
       if (j < n) LOGICAL(ans)[0] = 1;
       break;
     case REALSXP:
-      class = getAttrib(v, R_ClassSymbol);
-      if (isString(class) && STRING_ELT(class, 0) == char_integer64) {
-        dv = (double *)REAL(v);
+      if (INHERITS(v, char_integer64)) {
+        const double *dv = REAL(v);
         for (j=0; j<n; j++) {
           if (DtoLL(dv[j]) == NA_INT64_LL) {
             LOGICAL(ans)[0] = 1;
