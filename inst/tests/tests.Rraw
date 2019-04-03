@@ -14122,7 +14122,7 @@ test(2022.20, fread(testDir('csvy/test_skip.csvy'),
      DT, message = 'User-supplied column names.*override.*YAML')
 ## invalid value fails
 test(2022.21, fread(f, yaml = 'gobble'),
-     error = 'isTrueFalse\\(yaml\\) is not TRUE')
+     error = 'isTRUEorFALSE\\(yaml\\) is not TRUE')
 
 ## warning that skip-as-search doesn't work with yaml
 DT_yaml[ , var2 := as.integer(var2)]
