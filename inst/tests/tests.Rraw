@@ -79,7 +79,8 @@ sugg = c(
   "bit64",          # if big integers are detected in file, fread reads them as bit64::integer64 if installed (warning if not)
   "xts",            # we have xts methods in R/xts.R
   "nanotime",       # fwrite looks for the 'nanotime' class name at C level (but we have our own writer in C, though)
-  "R.utils"         # for fread to accept .gz and .bz2 files directly
+  "R.utils",        # for fread to accept .gz and .bz2 files directly
+  "yaml"            # for fread's yaml argument (csvy capability)
   # zoo             # In DESCRIPTION:Suggests otherwise R CMD check warning: '::' or ':::' import not declared from: 'zoo'; it is tested in other.Rraw though
   # reshape2        # In DESCRIPTION:Suggests otherwise same R CMD check warning. See fmelt.R line 1 refers to reshape2 depending on R 3.0.0, but now we do too,
 )                   # perhaps something can be improved now. dcast and melt methods for data.table are tested directly here in main without needing reshape2 loaded.
@@ -13986,6 +13987,147 @@ setkey(DT, a, b)
 setorder(DT, b)
 test(2021.3, key(DT), NULL)
 
+# testing csvy reading capabilities
+## simple csvy
+f = testDir("csvy/test.csvy")
+DT = data.table(var1 = c("A", "B"),
+                var2 = c(1L, 3L),
+                var3 = c(2.5, 4.3))
+DT_yaml = copy(DT)
+setattr(DT_yaml, 'yaml_metadata',
+  list(name = "my-dataset",
+       source = "https://github.com/leeper/csvy/tree/master/inst/examples",
+       schema = list(fields = list(
+         list(name = "var1", title = "variable 1", type = "string", 
+              description = "explaining var1", 
+              constraints = list(list(required = TRUE))), 
+         list(name = "var2", title = "variable 2", type = "integer"), 
+         list(name = "var3", title = "variable 3", type = "number")
+       ))))
+## with skip = '__auto__', fread can figure out
+##   how to start after the metadata (just ignoring it)
+test(2022.1, fread(f), DT)
+## should be the same, but with yaml_metadata attribute
+test(2022.2, fread(f, yaml = TRUE), DT_yaml)
+## testing verbose messaging
+test(2022.3, fread(f, yaml = TRUE, verbose = TRUE),
+     DT_yaml, output = 'Processed.*YAML metadata.*')
+## this file is identical, except the body of the
+##   YAML header is commented out with # (should read identically)
+test(2022.4,
+     fread(testDir('csvy/test_comment.csvy'), yaml = TRUE),
+     DT_yaml)
+## user input is taken as most intentional & overrides YAML
+DT_yaml[ , var2 := as.numeric(var2)]
+test(2022.05, fread(f, yaml = TRUE, colClasses = list(numeric = 'var2')),
+     DT_yaml, message = 'colClasses.*YAML header are in conflict.*var2')
+## extraneous/unused fields shouldn't throw off reading
+DT = fread(testDir('csvy/test_extraneous.csvy'), yaml = TRUE)
+test(2022.6, names(DT), c('Date', 'WTI'))
+test(2022.7, attr(DT, 'yaml_metadata'),
+     list(names = c("Date", "WTI"), class = "data.frame",
+          title = "Cushing, OK WTI Spot Price FOB", filename = "data.csv",
+          fileurl = "https://raw.githubusercontent.com/jrovegno/csvy/master/data.csv",
+          sourceurl = "http://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=RWTC&f=D",
+          source_csvy = "https://github.com/leeper/csvy/tree/master/inst/examples",
+          item = "PET", sourcekey = "RWTC", freq = "Daily",
+          rate = "MID", type = "price", units = "Dollars per Barrel",
+          latestdate = "2015-08-31", releasedate = "2015-09-02",
+          nextreleasedate = "2015-09-10", source = "Thomson Reuters",
+          contactemail = "infoctr@eia.doe.gov", contactphone = "(202) 586-8800"))
+## yaml can also handle sep, dec, quote, and na.strings
+DT_out = data.table(var1 = c("A", "B"),
+                    var2 = c(1L, NA),
+                    var3 = c(2.5, 4.3))
+meta =
+  list(name = NULL,
+       schema = list(fields = list(
+         list(name = "var1", title = "variable 1", type = "string", 
+              description = "a single-quoted character variable"), 
+         list(name = "var2", title = "variable 2", type = "integer"), 
+         list(name = "var3", title = "variable 3", type = "number", 
+              description = "European-style numeric")
+       )),
+       header = TRUE, sep = "|", dec = ",",
+       quote = "'", na.strings = "@")
+attr(DT_out, 'yaml_metadata') = meta
+test(2022.8, fread(testDir( 'csvy/test_attributes.csvy'), yaml = TRUE), DT_out)
+## user-specified attributes can override data from YAML
+meta$sep = "-"
+setattr(DT_out, 'yaml_metadata', meta)
+test(2022.09, fread(testDir('csvy/test_override_sep.csvy'), yaml = TRUE, sep = '|'), DT_out,
+     message = 'User-supplied.*sep.*override')
+
+meta$sep = "|"
+setattr(DT_out, 'yaml_metadata', meta)
+test(2022.10, fread(testDir('csvy/test_override_header.csvy'), yaml = TRUE, header = FALSE),
+     DT_out, message = 'User-supplied.*header.*override')
+col.names = c('x', 'y', 'z')
+setnames(DT_out, col.names)
+test(2022.11, fread(testDir('csvy/test_override_header.csvy'), yaml = TRUE, header = FALSE, col.names = col.names), DT_out, 
+     message = c('User-supplied.*header.*override', 'User-supplied.*col.names.*override'))
+
+test(2022.12, fread(testDir('csvy/test_attributes.csvy'), yaml = TRUE, col.names = col.names), 
+     DT_out, message = 'User-supplied.*col.names')
+
+setnames(DT_out, c('var1', 'var2', 'var3'))
+meta$quote = "^"
+setattr(DT_out, 'yaml_metadata', meta)
+test(2022.13, fread(testDir('csvy/test_override_quote.csvy'), yaml = TRUE, quote = "'"),
+     DT_out, message = 'User-supplied.*quote')
+     
+meta$quote = "'"
+meta$dec = "."
+setattr(DT_out, 'yaml_metadata', meta)
+test(2022.14, fread(testDir('csvy/test_override_dec.csvy'), yaml = TRUE, dec = ','),
+     DT_out, message = 'User-supplied.*dec')
+  
+meta$dec = ',' 
+meta$na.strings = 'NA'
+setattr(DT_out, 'yaml_metadata', meta)
+test(2022.15, fread(testDir('csvy/test_override_na.csvy'), yaml = TRUE, na.strings = '@'),
+     DT_out, message = 'User-supplied.*na.strings')
+
+## error if YAML malformed
+test(2022.16, fread(testDir('csvy/test_incomplete_header.csvy'), yaml = TRUE),
+     error = 'Reached the end.*YAML.*valid csvy')
+## use any other CSV in test directory which doesn't have YAML
+test(2022.17, fread(testDir('issue_2051.csv'), yaml = TRUE),
+     error = 'Encountered.*unskipped.*constitute.*valid YAML')
+## no problem if some fields are missing a type (just
+##   resort to standard auto-inferral, i.e., identical to
+##   the case of partially-specified colClasses)
+DT = data.table(var1 = c("A", "B"), var2 = c(1L, 3L),
+                var3 = c(2.5, 4.3))
+setattr(DT, 'yaml_metadata',
+  list(name = "my-dataset", source = "https://github.com/leeper/csvy/tree/master/inst/examples",
+       schema = list(fields = list(
+         list(name = "var1"), list(name = "var2", type = "integer"), 
+         list(name = "var3", type = "number")
+       ))))
+test(2022.18, fread(testDir('csvy/test_missing_type.csvy'), yaml = TRUE), DT)
+## skip applies starting after the YAML header
+setattr(DT, 'yaml_metadata',
+  list(schema = list(fields = list(
+    list(name = "var1", type = "string"), 
+    list(name = "var2", type = "integer"), 
+    list(name = "var3", type = "number")
+  ))))
+test(2022.19, fread(testDir('csvy/test_skip.csvy'), yaml = TRUE, skip = 2L), DT)
+## user-supplied col.names override metadata (as for colClasses)
+cn = paste0('V', 1:3)
+setnames(DT, cn)
+test(2022.20, fread(testDir('csvy/test_skip.csvy'),
+                    yaml = TRUE, skip = 2L, col.names = cn),
+     DT, message = 'User-supplied column names.*override.*YAML')
+## invalid value fails
+test(2022.21, fread(f, yaml = 'gobble'),
+     error = 'isTrueFalse\\(yaml\\) is not TRUE')
+
+## warning that skip-as-search doesn't work with yaml
+DT_yaml[ , var2 := as.integer(var2)]
+test(2022.22, fread(f, skip = 'var1,', yaml = TRUE),
+     DT_yaml, warning = 'Combining a search.*YAML.*')
 
 ###################################
 #  Add new tests above this line  #
