@@ -1,7 +1,7 @@
 language: r
 dist: trusty
 sudo: required
-cache: packages
+# cache: packages   temporarily off 9 Apr 2019: https://twitter.com/jimhester_/status/1115674794861768704
 warnings_are_errors: true
 
 branches:
