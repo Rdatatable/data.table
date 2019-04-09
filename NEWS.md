@@ -22,7 +22,7 @@
 3. `setorder` on a superset of a keyed `data.table`'s key now retains its key, [#3456](https://github.com/Rdatatable/data.table/issues/3456). For example, if `a` is the key of `DT`, `setorder(DT, a, -v)` will leave `DT` keyed by `a`.
 
 
-### Changes in v1.12.2  (submitted to CRAN on 28 Mar 2019)
+### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 
 #### NEW FEATURES
 
@@ -30,7 +30,7 @@
 
 2. `foverlaps` now supports `type="equal"`, [#3416](https://github.com/Rdatatable/data.table/issues/3416) and part of [#3002](https://github.com/Rdatatable/data.table/issues/3002).
 
-3. The number of logical CPUs used by default has been reduced from 100% to 50%. The previous 100% default was reported to cause significant slow downs when other non-trivial processes were also running, [#3395](https://github.com/Rdatatable/data.table/issues/3395) [#3298](https://github.com/Rdatatable/data.table/issues/3298). Two new optional environment variables (`R_DATATABLE_NUM_PROCS_PERCENT` & `R_DATATABLE_NUM_THREADS`) control this default. \code(setDTthreads()) gains \code{percent=} and \code{?setDTthreads} has been significantly revised. The output of \code{getDTthreads(verbose=TRUE)} has been expanded. The environment variable `OMP_THREAD_LIMIT` is now respected ([#3300](https://github.com/Rdatatable/data.table/issues/3300)) in addition to `OMP_NUM_THREADS` as before.
+3. The number of logical CPUs used by default has been reduced from 100% to 50%. The previous 100% default was reported to cause significant slow downs when other non-trivial processes were also running, [#3395](https://github.com/Rdatatable/data.table/issues/3395) [#3298](https://github.com/Rdatatable/data.table/issues/3298). Two new optional environment variables (`R_DATATABLE_NUM_PROCS_PERCENT` & `R_DATATABLE_NUM_THREADS`) control this default. `setDTthreads()` gains `percent=` and `?setDTthreads` has been significantly revised. The output of `getDTthreads(verbose=TRUE)` has been expanded. The environment variable `OMP_THREAD_LIMIT` is now respected ([#3300](https://github.com/Rdatatable/data.table/issues/3300)) in addition to `OMP_NUM_THREADS` as before.
 
 4. `rbind` and `rbindlist` now retain the position of duplicate column names rather than grouping them together [#3373](https://github.com/Rdatatable/data.table/issues/3373), fill length 0 columns (including NULL) with NA with warning [#1871](https://github.com/Rdatatable/data.table/issues/1871), and recycle length-1 columns [#524](https://github.com/Rdatatable/data.table/issues/524). Thanks to Kun Ren for the requests which arose when parsing JSON.
 
@@ -105,7 +105,8 @@
 
 8. `unique(DT)` checks up-front the types of all the columns and will fail if any column is type `list` even though those `list` columns may not be needed to establish uniqueness. Use `unique(DT, by=...)` to specify columns that are not type `list`. v1.11.8 and before would also correctly fail with the same error, but not when uniqueness had been established in prior columns: it would stop early, not look at the `list` column and return the correct result. Checking up-front was necessary for some internal optimizations and it's probably best to be explicit anyway. Thanks to James Lamb for reporting, [#3332](https://github.com/Rdatatable/data.table/issues/3332). The error message has been embellished :
     ```
-    Column 2 of by= (2) is type 'list', not yet supported. Please use the by= argument to specify columns with types that are supported.
+    Column 2 of by= (2) is type 'list', not yet supported. Please use the by= argument to specify
+    columns with types that are supported.
     ```
 
 9. Reminder that note 11 in v1.11.0 (May 2018) warned that `set2key()` and `key2()` will be removed in May 2019. They have been warning since v1.9.8 (Nov 2016) and their warnings were upgraded to errors in v1.11.0 (May 2018). When they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental'.
