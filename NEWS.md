@@ -22,7 +22,7 @@
 3. `setorder` on a superset of a keyed `data.table`'s key now retains its key, [#3456](https://github.com/Rdatatable/data.table/issues/3456). For example, if `a` is the key of `DT`, `setorder(DT, a, -v)` will leave `DT` keyed by `a`.
 
 
-### Changes in v1.12.2  (07 Apr 2019)
+### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 
 #### NEW FEATURES
 
