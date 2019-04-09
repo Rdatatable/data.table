@@ -383,8 +383,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   if (TYPEOF(values)==VECSXP) {
     if (length(cols)>1) {
       if (length(values)==0) error("Supplied %d columns to be assigned an empty list (which may be an empty data.table or data.frame since they are lists too). To delete multiple columns use NULL instead. To add multiple empty list columns, use list(list()).", length(cols));
-      if (length(values)>1 && length(values)!=length(cols))
-        error("Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2.", length(cols), length(values));
+      if (length(values)!=length(cols))
+        error("Supplied %d columns to be assigned %d item%s; expecting %d items.%s", length(cols), length(values), length(values)>1?"s":"", length(cols),
+              length(values)==1?" Try removing the list() or .() wrapper around the RHS.":"");
     } // else it's a list() column being assigned to one column
   }
   // Check all inputs :
@@ -395,8 +396,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       else error("Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. Use column names instead in j to add new columns.", i+1, coln, oldncol);
     }
     coln--;
-    if (TYPEOF(values)==VECSXP && (length(cols)>1 || length(values)==1))
-      thisvalue = VECTOR_ELT(values,i%LENGTH(values));
+    if (TYPEOF(values)==VECSXP && (LENGTH(cols)>1 || (LENGTH(values)==1 && TYPEOF(VECTOR_ELT(values,0))==VECSXP)))  // last part for col:=list(list(1:3))
+      thisvalue = VECTOR_ELT(values, i);
     else
       thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
     vlen = length(thisvalue);
@@ -418,14 +419,15 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       }
       // RHS of assignment to new column is zero length but we'll use its type to create all-NA column of that type
     }
-    if (!(isVectorAtomic(thisvalue) || isNewList(thisvalue)))  // NULL had a continue earlier above
-      error("RHS of assignment is not NULL, not an atomic vector (see ?is.atomic) and not a list column. Recall that structurally, a list column is a sequence of lists wrapped in list() or .(); if you're trying to create a list column, try wrapping it in an extra list().");
+    // delete ... if (!(isVectorAtomic(thisvalue) || isNewList(thisvalue)))  // NULL had a continue earlier above
+    //  error("RHS of assignment is not NULL, not an atomic vector (see ?is.atomic) and not a list column. If you're trying to create a list column, try wrapping it with an extra list() or .()");
     if (isMatrix(thisvalue) && (j=INTEGER(getAttrib(thisvalue, R_DimSymbol))[1]) > 1)  // matrix passes above (considered atomic vector)
       warning("%d column matrix RHS of := will be treated as one vector", j);
-    if ((coln+1)<=oldncol && isFactor(VECTOR_ELT(dt,coln)) &&
+    const SEXP existing = (coln+1)<=oldncol ? VECTOR_ELT(dt,coln) : R_NilValue;
+    if (isFactor(existing) &&
       !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue) && !isNewList(thisvalue))  // !=INTSXP includes factor
       error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
-    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen) {
+    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen && (!isNewList(existing) || isNewList(thisvalue))) {
       error("Supplied %d items to be assigned to %d items of column '%s'. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code.", vlen, targetlen,CHAR(colnam));
     }
   }
@@ -456,8 +458,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   }
   for (i=0; i<length(cols); i++) {
     coln = INTEGER(cols)[i]-1;
-    if (TYPEOF(values)==VECSXP && (LENGTH(cols)>1 || LENGTH(values)==1))
-      thisvalue = VECTOR_ELT(values,i%LENGTH(values));
+    if (TYPEOF(values)==VECSXP && (LENGTH(cols)>1 || TYPEOF(target)==VECSXP || (LENGTH(values)==1 && TYPEOF(VECTOR_ELT(values,0))==VECSXP)))  // last part for col:=list(list(1:3))
+      thisvalue = VECTOR_ELT(values, i);
     else
       thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
     if (TYPEOF(thisvalue)==NILSXP) {
@@ -468,7 +470,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     vlen = length(thisvalue);
     if (length(rows)==0 && targetlen==vlen && (vlen>0 || nrow==0)) {
       if (  MAYBE_SHARED(thisvalue) ||  // set() protects the NAMED of atomic vectors from .Call setting arguments to 2 by wrapping with list
-         (TYPEOF(values)==VECSXP && i>LENGTH(values)-1) || // recycled RHS would have columns pointing to others, #185.
+         // (TYPEOF(values)==VECSXP && i>LENGTH(values)-1) || // recycled RHS would have columns pointing to others, #185.
          (TYPEOF(values)!=VECSXP && i>0) // assigning the same values to a second column. Have to ensure a copy #2540
          ) {
         if (verbose) {
@@ -578,7 +580,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
           }
         }
       } else {
-        if (TYPEOF(targetcol) == TYPEOF(thisvalue))
+        if (TYPEOF(targetcol)==TYPEOF(thisvalue) || TYPEOF(targetcol)==VECSXP)
           RHS = thisvalue;
         else {
           // coerce the RHS to match the type of the column, unlike [<-.data.frame, for efficiency.
@@ -803,7 +805,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
   if (len<1) return NULL;
   int slen = length(source);
   if (slen==0) return NULL;
-  if (slen>1 && slen!=len) error("Internal error: recycle length error not caught earlier. slen=%d len=%d", slen, len); // # nocov
+  if (slen>1 && slen!=len && (!isNewList(target) || isNewList(source)))
+    error("Internal error: recycle length error not caught earlier. slen=%d len=%d", slen, len); // # nocov
   // Internal error because the column has already been added to the DT, so length mismatch should have been caught before adding the column.
   // for 5647 this used to limit slen to len, but no longer
   *memrecycle_message = '\0';
@@ -920,20 +923,18 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       }
       break;
     case VECSXP :
-      if (TYPEOF(source)!=VECSXP) { source = PROTECT(coerceVector(source, VECSXP)); protecti++; }
-      if (slen==1) {
-        const SEXP val = VECTOR_ELT(source, 0);
-        for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, val);
+      if (TYPEOF(source)==VECSXP && len==slen) {
+        for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, VECTOR_ELT(source, i));
       } else {
-        const SEXP *val = (SEXP *)DATAPTR(source);  // TODO: revisit VECTOR_PTR
-        for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, val[i]);
+        const SEXP val = TYPEOF(source)==VECSXP ? VECTOR_ELT(source, 0) : source;
+        for (int i=0; i<len; i++) SET_VECTOR_ELT(target, start+i, val);
       }
       break;
     default :
       error("Unsupported type in assign.c:memrecycle '%s' (no where)", type2char(TYPEOF(target)));  // # nocov
     }
   } else {
-    if (TYPEOF(target) != TYPEOF(source))
+    if (TYPEOF(target)!=TYPEOF(source) && TYPEOF(target)!=VECSXP)
       error("Internal error: TYPEOF(target)['%s']!=TYPEOF(source)['%s'] in memrecycle (where)", type2char(TYPEOF(target)),type2char(TYPEOF(source))); // # nocov
     const int *wd = INTEGER(where)+start;
     const int mask = slen==1 ? 0 : INT_MAX;
@@ -965,11 +966,19 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       }
     } break;
     case VECSXP : {
-      const SEXP *sd = (SEXP *)DATAPTR(source);  // TODO revisit VECTOR_PTR
-      for (int i=0; i<len; i++) {
-        const int w = wd[i];
-        if (w<1) continue;
-        SET_VECTOR_ELT(target, w-1, sd[i&mask]);
+      if (TYPEOF(source)==VECSXP) {
+        const SEXP *sd = VECTOR_PTR(source);
+        for (int i=0; i<len; i++) {
+          const int w = wd[i];
+          if (w<1) continue;
+          SET_VECTOR_ELT(target, w-1, sd[i&mask]);
+        }
+      } else {
+        for (int i=0; i<len; i++) {
+          const int w = wd[i];
+          if (w<1) continue;
+          SET_VECTOR_ELT(target, w-1, source);
+        }
       }
     } break;
     default :
