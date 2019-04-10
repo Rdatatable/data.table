@@ -55,7 +55,8 @@ SEXP uniqlist(SEXP l, SEXP order)
     int *o = INTEGER(order);  // only used when via_order is true
     switch(TYPEOF(v)) {
     case INTSXP : case LGLSXP : {
-      int *vd=INTEGER(v), prev, elem;
+      const int *vd=INTEGER(v);
+      int prev, elem;
       if (via_order) {
         // ad hoc by (order passed in)
         COMPARE1_VIA_ORDER COMPARE2
@@ -65,7 +66,8 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case STRSXP : {
-      SEXP *vd=(SEXP *)DATAPTR(v), prev, elem;   // TODO: tried to replace DATAPTR here but (SEXP *)&STRING_ELT(v,0) results in lvalue required as unary ‘&’ operand
+      const SEXP *vd=STRING_PTR(v);
+      SEXP prev, elem;
       if (via_order) {
         COMPARE1_VIA_ORDER && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
       } else {
@@ -73,7 +75,8 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case REALSXP : {
-      uint64_t *vd=(uint64_t *)REAL(v), prev, elem;
+      const uint64_t *vd=(const uint64_t *)REAL(v);
+      uint64_t prev, elem;
       // grouping by integer64 makes sense (ids). grouping by float supported but a good use-case for that is harder to imagine
       if (getNumericRounding_C()==0 /*default*/ || inherits(v, "integer64")) {
         if (via_order) {
@@ -211,7 +214,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
   if (nrows==0) return(allocVector(INTSXP, 0));
   R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;
-  R_len_t *ansgrp = (R_len_t *)R_alloc(ansgrpsize, sizeof(R_len_t)), starts, grplen;
+  R_len_t *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen; // #3401 fix. Needs to be Calloc due to Realloc below .. else segfaults.
   R_len_t ngrps = length(grps);
   bool *i64 = (bool *)R_alloc(ncols, sizeof(bool));
   if (ngrps==0) error("Internal error: nrows[%d]>0 but ngrps==0", nrows); // # nocov
@@ -295,6 +298,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
     }
     ansgrp[tmp] = thisi;
   }
+  Free(ansgrp);
   UNPROTECT(1);
   return(ans);
 }

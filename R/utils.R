@@ -1,5 +1,18 @@
 # all non-exported / unused internal (utility) functions
 
+# R 3.5.0 made isTRUE longer but more efficient :
+#   `is.logical(x) && length(x)==1L && !is.na(x) && x`
+# Before R 3.5.0, isTRUE was defined as simply:
+#   identical(TRUE,x)
+# See PR#3421 for timings.
+# It was changed in R so that isTRUE(c(a=TRUE)) returned TRUE: https://github.com/wch/r-source/commit/828997ac6ecfb73aaa0aae9d1d0584a4ffc50881#diff-b41e3f9f1d389bb6f7a842cd5a3308b8
+if (base::getRversion() < "3.5.0") {
+  isTRUE  = function(x) is.logical(x) && length(x)==1L && !is.na(x) && x    # backport R's new implementation of isTRUE
+  isFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x) && !x   # backport isFALSE that was added in R 3.5.0
+}
+isTRUEorNA    <- function(x) is.logical(x) && length(x)==1L && (is.na(x) || x)
+isTRUEorFALSE <- function(x) is.logical(x) && length(x)==1L && !is.na(x)
+
 # which.first
 which.first <- function(x)
 {
@@ -92,4 +105,24 @@ brackify = function(x) {
   # arbitrary cutoff
   if (length(x) > 10L) x = c(x[1:10], '...')
   sprintf('[%s]', paste(x, collapse = ', '))
+}
+
+# patterns done via NSE in melt.data.table and .SDcols in `[.data.table`
+do_patterns = function(pat_sub, all_cols) {
+  # received as substitute(patterns(...))
+  pat_sub = as.list(pat_sub)[-1L]
+  # identify cols = argument if present
+  idx = which(names(pat_sub) == "cols")
+  if (length(idx)) {
+    cols = eval(pat_sub[["cols"]], parent.frame(2L))
+    pat_sub = pat_sub[-idx]
+  } else cols = all_cols
+  pats = lapply(pat_sub, eval, parent.frame(2L))
+  matched = patterns(pats, cols=cols)
+  # replace with lengths when R 3.2.0 dependency arrives
+  if (length(idx <- which(sapply(matched, length) == 0L)))
+    stop('Pattern', if (length(idx) > 1L) 's', ' not found: [',
+         paste(pats[idx], collapse = ', '), ']')
+
+  return(matched)
 }

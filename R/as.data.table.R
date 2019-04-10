@@ -6,7 +6,7 @@ as.data.table <-function(x, keep.rownames=FALSE, ...)
 }
 
 as.data.table.default <- function(x, ...){
-  setDT(as.data.frame(x, ...))[]
+  as.data.table(as.data.frame(x, ...)) # we cannot assume as.data.frame will do copy, thus setDT changed to as.data.table #3230
 }
 
 as.data.table.factor <- as.data.table.ordered <-
@@ -94,7 +94,7 @@ as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name=
   if (is.null(names(val)) || all(!nzchar(names(val))))
     setattr(val, 'names', paste0("V", rev(seq_along(val))))
   if (value.name %chin% names(val))
-    stop(sprintf("Argument 'value.name' should not overlap with column names in result: %s.", paste(rev(names(val)), collapse=", ")))
+    stop("Argument 'value.name' should not overlap with column names in result: ", brackify(rev(names(val))))
   N = NULL
   ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N=as.vector(x))
   if (isTRUE(na.rm))
@@ -108,6 +108,8 @@ as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name=
 }
 
 as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
+  wn = sapply(x,is.null)
+  if (any(wn)) x = x[!wn]
   if (!length(x)) return( null.data.table() )
   # fix for #833, as.data.table.list with matrix/data.frame/data.table as a list element..
   # TODO: move this entire logic (along with data.table() to C
@@ -125,18 +127,17 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
   idx = which(n < mn)
   if (length(idx)) {
     for (i in idx) {
-      if (!is.null(x[[i]])) {# avoids warning when a list element is NULL
-        if (inherits(x[[i]], "POSIXlt")) {
-          warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
-          x[[i]] = as.POSIXct(x[[i]])
-        }
-        # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
-        if (!n[i] && mn)
-          warning("Item ", i, " is of size 0 but maximum size is ", mn, ", therefore recycled with 'NA'")
-        else if (n[i] && mn %% n[i] != 0L)
-          warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
-        x[[i]] = rep(x[[i]], length.out=mn)
+      # any is.null(x[[i]]) were removed above, otherwise warning when a list element is NULL
+      if (inherits(x[[i]], "POSIXlt")) {
+        warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+        x[[i]] = as.POSIXct(x[[i]])
       }
+      # Implementing FR #4813 - recycle with warning when nr %% nrows[i] != 0L
+      if (!n[i] && mn)
+        warning("Item ", i, " is of size 0 but maximum size is ", mn, ", therefore recycled with 'NA'")
+      else if (n[i] && mn %% n[i] != 0L)
+        warning("Item ", i, " is of size ", n[i], " but maximum size is ", mn, " (recycled leaving a remainder of ", mn%%n[i], " items)")
+      x[[i]] = rep(x[[i]], length.out=mn)
     }
   }
   # fix for #842

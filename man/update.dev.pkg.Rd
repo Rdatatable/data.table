@@ -10,7 +10,8 @@
 }
 
 \usage{\method{update}{dev.pkg}(object="data.table",
-repo="https://Rdatatable.gitlab.io/data.table", field="Revision", type=getOption("pkgType"), \dots)
+repo="https://Rdatatable.gitlab.io/data.table", field="Revision",
+type=getOption("pkgType"), \dots)
 }
 \arguments{
   \item{object}{ character scalar, package name. }
