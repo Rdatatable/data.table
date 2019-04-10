@@ -576,6 +576,7 @@ static void StrtoI32(FieldParseContext *ctx)
   const char *ch = *(ctx->ch);
   int32_t *target = (int32_t*) ctx->targets[sizeof(int32_t)];
 
+  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;  // to know if at least one digit is present
@@ -587,8 +588,8 @@ static void StrtoI32(FieldParseContext *ctx)
   // see init.c for checks of unsigned uint_fast8_t cast
   // optimizer should implement 10* as ((x<<2 + x)<<1) or (x<<3 + x<<1)
 
-  /*if (loseLeadingZeroOption)*/ while (*ch=='0') ch++;
   // number significant figures = digits from the first non-zero onwards including trailing zeros
+  while (*ch=='0') ch++;
   uint_fast32_t sf = 0;
   while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
     acc = 10*acc + digit;
@@ -614,7 +615,7 @@ static void StrtoI64(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int64_t *target = (int64_t*) ctx->targets[sizeof(int64_t)];
-
+  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;
@@ -673,6 +674,7 @@ static void parse_double_regular(FieldParseContext *ctx)
   const char *ch = *(ctx->ch);
   double *target = (double*) ctx->targets[sizeof(double)];
 
+  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
   bool neg, Eneg;
   ch += (neg = *ch=='-') + (*ch=='+');
 
@@ -682,9 +684,7 @@ static void parse_double_regular(FieldParseContext *ctx)
                           // equal to acc * pow(10,e)
   uint_fast8_t digit;     // temporary variable, holds last scanned digit.
 
-  // Skip leading zeros
-  while (*ch=='0') ch++;
-
+  while (*ch=='0') ch++;  // Skip leading zeros
   // Read the first, integer part of the floating number (but no more than
   // FLOAT_MAX_DIGITS digits).
   int_fast32_t sflimit = FLOAT_MAX_DIGITS;
@@ -1903,18 +1903,22 @@ int freadMain(freadMainArgs _args) {
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
+    if (type[j]==CT_DROP) { size[j]=0; ndrop++; continue; }
+    if (type[j]<tmpType[j]) {
+      if (strcmp(typeName[tmpType[j]], typeName[type[j]]) != 0) {
+        DTWARN("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. " \
+               "If this was intended, please coerce to the lower type afterwards.",
+               j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
+      }
+      type[j] = tmpType[j];
+      // TODO: apply overrides to lower type afterwards and warn about the loss of accuracy then (if any); e.g. "4.0" would be fine to coerce to integer with no warning since
+      // no loss of accuracy but must be read as double for now in case "4.3" occurs out of sample to know if warning about accuracy is needed afterwards.
+    }
+    nUserBumped += type[j]>tmpType[j];
     size[j] = typeSize[type[j]];
     rowSize1 += (size[j] & 1);  // only works if all sizes are powers of 2
     rowSize4 += (size[j] & 4);
     rowSize8 += (size[j] & 8);
-    if (type[j]==CT_DROP) { ndrop++; continue; }
-    if (type[j]<tmpType[j]) {
-      if (verbose) DTPRINT("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' which will lose accuracy. " \
-           "If this was intended, please coerce to the lower type afterwards. Only overrides to a higher type are permitted.",
-           j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
-      type[j] = tmpType[j];
-    }
-    nUserBumped += type[j]>tmpType[j];
     if (type[j] == CT_STRING) nStringCols++; else nNonStringCols++;
   }
   if (verbose) DTPRINT("  After %d type and %d drop user overrides : %s\n", nUserBumped, ndrop, typesAsString(ncol));
@@ -1997,9 +2001,10 @@ int freadMain(freadMainArgs _args) {
     {
       nth = omp_get_num_threads();
       if (me!=0) {
-        // should never happen
-        snprintf(internalErr, internalErrSize, "Internal error: Master thread is not thread 0 but thread %d.\n", me); // # nocov
+        // # nocov start
+        snprintf(internalErr, internalErrSize, "Internal error: Master thread is not thread 0 but thread %d.\n", me);
         stopTeam = true;
+        // # nocov end
       }
       myShowProgress = args.showProgress;
     }
@@ -2250,11 +2255,13 @@ int freadMain(freadMainArgs _args) {
       #pragma omp ordered
       {
         if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered
-          myNrow = 0;               // discard my buffer
+          myNrow = 0;               // # nocov; discard my buffer
         }
         else if (headPos!=thisJumpStart) {
-          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof); // # nocov
+           // # nocov start
+          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
+          // # nocov end
         }
         else {
           ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.

@@ -34,14 +34,15 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
     nas  = x[[ncol(x)]]
   }
   if (ties.method == "random") {
-    set(x, i = if (is.na(na.last)) which_(nas, FALSE) else NULL,
-         j = "..stats_runif..",
-         value = stats::runif(nrow(x)))
+    v = stats::runif(nrow(x))
+    if (is.na(na.last)) {
+      idx = which_(nas, FALSE)
+      set(x, idx, '..stats_runif..', v[idx])
+    } else set(x, NULL, '..stats_runif..', v)
     order = if (length(order) == 1L) c(rep(order, length(cols)), 1L) else c(order, 1L)
     cols = c(cols, ncol(x))
   }
-  xorder  = forderv(x, by=cols, order=order, sort=TRUE, retGrp=TRUE,
-        na.last=if (identical(na.last, FALSE)) na.last else TRUE)
+  xorder  = forderv(x, by=cols, order=order, sort=TRUE, retGrp=TRUE, na.last=if (isFALSE(na.last)) na.last else TRUE)
   xstart  = attr(xorder, 'starts')
   xsorted = FALSE
   if (!length(xorder)) {
