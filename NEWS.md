@@ -4,7 +4,7 @@
 
 #### NEW FEATURES
 
-1. "print.data.table() now allows the option to print out timezone of POSIX columns when available, [#2842](https://github.com/Rdatatable/data.table/issues/2842). Thanks to Michael Chirico for reporting and Felipe Parages for adding, [PR#XYZ](PR link)" 
+1. "print.data.table() now allows the option to print out timezone of POSIX columns when available, [#2842](https://github.com/Rdatatable/data.table/issues/2842). Thanks to Michael Chirico for reporting and Felipe Parages for adding, [PR#3500](https://github.com/Rdatatable/data.table/pull/3500)" 
 
 #### BUG FIXES
 
