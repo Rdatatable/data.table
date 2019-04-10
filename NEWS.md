@@ -4,6 +4,8 @@
 
 #### NEW FEATURES
 
+1. "print.data.table() now allows the option to print out timezone of POSIX columns when available, [#2842](https://github.com/Rdatatable/data.table/issues/2842). Thanks to Michael Chirico for reporting and Felipe Parages for adding, [PR#XYZ](PR link)" 
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
