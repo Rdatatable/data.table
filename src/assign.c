@@ -380,13 +380,30 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   }
   if (any_duplicated(cols,FALSE)) error("Can't assign to the same column twice in the same query (duplicates detected).");
   if (!isNull(newcolnames) && !isString(newcolnames)) error("newcolnames is supplied but isn't a character vector");
+  bool RHS_list_of_columns = false;
   if (TYPEOF(values)==VECSXP) {
     if (length(cols)>1) {
       if (length(values)==0) error("Supplied %d columns to be assigned an empty list (which may be an empty data.table or data.frame since they are lists too). To delete multiple columns use NULL instead. To add multiple empty list columns, use list(list()).", length(cols));
       if (length(values)!=length(cols))
         error("Supplied %d columns to be assigned %d item%s; expecting %d items.%s", length(cols), length(values), length(values)>1?"s":"", length(cols),
               length(values)==1?" Try removing the list() or .() wrapper around the RHS.":"");
-    } // else it's a list() column being assigned to one column
+      RHS_list_of_columns = true;
+    } else {
+      // tricky case: when assigning to one column, and the RHS is a list, does that list wrapper represent (1) a list of one column, or (2) a list column?
+      // as from v1.12.4 we resolve this by looking at the type of the column being assigned. If it's not a list column, then the RHS's list must be (1).
+      // The goal here is not to use whether the length is 1 or not, because that causes edge case differences when assigning to one row.
+      int coln = INTEGER(cols)[0];
+      if (coln>=1) {
+        if (coln<=oldncol) {
+          // existing column
+          SEXP col = VECTOR_ELT(dt, coln-1);
+          if (!isNewList(VECTOR_ELT(dt, coln-1))) RHS_list_of_columns = true;
+          else
+
+
+      } // else invalid column number and the out-of-range error happens below
+
+    }  // else it's a list() column being assigned to one column
   }
   // Check all inputs :
   for (i=0; i<length(cols); i++) {
