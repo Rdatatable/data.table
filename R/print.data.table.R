@@ -60,7 +60,6 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     rn = seq_len(nrow(x))
     printdots = FALSE
   }
-  
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
   if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(x,inherits,"integer64"))) require_bit64()
