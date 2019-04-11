@@ -10,6 +10,8 @@
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
 
+2. `keyby=colName` could use the wrong index and return incorrect results if both `colName` and `colNameExtra` (where `colName` is a leading subset of characters of `colNameExtra`) are column names and an index exists on `colNameExtra`, [#3498](https://github.com/Rdatatable/data.table/issues/3498). Thanks to Xianying Tan for the detailed report and pinpointing the source line at fault.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
