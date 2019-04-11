@@ -13996,6 +13996,18 @@ test(2022.2, d[.("a"), f:=list(function(x) x^4)], data.table(id=c("a","b"), f=li
 test(2022.3, d[2, f:=6:8], data.table(id=c("a","b"), f=list(function(x) x^4, 6:8), key="id"))
 test(2022.4, d[.("b"), f:=list(list(function(x) x^3))], data.table(id=c("a","b"), f=list(function(x) x^4, function(x) x^3), key="id"))
 
+# keyby= used wrong index where "CLASS" is leading subset of characters of "CLASS_L3" and index exists on CLASS_L3, #3498
+DT = data.table(
+  CLASS_L3 = c("gggg", "iiii", "bbbb", "bbbb", "gggg", "ffff", "bbbb", "Repo", "bbbb", "dddd", "hhhh", "dddd", "gggg", "dddd"),
+  CLASS    = c("aaaa", "dddd", "gggg", "gggg", "aaaa", "eeee", "eeee", "ffff", "gggg", "aaaa", "aaaa", "aaaa", "aaaa", "aaaa"))
+test(2023.1, indices(DT), NULL)
+test(2023.2, DT[, .N, keyby = CLASS], ans<-data.table(CLASS=c("aaaa","dddd","eeee","ffff","gggg"), N=INT(7,1,2,1,3), key="CLASS"))
+test(2023.3, indices(DT), NULL)
+setindex(DT, CLASS_L3)
+test(2023.4, indices(DT), "CLASS_L3")
+test(2023.5, DT[, .N, keyby = CLASS], ans)   # just this test failed in v1.12.2 and before due to using the CLASS_L3 index incorrectly
+test(2023.6, DT[, .N, by = CLASS], data.table(CLASS=c("aaaa","dddd","gggg","eeee","ffff"), N=INT(7,1,3,2,1)))
+
 
 ###################################
 #  Add new tests above this line  #

@@ -863,8 +863,9 @@ replace_dot_alias <- function(e) {
           # either bysameorder or byindex can be true but not both. TODO: better name for bysameorder might be bykeyx
           if (!bysameorder && keyby && !length(irows) && isTRUE(getOption("datatable.use.index"))) {
             # TODO: could be allowed if length(irows)>1 but then the index would need to be squashed for use by uniqlist, #3062
-            tt = paste0(allbyvars, collapse="__")
-            w = which.first(substring(indices(x),1L,nchar(tt)) == tt)  # substring to avoid the overhead of grep
+            # find if allbyvars is leading subset of any of the indices; add a trailing "__" to fix #3498 where a longer column name starts with a shorter column name
+            tt = paste0(c(allbyvars,""), collapse="__")
+            w = which.first(substring(paste0(indices(x),"__"),1L,nchar(tt)) == tt)
             if (!is.na(w)) {
               byindex = indices(x)[w]
               if (!length(getindex(x, byindex))) {
