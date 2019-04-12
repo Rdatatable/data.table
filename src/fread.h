@@ -136,6 +136,8 @@ typedef struct freadMainArgs
   // will become integer.
   bool logical01;
 
+  bool keepLeadingZeros;
+
   char _padding[1];
 
   // Any additional implementation-specific parameters.
