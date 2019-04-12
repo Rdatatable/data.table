@@ -388,13 +388,17 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       // tricky case: when assigning to one column, and the RHS is a list, does that list wrapper represent (1) a list of one column, or (2) a list column?
       // as from v1.12.4 we resolve this by looking at the type of the column being assigned. If it's not a list column, then the RHS's list must be (1).
       // The goal here is not to use whether the length is 1 or not, because that causes edge case differences when assigning to one row.
+      if (LENGTH(values)==1) RHS_list_of_columns = true;
+        // the list could represent a set of 1 columns,so
+      /*
+       && isNewList(VECTOR_ELT(values,0))) RHS_list_of_columns = true
       int coln = INTEGER(cols)[0];
       if (coln>=1) {
         if (coln<=oldncol) {
           // existing column
           if (!isNewList(VECTOR_ELT(dt, coln-1))) {
-            // if (LENGTH(values)!=nrow/*column plonk changing column type to list such as test 1480*/)
-            RHS_list_of_columns = true;
+            // if (LENGTH(values)!=nrow*//*column plonk changing column type to list such as test 1480*/
+        /*    RHS_list_of_columns = true;
           } else {
             if (LENGTH(values)==1 && isNewList(VECTOR_ELT(values,0))) RHS_list_of_columns = true;  // .(list(...))
           }
@@ -402,7 +406,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
           // new column must be clearly intended to create list column; so .(list(...)) needed.
           RHS_list_of_columns = LENGTH(values)==1;  //true;  // e.g. newCol:=.(list(1:3,1:2,1:10)) ok;  newCol:=list(1:3,1:2,1:10) would be length error (3 too many items on RHS)
         }
-      } // else invalid column number <= 0 out-of-range error happens below
+      } */// else invalid column number <= 0 out-of-range error happens below
     }
   }
   if (verbose) Rprintf("RHS_list_of_columns == %s\n", RHS_list_of_columns ? "true" : "false");
