@@ -455,10 +455,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     if (isMatrix(thisvalue) && (j=INTEGER(getAttrib(thisvalue, R_DimSymbol))[1]) > 1)  // matrix passes above (considered atomic vector)
       warning("%d column matrix RHS of := will be treated as one vector", j);
     const SEXP existing = (coln+1)<=oldncol ? VECTOR_ELT(dt,coln) : R_NilValue;
+
     if (isFactor(existing) &&
       !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue) && !isNewList(thisvalue))  // !=INTSXP includes factor
       error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
-    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen) {   // delete ... && (!isNewList(existing) || isNewList(thisvalue))) {
+
+    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen && TYPEOF(existing)!=VECSXP) {
+      // note that isNewList(R_NilValue) is true (oddly) so it needs to be TYPEOF(existing)!=VECSXP above
       error("Supplied %d items to be assigned to %d items of column '%s'. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code.", vlen, targetlen,CHAR(colnam));
     }
   }
