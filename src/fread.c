@@ -2149,7 +2149,10 @@ int freadMain(freadMainArgs _args) {
           while (*tch==' ') tch++;  // multiple sep=' ' at the tLineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
           fieldStart = tch;
           skip_white(&tch);
-          if (*tch=='\0') continue; // empty last line
+          if (*tch=='\0') {
+            nrowLimit = myNrow;
+            continue; // empty last line
+          }
           if (eol(&tch) && skipEmptyLines) { tch++; continue; }
           tch = fieldStart;         // in case tabs at the beginning of the first field need to be included
         }
