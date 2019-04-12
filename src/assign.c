@@ -380,16 +380,19 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   }
   if (any_duplicated(cols,FALSE)) error("Can't assign to the same column twice in the same query (duplicates detected).");
   if (!isNull(newcolnames) && !isString(newcolnames)) error("newcolnames is supplied but isn't a character vector");
-  const bool RHS_list_of_columns = TYPEOF(values)==VECSXP && (length(cols)>1 || LENGTH(values)==1);
+  bool RHS_list_of_columns = TYPEOF(values)==VECSXP && (length(cols)>1 || LENGTH(values)==1);
   if (verbose) Rprintf("RHS_list_of_columns == %s\n", RHS_list_of_columns ? "true" : "false");
   if (RHS_list_of_columns) {
     if (length(values)==0)
       error("Supplied %d columns to be assigned an empty list (which may be an empty data.table or data.frame since they are lists too). "
             "To delete multiple columns use NULL instead. To add multiple empty list columns, use list(list()).", length(cols));
-    if (length(values)!=length(cols))
-      error("Supplied %d columns to be assigned %d item%s; expecting %d item%s.%s",
-            length(cols), length(values), length(values)>1?"s":"", length(cols), length(cols)>1?"s":"",
-            length(values)==1?" Try adding/removing the list() or .() wrapper around the RHS.":"");
+    if (length(values)>1 && length(values)!=length(cols))
+      error("Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2. Try adding/removing a list() or .() wrapper around the RHS.", length(cols), length(values));
+    if (length(values)==1) {
+      // c("colA","colB"):=list(13:15) should use 13:15 for both columns (recycle 1 item ok). So just change RHS so we don't have to deal with recycling-length-1 later
+      values = VECTOR_ELT(values,0);
+      RHS_list_of_columns = false;
+    }
   }
   // Check all inputs :
   for (i=0; i<length(cols); i++) {
