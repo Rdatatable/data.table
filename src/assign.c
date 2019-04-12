@@ -380,35 +380,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   }
   if (any_duplicated(cols,FALSE)) error("Can't assign to the same column twice in the same query (duplicates detected).");
   if (!isNull(newcolnames) && !isString(newcolnames)) error("newcolnames is supplied but isn't a character vector");
-  bool RHS_list_of_columns = false;
-  if (TYPEOF(values)==VECSXP) {
-    if (length(cols)>1) {
-      RHS_list_of_columns = true;  // easy and unambiguous
-    } else {
-      // tricky case: when assigning to one column, and the RHS is a list, does that list wrapper represent (1) a list of one column, or (2) a list column?
-      // as from v1.12.4 we resolve this by looking at the type of the column being assigned. If it's not a list column, then the RHS's list must be (1).
-      // The goal here is not to use whether the length is 1 or not, because that causes edge case differences when assigning to one row.
-      if (LENGTH(values)==1) RHS_list_of_columns = true;
-        // the list could represent a set of 1 columns,so
-      /*
-       && isNewList(VECTOR_ELT(values,0))) RHS_list_of_columns = true
-      int coln = INTEGER(cols)[0];
-      if (coln>=1) {
-        if (coln<=oldncol) {
-          // existing column
-          if (!isNewList(VECTOR_ELT(dt, coln-1))) {
-            // if (LENGTH(values)!=nrow*//*column plonk changing column type to list such as test 1480*/
-        /*    RHS_list_of_columns = true;
-          } else {
-            if (LENGTH(values)==1 && isNewList(VECTOR_ELT(values,0))) RHS_list_of_columns = true;  // .(list(...))
-          }
-        } else {
-          // new column must be clearly intended to create list column; so .(list(...)) needed.
-          RHS_list_of_columns = LENGTH(values)==1;  //true;  // e.g. newCol:=.(list(1:3,1:2,1:10)) ok;  newCol:=list(1:3,1:2,1:10) would be length error (3 too many items on RHS)
-        }
-      } */// else invalid column number <= 0 out-of-range error happens below
-    }
-  }
+  const bool RHS_list_of_columns = TYPEOF(values)==VECSXP && (length(cols)>1 || LENGTH(values)==1);
   if (verbose) Rprintf("RHS_list_of_columns == %s\n", RHS_list_of_columns ? "true" : "false");
   if (RHS_list_of_columns) {
     if (length(values)==0)
@@ -427,10 +399,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       else error("Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. Use column names instead in j to add new columns.", i+1, coln, oldncol);
     }
     coln--;
-    //if (TYPEOF(values)==VECSXP && (LENGTH(cols)>1 || (LENGTH(values)==1 && TYPEOF(VECTOR_ELT(values,0))==VECSXP)))
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
-    //else
-    //  thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
     vlen = length(thisvalue);
     if (isNull(thisvalue) && !isNull(rows)) error("When deleting columns, i should not be provided");  // #1082, #3089
     if (coln+1 <= oldncol) colnam = STRING_ELT(names,coln);
@@ -450,19 +419,18 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       }
       // RHS of assignment to new column is zero length but we'll use its type to create all-NA column of that type
     }
-    // delete ... if (!(isVectorAtomic(thisvalue) || isNewList(thisvalue)))  // NULL had a continue earlier above
-    //  error("RHS of assignment is not NULL, not an atomic vector (see ?is.atomic) and not a list column. If you're trying to create a list column, try wrapping it with an extra list() or .()");
     if (isMatrix(thisvalue) && (j=INTEGER(getAttrib(thisvalue, R_DimSymbol))[1]) > 1)  // matrix passes above (considered atomic vector)
       warning("%d column matrix RHS of := will be treated as one vector", j);
     const SEXP existing = (coln+1)<=oldncol ? VECTOR_ELT(dt,coln) : R_NilValue;
-
     if (isFactor(existing) &&
-      !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue) && !isNewList(thisvalue))  // !=INTSXP includes factor
-      error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
-
+      !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue) && !isNewList(thisvalue)) {  // !=INTSXP includes factor
+      error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)",
+            CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
+    }
     if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen && TYPEOF(existing)!=VECSXP) {
-      // note that isNewList(R_NilValue) is true (oddly) so it needs to be TYPEOF(existing)!=VECSXP above
-      error("Supplied %d items to be assigned to %d items of column '%s'. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code.", vlen, targetlen,CHAR(colnam));
+      // note that isNewList(R_NilValue) is true so it needs to be TYPEOF(existing)!=VECSXP above
+      error("Supplied %d items to be assigned to %d items of column '%s'. If you wish to 'recycle' the RHS please "
+            "use rep() to make this intent clear to readers of your code.", vlen, targetlen, CHAR(colnam));
     }
   }
   // having now checked the inputs, from this point there should be no errors so we can now proceed to
@@ -493,11 +461,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   for (i=0; i<length(cols); i++) {
     coln = INTEGER(cols)[i]-1;
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
-
-    //if (TYPEOF(values)==VECSXP && (LENGTH(cols)>1 || TYPEOF(target)==VECSXP || (LENGTH(values)==1 && TYPEOF(VECTOR_ELT(values,0))==VECSXP)))  // last part for col:=list(list(1:3))
-    //  thisvalue = VECTOR_ELT(values, i);
-    //else
-    //  thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
     if (TYPEOF(thisvalue)==NILSXP) {
       if (!isNull(rows)) error("Internal error: earlier error 'When deleting columns, i should not be provided' did not happen."); // # nocov
       anytodelete = TRUE;
@@ -506,7 +469,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     vlen = length(thisvalue);
     if (length(rows)==0 && targetlen==vlen && (vlen>0 || nrow==0)) {
       if (  MAYBE_SHARED(thisvalue) ||  // set() protects the NAMED of atomic vectors from .Call setting arguments to 2 by wrapping with list
-         // (TYPEOF(values)==VECSXP && i>LENGTH(values)-1) || // recycled RHS would have columns pointing to others, #185.
          (TYPEOF(values)!=VECSXP && i>0) // assigning the same values to a second column. Have to ensure a copy #2540
          ) {
         if (verbose) {

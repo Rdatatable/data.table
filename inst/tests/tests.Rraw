@@ -13993,7 +13993,7 @@ setkey(DT, a, b)
 setorder(DT, b)
 test(2021.3, key(DT), NULL)
 
-# assign RHS list better error msg, #950
+# assign to list column works now when RHS is not list, #950 and then PR#**** follow up
 d = data.table(id=c("a","b"), f=list(function(x) x*2, function(x) x^2), key="id")
 test(2022.1, d[.("a"), f:=function(x)x^3], data.table(id=c("a","b"), f=list(function(x) x^3, function(x) x^2), key="id"))
 test(2022.2, d[.("a"), f:=list(function(x) x^4)], data.table(id=c("a","b"), f=list(function(x) x^4, function(x) x^2), key="id"))
