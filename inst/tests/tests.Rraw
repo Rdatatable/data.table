@@ -2106,20 +2106,20 @@ test(752, DT[,head(.SD,2)[,new:=1:.N],by=a], data.table(a=rep(1:3,each=2),b=c(1:
 
 # Test duplicate() of recycled plonking RHS, #2298
 DT = data.table(a=letters[3:1],x=1:3)
-test(753.1, setkey(DT[,c("x1","x2"):=x],a), data.table(a=letters[1:3],x=3:1,x1=3:1,x2=3:1,key="a"))
-test(753.2, DT[,c("x1","x2"):=4:6, verbose = TRUE], data.table(a=letters[1:3],x=3:1,x1=4:6,x2=4:6,key="a"),
+test(753, setkey(DT[,c("x1","x2"):=x],a), data.table(a=letters[1:3],x=3:1,x1=3:1,x2=3:1,key="a"))
+test(753.1, DT[,c("x1","x2"):=4:6, verbose = TRUE], data.table(a=letters[1:3],x=3:1,x1=4:6,x2=4:6,key="a"),
             output = "RHS for item 2 has been duplicated")
-test(753.3, DT[2,x2:=7L], data.table(a=letters[1:3],x=3:1,x1=4:6,x2=c(4L,7L,6L),key="a"))
+test(753.2, DT[2,x2:=7L], data.table(a=letters[1:3],x=3:1,x1=4:6,x2=c(4L,7L,6L),key="a"))
 DT = data.table(a=letters[3:1],x=1:3,y=4:6)
-test(754.1, DT[,c("x1","y1","x2"):=list(x,y)], error="Supplied 3 columns to be assigned 2 items; expecting 3 items.")
-test(754.2, DT[,c("x1","y1","x2"):=list(x,y,x)], data.table(a=letters[3:1],x=1:3,y=4:6,x1=1:3,y1=4:6,x2=1:3))
+test(754, DT[,c("x1","y1","x2"):=list(x,y)], error="Supplied 3 columns to be assigned 2 items; expecting 3 items.")
+test(754.0, DT[,c("x1","y1","x2"):=list(x,y,x)], data.table(a=letters[3:1],x=1:3,y=4:6,x1=1:3,y1=4:6,x2=1:3))
 # And non-recycling i.e. that a single column copy does copy the column
 DT = data.table(a=1:3)
-test(754.3, DT[,b:=a][1,a:=4L][2,b:=5L], data.table(a=INT(4,2,3),b=INT(1,5,3)))
-test(754.4, DT[,b:=a][3,b:=6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
-test(754.5, DT[,a:=as.character(a),verbose=TRUE], output="Direct plonk.*no copy")
+test(754.1, DT[,b:=a][1,a:=4L][2,b:=5L], data.table(a=INT(4,2,3),b=INT(1,5,3)))
+test(754.2, DT[,b:=a][3,b:=6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
+test(754.3, DT[,a:=as.character(a),verbose=TRUE], output="Direct plonk.*no copy")
 RHS = as.integer(DT$a)
-test(754.6, DT[,a:=RHS,verbose=TRUE], output="RHS for item 1 has been duplicated")
+test(754.4, DT[,a:=RHS,verbose=TRUE], output="RHS for item 1 has been duplicated")
 
 # Used to test warning on redundant by (#2282) but by=.EACHI has now superseded
 DT = data.table(a=letters[1:3],b=rep(c("d","e"),each=3),x=1:6,key="a,b")
