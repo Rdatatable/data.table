@@ -326,8 +326,11 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
     SEXP *ustr3 = (SEXP *)malloc(ustr_n * sizeof(SEXP));
     if (!ustr3) Error("Failed to alloc ustr3 when converting strings to UTF8");  // # nocov
     memcpy(ustr3, STRING_PTR(ustr2), ustr_n*sizeof(SEXP));
+    // need to reset ustr_maxlen because we need ustr_maxlen for utf8 strings
+    ustr_maxlen = 0;
     for (int i=0; i<ustr_n; i++) {
       SEXP s = ustr3[i];
+      if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
       if (TRUELENGTH(s)>0) savetl(s);
     }
     cradix(ustr3, ustr_n);  // sort to detect possible duplicates after converting; e.g. two different non-utf8 map to the same utf8
