@@ -134,38 +134,54 @@ status = function(which="both") {
   invisible()
 }
 
-run = function(which=c("not.started","cran.fail","bioc.fail","both.fail","rerun.all")) {
+run = function(pkgs=NULL) {
   cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
-  if (length(which)>1) which = which[1L]
-  cat("which == ",which,"\n", sep="")
-  numtgz = as.integer(system("ls -1 *.tar.gz | wc -l", intern=TRUE))
-  stopifnot(numtgz==length(deps))
-  if (which=="rerun.all") {
-    cmd = "rm -rf *.Rcheck ; ls -1 *.tar.gz | TZ='UTC' OMP_THREAD_LIMIT=2 parallel R CMD check"
-    # TZ='UTC' because some packages have failed locally for me but not on CRAN or for their maintainer, due to sensitivity of tests to timezone
-    cat("WIPE ALL CHECKS:",cmd,"\n")
-    cat("Proceed? (ctrl-c or enter)\n")
-    scan(quiet=TRUE)
-    # apx 7.5 hrs for 582 packages on my 4 cpu laptop with 8 threads
-  } else {
-    if (!which %in% c("not.started","cran.fail","bioc.fail","both.fail")) {
-      x = which   # one package manually
+  if (length(pkgs)==1) pkgs = strsplit(pkgs, split="[, ]")[[1]]
+  if (anyDuplicated(pkgs)) stop("pkgs contains dups")
+  if (!length(pkgs)) {
+    opts = c("not.started","cran.fail","bioc.fail","both.fail","rerun.all")
+    cat(paste0(1:length(opts),": ",opts)  , sep="\n")
+    w = suppressWarnings(as.integer(readline("Enter option: ")))
+    if (is.na(w) || !w %in% seq_along(opts)) stop(w," is invalid")
+    which = opts[w]
+    numtgz = as.integer(system("ls -1 *.tar.gz | wc -l", intern=TRUE))
+    stopifnot(numtgz==length(deps))
+    if (which=="rerun.all") {
+      pkgs = "__ALL__"
+      cmd = "rm -rf *.Rcheck"
+      cat("WIPE ALL CHECK RESULTS:",cmd,"\n")
+      cat("Proceed? (ctrl-c or enter)\n")
+      scan(quiet=TRUE)
+      system(cmd)
     } else {
-      x = NULL
-      if (which=="not.started") x = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # those that haven't run
-      if (which %in% c("cran.fail","both.fail")) x = union(x, .fail.cran)  # .fail.* were written to .GlobalEnv by status()
-      if (which %in% c("bioc.fail","both.fail")) x = union(x, .fail.bioc)
+      pkgs = NULL
+      if (which=="not.started") pkgs = deps[!file.exists(paste0("./",deps,".Rcheck"))]  # those that haven't run
+      if (which %in% c("cran.fail","both.fail")) pkgs = union(pkgs, .fail.cran)  # .fail.* were written to .GlobalEnv by status()
+      if (which %in% c("bioc.fail","both.fail")) pkgs = union(pkgs, .fail.bioc)
     }
-    if (length(x)==0) { cat("No packages to run\n"); return(invisible()); }
-    cat("Running",length(x),"packages:", paste(x), "\n")
-    cat("Proceed? (ctrl-c or enter)\n")
-    scan(quiet=TRUE)
-    for (i in x) system(paste0("rm -rf ./",i,".Rcheck"))
-    cmd = paste0("ls -1 *.tar.gz | grep -E '", paste0(paste0(x,"_"),collapse="|"),"' | TZ='UTC' OMP_THREAD_LIMIT=2 parallel R CMD check")
   }
+  if (length(pkgs)==0) { cat("No packages to run\n"); return(invisible()); }
+  if (identical(pkgs,"__ALL__")) {
+    cat("Running all",length(deps),"packages\n")
+    filter = ""
+  } else {
+    cat("Running",length(pkgs),"packages:", paste(pkgs), "\n")
+    filter = paste0("| grep -E '", paste0(paste0(pkgs,"_"),collapse="|"), "' ")
+  }
+  cat("Proceed? (ctrl-c or enter)\n")
+  scan(quiet=TRUE)
+  if (!identical(pkgs,"_ALL_")) for (i in pkgs) system(paste0("rm -rf ./",i,".Rcheck"))
+  cmd = paste0("ls -1 *.tar.gz ", filter, "| TZ='UTC' OMP_THREAD_LIMIT=2 parallel --max-procs 50% R CMD check")
+  # TZ='UTC' because some packages have failed locally for me but not on CRAN or for their maintainer, due to sensitivity of tests to timezone
   if (as.integer(system("ps -e | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
   system(paste("((",cmd,">/dev/null 2>&1); touch /tmp/finished.flag)"), wait=FALSE)
+}
+
+inst = function() {
+  last = system("ls -t ~/GitHub/data.table/data.table_*.tar.gz", intern=TRUE)[1L]  # latest timestamp should be dev version
+  cat("Installing",last,"...\n")
+  system(paste("R CMD INSTALL", last))
 }
 
 status()

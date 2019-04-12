@@ -1,7 +1,7 @@
 language: r
 dist: trusty
 sudo: required
-cache: packages
+cache: packages   # to rebuild cache see tweet thread ending here https://twitter.com/jimhester_/status/1115718589804421121
 warnings_are_errors: true
 
 branches:
@@ -13,7 +13,7 @@ r:
 
 os:
   - linux
-  - osx
+  # - osx  # Takes 13m (+9m linux = 22m total); #3357; #3326; #3331. Off by default to speed up dev cycle. AppVeyor covers R-devel and completes in 10m concurrently.
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install llvm &&
