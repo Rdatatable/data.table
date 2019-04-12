@@ -277,7 +277,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
   R_len_t i, j, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
-  SEXP targetcol, RHS, names, nullint, thisvalue, thisv, targetlevels, newcol, s, colnam, klass, tmp, colorder, key, index, a, assignedNames, indexNames;
+  SEXP targetcol, RHS, names, nullint, thisv, targetlevels, newcol, s, colnam, klass, tmp, colorder, key, index, a, assignedNames, indexNames;
   SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
   Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, isDataTable=FALSE;
   const char *c1, *tc1, *tc2;
@@ -383,11 +383,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   bool RHS_list_of_columns = false;
   if (TYPEOF(values)==VECSXP) {
     if (length(cols)>1) {
-      if (length(values)==0) error("Supplied %d columns to be assigned an empty list (which may be an empty data.table or data.frame since they are lists too). To delete multiple columns use NULL instead. To add multiple empty list columns, use list(list()).", length(cols));
-      if (length(values)!=length(cols))
-        error("Supplied %d columns to be assigned %d item%s; expecting %d items.%s", length(cols), length(values), length(values)>1?"s":"", length(cols),
-              length(values)==1?" Try removing the list() or .() wrapper around the RHS.":"");
-      RHS_list_of_columns = true;
+      RHS_list_of_columns = true;  // easy and unambiguous
     } else {
       // tricky case: when assigning to one column, and the RHS is a list, does that list wrapper represent (1) a list of one column, or (2) a list column?
       // as from v1.12.4 we resolve this by looking at the type of the column being assigned. If it's not a list column, then the RHS's list must be (1).
@@ -396,14 +392,28 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       if (coln>=1) {
         if (coln<=oldncol) {
           // existing column
-          SEXP col = VECTOR_ELT(dt, coln-1);
-          if (!isNewList(VECTOR_ELT(dt, coln-1))) RHS_list_of_columns = true;
-          else
-
-
-      } // else invalid column number and the out-of-range error happens below
-
-    }  // else it's a list() column being assigned to one column
+          if (!isNewList(VECTOR_ELT(dt, coln-1))) {
+            // if (LENGTH(values)!=nrow/*column plonk changing column type to list such as test 1480*/)
+            RHS_list_of_columns = true;
+          } else {
+            if (LENGTH(values)==1 && isNewList(VECTOR_ELT(values,0))) RHS_list_of_columns = true;  // .(list(...))
+          }
+        } else {
+          // new column must be clearly intended to create list column; so .(list(...)) needed.
+          RHS_list_of_columns = LENGTH(values)==1;  //true;  // e.g. newCol:=.(list(1:3,1:2,1:10)) ok;  newCol:=list(1:3,1:2,1:10) would be length error (3 too many items on RHS)
+        }
+      } // else invalid column number <= 0 out-of-range error happens below
+    }
+  }
+  if (verbose) Rprintf("RHS_list_of_columns == %s\n", RHS_list_of_columns ? "true" : "false");
+  if (RHS_list_of_columns) {
+    if (length(values)==0)
+      error("Supplied %d columns to be assigned an empty list (which may be an empty data.table or data.frame since they are lists too). "
+            "To delete multiple columns use NULL instead. To add multiple empty list columns, use list(list()).", length(cols));
+    if (length(values)!=length(cols))
+      error("Supplied %d columns to be assigned %d item%s; expecting %d item%s.%s",
+            length(cols), length(values), length(values)>1?"s":"", length(cols), length(cols)>1?"s":"",
+            length(values)==1?" Try adding/removing the list() or .() wrapper around the RHS.":"");
   }
   // Check all inputs :
   for (i=0; i<length(cols); i++) {
@@ -413,10 +423,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       else error("Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. Use column names instead in j to add new columns.", i+1, coln, oldncol);
     }
     coln--;
-    if (TYPEOF(values)==VECSXP && (LENGTH(cols)>1 || (LENGTH(values)==1 && TYPEOF(VECTOR_ELT(values,0))==VECSXP)))  // last part for col:=list(list(1:3))
-      thisvalue = VECTOR_ELT(values, i);
-    else
-      thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
+    //if (TYPEOF(values)==VECSXP && (LENGTH(cols)>1 || (LENGTH(values)==1 && TYPEOF(VECTOR_ELT(values,0))==VECSXP)))
+    SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
+    //else
+    //  thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
     vlen = length(thisvalue);
     if (isNull(thisvalue) && !isNull(rows)) error("When deleting columns, i should not be provided");  // #1082, #3089
     if (coln+1 <= oldncol) colnam = STRING_ELT(names,coln);
@@ -444,7 +454,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     if (isFactor(existing) &&
       !isString(thisvalue) && TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue) && !isNewList(thisvalue))  // !=INTSXP includes factor
       error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)", CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
-    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen && (!isNewList(existing) || isNewList(thisvalue))) {
+    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen) {   // delete ... && (!isNewList(existing) || isNewList(thisvalue))) {
       error("Supplied %d items to be assigned to %d items of column '%s'. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code.", vlen, targetlen,CHAR(colnam));
     }
   }
@@ -475,10 +485,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   }
   for (i=0; i<length(cols); i++) {
     coln = INTEGER(cols)[i]-1;
-    if (TYPEOF(values)==VECSXP && (LENGTH(cols)>1 || TYPEOF(target)==VECSXP || (LENGTH(values)==1 && TYPEOF(VECTOR_ELT(values,0))==VECSXP)))  // last part for col:=list(list(1:3))
-      thisvalue = VECTOR_ELT(values, i);
-    else
-      thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
+    SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
+
+    //if (TYPEOF(values)==VECSXP && (LENGTH(cols)>1 || TYPEOF(target)==VECSXP || (LENGTH(values)==1 && TYPEOF(VECTOR_ELT(values,0))==VECSXP)))  // last part for col:=list(list(1:3))
+    //  thisvalue = VECTOR_ELT(values, i);
+    //else
+    //  thisvalue = values;   // One vector applied to all columns, often NULL or NA for example
     if (TYPEOF(thisvalue)==NILSXP) {
       if (!isNull(rows)) error("Internal error: earlier error 'When deleting columns, i should not be provided' did not happen."); // # nocov
       anytodelete = TRUE;
@@ -771,10 +783,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     for (r=LENGTH(cols)-1; r>=0; r--) {
       i = INTEGER(colorder)[r]-1;
       coln = INTEGER(cols)[i]-1;
-      if (TYPEOF(values)==VECSXP && LENGTH(values)>0)
-        thisvalue = VECTOR_ELT(values,i%LENGTH(values));
-      else
-        thisvalue = values;
+      SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
       if (isNull(thisvalue)) {
         // A new column being assigned NULL would have been warned above, added above, and now deleted (just easier
         // to code it this way e.g. so that other columns may be added or removed ok by the same query).
