@@ -6,7 +6,10 @@
 
 1. New option `options(datatable.quiet = TRUE)` turns off the package startup message, [#3489](https://github.com/Rdatatable/data.table/issues/3489). `suppressPackageStartupMessages()` continues to work too. Thanks to @leobarlach for the suggestion inspired by `options(tidyverse.quiet = TRUE)`. We don't know of a way to make a package respect the `quietly=` option of `library()` and `require()` because the `quietly=` isn't passed through for use by the package's own `.onAttach`. If you can see how to do that, please submit a patch to R.
 
-2. `rleid` functions now support long vectors (length > 2 billion).
+2. `rleid()` functions now support long vectors (length > 2 billion).
+
+3. `fread()`:
+    * skips embeded NUL characters with warning, [#3400](https://github.com/Rdatatable/data.table/issues/3400)
 
 #### BUG FIXES
 
