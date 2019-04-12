@@ -93,7 +93,7 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     default :
-      error("Type '%s' not supported", type2char(TYPEOF(v)));
+      error("Type '%s' not supported", type2char(TYPEOF(v)));  // # nocov
     }
   } else {
     // ncol>1
@@ -124,7 +124,7 @@ SEXP uniqlist(SEXP l, SEXP order)
           }
           break;
         default :
-          error("Type '%s' not supported", type2char(TYPEOF(v)));
+          error("Type '%s' not supported", type2char(TYPEOF(v)));  // # nocov
         }
       }
       if (!b) {
@@ -201,7 +201,7 @@ SEXP rleid(SEXP l, SEXP cols) {
           // long long == 8 bytes checked in init.c
           break;
         default :
-          error("Type '%s' not supported", type2char(TYPEOF(jcol)));
+          error("Type '%s' not supported", type2char(TYPEOF(jcol)));  // # nocov
         }
       }
       ians[i] = (grp+=!same);
@@ -252,8 +252,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   bool *i64 = (bool *)R_alloc(ncols, sizeof(bool));
   if (ngrps==0) error("Internal error: nrows[%d]>0 but ngrps==0", nrows); // # nocov
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
-  if (!isInteger(cols) || ncols == 0)
-    error("cols must be an integer vector of positive length");
+  if (!isInteger(cols) || ncols == 0) error("cols must be an integer vector of positive length");
   // mult arg
   enum {ALL, FIRST, LAST} mult = ALL;
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
@@ -307,7 +306,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
                        dtwiddle(xd, thisi) >= dtwiddle(xd, previ);
         } break;
         default:
-          error("Type '%s' not supported", type2char(TYPEOF(v)));
+          error("Type '%s' not supported", type2char(TYPEOF(v)));  // # nocov
         }
       }
       if (b) break;

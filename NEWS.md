@@ -6,6 +6,8 @@
 
 1. New option `options(datatable.quiet = TRUE)` turns off the package startup message, [#3489](https://github.com/Rdatatable/data.table/issues/3489). `suppressPackageStartupMessages()` continues to work too. Thanks to @leobarlach for the suggestion inspired by `options(tidyverse.quiet = TRUE)`. We don't know of a way to make a package respect the `quietly=` option of `library()` and `require()` because the `quietly=` isn't passed through for use by the package's own `.onAttach`. If you can see how to do that, please submit a patch to R.
 
+2. `rleid` functions now support long vectors (length > 2 billion).
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -116,8 +118,6 @@
 9. Reminder that note 11 in v1.11.0 (May 2018) warned that `set2key()` and `key2()` will be removed in May 2019. They have been warning since v1.9.8 (Nov 2016) and their warnings were upgraded to errors in v1.11.0 (May 2018). When they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental'.
 
 10. The `key(DT)<-` form of `setkey()` has been warning since at least 2012 to use `setkey()`. The warning is now stronger: `key(x)<-value is deprecated and not supported. Please change to use setkey().`. This warning will be upgraded to error in one year.
-
-11. `rleid` functions now supports long vectors.
 
 
 ### Changes in v1.12.0  (13 Jan 2019)
