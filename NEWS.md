@@ -17,6 +17,8 @@
     1:     1    1,2
     2:     2    foo
     3:     3  3,4,5
+
+    # The following all accomplish the same assignment:
     > DT[2, b:=letters[9:13]]           # was error, now works
     > DT[2, b:=.(letters[9:13])]        # was error, now works
     > DT[2, b:=.(list(letters[9:13]))]  # .(list()) was needed, still works
