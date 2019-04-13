@@ -8,6 +8,26 @@
 
 2. `rleid` functions now support long vectors (length > 2 billion).
 
+3. Assigning to a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
+    ```R
+    > DT = data.table(A=1:3, b=list(1:2,"foo",3:5))
+    > DT
+           A      b
+       <int> <list>
+    1:     1    1,2
+    2:     2    foo
+    3:     3  3,4,5
+    > DT[2, b:=letters[9:13]]           # was error, now works
+    > DT[2, b:=.(letters[9:13])]        # was error, now works
+    > DT[2, b:=.(list(letters[9:13]))]  # .(list()) was needed, still works
+    > DT
+           A         b
+       <int>    <list>
+    1:     1       1,2
+    2:     2 i,j,k,l,m
+    3:     3     3,4,5
+    ```
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
