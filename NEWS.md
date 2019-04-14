@@ -8,22 +8,22 @@
 
 2. `rleid` functions now support long vectors (length > 2 billion).
 
-3. Assigning to a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
+3. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
     ```R
-    > DT = data.table(A=1:3, b=list(1:2,"foo",3:5))
+    > DT = data.table(A=1:3, B=list(1:2,"foo",3:5))
     > DT
-           A      b
+           A      B
        <int> <list>
     1:     1    1,2
     2:     2    foo
     3:     3  3,4,5
-
+    
     # The following all accomplish the same assignment:
-    > DT[2, b:=letters[9:13]]           # was error, now works
-    > DT[2, b:=.(letters[9:13])]        # was error, now works
-    > DT[2, b:=.(list(letters[9:13]))]  # .(list()) was needed, still works
+    > DT[2, B:=letters[9:13]]           # was error, now works
+    > DT[2, B:=.(letters[9:13])]        # was error, now works
+    > DT[2, B:=.(list(letters[9:13]))]  # .(list()) was needed, still works
     > DT
-           A         b
+           A         B
        <int>    <list>
     1:     1       1,2
     2:     2 i,j,k,l,m
