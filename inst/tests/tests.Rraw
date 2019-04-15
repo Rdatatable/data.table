@@ -14017,8 +14017,25 @@ DT = data.table(x=c("a","b","c","b","a","c"), y=c(1,3,6,1,6,3), v=1:6)
 setindex(DT, y)
 test(2024, DT[y==6, v:=10L, verbose=TRUE], output=c("Constructing irows for.*", "Reorder irows for.*"))
 
-# fread embedded NULL, #3400
-test(2025, fread(testDir("issue_3400_fread.txt"), skip=1, header=TRUE), data.table(A=INT(1,3), B=INT(2,2), C=INT(3,1)))
+# fread embedded '\0', #3400
+test(2025.01, fread(testDir("issue_3400_fread.txt"), skip=1, header=TRUE), data.table(A=INT(1,3,4), B=INT(2,2,5), C=INT(3,1,6)))
+f = tempfile()
+for (nNUL in 0:3) {
+  writeBin(c(charToRaw("a=b\nA  B  C\n1  3  5\n"), rep(as.raw(0), nNUL), charToRaw("2  4  6\n")), con=f)
+  test(2025.02, fread(f, skip=1, header=TRUE), ans<-data.table(A=1:2, B=3:4, C=5:6))
+  test(2025.03, fread(f), ans)  # auto detect skip and header works too
+  writeBin(c(charToRaw("a=b\nA,B,C\n1,3,5\n"), rep(as.raw(0), nNUL), charToRaw("2,4,6\n")), con=f)
+  test(2025.04, fread(f, skip=1, header=TRUE), ans)
+  test(2025.05, fread(f), ans)
+  writeBin(c(charToRaw("a=b\n"), rep(as.raw(0), nNUL), charToRaw("A  B  C\n1  3  5\n2  4  6\n")), con=f)
+  test(2025.06, fread(f, skip=1, header=TRUE), ans)
+  test(2025.07, fread(f), ans)
+  writeBin(c(charToRaw("a=b\n"), rep(as.raw(0), nNUL), charToRaw("A,B,C\n1,3,5\n2,4,6\n")), con=f)
+  test(2025.08, fread(f, skip=1, header=TRUE), ans)
+  test(2025.09, fread(f), ans)
+}
+writeBin(c(charToRaw("A,B,C\n1,foo,5\n2,"), as.raw(0),charToRaw("bar"), as.raw(0),as.raw(0), charToRaw(",6\n")), con=f)
+test(2025.10, fread(f), data.table(A=1:2, B=c("foo","bar"), C=5:6))
 
 
 ###################################

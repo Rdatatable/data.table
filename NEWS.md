@@ -6,9 +6,12 @@
 
 1. New option `options(datatable.quiet = TRUE)` turns off the package startup message, [#3489](https://github.com/Rdatatable/data.table/issues/3489). `suppressPackageStartupMessages()` continues to work too. Thanks to @leobarlach for the suggestion inspired by `options(tidyverse.quiet = TRUE)`. We don't know of a way to make a package respect the `quietly=` option of `library()` and `require()` because the `quietly=` isn't passed through for use by the package's own `.onAttach`. If you can see how to do that, please submit a patch to R.
 
-2. `rleid` functions now support long vectors (length > 2 billion).
+2. `rleid()` functions now support long vectors (length > 2 billion).
 
-3. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
+3. `fread()`:
+    * now skips embedded `NUL` (`\0`), [#3400](https://github.com/Rdatatable/data.table/issues/3400). Thanks to Marcus Davy for reporting with examples, and Roy Storey for the initial PR.
+
+4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
     ```R
     > DT = data.table(A=1:3, B=list(1:2,"foo",3:5))
     > DT
