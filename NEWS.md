@@ -11,6 +11,28 @@
 3. `fread()`:
     * skips embeded NUL characters with warning, [#3400](https://github.com/Rdatatable/data.table/issues/3400)
 
+3. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
+    ```R
+    > DT = data.table(A=1:3, B=list(1:2,"foo",3:5))
+    > DT
+           A      B
+       <int> <list>
+    1:     1    1,2
+    2:     2    foo
+    3:     3  3,4,5
+    
+    # The following all accomplish the same assignment:
+    > DT[2, B:=letters[9:13]]           # was error, now works
+    > DT[2, B:=.(letters[9:13])]        # was error, now works
+    > DT[2, B:=.(list(letters[9:13]))]  # .(list()) was needed, still works
+    > DT
+           A         B
+       <int>    <list>
+    1:     1       1,2
+    2:     2 i,j,k,l,m
+    3:     3     3,4,5
+    ```
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
