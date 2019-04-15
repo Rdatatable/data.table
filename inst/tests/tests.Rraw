@@ -1016,8 +1016,10 @@ test(350.6, DT[c(0,0,0), .N], 0L)
 
 # Test recycling list() on RHS of :=
 DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12)
-test(351, DT[,c("a","b"):=list(13:15)], data.table(a=13:15,b=13:15,c=7:9,d=10:12))
-test(352, DT[,letters[1:4]:=list(1L,NULL)], error="Supplied 4 columns to be assigned 2 items. Please see NEWS for v1.12.2")
+test(351.1, DT[,c("a","b"):=list(13:15)], ans<-data.table(a=13:15,b=13:15,c=7:9,d=10:12))
+test(351.2, DT[,c("a","b"):=13:15],       ans)
+test(352.1, DT[,letters[1:4]:=list(1L,NULL)], error="Supplied 4 columns to be assigned 2 items. Please see NEWS for v1.12.2")
+test(352.2, DT[,letters[1:4]:=list(1L,NULL,2L,NULL)], data.table(a=c(1L,1L,1L),c=c(2L,2L,2L)))
 
 # Test assigning new levels into factor columns
 DT = data.table(f=factor(c("a","b")),x=1:4)
@@ -2110,6 +2112,7 @@ test(753.1, DT[,c("x1","x2"):=4:6, verbose = TRUE], data.table(a=letters[1:3],x=
 test(753.2, DT[2,x2:=7L], data.table(a=letters[1:3],x=3:1,x1=4:6,x2=c(4L,7L,6L),key="a"))
 DT = data.table(a=letters[3:1],x=1:3,y=4:6)
 test(754, DT[,c("x1","y1","x2"):=list(x,y)], error="Supplied 3 columns to be assigned 2 items. Please see NEWS for v1.12.2")
+test(754.0, DT[,c("x1","y1","x2"):=list(x,y,x)], data.table(a=letters[3:1],x=1:3,y=4:6,x1=1:3,y1=4:6,x2=1:3))
 # And non-recycling i.e. that a single column copy does copy the column
 DT = data.table(a=1:3)
 test(754.1, DT[,b:=a][1,a:=4L][2,b:=5L], data.table(a=INT(4,2,3),b=INT(1,5,3)))
@@ -4869,10 +4872,10 @@ test(1294.17, dt[, c := NA]$c, rep(NA, 3))
 test(1294.18, dt[, c := list(1)]$c, rep(TRUE, 3), warning="Coerced double RHS to logical")
 test(1294.19, dt[, c := list(list(1))]$c, rep(TRUE, 3), warning="Coerced list RHS to logical")
 test(1294.20, dt[, c := "bla"]$c, rep(NA, 3), warning="Coerced character RHS to logical")
-test(1294.21, dt[, d := 1]$d, rep(list(1), 3), warning="Coerced double RHS to list")
-test(1294.22, dt[, d := 1L]$d, rep(list(1L), 3), warning="Coerced integer RHS to list")
-test(1294.23, dt[, d := TRUE]$d, rep(list(TRUE), 3), warning="Coerced logical RHS to list")
-test(1294.24, dt[, d := "bla"]$d, rep(list("bla"), 3), warning="Coerced character RHS to list")
+test(1294.21, dt[, d := 1]$d, rep(list(1), 3))
+test(1294.22, dt[, d := 1L]$d, rep(list(1L), 3))
+test(1294.23, dt[, d := TRUE]$d, rep(list(TRUE), 3))
+test(1294.24, dt[, d := "bla"]$d, rep(list("bla"), 3))
 test(1294.25, dt[, d := list(list(1))]$d, rep(list(1), 3))
 test(1294.26, dt[, e := 1]$e, rep("1", 3), warning="Coerced double RHS to character")
 test(1294.27, dt[, e := 1L]$e, rep("1", 3), warning="Coerced integer RHS to character")
@@ -6657,9 +6660,13 @@ test(1478.2, sapply(ll, length), INT(1,2,0,0))
 test(1479, rbindlist(replicate(4,rbindlist(replicate(47, NULL),
       use.names=TRUE, fill=TRUE)), use.names=TRUE, fill=TRUE), null.data.table())
 
-# #936, assigning list column to a factor column by reference
-DT <- data.table(x = factor(c("a", "b c", "d e f")))
-test(1480, DT[, x := strsplit(as.character(x), " ")], data.table(x=list("a", letters[2:3], letters[4:6])))
+# #936, plonking list column over a factor column by reference
+DT = data.table(x = factor(c("a", "b c", "d e f")))
+test(1480.1, DT[, x := strsplit(as.character(x), " ")],       ans<-data.table(x=list("a", letters[2:3], letters[4:6])))
+DT = data.table(x = factor(c("a", "b c", "d e f")))
+test(1480.2, DT[, x := .(strsplit(as.character(x), " "))],    ans)
+DT = data.table(x = factor(c("a", "b c", "d e f")))
+test(1480.3, DT[, x := list(strsplit(as.character(x), " "))], ans)
 
 # #970, over-allocation issue
 a=data.frame(matrix(1,ncol=101L))
@@ -13789,7 +13796,7 @@ test(2005.1, truelength(NULL), 0L)
 DT = data.table(a=1:3, b=4:6)
 test(2005.2, set(DT, 4L, "b", NA), error="i[1] is 4 which is out of range [1,nrow=3]")
 test(2005.3, set(DT, 3L, 8i, NA), error="j is type 'complex'. Must be integer, character, or numeric is coerced with warning.")
-test(2005.4, set(DT, 1L, 2L, expression(x+2)), error="RHS of assignment is not NULL, not an atomic vector (see ?is.atomic) and not a list column.")
+test(2005.4, set(DT, 1L, 2L, expression(x+2)), error="(list) object cannot be coerced to type 'integer'") # R's error message same as returned by as.integer(expression(x+2))
 DT[,foo:=factor(c("a","b","c"))]
 test(2005.5, DT[2, foo:=8i], error="Can't assign to column 'foo' (type 'factor') a value of type 'complex' (not character, factor, integer or numeric)")
 test(2005.6, DT[2, a:=9, verbose=TRUE], output="Coerced length-1 RHS from double to integer to match column's type. No precision was lost. If this")
@@ -13992,10 +13999,49 @@ setkey(DT, a, b)
 setorder(DT, b)
 test(2021.3, key(DT), NULL)
 
-# assign RHS list better error msg, #950
+# assign to list column works now when RHS is not list, #950
 d = data.table(id=c("a","b"), f=list(function(x) x*2, function(x) x^2), key="id")
-test(2022.1, d[.("a"), f:=list(function(x) x^3)], error="RHS of assignment is not NULL.*try wrapping it in an extra list.*")
-test(2022.2, d[.("a"), f:=list(list(function(x) x^3))], data.table(id=c("a","b"), f=list(function(x) x^3, function(x) x^2), key="id"))
+test(2022.1, d[.("a"), f:=function(x)x^3], data.table(id=c("a","b"), f=list(function(x) x^3, function(x) x^2), key="id"))
+test(2022.2, d[.("a"), f:=list(function(x) x^4)], data.table(id=c("a","b"), f=list(function(x) x^4, function(x) x^2), key="id"))
+test(2022.3, d[2, f:=6:8], data.table(id=c("a","b"), f=list(function(x) x^4, 6:8), key="id"))
+test(2022.4, d[.("b"), f:=list(list(function(x) x^3))], data.table(id=c("a","b"), f=list(function(x) x^4, function(x) x^3), key="id"))
+
+# keyby= used wrong index where "CLASS" is leading subset of characters of "CLASS_L3" and index exists on CLASS_L3, #3498
+DT = data.table(
+  CLASS_L3 = c("gggg", "iiii", "bbbb", "bbbb", "gggg", "ffff", "bbbb", "Repo", "bbbb", "dddd", "hhhh", "dddd", "gggg", "dddd"),
+  CLASS    = c("aaaa", "dddd", "gggg", "gggg", "aaaa", "eeee", "eeee", "ffff", "gggg", "aaaa", "aaaa", "aaaa", "aaaa", "aaaa"))
+test(2023.1, indices(DT), NULL)
+test(2023.2, DT[, .N, keyby = CLASS], ans<-data.table(CLASS=c("aaaa","dddd","eeee","ffff","gggg"), N=INT(7,1,2,1,3), key="CLASS"))
+test(2023.3, indices(DT), NULL)
+setindex(DT, CLASS_L3)
+test(2023.4, indices(DT), "CLASS_L3")
+test(2023.5, DT[, .N, keyby = CLASS], ans)   # just this test failed in v1.12.2 and before due to using the CLASS_L3 index incorrectly
+test(2023.6, DT[, .N, by = CLASS], data.table(CLASS=c("aaaa","dddd","gggg","eeee","ffff"), N=INT(7,1,3,2,1)))
+
+# more verbose timings #1265
+DT = data.table(x=c("a","b","c","b","a","c"), y=c(1,3,6,1,6,3), v=1:6)
+setindex(DT, y)
+test(2024, DT[y==6, v:=10L, verbose=TRUE], output=c("Constructing irows for.*", "Reorder irows for.*"))
+
+# fread embedded '\0', #3400
+test(2025.01, fread(testDir("issue_3400_fread.txt"), skip=1, header=TRUE), data.table(A=INT(1,3,4), B=INT(2,2,5), C=INT(3,1,6)))
+f = tempfile()
+for (nNUL in 0:3) {
+  writeBin(c(charToRaw("a=b\nA  B  C\n1  3  5\n"), rep(as.raw(0), nNUL), charToRaw("2  4  6\n")), con=f)
+  test(2025.02, fread(f, skip=1, header=TRUE), ans<-data.table(A=1:2, B=3:4, C=5:6))
+  test(2025.03, fread(f), ans)  # auto detect skip and header works too
+  writeBin(c(charToRaw("a=b\nA,B,C\n1,3,5\n"), rep(as.raw(0), nNUL), charToRaw("2,4,6\n")), con=f)
+  test(2025.04, fread(f, skip=1, header=TRUE), ans)
+  test(2025.05, fread(f), ans)
+  writeBin(c(charToRaw("a=b\n"), rep(as.raw(0), nNUL), charToRaw("A  B  C\n1  3  5\n2  4  6\n")), con=f)
+  test(2025.06, fread(f, skip=1, header=TRUE), ans)
+  test(2025.07, fread(f), ans)
+  writeBin(c(charToRaw("a=b\n"), rep(as.raw(0), nNUL), charToRaw("A,B,C\n1,3,5\n2,4,6\n")), con=f)
+  test(2025.08, fread(f, skip=1, header=TRUE), ans)
+  test(2025.09, fread(f), ans)
+}
+writeBin(c(charToRaw("A,B,C\n1,foo,5\n2,"), as.raw(0),charToRaw("bar"), as.raw(0),as.raw(0), charToRaw(",6\n")), con=f)
+test(2025.10, fread(f), data.table(A=1:2, B=c("foo","bar"), C=5:6))
 
 # Tests for FR #2842
 DT = data.table(t1 = as.POSIXct("1982-04-26 13:34:56", tz = "Europe/Madrid"),t2 = as.POSIXct("2019-01-01 19:00:01",tz = "UTC"))

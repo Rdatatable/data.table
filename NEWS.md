@@ -4,11 +4,42 @@
 
 #### NEW FEATURES
 
-1. "print.data.table() now allows the option to print out timezone of POSIX columns when available, [#2842](https://github.com/Rdatatable/data.table/issues/2842). Thanks to Michael Chirico for reporting and Felipe Parages for adding, [PR#3500](https://github.com/Rdatatable/data.table/pull/3500)" 
+1. New option `options(datatable.quiet = TRUE)` turns off the package startup message, [#3489](https://github.com/Rdatatable/data.table/issues/3489). `suppressPackageStartupMessages()` continues to work too. Thanks to @leobarlach for the suggestion inspired by `options(tidyverse.quiet = TRUE)`. We don't know of a way to make a package respect the `quietly=` option of `library()` and `require()` because the `quietly=` isn't passed through for use by the package's own `.onAttach`. If you can see how to do that, please submit a patch to R.
+
+2. `rleid()` functions now support long vectors (length > 2 billion).
+
+3. `fread()`:
+    * now skips embedded `NUL` (`\0`), [#3400](https://github.com/Rdatatable/data.table/issues/3400). Thanks to Marcus Davy for reporting with examples, and Roy Storey for the initial PR.
+
+4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
+    ```R
+    > DT = data.table(A=1:3, B=list(1:2,"foo",3:5))
+    > DT
+           A      B
+       <int> <list>
+    1:     1    1,2
+    2:     2    foo
+    3:     3  3,4,5
+    
+    # The following all accomplish the same assignment:
+    > DT[2, B:=letters[9:13]]           # was error, now works
+    > DT[2, B:=.(letters[9:13])]        # was error, now works
+    > DT[2, B:=.(list(letters[9:13]))]  # .(list()) was needed, still works
+    > DT
+           A         B
+       <int>    <list>
+    1:     1       1,2
+    2:     2 i,j,k,l,m
+    3:     3     3,4,5
+    ```
+
+5. `print.data.table()` gains an option to display the timezone of `POSIXct` columns when available, [#2842](https://github.com/Rdatatable/data.table/issues/2842). Thanks to Michael Chirico for reporting and Felipe Parages for the PR.
 
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
+
+2. `keyby=colName` could use the wrong index and return incorrect results if both `colName` and `colNameExtra` (where `colName` is a leading subset of characters of `colNameExtra`) are column names and an index exists on `colNameExtra`, [#3498](https://github.com/Rdatatable/data.table/issues/3498). Thanks to Xianying Tan for the detailed report and pinpointing the source line at fault.
 
 #### NOTES
 

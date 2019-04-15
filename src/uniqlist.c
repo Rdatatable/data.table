@@ -93,7 +93,7 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     default :
-      error("Type '%s' not supported", type2char(TYPEOF(v)));
+      error("Type '%s' not supported", type2char(TYPEOF(v)));  // # nocov
     }
   } else {
     // ncol>1
@@ -124,7 +124,7 @@ SEXP uniqlist(SEXP l, SEXP order)
           }
           break;
         default :
-          error("Type '%s' not supported", type2char(TYPEOF(v)));
+          error("Type '%s' not supported", type2char(TYPEOF(v)));  // # nocov
         }
       }
       if (!b) {
@@ -160,48 +160,81 @@ SEXP uniqlengths(SEXP x, SEXP n) {
 // we could compute `uniqlist` and `uniqlengths` and then construct the result
 // but that seems unnecessary waste of memory and roundabout..
 // so, we'll do it directly here..
-SEXP rleid(SEXP l, SEXP cols)
-{
-  R_len_t nrow = length(VECTOR_ELT(l,0)), ncol = length(l);
-  if (!nrow || !ncol) return (allocVector(INTSXP, 0));
-  if (!isInteger(cols) || LENGTH(cols)==0) error("cols must be an integer vector with length >= 1");
-  for (int i=0; i<LENGTH(cols); i++) {
-    int elem = INTEGER(cols)[i];
-    if (elem<1 || elem>LENGTH(l)) error("Item %d of cols is %d which is outside range of l [1,length(l)=%d]", i+1, elem, LENGTH(l));
+SEXP rleid(SEXP l, SEXP cols) {
+  R_xlen_t nrow = xlength(VECTOR_ELT(l, 0));
+  R_len_t ncol = length(l), lencols = length(cols);
+  if (!nrow || !ncol) return(allocVector(INTSXP, 0));
+  if (!isInteger(cols) || lencols==0) error("cols must be an integer vector with length >= 1");
+  int *icols = INTEGER(cols);
+  for (int i=0; i<lencols; i++) {
+    int elem = icols[i];
+    if (elem<1 || elem>ncol) error("Item %d of cols is %d which is outside range of l [1,length(l)=%d]", i+1, elem, ncol);
   }
   for (int i=1; i<ncol; i++) {
-    if (length(VECTOR_ELT(l,i)) != nrow) error("All elements to input list must be of same length. Element [%d] has length %d != length of first element = %d.", i+1, length(VECTOR_ELT(l,i)), nrow);
+    if (xlength(VECTOR_ELT(l,i)) != nrow) error("All elements to input list must be of same length. Element [%d] has length %llu != length of first element = %llu.", i+1, xlength(VECTOR_ELT(l,i)), nrow);
   }
   SEXP ans = PROTECT(allocVector(INTSXP, nrow));
-  R_len_t grp = 1;
-  INTEGER(ans)[0] = grp; // first row is always the first of first group
-  for (int i=1; i<nrow; i++) {
-    Rboolean b = TRUE;
-    int j = LENGTH(cols);
-    // the last column varies the most frequently so check that first and work backwards
-    while (--j>=0 && b) {
-      SEXP v = VECTOR_ELT(l, INTEGER(cols)[j]-1);
-      switch (TYPEOF(v)) {
-      case INTSXP : case LGLSXP :
-        b = INTEGER(v)[i]==INTEGER(v)[i-1];
-        break;
-      case STRSXP :
-        b = STRING_ELT(v,i)==STRING_ELT(v,i-1);
-        // TODO: do we want to check encodings here now that forder seems to?
-        // Old comment : forder checks no non-ascii unknown, and either UTF-8 or Latin1 but not both.
-        //               So == pointers is ok given that check
-        break;
-      case REALSXP : {
-        long long *ll = (long long *)REAL(v);
-        b = ll[i]==ll[i-1]; }
-        // 8 bytes of bits are identical. For real (no rounding currently) and integer64
-        // long long == 8 bytes checked in init.c
-        break;
-      default :
-        error("Type '%s' not supported", type2char(TYPEOF(v)));
+  int *ians = INTEGER(ans);
+  int grp = 1;
+  ians[0] = grp; // first row is always the first of first group
+  if (ncol > 1) {
+    for (R_xlen_t i=1; i<nrow; i++) {
+      bool same = true;
+      int j = lencols;
+      // the last column varies the most frequently so check that first and work backwards
+      while (--j>=0 && same) {
+        SEXP jcol = VECTOR_ELT(l, icols[j]-1);
+        switch (TYPEOF(jcol)) {
+        case INTSXP : case LGLSXP :
+          same = INTEGER(jcol)[i]==INTEGER(jcol)[i-1];
+          break;
+        case STRSXP :
+          same = STRING_ELT(jcol,i)==STRING_ELT(jcol,i-1);
+          // TODO: do we want to check encodings here now that forder seems to?
+          // Old comment : forder checks no non-ascii unknown, and either UTF-8 or Latin1 but not both.
+          //               So == pointers is ok given that check
+          break;
+        case REALSXP : {
+          long long *ll = (long long *)REAL(jcol);
+          same = ll[i]==ll[i-1]; }
+          // 8 bytes of bits are identical. For real (no rounding currently) and integer64
+          // long long == 8 bytes checked in init.c
+          break;
+        default :
+          error("Type '%s' not supported", type2char(TYPEOF(jcol)));  // # nocov
+        }
       }
+      ians[i] = (grp+=!same);
     }
-    INTEGER(ans)[i] = (grp+=!b);
+  } else { // we are checking only one column so we can easily takes inline R functions out of the loops
+    SEXP jcol = VECTOR_ELT(l, icols[0]-1);
+    switch (TYPEOF(jcol)) {
+    case INTSXP : case LGLSXP : {
+        int *ijcol = INTEGER(jcol);
+        for (R_xlen_t i=1; i<nrow; i++) {
+          bool same = ijcol[i]==ijcol[i-1];
+          ians[i] = (grp+=!same);
+        }
+      }
+      break;
+    case STRSXP : {
+        for (R_xlen_t i=1; i<nrow; i++) {
+          bool same = STRING_ELT(jcol,i)==STRING_ELT(jcol,i-1);
+          ians[i] = (grp+=!same);
+        }
+      }
+      break;
+    case REALSXP : {
+        long long *lljcol = (long long *)REAL(jcol);
+        for (R_xlen_t i=1; i<nrow; i++) {
+          bool same = lljcol[i]==lljcol[i-1];
+          ians[i] = (grp+=!same);
+        }
+      }
+      break;
+    default :
+      error("Type '%s' not supported", type2char(TYPEOF(jcol)));
+    }
   }
   UNPROTECT(1);
   return(ans);
@@ -219,8 +252,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   bool *i64 = (bool *)R_alloc(ncols, sizeof(bool));
   if (ngrps==0) error("Internal error: nrows[%d]>0 but ngrps==0", nrows); // # nocov
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
-  if (!isInteger(cols) || ncols == 0)
-    error("cols must be an integer vector of positive length");
+  if (!isInteger(cols) || ncols == 0) error("cols must be an integer vector of positive length");
   // mult arg
   enum {ALL, FIRST, LAST} mult = ALL;
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
@@ -274,7 +306,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
                        dtwiddle(xd, thisi) >= dtwiddle(xd, previ);
         } break;
         default:
-          error("Type '%s' not supported", type2char(TYPEOF(v)));
+          error("Type '%s' not supported", type2char(TYPEOF(v)));  // # nocov
         }
       }
       if (b) break;
