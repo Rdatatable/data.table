@@ -9,9 +9,9 @@
 2. `rleid()` functions now support long vectors (length > 2 billion).
 
 3. `fread()`:
-    * skips embeded NUL characters with warning, [#3400](https://github.com/Rdatatable/data.table/issues/3400)
+    * now skips embedded `NUL` (`\0`), [#3400](https://github.com/Rdatatable/data.table/issues/3400). Thanks to Marcus Davy for reporting with examples, and Roy Storey for the initial PR.
 
-3. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
+4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
     ```R
     > DT = data.table(A=1:3, B=list(1:2,"foo",3:5))
     > DT
