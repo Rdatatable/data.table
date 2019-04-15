@@ -1,4 +1,4 @@
-test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, script=NULL) {
+test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, script="tests.Rraw") {
   if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
@@ -12,24 +12,34 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
     subdir = "tests"
   }
   fulldir = file.path(rootdir, subdir)
+  
+  # nocov start
+  if (isTRUE(benchmark)) {
+    warning("'benchmark' argument is deprecated, use script='benchmark.Rraw' instead")
+    script = "benchmark.Rraw"
+  }
+  if (isTRUE(with.other.packages)) {
+    warning("'with.other.packages' argument is deprecated, use script='other.Rraw' instead")
+    script = "other.Rraw"
+  }
+  # nocov end
 
   if (!is.null(script)) {
     stopifnot(is.character(script), length(script)==1L, !is.na(script), nzchar(script))
     if (!identical(basename(script), script)) {
+      # nocov start
       subdir = dirname(script)
       fulldir = normalizePath(subdir, mustWork=FALSE)
       fn = basename(script)
+      # nocov end
     } else {
       fn = script
     }
   } else {
-    stopifnot( !(with.other.packages && benchmark) )
-    fn = if (with.other.packages) "other.Rraw"
-         else if (benchmark) "benchmark.Rraw"
-         else "tests.Rraw"
+    stop("'script' argument should not be NULL") # nocov
   }
   fn = setNames(file.path(fulldir, fn), file.path(subdir, fn))
-  if (!file.exists(fn)) stop(fn," does not exist")   # nocov
+  if (!file.exists(fn)) stop(fn," does not exist") # nocov
 
   # From R 3.6.0 onwards, we can check that && and || are using only length-1 logicals (in the test suite)
   # rather than relying on x && y being equivalent to x[[1L]] && y[[1L]]  silently.
@@ -73,7 +83,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   if (is.na(orig__R_CHECK_LENGTH_1_LOGIC2_)) {
     Sys.unsetenv("_R_CHECK_LENGTH_1_LOGIC2_")
   } else {
-    Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_)   # nocov
+    Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_) # nocov
   }
 
   suppressWarnings(do.call("RNGkind",as.list(oldRNG)))
@@ -126,15 +136,15 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   #}
   #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
 
+  # nocov start
   if (nfail > 0) {
-    # nocov start
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
     cat("\r")
     stop(nfail," error",s1," out of ",ntest," in ",timetaken(started.at)," on ",date(),". [",plat,"].",
          " Search ",names(fn)," for test number",s2,paste(whichfail,collapse=", "),".")
     # important to stop() here, so that 'R CMD check' fails
-    # nocov end
   }
+  # nocov end
   cat(plat,"\n\nAll ",ntest," tests in ",names(fn)," completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
   # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
   # stale due to not updating yet since a fix in R-devel, for example.
