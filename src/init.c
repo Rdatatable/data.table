@@ -80,6 +80,8 @@ SEXP hasOpenMP();
 SEXP uniqueNlogical();
 SEXP frollfunR();
 SEXP dllVersion();
+SEXP nafillR();
+SEXP colnamesInt();
 
 // .Externals
 SEXP fastmean();
@@ -162,6 +164,8 @@ R_CallMethodDef callMethods[] = {
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
 {"CfrollfunR", (DL_FUNC) &frollfunR, -1},
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
+{"CnafillR", (DL_FUNC) &nafillR, -1},
+{"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
 {NULL, NULL, 0}
 };
 
