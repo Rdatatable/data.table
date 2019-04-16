@@ -35,6 +35,8 @@
 
 5. `print.data.table()` gains an option to display the timezone of `POSIXct` columns when available, [#2842](https://github.com/Rdatatable/data.table/issues/2842). Thanks to Michael Chirico for reporting and Felipe Parages for the PR.
 
+6. New functions `nafill` and `setnafill`, [#854](https://github.com/Rdatatable/data.table/issues/854). Thanks to Matthieu Gomez for the request and Jan Gorecki for implementing.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
