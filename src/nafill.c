@@ -29,7 +29,7 @@ SEXP colnamesInt(SEXP x, SEXP cols) {
   } else if (isString(cols)) {
     SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
     if (isNull(xnames)) error("'x' argument data.table has no names");
-    ricols = PROTECT(chmatch(cols, xnames, 0, FALSE)); protecti++;
+    ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
     int *icols = INTEGER(ricols);
     for (int i=0; i<length(ricols); i++) if (icols[i]==0) error("'cols' argument specify non existing column(s)"); // handles NAs also
   } else {
@@ -87,9 +87,9 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   if (!isLogical(verbose) || length(verbose)!=1 || LOGICAL(verbose)[0]==NA_LOGICAL)
     error("verbose must be TRUE or FALSE");
   bool bverbose = LOGICAL(verbose)[0];
-  
+
   if (!xlength(obj)) return(obj);
-  
+
   bool binplace = LOGICAL(inplace)[0];
   SEXP x = R_NilValue;
   if (isVectorAtomic(obj)) {
@@ -112,7 +112,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     }
   }
   R_len_t nx = length(x);
-  
+
   double* dx[nx];
   int32_t* ix[nx];
   uint_fast64_t inx[nx];
@@ -134,16 +134,16 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
       vans[i] = ((ans_t) { .dbl_v=dx[i], .int_v=ix[i], .status=0, .message={"\0","\0","\0","\0"} });
     }
   }
-  
+
   unsigned int itype;
   if (!strcmp(CHAR(STRING_ELT(type, 0)), "const")) itype = 0;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "locf")) itype = 1;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "nocb")) itype = 2;
   else error("Internal error: invalid type argument in nafillR function, should have been caught before. please report to data.table issue tracker."); // # nocov
-  
+
   if (itype==0 && length(fill)!=1)
     error("fill must be a vector of length 1");
-  
+
   double dfill=NA_REAL;
   int32_t ifill=NA_INTEGER;
   if (itype==0) {
@@ -160,7 +160,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
       error("fill must be numeric");
     }
   }
-  
+
   double tic, toc;
   if (bverbose) tic = omp_get_wtime();
   #pragma omp parallel for if (nx>1) schedule(auto) num_threads(getDTthreads())
@@ -175,16 +175,16 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     }
   }
   if (bverbose) toc = omp_get_wtime();
-  
+
   for (R_len_t i=0; i<nx; i++) {
     if (bverbose && (vans[i].message[0][0] != '\0')) Rprintf("%s: %d: %s", __func__, i+1, vans[i].message[0]);
     if (vans[i].message[1][0] != '\0') REprintf("%s: %d: %s", __func__, i+1, vans[i].message[1]); // # nocov start
     if (vans[i].message[2][0] != '\0') warning("%s: %d: %s", __func__, i+1, vans[i].message[2]);
     if (vans[i].status == 3) error("%s: %d: %s", __func__, i+1, vans[i].message[3]); // # nocov end
   }
-  
+
   if (bverbose) Rprintf("%s: parallel processing of %d column(s) took %.3fs\n", __func__, nx, toc-tic);
-  
+
   UNPROTECT(protecti);
   if (binplace) {
     return obj;
