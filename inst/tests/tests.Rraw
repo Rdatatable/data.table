@@ -14045,6 +14045,12 @@ DT[2,t:= as.POSIXct("2019-01-01 19:00:01",tz = "UTC")]
 test(2026.3, capture.output(print(DT)), c("   v1                   t","1:  1                <NA>", "2: NA 2019-01-01 19:00:01"))
 test(2026.4, capture.output(print(DT, timezone = TRUE)), c("   v1                       t","1:  1                    <NA>","2: NA 2019-01-01 19:00:01 UTC"))
 
+# 3507 -- catching list(x, ) errors gracefully
+DT = data.table(a = 1:5)
+## original error triggered with grouping
+test(2027.1, DT[ , list(1, ), by = a], error = 'Empty list argument at input 2')
+## consistency in error in non-grouping query
+test(2027.2, DT[ , list(1, )], error = 'Empty list argument at input 2')
 
 ###################################
 #  Add new tests above this line  #
