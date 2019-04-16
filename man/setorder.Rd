@@ -4,6 +4,7 @@
 \alias{order}
 \alias{fastorder}
 \alias{forder}
+\alias{forderv}
 
 \title{Fast row reordering of a data.table by reference}
 \description{
@@ -18,12 +19,11 @@ Check out the \code{See Also} section below for other \code{set*} function
 based on the columns (and column order) provided. It reorders the table
 \emph{by reference} and is therefore very memory efficient.
 
-Also \code{x[order(.)]} is now optimised internally to use data.table's fast
-order. data.table always reorders in "C-locale" (see Details). To sort by session
-locale, use \code{x[base::order(.)]}.
+Note that queries like \code{x[order(.)]} are optimised internally to use \code{data.table}'s fast order.
 
-\code{bit64::integer64} type is also supported for reordering rows of a
-\code{data.table}.
+Also note that \code{data.table} always reorders in "C-locale" (see Details). To sort by session locale, use \code{x[base::order(.)]}.
+
+\code{bit64::integer64} type is also supported for reordering rows of a \code{data.table}.
 }
 
 \usage{
@@ -37,30 +37,31 @@ setorderv(x, cols = colnames(x), order=1L, na.last=FALSE)
 \item{\dots}{ The columns to sort by. Do not quote column names. If \code{\dots}
 is missing (ex: \code{setorder(x)}), \code{x} is rearranged based on all
 columns in ascending order by default. To sort by a column in descending order
-prefix a \code{"-"}, i.e., \code{setorder(x, a, -b, c)}. The \code{-b} works
+prefix the symbol \code{"-"} which means "descending" (\emph{not} "negative", in this context), i.e., \code{setorder(x, a, -b, c)}. The \code{-b} works
 when \code{b} is of type \code{character} as well. }
-\item{cols}{ A character vector of column names of \code{x} by which to order. By default, sorts over all columns; \code{cols = NULL} will return \code{x} untouched. Do not add \code{"-"} here. Use \code{order} argument instead.}
+\item{cols}{ A character vector of column names of \code{x} by which to order. By default, sorts over all columns; \code{cols = NULL} will return \code{x} untouched. Do not add \code{"-"} here. Use \code{order} argument instead. }
 \item{order}{ An integer vector with only possible values of \code{1} and
 \code{-1}, corresponding to ascending and descending order. The length of
 \code{order} must be either \code{1} or equal to that of \code{cols}. If
 \code{length(order) == 1}, it is recycled to \code{length(cols)}. }
-\item{na.last}{logical. If \code{TRUE}, missing values in the data are placed
-last; if \code{FALSE}, they are placed first; if \code{NA} they are removed.
+\item{na.last}{ \code{logical}. If \code{TRUE}, missing values in the data are placed last; if \code{FALSE}, they are placed first; if \code{NA} they are removed.
 \code{na.last=NA} is valid only for \code{x[order(., na.last)]} and its
 default is \code{TRUE}. \code{setorder} and \code{setorderv} only accept
-TRUE/FALSE with default \code{FALSE}.}
+\code{TRUE}/\code{FALSE} with default \code{FALSE}. }
 }
 \details{
-\code{data.table} implements fast radix based ordering. In versions <= 1.9.2,
-it was only capable of increasing order (ascending). From 1.9.4 on, the
-functionality has been extended to decreasing order (descending) as well.
+\code{data.table} implements its own fast radix-based ordering. See the references for some exposition on the concept of radix sort.
 
 \code{setorder} accepts unquoted column names (with names preceded with a
-\code{-} sign for descending order) and reorders data.table rows
-\emph{by reference}, for e.g., \code{setorder(x, a, -b, c)}. Note that
-\code{-b} also works with columns of type \code{character} unlike
-\code{base::order}, which requires \code{-xtfrm(y)} instead (which is slow).
-\code{setorderv} in turn accepts a  character vector of column names and an
+\code{-} sign for descending order) and reorders \code{data.table} rows
+\emph{by reference}, for e.g., \code{setorder(x, a, -b, c)}. We emphasize that
+this means "descending" and not "negative" because the implementation simply
+reverses the sort order, as opposed to sorting the opposite of the input
+(which would be inefficient).
+
+Note that \code{-b} also works with columns of type \code{character} unlike
+\code{\link[base]{order}}, which requires \code{-xtfrm(y)} instead (which is slow).
+\code{setorderv} in turn accepts a character vector of column names and an
 integer vector of column order separately.
 
 Note that \code{\link{setkey}} still requires and will always sort only in
@@ -90,7 +91,7 @@ The behaviour of \code{base::order} depends on assumptions about the locale of t
 In English locales, \code{"america" < "BRAZIL"} is true by default
 but false if you either type \code{Sys.setlocale(locale="C")} or the R session has been started in a C locale
 for you -- which can happen on servers/services since the locale comes from the environment the R session
-was started in. By contrast, \code{"america" < "BRAZIL"} is always false in \code{data.table} regardless of the way your R session was started.
+was started in. By contrast, \code{"america" < "BRAZIL"} is always \code{FALSE} in \code{data.table} regardless of the way your R session was started.
 
 If \code{setorder} results in reordering of the rows of a keyed \code{data.table},
 then its key will be set to \code{NULL}.
@@ -99,11 +100,19 @@ then its key will be set to \code{NULL}.
 The input is modified by reference, and returned (invisibly) so it can be used
 in compound statements; e.g., \code{setorder(DT,a,-b)[, cumsum(c), by=list(a,b)]}.
 If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See
-\code{?copy}.
+\code{\link{copy}}.
 }
-\seealso{ \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}},
-\code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}},
-\code{\link{setDF}}, \code{\link{copy}}, \code{\link{setNumericRounding}}
+\references{
+  \url{https://en.wikipedia.org/wiki/Radix_sort}\cr
+  \url{https://en.wikipedia.org/wiki/Counting_sort}\cr
+  \url{http://stereopsis.com/radix.html}\cr
+  \url{https://codercorner.com/RadixSortRevisited.htm}\cr
+  \url{https://medium.com/basecs/getting-to-the-root-of-sorting-with-radix-sort-f8e9240d4224}
+}
+\seealso{
+  \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}},
+  \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}},
+  \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setNumericRounding}}
 }
 \examples{
 

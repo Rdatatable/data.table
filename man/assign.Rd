@@ -31,7 +31,7 @@ set(x, i = NULL, j, value)
 \item{value}{ A list of replacement values to assign by reference to \code{x[i, j]}. }
 }
 \details{
-\code{:=} is defined for use in \code{j} only. It \emph{adds} or \emph{updates} or \emph{removes} column(s) by reference. It makes no copies of any part of memory at all. Read the \href{../doc/datatable-reference-semantics.html}{Reference Semantics HTML vignette} to follow with examples. Some typical usages are:
+\code{:=} is defined for use in \code{j} only. It \emph{adds} or \emph{updates} or \emph{removes} column(s) by reference. It makes no copies of any part of memory at all. Read the \href{vignettes/datatable-reference-semantics.html}{Reference Semantics HTML vignette} to follow with examples. Some typical usages are:
 
 \preformatted{
     DT[, col := val]                              # update (or add at the end if doesn't exist) a column called "col" with value "val" (recycled if necessary).
@@ -53,9 +53,9 @@ All of the following result in a friendly error (by design) :
     DT[, {col1 := 1L; col2 := 2L}]                # Use the functional form, `:=`(), instead (see above).
 }
 
-For additional resources, check the \href{../doc/datatable-faq.html}{FAQs vignette}. Also have a look at StackOverflow's \href{http://stackoverflow.com/search?q=\%5Bdata.table\%5D+reference}{data.table tag}.
+For additional resources, check the \href{vignettes/datatable-faq.html}{FAQs vignette}. Also have a look at StackOverflow's \href{http://stackoverflow.com/search?q=\%5Bdata.table\%5D+reference}{data.table tag}.
 
-\code{:=} in \code{j} can be combined with all types of \code{i} (such as binary search), and all types of \code{by}. This a one reason why \code{:=} has been implemented in \code{j}. See the \href{../doc/datatable-reference-semantics}{Reference Semantics HTML vignette} and also \code{FAQ 2.16} for analogies to SQL.
+\code{:=} in \code{j} can be combined with all types of \code{i} (such as binary search), and all types of \code{by}. This a one reason why \code{:=} has been implemented in \code{j}. See the \href{vignettes/datatable-reference-semantics}{Reference Semantics HTML vignette} and also \code{FAQ 2.16} for analogies to SQL.
 
 When \code{LHS} is a factor column and \code{RHS} is a character vector with items missing from the factor levels, the new level(s) are automatically added (by reference, efficiently), unlike base methods.
 

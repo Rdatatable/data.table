@@ -88,13 +88,3 @@ double iquickselect(int *x, int n, int k) {
   }
 }
 
-
-// SEXP quickselect(SEXP xArg, SEXP n, SEXP k) {
-
-//     void *x = DATAPTR(xArg);
-//     SEXP ans = PROTECT(allocVector(REALSXP, 1L));
-//     REAL(ans)[0] = quickselectwrapper(x, INTEGER(n)[0], INTEGER(k)[0]-1);
-
-//     UNPROTECT(1);
-//     return(ans);
-// }

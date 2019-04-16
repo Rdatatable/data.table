@@ -226,11 +226,12 @@ static char *typesAsString(int ncol) {
 
 static inline void skip_white(const char **pch) {
   // skip space so long as sep isn't space and skip tab so long as sep isn't tab
+  // always skip any \0 (NUL) that occur before end of file, #3400
   const char *ch = *pch;
-  if (whiteChar == 0) {   // whiteChar==0 means skip both ' ' and '\t';  sep is neither ' ' nor '\t'.
-    while (*ch == ' ' || *ch == '\t') ch++;
+  if (whiteChar==0) {   // whiteChar==0 means skip both ' ' and '\t';  sep is neither ' ' nor '\t'.
+    while (*ch==' ' || *ch=='\t' || (*ch=='\0' && ch<eof)) ch++;
   } else {
-    while (*ch == whiteChar) ch++;  // sep is ' ' or '\t' so just skip the other one.
+    while (*ch==whiteChar || (*ch=='\0' && ch<eof)) ch++;  // sep is ' ' or '\t' so just skip the other one.
   }
   *pch = ch;
 }
@@ -272,7 +273,8 @@ static inline bool end_of_field(const char *ch) {
   // of \r, \n, \0. We cast to unsigned first because `char` type is signed by
   // default, and therefore characters in the range 0x80-0xFF are negative.
   // We use eol() because that looks at eol_one_r inside it w.r.t. \r
-  return *ch==sep || ((uint8_t)*ch<=13 && (*ch=='\0' || eol(&ch)));
+  // \0 (maybe more than one) before eof are part of field and do not end it; eol() returns false for \0 but the ch==eof will return true for the \0 at eof.
+  return *ch==sep || ((uint8_t)*ch<=13 && (ch==eof || eol(&ch)));
 }
 
 
@@ -322,7 +324,7 @@ static inline int countfields(const char **pch)
     // Field() leaves *ch resting on sep, \r, \n or *eof=='\0'
     if (sep==' ' && *ch==sep) {
       while (ch[1]==' ') ch++;
-      if (ch[1]=='\r' || ch[1]=='\n' || ch[1]=='\0') {
+      if (ch[1]=='\r' || ch[1]=='\n' || (ch[1]=='\0' && ch+1==eof)) {
         // reached end of line. Ignore padding spaces at the end of line.
         ch++;  // Move onto end of line character
       }
@@ -333,7 +335,7 @@ static inline int countfields(const char **pch)
       continue;
     }
     if (eol(&ch)) { *pch=ch+1; return ncol; }
-    if (*ch!='\0') return -1;  // -1 means this line not valid for this sep and quote rule
+    if (ch!=eof) return -1;  // -1 means this line not valid for this sep and quote rule
     break;
   }
   *pch = ch;
@@ -348,7 +350,7 @@ static inline const char *nextGoodLine(const char *ch, int ncol)
   // If this doesn't return the true line start, no matter. The previous thread will run-on and
   // resolve it. A good guess is all we need here. Being wrong will just be a bit slower.
   // If there are no embedded newlines, all newlines are true, and this guess will never be wrong.
-  while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
+  while (*ch!='\n' && *ch!='\r' && (*ch!='\0' || ch<eof)) ch++;
   if (ch==eof) return eof;
   if (eol(&ch)) // move to last byte of the line ending sequence (e.g. \r\r\n would be +2).
     ch++;       // and then move to first byte of next line
@@ -359,7 +361,7 @@ static inline const char *nextGoodLine(const char *ch, int ncol)
   while (attempts++<5 && ch<eof) {
     const char *ch2 = ch;
     if (countfields(&ch2)==ncol) return ch;  // returns simpleNext here on first attempt, almost all the time
-    while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
+    while (*ch!='\n' && *ch!='\r' && (*ch!='\0' || ch<eof)) ch++;
     if (eol(&ch)) ch++;
   }
   return simpleNext;
@@ -490,17 +492,18 @@ static void Field(FieldParseContext *ctx)
 
   // need to skip_white first for the reason that a quoted field might have space before the
   // quote; e.g. test 1609. We need to skip the space(s) to then switch on quote or not.
-  if (*ch==' ' && stripWhite) while(*++ch==' ');  // if sep==' ' the space would have been skipped already and we wouldn't be on space now.
+  if ((*ch==' ' && stripWhite) || (*ch=='\0' && ch<eof))
+    while(*++ch==' ' || (*ch=='\0' && ch<eof));  // if sep==' ' the space would have been skipped already and we wouldn't be on space now.
   const char *fieldStart=ch;
   if (*ch!=quote || quoteRule==3) {
     // Most common case. Unambiguously not quoted. Simply search for sep|eol. If field contains sep|eol then it should have been quoted and we do not try to heal that.
     while(!end_of_field(ch)) ch++;  // sep, \r, \n or \0 will end
     *(ctx->ch) = ch;
     int fieldLen = (int)(ch-fieldStart);
-    if (stripWhite) {   // TODO:  do this if and the next one together once in bulk afterwards before push
-      while(fieldLen>0 && ch[-1]==' ') { fieldLen--; ch--; }
+    //if (stripWhite) {   // TODO:  do this if and the next one together once in bulk afterwards before push
+      while(fieldLen>0 && ((ch[-1]==' ' && stripWhite) || ch[-1]=='\0')) { fieldLen--; ch--; }
       // this space can't be sep otherwise it would have stopped the field earlier inside end_of_field()
-    }
+    //}
     if ((fieldLen==0 && blank_is_a_NAstring) || (fieldLen && end_NA_string(fieldStart)==ch)) fieldLen=INT32_MIN;  // TODO - speed up by avoiding end_NA_string when there are none
     target->off = (int32_t)(fieldStart - ctx->anchor);
     target->len = fieldLen;
@@ -565,8 +568,8 @@ static void Field(FieldParseContext *ctx)
     *(ctx->ch) = ch;
   } else {
     *(ctx->ch) = ch;
-    if (*ch=='\0' && quoteRule!=2) { target->off--; target->len++; }              // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
-    if (stripWhite) while(target->len>0 && ch[-1]==' ') { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
+    if (*ch=='\0' && quoteRule!=2) { target->off--; target->len++; }   // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
+    while(target->len>0 && ((ch[-1]==' ' && stripWhite) || ch[-1]=='\0')) { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
   }
 }
 
@@ -576,6 +579,7 @@ static void StrtoI32(FieldParseContext *ctx)
   const char *ch = *(ctx->ch);
   int32_t *target = (int32_t*) ctx->targets[sizeof(int32_t)];
 
+  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;  // to know if at least one digit is present
@@ -587,8 +591,8 @@ static void StrtoI32(FieldParseContext *ctx)
   // see init.c for checks of unsigned uint_fast8_t cast
   // optimizer should implement 10* as ((x<<2 + x)<<1) or (x<<3 + x<<1)
 
-  /*if (loseLeadingZeroOption)*/ while (*ch=='0') ch++;
   // number significant figures = digits from the first non-zero onwards including trailing zeros
+  while (*ch=='0') ch++;
   uint_fast32_t sf = 0;
   while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
     acc = 10*acc + digit;
@@ -614,7 +618,7 @@ static void StrtoI64(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int64_t *target = (int64_t*) ctx->targets[sizeof(int64_t)];
-
+  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;
@@ -673,6 +677,7 @@ static void parse_double_regular(FieldParseContext *ctx)
   const char *ch = *(ctx->ch);
   double *target = (double*) ctx->targets[sizeof(double)];
 
+  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
   bool neg, Eneg;
   ch += (neg = *ch=='-') + (*ch=='+');
 
@@ -682,9 +687,7 @@ static void parse_double_regular(FieldParseContext *ctx)
                           // equal to acc * pow(10,e)
   uint_fast8_t digit;     // temporary variable, holds last scanned digit.
 
-  // Skip leading zeros
-  while (*ch=='0') ch++;
-
+  while (*ch=='0') ch++;  // Skip leading zeros
   // Read the first, integer part of the floating number (but no more than
   // FLOAT_MAX_DIGITS digits).
   int_fast32_t sflimit = FLOAT_MAX_DIGITS;
@@ -1061,7 +1064,7 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
     field++;
     if (sep==' ' && *ch==sep) {
       while (ch[1]==' ') ch++;
-      if (ch[1]=='\0' || ch[1]=='\n' || ch[1]=='\r') ch++;  // space at the end of line does not mean sep
+      if (ch[1]=='\n' || ch[1]=='\r' || (ch[1]=='\0' && ch+1<eof)) ch++;  // space at the end of line does not mean sep
     }
     if (*ch!=sep || field==ncol) break;  // field==ncol is needed for 1753.2 where line ends with an extra comma but shouldn't, so shouldn't be moved over
     ch++;
@@ -1394,7 +1397,7 @@ int freadMain(freadMainArgs _args) {
 
   // skip blank input at the start
   const char *lineStart = ch;
-  while (ch<eof && isspace(*ch)) {   // isspace matches ' ', \t, \n and \r
+  while (ch<eof && (isspace(*ch) || *ch=='\0')) {   // isspace matches ' ', \t, \n and \r;  \0 before eof should be skipped too
     if (*ch=='\n') { ch++; lineStart=ch; row1line++; } else ch++;
   }
   if (ch>=eof) STOP("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace.");
@@ -1683,7 +1686,7 @@ int freadMain(freadMainArgs _args) {
         continue;
       }
       if ( (thisNcol<ncol && ncol>1 && !fill) ||
-           (!eol(&ch) && *ch!='\0') ) {
+           (!eol(&ch) && ch!=eof) ) {
         if (verbose) DTPRINT("  A line with too-%s fields (%d/%d) was found on line %d of sample jump %d. %s\n",
                              thisNcol<ncol ? "few" : "many", thisNcol, ncol, jumpLine, jump, jump>0 ? "Most likely this jump landed awkwardly so type bumps here will be skipped." : "");
         bumped = false;
@@ -2001,9 +2004,10 @@ int freadMain(freadMainArgs _args) {
     {
       nth = omp_get_num_threads();
       if (me!=0) {
-        // should never happen
-        snprintf(internalErr, internalErrSize, "Internal error: Master thread is not thread 0 but thread %d.\n", me); // # nocov
+        // # nocov start
+        snprintf(internalErr, internalErrSize, "Internal error: Master thread is not thread 0 but thread %d.\n", me);
         stopTeam = true;
+        // # nocov end
       }
       myShowProgress = args.showProgress;
     }
@@ -2118,7 +2122,7 @@ int freadMain(freadMainArgs _args) {
           }
           //*** END HOT. START TEPID ***//
           if (tch==tLineStart) {
-            skip_white(&tch);
+            skip_white(&tch);       // skips \0 before eof
             if (*tch=='\0') break;  // empty last line
             if (eol(&tch) && skipEmptyLines) { tch++; continue; }
             tch = tLineStart;  // in case white space at the beginning may need to be including in field
@@ -2147,8 +2151,8 @@ int freadMain(freadMainArgs _args) {
         if (sep==' ') {
           while (*tch==' ') tch++;  // multiple sep=' ' at the tLineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
           fieldStart = tch;
-          skip_white(&tch);
-          if (*tch=='\0') continue; // empty last line
+          skip_white(&tch);          // skips \0 before eof
+          if (*tch=='\0') continue;  // tch==eof; empty last line
           if (eol(&tch) && skipEmptyLines) { tch++; continue; }
           tch = fieldStart;         // in case tabs at the beginning of the first field need to be included
         }
@@ -2179,7 +2183,7 @@ int freadMain(freadMainArgs _args) {
             if (end_of_field(tch)) {
               if (sep==' ' && *tch==' ') {
                 while (tch[1]==' ') tch++;  // multiple space considered one sep so move to last
-                if (tch[1]=='\r' || tch[1]=='\n' || tch[1]=='\0') tch++;
+                if (tch[1]=='\r' || tch[1]=='\n' || tch+1==eof) tch++;
               }
               break;
             }
@@ -2229,17 +2233,17 @@ int freadMain(freadMainArgs _args) {
           ((char**) targets)[size[j]] += size[j];
           j++;
           if (*tch==sep) { tch++; continue; }
-          if (fill && (*tch=='\n' || *tch=='\r' || *tch=='\0') && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
+          if (fill && (*tch=='\n' || *tch=='\r' || tch==eof) && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
           break;
         }
-        if (j<ncol || (!eol(&tch) && *tch!='\0'))  {
+        if (j<ncol || (!eol(&tch) && tch!=eof))  {
           // Too few or too many columns observed (but not empty lines when skipEmptyLines as they were found and skipped earlier above).
           // If fill==true, fields should already have been filled above due to continue inside while(j<ncol).
           myStopEarly = true;
           tch = tLineStart;
           break;
         }
-        if (*tch!='\0') tch++;
+        if (tch!=eof) tch++;
         myNrow++;
       }
       if (verbose) { double now = wallclock(); thRead += now-tLast; tLast = now; }
@@ -2254,11 +2258,13 @@ int freadMain(freadMainArgs _args) {
       #pragma omp ordered
       {
         if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered
-          myNrow = 0;               // discard my buffer
+          myNrow = 0;               // # nocov; discard my buffer
         }
         else if (headPos!=thisJumpStart) {
-          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof); // # nocov
+           // # nocov start
+          snprintf(internalErr, internalErrSize, "Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
+          // # nocov end
         }
         else {
           ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
