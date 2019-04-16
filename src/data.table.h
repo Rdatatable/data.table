@@ -20,6 +20,7 @@ typedef R_xlen_t RLEN;
 #define IS_LATIN(x) (LEVELS(x) & 4)
 
 #define SIZEOF(x) sizes[TYPEOF(x)]
+#define TYPEORDER(x) typeorder[x]
 
 #ifdef MIN
 #undef MIN
@@ -56,7 +57,6 @@ typedef R_xlen_t RLEN;
 #endif
 
 // init.c
-void setSizes();
 SEXP char_integer64;
 SEXP char_ITime;
 SEXP char_IDate;
@@ -67,6 +67,9 @@ SEXP char_lens;
 SEXP char_indices;
 SEXP char_allLen1;
 SEXP char_allGrp1;
+SEXP char_factor;
+SEXP char_ordered;
+SEXP char_dataframe;
 SEXP sym_sorted;
 SEXP sym_index;
 SEXP sym_BY;
@@ -82,12 +85,13 @@ long long NA_INT64_LL;
 SEXP keepattr(SEXP to, SEXP from);
 SEXP growVector(SEXP x, R_len_t newlen);
 size_t sizes[100];  // max appears to be FUNSXP = 99, see Rinternals.h
+size_t typeorder[100];
 SEXP SelfRefSymbol;
 
 // assign.c
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
+void writeNA(SEXP v, const int from, const int n);
 void savetl_init(), savetl(SEXP s), savetl_end();
-Rboolean isDatatable(SEXP x);
 int checkOverAlloc(SEXP x);
 
 // forder.c
@@ -112,7 +116,8 @@ SEXP uniqlist(SEXP l, SEXP order);
 SEXP uniqlengths(SEXP x, SEXP n);
 
 // chmatch.c
-SEXP chmatch(SEXP x, SEXP table, R_len_t nomatch, Rboolean in);
+SEXP chmatch(SEXP x, SEXP table, int nomatch);
+SEXP chin(SEXP x, SEXP table);
 
 SEXP isOrderedSubset(SEXP, SEXP);
 void setselfref(SEXP);
@@ -127,7 +132,7 @@ SEXP dt_na(SEXP x, SEXP cols);
 
 // assign.c
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
-void memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
+const char *memrecycle(SEXP target, SEXP where, int r, int len, SEXP source);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
@@ -140,9 +145,6 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted,
                 SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg,
                 SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
 
-// rbindlist.c
-SEXP combineFactorLevels(SEXP factorLevels, int *factorType, Rboolean *isRowOrdered);
-
 // quickselect
 double dquickselect(double *x, int n, int k);
 double iquickselect(int *x, int n, int k);
@@ -151,6 +153,7 @@ double iquickselect(int *x, int n, int k);
 double wallclock();
 
 // openmp-utils.c
+void initDTthreads();
 int getDTthreads();
 void avoid_openmp_hang_within_fork();
 
@@ -166,3 +169,9 @@ void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int 
 
 // frollR.c
 SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
+
+// nafill.c
+SEXP colnamesInt(SEXP x, SEXP cols);
+void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose);
+void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose);
+SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose);

@@ -3,24 +3,6 @@
 #include <fcntl.h>
 #include <time.h>
 
-
-void setSizes() {
-  // called by init.c
-  int i;
-  for (i=0;i<100;i++) sizes[i]=0;
-  // only these types are currently allowed as column types :
-  sizes[INTSXP] = sizeof(int);     // integer and factor
-  sizes[LGLSXP] = sizeof(int);     // logical
-  sizes[REALSXP] = sizeof(double); // numeric
-  sizes[STRSXP] = sizeof(SEXP *);  // character
-  sizes[VECSXP] = sizeof(SEXP *);  // a column itself can be a list()
-  for (i=0;i<100;i++) {
-    if (sizes[i]>8) error("Type %d is sizeof() greater than 8 bytes on this machine. We haven't tested on any architecture greater than 64bit, yet.", i);
-    // One place we need the largest sizeof (assumed to be 8 bytes) is the working memory malloc in reorder.c
-  }
-  SelfRefSymbol = install(".internal.selfref");
-}
-
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verbose)
 {
   R_len_t i, j, k, rownum, ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp, origIlen=0, origSDnrow=0;
@@ -292,7 +274,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (TYPEOF(target)!=TYPEOF(RHS) && !isNull(target))
           error("Type of RHS ('%s') must match LHS ('%s'). To check and coerce would impact performance too much for the fastest cases. Either change the type of the target column, or coerce the RHS of := yourself (e.g. by using 1L instead of 1)", type2char(TYPEOF(RHS)), type2char(TYPEOF(target)));
         int vlen = length(RHS);
-        if (vlen!=1 && vlen!=grpn) {
+        if (vlen>1 && vlen!=grpn) {
           SEXP colname = isNull(target) ? STRING_ELT(newnames, INTEGER(lhs)[j]-origncol-1) : STRING_ELT(dtnames,INTEGER(lhs)[j]-1);
           error("Supplied %d items to be assigned to group %d of size %d in column '%s'. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code.",vlen,i+1,grpn,CHAR(colname));
           // e.g. in #4990 `:=` did not issue recycling warning during grouping. Now it is error not warning.
@@ -439,14 +421,15 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         default:
           error("Logical error. Type of column should have been checked by now");
         }
-        continue;
+      } else {
+        // thislen>0
+        if (TYPEOF(source) != TYPEOF(target))
+          error("Column %d of result for group %d is type '%s' but expecting type '%s'. Column types must be consistent for each group.", j+1, i+1, type2char(TYPEOF(source)), type2char(TYPEOF(target)));
+        if (thislen>1 && thislen!=maxn && grpn>0) {  // grpn>0 for grouping empty tables; test 1986
+          error("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code.", thislen, j+1, i+1, maxn);
+        }
+        memrecycle(target, R_NilValue, thisansloc, maxn, source);
       }
-      if (TYPEOF(source) != TYPEOF(target))
-        error("Column %d of result for group %d is type '%s' but expecting type '%s'. Column types must be consistent for each group.", j+1, i+1, type2char(TYPEOF(source)), type2char(TYPEOF(target)));
-      if (thislen!=1 && thislen!=maxn && grpn>0) {  // grpn>0 for grouping empty tables; test 1986
-        error("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code.", thislen, j+1, i+1, maxn);
-      }
-      memrecycle(target, R_NilValue, thisansloc, maxn, source);
     }
     ansloc += maxn;
     if (firstalloc) {

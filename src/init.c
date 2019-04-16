@@ -15,13 +15,14 @@ SEXP selfrefokwrapper();
 SEXP truelength();
 SEXP setcharvec();
 SEXP setcolorder();
-SEXP chmatchwrapper();
+SEXP chmatch_R();
+SEXP chmatchdup_R();
+SEXP chin_R();
 SEXP freadR();
 SEXP fwriteR();
 SEXP reorder();
 SEXP rbindlist();
 SEXP vecseq();
-SEXP copyattr();
 SEXP setlistelt();
 SEXP setmutable();
 SEXP address();
@@ -44,7 +45,6 @@ SEXP pointWrapper();
 SEXP setNumericRounding();
 SEXP getNumericRounding();
 SEXP binary();
-SEXP chmatch2();
 SEXP subsetDT();
 SEXP subsetVector();
 SEXP convertNegAndZeroIdx();
@@ -80,6 +80,8 @@ SEXP hasOpenMP();
 SEXP uniqueNlogical();
 SEXP frollfunR();
 SEXP dllVersion();
+SEXP nafillR();
+SEXP colnamesInt();
 
 // .Externals
 SEXP fastmean();
@@ -97,13 +99,14 @@ R_CallMethodDef callMethods[] = {
 {"Ctruelength", (DL_FUNC) &truelength, -1},
 {"Csetcharvec", (DL_FUNC) &setcharvec, -1},
 {"Csetcolorder", (DL_FUNC) &setcolorder, -1},
-{"Cchmatchwrapper", (DL_FUNC) &chmatchwrapper, -1},
+{"Cchmatch", (DL_FUNC) &chmatch_R, -1},
+{"Cchmatchdup", (DL_FUNC) &chmatchdup_R, -1},
+{"Cchin", (DL_FUNC) &chin_R, -1},
 {"CfreadR", (DL_FUNC) &freadR, -1},
 {"CfwriteR", (DL_FUNC) &fwriteR, -1},
 {"Creorder", (DL_FUNC) &reorder, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
-{"Ccopyattr", (DL_FUNC) &copyattr, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
 {"Csetmutable", (DL_FUNC) &setmutable, -1},
 {"Caddress", (DL_FUNC) &address, -1},
@@ -126,7 +129,6 @@ R_CallMethodDef callMethods[] = {
 {"CsetNumericRounding", (DL_FUNC) &setNumericRounding, -1},
 {"CgetNumericRounding", (DL_FUNC) &getNumericRounding, -1},
 {"Cbinary", (DL_FUNC) &binary, -1},
-{"Cchmatch2", (DL_FUNC) &chmatch2, -1},
 {"CsubsetDT", (DL_FUNC) &subsetDT, -1},
 {"CsubsetVector", (DL_FUNC) &subsetVector, -1},
 {"CconvertNegAndZeroIdx", (DL_FUNC) &convertNegAndZeroIdx, -1},
@@ -162,6 +164,8 @@ R_CallMethodDef callMethods[] = {
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
 {"CfrollfunR", (DL_FUNC) &frollfunR, -1},
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
+{"CnafillR", (DL_FUNC) &nafillR, -1},
+{"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
 {NULL, NULL, 0}
 };
 
@@ -171,6 +175,20 @@ R_ExternalMethodDef externalMethods[] = {
 {"Cfastmean", (DL_FUNC) &fastmean, -1},
 {NULL, NULL, 0}
 };
+
+static void setSizes() {
+  for (int i=0; i<100; ++i) { sizes[i]=0; typeorder[i]=0; }
+  // only these types are currently allowed as column types :
+  sizes[LGLSXP] =  sizeof(int);       typeorder[LGLSXP] =  0;
+  sizes[RAWSXP] =  sizeof(Rbyte);     typeorder[RAWSXP] =  1;
+  sizes[INTSXP] =  sizeof(int);       typeorder[INTSXP] =  2;   // integer and factor
+  sizes[REALSXP] = sizeof(double);    typeorder[REALSXP] = 3;   // numeric and integer64
+  sizes[CPLXSXP] = sizeof(Rcomplex);  typeorder[CPLXSXP] = 4;
+  sizes[STRSXP] =  sizeof(SEXP *);    typeorder[STRSXP] =  5;
+  sizes[VECSXP] =  sizeof(SEXP *);    typeorder[VECSXP] =  6;   // list column
+  if (sizeof(char *)>8) error("Pointers are %d bytes, greater than 8. We have not tested on any architecture greater than 64bit yet.", sizeof(char *));
+  // One place we need the largest sizeof is the working memory malloc in reorder.c
+}
 
 void attribute_visible R_init_datatable(DllInfo *info)
 // relies on pkg/src/Makevars to mv data.table.so to datatable.so
@@ -249,11 +267,13 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_indices =   PRINTNAME(install("indices"));
   char_allLen1 =   PRINTNAME(install("allLen1"));
   char_allGrp1 =   PRINTNAME(install("allGrp1"));
+  char_factor =    PRINTNAME(install("factor"));
+  char_ordered =   PRINTNAME(install("ordered"));
+  char_dataframe = PRINTNAME(install("data.frame"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
-    error("PRINTNAME(install(\"integer64\")) has returned %s not %s",
-      type2char(TYPEOF(char_integer64)), type2char(CHARSXP));
+    error("PRINTNAME(install(\"integer64\")) has returned %s not %s", type2char(TYPEOF(char_integer64)), type2char(CHARSXP));  // # nocov
   }
 
   // create commonly used symbols, same as R_*Symbol but internal to DT
@@ -267,7 +287,9 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  SelfRefSymbol = install(".internal.selfref");
 
+  initDTthreads();
   avoid_openmp_hang_within_fork();
 }
 
@@ -311,9 +333,9 @@ inline double LLtoD(long long x) {
   return u.d;
 }
 
-
+// # nocov start
 SEXP hasOpenMP() {
-  // Just for use by onAttach to avoid an RPRINTF from C level which isn't suppressable by CRAN
+  // Just for use by onAttach (hence nocov) to avoid an RPRINTF from C level which isn't suppressable by CRAN
   // There is now a 'grep' in CRAN_Release.cmd to detect any use of RPRINTF in init.c, which is
   // why RPRINTF is capitalized in this comment to avoid that grep.
   // TODO: perhaps .Platform or .Machine in R itself could contain whether OpenMP is available.
@@ -323,9 +345,10 @@ SEXP hasOpenMP() {
   return ScalarLogical(FALSE);
   #endif
 }
+// # nocov end
 
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.12.1")));
+  return(ScalarString(mkChar("1.12.3")));
 }
 

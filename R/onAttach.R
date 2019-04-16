@@ -17,11 +17,16 @@
       g = ""
   }
   dev = as.integer(v[1L, 3L]) %% 2L == 1L  # version number odd => dev
-  packageStartupMessage("data.table ", v, if(dev)paste0(" IN DEVELOPMENT built ",d,g), "  Latest news: r-datatable.com")
-  if (dev && (Sys.Date() - as.Date(d))>28)
-    packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********")
-  if (!.Call(ChasOpenMP))
-    packageStartupMessage("**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode. If this is a Mac, please ensure you are using R>=3.4.0 and have followed our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. This warning message should not occur on Windows or Linux. If it does, please file a GitHub issue.\n**********")
+  if (!isTRUE(getOption("datatable.quiet"))) {   # new option in v1.12.4, #3489
+    packageStartupMessage("data.table ", v, if(dev)paste0(" IN DEVELOPMENT built ",d,g),
+                          " using ", getDTthreads(verbose=FALSE), " threads (see ?getDTthreads).  Latest news: r-datatable.com")
+    if (dev && (Sys.Date() - as.Date(d))>28)
+      packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********")
+    if (!.Call(ChasOpenMP))
+      packageStartupMessage("**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode.",
+        " If this is a Mac, please ensure you are using R>=3.4.0 and have followed our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation.",
+        " This warning message should not occur on Windows or Linux. If it does, please file a GitHub issue.\n**********")
+  }
 }
 
 dcf.lib = function(pkg, field){

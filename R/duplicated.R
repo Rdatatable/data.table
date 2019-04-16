@@ -1,5 +1,6 @@
 
 warning_oldUniqueByKey = "The deprecated option 'datatable.old.unique.by.key' is being used. Please stop using it and pass 'by=key(DT)' instead for clarity. For more information please search the NEWS file for this option."
+# upgrade the 4 calls below to error after May 2019 ( see note 10 from 1.11.0 May 2018 which said one year from then )
 
 duplicated.data.table <- function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
   if (!cedta()) return(NextMethod("duplicated")) #nocov

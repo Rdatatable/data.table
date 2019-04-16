@@ -18,14 +18,20 @@ setindexv <- function(x, cols, verbose=getOption("datatable.verbose")) {
   }
 }
 
-set2key <- function(...) {
-  stop("set2key() is now deprecated. Please use setindex() instead.")
-}
-set2keyv <- function(...) {
-  stop("set2keyv() is now deprecated. Please use setindexv() instead.")
-}
-key2 <- function(x) {
-  stop("key2() is now deprecated. Please use indices() instead.")
+# remove these 3 after May 2019; see discussion in #3399 and notes in v1.12.2. They were marked experimental after all.
+set2key <- function(...)  stop("set2key() is now deprecated. Please use setindex() instead.")
+set2keyv <- function(...) stop("set2keyv() is now deprecated. Please use setindexv() instead.")
+key2 <- function(...)     stop("key2() is now deprecated. Please use indices() instead.")
+
+# upgrade to error after Mar 2020. Has already been warning since 2012, and stronger warning in Mar 2019 (note in news for 1.12.2); #3399
+"key<-" <- function(x,value) {
+  warning("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future.")
+  setkeyv(x,value)
+  # The returned value here from key<- is then copied by R before assigning to x, it seems. That's
+  # why we can't do anything about it without a change in R itself. If we return NULL (or invisible()) from this key<-
+  # method, the table gets set to NULL. So, although we call setkeyv(x,cols) here, and that doesn't copy, the
+  # returned value (x) then gets copied by R.
+  # So, solution is that caller has to call setkey or setkeyv directly themselves, to avoid <- dispatch and its copy.
 }
 
 setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
@@ -125,16 +131,6 @@ getindex <- function(x, name) {
     stop("Internal error: index '",name,"' exists but is invalid")   # nocov
   }
   ans
-}
-
-"key<-" <- function(x,value) {
-  warning("The key(x)<-value form of setkey can copy the whole table. This is due to <- in R itself. Please change to setkeyv(x,value) or setkey(x,...) which do not copy and are faster. See help('setkey'). You can safely ignore this warning if it is inconvenient to change right now. Setting options(warn=2) turns this warning into an error, so you can then use traceback() to find and change your key<- calls.")
-  setkeyv(x,value)
-  # The returned value here from key<- is then copied by R before assigning to x, it seems. That's
-  # why we can't do anything about it without a change in R itself. If we return NULL (or invisible()) from this key<-
-  # method, the table gets set to NULL. So, although we call setkeyv(x,cols) here, and that doesn't copy, the
-  # returned value (x) then gets copied by R.
-  # So, solution is that caller has to call setkey or setkeyv directly themselves, to avoid <- dispatch and its copy.
 }
 
 haskey <- function(x) !is.null(key(x))
@@ -337,7 +333,9 @@ setorderv <- function(x, cols = colnames(x), order=1L, na.last=FALSE)
     if (is.data.frame(x) & !is.data.table(x)) {
       setattr(x, 'row.names', rownames(x)[o])
     }
-    setattr(x, 'sorted', NULL) # if 'forderv' is not 0-length, it means order has changed. So, set key to NULL, else retain key.
+    k = key(x)
+    if (!identical(head(cols, length(k)), k) || any(head(order, length(k)) < 0))
+      setattr(x, 'sorted', NULL) # if 'forderv' is not 0-length & key is not a same-ordered subset of cols, it means order has changed. So, set key to NULL, else retain key.
     setattr(x, 'index', NULL)  # remove secondary keys too. These could be reordered and retained, but simpler and faster to remove
   }
   invisible(x)

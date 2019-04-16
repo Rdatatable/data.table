@@ -14,7 +14,8 @@
     row.names=getOption("datatable.print.rownames"), # default: TRUE
     col.names=getOption("datatable.print.colnames"), # default: "auto"
     print.keys=getOption("datatable.print.keys"),    # default: FALSE
-    quote=FALSE, \dots)
+    quote=FALSE,
+    timezone=FALSE, \dots)
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
@@ -25,6 +26,7 @@
   \item{col.names}{ One of three flavours for controlling the display of column names in output. \code{"auto"} includes column names above the data, as well as below the table if \code{nrow(x) > 20}. \code{"top"} excludes this lower register when applicable, and \code{"none"} suppresses column names altogether (as well as column classes if \code{class = TRUE}. }
   \item{print.keys}{ If \code{TRUE}, any \code{\link{key}} and/or \code{\link[=indices]{index}} currently assigned to \code{x} will be printed prior to the preview of the data. }
   \item{quote}{ If \code{TRUE}, all output will appear in quotes, as in \code{print.default}. }
+  \item{timezone}{ If \code{TRUE}, time columns of class POSIXct or POSIXlt will be printed with their timezones (if attribute is available). }
   \item{\dots}{ Other arguments ultimately passed to \code{format}. }
 }
 \details{

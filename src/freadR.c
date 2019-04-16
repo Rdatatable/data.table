@@ -67,7 +67,8 @@ SEXP freadR(
   SEXP dropArg,
   SEXP colClassesArg,
   SEXP integer64Arg,
-  SEXP encodingArg
+  SEXP encodingArg,
+  SEXP keepLeadingZerosArgs
 ) {
   verbose = LOGICAL(verboseArg)[0];
   warningsAreErrors = LOGICAL(warnings2errorsArg)[0];
@@ -146,6 +147,7 @@ SEXP freadR(
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
   args.verbose = verbose;
   args.warningsAreErrors = warningsAreErrors;
+  args.keepLeadingZeros = LOGICAL(keepLeadingZerosArgs)[0];
 
   // === extras used for callbacks ===
   if (!isString(integer64Arg) || LENGTH(integer64Arg)!=1) error("'integer64' must be a single character string");
@@ -206,7 +208,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT));
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
     if (isString(colClassesSxp)) {
-      SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT, FALSE));
+      SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT));
       if (LENGTH(colClassesSxp)==1) {
         signed char newType = typeEnum[INTEGER(typeEnum_idx)[0]-1];
         if (newType == CT_DROP) STOP("colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing");
@@ -224,7 +226,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     } else {
       if (!isNewList(colClassesSxp)) STOP("CfreadR: colClasses is not type list");
       if (!length(getAttrib(colClassesSxp, R_NamesSymbol))) STOP("CfreadR: colClasses is type list but has no names");
-      SEXP typeEnum_idx = PROTECT(chmatch(PROTECT(getAttrib(colClassesSxp, R_NamesSymbol)), typeRName_sxp, NUT, FALSE));
+      SEXP typeEnum_idx = PROTECT(chmatch(PROTECT(getAttrib(colClassesSxp, R_NamesSymbol)), typeRName_sxp, NUT));
       for (int i=0; i<LENGTH(colClassesSxp); i++) {
         SEXP items;
         signed char thisType = typeEnum[INTEGER(typeEnum_idx)[i]-1];
@@ -239,7 +241,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
           continue;
         }
         SEXP itemsInt;
-        if (isString(items)) itemsInt = PROTECT(chmatch(items, colNamesSxp, NA_INTEGER, FALSE));
+        if (isString(items)) itemsInt = PROTECT(chmatch(items, colNamesSxp, NA_INTEGER));
         else                 itemsInt = PROTECT(coerceVector(items, INTSXP));
         // UNPROTECTed directly just after this for loop. No protecti++ here is correct.
         for (int j=0; j<LENGTH(items); j++) {
@@ -258,7 +260,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         UNPROTECT(1); // UNPROTECTing itemsInt inside loop to save protection stack
       }
       for (int i=0; i<ncol; i++) if (type[i]<0) type[i] *= -1;  // undo sign; was used to detect duplicates
-      UNPROTECT(2);  // typeEnum_idx (+1 for its protect of getAttrib)
+      UNPROTECT(2);  // typeEnum_idx (+1 for its protect of getAttrib which rcheck asked for iirc)
     }
     UNPROTECT(1);  // typeRName_sxp
   }
@@ -267,7 +269,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   }
   if (length(dropSxp)) {
     SEXP itemsInt;
-    if (isString(dropSxp)) itemsInt = PROTECT(chmatch(dropSxp, colNamesSxp, NA_INTEGER, FALSE));
+    if (isString(dropSxp)) itemsInt = PROTECT(chmatch(dropSxp, colNamesSxp, NA_INTEGER));
     else                   itemsInt = PROTECT(coerceVector(dropSxp, INTSXP));
     for (int j=0; j<LENGTH(itemsInt); j++) {
       int k = INTEGER(itemsInt)[j];
@@ -294,7 +296,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     SEXP tt;
     if (isString(selectSxp)) {
       // invalid cols check part of #1445 moved here (makes sense before reading the file)
-      tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER, FALSE));
+      tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER));
       for (int i=0; i<length(selectSxp); i++) if (INTEGER(tt)[i]==NA_INTEGER)
         DTWARN("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
     } else {
@@ -456,6 +458,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
       if (thisSize == 4) {
         char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*4;
         char *src4 = (char*)buff4 + off4;
+        // debug line for #3369 ... if (DTi>2638000) printf("freadR.c:460: thisSize==4, resj=%d, %zd, %d, %d, j=%d, done=%d\n", resj, DTi, off4, rowSize4, j, done);
         for (int i=0; i<nRows; i++) {
           memcpy(dest, src4, 4);
           src4 += rowSize4;

@@ -1,4 +1,4 @@
-test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, script=NULL) {
+test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, script="tests.Rraw") {
   if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
@@ -12,31 +12,45 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
     subdir = "tests"
   }
   fulldir = file.path(rootdir, subdir)
+  
+  # nocov start
+  if (isTRUE(benchmark)) {
+    warning("'benchmark' argument is deprecated, use script='benchmark.Rraw' instead")
+    script = "benchmark.Rraw"
+  }
+  if (isTRUE(with.other.packages)) {
+    warning("'with.other.packages' argument is deprecated, use script='other.Rraw' instead")
+    script = "other.Rraw"
+  }
+  # nocov end
 
   if (!is.null(script)) {
     stopifnot(is.character(script), length(script)==1L, !is.na(script), nzchar(script))
     if (!identical(basename(script), script)) {
+      # nocov start
       subdir = dirname(script)
       fulldir = normalizePath(subdir, mustWork=FALSE)
       fn = basename(script)
+      # nocov end
     } else {
       fn = script
     }
   } else {
-    stopifnot( !(with.other.packages && benchmark) )
-    fn = if (with.other.packages) "other.Rraw"
-         else if (benchmark) "benchmark.Rraw"
-         else "tests.Rraw"
+    stop("'script' argument should not be NULL") # nocov
   }
   fn = setNames(file.path(fulldir, fn), file.path(subdir, fn))
-  if (!file.exists(fn)) stop(fn," does not exist")
+  if (!file.exists(fn)) stop(fn," does not exist") # nocov
 
   # From R 3.6.0 onwards, we can check that && and || are using only length-1 logicals (in the test suite)
   # rather than relying on x && y being equivalent to x[[1L]] && y[[1L]]  silently.
   orig__R_CHECK_LENGTH_1_LOGIC2_ <- Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_", unset = NA_character_)
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
   # This environment variable is restored to its previous state (including not defined) after sourcing test script
-  
+
+  oldRNG = suppressWarnings(RNGversion("3.5.0"))
+  # sample method changed in R 3.6 to remove bias; see #3431 for links and notes
+  # This can be removed (and over 120 tests updated) if and when the oldest R version we test and support is moved to R 3.6
+
   oldverbose = options(datatable.verbose=verbose)
   oldenc = options(encoding="UTF-8")[[1L]]  # just for tests 708-712 on Windows
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
@@ -49,7 +63,6 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   assign("nfail", 0L, envir=env)
   assign("ntest", 0L, envir=env)
   assign("whichfail", NULL, envir=env)
-  setDTthreads(2) # explicitly limit to 2 so as not to breach CRAN policy (but tests are small so should not use more than 2 anyway)
   assign("started.at", proc.time(), envir=env)
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
   assign("timings", data.table( ID = seq_len(9999L), time=0.0, nTest=0L ), envir=env)   # test timings aggregated to integer id
@@ -65,33 +78,39 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   options(oldverbose)
   options(oldenc)
   # Sys.setlocale("LC_CTYPE", oldlocale)
-  setDTthreads(0)
   ans = env$nfail==0
-  
+
   if (is.na(orig__R_CHECK_LENGTH_1_LOGIC2_)) {
     Sys.unsetenv("_R_CHECK_LENGTH_1_LOGIC2_")
   } else {
-    Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_)
+    Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = orig__R_CHECK_LENGTH_1_LOGIC2_) # nocov
   }
-  
+
+  suppressWarnings(do.call("RNGkind",as.list(oldRNG)))
+  # suppressWarning again in the unlikely event that user selected sample='Rounding' themselves before calling test.data.table()
+
   timings = get("timings", envir=env)
   ntest = get("ntest", envir=env)
   nfail = get("nfail", envir=env)
   started.at = get("started.at", envir=env)
   whichfail = get("whichfail", envir=env)
-  
+
   # Summary. This code originally in tests.Rraw and moved up here in #3307
+  # One big long line because CRAN checks output last 13 lines. One long line counts as one out of 13.
   plat = paste0("endian==", .Platform$endian,
                 ", sizeof(long double)==", .Machine$sizeof.longdouble,
                 ", sizeof(pointer)==", .Machine$sizeof.pointer,
                 ", TZ=", suppressWarnings(Sys.timezone()),
                 ", locale='", Sys.getlocale(), "'",
-                ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'")
+                ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
+                ", getDTthreads()='", paste0(capture.output(invisible(getDTthreads(verbose=TRUE))), collapse="; "), "'")
   DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
-  if ((x<-sum(timings[["nTest"]])) != ntest) warning("Timings count mismatch:",x,"vs",ntest)
+  if ((x<-sum(timings[["nTest"]])) != ntest) {
+    warning("Timings count mismatch:",x,"vs",ntest)  # nocov
+  }
   cat("\n10 longest running tests took ", as.integer(tt<-DT[, sum(time)]), "s (", as.integer(100*tt/(ss<-timings[,sum(time)])), "% of ", as.integer(ss), "s)\n", sep="")
   print(DT, class=FALSE)
-  
+
   ## this chunk requires to include new suggested deps: graphics, grDevices
   #memtest.plot = function(.inittime) {
   #  if (!all(requireNamespace(c("graphics","grDevices"), quietly=TRUE))) return(invisible())
@@ -116,7 +135,8 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   #  }
   #}
   #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
-  
+
+  # nocov start
   if (nfail > 0) {
     if (nfail>1) {s1="s";s2="s: "} else {s1="";s2=" "}
     cat("\r")
@@ -124,10 +144,11 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
          " Search ",names(fn)," for test number",s2,paste(whichfail,collapse=", "),".")
     # important to stop() here, so that 'R CMD check' fails
   }
+  # nocov end
   cat(plat,"\n\nAll ",ntest," tests in ",names(fn)," completed ok in ",timetaken(started.at)," on ",date(),"\n",sep="")
   # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
   # stale due to not updating yet since a fix in R-devel, for example.
-  
+
   #attr(ans, "details") <- env
   invisible(ans)
 }
@@ -215,7 +236,8 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     filename = NA_character_ # nocov
   }
 
-  if (!missing(error) && !missing(y)) stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")
+  if (!missing(error) && !missing(y))
+    stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov
 
   string_match = function(x, y) {
     length(grep(x,y,fixed=TRUE)) ||                    # try treating x as literal first; useful for most messages containing ()[]+ characters
