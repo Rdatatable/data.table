@@ -106,3 +106,5 @@ test(4.21, colnamesInt(dt, NULL), seq_along(dt))
 dt = data.table(a=c(1L, 2L, NA_integer_), b=c(1, 2, NA_real_))
 test(5.01, nafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
 test(5.02, setnafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
+test(5.03, nafill(dt, "locf", verbose=NA), error="verbose must be TRUE or FALSE")
+
