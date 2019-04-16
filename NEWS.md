@@ -41,7 +41,7 @@
 
 2. `keyby=colName` could use the wrong index and return incorrect results if both `colName` and `colNameExtra` (where `colName` is a leading subset of characters of `colNameExtra`) are column names and an index exists on `colNameExtra`, [#3498](https://github.com/Rdatatable/data.table/issues/3498). Thanks to Xianying Tan for the detailed report and pinpointing the source line at fault.
 
-3. `j = list(x, )` would sometimes correctly error but with a confusing diagnosis, [#3507](https://github.com/Rdatatable/data.table/issues/3507). This is now caught and stopped much earlier with a helpful admonition; thanks @eddelbuettel for the report.
+3. A missing item in `j` such as `j=.(colA, )` now gives a helpful error (`Item 2 of the .() or list() passed to j is missing`) rather than the unhelpful error `argument "this_jsub" is missing, with no default` (v1.12.2) or `argument 2 is empty` (v1.12.0 and before), [#3507](https://github.com/Rdatatable/data.table/issues/3507). Thanks to @eddelbuettel for the report.
 
 #### NOTES
 

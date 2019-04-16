@@ -983,9 +983,7 @@ replace_dot_alias <- function(e) {
           if (is.null(jvnames)) jvnames = rep.int("", length(jsubl)-1L)
           for (jj in seq.int(2L,length(jsubl))) {
             if (jvnames[jj-1L] == "" && mode(jsubl[[jj]])=="name") {
-              # #3507 -- list(x, ) caught here as an error
-              if (!nzchar(as.character(jsubl[[jj]])))
-                stop("Empty list argument at input ", jj - 1L, "; please explicitly provide 'NULL' if you're intending to drop a column, and note that R doesn't currently support trailing commas.")
+              if (!nzchar(as.character(jsubl[[jj]]))) stop("Item ", jj-1L, " of the .() or list() passed to j is missing") #3507
               jvnames[jj-1L] = gsub("^[.](N|I|GRP|BY)$", "\\1", deparse(jsubl[[jj]]))
             }
             # TO DO: if call to a[1] for example, then call it 'a' too
