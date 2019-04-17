@@ -248,19 +248,19 @@ void writeFloat64(double *col, int64_t row, char **pch)
       //      30460  => l=3046, sf=4, exp=4      dr=0; dl0=1; width=5
       //      0.0072 => l=72, sf=2, exp=-3       dr=4; dl0=1; width=6
       if (width <= sf + (sf>1) + 2 + (abs(exp)>99?3:2)) {
-         //              ^^^^ to not include 1 char for dec in -7e-04 where sf==1
-         //                      ^ 2 for 'e+'/'e-'
-         // decimal format ...
-         ch += width-1;
-         if (dr) {
-           while (dr && sf) { *ch--='0'+l%10; l/=10; dr--; sf--; }
-           while (dr) { *ch--='0'; dr--; }
-           *ch-- = dec;
-         }
-         while (dl0) { *ch--='0'; dl0--; }
-         while (sf) { *ch--='0'+l%10; l/=10; sf--; }
-         // ch is now 1 before the first char of the field so position it afterward again, and done
-         ch += width+1;
+        //               ^^^^ to not include 1 char for dec in -7e-04 where sf==1
+        //                       ^ 2 for 'e+'/'e-'
+        // decimal format ...
+        ch += width-1;
+        if (dr) {
+          while (dr && sf) { *ch--='0'+l%10; l/=10; dr--; sf--; }
+          while (dr) { *ch--='0'; dr--; }
+          *ch-- = dec;
+        }
+        while (dl0) { *ch--='0'; dl0--; }
+        while (sf) { *ch--='0'+l%10; l/=10; sf--; }
+        // ch is now 1 before the first char of the field so position it afterward again, and done
+        ch += width+1;
       } else {
         // scientific ...
         ch += sf;  // sf-1 + 1 for dec
@@ -548,43 +548,43 @@ int writer_len[] = {
 
 int compressbuff(void* dest, size_t *destLen, const void* source, size_t sourceLen)
 {
-    int level = Z_DEFAULT_COMPRESSION;
-    z_stream stream;
-    int err;
-    const uInt max = (uInt)-1;
-    uLong left;
+  int level = Z_DEFAULT_COMPRESSION;
+  z_stream stream;
+  int err;
+  const uInt max = (uInt)-1;
+  uLong left;
 
-    left = *destLen;
-    *destLen = 0;
+  left = *destLen;
+  *destLen = 0;
 
-    stream.zalloc = (alloc_func)0;
-    stream.zfree = (free_func)0;
-    stream.opaque = (voidpf)0;
+  stream.zalloc = (alloc_func)0;
+  stream.zfree = (free_func)0;
+  stream.opaque = (voidpf)0;
 
-    err = deflateInit2(&stream, level, Z_DEFLATED, 31, 8, Z_DEFAULT_STRATEGY);
-    if (err != Z_OK)
-      return err;
+  err = deflateInit2(&stream, level, Z_DEFLATED, 31, 8, Z_DEFAULT_STRATEGY);
+  if (err != Z_OK)
+    return err;  // # nocov
 
-    stream.next_out = dest;
-    stream.avail_out = 0;
-    stream.next_in = (z_const Bytef *)source;
-    stream.avail_in = 0;
+  stream.next_out = dest;
+  stream.avail_out = 0;
+  stream.next_in = (z_const Bytef *)source;
+  stream.avail_in = 0;
 
-    do {
-        if (stream.avail_out == 0) {
-            stream.avail_out = left > (uLong)max ? max : (uInt)left;
-            left -= stream.avail_out;
-        }
-        if (stream.avail_in == 0) {
-            stream.avail_in = sourceLen > (uLong)max ? max : (uInt)sourceLen;
-            sourceLen -= stream.avail_in;
-        }
-        err = deflate(&stream, sourceLen ? Z_NO_FLUSH : Z_FINISH);
-    } while (err == Z_OK);
+  do {
+    if (stream.avail_out == 0) {
+      stream.avail_out = left > (uLong)max ? max : (uInt)left;
+      left -= stream.avail_out;
+    }
+    if (stream.avail_in == 0) {
+      stream.avail_in = sourceLen > (uLong)max ? max : (uInt)sourceLen;
+      sourceLen -= stream.avail_in;
+    }
+    err = deflate(&stream, sourceLen ? Z_NO_FLUSH : Z_FINISH);
+  } while (err == Z_OK);
 
-    *destLen = stream.total_out;
-    deflateEnd(&stream);
-    return err == Z_STREAM_END ? Z_OK : err;
+  *destLen = stream.total_out;
+  deflateEnd(&stream);
+  return err == Z_STREAM_END ? Z_OK : err;
 }
 
 static int failed = 0;
@@ -627,7 +627,7 @@ void fwriteMain(fwriteMainArgs args)
 
   char *buff = malloc(buffSize);
   if (!buff)
-    STOP("Unable to allocate %d MiB for buffer: %s", buffSize / 1024 / 1024, strerror(errno));
+    STOP("Unable to allocate %d MiB for buffer: %s", buffSize / 1024 / 1024, strerror(errno));  // # nocov
 
   size_t zbuffSize = 0;
   size_t zbuffUsed = 0;
@@ -637,7 +637,7 @@ void fwriteMain(fwriteMainArgs args)
     zbuffSize = buffSize + buffSize/10 + 16;
     zbuff = malloc(zbuffSize);
     if (!zbuff)
-        STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));
+      STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
   }
 
   if(args.verbose) {
@@ -678,8 +678,7 @@ void fwriteMain(fwriteMainArgs args)
     DTPRINT("maxHeaderLen=%d\n", maxHeaderLen);
 
   if (maxHeaderLen >= buffLimit) {
-    STOP("Error : header line is greater than buffer limit. Try to increase buffMB option. Example 'buffMB = %d'\n",
-            2 * maxHeaderLen / 1024 / 1024 + 1);
+    STOP("Error : header line is greater than buffer limit. Try to increase buffMB option. Example 'buffMB = %d'\n", 2*maxHeaderLen/1024/1024 + 1); // # nocov
   }
 
   // Estimate max line length of a 1000 row sample (100 rows in 10 places).
@@ -695,42 +694,40 @@ void fwriteMain(fwriteMainArgs args)
           args.doRowNames, args.rowNames, doQuote, args.nrow, args.ncol, eolLen);
   }
   for (int64_t i = 0; i < args.nrow; i += args.nrow / 1000 + 1) {
-      int thisLineLen=0;
-      if (args.doRowNames) {
-        if (args.rowNames) {
-          thisLineLen += (int)strnlen(getString(args.rowNames, i), buffLimit);
-        } else {
-          thisLineLen += 1+(int)log10(args.nrow);  // the width of the row number
-        }
-        thisLineLen += 2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
+    int thisLineLen=0;
+    if (args.doRowNames) {
+      if (args.rowNames) {
+        thisLineLen += (int)strnlen(getString(args.rowNames, i), buffLimit);
+      } else {
+        thisLineLen += 1+(int)log10(args.nrow);  // the width of the row number
       }
+      thisLineLen += 2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
+    }
 
-      for (int j=0; j<args.ncol; j++) {
-          int num_fun = args.whichFun[j];
-          if (writer_len[num_fun]) {
-              thisLineLen += writer_len[num_fun] + 2 * (doQuote != 0) + 1; /* 1 for sep */
-          } else if (num_fun == WF_String) { // if String
-              const char* ch = getString(args.columns[j], i);
-              thisLineLen += (ch == NULL) ? strnlen(na, buffLimit) : strnlen(ch, buffLimit);
-              thisLineLen +=  2 * (doQuote!=0) + 1;
-          } else if (num_fun == WF_CategString) { // if Factor
-              const char* ch = getCategString(args.columns[j], i);
-              thisLineLen += (ch == NULL) ? strnlen(na, buffLimit) : strnlen(ch, buffLimit);
-              thisLineLen +=  2 * (doQuote!=0) + 1;
-          } else if (num_fun == WF_List) { // if List
-              char *ch = buff;                // overwrite at the beginning of buff to be more robust > 1 million bytes
-              writeList(args.columns[j], i, &ch);
-              thisLineLen += (int)(ch-buff) + 1;
-          }
+    for (int j=0; j<args.ncol; j++) {
+      int num_fun = args.whichFun[j];
+      if (writer_len[num_fun]) {
+        thisLineLen += writer_len[num_fun] + 2 * (doQuote != 0) + 1; /* 1 for sep */
+      } else if (num_fun == WF_String) { // if String
+        const char* ch = getString(args.columns[j], i);
+        thisLineLen += (ch == NULL) ? strnlen(na, buffLimit) : strnlen(ch, buffLimit);
+        thisLineLen +=  2 * (doQuote!=0) + 1;
+      } else if (num_fun == WF_CategString) { // if Factor
+        const char* ch = getCategString(args.columns[j], i);
+        thisLineLen += (ch == NULL) ? strnlen(na, buffLimit) : strnlen(ch, buffLimit);
+        thisLineLen +=  2 * (doQuote!=0) + 1;
+      } else if (num_fun == WF_List) { // if List
+        char *ch = buff;                // overwrite at the beginning of buff to be more robust > 1 million bytes
+        writeList(args.columns[j], i, &ch);
+        thisLineLen += (int)(ch-buff) + 1;
       }
-      thisLineLen += eolLen;
-      if (thisLineLen > maxLineLen)
-          maxLineLen = thisLineLen;
-      // stop if buffer is too low
-      if (maxLineLen >= buffSecure) {
-          STOP("Error : max line length is greater than buffer secure limit. Try to increase buffMB option. Example 'buffMB = %d'\n",
-            2 * maxLineLen / 1024 / 1024 + 1);
-      }
+    }
+    thisLineLen += eolLen;
+    if (thisLineLen > maxLineLen) maxLineLen = thisLineLen;
+    // stop if buffer is too low
+    if (maxLineLen >= buffSecure) {
+      STOP("Error : max line length is greater than buffer secure limit. Try to increase buffMB option. Example 'buffMB = %d'\n", 2*maxLineLen/1024/1024 + 1); // # nocov
+    }
   }
 
   if (args.verbose)
@@ -752,11 +749,13 @@ void fwriteMain(fwriteMainArgs args)
     // There is no binary/text mode distinction on Linux and Mac
 
     if (f == -1) {
+      // # nocov start
       int erropen = errno;
       STOP(access( args.filename, F_OK ) != -1 ?
            "%s: '%s'. Failed to open existing file for writing. Do you have write permission to it? Is this Windows and does another process such as Excel have it open?" :
            "%s: '%s'. Unable to create new file for writing (it does not exist already). Do you have permission to write here, is there space on the disk and does the path exist?",
            strerror(erropen), args.filename);
+      // # nocov end
     }
   }
 
@@ -790,7 +789,7 @@ void fwriteMain(fwriteMainArgs args)
       zbuffUsed = zbuffSize;
       int ret = compressbuff(zbuff, &zbuffUsed, buff, (int)(ch - buff));
       if(ret) {
-        STOP("Compress gzip error: %d", ret);
+        STOP("Compress gzip error: %d", ret);  // # nocov
       }
     }
 
@@ -800,19 +799,21 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT(buff);
     } else if ((args.is_gzip)) {
       if (WRITE(f, zbuff, (int)zbuffUsed) == -1) {
-        errwrite=errno;  // capture write errno now incase close fails with a different errno
+        errwrite=errno;  // # nocov ; capture write errno now incase close fails with a different errno
       }
     } else if (WRITE(f, buff, (int)(ch-buff)) == -1) {
-      errwrite=errno;
+      errwrite=errno;  // # nocov
     }
 
     if (errwrite) {
+      // # nocov start
       CLOSE(f);
       free(buff);
       if(args.is_gzip){
         free(zbuff);
       }
       STOP("%s: '%s'", strerror(errwrite), args.filename);
+      // # nocov end
     }
   }
 
@@ -825,9 +826,9 @@ void fwriteMain(fwriteMainArgs args)
     DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
     if (args.verbose)
-      DTPRINT("No data rows present (nrow==0)\n");
+      DTPRINT("No data rows present (nrow==0)\n");       // # nocov
     if (f!=-1 && CLOSE(f))
-      STOP("%s: '%s'", strerror(errno), args.filename);
+      STOP("%s: '%s'", strerror(errno), args.filename);  // # nocov
     return;
   }
 
@@ -858,7 +859,7 @@ void fwriteMain(fwriteMainArgs args)
     ch = myBuff = malloc(buffSize);  // each thread has its own buffer. malloc and errno are thread-safe.
 
     if (myBuff==NULL) {
-      failed=-errno;
+      failed=-errno;  // # nocov
     }
 
     size_t myzbuffUsed = 0;
@@ -869,7 +870,7 @@ void fwriteMain(fwriteMainArgs args)
       myzbuffSize = buffSize + buffSize/10 + 16;
       myzBuff = malloc(myzbuffSize);
       if (myzBuff==NULL) {
-        failed=-errno;
+        failed=-errno;  // # nocov
       }
     }
     // Do not rely on availability of '#omp cancel' new in OpenMP v4.0 (July 2013).
@@ -887,7 +888,7 @@ void fwriteMain(fwriteMainArgs args)
     #pragma omp for ordered schedule(dynamic)
     for(int64_t start=0; start<args.nrow; start+=rowsPerBatch) {
       if (failed)
-        continue;  // Not break. See comments above about #omp cancel
+        continue;  // # nocov ; continue not break (see comments above about #omp cancel)
       int64_t end = ((args.nrow - start)<rowsPerBatch) ? args.nrow : start + rowsPerBatch;
       for (int64_t i=start; i<end; i++) {
         // Tepid starts here (once at beginning of each per line)
@@ -916,15 +917,15 @@ void fwriteMain(fwriteMainArgs args)
               size = (ch == NULL) ? strnlen(na, buffLimit) : strnlen(ch, buffLimit);
             }
           if (size >= buffLimit) {
-              failed = -1;
-              break;
+              failed = -1;  // # nocov
+              break;        // # nocov
           } else {
             (args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
             *ch++ = sep;
             // Test if buffer to low
             if ( (int)(ch - myBuff) >= buffLimit ) {
-                failed = -1;
-                break; // stop writing
+                failed = -1;   // # nocov
+                break;         // # nocov ; stop writing
             }
           }
         }
@@ -932,7 +933,7 @@ void fwriteMain(fwriteMainArgs args)
         ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
         write_chars(args.eol, &ch);  // overwrite last sep with eol instead
         if (failed)
-          break; // this thread stop writing rows; fall through to clear up and STOP() below
+          break; // # nocov ; this thread stop writing rows; fall through to clear up and STOP() below
       }
       // compress buffer if gzip
       if (args.is_gzip) {
@@ -947,10 +948,10 @@ void fwriteMain(fwriteMainArgs args)
             DTPRINT(myBuff);
           } else if ((args.is_gzip)) {
             if (WRITE(f, myzBuff, (int)(myzbuffUsed)) == -1) {
-              failed=errno;
+              failed=errno;  // # nocov
             }
           } else if (WRITE(f, myBuff, (int)(ch - myBuff)) == -1) {
-              failed=errno;
+              failed=errno;  // # nocov
           }
 
           int used = 100*((double)(ch-myBuff))/buffSize;  // percentage of original buffMB
@@ -961,6 +962,7 @@ void fwriteMain(fwriteMainArgs args)
             // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
             // master thread (me==0) and hopefully this will work on Windows. If not, user should set
             // showProgress=FALSE until this can be fixed or removed.
+            // # nocov start
             int ETA = (int)((args.nrow-end)*((now-startTime)/end));
             if (hasPrinted || ETA >= 2) {
               if (args.verbose && !hasPrinted) DTPRINT("\n");
@@ -972,6 +974,7 @@ void fwriteMain(fwriteMainArgs args)
               nextTime = now+1;
               hasPrinted = true;
             }
+            // # nocov end
           }
           // May be possible for master thread (me==0) to call R_CheckUserInterrupt() here.
           // Something like:
@@ -995,12 +998,13 @@ void fwriteMain(fwriteMainArgs args)
     // or realloc fail. If the initial malloc failed, free(NULL) is ok and does nothing.
     free(myBuff);
     if (args.is_gzip) {
-        free(myzBuff);
+      free(myzBuff);
     }
   }
 
   // Finished parallel region and can call R API safely now.
   if (hasPrinted) {
+    // # nocov start
     if (!failed) {
       // clear the progress meter
       DTPRINT("\r                                                                       "
@@ -1009,18 +1013,19 @@ void fwriteMain(fwriteMainArgs args)
       // unless failed as we'd like to see anyBufferGrown and maxBuffUsedPC
       DTPRINT("\n");
     }
+    // # nocov end
   }
 
   if (f!=-1 && CLOSE(f) && !failed)
-    STOP("%s: '%s'", strerror(errno), args.filename);
+    STOP("%s: '%s'", strerror(errno), args.filename);  // # nocov
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
   // from the original error.
   if (failed<0) {
-    STOP("Error : one or more threads failed to malloc or buffer was too small. Try to increase buffMB option. Example 'buffMB = %d'\n", 2 * args.buffMB);
+    STOP("Error : one or more threads failed to malloc or buffer was too small. Try to increase buffMB option. Example 'buffMB = %d'\n", 2 * args.buffMB);  // # nocov
   } else if (failed>0) {
-    STOP("%s: '%s'", strerror(failed), args.filename);
+    STOP("%s: '%s'", strerror(failed), args.filename);  // # nocov
   }
   return;
 }
