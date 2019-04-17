@@ -529,21 +529,21 @@ void writeCategString(void *col, int64_t row, char **pch)
   write_string(getCategString(col, row), pch);
 }
 
-int writer_len[] = {
-  5, //&writeBool8,
-  5, //&writeBool32,
-  5, //&writeBool32AsString,
-  9, //&writeInt32,
-  19, //&writeInt64,
-  24, //&writeFloat64,
-  32, //&writeITime,
-  16, //&writeDateInt32,
-  16, //&writeDateFloat64,
-  32, //&writePOSIXct,
-  48, //&writeNanotime,
-  0, //&writeString,
-  0, //&writeCategString,
-  0, //&writeList
+int writer_len[] = {  // max field length for calculating max line length
+  5,  //&writeBool8       "false"
+  5,  //&writeBool32
+  5,  //&writeBool32AsString
+  11, //&writeInt32       "-2147483647"
+  20, //&writeInt64       "-9223372036854775807"
+  24, //&writeFloat64     "-3.141592653589793115998" with max options(digits=22)
+  32, //&writeITime
+  16, //&writeDateInt32
+  16, //&writeDateFloat64
+  32, //&writePOSIXct
+  48, //&writeNanotime
+  0,  //&writeString
+  0,  //&writeCategString
+  0,  //&writeList
 };
 
 int compressbuff(void* dest, size_t *destLen, const void* source, size_t sourceLen)
