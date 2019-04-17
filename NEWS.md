@@ -4,17 +4,15 @@
 
 #### NEW FEATURES
 
-1. New option `options(datatable.quiet = TRUE)` turns off the package startup message, [#3489](https://github.com/Rdatatable/data.table/issues/3489). `suppressPackageStartupMessages()` continues to work too. Thanks to @leobarlach for the suggestion inspired by `options(tidyverse.quiet = TRUE)`. We don't know of a way to make a package respect the `quietly=` option of `library()` and `require()` because the `quietly=` isn't passed through for use by the package's own `.onAttach`. If you can see how to do that, please submit a patch to R.
+1. `rleid()` functions now support long vectors (length > 2 billion).
 
-2. `rleid()` functions now support long vectors (length > 2 billion).
-
-3. `fread()`:
+2. `fread()`:
     * now skips embedded `NUL` (`\0`), [#3400](https://github.com/Rdatatable/data.table/issues/3400). Thanks to Marcus Davy for reporting with examples, and Roy Storey for the initial PR.
-    
-4. `fwrite()`:
-    * can now write directly gzipped csv file if `compress` option is set to `gzip` or if file ends with `".gz"`. Compression, like `fwrite`, is multithreaded. Thanks to Philippe Chataignon for the PR.
 
-5. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
+3. `fwrite()`:
+    * now writes compressed `.gz` files directly, [#2016](https://github.com/Rdatatable/data.table/issues/2016). Either set `compress="gzip"` or use a `.gz` filename extension. Compression, like `fwrite`, is multithreaded and compresses each chunk on-the-fly (a full size file is not created first). Many thanks to Philippe Chataignon for the PR.
+
+4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
     ```R
     > DT = data.table(A=1:3, B=list(1:2,"foo",3:5))
     > DT
@@ -36,9 +34,9 @@
     3:     3     3,4,5
     ```
 
-6. `print.data.table()` gains an option to display the timezone of `POSIXct` columns when available, [#2842](https://github.com/Rdatatable/data.table/issues/2842). Thanks to Michael Chirico for reporting and Felipe Parages for the PR.
+5. `print.data.table()` gains an option to display the timezone of `POSIXct` columns when available, [#2842](https://github.com/Rdatatable/data.table/issues/2842). Thanks to Michael Chirico for reporting and Felipe Parages for the PR.
 
-7. New functions `nafill` and `setnafill`, [#854](https://github.com/Rdatatable/data.table/issues/854). Thanks to Matthieu Gomez for the request and Jan Gorecki for implementing.
+6. New functions `nafill` and `setnafill`, [#854](https://github.com/Rdatatable/data.table/issues/854). Thanks to Matthieu Gomez for the request and Jan Gorecki for implementing.
 
 #### BUG FIXES
 
@@ -60,6 +58,8 @@
     ```
 
 3. `setorder` on a superset of a keyed `data.table`'s key now retains its key, [#3456](https://github.com/Rdatatable/data.table/issues/3456). For example, if `a` is the key of `DT`, `setorder(DT, a, -v)` will leave `DT` keyed by `a`.
+
+4. New option `options(datatable.quiet = TRUE)` turns off the package startup message, [#3489](https://github.com/Rdatatable/data.table/issues/3489). `suppressPackageStartupMessages()` continues to work too. Thanks to @leobarlach for the suggestion inspired by `options(tidyverse.quiet = TRUE)`. We don't know of a way to make a package respect the `quietly=` option of `library()` and `require()` because the `quietly=` isn't passed through for use by the package's own `.onAttach`. If you can see how to do that, please submit a patch to R.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
