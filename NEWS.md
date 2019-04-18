@@ -347,26 +347,26 @@
     the warning message has changed from :
 
     ```
-    Coerced character RHS to integer to match the column's type. Either change the target column ['id']
-    to character first (by creating a new character vector length 3 (nrows of entire table) and assign
-    that; i.e. 'replace' column), or coerce RHS to integer (e.g. 1L, NA_[real|integer]_, as.*, etc) to
-    make your intent clear and for speed. Or, set the column type correctly up front when you create the
-    table and stick to it, please.
+    Coerced character RHS to integer to match the column's type. Either change the target column
+    ['id'] to character first (by creating a new character vector length 3 (nrows of entire table) and
+    assign that; i.e. 'replace' column), or coerce RHS to integer (e.g. 1L, NA_[real|integer]_, as.*,
+    etc) to make your intent clear and for speed. Or, set the column type correctly up front when you
+    create the table and stick to it, please.
     ```
 
     to :
 
     ```
-    Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If the
-    target column's type integer is correct, it's best for efficiency to avoid the coercion and create
-    the RHS as type integer. To achieve that consider R's type postfix: typeof(0L) vs typeof(0), and
-    typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_). Wrapping the RHS with as.integer() will avoid
-    this warning but still perform the coercion. If the target column's type is not correct, it is best
-    to revisit where the DT was created and fix the column type there; e.g., by using colClasses= in
-    fread(). Otherwise, you can change the column type now by plonking a new column (of the desired type)
-    over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has nrow(DT) elements then
-    the assignment is called a column plonk and is the way to change a column's type. Column types can be
-    observed with sapply(DT,typeof).
+    Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If
+    the target column's type integer is correct, it's best for efficiency to avoid the coercion and
+    create the RHS as type integer. To achieve that consider the L postfix: typeof(0L) vs typeof(0),
+    and typeof(NA) vs typeof(NA_integer_) vs typeof(NA_real_). Wrapping the RHS with as.integer() will
+    avoid this warning but still perform the coercion. If the target column's type is not correct, it
+    is best to revisit where the DT was created and fix the column type there; e.g., by using
+    colClasses= in fread(). Otherwise, you can change the column type now by plonking a new column (of
+    the desired type) over the top of it; e.g. DT[, `id`:=as.character(`id`)]. If the RHS of := has
+    nrow(DT) elements then the assignment is called a column plonk and is the way to change a column's
+    type. Column types can be observed with sapply(DT,typeof).
     ```
 
     Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
@@ -375,9 +375,9 @@
     DT = data.table(v=1:3)
     DT[2, v:=3.14]
     Warning message:
-      Coerced double RHS to integer to match the type of the target column (column 1 named 'v'). One or
-      more RHS values contain fractions which have been lost; e.g. item 1 with value 3.140000 has been
-      truncated to 3.
+      Coerced double RHS to integer to match the type of the target column (column 1 named 'v'). One
+      or more RHS values contain fractions which have been lost; e.g. item 1 with value 3.140000 has
+      been truncated to 3.
     ```
 
 2. `split.data.table` method is now properly exported, [#2920](https://github.com/Rdatatable/data.table/issues/2920). But we don't recommend it because `split` copies all the pieces into new memory.
@@ -416,19 +416,23 @@
 #### NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES
 
 1. `fread()`'s `na.strings=` argument :
+
     ```R
     "NA"                                      # old default
     getOption("datatable.na.strings", "NA")   # this release; i.e. the same; no change yet
     getOption("datatable.na.strings", "")     # future release
     ```
+
     This option controls how `,,` is read in character columns. It does not affect numeric columns which read `,,` as `NA` regardless. We would like `,,`=>`NA` for consistency with numeric types, and `,"",`=>empty string to be the standard default for `fwrite/fread` character columns so that `fread(fwrite(DT))==DT` without needing any change to any parameters. `fwrite` has never written `NA` as `"NA"` in case `"NA"` is a valid string in the data; e.g., 2 character id columns sometimes do. Instead, `fwrite` has always written `,,` by default for an `<NA>` in a character columns. The use of R's `getOption()` allows users to move forward now, using `options(datatable.fread.na.strings="")`, or restore old behaviour when the default's default is changed in future, using `options(datatable.fread.na.strings="NA")`.
 
 2. `fread()` and `fwrite()`'s `logical01=` argument :
+
     ```R
     logical01 = FALSE                         # old default
     getOption("datatable.logical01", FALSE)   # this release; i.e. the same; no change yet
     getOption("datatable.logical01", TRUE)    # future release
     ```
+
     This option controls whether a column of all 0's and 1's is read as `integer`, or `logical` directly to avoid needing to change the type afterwards to `logical` or use `colClasses`. `0/1` is smaller and faster than `"TRUE"/"FALSE"`, which can make a significant difference to space and time the more `logical` columns there are. When the default's default changes to `TRUE` for `fread` we do not expect much impact since all arithmetic operators that are currently receiving 0's and 1's as type `integer` (think `sum()`) but instead could receive `logical`, would return exactly the same result on the 0's and 1's as `logical` type. However, code that is manipulating column types using `is.integer` or `is.logical` on `fread`'s result, could require change. It could be painful if `DT[(logical_column)]` (i.e. `DT[logical_column==TRUE]`) changed behaviour due to `logical_column` no longer being type `logical` but `integer`. But that is not the change proposed. The change is the other way around; i.e., a previously `integer` column holding only 0's and 1's would now be type `logical`. Since it's that way around, we believe the scope for breakage is limited. We think a lot of code is converting 0/1 integer columns to logical anyway, either using `colClasses=` or afterwards with an assign. For `fwrite`, the level of breakage depends on the consumer of the output file. We believe `0/1` is a better more standard default choice to move to. See notes below about improvements to `fread`'s sampling for type guessing, and automatic rereading in the rare cases of out-of-sample type surprises.
 
 
@@ -462,7 +466,8 @@ These options are meant for temporary use to aid your migration, [#2652](https:/
     * Detecting whether a very long input string is a file name or data is now much faster, [#2531](https://github.com/Rdatatable/data.table/issues/2531). Many thanks to @javrucebo for the detailed report, benchmarks and suggestions.
     * A column of `TRUE/FALSE`s is ok, as well as `True/False`s and `true/false`s, but mixing styles (e.g. `TRUE/false`) is not and will be read as type `character`.
     * New argument `index` to compliment the existing `key` argument for applying secondary orderings out of the box for convenience, [#2633](https://github.com/Rdatatable/data.table/issues/2633).
-    * A warning is now issued whenever incorrectly quoted fields have been detected and fixed using a non-standard quote rule. `fread` has always used these advanced rules but now it warns that it is using them. Most file writers correctly quote fields if the field contains the field separator, but a common error is not to also quote fields that contain a quote and then escape those quotes, particularly if that quote occurs at the start of the field. The ability to detect and fix such files is referred to as self-healing. Ambiguities are resolved using the knowledge that the number of columns is constant, and therefore this ability is not available when `fill=TRUE`. This feature can be improved in future by using column type consistency as well as the number of fields.
+    * A warning is now issued whenever incorrectly quoted fields have been detected and fixed using a non-standard quote rule. `fread` has always used these advanced rules but now it warns that it is using them. Most file writers correctly quote fields if the field contains the field separator, but a common error is not to also quote fields that contain a quote and then escape those quotes, particularly if that quote occurs at the start of the field. The ability to detect and fix such files is referred to as self-healing. Ambiguities are resolved using the knowledge that the number of columns is constant, and therefore this ability is not available when `fill=TRUE`. This feature can be improved in future by using column type consistency as well as the number of fields. For example:
+
     ```R
     txt = 'A,B\n1,hello\n2,"howdy" said Joe\n3,bonjour\n'
     cat(txt)
@@ -479,6 +484,7 @@ These options are meant for temporary use to aid your migration, [#2652](https:/
     Warning message:
     In fread(txt) : Found and resolved improper quoting
     ```
+
     * Many thanks to @yaakovfeldman, Guillermo Ponce, Arun Srinivasan, Hugh Parsonage, Mark Klik, Pasha Stetsenko, Mahyar K, Tom Crockett, @cnoelke, @qinjs, @etienne-s, Mark Danese, Avraham Adler, @franknarf1, @MichaelChirico, @tdhock, Luke Tierney, Ananda Mahto, @memoryfull, @brandenkmurray for testing dev and reporting these regressions before release to CRAN: #1464, #1671, #1888, #1895, #2070, #2073, #2087, #2091, #2092, #2107, #2118, #2123, #2167, #2194, #2196, #2201, #2222, #2228, #2238, #2246, #2251, #2265, #2267, #2285, #2287, #2299, #2322, #2347, #2352, #2370, #2371, #2395, #2404, #2446, #2453, #2457, #2464, #2481, #2499, #2512, #2515, #2516, #2518, #2520, #2523, #2526, #2535, #2542, #2548, #2561, #2600, #2625, #2666, #2697, #2735, #2744.
 
 2. `fwrite()`:
@@ -514,15 +520,16 @@ These options are meant for temporary use to aid your migration, [#2652](https:/
 13. `unique(DT)` now returns `DT` early when there are no duplicates to save RAM, [#2013](https://github.com/Rdatatable/data.table/issues/2013). Thanks to Michael Chirico for the PR, and thanks to @mgahan for pointing out a reversion in `na.omit.data.table` before release, [#2660](https://github.com/Rdatatable/data.table/issues/2660#issuecomment-371027948).
 
 14. `uniqueN()` is now faster on logical vectors. Thanks to Hugh Parsonage for [PR#2648](https://github.com/Rdatatable/data.table/pull/2648).
-    ```
+
+    ```R
     N = 1e9
-                                          was      now
-    x = c(TRUE,FALSE,NA,rep(TRUE,N))
-    uniqueN(x) == 3                      5.4s    0.00s
-    x = c(TRUE,rep(FALSE,N), NA)
-    uniqueN(x,na.rm=TRUE) == 2           5.4s    0.00s
-    x = c(rep(TRUE,N),FALSE,NA)
-    uniqueN(x) == 3                      6.7s    0.38s
+                                       #   was      now
+    x = c(TRUE,FALSE,NA,rep(TRUE,N))   #
+    uniqueN(x) == 3                    #  5.4s    0.00s
+    x = c(TRUE,rep(FALSE,N), NA)       #
+    uniqueN(x,na.rm=TRUE) == 2         #  5.4s    0.00s
+    x = c(rep(TRUE,N),FALSE,NA)        #
+    uniqueN(x) == 3                    #  6.7s    0.38s
     ```
 
 15. Subsetting optimization with keys and indices is now possible for compound queries like `DT[a==1 & b==2]`, [#2472](https://github.com/Rdatatable/data.table/issues/2472).
@@ -533,16 +540,19 @@ Thanks to @MichaelChirico for reporting and to @MarkusBonsch for the implementat
 17. `update.dev.pkg` is new function to update package from development repository, it will download package sources only when newer commit is available in repository. `data.table::update.dev.pkg()` defaults updates `data.table`, but any package can be used.
 
 18. Item 1 in NEWS for [v1.10.2](https://github.com/Rdatatable/data.table/blob/master/NEWS.md#changes-in-v1102--on-cran-31-jan-2017) on CRAN in Jan 2017 included :
+
     > When j is a symbol prefixed with `..` it will be looked up in calling scope and its value taken to be column names or numbers.
     > When you see the `..` prefix think one-level-up, like the directory `..` in all operating systems means the parent directory.
     > In future the `..` prefix could be made to work on all symbols apearing anywhere inside `DT[...]`.
 
-    The response has been positive ([this tweet](https://twitter.com/MattDowle/status/967290562725359617) and [FR#2655](https://github.com/Rdatatable/data.table/issues/2655)) and so this prefix is now expanded to all symbols appearing in `j=` as a first step; e.g. :
+    The response has been positive ([this tweet](https://twitter.com/MattDowle/status/967290562725359617) and [FR#2655](https://github.com/Rdatatable/data.table/issues/2655)) and so this prefix is now expanded to all symbols appearing in `j=` as a first step; e.g.
+
     ```R
     cols = "colB"
     DT[, c(..cols, "colC")]   # same as DT[, .(colB,colC)]
     DT[, -..cols]             # all columns other than colB
     ```
+
     Thus, `with=` should no longer be needed in any cases. Please change to using the `..` prefix and over the next few years we will start to formally deprecate and remove the `with=` parameter.  If this is well received, the `..` prefix could be expanded to symbols appearing in `i=` and `by=`, too. Note that column names should not now start with `..`. If a symbol `..var` is used in `j=` but `..var` exists as a column name, the column still takes precedence, for backwards compatibility. Over the next few years, data.table will start issuing warnings/errors when it sees column names starting with `..`. This affects one CRAN package out of 475 using data.table, so we do not believe this restriction to be unreasonable. Our main focus here which we believe `..` achieves is to resolve the more common ambiguity when `var` is in calling scope and `var` is a column name too. Further, we have not forgotten that in the past we recommended prefixing the variable in calling scope with `..` yourself. If you did that and `..var` exists in calling scope, that still works, provided neither `var` exists in calling scope nor `..var` exists as a column name. Please now remove the `..` prefix on `..var` in calling scope to tidy this up. In future data.table will start to warn/error on such usage.
 
 19. `setindexv` can now assign multiple (separate) indices by accepting a `list` in the `cols` argument.
@@ -662,6 +672,7 @@ Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdat
 10. As warned in v1.9.8 release notes below in this file (25 Nov 2016) it has been 1 year since then and so use of `options(datatable.old.unique.by.key=TRUE)` to restore the old default is now deprecated with warning. The new warning states that this option still works and repeats the request to pass `by=key(DT)` explicitly to `unique()`, `duplicated()`, `uniqueN()` and `anyDuplicated()` and to stop using this option. In another year, this warning will become error. Another year after that the option will be removed.
 
 11. As `set2key()` and `key2()` have been warning since v1.9.8 (Nov 2016), their warnings have now been upgraded to errors. Note that when they were introduced in version 1.9.4 (Oct 2014) they were marked as 'experimental' in NEWS item 4. They will be removed in one year.
+
     ```
     Was warning: set2key() will be deprecated in the next relase. Please use setindex() instead.
     Now error: set2key() is now deprecated. Please use setindex() instead.
@@ -709,11 +720,13 @@ Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdat
 #### NEW FEATURES
 
 1. When `j` is a symbol prefixed with `..` it will be looked up in calling scope and its value taken to be column names or numbers.
+
     ```R
     myCols = c("colA","colB")
     DT[, myCols, with=FALSE]
     DT[, ..myCols]              # same
     ```
+
    When you see the `..` prefix think _one-level-up_ like the directory `..` in all operating systems meaning the parent directory. In future the `..` prefix could be made to work on all symbols apearing anywhere inside `DT[...]`. It is intended to be a convenient way to protect your code from accidentally picking up a column name. Similar to how `x.` and `i.` prefixes (analogous to SQL table aliases) can already be used to disambiguate the same column name present in both `x` and `i`. A symbol prefix rather than a `..()` _function_ will be easier for us to optimize internally and more convenient if you have many variables in calling scope that you wish to use in your expressions safely. This feature was first raised in 2012 and long wished for, [#633](https://github.com/Rdatatable/data.table/issues/633). It is experimental.
 
 2. When `fread()` or `print()` see `integer64` columns are present, `bit64`'s namespace is now automatically loaded for convenience.
@@ -721,6 +734,7 @@ Thanks to @sritchie73 for reporting and fixing [PR#2631](https://github.com/Rdat
 3. `fwrite()` now supports the new [`nanotime`](https://cran.r-project.org/package=nanotime) type by Dirk Eddelbuettel, [#1982](https://github.com/Rdatatable/data.table/issues/1982). Aside: `data.table` already automatically supported `nanotime` in grouping and joining operations via longstanding support of its underlying `integer64` type.
 
 4. `indices()` gains a new argument `vectors`, default `FALSE`. This strsplits the index names by `__` for you, [#1589](https://github.com/Rdatatable/data.table/issues/1589).
+
     ```R
     DT = data.table(A=1:3, B=6:4)
     setindex(DT, B)
