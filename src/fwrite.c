@@ -548,20 +548,12 @@ int writer_len[] = {  // max field length for calculating max line length
 
 int compressbuff(void* dest, size_t *destLen, const void* source, size_t sourceLen)
 {
-  int level = Z_DEFAULT_COMPRESSION;
   z_stream stream;
-  int err;
-  const uInt max = (uInt)-1;
-  uLong left;
-
-  left = *destLen;
-  *destLen = 0;
-
   stream.zalloc = (alloc_func)0;
   stream.zfree = (free_func)0;
   stream.opaque = (voidpf)0;
 
-  err = deflateInit2(&stream, level, Z_DEFLATED, 31, 8, Z_DEFAULT_STRATEGY);
+  int err = deflateInit2(&stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 31, 8, Z_DEFAULT_STRATEGY);
   if (err != Z_OK)
     return err;  // # nocov
 
@@ -569,14 +561,15 @@ int compressbuff(void* dest, size_t *destLen, const void* source, size_t sourceL
   stream.avail_out = 0;
   stream.next_in = (z_const Bytef *)source;
   stream.avail_in = 0;
-
+  size_t left = *destLen;
+  const uInt uInt_max = (uInt)-1;  // stream.avail_out is type uInt
   do {
     if (stream.avail_out == 0) {
-      stream.avail_out = left > (uLong)max ? max : (uInt)left;
+      stream.avail_out = left>uInt_max ? uInt_max : left;
       left -= stream.avail_out;
     }
     if (stream.avail_in == 0) {
-      stream.avail_in = sourceLen > (uLong)max ? max : (uInt)sourceLen;
+      stream.avail_in = sourceLen>uInt_max ? uInt_max : sourceLen;
       sourceLen -= stream.avail_in;
     }
     err = deflate(&stream, sourceLen ? Z_NO_FLUSH : Z_FINISH);
