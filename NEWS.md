@@ -12,6 +12,7 @@
     * now skips embedded `NUL` (`\0`), [#3400](https://github.com/Rdatatable/data.table/issues/3400). Thanks to Marcus Davy for reporting with examples, and Roy Storey for the initial PR.
 
 4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
+
     ```R
     > DT = data.table(A=1:3, B=list(1:2,"foo",3:5))
     > DT
@@ -20,7 +21,7 @@
     1:     1    1,2
     2:     2    foo
     3:     3  3,4,5
-    
+    >
     # The following all accomplish the same assignment:
     > DT[2, B:=letters[9:13]]           # was error, now works
     > DT[2, B:=.(letters[9:13])]        # was error, now works
@@ -50,6 +51,7 @@
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
 
 2. Adding a new column by reference using `set()` on a `data.table` loaded from binary file now give a more helpful error message, [#2996](https://github.com/Rdatatable/data.table/issues/2996). Thanks to Joseph Burling for reporting.
+
     ```
     This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed
     manually (e.g. using structure()). Please run setDT() or alloc.col() on it first (to pre-allocate
@@ -72,6 +74,7 @@
 4. `rbind` and `rbindlist` now retain the position of duplicate column names rather than grouping them together [#3373](https://github.com/Rdatatable/data.table/issues/3373), fill length 0 columns (including NULL) with NA with warning [#1871](https://github.com/Rdatatable/data.table/issues/1871), and recycle length-1 columns [#524](https://github.com/Rdatatable/data.table/issues/524). Thanks to Kun Ren for the requests which arose when parsing JSON.
 
 5. `rbindlist`'s `use.names=` default has changed from `FALSE` to `"check"`. This emits a message if the column names of each item are not identical and then proceeds as if `use.names=FALSE` for backwards compatibility; i.e., bind by column position not by column name. The `rbind` method for `data.table` already sets `use.names=TRUE` so this change affects `rbindlist` only and not `rbind.data.table`. To stack differently named columns together silently (the previous default behavior of `rbindlist`), it is now necessary to specify `use.names=FALSE` for clarity to readers of your code. Thanks to Clayton Stanley who first raised the issue [here](http://lists.r-forge.r-project.org/pipermail/datatable-help/2014-April/002480.html). To aid pinpointing the calls to `rbindlist` that need attention, the message can be turned to error using `options(datatable.rbindlist.check="error")`. This option also accepts `"warning"`, `"message"` and `"none"`. In this release the message is suppressed for default column names (`"V[0-9]+"`); the next release will emit the message for those too. In 6 months the default will be upgraded from message to warning. There are two slightly different messages. They are helpful, include context and point to this news item :
+
     ```
     Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with
       NA (NULL for list columns), or use.names=FALSE to ignore column names.
@@ -128,7 +131,7 @@
 
 1. When upgrading to 1.12.0 some Windows users might have seen `CdllVersion not found` in some circumstances. We found a way to catch that so the [helpful message](https://twitter.com/MattDowle/status/1084528873549705217) now occurs for those upgrading from versions prior to 1.12.0 too, as well as those upgrading from 1.12.0 to a later version. See item 1 in notes section of 1.12.0 below for more background.
 
-2. v1.12.0 checked itself on loading using `tools::checkMD5sums("data.table")` but this check failed under the `packrat` package manager on Windows because `packrat` appears to modify the DESCRIPTION file of packages it has snapshot, [#3329](https://github.com/Rdatatable/data.table/issues/3329). This check is now removed. The `CdllVersion` check was introduced after the `checkMD5sums()` attempt and is better; e.g., reliable on all platforms. 
+2. v1.12.0 checked itself on loading using `tools::checkMD5sums("data.table")` but this check failed under the `packrat` package manager on Windows because `packrat` appears to modify the DESCRIPTION file of packages it has snapshot, [#3329](https://github.com/Rdatatable/data.table/issues/3329). This check is now removed. The `CdllVersion` check was introduced after the `checkMD5sums()` attempt and is better; e.g., reliable on all platforms.
 
 3. As promised in new feature 6 of v1.11.6 Sep 2018 (see below in this news file), the `datatable.CJ.names` option's default is now `TRUE`. In v1.13.0 it will be removed.
 
@@ -141,6 +144,7 @@
 7. `foverlaps` provides clearer error messages w.r.t. factor and POSIXct interval columns, [#2645](https://github.com/Rdatatable/data.table/issues/2645) [#3007](https://github.com/Rdatatable/data.table/issues/3007) [#1143](https://github.com/Rdatatable/data.table/issues/1143). Thanks to @sritchie73, @msummersgill and @DavidArenburg for the reports.
 
 8. `unique(DT)` checks up-front the types of all the columns and will fail if any column is type `list` even though those `list` columns may not be needed to establish uniqueness. Use `unique(DT, by=...)` to specify columns that are not type `list`. v1.11.8 and before would also correctly fail with the same error, but not when uniqueness had been established in prior columns: it would stop early, not look at the `list` column and return the correct result. Checking up-front was necessary for some internal optimizations and it's probably best to be explicit anyway. Thanks to James Lamb for reporting, [#3332](https://github.com/Rdatatable/data.table/issues/3332). The error message has been embellished :
+
     ```
     Column 2 of by= (2) is type 'list', not yet supported. Please use the by= argument to specify
     columns with types that are supported.
@@ -170,16 +174,18 @@
 7. `NA` in `between()` and `%between%`'s `lower` and `upper` are now taken as missing bounds and return `TRUE` rather than `NA`. This is now documented.
 
 8. `shift()` now interprets negative values of `n` to mean the opposite `type=`, [#1708](https://github.com/Rdatatable/data.table/issues/1708). When `give.names=TRUE` the result is named using a positive `n` with the appropriate `type=`. Alternatively, a new `type="shift"` names the result using a signed `n` and constant type.
+
     ```R
     shift(x, n=-5:5, give.names=TRUE)                =>  "_lead_5" ... "_lag_5"
     shift(x, n=-5:5, type="shift", give.names=TRUE)  =>  "_shift_-5" ... "_shift_5"
-    ``` 
+    ```
 
-9. `fwrite()` now accepts `matrix`, [#2613](https://github.com/Rdatatable/data.table/issues/2613). Thanks to Michael Chirico for the suggestion and Felipe Parages for implementing. For now matrix input is converted to data.table (which can be costly) before writing. 
+9. `fwrite()` now accepts `matrix`, [#2613](https://github.com/Rdatatable/data.table/issues/2613). Thanks to Michael Chirico for the suggestion and Felipe Parages for implementing. For now matrix input is converted to data.table (which can be costly) before writing.
 
 10. `fread()` and `fwrite()` can now handle file names in native and UTF-8 encoding, [#3078](https://github.com/Rdatatable/data.table/issues/3078). Thanks to Daniel Possenriede (@dpprdan) for reporting and fixing.
 
 11. `DT[i]` and `DT[i,cols]` now call internal parallel subsetting code, [#2951](https://github.com/Rdatatable/data.table/issues/2951). Subsetting is significantly faster (as are many other operations) with factor columns rather than character.
+
     ```R
     N = 2e8                           # 4GB data on 4-core CPU with 16GB RAM
     DT = data.table(ID = sample(LETTERS,N,TRUE),
@@ -192,16 +198,18 @@
     system.time(DT[w])                #     0.4s      2.3s
     system.time(DT[w, c("ID","V2")])  #     0.3s      1.9s
     ```
-    
+
 12. `DT[..., .SDcols=]` now accepts `patterns()`; e.g. `DT[..., .SDcols=patterns("^V")]`, for filtering columns according to a pattern (as in `melt.data.table`), [#1878](https://github.com/Rdatatable/data.table/issues/1878). Thanks to many people for pushing for this and @MichaelChirico for ultimately filing the PR. See `?data.table` for full details and examples.
 
 13. `split` data.table method will now preserve attributes, closes [#2047](https://github.com/Rdatatable/data.table/issues/2047). Thanks to @caneff for reporting.
 
 14. `DT[i,j]` now retains user-defined and inherited attributes, [#995](https://github.com/Rdatatable/data.table/issues/995); e.g.
+
     ```R
     attr(datasets::BOD,"reference")                     # "A1.4, p. 270"
     attr(as.data.table(datasets::BOD)[2],"reference")   # was NULL now "A1.4, p. 270"
     ```
+
     If a superclass defines attributes that may not be valid after a `[` subset then the superclass should implement its own `[` method to manage those after calling `NextMethod()`.
 
 #### BUG FIXES
@@ -232,7 +240,7 @@
 
 13. Multithreaded stability should be much improved with R 3.5+. Many thanks to Luke Tierney for pinpointing a memory issue with package `constellation` caused by `data.table` and his advice, [#3165](https://github.com/Rdatatable/data.table/issues/3165). Luke also added an extra check to R-devel when compiled with `--enable-strict-barrier`. The test suite is run through latest daily R-devel after every commit as usual, but now with `--enable-strict-barrier` on too via GitLab Pipelines ("Extra" badge at the top of the data.table [homepage](http://r-datatable.com)) thanks to Jan Gorecki.
 
-14. Fixed an edge-case bug of platform-dependent output of `strtoi("", base = 2L)` on which `groupingsets` had relied, [#3267](https://github.com/Rdatatable/data.table/issues/3267). 
+14. Fixed an edge-case bug of platform-dependent output of `strtoi("", base = 2L)` on which `groupingsets` had relied, [#3267](https://github.com/Rdatatable/data.table/issues/3267).
 
 #### NOTES
 
@@ -274,6 +282,7 @@
 2. Some namespace changes have been made with respect to melt, dcast and xts. No change is expected but if you do have any trouble, please file an issue.
 
 3. `split.data.table` was exported in v1.11.6 in addition to being registered using `S3method(split, data.table)`. The export has been removed again. It had been added because a user said they found it difficult to find, [#2920](https://github.com/Rdatatable/data.table/issues/2920). But S3 methods are not normally exported explicitly by packages. The proper way to access the `split.data.table` method is to call `split(DT)` where `DT` is a `data.table`. The generic (`base::split` in this case) then dispatches to the `split.data.table` method. v1.11.6 was not on CRAN very long (1 week) so we think it's better to revert this change quickly. To know what methods exist, R provides the `methods()` function.
+
     ```R
     methods(split)               # all the methods for the split generic
     methods(class="data.table")  # all the generics that data.table has a method for (47 currently)
@@ -329,11 +338,14 @@
 #### NOTES
 
 1. The type coercion warning message has been improved, [#2989](https://github.com/Rdatatable/data.table/pull/2989). Thanks to @sarahbeeysian on [Twitter](https://twitter.com/sarahbeeysian/status/1021359529789775872) for highlighting. For example, given the follow statements:
+
     ```R
     DT = data.table(id=1:3)
     DT[2, id:="foo"]
     ```
-    the warning message has changed from :<br>
+
+    the warning message has changed from :
+
     ```
     Coerced character RHS to integer to match the column's type. Either change the target column ['id']
     to character first (by creating a new character vector length 3 (nrows of entire table) and assign
@@ -341,7 +353,9 @@
     make your intent clear and for speed. Or, set the column type correctly up front when you create the
     table and stick to it, please.
     ```
-    to :<br>
+
+    to :
+
     ```
     Coerced character RHS to integer to match the type of the target column (column 1 named 'id'). If the
     target column's type integer is correct, it's best for efficiency to avoid the coercion and create
@@ -354,7 +368,9 @@
     the assignment is called a column plonk and is the way to change a column's type. Column types can be
     observed with sapply(DT,typeof).
     ```
+
     Further, if a coercion from double to integer is performed, fractional data such as 3.14 is now detected and the truncation to 3 is warned about if and only if truncation has occurred.
+
     ```R
     DT = data.table(v=1:3)
     DT[2, v:=3.14]
