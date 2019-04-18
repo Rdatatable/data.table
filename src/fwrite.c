@@ -738,8 +738,8 @@ void fwriteMain(fwriteMainArgs args)
     // to convert \n to \r\n on Windows when in text mode not not when in binary mode.
 #else
     f = open(args.filename, O_WRONLY | O_CREAT | (args.append ? O_APPEND : O_TRUNC), 0666);
-#endif
     // There is no binary/text mode distinction on Linux and Mac
+#endif
 
     if (f == -1) {
       // # nocov start
@@ -764,15 +764,11 @@ void fwriteMain(fwriteMainArgs args)
     char *ch = buff;
     if (args.doRowNames) {
       // Unusual: the extra blank column name when row_names are added as the first column
-      if (doQuote) {
-        *ch++='"'; *ch++='"';
-      }
+      if (doQuote!=0/*'auto'(NA) or true*/) { *ch++='"'; *ch++='"'; } // to match write.csv
       *ch++ = sep;
     }
     for (int j=0; j<args.ncol; j++) {
-      if (j>0) {
-        *ch++ = sep;
-      }
+      if (j>0) *ch++ = sep;
       writeString(args.colNames, j, &ch);
     }
     write_chars(args.eol, &ch);
@@ -802,26 +798,19 @@ void fwriteMain(fwriteMainArgs args)
       // # nocov start
       CLOSE(f);
       free(buff);
-      if(args.is_gzip){
-        free(zbuff);
-      }
+      free(zbuff);
       STOP("%s: '%s'", strerror(errwrite), args.filename);
       // # nocov end
     }
   }
 
   free(buff);  // TODO: also to be free'd in cleanup when there's an error opening file above
-  if(args.is_gzip){
-    free(zbuff);
-  }
+  free(zbuff);
 
-  if (args.verbose)
-    DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
+  if (args.verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
-    if (args.verbose)
-      DTPRINT("No data rows present (nrow==0)\n");       // # nocov
-    if (f!=-1 && CLOSE(f))
-      STOP("%s: '%s'", strerror(errno), args.filename);  // # nocov
+    if (args.verbose) DTPRINT("No data rows present (nrow==0)\n");
+    if (f!=-1 && CLOSE(f)) STOP("%s: '%s'", strerror(errno), args.filename);
     return;
   }
 
@@ -880,8 +869,7 @@ void fwriteMain(fwriteMainArgs args)
 
     #pragma omp for ordered schedule(dynamic)
     for(int64_t start=0; start<args.nrow; start+=rowsPerBatch) {
-      if (failed)
-        continue;  // # nocov ; continue not break (see comments above about #omp cancel)
+      if (failed) continue;  // # not break; see comments above about #omp cancel
       int64_t end = ((args.nrow - start)<rowsPerBatch) ? args.nrow : start + rowsPerBatch;
       for (int64_t i=start; i<end; i++) {
         // Tepid starts here (once at beginning of each per line)
@@ -925,8 +913,7 @@ void fwriteMain(fwriteMainArgs args)
         // Tepid again (once at the end of each line)
         ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
         write_chars(args.eol, &ch);  // overwrite last sep with eol instead
-        if (failed)
-          break; // # nocov ; this thread stop writing rows; fall through to clear up and STOP() below
+        if (failed) break; // this thread stop writing rows; fall through to clear up and STOP() below
       }
       // compress buffer if gzip
       if (args.is_gzip) {
