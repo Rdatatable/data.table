@@ -619,8 +619,7 @@ void fwriteMain(fwriteMainArgs args)
   size_t buffSecure = (size_t) 5 * buffSize / 10; // maxLineLen in initial sample must be under this value
 
   char *buff = malloc(buffSize);
-  if (!buff)
-    STOP("Unable to allocate %d MiB for buffer: %s", buffSize / 1024 / 1024, strerror(errno));  // # nocov
+  if (!buff) STOP("Unable to allocate %d MiB for buffer: %s", buffSize / 1024 / 1024, strerror(errno));
 
   size_t zbuffSize = 0;
   size_t zbuffUsed = 0;
@@ -629,11 +628,10 @@ void fwriteMain(fwriteMainArgs args)
   if (args.is_gzip) {
     zbuffSize = buffSize + buffSize/10 + 16;
     zbuff = malloc(zbuffSize);
-    if (!zbuff)
-      STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
+    if (!zbuff) STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));
   }
 
-  if(args.verbose) {
+  if (args.verbose) {
     DTPRINT("Column writers: ");
     if (args.ncol<=50) {
       for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
@@ -723,8 +721,7 @@ void fwriteMain(fwriteMainArgs args)
     }
   }
 
-  if (args.verbose)
-    DTPRINT("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
+  if (args.verbose) DTPRINT("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
 
   int f=0;
   if (*args.filename=='\0') {
@@ -839,10 +836,7 @@ void fwriteMain(fwriteMainArgs args)
   {
     char *ch, *myBuff;               // local to each thread
     ch = myBuff = malloc(buffSize);  // each thread has its own buffer. malloc and errno are thread-safe.
-
-    if (myBuff==NULL) {
-      failed=-errno;  // # nocov
-    }
+    if (myBuff==NULL) failed=-errno;
 
     size_t myzbuffUsed = 0;
     size_t myzbuffSize = 0;
@@ -851,9 +845,7 @@ void fwriteMain(fwriteMainArgs args)
     if(args.is_gzip){
       myzbuffSize = buffSize + buffSize/10 + 16;
       myzBuff = malloc(myzbuffSize);
-      if (myzBuff==NULL) {
-        failed=-errno;  // # nocov
-      }
+      if (myzBuff==NULL) failed=-errno;
     }
     // Do not rely on availability of '#omp cancel' new in OpenMP v4.0 (July 2013).
     // OpenMP v4.0 is in gcc 4.9+ (https://gcc.gnu.org/wiki/openmp) but
@@ -869,7 +861,7 @@ void fwriteMain(fwriteMainArgs args)
 
     #pragma omp for ordered schedule(dynamic)
     for(int64_t start=0; start<args.nrow; start+=rowsPerBatch) {
-      if (failed) continue;  // # not break; see comments above about #omp cancel
+      if (failed) continue;  // Not break. See comments above about #omp cancel
       int64_t end = ((args.nrow - start)<rowsPerBatch) ? args.nrow : start + rowsPerBatch;
       for (int64_t i=start; i<end; i++) {
         // Tepid starts here (once at beginning of each per line)
@@ -977,9 +969,7 @@ void fwriteMain(fwriteMainArgs args)
     // all threads will call this free on their buffer, even if one or more threads had malloc
     // or realloc fail. If the initial malloc failed, free(NULL) is ok and does nothing.
     free(myBuff);
-    if (args.is_gzip) {
-      free(myzBuff);
-    }
+    free(myzBuff);
   }
 
   // Finished parallel region and can call R API safely now.
