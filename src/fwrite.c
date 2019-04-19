@@ -622,7 +622,6 @@ void fwriteMain(fwriteMainArgs args)
   if (!buff) STOP("Unable to allocate %d MiB for buffer: %s", buffSize / 1024 / 1024, strerror(errno));
 
   size_t zbuffSize = 0;
-  size_t zbuffUsed = 0;
   void *zbuff = NULL;
 
   if (args.is_gzip) {
@@ -770,34 +769,28 @@ void fwriteMain(fwriteMainArgs args)
     }
     write_chars(args.eol, &ch);
 
-    // compress buff into zbuff
-    if(args.is_gzip){
-      zbuffUsed = zbuffSize;
-      int ret = compressbuff(zbuff, &zbuffUsed, buff, (int)(ch - buff));
-      if(ret) {
-        STOP("Compress gzip error: %d", ret);  // # nocov
-      }
-    }
-
-    int errwrite = 0;
     if (f==-1) {
       *ch = '\0';
       DTPRINT(buff);
-    } else if ((args.is_gzip)) {
-      if (WRITE(f, zbuff, (int)zbuffUsed) == -1) {
-        errwrite=errno;  // # nocov ; capture write errno now incase close fails with a different errno
+    } else {
+      int ret1=0, ret2=0;
+      if (args.is_gzip) {
+        size_t zbuffUsed = zbuffSize;
+        ret1 = compressbuff(zbuff, &zbuffUsed, buff, (int)(ch - buff));
+        ret2 = WRITE(f, zbuff, (int)zbuffUsed);
+      } else {
+        ret2 = WRITE(f,  buff, (int)(ch-buff));
       }
-    } else if (WRITE(f, buff, (int)(ch-buff)) == -1) {
-      errwrite=errno;  // # nocov
-    }
-
-    if (errwrite) {
-      // # nocov start
-      CLOSE(f);
-      free(buff);
-      free(zbuff);
-      STOP("%s: '%s'", strerror(errwrite), args.filename);
-      // # nocov end
+      if (ret1 || ret2==-1) {
+        // # nocov start
+        int errwrite = errno; // capture write errno now incase close fails with a different errno
+        CLOSE(f);
+        free(buff);
+        free(zbuff);
+        if (ret1) STOP("Compress gzip error: %d", ret1);
+        else      STOP("%s: '%s'", strerror(errwrite), args.filename);
+        // # nocov end
+      }
     }
   }
 
