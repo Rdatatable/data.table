@@ -497,7 +497,7 @@ static void Field(FieldParseContext *ctx)
   const char *fieldStart=ch;
   if (*ch!=quote || quoteRule==3) {
     // Most common case. Unambiguously not quoted. Simply search for sep|eol. If field contains sep|eol then it should have been quoted and we do not try to heal that.
-    while(!end_of_field(ch)) ch++;  // sep, \r, \n or \0 will end
+    while(!end_of_field(ch)) ch++;  // sep, \r, \n or eof will end
     *(ctx->ch) = ch;
     int fieldLen = (int)(ch-fieldStart);
     //if (stripWhite) {   // TODO:  do this if and the next one together once in bulk afterwards before push
@@ -516,7 +516,7 @@ static void Field(FieldParseContext *ctx)
   fieldStart++;  // step over opening quote
   switch(quoteRule) {
   case 0:  // quoted with embedded quotes doubled; the final unescaped " must be followed by sep|eol
-    while (*++ch) {
+    while (*++ch || ch<eof) {
       if (*ch==quote) {
         if (ch[1]==quote) { ch++; continue; }
         break;  // found undoubled closing quote
@@ -524,7 +524,7 @@ static void Field(FieldParseContext *ctx)
     }
     break;
   case 1:  // quoted with embedded quotes escaped; the final unescaped " must be followed by sep|eol
-    while (*++ch) {
+    while (*++ch || ch<eof) {
       if (*ch=='\\' && (ch[1]==quote || ch[1]=='\\')) { ch++; continue; }
       if (*ch==quote) break;
     }
@@ -538,14 +538,14 @@ static void Field(FieldParseContext *ctx)
     // Under this rule, no eol may occur inside fields.
     {
       const char *ch2 = ch;
-      while (*++ch && *ch!='\n' && *ch!='\r') {
+      while ((*++ch || ch<eof) && *ch!='\n' && *ch!='\r') {
         if (*ch==quote && end_of_field(ch+1)) {ch2=ch; break;}  // (*1) regular ", ending; leave *ch on closing quote
         if (*ch==sep) {
           // first sep in this field
           // if there is a ", afterwards but before the next \n, use that; the field was quoted and it's still case (i) above.
           // Otherwise break here at this first sep as it's case (ii) above (the data contains a quote at the start and no sep)
           ch2 = ch;
-          while (*++ch2 && *ch2!='\n' && *ch2!='\r') {
+          while ((*++ch2 || ch<eof) && *ch2!='\n' && *ch2!='\r') {
             if (*ch2==quote && end_of_field(ch2+1)) {
               ch = ch2;                                          // (*2) move on to that first ", -- that's this field's ending
               break;
@@ -568,7 +568,7 @@ static void Field(FieldParseContext *ctx)
     *(ctx->ch) = ch;
   } else {
     *(ctx->ch) = ch;
-    if (*ch=='\0' && quoteRule!=2) { target->off--; target->len++; }   // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
+    if (ch==eof && quoteRule!=2) { target->off--; target->len++; }   // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
     while(target->len>0 && ((ch[-1]==' ' && stripWhite) || ch[-1]=='\0')) { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
   }
 }
