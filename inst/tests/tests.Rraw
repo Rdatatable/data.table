@@ -5708,11 +5708,11 @@ test(1378.1, fread(file=testDir("russellCRLF.csv"))[19,`Value With Dividends`], 
 f = paste0("file://",testDir("russellCRLF.csv"))
 # simulates a http:// request as far as file.download() and unlink() goes, without internet
 # download.file() in fread() changes the input data from \r\n to \n, on Windows.
-# test(1378.2, fread(f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
+test(1378.2, fread(f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
 
 f = paste("file://",testDir("russellCRCRLF.csv"),sep="")
 # actually has 3 \r in the file, download.file() from file:// changes that to \r\r\n, so we can simulate download.file from http: in text mode.
-# test(1378.3, fread(f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
+test(1378.3, fread(f, showProgress=FALSE)[19,`Value With Dividends`], 357.97)
 #====================================
 
 options(datatable.fread.datatable = FALSE)
@@ -11969,7 +11969,7 @@ test(1885.4, fread(txt, fill=TRUE, na.strings=""), ans[c(1,2,NA,3),])
 
 # file detected as no header automatically
 # (TOOD: undoubling double quotes #1109, #1299) but otherwise, auto mode correct
-# test(1886, fread(testDir("quoted_no_header.csv"))[c(1,.N),list(V1,V6)], data.table(V1=c("John","Joan \"\"the bone\"\", Anne"), V6=INT(8075,123)))
+test(1886, fread(testDir("quoted_no_header.csv"))[c(1,.N),list(V1,V6)], data.table(V1=c("John","Joan \"\"the bone\"\", Anne"), V6=INT(8075,123)))
 
 # na.omit with invert & no NAs works, #2660
 DT = data.table(a = 1:5)

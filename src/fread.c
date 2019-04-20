@@ -545,7 +545,7 @@ static void Field(FieldParseContext *ctx)
           // if there is a ", afterwards but before the next \n, use that; the field was quoted and it's still case (i) above.
           // Otherwise break here at this first sep as it's case (ii) above (the data contains a quote at the start and no sep)
           ch2 = ch;
-          while ((*++ch2 || ch<eof) && *ch2!='\n' && *ch2!='\r') {
+          while ((*++ch2 || ch2<eof) && *ch2!='\n' && *ch2!='\r') {
             if (*ch2==quote && end_of_field(ch2+1)) {
               ch = ch2;                                          // (*2) move on to that first ", -- that's this field's ending
               break;
