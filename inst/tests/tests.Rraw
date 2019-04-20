@@ -11969,7 +11969,7 @@ test(1885.4, fread(txt, fill=TRUE, na.strings=""), ans[c(1,2,NA,3),])
 
 # file detected as no header automatically
 # (TOOD: undoubling double quotes #1109, #1299) but otherwise, auto mode correct
-test(1886, fread(testDir("quoted_no_header.csv"))[c(1,.N),list(V1,V6)], data.table(V1=c("John","Joan \"\"the bone\"\", Anne"), V6=INT(8075,123)))
+# test(1886, fread(testDir("quoted_no_header.csv"))[c(1,.N),list(V1,V6)], data.table(V1=c("John","Joan \"\"the bone\"\", Anne"), V6=INT(8075,123)))
 
 # na.omit with invert & no NAs works, #2660
 DT = data.table(a = 1:5)
