@@ -41,7 +41,7 @@ SEXP colnamesInt(SEXP x, SEXP cols) {
 }
 
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose) {
-  double tic;
+  double tic=0.0;
   if (verbose) tic = omp_get_wtime();
   if (type==0) { // const
     for (uint_fast64_t i=0; i<nx; i++) {
@@ -62,7 +62,7 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, a
 }
 
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose) {
-  double tic;
+  double tic=0.0;
   if (verbose) tic = omp_get_wtime();
   if (type==0) { // const
     for (uint_fast64_t i=0; i<nx; i++) {
@@ -161,7 +161,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     }
   }
 
-  double tic, toc;
+  double tic=0.0, toc=0.0;
   if (bverbose) tic = omp_get_wtime();
   #pragma omp parallel for if (nx>1) schedule(auto) num_threads(getDTthreads())
   for (R_len_t i=0; i<nx; i++) {

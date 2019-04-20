@@ -427,10 +427,24 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
           lenOff *source = buff8_lenoffs + off8;
           for (int i=0; i<nRows; i++) {
             int strLen = source->len;
-            if (strLen) {
+            if (strLen<=0) {
               // stringLen == INT_MIN => NA, otherwise not a NAstring was checked inside fread_mean
-              SET_STRING_ELT(dest, DTi+i, strLen<0 ? NA_STRING : mkCharLenCE(anchor + source->off, strLen, ienc));
-            } // else dest was already initialized with R_BlankString by allocVector()
+              if (strLen<0) SET_STRING_ELT(dest, DTi+i, NA_STRING); // else leave the "" in place that was initialized by allocVector()
+            } else {
+              const char *str = anchor + source->off;
+              int c=0;
+              while (c<strLen && str[c]) c++;
+              if (c<strLen) {
+                // embedded nul found; any at the beginning or the end of the field should have already been excluded but this will strip those too if present just in case
+                char *last = (char *)str+c;    // obtain write access to (const char *)anchor;
+                while (c<strLen) {
+                  if (str[c]) *last++=str[c];  // cow page write: saves allocation and management of a temp that would need to thread-safe in future.
+                  c++;                         //   This is only thread accessing this region. For non-mmap direct input nul are not possible (R would not have accepted nul earlier).
+                }
+                strLen = last-str;
+              }
+              SET_STRING_ELT(dest, DTi+i, mkCharLenCE(str, strLen, ienc));
+            }
             source += cnt8;
           }
           done++; // if just one string col near the start, don't loop over the other 10,000 cols. TODO? start on first too
