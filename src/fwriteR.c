@@ -19,6 +19,10 @@ const char *getString(SEXP *col, int64_t row) {   // TODO: inline for use in fwr
   return x==NA_STRING ? NULL : CHAR(x);
 }
 
+const int getStringLen(SEXP *col, int64_t row) {
+  return LENGTH(x);  // LENGTH of CHARSXP is nchar
+}
+
 const char *getCategString(SEXP col, int64_t row) {
   // the only writer that needs to have the header of the SEXP column, to get to the levels
   int x = INTEGER(col)[row];

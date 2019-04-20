@@ -6,7 +6,7 @@
 #include <stdint.h>    // INT32_MIN
 #include <math.h>      // isfinite, isnan
 #include <stdlib.h>    // abs
-#include <string.h>    // strnlen, strerror
+#include <string.h>    // strlen, strerror
 
 #ifdef WIN32
 #include <sys/types.h>
@@ -36,6 +36,7 @@ static bool qmethodEscape=false;       // when quoting fields, how to escape dou
 static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 
 extern const char *getString(void *, int);
+extern const int getStringLen(void *, int);
 extern const char *getCategString(void *, int);
 extern double wallclock(void);
 
@@ -587,7 +588,6 @@ void fwriteMain(fwriteMainArgs args)
 {
   double startTime = wallclock();
   double nextTime = startTime+2; // start printing progress meter in 2 sec if not completed by then
-  double t0 = startTime;
 
   na = args.na;
   sep = args.sep;
@@ -602,33 +602,11 @@ void fwriteMain(fwriteMainArgs args)
   qmethodEscape = args.qmethodEscape;
   squashDateTime = args.squashDateTime;
 
-
-  // alloc one buffMB here.  Keep rewriting each field to it, to sum up the size.  Restriction: one field can't be
-  // greater that minimumum buffMB (1MB = 1 million characters).  Otherwise unbounded overwrite. Possible with very
-  // very long single strings, or very long list column values.
-  // The caller guarantees no field with be longer than this. If so, it can set buffMB larger. It might know
-  // due to some stats it has maintained on each column or in the environment generally.
-  // However, a single field being longer than 1 million characters is considered a very reasonable restriction.
-  // Once we have a good line length estimate, we may increase the buffer size a lot anyway.
-  // The default buffMB is 8MB,  so it's really 8 million character limit by default. 1MB is because user might set
-  // buffMB to 1, say if they have 512 CPUs or more, perhaps.
-
   if (args.buffMB<1 || args.buffMB>1024) STOP("buffMB=%d outside [1,1024]", args.buffMB);
   size_t buffSize = (size_t)1024*1024*args.buffMB;
-  size_t buffLimit = (size_t) 9 * buffSize / 10; // set buffer limit for thread = 90%
-  size_t buffSecure = (size_t) 5 * buffSize / 10; // maxLineLen in initial sample must be under this value
 
-  char *buff = malloc(buffSize);
-  if (!buff) STOP("Unable to allocate %d MiB for buffer: %s", buffSize / 1024 / 1024, strerror(errno));
-
-  size_t zbuffSize = 0;
-  void *zbuff = NULL;
-
-  if (args.is_gzip) {
-    zbuffSize = buffSize + buffSize/10 + 16;
-    zbuff = malloc(zbuffSize);
-    if (!zbuff) STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));
-  }
+  int eolLen=strlen(args.eol), naLen=strlen(args.na);
+  if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
 
   if (args.verbose) {
     DTPRINT("Column writers: ");
@@ -639,88 +617,9 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT("... ");
       for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
     }
-    DTPRINT("\n");
-  }
-
-  int eolLen = strnlen(args.eol, buffLimit);
-  if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
-
-  int maxHeaderLen = 0;
-  if (args.colNames) {
-    // We don't know how long this line will be.
-    // This line must be lesser than buffer size buffSize
-    if (args.doRowNames) {
-      // Unusual: the extra blank column name when row_names are added as the first column
-      if (doQuote) {
-        maxHeaderLen += 2;
-      }
-      maxHeaderLen += 1; /* for sep */
-    }
-    for (int j=0; j<args.ncol; j++) {
-      if (j>0) {
-        maxHeaderLen += 1; /* for sep */
-      }
-      maxHeaderLen += strnlen(getString(args.colNames, j), buffLimit);
-    }
-    maxHeaderLen += eolLen; /*eol*/
-  }
-  if (args.verbose)
-    DTPRINT("maxHeaderLen=%d\n", maxHeaderLen);
-
-  if (maxHeaderLen >= buffLimit) {
-    STOP("Error : header line is greater than buffer limit. Try to increase buffMB option. Example 'buffMB = %d'\n", 2*maxHeaderLen/1024/1024 + 1); // # nocov
-  }
-
-  // Estimate max line length of a 1000 row sample (100 rows in 10 places).
-  // 'Estimate' even of this sample because quote='auto' may add quotes and escape embedded quotes.
-  // Buffers will be resized later if there are too many line lengths outside the sample, anyway.
-  // maxLineLen is required to determine a reasonable rowsPerBatch.
-
-  int maxLineLen = 0;
-  // Cold section as only 1,000 rows. Speed not an issue issue here.
-  // Overestimating line length is ok.
-  if (args.verbose) {
     DTPRINT("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%d args.ncol=%d eolLen=%d\n",
           args.doRowNames, args.rowNames, doQuote, args.nrow, args.ncol, eolLen);
   }
-  for (int64_t i = 0; i < args.nrow; i += args.nrow / 1000 + 1) {
-    int thisLineLen=0;
-    if (args.doRowNames) {
-      if (args.rowNames) {
-        thisLineLen += (int)strnlen(getString(args.rowNames, i), buffLimit);
-      } else {
-        thisLineLen += 1+(int)log10(args.nrow);  // the width of the row number
-      }
-      thisLineLen += 2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
-    }
-
-    for (int j=0; j<args.ncol; j++) {
-      int num_fun = args.whichFun[j];
-      if (writer_len[num_fun]) {
-        thisLineLen += writer_len[num_fun] + 2 * (doQuote != 0) + 1; /* 1 for sep */
-      } else if (num_fun == WF_String) { // if String
-        const char* ch = getString(args.columns[j], i);
-        thisLineLen += (ch == NULL) ? strnlen(na, buffLimit) : strnlen(ch, buffLimit);
-        thisLineLen +=  2 * (doQuote!=0) + 1;
-      } else if (num_fun == WF_CategString) { // if Factor
-        const char* ch = getCategString(args.columns[j], i);
-        thisLineLen += (ch == NULL) ? strnlen(na, buffLimit) : strnlen(ch, buffLimit);
-        thisLineLen +=  2 * (doQuote!=0) + 1;
-      } else if (num_fun == WF_List) { // if List
-        char *ch = buff;                // overwrite at the beginning of buff to be more robust > 1 million bytes
-        writeList(args.columns[j], i, &ch);
-        thisLineLen += (int)(ch-buff) + 1;
-      }
-    }
-    thisLineLen += eolLen;
-    if (thisLineLen > maxLineLen) maxLineLen = thisLineLen;
-    // stop if buffer is too low
-    if (maxLineLen >= buffSecure) {
-      STOP("Error : max line length is greater than buffer secure limit. Try to increase buffMB option. Example 'buffMB = %d'\n", 2*maxLineLen/1024/1024 + 1); // # nocov
-    }
-  }
-
-  if (args.verbose) DTPRINT("maxLineLen=%d from sample. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
 
   int f=0;
   if (*args.filename=='\0') {
@@ -736,7 +635,6 @@ void fwriteMain(fwriteMainArgs args)
     f = open(args.filename, O_WRONLY | O_CREAT | (args.append ? O_APPEND : O_TRUNC), 0666);
     // There is no binary/text mode distinction on Linux and Mac
 #endif
-
     if (f == -1) {
       // # nocov start
       int erropen = errno;
@@ -748,15 +646,17 @@ void fwriteMain(fwriteMainArgs args)
     }
   }
 
-  t0=wallclock();
-
+  double t0 = wallclock();
   if (args.verbose) {
     DTPRINT("Writing column names ... ");
     if (f==-1) DTPRINT("\n");
   }
   if (args.colNames) {
-    // We have tested this line length and verify that buffer was big enough
-    // So no more buffer tests
+    size_t headerLen = 0;
+    for (int j=0; j<args.ncol; j++) headerLen += getStringLen(args.colNames, j)*2;  // *2 in case quotes are escaped or doubled
+    headerLen += args.ncol*(1/*sep*/+(doQuote!=0)*2) + eolLen + 3;  // 3 in case doRowNames and doQuote (the first blank <<"",>> column name)
+    char *buff = malloc(headerLen);
+    if (!buff) STOP("Unable to allocate %d MiB for header: %s", headerLen / 1024 / 1024, strerror(errno));
     char *ch = buff;
     if (args.doRowNames) {
       // Unusual: the extra blank column name when row_names are added as the first column
@@ -764,39 +664,39 @@ void fwriteMain(fwriteMainArgs args)
       *ch++ = sep;
     }
     for (int j=0; j<args.ncol; j++) {
-      if (j>0) *ch++ = sep;
       writeString(args.colNames, j, &ch);
+      *ch++ = sep;
     }
+    ch--; // backup over the last sep
     write_chars(args.eol, &ch);
-
     if (f==-1) {
       *ch = '\0';
       DTPRINT(buff);
+      free(buff);
     } else {
       int ret1=0, ret2=0;
       if (args.is_gzip) {
+        size_t zbuffSize = headerLen + headerLen/10 + 16;
+        char *zbuff = malloc(zbuffSize);
+        if (!zbuff) {free(buff); STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));}
         size_t zbuffUsed = zbuffSize;
-        ret1 = compressbuff(zbuff, &zbuffUsed, buff, (int)(ch - buff));
-        ret2 = WRITE(f, zbuff, (int)zbuffUsed);
+        ret1 = compressbuff(zbuff, &zbuffUsed, buff, (int)(ch-buff));
+        if (ret1==0) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
+        free(zbuff);
       } else {
         ret2 = WRITE(f,  buff, (int)(ch-buff));
       }
+      free(buff);
       if (ret1 || ret2==-1) {
         // # nocov start
         int errwrite = errno; // capture write errno now incase close fails with a different errno
         CLOSE(f);
-        free(buff);
-        free(zbuff);
         if (ret1) STOP("Compress gzip error: %d", ret1);
         else      STOP("%s: '%s'", strerror(errwrite), args.filename);
         // # nocov end
       }
     }
   }
-
-  free(buff);  // TODO: also to be free'd in cleanup when there's an error opening file above
-  free(zbuff);
-
   if (args.verbose) DTPRINT("done in %.3fs\n", 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
     if (args.verbose) DTPRINT("No data rows present (nrow==0)\n");
@@ -807,7 +707,31 @@ void fwriteMain(fwriteMainArgs args)
   // Decide buffer size and rowsPerBatch for each thread
   // Once rowsPerBatch is decided it can't be changed
 
-  rowsPerBatch =  buffLimit / maxLineLen;
+  // Calculate upper bound for line length. Numbers use a fixed maximum (e.g. 12 for integer) while strings find the longest
+  // string in each column. Upper bound is then the sum of the columns' max widths.
+  // This upper bound is required to determine a reasonable rowsPerBatch. It also saves needing to grow the buffers which
+  // is especially tricky when compressing, and saves needing to check/limit the buffer writing because we know
+  // up front the buffer does have sufficient capacity.
+  // A large overestimate (e.g. 2-5x too big) is ok, provided it is not so large that the buffers can't be allocated.
+
+  size_t maxLineLen = eolLen + args.ncol*(2*(doQuote!=0) + 1/*sep*/);
+  if (args.doRowNames) {
+    maxLineLen += args.rowNames ? getMaxStringLen(args.rowNames)*2 : 1+(int)log10(args.nrow);  // the width of the row number
+    maxLineLen += 2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
+  }
+  for (int j=0; j<args.ncol; j++) {
+    int width = writer_maxlen[args.whichFun[j]];
+    if (width==0) width = getMaxStringLen(args.columns[j]);  // WF_String, WF_CategString and WF_List
+    if (width<naLen) width = naLen;
+    maxLineLen += width*2;  // *2 in case the longest string is all quotes and they all need to be escaped
+  }
+  if (args.verbose) DTPRINT("maxLineLen=%zd. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
+
+  //size_t buffLimit = (size_t) 9 * buffSize / 10; // set buffer limit for thread = 90%
+  //size_t buffSecure = (size_t) 5 * buffSize / 10; // maxLineLen in initial sample must be under this value
+
+  if (maxLineLen*2>buffsize) { buffSize=2*maxLineLen; rowsPerBatch=2; }
+  else rowsPerBatch = buffSize / maxLineLen;
   if (rowsPerBatch > args.nrow) rowsPerBatch = args.nrow;
   if (rowsPerBatch < 1) rowsPerBatch = 1;
   int numBatches = (args.nrow-1)/rowsPerBatch + 1;
