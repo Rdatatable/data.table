@@ -24,8 +24,12 @@ between <- function(x,lower,upper,incbounds=TRUE,verbose=getOption("datatable.ve
 
 # %between% is vectorised, #534.
 "%between%" <- function(x, y) {
+  ysub = substitute(y)
+  if (ysub[[1L]]==".") {
+    ysub[[1L]]=quote(list)
+    y = eval.parent(ysub)
+  }
   if ((l <- length(y)) != 2L) {
-    ysub = substitute(y)
     stop("RHS has length() ", l, "; expecting length 2. ",
          if (is.call(ysub) && ysub[[1L]] == 'c')
            sprintf("Perhaps you meant %s? ",

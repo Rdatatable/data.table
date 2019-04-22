@@ -14071,6 +14071,9 @@ dn = as.POSIXct('2016-09-18 08:00:00')
 up = as.POSIXct('2016-09-18 09:00:00')
 test(2028.11, between(x, dn, up, verbose=TRUE), output="between parallel processing of double using closed bounds with recycling took")
 test(2028.12, between(x, dn, up, incbounds=FALSE, verbose=TRUE), output="between parallel processing of double using open bounds with recycling took")
+# `between` support `.` in RHS #2315
+X = data.table(a = 1:5, b = 6:10, c = c(5:1))
+test(2028.13, X[c %between% list(a, b)], X[c %between% .(a, b)])
 
 
 ###################################
