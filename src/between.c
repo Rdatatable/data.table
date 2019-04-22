@@ -12,7 +12,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
     error("Incompatible vector lengths: length(x)==%d length(lower)==%d length(upper)==%d. Each should be either length 1 or the length of the longest.", nx, nl, nu);
   }
   if (!isLogical(bounds) || LOGICAL(bounds)[0] == NA_LOGICAL)
-    error("incbounds must be logical TRUE/FALSE.");  // # nocov
+    error("incbounds must be logical TRUE/FALSE.");
 
   int nprotect = 0;
   bool integer=true;
