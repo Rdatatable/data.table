@@ -4,13 +4,18 @@ between <- function(x,lower,upper,incbounds=TRUE,verbose=getOption("datatable.ve
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
   is_strictly_numeric <- function(x) is.numeric(x) && !inherits(x, "integer64")
+  if (inherits(x, "POSIXct") && inherits(lower, "POSIXct") && inherits(upper, "POSIXct")) { #3519
+    x = unclass(x)
+    lower = unclass(lower)
+    upper = unclass(upper)
+  }
   if (is_strictly_numeric(x) && is_strictly_numeric(lower) && is_strictly_numeric(upper)) {
     # faster parallelised version for int/double.
     # Cbetween supports length(lower)==1 (recycled) and (from v1.12.0) length(lower)==length(x).
     # length(upper) can be 1 or length(x) independently of lower
     .Call(Cbetween, x, lower, upper, incbounds, verbose)
   } else {
-    if (isTRUE(verbose)) cat("between on character field, fallback to slow R routine\n")
+    if (isTRUE(verbose)) cat("optimised between not available for this data type, fallback to slow R routine\n")
     # now just for character input. TODO: support character between in Cbetween and remove this branch
     if (incbounds) x>=lower & x<=upper
     else x>lower & x<upper
