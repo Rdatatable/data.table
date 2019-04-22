@@ -25,7 +25,7 @@ between <- function(x,lower,upper,incbounds=TRUE,verbose=getOption("datatable.ve
 # %between% is vectorised, #534.
 "%between%" <- function(x, y) {
   ysub = substitute(y)
-  if (ysub[[1L]]==".") {
+  if (is.call(ysub) && ysub[[1L]]==".") {
     ysub[[1L]]=quote(list)
     y = eval.parent(ysub)
   }
