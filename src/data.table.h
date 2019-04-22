@@ -175,3 +175,6 @@ SEXP colnamesInt(SEXP x, SEXP cols);
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose);
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose);
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose);
+
+// between.c
+SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds, SEXP verbose);

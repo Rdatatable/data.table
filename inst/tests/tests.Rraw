@@ -14054,9 +14054,17 @@ test(2027.1, DT[, list(1, ), by=a], error = 'Item 2 of the .() or list() passed 
 test(2027.2, DT[, list(1,2,)],      error = 'Item 3 of the .() or list() passed to j is missing')
 test(2027.3, DT[, .(1,,3,), by=a],  error = 'Item 2 of the .() or list() passed to j is missing')
 
-# `between` invalid arg
-test(2028.1, between(1:5, 2,4, incbounds=423), error="incbounds must be logical")
-test(2028.2, between(1:5, 2,4, incbounds=NA), error="incbounds must be logical")
+# `between` invalid args, and verbose #3516
+test(2028.01, between(1:5, 2, 4, incbounds=423), error="incbounds must be logical")
+test(2028.02, between(1:5, 2, 4, incbounds=NA), error="incbounds must be logical")
+test(2028.03, between(1:5, 2, 4, verbose=423), error="verbose must be logical")
+test(2028.04, between(1:5, 2, 4, verbose=NA), error="verbose must be logical")
+test(2028.05, between(1:5, 2L, 4L, verbose=TRUE), output="between parallel processing of integer with recycling took")
+test(2028.06, between(1:5, rep(2L,5L), rep(4L, 5L), verbose=TRUE), output="between parallel processing of integer took")
+test(2028.07, between(as.double(1:5), 2, 4, incbounds=FALSE, verbose=TRUE), output="between parallel processing of double using open bounds with recycling took")
+test(2028.08, between(as.double(1:5), 2, 4, verbose=TRUE), output="between parallel processing of double using closed bounds with recycling took")
+test(2028.09, between(as.double(1:5), rep(2, 5L), rep(4, 5L), verbose=TRUE), output="between parallel processing of double took")
+test(2028.10, between(c("foo","bar","paz"), "bag", "fog", verbose=TRUE), output="between on character field, fallback to slow R routine")
 
 
 ###################################
