@@ -728,10 +728,6 @@ void fwriteMain(fwriteMainArgs args)
 
   // Decide buffer size and rowsPerBatch for each thread
   // Once rowsPerBatch is decided it can't be changed
-
-  //size_t buffLimit = (size_t) 9 * buffSize / 10; // set buffer limit for thread = 90%
-  //size_t buffSecure = (size_t) 5 * buffSize / 10; // maxLineLen in initial sample must be under this value
-
   if (maxLineLen*2>buffSize) { buffSize=2*maxLineLen; rowsPerBatch=2; }
   else rowsPerBatch = buffSize / maxLineLen;
   if (rowsPerBatch > args.nrow) rowsPerBatch = args.nrow;
@@ -761,7 +757,7 @@ void fwriteMain(fwriteMainArgs args)
     size_t myzbuffSize = 0;
     void *myzBuff = NULL;
 
-    if(args.is_gzip){
+    if(args.is_gzip && !failed){
       myzbuffSize = buffSize + buffSize/10 + 16;
       myzBuff = malloc(myzbuffSize);
       if (myzBuff==NULL) failed=-errno;
@@ -797,11 +793,8 @@ void fwriteMain(fwriteMainArgs args)
         }
         // Hot loop
         for (int j=0; j<args.ncol; j++) {
-           //printf("j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
           (args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
-          //printf("  j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
           *ch++ = sep;
-          //printf("  j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
         }
         // Tepid again (once at the end of each line)
         ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
@@ -809,7 +802,7 @@ void fwriteMain(fwriteMainArgs args)
         if (failed) break; // this thread stop writing rows; fall through to clear up and STOP() below
       }
       // compress buffer if gzip
-      if (args.is_gzip) {
+      if (args.is_gzip && !failed) {
         myzbuffUsed = myzbuffSize;
         failed = compressbuff(myzBuff, &myzbuffUsed, myBuff, (int)(ch-myBuff));
       }
@@ -876,12 +869,10 @@ void fwriteMain(fwriteMainArgs args)
   // Finished parallel region and can call R API safely now.
   if (hasPrinted) {
     // # nocov start
-    if (!failed) {
-      // clear the progress meter
+    if (!failed) { // clear the progress meter
       DTPRINT("\r                                                                       "
               "                                                              \r");
-    } else {
-      // unless failed as we'd like to see anyBufferGrown and maxBuffUsedPC
+    } else {       // don't clear any potentially helpful output before error
       DTPRINT("\n");
     }
     // # nocov end
@@ -894,9 +885,11 @@ void fwriteMain(fwriteMainArgs args)
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
   // from the original error.
   if (failed<0) {
-    STOP("Error : one or more threads failed to malloc or buffer was too small. Try to increase buffMB option. Example 'buffMB = %d'\n", 2 * args.buffMB);  // # nocov
+    STOP("Error %d: one or more threads failed to allocate buffers or there was a compression error."
+         " Please try again with verbose=TRUE and try searching online for this error message.\n", failed);  // # nocov
   } else if (failed>0) {
     STOP("%s: '%s'", strerror(failed), args.filename);  // # nocov
   }
   return;
 }
+
