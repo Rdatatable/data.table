@@ -7,7 +7,7 @@
 1. `rleid()` functions now support long vectors (length > 2 billion).
 
 2. `fread()`:
-    * now skips embedded `NUL` (`\0`), [#3400](https://github.com/Rdatatable/data.table/issues/3400). Thanks to Marcus Davy for reporting with examples, and Roy Storey for the initial PR.
+    * now skips embedded `NUL` (`\0`), [#3400](https://github.com/Rdatatable/data.table/issues/3400). Thanks to Marcus Davy for reporting with examples, Roy Storey for the initial PR, and Bingjie Qian for testing this feature on a very complicated real-world file which revealed an issue which was caught and fixed before release.
 
 3. `fwrite()`:
     * now writes compressed `.gz` files directly, [#2016](https://github.com/Rdatatable/data.table/issues/2016). Compression, like `fwrite()`, is multithreaded and compresses each chunk on-the-fly (a full size intermediate file is not created). Use a ".gz" extension, or the new `compress=` option. Many thanks to Philippe Chataignon for the significant PR. For example:
