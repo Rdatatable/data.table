@@ -13,10 +13,10 @@
     * now writes compressed `.gz` files directly, [#2016](https://github.com/Rdatatable/data.table/issues/2016). Compression, like `fwrite()`, is multithreaded and compresses each chunk on-the-fly (a full size intermediate file is not created). Use a ".gz" extension, or the new `compress=` option. Many thanks to Philippe Chataignon for the significant PR. For example:
 
     ```R
-    DT = data.table(A=rep(1:2,each=100), B=rep(1:4,each=25))
-    fwrite(DT, "data.csv")      # 804 bytes
-    fwrite(DT, "data.csv.gz")   #  74 bytes
-    identical(DT, fread("data.csv.gz"))
+    DT = data.table(A=rep(1:2, 100e6), B=rep(1:4, 50e6))
+    fwrite(DT, "data.csv")      # 763MB; 1.3s
+    fwrite(DT, "data.csv.gz")   #   2MB; 1.6s
+    identical(fread("data.csv.gz"), DT)
     ```
 
 4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
