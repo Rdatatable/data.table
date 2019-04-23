@@ -46,6 +46,8 @@
 
 3. A missing item in `j` such as `j=.(colA, )` now gives a helpful error (`Item 2 of the .() or list() passed to j is missing`) rather than the unhelpful error `argument "this_jsub" is missing, with no default` (v1.12.2) or `argument 2 is empty` (v1.12.0 and before), [#3507](https://github.com/Rdatatable/data.table/issues/3507). Thanks to @eddelbuettel for the report.
 
+4. `between` now properly handles `POSIXct` type, [#3519](https://github.com/Rdatatable/data.table/issues/3519). Additionally support `.` as `list` alias in RHS, [#2315](https://github.com/Rdatatable/data.table/issues/2315). Thanks to @Henrik-P for the report.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
