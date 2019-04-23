@@ -14,8 +14,8 @@
 
     ```R
     DT = data.table(A=rep(1:2,each=100), B=rep(1:4,each=25))
-    fwrite(DT, "data.csv");    file.size("data.csv")     # 804
-    fwrite(DT, "data.csv.gz"); file.size("data.csv.gz")  #  74
+    fwrite(DT, "data.csv")      # 804 bytes
+    fwrite(DT, "data.csv.gz")   #  74 bytes
     identical(DT, fread("data.csv.gz"))
     ```
 
