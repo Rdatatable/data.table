@@ -252,19 +252,19 @@ void writeFloat64(double *col, int64_t row, char **pch)
       //      30460  => l=3046, sf=4, exp=4      dr=0; dl0=1; width=5
       //      0.0072 => l=72, sf=2, exp=-3       dr=4; dl0=1; width=6
       if (width <= sf + (sf>1) + 2 + (abs(exp)>99?3:2)) {
-        //               ^^^^ to not include 1 char for dec in -7e-04 where sf==1
-        //                       ^ 2 for 'e+'/'e-'
-        // decimal format ...
-        ch += width-1;
-        if (dr) {
-          while (dr && sf) { *ch--='0'+l%10; l/=10; dr--; sf--; }
-          while (dr) { *ch--='0'; dr--; }
-          *ch-- = dec;
-        }
-        while (dl0) { *ch--='0'; dl0--; }
-        while (sf) { *ch--='0'+l%10; l/=10; sf--; }
-        // ch is now 1 before the first char of the field so position it afterward again, and done
-        ch += width+1;
+         //              ^^^^ to not include 1 char for dec in -7e-04 where sf==1
+         //                      ^ 2 for 'e+'/'e-'
+         // decimal format ...
+         ch += width-1;
+         if (dr) {
+           while (dr && sf) { *ch--='0'+l%10; l/=10; dr--; sf--; }
+           while (dr) { *ch--='0'; dr--; }
+           *ch-- = dec;
+         }
+         while (dl0) { *ch--='0'; dl0--; }
+         while (sf) { *ch--='0'+l%10; l/=10; sf--; }
+         // ch is now 1 before the first char of the field so position it afterward again, and done
+         ch += width+1;
       } else {
         // scientific ...
         ch += sf;  // sf-1 + 1 for dec
