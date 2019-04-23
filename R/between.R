@@ -4,10 +4,23 @@ between <- function(x,lower,upper,incbounds=TRUE,verbose=getOption("datatable.ve
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
   is_strictly_numeric <- function(x) is.numeric(x) && !inherits(x, "integer64")
-  if (inherits(x, "POSIXct") && inherits(lower, "POSIXct") && inherits(upper, "POSIXct")) { #3519
-    x = unclass(x)
-    lower = unclass(lower)
-    upper = unclass(upper)
+  try_posix_cast <- function(x, tz) {
+    x_time = as.POSIXct(x, tz = tz)
+    if (is.na(x_time)) return(x)
+    return(x_time)
+  }
+  if (inherits(x, "POSIXct")) {
+    # allow fast between on POSIX vs POSIX-as-string in some circumstances
+    #   (biggest worry is hard-to-predict timezone mismatch)
+    if (!is.null(tz <- attr(x, 'tzone')) && (is.character(lower) || is.character(upper))) {
+      lower = try_posix_cast(lower, tz)
+      upper = try_posix_cast(upper, tz)
+    }
+    if (inherits(lower, "POSIXct") && inherits(upper, "POSIXct")) { #3519
+      x = unclass(x)
+      lower = unclass(lower)
+      upper = unclass(upper)
+    }
   }
   if (is_strictly_numeric(x) && is_strictly_numeric(lower) && is_strictly_numeric(upper)) {
     # faster parallelised version for int/double.
