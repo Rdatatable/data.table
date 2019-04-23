@@ -70,9 +70,8 @@ static int32_t whichWriter(SEXP);
 void writeList(SEXP *col, int64_t row, char **pch) {
   SEXP v = col[row];
   int32_t wf = whichWriter(v);
-  if (TYPEOF(v)==VECSXP || wf==INT32_MIN) {
-    error("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing atomic vectors of type logical, integer, integer64, double, character and factor, currently.",
-           row+1, type2char(TYPEOF(v)));
+  if (TYPEOF(v)==VECSXP || wf==INT32_MIN || isFactor(v)) {
+    error("Internal error: getMaxListItemLen should have caught this up front.");  // # nocov
   }
   char *ch = *pch;
   write_chars(sep2start, &ch);
@@ -94,28 +93,16 @@ const int getMaxListItemLen(const SEXP *col, const int64_t n) {
     SEXP this = *col++;
     if (this==last) continue; // no point calling LENGTH() again on the same string; LENGTH is unlikely as fast as single pointer compare
     int32_t wf = whichWriter(this);
-    if (TYPEOF(this)==VECSXP || wf==INT32_MIN) {
-      error("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing atomic vectors of" \
-            " type logical, integer, integer64, double, character and factor, currently.", i+1, type2char(TYPEOF(this)));
+    if (TYPEOF(this)==VECSXP || wf==INT32_MIN || isFactor(this)) {
+      error("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing items which are atomic vectors of" \
+            " type logical, integer, integer64, double and character.", i+1, isFactor(this) ? "factor" : type2char(TYPEOF(this)));
     }
     int width = writerMaxLen[wf];
     if (width==0) {
-      switch(wf) {
-      case WF_String: {
-        SEXP *elem = STRING_PTR(this);
-        int l = LENGTH(this);
-        for (int j=0; j<l; ++j) width+=LENGTH(*elem++);
-      } break;
-      case WF_CategString: {
-        SEXP levels = getAttrib(this, R_LevelsSymbol);
-        int l = LENGTH(this);
-        const int *id = INTEGER(this);
-        for (int j=0; j<l; ++j, ++id) if (*id>=1) width+=LENGTH(STRING_ELT(levels, *id-1));
-      } break;
-      case WF_List:  // error above should have happened, fall through to default
-      default:
-        STOP("Internal error: row %d of list column has no max length method implemented", i+1);
-      }
+      if (wf!=WF_String) STOP("Internal error: row %d of list column has no max length method implemented", i+1); // # nocov
+      SEXP *elem = STRING_PTR(this);
+      const int l = LENGTH(this);
+      for (int j=0; j<l; ++j) width+=LENGTH(*elem++);
     } else {
       width = (length(this)+1) * width;  // +1 for sep2
     }

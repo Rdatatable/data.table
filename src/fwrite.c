@@ -6,7 +6,7 @@
 #include <stdint.h>    // INT32_MIN
 #include <math.h>      // isfinite, isnan
 #include <stdlib.h>    // abs
-#include <string.h>    // strlen, strerror
+#include <string.h>    // strnlen (n for codacy), strerror
 
 #ifdef WIN32
 #include <sys/types.h>
@@ -591,7 +591,7 @@ void fwriteMain(fwriteMainArgs args)
   if (args.buffMB<1 || args.buffMB>1024) STOP("buffMB=%d outside [1,1024]", args.buffMB);
   size_t buffSize = (size_t)1024*1024*args.buffMB;
 
-  int eolLen=strlen(args.eol), naLen=strlen(args.na);
+  int eolLen=strnlen(args.eol, 1024), naLen=strnlen(args.na, 1024);  // strnlen required by Codacy
   if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
 
   if (args.verbose) {
@@ -606,6 +606,43 @@ void fwriteMain(fwriteMainArgs args)
     DTPRINT("\nargs.doRowNames=%d args.rowNames=%d doQuote=%d args.nrow=%d args.ncol=%d eolLen=%d\n",
           args.doRowNames, args.rowNames, doQuote, args.nrow, args.ncol, eolLen);
   }
+
+  // Calculate upper bound for line length. Numbers use a fixed maximum (e.g. 12 for integer) while strings find the longest
+  // string in each column. Upper bound is then the sum of the columns' max widths.
+  // This upper bound is required to determine a reasonable rowsPerBatch. It also saves needing to grow the buffers which
+  // is especially tricky when compressing, and saves needing to check/limit the buffer writing because we know
+  // up front the buffer does have sufficient capacity.
+  // A large overestimate (e.g. 2-5x too big) is ok, provided it is not so large that the buffers can't be allocated.
+  // Do this first so that, for example, any unsupported types in list columns happen first before opening file (which
+  // could be console output) and writing column names to it.
+
+  double t0 = wallclock();
+  size_t maxLineLen = eolLen + args.ncol*(2*(doQuote!=0) + 1/*sep*/);
+  if (args.doRowNames) {
+    maxLineLen += args.rowNames ? getMaxStringLen(args.rowNames, args.nrow)*2 : 1+(int)log10(args.nrow);  // the width of the row number
+    maxLineLen += 2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
+  }
+  for (int j=0; j<args.ncol; j++) {
+    int width = writerMaxLen[args.whichFun[j]];
+    if (width==0) {
+      switch(args.whichFun[j]) {
+      case WF_String:
+        width = getMaxStringLen(args.columns[j], args.nrow);
+        break;
+      case WF_CategString:
+        width = getMaxCategLen(args.columns[j]);
+        break;
+      case WF_List:
+        width = getMaxListItemLen(args.columns[j], args.nrow);
+        break;
+      default:
+        STOP("Internal error: type %d has no max length method implemented", args.whichFun[j]);  // # nocov
+      }
+    }
+    if (width<naLen) width = naLen;
+    maxLineLen += width*2;  // *2 in case the longest string is all quotes and they all need to be escaped
+  }
+  if (args.verbose) DTPRINT("maxLineLen=%zd. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
 
   int f=0;
   if (*args.filename=='\0') {
@@ -632,7 +669,6 @@ void fwriteMain(fwriteMainArgs args)
     }
   }
 
-  double t0 = wallclock();
   if (args.verbose) {
     DTPRINT("Writing column names ... ");
     if (f==-1) DTPRINT("\n");
@@ -692,40 +728,6 @@ void fwriteMain(fwriteMainArgs args)
 
   // Decide buffer size and rowsPerBatch for each thread
   // Once rowsPerBatch is decided it can't be changed
-
-  // Calculate upper bound for line length. Numbers use a fixed maximum (e.g. 12 for integer) while strings find the longest
-  // string in each column. Upper bound is then the sum of the columns' max widths.
-  // This upper bound is required to determine a reasonable rowsPerBatch. It also saves needing to grow the buffers which
-  // is especially tricky when compressing, and saves needing to check/limit the buffer writing because we know
-  // up front the buffer does have sufficient capacity.
-  // A large overestimate (e.g. 2-5x too big) is ok, provided it is not so large that the buffers can't be allocated.
-
-  size_t maxLineLen = eolLen + args.ncol*(2*(doQuote!=0) + 1/*sep*/);
-  if (args.doRowNames) {
-    maxLineLen += args.rowNames ? getMaxStringLen(args.rowNames, args.nrow)*2 : 1+(int)log10(args.nrow);  // the width of the row number
-    maxLineLen += 2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
-  }
-  for (int j=0; j<args.ncol; j++) {
-    int width = writerMaxLen[args.whichFun[j]];
-    if (width==0) {
-      switch(args.whichFun[j]) {
-      case WF_String:
-        width = getMaxStringLen(args.columns[j], args.nrow);
-        break;
-      case WF_CategString:
-        width = getMaxCategLen(args.columns[j]);
-        break;
-      case WF_List:
-        width = getMaxListItemLen(args.columns[j], args.nrow);
-        break;
-      default:
-        STOP("Internal error: type %d has no max length method implemented", args.whichFun[j]);
-      }
-    }
-    if (width<naLen) width = naLen;
-    maxLineLen += width*2;  // *2 in case the longest string is all quotes and they all need to be escaped
-  }
-  if (args.verbose) DTPRINT("maxLineLen=%zd. Found in %.3fs\n", maxLineLen, 1.0*(wallclock()-t0));
 
   //size_t buffLimit = (size_t) 9 * buffSize / 10; // set buffer limit for thread = 90%
   //size_t buffSecure = (size_t) 5 * buffSize / 10; // maxLineLen in initial sample must be under this value
