@@ -37,6 +37,9 @@ static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 
 extern const char *getString(void *, int);
 extern const int getStringLen(void *, int);
+extern const int getMaxStringLen(void *, int64_t);
+extern const int getMaxCategLen(void *);
+extern const int getMaxListItemLen(void *, int64_t);
 extern const char *getCategString(void *, int);
 extern double wallclock(void);
 
@@ -530,23 +533,6 @@ void writeCategString(void *col, int64_t row, char **pch)
   write_string(getCategString(col, row), pch);
 }
 
-int writer_len[] = {  // max field length for calculating max line length
-  5,  //&writeBool8       "false"
-  5,  //&writeBool32
-  5,  //&writeBool32AsString
-  11, //&writeInt32       "-2147483647"
-  20, //&writeInt64       "-9223372036854775807"
-  24, //&writeFloat64     "-3.141592653589793115998" with max options(digits=22)
-  32, //&writeITime
-  16, //&writeDateInt32
-  16, //&writeDateFloat64
-  32, //&writePOSIXct
-  48, //&writeNanotime
-  0,  //&writeString
-  0,  //&writeCategString
-  0,  //&writeList
-};
-
 int compressbuff(void* dest, size_t *destLen, const void* source, size_t sourceLen)
 {
   z_stream stream;
@@ -716,12 +702,26 @@ void fwriteMain(fwriteMainArgs args)
 
   size_t maxLineLen = eolLen + args.ncol*(2*(doQuote!=0) + 1/*sep*/);
   if (args.doRowNames) {
-    maxLineLen += args.rowNames ? getMaxStringLen(args.rowNames)*2 : 1+(int)log10(args.nrow);  // the width of the row number
+    maxLineLen += args.rowNames ? getMaxStringLen(args.rowNames, args.nrow)*2 : 1+(int)log10(args.nrow);  // the width of the row number
     maxLineLen += 2*(doQuote!=0/*NA('auto') or true*/) + 1/*sep*/;
   }
   for (int j=0; j<args.ncol; j++) {
-    int width = writer_maxlen[args.whichFun[j]];
-    if (width==0) width = getMaxStringLen(args.columns[j]);  // WF_String, WF_CategString and WF_List
+    int width = writerMaxLen[args.whichFun[j]];
+    if (width==0) {
+      switch(args.whichFun[j]) {
+      case WF_String:
+        width = getMaxStringLen(args.columns[j], args.nrow);
+        break;
+      case WF_CategString:
+        width = getMaxCategLen(args.columns[j]);
+        break;
+      case WF_List:
+        width = getMaxListItemLen(args.columns[j], args.nrow);
+        break;
+      default:
+        STOP("Internal error: type %d has no max length method implemented", args.whichFun[j]);
+      }
+    }
     if (width<naLen) width = naLen;
     maxLineLen += width*2;  // *2 in case the longest string is all quotes and they all need to be escaped
   }
@@ -730,7 +730,7 @@ void fwriteMain(fwriteMainArgs args)
   //size_t buffLimit = (size_t) 9 * buffSize / 10; // set buffer limit for thread = 90%
   //size_t buffSecure = (size_t) 5 * buffSize / 10; // maxLineLen in initial sample must be under this value
 
-  if (maxLineLen*2>buffsize) { buffSize=2*maxLineLen; rowsPerBatch=2; }
+  if (maxLineLen*2>buffSize) { buffSize=2*maxLineLen; rowsPerBatch=2; }
   else rowsPerBatch = buffSize / maxLineLen;
   if (rowsPerBatch > args.nrow) rowsPerBatch = args.nrow;
   if (rowsPerBatch < 1) rowsPerBatch = 1;
@@ -795,29 +795,11 @@ void fwriteMain(fwriteMainArgs args)
         }
         // Hot loop
         for (int j=0; j<args.ncol; j++) {
-          int size = 0;
-          int num_fun = args.whichFun[j];
-          if (writer_len[num_fun]) {
-              size = writer_len[num_fun];
-          } else if (num_fun == WF_String) { // if String
-              const char* ch = getString(args.columns[j], i);
-              size = (ch == NULL) ? strnlen(na, buffLimit) : strnlen(ch, buffLimit);
-          } else if (num_fun == WF_CategString) { // if Factor
-              const char* ch = getCategString(args.columns[j], i);
-              size = (ch == NULL) ? strnlen(na, buffLimit) : strnlen(ch, buffLimit);
-            }
-          if (size >= buffLimit) {
-              failed = -1;  // # nocov
-              break;        // # nocov
-          } else {
-            (args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
-            *ch++ = sep;
-            // Test if buffer to low
-            if ( (int)(ch - myBuff) >= buffLimit ) {
-                failed = -1;   // # nocov
-                break;         // # nocov ; stop writing
-            }
-          }
+           //printf("j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
+          (args.funs[args.whichFun[j]])(args.columns[j], i, &ch);
+          //printf("  j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
+          *ch++ = sep;
+          //printf("  j=%d args.ncol=%d myBuff='%.*s' ch=%p\n", j, args.ncol, 20, myBuff, ch);
         }
         // Tepid again (once at the end of each line)
         ch--;  // backup onto the last sep after the last column. ncol>=1 because 0-columns was caught earlier.
@@ -827,7 +809,7 @@ void fwriteMain(fwriteMainArgs args)
       // compress buffer if gzip
       if (args.is_gzip) {
         myzbuffUsed = myzbuffSize;
-        failed = compressbuff(myzBuff, &myzbuffUsed, myBuff, (int)(ch - myBuff));
+        failed = compressbuff(myzBuff, &myzbuffUsed, myBuff, (int)(ch-myBuff));
       }
       #pragma omp ordered
       {

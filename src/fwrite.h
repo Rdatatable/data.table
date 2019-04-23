@@ -43,6 +43,23 @@ typedef enum {   // same order as fun[] above
   WF_List
 } WFs;
 
+static const int writerMaxLen[] = {  // same order as fun[] and WFs above; max field width used for calculating upper bound line length
+  5,  //&writeBool8            "false"
+  5,  //&writeBool32           "false"
+  5,  //&writeBool32AsString   "false"
+  11, //&writeInt32            "-2147483647"
+  20, //&writeInt64            "-9223372036854775807"
+  29, //&writeFloat64          "-3.141592653589793115998E-123" [max sf 22 consistent with options()$digits]
+  32, //&writeITime
+  16, //&writeDateInt32
+  16, //&writeDateFloat64
+  32, //&writePOSIXct
+  48, //&writeNanotime
+  0,  //&writeString
+  0,  //&writeCategString
+  0,  //&writeList
+};
+
 typedef struct fwriteMainArgs
 {
   // Name of the file to open (a \0-terminated C string). If the file name
