@@ -885,7 +885,7 @@ void fwriteMain(fwriteMainArgs args)
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
   // from the original error.
   if (failed<0) {
-    STOP("Error %d: one or more threads failed to allocate buffers or there was a compression error."
+    STOP("Error %d: one or more threads failed to allocate buffers or there was a compression error."        // # nocov
          " Please try again with verbose=TRUE and try searching online for this error message.\n", failed);  // # nocov
   } else if (failed>0) {
     STOP("%s: '%s'", strerror(failed), args.filename);  // # nocov
