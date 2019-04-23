@@ -17,6 +17,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(verbose),
   showProgress = getOption("datatable.showProgress", interactive()),
+  compress = c("auto", "none", "gzip"),
   verbose = getOption("datatable.verbose", FALSE))
 }
 \arguments{
@@ -52,6 +53,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{buffMB}{The buffer size (MB) per thread in the range 1 to 1024, default 8MB. Experiment to see what works best for your data on your hardware.}
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
+  \item{compress}{If \code{compress = "auto"} and if \code{file} ends in \code{.gz} then output format is gzipped csv else csv. If \code{compress = "none"}, output format is always csv. If \code{compress = "gzip"} then format is gzipped csv. Output to the console is never gzipped even if \code{compress = "gzip"}. By default, \code{compress = "auto"}.}
   \item{verbose}{Be chatty and report timings?}
 }
 \details{

@@ -4,12 +4,20 @@
 
 #### NEW FEATURES
 
-1. New option `options(datatable.quiet = TRUE)` turns off the package startup message, [#3489](https://github.com/Rdatatable/data.table/issues/3489). `suppressPackageStartupMessages()` continues to work too. Thanks to @leobarlach for the suggestion inspired by `options(tidyverse.quiet = TRUE)`. We don't know of a way to make a package respect the `quietly=` option of `library()` and `require()` because the `quietly=` isn't passed through for use by the package's own `.onAttach`. If you can see how to do that, please submit a patch to R.
+1. `rleid()` functions now support long vectors (length > 2 billion).
 
-2. `rleid()` functions now support long vectors (length > 2 billion).
+2. `fread()`:
+    * now skips embedded `NUL` (`\0`), [#3400](https://github.com/Rdatatable/data.table/issues/3400). Thanks to Marcus Davy for reporting with examples, Roy Storey for the initial PR, and Bingjie Qian for testing this feature on a very complicated real-world file which revealed an issue which was caught and fixed before release.
 
-3. `fread()`:
-    * now skips embedded `NUL` (`\0`), [#3400](https://github.com/Rdatatable/data.table/issues/3400). Thanks to Marcus Davy for reporting with examples, and Roy Storey for the initial PR.
+3. `fwrite()`:
+    * now writes compressed `.gz` files directly, [#2016](https://github.com/Rdatatable/data.table/issues/2016). Compression, like `fwrite()`, is multithreaded and compresses each chunk on-the-fly (a full size intermediate file is not created). Use a ".gz" extension, or the new `compress=` option. Many thanks to Philippe Chataignon for the significant PR. For example:
+
+    ```R
+    DT = data.table(A=rep(1:2, 100e6), B=rep(1:4, 50e6))
+    fwrite(DT, "data.csv")      # 763MB; 1.3s
+    fwrite(DT, "data.csv.gz")   #   2MB; 1.6s
+    identical(fread("data.csv.gz"), DT)
+    ```
 
 4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
 
@@ -46,7 +54,9 @@
 
 3. A missing item in `j` such as `j=.(colA, )` now gives a helpful error (`Item 2 of the .() or list() passed to j is missing`) rather than the unhelpful error `argument "this_jsub" is missing, with no default` (v1.12.2) or `argument 2 is empty` (v1.12.0 and before), [#3507](https://github.com/Rdatatable/data.table/issues/3507). Thanks to @eddelbuettel for the report.
 
-4. `between` now properly handles `POSIXct` type, [#3519](https://github.com/Rdatatable/data.table/issues/3519). Additionally support `.` as `list` alias in RHS, [#2315](https://github.com/Rdatatable/data.table/issues/2315). Thanks to @Henrik-P for the report.
+4. `fwrite()` could crash when writing very long strings such as 30 million characters, [#2974](https://github.com/Rdatatable/data.table/issues/2974), and could be unstable in memory constrained environments, [#2612](https://github.com/Rdatatable/data.table/issues/2612). Thanks to @logworthy and @zachokeeffe for reporting and Philippe Chataignon for fixing in PR [#3288](https://github.com/Rdatatable/data.table/pull/3288).
+
+5. `between` now properly handles `POSIXct`, [#3519](https://github.com/Rdatatable/data.table/issues/3519), and supports `.()` as `list()` alias in RHS, [#2315](https://github.com/Rdatatable/data.table/issues/2315). Thanks to @Henrik-P for the report.
 
 #### NOTES
 
@@ -61,6 +71,8 @@
     ```
 
 3. `setorder` on a superset of a keyed `data.table`'s key now retains its key, [#3456](https://github.com/Rdatatable/data.table/issues/3456). For example, if `a` is the key of `DT`, `setorder(DT, a, -v)` will leave `DT` keyed by `a`.
+
+4. New option `options(datatable.quiet = TRUE)` turns off the package startup message, [#3489](https://github.com/Rdatatable/data.table/issues/3489). `suppressPackageStartupMessages()` continues to work too. Thanks to @leobarlach for the suggestion inspired by `options(tidyverse.quiet = TRUE)`. We don't know of a way to make a package respect the `quietly=` option of `library()` and `require()` because the `quietly=` isn't passed through for use by the package's own `.onAttach`. If you can see how to do that, please submit a patch to R.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
