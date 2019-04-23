@@ -10,7 +10,14 @@
     * now skips embedded `NUL` (`\0`), [#3400](https://github.com/Rdatatable/data.table/issues/3400). Thanks to Marcus Davy for reporting with examples, and Roy Storey for the initial PR.
 
 3. `fwrite()`:
-    * now writes compressed `.gz` files directly, [#2016](https://github.com/Rdatatable/data.table/issues/2016). Either set `compress="gzip"` or use a `.gz` filename extension. Compression, like `fwrite`, is multithreaded and compresses each chunk on-the-fly (a full size file is not created first). Many thanks to Philippe Chataignon for the PR.
+    * now writes compressed `.gz` files directly, [#2016](https://github.com/Rdatatable/data.table/issues/2016). Compression, like `fwrite()`, is multithreaded and compresses each chunk on-the-fly (a full size intermediate file is not created). Use a ".gz" extension, or the new `compress=` option. Many thanks to Philippe Chataignon for the PR. For example:
+
+    ```R
+    DT = data.table(A=rep(1:2,each=100), B=rep(1:4,each=25))
+    fwrite(DT, "data.csv");    file.size("data.csv")     # 804
+    fwrite(DT, "data.csv.gz"); file.size("data.csv.gz")  #  74
+    identical(DT, fread("data.csv.gz"))
+    ```
 
 4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
     ```R
