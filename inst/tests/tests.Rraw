@@ -9467,6 +9467,23 @@ test(1658.34, fwrite(matrix(1:4, nrow=2, ncol=2), quote = TRUE), output = '"V1",
 test(1658.35, fwrite(matrix(1:3, nrow=3, ncol=1), quote = TRUE), output = '"V1"\n.*1\n2\n3', message = "x being coerced from class: matrix to data.table")
 test(1658.36, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c("ca","cb"))), quote = TRUE), output = '"ca","cb"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
 
+# fwrite compress
+test(1658.37, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"), output='a,b\n1,1\n2,2\n3,3')  # compress ignored on console
+DT = data.table(a=rep(1:2,each=100), b=rep(1:4,each=25))
+fwrite(DT, file=f1<-tempfile(fileext=".gz"))
+fwrite(DT, file=f2<-tempfile())
+test(1658.38, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
+if (test_R.utils) test(1658.39, fread(f1), DT)  # use fread to decompress gz (works cross-platform)
+fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
+test(1658.40, file.info(f3)$size, file.info(f1)$size)
+unlink(c(f1,f2,f3))
+DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c("foo", "bar", "baz")))
+test(1658.41, fwrite(DT), output=c("a,b","1,1|2|3|4","2,3.14|1e+12","3,foo|bar|baz"))
+DT[3,b:=c(3i,4i,5i)]
+test(1658.42, fwrite(DT), error="Row 3 of list column is type 'complex'")
+DT[3,b:=factor(letters[1:3])]
+test(1658.43, fwrite(DT), error="Row 3 of list column is type 'factor'")
+
 ## End fwrite tests
 
 # tests for #679, inrange(), FR #707
@@ -10334,7 +10351,8 @@ DT = data.table(
   D = as.POSIXct(dt<-paste(d,t), tz="UTC"),
   E = as.POSIXct(paste0(dt,c(".999",".0",".5",".111112",".123456",".023",".0",".999999",".99",".0009")), tz="UTC"))
 
-test(1740.1, fwrite(DT,dateTimeAs="iso"), error="dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
+test(1740.0, fwrite(DT,dateTimeAs="iso"), error="dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
+test(1740.1, fwrite(DT,dateTimeAs=c("ISO","squash")), error="dateTimeAs must be a single string")
 test(1740.2, capture.output(fwrite(DT,dateTimeAs="ISO")), c(
 "A,B,C,D,E",
 "1907-10-21,1907-10-21,23:59:59,1907-10-21T23:59:59Z,1907-10-21T23:59:59.999Z",

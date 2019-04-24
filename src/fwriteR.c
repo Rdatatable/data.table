@@ -1,4 +1,3 @@
-
 #include <stdbool.h>
 #include "data.table.h"
 #include "fwrite.h"
@@ -18,6 +17,29 @@ static const char *sep2start, *sep2end;
 const char *getString(SEXP *col, int64_t row) {   // TODO: inline for use in fwrite.c
   SEXP x = col[row];
   return x==NA_STRING ? NULL : CHAR(x);
+}
+
+const int getStringLen(SEXP *col, int64_t row) {
+  return LENGTH(col[row]);  // LENGTH of CHARSXP is nchar
+}
+
+const int getMaxStringLen(const SEXP *col, const int64_t n) {
+  int max=0;
+  SEXP last=NULL;
+  for (int i=0; i<n; ++i) {
+    SEXP this = *col++;
+    if (this==last) continue; // no point calling LENGTH() again on the same string; LENGTH is unlikely as fast as single pointer compare
+    int thisnchar = LENGTH(this);
+    if (thisnchar>max) max=thisnchar;
+    last = this;
+  }
+  return max;
+}
+
+const int getMaxCategLen(SEXP col) {
+  col = getAttrib(col, R_LevelsSymbol);
+  if (!isString(col)) error("Internal error: col passed to getMaxCategLen is missing levels");
+  return getMaxStringLen( STRING_PTR(col), LENGTH(col) );
 }
 
 const char *getCategString(SEXP col, int64_t row) {
@@ -43,31 +65,13 @@ writer_fun_t funs[] = {
   &writeList
 };
 
-typedef enum {   // same order as fun[] above
-  WF_Bool8,
-  WF_Bool32,
-  WF_Bool32AsString,
-  WF_Int32,
-  WF_Int64,
-  WF_Float64,
-  WF_ITime,
-  WF_DateInt32,
-  WF_DateFloat64,
-  WF_POSIXct,
-  WF_Nanotime,
-  WF_String,
-  WF_CategString,
-  WF_List
-} WFs;
-
 static int32_t whichWriter(SEXP);
 
 void writeList(SEXP *col, int64_t row, char **pch) {
   SEXP v = col[row];
   int32_t wf = whichWriter(v);
-  if (TYPEOF(v)==VECSXP || wf==INT32_MIN) {
-    error("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing atomic vectors of type logical, integer, integer64, double, character and factor, currently.",
-           row+1, type2char(TYPEOF(v)));
+  if (TYPEOF(v)==VECSXP || wf==INT32_MIN || isFactor(v)) {
+    error("Internal error: getMaxListItemLen should have caught this up front.");  // # nocov
   }
   char *ch = *pch;
   write_chars(sep2start, &ch);
@@ -80,6 +84,31 @@ void writeList(SEXP *col, int64_t row, char **pch) {
   if (LENGTH(v)) ch--; // backup over the last sep2 after the last item
   write_chars(sep2end, &ch);
   *pch = ch;
+}
+
+const int getMaxListItemLen(const SEXP *col, const int64_t n) {
+  int max=0;
+  SEXP last=NULL;
+  for (int i=0; i<n; ++i) {
+    SEXP this = *col++;
+    if (this==last) continue; // no point calling LENGTH() again on the same string; LENGTH is unlikely as fast as single pointer compare
+    int32_t wf = whichWriter(this);
+    if (TYPEOF(this)==VECSXP || wf==INT32_MIN || isFactor(this)) {
+      error("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing items which are atomic vectors of" \
+            " type logical, integer, integer64, double and character.", i+1, isFactor(this) ? "factor" : type2char(TYPEOF(this)));
+    }
+    int width = writerMaxLen[wf];
+    if (width==0) {
+      if (wf!=WF_String) STOP("Internal error: row %d of list column has no max length method implemented", i+1); // # nocov
+      const int l = LENGTH(this);
+      for (int j=0; j<l; ++j) width+=LENGTH(STRING_ELT(this, j));
+    } else {
+      width = (length(this)+1) * width;  // +1 for sep2
+    }
+    if (width>max) max=width;
+    last = this;
+  }
+  return max;
 }
 
 static int32_t whichWriter(SEXP column) {
@@ -128,10 +157,13 @@ SEXP fwriteR(
   SEXP buffMB_Arg,         // [1-1024] default 8MB
   SEXP nThread_Arg,
   SEXP showProgress_Arg,
-  SEXP verbose_Arg)
+  SEXP is_gzip_Arg,
+  SEXP verbose_Arg
+  )
 {
   if (!isNewList(DF)) error("fwrite must be passed an object of type list; e.g. data.frame, data.table");
   fwriteMainArgs args;
+  args.is_gzip = LOGICAL(is_gzip_Arg)[0];
   args.verbose = LOGICAL(verbose_Arg)[0];
   args.filename = CHAR(STRING_ELT(filename_Arg, 0));
   args.ncol = length(DF);
