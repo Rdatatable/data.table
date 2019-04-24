@@ -10,9 +10,9 @@ between <- function(x,lower,upper,incbounds=TRUE,verbose=getOption("datatable.ve
     return(x_time)
   }
   if (inherits(x, "POSIXct")) {
-    # allow fast between on POSIX vs POSIX-as-string in some circumstances
+    # allow fast between on POSIX vs non-explicit-POSIX in some circumstances
     #   (biggest worry is hard-to-predict timezone mismatch)
-    if (!is.null(tz <- attr(x, 'tzone')) && (is.character(lower) || is.character(upper))) {
+    if (!is.null(tz <- attr(x, 'tzone'))) {
       lower = try_posix_cast(lower, tz)
       upper = try_posix_cast(upper, tz)
     }
