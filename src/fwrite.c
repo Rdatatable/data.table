@@ -6,7 +6,7 @@
 #include <stdint.h>    // INT32_MIN
 #include <math.h>      // isfinite, isnan
 #include <stdlib.h>    // abs
-#include <string.h>    // strnlen (n for codacy), strerror
+#include <string.h>    // strlen, strerror
 
 #ifdef WIN32
 #include <sys/types.h>
@@ -591,7 +591,10 @@ void fwriteMain(fwriteMainArgs args)
   if (args.buffMB<1 || args.buffMB>1024) STOP("buffMB=%d outside [1,1024]", args.buffMB);
   size_t buffSize = (size_t)1024*1024*args.buffMB;
 
-  int eolLen=strnlen(args.eol, 1024), naLen=strnlen(args.na, 1024);  // strnlen required by Codacy
+  int eolLen=strlen(args.eol), naLen=strlen(args.na);
+  // Aside: codacy wants strnlen but strnlen is not in C99 (neither is strlen_s). To pass `gcc -std=c99 -Wall -pedantic`
+  //        we'd need `#define _POSIX_C_SOURCE 200809L` before #include <string.h> but that seems a step too far
+  //        and platform specific. We prefer to be pure C99.
   if (eolLen<=0) STOP("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d", eolLen);
 
   if (args.verbose) {

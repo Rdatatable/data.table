@@ -46,6 +46,8 @@
 
 6. New functions `nafill` and `setnafill`, [#854](https://github.com/Rdatatable/data.table/issues/854). Thanks to Matthieu Gomez for the request and Jan Gorecki for implementing.
 
+7. `between()` and `%between%` are faster for `POSIXct`, [#3519](https://github.com/Rdatatable/data.table/issues/3519), and now support `.()` alias, [#2315](https://github.com/Rdatatable/data.table/issues/2315). Thanks to @Henrik-P for the reports.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -56,7 +58,7 @@
 
 4. `fwrite()` could crash when writing very long strings such as 30 million characters, [#2974](https://github.com/Rdatatable/data.table/issues/2974), and could be unstable in memory constrained environments, [#2612](https://github.com/Rdatatable/data.table/issues/2612). Thanks to @logworthy and @zachokeeffe for reporting and Philippe Chataignon for fixing in PR [#3288](https://github.com/Rdatatable/data.table/pull/3288).
 
-5. `between` now properly handles `POSIXct`, [#3519](https://github.com/Rdatatable/data.table/issues/3519), and supports `.()` as `list()` alias in RHS, [#2315](https://github.com/Rdatatable/data.table/issues/2315). Thanks to @Henrik-P for the report.
+5. `fread()` could crash if `quote=""` (i.e. ignore quotes), the last line is too short, and `fill=TRUE`, [#3524](https://github.com/Rdatatable/data.table/pull/3524). Thanks to Jiucang Hao for the report and reproducible example.
 
 #### NOTES
 
