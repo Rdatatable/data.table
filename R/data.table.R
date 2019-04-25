@@ -216,8 +216,8 @@ replace_dot_alias <- function(e) {
   }
 }
 
-# count of updated rows after `:=` stored in .Last.nrow #1885
-.Last.nrow <- NULL # onLoad init this to copy(NA_integer_)
+# count of updated rows after `:=` stored in .Last.updated #1885
+.Last.updated <- NULL # onLoad init this to copy(NA_integer_)
 
 "[.data.table" <- function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
 {
@@ -1140,7 +1140,7 @@ replace_dot_alias <- function(e) {
           cols = as.integer(m)
           newnames=NULL
           if (identical(irows, integer())) {
-            .Call(Cassign, NULL, irows, NULL, NULL, NULL, FALSE, TRUE, get(".Last.nrow", envir=topenv())) # call only to write 0 to .Last.nrow
+            .Call(Cassign, NULL, irows, NULL, NULL, NULL, FALSE, TRUE, get(".Last.updated", envir=topenv())) # call only to write 0 to .Last.updated
             # Empty integer() means no rows e.g. logical i with only FALSE and NA
             # got converted to empty integer() by the which() above
             # Short circuit and do-nothing since columns already exist. If some don't
@@ -1385,7 +1385,7 @@ replace_dot_alias <- function(e) {
     }
     if (!is.null(lhs)) {
       # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
-      .Call(Cassign, x, irows, cols, newnames, jval, verbose, TRUE, get(".Last.nrow", envir=topenv()))
+      .Call(Cassign, x, irows, cols, newnames, jval, verbose, TRUE, get(".Last.updated", envir=topenv()))
       return(suppPrint(x))
     }
     if ((is.call(jsub) && is.list(jval) && jsub[[1L]] != "get" && !is.object(jval)) || !missingby) {

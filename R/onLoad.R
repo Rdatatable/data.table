@@ -102,7 +102,7 @@
   # R could feasibly in future not copy DF's vecsxp in this case. If that changes in R, we'd like to know via the warning
   # because tests will likely break too. The warning will quickly tell R-core and us why, so we can then update.
 
-  assign(".Last.nrow", copy(NA_integer_), envir=topenv()) #1885
+  assign(".Last.updated", copy(NA_integer_), envir=topenv()) #1885
 
   invisible()
 }

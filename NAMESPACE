@@ -50,7 +50,7 @@ S3method(rollup, data.table)
 export(frollmean)
 export(nafill)
 export(setnafill)
-export(.Last.nrow)
+export(.Last.updated)
 
 S3method("[", data.table)
 S3method("[<-", data.table)
