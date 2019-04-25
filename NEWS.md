@@ -46,6 +46,8 @@
 
 6. New functions `nafill` and `setnafill`, [#854](https://github.com/Rdatatable/data.table/issues/854). Thanks to Matthieu Gomez for the request and Jan Gorecki for implementing.
 
+7. New technical variable `.Last.nrow` has been introduced to provide information about number of rows affected by the most recent update by reference using `:=`, closes [#1885](https://github.com/Rdatatable/data.table/issues/1885).
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.

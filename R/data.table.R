@@ -216,6 +216,9 @@ replace_dot_alias <- function(e) {
   }
 }
 
+# count of updated rows after `:=` stored in .Last.nrow #1885
+.Last.nrow <- NULL # onLoad init this to copy(NA_integer_)
+
 "[.data.table" <- function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
@@ -1137,6 +1140,7 @@ replace_dot_alias <- function(e) {
           cols = as.integer(m)
           newnames=NULL
           if (identical(irows, integer())) {
+            .Call(Cassign, NULL, irows, NULL, NULL, NULL, FALSE, TRUE, get(".Last.nrow", envir=topenv())) # call only to write 0 to .Last.nrow
             # Empty integer() means no rows e.g. logical i with only FALSE and NA
             # got converted to empty integer() by the which() above
             # Short circuit and do-nothing since columns already exist. If some don't
@@ -1381,7 +1385,7 @@ replace_dot_alias <- function(e) {
     }
     if (!is.null(lhs)) {
       # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
-      .Call(Cassign,x,irows,cols,newnames,jval,verbose)
+      .Call(Cassign, x, irows, cols, newnames, jval, verbose, TRUE, get(".Last.nrow", envir=topenv()))
       return(suppPrint(x))
     }
     if ((is.call(jsub) && is.list(jval) && jsub[[1L]] != "get" && !is.object(jval)) || !missingby) {
@@ -2095,7 +2099,7 @@ tail.data.table <- function(x, n=6L, ...) {
     # search for one other .Call to assign in [.data.table to see how it differs
   }
   verbose=getOption("datatable.verbose")
-  x = .Call(Cassign,copy(x),i,cols,newnames,value,verbose) # From 3.1.0, DF[2,"b"] = 7 no longer copies DF$a (so in this [<-.data.table method we need to copy)
+  x = .Call(Cassign,copy(x),i,cols,newnames,value,verbose,FALSE,NULL) # From 3.1.0, DF[2,"b"] = 7 no longer copies DF$a (so in this [<-.data.table method we need to copy)
   alloc.col(x)  #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
   if (length(reinstatekey)) setkeyv(x,reinstatekey)
   invisible(x)
@@ -2638,7 +2642,7 @@ set <- function(x,i=NULL,j,value)  # low overhead, loopable
     .Call(Csetlistelt,l,1L,value)  # to avoid the copy by list() in R < 3.1.0
     value = l
   }
-  .Call(Cassign,x,i,j,NULL,value,FALSE)   #  verbose=FALSE for speed to avoid getOption()  TO DO: somehow read getOption("datatable.verbose") from C level
+  .Call(Cassign,x,i,j,NULL,value,FALSE,FALSE,NULL)   #  verbose=FALSE for speed to avoid getOption()  TO DO: somehow read getOption("datatable.verbose") from C level
   invisible(x)
 }
 

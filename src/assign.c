@@ -270,7 +270,7 @@ SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
   return ScalarInteger(_selfrefok(x,FALSE,LOGICAL(verbose)[0]));
 }
 
-SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP verb)
+SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP verb, SEXP update, SEXP updated)
 {
   // For internal use only by := in [.data.table, and set()
   // newcolnames : add these columns (if any)
@@ -283,7 +283,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   const char *c1, *tc1, *tc2;
   int *buf, k=0, newKeyLength, indexNo;
   size_t size; // must be size_t otherwise overflow later in memcpy
-  if (isNull(dt)) error("assign has been passed a NULL dt");
+  if (isNull(dt)){
+    if (!length(rows) && LOGICAL(update)[0]) { // extra escape to handle case when no rows updated #1885
+      INTEGER(updated)[0] = 0;
+      return(dt);
+    } else error("assign has been passed a NULL dt");
+  }
   if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
   if (length(bindingIsLocked) && LOGICAL(bindingIsLocked)[0])
     error(".SD is locked. Updating .SD by reference using := or set are reserved for future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, until shallow() is exported.");
@@ -321,6 +326,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   if (isNull(rows)) {
     numToDo = nrow;
     targetlen = nrow;
+    if (LOGICAL(update)[0]) INTEGER(updated)[0] = numToDo;
     if (verbose) Rprintf("Assigning to all %d rows\n", nrow);
     // fast way to assign to whole column, without creating 1:nrow(x) vector up in R, or here in C
   } else {
@@ -339,6 +345,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         error("i[%d] is %d which is out of range [1,nrow=%d].",i+1,rowsd[i],nrow);  // set() reaches here (test 2005.2); := reaches the same error in subset.c first
       if (rowsd[i]>=1) numToDo++;
     }
+    if (LOGICAL(update)[0]) INTEGER(updated)[0] = numToDo;
     if (verbose) Rprintf("Assigning to %d row subset of %d rows\n", numToDo, nrow);
     // TODO: include in message if any rows are assigned several times (e.g. by=.EACHI with dups in i)
     if (numToDo==0) {

@@ -14072,6 +14072,51 @@ test(2027.1, DT[, list(1, ), by=a], error = 'Item 2 of the .() or list() passed 
 test(2027.2, DT[, list(1,2,)],      error = 'Item 3 of the .() or list() passed to j is missing')
 test(2027.3, DT[, .(1,,3,), by=a],  error = 'Item 2 of the .() or list() passed to j is missing')
 
+# .Last.nrow #1885
+d = data.table(a=1:4, b=2:5)
+d[, z:=5L]
+test(2028.01, .Last.nrow, 4L) # new column
+d[, z:=6L]
+test(2028.02, .Last.nrow, 4L) # update existing column
+d[2:3, z:=7L]
+test(2028.03, .Last.nrow, 2L) # sub assign
+d[integer(), z:=8L]
+test(2028.04, .Last.nrow, 0L) # empty sub-assign
+d[-1L, z:=9L]
+test(2028.05, .Last.nrow, 3L) # inverse sub-assign
+d[-(1:4), z:=10L]
+test(2028.06, .Last.nrow, 0L) # inverse empty sub-assign
+d[, z:=NULL]
+test(2028.07, .Last.nrow, 4L) # delete column
+d[2:3, z:=11L]
+test(2028.08, .Last.nrow, 2L) # new column during sub-assign
+d[, z:=NULL]
+d[integer(), z:=12L]
+test(2028.09, .Last.nrow, 0L) # new columns from empty sub-assign
+d[, z:=NULL]
+d[-(1:4), z:=13L]
+test(2028.10, .Last.nrow, 0L) # new columns from empty inverse sub-assign
+d[, z:=NULL][, z:=14L]
+test(2028.11, .Last.nrow, 4L) # new column from chaining
+d[, z:=NULL][2:3, z:=14L]
+test(2028.12, .Last.nrow, 2L) # sub-assign from chaining
+d[2:3, z:=14L][, z:=NULL]
+test(2028.13, .Last.nrow, 4L) # delete column from chaining
+set(d, 1:2, "z", 15L)
+test(2028.14, .Last.nrow, 4L) # set does not affect .Last.nrow
+g = data.table(a=1:4, z=15L) # join
+d[g, on="a", z:=i.z]
+test(2028.15, .Last.nrow, 4L) # all match of all rows
+g = data.table(a=2:4, z=16L) # join
+d[, z:=NULL][g, on="a", z:=i.z]
+test(2028.16, .Last.nrow, 3L) # all match
+g = data.table(a=c(2L,4L,6L), z=17L)
+d[, z:=NULL][g, on="a", z:=i.z]
+test(2028.17, .Last.nrow, 2L) # partial match
+g = data.table(a=5:6, z=18L)
+d[, z:=NULL][g, on="a", z:=i.z]
+test(2028.18, .Last.nrow, 0L) # zero match
+
 
 ###################################
 #  Add new tests above this line  #
