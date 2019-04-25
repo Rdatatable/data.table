@@ -14072,50 +14072,60 @@ test(2027.1, DT[, list(1, ), by=a], error = 'Item 2 of the .() or list() passed 
 test(2027.2, DT[, list(1,2,)],      error = 'Item 3 of the .() or list() passed to j is missing')
 test(2027.3, DT[, .(1,,3,), by=a],  error = 'Item 2 of the .() or list() passed to j is missing')
 
+# fread quote="" when last line too short and filled with fill=TRUE (provided via email), crash in v1.12.2 and before
+test(2028.1, fread(testDir("noquote.csv.gz"), fill=TRUE, quote="")[c(1,.N), c(1,2,9,10)],
+             data.table(H=c("D","T"), "Locate Reply"=c("BCS","Locate Reply"), V9=c("A",""), V10=c("4/23/2019 7:11:11 AM","")))
+test(2028.2, fread(testDir("noquote.csv.gz"), fill=TRUE, quote="", header=FALSE)[c(1,.N), c(1,2,3,8,9,10)],
+             data.table(V1=c("H","T"), V2="Locate Reply", V3=c("GORLTR","2093"), V8=INT(NA,NA), V9="", V10=""))
+txt = "A,B,C\n1,4,7\n2,5,8\n3,6\n"
+test(2029.1, fread(txt), data.table(A=1:2, B=4:5, C=7:8), warning="Discarded single-line footer: <<3,6>>")
+test(2029.2, fread(txt, quote=""), data.table(A=1:2, B=4:5, C=7:8), warning="Discarded single-line footer: <<3,6>>")
+test(2029.3, fread(txt, quote="", fill=TRUE), data.table(A=1:3, B=4:6, C=c(7:8,NA)))
+
 # .Last.updated #1885
 d = data.table(a=1:4, b=2:5)
 d[, z:=5L]
-test(2028.01, .Last.updated, 4L) # new column
+test(2030.01, .Last.updated, 4L) # new column
 d[, z:=6L]
-test(2028.02, .Last.updated, 4L) # update existing column
+test(2030.02, .Last.updated, 4L) # update existing column
 d[2:3, z:=7L]
-test(2028.03, .Last.updated, 2L) # sub assign
+test(2030.03, .Last.updated, 2L) # sub assign
 d[integer(), z:=8L]
-test(2028.04, .Last.updated, 0L) # empty sub-assign
+test(2030.04, .Last.updated, 0L) # empty sub-assign
 d[-1L, z:=9L]
-test(2028.05, .Last.updated, 3L) # inverse sub-assign
+test(2030.05, .Last.updated, 3L) # inverse sub-assign
 d[-(1:4), z:=10L]
-test(2028.06, .Last.updated, 0L) # inverse empty sub-assign
+test(2030.06, .Last.updated, 0L) # inverse empty sub-assign
 d[, z:=NULL]
-test(2028.07, .Last.updated, 4L) # delete column
+test(2030.07, .Last.updated, 4L) # delete column
 d[2:3, z:=11L]
-test(2028.08, .Last.updated, 2L) # new column during sub-assign
+test(2030.08, .Last.updated, 2L) # new column during sub-assign
 d[, z:=NULL]
 d[integer(), z:=12L]
-test(2028.09, .Last.updated, 0L) # new columns from empty sub-assign
+test(2030.09, .Last.updated, 0L) # new columns from empty sub-assign
 d[, z:=NULL]
 d[-(1:4), z:=13L]
-test(2028.10, .Last.updated, 0L) # new columns from empty inverse sub-assign
+test(2030.10, .Last.updated, 0L) # new columns from empty inverse sub-assign
 d[, z:=NULL][, z:=14L]
-test(2028.11, .Last.updated, 4L) # new column from chaining
+test(2030.11, .Last.updated, 4L) # new column from chaining
 d[, z:=NULL][2:3, z:=14L]
-test(2028.12, .Last.updated, 2L) # sub-assign from chaining
+test(2030.12, .Last.updated, 2L) # sub-assign from chaining
 d[2:3, z:=14L][, z:=NULL]
-test(2028.13, .Last.updated, 4L) # delete column from chaining
+test(2030.13, .Last.updated, 4L) # delete column from chaining
 set(d, 1:2, "z", 15L)
-test(2028.14, .Last.updated, 4L) # set does not affect .Last.updated
+test(2030.14, .Last.updated, 4L) # set does not affect .Last.updated
 g = data.table(a=1:4, z=15L) # join
 d[g, on="a", z:=i.z]
-test(2028.15, .Last.updated, 4L) # all match of all rows
+test(2030.15, .Last.updated, 4L) # all match of all rows
 g = data.table(a=2:4, z=16L) # join
 d[, z:=NULL][g, on="a", z:=i.z]
-test(2028.16, .Last.updated, 3L) # all match
+test(2030.16, .Last.updated, 3L) # all match
 g = data.table(a=c(2L,4L,6L), z=17L)
 d[, z:=NULL][g, on="a", z:=i.z]
-test(2028.17, .Last.updated, 2L) # partial match
+test(2030.17, .Last.updated, 2L) # partial match
 g = data.table(a=5:6, z=18L)
 d[, z:=NULL][g, on="a", z:=i.z]
-test(2028.18, .Last.updated, 0L) # zero match
+test(2030.18, .Last.updated, 0L) # zero match
 
 
 ###################################
