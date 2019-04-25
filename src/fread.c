@@ -213,11 +213,11 @@ static char *typesAsString(int ncol) {
   static char str[101];
   int i=0;
   if (ncol<=100) {
-    for (; i<ncol; i++) str[i] = typeLetter[type[i]];
+    for (; i<ncol; i++) str[i] = typeLetter[abs(type[i])];  // abs for out-of-sample type bumps (negative)
   } else {
-    for (; i<80; i++) str[i] = typeLetter[type[i]];
+    for (; i<80; i++) str[i] = typeLetter[abs(type[i])];
     str[i++]='.'; str[i++]='.'; str[i++]='.';
-    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[type[j]];
+    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[abs(type[j])];
   }
   str[i] = '\0';
   return str;
@@ -495,7 +495,7 @@ static void Field(FieldParseContext *ctx)
   if ((*ch==' ' && stripWhite) || (*ch=='\0' && ch<eof))
     while(*++ch==' ' || (*ch=='\0' && ch<eof));  // if sep==' ' the space would have been skipped already and we wouldn't be on space now.
   const char *fieldStart=ch;
-  if (*ch!=quote || quoteRule==3) {
+  if (*ch!=quote || quoteRule==3 || quote=='\0') {
     // Most common case. Unambiguously not quoted. Simply search for sep|eol. If field contains sep|eol then it should have been quoted and we do not try to heal that.
     while(!end_of_field(ch)) ch++;  // sep, \r, \n or eof will end
     *(ctx->ch) = ch;
@@ -562,7 +562,7 @@ static void Field(FieldParseContext *ctx)
   }
   target->len = (int32_t)(ch - fieldStart);
   target->off = (int32_t)(fieldStart - ctx->anchor);
-  if (*ch==quote) {
+  if (*ch==quote) {   // quote=='\0' (user set quote="") would have returned earlier above in the same branch as quoteRule 3
     ch++;
     skip_white(&ch);
     *(ctx->ch) = ch;
@@ -798,7 +798,7 @@ static void parse_double_extended(FieldParseContext *ctx)
   double *target = (double*) ctx->targets[sizeof(double)];
   bool neg, quoted;
   init();
-  ch += (quoted = (*ch=='"'));
+  ch += (quoted = (*ch==quote && quote));
   ch += (neg = (*ch=='-')) + (*ch=='+');
 
   if (ch[0]=='n' && ch[1]=='a' && ch[2]=='n' && (ch += 3)) goto return_nan;
@@ -843,7 +843,7 @@ static void parse_double_extended(FieldParseContext *ctx)
   return_na:
     *target = NA_FLOAT64;
   ok:
-    if (quoted && *ch!='"') {
+    if (quoted && *ch!=quote) {
       *target = NA_FLOAT64;
     } else {
       *(ctx->ch) = ch + quoted;
@@ -1048,7 +1048,7 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
         // thread at headPos which has full lineage to sof may bump the quoteRule.
         break; // caller will detect this line hasn't finished properly
       }
-      if (*ch==quote) {
+      if (*ch==quote && quote) {  // && quote to exclude quote='\0' (user passed quote="")
         ch++;
         fun[tmpType[field]](&fctx);
         if (*ch==quote) {
@@ -1169,6 +1169,8 @@ int freadMain(freadMainArgs _args) {
   if (dec=='\0') STOP("dec='' not allowed. Should be '.' or ','");
   if (args.sep == dec) STOP("sep == dec ('%c') is not allowed", dec);
   if (quote == dec) STOP("quote == dec ('%c') is not allowed", dec);
+  // since quote=='\0' when user passed quote="", the logic in this file uses '*ch==quote && quote' otherwise
+  //   the ending \0 at eof could be treated as a quote (test xxx)
 
   // File parsing context: pointer to the start of file, and to the end of
   // the file. The `sof` pointer may be shifted in order to skip over
@@ -1459,7 +1461,7 @@ int freadMain(freadMainArgs _args) {
     int topSkip=0;            // how many rows to auto-skip
     const char *topStart=NULL;
 
-    for (quoteRule=0; quoteRule<4; quoteRule++) {
+    for (quoteRule=quote?0:3; quoteRule<4; quoteRule++) {
       // quote rule in order of preference.
       // when top is tied the first wins, so do all seps for the first quoteRule, then all seps for the second quoteRule, etc
       for (int s=0; s<nseps; s++) {
@@ -1469,7 +1471,7 @@ int freadMain(freadMainArgs _args) {
         // if (verbose) DTPRINT("  Trying sep='%c' with quoteRule %d ...\n", sep, quoteRule);
 
         if (fill) {
-          if (quoteRule>1) continue;  // turn off self-healing quote rules when filling
+          if (quoteRule>1 && quote) continue;  // turn off self-healing quote rule when filling
           int firstRowNcol = countfields(&ch);
           int thisncol=0, maxncol=firstRowNcol, thisRow=0;
           while (ch<eof && ++thisRow<jumpLines) {   // TODO: rename 'jumpLines' to 'jumpRows'
@@ -1562,7 +1564,7 @@ int freadMain(freadMainArgs _args) {
     }
 
     quoteRule = topQuoteRule;
-    if (quoteRule>1) {
+    if (quoteRule>1 && quote) {
       DTWARN("Found and resolved improper quoting in first %d rows. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning.", jumpLines);
       // TODO: include line number and text in warning. Could loop again with the standard quote rule to find the line that fails.
     }
@@ -2172,10 +2174,10 @@ int freadMain(freadMainArgs _args) {
               tch = end_NA_string(tch);
               skip_white(&tch);
               if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
-              if (*tch==quote) { quoted=true; tch++; }
+              if (*tch==quote && quote) { quoted=true; tch++; }
             } // else Field() handles NA inside it unlike other processors e.g. ,, is interpretted as "" or NA depending on option read inside Field()
             fun[abs(thisType)](&fctx);
-            if (quoted) {
+            if (quoted) {   // quoted was only set to true with '&& quote' above (=> quote!='\0' now)
               if (*tch==quote) tch++;
               else goto typebump;
             }
@@ -2362,6 +2364,7 @@ int freadMain(freadMainArgs _args) {
     for (int i=0; i<ncol; i++) typeCounts[ abs(type[i]) ]++;
 
     if (nTypeBump) {
+      if (verbose) DTPRINT("  %d out-of-sample type bumps: %s\n", nTypeBump, typesAsString(ncol));
       rowSize1 = rowSize4 = rowSize8 = 0;
       nStringCols = 0;
       nNonStringCols = 0;
