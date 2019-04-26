@@ -11,12 +11,16 @@
  *   recalculate whole mean for each observation, roundoff correction is adjusted, also support for NaN and Inf
  */
 
+static char *end(char *start) {
+  return strchr(start, 0);
+}
+
 void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   double tic = 0;
   if (verbose) tic = omp_get_wtime();
   if (algo==0) fadaptiverollmeanFast(x, nx, ans, k, fill, narm, hasna, verbose);
   else if (algo==1) fadaptiverollmeanExact(x, nx, ans, k, fill, narm, hasna, verbose);
-  if (verbose) sprintf(ans->message[0], "%s%s: processing algo %d took %.3fs\n", ans->message[0], __func__, algo, omp_get_wtime()-tic);
+  if (verbose) snprintf(end(ans->message[0]), 500, "%s: processing algo %d took %.3fs\n", __func__, algo, omp_get_wtime()-tic);
 }
 
 /* fast adaptive rolling mean - fast
@@ -26,13 +30,13 @@ void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, double_an
  */
 
 void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
-  if (verbose) sprintf(ans->message[0], "%s%s: running for input length %llu, hasna %d, narm %d\n", ans->message[0], __func__, (unsigned long long int)nx, hasna, (int) narm);
+  if (verbose) snprintf(end(ans->message[0]), 500, "%s: running for input length %llu, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
   double *cs = malloc(nx*sizeof(double));                       // cumsum vector, same as double cs[nx] but no segfault
   if (!cs) {
     ans->status = 3;                                            // raise error
-    sprintf(ans->message[3], "%s: Unable to allocate memory for cumsum", __func__);
+    snprintf(ans->message[3], 500, "%s: Unable to allocate memory for cumsum", __func__);
     free(cs);
     return;
   }
@@ -51,9 +55,9 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *
     } else {                                                    // update truehasna flag if NAs detected
       if (hasna==-1) {                                          // raise warning
         ans->status = 2;
-        sprintf(ans->message[2], "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
+        snprintf(ans->message[2], 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
       }
-      if (verbose) sprintf(ans->message[0], "%s%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", ans->message[0], __func__);
+      if (verbose) snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
       w = 0.0;
       truehasna = true;
     }
@@ -63,7 +67,7 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *
     uint_fast64_t *cn = malloc(nx*sizeof(uint_fast64_t));       // cumulative NA counter, used the same way as cumsum, same as uint_fast64_t cn[nx] but no segfault
     if (!cn) {
       ans->status = 3;                                          // raise error
-      sprintf(ans->message[3], "%s: Unable to allocate memory for cum NA counter", __func__);
+      snprintf(ans->message[3], 500, "%s: Unable to allocate memory for cum NA counter", __func__);
       free(cs);
       free(cn);
       return;
@@ -104,7 +108,7 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *
  */
 
 void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
-  if (verbose) sprintf(ans->message[0], "%s%s: running in parallel for input length %llu, hasna %d, narm %d\n", ans->message[0], __func__, (unsigned long long int)nx, hasna, (int) narm);
+  if (verbose) snprintf(end(ans->message[0]), 500, "%s: running in parallel for input length %llu, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, hasna, (int) narm);
 
   bool truehasna = hasna>0;                                   // flag to re-run if NAs detected
 
@@ -134,11 +138,11 @@ void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int 
     if (truehasna) {
       if (hasna==-1) {                                          // raise warning
         ans->status = 2;
-        sprintf(ans->message[2], "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
+        snprintf(ans->message[2], 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
       }
       if (verbose) {
-        if (narm) sprintf(ans->message[0], "%s%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", ans->message[0], __func__);
-        else sprintf(ans->message[0], "%s%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n", ans->message[0], __func__);
+        if (narm) snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+        else snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n", __func__);
       }
     }
   }
