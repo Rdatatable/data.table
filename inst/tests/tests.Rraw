@@ -14115,7 +14115,7 @@ test(2030.12, .Last.updated, 2L) # sub-assign from chaining
 d[2:3, z:=14L][, z:=NULL]
 test(2030.13, .Last.updated, 4L) # delete column from chaining
 set(d, 1:2, "z", 15L)
-test(2030.14, .Last.updated, 4L) # set does not affect .Last.updated
+test(2030.14, .Last.updated, 2L) # set() updates .Last.updated too
 g = data.table(a=1:4, z=15L) # join
 d[g, on="a", z:=i.z]
 test(2030.15, .Last.updated, 4L) # all match of all rows

@@ -82,6 +82,7 @@ SEXP frollfunR();
 SEXP dllVersion();
 SEXP nafillR();
 SEXP colnamesInt();
+SEXP initLastUpdated();
 
 // .Externals
 SEXP fastmean();
@@ -166,6 +167,7 @@ R_CallMethodDef callMethods[] = {
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
 {"CnafillR", (DL_FUNC) &nafillR, -1},
 {"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
+{"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
 {NULL, NULL, 0}
 };
 
@@ -346,6 +348,14 @@ SEXP hasOpenMP() {
   #endif
 }
 // # nocov end
+
+extern int *_Last_updated;  // assign.c
+
+SEXP initLastUpdated(SEXP var) {
+  if (!isInteger(var) || LENGTH(var)!=1) error(".Last.value in namespace is not a length 1 integer");
+  _Last_updated = INTEGER(var);
+  return R_NilValue;
+}
 
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056

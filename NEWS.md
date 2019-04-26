@@ -46,7 +46,7 @@
 
 6. New functions `nafill` and `setnafill`, [#854](https://github.com/Rdatatable/data.table/issues/854). Thanks to Matthieu Gomez for the request and Jan Gorecki for implementing.
 
-7. New technical variable `.Last.updated` has been introduced to provide information about number of rows affected by the most recent update by reference using `:=`, closes [#1885](https://github.com/Rdatatable/data.table/issues/1885).
+7. New variable `.Last.updated` (similar to R's `.Last.value`) contains the number of rows affected by the most recent `:=` or `set()`, [#1885](https://github.com/Rdatatable/data.table/issues/1885).
 
 #### BUG FIXES
 

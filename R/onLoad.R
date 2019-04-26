@@ -1,5 +1,7 @@
 # nocov start
 
+.Last.updated <- vector("integer", 1L) # exported variable; number of rows updated by the last := or set(), #1885
+
 .onLoad <- function(libname, pkgname) {
   # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
   if (!exists("test.data.table", .GlobalEnv, inherits=FALSE) &&    # check when installed package is loaded but skip when developing the package with cc()
@@ -102,7 +104,7 @@
   # R could feasibly in future not copy DF's vecsxp in this case. If that changes in R, we'd like to know via the warning
   # because tests will likely break too. The warning will quickly tell R-core and us why, so we can then update.
 
-  assign(".Last.updated", copy(NA_integer_), envir=topenv()) #1885
+  .Call(CinitLastUpdated, .Last.updated)  #1885
 
   invisible()
 }

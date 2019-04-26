@@ -270,7 +270,9 @@ SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
   return ScalarInteger(_selfrefok(x,FALSE,LOGICAL(verbose)[0]));
 }
 
-SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP verb, SEXP update, SEXP updated)
+int *_Last_updated = NULL;
+
+SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP verb)
 {
   // For internal use only by := in [.data.table, and set()
   // newcolnames : add these columns (if any)
@@ -283,12 +285,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   const char *c1, *tc1, *tc2;
   int *buf, k=0, newKeyLength, indexNo;
   size_t size; // must be size_t otherwise overflow later in memcpy
-  if (isNull(dt)){
-    if (!length(rows) && LOGICAL(update)[0]) { // extra escape to handle case when no rows updated #1885
-      INTEGER(updated)[0] = 0;
-      return(dt);
-    } else error("assign has been passed a NULL dt");
-  }
+  if (isNull(dt)) error("assign has been passed a NULL dt");
   if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
   if (length(bindingIsLocked) && LOGICAL(bindingIsLocked)[0])
     error(".SD is locked. Updating .SD by reference using := or set are reserved for future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, until shallow() is exported.");
@@ -326,7 +323,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   if (isNull(rows)) {
     numToDo = nrow;
     targetlen = nrow;
-    if (LOGICAL(update)[0]) INTEGER(updated)[0] = numToDo;
     if (verbose) Rprintf("Assigning to all %d rows\n", nrow);
     // fast way to assign to whole column, without creating 1:nrow(x) vector up in R, or here in C
   } else {
@@ -345,17 +341,20 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
         error("i[%d] is %d which is out of range [1,nrow=%d].",i+1,rowsd[i],nrow);  // set() reaches here (test 2005.2); := reaches the same error in subset.c first
       if (rowsd[i]>=1) numToDo++;
     }
-    if (LOGICAL(update)[0]) INTEGER(updated)[0] = numToDo;
     if (verbose) Rprintf("Assigning to %d row subset of %d rows\n", numToDo, nrow);
     // TODO: include in message if any rows are assigned several times (e.g. by=.EACHI with dups in i)
     if (numToDo==0) {
-      if (!length(newcolnames)) return(dt); // all items of rows either 0 or NA. !length(newcolnames) for #759
+      if (!length(newcolnames)) {
+        *_Last_updated = 0;
+        return(dt); // all items of rows either 0 or NA. !length(newcolnames) for #759
+      }
       if (verbose) Rprintf("Added %d new column%s initialized with all-NA\n",
                            length(newcolnames), (length(newcolnames)>1)?"s":"");
     }
   }
   if (!length(cols)) {
     warning("length(LHS)==0; no columns to delete or assign RHS to.");   // test 1295 covers
+    *_Last_updated = 0;
     return(dt);
   }
   // FR #2077 - set able to add new cols by reference
@@ -631,6 +630,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     }
     memrecycle(targetcol, rows, 0, targetlen, RHS);  // also called from dogroups where these arguments are used more
   }
+  *_Last_updated = numToDo;  // the updates have taken place with no error, so update .Last.updated now
   PROTECT(assignedNames = allocVector(STRSXP, LENGTH(cols)));
   protecti++;
   for (i=0;i<LENGTH(cols);i++) SET_STRING_ELT(assignedNames,i,STRING_ELT(names,INTEGER(cols)[i]-1));
