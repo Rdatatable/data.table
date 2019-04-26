@@ -13,19 +13,22 @@
 
 void frollmean(unsigned int algo, double *x, uint_fast64_t nx, double_ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
   if (nx < k) {                                                 // if window width bigger than input just return vector of fill values
-    if (verbose) Rprintf("%s: window width longer than input vector, returning all NA vector\n", __func__);
+    if (verbose) sprintf(ans->message[0], "%s%s: window width longer than input vector, returning all NA vector\n", ans->message[0], __func__);
     for (int i=0; i<nx; i++) ans->ans[i] = fill;
     return;
   }
+  double tic = 0;
+  if (verbose) tic = omp_get_wtime();
   if (algo==0) frollmeanFast(x, nx, ans, k, fill, narm, hasna, verbose);
   else if (algo==1) frollmeanExact(x, nx, ans, k, fill, narm, hasna, verbose);
   // align
   if (ans->status < 3 && align < 1) {                           // align center or left, only when no errors occurred
     int k_ = align==-1 ? k-1 : floor(k/2);                      // offset to shift
-    if (verbose) Rprintf("%s: align %d, shift answer by %d\n", __func__, align, -k_);
+    if (verbose) sprintf(ans->message[0], "%s%s: align %d, shift answer by %d\n", ans->message[0], __func__, align, -k_);
     memmove((char *)ans->ans, (char *)ans->ans + (k_*sizeof(double)), (nx-k_)*sizeof(double)); // apply shift to achieve expected align
     for (uint_fast64_t i=nx-k_; i<nx; i++) ans->ans[i] = fill;  // fill from right side
   }
+  if (verbose) sprintf(ans->message[0], "%s%s: processing algo %d took %.3fs\n", ans->message[0], __func__, algo, omp_get_wtime()-tic);
 }
 
 /* fast rolling mean - fast
@@ -35,7 +38,7 @@ void frollmean(unsigned int algo, double *x, uint_fast64_t nx, double_ans_t *ans
  */
 
 void frollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
-  if (verbose) Rprintf("%s: running for input length %llu, window %d, hasna %d, narm %d\n", __func__, nx, k, hasna, (int) narm);
+  if (verbose) sprintf(ans->message[0], "%s%s: running for input length %llu, window %d, hasna %d, narm %d\n", ans->message[0], __func__, (unsigned long long int)nx, k, hasna, (int) narm);
   long double w = 0.0;                                          // sliding window aggregate
   bool truehasna = hasna>0;                                     // flag to re-run with NA support if NAs detected
   if (!truehasna) {
@@ -57,7 +60,7 @@ void frollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double
           ans->status = 2;
           sprintf(ans->message[2], "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
         }
-        if (verbose) Rprintf("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+        if (verbose) sprintf(ans->message[0], "%s%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", ans->message[0], __func__);
         w = 0.0;
         truehasna = true;
       }
@@ -66,7 +69,7 @@ void frollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double
         ans->status = 2;
         sprintf(ans->message[2], "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
       }
-      if (verbose) Rprintf("%s: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs\n", __func__);
+      if (verbose) sprintf(ans->message[0], "%s%s: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs\n", ans->message[0], __func__);
       w = 0.0;
       truehasna = true;
     }
@@ -103,7 +106,8 @@ void frollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double
  */
 
 void frollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
-  if (verbose) Rprintf("%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n", __func__, nx, k, hasna, (int) narm);
+  if (verbose) sprintf(ans->message[0], "%s%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n", ans->message[0], __func__, (unsigned long long int)nx, k, hasna, (int) narm);
+
   for (int i=0; i<k-1; i++) {                                   // fill partial window only
     ans->ans[i] = fill;
   }
@@ -134,8 +138,8 @@ void frollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int k, doubl
         sprintf(ans->message[2], "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
       }
       if (verbose) {
-        if (narm) Rprintf("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
-        else Rprintf("%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n", __func__);
+        if (narm) sprintf(ans->message[0], "%s%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", ans->message[0], __func__);
+        else sprintf(ans->message[0], "%s%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n", ans->message[0], __func__);
       }
     }
   }
