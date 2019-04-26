@@ -1150,6 +1150,7 @@ replace_dot_alias <- function(e) {
               cat("No rows match i. No new columns to add so not evaluating RHS of :=\n")
               cat("Assigning to 0 row subset of",nrow(x),"rows\n")
             }
+            .Call(Cassign, x, irows, NULL, NULL, NULL, FALSE) # only purpose is to write 0 to .Last.updated
             .global$print = address(x)
             return(invisible(x))
           }
