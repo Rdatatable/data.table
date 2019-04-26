@@ -402,16 +402,9 @@ sudo R CMD javareconf
 # ENDIF
 
 revdepr  # see top of revdep.R for this alias to put in ~/.bash_aliases
-# If warning "/usr/lib/R/library is not writable"; e.g. Matrix updated ...
-  sudo R
-  update.packages("/usr/lib/R/library")
-
-# ** ensure latest version installed into revdeplib **
-inst()
-
-status()
-run()
-run("rerun.all")
+inst()   # *** ensure latest dev version of data.table installed into revdeplib ***
+run()    # prints menu of options
+status() # includes timestamp of installed data.table that is being tested.
 
 out = function(fnam="~/fail.log") {
   x = c(.fail.cran, .fail.bioc)
