@@ -1,6 +1,6 @@
 #include "data.table.h"
 
-SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds, SEXP verbose) {
+SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
 
   R_len_t nx = length(x), nl = length(lower), nu = length(upper);
   double tic=0.0;
@@ -14,8 +14,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds, SEXP verbose) {
   }
   if (!isLogical(bounds) || LOGICAL(bounds)[0] == NA_LOGICAL)
     error("incbounds must be logical TRUE/FALSE.");
-  if (!isLogical(verbose) || LOGICAL(verbose)[0] == NA_LOGICAL)
-    error("verbose must be logical TRUE/FALSE.");
+  const bool verbose = GetVerbose();
 
   int nprotect = 0;
   bool integer=true;
@@ -44,19 +43,19 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds, SEXP verbose) {
     if (!recycleX && recycleLow && recycleUpp) {
       const int l = lp[0] + open;  // +open so we can always use >= and <=.  NA_INTEGER+1 == -INT_MAX == INT_MIN+1 (so NA limit handled by this too)
       const int u = up[0]==NA_INTEGER ? INT_MAX : up[0] - open;
-      if (LOGICAL(verbose)[0]) tic = omp_get_wtime();
+      if (verbose) tic = omp_get_wtime();
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<longest; i++) {
         int elem = xp[i];
         ansp[i] = elem==NA_INTEGER ? NA_LOGICAL : (l<=elem && elem<=u);
       }
-      if (LOGICAL(verbose)[0]) Rprintf("between parallel processing of integer with recycling took %8.3fs\n", omp_get_wtime()-tic);
+      if (verbose) Rprintf("between parallel processing of integer with recycling took %8.3fs\n", omp_get_wtime()-tic);
     }
     else {
       const int xMask = recycleX ? 0 : INT_MAX;
       const int lowMask = recycleLow ? 0 : INT_MAX;
       const int uppMask = recycleUpp ? 0 : INT_MAX;
-      if (LOGICAL(verbose)[0]) tic = omp_get_wtime();
+      if (verbose) tic = omp_get_wtime();
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<longest; i++) {
         int elem = xp[i & xMask];
@@ -65,7 +64,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds, SEXP verbose) {
         u = (u==NA_INTEGER) ? INT_MAX : u-open;
         ansp[i] = elem==NA_INTEGER ? NA_LOGICAL : (l<=elem && elem<=u);
       }
-      if (LOGICAL(verbose)[0]) Rprintf("between parallel processing of integer took %8.3fs\n", omp_get_wtime()-tic);
+      if (verbose) Rprintf("between parallel processing of integer took %8.3fs\n", omp_get_wtime()-tic);
     }
   } else {
     // type real
@@ -76,28 +75,28 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds, SEXP verbose) {
       const double l = isnan(lp[0]) ? -INFINITY : lp[0];
       const double u = isnan(up[0]) ?  INFINITY : up[0];
       if (open) {
-        if (LOGICAL(verbose)[0]) tic = omp_get_wtime();
+        if (verbose) tic = omp_get_wtime();
         #pragma omp parallel for num_threads(getDTthreads())
         for (int i=0; i<longest; i++) {
           double elem = xp[i];
           ansp[i] = isnan(elem) ? NA_LOGICAL : (l<elem && elem<u);
         }
-        if (LOGICAL(verbose)[0]) Rprintf("between parallel processing of double using open bounds with recycling took %8.3fs\n", omp_get_wtime()-tic);
+        if (verbose) Rprintf("between parallel processing of double using open bounds with recycling took %8.3fs\n", omp_get_wtime()-tic);
       } else {
-        if (LOGICAL(verbose)[0]) tic = omp_get_wtime();
+        if (verbose) tic = omp_get_wtime();
         #pragma omp parallel for num_threads(getDTthreads())
         for (int i=0; i<longest; i++) {
           double elem = xp[i];
           ansp[i] = isnan(elem) ? NA_LOGICAL : (l<=elem && elem<=u);
         }
-        if (LOGICAL(verbose)[0]) Rprintf("between parallel processing of double using closed bounds with recycling took %8.3fs\n", omp_get_wtime()-tic);
+        if (verbose) Rprintf("between parallel processing of double using closed bounds with recycling took %8.3fs\n", omp_get_wtime()-tic);
       }
     }
     else {
       const int xMask = recycleX ? 0 : INT_MAX;
       const int lowMask = recycleLow ? 0 : INT_MAX;
       const int uppMask = recycleUpp ? 0 : INT_MAX;
-      if (LOGICAL(verbose)[0]) tic = omp_get_wtime();
+      if (verbose) tic = omp_get_wtime();
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<longest; i++) {
         double elem = xp[i & xMask];
@@ -107,7 +106,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds, SEXP verbose) {
         if (isnan(u)) u= INFINITY;
         ansp[i] = isnan(elem) ? NA_LOGICAL : (open ? l<elem && elem<u : l<=elem && elem<=u);
       }
-      if (LOGICAL(verbose)[0]) Rprintf("between parallel processing of double took %8.3fs\n", omp_get_wtime()-tic);
+      if (verbose) Rprintf("between parallel processing of double took %8.3fs\n", omp_get_wtime()-tic);
     }
   }
   UNPROTECT(nprotect);

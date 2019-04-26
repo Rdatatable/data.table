@@ -15,7 +15,7 @@ Intended for use in \code{i} in \code{[.data.table}.
 the intervals provided in \code{lower,upper}.
 }
 \usage{
-between(x, lower, upper, incbounds=TRUE, verbose=getOption("datatable.verbose"))
+between(x, lower, upper, incbounds=TRUE)
 x \%between\% y
 
 inrange(x, lower, upper, incbounds=TRUE)
@@ -32,7 +32,6 @@ interpreted as \code{lower} and \code{y[[2]]} as \code{upper}.}
 \item{incbounds}{ \code{TRUE} means inclusive bounds, i.e., [lower,upper].
 \code{FALSE} means exclusive bounds, i.e., (lower,upper).
 It is set to \code{TRUE} by default for infix notations.}
-\item{verbose}{ \code{TRUE} turns on status and information messages to the console.}
 }
 \details{
 

@@ -14132,32 +14132,32 @@ test(2030.18, .Last.updated, 0L) # zero match
 # `between` invalid args, and verbose #3516
 test(2031.01, between(1:5, 2, 4, incbounds=423), error="incbounds must be logical")
 test(2031.02, between(1:5, 2, 4, incbounds=NA), error="incbounds must be logical")
-test(2031.03, between(1:5, 2, 4, verbose=423), error="verbose must be logical")
-test(2031.04, between(1:5, 2, 4, verbose=NA), error="verbose must be logical")
-test(2031.05, between(1:5, 2L, 4L, verbose=TRUE), output="between parallel processing of integer with recycling took")
-test(2031.06, between(1:5, rep(2L,5L), rep(4L, 5L), verbose=TRUE), output="between parallel processing of integer took")
-test(2031.07, between(as.double(1:5), 2, 4, incbounds=FALSE, verbose=TRUE), output="between parallel processing of double using open bounds with recycling took")
-test(2031.08, between(as.double(1:5), 2, 4, verbose=TRUE), output="between parallel processing of double using closed bounds with recycling took")
-test(2031.09, between(as.double(1:5), rep(2, 5L), rep(4, 5L), verbose=TRUE), output="between parallel processing of double took")
-test(2031.10, between(c("foo","bar","paz"), "bag", "fog", verbose=TRUE), output="optimised between not available for this data type, fallback to slow R routine")
+old = options(datatable.verbose=TRUE)
+test(2031.05, between(1:5, 2L, 4L), output="between parallel processing of integer with recycling took")
+test(2031.06, between(1:5, rep(2L,5L), rep(4L, 5L)), output="between parallel processing of integer took")
+test(2031.07, between(as.double(1:5), 2, 4, incbounds=FALSE), output="between parallel processing of double using open bounds with recycling took")
+test(2031.08, between(as.double(1:5), 2, 4), output="between parallel processing of double using closed bounds with recycling took")
+test(2031.09, between(as.double(1:5), rep(2, 5L), rep(4, 5L)), output="between parallel processing of double took")
+test(2031.10, between(c("foo","bar","paz"), "bag", "fog"), output="optimised between not available for this data type, fallback to slow R routine")
 # `between` handle POSIXct type
 x = as.POSIXct("2016-09-18 07:00:00") + 0:10*60*15
 dn = as.POSIXct('2016-09-18 08:00:00')
 up = as.POSIXct('2016-09-18 09:00:00')
-test(2031.11, between(x, dn, up, verbose=TRUE), output="between parallel processing of double using closed bounds with recycling took")
-test(2031.12, between(x, dn, up, incbounds=FALSE, verbose=TRUE), output="between parallel processing of double using open bounds with recycling took")
+test(2031.11, between(x, dn, up), output="between parallel processing of double using closed bounds with recycling took")
+test(2031.12, between(x, dn, up, incbounds=FALSE), output="between parallel processing of double using open bounds with recycling took")
 ## also handling of string lower/upper bounds _only when x has a time zone_
 dn = as.character(dn)
 up = as.character(up)
-test(2031.13, between(x, dn, up, verbose = TRUE), output = 'optimised between not available')
+test(2031.13, between(x, dn, up), output = 'optimised between not available')
 attr(x, 'tzone') = 'UTC'
-test(2031.14, between(x, dn, up, verbose = TRUE), output = 'between parallel processing of double')
+test(2031.14, between(x, dn, up), output = 'between parallel processing of double')
 ### additional flexibility -- cast when one bound is already POSIXct
 up = as.POSIXct(up)
-test(2031.15, between(x, dn, up, verbose = TRUE), output = 'between parallel processing of double')
+test(2031.15, between(x, dn, up), output = 'between parallel processing of double')
 # `between` support `.` in RHS #2315
 X = data.table(a = 1:5, b = 6:10, c = c(5:1))
 test(2031.16, X[c %between% list(a, b)], X[c %between% .(a, b)])
+options(old)
 
 
 ###################################

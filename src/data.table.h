@@ -75,9 +75,11 @@ SEXP sym_index;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
+SEXP sym_verbose;
 bool INHERITS(SEXP x, SEXP char_);
 long long DtoLL(double x);
 double LLtoD(long long x);
+bool GetVerbose();
 double NA_INT64_D;
 long long NA_INT64_LL;
 
@@ -177,4 +179,4 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose);
 
 // between.c
-SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds, SEXP verbose);
+SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);

@@ -1,5 +1,5 @@
 # is x[i] in between lower[i] and upper[i] ?
-between <- function(x,lower,upper,incbounds=TRUE,verbose=getOption("datatable.verbose")) {
+between <- function(x,lower,upper,incbounds=TRUE) {
   if (is.logical(x)) stop("between has been x of type logical")
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
@@ -26,9 +26,9 @@ between <- function(x,lower,upper,incbounds=TRUE,verbose=getOption("datatable.ve
     # faster parallelised version for int/double.
     # Cbetween supports length(lower)==1 (recycled) and (from v1.12.0) length(lower)==length(x).
     # length(upper) can be 1 or length(x) independently of lower
-    .Call(Cbetween, x, lower, upper, incbounds, verbose)
+    .Call(Cbetween, x, lower, upper, incbounds)
   } else {
-    if (isTRUE(verbose)) cat("optimised between not available for this data type, fallback to slow R routine\n")
+    if (isTRUE(getOption("datatable.verbose"))) cat("optimised between not available for this data type, fallback to slow R routine\n")
     # now just for character input. TODO: support character between in Cbetween and remove this branch
     if (incbounds) x>=lower & x<=upper
     else x>lower & x<upper
@@ -60,7 +60,7 @@ inrange <- function(x,lower,upper,incbounds=TRUE) {
   query = setDT(list(x=x))
   subject = setDT(list(l=lower, u=upper))
   ops = if (incbounds) c(4L, 2L) else c(5L, 3L) # >=,<= and >,<
-  verbose = getOption("datatable.verbose")
+  verbose = isTRUE(getOption("datatable.verbose"))
   if (verbose) {last.started.at=proc.time();cat("forderv(query) took ... ");flush.console()}
   xo = forderv(query)
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
