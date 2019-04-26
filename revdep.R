@@ -18,6 +18,8 @@ options(repos = c("CRAN"=c("http://cloud.r-project.org")))
 # and BiocManager::install()) will call this script again recursively.
 Sys.unsetenv("R_PROFILE_USER")
 
+system("sudo R -e \"utils::update.packages('/usr/lib/R/library', ask=FALSE)\"")
+
 require(utils)  # only base is loaded when R_PROFILE_USER runs
 update.packages(ask=FALSE)
 # if package not found on mirror, try manually a different one:
@@ -85,7 +87,10 @@ length(deps)
 
 status = function(which="both") {
   if (which=="both") {
-    cat("Installed data.table to be tested against:",as.character(packageVersion("data.table")),"\n")
+    cat("Installed data.table to be tested against:",
+         as.character(packageVersion("data.table")),
+         format(as.POSIXct(packageDescription("data.table")$Packaged, tz="UTC"), tz=""),  # local time
+         "\n")
     cat("CRAN:\n"); status("cran")
     cat("BIOC:\n"); status("bioc")
     cat("TOTAL          :", length(deps), "\n\n")
