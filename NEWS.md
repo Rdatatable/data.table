@@ -46,7 +46,9 @@
 
 6. New functions `nafill` and `setnafill`, [#854](https://github.com/Rdatatable/data.table/issues/854). Thanks to Matthieu Gomez for the request and Jan Gorecki for implementing.
 
-7. `between()` and `%between%` are faster for `POSIXct`, [#3519](https://github.com/Rdatatable/data.table/issues/3519), and now support `.()` alias, [#2315](https://github.com/Rdatatable/data.table/issues/2315). Thanks to @Henrik-P for the reports.
+7. New variable `.Last.updated` (similar to R's `.Last.value`) contains the number of rows affected by the most recent `:=` or `set()`, [#1885](https://github.com/Rdatatable/data.table/issues/1885).
+
+8. `between()` and `%between%` are faster for `POSIXct`, [#3519](https://github.com/Rdatatable/data.table/issues/3519), and now support the `.()` alias, [#2315](https://github.com/Rdatatable/data.table/issues/2315). Thanks to @Henrik-P for the reports.
 
 #### BUG FIXES
 

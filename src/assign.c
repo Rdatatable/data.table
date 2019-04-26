@@ -270,6 +270,8 @@ SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
   return ScalarInteger(_selfrefok(x,FALSE,LOGICAL(verbose)[0]));
 }
 
+int *_Last_updated = NULL;
+
 SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP verb)
 {
   // For internal use only by := in [.data.table, and set()
@@ -342,13 +344,17 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     if (verbose) Rprintf("Assigning to %d row subset of %d rows\n", numToDo, nrow);
     // TODO: include in message if any rows are assigned several times (e.g. by=.EACHI with dups in i)
     if (numToDo==0) {
-      if (!length(newcolnames)) return(dt); // all items of rows either 0 or NA. !length(newcolnames) for #759
+      if (!length(newcolnames)) {
+        *_Last_updated = 0;
+        return(dt); // all items of rows either 0 or NA. !length(newcolnames) for #759
+      }
       if (verbose) Rprintf("Added %d new column%s initialized with all-NA\n",
                            length(newcolnames), (length(newcolnames)>1)?"s":"");
     }
   }
   if (!length(cols)) {
     warning("length(LHS)==0; no columns to delete or assign RHS to.");   // test 1295 covers
+    *_Last_updated = 0;
     return(dt);
   }
   // FR #2077 - set able to add new cols by reference
@@ -624,6 +630,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     }
     memrecycle(targetcol, rows, 0, targetlen, RHS);  // also called from dogroups where these arguments are used more
   }
+  *_Last_updated = numToDo;  // the updates have taken place with no error, so update .Last.updated now
   PROTECT(assignedNames = allocVector(STRSXP, LENGTH(cols)));
   protecti++;
   for (i=0;i<LENGTH(cols);i++) SET_STRING_ELT(assignedNames,i,STRING_ELT(names,INTEGER(cols)[i]-1));
