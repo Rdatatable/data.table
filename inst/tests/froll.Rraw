@@ -126,7 +126,7 @@ anserr = list(
 errs = sapply(lapply(anserr, abs), sum, na.rm=TRUE)
 if (!(.Platform$OS.type=="windows" && getDTthreads()>1L)) { # windows 2+ threads rounding issue: #3346
   if (.Machine$sizeof.longdouble == 16L) test(9999.024, errs[["froll_exact"]]==0) # only where long double available, otherwise we get noLD CRAN note
-  test(9999.025, errs[["froll_fast"]]>errs[["froll_exact"]])
+  if (Sys.info()["machine"] == "x86_64") test(9999.025, errs[["froll_fast"]]>errs[["froll_exact"]]) # floating point arithmetic issue on various machines #3491
 }
 test(9999.026, errs[["fastma"]]>errs[["froll_exact"]])
 test(9999.027, errs[["fastma"]]>errs[["froll_fast"]])

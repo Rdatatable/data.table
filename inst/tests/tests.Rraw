@@ -14073,10 +14073,12 @@ test(2027.2, DT[, list(1,2,)],      error = 'Item 3 of the .() or list() passed 
 test(2027.3, DT[, .(1,,3,), by=a],  error = 'Item 2 of the .() or list() passed to j is missing')
 
 # fread quote="" when last line too short and filled with fill=TRUE (provided via email), crash in v1.12.2 and before
-test(2028.1, fread(testDir("noquote.csv.gz"), fill=TRUE, quote="")[c(1,.N), c(1,2,9,10)],
+if (test_R.utils) {
+  test(2028.1, fread(testDir("noquote.csv.gz"), fill=TRUE, quote="")[c(1,.N), c(1,2,9,10)],
              data.table(H=c("D","T"), "Locate Reply"=c("BCS","Locate Reply"), V9=c("A",""), V10=c("4/23/2019 7:11:11 AM","")))
-test(2028.2, fread(testDir("noquote.csv.gz"), fill=TRUE, quote="", header=FALSE)[c(1,.N), c(1,2,3,8,9,10)],
+  test(2028.2, fread(testDir("noquote.csv.gz"), fill=TRUE, quote="", header=FALSE)[c(1,.N), c(1,2,3,8,9,10)],
              data.table(V1=c("H","T"), V2="Locate Reply", V3=c("GORLTR","2093"), V8=INT(NA,NA), V9="", V10=""))
+}
 txt = "A,B,C\n1,4,7\n2,5,8\n3,6\n"
 test(2029.1, fread(txt), data.table(A=1:2, B=4:5, C=7:8), warning="Discarded single-line footer: <<3,6>>")
 test(2029.2, fread(txt, quote=""), data.table(A=1:2, B=4:5, C=7:8), warning="Discarded single-line footer: <<3,6>>")
