@@ -20,7 +20,7 @@ void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, double_an
   if (verbose) tic = omp_get_wtime();
   if (algo==0) fadaptiverollmeanFast(x, nx, ans, k, fill, narm, hasna, verbose);
   else if (algo==1) fadaptiverollmeanExact(x, nx, ans, k, fill, narm, hasna, verbose);
-  if (verbose) snprintf(end(ans->message[0]), 500, "%s: processing algo %d took %.3fs\n", __func__, algo, omp_get_wtime()-tic);
+  if (verbose) snprintf(end(ans->message[0]), 500, "%s: processing algo %u took %.3fs\n", __func__, algo, omp_get_wtime()-tic);
 }
 
 /* fast adaptive rolling mean - fast

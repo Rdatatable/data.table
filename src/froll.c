@@ -32,7 +32,7 @@ void frollmean(unsigned int algo, double *x, uint_fast64_t nx, double_ans_t *ans
     memmove((char *)ans->ans, (char *)ans->ans + (k_*sizeof(double)), (nx-k_)*sizeof(double)); // apply shift to achieve expected align
     for (uint_fast64_t i=nx-k_; i<nx; i++) ans->ans[i] = fill;  // fill from right side
   }
-  if (verbose) snprintf(end(ans->message[0]), 500, "%s: processing algo %d took %.3fs\n", __func__, algo, omp_get_wtime()-tic);
+  if (verbose) snprintf(end(ans->message[0]), 500, "%s: processing algo %u took %.3fs\n", __func__, algo, omp_get_wtime()-tic);
 }
 
 /* fast rolling mean - fast
