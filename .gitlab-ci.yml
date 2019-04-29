@@ -1,6 +1,7 @@
 variables:
   CRAN_MIRROR: "https://cloud.r-project.org"
-  _R_CHECK_FORCE_SUGGESTS_: "FALSE"
+  _R_CHECK_FORCE_SUGGESTS_: "false"
+  _R_CHECK_NO_STOP_ON_TEST_ERROR_: "true"
 
 stages:
   - dependencies
@@ -71,12 +72,12 @@ build: # build data.table sources as tar.gz archive
   - build
   <<: *artifacts
 
-.test-linux-template: &test-linux
+.test-lin-template: &test-lin
   <<: *test
   tags:
     - linux
 
-.test-windows-template: &test-windows
+.test-win-template: &test-win
   <<: *test
   tags:
     - windows
@@ -85,13 +86,13 @@ build: # build data.table sources as tar.gz archive
     - rm -rf /tmp/$R_DIR/library && mkdir -p /tmp/$R_DIR/library
     - export R_LIBS_USER="/tmp/$R_DIR/library"
 
-.test-macosx-template: &test-macosx
+.test-osx-template: &test-osx
   <<: *test
   tags:
     - macosx
 
-test-r-release: #  most comprehensive tests, force all suggests, also integration tests
-  <<: *test-linux
+test-rel-lin: #  most comprehensive tests, force all suggests, also integration tests, using gcc -O3
+  <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   variables: # unlike CRAN
     _R_CHECK_CRAN_INCOMING_: "FALSE"
@@ -99,6 +100,10 @@ test-r-release: #  most comprehensive tests, force all suggests, also integratio
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     OPENBLAS_MAIN_FREE: "1"
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
+  before_script:
+    - mkdir -p ~/.R
+    - echo 'CFLAGS=-g -O3 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O3 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies(c("DESCRIPTION","inst/tests/tests-DESCRIPTION"), which="all"))'
     - *copy-src
@@ -108,11 +113,15 @@ test-r-release: #  most comprehensive tests, force all suggests, also integratio
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-r-release-vanilla: # minimal installation, no suggested deps, no vignettes or manuals, measure memory
-  <<: *test-linux
+test-rel-vanilla-lin: # minimal installation, no suggested deps, no vignettes or manuals, measure memory, using gcc -O0 -fno-openmp
+  <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
   variables:
     TEST_DATA_TABLE_MEMTEST: "TRUE"
+  before_script:
+    - mkdir -p ~/.R
+    - echo 'CFLAGS=-g -O0 -fno-openmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
     - *copy-src
     - rm -r bus
@@ -121,12 +130,12 @@ test-r-release-vanilla: # minimal installation, no suggested deps, no vignettes 
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-r-release-cran: # as CRAN
-  <<: *test-linux
+test-rel-cran-lin: # currently released R on Linux
+  <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   variables:
-    _R_CHECK_CRAN_INCOMING_: "TRUE"
-    _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_: "TRUE"           # stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   # Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
     - *copy-src
@@ -135,14 +144,16 @@ test-r-release-cran: # as CRAN
     - cd bus/$CI_BUILD_NAME
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
+    - >-
+        Rscript -e 'l<-readLines("data.table.Rcheck/00check.log"); if (!identical(l[length(l)], "Status: OK")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: OK"), " but ", shQuote(toString(l[length(l)]))) else q("no")'
 
-test-r-devel-cran: # R-devel as CRAN
-  <<: *test-linux
+test-dev-cran-lin: # R-devel on Linux
+  <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel
-  allow_failure: true
+  allow_failure: false
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
-    _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
     - *copy-src
@@ -152,12 +163,12 @@ test-r-devel-cran: # R-devel as CRAN
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-r-3.1.0-cran: # test stated dependency on R 3.1.0 as CRAN
-  <<: *test-linux
+test-310-cran-lin: # test stated R dependency (3.1.0) using Linux
+  <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-3.1.0
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
-    _R_CHECK_CRAN_INCOMING_REMOTE_: "TRUE"
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
     - *copy-src
@@ -167,11 +178,11 @@ test-r-3.1.0-cran: # test stated dependency on R 3.1.0 as CRAN
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *cleanup-src
 
-test-r-release-windows: # windows test and build binaries
-  <<: *test-windows
+test-rel-win: # windows test and build binaries
+  <<: *test-win
   variables:
     R_BIN_VERSION: "3.5"
-    R_DIR: "R-3.5.0"
+    R_DIR: "R-3.5.1"
   script:
     - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'))"
     - *copy-src
@@ -184,13 +195,13 @@ test-r-release-windows: # windows test and build binaries
     - mv $(ls -1t data.table_*.zip | head -n 1) cran/bin/windows/contrib/$R_BIN_VERSION
     - *cleanup-src
 
-test-r-devel-windows: # R-devel on windows
-  <<: *test-windows
+test-dev-win: # R-devel on windows
+  <<: *test-win
   variables:
     R_BIN_VERSION: "3.6"
     R_DIR: "R-devel"
-    TEST_DATA_TABLE_MEMTEST: "TRUE"
-  allow_failure: true
+    TEST_DATA_TABLE_MEMTEST: "FALSE" # disabled as described in #3147
+  allow_failure: false
   script:
     - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'))"
     - *copy-src
@@ -203,8 +214,8 @@ test-r-devel-windows: # R-devel on windows
     - mv $(ls -1t data.table_*.zip | head -n 1) cran/bin/windows/contrib/$R_BIN_VERSION
     - *cleanup-src
 
-.test-r-release-macosx: # macosx test and build binaries
-  <<: *test-macosx
+.test-rel-osx: # macosx test and build binaries
+  <<: *test-osx
   variables:
     R_BIN_VERSION: "3.5"
   script:
@@ -229,14 +240,14 @@ integration: # merging all artifacts to produce single R repository and summarie
   dependencies:
   - mirror-packages
   - build
-  - test-r-release
-  - test-r-release-cran
-  - test-r-devel-cran
-  - test-r-release-vanilla
-  - test-r-3.1.0-cran
-  - test-r-release-windows
-  - test-r-devel-windows
-  #- test-r-release-macosx
+  - test-rel-lin
+  - test-rel-cran-lin
+  - test-dev-cran-lin
+  - test-rel-vanilla-lin
+  - test-310-cran-lin
+  - test-rel-win
+  - test-dev-win
+  #- test-rel-osx
   variables:
     R_BIN_VERSION: "3.5"
     R_DEVEL_BIN_VERSION: "3.6"
@@ -259,12 +270,12 @@ integration: # merging all artifacts to produce single R repository and summarie
     - mv $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="source"), type="source", fields="Revision", addFiles=TRUE)'
     # publish binaries
-    - Rscript -e 'move.bin("test-r-release-windows", Sys.getenv("R_BIN_VERSION"), os.type="windows")'
-    - Rscript -e 'move.bin("test-r-devel-windows", Sys.getenv("R_DEVEL_BIN_VERSION"), os.type="windows", silent=TRUE)'
+    - Rscript -e 'move.bin("test-rel-win", Sys.getenv("R_BIN_VERSION"), os.type="windows")'
+    - Rscript -e 'move.bin("test-dev-win", Sys.getenv("R_DEVEL_BIN_VERSION"), os.type="windows", silent=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_BIN_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_DEVEL_BIN_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
-    #- Rscript -e 'move.bin("test-r-release-macosx", Sys.getenv("R_BIN_VERSION"), os.type="macosx")'
-    #- Rscript -e 'move.bin("test-r-devel-macosx", Sys.getenv("R_DEVEL_BIN_VERSION"), os.type="macosx", silent=TRUE)'
+    #- Rscript -e 'move.bin("test-rel-osx", Sys.getenv("R_BIN_VERSION"), os.type="macosx")'
+    #- Rscript -e 'move.bin("test-dev-osx", Sys.getenv("R_DEVEL_BIN_VERSION"), os.type="macosx", silent=TRUE)'
     #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_BIN_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
     #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_DEVEL_BIN_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
     # install all pkgs to render html and double check successful installation of all devel packages
@@ -285,7 +296,7 @@ integration: # merging all artifacts to produce single R repository and summarie
     # web/checks/$pkg/$job: 00install.out, 00check.log, *.Rout, memtest.csv, memtest.png
     - Rscript -e 'sapply(names(test.jobs), check.copy, simplify=FALSE)'
     # web/packages/$pkg/$pkg.pdf
-    - Rscript -e 'pdf.copy("data.table", "test-r-release")'
+    - Rscript -e 'pdf.copy("data.table", "test-rel-lin")'
     # web/checks/check_results_$pkg.html
     - Rscript -e 'check.index("data.table", names(test.jobs))'
     # cleanup artifacts from other jobs

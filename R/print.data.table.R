@@ -6,7 +6,9 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
                row.names=getOption("datatable.print.rownames"),
                col.names=getOption("datatable.print.colnames"),
                print.keys=getOption("datatable.print.keys"),
-               quote=FALSE, ...) {    # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
+               quote=FALSE,
+               timezone=FALSE, ...) {    
+  # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
   # nrows - under this the whole (small) table is printed, unless topn is provided (100)
   # class - should column class be printed underneath column name? (FALSE)
   if (!col.names %chin% c("auto", "top", "none"))
@@ -42,15 +44,19 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     cat("Ind", if (length(ixs) > 1L) "ices" else "ex", ": <",
       paste(ixs, collapse=">, <"), ">\n", sep="")
   }
-  if (nrow(x) == 0L) {
-    if (length(x)==0L)
-       cat("Null data.table (0 rows and 0 cols)\n")  # See FAQ 2.5 and NEWS item in v1.8.9
-    else
-       cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1L)"s",": ",paste(head(names(x),6L),collapse=","),if(ncol(x)>6L)"...","\n",sep="")
+  if (any(dim(x)==0L)) {
+    class = if (is.data.table(x)) "table" else "frame"  # a data.frame could be passed to print.data.table() directly, #3363
+    if (all(dim(x)==0L)) {
+      cat("Null data.",class," (0 rows and 0 cols)\n", sep="")  # See FAQ 2.5 and NEWS item in v1.8.9
+    } else {
+      cat("Empty data.",class," (", dim(x)[1L], " rows and ",length(x)," cols)", sep="")
+      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="")
+      cat("\n")
+    }
     return(invisible(x))
   }
   if ((topn*2+1)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
-    toprint = rbind(head(x, topn), tail(x, topn))
+    toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
     printdots = TRUE
   } else {
@@ -58,7 +64,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     rn = seq_len(nrow(x))
     printdots = FALSE
   }
-  toprint=format.data.table(toprint, na.encode=FALSE, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
+  toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
   if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(x,inherits,"integer64"))) require_bit64()
   # When we depend on R 3.2.0 (Apr 2015) we can use isNamespaceLoaded() added then, instead of %chin% above
@@ -105,7 +111,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
   invisible(x)
 }
 
-format.data.table <- function (x, ..., justify="none") {
+format.data.table <- function (x, ..., justify="none", timezone = FALSE) {
   if (is.atomic(x) && !is.null(x)) {
     stop("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
@@ -116,6 +122,16 @@ format.data.table <- function (x, ..., justify="none") {
       paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 - format has to be added here...
     else
       paste0("<", class(x)[1L], ">")
+  }
+  # FR #2842 add timezone for posix timestamps
+  format.timezone <- function(col) { # paste timezone to a time object
+    tz = attr(col,'tzone', exact = TRUE)
+    if (!is.null(tz)) { # date object with tz
+      nas = is.na(col)
+      col = paste0(as.character(col)," ",tz) # parse to character
+      col[nas] = NA_character_
+    }
+    return(col)
   }
   # FR #1091 for pretty printing of character
   # TODO: maybe instead of doing "this is...", we could do "this ... test"?
@@ -128,6 +144,7 @@ format.data.table <- function (x, ..., justify="none") {
   }
   do.call("cbind",lapply(x,function(col,...){
     if (!is.null(dim(col))) stop("Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
+    if(timezone) col = format.timezone(col)
     if (is.list(col)) col = vapply_1c(col, format.item)
     else col = format(char.trunc(col), justify=justify, ...) # added an else here to fix #5435
     col

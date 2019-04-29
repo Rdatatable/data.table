@@ -25,7 +25,7 @@ Secondary separator for list() columns, such as columns 11 and 12 in BED (no nee
 #define NUT  NUMTYPE+2  // +1 for "numeric" alias for "double"; +1 for CLASS fallback using as.class() at R level afterwards
 
 static int  typeSxp[NUT] =     {NILSXP,  LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        STRSXP,      REALSXP,    STRSXP   };
-static char typeRName[NUT][10]={"drop",  "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "character", "numeric",  "CLASS"  };
+static char typeRName[NUT][10]={"NULL",  "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "character", "numeric",  "CLASS"  };
 static int  typeEnum[NUT] =    {CT_DROP, CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_STRING,   CT_FLOAT64, CT_STRING};
 static colType readInt64As=CT_INT64;
 static SEXP selectSxp;
@@ -67,7 +67,8 @@ SEXP freadR(
   SEXP dropArg,
   SEXP colClassesArg,
   SEXP integer64Arg,
-  SEXP encodingArg
+  SEXP encodingArg,
+  SEXP keepLeadingZerosArgs
 ) {
   verbose = LOGICAL(verboseArg)[0];
   warningsAreErrors = LOGICAL(warnings2errorsArg)[0];
@@ -146,6 +147,7 @@ SEXP freadR(
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
   args.verbose = verbose;
   args.warningsAreErrors = warningsAreErrors;
+  args.keepLeadingZeros = LOGICAL(keepLeadingZerosArgs)[0];
 
   // === extras used for callbacks ===
   if (!isString(integer64Arg) || LENGTH(integer64Arg)!=1) error("'integer64' must be a single character string");
@@ -206,10 +208,10 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT));
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
     if (isString(colClassesSxp)) {
-      SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT, FALSE));
+      SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT));
       if (LENGTH(colClassesSxp)==1) {
         signed char newType = typeEnum[INTEGER(typeEnum_idx)[0]-1];
-        if (newType == CT_DROP) STOP("colClasses='drop' is not permitted; i.e. to drop all columns and load nothing");
+        if (newType == CT_DROP) STOP("colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing");
         for (int i=0; i<ncol; i++) type[i]=newType;   // freadMain checks bump up only not down
       } else if (LENGTH(colClassesSxp)==ncol) {
         for (int i=0; i<ncol; i++) {
@@ -224,18 +226,22 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     } else {
       if (!isNewList(colClassesSxp)) STOP("CfreadR: colClasses is not type list");
       if (!length(getAttrib(colClassesSxp, R_NamesSymbol))) STOP("CfreadR: colClasses is type list but has no names");
-      SEXP typeEnum_idx = PROTECT(chmatch(PROTECT(getAttrib(colClassesSxp, R_NamesSymbol)), typeRName_sxp, NUT, FALSE));
+      SEXP typeEnum_idx = PROTECT(chmatch(PROTECT(getAttrib(colClassesSxp, R_NamesSymbol)), typeRName_sxp, NUT));
       for (int i=0; i<LENGTH(colClassesSxp); i++) {
         SEXP items;
         signed char thisType = typeEnum[INTEGER(typeEnum_idx)[i]-1];
         items = VECTOR_ELT(colClassesSxp,i);
         if (thisType == CT_DROP) {
-          if (!isNull(dropSxp) || !isNull(selectSxp)) STOP("Can't use NULL in colClasses when select or drop is used as well.");
-          dropSxp = items;
+          if (!isNull(dropSxp) || !isNull(selectSxp)) {
+            if (dropSxp!=items) DTWARN("Ignoring the NULL item in colClasses= because select= or drop= has been used.");
+            // package damr has a nice workaround for when NULL didn't work before v1.12.0: it sets drop=col_class$`NULL`. So allow that unambiguous case with no warning.
+          } else {
+            dropSxp = items;
+          }
           continue;
         }
         SEXP itemsInt;
-        if (isString(items)) itemsInt = PROTECT(chmatch(items, colNamesSxp, NA_INTEGER, FALSE));
+        if (isString(items)) itemsInt = PROTECT(chmatch(items, colNamesSxp, NA_INTEGER));
         else                 itemsInt = PROTECT(coerceVector(items, INTSXP));
         // UNPROTECTed directly just after this for loop. No protecti++ here is correct.
         for (int j=0; j<LENGTH(items); j++) {
@@ -254,7 +260,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         UNPROTECT(1); // UNPROTECTing itemsInt inside loop to save protection stack
       }
       for (int i=0; i<ncol; i++) if (type[i]<0) type[i] *= -1;  // undo sign; was used to detect duplicates
-      UNPROTECT(2);  // typeEnum_idx (+1 for its protect of getAttrib)
+      UNPROTECT(2);  // typeEnum_idx (+1 for its protect of getAttrib which rcheck asked for iirc)
     }
     UNPROTECT(1);  // typeRName_sxp
   }
@@ -263,7 +269,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   }
   if (length(dropSxp)) {
     SEXP itemsInt;
-    if (isString(dropSxp)) itemsInt = PROTECT(chmatch(dropSxp, colNamesSxp, NA_INTEGER, FALSE));
+    if (isString(dropSxp)) itemsInt = PROTECT(chmatch(dropSxp, colNamesSxp, NA_INTEGER));
     else                   itemsInt = PROTECT(coerceVector(dropSxp, INTSXP));
     for (int j=0; j<LENGTH(itemsInt); j++) {
       int k = INTEGER(itemsInt)[j];
@@ -277,7 +283,10 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         if (k<1 || k>ncol) {
           DTWARN("Column number %d (drop[%d]) is out of range [1,ncol=%d]",k,j+1,ncol);
         } else {
-          if (type[k-1] == CT_DROP) STOP("Duplicates detected in drop");
+          // if (type[k-1] == CT_DROP) DTWARN("drop= contains duplicates");
+          // NULL in colClasses didn't work between 1.11.0 and 1.11.8 so people have been using drop= to re-specify the NULL columns in colClasses. Now that NULL in colClasses works
+          // from v1.12.0 there is no easy way to distinguish dups in drop= from drop overlapping with NULLs in colClasses. But it's unambiguous that it was intended to remove these
+          // columns, so no need for warning.
           type[k-1] = CT_DROP;
         }
       }
@@ -287,7 +296,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     SEXP tt;
     if (isString(selectSxp)) {
       // invalid cols check part of #1445 moved here (makes sense before reading the file)
-      tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER, FALSE));
+      tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER));
       for (int i=0; i<length(selectSxp); i++) if (INTEGER(tt)[i]==NA_INTEGER)
         DTWARN("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
     } else {
@@ -418,10 +427,24 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
           lenOff *source = buff8_lenoffs + off8;
           for (int i=0; i<nRows; i++) {
             int strLen = source->len;
-            if (strLen) {
+            if (strLen<=0) {
               // stringLen == INT_MIN => NA, otherwise not a NAstring was checked inside fread_mean
-              SET_STRING_ELT(dest, DTi+i, strLen<0 ? NA_STRING : mkCharLenCE(anchor + source->off, strLen, ienc));
-            } // else dest was already initialized with R_BlankString by allocVector()
+              if (strLen<0) SET_STRING_ELT(dest, DTi+i, NA_STRING); // else leave the "" in place that was initialized by allocVector()
+            } else {
+              const char *str = anchor + source->off;
+              int c=0;
+              while (c<strLen && str[c]) c++;
+              if (c<strLen) {
+                // embedded nul found; any at the beginning or the end of the field should have already been excluded but this will strip those too if present just in case
+                char *last = (char *)str+c;    // obtain write access to (const char *)anchor;
+                while (c<strLen) {
+                  if (str[c]) *last++=str[c];  // cow page write: saves allocation and management of a temp that would need to thread-safe in future.
+                  c++;                         //   This is only thread accessing this region. For non-mmap direct input nul are not possible (R would not have accepted nul earlier).
+                }
+                strLen = last-str;
+              }
+              SET_STRING_ELT(dest, DTi+i, mkCharLenCE(str, strLen, ienc));
+            }
             source += cnt8;
           }
           done++; // if just one string col near the start, don't loop over the other 10,000 cols. TODO? start on first too
@@ -449,6 +472,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
       if (thisSize == 4) {
         char *dest = (char *)DATAPTR(VECTOR_ELT(DT, resj)) + DTi*4;
         char *src4 = (char*)buff4 + off4;
+        // debug line for #3369 ... if (DTi>2638000) printf("freadR.c:460: thisSize==4, resj=%d, %zd, %d, %d, j=%d, done=%d\n", resj, DTi, off4, rowSize4, j, done);
         for (int i=0; i<nRows; i++) {
           memcpy(dest, src4, 4);
           src4 += rowSize4;
@@ -492,7 +516,7 @@ void progress(int p, int eta) {
   // https://cran.r-project.org/bin/windows/base/rw-FAQ.html#The-console-freezes-when-my-compiled-code-is-running
 
   // No use of \r to avoid bug in RStudio, linked in the same issue #2457
-
+  // # nocov start
   static int displayed = -1;  // -1 means not yet displayed, otherwise [0,50] '=' are displayed
   static char bar[] = "================================================== ";  // 50 marks for each 2%
   if (displayed==-1) {
@@ -519,6 +543,7 @@ void progress(int p, int eta) {
     }
     R_FlushConsole();
   }
+  // # nocov end
 }
 
 void __halt(bool warn, const char *format, ...) {
