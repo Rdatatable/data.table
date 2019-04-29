@@ -794,6 +794,13 @@ test(9999.185, frollmean(d, 3:4, algo="exact", verbose=TRUE), output=c(
 ## test warnings
 test(9999.186, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
 test(9999.187, frollmean(c(1:2,NA,4:10), 2, hasNA=FALSE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.188, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE, algo="exact"), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.189, frollmean(c(1:2,NA,4:10), 2, hasNA=FALSE, algo="exact"), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.190, frollmean(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, hasNA=FALSE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="*hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.191, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, hasNA=FALSE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="*hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.192, frollmean(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, hasNA=FALSE, algo="exact"), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="*hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.193, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, hasNA=FALSE, algo="exact"), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="*hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+
 
 ## validation
 

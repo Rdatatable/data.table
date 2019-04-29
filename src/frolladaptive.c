@@ -34,12 +34,12 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
   double *cs = malloc(nx*sizeof(double));                       // cumsum vector, same as double cs[nx] but no segfault
-  if (!cs) {
+  if (!cs) {                                                    // # nocov start
     ans->status = 3;                                            // raise error
     snprintf(ans->message[3], 500, "%s: Unable to allocate memory for cumsum", __func__);
     free(cs);
     return;
-  }
+  }                                                             // # nocov end
   if (!truehasna) {
     for (uint_fast64_t i=0; i<nx; i++) {                        // loop on every observation to calculate cumsum only
       w += x[i];                                                // cumulate in long double
@@ -65,13 +65,13 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *
   if (truehasna) {
     uint_fast64_t nc = 0;                                       // running NA counter
     uint_fast64_t *cn = malloc(nx*sizeof(uint_fast64_t));       // cumulative NA counter, used the same way as cumsum, same as uint_fast64_t cn[nx] but no segfault
-    if (!cn) {
+    if (!cn) {                                                  // # nocov start
       ans->status = 3;                                          // raise error
       snprintf(ans->message[3], 500, "%s: Unable to allocate memory for cum NA counter", __func__);
       free(cs);
       free(cn);
       return;
-    }
+    }                                                           // # nocov end
     for (uint_fast64_t i=0; i<nx; i++) {                        // loop over observations to calculate cumsum and cum NA counter
       if (R_FINITE(x[i])) w += x[i];                            // add observation to running sum
       else nc++;                                                // increment non-finite counter
