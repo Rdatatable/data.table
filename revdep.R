@@ -18,10 +18,10 @@ options(repos = c("CRAN"=c("http://cloud.r-project.org")))
 # and BiocManager::install()) will call this script again recursively.
 Sys.unsetenv("R_PROFILE_USER")
 
-system("sudo R -e \"utils::update.packages('/usr/lib/R/library', ask=FALSE)\"")
+system("sudo R -e \"utils::update.packages('/usr/lib/R/library', ask=FALSE, checkBuilt=TRUE)\"")
 
 require(utils)  # only base is loaded when R_PROFILE_USER runs
-update.packages(ask=FALSE)
+update.packages(ask=FALSE, checkBuilt=TRUE)
 # if package not found on mirror, try manually a different one:
 #   install.packages("<pkg>", repos="http://cran.stat.ucla.edu/")
 #   update.packages(ask=FALSE)   # a repeat sometimes does more, keep repeating until none
@@ -29,7 +29,7 @@ update.packages(ask=FALSE)
 # Follow: https://bioconductor.org/install
 # Ensure no library() call in .Rprofile, such as library(bit64)
 require(BiocManager)
-BiocManager::install(ask=FALSE)
+BiocManager::install(ask=FALSE, version="devel")
 BiocManager::valid()
 
 avail = available.packages(repos=BiocManager::repositories())  # includes CRAN at the end from getOption("repos"). And ensure latest Bioc version is in repo path here.
@@ -62,7 +62,7 @@ for (p in deps) {
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
 length(deps)
-update.packages(repos=BiocManager::repositories())  # double-check all dependencies are latest too
+update.packages(repos=BiocManager::repositories(), checkBuilt=TRUE)  # double-check all dependencies are latest too
 table(installed.packages()[,"Built"])  # ensure all built with this major release of R; e.g. none should have been built with R-devel
 
 # Remove the tar.gz no longer needed :
