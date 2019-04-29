@@ -21,6 +21,7 @@ void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, double_an
   if (algo==0) fadaptiverollmeanFast(x, nx, ans, k, fill, narm, hasna, verbose);
   else if (algo==1) fadaptiverollmeanExact(x, nx, ans, k, fill, narm, hasna, verbose);
   if (verbose) snprintf(end(ans->message[0]), 500, "%s: processing algo %u took %.3fs\n", __func__, algo, omp_get_wtime()-tic);
+  // implicit n_message limit discussed here: https://github.com/Rdatatable/data.table/issues/3423#issuecomment-487722586
 }
 
 /* fast adaptive rolling mean - fast

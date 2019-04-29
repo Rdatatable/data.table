@@ -5,6 +5,7 @@ typedef struct double_ans_t { // used in froll
   uint8_t status;             // 0:ok, 1:message, 2:warning, 3:error; unix return signal: {0,1,2}=0, {3}=1
   char message[4][4096];      // STDOUT: output, STDERR: message, warning, error
 } double_ans_t;
+// implicit n_message limit discussed here: https://github.com/Rdatatable/data.table/issues/3423#issuecomment-487722586
 
 typedef struct ans_t {        // used in nafill
   int32_t *int_v;
@@ -12,3 +13,4 @@ typedef struct ans_t {        // used in nafill
   uint8_t status;             // 0:ok, 1:message, 2:warning, 3:error; unix return signal: {0,1,2}=0, {3}=1
   char message[4][256];       // STDOUT: output, STDERR: message, warning, error
 } ans_t;
+

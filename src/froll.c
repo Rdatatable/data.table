@@ -18,6 +18,7 @@ static char *end(char *start) {
 void frollmean(unsigned int algo, double *x, uint_fast64_t nx, double_ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
   if (nx < k) {                                                 // if window width bigger than input just return vector of fill values
     if (verbose) snprintf(end(ans->message[0]), 500, "%s: window width longer than input vector, returning all NA vector\n", __func__);
+    // implicit n_message limit discussed here: https://github.com/Rdatatable/data.table/issues/3423#issuecomment-487722586
     for (int i=0; i<nx; i++) ans->ans[i] = fill;
     return;
   }
