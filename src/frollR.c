@@ -109,7 +109,8 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
 
   SEXP ans;
   ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;      // allocate list to keep results
-  double_ans_t dans[nx*nk];                                     // answer columns as array of double_ans_t struct
+  double_ans_t *dans = malloc(sizeof(double_ans_t)*nx*nk);      // answer columns as array of double_ans_t struct
+  if (!dans) error("%s: Unable to allocate memory answer", __func__); // # nocov
   double* dx[nx];                                               // pointers to source columns
   uint_fast64_t inx[nx];                                        // to not recalculate `length(x[[i]])` we store it in extra array
   if (bverbose) Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
