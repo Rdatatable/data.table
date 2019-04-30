@@ -58,7 +58,7 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, a
       ans->dbl_v[i] = ISNA(x[i]) ? ans->dbl_v[i+1] : x[i];
     }
   }
-  if (verbose) sprintf(ans->message[0], "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+  if (verbose) snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
 }
 
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose) {
@@ -79,7 +79,7 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
       ans->int_v[i] = x[i]==NA_INTEGER ? ans->int_v[i+1] : x[i];
     }
   }
-  if (verbose) sprintf(ans->message[0], "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+  if (verbose) snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
 }
 
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose) {
