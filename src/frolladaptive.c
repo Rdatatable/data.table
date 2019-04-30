@@ -15,7 +15,7 @@ static char *end(char *start) {
   return strchr(start, 0);
 }
 
-void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   double tic = 0;
   if (verbose) tic = omp_get_wtime();
   if (algo==0) fadaptiverollmeanFast(x, nx, ans, k, fill, narm, hasna, verbose);
@@ -30,7 +30,7 @@ void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, double_an
  * if NAs detected re-run rollmean implemented as cumsum with NA support
  */
 
-void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+void fadaptiverollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose) snprintf(end(ans->message[0]), 500, "%s: running for input length %llu, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
@@ -48,15 +48,15 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *
     }
     if (R_FINITE((double) w)) {                                 // no need to calc this if NAs detected as will re-calc all below in truehasna==1
       #pragma omp parallel for num_threads(getDTthreads())
-      for (uint_fast64_t i=0; i<nx; i++) {                    // loop over observations to calculate final answer
-        if (i+1 == k[i]) ans->ans[i] = cs[i]/k[i];            // current obs window width exactly same as obs position in a vector
-        else if (i+1 > k[i]) ans->ans[i] = (cs[i]-cs[i-k[i]])/k[i]; // window width smaller than position so use cumsum to calculate diff
-        else ans->ans[i] = fill;                              // position in a vector smaller than obs window width - partial window
+      for (uint_fast64_t i=0; i<nx; i++) {                      // loop over observations to calculate final answer
+        if (i+1 == k[i]) ans->dbl_v[i] = cs[i]/k[i];            // current obs window width exactly same as obs position in a vector
+        else if (i+1 > k[i]) ans->dbl_v[i] = (cs[i]-cs[i-k[i]])/k[i]; // window width smaller than position so use cumsum to calculate diff
+        else ans->dbl_v[i] = fill;                              // position in a vector smaller than obs window width - partial window
       }
     } else {                                                    // update truehasna flag if NAs detected
       if (hasna==-1) {                                          // raise warning
         ans->status = 2;
-        snprintf(ans->message[2], 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
+        snprintf(end(ans->message[2]), 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
       }
       if (verbose) snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
       w = 0.0;
@@ -80,21 +80,21 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *
       cn[i] = nc;                                               // cum NA counter
     }
     #pragma omp parallel for num_threads(getDTthreads())
-    for (uint_fast64_t i=0; i<nx; i++) {                      // loop over observations to calculate final answer
-      if (i+1 < k[i]) {                                       // partial window
-        ans->ans[i] = fill;
-      } else if (!narm) {                                     // this branch reduce number of branching in narm=1 below
+    for (uint_fast64_t i=0; i<nx; i++) {                        // loop over observations to calculate final answer
+      if (i+1 < k[i]) {                                         // partial window
+        ans->dbl_v[i] = fill;
+      } else if (!narm) {                                       // this branch reduce number of branching in narm=1 below
         if (i+1 == k[i]) {
-          ans->ans[i] = cn[i]>0 ? NA_REAL : cs[i]/k[i];
+          ans->dbl_v[i] = cn[i]>0 ? NA_REAL : cs[i]/k[i];
         } else if (i+1 > k[i]) {
-          ans->ans[i] = (cn[i] - cn[i-k[i]])>0 ? NA_REAL : (cs[i]-cs[i-k[i]])/k[i];
+          ans->dbl_v[i] = (cn[i] - cn[i-k[i]])>0 ? NA_REAL : (cs[i]-cs[i-k[i]])/k[i];
         }
-      } else if (i+1 == k[i]) {                               // window width equal to observation position in vector
-        int thisk = k[i] - ((int) cn[i]);                     // window width taking NAs into account, we assume single window width is int32, cum NA counter can be int64
-        ans->ans[i] = thisk==0 ? R_NaN : cs[i]/thisk;         // handle all obs NAs and na.rm=TRUE
-      } else if (i+1 > k[i]) {                                // window width smaller than observation position in vector
-        int thisk = k[i] - ((int) (cn[i] - cn[i-k[i]]));      // window width taking NAs into account, we assume single window width is int32, cum NA counter can be int64
-        ans->ans[i] = thisk==0 ? R_NaN : (cs[i]-cs[i-k[i]])/thisk; // handle all obs NAs and na.rm=TRUE
+      } else if (i+1 == k[i]) {                                 // window width equal to observation position in vector
+        int thisk = k[i] - ((int) cn[i]);                       // window width taking NAs into account, we assume single window width is int32, cum NA counter can be int64
+        ans->dbl_v[i] = thisk==0 ? R_NaN : cs[i]/thisk;         // handle all obs NAs and na.rm=TRUE
+      } else if (i+1 > k[i]) {                                  // window width smaller than observation position in vector
+        int thisk = k[i] - ((int) (cn[i] - cn[i-k[i]]));        // window width taking NAs into account, we assume single window width is int32, cum NA counter can be int64
+        ans->dbl_v[i] = thisk==0 ? R_NaN : (cs[i]-cs[i-k[i]])/thisk; // handle all obs NAs and na.rm=TRUE
       }
     }
     free(cn);
@@ -108,7 +108,7 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *
  * uses multiple cores
  */
 
-void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+void fadaptiverollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose) snprintf(end(ans->message[0]), 500, "%s: running in parallel for input length %llu, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, hasna, (int) narm);
 
   bool truehasna = hasna>0;                                   // flag to re-run if NAs detected
@@ -117,7 +117,7 @@ void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int 
     #pragma omp parallel for num_threads(getDTthreads())
     for (uint_fast64_t i=0; i<nx; i++) {                      // loop on every observation to produce final answer
       if (narm && truehasna) continue;                        // if NAs detected no point to continue
-      if (i+1 < k[i]) ans->ans[i] = fill;                     // position in a vector smaller than obs window width - partial window
+      if (i+1 < k[i]) ans->dbl_v[i] = fill;                   // position in a vector smaller than obs window width - partial window
       else {
         long double w = 0.0;
         for (int j=-k[i]+1; j<=0; j++) {                      // sub-loop on window width
@@ -129,17 +129,17 @@ void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int 
           for (int j=-k[i]+1; j<=0; j++) {                    // sub-loop on window width
             err += x[i+j] - res;                              // measure difference of obs in sub-loop to calculated fun for obs
           }
-          ans->ans[i] = (double) (res + (err / k[i]));        // adjust calculated fun with roundoff correction
+          ans->dbl_v[i] = (double) (res + (err / k[i]));      // adjust calculated fun with roundoff correction
         } else {
-          if (!narm) ans->ans[i] = (double) (w / k[i]);       // NAs should be propagated
+          if (!narm) ans->dbl_v[i] = (double) (w / k[i]);     // NAs should be propagated
           truehasna = true;                                   // NAs detected for this window, set flag so rest of windows will not be re-run
         }
       }
     }
     if (truehasna) {
-      if (hasna==-1) {                                          // raise warning
+      if (hasna==-1) {                                        // raise warning
         ans->status = 2;
-        snprintf(ans->message[2], 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
+        snprintf(end(ans->message[2]), 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
       }
       if (verbose) {
         if (narm) snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
@@ -150,7 +150,7 @@ void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int 
   if (truehasna && narm) {
     #pragma omp parallel for num_threads(getDTthreads())
     for (uint_fast64_t i=0; i<nx; i++) {                      // loop over observations to produce final answer
-      if (i+1 < k[i]) ans->ans[i] = fill;                     // partial window
+      if (i+1 < k[i]) ans->dbl_v[i] = fill;                   // partial window
       else {
         long double w = 0.0;                                  // window to accumulate values in particular window
         long double err = 0.0;                                // accumulate roundoff error
@@ -165,15 +165,15 @@ void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int 
           for (int j=-k[i]+1; j<=0; j++) {                    // sub-loop on window width to accumulate roundoff error
             err += x[i+j] - res;                              // measure roundoff for each obs in window
           }
-          ans->ans[i] = (double) (res + (err / k[i]));        // adjust calculated fun with roundoff correction
+          ans->dbl_v[i] = (double) (res + (err / k[i]));      // adjust calculated fun with roundoff correction
         } else if (nc < k[i]) {
           res = w / (k[i]-nc);
           for (int j=-k[i]+1; j<=0; j++) {                    // sub-loop on window width to accumulate roundoff error
             if (!ISNAN(x[i+j])) err += x[i+j] - res;          // measure roundoff for each obs in window
           }
-          ans->ans[i] = (double) (res + (err / (k[i] - nc))); // adjust calculated fun with roundoff correction
+          ans->dbl_v[i] = (double) (res + (err / (k[i] - nc))); // adjust calculated fun with roundoff correction
         } else {                                              // nc == k[i]
-          ans->ans[i] = R_NaN;                                // this branch assume narm so R_NaN always here
+          ans->dbl_v[i] = R_NaN;                              // this branch assume narm so R_NaN always here
         }
       }
     }

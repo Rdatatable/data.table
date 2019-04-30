@@ -117,7 +117,8 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   int32_t* ix[nx];
   uint_fast64_t inx[nx];
   SEXP ans = R_NilValue;
-  ans_t vans[nx];
+  ans_t *vans = malloc(sizeof(ans_t)*nx);
+  if (!vans) error("%s: Unable to allocate memory answer", __func__); // # nocov
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));
     dx[i] = REAL(VECTOR_ELT(x, i));
