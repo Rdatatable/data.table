@@ -474,7 +474,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {
           writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
-          const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol);  // coerces if needed within memrecycle; possibly with a no-alloc direct coerce
+          bool coerced = false;
+          if (TYPEOF(target)==VECSXP && TYPEOF(thisCol)!=VECSXP) {
+            // do an as.list() on the atomic column; #3528
+            thisCol = PROTECT(coerceVector(thisCol, VECSXP));
+            coerced = true;
+          } // else coerces if needed within memrecycle; possibly with a no-alloc direct coerce
+          const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol);
+          if (coerced) UNPROTECT(1);
           if (ret) warning("Column %d of item %d: %s", w+1, i+1, ret);  // currently just one warning when precision is lost; e.g. assigning 3.4 to integer64
         }
         ansloc += thisnrow;
