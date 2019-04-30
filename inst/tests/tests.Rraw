@@ -14129,6 +14129,10 @@ g = data.table(a=5:6, z=18L)
 d[, z:=NULL][g, on="a", z:=i.z]
 test(2030.18, .Last.updated, 0L) # zero match
 
+# rbind vec with list regression dev 1.12.3; #3528
+test(2031.01, rbind(data.table(A=1:3, B=7:9), data.table(A=4:6, B=as.list(10:12))), ans<-data.table(A=1:6, B=as.list(7:12)))
+test(2031.02, rbind(data.table(A=1:3, B=as.list(7:9)), data.table(A=4:6, B=10:12)), ans)
+
 
 ###################################
 #  Add new tests above this line  #
