@@ -72,9 +72,9 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
       if (verbose) Rprintf("between parallel processing of integer with recycling took %8.3fs\n", omp_get_wtime()-tic);
     }
     else {
-      const int64_t xMask = recycleX ? 0 : INT_MAX;
-      const int64_t lowMask = recycleLow ? 0 : INT_MAX;
-      const int64_t uppMask = recycleUpp ? 0 : INT_MAX;
+      const int xMask = recycleX ? 0 : INT_MAX;
+      const int lowMask = recycleLow ? 0 : INT_MAX;
+      const int uppMask = recycleUpp ? 0 : INT_MAX;
       if (verbose) tic = omp_get_wtime();
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<longest; i++) {
