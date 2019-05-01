@@ -154,7 +154,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
         int64_t elem = xp[i];
         ansp[i] = elem==NA_INTEGER64 ? NA_LOGICAL : (l<=elem && elem<=u);
       }
-      if (verbose) Rprintf("between parallel processing of intege64r with recycling took %8.3fs\n", omp_get_wtime()-tic);
+      if (verbose) Rprintf("between parallel processing of integer64 with recycling took %8.3fs\n", omp_get_wtime()-tic);
     }
     else {
       const int xMask = recycleX ? 0 : INT_MAX;
