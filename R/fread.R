@@ -23,7 +23,8 @@ autostart=NA)
     stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
   stopifnot( isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill), isTRUEorFALSE(showProgress),
-             isTRUEorFALSE(stringsAsFactors), isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros) )
+             isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros) )
+  stopifnot( isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0))
   stopifnot( is.numeric(nrows), length(nrows)==1L )
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
@@ -192,7 +193,7 @@ autostart=NA)
       },
       warning = function(e) {
         warn_msg <-
-              sprintf("Column %s was set by colClasses to be '%s', but fread encountered the following warning:\n\t %s\nso the column will be left as type '%s'",
+              sprintf("Column '%s' was set by colClasses to be '%s' but fread encountered the following warning:\n\t %s\nso the column has been left as type '%s'",
                       names(ans)[j], new_class, e$message, typeof(v))
         warning(warn_msg)
         return(v)
@@ -201,7 +202,7 @@ autostart=NA)
       # put after.
       error = function(e) {
         err_msg <-
-          sprintf("Column %s was set by colClasses to be '%s', but fread encountered the following error:\n\t %s\nso the column will be left as type '%s'",
+          sprintf("Column '%s' was set by colClasses to be '%s' but fread encountered the following error:\n\t %s\nso the column has been left as type '%s'",
                   names(ans)[j], new_class, e$message, typeof(v))
         warning(err_msg,
                 call. = FALSE)
@@ -239,6 +240,8 @@ autostart=NA)
     } else {
       cols_to_factor <- which(vapply(ans, is.character, logical(1L)))
     }
+    if (verbose && length(cols_to_factor))
+      cat("Converting column(s) ", brackify(names(ans)[cols_to_factor]), " from 'char' to 'factor'\n", sep = "")
     for (j in cols_to_factor) {
       set(ans,
           j = j,
@@ -313,16 +316,6 @@ autostart=NA)
     setindexv(ans, index)
   }
   ans
-}
-
-# for internal use only. Used in `fread` and `data.table` for 'stringsAsFactors' argument
-# Not used
-setfactor <- function(x, cols, verbose) {
-  if (length(cols)) {
-    if (verbose) cat("Converting column(s) ", brackify(names(x)[cols]), " from 'char' to 'factor'\n", sep = "")
-    for (j in cols) set(x, j = j, value = as_factor(.subset2(x, j)))
-  }
-  invisible(x)
 }
 
 # simplified but faster version of `factor()` for internal use.

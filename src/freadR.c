@@ -228,22 +228,24 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       }
       UNPROTECT(1); // typeEnum_idx
     } else {
-      if (!isNewList(colClassesSxp)) STOP("CfreadR: colClasses is not type list");
+      if (!isNewList(colClassesSxp)) STOP("colClasses is type '%s' but should be list or character", type2char(TYPEOF(colClassesSxp)));
       SEXP listNames = PROTECT(getAttrib(colClassesSxp, R_NamesSymbol));  // rchk wanted this protected
-      if (!length(listNames)) STOP("CfreadR: colClasses is type list but has no names");
+      if (!length(listNames)) STOP("colClasses is type list but has no names");
       SEXP typeEnum_idx = PROTECT(chmatch(listNames, typeRName_sxp, NUT));
+      bool firstNULL=true, NULLwarned=false;
       for (int i=0; i<LENGTH(colClassesSxp); i++) {
         SEXP items;
         const int w = INTEGER(typeEnum_idx)[i];
         signed char thisType = typeEnum[w-1];
         items = VECTOR_ELT(colClassesSxp,i);
         if (thisType == CT_DROP) {
-          if (!isNull(dropSxp) || !isNull(selectSxp)) {
-            if (dropSxp!=items) DTWARN("Ignoring the NULL item in colClasses= because select= or drop= has been used.");
-            // package damr has a nice workaround for when NULL didn't work before v1.12.0: it sets drop=col_class$`NULL`. So allow that unambiguous case with no warning.
-          } else {
-            dropSxp = items;
+          if (firstNULL) {
+            if (!isNull(dropSxp) || !isNull(selectSxp)) {
+              if (dropSxp!=items && !NULLwarned) { DTWARN("Ignoring the NULL item in colClasses= because select= or drop= has been used."); NULLwarned=true; }
+              // package damr has a nice workaround for when NULL didn't work before v1.12.0: it sets drop=col_class$`NULL`. So allow that unambiguous case with no warning.
+            } else { dropSxp=items; firstNULL=false; }
           }
+          else if (!NULLwarned) { DTWARN("There is more than one NULL item in colClasses= list. Ignoring all but the first."); NULLwarned=true; }
           continue;
         }
         SEXP itemsInt;

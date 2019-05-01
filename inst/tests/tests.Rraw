@@ -10442,8 +10442,8 @@ test(1743.13, sapply(fread("a,b\n09/05/98,2015-01-01", colClasses = "Date"), cla
 
 ## Just invalid
 test(1743.14, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="[nN]o method .*for .*foo")
-test(1743.15, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="the column will be left as type .*character")
-test(1743.16, sapply(fread("a,b\n2017-01-01,2", colClasses=list(foo=1)), class), c(a="character", b="integer"), warning="the column will be left as type .*character")
+test(1743.15, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="the column has been left as type .*character")
+test(1743.16, sapply(fread("a,b\n2017-01-01,2", colClasses=list(foo=1)), class), c(a="character", b="integer"), warning="the column has been left as type .*character")
 
 ## When colClasses is a list, it should still work if factor is a name of multiple elements.
 test(1743.17, sapply(fread("a,b\nc,d", colClasses = list(factor = 1L, factor = 2L)), class), c(a="factor", b="factor"))
@@ -10469,19 +10469,18 @@ test(1743.216, sapply(fread("a,b\n1,x", colClasses = list(factor = "b"), select 
 test(1743.217, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor = c(1, 2, 4), factor = 3), select = c(5, 6, 2, 4)), class), y = c(e = "character", f = "character", b = "factor", d = "factor"))
 test(1743.218, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor = c(1, 2, 4), factor = 3), select = c(5, 4, 2, 3)), class), y = c(e = "character", d = "factor", b = "factor", c = "factor"))
 
-
-## We are unable to work out colClasses when it contains integers with select/drop character
-test(1743.22, sapply(fread("a,b,c\n1999/01/01,2,f", colClasses = list(Date = 1L), drop = "a"), class), y = c(b="integer", c="character"), warning = "drop.* specifies columns by name, but some elements of colClasses refer to position. This combination is not supported. Some colClasses may not have been set")
-test(1743.23, sapply(fread("a,b,c\n2,2,f", colClasses = list(complex = "c", integer = 2L), drop = "a"), class), y = c(b="integer", c="character"), warning = "drop.* specifies columns by name, but some elements of colClasses refer to position. This combination is not supported. Some colClasses may not have been set")
-# But this is ok
-test(1743.241, sapply(fread("a,b,c\n2,2,f", colClasses = list(character = "c", integer = "b"), drop = "a"), class), y = c(b="integer", c="character"))
-test(1743.242, sapply(fread("a,b,c\n2,2,f", colClasses = c("integer", "integer", "factor"), drop = "a"), class), y = c(b="integer", c="character"), warning="drop.* specifies columns by name, but some elements of colClasses refer to position.")
-
+test(1743.22, fread("a,b,c\n1999/01/01,2,f", colClasses=list(Date=1L), drop="a"), data.table(b=2L, c="f"))
+test(1743.231, fread("a,b,c\n2,1,4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c="4i"), warning="NAs introduced by coercion.*left as type 'character'")
+test(1743.232, fread("a,b,c\n2,1,3+4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c=3+4i))
+test(1743.241, fread("a,b,c\n2,2,f", colClasses = list(character="c", integer="b"), drop="a"), data.table(b=2L, c="f"))
+test(1743.242, fread("a,b,c\n2,2,f", colClasses = c("integer", "integer", "factor"), drop="a"), data.table(b=2L, c=factor("f")))
 
 ## POSIXct
-test(1743.25, vapply(fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses = c("POSIXct", "integer", "character")), inherits, FUN.VALUE = FALSE, what = "POSIXct", USE.NAMES = FALSE), c(TRUE, FALSE, FALSE))
-test(1743.26, vapply(fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses = list(POSIXct="c", character="b"), drop=c("a","b")), inherits, FUN.VALUE = FALSE, what = "POSIXct", USE.NAMES = FALSE), c(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE))
-test(1743.27, vapply(fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses = list(POSIXct="c", character=2), drop=c("a","b")), inherits, FUN.VALUE = FALSE, what = "POSIXct", USE.NAMES = FALSE), c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE), warning="drop specifies columns by name.*colClasses refer to position")
+test(1743.25, fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses=c("POSIXct","integer","character")), data.table(a=as.POSIXct("2015-06-01 11:00:00"),b=1L,c="ae"))
+test(1743.26, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character="b"), drop=c("a","b"), logical01=TRUE),
+              ans<-data.table(c=as.POSIXct("2015-06-01 11:00:00"), d="a", e=1.5, f="M", g=9L, h=FALSE))
+test(1743.27, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character=2), drop=c("a","b"), logical01=TRUE),
+              ans)
 
 ## raw same behaviour as read.csv
 test(1743.28, sapply(fread("a,b\n05,05", colClasses = c("raw", "integer")), class), sapply(read.csv(text ="a,b\n05,05", colClasses = c("raw", "integer")), class))
@@ -10489,21 +10488,19 @@ test(1743.29, sapply(fread("a,b\n05,05", colClasses = list(raw = 1L)), class), s
 
 ## colClasses Examples
 data1743 = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
-data1743.307 = "A,B,C,D,E,F,G\n1,3,5,7,9,11,13\n2,4,6,8,10,12,14\n"
-
-### drop examples weren't working
-test(1743.301, names(fread(data1743, colClasses=c("B"="NULL","C"="NULL"))), c("A", "D"))
-test(1743.302, names(fread(data1743, colClasses=list(NULL=c("B","C")))), c("A", "D"))
-test(1743.303, names(fread(data1743, drop=c("B","C"))), c("A", "D"))
-test(1743.304, names(fread(data1743, drop=2:3)), c("A", "D"))
-### Similarly
-test(1743.305, names(fread(data1743, colClasses=c("integer", "NULL", "NULL", "integer"))), c("A", "D"))
-test(1743.306, names(fread(data1743, colClasses=c("integer", "NULL", "NULL", "integer"), drop=4)), c("A"))
-test(1743.307, names(fread(data1743.307, colClasses=list(NULL = c("C", "D"), NULL = 1:2, NULL = "F", NULL = 5))), c("G"))
-
-### Warning examples
-test(1743.31, names(fread(data1743, colClasses="NULL")), LETTERS[1:4], warning="colClasses.*quoted.*interpreted as colClasses.*NULL")
-test(1743.32, sapply(fread("A,B\na,0+1i", colClasses="complex"), class), c(A="character", B="complex"), warning="Column 1 was set by colClasses to be .complex")
+test(1743.301, fread(data1743, colClasses=c("B"="NULL","C"="NULL")), ans<-data.table(A=1:2, D=7:8))
+test(1743.302, fread(data1743, colClasses=list(NULL=c("B","C"))),    ans)
+test(1743.303, fread(data1743, drop=c("B","C")),                     ans)
+test(1743.304, fread(data1743, drop=2:3),                            ans)
+test(1743.305, fread(data1743, colClasses=c("integer", "NULL", "NULL", "integer")), ans)
+test(1743.306, fread(data1743, colClasses=c("integer", "NULL", "NULL", "integer"), drop=4), data.table(A=1:2))
+test(1743.307, fread(data1743, colClasses=list(NULL=c("C","D"), NULL=1:2)), data.table(A=1:2, B=3:4),
+               warning="There is more than one NULL item in colClasses= list. Ignoring all but the first.")
+test(1743.308, fread(data1743, colClasses=list(NULL=c("C","D")), drop=1:2), data.table(C=5:6, D=7:8),
+               warning="Ignoring the NULL item in colClasses= because select= or drop= has been used")
+test(1743.31, fread(data1743, colClasses="NULL"), data.table(A=1:2, B=3:4, C=5:6, D=7:8), warning="colClasses.*quoted.*interpreted as colClasses.*NULL")
+test(1743.32, fread("A,B\na,0+1i", colClasses="complex"), data.table(A="a", B=1i),
+              warning="Column 'A' was set.*complex.*NAs introduced by coercion.*column has been left as.*character")
 
 ## stringsAsFactors = double Issue #2025
 fwrite(data.table(v1 = sample(letters, size = 26 * 10, replace = TRUE), V2 = paste0("A", c(1:259, 1)), V3 = sample.int(26, n = 260, replace = TRUE)), temp1743_41.csv <- tempfile(fileext = ".csv"))
