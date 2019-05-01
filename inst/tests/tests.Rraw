@@ -14183,7 +14183,9 @@ test(2032.19, X[c %between% list(a, b)], X[c %between% .(a, b)])
 
 # between num to int coercion #3517
 old = options("datatable.verbose"=TRUE)
-#TODO
+test(2032.20, between(1:5, 2, 4), output="between parallel processing of integer")
+test(2032.21, between(1:5, 2L, 4), output="between parallel processing of integer")
+test(2032.22, between(1:5, 2, 4L), output="between parallel processing of integer")
 options(old)
 
 # between int64 support

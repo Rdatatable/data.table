@@ -3,6 +3,18 @@
 #define NA_INTEGER64 LLONG_MIN
 #define MAX_INTEGER64 LLONG_MAX
 
+bool isReallyRealC(SEXP x) {
+  if (!isReal(x)) return(false);
+  R_xlen_t n=xlength(x), i=0;
+  double *dx = REAL(x);
+  while (i<n &&
+         ( ISNA(dx[i]) ||
+         ( R_FINITE(dx[i]) && dx[i] == (int)(dx[i])))) {
+    i++;
+  }
+  return(i<n);
+}
+
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
 
   R_len_t nx = length(x), nl = length(lower), nu = length(upper);
@@ -22,9 +34,10 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
   int nprotect = 0;
   bool integer=true;
   bool integer64=false;
+  Rprintf("int(x)=%d, int(lower)=%d, rreal(lower)=%d, int(upper)=%d, rreal(upper)=%d\n", isInteger(x), isInteger(lower), isReallyRealC(lower), isReallyRealC(upper), isReallyRealC(upper));
   if (isInteger(x) &&         // #3517 coerce to num to int when possible
-      (isInteger(lower) || (!isInteger(lower) && !isReallyReal(lower))) &&
-      (isInteger(upper) || (!isInteger(upper) && !isReallyReal(upper)))) {
+      (isInteger(lower) || (!isInteger(lower) && !isReallyRealC(lower))) &&
+      (isInteger(upper) || (!isInteger(upper) && !isReallyRealC(upper)))) {
     if (!isInteger(lower)) {
       lower = PROTECT(coerceVector(lower, INTSXP)); nprotect++;
     }
