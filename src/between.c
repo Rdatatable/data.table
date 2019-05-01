@@ -34,7 +34,6 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
   int nprotect = 0;
   bool integer=true;
   bool integer64=false;
-  Rprintf("int(x)=%d, int(lower)=%d, rreal(lower)=%d, int(upper)=%d, rreal(upper)=%d\n", isInteger(x), isInteger(lower), isReallyRealC(lower), isReallyRealC(upper), isReallyRealC(upper));
   if (isInteger(x) &&         // #3517 coerce to num to int when possible
       (isInteger(lower) || (!isInteger(lower) && !isReallyRealC(lower))) &&
       (isInteger(upper) || (!isInteger(upper) && !isReallyRealC(upper)))) {
