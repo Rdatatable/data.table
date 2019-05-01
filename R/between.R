@@ -7,28 +7,28 @@ between <- function(x,lower,upper,incbounds=TRUE) {
   # POSIX special handling to auto coerce character
   if (is.px(x) && !is.null(tz<-attr(x, "tzone", TRUE)) && nzchar(tz) &&
       (is.character(lower) || is.character(upper))) {
-    try_posix_cast <- function(x, tz) tryCatch(
+    try_posix_cast <- function(x, tz) {tryCatch(
       list(status=0L, value=as.POSIXct(x, tz = tz)),
       error = function(e) list(status=1L, value=NULL, message=e[["message"]])
-    )
+    )}
     if (is.character(lower)) {
       ans = try_posix_cast(lower, tz)
       if (ans$status==0L) lower = ans$value
-      else stop("'between' function the 'x' argument is a POSIX class while 'lower' was not, coercion to POSIX failed with:", ans$message)
+      else stop("'between' function the 'x' argument is a POSIX class while 'lower' was not, coercion to POSIX failed with: ", ans$message)
     }
     if (is.character(upper)) {
       ans = try_posix_cast(upper, tz)
       if (ans$status==0L) upper = ans$value
-      else stop("'between' function the 'x' argument is a POSIX class while 'upper' was not, coercion to POSIX failed with:", ans$message)
+      else stop("'between' function the 'x' argument is a POSIX class while 'upper' was not, coercion to POSIX failed with: ", ans$message)
     }
     stopifnot(is.px(x), is.px(lower), is.px(upper)) # nocov # internal
   }
   # POSIX check time zone match
   if (is.px(x) && is.px(lower) && is.px(upper)) {
-    tz_match = function(x, y, z) ( # NULL match "", else all identical
-      ((is.null(x) || !nzchar(x)) && (is.null(y) || !nzchar(y)) && (is.null(z) || !nzchar(z)))
-      || (identical(x, y) && identical(x, z))
-      )
+    tz_match = function(x, y, z) { # NULL match "", else all identical
+      ((is.null(x) || !nzchar(x)) && (is.null(y) || !nzchar(y)) && (is.null(z) || !nzchar(z))) ||
+        (identical(x, y) && identical(x, z))
+    }
     if (!tz_match(attr(x, "tzone", TRUE), attr(lower, "tzone", TRUE), attr(upper, "tzone", TRUE))) {
       stop("'between' function arguments have mismatched timezone attribute, align all arguments to same timezone")
     }
