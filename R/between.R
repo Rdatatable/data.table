@@ -3,26 +3,38 @@ between <- function(x,lower,upper,incbounds=TRUE) {
   if (is.logical(x)) stop("between has been x of type logical")
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
-  is_strictly_numeric <- function(x) is.numeric(x) && !inherits(x, "integer64")
-  try_posix_cast <- function(x, tz) {
-    x_time = as.POSIXct(x, tz = tz)
-    if (is.na(x_time)) return(x)
-    return(x_time)
-  }
-  if (inherits(x, "POSIXct")) {
-    # allow fast between on POSIX vs non-explicit-POSIX in some circumstances
-    #   (biggest worry is hard-to-predict timezone mismatch)
-    if (!is.null(tz <- attr(x, 'tzone'))) {
-      lower = try_posix_cast(lower, tz)
-      upper = try_posix_cast(upper, tz)
+  is.px = function(x) inherits(x, "POSIXct")
+  # POSIX special handling to auto coerce character
+  if (is.px(x) && !is.null(tz<-attr(x, "tzone", TRUE)) && nzchar(tz) &&
+      (is.character(lower) || is.character(upper))) {
+    try_posix_cast <- function(x, tz) tryCatch(
+      list(status=0L, value=as.POSIXct(x, tz = tz)),
+      error = function(e) list(status=1L, value=NULL, message=e[["message"]])
+    )
+    if (is.character(lower)) {
+      ans = try_posix_cast(lower, tz)
+      if (ans$status==0L) lower = ans$value
+      else stop("'between' function the 'x' argument is a POSIX class while 'lower' was not, coercion to POSIX failed with:", ans$message)
     }
-    if (inherits(lower, "POSIXct") && inherits(upper, "POSIXct")) { #3519
-      x = unclass(x)
-      lower = unclass(lower)
-      upper = unclass(upper)
+    if (is.character(upper)) {
+      ans = try_posix_cast(upper, tz)
+      if (ans$status==0L) upper = ans$value
+      else stop("'between' function the 'x' argument is a POSIX class while 'upper' was not, coercion to POSIX failed with:", ans$message)
+    }
+    stopifnot(is.px(x), is.px(lower), is.px(upper)) # nocov # internal
+  }
+  # POSIX check time zone match
+  if (is.px(x) && is.px(lower) && is.px(upper)) {
+    tz_match = function(x, y, z) ( # NULL match "", else all identical
+      ((is.null(x) || !nzchar(x)) && (is.null(y) || !nzchar(y)) && (is.null(z) || !nzchar(z)))
+      || (identical(x, y) && identical(x, z))
+      )
+    if (!tz_match(attr(x, "tzone", TRUE), attr(lower, "tzone", TRUE), attr(upper, "tzone", TRUE))) {
+      stop("'between' function arguments have mismatched timezone attribute, align all arguments to same timezone")
     }
   }
-  if (is_strictly_numeric(x) && is_strictly_numeric(lower) && is_strictly_numeric(upper)) {
+  is.supported = function(x) is.integer(x) || (storage.mode(x)=="double" && !inherits(x, "integer64"))
+  if (is.supported(x) && is.supported(lower) && is.supported(upper)) {
     # faster parallelised version for int/double.
     # Cbetween supports length(lower)==1 (recycled) and (from v1.12.0) length(lower)==length(x).
     # length(upper) can be 1 or length(x) independently of lower
