@@ -33,7 +33,7 @@ between <- function(x,lower,upper,incbounds=TRUE) {
       stop("'between' function arguments have mismatched timezone attribute, align all arguments to same timezone")
     }
   }
-  is.supported = function(x) is.integer(x) || (storage.mode(x)=="double" && !inherits(x, "integer64"))
+  is.supported = function(x) (is.numeric(x) && !inherits(x, "integer64")) || is.px(x)
   if (is.supported(x) && is.supported(lower) && is.supported(upper)) {
     # faster parallelised version for int/double.
     # Cbetween supports length(lower)==1 (recycled) and (from v1.12.0) length(lower)==length(x).
