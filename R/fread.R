@@ -127,8 +127,7 @@ autostart=NA)
 
     if (identical(colClasses, "NULL")) {
       colClasses = NULL
-      warning('colClasses="NULL" (quoted) which will be interpreted as colClasses=NULL (the default), ',
-              'as opposed to dropping every column.')
+      warning('colClasses="NULL" (quoted) is interpreted as colClasses=NULL (the default) as opposed to dropping every column.')
     }
 
     if (!is.null(names(colClasses))) {   # names are column names; convert to list approach
@@ -172,15 +171,47 @@ autostart=NA)
     setattr(ans, 'names', make.names(names(ans), unique=TRUE))
   }
 
-  if (is.numeric(select)) {
-    select <- as.integer(select)
+  colClassesAs = attr(ans, "colClassesAs")   # should only be present if one or more are != ""
+  for (j in which(colClassesAs!="")) {       # # 1634
+    v <- .subset2(ans, j)
+    new_class = colClassesAs[j]
+      # Following tryCatch designed to try coercion to a particular class,
+      # and abort on any column if it encounters any warning or error. Different to
+      # read.csv -- won't attempt coercion if NAs introduced, but also less fussy
+      # and won't error if a column won't work, instead reverting to previous class.
+    new_v <- tryCatch({
+        switch(new_class,
+               "factor" = as_factor(v),
+               "complex" = as.complex(v),
+               "raw" = as_raw(v),  # Internal implementation
+               "Date" = as.Date(v),
+               "POSIXct" = as.POSIXct(v),
+               "NULL" = v,  # Do nothing for now.
+               # Finally,
+               methods::as(v, new_class))
+      },
+      warning = function(e) {
+        warn_msg <-
+              sprintf("Column %s was set by colClasses to be '%s', but fread encountered the following warning:\n\t %s\nso the column will be left as type '%s'",
+                      names(ans)[j], new_class, e$message, typeof(v))
+        warning(warn_msg)
+        return(v)
+      },
+      # Since errors themselves raise warnings,
+      # put after.
+      error = function(e) {
+        err_msg <-
+          sprintf("Column %s was set by colClasses to be '%s', but fread encountered the following error:\n\t %s\nso the column will be left as type '%s'",
+                  names(ans)[j], new_class, e$message, typeof(v))
+        warning(err_msg,
+                call. = FALSE)
+        return(v)
+      })
+    # New value may be the same as the old value
+    # if the coercion was aborted.
+    set(ans, j = j, value = new_v)
   }
-  # Fix Issue 1634
-  set_colClasses(ans,
-                 select = select,
-                 drop = drop,
-                 colClasses = colClasses,
-                 verbose = verbose)
+  setattr(ans, "colClassesAs", NULL)
 
   # Should be after set_colClasses_ante
   if (stringsAsFactors) {
@@ -238,7 +269,7 @@ autostart=NA)
   if (!is.null(select)) {
     # fix for #1445
 # head
-    if (is.integer(select)) {
+    if (is.numeric(select)) {
       reorder <-
         if (length(o <- forderv(select))) {
           match(select, select[o], nomatch = 0L)
@@ -294,210 +325,6 @@ setfactor <- function(x, cols, verbose) {
   invisible(x)
 }
 
-
-set_colClasses <- function(ans,
-                           select,
-                           drop,
-                           colClasses,
-                           unsupported_classes = NULL, # != "NULL"
-                           already_set_classes = c("logical",
-                                                   "integer", "integer64",
-                                                   "numeric", "double",
-                                                   "character",
-                                                   NA_character_),
-                           verbose = FALSE) {
-
-  if (length(colClasses) && any(!is.na(colClasses))) {
-    if (verbose) cat("Applying colClasses:\n")
-    if (typeof(colClasses) == "character") {
-
-      colClasses <-
-        if (length(colClasses) == 1L) {
-          if (is.na(colClasses)) {
-            NA_character_
-          } else {
-            setNames(list(seq_along(ans)), colClasses[1L])
-          }
-        } else {
-          # Convert 'character' type to 'list'
-          #
-          # c("integer", "character", "character", "character") ==> list(character = 2:4, integer = 1)
-          unique_colClasses <- unique(colClasses)
-          unique_colClasses <- unique_colClasses[!is.na(unique_colClasses)]
-          setNames(lapply(unique_colClasses, function(x) which(colClasses == x)),
-                   unique_colClasses)
-        }
-    }
-
-
-    if (!all(names(colClasses) %chin% already_set_classes)) {
-      # for e.g. colClasses = list(character = 1, Date = 2)
-      #       to avoid arcane warnings when set is used recommending to use integers for j =.
-      colClasses <- lapply(colClasses, function(x) if (is.double(x)) as.integer(x) else x)
-      if (!is.null(unsupported_classes) && any(unsupported_classes %chin% names(colClasses))) {
-        names(colClasses)[which(unsupported_classes %chin% names(colClasses))] <- "character"
-      }
-
-      # If select or drop were used, colClasses is either unuseable
-      # or will need modification before it can be applied safely.
-      if (!is.null(select) || !is.null(drop)) {
-        if (is.character(select) || is.character(drop)) {
-
-          if (any(vapply(colClasses, is.integer, logical(1L)))) {
-            sel_dro <- if (is.character(select)) "select" else "drop"
-            # Difficult unless select in Cfread records the original positions in the file.
-            #
-            warning(sel_dro, " specifies columns by name, but some elements of colClasses refer to position. ",
-                    "This combination is not supported. Some colClasses may not have been set.")
-            return(ans)
-          } else {
-            # both select/drop and all colClasses are character
-            if (is.null(select)) {
-              colClasses <-
-                lapply(colClasses, function(el) {
-                  el[!el %chin% drop]
-                })
-            } else {
-              colClasses <-
-                lapply(colClasses, function(el) {
-                  el[el %chin% select]
-                })
-            }
-          }
-        } else {
-          # select/drop is integer
-          if (is.null(select)) {
-            # If colClasses contains a character list item here,
-            # no problem with ordering, because set() will use
-            # column names. Only need to make sure that set isn't
-            # provided with a column that doesn't exist.
-            #
-            # For integers, we need to decrement those above a dropped column
-            # by the number of dropped columns < column specified
-            colClasses <-
-              lapply(colClasses, function(el) {
-                if (is.integer(el)) {
-                  # drop <- c(2, 5, 7, 10)
-                  # x <- c(1, 3, 5, 9, 10, 11)
-                  # expect:
-                  # 1 => 1 - stays (below minimum drop)
-                  # 3 => 2 - reduced by 1 = number of dropped columns below 3
-                  # 5 => NULL is dropped
-                  # 9 => 6 = 9 - 3 dropped columns below
-                  # etc
-                  out <- el[!el %in% drop]
-                  if (length(out)) {
-                    out - cumsum(seq_len(max(out)) %in% drop)[out]
-                  } else {
-                    integer(0L)
-                  }
-                } else {
-                  # character, nothing to do
-                  # except make sure we don't provide
-                  # set with any alien columns
-                  el[el %chin% names(ans)]
-                }
-              })
-          } else {
-            # This does not conflict with #1445
-            # as this is within a function.
-            if (!is.sorted(select)) {
-              select <- select[forderv(select, by = NULL)]
-            }
-            colClasses <-
-              lapply(colClasses, function(el) {
-                if (is.integer(el)) {
-                  out <- match(el, select, nomatch = 0L)
-                  out[out > 0L]
-                } else {
-                  el[el %chin% names(ans)]
-                }
-              })
-          }
-        }
-      }
-
-      # NULL columns should be treated differently, because
-      # positions will affect columns to the right
-      NULL_colClasses <- colClasses[names(colClasses) == "NULL"]
-
-      #
-      # When colClasses is a list, it looks like
-      #  list(<new_class1> = <new_class1_cols>, <new_class2> = <new_class2_cols>)
-      #             cCi ^
-      for (cCi in seq_along(colClasses)) {
-        new_class <- names(colClasses)[cCi]
-        new_class_cols <- colClasses[[cCi]]
-        # Skip if already done.
-        if (!new_class %chin% already_set_classes && length(new_class_cols)) {
-          if (verbose && new_class != "NULL") {
-            cat("\tSetting column(s) ", new_class_cols, " to ", new_class, "\n")
-          }
-
-          for (j in new_class_cols) {
-            v <- .subset2(ans, j)
-            new_v <-
-              # Following tryCatch designed to try coercion to a particular class,
-              # and abort on any column if it encounters any warning or error. Different to
-              # read.csv -- won't attempt coercion if NAs introduced, but also less fussy
-              # and won't error if a column won't work, instead reverting to previous class.
-              tryCatch({
-                switch(new_class,
-                       "factor" = as_factor(v),
-                       "complex" = as.complex(v),
-                       "raw" = as_raw(v),  # Internal implementation
-                       "Date" = as.Date(v),
-                       "POSIXct" = as.POSIXct(v),
-                       "NULL" = v,  # Do nothing for now.
-                       # Finally,
-                       methods::as(v, new_class))
-              },
-              warning = function(e) {
-                warn_msg <-
-                      sprintf("Column %s was set by colClasses to be '%s', but fread encountered the following warning:\n\t %s\nso the column will be left as type '%s'",
-                              as.character(j), new_class, e$message, typeof(v))
-                warning(warn_msg)
-                return(v)
-              },
-              # Since errors themselves raise warnings,
-              # put after.
-              error = function(e) {
-                err_msg <-
-                  sprintf("Column %s was set by colClasses to be '%s', but fread encountered the following error:\n\t %s\nso the column will be left as type '%s'",
-                          as.character(j), new_class, e$message, typeof(v))
-                warning(err_msg,
-                        call. = FALSE)
-                return(v)
-              })
-
-            # New value may be the same as the old value
-            # if the coercion was aborted.
-            set(ans, j = j, value = new_v)
-          }
-        }
-      }
-      # Safe to use NULL_colClasses now
-      if (length(NULL_colClasses)) {
-        char_NULL_colClasses <- vapply(NULL_colClasses, is.character, logical(1L))
-        if (all(char_NULL_colClasses)) {
-          null_cols <- unlist(NULL_colClasses, use.names = FALSE)
-        } else {
-          # consider
-          # NULL_colClasses = list(NULL = c("C", "D"), NULL = 1:2, NULL = "E", NULL = 5)
-          # Not sure which is best practice, by numbers (reversed) or by column name?
-          # I chose by name.
-          null_cols <- c(unlist(NULL_colClasses[char_NULL_colClasses], use.names = FALSE),
-                         names(ans)[unlist(NULL_colClasses[!char_NULL_colClasses], use.names = FALSE)])
-
-        }
-        ans[, (null_cols) := NULL]
-      }
-    }
-
-  }
-  invisible(ans)
-}
-
 # simplified but faster version of `factor()` for internal use.
 as_factor <- function(x) {
   lev = forderv(x, retGrp = TRUE, na.last = NA)
@@ -530,7 +357,4 @@ as_factor <- function(x) {
 as_raw <- function(x) {
   scan(text = x, what = raw(), quiet = TRUE)
 }
-
-
-
 
