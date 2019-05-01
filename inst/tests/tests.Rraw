@@ -14181,6 +14181,20 @@ test(2032.18, between(x, dn, up), error="mismatched timezone attribute")
 X = data.table(a = 1:5, b = 6:10, c = c(5:1))
 test(2032.19, X[c %between% list(a, b)], X[c %between% .(a, b)])
 
+# between num to int coercion #3517
+old = options("datatable.verbose"=TRUE)
+#TODO
+options(old)
+
+# between int64 support
+if (test_bit64) {
+  as.i64 = bit64::as.integer64
+  test(2032.51, between(1:10, as.i64(3), as.i64(6)), error="are integer64 class while 'x' argument is not")
+  test(2032.52, between(1:10, 3, as.i64(6)), error="are integer64 class while 'x' argument is not")
+  old = options("datatable.verbose"=TRUE)
+  #TODO
+  options(old)
+}
 
 
 ###################################

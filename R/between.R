@@ -4,6 +4,7 @@ between <- function(x,lower,upper,incbounds=TRUE) {
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
   is.px = function(x) inherits(x, "POSIXct")
+  is.i64 = function(x) inherits(x, "integer64")
   # POSIX special handling to auto coerce character
   if (is.px(x) && !is.null(tz<-attr(x, "tzone", TRUE)) && nzchar(tz) &&
       (is.character(lower) || is.character(upper))) {
@@ -23,7 +24,7 @@ between <- function(x,lower,upper,incbounds=TRUE) {
     }
     stopifnot(is.px(x), is.px(lower), is.px(upper)) # nocov # internal
   }
-  # POSIX check time zone match
+  # POSIX check timezone match
   if (is.px(x) && is.px(lower) && is.px(upper)) {
     tz_match = function(x, y, z) { # NULL match "", else all identical
       ((is.null(x) || !nzchar(x)) && (is.null(y) || !nzchar(y)) && (is.null(z) || !nzchar(z))) ||
@@ -33,7 +34,15 @@ between <- function(x,lower,upper,incbounds=TRUE) {
       stop("'between' function arguments have mismatched timezone attribute, align all arguments to same timezone")
     }
   }
-  is.supported = function(x) (is.numeric(x) && !inherits(x, "integer64")) || is.px(x)
+  # int64
+  if (is.i64(x)) {
+    if (!requireNamespace("bit64", quietly=TRUE)) stop("trying to use integer64 class when 'bit64' package is not installed")
+    if (!is.i64(lower) && is.numeric(lower)) lower = bit64::as.integer64(lower)
+    if (!is.i64(upper) && is.numeric(upper)) upper = bit64::as.integer64(upper)
+  } else if (is.i64(lower) || is.i64(upper)) {
+    stop("'lower' and/or 'upper' are integer64 class while 'x' argument is not, align classes before passing to 'between'")
+  }
+  is.supported = function(x) is.numeric(x) || is.px(x)
   if (is.supported(x) && is.supported(lower) && is.supported(upper)) {
     # faster parallelised version for int/double.
     # Cbetween supports length(lower)==1 (recycled) and (from v1.12.0) length(lower)==length(x).

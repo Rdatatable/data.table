@@ -1,5 +1,8 @@
 #include "data.table.h"
 
+#define NA_INTEGER64 LLONG_MIN
+#define MAX_INTEGER64 LLONG_MAX
+
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
 
   R_len_t nx = length(x), nl = length(lower), nu = length(upper);
@@ -18,15 +21,32 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
 
   int nprotect = 0;
   bool integer=true;
-  if (isReal(x) || isReal(lower) || isReal(upper)) {
-    if (inherits(x,"integer64") || inherits(lower,"integer64") || inherits(upper,"integer64")) {
-      error("Internal error: one or more of x, lower and upper is type integer64 but this should have been caught by between() at R level.");  // # nocov
+  bool integer64=false;
+  if (isInteger(x) &&         // #3517 coerce to num to int when possible
+      (isInteger(lower) || (!isInteger(lower) && !isReallyReal(lower))) &&
+      (isInteger(upper) || (!isInteger(upper) && !isReallyReal(upper)))) {
+    if (!isInteger(lower)) {
+      lower = PROTECT(coerceVector(lower, INTSXP)); nprotect++;
     }
+    if (!isInteger(upper)) {
+      upper = PROTECT(coerceVector(upper, INTSXP)); nprotect++;
+    }
+  } else if (inherits(x,"integer64")) {
+    if (!inherits(lower,"integer64") || !inherits(upper,"integer64"))
+      error("Internal error in between: 'x' is integer64 while 'lower' and/or 'upper' are not, should have been catched by now"); // # nocov
     integer=false;
-    lower = PROTECT(coerceVector(lower, REALSXP));  // these coerces will convert NA appropriately
-    upper = PROTECT(coerceVector(upper, REALSXP));
-    x     = PROTECT(coerceVector(x, REALSXP));
-    nprotect += 3;
+    integer64=true;
+  } else if (isReal(x) || isReal(lower) || isReal(upper)) {
+    integer=false;
+    if (!isReal(x)) {
+      x = PROTECT(coerceVector(x, REALSXP)); nprotect++;
+    }
+    if (!isReal(lower)) {
+      lower = PROTECT(coerceVector(lower, REALSXP)); nprotect++; // these coerces will convert NA appropriately
+    }
+    if (!isReal(upper)) {
+      upper = PROTECT(coerceVector(upper, REALSXP)); nprotect++;
+    }
   }
   // TODO: sweep through lower and upper ensuring lower<=upper (inc bounds) and no lower>upper or lower==INT_MAX
 
@@ -52,9 +72,9 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
       if (verbose) Rprintf("between parallel processing of integer with recycling took %8.3fs\n", omp_get_wtime()-tic);
     }
     else {
-      const int xMask = recycleX ? 0 : INT_MAX;
-      const int lowMask = recycleLow ? 0 : INT_MAX;
-      const int uppMask = recycleUpp ? 0 : INT_MAX;
+      const int64_t xMask = recycleX ? 0 : INT_MAX;
+      const int64_t lowMask = recycleLow ? 0 : INT_MAX;
+      const int64_t uppMask = recycleUpp ? 0 : INT_MAX;
       if (verbose) tic = omp_get_wtime();
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<longest; i++) {
@@ -66,7 +86,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
       }
       if (verbose) Rprintf("between parallel processing of integer took %8.3fs\n", omp_get_wtime()-tic);
     }
-  } else {
+  } else if (!integer64) {
     // type real
     const double *lp = REAL(lower);
     const double *up = REAL(upper);
@@ -107,6 +127,37 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
         ansp[i] = isnan(elem) ? NA_LOGICAL : (open ? l<elem && elem<u : l<=elem && elem<=u);
       }
       if (verbose) Rprintf("between parallel processing of double took %8.3fs\n", omp_get_wtime()-tic);
+    }
+  } else {
+    // type integer64
+    const int64_t *lp = (int64_t *)REAL(lower);
+    const int64_t *up = (int64_t *)REAL(upper);
+    const int64_t *xp = (int64_t *)REAL(x);
+    if (!recycleX && recycleLow && recycleUpp) {
+      const int64_t l = lp[0] + open; // +open as for int32 branch
+      const int64_t u = up[0]==NA_INTEGER64 ? MAX_INTEGER64 : up[0] - open;
+      if (verbose) tic = omp_get_wtime();
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int i=0; i<longest; i++) {
+        int64_t elem = xp[i];
+        ansp[i] = elem==NA_INTEGER64 ? NA_LOGICAL : (l<=elem && elem<=u);
+      }
+      if (verbose) Rprintf("between parallel processing of intege64r with recycling took %8.3fs\n", omp_get_wtime()-tic);
+    }
+    else {
+      const int xMask = recycleX ? 0 : INT_MAX;
+      const int lowMask = recycleLow ? 0 : INT_MAX;
+      const int uppMask = recycleUpp ? 0 : INT_MAX;
+      if (verbose) tic = omp_get_wtime();
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int i=0; i<longest; i++) {
+        int64_t elem = xp[i & xMask];
+        int64_t l = lp[i & lowMask];
+        int64_t u = up[i & uppMask];
+        u = u==NA_INTEGER64 ? MAX_INTEGER64 : u-open;
+        ansp[i] = elem==NA_INTEGER64 ? NA_LOGICAL : (l<=elem && elem<=u);
+      }
+      if (verbose) Rprintf("between parallel processing of integer64 took %8.3fs\n", omp_get_wtime()-tic);
     }
   }
   UNPROTECT(nprotect);
