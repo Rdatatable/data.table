@@ -10419,9 +10419,7 @@ test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
 test(1743.1, sapply(fread("a,b\n3,a", colClasses=c(NA, "factor")), class), c(a="integer", b="factor"))
 test(1743.2, sapply(fread("a,b\n3,a", colClasses=c(NA, NA)), class), c(a="integer", b="character"))
 test(1743.3, fread("a,b\n1,a", colClasses=c(NA, TRUE)), error="colClasses is.*logical.*but it has some TRUE or FALSE.*not allowed")
-# also unknown issue in mixed character/factor output and colClasses vector
-test(1743.4, sapply(fread("a,b\n1,a", colClasses=c("character", "factor")), class), c(a="character", b="factor"))
-
+test(1743.4, fread("a,b\n1,a", colClasses=c("character", "factor")), data.table(a="1", b=factor("a")))
 
 # Issue #1634: 'fread doesn't check colClasses to be valid type'
 # Currently using BioGenerics, which doesn't support USE.NAMES
@@ -10434,7 +10432,6 @@ test(1743.8, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "inte
 test(1743.9, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", NA)), class), c(a="Date",b="integer",c="complex",d="integer"))
 test(1743.11, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", "raw")), class), c(a="Date",b="integer",c="complex",d="raw"))
 test(1743.12, x = vapply(fread("a,b\n2015-01-01,2015-01-01", colClasses = c(NA, "IDate")), inherits, what = "IDate", FUN.VALUE = logical(1)), y = c(a=FALSE, b=TRUE))
-
 
 ## Attempts to impose incompatible colClasses is a warning (not an error)
 ## and does not change the value of the columns
@@ -10498,19 +10495,22 @@ test(1743.307, fread(data1743, colClasses=list(NULL=c("C","D"), NULL=1:2)), data
                warning="There is more than one NULL item in colClasses= list. Ignoring all but the first.")
 test(1743.308, fread(data1743, colClasses=list(NULL=c("C","D")), drop=1:2), data.table(C=5:6, D=7:8),
                warning="Ignoring the NULL item in colClasses= because select= or drop= has been used")
-test(1743.31, fread(data1743, colClasses="NULL"), data.table(A=1:2, B=3:4, C=5:6, D=7:8), warning="colClasses.*quoted.*interpreted as colClasses.*NULL")
+test(1743.311, fread(data1743, colClasses="NULL"), ans<-data.table(A=1:2, B=3:4, C=5:6, D=7:8), warning="colClasses.*quoted.*interpreted as colClasses.*NULL")
+test(1743.312, fread(data1743, colClasses=character()), ans)
 test(1743.32, fread("A,B\na,0+1i", colClasses="complex"), data.table(A="a", B=1i),
               warning="Column 'A' was set.*complex.*NAs introduced by coercion.*column has been left as.*character")
 
-## stringsAsFactors = double Issue #2025
-fwrite(data.table(v1 = sample(letters, size = 26 * 10, replace = TRUE), V2 = paste0("A", c(1:259, 1)), V3 = sample.int(26, n = 260, replace = TRUE)), temp1743_41.csv <- tempfile(fileext = ".csv"))
-test(1743.411, sapply(fread(temp1743_41.csv), class)[[1]], "character")
-test(1743.412, sapply(fread(temp1743_41.csv, stringsAsFactors = 0), class)[[1]], "character")
-test(1743.413, sapply(fread(temp1743_41.csv, stringsAsFactors = 0.10), class)[[1]], "character")
-test(1743.414, sapply(fread(temp1743_41.csv, stringsAsFactors = 0.11), class)[[1]], "factor")
-test(1743.415, sapply(fread(temp1743_41.csv, stringsAsFactors = 0.12), class)[[1]], "factor")
-test(1743.416, sapply(fread(temp1743_41.csv, stringsAsFactors = 1.00), class)[[2]], "factor")
-invisible(file.remove(temp1743_41.csv))
+# stringsAsFactors = double; #2025
+fwrite(data.table(V1 = sample(letters, size=26*10, replace=TRUE),
+                  V2 = paste0("A", c(1:259, 1)),
+                  V3 = sample.int(26, n=260, replace=TRUE)),  f<-tempfile(fileext = ".csv"))
+test(1743.411, class(fread(f)[[1]]),                                      "character")
+test(1743.412, class(fread(f, stringsAsFactors=0)[[1]]),                  "character")
+test(1743.413, class(fread(f, stringsAsFactors=0.10, verbose=TRUE)[[1]]), "character", output="stringsAsFactors=0.1 converted 0 column")
+test(1743.414, class(fread(f, stringsAsFactors=0.11, verbose=TRUE)[[1]]), "factor",    output="stringsAsFactors=0.11 converted 1 column")
+test(1743.415, class(fread(f, stringsAsFactors=0.12)[[1]]),               "factor")
+test(1743.416, class(fread(f, stringsAsFactors=1.00)[[1]]),               "factor")
+unlink(f)
 
 # rolling join stopped working for double with fractions, #1904
 DT = data.table(A=c(1999.917,2000.417,2000.917,2001.417,2001.917))
@@ -12831,7 +12831,7 @@ test(1956.6, DT[, .SD, .SDcols = 3i], error = '.SDcols should be column numbers 
 test(1957.1, brackify(1:3), '[1, 2, 3]')
 test(1957.2, brackify(1:11), "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ...]")
 test(1957.3, fread("A,B\na,b\nc,d\n", stringsAsFactors=TRUE, verbose=TRUE), data.table(A=factor(c("a","c")), B=factor(c("b","d"))),
-             output="Converting column(s) [A, B] from 'char' to 'factor'")
+             output="stringsAsFactors=TRUE converted 2 column(s): [A, B]")
 
 # misc. coverage tests in fread
 test(1958.1, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encoding' must be")

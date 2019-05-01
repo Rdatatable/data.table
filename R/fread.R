@@ -124,14 +124,12 @@ autostart=NA)
   }
   if (!is.null(colClasses) && is.atomic(colClasses)) {
     if (!is.character(colClasses)) stop("colClasses is not type list or character vector")
-    if (!length(colClasses)) stop("colClasses is character vector ok but has 0 length")
-
-    if (identical(colClasses, "NULL")) {
+    if (!length(colClasses)) {
+      colClasses=NULL;
+    } else if (identical(colClasses, "NULL")) {
       colClasses = NULL
       warning('colClasses="NULL" (quoted) is interpreted as colClasses=NULL (the default) as opposed to dropping every column.')
-    }
-
-    if (!is.null(names(colClasses))) {   # names are column names; convert to list approach
+    } else if (!is.null(names(colClasses))) {   # names are column names; convert to list approach
       colClasses = tapply(names(colClasses), colClasses, c, simplify=FALSE)
     }
   }
@@ -187,8 +185,7 @@ autostart=NA)
                "raw" = as_raw(v),  # Internal implementation
                "Date" = as.Date(v),
                "POSIXct" = as.POSIXct(v),
-               "NULL" = v,  # Do nothing for now.
-               # Finally,
+               # finally:
                methods::as(v, new_class))
       },
       warning = function(e) {
@@ -216,57 +213,15 @@ autostart=NA)
 
   # Should be after set_colClasses_ante
   if (stringsAsFactors) {
-    # Re Issue 2025
-    if (is.double(stringsAsFactors)) {
+    if (is.double(stringsAsFactors)) { #2025
       should_be_factor <- function(v) is.character(v) && uniqueN(v) < nr * stringsAsFactors
       cols_to_factor <- which(vapply(ans, should_be_factor, logical(1L)))
-      if (verbose) {
-        cat("stringsAsFactors=", stringsAsFactors, ", interpreting as the minimum number",
-            "of distinct values a character column must have (as a proportion of its length)",
-            "to be converted to factor.")
-        if (length(cols_to_factor) == 0L) cat("There were no such columns.")
-        if (length(cols_to_factor) == 1L) cat("There was one such column: ", names(ans)[cols_to_factor], ".")
-
-        if (length(cols_to_factor) >= 2L) {
-          cat("There were", length(cols_to_factor), "such columns: ",
-              if (length(cols_to_factor) <= 10L) {
-                names(ans)[cols_to_factor]
-              } else {
-                c(names(ans)[cols_to_factor[1:6]], "(First 6 shown.)")
-              },
-              ".")
-        }
-      }
     } else {
       cols_to_factor <- which(vapply(ans, is.character, logical(1L)))
     }
-    if (verbose && length(cols_to_factor))
-      cat("Converting column(s) ", brackify(names(ans)[cols_to_factor]), " from 'char' to 'factor'\n", sep = "")
-    for (j in cols_to_factor) {
-      set(ans,
-          j = j,
-          value = tryCatch(as_factor(.subset2(ans, j)),
-                           warning = function(e) {
-                             warning("Column ", j, " was type 'character', ",
-                                     "but when trying to honour ",
-                                     "`stringsAsFactors = ", deparse(substitute(stringsAsFactors)), "` ",
-                                     "fread encountered the following warning:\n\t",
-                                     e$message, "\n",
-                                     " so the column will be left as 'character'.")
-                             return(.subset2(ans, j))
-                           },
-                           error = function(e) {
-                             warning("Column ", j, " was type 'character', ",
-                                     "but when trying to honour ",
-                                     "`stringsAsFactors = ", deparse(substitute(stringsAsFactors)), "` ",
-                                     "fread encountered the following error:\n\t",
-                                     e$message, "\n",
-                                     " so the column will be left as 'character'.")
-                             return(.subset2(ans, j))
-                           }))
-    }
+    if (verbose) cat("stringsAsFactors=", stringsAsFactors, " converted ", length(cols_to_factor), " column(s): ", brackify(names(ans)[cols_to_factor]), "\n", sep="")
+    for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
   }
-
 
   # 2007: is.missing is not correct since default value of select is NULL
   if (!is.null(select)) {
