@@ -35,6 +35,7 @@ static cetype_t ienc = CE_NATIVE;
 static SEXP RCHK;
 static SEXP DT;
 static SEXP colNamesSxp;
+static SEXP colClassesAs; // the classes like factor, POSIXct which are currently done afterwards at R level: strings don't match typeRName above => NUT / "CLASS"
 static int8_t *type;
 static int8_t *size;
 static int ncol = 0;
@@ -176,9 +177,9 @@ SEXP freadR(
   else STOP("encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'", tt);
   // === end extras ===
 
-  RCHK = PROTECT(allocVector(VECSXP, 2));
+  RCHK = PROTECT(allocVector(VECSXP, 3));
   // see kalibera/rchk#9 and Rdatatable/data.table#2865.  To avoid rchk false positives.
-  // allocateDT() assigns DT to position 0. userOverride() assigns colNamesSxp to position 1; colNamesSxp is used in allocateDT()
+  // allocateDT() assigns DT to position 0. userOverride() assigns colNamesSxp to position 1 and colClassesAs to position 2 (both used in allocateDT())
   freadMain(args);
   UNPROTECT(1);
   return DT;
@@ -190,33 +191,36 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   if (typeSize[CT_BOOL8_N]!=1) STOP("Internal error: typeSize[CT_BOOL8_N] != 1"); // # nocov
   if (typeSize[CT_STRING]!=8) STOP("Internal error: typeSize[CT_STRING] != 1"); // # nocov
   colNamesSxp = R_NilValue;
-  if (colNames!=NULL) {
-    SET_VECTOR_ELT(RCHK, 1, colNamesSxp=allocVector(STRSXP, ncol));
-    for (int i=0; i<ncol; i++) {
-      SEXP elem;
-      if (colNames[i].len<=0) {
-        char buff[12];
-        sprintf(buff,"V%d",i+1);
-        elem = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
-      } else {
-        elem = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
-      }
-      SET_STRING_ELT(colNamesSxp, i, elem);
+  SET_VECTOR_ELT(RCHK, 1, colNamesSxp=allocVector(STRSXP, ncol));
+  colClassesAs = NULL;
+  for (int i=0; i<ncol; i++) {
+    SEXP elem;
+    if (colNames==NULL || colNames[i].len<=0) {
+      char buff[12];
+      sprintf(buff,"V%d",i+1);
+      elem = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
+    } else {
+      elem = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
     }
+    SET_STRING_ELT(colNamesSxp, i, elem);
   }
   if (length(colClassesSxp)) {
     SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT));
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
+    SET_VECTOR_ELT(RCHK, 2, colClassesAs=allocVector(STRSXP, ncol));  // if any, this attached to the DT for R level to call as_ methods on
     if (isString(colClassesSxp)) {
       SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT));
       if (LENGTH(colClassesSxp)==1) {
         signed char newType = typeEnum[INTEGER(typeEnum_idx)[0]-1];
         if (newType == CT_DROP) STOP("colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing");
         for (int i=0; i<ncol; i++) type[i]=newType;   // freadMain checks bump up only not down
+        if (INTEGER(typeEnum_idx)[0]==NUT) for (int i=0; i<ncol; i++) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,0));
       } else if (LENGTH(colClassesSxp)==ncol) {
         for (int i=0; i<ncol; i++) {
           if (STRING_ELT(colClassesSxp,i)==NA_STRING) continue; // user is ok with inherent type for this column
-          type[i] = typeEnum[INTEGER(typeEnum_idx)[i]-1];
+          int w = INTEGER(typeEnum_idx)[i];
+          type[i] = typeEnum[w-1];
+          if (w==NUT) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,i));
         }
       } else {
         STOP("colClasses is an unnamed character vector but its length is %d. Must be length 1 or ncol (%d in this case) when unnamed. To specify types for a subset of columns you can either name the items with the column names or pass list() format to colClasses using column names or column numbers. See examples in ?fread.",
@@ -224,20 +228,24 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       }
       UNPROTECT(1); // typeEnum_idx
     } else {
-      if (!isNewList(colClassesSxp)) STOP("CfreadR: colClasses is not type list");
-      if (!length(getAttrib(colClassesSxp, R_NamesSymbol))) STOP("CfreadR: colClasses is type list but has no names");
-      SEXP typeEnum_idx = PROTECT(chmatch(PROTECT(getAttrib(colClassesSxp, R_NamesSymbol)), typeRName_sxp, NUT));
+      if (!isNewList(colClassesSxp)) STOP("colClasses is type '%s' but should be list or character", type2char(TYPEOF(colClassesSxp)));
+      SEXP listNames = PROTECT(getAttrib(colClassesSxp, R_NamesSymbol));  // rchk wanted this protected
+      if (!length(listNames)) STOP("colClasses is type list but has no names");
+      SEXP typeEnum_idx = PROTECT(chmatch(listNames, typeRName_sxp, NUT));
+      bool firstNULL=true, NULLwarned=false;
       for (int i=0; i<LENGTH(colClassesSxp); i++) {
         SEXP items;
-        signed char thisType = typeEnum[INTEGER(typeEnum_idx)[i]-1];
+        const int w = INTEGER(typeEnum_idx)[i];
+        signed char thisType = typeEnum[w-1];
         items = VECTOR_ELT(colClassesSxp,i);
         if (thisType == CT_DROP) {
-          if (!isNull(dropSxp) || !isNull(selectSxp)) {
-            if (dropSxp!=items) DTWARN("Ignoring the NULL item in colClasses= because select= or drop= has been used.");
-            // package damr has a nice workaround for when NULL didn't work before v1.12.0: it sets drop=col_class$`NULL`. So allow that unambiguous case with no warning.
-          } else {
-            dropSxp = items;
+          if (firstNULL) {
+            if (!isNull(dropSxp) || !isNull(selectSxp)) {
+              if (dropSxp!=items && !NULLwarned) { DTWARN("Ignoring the NULL item in colClasses= because select= or drop= has been used."); NULLwarned=true; }
+              // package damr has a nice workaround for when NULL didn't work before v1.12.0: it sets drop=col_class$`NULL`. So allow that unambiguous case with no warning.
+            } else { dropSxp=items; firstNULL=false; }
           }
+          else if (!NULLwarned) { DTWARN("There is more than one NULL item in colClasses= list. Ignoring all but the first."); NULLwarned=true; }
           continue;
         }
         SEXP itemsInt;
@@ -254,13 +262,14 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
             k--;
             if (type[k]<0) STOP("Column '%s' appears more than once in colClasses", CHAR(STRING_ELT(colNamesSxp,k)));
             type[k] = -thisType;
+            if (w==NUT) SET_STRING_ELT(colClassesAs, k, STRING_ELT(listNames,i));
             // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
           }
         }
         UNPROTECT(1); // UNPROTECTing itemsInt inside loop to save protection stack
       }
       for (int i=0; i<ncol; i++) if (type[i]<0) type[i] *= -1;  // undo sign; was used to detect duplicates
-      UNPROTECT(2);  // typeEnum_idx (+1 for its protect of getAttrib which rcheck asked for iirc)
+      UNPROTECT(2);  // listNames and typeEnum_idx
     }
     UNPROTECT(1);  // typeRName_sxp
   }
@@ -329,17 +338,30 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
   if (newDT) {
     ncol = ncolArg;
     dtnrows = allocNrow;
-    SET_VECTOR_ELT(RCHK, 0, DT=allocVector(VECSXP,ncol-ndrop));
+    SET_VECTOR_ELT(RCHK, 0, DT=allocVector(VECSXP, ncol-ndrop));
     if (ndrop==0) {
-      setAttrib(DT,R_NamesSymbol,colNamesSxp);  // colNames mkChar'd in userOverride step
+      setAttrib(DT, R_NamesSymbol, colNamesSxp);  // colNames mkChar'd in userOverride step
+      if (colClassesAs) setAttrib(DT, sym_colClassesAs, colClassesAs);
     } else {
       SEXP tt = PROTECT(allocVector(STRSXP, ncol-ndrop));
       setAttrib(DT, R_NamesSymbol, tt);
-      UNPROTECT(1); // tt; now that it's safely a member of protected object
+      UNPROTECT(1); // tt; now that it's safely a member of protected object (for rchk)
+      SEXP ss = R_NilValue;
+      if (colClassesAs) {
+        ss = PROTECT(allocVector(STRSXP, ncol-ndrop));
+        setAttrib(DT, sym_colClassesAs, ss);
+        UNPROTECT(1); // ss
+      }
       for (int i=0,resi=0; i<ncol; i++) if (type[i]!=CT_DROP) {
-        SET_STRING_ELT(tt,resi++,STRING_ELT(colNamesSxp,i));
+        if (colClassesAs) SET_STRING_ELT(ss, resi, STRING_ELT(colClassesAs,i));
+        SET_STRING_ELT(tt, resi++, STRING_ELT(colNamesSxp,i));
       }
     }
+    colClassesAs = getAttrib(DT, sym_colClassesAs);
+    bool none = true;
+    const int n = length(colClassesAs);
+    for (int i=0; i<n; ++i) if (STRING_ELT(colClassesAs,i) != R_BlankString) { none=false; break; }
+    if (none) setAttrib(DT, sym_colClassesAs, R_NilValue);
   }
   // TODO: move DT size calculation into a separate function (since the final size is different from the initial size anyways)
   size_t DTbytes = SIZEOF(DT)*(ncol-ndrop)*2; // the VECSXP and its column names (exclude global character cache usage)

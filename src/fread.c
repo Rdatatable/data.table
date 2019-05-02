@@ -1845,12 +1845,11 @@ int freadMain(freadMainArgs _args) {
 
   ch = pos;  // back to start of first row (column names if header==true)
 
-  colNames = (lenOff*) calloc((size_t)ncol, sizeof(lenOff));
-  if (!colNames) STOP("Unable to allocate %d*%d bytes for column name pointers: %s", ncol, sizeof(lenOff), strerror(errno));
-
   if (args.header==false) {
-    // colNames was calloc'd so nothing to do; all len=off=0 already and default column names (V1, V2, etc) will be assigned
+    colNames = NULL;  // userOverride will assign V1, V2, etc
   } else {
+    colNames = (lenOff*) calloc((size_t)ncol, sizeof(lenOff));
+    if (!colNames) STOP("Unable to allocate %d*%d bytes for column name pointers: %s", ncol, sizeof(lenOff), strerror(errno));
     if (sep==' ') while (*ch==' ') ch++;
     void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
     FieldParseContext fctx = {
