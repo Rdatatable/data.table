@@ -11,6 +11,7 @@
     * `colClasses` now supports `'complex'`, `'raw'`, `'Date'`, `'POSIXct'`, and user-defined classes (so long as an `as.` method exists), [#491](https://github.com/Rdatatable/data.table/issues/491) [#1634](https://github.com/Rdatatable/data.table/issues/1634) [#2610](https://github.com/Rdatatable/data.table/issues/2610). Any error during coercion results in a warning and the column is left as the default type (probably `"character"`). Thanks to @hughparsonage for the PR.
     * `stringsAsFactors=0.10` will factorize any character column containing under `0.10*nrow` unique strings, [#2025](https://github.com/Rdatatable/data.table/issues/2025). Thanks to @hughparsonage for the PR.
     * `colClasses=list(numeric=20:30, numeric="ID")` will apply the `numeric` type to column numbers `20:30` as before and now also column name `"ID"`; i.e. all duplicate class names are now respected rather than only the first. This need may arise when specifying some columns by name and others by number, as in this example. Thanks to @hughparsonage for the PR.
+    * gains `yaml` (default `FALSE`) and the ability to parse CSVY-formatted input files; i.e., csv files with metadata in a header formatted as YAML (http://csvy.org/), [#1701](https://github.com/Rdatatable/data.table/issues/1701). See `?fread` and files in `/inst/tests/csvy/` for sample formats. Please provide feedback if you find this feature useful and would like extended capabilities. For now, consider it experimental, meaning the API/arguments may change. Thanks to @leeper at [`rio`](https://github.com/leeper/rio) for the inspiration and @MichaelChirico for implementing.
 
 3. `fwrite()`:
     * now writes compressed `.gz` files directly, [#2016](https://github.com/Rdatatable/data.table/issues/2016). Compression, like `fwrite()`, is multithreaded and compresses each chunk on-the-fly (a full size intermediate file is not created). Use a ".gz" extension, or the new `compress=` option. Many thanks to Philippe Chataignon for the significant PR. For example:
@@ -48,6 +49,16 @@
 5. `print.data.table()` gains an option to display the timezone of `POSIXct` columns when available, [#2842](https://github.com/Rdatatable/data.table/issues/2842). Thanks to Michael Chirico for reporting and Felipe Parages for the PR.
 
 6. New functions `nafill` and `setnafill`, [#854](https://github.com/Rdatatable/data.table/issues/854). Thanks to Matthieu Gomez for the request and Jan Gorecki for implementing.
+
+    ```R
+    > x = c(1:3, NA, NA, 6:7, NA, 9:10)
+    > nafill(x, fill=0L)   ## fill with constant
+     [1]  1  2  3  0  0  6  7  0  9 10
+    > nafill(x, "locf")    ## last obs carried forward
+     [1]  1  2  3  3  3  6  7  7  9 10
+    > nafill(x, "nocb")    ## next obs carried backward
+     [1]  1  2  3  6  6  6  7  9  9 10
+    ```
 
 7. New variable `.Last.updated` (similar to R's `.Last.value`) contains the number of rows affected by the most recent `:=` or `set()`, [#1885](https://github.com/Rdatatable/data.table/issues/1885).
 

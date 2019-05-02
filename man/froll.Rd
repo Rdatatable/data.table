@@ -38,8 +38,7 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   \item{adaptive}{ logical, should adaptive rolling function be
     calculated, default \code{FALSE}. See details below. }
   \item{verbose}{ logical, default \code{getOption("datatable.verbose")},
-    \code{TRUE} turns on status and information messages to the console,
-    it also disable parallel processing. }
+    \code{TRUE} turns on status and information messages to the console. }
 }
 \details{
   \code{froll*} functions accepts vectors, lists, data.frames or

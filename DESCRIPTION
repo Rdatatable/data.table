@@ -42,7 +42,7 @@ Authors@R: c(
   person("Roy","Storey",           role="ctb"))
 Depends: R (>= 3.1.0)
 Imports: methods
-Suggests: bit64, curl, R.utils, knitr, xts, nanotime, zoo
+Suggests: bit64, curl, R.utils, knitr, xts, nanotime, zoo, yaml
 SystemRequirements: zlib
 Description: Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns, friendly and fast character-separated-value read/write. Offers a natural and flexible syntax, for faster development.
 License: MPL-2.0 | file LICENSE
