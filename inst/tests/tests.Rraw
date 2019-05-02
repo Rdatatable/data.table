@@ -14194,20 +14194,31 @@ if (test_bit64) {
   test(2032.51, between(1:10, as.i64(3), as.i64(6)), error="are integer64 class while 'x' argument is not")
   test(2032.52, between(1:10, 3, as.i64(6)), error="are integer64 class while 'x' argument is not")
   old = options("datatable.verbose"=TRUE)
+  x = as.i64(1:10)
   ans36 = c(FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE)
   ans36open = c(FALSE,FALSE,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE)
-  test(2032.53, between(as.i64(1:10), 3, 6), ans36, output="between parallel processing of integer64 with recycling")
-  test(2032.54, between(as.i64(1:10), 3, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
-  test(2032.55, between(as.i64(1:10), 3L, 6), ans36, output="between parallel processing of integer64 with recycling")
-  test(2032.56, between(as.i64(1:10), 3L, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
-  test(2032.57, between(as.i64(1:10), 3, 6L), ans36, output="between parallel processing of integer64 with recycling")
-  test(2032.58, between(as.i64(1:10), 3, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
-  test(2032.59, between(as.i64(1:10), 3L, 6L), ans36, output="between parallel processing of integer64 with recycling")
-  test(2032.60, between(as.i64(1:10), 3L, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
-  #TODO without recycling
-  #TODO real int64
-  #TODO NA int64 in x/lower/upper
-  #TODO NA int64 in lower/upper without recycling
+  test(2032.53, between(x, 3, 6), ans36, output="between parallel processing of integer64 with recycling")
+  test(2032.54, between(x, 3, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  test(2032.55, between(x, 3L, 6), ans36, output="between parallel processing of integer64 with recycling")
+  test(2032.56, between(x, 3L, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  test(2032.57, between(x, 3, 6L), ans36, output="between parallel processing of integer64 with recycling")
+  test(2032.58, between(x, 3, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  test(2032.59, between(x, 3L, 6L), ans36, output="between parallel processing of integer64 with recycling")
+  test(2032.60, between(x, 3L, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  test(2032.61, between(x, rep(3, 10L), rep(6, 10L)), ans36, output="between parallel processing of integer64 took")
+  test(2032.62, between(x, rep(3, 10L), rep(6, 10L), incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  maxint = 2147483647
+  test(2032.63, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 with recycling")
+  test(2032.64, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  x[5] = NA
+  ans36[5] = NA
+  ans36open[5] = NA
+  test(2032.65, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 with recycling")
+  test(2032.66, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  test(2032.67, between(x+maxint, NA, 6+maxint), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 with recycling")
+  test(2032.68, between(x+maxint, 3+maxint, NA, incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 with recycling")
+  test(2032.69, between(x+maxint, rep(NA, 10L), rep(6+maxint, 10L)), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
+  test(2032.70, between(x+maxint, rep(3+maxint, 10L), rep(NA, 10L), incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
   options(old)
 }
 

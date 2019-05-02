@@ -164,7 +164,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=0; i<longest; i++) {
         int64_t elem = xp[i & xMask];
-        int64_t l = lp[i & lowMask];
+        int64_t l = lp[i & lowMask] +open;
         int64_t u = up[i & uppMask];
         u = u==NA_INTEGER64 ? MAX_INTEGER64 : u-open;
         ansp[i] = elem==NA_INTEGER64 ? NA_LOGICAL : (l<=elem && elem<=u);
