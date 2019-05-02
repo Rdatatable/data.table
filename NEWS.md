@@ -49,6 +49,16 @@
 
 6. New functions `nafill` and `setnafill`, [#854](https://github.com/Rdatatable/data.table/issues/854). Thanks to Matthieu Gomez for the request and Jan Gorecki for implementing.
 
+    ```R
+    > x = c(1:3, NA, NA, 6:7, NA, 9:10)
+    > nafill(x, fill=0L)   ## fill with constant
+     [1]  1  2  3  0  0  6  7  0  9 10
+    > nafill(x, "locf")    ## last obs carried forward
+     [1]  1  2  3  3  3  6  7  7  9 10
+    > nafill(x, "nocb")    ## next obs carried backward
+     [1]  1  2  3  6  6  6  7  9  9 10
+    ```
+
 7. New variable `.Last.updated` (similar to R's `.Last.value`) contains the number of rows affected by the most recent `:=` or `set()`, [#1885](https://github.com/Rdatatable/data.table/issues/1885).
 
 #### BUG FIXES
