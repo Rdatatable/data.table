@@ -51,10 +51,11 @@
 
     ```R
     > x = c(1:3, NA, NA, 6:7, NA, 9:10)
+    > nafill(x, fill=0L)   ## fill with constant
      [1]  1  2  3  0  0  6  7  0  9 10
-    > nafill(x, "locf")
+    > nafill(x, "locf")    ## last obs carried forward
      [1]  1  2  3  3  3  6  7  7  9 10
-    > nafill(x, "nocb")
+    > nafill(x, "nocb")    ## next obs carried backward
      [1]  1  2  3  6  6  6  7  9  9 10
     ```
 
