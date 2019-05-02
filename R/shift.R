@@ -23,3 +23,21 @@ shift <- function(x, n=1L, fill=NA, type=c("lag", "lead", "shift"), give.names=F
   }
   ans
 }
+
+nafill = function(x, type=c("const","locf","nocb"), fill=NA, verbose=getOption("datatable.verbose")) {
+  type = match.arg(type)
+  if (type!="const" && !missing(fill))
+    warning("argument 'fill' ignored, only make sense for type='const'")
+  .Call(CnafillR, x, type, fill, FALSE, NULL, verbose)
+}
+
+setnafill = function(x, type=c("const","locf","nocb"), fill=NA, cols=seq_along(x), verbose=getOption("datatable.verbose")) {
+  type = match.arg(type)
+  if (type!="const" && !missing(fill))
+    warning("argument 'fill' ignored, only make sense for type='const'")
+  invisible(.Call(CnafillR, x, type, fill, TRUE, cols, verbose))
+}
+
+colnamesInt = function(x, cols) {
+  .Call(CcolnamesInt, x, cols)
+}

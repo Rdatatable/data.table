@@ -1017,8 +1017,10 @@ test(350.6, DT[c(0,0,0), .N], 0L)
 
 # Test recycling list() on RHS of :=
 DT = data.table(a=1:3,b=4:6,c=7:9,d=10:12)
-test(351, DT[,c("a","b"):=list(13:15)], data.table(a=13:15,b=13:15,c=7:9,d=10:12))
-test(352, DT[,letters[1:4]:=list(1L,NULL)], error="Supplied 4 columns to be assigned 2 items. Please see NEWS for v1.12.2")
+test(351.1, DT[,c("a","b"):=list(13:15)], ans<-data.table(a=13:15,b=13:15,c=7:9,d=10:12))
+test(351.2, DT[,c("a","b"):=13:15],       ans)
+test(352.1, DT[,letters[1:4]:=list(1L,NULL)], error="Supplied 4 columns to be assigned 2 items. Please see NEWS for v1.12.2")
+test(352.2, DT[,letters[1:4]:=list(1L,NULL,2L,NULL)], data.table(a=c(1L,1L,1L),c=c(2L,2L,2L)))
 
 # Test assigning new levels into factor columns
 DT = data.table(f=factor(c("a","b")),x=1:4)
@@ -2111,6 +2113,7 @@ test(753.1, DT[,c("x1","x2"):=4:6, verbose = TRUE], data.table(a=letters[1:3],x=
 test(753.2, DT[2,x2:=7L], data.table(a=letters[1:3],x=3:1,x1=4:6,x2=c(4L,7L,6L),key="a"))
 DT = data.table(a=letters[3:1],x=1:3,y=4:6)
 test(754, DT[,c("x1","y1","x2"):=list(x,y)], error="Supplied 3 columns to be assigned 2 items. Please see NEWS for v1.12.2")
+test(754.0, DT[,c("x1","y1","x2"):=list(x,y,x)], data.table(a=letters[3:1],x=1:3,y=4:6,x1=1:3,y1=4:6,x2=1:3))
 # And non-recycling i.e. that a single column copy does copy the column
 DT = data.table(a=1:3)
 test(754.1, DT[,b:=a][1,a:=4L][2,b:=5L], data.table(a=INT(4,2,3),b=INT(1,5,3)))
@@ -4870,10 +4873,10 @@ test(1294.17, dt[, c := NA]$c, rep(NA, 3))
 test(1294.18, dt[, c := list(1)]$c, rep(TRUE, 3), warning="Coerced double RHS to logical")
 test(1294.19, dt[, c := list(list(1))]$c, rep(TRUE, 3), warning="Coerced list RHS to logical")
 test(1294.20, dt[, c := "bla"]$c, rep(NA, 3), warning="Coerced character RHS to logical")
-test(1294.21, dt[, d := 1]$d, rep(list(1), 3), warning="Coerced double RHS to list")
-test(1294.22, dt[, d := 1L]$d, rep(list(1L), 3), warning="Coerced integer RHS to list")
-test(1294.23, dt[, d := TRUE]$d, rep(list(TRUE), 3), warning="Coerced logical RHS to list")
-test(1294.24, dt[, d := "bla"]$d, rep(list("bla"), 3), warning="Coerced character RHS to list")
+test(1294.21, dt[, d := 1]$d, rep(list(1), 3))
+test(1294.22, dt[, d := 1L]$d, rep(list(1L), 3))
+test(1294.23, dt[, d := TRUE]$d, rep(list(TRUE), 3))
+test(1294.24, dt[, d := "bla"]$d, rep(list("bla"), 3))
 test(1294.25, dt[, d := list(list(1))]$d, rep(list(1), 3))
 test(1294.26, dt[, e := 1]$e, rep("1", 3), warning="Coerced double RHS to character")
 test(1294.27, dt[, e := 1L]$e, rep("1", 3), warning="Coerced integer RHS to character")
@@ -6658,9 +6661,13 @@ test(1478.2, sapply(ll, length), INT(1,2,0,0))
 test(1479, rbindlist(replicate(4,rbindlist(replicate(47, NULL),
       use.names=TRUE, fill=TRUE)), use.names=TRUE, fill=TRUE), null.data.table())
 
-# #936, assigning list column to a factor column by reference
-DT <- data.table(x = factor(c("a", "b c", "d e f")))
-test(1480, DT[, x := strsplit(as.character(x), " ")], data.table(x=list("a", letters[2:3], letters[4:6])))
+# #936, plonking list column over a factor column by reference
+DT = data.table(x = factor(c("a", "b c", "d e f")))
+test(1480.1, DT[, x := strsplit(as.character(x), " ")],       ans<-data.table(x=list("a", letters[2:3], letters[4:6])))
+DT = data.table(x = factor(c("a", "b c", "d e f")))
+test(1480.2, DT[, x := .(strsplit(as.character(x), " "))],    ans)
+DT = data.table(x = factor(c("a", "b c", "d e f")))
+test(1480.3, DT[, x := list(strsplit(as.character(x), " "))], ans)
 
 # #970, over-allocation issue
 a=data.frame(matrix(1,ncol=101L))
@@ -8364,6 +8371,10 @@ test(1618.4, fread("a,c,b\n1,2,3", select=c(2:3)), data.table(c=2L, b=3L))
 test(1618.5, fread("a,c,b\n1,2,3", select=c("b", "c"), col.names=c("q", "r")), data.table(q=3L, r=2L))
 test(1618.6, fread("a,c,b\n1,2,3", select=c("b", "z")), data.table(b=3L), warning="Column name 'z' not found.*skipping")
 
+# Additional test for 1445 for non-monotonic integer select
+select1618.8 <- c(4, 9, 8, 23, 1, 21, 5, 18, 11, 13)
+test(1618.8, names(fread("a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z\na,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z", select = select1618.8)), letters[select1618.8])
+
 # fix for #1270. Have been problems with R before vs after 3.1.0 here. But now ok in all R versions.
 DT = data.table(x=1:2, y=5:6)
 test(1619.1, DT[, .BY, by=x]$BY, as.list(1:2))
@@ -9454,13 +9465,29 @@ test(1658.31, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=
 test(1658.32, fwrite(data.table(D = as.POSIXct(seq.Date(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
     output="D\n2038-01-19T00:00:00Z\n2038-01-20T00:00:00Z")
 
-
 # input is of class matrix
 test(1658.33, fwrite(matrix("foo"), quote=TRUE), output='"V1"\n.*"foo"', message = "x being coerced from class: matrix to data.table")
 #                                                              ^^ this is to pass testing with verbose=TRUE; there is some verbose output between column names and the data
 test(1658.34, fwrite(matrix(1:4, nrow=2, ncol=2), quote = TRUE), output = '"V1","V2"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
 test(1658.35, fwrite(matrix(1:3, nrow=3, ncol=1), quote = TRUE), output = '"V1"\n.*1\n2\n3', message = "x being coerced from class: matrix to data.table")
 test(1658.36, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c("ca","cb"))), quote = TRUE), output = '"ca","cb"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
+
+# fwrite compress
+test(1658.37, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"), output='a,b\n1,1\n2,2\n3,3')  # compress ignored on console
+DT = data.table(a=rep(1:2,each=100), b=rep(1:4,each=25))
+fwrite(DT, file=f1<-tempfile(fileext=".gz"))
+fwrite(DT, file=f2<-tempfile())
+test(1658.38, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
+if (test_R.utils) test(1658.39, fread(f1), DT)  # use fread to decompress gz (works cross-platform)
+fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
+test(1658.40, file.info(f3)$size, file.info(f1)$size)
+unlink(c(f1,f2,f3))
+DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c("foo", "bar", "baz")))
+test(1658.41, fwrite(DT), output=c("a,b","1,1|2|3|4","2,3.14|1e+12","3,foo|bar|baz"))
+DT[3,b:=c(3i,4i,5i)]
+test(1658.42, fwrite(DT), error="Row 3 of list column is type 'complex'")
+DT[3,b:=factor(letters[1:3])]
+test(1658.43, fwrite(DT), error="Row 3 of list column is type 'factor'")
 
 ## End fwrite tests
 
@@ -10329,7 +10356,8 @@ DT = data.table(
   D = as.POSIXct(dt<-paste(d,t), tz="UTC"),
   E = as.POSIXct(paste0(dt,c(".999",".0",".5",".111112",".123456",".023",".0",".999999",".99",".0009")), tz="UTC"))
 
-test(1740.1, fwrite(DT,dateTimeAs="iso"), error="dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
+test(1740.0, fwrite(DT,dateTimeAs="iso"), error="dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
+test(1740.1, fwrite(DT,dateTimeAs=c("ISO","squash")), error="dateTimeAs must be a single string")
 test(1740.2, capture.output(fwrite(DT,dateTimeAs="ISO")), c(
 "A,B,C,D,E",
 "1907-10-21,1907-10-21,23:59:59,1907-10-21T23:59:59Z,1907-10-21T23:59:59.999Z",
@@ -10392,8 +10420,98 @@ test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
 test(1743.1, sapply(fread("a,b\n3,a", colClasses=c(NA, "factor")), class), c(a="integer", b="factor"))
 test(1743.2, sapply(fread("a,b\n3,a", colClasses=c(NA, NA)), class), c(a="integer", b="character"))
 test(1743.3, fread("a,b\n1,a", colClasses=c(NA, TRUE)), error="colClasses is.*logical.*but it has some TRUE or FALSE.*not allowed")
-# also unknown issue in mixed character/factor output and colClasses vector
-test(1743.4, sapply(fread("a,b\n1,a", colClasses=c("character", "factor")), class), c(a="character", b="factor"))
+test(1743.4, fread("a,b\n1,a", colClasses=c("character", "factor")), data.table(a="1", b=factor("a")))
+
+# Issue #1634: 'fread doesn't check colClasses to be valid type'
+# Currently using BioGenerics, which doesn't support USE.NAMES
+## Date supported character/list colClasses
+test(1743.5, sapply(fread("a,b\n2017-01-01,1", colClasses=c("Date", "integer")), class), c(a="Date", b="integer"))
+test(1743.6, sapply(fread("a,b\n2017-01-01,1", colClasses=list(Date = 1L, integer = 2L)), class), c(a="Date", b="integer"))
+test(1743.6, sapply(fread("a,b\n2017-01-01,2017-01-02", colClasses=list(Date = 1:2)), class), c(a="Date", b="Date"))
+test(1743.7, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), c(a="Date", b="integer", c="complex"))
+test(1743.8, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), c(a="Date", b="integer", c="complex"))
+test(1743.9, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", NA)), class), c(a="Date",b="integer",c="complex",d="integer"))
+test(1743.11, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", "raw")), class), c(a="Date",b="integer",c="complex",d="raw"))
+test(1743.12, x = vapply(fread("a,b\n2015-01-01,2015-01-01", colClasses = c(NA, "IDate")), inherits, what = "IDate", FUN.VALUE = logical(1)), y = c(a=FALSE, b=TRUE))
+
+## Attempts to impose incompatible colClasses is a warning (not an error)
+## and does not change the value of the columns
+test(1743.13, sapply(fread("a,b\n09/05/98,2015-01-01", colClasses = "Date"), class), y=c(a="character", b="Date"), warning="standard unambiguous format")
+
+## Just invalid
+test(1743.14, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="[nN]o method .*for .*foo")
+test(1743.15, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="the column has been left as type .*character")
+test(1743.16, sapply(fread("a,b\n2017-01-01,2", colClasses=list(foo=1)), class), c(a="character", b="integer"), warning="the column has been left as type .*character")
+
+## When colClasses is a list, it should still work if factor is a name of multiple elements.
+test(1743.17, sapply(fread("a,b\nc,d", colClasses = list(factor = 1L, factor = 2L)), class), c(a="factor", b="factor"))
+test(1743.18, sapply(fread("a,b,c,d\nw,x,y,z", colClasses = list(factor = 1L, factor = 2L, factor = "c")), class), c(a="factor", b="factor", c ="factor", d="character"))
+
+## When colClasses is used with select, integers in colClasses refer to the original column order
+test(1743.191, sapply(fread("a,b,c\nd,e,f", colClasses = list(Date = 1L), select = 2:3), class), y = c(b="character", c="character"))
+test(1743.192, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c(1L, 3L), Date = 4), select = 3:2), class), y = c(c="raw", b="integer"))
+test(1743.193, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c(1L, 3L), Date = 4), drop = c(1, 4)), class), y = c(b="integer", c="raw"))
+test(1743.194, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c("a", "c"), Date = "d"), drop = c(1L, 4L)), class), y = c(b="integer", c="raw"))
+test(1743.195, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c("a", "c"), Date = "d"), select = c(2L, 3L)), class), y = c(b="integer", c="raw"))
+test(1743.196, sapply(fread("a,b,c,d\n2,0+1i,2,x", colClasses = list(raw = c("a", "c"), complex = "b", Date = "d"), select = c(2L, 3L)), class), y = c(b="complex", c="raw"))
+test(1743.197, sapply(fread("A,B,C,D\nA,B,X,4", select = c(1, 4, 3, 2), colClasses = c("factor", "factor", "character", "integer")), class), c("A" = "factor", "D" = "integer", "C" = "character", "B" = "factor"))
+
+## factors
+test(1743.211, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = 1L), select = 2:3), class), y = c(b="integer", c="character"))
+test(1743.212, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = c(1L, 3L)), select = 2:3), class), y = c(b="integer", c="factor"))
+## concordance with #1445 - respect select's order
+test(1743.213, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = c(1L, 3L)), select = 3:2), class), y = c(c="factor", b="integer"))
+test(1743.214, sapply(fread("a,b,c,d\n2,2,f,x", colClasses = list(factor = c(1L, 3L), Date = 4), select = 3:2), class), y = c(c="factor", b="integer"))
+test(1743.215, sapply(fread("a,b,c\n2,2,f", colClasses = c("integer", "integer", "factor"), select=2:3), class), y = c(b="integer", c="factor"))
+test(1743.216, sapply(fread("a,b\n1,x", colClasses = list(factor = "b"), select = "b"), class), c(b = "factor"))
+test(1743.217, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor = c(1, 2, 4), factor = 3), select = c(5, 6, 2, 4)), class), y = c(e = "character", f = "character", b = "factor", d = "factor"))
+test(1743.218, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor = c(1, 2, 4), factor = 3), select = c(5, 4, 2, 3)), class), y = c(e = "character", d = "factor", b = "factor", c = "factor"))
+
+test(1743.22, fread("a,b,c\n1999/01/01,2,f", colClasses=list(Date=1L), drop="a"), data.table(b=2L, c="f"))
+test(1743.231, fread("a,b,c\n2,1,4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c="4i"), warning="NAs introduced by coercion.*left as type 'character'")
+test(1743.232, fread("a,b,c\n2,1,3+4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c=3+4i))
+test(1743.241, fread("a,b,c\n2,2,f", colClasses = list(character="c", integer="b"), drop="a"), data.table(b=2L, c="f"))
+test(1743.242, fread("a,b,c\n2,2,f", colClasses = c("integer", "integer", "factor"), drop="a"), data.table(b=2L, c=factor("f")))
+
+## POSIXct
+test(1743.25, fread("a,b,c\n2015-06-01 11:00:00,1,ae", colClasses=c("POSIXct","integer","character")), data.table(a=as.POSIXct("2015-06-01 11:00:00"),b=1L,c="ae"))
+test(1743.26, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character="b"), drop=c("a","b"), logical01=TRUE),
+              ans<-data.table(c=as.POSIXct("2015-06-01 11:00:00"), d="a", e=1.5, f="M", g=9L, h=FALSE))
+test(1743.27, fread("a,b,c,d,e,f,g,h\n1,k,2015-06-01 11:00:00,a,1.5,M,9,0", colClasses=list(POSIXct="c", character=2), drop=c("a","b"), logical01=TRUE),
+              ans)
+
+## raw same behaviour as read.csv
+test(1743.28, sapply(fread("a,b\n05,05", colClasses = c("raw", "integer")), class), sapply(read.csv(text ="a,b\n05,05", colClasses = c("raw", "integer")), class))
+test(1743.29, sapply(fread("a,b\n05,05", colClasses = list(raw = 1L)), class), sapply(read.csv(text = "a,b\n05,05", colClasses = c("raw", "integer")), class))
+
+## colClasses Examples
+data1743 = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
+test(1743.301, fread(data1743, colClasses=c("B"="NULL","C"="NULL")), ans<-data.table(A=1:2, D=7:8))
+test(1743.302, fread(data1743, colClasses=list(NULL=c("B","C"))),    ans)
+test(1743.303, fread(data1743, drop=c("B","C")),                     ans)
+test(1743.304, fread(data1743, drop=2:3),                            ans)
+test(1743.305, fread(data1743, colClasses=c("integer", "NULL", "NULL", "integer")), ans)
+test(1743.306, fread(data1743, colClasses=c("integer", "NULL", "NULL", "integer"), drop=4), data.table(A=1:2))
+test(1743.307, fread(data1743, colClasses=list(NULL=c("C","D"), NULL=1:2)), data.table(A=1:2, B=3:4),
+               warning="There is more than one NULL item in colClasses= list. Ignoring all but the first.")
+test(1743.308, fread(data1743, colClasses=list(NULL=c("C","D")), drop=1:2), data.table(C=5:6, D=7:8),
+               warning="Ignoring the NULL item in colClasses= because select= or drop= has been used")
+test(1743.311, fread(data1743, colClasses="NULL"), ans<-data.table(A=1:2, B=3:4, C=5:6, D=7:8), warning="colClasses.*quoted.*interpreted as colClasses.*NULL")
+test(1743.312, fread(data1743, colClasses=character()), ans)
+test(1743.32, fread("A,B\na,0+1i", colClasses="complex"), data.table(A="a", B=1i),
+              warning="Column 'A' was set.*complex.*NAs introduced by coercion.*column has been left as.*character")
+
+# stringsAsFactors = double; #2025
+fwrite(data.table(V1 = sample(letters, size=26*10, replace=TRUE),
+                  V2 = paste0("A", c(1:259, 1)),
+                  V3 = sample.int(26, n=260, replace=TRUE)),  f<-tempfile(fileext = ".csv"))
+test(1743.411, class(fread(f)[[1]]),                                      "character")
+test(1743.412, class(fread(f, stringsAsFactors=0)[[1]]),                  "character")
+test(1743.413, class(fread(f, stringsAsFactors=0.10, verbose=TRUE)[[1]]), "character", output="stringsAsFactors=0.1 converted 0 column")
+test(1743.414, class(fread(f, stringsAsFactors=0.11, verbose=TRUE)[[1]]), "factor",    output="stringsAsFactors=0.11 converted 1 column")
+test(1743.415, class(fread(f, stringsAsFactors=0.12)[[1]]),               "factor")
+test(1743.416, class(fread(f, stringsAsFactors=1.00)[[1]]),               "factor")
+unlink(f)
 
 # rolling join stopped working for double with fractions, #1904
 DT = data.table(A=c(1999.917,2000.417,2000.917,2001.417,2001.917))
@@ -11230,14 +11348,14 @@ test(1825.2, fread('A,B\n"1","2"', colClasses = "character"), data.table(A="1", 
 test(1825.3, fread('A,B\n"1","2"', colClasses = "numeric"), data.table(A=1.0, B=2.0))
 test(1825.4, fread("A,B\n1,TRUE", colClasses=c("integer", "logical")), data.table(A=1L, B=TRUE))  # 2766
 str <- "x1,x2,x3,x4,x5\n1,2,1.5,T,cc\n3,4,2.5,F,ff"                                               # 2922
-test(1825.5, fread(str),                                                                          data.table(x1=INT(1,3), x2=INT(2,4), x3=c(1.5,2.5), x4=c("T","F"), x5=c("cc","ff")))
+test(1825.5, fread(str), ans0<-data.table(x1=INT(1,3), x2=INT(2,4), x3=c(1.5,2.5), x4=c("T","F"), x5=c("cc","ff")))
 test(1825.6, fread(str, colClasses=c("integer","numeric","numeric","integer","character")),
              ans<-data.table(x1=INT(1,3), x2=c(2,4),   x3=c(1.5,2.5), x4=c("T","F"), x5=c("cc","ff")),
              warning="Attempt to override column 4 <<x4>> of inherent type 'string' down to 'int32' ignored. Only overrides to a higher type are currently supported.")
 test(1825.7, fread(str, colClasses=c("integer","numeric","numeric","logical","character")),       ans, warning="Attempt.*column 4.*'string'.*'bool8' ignored.")
 test(1825.8, fread(str, colClasses=c("integer", "numeric", "numeric", "character", "character")), ans)
 test(1825.9, fread(str, colClasses=c("integer", "NULL", "numeric", "character", "character")), data.table(x1=INT(1,3), x3=c(1.5,2.5), x4=c("T","F"), x5=c("cc","ff")))
-test(1825.11, fread(str, colClasses="NULL"), error="colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing")
+test(1825.11, fread(str, colClasses="NULL"), ans0, warning='colClasses="NULL" (quoted) is interpreted as colClasses=NULL (the default) as opposed to dropping every column')
 test(1825.12, fread("a,b,c\n1,2,3.0\n2,3,4.5", colClasses = c("integer", "integer", "integer")), # 2863
               data.table(a=1:2, b=2:3, c=c(3,4.5)),
               warning="Attempt to override column 3 <<c>> of inherent type 'float64' down to 'int32'")
@@ -12714,7 +12832,7 @@ test(1956.6, DT[, .SD, .SDcols = 3i], error = '.SDcols should be column numbers 
 test(1957.1, brackify(1:3), '[1, 2, 3]')
 test(1957.2, brackify(1:11), "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ...]")
 test(1957.3, fread("A,B\na,b\nc,d\n", stringsAsFactors=TRUE, verbose=TRUE), data.table(A=factor(c("a","c")), B=factor(c("b","d"))),
-             output="Converting column(s) [A, B] from 'char' to 'factor'")
+             output="stringsAsFactors=TRUE converted 2 column(s): [A, B]")
 
 # misc. coverage tests in fread
 test(1958.1, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encoding' must be")
@@ -13784,7 +13902,7 @@ test(2005.1, truelength(NULL), 0L)
 DT = data.table(a=1:3, b=4:6)
 test(2005.2, set(DT, 4L, "b", NA), error="i[1] is 4 which is out of range [1,nrow=3]")
 test(2005.3, set(DT, 3L, 8i, NA), error="j is type 'complex'. Must be integer, character, or numeric is coerced with warning.")
-test(2005.4, set(DT, 1L, 2L, expression(x+2)), error="RHS of assignment is not NULL, not an an atomic vector (see ?is.atomic) and not a list column.")
+test(2005.4, set(DT, 1L, 2L, expression(x+2)), error="(list) object cannot be coerced to type 'integer'") # R's error message same as returned by as.integer(expression(x+2))
 DT[,foo:=factor(c("a","b","c"))]
 test(2005.5, DT[2, foo:=8i], error="Can't assign to column 'foo' (type 'factor') a value of type 'complex' (not character, factor, integer or numeric)")
 test(2005.6, DT[2, a:=9, verbose=TRUE], output="Coerced length-1 RHS from double to integer to match column's type. No precision was lost. If this")
@@ -13987,8 +14105,130 @@ setkey(DT, a, b)
 setorder(DT, b)
 test(2021.3, key(DT), NULL)
 
-# testing csvy reading capabilities
-## simple csvy
+# assign to list column works now when RHS is not list, #950
+d = data.table(id=c("a","b"), f=list(function(x) x*2, function(x) x^2), key="id")
+test(2022.1, d[.("a"), f:=function(x)x^3], data.table(id=c("a","b"), f=list(function(x) x^3, function(x) x^2), key="id"))
+test(2022.2, d[.("a"), f:=list(function(x) x^4)], data.table(id=c("a","b"), f=list(function(x) x^4, function(x) x^2), key="id"))
+test(2022.3, d[2, f:=6:8], data.table(id=c("a","b"), f=list(function(x) x^4, 6:8), key="id"))
+test(2022.4, d[.("b"), f:=list(list(function(x) x^3))], data.table(id=c("a","b"), f=list(function(x) x^4, function(x) x^3), key="id"))
+
+# keyby= used wrong index where "CLASS" is leading subset of characters of "CLASS_L3" and index exists on CLASS_L3, #3498
+DT = data.table(
+  CLASS_L3 = c("gggg", "iiii", "bbbb", "bbbb", "gggg", "ffff", "bbbb", "Repo", "bbbb", "dddd", "hhhh", "dddd", "gggg", "dddd"),
+  CLASS    = c("aaaa", "dddd", "gggg", "gggg", "aaaa", "eeee", "eeee", "ffff", "gggg", "aaaa", "aaaa", "aaaa", "aaaa", "aaaa"))
+test(2023.1, indices(DT), NULL)
+test(2023.2, DT[, .N, keyby = CLASS], ans<-data.table(CLASS=c("aaaa","dddd","eeee","ffff","gggg"), N=INT(7,1,2,1,3), key="CLASS"))
+test(2023.3, indices(DT), NULL)
+setindex(DT, CLASS_L3)
+test(2023.4, indices(DT), "CLASS_L3")
+test(2023.5, DT[, .N, keyby = CLASS], ans)   # just this test failed in v1.12.2 and before due to using the CLASS_L3 index incorrectly
+test(2023.6, DT[, .N, by = CLASS], data.table(CLASS=c("aaaa","dddd","gggg","eeee","ffff"), N=INT(7,1,3,2,1)))
+
+# more verbose timings #1265
+DT = data.table(x=c("a","b","c","b","a","c"), y=c(1,3,6,1,6,3), v=1:6)
+setindex(DT, y)
+test(2024, DT[y==6, v:=10L, verbose=TRUE], output=c("Constructing irows for.*", "Reorder irows for.*"))
+
+# fread embedded '\0', #3400
+test(2025.01, fread(testDir("issue_3400_fread.txt"), skip=1, header=TRUE), data.table(A=INT(1,3,4), B=INT(2,2,5), C=INT(3,1,6)))
+f = tempfile()
+for (nNUL in 0:3) {
+  writeBin(c(charToRaw("a=b\nA  B  C\n1  3  5\n"), rep(as.raw(0), nNUL), charToRaw("2  4  6\n")), con=f)
+  test(2025.02, fread(f, skip=1, header=TRUE), ans<-data.table(A=1:2, B=3:4, C=5:6))
+  test(2025.03, fread(f), ans)  # auto detect skip and header works too
+  writeBin(c(charToRaw("a=b\nA,B,C\n1,3,5\n"), rep(as.raw(0), nNUL), charToRaw("2,4,6\n")), con=f)
+  test(2025.04, fread(f, skip=1, header=TRUE), ans)
+  test(2025.05, fread(f), ans)
+  writeBin(c(charToRaw("a=b\n"), rep(as.raw(0), nNUL), charToRaw("A  B  C\n1  3  5\n2  4  6\n")), con=f)
+  test(2025.06, fread(f, skip=1, header=TRUE), ans)
+  test(2025.07, fread(f), ans)
+  writeBin(c(charToRaw("a=b\n"), rep(as.raw(0), nNUL), charToRaw("A,B,C\n1,3,5\n2,4,6\n")), con=f)
+  test(2025.08, fread(f, skip=1, header=TRUE), ans)
+  test(2025.09, fread(f), ans)
+}
+makeNul = function(str){ tt=charToRaw(str); tt[tt==42L]=as.raw(0); writeBin(tt, con=f)}  # "*" (42) represents NUL
+makeNul("A,B,C\n1,foo,5\n2,*bar**,6\n")
+test(2025.10, fread(f), data.table(A=1:2, B=c("foo","bar"), C=5:6))
+makeNul('A,B,C\n1,foo*bar,3\n2,**"**b*az*",4\n')
+test(2025.11, fread(f), data.table(A=1:2, B=c("foobar","baz"), C=3:4))
+
+# printing timezone, #2842
+DT = data.table(t1 = as.POSIXct("1982-04-26 13:34:56", tz = "Europe/Madrid"),t2 = as.POSIXct("2019-01-01 19:00:01",tz = "UTC"))
+test(2026.1, capture.output(print(DT))[2], "1: 1982-04-26 13:34:56 2019-01-01 19:00:01")
+test(2026.2, capture.output(print(DT,timezone = TRUE))[2], "1: 1982-04-26 13:34:56 Europe/Madrid 2019-01-01 19:00:01 UTC")
+DT = data.table(v1 = c(1,as.numeric(NA)))
+DT[2,t:= as.POSIXct("2019-01-01 19:00:01",tz = "UTC")]
+test(2026.3, capture.output(print(DT)), c("   v1                   t","1:  1                <NA>", "2: NA 2019-01-01 19:00:01"))
+test(2026.4, capture.output(print(DT, timezone = TRUE)), c("   v1                       t","1:  1                    <NA>","2: NA 2019-01-01 19:00:01 UTC"))
+
+# empty item in j=list(x, ) errors gracefully, #3507
+DT = data.table(a = 1:5)
+test(2027.1, DT[, list(1, ), by=a], error = 'Item 2 of the .() or list() passed to j is missing')
+test(2027.2, DT[, list(1,2,)],      error = 'Item 3 of the .() or list() passed to j is missing')
+test(2027.3, DT[, .(1,,3,), by=a],  error = 'Item 2 of the .() or list() passed to j is missing')
+
+# fread quote="" when last line too short and filled with fill=TRUE (provided via email), crash in v1.12.2 and before
+if (test_R.utils) {
+  test(2028.1, fread(testDir("noquote.csv.gz"), fill=TRUE, quote="")[c(1,.N), c(1,2,9,10)],
+             data.table(H=c("D","T"), "Locate Reply"=c("BCS","Locate Reply"), V9=c("A",""), V10=c("4/23/2019 7:11:11 AM","")))
+  test(2028.2, fread(testDir("noquote.csv.gz"), fill=TRUE, quote="", header=FALSE)[c(1,.N), c(1,2,3,8,9,10)],
+             data.table(V1=c("H","T"), V2="Locate Reply", V3=c("GORLTR","2093"), V8=INT(NA,NA), V9="", V10=""))
+}
+txt = "A,B,C\n1,4,7\n2,5,8\n3,6\n"
+test(2029.1, fread(txt), data.table(A=1:2, B=4:5, C=7:8), warning="Discarded single-line footer: <<3,6>>")
+test(2029.2, fread(txt, quote=""), data.table(A=1:2, B=4:5, C=7:8), warning="Discarded single-line footer: <<3,6>>")
+test(2029.3, fread(txt, quote="", fill=TRUE), data.table(A=1:3, B=4:6, C=c(7:8,NA)))
+
+# .Last.updated #1885
+d = data.table(a=1:4, b=2:5)
+d[, z:=5L]
+test(2030.01, .Last.updated, 4L) # new column
+d[, z:=6L]
+test(2030.02, .Last.updated, 4L) # update existing column
+d[2:3, z:=7L]
+test(2030.03, .Last.updated, 2L) # sub assign
+d[integer(), z:=8L]
+test(2030.04, .Last.updated, 0L) # empty sub-assign
+d[-1L, z:=9L]
+test(2030.05, .Last.updated, 3L) # inverse sub-assign
+d[-(1:4), z:=10L]
+test(2030.06, .Last.updated, 0L) # inverse empty sub-assign
+d[, z:=NULL]
+test(2030.07, .Last.updated, 4L) # delete column
+d[2:3, z:=11L]
+test(2030.08, .Last.updated, 2L) # new column during sub-assign
+d[, z:=NULL]
+d[integer(), z:=12L]
+test(2030.09, .Last.updated, 0L) # new columns from empty sub-assign
+d[, z:=NULL]
+d[-(1:4), z:=13L]
+test(2030.10, .Last.updated, 0L) # new columns from empty inverse sub-assign
+d[, z:=NULL][, z:=14L]
+test(2030.11, .Last.updated, 4L) # new column from chaining
+d[, z:=NULL][2:3, z:=14L]
+test(2030.12, .Last.updated, 2L) # sub-assign from chaining
+d[2:3, z:=14L][, z:=NULL]
+test(2030.13, .Last.updated, 4L) # delete column from chaining
+set(d, 1:2, "z", 15L)
+test(2030.14, .Last.updated, 2L) # set() updates .Last.updated too
+g = data.table(a=1:4, z=15L) # join
+d[g, on="a", z:=i.z]
+test(2030.15, .Last.updated, 4L) # all match of all rows
+g = data.table(a=2:4, z=16L) # join
+d[, z:=NULL][g, on="a", z:=i.z]
+test(2030.16, .Last.updated, 3L) # all match
+g = data.table(a=c(2L,4L,6L), z=17L)
+d[, z:=NULL][g, on="a", z:=i.z]
+test(2030.17, .Last.updated, 2L) # partial match
+g = data.table(a=5:6, z=18L)
+d[, z:=NULL][g, on="a", z:=i.z]
+test(2030.18, .Last.updated, 0L) # zero match
+
+# rbind vec with list regression dev 1.12.3; #3528
+test(2031.01, rbind(data.table(A=1:3, B=7:9), data.table(A=4:6, B=as.list(10:12))), ans<-data.table(A=1:6, B=as.list(7:12)))
+test(2031.02, rbind(data.table(A=1:3, B=as.list(7:9)), data.table(A=4:6, B=10:12)), ans)
+
+# csvy; #1701
 f = testDir("csvy/test.csvy")
 DT = data.table(var1 = c("A", "B"),
                 var2 = c(1L, 3L),
@@ -14006,25 +14246,25 @@ setattr(DT_yaml, 'yaml_metadata',
        ))))
 ## with skip = '__auto__', fread can figure out
 ##   how to start after the metadata (just ignoring it)
-test(2022.1, fread(f), DT)
+test(2032.01, fread(f), DT)
 ## should be the same, but with yaml_metadata attribute
-test(2022.2, fread(f, yaml = TRUE), DT_yaml)
+test(2032.02, fread(f, yaml = TRUE), DT_yaml)
 ## testing verbose messaging
-test(2022.3, fread(f, yaml = TRUE, verbose = TRUE),
+test(2032.03, fread(f, yaml = TRUE, verbose = TRUE),
      DT_yaml, output = 'Processed.*YAML metadata.*')
 ## this file is identical, except the body of the
 ##   YAML header is commented out with # (should read identically)
-test(2022.4,
+test(2032.04,
      fread(testDir('csvy/test_comment.csvy'), yaml = TRUE),
      DT_yaml)
 ## user input is taken as most intentional & overrides YAML
 DT_yaml[ , var2 := as.numeric(var2)]
-test(2022.05, fread(f, yaml = TRUE, colClasses = list(numeric = 'var2')),
+test(2032.05, fread(f, yaml = TRUE, colClasses = list(numeric = 'var2')),
      DT_yaml, message = 'colClasses.*YAML header are in conflict.*var2')
 ## extraneous/unused fields shouldn't throw off reading
 DT = fread(testDir('csvy/test_extraneous.csvy'), yaml = TRUE)
-test(2022.6, names(DT), c('Date', 'WTI'))
-test(2022.7, attr(DT, 'yaml_metadata'),
+test(2032.06, names(DT), c('Date', 'WTI'))
+test(2032.07, attr(DT, 'yaml_metadata'),
      list(names = c("Date", "WTI"), class = "data.frame",
           title = "Cushing, OK WTI Spot Price FOB", filename = "data.csv",
           fileurl = "https://raw.githubusercontent.com/jrovegno/csvy/master/data.csv",
@@ -14051,48 +14291,48 @@ meta =
        header = TRUE, sep = "|", dec = ",",
        quote = "'", na.strings = "@")
 attr(DT_out, 'yaml_metadata') = meta
-test(2022.8, fread(testDir( 'csvy/test_attributes.csvy'), yaml = TRUE), DT_out)
+test(2032.08, fread(testDir( 'csvy/test_attributes.csvy'), yaml = TRUE), DT_out)
 ## user-specified attributes can override data from YAML
 meta$sep = "-"
 setattr(DT_out, 'yaml_metadata', meta)
-test(2022.09, fread(testDir('csvy/test_override_sep.csvy'), yaml = TRUE, sep = '|'), DT_out,
+test(2032.09, fread(testDir('csvy/test_override_sep.csvy'), yaml = TRUE, sep = '|'), DT_out,
      message = 'User-supplied.*sep.*override')
 
 meta$sep = "|"
 setattr(DT_out, 'yaml_metadata', meta)
-test(2022.10, fread(testDir('csvy/test_override_header.csvy'), yaml = TRUE, header = FALSE),
+test(2032.10, fread(testDir('csvy/test_override_header.csvy'), yaml = TRUE, header = FALSE),
      DT_out, message = 'User-supplied.*header.*override')
 col.names = c('x', 'y', 'z')
 setnames(DT_out, col.names)
-test(2022.11, fread(testDir('csvy/test_override_header.csvy'), yaml = TRUE, header = FALSE, col.names = col.names), DT_out, 
+test(2032.11, fread(testDir('csvy/test_override_header.csvy'), yaml = TRUE, header = FALSE, col.names = col.names), DT_out, 
      message = c('User-supplied.*header.*override', 'User-supplied.*col.names.*override'))
 
-test(2022.12, fread(testDir('csvy/test_attributes.csvy'), yaml = TRUE, col.names = col.names), 
+test(2032.12, fread(testDir('csvy/test_attributes.csvy'), yaml = TRUE, col.names = col.names), 
      DT_out, message = 'User-supplied.*col.names')
 
 setnames(DT_out, c('var1', 'var2', 'var3'))
 meta$quote = "^"
 setattr(DT_out, 'yaml_metadata', meta)
-test(2022.13, fread(testDir('csvy/test_override_quote.csvy'), yaml = TRUE, quote = "'"),
+test(2032.13, fread(testDir('csvy/test_override_quote.csvy'), yaml = TRUE, quote = "'"),
      DT_out, message = 'User-supplied.*quote')
      
 meta$quote = "'"
 meta$dec = "."
 setattr(DT_out, 'yaml_metadata', meta)
-test(2022.14, fread(testDir('csvy/test_override_dec.csvy'), yaml = TRUE, dec = ','),
+test(2032.14, fread(testDir('csvy/test_override_dec.csvy'), yaml = TRUE, dec = ','),
      DT_out, message = 'User-supplied.*dec')
   
 meta$dec = ',' 
 meta$na.strings = 'NA'
 setattr(DT_out, 'yaml_metadata', meta)
-test(2022.15, fread(testDir('csvy/test_override_na.csvy'), yaml = TRUE, na.strings = '@'),
+test(2032.15, fread(testDir('csvy/test_override_na.csvy'), yaml = TRUE, na.strings = '@'),
      DT_out, message = 'User-supplied.*na.strings')
 
 ## error if YAML malformed
-test(2022.16, fread(testDir('csvy/test_incomplete_header.csvy'), yaml = TRUE),
+test(2032.16, fread(testDir('csvy/test_incomplete_header.csvy'), yaml = TRUE),
      error = 'Reached the end.*YAML.*valid csvy')
 ## use any other CSV in test directory which doesn't have YAML
-test(2022.17, fread(testDir('issue_2051.csv'), yaml = TRUE),
+test(2032.17, fread(testDir('issue_2051.csv'), yaml = TRUE),
      error = 'Encountered.*unskipped.*constitute.*valid YAML')
 ## no problem if some fields are missing a type (just
 ##   resort to standard auto-inferral, i.e., identical to
@@ -14105,7 +14345,7 @@ setattr(DT, 'yaml_metadata',
          list(name = "var1"), list(name = "var2", type = "integer"), 
          list(name = "var3", type = "number")
        ))))
-test(2022.18, fread(testDir('csvy/test_missing_type.csvy'), yaml = TRUE), DT)
+test(2032.18, fread(testDir('csvy/test_missing_type.csvy'), yaml = TRUE), DT)
 ## skip applies starting after the YAML header
 setattr(DT, 'yaml_metadata',
   list(schema = list(fields = list(
@@ -14113,21 +14353,22 @@ setattr(DT, 'yaml_metadata',
     list(name = "var2", type = "integer"), 
     list(name = "var3", type = "number")
   ))))
-test(2022.19, fread(testDir('csvy/test_skip.csvy'), yaml = TRUE, skip = 2L), DT)
+test(2032.19, fread(testDir('csvy/test_skip.csvy'), yaml = TRUE, skip = 2L), DT)
 ## user-supplied col.names override metadata (as for colClasses)
 cn = paste0('V', 1:3)
 setnames(DT, cn)
-test(2022.20, fread(testDir('csvy/test_skip.csvy'),
+test(2032.20, fread(testDir('csvy/test_skip.csvy'),
                     yaml = TRUE, skip = 2L, col.names = cn),
      DT, message = 'User-supplied column names.*override.*YAML')
 ## invalid value fails
-test(2022.21, fread(f, yaml = 'gobble'),
+test(2032.21, fread(f, yaml = 'gobble'),
      error = 'isTRUEorFALSE\\(yaml\\) is not TRUE')
 
 ## warning that skip-as-search doesn't work with yaml
 DT_yaml[ , var2 := as.integer(var2)]
-test(2022.22, fread(f, skip = 'var1,', yaml = TRUE),
+test(2032.22, fread(f, skip = 'var1,', yaml = TRUE),
      DT_yaml, warning = 'Combining a search.*YAML.*')
+
 
 ###################################
 #  Add new tests above this line  #

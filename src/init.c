@@ -80,6 +80,9 @@ SEXP hasOpenMP();
 SEXP uniqueNlogical();
 SEXP frollfunR();
 SEXP dllVersion();
+SEXP nafillR();
+SEXP colnamesInt();
+SEXP initLastUpdated();
 
 // .Externals
 SEXP fastmean();
@@ -162,6 +165,9 @@ R_CallMethodDef callMethods[] = {
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
 {"CfrollfunR", (DL_FUNC) &frollfunR, -1},
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
+{"CnafillR", (DL_FUNC) &nafillR, -1},
+{"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
+{"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
 {NULL, NULL, 0}
 };
 
@@ -283,6 +289,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  sym_colClassesAs = install("colClassesAs");
   SelfRefSymbol = install(".internal.selfref");
 
   initDTthreads();
@@ -342,6 +349,14 @@ SEXP hasOpenMP() {
   #endif
 }
 // # nocov end
+
+extern int *_Last_updated;  // assign.c
+
+SEXP initLastUpdated(SEXP var) {
+  if (!isInteger(var) || LENGTH(var)!=1) error(".Last.value in namespace is not a length 1 integer");
+  _Last_updated = INTEGER(var);
+  return R_NilValue;
+}
 
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056

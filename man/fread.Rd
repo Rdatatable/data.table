@@ -42,7 +42,14 @@ yaml=FALSE, autostart=NA
   \item{skip}{ If 0 (default) start on the first line and from there finds the first row with a consistent number of columns. This automatically avoids irregular header information before the column names row. \code{skip>0} means ignore the first \code{skip} rows manually. \code{skip="string"} searches for \code{"string"} in the file (e.g. a substring of the column names row) and starts on that line (inspired by read.xls in package gdata). }
   \item{select}{ Vector of column names or numbers to keep, drop the rest. }
   \item{drop}{ Vector of column names or numbers to drop, keep the rest. }
-  \item{colClasses}{ A character vector of classes (named or unnamed), as read.csv. Or a named list of vectors of column names or numbers, see examples. colClasses in fread is intended for rare overrides, not for routine use. fread will only promote a column to a higher type if colClasses requests it. It won't downgrade a column to a lower type since NAs would result. You have to coerce such columns afterwards yourself, if you really require data loss. }
+  \item{colClasses}{If \code{NULL}, the default, the classes of the columns are inferred from the input's contents.
+  Otherwise, \code{colClasses} specifies the classes for the columns, as in \code{\link[utils]{read.csv}}, but with the following differences:
+  \itemize{
+    \item{If coercion results in an error or introduces \code{NA}s, the attempt is aborted for that column with warning and the column's type is left unchanged (probably \code{character}).}
+    \item{Named list of vectors of column names or numbers are supported where the list names are the class names. The \code{list} form makes it easier to set a batch of columns to be a particular class; see examples. When column numbers are used in the `list` form, they refer to the column number in the file, not the column number after \code{select} or \code{drop} has been applied.}
+    \item{Columns are not demoted to a lower type if this would risk loss of information. You have to coerce such columns afterwards yourself, if you really require data loss.}
+    \item{(when #1426 is done) If `select` or `drop` is used,  \code{colClasses} may be a character vector with as many items as the number of columns selected.}
+  }}
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{base::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
   \item{dec}{ The decimal separator as in \code{base::read.csv}. If not "." (default) then usually ",". See details. }
   \item{col.names}{ A vector of optional names for the variables (columns). The default is to use the header column if present or detected, or if not "V" followed by the column number. This is applied after \code{check.names} and before \code{key} and \code{index}. }

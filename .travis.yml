@@ -1,7 +1,7 @@
 language: r
 dist: trusty
 sudo: required
-cache: packages
+cache: packages   # to rebuild cache see tweet thread ending here https://twitter.com/jimhester_/status/1115718589804421121
 warnings_are_errors: true
 
 branches:

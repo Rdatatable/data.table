@@ -22,7 +22,8 @@ yaml=FALSE, autostart=NA)
     stop("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
   stopifnot( isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill), isTRUEorFALSE(showProgress),
-             isTRUEorFALSE(stringsAsFactors), isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml) )
+             isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml) )
+  stopifnot( isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0))
   stopifnot( is.numeric(nrows), length(nrows)==1L )
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
@@ -122,8 +123,12 @@ yaml=FALSE, autostart=NA)
   }
   if (!is.null(colClasses) && is.atomic(colClasses)) {
     if (!is.character(colClasses)) stop("colClasses is not type list or character vector")
-    if (!length(colClasses)) stop("colClasses is character vector ok but has 0 length")
-    if (!is.null(names(colClasses))) {   # names are column names; convert to list approach
+    if (!length(colClasses)) {
+      colClasses=NULL;
+    } else if (identical(colClasses, "NULL")) {
+      colClasses = NULL
+      warning('colClasses="NULL" (quoted) is interpreted as colClasses=NULL (the default) as opposed to dropping every column.')
+    } else if (!is.null(names(colClasses))) {   # names are column names; convert to list approach
       colClasses = tapply(names(colClasses), colClasses, c, simplify=FALSE)
     }
   }
@@ -300,29 +305,58 @@ yaml=FALSE, autostart=NA)
   if (check.names) {
     setattr(ans, 'names', make.names(names(ans), unique=TRUE))
   }
-  cols = NULL
-  if (stringsAsFactors)
-    cols = which(vapply(ans, is.character, TRUE))
-  else if (length(colClasses)) {
-    if (is.list(colClasses) && "factor" %chin% names(colClasses))
-      cols = colClasses[["factor"]]
-    else if (is.character(colClasses) && "factor" %chin% colClasses)
-      cols = which(colClasses=="factor")
+
+  colClassesAs = attr(ans, "colClassesAs")   # should only be present if one or more are != ""
+  for (j in which(colClassesAs!="")) {       # # 1634
+    v <- .subset2(ans, j)
+    new_class = colClassesAs[j]
+    new_v <- tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)
+      switch(new_class,
+             "factor" = as_factor(v),
+             "complex" = as.complex(v),
+             "raw" = as_raw(v),  # Internal implementation
+             "Date" = as.Date(v),
+             "POSIXct" = as.POSIXct(v),
+             # finally:
+             methods::as(v, new_class))
+      },
+      warning = fun <- function(e) {
+        warning("Column '", names(ans)[j], "' was set by colClasses to be '", new_class, "' but fread encountered the following ", 
+                if (inherits(e, "error")) "error" else "warning", ":\n\t", e$message, "\nso the column has been left as type '", typeof(v), "'", call.=FALSE)
+        return(v)
+      },
+      error = fun)
+    set(ans, j = j, value = new_v)  # aside: new_v == v if the coercion was aborted
   }
-  setfactor(ans, cols, verbose)
-  # 2007: is.missing is not correct since default value of select is NULL
-  if (!is.null(select)) {
-    # fix for #1445
-    if (is.numeric(select)) {
-      reorder = frank(select)
+  setattr(ans, "colClassesAs", NULL)
+
+  if (stringsAsFactors) {
+    if (is.double(stringsAsFactors)) { #2025
+      should_be_factor <- function(v) is.character(v) && uniqueN(v) < nr * stringsAsFactors
+      cols_to_factor <- which(vapply(ans, should_be_factor, logical(1L)))
     } else {
-      reorder = select[select %chin% names(ans)]
-      # any missing columns are warning about in fread.c and skipped
+      cols_to_factor <- which(vapply(ans, is.character, logical(1L)))
     }
-    setcolorder(ans, reorder)
+    if (verbose) cat("stringsAsFactors=", stringsAsFactors, " converted ", length(cols_to_factor), " column(s): ", brackify(names(ans)[cols_to_factor]), "\n", sep="")
+    for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
   }
-  # FR #768
-  if (!missing(col.names))
+
+  if (!is.null(select)) {
+    if (is.numeric(select)) {
+      if (length(o <- forderv(select))) {
+        rank = integer(length(o))
+        rank[o] = 1:length(o)
+        setcolorder(ans, rank)
+      }
+    } else {
+      if (!identical(names(ans), select)) {
+        reorder = select[select %chin% names(ans)] # any missing columns are warned about in freadR.c and skipped
+        setcolorder(ans, reorder)
+      }
+    }
+  }
+
+  if (!missing(col.names))   # FR #768
     setnames(ans, col.names) # setnames checks and errors automatically
   if (!is.null(key) && data.table) {
     if (!is.character(key))
@@ -351,20 +385,17 @@ yaml=FALSE, autostart=NA)
   ans
 }
 
-# for internal use only. Used in `fread` and `data.table` for 'stringsAsFactors' argument
-setfactor <- function(x, cols, verbose) {
-  # simplified but faster version of `factor()` for internal use.
-  as_factor <- function(x) {
-    lev = forderv(x, retGrp = TRUE, na.last = NA)
-    # get levels, also take care of all sorted condition
-    lev = if (length(lev)) x[lev[attributes(lev)$starts]] else x[attributes(lev)$starts]
-    ans = chmatch(x, lev)
-    setattr(ans, 'levels', lev)
-    setattr(ans, 'class', 'factor')
-  }
-  if (length(cols)) {
-    if (verbose) cat("Converting column(s) ", brackify(names(x)[cols]), " from 'char' to 'factor'\n", sep = "")
-    for (j in cols) set(x, j = j, value = as_factor(.subset2(x, j)))
-  }
-  invisible(x)
+# simplified but faster version of `factor()` for internal use.
+as_factor <- function(x) {
+  lev = forderv(x, retGrp = TRUE, na.last = NA)
+  # get levels, also take care of all sorted condition
+  lev = if (length(lev)) x[lev[attributes(lev)$starts]] else x[attributes(lev)$starts]
+  ans = chmatch(x, lev)
+  setattr(ans, 'levels', lev)
+  setattr(ans, 'class', 'factor')
 }
+
+as_raw <- function(x) {
+  scan(text=x, what=raw(), quiet=TRUE)  # as in read.csv, which ultimately uses src/main/scan.c and strtoraw
+}
+

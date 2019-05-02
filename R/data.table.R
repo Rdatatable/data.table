@@ -173,8 +173,10 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
        && !any(duplicated(names(value)[names(value) %chin% ckey])))
        setattr(value, "sorted", ckey)
   }
-  # FR #643, setfactor is an internal function in fread.R
-  if (isTRUE(stringsAsFactors)) setfactor(value, which(vapply(value, is.character, TRUE)), FALSE)
+  if (isTRUE(stringsAsFactors)) {
+    for (j in which(vapply(value, is.character, TRUE))) set(value, NULL, j, as_factor(.subset2(value, j)))
+    # as_factor is internal function in fread.R currently
+  }
   alloc.col(value)  # returns a NAMED==0 object, unlike data.frame()
 }
 
@@ -589,12 +591,14 @@ replace_dot_alias <- function(e) {
         if (!byjoin || nqbyjoin) {
           # Really, `anyDuplicated` in base is AWESOME!
           # allow.cartesian shouldn't error if a) not-join, b) 'i' has no duplicates
+          if (verbose) {last.started.at=proc.time();cat("Constructing irows for '!byjoin || nqbyjoin' ... ");flush.console()}
           irows = if (allLen1) f__ else vecseq(f__,len__,
-            if( allow.cartesian ||
-              notjoin || # #698. When notjoin=TRUE, ignore allow.cartesian. Rows in answer will never be > nrow(x).
-              !anyDuplicated(f__, incomparables = c(0L, NA_integer_)))  # #742. If 'i' has no duplicates, ignore
-              NULL
-            else as.double(nrow(x)+nrow(i))) # rows in i might not match to x so old max(nrow(x),nrow(i)) wasn't enough. But this limit now only applies when there are duplicates present so the reason now for nrow(x)+nrow(i) is just to nail it down and be bigger than max(nrow(x),nrow(i)).
+            if (allow.cartesian ||
+                notjoin || # #698. When notjoin=TRUE, ignore allow.cartesian. Rows in answer will never be > nrow(x).
+                !anyDuplicated(f__, incomparables = c(0L, NA_integer_))) {
+              NULL # #742. If 'i' has no duplicates, ignore
+            } else as.double(nrow(x)+nrow(i))) # rows in i might not match to x so old max(nrow(x),nrow(i)) wasn't enough. But this limit now only applies when there are duplicates present so the reason now for nrow(x)+nrow(i) is just to nail it down and be bigger than max(nrow(x),nrow(i)).
+          if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
           # Fix for #1092 and #1074
           # TODO: implement better version of "any"/"all"/"which" to avoid
           # unnecessary construction of logical vectors
@@ -629,10 +633,12 @@ replace_dot_alias <- function(e) {
       if (length(xo) && length(irows)) {
         irows = xo[irows]   # TO DO: fsort here?
         if (mult=="all" && !allGrp1) { # following #1991 fix, !allGrp1 will always be TRUE. TODO: revisit.
+          if (verbose) {last.started.at=proc.time();cat("Reorder irows for 'mult==\"all\" && !allGrp1' ... ");flush.console()}
           irows = setorder(setDT(list(indices=rep.int(indices__, len__), irows=irows)))[["irows"]]
+          if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
         }
       }
-      if(optimizedSubset){
+      if (optimizedSubset){
         ## special treatment for calls like DT[x == 3] that are transformed into DT[J(x=3), on = "x==x"]
 
         if(!.Call(CisOrderedSubset, irows, nrow(x))){
@@ -863,8 +869,9 @@ replace_dot_alias <- function(e) {
           # either bysameorder or byindex can be true but not both. TODO: better name for bysameorder might be bykeyx
           if (!bysameorder && keyby && !length(irows) && isTRUE(getOption("datatable.use.index"))) {
             # TODO: could be allowed if length(irows)>1 but then the index would need to be squashed for use by uniqlist, #3062
-            tt = paste0(allbyvars, collapse="__")
-            w = which.first(substring(indices(x),1L,nchar(tt)) == tt)  # substring to avoid the overhead of grep
+            # find if allbyvars is leading subset of any of the indices; add a trailing "__" to fix #3498 where a longer column name starts with a shorter column name
+            tt = paste0(c(allbyvars,""), collapse="__")
+            w = which.first(substring(paste0(indices(x),"__"),1L,nchar(tt)) == tt)
             if (!is.na(w)) {
               byindex = indices(x)[w]
               if (!length(getindex(x, byindex))) {
@@ -977,8 +984,10 @@ replace_dot_alias <- function(e) {
           jvnames = names(jsubl)[-1L]   # check list(a=sum(v),v)
           if (is.null(jvnames)) jvnames = rep.int("", length(jsubl)-1L)
           for (jj in seq.int(2L,length(jsubl))) {
-            if (jvnames[jj-1L] == "" && mode(jsubl[[jj]])=="name")
-              jvnames[jj-1L] = gsub("^[.](N|I|GRP|BY)$","\\1",deparse(jsubl[[jj]]))
+            if (jvnames[jj-1L] == "" && mode(jsubl[[jj]])=="name") {
+              if (jsubl[[jj]]=="") stop("Item ", jj-1L, " of the .() or list() passed to j is missing") #3507
+              jvnames[jj-1L] = gsub("^[.](N|I|GRP|BY)$", "\\1", deparse(jsubl[[jj]]))
+            }
             # TO DO: if call to a[1] for example, then call it 'a' too
           }
           setattr(jsubl, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back aftwards on the result.
@@ -1143,6 +1152,7 @@ replace_dot_alias <- function(e) {
               cat("No rows match i. No new columns to add so not evaluating RHS of :=\n")
               cat("Assigning to 0 row subset of",nrow(x),"rows\n")
             }
+            .Call(Cassign, x, irows, NULL, NULL, NULL, FALSE) # only purpose is to write 0 to .Last.updated
             .global$print = address(x)
             return(invisible(x))
           }
