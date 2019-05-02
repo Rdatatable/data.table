@@ -45,20 +45,11 @@ autostart=NA
   \item{colClasses}{If \code{NULL}, the default, the classes of the columns are inferred from the input's contents.
   Otherwise, \code{colClasses} specifies the classes for the columns, as in \code{\link[utils]{read.csv}}, but with the following differences:
   \itemize{
-    \item{The classes \code{NA}, \code{"logical"}, \code{"integer"},
-    \code{"numeric"}, \code{"double"},
-    \code{"character"} are inferred when read.
-    If other classes are specified, they are coerced using \code{\link{set}} after the data is read.
-    Unlike \code{read.csv} if such coercion would result in an error or introduce \code{NA}s,
-    the attempt is aborted for that column, with a warning (not an error), and the column is left unchanged
-    (probably as a \code{character} column).}
-    \item{Named lists of vectors of column names or numbers are supported. (See examples.)}
-    \item{\code{colClasses} in \code{fread} is intended for rare overrides, not for routine use. If \code{colClasses} is used, \code{fread} will only promote a column to a \emph{higher} type; it won't downgrade a column to a lower type since this would risk loss of information. You have to coerce such columns afterwards yourself, if you really require data loss.}
-    }
-    If the list form of \code{colClasses} is used in conjuction with
-    \code{select} xor \code{drop}, references to \code{colClasses} by position (e.g. \code{colClasses = list(integer = 2)})
-    are only allowed if \code{select} xor \code{drop} are integer (i.e. references to positions) as well. In this case,
-    both references to column position are references to the file, rather than the result. (That is, \code{colClasses = list(factor = n)} and \code{select = n} both refer to same column.)}
+    \item{If coercion results in an error or introduces \code{NA}s, the attempt is aborted for that column with warning and the column's type is left unchanged (probably \code{character}).}
+    \item{Named list of vectors of column names or numbers are supported where the list names are the class names. The \code{list} form makes it easier to set a batch of columns to be a particular class; see examples. When column numbers are used in the `list` form, they refer to the column number in the file, not the column number after \code{select} or \code{drop} has been applied.}
+    \item{Columns are not demoted to a lower type if this would risk loss of information. You have to coerce such columns afterwards yourself, if you really require data loss.}
+    \item{(when #1426 is done) If `select` or `drop` is used,  \code{colClasses} may be a character vector with as many items as the number of columns selected.}
+  }}
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{base::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
   \item{dec}{ The decimal separator as in \code{base::read.csv}. If not "." (default) then usually ",". See details. }
   \item{col.names}{ A vector of optional names for the variables (columns). The default is to use the header column if present or detected, or if not "V" followed by the column number. This is applied after \code{check.names} and before \code{key} and \code{index}. }

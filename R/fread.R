@@ -174,44 +174,29 @@ autostart=NA)
   for (j in which(colClassesAs!="")) {       # # 1634
     v <- .subset2(ans, j)
     new_class = colClassesAs[j]
-      # Following tryCatch designed to try coercion to a particular class,
-      # and abort on any column if it encounters any warning or error. Different to
-      # read.csv -- won't attempt coercion if NAs introduced, but also less fussy
-      # and won't error if a column won't work, instead reverting to previous class.
-    new_v <- tryCatch({
-        switch(new_class,
-               "factor" = as_factor(v),
-               "complex" = as.complex(v),
-               "raw" = as_raw(v),  # Internal implementation
-               "Date" = as.Date(v),
-               "POSIXct" = as.POSIXct(v),
-               # finally:
-               methods::as(v, new_class))
+    new_v <- tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)
+      switch(new_class,
+             "factor" = as_factor(v),
+             "complex" = as.complex(v),
+             "raw" = as_raw(v),  # Internal implementation
+             "Date" = as.Date(v),
+             "POSIXct" = as.POSIXct(v),
+             # finally:
+             methods::as(v, new_class))
       },
-      warning = function(e) {
-        warn_msg <-
-              sprintf("Column '%s' was set by colClasses to be '%s' but fread encountered the following warning:\n\t %s\nso the column has been left as type '%s'",
-                      names(ans)[j], new_class, e$message, typeof(v))
-        warning(warn_msg)
+      warning = fun <- function(e) {
+        etype = if (inherits(e,"error")) "error" else "warning"
+        warning(sprintf("Column '%s' was set by colClasses to be '%s' but fread encountered the following %s:\n\t%s\nso the column has been left as type '%s'",
+                names(ans)[j], new_class, etype, e$message, typeof(v)), call.=FALSE)
         return(v)
       },
-      # Since errors themselves raise warnings,
-      # put after.
-      error = function(e) {
-        err_msg <-
-          sprintf("Column '%s' was set by colClasses to be '%s' but fread encountered the following error:\n\t %s\nso the column has been left as type '%s'",
-                  names(ans)[j], new_class, e$message, typeof(v))
-        warning(err_msg,
-                call. = FALSE)
-        return(v)
-      })
+      error = fun)
     # New value may be the same as the old value
     # if the coercion was aborted.
     set(ans, j = j, value = new_v)
   }
   setattr(ans, "colClassesAs", NULL)
 
-  # Should be after set_colClasses_ante
   if (stringsAsFactors) {
     if (is.double(stringsAsFactors)) { #2025
       should_be_factor <- function(v) is.character(v) && uniqueN(v) < nr * stringsAsFactors
@@ -223,29 +208,22 @@ autostart=NA)
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
   }
 
-  # 2007: is.missing is not correct since default value of select is NULL
   if (!is.null(select)) {
-    # fix for #1445
-# head
     if (is.numeric(select)) {
-      reorder <-
-        if (length(o <- forderv(select))) {
-          match(select, select[o], nomatch = 0L)
-        } else {
-          seq_along(select)
-        }
-#
-#    if (is.numeric(select)) {
-#      reorder = frank(select)
-# master
+      if (length(o <- forderv(select))) {
+        rank = integer(length(o))
+        rank[o] = 1:length(o)
+        setcolorder(ans, rank)
+      }
     } else {
-      reorder = select[select %chin% names(ans)]
-      # any missing columns are warning about in fread.c and skipped
+      if (!identical(names(ans), select)) {
+        reorder = select[select %chin% names(ans)] # any missing columns are warned about in freadR.c and skipped
+        setcolorder(ans, reorder)
+      }
     }
-    setcolorder(ans, reorder)
   }
-  # FR #768
-  if (!missing(col.names))
+
+  if (!missing(col.names))   # FR #768
     setnames(ans, col.names) # setnames checks and errors automatically
   if (!is.null(key) && data.table) {
     if (!is.character(key))
@@ -283,26 +261,7 @@ as_factor <- function(x) {
   setattr(ans, 'class', 'factor')
 }
 
-# As in read.csv, which ultimately uses src/main/scan.c Line 193 (or thereabouts)
-# static Rbyte
-# strtoraw (const char *nptr, char **endptr)
-# {
-#   const char *p = nptr;
-#   int i, val = 0;
-#
-#   /* should have whitespace plus exactly 2 hex digits */
-#     while(Rspace(*p)) p++;
-#   for(i = 1; i <= 2; i++, p++) {
-#     val *= 16;
-#     if(*p >= '0' && *p <= '9') val += *p - '0';
-#     else if (*p >= 'A' && *p <= 'F') val += *p - 'A' + 10;
-#     else if (*p >= 'a' && *p <= 'f') val += *p - 'a' + 10;
-#     else {val = 0; break;}
-#   }
-#   *endptr = (char *) p;
-#   return (Rbyte) val;
-# }
 as_raw <- function(x) {
-  scan(text = x, what = raw(), quiet = TRUE)
+  scan(text=x, what=raw(), quiet=TRUE)  # as in read.csv, which ultimately uses src/main/scan.c and strtoraw
 }
 
