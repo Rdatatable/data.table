@@ -133,13 +133,9 @@ yaml=FALSE, autostart=NA)
     }
   }
   stopifnot(length(skip)==1L, !is.na(skip), is.character(skip) || is.numeric(skip))
-  if (skip=="__auto__") {
-    if (yaml) {
-      skip=0L
-    } else {
-      skip=-1L   # skip="string" so long as "string" is not "__auto__". Best conveys to user something is automatic there (than -1 or NA).
-    }
-  } else if (is.double(skip)) skip = as.integer(skip)
+  if (identical(skip,"__auto__")) skip = ifelse(yaml,0L,-1L)
+  else if (is.double(skip)) skip = as.integer(skip)
+  # else skip="string" so long as "string" is not "__auto__" (best conveys to user skip is automatic rather than user needing to know -1 or NA means auto)
   stopifnot(is.null(na.strings) || is.character(na.strings))
   tt = grep("^\\s+$", na.strings)
   if (length(tt)) {
@@ -162,12 +158,9 @@ yaml=FALSE, autostart=NA)
     if (!requireNamespace('yaml', quietly = TRUE))
       stop("'data.table' relies on the package 'yaml' to parse the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
     if (is.character(skip))
-      warning("Combining a search string as 'skip' and reading a ",
-              "YAML header may not work as expected -- currently, ",
-              "reading will proceed to search for 'skip' from ",
-              "the beginning of the file, NOT from the end of ",
-              "the metadata; please file an issue on GitHub if ",
-              "you'd like to see more intuitive behavior supported.")
+      warning("Combining a search string as 'skip' and reading a YAML header may not work as expected -- currently, ",
+              "reading will proceed to search for 'skip' from the beginning of the file, NOT from the end of ",
+              "the metadata; please file an issue on GitHub if you'd like to see more intuitive behavior supported.")
     # create connection to stream header lines from file:
     #   https://stackoverflow.com/questions/9871307
     f = base::file(input, 'r')
@@ -176,12 +169,9 @@ yaml=FALSE, autostart=NA)
     yaml_border_re = '^#?---'
     if (!grepl(yaml_border_re, first_line)) {
       close(f)
-      stop('Encountered <', substring(first_line, 1L, 50L),
-           if (nchar(first_line) > 50L) '...', '> at the first ',
-           'unskipped line (', 1L+skip, '), which does not ',
-           'constitute the start to a valid YAML header ',
-           '(expecting something matching regex "', yaml_border_re,
-           '"); please check your input and try again.')
+      stop('Encountered <', substring(first_line, 1L, 50L), if (nchar(first_line) > 50L) '...', '> at the first ',
+           'unskipped line (', 1L+skip, '), which does not constitute the start to a valid YAML header ',
+           '(expecting something matching regex "', yaml_border_re, '"); please check your input and try again.')
     }
 
     yaml_comment_re = '^#'
@@ -191,11 +181,8 @@ yaml=FALSE, autostart=NA)
       n_read = n_read + 1L
       if (!length(this_line)){
         close(f)
-        stop('Reached the end of the file before finding ',
-             'a completion to the YAML header. A valid ',
-             'YAML header is bookended by lines matching ',
-             'the regex "', yaml_border_re, '". Please ',
-             'double check the input file is a valid csvy.')
+        stop('Reached the end of the file before finding a completion to the YAML header. A valid YAML header is bookended by lines matching ',
+             'the regex "', yaml_border_re, '". Please double check the input file is a valid csvy.')
       }
       if (grepl(yaml_border_re, this_line)) break
       if (grepl(yaml_comment_re, this_line))
@@ -206,9 +193,7 @@ yaml=FALSE, autostart=NA)
 
     yaml_header = yaml::yaml.load(yaml_string)
     yaml_names = names(yaml_header)
-    if (verbose) cat('Processed', n_read, 'lines of YAML',
-                     'metadata with the following top-level fields:',
-                     brackify(yaml_names), '\n')
+    if (verbose) cat('Processed', n_read, 'lines of YAML metadata with the following top-level fields:', brackify(yaml_names), '\n')
     # process header first since it impacts how to handle colClasses
     if ('header' %chin% yaml_names) {
       if ('header' %chin% call_args) message("User-supplied 'header' will override that found in metadata.")
@@ -239,22 +224,15 @@ yaml=FALSE, autostart=NA)
             new_names[ii] %chin% colClasses[[ new_types[ii] ]]
           }))) {
             plural = sum(idx_type) > 1L
-            message('colClasses dictated by user input and ',
-                    'those read from YAML header are in conflict ',
-                    '(specifically, for column', if (plural) 's',
-                    ' [', paste(new_names[matched_name_idx[!idx_type]],
-                                collapse = ','),
-                    ']); the proceeding assumes the user input was ',
-                    'an intentional override and will ignore the types ',
-                    'implied by the YAML header; please exclude ',
-                    if (plural) 'these columns' else 'this column',
-                    ' from colClasses if this was unintentional.')
+            message('colClasses dictated by user input and those read from YAML header are in conflict (specifically, for column', if (plural) 's',
+                    ' [', paste(new_names[matched_name_idx[!idx_type]], collapse = ','), ']); the proceeding assumes the user input was ',
+                    'an intentional override and will ignore the types implied by the YAML header; please exclude ',
+                    if (plural) 'these columns' else 'this column from colClasses if this was unintentional.')
           }
         }
         # only add unmentioned columns
         for (ii in which(!idx_name)) {
-          colClasses[[ new_types[ii] ]] =
-            c(colClasses[[ new_types[ii] ]], new_names[ii])
+          colClasses[[ new_types[ii] ]] = c(colClasses[[ new_types[ii] ]], new_names[ii])
         }
       } else {
         # there are no names to be matched in the data, which fread expects
@@ -321,7 +299,7 @@ yaml=FALSE, autostart=NA)
              methods::as(v, new_class))
       },
       warning = fun <- function(e) {
-        warning("Column '", names(ans)[j], "' was set by colClasses to be '", new_class, "' but fread encountered the following ", 
+        warning("Column '", names(ans)[j], "' was set by colClasses to be '", new_class, "' but fread encountered the following ",
                 if (inherits(e, "error")) "error" else "warning", ":\n\t", e$message, "\nso the column has been left as type '", typeof(v), "'", call.=FALSE)
         return(v)
       },
