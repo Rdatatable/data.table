@@ -185,15 +185,12 @@ autostart=NA)
              methods::as(v, new_class))
       },
       warning = fun <- function(e) {
-        etype = if (inherits(e,"error")) "error" else "warning"
-        warning(sprintf("Column '%s' was set by colClasses to be '%s' but fread encountered the following %s:\n\t%s\nso the column has been left as type '%s'",
-                names(ans)[j], new_class, etype, e$message, typeof(v)), call.=FALSE)
+        warning("Column '", names(ans)[j], "' was set by colClasses to be '", new_class, "' but fread encountered the following ", 
+                if (inherits(e, "error")) "error" else "warning", ":\n\t", e$message, "\nso the column has been left as type '", typeof(v), "'", call.=FALSE)
         return(v)
       },
       error = fun)
-    # New value may be the same as the old value
-    # if the coercion was aborted.
-    set(ans, j = j, value = new_v)
+    set(ans, j = j, value = new_v)  # aside: new_v == v if the coercion was aborted
   }
   setattr(ans, "colClassesAs", NULL)
 
