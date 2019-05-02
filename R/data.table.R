@@ -173,8 +173,10 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
        && !any(duplicated(names(value)[names(value) %chin% ckey])))
        setattr(value, "sorted", ckey)
   }
-  # FR #643, setfactor is an internal function in fread.R
-  if (isTRUE(stringsAsFactors)) setfactor(value, which(vapply(value, is.character, TRUE)), FALSE)
+  if (isTRUE(stringsAsFactors)) {
+    for (j in which(vapply(value, is.character, TRUE))) set(value, NULL, j, as_factor(.subset2(value, j)))
+    # as_factor is internal function in fread.R currently
+  }
   alloc.col(value)  # returns a NAMED==0 object, unlike data.frame()
 }
 
