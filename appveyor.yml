@@ -43,6 +43,7 @@ build_script:
   - travis-tool.sh r_install xts
   - travis-tool.sh r_install nanotime
   - travis-tool.sh r_install R.utils
+  - travis-tool.sh r_install yaml
 
 test_script:
   - travis-tool.sh run_tests
