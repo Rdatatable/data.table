@@ -18,6 +18,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   buffMB = 8L, nThread = getDTthreads(verbose),
   showProgress = getOption("datatable.showProgress", interactive()),
   compress = c("auto", "none", "gzip"),
+  yaml = FALSE,
   verbose = getOption("datatable.verbose", FALSE))
 }
 \arguments{
@@ -54,10 +55,33 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
   \item{compress}{If \code{compress = "auto"} and if \code{file} ends in \code{.gz} then output format is gzipped csv else csv. If \code{compress = "none"}, output format is always csv. If \code{compress = "gzip"} then format is gzipped csv. Output to the console is never gzipped even if \code{compress = "gzip"}. By default, \code{compress = "auto"}.}
+  \item{yaml}{ If \code{TRUE}, \code{fwrite} will output a CSVY file, that is, a CSV file with metadata stored as a YAML header, using \code{\link[yaml]{as.yaml}}. Incompatible with \code{append = TRUE}. See \code{Details}. }
   \item{verbose}{Be chatty and report timings?}
 }
 \details{
 \code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
+
+\bold{CSVY Support:}
+
+The following fields will be written to the header of the file and surrounded by \code{---} on top and bottom:
+list(
+        source = sprintf('R[v%s.%s]::data.table[v%s]::fwrite', 
+                         R.version$major, R.version$minor, format(utils::packageVersion('data.table'))),
+        creation_time_utc = format(Sys.time(), tz = 'UTC'),
+        schema = list(
+          fields = lapply(
+            seq_along(x), 
+            function(i) list(name = schema_vec$name[i], type = schema_vec$type[i])
+          )
+        ),
+        header = col.names, sep = sep, sep2 = sep2, eol = eol, na.strings = na,
+        dec = dec, qmethod = qmethod, logical01 = logical01
+      )
+  \itemize{
+    \item{\code{source} - Contains the R version and \code{data.table} version used to write the file}
+    \item{\code{creation_time_utc} - Current timestamp in UTC time just before the header is written
+  }
+
 }
 \seealso{
   \code{\link{setDTthreads}}, \code{\link{fread}}, \code{\link[utils:write.table]{write.csv}}, \code{\link[utils:write.table]{write.table}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
