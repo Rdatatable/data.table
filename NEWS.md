@@ -53,9 +53,9 @@
     ```R
     library(data.table)
     library(zoo)
-    DT = setDT(lapply(1:100, function(i) c(rnorm(9e6), rep(NA_real_, 1e6))))
+    DT = setDT(lapply(1:100, function(i) sample(c(rnorm(9e6), rep(NA_real_, 1e6)))))
     format(object.size(DT), units="GB") ## 7.5 Gb
-    na.locf(DT)                   ## zoo           67.327s
+    na.locf(DT, na.rm=FALSE)      ## zoo           53.518s
     setDTthreads(1L);
     nafill(DT, "locf")            ## DT 1 thread    7.562s
     setDTthreads(0L);
