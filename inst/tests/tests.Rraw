@@ -14368,7 +14368,48 @@ if (test_yaml) {  # csvy; #1701
   DT_yaml[ , var2 := as.integer(var2)]
   test(2032.22, fread(f, skip = 'var1,', yaml = TRUE),
        DT_yaml, warning = 'Combining a search.*YAML.*')
+       
+       
+  # fwrite csvy: #3534
+  tmp = tempfile()
+  DT = data.table(a = 1:5, b = c(pi, 1:4), c = letters[1:5])
+  fwrite(DT, tmp, yaml = TRUE)
+  as_read = readLines(tmp)
+  test(2033.1, as_read[c(1L, 25L)], c('---', '---'))
+  test(2033.2, grepl('source: R.*data.table.*fwrite', as_read[2L]))
+  test(2033.3, grepl('creation_time_utc', as_read[3L]))
+  test(2033.4, as_read[4:24],
+       c("schema:", "  fields:", "  - name: a", "    type: integer", 
+         "  - name: b", "    type: numeric", "  - name: c", "    type: character", 
+         "header: yes", "sep: ','", "sep2:", "- ''", "- '|'", "- ''", 
+         # NB: apparently \n is encoded like this in YAML
+         "eol: |2+", "", "na.strings: ''", "dec: '.'", "qmethod: double", 
+         "logical01: no", ""))
+  tbl_body = c("a,b,c", "1,3.14159265358979,a", "2,1,b", "3,2,c", "4,3,d", "5,4,e")
+  test(2033.5, as_read[26:31], tbl_body)
+       
+  # multi-class columns
+  DT[ , t := .POSIXct(1:5, tz = 'UTC')]
+  fwrite(DT, tmp, yaml = TRUE)
+  as_read = readLines(tmp)
+  test(2033.5, as_read[13L], "    type: POSIXct")
+  
+  # ~invertibility~
+  # fread side needs to be improved for Hugh's colClasses update
+  DT[ , t := NULL]
+  fwrite(DT, tmp, yaml = TRUE)
+  DT2 = fread(tmp, yaml = TRUE)
+  # remove metadata to compare
+  attr(DT2, 'yaml_metadata') = NULL
+  test(2033.6, all.equal(DT, DT2))
+  
+  # unsupported operations
+  test(2033.7, capture.output(fwrite(DT, append = TRUE, yaml = TRUE)), tbl_body,
+       warning = 'Skipping yaml writing because append = TRUE')
+  test(2033.8, capture.output(fwrite(DT, compress = 'gzip', yaml = TRUE)), tbl_body,
+       warning = 'Skipping yaml writing because is_gzip = TRUE')
 }
+
 
 
 ###################################
