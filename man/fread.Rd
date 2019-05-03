@@ -48,7 +48,7 @@ yaml=FALSE, autostart=NA
     \item{If coercion results in an error or introduces \code{NA}s, the attempt is aborted for that column with warning and the column's type is left unchanged (probably \code{character}).}
     \item{Named list of vectors of column names or numbers are supported where the list names are the class names. The \code{list} form makes it easier to set a batch of columns to be a particular class; see examples. When column numbers are used in the `list` form, they refer to the column number in the file, not the column number after \code{select} or \code{drop} has been applied.}
     \item{Columns are not demoted to a lower type if this would risk loss of information. You have to coerce such columns afterwards yourself, if you really require data loss.}
-    \item{(when #1426 is done) If `select` or `drop` is used,  \code{colClasses} may be a character vector with as many items as the number of columns selected.}
+    \item{If `select` or `drop` is used,  \code{colClasses} may be a character vector with as many items as the number of columns selected.}
   }}
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{base::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
   \item{dec}{ The decimal separator as in \code{base::read.csv}. If not "." (default) then usually ",". See details. }

@@ -204,6 +204,58 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     }
     SET_STRING_ELT(colNamesSxp, i, elem);
   }
+  int ndrop = 0;
+  if (length(dropSxp)) {
+    SEXP itemsInt;
+    if (isString(dropSxp)) itemsInt = PROTECT(chmatch(dropSxp, colNamesSxp, NA_INTEGER));
+    else                   itemsInt = PROTECT(coerceVector(dropSxp, INTSXP));
+    for (int j=0; j<LENGTH(itemsInt); j++) {
+      int k = INTEGER(itemsInt)[j];
+      if (k==NA_INTEGER) {
+        if (isString(dropSxp)) {
+          DTWARN("Column name '%s' in 'drop' not found", CHAR(STRING_ELT(dropSxp, j)));
+        } else {
+          DTWARN("drop[%d] is NA", j+1);
+        }
+      } else {
+        if (k<1 || k>ncol) {
+          DTWARN("Column number %d (drop[%d]) is out of range [1,ncol=%d]",k,j+1,ncol);
+        } else {
+          // if (type[k-1] == CT_DROP) DTWARN("drop= contains duplicates");
+          // NULL in colClasses didn't work between 1.11.0 and 1.11.8 so people have been using drop= to re-specify the NULL columns in colClasses. Now that NULL in colClasses works
+          // from v1.12.0 there is no easy way to distinguish dups in drop= from drop overlapping with NULLs in colClasses. But it's unambiguous that it was intended to remove these
+          // columns, so no need for warning.
+          ndrop += (type[k-1]!=CT_DROP);
+          type[k-1] = CT_DROP;
+        }
+      }
+    }
+    UNPROTECT(1); // itemsInt
+  } else if (length(selectSxp)) {
+    SEXP tt;
+    if (isString(selectSxp)) {
+      // invalid cols check part of #1445 moved here (makes sense before reading the file)
+      tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER));
+      for (int i=0; i<length(selectSxp); i++) if (INTEGER(tt)[i]==NA_INTEGER)
+        DTWARN("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
+    } else {
+      tt = PROTECT(selectSxp); // harmless superfluous PROTECT, for ease of balancing
+    }
+    for (int i=0; i<LENGTH(tt); i++) {
+      int k = isInteger(tt) ? INTEGER(tt)[i] : (int)REAL(tt)[i];
+      if (k == NA_INTEGER) continue;
+      if (k<0) STOP("Column number %d (select[%d]) negative but should be in the range [1,ncol=%d]. Consider drop= for column exclusion.",k,i+1,ncol);
+      if (k==0) STOP("select = 0 (select[%d]) has no meaning. All values of select should be in the range [1,ncol=%d].",i+1,ncol);
+      if (k>ncol) STOP("Column number %d (select[%d]) is too large for this table, which only has %d columns.",k,i+1,ncol);
+      if (type[k-1]<0) STOP("Column number %d ('%s') has been selected twice by select=", k, CHAR(STRING_ELT(colNamesSxp,k-1)));
+      type[k-1] *= -1; // detect and error on duplicates on all types without calling duplicated() at all
+    }
+    for (int i=0; i<ncol; i++) {
+      if (type[i]<0) type[i] *= -1;
+      else type[i]=CT_DROP;
+    }
+    UNPROTECT(1); // tt
+  }
   if (length(colClassesSxp)) {
     SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT));
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
@@ -276,56 +328,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   if (readInt64As != CT_INT64) {
     for (int i=0; i<ncol; i++) if (type[i]==CT_INT64) type[i] = readInt64As;
   }
-  if (length(dropSxp)) {
-    SEXP itemsInt;
-    if (isString(dropSxp)) itemsInt = PROTECT(chmatch(dropSxp, colNamesSxp, NA_INTEGER));
-    else                   itemsInt = PROTECT(coerceVector(dropSxp, INTSXP));
-    for (int j=0; j<LENGTH(itemsInt); j++) {
-      int k = INTEGER(itemsInt)[j];
-      if (k==NA_INTEGER) {
-        if (isString(dropSxp)) {
-          DTWARN("Column name '%s' in 'drop' not found", CHAR(STRING_ELT(dropSxp, j)));
-        } else {
-          DTWARN("drop[%d] is NA", j+1);
-        }
-      } else {
-        if (k<1 || k>ncol) {
-          DTWARN("Column number %d (drop[%d]) is out of range [1,ncol=%d]",k,j+1,ncol);
-        } else {
-          // if (type[k-1] == CT_DROP) DTWARN("drop= contains duplicates");
-          // NULL in colClasses didn't work between 1.11.0 and 1.11.8 so people have been using drop= to re-specify the NULL columns in colClasses. Now that NULL in colClasses works
-          // from v1.12.0 there is no easy way to distinguish dups in drop= from drop overlapping with NULLs in colClasses. But it's unambiguous that it was intended to remove these
-          // columns, so no need for warning.
-          type[k-1] = CT_DROP;
-        }
-      }
-    }
-    UNPROTECT(1); // itemsInt
-  } else if (length(selectSxp)) {
-    SEXP tt;
-    if (isString(selectSxp)) {
-      // invalid cols check part of #1445 moved here (makes sense before reading the file)
-      tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER));
-      for (int i=0; i<length(selectSxp); i++) if (INTEGER(tt)[i]==NA_INTEGER)
-        DTWARN("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
-    } else {
-      tt = PROTECT(selectSxp); // harmless superfluous PROTECT, for ease of balancing
-    }
-    for (int i=0; i<LENGTH(tt); i++) {
-      int k = isInteger(tt) ? INTEGER(tt)[i] : (int)REAL(tt)[i];
-      if (k == NA_INTEGER) continue;
-      if (k<0) STOP("Column number %d (select[%d]) negative but should be in the range [1,ncol=%d]. Consider drop= for column exclusion.",k,i+1,ncol);
-      if (k==0) STOP("select = 0 (select[%d]) has no meaning. All values of select should be in the range [1,ncol=%d].",i+1,ncol);
-      if (k>ncol) STOP("Column number %d (select[%d]) is too large for this table, which only has %d columns.",k,i+1,ncol);
-      if (type[k-1]<0) STOP("Column number %d ('%s') has been selected twice by select=", k, CHAR(STRING_ELT(colNamesSxp,k-1)));
-      type[k-1] *= -1; // detect and error on duplicates on all types without calling duplicated() at all
-    }
-    for (int i=0; i<ncol; i++) {
-      if (type[i]<0) type[i] *= -1;
-      else type[i]=CT_DROP;
-    }
-    UNPROTECT(1); // tt
-  }
+
   return true;
 }
 

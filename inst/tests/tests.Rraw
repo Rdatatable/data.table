@@ -10513,6 +10513,10 @@ test(1743.415, class(fread(f, stringsAsFactors=0.12)[[1]]),               "facto
 test(1743.416, class(fread(f, stringsAsFactors=1.00)[[1]]),               "factor")
 unlink(f)
 
+# colClasses with select; #1426
+test(1743.51, fread(data1743, select=c("D","B"), colClasses=c("character","numeric")), data.table(D=c("7","8"), B=c(3,4)))
+test(1743.52, fread(data1743, drop=c(4,2), colClasses=c("character","numeric")), data.table(A=c("1","2"), C=c(5,6)))
+
 # rolling join stopped working for double with fractions, #1904
 DT = data.table(A=c(1999.917,2000.417,2000.917,2001.417,2001.917))
 setkey(DT,A)
