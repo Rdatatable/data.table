@@ -36,7 +36,7 @@ between <- function(x,lower,upper,incbounds=TRUE) {
   }
   # int64
   if (is.i64(x)) {
-    if (!requireNamespace("bit64", quietly=TRUE)) stop("trying to use integer64 class when 'bit64' package is not installed")
+    if (!requireNamespace("bit64", quietly=TRUE)) stop("trying to use integer64 class when 'bit64' package is not installed") # nocov
     if (!is.i64(lower) && is.numeric(lower)) lower = bit64::as.integer64(lower)
     if (!is.i64(upper) && is.numeric(upper)) upper = bit64::as.integer64(upper)
   } else if (is.i64(lower) || is.i64(upper)) {

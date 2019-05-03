@@ -48,17 +48,16 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
       error("Internal error in between: 'x' is integer64 while 'lower' and/or 'upper' are not, should have been catched by now"); // # nocov
     integer=false;
     integer64=true;
-  } else if (isReal(x) || isReal(lower) || isReal(upper)) {
+  } else if (isReal(x)) {
     integer=false;
-    if (!isReal(x)) {
-      x = PROTECT(coerceVector(x, REALSXP)); nprotect++;
-    }
     if (!isReal(lower)) {
       lower = PROTECT(coerceVector(lower, REALSXP)); nprotect++; // these coerces will convert NA appropriately
     }
     if (!isReal(upper)) {
       upper = PROTECT(coerceVector(upper, REALSXP)); nprotect++;
     }
+  } else {
+    error("Internal error in between: 'x' is not int, double or int64, should have been catched by now"); // # nocov
   }
   // TODO: sweep through lower and upper ensuring lower<=upper (inc bounds) and no lower>upper or lower==INT_MAX
 
