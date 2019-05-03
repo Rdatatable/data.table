@@ -101,7 +101,9 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         header = col.names, sep = sep, sep2 = sep2, eol = eol, na.strings = na,
         dec = dec, qmethod = qmethod, logical01 = logical01
       )
+      # NB: as.yaml adds trailing newline
       cat('---', yaml::as.yaml(yaml_header, line.sep = eol), '---', sep = eol, file = file)
+      append = TRUE
     }
   }
   file <- enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
