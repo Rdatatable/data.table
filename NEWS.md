@@ -22,6 +22,8 @@
     fwrite(DT, "data.csv.gz")   #   2MB; 1.6s
     identical(fread("data.csv.gz"), DT)
     ```
+    
+    * Gains `yaml` argument matching that of `fread`, [#3534](https://github.com/Rdatatable/data.table/issues/3534). See the item in `fread` for a bit more detail; here, we'd like to reiterate that feedback is appreciated in the initial phase of rollout for this feature.
 
 4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
 
