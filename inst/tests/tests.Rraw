@@ -14370,6 +14370,14 @@ if (test_yaml) {  # csvy; #1701
        DT_yaml, warning = 'Combining a search.*YAML.*')
 }
 
+# #2369 -- source()d data.table printing edge case
+tmp = tempfile()
+setup = c('library(data.table)', 'DT = data.table(a = 1)')
+writeLines(c(setup, 'DT[ , a := 1]'), tmp)
+test(2033.1, !any(grepl("1:     1", capture.output(source(tmp, echo = TRUE)), fixed = TRUE)))
+## test force-printing still works
+writeLines(c(setup, 'DT[ , a := 1][]'), tmp)
+test(2033.2, source(tmp, echo = TRUE), output = "1:\\s+1")
 
 ###################################
 #  Add new tests above this line  #
