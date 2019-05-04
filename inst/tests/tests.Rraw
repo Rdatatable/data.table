@@ -14373,7 +14373,8 @@ if (test_yaml) {  # csvy; #1701
   # fwrite csvy: #3534
   tmp = tempfile()
   DT = data.table(a = 1:5, b = c(pi, 1:4), c = letters[1:5])
-  fwrite(DT, tmp, yaml = TRUE)
+  # force eol to compare correctly as.yaml's treatment thereof
+  fwrite(DT, tmp, yaml = TRUE, eol = '\n')
   as_read = readLines(tmp)
   test(2033.1, as_read[c(1L, 25L)], c('---', '---'))
   test(2033.2, grepl('source: R.*data.table.*fwrite', as_read[2L]))
