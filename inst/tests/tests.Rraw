@@ -14404,13 +14404,11 @@ if (test_yaml) {  # csvy; #1701
   test(2033.6, all.equal(DT, DT2))
   
   # unsupported operations
-  test(2033.7, capture.output(fwrite(DT, append = TRUE, yaml = TRUE)), tbl_body,
+  test(2033.7, capture.output(fwrite(DT, append = TRUE, yaml = TRUE)), tbl_body[-1L],
        warning = 'Skipping yaml writing because append = TRUE')
   test(2033.8, capture.output(fwrite(DT, compress = 'gzip', yaml = TRUE)), tbl_body,
        warning = 'Skipping yaml writing because is_gzip = TRUE')
 }
-
-
 
 ###################################
 #  Add new tests above this line  #
