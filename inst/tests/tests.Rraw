@@ -14370,6 +14370,20 @@ if (test_yaml) {  # csvy; #1701
        DT_yaml, warning = 'Combining a search.*YAML.*')
 }
 
+# #1729 -- more helpful guidance when assigning before setDT() after readRDS()
+DT = data.table(a = 1:3)
+tmp = tempfile()
+saveRDS(DT, tmp)
+rm(DT)
+DT = readRDS(tmp)
+foo = function(x) {
+  x[ , b := 4:6, verbose = TRUE][]
+}
+test(2033.1, foo(DT), output = 'Please remember to always setDT()')
+# no assignment was made to DT
+test(2033.2, names(DT), 'a')
+# _selrefok() verbose message was duplicated
+test(2033.3, unname(table(unlist(strsplit(capture.output(foo(DT)), '\n|\\s+')))['ptr']), 1L)
 
 ###################################
 #  Add new tests above this line  #
