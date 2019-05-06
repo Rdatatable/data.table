@@ -192,7 +192,6 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   if (typeSize[CT_STRING]!=8) STOP("Internal error: typeSize[CT_STRING] != 1"); // # nocov
   colNamesSxp = R_NilValue;
   SET_VECTOR_ELT(RCHK, 1, colNamesSxp=allocVector(STRSXP, ncol));
-  colClassesAs = NULL;
   for (int i=0; i<ncol; i++) {
     SEXP elem;
     if (colNames==NULL || colNames[i].len<=0) {
@@ -203,6 +202,25 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       elem = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
     }
     SET_STRING_ELT(colNamesSxp, i, elem);
+  }
+  // redirect any NULL items in list form of colClasses to drop=, to keep the code simpler later
+  if (TYPEOF(colClassesSxp)==VECSXP) {  // not isNewList() because that returns true for NULL
+    SEXP listNames = PROTECT(getAttrib(colClassesSxp, R_NamesSymbol));  // rchk wanted this protected
+    if (!length(listNames)) STOP("colClasses is type list but has no names");
+    bool firstNULL=true, NULLwarned=false;
+    for (int i=0; i<LENGTH(colClassesSxp); ++i) {
+      if (STRING_ELT(listNames, i) == char_NULL) {
+        SEXP items = VECTOR_ELT(colClassesSxp,i);
+        if (firstNULL) {
+          if (!isNull(dropSxp) || !isNull(selectSxp)) {
+            if (dropSxp!=items && !NULLwarned) { DTWARN("Ignoring the NULL item in colClasses= because select= or drop= has been used."); NULLwarned=true; }
+            // package damr has a nice workaround for when NULL didn't work before v1.12.0: it sets drop=col_class$`NULL`. So allow that unambiguous case with no warning.
+          } else { dropSxp=items; firstNULL=false; }
+        }
+        else if (!NULLwarned) { DTWARN("There is more than one NULL item in colClasses= list. Ignoring all but the first."); NULLwarned=true; }
+      }
+    }
+    UNPROTECT(1);  // listNames
   }
   int ndrop = 0;
   if (length(dropSxp)) {
@@ -221,12 +239,8 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         if (k<1 || k>ncol) {
           DTWARN("Column number %d (drop[%d]) is out of range [1,ncol=%d]",k,j+1,ncol);
         } else {
-          // if (type[k-1] == CT_DROP) DTWARN("drop= contains duplicates");
-          // NULL in colClasses didn't work between 1.11.0 and 1.11.8 so people have been using drop= to re-specify the NULL columns in colClasses. Now that NULL in colClasses works
-          // from v1.12.0 there is no easy way to distinguish dups in drop= from drop overlapping with NULLs in colClasses. But it's unambiguous that it was intended to remove these
-          // columns, so no need for warning.
-          ndrop += (type[k-1]!=CT_DROP);
-          type[k-1] = CT_DROP;
+          if (type[k-1]==CT_DROP) { DTWARN("drop= contains duplicates"); }
+          else { ndrop++; type[k-1]=CT_DROP; }
         }
       }
     }
@@ -241,7 +255,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     } else {
       tt = PROTECT(selectSxp); // harmless superfluous PROTECT, for ease of balancing
     }
-    for (int i=0; i<LENGTH(tt); i++) {
+    for (int i=0; i<LENGTH(tt); ++i) {
       int k = isInteger(tt) ? INTEGER(tt)[i] : (int)REAL(tt)[i];
       if (k == NA_INTEGER) continue;
       if (k<0) STOP("Column number %d (select[%d]) negative but should be in the range [1,ncol=%d]. Consider drop= for column exclusion.",k,i+1,ncol);
@@ -250,12 +264,13 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       if (type[k-1]<0) STOP("Column number %d ('%s') has been selected twice by select=", k, CHAR(STRING_ELT(colNamesSxp,k-1)));
       type[k-1] *= -1; // detect and error on duplicates on all types without calling duplicated() at all
     }
-    for (int i=0; i<ncol; i++) {
+    for (int i=0; i<ncol; ++i) {
       if (type[i]<0) type[i] *= -1;
-      else type[i]=CT_DROP;
+      else { ndrop++; type[i]=CT_DROP; }
     }
     UNPROTECT(1); // tt
   }
+  colClassesAs = NULL;
   if (length(colClassesSxp)) {
     SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT));
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
@@ -265,18 +280,27 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       if (LENGTH(colClassesSxp)==1) {
         signed char newType = typeEnum[INTEGER(typeEnum_idx)[0]-1];
         if (newType == CT_DROP) STOP("colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing");
-        for (int i=0; i<ncol; i++) type[i]=newType;   // freadMain checks bump up only not down
+        for (int i=0; i<ncol; i++) if (type[i]!=CT_DROP) type[i]=newType;   // freadMain checks bump up only not down
         if (INTEGER(typeEnum_idx)[0]==NUT) for (int i=0; i<ncol; i++) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,0));
       } else if (LENGTH(colClassesSxp)==ncol) {
-        for (int i=0; i<ncol; i++) {
-          if (STRING_ELT(colClassesSxp,i)==NA_STRING) continue; // user is ok with inherent type for this column
+        for (int i=0; i<ncol; ++i) {
+          if (type[i]==CT_DROP) continue;                        // user might have specified the type of all columns including those dropped with drop=
+          if (STRING_ELT(colClassesSxp, i)==NA_STRING) continue; // user is ok with inherent type for this column
           int w = INTEGER(typeEnum_idx)[i];
           type[i] = typeEnum[w-1];
           if (w==NUT) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,i));
         }
+      } else if (LENGTH(colClassesSxp)==ncol-ndrop) {
+        for (int i=0, j=-1; i<ncol; ++i) {
+          if (type[i]==CT_DROP) continue;
+          if (STRING_ELT(colClassesSxp,++j)==NA_STRING) continue;
+          int w = INTEGER(typeEnum_idx)[j];
+          type[i] = typeEnum[w-1];
+          if (w==NUT) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,j));
+        }
       } else {
-        STOP("colClasses is an unnamed character vector but its length is %d. Must be length 1 or ncol (%d in this case) when unnamed. To specify types for a subset of columns you can either name the items with the column names or pass list() format to colClasses using column names or column numbers. See examples in ?fread.",
-              LENGTH(colClassesSxp), ncol);
+        STOP("colClasses is a character vector ok but its length is %d. Its length must match the number of columns in the file (%d), or the number of columns after select/drop has been applied (%d). To specify types for a subset of named columns you can use a named character vector, or list format accepts sets of column names or numbers for each type. See examples in ?fread.",
+              LENGTH(colClassesSxp), ncol, ncol-ndrop);
       }
       UNPROTECT(1); // typeEnum_idx
     } else {
@@ -284,22 +308,11 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       SEXP listNames = PROTECT(getAttrib(colClassesSxp, R_NamesSymbol));  // rchk wanted this protected
       if (!length(listNames)) STOP("colClasses is type list but has no names");
       SEXP typeEnum_idx = PROTECT(chmatch(listNames, typeRName_sxp, NUT));
-      bool firstNULL=true, NULLwarned=false;
       for (int i=0; i<LENGTH(colClassesSxp); i++) {
-        SEXP items;
         const int w = INTEGER(typeEnum_idx)[i];
         signed char thisType = typeEnum[w-1];
-        items = VECTOR_ELT(colClassesSxp,i);
-        if (thisType == CT_DROP) {
-          if (firstNULL) {
-            if (!isNull(dropSxp) || !isNull(selectSxp)) {
-              if (dropSxp!=items && !NULLwarned) { DTWARN("Ignoring the NULL item in colClasses= because select= or drop= has been used."); NULLwarned=true; }
-              // package damr has a nice workaround for when NULL didn't work before v1.12.0: it sets drop=col_class$`NULL`. So allow that unambiguous case with no warning.
-            } else { dropSxp=items; firstNULL=false; }
-          }
-          else if (!NULLwarned) { DTWARN("There is more than one NULL item in colClasses= list. Ignoring all but the first."); NULLwarned=true; }
-          continue;
-        }
+        if (thisType==CT_DROP) continue;  // was dealt with earlier above
+        SEXP items = VECTOR_ELT(colClassesSxp,i);
         SEXP itemsInt;
         if (isString(items)) itemsInt = PROTECT(chmatch(items, colNamesSxp, NA_INTEGER));
         else                 itemsInt = PROTECT(coerceVector(items, INTSXP));
@@ -313,8 +326,10 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
             if (k<1 || k>ncol) STOP("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]",k,i+1,j+1,ncol);
             k--;
             if (type[k]<0) STOP("Column '%s' appears more than once in colClasses", CHAR(STRING_ELT(colNamesSxp,k)));
-            type[k] = -thisType;
-            if (w==NUT) SET_STRING_ELT(colClassesAs, k, STRING_ELT(listNames,i));
+            if (type[k]!=CT_DROP) {
+              type[k] = -thisType;
+              if (w==NUT) SET_STRING_ELT(colClassesAs, k, STRING_ELT(listNames,i));
+            }
             // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
           }
         }
@@ -328,7 +343,6 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
   if (readInt64As != CT_INT64) {
     for (int i=0; i<ncol; i++) if (type[i]==CT_INT64) type[i] = readInt64As;
   }
-
   return true;
 }
 
