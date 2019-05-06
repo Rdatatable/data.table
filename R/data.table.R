@@ -1725,7 +1725,7 @@ replace_dot_alias <- function(e) {
         .gforce_ok <- function(q) {
           if (dotN(q)) return(TRUE) # For #5760
           # Need is.symbol() check. See #1369, #1974 or #2949 issues and explanation below by searching for one of these issues.
-          cond = is.call(q) && is.symbol(q[[1]]) && (q1c <- as.character(q[[1]])) %chin% gfuns && !is.call(q[[2L]]) && is_strictly_numeric(eval(q[[2L]], x, parent.frame()))
+          cond = is.call(q) && is.symbol(q[[1]]) && (q1c <- as.character(q[[1]])) %chin% gfuns && !is.call(q[[2L]]) && is_vector_extended(eval(q[[2L]], x, parent.frame()))
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
           ans = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1c %chin% c("head","tail")) # head-tail uses default value n=6 which as of now should not go gforce
           if (identical(ans, TRUE)) return(ans)
@@ -1761,7 +1761,7 @@ replace_dot_alias <- function(e) {
       nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
       oldjsub = jsub
       .fastmean_ok = function(q) {
-        is.call(q) && is.symbol(q[[1L]]) && q[[1L]] == "mean" && is_strictly_numeric(eval(q[[2L]], x, parent.frame()))
+        is.call(q) && is.symbol(q[[1L]]) && q[[1L]] == "mean" && is_vector_extended(eval(q[[2L]], x, parent.frame()))
       }
       if (jsub[[1L]]=="list") {
         fastmean_assigned = FALSE
@@ -1901,7 +1901,7 @@ replace_dot_alias <- function(e) {
 
 # variable is numeric & won't attempt to dispatch to non-standard gfuns element
 #   prevents errors like #3533, #1876, #3079
-is_strictly_numeric = function(x) class(x)[1L] %chin% c('integer', 'integer64', 'numeric')
+is_vector_extended = function(x) is.vector(x) || inherits(x, 'integer64')
 
 .optmean <- function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.
   if (length(expr)==2L)  # no parameters passed to mean, so defaults of trim=0 and na.rm=FALSE
