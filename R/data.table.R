@@ -1722,10 +1722,10 @@ replace_dot_alias <- function(e) {
       } else {
         # Apply GForce
         gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "first", "tail", "[") # added .N for #5760
-        .ok <- function(q) {
+        .gforce_ok <- function(q) {
           if (dotN(q)) return(TRUE) # For #5760
           # Need is.symbol() check. See #1369, #1974 or #2949 issues and explanation below by searching for one of these issues.
-          cond = is.call(q) && is.symbol(q[[1]]) && (q1c <- as.character(q[[1]])) %chin% gfuns && !is.call(q[[2L]])
+          cond = is.call(q) && is.symbol(q[[1]]) && (q1c <- as.character(q[[1]])) %chin% gfuns && !is.call(q[[2L]]) && is_strictly_numeric(eval(q[[2L]], x, parent.frame()))
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
           ans = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1c %chin% c("head","tail")) # head-tail uses default value n=6 which as of now should not go gforce
           if (identical(ans, TRUE)) return(ans)
@@ -1739,8 +1739,8 @@ replace_dot_alias <- function(e) {
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
-          for (ii in seq_along(jsub)[-1L]) if (!.ok(jsub[[ii]])) GForce = FALSE
-        } else GForce = .ok(jsub)
+          for (ii in seq_along(jsub)[-1L]) if (!.gforce_ok(jsub[[ii]])) GForce = FALSE
+        } else GForce = .gforce_ok(jsub)
         if (GForce) {
           if (jsub[[1L]]=="list")
             for (ii in seq_along(jsub)[-1L]) {
@@ -1760,17 +1760,17 @@ replace_dot_alias <- function(e) {
       # Still do the old speedup for mean, for now
       nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
       oldjsub = jsub
+      .fastmean_ok = function(q) {
+        is.call(q) && is.symbol(q[[1L]]) && q[[1L]] == "mean" && is_strictly_numeric(eval(q[[2L]], x, parent.frame()))
+      }
       if (jsub[[1L]]=="list") {
         for (ii in seq_along(jsub)[-1L]) {
           this_jsub = jsub[[ii]]
           if (dotN(this_jsub)) next; # For #5760
           # Addressing #1369, #2949 and #1974. Added is.symbol() check to handle cases where expanded function definition is used insead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
-          if (is.call(this_jsub) && is.symbol(this_jsub[[1L]]) && this_jsub[[1L]]=="mean")
-            jsub[[ii]] = .optmean(this_jsub)
+          if (.fastmean_ok(jsub)) jsub[[ii]] = .optmean(this_jsub)
         }
-      } else if (jsub[[1L]]=="mean") {
-        jsub = .optmean(jsub)
-      }
+      } else if (.fastmean_ok(jsub)) jsub = .optmean(jsub)
       if (nomeanopt) {
         warning("Unable to optimize call to mean() and could be very slow. You must name 'na.rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean 'trim' which is the 2nd argument of mean. 'trim' is not yet optimized.",immediate.=TRUE)
       }
@@ -1889,6 +1889,10 @@ replace_dot_alias <- function(e) {
   }
   alloc.col(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
+
+# variable is numeric & won't attempt to dispatch to non-standard gfuns element
+#   prevents errors like #3533, #1876, #3079
+is_strictly_numeric = function(x) class(x)[1L] %chin% c('integer', 'numeric')
 
 .optmean <- function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.
   if (length(expr)==2L)  # no parameters passed to mean, so defaults of trim=0 and na.rm=FALSE
