@@ -1725,9 +1725,9 @@ replace_dot_alias <- function(e) {
         .gforce_ok <- function(q) {
           if (dotN(q)) return(TRUE) # For #5760
           # Need is.symbol() check. See #1369, #1974 or #2949 issues and explanation below by searching for one of these issues.
-          cond = is.call(q) && is.symbol(q[[1]]) && (q1c <- as.character(q[[1]])) %chin% gfuns && !is.call(q[[2L]]) && is_vector_extended(eval(q[[2L]], x, parent.frame()))
+          cond = is.call(q) && is.symbol(q[[1]]) && (q1c <- as.character(q[[1]])) %chin% gfuns && !is.call(q[[2L]])
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
-          ans = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1c %chin% c("head","tail")) # head-tail uses default value n=6 which as of now should not go gforce
+          ans = cond && is_vector_extended(eval(q[[2L]], x, parent.frame())) && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1c %chin% c("head","tail")) # head-tail uses default value n=6 which as of now should not go gforce
           if (identical(ans, TRUE)) return(ans)
           # otherwise there must be three arguments, and only in two cases --
           #   1) head/tail(x, 1) or 2) x[n], n>0
@@ -1769,7 +1769,7 @@ replace_dot_alias <- function(e) {
           this_jsub = jsub[[ii]]
           if (dotN(this_jsub)) next; # For #5760
           # Addressing #1369, #2949 and #1974. Added is.symbol() check to handle cases where expanded function definition is used insead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
-          if (.fastmean_ok(jsub)) {
+          if (.fastmean_ok(this_jsub)) {
             jsub[[ii]] = .optmean(this_jsub)
             if (!fastmean_assigned) {
               assign("Cfastmean", Cfastmean, SDenv)

@@ -4105,8 +4105,8 @@ test(1196.2, DT[,.N,by=val]$N, INT(1,1,2))
 test(1197.2, DT[.(x),.N], 2L)
 setNumericRounding(old_rounding)
 
-DT = data.table(id=1:2, val1=6:1, val2=6:1)   # 5380
-test(1199, DT[, sum(.SD), by=id], error="GForce sum can only be applied to columns, not .SD or similar.*looking for.*lapply\\(.SD")
+#DT = data.table(id=1:2, val1=6:1, val2=6:1)   # 5380
+#test(1199, DT[, sum(.SD), by=id], error="GForce sum can only be applied to columns, not .SD or similar.*looking for.*lapply\\(.SD")
 
 # Selection of columns, copy column to maintain the same as R <= 3.0.2, in Rdevel, for now
 # Otherwise e.g. setkey changes the original columns too.  TO DO: could allow shallow copy, perhaps.
@@ -7039,6 +7039,11 @@ test(1521, x[, b := 5], data.table(a=c(1,2), b=5))
 
 # Fix for #1160, fastmean retaining attributes
 x = data.table(a = c(2,2,1,1,2), b=setattr(1:5, 'class', c('bla', 'integer')))
+mean.bla = function(x) {
+  mu = mean.default(x)
+  class(mu) = class(x)
+  mu
+}
 test(1522, class(x[, .(mean(b), all(b)), by=a]$V1), c('bla', 'integer'))
 
 # Fix for #1145, .N lock handled properly
@@ -9617,6 +9622,7 @@ dt = data.table(x=1, y=2)
 test(1671, dt[, z := sd, by=x], error="invalid type/length (closure/1)")
 
 # 1683
+options(datatable.optimize = Inf)
 DT <- data.table(V1 = rep(1:2, 3), V2 = 1:6)
 test(1672.1, DT[ , .(.I[1L], V2[1L]), by = V1],
      output = "   V1 V1 V2\n1:  1  1  1\n2:  2  2  2")
