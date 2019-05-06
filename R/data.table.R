@@ -1764,13 +1764,24 @@ replace_dot_alias <- function(e) {
         is.call(q) && is.symbol(q[[1L]]) && q[[1L]] == "mean" && is_strictly_numeric(eval(q[[2L]], x, parent.frame()))
       }
       if (jsub[[1L]]=="list") {
+        fastmean_assigned = FALSE
         for (ii in seq_along(jsub)[-1L]) {
           this_jsub = jsub[[ii]]
           if (dotN(this_jsub)) next; # For #5760
           # Addressing #1369, #2949 and #1974. Added is.symbol() check to handle cases where expanded function definition is used insead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
-          if (.fastmean_ok(jsub)) jsub[[ii]] = .optmean(this_jsub)
+          if (.fastmean_ok(jsub)) {
+            jsub[[ii]] = .optmean(this_jsub)
+            if (!fastmean_assigned) {
+              assign("Cfastmean", Cfastmean, SDenv)
+              assign("mean", base::mean.default, SDenv)
+            }
+          }
         }
-      } else if (.fastmean_ok(jsub)) jsub = .optmean(jsub)
+      } else if (.fastmean_ok(jsub)) {
+        jsub = .optmean(jsub)
+        assign("Cfastmean", Cfastmean, SDenv)
+        assign("mean", base::mean.default, SDenv)
+      }
       if (nomeanopt) {
         warning("Unable to optimize call to mean() and could be very slow. You must name 'na.rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean 'trim' which is the 2nd argument of mean. 'trim' is not yet optimized.",immediate.=TRUE)
       }
@@ -1780,8 +1791,6 @@ replace_dot_alias <- function(e) {
         else
           cat("Old mean optimization is on, left j unchanged.\n")
       }
-      assign("Cfastmean", Cfastmean, SDenv)
-      assign("mean", base::mean.default, SDenv)
       # Old comments still here for now ...
       # Here in case nomeanopt=TRUE or some calls to mean weren't detected somehow. Better but still slow.
       # Maybe change to :
@@ -1892,7 +1901,7 @@ replace_dot_alias <- function(e) {
 
 # variable is numeric & won't attempt to dispatch to non-standard gfuns element
 #   prevents errors like #3533, #1876, #3079
-is_strictly_numeric = function(x) class(x)[1L] %chin% c('integer', 'numeric')
+is_strictly_numeric = function(x) class(x)[1L] %chin% c('integer', 'integer64', 'numeric')
 
 .optmean <- function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.
   if (length(expr)==2L)  # no parameters passed to mean, so defaults of trim=0 and na.rm=FALSE

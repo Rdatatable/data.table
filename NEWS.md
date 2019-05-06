@@ -77,6 +77,8 @@
 
 5. `fread()` could crash if `quote=""` (i.e. ignore quotes), the last line is too short, and `fill=TRUE`, [#3524](https://github.com/Rdatatable/data.table/pull/3524). Thanks to Jiucang Hao for the report and reproducible example.
 
+6. `data.table` grouping optimization (`GForce` & `fastmean`) ignored method dispatch and could give incorrect results for non-simple classes, [#3533](https://github.com/Rdatatable/data.table/issues/3533), [#1876](https://github.com/Rdatatable/data.table/issues/1876), and [#3079](https://github.com/Rdatatable/data.table/issues/3079). Thanks to @d-sci, @rossholmberg, and @Henrik-P, respectively, for reporting.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.

@@ -14370,6 +14370,17 @@ if (test_yaml) {  # csvy; #1701
        DT_yaml, warning = 'Combining a search.*YAML.*')
 }
 
+# #3533, #1876, #3079 -- ensure GForce/fastmean are not applied incorrectly under method dispatch
+DT = data.table(ID = 1:2, v = 3:4, d = .Date(1:2))
+class(DT$v) = 'mymean'
+mean.mymean = function(x) min(x) + 1
+test(2033.1, DT[ , mean(v)], 4)
+options(datatable.optimize = 0)
+trueDT = data.table(ID = 1:2, V1 = c(4, 5))
+test(2033.2, DT[ , mean(v), by = ID], trueDT)
+options(datatable.optimize = 2)
+test(2033.3, DT[ , mean(v), by = ID, verbose = TRUE], trueDT, output = 'GForce FALSE')
+
 
 ###################################
 #  Add new tests above this line  #
