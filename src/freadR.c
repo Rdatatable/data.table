@@ -245,18 +245,21 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       }
     }
     UNPROTECT(1); // itemsInt
-  } else if (length(selectSxp)) {
-    SEXP tt;
+  }
+  const int *selectInts = NULL; // if select is provided this will point to 1-based ints of the column numbers (which might already be the input as-is)
+  bool selectProtected = false;
+  if (length(selectSxp)) {
     if (isString(selectSxp)) {
       // invalid cols check part of #1445 moved here (makes sense before reading the file)
-      tt = PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER));
-      for (int i=0; i<length(selectSxp); i++) if (INTEGER(tt)[i]==NA_INTEGER)
+      selectInts = INTEGER(PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER)));
+      for (int i=0; i<LENGTH(selectSxp); i++) if (selectInts[i]==NA_INTEGER)
         DTWARN("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
     } else {
-      tt = PROTECT(selectSxp); // harmless superfluous PROTECT, for ease of balancing
+      selectInts = INTEGER(PROTECT(coerceVector(selectSxp, INTSXP))); // coerces numeric to int, otherwise harmless superfluous PROTECT for ease of balancing
     }
-    for (int i=0; i<LENGTH(tt); ++i) {
-      int k = isInteger(tt) ? INTEGER(tt)[i] : (int)REAL(tt)[i];
+    selectProtected = true;
+    for (int i=0; i<LENGTH(selectSxp); ++i) {
+      int k = selectInts[i];
       if (k == NA_INTEGER) continue;
       if (k<0) STOP("Column number %d (select[%d]) negative but should be in the range [1,ncol=%d]. Consider drop= for column exclusion.",k,i+1,ncol);
       if (k==0) STOP("select = 0 (select[%d]) has no meaning. All values of select should be in the range [1,ncol=%d].",i+1,ncol);
@@ -268,7 +271,6 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
       if (type[i]<0) type[i] *= -1;
       else { ndrop++; type[i]=CT_DROP; }
     }
-    UNPROTECT(1); // tt
   }
   colClassesAs = NULL;
   if (length(colClassesSxp)) {
@@ -276,13 +278,19 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
     SET_VECTOR_ELT(RCHK, 2, colClassesAs=allocVector(STRSXP, ncol));  // if any, this attached to the DT for R level to call as_ methods on
     if (isString(colClassesSxp)) {
+      if (!isNull(getAttrib(colClassesSxp, R_NamesSymbol))) STOP("Internal error: named colClasses was not converted to list format at R level first");
       SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT));
+      SEXP opt = R_NilValue;
       if (LENGTH(colClassesSxp)==1) {
         signed char newType = typeEnum[INTEGER(typeEnum_idx)[0]-1];
         if (newType == CT_DROP) STOP("colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing");
         for (int i=0; i<ncol; i++) if (type[i]!=CT_DROP) type[i]=newType;   // freadMain checks bump up only not down
         if (INTEGER(typeEnum_idx)[0]==NUT) for (int i=0; i<ncol; i++) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,0));
-      } else if (LENGTH(colClassesSxp)==ncol) {
+      } else if (LENGTH(colClassesSxp)==ncol && (length(selectSxp)<ncol || !IS_TRUE(opt=GetOption(install("datatable.colClassesSelectOrder"), R_NilValue)))) {
+        if (selectInts && LENGTH(selectSxp)==ncol && opt==R_NilValue)
+          DTWARN("colClasses is an unnamed character vector with the same length (%d) as select, but this is also the number of columns in the file (%d). For backwards "
+                 "compatibility, colClasses is still taken to be in the order that the columns appear in the file. Please set options(datatable.colClassesSelectOrder=TRUE) to "
+                 "achieve new behavior that if select is supplied, colClasses corresponds to the order of columns in select.", ncol, ncol);
         for (int i=0; i<ncol; ++i) {
           if (type[i]==CT_DROP) continue;                        // user might have specified the type of all columns including those dropped with drop=
           if (STRING_ELT(colClassesSxp, i)==NA_STRING) continue; // user is ok with inherent type for this column
@@ -291,12 +299,15 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
           if (w==NUT) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,i));
         }
       } else if (LENGTH(colClassesSxp)==ncol-ndrop) {
+        if (selectInts && LENGTH(selectSxp)!=ncol-ndrop) STOP("colClasses is length %d but select is length %d. ncol=%d ndrop=%d", LENGTH(colClassesSxp), LENGTH(selectSxp), ncol, ndrop);
         for (int i=0, j=-1; i<ncol; ++i) {
           if (type[i]==CT_DROP) continue;
           if (STRING_ELT(colClassesSxp,++j)==NA_STRING) continue;
           int w = INTEGER(typeEnum_idx)[j];
-          type[i] = typeEnum[w-1];
-          if (w==NUT) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,j));
+          int y = selectInts ? selectInts[j] : i+1;
+          if (y==NA_INTEGER) continue; else y--;
+          type[y] = typeEnum[w-1];
+          if (w==NUT) SET_STRING_ELT(colClassesAs, y, STRING_ELT(colClassesSxp,j));
         }
       } else {
         STOP("colClasses is a character vector ok but its length is %d. Its length must match the number of columns in the file (%d), or the number of columns after select/drop has been applied (%d). To specify types for a subset of named columns you can use a named character vector, or list format accepts sets of column names or numbers for each type. See examples in ?fread.",
@@ -340,6 +351,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     }
     UNPROTECT(1);  // typeRName_sxp
   }
+  if (selectProtected) UNPROTECT(1);
   if (readInt64As != CT_INT64) {
     for (int i=0; i<ncol; i++) if (type[i]==CT_INT64) type[i] = readInt64As;
   }
