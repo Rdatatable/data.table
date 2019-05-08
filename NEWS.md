@@ -12,11 +12,11 @@
     * `stringsAsFactors=0.10` will factorize any character column containing under `0.10*nrow` unique strings, [#2025](https://github.com/Rdatatable/data.table/issues/2025). Thanks to @hughparsonage for the PR.
     * `colClasses=list(numeric=20:30, numeric="ID")` will apply the `numeric` type to column numbers `20:30` as before and now also column name `"ID"`; i.e. all duplicate class names are now respected rather than only the first. This need may arise when specifying some columns by name and others by number, as in this example. Thanks to @hughparsonage for the PR.
     * gains `yaml` (default `FALSE`) and the ability to parse CSVY-formatted input files; i.e., csv files with metadata in a header formatted as YAML (http://csvy.org/), [#1701](https://github.com/Rdatatable/data.table/issues/1701). See `?fread` and files in `/inst/tests/csvy/` for sample formats. Please provide feedback if you find this feature useful and would like extended capabilities. For now, consider it experimental, meaning the API/arguments may change. Thanks to @leeper at [`rio`](https://github.com/leeper/rio) for the inspiration and @MichaelChirico for implementing.
-    * `select` can now be used to specify types for just the columns selected, [#1426](https://github.com/Rdatatable/data.table/issues/1426). There are two new methods: a `list` of two items (the column names/numbers and their corresponding types), or a named vector (like `colClasses`).
+    * `select` can now be used to specify types for just the columns selected, [#1426](https://github.com/Rdatatable/data.table/issues/1426). There are two options: a named vector like `colClasses`, or a `list` of two items (the column names/numbers and their corresponding types). For example:
 
     ```R
-    fread(file, select=c(ID="character", value="userClass"))
-    fread(file, select=list(c("ID","userClass"), c("character","userClass")))
+    fread(file, select=c(ID="character", someCol="integer64"))               # a named vector
+    fread(file, select=list(c("ID","someCol"), c("character","integer64")))  # a list of two items
     ```
 
 3. `fwrite()`:
