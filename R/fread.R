@@ -269,6 +269,7 @@ yaml=FALSE, autostart=NA)
   warnings2errors = getOption("warn") >= 2
   ans = .Call(CfreadR,input,sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
               fill,showProgress,nThread,verbose,warnings2errors,logical01,select,drop,colClasses,integer64,encoding,keepLeadingZeros)
+  if (!length(ans)) return(null.data.table())  # test 1743.308 drops all columns
   nr = length(ans[[1L]])
   if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(ans,inherits,"integer64"))) require_bit64()
   setattr(ans,"row.names",.set_row_names(nr))
@@ -320,6 +321,8 @@ yaml=FALSE, autostart=NA)
   }
 
   if (!is.null(select)) {
+    if (is.list(select)) select=select[[1L]]
+    else if (length(names(select))) select=names(select)
     if (is.numeric(select)) {
       if (length(o <- forderv(select))) {
         rank = integer(length(o))

@@ -2703,7 +2703,7 @@ test(959.1, fread(input, colClasses=c("character","double","numeric")),
 test(959.2, fread(input, colClasses=c("character",NA,"numeric")),
             data.table(A=c("01","002"),B=c("foo","bar"),C=c(3.14,6.28)))
 test(960, fread(input, colClasses=c("character","double")),
-          error="colClasses.*character vector.*length is 2. Its length.*number of columns in the file \\(3\\).*after select/drop has been applied \\(3\\)")
+          error="colClasses= is length 2 but there are 3 columns. To specify types for a subset of columns, you can")
 test(961, fread(input, colClasses=1:3), error="colClasses is not type list or character vector")
 test(962, fread(input, colClasses=list(1:3)), error="colClasses is type list but has no names")
 test(963, fread(input, colClasses=list(character="D")), error="Column name 'D' in colClasses..1.. not found")
@@ -3173,13 +3173,13 @@ test(1065, X[J(2:5), (var):=22L], data.table(A=rep(1:3, each=2), B=c(1L,4L,rep(2
 # fread single unnamed colClasses
 f = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
 test(1066, fread(f,colClasses=c("integer","integer","character")),
-           error="colClasses is a character vector ok but its length is 3. Its length must match.*4.*or.*4")
+           error="colClasses= is length 3 but there are 4 columns. To specify types for a subset of columns, you can")
 test(1067, fread(f,colClasses=c("integer","numeric","character","character")), data.table(A=1:2,B=c(3,4),C=c("5","6"),D=c("7","8")))
 test(1068, fread(f,colClasses="character"), data.table(A=c("1","2"),B=c("3","4"),C=c("5","6"),D=c("7","8")))
 
 # fread select and drop
 test(1069, fread(f,drop=c("D","B")), data.table(A=1:2,C=5:6))
-test(1070, fread(f,drop="E"), fread(f), warning="Column name 'E' in 'drop' not found")
+test(1070, fread(f,drop="E"), fread(f), warning="Column name 'E' (drop[1]) not found")
 test(1071, fread(f,select="B",colClasses=list(numeric="C")), data.table(B=3:4))
 test(1072, fread(f,select="B",drop="C"), error="not both")
 test(1073, fread(f,drop=2:3), fread(f,select=c(1,4)))  # tests coercing numeric select as well
@@ -10454,14 +10454,17 @@ test(1743.193, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c(1L, 3
 test(1743.194, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c("a", "c"), Date = "d"), drop = c(1L, 4L)), class), y = c(b="integer", c="raw"))
 test(1743.195, sapply(fread("a,b,c,d\n2,2,0f,x", colClasses = list(raw = c("a", "c"), Date = "d"), select = c(2L, 3L)), class), y = c(b="integer", c="raw"))
 test(1743.196, sapply(fread("a,b,c,d\n2,0+1i,2,x", colClasses = list(raw = c("a", "c"), complex = "b", Date = "d"), select = c(2L, 3L)), class), y = c(b="complex", c="raw"))
-old = options(datatable.colClassesSelectOrder=NULL)
-test(1743.197, fread("A,B,C,D\nA,B,X,4", select=c(1,4,3,2), colClasses=c("factor","factor","character","integer")), ans<-data.table(A=factor("A"), D=4L, C="X", B=factor("B")),
-               warning="colClasses is an unnamed character vector with the same length (4) as select, but this is also the number of columns in the file (4)")
-options(datatable.colClassesSelectOrder=FALSE)
-test(1743.198, fread("A,B,C,D\nA,B,X,4", select=c(1,4,3,2), colClasses=c("factor","factor","character","integer")), ans)
-options(datatable.colClassesSelectOrder=TRUE)
-test(1743.199, fread("A,B,C,D\nA,B,X,4", select=c(1,4,3,2), colClasses=c("factor","integer","character","factor")), ans)
-options(old)
+
+# colClasses in select; #1426
+test(1743.197, fread("A,B,C,D\nA,B,X,4", select=c(1,4,3,2), colClasses=c("factor","factor","character","integer")), ans<-data.table(A=factor("A"), D=4L, C="X", B=factor("B")))
+test(1743.198, fread("A,B,C,D\nA,B,X,4", select=list(c(1,4,3,2), c("factor","integer","character","factor"))), ans)
+test(1743.199, fread("A,B,C,D\nA,B,X,4", select=c(A="factor", D="integer", C="character", B="factor")), ans)
+test(1743.200, fread("A,B,C,D\nA,B,X,4", select=list("A")), error="When select= is a list it must be two items.*But it has 1 item")
+test(1743.201, fread("A,B,C,D\nA,B,X,4", select=list(1:2, c("factor","integer","character"))), error="Item 1 of select.*is length 2 but item 2.*is length 3")
+test(1743.202, fread("A,B,C,D\nA,B,X,4", select=list("A","factor"), colClasses="character"), error="select=list.*ok but colClasses= has been provided as well. Please remove colClasses.")
+test(1743.203, fread("A,B,C,D\nA,B,X,4", select=c(A="factor"), colClasses="character"), error="select= is a named vector.*but colClasses= has been provided as well. Please remove colClasses=.")
+test(1743.204, fread("A,B,C,D\nA,B,X,4", select=list(c("D","B"), c("character","factor"))), data.table(D="4", B=factor("B")))
+test(1743.205, fread("A,B,C,D\nA,B,X,4", select=list(c(4,2),     c("character","factor"))), data.table(D="4", B=factor("B")))
 
 ## factors
 test(1743.211, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = 1L), select = 2:3), class), y = c(b="integer", c="character"))
@@ -10500,10 +10503,9 @@ test(1743.3041, fread(data1743, drop=2:3),                           ans)
 test(1743.3042, fread(data1743, drop=c(2,NA,3)),                     ans, warning="drop[2] is NA")
 test(1743.305, fread(data1743, colClasses=c("integer", "NULL", "NULL", "integer")), ans)
 test(1743.306, fread(data1743, colClasses=c("integer", "NULL", "NULL", "integer"), drop=4), data.table(A=1:2))
-test(1743.307, fread(data1743, colClasses=list(NULL=c("C","D"), NULL=1:2)), data.table(A=1:2, B=3:4),
-               warning="There is more than one NULL item in colClasses= list. Ignoring all but the first.")
-test(1743.308, fread(data1743, colClasses=list(NULL=c("C","D")), drop=1:2), data.table(C=5:6, D=7:8),
-               warning="Ignoring the NULL item in colClasses= because select= or drop= has been used")
+test(1743.3071, fread(data1743, colClasses=list(NULL=c("C","D"), NULL=1:2)), data.table(NULL))
+test(1743.3072, fread(data1743, colClasses=list(NULL=c("C","D"), NULL=1)), data.table(B=3:4))
+test(1743.308, fread(data1743, colClasses=list(NULL=c("C","D")), drop=1:2), data.table(NULL))
 test(1743.311, fread(data1743, colClasses="NULL"), ans<-data.table(A=1:2, B=3:4, C=5:6, D=7:8), warning="colClasses.*quoted.*interpreted as colClasses.*NULL")
 test(1743.312, fread(data1743, colClasses=character()), ans)
 test(1743.32, fread("A,B\na,0+1i", colClasses="complex"), data.table(A="a", B=1i),
@@ -10520,10 +10522,6 @@ test(1743.414, class(fread(f, stringsAsFactors=0.11, verbose=TRUE)[[1]]), "facto
 test(1743.415, class(fread(f, stringsAsFactors=0.12)[[1]]),               "factor")
 test(1743.416, class(fread(f, stringsAsFactors=1.00)[[1]]),               "factor")
 unlink(f)
-
-# colClasses with select; #1426
-test(1743.51, fread(data1743, select=c("D","B"), colClasses=c("character","numeric")), data.table(D=c("7","8"), B=c(3,4)))
-test(1743.52, fread(data1743, drop=c(4,2), colClasses=c("character","numeric")), data.table(A=c("1","2"), C=c(5,6)))
 
 # rolling join stopped working for double with fractions, #1904
 DT = data.table(A=c(1999.917,2000.417,2000.917,2001.417,2001.917))
@@ -11373,15 +11371,13 @@ test(1825.12, fread("a,b,c\n1,2,3.0\n2,3,4.5", colClasses = c("integer", "intege
               warning="Attempt to override column 3 <<c>> of inherent type 'float64' down to 'int32'")
 test(1825.13, fread("a,b,c\n1,2,3.0\n2,3,4.5", colClasses=list(NULL="b")), data.table(a=1:2, c=c(3,4.5)))
 test(1825.14, fread(str, colClasses=list(integer=1:2, NULL=3:5)), data.table(x1=INT(1,3), x2=INT(2,4)))
-test(1825.15, fread(str, colClasses=list(numeric=2, NULL=3:5), drop=1),
-              data.table(x2=c(2,4), x3=c(1.5,2.5), x4=c("T","F"), x5=c("cc","ff")),
-              warning="Ignoring the NULL item in colClasses= because select= or drop= has been used")   # warning because drop != colClasses$`NULL`
+test(1825.15, fread(str, colClasses=list(numeric=2, NULL=3:5), drop=1), data.table(x2=c(2,4)))
 test(1825.16, fread(str, colClasses=(cl<-list(numeric=2, NULL=3:5)), drop=cl$`NULL`), data.table(x1=INT(1,3), x2=c(2,4)))  # cover commit f0bd6e3
 # NULL didn't work in 1.11.0-1.11.8 so some usage exists where drop= is used to respecify the NULLs. The warning could be reintroduced in future.
 # https://github.com/Rdatatable/data.table/issues/3233#issuecomment-453674647
 test(1825.17, fread(str, colClasses=c("integer","integer","NULL","character","NULL"), drop=3), data.table(x1=INT(1,3), x2=INT(2,4), x4=c("T","F")))
 test(1825.18, fread(str, colClasses=c("integer","numeric","NULL","character","NULL"), drop=3:4), data.table(x1=INT(1,3), x2=c(2,4)))
-test(1825.19, fread(str, drop=6), data.table(x1=INT(1,3), x2=INT(2,4), x3=c(1.5,2.5), x4=c("T","F"), x5=c("cc","ff")), warning="Column number 6 (drop[1]) is out of range [1,ncol=5]")
+test(1825.19, fread(str, drop=6), data.table(x1=INT(1,3), x2=INT(2,4), x3=c(1.5,2.5), x4=c("T","F"), x5=c("cc","ff")), warning="drop[1] is 6 which is out of range [1,ncol=5]")
 # extra tests from #3143
 DT = data.table(a = c(1.0, 2.0, 3.0, 4.0, 5.1), b = c("1", "2", "E", "4", "5"))
 fwrite(DT, f<-tempfile())

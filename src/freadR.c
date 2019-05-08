@@ -31,6 +31,7 @@ static colType readInt64As=CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
 static SEXP colClassesSxp;
+static bool colClassesBySelect = false;
 static cetype_t ienc = CE_NATIVE;
 static SEXP RCHK;
 static SEXP DT;
@@ -161,11 +162,32 @@ SEXP freadR(
     readInt64As = CT_FLOAT64;
   } else STOP("Invalid value integer64='%s'. Must be 'integer64', 'character', 'double' or 'numeric'", tt);
 
-  colClassesSxp = colClassesArg;   // checked inside userOverride where it is used.
-
-  if (!isNull(selectArg) && !isNull(dropArg)) STOP("Use either select= or drop= but not both.");
+  colClassesSxp = colClassesArg;
   selectSxp = selectArg;
   dropSxp = dropArg;
+  colClassesBySelect = false;
+  if (!isNull(selectSxp)) {
+    if (!isNull(dropSxp)) STOP("Use either select= or drop= but not both.");
+    if (isNewList(selectArg)) {
+      if (LENGTH(selectArg)!=2)
+        STOP("When select= is a list it must be two items: select=list(<which columns>, <their types>). But it has %d items.", LENGTH(selectArg));
+      if (length(VECTOR_ELT(selectArg,0))!=length(VECTOR_ELT(selectArg,1)))
+        STOP("Item 1 of select= (the columns to select) is length %d but item 2 (the corresponding types) is length %d.", length(VECTOR_ELT(selectArg,0)), length(VECTOR_ELT(selectArg,1)));
+      if (!isNull(colClassesSxp))
+        STOP("select=list(<which columns>, <their types>) ok but colClasses= has been provided as well. Please remove colClasses.");
+      colClassesSxp = VECTOR_ELT(selectArg, 1);
+      selectSxp = VECTOR_ELT(selectArg, 0);
+      colClassesBySelect = true;
+    } else {
+      if (!isNull(getAttrib(selectArg, R_NamesSymbol))) {
+        if (!isNull(colClassesSxp))
+          STOP("select= is a named vector specifying the columns to select and their types, but colClasses= has been provided as well. Please remove colClasses=.");
+        colClassesSxp = selectArg;
+        selectSxp = getAttrib(selectArg, R_NamesSymbol);
+        colClassesBySelect = true;
+      }
+    }
+  }
 
   // Encoding, #563: Borrowed from do_setencoding from base R
   // https://github.com/wch/r-source/blob/ca5348f0b5e3f3c2b24851d7aff02de5217465eb/src/main/util.c#L1115
@@ -183,6 +205,35 @@ SEXP freadR(
   freadMain(args);
   UNPROTECT(1);
   return DT;
+}
+
+static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
+  if (!length(items)) return;
+  SEXP itemsInt = PROTECT(isString(items) ? chmatch(items, colNamesSxp, NA_INTEGER) :
+                                            coerceVector(items, INTSXP));
+  const int *itemsD = INTEGER(itemsInt), n=LENGTH(itemsInt);
+  for (int j=0; j<n; ++j) {
+    int k = itemsD[j];
+    if (k==NA_INTEGER || k<1 || k>ncol) {
+      static char buff[51];
+      if (dropSource==-1) snprintf(buff, 50, "drop[%d]", j+1);
+      else snprintf(buff, 50, "colClasses[[%d]][%d]", dropSource+1, j+1);
+      if (k==NA_INTEGER) {
+        if (isString(items)) {
+          DTWARN("Column name '%s' (%s) not found", CHAR(STRING_ELT(items, j)), buff);
+        } else {
+          DTWARN("%s is NA", buff);
+        }
+      } else {
+        DTWARN("%s is %d which is out of range [1,ncol=%d]", buff, k, ncol)
+      }
+    } else {
+      type[k-1] = CT_DROP;
+      // aside: dropping the same column several times is acceptable with no warning. This could arise via duplicates in the drop= vector,
+      // or specifying the same column to drop using NULLs in colClasses and drop= too.
+    }
+  }
+  UNPROTECT(1);
 }
 
 _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
@@ -203,54 +254,23 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     }
     SET_STRING_ELT(colNamesSxp, i, elem);
   }
-  // redirect any NULL items in list form of colClasses to drop=, to keep the code simpler later
+  // "use either select= or drop= but not both" was checked earlier in freadR
+  applyDrop(dropSxp, type, ncol, /*dropSource=*/-1);
   if (TYPEOF(colClassesSxp)==VECSXP) {  // not isNewList() because that returns true for NULL
     SEXP listNames = PROTECT(getAttrib(colClassesSxp, R_NamesSymbol));  // rchk wanted this protected
     if (!length(listNames)) STOP("colClasses is type list but has no names");
-    bool firstNULL=true, NULLwarned=false;
     for (int i=0; i<LENGTH(colClassesSxp); ++i) {
       if (STRING_ELT(listNames, i) == char_NULL) {
         SEXP items = VECTOR_ELT(colClassesSxp,i);
-        if (firstNULL) {
-          if (!isNull(dropSxp) || !isNull(selectSxp)) {
-            if (dropSxp!=items && !NULLwarned) { DTWARN("Ignoring the NULL item in colClasses= because select= or drop= has been used."); NULLwarned=true; }
-            // package damr has a nice workaround for when NULL didn't work before v1.12.0: it sets drop=col_class$`NULL`. So allow that unambiguous case with no warning.
-          } else { dropSxp=items; firstNULL=false; }
-        }
-        else if (!NULLwarned) { DTWARN("There is more than one NULL item in colClasses= list. Ignoring all but the first."); NULLwarned=true; }
+        applyDrop(items, type, ncol, /*dropSource=*/i);
       }
     }
     UNPROTECT(1);  // listNames
-  }
-  int ndrop = 0;
-  if (length(dropSxp)) {
-    SEXP itemsInt;
-    if (isString(dropSxp)) itemsInt = PROTECT(chmatch(dropSxp, colNamesSxp, NA_INTEGER));
-    else                   itemsInt = PROTECT(coerceVector(dropSxp, INTSXP));
-    for (int j=0; j<LENGTH(itemsInt); j++) {
-      int k = INTEGER(itemsInt)[j];
-      if (k==NA_INTEGER) {
-        if (isString(dropSxp)) {
-          DTWARN("Column name '%s' in 'drop' not found", CHAR(STRING_ELT(dropSxp, j)));
-        } else {
-          DTWARN("drop[%d] is NA", j+1);
-        }
-      } else {
-        if (k<1 || k>ncol) {
-          DTWARN("Column number %d (drop[%d]) is out of range [1,ncol=%d]",k,j+1,ncol);
-        } else {
-          if (type[k-1]==CT_DROP) { DTWARN("drop= contains duplicates"); }
-          else { ndrop++; type[k-1]=CT_DROP; }
-        }
-      }
-    }
-    UNPROTECT(1); // itemsInt
   }
   const int *selectInts = NULL; // if select is provided this will point to 1-based ints of the column numbers (which might already be the input as-is)
   bool selectProtected = false;
   if (length(selectSxp)) {
     if (isString(selectSxp)) {
-      // invalid cols check part of #1445 moved here (makes sense before reading the file)
       selectInts = INTEGER(PROTECT(chmatch(selectSxp, colNamesSxp, NA_INTEGER)));
       for (int i=0; i<LENGTH(selectSxp); i++) if (selectInts[i]==NA_INTEGER)
         DTWARN("Column name '%s' not found in column name header (case sensitive), skipping.", CHAR(STRING_ELT(selectSxp, i)));
@@ -269,7 +289,7 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     }
     for (int i=0; i<ncol; ++i) {
       if (type[i]<0) type[i] *= -1;
-      else { ndrop++; type[i]=CT_DROP; }
+      else type[i]=CT_DROP;
     }
   }
   colClassesAs = NULL;
@@ -278,19 +298,16 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
     SET_VECTOR_ELT(RCHK, 2, colClassesAs=allocVector(STRSXP, ncol));  // if any, this attached to the DT for R level to call as_ methods on
     if (isString(colClassesSxp)) {
-      if (!isNull(getAttrib(colClassesSxp, R_NamesSymbol))) STOP("Internal error: named colClasses was not converted to list format at R level first");
       SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT));
-      SEXP opt = R_NilValue;
       if (LENGTH(colClassesSxp)==1) {
         signed char newType = typeEnum[INTEGER(typeEnum_idx)[0]-1];
         if (newType == CT_DROP) STOP("colClasses='NULL' is not permitted; i.e. to drop all columns and load nothing");
         for (int i=0; i<ncol; i++) if (type[i]!=CT_DROP) type[i]=newType;   // freadMain checks bump up only not down
         if (INTEGER(typeEnum_idx)[0]==NUT) for (int i=0; i<ncol; i++) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,0));
-      } else if (LENGTH(colClassesSxp)==ncol && (length(selectSxp)<ncol || !IS_TRUE(opt=GetOption(install("datatable.colClassesSelectOrder"), R_NilValue)))) {
-        if (selectInts && LENGTH(selectSxp)==ncol && opt==R_NilValue)
-          DTWARN("colClasses is an unnamed character vector with the same length (%d) as select, but this is also the number of columns in the file (%d). For backwards "
-                 "compatibility, colClasses is still taken to be in the order that the columns appear in the file. Please set options(datatable.colClassesSelectOrder=TRUE) to "
-                 "achieve new behavior that if select is supplied, colClasses corresponds to the order of columns in select.", ncol, ncol);
+      } else if (colClassesBySelect==false) {
+        if (LENGTH(colClassesSxp)!=ncol)
+          STOP("colClasses= is length %d but there are %d columns. To specify types for a subset of columns, you can use a named vector, list format, or specify "
+               "types in select=. Please see examples in ?fread.", LENGTH(colClassesSxp), ncol);
         for (int i=0; i<ncol; ++i) {
           if (type[i]==CT_DROP) continue;                        // user might have specified the type of all columns including those dropped with drop=
           if (STRING_ELT(colClassesSxp, i)==NA_STRING) continue; // user is ok with inherent type for this column
@@ -298,20 +315,20 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
           type[i] = typeEnum[w-1];
           if (w==NUT) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,i));
         }
-      } else if (LENGTH(colClassesSxp)==ncol-ndrop) {
-        if (selectInts && LENGTH(selectSxp)!=ncol-ndrop) STOP("colClasses is length %d but select is length %d. ncol=%d ndrop=%d", LENGTH(colClassesSxp), LENGTH(selectSxp), ncol, ndrop);
-        for (int i=0, j=-1; i<ncol; ++i) {
-          if (type[i]==CT_DROP) continue;
-          if (STRING_ELT(colClassesSxp,++j)==NA_STRING) continue;
-          int w = INTEGER(typeEnum_idx)[j];
-          int y = selectInts ? selectInts[j] : i+1;
-          if (y==NA_INTEGER) continue; else y--;
-          type[y] = typeEnum[w-1];
-          if (w==NUT) SET_STRING_ELT(colClassesAs, y, STRING_ELT(colClassesSxp,j));
+      } else { // colClassesBySelect==true
+        if (!selectInts) STOP("Internal error: selectInts is NULL but colClassesBySelect is true");
+        if (length(selectSxp)!=length(colClassesSxp)) STOP("Internal error: length(selectSxp)!=length(colClassesSxp) but colClassesBySelect is true");
+        const int n = length(colClassesSxp);
+        for (int i=0; i<n; ++i) {
+          //if (type[i]==CT_DROP) continue;
+          if (STRING_ELT(colClassesSxp,i)==NA_STRING) continue;
+          int w = INTEGER(typeEnum_idx)[i];
+          int y = selectInts[i];  // : i+1;
+          if (y==NA_INTEGER) continue;
+          //if (type[y-1]==CT_DROP) continue;
+          type[y-1] = typeEnum[w-1];
+          if (w==NUT) SET_STRING_ELT(colClassesAs, y-1, STRING_ELT(colClassesSxp, i));
         }
-      } else {
-        STOP("colClasses is a character vector ok but its length is %d. Its length must match the number of columns in the file (%d), or the number of columns after select/drop has been applied (%d). To specify types for a subset of named columns you can use a named character vector, or list format accepts sets of column names or numbers for each type. See examples in ?fread.",
-              LENGTH(colClassesSxp), ncol, ncol-ndrop);
       }
       UNPROTECT(1); // typeEnum_idx
     } else {

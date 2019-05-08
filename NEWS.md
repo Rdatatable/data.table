@@ -12,7 +12,12 @@
     * `stringsAsFactors=0.10` will factorize any character column containing under `0.10*nrow` unique strings, [#2025](https://github.com/Rdatatable/data.table/issues/2025). Thanks to @hughparsonage for the PR.
     * `colClasses=list(numeric=20:30, numeric="ID")` will apply the `numeric` type to column numbers `20:30` as before and now also column name `"ID"`; i.e. all duplicate class names are now respected rather than only the first. This need may arise when specifying some columns by name and others by number, as in this example. Thanks to @hughparsonage for the PR.
     * gains `yaml` (default `FALSE`) and the ability to parse CSVY-formatted input files; i.e., csv files with metadata in a header formatted as YAML (http://csvy.org/), [#1701](https://github.com/Rdatatable/data.table/issues/1701). See `?fread` and files in `/inst/tests/csvy/` for sample formats. Please provide feedback if you find this feature useful and would like extended capabilities. For now, consider it experimental, meaning the API/arguments may change. Thanks to @leeper at [`rio`](https://github.com/leeper/rio) for the inspiration and @MichaelChirico for implementing.
-    * if `select` or `drop` is used and `colClasses` is an unnamed character vector of types, it can now be as long as the number of columns selected, [#1426](https://github.com/Rdatatable/data.table/issues/1426). If all columns are selected (likely in a different order) then, for backwards compatibility, when `colClasses` is an unnamed character vector it still corresponds to the order of the columns in the file, with warning asking you to set `options(datatable.colClassesSelectOrder=TRUE)` for new behavior. Set the option to `FALSE` to silence the warning. In future this will be turned on by default and eventually the option will be removed.
+    * `select` can now be used to specify types for just the columns selected, [#1426](https://github.com/Rdatatable/data.table/issues/1426). There are two new methods: a `list` of two items (the column names/numbers and their corresponding types), or a named vector (like `colClasses`).
+
+    ```R
+    fread(file, select=c(ID="character", value="userClass"))
+    fread(file, select=list(c("ID","userClass"), c("character","userClass")))
+    ```
 
 3. `fwrite()`:
     * now writes compressed `.gz` files directly, [#2016](https://github.com/Rdatatable/data.table/issues/2016). Compression, like `fwrite()`, is multithreaded and compresses each chunk on-the-fly (a full size intermediate file is not created). Use a ".gz" extension, or the new `compress=` option. Many thanks to Philippe Chataignon for the significant PR. For example:
