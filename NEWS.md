@@ -65,6 +65,8 @@
 
 7. New variable `.Last.updated` (similar to R's `.Last.value`) contains the number of rows affected by the most recent `:=` or `set()`, [#1885](https://github.com/Rdatatable/data.table/issues/1885).
 
+8. New convenience functions `%ilike%` and `%flike%` which map to new arguments `ignore.case` and `fixed`, respectively, to `like`, [#3333](https://github.com/Rdatatable/data.table/issues/3333). The former is for case-insensitive pattern matching, the latter for more efficient matching of fixed strings.  Thanks to @andreasLD for providing most of the core code.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
