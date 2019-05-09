@@ -60,6 +60,9 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   cat("Running", fn, "\n")
   env = new.env(parent=.GlobalEnv)
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
+  # if a translated error is expected from base, compare the error
+  #   produced by data.table to that from base, #3039
+  assign("get_base_error", function(expr) tryCatch(expr, error = function(e) e$message), envir = env)
   assign("nfail", 0L, envir=env)
   assign("ntest", 0L, envir=env)
   assign("whichfail", NULL, envir=env)

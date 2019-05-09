@@ -415,7 +415,7 @@ xx = capture.output(ans <- DT[,{print(x);sum(y)},by=x,verbose=FALSE])
 test(145, xx, c("[1] \"a\"","[1] \"b\""))
 test(146, ans, data.table(x=c("a","b"),V1=c(3L,12L)))
 
-test(147, DT[,MySum=sum(v)], error="unused argument")  # user meant DT[,list(MySum=sum(v))]. FR#204 done.
+test(147, DT[,MySum=sum(v)], error=get_base_error((function(){})(MySum = sum(v))))  # user meant DT[,list(MySum=sum(v))]. FR#204 done.
 
 dt = data.table(a=c(1L,4L,5L), b=1:3, key="a")
 test(148, dt[CJ(2:3),roll=TRUE], data.table(a=c(2L,3L),b=c(1L,1L),key="a"))
