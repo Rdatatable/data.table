@@ -32,7 +32,7 @@ check_formula <- function(formula, varnames, valnames) {
   allvars = c(vars, valnames)
   if (any(allvars %chin% varnames[duplicated(varnames)]))
     stop('data.table to cast must have unique column names')
-  ans = deparse_formula(as.list(formula)[-1L], varnames, allvars)
+  deparse_formula(as.list(formula)[-1L], varnames, allvars)
 }
 
 deparse_formula <- function(expr, varnames, allvars) {
@@ -113,14 +113,13 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
   lvals = value_vars(value.var, names(data))
   valnames = unique(unlist(lvals))
   lvars = check_formula(formula, names(data), valnames)
-  lvars = lapply(lvars, function(x) if (!length(x)) quote(`.`) else x)
+  lvars = lapply(lvars, function(x) if (length(x)) x else quote(`.`))
   # tired of lapply and the way it handles environments!
   allcols = c(unlist(lvars), lapply(valnames, as.name))
   dat = vector("list", length(allcols))
   for (i in seq_along(allcols)) {
     x = allcols[[i]]
-    dat[[i]] = if (identical(x, quote(`.`))) rep(".", nrow(data))
-            else eval(x, data, parent.frame())
+    dat[[i]] = if (identical(x, quote(`.`))) rep(".", nrow(data)) else eval(x, data, parent.frame())
     if (is.function(dat[[i]]))
       stop("Column [", deparse(x), "] not found or of unknown type.")
   }
@@ -136,10 +135,11 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
   lhsnames = head(varnames, length(lvars$lhs))
   rhsnames = tail(varnames, -length(lvars$lhs))
   setattr(dat, 'names', c(varnames, valnames))
-  setDT(dat)
-  if (any(vapply_1b(as.list(dat)[varnames], is.list))) {
+  if (any(vapply_1b(dat[varnames], is.list))) {
     stop("Columns specified in formula can not be of type list")
   }
+  setDT(dat)
+
   m <- as.list(match.call()[-1L])
   subset <- m[["subset"]][[2L]]
   if (!is.null(subset)) {
@@ -165,11 +165,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
       # tryCatch(fill.default <- dat[0L][, eval(fun.call)], error = function(x) stop(errmsg, call.=FALSE))
       if (nrow(fill.default) != 1L) stop(errmsg, call.=FALSE)
     }
-    if (!any(valnames %chin% varnames)) {
-      dat = dat[, eval(fun.call), by=c(varnames)]
-    } else {
-      dat = dat[, { .SD; eval(fun.call) }, by=c(varnames), .SDcols = valnames]
-    }
+    dat = dat[, eval(fun.call), by=c(varnames)]
   }
   order_ <- function(x) {
     o = forderv(x, retGrp=TRUE, sort=TRUE)
@@ -211,7 +207,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
       lhs = lhs_; rhs = rhs_
     }
     maplen = vapply_1i(mapunique, length)
-    idx = do.call("CJ", mapunique)[map, I := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
+    idx = do.call("CJ", mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
     ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call))
     allcols = do.call("paste", c(rhs, sep=sep))
     if (length(valnames) > 1L)
@@ -220,26 +216,6 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
       # removed 'setcolorder()' here, #1153
     setattr(ans, 'names', c(lhsnames, allcols))
     setDT(ans); setattr(ans, 'sorted', lhsnames)
-  } else {
-    # formula is of the form x + y ~ . (rare case)
-    if (drop) {
-      if (is.null(subset) && is.null(fun.call)) {
-        dat = copy(dat) # can't be avoided
-        setkeyv(dat, lhsnames)
-      }
-      ans = dat
-    } else {
-      lhs = shallow(dat, lhsnames)
-      val = shallow(dat, valnames)
-      lhs_ = cj_uniq(lhs)
-      idx = lhs_[lhs, I := .I][["I"]]
-      lhs_[, I := NULL]
-      ans = .Call(Cfcast, lhs_, val, nrow(lhs_), 1L, idx, fill, fill.default, is.null(fun.call))
-      setDT(ans); setattr(ans, 'sorted', lhsnames)
-      setnames(ans, c(lhsnames, valnames))
-    }
-    if (length(valnames) == 1L)
-      setnames(ans, valnames, value.var)
-  }
+  } else stop("Internal error -- empty rhsnames in dcast; please report") # nocov
   return (ans)
 }
