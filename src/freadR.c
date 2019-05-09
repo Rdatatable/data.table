@@ -313,8 +313,8 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         if (INTEGER(typeEnum_idx)[0]==NUT) for (int i=0; i<ncol; i++) SET_STRING_ELT(colClassesAs, i, STRING_ELT(colClassesSxp,0));
       } else if (selectColClasses==false) {
         if (LENGTH(colClassesSxp)!=ncol)
-          STOP("colClasses= is length %d but there are %d columns. To specify types for a subset of columns, you can use a named vector, list format, or specify "
-               "types in select=. Please see examples in ?fread.", LENGTH(colClassesSxp), ncol);
+          STOP("colClasses= is an unnamed vector of types, length %d, but there are %d columns in the input. To specify types for a subset of columns, you can use "
+               "a named vector, list format, or specify types using select= instead of colClasses=. Please see examples in ?fread.", LENGTH(colClassesSxp), ncol);
         for (int i=0; i<ncol; ++i) {
           if (type[i]==CT_DROP) continue;                    // user might have specified the type of all columns including those dropped with drop=
           SEXP tt = STRING_ELT(colClassesSxp,i);
