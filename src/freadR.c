@@ -199,7 +199,7 @@ SEXP freadR(
   if (strcmp(tt, "unknown")==0) ienc = CE_NATIVE;
   else if (strcmp(tt, "Latin-1")==0) ienc = CE_LATIN1;
   else if (strcmp(tt, "UTF-8")==0) ienc = CE_UTF8;
-  else STOP("encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'", tt);
+  else STOP("encoding='%s' invalid. Must be 'unknown', 'Latin-1' or 'UTF-8'", tt);  // # nocov
   // === end extras ===
 
   RCHK = PROTECT(allocVector(VECSXP, 4));
