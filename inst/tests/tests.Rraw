@@ -12689,6 +12689,17 @@ options(datatable.use.index=FALSE)
 test(1942.11, DT[,sum(v),keyby=id1,verbose=TRUE], data.table(id1=c("D","A","C"), V1=INT(1,6,8), key="id1"), output="Finding groups using forderv")
 options(datatable.use.index=TRUE)
 
+# test coverage in uniqlist.c of Realloc when over initial 1000 uniqs, and use double to cover numeric tolerance (both in one-column case and >1 column branch)
+set.seed(2)
+DT = data.table(real=sample((1:1500)/1000, 10000, replace=TRUE), id=sample(letters, 1000, replace=TRUE), value=1:10000)
+setkey(DT,id,real)
+test(1942.12, DT[, .(list(value)), keyby=.(id,real), verbose=TRUE][c(1,6,8744,.N)],
+              data.table(id=c("a","a","z","z"), real=c(0.004,0.037,1.486,1.497), V1=list(9441L, c(3375L,5983L), c(4901L,5260L,7668L), 4181L), key="id,real"),
+              output="Finding groups using uniqlist on key")
+setindex(DT,real)
+test(1942.13, DT[, sum(value), keyby=real, verbose=TRUE][c(1,500,1498,.N)], data.table(real=c(0.001, 0.501, 1.499, 1.5), V1=INT(31036,37564,14792,38606), key="real"),
+              output="Finding groups using uniqlist on index 'real'")
+
 # merge warning: longer object length is not a multiple of shorter object length, #3061
 DT1 <- data.table(
   id = c("A", "A", "A", "A", "A"),
@@ -14378,6 +14389,11 @@ if (test_yaml) {  # csvy; #1701
        DT_yaml, warning = 'Combining a search.*YAML.*')
 }
 
+# fcast coverage
+DT = data.table(a = rep(1:2, each = 2), b = rep(1:2, 2), c = 4:1, d = 5:8)
+test(2033.1,
+     dcast(DT, a ~ b, value.var = list('c', 'd'), fun.aggregate = list(sum)),
+     error = "When 'fun.aggregate' and 'value.var' are both lists")
 
 ###################################
 #  Add new tests above this line  #
