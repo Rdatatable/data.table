@@ -291,6 +291,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
   sym_colClassesAs = install("colClassesAs");
+  sym_selectOrder = install("selectOrder");
   SelfRefSymbol = install(".internal.selfref");
 
   initDTthreads();

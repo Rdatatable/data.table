@@ -300,7 +300,7 @@ yaml=FALSE, autostart=NA)
              methods::as(v, new_class))
       },
       warning = fun <- function(e) {
-        warning("Column '", names(ans)[j], "' was set by colClasses to be '", new_class, "' but fread encountered the following ",
+        warning("Column '", names(ans)[j], "' was requested to be '", new_class, "' but fread encountered the following ",
                 if (inherits(e, "error")) "error" else "warning", ":\n\t", e$message, "\nso the column has been left as type '", typeof(v), "'", call.=FALSE)
         return(v)
       },
@@ -320,22 +320,9 @@ yaml=FALSE, autostart=NA)
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
   }
 
-  if (!is.null(select)) {
-    if (is.list(select)) select=select[[1L]]
-    else if (length(names(select))) select=names(select)
-    if (is.numeric(select)) {
-      if (length(o <- forderv(select))) {
-        rank = integer(length(o))
-        rank[o] = 1:length(o)
-        setcolorder(ans, rank)
-      }
-    } else {
-      if (!identical(names(ans), select)) {
-        reorder = select[select %chin% names(ans)] # any missing columns are warned about in freadR.c and skipped
-        setcolorder(ans, reorder)
-      }
-    }
-  }
+  selectOrder = attr(ans, "selectOrder")  # only present if select= was specified
+  if (length(selectOrder)) setcolorder(ans, selectOrder)
+  setattr(ans, "selectOrder", NULL)
 
   if (!missing(col.names))   # FR #768
     setnames(ans, col.names) # setnames checks and errors automatically

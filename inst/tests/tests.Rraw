@@ -10457,14 +10457,13 @@ test(1743.196, sapply(fread("a,b,c,d\n2,0+1i,2,x", colClasses = list(raw = c("a"
 
 # colClasses in select; #1426
 test(1743.197, fread("A,B,C,D\nA,B,X,4", select=c(1,4,3,2), colClasses=c("factor","factor","character","integer")), ans<-data.table(A=factor("A"), D=4L, C="X", B=factor("B")))
-test(1743.198, fread("A,B,C,D\nA,B,X,4", select=list(c(1,4,3,2), c("factor","integer","character","factor"))), ans)
+test(1743.198, fread("A,B,C,D\nA,B,X,4", select=list(c(1,4,3,2), c("factor","integer","character","factor"))), error="select= is type list.*but has no names")
 test(1743.199, fread("A,B,C,D\nA,B,X,4", select=c(A="factor", D="integer", C="character", B="factor")), ans)
-test(1743.200, fread("A,B,C,D\nA,B,X,4", select=list("A")), error="When select= is a list it must be two items.*But it has 1 item")
-test(1743.201, fread("A,B,C,D\nA,B,X,4", select=list(1:2, c("factor","integer","character"))), error="Item 1 of select.*is length 2 but item 2.*is length 3")
-test(1743.202, fread("A,B,C,D\nA,B,X,4", select=list("A","factor"), colClasses="character"), error="select=list.*ok but colClasses= has been provided as well. Please remove colClasses.")
-test(1743.203, fread("A,B,C,D\nA,B,X,4", select=c(A="factor"), colClasses="character"), error="select= is a named vector.*but colClasses= has been provided as well. Please remove colClasses=.")
-test(1743.204, fread("A,B,C,D\nA,B,X,4", select=list(c("D","B"), c("character","factor"))), data.table(D="4", B=factor("B")))
-test(1743.205, fread("A,B,C,D\nA,B,X,4", select=list(c(4,2),     c("character","factor"))), data.table(D="4", B=factor("B")))
+test(1743.200, fread("A,B,C,D\nA,B,X,4", select=list(factor="A", integer=4, character="C", factor=2)), ans)  # all 4 columns but in different order by list form of select
+test(1743.201, fread("A,B,C,D\nA,B,X,4", select=list(factor="A"), colClasses="character"), error="select= is type list.*but colClasses= has been provided as well. Please remove colClasses.")
+test(1743.202, fread("A,B,C,D\nA,B,X,4", select=c(A="factor"), colClasses="character"), error="select= is a named vector.*but colClasses= has been provided as well. Please remove colClasses=.")
+test(1743.203, fread("A,B,C,D\nA,B,X,4", select=list(character="D", factor="B")), data.table(D="4", B=factor("B")))
+test(1743.204, fread("A,B,C,D\nA,B,X,4", select=list(character=4, character=2)), data.table(D="4", B="B"))
 
 ## factors
 test(1743.211, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = 1L), select = 2:3), class), y = c(b="integer", c="character"))
@@ -10510,7 +10509,7 @@ test(1743.308, fread(data1743, colClasses=list(NULL=c("C","D")), drop=1:2), data
 test(1743.311, fread(data1743, colClasses="NULL"), ans<-data.table(A=1:2, B=3:4, C=5:6, D=7:8), warning="colClasses.*quoted.*interpreted as colClasses.*NULL")
 test(1743.312, fread(data1743, colClasses=character()), ans)
 test(1743.32, fread("A,B\na,0+1i", colClasses="complex"), data.table(A="a", B=1i),
-              warning="Column 'A' was set.*complex.*NAs introduced by coercion.*column has been left as.*character")
+              warning="Column 'A' was requested to be 'complex'.*NAs introduced by coercion.*column has been left as.*character")
 
 # stringsAsFactors = double; #2025
 fwrite(data.table(V1 = sample(letters, size=26*10, replace=TRUE),
