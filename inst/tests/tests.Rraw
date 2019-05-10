@@ -14334,26 +14334,6 @@ if (test_yaml) {  # csvy; #1701
        DT_yaml, warning = 'Combining a search.*YAML.*')
 }
 
-<<<<<<< HEAD
-=======
-# FR #2356 - retain names of named vector as column with keep.rownames=TRUE
-x <- 1:5
-setattr(x, 'names', letters[1:5])
-test(2033.1, as.data.table(x, keep=TRUE), data.table(rn=names(x), x=unname(x)))
-x <- as.numeric(x)
-setattr(x, 'names', letters[1:5])
-test(2033.2, as.data.table(x, keep=TRUE), data.table(rn=names(x), x=unname(x)))
-x <- as.character(x)
-setattr(x, 'names', letters[1:5])
-test(2033.3, as.data.table(x, keep=TRUE), data.table(rn=names(x), x=unname(x)))
-x <- as.factor(x)
-setattr(x, 'names', letters[1:5])
-test(2033.4, as.data.table(x, keep=TRUE), data.table(rn=names(x), x=unname(x)))
-x <- as.Date(1:5, origin="2013-01-01")
-setattr(x, 'names', letters[1:5])
-test(2033.5, as.data.table(x, keep=TRUE), data.table(rn=names(x), x=unname(x)))
-
->>>>>>> 00bdccd6059a49d1deff49031fb1a79493ee6d0b
 # Fix for #1216, .SDcols and with=FALSE should evaluate within frame of 'x' only when it's of the form a:b
 dt = data.table(index1=1:10, index2=10:1, index3=1, s=4, i=24)
 i = 2L
