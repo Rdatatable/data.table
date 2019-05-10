@@ -320,10 +320,6 @@ yaml=FALSE, autostart=NA)
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
   }
 
-  selectOrder = attr(ans, "selectOrder")  # only present if select= was specified
-  if (length(selectOrder)) setcolorder(ans, selectOrder)
-  setattr(ans, "selectOrder", NULL)
-
   if (!missing(col.names))   # FR #768
     setnames(ans, col.names) # setnames checks and errors automatically
   if (!is.null(key) && data.table) {

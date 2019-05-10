@@ -10458,7 +10458,7 @@ test(1743.196, sapply(fread("a,b,c,d\n2,0+1i,2,x", colClasses = list(raw = c("a"
 
 # colClasses in select; #1426
 test(1743.197, fread("A,B,C,D\nA,B,X,4", select=c(1,4,3,2), colClasses=c("factor","factor","character","integer")), ans<-data.table(A=factor("A"), D=4L, C="X", B=factor("B")))
-test(1743.198, fread("A,B,C,D\nA,B,X,4", select=list(c(1,4,3,2), c("factor","integer","character","factor"))), error="select= is type list.*but has no names")
+test(1743.198, fread("A,B,C,D\nA,B,X,4", select=list(c(1,4,3,2), c("factor","integer","character","factor"))), error="select= is type list but has no names")
 test(1743.199, fread("A,B,C,D\nA,B,X,4", select=c(A="factor", D="integer", C="character", B="factor")), ans)
 test(1743.200, fread("A,B,C,D\nA,B,X,4", select=list(factor="A", integer=4, character="C", factor=2)), ans)  # all 4 columns but in different order by list form of select
 test(1743.201, fread("A,B,C,D\nA,B,X,4", select=list(factor="A"), colClasses="character"), error="select= is type list.*but colClasses= has been provided as well. Please remove colClasses.")

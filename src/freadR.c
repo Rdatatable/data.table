@@ -178,7 +178,7 @@ SEXP freadR(
       if (!isNull(colClassesSxp))
         STOP("select= is type list for specifying types in select=, but colClasses= has been provided as well. Please remove colClasses=.");
       if (!length(getAttrib(selectArg, R_NamesSymbol)))
-        STOP("select= is type list so expecting list(type1=cols1, type2=cols2, ...) but has no names");
+        STOP("select= is type list but has no names; expecting list(type1=cols1, type2=cols2, ...)");
       colClassesSxp = selectArg;
       selectColClasses = true;
       selectSxp = R_NilValue;
@@ -349,7 +349,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 
       int *selectRankD = NULL, rank = 1;
       if (selectColClasses) {
-        SET_VECTOR_ELT(RCHK, 3, selectRank=allocVector(INTSXP, ncol));  // returned as attribute to R level
+        SET_VECTOR_ELT(RCHK, 3, selectRank=allocVector(INTSXP, ncol));  // column order changed in setFinalNRow
         selectRankD = INTEGER(selectRank);
       }
 
@@ -429,16 +429,20 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
       }
     }
     if (selectRank) {
-      SEXP tt;
-      setAttrib(DT, sym_selectOrder, tt=allocVector(INTSXP, ncol-ndrop));
+      SEXP tt = PROTECT(allocVector(INTSXP, ncol-ndrop));
       int *ttD = INTEGER(tt), *rankD = INTEGER(selectRank), rank=1;
       for (int i=0; i<ncol; ++i) if (type[i]!=CT_DROP) ttD[ rankD[i]-1 ] = rank++;
+      SET_VECTOR_ELT(RCHK, 3, selectRank = tt);
+      // selectRank now holds the order not the rank (so its name is now misleading). setFinalNRow passes it to setcolorder
+      // we can't change column order now because they might be reallocated in the reread
+      UNPROTECT(1); // tt
     }
     colClassesAs = getAttrib(DT, sym_colClassesAs);
     bool none = true;
     const int n = length(colClassesAs);
     for (int i=0; i<n; ++i) if (STRING_ELT(colClassesAs,i) != R_BlankString) { none=false; break; }
     if (none) setAttrib(DT, sym_colClassesAs, R_NilValue);
+    else if (selectRank) setAttrib(DT, sym_colClassesAs, subsetVector(colClassesAs, selectRank));  // reorder the colClassesAs
   }
   // TODO: move DT size calculation into a separate function (since the final size is different from the initial size anyways)
   size_t DTbytes = SIZEOF(DT)*(ncol-ndrop)*2; // the VECSXP and its column names (exclude global character cache usage)
@@ -478,12 +482,12 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
 
 
 void setFinalNrow(size_t nrow) {
-  // TODO realloc
+  if (selectRank) setcolorder(DT, selectRank);  // selectRank was changed to contain order (not rank) in allocateDT above
   if (length(DT)) {
     if (nrow == dtnrows)
       return;
     for (int i=0; i<LENGTH(DT); i++) {
-      SETLENGTH(VECTOR_ELT(DT,i), nrow);
+      SETLENGTH(VECTOR_ELT(DT,i), nrow);  // TODO: realloc
       SET_TRUELENGTH(VECTOR_ELT(DT,i), nrow);
     }
   }

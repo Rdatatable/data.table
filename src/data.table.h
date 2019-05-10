@@ -79,7 +79,6 @@ SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
 SEXP sym_colClassesAs;
-SEXP sym_selectOrder;
 bool INHERITS(SEXP x, SEXP char_);
 long long DtoLL(double x);
 double LLtoD(long long x);
@@ -98,6 +97,7 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 void writeNA(SEXP v, const int from, const int n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
+SEXP setcolorder(SEXP x, SEXP o);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
@@ -109,6 +109,9 @@ int getNumericRounding_C();
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
+
+// subset.c
+SEXP subsetVector(SEXP x, SEXP idx);
 
 // fcast.c
 SEXP int_vec_init(R_len_t n, int val);
