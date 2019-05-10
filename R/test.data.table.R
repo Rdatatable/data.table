@@ -278,13 +278,15 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     fwrite(mem, "memtest.csv", append=TRUE)                                                                             # nocov
   }
   fail = FALSE
-  if (num < prevtest+0.0000005) {
-    # nocov start
-    cat("Test id", numStr, "is not in increasing order\n")
-    fail = TRUE
-    # nocov end
+  if (.test.data.table) {
+    if (num<prevtest+0.0000005) {
+      # nocov start
+      cat("Test id", numStr, "is not in increasing order\n")
+      fail = TRUE
+      # nocov end
+    }
+    assign("prevtest", num, parent.frame(), inherits=TRUE)
   }
-  assign("prevtest", num, parent.frame(), inherits=TRUE)
   if (!fail) for (type in c("warning","error","message")) {
     observed = actual[[type]]
     expected = get(type)
