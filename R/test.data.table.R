@@ -12,7 +12,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
     subdir = "tests"
   }
   fulldir = file.path(rootdir, subdir)
-  
+
   # nocov start
   if (isTRUE(benchmark)) {
     warning("'benchmark' argument is deprecated, use script='benchmark.Rraw' instead")
@@ -62,6 +62,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
   assign("nfail", 0L, envir=env)
   assign("ntest", 0L, envir=env)
+  assign("prevtest", -1, envir=env)
   assign("whichfail", NULL, envir=env)
   assign("started.at", proc.time(), envir=env)
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
@@ -209,7 +210,9 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
   # 3) each test has a unique id which we refer to in commit messages, emails etc.
   # 4) test that a query generates exactly 2 warnings, that they are both the correct warning messages, and that the result is the one expected
   .test.data.table = exists("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
+  numStr = sprintf("%.8g", num)
   if (.test.data.table) {
+    prevtest = get("prevtest", parent.frame())
     nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
     whichfail = get("whichfail", parent.frame())
     assign("ntest", get("ntest", parent.frame()) + 1L, parent.frame(), inherits=TRUE)   # bump number of tests run
@@ -225,7 +228,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
        assign("lasttime", now, parent.frame(), inherits=TRUE)
        timings[ as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE ]
     } )
-    cat("\rRunning test id", sprintf("%.8g", num), "     ")
+    cat("\rRunning test id", numStr, "     ")
     flush.console()
     # This flush is for Windows to make sure last test number is written to file in CRAN and win-builder output where
     # console output is captured. \r seems especially prone to not being auto flushed. The downside is that the last 13
@@ -235,9 +238,8 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     memtest = FALSE          # nocov
     filename = NA_character_ # nocov
   }
-
   if (!missing(error) && !missing(y))
-    stop("Test ",num," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov
+    stop("Test ",numStr," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov
 
   string_match = function(x, y) {
     length(grep(x,y,fixed=TRUE)) ||                    # try treating x as literal first; useful for most messages containing ()[]+ characters
@@ -276,12 +278,19 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     fwrite(mem, "memtest.csv", append=TRUE)                                                                             # nocov
   }
   fail = FALSE
-  for (type in c("warning","error","message")) {
+  if (num < prevtest+0.0000005) {
+    # nocov start
+    cat("Test id", numStr, "is not in increasing order\n")
+    fail = TRUE
+    # nocov end
+  }
+  assign("prevtest", num, parent.frame(), inherits=TRUE)
+  if (!fail) for (type in c("warning","error","message")) {
     observed = actual[[type]]
     expected = get(type)
     if (length(expected) != length(observed)) {
       # nocov start
-      cat("Test ",num," produced ",length(observed)," ",type,"s but expected ",length(expected),"\n",sep="")
+      cat("Test ",numStr," produced ",length(observed)," ",type,"s but expected ",length(expected),"\n",sep="")
       cat(paste("Expected:",expected), sep="\n")
       cat(paste("Observed:",observed), sep="\n")
       fail = TRUE
@@ -291,7 +300,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
       for (i in seq_along(expected)) {
         if (!string_match(expected[i], observed[i])) {
           # nocov start
-          cat("Test",num,"didn't produce the correct",type,":\n")
+          cat("Test",numStr,"didn't produce the correct",type,":\n")
           cat("Expected:", expected[i], "\n")
           cat("Observed:", observed[i], "\n")
           fail = TRUE
@@ -306,7 +315,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
     if (!string_match(output, out)) {
       # nocov start
-      cat("Test",num,"didn't produce correct output:\n")
+      cat("Test",numStr,"didn't produce correct output:\n")
       cat("Expected: <<",gsub("\n","\\\\n",output),">>\n",sep="")  # \n printed as '\\n' so the two lines of output can be compared vertically
       cat("Observed: <<",gsub("\n","\\\\n",out),">>\n",sep="")
       fail = TRUE
@@ -320,7 +329,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     if (is.data.table(x) && is.data.table(y)) {
       if (!selfrefok(x) || !selfrefok(y)) {
         # nocov start
-        cat("Test ",num," ran without errors but selfrefok(", if(!selfrefok(x))"x"else"y", ") is FALSE\n", sep="")
+        cat("Test ",numStr," ran without errors but selfrefok(", if(!selfrefok(x))"x"else"y", ") is FALSE\n", sep="")
         fail = TRUE
         # nocov end
       } else {
@@ -342,7 +351,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     # nocov start
     if (!fail) {
-      cat("Test",num,"ran without errors but failed check that x equals y:\n")
+      cat("Test",numStr,"ran without errors but failed check that x equals y:\n")
       cat("> x =",deparse(xsub),"\n")
       if (is.data.table(x)) compactprint(x) else {cat("First 6 of ", length(x)," (type '", typeof(x), "'): ", sep=""); print(head(x))}
       cat("> y =",deparse(ysub),"\n")
@@ -355,7 +364,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
   if (fail && .test.data.table) {
     # nocov start
     assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
-    assign("whichfail", c(whichfail, num), parent.frame(), inherits=TRUE)
+    assign("whichfail", c(whichfail, numStr), parent.frame(), inherits=TRUE)
     # nocov end
   }
   invisible(!fail)
