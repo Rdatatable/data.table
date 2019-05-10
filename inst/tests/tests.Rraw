@@ -14178,12 +14178,13 @@ test(2025.11, fread(f), data.table(A=1:2, B=c("foobar","baz"), C=3:4))
 
 # printing timezone, #2842
 DT = data.table(t1 = as.POSIXct("1982-04-26 13:34:56", tz = "Europe/Madrid"),t2 = as.POSIXct("2019-01-01 19:00:01",tz = "UTC"))
-test(2026.1, capture.output(print(DT))[2], "1: 1982-04-26 13:34:56 2019-01-01 19:00:01")
-test(2026.2, capture.output(print(DT,timezone = TRUE))[2], "1: 1982-04-26 13:34:56 Europe/Madrid 2019-01-01 19:00:01 UTC")
-DT = data.table(v1 = c(1,as.numeric(NA)))
-DT[2,t:= as.POSIXct("2019-01-01 19:00:01",tz = "UTC")]
-test(2026.3, capture.output(print(DT)), c("   v1                   t","1:  1                <NA>", "2: NA 2019-01-01 19:00:01"))
-test(2026.4, capture.output(print(DT, timezone = TRUE)), c("   v1                       t","1:  1                    <NA>","2: NA 2019-01-01 19:00:01 UTC"))
+test(2026.1, capture.output(print(DT))[2L], "1: 1982-04-26 13:34:56 CEST 2019-01-01 19:00:01 UTC")
+DT = data.table(v1 = c(1, as.numeric(NA)))
+DT[2L, t:= as.POSIXct("2019-01-01 19:00:01", tz = "UTC")]
+test(2026.2, capture.output(print(DT)),
+     c("   v1                       t",
+       "1:  1                    <NA>", 
+       "2: NA 2019-01-01 19:00:01 UTC"))
 
 # empty item in j=list(x, ) errors gracefully, #3507
 DT = data.table(a = 1:5)
@@ -14405,6 +14406,28 @@ test(2034.1, fread('A,B\n"foo","ba"r"', quote="''"), error='quote= must be a sin
 test(2034.2, fread('A,B\n"foo","ba"r"', quote=FALSE), ans<-data.table(A='"foo"', B='"ba"r"'))
 test(2034.3, fread('A,B\n"foo","ba"r"', quote=""), ans)
 
+# format_col and format_list_item printing helpers/generics
+## Use case: solve #2842 by defining format_col.POSIXct to have usetz = TRUE
+DT = data.table(
+  t1 = as.POSIXct('2018-05-01 12:34:56', tz = 'UTC'),
+  t2 = as.POSIXct('2018-05-01 12:34:56', tz = 'Asia/Singapore')
+)
+test(2035.1, DT, output = 'UTC.*\\+08')
+
+# #3011 -- default expression printing can break format_col.default
+test(2035.2, print(data.table(e = expression(1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13))), output = '1 + 2 + 3')
+
+# format_col generic is used
+format_col.complex = function(x, ...) sprintf('(%.1f, %.1fi)', Re(x), Im(x))
+registerS3method("format_col", "complex", format_col.complex)
+x = data.table(z = c(1 + 3i, 2 - 1i, pi + 2.718i))
+test(2035.3, x, output = '(1.0, 3.0i)')
+
+# format_list_item() generic is used
+format_list_item.myclass <- function(x, ...) paste0("<", class(x)[1L], ":", x$id, ">")
+registerS3method("format_list_item", "myclass", format_list_item.myclass)
+DT = data.table(row = 1:2, objs = list(structure(list(id = "foo"), class = "myclass"),  structure(list(id = "bar"), class = "myclass")))
+test(2035.4, print(DT), output = "myclass:foo.*myclass:bar")
 
 ###################################
 #  Add new tests above this line  #
