@@ -42,8 +42,8 @@ static int8_t *type;
 static int8_t *size;
 static int ncol = 0;
 static int64_t dtnrows = 0;
-static _Bool verbose = 0;
-static _Bool warningsAreErrors = 0;
+static bool verbose = false;
+static bool warningsAreErrors = false;
 
 
 SEXP freadR(
@@ -81,7 +81,7 @@ SEXP freadR(
   dtnrows = 0;
   const char *ch, *ch2;
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
-    error("fread input must be a single character string: a filename or the data itself");
+    error("Internal error: freadR input not a single character string: a filename or the data itself. Should have been caught at R level.");  // # nocov
   ch = ch2 = (const char *)CHAR(STRING_ELT(inputArg,0));
   while (*ch2!='\n' && *ch2!='\r' && *ch2!='\0') ch2++;
   args.input = (*ch2=='\0') ? R_ExpandFileName(ch) : ch; // for convenience so user doesn't have to call path.expand()
@@ -98,16 +98,20 @@ SEXP freadR(
   }
 
   if (!isString(sepArg) || LENGTH(sepArg)!=1 || strlen(CHAR(STRING_ELT(sepArg,0)))>1)
-    error("CfreadR: sep must be 'auto' or a single character ('\\n' is an acceptable single character)");
+    error("Internal error: freadR sep not a single character. R level catches this.");  // # nocov
   args.sep = CHAR(STRING_ELT(sepArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
 
   if (!(isString(decArg) && LENGTH(decArg)==1 && strlen(CHAR(STRING_ELT(decArg,0)))==1))
-    error("CfreadR: dec must be a single character such as '.' or ','");
+    error("Internal error: freadR dec not a single character. R level catches this.");  // # nocov
   args.dec = CHAR(STRING_ELT(decArg,0))[0];
 
-  if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
-    error("CfreadR: quote must be a single character or empty \"\"");
-  args.quote = CHAR(STRING_ELT(quoteArg,0))[0];
+  if (IS_FALSE(quoteArg)) {
+    args.quote = '\0';
+  } else {
+    if (!isString(quoteArg) || LENGTH(quoteArg)!=1 || strlen(CHAR(STRING_ELT(quoteArg,0))) > 1)
+      error("quote= must be a single character, blank \"\", or FALSE");
+    args.quote = CHAR(STRING_ELT(quoteArg,0))[0];
+  }
 
   // header is the only boolean where NA is valid and means 'auto'.
   // LOGICAL in R is signed 32 bits with NA_LOGICAL==INT_MIN, currently.
@@ -133,7 +137,7 @@ SEXP freadR(
   } else error("Internal error: skip not integer or string in freadR.c"); // # nocov
 
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
-    error("'na.strings' is type '%s'.  Must be either NULL or a character vector.", type2char(TYPEOF(NAstringsArg)));
+    error("Internal error: NAstringsArg is type '%s'. R level catches this", type2char(TYPEOF(NAstringsArg)));  // # nocov
   int nnas = length(NAstringsArg);
   const char **NAstrings = (const char **)R_alloc((nnas + 1), sizeof(char*));  // +1 for the final NULL to save a separate nna variable
   for (int i=0; i<nnas; i++)
@@ -141,7 +145,7 @@ SEXP freadR(
   NAstrings[nnas] = NULL;
   args.NAstrings = NAstrings;
 
-  // here we use _Bool and rely on fread at R level to check these do not contain NA_LOGICAL
+  // here we use bool and rely on fread at R level to check these do not contain NA_LOGICAL
   args.stripWhite = LOGICAL(stripWhiteArg)[0];
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
   args.fill = LOGICAL(fillArg)[0];
@@ -222,13 +226,12 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
       if (dropSource==-1) snprintf(buff, 50, "drop[%d]", j+1);
       else snprintf(buff, 50, "colClasses[[%d]][%d]", dropSource+1, j+1);
       if (k==NA_INTEGER) {
-        if (isString(items)) {
+        if (isString(items))
           DTWARN("Column name '%s' (%s) not found", CHAR(STRING_ELT(items, j)), buff);
-        } else {
+        else
           DTWARN("%s is NA", buff);
-        }
       } else {
-        DTWARN("%s is %d which is out of range [1,ncol=%d]", buff, k, ncol)
+        DTWARN("%s is %d which is out of range [1,ncol=%d]", buff, k, ncol);
       }
     } else {
       type[k-1] = CT_DROP;
@@ -239,7 +242,7 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
   UNPROTECT(1);
 }
 
-_Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
+bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
 {
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
   if (typeSize[CT_BOOL8_N]!=1) STOP("Internal error: typeSize[CT_BOOL8_N] != 1"); // # nocov
@@ -362,18 +365,22 @@ _Bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, int ncol)
         for (int j=0; j<LENGTH(items); j++) {
           int k = INTEGER(itemsInt)[j];
           if (k==NA_INTEGER) {
-            if (isString(items)) STOP("Column name '%s' in colClasses[[%d]] not found", CHAR(STRING_ELT(items, j)),i+1);
-            else STOP("colClasses[[%d]][%d] is NA", i+1, j+1);
+            if (isString(items))
+              DTWARN("Column name '%s' (colClasses[[%d]][%d]) not found", CHAR(STRING_ELT(items, j)), i+1, j+1);
+            else
+              DTWARN("colClasses[[%d]][%d] is NA", i+1, j+1);
           } else {
-            if (k<1 || k>ncol) STOP("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]",k,i+1,j+1,ncol);
-            k--;
-            if (type[k]<0) STOP("Column '%s' appears more than once in colClasses", CHAR(STRING_ELT(colNamesSxp,k)));
-            if (type[k]!=CT_DROP) {
-              type[k] = -thisType;
-              if (w==NUT) SET_STRING_ELT(colClassesAs, k, STRING_ELT(listNames,i));
-              if (selectRankD) selectRankD[k] = rank++;
+            if (k>=1 && k<=ncol) {
+              if (type[k-1]<0)
+                DTWARN("Column %d ('%s') appears more than once in colClasses. The second time is colClasses[[%d]][%d].", k, CHAR(STRING_ELT(colNamesSxp,k-1)), i+1, j+1);
+              else if (type[k-1]!=CT_DROP) {
+                type[k-1] = -thisType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
+                if (w==NUT) SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
+                if (selectRankD) selectRankD[k-1] = rank++;
+              }
+            } else {
+              DTWARN("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]", k, i+1, j+1, ncol);
             }
-            // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
           }
         }
         UNPROTECT(1); // UNPROTECTing itemsInt inside loop to save protection stack
@@ -581,7 +588,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
           src1 += rowSize1;
           dest++;
         }
-      } else STOP("Runtime error: unexpected field of size %d\n", thisSize);
+      } else STOP("Internal error: unexpected field of size %d\n", thisSize);  // # nocov
       done++;
     }
     off8 += (size[j] & 8);
@@ -590,7 +597,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
   }
 }
 
-
+// # nocov start
 void progress(int p, int eta) {
   // called from thread 0 only
   // p between 0 and 100
@@ -608,7 +615,6 @@ void progress(int p, int eta) {
   // https://cran.r-project.org/bin/windows/base/rw-FAQ.html#The-console-freezes-when-my-compiled-code-is-running
 
   // No use of \r to avoid bug in RStudio, linked in the same issue #2457
-  // # nocov start
   static int displayed = -1;  // -1 means not yet displayed, otherwise [0,50] '=' are displayed
   static char bar[] = "================================================== ";  // 50 marks for each 2%
   if (displayed==-1) {
@@ -635,8 +641,8 @@ void progress(int p, int eta) {
     }
     R_FlushConsole();
   }
-  // # nocov end
 }
+// # nocov end
 
 void __halt(bool warn, const char *format, ...) {
   // Solves: http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
@@ -647,8 +653,10 @@ void __halt(bool warn, const char *format, ...) {
   vsnprintf(msg, 2000, format, args);
   va_end(args);
   freadCleanup(); // this closes mmp hence why we just copied substrings from mmp to msg[] first since mmp is now invalid
-  if (warn) warning("%s", msg);  // include "%s" because data in msg might include '%'
-  else error("%s", msg);
+  // if (warn) warning("%s", msg);
+  //   this warning() call doesn't seem to honor warn=2 straight away in R 3.6, so now always call error() directly to be sure
+  //   we were going via warning() before to get the (converted from warning) prefix in the message (which we could mimic in future)
+  error("%s", msg); // include "%s" because data in msg might include '%'
 }
 
 void prepareThreadContext(ThreadLocalFreadParsingContext *ctx) {}

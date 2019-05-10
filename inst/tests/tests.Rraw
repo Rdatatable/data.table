@@ -2706,10 +2706,11 @@ test(960, fread(input, colClasses=c("character","double")),
           error="colClasses= is an unnamed vector of types, length 2, but there are 3 columns.*you can")
 test(961, fread(input, colClasses=1:3), error="colClasses is not type list or character vector")
 test(962, fread(input, colClasses=list(1:3)), error="colClasses is type list but has no names")
-test(963, fread(input, colClasses=list(character="D")), error="Column name 'D' in colClasses..1.. not found")
-test(964, fread(input, colClasses=c(D="character")), error="Column name 'D' in colClasses..1.. not found")
-test(965, fread(input, colClasses=list(character=0)), error="Column number 0 (colClasses[[1]][1]) is out of range [1,ncol=3]")
-test(966, fread(input, colClasses=list(character=2:4)), error="Column number 4 (colClasses[[1]][3]) is out of range [1,ncol=3]")
+test(963, fread(input, colClasses=list(character="D")), ans<-data.table(A=1:2, B=c("foo","bar"), C=c(3.14,6.28)), warning="Column name 'D' (colClasses[[1]][1]) not found")
+test(964, fread(input, colClasses=c(D="character")),    ans, warning="Column name 'D' (colClasses[[1]][1]) not found")
+test(965, fread(input, colClasses=list(character=0)),   ans, warning="Column number 0 (colClasses[[1]][1]) is out of range [1,ncol=3]")
+test(966, fread(input, colClasses=list(character=2:4)), data.table(A=1:2, B=c("foo","bar"), C=c("3.140","6.28000")),
+                       warning="Column number 4 (colClasses[[1]][3]) is out of range [1,ncol=3]")
 
 # Character input more than 4096 bytes (used to be passed through path.expand which imposed the limit), #2649
 test(967, nrow(fread( paste( rep('a\tb\n', 10000), collapse=''), header=FALSE)), 10000L)
@@ -10510,6 +10511,11 @@ test(1743.311, fread(data1743, colClasses="NULL"), ans<-data.table(A=1:2, B=3:4,
 test(1743.312, fread(data1743, colClasses=character()), ans)
 test(1743.32, fread("A,B\na,0+1i", colClasses="complex"), data.table(A="a", B=1i),
               warning="Column 'A' was requested to be 'complex'.*NAs introduced by coercion.*column has been left as.*character")
+test(1743.33, fread(data1743, colClasses=list("character"=4, "numeric"=c(2,NA,1))), data.table(A=c(1,2), B=c(3,4), C=5:6, D=c("7","8")), warning="colClasses[[2]][2] is NA")
+test(1743.34, fread(data1743, select=list("character"=4, "numeric"=c(2,NA,1))), data.table(D=c("7","8"), B=c(3,4), A=c(1,2)), warning="colClasses[[2]][2] is NA")
+old = options(warn=2)
+test(1743.35, fread(data1743, select=list("character"=4, "numeric"=c(2,NA,1))), error="colClasses[[2]][2] is NA")
+options(old)
 
 # stringsAsFactors = double; #2025
 fwrite(data.table(V1 = sample(letters, size=26*10, replace=TRUE),
@@ -10838,11 +10844,10 @@ test(1755, fread(testDir("unescaped.csv"), logical01=TRUE),
 # test duplicated colClasses
 txt = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
 test(1756.1, fread(txt), data.table(A=1:2, B=3:4, C=5:6, D=7:8))
-test(1756.2, fread(txt, colClasses=list('numeric'=c(1,3))), data.table(A=as.double(1:2), B=3:4, C=as.double(5:6), D=7:8))
-test(1756.3, fread(txt, colClasses=list('numeric'=c(1,3,1))), error="Column 'A' appears more than once in colClasses")
-test(1756.4, fread(txt, colClasses=list('numeric'=c(1,3),'character'=2)),
-             data.table(A=as.double(1:2), B=c("3","4"), C=as.double(5:6), D=7:8))
-test(1756.5, fread(txt, colClasses=list('numeric'=c(1,2),'character'=2)), error="Column 'B' appears more than once")
+test(1756.2, fread(txt, colClasses=list('numeric'=c(1,3))),   ans<-data.table(A=as.double(1:2), B=3:4, C=as.double(5:6), D=7:8))
+test(1756.3, fread(txt, colClasses=list('numeric'=c(1,3,1))), ans, warning="Column 1 ('A') appears more than once in colClasses. The second time is colClasses[[1]][3]")
+test(1756.4, fread(txt, colClasses=list('numeric'=c(1,3),'character'=2)),   ans<-data.table(A=as.double(1:2), B=c("3","4"), C=as.double(5:6), D=7:8))
+test(1756.5, fread(txt, colClasses=list('numeric'=c(1,3),'character'=2:3)), ans, warning="Column 3 ('C') appears more than once in colClasses. The second time is colClasses[[2]][2]")
 
 # Windows \r\n line endings when using multiple threads and detecting type within quoted fields, #2087
 if (test_R.utils) {
@@ -14394,6 +14399,12 @@ DT = data.table(a = rep(1:2, each = 2), b = rep(1:2, 2), c = 4:1, d = 5:8)
 test(2033.1,
      dcast(DT, a ~ b, value.var = list('c', 'd'), fun.aggregate = list(sum)),
      error = "When 'fun.aggregate' and 'value.var' are both lists")
+
+# fread no quote coverage
+test(2034.1, fread('A,B\n"foo","ba"r"', quote="''"), error='quote= must be a single character, blank "", or FALSE')
+test(2034.2, fread('A,B\n"foo","ba"r"', quote=FALSE), ans<-data.table(A='"foo"', B='"ba"r"'))
+test(2034.3, fread('A,B\n"foo","ba"r"', quote=""), ans)
+
 
 ###################################
 #  Add new tests above this line  #
