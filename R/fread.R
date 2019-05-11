@@ -153,10 +153,10 @@ yaml=FALSE, autostart=NA)
     # whitespace at the beginning or end of na.strings is checked at C level and is an error there; test 1804
   }
   if (yaml) {
-    # for tracking which YAML elements may be overridden by being declared explicitly
-    call_args = names(match.call())
     if (!requireNamespace('yaml', quietly = TRUE))
       stop("'data.table' relies on the package 'yaml' to parse the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
+    # for tracking which YAML elements may be overridden by being declared explicitly
+    call_args = names(match.call())
     if (is.character(skip))
       warning("Combining a search string as 'skip' and reading a YAML header may not work as expected -- currently, ",
               "reading will proceed to search for 'skip' from the beginning of the file, NOT from the end of ",
