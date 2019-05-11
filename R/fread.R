@@ -269,8 +269,9 @@ yaml=FALSE, autostart=NA)
   warnings2errors = getOption("warn") >= 2
   ans = .Call(CfreadR,input,sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
               fill,showProgress,nThread,verbose,warnings2errors,logical01,select,drop,colClasses,integer64,encoding,keepLeadingZeros)
+  if (!length(ans)) return(null.data.table())  # test 1743.308 drops all columns
   nr = length(ans[[1L]])
-  if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(ans,inherits,"integer64"))) require_bit64()
+  if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(ans,inherits,"integer64"))) require_bit64()  # nocov
   setattr(ans,"row.names",.set_row_names(nr))
 
   if (isTRUE(data.table)) {
@@ -299,7 +300,7 @@ yaml=FALSE, autostart=NA)
              methods::as(v, new_class))
       },
       warning = fun <- function(e) {
-        warning("Column '", names(ans)[j], "' was set by colClasses to be '", new_class, "' but fread encountered the following ",
+        warning("Column '", names(ans)[j], "' was requested to be '", new_class, "' but fread encountered the following ",
                 if (inherits(e, "error")) "error" else "warning", ":\n\t", e$message, "\nso the column has been left as type '", typeof(v), "'", call.=FALSE)
         return(v)
       },
@@ -317,21 +318,6 @@ yaml=FALSE, autostart=NA)
     }
     if (verbose) cat("stringsAsFactors=", stringsAsFactors, " converted ", length(cols_to_factor), " column(s): ", brackify(names(ans)[cols_to_factor]), "\n", sep="")
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
-  }
-
-  if (!is.null(select)) {
-    if (is.numeric(select)) {
-      if (length(o <- forderv(select))) {
-        rank = integer(length(o))
-        rank[o] = 1:length(o)
-        setcolorder(ans, rank)
-      }
-    } else {
-      if (!identical(names(ans), select)) {
-        reorder = select[select %chin% names(ans)] # any missing columns are warned about in freadR.c and skipped
-        setcolorder(ans, reorder)
-      }
-    }
   }
 
   if (!missing(col.names))   # FR #768
