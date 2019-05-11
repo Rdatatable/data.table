@@ -12,6 +12,12 @@
     * `stringsAsFactors=0.10` will factorize any character column containing under `0.10*nrow` unique strings, [#2025](https://github.com/Rdatatable/data.table/issues/2025). Thanks to @hughparsonage for the PR.
     * `colClasses=list(numeric=20:30, numeric="ID")` will apply the `numeric` type to column numbers `20:30` as before and now also column name `"ID"`; i.e. all duplicate class names are now respected rather than only the first. This need may arise when specifying some columns by name and others by number, as in this example. Thanks to @hughparsonage for the PR.
     * gains `yaml` (default `FALSE`) and the ability to parse CSVY-formatted input files; i.e., csv files with metadata in a header formatted as YAML (http://csvy.org/), [#1701](https://github.com/Rdatatable/data.table/issues/1701). See `?fread` and files in `/inst/tests/csvy/` for sample formats. Please provide feedback if you find this feature useful and would like extended capabilities. For now, consider it experimental, meaning the API/arguments may change. Thanks to @leeper at [`rio`](https://github.com/leeper/rio) for the inspiration and @MichaelChirico for implementing.
+    * `select` can now be used to specify types for just the columns selected, [#1426](https://github.com/Rdatatable/data.table/issues/1426). Just like `colClasses` it can be a named vector of `colname=type` pairs, or a named `list` of `type=col(s)` pairs. For example:
+
+    ```R
+    fread(file, select=c(colD="character", colA="integer64"))                  # returns 2 columns: colD,colA
+    fread(file, select=list(character="colD", integer=8:10, character="colA")) # returns 5 columns: colD,8,9,10,colA
+    ```
 
 3. `fwrite()`:
     * now writes compressed `.gz` files directly, [#2016](https://github.com/Rdatatable/data.table/issues/2016). Compression, like `fwrite()`, is multithreaded and compresses each chunk on-the-fly (a full size intermediate file is not created). Use a ".gz" extension, or the new `compress=` option. Many thanks to Philippe Chataignon for the significant PR. For example:
@@ -22,6 +28,8 @@
     fwrite(DT, "data.csv.gz")   #   2MB; 1.6s
     identical(fread("data.csv.gz"), DT)
     ```
+    
+    * Gains `yaml` argument matching that of `fread`, [#3534](https://github.com/Rdatatable/data.table/issues/3534). See the item in `fread` for a bit more detail; here, we'd like to reiterate that feedback is appreciated in the initial phase of rollout for this feature.
 
 4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
 
@@ -76,6 +84,8 @@
 4. `fwrite()` could crash when writing very long strings such as 30 million characters, [#2974](https://github.com/Rdatatable/data.table/issues/2974), and could be unstable in memory constrained environments, [#2612](https://github.com/Rdatatable/data.table/issues/2612). Thanks to @logworthy and @zachokeeffe for reporting and Philippe Chataignon for fixing in PR [#3288](https://github.com/Rdatatable/data.table/pull/3288).
 
 5. `fread()` could crash if `quote=""` (i.e. ignore quotes), the last line is too short, and `fill=TRUE`, [#3524](https://github.com/Rdatatable/data.table/pull/3524). Thanks to Jiucang Hao for the report and reproducible example.
+
+6. Printing could occur unexpectedly when code is run with `source`, [#2369](https://github.com/Rdatatable/data.table/issues/2369). Thanks to @jan-glx for the report and reproducible example.
 
 #### NOTES
 
