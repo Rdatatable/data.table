@@ -44,6 +44,8 @@ set(x, i = NULL, j, value)
     DT[,`:=`(new1 = sum(colB), new2 = sum(colC))] # Functional form
 }
 
+Note that for efficiency no check is performed for duplicate assignments, i.e. if multiple values are passed for assignment to the same index, assignment to this index will occur repeatedly and sequentially; for a given use case, consider whether it makes sense to create your own test for duplicates, e.g. in production code.
+
 All of the following result in a friendly error (by design) :
 
 \preformatted{
