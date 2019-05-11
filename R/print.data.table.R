@@ -25,6 +25,8 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
     SYS <- sys.calls()
     if (length(SYS) <= 2L ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
+        ( length(SYS) >= 3L && is.symbol(thisSYS <- SYS[[length(SYS)-2L]][[1L]]) &&
+          as.character(thisSYS) == 'source') || # suppress printing from source(echo = TRUE) calls, #2369
         ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) &&
           as.character(thisSYS) %chin% mimicsAutoPrint ) )  {
       return(invisible(x))
