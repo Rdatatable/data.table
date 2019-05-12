@@ -12,7 +12,8 @@
     Integer.
 }
 \details{
-  Be aware that updates on duplicated indices will report actual number of
+  Be aware that in the case of duplicate indices, multiple updates occur (duplicates are overwritten);
+  \code{.Last.updated} will include \emph{all} of the
   updates performed, including duplicated ones. See examples.
 }
 \examples{
