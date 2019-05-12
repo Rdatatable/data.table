@@ -14467,6 +14467,18 @@ test(2036.1, !any(grepl("1:     1", capture.output(source(tmp, echo = TRUE)), fi
 writeLines(c(setup, 'DT[ , a := 1][]'), tmp)
 test(2036.2, source(tmp, echo = TRUE), output = "1:\\s+1")
 
+# more helpful guidance when assigning before setDT() after readRDS(); #1729
+DT = data.table(a = 1:3)
+saveRDS(DT, tmp<-tempfile())
+rm(DT)
+DT = readRDS(tmp)
+foo = function(x) { x[ , b:=4:6, verbose=TRUE][] }
+test(2037.1, foo(DT), output='Please remember to always setDT()')
+# no assignment was made to DT
+test(2037.2, names(DT), 'a')
+# _selrefok() verbose message was duplicated
+test(2037.3, unname(table(unlist(strsplit(capture.output(foo(DT)), '\n|\\s+')))['ptr']), 1L)
+
 
 ###################################
 #  Add new tests above this line  #
