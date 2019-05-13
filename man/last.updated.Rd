@@ -3,7 +3,7 @@
 \alias{Last.updated}
 \title{ Number of rows affected by last update }
 \description{
-    Returns number of rows affected by last update using \code{:=} operator.
+    Returns number of rows affected by last \code{:=} or \code{set()}.
 }
 \usage{
     .Last.updated
