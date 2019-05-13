@@ -16,6 +16,9 @@
   \code{.Last.updated} will include \emph{all} of the
   updates performed, including duplicated ones. See examples.
 }
+\seealso{
+  \code{\link{:=}}
+}
 \examples{
 d = data.table(a=1:4, b=2:5)
 d[2:3, z:=5L]
