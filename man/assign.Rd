@@ -44,6 +44,8 @@ set(x, i = NULL, j, value)
     DT[,`:=`(new1 = sum(colB), new2 = sum(colC))] # Functional form
 }
 
+The \code{\link{.Last.updated}} variable contains the number of rows updated by the most recent \code{:=} or \code{set} calls, which may be useful, for example, in production settings for testing assumptions about the number of rows affected by a statement; see \code{\link{.Last.updated}} for details.
+
 Note that for efficiency no check is performed for duplicate assignments, i.e. if multiple values are passed for assignment to the same index, assignment to this index will occur repeatedly and sequentially; for a given use case, consider whether it makes sense to create your own test for duplicates, e.g. in production code.
 
 All of the following result in a friendly error (by design) :
@@ -78,7 +80,7 @@ Since \code{[.data.table} incurs overhead to check the existence and type of arg
 \value{
 \code{DT} is modified by reference and returned invisibly. If you require a copy, take a \code{\link{copy}} first (using \code{DT2 = copy(DT)}).
 }
-\seealso{ \code{\link{data.table}}, \code{\link{copy}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{set}}
+\seealso{ \code{\link{data.table}}, \code{\link{copy}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{set}}, \code{\link{.Last.updated}}
 }
 \examples{
 DT = data.table(a = LETTERS[c(3L,1:3)], b = 4:7)

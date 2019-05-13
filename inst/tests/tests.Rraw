@@ -14485,16 +14485,105 @@ test(2037.2, names(DT), 'a')
 # _selrefok() verbose message was duplicated
 test(2037.3, unname(table(unlist(strsplit(capture.output(foo(DT)), '\n|\\s+')))['ptr']), 1L)
 
-# #3533, #1876, #3079 -- ensure GForce/fastmean are not applied incorrectly under method dispatch
+# `between` invalid args, and verbose #3516
+test(2038.01, between(1:5, 2, 4, incbounds=423), error="incbounds must be logical")
+test(2038.02, between(1:5, 2, 4, incbounds=NA), error="incbounds must be logical")
+old = options(datatable.verbose=TRUE)
+test(2038.03, between(1:5, 2L, 4L), output="between parallel processing of integer with recycling took")
+test(2038.04, between(1:5, rep(2L,5L), rep(4L, 5L)), output="between parallel processing of integer took")
+test(2038.05, between(as.double(1:5), 2, 4, incbounds=FALSE), output="between parallel processing of double using open bounds with recycling took")
+test(2038.06, between(as.double(1:5), 2, 4), output="between parallel processing of double using closed bounds with recycling took")
+test(2038.07, between(as.double(1:5), rep(2, 5L), rep(4, 5L)), output="between parallel processing of double took")
+test(2038.08, between(c("foo","bar","paz"), "bag", "fog"), output="optimised between not available for this data type, fallback to slow R routine")
+
+# `between` handle POSIXct type
+x = as.POSIXct("2016-09-18 07:00:00") + 0:10*60*15
+dn = as.POSIXct('2016-09-18 08:00:00')
+up = as.POSIXct('2016-09-18 09:00:00')
+test(2038.09, between(x, dn, up), output="between parallel processing of double using closed bounds with recycling took")
+test(2038.10, between(x, dn, up, incbounds=FALSE), output="between parallel processing of double using open bounds with recycling took")
+
+# also handling of string lower/upper bounds _only when x has a time zone_
+x = as.POSIXct("2016-09-18 07:00:00") + 0:10*60*15
+dn = '2016-09-18 08:00:00'
+up = '2016-09-18 09:00:00'
+test(2038.11, between(x, dn, up), output = 'optimised between not available')
+attr(x, 'tzone') = 'UTC'
+test(2038.12, between(x, dn, up), output = 'between parallel processing of double')
+
+# additional flexibility -- cast when one bound is already POSIXct
+up = as.POSIXct(up, tz="UTC")
+test(2038.13, between(x, dn, up), output = 'between parallel processing of double')
+options(old)
+
+# exceptions in char to POSIX coercion
+dn = 'aa2016-09-18 08:00:00'
+test(2038.14, between(x, dn, up), error="coercion to POSIX failed")
+dn = '2016-09-18 08:00:00'
+up = 'bb2016-09-18 09:00:00'
+test(2038.15, between(x, dn, up), error="coercion to POSIX failed")
+
+# exceptions due to timezone mismatch
+x = as.POSIXct("2016-09-18 07:00:00", tz="UTC") + 0:10*60*15
+dn = as.POSIXct('2016-09-18 08:00:00')
+up = '2016-09-18 09:00:00'
+test(2038.16, between(x, dn, up), error="mismatched timezone attribute")
+
+# `between` support `.` in RHS #2315
+X = data.table(a = 1:5, b = 6:10, c = c(5:1))
+test(2038.17, X[c %between% list(a, b)], X[c %between% .(a, b)])
+
+# between num to int coercion #3517
+old = options("datatable.verbose"=TRUE)
+test(2038.18, between(1:5, 2, 4), output="between parallel processing of integer with recycling")
+test(2038.19, between(1:5, 2L, 4), output="between parallel processing of integer with recycling")
+test(2038.20, between(1:5, 2, 4L), output="between parallel processing of integer with recycling")
+options(old)
+
+# between int64 support
+if (test_bit64) {
+  as.i64 = bit64::as.integer64
+  test(2039.01, between(1:10, as.i64(3), as.i64(6)), error="are integer64 class while 'x' argument is not")
+  test(2039.02, between(1:10, 3, as.i64(6)), error="are integer64 class while 'x' argument is not")
+  old = options("datatable.verbose"=TRUE)
+  x = as.i64(1:10)
+  ans36 = c(FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE)
+  ans36open = c(FALSE,FALSE,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE)
+  test(2039.03, between(x, 3, 6), ans36, output="between parallel processing of integer64 with recycling")
+  test(2039.04, between(x, 3, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  test(2039.05, between(x, 3L, 6), ans36, output="between parallel processing of integer64 with recycling")
+  test(2039.06, between(x, 3L, 6, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  test(2039.07, between(x, 3, 6L), ans36, output="between parallel processing of integer64 with recycling")
+  test(2039.08, between(x, 3, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  test(2039.09, between(x, 3L, 6L), ans36, output="between parallel processing of integer64 with recycling")
+  test(2039.10, between(x, 3L, 6L, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  test(2039.11, between(x, rep(3, 10L), rep(6, 10L)), ans36, output="between parallel processing of integer64 took")
+  test(2039.12, between(x, rep(3, 10L), rep(6, 10L), incbounds=FALSE), ans36open, output="between parallel processing of integer64 took")
+  maxint = 2147483647
+  test(2039.13, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 with recycling")
+  test(2039.14, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  x[5] = NA
+  ans36[5] = NA
+  ans36open[5] = NA
+  test(2039.15, between(x+maxint, 3+maxint, 6+maxint), ans36, output="between parallel processing of integer64 with recycling")
+  test(2039.16, between(x+maxint, 3+maxint, 6+maxint, incbounds=FALSE), ans36open, output="between parallel processing of integer64 with recycling")
+  test(2039.17, between(x+maxint, NA, 6+maxint), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 with recycling")
+  test(2039.18, between(x+maxint, 3+maxint, NA, incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 with recycling")
+  test(2039.19, between(x+maxint, rep(NA, 10L), rep(6+maxint, 10L)), c(TRUE, TRUE, tail(ans36, -2L)), output="between parallel processing of integer64 took")
+  test(2039.20, between(x+maxint, rep(3+maxint, 10L), rep(NA, 10L), incbounds=FALSE), c(head(ans36open, -5L), rep(TRUE, 5)), output="between parallel processing of integer64 took")
+  options(old)
+}
+
+# ensure GForce/fastmean are not applied incorrectly under method dispatch; #3533, #1876, #3079
 DT = data.table(ID = 1:2, v = 3:4, d = .Date(1:2))
 class(DT$v) = 'mymean'
 mean.mymean = function(x) min(x) + 1
-test(2038.1, DT[ , mean(v)], 4)
+test(2040.1, DT[, mean(v)], 4)
 options(datatable.optimize = 0)
 trueDT = data.table(ID = 1:2, V1 = c(4, 5))
-test(2038.2, DT[ , mean(v), by = ID], trueDT)
+test(2040.2, DT[, mean(v), by=ID], trueDT)
 options(datatable.optimize = 2)
-test(2038.3, DT[ , mean(v), by = ID, verbose = TRUE], trueDT, output = 'GForce FALSE')
+test(2040.3, DT[, mean(v), by=ID, verbose = TRUE], trueDT, output = 'GForce FALSE')
 
 
 ###################################

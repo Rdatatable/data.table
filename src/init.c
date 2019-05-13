@@ -291,6 +291,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
   sym_colClassesAs = install("colClassesAs");
+  sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");
 
   initDTthreads();
@@ -335,6 +336,12 @@ inline double LLtoD(long long x) {
   union {double d; int64_t i64;} u;
   u.i64 = (int64_t)x;
   return u.d;
+}
+
+bool GetVerbose() {
+  // don't call repetitively; save first in that case
+  SEXP opt = GetOption(sym_verbose, R_NilValue);
+  return isLogical(opt) && LENGTH(opt)==1 && LOGICAL(opt)[0]==1;
 }
 
 // # nocov start

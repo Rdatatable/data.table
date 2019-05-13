@@ -71,7 +71,9 @@
     setnafill(DT, "locf")         ## DT in-place    0.367s
     ```
 
-7. New variable `.Last.updated` (similar to R's `.Last.value`) contains the number of rows affected by the most recent `:=` or `set()`, [#1885](https://github.com/Rdatatable/data.table/issues/1885).
+7. New variable `.Last.updated` (similar to R's `.Last.value`) contains the number of rows affected by the most recent `:=` or `set()`, [#1885](https://github.com/Rdatatable/data.table/issues/1885). For details see `?.Last.updated`.
+
+8. `between()` and `%between%` are faster for `POSIXct`, [#3519](https://github.com/Rdatatable/data.table/issues/3519), and now support the `.()` alias, [#2315](https://github.com/Rdatatable/data.table/issues/2315). Thanks to @Henrik-P for the reports. There is now also support for `bit64`'s `integer64` class and more robust coercion of types, [#3517](https://github.com/Rdatatable/data.table/issues/3517).
 
 #### BUG FIXES
 

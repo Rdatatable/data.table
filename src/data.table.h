@@ -34,6 +34,10 @@ typedef R_xlen_t RLEN;
 #endif
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+// for use with bit64::integer64
+#define NA_INTEGER64  INT64_MIN
+#define MAX_INTEGER64 INT64_MAX
+
 // Backport macros added to R in 2017 so we don't need to update dependency from R 3.0.0
 #ifndef MAYBE_SHARED
 # define MAYBE_SHARED(x) (NAMED(x) > 1)
@@ -79,9 +83,11 @@ SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
 SEXP sym_colClassesAs;
+SEXP sym_verbose;
 bool INHERITS(SEXP x, SEXP char_);
 long long DtoLL(double x);
 double LLtoD(long long x);
+bool GetVerbose();
 double NA_INT64_D;
 long long NA_INT64_LL;
 
@@ -183,3 +189,6 @@ SEXP colnamesInt(SEXP x, SEXP cols);
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose);
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose);
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose);
+
+// between.c
+SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
