@@ -44,7 +44,7 @@ set(x, i = NULL, j, value)
     DT[,`:=`(new1 = sum(colB), new2 = sum(colC))] # Functional form
 }
 
-It is possible to obtain number of rows updated by most recent \code{:=} or \code{set} calls using \code{.Last.updated} variable. For details see \code{\link{.Last.updated}}.
+The \code{\link{.Last.updated}} variable contains the number of rows updated by the most recent \code{:=} or \code{set} calls, which may be useful, for example, in production settings for testing assumptions about the number of rows affected by a statement; see \code{\link{.Last.updated}} for details.
 
 Note that for efficiency no check is performed for duplicate assignments, i.e. if multiple values are passed for assignment to the same index, assignment to this index will occur repeatedly and sequentially; for a given use case, consider whether it makes sense to create your own test for duplicates, e.g. in production code.
 
