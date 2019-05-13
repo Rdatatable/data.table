@@ -71,7 +71,7 @@
     setnafill(DT, "locf")         ## DT in-place    0.367s
     ```
 
-7. New variable `.Last.updated` (similar to R's `.Last.value`) contains the number of rows affected by the most recent `:=` or `set()`, [#1885](https://github.com/Rdatatable/data.table/issues/1885).
+7. New variable `.Last.updated` (similar to R's `.Last.value`) contains the number of rows affected by the most recent `:=` or `set()`, [#1885](https://github.com/Rdatatable/data.table/issues/1885). For details see `?.Last.updated`.
 
 #### BUG FIXES
 
