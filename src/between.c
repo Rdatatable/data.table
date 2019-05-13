@@ -1,8 +1,5 @@
 #include "data.table.h"
 
-#define NA_INTEGER64 LLONG_MIN
-#define MAX_INTEGER64 LLONG_MAX
-
 bool isReallyRealC(SEXP x) {
   if (!isReal(x)) return(false);
   R_xlen_t n=xlength(x), i=0;

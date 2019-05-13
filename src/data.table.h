@@ -34,6 +34,10 @@ typedef R_xlen_t RLEN;
 #endif
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+// for use with bit64::integer64
+#define NA_INTEGER64  INT64_MIN
+#define MAX_INTEGER64 INT64_MAX
+
 // Backport macros added to R in 2017 so we don't need to update dependency from R 3.0.0
 #ifndef MAYBE_SHARED
 # define MAYBE_SHARED(x) (NAMED(x) > 1)
