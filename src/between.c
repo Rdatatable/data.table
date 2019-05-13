@@ -1,6 +1,6 @@
 #include "data.table.h"
 
-bool isReallyRealC(SEXP x) {
+bool isRealReallyInt(SEXP x) {
   if (!isReal(x)) return(false);
   R_xlen_t n=xlength(x), i=0;
   double *dx = REAL(x);
@@ -9,7 +9,7 @@ bool isReallyRealC(SEXP x) {
          ( R_FINITE(dx[i]) && dx[i] == (int)(dx[i])))) {
     i++;
   }
-  return(i<n);
+  return i==n;
 }
 
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
@@ -32,8 +32,8 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
   bool integer=true;
   bool integer64=false;
   if (isInteger(x) &&         // #3517 coerce to num to int when possible
-      (isInteger(lower) || (!isInteger(lower) && !isReallyRealC(lower))) &&
-      (isInteger(upper) || (!isInteger(upper) && !isReallyRealC(upper)))) {
+      (isInteger(lower) || isRealReallyInt(lower)) &&
+      (isInteger(upper) || isRealReallyInt(upper))) {
     if (!isInteger(lower)) {
       lower = PROTECT(coerceVector(lower, INTSXP)); nprotect++;
     }
@@ -42,7 +42,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
     }
   } else if (inherits(x,"integer64")) {
     if (!inherits(lower,"integer64") || !inherits(upper,"integer64"))
-      error("Internal error in between: 'x' is integer64 while 'lower' and/or 'upper' are not, should have been catched by now"); // # nocov
+      error("Internal error in between: 'x' is integer64 while 'lower' and/or 'upper' are not, should have been caught by now"); // # nocov
     integer=false;
     integer64=true;
   } else if (isReal(x)) {
@@ -54,7 +54,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
       upper = PROTECT(coerceVector(upper, REALSXP)); nprotect++;
     }
   } else {
-    error("Internal error in between: 'x' is not int, double or int64, should have been catched by now"); // # nocov
+    error("Internal error in between: 'x' is not int, double or int64, should have been caught by now"); // # nocov
   }
   // TODO: sweep through lower and upper ensuring lower<=upper (inc bounds) and no lower>upper or lower==INT_MAX
 
@@ -169,6 +169,6 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
     }
   }
   UNPROTECT(nprotect);
-  return(ans);
+  return ans;
 }
 
