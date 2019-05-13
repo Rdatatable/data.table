@@ -18,6 +18,8 @@ typedef R_xlen_t RLEN;
 #define IS_UTF8(x)  (LEVELS(x) & 8)
 #define IS_ASCII(x) (LEVELS(x) & 64)
 #define IS_LATIN(x) (LEVELS(x) & 4)
+#define IS_TRUE(x)  (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==TRUE)
+#define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
 
 #define SIZEOF(x) sizes[TYPEOF(x)]
 #define TYPEORDER(x) typeorder[x]
@@ -70,6 +72,7 @@ SEXP char_allGrp1;
 SEXP char_factor;
 SEXP char_ordered;
 SEXP char_dataframe;
+SEXP char_NULL;
 SEXP sym_sorted;
 SEXP sym_index;
 SEXP sym_BY;
@@ -96,6 +99,7 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 void writeNA(SEXP v, const int from, const int n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
+SEXP setcolorder(SEXP x, SEXP o);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
@@ -107,6 +111,9 @@ int getNumericRounding_C();
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
+
+// subset.c
+SEXP subsetVector(SEXP x, SEXP idx);
 
 // fcast.c
 SEXP int_vec_init(R_len_t n, int val);
