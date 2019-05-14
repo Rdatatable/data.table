@@ -78,7 +78,7 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
     xi = x[[i]]
     if (is.null(xi)) stop("Internal error: NULL item ", i," should have been removed from list above")  # nocov
     if ("POSIXlt" %chin% class(xi)) {
-      warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+      warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date. Use as.POSIXct to avoid this warning.")
       x[[i]] = as.POSIXct(xi)
     } else if (is.matrix(xi) || is.data.frame(xi)) {  # including data.table (a data.frame, too)
       xi = as.data.table(xi, keep.rownames=keep.rownames)       # TO DO: allow a matrix to be a column of a data.table. This could allow a key'd lookup to a matrix, not just by a single rowname vector, but by a combination of several columns. A matrix column could be stored either by row or by column contiguous in memory.
@@ -1251,7 +1251,7 @@ replace_dot_alias <- function(e) {
   SDenv = new.env(parent=parent.frame())
   # taking care of warnings for posixlt type, #646
   SDenv$strptime <- function(x, ...) {
-    warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+    warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date. Use as.POSIXct to avoid this warning.")
     as.POSIXct(base::strptime(x, ...))
   }
 
