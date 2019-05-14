@@ -14568,6 +14568,12 @@ if (test_bit64) {
   options(old)
 }
 
+# zero rows table group by NULL #3530
+dt = data.table(x = c("a","b","a","b"), y = c(1,2,3,4))
+test(2040.1, dt[0, .N, by = NULL], data.table(N=0L))
+f = function(...) NULL
+test(2040.2, dt[0, .N, by = f()], data.table(N=0L))
+
 
 ###################################
 #  Add new tests above this line  #

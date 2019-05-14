@@ -246,6 +246,7 @@ replace_dot_alias <- function(e) {
     by=bysub= if (missing(by)) NULL else substitute(by)
     keyby=FALSE
   }
+  bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
   if (missing(i) && missing(j)) {
     tt_isub = substitute(i)
@@ -709,7 +710,6 @@ replace_dot_alias <- function(e) {
   } else {  # missing(i)
     i = NULL
   }
-
   byval = NULL
   xnrow = nrow(x)
   xcols = xcolsAns = icols = icolsAns = integer()
@@ -882,12 +882,12 @@ replace_dot_alias <- function(e) {
           }
         }
 
-        if (is.null(irows))
+        if (is.null(irows)) {
           if (is.call(bysub) && length(bysub) == 3L && bysub[[1L]] == ":" && is.name(bysub[[2L]]) && is.name(bysub[[3L]])) {
             byval = eval(bysub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame())
             byval = as.list(x)[byval]
           } else byval = eval(bysub, x, parent.frame())
-        else {
+        } else {
           # length 0 when i returns no rows
           if (!is.integer(irows)) stop("Internal error: irows isn't integer") # nocov
           # Passing irows as i to x[] below has been troublesome in a rare edge case.
@@ -935,13 +935,14 @@ replace_dot_alias <- function(e) {
           }
         }
         if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
-        for (jj in seq_len(length(byval))) {
+        if (length(byval)==1L && is.null(byval[[1L]])) bynull=TRUE #3530 when by=(function()NULL)()
+        if (!bynull) for (jj in seq_len(length(byval))) {
           if (!typeof(byval[[jj]]) %chin% c("integer","logical","character","double")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
         }
         tt = vapply_1i(byval,length)
         if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be length ", xnrow, "; the same length as there are rows in x (after subsetting if i is provided).")
         if (is.null(bynames)) bynames = rep.int("",length(byval))
-        if (any(bynames=="")) {
+        if (any(bynames=="") && !bynull) {
           for (jj in seq_along(bynames)) {
             if (bynames[jj]=="") {
               # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
@@ -1272,9 +1273,8 @@ replace_dot_alias <- function(e) {
     }
     assign(sym, get(getName, parent.frame()), SDenv)
   }
-
   # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
-  if (missingby || (!byjoin && !length(byval))) {
+  if (missingby || bynull || (!byjoin && !length(byval))) {
     # No grouping: 'by' = missing | NULL | character() | "" | list()
     # Considered passing a one-group to dogroups but it doesn't do the recycling of i within group, that's done here
     if (length(ansvars)) {
@@ -1399,7 +1399,10 @@ replace_dot_alias <- function(e) {
 
       # Fix for #813 and #758. Ex: DT[c(FALSE, FALSE), list(integer(0L), y)]
       # where DT = data.table(x=1:2, y=3:4) should return an empty data.table!!
-      if (!is.null(irows) && (identical(irows, integer(0L)) || (!anyNA(irows) && all(irows==0L)))) ## anyNA() because all() returns NA (not FALSE) when irows is all-NA. TODO: any way to not check all 'irows' values?
+      if (!is.null(irows) && `||`(
+          identical(irows, integer(0L)) && !bynull,
+          length(irows) && !anyNA(irows) && all(irows==0L) ## anyNA() because all() returns NA (not FALSE) when irows is all-NA. TODO: any way to not check all 'irows' values?
+          ))
         if (is.atomic(jval)) jval = jval[0L] else jval = lapply(jval, `[`, 0L)
       if (is.atomic(jval)) {
         setattr(jval,"names",NULL)
@@ -1844,7 +1847,6 @@ replace_dot_alias <- function(e) {
   # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
   # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
   # TO DO: setkey could mark the key whether it is unique or not.
-
   if (!is.null(lhs)) {
     if (any(names(x)[cols] %chin% key(x)))
       setkey(x,NULL)
