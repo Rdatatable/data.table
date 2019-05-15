@@ -7,7 +7,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
            dateTimeAs = c("ISO","squash","epoch","write.csv"),
            buffMB=8, nThread=getDTthreads(verbose),
            showProgress=getOption("datatable.showProgress", interactive()),
-           compress = c("auto", "none", "gzip"), 
+           compress = c("auto", "none", "gzip"),
            yaml = FALSE,
            verbose=getOption("datatable.verbose", FALSE)) {
   na = as.character(na[1L]) # fix for #1725
@@ -48,9 +48,9 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     length(buffMB)==1L && !is.na(buffMB) && 1L<=buffMB && buffMB<=1024,
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
     )
-  
+
   is_gzip <- compress == "gzip" || (compress == "auto" && grepl("\\.gz$", file))
-  
+
   file <- path.expand(file)  # "~/foo/bar"
   if (append && missing(col.names) && (file=="" || file.exists(file)))
     col.names = FALSE  # test 1658.16 checks this
@@ -74,7 +74,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
       return(invisible())
     }
   }
-  
+
   # process YAML after potentially short-circuiting due to irregularities
   if (yaml) {
     if (!requireNamespace('yaml', quietly = TRUE))
@@ -89,12 +89,12 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
       # as.vector strips names
       schema_vec = list(name = names(schema_vec), type = as.vector(schema_vec))
       yaml_header = list(
-        source = sprintf('R[v%s.%s]::data.table[v%s]::fwrite', 
-                         R.version$major, R.version$minor, format(utils::packageVersion('data.table'))),
+        source = sprintf('R[v%s.%s]::data.table[v%s]::fwrite',
+                         R.version$major, R.version$minor, format(tryCatch(utils::packageVersion('data.table'), error=function(e)'DEV'))),
         creation_time_utc = format(Sys.time(), tz = 'UTC'),
         schema = list(
           fields = lapply(
-            seq_along(x), 
+            seq_along(x),
             function(i) list(name = schema_vec$name[i], type = schema_vec$type[i])
           )
         ),

@@ -20,10 +20,6 @@ static int maxgrpn = 0;
 static int *oo = NULL;
 static int *ff = NULL;
 static int isunsorted = 0;
-static union {
-  double d;
-  long long ll;
-} u;
 
 // from R's src/cov.c (for variance / sd)
 #ifdef HAVE_LONG_DOUBLE
@@ -776,177 +772,56 @@ SEXP gmax(SEXP x, SEXP narm)
 }
 
 // gmedian, always returns numeric type (to avoid as.numeric() wrap..)
-SEXP gmedian(SEXP x, SEXP narm) {
-
-  if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
+SEXP gmedian(SEXP x, SEXP narmArg) {
+  if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
   if (!isVectorAtomic(x)) error("GForce median can only be applied to columns, not .SD or similar. To find median of all items in a list such as .SD, either add the prefix stats::median(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,median),by=,.SDcols=]'");
   if (inherits(x, "factor")) error("median is not meaningful for factors.");
-  R_len_t i=0, j=0, k=0, imed=0, thisgrpsize=0, medianindex=0, nacount=0;
-  double val = 0.0;
-  Rboolean isna = FALSE, isint64 = FALSE;
-  SEXP ans, sub, klass;
-  void *ptr;
+  const bool isInt64 = INHERITS(x, char_integer64), narm = LOGICAL(narmArg)[0];
   int n = (irowslen == -1) ? length(x) : irowslen;
   if (nrow != n) error("nrow [%d] != length(x) [%d] in gmedian", nrow, n);
+  SEXP ans = PROTECT(allocVector(REALSXP, ngrp));
+  double *ansd = REAL(ans);
   switch(TYPEOF(x)) {
-  case REALSXP:
-    klass = getAttrib(x, R_ClassSymbol);
-    isint64 = (isString(klass) && STRING_ELT(klass, 0) == char_integer64);
-    ans = PROTECT(allocVector(REALSXP, ngrp));
-    sub = PROTECT(allocVector(REALSXP, maxgrpn)); // allocate once upfront
-    ptr = REAL(sub);
-    if (!LOGICAL(narm)[0]) {
-      for (i=0; i<ngrp; i++) {
-        isna = FALSE;
-        thisgrpsize = grpsize[i];
-        SETLENGTH(sub, thisgrpsize);
-        for (j=0; j<thisgrpsize; j++) {
-          k = ff[i]+j-1;
-          if (isunsorted) k = oo[k]-1;
-          k = (irowslen == -1) ? k : irows[k]-1;
-          // TODO: raise this if-statement?
-          if (!isint64) {
-            if (!ISNAN(REAL(x)[k])) {
-              REAL(sub)[j] = REAL(x)[k];
-            } else {
-              REAL(ans)[i] = NA_REAL;
-              isna = TRUE; break;
-            }
-          } else {
-            u.d = REAL(x)[k];
-            if (u.ll != NA_INT64_LL) {
-              REAL(sub)[j] = (double)u.ll;
-            } else {
-              REAL(ans)[i] = NA_REAL;
-              isna = TRUE; break;
-            }
-          }
-        }
-        if (isna) continue;
-        medianindex = (R_len_t)(ceil((double)(thisgrpsize)/2));
-        REAL(ans)[i] = dquickselect(ptr, thisgrpsize, medianindex-1); // 0-indexed
-        // all elements to the left of thisgrpsize/2 is < the value at that index
-        // we just need to get min of last half
-        if (thisgrpsize % 2 == 0) {
-          val = REAL(sub)[medianindex]; // 0-indexed
-          for (imed=medianindex+1; imed<thisgrpsize; imed++) {
-            val = REAL(sub)[imed] > val ? val : REAL(sub)[imed];
-          }
-          REAL(ans)[i] = (REAL(ans)[i] + val)/2.0;
-        }
+  case REALSXP: {
+    double *subd = REAL(PROTECT(allocVector(REALSXP, maxgrpn))); // allocate once upfront and reuse
+    int64_t *xi64 = (int64_t *)REAL(x);
+    double  *xd = REAL(x);
+    for (int i=0; i<ngrp; ++i) {
+      int thisgrpsize = grpsize[i], nacount=0;
+      for (int j=0; j<thisgrpsize; ++j) {
+        int k = ff[i]+j-1;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        if (isInt64 ? xi64[k]==NA_INTEGER64 : ISNAN(xd[k])) nacount++;
+        else subd[j-nacount] = xd[k];
       }
-    } else {
-      for (i=0; i<ngrp; i++) {
-        nacount = 0;
-        thisgrpsize = grpsize[i];
-        for (j=0; j<thisgrpsize; j++) {
-          k = ff[i]+j-1;
-          if (isunsorted) k = oo[k]-1;
-          k = (irowslen == -1) ? k : irows[k]-1;
-          // TODO: raise this if-statement?
-          if (!isint64) {
-            if (!ISNAN(REAL(x)[k])) {
-              REAL(sub)[j-nacount] = REAL(x)[k];
-            } else { nacount++; continue; }
-          } else {
-            u.d = REAL(x)[k];
-            if (u.ll != NA_INT64_LL) {
-              REAL(sub)[j-nacount] = (double)u.ll;
-            } else { nacount++; continue; }
-          }
-        }
-        if (nacount == thisgrpsize) {
-          REAL(ans)[i] = NA_REAL; // all NAs
-          continue;
-        }
-        thisgrpsize -= nacount;
-        SETLENGTH(sub, thisgrpsize);
-        medianindex = (R_len_t)(ceil((double)(thisgrpsize)/2));
-        REAL(ans)[i] = dquickselect(ptr, thisgrpsize, medianindex-1);
-        if (thisgrpsize % 2 == 0) {
-          // all elements to the left of thisgrpsize/2 is < the value at that index
-          // we just need to get min of last half
-          val = REAL(sub)[medianindex]; // 0-indexed
-          for (imed=medianindex+1; imed<thisgrpsize; imed++) {
-            val = REAL(sub)[imed] > val ? val : REAL(sub)[imed];
-          }
-          REAL(ans)[i] = (REAL(ans)[i] + val)/2.0;
-        }
-      }
-    }
-    SETLENGTH(sub, maxgrpn);
+      thisgrpsize -= nacount;  // all-NA is returned as NA_REAL via n==0 case inside *quickselect
+      ansd[i] = (nacount && !narm) ? NA_REAL : (isInt64 ? i64quickselect((void *)subd, thisgrpsize) : dquickselect(subd, thisgrpsize));
+    }}
     break;
-  case LGLSXP: case INTSXP:
-    ans = PROTECT(allocVector(REALSXP, ngrp));
-    sub = PROTECT(allocVector(INTSXP, maxgrpn)); // allocate once upfront
-    ptr = INTEGER(sub);
-    if (!LOGICAL(narm)[0]) {
-      for (i=0; i<ngrp; i++) {
-        isna = FALSE;
-        thisgrpsize = grpsize[i];
-        SETLENGTH(sub, thisgrpsize);
-        for (j=0; j<thisgrpsize; j++) {
-          k = ff[i]+j-1;
-          if (isunsorted) k = oo[k]-1;
-          k = (irowslen == -1) ? k : irows[k]-1;
-          if (INTEGER(x)[k] != NA_INTEGER) {
-            INTEGER(sub)[j] = INTEGER(x)[k];
-          } else {
-            REAL(ans)[i] = NA_REAL;
-            isna = TRUE; break;
-          }
-        }
-        if (isna) continue;
-        medianindex = (R_len_t)(ceil((double)(thisgrpsize)/2));
-        REAL(ans)[i] = iquickselect(ptr, thisgrpsize, medianindex-1); // 0-indexed
-        // all elements to the left of thisgrpsize/2 is < the value at that index
-        // we just need to get min of last half
-        if (thisgrpsize % 2 == 0) {
-          val = INTEGER(sub)[medianindex]; // 0-indexed
-          for (imed=medianindex+1; imed<thisgrpsize; imed++) {
-            val = INTEGER(sub)[imed] > val ? val : INTEGER(sub)[imed];
-          }
-          REAL(ans)[i] = (REAL(ans)[i] + val)/2.0;
-        }
+  case LGLSXP: case INTSXP: {
+    int *subi = INTEGER(PROTECT(allocVector(INTSXP, maxgrpn)));
+    int *xi = INTEGER(x);
+    for (int i=0; i<ngrp; i++) {
+      int thisgrpsize = grpsize[i], nacount=0;
+      for (int j=0; j<thisgrpsize; ++j) {
+        int k = ff[i]+j-1;
+        if (isunsorted) k = oo[k]-1;
+        k = (irowslen == -1) ? k : irows[k]-1;
+        if (xi[k]==NA_INTEGER) nacount++;
+        else subi[j-nacount] = xi[k];
       }
-    } else {
-      for (i=0; i<ngrp; i++) {
-        nacount = 0;
-        thisgrpsize = grpsize[i];
-        for (j=0; j<thisgrpsize; j++) {
-          k = ff[i]+j-1;
-          if (isunsorted) k = oo[k]-1;
-          k = (irowslen == -1) ? k : irows[k]-1;
-          if (INTEGER(x)[k] != NA_INTEGER) {
-            INTEGER(sub)[j-nacount] = INTEGER(x)[k];
-          } else { nacount++; continue; }
-        }
-        if (nacount == thisgrpsize) {
-          REAL(ans)[i] = NA_REAL; // all NAs
-          continue;
-        }
-        thisgrpsize -= nacount;
-        SETLENGTH(sub, thisgrpsize);
-        medianindex = (R_len_t)(ceil((double)(thisgrpsize)/2));
-        REAL(ans)[i] = iquickselect(ptr, thisgrpsize, medianindex-1);
-        if (thisgrpsize % 2 == 0) {
-          // all elements to the left of thisgrpsize/2 is < the value at that index
-          // we just need to get min of last half
-          val = INTEGER(sub)[medianindex]; // 0-indexed
-          for (imed=medianindex+1; imed<thisgrpsize; imed++) {
-            val = INTEGER(sub)[imed] > val ? val : INTEGER(sub)[imed];
-          }
-          REAL(ans)[i] = (REAL(ans)[i] + val)/2.0;
-        }
-      }
-    }
-    SETLENGTH(sub, maxgrpn);
+      ansd[i] = (nacount && !narm) ? NA_REAL : iquickselect(subi, thisgrpsize-nacount);
+    }}
     break;
   default:
-    error("Type '%s' not supported by GForce median (gmedian). Either add the prefix stats::median(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
+    error("Type '%s' not supported by GForce median (gmedian). Either add the prefix stats::median(.) or turn "
+          "off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
   }
-  UNPROTECT(2);
-  return(ans);
+  if (!isInt64) copyMostAttrib(x, ans);
+  // else the integer64 class needs to be dropped since double is always returned by gmedian
+  UNPROTECT(2);  // ans, subd|subi
+  return ans;
 }
 
 SEXP glast(SEXP x) {
@@ -1306,6 +1181,7 @@ SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
         error("Type '%s' not supported by GForce sd (gsd). Either add the prefix stats::sd(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
       }
   }
+  // no copyMostAttrib(x, ans) since class (e.g. Date) unlikely applicable to sd/var
   UNPROTECT(2);
   return (ans);
 }
