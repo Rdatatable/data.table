@@ -91,7 +91,7 @@
 
 7. Grouping by `NULL` on zero rows data.table now behaves consistently to non-zero rows data.table, [#3530](https://github.com/Rdatatable/data.table/issues/3530). Thanks to @SymbolixAU for the report and reproducible example.
 
-8. GForce optimization of `median` did not retain the class so for example a median of `Date` or `POSIXct` would return a raw number rather than retain the date class, [#3079](https://github.com/Rdatatable/data.table/issues/3079). Thanks to @Henrik-P for reporting.
+8. GForce optimization of `median` did not retain the class; e.g. `median` of `Date` or `POSIXct` would return a raw number rather than retain the date class, [#3079](https://github.com/Rdatatable/data.table/issues/3079). Thanks to @Henrik-P for reporting.
 
 #### NOTES
 

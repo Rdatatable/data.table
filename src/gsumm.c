@@ -1181,7 +1181,7 @@ SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
         error("Type '%s' not supported by GForce sd (gsd). Either add the prefix stats::sd(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
       }
   }
-  copyMostAttrib(x, ans);
+  // no copyMostAttrib(x, ans) since class (e.g. Date) unlikely applicable to sd/var
   UNPROTECT(2);
   return (ans);
 }
