@@ -9,7 +9,7 @@ static inline void i64swap(int64_t *a, int64_t *b) {int64_t tmp=*a; *a=*b; *b=tm
 #undef BODY
 #define BODY(SWAP)                          \
   if (n==0) return NA_REAL;                 \
-  int med = n/2 - n%2==0;                   \
+  int med = n/2 - (n%2==0);                 \
   unsigned long ir=n-1, l=0;                \
   for(;;) {                                 \
     if (ir <= l+1) {                        \

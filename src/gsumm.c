@@ -792,8 +792,8 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
         int k = ff[i]+j-1;
         if (isunsorted) k = oo[k]-1;
         k = (irowslen == -1) ? k : irows[k]-1;
-        nacount += (isInt64 ? xi64[k]==NA_INTEGER64 : ISNAN(xd[k]));
-        subd[j-nacount] = xd[k];
+        if (isInt64 ? xi64[k]==NA_INTEGER64 : ISNAN(xd[k])) nacount++;
+        else subd[j-nacount] = xd[k];
       }
       thisgrpsize -= nacount;  // all-NA is returned as NA_REAL via n==0 case inside *quickselect
       ansd[i] = (nacount && !narm) ? NA_REAL : (isInt64 ? i64quickselect((void *)subd, thisgrpsize) : dquickselect(subd, thisgrpsize));
@@ -808,8 +808,8 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
         int k = ff[i]+j-1;
         if (isunsorted) k = oo[k]-1;
         k = (irowslen == -1) ? k : irows[k]-1;
-        nacount += xi[k]==NA_INTEGER;
-        subi[j-nacount] = xi[k];
+        if (xi[k]==NA_INTEGER) nacount++;
+        else subi[j-nacount] = xi[k];
       }
       ansd[i] = (nacount && !narm) ? NA_REAL : iquickselect(subi, thisgrpsize-nacount);
     }}
