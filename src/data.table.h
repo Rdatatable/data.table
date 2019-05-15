@@ -160,8 +160,9 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted,
                 SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
 
 // quickselect
-double dquickselect(double *x, int n, int k);
-double iquickselect(int *x, int n, int k);
+double dquickselect(double *x, int n);
+double iquickselect(int *x, int n);
+double i64quickselect(int64_t *x, int n);
 
 // fread.c
 double wallclock();

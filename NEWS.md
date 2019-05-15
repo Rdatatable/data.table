@@ -28,7 +28,7 @@
     fwrite(DT, "data.csv.gz")   #   2MB; 1.6s
     identical(fread("data.csv.gz"), DT)
     ```
-    
+
     * Gains `yaml` argument matching that of `fread`, [#3534](https://github.com/Rdatatable/data.table/issues/3534). See the item in `fread` for a bit more detail; here, we'd like to reiterate that feedback is appreciated in the initial phase of rollout for this feature.
 
 4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
@@ -90,6 +90,8 @@
 6. Printing could occur unexpectedly when code is run with `source`, [#2369](https://github.com/Rdatatable/data.table/issues/2369). Thanks to @jan-glx for the report and reproducible example.
 
 7. Grouping by `NULL` on zero rows data.table now behaves consistently to non-zero rows data.table, [#3530](https://github.com/Rdatatable/data.table/issues/3530). Thanks to @SymbolixAU for the report and reproducible example.
+
+8. GForce optimization of `median` did not retain the class so for example a median of `Date` or `POSIXct` would return a raw number rather than retain the date class, [#3079](https://github.com/Rdatatable/data.table/issues/3079). Thanks to @Henrik-P for reporting.
 
 #### NOTES
 
