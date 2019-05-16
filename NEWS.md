@@ -75,7 +75,7 @@
 
 8. `between()` and `%between%` are faster for `POSIXct`, [#3519](https://github.com/Rdatatable/data.table/issues/3519), and now support the `.()` alias, [#2315](https://github.com/Rdatatable/data.table/issues/2315). Thanks to @Henrik-P for the reports. There is now also support for `bit64`'s `integer64` class and more robust coercion of types, [#3517](https://github.com/Rdatatable/data.table/issues/3517).
 
-8. New convenience functions `%ilike%` and `%flike%` which map to new arguments `ignore.case` and `fixed`, respectively, to `like`, [#3333](https://github.com/Rdatatable/data.table/issues/3333). The former is for case-insensitive pattern matching, the latter for more efficient matching of fixed strings.  Thanks to @andreasLD for providing most of the core code.
+9. New convenience functions `%ilike%` and `%flike%` which map to new `like()` arguments `ignore.case` and `fixed` respectively, [#3333](https://github.com/Rdatatable/data.table/issues/3333). `%ilike%` is for case-insensitive pattern matching. `%flike%` is for more efficient matching of fixed strings. Thanks to @andreasLD for providing most of the core code.
 
 #### BUG FIXES
 
