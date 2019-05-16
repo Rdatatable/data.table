@@ -7,7 +7,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
                col.names=getOption("datatable.print.colnames"),
                print.keys=getOption("datatable.print.keys"),
                quote=FALSE,
-               timezone=FALSE, ...) {    
+               timezone=FALSE, ...) {
   # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
   # nrows - under this the whole (small) table is printed, unless topn is provided (100)
   # class - should column class be printed underneath column name? (FALSE)
@@ -67,9 +67,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     printdots = FALSE
   }
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
-
-  if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(x,inherits,"integer64"))) require_bit64()
-  # When we depend on R 3.2.0 (Apr 2015) we can use isNamespaceLoaded() added then, instead of %chin% above
+  require_bit64_if_needed(x)
 
   # FR #5020 - add row.names = logical argument to print.data.table
   if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))

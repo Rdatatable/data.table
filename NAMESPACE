@@ -167,8 +167,6 @@ S3method(unique, ITime)
 # getdots
 # NCOL
 # NROW
-# take
-# trim
 # which.first
 # which.last
 

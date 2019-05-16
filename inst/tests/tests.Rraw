@@ -48,7 +48,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
   test = data.table:::test
-  trim = data.table:::trim
   uniqlengths = data.table:::uniqlengths
   uniqlist = data.table:::uniqlist
   which_ = data.table:::which_
@@ -7130,10 +7129,8 @@ dt2 = as.data.table(dt1); setattr(dt2, 'sorted', NULL)
 test(1533.1, setkeyv(dt1, character(0)), dt2, warning = "cols is a character vector")
 test(1533.2, setkeyv(dt1, "x", verbose=TRUE), setkey(dt2, x), output = "forder took")
 
-# coverage for internal trim, test 1534 removed as custom %+% has been removed
-test(1535.1, trim("  abcde "), "abcde")
-test(1535.2, trim("  abcde"), "abcde")
-test(1535.3, trim("abcde "), "abcde")
+# test 1534 removed as custom %+% has been removed
+# test 1535 removed as internal trim() not used
 
 # remaining test for covering duplicated.data.table
 dt = data.table(x=1:5, y=6:10)
