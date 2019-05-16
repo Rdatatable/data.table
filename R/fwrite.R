@@ -7,7 +7,8 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
            dateTimeAs = c("ISO","squash","epoch","write.csv"),
            buffMB=8, nThread=getDTthreads(verbose),
            showProgress=getOption("datatable.showProgress", interactive()),
-           compress = c("auto", "none", "gzip"), 
+           compress = c("auto", "none", "gzip"),
+           yaml = FALSE,
            verbose=getOption("datatable.verbose", FALSE)) {
   na = as.character(na[1L]) # fix for #1725
   if (missing(qmethod)) qmethod = qmethod[1L]
@@ -47,9 +48,9 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     length(buffMB)==1L && !is.na(buffMB) && 1L<=buffMB && buffMB<=1024,
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
     )
-  
+
   is_gzip <- compress == "gzip" || (compress == "auto" && grepl("\\.gz$", file))
-  
+
   file <- path.expand(file)  # "~/foo/bar"
   if (append && missing(col.names) && (file=="" || file.exists(file)))
     col.names = FALSE  # test 1658.16 checks this
@@ -73,9 +74,41 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
       return(invisible())
     }
   }
+
+  # process YAML after potentially short-circuiting due to irregularities
+  if (yaml) {
+    if (!requireNamespace('yaml', quietly = TRUE))
+      stop("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
+    if (append || is_gzip) {
+      if (append) warning("Skipping yaml writing because append = TRUE; YAML will only be written to the top of a file.")
+      if (is_gzip) warning("Skipping yaml writing because is_gzip = TRUE; compression of YAML metadata is not supported.")
+    } else {
+      schema_vec = sapply(x, class)
+      # multi-class objects reduced to first class
+      if (is.list(schema_vec)) schema_vec = sapply(schema_vec, `[`, 1L)
+      # as.vector strips names
+      schema_vec = list(name = names(schema_vec), type = as.vector(schema_vec))
+      yaml_header = list(
+        source = sprintf('R[v%s.%s]::data.table[v%s]::fwrite',
+                         R.version$major, R.version$minor, format(tryCatch(utils::packageVersion('data.table'), error=function(e)'DEV'))),
+        creation_time_utc = format(Sys.time(), tz = 'UTC'),
+        schema = list(
+          fields = lapply(
+            seq_along(x),
+            function(i) list(name = schema_vec$name[i], type = schema_vec$type[i])
+          )
+        ),
+        header = col.names, sep = sep, sep2 = sep2, eol = eol, na.strings = na,
+        dec = dec, qmethod = qmethod, logical01 = logical01
+      )
+      # NB: as.yaml adds trailing newline
+      cat('---', yaml::as.yaml(yaml_header, line.sep = eol), '---', sep = eol, file = file)
+      append = TRUE
+    }
+  }
   file <- enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
-          row.names, col.names, logical01, dateTimeAs, buffMB, nThread,
-          showProgress, is_gzip, verbose)
+        row.names, col.names, logical01, dateTimeAs, buffMB, nThread,
+        showProgress, is_gzip, verbose)
   invisible()
 }

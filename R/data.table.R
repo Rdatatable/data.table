@@ -78,7 +78,7 @@ data.table <-function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
     xi = x[[i]]
     if (is.null(xi)) stop("Internal error: NULL item ", i," should have been removed from list above")  # nocov
     if ("POSIXlt" %chin% class(xi)) {
-      warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+      warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date. Use as.POSIXct to avoid this warning.")
       x[[i]] = as.POSIXct(xi)
     } else if (is.matrix(xi) || is.data.frame(xi)) {  # including data.table (a data.frame, too)
       xi = as.data.table(xi, keep.rownames=keep.rownames)       # TO DO: allow a matrix to be a column of a data.table. This could allow a key'd lookup to a matrix, not just by a single rowname vector, but by a combination of several columns. A matrix column could be stored either by row or by column contiguous in memory.
@@ -246,6 +246,7 @@ replace_dot_alias <- function(e) {
     by=bysub= if (missing(by)) NULL else substitute(by)
     keyby=FALSE
   }
+  bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
   if (missing(i) && missing(j)) {
     tt_isub = substitute(i)
@@ -709,7 +710,6 @@ replace_dot_alias <- function(e) {
   } else {  # missing(i)
     i = NULL
   }
-
   byval = NULL
   xnrow = nrow(x)
   xcols = xcolsAns = icols = icolsAns = integer()
@@ -882,12 +882,12 @@ replace_dot_alias <- function(e) {
           }
         }
 
-        if (is.null(irows))
+        if (is.null(irows)) {
           if (is.call(bysub) && length(bysub) == 3L && bysub[[1L]] == ":" && is.name(bysub[[2L]]) && is.name(bysub[[3L]])) {
             byval = eval(bysub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame())
             byval = as.list(x)[byval]
           } else byval = eval(bysub, x, parent.frame())
-        else {
+        } else {
           # length 0 when i returns no rows
           if (!is.integer(irows)) stop("Internal error: irows isn't integer") # nocov
           # Passing irows as i to x[] below has been troublesome in a rare edge case.
@@ -935,13 +935,14 @@ replace_dot_alias <- function(e) {
           }
         }
         if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
-        for (jj in seq_len(length(byval))) {
+        if (length(byval)==1L && is.null(byval[[1L]])) bynull=TRUE #3530 when by=(function()NULL)()
+        if (!bynull) for (jj in seq_len(length(byval))) {
           if (!typeof(byval[[jj]]) %chin% c("integer","logical","character","double")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
         }
         tt = vapply_1i(byval,length)
         if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be length ", xnrow, "; the same length as there are rows in x (after subsetting if i is provided).")
         if (is.null(bynames)) bynames = rep.int("",length(byval))
-        if (any(bynames=="")) {
+        if (any(bynames=="") && !bynull) {
           for (jj in seq_along(bynames)) {
             if (bynames[jj]=="") {
               # Best guess. Use "month" in the case of by=month(date), use "a" in the case of by=a%%2
@@ -1161,7 +1162,10 @@ replace_dot_alias <- function(e) {
           newnames=setdiff(lhs,names(x))
           m[is.na(m)] = ncol(x)+seq_len(length(newnames))
           cols = as.integer(m)
-          if ((ok<-selfrefok(x,verbose))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
+          # don't pass verbose to selfrefok here -- only activated when
+          #   ok=-1 which will trigger alloc.col with verbose in the next
+          #   branch, which again calls _selfrefok and returns the message then
+          if ((ok<-selfrefok(x, verbose=FALSE))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
             warning("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
           if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
             DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
@@ -1169,7 +1173,10 @@ replace_dot_alias <- function(e) {
             # i.e. reallocate at the size as if the new columns were added followed by alloc.col().
             name = substitute(x)
             if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
-              cat("Growing vector of column pointers from truelength ",truelength(x)," to ",n,". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n")
+              cat("Growing vector of column pointers from truelength ", truelength(x), " to ", n, ". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n")
+              # #1729 -- copying to the wrong environment here can cause some confusion
+              if (ok == -1L) cat("Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected.\n")
+
               # Verbosity should not issue warnings, so cat rather than warning.
               # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
 
@@ -1245,7 +1252,7 @@ replace_dot_alias <- function(e) {
   SDenv = new.env(parent=parent.frame())
   # taking care of warnings for posixlt type, #646
   SDenv$strptime <- function(x, ...) {
-    warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+    warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date. Use as.POSIXct to avoid this warning.")
     as.POSIXct(base::strptime(x, ...))
   }
 
@@ -1266,9 +1273,8 @@ replace_dot_alias <- function(e) {
     }
     assign(sym, get(getName, parent.frame()), SDenv)
   }
-
   # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
-  if (missingby || (!byjoin && !length(byval))) {
+  if (missingby || bynull || (!byjoin && !length(byval))) {
     # No grouping: 'by' = missing | NULL | character() | "" | list()
     # Considered passing a one-group to dogroups but it doesn't do the recycling of i within group, that's done here
     if (length(ansvars)) {
@@ -1393,7 +1399,10 @@ replace_dot_alias <- function(e) {
 
       # Fix for #813 and #758. Ex: DT[c(FALSE, FALSE), list(integer(0L), y)]
       # where DT = data.table(x=1:2, y=3:4) should return an empty data.table!!
-      if (!is.null(irows) && (identical(irows, integer(0L)) || (!anyNA(irows) && all(irows==0L)))) ## anyNA() because all() returns NA (not FALSE) when irows is all-NA. TODO: any way to not check all 'irows' values?
+      if (!is.null(irows) && `||`(
+          identical(irows, integer(0L)) && !bynull,
+          length(irows) && !anyNA(irows) && all(irows==0L) ## anyNA() because all() returns NA (not FALSE) when irows is all-NA. TODO: any way to not check all 'irows' values?
+          ))
         if (is.atomic(jval)) jval = jval[0L] else jval = lapply(jval, `[`, 0L)
       if (is.atomic(jval)) {
         setattr(jval,"names",NULL)
@@ -1724,18 +1733,16 @@ replace_dot_alias <- function(e) {
         gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "first", "tail", "[") # added .N for #5760
         .ok <- function(q) {
           if (dotN(q)) return(TRUE) # For #5760
-          # Need is.symbol() check. See #1369, #1974 or #2949 issues and explanation below by searching for one of these issues.
-          cond = is.call(q) && is.symbol(q[[1]]) && (q1c <- as.character(q[[1]])) %chin% gfuns && !is.call(q[[2L]])
-          # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
-          ans = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1c %chin% c("head","tail")) # head-tail uses default value n=6 which as of now should not go gforce
-          if (identical(ans, TRUE)) return(ans)
-          # otherwise there must be three arguments, and only in two cases --
+          # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
+          # is.symbol() is for #1369, #1974 and #2949
+          if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1c <- as.character(q[[1L]])) %chin% gfuns)) return(FALSE)
+          if (!(q2c<-as.character(q[[2L]])) %chin% names(SDenv$.SDall) && q2c!=".I") return(FALSE)  # 875
+          if ((length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1c %chin% c("head","tail"))) return(TRUE)
+          # ... head-tail uses default value n=6 which as of now should not go gforce ^^
+          # otherwise there must be three arguments, and only in two cases:
           #   1) head/tail(x, 1) or 2) x[n], n>0
-          ans = cond && length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-            # Since cond==TRUE here, and can only be TRUE if length(q1c)==1, there's no need to check length(q1c)==1 again.
-            ( (q1c %chin% c("head", "tail") && q3==1L) || (q1c %chin% "[" && q3>0L) )
-          if (is.na(ans)) ans=FALSE
-          ans
+          length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
+            ( (q1c %chin% c("head", "tail") && q3==1L) || (q1c == "[" && q3>0L) )
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
@@ -1781,7 +1788,6 @@ replace_dot_alias <- function(e) {
           cat("Old mean optimization is on, left j unchanged.\n")
       }
       assign("Cfastmean", Cfastmean, SDenv)
-      assign("mean", base::mean.default, SDenv)
       # Old comments still here for now ...
       # Here in case nomeanopt=TRUE or some calls to mean weren't detected somehow. Better but still slow.
       # Maybe change to :
@@ -1838,7 +1844,6 @@ replace_dot_alias <- function(e) {
   # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
   # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
   # TO DO: setkey could mark the key whether it is unique or not.
-
   if (!is.null(lhs)) {
     if (any(names(x)[cols] %chin% key(x)))
       setkey(x,NULL)

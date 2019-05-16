@@ -379,7 +379,7 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
     if (nrow > .Machine$integer.max) {
       stop("Cross product of elements provided to CJ() would result in ",nrow," rows which exceeds .Machine$integer.max == ",.Machine$integer.max)
     }
-    x = c(rev(take(cumprod(rev(n)))), 1L)
+    x = c(rev(  head(cumprod(rev(n)),-1)  ), 1L)
     for (i in seq_along(x)) {
       y = l[[i]]
       # fix for #1513
