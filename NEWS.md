@@ -15,8 +15,11 @@
     * `select` can now be used to specify types for just the columns selected, [#1426](https://github.com/Rdatatable/data.table/issues/1426). Just like `colClasses` it can be a named vector of `colname=type` pairs, or a named `list` of `type=col(s)` pairs. For example:
 
     ```R
-    fread(file, select=c(colD="character", colA="integer64"))                  # returns 2 columns: colD,colA
-    fread(file, select=list(character="colD", integer=8:10, character="colA")) # returns 5 columns: colD,8,9,10,colA
+    fread(file, select=c(colD="character",     # returns 2 columns: colD,colA
+                         colA="integer64"))
+    fread(file, select=list(character="colD",  # returns 5 columns: colD,8,9,10,colA
+                            integer=  8:10,
+                            character="colA"))
     ```
 
 3. `fwrite()`:
