@@ -38,9 +38,12 @@ which.last <- function(x)
 require_bit64_if_needed = function(DT) {
   # called in fread and print.data.table
   if (!isNamespaceLoaded("bit64") && any(sapply(DT,inherits,"integer64"))) {
+    # nocov start
+    # a test was attempted to cover the requireNamespace() by using unloadNamespace() first, but that fails when nanotime is loaded because nanotime also uses bit64
     if (!requireNamespace("bit64",quietly=TRUE)) {
-      warning("Some columns are type 'integer64' but package bit64 is not installed. Those columns will print as strange looking floating point data. There is no need to reload the data. Simply install.packages('bit64') to obtain the integer64 print method and print the data again.")  # nocov
+      warning("Some columns are type 'integer64' but package bit64 is not installed. Those columns will print as strange looking floating point data. There is no need to reload the data. Simply install.packages('bit64') to obtain the integer64 print method and print the data again.")
     }
+    # nocov end
   }
 }
 
