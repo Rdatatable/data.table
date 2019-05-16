@@ -14577,6 +14577,14 @@ DT[, time:=as.POSIXct(date)]
 test(2041.1, DT[, median(date), by=g], data.table(g=c("a","b"), V1=as.Date(c("2018-01-03","2018-01-25"))))
 test(2041.2, DT[, median(time), by=g], DT[c(2,5),.(g=g, V1=time)])
 
+# 'invalid trim argument' with optimization level 1; #1876
+test(2042.1, DT[ , as.character(mean(date)), by=g, verbose=TRUE ],
+             data.table(g=c("a","b"), V1=c("2018-01-04","2018-01-21")),
+             output=msg<-"GForce is on, left j unchanged.*Old mean optimization is on, left j unchanged")
+test(2042.2, DT[ , format(mean(date),"%b-%Y")], "Jan-2018")
+test(2042.3, DT[ , format(mean(date),"%b-%Y"), by=g, verbose=TRUE ],  # just this case generated the error
+             data.table(g=c("a","b"), V1=c("Jan-2018","Jan-2018")), output=msg)
+
 
 ###################################
 #  Add new tests above this line  #

@@ -40,8 +40,9 @@ SEXP fastmean(SEXP args)
     narm=LOGICAL(tmp)[0];
   }
   PROTECT(ans = allocNAVector(REALSXP, 1));
+  copyMostAttrib(x, ans);
   if (!isInteger(x) && !isReal(x) && !isLogical(x)) {
-    warning("argument is not numeric or logical: returning NA");
+    warning("fastmean was passed '%s' not numeric or logical; returning NA", type2char(TYPEOF(x)));
     UNPROTECT(1);
     return(ans);
   }
@@ -112,7 +113,6 @@ SEXP fastmean(SEXP args)
       error("Type '%s' not supported in fastmean", type2char(TYPEOF(x)));
     }
   }
-  copyMostAttrib(x, ans);
   UNPROTECT(1);
   return(ans);
 }
@@ -136,6 +136,4 @@ SEXP fastmean(SEXP args)
       COMPLEX(ans)[0].i = (double) si;
       break;
 */
-
-
 
