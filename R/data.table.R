@@ -1733,18 +1733,16 @@ replace_dot_alias <- function(e) {
         gfuns = c("sum", "prod", "mean", "median", "var", "sd", ".N", "min", "max", "head", "last", "first", "tail", "[") # added .N for #5760
         .ok <- function(q) {
           if (dotN(q)) return(TRUE) # For #5760
-          # Need is.symbol() check. See #1369, #1974 or #2949 issues and explanation below by searching for one of these issues.
-          cond = is.call(q) && is.symbol(q[[1]]) && (q1c <- as.character(q[[1]])) %chin% gfuns && !is.call(q[[2L]])
-          # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls
-          ans = cond && (length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1c %chin% c("head","tail")) # head-tail uses default value n=6 which as of now should not go gforce
-          if (identical(ans, TRUE)) return(ans)
-          # otherwise there must be three arguments, and only in two cases --
+          # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
+          # is.symbol() is for #1369, #1974 and #2949
+          if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1c <- as.character(q[[1L]])) %chin% gfuns)) return(FALSE)
+          if (!(q2c<-as.character(q[[2L]])) %chin% names(SDenv$.SDall) && q2c!=".I") return(FALSE)  # 875
+          if ((length(q)==2L || identical("na",substring(names(q)[3L], 1L, 2L))) && (!q1c %chin% c("head","tail"))) return(TRUE)
+          # ... head-tail uses default value n=6 which as of now should not go gforce ^^
+          # otherwise there must be three arguments, and only in two cases:
           #   1) head/tail(x, 1) or 2) x[n], n>0
-          ans = cond && length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-            # Since cond==TRUE here, and can only be TRUE if length(q1c)==1, there's no need to check length(q1c)==1 again.
-            ( (q1c %chin% c("head", "tail") && q3==1L) || (q1c %chin% "[" && q3>0L) )
-          if (is.na(ans)) ans=FALSE
-          ans
+          length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
+            ( (q1c %chin% c("head", "tail") && q3==1L) || (q1c == "[" && q3>0L) )
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE

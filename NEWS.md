@@ -95,6 +95,8 @@
 
 9. `DT[, format(mean(date,""%b-%Y")), by=group]` could fail with `invalid 'trim' argument`, [#1876](https://github.com/Rdatatable/data.table/issues/1876). Thanks to Ross Holmberg for reporting.
 
+10. `externalVar=1:5; DT[, mean(externalVar), by=group]` could return incorrect results rather than a constant (`3` in this example) for each group, [#875](https://github.com/Rdatatable/data.table/issues/875). GForce optimization was being applied incorrectly to the `mean` without realizing `externalVar` was not a column.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
