@@ -5328,6 +5328,8 @@ test(1362.14, names(DT[, c(list(bla=.I, mean(y)), lapply(.SD, sum)), by=x]), c("
 # Add test to ensure that mean() gets replaced with fastmean when GForce won't be used.
 test(1362.15, DT[, c(list(.I, mean(y)), lapply(.SD, mean)), by=x, verbose=TRUE],
   output="Old mean optimization changed j from 'list(.I, mean(y), mean(y), mean(z))' to 'list(.I, .External(Cfastmean, y, FALSE), .External(Cfastmean, y, FALSE), .External(Cfastmean, z, FALSE))'")
+DT[, w:=c(3i,4i,5i,6i,7i)]
+test(1362.16, DT[, .(mean(w), y*2), by=x], error="fastmean was passed type complex, not numeric or logical")
 
 # setDT(DT), when input is already a data.table checks if selfrefok and if not, does alloc.col again.
 DT = list(data.frame(x=1:5, y=6:10))
