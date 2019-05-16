@@ -1176,7 +1176,7 @@ replace_dot_alias <- function(e) {
               cat("Growing vector of column pointers from truelength ", truelength(x), " to ", n, ". A shallow copy has been taken, see ?alloc.col. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could alloc.col() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n")
               # #1729 -- copying to the wrong environment here can cause some confusion
               if (ok == -1L) cat("Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected.\n")
-              
+
               # Verbosity should not issue warnings, so cat rather than warning.
               # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
 
@@ -1790,7 +1790,6 @@ replace_dot_alias <- function(e) {
           cat("Old mean optimization is on, left j unchanged.\n")
       }
       assign("Cfastmean", Cfastmean, SDenv)
-      assign("mean", base::mean.default, SDenv)
       # Old comments still here for now ...
       # Here in case nomeanopt=TRUE or some calls to mean weren't detected somehow. Better but still slow.
       # Maybe change to :

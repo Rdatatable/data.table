@@ -5328,6 +5328,8 @@ test(1362.14, names(DT[, c(list(bla=.I, mean(y)), lapply(.SD, sum)), by=x]), c("
 # Add test to ensure that mean() gets replaced with fastmean when GForce won't be used.
 test(1362.15, DT[, c(list(.I, mean(y)), lapply(.SD, mean)), by=x, verbose=TRUE],
   output="Old mean optimization changed j from 'list(.I, mean(y), mean(y), mean(z))' to 'list(.I, .External(Cfastmean, y, FALSE), .External(Cfastmean, y, FALSE), .External(Cfastmean, z, FALSE))'")
+DT[, w:=c(3i,4i,5i,6i,7i)]
+test(1362.16, DT[, .(mean(w), y*2), by=x], error="fastmean was passed type complex, not numeric or logical")
 
 # setDT(DT), when input is already a data.table checks if selfrefok and if not, does alloc.col again.
 DT = list(data.frame(x=1:5, y=6:10))
@@ -14576,6 +14578,14 @@ DT = data.table(date = as.Date(c("2018-01-01", "2018-01-03", "2018-01-08", "2018
 DT[, time:=as.POSIXct(date)]
 test(2041.1, DT[, median(date), by=g], data.table(g=c("a","b"), V1=as.Date(c("2018-01-03","2018-01-25"))))
 test(2041.2, DT[, median(time), by=g], DT[c(2,5),.(g=g, V1=time)])
+
+# 'invalid trim argument' with optimization level 1; #1876
+test(2042.1, DT[ , as.character(mean(date)), by=g, verbose=TRUE ],
+             data.table(g=c("a","b"), V1=c("2018-01-04","2018-01-21")),
+             output=msg<-"GForce is on, left j unchanged.*Old mean optimization is on, left j unchanged")
+test(2042.2, DT[ , format(mean(date),"%b-%Y")], "Jan-2018")
+test(2042.3, DT[ , format(mean(date),"%b-%Y"), by=g, verbose=TRUE ],  # just this case generated the error
+             data.table(g=c("a","b"), V1=c("Jan-2018","Jan-2018")), output=msg)
 
 
 ###################################

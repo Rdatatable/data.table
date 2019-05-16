@@ -93,6 +93,8 @@
 
 8. GForce optimization of `median` did not retain the class; e.g. `median` of `Date` or `POSIXct` would return a raw number rather than retain the date class, [#3079](https://github.com/Rdatatable/data.table/issues/3079). Thanks to @Henrik-P for reporting.
 
+9. `DT[, format(mean(date,""%b-%Y")), by=group]` could fail with `invalid 'trim' argument`, [#1876](https://github.com/Rdatatable/data.table/issues/1876). Thanks to Ross Holmberg for reporting.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
