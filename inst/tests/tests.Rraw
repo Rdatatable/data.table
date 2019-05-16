@@ -14530,6 +14530,10 @@ old = options("datatable.verbose"=TRUE)
 test(2038.18, between(1:5, 2, 4), output="between parallel processing of integer with recycling")
 test(2038.19, between(1:5, 2L, 4), output="between parallel processing of integer with recycling")
 test(2038.20, between(1:5, 2, 4L), output="between parallel processing of integer with recycling")
+# revdep regression #3565
+test(2038.21, between(1:10, -Inf, Inf), between(1:10, NA, NA), output="between parallel processing of double using closed bounds with recycling")
+test(2038.22, between(1:10, -Inf, Inf), between(as.double(1:10), -Inf, Inf), output="between parallel processing of double using closed bounds with recycling")
+
 options(old)
 
 # between int64 support

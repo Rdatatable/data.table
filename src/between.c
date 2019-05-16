@@ -31,16 +31,20 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
   int nprotect = 0;
   bool integer=true;
   bool integer64=false;
-  if (isInteger(x) &&         // #3517 coerce to num to int when possible
-      (isInteger(lower) || isRealReallyInt(lower)) &&
-      (isInteger(upper) || isRealReallyInt(upper))) {
-    if (!isInteger(lower)) {
-      lower = PROTECT(coerceVector(lower, INTSXP)); nprotect++;
+  if (isInteger(x)) {
+    if ((isInteger(lower) || isRealReallyInt(lower)) &&
+        (isInteger(upper) || isRealReallyInt(upper))) { // #3517 coerce to num to int when possible
+      if (!isInteger(lower)) {
+        lower = PROTECT(coerceVector(lower, INTSXP)); nprotect++;
+      }
+      if (!isInteger(upper)) {
+        upper = PROTECT(coerceVector(upper, INTSXP)); nprotect++;
+      }
+    } else { // #3565
+      x = PROTECT(coerceVector(x, REALSXP)); nprotect++;
     }
-    if (!isInteger(upper)) {
-      upper = PROTECT(coerceVector(upper, INTSXP)); nprotect++;
-    }
-  } else if (inherits(x,"integer64")) {
+  }
+  if (inherits(x,"integer64")) {
     if (!inherits(lower,"integer64") || !inherits(upper,"integer64"))
       error("Internal error in between: 'x' is integer64 while 'lower' and/or 'upper' are not, should have been caught by now"); // # nocov
     integer=false;
@@ -53,7 +57,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
     if (!isReal(upper)) {
       upper = PROTECT(coerceVector(upper, REALSXP)); nprotect++;
     }
-  } else {
+  } else if (!isInteger(x)) {
     error("Internal error in between: 'x' is not int, double or int64, should have been caught by now"); // # nocov
   }
   // TODO: sweep through lower and upper ensuring lower<=upper (inc bounds) and no lower>upper or lower==INT_MAX
