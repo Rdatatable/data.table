@@ -60,9 +60,13 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   cat("Running", fn, "\n")
   env = new.env(parent=.GlobalEnv)
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
-  # if a translated error is expected from base, compare the error
-  #   produced by data.table to that from base, #3039
-  assign("get_base_error", function(expr) tryCatch(expr, error = function(e) e$message), envir = env)
+
+  # are R's messages being translated to a foreign language? #3039, #630
+  txt = eval(parse(text="tryCatch(mean(notexist), error = function(e) e$message)"), envir=.GlobalEnv)
+  foreign = txt != "argument is not numeric or logical: returning NA"
+  if (foreign) cat("\n**** This R session's language is not English. Each test will still check that the correct number of errors and/or\n",
+                     "**** warnings are produced. However, to test the text of each error/warning too, please restart R with LANGUAGE=en\n\n", sep="")
+  assign("foreign", foreign, envir=env)
   assign("nfail", 0L, envir=env)
   assign("ntest", 0L, envir=env)
   assign("prevtest", -1, envir=env)
@@ -224,6 +228,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     memtest = get("memtest", parent.frame())
     inittime = get("inittime", parent.frame())
     filename = get("filename", parent.frame())
+    foreign = get("foreign", parent.frame())
     time = nTest = NULL  # to avoid 'no visible binding' note
     on.exit( {
        now = proc.time()[3]
@@ -303,7 +308,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
     } else {
       # the expected type occurred and, if more than 1 of that type, in the expected order
       for (i in seq_along(expected)) {
-        if (!string_match(expected[i], observed[i])) {
+        if (!foreign && !string_match(expected[i], observed[i])) {
           # nocov start
           cat("Test",numStr,"didn't produce the correct",type,":\n")
           cat("Expected:", expected[i], "\n")

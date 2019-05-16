@@ -121,6 +121,11 @@ q("no")
 R CMD check data.table_1.12.3.tar.gz
 rm ~/.Renviron
 
+# Test non-English does not break test.data.table() due to translation of messages; #3039, #630
+LANGUAGE=de R
+require(data.table)
+test.data.table()
+
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
 require(data.table)

@@ -102,6 +102,8 @@
 
 10. `externalVar=1:5; DT[, mean(externalVar), by=group]` could return incorrect results rather than a constant (`3` in this example) for each group, [#875](https://github.com/Rdatatable/data.table/issues/875). GForce optimization was being applied incorrectly to the `mean` without realizing `externalVar` was not a column.
 
+11. `test.data.table()` now passes in non-English R sessions, [#630](https://github.com/Rdatatable/data.table/issues/630) [#3039](https://github.com/Rdatatable/data.table/issues/3039). Each test still checks that the number of warnings and/or errors produced is correct. However, a message is displayed suggesting to restart R with `LANGUAGE=en` in order to test that the text of the warning and/or error messages are as expected, too.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
