@@ -309,7 +309,6 @@ SEXP gsum(SEXP x, SEXP narmArg)
 {
   if (!isLogical(narmArg) || LENGTH(narmArg)!=1 || LOGICAL(narmArg)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
   const bool narm = LOGICAL(narmArg)[0];
-  if (!isVectorAtomic(x)) error("GForce sum can only be applied to columns, not .SD or similar. To sum all items in a list such as .SD, either add the prefix base::sum(.SD) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,sum),by=,.SDcols=]'");
   if (inherits(x, "factor")) error("sum is not meaningful for factors.");
   const int n = (irowslen == -1) ? length(x) : irowslen;
   //clock_t start = clock();

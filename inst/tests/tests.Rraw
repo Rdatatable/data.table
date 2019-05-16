@@ -4105,8 +4105,10 @@ test(1197.1, DT[,.N,by=val]$N, INT(1,1,2))
 test(1197.2, DT[.(x),.N], 2L)
 setNumericRounding(old_rounding)
 
-DT = data.table(id=1:2, val1=6:1, val2=6:1)   # 5380
-test(1199, DT[, sum(.SD), by=id], error="GForce sum can only be applied to columns, not .SD or similar.*looking for.*lapply\\(.SD")
+DT = data.table(id=INT(1,2,1), val1=3:1, val2=3:1, val3=list(2:3,4:6,7:10))   # 5380
+test(1199.1, DT[, sum(.SD), by=id, .SDcols=2:3], data.table(id=1:2, V1=INT(8,4)))   #875 made the .SD case work
+test(1199.2, DT[, sum(.SD), by=id], error="only defined on a data frame with all numeric variables")
+test(1199.3, DT[, sum(val3), by=id], error="Type 'list' not supported by GForce sum [(]gsum[)]. Either.*or turn off")
 
 # Selection of columns, copy column to maintain the same as R <= 3.0.2, in Rdevel, for now
 # Otherwise e.g. setkey changes the original columns too.  TO DO: could allow shallow copy, perhaps.
@@ -14531,9 +14533,8 @@ test(2038.18, between(1:5, 2, 4), output="between parallel processing of integer
 test(2038.19, between(1:5, 2L, 4), output="between parallel processing of integer with recycling")
 test(2038.20, between(1:5, 2, 4L), output="between parallel processing of integer with recycling")
 # revdep regression #3565
-test(2038.21, between(1:10, -Inf, Inf), between(1:10, NA, NA), output="between parallel processing of double using closed bounds with recycling")
-test(2038.22, between(1:10, -Inf, Inf), between(as.double(1:10), -Inf, Inf), output="between parallel processing of double using closed bounds with recycling")
-
+test(2038.21, between(1:10, -Inf, Inf),            rep(TRUE,10), output="between parallel processing of double using closed bounds with recycling")
+test(2038.22, between(as.double(1:10), -Inf, Inf), rep(TRUE,10), output="between parallel processing of double using closed bounds with recycling")
 options(old)
 
 # between int64 support
@@ -14590,6 +14591,20 @@ test(2042.1, DT[ , as.character(mean(date)), by=g, verbose=TRUE ],
 test(2042.2, DT[ , format(mean(date),"%b-%Y")], "Jan-2018")
 test(2042.3, DT[ , format(mean(date),"%b-%Y"), by=g, verbose=TRUE ],  # just this case generated the error
              data.table(g=c("a","b"), V1=c("Jan-2018","Jan-2018")), output=msg)
+
+# gforce wrongly applied to external variable; #875
+DT = data.table(x=INT(1,1,1,2,2), y=1:5)
+z = 1:5
+options(datatable.optimize = Inf)
+test(2043.1, DT[, list(mean(z), mean(y)), by=x], ans<-data.table(x=1:2, V1=c(3,3), V2=c(2.0,4.5)))
+options(datatable.optimize = 1L)
+test(2043.2, DT[, list(mean(z), mean(y)), by=x], ans)
+options(datatable.optimize = 0L)
+test(2043.3, DT[, list(mean(z), mean(y)), by=x], ans)
+options(datatable.optimize = Inf)
+test(2043.4, DT[, list(sd(z), sd(y)), by=x], data.table(x=1:2, V1=sd(z), V2=c(sd(1:3), sd(4:5))))
+z = 1:4
+test(2043.5, DT[, list(mean(z), mean(y)), by=x], ans<-data.table(x=1:2, V1=c(2.5,2.5), V2=c(2.0,4.5)))  # was length error about z
 
 
 ###################################
