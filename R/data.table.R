@@ -506,7 +506,6 @@ replace_dot_alias <- function(e) {
         else
           seq_len(min(length(i),length(rightcols)))
         rightcols = head(rightcols,length(leftcols))
-        xo = integer(0L)  ## signifies 1:.N.   To revist before merge: this line was removed in #2734 (joinTypeFix). When Matt resolved conflicts he wasn't sure.
         ops = rep(1L, length(leftcols))
       }
       # Implementation for not-join along with by=.EACHI, #604
