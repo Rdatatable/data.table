@@ -17,7 +17,7 @@
 void __halt(bool warn, const char *format, ...);   // see freadR.c
 #define STOP(...)   __halt(0, __VA_ARGS__)
 #define DTPRINT     Rprintf
-#define DTWARN(...) { if (warningsAreErrors) __halt(1, __VA_ARGS__); else warning(__VA_ARGS__); }
+#define DTWARN(...) warningsAreErrors ? __halt(1, __VA_ARGS__) : warning(__VA_ARGS__)
 
 #endif
 

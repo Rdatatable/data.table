@@ -7,10 +7,12 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
            dateTimeAs = c("ISO","squash","epoch","write.csv"),
            buffMB=8, nThread=getDTthreads(verbose),
            showProgress=getOption("datatable.showProgress", interactive()),
+           compress = c("auto", "none", "gzip"),
+           yaml = FALSE,
            verbose=getOption("datatable.verbose", FALSE)) {
-  isLOGICAL = function(x) isTRUE(x) || identical(FALSE, x)  # it seems there is no isFALSE in R?
   na = as.character(na[1L]) # fix for #1725
   if (missing(qmethod)) qmethod = qmethod[1L]
+  if (missing(compress)) compress = compress[1L]
   if (missing(dateTimeAs)) { dateTimeAs = dateTimeAs[1L] }
   else if (length(dateTimeAs)>1L) stop("dateTimeAs must be a single string")
   dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
@@ -26,21 +28,29 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
   nThread = as.integer(nThread)
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
   # validate arguments
+  if (is.matrix(x)) { # coerce to data.table if input object is matrix
+    message("x being coerced from class: matrix to data.table")
+    x <- as.data.table(x)
+  }
   stopifnot(is.list(x),
-    identical(quote,"auto") || identical(quote,FALSE) || identical(quote,TRUE),
+    identical(quote,"auto") || isTRUEorFALSE(quote),
     is.character(sep) && length(sep)==1L && nchar(sep) == 1L,
     is.character(sep2) && length(sep2)==3L && nchar(sep2[2L])==1L,
     is.character(dec) && length(dec)==1L && nchar(dec) == 1L,
     dec != sep,  # sep2!=dec and sep2!=sep checked at C level when we know if list columns are present
     is.character(eol) && length(eol)==1L,
     length(qmethod) == 1L && qmethod %chin% c("double", "escape"),
-    isLOGICAL(col.names), isLOGICAL(append), isLOGICAL(row.names),
-    isLOGICAL(verbose), isLOGICAL(showProgress), isLOGICAL(logical01),
+    length(compress) == 1L && compress %chin% c("auto", "none", "gzip"),
+    isTRUEorFALSE(col.names), isTRUEorFALSE(append), isTRUEorFALSE(row.names),
+    isTRUEorFALSE(verbose), isTRUEorFALSE(showProgress), isTRUEorFALSE(logical01),
     length(na) == 1L, #1725, handles NULL or character(0) input
     is.character(file) && length(file)==1L && !is.na(file),
     length(buffMB)==1L && !is.na(buffMB) && 1L<=buffMB && buffMB<=1024,
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
     )
+
+  is_gzip <- compress == "gzip" || (compress == "auto" && grepl("\\.gz$", file))
+
   file <- path.expand(file)  # "~/foo/bar"
   if (append && missing(col.names) && (file=="" || file.exists(file)))
     col.names = FALSE  # test 1658.16 checks this
@@ -64,9 +74,41 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
       return(invisible())
     }
   }
+
+  # process YAML after potentially short-circuiting due to irregularities
+  if (yaml) {
+    if (!requireNamespace('yaml', quietly = TRUE))
+      stop("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
+    if (append || is_gzip) {
+      if (append) warning("Skipping yaml writing because append = TRUE; YAML will only be written to the top of a file.")
+      if (is_gzip) warning("Skipping yaml writing because is_gzip = TRUE; compression of YAML metadata is not supported.")
+    } else {
+      schema_vec = sapply(x, class)
+      # multi-class objects reduced to first class
+      if (is.list(schema_vec)) schema_vec = sapply(schema_vec, `[`, 1L)
+      # as.vector strips names
+      schema_vec = list(name = names(schema_vec), type = as.vector(schema_vec))
+      yaml_header = list(
+        source = sprintf('R[v%s.%s]::data.table[v%s]::fwrite',
+                         R.version$major, R.version$minor, format(tryCatch(utils::packageVersion('data.table'), error=function(e)'DEV'))),
+        creation_time_utc = format(Sys.time(), tz = 'UTC'),
+        schema = list(
+          fields = lapply(
+            seq_along(x),
+            function(i) list(name = schema_vec$name[i], type = schema_vec$type[i])
+          )
+        ),
+        header = col.names, sep = sep, sep2 = sep2, eol = eol, na.strings = na,
+        dec = dec, qmethod = qmethod, logical01 = logical01
+      )
+      # NB: as.yaml adds trailing newline
+      cat('---', yaml::as.yaml(yaml_header, line.sep = eol), '---', sep = eol, file = file)
+      append = TRUE
+    }
+  }
+  file <- enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
-          row.names, col.names, logical01, dateTimeAs, buffMB, nThread,
-          showProgress, verbose)
+        row.names, col.names, logical01, dateTimeAs, buffMB, nThread,
+        showProgress, is_gzip, verbose)
   invisible()
 }
-

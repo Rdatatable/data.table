@@ -17,10 +17,12 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(verbose),
   showProgress = getOption("datatable.showProgress", interactive()),
+  compress = c("auto", "none", "gzip"),
+  yaml = FALSE,
   verbose = getOption("datatable.verbose", FALSE))
 }
 \arguments{
-  \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}.}
+  \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}. If \code{matrix}, it gets internally coerced to \code{data.table} preserving col names but not row names}
   \item{file}{Output file name. \code{""} indicates output to the console. }
   \item{append}{If \code{TRUE}, the file is opened in append mode and column names (header row) are not written.}
   \item{quote}{When \code{"auto"}, character fields, factor fields and column names will only be surrounded by double quotes when they need to be; i.e., when the field contains the separator \code{sep}, a line ending \code{\\n}, the double quote itself or (when \code{list} columns are present) \code{sep2[2]} (see \code{sep2} below). If \code{FALSE} the fields are not wrapped with quotes even if this would break the CSV due to the contents of the field. If \code{TRUE} double quotes are always included other than around numeric fields, as \code{write.csv}.}
@@ -30,7 +32,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{na}{The string to use for missing values in the data. Default is a blank string \code{""}.}
   \item{dec}{The decimal separator, by default \code{"."}. See link in references. Cannot be the same as \code{sep}.}
   \item{row.names}{Should row names be written? For compatibility with \code{data.frame} and \code{write.csv} since \code{data.table} never has row names. Hence default \code{FALSE} unlike \code{write.csv}.}
-  \item{col.names}{Should the column names (header row) be written? The default is TRUE. However, if missing, \code{append=TRUE} and the file already exists, the default is set to \code{FALSE} for convenience to prevent column names appearing again mid file.}
+  \item{col.names}{Should the column names (header row) be written? The default is \code{TRUE} for new files and when overwriting existing files (\code{append=FALSE}). Otherwise, the default is \code{FALSE} to prevent column names appearing again mid-file when stacking a set of \code{data.table}s or appending rows to the end of a file.}
   \item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings.
       \itemize{
 	\item{"escape" - the quote character (as well as the backslash character) is escaped in C style by a backslash, or}
@@ -52,10 +54,31 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{buffMB}{The buffer size (MB) per thread in the range 1 to 1024, default 8MB. Experiment to see what works best for your data on your hardware.}
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
+  \item{compress}{If \code{compress = "auto"} and if \code{file} ends in \code{.gz} then output format is gzipped csv else csv. If \code{compress = "none"}, output format is always csv. If \code{compress = "gzip"} then format is gzipped csv. Output to the console is never gzipped even if \code{compress = "gzip"}. By default, \code{compress = "auto"}.}
+  \item{yaml}{ If \code{TRUE}, \code{fwrite} will output a CSVY file, that is, a CSV file with metadata stored as a YAML header, using \code{\link[yaml]{as.yaml}}. Incompatible with \code{append = TRUE} or \code{gzip} compression. See \code{Details}. }
   \item{verbose}{Be chatty and report timings?}
 }
 \details{
 \code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
+
+\bold{CSVY Support:}
+
+The following fields will be written to the header of the file and surrounded by \code{---} on top and bottom:
+
+  \itemize{
+    \item{ \code{source} - Contains the R version and \code{data.table} version used to write the file }
+    \item{ \code{creation_time_utc} - Current timestamp in UTC time just before the header is written }
+    \item{ \code{schema} with element \code{fields} giving \code{name}-\code{type} (\code{class}) pairs for the table; multi-class objects (e.g. \code{c('POSIXct', 'POSIXt')}) will have their first class written. }
+    \item{ \code{header} - same as \code{col.names} (which is \code{header} on input) }
+    \item{ \code{sep} }
+    \item{ \code{sep2} }
+    \item{ \code{eol} }
+    \item{ \code{na.strings} - same as \code{na} }
+    \item{ \code{dec} }
+    \item{ \code{qmethod} }
+    \item{ \code{logical01} }
+  }
+
 }
 \seealso{
   \code{\link{setDTthreads}}, \code{\link{fread}}, \code{\link[utils:write.table]{write.csv}}, \code{\link[utils:write.table]{write.table}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
