@@ -64,8 +64,12 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   # are R's messages being translated to a foreign language? #3039, #630
   txt = eval(parse(text="tryCatch(mean(not__exist__), error = function(e) e$message)"), envir=.GlobalEnv)
   foreign = txt != "object 'not__exist__' not found"
-  if (foreign) cat("\n**** This R session's language is not English. Each test will still check that the correct number of errors and/or\n",
-                     "**** warnings are produced. However, to test the text of each error/warning too, please restart R with LANGUAGE=en\n\n", sep="")
+  if (foreign) {
+    # nocov start
+    cat("\n**** This R session's language is not English. Each test will still check that the correct number of errors and/or\n",
+          "**** warnings are produced. However, to test the text of each error/warning too, please restart R with LANGUAGE=en\n\n", sep="")
+    # nocov end
+  }
   assign("foreign", foreign, envir=env)
   assign("nfail", 0L, envir=env)
   assign("ntest", 0L, envir=env)
