@@ -62,8 +62,8 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
 
   # are R's messages being translated to a foreign language? #3039, #630
-  txt = eval(parse(text="tryCatch(mean(notexist), error = function(e) e$message)"), envir=.GlobalEnv)
-  foreign = txt != "argument is not numeric or logical: returning NA"
+  txt = eval(parse(text="tryCatch(mean(not__exist__), error = function(e) e$message)"), envir=.GlobalEnv)
+  foreign = txt != "object 'not__exist__' not found"
   if (foreign) cat("\n**** This R session's language is not English. Each test will still check that the correct number of errors and/or\n",
                      "**** warnings are produced. However, to test the text of each error/warning too, please restart R with LANGUAGE=en\n\n", sep="")
   assign("foreign", foreign, envir=env)
