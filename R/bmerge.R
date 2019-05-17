@@ -18,8 +18,8 @@ bmerge <- function(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops
                           # Otherwise, types of i join columns are anyways promoted to match x's
                           # types (with warning or verbose)
   resetifactor = NULL     # Keep track of any factor to factor/character join cols (only time we keep orig)
-  
-  ## function to determine type of columns. 
+
+  ## function to determine type of columns.
   ## Important not to use typeof() since integer and factor have same type (integer)
   ## important to test for is.double instead of is.numeric because of bug with IDate (test 346)
   getClass <- function(x){
@@ -27,7 +27,7 @@ bmerge <- function(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops
     else if(is.integer(x))            out <- "integer"
     else if(base::is.double(x)){ ## base::is.double(integer64) is TRUE, while bit64::is.double(integer64) is FALSE!
       if(inherits(x, "integer64"))    out <- "integer64" ## is.numeric returns TRUE on integer64 columns
-      ## distinguish integer values with storage mode double from real numeric 
+      ## distinguish integer values with storage mode double from real numeric
       ## values that can't be coerced to integer without loss of precision
       else if(isReallyReal(x))        out <- "reallyDouble"
       else                            out <- "intAsDouble"
@@ -37,7 +37,7 @@ bmerge <- function(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops
     else                              out <- "other"
     return(out)
   }
-  
+
   ## function or coercing a vector to a new type. Depending on the source and target type,
   ## different coercion strategies are used.
   coerceClass <- function(x, to){
@@ -45,7 +45,7 @@ bmerge <- function(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops
     ## reallyDouble and intAsDouble are the same here:
     if(sourceType %chin% c("reallyDouble", "intAsDouble")) sourceType <- "double"
     if(sourceType == to) return(x) ## nothing to be done
-    if(!to %chin% c("logical", "integer", "double", "character", "factor", "integer64")) 
+    if(!to %chin% c("logical", "integer", "double", "character", "factor", "integer64"))
       stop("Invalid 'to' argument: ", to)
     if(sourceType == "other")
       stop("type coercion not supported for this type: ", paste0(class(x), collapse = ","))
@@ -63,7 +63,7 @@ bmerge <- function(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops
     }
     return(out)
   }
-  
+
   ## Establish a lookup table with coercion strategies for each pair of types.
   ## Coercion strategies can be one of the following:
   ##------------------|-----------------------------------------------------
@@ -81,84 +81,19 @@ bmerge <- function(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops
   ##------------------|-----------------------------------------------------
   ## rows mark the column type in i, columns the column type in x
   ## possible types are: logical, integer, intAsDouble, reallyDouble, character, factor, integer64
-  allTypes <- c("logical", "integer", "intAsDouble", "reallyDouble", "character", "factor", "integer64", "other")
-  ct <- matrix(data = NA_character_, nrow = length(allTypes), ncol = length(allTypes), 
-               dimnames = list(allTypes, allTypes))
-  
-  ct["logical",      "logical"] = "y"
-  ct["integer",      "logical"] = "e"
-  ct["intAsDouble",  "logical"] = "e"
-  ct["reallyDouble", "logical"] = "e"
-  ct["character",    "logical"] = "e"
-  ct["factor",       "logical"] = "e"
-  ct["integer64",    "logical"] = "e"
-  ct["other",        "logical"] = "e"
-  
-  ct["logical",      "integer"] = "ci"
-  ct["integer",      "integer"] = "y"
-  ct["intAsDouble",  "integer"] = "ci"
-  ct["reallyDouble", "integer"] = "cx"
-  ct["character",    "integer"] = "e"
-  ct["factor",       "integer"] = "e"
-  ct["integer64",    "integer"] = "ci"
-  ct["other",        "integer"] = "e"
-  
-  ct["logical",      "intAsDouble"] = "ci"
-  ct["integer",      "intAsDouble"] = "ci"
-  ct["intAsDouble",  "intAsDouble"] = "y"
-  ct["reallyDouble", "intAsDouble"] = "y"
-  ct["character",    "intAsDouble"] = "e"
-  ct["factor",       "intAsDouble"] = "e"
-  ct["integer64",    "intAsDouble"] = "ci"
-  ct["other",        "intAsDouble"] = "e"
-  
-  ct["logical",      "reallyDouble"] = "ci"
-  ct["integer",      "reallyDouble"] = "ci"
-  ct["intAsDouble",  "reallyDouble"] = "y"
-  ct["reallyDouble", "reallyDouble"] = "y"
-  ct["character",    "reallyDouble"] = "e"
-  ct["factor",       "reallyDouble"] = "e"
-  ct["integer64",    "reallyDouble"] = "ci"
-  ct["other",        "reallyDouble"] = "e"
-  
-  ct["logical",      "character"] = "e"
-  ct["integer",      "character"] = "e"
-  ct["intAsDouble",  "character"] = "e"
-  ct["reallyDouble", "character"] = "e"
-  ct["character",    "character"] = "y"
-  ct["factor",       "character"] = "ci"
-  ct["integer64",    "character"] = "e"
-  ct["other",        "character"] = "e"
-  
-  ct["logical",      "factor"] = "e"
-  ct["integer",      "factor"] = "e"
-  ct["intAsDouble",  "factor"] = "e"
-  ct["reallyDouble", "factor"] = "e"
-  ct["character",    "factor"] = "ci"
-  ct["factor",       "factor"] = "y"
-  ct["integer64",    "factor"] = "e"
-  ct["other",        "factor"] = "e"
-  
-  ct["logical",      "integer64"] = "ci"
-  ct["integer",      "integer64"] = "ci"
-  ct["intAsDouble",  "integer64"] = "ci"
-  ct["reallyDouble", "integer64"] = "cx"
-  ct["character",    "integer64"] = "e"
-  ct["factor",       "integer64"] = "e"
-  ct["integer64",    "integer64"] = "y"
-  ct["other",        "integer64"] = "e"
-  
-  ct["logical",      "other"] = "e"
-  ct["integer",      "other"] = "e"
-  ct["intAsDouble",  "other"] = "e"
-  ct["reallyDouble", "other"] = "e"
-  ct["character",    "other"] = "e"
-  ct["factor",       "other"] = "e"
-  ct["integer64",    "other"] = "e"
-  ct["other",        "other"] = "e"
-  
-  if(anyNA(ct)) stop("Type coercion table ct incomplete.")
-  
+
+  ct = as.matrix(read.table(text="
+               logical integer intAsDouble reallyDouble character factor integer64 other
+  logical            y      ci          ci           ci         e      e        ci     e
+  integer            e       y          ci           ci         e      e        ci     e
+  intAsDouble        e      ci           y            y         e      e        ci     e
+  reallyDouble       e      cx           y            y         e      e        cx     e
+  character          e       e           e            e         y     ci         e     e
+  factor             e       e           e            e        ci      y         e     e
+  integer64          e      ci          ci           ci         e      e         y     e
+  other              e       e           e            e         e      e         e     e
+  "))
+
   for (a in seq_along(leftcols)) {
     # This loop does the following:
     # - check that join columns have compatible types
@@ -178,20 +113,20 @@ bmerge <- function(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops
     if(myItype %chin% c("intAsDouble", "reallyDouble")) myItype = "double"
     if(myItype == "other") myItype = paste0(class(i[[lc]]), collapse = ",")
     coercionStrategy <- ct[myIclass, myXclass]
-    
+
     if(coercionStrategy == "y"){
       ## nothing to be done, but no 'next' since the factor related stuff below needs to be executed
-    } 
+    }
     else if(coercionStrategy == "e"){
-      stop(sprintf("Incompatible types: %s (%s) and %s (%s)", 
+      stop(sprintf("Incompatible types: %s (%s) and %s (%s)",
                    paste0("x.", xcnam), myXtype, paste0("i.", icnam), myItype))
-    } 
+    }
     else if(coercionStrategy %chin% c("ci", "ciw")){
       ## coerce i[[lc]] to same class as x[[rc]]
-      if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
+      if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.",
                                 myItype, paste0("i.'", icnam, "'"), myXtype, paste0("x.'", xcnam, "'"))); flush.console()}
       if(coercionStrategy == "ciw"){
-        warning(sprintf("Coercing %s column %s to %s to match type of %s.", 
+        warning(sprintf("Coercing %s column %s to %s to match type of %s.",
                         myItype, paste0("i.'", icnam, "'"), myXtype, paste0("x.'", xcnam, "'")))
       }
       if(myXtype == "factor"){
@@ -206,21 +141,21 @@ bmerge <- function(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops
         set(i, j=lc, value=newval)
       }
       myItype = myXtype
-    } 
+    }
     else if(coercionStrategy %chin% c("cx", "cxw")){
       ## coerce x[[rc]] to same class as i[[lc]]
-      if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.", 
+      if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.",
                                 myXtype, paste0("x.'", xcnam, "'"), myItype, paste0("i.'", icnam, "'"))); flush.console()}
       if(coercionStrategy == "cxw"){
-        warning(sprintf("Coercing %s column %s to %s to match type of %s.", 
+        warning(sprintf("Coercing %s column %s to %s to match type of %s.",
                         myXtype, paste0("x.'", xcnam, "'"), myItype, paste0("i.'", icnam, "'")))
       }
       newval = coerceClass(x[[rc]], to = myItype) ## will do mode() coercion if possible to retain attributes
       set(x, j=rc, value=newval)
       myXtype = myItype
-    } 
+    }
     else stop("Internal error in bmerge: unknown type coercion strategy.")
-    
+
     ## now take care about factor columns.
     if(myXtype == "factor"){
       if(myItype != "factor") stop("Internal error in bmerge: at this point, myItype should be factor.")
@@ -236,13 +171,13 @@ bmerge <- function(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops
       newfactor = chmatch(li, lx, nomatch=0L)[val] # fix for #945, a hacky solution for now.
       levels(newfactor) = lx
       class(newfactor) = "factor"
-      set(i, j=lc, value=newfactor) 
+      set(i, j=lc, value=newfactor)
     }
   }
-  
+
   ## after all modifications of i, check if i has a proper key on all leftcols
   io <- identical(leftcols, head(chmatch(key(i), names(i)), length(leftcols)))
-  
+
   ## after all modifications of x, check if x has a proper key on all rightcols.
   ## If not, calculate the order. Also for non-equi joins, the order must be calculated.
   non_equi = which.first(ops != 1L) # 1 is "==" operator
@@ -300,7 +235,7 @@ bmerge <- function(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops
     } else nqgrp = integer(0L)
     if (verbose) cat("  Found", nqmaxgrp, "non-equi group(s) ...\n")
   }
-  
+
   if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...");flush.console()}
   ans = .Call(Cbmerge, i, x, as.integer(leftcols), as.integer(rightcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
   if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}

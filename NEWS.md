@@ -104,11 +104,7 @@
 
 11. `test.data.table()` now passes in non-English R sessions, [#630](https://github.com/Rdatatable/data.table/issues/630) [#3039](https://github.com/Rdatatable/data.table/issues/3039). Each test still checks that the number of warnings and/or errors produced is correct. However, a message is displayed suggesting to restart R with `LANGUAGE=en` in order to test that the text of the warning and/or error messages are as expected, too.
 
-12. Joining data.tables on columns of different types could lead to unexpected behaviour in the past in at least two ways [#2592](https://github.com/Rdatatable/data.table/issues/2592):
-- when joining an integer column in `x`, to a numeric column in `i`, the numeric column was coerced to integer, so that e.g. a 1.5 (transformed to 1) could join to a 1.
-- when joining an integer column in `x` to a factor column in `i`, the integer values were matched to the factor level index. So if the first factor level was e.g. "test", an integer 1 would be seen equal to "test".
-The whole logic of converting types during joins has been reviewed, updated and streamlined to fix the issue.
-Thanks to @MarkusBonsch for reporting and fixing.
+12. Joining a double column with an integer column could result in 1.3 matching 1, [#2592](https://github.com/Rdatatable/data.table/issues/2592), and joining a factor column to an integer column would match the factor's integers rather than error. The logic of converting types during joins has been reviewed, updated and streamlined. Many thanks to @MarkusBonsch for reporting and fixing.
 
 #### NOTES
 
