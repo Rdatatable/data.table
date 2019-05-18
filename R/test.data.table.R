@@ -249,6 +249,7 @@ test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) 
   } else {
     memtest = FALSE          # nocov
     filename = NA_character_ # nocov
+    foreign = FALSE          # nocov # assumes users of 'cc(F); test(...)' has LANGUAGE=en
   }
   if (!missing(error) && !missing(y))
     stop("Test ",numStr," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov

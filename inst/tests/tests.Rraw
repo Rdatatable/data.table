@@ -14613,6 +14613,18 @@ test(2043.4, DT[, list(sd(z), sd(y)), by=x], data.table(x=1:2, V1=sd(z), V2=c(sd
 z = 1:4
 test(2043.5, DT[, list(mean(z), mean(y)), by=x], ans<-data.table(x=1:2, V1=c(2.5,2.5), V2=c(2.0,4.5)))  # was length error about z
 
+# natural join #629
+d1 = data.table(id1=1:3, id2=2:4, v1=1:3)
+d2 = data.table(id1=2:4, id2=3:5, v2=3:1)
+ans = data.table(id1=2:4, id2=3:5, v1=c(2:3,NA_integer_), v2=3:1)
+test(2044.1, d1[d2, on=.(id1,id2)], ans)
+test(2044.2, d1[d2, on=.(id1,id2), nomatch=NULL], ans[1:2])
+test(2044.3, d1[d2, verbose=TRUE], ans, output="natural join")
+test(2044.4, d1[d2, nomatch=NULL, verbose=TRUE], ans[1:2], output="natural join")
+d2 = data.table(id1=2:4, id2=letters[3:5], v2=3:1)
+test(2044.5, d1[d2, on=.(id1,id2)], error="typeof.*integer.*typeof.*character")
+test(2044.6, d1[d2, verbose=TRUE], output="natural join", error="typeof.*integer.*typeof.*character")
+
 
 ###################################
 #  Add new tests above this line  #
