@@ -381,8 +381,6 @@ replace_dot_alias <- function(e) {
       isub=NA_integer_
     }
     isnull_inames = FALSE
-    nqgrp = integer(0L)  # for non-equi join
-    nqmaxgrp = 1L       # for non-equi join
     # Fixes 4994: a case where quoted expression with a "!", ex: expr = quote(!dt1); dt[eval(expr)] requires
     # the "eval" to be checked before `as.name("!")`. Therefore interchanged.
     restore.N = remove.N = FALSE
@@ -571,9 +569,6 @@ replace_dot_alias <- function(e) {
           if (any_na(as_list(xo))) xo = xo[!is.na(xo)]
         }
       } else {
-        # turning on mult = "first"/"last" for non-equi joins again to test..
-        # if (nqmaxgrp>1L) stop("Non-equi joins aren't yet functional with mult='first' and mult='last'.")
-        # mult="first"/"last" logic moved to bmerge.c, also handles non-equi cases, #1452
         if (!byjoin) { #1287 and #1271
           irows = f__ # len__ is set to 1 as well, no need for 'pmin' logic
           if (identical(nomatch,0L)) irows = irows[len__>0L]  # 0s are len 0, so this removes -1 irows
