@@ -364,7 +364,7 @@ TESTDT = data.table(NULL)
 test(122, TESTDT[1], TESTDT)
 test(123, TESTDT[0], TESTDT)
 test(124, TESTDT[1:10], TESTDT)
-test(125, TESTDT["k"], error="the columns to join by must be specified either using")
+test(125, TESTDT["k"], error="the columns to join by must be specified using")
 # test 126 no longer needed now that test() has 'error' argument
 
 TESTDT = data.table(a=3L,v=2L,key="a")  # testing 1-row table
@@ -1207,7 +1207,7 @@ test(415, x:=1, error="defined for use in j, once only and in particular ways")
 
 # Somehow never tested that X[Y] is error if X is unkeyed.
 DT = data.table(a=1:3,b=4:6)
-test(416, DT[J(2)], error="the columns to join by must be specified either using")
+test(416, DT[J(2)], error="the columns to join by must be specified using")
 
 # Test shallow copy verbose message from := adding a column, and (TO DO) only when X is NAMED.
 DT = data.table(a=1:3,b=4:6)
@@ -14619,12 +14619,17 @@ d2 = data.table(id1=2:4, id2=3:5, v2=3:1)
 ans = data.table(id1=2:4, id2=3:5, v1=c(2:3,NA_integer_), v2=3:1)
 test(2044.1, d1[d2, on=.(id1,id2)], ans)
 test(2044.2, d1[d2, on=.(id1,id2), nomatch=NULL], ans[1:2])
-test(2044.3, d1[d2, verbose=TRUE], ans, output="natural join")
+test(2044.3, d1[d2, verbose=TRUE], ans, output="natural join using: [id1, id2]")
 test(2044.4, d1[d2, nomatch=NULL, verbose=TRUE], ans[1:2], output="natural join")
 d2 = data.table(id1=2:4, id2=letters[3:5], v2=3:1)
 test(2044.5, d1[d2, on=.(id1,id2)], error="typeof.*integer.*typeof.*character")
 test(2044.6, d1[d2, verbose=TRUE], output="natural join", error="typeof.*integer.*typeof.*character")
-
+test(2044.7, d1[d1, verbose = TRUE], d1, output="natural join using all 'x' columns")
+d1 = setDT(replicate(20L, 1L, simplify = FALSE))
+d2 = copy(d1[ , 1:15])
+setnames(d2, 1L, 'X1')
+test(2044.8, d1[d2, verbose = TRUE], cbind(d1, X1 = d2$X1),
+     output="natural join using: \\[.*[.]{3}\\]")
 
 ###################################
 #  Add new tests above this line  #

@@ -484,11 +484,15 @@ replace_dot_alias <- function(e) {
     }
     if (is.data.table(i)) {
       if (!haskey(x) && missing(on) && length(common_names <- intersect(names(x), names(i)))) {
-        if (verbose) cat("Joining but 'x' has no key and 'on' is missing, natural join using common columns\n")
+        if (verbose) {
+          which_cols_msg = if (length(common_names) == length(x)) " all 'x' columns" 
+          else paste(":", brackify(common_names))
+          cat("Joining but 'x' has no key and 'on' is missing, defaulting to natural join using", which_cols_msg, "\n", sep = "")
+        }
         on = common_names # natural join #629
       }
       if (!haskey(x) && missing(on) && is.null(xo)) {
-        stop("When i is a data.table (or character vector), the columns to join by must be specified either using 'on=' argument (see ?data.table) or by keying x (i.e. sorted, and, marked as sorted, see ?setkey). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+        stop("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
       }
       if (!missing(on)) {
         # on = .() is now possible, #1257
