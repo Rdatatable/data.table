@@ -6514,6 +6514,14 @@ if (test_xts) {
   setcolorder(dt, c(2, 3, 1))
   dt[ , char_col := 'a']
   test(1465.17, as.xts(dt), xt, warning = 'columns are not numeric')
+  
+  # 890 -- key argument for as.data.table.xts
+  x = xts(1:10, as.Date(1:10, origin = "1970-01-01"))
+  test(1465.18, capture.output(as.data.table(x, key="index")),
+       c("         index V1", " 1: 1970-01-02  1", " 2: 1970-01-03  2", 
+         " 3: 1970-01-04  3", " 4: 1970-01-05  4", " 5: 1970-01-06  5", 
+         " 6: 1970-01-07  6", " 7: 1970-01-08  7", " 8: 1970-01-09  8", 
+         " 9: 1970-01-10  9", "10: 1970-01-11 10"))
 
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
 }
@@ -14613,6 +14621,41 @@ test(2043.4, DT[, list(sd(z), sd(y)), by=x], data.table(x=1:2, V1=sd(z), V2=c(sd
 z = 1:4
 test(2043.5, DT[, list(mean(z), mean(y)), by=x], ans<-data.table(x=1:2, V1=c(2.5,2.5), V2=c(2.0,4.5)))  # was length error about z
 
+#tests for adding key to as.data.table, #890
+## as.data.table.numeric (should cover as.data.table.factor, 
+## *.ordered, *.integer, *.logical, *.character, and *.Date since
+## all are the same function in as.data.table.R)
+nn = c(a=0.1, c=0.2, b=0.3, d=0.4)
+ans = data.table(nn, key='nn')
+ans_rn = data.table(rn = names(nn), nn, key='rn')
+test(2044.1, as.data.table(nn, key="nn"), ans)
+test(2044.2, as.data.table(nn, keep.rownames=TRUE, key="rn"), ans_rn)
+
+## as.data.table.data.frame
+DF = as.data.frame(ans)
+test(2044.3, as.data.table(DF, key="nn"), ans)
+
+## as.data.table.data.table
+DT = copy(ans)
+test(2044.4, as.data.table(DT, key="nn"), ans)
+
+## as.data.table.default
+rr <- as.raw(3:1)
+test(2044.5, as.data.table(rr, keep.rownames=TRUE, key="rn"),
+     data.table(rn = paste0(1:3), x = rr, key='rn'))
+
+## as.data.table.list
+l = as.list(ans)
+test(2044.6, as.data.table(l, key='nn'), ans)
+
+## as.data.table.matrix
+mm <- as.matrix(ans)
+test(2044.8, as.data.table(mm, key='nn'), ans)
+
+## as.data.table.table
+tt <- as.table(nn)
+test(2044.9, as.data.table(tt, key="N"),
+     data.table(V1 = names(tt), N = as.vector(tt), key='N'))
 
 ###################################
 #  Add new tests above this line  #

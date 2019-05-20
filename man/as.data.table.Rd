@@ -19,11 +19,11 @@ Functions to check if an object is \code{data.table}, or coerce it if possible.
 
 }
 \usage{
-as.data.table(x, keep.rownames=FALSE, \dots)
+as.data.table(x, keep.rownames=FALSE, key=NULL, \dots)
 
 \method{as.data.table}{data.table}(x, \dots)
 
-\method{as.data.table}{array}(x, keep.rownames=FALSE, sorted=TRUE, value.name="value", na.rm=TRUE, \dots)
+\method{as.data.table}{array}(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, value.name="value", na.rm=TRUE, \dots)
 
 is.data.table(x)
 
@@ -31,6 +31,7 @@ is.data.table(x)
 \arguments{
   \item{x}{An R object.}
   \item{keep.rownames}{Default is \code{FALSE}. If \code{TRUE}, adds the input object's names as a separate column named \code{"rn"}. \code{keep.rownames = "id"} names the column \code{"id"} instead.}
+  \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkeyv}}. }
   \item{sorted}{logical used in \emph{array} method, default \code{TRUE}.}
   \item{value.name}{character scalar used in \emph{array} method, default \code{"value"}.}
   \item{na.rm}{logical used in \emph{array} method, default \code{TRUE} will remove rows with \code{NA} values.}
@@ -67,6 +68,7 @@ mm = matrix(1:4, ncol=2, dimnames=list(c("r1", "r2"), c("c1", "c2")))
 as.data.table(mm)
 as.data.table(mm, keep.rownames=TRUE)
 as.data.table(mm, keep.rownames="rownames")
+as.data.table(mm, key="c1")
 
 ll = list(a=1:2, b=3:4)
 as.data.table(ll)
@@ -80,6 +82,7 @@ as.data.table(DF, keep.rownames="rownames")
 
 DT = data.table(x=rep(c("x","y","z"),each=2), y=c(1:6))
 as.data.table(DT)
+as.data.table(DT, key='x')
 
 ar = rnorm(27)
 ar[sample(27, 15)] = NA
