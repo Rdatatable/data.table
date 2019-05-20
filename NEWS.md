@@ -122,6 +122,7 @@
 
 5. When loading a `data.table` from disk (e.g. with `readRDS`), best practice is to run `setDT()` on the new object to assure it is correctly allocated memory for new column pointers. Barring this, unexpected behavior can follow; for example, if you assign a new column to `DT` from a function `f`, the new columns will only be assigned within `f` and `DT` will be unchanged. The `verbose` messaging in this situation is now more helpful, [#1729](https://github.com/Rdatatable/data.table/issues/1729). Thanks @vspinu for sharing his experience to spur this.
 
+6. Added a note to `?frank` clarifying that ranking is being done according to C sorting (i.e., like `forder`), [#2328](https://github.com/Rdatatable/data.table/issues/2328). Thanks to @cguill95 for the request.
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 
