@@ -18,6 +18,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 
   all.equal.data.table = data.table:::all.equal.data.table
   any_na = data.table:::any_na
+  as.data.table.array = data.table:::as.data.table.array
   as.IDate.default = data.table:::as.IDate.default
   as.ITime.default = data.table:::as.ITime.default
   binary = data.table:::binary
@@ -14628,33 +14629,44 @@ test(2043.5, DT[, list(mean(z), mean(y)), by=x], ans<-data.table(x=1:2, V1=c(2.5
 nn = c(a=0.1, c=0.2, b=0.3, d=0.4)
 ans = data.table(nn, key='nn')
 ans_rn = data.table(rn = names(nn), nn, key='rn')
-test(2044.1, as.data.table(nn, key="nn"), ans)
-test(2044.2, as.data.table(nn, keep.rownames=TRUE, key="rn"), ans_rn)
+test(2044.01, as.data.table(nn, key="nn"), ans)
+test(2044.02, as.data.table(nn, keep.rownames=TRUE, key="rn"), ans_rn)
 
 ## as.data.table.data.frame
 DF = as.data.frame(ans)
-test(2044.3, as.data.table(DF, key="nn"), ans)
+test(2044.03, as.data.table(DF, key="nn"), ans)
 
 ## as.data.table.data.table
 DT = copy(ans)
-test(2044.4, as.data.table(DT, key="nn"), ans)
+test(2044.04, as.data.table(DT, key="nn"), ans)
 
 ## as.data.table.default
 rr <- as.raw(3:1)
-test(2044.5, as.data.table(rr, keep.rownames=TRUE, key="rn"),
+test(2044.05, as.data.table(rr, keep.rownames=TRUE, key="rn"),
      data.table(rn = paste0(1:3), x = rr, key='rn'))
 
 ## as.data.table.list
 l = as.list(ans)
-test(2044.6, as.data.table(l, key='nn'), ans)
+test(2044.06, as.data.table(l, key='nn'), ans)
+### for coverage (not strictly related to key argument)
+names(l) = NULL
+test(2044.07, as.data.table(l, key='V1'), setnames(copy(ans), 'V1'))
+test(2044.08, as.data.table(list()), data.table(NULL))
 
 ## as.data.table.matrix
 mm <- as.matrix(ans)
-test(2044.8, as.data.table(mm, key='nn'), ans)
+test(2044.09, as.data.table(mm, key='nn'), ans)
+### for coverage (not strictly related to key argument)
+colnames(mm) = NULL
+test(2044.10, as.data.table(mm, key='V1'), setnames(copy(ans), 'V1'))
+
+## as.data.table.array
+aa = array(nn, c(1L, 2L, 2L))
+test(2044.11, as.data.table(aa, key='V3')
 
 ## as.data.table.table
 tt <- as.table(nn)
-test(2044.9, as.data.table(tt, key="N"),
+test(2044.11, as.data.table(tt, key="N"),
      data.table(V1 = names(tt), N = as.vector(tt), key='N'))
 
 ###################################
