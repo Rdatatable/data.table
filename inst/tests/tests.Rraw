@@ -14614,22 +14614,35 @@ z = 1:4
 test(2043.5, DT[, list(mean(z), mean(y)), by=x], ans<-data.table(x=1:2, V1=c(2.5,2.5), V2=c(2.0,4.5)))  # was length error about z
 
 # natural join #629
-d1 = data.table(id1=1:3, id2=2:4, v1=1:3)
-d2 = data.table(id1=2:4, id2=3:5, v2=3:1)
-ans = data.table(id1=2:4, id2=3:5, v1=c(2:3,NA_integer_), v2=3:1)
-test(2044.1, d1[d2, on=.(id1,id2)], ans)
-test(2044.2, d1[d2, on=.(id1,id2), nomatch=NULL], ans[1:2])
-test(2044.3, d1[d2, verbose=TRUE], ans, output="natural join using: [id1, id2]")
-test(2044.4, d1[d2, nomatch=NULL, verbose=TRUE], ans[1:2], output="natural join")
+d1 = data.table(id1=rep(1L,3), id2=2:4, v1=1:3)
+d2 = data.table(id1=rep(1L,3), id2=3:5, v2=3:1)
+ans = data.table(id1=rep(1L, 3), id2=3:5, v1=c(2:3,NA_integer_), v2=3:1)
+test(2044.01, d1[d2], error="columns to join by must be specified")
+test(2044.02, d1[d2, on=.NATURAL, verbose=TRUE], ans, output="natural join using: [id1, id2]")
+options("datatable.naturaljoin"=TRUE)
+test(2044.03, d1[d2, on=.(id1,id2)], ans)
+test(2044.04, d1[d2, on=.(id1,id2), nomatch=NULL], ans[1:2])
+test(2044.05, d1[d2, verbose=TRUE], ans, output="natural join using: [id1, id2]")
+test(2044.06, d1[d2, on=.NATURAL, verbose=TRUE], ans, output="natural join using: [id1, id2]")
+test(2044.07, d1[d2, nomatch=NULL, verbose=TRUE], ans[1:2], output="natural join using: [id1, id2]")
+setkey(d1, id1)
+test(2044.08, nrow(d1[d2, allow.cartesian=TRUE]), 9L) # join
+test(2044.09, d1[d2, on=.NATURAL, verbose=TRUE], ans, output="natural join using: [id1, id2]") # ignore key when on=.NATURAL
+setkey(d1, NULL)
+setnames(d2, c("a","b","c"))
+test(2044.10, d1[d2], error="Attempting to do natural join but no common columns in provided tables")
+test(2044.11, d1[d2, on=.NATURAL], error="Attempting to do natural join but no common columns in provided tables")
 d2 = data.table(id1=2:4, id2=letters[3:5], v2=3:1)
-test(2044.5, d1[d2, on=.(id1,id2)], error="typeof.*integer.*typeof.*character")
-test(2044.6, d1[d2, verbose=TRUE], output="natural join", error="typeof.*integer.*typeof.*character")
-test(2044.7, d1[d1, verbose = TRUE], d1, output="natural join using all 'x' columns")
+test(2044.12, d1[d2, on=.(id1,id2)], error="typeof.*integer.*typeof.*character")
+test(2044.13, d1[d2, verbose=TRUE], output="natural join", error="typeof.*integer.*typeof.*character")
+test(2044.14, d1[d1, verbose=TRUE], d1, output="natural join using all 'x' columns")
 d1 = setDT(replicate(20L, 1L, simplify = FALSE))
 d2 = copy(d1[ , 1:15])
 setnames(d2, 1L, 'X1')
-test(2044.8, d1[d2, verbose = TRUE], cbind(d1, X1 = d2$X1),
+test(2044.15, d1[d2, verbose = TRUE], cbind(d1, X1 = d2$X1),
      output="natural join using: \\[.*[.]{3}\\]")
+options("datatable.naturaljoin"=FALSE)
+
 
 ###################################
 #  Add new tests above this line  #

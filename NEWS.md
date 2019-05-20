@@ -80,7 +80,7 @@
 
 9. New convenience functions `%ilike%` and `%flike%` which map to new `like()` arguments `ignore.case` and `fixed` respectively, [#3333](https://github.com/Rdatatable/data.table/issues/3333). `%ilike%` is for case-insensitive pattern matching. `%flike%` is for more efficient matching of fixed strings. Thanks to @andreasLD for providing most of the core code.
 
-10. When doing join but `x` data.table has no key and `on` argument is missing, it will attempt to do _natural join_ thus set `on` to common columns across both data.tables, [#629](https://github.com/Rdatatable/data.table/issues/629). Thanks to David Kulp for request.
+10. It is now possible to join two tables on their common columns, so called _natural join_, [#629](https://github.com/Rdatatable/data.table/issues/629). Use `on=.NATURAL` or `options("datatable.naturaljoin"=TRUE)`. Latter one works only when `x` has no key, if key is present then key columns are being used to join as before. Thanks to David Kulp for request.
 
 #### BUG FIXES
 
