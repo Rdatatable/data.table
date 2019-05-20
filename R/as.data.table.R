@@ -87,24 +87,25 @@ as.data.table.array <- function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, v
     stop("Argument 'sorted' must be scalar logical and non-NA")
   if (!is.logical(na.rm) || length(na.rm)!=1L || is.na(na.rm))
     stop("Argument 'na.rm' must be scalar logical and non-NA")
-  if (isTRUE(sorted))
+  if (isTRUE(sorted) && !is.null(key))
+    stop("Please provide either 'key' or 'sorted', but not both.")
 
   dnx = dimnames(x)
   # NULL dimnames will create integer keys, not character as in table method
-  val = rev(if (is.null(dnx)) lapply(dim(x), seq.int) else dnx)
+  val = rev(if (is.null(dnx)) lapply(dx, seq.int) else dnx)
   if (is.null(names(val)) || all(!nzchar(names(val))))
     setattr(val, 'names', paste0("V", rev(seq_along(val))))
   if (value.name %chin% names(val))
     stop("Argument 'value.name' should not overlap with column names in result: ", brackify(rev(names(val))))
   N = NULL
-  ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N=as.vector(x), key=key)
+  ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N=as.vector(x))
   if (isTRUE(na.rm))
     ans = ans[!is.na(N)]
   setnames(ans, "N", value.name)
   dims = rev(head(names(ans), -1L))
   setcolorder(ans, c(dims, value.name))
-  if (isTRUE(sorted))
-    setkeyv(ans, dims)
+  if (isTRUE(sorted)) key = dims
+  setkeyv(ans, key)
   ans[]
 }
 

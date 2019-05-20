@@ -23,7 +23,8 @@ as.data.table(x, keep.rownames=FALSE, key=NULL, \dots)
 
 \method{as.data.table}{data.table}(x, \dots)
 
-\method{as.data.table}{array}(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, value.name="value", na.rm=TRUE, \dots)
+\method{as.data.table}{array}(x, keep.rownames=FALSE, key=NULL, sorted=TRUE,
+              value.name="value", na.rm=TRUE, \dots)
 
 is.data.table(x)
 
