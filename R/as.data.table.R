@@ -80,13 +80,14 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, key=NULL, ...) {
 as.data.table.array <- function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, value.name="value", na.rm=TRUE, ...) {
   dx = dim(x)
   if (length(dx) <= 2L)
-    stop("as.data.table.array method should be only called for arrays with 3+ dimensions, for 2 dimensions matrix method should be used")
+    stop("as.data.table.array method should only be called for arrays with 3+ dimensions; use the matrix method for 2-dimensional arrays")
   if (!is.character(value.name) || length(value.name)!=1L || is.na(value.name) || !nzchar(value.name))
-    stop("Argument 'value.name' must be scalar character, non-NA and non zero char")
+    stop("Argument 'value.name' must be scalar character, non-NA and at least one character")
   if (!is.logical(sorted) || length(sorted)!=1L || is.na(sorted))
     stop("Argument 'sorted' must be scalar logical and non-NA")
   if (!is.logical(na.rm) || length(na.rm)!=1L || is.na(na.rm))
     stop("Argument 'na.rm' must be scalar logical and non-NA")
+  if (isTRUE(sorted))
 
   dnx = dimnames(x)
   # NULL dimnames will create integer keys, not character as in table method
