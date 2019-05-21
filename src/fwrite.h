@@ -98,6 +98,7 @@ typedef struct fwriteMainArgs
   int nth;
   bool showProgress;
   bool is_gzip;
+  bool with_bom;
   bool verbose;
 } fwriteMainArgs;
 

@@ -533,6 +533,16 @@ void writeCategString(void *col, int64_t row, char **pch)
   write_string(getCategString(col, row), pch);
 }
 
+void writeBom(char **pch)
+{
+  char *ch = *pch;
+  *ch++ = 0xEF;
+  *ch++ = 0xBB;
+  *ch++ = 0xBF;
+  *pch = ch;
+}
+
+
 int compressbuff(void* dest, size_t *destLen, const void* source, size_t sourceLen)
 {
   z_stream stream;
@@ -673,6 +683,10 @@ void fwriteMain(fwriteMainArgs args)
   }
 
   if (args.verbose) {
+    DTPRINT("Writing BOM ...");
+    if (f==-1) DTPRINT("\n");
+  }
+  if (args.verbose) {
     DTPRINT("Writing column names ... ");
     if (f==-1) DTPRINT("\n");
   }
@@ -683,6 +697,8 @@ void fwriteMain(fwriteMainArgs args)
     char *buff = malloc(headerLen);
     if (!buff) STOP("Unable to allocate %d MiB for header: %s", headerLen / 1024 / 1024, strerror(errno));
     char *ch = buff;
+    if (args.with_bom)
+        writeBom(&ch);
     if (args.doRowNames) {
       // Unusual: the extra blank column name when row_names are added as the first column
       if (doQuote!=0/*'auto'(NA) or true*/) { *ch++='"'; *ch++='"'; } // to match write.csv
