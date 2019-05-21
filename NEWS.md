@@ -104,7 +104,7 @@
 
 11. `test.data.table()` now passes in non-English R sessions, [#630](https://github.com/Rdatatable/data.table/issues/630) [#3039](https://github.com/Rdatatable/data.table/issues/3039). Each test still checks that the number of warnings and/or errors produced is correct. However, a message is displayed suggesting to restart R with `LANGUAGE=en` in order to test that the text of the warning and/or error messages are as expected, too.
 
-12. Joining a double column with an integer column could result in 1.3 matching 1, [#2592](https://github.com/Rdatatable/data.table/issues/2592), and joining a factor column to an integer column would match the factor's integers rather than error. The logic of converting types during joins has been reviewed, updated and streamlined. Many thanks to @MarkusBonsch for reporting and fixing.
+12. Joining a double column in `i` with an integer column in `x` could result in 1.3 matching to 1, [#2592](https://github.com/Rdatatable/data.table/issues/2592), and joining a factor column to an integer column would match the factor's integers rather than error. Many thanks to @MarkusBonsch for reporting and fixing. Joining a character column in `i` to a factor column in `x` is now faster and retains the character `i` column in the result rather than coercing it to factor. Joining an integer column in `i` to a double column in `x` now retains the integer type in the result rather than coercing it to double. Logical columns may now only be joined to logical columns, unless the logical column contains all-NA in which case it is coerced as before.
 
 #### NOTES
 
