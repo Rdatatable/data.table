@@ -87,8 +87,9 @@ as.data.table.array <- function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, v
     stop("Argument 'sorted' must be scalar logical and non-NA")
   if (!is.logical(na.rm) || length(na.rm)!=1L || is.na(na.rm))
     stop("Argument 'na.rm' must be scalar logical and non-NA")
-  if (isTRUE(sorted) && !is.null(key))
+  if (!missing(sorted) && !is.null(key))
     stop("Please provide either 'key' or 'sorted', but not both.")
+
 
   dnx = dimnames(x)
   # NULL dimnames will create integer keys, not character as in table method
@@ -104,7 +105,7 @@ as.data.table.array <- function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, v
   setnames(ans, "N", value.name)
   dims = rev(head(names(ans), -1L))
   setcolorder(ans, c(dims, value.name))
-  if (isTRUE(sorted)) key = dims
+  if (isTRUE(sorted) && is.null(key)) key = dims
   setkeyv(ans, key)
   ans[]
 }
