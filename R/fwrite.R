@@ -104,8 +104,16 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         header = col.names, sep = sep, sep2 = sep2, eol = eol, na.strings = na,
         dec = dec, qmethod = qmethod, logical01 = logical01
       )
+      if (with_bom) {
+          bom <- raw(3)
+          bom[1] <- as.raw(0xEF)
+          bom[2] <- as.raw(0xBB)
+          bom[3] <- as.raw(0xBF)
+          writeBin(bom, file)
+          with_bom <- FALSE
+      }
       # NB: as.yaml adds trailing newline
-      cat('---', yaml::as.yaml(yaml_header, line.sep = eol), '---', sep = eol, file = file)
+      cat('---', yaml::as.yaml(yaml_header, line.sep = eol), '---', sep = eol, file = file, append = TRUE)
       append = TRUE
     }
   }
