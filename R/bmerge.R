@@ -94,10 +94,10 @@ bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbo
         #            set(i, j=lc, value=newfactor)
       } else {
         if (xclass=="character") {
-          if (verbose) cat("Coercing factor column i.",names(i)[ic]," to character to match type of x.",names(x)[xc],".\n",sep="")
-          val = as.character(i[[ic]])
-          set(i, j=ic, value=val)
-          set(callersi, j=ic, value=val)
+          if (verbose) cat("Coercing factor column i.",names(i)[ic]," to type character to match type of x.",names(x)[xc],".\n",sep="")
+          # val = as.character(i[[ic]])
+          set(i, j=ic, value=as.character(i[[ic]]))
+          # set(callersi, j=ic, value=val)
           next
         } else if (iclass=="character") {
           if (verbose) cat("Matching character column i.",names(i)[ic]," to factor levels in x.",names(x)[xc],".\n",sep="")
@@ -116,28 +116,29 @@ bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbo
       stop("Incompatible join types: x.", names(x)[xc], " (",xclass,") and i.", names(i)[ic], " (",iclass,")")
     }
     if (xclass=="integer64" || iclass=="integer64") {
-      if (xclass=="integer64") { w=i; wc=ic; wclass=iclass; } else { w=x; wc=xc; wclass=xclass; }  # w is which to coerce
+      nm = paste0(c("i.","x."), c(names(i)[ic], names(x)[xc]))
+      if (xclass=="integer64") { w=i; wc=ic; wclass=iclass; } else { w=x; wc=xc; wclass=xclass; nm=rev(nm) }  # w is which to coerce
       if (wclass=="integer" || (wclass=="double" && !isReallyReal(w[[wc]]))) {
-        val = as.integer64(w[[wc]])
-        set(w, j=wc, value=val)
-        if (wclass==iclass) set(callersi, j=wc, value=val)
-      } else stop("cannot coerce reallyreal to integer64")
+        if (verbose) cat("Coercing ",wclass," column ", nm[1L], if(wclass=="double")" (which contains no fractions)"," to type integer64 to match type of ", nm[2L],".\n",sep="")
+        set(w, j=wc, value=as.integer64(w[[wc]]))
+      } else stop("Incompatible join types: ", nm[2L], " is type integer64 but ", nm[1L], " is type double and contains fractions")
     } else {
       # just integer and double left
       if (iclass=="double") {
         if (!isReallyReal(i[[ic]])) {
           # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
           # we've always coerced to int and returned int, for convenience.
-          if (verbose) cat("Coercing double column i.",names(i)[ic]," which contains integers to type integer to match type of x.",names(x)[xc],".\n",sep="")
+          if (verbose) cat("Coercing double column i.",names(i)[ic]," (which contains no fractions) to type integer to match type of x.",names(x)[xc],".\n",sep="")
           val = as.integer(i[[ic]])
-          set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result
-          set(i, j=ic, value=val)  # change local shallow copy too to apply in the Cmerge call below
+          set(i, j=ic, value=val)
+          set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
         }
-        else stop("Cannot coerce double to int")
+        else stop("Incompatible join types: x.",names(x)[xc]," is type integer but i.",names(i)[ic]," is type double and contains fractions")
       } else {
-        val = as.double(i[[ic]])
-        set(i, j=ic, value=val)
-        set(callersi, j=ic, value=val)
+        #val = as.double(i[[ic]])
+        if (verbose) cat("Coerced integer column i.",names(i)[ic]," to type double for join to match type of x.",names(x)[xc],".\n",sep="")
+        set(i, j=ic, value=as.double(i[[ic]]))
+        # set(callersi, j=ic, value=val)
       }
     }
   }

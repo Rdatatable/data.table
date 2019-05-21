@@ -14610,13 +14610,14 @@ test(2043.4, DT[, list(sd(z), sd(y)), by=x], data.table(x=1:2, V1=sd(z), V2=c(sd
 z = 1:4
 test(2043.5, DT[, list(mean(z), mean(y)), by=x], ans<-data.table(x=1:2, V1=c(2.5,2.5), V2=c(2.0,4.5)))  # was length error about z
 
-## test type coercion in joins (#2592)
+# test type coercion in joins, #2592
 dt1 <- data.table(int = 1L:10L,
                   doubleInt = as.numeric(1:10),        # integers stored as double
                   realDouble = seq(0.5, 5, by = 0.5),  # fractions present
                   bool = c(rep(FALSE, 9), TRUE),
                   char = letters[1L:10L],
-                  fact = factor(letters[1L:10L]))
+                  fact = factor(letters[1L:10L]),
+                  complex = as.complex(1:5))
 dt2 <- data.table(int = 1L:5L,
                   doubleInt = as.numeric(1:5),
                   realDouble = seq(0.5, 2.5, by = 0.5),
@@ -14629,154 +14630,93 @@ if (test_bit64) {
   dt2[, int64 := as.integer64(c(1:4, 3e9))]
 }
 ## no coercion when types match
-test(2044.001, nrow(dt1[dt2, on="bool==bool",             verbose=TRUE]), nrow(dt2), output="No coercion needed")
-test(2044.002, nrow(dt1[dt2, on="int==int",               verbose=TRUE]), nrow(dt2), output="No coercion needed")
-test(2044.003, nrow(dt1[dt2, on="doubleInt==doubleInt",   verbose=TRUE]), nrow(dt2), output="No coercion needed")
-test(2044.004, nrow(dt1[dt2, on="realDouble==realDouble", verbose=TRUE]), nrow(dt2), output="No coercion needed")
-test(2044.005, nrow(dt1[dt2, on="doubleInt==realDouble",  verbose=TRUE]), nrow(dt2), output="No coercion needed")
-test(2044.006, nrow(dt1[dt2, on="realDouble==doubleInt",  verbose=TRUE]), nrow(dt2), output="No coercion needed")
-test(2044.007, nrow(dt1[dt2, on="char==char",             verbose=TRUE]), nrow(dt2), output="No coercion needed")
-test(2044.008, nrow(dt1[dt2, on="fact==fact",             verbose=TRUE]), nrow(dt2), output="No coercion needed")
+test(2044.01, nrow(dt1[dt2, on="bool==bool",             verbose=TRUE]), nrow(dt2), output="No coercion needed")
+test(2044.02, nrow(dt1[dt2, on="int==int",               verbose=TRUE]), nrow(dt2), output="No coercion needed")
+test(2044.03, nrow(dt1[dt2, on="doubleInt==doubleInt",   verbose=TRUE]), nrow(dt2), output="No coercion needed")
+test(2044.04, nrow(dt1[dt2, on="realDouble==realDouble", verbose=TRUE]), nrow(dt2), output="No coercion needed")
+test(2044.05, nrow(dt1[dt2, on="doubleInt==realDouble",  verbose=TRUE]), nrow(dt2), output="No coercion needed")
+test(2044.06, nrow(dt1[dt2, on="realDouble==doubleInt",  verbose=TRUE]), nrow(dt2), output="No coercion needed")
+test(2044.07, nrow(dt1[dt2, on="char==char",             verbose=TRUE]), nrow(dt2), output="No coercion needed")
+test(2044.08, nrow(dt1[dt2, on="fact==fact",             verbose=TRUE]), nrow(dt2), output="Matching i.fact factor levels to x.fact factor levels")
 if (test_bit64) {
-  test(2044.009, nrow(dt1[dt2, on = "int64==int64",       verbose=TRUE]), nrow(dt2), output="No coercion needed")
+  test(2044.09, nrow(dt1[dt2, on = "int64==int64",       verbose=TRUE]), nrow(dt2), output="No coercion needed")
 }
-## error on incompatible types
-test(2044.020, dt1[dt2, on="bool==int"],        error="Incompatible join types: x.bool (logical) and i.int (integer)")
-test(2044.021, dt1[dt2, on="bool==doubleInt"],  error="Incompatible join types: x.bool (logical) and i.doubleInt (double)")
-test(2044.022, dt1[dt2, on="bool==realDouble"], error="Incompatible join types: x.bool (logical) and i.realDouble (double)")
-test(2044.023, dt1[dt2, on="bool==char"],       error="Incompatible join types: x.bool (logical) and i.char (character)")
-test(2044.024, dt1[dt2, on="bool==fact"],       error="Incompatible join types: x.bool (logical) and i.fact (factor)")
-test(2044.025, dt1[dt2, on="int==bool"],        error="Incompatible join types: x.int (integer) and i.bool (logical)")
-test(2044.026, dt1[dt2, on="int==char"],        error="Incompatible join types: x.int (integer) and i.char (character)")
-test(2044.027, dt1[dt2, on="int==fact"],        error="Incompatible join types: x.int (integer) and i.fact (factor)")
-test(2044.028, dt1[dt2, on="doubleInt==bool"],  error="Incompatible join types: x.doubleInt (double) and i.bool (logical)")
-test(2044.029, dt1[dt2, on="doubleInt==char"],  error="Incompatible join types: x.doubleInt (double) and i.char (character)")
-test(2044.030, dt1[dt2, on="doubleInt==fact"],  error="Incompatible join types: x.doubleInt (double) and i.fact (factor)")
-test(2044.031, dt1[dt2, on="realDouble==bool"], error="Incompatible join types: x.realDouble (double) and i.bool (logical)")
-test(2044.032, dt1[dt2, on="realDouble==char"], error="Incompatible join types: x.realDouble (double) and i.char (character)")
-test(2044.033, dt1[dt2, on="realDouble==fact"], error="Incompatible join types: x.realDouble (double) and i.fact (factor)")
-test(2044.034, dt1[dt2, on="char==bool"],       error="Incompatible join types: x.char (character) and i.bool (logical)")
-test(2044.035, dt1[dt2, on="char==int"],        error="Incompatible join types: x.char (character) and i.int (integer)")
-test(2044.036, dt1[dt2, on="char==doubleInt"],  error="Incompatible join types: x.char (character) and i.doubleInt (double)")
-test(2044.037, dt1[dt2, on="char==realDouble"], error="Incompatible join types: x.char (character) and i.realDouble (double)")
-test(2044.038, dt1[dt2, on="fact==bool"],       error="Incompatible join types: x.fact (factor) and i.bool (logical)")
-test(2044.039, dt1[dt2, on="fact==int"],        error="Incompatible join types: x.fact (factor) and i.int (integer)")
-test(2044.040, dt1[dt2, on="fact==doubleInt"],  error="Incompatible join types: x.fact (factor) and i.doubleInt (double)")
-test(2044.041, dt1[dt2, on="fact==realDouble"], error="Incompatible join types: x.fact (factor) and i.realDouble (double)")
+test(2044.10, dt1[dt2, on = "int==complex"],   error = "i.complex is type complex which is not supported by data.table join")
+test(2044.11, dt1[dt2, on = "complex==int"],   error = "x.complex is type complex which is not supported by data.table join")
+# incompatible types
+test(2044.20, dt1[dt2, on="bool==int"],        error="Incompatible join types: x.bool (logical) and i.int (integer)")
+test(2044.21, dt1[dt2, on="bool==doubleInt"],  error="Incompatible join types: x.bool (logical) and i.doubleInt (double)")
+test(2044.22, dt1[dt2, on="bool==realDouble"], error="Incompatible join types: x.bool (logical) and i.realDouble (double)")
+test(2044.23, dt1[dt2, on="bool==char"],       error="Incompatible join types: x.bool (logical) and i.char (character)")
+test(2044.24, dt1[dt2, on="bool==fact"],       error="Incompatible join types: x.bool (logical) and i.fact (factor)")
+test(2044.25, dt1[dt2, on="int==bool"],        error="Incompatible join types: x.int (integer) and i.bool (logical)")
+test(2044.26, dt1[dt2, on="int==char"],        error="Incompatible join types: x.int (integer) and i.char (character)")
+test(2044.27, dt1[dt2, on="int==fact"],        error="Incompatible join types: x.int (integer) and i.fact (factor)")
+test(2044.28, dt1[dt2, on="doubleInt==bool"],  error="Incompatible join types: x.doubleInt (double) and i.bool (logical)")
+test(2044.29, dt1[dt2, on="doubleInt==char"],  error="Incompatible join types: x.doubleInt (double) and i.char (character)")
+test(2044.30, dt1[dt2, on="doubleInt==fact"],  error="Incompatible join types: x.doubleInt (double) and i.fact (factor)")
+test(2044.31, dt1[dt2, on="realDouble==bool"], error="Incompatible join types: x.realDouble (double) and i.bool (logical)")
+test(2044.32, dt1[dt2, on="realDouble==char"], error="Incompatible join types: x.realDouble (double) and i.char (character)")
+test(2044.33, dt1[dt2, on="realDouble==fact"], error="Incompatible join types: x.realDouble (double) and i.fact (factor)")
+test(2044.34, dt1[dt2, on="char==bool"],       error="Incompatible join types: x.char (character) and i.bool (logical)")
+test(2044.35, dt1[dt2, on="char==int"],        error="Incompatible join types: x.char (character) and i.int (integer)")
+test(2044.36, dt1[dt2, on="char==doubleInt"],  error="Incompatible join types: x.char (character) and i.doubleInt (double)")
+test(2044.37, dt1[dt2, on="char==realDouble"], error="Incompatible join types: x.char (character) and i.realDouble (double)")
+test(2044.38, dt1[dt2, on="fact==bool"],       error="Incompatible join types: x.fact (factor) and i.bool (logical)")
+test(2044.39, dt1[dt2, on="fact==int"],        error="Incompatible join types: x.fact (factor) and i.int (integer)")
+test(2044.40, dt1[dt2, on="fact==doubleInt"],  error="Incompatible join types: x.fact (factor) and i.doubleInt (double)")
+test(2044.41, dt1[dt2, on="fact==realDouble"], error="Incompatible join types: x.fact (factor) and i.realDouble (double)")
 if (test_bit64) {
-  test(2044.042, dt1[dt2, on = "bool==int64"],  error="Incompatible join types: x.bool (logical) and i.int64 (integer64)")
-  test(2044.043, dt1[dt2, on = "char==int64"],  error="Incompatible join types: x.char (character) and i.int64 (integer64)")
-  test(2044.044, dt1[dt2, on = "fact==int64"],  error="Incompatible join types: x.fact (factor) and i.int64 (integer64)")
-  test(2044.045, dt1[dt2, on = "int64==bool"],  error="Incompatible join types: x.int64 (integer64) and i.bool (logical)")
-  test(2044.046, dt1[dt2, on = "int64==char"],  error="Incompatible join types: x.int64 (integer64) and i.char (character)")
-  test(2044.047, dt1[dt2, on = "int64==fact"],  error="Incompatible join types: x.int64 (integer64) and i.fact (factor)")
+  test(2044.42, dt1[dt2, on = "bool==int64"],  error="Incompatible join types: x.bool (logical) and i.int64 (integer64)")
+  test(2044.43, dt1[dt2, on = "char==int64"],  error="Incompatible join types: x.char (character) and i.int64 (integer64)")
+  test(2044.44, dt1[dt2, on = "fact==int64"],  error="Incompatible join types: x.fact (factor) and i.int64 (integer64)")
+  test(2044.45, dt1[dt2, on = "int64==bool"],  error="Incompatible join types: x.int64 (integer64) and i.bool (logical)")
+  test(2044.46, dt1[dt2, on = "int64==char"],  error="Incompatible join types: x.int64 (integer64) and i.char (character)")
+  test(2044.47, dt1[dt2, on = "int64==fact"],  error="Incompatible join types: x.int64 (integer64) and i.fact (factor)")
 }
-## correct behaviour on other types.
-## 4 checks:
-## - correct warning
-## - correct type of the coerced columns in i and x
-## - correct number of rows in the join
-cols <- c("bool", "int", "doubleInt", "realDouble", "char", "fact")
+# coercion for join
+cols = c("x.bool","x.int","x.doubleInt","i.bool","i.int","i.doubleInt","i.char")
+test(2044.60, dt1[dt2, ..cols, on="int==doubleInt", verbose=TRUE],
+              data.table(x.bool=FALSE, x.int=1:5, x.doubleInt=as.double(1:5), i.bool=TRUE, i.int=1:5, i.doubleInt=1:5, i.char=letters[1:5]),
+              output="Coercing double column i.doubleInt (which contains no fractions) to type integer to match type of x.int")
+test(2044.61, dt1[dt2, ..cols, on="int==realDouble"],
+              error="Incompatible join types: x.int is type integer but i.realDouble is type double and contains fractions")
+test(2044.62, dt1[dt2, ..cols, on="doubleInt==int", verbose=TRUE],
+              data.table(x.bool=FALSE, x.int=1:5, x.doubleInt=as.double(1:5), i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
+              output="Coerced integer column i.int to type double for join to match type of x.doubleInt")
+test(2044.63, dt1[dt2, ..cols, on="realDouble==int", verbose=TRUE],
+              data.table(x.bool=c(rep(FALSE,4),TRUE), x.int=INT(2,4,6,8,10), x.doubleInt=c(2,4,6,8,10), i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
+              output="Coerced integer column i.int to type double for join to match type of x.realDouble")
+cols = c("x.int","x.char","x.fact","i.int","i.char","i.fact")
+test(2044.64, dt1[dt2, ..cols, on="char==fact", verbose=TRUE],
+              ans<-data.table(x.int=1:5, x.char=letters[1:5], x.fact=factor(letters[1:5]), i.int=1:5, i.char=letters[1:5], i.fact=factor(letters[1:5])),
+              output="Coercing factor column i.fact to type character to match type of x.char")
+test(2044.65, dt1[dt2, ..cols, on="fact==char", verbose=TRUE],
+              ans,
+              output="Matching character column i.char to factor levels in x.fact")
 if (test_bit64) {
-  cols <- c(cols, "int64")
+  cols = c("x.int","x.doubleInt","x.realDouble","x.int64","i.int","i.doubleInt","i.realDouble","i.int64")
+  # int64 in i
+  test(2044.66, dt1[dt2, ..cols, on="int==int64", nomatch=0L, verbose=TRUE],
+                ans<-data.table(x.int=1:4, x.doubleInt=as.double(1:4), x.realDouble=c(0.5,1.0,1.5,2.0), x.int64=as.integer64(1:4),
+                                i.int=1:4, i.doubleInt=as.double(1:4), i.realDouble=c(0.5,1.0,1.5,2.0), i.int64=as.integer64(1:4)),
+                output = "Coercing integer column x.int to type integer64 to match type of i.int64")
+  test(2044.67, dt1[dt2, ..cols, on="doubleInt==int64", nomatch=0L, verbose=TRUE],
+                ans,
+                output = "Coercing double column x.doubleInt (which contains no fractions) to type integer64 to match type of i.int64")
+  test(2044.68, dt1[dt2, ..cols, on="realDouble==int64", nomatch=0L, verbose=TRUE],
+                error="Incompatible join types: i.int64 is type integer64 but x.realDouble is type double and contains fractions")
+  # int64 in x
+  test(2044.69, dt1[dt2, ..cols, on="int64==int", nomatch=0L, verbose=TRUE],
+                ans<-data.table(x.int=1:5, x.doubleInt=as.double(1:5), x.realDouble=c(0.5,1.0,1.5,2.0,2.5), x.int64=as.integer64(1:5),
+                                i.int=1:5, i.doubleInt=as.double(1:5), i.realDouble=c(0.5,1.0,1.5,2.0,2.5), i.int64=as.integer64(1:5)),
+                output = "Coercing integer column i.int to type integer64 to match type of x.int64")
+  test(2044.70, dt1[dt2, ..cols, on="int64==doubleInt", nomatch=0L, verbose=TRUE],
+                ans,
+                output = "Coercing double column i.doubleInt (which contains no fractions) to type integer64 to match type of x.int64")
+  test(2044.71, dt1[dt2, ..cols, on="int64==realDouble", nomatch=0L, verbose=TRUE],
+                error="Incompatible join types: x.int64 is type integer64 but i.realDouble is type double and contains fractions")
 }
-cols <- c(paste0("x.", cols), paste0("i.", cols)) ## make sure that all columns from x and i are in the result
-
-test(2044.050,
-     result <- dt1[dt2, cols, on = "int==doubleInt", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "int==doubleInt", with = FALSE, nomatch = 0L],
-     output = "Coercing double column i.'doubleInt' to integer to match type of x.'int'.")
-test(2044.051, class(result$i.doubleInt), "integer")
-test(2044.052, class(result$x.int),    "integer")
-test(2044.053, nrow(result), 5L)
-test(2044.054,
-     result <- dt1[dt2, cols, on = "int==realDouble", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "int==realDouble", with = FALSE, nomatch = 0L],
-     output = "Coercing integer column x.'int' to double to match type of i.'realDouble'.")
-test(2044.055, class(result$i.realDouble), "numeric")
-test(2044.056, class(result$x.int),        "integer") ## coercion of x columns is only for the join. The original type is returned.
-test(2044.057, nrow(result), 2L)
-
-
-test(2044.060,
-     result <- dt1[dt2, cols, on = "doubleInt==int", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "doubleInt==int", with = FALSE, nomatch = 0L],
-     output = "Coercing integer column i.'int' to double to match type of x.'doubleInt'.")
-test(2044.061, class(result$i.int),    "numeric")
-test(2044.062, class(result$x.doubleInt), "numeric")
-test(2044.063, nrow(result), 5L)
-test(2044.064,
-     result <- dt1[dt2, cols, on = "realDouble==int", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "realDouble==int", with = FALSE, nomatch = 0L],
-     output = "Coercing integer column i.'int' to double to match type of x.'realDouble'.")
-test(2044.065, class(result$i.int),        "numeric")
-test(2044.066, class(result$x.realDouble), "numeric")
-test(2044.067, nrow(result), 5L)
-test(2044.068,
-     result <- dt1[dt2, cols, on = "char==fact", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "char==fact", with = FALSE, nomatch = 0L],
-     output = "Coercing factor column i.'fact' to character to match type of x.'char'.")
-test(2044.069, class(result$i.fact), "character")
-test(2044.070, class(result$x.char), "character")
-test(2044.071, nrow(result), 5L)
-test(2044.072,
-     result <- dt1[dt2, cols, on = "fact==char", with = FALSE, nomatch = 0L, verbose = TRUE],
-     dt1[dt2, cols, on = "fact==char", with = FALSE, nomatch = 0L],
-     output = "Coercing character column i.'char' to factor to match type of x.'fact'.")
-test(2044.073, class(result$i.char), "factor")
-test(2044.074, class(result$x.fact), "factor")
-test(2044.075, nrow(result), 5L)
-if (test_bit64) {
-  test(2044.080,
-       result <- dt1[dt2, cols, on = "int==int64", with = FALSE, nomatch = 0L, verbose = TRUE],
-       suppressWarnings(dt1[dt2, cols, on = "int==int64", with = FALSE, nomatch = 0L]),
-       output = "Coercing integer64 column i.'int64' to integer to match type of x.'int'.",
-       warning = "NAs produced by integer overflow")
-  test(2044.081, class(result$i.int64), "integer")
-  test(2044.082, class(result$x.int),   "integer")
-  test(2044.083, nrow(result), 4L)
-  test(2044.084,
-       result <- dt1[dt2, cols, on = "doubleInt==int64", with = FALSE, nomatch = 0L, verbose = TRUE],
-       dt1[dt2, cols, on = "doubleInt==int64", with = FALSE, nomatch = 0L],
-       output = "Coercing integer64 column i.'int64' to double to match type of x.'doubleInt'.")
-  test(2044.085, class(result$i.int64),  "numeric")
-  test(2044.086, class(result$x.doubleInt), "numeric")
-  test(2044.087, nrow(result), 4L)
-  test(2044.088,
-       result <- dt1[dt2, cols, on = "realDouble==int64", with = FALSE, nomatch = 0L, verbose = TRUE],
-       dt1[dt2, cols, on = "realDouble==int64", with = FALSE, nomatch = 0L],
-       output = "Coercing integer64 column i.'int64' to double to match type of x.'realDouble'.")
-  test(2044.089, class(result$i.int64), "numeric")
-  test(2044.090, class(result$x.realDouble), "numeric")
-  test(2044.091, nrow(result), 4L)
-
-
-  test(2044.096,
-       result <- dt1[dt2, cols, on = "int64==int", with = FALSE, nomatch = 0L, verbose = TRUE],
-       dt1[dt2, cols, on = "int64==int", with = FALSE, nomatch = 0L],
-       output = "Coercing integer column i.'int' to integer64 to match type of x.'int64'.")
-  test(2044.097, class(result$i.int),   "integer64")
-  test(2044.098, class(result$x.int64), "integer64")
-  test(2044.099, nrow(result), 5L)
-  test(2044.100,
-       result <- dt1[dt2, cols, on = "int64==doubleInt", with = FALSE, nomatch = 0L, verbose = TRUE],
-       dt1[dt2, cols, on = "int64==doubleInt", with = FALSE, nomatch = 0L],
-       output = "Coercing double column i.'doubleInt' to integer64 to match type of x.'int64'.")
-  test(2044.101, class(result$i.doubleInt), "integer64")
-  test(2044.102, class(result$x.int64),  "integer64")
-  test(2044.103, nrow(result), 5L)
-  test(2044.104,
-       result <- dt1[dt2, cols, on = "int64==realDouble", with = FALSE, nomatch = 0L, verbose = TRUE],
-       dt1[dt2, cols, on = "int64==realDouble", with = FALSE, nomatch = 0L],
-       output = "Coercing integer64 column x.'int64' to double to match type of i.'realDouble'.")
-  test(2044.105, class(result$i.realDouble), "numeric")
-  test(2044.106, class(result$x.int64),      "integer64") ## coercion of x columns is only for the join. The original type is returned.
-  test(2044.107, nrow(result), 2L)
-}
-## correct behaviour if non-standard types are involved:
-## can only be tested for non-standard column in i because non-standard in x throws error before bmerge in forderv
-test(2044.110, dt1[dt2, on = "int==complex"],
-     error = "i.complex is type complex which is not supported by data.table join")
 
 
 ###################################
