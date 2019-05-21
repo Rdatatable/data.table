@@ -120,7 +120,7 @@ bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbo
       if (xclass=="integer64") { w=i; wc=ic; wclass=iclass; } else { w=x; wc=xc; wclass=xclass; nm=rev(nm) }  # w is which to coerce
       if (wclass=="integer" || (wclass=="double" && !isReallyReal(w[[wc]]))) {
         if (verbose) cat("Coercing ",wclass," column ", nm[1L], if(wclass=="double")" (which contains no fractions)"," to type integer64 to match type of ", nm[2L],".\n",sep="")
-        set(w, j=wc, value=as.integer64(w[[wc]]))
+        set(w, j=wc, value=bit64::as.integer64(w[[wc]]))
       } else stop("Incompatible join types: ", nm[2L], " is type integer64 but ", nm[1L], " is type double and contains fractions")
     } else {
       # just integer and double left

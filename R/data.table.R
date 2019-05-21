@@ -2963,7 +2963,7 @@ isReallyReal <- function(x) {
         RHS = RHS[0L]
       } else if (notjoin) {
         ## dt[!x == 3] must not return rows where x is NA
-        RHS = c(RHS, if (is.double(RHS)) c(NA, NaN) else NA)
+        RHS = c(RHS, if (is.double(RHS) && is.double(x[[col]])) c(NA, NaN) else NA)
       }
     }
     ## if it passed until here, fast subset can be done for this stub
