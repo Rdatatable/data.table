@@ -189,8 +189,20 @@ inst = function() {
   system(paste("R CMD INSTALL", last))
 }
 
+log = function(x=c(.fail.cran, .fail.bioc), fnam="~/fail.log") {
+  cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
+  cat(paste(x,collapse=" "), "\n")
+  cat(capture.output(sessionInfo()), "\n", file=fnam, sep="\n")
+  cat(capture.output(BiocManager::install(), type="message"), "\n", file=fnam, sep="\n", append=TRUE)
+  for (i in x) {
+    system(paste0("ls | grep '",i,".*tar.gz' >> ",fnam))
+    system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))
+    cat("\n\n", file=fnam, append=TRUE)
+  }
+}
+
 status()
 
 # Now R prompt is ready to fix any problems with CRAN or Bioconductor updates.
-# Then run run() and status() as per section in CRAN_Release.cmd
+# Then run run(), status() and log() as per section in CRAN_Release.cmd
 
