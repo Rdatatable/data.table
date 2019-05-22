@@ -31,7 +31,7 @@ This vignette will explain the most common ways to use the `.SD` variable in you
 
 In the broadest sense, `.SD` is just shorthand for capturing a variable that comes up frequently in the context of data analysis. It can be understood to stand for *S*ubset, *S*elfsame, or *S*elf-reference of the *D*ata. That is, `.SD` is in its most basic guise a _reflexive reference_ to the `data.table` itself -- as we'll see in examples below, this is particularly helpful for chaining together "queries" (extractions/subsets/etc using `[`). In particular, this also means that `.SD` is _itself a `data.table`_ (with the caveat that it does not allow assignment with `:=`).
 
-The simpler usage of `.SD` is for column subsetting (i.e., when `.SDcols` is specified); as this version is much more straightforward to understand, we'll cover that first below. The interpretation of `.SD` in its second usage, grouping scenarios (i.e., when `by = ` or `keyby = ` is specified), is slightly different, conceptually (though at core it's the same, since, after all, a non-grouped operation is an edge case of grouping with just one group). 
+The simpler usage of `.SD` is for column subsetting (i.e., when `.SDcols` is specified); as this version is much more straightforward to understand, we'll cover that first below. The interpretation of `.SD` in its second usage, grouping scenarios (i.e., when `by = ` or `keyby = ` is specified), is slightly different, conceptually (though at core it's the same, since, after all, a non-grouped operation is an edge case of grouping with just one group).
 
 ## Loading and Previewing Lahman Data
 
@@ -42,12 +42,12 @@ load('Teams.RData')
 setDT(Teams)
 Teams
 
-load('Pitching.Rdata')
+load('Pitching.RData')
 setDT(Pitching)
 Pitching
 ```
 
-Readers up on baseball lingo should find the tables' contents familiar; `Teams` records some statistics for a given team in a given year, while `Pitching` records statistics for a given pitcher in a given year. Please do check out the [documentation](http://www.seanlahman.com/files/database/readme2017.txt) and explore the data yourself a bit before proceeding to familiarize yourself with their structure. 
+Readers up on baseball lingo should find the tables' contents familiar; `Teams` records some statistics for a given team in a given year, while `Pitching` records statistics for a given pitcher in a given year. Please do check out the [documentation](http://www.seanlahman.com/files/database/readme2017.txt) and explore the data yourself a bit before proceeding to familiarize yourself with their structure.
 
 # `.SD` on Ungrouped Data
 
@@ -144,7 +144,7 @@ Varying model specification is a core feature of robust statistical analysis. Le
 
 Here's a short script leveraging the power of `.SD` which explores this question:
 
-```{r sd_for_lm, cache = TRUE}
+```{r sd_for_lm, cache = FALSE}
 # this generates a list of the 2^k possible extra variables
 #   for models of the form ERA ~ G + (...)
 extra_var = c('yearID', 'teamID', 'G', 'L')
@@ -155,7 +155,7 @@ models = unlist(
 
 # here are 16 visually distinct colors, taken from the list of 20 here:
 #   https://sashat.me/2017/01/11/list-of-20-simple-distinct-colors/
-col16 = c('#e6194b', '#3cb44b', '#ffe119', '#0082c8', 
+col16 = c('#e6194b', '#3cb44b', '#ffe119', '#0082c8',
           '#f58231', '#911eb4', '#46f0f0', '#f032e6',
           '#d2f53c', '#fabebe', '#008080', '#e6beff',
           '#aa6e28', '#fffac8', '#800000', '#aaffc3')
@@ -173,13 +173,13 @@ barplot(lm_coef, names.arg = sapply(models, paste, collapse = '/'),
         col = col16, las = 2L, cex.names = .8)
 ```
 
-The coefficient always has the expected sign (better pitchers tend to have more wins and fewer runs allowed), but the magnitude can vary substantially depending on what else we control for. 
+The coefficient always has the expected sign (better pitchers tend to have more wins and fewer runs allowed), but the magnitude can vary substantially depending on what else we control for.
 
 ## Conditional Joins
 
 `data.table` syntax is beautiful for its simplicity and robustness. The syntax `x[i]` flexibly handles two common approaches to subsetting -- when `i` is a `logical` vector, `x[i]` will return those rows of `x` corresponding to where `i` is `TRUE`; when `i` is _another `data.table`_, a (right) `join` is performed (in the plain form, using the `key`s of `x` and `i`, otherwise, when `on = ` is specified, using matches of those columns).
 
-This is great in general, but falls short when we wish to perform a _conditional join_, wherein the exact nature of the relationship among tables depends on some characteristics of the rows in one or more columns. 
+This is great in general, but falls short when we wish to perform a _conditional join_, wherein the exact nature of the relationship among tables depends on some characteristics of the rows in one or more columns.
 
 This example is admittedly a tad contrived, but illustrates the idea; see here ([1](https://stackoverflow.com/questions/31329939/conditional-keyed-join-update-and-update-a-flag-column-for-matches), [2](https://stackoverflow.com/questions/29658627/conditional-binary-join-and-update-by-reference-using-the-data-table-package)) for more.
 
@@ -190,9 +190,9 @@ The goal is to add a column `team_performance` to the `Pitching` table that reco
 #   subset first; then define rank of pitchers within their team each year
 #   (in general, we should put more care into the 'ties.method' of frank)
 Pitching[G > 5, rank_in_team := frank(ERA), by = .(teamID, yearID)]
-Pitching[rank_in_team == 1, team_performance := 
-           # this should work without needing copy(); 
-           #   that it doesn't appears to be a bug: 
+Pitching[rank_in_team == 1, team_performance :=
+           # this should work without needing copy();
+           #   that it doesn't appears to be a bug:
            #   https://github.com/Rdatatable/data.table/issues/1926
            Teams[copy(.SD), Rank, on = c('teamID', 'yearID')]]
 ```
