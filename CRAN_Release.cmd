@@ -410,22 +410,7 @@ revdepr  # see top of revdep.R for this alias to put in ~/.bash_aliases
 inst()   # *** ensure latest dev version of data.table installed into revdeplib ***
 run()    # prints menu of options
 status() # includes timestamp of installed data.table that is being tested.
-
-out = function(fnam="~/fail.log") {
-  x = c(.fail.cran, .fail.bioc)
-  cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
-  cat(paste(x,collapse=" "), "\n")
-  cat(capture.output(sessionInfo()), "\n", file=fnam, sep="\n")
-  cat("> BiocManager::install()\n", file=fnam, append=TRUE)
-  cat(capture.output(BiocManager::install(), type="message"), file=fnam, sep="\n", append=TRUE)
-  cat("> BiocManager::valid()\n", file=fnam, append=TRUE)
-  cat(isTRUE(BiocManager::valid()), "\n\n\n", file=fnam, append=TRUE)
-  for (i in x) {
-    system(paste0("ls | grep '",i,".*tar.gz' >> ",fnam))
-    system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))
-    cat("\n\n", file=fnam, append=TRUE)
-  }
-}
+log()    # cats all fail logs to ~/fail.log
 
 # Once all issues resolved with CRAN packages, tackle long-term unfixed bioconductor packages as follows.
 # 1. Note down all error and warning bioc packages
