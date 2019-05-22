@@ -481,8 +481,23 @@ replace_dot_alias <- function(e) {
       i = as.data.table(i)
     }
     if (is.data.table(i)) {
-      if (!haskey(x) && missing(on)) {
-        stop("When i is a data.table (or character vector), the columns to join by must be specified either using 'on=' argument (see ?data.table) or by keying x (i.e. sorted, and, marked as sorted, see ?setkey). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+      naturaljoin = FALSE
+      if (missing(on)) {
+        if (!haskey(x)) {
+          if (getOption("datatable.naturaljoin")) naturaljoin = TRUE
+          else stop("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+        }
+      } else if (identical(substitute(on), as.name(".NATURAL"))) naturaljoin = TRUE
+      if (naturaljoin) { # natural join #629
+        common_names = intersect(names(x), names(i))
+        len_common_names = length(common_names)
+        if (!len_common_names) stop("Attempting to do natural join but no common columns in provided tables")
+        if (verbose) {
+          which_cols_msg = if (len_common_names == length(x)) " all 'x' columns"
+          else paste(":", brackify(common_names))
+          cat("Joining but 'x' has no key, natural join using", which_cols_msg, "\n", sep = "")
+        }
+        on = common_names
       }
       if (!missing(on)) {
         # on = .() is now possible, #1257

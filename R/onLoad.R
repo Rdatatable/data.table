@@ -58,6 +58,7 @@
        "datatable.use.index"="TRUE",           # global switch to address #1422
        "datatable.prettyprint.char" = NULL,     # FR #1091
        "datatable.old.unique.by.key" = "FALSE"  # TODO: change warnings in duplicated.R to error on or after May 2019 then remove a year after that.
+       ,"datatable.naturaljoin" = "FALSE"      # natural join, when set to TRUE then `on` defaults to `.NATURAL`
        )
   for (i in setdiff(names(opts),names(options()))) {
     eval(parse(text=paste0("options(",i,"=",opts[i],")")))

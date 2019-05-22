@@ -18,6 +18,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 
   all.equal.data.table = data.table:::all.equal.data.table
   any_na = data.table:::any_na
+  as.data.table.array = data.table:::as.data.table.array
   as.IDate.default = data.table:::as.IDate.default
   as.ITime.default = data.table:::as.ITime.default
   binary = data.table:::binary
@@ -93,7 +94,8 @@ oldOptions = options(
   datatable.verbose = FALSE,
   datatable.alloccol = 1024L,
   datatable.print.class = FALSE,  #  This is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
-  datatable.rbindlist.check = NULL
+  datatable.rbindlist.check = NULL,
+  datatable.naturaljoin = FALSE
 )
 # some tests (e.g. 1066, 1293) rely on capturing output that will be garbled with small width
 if (getOption('width') < 80L) options(width = 80L)
@@ -363,7 +365,7 @@ TESTDT = data.table(NULL)
 test(122, TESTDT[1], TESTDT)
 test(123, TESTDT[0], TESTDT)
 test(124, TESTDT[1:10], TESTDT)
-test(125, TESTDT["k"], error="the columns to join by must be specified either using")
+test(125, TESTDT["k"], error="the columns to join by must be specified using")
 # test 126 no longer needed now that test() has 'error' argument
 
 TESTDT = data.table(a=3L,v=2L,key="a")  # testing 1-row table
@@ -1206,7 +1208,7 @@ test(415, x:=1, error="defined for use in j, once only and in particular ways")
 
 # Somehow never tested that X[Y] is error if X is unkeyed.
 DT = data.table(a=1:3,b=4:6)
-test(416, DT[J(2)], error="the columns to join by must be specified either using")
+test(416, DT[J(2)], error="the columns to join by must be specified using")
 
 # Test shallow copy verbose message from := adding a column, and (TO DO) only when X is NAMED.
 DT = data.table(a=1:3,b=4:6)
@@ -6512,6 +6514,14 @@ if (test_xts) {
   setcolorder(dt, c(2, 3, 1))
   dt[ , char_col := 'a']
   test(1465.17, as.xts(dt), xt, warning = 'columns are not numeric')
+  
+  # 890 -- key argument for as.data.table.xts
+  x = xts(1:10, as.Date(1:10, origin = "1970-01-01"))
+  test(1465.18, capture.output(as.data.table(x, key="index")),
+       c("         index V1", " 1: 1970-01-02  1", " 2: 1970-01-03  2", 
+         " 3: 1970-01-04  3", " 4: 1970-01-05  4", " 5: 1970-01-06  5", 
+         " 6: 1970-01-07  6", " 7: 1970-01-08  7", " 8: 1970-01-09  8", 
+         " 9: 1970-01-10  9", "10: 1970-01-11 10"))
 
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
 }
@@ -11060,7 +11070,7 @@ test(1774.02, TRUE, all(
 # 4D unnamed
 x = array(1:81, dim=rep(3L,4))
 dt = as.data.table(x, na.rm=FALSE)
-test(1774.03, TRUE, all(
+test(1774.03, all(
   identical(dim(dt), c(81L,5L)),
   identical(names(dt), c(paste0("V",1:4),"value")),
   all(dt[J(1L)][1L, value] == 1L, dt[J(2L)][1L, value] == 2L, dt[J(3L)][.N, value] == 81L) # this also tests if dt is keyed
@@ -11068,7 +11078,7 @@ test(1774.03, TRUE, all(
 # 4D named dim values but not dims
 x = array(1:81, dim=rep(3L, 4L), dimnames=rep(list(letters[1:3]), 4L))
 dt = as.data.table(x, na.rm=FALSE)
-test(1774.04, TRUE, all(
+test(1774.04, all(
   identical(dim(dt), c(81L,5L)),
   identical(names(dt), c(paste0("V",1:4),"value")),
   all(dt[J("a")][1L, value] == 1L, dt[J("b")][1L, value] == 2L, dt[J("c")][.N, value] == 81L)
@@ -11076,7 +11086,7 @@ test(1774.04, TRUE, all(
 # 4D named dim values and dims
 x = array(1:81, dim=rep(3L, 4L), dimnames=setNames(rep(list(letters[1:3]), 4L), letters[1:4]))
 dt = as.data.table(x, na.rm=FALSE)
-test(1774.05, TRUE, all(
+test(1774.05, all(
   identical(dim(dt), c(81L,5L)),
   identical(names(dt), c(letters[1:4],"value")),
   all(dt[J("a")][1L, value] == 1L, dt[J("b")][1L, value] == 2L, dt[J("c")][.N, value] == 81L)
@@ -11084,7 +11094,7 @@ test(1774.05, TRUE, all(
 # third dim of length 1L so really 2D
 x = array(1:4, dim=c(2L,2L,1L), dimnames=list(a=letters[1:2], b=letters[1:2], c="a"))
 dt = as.data.table(x, na.rm=FALSE)
-test(1774.06, TRUE, all(
+test(1774.06, all(
   identical(dim(dt), c(4L,4L)),
   identical(names(dt), c("a","b","c","value")),
   all(dt[J("a")][, value] == c(1L,3L), dt[J("b")][, value] == c(2L,4L))
@@ -11092,7 +11102,7 @@ test(1774.06, TRUE, all(
 # second and third dim of length 1L so really 1D
 x = array(1:2, dim=c(2L,1L,1L), dimnames=list(a=letters[1:2], b="a", c="a"))
 dt = as.data.table(x, na.rm=FALSE)
-test(1774.07, TRUE, all(
+test(1774.07, all(
   identical(dim(dt), c(2L,4L)),
   identical(names(dt), c("a","b","c","value")),
   all(dt[J("a")][, value] == 1L, dt[J("b")][, value] == 2L)
@@ -11103,7 +11113,7 @@ x = rnorm(27)
 x[sample(length(x), length(x)/2)] = NA
 dim(x) = c(3L,3L,3L)
 dt = as.data.table(x, na.rm=FALSE)
-test(1774.08, TRUE, all(
+test(1774.08, all(
   identical(dim(dt), c(27L,4L)),
   identical(names(dt), c(paste0("V",1:3),"value")),
   dt[is.na(value), .N] > 0L,
@@ -11111,7 +11121,7 @@ test(1774.08, TRUE, all(
 ))
 # na.rm=TRUE / sorted=TRUE
 dt = as.data.table(x)
-test(1774.09, TRUE, all(
+test(1774.09, all(
   identical(dim(dt), c(14L,4L)),
   identical(names(dt), c(paste0("V",1:3),"value")),
   dt[is.na(value), .N] == 0L,
@@ -11119,7 +11129,7 @@ test(1774.09, TRUE, all(
 ))
 # na.rm=TRUE / sorted=FALSE
 dt = as.data.table(x, sorted=FALSE)
-test(1774.10, TRUE, all(
+test(1774.10, all(
   identical(dim(dt), c(14L,4L)),
   identical(names(dt), c(paste0("V",1:3),"value")),
   dt[is.na(value), .N] == 0L,
@@ -11128,7 +11138,7 @@ test(1774.10, TRUE, all(
 ))
 # na.rm=FALSE / sorted=FALSE
 dt = as.data.table(x, na.rm=FALSE, sorted=FALSE)
-test(1774.11, TRUE, all(
+test(1774.11, all(
   identical(dim(dt), c(27L,4L)),
   identical(names(dt), c(paste0("V",1:3),"value")),
   is.unsorted(dt[[1]]),
@@ -11139,6 +11149,12 @@ x = array(1:2, dim=c(2L,1L,1L), dimnames=list(a=letters[1:2], b="a", c="a"))
 test(1774.12, as.data.table(x, value.name="a"), error = "Argument 'value.name' should not overlap with column names in result")
 x = array(1:2, dim=c(2L,1L,1L), dimnames=list(a=letters[1:2], b="a", value="a"))
 test(1774.13, as.data.table(x), error = "Argument 'value.name' should not overlap with column names in result")
+
+## unsupported usage of as.data.table.array
+test(1774.14, as.data.table.array(as.matrix(x)), error="method should only be called for arrays with 3+")
+test(1774.15, as.data.table(x, value.name=NA), error="'value.name' must be scalar")
+test(1774.16, as.data.table(x, sorted='a'), error="'sorted' must be scalar")
+test(1774.17, as.data.table(x, na.rm='a'), error="'na.rm' must be scalar")
 
 # verify print.keys works
 DT1 <- data.table(a = 1:3, key = "a")
@@ -14735,6 +14751,83 @@ test(2044.84, dt1[dt2, on="b==a",             verbose=TRUE], data.table(a=NA_rea
               output=msg<-"Coerced all-NA x.b (character) to type integer to match type of i.a")
 test(2044.85, dt1[dt2, on="b==a", nomatch=0L, verbose=TRUE], data.table(a=double(), b=integer(), i.b=logical()),
               output=msg)
+
+# natural join #629
+d1 = data.table(id1=rep(1L,3), id2=2:4, v1=1:3)
+d2 = data.table(id1=rep(1L,3), id2=3:5, v2=3:1)
+ans = data.table(id1=rep(1L, 3), id2=3:5, v1=c(2:3,NA_integer_), v2=3:1)
+test(2045.01, d1[d2], error="columns to join by must be specified")
+test(2045.02, d1[d2, on=.NATURAL, verbose=TRUE], ans, output="natural join using: [id1, id2]")
+options(datatable.naturaljoin=TRUE)
+test(2045.03, d1[d2, on=.(id1,id2)], ans)
+test(2045.04, d1[d2, on=.(id1,id2), nomatch=NULL], ans[1:2])
+test(2045.05, d1[d2, verbose=TRUE], ans, output="natural join using: [id1, id2]")
+test(2045.06, d1[d2, on=.NATURAL, verbose=TRUE], ans, output="natural join using: [id1, id2]")
+test(2045.07, d1[d2, nomatch=NULL, verbose=TRUE], ans[1:2], output="natural join using: [id1, id2]")
+setkey(d1, id1)
+test(2045.08, nrow(d1[d2, allow.cartesian=TRUE]), 9L) # join
+test(2045.09, d1[d2, on=.NATURAL, verbose=TRUE], ans, output="natural join using: [id1, id2]") # ignore key when on=.NATURAL
+setkey(d1, NULL)
+setnames(d2, c("a","b","c"))
+test(2045.10, d1[d2], error="Attempting to do natural join but no common columns in provided tables")
+test(2045.11, d1[d2, on=.NATURAL], error="Attempting to do natural join but no common columns in provided tables")
+d2 = data.table(id1=2:4, id2=letters[3:5], v2=3:1)
+test(2045.12, d1[d2, on=.(id1,id2)], error="Incompatible join types: x.id2 (integer) and i.id2 (character)")
+test(2045.13, d1[d2, verbose=TRUE], output="natural join", error="Incompatible join types: x.id2 (integer) and i.id2 (character)")
+test(2045.14, d1[d1, verbose=TRUE], d1, output="natural join using all 'x' columns")
+d1 = setDT(replicate(20L, 1L, simplify = FALSE))
+d2 = copy(d1[ , 1:15])
+setnames(d2, 1L, 'X1')
+test(2045.15, d1[d2, verbose = TRUE], cbind(d1, X1 = d2$X1), output="natural join using: \\[.*[.]{3}\\]")
+options(datatable.naturaljoin=FALSE)
+
+#tests for adding key to as.data.table, #890
+## as.data.table.numeric (should cover as.data.table.factor, 
+## *.ordered, *.integer, *.logical, *.character, and *.Date since
+## all are the same function in as.data.table.R)
+nn = c(a=0.1, c=0.2, b=0.3, d=0.4)
+ans = data.table(nn, key='nn')
+ans_rn = data.table(rn = names(nn), nn, key='rn')
+test(2046.01, as.data.table(nn, key="nn"), ans)
+test(2046.02, as.data.table(nn, keep.rownames=TRUE, key="rn"), ans_rn)
+
+## as.data.table.data.frame
+DF = as.data.frame(ans)
+test(2046.03, as.data.table(DF, key="nn"), ans)
+
+## as.data.table.data.table
+DT = copy(ans)
+test(2046.04, as.data.table(DT, key="nn"), ans)
+
+## as.data.table.default
+rr <- as.raw(3:1)
+test(2046.05, as.data.table(rr, keep.rownames=TRUE, key="rn"),
+     data.table(rn = paste0(1:3), x = rr, key='rn'))
+
+## as.data.table.list
+l = as.list(ans)
+test(2046.06, as.data.table(l, key='nn'), ans)
+
+## as.data.table.matrix
+mm <- as.matrix(ans)
+test(2046.07, as.data.table(mm, key='nn'), ans)
+
+## as.data.table.array
+aa = array(nn, c(1L, 2L, 2L))
+test(2046.08, as.data.table(aa, key='V3'),
+     data.table(V1 = 1L, V2 = rep(1:2, 2L), V3 = rep(1:2, each = 2L), value = as.vector(nn), key='V3'))
+### conflict between sorted&key arguments
+test(2046.09, as.data.table(aa, key='V3', sorted = TRUE), error="Please provide either 'key' or 'sorted'")
+
+## as.data.table.table
+tt <- as.table(nn)
+test(2046.10, as.data.table(tt, key="N"),
+     data.table(V1 = names(tt), N = as.vector(tt), key='N'))
+
+# some coverage tests uncovered by #890
+test(2047.1, as.data.table(list(character(0L))), data.table(V1 = character(0L)))
+test(2047.2, as.data.table(list()), data.table(NULL))
+test(2047.3, as.data.table(rbind(1L)), data.table(V1 = 1L))
 
 
 ###################################
