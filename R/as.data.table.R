@@ -151,8 +151,7 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, ...) {
       setattr(xx, 'names', names(x)[nz])
     x = xx
   }
-  setDT(x, key=key) # copy ensured above
-  if (is.null(names(x))) setnames(x, paste0("V", seq_len(length(x))))
+  setDT(x, key=key) # copy ensured above; also, setDT handles naming
   x
 }
 
