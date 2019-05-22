@@ -80,6 +80,10 @@
 
 9. New convenience functions `%ilike%` and `%flike%` which map to new `like()` arguments `ignore.case` and `fixed` respectively, [#3333](https://github.com/Rdatatable/data.table/issues/3333). `%ilike%` is for case-insensitive pattern matching. `%flike%` is for more efficient matching of fixed strings. Thanks to @andreasLD for providing most of the core code.
 
+10. It is now possible to join two tables on their common columns, so called _natural join_, [#629](https://github.com/Rdatatable/data.table/issues/629). Use `on=.NATURAL` or `options("datatable.naturaljoin"=TRUE)`. Latter one works only when `x` has no key, if key is present then key columns are being used to join as before. Thanks to David Kulp for request.
+
+11. `as.data.table` gains `key` argument mirroring its use in `setDT` and `data.table`, [#890](https://github.com/Rdatatable/data.table/issues/890). As a byproduct, the arguments of `as.data.table.array` have changed order, which could affect code relying on positional arguments to this method. Thanks @cooldome for the suggestion and @MichaelChirico for implementation.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -104,6 +108,8 @@
 
 11. `test.data.table()` now passes in non-English R sessions, [#630](https://github.com/Rdatatable/data.table/issues/630) [#3039](https://github.com/Rdatatable/data.table/issues/3039). Each test still checks that the number of warnings and/or errors produced is correct. However, a message is displayed suggesting to restart R with `LANGUAGE=en` in order to test that the text of the warning and/or error messages are as expected, too.
 
+12. Joining a double column in `i` containing say 1.3, with an integer column in `x` containing say 1, would result in the 1.3 matching to 1, [#2592](https://github.com/Rdatatable/data.table/issues/2592), and joining a factor column to an integer column would match the factor's integers rather than error. The type coercion logic has been revised and strengthened. Many thanks to @MarkusBonsch for reporting and fixing. Joining a character column in `i` to a factor column in `x` is now faster and retains the character column in the result rather than coercing it to factor. Joining an integer column in `i` to a double column in `x` now retains the integer type in the result rather than coercing the integers into the double type. Logical columns may now only be joined to logical columns, other than all-NA columns which are coerced to the matching column's type. All coercions are reported in verbose mode: `options(datatable.verbose=TRUE)`.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
@@ -121,6 +127,12 @@
 4. New option `options(datatable.quiet = TRUE)` turns off the package startup message, [#3489](https://github.com/Rdatatable/data.table/issues/3489). `suppressPackageStartupMessages()` continues to work too. Thanks to @leobarlach for the suggestion inspired by `options(tidyverse.quiet = TRUE)`. We don't know of a way to make a package respect the `quietly=` option of `library()` and `require()` because the `quietly=` isn't passed through for use by the package's own `.onAttach`. If you can see how to do that, please submit a patch to R.
 
 5. When loading a `data.table` from disk (e.g. with `readRDS`), best practice is to run `setDT()` on the new object to assure it is correctly allocated memory for new column pointers. Barring this, unexpected behavior can follow; for example, if you assign a new column to `DT` from a function `f`, the new columns will only be assigned within `f` and `DT` will be unchanged. The `verbose` messaging in this situation is now more helpful, [#1729](https://github.com/Rdatatable/data.table/issues/1729). Thanks @vspinu for sharing his experience to spur this.
+
+6. New vignette _Using `.SD` for Data Analysis_, a deep dive into use cases for the `.SD` variable to help illuminate this topic which we've found to be a sticking point for beginning and intermediate `data.table` users, [#3412](https://github.com/Rdatatable/data.table/issues/3412).
+
+7. Added a note to `?frank` clarifying that ranking is being done according to C sorting (i.e., like `forder`), [#2328](https://github.com/Rdatatable/data.table/issues/2328). Thanks to @cguill95 for the request.
+
+8. Historically, `dcast` and `melt` were built as enhancements to `reshape2`'s own `dcast`/`melt`. We removed dependency on `reshape2` in v1.9.6 but maintained some backward compatibility. As that package has been deprecated since December 2017, we have now formally completed the split from `reshape2` by removing some last vestiges, [#3549](https://github.com/Rdatatable/data.table/issues/3549). We thank the `reshape2` authors for their original inspiration for these functions.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
