@@ -54,8 +54,10 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
   is_gzip <- compress == "gzip" || (compress == "auto" && grepl("\\.gz$", file))
 
   file <- path.expand(file)  # "~/foo/bar"
-  if (append && missing(col.names) && (file=="" || file.exists(file)))
+  if (append && missing(col.names) && (file=="" || file.exists(file))) {
     col.names = FALSE  # test 1658.16 checks this
+    bom = FALSE
+  }
   if (bom && !col.names) stop("bom can be TRUE only if col.names is TRUE")
   if (identical(quote,"auto")) quote=NA  # logical NA
   if (file=="") {
