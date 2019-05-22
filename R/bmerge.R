@@ -2,74 +2,34 @@
 bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
   callersi = i
-  i = shallow(i)  # important: i is already passed in as a shallow copy from [.data.table because [.data.table
-                       # builds the answer from (potentially) coerced i, other than factor columns for which the
-                       # original levels in i are retained in the final answer.
-  x = shallow(x)       # if any coercions are done for x, we must be careful not to change the caller's view of x.
-  # careful to only plonk syntax (full column) on i/x from now on (otherwise user's i and x would change);
+  # Just so that when a double in i which contains integers stored as double, is joined to an integer column
+  # in x, the i column is returned as integer in the result. Just before the call to bmerge() in [.data.table
+  # there is a shallow() copy of i to prevent this change of type affecting the user's object by reference.
+  # There is only one use of callersi here.
+  # Useful for ad hoc joins when the L postfix is often forgotten.
+  # Otherwise, the type of the i column is always returned.
+
+  i = shallow(i)
+  x = shallow(x)
+  # careful to only plonk syntax (full column) on i/x from now on otherwise user's i and x would change;
   #   this is why shallow() is very importantly internal only, currently.
 
-  #  DELETE ... resetifactor = NULL     # Keep track of any factor to factor/character join cols (only time we keep orig)
+  supported = c("logical", "integer", "double", "character", "factor", "integer64")
 
   getClass <- function(x) {
     ans = typeof(x)
     if      (ans=="integer") { if (is.factor(x))             ans = "factor"    }
     else if (ans=="double")  { if (inherits(x, "integer64")) ans = "integer64" }
-    # do not call isReallyReal(x) yet because if both types are double, we don't need to coerce even if one or both sides are int-as-double
+    # do not call isReallyReal(x) yet because i) if both types are double we don't need to coerce even if one or both sides
+    # are int-as-double, and ii) to save calling it until we really need it
     ans
   }
 
-  ## function or coercing a vector to a new type. Depending on the source and target type,
-  ## different coercion strategies are used.
-  coerceClass <- function(x, to){
-    sourceType <- getClass(x)
-    ## reallyDouble and intAsDouble are the same here:
-    if(sourceType %chin% c("reallyDouble", "intAsDouble")) sourceType <- "double"
-    if(sourceType == to) return(x) ## nothing to be done
-    if(!to %chin% c("logical", "integer", "double", "character", "factor", "integer64"))
-      stop("Invalid 'to' argument: ", to)
-    if(sourceType == "other")
-      stop("type coercion not supported for this type: ", paste0(class(x), collapse = ","))
-    if(sourceType %chin% c("logical", "integer", "double") &
-       to         %chin% c("logical", "integer", "double")){
-      ## for these classes, we can do mode coercion to retain other class attributes, e.g. IDate
-      ## identical types have been caught above
-      out       <- x
-      mode(out) <- to
-    }
-    else {
-      ## we need as.'to'() conversion
-      converter <- match.fun(paste0("as.", to))
-      out       <- converter(x)
-    }
-    return(out)
-  }
-
-  ## Establish a lookup table with coercion strategies for each pair of types.
-  ## Coercion strategies can be one of the following:
-  ##------------------|-----------------------------------------------------
-  ## y (yes):         | no coercion necessary, types match
-  ##------------------|-----------------------------------------------------
-  ## e (error):       | throw an error because of incompatible types
-  ##------------------|-----------------------------------------------------
-  ## ci (coercion i): | coerce the column in i to the type of the column in x
-  ##------------------|-----------------------------------------------------
-  ## ciw:             | same as above, but with warning.
-  ##------------------|-----------------------------------------------------
-  ## cx (coercion x): | coerce the column in x to the type of the column in i
-  ##------------------|-----------------------------------------------------
-  ## cxw:             | same as above, but with warning.
-  ##------------------|-----------------------------------------------------
-  ## rows mark the column type in i, columns the column type in x
-  ## possible types are: logical, integer, intAsDouble, reallyDouble, character, factor, integer64
-
-  supported = c("logical", "integer", "double", "character", "factor", "integer64")
   for (a in seq_along(icols)) {
-    # This loop does the following:
     # - check that join columns have compatible types
-    # - do type coercions if necessary
-    # - special support for joining factor columns
-    # Note that if i is keyed, if this coerces, i's key gets dropped and the key may not be retained
+    # - do type coercions if necessary on just the shallow local copies for the purpose of join
+    # - handle factor columns appropriately
+    # Note that if i is keyed, if this coerces i's key gets dropped by set()
     ic = icols[a]
     xc = xcols[a]
     xclass = getClass(x[[xc]])
@@ -80,30 +40,20 @@ bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbo
       if (roll!=0.0 && a==length(icols))
         stop("Attempting roll join on factor column when joining x.",names(x)[xc]," to i.",names(i)[ic],". Only integer, double or character colums may be roll joined.")
       if (xclass=="factor" && iclass=="factor") {
-        # Levels are matched to levels here, then bmerge.c continues as-if integer
-        # Retain original levels of i's factor column (important when NAs, see tests 687 and 688).  Related fixes: #499 and #945
-        # delete ... resetifactor = c(resetifactor,lc)
-        #            val = origi[[lc]] # note: using 'origi' here because set(..., value = .) always copies '.', we need a way to avoid it in internal cases.
-        #            lx = levels(x[[xc]])
-        #            li = levels(val)
         if (verbose) cat("Matching i.",names(i)[ic]," factor levels to x.",names(x)[xc]," factor levels.\n",sep="")
         set(i, j=ic, value=chmatch(levels(i[[ic]]), levels(x[[xc]]), nomatch=0L)[i[[ic]]])
         next
-        #            levels(newfactor) = lx
-        #            class(newfactor) = "factor"
-        #            set(i, j=lc, value=newfactor)
       } else {
         if (xclass=="character") {
           if (verbose) cat("Coercing factor column i.",names(i)[ic]," to type character to match type of x.",names(x)[xc],".\n",sep="")
-          # val = as.character(i[[ic]])
           set(i, j=ic, value=as.character(i[[ic]]))
-          # set(callersi, j=ic, value=val)
           next
         } else if (iclass=="character") {
           if (verbose) cat("Matching character column i.",names(i)[ic]," to factor levels in x.",names(x)[xc],".\n",sep="")
           set(i, j=ic, value=chmatch(i[[ic]], levels(x[[xc]]), nomatch=0L))
           next
         }
+        # else incompatible join type error below (factors can only join to factors or character)
       }
     }
     if (xclass == iclass) {
@@ -135,24 +85,11 @@ bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbo
         }
         else stop("Incompatible join types: x.",names(x)[xc]," is type integer but i.",names(i)[ic]," is type double and contains fractions")
       } else {
-        #val = as.double(i[[ic]])
         if (verbose) cat("Coerced integer column i.",names(i)[ic]," to type double for join to match type of x.",names(x)[xc],".\n",sep="")
         set(i, j=ic, value=as.double(i[[ic]]))
-        # set(callersi, j=ic, value=val)
       }
     }
   }
-  # browser()
-
-#      stop(sprintf("Incompatible types: %s (%s) and %s (%s)",
-#                   paste0("x.", xcnam), myXtype, paste0("i.", icnam), myItype))
-
-#      if (verbose) {cat(sprintf("Coercing %s column %s to %s to match type of %s.",
-#                                myItype, paste0("i.'", icnam, "'"), myXtype, paste0("x.'", xcnam, "'"))); flush.console()}
-
-#        warning(sprintf("Coercing %s column %s to %s to match type of %s.",
-#                        myItype, paste0("i.'", icnam, "'"), myXtype, paste0("x.'", xcnam, "'")))
-
 
   ## after all modifications of i, check if i has a proper key on all icols
   io <- identical(icols, head(chmatch(key(i), names(i)), length(icols)))
@@ -220,17 +157,7 @@ bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbo
   if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
   # TO DO: xo could be moved inside Cbmerge
 
-  # delete ... in the caller's shallow copy,  see comment at the top of this function for usage
-  # We want to leave the coercions to i in place otherwise, since the caller depends on that to build the result
-  #if (length(resetifactor)) {
-  #  for (ii in resetifactor)
-  #    set(i,j=ii,value=origi[[ii]])
-  #  if (haskey(origi))
-  #    setattr(i, 'sorted', key(origi))
-  #}
-
-  ## add xo for further use
-  ans$xo <- xo
+  ans$xo <- xo  # for further use by [.data.table
   return(ans)
 }
 
