@@ -683,10 +683,6 @@ void fwriteMain(fwriteMainArgs args)
   }
 
   if (args.verbose) {
-    DTPRINT("Writing BOM ...");
-    if (f==-1) DTPRINT("\n");
-  }
-  if (args.verbose) {
     DTPRINT("Writing column names ... ");
     if (f==-1) DTPRINT("\n");
   }
