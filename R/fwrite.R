@@ -105,7 +105,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         dec = dec, qmethod = qmethod, logical01 = logical01
       )
       if (with_bom) {
-          bom <- raw(3)
+          bom <- raw(3L)
           bom[1] <- as.raw(0xEF)
           bom[2] <- as.raw(0xBB)
           bom[3] <- as.raw(0xBF)
