@@ -81,8 +81,7 @@ sugg = c(
   "R.utils",        # for fread to accept .gz and .bz2 files directly
   "yaml"            # for fread's yaml argument (csvy capability)
   # zoo             # In DESCRIPTION:Suggests otherwise R CMD check warning: '::' or ':::' import not declared from: 'zoo'; it is tested in other.Rraw though
-  # reshape2        # In DESCRIPTION:Suggests otherwise same R CMD check warning. See fmelt.R line 1 refers to reshape2 depending on R 3.0.0, but now we do too,
-)                   # perhaps something can be improved now. dcast and melt methods for data.table are tested directly here in main without needing reshape2 loaded.
+)
 for (s in sugg) {
   assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(require(s, character.only=TRUE))))
   if (!loaded) cat("\n**** Suggested package",s,"is not installed. Tests using it will be skipped.\n\n")
@@ -2936,7 +2935,6 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
 # All melt.data.table tests go in here #
 #########################################
 {
-  # reshape2 does not need to be loaded to run these.
   # We run these routinely, in dev by cc(), on Travis (coverage) and on CRAN
   set.seed(45)
   N=18L  # increased in v1.12.2 from 6 to 18 to get NA in f_1 for coverage
@@ -3007,8 +3005,8 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   }
   test(1035.18, foo(DT, by="x"), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)), warning="are not all of the same type. By order of hierarchy, the molten data value column will be of type 'double'")
   test(1035.19, foo(DT), data.table(x=rep(DT$x, 2L), variable=factor(rep(c("y", "v"), each=9L), levels=c("y", "v")), value=c(DT$y, DT$v)),
-               warning=c("To be consistent with reshape2's melt, id.vars and",
-                         "'measure.vars'.*are not all of the same type.*Check"))
+               warning=c("id.vars and measure.vars are internally guessed when both are 'NULL'",
+                         "are not all of the same type. By order of hierarchy"))
   # Fix for #1055; was test 1495
   DT <- data.table(A = 1:2, B = 3:4, D = 5:6, D = 7:8)
   test(1035.20, melt(DT, id=1:2), data.table(A=1:2, B=3:4,
@@ -3297,11 +3295,10 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
 # All dcast.data.table tests go in here #
 #########################################
 {
-  # reshape2 does not need to be loaded to run these.
   # On 14 March 2018, as part of pruning long tests PR#2671, Matt replaced the y value of these tests with the known result. Before that, the tests
-  # coerced to data.frame and comparing to the result of calling the reshape2::dcast data.frame method. Using an explicit known correct result is more
-  # robust than checking that two packages agree; e.g. these check the result is correctly keyed now too. We still Suggest reshape2 but if it has any
-  # problems on CRAN it won't now impact our tests.
+  # coerced to data.frame and compared to the result of calling the reshape2::dcast data.frame method.
+  # Now that we have split completely from reshape2 (which is deprecated), we no longer
+  # want to compare output for consistency to a formally unrelated package
   # We run these routinely, in dev by cc(), on Travis (coverage) and on CRAN
 
   # Just this first test in an extra one originally for #825 to test reshape::cast. Matt retained the test and tweaked it to test dcast

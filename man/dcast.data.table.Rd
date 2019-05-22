@@ -3,7 +3,7 @@
 \alias{dcast}
 \title{Fast dcast for data.table}
 \description{
-  \code{dcast.data.table} is \code{data.table}'s long-to-wide reshaping tool. It is designed as an enhancement to \code{reshape2::dcast}; in the spirit of \code{data.table}, it is very fast and memory efficient, making it well-suited to handling large data sets in RAM.  More importantly, it is capable of handling very large data quite efficiently in terms of memory usage vis-a-vis \code{reshape2::dcast}. \code{dcast.data.table} can also cast multiple \code{value.var} columns and accepts multiple functions to \code{fun.aggregate}. See Examples for more.
+  \code{dcast.data.table} is \code{data.table}'s long-to-wide reshaping tool. In the spirit of \code{data.table}, it is very fast and memory efficient, making it well-suited to handling large data sets in RAM.  More importantly, it is capable of handling very large data quite efficiently in terms of memory usage. \code{dcast.data.table} can also cast multiple \code{value.var} columns and accepts multiple functions to \code{fun.aggregate}. See Examples for more.
 }
 
 \usage{
@@ -51,6 +51,8 @@ From \code{v1.9.4}, \code{dcast} tries to preserve attributes wherever possible.
 
 From \code{v1.9.6}, it is possible to cast multiple \code{value.var} columns and also cast by providing multiple \code{fun.aggregate} functions. Multiple \code{fun.aggregate} functions should be provided as a \code{list}, for e.g., \code{list(mean, sum, function(x) paste(x, collapse="")}. \code{value.var} can be either a character vector or list of length one, or a list of length equal to \code{length(fun.aggregate)}. When \code{value.var} is a character vector or a list of length one, each function mentioned under \code{fun.aggregate} is applied to every column specified under \code{value.var} column. When \code{value.var} is a list of length equal to \code{length(fun.aggregate)} each element of \code{fun.aggregate} is applied to each element of \code{value.var} column.
 
+Historical note: \code{dcast.data.table} was originally designed as an enhancement to \code{reshape2::dcast} in terms of computing and memory efficiency. \code{reshape2} has since been deprecated, and \code{dcast} has had a generic defined within \code{data.table} since \code{v1.9.6} in 2015, at which point the dependency between the packages became more etymological than programmatic. We thank the \code{reshape2} authors for the inspiration.
+
 }
 \value{
     A keyed \code{data.table} that has been cast. The key columns are equal to the variables in the \code{formula} LHS in the same order.
@@ -95,18 +97,6 @@ dcast(DT, v1 + v2 ~ ., value.var = "v4", fun.aggregate = sum)
 # fill and types
 dcast(DT, v2 ~ v3, value.var = 'v1', fill = 0L)  #  0L --> 0
 dcast(DT, v2 ~ v3, value.var = 'v4', fill = 1.1) # 1.1 --> 1L
-
-\dontrun{
-# benchmark against reshape2's dcast, minimum of 3 runs
-set.seed(45)
-DT <- data.table(aa=sample(1e4, 1e6, TRUE),
-      bb=sample(1e3, 1e6, TRUE),
-      cc = sample(letters, 1e6, TRUE), dd=runif(1e6))
-system.time(dcast(DT, aa ~ cc, fun=sum)) # 0.12 seconds
-system.time(dcast(DT, bb ~ cc, fun=mean)) # 0.04 seconds
-# reshape2::dcast takes 31 seconds
-system.time(dcast(DT, aa + bb ~ cc, fun=sum)) # 1.2 seconds
-}
 
 # multiple value.var and multiple fun.aggregate
 DT = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE),

@@ -124,6 +124,8 @@
 
 5. When loading a `data.table` from disk (e.g. with `readRDS`), best practice is to run `setDT()` on the new object to assure it is correctly allocated memory for new column pointers. Barring this, unexpected behavior can follow; for example, if you assign a new column to `DT` from a function `f`, the new columns will only be assigned within `f` and `DT` will be unchanged. The `verbose` messaging in this situation is now more helpful, [#1729](https://github.com/Rdatatable/data.table/issues/1729). Thanks @vspinu for sharing his experience to spur this.
 
+6. Historically, `dcast` and `melt` were built as enhancements to `reshape2`'s own `dcast`/`melt`. We removed dependency on `reshape2` in v1.9.6 but maintained some backward compatibility. As that package has been deprecated since December 2017, we have now formally completed the split from `reshape2` by removing some last vestiges, [#3549](https://github.com/Rdatatable/data.table/issues/3549). We thank the `reshape2` authors for their original inspiration for these functions.
+
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 
