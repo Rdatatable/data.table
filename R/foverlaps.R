@@ -134,8 +134,8 @@ foverlaps <- function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   matches <- function(ii, xx, del, ...) {
     cols = setdiff(names(xx), del)
-    xx = .shallow(xx, cols, retain.key = FALSE)
-    ans = bmerge(xx, ii, seq_along(xx), seq_along(xx), integer(0), mult=mult, ops=rep(1L, length(xx)), integer(0), 1L, verbose=verbose, ...)
+    xx = .shallow(xx, cols, retain.key = TRUE)
+    ans = bmerge(xx, ii, seq_along(xx), seq_along(xx), mult=mult, ops=rep(1L, length(xx)), verbose=verbose, ...)
     # vecseq part should never run here, but still...
     if (ans$allLen1) ans$starts else vecseq(ans$starts, ans$lens, NULL) # nocov
   }
