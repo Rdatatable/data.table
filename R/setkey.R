@@ -86,7 +86,6 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
   }
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
-  
   # forder only if index is not present
   if(is.null(indices(x))){
       if (verbose) {
@@ -97,7 +96,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
           o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)
       }
   } else {
-      o <- attr(attributes(x)$index, names(attributes(attributes(x)$index)))
+      o <- attr(attributes(x)$index, which=names(attributes(attributes(x)$index)), exact = TRUE)
   }
   if (!physical) {
     if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
