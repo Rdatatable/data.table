@@ -86,8 +86,16 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
   }
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
-  # forder only if index is not present
+  
+  # get existing index name if any
+  found_index <- NULL
   if(is.null(indices(x))){
+      found_index <- names(attributes(attributes(x)$index))
+      found_index <- gsub("^__","", found_index)
+  }
+  
+  # forder only if index is not present
+  if(!identical(found_index, cols)){
       if (verbose) {
           tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
           # suppress needed for tests 644 and 645 in verbose mode
@@ -96,7 +104,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
           o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)
       }
   } else {
-      o <- attr(attributes(x)$index, which=names(attributes(attributes(x)$index)), exact = TRUE)
+      o <- attr(attributes(x)$index, which=found_index, exact = TRUE)
   }
   if (!physical) {
     if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
