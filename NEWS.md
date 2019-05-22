@@ -110,6 +110,8 @@
 
 12. Joining a double column in `i` containing say 1.3, with an integer column in `x` containing say 1, would result in the 1.3 matching to 1, [#2592](https://github.com/Rdatatable/data.table/issues/2592), and joining a factor column to an integer column would match the factor's integers rather than error. The type coercion logic has been revised and strengthened. Many thanks to @MarkusBonsch for reporting and fixing. Joining a character column in `i` to a factor column in `x` is now faster and retains the character column in the result rather than coercing it to factor. Joining an integer column in `i` to a double column in `x` now retains the integer type in the result rather than coercing the integers into the double type. Logical columns may now only be joined to logical columns, other than all-NA columns which are coerced to the matching column's type. All coercions are reported in verbose mode: `options(datatable.verbose=TRUE)`.
 
+14. Attempting to recycle 2 or more items into an existing `list` column now gives the intended helpful error rather than `Internal error: recycle length error not caught earlier.`, [#3543](https://github.com/Rdatatable/data.table/issues/3543). Thanks to @MichaelChirico for finding and reporting.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
