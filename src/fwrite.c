@@ -693,7 +693,7 @@ void fwriteMain(fwriteMainArgs args)
     char *buff = malloc(headerLen);
     if (!buff) STOP("Unable to allocate %d MiB for header: %s", headerLen / 1024 / 1024, strerror(errno));
     char *ch = buff;
-    if (args.with_bom)
+    if (args.bom)
         writeBom(&ch);
     if (args.doRowNames) {
       // Unusual: the extra blank column name when row_names are added as the first column

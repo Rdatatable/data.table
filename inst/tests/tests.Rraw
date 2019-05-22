@@ -9508,13 +9508,13 @@ test(1658.47, fwrite(DT), error="Row 3 of list column is type 'factor'")
 # fwrite bom
 DT <- data.table(l=letters, n=1:26)
 
-fwrite(DT, f1 <- tempfile(), with_bom=T)
+fwrite(DT, f1 <- tempfile(), bom=T)
 test(1658.48, identical(readBin(f1, raw(), 6), as.raw(c(0xef, 0xbb, 0xbf, 0x6c, 0x2c, 0x6e))), TRUE)
 
-fwrite(DT, f2 <- tempfile(), with_bom=T, yaml=T)
+fwrite(DT, f2 <- tempfile(), bom=T, yaml=T)
 test(1658.49, identical(readBin(f2, raw(), 6), as.raw(c(0xef, 0xbb, 0xbf, 0x2d, 0x2d, 0x2d))), TRUE)
 
-fwrite(DT, f3 <- tempfile(), with_bom=F)
+fwrite(DT, f3 <- tempfile(), bom=F)
 test(1658.50, identical(readBin(f3, raw(), 3), as.raw(c(0x6c, 0x2c, 0x6e))), TRUE)
 
 fwrite(DT, f4 <- tempfile(), yaml=T)

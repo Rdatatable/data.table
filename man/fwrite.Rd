@@ -19,7 +19,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   showProgress = getOption("datatable.showProgress", interactive()),
   compress = c("auto", "none", "gzip"),
   yaml = FALSE,
-  with_bom = FALSE,
+  bom = FALSE,
   verbose = getOption("datatable.verbose", FALSE))
 }
 \arguments{
@@ -57,7 +57,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
   \item{compress}{If \code{compress = "auto"} and if \code{file} ends in \code{.gz} then output format is gzipped csv else csv. If \code{compress = "none"}, output format is always csv. If \code{compress = "gzip"} then format is gzipped csv. Output to the console is never gzipped even if \code{compress = "gzip"}. By default, \code{compress = "auto"}.}
   \item{yaml}{If \code{TRUE}, \code{fwrite} will output a CSVY file, that is, a CSV file with metadata stored as a YAML header, using \code{\link[yaml]{as.yaml}}. Incompatible with \code{append = TRUE} or \code{gzip} compression. See \code{Details}. }
-  \item{with_bom}{If \code{TRUE} and if \code{col.names} is \code{TRUE}, a BOM sequence (EF BB BF) is added at the beginning of the file and \code{fwrite} will output a file in format 'UTF-8 with BOM'.}
+  \item{bom}{If \code{TRUE} and if \code{col.names} is \code{TRUE}, a BOM sequence (EF BB BF) is added at the beginning of the file and \code{fwrite} will output a file in format 'UTF-8 with BOM'.}
   \item{verbose}{Be chatty and report timings?}
 }
 \details{

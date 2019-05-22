@@ -9,7 +9,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
            showProgress=getOption("datatable.showProgress", interactive()),
            compress = c("auto", "none", "gzip"),
            yaml = FALSE,
-           with_bom = FALSE,
+           bom = FALSE,
            verbose=getOption("datatable.verbose", FALSE)) {
   na = as.character(na[1L]) # fix for #1725
   if (missing(qmethod)) qmethod = qmethod[1L]
@@ -44,7 +44,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     length(compress) == 1L && compress %chin% c("auto", "none", "gzip"),
     isTRUEorFALSE(col.names), isTRUEorFALSE(append), isTRUEorFALSE(row.names),
     isTRUEorFALSE(verbose), isTRUEorFALSE(showProgress), isTRUEorFALSE(logical01),
-    isTRUEorFALSE(with_bom), 
+    isTRUEorFALSE(bom), 
     length(na) == 1L, #1725, handles NULL or character(0) input
     is.character(file) && length(file)==1L && !is.na(file),
     length(buffMB)==1L && !is.na(buffMB) && 1L<=buffMB && buffMB<=1024,
@@ -56,7 +56,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
   file <- path.expand(file)  # "~/foo/bar"
   if (append && missing(col.names) && (file=="" || file.exists(file)))
     col.names = FALSE  # test 1658.16 checks this
-  if (with_bom && !col.names) stop("with_bom can be TRUE only if col.names is TRUE")
+  if (bom && !col.names) stop("bom can be TRUE only if col.names is TRUE")
   if (identical(quote,"auto")) quote=NA  # logical NA
   if (file=="") {
     # console output which it seems isn't thread safe on Windows even when one-batch-at-a-time
@@ -104,13 +104,13 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         header = col.names, sep = sep, sep2 = sep2, eol = eol, na.strings = na,
         dec = dec, qmethod = qmethod, logical01 = logical01
       )
-      if (with_bom) {
+      if (bom) {
           bom <- raw(3L)
           bom[1] <- as.raw(0xEF)
           bom[2] <- as.raw(0xBB)
           bom[3] <- as.raw(0xBF)
           writeBin(bom, file)
-          with_bom <- FALSE
+          bom <- FALSE
       }
       # NB: as.yaml adds trailing newline
       cat('---', yaml::as.yaml(yaml_header, line.sep = eol), '---', sep = eol, file = file, append = TRUE)
@@ -120,6 +120,6 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
   file <- enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, dateTimeAs, buffMB, nThread,
-        showProgress, is_gzip, with_bom, verbose)
+        showProgress, is_gzip, bom, verbose)
   invisible()
 }
