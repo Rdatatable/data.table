@@ -130,6 +130,7 @@
 
 6. New vignette _Using `.SD` for Data Analysis_, a deep dive into use cases for the `.SD` variable to help illuminate this topic which we've found to be a sticking point for beginning and intermediate `data.table` users, [#3412](https://github.com/Rdatatable/data.table/issues/3412).
 
+7. Added a note to `?frank` clarifying that ranking is being done according to C sorting (i.e., like `forder`), [#2328](https://github.com/Rdatatable/data.table/issues/2328). Thanks to @cguill95 for the request.
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 
