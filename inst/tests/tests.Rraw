@@ -9517,10 +9517,7 @@ test(1658.49, identical(readBin(f2, raw(), 6), as.raw(c(0xef, 0xbb, 0xbf, 0x2d, 
 fwrite(DT, f3 <- tempfile(), bom=FALSE)
 test(1658.50, identical(readBin(f3, raw(), 3), as.raw(c(0x6c, 0x2c, 0x6e))), TRUE)
 
-fwrite(DT, f4 <- tempfile(), yaml=TRUE)
-test(1658.51, identical(readBin(f4, raw(), 3), as.raw(c(0x2d, 0x2d, 0x2d))), TRUE)
-
-unlink(c(f1, f2, f3, f4))
+unlink(c(f1, f2, f3))
 
 ## End fwrite tests
 
