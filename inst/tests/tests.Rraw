@@ -14810,29 +14810,27 @@ test(2046.05, as.data.table(rr, keep.rownames=TRUE, key="rn"),
 ## as.data.table.list
 l = as.list(ans)
 test(2046.06, as.data.table(l, key='nn'), ans)
-### for coverage (not strictly related to key argument)
-names(l) = NULL
-test(2046.07, as.data.table(l, key='V1'), setnames(copy(ans), 'V1'))
-test(2046.08, as.data.table(list()), data.table(NULL))
 
 ## as.data.table.matrix
 mm <- as.matrix(ans)
-test(2046.09, as.data.table(mm, key='nn'), ans)
-### for coverage (not strictly related to key argument)
-colnames(mm) = NULL
-test(2046.10, as.data.table(mm, key='V1'), setnames(copy(ans), 'V1'))
+test(2046.07, as.data.table(mm, key='nn'), ans)
 
 ## as.data.table.array
 aa = array(nn, c(1L, 2L, 2L))
-test(2046.11, as.data.table(aa, key='V3'),
+test(2046.08, as.data.table(aa, key='V3'),
      data.table(V1 = 1L, V2 = rep(1:2, 2L), V3 = rep(1:2, each = 2L), value = as.vector(nn), key='V3'))
 ### conflict between sorted&key arguments
-test(2046.12, as.data.table(aa, key='V3', sorted = TRUE), error="Please provide either 'key' or 'sorted'")
+test(2046.09, as.data.table(aa, key='V3', sorted = TRUE), error="Please provide either 'key' or 'sorted'")
 
 ## as.data.table.table
 tt <- as.table(nn)
-test(2046.13, as.data.table(tt, key="N"),
+test(2046.10, as.data.table(tt, key="N"),
      data.table(V1 = names(tt), N = as.vector(tt), key='N'))
+
+# some coverage tests uncovered by #890
+test(2047.1, as.data.table(list(character(0L))), data.table(V1 = character(0L)))
+test(2047.2, as.data.table(list()), data.table(NULL))
+test(2047.3, as.data.table(rbind(1L)), data.table(V1 = 1L))
 
 
 ###################################
