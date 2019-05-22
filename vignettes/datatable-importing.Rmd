@@ -122,6 +122,11 @@ The case for `:=` is slightly different, because `:=` is interpreted as a functi
 
 If you don't mind having `id` and `grp` registered as variables globally in your package namespace you can use `?globalVariables`. Be aware that these notes do not have any impact on the code or its functionality; if you are not going to publish your package, you may simply choose to ignore them.
 
+## Avoid of package options
+
+Common practice is to provide customization of various options globally for a package using `options` function. `data.table` is no exception here. Use of options of your dependency package should be avoided inside your package, and use of options by end user should be used with extra care. The reason for that is because those options works globally, for your package, other packages, and user's code.
+Consider the case when `data.table` is imported by `pkgX`, where `pkgX` compute a join. Then an end user sets `options(datatable.nomatch=NULL)`, as a result join performed by `pkgX` is now an inner join, not outer join. Options are generally safe when you work just with `data.table`, or the package you are developing will be an internal package that will work just with `data.table`. Remember that global options should be well documented.
+
 ## Troubleshooting
 
 If you face any problems in this process, before trying to ask questions or reporting issues, please confirm that the problem is reproducible in a clean R session using the R console: `R CMD check package.name`.
