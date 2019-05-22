@@ -381,8 +381,6 @@ replace_dot_alias <- function(e) {
       isub=NA_integer_
     }
     isnull_inames = FALSE
-    nqgrp = integer(0L)  # for non-equi join
-    nqmaxgrp = 1L       # for non-equi join
     # Fixes 4994: a case where quoted expression with a "!", ex: expr = quote(!dt1); dt[eval(expr)] requires
     # the "eval" to be checked before `as.name("!")`. Therefore interchanged.
     restore.N = remove.N = FALSE
@@ -483,7 +481,7 @@ replace_dot_alias <- function(e) {
       i = as.data.table(i)
     }
     if (is.data.table(i)) {
-      if (!haskey(x) && missing(on) && is.null(xo)) {
+      if (!haskey(x) && missing(on)) {
         stop("When i is a data.table (or character vector), the columns to join by must be specified either using 'on=' argument (see ?data.table) or by keying x (i.e. sorted, and, marked as sorted, see ?setkey). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
       }
       if (!missing(on)) {
@@ -498,69 +496,18 @@ replace_dot_alias <- function(e) {
         leftcols  = chmatch(unname(on), names(i))
         if (length(nacols <- which(is.na(leftcols))))
           stop("Column(s) [", paste(unname(on)[nacols], collapse=","), "] not found in i")
-        # figure out the columns on which to compute groups on
-        non_equi = which.first(ops != 1L) # 1 is "==" operator
-        if (!is.na(non_equi)) {
-          # non-equi operators present.. investigate groups..
-          if (verbose) cat("Non-equi join operators detected ... \n")
-          if (!missingroll) stop("roll is not implemented for non-equi joins yet.")
-          if (verbose) {last.started.at=proc.time();cat("  forder took ... ");flush.console()}
-          # TODO: could check/reuse secondary indices, but we need 'starts' attribute as well!
-          xo = forderv(x, rightcols, retGrp=TRUE)
-          if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-          xg = attr(xo, 'starts')
-          resetcols = head(rightcols, non_equi-1L)
-          if (length(resetcols)) {
-            # TODO: can we get around having to reorder twice here?
-            # or at least reuse previous order?
-            if (verbose) {last.started.at=proc.time();cat("  Generating group lengths ... ");flush.console()}
-            resetlen = attr(forderv(x, resetcols, retGrp=TRUE), 'starts')
-            resetlen = .Call(Cuniqlengths, resetlen, nrow(x))
-            if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
-          } else resetlen = integer(0L)
-          if (verbose) {last.started.at=proc.time();cat("  Generating non-equi group ids ... ");flush.console()}
-          nqgrp = .Call(Cnestedid, x, rightcols[non_equi:length(rightcols)], xo, xg, resetlen, mult)
-          if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
-          if (length(nqgrp)) nqmaxgrp = max(nqgrp) # fix for #1986, when 'x' is 0-row table max(.) returns -Inf.
-          if (nqmaxgrp > 1L) { # got some non-equi join work to do
-            if ("_nqgrp_" %chin% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
-            if (verbose) {last.started.at=proc.time();cat("  Recomputing forder with non-equi ids ... ");flush.console()}
-            set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
-            xo = forderv(nqx, c(ncol(nqx), rightcols))
-            if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
-          } else nqgrp = integer(0L)
-          if (verbose) cat("  Found", nqmaxgrp, "non-equi group(s) ...\n")
-        }
-        if (is.na(non_equi)) {
-          # equi join. use existing key (#1825) or existing secondary index (#1439)
-          if ( identical(head(key(x), length(on)), names(on)) ) {
-            xo = integer(0L)
-            if (verbose) cat("on= matches existing key, using key\n")
-          } else {
-            if (isTRUE(getOption("datatable.use.index"))) {
-              xo = getindex(x, names(on))
-              if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
-            }
-            if (is.null(xo)) {
-              if (verbose) {last.started.at=proc.time(); flush.console()}
-              xo = forderv(x, by = rightcols)
-              if (verbose) {cat("Calculated ad hoc index in",timetaken(last.started.at),"\n"); flush.console()}
-              # TODO: use setindex() instead, so it's cached for future reuse
-            }
-          }
-        }
-      } else if (is.null(xo)) {
+      } else {
+        ## missing on
         rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in bmerge()
         leftcols = if (haskey(i))
           chmatch(head(key(i),length(rightcols)),names(i))
         else
           seq_len(min(length(i),length(rightcols)))
         rightcols = head(rightcols,length(leftcols))
-        xo = integer(0L)  ## signifies 1:.N
         ops = rep(1L, length(leftcols))
       }
       # Implementation for not-join along with by=.EACHI, #604
-      if (notjoin && (byjoin || mult != "all")) { # mult != "all" needed for #1571 fix
+      if (notjoin && (byjoin || mult != "all")) { # mult != "all" needed for #1571
         notjoin = FALSE
         if (verbose) {last.started.at=proc.time();cat("not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ...");flush.console()}
         orignames = copy(names(i))
@@ -570,7 +517,8 @@ replace_dot_alias <- function(e) {
         setattr(i, 'sorted', names(i)) # since 'x' has key set, this'll always be sorted
       }
       i = .shallow(i, retain.key = TRUE)
-      ans = bmerge(i, x, leftcols, rightcols, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp, verbose=verbose)
+      ans = bmerge(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops, verbose=verbose)
+      xo <- ans$xo ## to make it available for further use.
       # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this
       # 'setorder', as there's another 'setorder' in generating 'irows' below...
       if (length(ans$indices)) setorder(setDT(ans[1L:3L]), indices)
@@ -621,9 +569,6 @@ replace_dot_alias <- function(e) {
           if (any_na(as_list(xo))) xo = xo[!is.na(xo)]
         }
       } else {
-        # turning on mult = "first"/"last" for non-equi joins again to test..
-        # if (nqmaxgrp>1L) stop("Non-equi joins aren't yet functional with mult='first' and mult='last'.")
-        # mult="first"/"last" logic moved to bmerge.c, also handles non-equi cases, #1452
         if (!byjoin) { #1287 and #1271
           irows = f__ # len__ is set to 1 as well, no need for 'pmin' logic
           if (identical(nomatch,0L)) irows = irows[len__>0L]  # 0s are len 0, so this removes -1 irows
@@ -3018,7 +2963,7 @@ isReallyReal <- function(x) {
         RHS = RHS[0L]
       } else if (notjoin) {
         ## dt[!x == 3] must not return rows where x is NA
-        RHS = c(RHS, if (is.double(RHS)) c(NA, NaN) else NA)
+        RHS = c(RHS, if (is.double(RHS) && is.double(x[[col]])) c(NA, NaN) else NA)
       }
     }
     ## if it passed until here, fast subset can be done for this stub
