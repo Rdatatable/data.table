@@ -63,6 +63,16 @@ bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbo
     if (xclass=="character" || iclass=="character" ||
         xclass=="logical" || iclass=="logical" ||
         xclass=="factor" || iclass=="factor") {
+      if (anyNA(i[[ic]]) && all(is.na(i[[ic]]))) { # TODO: allNA function in C
+        if (verbose) cat("Coerced all-NA i.",names(i)[ic]," (",iclass,") to type ",xclass," to match type of x.",names(x)[xc],".\n",sep="")
+        set(i, j=ic, value=match.fun(paste0("as.", xclass))(i[[ic]]))
+        next
+      }
+      else if (anyNA(x[[xc]]) && all(is.na(x[[xc]]))) {
+        if (verbose) cat("Coerced all-NA x.",names(x)[xc]," (",xclass,") to type ",iclass," to match type of i.",names(i)[ic],".\n",sep="")
+        set(x, j=xc, value=match.fun(paste0("as.", iclass))(x[[xc]]))
+        next
+      }
       stop("Incompatible join types: x.", names(x)[xc], " (",xclass,") and i.", names(i)[ic], " (",iclass,")")
     }
     if (xclass=="integer64" || iclass=="integer64") {

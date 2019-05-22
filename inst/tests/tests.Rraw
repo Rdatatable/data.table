@@ -14722,6 +14722,21 @@ if (test_bit64) {
   test(2044.71, dt1[dt2, ..cols, on="int64==realDouble", nomatch=0L, verbose=TRUE],
                 error="Incompatible join types: x.int64 is type integer64 but i.realDouble is type double and contains fractions")
 }
+# coercion of all-NA
+dt1 = data.table(a=1,  b=NA_character_)
+dt2 = data.table(a=2L, b=NA)
+test(2044.80, dt1[dt2, on="a==b",             verbose=TRUE], data.table(a=NA, b=NA_character_, i.a=2L),
+              output=msg<-"Coerced all-NA i.b (logical) to type double to match type of x.a")
+test(2044.81, dt1[dt2, on="a==b", nomatch=0L, verbose=TRUE], data.table(a=logical(), b=character(), i.a=integer()),
+              output=msg)
+test(2044.82, dt1[dt2, on="b==b",             verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
+              output=msg<-"Coerced all-NA i.b (logical) to type character to match type of x.b")
+test(2044.83, dt1[dt2, on="b==b", nomatch=0L, verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
+              output=msg)
+test(2044.84, dt1[dt2, on="b==a",             verbose=TRUE], data.table(a=NA_real_, b=2L, i.b=NA),
+              output=msg<-"Coerced all-NA x.b (character) to type integer to match type of i.a")
+test(2044.85, dt1[dt2, on="b==a", nomatch=0L, verbose=TRUE], data.table(a=double(), b=integer(), i.b=logical()),
+              output=msg)
 
 
 ###################################
