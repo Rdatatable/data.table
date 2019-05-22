@@ -67,16 +67,6 @@
   if (!is.null(getOption("datatable.old.bywithoutby")))
     warning("Option 'datatable.old.bywithoutby' has been removed as warned for 2 years. It is now ignored. Please use by=.EACHI instead and stop using this option.")
 
-  # reshape2
-  # Tried this :
-  # if (!"package:reshape2" %in% search()) {
-  #   # temporary until reshape2 pull request to make generic is on CRAN ...
-  #   try(library(reshape2, pos="package:base", quietly=TRUE, warn.conflicts=FALSE), silent=TRUE)
-  # }
-  # which works. But then when melt in data.table is loaded, _that's_ what generates the mask message.
-  # There's also a NOTE: Package startup functions should not change the search path.
-  # Therefore, removed. Users will need to make sure reshape2 isn't loaded, or loaded behind data.table on search()
-
   # Test R behaviour that changed in v3.1 and is now depended on
   x = 1L:3L
   y = list(x)

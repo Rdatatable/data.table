@@ -132,6 +132,9 @@
 
 7. Added a note to `?frank` clarifying that ranking is being done according to C sorting (i.e., like `forder`), [#2328](https://github.com/Rdatatable/data.table/issues/2328). Thanks to @cguill95 for the request.
 
+8. Historically, `dcast` and `melt` were built as enhancements to `reshape2`'s own `dcast`/`melt`. We removed dependency on `reshape2` in v1.9.6 but maintained some backward compatibility. As that package has been deprecated since December 2017, we have now formally completed the split from `reshape2` by removing some last vestiges, [#3549](https://github.com/Rdatatable/data.table/issues/3549). We thank the `reshape2` authors for their original inspiration for these functions.
+
+
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 
 #### NEW FEATURES
