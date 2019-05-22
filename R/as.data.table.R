@@ -1,4 +1,4 @@
-as.data.table <-function(x, keep.rownames=FALSE, ...)
+as.data.table <-function(x, keep.rownames=FALSE, key=NULL, ...)
 {
   if (is.null(x))
     return(null.data.table())
@@ -6,13 +6,13 @@ as.data.table <-function(x, keep.rownames=FALSE, ...)
 }
 
 as.data.table.default <- function(x, ...){
-  as.data.table(as.data.frame(x, ...)) # we cannot assume as.data.frame will do copy, thus setDT changed to as.data.table #3230
+  as.data.table(as.data.frame(x, ...), ...) # we cannot assume as.data.frame will do copy, thus setDT changed to as.data.table #3230
 }
 
 as.data.table.factor <- as.data.table.ordered <-
 as.data.table.integer <- as.data.table.numeric <-
 as.data.table.logical <- as.data.table.character <-
-as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ...) {
+as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, key=NULL, ...) {
   if (is.matrix(x)) {
     return(as.data.table.matrix(x, ...))
   }
@@ -27,21 +27,21 @@ as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ..
     nm = if (length(x) == 2L) if (is.character(keep.rownames)) keep.rownames[1L] else "rn"
     setattr(x, 'names', c(nm, tt))
   }
-  as.data.table.list(x, FALSE)
+  as.data.table.list(x, FALSE, key)
 }
 
 # as.data.table.table - FR #4848
-as.data.table.table <- function(x, keep.rownames=FALSE, ...) {
+as.data.table.table <- function(x, keep.rownames=FALSE, key=NULL, ...) {
   # Fix for bug #5408 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
   val = rev(dimnames(provideDimnames(x)))
   if (is.null(names(val)) || !any(nzchar(names(val))))
     setattr(val, 'names', paste0("V", rev(seq_along(val))))
-  ans <- data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x))
+  ans <- data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x), key=key)
   setcolorder(ans, c(rev(head(names(ans), -1L)), "N"))
   ans
 }
 
-as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
+as.data.table.matrix <- function(x, keep.rownames=FALSE, key=NULL, ...) {
   if (!identical(keep.rownames, FALSE)) {
     # can specify col name to keep.rownames, #575
     ans = data.table(rn=rownames(x), x, keep.rownames=FALSE)
@@ -50,7 +50,6 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
     return(ans)
   }
   d <- dim(x)
-  nrows <- d[1L]
   ncols <- d[2L]
   ic <- seq_len(ncols)
   if (!ncols) return(null.data.table())
@@ -64,33 +63,37 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, ...) {
     for (i in ic) value[[i]] <- as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
   }
   col_labels <- dimnames(x)[[2L]]
+  setDT(value)
   if (length(col_labels) == ncols) {
     if (any(empty <- !nzchar(col_labels)))
       col_labels[empty] <- paste0("V", ic[empty])
-    setattr(value, "names", col_labels)
+    setnames(value, col_labels)
   } else {
-    setattr(value, "names", paste0("V", ic))
+    setnames(value, paste0("V", ic))
   }
-  setattr(value,"row.names",.set_row_names(nrows))
-  setattr(value,"class",c("data.table","data.frame"))
-  alloc.col(value)
+  # setkey now to allow matrix column names as key
+  setkeyv(value, key)
+  value
 }
 
 # as.data.table.array - #1418
-as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name="value", na.rm=TRUE, ...) {
+as.data.table.array <- function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, value.name="value", na.rm=TRUE, ...) {
   dx = dim(x)
   if (length(dx) <= 2L)
-    stop("as.data.table.array method should be only called for arrays with 3+ dimensions, for 2 dimensions matrix method should be used")
+    stop("as.data.table.array method should only be called for arrays with 3+ dimensions; use the matrix method for 2-dimensional arrays")
   if (!is.character(value.name) || length(value.name)!=1L || is.na(value.name) || !nzchar(value.name))
-    stop("Argument 'value.name' must be scalar character, non-NA and non zero char")
+    stop("Argument 'value.name' must be scalar character, non-NA and at least one character")
   if (!is.logical(sorted) || length(sorted)!=1L || is.na(sorted))
     stop("Argument 'sorted' must be scalar logical and non-NA")
   if (!is.logical(na.rm) || length(na.rm)!=1L || is.na(na.rm))
     stop("Argument 'na.rm' must be scalar logical and non-NA")
+  if (!missing(sorted) && !is.null(key))
+    stop("Please provide either 'key' or 'sorted', but not both.")
+
 
   dnx = dimnames(x)
   # NULL dimnames will create integer keys, not character as in table method
-  val = rev(if (is.null(dnx)) lapply(dim(x), seq.int) else dnx)
+  val = rev(if (is.null(dnx)) lapply(dx, seq.int) else dnx)
   if (is.null(names(val)) || all(!nzchar(names(val))))
     setattr(val, 'names', paste0("V", rev(seq_along(val))))
   if (value.name %chin% names(val))
@@ -102,12 +105,12 @@ as.data.table.array <- function(x, keep.rownames=FALSE, sorted=TRUE, value.name=
   setnames(ans, "N", value.name)
   dims = rev(head(names(ans), -1L))
   setcolorder(ans, c(dims, value.name))
-  if (isTRUE(sorted))
-    setkeyv(ans, dims)
+  if (isTRUE(sorted) && is.null(key)) key = dims
+  setkeyv(ans, key)
   ans[]
 }
 
-as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
+as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, ...) {
   wn = sapply(x,is.null)
   if (any(wn)) x = x[!wn]
   if (!length(x)) return( null.data.table() )
@@ -148,10 +151,8 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
       setattr(xx, 'names', names(x)[nz])
     x = xx
   }
-  if (is.null(names(x))) setattr(x,"names",paste0("V",seq_len(length(x))))
-  setattr(x,"row.names",.set_row_names(max(n)))
-  setattr(x,"class",c("data.table","data.frame"))
-  alloc.col(x)
+  setDT(x, key=key) # copy ensured above; also, setDT handles naming
+  x
 }
 
 # don't retain classes before "data.frame" while converting
@@ -166,16 +167,16 @@ as.data.table.list <- function(x, keep.rownames=FALSE, ...) {
   unique( c("data.table", "data.frame", tail(cx, length(cx)-n)) )
 }
 
-as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...) {
+as.data.table.data.frame <- function(x, keep.rownames=FALSE, key=NULL, ...) {
   if (!identical(keep.rownames, FALSE)) {
     # can specify col name to keep.rownames, #575
-    ans = data.table(rn=rownames(x), x, keep.rownames=FALSE)
+    ans = data.table(rn=rownames(x), x, keep.rownames=FALSE, key=key)
     if (is.character(keep.rownames))
       setnames(ans, 'rn', keep.rownames[1L])
     return(ans)
   }
   ans = copy(x)  # TO DO: change this deep copy to be shallow.
-  setattr(ans,"row.names",.set_row_names(nrow(x)))
+  setattr(ans, "row.names", .set_row_names(nrow(x)))
 
   ## NOTE: This test (#527) is no longer in effect ##
   # for nlme::groupedData which has class c("nfnGroupedData","nfGroupedData","groupedData","data.frame")
@@ -185,6 +186,8 @@ as.data.table.data.frame <- function(x, keep.rownames=FALSE, ...) {
   # fix for #1078 and #1128, see .resetclass() for explanation.
   setattr(ans, "class", .resetclass(x, "data.frame"))
   alloc.col(ans)
+  setkeyv(ans, key)
+  ans
 }
 
 as.data.table.data.table <- function(x, ...) {
