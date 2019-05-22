@@ -14461,13 +14461,13 @@ if (test_yaml) {  # csvy; #1701
 
   # windows eol
   fwrite(DT, tmp, yaml = TRUE, eol = '\r\n')
-  test(2033.06, readLines(tmp)[18L], 'eol: "\\r\\n"')
+  test(2033.06, readLines(tmp)[18L], 'eol: |2+')    # was 'eol: "\\r\\n"' before this PR (#3580)
 
   # multi-class columns
   DT[ , t := .POSIXct(1:5, tz = 'UTC')]
   fwrite(DT, tmp, yaml = TRUE)
   as_read = readLines(tmp)
-  test(2033.07, as_read[13L], "    type: POSIXct")
+  test(2033.07, as_read[74L], "    type: POSIXct")  # was as_read[13L] before this PR (#3580)
 
   # ~invertibility~
   # fread side needs to be improved for Hugh's colClasses update
