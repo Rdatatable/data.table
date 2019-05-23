@@ -112,7 +112,7 @@
 
 14. Subassigning using `$<-` to a `data.table` embedded in a list column of a single-row `data.table` could fail, [#3474](https://github.com/Rdatatable/data.table/issues/3474). Note that `$<-` is not recommended; please use `:=` instead which already worked in this case. Thanks to Jakob Richter for reporting.
 
-15. `rbind` and `rbindlist` of zero-row `data.table` now retain again the unused levels of any zero-length factor columns, [#3508](https://github.com/Rdatatable/data.table/issues/3508). This was a regression in v1.12.2 just when stacking zero-row items. Unused factor levels when nrow>=1 were already retained. Thanks to Gregory Demin for reporting.
+15. `rbind` and `rbindlist` of zero-row items now retain (again) the unused levels of any (zero-length) factor columns, [#3508](https://github.com/Rdatatable/data.table/issues/3508). This was a regression in v1.12.2 just for zero-row items. Unused factor levels were already retained for items having `nrow>=1`. Thanks to Gregory Demin for reporting.
 
 #### NOTES
 
