@@ -87,6 +87,7 @@ S3method("names<-", data.table)
 S3method(duplicated, data.table)
 S3method(unique, data.table)
 S3method(merge, data.table)
+export(merge.data.table) #2618
 S3method(subset, data.table)
 S3method(transform, data.table)
 S3method(within, data.table)
