@@ -9515,10 +9515,10 @@ test(1658.47, fwrite(DT), error="Row 3 of list column is type 'factor'")
 DT <- data.table(l=letters, n=1:26)
 
 fwrite(DT, f1 <- tempfile(), bom=TRUE)
+n_lines = length(readLines(f1))
 test(1658.48, readBin(f1, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x6c, 0x2c, 0x6e)))
 
 fwrite(DT, f2 <- tempfile(), bom=FALSE)
-n_lines = length(readLines(f2))
 test(1658.49, readBin(f2, raw(), 3L), as.raw(c(0x6c, 0x2c, 0x6e)))
 
 # re-write to the same file should overwrite
