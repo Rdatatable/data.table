@@ -140,6 +140,7 @@
 
 8. Historically, `dcast` and `melt` were built as enhancements to `reshape2`'s own `dcast`/`melt`. We removed dependency on `reshape2` in v1.9.6 but maintained some backward compatibility. As that package has been deprecated since December 2017, we have now formally completed the split from `reshape2` by removing some last vestiges, [#3549](https://github.com/Rdatatable/data.table/issues/3549). We thank the `reshape2` authors for their original inspiration for these functions.
 
+9. `DT[col]` where `col` is a column containing row numbers of itself to select, now suggests the correct syntax (`DT[(col)]` or `DT[DT$col]`), [#697](https://github.com/Rdatatable/data.table/issues/697). This expands the message introduced in [#1884](https://github.com/Rdatatable/data.table/issues/1884) for the case where `col` is type `logical` and `DT[col==TRUE]` is suggested.
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 

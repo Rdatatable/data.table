@@ -452,10 +452,11 @@ replace_dot_alias <- function(e) {
       if (inherits(i,"try-error")) {
         # must be "not found" since isub is a mere symbol
         col = try(eval(isub, x), silent=TRUE)  # is it a column name?
-        if (identical(typeof(col),"logical"))
-          stop(as.character(isub)," is not found in calling scope but it is a column of type logical. If you wish to select rows where that column is TRUE, either wrap the symbol with '()' or use ==TRUE to be clearest to readers of your code.")
-        else
-          stop(as.character(isub)," is not found in calling scope and it is not a column of type logical. When the first argument inside DT[...] is a single symbol, data.table looks for it in calling scope.")
+        msg = if (inherits(col,"try-error")) " and it is not a column name either."
+              else paste0(" but it is a column of type ", typeof(col),". If you wish to select rows where that column contains TRUE",
+                          ", or perhaps that column contains row numbers of itself to select, try DT[(col)], DT[DT$col], or DT[col==TRUE] is particularly clear and is optimized.")
+        stop(as.character(isub), " is not found in calling scope", msg,
+             " When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope.")
       }
     }
     if (restore.N) {
@@ -633,7 +634,7 @@ replace_dot_alias <- function(e) {
       }
       # TO DO: TODO: Incorporate which_ here on DT[!i] where i is logical. Should avoid i = !i (above) - inefficient.
       # i is not a data.table
-      if (!is.logical(i) && !is.numeric(i)) stop("i has not evaluated to logical, integer or double")
+      if (!is.logical(i) && !is.numeric(i)) stop("i has evaluated to type ", typeof(i), ". Expecting logical, integer or double.")
       if (is.logical(i)) {
         if (length(i)==1L  # to avoid unname copy when length(i)==nrow (normal case we don't want to slow down)
           && isTRUE(unname(i))) { irows=i=NULL }  # unname() for #2152 - length 1 named logical vector.
