@@ -107,15 +107,12 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         dec = dec, qmethod = qmethod, logical01 = logical01
       )
       if (bom) {
-          bom <- raw(3L)
-          bom[1] <- as.raw(0xEF)
-          bom[2] <- as.raw(0xBB)
-          bom[3] <- as.raw(0xBF)
-          writeBin(bom, file)
-          bom <- FALSE
-      }
+        bom_char = rawToChar(as.raw(c(0xEF, 0xBB, 0xBF)))
+        bom = FALSE
+      } else bom_char = ''
       # NB: as.yaml adds trailing newline
-      cat('---', yaml::as.yaml(yaml_header, line.sep = eol), '---', sep = eol, file = file, append = TRUE)
+      cat(paste0(bom_char, '---'), yaml::as.yaml(yaml_header, line.sep = eol), '---', sep = eol, file = file)
+      bom = FALSE
       append = TRUE
     }
   }

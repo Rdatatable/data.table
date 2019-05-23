@@ -9515,15 +9515,12 @@ test(1658.47, fwrite(DT), error="Row 3 of list column is type 'factor'")
 DT <- data.table(l=letters, n=1:26)
 
 fwrite(DT, f1 <- tempfile(), bom=TRUE)
-test(1658.48, identical(readBin(f1, raw(), 6), as.raw(c(0xef, 0xbb, 0xbf, 0x6c, 0x2c, 0x6e))), TRUE)
+test(1658.48, readBin(f1, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x6c, 0x2c, 0x6e)))
 
-fwrite(DT, f2 <- tempfile(), bom=TRUE, yaml=TRUE)
-test(1658.49, identical(readBin(f2, raw(), 6), as.raw(c(0xef, 0xbb, 0xbf, 0x2d, 0x2d, 0x2d))), TRUE)
+fwrite(DT, f2 <- tempfile(), bom=FALSE)
+test(1658.49, readBin(f2, raw(), 3L), as.raw(c(0x6c, 0x2c, 0x6e)))
 
-fwrite(DT, f3 <- tempfile(), bom=FALSE)
-test(1658.50, identical(readBin(f3, raw(), 3), as.raw(c(0x6c, 0x2c, 0x6e))), TRUE)
-
-unlink(c(f1, f2, f3))
+unlink(c(f1, f2))
 
 ## End fwrite tests
 
@@ -14461,13 +14458,13 @@ if (test_yaml) {  # csvy; #1701
 
   # windows eol
   fwrite(DT, tmp, yaml = TRUE, eol = '\r\n')
-  test(2033.06, readLines(tmp)[18L], 'eol: |2+')    # was 'eol: "\\r\\n"' before this PR (#3580)
+  test(2033.06, readLines(tmp)[18L], 'eol: "\\r\\n"')
 
   # multi-class columns
   DT[ , t := .POSIXct(1:5, tz = 'UTC')]
   fwrite(DT, tmp, yaml = TRUE)
   as_read = readLines(tmp)
-  test(2033.07, as_read[74L], "    type: POSIXct")  # was as_read[13L] before this PR (#3580)
+  test(2033.07, as_read[13L], "    type: POSIXct")
 
   # ~invertibility~
   # fread side needs to be improved for Hugh's colClasses update
@@ -14483,6 +14480,12 @@ if (test_yaml) {  # csvy; #1701
        warning = 'Skipping yaml writing because append = TRUE')
   test(2033.10, capture.output(fwrite(DT, compress = 'gzip', yaml = TRUE)), tbl_body,
        warning = 'Skipping yaml writing because is_gzip = TRUE')
+   
+  # yaml + bom arguments  
+  DT <- data.table(l=letters, n=1:26)
+  fwrite(DT, f <- tempfile(), bom=TRUE, yaml=TRUE)
+  test(2033.11, readBin(f, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x2d, 0x2d, 0x2d)))
+  unlink(f)
 }
 
 # fcast coverage
