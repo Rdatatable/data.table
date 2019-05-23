@@ -9515,7 +9515,7 @@ test(1658.47, fwrite(DT), error="Row 3 of list column is type 'factor'")
 DT <- data.table(l=letters, n=1:26)
 
 fwrite(DT, f1 <- tempfile(), bom=TRUE)
-n_lines = length(readLines(f1))
+n_lines = length(readLines(f1, warn = FALSE))
 test(1658.48, readBin(f1, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x6c, 0x2c, 0x6e)))
 
 fwrite(DT, f2 <- tempfile(), bom=FALSE)
@@ -9523,7 +9523,7 @@ test(1658.49, readBin(f2, raw(), 3L), as.raw(c(0x6c, 0x2c, 0x6e)))
 
 # re-write to the same file should overwrite
 fwrite(DT, f2, bom = TRUE)
-test(1658.50, length(readLines(f2)), n_lines)
+test(1658.50, length(readLines(f2, warn = FALSE)), n_lines)
 
 unlink(c(f1, f2))
 
@@ -14489,11 +14489,11 @@ if (test_yaml) {  # csvy; #1701
   # yaml + bom arguments  
   DT <- data.table(l=letters, n=1:26)
   fwrite(DT, f <- tempfile(), bom=TRUE, yaml=TRUE)
-  n_lines = length(readLines(f))
+  n_lines = length(readLines(f, warn = FALSE))
   test(2033.11, readBin(f, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x2d, 0x2d, 0x2d)))
   # re-write should have same output (not appended)
   fwrite(DT, f <- tempfile(), bom=TRUE, yaml=TRUE)
-  test(2033.12, length(readLines(f)), n_lines)
+  test(2033.12, length(readLines(f, warn = FALSE)), n_lines)
   unlink(f)
 }
 
