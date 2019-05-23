@@ -99,6 +99,7 @@ typedef struct fwriteMainArgs
   bool showProgress;
   bool is_gzip;
   bool bom;
+  const char *yaml;
   bool verbose;
 } fwriteMainArgs;
 

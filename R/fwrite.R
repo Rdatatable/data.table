@@ -31,7 +31,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
   # validate arguments
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
     message("x being coerced from class: matrix to data.table")
-    x <- as.data.table(x)
+    x = as.data.table(x)
   }
   stopifnot(is.list(x),
     identical(quote,"auto") || isTRUEorFALSE(quote),
@@ -44,21 +44,20 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     length(compress) == 1L && compress %chin% c("auto", "none", "gzip"),
     isTRUEorFALSE(col.names), isTRUEorFALSE(append), isTRUEorFALSE(row.names),
     isTRUEorFALSE(verbose), isTRUEorFALSE(showProgress), isTRUEorFALSE(logical01),
-    isTRUEorFALSE(bom), 
+    isTRUEorFALSE(bom),
     length(na) == 1L, #1725, handles NULL or character(0) input
     is.character(file) && length(file)==1L && !is.na(file),
     length(buffMB)==1L && !is.na(buffMB) && 1L<=buffMB && buffMB<=1024,
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
     )
 
-  is_gzip <- compress == "gzip" || (compress == "auto" && grepl("\\.gz$", file))
+  is_gzip = compress == "gzip" || (compress == "auto" && grepl("\\.gz$", file))
 
-  file <- path.expand(file)  # "~/foo/bar"
+  file = path.expand(file)  # "~/foo/bar"
   if (append && missing(col.names) && (file=="" || file.exists(file))) {
     col.names = FALSE  # test 1658.16 checks this
     bom = FALSE
   }
-  if (bom && !col.names) stop("bom can be TRUE only if col.names is TRUE") # nocov
   if (identical(quote,"auto")) quote=NA  # logical NA
   if (file=="") {
     # console output which it seems isn't thread safe on Windows even when one-batch-at-a-time
@@ -81,12 +80,12 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
   }
 
   # process YAML after potentially short-circuiting due to irregularities
-  if (yaml) {
+  yaml = if (yaml) {
     if (!requireNamespace('yaml', quietly=TRUE))
       stop("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
-    if (append || is_gzip) {
-      if (append) warning("Skipping yaml writing because append = TRUE; YAML will only be written to the top of a file.")
-      if (is_gzip) warning("Skipping yaml writing because is_gzip = TRUE; compression of YAML metadata is not supported.")
+    if (append && (file=="" || file.exists(file))) {
+      warning("Ignoring yaml=TRUE because append=TRUE and the file already exists. YAML will only be written to the top of a file.")
+      ""
     } else {
       schema_vec = sapply(x, class)
       # multi-class objects reduced to first class
@@ -106,20 +105,13 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
         header=col.names, sep=sep, sep2=sep2, eol=eol, na.strings=na,
         dec=dec, qmethod=qmethod, logical01=logical01
       )
-      if (bom) {
-        # writeBin cannot overwrite, so wipe the file
-        if (file.exists(file)) close(file(file, open='w'))
-        writeBin(as.raw(c(0xEF, 0xBB, 0xBF)), file)
-      }
-      # NB: as.yaml adds trailing newline
-      cat('---', yaml::as.yaml(yaml_header, line.sep=eol), '---', sep=eol, file=file, append=bom)
-      bom = FALSE
-      append = TRUE
+      paste0('---', eol, yaml::as.yaml(yaml_header, line.sep=eol), '---', eol) # NB: as.yaml adds trailing newline
     }
-  }
-  file <- enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
+  } else ""
+  file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, dateTimeAs, buffMB, nThread,
-        showProgress, is_gzip, bom, verbose)
+        showProgress, is_gzip, bom, yaml, verbose)
   invisible()
 }
+
