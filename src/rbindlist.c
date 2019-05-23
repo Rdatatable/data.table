@@ -392,13 +392,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
       for (int i=0; i<LENGTH(l); ++i) {
         const int thisnrow = eachMax[i];
-        if (thisnrow==0) continue;
         SEXP li = VECTOR_ELT(l, i);
+        if (!length(li)) continue;  // NULL items in the list() of DT/DF; not if thisnrow==0 because we need to retain (unused) factor levels (#3508)
         int w = usenames ? colMap[i*ncol + j] : j;
-        SEXP thisCol;
-        if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
+        if (w==-1) {
           writeNA(target, ansloc, thisnrow);
         } else {
+          SEXP thisCol = VECTOR_ELT(li, w);
           SEXP thisColStr = isFactor(thisCol) ? getAttrib(thisCol, R_LevelsSymbol) : (isString(thisCol) ? thisCol : VECTOR_ELT(coercedForFactor, i));
           const int n = length(thisColStr);
           const SEXP *thisColStrD = STRING_PTR(thisColStr);  // D for data
@@ -464,14 +464,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       } else {
         setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
       }
-    } else {
+    } else {  // factor==false
       for (int i=0; i<LENGTH(l); ++i) {
         const int thisnrow = eachMax[i];
         if (thisnrow==0) continue;
         SEXP li = VECTOR_ELT(l, i);
         int w = usenames ? colMap[i*ncol + j] : j;
         SEXP thisCol;
-        if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {
+        if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
           bool coerced = false;
