@@ -154,26 +154,32 @@ void frollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill,
     #pragma omp parallel for num_threads(getDTthreads())
     for (uint_fast64_t i=k-1; i<nx; i++) {                    // loop on every observation with complete window, partial already filled in single threaded section
       long double w = 0.0;
+      double tmp_res = 0.0;
       int nc = 0;                                             // NA counter within sliding window
       for (int j=-k+1; j<=0; j++) {                           // nested loop on window width
         if (ISNAN(x[i+j])) nc++;                              // increment NA count in current window
         else w += x[i+j];                                     // add observation to current window
       }
-      long double res = w / k;                                // keep results as long double for intermediate processing
-      long double err = 0.0;                                  // roundoff corrector
-      if (nc == 0) {                                          // no NAs in current window
-        for (int j=-k+1; j<=0; j++) {                         // sub-loop on window width
-          err += x[i+j] - res;                                // measure roundoff for each obs in window
+      if (w > DBL_MAX) tmp_res = R_PosInf;                    // handle Inf for na.rm=TRUE consistently to base R
+      else if (w < -DBL_MAX) tmp_res = R_NegInf;
+      else {
+        long double res = w / k;                              // keep results as long double for intermediate processing
+        long double err = 0.0;                                // roundoff corrector
+        if (nc == 0) {                                        // no NAs in current window
+          for (int j=-k+1; j<=0; j++) {                       // sub-loop on window width
+            err += x[i+j] - res;                              // measure roundoff for each obs in window
+          }
+          tmp_res = (double) (res + (err / k));               // adjust calculated fun with roundoff correction
+        } else if (nc < k) {
+          for (int j=-k+1; j<=0; j++) {                       // sub-loop on window width
+            if (!ISNAN(x[i+j])) err += x[i+j] - res;          // measure roundoff for each non-NA obs in window
+          }
+          tmp_res = (double) (res + (err / (k - nc)));        // adjust calculated fun with roundoff correction
+        } else {                                              // nc == k
+          tmp_res = R_NaN;                                    // all values NAs and narm so produce expected values
         }
-        ans->dbl_v[i] = (double) (res + (err / k));           // adjust calculated fun with roundoff correction
-      } else if (nc < k) {
-        for (int j=-k+1; j<=0; j++) {                         // sub-loop on window width
-          if (!ISNAN(x[i+j])) err += x[i+j] - res;            // measure roundoff for each non-NA obs in window
-        }
-        ans->dbl_v[i] = (double) (res + (err / (k - nc)));    // adjust calculated fun with roundoff correction
-      } else {                                                // nc == k
-        ans->dbl_v[i] = R_NaN;                                // all values NAs and narm so produce expected values
       }
+      ans->dbl_v[i] = tmp_res;
     }
   }
 }
