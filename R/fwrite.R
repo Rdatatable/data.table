@@ -82,7 +82,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
 
   # process YAML after potentially short-circuiting due to irregularities
   if (yaml) {
-    if (!requireNamespace('yaml', quietly = TRUE))
+    if (!requireNamespace('yaml', quietly=TRUE))
       stop("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
     if (append || is_gzip) {
       if (append) warning("Skipping yaml writing because append = TRUE; YAML will only be written to the top of a file.")
@@ -92,26 +92,27 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
       # multi-class objects reduced to first class
       if (is.list(schema_vec)) schema_vec = sapply(schema_vec, `[`, 1L)
       # as.vector strips names
-      schema_vec = list(name = names(schema_vec), type = as.vector(schema_vec))
+      schema_vec = list(name=names(schema_vec), type=as.vector(schema_vec))
       yaml_header = list(
         source = sprintf('R[v%s.%s]::data.table[v%s]::fwrite',
-                         R.version$major, R.version$minor, format(tryCatch(utils::packageVersion('data.table'), error=function(e)'DEV'))),
-        creation_time_utc = format(Sys.time(), tz = 'UTC'),
+                         R.version$major, R.version$minor, format(tryCatch(utils::packageVersion('data.table'), error=function(e) 'DEV'))),
+        creation_time_utc = format(Sys.time(), tz='UTC'),
         schema = list(
           fields = lapply(
             seq_along(x),
-            function(i) list(name = schema_vec$name[i], type = schema_vec$type[i])
+            function(i) list(name=schema_vec$name[i], type=schema_vec$type[i])
           )
         ),
-        header = col.names, sep = sep, sep2 = sep2, eol = eol, na.strings = na,
-        dec = dec, qmethod = qmethod, logical01 = logical01
+        header=col.names, sep=sep, sep2=sep2, eol=eol, na.strings=na,
+        dec=dec, qmethod=qmethod, logical01=logical01
       )
       if (bom) {
-        bom_char = rawToChar(as.raw(c(0xEF, 0xBB, 0xBF)))
-        bom = FALSE
-      } else bom_char = ''
+        # writeBin cannot overwrite, so wipe the file
+        if (file.exists(file)) close(file(file, open='w'))
+        writeBin(as.raw(c(0xEF, 0xBB, 0xBF)), file)
+      }
       # NB: as.yaml adds trailing newline
-      cat(paste0(bom_char, '---'), yaml::as.yaml(yaml_header, line.sep = eol), '---', sep = eol, file = file)
+      cat('---', yaml::as.yaml(yaml_header, line.sep=eol), '---', sep=eol, file=file, append=bom)
       bom = FALSE
       append = TRUE
     }
