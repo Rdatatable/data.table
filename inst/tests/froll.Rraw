@@ -875,7 +875,6 @@ if (requireNamespace("zoo", quietly=TRUE)) {
         for (na.rm in c(FALSE, TRUE)) {
           for (fill in c(NA_real_, 0)) {
             for (algo in algos) {
-              if (fun=="sum" & algo!="fast") next
               num <<- num + num.step
               eval(substitute( # so we can have values displayed in output/log rather than variables
                 test(.num,

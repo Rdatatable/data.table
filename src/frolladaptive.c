@@ -155,32 +155,30 @@ void fadaptiverollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, dou
         long double w = 0.0;                                  // window to accumulate values in particular window
         long double err = 0.0;                                // accumulate roundoff error
         long double res;                                      // keep results as long double for intermediate processing
-        double tmp_res = 0.0;
         int nc = 0;                                           // NA counter within current window
         for (int j=-k[i]+1; j<=0; j++) {                      // sub-loop on window width
           if (ISNAN(x[i+j])) nc++;                            // increment NA count in current window
           else w += x[i+j];                                   // add observation to current window
         }
-        if (w > DBL_MAX) tmp_res = R_PosInf;                    // handle Inf for na.rm=TRUE consistently to base R
-        else if (w < -DBL_MAX) tmp_res = R_NegInf;
+        if (w > DBL_MAX) ans->dbl_v[i] = R_PosInf;            // handle Inf for na.rm=TRUE consistently to base R
+        else if (w < -DBL_MAX) ans->dbl_v[i] = R_NegInf;
         else {
-          if (nc == 0) {                                        // no NAs in current window
+          if (nc == 0) {                                      // no NAs in current window
             res = w / k[i];
-            for (int j=-k[i]+1; j<=0; j++) {                    // sub-loop on window width to accumulate roundoff error
-              err += x[i+j] - res;                              // measure roundoff for each obs in window
+            for (int j=-k[i]+1; j<=0; j++) {                  // sub-loop on window width to accumulate roundoff error
+              err += x[i+j] - res;                            // measure roundoff for each obs in window
             }
-            tmp_res = (double) (res + (err / k[i]));      // adjust calculated fun with roundoff correction
+            ans->dbl_v[i] = (double) (res + (err / k[i]));    // adjust calculated fun with roundoff correction
           } else if (nc < k[i]) {
             res = w / (k[i]-nc);
-            for (int j=-k[i]+1; j<=0; j++) {                    // sub-loop on window width to accumulate roundoff error
-              if (!ISNAN(x[i+j])) err += x[i+j] - res;          // measure roundoff for each obs in window
+            for (int j=-k[i]+1; j<=0; j++) {                  // sub-loop on window width to accumulate roundoff error
+              if (!ISNAN(x[i+j])) err += x[i+j] - res;        // measure roundoff for each obs in window
             }
-            tmp_res = (double) (res + (err / (k[i] - nc))); // adjust calculated fun with roundoff correction
-          } else {                                              // nc == k[i]
-            tmp_res = R_NaN;                              // this branch assume narm so R_NaN always here
+            ans->dbl_v[i] = (double) (res + (err / (k[i] - nc))); // adjust calculated fun with roundoff correction
+          } else {                                            // nc == k[i]
+            ans->dbl_v[i] = R_NaN;                            // this branch assume narm so R_NaN always here
           }
         }
-        ans->dbl_v[i] = tmp_res;
       }
     }
   } // end of truehasna
