@@ -6029,6 +6029,13 @@ thisDT <- copy(DT)[, c("aaa", "b") := 2]
 test(1419.58, indices(thisDT), c("a", "ab"))
 test(1419.59, allIndicesValid(thisDT), TRUE)
 
+## setkey on same col as index before
+DT <- data.table(a = c(1,1,1,1,1,2,2,2,2,2),
+                 aaa = c(1,1,2,2,2,1,1,2,2,2))
+setindex(DT, a)
+test(1419.59, allIndicesValid(DT), TRUE)
+setkey(DT, a)
+test(1419.60, indices(DT), c("a"))
 
 # setnames updates secondary key
 DT = data.table(a=1:5,b=10:6)
