@@ -58,7 +58,7 @@ fwrite <- function(x, file="", append=FALSE, quote="auto",
     col.names = FALSE  # test 1658.16 checks this
     bom = FALSE
   }
-  if (bom && !col.names) stop("bom can be TRUE only if col.names is TRUE")
+  if (bom && !col.names) stop("bom can be TRUE only if col.names is TRUE") # nocov
   if (identical(quote,"auto")) quote=NA  # logical NA
   if (file=="") {
     # console output which it seems isn't thread safe on Windows even when one-batch-at-a-time
