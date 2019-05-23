@@ -452,10 +452,12 @@ replace_dot_alias <- function(e) {
       if (inherits(i,"try-error")) {
         # must be "not found" since isub is a mere symbol
         col = try(eval(isub, x), silent=TRUE)  # is it a column name?
-        if (identical(typeof(col),"logical"))
-          stop(as.character(isub)," is not found in calling scope but it is a column of type logical. If you wish to select rows where that column is TRUE, either wrap the symbol with '()' or use ==TRUE to be clearest to readers of your code.")
-        else
-          stop(as.character(isub)," is not found in calling scope and it is not a column of type logical. When the first argument inside DT[...] is a single symbol, data.table looks for it in calling scope.")
+        msg_tail = 
+          switch(typeof(col),
+                 logical = "but it is a column of type logical. If you wish to select rows where that column is TRUE, either wrap the symbol with '()' or use ==TRUE to be clearest to readers of your code.",
+                 integer = "but it is a column of type integer. If you wish to index rows using that column, either wrap the symbol with '()' or extract it with `[[` or `$` to be clearest to readers of your code.",
+                 "and it is not a column of type logical or integer. When the first argument inside DT[...] is a single symbol, data.table looks for it in calling scope.")
+        stop(as.character(isub), " is not found in calling scope ", msg_tail)
       }
     }
     if (restore.N) {
