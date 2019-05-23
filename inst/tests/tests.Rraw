@@ -9520,6 +9520,10 @@ test(1658.48, readBin(f1, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x6c, 0x2c, 0x6
 fwrite(DT, f2 <- tempfile(), bom=FALSE)
 test(1658.49, readBin(f2, raw(), 3L), as.raw(c(0x6c, 0x2c, 0x6e)))
 
+# re-write to the same file should overwrite
+fwrite(DT, f2, bom = TRUE)
+test(1658.50, length(readLines(f2)), 27L)
+
 unlink(c(f1, f2))
 
 ## End fwrite tests
@@ -14485,6 +14489,9 @@ if (test_yaml) {  # csvy; #1701
   DT <- data.table(l=letters, n=1:26)
   fwrite(DT, f <- tempfile(), bom=TRUE, yaml=TRUE)
   test(2033.11, readBin(f, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x2d, 0x2d, 0x2d)))
+  # re-write should have same output (not appended)
+  fwrite(DT, f <- tempfile(), bom=TRUE, yaml=TRUE)
+  test(2033.12, length(readLines(f)), 50L)
   unlink(f)
 }
 
