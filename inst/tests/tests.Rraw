@@ -1299,11 +1299,11 @@ f = function() {
 f()
 test(437.2, truelength(DT), 2044L)
 
-# quick test that [<- over allocates (again) after the copy of length via *tmp*
+# quick test that [<- (not recommended) over allocates (again) after the copy of length via *tmp*
 DT = data.table(a=1:3,b=4:6)
 tl = truelength(DT)
 DT$foo = 7L
-test(438, truelength(DT), tl+1L)   # the (not recommended) $<- calls a new alloc.col, hence tl becomes +1
+test(438, truelength(DT), tl)
 DT[,"bar"] = 8L
 test(439, truelength(DT), tl+2L)
 test(440, DT, data.table(a=1:3,b=4:6,foo=7L,bar=8L))
@@ -14835,6 +14835,17 @@ test(2048.1, DT[, newCol:=.(rep(0, .N), rep(1, .N))],       # was ok before when
              error="Supplied 2 items to be assigned to 3 items of column 'newCol'.*please use rep")
 test(2048.2, DT[, existingCol:=.(rep(0, .N), rep(1, .N))],  # was internal error (rather than helpful error) when assigning to existing column
              error="Supplied 2 items to be assigned to 3 items of column 'existingCol'.*please use rep")
+
+# subassign to an embedded data.table in a 1-row data.table; #3474
+inner = data.table(a=1:3, b=1:3)
+outer = data.table(aa=1, ab=list(inner))
+old = options(datatable.verbose=TRUE)
+test(2049.1, outer$ab[[1]]$b <- 4L, 4L,    # also tests the incorrect warning has gone
+             output="RHS_list_of_columns revised to false .df=0.*RHS_list_of_columns revised to false .df=1")
+options(old)
+test(2049.2, outer$ab, list(data.table(a=1:3, b=4L)))
+test(2049.3, outer$ab[[1]][, b := 5L], data.table(a=1:3, b=5L))
+test(2049.4, outer$ab, list(data.table(a=1:3, b=5L)))
 
 
 ###################################
