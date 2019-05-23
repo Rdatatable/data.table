@@ -62,16 +62,14 @@
 6. New functions `nafill` and `setnafill`, [#854](https://github.com/Rdatatable/data.table/issues/854). Thanks to Matthieu Gomez for the request and Jan Gorecki for implementing.
 
     ```R
-    library(data.table)
-    library(zoo)
     DT = setDT(lapply(1:100, function(i) sample(c(rnorm(9e6), rep(NA_real_, 1e6)))))
-    format(object.size(DT), units="GB") ## 7.5 Gb
-    na.locf(DT, na.rm=FALSE)      ## zoo           53.518s
-    setDTthreads(1L);
-    nafill(DT, "locf")            ## DT 1 thread    7.562s
-    setDTthreads(0L);
-    nafill(DT, "locf")            ## DT 40 threads  0.605s
-    setnafill(DT, "locf")         ## DT in-place    0.367s
+    format(object.size(DT), units="GB")  ## 7.5 Gb
+    zoo::na.locf(DT, na.rm=FALSE)  ## zoo           53.518s
+    setDTthreads(1L)
+    nafill(DT, "locf")             ## DT 1 thread    7.562s
+    setDTthreads(0L)
+    nafill(DT, "locf")             ## DT 40 threads  0.605s
+    setnafill(DT, "locf")          ## DT in-place    0.367s
     ```
 
 7. New variable `.Last.updated` (similar to R's `.Last.value`) contains the number of rows affected by the most recent `:=` or `set()`, [#1885](https://github.com/Rdatatable/data.table/issues/1885). For details see `?.Last.updated`.
@@ -98,7 +96,7 @@
 
 6. Printing could occur unexpectedly when code is run with `source`, [#2369](https://github.com/Rdatatable/data.table/issues/2369). Thanks to @jan-glx for the report and reproducible example.
 
-7. Grouping by `NULL` on zero rows data.table now behaves consistently to non-zero rows data.table, [#3530](https://github.com/Rdatatable/data.table/issues/3530). Thanks to @SymbolixAU for the report and reproducible example.
+7. Grouping by `NULL` on zero rows `data.table` now behaves consistently to non-zero rows `data.table`, [#3530](https://github.com/Rdatatable/data.table/issues/3530). Thanks to @SymbolixAU for the report and reproducible example.
 
 8. GForce optimization of `median` did not retain the class; e.g. `median` of `Date` or `POSIXct` would return a raw number rather than retain the date class, [#3079](https://github.com/Rdatatable/data.table/issues/3079). Thanks to @Henrik-P for reporting.
 
@@ -110,7 +108,9 @@
 
 12. Joining a double column in `i` containing say 1.3, with an integer column in `x` containing say 1, would result in the 1.3 matching to 1, [#2592](https://github.com/Rdatatable/data.table/issues/2592), and joining a factor column to an integer column would match the factor's integers rather than error. The type coercion logic has been revised and strengthened. Many thanks to @MarkusBonsch for reporting and fixing. Joining a character column in `i` to a factor column in `x` is now faster and retains the character column in the result rather than coercing it to factor. Joining an integer column in `i` to a double column in `x` now retains the integer type in the result rather than coercing the integers into the double type. Logical columns may now only be joined to logical columns, other than all-NA columns which are coerced to the matching column's type. All coercions are reported in verbose mode: `options(datatable.verbose=TRUE)`.
 
-14. Attempting to recycle 2 or more items into an existing `list` column now gives the intended helpful error rather than `Internal error: recycle length error not caught earlier.`, [#3543](https://github.com/Rdatatable/data.table/issues/3543). Thanks to @MichaelChirico for finding and reporting.
+13. Attempting to recycle 2 or more items into an existing `list` column now gives the intended helpful error rather than `Internal error: recycle length error not caught earlier.`, [#3543](https://github.com/Rdatatable/data.table/issues/3543). Thanks to @MichaelChirico for finding and reporting.
+
+14. Subassigning using `$<-` to a `data.table` embedded in a list column of a single-row `data.table` could fail, [#3474](https://github.com/Rdatatable/data.table/issues/3474). Note that `$<-` is not recommended; please use `:=` instead which already worked in this case. Thanks to Jakob Richter for reporting.
 
 #### NOTES
 
@@ -141,7 +141,7 @@
 
 #### NEW FEATURES
 
-1. `:=` no longer recycles length>1 RHS vectors. There was a warning when recycling left a remainder but no warning when the LHS length was an exact multiple of the RHS length (the same behaviour as base R). Consistent feedback for several years has been that recycling is more often a bug. In rare cases where you need to recycle a length>1 vector, please use `rep()` explicitly. Single values are still recycled silently as before. Early warning was given in [this tweet](https://twitter.com/MattDowle/status/1088544083499311104). The 774 CRAN and Bioconductor packages using data.table were tested and the maintainers of the 16 packages affected (2%) were consulted before going ahead, [#3310](https://github.com/Rdatatable/data.table/pull/3310). Upon agreement we went ahead. Many thanks to all those maintainers for already updating on CRAN, [#3347](https://github.com/Rdatatable/data.table/pull/3347).
+1. `:=` no longer recycles length>1 RHS vectors. There was a warning when recycling left a remainder but no warning when the LHS length was an exact multiple of the RHS length (the same behaviour as base R). Consistent feedback for several years has been that recycling is more often a bug. In rare cases where you need to recycle a length>1 vector, please use `rep()` explicitly. Single values are still recycled silently as before. Early warning was given in [this tweet](https://twitter.com/MattDowle/status/1088544083499311104). The 774 CRAN and Bioconductor packages using `data.table` were tested and the maintainers of the 16 packages affected (2%) were consulted before going ahead, [#3310](https://github.com/Rdatatable/data.table/pull/3310). Upon agreement we went ahead. Many thanks to all those maintainers for already updating on CRAN, [#3347](https://github.com/Rdatatable/data.table/pull/3347).
 
 2. `foverlaps` now supports `type="equal"`, [#3416](https://github.com/Rdatatable/data.table/issues/3416) and part of [#3002](https://github.com/Rdatatable/data.table/issues/3002).
 
