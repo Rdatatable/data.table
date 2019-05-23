@@ -89,7 +89,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   
   # get existing index name if any
   found_index <- NULL
-  if(is.null(indices(x))){
+  if(!is.null(indices(x))){
       found_index <- names(attributes(attributes(x)$index))
       found_index <- gsub("^__","", found_index)
   }
@@ -104,6 +104,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
           o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)
       }
   } else {
+      cat("using existing index for", found_index, "\n")
       o <- attr(attributes(x)$index, which=found_index, exact = TRUE)
   }
   if (!physical) {
