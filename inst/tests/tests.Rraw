@@ -9511,19 +9511,20 @@ test(1658.46, fwrite(DT), error="Row 3 of list column is type 'complex'")
 DT[3,b:=factor(letters[1:3])]
 test(1658.47, fwrite(DT), error="Row 3 of list column is type 'factor'")
 
-old = options(datatable.verbose=TRUE)  # temp trace on windows
 # fwrite bom
 DT = data.table(l=letters, n=1:26)
 fwrite(DT, f1<-tempfile(), bom=TRUE)
 n_lines = length(readLines(f1, warn=FALSE))
 test(1658.48, readBin(f1, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x6c, 0x2c, 0x6e)))
 fwrite(DT, f2<-tempfile(), bom=FALSE)
+print(readBin(f2, raw(), n=1000))
 test(1658.49, readBin(f2, raw(), 3L), as.raw(c(0x6c, 0x2c, 0x6e)))
+print(readBin(f2, raw(), n=1000))
 # re-write to the same file should overwrite
 fwrite(DT, f2, bom=TRUE)
+print(readBin(f2, raw(), n=1000))
 test(1658.50, length(readLines(f2, warn=FALSE)), n_lines)
 unlink(c(f1, f2))
-options(old)
 
 ## End fwrite tests
 
@@ -14478,8 +14479,8 @@ if (test_yaml) {  # csvy; #1701
   attr(DT2, 'yaml_metadata') = NULL
   test(2033.08, all.equal(DT, DT2))
 
-  test(2033.09, capture.output(fwrite(DT, append = TRUE, yaml = TRUE)), tbl_body[-1L],
-       warning = 'Ignoring yaml=TRUE because append=TRUE and the file already exists. YAML.*only.*top of a file')
+  test(2033.09, fwrite(DT, append=TRUE, yaml=TRUE, verbose=TRUE),
+       output = paste0(c('Appending to existing file so setting bom=FALSE and yaml=FALSE', tbl_body[-1L]), collapse=".*"))
 
   # TODO: test gzip'd yaml which is now supported
 
