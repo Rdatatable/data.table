@@ -14491,6 +14491,7 @@ if (test_yaml) {  # csvy; #1701
   DT = data.table(l=letters, n=1:26)
   fwrite(DT, f<-tempfile(), bom=TRUE, yaml=TRUE)
   fcon = file(f, encoding="UTF-8")  # Windows readLines needs to be told; see also test 1658.50
+  print(readLines(fcon))
   test(2033.11, length(readLines(fcon)), 49L)
   close(fcon)
   test(2033.12, readBin(f, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x2d, 0x2d, 0x2d)))
