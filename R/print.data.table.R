@@ -1,6 +1,6 @@
 # Moved here out from data.table.R on 10 Aug 2017. See data.table.R for history prior to that.
 
-print.data.table <- function(x, topn=getOption("datatable.print.topn"),
+print.data.table = function(x, topn=getOption("datatable.print.topn"),
                nrows=getOption("datatable.print.nrows"),
                class=getOption("datatable.print.class"),
                row.names=getOption("datatable.print.rownames"),
@@ -23,7 +23,7 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     # This applies just at the prompt. Inside functions, print(DT) will of course print.
     # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
     #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
-    SYS <- sys.calls()
+    SYS = sys.calls()
     if (length(SYS) <= 2L ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
         ( length(SYS) >= 3L && is.symbol(thisSYS <- SYS[[length(SYS)-2L]][[1L]]) &&
           as.character(thisSYS) == 'source') || # suppress printing from source(echo = TRUE) calls, #2369
@@ -111,11 +111,11 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
   invisible(x)
 }
 
-format.data.table <- function (x, ..., justify="none", timezone = FALSE) {
+format.data.table = function (x, ..., justify="none", timezone = FALSE) {
   if (is.atomic(x) && !is.null(x)) {
     stop("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
-  format.item <- function(x) {
+  format.item = function(x) {
     if (is.null(x))  # NULL item in a list column
       ""
     else if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
@@ -124,7 +124,7 @@ format.data.table <- function (x, ..., justify="none", timezone = FALSE) {
       paste0("<", class(x)[1L], ">")
   }
   # FR #2842 add timezone for posix timestamps
-  format.timezone <- function(col) { # paste timezone to a time object
+  format.timezone = function(col) { # paste timezone to a time object
     tz = attr(col,'tzone', exact = TRUE)
     if (!is.null(tz)) { # date object with tz
       nas = is.na(col)
@@ -135,7 +135,7 @@ format.data.table <- function (x, ..., justify="none", timezone = FALSE) {
   }
   # FR #1091 for pretty printing of character
   # TODO: maybe instead of doing "this is...", we could do "this ... test"?
-  char.trunc <- function(x, trunc.char = getOption("datatable.prettyprint.char")) {
+  char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
     trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
     if (!is.character(x) || trunc.char <= 0L) return(x)
     idx = which(nchar(x) > trunc.char)

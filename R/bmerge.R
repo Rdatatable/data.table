@@ -1,5 +1,5 @@
 
-bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
+bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
   callersi = i
   # Just so that when a double in i which contains integers stored as double, is joined to an integer column
@@ -16,7 +16,7 @@ bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbo
 
   supported = c("logical", "integer", "double", "character", "factor", "integer64")
 
-  getClass <- function(x) {
+  getClass = function(x) {
     ans = typeof(x)
     if      (ans=="integer") { if (is.factor(x))             ans = "factor"    }
     else if (ans=="double")  { if (inherits(x, "integer64")) ans = "integer64" }
@@ -102,7 +102,7 @@ bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbo
   }
 
   ## after all modifications of i, check if i has a proper key on all icols
-  io <- identical(icols, head(chmatch(key(i), names(i)), length(icols)))
+  io = identical(icols, head(chmatch(key(i), names(i)), length(icols)))
 
   ## after all modifications of x, check if x has a proper key on all xcols.
   ## If not, calculate the order. Also for non-equi joins, the order must be calculated.
@@ -113,7 +113,7 @@ bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbo
       xo = integer(0L)
       if (verbose) cat("on= matches existing key, using key\n")
     } else {
-      xo <- NULL
+      xo = NULL
       if (isTRUE(getOption("datatable.use.index"))) {
         xo = getindex(x, names(x)[xcols])
         if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
@@ -126,12 +126,12 @@ bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbo
       }
     }
     ## these vaiables are only needed for non-equi joins. Set them to default.
-    nqgrp <- integer(0)
-    nqmaxgrp <- 1L
+    nqgrp = integer(0)
+    nqmaxgrp = 1L
   } else {
     # non-equi operators present.. investigate groups..
-    nqgrp <- integer(0)
-    nqmaxgrp <- 1L
+    nqgrp = integer(0)
+    nqmaxgrp = 1L
     if (verbose) cat("Non-equi join operators detected ... \n")
     if (roll != FALSE) stop("roll is not implemented for non-equi joins yet.")
     if (verbose) {last.started.at=proc.time();cat("  forder took ... ");flush.console()}
@@ -167,7 +167,7 @@ bmerge <- function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbo
   if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
   # TO DO: xo could be moved inside Cbmerge
 
-  ans$xo <- xo  # for further use by [.data.table
+  ans$xo = xo  # for further use by [.data.table
   return(ans)
 }
 

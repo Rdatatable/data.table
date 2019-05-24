@@ -1,4 +1,4 @@
-as.data.table.xts <- function(x, keep.rownames = TRUE, key=NULL, ...) {
+as.data.table.xts = function(x, keep.rownames = TRUE, key=NULL, ...) {
   stopifnot(requireNamespace("xts"), !missing(x), xts::is.xts(x))
   # as.data.frame.xts will handle copying, and
   #   the error check above ensures as.data.frame.xts is applied
@@ -12,7 +12,7 @@ as.data.table.xts <- function(x, keep.rownames = TRUE, key=NULL, ...) {
   r[]
 }
 
-as.xts.data.table <- function(x, ...) {
+as.xts.data.table = function(x, ...) {
   stopifnot(requireNamespace("xts"), !missing(x), is.data.table(x))
   if (!xts::is.timeBased(x[[1L]])) stop("data.table must have a time based column in first position, use `setcolorder` function to change the order, or see ?timeBased for supported types")
   colsNumeric = vapply_1b(x, is.numeric)[-1L] # exclude first col, xts index
