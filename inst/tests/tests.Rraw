@@ -14491,14 +14491,18 @@ if (test_yaml) {  # csvy; #1701
   DT = data.table(l=letters, n=1:26)
   fwrite(DT, f<-tempfile(), bom=TRUE, yaml=TRUE)
   fcon = file(f, encoding="UTF-8")  # Windows readLines needs to be told; see also test 1658.50
-  print(readLines(fcon))
-  test(2033.11, length(readLines(fcon)), 49L)
+  lines = readLines(fcon)
+  lines = lines[lines!=""]  # an extra "" after "eol: |2+" (line 16) on Linux but not Windows
+                            # remove the blank here so we don't need to change this test if/when that changes in yaml package
+  test(2033.11, length(lines), 48L)
   close(fcon)
   test(2033.12, readBin(f, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x2d, 0x2d, 0x2d)))
   # re-write should have same output (not appended)
   fwrite(DT, f<-tempfile(), bom=TRUE, yaml=TRUE)
   fcon = file(f, encoding="UTF-8")
-  test(2033.13, length(readLines(fcon)), 49L)
+  lines = readLines(fcon)
+  lines = lines[lines!=""]
+  test(2033.13, length(lines), 48L)
   close(fcon)
   test(2033.14, fread(f), DT)
   unlink(f)
