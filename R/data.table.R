@@ -1171,7 +1171,7 @@ replace_dot_alias = function(e) {
               } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
                 assign(as.character(name[[3L]]), x, k, inherits=FALSE)
               }
-            } # TO DO: else if env$= or list$=
+            } # TO DO: else if env$<- or list$<-
           }
         }
       }
