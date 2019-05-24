@@ -1151,7 +1151,7 @@ replace_dot_alias = function(e) {
               # Note that the NAMED(dt)>1 doesn't work because .Call
               # always sets to 2 (see R-ints), it seems. Work around
               # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
-              # because that's just passed in as FALSE from [= where we know `*tmp*` isn't really NAMED=2.
+              # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
               # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
               # don't mind.
             }
@@ -1886,7 +1886,7 @@ replace_dot_alias = function(e) {
 #    #x[[...]]
 #}
 
-#"[[<-.data.table" <- function(x,i,j,value) {
+#"[[<-.data.table" = function(x,i,j,value) {
 #    if (!cedta()) return(`[[<-.data.frame`(x,i,j,value))
 #    if (!missing(j)) stop("[[i,j]] assignment not available in data.table, put assignment(s) in [i,{...}] instead, more powerful")
 #    cl = oldClass(x)  # [[<-.data.frame uses oldClass rather than class, don't know why but we'll follow suit
@@ -2018,8 +2018,8 @@ tail.data.table = function(x, n=6L, ...) {
   x[i]
 }
 
-"[<-.data.table" <- function (x, i, j, value) {
-  # [= is provided for consistency, but := is preferred as it allows by group and by reference to subsets of columns
+"[<-.data.table" = function (x, i, j, value) {
+  # [<- is provided for consistency, but := is preferred as it allows by group and by reference to subsets of columns
   # with no copy of the (very large, say 10GB) columns at all. := is like an UPDATE in SQL and we like and want two symbols to change.
   if (!cedta()) {
     x = if (nargs()<4L) `[<-.data.frame`(x, i, value=value)
@@ -2075,13 +2075,13 @@ tail.data.table = function(x, n=6L, ...) {
   invisible(x)
   # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
   # or uses data.table := syntax; i.e. DT[i,j:=value]
-  # but, there is one copy by R in [= dispatch to `*tmp*`; i.e. DT[i,j]=value. *Update: not from R > 3.0.2, yay*
+  # but, there is one copy by R in [<- dispatch to `*tmp*`; i.e. DT[i,j]=value. *Update: not from R > 3.0.2, yay*
   # That copy is via main/duplicate.c which preserves truelength but copies length amount. Hence alloc.col(x,length(x)).
   # No warn passed to assign here because we know it'll be copied via *tmp*.
   # := allows subassign to a column with no copy of the column at all,  and by group, etc.
 }
 
-"$<-.data.table" <- function(x, name, value) {
+"$<-.data.table" = function(x, name, value) {
   if (!cedta()) {
     ans = `$<-.data.frame`(x, name, value)
     return(alloc.col(ans))           # over-allocate (again)
@@ -2136,7 +2136,7 @@ dimnames.data.table = function(x) {
   x  # this returned value is now shallow copied by R 3.1.0 via *tmp*. A very welcome change.
 }
 
-"names<-.data.table" <- function(x,value)
+"names<-.data.table" = function(x,value)
 {
   # When non data.table aware packages change names, we'd like to maintain the key.
   # If call is names(DT)[2]="newname", R will call this names<-.data.table function (notice no i) with 'value' already prepared to be same length as ncol

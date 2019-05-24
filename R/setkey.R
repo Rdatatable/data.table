@@ -24,7 +24,7 @@ set2keyv = function(...) stop("set2keyv() is now deprecated. Please use setindex
 key2 = function(...)     stop("key2() is now deprecated. Please use indices() instead.")
 
 # upgrade to error after Mar 2020. Has already been warning since 2012, and stronger warning in Mar 2019 (note in news for 1.12.2); #3399
-"key<-" <- function(x,value) {
+"key<-" = function(x,value) {
   warning("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future.")
   setkeyv(x,value)
   # The returned value here from key= is then copied by R before assigning to x, it seems. That's
