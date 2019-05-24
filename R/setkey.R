@@ -1,4 +1,4 @@
-setkey <- function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE)
+setkey = function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE)
 {
   if (is.character(x)) stop("x may no longer be the character name of the data.table. The possibility was undocumented and has been removed.")
   cols = as.character(substitute(list(...))[-1L])
@@ -8,8 +8,8 @@ setkey <- function(x, ..., verbose=getOption("datatable.verbose"), physical=TRUE
 }
 
 # FR #1442
-setindex <- function(...) setkey(..., physical=FALSE)
-setindexv <- function(x, cols, verbose=getOption("datatable.verbose")) {
+setindex = function(...) setkey(..., physical=FALSE)
+setindexv = function(x, cols, verbose=getOption("datatable.verbose")) {
   if (is.list(cols)) {
     sapply(cols, setkeyv, x=x, verbose=verbose, physical=FALSE)
     return(invisible(x))
@@ -19,22 +19,22 @@ setindexv <- function(x, cols, verbose=getOption("datatable.verbose")) {
 }
 
 # remove these 3 after May 2019; see discussion in #3399 and notes in v1.12.2. They were marked experimental after all.
-set2key <- function(...)  stop("set2key() is now deprecated. Please use setindex() instead.")
-set2keyv <- function(...) stop("set2keyv() is now deprecated. Please use setindexv() instead.")
-key2 <- function(...)     stop("key2() is now deprecated. Please use indices() instead.")
+set2key = function(...)  stop("set2key() is now deprecated. Please use setindex() instead.")
+set2keyv = function(...) stop("set2keyv() is now deprecated. Please use setindexv() instead.")
+key2 = function(...)     stop("key2() is now deprecated. Please use indices() instead.")
 
 # upgrade to error after Mar 2020. Has already been warning since 2012, and stronger warning in Mar 2019 (note in news for 1.12.2); #3399
 "key<-" <- function(x,value) {
   warning("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future.")
   setkeyv(x,value)
-  # The returned value here from key<- is then copied by R before assigning to x, it seems. That's
+  # The returned value here from key= is then copied by R before assigning to x, it seems. That's
   # why we can't do anything about it without a change in R itself. If we return NULL (or invisible()) from this key<-
   # method, the table gets set to NULL. So, although we call setkeyv(x,cols) here, and that doesn't copy, the
   # returned value (x) then gets copied by R.
-  # So, solution is that caller has to call setkey or setkeyv directly themselves, to avoid <- dispatch and its copy.
+  # So, solution is that caller has to call setkey or setkeyv directly themselves, to avoid = dispatch and its copy.
 }
 
-setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
+setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
 {
   if (is.null(cols)) {   # this is done on a data.frame when !cedta at top of [.data.table
     if (physical) setattr(x,"sorted",NULL)
@@ -55,7 +55,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
   } else {
     # remove backticks from cols
-    cols <- gsub("`", "", cols, fixed = TRUE)
+    cols = gsub("`", "", cols, fixed = TRUE)
     miss = !(cols %chin% colnames(x))
     if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
   }
@@ -91,7 +91,7 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
     # suppress needed for tests 644 and 645 in verbose mode
     cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
   } else {
-    o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)
+    o = forderv(x, cols, sort=TRUE, retGrp=FALSE)
   }
   if (!physical) {
     if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
@@ -113,18 +113,18 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   invisible(x)
 }
 
-key <- function(x) attr(x,"sorted",exact=TRUE)
+key = function(x) attr(x,"sorted",exact=TRUE)
 
-indices <- function(x, vectors = FALSE) {
+indices = function(x, vectors = FALSE) {
   ans = names(attributes(attr(x,"index",exact=TRUE)))
   if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
-  ans <- gsub("^__","",ans)     # the leading __ is internal only, so remove that in result
+  ans = gsub("^__","",ans)     # the leading __ is internal only, so remove that in result
   if (isTRUE(vectors))
-    ans <- strsplit(ans, "__", fixed = TRUE)
+    ans = strsplit(ans, "__", fixed = TRUE)
   ans
 }
 
-getindex <- function(x, name) {
+getindex = function(x, name) {
   # name can be "col", or "col1__col2", or c("col1","col2")
   ans = attr(attr(x, 'index'), paste0("__",name,collapse=""), exact=TRUE)
   if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) {
@@ -133,18 +133,18 @@ getindex <- function(x, name) {
   ans
 }
 
-haskey <- function(x) !is.null(key(x))
+haskey = function(x) !is.null(key(x))
 
 # reverse a vector by reference (no copy)
-setrev <- function(x) .Call(Csetrev, x)
+setrev = function(x) .Call(Csetrev, x)
 
 # reorder a vector based on 'order' (integer)
 # to be used in fastorder instead of x[o], but in general, it's better to replace vector subsetting with this..?
 # Basic checks that all items of order are in range 1:n with no NAs are now made inside Creorder.
 # FOR INTERNAL USE ONLY
-setreordervec <- function(x, order) .Call(Creorder, x, order)
+setreordervec = function(x, order) .Call(Creorder, x, order)
 
-# sort = sort.int = sort.list = order = is.unsorted <- function(...)
+# sort = sort.int = sort.list = order = is.unsorted = function(...)
 #    stop("Should never be called by data.table internals. Use is.sorted() on vectors, or forder() for lists and vectors.")
 # Nice idea, but users might use these in i or j e.g. blocking order caused tests 304 to fail.
 # Maybe just a grep through *.R for use of these function internally would be better (TO DO).
@@ -158,7 +158,7 @@ setreordervec <- function(x, order) .Call(Creorder, x, order)
 # The others (order, sort.int etc) are turned off to protect ourselves from using them internally, for speed and for
 # consistency; e.g., consistent twiddling of numeric/integer64, NA at the beginning of integer, locale ordering of character vectors.
 
-is.sorted <- function(x, by=seq_along(x)) {
+is.sorted = function(x, by=seq_along(x)) {
   if (is.list(x)) {
     warning("Use 'if (length(o<-forderv(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted.")
     # could pass through a flag for forderv to return early on first FALSE. But we don't need that internally
@@ -174,7 +174,7 @@ is.sorted <- function(x, by=seq_along(x)) {
   # Important to call forder.c::fsorted here, for consistent character ordering and numeric/integer64 twiddling.
 }
 
-forderv <- function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
+forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
 {
   if (!(sort || retGrp)) stop("At least one of retGrp or sort must be TRUE")
   na.last = as.logical(na.last)
@@ -209,7 +209,7 @@ forderv <- function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.la
   .Call(Cforder, x, by, retGrp, sort, order, na.last)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
-forder <- function(x, ..., na.last=TRUE, decreasing=FALSE)
+forder = function(x, ..., na.last=TRUE, decreasing=FALSE)
 {
   if (!is.data.table(x)) stop("x must be a data.table.")
   if (ncol(x) == 0L) stop("Attempting to order a 0-column data.table.")
@@ -234,11 +234,11 @@ forder <- function(x, ..., na.last=TRUE, decreasing=FALSE)
         v = v[[-1L]]
       }
       if (is.name(v)) {
-        ix <- chmatch(as.character(v), xcols, nomatch=0L)
+        ix = chmatch(as.character(v), xcols, nomatch=0L)
         if (ix != 0L) ans <- point(ans, i, x, ix) # see 'point' in data.table.R and C-version pointWrapper in assign.c - avoid copies
         else {
           v = as.call(list(as.name("list"), v))
-          ans <- point(ans, i, eval(v, x, parent.frame()), 1L)
+          ans = point(ans, i, eval(v, x, parent.frame()), 1L)
         }
       } else {
         if (!is.object(eval(v, x, parent.frame()))) {
@@ -255,9 +255,9 @@ forder <- function(x, ..., na.last=TRUE, decreasing=FALSE)
   o
 }
 
-fsort <- function(x, decreasing=FALSE, na.last=FALSE, internal=FALSE, verbose=FALSE, ...)
+fsort = function(x, decreasing=FALSE, na.last=FALSE, internal=FALSE, verbose=FALSE, ...)
 {
-  containsNAs <- FALSE
+  containsNAs = FALSE
   if (typeof(x)=="double" && !decreasing && !(containsNAs<-anyNA(x))) {
       if (internal) stop("Internal code should not be being called on type double")
       return(.Call(Cfsort, x, verbose))
@@ -277,7 +277,7 @@ fsort <- function(x, decreasing=FALSE, na.last=FALSE, internal=FALSE, verbose=FA
   }
 }
 
-setorder <- function(x, ..., na.last=FALSE)
+setorder = function(x, ..., na.last=FALSE)
 # na.last=FALSE here, to be consistent with data.table's default
 # as opposed to DT[order(.)] where na.last=TRUE, to be consistent with base
 {
@@ -304,7 +304,7 @@ setorder <- function(x, ..., na.last=FALSE)
   setorderv(x, cols, order, na.last)
 }
 
-setorderv <- function(x, cols = colnames(x), order=1L, na.last=FALSE)
+setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
 {
   if (is.null(cols)) return(x)
   if (!is.data.frame(x)) stop("x must be a data.frame or data.table")
@@ -317,7 +317,7 @@ setorderv <- function(x, cols = colnames(x), order=1L, na.last=FALSE)
   }
   if (!all(nzchar(cols))) stop("cols contains some blanks.")     # TODO: probably I'm checking more than necessary here.. there are checks in 'forderv' as well
   # remove backticks from cols
-  cols <- gsub("`", "", cols, fixed = TRUE)
+  cols = gsub("`", "", cols, fixed = TRUE)
   miss = !(cols %chin% colnames(x))
   if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
   if (".xi" %chin% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
@@ -341,12 +341,12 @@ setorderv <- function(x, cols = colnames(x), order=1L, na.last=FALSE)
   invisible(x)
 }
 
-binary <- function(x) .Call(Cbinary, x)
+binary = function(x) .Call(Cbinary, x)
 
-setNumericRounding <- function(x) {.Call(CsetNumericRounding, as.integer(x)); invisible()}
-getNumericRounding <- function() .Call(CgetNumericRounding)
+setNumericRounding = function(x) {.Call(CsetNumericRounding, as.integer(x)); invisible()}
+getNumericRounding = function() .Call(CgetNumericRounding)
 
-SJ <- function(...) {
+SJ = function(...) {
   JDT = as.data.table(list(...))
   setkey(JDT)
 }
@@ -354,17 +354,17 @@ SJ <- function(...) {
 
 # TO DO?: Use the CJ list() replication method for SJ (inside as.data.table.list?, #2109) too to avoid alloc.col
 
-CJ <- function(..., sorted = TRUE, unique = FALSE)
+CJ = function(..., sorted = TRUE, unique = FALSE)
 {
   # Pass in a list of unique values, e.g. ids and dates
   # Cross Join will then produce a join table with the combination of all values (cross product).
   # The last vector is varied the quickest in the table, so dates should be last for roll for example
   l = list(...)
-  emptyList <- FALSE ## fix for #2511
+  emptyList = FALSE ## fix for #2511
   if(any(sapply(l, length) == 0L)){
     ## at least one column is empty The whole thing will be empty in the end
-    emptyList <- TRUE
-    l <- lapply(l, "[", 0L)
+    emptyList = TRUE
+    l = lapply(l, "[", 0L)
   }
   if (unique && !emptyList) l = lapply(l, unique)
 
@@ -408,7 +408,7 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
   }
   setattr(l, "names", vnames)
 
-  l <- alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
+  l = alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
   if (sorted) {
     if (!dups) setattr(l, 'sorted', names(l))
     else setkey(l) # fix #1513

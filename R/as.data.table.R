@@ -1,18 +1,18 @@
-as.data.table <-function(x, keep.rownames=FALSE, key=NULL, ...)
+as.data.table =function(x, keep.rownames=FALSE, key=NULL, ...)
 {
   if (is.null(x))
     return(null.data.table())
   UseMethod("as.data.table")
 }
 
-as.data.table.default <- function(x, ...){
+as.data.table.default = function(x, ...){
   as.data.table(as.data.frame(x, ...), ...) # we cannot assume as.data.frame will do copy, thus setDT changed to as.data.table #3230
 }
 
-as.data.table.factor <- as.data.table.ordered <-
-as.data.table.integer <- as.data.table.numeric <-
-as.data.table.logical <- as.data.table.character <-
-as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, key=NULL, ...) {
+as.data.table.factor = as.data.table.ordered =
+as.data.table.integer = as.data.table.numeric =
+as.data.table.logical = as.data.table.character =
+as.data.table.Date = as.data.table.ITime = function(x, keep.rownames=FALSE, key=NULL, ...) {
   if (is.matrix(x)) {
     return(as.data.table.matrix(x, ...))
   }
@@ -20,8 +20,8 @@ as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ke
   nm = names(x)
   # FR #2356 - transfer names of named vector as "rn" column if required
   if (!identical(keep.rownames, FALSE) & !is.null(nm))
-    x <- list(nm, unname(x))
-  else x <- list(x)
+    x = list(nm, unname(x))
+  else x = list(x)
   if (tt == make.names(tt)) {
     # can specify col name to keep.rownames, #575
     nm = if (length(x) == 2L) if (is.character(keep.rownames)) keep.rownames[1L] else "rn"
@@ -31,17 +31,17 @@ as.data.table.Date <- as.data.table.ITime <- function(x, keep.rownames=FALSE, ke
 }
 
 # as.data.table.table - FR #4848
-as.data.table.table <- function(x, keep.rownames=FALSE, key=NULL, ...) {
+as.data.table.table = function(x, keep.rownames=FALSE, key=NULL, ...) {
   # Fix for bug #5408 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
   val = rev(dimnames(provideDimnames(x)))
   if (is.null(names(val)) || !any(nzchar(names(val))))
     setattr(val, 'names', paste0("V", rev(seq_along(val))))
-  ans <- data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x), key=key)
+  ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N = as.vector(x), key=key)
   setcolorder(ans, c(rev(head(names(ans), -1L)), "N"))
   ans
 }
 
-as.data.table.matrix <- function(x, keep.rownames=FALSE, key=NULL, ...) {
+as.data.table.matrix = function(x, keep.rownames=FALSE, key=NULL, ...) {
   if (!identical(keep.rownames, FALSE)) {
     # can specify col name to keep.rownames, #575
     ans = data.table(rn=rownames(x), x, keep.rownames=FALSE)
@@ -49,12 +49,12 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, key=NULL, ...) {
       setnames(ans, 'rn', keep.rownames[1L])
     return(ans)
   }
-  d <- dim(x)
-  ncols <- d[2L]
-  ic <- seq_len(ncols)
+  d = dim(x)
+  ncols = d[2L]
+  ic = seq_len(ncols)
   if (!ncols) return(null.data.table())
 
-  value <- vector("list", ncols)
+  value = vector("list", ncols)
   if (mode(x) == "character") {
     # fix for #745 - A long overdue SO post: http://stackoverflow.com/questions/17691050/data-table-still-converts-strings-to-factors
     for (i in ic) value[[i]] <- x[, i]                  # <strike>for efficiency.</strike> For consistency - data.table likes and prefers "character"
@@ -62,11 +62,11 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, key=NULL, ...) {
   else {
     for (i in ic) value[[i]] <- as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
   }
-  col_labels <- dimnames(x)[[2L]]
+  col_labels = dimnames(x)[[2L]]
   setDT(value)
   if (length(col_labels) == ncols) {
     if (any(empty <- !nzchar(col_labels)))
-      col_labels[empty] <- paste0("V", ic[empty])
+      col_labels[empty] = paste0("V", ic[empty])
     setnames(value, col_labels)
   } else {
     setnames(value, paste0("V", ic))
@@ -77,7 +77,7 @@ as.data.table.matrix <- function(x, keep.rownames=FALSE, key=NULL, ...) {
 }
 
 # as.data.table.array - #1418
-as.data.table.array <- function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, value.name="value", na.rm=TRUE, ...) {
+as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, value.name="value", na.rm=TRUE, ...) {
   dx = dim(x)
   if (length(dx) <= 2L)
     stop("as.data.table.array method should only be called for arrays with 3+ dimensions; use the matrix method for 2-dimensional arrays")
@@ -110,7 +110,7 @@ as.data.table.array <- function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, v
   ans[]
 }
 
-as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, ...) {
+as.data.table.list = function(x, keep.rownames=FALSE, key=NULL, ...) {
   wn = sapply(x,is.null)
   if (any(wn)) x = x[!wn]
   if (!length(x)) return( null.data.table() )
@@ -159,7 +159,7 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, ...) {
 # from it.. like base R does. This'll break test #527 (see
 # tests and as.data.table.data.frame) I've commented #527
 # for now. This addresses #1078 and #1128
-.resetclass <- function(x, class) {
+.resetclass = function(x, class) {
   if (length(class)!=1L)
     stop("class must be length 1") # nocov
   cx = class(x)
@@ -167,7 +167,7 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, ...) {
   unique( c("data.table", "data.frame", tail(cx, length(cx)-n)) )
 }
 
-as.data.table.data.frame <- function(x, keep.rownames=FALSE, key=NULL, ...) {
+as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
   if (!identical(keep.rownames, FALSE)) {
     # can specify col name to keep.rownames, #575
     ans = data.table(rn=rownames(x), x, keep.rownames=FALSE, key=key)
@@ -190,7 +190,7 @@ as.data.table.data.frame <- function(x, keep.rownames=FALSE, key=NULL, ...) {
   ans
 }
 
-as.data.table.data.table <- function(x, ...) {
+as.data.table.data.table = function(x, ...) {
   # as.data.table always returns a copy, automatically takes care of #473
   x = copy(x) # #1681
   # fix for #1078 and #1128, see .resetclass() for explanation.

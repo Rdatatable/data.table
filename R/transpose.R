@@ -1,4 +1,4 @@
-transpose <- function(l, fill=NA, ignore.empty=FALSE) {
+transpose = function(l, fill=NA, ignore.empty=FALSE) {
   ans = .Call(Ctranspose, l, fill, ignore.empty)
   if (is.data.table(l)) setDT(ans)
   else if (is.data.frame(l)) {
@@ -10,7 +10,7 @@ transpose <- function(l, fill=NA, ignore.empty=FALSE) {
   ans[]
 }
 
-tstrsplit <- function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
+tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   ans = transpose(strsplit(as.character(x), ...), fill=fill, ignore.empty=FALSE)
   if (!missing(keep)) {
     keep = suppressWarnings(as.integer(keep))

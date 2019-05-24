@@ -2,11 +2,11 @@
 #   of the R version dependency and (2) reshape2::dcast is not generic.
 #   Anyway, reshape2 package is deprecated since December 2017.
 
-melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
+melt = function(data, ..., na.rm = FALSE, value.name = "value") {
   UseMethod("melt", data)
 }
 
-patterns <- function(..., cols=character(0L)) {
+patterns = function(..., cols=character(0L)) {
   # if ... has no names, names(list(...)) will be "";
   #   this assures they'll be NULL instead
   p = unlist(list(...), use.names = any(nzchar(names(...))))
@@ -15,7 +15,7 @@ patterns <- function(..., cols=character(0L)) {
   lapply(p, grep, cols)
 }
 
-melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variable",
+melt.data.table = function(data, id.vars, measure.vars, variable.name = "variable",
        value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE,
        verbose = getOption("datatable.verbose")) {
   if (!is.data.table(data)) stop("'data' must be a data.table")
@@ -44,7 +44,7 @@ melt.data.table <- function(data, id.vars, measure.vars, variable.name = "variab
       value.name = meas.nm
     }
   }
-  ans <- .Call(Cfmelt, data, id.vars, measure.vars,
+  ans = .Call(Cfmelt, data, id.vars, measure.vars,
       as.logical(variable.factor), as.logical(value.factor),
       variable.name, value.name, as.logical(na.rm),
       as.logical(verbose))
