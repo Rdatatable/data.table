@@ -29,6 +29,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   dcast.data.table = data.table:::dcast.data.table
   forder = data.table:::forder
   forderv = data.table:::forderv
+  format.data.table = data.table:::format.data.table
   getdots = data.table:::getdots
   groupingsets.data.table = data.table:::groupingsets.data.table
   guess = data.table:::guess
@@ -54,6 +55,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   which_ = data.table:::which_
   which.first = data.table:::which.first
   which.last = data.table:::which.last
+  `-.IDate` = data.table:::`-.IDate`
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -8589,6 +8591,10 @@ setnames(x, '.seqn')
 setnames(y, '.seqn')
 test(1626.89, fintersect(x, y), error = "column named '.seqn'")
 
+# empty x shortout
+x = y = data.table(a = 1)
+test(1626.90, fsetdiff(x[0L], y), x[0L])
+
 
 # fix for #1087 and #1465
 test(1627.1, charToRaw(names(fread(testDir("issue_1087_utf8_bom.csv")))[1L]), as.raw(97L))
@@ -14872,6 +14878,9 @@ test(2046.10, as.data.table(tt, key="N"),
 test(2047.1, as.data.table(list(character(0L))), data.table(V1 = character(0L)))
 test(2047.2, as.data.table(list()), data.table(NULL))
 test(2047.3, as.data.table(rbind(1L)), data.table(V1 = 1L))
+mm = rbind(1:2)
+colnames(mm) = c('a', '')
+test(2047.4, as.data.table(mm), data.table(a = 1L, V2 = 2L))
 
 # recyle internal error; #3543
 DT = data.table(A=1:3, existingCol=list(0,1,2))
@@ -14899,6 +14908,23 @@ test(2050.3, rbind(DT[0], DT[1])[,levels(f)], c("a","b","c"))  # ok before
 test(2050.4, rbind(DT[0], DT[0])[,levels(f)], c("a","b","c"))  # now ok again (only when nrow=0 were unused levels dropped)
 test(2050.5, rbindlist(list(DT[0], DT[0]))[,levels(f)], c("a","b","c"))  # now ok again
 test(2050.6, rbind(DT[1], data.table(f=factor(letters[10:11]))[0])[,levels(f)], c("a","b","c","j","k")) # now includes "j","k" again
+
+# coverage tests
+## abusing -.Date, format.data.table, rleidv
+test(2051.1, `-.IDate`(.Date(0), 1L), .Date(-1))
+test(2051.2, `-.IDate`(1L, 1L), error = 'only subtract from "IDate"')
+
+test(2051.3, format.data.table(1L), error = 'Possibly corrupt data.table')
+
+test(2051.4, rleidv(prefix = 1L), error = 'prefix must be NULL or')
+
+## passing Date to second argument of as.POSIXct.ITime
+t = as.ITime(0L)
+test(2051.5, as.POSIXct(t, .Date(0L)), .POSIXct(0, 'UTC'))
+
+## forder of dynamic expression
+DT = data.table(a = 1:3)
+test(2051.6, DT[order(sin(a/pi))], DT)
 
 ###################################
 #  Add new tests above this line  #

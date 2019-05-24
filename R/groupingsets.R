@@ -94,7 +94,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
   int64.cols = vapply(empty, inherits, logical(1L), "integer64")
   int64.cols = names(int64.cols)[int64.cols]
   if (length(int64.cols) && !requireNamespace("bit64", quietly=TRUE))
-    stop("Using integer64 class columns require to have 'bit64' package installed.")
+    stop("Using integer64 class columns require to have 'bit64' package installed.") # nocov
   int64.by.cols = intersect(int64.cols, by)
   # aggregate function called for each grouping set
   aggregate.set = function(by.set) {

@@ -91,8 +91,10 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
 }
 
 `-.IDate` = function (e1, e2) {
-  if (!inherits(e1, "IDate"))
+  if (!inherits(e1, "IDate")) {
+    if (inherits(e1, 'Date')) return(base::`-.Date`(e1, e2))
     stop("can only subtract from \"IDate\" objects")
+  }
   if (storage.mode(e1) != "integer")
     stop("Internal error: storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
