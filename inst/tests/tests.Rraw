@@ -9514,7 +9514,7 @@ test(1658.47, fwrite(DT), error="Row 3 of list column is type 'factor'")
 # fwrite bom
 DT = data.table(l=letters, n=1:26)
 fwrite(DT, f1<-tempfile(), bom=TRUE)
-f1con = file(f1, encoding="UTF-8")  # Windows needs to be told otherwise it thinks n_lines==1
+f1con = file(f1, encoding="UTF-8")  # Windows readLines needs to be told otherwise it thinks n_lines==1
 test(1658.48, length(readLines(f1con)), 27L)
 test(1658.49, readBin(f1, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x6c, 0x2c, 0x6e)))
 close(f1con)
@@ -14488,13 +14488,18 @@ if (test_yaml) {  # csvy; #1701
   # TODO: test gzip'd yaml which is now supported
 
   # yaml + bom arguments
-  DT <- data.table(l=letters, n=1:26)
-  fwrite(DT, f <- tempfile(), bom=TRUE, yaml=TRUE)
-  n_lines = length(readLines(f, warn = FALSE))
-  test(2033.11, readBin(f, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x2d, 0x2d, 0x2d)))
+  DT = data.table(l=letters, n=1:26)
+  fwrite(DT, f<-tempfile(), bom=TRUE, yaml=TRUE)
+  fcon = file(f, encoding="UTF-8")  # Windows readLines needs to be told; see also test 1658.50
+  test(2033.11, length(readLines(fcon)), 49L)
+  close(fcon)
+  test(2033.12, readBin(f, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x2d, 0x2d, 0x2d)))
   # re-write should have same output (not appended)
-  fwrite(DT, f <- tempfile(), bom=TRUE, yaml=TRUE)
-  test(2033.12, length(readLines(f, warn = FALSE)), n_lines)
+  fwrite(DT, f<-tempfile(), bom=TRUE, yaml=TRUE)
+  fcon = file(f, encoding="UTF-8")
+  test(2033.13, length(readLines(fcon)), 49L)
+  close(fcon)
+  test(2033.14, fread(f), DT)
   unlink(f)
 }
 
