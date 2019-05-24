@@ -57,7 +57,7 @@ as.data.table.matrix = function(x, keep.rownames=FALSE, key=NULL, ...) {
   value = vector("list", ncols)
   if (mode(x) == "character") {
     # fix for #745 - A long overdue SO post: http://stackoverflow.com/questions/17691050/data-table-still-converts-strings-to-factors
-    for (i in ic) value[[i]] <- x[, i]                  # <strike>for efficiency.</strike> For consistency - data.table likes and prefers "character"
+    for (i in ic) value[[i]] = x[, i]                  # <strike>for efficiency.</strike> For consistency - data.table likes and prefers "character"
   }
   else {
     for (i in ic) value[[i]] <- as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table

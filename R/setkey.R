@@ -394,7 +394,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
       else
         l[[i]] = rep.int(rep.int(y, times = rep.int(x[i], n[i])), times = nrow/(x[i]*n[i]))
       if (!is.null(attribs[[i]])){
-        attributes(l[[i]]) <- attribs[[i]] # reset all attributes that were destroyed by rep.int
+        attributes(l[[i]]) = attribs[[i]] # reset all attributes that were destroyed by rep.int
       }
     }
   }

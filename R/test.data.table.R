@@ -161,7 +161,7 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
   # stale due to not updating yet since a fix in R-devel, for example.
 
-  #attr(ans, "details") <- env
+  #attr(ans, "details") = env
   invisible(ans)
 }
 

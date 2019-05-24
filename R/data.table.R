@@ -1955,11 +1955,11 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   p = dm[2L]
   n = dm[1L]
   collabs = as.list(cn)
-  class(X) <- NULL
+  class(X) = NULL
   non.numeric = non.atomic = FALSE
   all.logical = TRUE
   for (j in seq_len(p)) {
-    if (is.ff(X[[j]])) X[[j]] <- X[[j]][]   # to bring the ff into memory, since we need to create a matrix in memory
+    if (is.ff(X[[j]])) X[[j]] = X[[j]][]   # to bring the ff into memory, since we need to create a matrix in memory
     xj = X[[j]]
     if (length(dj <- dim(xj)) == 2L && dj[2L] > 1L) {
       if (inherits(xj, "data.table"))
@@ -1993,7 +1993,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       xj = X[[j]]
       miss = is.na(xj)
       xj = if (length(levels(xj))) as.vector(xj) else format(xj)
-      is.na(xj) <- miss
+      is.na(xj) = miss
       X[[j]] = xj
     }
   }
@@ -2160,8 +2160,8 @@ within.data.table = function (data, expr, ...)
   l = l[!vapply_1b(l, is.null)]
   nD = length(del <- setdiff(names(data), (nl <- names(l))))
   ans = copy(data)
-  if (length(nl)) ans[,nl] <- l
-  if (nD) ans[,del] <- NULL
+  if (length(nl)) ans[,nl] = l
+  if (nD) ans[,del] = NULL
   if (haskey(data) && all(key(data) %chin% names(ans))) {
     x = TRUE
     for (i in key(data)) {
@@ -2436,7 +2436,7 @@ point = function(to, to_idx, from, from_idx) {
         setattr(attr(ans, "index", exact = TRUE), index, NULL)
       } else {
         ## rename index to reducedindex
-        names(attributes(attr(ans, "index")))[names(attributes(attr(ans, "index"))) == index] <- reducedindex
+        names(attributes(attr(ans, "index")))[names(attributes(attr(ans, "index"))) == index] = reducedindex
       }
     }
   } else { # retain.key == FALSE
@@ -3003,7 +3003,7 @@ isReallyReal = function(x) {
   ## with 'CJ' and 'do.call' and this would cause problems if colNames were 'sorted' or 'unique'
   ## as these two would be interpreted as args for CJ
   colNames = names(i)
-  names(i) <- NULL
+  names(i) = NULL
   i$sorted = FALSE
   i$unique = TRUE
   i = do.call(CJ, i)
@@ -3153,6 +3153,6 @@ isReallyReal = function(x) {
     stop("Invalid operators ", paste(operators[idx_op %in% c(0L, 6L)], collapse=","), ". Only allowed operators are ", paste(ops[1:5], collapse=""), ".")
   ## the final on will contain the xCol as name, the iCol as value
   on = iCols
-  names(on) <- xCols
+  names(on) = xCols
   return(list(on = on, ops = idx_op))
 }

@@ -64,7 +64,7 @@ as.list.IDate = function(x, ...) NextMethod()
 
 # rounding -- good for graphing / subsetting
 ## round.IDate = function (x, digits, units=digits, ...) {
-##     if (missing(digits)) digits <- units # workaround to provide a units argument to match the round generic and round.POSIXt
+##     if (missing(digits)) digits = units # workaround to provide a units argument to match the round generic and round.POSIXt
 ##     units = match.arg(digits, c("weeks", "months", "quarters", "years"))
 round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...) {
   units = match.arg(digits)
@@ -263,7 +263,7 @@ as.POSIXct.IDate = function(x, tz = "UTC", time = 0, ...) {
     time = tz # allows you to use time as the 2nd argument
     tz = "UTC"
   }
-  if (tz == "") tz <- "UTC"
+  if (tz == "") tz = "UTC"
   as.POSIXct(as.POSIXlt(x, ...), tz, ...) + time
 }
 
