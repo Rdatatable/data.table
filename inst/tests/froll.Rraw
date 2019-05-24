@@ -801,15 +801,15 @@ test(9999.191, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, hasNA=FALSE)
 test(9999.192, frollmean(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, hasNA=FALSE, algo="exact"), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="*hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
 test(9999.193, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, hasNA=FALSE, algo="exact"), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="*hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
 
-### frollsum
-#x = 1:6/2
-#ans1 = frollsum(x, 3)
-#expected = c(rep(NA_real_,2), c(3,4.5,6,7.5))
-#test(9999.201, ans1, expected)
-#n = c(2L, 2L, 3L, 4L, 2L, 3L)
-#ans1 = frollsum(x, n, adaptive=TRUE)
-#expected = c(NA_real_, 1.5, 3, 5, 4.5, 7.5)
-#test(9999.202, ans1, expected)
+## frollsum
+x = 1:6/2
+ans1 = frollsum(x, 3)
+expected = c(rep(NA_real_,2), c(3,4.5,6,7.5))
+test(9999.201, ans1, expected)
+n = c(2L, 2L, 3L, 4L, 2L, 3L)
+ans1 = frollsum(x, n, adaptive=TRUE)
+expected = c(NA_real_, 1.5, 3, 5, 4.5, 7.5)
+test(9999.202, ans1, expected)
 
 ## validation
 
@@ -836,7 +836,7 @@ rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE) {
   for (i in n:nx) ans[i] = f(x[(i-n+1):i], na.rm=na.rm)
   ans
 }
-base_compare = function(x, n, funs=c("mean"), algos=c("fast","exact")) {
+base_compare = function(x, n, funs=c("mean","sum"), algos=c("fast","exact")) {
   num.step = 0.0001
   for (fun in funs) {
     for (na.rm in c(FALSE, TRUE)) {
@@ -867,9 +867,9 @@ num = 9999.6000 # book 3000 tests for zoo
 #### against zoo
 if (requireNamespace("zoo", quietly=TRUE)) {
   drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
-  zoo_compare = function(x, n, funs=c("mean"), algos=c("fast","exact")) {
+  zoo_compare = function(x, n, funs=c("mean","sum"), algos=c("fast","exact")) {
     num.step = 0.0001
-    #### fun, align, na.rm, fill, exact
+    #### fun, align, na.rm, fill, algo
     for (fun in funs) {
       for (align in c("right","center","left")) {
         for (na.rm in c(FALSE, TRUE)) {
@@ -931,9 +931,9 @@ arollfun = function(fun, x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
   }
   ans
 }
-afun_compare = function(x, n, funs=c("mean"), algos=c("fast","exact")) {
+afun_compare = function(x, n, funs=c("mean","sum"), algos=c("fast","exact")) {
   num.step = 0.0001
-  #### fun, na.rm, fill, exact
+  #### fun, na.rm, fill, algo
   for (fun in funs) {
     for (na.rm in c(FALSE, TRUE)) {
       for (fill in c(NA_real_, 0)) {

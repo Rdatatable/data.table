@@ -4,15 +4,20 @@
 \alias{rolling}
 \alias{sliding}
 \alias{moving}
+\alias{rollmean}
 \alias{frollmean}
+\alias{rollsum}
+\alias{frollsum}
 \title{Rolling functions}
 \description{
   Fast rolling functions to calculate aggregates on sliding window. Function name and arguments are experimental.
 }
-
 \usage{
 frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
+  verbose=getOption("datatable.verbose"))
+frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
+  "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
   verbose=getOption("datatable.verbose"))
 }
 \arguments{

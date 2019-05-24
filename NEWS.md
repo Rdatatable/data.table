@@ -86,6 +86,8 @@
 
 12. `merge.data.table` is now exported, [#2618](https://github.com/Rdatatable/data.table/pull/2618). We realize that S3 methods should not ordinarily be exported. Rather, the method should be invoked via S3 dispatch. But users continue to request its export, perhaps because of intricacies relating to the fact that data.table inherits from data.frame, there are two arguments to `merge()` but S3 dispatch applies just to the first, and a desire to explicitly call `data.table::merge.data.table` from package code. Thanks to @AndreMikulec for the most recent request.
 
+13. New rolling function to calculate rolling sum has been implemented and exported, see `?frollsum`, [#2778](https://github.com/Rdatatable/data.table/issues/2778).
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.

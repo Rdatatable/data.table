@@ -1,8 +1,9 @@
 #include "froll.h"
 
-/* fast adaptive rolling functions
- * routes to particular algo
- */
+// helper used to append verbose message or warnings
+static char *end(char *start) {
+  return strchr(start, 0);
+}
 
 /* fast adaptive rolling mean - router
  * algo = 0: fadaptiverollmeanFast
@@ -10,11 +11,6 @@
  * algo = 1: fadaptiverollmeanExact
  *   recalculate whole mean for each observation, roundoff correction is adjusted, also support for NaN and Inf
  */
-
-static char *end(char *start) {
-  return strchr(start, 0);
-}
-
 void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   double tic = 0;
   if (verbose) tic = omp_get_wtime();
@@ -23,13 +19,11 @@ void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *an
   if (verbose) snprintf(end(ans->message[0]), 500, "%s: processing algo %u took %.3fs\n", __func__, algo, omp_get_wtime()-tic);
   // implicit n_message limit discussed here: https://github.com/Rdatatable/data.table/issues/3423#issuecomment-487722586
 }
-
 /* fast adaptive rolling mean - fast
  * when no info on NA (hasNA argument) then assume no NAs run faster version
  * adaptive rollmean implemented as cumsum first pass, then diff cumsum by indexes `i` to `i-k[i]`
  * if NAs detected re-run rollmean implemented as cumsum with NA support
  */
-
 void fadaptiverollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose) snprintf(end(ans->message[0]), 500, "%s: running for input length %llu, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
@@ -101,13 +95,11 @@ void fadaptiverollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int *k, doub
   } // end of truehasna
   free(cs);
 }
-
 /* fast adaptive rolling mean exact
  * extra nested loop to calculate mean of each obs and error correction
  * requires much more cpu
  * uses multiple cores
  */
-
 void fadaptiverollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose) snprintf(end(ans->message[0]), 500, "%s: running in parallel for input length %llu, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, hasna, (int) narm);
 
@@ -182,4 +174,142 @@ void fadaptiverollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, dou
       }
     }
   } // end of truehasna
+}
+
+/* fast adaptive rolling sum */
+void fadaptiverollsum(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+  double tic = 0;
+  if (verbose) tic = omp_get_wtime();
+  if (algo==0) fadaptiverollsumFast(x, nx, ans, k, fill, narm, hasna, verbose);
+  else if (algo==1) fadaptiverollsumExact(x, nx, ans, k, fill, narm, hasna, verbose);
+  if (verbose) snprintf(end(ans->message[0]), 500, "%s: processing algo %u took %.3fs\n", __func__, algo, omp_get_wtime()-tic);
+}
+void fadaptiverollsumFast(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+  if (verbose) snprintf(end(ans->message[0]), 500, "%s: running for input length %llu, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, hasna, (int) narm);
+  bool truehasna = hasna>0;
+  long double w = 0.0;
+  double *cs = malloc(nx*sizeof(double));
+  if (!cs) {                                                    // # nocov start
+    ans->status = 3;
+    snprintf(ans->message[3], 500, "%s: Unable to allocate memory for cumsum", __func__);
+    free(cs);
+    return;
+  }                                                             // # nocov end
+  if (!truehasna) {
+    for (uint_fast64_t i=0; i<nx; i++) {
+      w += x[i];
+      cs[i] = (double) w;
+    }
+    if (R_FINITE((double) w)) {
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (uint_fast64_t i=0; i<nx; i++) {
+        if (i+1 == k[i]) ans->dbl_v[i] = cs[i];
+        else if (i+1 > k[i]) ans->dbl_v[i] = cs[i]-cs[i-k[i]];
+        else ans->dbl_v[i] = fill;
+      }
+    } else {
+      if (hasna==-1) {
+        ans->status = 2;
+        snprintf(end(ans->message[2]), 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
+      }
+      if (verbose) snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+      w = 0.0;
+      truehasna = true;
+    }
+  }
+  if (truehasna) {
+    uint_fast64_t nc = 0;
+    uint_fast64_t *cn = malloc(nx*sizeof(uint_fast64_t));
+    if (!cn) {                                                  // # nocov start
+      ans->status = 3;
+      snprintf(ans->message[3], 500, "%s: Unable to allocate memory for cum NA counter", __func__);
+      free(cs);
+      free(cn);
+      return;
+    }                                                           // # nocov end
+    for (uint_fast64_t i=0; i<nx; i++) {
+      if (R_FINITE(x[i])) w += x[i];
+      else nc++;
+      cs[i] = (double) w;
+      cn[i] = nc;
+    }
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (uint_fast64_t i=0; i<nx; i++) {
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else if (!narm) {
+        if (i+1 == k[i]) {
+          ans->dbl_v[i] = cn[i]>0 ? NA_REAL : cs[i];
+        } else if (i+1 > k[i]) {
+          ans->dbl_v[i] = (cn[i] - cn[i-k[i]])>0 ? NA_REAL : cs[i]-cs[i-k[i]];
+        }
+      } else if (i+1 == k[i]) {
+        int thisk = k[i] - ((int) cn[i]);
+        ans->dbl_v[i] = thisk==0 ? 0.0 : cs[i];
+      } else if (i+1 > k[i]) {
+        int thisk = k[i] - ((int) (cn[i] - cn[i-k[i]]));
+        ans->dbl_v[i] = thisk==0 ? 0.0 : cs[i]-cs[i-k[i]];
+      }
+    }
+    free(cn);
+  }
+  free(cs);
+}
+void fadaptiverollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+  if (verbose) snprintf(end(ans->message[0]), 500, "%s: running in parallel for input length %llu, hasna %d, narm %d\n", __func__, (unsigned long long int)nx, hasna, (int) narm);
+  
+  bool truehasna = hasna>0;
+  
+  if (!truehasna || !narm) {
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (uint_fast64_t i=0; i<nx; i++) {
+      if (narm && truehasna) continue;
+      if (i+1 < k[i]) ans->dbl_v[i] = fill;
+      else {
+        long double w = 0.0;
+        for (int j=-k[i]+1; j<=0; j++) {
+          w += x[i+j];
+        }
+        if (R_FINITE((double) w)) {
+          ans->dbl_v[i] = (double) w;
+        } else {
+          if (!narm) ans->dbl_v[i] = (double) w;
+          truehasna = true;
+        }
+      }
+    }
+    if (truehasna) {
+      if (hasna==-1) {
+        ans->status = 2;
+        snprintf(end(ans->message[2]), 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
+      }
+      if (verbose) {
+        if (narm) snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+        else snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n", __func__);
+      }
+    }
+  }
+  if (truehasna && narm) {
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (uint_fast64_t i=0; i<nx; i++) {
+      if (i+1 < k[i]) ans->dbl_v[i] = fill;
+      else {
+        long double w = 0.0;
+        int nc = 0;
+        for (int j=-k[i]+1; j<=0; j++) {
+          if (ISNAN(x[i+j])) nc++;
+          else w += x[i+j];
+        }
+        if (w > DBL_MAX) ans->dbl_v[i] = R_PosInf;
+        else if (w < -DBL_MAX) ans->dbl_v[i] = R_NegInf;
+        else {
+          if (nc < k[i]) {
+            ans->dbl_v[i] = (double) w;
+          } else {
+            ans->dbl_v[i] = 0.0;
+          }
+        }
+      }
+    }
+  }
 }

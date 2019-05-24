@@ -1,6 +1,9 @@
 #include "froll.h"
 
-/* fast rolling functions */
+// helper used to append verbose message or warnings
+static char *end(char *start) {
+  return strchr(start, 0);
+}
 
 /* fast rolling mean - router
  * early stopping for window bigger than input
@@ -10,11 +13,6 @@
  * algo = 1: frollmeanExact
  *   recalculate whole mean for each observation, roundoff correction is adjusted, also support for NaN and Inf
  */
-
-static char *end(char *start) {                                 // used to append verbose message or warnings
-  return strchr(start, 0);
-}
-
 void frollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
   if (nx < k) {                                                 // if window width bigger than input just return vector of fill values
     if (verbose) snprintf(end(ans->message[0]), 500, "%s: window width longer than input vector, returning all NA vector\n", __func__);
@@ -35,13 +33,11 @@ void frollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k
   }
   if (verbose) snprintf(end(ans->message[0]), 500, "%s: processing algo %u took %.3fs\n", __func__, algo, omp_get_wtime()-tic);
 }
-
 /* fast rolling mean - fast
  * when no info on NA (hasNA argument) then assume no NAs run faster version
  * rollmean implemented as single pass sliding window for align="right"
  * if NAs detected re-run rollmean implemented as single pass sliding window with NA support
  */
-
 void frollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose) snprintf(end(ans->message[0]), 500, "%s: running for input length %llu, window %d, hasna %d, narm %d\n",
                                          __func__, (unsigned long long int)nx, k, hasna, (int)narm);
@@ -104,13 +100,11 @@ void frollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, 
     }
   }
 }
-
 /* fast rolling mean - exact
  * when no info on NA (hasNA argument) then assume no NAs run faster version, also when na.rm=FALSE faster version can proceed
  * rollmean implemented as mean of k obs for each observation for align="right"
  * if NAs detected and na.rm=TRUE then re-run rollmean implemented as mean of k bos for each observation with NA support
  */
-
 void frollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose) snprintf(end(ans->message[0]), 500, "%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n",
                                               __func__, (unsigned long long int)nx, k, hasna, (int)narm);
@@ -176,6 +170,144 @@ void frollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill,
           ans->dbl_v[i] = (double) (res + (err / (k - nc)));  // adjust calculated fun with roundoff correction
         } else {                                              // nc == k
           ans->dbl_v[i] = R_NaN;                              // all values NAs and narm so produce expected values
+        }
+      }
+    }
+  }
+}
+
+/* fast rolling sum */
+void frollsum(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
+  if (nx < k) {
+    if (verbose) snprintf(end(ans->message[0]), 500, "%s: window width longer than input vector, returning all NA vector\n", __func__);
+    for (int i=0; i<nx; i++) ans->dbl_v[i] = fill;
+    return;
+  }
+  double tic = 0;
+  if (verbose) tic = omp_get_wtime();
+  if (algo==0) frollsumFast(x, nx, ans, k, fill, narm, hasna, verbose);
+  else if (algo==1) frollsumExact(x, nx, ans, k, fill, narm, hasna, verbose);
+  // align
+  if (ans->status < 3 && align < 1) {
+    int k_ = align==-1 ? k-1 : floor(k/2);
+    if (verbose) snprintf(end(ans->message[0]), 500, "%s: align %d, shift answer by %d\n", __func__, align, -k_);
+    memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double));
+    for (uint_fast64_t i=nx-k_; i<nx; i++) ans->dbl_v[i] = fill;
+  }
+  if (verbose) snprintf(end(ans->message[0]), 500, "%s: processing algo %u took %.3fs\n", __func__, algo, omp_get_wtime()-tic);
+}
+void frollsumFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
+  if (verbose) snprintf(end(ans->message[0]), 500, "%s: running for input length %llu, window %d, hasna %d, narm %d\n",
+      __func__, (unsigned long long int)nx, k, hasna, (int)narm);
+  long double w = 0.0;
+  bool truehasna = hasna>0;
+  if (!truehasna) {
+    int i;
+    for (i=0; i<k-1; i++) {
+      w += x[i];
+      ans->dbl_v[i] = fill;
+    }
+    w += x[i];
+    ans->dbl_v[i] = (double) w;
+    if (R_FINITE((double) w)) {
+      for (uint_fast64_t i=k; i<nx; i++) {
+        w -= x[i-k];
+        w += x[i];
+        ans->dbl_v[i] = (double) w;
+      }
+      if (!R_FINITE((double) w)) {
+        if (hasna==-1) {
+          ans->status = 2;
+          snprintf(end(ans->message[2]), 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
+        }
+        if (verbose) snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+        w = 0.0;
+        truehasna = true;
+      }
+    } else {
+      if (hasna==-1) {
+        ans->status = 2;
+        snprintf(end(ans->message[2]), 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
+      }
+      if (verbose) snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs\n", __func__);
+      w = 0.0;
+      truehasna = true;
+    }
+  }
+  if (truehasna) {
+    int nc = 0;
+    int i;
+    for (i=0; i<k-1; i++) {
+      if (R_FINITE(x[i])) w += x[i];
+      else nc++;
+      ans->dbl_v[i] = fill;
+    }
+    if (R_FINITE(x[i])) w += x[i];
+    else nc++;
+    if (nc == 0) ans->dbl_v[i] = (double) w;
+    else if (nc == k) ans->dbl_v[i] = narm ? 0.0 : NA_REAL;
+    else ans->dbl_v[i] = narm ? (double) w : NA_REAL;
+    for (uint_fast64_t i=k; i<nx; i++) {
+      if (R_FINITE(x[i])) w += x[i];
+      else nc++;
+      if (R_FINITE(x[i-k])) w -= x[i-k];
+      else nc--;
+      if (nc == 0) ans->dbl_v[i] = (double) w;
+      else if (nc == k) ans->dbl_v[i] = narm ? 0.0 : NA_REAL;
+      else ans->dbl_v[i] = narm ? (double) w : NA_REAL;
+    }
+  }
+}
+void frollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
+  if (verbose) snprintf(end(ans->message[0]), 500, "%s: running in parallel for input length %llu, window %d, hasna %d, narm %d\n",
+      __func__, (unsigned long long int)nx, k, hasna, (int)narm);
+
+  for (int i=0; i<k-1; i++) {
+    ans->dbl_v[i] = fill;
+  }
+  bool truehasna = hasna>0;
+  if (!truehasna || !narm) {
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (uint_fast64_t i=k-1; i<nx; i++) {
+      if (narm && truehasna) continue;
+      long double w = 0.0;
+      for (int j=-k+1; j<=0; j++) {
+        w += x[i+j];
+      }
+      if (R_FINITE((double) w)) {
+        ans->dbl_v[i] = (double) w;
+      } else {
+        if (!narm) ans->dbl_v[i] = (double) w;
+        truehasna = true;
+      }
+    }
+    if (truehasna) {
+      if (hasna==-1) {
+        ans->status = 2;
+        snprintf(end(ans->message[2]), 500, "%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning", __func__);
+      }
+      if (verbose) {
+        if (narm) snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n", __func__);
+        else snprintf(end(ans->message[0]), 500, "%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n", __func__);
+      }
+    }
+  }
+  if (truehasna && narm) {
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (uint_fast64_t i=k-1; i<nx; i++) {
+      long double w = 0.0;
+      int nc = 0;
+      for (int j=-k+1; j<=0; j++) {
+        if (ISNAN(x[i+j])) nc++;
+        else w += x[i+j];
+      }
+      if (w > DBL_MAX) ans->dbl_v[i] = R_PosInf;
+      else if (w < -DBL_MAX) ans->dbl_v[i] = R_NegInf;
+      else {
+        if (nc < k) {
+          ans->dbl_v[i] = (double) w;
+        } else {
+          ans->dbl_v[i] = 0.0;
         }
       }
     }
