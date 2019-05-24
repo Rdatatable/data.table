@@ -38,14 +38,14 @@ is.ff = function(x) inherits(x, "ff")  # define this in data.table so that we do
 #    if (is.array(x)) nrow(x) else length(x)
 #}
 
-null.data.table =function() {
+null.data.table = function() {
   ans = list()
   setattr(ans,"class",c("data.table","data.frame"))
   setattr(ans,"row.names",.set_row_names(0L))
   alloc.col(ans)
 }
 
-data.table =function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
+data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
 {
   # NOTE: It may be faster in some circumstances to create a data.table by creating a list l first, and then setattr(l,"class",c("data.table","data.frame")) at the expense of checking.
   # TO DO: rewrite data.table(), one of the oldest functions here. Many people use data.table() to convert data.frame rather than

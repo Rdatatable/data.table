@@ -1,4 +1,4 @@
-as.data.table =function(x, keep.rownames=FALSE, key=NULL, ...)
+as.data.table = function(x, keep.rownames=FALSE, key=NULL, ...)
 {
   if (is.null(x))
     return(null.data.table())

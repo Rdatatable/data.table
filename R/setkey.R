@@ -27,11 +27,11 @@ key2 = function(...)     stop("key2() is now deprecated. Please use indices() in
 "key<-" = function(x,value) {
   warning("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future.")
   setkeyv(x,value)
-  # The returned value here from key= is then copied by R before assigning to x, it seems. That's
+  # The returned value here from key<- is then copied by R before assigning to x, it seems. That's
   # why we can't do anything about it without a change in R itself. If we return NULL (or invisible()) from this key<-
   # method, the table gets set to NULL. So, although we call setkeyv(x,cols) here, and that doesn't copy, the
   # returned value (x) then gets copied by R.
-  # So, solution is that caller has to call setkey or setkeyv directly themselves, to avoid = dispatch and its copy.
+  # So, solution is that caller has to call setkey or setkeyv directly themselves, to avoid <- dispatch and its copy.
 }
 
 setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
