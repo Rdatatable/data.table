@@ -56,7 +56,7 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
   if (getOption("datatable.CJ.names", TRUE)) {  # added as FALSE in v1.11.6 with NEWS item saying TRUE in v1.12.0. TODO: remove in v1.13.0
     vnames = name_dots(...)$vnames
   } else {
-    if (is.null(vnames <- names(out))) vnames = paste0("V", seq_len(ncol))
+    if (is.null(vnames <- names(l))) vnames = paste0("V", seq_len(ncol))
     else if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
   }
   setattr(out, "names", vnames)
