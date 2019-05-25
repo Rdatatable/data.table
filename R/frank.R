@@ -1,4 +1,4 @@
-frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
+frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
   ties.method = match.arg(ties.method)
   if (!length(na.last)) stop('length(na.last) = 0')
   if (length(na.last) != 1L) {
@@ -7,7 +7,7 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
   }
   keep = (na.last == "keep")
   na.last = as.logical(na.last)
-  as_list <- function(x) {
+  as_list = function(x) {
     xx = vector("list", 1L)
     .Call(Csetlistelt, xx, 1L, x)
     xx
@@ -67,7 +67,7 @@ frankv <- function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("
   ans
 }
 
-frank <- function(x, ..., na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
+frank = function(x, ..., na.last=TRUE, ties.method=c("average", "first", "random", "max", "min", "dense")) {
   cols = substitute(list(...))[-1L]
   if (identical(as.character(cols), "NULL")) {
     cols  = NULL

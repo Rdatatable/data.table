@@ -1,5 +1,5 @@
 # is x[i] in between lower[i] and upper[i] ?
-between <- function(x,lower,upper,incbounds=TRUE) {
+between = function(x,lower,upper,incbounds=TRUE) {
   if (is.logical(x)) stop("between has been x of type logical")
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
@@ -8,7 +8,7 @@ between <- function(x,lower,upper,incbounds=TRUE) {
   # POSIX special handling to auto coerce character
   if (is.px(x) && !is.null(tz<-attr(x, "tzone", TRUE)) && nzchar(tz) &&
       (is.character(lower) || is.character(upper))) {
-    try_posix_cast <- function(x, tz) {tryCatch(
+    try_posix_cast = function(x, tz) {tryCatch(
       list(status=0L, value=as.POSIXct(x, tz = tz)),
       error = function(e) list(status=1L, value=NULL, message=e[["message"]])
     )}
@@ -57,7 +57,7 @@ between <- function(x,lower,upper,incbounds=TRUE) {
 }
 
 # %between% is vectorised, #534.
-"%between%" <- function(x, y) {
+"%between%" = function(x, y) {
   ysub = substitute(y)
   if (is.call(ysub) && ysub[[1L]]==".") {
     ysub[[1L]]=quote(list)
@@ -77,7 +77,7 @@ between <- function(x,lower,upper,incbounds=TRUE) {
 
 # issue FR #707
 # is x[i] found anywhere within [lower, upper] range?
-inrange <- function(x,lower,upper,incbounds=TRUE) {
+inrange = function(x,lower,upper,incbounds=TRUE) {
   query = setDT(list(x=x))
   subject = setDT(list(l=lower, u=upper))
   ops = if (incbounds) c(4L, 2L) else c(5L, 3L) # >=,<= and >,<
@@ -86,7 +86,7 @@ inrange <- function(x,lower,upper,incbounds=TRUE) {
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
   ans = bmerge(shallow(subject), query, 1L:2L, c(1L,1L),
       0, c(FALSE, TRUE), 0L, "all", ops, verbose) # fix for #1819, turn on verbose messages
-  xo <- ans$xo
+  xo = ans$xo
   options(datatable.verbose=FALSE)
   setDT(ans[c("starts", "lens")], key=c("starts", "lens"))
   options(datatable.verbose=verbose)
@@ -96,4 +96,4 @@ inrange <- function(x,lower,upper,incbounds=TRUE) {
   idx
 }
 
-"%inrange%" <- function(x,y) inrange(x,y[[1L]],y[[2L]],incbounds=TRUE)
+"%inrange%" = function(x,y) inrange(x,y[[1L]],y[[2L]],incbounds=TRUE)

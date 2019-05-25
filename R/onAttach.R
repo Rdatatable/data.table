@@ -1,6 +1,6 @@
 # nocov start
 
-.onAttach <- function(libname, pkgname) {
+.onAttach = function(libname, pkgname) {
   # Runs when attached to search() path such as by library() or require()
   if (!interactive()) return()
   v = packageVersion("data.table")

@@ -1,8 +1,8 @@
 # nocov start
 
-.Last.updated <- vector("integer", 1L) # exported variable; number of rows updated by the last := or set(), #1885
+.Last.updated = vector("integer", 1L) # exported variable; number of rows updated by the last := or set(), #1885
 
-.onLoad <- function(libname, pkgname) {
+.onLoad = function(libname, pkgname) {
   # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
   if (!exists("test.data.table", .GlobalEnv, inherits=FALSE) &&    # check when installed package is loaded but skip when developing the package with cc()
       (dllV<-if(is.loaded("CdllVersion",PACKAGE="datatable")).Call(CdllVersion)else"before 1.12.0") != (RV<-packageVersion("data.table"))) {
@@ -100,13 +100,13 @@
   invisible()
 }
 
-getRversion <- function(...) stop("Reminder to data.table developers: don't use getRversion() internally. Add a behaviour test to .onLoad instead.")
+getRversion = function(...) stop("Reminder to data.table developers: don't use getRversion() internally. Add a behaviour test to .onLoad instead.")
 # 1) using getRversion() wasted time when R3.0.3beta was released without the changes we expected in getRversion()>"3.0.2".
 # 2) R-devel and ourselves may wish to tinker with R-devel, turning on and off features in the same version number. So it's better if data.table doesn't hard code expectations into the version number.
 # 3) The discipline of adding a feaure test here helps fully understand the change.
 # 4) Defining getRversion with a stop() here helps prevent new switches on getRversion() being added in future. Easily circumvented but the point is to issue the message above.
 
-.onUnload <- function(libpath) {
+.onUnload = function(libpath) {
   # fix for #474. the shared object name is different from package name
   # So 'detach' doesn't find datatable.so, as it looks by default for data.table.so
   library.dynam.unload("datatable", libpath)
