@@ -88,7 +88,8 @@ setkeyv <- function(x, cols, verbose=getOption("datatable.verbose"), physical=TR
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
   
   # get existing index name if any
-  if(!is.null(indices(x))) found_index = names(attributes(attributes(x)$index))
+  found_index = NULL
+  if(!is.null(indices(x))) found_index <- names(attributes(attributes(x)$index))
   new_possible_index = paste0("__", cols, collapse="")
   
   # forder only if index is not present
