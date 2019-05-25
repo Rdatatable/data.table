@@ -91,6 +91,9 @@ bool GetVerbose();
 double NA_INT64_D;
 long long NA_INT64_LL;
 
+// cj.c
+SEXP cj(SEXP base_list);
+
 // dogroups.c
 SEXP keepattr(SEXP to, SEXP from);
 SEXP growVector(SEXP x, R_len_t newlen);
