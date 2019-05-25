@@ -10,15 +10,15 @@ if (base::getRversion() < "3.5.0") {
   isTRUE  = function(x) is.logical(x) && length(x)==1L && !is.na(x) && x    # backport R's new implementation of isTRUE
   isFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x) && !x   # backport isFALSE that was added in R 3.5.0
 }
-isTRUEorNA    <- function(x) is.logical(x) && length(x)==1L && (is.na(x) || x)
-isTRUEorFALSE <- function(x) is.logical(x) && length(x)==1L && !is.na(x)
+isTRUEorNA    = function(x) is.logical(x) && length(x)==1L && (is.na(x) || x)
+isTRUEorFALSE = function(x) is.logical(x) && length(x)==1L && !is.na(x)
 
 if (base::getRversion() < "3.2.0") {  # Apr 2015
   isNamespaceLoaded = function(x) x %chin% loadedNamespaces()
 }
 
 # which.first
-which.first <- function(x)
+which.first = function(x)
 {
   if (!is.logical(x)) {
     stop("x not boolean")
@@ -27,7 +27,7 @@ which.first <- function(x)
 }
 
 # which.last
-which.last <- function(x)
+which.last = function(x)
 {
   if (!is.logical(x)) {
     stop("x not boolean")
@@ -48,17 +48,17 @@ require_bit64_if_needed = function(DT) {
 }
 
 # vapply for return value character(1)
-vapply_1c <- function (x, fun, ..., use.names = TRUE) {
+vapply_1c = function (x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_character_, USE.NAMES = use.names)
 }
 
 # vapply for return value logical(1)
-vapply_1b <- function (x, fun, ..., use.names = TRUE) {
+vapply_1b = function (x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA, USE.NAMES = use.names)
 }
 
 # vapply for return value integer(1)
-vapply_1i <- function (x, fun, ..., use.names = TRUE) {
+vapply_1i = function (x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
 }
 
@@ -66,8 +66,8 @@ more = function(f) system(paste("more",f))    # nocov  (just a dev helper)
 
 # helper used to auto-name columns in data.table(x,y) as c("x","y"), CJ(x,y) and similar
 # naming of unnested matrices still handled by data.table()
-name_dots <- function(...) {
-  dot_sub <- as.list(substitute(list(...)))[-1L]
+name_dots = function(...) {
+  dot_sub = as.list(substitute(list(...)))[-1L]
   vnames = names(dot_sub)
   if (is.null(vnames)) {
     vnames = rep.int("", length(dot_sub))

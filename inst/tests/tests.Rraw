@@ -29,6 +29,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   dcast.data.table = data.table:::dcast.data.table
   forder = data.table:::forder
   forderv = data.table:::forderv
+  format.data.table = data.table:::format.data.table
   getdots = data.table:::getdots
   groupingsets.data.table = data.table:::groupingsets.data.table
   guess = data.table:::guess
@@ -54,6 +55,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   which_ = data.table:::which_
   which.first = data.table:::which.first
   which.last = data.table:::which.last
+  `-.IDate` = data.table:::`-.IDate`
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -1299,11 +1301,11 @@ f = function() {
 f()
 test(437.2, truelength(DT), 2044L)
 
-# quick test that [<- over allocates (again) after the copy of length via *tmp*
+# quick test that [<- (not recommended) over allocates (again) after the copy of length via *tmp*
 DT = data.table(a=1:3,b=4:6)
 tl = truelength(DT)
 DT$foo = 7L
-test(438, truelength(DT), tl+1L)   # the (not recommended) $<- calls a new alloc.col, hence tl becomes +1
+test(438, truelength(DT), tl)
 DT[,"bar"] = 8L
 test(439, truelength(DT), tl+2L)
 test(440, DT, data.table(a=1:3,b=4:6,foo=7L,bar=8L))
@@ -6527,13 +6529,13 @@ if (test_xts) {
   setcolorder(dt, c(2, 3, 1))
   dt[ , char_col := 'a']
   test(1465.17, as.xts(dt), xt, warning = 'columns are not numeric')
-  
+
   # 890 -- key argument for as.data.table.xts
   x = xts(1:10, as.Date(1:10, origin = "1970-01-01"))
   test(1465.18, capture.output(as.data.table(x, key="index")),
-       c("         index V1", " 1: 1970-01-02  1", " 2: 1970-01-03  2", 
-         " 3: 1970-01-04  3", " 4: 1970-01-05  4", " 5: 1970-01-06  5", 
-         " 6: 1970-01-07  6", " 7: 1970-01-08  7", " 8: 1970-01-09  8", 
+       c("         index V1", " 1: 1970-01-02  1", " 2: 1970-01-03  2",
+         " 3: 1970-01-04  3", " 4: 1970-01-05  4", " 5: 1970-01-06  5",
+         " 6: 1970-01-07  6", " 7: 1970-01-08  7", " 8: 1970-01-09  8",
          " 9: 1970-01-10  9", "10: 1970-01-11 10"))
 
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
@@ -8602,6 +8604,10 @@ setnames(x, '.seqn')
 setnames(y, '.seqn')
 test(1626.89, fintersect(x, y), error = "column named '.seqn'")
 
+# empty x shortout
+x = y = data.table(a = 1)
+test(1626.90, fsetdiff(x[0L], y), x[0L])
+
 
 # fix for #1087 and #1465
 test(1627.1, charToRaw(names(fread(testDir("issue_1087_utf8_bom.csv")))[1L]), as.raw(97L))
@@ -9479,7 +9485,7 @@ test(1658.25, fwrite(ok_dt, quote=TRUE), output='"foo"\n"bar"')
 # integer NA
 DT = data.table(A=c(2L,NA,3L), B=c(NA,4:5))
 test(1658.26, fwrite(DT), output='A,B\n2,\n,4\n3,5')
-test(1658.27, fwrite(DT, na="NA", verbose=TRUE), output='Writing column names.*"A","B".*2,NA\nNA,4\n3,5')
+test(1658.27, fwrite(DT, na="NA", verbose=TRUE), output='Writing bom .false., yaml .0 characters. and column names .true.*"A","B".*2,NA\nNA,4\n3,5')
 
 # wrong argument types
 test(1658.28, fwrite(ok_dt, 1), error="is.character\\(file\\).*not TRUE")
@@ -9523,6 +9529,24 @@ DT[3,b:=c(3i,4i,5i)]
 test(1658.46, fwrite(DT), error="Row 3 of list column is type 'complex'")
 DT[3,b:=factor(letters[1:3])]
 test(1658.47, fwrite(DT), error="Row 3 of list column is type 'factor'")
+
+# fwrite bom
+DT = data.table(l=letters, n=1:26)
+fwrite(DT, f1<-tempfile(), bom=TRUE)
+f1con = file(f1, encoding="UTF-8")  # Windows readLines needs to be told otherwise it thinks n_lines==1
+test(1658.48, length(readLines(f1con)), 27L)
+test(1658.49, readBin(f1, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x6c, 0x2c, 0x6e)))
+close(f1con)
+fwrite(DT, f2<-tempfile(), bom=FALSE)
+test(1658.50, readBin(f2, raw(), 3L), as.raw(c(0x6c, 0x2c, 0x6e)))
+# re-write to the same file should overwrite.
+# Windows seems to cache the connection to f2 and fails on a subsequent read, hence using file(,encoding="UTF-8")
+fwrite(DT, f2, bom=TRUE)
+f2con = file(f2, encoding="UTF-8")
+test(1658.51, length(readLines(f2con)), 27L)
+close(f2con)
+test(1658.52, file.info(f1)$size, file.info(f2)$size)
+unlink(c(f1, f2))
 
 ## End fwrite tests
 
@@ -11049,11 +11073,18 @@ test(1772.2, split(DT, by = c('a', 'b'), sorted = TRUE),
 if (exists("A")) rm(A)
 if (exists("B")) rm(B)
 if (exists("NOTEXIST")) rm(NOTEXIST)
-DT <- data.table(A = c(FALSE, TRUE), B = 1:2)
-test(1773.1, DT[A], error = "not found in calling scope.*wrap the symbol with")
-test(1773.2, DT[B], error = "not found in calling scope and it is not a column of type logical")
-test(1773.3, DT[NOTEXIST], error = "not found in calling scope and it is not a column of type logical")
-test(1773.4, DT[(A)], DT[2])
+if (exists("MyCol")) rm(MyCol)
+DT <- data.table(A = c(FALSE, TRUE), B = 2:1, C=c(2,3), MyCol=c(2,2))
+test(1773.01, DT[A], error = "A is not found in calling scope but it is a column of type logical.*==TRUE.*When the first argument")
+test(1773.02, DT[B], error = "B is not found in calling scope but it is a column of type integer.*DT\\[\\(col\\)\\].*When the first argument")   # 697
+test(1773.03, DT[C], error = "i has evaluated to type closure. Expecting logical, integer or double")  # C picks up stats::C in calling scope
+test(1773.04, DT[MyCol], error="MyCol is not found in calling scope but it is a column of type double.*DT\\[\\(col\\)\\].*When the first argument")
+test(1773.05, DT[NOTEXIST], error = "NOTEXIST is not found in calling scope and it is not a column name either. When the first argument")
+test(1773.06, DT[(A)], DT[2])
+test(1773.07, DT[A==TRUE], DT[2])
+test(1773.08, DT[(B)], data.table(A=c(TRUE,FALSE), B=1:2, C=c(3,2), MyCol=2))
+test(1773.09, DT[(MyCol)], data.table(A=c(TRUE,TRUE), B=INT(1,1), C=c(3,3), MyCol=2))
+test(1773.10, DT[(C)], data.table(A=c(TRUE,NA), B=c(1L,NA), C=c(3,NA), MyCol=c(2,NA)))
 
 # New as.data.table.array method in v1.10.5
 set.seed(1L)
@@ -13412,7 +13443,7 @@ test(1967.48, x[ , b, .SDcols = 'a'], 6:10,
 test(1967.49, x[ , list(5) := 6], error = 'LHS of := must be a symbol')
 test(1967.50, x[ , 1 + 3i := 6], error = "LHS of := isn't column names")
 test(1967.511, x[ , .(5L), by = .EACHI, mult = 'all'], error='logical error. i is not data.table')
-test(1967.512, x[1+3i], error='i has not evaluated to logical')
+test(1967.512, x[1+3i], error='i has evaluated to type complex. Expecting logical, integer or double')
 test(1967.521, x[1:2, by=a], x[1:2,], warning="Ignoring by= because j= is not supplied")
 test(1967.522, x[, by=a],    x,       warning=c("Ignoring by= because j= is not supplied","i and j are both missing.*upgraded to error in future"))
 test(1967.523, x[by=a],      x,       warning=c("Ignoring by= because j= is not supplied","i and j are both missing.*upgraded to error in future"))
@@ -14445,18 +14476,18 @@ if (test_yaml) {  # csvy; #1701
   # force eol for platform independence
   fwrite(DT, tmp, yaml = TRUE, eol = '\n')
   as_read = readLines(tmp)
-  test(2033.01, as_read[c(1L, 25L)], c('---', '---'))
+  test(2033.01, as_read[c(1L, 24L)], c('---', '---'))
   test(2033.02, grepl('source: R.*data.table.*fwrite', as_read[2L]))
   test(2033.03, grepl('creation_time_utc', as_read[3L]))
-  test(2033.04, as_read[4:24],
+  test(2033.04, as_read[4:23],
        c("schema:", "  fields:", "  - name: a", "    type: integer",
          "  - name: b", "    type: numeric", "  - name: c", "    type: character",
          "header: yes", "sep: ','", "sep2:", "- ''", "- '|'", "- ''",
          # NB: apparently \n is encoded like this in YAML
          "eol: |2+", "", "na.strings: ''", "dec: '.'", "qmethod: double",
-         "logical01: no", ""))
+         "logical01: no"))
   tbl_body = c("a,b,c", "1,3.14159265358979,a", "2,1,b", "3,2,c", "4,3,d", "5,4,e")
-  test(2033.05, as_read[26:31], tbl_body)
+  test(2033.05, as_read[25:30], tbl_body)
 
   # windows eol
   fwrite(DT, tmp, yaml = TRUE, eol = '\r\n')
@@ -14477,11 +14508,30 @@ if (test_yaml) {  # csvy; #1701
   attr(DT2, 'yaml_metadata') = NULL
   test(2033.08, all.equal(DT, DT2))
 
-  # unsupported operations
-  test(2033.09, capture.output(fwrite(DT, append = TRUE, yaml = TRUE)), tbl_body[-1L],
-       warning = 'Skipping yaml writing because append = TRUE')
-  test(2033.10, capture.output(fwrite(DT, compress = 'gzip', yaml = TRUE)), tbl_body,
-       warning = 'Skipping yaml writing because is_gzip = TRUE')
+  test(2033.09, fwrite(DT, append=TRUE, yaml=TRUE, verbose=TRUE),
+       output = paste0(c('Appending to existing file so setting bom=FALSE and yaml=FALSE', tbl_body[-1L]), collapse=".*"))
+
+  # TODO: test gzip'd yaml which is now supported
+
+  # yaml + bom arguments
+  DT = data.table(l=letters, n=1:26)
+  fwrite(DT, f<-tempfile(), bom=TRUE, yaml=TRUE)
+  fcon = file(f, encoding="UTF-8")  # Windows readLines needs to be told; see also test 1658.50
+  lines = readLines(fcon)
+  lines = lines[lines!=""]  # an extra "" after "eol: |2+" (line 16) on Linux but not Windows
+                            # remove the blank here so we don't need to change this test if/when that changes in yaml package
+  test(2033.11, length(lines), 48L)
+  close(fcon)
+  test(2033.12, readBin(f, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x2d, 0x2d, 0x2d)))
+  # re-write should have same output (not appended)
+  fwrite(DT, f<-tempfile(), bom=TRUE, yaml=TRUE)
+  fcon = file(f, encoding="UTF-8")
+  lines = readLines(fcon)
+  lines = lines[lines!=""]
+  test(2033.13, length(lines), 48L)
+  close(fcon)
+  test(2033.14, fread(f), DT)
+  unlink(f)
 }
 
 # fcast coverage
@@ -14795,7 +14845,7 @@ test(2045.15, d1[d2, verbose = TRUE], cbind(d1, X1 = d2$X1), output="natural joi
 options(datatable.naturaljoin=FALSE)
 
 #tests for adding key to as.data.table, #890
-## as.data.table.numeric (should cover as.data.table.factor, 
+## as.data.table.numeric (should cover as.data.table.factor,
 ## *.ordered, *.integer, *.logical, *.character, and *.Date since
 ## all are the same function in as.data.table.R)
 nn = c(a=0.1, c=0.2, b=0.3, d=0.4)
@@ -14841,7 +14891,49 @@ test(2046.10, as.data.table(tt, key="N"),
 test(2047.1, as.data.table(list(character(0L))), data.table(V1 = character(0L)))
 test(2047.2, as.data.table(list()), data.table(NULL))
 test(2047.3, as.data.table(rbind(1L)), data.table(V1 = 1L))
+mm = rbind(1:2)
+colnames(mm) = c('a', '')
+test(2047.4, as.data.table(mm), data.table(a = 1L, V2 = 2L))
 
+# recyle internal error; #3543
+DT = data.table(A=1:3, existingCol=list(0,1,2))
+test(2048.1, DT[, newCol:=.(rep(0, .N), rep(1, .N))],       # was ok before when assigning to new column
+             error="Supplied 2 items to be assigned to 3 items of column 'newCol'.*please use rep")
+test(2048.2, DT[, existingCol:=.(rep(0, .N), rep(1, .N))],  # was internal error (rather than helpful error) when assigning to existing column
+             error="Supplied 2 items to be assigned to 3 items of column 'existingCol'.*please use rep")
+
+# subassign to an embedded data.table in a 1-row data.table; #3474
+inner = data.table(a=1:3, b=1:3)
+outer = data.table(aa=1, ab=list(inner))
+old = options(datatable.verbose=TRUE)
+test(2049.1, outer$ab[[1]]$b <- 4L, 4L,    # also tests the incorrect warning has gone
+             output="RHS_list_of_columns revised to false .df=0.*RHS_list_of_columns revised to false .df=1")
+options(old)
+test(2049.2, outer$ab, list(data.table(a=1:3, b=4L)))
+test(2049.3, outer$ab[[1]][, b := 5L], data.table(a=1:3, b=5L))
+test(2049.4, outer$ab, list(data.table(a=1:3, b=5L)))
+
+# rbindlist zero row DT should retain its (unused) levels, #3508
+DT = data.table(f = factor(c("a", "b", "c")))
+test(2050.1, rbind(DT[1], DT[1])[,levels(f)], c("a","b","c"))  # ok before (unused levels when nrow>0 were retained)
+test(2050.2, rbind(DT[1], DT[0])[,levels(f)], c("a","b","c"))  # ok before
+test(2050.3, rbind(DT[0], DT[1])[,levels(f)], c("a","b","c"))  # ok before
+test(2050.4, rbind(DT[0], DT[0])[,levels(f)], c("a","b","c"))  # now ok again (only when nrow=0 were unused levels dropped)
+test(2050.5, rbindlist(list(DT[0], DT[0]))[,levels(f)], c("a","b","c"))  # now ok again
+test(2050.6, rbind(DT[1], data.table(f=factor(letters[10:11]))[0])[,levels(f)], c("a","b","c","j","k")) # now includes "j","k" again
+
+# coverage tests
+## abusing -.Date, format.data.table, rleidv
+test(2051.1, `-.IDate`(structure(0, class="Date"), 1L), structure(-1, class="Date"))
+test(2051.2, `-.IDate`(1L, 1L), error = 'only subtract from "IDate"')
+test(2051.3, format.data.table(1L), error = 'Possibly corrupt data.table')
+test(2051.4, rleidv(prefix = 1L), error = 'prefix must be NULL or')
+## passing Date to second argument of as.POSIXct.ITime
+t = as.ITime(0L)
+test(2051.5, as.POSIXct(t, structure(0L, class="Date")), .POSIXct(0, 'UTC'))
+## forder of dynamic expression
+DT = data.table(a = 1:3)
+test(2051.6, DT[order(sin(a/pi))], DT)
 
 ###################################
 #  Add new tests above this line  #

@@ -1,4 +1,4 @@
-test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, script="tests.Rraw") {
+test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.packages=FALSE, benchmark=FALSE, script="tests.Rraw") {
   if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
     # package developer
     # nocov start
@@ -43,7 +43,7 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
 
   # From R 3.6.0 onwards, we can check that && and || are using only length-1 logicals (in the test suite)
   # rather than relying on x && y being equivalent to x[[1L]] && y[[1L]]  silently.
-  orig__R_CHECK_LENGTH_1_LOGIC2_ <- Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_", unset = NA_character_)
+  orig__R_CHECK_LENGTH_1_LOGIC2_ = Sys.getenv("_R_CHECK_LENGTH_1_LOGIC2_", unset = NA_character_)
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
   # This environment variable is restored to its previous state (including not defined) after sourcing test script
 
@@ -161,12 +161,12 @@ test.data.table <- function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.p
   # date() is included so we can tell exactly when these tests ran on CRAN. Sometimes a CRAN log can show error but that can be just
   # stale due to not updating yet since a fix in R-devel, for example.
 
-  #attr(ans, "details") <- env
+  #attr(ans, "details") = env
   invisible(ans)
 }
 
 # nocov start
-compactprint <- function(DT, topn=2L) {
+compactprint = function(DT, topn=2L) {
   tt = vapply_1c(DT,function(x)class(x)[1L])
   tt[tt=="integer64"] = "i64"
   tt = substring(tt, 1L, 3L)
@@ -205,7 +205,7 @@ gc_mem = function() {
   # nocov end
 }
 
-test <- function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied

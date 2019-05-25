@@ -5,7 +5,6 @@
 \alias{sliding}
 \alias{moving}
 \alias{frollmean}
-\alias{frollsum}
 \title{Rolling functions}
 \description{
   Fast rolling functions to calculate aggregates on sliding window. Function name and arguments are experimental.
@@ -25,8 +24,7 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
     then slower algorithm is used. It suffers less from floating point
     rounding error, performs extra pass to adjust rounding error
     correction and carefully handles all non-finite values. If available
-    it will use multiple cores. Might not be really \emph{exact} on
-    Windows. See details for more information. }
+    it will use multiple cores. See details for more information. }
   \item{align}{ character, define if rolling window covers preceding rows
     (\code{"right"}), following rows (\code{"left"}) or centered
     (\code{"center"}). Defaults to \code{"right"}. }
@@ -56,10 +54,11 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   any \code{NaN, +Inf, -Inf} is treated as \code{NA}.
   Setting \code{algo="exact"} will make rolling functions to use
   compute-intensive algorithm that suffers less from floating point
-  rounding error. It will additionally make extra pass to perform floating
-  point error correction. It also handles \code{NaN, +Inf, -Inf}
-  consistently to base R. Although might not be really exact on
-  Windows when using multiple threads.
+  rounding error. It also handles \code{NaN, +Inf, -Inf} consistently to
+  base R. In case of some functions (like \emph{mean}), it will additionally
+  make extra pass to perform floating point error correction. Error
+  corrections might not be truly exact on some platforms (like Windows)
+  when using multiple threads.
 
   Adaptive rolling functions are special cases where for each single
   observation has own corresponding rolling window width. Due to the logic
@@ -71,8 +70,8 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   }
 
   When multiple columns or multiple windows width are provided, then they
-  are run in parallel. Eventually nested parallelism occurs when
-  \code{algo="exact"}, see examples.
+  are run in parallel. Except for the \code{algo="exact"} which runs in
+  parallel already.
 }
 \value{
   A list except when the input is a \code{vector} and

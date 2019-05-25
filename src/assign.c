@@ -272,7 +272,7 @@ SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
 
 int *_Last_updated = NULL;
 
-SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP verb)
+SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
 {
   // For internal use only by := in [.data.table, and set()
   // newcolnames : add these columns (if any)
@@ -281,7 +281,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   R_len_t i, j, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
   SEXP targetcol, RHS, names, nullint, thisv, targetlevels, newcol, s, colnam, klass, tmp, colorder, key, index, a, assignedNames, indexNames;
   SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
-  Rboolean verbose = LOGICAL(verb)[0], anytodelete=FALSE, isDataTable=FALSE;
+  bool verbose=GetVerbose(), anytodelete=false, isDataTable=false;
   const char *c1, *tc1, *tc2;
   int *buf, k=0, newKeyLength, indexNo;
   size_t size; // must be size_t otherwise overflow later in memcpy
@@ -300,13 +300,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     if (strcmp(CHAR(STRING_ELT(klass, i)), "data.table") == 0) break;
   }
   if (i<length(klass))
-    isDataTable = TRUE;
+    isDataTable = true;
   else {
     for (i=0; i<length(klass); i++) {
       if (strcmp(CHAR(STRING_ELT(klass, i)), "data.frame") == 0) break;
     }
     if (i == length(klass)) error("Input is not a data.table, data.frame or an object that inherits from either.");
-    isDataTable = FALSE;   // meaning data.frame from now on. Can use set() on existing columns but not add new ones because DF aren't over-allocated.
+    isDataTable = false;   // meaning data.frame from now on. Can use set() on existing columns but not add new ones because DF aren't over-allocated.
   }
   oldncol = LENGTH(dt);
   names = getAttrib(dt,R_NamesSymbol);
@@ -386,7 +386,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
   }
   if (any_duplicated(cols,FALSE)) error("Can't assign to the same column twice in the same query (duplicates detected).");
   if (!isNull(newcolnames) && !isString(newcolnames)) error("newcolnames is supplied but isn't a character vector");
-  bool RHS_list_of_columns = TYPEOF(values)==VECSXP && (length(cols)>1 || LENGTH(values)==1);
+  bool RHS_list_of_columns = TYPEOF(values)==VECSXP && (length(cols)>1 || LENGTH(values)==1);  // initial value; may be revised below
   if (verbose) Rprintf("RHS_list_of_columns == %s\n", RHS_list_of_columns ? "true" : "false");
   if (RHS_list_of_columns) {
     if (length(values)==0)
@@ -396,8 +396,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       error("Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2. Try adding/removing a list() or .() wrapper around the RHS.", length(cols), length(values));
     if (length(values)==1) {
       // c("colA","colB"):=list(13:15) should use 13:15 for both columns (recycle 1 item ok). So just change RHS so we don't have to deal with recycling-length-1 later
-      values = VECTOR_ELT(values,0);
+      SEXP item = VECTOR_ELT(values,0);
+      bool df;
+      if (!(df=INHERITS(item, char_dataframe))) values = item;   // if() for #3474
       RHS_list_of_columns = false;
+      if (verbose) Rprintf("RHS_list_of_columns revised to false (df=%d)\n", df);
     }
   }
   // Check all inputs :
@@ -436,7 +439,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
       error("Can't assign to column '%s' (type 'factor') a value of type '%s' (not character, factor, integer or numeric)",
             CHAR(STRING_ELT(names,coln)),type2char(TYPEOF(thisvalue)));
     }
-    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen && TYPEOF(existing)!=VECSXP) {
+    if (nrow>0 && targetlen>0 && vlen>1 && vlen!=targetlen && (TYPEOF(existing)!=VECSXP || TYPEOF(thisvalue)==VECSXP)) {
       // note that isNewList(R_NilValue) is true so it needs to be TYPEOF(existing)!=VECSXP above
       error("Supplied %d items to be assigned to %d items of column '%s'. If you wish to 'recycle' the RHS please "
             "use rep() to make this intent clear to readers of your code.", vlen, targetlen, CHAR(colnam));
@@ -472,7 +475,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values, SEXP v
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
     if (TYPEOF(thisvalue)==NILSXP) {
       if (!isNull(rows)) error("Internal error: earlier error 'When deleting columns, i should not be provided' did not happen."); // # nocov
-      anytodelete = TRUE;
+      anytodelete = true;
       continue;   // delete column(s) afterwards, below this loop
     }
     vlen = length(thisvalue);

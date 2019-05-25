@@ -1,4 +1,4 @@
-fread <- function(
+fread = function(
 input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec=".", quote="\"", nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbose=getOption("datatable.verbose",FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL, integer64=getOption("datatable.integer64","integer64"),
@@ -287,9 +287,9 @@ yaml=FALSE, autostart=NA)
 
   colClassesAs = attr(ans, "colClassesAs")   # should only be present if one or more are != ""
   for (j in which(colClassesAs!="")) {       # # 1634
-    v <- .subset2(ans, j)
+    v = .subset2(ans, j)
     new_class = colClassesAs[j]
-    new_v <- tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)
+    new_v = tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)
       switch(new_class,
              "factor" = as_factor(v),
              "complex" = as.complex(v),
@@ -311,10 +311,10 @@ yaml=FALSE, autostart=NA)
 
   if (stringsAsFactors) {
     if (is.double(stringsAsFactors)) { #2025
-      should_be_factor <- function(v) is.character(v) && uniqueN(v) < nr * stringsAsFactors
-      cols_to_factor <- which(vapply(ans, should_be_factor, logical(1L)))
+      should_be_factor = function(v) is.character(v) && uniqueN(v) < nr * stringsAsFactors
+      cols_to_factor = which(vapply(ans, should_be_factor, logical(1L)))
     } else {
-      cols_to_factor <- which(vapply(ans, is.character, logical(1L)))
+      cols_to_factor = which(vapply(ans, is.character, logical(1L)))
     }
     if (verbose) cat("stringsAsFactors=", stringsAsFactors, " converted ", length(cols_to_factor), " column(s): ", brackify(names(ans)[cols_to_factor]), "\n", sep="")
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
@@ -350,7 +350,7 @@ yaml=FALSE, autostart=NA)
 }
 
 # simplified but faster version of `factor()` for internal use.
-as_factor <- function(x) {
+as_factor = function(x) {
   lev = forderv(x, retGrp = TRUE, na.last = NA)
   # get levels, also take care of all sorted condition
   lev = if (length(lev)) x[lev[attributes(lev)$starts]] else x[attributes(lev)$starts]
@@ -359,7 +359,7 @@ as_factor <- function(x) {
   setattr(ans, 'class', 'factor')
 }
 
-as_raw <- function(x) {
+as_raw = function(x) {
   scan(text=x, what=raw(), quiet=TRUE)  # as in read.csv, which ultimately uses src/main/scan.c and strtoraw
 }
 

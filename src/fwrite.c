@@ -672,28 +672,39 @@ void fwriteMain(fwriteMainArgs args)
     }
   }
 
+  int yamlLen = strlen(args.yaml);
   if (args.verbose) {
-    DTPRINT("Writing column names ... ");
+    DTPRINT("Writing bom (%s), yaml (%d characters) and column names (%s) ... ",
+            args.bom?"true":"false", yamlLen, args.colNames?"true":"false");
     if (f==-1) DTPRINT("\n");
   }
+  size_t headerLen = 0;
+  if (args.bom) headerLen += 3;
+  headerLen += yamlLen;
   if (args.colNames) {
-    size_t headerLen = 0;
     for (int j=0; j<args.ncol; j++) headerLen += getStringLen(args.colNames, j)*2;  // *2 in case quotes are escaped or doubled
     headerLen += args.ncol*(1/*sep*/+(doQuote!=0)*2) + eolLen + 3;  // 3 in case doRowNames and doQuote (the first blank <<"",>> column name)
+  }
+  if (headerLen) {
     char *buff = malloc(headerLen);
     if (!buff) STOP("Unable to allocate %d MiB for header: %s", headerLen / 1024 / 1024, strerror(errno));
     char *ch = buff;
-    if (args.doRowNames) {
-      // Unusual: the extra blank column name when row_names are added as the first column
-      if (doQuote!=0/*'auto'(NA) or true*/) { *ch++='"'; *ch++='"'; } // to match write.csv
-      *ch++ = sep;
+    if (args.bom) {*ch++=0xEF; *ch++=0xBB; *ch++=0xBF; }  // 3 appears above (search for "bom")
+    memcpy(ch, args.yaml, yamlLen);
+    ch += yamlLen;
+    if (args.colNames) {
+      if (args.doRowNames) {
+        // Unusual: the extra blank column name when row_names are added as the first column
+        if (doQuote!=0/*'auto'(NA) or true*/) { *ch++='"'; *ch++='"'; } // to match write.csv
+        *ch++ = sep;
+      }
+      for (int j=0; j<args.ncol; j++) {
+        writeString(args.colNames, j, &ch);
+        *ch++ = sep;
+      }
+      ch--; // backup over the last sep
+      write_chars(args.eol, &ch);
     }
-    for (int j=0; j<args.ncol; j++) {
-      writeString(args.colNames, j, &ch);
-      *ch++ = sep;
-    }
-    ch--; // backup over the last sep
-    write_chars(args.eol, &ch);
     if (f==-1) {
       *ch = '\0';
       DTPRINT(buff);
