@@ -120,6 +120,8 @@
 
 15. `rbind` and `rbindlist` of zero-row items now retain (again) the unused levels of any (zero-length) factor columns, [#3508](https://github.com/Rdatatable/data.table/issues/3508). This was a regression in v1.12.2 just for zero-row items. Unused factor levels were already retained for items having `nrow>=1`. Thanks to Gregory Demin for reporting.
 
+16. Running the `:=` examples with `example` and `local=TRUE` works as expected, [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @vlulla for the report.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
