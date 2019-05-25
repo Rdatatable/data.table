@@ -43,6 +43,13 @@ SEXP cj(SEXP base_list) {
       }
       SET_VECTOR_ELT(out, j, this_col);
     } break;
+    case VECSXP: {
+      SEXP this_col = PROTECT(allocVector(VECSXP, NN)); nprotect++;
+      for (int i = 0; i < NN; i++) {
+        SET_VECTOR_ELT(this_col, i, VECTOR_ELT(this_v, (i % modulo) / div));
+      }
+      SET_VECTOR_ELT(out, j, this_col);
+    } break;
     default:
       error("Type '%s' not supported by CJ.", type2char(TYPEOF(this_v)));
     }

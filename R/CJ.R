@@ -35,6 +35,7 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
     }
     
     # apply sorting
+    if (sorted && any(idx <- vapply_1b(l, is.list))) stop("'sorted' is TRUE but element ", which(idx), " is a list, which can't be sorted; try setting sorted = FALSE")
     if (sorted) l = lapply(l, function(li) {
       # fix for #1513
       if (length(o <- forderv(li, retGrp=TRUE))) li = li[o]
@@ -46,7 +47,7 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
     #   will keep attributes only for classes with methods that impose so
     attrib = lapply(l, attributes)
     out = .Call(Ccj, l)
-    for (jj in 1:ncol) if (!is.null(attributes(l[[jj]]))) attributes(out[[jj]]) = attrib[[jj]]
+    if (!is.null(attrib)) for (jj in 1:ncol) if (!is.null(attrib[[jj]])) attributes(out[[jj]]) = attrib[[jj]]
   # ncol == 0 || emptyList
   } else {out = l; nrow = length(l[[1L]])}
   setattr(out, "row.names", .set_row_names(nrow))

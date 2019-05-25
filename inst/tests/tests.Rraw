@@ -2810,10 +2810,18 @@ test(995, DT[CJ(c(5,3), c(5,1), sorted=FALSE)], OUT)
 # CJ with ordered factor
 xx <- factor(letters[1:2], ordered=TRUE)
 yy <- sample(2)
-options(datatable.CJ.names=FALSE)
+old = options(datatable.CJ.names=FALSE)
 test(996.1, CJ(xx, yy), setkey(data.table(rep(xx, each=2), rep(base::sort.int(yy), 2))))
 options(datatable.CJ.names=TRUE)
 test(996.2, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2), yy = rep(base::sort.int(yy), 2))))
+options(old)
+
+# #3597 -- CJ properly informs sorted can't apply to list input
+test(996.3, CJ(list(1:2, 3)), error = "list, which can't be sorted")
+test(996.4, CJ(list(1:2, 3), 4:6, sorted = FALSE),
+     data.table(V1 = list(1:2, 1:2, 1:2, 3, 3, 3), V2 = rep(4:6, 2)))
+
+test(996.5, CJ(expression(1), sorted = FALSE), error = "Type 'expression' not supported")
 
 # That CJ orders NA consistently with setkey and historically, now it doesn't use setkey.
 # NA must always come first in data.table throughout, since binary search relies on that internally.
