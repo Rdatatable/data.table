@@ -4,20 +4,26 @@ SEXP cj(SEXP base_list) {
   int JJ = LENGTH(base_list), nprotect = 0;
   SEXP out = PROTECT(allocVector(VECSXP, JJ)); nprotect++;
   int NN = 1;
+  // already confirmed to be less than .Machine$integer.max in R
   for (int j = 0; j < JJ; j++) NN *= LENGTH(VECTOR_ELT(base_list, j));
   int div = NN, modulo;
   
-  //#pragma omp parallel for num_threads(getDTthreads())
   for (int j = 0; j < JJ; j++) {
     SEXP this_v = VECTOR_ELT(base_list, j);
+    // Basic idea is this: in output column j, row i, the value will be element idx of the j'th input;
+    //   idx has a simple form i % p_j / q_j, with the sequences p_j and q_j given by p_0 = NN, q_0 = NN/k_0, and generically p_{j+1} = q_{j}, q_{j+1} = q_{j}/k_{j+1}, where k_j is the length of the j'th input.
+    // Since p_0 = NN, i % p_0 does nothing; similarly since q_J = 1, / q_J does nothing;
+    //   As such these edge cases are split out in the code for efficiency.
     modulo = div;
     div = modulo/LENGTH(VECTOR_ELT(base_list, j));
     switch(TYPEOF(this_v)) {
     case LGLSXP: {
       SEXP this_col = PROTECT(allocVector(LGLSXP, NN)); nprotect++;
+      // for openMP loop
       int *restrict this_v_ptr = LOGICAL(this_v);
       int *this_col_ptr = LOGICAL(this_col);
       if (j == 0) {
+        // typically usage has JJ << NN, so parallelize rows, not columns
         #pragma omp parallel for num_threads(getDTthreads())
         for (int i = 0; i < NN; i++) {
           this_col_ptr[i] = this_v_ptr[i / div];
