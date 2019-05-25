@@ -2817,11 +2817,12 @@ test(996.2, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2), yy = rep(base::s
 options(old)
 
 # #3597 -- CJ properly informs sorted can't apply to list input
-test(996.3, CJ(list(1:2, 3)), error = "list, which can't be sorted")
+test(996.3, CJ(list(1:2, 3)), error = "non-atomic, which can't be sorted")
 test(996.4, CJ(list(1:2, 3), 4:6, sorted = FALSE),
      data.table(V1 = list(1:2, 1:2, 1:2, 3, 3, 3), V2 = rep(4:6, 2)))
 
-test(996.5, CJ(expression(1), sorted = FALSE), error = "Type 'expression' not supported")
+test(996.5, CJ(expression(1)), error = "element 1 is non-atomic")
+test(996.6, CJ(expression(2), 3, sorted = FALSE), error = "Type 'expression' not supported")
 
 # That CJ orders NA consistently with setkey and historically, now it doesn't use setkey.
 # NA must always come first in data.table throughout, since binary search relies on that internally.

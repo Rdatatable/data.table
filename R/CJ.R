@@ -18,11 +18,13 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
     emptyList <- TRUE
     l <- lapply(l, "[", 0L)
   }
+  if (sorted && !all(idx <- vapply_1b(l, is.atomic))) stop("'sorted' is TRUE but element ", which(!idx), " is non-atomic, which can't be sorted; try setting sorted = FALSE")
   if (unique && !emptyList) l = lapply(l, unique)
 
   dups = FALSE # fix for #1513
   ncol = length(l)
   if (ncol==1L && !emptyList) {
+    
     if (sorted && length(o <- forderv(l[[1L]]))) out = list(l[[1L]][o])
     else out = list(l[[1L]])
     nrow = length(l[[1L]])
@@ -35,7 +37,6 @@ CJ <- function(..., sorted = TRUE, unique = FALSE)
     }
     
     # apply sorting
-    if (sorted && any(idx <- vapply_1b(l, is.list))) stop("'sorted' is TRUE but element ", which(idx), " is a list, which can't be sorted; try setting sorted = FALSE")
     if (sorted) l = lapply(l, function(li) {
       # fix for #1513
       if (length(o <- forderv(li, retGrp=TRUE))) li = li[o]
