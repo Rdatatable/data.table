@@ -689,7 +689,7 @@ void fwriteMain(fwriteMainArgs args)
     char *buff = malloc(headerLen);
     if (!buff) STOP("Unable to allocate %d MiB for header: %s", headerLen / 1024 / 1024, strerror(errno));
     char *ch = buff;
-    if (args.bom) {*ch++=0xEF; *ch++=0xBB; *ch++=0xBF; }  // 3 appears above (search for "bom")
+    if (args.bom) {*ch++=(char)0xEF; *ch++=(char)0xBB; *ch++=(char)0xBF; }  // 3 appears above (search for "bom")
     memcpy(ch, args.yaml, yamlLen);
     ch += yamlLen;
     if (args.colNames) {
