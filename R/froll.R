@@ -9,3 +9,6 @@ froll = function(fun, x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "
 frollmean = function(x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, verbose=getOption("datatable.verbose")) {
   froll(fun="mean", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive, verbose=verbose)
 }
+frollsum <- function(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, verbose=getOption("datatable.verbose")) {
+  froll(fun="sum", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive, verbose=verbose)
+}

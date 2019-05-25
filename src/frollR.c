@@ -129,9 +129,9 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     dx[i] = REAL(VECTOR_ELT(x, i));                             // assign source columns to C pointers
   }
 
-  enum {MEAN/*, SUM*/} sfun;
+  enum {MEAN, SUM} sfun;
   if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean")) sfun = MEAN;
-  //else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) sfun = SUM;
+  else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) sfun = SUM;
   else error("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker."); // # nocov
 
   if (length(fill) != 1)
@@ -184,8 +184,10 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
         if (!badaptive) frollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
         else fadaptiverollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
         break;
-        //case SUM :
-        //  break;
+      case SUM :
+        if (!badaptive) frollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
+        else fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
+        break;
       }
     }
   }
