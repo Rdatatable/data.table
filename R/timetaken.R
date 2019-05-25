@@ -1,4 +1,4 @@
-timetaken <- function(started.at)
+timetaken = function(started.at)
 {
   if (!inherits(started.at,"proc_time")) stop("Use started.at=proc.time() not Sys.time() (POSIXt and slow)")  # nocov
   format = function(secs) {

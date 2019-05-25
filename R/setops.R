@@ -3,7 +3,7 @@
 #   dt   [symbol] - a data.table
 # Iff all of 'cols' is present in 'x' return col indices
 # is.data.table(dt) check should be performed in the calling function
-validate <- function(cols, dt) {
+validate = function(cols, dt) {
   argcols = deparse(substitute(cols))
   argdt = deparse(substitute(dt))
   origcols = cols
@@ -17,7 +17,7 @@ validate <- function(cols, dt) {
 }
 
 # setdiff for data.tables, internal at the moment #547, used in not-join
-setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE) {
+setdiff_ = function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE) {
   if (!is.data.table(x) || !is.data.table(y)) stop("x and y must both be data.tables")
   # !ncol redundant since all 0-column data.tables have 0 rows
   if (!nrow(x)) return(x)
@@ -47,7 +47,7 @@ setdiff_ <- function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE
 
 # set operators ----
 
-funique <- function(x) {
+funique = function(x) {
   stopifnot(is.data.table(x))
   dup = duplicated(x)
   if (any(dup)) .Call(CsubsetDT, x, which_(dup, FALSE), seq_along(x)) else x
@@ -67,7 +67,7 @@ funique <- function(x) {
   if (.seqn && ".seqn" %chin% names(x)) stop("None of the datasets should contain a column named '.seqn'")
 }
 
-fintersect <- function(x, y, all=FALSE) {
+fintersect = function(x, y, all=FALSE) {
   .set_ops_arg_check(x, y, all, .seqn = TRUE)
   if (!nrow(x) || !nrow(y)) return(x[0L])
   if (all) {
@@ -81,7 +81,7 @@ fintersect <- function(x, y, all=FALSE) {
   }
 }
 
-fsetdiff <- function(x, y, all=FALSE) {
+fsetdiff = function(x, y, all=FALSE) {
   .set_ops_arg_check(x, y, all, .seqn = TRUE)
   if (!nrow(x)) return(x)
   if (!nrow(y)) return(if (!all) funique(x) else x)
@@ -95,14 +95,14 @@ fsetdiff <- function(x, y, all=FALSE) {
   }
 }
 
-funion <- function(x, y, all=FALSE) {
+funion = function(x, y, all=FALSE) {
   .set_ops_arg_check(x, y, all, block_list = !all)
   ans = rbindlist(list(x, y))
   if (!all) ans = funique(ans)
   ans
 }
 
-fsetequal <- function(x, y, all=TRUE) {
+fsetequal = function(x, y, all=TRUE) {
   .set_ops_arg_check(x, y, all)
   if (!all) {
     x = funique(x)
@@ -113,7 +113,7 @@ fsetequal <- function(x, y, all=TRUE) {
 
 # all.equal ----
 
-all.equal.data.table <- function(target, current, trim.levels=TRUE, check.attributes=TRUE, ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps), ...) {
+all.equal.data.table = function(target, current, trim.levels=TRUE, check.attributes=TRUE, ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps), ...) {
   stopifnot(is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order), is.numeric(tolerance))
   if (!is.data.table(target) || !is.data.table(current)) stop("'target' and 'current' must both be data.tables")
 
