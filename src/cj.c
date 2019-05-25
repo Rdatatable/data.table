@@ -16,8 +16,18 @@ SEXP cj(SEXP base_list) {
       SEXP this_col = PROTECT(allocVector(LGLSXP, NN)); nprotect++;
       int *this_v_ptr = LOGICAL(this_v);
       int *this_col_ptr = LOGICAL(this_col);
-      for (int i = 0; i < NN; i++) {
-        this_col_ptr[i] = this_v_ptr[(i % modulo) / div];
+      if (j == 0) {
+        for (int i = 0; i < NN; i++) {
+          this_col_ptr[i] = this_v_ptr[i / div];
+        }
+      } else if (j == JJ - 1) {
+        for (int i = 0; i < NN; i++) {
+          this_col_ptr[i] = this_v_ptr[i % modulo];
+        }
+      } else {
+        for (int i = 0; i < NN; i++) {
+          this_col_ptr[i] = this_v_ptr[(i % modulo) / div];
+        }
       }
       SET_VECTOR_ELT(out, j, this_col);
     }
@@ -26,8 +36,18 @@ SEXP cj(SEXP base_list) {
       SEXP this_col = PROTECT(allocVector(INTSXP, NN)); nprotect++;
       int *this_v_ptr = INTEGER(this_v);
       int *this_col_ptr = INTEGER(this_col);
-      for (int i = 0; i < NN; i++) {
-        this_col_ptr[i] = this_v_ptr[(i % modulo) / div];
+      if (j == 0) {
+        for (int i = 0; i < NN; i++) {
+          this_col_ptr[i] = this_v_ptr[i / div];
+        }
+      } else if (j == JJ - 1) {
+        for (int i = 0; i < NN; i++) {
+          this_col_ptr[i] = this_v_ptr[i % modulo];
+        }
+      } else {
+        for (int i = 0; i < NN; i++) {
+          this_col_ptr[i] = this_v_ptr[(i % modulo) / div];
+        }
       }
       SET_VECTOR_ELT(out, j, this_col);
     }
@@ -36,23 +56,53 @@ SEXP cj(SEXP base_list) {
       SEXP this_col = PROTECT(allocVector(REALSXP, NN)); nprotect++;
       double *this_v_ptr = REAL(this_v);
       double *this_col_ptr = REAL(this_col);
-      for (int i = 0; i < NN; i++) {
-        this_col_ptr[i] = this_v_ptr[(i % modulo) / div];
+      if (j == 0) {
+        for (int i = 0; i < NN; i++) {
+          this_col_ptr[i] = this_v_ptr[i / div];
+        }
+      } else if (j == JJ - 1) {
+        for (int i = 0; i < NN; i++) {
+          this_col_ptr[i] = this_v_ptr[i % modulo];
+        }
+      } else {
+        for (int i = 0; i < NN; i++) {
+          this_col_ptr[i] = this_v_ptr[(i % modulo) / div];
+        }
       }
       SET_VECTOR_ELT(out, j, this_col);
-    }
+    } 
       break;
     case STRSXP: {
       SEXP this_col = PROTECT(allocVector(STRSXP, NN)); nprotect++;
-      for (int i = 0; i < NN; i++) {
-        SET_STRING_ELT(this_col, i, STRING_ELT(this_v, (i % modulo) / div));
+      if (j == 0) {
+        for (int i = 0; i < NN; i++) {
+          SET_STRING_ELT(this_col, i, STRING_ELT(this_v, i / div));
+        }
+      } else if (j == JJ - 1) {
+        for (int i = 0; i < NN; i++) {
+          SET_STRING_ELT(this_col, i, STRING_ELT(this_v, i % modulo));
+        }
+      } else {
+        for (int i = 0; i < NN; i++) {
+          SET_STRING_ELT(this_col, i, STRING_ELT(this_v, (i % modulo) / div));
+        }
       }
       SET_VECTOR_ELT(out, j, this_col);
     } break;
     case VECSXP: {
       SEXP this_col = PROTECT(allocVector(VECSXP, NN)); nprotect++;
-      for (int i = 0; i < NN; i++) {
-        SET_VECTOR_ELT(this_col, i, VECTOR_ELT(this_v, (i % modulo) / div));
+      if (j == 0) {
+        for (int i = 0; i < NN; i++) {
+          SET_VECTOR_ELT(this_col, i, VECTOR_ELT(this_v, i / div));
+        }
+      } else if (j == JJ - 1) {
+        for (int i = 0; i < NN; i++) {
+          SET_VECTOR_ELT(this_col, i, VECTOR_ELT(this_v, i % modulo));
+        }
+      } else {
+        for (int i = 0; i < NN; i++) {
+          SET_VECTOR_ELT(this_col, i, VECTOR_ELT(this_v, (i % modulo) / div));
+        }
       }
       SET_VECTOR_ELT(out, j, this_col);
     } break;
