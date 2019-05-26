@@ -1002,9 +1002,9 @@ rm(num)
 
 ## frollapply
 x = 1:10
-test(9995.1, frollsum(x, 3), frollapply(x, 3, sum))
-test(9995.2, frollsum(x, 6), frollapply(x, 6, sum))
-test(9995.3, frollmean(x, 3), frollapply(x, 3, mean))
+test(9999.9991, frollsum(x, 3), frollapply(x, 3, sum))
+test(9999.9992, frollsum(x, 6), frollapply(x, 6, sum))
+test(9999.9993, frollmean(x, 3), frollapply(x, 3, mean))
 
 ## frollapply benchmark
 if (FALSE) {
@@ -1021,7 +1021,13 @@ if (FALSE) {
   system.time(ans1<-frollmean(x, n))
   system.time(ans2<-frollapply(x, n, mean))
   system.time(ans3<-rollfun(x, n, mean))
-  # memcpy: 0.006 vs 8.772 vs 9.563
-
   all.equal(ans1, ans2) && all.equal(ans1, ans3)
+  system.time(ans1<-frollsum(x, n))
+  system.time(ans2<-frollapply(x, n, sum))
+  system.time(ans3<-rollfun(x, n, sum))
+  all.equal(ans1, ans2) && all.equal(ans1, ans3)
+
+  # memcpy
+  # mean:  0.006 vs 8.772 vs 9.563
+  # sum:   0.001 vs 1.344 vs 5.466
 }
