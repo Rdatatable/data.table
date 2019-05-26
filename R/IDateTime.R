@@ -60,6 +60,15 @@ unique.IDate =
     as.IDate(NextMethod())
   }
 
+`[<-.IDate` = function(x, i, value) {
+  if (!length(value)) return(x)
+  value = as.integer(as.IDate(value))
+  setattr(x, 'class', NULL)
+  x[i] = value
+  setattr(x, 'class', c('IDate', 'Date'))
+  x
+}
+
 # fix for #1315
 as.list.IDate = function(x, ...) NextMethod()
 
