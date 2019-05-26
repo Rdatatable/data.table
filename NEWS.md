@@ -148,6 +148,9 @@
 
 9. `DT[col]` where `col` is a column containing row numbers of itself to select, now suggests the correct syntax (`DT[(col)]` or `DT[DT$col]`), [#697](https://github.com/Rdatatable/data.table/issues/697). This expands the message introduced in [#1884](https://github.com/Rdatatable/data.table/issues/1884) for the case where `col` is type `logical` and `DT[col==TRUE]` is suggested.
 
+10. The `datatable.old.unique.by.key` option has been warning for 1 year that it is deprecated: `... Please stop using it and pass by=key(DT) instead for clarity ...`. This warning is now upgraded to error as per the schedule in note 10 of v1.11.0 (May 2018), and note 1 of v1.9.8 (Nov 2016). In June 2020 the option will be removed.
+
+
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 
 #### NEW FEATURES
