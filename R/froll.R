@@ -12,3 +12,10 @@ frollmean = function(x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "l
 frollsum <- function(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, verbose=getOption("datatable.verbose")) {
   froll(fun="sum", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive, verbose=verbose)
 }
+frollapply = function(x, n, fun) {
+  x = as.double(x)
+  n = as.integer(n)
+  stopifnot(is.function(fun))
+  ans = .Call(CfrollapplyR, x, n, fun, new.env())
+  ans
+}

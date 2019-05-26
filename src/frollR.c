@@ -206,3 +206,34 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   UNPROTECT(protecti);
   return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
 }
+
+SEXP frollapplyR(SEXP x, SEXP k, SEXP fun, SEXP env) {
+  if (!isReal(x)) error("'x' must be real");
+  if (!isInteger(k)) error("'k' must be integer");
+  if (!isFunction(fun)) error("'fun' must be a function");
+  if (!isEnvironment(env)) error("'env' should be an environment");
+
+  int protecti=0;
+  R_xlen_t nx = xlength(x);
+  double *dx = REAL(x);
+  int ik = INTEGER(k)[0];
+
+  SEXP w = PROTECT(allocVector(REALSXP, ik)); protecti++;
+  double *dw = REAL(w);
+  SEXP ans = PROTECT(allocVector(REALSXP, nx)); protecti++;
+  double *dans = REAL(ans);
+
+  SEXP call = PROTECT(lang2(fun, R_NilValue)); protecti++;
+  SETCADR(call, w);
+
+  for (int i=0; i<ik-1; i++) dans[i] = NA_REAL;
+  for (R_xlen_t i=ik-1; i<nx; i++) {
+    memcpy(dw, dx+(i-ik+1), ik*sizeof(double));
+    // instead of memcpy I tried below line to change pointer address but getting: lvalue required as left operand of assignment
+    //REAL(w) = dx+(i-ik);
+    // or maybe bitshift here?
+    dans[i] = REAL(eval(call, env))[0];
+  }
+  UNPROTECT(protecti);
+  return ans;
+}

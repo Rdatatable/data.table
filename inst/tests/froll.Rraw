@@ -11,6 +11,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   require(data.table)
   test = data.table:::test
   froll = data.table:::froll
+  frollapply = data.table:frollapply
 }
 
 ## rolling features
@@ -998,3 +999,29 @@ afun_compare(x, n)
 x = makeNA(rnorm(1e3+1), nf=TRUE); n = sample(51, length(x), TRUE)
 afun_compare(x, n)
 rm(num)
+
+## frollapply
+x = 1:10
+test(9995.1, frollsum(x, 3), frollapply(x, 3, sum))
+test(9995.2, frollsum(x, 6), frollapply(x, 6, sum))
+test(9995.3, frollmean(x, 3), frollapply(x, 3, mean))
+
+## frollapply benchmark
+if (FALSE) {
+  set.seed(108)
+  x = rnorm(1e6)
+  n = 1e3
+  rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE) {
+    ans = rep(fill, nx<-length(x))
+    f = match.fun(FUN)
+    if (nf.rm) x[is.infinite(x)] = NA_real_
+    for (i in n:nx) ans[i] = f(x[(i-n+1):i], na.rm=na.rm)
+    ans
+  }
+  system.time(ans1<-frollmean(x, n))
+  system.time(ans2<-frollapply(x, n, mean))
+  system.time(ans3<-rollfun(x, n, mean))
+  # memcpy: 0.006 vs 8.772 vs 9.563
+
+  all.equal(ans1, ans2) && all.equal(ans1, ans3)
+}

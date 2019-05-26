@@ -190,6 +190,7 @@ void fadaptiverollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, doub
 
 // frollR.c
 SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
+SEXP frollapplyR(SEXP x, SEXP k, SEXP fun, SEXP env);
 
 // nafill.c
 SEXP colnamesInt(SEXP x, SEXP cols);

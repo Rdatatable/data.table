@@ -8,6 +8,8 @@
 \alias{frollmean}
 \alias{rollsum}
 \alias{frollsum}
+\alias{rollapply}
+\alias{frollapply}
 \title{Rolling functions}
 \description{
   Fast rolling functions to calculate aggregates on sliding window. Function name and arguments are experimental.
@@ -19,6 +21,7 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
 frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
   "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
   verbose=getOption("datatable.verbose"))
+frollapply(x, n, fun)
 }
 \arguments{
   \item{x}{ vector, list, data.frame or data.table of numeric columns. }
@@ -42,6 +45,7 @@ frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
     calculated, default \code{FALSE}. See details below. }
   \item{verbose}{ logical, default \code{getOption("datatable.verbose")},
     \code{TRUE} turns on status and information messages to the console. }
+  \item{fun}{ function, to be used in \code{frollapply}. }
 }
 \details{
   \code{froll*} functions accepts vectors, lists, data.frames or
