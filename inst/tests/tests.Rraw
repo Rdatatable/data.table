@@ -13477,7 +13477,7 @@ test(1967.69, !any(grepl('order optimization', verbose_output, fixed = TRUE)))
 test(1967.70, any(grepl('[1] 5', verbose_output, fixed = TRUE)))
 options('datatable.optimize' = 1L)
 test(1967.71, x[order(a), .N, verbose = TRUE], 5L,
-     output = "i changed from 'order(...)' to 'forder(")
+     output = "changed 'order(...)' in i to 'forder(")
 setkey(x)
 test(1967.72, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
@@ -14932,6 +14932,14 @@ test(2052, rbindlist(list(dt1, dt2), fill=TRUE),
            data.table(V1=c(dt1$V1, dt2$V1),
                       V46=structure(c(3L,1L,1L,NA,3L,NA,NA,NA,NA,NA), .Label=c("Low","Typical","High",NA), class = c("ordered", "factor"))))
 
+# forder detected more generally in i, #1921
+DT = data.table(
+  A = c(2L, 1L, 1L, 2L, 2L, 1L, 1L, 2L, 1L, 1L), 
+  B = c("b", "c", "a", "b", "b", "b", "c", "a", "b", "a"), 
+  C = c(2L, 3L, 5L, 8L, 6L, 1L, 4L, 9L, 10L, 7L)
+)
+test(2053, DT[order(C)[1:5], B, verbose = TRUE], c('b', 'b', 'c', 'c', 'a'),
+     output = 'order optimisation is on')
 
 ###################################
 #  Add new tests above this line  #

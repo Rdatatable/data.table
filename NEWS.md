@@ -88,6 +88,8 @@
 
 13. New rolling function to calculate rolling sum has been implemented and exported, see `?frollsum`, [#2778](https://github.com/Rdatatable/data.table/issues/2778).
 
+14. `order` is now optimized anywhere in `i` when `datatable.optimize >= 1`, [#1921](https://github.com/Rdatatable/data.table/issues/1921). For example, top-N queries like `DT[order(V)[1:N]]` now use optimized sorting.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
