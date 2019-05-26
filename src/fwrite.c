@@ -760,31 +760,35 @@ void fwriteMain(fwriteMainArgs args)
 
   failed=0;  // static global so checkBuffer can set it. -errno for malloc or realloc fails, +errno for write fail
 
-  bool hasPrinted=false;
-  int maxBuffUsedPC=0;
+  bool hasPrinted = false;
+  int maxBuffUsedPC = 0;
+
+  // compute zbuffSize which is the same for each thread
+  size_t zbuffSize = 0;
+  if(args.is_gzip){
+    z_stream stream;
+    if(init_stream(&stream))
+      STOP("Can't allocate gzip stream structure");
+    zbuffSize = deflateBound(&stream, buffSize);
+    deflateEnd(&stream);
+  }
 
   #pragma omp parallel num_threads(nth)
   {
-    char *ch, *myBuff;               // local to each thread
-    ch = myBuff = malloc(buffSize);  // each thread has its own buffer. malloc and errno are thread-safe.
-    if (myBuff==NULL) failed=-errno;
-
-    size_t myzbuffUsed = 0;
-    size_t myzbuffSize = 0;
+    // local to each thread
+    char *ch, *myBuff;
     void *myzBuff = NULL;
+    size_t myzbuffUsed = 0;
 
-    if(args.is_gzip && !failed){
-      z_stream mystream;
-      if(init_stream(&mystream)) {
-        failed = 999;
-      }
-      if (!failed) {
-        myzbuffSize = deflateBound(&mystream, buffSize);
-        myzBuff = malloc(myzbuffSize);
-        if (myzBuff==NULL) failed=-errno;
-      }
-      deflateEnd(&mystream);
+    // each thread has its own buffer. malloc and errno are thread-safe.
+    ch = myBuff = malloc(buffSize);
+    if (myBuff==NULL) failed=-errno;
+    // each thread has its own zbuffer
+    if (!failed) {
+      myzBuff = malloc(zbuffSize);
+      if (myzBuff==NULL) failed=-errno;
     }
+
     // Do not rely on availability of '#omp cancel' new in OpenMP v4.0 (July 2013).
     // OpenMP v4.0 is in gcc 4.9+ (https://gcc.gnu.org/wiki/openmp) but
     // not yet in clang as of v3.8 (http://openmp.llvm.org/)
@@ -828,10 +832,10 @@ void fwriteMain(fwriteMainArgs args)
       if (args.is_gzip && !failed) {
         z_stream mystream;
         if(init_stream(&mystream)) {
-          failed = 998;
+          failed = -998;
         }
         if (!failed) {
-            myzbuffUsed = myzbuffSize;
+            myzbuffUsed = zbuffSize;
             failed = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (int)(ch-myBuff));
         }
         deflateEnd(&mystream);
