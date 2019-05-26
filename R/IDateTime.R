@@ -40,7 +40,7 @@ as.IDate.POSIXct = function(x, tz = attr(x, "tzone"), ...) {
     as.IDate(as.Date(x, tz = tz, ...))
 }
 
-as.IDate.IDate = function(x, ...) x
+as.IDate.IDate = function(x, ...) as.integer(x)
 
 as.Date.IDate = function(x, ...) {
   x = as.numeric(x)
@@ -55,6 +55,7 @@ c.IDate =
 rep.IDate =
 split.IDate =
 unique.IDate =
+`[<-.IDate` = 
   function(x, ...) {
     as.IDate(NextMethod())
   }
