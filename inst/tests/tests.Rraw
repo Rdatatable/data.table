@@ -14933,9 +14933,11 @@ test(2052, rbindlist(list(dt1, dt2), fill=TRUE),
            data.table(V1=c(dt1$V1, dt2$V1),
                       V46=structure(c(3L,1L,1L,NA,3L,NA,NA,NA,NA,NA), .Label=c("Low","Typical","High",NA), class = c("ordered", "factor"))))
 
+# [<-.IDate method solves #2008 --
 # rbind.data.frame doesn't respect integer storage mode of IDate
 DF = data.frame(date = as.IDate(0L))
-test(2053, storage.mode(rbind(DF, DF)$date), 'integer')
+test(2053.1, storage.mode(rbind(DF, DF)$date), 'integer')
+test(2053.2, DF$date[1L] <- integer(), integer())
 
 ###################################
 #  Add new tests above this line  #
