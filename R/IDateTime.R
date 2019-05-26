@@ -40,7 +40,7 @@ as.IDate.POSIXct = function(x, tz = attr(x, "tzone"), ...) {
     as.IDate(as.Date(x, tz = tz, ...))
 }
 
-as.IDate.IDate = function(x, ...) as.integer(x)
+as.IDate.IDate = function(x, ...) x
 
 as.Date.IDate = function(x, ...) {
   x = as.numeric(x)
@@ -55,11 +55,13 @@ c.IDate =
 rep.IDate =
 split.IDate =
 unique.IDate =
-`[<-.IDate` = 
   function(x, ...) {
     as.IDate(NextMethod())
   }
 
+# for #2008 -- Internal rbind calls [<-,
+#   which winds up (1) converting to numeric and (2) keeping IDate class
+#   Define our own method to prevent value ever coercing to double
 `[<-.IDate` = function(x, i, value) {
   if (!length(value)) return(x)
   value = as.integer(as.IDate(value))
