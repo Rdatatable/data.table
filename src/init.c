@@ -168,6 +168,7 @@ R_CallMethodDef callMethods[] = {
 {"CnafillR", (DL_FUNC) &nafillR, -1},
 {"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
+{"Ccoalesce", (DL_FUNC) &coalesce, -1},
 {NULL, NULL, 0}
 };
 
