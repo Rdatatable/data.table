@@ -783,9 +783,13 @@ void fwriteMain(fwriteMainArgs args)
     ch = myBuff = malloc(buffSize);
     if (myBuff==NULL) failed=-errno;
     // each thread has its own zbuffer
-    if (!failed) {
+    z_stream mystream;
+    if (args.is_gzip && !failed) {
       myzBuff = malloc(zbuffSize);
       if (myzBuff==NULL) failed=-errno;
+      if(init_stream(&mystream)) {
+          failed = -998; // # nocov
+      }
     }
 
     // Do not rely on availability of '#omp cancel' new in OpenMP v4.0 (July 2013).
@@ -829,15 +833,11 @@ void fwriteMain(fwriteMainArgs args)
       }
       // compress buffer if gzip
       if (args.is_gzip && !failed) {
-        z_stream mystream;
-        if(init_stream(&mystream)) {
-          failed = -998; // # nocov
-        }
         if (!failed) {
           myzbuffUsed = zbuffSize;
           failed = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (int)(ch-myBuff));
         }
-        deflateEnd(&mystream);
+        deflateReset(&mystream);
       }
       #pragma omp ordered
       {
@@ -895,6 +895,9 @@ void fwriteMain(fwriteMainArgs args)
     }
     // all threads will call this free on their buffer, even if one or more threads had malloc
     // or realloc fail. If the initial malloc failed, free(NULL) is ok and does nothing.
+    if (args.is_gzip) {
+      deflateEnd(&mystream);
+    }
     free(myBuff);
     free(myzBuff);
   }
