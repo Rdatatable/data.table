@@ -6054,8 +6054,8 @@ test(1419.64, setkey(DT, a, verbose=TRUE), output="forder took")
 setkey(DT, NULL)
 setindex(DT, a)
 setindex(DT, aaa)
-test(1419.63, allIndicesValid(DT), TRUE)
-test(1419.64, setkey(DT, aaa, verbose=TRUE), output="using existing index for aaa")
+test(1419.65, allIndicesValid(DT), TRUE)
+test(1419.66, setkey(DT, aaa, verbose=TRUE), output="using existing index for aaa")
 
 # setnames updates secondary key
 DT = data.table(a=1:5,b=10:6)
