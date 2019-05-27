@@ -6039,6 +6039,7 @@ test(1419.60, allIndicesValid(DT), TRUE)
 setkey(DT, a)
 test(1419.61, DT$a, c(1,1,2,3,4,5,6,7,8,9))
 setkey(DT, NULL)
+setindex(DT, a)
 test(1419.62, setkey(DT, a, verbose=TRUE), output="using existing index for a")
 
 # check setkey incase of existing multiple indexes
