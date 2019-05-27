@@ -39,7 +39,7 @@ Authors@R: c(
   person("Michael","Quinn",        role="ctb"),
   person("@javrucebo","",          role="ctb"),
   person("@marc-outins","",        role="ctb"),
-  person("Roy","Storey",           role="ctb")),
+  person("Roy","Storey",           role="ctb"),
   person("Manish","Saraswat",      role="ctb"))
 Depends: R (>= 3.1.0)
 Imports: methods
