@@ -5668,13 +5668,13 @@ test(1376.06, indices(DT), c("b","a"))  # 2 secondary keys of single columns
 test(1376.07, DT[a==7L,verbose=TRUE], DT[7L], output="Optimized subsetting with index 'a'")
 setkey(DT,b)
 test(1376.08, indices(DT), NULL)
-test(1376.09, list(DT[a==2L], indices(DT)), list(DT[9L],"a"))  # create indices for next test
+test(1376.09, list(DT[a==2L], indices(DT)), list(DT[2L],"a"))  # create indices for next test
 setindex(DT,NULL)
 test(1376.10, list(key(DT), indices(DT)), list("b", NULL))
 options(datatable.auto.index = FALSE)
-test(1376.11, list(DT[a==2L], indices(DT)), list(DT[9L],NULL))
+test(1376.11, list(DT[a==2L], indices(DT)), list(DT[2L],NULL))
 options(datatable.auto.index = TRUE)
-test(1376.12, list(DT[a==2L], indices(DT)), list(DT[9L],"a"))
+test(1376.12, list(DT[a==2L], indices(DT)), list(DT[2L],"a"))
 
 # When i is FALSE and a column is being added by reference, for consistency with cases when i is not FALSE
 # we should still add the column. But we need to know what type it should be, so the user supplied RHS of :=
