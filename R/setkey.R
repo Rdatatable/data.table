@@ -88,12 +88,10 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
   
   # get existing index name if any
-  found_index = NULL
-  if(!is.null(indices(x))) found_index <- names(attributes(attributes(x)$index))
-  new_possible_index = paste0("__", cols, collapse="")
+  index = paste0(cols, collapse="__")
   
   # forder only if index is not present
-  if(!any(new_possible_index == found_index)){
+  if (!any(index == indices(x))){
       if (verbose) {
           tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
           # suppress needed for tests 644 and 645 in verbose mode
@@ -102,10 +100,10 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
           o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)
       }
   } else {
-      # find the matching index
-      ix =  found_index[which(found_index == new_possible_index)]
+      # find the name of matching index
+      ix = indices(x)[which(indices(x) == index)]
       if (verbose){
-          cat("using existing index for", gsub("^__","", ix), "\n")
+          cat("using existing index for", ix, "\n")
           o <- attr(attributes(x)$index, which=ix, exact = TRUE)
       } else {
           o <- attr(attributes(x)$index, which=ix, exact = TRUE)

@@ -6032,18 +6032,23 @@ test(1419.58, indices(thisDT), c("a", "ab"))
 test(1419.59, allIndicesValid(thisDT), TRUE)
 
 ## setkey on same col as index before
-DT <- data.table(a = c(1,1,1,1,1,2,2,2,2,2),
+DT <- data.table(a =c(4,1,3,9,2,1,8,7,6,5),
                  aaa = c(1,1,2,2,2,1,1,2,2,2))
 setindex(DT, a)
 test(1419.60, allIndicesValid(DT), TRUE)
-test(1419.61, setkey(DT, a, verbose=TRUE), output="using existing index for a")
+setkey(DT, a)
+test(1419.61, DT$a, c(1,1,2,3,4,5,6,7,8,9))
+setkey(DT, NULL)
+test(1419.62, setkey(DT, a, verbose=TRUE), output="using existing index for a")
+
+# check setkey incase of existing multiple indexes
 DT <- data.table(a = c(1,1,1,1,1,2,2,2,2,2),
                  aaa = c(1,1,2,2,2,1,1,2,2,2),
                  bbb = c(1,1,2,0,1,1,1,0,1,1))
 setindex(DT, a)
 setindex(DT, aaa)
-test(1419.62, allIndicesValid(DT), TRUE)
-test(1419.63, setkey(DT, aaa, verbose=TRUE), output="using existing index for aaa")
+test(1419.63, allIndicesValid(DT), TRUE)
+test(1419.64, setkey(DT, aaa, verbose=TRUE), output="using existing index for aaa")
 
 # setnames updates secondary key
 DT = data.table(a=1:5,b=10:6)
