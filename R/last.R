@@ -10,11 +10,11 @@ last = function(x, ...) {
     } else if (is.data.frame(x)) return(x[NROW(x),])
   }
   if(!requireNamespace("xts", quietly = TRUE)) {
-    tail(x, n = 1L, ...)
+    tail(x, n = 1L, ...) # nocov
   } else {
     # fix with suggestion from Joshua, #1347
     if (!"package:xts" %chin% search()) {
-      tail(x, n = 1L, ...)
+      tail(x, n = 1L, ...) # nocov
     } else xts::last(x, ...) # UseMethod("last") doesn't find xts's methods, not sure what I did wrong.
   }
 }
@@ -27,11 +27,11 @@ first = function(x, ...) {
     } else if (is.data.frame(x)) return(x[1L,])
   }
   if(!requireNamespace("xts", quietly = TRUE)) {
-    head(x, n = 1L, ...)
+    head(x, n = 1L, ...) # nocov
   } else {
     # fix with suggestion from Joshua, #1347
     if (!"package:xts" %chin% search()) {
-      head(x, n = 1L, ...)
-    } else xts::first(x, ...)
+      head(x, n = 1L, ...) # nocov
+    } else xts::first(x, ...) # nocov
   }
 }
