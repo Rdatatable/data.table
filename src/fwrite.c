@@ -703,19 +703,19 @@ void fwriteMain(fwriteMainArgs args)
       int ret1=0, ret2=0;
       if (args.is_gzip) {
         z_stream stream;
-        if(init_stream(&stream)) { free(buff); STOP("Can't allocate gzip stream structure"); } // # nocov
+        if(init_stream(&stream)) {
+          free(buff);                                    // # nocov
+          STOP("Can't allocate gzip stream structure");  // # nocov
+        }
         size_t zbuffSize = deflateBound(&stream, headerLen);
         char *zbuff = malloc(zbuffSize);
-        // # nocov start
         if (!zbuff) {
-            free(buff);
-            STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));
+          free(buff);                                                                                   // # nocov
+          STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
         }
-        // # nocov end
         size_t zbuffUsed = zbuffSize;
         ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (int)(ch-buff));
-        if (ret1 == Z_OK)
-            ret2 = WRITE(f, zbuff, (int)zbuffUsed);
+        if (ret1==Z_OK) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
         deflateEnd(&stream);
         free(zbuff);
       } else {
@@ -834,8 +834,8 @@ void fwriteMain(fwriteMainArgs args)
           failed = -998; // # nocov
         }
         if (!failed) {
-            myzbuffUsed = zbuffSize;
-            failed = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (int)(ch-myBuff));
+          myzbuffUsed = zbuffSize;
+          failed = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (int)(ch-myBuff));
         }
         deflateEnd(&mystream);
       }

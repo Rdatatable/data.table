@@ -9535,6 +9535,12 @@ close(f2con)
 test(1658.52, file.info(f1)$size, file.info(f2)$size)
 unlink(c(f1, f2))
 
+# compression error -5 due to only 3 bytes (bom) in first block; #3599
+DT = data.table(l=letters, n=1:26)
+test(1658.53, fwrite(DT, file=f<-tempfile(fileext=".gz"), bom=TRUE, col.names=FALSE), NULL)
+test(1658.54, fread(f), setnames(DT,c("V1","V2")))
+unlink(f)
+
 ## End fwrite tests
 
 # tests for #679, inrange(), FR #707
