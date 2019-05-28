@@ -7,9 +7,11 @@ static SEXP match_logical(SEXP table, SEXP x) {
   R_len_t i;
   SEXP ans, m;
   ans = PROTECT(allocVector(LGLSXP, length(x)));
+  int *ians = INTEGER(ans);
   m = PROTECT(match(table, x, 0)); // nomatch=0
+  const int *im = INTEGER(m);
   for (i=0; i<length(x); i++)
-    INTEGER(ans)[i] = INTEGER(m)[i] > 0;
+    ians[i] = im[i] > 0;
   UNPROTECT(2);
   return(ans);
 }

@@ -48,8 +48,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   iSD = PROTECT(findVar(install(".iSD"), env)); protecti++; // 1-row and possibly no cols (if no i variables are used via JIS)
   xSD = PROTECT(findVar(install(".xSD"), env)); protecti++;
   R_len_t maxGrpSize = 0;
+  const int *ilens = INTEGER(lens);
   for (R_len_t i=0; i<LENGTH(lens); i++) {
-    if (INTEGER(lens)[i] > maxGrpSize) maxGrpSize = INTEGER(lens)[i];
+    if (ilens[i] > maxGrpSize) maxGrpSize = ilens[i];
   }
   defineVar(install(".I"), I = PROTECT(allocVector(INTSXP, maxGrpSize)), env); protecti++;
   R_LockBinding(install(".I"), env);
@@ -95,40 +96,42 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   Rboolean jexpIsSymbolOtherThanSD = (isSymbol(jexp) && strcmp(CHAR(PRINTNAME(jexp)),".SD")!=0);  // test 559
 
   ansloc = 0;
+  const int *istarts = INTEGER(starts);
+  const int *iorder = INTEGER(order);
   for(i=0; i<ngrp; i++) {   // even for an empty i table, ngroup is length 1 (starts is value 0), for consistency of empty cases
 
-    if (INTEGER(starts)[i]==0 && (i<ngrp-1 || estn>-1)) continue;
+    if (istarts[i]==0 && (i<ngrp-1 || estn>-1)) continue;
     // Previously had replaced (i>0 || !isNull(lhs)) with i>0 to fix #5376
     // The above is now to fix #1993, see test 1746.
     // In cases were no i rows match, '|| estn>-1' ensures that the last empty group creates an empty result.
     // TODO: revisit and tidy
 
     if (!isNull(lhs) &&
-        (INTEGER(starts)[i] == NA_INTEGER ||
-         (LENGTH(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)))
+        (istarts[i] == NA_INTEGER ||
+         (LENGTH(order) && iorder[ istarts[i]-1 ]==NA_INTEGER)))
       continue;
-    grpn = INTEGER(lens)[i];
-    INTEGER(N)[0] = INTEGER(starts)[i] == NA_INTEGER ? 0 : grpn;
+    grpn = ilens[i];
+    INTEGER(N)[0] = istarts[i] == NA_INTEGER ? 0 : grpn;
     // .N is number of rows matched to ( 0 even when nomatch is NA)
     INTEGER(GRP)[0] = i+1;  // group counter exposed as .GRP
 
     for (j=0; j<length(iSD); j++) {   // either this or the next for() will run, not both
       size_t size = SIZEOF(VECTOR_ELT(iSD,j));
-      memcpy((char *)DATAPTR(VECTOR_ELT(iSD,j)),  // ok use of memcpy. Loop'd through columns not rows
+      memcpy((char *)DATAPTR(VECTOR_ELT(iSD,j)),  // ok use of memcpy. Loop'd through columns not rows // TODO remove DATAPTR
              (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(jiscols)[j]-1))+i*size,
              size);
     }
     // igrp determines the start of the current group in rows of dt (0 based).
     // if jiscols is not null, we have a by = .EACHI, so the start is exactly i.
     // Otherwise, igrp needs to be determined from starts, potentially taking care about the order if present.
-    igrp = !isNull(jiscols) ? i : (length(grporder) ? INTEGER(grporder)[INTEGER(starts)[i]-1]-1 : INTEGER(starts)[i]-1);
+    igrp = !isNull(jiscols) ? i : (length(grporder) ? INTEGER(grporder)[istarts[i]-1]-1 : istarts[i]-1);
     if (igrp>=0 && nrowgroups) for (j=0; j<length(BY); j++) {    // igrp can be -1 so 'if' is important, otherwise memcpy crash
       size_t size = SIZEOF(VECTOR_ELT(BY,j));
-      memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),  // ok use of memcpy size 1. Loop'd through columns not rows
+      memcpy((char *)DATAPTR(VECTOR_ELT(BY,j)),  // ok use of memcpy size 1. Loop'd through columns not rows // TODO remove DATAPTR
              (char *)DATAPTR(VECTOR_ELT(groups,INTEGER(grpcols)[j]-1))+igrp*size,
              size);
     }
-    if (INTEGER(starts)[i] == NA_INTEGER || (LENGTH(order) && INTEGER(order)[ INTEGER(starts)[i]-1 ]==NA_INTEGER)) {
+    if (istarts[i] == NA_INTEGER || (LENGTH(order) && iorder[ istarts[i]-1 ]==NA_INTEGER)) {
       for (j=0; j<length(SDall); j++) {
         switch (TYPEOF(VECTOR_ELT(SDall, j))) {
         case LGLSXP :
@@ -177,20 +180,21 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     } else {
       if (LOGICAL(verbose)[0]) tstart = clock();
       SETLENGTH(I, grpn);
+      int *iI = INTEGER(I);
       if (LENGTH(order)==0) {
-        if (grpn) rownum = INTEGER(starts)[i]-1; else rownum = -1;  // not ternary to pass strict-barrier
-        for (j=0; j<grpn; j++) INTEGER(I)[j] = rownum+j+1;
+        if (grpn) rownum = istarts[i]-1; else rownum = -1;  // not ternary to pass strict-barrier
+        for (j=0; j<grpn; j++) iI[j] = rownum+j+1;
         if (rownum>=0) {
           for (j=0; j<length(SDall); j++) {
             size_t size = SIZEOF(VECTOR_ELT(SDall,j));
-            memcpy((char *)DATAPTR(VECTOR_ELT(SDall,j)),  // direct memcpy best here, for usually large size groups. by= each row is slow and not recommended anyway, so we don't mind there's no switch here for grpn==1
+            memcpy((char *)DATAPTR(VECTOR_ELT(SDall,j)),  // direct memcpy best here, for usually large size groups. by= each row is slow and not recommended anyway, so we don't mind there's no switch here for grpn==1 // TODO remove DATAPTR
                    (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(dtcols)[j]-1))+rownum*size,
                    grpn*size);
             // SD is our own alloc'd memory, and the source (DT) is protected throughout, so no need for SET_* overhead
           }
           for (j=0; j<length(xSD); j++) {
             size_t size = SIZEOF(VECTOR_ELT(xSD,j));
-            memcpy((char *)DATAPTR(VECTOR_ELT(xSD,j)),  // ok use of memcpy. Loop'd through columns not rows
+            memcpy((char *)DATAPTR(VECTOR_ELT(xSD,j)),  // ok use of memcpy. Loop'd through columns not rows // TODO remove DATAPTR
                    (char *)DATAPTR(VECTOR_ELT(dt,INTEGER(xjiscols)[j]-1))+rownum*size,
                    size);
           }
@@ -198,24 +202,23 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (LOGICAL(verbose)[0]) { tblock[0] += clock()-tstart; nblock[0]++; }
       } else {
         // Fairly happy with this block. No need for SET_* here. See comment above.
-        for (k=0; k<grpn; k++) INTEGER(I)[k] = INTEGER(order)[ INTEGER(starts)[i]-1 + k ];
+        for (k=0; k<grpn; k++) iI[k] = iorder[ istarts[i]-1 + k ];
         for (j=0; j<length(SDall); j++) {
           size_t size = SIZEOF(VECTOR_ELT(SDall,j));
           target = VECTOR_ELT(SDall,j);
           source = VECTOR_ELT(dt,INTEGER(dtcols)[j]-1);
-          int *Id = INTEGER(I);
           if (size==4) {
-            int *td = (int *)DATAPTR(target);
-            int *sd = (int *)DATAPTR(source);
+            int *td = INTEGER(target);
+            int *sd = INTEGER(source);
             for (k=0; k<grpn; k++) {
-              rownum = Id[k]-1;
+              rownum = iI[k]-1;
               td[k] = sd[rownum];  // on 32bit copies pointers too
             }
           } else {  // size 8
-            double *td = (double *)DATAPTR(target);
-            double *sd = (double *)DATAPTR(source);
+            double *td = REAL(target);
+            double *sd = REAL(source);
             for (k=0; k<grpn; k++) {
-              rownum = Id[k]-1;
+              rownum = iI[k]-1;
               td[k] = sd[rownum];  // on 64bit copies pointers too
             }
           }
@@ -327,7 +330,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           // Common case 1 : j is a list of simple aggregates i.e. list of atoms only
         else if (maxn >= grpn) {
           estn = 0;
-          for (j=0;j<LENGTH(lens);j++) estn+=INTEGER(lens)[j];
+          for (j=0;j<LENGTH(lens);j++) estn+=ilens[j];
           // Common case 2 : j returns as many rows as there are in the group (maybe a join)
           // TO DO: this might over allocate if first group has 1 row and j is actually a single row aggregate
           //        in cases when we're not sure could wait for the first few groups before deciding.
@@ -380,7 +383,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       target = VECTOR_ELT(ans,j);
       source = VECTOR_ELT(groups, INTEGER(grpcols)[j]-1);  // target and source the same type by construction above
       if (SIZEOF(target)==4) {
-        int *td = (int *)DATAPTR(target);
+        int *td = (int *)DATAPTR(target); // TODO remove DATAPTR
         int *sd = (int *)DATAPTR(source);
         for (int r=0; r<maxn; r++) td[ansloc+r] = sd[igrp];
       } else {
@@ -494,7 +497,7 @@ SEXP growVector(SEXP x, R_len_t newlen)
     // TO DO: Again, is there bulk op to avoid this loop, which still respects older generations
     break;
   default :
-    memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*SIZEOF(x));   // SIZEOF() returns size_t (just as sizeof()) so * shouldn't overflow
+    memcpy((char *)DATAPTR(newx), (char *)DATAPTR(x), len*SIZEOF(x));   // SIZEOF() returns size_t (just as sizeof()) so * shouldn't overflow // TODO remove DATAPTR
   }
   // if (verbose) Rprintf("Growing vector from %d to %d items of type '%s'\n", len, newlen, type2char(TYPEOF(x)));
   // Would print for every column if here. Now just up in dogroups (one msg for each table grow).
