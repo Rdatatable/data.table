@@ -533,37 +533,27 @@ void writeCategString(void *col, int64_t row, char **pch)
   write_string(getCategString(col, row), pch);
 }
 
-int compressbuff(void* dest, size_t *destLen, const void* source, size_t sourceLen)
+int init_stream(z_stream *stream) {
+  stream->zalloc = Z_NULL;
+  stream->zfree = Z_NULL;
+  stream->opaque = Z_NULL;
+
+  // 31 comes from : windows bits 15 | 16 gzip format
+  int err = deflateInit2(stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 31, 8, Z_DEFAULT_STRATEGY);
+  return err;  // # nocov
+}
+
+int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* source, size_t sourceLen)
 {
-  z_stream stream;
-  stream.zalloc = (alloc_func)0;
-  stream.zfree = (free_func)0;
-  stream.opaque = (voidpf)0;
+  int err = 0;
 
-  int err = deflateInit2(&stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 31, 8, Z_DEFAULT_STRATEGY);
-  if (err != Z_OK)
-    return err;  // # nocov
+  stream->next_out = dest;
+  stream->avail_out = *destLen;
+  stream->next_in = (z_const Bytef *)source;
+  stream->avail_in = sourceLen;
 
-  stream.next_out = dest;
-  stream.avail_out = 0;
-  stream.next_in = (z_const Bytef *)source;
-  stream.avail_in = 0;
-  size_t left = *destLen;
-  const uInt uInt_max = (uInt)-1;  // stream.avail_out is type uInt
-  do {
-    if (stream.avail_out == 0) {
-      stream.avail_out = left>uInt_max ? uInt_max : left;
-      left -= stream.avail_out;
-    }
-    if (stream.avail_in == 0) {
-      stream.avail_in = sourceLen>uInt_max ? uInt_max : sourceLen;
-      sourceLen -= stream.avail_in;
-    }
-    err = deflate(&stream, sourceLen ? Z_NO_FLUSH : Z_FINISH);
-  } while (err == Z_OK);
-
-  *destLen = stream.total_out;
-  deflateEnd(&stream);
+  err = deflate(stream, Z_FINISH);
+  *destLen = stream->total_out;
   return err == Z_STREAM_END ? Z_OK : err;
 }
 
@@ -689,7 +679,7 @@ void fwriteMain(fwriteMainArgs args)
     char *buff = malloc(headerLen);
     if (!buff) STOP("Unable to allocate %d MiB for header: %s", headerLen / 1024 / 1024, strerror(errno));
     char *ch = buff;
-    if (args.bom) {*ch++=0xEF; *ch++=0xBB; *ch++=0xBF; }  // 3 appears above (search for "bom")
+    if (args.bom) {*ch++=(char)0xEF; *ch++=(char)0xBB; *ch++=(char)0xBF; }  // 3 appears above (search for "bom")
     memcpy(ch, args.yaml, yamlLen);
     ch += yamlLen;
     if (args.colNames) {
@@ -712,12 +702,21 @@ void fwriteMain(fwriteMainArgs args)
     } else {
       int ret1=0, ret2=0;
       if (args.is_gzip) {
-        size_t zbuffSize = headerLen + headerLen/10 + 16;
+        z_stream stream;
+        if(init_stream(&stream)) {
+          free(buff);                                    // # nocov
+          STOP("Can't allocate gzip stream structure");  // # nocov
+        }
+        size_t zbuffSize = deflateBound(&stream, headerLen);
         char *zbuff = malloc(zbuffSize);
-        if (!zbuff) {free(buff); STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));}
+        if (!zbuff) {
+          free(buff);                                                                                   // # nocov
+          STOP("Unable to allocate %d MiB for zbuffer: %s", zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
+        }
         size_t zbuffUsed = zbuffSize;
-        ret1 = compressbuff(zbuff, &zbuffUsed, buff, (int)(ch-buff));
-        if (ret1==0) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
+        ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (int)(ch-buff));
+        if (ret1==Z_OK) ret2 = WRITE(f, zbuff, (int)zbuffUsed);
+        deflateEnd(&stream);
         free(zbuff);
       } else {
         ret2 = WRITE(f,  buff, (int)(ch-buff));
@@ -740,6 +739,8 @@ void fwriteMain(fwriteMainArgs args)
     return;
   }
 
+  // Writing rows
+
   // Decide buffer size and rowsPerBatch for each thread
   // Once rowsPerBatch is decided it can't be changed
   if (maxLineLen*2>buffSize) { buffSize=2*maxLineLen; rowsPerBatch=2; }
@@ -758,24 +759,39 @@ void fwriteMain(fwriteMainArgs args)
 
   failed=0;  // static global so checkBuffer can set it. -errno for malloc or realloc fails, +errno for write fail
 
-  bool hasPrinted=false;
-  int maxBuffUsedPC=0;
+  bool hasPrinted = false;
+  int maxBuffUsedPC = 0;
+
+  // compute zbuffSize which is the same for each thread
+  size_t zbuffSize = 0;
+  if(args.is_gzip){
+    z_stream stream;
+    if(init_stream(&stream))
+      STOP("Can't allocate gzip stream structure"); // # nocov
+    zbuffSize = deflateBound(&stream, buffSize);
+    deflateEnd(&stream);
+  }
 
   #pragma omp parallel num_threads(nth)
   {
-    char *ch, *myBuff;               // local to each thread
-    ch = myBuff = malloc(buffSize);  // each thread has its own buffer. malloc and errno are thread-safe.
-    if (myBuff==NULL) failed=-errno;
-
-    size_t myzbuffUsed = 0;
-    size_t myzbuffSize = 0;
+    // local to each thread
+    char *ch, *myBuff;
     void *myzBuff = NULL;
+    size_t myzbuffUsed = 0;
 
-    if(args.is_gzip && !failed){
-      myzbuffSize = buffSize + buffSize/10 + 16;
-      myzBuff = malloc(myzbuffSize);
+    // each thread has its own buffer. malloc and errno are thread-safe.
+    ch = myBuff = malloc(buffSize);
+    if (myBuff==NULL) failed=-errno;
+    // each thread has its own zbuffer
+    z_stream mystream;
+    if (args.is_gzip && !failed) {
+      myzBuff = malloc(zbuffSize);
       if (myzBuff==NULL) failed=-errno;
+      if(init_stream(&mystream)) {
+          failed = -998; // # nocov
+      }
     }
+
     // Do not rely on availability of '#omp cancel' new in OpenMP v4.0 (July 2013).
     // OpenMP v4.0 is in gcc 4.9+ (https://gcc.gnu.org/wiki/openmp) but
     // not yet in clang as of v3.8 (http://openmp.llvm.org/)
@@ -817,8 +833,11 @@ void fwriteMain(fwriteMainArgs args)
       }
       // compress buffer if gzip
       if (args.is_gzip && !failed) {
-        myzbuffUsed = myzbuffSize;
-        failed = compressbuff(myzBuff, &myzbuffUsed, myBuff, (int)(ch-myBuff));
+        if (!failed) {
+          myzbuffUsed = zbuffSize;
+          failed = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, (int)(ch-myBuff));
+        }
+        deflateReset(&mystream);
       }
       #pragma omp ordered
       {
@@ -876,6 +895,9 @@ void fwriteMain(fwriteMainArgs args)
     }
     // all threads will call this free on their buffer, even if one or more threads had malloc
     // or realloc fail. If the initial malloc failed, free(NULL) is ok and does nothing.
+    if (args.is_gzip) {
+      deflateEnd(&mystream);
+    }
     free(myBuff);
     free(myzBuff);
   }

@@ -88,6 +88,8 @@
 
 13. New rolling function to calculate rolling sum has been implemented and exported, see `?frollsum`, [#2778](https://github.com/Rdatatable/data.table/issues/2778).
 
+14. `setkey` to an existing index now uses the index, [#2889](https://github.com/Rdatatable/data.table/issues/2889). Thanks to @MichaelChirico for suggesting and @saraswatmks for the PR.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -120,7 +122,9 @@
 
 15. `rbind` and `rbindlist` of zero-row items now retain (again) the unused levels of any (zero-length) factor columns, [#3508](https://github.com/Rdatatable/data.table/issues/3508). This was a regression in v1.12.2 just for zero-row items. Unused factor levels were already retained for items having `nrow>=1`. Thanks to Gregory Demin for reporting.
 
-16. Running the `:=` examples with `example` and `local=TRUE` works as expected, [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @vlulla for the report.
+16. `rbind` and `rbindlist` of an item containing an ordered factor with levels containing an `NA` (as opposed to an NA integer) could segfault, [#3601](https://github.com/Rdatatable/data.table/issues/3601). This was a a regression in v1.12.2. Thanks to Damian Betebenner for reporting.
+
+17. `example(":=", local=TRUE)` now works rather than error, [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @vlulla for the report.
 
 #### NOTES
 
@@ -147,6 +151,9 @@
 8. Historically, `dcast` and `melt` were built as enhancements to `reshape2`'s own `dcast`/`melt`. We removed dependency on `reshape2` in v1.9.6 but maintained some backward compatibility. As that package has been deprecated since December 2017, we have now formally completed the split from `reshape2` by removing some last vestiges, [#3549](https://github.com/Rdatatable/data.table/issues/3549). We thank the `reshape2` authors for their original inspiration for these functions.
 
 9. `DT[col]` where `col` is a column containing row numbers of itself to select, now suggests the correct syntax (`DT[(col)]` or `DT[DT$col]`), [#697](https://github.com/Rdatatable/data.table/issues/697). This expands the message introduced in [#1884](https://github.com/Rdatatable/data.table/issues/1884) for the case where `col` is type `logical` and `DT[col==TRUE]` is suggested.
+
+10. The `datatable.old.unique.by.key` option has been warning for 1 year that it is deprecated: `... Please stop using it and pass by=key(DT) instead for clarity ...`. This warning is now upgraded to error as per the schedule in note 10 of v1.11.0 (May 2018), and note 1 of v1.9.8 (Nov 2016). In June 2020 the option will be removed.
+
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 

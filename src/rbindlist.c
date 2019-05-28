@@ -351,7 +351,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (!levelsRaw) { savetl_end(); error("Failed to allocate working memory for %d ordered factor levels of result column %d", nLevel, idcol+j+1); }
         for (int k=0; k<longestLen; ++k) {
           SEXP s = sd[k];
-          if (s==NA_STRING) continue;
           if (TRUELENGTH(s)>0) savetl(s);
           levelsRaw[k] = s;
           SET_TRUELENGTH(s,-k-1);
