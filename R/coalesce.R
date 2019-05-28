@@ -1,8 +1,6 @@
 coalesce <- function(x, ...) {
   if (!anyNA(x) || missing(..1)) return(x)
   
-  count_na = sum(is.na(x))
-  
   values = list(...)
   
   nn = length(x)
@@ -30,5 +28,5 @@ coalesce <- function(x, ...) {
          " Please ensure type consistency on your inputs.")
   }
   
-  .Call(Ccoalesce, x, values, nn, count_na)
+  .Call(Ccoalesce, x, values)
 }

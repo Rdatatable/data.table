@@ -32,6 +32,7 @@ export(rleidv)
 export(rowid)
 export(rowidv)
 export(uniqueN)
+export(coalesce)
 export(setDTthreads, getDTthreads)
 # set operators
 export(fintersect)
