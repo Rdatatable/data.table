@@ -65,8 +65,8 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
         thisi = VECTOR_ELT(ans, j);
         INTEGER(thisi)[k] = (j < len[i]) ? ili[j] : ifill[0];
       }
-      break;
     }
+      break;
     case LGLSXP : {
       const int *ili = LOGICAL(li);
       const int *ifill = LOGICAL(fill);
@@ -74,8 +74,8 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
         thisi = VECTOR_ELT(ans, j);
         LOGICAL(thisi)[k] = (j < len[i]) ? ili[j] : ifill[0];
       }
-      break;
     }
+      break;
     case REALSXP : {
       const double *dli = REAL(li);
       const double *dfill = REAL(fill);
@@ -83,15 +83,15 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
         thisi = VECTOR_ELT(ans, j);
         REAL(thisi)[k] = (j < len[i]) ? dli[j] : dfill[0];
       }
-      break;
     }
+      break;
     case STRSXP : {
       for (j=0; j<maxlen; j++) {
         thisi = VECTOR_ELT(ans, j);
         SET_STRING_ELT(thisi, k, (j < len[i]) ? STRING_ELT(li, j) : STRING_ELT(fill, 0));
       }
-      break;
     }
+      break;
     default :
         error("Unsupported column type '%s'", type2char(maxtype));
     }

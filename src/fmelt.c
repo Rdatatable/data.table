@@ -46,20 +46,21 @@ SEXP which_notNA(SEXP x) {
   case LGLSXP: {
     const int *ix = LOGICAL(x);
     for (i = 0; i < n; i++) iv[i] = (ix[i] != NA_LOGICAL);
-    break;
   }
+    break;
   case INTSXP: {
     const int *ix = INTEGER(x);
     for (i = 0; i < n; i++) iv[i] = (ix[i] != NA_INTEGER);
-    break;
   }
+    break;
   case REALSXP: {
     const double *dx = REAL(x);
     for (i = 0; i < n; i++) iv[i] = !ISNAN(dx[i]);
-    break;
   }
-  case STRSXP:
+    break;
+  case STRSXP: {
     for (i = 0; i < n; i++) iv[i] = (STRING_ELT(x, i) != NA_STRING);
+  }
     break;
   default:
     error("%s() applied to non-(list or vector) of type '%s'",
@@ -500,8 +501,8 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         } else {
           for (k=0; k<data->nrow; k++) SET_VECTOR_ELT(target, j*data->nrow + k, VECTOR_ELT(thiscol, k));
         }
-        break;
       }
+        break;
       case STRSXP : {
         if (data->isfactor[i]) {
           if (isFactor(thiscol)) {
@@ -516,8 +517,8 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         } else {
           for (k=0; k<data->nrow; k++) SET_STRING_ELT(target, j*data->nrow + k, STRING_ELT(thiscol, k));
         }
-        break;
       }
+        break;
       case REALSXP : {
         double *dtarget = REAL(target);
         const double *dthiscol = REAL(thiscol);
@@ -527,8 +528,8 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         } else {
           memcpy((char *)dtarget+j*data->nrow*size, (char *)dthiscol, data->nrow*size);
         }
-        break;
       }
+        break;
       case INTSXP : {
         int *itarget = INTEGER(target);
         const int *ithiscol = INTEGER(thiscol);
@@ -538,8 +539,8 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         } else {
           memcpy((char *)itarget+j*data->nrow*size, (char *)ithiscol, data->nrow*size);
         }
-        break;
       }
+        break;
       case LGLSXP : {
         int *itarget = LOGICAL(target);
         const int *ithiscol = LOGICAL(thiscol);
@@ -549,8 +550,8 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         } else {
           memcpy((char *)itarget+j*data->nrow*size, (char *)ithiscol, data->nrow*size);
         }
-        break;
       }
+        break;
       default : error("Unknown column type '%s' for column '%s'.", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1)));
       }
       if (data->narm) counter += thislen;
@@ -653,7 +654,6 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
 
   int i,j,k, counter=0, thislen;
   SEXP ansids, thiscol, target, thisidx;
-
   size_t size;
   ansids = PROTECT(allocVector(VECSXP, data->lids));
   for (i=0; i<data->lids; i++) {
@@ -679,8 +679,8 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
         for (j=0; j<data->lmax; j++)
           memcpy((char *)dtarget+j*data->nrow*size, (char *)dthiscol, data->nrow*size);
       }
-      break;
     }
+      break;
     case INTSXP : {
       int *itarget = INTEGER(target);
       const int *ithiscol = INTEGER(thiscol);
@@ -697,8 +697,8 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
         for (j=0; j<data->lmax; j++)
           memcpy((char *)itarget+j*data->nrow*size, (char *)ithiscol, data->nrow*size);
       }
-      break;
     }
+      break;
     case LGLSXP : {
       int *itarget = LOGICAL(target);
       const int *ithiscol = LOGICAL(thiscol);
@@ -715,8 +715,8 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
         for (j=0; j<data->lmax; j++)
           memcpy((char *)itarget+j*data->nrow*size, (char *)ithiscol, data->nrow*size);
       }
-      break;
     }
+      break;
     case STRSXP : {
       if (data->narm) {
         for (j=0; j<data->lmax; j++) {
@@ -735,16 +735,16 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
           }
         }
       }
-      break;
     }
+      break;
     case VECSXP : {
       for (j=0; j<data->lmax; j++) {
         for (k=0; k<data->nrow; k++) {
           SET_VECTOR_ELT(target, j*data->nrow + k, VECTOR_ELT(thiscol, k));
         }
       }
-      break;
     }
+      break;
     default : error("Unknown column type '%s' for column '%s' in 'data'", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(data->idcols)[i]-1)));
     }
   }

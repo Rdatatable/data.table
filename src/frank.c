@@ -28,15 +28,16 @@ SEXP dt_na(SEXP x, SEXP cols) {
     case LGLSXP: {
       const int *iv = LOGICAL(v);
       for (j=0; j<n; j++) ians[j] |= (iv[j] == NA_LOGICAL);
-      break;
     }
+      break;
     case INTSXP: {
       const int *iv = INTEGER(v);
       for (j=0; j<n; j++) ians[j] |= (iv[j] == NA_INTEGER);
-      break;
     }
-    case STRSXP:
+      break;
+    case STRSXP: {
       for (j=0; j<n; j++) ians[j] |= (STRING_ELT(v, j) == NA_STRING);
+    }
       break;
     case REALSXP: {
       const double *dv = REAL(v);
@@ -47,15 +48,17 @@ SEXP dt_na(SEXP x, SEXP cols) {
       } else {
         for (j=0; j<n; j++) ians[j] |= ISNAN(dv[j]);
       }
-      break;
     }
-    case RAWSXP:
+      break;
+    case RAWSXP: {
       // no such thing as a raw NA
       // vector already initialised to all 0's
+    }
       break;
-    case CPLXSXP:
+    case CPLXSXP: {
       // taken from https://github.com/wch/r-source/blob/d75f39d532819ccc8251f93b8ab10d5b83aac89a/src/main/coerce.c
       for (j=0; j<n; j++) ians[j] |= (ISNAN(COMPLEX(v)[j].r) || ISNAN(COMPLEX(v)[j].i));
+    }
       break;
     default:
       error("Unknown column type '%s'", type2char(TYPEOF(v)));
@@ -154,19 +157,19 @@ SEXP anyNA(SEXP x, SEXP cols) {
       const int *iv = LOGICAL(v);
       while(j < n && iv[j] != NA_LOGICAL) j++;
       if (j < n) LOGICAL(ans)[0] = 1;
-      break;
     }
+      break;
     case INTSXP: {
       const int *iv = INTEGER(v);
       while(j < n && iv[j] != NA_INTEGER) j++;
       if (j < n) LOGICAL(ans)[0] = 1;
-      break;
     }
+      break;
     case STRSXP: {
       while (j < n && STRING_ELT(v, j) != NA_STRING) j++;
       if (j < n) LOGICAL(ans)[0] = 1;
-      break;
     }
+      break;
     case REALSXP: {
       const double *dv = REAL(v);
       if (INHERITS(v, char_integer64)) {
@@ -180,19 +183,19 @@ SEXP anyNA(SEXP x, SEXP cols) {
         while(j < n && !ISNAN(dv[j])) j++;
         if (j < n) LOGICAL(ans)[0] = 1;
       }
-      break;
     }
+      break;
     case RAWSXP: {
       // no such thing as a raw NA
       // vector already initialised to all 0's
-      break;
     }
+      break;
     case CPLXSXP: {
       // taken from https://github.com/wch/r-source/blob/d75f39d532819ccc8251f93b8ab10d5b83aac89a/src/main/coerce.c
       while (j < n && !ISNAN(COMPLEX(v)[j].r) && !ISNAN(COMPLEX(v)[j].i)) j++;
       if (j < n) LOGICAL(ans)[0] = 1;
-      break;
     }
+      break;
     default:
       error("Unknown column type '%s'", type2char(TYPEOF(v)));
     }

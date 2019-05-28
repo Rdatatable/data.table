@@ -45,8 +45,8 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
           itarget[k] = (thisidx == NA_INTEGER) ? ithisfill[0] : ithiscol[thisidx-1];
         }
       }
-      break;
     }
+      break;
     case REALSXP: {
       const double *dthiscol = REAL(thiscol);
       const double *dthisfill = REAL(thisfill);
@@ -59,8 +59,8 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
           dtarget[k] = (thisidx == NA_INTEGER) ? dthisfill[0] : dthiscol[thisidx-1];
         }
       }
-      break;
     }
+      break;
     case LGLSXP: {
       const int *ithiscol = LOGICAL(thiscol);
       const int *ithisfill = LOGICAL(thisfill);
@@ -73,8 +73,8 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
           itarget[k] = (thisidx == NA_INTEGER) ? ithisfill[0] : ithiscol[thisidx-1];
         }
       }
-      break;
     }
+      break;
     case STRSXP: {
       for (j=0; j<ncols; j++) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
@@ -84,8 +84,8 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
           SET_STRING_ELT(target, k, (thisidx == NA_INTEGER) ? STRING_ELT(thisfill, 0) : STRING_ELT(thiscol, thisidx-1));
         }
       }
-      break;
     }
+      break;
     case VECSXP: {
       for (j=0; j<ncols; j++) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
@@ -95,8 +95,8 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
           SET_VECTOR_ELT(target, k, (thisidx == NA_INTEGER) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(thiscol, thisidx-1));
         }
       }
-      break;
     }
+      break;
     }
     if (count) UNPROTECT(1);
   }
