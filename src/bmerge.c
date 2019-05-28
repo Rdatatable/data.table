@@ -344,7 +344,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     double *dxc = REAL(xc);
     isInt64 = INHERITS(xc, char_integer64);
     uint64_t (*twiddle)(void *, int) = isInt64 ? &i64twiddle : &dtwiddle;
-    // TODO: remove this last remaining use of i64twiddle. remove DATAPTR too.
+    // TODO: remove this last remaining use of i64twiddle.
     ival.ull = twiddle(dic, ir);
     while(xlow < xupp-1) {
       mid = xlow + (xupp-xlow)/2;
