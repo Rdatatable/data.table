@@ -553,6 +553,11 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
   stream->avail_in = sourceLen;
 
   err = deflate(stream, Z_FINISH);
+  // with Z_FINISH, deflate must return Z_STREAM_END if correct, otherwise
+  // it's an error, and we can't return Z_OK = 0
+  if (err == Z_OK) {
+    err = -9;
+  }
   *destLen = stream->total_out;
   return err == Z_STREAM_END ? Z_OK : err;
 }
