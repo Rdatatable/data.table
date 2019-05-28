@@ -383,12 +383,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       target = VECTOR_ELT(ans,j);
       source = VECTOR_ELT(groups, INTEGER(grpcols)[j]-1);  // target and source the same type by construction above
       if (SIZEOF(target)==4) {
-        int *td = (int *)DATAPTR(target); // TODO remove DATAPTR
-        int *sd = (int *)DATAPTR(source);
+        int *td = INTEGER(target);
+        int *sd = INTEGER(source);
         for (int r=0; r<maxn; r++) td[ansloc+r] = sd[igrp];
       } else {
-        double *td = (double *)DATAPTR(target);
-        double *sd = (double *)DATAPTR(source);
+        double *td = REAL(target);
+        double *sd = REAL(source);
         for (int r=0; r<maxn; r++) td[ansloc+r] = sd[igrp];
       }
       // Shouldn't need SET_* to age objects here since groups, TO DO revisit.
