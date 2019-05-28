@@ -7,7 +7,8 @@
 SEXP seq_int(int n, int start) {
   if (n <= 0) return(R_NilValue);
   SEXP ans = PROTECT(allocVector(INTSXP, n));
-  for (int i=0; i<n; i++) INTEGER(ans)[i] = start+i;
+  int *ians = INTEGER(ans);
+  for (int i=0; i<n; i++) ians[i] = start+i;
   UNPROTECT(1);
   return(ans);
 }
@@ -18,10 +19,11 @@ SEXP set_diff(SEXP x, int n) {
   if (n <= 0) error("'n' must be a positive integer");
   SEXP table = PROTECT(seq_int(n, 1));       // TODO: using match to 1:n seems odd here, why use match at all
   SEXP xmatch = PROTECT(match(x, table, 0)); // Old comment:took a while to realise: matches vec against x - thanks to comment from Matt in assign.c!
+  const int *ixmatch = INTEGER(xmatch);
   int *buf = (int *) R_alloc(n, sizeof(int));
   int j=0;
   for (int i=0; i<n; i++) {
-    if (INTEGER(xmatch)[i] == 0) {
+    if (ixmatch[i] == 0) {
       buf[j++] = i+1;
     }
   }
@@ -39,18 +41,25 @@ SEXP which_notNA(SEXP x) {
   int i, j=0, n = length(x);
 
   PROTECT(v = allocVector(LGLSXP, n));
+  int *iv = LOGICAL(v);
   switch (TYPEOF(x)) {
-  case LGLSXP:
-    for (i = 0; i < n; i++) LOGICAL(v)[i] = (LOGICAL(x)[i] != NA_LOGICAL);
+  case LGLSXP: {
+    const int *ix = LOGICAL(x);
+    for (i = 0; i < n; i++) iv[i] = (ix[i] != NA_LOGICAL);
     break;
-  case INTSXP:
-    for (i = 0; i < n; i++) LOGICAL(v)[i] = (INTEGER(x)[i] != NA_INTEGER);
+  }
+  case INTSXP: {
+    const int *ix = INTEGER(x);
+    for (i = 0; i < n; i++) iv[i] = (ix[i] != NA_INTEGER);
     break;
-  case REALSXP:
-    for (i = 0; i < n; i++) LOGICAL(v)[i] = !ISNAN(REAL(x)[i]);
+  }
+  case REALSXP: {
+    const double *dx = REAL(x);
+    for (i = 0; i < n; i++) iv[i] = !ISNAN(dx[i]);
     break;
+  }
   case STRSXP:
-    for (i = 0; i < n; i++) LOGICAL(v)[i] = (STRING_ELT(x, i) != NA_STRING);
+    for (i = 0; i < n; i++) iv[i] = (STRING_ELT(x, i) != NA_STRING);
     break;
   default:
     error("%s() applied to non-(list or vector) of type '%s'",
@@ -59,7 +68,7 @@ SEXP which_notNA(SEXP x) {
 
   int *buf = (int *) R_alloc(n, sizeof(int));
   for (i = 0; i < n; i++) {
-    if (LOGICAL(v)[i] == TRUE) {
+    if (iv[i] == TRUE) {
       buf[j] = i + 1;
       j++;
     }
@@ -77,9 +86,10 @@ SEXP which(SEXP x, Rboolean val) {
   int i, j=0, n = length(x);
   SEXP ans;
   if (!isLogical(x)) error("Argument to 'which' must be logical");
+  const int *ix = LOGICAL(x);
   int *buf = (int *) R_alloc(n, sizeof(int));
   for (i = 0; i < n; i++) {
-    if (LOGICAL(x)[i] == val) {
+    if (ix[i] == val) {
       buf[j] = i + 1;
       j++;
     }
@@ -107,13 +117,14 @@ SEXP concat(SEXP vec, SEXP idx) {
 
   if (TYPEOF(vec) != STRSXP) error("concat: 'vec must be a character vector");
   if (!isInteger(idx) || length(idx) < 0) error("concat: 'idx' must be an integer vector of length >= 0");
+  const int *iidx = INTEGER(idx);
   for (i=0; i<length(idx); i++) {
-    if (INTEGER(idx)[i] < 0 || INTEGER(idx)[i] > length(vec))
+    if (iidx[i] < 0 || iidx[i] > length(vec))
       error("concat: 'idx' must take values between 0 and length(vec); 0 <= idx <= length(vec)");
   }
   PROTECT(v = allocVector(STRSXP, nidx > 5 ? 5 : nidx));
   for (i=0; i<length(v); i++) {
-    SET_STRING_ELT(v, i, STRING_ELT(vec, INTEGER(idx)[i]-1));
+    SET_STRING_ELT(v, i, STRING_ELT(vec, iidx[i]-1));
   }
   if (nidx > 5) SET_STRING_ELT(v, 4, mkChar("..."));
   PROTECT(t = s = allocList(3));
@@ -151,10 +162,12 @@ static SEXP unlist_(SEXP xint) {
   for (i=0; i<n; i++)
     totn += length(VECTOR_ELT(xint, i));
   ans = PROTECT(allocVector(INTSXP, totn));
+  int *ians = INTEGER(ans);
   for (i=0; i<n; i++) {
     tmp = VECTOR_ELT(xint, i);
+    const int *itmp = INTEGER(tmp);
     for (j=0; j<length(tmp); j++)
-      INTEGER(ans)[k++] = INTEGER(tmp)[j];
+      ians[k++] = itmp[j];
   }
   UNPROTECT(1);
   return(ans);
@@ -472,21 +485,24 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
       if (TYPEOF(thiscol) != TYPEOF(target) && (data->maxtype[i] == VECSXP || !isFactor(thiscol))) {
         thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));  thisprotecti++;
       }
+      const int *ithisidx;
       if (data->narm) {
         thisidx = VECTOR_ELT(data->naidx, j);
+        ithisidx = INTEGER(thisidx);
         thislen = length(thisidx);
       }
       size = SIZEOF(thiscol);
       switch (TYPEOF(target)) {
-        case VECSXP :
+      case VECSXP : {
         if (data->narm) {
-          for (k=0; k<thislen; k++)
-            SET_VECTOR_ELT(target, counter + k, VECTOR_ELT(thiscol, INTEGER(thisidx)[k]-1));
+        for (k=0; k<thislen; k++)
+          SET_VECTOR_ELT(target, counter + k, VECTOR_ELT(thiscol, ithisidx[k]-1));
         } else {
           for (k=0; k<data->nrow; k++) SET_VECTOR_ELT(target, j*data->nrow + k, VECTOR_ELT(thiscol, k));
         }
         break;
-        case STRSXP :
+      }
+      case STRSXP : {
         if (data->isfactor[i]) {
           if (isFactor(thiscol)) {
             SET_VECTOR_ELT(flevels, j, getAttrib(thiscol, R_LevelsSymbol));
@@ -496,36 +512,46 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         }
         if (data->narm) {
           for (k=0; k<thislen; k++)
-            SET_STRING_ELT(target, counter + k, STRING_ELT(thiscol, INTEGER(thisidx)[k]-1));
+            SET_STRING_ELT(target, counter + k, STRING_ELT(thiscol, ithisidx[k]-1));
         } else {
           for (k=0; k<data->nrow; k++) SET_STRING_ELT(target, j*data->nrow + k, STRING_ELT(thiscol, k));
         }
         break;
-        case REALSXP :
+      }
+      case REALSXP : {
+        double *dtarget = REAL(target);
+        const double *dthiscol = REAL(thiscol);
         if (data->narm) {
           for (k=0; k<thislen; k++)
-            REAL(target)[counter + k] = REAL(thiscol)[INTEGER(thisidx)[k]-1];
+            dtarget[counter + k] = dthiscol[ithisidx[k]-1];
         } else {
-          memcpy((char *)REAL(target)+j*data->nrow*size, (char *)REAL(thiscol), data->nrow*size);
+          memcpy((char *)dtarget+j*data->nrow*size, (char *)dthiscol, data->nrow*size);
         }
         break;
-        case INTSXP :
+      }
+      case INTSXP : {
+        int *itarget = INTEGER(target);
+        const int *ithiscol = INTEGER(thiscol);
         if (data->narm) {
           for (k=0; k<thislen; k++)
-            INTEGER(target)[counter + k] = INTEGER(thiscol)[INTEGER(thisidx)[k]-1];
+            itarget[counter + k] = ithiscol[ithisidx[k]-1];
         } else {
-          memcpy((char *)INTEGER(target)+j*data->nrow*size, (char *)INTEGER(thiscol), data->nrow*size);
+          memcpy((char *)itarget+j*data->nrow*size, (char *)ithiscol, data->nrow*size);
         }
         break;
-        case LGLSXP :
+      }
+      case LGLSXP : {
+        int *itarget = LOGICAL(target);
+        const int *ithiscol = LOGICAL(thiscol);
         if (data->narm) {
           for (k=0; k<thislen; k++)
-            LOGICAL(target)[counter + k] = LOGICAL(thiscol)[INTEGER(thisidx)[k]-1];
+            itarget[counter + k] = ithiscol[ithisidx[k]-1];
         } else {
-          memcpy((char *)LOGICAL(target)+j*data->nrow*size, (char *)LOGICAL(thiscol), data->nrow*size);
+          memcpy((char *)itarget+j*data->nrow*size, (char *)ithiscol, data->nrow*size);
         }
         break;
-        default : error("Unknown column type '%s' for column '%s'.", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1)));
+      }
+      default : error("Unknown column type '%s' for column '%s'.", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1)));
       }
       if (data->narm) counter += thislen;
       UNPROTECT(thisprotecti);  // inside inner loop (note that it's double loop) so as to limit use of protection stack
@@ -627,6 +653,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
 
   int i,j,k, counter=0, thislen;
   SEXP ansids, thiscol, target, thisidx;
+
   size_t size;
   ansids = PROTECT(allocVector(VECSXP, data->lids));
   for (i=0; i<data->lids; i++) {
@@ -636,55 +663,68 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
     SET_VECTOR_ELT(ansids, i, target=allocVector(TYPEOF(thiscol), data->totlen) );
     copyMostAttrib(thiscol, target); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     switch(TYPEOF(thiscol)) {
-    case REALSXP :
+    case REALSXP : {
+      double *dtarget = REAL(target);
+      const double *dthiscol = REAL(thiscol);
       if (data->narm) {
         for (j=0; j<data->lmax; j++) {
           thisidx = VECTOR_ELT(data->naidx, j);
+          const int *ithisidx = INTEGER(thisidx);
           thislen = length(thisidx);
           for (k=0; k<thislen; k++)
-            REAL(target)[counter + k] = REAL(thiscol)[INTEGER(thisidx)[k]-1];
+            dtarget[counter + k] = dthiscol[ithisidx[k]-1];
           counter += thislen;
         }
       } else {
         for (j=0; j<data->lmax; j++)
-          memcpy((char *)REAL(target)+j*data->nrow*size, (char *)REAL(thiscol), data->nrow*size);
+          memcpy((char *)dtarget+j*data->nrow*size, (char *)dthiscol, data->nrow*size);
       }
       break;
-    case INTSXP :
+    }
+    case INTSXP : {
+      int *itarget = INTEGER(target);
+      const int *ithiscol = INTEGER(thiscol);
       if (data->narm) {
         for (j=0; j<data->lmax; j++) {
           thisidx = VECTOR_ELT(data->naidx, j);
+          const int *ithisidx = INTEGER(thisidx);
           thislen = length(thisidx);
           for (k=0; k<thislen; k++)
-            INTEGER(target)[counter + k] = INTEGER(thiscol)[INTEGER(thisidx)[k]-1];
+            itarget[counter + k] = ithiscol[ithisidx[k]-1];
           counter += thislen;
         }
       } else {
         for (j=0; j<data->lmax; j++)
-          memcpy((char *)INTEGER(target)+j*data->nrow*size, (char *)INTEGER(thiscol), data->nrow*size);
+          memcpy((char *)itarget+j*data->nrow*size, (char *)ithiscol, data->nrow*size);
       }
       break;
-    case LGLSXP :
+    }
+    case LGLSXP : {
+      int *itarget = LOGICAL(target);
+      const int *ithiscol = LOGICAL(thiscol);
       if (data->narm) {
         for (j=0; j<data->lmax; j++) {
           thisidx = VECTOR_ELT(data->naidx, j);
+          const int *ithisidx = INTEGER(thisidx);
           thislen = length(thisidx);
           for (k=0; k<thislen; k++)
-            LOGICAL(target)[counter + k] = LOGICAL(thiscol)[INTEGER(thisidx)[k]-1];
+            itarget[counter + k] = ithiscol[ithisidx[k]-1];
           counter += thislen;
         }
       } else {
         for (j=0; j<data->lmax; j++)
-          memcpy((char *)LOGICAL(target)+j*data->nrow*size, (char *)LOGICAL(thiscol), data->nrow*size);
+          memcpy((char *)itarget+j*data->nrow*size, (char *)ithiscol, data->nrow*size);
       }
       break;
-    case STRSXP :
+    }
+    case STRSXP : {
       if (data->narm) {
         for (j=0; j<data->lmax; j++) {
           thisidx = VECTOR_ELT(data->naidx, j);
+          const int *ithisidx = INTEGER(thisidx);
           thislen = length(thisidx);
           for (k=0; k<thislen; k++)
-            SET_STRING_ELT(target, counter + k, STRING_ELT(thiscol, INTEGER(thisidx)[k]-1));
+            SET_STRING_ELT(target, counter + k, STRING_ELT(thiscol, ithisidx[k]-1));
           counter += thislen;
         }
       } else {
@@ -696,13 +736,15 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
         }
       }
       break;
-    case VECSXP :
+    }
+    case VECSXP : {
       for (j=0; j<data->lmax; j++) {
         for (k=0; k<data->nrow; k++) {
           SET_VECTOR_ELT(target, j*data->nrow + k, VECTOR_ELT(thiscol, k));
         }
       }
       break;
+    }
     default : error("Unknown column type '%s' for column '%s' in 'data'", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(data->idcols)[i]-1)));
     }
   }

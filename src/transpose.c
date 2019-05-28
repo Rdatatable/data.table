@@ -57,31 +57,41 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
       if (!isFactor(li)) li = PROTECT(coerceVector(li, maxtype));
       else li = PROTECT(asCharacterFactor(li));
     }
-    switch (maxtype) {
-    case INTSXP :
+    switch (maxtype) { // TODO remove more macros
+    case INTSXP : {
+      const int *ili = INTEGER(li);
+      const int *ifill = INTEGER(fill);
       for (j=0; j<maxlen; j++) {
         thisi = VECTOR_ELT(ans, j);
-        INTEGER(thisi)[k] = (j < len[i]) ? INTEGER(li)[j] : INTEGER(fill)[0];
+        INTEGER(thisi)[k] = (j < len[i]) ? ili[j] : ifill[0];
       }
       break;
-    case LGLSXP :
+    }
+    case LGLSXP : {
+      const int *ili = LOGICAL(li);
+      const int *ifill = LOGICAL(fill);
       for (j=0; j<maxlen; j++) {
         thisi = VECTOR_ELT(ans, j);
-        LOGICAL(thisi)[k] = (j < len[i]) ? LOGICAL(li)[j] : LOGICAL(fill)[0];
+        LOGICAL(thisi)[k] = (j < len[i]) ? ili[j] : ifill[0];
       }
       break;
-    case REALSXP :
+    }
+    case REALSXP : {
+      const double *dli = REAL(li);
+      const double *dfill = REAL(fill);
       for (j=0; j<maxlen; j++) {
         thisi = VECTOR_ELT(ans, j);
-        REAL(thisi)[k] = (j < len[i]) ? REAL(li)[j] : REAL(fill)[0];
+        REAL(thisi)[k] = (j < len[i]) ? dli[j] : dfill[0];
       }
       break;
-    case STRSXP :
+    }
+    case STRSXP : {
       for (j=0; j<maxlen; j++) {
         thisi = VECTOR_ELT(ans, j);
         SET_STRING_ELT(thisi, k, (j < len[i]) ? STRING_ELT(li, j) : STRING_ELT(fill, 0));
       }
       break;
+    }
     default :
         error("Unsupported column type '%s'", type2char(maxtype));
     }

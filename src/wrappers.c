@@ -36,10 +36,12 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
   R_len_t nx = length(x), i;
   SEXP xchar, newx;
   xchar = PROTECT(allocVector(STRSXP, nx));
+  int *ix = INTEGER(x);
   for (i=0; i<nx; i++)
-    SET_STRING_ELT(xchar, i, STRING_ELT(levels, INTEGER(x)[i]-1));
+    SET_STRING_ELT(xchar, i, STRING_ELT(levels, ix[i]-1));
   newx = PROTECT(chmatch(xchar, ulevels, NA_INTEGER));
-  for (i=0; i<nx; i++) INTEGER(x)[i] = INTEGER(newx)[i];
+  int *inewx = INTEGER(newx);
+  for (i=0; i<nx; i++) ix[i] = inewx[i];
   setAttrib(x, R_LevelsSymbol, ulevels);
   UNPROTECT(2);
   return(x);
