@@ -5934,7 +5934,7 @@ test(1419.18, key(thisDT), "x1")
 ## testing secondary index retainment on assign (#2372)
 
 allIndicesValid <- function(DT){
-  ## checks that the order of all indices is correct
+  ## checks that the order of all indices are correct
   for(idx in seq_along(indices(DT))){
     index <- attr(attr(DT, "index"), paste0("__", indices(DT)[idx], collapse = ""))
     if(!length(index)) index <- seq_len(nrow(DT))
@@ -6031,6 +6031,33 @@ thisDT <- copy(DT)[, c("aaa", "b") := 2]
 test(1419.58, indices(thisDT), c("a", "ab"))
 test(1419.59, allIndicesValid(thisDT), TRUE)
 
+## setkey on same col as existing index, #2889
+DT <- data.table(a =c(4,1,3,9,2,1,8,7,6,5),
+                 aaa = c(1,1,2,2,2,1,1,2,2,2))
+setindex(DT, a)
+test(1419.60, allIndicesValid(DT), TRUE)
+setindex(DT, NULL)
+setkey(DT, a)
+test(1419.61, DT$a, c(1,1,2,3,4,5,6,7,8,9))
+setkey(DT, NULL)
+setindex(DT, a)
+test(1419.62, setkey(DT, a, verbose=TRUE), data.table(a=c(1,1:9), aaa=c(1,1,2,2,1,2,2,2,1,2), key="a"),
+              output="setkey on columns [a] using existing index 'a'")  # checks also that the prior index a is dropped (because y is keyed with no index)
+
+# setkey picks correct index of multiple indexes (e.g. exact=TRUE is used in internals)
+DT = data.table(a =   c(3,3,4,4,5,6,1,1,7,2),
+                aaa = c(1,1,2,2,2,1,1,2,2,2),
+                bbb = c(1,1,2,0,1,1,1,0,1,1))
+setkey(DT, a)
+test(1419.63, DT$a, c(1,1,2,3,3,4,4,5,6,7))
+setkey(DT, NULL)
+test(1419.64, setkey(DT, a, verbose=TRUE), output="forder took")
+setkey(DT, NULL)
+setindex(DT, aaa, a)
+setindex(DT, aaa)   # this aaa not previous aaa_a should be used by setkey(DT,aaa); i.e. ensure no partial matching
+test(1419.65, allIndicesValid(DT), TRUE)
+test(1419.66, setkey(DT, aaa, verbose=TRUE), data.table(a=c(1,3,3,6,1,2,4,4,5,7), aaa=c(1,1,1,1,2,2,2,2,2,2), bbb=c(1,1,1,1,0,1,2,0,1,1), key="aaa"),
+              output="setkey on columns [aaa] using existing index 'aaa'")  # checks that all indexes are dropped (aaa_a too)
 
 # setnames updates secondary key
 DT = data.table(a=1:5,b=10:6)
