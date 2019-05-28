@@ -5668,13 +5668,13 @@ test(1376.06, indices(DT), c("b","a"))  # 2 secondary keys of single columns
 test(1376.07, DT[a==7L,verbose=TRUE], DT[7L], output="Optimized subsetting with index 'a'")
 setkey(DT,b)
 test(1376.08, indices(DT), NULL)
-test(1376.09, list(DT[a==2L], indices(DT)), list(DT[2L],"a"))  # create indices for next test
+test(1376.09, list(DT[a==2L], indices(DT)), list(DT[9L],"a"))  # create indices for next test
 setindex(DT,NULL)
 test(1376.10, list(key(DT), indices(DT)), list("b", NULL))
 options(datatable.auto.index = FALSE)
-test(1376.11, list(DT[a==2L], indices(DT)), list(DT[2L],NULL))
+test(1376.11, list(DT[a==2L], indices(DT)), list(DT[9L],NULL))
 options(datatable.auto.index = TRUE)
-test(1376.12, list(DT[a==2L], indices(DT)), list(DT[2L],"a"))
+test(1376.12, list(DT[a==2L], indices(DT)), list(DT[9L],"a"))
 
 # When i is FALSE and a column is being added by reference, for consistency with cases when i is not FALSE
 # we should still add the column. But we need to know what type it should be, so the user supplied RHS of :=
@@ -6042,7 +6042,7 @@ test(1419.61, DT$a, c(1,1,2,3,4,5,6,7,8,9))
 setkey(DT, NULL)
 setindex(DT, a)
 test(1419.62, setkey(DT, a, verbose=TRUE), data.table(a=c(1,1:9), aaa=c(1,1,2,2,1,2,2,2,1,2), key="a"),
-              output="using existing index for a")  # checks also that the prior index a is dropped (because y is keyed with no index)
+              output="setkey on columns [a] using existing index 'a'")  # checks also that the prior index a is dropped (because y is keyed with no index)
 
 # setkey picks correct index of multiple indexes (e.g. exact=TRUE is used in internals)
 DT = data.table(a =   c(3,3,4,4,5,6,1,1,7,2),
@@ -6057,7 +6057,7 @@ setindex(DT, aaa, a)
 setindex(DT, aaa)   # this aaa not previous aaa_a should be used by setkey(DT,aaa); i.e. ensure no partial matching
 test(1419.65, allIndicesValid(DT), TRUE)
 test(1419.66, setkey(DT, aaa, verbose=TRUE), data.table(a=c(1,3,3,6,1,2,4,4,5,7), aaa=c(1,1,1,1,2,2,2,2,2,2), bbb=c(1,1,1,1,0,1,2,0,1,1), key="aaa"),
-              output="using existing index for aaa")  # checks that all indexes are dropped (aaa_a too)
+              output="setkey on columns [aaa] using existing index 'aaa'")  # checks that all indexes are dropped (aaa_a too)
 
 # setnames updates secondary key
 DT = data.table(a=1:5,b=10:6)

@@ -86,27 +86,19 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
   }
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
-  
-  # get existing index name if any
+
   newkey = paste0(cols, collapse="__")
-  
-  # forder only if index is not present
-  if (!any(indices(x) == newkey)){
-      if (verbose) {
-          tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
-          # suppress needed for tests 644 and 645 in verbose mode
-          cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
-      } else {
-          o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)
-      }
+  if (!any(indices(x) == newkey)) {
+    if (verbose) {
+      tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
+      # suppress needed for tests 644 and 645 in verbose mode
+      cat("forder took", tt["user.self"]+tt["sys.self"], "sec\n")
+    } else {
+      o = forderv(x, cols, sort=TRUE, retGrp=FALSE)
+    }
   } else {
-      # find the name of matching index
-      if (verbose){
-          cat("using existing index for", newkey, "\n")
-          o <- attr(attributes(x)$index, which=newkey, exact = TRUE)
-      } else {
-          o <- attr(attributes(x)$index, which=newkey, exact = TRUE)
-      }
+    if (verbose) cat("setkey on columns ", brackify(cols), " using existing index '", newkey, "'\n", sep="")
+    o = getindex(x, newkey)
   }
   if (!physical) {
     if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
@@ -175,7 +167,7 @@ setreordervec = function(x, order) .Call(Creorder, x, order)
 
 is.sorted = function(x, by=seq_along(x)) {
   if (is.list(x)) {
-    warning("Use 'if (length(o<-forderv(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted.")
+    warning("Use 'if (length(o <- forderv(DT,by))) ...' for efficiency in one step, so you have o as well if not sorted.")
     # could pass through a flag for forderv to return early on first FALSE. But we don't need that internally
     # since internally we always then need ordering, an it's better in one step. Don't want inefficiency to creep in.
     # This is only here for user/debugging use to check/test valid keys; e.g. data.table:::is.sorted(DT,by)
@@ -250,7 +242,7 @@ forder = function(x, ..., na.last=TRUE, decreasing=FALSE)
       }
       if (is.name(v)) {
         ix = chmatch(as.character(v), xcols, nomatch=0L)
-        if (ix != 0L) ans <- point(ans, i, x, ix) # see 'point' in data.table.R and C-version pointWrapper in assign.c - avoid copies
+        if (ix != 0L) ans = point(ans, i, x, ix) # see 'point' in data.table.R and C-version pointWrapper in assign.c - avoid copies
         else {
           v = as.call(list(as.name("list"), v))
           ans = point(ans, i, eval(v, x, parent.frame()), 1L)
@@ -273,7 +265,7 @@ forder = function(x, ..., na.last=TRUE, decreasing=FALSE)
 fsort = function(x, decreasing=FALSE, na.last=FALSE, internal=FALSE, verbose=FALSE, ...)
 {
   containsNAs = FALSE
-  if (typeof(x)=="double" && !decreasing && !(containsNAs<-anyNA(x))) {
+  if (typeof(x)=="double" && !decreasing && !(containsNAs <- anyNA(x))) {
       if (internal) stop("Internal code should not be being called on type double")
       return(.Call(Cfsort, x, verbose))
   }
