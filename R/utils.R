@@ -113,3 +113,17 @@ do_patterns = function(pat_sub, all_cols) {
 
   return(matched)
 }
+
+any_na_integer = function(x) {
+  #x = sample(1e8)
+  #any_na_integer(x)
+  stopifnot(is.integer(x))
+  .Call(Cany_na_integerR, x)
+}
+
+list_any_na_integer = function(x) {
+  #x = list(sample(1e8), c(sample(1e8-1), NA), sample(1e8))
+  #list_any_na_integer(x)
+  stopifnot(is.list(x), all(sapply(x, is.integer)))
+  .Call(Clist_any_na_integerR, x)
+}
