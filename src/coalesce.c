@@ -7,17 +7,17 @@ SEXP coalesce(SEXP x, SEXP values) {
   switch(TYPEOF(x)) { // pass over x in parallel to count NA
   case LGLSXP: {
     int *restrict x_ptr = LOGICAL(x);
-    #pragma omp parallel for schedule(dynamic) reduction(+:na_count)
+    #pragma omp parallel for reduction(+:na_count) num_threads(getDTthreads())
     for (uint64_t i = 0; i < NN; i++) na_count += (int) (x_ptr[i] == NA_LOGICAL);
   } break;
   case INTSXP: {
     int *restrict x_ptr = INTEGER(x);
-    #pragma omp parallel for schedule(dynamic) reduction(+:na_count)
+    #pragma omp parallel for reduction(+:na_count) num_threads(getDTthreads())
     for (uint64_t i = 0; i < NN; i++) na_count += (int) (x_ptr[i] == NA_INTEGER);
   } break;
   case REALSXP: {
     double *restrict x_ptr = REAL(x);
-    #pragma omp parallel for schedule(dynamic) reduction(+:na_count)
+    #pragma omp parallel for reduction(+:na_count) num_threads(getDTthreads())
     for (uint64_t i = 0; i < NN; i++) na_count += (int) (ISNA(x_ptr[i]));
   } break;
   case STRSXP: {
