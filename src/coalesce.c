@@ -1,61 +1,52 @@
 #include "data.table.h"
 
 void which_int(int *x, int nx, int *out, int *nout, int val) {
-  int *buf = malloc(nx*sizeof(buf));
-  if (!buf) error("%s: Unable to allocate memory", __func__); // # nocov
   int j=0;
   for (int i=0; i<nx; i++) {
     if (x[i] == val) {
-      buf[j] = i;
+      out[j] = i;
       j++;
     }
   }
   nout[0] = j+1;
-  memcpy(out, buf, j*sizeof(buf));
 }
 void which_double(double *x, int nx, int *out, int *nout, double val) {
-  int *buf = malloc(nx*sizeof(buf));
-  if (!buf) error("%s: Unable to allocate memory", __func__); // # nocov
   int j=0;
   if (ISNA(val)) {
     for (int i=0; i<nx; i++) {
       if (ISNA(x[i])) {
-        buf[j] = i;
+        out[j] = i;
         j++;
       }
     }
   } else {
     for (int i=0; i<nx; i++) {
       if (x[i] == val) {
-        buf[j] = i;
+        out[j] = i;
         j++;
       }
     }
   }
   nout[0] = j+1;
-  memcpy(out, buf, j*sizeof(buf));
 }
 void which_char(SEXP x, int nx, int *out, int *nout, SEXP val) {
-  int *buf = malloc(nx*sizeof(buf));
-  if (!buf) error("%s: Unable to allocate memory", __func__); // # nocov
   int j=0;
   if (STRING_ELT(val, 0) == NA_STRING) {
     for (int i=0; i<nx; i++) {
       if (STRING_ELT(x, i) == NA_STRING) {
-        buf[j] = i;
+        out[j] = i;
         j++;
       }
     }
   } else {
     for (int i=0; i<nx; i++) {
       if (STRING_ELT(x, i) == STRING_ELT(val, 0)) {
-        buf[j] = i;
+        out[j] = i;
         j++;
       }
     }
   }
   nout[0] = j+1;
-  memcpy(out, buf, j*sizeof(buf));
 }
 /*SEXP whichna_charR(SEXP x) {
   int protecti = 0;
@@ -72,14 +63,18 @@ void which_char(SEXP x, int nx, int *out, int *nout, SEXP val) {
 SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
   int JJ = length(values), protecti = 0, nx = length(x);
 
-  int *iwhich = malloc(nx*sizeof(iwhich));
-  if (!iwhich) error("%s: Unable to allocate memory", __func__); // # nocov
-  int nwhich=0;
-
   if (!isLogical(inplace) || length(inplace)!=1 || LOGICAL(inplace)[0]==NA_LOGICAL)
     error("internal error: inplace must be TRUE or FALSE"); // # nocov
   bool binplace = LOGICAL(inplace)[0];
 
+  double tic = 0;
+  const bool verbose = GetVerbose();
+
+  int *iwhich = malloc(nx*sizeof(iwhich)); // only nwhich will be filled, remaining space will store garbage
+  if (!iwhich) error("%s: Unable to allocate memory", __func__); // # nocov
+  int nwhich=0;
+
+  if (verbose) tic = omp_get_wtime();
   switch(TYPEOF(x)) {
   case LGLSXP: {
     which_int(LOGICAL(x), nx, iwhich, &nwhich, NA_LOGICAL);
@@ -96,6 +91,7 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
   } break;
   default: error("Incompatible type");
   }
+  if (verbose) Rprintf("%s: which NA took %.3fs\n", __func__, omp_get_wtime()-tic);
 
   if (nwhich==0) return(binplace ? x : duplicate(x));
 
@@ -105,9 +101,12 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     valueslens[j] = LENGTH(VECTOR_ELT(values, j));
   }
   SEXP out = R_NilValue;
+  if (verbose) tic = omp_get_wtime();
   if (binplace) out = x; else {
     out = PROTECT(duplicate(x)); protecti++;
   }
+  if (verbose) Rprintf("%s: duplicate (if !inplace) took %.3fs\n", __func__, omp_get_wtime()-tic);
+  if (verbose) tic = omp_get_wtime();
   switch(TYPEOF(x)) {
   case LGLSXP: {
     int *out_ptr = LOGICAL(out);
@@ -180,6 +179,7 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
   } break;
   default: error("Unrecognized type.");
   }
+  if (verbose) Rprintf("%s: loop over x NAs indices took %.3fs\n", __func__, omp_get_wtime()-tic);
 
   UNPROTECT(protecti);
   return out;
