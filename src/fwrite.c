@@ -552,10 +552,10 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
   stream->next_in = (z_const Bytef *)source;
   stream->avail_in = sourceLen;
 
-  err = deflate(stream, Z_FINISH); 
+  err = deflate(stream, Z_FINISH);
   if (err == Z_OK) {
     // with Z_FINISH, deflate must return Z_STREAM_END if correct, otherwise it's an error and we shouldn't return Z_OK (0)
-    err = -9;
+    err = -9;  // # nocov
   }
   *destLen = stream->total_out;
   return err == Z_STREAM_END ? Z_OK : err;
