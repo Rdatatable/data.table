@@ -1,6 +1,5 @@
 #include "data.table.h"
 
-// low overhead helpers
 void which_int(int *x, int nx, int *out, int *nout, int val) {
   int *buf = malloc(nx*sizeof(buf));
   if (!buf) error("%s: Unable to allocate memory", __func__); // # nocov
@@ -89,7 +88,7 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     which_int(INTEGER(x), nx, iwhich, &nwhich, NA_INTEGER);
   } break;
   case REALSXP: {
-    which_double(REAL(x), nx, iwhich, &nwhich, NA_REAL);
+    which_double(REAL(x), nx, iwhich, &nwhich, inherits(x,"integer64") ? NA_INT64_D : NA_REAL);
   } break;
   case STRSXP: {
     SEXP val = PROTECT(allocNAVector(STRSXP, 1)); protecti++;
@@ -100,6 +99,11 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
 
   if (nwhich==0) return(binplace ? x : duplicate(x));
 
+  int *valueslens = malloc(JJ*sizeof(valueslens));
+  if (!valueslens) error("%s: Unable to allocate memory", __func__); // # nocov
+  for (int j=0; j<JJ; j++) {
+    valueslens[j] = LENGTH(VECTOR_ELT(values, j));
+  }
   SEXP out = R_NilValue;
   if (binplace) out = x; else {
     out = PROTECT(duplicate(x)); protecti++;
@@ -110,10 +114,9 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     for (int i=0; i<nwhich-1; i++) {
       int j = 0;
       while (j < JJ) {
-        SEXP this_j = VECTOR_ELT(values, j);
-        int this_replacement = LOGICAL(this_j)[LENGTH(this_j)==1 ? 0 : iwhich[i]];
-        if (this_replacement != NA_LOGICAL) {
-          out_ptr[iwhich[i]] = this_replacement;
+        int this = LOGICAL(VECTOR_ELT(values, j))[valueslens[j]==1 ? 0 : iwhich[i]];
+        if (this != NA_LOGICAL) {
+          out_ptr[iwhich[i]] = this;
           break;
         }
         j++;
@@ -125,10 +128,9 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     for (int i=0; i<nwhich-1; i++) {
       int j = 0;
       while (j < JJ) {
-        SEXP this_j = VECTOR_ELT(values, j);
-        int this_replacement = INTEGER(this_j)[LENGTH(this_j)==1 ? 0 : iwhich[i]];
-        if (this_replacement != NA_INTEGER) {
-          out_ptr[iwhich[i]] = this_replacement;
+        int this = INTEGER(VECTOR_ELT(values, j))[valueslens[j]==1 ? 0 : iwhich[i]];
+        if (this != NA_INTEGER) {
+          out_ptr[iwhich[i]] = this;
           break;
         }
         j++;
@@ -137,16 +139,29 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
   } break;
   case REALSXP: {
     double *out_ptr = REAL(out);
-    for (int i=0; i<nwhich-1; i++) {
-      int j = 0;
-      while (j < JJ) {
-        SEXP this_j = VECTOR_ELT(values, j);
-        double this_replacement = REAL(this_j)[LENGTH(this_j)==1 ? 0 : iwhich[i]];
-        if (!ISNA(this_replacement)) {
-          out_ptr[iwhich[i]] = this_replacement;
-          break;
+    if (!inherits(x,"integer64")) { // numeric
+      for (int i=0; i<nwhich-1; i++) {
+        int j = 0;
+        while (j < JJ) {
+          double this = REAL(VECTOR_ELT(values, j))[valueslens[j]==1 ? 0 : iwhich[i]];
+          if (!ISNA(this)) {
+            out_ptr[iwhich[i]] = this;
+            break;
+          }
+          j++;
         }
-        j++;
+      }
+    } else { // integer64
+      for (int i=0; i<nwhich-1; i++) {
+        int j = 0;
+        while (j < JJ) {
+          double this = REAL(VECTOR_ELT(values, j))[valueslens[j]==1 ? 0 : iwhich[i]];
+          if (this != NA_INT64_D) {
+            out_ptr[iwhich[i]] = this;
+            break;
+          }
+          j++;
+        }
       }
     }
   } break;
@@ -154,10 +169,9 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     for (int i=0; i<nwhich-1; i++) {
       int j = 0;
       while (j < JJ) {
-        SEXP this_j = VECTOR_ELT(values, j);
-        SEXP this_replacement = STRING_ELT(this_j, LENGTH(this_j)==1 ? 0 : iwhich[i]);
-        if (this_replacement != NA_STRING) {
-          SET_STRING_ELT(out, iwhich[i], this_replacement);
+        SEXP this = STRING_ELT(VECTOR_ELT(values, j), valueslens[j]==1 ? 0 : iwhich[i]);
+        if (this != NA_STRING) {
+          SET_STRING_ELT(out, iwhich[i], this);
           break;
         }
         j++;
