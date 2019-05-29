@@ -59,9 +59,7 @@ unique.IDate =
     as.IDate(NextMethod())
   }
 
-# for #2008 -- Internal rbind calls [<-,
-#   which winds up (1) converting to numeric and (2) keeping IDate class
-#   Define our own method to prevent value ever coercing to double
+# define this [<- method to prevent base R's internal rbind coercing integer IDate to double, #2008
 `[<-.IDate` = function(x, i, value) {
   if (!length(value)) return(x)
   value = as.integer(as.IDate(value))
