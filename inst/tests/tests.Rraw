@@ -993,16 +993,11 @@ test(343, DT[,(mynewcol):=21L], data.table(b=1:3,newname=21L))
 mycols = 1:2
 test(344, DT[,(mycols):=NULL], data.table(NULL))
 
-
-# It seems that the .Internal rbind of two data.frame coerces IDate to numeric. Tried defining
-# "[<-.IDate" as per Tom's suggestion, and c.IDate to no avail (maybe because the .Internal code
-# in bind.c doesn't look up package methods?). Anyway, as from 1.8.1, double are allowed in keys, so
-# these still work but for a different reason than before 1.8.1: the results are IDate stored as double,
-# rather than before when is worked because by and setkey coerced double to integer.
-# Now, as from 1.12.4, the integer IDate in i is retained as integer rather than letting the double IDate persist.
+# this originally tested that IDate would come back as double from rbind(DF, DF)
+# Now #2008 is fixed in v1.12.4 it now checks it stays as an integer.
 DF = data.frame(x=as.IDate(c("2010-01-01","2010-01-02")), y=1:6)
 DT = as.data.table(rbind(DF,DF))
-test(345, DT[,sum(y),by=x], {.x=as.IDate(c("2010-01-01","2010-01-02"));mode(.x)="double";data.table(x=.x,V1=c(18L,24L))})
+test(345, DT[,sum(y),by=x], data.table(x=as.IDate(c("2010-01-01","2010-01-02")),V1=c(18L,24L)))
 test(346, setkey(DT,x)[J(as.IDate("2010-01-02"))], data.table(x=as.IDate(rep("2010-01-02",6L)), y=rep(c(2L,4L,6L),2), key="x"))
 
 # Test .N==0 with nomatch=NA|0, # tests for #963 added as well
@@ -5934,7 +5929,7 @@ test(1419.18, key(thisDT), "x1")
 ## testing secondary index retainment on assign (#2372)
 
 allIndicesValid <- function(DT){
-  ## checks that the order of all indices is correct
+  ## checks that the order of all indices are correct
   for(idx in seq_along(indices(DT))){
     index <- attr(attr(DT, "index"), paste0("__", indices(DT)[idx], collapse = ""))
     if(!length(index)) index <- seq_len(nrow(DT))
@@ -6031,6 +6026,33 @@ thisDT <- copy(DT)[, c("aaa", "b") := 2]
 test(1419.58, indices(thisDT), c("a", "ab"))
 test(1419.59, allIndicesValid(thisDT), TRUE)
 
+## setkey on same col as existing index, #2889
+DT <- data.table(a =c(4,1,3,9,2,1,8,7,6,5),
+                 aaa = c(1,1,2,2,2,1,1,2,2,2))
+setindex(DT, a)
+test(1419.60, allIndicesValid(DT), TRUE)
+setindex(DT, NULL)
+setkey(DT, a)
+test(1419.61, DT$a, c(1,1,2,3,4,5,6,7,8,9))
+setkey(DT, NULL)
+setindex(DT, a)
+test(1419.62, setkey(DT, a, verbose=TRUE), data.table(a=c(1,1:9), aaa=c(1,1,2,2,1,2,2,2,1,2), key="a"),
+              output="setkey on columns [a] using existing index 'a'")  # checks also that the prior index a is dropped (because y is keyed with no index)
+
+# setkey picks correct index of multiple indexes (e.g. exact=TRUE is used in internals)
+DT = data.table(a =   c(3,3,4,4,5,6,1,1,7,2),
+                aaa = c(1,1,2,2,2,1,1,2,2,2),
+                bbb = c(1,1,2,0,1,1,1,0,1,1))
+setkey(DT, a)
+test(1419.63, DT$a, c(1,1,2,3,3,4,4,5,6,7))
+setkey(DT, NULL)
+test(1419.64, setkey(DT, a, verbose=TRUE), output="forder took")
+setkey(DT, NULL)
+setindex(DT, aaa, a)
+setindex(DT, aaa)   # this aaa not previous aaa_a should be used by setkey(DT,aaa); i.e. ensure no partial matching
+test(1419.65, allIndicesValid(DT), TRUE)
+test(1419.66, setkey(DT, aaa, verbose=TRUE), data.table(a=c(1,3,3,6,1,2,4,4,5,7), aaa=c(1,1,1,1,2,2,2,2,2,2), bbb=c(1,1,1,1,0,1,2,0,1,1), key="aaa"),
+              output="setkey on columns [aaa] using existing index 'aaa'")  # checks that all indexes are dropped (aaa_a too)
 
 # setnames updates secondary key
 DT = data.table(a=1:5,b=10:6)
@@ -9534,6 +9556,12 @@ test(1658.51, length(readLines(f2con)), 27L)
 close(f2con)
 test(1658.52, file.info(f1)$size, file.info(f2)$size)
 unlink(c(f1, f2))
+
+# compression error -5 due to only 3 bytes (bom) in first block; #3599
+DT = data.table(l=letters, n=1:26)
+test(1658.53, fwrite(DT, file=f<-tempfile(fileext=".gz"), bom=TRUE, col.names=FALSE), NULL)
+if (test_R.utils) test(1658.54, fread(f), setnames(DT,c("V1","V2")))
+unlink(f)
 
 ## End fwrite tests
 
@@ -13477,7 +13505,7 @@ test(1967.69, !any(grepl('order optimization', verbose_output, fixed = TRUE)))
 test(1967.70, any(grepl('[1] 5', verbose_output, fixed = TRUE)))
 options('datatable.optimize' = 1L)
 test(1967.71, x[order(a), .N, verbose = TRUE], 5L,
-     output = "i changed from 'order(...)' to 'forder(")
+     output = "changed 'order(...)' in i to 'forder(")
 setkey(x)
 test(1967.72, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
@@ -14931,6 +14959,20 @@ dt2 = structure(list(V1 = c("2018", "2018", "2018", "2018", "2018")), row.names 
 test(2052, rbindlist(list(dt1, dt2), fill=TRUE),
            data.table(V1=c(dt1$V1, dt2$V1),
                       V46=structure(c(3L,1L,1L,NA,3L,NA,NA,NA,NA,NA), .Label=c("Low","Typical","High",NA), class = c("ordered", "factor"))))
+
+# rbind.data.frame didn't respect integer storage mode of IDate, #2008
+DF = data.frame(date = as.IDate(0L))
+test(2053.1, storage.mode(rbind(DF, DF)$date), 'integer')
+test(2053.2, DF$date[1L] <- integer(), integer())
+
+# forder detected more generally in i, #1921
+DT = data.table(
+  A = c(2L, 1L, 1L, 2L, 2L, 1L, 1L, 2L, 1L, 1L),
+  B = c("b", "c", "a", "b", "b", "b", "c", "a", "b", "a"),
+  C = c(2L, 3L, 5L, 8L, 6L, 1L, 4L, 9L, 10L, 7L)
+)
+test(2054, DT[order(C)[1:5], B, verbose=TRUE], c('b', 'b', 'c', 'c', 'a'),
+           output = 'order optimisation is on')
 
 
 ###################################

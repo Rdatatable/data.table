@@ -161,6 +161,7 @@ S3method(seq, IDate)
 S3method(split, IDate)
 S3method(unique, IDate)
 S3method(unique, ITime)
+S3method('[<-', IDate)
 
 # duplist
 # getdots
