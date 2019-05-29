@@ -31,19 +31,10 @@ void which_double(double *x, int nx, int *out, int *nout, double val) {
 }
 void which_char(SEXP x, int nx, int *out, int *nout, SEXP val) {
   int j=0;
-  if (STRING_ELT(val, 0) == NA_STRING) {
-    for (int i=0; i<nx; i++) {
-      if (STRING_ELT(x, i) == NA_STRING) {
-        out[j] = i;
-        j++;
-      }
-    }
-  } else {
-    for (int i=0; i<nx; i++) {
-      if (STRING_ELT(x, i) == STRING_ELT(val, 0)) {
-        out[j] = i;
-        j++;
-      }
+  for (int i=0; i<nx; i++) {
+    if (STRING_ELT(x, i) == val) {
+      out[j] = i;
+      j++;
     }
   }
   nout[0] = j+1;
@@ -86,8 +77,7 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     which_double(REAL(x), nx, iwhich, &nwhich, inherits(x,"integer64") ? NA_INT64_D : NA_REAL);
   } break;
   case STRSXP: {
-    SEXP val = PROTECT(allocNAVector(STRSXP, 1)); protecti++;
-    which_char(x, nx, iwhich, &nwhich, val);
+    which_char(x, nx, iwhich, &nwhich, NA_STRING);
   } break;
   default: error("Incompatible type");
   }
