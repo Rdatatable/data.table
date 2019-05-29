@@ -201,6 +201,6 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
 
 // utils.c
-void any_na_integer(int *x, uint64_t nx, bool *ans, uint64_t *first, bool parallel);
+void any_na_integer(int *x, uint64_t nx, bool *ans, bool parallel);
 SEXP any_na_integerR(SEXP x);
 SEXP list_any_na_integerR(SEXP x);
