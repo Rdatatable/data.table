@@ -446,8 +446,8 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
       switch (TYPEOF(target)) {
       case VECSXP :
         if (data->narm) {
-	  for (int k=0; k<thislen; ++k)
-	    SET_VECTOR_ELT(target, counter + k, VECTOR_ELT(thiscol, ithisidx[k]-1));
+          for (int k=0; k<thislen; ++k)
+            SET_VECTOR_ELT(target, counter + k, VECTOR_ELT(thiscol, ithisidx[k]-1));
         } else {
           for (int k=0; k<data->nrow; ++k) SET_VECTOR_ELT(target, j*data->nrow + k, VECTOR_ELT(thiscol, k));
         }
@@ -478,29 +478,19 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         }
       }
         break;
-      case INTSXP : {
+      case INTSXP :
+      case LGLSXP : {
         int *itarget = INTEGER(target);
         const int *ithiscol = INTEGER(thiscol);
         if (data->narm) {
-          for (k=0; k<thislen; k++)
+          for (int k=0; k<thislen; ++k)
             itarget[counter + k] = ithiscol[ithisidx[k]-1];
         } else {
           memcpy(itarget + j*data->nrow, ithiscol, data->nrow*size);
         }
-      }
-        break;
-      case LGLSXP : {
-        int *itarget = LOGICAL(target);
-        const int *ithiscol = LOGICAL(thiscol);
-        if (data->narm) {
-          for (k=0; k<thislen; k++)
-            itarget[counter + k] = ithiscol[ithisidx[k]-1];
-        } else {
-          memcpy(itarget + j*data->nrow, ithiscol, data->nrow*size);
-        }
-      }
-        break;
-      default : error("Unknown column type '%s' for column '%s'.", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1)));
+      } break;
+      default :
+        error("Unknown column type '%s' for column '%s'.", type2char(TYPEOF(thiscol)), CHAR(STRING_ELT(dtnames, INTEGER(thisvaluecols)[i]-1)));
       }
       if (data->narm) counter += thislen;
       UNPROTECT(thisprotecti);  // inside inner loop (note that it's double loop) so as to limit use of protection stack
@@ -599,15 +589,12 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
 }
 
 SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data) {
-
-  int counter=0, thislen;
-  SEXP target, thisidx;
-  size_t size;
   SEXP ansids = PROTECT(allocVector(VECSXP, data->lids));
   for (int i=0; i<data->lids; ++i) {
-    counter = 0;
+    int counter = 0;
     SEXP thiscol = VECTOR_ELT(DT, INTEGER(data->idcols)[i]-1);
-    size = SIZEOF(thiscol);
+    size_t size = SIZEOF(thiscol);
+    SEXP target;
     SET_VECTOR_ELT(ansids, i, target=allocVector(TYPEOF(thiscol), data->totlen) );
     copyMostAttrib(thiscol, target); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
     switch(TYPEOF(thiscol)) {
@@ -616,9 +603,9 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
       const double *dthiscol = REAL(thiscol);
       if (data->narm) {
         for (int j=0; j<data->lmax; ++j) {
-          thisidx = VECTOR_ELT(data->naidx, j);
+          SEXP thisidx = VECTOR_ELT(data->naidx, j);
           const int *ithisidx = INTEGER(thisidx);
-          thislen = length(thisidx);
+          const int thislen = length(thisidx);
           for (int k=0; k<thislen; ++k)
             dtarget[counter + k] = dthiscol[ithisidx[k]-1];
           counter += thislen;
@@ -629,14 +616,15 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
       }
     }
       break;
-    case INTSXP : {
+    case INTSXP :
+    case LGLSXP : {
       int *itarget = INTEGER(target);
       const int *ithiscol = INTEGER(thiscol);
       if (data->narm) {
         for (int j=0; j<data->lmax; ++j) {
-          thisidx = VECTOR_ELT(data->naidx, j);
+          SEXP thisidx = VECTOR_ELT(data->naidx, j);
           const int *ithisidx = INTEGER(thisidx);
-          thislen = length(thisidx);
+          const int thislen = length(thisidx);
           for (int k=0; k<thislen; ++k)
             itarget[counter + k] = ithiscol[ithisidx[k]-1];
           counter += thislen;
@@ -645,32 +633,13 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
         for (int j=0; j<data->lmax; ++j)
           memcpy(itarget + j*data->nrow, ithiscol, data->nrow*size);
       }
-    }
-      break;
-    case LGLSXP : {
-      int *itarget = LOGICAL(target);
-      const int *ithiscol = LOGICAL(thiscol);
-      if (data->narm) {
-        for (int j=0; j<data->lmax; ++j) {
-          thisidx = VECTOR_ELT(data->naidx, j);
-          const int *ithisidx = INTEGER(thisidx);
-          thislen = length(thisidx);
-          for (int k=0; k<thislen; ++k)
-            itarget[counter + k] = ithiscol[ithisidx[k]-1];
-          counter += thislen;
-        }
-      } else {
-        for (int j=0; j<data->lmax; ++j)
-          memcpy(itarget + j*data->nrow, ithiscol, data->nrow*size);
-      }
-    }
-      break;
+    } break;
     case STRSXP : {
       if (data->narm) {
         for (int j=0; j<data->lmax; ++j) {
-          thisidx = VECTOR_ELT(data->naidx, j);
+          SEXP thisidx = VECTOR_ELT(data->naidx, j);
           const int *ithisidx = INTEGER(thisidx);
-          thislen = length(thisidx);
+          const int thislen = length(thisidx);
           for (int k=0; k<thislen; ++k)
             SET_STRING_ELT(target, counter + k, STRING_ELT(thiscol, ithisidx[k]-1));
           counter += thislen;
