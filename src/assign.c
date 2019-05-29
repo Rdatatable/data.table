@@ -280,7 +280,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // rows : row numbers to assign
   R_len_t i, j, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
   SEXP targetcol, RHS, names, nullint, thisv, targetlevels, newcol, s, colnam, klass, tmp, colorder, key, index, a, assignedNames, indexNames;
-  int *iRHS;
   SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
   bool verbose=GetVerbose(), anytodelete=false, isDataTable=false;
   const char *c1, *tc1, *tc2;
@@ -537,7 +536,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
           R_len_t addi = 0;
           SEXP addlevels=NULL;
           PROTECT(RHS = allocVector(INTSXP, length(thisvalue))); protecti++;
-          iRHS = INTEGER(RHS);
+          int *iRHS = INTEGER(RHS);
           for (j=0; j<length(thisvalue); j++) {
             thisv = STRING_ELT(thisvalue,j);
             if (TRUELENGTH(thisv)==0) {
@@ -559,12 +558,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
               SET_STRING_ELT(targetlevels, oldlen+j, STRING_ELT(addlevels, j));
             setAttrib(targetcol, R_LevelsSymbol, targetlevels);
           }
-          for (j=0; j<length(targetlevels); j++) SET_TRUELENGTH(STRING_ELT(targetlevels,j),0);  // important to reinstate 0 for countingcharacterorder and HASHPRI (if any) as done by savetl_end().
+          for (int j=0; j<length(targetlevels); j++) SET_TRUELENGTH(STRING_ELT(targetlevels,j),0);  // important to reinstate 0 for countingcharacterorder and HASHPRI (if any) as done by savetl_end().
           savetl_end();
         } else {
           // value is either integer or numeric vector
           if (TYPEOF(thisvalue)!=INTSXP && TYPEOF(thisvalue)!=LGLSXP && !isReal(thisvalue))
             error("Internal error: up front checks (before starting to modify DT) didn't catch type of RHS ('%s') assigning to factor column '%s'. please report to data.table issue tracker.", type2char(TYPEOF(thisvalue)), CHAR(STRING_ELT(names,coln))); // # nocov
+          int *iRHS;
           if (isReal(thisvalue) || TYPEOF(thisvalue)==LGLSXP) {
             PROTECT(RHS = coerceVector(thisvalue,INTSXP)); protecti++;
             iRHS = INTEGER(RHS);
@@ -575,7 +575,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
             RHS = PROTECT(duplicate(thisvalue)); protecti++;
             iRHS = INTEGER(RHS);
           }
-          for (j=0; j<length(RHS); j++) {
+          for (int j=0; j<length(RHS); j++) {
             if ( (iRHS[j]<1 || iRHS[j]>LENGTH(targetlevels))
                  && iRHS[j] != NA_INTEGER) {
               warning("RHS contains %d which is outside the levels range ([1,%d]) of column %d, NAs generated", iRHS[j], LENGTH(targetlevels), i+1);
@@ -1106,19 +1106,28 @@ SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
 
 SEXP setcolorder(SEXP x, SEXP o)
 {
-  // checks have already been made at R level in setcolorder()
-  // reording columns by reference makes no difference to generations
-  // so there's no need to use SET_* api. // edit: we do use SET_STRING_ELT to avoid memcpy DATAPTR
-  SEXP *tmp = Calloc(LENGTH(x),SEXP);
-  for (int i=0; i<LENGTH(x); i++)
-    tmp[i] = VECTOR_ELT(x, INTEGER(o)[i]-1);
-  memcpy((char *)DATAPTR(x),(char *)tmp,LENGTH(x)*sizeof(char *)); // sizeof is of type size_t (unsigned) - so no overflow here
-  SEXP names = getAttrib(x,R_NamesSymbol);
+  SEXP names = getAttrib(x, R_NamesSymbol);
+  const int *od = INTEGER(o), ncol=LENGTH(x);
   if (isNull(names)) error("dt passed to setcolorder has no names");
-  for (int i=0; i<LENGTH(x); i++)
-    tmp[i] = STRING_ELT(names, INTEGER(o)[i]-1);
-  for (int i=0; i<LENGTH(x); i++)
-    SET_STRING_ELT(names, i, tmp[i]);
+  if (ncol != LENGTH(names)) error("dt passed to setcolorder has %d columns but %d names", ncol, LENGTH(names));
+
+  // Double-check here at C level that o[] is a strict permutation of 1:ncol. Reordering columns by reference makes no
+  // difference to generations/refcnt so we can write behind barrier in this very special case of strict permutation.
+  bool *seen = Calloc(ncol, bool);
+  for (int i=0; i<ncol; ++i) {
+    if (od[i]==NA_INTEGER || od[i]<1 || od[i]>ncol)
+      error("Internal error: o passed to Csetcolorder contains an NA or out-of-bounds");  // # nocov
+    if (seen[od[i]-1])
+      error("Internal error: o passed to Csetcolorder contains a duplicate");             // # nocov
+    seen[od[i]-1] = true;
+  }
+  Free(seen);
+
+  SEXP *tmp = Calloc(ncol, SEXP), *xd = VECTOR_PTR(x), *namesd = STRING_PTR(names);
+  for (int i=0; i<ncol; ++i) tmp[i] = xd[od[i]-1];
+  memcpy(xd, tmp, ncol*sizeof(SEXP)); // sizeof is type size_t so no overflow here
+  for (int i=0; i<ncol; ++i) tmp[i] = namesd[od[i]-1];
+  memcpy(namesd, tmp, ncol*sizeof(SEXP));
   // No need to change key (if any); sorted attribute is column names not positions
   Free(tmp);
   return(R_NilValue);
