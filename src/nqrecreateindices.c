@@ -9,23 +9,29 @@ SEXP nqRecreateIndices(SEXP xo, SEXP len, SEXP indices, SEXP nArg) {
   ans = PROTECT(allocVector(VECSXP, 2));
   SET_VECTOR_ELT(ans, 0, (newstarts = allocVector(INTSXP, n)));
   SET_VECTOR_ELT(ans, 1, (newlen = allocVector(INTSXP, n)));
+  
+  int *inewlen = INTEGER(newlen);
+  const int *iindices = INTEGER(indices);
+  const int *ilen = INTEGER(len);
+  const int *ixo = INTEGER(xo);
+  int *inewstarts = INTEGER(newstarts);
 
-  for (int i=0; i<n; i++) INTEGER(newlen)[i] = 0;
+  for (int i=0; i<n; ++i) inewlen[i] = 0;
   // simplifying logic ... also fixes #2275
-  for (int i=0; i<length(indices); i++) {
-    INTEGER(newlen)[INTEGER(indices)[i]-1] += INTEGER(len)[i];
+  for (int i=0; i<length(indices); ++i) {
+    inewlen[iindices[i]-1] += ilen[i];
   }
   // fix for #2360, rewriting the for-loop from before
   // TODO: revisit to see if this be simplified further when I've some time.
   R_len_t j=0, tmp=0;
-  for (int i=0; i<n; i++) {
-    if (INTEGER(xo)[j] <= 0) { // NA_integer_ = INT_MIN is checked in init.c
-      INTEGER(newstarts)[i] = INTEGER(xo)[j];
+  for (int i=0; i<n; ++i) {
+    if (ixo[j] <= 0) { // NA_integer_ = INT_MIN is checked in init.c
+      inewstarts[i] = ixo[j];
       j++; // newlen will be 1 for xo=NA and 0 for xo=0 .. but we need to increment by 1 for both
     } else {
-      INTEGER(newstarts)[i] = tmp+1;
-      tmp += INTEGER(newlen)[i];
-      j += INTEGER(newlen)[i];
+      inewstarts[i] = tmp+1;
+      tmp += inewlen[i];
+      j += inewlen[i];
     }
   }
   UNPROTECT(1);
