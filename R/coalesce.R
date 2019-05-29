@@ -1,5 +1,5 @@
-coalesce <- function(x, ...) {
-  if (!anyNA(x) || missing(..1)) return(x)
+coalesce = function(x, ..., inplace=FALSE) {
+  if (missing(..1)) return(x)
   
   values = list(...)
   
@@ -28,5 +28,14 @@ coalesce <- function(x, ...) {
          " Please ensure type consistency on your inputs.")
   }
   
-  .Call(Ccoalesce, x, values)
+  ans = .Call(Ccoalesce, x, values, inplace)
+  if (inplace) invisible(ans) else ans
 }
+setcoalesce = function(x, ...) {
+  if (missing(..1)) return(invisible(x))
+  invisible(coalesce(x, ..., inplace=TRUE))
+}
+#whichna.character = function(x) {
+#  stopifnot(is.character(x))
+#  .Call(Cwhichna_charR, x)
+#}

@@ -201,4 +201,5 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
 
 // coalesce.c
-SEXP coalesce(SEXP x, SEXP values);
+SEXP coalesce(SEXP x, SEXP values, SEXP inplace);
+//SEXP whichna_charR(SEXP x);
