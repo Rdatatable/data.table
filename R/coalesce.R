@@ -1,7 +1,11 @@
-coalesce = function(x, ..., inplace=FALSE) {
-  if (missing(..1)) return(x)
+coalesce = function(x, ..., .dots=NULL, .inplace=FALSE) {
+  if (is.null(.dots) && missing(..1)) return(x)
   
-  values = list(...)
+  values = if (!is.null(.dots)) {
+    if (!missing(..1)) stop("provide either '...' or '.dots' argument, not both")
+    if (!is.list(.dots)) stop("argument '.dots' requires a list input")
+    .dots
+  } else list(...)
   
   nn = length(x)
   # can be lengths() in R 3.2.0
@@ -28,12 +32,11 @@ coalesce = function(x, ..., inplace=FALSE) {
          " Please ensure type consistency on your inputs.")
   }
   
-  ans = .Call(Ccoalesce, x, values, inplace)
-  if (inplace) invisible(ans) else ans
+  ans = .Call(Ccoalesce, x, values, .inplace)
+  if (.inplace) invisible(ans) else ans
 }
-setcoalesce = function(x, ...) {
-  if (missing(..1)) return(invisible(x))
-  invisible(coalesce(x, ..., inplace=TRUE))
+setcoalesce = function(x, ..., .dots=NULL) {
+  invisible(coalesce(x, ..., .dots=.dots, .inplace=TRUE))
 }
 #whichna.character = function(x) {
 #  stopifnot(is.character(x))
