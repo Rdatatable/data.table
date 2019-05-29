@@ -1,5 +1,21 @@
 # nocov start
 
+# used to raise message (write to STDERR but not raise warning) once per session only
+.pkg.store = new.env()
+.pkg.store$.unsafe.opt.msg = FALSE
+.msg.unsafe.opt = function() {
+  if (.pkg.store$.unsafe.opt.msg) return(invisible())
+  nomatch.opt = getOption("datatable.nomatch")
+  if (
+    !(identical(nomatch.opt, NA_integer_) || identical(nomatch.opt, NA))
+    ||
+    !identical(getOption("datatable.naturaljoin"), FALSE)
+    ) {
+    message("Using 'datatable.nomatch' or 'datatable.naturaljoin' options is unsafe. Please provide argument explicitly. Eventually justify your use case in our GitHub issue #3585.")
+    .pkg.store$.unsafe.opt.msg = TRUE
+  }
+}
+
 .Last.updated = vector("integer", 1L) # exported variable; number of rows updated by the last := or set(), #1885
 
 .onLoad = function(libname, pkgname) {

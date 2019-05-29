@@ -253,6 +253,9 @@ replace_order = function(isub, verbose, env) {
     if (!missing(i) & is.data.table(ans)) setkey(ans,NULL)  # See test 304
     return(ans)
   }
+
+  .msg.unsafe.opt() #3585
+
   if (!missing(verbose)) {
     stopifnot(isTRUEorFALSE(verbose))
     # set the global verbose option because that is fetched from C code without having to pass it through
