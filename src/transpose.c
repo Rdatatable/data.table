@@ -4,8 +4,8 @@
 
 SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
 
-  R_len_t i, j, k=0, maxlen=0, zerolen=0, anslen;
-  SEXP li, thisi, ans;
+  R_len_t k=0, maxlen=0, zerolen=0, anslen;
+  SEXP li, ans;
   SEXPTYPE type, maxtype=0;
   Rboolean coerce = FALSE;
 
@@ -22,7 +22,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
 
   // preprocessing
   R_len_t *len  = (R_len_t *)R_alloc(ln, sizeof(R_len_t));
-  for (i=0; i<ln; i++) {
+  for (int i=0; i<ln; ++i) {
     li = VECTOR_ELT(l, i);
     if (!isVectorAtomic(li) && !isNull(li))
       error("Item %d of list input is not an atomic vector", i+1);
@@ -44,12 +44,12 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
   // allocate 'ans'
   ans = PROTECT(allocVector(VECSXP, maxlen));
   anslen = (!ignore) ? ln : (ln - zerolen);
-  for (i=0; i<maxlen; i++) {
-    SET_VECTOR_ELT(ans, i, thisi=allocVector(maxtype, anslen) );
+  for (int i=0; i<maxlen; ++i) {
+    SET_VECTOR_ELT(ans, i, allocVector(maxtype, anslen));
   }
 
   // transpose
-  for (i=0; i<ln; i++) {
+  for (int i=0; i<ln; ++i) {
     if (ignore && !len[i]) continue;
     li = VECTOR_ELT(l, i);
     if (TYPEOF(li) != maxtype) {
@@ -57,28 +57,37 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
       if (!isFactor(li)) li = PROTECT(coerceVector(li, maxtype));
       else li = PROTECT(asCharacterFactor(li));
     }
-    switch (maxtype) {
-    case INTSXP :
-      for (j=0; j<maxlen; j++) {
-        thisi = VECTOR_ELT(ans, j);
-        INTEGER(thisi)[k] = (j < len[i]) ? INTEGER(li)[j] : INTEGER(fill)[0];
+    switch (maxtype) { // TODO remove more macros
+    case INTSXP : {
+      const int *ili = INTEGER(li);
+      const int *ifill = INTEGER(fill);
+      for (int j=0; j<maxlen; ++j) {
+        SEXP thisi = VECTOR_ELT(ans, j);
+        INTEGER(thisi)[k] = (j < len[i]) ? ili[j] : ifill[0];
       }
+    }
       break;
-    case LGLSXP :
-      for (j=0; j<maxlen; j++) {
-        thisi = VECTOR_ELT(ans, j);
-        LOGICAL(thisi)[k] = (j < len[i]) ? LOGICAL(li)[j] : LOGICAL(fill)[0];
+    case LGLSXP : {
+      const int *ili = LOGICAL(li);
+      const int *ifill = LOGICAL(fill);
+      for (int j=0; j<maxlen; ++j) {
+        SEXP thisi = VECTOR_ELT(ans, j);
+        LOGICAL(thisi)[k] = (j < len[i]) ? ili[j] : ifill[0];
       }
+    }
       break;
-    case REALSXP :
-      for (j=0; j<maxlen; j++) {
-        thisi = VECTOR_ELT(ans, j);
-        REAL(thisi)[k] = (j < len[i]) ? REAL(li)[j] : REAL(fill)[0];
+    case REALSXP : {
+      const double *dli = REAL(li);
+      const double *dfill = REAL(fill);
+      for (int j=0; j<maxlen; ++j) {
+        SEXP thisi = VECTOR_ELT(ans, j);
+        REAL(thisi)[k] = (j < len[i]) ? dli[j] : dfill[0];
       }
+    }
       break;
     case STRSXP :
-      for (j=0; j<maxlen; j++) {
-        thisi = VECTOR_ELT(ans, j);
+      for (int j=0; j<maxlen; ++j) {
+        SEXP thisi = VECTOR_ELT(ans, j);
         SET_STRING_ELT(thisi, k, (j < len[i]) ? STRING_ELT(li, j) : STRING_ELT(fill, 0));
       }
       break;

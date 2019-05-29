@@ -57,7 +57,7 @@
        "datatable.auto.index"="TRUE",          # DT[col=="val"] to auto add index so 2nd time faster
        "datatable.use.index"="TRUE",           # global switch to address #1422
        "datatable.prettyprint.char" = NULL,     # FR #1091
-       "datatable.old.unique.by.key" = "FALSE"  # TODO: change warnings in duplicated.R to error on or after May 2019 then remove a year after that.
+       "datatable.old.unique.by.key" = "FALSE"  # TODO: remove in May 2020
        ,"datatable.naturaljoin" = "FALSE"      # natural join, when set to TRUE then `on` defaults to `.NATURAL`
        )
   for (i in setdiff(names(opts),names(options()))) {

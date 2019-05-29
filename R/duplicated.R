@@ -1,6 +1,6 @@
 
-warning_oldUniqueByKey = "The deprecated option 'datatable.old.unique.by.key' is being used. Please stop using it and pass 'by=key(DT)' instead for clarity. For more information please search the NEWS file for this option."
-# upgrade the 4 calls below to error after May 2019 ( see note 10 from 1.11.0 May 2018 which said one year from then )
+error_oldUniqueByKey = "The deprecated option 'datatable.old.unique.by.key' is being used. Please stop using it and pass 'by=key(DT)' instead for clarity. For more information please search the NEWS file for this option."
+# remove this option in June 2020 (see note 10 from 1.12.4 in May 2019 which said one year from then )
 
 duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
   if (!cedta()) return(NextMethod("duplicated")) #nocov
@@ -9,7 +9,7 @@ duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_
   }
   if (missing(by) && isTRUE(getOption("datatable.old.unique.by.key"))) {  #1284
     by = key(x)
-    warning(warning_oldUniqueByKey)
+    stop(error_oldUniqueByKey)
   }
   if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0L)) # fix for bug #5582
   if (is.na(fromLast) || !is.logical(fromLast)) stop("'fromLast' must be TRUE or FALSE")
@@ -41,7 +41,7 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
   if (nrow(x) <= 1L) return(x)
   if (missing(by) && isTRUE(getOption("datatable.old.unique.by.key"))) {
     by = key(x)
-    warning(warning_oldUniqueByKey)
+    stop(error_oldUniqueByKey)
   } else if (is.null(by)) by=seq_along(x)
   o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)
   # if by=key(x), forderv tests for orderedness within it quickly and will short-circuit
@@ -100,7 +100,7 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
     }
     bad.cols = setdiff(by, names(x))
     if (length(bad.cols)) {
-      stop("by specifies column names that do not exist. First 5: ",paste(head(bad.cols,5),collapse=","))
+      stop("by specifies column names that do not exist: ", brackify(bad.cols))
     }
 
     use.keyprefix = haskey(x) &&
@@ -123,7 +123,7 @@ anyDuplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=s
   if (!cedta()) return(NextMethod("anyDuplicated")) # nocov
   if (missing(by) && isTRUE(getOption("datatable.old.unique.by.key"))) {
     by = key(x)
-    warning(warning_oldUniqueByKey)
+    stop(error_oldUniqueByKey)
   }
   dups = duplicated(x, incomparables, fromLast, by, ...)
   if (fromLast) idx = tail(which(dups), 1L) else idx = head(which(dups), 1L)
@@ -138,7 +138,7 @@ anyDuplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=s
 uniqueN = function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) { # na.rm, #1455
   if (missing(by) && is.data.table(x) && isTRUE(getOption("datatable.old.unique.by.key"))) {
     by = key(x)
-    warning(warning_oldUniqueByKey)
+    stop(error_oldUniqueByKey)
   }
   if (is.null(x)) return(0L)
   if (!is.atomic(x) && !is.data.frame(x))
