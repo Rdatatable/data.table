@@ -34,53 +34,6 @@ SEXP set_diff(SEXP x, int n) {
   return(ans);
 }
 
-// plucked and modified from base (coerce.c and summary.c).
-// for melt's `na.rm=TRUE` option
-SEXP which_notNA(SEXP x) {
-  SEXP v, ans;
-  int j=0, n = length(x);
-
-  PROTECT(v = allocVector(LGLSXP, n));
-  int *iv = LOGICAL(v);
-  switch (TYPEOF(x)) {
-  case LGLSXP: {
-    const int *ix = LOGICAL(x);
-    for (int i=0; i<n; ++i) iv[i] = (ix[i] != NA_LOGICAL);
-  }
-    break;
-  case INTSXP: {
-    const int *ix = INTEGER(x);
-    for (int i=0; i<n; ++i) iv[i] = (ix[i] != NA_INTEGER);
-  }
-    break;
-  case REALSXP: {
-    const double *dx = REAL(x);
-    for (int i=0; i<n; ++i) iv[i] = !ISNAN(dx[i]);
-  }
-    break;
-  case STRSXP: {
-    for (int i=0; i<n; ++i) iv[i] = (STRING_ELT(x, i) != NA_STRING);
-  }
-    break;
-  default:
-    error("%s() applied to non-(list or vector) of type '%s'",
-      "which_notNA", type2char(TYPEOF(x)));
-  }
-
-  int *buf = (int *) R_alloc(n, sizeof(int));
-  for (int i=0; i<n; ++i) {
-    if (iv[i] == TRUE) {
-      buf[j++] = i+1;
-    }
-  }
-  n = j;
-  PROTECT(ans = allocVector(INTSXP, n));
-  if (n) memcpy(INTEGER(ans), buf, sizeof(int) * n);
-
-  UNPROTECT(2);
-  return(ans);
-}
-
 SEXP which(SEXP x, Rboolean val) {
 
   int j=0, n = length(x);
