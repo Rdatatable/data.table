@@ -218,6 +218,26 @@ replace_dot_alias = function(e) {
   }
 }
 
+# replace order -> forder wherever it appears in i
+replace_order = function(isub, verbose, env) {
+  if (length(isub) == 1L) return(isub)
+  for (ii in seq_along(isub)) {
+    isub_el = isub[[ii]]
+    if (missing(isub_el)) break
+    if (is.name(isub_el)) {
+      # stop base::order from becoming forder(x, base, order)
+      if (isub_el == '::') break
+      if (isub_el == 'order') {
+        if (verbose) cat("order optimisation is on, changed 'order(...)' in i to 'forder(x, ...)'.\n")
+        env$eval_forder = TRUE
+        return(as.call(c(list(quote(forder), quote(x)), as.list(isub)[-1L])))
+      }
+    }
+    if (is.call(isub_el)) isub[[ii]] = replace_order(isub_el, verbose, env)
+  }
+  return(isub)
+}
+
 "[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
@@ -417,31 +437,34 @@ replace_dot_alias = function(e) {
       if (is.call(isub) && isub[[1L]] == "(" && !is.name(isub[[2L]]))
         isub = isub[[2L]]
     }
-    if (is.call(isub) && isub[[1L]] == as.name("order") && getOption("datatable.optimize") >= 1) { # optimize here so that we can switch it off if needed
-      if (verbose) cat("order optimisation is on, i changed from 'order(...)' to 'forder(DT, ...)'.\n")
-      isub = as.list(isub)
-      isub = as.call(c(list(quote(forder), quote(x)), isub[-1L]))
-    }
+    
     if (is.null(isub)) return( null.data.table() )
-    if (is.call(isub) && isub[[1L]] == quote(forder)) {
+    
+    # optimize here so that we can switch it off if needed
+    check_eval_env = environment()
+    check_eval_env$eval_forder = FALSE
+    if (getOption("datatable.optimize") >= 1) {
+      isub = replace_order(isub, verbose, check_eval_env)
+    } 
+    if (check_eval_env$eval_forder) {
       order_env = new.env(parent=parent.frame())            # until 'forder' is exported
       assign("forder", forder, order_env)
       assign("x", x, order_env)
-      i = eval(isub, order_env, parent.frame())             # for optimisation of 'order' to 'forder'
+      i = eval(.massagei(isub), order_env, parent.frame())             # for optimisation of 'order' to 'forder'
       # that forder returns empty integer() is taken care of internally within forder
     } else if (length(o <- .prepareFastSubset(isub = isub, x = x,
                                               enclos =  parent.frame(),
                                               notjoin = notjoin, verbose = verbose))){
-        ## redirect to the is.data.table(x) == TRUE branch.
-        ## Additional flag to adapt things after bmerge:
-        optimizedSubset = TRUE
-        notjoin = o$notjoin
-        i = o$i
-        on = o$on
-        ## the following two are ignored if i is not a data.table.
-        ## Since we are converting i to data.table, it is important to set them properly.
-        nomatch = 0L
-        mult = "all"
+      ## redirect to the is.data.table(x) == TRUE branch.
+      ## Additional flag to adapt things after bmerge:
+      optimizedSubset = TRUE
+      notjoin = o$notjoin
+      i = o$i
+      on = o$on
+      ## the following two are ignored if i is not a data.table.
+      ## Since we are converting i to data.table, it is important to set them properly.
+      nomatch = 0L
+      mult = "all"
     }
     else if (!is.name(isub)) {
       i = tryCatch(eval(.massagei(isub), x, parent.frame()),
@@ -453,8 +476,8 @@ replace_dot_alias = function(e) {
         # must be "not found" since isub is a mere symbol
         col = try(eval(isub, x), silent=TRUE)  # is it a column name?
         msg = if (inherits(col,"try-error")) " and it is not a column name either."
-              else paste0(" but it is a column of type ", typeof(col),". If you wish to select rows where that column contains TRUE",
-                          ", or perhaps that column contains row numbers of itself to select, try DT[(col)], DT[DT$col], or DT[col==TRUE] is particularly clear and is optimized.")
+        else paste0(" but it is a column of type ", typeof(col),". If you wish to select rows where that column contains TRUE",
+                    ", or perhaps that column contains row numbers of itself to select, try DT[(col)], DT[DT$col], or DT[col==TRUE] is particularly clear and is optimized.")
         stop(as.character(isub), " is not found in calling scope", msg,
              " When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope.")
       }
