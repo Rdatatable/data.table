@@ -126,6 +126,8 @@
 
 17. `example(":=", local=TRUE)` now works rather than error, [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @vlulla for the report.
 
+18. `rbind.data.frame` on `IDate` columns changed the column from `integer` to `double`, [#2008](https://github.com/Rdatatable/data.table/issues/2008). Thanks to @rmcgehee for reporting.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.

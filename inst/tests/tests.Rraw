@@ -993,16 +993,11 @@ test(343, DT[,(mynewcol):=21L], data.table(b=1:3,newname=21L))
 mycols = 1:2
 test(344, DT[,(mycols):=NULL], data.table(NULL))
 
-
-# It seems that the .Internal rbind of two data.frame coerces IDate to numeric. Tried defining
-# "[<-.IDate" as per Tom's suggestion, and c.IDate to no avail (maybe because the .Internal code
-# in bind.c doesn't look up package methods?). Anyway, as from 1.8.1, double are allowed in keys, so
-# these still work but for a different reason than before 1.8.1: the results are IDate stored as double,
-# rather than before when is worked because by and setkey coerced double to integer.
-# Now, as from 1.12.4, the integer IDate in i is retained as integer rather than letting the double IDate persist.
+# this originally tested that IDate would come back as double from rbind(DF, DF)
+# Now #2008 is fixed in v1.12.4 it now checks it stays as an integer.
 DF = data.frame(x=as.IDate(c("2010-01-01","2010-01-02")), y=1:6)
 DT = as.data.table(rbind(DF,DF))
-test(345, DT[,sum(y),by=x], {.x=as.IDate(c("2010-01-01","2010-01-02"));mode(.x)="double";data.table(x=.x,V1=c(18L,24L))})
+test(345, DT[,sum(y),by=x], data.table(x=as.IDate(c("2010-01-01","2010-01-02")),V1=c(18L,24L)))
 test(346, setkey(DT,x)[J(as.IDate("2010-01-02"))], data.table(x=as.IDate(rep("2010-01-02",6L)), y=rep(c(2L,4L,6L),2), key="x"))
 
 # Test .N==0 with nomatch=NA|0, # tests for #963 added as well
@@ -14964,6 +14959,11 @@ dt2 = structure(list(V1 = c("2018", "2018", "2018", "2018", "2018")), row.names 
 test(2052, rbindlist(list(dt1, dt2), fill=TRUE),
            data.table(V1=c(dt1$V1, dt2$V1),
                       V46=structure(c(3L,1L,1L,NA,3L,NA,NA,NA,NA,NA), .Label=c("Low","Typical","High",NA), class = c("ordered", "factor"))))
+
+# rbind.data.frame didn't respect integer storage mode of IDate, #2008
+DF = data.frame(date = as.IDate(0L))
+test(2053.1, storage.mode(rbind(DF, DF)$date), 'integer')
+test(2053.2, DF$date[1L] <- integer(), integer())
 
 
 ###################################
