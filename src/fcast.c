@@ -7,11 +7,11 @@
 SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg) {
 
   int nrows=INTEGER(nrowArg)[0], ncols=INTEGER(ncolArg)[0];
-  int nlhs=length(lhs), nval=length(val), *idx = INTEGER(idxArg), thisidx;
+  int nlhs=length(lhs), nval=length(val), *idx = INTEGER(idxArg);
   SEXP thiscol, target, ans, thisfill;
   Rboolean isfill = TRUE, count;
 
-  ans = PROTECT(allocVector(VECSXP, nlhs + (nval * ncols)));
+  SEXP ans = PROTECT(allocVector(VECSXP, nlhs + (nval * ncols)));
   // set lhs cols
   for (int i=0; i<nlhs; ++i) {
     SET_VECTOR_ELT(ans, i, VECTOR_ELT(lhs, i));
@@ -33,7 +33,8 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
       count = TRUE;
     }
     switch (TYPEOF(thiscol)) {
-    case INTSXP: {
+    case INTSXP:
+    case LGLSXP: {
       const int *ithiscol = INTEGER(thiscol);
       const int *ithisfill = INTEGER(thisfill);
       for (int j=0; j<ncols; ++j) {
@@ -41,12 +42,11 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
         int *itarget = INTEGER(target);
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
-          thisidx = idx[k*ncols + j];
+          int thisidx = idx[k*ncols + j];
           itarget[k] = (thisidx == NA_INTEGER) ? ithisfill[0] : ithiscol[thisidx-1];
         }
       }
-    }
-      break;
+    } break;
     case REALSXP: {
       const double *dthiscol = REAL(thiscol);
       const double *dthisfill = REAL(thisfill);
@@ -55,32 +55,17 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
         double *dtarget = REAL(target);
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
-          thisidx = idx[k*ncols + j];
+          int thisidx = idx[k*ncols + j];
           dtarget[k] = (thisidx == NA_INTEGER) ? dthisfill[0] : dthiscol[thisidx-1];
         }
       }
-    }
-      break;
-    case LGLSXP: {
-      const int *ithiscol = LOGICAL(thiscol);
-      const int *ithisfill = LOGICAL(thisfill);
-      for (int j=0; j<ncols; ++j) {
-        SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
-        int *itarget = LOGICAL(target);
-        copyMostAttrib(thiscol, target);
-        for (int k=0; k<nrows; ++k) {
-          thisidx = idx[k*ncols + j];
-          itarget[k] = (thisidx == NA_INTEGER) ? ithisfill[0] : ithiscol[thisidx-1];
-        }
-      }
-    }
-      break;
+    } break;
     case STRSXP:
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
-          thisidx = idx[k*ncols + j];
+          int thisidx = idx[k*ncols + j];
           SET_STRING_ELT(target, k, (thisidx == NA_INTEGER) ? STRING_ELT(thisfill, 0) : STRING_ELT(thiscol, thisidx-1));
         }
       }
@@ -90,7 +75,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(TYPEOF(thiscol), nrows) );
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
-          thisidx = idx[k*ncols + j];
+          int thisidx = idx[k*ncols + j];
           SET_VECTOR_ELT(target, k, (thisidx == NA_INTEGER) ? VECTOR_ELT(thisfill, 0) : VECTOR_ELT(thiscol, thisidx-1));
         }
       }
