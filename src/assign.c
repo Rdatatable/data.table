@@ -1109,7 +1109,8 @@ SEXP setcolorder(SEXP x, SEXP o)
   SEXP names = getAttrib(x, R_NamesSymbol);
   const int *od = INTEGER(o), ncol=LENGTH(x);
   if (isNull(names)) error("dt passed to setcolorder has no names");
-  if (ncol != LENGTH(names)) error("dt passed to setcolorder has %d columns but %d names", ncol, LENGTH(names));
+  if (ncol != LENGTH(names))
+    error("Internal error: dt passed to setcolorder has %d columns but %d names", ncol, LENGTH(names));  // # nocov
 
   // Double-check here at C level that o[] is a strict permutation of 1:ncol. Reordering columns by reference makes no
   // difference to generations/refcnt so we can write behind barrier in this very special case of strict permutation.

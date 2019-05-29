@@ -298,7 +298,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     // ilow and iupp now surround the group in ic, too
   }
     break;
-  case STRSXP : {
+  case STRSXP :
     if (op[col] != EQ) error("Only '==' operator is supported for columns of type %s.", type2char(TYPEOF(xc)));
     ival.s = ENC2UTF8(STRING_ELT(ic,ir));
     while(xlow < xupp-1) {
@@ -337,7 +337,6 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       xval.s = ENC2UTF8(STRING_ELT(ic, o ? o[mid]-1 : mid));
       if (xval.s == ival.s) tmpupp=mid; else ilow=mid;   // see above re ==
     }
-  }
     break;
   case REALSXP : {
     double *dic = REAL(ic);

@@ -6,11 +6,11 @@
 extern SEXP char_integer64;
 
 SEXP dt_na(SEXP x, SEXP cols) {
-  int i, j, n=0, elem;
+  int n=0, elem;
 
   if (!isNewList(x)) error("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'", type2char(TYPEOF(x))); // # nocov
   if (!isInteger(cols)) error("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
-  for (i=0; i<LENGTH(cols); i++) {
+  for (int i=0; i<LENGTH(cols); ++i) {
     elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))
       error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, elem, LENGTH(x));
@@ -18,8 +18,8 @@ SEXP dt_na(SEXP x, SEXP cols) {
   }
   SEXP ans = PROTECT(allocVector(LGLSXP, n));
   int *ians = LOGICAL(ans);
-  for (i=0; i<n; i++) ians[i]=0;
-  for (i=0; i<LENGTH(cols); i++) {
+  for (int i=0; i<n; ++i) ians[i]=0;
+  for (int i=0; i<LENGTH(cols); ++i) {
     SEXP v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
     if (!length(v) || isNewList(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip list/pairlist columns
     if (n != length(v))
@@ -27,26 +27,27 @@ SEXP dt_na(SEXP x, SEXP cols) {
     switch (TYPEOF(v)) {
     case LGLSXP: {
       const int *iv = LOGICAL(v);
-      for (j=0; j<n; j++) ians[j] |= (iv[j] == NA_LOGICAL);
+      for (int j=0; j<n; ++j) ians[j] |= (iv[j] == NA_LOGICAL);
     }
       break;
     case INTSXP: {
       const int *iv = INTEGER(v);
-      for (j=0; j<n; j++) ians[j] |= (iv[j] == NA_INTEGER);
+      for (int j=0; j<n; ++j) ians[j] |= (iv[j] == NA_INTEGER);
     }
       break;
     case STRSXP: {
-      for (j=0; j<n; j++) ians[j] |= (STRING_ELT(v, j) == NA_STRING);
+      const SEXP *sv = STRING_PTR(v);
+      for (int j=0; j<n; ++j) ians[j] |= (sv[j] == NA_STRING);
     }
       break;
     case REALSXP: {
       const double *dv = REAL(v);
       if (INHERITS(v, char_integer64)) {
-        for (j=0; j<n; j++) {
+        for (int j=0; j<n; ++j) {
           ians[j] |= (DtoLL(dv[j]) == NA_INT64_LL);   // TODO: can be == NA_INT64_D directly
         }
       } else {
-        for (j=0; j<n; j++) ians[j] |= ISNAN(dv[j]);
+        for (int j=0; j<n; ++j) ians[j] |= ISNAN(dv[j]);
       }
     }
       break;
@@ -57,7 +58,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
       break;
     case CPLXSXP: {
       // taken from https://github.com/wch/r-source/blob/d75f39d532819ccc8251f93b8ab10d5b83aac89a/src/main/coerce.c
-      for (j=0; j<n; j++) ians[j] |= (ISNAN(COMPLEX(v)[j].r) || ISNAN(COMPLEX(v)[j].i));
+      for (int j=0; j<n; ++j) ians[j] |= (ISNAN(COMPLEX(v)[j].r) || ISNAN(COMPLEX(v)[j].i));
     }
       break;
     default:
