@@ -1,12 +1,28 @@
 #include "data.table.h"
 
 /*
- * input validation and extraction
+ * input validation
  */
-bool trueFalseR(SEXP x) {
-  if (!isLogical(x) || length(x)!=1 || LOGICAL(x)[0]==NA_LOGICAL)
-    error("internal error: argument must be TRUE or FALSE"); // # nocov
-  return LOGICAL(x)[0];
+bool isTrueFalse(SEXP x) {
+  return !isLogical(x) || length(x)!=1 || LOGICAL(x)[0]==NA_LOGICAL;
+}
+int lenMiss(SEXP x, int n, bool scalar) {
+  if (!isNewList(x)) error("x must be a list");
+  int nx = length(x);
+  for (int i=0; i<nx; i++) {
+    int thisn = length(VECTOR_ELT(x, i));
+    if (thisn!=n && (scalar && thisn!=1)) return i;
+  }
+  return -1;
+}
+int typeMiss(SEXP x, SEXPTYPE type) {
+  if (!isNewList(x)) error("x must be a list");
+  int nx = length(x);
+  for (int i=0; i<nx; i++) {
+    SEXPTYPE thistype = TYPEOF(VECTOR_ELT(x, i));
+    if (thistype!=type) return i;
+  }
+  return -1;
 }
 
 /*
@@ -111,7 +127,7 @@ SEXP which_eq_doubleR(SEXP x, SEXP val, SEXP negate) {
   int *ians = INTEGER(ans);
   int nans=0;
   double dval = REAL(val)[0];
-  bool bnegate = trueFalseR(negate);
+  bool bnegate = isTrueFalse(negate);
   which_eq_double(REAL(x), nx, ians, &nans, dval, bnegate);
   SETLENGTH(ans, nans);
   UNPROTECT(protecti);
@@ -123,7 +139,7 @@ SEXP which_eq_charR(SEXP x, SEXP val, SEXP negate) {
   SEXP ans = PROTECT(allocVector(INTSXP, nx)); protecti++;
   int *ians = INTEGER(ans);
   int nans=0;
-  bool bnegate = trueFalseR(negate);
+  bool bnegate = isTrueFalse(negate);
   which_eq_char(x, nx, ians, &nans, STRING_ELT(val, 0), bnegate);
   SETLENGTH(ans, nans);
   UNPROTECT(protecti);

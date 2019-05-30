@@ -3,7 +3,14 @@
 SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
   int JJ = length(values), protecti = 0, nx = length(x);
 
-  bool binplace = trueFalseR(inplace);
+  if (!isTrueFalse(inplace)) error("%s: argument '.inplace' must be TRUE or FALSE", __func__);
+  bool binplace = LOGICAL(inplace)[0];
+
+  int firstLenMiss = lenMiss(values, nx, true);
+  if (firstLenMiss >= 0) error("%s: Replacement %d has length %d but length(x) is %d. Only singletons will be recycled.", __func__, firstLenMiss+1, length(VECTOR_ELT(values, firstLenMiss)), nx);
+
+  int firstTypeMiss = typeMiss(values, TYPEOF(x));
+  if (firstTypeMiss >= 0) error("%s: Replacement %d has internal type %s but typeof(x) is %s. Please coerce before coalescing", __func__, firstTypeMiss+1, type2char(TYPEOF(VECTOR_ELT(values, firstTypeMiss))), type2char(TYPEOF(x)));
 
   double tic = 0;
   const bool verbose = GetVerbose();
