@@ -279,7 +279,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
   R_len_t i, j, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
-  SEXP targetcol, RHS, names, nullint, thisv, targetlevels, newcol, s, colnam, klass, tmp, colorder, key, index, a, assignedNames, indexNames;
+  SEXP targetcol, names, nullint, thisv, targetlevels, newcol, s, colnam, klass, tmp, colorder, key, index, a, assignedNames, indexNames;
   SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
   bool verbose=GetVerbose(), anytodelete=false, isDataTable=false;
   const char *c1, *tc1, *tc2;
@@ -327,7 +327,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     // fast way to assign to whole column, without creating 1:nrow(x) vector up in R, or here in C
   } else {
     if (isReal(rows)) {
-      rows = PROTECT(rows = coerceVector(rows, INTSXP)); protecti++;
+      rows = PROTECT(coerceVector(rows, INTSXP)); protecti++;
       warning("Coerced i from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2");
     }
     if (!isInteger(rows))
@@ -365,7 +365,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     }
     if (k>0) {
       if (!isDataTable) error("set() on a data.frame is for changing existing columns, not adding new ones. Please use a data.table for that. data.table's are over-allocated and don't shallow copy.");
-      PROTECT(newcolnames = allocVector(STRSXP, k)); protecti++;
+      newcolnames = PROTECT(allocVector(STRSXP, k)); protecti++;
       for (i=0; i<k; i++) {
         SET_STRING_ELT(newcolnames, i, STRING_ELT(cols, buf[i]));
         INTEGER(tmp)[buf[i]] = oldncol+i+1;
@@ -467,6 +467,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     // truelengths of both already set by alloccol
   }
   for (i=0; i<length(cols); i++) {
+    int thisprotecti = 0;  // UNPROTECT(thisprotecti) at the end of this loop to save protection stack
     coln = INTEGER(cols)[i]-1;
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
     if (TYPEOF(thisvalue)==NILSXP) {
@@ -488,18 +489,19 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       } else {
         if (verbose) Rprintf("Direct plonk of unnamed RHS, no copy.\n");  // e.g. DT[,a:=as.character(a)] as tested by 754.3
       }
-      SET_VECTOR_ELT(dt,coln,thisvalue);                   // plonk new column in as it's already the correct length
+      SET_VECTOR_ELT(dt, coln, thisvalue);                 // plonk new column in as it's already the correct length
       setAttrib(thisvalue, R_NamesSymbol, R_NilValue);     // clear names such as  DT[,a:=mapvector[a]]
       setAttrib(thisvalue, R_DimSymbol, R_NilValue);       // so that matrix is treated as vector
       setAttrib(thisvalue, R_DimNamesSymbol, R_NilValue);  // the 3rd of the 3 attribs not copied by copyMostAttrib, for consistency.
       continue;
     }
+    SEXP RHS;
+
     if (coln+1 > oldncol) {  // new column
-      newcol = allocNAVector(TYPEOF(thisvalue),nrow);
+      SET_VECTOR_ELT(dt, coln, newcol=allocNAVector(TYPEOF(thisvalue), nrow));
       // initialize with NAs for when 'rows' is a subset and it doesn't touch
       // do not try to save the time to NA fill (contiguous branch free assign anyway) since being
       // sure all items will be written to (isNull(rows), length(rows), vlen<1, targetlen) is not worth the risk.
-      SET_VECTOR_ELT(dt,coln,newcol);
       if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,newcol);  // class etc but not names
       // else for lists (such as data.frame and data.table) treat them as raw lists and drop attribs
       if (vlen<1) continue;   // e.g. DT[,newcol:=integer()] (adding new empty column)
@@ -512,7 +514,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
         // If it's the same RHS being assigned to several columns, we have to recoerce for each
         // one because the levels of each target are likely different
         if (isFactor(thisvalue)) {
-          PROTECT(thisvalue = asCharacterFactor(thisvalue)); protecti++;
+          thisvalue = PROTECT(asCharacterFactor(thisvalue)); thisprotecti++;
         }
         targetlevels = getAttrib(targetcol, R_LevelsSymbol);
         if (isNull(targetlevels)) error("somehow this factor column has no levels");
@@ -535,15 +537,15 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
           }
           R_len_t addi = 0;
           SEXP addlevels=NULL;
-          PROTECT(RHS = allocVector(INTSXP, length(thisvalue))); protecti++;
+          RHS = PROTECT(allocVector(INTSXP, length(thisvalue))); thisprotecti++;
           int *iRHS = INTEGER(RHS);
           for (j=0; j<length(thisvalue); j++) {
             thisv = STRING_ELT(thisvalue,j);
             if (TRUELENGTH(thisv)==0) {
               if (addi==0) {
-                PROTECT(addlevels = allocVector(STRSXP, 100)); protecti++;
+                addlevels = PROTECT(allocVector(STRSXP, 100)); thisprotecti++;
               } else if (addi >= length(addlevels)) {
-                PROTECT(addlevels = growVector(addlevels, length(addlevels)+1000)); protecti++;
+                addlevels = PROTECT(growVector(addlevels, length(addlevels)+1000)); thisprotecti++;
               }
               SET_STRING_ELT(addlevels,addi++,thisv);
               // if-else for #1718 fix
@@ -553,7 +555,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
           }
           if (addi > 0) {
             R_len_t oldlen = length(targetlevels);
-            PROTECT(targetlevels = growVector(targetlevels, oldlen+addi)); protecti++;
+            targetlevels = PROTECT(growVector(targetlevels, oldlen+addi)); thisprotecti++;
             for (j=0; j<addi; j++)
               SET_STRING_ELT(targetlevels, oldlen+j, STRING_ELT(addlevels, j));
             setAttrib(targetcol, R_LevelsSymbol, targetlevels);
@@ -566,13 +568,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
             error("Internal error: up front checks (before starting to modify DT) didn't catch type of RHS ('%s') assigning to factor column '%s'. please report to data.table issue tracker.", type2char(TYPEOF(thisvalue)), CHAR(STRING_ELT(names,coln))); // # nocov
           int *iRHS;
           if (isReal(thisvalue) || TYPEOF(thisvalue)==LGLSXP) {
-            PROTECT(RHS = coerceVector(thisvalue,INTSXP)); protecti++;
+            RHS = PROTECT(coerceVector(thisvalue,INTSXP)); thisprotecti++;
             iRHS = INTEGER(RHS);
             // silence warning on singleton NAs
             if (iRHS[0] != NA_INTEGER) warning("Coerced '%s' RHS to 'integer' to match the factor column's underlying type. Character columns are now recommended (can be in keys), or coerce RHS to integer or character first.", type2char(TYPEOF(thisvalue)));
           } else { // thisvalue is integer
             // make sure to copy thisvalue. May be modified below. See #2984
-            RHS = PROTECT(duplicate(thisvalue)); protecti++;
+            RHS = PROTECT(duplicate(thisvalue)); thisprotecti++;
             iRHS = INTEGER(RHS);
           }
           for (int j=0; j<length(RHS); j++) {
@@ -589,11 +591,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
         else {
           // coerce the RHS to match the type of the column, unlike [<-.data.frame, for efficiency.
           if (isString(targetcol) && isFactor(thisvalue)) {
-            PROTECT(RHS = asCharacterFactor(thisvalue)); protecti++;
+            RHS = PROTECT(asCharacterFactor(thisvalue)); thisprotecti++;
             if (verbose) Rprintf("Coerced factor RHS to character to match the column's type. Avoid this coercion if possible, for efficiency, by creating RHS as type character.\n");
             // TO DO: datatable.pedantic could turn this into warning
           } else {
-            PROTECT(RHS = coerceVector(thisvalue,TYPEOF(targetcol))); protecti++;
+            RHS = PROTECT(coerceVector(thisvalue,TYPEOF(targetcol))); thisprotecti++;
             char *s1 = (char *)type2char(TYPEOF(targetcol));
             char *s2 = (char *)type2char(TYPEOF(thisvalue));
             // FR #2551, added test for equality between RHS and thisvalue to not provide the warning when length(thisvalue) == 1
@@ -623,9 +625,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       }
     }
     memrecycle(targetcol, rows, 0, targetlen, RHS);  // also called from dogroups where these arguments are used more
+    UNPROTECT(thisprotecti); // unprotect inside loop through columns to save protection stack
   }
   *_Last_updated = numToDo;  // the updates have taken place with no error, so update .Last.updated now
-  PROTECT(assignedNames = allocVector(STRSXP, LENGTH(cols))); protecti++;
+  assignedNames = PROTECT(allocVector(STRSXP, LENGTH(cols))); protecti++;
   for (i=0;i<LENGTH(cols);i++) SET_STRING_ELT(assignedNames,i,STRING_ELT(names,INTEGER(cols)[i]-1));
   key = getAttrib(dt, sym_sorted);
   if (length(key)) {
@@ -1124,7 +1127,8 @@ SEXP setcolorder(SEXP x, SEXP o)
   }
   Free(seen);
 
-  SEXP *tmp = Calloc(ncol, SEXP), *xd = VECTOR_PTR(x), *namesd = STRING_PTR(names);
+  SEXP *tmp = Calloc(ncol, SEXP);
+  SEXP *xd = VECTOR_PTR(x), *namesd = STRING_PTR(names);
   for (int i=0; i<ncol; ++i) tmp[i] = xd[od[i]-1];
   memcpy(xd, tmp, ncol*sizeof(SEXP)); // sizeof is type size_t so no overflow here
   for (int i=0; i<ncol; ++i) tmp[i] = namesd[od[i]-1];
