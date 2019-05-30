@@ -4,7 +4,7 @@
  * input validation
  */
 bool isTrueFalse(SEXP x) {
-  return !isLogical(x) || length(x)!=1 || LOGICAL(x)[0]==NA_LOGICAL;
+  return isLogical(x) && length(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL;
 }
 int lenMiss(SEXP x, int n, bool scalar) {
   if (!isNewList(x)) error("x must be a list");

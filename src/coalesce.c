@@ -3,6 +3,8 @@
 SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
   int JJ = length(values), protecti = 0, nx = length(x);
 
+  if (!isVectorAtomic(x)) error("%s argument 'x' must be atomic vector", __func__);
+
   if (!isTrueFalse(inplace)) error("%s: argument '.inplace' must be TRUE or FALSE", __func__);
   bool binplace = LOGICAL(inplace)[0];
 
