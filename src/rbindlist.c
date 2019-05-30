@@ -305,12 +305,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
       else {
-        if (!factor && !int64 && !R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
-                                                      PROTECT(getAttrib(firstCol, R_ClassSymbol)),
-                                                      0)) {
+        bool prot = false;
+        if (!factor && !int64 && (prot=true) && !R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
+                                                                     PROTECT(getAttrib(firstCol, R_ClassSymbol)),
+                                                                     0)) {
           error("Class attribute on column %d of item %d does not match with column %d of item %d.", w+1, i+1, firstw+1, firsti+1);
         }
-        UNPROTECT(2);
+        if (prot) UNPROTECT(2);
       }
     }
 
