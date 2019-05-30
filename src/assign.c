@@ -296,7 +296,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // For data.frame, can use set() on existing columns but not add new ones because DF are not over-allocated.
   bool isDataTable = INHERITS(dt, char_datatable);
   if (!isDataTable && !INHERITS(dt, char_dataframe))
-    error("Input is not a data.table, data.frame or an object that inherits from either.");
+    error("Internal error: dt passed to Cassign is not a data.table or data.frame");  // # nocov
 
   oldncol = LENGTH(dt);
   names = getAttrib(dt, R_NamesSymbol);
