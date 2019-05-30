@@ -296,17 +296,22 @@ There are some things to overcome to achieve compile without USE_RINTERNALS, tho
 ########################################################################
 #  rchk : https://github.com/kalibera/rchk
 ########################################################################
+# if rebuilding, ~/build/rchk/scripts/config.inc :
+# export WLLVM=/home/mdowle/.local/bin
+# export LLVM=/usr/lib/llvm-7
+# export RCHK=/home/mdowle/build/rchk
 cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
-# edit ~/.R/Makevars to set CFLAGS=-O0 -g so that rchk can provide source line numbers
+vi ~/.R/Makevars   # set CFLAGS=-O0 -g so that rchk can provide source line numbers
 echo 'install.packages("~/GitHub/data.table/data.table_1.12.3.tar.gz",repos=NULL)' | ./bin/R --slave
-../scripts/check_package.sh data.table
+# objcopy warnings (if any) can be ignored: https://github.com/kalibera/rchk/issues/17#issuecomment-497312504
+. ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
 # keep running and rerunning locally until all problems cease.
 #   rchk has an internal stack which can exhaust. Clearing the current set of problems (e.g. as displayed
 #   on CRAN) is not sufficient because new problems can be found because it didn't get that far before.
-#   Hence repeating locally until clear is necessary.
+#   Hence repeat locally until all clear is necessary.
 
 
 ###############################################
