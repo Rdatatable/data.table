@@ -92,14 +92,16 @@ grep mkChar *.c            # see comment in bmerge.c about passing this grep. I'
 # or ii) passed to setAttrib (which protects, providing leak-seals above are ok)
 # ScalarLogical in R now returns R's global TRUE from R 3.1.0; Apr 2014. Before that it allocated.
 # Aside: ScalarInteger may return globals for small integers in future version of R.
-grep ScalarInteger *.c   # Check all Scalar* either PROTECTed, return-ed or passed to setAttrib.
+grep ScalarInteger *.c | grep -v PROTECT | grep -v setAttrib | grep -v return  # Check all Scalar* either PROTECTed, return-ed or passed to setAttrib.
+grep ScalarString *.c  | grep -v PROTECT | grep -v setAttrib | grep -v return
 grep ScalarLogical *.c   # Now we depend on 3.1.0+, check ScalarLogical is NOT PROTECTed.
-grep ScalarString *.c
 
 # Inspect missing PROTECTs
 # To pass this grep is why we like SET_VECTOR_ELT(,,var=allocVector()) style on one line.
 # If a PROTECT is not needed then a comment is added explaining why and including "PROTECT" in the comment to pass this grep
 grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
+grep coerceVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
+grep asCharacter *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
 cd ..
 R

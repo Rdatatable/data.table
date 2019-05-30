@@ -4,11 +4,6 @@
 
 SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
 
-  R_len_t k=0, maxlen=0, zerolen=0, anslen;
-  SEXP li, ans;
-  SEXPTYPE type, maxtype=0;
-  Rboolean coerce = FALSE;
-
   if (!isNewList(l))
     error("l must be a list.");
   if (!length(l))
@@ -22,8 +17,10 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
 
   // preprocessing
   R_len_t *len  = (R_len_t *)R_alloc(ln, sizeof(R_len_t));
+  int maxlen=0, zerolen=0;
+  SEXPTYPE maxtype=0;
   for (int i=0; i<ln; ++i) {
-    li = VECTOR_ELT(l, i);
+    SEXP li = VECTOR_ELT(l, i);
     if (!isVectorAtomic(li) && !isNull(li))
       error("Item %d of list input is not an atomic vector", i+1);
     len[i] = length(li);
@@ -33,7 +30,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
     if (isFactor(li)) {
       maxtype = STRSXP;
     } else {
-      type = TYPEOF(li);
+      SEXPTYPE type = TYPEOF(li);
       if (type > maxtype)
         maxtype = type;
     }
@@ -42,20 +39,21 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
   fill = PROTECT(coerceVector(fill, maxtype));
 
   // allocate 'ans'
-  ans = PROTECT(allocVector(VECSXP, maxlen));
-  anslen = (!ignore) ? ln : (ln - zerolen);
+  SEXP ans = PROTECT(allocVector(VECSXP, maxlen));
+  int anslen = (!ignore) ? ln : (ln - zerolen);
   for (int i=0; i<maxlen; ++i) {
     SET_VECTOR_ELT(ans, i, allocVector(maxtype, anslen));
   }
 
   // transpose
+  int k=0;
   for (int i=0; i<ln; ++i) {
     if (ignore && !len[i]) continue;
-    li = VECTOR_ELT(l, i);
+    SEXP li = VECTOR_ELT(l, i);
+    bool coerce = false;
     if (TYPEOF(li) != maxtype) {
-      coerce = TRUE;
-      if (!isFactor(li)) li = PROTECT(coerceVector(li, maxtype));
-      else li = PROTECT(asCharacterFactor(li));
+      coerce = true;
+      li = PROTECT(isFactor(li) ? asCharacterFactor(li) : coerceVector(li, maxtype));
     }
     switch (maxtype) { // TODO remove more macros
     case INTSXP : {
@@ -94,10 +92,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
     default :
         error("Unsupported column type '%s'", type2char(maxtype));
     }
-    if (coerce) {
-      coerce = FALSE;
-      UNPROTECT(1);
-    }
+    if (coerce) UNPROTECT(1);
     k++;
   }
   UNPROTECT(2);

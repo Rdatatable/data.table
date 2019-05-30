@@ -273,6 +273,7 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_allGrp1 =   PRINTNAME(install("allGrp1"));
   char_factor =    PRINTNAME(install("factor"));
   char_ordered =   PRINTNAME(install("ordered"));
+  char_datatable = PRINTNAME(install("data.table"));
   char_dataframe = PRINTNAME(install("data.frame"));
   char_NULL =      PRINTNAME(install("NULL"));
 
