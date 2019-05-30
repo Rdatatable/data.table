@@ -380,12 +380,8 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
 }
 
 SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, struct processData *data) {
-  int i, j, k, counter=0, thislen=0;
-  SEXP thisvaluecols, ansvals, thisidx=R_NilValue, flevels;
-  Rboolean copyattr = FALSE, thisvalfactor;
-  size_t size;
-  for (i=0; i<data->lvalues; i++) {
-    thisvaluecols = VECTOR_ELT(data->valuecols, i);
+  for (int i=0; i<data->lvalues; ++i) {
+    SEXP thisvaluecols = VECTOR_ELT(data->valuecols, i);
     if (!data->isidentical[i])
       warning("'measure.vars' [%s] are not all of the same type. By order of hierarchy, the molten data value column will be of type '%s'. All measure variables not of type '%s' will be coerced too. Check DETAILS in ?melt.data.table for more on coercion.\n", CHAR(STRING_ELT(concat(dtnames, thisvaluecols), 0)), type2char(data->maxtype[i]), type2char(data->maxtype[i]));
     if (data->maxtype[i] == VECSXP && data->narm) {
@@ -395,11 +391,11 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
   }
   if (data->narm) {
     SEXP seqcols = PROTECT(seq_int(data->lvalues, 1));
-    for (i=0; i<data->lmax; i++) {
+    for (int i=0; i<data->lmax; ++i) {
       SEXP tmp = PROTECT(allocVector(VECSXP, data->lvalues));
-      for (j=0; j<data->lvalues; j++) {
+      for (int j=0; j<data->lvalues; ++j) {
         if (i < data->leach[j]) {
-          thisvaluecols = VECTOR_ELT(data->valuecols, j);
+          SEXP thisvaluecols = VECTOR_ELT(data->valuecols, j);
           SET_VECTOR_ELT(tmp, j, VECTOR_ELT(DT, INTEGER(thisvaluecols)[i]-1));
         } else {
           SET_VECTOR_ELT(tmp, j, allocNAVector(data->maxtype[j], data->nrow));
@@ -415,34 +411,36 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
   } else {
     data->totlen = data->nrow * data->lmax;
   }
-  flevels = PROTECT(allocVector(VECSXP, data->lmax));
+  SEXP flevels = PROTECT(allocVector(VECSXP, data->lmax));
   Rboolean *isordered = (Rboolean *)R_alloc(data->lmax, sizeof(Rboolean));
-  ansvals = PROTECT(allocVector(VECSXP, data->lvalues));
-  for (i=0; i<data->lvalues; i++) {
-    thisvalfactor = (data->maxtype[i] == VECSXP) ? FALSE : valfactor;
+  SEXP ansvals = PROTECT(allocVector(VECSXP, data->lvalues));
+  for (int i=0; i<data->lvalues; ++i) {
+    bool thisvalfactor = (data->maxtype[i] == VECSXP) ? false : valfactor;
     SEXP target = PROTECT(allocVector(data->maxtype[i], data->totlen)); // to keep rchk happy
     SET_VECTOR_ELT(ansvals, i, target);
     UNPROTECT(1);  // still protected by virtue of being member of protected ansval.
-    thisvaluecols = VECTOR_ELT(data->valuecols, i);
-    counter = 0; copyattr = FALSE;
-    for (j=0; j<data->lmax; j++) {
+    SEXP thisvaluecols = VECTOR_ELT(data->valuecols, i);
+    int counter = 0;
+    bool copyattr = false;
+    for (int j=0; j<data->lmax; ++j) {
       int thisprotecti = 0;
       SEXP thiscol = (j < data->leach[i]) ? VECTOR_ELT(DT, INTEGER(thisvaluecols)[j]-1)
                        : allocNAVector(data->maxtype[i], data->nrow);
       if (!copyattr && data->isidentical[i] && !data->isfactor[i]) {
         copyMostAttrib(thiscol, target);
-        copyattr = TRUE;
+        copyattr = true;
       }
       if (TYPEOF(thiscol) != TYPEOF(target) && (data->maxtype[i] == VECSXP || !isFactor(thiscol))) {
         thiscol = PROTECT(coerceVector(thiscol, TYPEOF(target)));  thisprotecti++;
       }
-      const int *ithisidx;
+      const int *ithisidx = NULL;
+      int thislen = 0;
       if (data->narm) {
-        thisidx = VECTOR_ELT(data->naidx, j);
+        SEXP thisidx = VECTOR_ELT(data->naidx, j);
         ithisidx = INTEGER(thisidx);
         thislen = length(thisidx);
       }
-      size = SIZEOF(thiscol);
+      size_t size = SIZEOF(thiscol);
       switch (TYPEOF(target)) {
       case VECSXP :
         if (data->narm) {
@@ -461,17 +459,17 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
           } else SET_VECTOR_ELT(flevels, j, thiscol);
         }
         if (data->narm) {
-          for (k=0; k<thislen; k++)
+          for (int k=0; k<thislen; ++k)
             SET_STRING_ELT(target, counter + k, STRING_ELT(thiscol, ithisidx[k]-1));
         } else {
-          for (k=0; k<data->nrow; k++) SET_STRING_ELT(target, j*data->nrow + k, STRING_ELT(thiscol, k));
+          for (int k=0; k<data->nrow; ++k) SET_STRING_ELT(target, j*data->nrow + k, STRING_ELT(thiscol, k));
         }
         break;
       case REALSXP : {
         double *dtarget = REAL(target);
         const double *dthiscol = REAL(thiscol);
         if (data->narm) {
-          for (k=0; k<thislen; k++)
+          for (int k=0; k<thislen; ++k)
             dtarget[counter + k] = dthiscol[ithisidx[k]-1];
         } else {
           memcpy(dtarget + j*data->nrow, dthiscol, data->nrow*size);
