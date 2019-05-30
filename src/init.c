@@ -169,7 +169,8 @@ R_CallMethodDef callMethods[] = {
 {"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
-//{"Cwhichna_charR", (DL_FUNC) &whichna_charR, -1},
+{"Cwhich_eq_doubleR", (DL_FUNC) &which_eq_doubleR, -1},
+{"Cwhich_eq_charR", (DL_FUNC) &which_eq_charR, -1},
 {NULL, NULL, 0}
 };
 

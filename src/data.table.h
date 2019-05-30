@@ -200,6 +200,13 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
 // between.c
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
 
+// utils.c
+bool trueFalseR(SEXP x);
+void which_eq_int(int *x, int nx, int *out, int *nout, int val, bool negate);
+void which_eq_double(double *x, int nx, int *out, int *nout, double val, bool negate);
+void which_eq_char(SEXP x, int nx, int *out, int *nout, SEXP val, bool negate);
+
 // coalesce.c
 SEXP coalesce(SEXP x, SEXP values, SEXP inplace);
-//SEXP whichna_charR(SEXP x);
+SEXP which_eq_doubleR(SEXP x, SEXP val, SEXP negate);
+SEXP which_eq_charR(SEXP x, SEXP val, SEXP negate);
