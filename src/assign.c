@@ -279,37 +279,27 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // cols : column names or numbers corresponding to the values to set
   // rows : row numbers to assign
   R_len_t i, j, numToDo, targetlen, vlen, r, oldncol, oldtncol, coln, protecti=0, newcolnum, indexLength;
-  SEXP targetcol, names, nullint, thisv, targetlevels, newcol, s, colnam, klass, tmp, colorder, key, index, a, assignedNames, indexNames;
+  SEXP targetcol, names, nullint, thisv, targetlevels, newcol, s, colnam, tmp, colorder, key, index, a, assignedNames, indexNames;
   SEXP bindingIsLocked = getAttrib(dt, install(".data.table.locked"));
-  bool verbose=GetVerbose(), anytodelete=false, isDataTable=false;
+  bool verbose=GetVerbose(), anytodelete=false;
   const char *c1, *tc1, *tc2;
-  int *buf, k=0, newKeyLength, indexNo;
+  int *buf, newKeyLength, indexNo;
   size_t size; // must be size_t otherwise overflow later in memcpy
   if (isNull(dt)) error("assign has been passed a NULL dt");
   if (TYPEOF(dt) != VECSXP) error("dt passed to assign isn't type VECSXP");
   if (length(bindingIsLocked) && LOGICAL(bindingIsLocked)[0])
     error(".SD is locked. Updating .SD by reference using := or set are reserved for future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, until shallow() is exported.");
 
-  klass = getAttrib(dt, R_ClassSymbol);
-  if (isNull(klass)) error("Input passed to assign has no class attribute. Must be a data.table or data.frame.");
-  // Check if there is a class "data.table" somewhere (#5115).
   // We allow set() on data.frame too; e.g. package Causata uses set() on a data.frame in tests/testTransformationReplay.R
   // := is only allowed on a data.table. However, the ":=" = stop(...) message in data.table.R will have already
   // detected use on a data.frame before getting to this point.
-  for (i=0; i<length(klass); i++) {   // There doesn't seem to be an R API interface to inherits(), but manually here isn't too bad.
-    if (strcmp(CHAR(STRING_ELT(klass, i)), "data.table") == 0) break;
-  }
-  if (i<length(klass))
-    isDataTable = true;
-  else {
-    for (i=0; i<length(klass); i++) {
-      if (strcmp(CHAR(STRING_ELT(klass, i)), "data.frame") == 0) break;
-    }
-    if (i == length(klass)) error("Input is not a data.table, data.frame or an object that inherits from either.");
-    isDataTable = false;   // meaning data.frame from now on. Can use set() on existing columns but not add new ones because DF aren't over-allocated.
-  }
+  // For data.frame, can use set() on existing columns but not add new ones because DF are not over-allocated.
+  bool isDataTable = INHERITS(dt, char_datatable);
+  if (!isDataTable && !INHERITS(dt, char_dataframe))
+    error("Input is not a data.table, data.frame or an object that inherits from either.");
+
   oldncol = LENGTH(dt);
-  names = getAttrib(dt,R_NamesSymbol);
+  names = getAttrib(dt, R_NamesSymbol);
   if (isNull(names)) error("dt passed to assign has no names");
   if (length(names)!=oldncol)
     error("Internal error in assign: length of names (%d) is not length of dt (%d)",length(names),oldncol); // # nocov
@@ -360,6 +350,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (isString(cols)) {
     PROTECT(tmp = chmatch(cols, names, 0)); protecti++;
     buf = (int *) R_alloc(length(cols), sizeof(int));
+    int k=0;
     for (i=0; i<length(cols); i++) {
       if (INTEGER(tmp)[i] == 0) buf[k++] = i;
     }
