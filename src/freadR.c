@@ -216,8 +216,7 @@ SEXP freadR(
 
 static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
   if (!length(items)) return;
-  SEXP itemsInt = PROTECT(isString(items) ? chmatch(items, colNamesSxp, NA_INTEGER) :
-                                            coerceVector(items, INTSXP));
+  SEXP itemsInt = PROTECT( isString(items) ? chmatch(items, colNamesSxp, NA_INTEGER) : coerceVector(items, INTSXP) );
   const int *itemsD = INTEGER(itemsInt), n=LENGTH(itemsInt);
   for (int j=0; j<n; ++j) {
     int k = itemsD[j];
