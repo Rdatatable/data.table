@@ -238,7 +238,7 @@ replace_order = function(isub, verbose, env) {
   return(isub)
 }
 
-"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
+"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -297,6 +297,7 @@ replace_order = function(isub, verbose, env) {
   if (length(rollends)>2L) stop("rollends must be length 1 or 2")
   if (length(rollends)==1L) rollends=rep.int(rollends,2L)
   # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
+  .unsafe.opt() #3585
   missingnomatch = missing(nomatch)
   if (is.null(nomatch)) nomatch = 0L # allow nomatch=NULL API already now, part of: https://github.com/Rdatatable/data.table/issues/857
   if (!is.na(nomatch) && nomatch!=0L) stop("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL)")
@@ -437,15 +438,15 @@ replace_order = function(isub, verbose, env) {
       if (is.call(isub) && isub[[1L]] == "(" && !is.name(isub[[2L]]))
         isub = isub[[2L]]
     }
-    
+
     if (is.null(isub)) return( null.data.table() )
-    
+
     # optimize here so that we can switch it off if needed
     check_eval_env = environment()
     check_eval_env$eval_forder = FALSE
     if (getOption("datatable.optimize") >= 1) {
       isub = replace_order(isub, verbose, check_eval_env)
-    } 
+    }
     if (check_eval_env$eval_forder) {
       order_env = new.env(parent=parent.frame())            # until 'forder' is exported
       assign("forder", forder, order_env)
@@ -514,8 +515,7 @@ replace_order = function(isub, verbose, env) {
       naturaljoin = FALSE
       if (missing(on)) {
         if (!haskey(x)) {
-          if (getOption("datatable.naturaljoin")) naturaljoin = TRUE
-          else stop("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+          stop("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
         }
       } else if (identical(substitute(on), as.name(".NATURAL"))) naturaljoin = TRUE
       if (naturaljoin) { # natural join #629

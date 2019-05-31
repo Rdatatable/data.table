@@ -96,8 +96,7 @@ oldOptions = options(
   datatable.verbose = FALSE,
   datatable.alloccol = 1024L,
   datatable.print.class = FALSE,  #  This is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
-  datatable.rbindlist.check = NULL,
-  datatable.naturaljoin = FALSE
+  datatable.rbindlist.check = NULL
 )
 # some tests (e.g. 1066, 1293) rely on capturing output that will be garbled with small width
 if (getOption('width') < 80L) options(width = 80L)
@@ -14840,28 +14839,25 @@ d2 = data.table(id1=rep(1L,3), id2=3:5, v2=3:1)
 ans = data.table(id1=rep(1L, 3), id2=3:5, v1=c(2:3,NA_integer_), v2=3:1)
 test(2045.01, d1[d2], error="columns to join by must be specified")
 test(2045.02, d1[d2, on=.NATURAL, verbose=TRUE], ans, output="natural join using: [id1, id2]")
-options(datatable.naturaljoin=TRUE)
 test(2045.03, d1[d2, on=.(id1,id2)], ans)
 test(2045.04, d1[d2, on=.(id1,id2), nomatch=NULL], ans[1:2])
-test(2045.05, d1[d2, verbose=TRUE], ans, output="natural join using: [id1, id2]")
+test(2045.05, d1[d2, on=.NATURAL, verbose=TRUE], ans, output="natural join using: [id1, id2]")
 test(2045.06, d1[d2, on=.NATURAL, verbose=TRUE], ans, output="natural join using: [id1, id2]")
-test(2045.07, d1[d2, nomatch=NULL, verbose=TRUE], ans[1:2], output="natural join using: [id1, id2]")
+test(2045.07, d1[d2, nomatch=NULL, on=.NATURAL, verbose=TRUE], ans[1:2], output="natural join using: [id1, id2]")
 setkey(d1, id1)
 test(2045.08, nrow(d1[d2, allow.cartesian=TRUE]), 9L) # join
 test(2045.09, d1[d2, on=.NATURAL, verbose=TRUE], ans, output="natural join using: [id1, id2]") # ignore key when on=.NATURAL
 setkey(d1, NULL)
 setnames(d2, c("a","b","c"))
-test(2045.10, d1[d2], error="Attempting to do natural join but no common columns in provided tables")
-test(2045.11, d1[d2, on=.NATURAL], error="Attempting to do natural join but no common columns in provided tables")
+test(2045.10, d1[d2, on=.NATURAL], error="Attempting to do natural join but no common columns in provided tables")
 d2 = data.table(id1=2:4, id2=letters[3:5], v2=3:1)
-test(2045.12, d1[d2, on=.(id1,id2)], error="Incompatible join types: x.id2 (integer) and i.id2 (character)")
-test(2045.13, d1[d2, verbose=TRUE], output="natural join", error="Incompatible join types: x.id2 (integer) and i.id2 (character)")
-test(2045.14, d1[d1, verbose=TRUE], d1, output="natural join using all 'x' columns")
+test(2045.11, d1[d2, on=.(id1,id2)], error="Incompatible join types: x.id2 (integer) and i.id2 (character)")
+test(2045.12, d1[d2, on=.NATURAL, verbose=TRUE], output="natural join", error="Incompatible join types: x.id2 (integer) and i.id2 (character)")
+test(2045.13, d1[d1, on=.NATURAL, verbose=TRUE], d1, output="natural join using all 'x' columns")
 d1 = setDT(replicate(20L, 1L, simplify = FALSE))
 d2 = copy(d1[ , 1:15])
 setnames(d2, 1L, 'X1')
-test(2045.15, d1[d2, verbose = TRUE], cbind(d1, X1 = d2$X1), output="natural join using: \\[.*[.]{3}\\]")
-options(datatable.naturaljoin=FALSE)
+test(2045.14, d1[d2, on=.NATURAL, verbose=TRUE], cbind(d1, X1 = d2$X1), output="natural join using: \\[.*[.]{3}\\]")
 
 #tests for adding key to as.data.table, #890
 ## as.data.table.numeric (should cover as.data.table.factor,

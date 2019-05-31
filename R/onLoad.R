@@ -1,5 +1,18 @@
 # nocov start
 
+# used to raise message (write to STDERR but not raise warning) once per session only
+# in future this will be upgraded to warning, then error, until eventually removed after several years
+.pkg.store = new.env()
+.pkg.store$.unsafe.done = FALSE
+.unsafe.opt = function() {
+  if (.pkg.store$.unsafe.done) return(invisible())
+  val = getOption("datatable.nomatch")
+  if (is.null(val)) return(invisible())  # not set is ideal (it's no longer set in .onLoad)
+  if (identical(val, NA) || identical(val, NA_integer_)) return(invisible())  # set to default NA is ok for now; in future possible message/warning asking to remove
+  message("The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicity in your calls rather than changing the default using this option.")
+  .pkg.store$.unsafe.done = TRUE
+}
+
 .Last.updated = vector("integer", 1L) # exported variable; number of rows updated by the last := or set(), #1885
 
 .onLoad = function(libname, pkgname) {
@@ -42,7 +55,6 @@
   # are relatively heavy functions where the overhead in getOption() would not be noticed.  It's only really [.data.table where getOption default bit.
   # Improvement to base::getOption() now submitted (100x; 5s down to 0.05s):  https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17394
   opts = c("datatable.verbose"="FALSE",            # datatable.<argument name>
-       "datatable.nomatch"="NA_integer_",      # datatable.<argument name>
        "datatable.optimize"="Inf",             # datatable.<argument name>
        "datatable.print.nrows"="100L",         # datatable.<argument name>
        "datatable.print.topn"="5L",            # datatable.<argument name>
@@ -58,7 +70,6 @@
        "datatable.use.index"="TRUE",           # global switch to address #1422
        "datatable.prettyprint.char" = NULL,     # FR #1091
        "datatable.old.unique.by.key" = "FALSE"  # TODO: remove in May 2020
-       ,"datatable.naturaljoin" = "FALSE"      # natural join, when set to TRUE then `on` defaults to `.NATURAL`
        )
   for (i in setdiff(names(opts),names(options()))) {
     eval(parse(text=paste0("options(",i,"=",opts[i],")")))
