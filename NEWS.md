@@ -92,7 +92,6 @@
 
 15. `DT[order(col)[1:5], ...]` (i.e. where `i` is a compound expression involving `order()`) is now optimized to use `data.table`'s multithreaded `forder`, [#1921](https://github.com/Rdatatable/data.table/issues/1921). This example is not a fully optimal top-N query since the full ordering is still computed. The improvement is that the call to `order()` is computed faster for any `i` expression using `order`.
 
-
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -130,6 +129,8 @@
 17. `example(":=", local=TRUE)` now works rather than error, [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @vlulla for the report.
 
 18. `rbind.data.frame` on `IDate` columns changed the column from `integer` to `double`, [#2008](https://github.com/Rdatatable/data.table/issues/2008). Thanks to @rmcgehee for reporting.
+
+19. `merge.data,table` now retains any custom classes of the first argument, [#1378](https://github.com/Rdatatable/data.table/issues/1378). Thanks to @michaelquinn32 for reopening.
 
 #### NOTES
 
