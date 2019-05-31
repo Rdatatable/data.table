@@ -80,7 +80,7 @@
 
 9. New convenience functions `%ilike%` and `%flike%` which map to new `like()` arguments `ignore.case` and `fixed` respectively, [#3333](https://github.com/Rdatatable/data.table/issues/3333). `%ilike%` is for case-insensitive pattern matching. `%flike%` is for more efficient matching of fixed strings. Thanks to @andreasLD for providing most of the core code.
 
-10. It is now possible to join two tables on their common columns, so called _natural join_, [#629](https://github.com/Rdatatable/data.table/issues/629). Use `on=.NATURAL` or `options("datatable.naturaljoin"=TRUE)`. Latter one works only when `x` has no key, if key is present then key columns are being used to join as before. Thanks to David Kulp for request.
+10. `on=.NATURAL` (TODO: `X[on=Y]`) joins two tables on their common column names, so called _natural join_, [#629](https://github.com/Rdatatable/data.table/issues/629). Thanks to David Kulp for request. As before, when `on=` is not provided, `X` must have a key and the key columns are used to join (like rownames, but multi-column and multi-type).
 
 11. `as.data.table` gains `key` argument mirroring its use in `setDT` and `data.table`, [#890](https://github.com/Rdatatable/data.table/issues/890). As a byproduct, the arguments of `as.data.table.array` have changed order, which could affect code relying on positional arguments to this method. Thanks @cooldome for the suggestion and @MichaelChirico for implementation.
 
@@ -159,7 +159,7 @@
 
 10. The `datatable.old.unique.by.key` option has been warning for 1 year that it is deprecated: `... Please stop using it and pass by=key(DT) instead for clarity ...`. This warning is now upgraded to error as per the schedule in note 10 of v1.11.0 (May 2018), and note 1 of v1.9.8 (Nov 2016). In June 2020 the option will be removed.
 
-11. There is new message informing (once per session) about global options that should be considered unsafe, namely `datatable.nomatch` and `datatable.naturaljoin`. Please provide `nomatch` argument and `on=.NATURAL` explicitly instead of using options, [#3585](https://github.com/Rdatatable/data.table/issues/3585).
+11. We intend to deprecate the `datatable.nomatch` option, [more info](https://github.com/Rdatatable/data.table/pull/3578/files). A message is now printed upon use of the option (once per session) as a first step. It asks you to please stop using the option and to pass `nomatch=NULL` explicitly if you require inner join. Outer join (`nomatch=NA`) has always been the default because it is safer; it does not drop missing data silently. The problem is that the option is global; i.e., if a user changes the default using this option for their own use, that can change the behavior of joins inside packages that use `data.table` too. This is the only `data.table` option with this concern.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)

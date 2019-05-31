@@ -21,7 +21,7 @@
 data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
 
 \method{[}{data.table}(x, i, j, by, keyby, with = TRUE,
-  nomatch = getOption("datatable.nomatch"),                   # default: NA_integer_
+  nomatch = getOption("datatable.nomatch", NA),
   mult = "all",
   roll = FALSE,
   rollends = if (roll=="nearest") c(TRUE,TRUE)
