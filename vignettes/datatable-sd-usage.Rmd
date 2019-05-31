@@ -124,7 +124,7 @@ Teams[ , (fkt_idx) := lapply(.SD, as.character), .SDcols = fkt_idx]
 head(Teams[[fkt_idx[1L]]])
 ```
 
-Lastly, we can do pattern-pased matching of columns in `.SDcols` to select all columns which contain `team` back to `factor`:
+Lastly, we can do pattern-based matching of columns in `.SDcols` to select all columns which contain `team` back to `factor`:
 
 ```{r sd_patterns}
 Teams[ , .SD, .SDcols = patterns('team')]

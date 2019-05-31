@@ -38,7 +38,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     if (!iclass %chin% supported) stop("i.", names(i)[ic]," is type ", iclass, " which is not supported by data.table join")
     if (xclass=="factor" || iclass=="factor") {
       if (roll!=0.0 && a==length(icols))
-        stop("Attempting roll join on factor column when joining x.",names(x)[xc]," to i.",names(i)[ic],". Only integer, double or character colums may be roll joined.")
+        stop("Attempting roll join on factor column when joining x.",names(x)[xc]," to i.",names(i)[ic],". Only integer, double or character columns may be roll joined.")
       if (xclass=="factor" && iclass=="factor") {
         if (verbose) cat("Matching i.",names(i)[ic]," factor levels to x.",names(x)[xc]," factor levels.\n",sep="")
         set(i, j=ic, value=chmatch(levels(i[[ic]]), levels(x[[xc]]), nomatch=0L)[i[[ic]]])
@@ -125,7 +125,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         # TODO: use setindex() instead, so it's cached for future reuse
       }
     }
-    ## these vaiables are only needed for non-equi joins. Set them to default.
+    ## these variables are only needed for non-equi joins. Set them to default.
     nqgrp = integer(0)
     nqmaxgrp = 1L
   } else {

@@ -163,7 +163,7 @@ as.data.table.list = function(x, keep.rownames=FALSE, key=NULL, ...) {
   if (length(class)!=1L)
     stop("class must be length 1") # nocov
   cx = class(x)
-  n  = chmatch(class, cx)   # chmatch accepts legth(class)>1 but next line requires length(n)==1
+  n  = chmatch(class, cx)   # chmatch accepts length(class)>1 but next line requires length(n)==1
   unique( c("data.table", "data.frame", tail(cx, length(cx)-n)) )
 }
 

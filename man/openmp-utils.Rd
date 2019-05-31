@@ -12,7 +12,7 @@
 \arguments{
   \item{threads}{ NULL (default) rereads environment variables. 0 means to use all logical CPUs available. Otherwise a number >= 1 }
   \item{restore_after_fork}{ Should data.table be multi-threaded after a fork has completed? NULL leaves the current setting unchanged which by default is TRUE. See details below. }
-  \item{percent}{ If provided it should be a number betwen 2 and 100; the percentage of logical CPUs to use. } By default on startup this is data.table uses 50%. }
+  \item{percent}{ If provided it should be a number between 2 and 100; the percentage of logical CPUs to use. } By default on startup this is data.table uses 50%. }
   \item{verbose}{ Display the value of relevant OpenMP settings plus the \code{restore_after_fork} internal option. }
 }
 \value{

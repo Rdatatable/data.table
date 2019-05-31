@@ -9,7 +9,7 @@
   val = getOption("datatable.nomatch")
   if (is.null(val)) return(invisible())  # not set is ideal (it's no longer set in .onLoad)
   if (identical(val, NA) || identical(val, NA_integer_)) return(invisible())  # set to default NA is ok for now; in future possible message/warning asking to remove
-  message("The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicity in your calls rather than changing the default using this option.")
+  message("The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicitly in your calls rather than changing the default using this option.")
   .pkg.store$.unsafe.done = TRUE
 }
 
@@ -114,7 +114,7 @@
 getRversion = function(...) stop("Reminder to data.table developers: don't use getRversion() internally. Add a behaviour test to .onLoad instead.")
 # 1) using getRversion() wasted time when R3.0.3beta was released without the changes we expected in getRversion()>"3.0.2".
 # 2) R-devel and ourselves may wish to tinker with R-devel, turning on and off features in the same version number. So it's better if data.table doesn't hard code expectations into the version number.
-# 3) The discipline of adding a feaure test here helps fully understand the change.
+# 3) The discipline of adding a feature test here helps fully understand the change.
 # 4) Defining getRversion with a stop() here helps prevent new switches on getRversion() being added in future. Easily circumvented but the point is to issue the message above.
 
 .onUnload = function(libpath) {
