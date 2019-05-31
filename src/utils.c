@@ -120,28 +120,65 @@ void which_eq_char(SEXP x, int nx, int *out, int *nout, SEXP val, bool negate) {
   }
   nout[0] = j;
 }
-SEXP which_eq_doubleR(SEXP x, SEXP val, SEXP negate) {
-  int protecti = 0;
-  R_len_t nx = length(x);
-  SEXP ans = PROTECT(allocVector(INTSXP, nx)); protecti++;
-  int *ians = INTEGER(ans);
-  int nans=0;
-  double dval = REAL(val)[0];
-  bool bnegate = isTrueFalse(negate);
-  which_eq_double(REAL(x), nx, ians, &nans, dval, bnegate);
-  SETLENGTH(ans, nans);
-  UNPROTECT(protecti);
-  return ans;
+void which_eq_int64(int64_t *x, int nx, int *out, int *nout, int64_t val, bool negate) {
+  int j=0;
+  if (negate) {
+    for (int i=0; i<nx; i++) {
+      if (x[i] != val) {
+        out[j] = i;
+        j++;
+      }
+    }
+  } else {
+    for (int i=0; i<nx; i++) {
+      if (x[i] == val) {
+        out[j] = i;
+        j++;
+      }
+    }
+  }
+  nout[0] = j;
 }
-SEXP which_eq_charR(SEXP x, SEXP val, SEXP negate) {
+SEXP which_eqR(SEXP x, SEXP val, SEXP negate) {
   int protecti = 0;
+
+  if (!isVectorAtomic(x)) error("%s argument 'x' must be atomic vector", __func__);
+
+  if (TYPEOF(x)!=TYPEOF(val)) error("%s argument 'value' must of the same type as argument 'x'", __func__);
+
+  if (!isTrueFalse(negate)) error("%s: argument 'negate' must be TRUE or FALSE", __func__);
+  bool bnegate = LOGICAL(negate)[0];
+
   R_len_t nx = length(x);
   SEXP ans = PROTECT(allocVector(INTSXP, nx)); protecti++;
-  int *ians = INTEGER(ans);
-  int nans=0;
-  bool bnegate = isTrueFalse(negate);
-  which_eq_char(x, nx, ians, &nans, STRING_ELT(val, 0), bnegate);
-  SETLENGTH(ans, nans);
+  int *iwhich = INTEGER(ans);
+  int nwhich = 0;
+
+  switch(TYPEOF(x)) {
+  case LGLSXP: {
+    which_eq_int(LOGICAL(x), nx, iwhich, &nwhich, LOGICAL(val)[0], bnegate);
+  } break;
+  case INTSXP: {
+    which_eq_int(INTEGER(x), nx, iwhich, &nwhich, INTEGER(val)[0], bnegate);
+  } break;
+  case REALSXP: {
+    if (inherits(x,"integer64")) {
+      which_eq_int64((int64_t *)REAL(x), nx, iwhich, &nwhich, ((int64_t *)REAL(val))[0], bnegate);
+    } else {
+      which_eq_double(REAL(x), nx, iwhich, &nwhich, REAL(val)[0], bnegate);
+    }
+  } break;
+  case STRSXP: {
+    which_eq_char(x, nx, iwhich, &nwhich, STRING_ELT(val, 0), bnegate);
+  } break;
+  default: {
+    error("Incompatible type");
+  }
+  }
+
+  for(int i=0; i<nwhich; i++) iwhich[i]++;
+
+  SETLENGTH(ans, nwhich);
   UNPROTECT(protecti);
   return ans;
 }

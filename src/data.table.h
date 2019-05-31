@@ -207,8 +207,8 @@ int typeMiss(SEXP x, SEXPTYPE type);
 void which_eq_int(int *x, int nx, int *out, int *nout, int val, bool negate);
 void which_eq_double(double *x, int nx, int *out, int *nout, double val, bool negate);
 void which_eq_char(SEXP x, int nx, int *out, int *nout, SEXP val, bool negate);
+void which_eq_int64(int64_t *x, int nx, int *out, int *nout, int64_t val, bool negate);
+SEXP which_eqR(SEXP x, SEXP val, SEXP negate);
 
 // coalesce.c
 SEXP coalesce(SEXP x, SEXP values, SEXP inplace);
-SEXP which_eq_doubleR(SEXP x, SEXP val, SEXP negate);
-SEXP which_eq_charR(SEXP x, SEXP val, SEXP negate);

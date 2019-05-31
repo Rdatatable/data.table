@@ -30,7 +30,11 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     which_eq_int(INTEGER(x), nx, iwhich, &nwhich, NA_INTEGER, false);
   } break;
   case REALSXP: {
-    which_eq_double(REAL(x), nx, iwhich, &nwhich, inherits(x,"integer64") ? NA_INT64_D : NA_REAL, false);
+    if (inherits(x,"integer64")) {
+      which_eq_int64((int64_t *)REAL(x), nx, iwhich, &nwhich, NA_INTEGER64, false);
+    } else {
+      which_eq_double(REAL(x), nx, iwhich, &nwhich, NA_REAL, false);
+    }
   } break;
   case STRSXP: {
     which_eq_char(x, nx, iwhich, &nwhich, NA_STRING, false);
@@ -46,16 +50,16 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     return(binplace ? x : duplicate(x));
   }
 
-  int *valueslens = malloc(JJ*sizeof(valueslens));
-  if (!valueslens) error("%s: Unable to allocate memory", __func__); // # nocov
-  for (int j=0; j<JJ; j++) valueslens[j] = LENGTH(VECTOR_ELT(values, j));
-
   SEXP out = R_NilValue;
   if (verbose) tic = omp_get_wtime();
   if (binplace) out = x; else {
     out = PROTECT(duplicate(x)); protecti++;
   }
   if (verbose) Rprintf("%s: duplicate (if !inplace) took %.3fs\n", __func__, omp_get_wtime()-tic);
+
+  int *valueslens = malloc(JJ*sizeof(valueslens));
+  if (!valueslens) error("%s: Unable to allocate memory", __func__); // # nocov
+  for (int j=0; j<JJ; j++) valueslens[j] = length(VECTOR_ELT(values, j));
 
   if (verbose) tic = omp_get_wtime();
   switch(TYPEOF(x)) {
@@ -88,13 +92,13 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     }
   } break;
   case REALSXP: {
-    double *out_ptr = REAL(out);
     if (inherits(x,"integer64")) { // integer64
+      int64_t *out_ptr = (int64_t *)REAL(out);
       for (int i=0; i<nwhich; i++) {
         int j = 0;
         while (j < JJ) {
-          double this = REAL(VECTOR_ELT(values, j))[valueslens[j]==1 ? 0 : iwhich[i]];
-          if (this != NA_INT64_D) {
+          int64_t this = ((int64_t *)REAL(VECTOR_ELT(values, j)))[valueslens[j]==1 ? 0 : iwhich[i]];
+          if (this != NA_INTEGER64) {
             out_ptr[iwhich[i]] = this;
             break;
           }
@@ -102,6 +106,7 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
         }
       }
     } else { // numeric
+      double *out_ptr = REAL(out);
       for (int i=0; i<nwhich; i++) {
         int j = 0;
         while (j < JJ) {

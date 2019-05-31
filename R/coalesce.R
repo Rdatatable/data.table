@@ -20,11 +20,6 @@ setcoalesce = function(x, ..., .dots=NULL) {
 
   invisible(.Call(Ccoalesce, x, values, TRUE))
 }
-which_eq.double = function(x, value, negate=FALSE) {
-  stopifnot(is.double(x), is.double(value))
-  .Call(Cwhich_eq_doubleR, x, value, negate)
-}
-which_eq.character = function(x, value, negate=FALSE) {
-  stopifnot(is.character(x), is.character(value))
-  .Call(Cwhich_eq_charR, x, value, negate)
+which_eq = function(x, value, negate=FALSE) {
+  .Call(Cwhich_eqR, x, value, negate)
 }
