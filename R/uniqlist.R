@@ -6,7 +6,7 @@ uniqlist = function (l, order = -1L)
   # is >2x times faster on numeric types
   # TO DO: Possibly reinstate reverse argument :
   #    FALSE works in the usual duplicated() way,  the first in a sequence of dups, will be FALSE
-  #    TRUE has the last in a sequence of dups FALSE (so you can keep the last if thats required)
+  #    TRUE has the last in a sequence of dups FALSE (so you can keep the last if that's required)
   # l = list(...)
   if (!is.list(l))
     stop("l not type list")

@@ -78,7 +78,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       dt = rbind(dt, yy, use.names=FALSE)
     }
   }
-  # X[Y] sytax puts JIS i columns at the end, merge likes them alongside i.
+  # X[Y] syntax puts JIS i columns at the end, merge likes them alongside i.
   newend = setdiff(names(y), by.y)
   # fix for #1290, make sure by.y order is set properly before naming
   setcolorder(dt, c(by.y, setdiff(names(dt), c(by.y, newend)), newend))
