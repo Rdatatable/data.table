@@ -79,7 +79,7 @@ Protecting your `data.table` from being updated by reference operations can be a
 # try to benchmark atomic processes
 
 If your benchmark is meant to be published it will be much more insightful if you will split it to measure time of atomic processes. This way your readers can see how much time was spent on reading data from source, cleaning, actual transformation, exporting results.
-Of course if your benchmark is meant to present _full workflow_ then it perfectly make sense to present total timing, still spliting timings might give good insight into bottlenecks in such workflow.
+Of course if your benchmark is meant to present _full workflow_ then it perfectly make sense to present total timing, still splitting timings might give good insight into bottlenecks in such workflow.
 There are another cases when it might not be desired, for example when benchmarking _reading csv_, followed by _grouping_. R requires to populate _R's global string cache_ which adds extra overhead when importing character data to R session. On the other hand _global string cache_ might speed up processes like _grouping_. In such cases when comparing R to other languages it might be useful to include total timing.
 
 # avoid class coercion

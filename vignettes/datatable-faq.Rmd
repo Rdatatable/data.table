@@ -15,6 +15,7 @@ vignette: >
 h2 {
     font-size: 20px;
 }
+#TOC { width: 100%; }
 </style>
 
 ```{r, echo = FALSE, message = FALSE}

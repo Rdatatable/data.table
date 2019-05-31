@@ -33,13 +33,15 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
 // fix for #1142 - duplicated levels for factors
 SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
 
-  R_len_t nx = length(x), i;
+  R_len_t nx = length(x);
   SEXP xchar, newx;
   xchar = PROTECT(allocVector(STRSXP, nx));
-  for (i=0; i<nx; i++)
-    SET_STRING_ELT(xchar, i, STRING_ELT(levels, INTEGER(x)[i]-1));
-  newx = PROTECT(chmatch(xchar, ulevels, NA_INTEGER, FALSE));
-  for (i=0; i<nx; i++) INTEGER(x)[i] = INTEGER(newx)[i];
+  int *ix = INTEGER(x);
+  for (int i=0; i<nx; ++i)
+    SET_STRING_ELT(xchar, i, STRING_ELT(levels, ix[i]-1));
+  newx = PROTECT(chmatch(xchar, ulevels, NA_INTEGER));
+  int *inewx = INTEGER(newx);
+  for (int i=0; i<nx; ++i) ix[i] = inewx[i];
   setAttrib(x, R_LevelsSymbol, ulevels);
   UNPROTECT(2);
   return(x);
@@ -48,13 +50,6 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
 SEXP copy(SEXP x)
 {
   return(duplicate(x));
-}
-
-SEXP copyattr(SEXP from, SEXP to)
-{
-  // for use by [.data.table to retain attribs such as "comments" when subsetting and j is missing
-  copyMostAttrib(from, to);
-  return(R_NilValue);
 }
 
 SEXP setlistelt(SEXP l, SEXP i, SEXP value)

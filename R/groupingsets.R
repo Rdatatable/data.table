@@ -1,7 +1,7 @@
-rollup <- function(x, ...) {
+rollup = function(x, ...) {
   UseMethod("rollup")
 }
-rollup.data.table <- function(x, j, by, .SDcols, id = FALSE, ...) {
+rollup.data.table = function(x, j, by, .SDcols, id = FALSE, ...) {
   # input data type basic validation
   if (!is.data.table(x))
     stop("Argument 'x' must be a data.table object")
@@ -16,10 +16,10 @@ rollup.data.table <- function(x, j, by, .SDcols, id = FALSE, ...) {
   groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj)
 }
 
-cube <- function(x, ...) {
+cube = function(x, ...) {
   UseMethod("cube")
 }
-cube.data.table <- function(x, j, by, .SDcols, id = FALSE, ...) {
+cube.data.table = function(x, j, by, .SDcols, id = FALSE, ...) {
   # input data type basic validation
   if (!is.data.table(x))
     stop("Argument 'x' must be a data.table object")
@@ -36,10 +36,10 @@ cube.data.table <- function(x, j, by, .SDcols, id = FALSE, ...) {
   groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj)
 }
 
-groupingsets <- function(x, ...) {
+groupingsets = function(x, ...) {
   UseMethod("groupingsets")
 }
-groupingsets.data.table <- function(x, j, by, sets, .SDcols, id = FALSE, jj, ...) {
+groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...) {
   # input data type basic validation
   if (!is.data.table(x))
     stop("Argument 'x' must be a data.table object")
@@ -94,10 +94,10 @@ groupingsets.data.table <- function(x, j, by, sets, .SDcols, id = FALSE, jj, ...
   int64.cols = vapply(empty, inherits, logical(1L), "integer64")
   int64.cols = names(int64.cols)[int64.cols]
   if (length(int64.cols) && !requireNamespace("bit64", quietly=TRUE))
-    stop("Using integer64 class columns require to have 'bit64' package installed.")
+    stop("Using integer64 class columns require to have 'bit64' package installed.") # nocov
   int64.by.cols = intersect(int64.cols, by)
   # aggregate function called for each grouping set
-  aggregate.set <- function(by.set) {
+  aggregate.set = function(by.set) {
     if (length(by.set)) {
       r = if (length(.SDcols)) x[, eval(jj), by.set, .SDcols=.SDcols] else x[, eval(jj), by.set]
     } else {
@@ -107,7 +107,9 @@ groupingsets.data.table <- function(x, j, by, sets, .SDcols, id = FALSE, jj, ...
     }
     if (id) {
       # integer bit mask of aggregation levels: http://www.postgresql.org/docs/9.5/static/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE
-      set(r, j = "grouping", value = strtoi(paste(c("1", "0")[by %chin% by.set + 1L], collapse=""), base=2L))
+      # 3267: strtoi("", base = 2L) output apparently unstable across platforms
+      i_str = paste(c("1", "0")[by %chin% by.set + 1L], collapse="")
+      set(r, j = "grouping", value = if (nzchar(i_str)) strtoi(i_str, base=2L) else 0L)
     }
     if (length(int64.by.cols)) {
       # workaround for rbindlist fill=TRUE on integer64 #1459

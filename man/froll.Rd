@@ -4,16 +4,20 @@
 \alias{rolling}
 \alias{sliding}
 \alias{moving}
+\alias{rollmean}
 \alias{frollmean}
+\alias{rollsum}
 \alias{frollsum}
 \title{Rolling functions}
 \description{
   Fast rolling functions to calculate aggregates on sliding window. Function name and arguments are experimental.
 }
-
 \usage{
 frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
+  verbose=getOption("datatable.verbose"))
+frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left",
+  "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE,
   verbose=getOption("datatable.verbose"))
 }
 \arguments{
@@ -37,8 +41,7 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   \item{adaptive}{ logical, should adaptive rolling function be
     calculated, default \code{FALSE}. See details below. }
   \item{verbose}{ logical, default \code{getOption("datatable.verbose")},
-    \code{TRUE} turns on status and information messages to the console,
-    it also disable parallel processing. }
+    \code{TRUE} turns on status and information messages to the console. }
 }
 \details{
   \code{froll*} functions accepts vectors, lists, data.frames or
@@ -52,13 +55,15 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   Each list element must be integer vector of window sizes corresponding
   to every single observation in each column.
 
-  When \code{algo="fast"} is used then any \code{NaN, +Inf, -Inf} is
-  treated as \code{NA}.
+  When \code{algo="fast"} then \emph{on-line} algorithm is used, also
+  any \code{NaN, +Inf, -Inf} is treated as \code{NA}.
   Setting \code{algo="exact"} will make rolling functions to use
   compute-intensive algorithm that suffers less from floating point
-  rounding error. It will additionally make extra pass to perform floating
-  point error correction. It also handles \code{NaN, +Inf, -Inf}
-  consistently to base R.
+  rounding error. It also handles \code{NaN, +Inf, -Inf} consistently to
+  base R. In case of some functions (like \emph{mean}), it will additionally
+  make extra pass to perform floating point error correction. Error
+  corrections might not be truly exact on some platforms (like Windows)
+  when using multiple threads.
 
   Adaptive rolling functions are special cases where for each single
   observation has own corresponding rolling window width. Due to the logic
@@ -70,8 +75,8 @@ frollmean(x, n, fill=NA, algo=c("fast", "exact"), align=c("right",
   }
 
   When multiple columns or multiple windows width are provided, then they
-  are run in parallel. Eventually nested parallelism occurs when
-  \code{algo="exact"}, see examples.
+  are run in parallel. Except for the \code{algo="exact"} which runs in
+  parallel already.
 }
 \value{
   A list except when the input is a \code{vector} and
@@ -139,12 +144,12 @@ fastma = function(x, n, na.rm) {
 }
 system.time(ans1<-ma(x, n))
 system.time(ans2<-fastma(x, n))
-system.time(ans3<-frollmean(x, n, algo="exact")) # parallel using openmp again
-system.time(ans4<-frollmean(x, n))
+system.time(ans3<-frollmean(x, n))
+system.time(ans4<-frollmean(x, n, algo="exact"))
 anserr = list(
-  froll_exact_f = ans4-ans1,
-  froll_exact_t = ans3-ans1,
-  fastma = ans2-ans1
+  fastma = ans2-ans1,
+  froll_fast = ans3-ans1,
+  froll_exact = ans4-ans1
 )
 errs = sapply(lapply(anserr, abs), sum, na.rm=TRUE)
 sapply(errs, format, scientific=FALSE) # roundoff

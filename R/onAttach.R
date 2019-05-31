@@ -1,6 +1,6 @@
 # nocov start
 
-.onAttach <- function(libname, pkgname) {
+.onAttach = function(libname, pkgname) {
   # Runs when attached to search() path such as by library() or require()
   if (!interactive()) return()
   v = packageVersion("data.table")
@@ -17,11 +17,16 @@
       g = ""
   }
   dev = as.integer(v[1L, 3L]) %% 2L == 1L  # version number odd => dev
-  packageStartupMessage("data.table ", v, if(dev)paste0(" IN DEVELOPMENT built ",d,g), "  Latest news: r-datatable.com")
-  if (dev && (Sys.Date() - as.Date(d))>28)
-    packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********")
-  if (!.Call(ChasOpenMP))
-    packageStartupMessage("**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode. If this is a Mac, please ensure you are using R>=3.4.0 and have followed our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. This warning message should not occur on Windows or Linux. If it does, please file a GitHub issue.\n**********")
+  if (!isTRUE(getOption("datatable.quiet"))) {   # new option in v1.12.4, #3489
+    packageStartupMessage("data.table ", v, if(dev)paste0(" IN DEVELOPMENT built ",d,g),
+                          " using ", getDTthreads(verbose=FALSE), " threads (see ?getDTthreads).  Latest news: r-datatable.com")
+    if (dev && (Sys.Date() - as.Date(d))>28)
+      packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********")
+    if (!.Call(ChasOpenMP))
+      packageStartupMessage("**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode.",
+        " If this is a Mac, please ensure you are using R>=3.4.0 and have followed our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation.",
+        " This warning message should not occur on Windows or Linux. If it does, please file a GitHub issue.\n**********")
+  }
 }
 
 dcf.lib = function(pkg, field){
@@ -56,6 +61,14 @@ update.dev.pkg = function(object="data.table", repo="https://Rdatatable.gitlab.i
               c("is up-to-date at","has been updated to")[upg+1L],
               dcf.lib(pkg, field),
               utils::packageVersion(pkg)))
+}
+
+# non-exported utility when using devel version #3272: data.table:::.git()
+.git = function(quiet=FALSE) {
+  ans = unname(read.dcf(system.file("DESCRIPTION", package="data.table"), fields="Revision")[, "Revision"])
+  if (!quiet && is.na(ans))
+    cat("Git revision is not available. Most likely data.table was installed from CRAN or local archive.\nGit revision is available when installing from our repositories 'https://Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data.table'.\n")
+  ans
 }
 
 # nocov end

@@ -1,0 +1,110 @@
+require(methods)
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+  if (!identical(suppressWarnings(packageDescription("data.table")), NA)) {
+    remove.packages("data.table")
+    stop("This is dev mode but data.table was installed. Uninstalled it. Please q() this R session and try cc() again. The installed namespace causes problems in dev mode for the S4 tests.\n")
+  }
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+} else {
+  require(data.table)
+  test = data.table:::test
+  INT = data.table:::INT
+  colnamesInt = data.table:::colnamesInt
+}
+
+x = 1:10
+x[c(1:2, 5:6, 9:10)] = NA
+test(1.01, nafill(x, "locf"), INT(NA,NA,3,4,4,4,7,8,8,8))
+test(1.02, nafill(x, "nocb"), INT(3,3,3,4,7,7,7,8,NA,NA))
+test(1.03, nafill(x, fill=0L), INT(0,0,3,4,0,0,7,8,0,0))
+test(1.04, nafill(x, fill=5), INT(5,5,3,4,5,5,7,8,5,5))
+test(1.05, nafill(x, fill=NA_integer_), x)
+test(1.06, nafill(x, fill=NA), x)
+test(1.07, nafill(x, fill=NA_real_), x)
+test(1.08, nafill(x, fill=Inf), x)
+test(1.09, nafill(x, fill=NaN), x)
+y = x/2
+test(1.11, nafill(y, "locf"), c(NA,NA,3,4,4,4,7,8,8,8)/2)
+test(1.12, nafill(y, "nocb"), c(3,3,3,4,7,7,7,8,NA,NA)/2)
+test(1.13, nafill(y, fill=0L), c(0,0,3,4,0,0,7,8,0,0)/2)
+test(1.14, nafill(y, fill=5/2), c(5,5,3,4,5,5,7,8,5,5)/2)
+test(1.15, nafill(y, fill=NA_integer_), y)
+test(1.16, nafill(y, fill=NA), y)
+test(1.17, nafill(y, fill=NA_real_), y)
+test(1.18, nafill(y, fill=Inf), c(Inf,Inf,3,4,Inf,Inf,7,8,Inf,Inf)/2)
+test(1.19, nafill(y, fill=NaN), c(NaN,NaN,3,4,NaN,NaN,7,8,NaN,NaN)/2)
+z = y
+z[5L] = NaN
+z[2L] = Inf
+z[9L] = -Inf
+test(1.21, nafill(z, "locf"), c(NA,Inf,3,4,NaN,NaN,7,8,-Inf,-Inf)/2)
+test(1.22, nafill(z, "nocb"), c(Inf,Inf,3,4,NaN,7,7,8,-Inf,NA)/2)
+dt = data.table(x, y, z)
+test(1.31, nafill(dt, "locf"), unname(lapply(dt, nafill, "locf")))
+test(1.32, nafill(dt, "nocb"), unname(lapply(dt, nafill, "nocb")))
+test(1.33, nafill(dt, fill=0), unname(lapply(dt, nafill, fill=0)))
+l = list(x, y[1:8], z[1:6])
+test(1.41, nafill(l, "locf"), lapply(l, nafill, "locf"))
+test(1.42, nafill(l, "nocb"), lapply(l, nafill, "nocb"))
+test(1.43, nafill(l, fill=0), lapply(l, nafill, fill=0))
+
+# setnafill
+dt = data.table(V1=1:10, V2=10:1, V3=1:10/2)
+dt[c(1L,4:5,9:10), V1:=NA][c(2:3, 5:6, 10L), V2:=NA][c(1:2, 5:6, 9:10), V3:=NA]
+db = copy(dt)
+test(2.01, {setnafill(dt, fill=0); dt}, as.data.table(nafill(db, fill=0)))
+dt = copy(db)
+test(2.02, {setnafill(dt, "locf"); dt}, as.data.table(nafill(db, "locf")))
+dt = copy(db)
+test(2.03, {setnafill(dt, "nocb"); dt}, as.data.table(nafill(db, "nocb")))
+dt = copy(db)
+test(2.04, {setnafill(dt, fill=0, cols=c("V2","V3")); dt}, db[, c(list(V1), nafill(.SD, fill=0)), .SDcols=c("V2","V3")])
+dt = copy(db)
+test(2.05, {setnafill(dt, "locf", cols=c("V2","V3")); dt}, db[, c(list(V1), nafill(.SD, "locf")), .SDcols=c("V2","V3")])
+dt = copy(db)
+test(2.06, {setnafill(dt, "nocb", cols=c("V2","V3")); dt}, db[, c(list(V1), nafill(.SD, "nocb")), .SDcols=c("V2","V3")])
+db[, "V4" := c(letters[1:3],NA,letters[5:7],NA,letters[9:10])]
+dt = copy(db)
+test(2.07, {setnafill(dt, "locf", cols=c("V2","V3")); dt}, db[, c(list(V1), nafill(.SD, "locf"), list(V4)), .SDcols=c("V2","V3")])
+
+# exceptions test coverage
+x = 1:10
+test(3.01, nafill(x, "locf", fill=0L), nafill(x, "locf"), warning="argument 'fill' ignored")
+test(3.02, setnafill(list(copy(x)), "locf", fill=0L), setnafill(list(copy(x)), "locf"), warning="argument 'fill' ignored")
+test(3.03, setnafill(x, "locf"), error="in-place update is supported only for list")
+test(3.04, nafill(letters[1:5], fill=0), error="must be numeric type, or list/data.table")
+test(3.05, setnafill(list(letters[1:5]), fill=0), error="must be numeric type, or list/data.table")
+test(3.06, nafill(x, fill=1:2), error="fill must be a vector of length 1")
+test(3.07, nafill(x, fill="asd"), error="fill must be numeric")
+
+# colnamesInt helper
+dt = data.table(a=1, b=2, d=3)
+test(4.01, colnamesInt(dt, "a"), 1L)
+test(4.02, colnamesInt(dt, 1L), 1L)
+test(4.03, colnamesInt(dt, 1), 1L)
+test(4.04, colnamesInt(dt, c("a","d")), c(1L, 3L))
+test(4.05, colnamesInt(dt, c(1L, 3L)), c(1L, 3L))
+test(4.06, colnamesInt(dt, c(1, 3)), c(1L, 3L))
+test(4.07, colnamesInt(dt, c("a", "e")), error="argument specify non existing column")
+test(4.08, colnamesInt(dt, c(1L, 4L)), error="argument specify non existing column")
+test(4.09, colnamesInt(dt, c(1, 4)), error="argument specify non existing column")
+test(4.10, colnamesInt(dt, c("a", NA)), error="argument specify non existing column")
+test(4.11, colnamesInt(dt, c(1L, NA)), error="argument specify non existing column")
+test(4.12, colnamesInt(dt, c(1, NA)), error="argument specify non existing column")
+test(4.13, colnamesInt(dt, c("a","d","a")), error="argument specify duplicated column")
+test(4.14, colnamesInt(dt, c(1L, 3L, 1L)), error="argument specify duplicated column")
+test(4.15, colnamesInt(dt, c(1, 3, 1)), error="argument specify duplicated column")
+test(4.16, colnamesInt(dt, list("a")), error="argument must be character or numeric")
+test(4.17, colnamesInt(dt, NA), error="argument must be character or numeric")
+test(4.18, colnamesInt(dt, character()), integer())
+test(4.19, colnamesInt(dt, numeric()), integer())
+test(4.20, colnamesInt(dt, integer()), integer())
+test(4.21, colnamesInt(dt, NULL), seq_along(dt))
+
+# verbose
+dt = data.table(a=c(1L, 2L, NA_integer_), b=c(1, 2, NA_real_))
+test(5.01, nafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
+test(5.02, setnafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
+test(5.03, nafill(dt, "locf", verbose=NA), error="verbose must be TRUE or FALSE")
+

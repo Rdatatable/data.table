@@ -1,4 +1,4 @@
-merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
+merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
                all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
   if (!sort %in% c(TRUE, FALSE))
     stop("Argument 'sort' should be logical TRUE/FALSE")
@@ -79,7 +79,7 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
       dt = rbind(dt, yy, use.names=FALSE)
     }
   }
-  # X[Y] sytax puts JIS i columns at the end, merge likes them alongside i.
+  # X[Y] syntax puts JIS i columns at the end, merge likes them alongside i.
   newend = setdiff(names(y), by.y)
   # fix for #1290, make sure by.y order is set properly before naming
   setcolorder(dt, c(by.y, setdiff(names(dt), c(by.y, newend)), newend))
@@ -90,7 +90,7 @@ merge.data.table <- function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FA
 
   # Throw warning if there are duplicate column names in 'dt' (i.e. if
   # `suffixes=c("","")`, to match behaviour in base:::merge.data.frame)
-  resultdupnames <- names(dt)[duplicated(names(dt))]
+  resultdupnames = names(dt)[duplicated(names(dt))]
   if (length(resultdupnames)) {
     warning("column names ", paste0("'", resultdupnames, "'", collapse=", "),
             " are duplicated in the result")

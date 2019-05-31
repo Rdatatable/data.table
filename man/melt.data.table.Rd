@@ -6,9 +6,6 @@
 An S3 method for melting \code{data.table}s written in C for speed and memory
 efficiency. Since \code{v1.9.6}, \code{melt.data.table} allows melting into
 multiple columns simultaneously.
-
-It is not necessary to load \code{reshape2} any more. But if you have to, then
-load \code{reshape2} package \emph{before} loading \code{data.table}.
 }
 \usage{
 ## fast melt a data.table
@@ -73,12 +70,12 @@ patterns will be matched against \code{names(data)}, for convenience.
 
 Attributes are preserved if all \code{value} columns are of the same type. By
 default, if any of the columns to be melted are of type \code{factor}, it'll
-be coerced to \code{character} type. This is to be compatible with
-\code{reshape2}'s \code{melt.data.frame}. To get a \code{factor} column, set
+be coerced to \code{character} type. To get a \code{factor} column, set
 \code{value.factor = TRUE}. \code{melt.data.table} also preserves
 \code{ordered} factors.
 
-Note that, as opposed to the (undocumented) behaviour of \code{reshape2::melt}, \code{id.vars}, when specified as numbers, must be between 1 and \code{ncol(data)}.
+Historical note: \code{melt.data.table} was originally designed as an enhancement to \code{reshape2::melt} in terms of computing and memory efficiency. \code{reshape2} has since been deprecated, and \code{melt} has had a generic defined within \code{data.table} since \code{v1.9.6} in 2015, at which point the dependency between the packages became more etymological than programmatic. We thank the \code{reshape2} authors for the inspiration.
+
 }
 
 \value{
