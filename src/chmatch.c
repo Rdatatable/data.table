@@ -4,12 +4,12 @@
 // LATIN1_MASK (1<<2) | UTF8_MASK (1<<3) | ASCII_MASK (1<<6)
 
 static SEXP match_logical(SEXP table, SEXP x) {
-  R_len_t i;
-  SEXP ans, m;
-  ans = PROTECT(allocVector(LGLSXP, length(x)));
-  m = PROTECT(match(table, x, 0)); // nomatch=0
-  for (i=0; i<length(x); i++)
-    INTEGER(ans)[i] = INTEGER(m)[i] > 0;
+  SEXP ans = PROTECT(allocVector(LGLSXP, length(x)));
+  int *ians = INTEGER(ans);
+  SEXP m = PROTECT(match(table, x, 0)); // nomatch=0
+  const int *im = INTEGER(m), n = length(x);
+  for (int i=0; i<n; ++i)
+    ians[i] = im[i] > 0;
   UNPROTECT(2);
   return(ans);
 }
