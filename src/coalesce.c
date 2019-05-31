@@ -48,15 +48,15 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
 
   int *valueslens = malloc(JJ*sizeof(valueslens));
   if (!valueslens) error("%s: Unable to allocate memory", __func__); // # nocov
-  for (int j=0; j<JJ; j++) {
-    valueslens[j] = LENGTH(VECTOR_ELT(values, j));
-  }
+  for (int j=0; j<JJ; j++) valueslens[j] = LENGTH(VECTOR_ELT(values, j));
+
   SEXP out = R_NilValue;
   if (verbose) tic = omp_get_wtime();
   if (binplace) out = x; else {
     out = PROTECT(duplicate(x)); protecti++;
   }
   if (verbose) Rprintf("%s: duplicate (if !inplace) took %.3fs\n", __func__, omp_get_wtime()-tic);
+
   if (verbose) tic = omp_get_wtime();
   switch(TYPEOF(x)) {
   case LGLSXP: {
