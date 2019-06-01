@@ -213,11 +213,11 @@ static char *typesAsString(int ncol) {
   static char str[101];
   int i=0;
   if (ncol<=100) {
-    for (; i<ncol; i++) str[i] = typeLetter[type[i]];
+    for (; i<ncol; i++) str[i] = typeLetter[abs(type[i])];  // abs for out-of-sample type bumps (negative)
   } else {
-    for (; i<80; i++) str[i] = typeLetter[type[i]];
+    for (; i<80; i++) str[i] = typeLetter[abs(type[i])];
     str[i++]='.'; str[i++]='.'; str[i++]='.';
-    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[type[j]];
+    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[abs(type[j])];
   }
   str[i] = '\0';
   return str;
@@ -226,11 +226,12 @@ static char *typesAsString(int ncol) {
 
 static inline void skip_white(const char **pch) {
   // skip space so long as sep isn't space and skip tab so long as sep isn't tab
+  // always skip any \0 (NUL) that occur before end of file, #3400
   const char *ch = *pch;
-  if (whiteChar == 0) {   // whiteChar==0 means skip both ' ' and '\t';  sep is neither ' ' nor '\t'.
-    while (*ch == ' ' || *ch == '\t') ch++;
+  if (whiteChar==0) {   // whiteChar==0 means skip both ' ' and '\t';  sep is neither ' ' nor '\t'.
+    while (*ch==' ' || *ch=='\t' || (*ch=='\0' && ch<eof)) ch++;
   } else {
-    while (*ch == whiteChar) ch++;  // sep is ' ' or '\t' so just skip the other one.
+    while (*ch==whiteChar || (*ch=='\0' && ch<eof)) ch++;  // sep is ' ' or '\t' so just skip the other one.
   }
   *pch = ch;
 }
@@ -272,7 +273,8 @@ static inline bool end_of_field(const char *ch) {
   // of \r, \n, \0. We cast to unsigned first because `char` type is signed by
   // default, and therefore characters in the range 0x80-0xFF are negative.
   // We use eol() because that looks at eol_one_r inside it w.r.t. \r
-  return *ch==sep || ((uint8_t)*ch<=13 && (*ch=='\0' || eol(&ch)));
+  // \0 (maybe more than one) before eof are part of field and do not end it; eol() returns false for \0 but the ch==eof will return true for the \0 at eof.
+  return *ch==sep || ((uint8_t)*ch<=13 && (ch==eof || eol(&ch)));
 }
 
 
@@ -322,7 +324,7 @@ static inline int countfields(const char **pch)
     // Field() leaves *ch resting on sep, \r, \n or *eof=='\0'
     if (sep==' ' && *ch==sep) {
       while (ch[1]==' ') ch++;
-      if (ch[1]=='\r' || ch[1]=='\n' || ch[1]=='\0') {
+      if (ch[1]=='\r' || ch[1]=='\n' || (ch[1]=='\0' && ch+1==eof)) {
         // reached end of line. Ignore padding spaces at the end of line.
         ch++;  // Move onto end of line character
       }
@@ -333,7 +335,7 @@ static inline int countfields(const char **pch)
       continue;
     }
     if (eol(&ch)) { *pch=ch+1; return ncol; }
-    if (*ch!='\0') return -1;  // -1 means this line not valid for this sep and quote rule
+    if (ch!=eof) return -1;  // -1 means this line not valid for this sep and quote rule
     break;
   }
   *pch = ch;
@@ -348,7 +350,7 @@ static inline const char *nextGoodLine(const char *ch, int ncol)
   // If this doesn't return the true line start, no matter. The previous thread will run-on and
   // resolve it. A good guess is all we need here. Being wrong will just be a bit slower.
   // If there are no embedded newlines, all newlines are true, and this guess will never be wrong.
-  while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
+  while (*ch!='\n' && *ch!='\r' && (*ch!='\0' || ch<eof)) ch++;
   if (ch==eof) return eof;
   if (eol(&ch)) // move to last byte of the line ending sequence (e.g. \r\r\n would be +2).
     ch++;       // and then move to first byte of next line
@@ -359,7 +361,7 @@ static inline const char *nextGoodLine(const char *ch, int ncol)
   while (attempts++<5 && ch<eof) {
     const char *ch2 = ch;
     if (countfields(&ch2)==ncol) return ch;  // returns simpleNext here on first attempt, almost all the time
-    while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
+    while (*ch!='\n' && *ch!='\r' && (*ch!='\0' || ch<eof)) ch++;
     if (eol(&ch)) ch++;
   }
   return simpleNext;
@@ -490,17 +492,18 @@ static void Field(FieldParseContext *ctx)
 
   // need to skip_white first for the reason that a quoted field might have space before the
   // quote; e.g. test 1609. We need to skip the space(s) to then switch on quote or not.
-  if (*ch==' ' && stripWhite) while(*++ch==' ');  // if sep==' ' the space would have been skipped already and we wouldn't be on space now.
+  if ((*ch==' ' && stripWhite) || (*ch=='\0' && ch<eof))
+    while(*++ch==' ' || (*ch=='\0' && ch<eof));  // if sep==' ' the space would have been skipped already and we wouldn't be on space now.
   const char *fieldStart=ch;
-  if (*ch!=quote || quoteRule==3) {
+  if (*ch!=quote || quoteRule==3 || quote=='\0') {
     // Most common case. Unambiguously not quoted. Simply search for sep|eol. If field contains sep|eol then it should have been quoted and we do not try to heal that.
-    while(!end_of_field(ch)) ch++;  // sep, \r, \n or \0 will end
+    while(!end_of_field(ch)) ch++;  // sep, \r, \n or eof will end
     *(ctx->ch) = ch;
     int fieldLen = (int)(ch-fieldStart);
-    if (stripWhite) {   // TODO:  do this if and the next one together once in bulk afterwards before push
-      while(fieldLen>0 && ch[-1]==' ') { fieldLen--; ch--; }
+    //if (stripWhite) {   // TODO:  do this if and the next one together once in bulk afterwards before push
+      while(fieldLen>0 && ((ch[-1]==' ' && stripWhite) || ch[-1]=='\0')) { fieldLen--; ch--; }
       // this space can't be sep otherwise it would have stopped the field earlier inside end_of_field()
-    }
+    //}
     if ((fieldLen==0 && blank_is_a_NAstring) || (fieldLen && end_NA_string(fieldStart)==ch)) fieldLen=INT32_MIN;  // TODO - speed up by avoiding end_NA_string when there are none
     target->off = (int32_t)(fieldStart - ctx->anchor);
     target->len = fieldLen;
@@ -513,7 +516,7 @@ static void Field(FieldParseContext *ctx)
   fieldStart++;  // step over opening quote
   switch(quoteRule) {
   case 0:  // quoted with embedded quotes doubled; the final unescaped " must be followed by sep|eol
-    while (*++ch) {
+    while (*++ch || ch<eof) {
       if (*ch==quote) {
         if (ch[1]==quote) { ch++; continue; }
         break;  // found undoubled closing quote
@@ -521,7 +524,7 @@ static void Field(FieldParseContext *ctx)
     }
     break;
   case 1:  // quoted with embedded quotes escaped; the final unescaped " must be followed by sep|eol
-    while (*++ch) {
+    while (*++ch || ch<eof) {
       if (*ch=='\\' && (ch[1]==quote || ch[1]=='\\')) { ch++; continue; }
       if (*ch==quote) break;
     }
@@ -535,14 +538,14 @@ static void Field(FieldParseContext *ctx)
     // Under this rule, no eol may occur inside fields.
     {
       const char *ch2 = ch;
-      while (*++ch && *ch!='\n' && *ch!='\r') {
+      while ((*++ch || ch<eof) && *ch!='\n' && *ch!='\r') {
         if (*ch==quote && end_of_field(ch+1)) {ch2=ch; break;}  // (*1) regular ", ending; leave *ch on closing quote
         if (*ch==sep) {
           // first sep in this field
           // if there is a ", afterwards but before the next \n, use that; the field was quoted and it's still case (i) above.
           // Otherwise break here at this first sep as it's case (ii) above (the data contains a quote at the start and no sep)
           ch2 = ch;
-          while (*++ch2 && *ch2!='\n' && *ch2!='\r') {
+          while ((*++ch2 || ch2<eof) && *ch2!='\n' && *ch2!='\r') {
             if (*ch2==quote && end_of_field(ch2+1)) {
               ch = ch2;                                          // (*2) move on to that first ", -- that's this field's ending
               break;
@@ -559,14 +562,14 @@ static void Field(FieldParseContext *ctx)
   }
   target->len = (int32_t)(ch - fieldStart);
   target->off = (int32_t)(fieldStart - ctx->anchor);
-  if (*ch==quote) {
+  if (*ch==quote) {   // quote=='\0' (user set quote="") would have returned earlier above in the same branch as quoteRule 3
     ch++;
     skip_white(&ch);
     *(ctx->ch) = ch;
   } else {
     *(ctx->ch) = ch;
-    if (*ch=='\0' && quoteRule!=2) { target->off--; target->len++; }              // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
-    if (stripWhite) while(target->len>0 && ch[-1]==' ') { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
+    if (ch==eof && quoteRule!=2) { target->off--; target->len++; }   // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
+    while(target->len>0 && ((ch[-1]==' ' && stripWhite) || ch[-1]=='\0')) { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
   }
 }
 
@@ -576,6 +579,7 @@ static void StrtoI32(FieldParseContext *ctx)
   const char *ch = *(ctx->ch);
   int32_t *target = (int32_t*) ctx->targets[sizeof(int32_t)];
 
+  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;  // to know if at least one digit is present
@@ -587,8 +591,8 @@ static void StrtoI32(FieldParseContext *ctx)
   // see init.c for checks of unsigned uint_fast8_t cast
   // optimizer should implement 10* as ((x<<2 + x)<<1) or (x<<3 + x<<1)
 
-  /*if (loseLeadingZeroOption)*/ while (*ch=='0') ch++;
   // number significant figures = digits from the first non-zero onwards including trailing zeros
+  while (*ch=='0') ch++;
   uint_fast32_t sf = 0;
   while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
     acc = 10*acc + digit;
@@ -614,7 +618,7 @@ static void StrtoI64(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int64_t *target = (int64_t*) ctx->targets[sizeof(int64_t)];
-
+  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;
@@ -673,6 +677,7 @@ static void parse_double_regular(FieldParseContext *ctx)
   const char *ch = *(ctx->ch);
   double *target = (double*) ctx->targets[sizeof(double)];
 
+  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
   bool neg, Eneg;
   ch += (neg = *ch=='-') + (*ch=='+');
 
@@ -682,9 +687,7 @@ static void parse_double_regular(FieldParseContext *ctx)
                           // equal to acc * pow(10,e)
   uint_fast8_t digit;     // temporary variable, holds last scanned digit.
 
-  // Skip leading zeros
-  while (*ch=='0') ch++;
-
+  while (*ch=='0') ch++;  // Skip leading zeros
   // Read the first, integer part of the floating number (but no more than
   // FLOAT_MAX_DIGITS digits).
   int_fast32_t sflimit = FLOAT_MAX_DIGITS;
@@ -795,7 +798,7 @@ static void parse_double_extended(FieldParseContext *ctx)
   double *target = (double*) ctx->targets[sizeof(double)];
   bool neg, quoted;
   init();
-  ch += (quoted = (*ch=='"'));
+  ch += (quoted = (*ch==quote && quote));
   ch += (neg = (*ch=='-')) + (*ch=='+');
 
   if (ch[0]=='n' && ch[1]=='a' && ch[2]=='n' && (ch += 3)) goto return_nan;
@@ -840,7 +843,7 @@ static void parse_double_extended(FieldParseContext *ctx)
   return_na:
     *target = NA_FLOAT64;
   ok:
-    if (quoted && *ch!='"') {
+    if (quoted && *ch!=quote) {
       *target = NA_FLOAT64;
     } else {
       *(ctx->ch) = ch + quoted;
@@ -1045,7 +1048,7 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
         // thread at headPos which has full lineage to sof may bump the quoteRule.
         break; // caller will detect this line hasn't finished properly
       }
-      if (*ch==quote) {
+      if (*ch==quote && quote) {  // && quote to exclude quote='\0' (user passed quote="")
         ch++;
         fun[tmpType[field]](&fctx);
         if (*ch==quote) {
@@ -1061,7 +1064,7 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
     field++;
     if (sep==' ' && *ch==sep) {
       while (ch[1]==' ') ch++;
-      if (ch[1]=='\0' || ch[1]=='\n' || ch[1]=='\r') ch++;  // space at the end of line does not mean sep
+      if (ch[1]=='\n' || ch[1]=='\r' || (ch[1]=='\0' && ch+1<eof)) ch++;  // space at the end of line does not mean sep
     }
     if (*ch!=sep || field==ncol) break;  // field==ncol is needed for 1753.2 where line ends with an extra comma but shouldn't, so shouldn't be moved over
     ch++;
@@ -1166,6 +1169,8 @@ int freadMain(freadMainArgs _args) {
   if (dec=='\0') STOP("dec='' not allowed. Should be '.' or ','");
   if (args.sep == dec) STOP("sep == dec ('%c') is not allowed", dec);
   if (quote == dec) STOP("quote == dec ('%c') is not allowed", dec);
+  // since quote=='\0' when user passed quote="", the logic in this file uses '*ch==quote && quote' otherwise
+  //   the ending \0 at eof could be treated as a quote (test xxx)
 
   // File parsing context: pointer to the start of file, and to the end of
   // the file. The `sof` pointer may be shifted in order to skip over
@@ -1394,7 +1399,7 @@ int freadMain(freadMainArgs _args) {
 
   // skip blank input at the start
   const char *lineStart = ch;
-  while (ch<eof && isspace(*ch)) {   // isspace matches ' ', \t, \n and \r
+  while (ch<eof && (isspace(*ch) || *ch=='\0')) {   // isspace matches ' ', \t, \n and \r;  \0 before eof should be skipped too
     if (*ch=='\n') { ch++; lineStart=ch; row1line++; } else ch++;
   }
   if (ch>=eof) STOP("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace.");
@@ -1456,7 +1461,7 @@ int freadMain(freadMainArgs _args) {
     int topSkip=0;            // how many rows to auto-skip
     const char *topStart=NULL;
 
-    for (quoteRule=0; quoteRule<4; quoteRule++) {
+    for (quoteRule=quote?0:3; quoteRule<4; quoteRule++) {
       // quote rule in order of preference.
       // when top is tied the first wins, so do all seps for the first quoteRule, then all seps for the second quoteRule, etc
       for (int s=0; s<nseps; s++) {
@@ -1466,7 +1471,7 @@ int freadMain(freadMainArgs _args) {
         // if (verbose) DTPRINT("  Trying sep='%c' with quoteRule %d ...\n", sep, quoteRule);
 
         if (fill) {
-          if (quoteRule>1) continue;  // turn off self-healing quote rules when filling
+          if (quoteRule>1 && quote) continue;  // turn off self-healing quote rule when filling
           int firstRowNcol = countfields(&ch);
           int thisncol=0, maxncol=firstRowNcol, thisRow=0;
           while (ch<eof && ++thisRow<jumpLines) {   // TODO: rename 'jumpLines' to 'jumpRows'
@@ -1559,7 +1564,7 @@ int freadMain(freadMainArgs _args) {
     }
 
     quoteRule = topQuoteRule;
-    if (quoteRule>1) {
+    if (quoteRule>1 && quote) {
       DTWARN("Found and resolved improper quoting in first %d rows. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning.", jumpLines);
       // TODO: include line number and text in warning. Could loop again with the standard quote rule to find the line that fails.
     }
@@ -1683,7 +1688,7 @@ int freadMain(freadMainArgs _args) {
         continue;
       }
       if ( (thisNcol<ncol && ncol>1 && !fill) ||
-           (!eol(&ch) && *ch!='\0') ) {
+           (!eol(&ch) && ch!=eof) ) {
         if (verbose) DTPRINT("  A line with too-%s fields (%d/%d) was found on line %d of sample jump %d. %s\n",
                              thisNcol<ncol ? "few" : "many", thisNcol, ncol, jumpLine, jump, jump>0 ? "Most likely this jump landed awkwardly so type bumps here will be skipped." : "");
         bumped = false;
@@ -1840,12 +1845,11 @@ int freadMain(freadMainArgs _args) {
 
   ch = pos;  // back to start of first row (column names if header==true)
 
-  colNames = (lenOff*) calloc((size_t)ncol, sizeof(lenOff));
-  if (!colNames) STOP("Unable to allocate %d*%d bytes for column name pointers: %s", ncol, sizeof(lenOff), strerror(errno));
-
   if (args.header==false) {
-    // colNames was calloc'd so nothing to do; all len=off=0 already and default column names (V1, V2, etc) will be assigned
+    colNames = NULL;  // userOverride will assign V1, V2, etc
   } else {
+    colNames = (lenOff*) calloc((size_t)ncol, sizeof(lenOff));
+    if (!colNames) STOP("Unable to allocate %d*%d bytes for column name pointers: %s", ncol, sizeof(lenOff), strerror(errno));
     if (sep==' ') while (*ch==' ') ch++;
     void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
     FieldParseContext fctx = {
@@ -2119,7 +2123,7 @@ int freadMain(freadMainArgs _args) {
           }
           //*** END HOT. START TEPID ***//
           if (tch==tLineStart) {
-            skip_white(&tch);
+            skip_white(&tch);       // skips \0 before eof
             if (*tch=='\0') break;  // empty last line
             if (eol(&tch) && skipEmptyLines) { tch++; continue; }
             tch = tLineStart;  // in case white space at the beginning may need to be including in field
@@ -2148,8 +2152,8 @@ int freadMain(freadMainArgs _args) {
         if (sep==' ') {
           while (*tch==' ') tch++;  // multiple sep=' ' at the tLineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
           fieldStart = tch;
-          skip_white(&tch);
-          if (*tch=='\0') continue; // empty last line
+          skip_white(&tch);          // skips \0 before eof
+          if (*tch=='\0') continue;  // tch==eof; empty last line
           if (eol(&tch) && skipEmptyLines) { tch++; continue; }
           tch = fieldStart;         // in case tabs at the beginning of the first field need to be included
         }
@@ -2169,10 +2173,10 @@ int freadMain(freadMainArgs _args) {
               tch = end_NA_string(tch);
               skip_white(&tch);
               if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
-              if (*tch==quote) { quoted=true; tch++; }
+              if (*tch==quote && quote) { quoted=true; tch++; }
             } // else Field() handles NA inside it unlike other processors e.g. ,, is interpretted as "" or NA depending on option read inside Field()
             fun[abs(thisType)](&fctx);
-            if (quoted) {
+            if (quoted) {   // quoted was only set to true with '&& quote' above (=> quote!='\0' now)
               if (*tch==quote) tch++;
               else goto typebump;
             }
@@ -2180,7 +2184,7 @@ int freadMain(freadMainArgs _args) {
             if (end_of_field(tch)) {
               if (sep==' ' && *tch==' ') {
                 while (tch[1]==' ') tch++;  // multiple space considered one sep so move to last
-                if (tch[1]=='\r' || tch[1]=='\n' || tch[1]=='\0') tch++;
+                if (tch[1]=='\r' || tch[1]=='\n' || tch+1==eof) tch++;
               }
               break;
             }
@@ -2230,17 +2234,17 @@ int freadMain(freadMainArgs _args) {
           ((char**) targets)[size[j]] += size[j];
           j++;
           if (*tch==sep) { tch++; continue; }
-          if (fill && (*tch=='\n' || *tch=='\r' || *tch=='\0') && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
+          if (fill && (*tch=='\n' || *tch=='\r' || tch==eof) && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
           break;
         }
-        if (j<ncol || (!eol(&tch) && *tch!='\0'))  {
+        if (j<ncol || (!eol(&tch) && tch!=eof))  {
           // Too few or too many columns observed (but not empty lines when skipEmptyLines as they were found and skipped earlier above).
           // If fill==true, fields should already have been filled above due to continue inside while(j<ncol).
           myStopEarly = true;
           tch = tLineStart;
           break;
         }
-        if (*tch!='\0') tch++;
+        if (tch!=eof) tch++;
         myNrow++;
       }
       if (verbose) { double now = wallclock(); thRead += now-tLast; tLast = now; }
@@ -2359,6 +2363,7 @@ int freadMain(freadMainArgs _args) {
     for (int i=0; i<ncol; i++) typeCounts[ abs(type[i]) ]++;
 
     if (nTypeBump) {
+      if (verbose) DTPRINT("  %d out-of-sample type bumps: %s\n", nTypeBump, typesAsString(ncol));
       rowSize1 = rowSize4 = rowSize8 = 0;
       nStringCols = 0;
       nNonStringCols = 0;

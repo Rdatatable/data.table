@@ -1,5 +1,6 @@
 #include "data.table.h"
 #include <Rdefines.h>
+#include <ctype.h>   // for isdigit
 
 SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
 {
@@ -191,7 +192,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   if (!fill && (usenames==TRUE || usenames==NA_LOGICAL)) {
     // Ensure no missings in both cases, and (when usenames==NA) all columns in same order too
     // We proceeded earlier as if fill was true, so varying ncol items will have missings here
-    const char *warnStr = usenames==NA_LOGICAL?" use.names='check' (default from v1.12.2) generates this warning and proceeds as if use.names=FALSE for backwards compatibility; TRUE in future.":"";
+    char buff[1001] = "";
+    const char *extra = usenames==TRUE?"":" use.names='check' (default from v1.12.2) emits this message and proceeds as if use.names=FALSE for "\
+                                          " backwards compatibility. See news item 5 in v1.12.2 for options to control this message.";
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
       if (!length(li) || !length(getAttrib(li, R_NamesSymbol))) continue;
@@ -204,20 +207,32 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           int w2 = colMap[i*ncol + j];
           const char *str = isString(s) ? CHAR(STRING_ELT(s,w2)) : "";
-          (usenames==TRUE ? error : warning)(
-            "Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s",
-            w2+1, str, i+1, missi+1, warnStr );
+          snprintf(buff, 1000, "Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s",
+                        w2+1, str, i+1, missi+1, extra );
+          if (usenames==TRUE) error(buff);
           i = LENGTH(l); // break from outer i loop
           break;         // break from inner j loop
         }
         if (w!=j && usenames==NA_LOGICAL) {
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           if (!isString(s) || i==0) error("Internal error: usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]", i);
-          warning("Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s",
-                  w+1, CHAR(STRING_ELT(s,w)), i+1, j+1, i, warnStr);
+          snprintf(buff, 1000, "Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s",
+                               w+1, CHAR(STRING_ELT(s,w)), i+1, j+1, i, extra);
           i = LENGTH(l);
           break;
         }
+      }
+      if (buff[0]) {
+        SEXP opt = GetOption(install("datatable.rbindlist.check"), R_NilValue);
+        if (!isNull(opt) && !(isString(opt) && length(opt)==1)) {
+          warning("options()$datatable.rbindlist.check is set but is not a single string. See news item 5 in v1.12.2.");
+          opt = R_NilValue;
+        }
+        const char *o = isNull(opt) ? "message" : CHAR(STRING_ELT(opt,0));
+        if      (strcmp(o,"message")==0) { eval(PROTECT(lang2(install("message"),PROTECT(ScalarString(mkChar(buff))))), R_GlobalEnv); UNPROTECT(2); }
+        else if (strcmp(o,"warning")==0) warning(buff);
+        else if (strcmp(o,"error")==0)   error(buff);
+        else if (strcmp(o,"none")!=0)    warning("options()$datatable.rbindlist.check=='%s' which is not 'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2.", o);
       }
     }
   }
@@ -289,8 +304,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         int64=true;
       }
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
-      else if (!factor && !int64 && !R_compute_identical(getAttrib(thisCol, R_ClassSymbol), getAttrib(firstCol,R_ClassSymbol), 0)) {
-        error("Class attribute on column %d of item %d does not match with column %d of item %d.", w+1, i+1, firstw+1, firsti+1);
+      else {
+        bool prot = false;
+        if (!factor && !int64 && (prot=true) && !R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
+                                                                     PROTECT(getAttrib(firstCol, R_ClassSymbol)),
+                                                                     0)) {
+          error("Class attribute on column %d of item %d does not match with column %d of item %d.", w+1, i+1, firstw+1, firsti+1);
+        }
+        if (prot) UNPROTECT(2);
       }
     }
 
@@ -376,19 +397,20 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
       for (int i=0; i<LENGTH(l); ++i) {
         const int thisnrow = eachMax[i];
-        if (thisnrow==0) continue;
         SEXP li = VECTOR_ELT(l, i);
+        if (!length(li)) continue;  // NULL items in the list() of DT/DF; not if thisnrow==0 because we need to retain (unused) factor levels (#3508)
         int w = usenames ? colMap[i*ncol + j] : j;
-        SEXP thisCol;
-        if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
+        if (w==-1) {
           writeNA(target, ansloc, thisnrow);
         } else {
+          SEXP thisCol = VECTOR_ELT(li, w);
           SEXP thisColStr = isFactor(thisCol) ? getAttrib(thisCol, R_LevelsSymbol) : (isString(thisCol) ? thisCol : VECTOR_ELT(coercedForFactor, i));
           const int n = length(thisColStr);
           const SEXP *thisColStrD = STRING_PTR(thisColStr);  // D for data
           for (int k=0; k<n; ++k) {
             SEXP s = thisColStrD[k];
-            if (TRUELENGTH(s)<0) continue;  // seen this level before (handles finding unique within character columns too)
+            if (s==NA_STRING ||             // remove NA from levels; test 1979 found by package emil when revdep testing 1.12.2 (#3473)
+                TRUELENGTH(s)<0) continue;  // seen this level before; handles removing dups from levels as well as finding unique of character columns
             if (TRUELENGTH(s)>0) savetl(s);
             if (allocLevel==nLevel) {       // including initial time when allocLevel==nLevel==0
               SEXP *tt = NULL;
@@ -415,7 +437,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           if (isFactor(thisCol)) {
             // loop through levels. If all i == truelength(i) then just do a memcpy. Otherwise hop via the integer map.
             bool nohop = true;
-            for (int k=0; k<n; ++k) if (-TRUELENGTH(thisColStrD[k]) != k+1) { nohop=false; break; }
+            for (int k=0; k<n; ++k) {
+              SEXP s = thisColStrD[k];
+              if (s!=NA_STRING && -TRUELENGTH(s)!=k+1) { nohop=false; break; }
+            }
             if (nohop) memcpy(targetd+ansloc, INTEGER(thisCol), thisnrow*SIZEOF(thisCol));
             else {
               int *id = INTEGER(thisCol);
@@ -444,17 +469,24 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       } else {
         setAttrib(target, R_ClassSymbol, ScalarString(char_factor));
       }
-    } else {
+    } else {  // factor==false
       for (int i=0; i<LENGTH(l); ++i) {
         const int thisnrow = eachMax[i];
         if (thisnrow==0) continue;
         SEXP li = VECTOR_ELT(l, i);
         int w = usenames ? colMap[i*ncol + j] : j;
         SEXP thisCol;
-        if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {
+        if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
-          const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol);  // coerces if needed within memrecycle; possibly with a no-alloc direct coerce
+          bool coerced = false;
+          if (TYPEOF(target)==VECSXP && TYPEOF(thisCol)!=VECSXP) {
+            // do an as.list() on the atomic column; #3528
+            thisCol = PROTECT(coerceVector(thisCol, VECSXP));
+            coerced = true;
+          } // else coerces if needed within memrecycle; possibly with a no-alloc direct coerce
+          const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol);
+          if (coerced) UNPROTECT(1);
           if (ret) warning("Column %d of item %d: %s", w+1, i+1, ret);  // currently just one warning when precision is lost; e.g. assigning 3.4 to integer64
         }
         ansloc += thisnrow;

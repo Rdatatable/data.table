@@ -26,8 +26,8 @@ mirror-packages: # download all recursive dependencies of data.table suggests an
     paths:
     - bus/$CI_BUILD_NAME/cran
   variables:
-    R_BIN_VERSION: "3.5"
-    R_DEVEL_BIN_VERSION: "3.6"
+    R_BIN_VERSION: "3.6"
+    R_DEVEL_BIN_VERSION: "3.7"
   script:
     - echo 'source("ci.R")' >> .Rprofile
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
@@ -136,6 +136,10 @@ test-rel-cran-lin: # currently released R on Linux
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"           # stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   # Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
+  before_script:
+    - mkdir -p ~/.R
+    - echo 'CFLAGS=-g0'> ~/.R/Makevars   # No -g because -g increases datatable.so size from 0.5MB to 1.5MB and breaches 'installed package size <= 5MB' note
+    - echo 'CXXFLAGS=-g0' >> ~/.R/Makevars
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"))'
     - *copy-src
@@ -181,8 +185,8 @@ test-310-cran-lin: # test stated R dependency (3.1.0) using Linux
 test-rel-win: # windows test and build binaries
   <<: *test-win
   variables:
-    R_BIN_VERSION: "3.5"
-    R_DIR: "R-3.5.1"
+    R_BIN_VERSION: "3.6"
+    R_DIR: "R-3.6.0"
   script:
     - Rscript -e "source('ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'))"
     - *copy-src
@@ -198,7 +202,7 @@ test-rel-win: # windows test and build binaries
 test-dev-win: # R-devel on windows
   <<: *test-win
   variables:
-    R_BIN_VERSION: "3.6"
+    R_BIN_VERSION: "3.7"
     R_DIR: "R-devel"
     TEST_DATA_TABLE_MEMTEST: "FALSE" # disabled as described in #3147
   allow_failure: false
@@ -217,7 +221,7 @@ test-dev-win: # R-devel on windows
 .test-rel-osx: # macosx test and build binaries
   <<: *test-osx
   variables:
-    R_BIN_VERSION: "3.5"
+    R_BIN_VERSION: "3.6"
   script:
     - Rscript -e 'source("ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"))'
     - *copy-src
@@ -249,8 +253,8 @@ integration: # merging all artifacts to produce single R repository and summarie
   - test-dev-win
   #- test-rel-osx
   variables:
-    R_BIN_VERSION: "3.5"
-    R_DEVEL_BIN_VERSION: "3.6"
+    R_BIN_VERSION: "3.6"
+    R_DEVEL_BIN_VERSION: "3.7"
   script:
     - echo 'source("ci.R"); source("publish.R")' >> .Rprofile
     # list of available test-* jobs dynamically based on bus/test-* directories

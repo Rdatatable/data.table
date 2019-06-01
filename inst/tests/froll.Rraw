@@ -125,8 +125,8 @@ anserr = list(
 )
 errs = sapply(lapply(anserr, abs), sum, na.rm=TRUE)
 if (!(.Platform$OS.type=="windows" && getDTthreads()>1L)) { # windows 2+ threads rounding issue: #3346
-  test(9999.024, errs[["froll_exact"]]==0)
-  test(9999.025, errs[["froll_fast"]]>errs[["froll_exact"]])
+  if (.Machine$sizeof.longdouble == 16L) test(9999.024, errs[["froll_exact"]]==0) # only where long double available, otherwise we get noLD CRAN note
+  if (Sys.info()["machine"] == "x86_64") test(9999.025, errs[["froll_fast"]]>errs[["froll_exact"]]) # floating point arithmetic issue on various machines #3491
 }
 test(9999.026, errs[["fastma"]]>errs[["froll_exact"]])
 test(9999.027, errs[["fastma"]]>errs[["froll_fast"]])
@@ -299,28 +299,39 @@ test(9999.067, ans2, expected)
 #### early stopping NAs in leading k obs
 test(9999.0671, frollmean(c(1:2,NA,4:10), 4, verbose=TRUE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), if product > 1 then entering parallel execution",
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
-  "frollmeanFast: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs"
+  "frollmeanFast: NA.*are present in input, skip non-NA attempt and run with extra care for NAs",
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: processing.*took.*"
 ))
 test(9999.0672, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE, verbose=TRUE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), if product > 1 then entering parallel execution",
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 4, hasna -1, narm 0",
-  "frollmeanFast: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs"
-), warning="hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning")
+  "frollmeanFast: NA.*are present in input, skip non-NA attempt and run with extra care for NAs",
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: processing.*took.*"
+), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
 test(9999.0673, frollmean(c(1:2,NA,4:10), 2, hasNA=FALSE, verbose=TRUE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), if product > 1 then entering parallel execution",
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 2, hasna -1, narm 0",
-  "frollmeanFast: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"
-), warning="hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning")
+  "frollmeanFast: NA.*are present in input, re-running with extra care for NAs",
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: processing.*took.*"
+), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
 test(9999.0674, frollmean(c(1:2,NA,4:10), 4, verbose=TRUE, align="center"), c(rep(NA_real_, 4), 5.5, 6.5, 7.5, 8.5, NA, NA), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), if product > 1 then entering parallel execution",
+  "frollfunR: 1 column.*1 window.*",
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
-  "frollmeanFast: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs",
-  "frollmean: align 0, shift answer by -2"
+  "frollmeanFast: NA.*are present in input, skip non-NA attempt and run with extra care for NAs",
+  "frollmean: align 0, shift answer by -2",
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: processing.*took.*"
 ))
 
 #### fill constant
@@ -414,16 +425,22 @@ test(9999.1195, frollmean(1:5, 2, na.rm=TRUE, hasNA=FALSE), error="using hasNA F
 #### exact na.rm=TRUE adaptive=TRUE verbose=TRUE
 test(9999.1196, frollmean(c(1:5,NA), 1:6, algo="exact", na.rm=TRUE, adaptive=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), not entering parallel execution here because algo='exact' will compute results in parallel",
+  "frollfunR: 1 column.*1 window.*, not entering parallel execution here because algo='exact' will compute results in parallel",
+  "frollfunR: 1:",
   "fadaptiverollmeanExact: running in parallel for input length 6, hasna 0, narm 1",
-  "fadaptiverollmeanExact: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"
+  "fadaptiverollmeanExact: NA.*are present in input, re-running with extra care for NAs",
+  "fadaptiverollmean: processing algo 1 took.*",
+  "frollfunR: processing.*took.*"
 ))
 #### exact na.rm=TRUE verbose=TRUE
 test(9999.1197, frollmean(c(1:5,NA), 2, algo="exact", na.rm=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), not entering parallel execution here because algo='exact' will compute results in parallel",
+  "frollfunR: 1 column.*1 window.*, not entering parallel execution here because algo='exact' will compute results in parallel",
+  "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 6, window 2, hasna 0, narm 1",
-  "frollmeanExact: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"
+  "frollmeanExact: NA.*are present in input, re-running with extra care for NAs",
+  "frollmean: processing algo 1 took.*",
+  "frollfunR: processing.*took.*"
 ))
 #### adaptive=TRUE n=character
 test(9999.1198, frollmean(1:5, n=letters[1:5], adaptive=TRUE), error="n must be integer vector or list of integer vectors")
@@ -633,106 +650,242 @@ x = 1:10
 n = 3
 test(9999.171, frollmean(x, n, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), if product > 1 then entering parallel execution",
-  "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0"))
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
+  "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: processing.*took.*"))
 test(9999.172, frollmean(list(x, x+1), n, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 2x1",
-  "frollfunR: 2 column(s) and 1 window(s), if product > 1 then entering parallel execution",
+  "frollfunR: 2 column.*1 window.*",
+  "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0"))
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: 2:",
+  "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: processing.*took.*"))
 test(9999.173, frollmean(x, c(n, n+1), verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x2",
-  "frollfunR: 1 column(s) and 2 window(s), if product > 1 then entering parallel execution",
+  "frollfunR: 1 column.*2 window.*",
+  "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0"))
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: 2:",
+  "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: processing.*took.*"))
 test(9999.174, frollmean(list(x, x+1), c(n, n+1), verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 2x2",
-  "frollfunR: 2 column(s) and 2 window(s), if product > 1 then entering parallel execution",
+  "frollfunR: 2 column.*2 window.*",
+  "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: 2:",
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: 3:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0"))
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: 4:",
+  "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: processing.*took.*"))
 test(9999.175, frollmean(x, n, algo="exact", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), not entering parallel execution here because algo='exact' will compute results in parallel",
-  "frollmeanExact: running in parallel for input length 10, window 3, hasna 0, narm 0"))
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
+  "frollmeanExact: running in parallel for input length 10, window 3, hasna 0, narm 0",
+  "frollmean: processing algo 1 took.*",
+  "frollfunR: processing.*took.*"))
 test(9999.176, frollmean(x, n, align="center", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), if product > 1 then entering parallel execution",
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: align 0, shift answer by -1"))
+  "frollmean: align 0, shift answer by -1",
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: processing.*took.*"))
 test(9999.177, frollmean(x, n, align="left", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), if product > 1 then entering parallel execution",
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: align -1, shift answer by -2"))
+  "frollmean: align -1, shift answer by -2",
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: processing.*took.*"))
 nn = c(1:4,2:3,1:4)
 test(9999.178, frollmean(x, nn, adaptive=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), if product > 1 then entering parallel execution",
-  "fadaptiverollmeanFast: running for input length 10, hasna 0, narm 0"))
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
+  "fadaptiverollmeanFast: running for input length 10, hasna 0, narm 0",
+  "fadaptiverollmean: processing algo 0 took.*",
+  "frollfunR: processing.*took.*"))
 test(9999.179, frollmean(x, nn, algo="exact", adaptive=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), not entering parallel execution here because algo='exact' will compute results in parallel",
-  "fadaptiverollmeanExact: running in parallel for input length 10, hasna 0, narm 0"))
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
+  "fadaptiverollmeanExact: running in parallel for input length 10, hasna 0, narm 0",
+  "fadaptiverollmean: processing algo 1 took.*",
+  "frollfunR: processing.*took.*"))
 
 x[8] = NA
 test(9999.180, frollmean(x, n, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), if product > 1 then entering parallel execution",
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmeanFast: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"))
+  "frollmeanFast: NA.*are present in input, re-running with extra care for NAs",
+  "frollmean: processing algo 0 took.*",
+  "frollfunR: processing.*took.*"))
 test(9999.181, frollmean(x, n, algo="exact", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), not entering parallel execution here because algo='exact' will compute results in parallel",
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasna 0, narm 0",
-  "frollmeanExact: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run"))
+  "frollmeanExact: NA.*are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run",
+  "frollmean: processing algo 1 took.*",
+  "frollfunR: processing.*took.*"))
 test(9999.182, frollmean(x, nn, adaptive=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), if product > 1 then entering parallel execution",
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
   "fadaptiverollmeanFast: running for input length 10, hasna 0, narm 0",
-  "fadaptiverollmeanFast: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs"))
+  "fadaptiverollmeanFast: NA.*are present in input, re-running with extra care for NAs",
+  "fadaptiverollmean: processing algo 0 took.*",
+  "frollfunR: processing.*took.*"))
 test(9999.183, frollmean(x, nn, algo="exact", adaptive=TRUE, verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), not entering parallel execution here because algo='exact' will compute results in parallel",
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
   "fadaptiverollmeanExact: running in parallel for input length 10, hasna 0, narm 0",
-  "fadaptiverollmeanExact: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run"))
+  "fadaptiverollmeanExact: NA.*are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run",
+  "fadaptiverollmean: processing algo 1 took.*",
+  "frollfunR: processing.*took.*"))
 
 d = as.data.table(list(1:10/2, 10:1/4))
 test(9999.184, frollmean(d[,1], 3, algo="exact", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: 1 column(s) and 1 window(s), not entering parallel execution here because algo='exact' will compute results in parallel",
-  "frollmeanExact: running in parallel for input length 10, window 3, hasna 0, narm 0"
+  "frollfunR: 1 column.*1 window.*",
+  "frollfunR: 1:",
+  "frollmeanExact: running in parallel for input length 10, window 3, hasna 0, narm 0",
+  "frollmean: processing algo 1 took.*",
+  "frollfunR: processing.*took.*"
 ))
 test(9999.185, frollmean(d, 3:4, algo="exact", verbose=TRUE), output=c(
   "frollfunR: allocating memory for results 2x2",
-  "frollfunR: 2 column(s) and 2 window(s), not entering parallel execution here because algo='exact' will compute results in parallel",
+  "frollfunR: 2 column.*2 window.*",
+  "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasna 0, narm 0",
+  "frollmean: processing algo 1 took.*",
+  "frollfunR: 2:",
   "frollmeanExact: running in parallel for input length 10, window 4, hasna 0, narm 0",
+  "frollmean: processing algo 1 took.*",
+  "frollfunR: 3:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasna 0, narm 0",
-  "frollmeanExact: running in parallel for input length 10, window 4, hasna 0, narm 0"
+  "frollmean: processing algo 1 took.*",
+  "frollfunR: 4:",
+  "frollmeanExact: running in parallel for input length 10, window 4, hasna 0, narm 0",
+  "frollmean: processing algo 1 took.*",
+  "frollfunR: processing.*took.*"
 ))
 
 ## test warnings
-test(9999.186, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning")
-test(9999.187, frollmean(c(1:2,NA,4:10), 2, hasNA=FALSE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning")
+test(9999.186, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.187, frollmean(c(1:2,NA,4:10), 2, hasNA=FALSE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.188, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE, algo="exact"), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.189, frollmean(c(1:2,NA,4:10), 2, hasNA=FALSE, algo="exact"), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.190, frollmean(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, hasNA=FALSE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="*hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.191, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, hasNA=FALSE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="*hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.192, frollmean(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, hasNA=FALSE, algo="exact"), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="*hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.193, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, hasNA=FALSE, algo="exact"), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="*hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+
+## frollsum
+x = 1:6/2
+ans1 = frollsum(x, 3)
+expected = c(rep(NA_real_,2), c(3,4.5,6,7.5))
+test(9999.201, ans1, expected)
+n = c(2L, 2L, 3L, 4L, 2L, 3L)
+ans1 = frollsum(x, n, adaptive=TRUE)
+expected = c(NA_real_, 1.5, 3, 5, 4.5, 7.5)
+test(9999.202, ans1, expected)
+## frollsum coverage
+test(9999.211, frollsum(1:5, 6, verbose=TRUE), rep(NA_real_, 5L), output="window width longer than input vector")
+test(9999.212, frollsum(c(1:2,NA,4:10), 4, hasNA=FALSE), c(rep(NA_real_, 6), 22, 26, 30, 34), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.213, frollsum(c(1:2,NA,4:10), 2, hasNA=FALSE), c(NA, 3, NA, NA, 9, 11, 13, 15, 17, 19), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.214, frollsum(c(1:2,NA,4:10), 4, hasNA=FALSE, algo="exact"), c(rep(NA_real_, 6), 22, 26, 30, 34), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.215, frollsum(c(1:2,NA,4:10), 4, algo="exact", na.rm=TRUE, verbose=TRUE), c(rep(NA_real_, 3L), 7, 11, 15, 22, 26, 30, 34), output="re-running with extra care for NAs")
+test(9999.216, frollsum(c(1:2,NA,4:10), 4, algo="exact", verbose=TRUE), c(rep(NA_real_, 6), 22, 26, 30, 34), output="NAs were handled already, no need to re-run")
+test(9999.217, frollsum(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, hasNA=FALSE), c(rep(NA_real_, 6), 22, 26, 30, 34), warning="*hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.218, frollsum(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, hasNA=FALSE, algo="exact"), c(rep(NA_real_, 6), 22, 26, 30, 34), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
+test(9999.219, frollsum(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, algo="exact", na.rm=TRUE, verbose=TRUE), c(rep(NA_real_, 3L), 7, 11, 15, 22, 26, 30, 34), output="re-running with extra care for NAs")
+test(9999.220, frollsum(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, algo="exact", verbose=TRUE), c(rep(NA_real_, 6), 22, 26, 30, 34), output="NAs were handled already, no need to re-run")
 
 ## validation
 
 set.seed(108)
-makeNA = function(x, ratio=0.1) {id=sample(length(x), as.integer(length(x) * ratio)); x[id]=NA; x}
-num = 9999.5000 # book 4000 tests for zoo
+makeNA = function(x, ratio=0.1, nf=FALSE) {
+  n = as.integer(length(x) * ratio)
+  id = sample(length(x), n)
+  if (!nf) {
+    x[id] = NA
+  } else {
+    x[id[1:(n/4)]] = NA
+    x[id[(n/4+1):(n/2)]] = NaN
+    x[id[(n/2+1):(3*n/4)]] = -Inf
+    x[id[(3*n/4+1):n]] = +Inf
+  }
+  x
+}
+num = 9999.5000 # book 1000
+## against base to verify exactness of non-finite values, not handled in zoo
+rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE) {
+  ans = rep(fill, nx<-length(x))
+  f = match.fun(FUN)
+  if (nf.rm) x[is.infinite(x)] = NA_real_
+  for (i in n:nx) ans[i] = f(x[(i-n+1):i], na.rm=na.rm)
+  ans
+}
+base_compare = function(x, n, funs=c("mean","sum"), algos=c("fast","exact")) {
+  num.step = 0.0001
+  for (fun in funs) {
+    for (na.rm in c(FALSE, TRUE)) {
+      for (fill in c(NA_real_, 0)) {
+        for (algo in algos) {
+          num <<- num + num.step
+          eval(substitute( # so we can have values displayed in output/log rather than variables
+            test(.num,
+                 froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo),
+                 rollfun(x, n, FUN=.fun, fill=.fill, na.rm=.na.rm, nf.rm=.nf.rm)),
+            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .nf.rm=algo!="exact")
+          ))
+        }
+      }
+    }
+  }
+}
+## random NA non-finite
+x = makeNA(rnorm(1e3), nf=TRUE); n = 50
+base_compare(x, n)
+x = makeNA(rnorm(1e3+1), nf=TRUE); n = 50
+base_compare(x, n)
+x = makeNA(rnorm(1e3), nf=TRUE); n = 51
+base_compare(x, n)
+x = makeNA(rnorm(1e3+1), nf=TRUE); n = 51
+base_compare(x, n)
+num = 9999.6000 # book 3000 tests for zoo
 #### against zoo
 if (requireNamespace("zoo", quietly=TRUE)) {
   drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
-  zoo_compare = function(x, n) {
+  zoo_compare = function(x, n, funs=c("mean","sum"), algos=c("fast","exact")) {
     num.step = 0.0001
-    #### fun, align, na.rm, fill, exact
-    for (fun in c("mean")) { # ,"sum"
+    #### fun, align, na.rm, fill, algo
+    for (fun in funs) {
       for (align in c("right","center","left")) {
         for (na.rm in c(FALSE, TRUE)) {
           for (fill in c(NA_real_, 0)) {
-            for (algo in c("fast", "exact")) {
+            for (algo in algos) {
               num <<- num + num.step
               eval(substitute( # so we can have values displayed in output/log rather than variables
                 test(.num,
@@ -776,11 +929,11 @@ if (requireNamespace("zoo", quietly=TRUE)) {
 }
 #### adaptive moving average compare
 num = 9999.9000 # 1000 tests should be more than enough
-afun = function(fun, x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
+arollfun = function(fun, x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
   # adaptive moving average in R
   stopifnot((nx<-length(x))==length(n))
   ans = rep(NA_real_, nx)
-  if (nf.rm) x[!is.finite(x)] = NA_real_
+  if (nf.rm) x[is.infinite(x)] = NA_real_
   FUN = match.fun(fun)
   for (i in seq_along(x)) {
     ans[i] = if (i >= n[i])
@@ -789,18 +942,18 @@ afun = function(fun, x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
   }
   ans
 }
-afun_compare = function(x, n) {
+afun_compare = function(x, n, funs=c("mean","sum"), algos=c("fast","exact")) {
   num.step = 0.0001
-  #### fun, na.rm, fill, exact
-  for (fun in c("mean")) { # ,"sum"
+  #### fun, na.rm, fill, algo
+  for (fun in funs) {
     for (na.rm in c(FALSE, TRUE)) {
       for (fill in c(NA_real_, 0)) {
-        for (algo in c("fast", "exact")) {
+        for (algo in algos) {
           num <<- num + num.step
           eval(substitute(
             test(.num,
                  froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, adaptive=TRUE),
-                 afun(.fun, x, n, fill=.fill, na.rm=.na.rm, nf.rm=.nf.rm)),
+                 arollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, nf.rm=.nf.rm)),
             list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .nf.rm=algo!="exact")
           ))
         }
@@ -834,5 +987,14 @@ afun_compare(x, n)
 x = makeNA(rnorm(1e3)); n = sample(51, length(x), TRUE)
 afun_compare(x, n)
 x = makeNA(rnorm(1e3+1)); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+#### random NA non-finites
+x = makeNA(rnorm(1e3), nf=TRUE); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3+1), nf=TRUE); n = sample(50, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3), nf=TRUE); n = sample(51, length(x), TRUE)
+afun_compare(x, n)
+x = makeNA(rnorm(1e3+1), nf=TRUE); n = sample(51, length(x), TRUE)
 afun_compare(x, n)
 rm(num)

@@ -80,6 +80,9 @@ SEXP hasOpenMP();
 SEXP uniqueNlogical();
 SEXP frollfunR();
 SEXP dllVersion();
+SEXP nafillR();
+SEXP colnamesInt();
+SEXP initLastUpdated();
 
 // .Externals
 SEXP fastmean();
@@ -162,6 +165,9 @@ R_CallMethodDef callMethods[] = {
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
 {"CfrollfunR", (DL_FUNC) &frollfunR, -1},
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
+{"CnafillR", (DL_FUNC) &nafillR, -1},
+{"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
+{"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
 {NULL, NULL, 0}
 };
 
@@ -265,7 +271,9 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_allGrp1 =   PRINTNAME(install("allGrp1"));
   char_factor =    PRINTNAME(install("factor"));
   char_ordered =   PRINTNAME(install("ordered"));
+  char_datatable = PRINTNAME(install("data.table"));
   char_dataframe = PRINTNAME(install("data.frame"));
+  char_NULL =      PRINTNAME(install("NULL"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
@@ -283,6 +291,8 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  sym_colClassesAs = install("colClassesAs");
+  sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");
 
   initDTthreads();
@@ -329,6 +339,12 @@ inline double LLtoD(long long x) {
   return u.d;
 }
 
+bool GetVerbose() {
+  // don't call repetitively; save first in that case
+  SEXP opt = GetOption(sym_verbose, R_NilValue);
+  return isLogical(opt) && LENGTH(opt)==1 && LOGICAL(opt)[0]==1;
+}
+
 // # nocov start
 SEXP hasOpenMP() {
   // Just for use by onAttach (hence nocov) to avoid an RPRINTF from C level which isn't suppressable by CRAN
@@ -343,8 +359,16 @@ SEXP hasOpenMP() {
 }
 // # nocov end
 
+extern int *_Last_updated;  // assign.c
+
+SEXP initLastUpdated(SEXP var) {
+  if (!isInteger(var) || LENGTH(var)!=1) error(".Last.value in namespace is not a length 1 integer");
+  _Last_updated = INTEGER(var);
+  return R_NilValue;
+}
+
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.12.1")));
+  return(ScalarString(mkChar("1.12.3")));
 }
 

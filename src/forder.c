@@ -1275,9 +1275,10 @@ SEXP isReallyReal(SEXP x) {
   // which needed a repeat of the argument. Hence simpler and more robust to return 0 when not type double.
   if (isReal(x)) {
     int n=length(x), i=0;
+    double *dx = REAL(x);
     while (i<n &&
-        ( ISNA(REAL(x)[i]) ||
-        ( R_FINITE(REAL(x)[i]) && REAL(x)[i] == (int)(REAL(x)[i])))) {
+        ( ISNA(dx[i]) ||
+        ( R_FINITE(dx[i]) && dx[i] == (int)(dx[i])))) {
       i++;
     }
     if (i<n) INTEGER(ans)[0] = i+1;  // return the location of first element which is really real; i.e. not an integer

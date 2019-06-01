@@ -1,29 +1,19 @@
-guess <- function(x) {
+guess = function(x) {
   if ("value" %chin% names(x))
     return("value")
   if ("(all)" %chin% names(x))
     return("(all)")
-  var <- names(x)[ncol(x)]
+  var = names(x)[ncol(x)]
   message("Using '", var, "' as value column. Use 'value.var' to override")
   return(var)
 }
 
-dcast <- function(data, formula, fun.aggregate = NULL, ..., margins = NULL,
-      subset = NULL, fill = NULL, value.var = guess(data)) {
-  if (is.data.table(data))
-    UseMethod("dcast", data)
-  else {
-    # reshape2::dcast is not generic so we have to call it explicitly. See comments at the top of fmelt.R too.
-    # nocov start
-    ns = tryCatch(getNamespace("reshape2"), error=function(e)
-         stop("The dcast generic in data.table has been passed a ",class(data)[1L]," (not a data.table) but the reshape2 package is not installed to process this type. Please either install reshape2 and try again, or pass a data.table to dcast instead."))
-    ns$dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
-             subset = subset, fill = fill, value.var = value.var)
-    # nocov end
-  }
+dcast = function(data, formula, fun.aggregate = NULL, ..., margins = NULL,
+                  subset = NULL, fill = NULL, value.var = guess(data)) {
+  UseMethod("dcast", data)
 }
 
-check_formula <- function(formula, varnames, valnames) {
+check_formula = function(formula, varnames, valnames) {
   if (is.character(formula)) formula = as.formula(formula)
   if (!inherits(formula, "formula") || length(formula) != 3L)
     stop("Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + b ~ c.")  # nocov; couldn't find a way to construct a test formula with length!=3L
@@ -32,10 +22,10 @@ check_formula <- function(formula, varnames, valnames) {
   allvars = c(vars, valnames)
   if (any(allvars %chin% varnames[duplicated(varnames)]))
     stop('data.table to cast must have unique column names')
-  ans = deparse_formula(as.list(formula)[-1L], varnames, allvars)
+  deparse_formula(as.list(formula)[-1L], varnames, allvars)
 }
 
-deparse_formula <- function(expr, varnames, allvars) {
+deparse_formula = function(expr, varnames, allvars) {
   lvars = lapply(expr, function(this) {
     if (is.call(this)) {
       if (this[[1L]] == quote(`+`))
@@ -51,7 +41,7 @@ deparse_formula <- function(expr, varnames, allvars) {
   lvars = lapply(lvars, function(x) if (length(x) && !is.list(x)) list(x) else x)
 }
 
-value_vars <- function(value.var, varnames) {
+value_vars = function(value.var, varnames) {
   if (is.character(value.var))
     value.var = list(value.var)
   value.var = lapply(value.var, unique)
@@ -62,7 +52,7 @@ value_vars <- function(value.var, varnames) {
   value.var
 }
 
-aggregate_funs <- function(funs, vals, sep="_", ...) {
+aggregate_funs = function(funs, vals, sep="_", ...) {
   if (is.call(funs) && funs[[1L]] == "eval")
     funs = eval(funs[[2L]], parent.frame(2L), parent.frame(2L))
   if (is.call(funs) && as.character(funs[[1L]]) %chin% c("c", "list")) {
@@ -78,7 +68,7 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
   }
   only_one_fun = length(unlist(funs)) == 1L
   dots = list(...)
-  construct_funs <- function(fun, nm, val) {
+  construct_funs = function(fun, nm, val) {
     ans = vector("list", length(fun)*length(val))
     nms = vector("character", length(ans))
     k = 1L
@@ -96,9 +86,9 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
     setattr(ans, 'names', nms)
   }
   ans = lapply(seq_along(funs), function(i) {
-    nm <- names(funs[i])
+    nm = names(funs[i])
     if (is.null(nm) || !nzchar(nm)) {
-      nm <- all.names(funs[[i]], max.names=1L, functions=TRUE)
+      nm = all.names(funs[[i]], max.names=1L, functions=TRUE)
     }
     if (!length(nm)) nm <- paste0("fun", i)
     construct_funs(funs[i], nm, vals[[i]])
@@ -106,21 +96,20 @@ aggregate_funs <- function(funs, vals, sep="_", ...) {
   as.call(c(quote(list), unlist(ans)))
 }
 
-dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
+dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
   if (!is.data.table(data)) stop("'data' must be a data.table.")
   drop = as.logical(rep(drop, length.out=2L))
   if (anyNA(drop)) stop("'drop' must be logical TRUE/FALSE")
   lvals = value_vars(value.var, names(data))
   valnames = unique(unlist(lvals))
   lvars = check_formula(formula, names(data), valnames)
-  lvars = lapply(lvars, function(x) if (!length(x)) quote(`.`) else x)
+  lvars = lapply(lvars, function(x) if (length(x)) x else quote(`.`))
   # tired of lapply and the way it handles environments!
   allcols = c(unlist(lvars), lapply(valnames, as.name))
   dat = vector("list", length(allcols))
   for (i in seq_along(allcols)) {
     x = allcols[[i]]
-    dat[[i]] = if (identical(x, quote(`.`))) rep(".", nrow(data))
-            else eval(x, data, parent.frame())
+    dat[[i]] = if (identical(x, quote(`.`))) rep(".", nrow(data)) else eval(x, data, parent.frame())
     if (is.function(dat[[i]]))
       stop("Column [", deparse(x), "] not found or of unknown type.")
   }
@@ -136,12 +125,13 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
   lhsnames = head(varnames, length(lvars$lhs))
   rhsnames = tail(varnames, -length(lvars$lhs))
   setattr(dat, 'names', c(varnames, valnames))
-  setDT(dat)
-  if (any(vapply_1b(as.list(dat)[varnames], is.list))) {
+  if (any(vapply_1b(dat[varnames], is.list))) {
     stop("Columns specified in formula can not be of type list")
   }
-  m <- as.list(match.call()[-1L])
-  subset <- m[["subset"]][[2L]]
+  setDT(dat)
+
+  m = as.list(match.call()[-1L])
+  subset = m[["subset"]][[2L]]
   if (!is.null(subset)) {
     if (is.name(subset)) subset = as.call(list(quote(`(`), subset))
     idx = which(eval(subset, data, parent.frame())) # any advantage thro' secondary keys?
@@ -161,23 +151,19 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
     errmsg = "Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately."
     if (is.null(fill)) {
-      fill.default <- suppressWarnings(dat[0L][, eval(fun.call)])
+      fill.default = suppressWarnings(dat[0L][, eval(fun.call)])
       # tryCatch(fill.default <- dat[0L][, eval(fun.call)], error = function(x) stop(errmsg, call.=FALSE))
       if (nrow(fill.default) != 1L) stop(errmsg, call.=FALSE)
     }
-    if (!any(valnames %chin% varnames)) {
-      dat = dat[, eval(fun.call), by=c(varnames)]
-    } else {
-      dat = dat[, { .SD; eval(fun.call) }, by=c(varnames), .SDcols = valnames]
-    }
+    dat = dat[, eval(fun.call), by=c(varnames)]
   }
-  order_ <- function(x) {
+  order_ = function(x) {
     o = forderv(x, retGrp=TRUE, sort=TRUE)
     idx = attr(o, 'starts')
     if (!length(o)) o = seq_along(x)
     o[idx] # subsetVector retains attributes, using R's subset for now
   }
-  cj_uniq <- function(DT) {
+  cj_uniq = function(DT) {
     do.call("CJ", lapply(DT, function(x)
       if (is.factor(x)) {
         xint = seq_along(levels(x))
@@ -211,7 +197,7 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
       lhs = lhs_; rhs = rhs_
     }
     maplen = vapply_1i(mapunique, length)
-    idx = do.call("CJ", mapunique)[map, I := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
+    idx = do.call("CJ", mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
     ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call))
     allcols = do.call("paste", c(rhs, sep=sep))
     if (length(valnames) > 1L)
@@ -220,26 +206,6 @@ dcast.data.table <- function(data, formula, fun.aggregate = NULL, sep = "_", ...
       # removed 'setcolorder()' here, #1153
     setattr(ans, 'names', c(lhsnames, allcols))
     setDT(ans); setattr(ans, 'sorted', lhsnames)
-  } else {
-    # formula is of the form x + y ~ . (rare case)
-    if (drop) {
-      if (is.null(subset) && is.null(fun.call)) {
-        dat = copy(dat) # can't be avoided
-        setkeyv(dat, lhsnames)
-      }
-      ans = dat
-    } else {
-      lhs = shallow(dat, lhsnames)
-      val = shallow(dat, valnames)
-      lhs_ = cj_uniq(lhs)
-      idx = lhs_[lhs, I := .I][["I"]]
-      lhs_[, I := NULL]
-      ans = .Call(Cfcast, lhs_, val, nrow(lhs_), 1L, idx, fill, fill.default, is.null(fun.call))
-      setDT(ans); setattr(ans, 'sorted', lhsnames)
-      setnames(ans, c(lhsnames, valnames))
-    }
-    if (length(valnames) == 1L)
-      setnames(ans, valnames, value.var)
-  }
+  } else stop("Internal error -- empty rhsnames in dcast; please report") # nocov
   return (ans)
 }

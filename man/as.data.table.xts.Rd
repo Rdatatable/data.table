@@ -5,13 +5,12 @@
   Efficient conversion xts to data.table.
 }
 \usage{
-\method{as.data.table}{xts}(x, keep.rownames = TRUE, \dots)
+\method{as.data.table}{xts}(x, keep.rownames = TRUE, key=NULL, \dots)
 }
 \arguments{
 \item{x}{xts to convert to data.table}
-
 \item{keep.rownames}{keep xts index as \emph{index} column in result data.table}
-
+\item{key}{ Character vector of one or more column names which is passed to \code{\link{setkeyv}}. }
 \item{\dots}{ignored, just for consistency with \code{as.data.table}}
 }
 \seealso{ \code{\link{as.xts.data.table}} }

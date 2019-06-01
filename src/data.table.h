@@ -18,6 +18,8 @@ typedef R_xlen_t RLEN;
 #define IS_UTF8(x)  (LEVELS(x) & 8)
 #define IS_ASCII(x) (LEVELS(x) & 64)
 #define IS_LATIN(x) (LEVELS(x) & 4)
+#define IS_TRUE(x)  (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==TRUE)
+#define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
 
 #define SIZEOF(x) sizes[TYPEOF(x)]
 #define TYPEORDER(x) typeorder[x]
@@ -31,6 +33,10 @@ typedef R_xlen_t RLEN;
 #undef MAX
 #endif
 #define MAX(a,b) (((a)>(b))?(a):(b))
+
+// for use with bit64::integer64
+#define NA_INTEGER64  INT64_MIN
+#define MAX_INTEGER64 INT64_MAX
 
 // Backport macros added to R in 2017 so we don't need to update dependency from R 3.0.0
 #ifndef MAYBE_SHARED
@@ -69,15 +75,20 @@ SEXP char_allLen1;
 SEXP char_allGrp1;
 SEXP char_factor;
 SEXP char_ordered;
+SEXP char_datatable;
 SEXP char_dataframe;
+SEXP char_NULL;
 SEXP sym_sorted;
 SEXP sym_index;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
+SEXP sym_colClassesAs;
+SEXP sym_verbose;
 bool INHERITS(SEXP x, SEXP char_);
 long long DtoLL(double x);
 double LLtoD(long long x);
+bool GetVerbose();
 double NA_INT64_D;
 long long NA_INT64_LL;
 
@@ -93,6 +104,7 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 void writeNA(SEXP v, const int from, const int n);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
+SEXP setcolorder(SEXP x, SEXP o);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
@@ -104,6 +116,9 @@ int getNumericRounding_C();
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
+
+// subset.c
+SEXP subsetVector(SEXP x, SEXP idx);
 
 // fcast.c
 SEXP int_vec_init(R_len_t n, int val);
@@ -146,8 +161,9 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted,
                 SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
 
 // quickselect
-double dquickselect(double *x, int n, int k);
-double iquickselect(int *x, int n, int k);
+double dquickselect(double *x, int n);
+double iquickselect(int *x, int n);
+double i64quickselect(int64_t *x, int n);
 
 // fread.c
 double wallclock();
@@ -158,14 +174,29 @@ int getDTthreads();
 void avoid_openmp_hang_within_fork();
 
 // froll.c
-void frollmean(unsigned int algo, double *x, uint_fast64_t nx, double_ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
-void frollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
-void frollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
+void frollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollsum(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
+void frollsumFast(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
+void frollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose);
 
 // frolladaptive.c
-void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollmeanFast(double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollmeanExact(double *x, uint_fast64_t nx, double_ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmean(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmeanFast(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollmeanExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollsum(unsigned int algo, double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollsumFast(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+void fadaptiverollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
 
 // frollR.c
 SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
+
+// nafill.c
+SEXP colnamesInt(SEXP x, SEXP cols);
+void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose);
+void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose);
+SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose);
+
+// between.c
+SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
