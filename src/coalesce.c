@@ -3,7 +3,7 @@
 SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
   int JJ = length(values), protecti = 0, nx = length(x);
 
-  if (!isVectorAtomic(x)) error("%s argument 'x' must be atomic vector", __func__);
+  if (!isVectorAtomic(x)) error("%s: argument 'x' must be atomic vector", __func__);
 
   if (!isTrueFalse(inplace)) error("%s: argument '.inplace' must be TRUE or FALSE", __func__);
   bool binplace = LOGICAL(inplace)[0];
@@ -40,7 +40,7 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     which_eq_char(x, nx, iwhich, &nwhich, NA_STRING, false);
   } break;
   default: {
-    error("Incompatible type");
+    error("%s: Incompatible type", __func__);
   }
   }
   if (verbose) Rprintf("%s: which NA took %.3fs\n", __func__, omp_get_wtime()-tic);
@@ -134,7 +134,7 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     }
   } break;
   default: {
-    error("Unrecognized type.");
+    error("%s: Incompatible type.", __func__);
   }
   }
   if (verbose) Rprintf("%s: loop over x NAs indices took %.3fs\n", __func__, omp_get_wtime()-tic);

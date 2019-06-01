@@ -142,9 +142,9 @@ void which_eq_int64(int64_t *x, int nx, int *out, int *nout, int64_t val, bool n
 SEXP which_eqR(SEXP x, SEXP val, SEXP negate) {
   int protecti = 0;
 
-  if (!isVectorAtomic(x)) error("%s argument 'x' must be atomic vector", __func__);
+  if (!isVectorAtomic(x)) error("%s: argument 'x' must be atomic vector", __func__);
 
-  if (TYPEOF(x)!=TYPEOF(val)) error("%s argument 'value' must of the same type as argument 'x'", __func__);
+  if (TYPEOF(x)!=TYPEOF(val)) error("%s: argument 'value' must of the same type as argument 'x'", __func__);
 
   if (!isTrueFalse(negate)) error("%s: argument 'negate' must be TRUE or FALSE", __func__);
   bool bnegate = LOGICAL(negate)[0];
@@ -172,7 +172,7 @@ SEXP which_eqR(SEXP x, SEXP val, SEXP negate) {
     which_eq_char(x, nx, iwhich, &nwhich, STRING_ELT(val, 0), bnegate);
   } break;
   default: {
-    error("Incompatible type");
+    error("%s: Incompatible type", __func__);
   }
   }
 
