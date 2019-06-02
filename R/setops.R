@@ -172,7 +172,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
                if(length(i2)) paste0(": ", paste(i2, collapse=", ")) else " has no index"))
     }
 
-    # Trim any extra row.names attributes that came from some inheritence
+    # Trim any extra row.names attributes that came from some inheritance
     # Trim ".internal.selfref" as long as there is no `all.equal.externalptr` method
     exclude.attrs = function(x, attrs = c("row.names",".internal.selfref")) x[!names(x) %chin% attrs]
     a1 = exclude.attrs(attributes(target))

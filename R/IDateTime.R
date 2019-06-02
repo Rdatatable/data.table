@@ -16,7 +16,7 @@ as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
     x = as.integer(x)
     class(x) = c("IDate", "Date")
     # We used to use structure() here because class(x)<- copied several times in R before v3.1.0
-    # Since R 3.1.0 improved class()<- and data.table's oldest oldest supportd R is now 3.1.0, we can use class<- again
+    # Since R 3.1.0 improved class()<- and data.table's oldest oldest supported R is now 3.1.0, we can use class<- again
     # structure() contains a match() and replace for specials, which we don't need.
     # class()<- ensures at least 1 shallow copy as appropriate is returned.
     x
@@ -58,6 +58,16 @@ unique.IDate =
   function(x, ...) {
     as.IDate(NextMethod())
   }
+
+# define this [<- method to prevent base R's internal rbind coercing integer IDate to double, #2008
+`[<-.IDate` = function(x, i, value) {
+  if (!length(value)) return(x)
+  value = as.integer(as.IDate(value))
+  setattr(x, 'class', NULL)
+  x[i] = value
+  setattr(x, 'class', c('IDate', 'Date'))
+  x
+}
 
 # fix for #1315
 as.list.IDate = function(x, ...) NextMethod()

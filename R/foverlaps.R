@@ -1,10 +1,10 @@
-foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=getOption("datatable.nomatch"), which=FALSE, verbose=getOption("datatable.verbose")) {
+foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=key(y), maxgap=0L, minoverlap=1L, type=c("any", "within", "start", "end", "equal"), mult=c("all", "first", "last"), nomatch=getOption("datatable.nomatch", NA), which=FALSE, verbose=getOption("datatable.verbose")) {
 
   if (!is.data.table(y) || !is.data.table(x)) stop("y and x must both be data.tables. Use `setDT()` to convert list/data.frames to data.tables by reference or as.data.table() to convert to data.tables by copying.")
   maxgap = as.integer(maxgap); minoverlap = as.integer(minoverlap)
   which = as.logical(which)
-  if (is.null(nomatch)) nomatch = 0L
-  nomatch = as.integer(nomatch)
+  .unsafe.opt() #3585
+  nomatch = if (is.null(nomatch)) 0L else as.integer(nomatch)
   if (!length(maxgap) || length(maxgap) != 1L || is.na(maxgap) || maxgap < 0L)
     stop("maxgap must be a non-negative integer value of length 1")
   if (!length(minoverlap) || length(minoverlap) != 1L || is.na(minoverlap) || minoverlap < 1L)

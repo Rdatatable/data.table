@@ -62,7 +62,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   if (identical(x, list(NULL)) || identical(x, list(list())) ||
       identical(x, list(data.frame(NULL))) || identical(x, list(data.table(NULL)))) return( null.data.table() )
   nd = name_dots(...)
-  myNCOL = function(x) if (is.null(x)) 0L else NCOL(x)   # tmp fix (since NCOL(NULL)==1) until PR#3471 goes ahread in v1.12.4
+  myNCOL = function(x) if (is.null(x)) 0L else NCOL(x)   # tmp fix (since NCOL(NULL)==1) until PR#3471 goes ahead in v1.12.4
   if (any(nocols<-sapply(x, myNCOL)==0L)) { tt=!nocols; x=x[tt]; nd=lapply(nd,'[',tt); }  # data.table(data.table(), data.table(a=integer())), #3445
   vnames = nd$vnames
   novname = nd$novname  # novname used later to know which were explicitly supplied in the call
@@ -218,7 +218,27 @@ replace_dot_alias = function(e) {
   }
 }
 
-"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
+# replace order -> forder wherever it appears in i
+replace_order = function(isub, verbose, env) {
+  if (length(isub) == 1L) return(isub)
+  for (ii in seq_along(isub)) {
+    isub_el = isub[[ii]]
+    if (missing(isub_el)) break
+    if (is.name(isub_el)) {
+      # stop base::order from becoming forder(x, base, order)
+      if (isub_el == '::') break
+      if (isub_el == 'order') {
+        if (verbose) cat("order optimisation is on, changed 'order(...)' in i to 'forder(x, ...)'.\n")
+        env$eval_forder = TRUE
+        return(as.call(c(list(quote(forder), quote(x)), as.list(isub)[-1L])))
+      }
+    }
+    if (is.call(isub_el)) isub[[ii]] = replace_order(isub_el, verbose, env)
+  }
+  return(isub)
+}
+
+"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch", NA), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL)
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -277,6 +297,7 @@ replace_dot_alias = function(e) {
   if (length(rollends)>2L) stop("rollends must be length 1 or 2")
   if (length(rollends)==1L) rollends=rep.int(rollends,2L)
   # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
+  .unsafe.opt() #3585
   missingnomatch = missing(nomatch)
   if (is.null(nomatch)) nomatch = 0L # allow nomatch=NULL API already now, part of: https://github.com/Rdatatable/data.table/issues/857
   if (!is.na(nomatch) && nomatch!=0L) stop("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL)")
@@ -311,7 +332,7 @@ replace_dot_alias = function(e) {
       # We don't want to evaluate j at all in making this decision because i) evaluating could itself
       # increment some variable and not intended to be evaluated a 2nd time later on and ii) we don't
       # want decisions like this to depend on the data or vector lengths since that can introduce
-      # inconistency reminiscent of drop=TRUE in [.data.frame that we seek to avoid.
+      # inconsistency reminiscent of drop=TRUE in [.data.frame that we seek to avoid.
       with=FALSE
       if (length(av)) {
         for (..name in av) {
@@ -417,31 +438,34 @@ replace_dot_alias = function(e) {
       if (is.call(isub) && isub[[1L]] == "(" && !is.name(isub[[2L]]))
         isub = isub[[2L]]
     }
-    if (is.call(isub) && isub[[1L]] == as.name("order") && getOption("datatable.optimize") >= 1) { # optimize here so that we can switch it off if needed
-      if (verbose) cat("order optimisation is on, i changed from 'order(...)' to 'forder(DT, ...)'.\n")
-      isub = as.list(isub)
-      isub = as.call(c(list(quote(forder), quote(x)), isub[-1L]))
-    }
+
     if (is.null(isub)) return( null.data.table() )
-    if (is.call(isub) && isub[[1L]] == quote(forder)) {
+
+    # optimize here so that we can switch it off if needed
+    check_eval_env = environment()
+    check_eval_env$eval_forder = FALSE
+    if (getOption("datatable.optimize") >= 1) {
+      isub = replace_order(isub, verbose, check_eval_env)
+    }
+    if (check_eval_env$eval_forder) {
       order_env = new.env(parent=parent.frame())            # until 'forder' is exported
       assign("forder", forder, order_env)
       assign("x", x, order_env)
-      i = eval(isub, order_env, parent.frame())             # for optimisation of 'order' to 'forder'
+      i = eval(.massagei(isub), order_env, parent.frame())             # for optimisation of 'order' to 'forder'
       # that forder returns empty integer() is taken care of internally within forder
     } else if (length(o <- .prepareFastSubset(isub = isub, x = x,
                                               enclos =  parent.frame(),
                                               notjoin = notjoin, verbose = verbose))){
-        ## redirect to the is.data.table(x) == TRUE branch.
-        ## Additional flag to adapt things after bmerge:
-        optimizedSubset = TRUE
-        notjoin = o$notjoin
-        i = o$i
-        on = o$on
-        ## the following two are ignored if i is not a data.table.
-        ## Since we are converting i to data.table, it is important to set them properly.
-        nomatch = 0L
-        mult = "all"
+      ## redirect to the is.data.table(x) == TRUE branch.
+      ## Additional flag to adapt things after bmerge:
+      optimizedSubset = TRUE
+      notjoin = o$notjoin
+      i = o$i
+      on = o$on
+      ## the following two are ignored if i is not a data.table.
+      ## Since we are converting i to data.table, it is important to set them properly.
+      nomatch = 0L
+      mult = "all"
     }
     else if (!is.name(isub)) {
       i = tryCatch(eval(.massagei(isub), x, parent.frame()),
@@ -453,8 +477,8 @@ replace_dot_alias = function(e) {
         # must be "not found" since isub is a mere symbol
         col = try(eval(isub, x), silent=TRUE)  # is it a column name?
         msg = if (inherits(col,"try-error")) " and it is not a column name either."
-              else paste0(" but it is a column of type ", typeof(col),". If you wish to select rows where that column contains TRUE",
-                          ", or perhaps that column contains row numbers of itself to select, try DT[(col)], DT[DT$col], or DT[col==TRUE] is particularly clear and is optimized.")
+        else paste0(" but it is a column of type ", typeof(col),". If you wish to select rows where that column contains TRUE",
+                    ", or perhaps that column contains row numbers of itself to select, try DT[(col)], DT[DT$col], or DT[col==TRUE] is particularly clear and is optimized.")
         stop(as.character(isub), " is not found in calling scope", msg,
              " When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope.")
       }
@@ -491,8 +515,7 @@ replace_dot_alias = function(e) {
       naturaljoin = FALSE
       if (missing(on)) {
         if (!haskey(x)) {
-          if (getOption("datatable.naturaljoin")) naturaljoin = TRUE
-          else stop("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+          stop("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
         }
       } else if (identical(substitute(on), as.name(".NATURAL"))) naturaljoin = TRUE
       if (naturaljoin) { # natural join #629
@@ -648,7 +671,7 @@ replace_dot_alias = function(e) {
 
         else if (length(i)==nrow(x)) { irows=i=which(i) }
         # The which() here auto removes NA for convenience so user doesn't need to remember "!is.na() & ..."
-        # Also this which() is for consistenty of DT[colA>3,which=TRUE] and which(DT[,colA>3])
+        # Also this which() is for consistency of DT[colA>3,which=TRUE] and which(DT[,colA>3])
         # Assigning to 'i' here as well to save memory, #926.
 
         else stop("i evaluates to a logical vector length ", length(i), " but there are ", nrow(x), " rows. Recycling of logical i is no longer allowed as it hides more bugs than is worth the rare convenience. Explicitly use rep(...,length=.N) if you really need to recycle.")
@@ -732,7 +755,7 @@ replace_dot_alias = function(e) {
         notj = TRUE
         jsub = jsub[[2L]]
       } else notj = FALSE
-      # fix for #1216, make sure the paranthesis are peeled from expr of the form (((1:4)))
+      # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
       while (is.call(jsub) && jsub[[1L]] == "(") jsub = as.list(jsub)[[-1L]]
       if (is.call(jsub) && length(jsub) == 3L && jsub[[1L]] == ":") {
         j = eval(jsub, setattr(as.list(seq_along(x)), 'names', names(x)), parent.frame()) # else j will be evaluated for the first time on next line
@@ -958,7 +981,7 @@ replace_dot_alias = function(e) {
             }
             # TO DO: if call to a[1] for example, then call it 'a' too
           }
-          setattr(jsubl, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back aftwards on the result.
+          setattr(jsubl, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group. We'll put them back afterwards on the result.
           jsub = as.call(jsubl)
         } # else empty list is needed for test 468: adding an empty list column
       } # else maybe a call to transform or something which returns a list.
@@ -984,7 +1007,7 @@ replace_dot_alias = function(e) {
             colm = TRUE
             colsub = colsub[[2L]]
           } else colm = FALSE
-          # fix for #1216, make sure the paranthesis are peeled from expr of the form (((1:4)))
+          # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
           while(is.call(colsub) && colsub[[1L]] == "(") colsub = as.list(colsub)[[-1L]]
           if (is.call(colsub) && length(colsub) == 3L && colsub[[1L]] == ":") {
             # .SDcols is of the format a:b
@@ -1536,7 +1559,7 @@ replace_dot_alias = function(e) {
     ansvarsnew = setdiff(ansvars, othervars)
     oldjsub = jsub
     funi = 1L # Fix for #985
-    # convereted the lapply(.SD, ...) to a function and used below, easier to implement FR #2722 then.
+    # converted the lapply(.SD, ...) to a function and used below, easier to implement FR #2722 then.
     .massageSD = function(jsub) {
       txt = as.list(jsub)[-1L]
       if (length(names(txt))>1L) .Call(Csetcharvec, names(txt), 2L, "")  # fixes bug #4839
@@ -1563,7 +1586,7 @@ replace_dot_alias = function(e) {
       jsub = as.call(ans)  # important no names here
       jvnames = ansvarsnew      # but here instead
       list(jsub, jvnames)
-      # It may seem inefficient to constuct a potentially long expression. But, consider calling
+      # It may seem inefficient to construct a potentially long expression. But, consider calling
       # lapply 100000 times. The C code inside lapply does the LCONS stuff anyway, every time it
       # is called, involving small memory allocations.
       # The R level lapply calls as.list which needs a shallow copy.
@@ -1609,7 +1632,7 @@ replace_dot_alias = function(e) {
         any_SD = FALSE
         jsubl = as.list.default(jsub)
         oldjvnames = jvnames
-        jvnames = NULL           # TODO: not let jvnames grow, maybe use (number of lapply(.SD, .))*lenght(ansvarsnew) + other jvars ?? not straightforward.
+        jvnames = NULL           # TODO: not let jvnames grow, maybe use (number of lapply(.SD, .))*length(ansvarsnew) + other jvars ?? not straightforward.
         # Fix for #744. Don't use 'i' in for-loops. It masks the 'i' from the input!!
         for (i_ in 2L:length(jsubl)) {
           this = jsub[[i_]]
@@ -1738,7 +1761,7 @@ replace_dot_alias = function(e) {
         for (ii in seq_along(jsub)[-1L]) {
           this_jsub = jsub[[ii]]
           if (dotN(this_jsub)) next; # For #5760
-          # Addressing #1369, #2949 and #1974. Added is.symbol() check to handle cases where expanded function definition is used insead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
+          # Addressing #1369, #2949 and #1974. Added is.symbol() check to handle cases where expanded function definition is used instead of function names. #1369 results in (function(x) sum(x)) as jsub[[.]] from dcast.data.table.
           if (is.call(this_jsub) && is.symbol(this_jsub[[1L]]) && this_jsub[[1L]]=="mean")
             jsub[[ii]] = .optmean(this_jsub)
         }
@@ -2958,7 +2981,7 @@ isReallyReal = function(x) {
     if (!is.name(stub[[2L]])) return(NULL)
     col = as.character(stub[[2L]])
     if (!col %chin% names(x)) return(NULL) ## any non-column name prevents fast subsetting
-    if(col %chin% names(i)) return(NULL) ## repeated appearance of the same column not suported (e.g. DT[x < 3 & x < 5])
+    if(col %chin% names(i)) return(NULL) ## repeated appearance of the same column not supported (e.g. DT[x < 3 & x < 5])
     ## now check the RHS of stub
     RHS = eval(stub[[3L]], x, enclos)
     if (is.list(RHS)) RHS = as.character(RHS)  # fix for #961
@@ -2976,7 +2999,7 @@ isReallyReal = function(x) {
     }
     if(is.character(x[[col]]) && !operator %chin% c("==", "%in%", "%chin%")) return(NULL) ## base R allows for non-equi operators on character columns, but these can't be optimized.
     if (!operator %chin% c("%in%", "%chin%")) {
-      # addional requirements for notjoin and NA values. Behaviour is different for %in%, %chin% compared to other operators
+      # additional requirements for notjoin and NA values. Behaviour is different for %in%, %chin% compared to other operators
       # RHS is of length=1 or n
       if (any_na(as_list(RHS))) {
         ## dt[x == NA] or dt[x <= NA] will always return empty
@@ -3020,7 +3043,7 @@ isReallyReal = function(x) {
   }
   if (is.null(idx)){
     if (!getOption("datatable.use.index")) return(NULL) # #1422
-    ## check whether an exising index can be used
+    ## check whether an existing index can be used
     ## An index can be used if it corresponds exactly to the columns in i (similar to the key above)
     candidates = indices(x, vectors = TRUE)
     idx = NULL

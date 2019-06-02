@@ -80,13 +80,17 @@
 
 9. New convenience functions `%ilike%` and `%flike%` which map to new `like()` arguments `ignore.case` and `fixed` respectively, [#3333](https://github.com/Rdatatable/data.table/issues/3333). `%ilike%` is for case-insensitive pattern matching. `%flike%` is for more efficient matching of fixed strings. Thanks to @andreasLD for providing most of the core code.
 
-10. It is now possible to join two tables on their common columns, so called _natural join_, [#629](https://github.com/Rdatatable/data.table/issues/629). Use `on=.NATURAL` or `options("datatable.naturaljoin"=TRUE)`. Latter one works only when `x` has no key, if key is present then key columns are being used to join as before. Thanks to David Kulp for request.
+10. `on=.NATURAL` (TODO: `X[on=Y]`) joins two tables on their common column names, so called _natural join_, [#629](https://github.com/Rdatatable/data.table/issues/629). Thanks to David Kulp for request. As before, when `on=` is not provided, `X` must have a key and the key columns are used to join (like rownames, but multi-column and multi-type).
 
 11. `as.data.table` gains `key` argument mirroring its use in `setDT` and `data.table`, [#890](https://github.com/Rdatatable/data.table/issues/890). As a byproduct, the arguments of `as.data.table.array` have changed order, which could affect code relying on positional arguments to this method. Thanks @cooldome for the suggestion and @MichaelChirico for implementation.
 
 12. `merge.data.table` is now exported, [#2618](https://github.com/Rdatatable/data.table/pull/2618). We realize that S3 methods should not ordinarily be exported. Rather, the method should be invoked via S3 dispatch. But users continue to request its export, perhaps because of intricacies relating to the fact that data.table inherits from data.frame, there are two arguments to `merge()` but S3 dispatch applies just to the first, and a desire to explicitly call `data.table::merge.data.table` from package code. Thanks to @AndreMikulec for the most recent request.
 
 13. New rolling function to calculate rolling sum has been implemented and exported, see `?frollsum`, [#2778](https://github.com/Rdatatable/data.table/issues/2778).
+
+14. `setkey` to an existing index now uses the index, [#2889](https://github.com/Rdatatable/data.table/issues/2889). Thanks to @MichaelChirico for suggesting and @saraswatmks for the PR.
+
+15. `DT[order(col)[1:5], ...]` (i.e. where `i` is a compound expression involving `order()`) is now optimized to use `data.table`'s multithreaded `forder`, [#1921](https://github.com/Rdatatable/data.table/issues/1921). This example is not a fully optimal top-N query since the full ordering is still computed. The improvement is that the call to `order()` is computed faster for any `i` expression using `order`.
 
 #### BUG FIXES
 
@@ -122,6 +126,12 @@
 
 16. `rbind` and `rbindlist` of an item containing an ordered factor with levels containing an `NA` (as opposed to an NA integer) could segfault, [#3601](https://github.com/Rdatatable/data.table/issues/3601). This was a a regression in v1.12.2. Thanks to Damian Betebenner for reporting.
 
+17. `example(":=", local=TRUE)` now works rather than error, [#2972](https://github.com/Rdatatable/data.table/issues/2972). Thanks @vlulla for the report.
+
+18. `rbind.data.frame` on `IDate` columns changed the column from `integer` to `double`, [#2008](https://github.com/Rdatatable/data.table/issues/2008). Thanks to @rmcgehee for reporting.
+
+19. `merge.data,table` now retains any custom classes of the first argument, [#1378](https://github.com/Rdatatable/data.table/issues/1378). Thanks to @michaelquinn32 for reopening.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
@@ -149,6 +159,8 @@
 9. `DT[col]` where `col` is a column containing row numbers of itself to select, now suggests the correct syntax (`DT[(col)]` or `DT[DT$col]`), [#697](https://github.com/Rdatatable/data.table/issues/697). This expands the message introduced in [#1884](https://github.com/Rdatatable/data.table/issues/1884) for the case where `col` is type `logical` and `DT[col==TRUE]` is suggested.
 
 10. The `datatable.old.unique.by.key` option has been warning for 1 year that it is deprecated: `... Please stop using it and pass by=key(DT) instead for clarity ...`. This warning is now upgraded to error as per the schedule in note 10 of v1.11.0 (May 2018), and note 1 of v1.9.8 (Nov 2016). In June 2020 the option will be removed.
+
+11. We intend to deprecate the `datatable.nomatch` option, [more info](https://github.com/Rdatatable/data.table/pull/3578/files). A message is now printed upon use of the option (once per session) as a first step. It asks you to please stop using the option and to pass `nomatch=NULL` explicitly if you require inner join. Outer join (`nomatch=NA`) has always been the default because it is safer; it does not drop missing data silently. The problem is that the option is global; i.e., if a user changes the default using this option for their own use, that can change the behavior of joins inside packages that use `data.table` too. This is the only `data.table` option with this concern.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
