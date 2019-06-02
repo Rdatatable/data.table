@@ -15010,33 +15010,46 @@ test(2055.15, coalesce(num, rep(3, 4L)), num_val)
 test(2055.16, coalesce(num, rep(NA_real_, 4L), rep(3, 4L)), num_val)
 test(2055.17, coalesce(str, rep('b', 4L)), str_val)
 test(2055.18, coalesce(str, rep(NA_character_, 4L), rep('b', 4L)), str_val)
-test(2055.19, coalesce(fkt, factor(rep('b', 4L), levels = c('a', 'b'))), fkt_val)
-test(2055.20, coalesce(fkt, rep(NA_integer_, 4L), factor(rep('b', 4L), levels = c('a', 'b'))), fkt_val)
+test(2055.19, coalesce(fkt, factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
+test(2055.20, coalesce(fkt, rep(NA_integer_, 4L), factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
 
 ## .dots argument
-test(2055.21, coalesce(bool, .dots = list(NA, TRUE)), bool_val)
+test(2055.21, coalesce(bool, .dots=list(NA, TRUE)), bool_val)
 
 ## edge cases/checks
 test(2055.22, coalesce(bool), bool)
 test(2055.23, coalesce(fkt), fkt)
-test(2055.24, coalesce(bool, 1L), error = 'internal type integer')
-#test(2055.25, coalesce(bool, NA_integer_), error = 'internal type integer')
-#test(2055.26, coalesce(fkt, 1L), error = '')
-#test(2055.27, coalesce(num, 3L), error = 'internal type integer')
-#test(2055.28, coalesce(int, 3), error = 'internal type double')
-test(2055.29, coalesce(fkt, 'b'), error = 'internal type character')
-test(2055.30, coalesce(str, factor('b')), error = 'internal type integer')
-test(2055.31, coalesce(bool, TRUE, .dots = list(FALSE)), error = "either '...' or '.dots'")
-test(2055.32, coalesce(bool, .dots = TRUE), error = "'.dots' requires a list")
-test(2055.33, coalesce(list(1), list(2)), error = "'x' must be an atomic vector")
-test(2055.34, coalesce(bool, c(TRUE, FALSE)), error = "Only singletons will be recycled")
-test(2055.35, coalesce(as.raw(0), as.raw(1)), error = "Incompatible type: raw")
+test(2055.24, coalesce(bool, 1L), error='internal type integer')
+#test(2055.25, coalesce(bool, NA_integer_), error='internal type integer')
+#test(2055.26, coalesce(fkt, 1L), error='')
+#test(2055.27, coalesce(num, 3L), error='internal type integer')
+#test(2055.28, coalesce(int, 3), error='internal type double')
+test(2055.29, coalesce(fkt, 'b'), error='internal type character')
+test(2055.30, coalesce(str, factor('b')), error='internal type integer')
+test(2055.31, coalesce(bool, TRUE, .dots=list(FALSE)), error="either '...' or '.dots'")
+test(2055.32, coalesce(bool, .dots=TRUE), error="'.dots' requires a list")
+test(2055.33, coalesce(list(1), list(2)), error="'x' must be an atomic vector")
+test(2055.34, coalesce(bool, c(TRUE, FALSE)), error="Only singletons will be recycled")
+test(2055.35, coalesce(as.raw(0), as.raw(1)), error="Incompatible type: raw")
 
 ## verbose output
-old = options(datatable.verbose = TRUE)
-test(2055.36, coalesce(bool, TRUE), bool_val, output = 'which NA took.*duplicate.*took.*loop over NA indices of x took')
-test(2055.37, coalesce(bool_val, TRUE), bool_val, output = 'no NAs in input, skip')
+old = options(datatable.verbose=TRUE)
+test(2055.36, coalesce(bool, TRUE), bool_val, output='which NA took.*duplicate.*took.*loop over NA indices of x took')
+test(2055.37, coalesce(bool_val, TRUE), bool_val, output='no NAs in input, skip')
 options(old)
+
+## integer64 tests
+if (test_bit64) {
+  int64 = as.integer64(int)
+  int64_val = as.integer64(1:4)
+  
+  test(2055.38, coalesce(int64, as.integer64(3)), int64_val)
+  test(2055.39, coalesce(int64, as.integer64(NA), as.integer64(3)), int64_val)
+  test(2055.40, coalesce(int64, as.integer64(rep(3, 4L))), int64_val)
+  
+  #test(2055.41, coalesce(int64, 1), error='')
+  test(2055.42, coalesce(int64, 1L), error = 'internal type integer')
+}
 
 
 ###################################
