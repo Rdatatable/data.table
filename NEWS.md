@@ -92,6 +92,8 @@
 
 15. `DT[order(col)[1:5], ...]` (i.e. where `i` is a compound expression involving `order()`) is now optimized to use `data.table`'s multithreaded `forder`, [#1921](https://github.com/Rdatatable/data.table/issues/1921). This example is not a fully optimal top-N query since the full ordering is still computed. The improvement is that the call to `order()` is computed faster for any `i` expression using `order`.
 
+16. New function `coalesce` for efficiently replacing missing values according to a prioritized list of candidates (_a la_ SQL), [#3424](https://github.com/Rdatatable/data.table/issues/3424) See [#3608](https://github.com/Rdatatable/data.table/pull/3608) for benchmarks.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.

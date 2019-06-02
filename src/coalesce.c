@@ -3,7 +3,7 @@
 SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
   int JJ = length(values), protecti = 0, nx = length(x);
 
-  if (!isVectorAtomic(x)) error("%s: argument 'x' must be atomic vector", __func__);
+  if (!isVectorAtomic(x)) error("%s: argument 'x' must be an atomic vector", __func__);
 
   if (!isTrueFalse(inplace)) error("%s: argument '.inplace' must be TRUE or FALSE", __func__);
   bool binplace = LOGICAL(inplace)[0];
@@ -40,7 +40,7 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     which_eq_char(x, nx, iwhich, &nwhich, NA_STRING, false);
   } break;
   default: {
-    error("%s: Incompatible type", __func__);
+    error("%s: Incompatible type: %s", __func__, type2char(TYPEOF(x)));
   }
   }
   if (verbose) Rprintf("%s: which NA took %.3fs\n", __func__, omp_get_wtime()-tic);
@@ -134,10 +134,10 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     }
   } break;
   default: {
-    error("%s: Incompatible type.", __func__);
+    error("Internal error in %s -- incompatible type should %s should have been caught by now; please report.", __func__, type2char(TYPEOF(x))); // # nocov
   }
   }
-  if (verbose) Rprintf("%s: loop over x NAs indices took %.3fs\n", __func__, omp_get_wtime()-tic);
+  if (verbose) Rprintf("%s: loop over NA indices of x took %.3fs\n", __func__, omp_get_wtime()-tic);
 
   UNPROTECT(protecti);
   return out;
