@@ -10,7 +10,16 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 } else {
   require(data.table)
   test = data.table:::test
-  #x = data.table:::x
+  setcoalesce = data.table:::setcoalesce
+  which_eq = data.table:::which_eq
+}
+
+sugg = c(
+  "bit64"
+)
+for (s in sugg) {
+  assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(require(s, character.only=TRUE))))
+  if (!loaded) cat("\n**** Suggested package",s,"is not installed. Tests using it will be skipped.\n\n")
 }
 
 # #3424 -- coalesce function
