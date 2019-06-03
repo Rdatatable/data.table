@@ -56,9 +56,12 @@ test(2055.21, coalesce(bool, .dots=list(NA, TRUE)), bool_val)
 test(2055.22, coalesce(bool), bool)
 test(2055.23, coalesce(fkt), fkt)
 test(2055.24, coalesce(bool, 1L), error='internal type integer')
+#TODO should we error here, or convert any NA type to the right NA?
 #test(2055.25, coalesce(bool, NA_integer_), error='internal type integer')
+#TODO we don't have any robustness around factor/integer as yet
 #test(2055.26, coalesce(fkt, 1L), error='')
 #test(2055.27, coalesce(num, 3L), error='internal type integer')
+#TODO two more placeholder tests -- do we really want to error here? or worth to add isReallyReal-type tests? numeric->integer should always be doable right?
 #test(2055.28, coalesce(int, 3), error='internal type double')
 test(2055.29, coalesce(fkt, 'b'), error='internal type character')
 test(2055.30, coalesce(str, factor('b')), error='internal type integer')
@@ -83,6 +86,7 @@ if (test_bit64) {
   test(2055.39, coalesce(int64, as.integer64(NA), as.integer64(3)), int64_val)
   test(2055.40, coalesce(int64, as.integer64(rep(3, 4L))), int64_val)
 
+  #TODO this line current runs and gives a nonsense answer
   #test(2055.41, coalesce(int64, 1), error='')
   test(2055.42, coalesce(int64, 1L), error = 'internal type integer')
 }
