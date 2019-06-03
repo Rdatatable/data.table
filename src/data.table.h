@@ -203,8 +203,10 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
 
 // utils.c
 bool isTrueFalse(SEXP x);
-int lenMiss(SEXP x, int n, bool scalar);
+int lengthMiss(SEXP x, int n, bool scalar);
 int typeMiss(SEXP x, SEXPTYPE type);
+int classMiss(SEXP x, SEXP char_class);
+int levelsMiss(SEXP x, SEXP levels);
 void which_eq_int(int *x, int nx, int *out, int *nout, int val, bool negate);
 void which_eq_double(double *x, int nx, int *out, int *nout, double val, bool negate);
 void which_eq_char(SEXP x, int nx, int *out, int *nout, SEXP val, bool negate);

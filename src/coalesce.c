@@ -8,11 +8,24 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
   if (!isTrueFalse(inplace)) error("%s: argument '.inplace' must be TRUE or FALSE", __func__);
   bool binplace = LOGICAL(inplace)[0];
 
-  int firstLenMiss = lenMiss(values, nx, true);
-  if (firstLenMiss >= 0) error("%s: Replacement %d has length %d but length(x) is %d. Only singletons will be recycled.", __func__, firstLenMiss+1, length(VECTOR_ELT(values, firstLenMiss)), nx);
+  int firstLengthMiss = lengthMiss(values, nx, true);
+  if (firstLengthMiss >= 0) error("%s: Replacement %d has length %d but length(x) is %d. Only singletons will be recycled.", __func__, firstLengthMiss+1, length(VECTOR_ELT(values, firstLengthMiss)), nx);
 
   int firstTypeMiss = typeMiss(values, TYPEOF(x));
   if (firstTypeMiss >= 0) error("%s: Replacement %d has internal type %s but typeof(x) is %s. Please coerce before coalescing", __func__, firstTypeMiss+1, type2char(TYPEOF(VECTOR_ELT(values, firstTypeMiss))), type2char(TYPEOF(x)));
+
+  if (INHERITS(x, char_integer64)) {
+    int firstClassMiss = classMiss(values, char_integer64);
+    if (firstClassMiss >= 0) error("%s: Replacement %d does not inherit interger64 class while 'x' do. Please align classes before coalescing", __func__, firstClassMiss+1);
+  } else if (INHERITS(x, char_Date)) {
+    int firstClassMiss = classMiss(values, char_Date);
+    if (firstClassMiss >= 0) error("%s: Replacement %d does not inherit Date class while 'x' do. Please align classes before coalescing", __func__, firstClassMiss+1);
+  } else if (INHERITS(x, char_factor)) {
+    int firstClassMiss = classMiss(values, char_factor);
+    if (firstClassMiss >= 0) error("%s: Replacement %d does not inherit factor class while 'x' do. Please align classes before coalescing", __func__, firstClassMiss+1);
+    int firstLevelsMiss = levelsMiss(values, getAttrib(x, R_LevelsSymbol));
+    if (firstLevelsMiss >= 0) error("%s: Replacement %d has different factor levels than 'x'. Coerce to character or align factor levels before coalescing", __func__, firstLevelsMiss+1);
+  }
 
   double tic = 0;
   const bool verbose = GetVerbose();

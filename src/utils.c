@@ -6,7 +6,7 @@
 bool isTrueFalse(SEXP x) {
   return isLogical(x) && length(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL;
 }
-int lenMiss(SEXP x, int n, bool scalar) {
+int lengthMiss(SEXP x, int n, bool scalar) {
   if (!isNewList(x)) error("x must be a list");
   int nx = length(x);
   for (int i=0; i<nx; i++) {
@@ -21,6 +21,29 @@ int typeMiss(SEXP x, SEXPTYPE type) {
   for (int i=0; i<nx; i++) {
     SEXPTYPE thistype = TYPEOF(VECTOR_ELT(x, i));
     if (thistype!=type) return i;
+  }
+  return -1;
+}
+int classMiss(SEXP x, SEXP char_class) {
+  if (!isNewList(x)) error("x must be a list");
+  int nx = length(x);
+  for (int i=0; i<nx; i++) {
+    if (!INHERITS(VECTOR_ELT(x, i), char_class)) return i;
+  }
+  return -1;
+}
+bool charIdentical(SEXP x, SEXP y) {
+  int nx = length(x);
+  if (nx != length(y)) return false;
+  for (int i=0; i<nx; i++) if (STRING_ELT(x,i) != STRING_ELT(y,i)) return false;
+  return true;
+}
+int levelsMiss(SEXP x, SEXP levels) {
+  if (!isNewList(x)) error("x must be a list");
+  int nx = length(x);
+  for (int i=0; i<nx; i++) {
+    SEXP this_levels = getAttrib(VECTOR_ELT(x, i), R_LevelsSymbol);
+    if (!charIdentical(this_levels, levels)) return i;
   }
   return -1;
 }
