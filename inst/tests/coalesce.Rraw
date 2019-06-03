@@ -22,7 +22,7 @@ for (s in sugg) {
   if (!loaded) cat("\n**** Suggested package",s,"is not installed. Tests using it will be skipped.\n\n")
 }
 
-# #3424 -- coalesce function
+# coalesce #3424
 bool = c(TRUE, NA, FALSE)
 bool_val = c(TRUE, TRUE, FALSE)
 int = c(1L, 2L, NA_integer_, 4L)
@@ -33,69 +33,113 @@ str = c('a', NA_character_, 'b', NA_character_)
 str_val = c('a', 'b', 'b', 'b')
 fkt = factor(str)
 fkt_val = factor(str_val)
-
-## singleton replacements
-test(2055.01, coalesce(bool, TRUE), bool_val)
-test(2055.02, coalesce(bool, NA, TRUE), bool_val)
-test(2055.03, coalesce(int, 3L), int_val)
-test(2055.04, coalesce(int, NA_integer_, 3L), int_val)
-test(2055.05, coalesce(num, 3), num_val)
-test(2055.06, coalesce(num, NA_real_, 3), num_val)
-test(2055.07, coalesce(str, 'b'), str_val)
-test(2055.08, coalesce(str, NA_character_, 'b'), str_val)
-test(2055.09, coalesce(fkt, factor('b', levels = c('a', 'b'))), fkt_val)
-test(2055.10, coalesce(fkt, NA_integer_, factor('b', levels = c('a', 'b'))), fkt_val)
-
-## vector replacements
-test(2055.11, coalesce(bool, rep(TRUE, 3L)), bool_val)
-test(2055.12, coalesce(bool, rep(NA, 3L), rep(TRUE, 3L)), bool_val)
-test(2055.13, coalesce(int, rep(3L, 4L)), int_val)
-test(2055.14, coalesce(int, rep(NA_integer_, 4L), rep(3L, 4L)), int_val)
-test(2055.15, coalesce(num, rep(3, 4L)), num_val)
-test(2055.16, coalesce(num, rep(NA_real_, 4L), rep(3, 4L)), num_val)
-test(2055.17, coalesce(str, rep('b', 4L)), str_val)
-test(2055.18, coalesce(str, rep(NA_character_, 4L), rep('b', 4L)), str_val)
-test(2055.19, coalesce(fkt, factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
-test(2055.20, coalesce(fkt, rep(NA_integer_, 4L), factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
-
-## .dots argument
-test(2055.21, coalesce(bool, .dots=list(NA, TRUE)), bool_val)
-
-## edge cases/checks
-test(2055.22, coalesce(bool), bool)
-test(2055.23, coalesce(fkt), fkt)
-test(2055.24, coalesce(bool, 1L), error='internal type integer')
+# singleton replacements
+test(2055.001, coalesce(bool, TRUE), bool_val)
+test(2055.002, coalesce(bool, NA, TRUE), bool_val)
+test(2055.003, coalesce(int, 3L), int_val)
+test(2055.004, coalesce(int, NA_integer_, 3L), int_val)
+test(2055.005, coalesce(num, 3), num_val)
+test(2055.006, coalesce(num, NA_real_, 3), num_val)
+test(2055.007, coalesce(str, 'b'), str_val)
+test(2055.008, coalesce(str, NA_character_, 'b'), str_val)
+test(2055.009, coalesce(fkt, factor('b', levels = c('a', 'b'))), fkt_val)
+test(2055.010, coalesce(fkt, NA_integer_, factor('b', levels = c('a', 'b'))), fkt_val)
+# vector replacements
+test(2055.011, coalesce(bool, rep(TRUE, 3L)), bool_val)
+test(2055.012, coalesce(bool, rep(NA, 3L), rep(TRUE, 3L)), bool_val)
+test(2055.013, coalesce(int, rep(3L, 4L)), int_val)
+test(2055.014, coalesce(int, rep(NA_integer_, 4L), rep(3L, 4L)), int_val)
+test(2055.015, coalesce(num, rep(3, 4L)), num_val)
+test(2055.016, coalesce(num, rep(NA_real_, 4L), rep(3, 4L)), num_val)
+test(2055.017, coalesce(str, rep('b', 4L)), str_val)
+test(2055.018, coalesce(str, rep(NA_character_, 4L), rep('b', 4L)), str_val)
+test(2055.019, coalesce(fkt, factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
+test(2055.020, coalesce(fkt, rep(NA_integer_, 4L), factor(rep('b', 4L), levels=c('a', 'b'))), fkt_val)
+# .dots argument
+test(2055.021, coalesce(bool, .dots=list(NA, TRUE)), bool_val)
+# floating point extras
+x = c(11L, NA, 13L, NA, 15L, NaN, NA, NA, NA)+0.1
+y = c(NA, 12L, 5L, NA, NA, 16L, NaN, Inf, NA)+0.1
+z = c(11L, NA, 1L, 14L, NA, 16L, 1L, 2L, NA)+0.1
+test(2055.041, coalesce(x, y, z), c(11:15,NaN,NaN,Inf,NA)+0.1)
+# edge cases/checks
+test(2055.051, coalesce(bool), bool)
+test(2055.052, coalesce(fkt), fkt)
+test(2055.053, coalesce(bool, 1L), error='internal type integer')
 #TODO should we error here, or convert any NA type to the right NA?
-#test(2055.25, coalesce(bool, NA_integer_), error='internal type integer')
+#test(2055.054, coalesce(bool, NA_integer_), error='internal type integer')
 #TODO we don't have any robustness around factor/integer as yet
-#test(2055.26, coalesce(fkt, 1L), error='')
-#test(2055.27, coalesce(num, 3L), error='internal type integer')
+#test(2055.055, coalesce(fkt, 1L), error='')
+#test(2055.056, coalesce(num, 3L), error='internal type integer')
 #TODO two more placeholder tests -- do we really want to error here? or worth to add isReallyReal-type tests? numeric->integer should always be doable right?
-#test(2055.28, coalesce(int, 3), error='internal type double')
-test(2055.29, coalesce(fkt, 'b'), error='internal type character')
-test(2055.30, coalesce(str, factor('b')), error='internal type integer')
-test(2055.31, coalesce(bool, TRUE, .dots=list(FALSE)), error="either '...' or '.dots'")
-test(2055.32, coalesce(bool, .dots=TRUE), error="'.dots' requires a list")
-test(2055.33, coalesce(list(1), list(2)), error="'x' must be an atomic vector")
-test(2055.34, coalesce(bool, c(TRUE, FALSE)), error="Only singletons will be recycled")
-test(2055.35, coalesce(as.raw(0), as.raw(1)), error="Incompatible type: raw")
-
-## verbose output
+#test(2055.057, coalesce(int, 3), error='internal type double')
+test(2055.058, coalesce(fkt, 'b'), error='internal type character')
+test(2055.059, coalesce(str, factor('b')), error='internal type integer')
+test(2055.060, coalesce(bool, TRUE, .dots=list(FALSE)), error="either '...' or '.dots'")
+test(2055.061, coalesce(bool, .dots=TRUE), error="'.dots' requires a list")
+test(2055.062, coalesce(list(1), list(2)), error="'x' must be an atomic vector")
+test(2055.063, coalesce(bool, c(TRUE, FALSE)), error="Only singletons will be recycled")
+test(2055.064, coalesce(as.raw(0), as.raw(1)), error="Incompatible type: raw")
+test(2055.065, coalesce(bool, .dots=list()), bool)
+# verbose output
 old = options(datatable.verbose=TRUE)
-test(2055.36, coalesce(bool, TRUE), bool_val, output='which NA took.*duplicate.*took.*loop over NA indices of x took')
-test(2055.37, coalesce(bool_val, TRUE), bool_val, output='no NAs in input, skip')
+test(2055.101, coalesce(bool, TRUE), bool_val, output='which NA took.*duplicate.*took.*loop over NA indices of x took')
+test(2055.102, coalesce(bool_val, TRUE), bool_val, output='no NAs in input, skip')
 options(old)
-
-## integer64 tests
+# integer64 tests
 if (test_bit64) {
   int64 = as.integer64(int)
   int64_val = as.integer64(1:4)
-
-  test(2055.38, coalesce(int64, as.integer64(3)), int64_val)
-  test(2055.39, coalesce(int64, as.integer64(NA), as.integer64(3)), int64_val)
-  test(2055.40, coalesce(int64, as.integer64(rep(3, 4L))), int64_val)
-
+  test(2055.201, coalesce(int64, as.integer64(3)), int64_val)
+  test(2055.202, coalesce(int64, as.integer64(NA), as.integer64(3)), int64_val)
+  test(2055.203, coalesce(int64, as.integer64(rep(3, 4L))), int64_val)
   #TODO this line current runs and gives a nonsense answer
-  #test(2055.41, coalesce(int64, 1), error='')
-  test(2055.42, coalesce(int64, 1L), error = 'internal type integer')
+  #test(2055.204, coalesce(int64, 1), error='')
+  test(2055.205, coalesce(int64, 1L), error = 'internal type integer')
 }
+
+# setcoalesce
+x = c(11L, NA, 13L, NA, 15L, NA)
+y = c(NA, 12L, 5L, NA, NA, NA)
+z = c(11L, NA, 1L, 14L, NA, NA)
+xx = copy(x)
+xx_addr = address(xx)
+setcoalesce(xx, y, z)
+test(2055.501, xx_addr, address(xx))
+test(2055.502, xx, c(11:15, NA))
+xx = copy(x)
+xx_addr = address(xx)
+setcoalesce(xx, .dots=list())
+test(2055.503, xx_addr, address(xx))
+test(2055.504, xx, x)
+test(2055.505, address(setcoalesce(xx)), xx_addr)
+test(2055.506, setcoalesce(xx, TRUE, .dots=list(FALSE)), error="either '...' or '.dots'")
+test(2055.507, setcoalesce(xx, .dots=TRUE), error="'.dots' requires a list")
+
+# which_eq
+test(2056.01, which_eq(c(TRUE, NA, FALSE, FALSE), FALSE, negate=TRUE), 1:2)
+test(2056.02, which_eq(c(TRUE, NA, FALSE, FALSE), NA, negate=TRUE), c(1L,3L,4L))
+test(2056.03, which_eq(c(TRUE, TRUE), TRUE, negate=TRUE), integer())
+test(2056.04, which_eq(c(1L, NA, 5L), 5L, negate=TRUE), c(1L,2L))
+test(2056.05, which_eq(c(1L, NA, 5L), NA_integer_, negate=TRUE), c(1L,3L))
+test(2056.06, which_eq(c(1L, 1L), 1L, negate=TRUE), integer())
+test(2056.07, which_eq(c("a", NA, "r", "a"), "a", negate=TRUE), 2:3)
+test(2056.08, which_eq(c("a", NA, "r", "a"), "r", negate=TRUE), c(1L,2L,4L))
+test(2056.09, which_eq(c("a","a"), "a", negate=TRUE), integer())
+test(2056.10, which_eq(c(1.1, NA, 3.1), NA_real_, negate=TRUE), c(1L,3L))
+test(2056.11, which_eq(c(NA_real_, NA_real_), NA_real_, negate=TRUE), integer())
+test(2056.12, which_eq(c(1.1, NaN, 3.1), NaN, negate=TRUE), c(1L,3L))
+test(2056.13, which_eq(c(NaN, NaN), NaN, negate=TRUE), integer())
+test(2056.14, which_eq(c(1.1, Inf, 3.1), Inf, negate=TRUE), c(1L,3L))
+test(2056.15, which_eq(c(Inf, Inf), Inf, negate=TRUE), integer())
+test(2056.16, which_eq(c(NA, 12L, 5L, NA, NA, 16L, NaN, Inf, NA)+0.1, NaN), 7L)
+test(2056.17, which_eq(c(NA, 12L, 5L, NA, NA, 16L, NaN, Inf, NA)+0.1, Inf), 8L)
+if (test_bit64) {
+  test(2056.51, which_eq(bit64::as.integer64(c(1L, NA, 5L)), bit64::as.integer64(5L), negate=TRUE), c(1L,2L))
+  test(2056.52, which_eq(bit64::as.integer64(c(1L, NA, 5L)), bit64::as.integer64(NA_integer_), negate=TRUE), c(1L,3L))
+  test(2056.53, which_eq(bit64::as.integer64(c(1L, 1L)), bit64::as.integer64(1L), negate=TRUE), integer())
+}
+test(2056.81, which_eq(list(1L,2L), 1L), error="argument 'x' must be atomic vector")
+test(2056.82, which_eq(c(1:2), 1), error="argument 'value' must of the same type as argument 'x'")
+test(2056.83, which_eq(c(1:2), 1L, negate=1L), error="argument 'negate' must be TRUE or FALSE")
+test(2056.84, which_eq(as.raw(0), as.raw(1)), error="Incompatible type: raw")

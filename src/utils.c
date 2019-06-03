@@ -172,7 +172,7 @@ SEXP which_eqR(SEXP x, SEXP val, SEXP negate) {
     which_eq_char(x, nx, iwhich, &nwhich, STRING_ELT(val, 0), bnegate);
   } break;
   default: {
-    error("%s: Incompatible type", __func__);
+    error("%s: Incompatible type: %s", __func__, type2char(TYPEOF(x)));
   }
   }
 
