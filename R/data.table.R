@@ -53,7 +53,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   # as.data.table which is faster; speed could be better.  Revisit how many copies are taken in for example data.table(DT1,DT2) which
   # cbind directs to.  And the nested loops for recycling lend themselves to being C level.
 
-  x <- list(...)   # doesn't copy named inputs as from R >= 3.1.0 (a very welcome change)
+  x = list(...)   # doesn't copy named inputs as from R >= 3.1.0 (a very welcome change)
   if (length(x)==0L) return( null.data.table() )
   if (length(x)==1L && (is.null(x[[1L]]) || (is.list(x[[1L]]) && length(x[[1L]])==0L))) return( null.data.table() ) #5377
   .Call(CcopyNamedInList,x)   # to maintain pre-Rv3.1.0 behaviour, for now. See test 548.2. TODO: revist
@@ -62,11 +62,14 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   vnames = if (is.null(names(x))) character(length(x)) else names(x)
   if (length(w <- which(vnames==""))) {
     sub = substitute(list(...))
-    for (i in w) if (is.name(nm<-sub[[i+1L]])) vnames[i] = as.character(nm)
+    for (i in w) {
+      if (is.name(nm<-sub[[i+1L]])) vnames[i]=as.character(nm)
+      else if ((tmp<-deparse(nm)[1L])==make.names(tmp)) vnames[i]=tmp
+    }
     names(x) = vnames
   }
-  ans = as.data.table.list(x, keep.rownames=keep.rownames)
-  if (check.names) setnames(ans, make.names(names(ans),unique=TRUE))
+  ans = as.data.table.list(x, keep.rownames=keep.rownames, check.names=check.names)
+  # delete ... if (check.names) setnames(ans, make.names(names(ans),unique=TRUE))
   if (!is.null(key)) {
     if (!is.character(key)) stop("key argument of data.table() must be character")
     if (length(key)==1L) {
@@ -88,9 +91,11 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
       setattr(ans, "sorted", ckey)
     }
   }
-  # FR #643, setfactor is an internal function in fread.R
-  if (isTRUE(stringsAsFactors)) setfactor(ans, which(vapply(ans, is.character, TRUE)), verbose=FALSE)
-  ans
+  if (isTRUE(stringsAsFactors)) {
+    for (j in which(vapply(ans, is.character, TRUE))) set(ans, NULL, j, as_factor(.subset2(ans, j)))
+    # as_factor is internal function in fread.R currently
+  }
+  alloc.col(ans)  # returns a NAMED==0 object, unlike data.frame()
 }
 
 replace_dot_alias = function(e) {

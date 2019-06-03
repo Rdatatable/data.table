@@ -110,7 +110,7 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   ans[]
 }
 
-as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, ...) {
+as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE, ...) {
   n = length(x)
   eachnrow = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
   eachncol = integer(n)
@@ -138,27 +138,28 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, ...) {
     if (length(x)==nrow) return(x)
     if (identical(x,list())) vector("list", nrow) else rep(x, length.out=nrow)
   }
-  vnames = vector("list", n)
+  vnames = character(ncol)
   k = 1L
   for(i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next
-    nm = names(x)[i]
-    if (!length(nm) || is.na(nm)) nm = ""
     if (eachnrow[i]>1L && nrow%%eachnrow[i]!=0L)   # in future: eachnrow[i]!=nrow
       warning("Item ", i, " has ", eachnrow[i], " rows but longest item has ", nrow, "; recycled with remainder.")
     if (is.data.table(xi)) {   # matrix and data.frame were coerced to data.table above
-      vnames[[i]] = names(xi)  #if (nm!="" && n>1L) paste(nm, names(xi), sep=".") else names(xi)
+      # vnames[[i]] = names(xi)  #if (nm!="" && n>1L) paste(nm, names(xi), sep=".") else names(xi)
       for (j in seq_along(xi)) {
         ans[[k]] = recycle(xi[[j]], nrow)
-        k=k+1L
+        vnames[k] = names(xi)[j]
+        k = k+1L
       }
     } else {
-      vnames[[i]] = nm
+      nm = names(x)[i]
+      vnames[k] = if (length(nm) && !is.na(nm) && nm!="") nm else paste0("V",i)
       ans[[k]] = recycle(xi, nrow)
-      k=k+1L
+      k = k+1L
     }
   }
+
   # fix for #842.   Not sure what this is for.  Revisit in PR in 1.12.4 if needed, else remove.
   #if (mn > 0L) {
   #  nz = which(n > 0L)
@@ -167,8 +168,10 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, ...) {
   #    setattr(xx, 'names', names(x)[nz])
   #  x = xx
   #}
-  setDT(x, key=key) # copy ensured above; also, setDT handles naming
-  x
+  if (check.names) vnames = make.names(vnames, unique=TRUE)
+  setattr(ans, "names", vnames)
+  setDT(ans, key=key) # copy ensured above; also, setDT handles naming
+  ans
 }
 
 # don't retain classes before "data.frame" while converting
