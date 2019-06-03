@@ -467,6 +467,43 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   // if n==1, the code is left to proceed below in case one or more of the 1-row by= columns are NA and na.last=NA. Otherwise it would be easy to return now.
   notFirst = false;
 
+  // first simple way, fail before test 1848 during bmerge typeof INT != DATE
+  for (int i=0; i<length(by); i++) { // #1738
+    SEXP this_col = VECTOR_ELT(DT, INTEGER(by)[i]);
+    if (INHERITS(this_col, char_Date)) {
+      SEXP this_col_int = PROTECT(coerceVector(this_col, INTSXP)); n_protect++;
+      SET_VECTOR_ELT(DT, INTEGER(by)[i], this_col_int);
+    }
+  }
+  
+  /* // another way, adding shallow copy, but so far 'memory not mapped somewhere'
+  // at the top of this fun add: SEXP DT = dt; and rename fun arg from DT to dt, also in data.table.h
+  int date_cols[length(by)];
+  int j=0;
+  Rprintf("first loop\n");
+  for (int i=0; i<length(by); i++) { // #1738
+    Rprintf("first loop; i: %d\n", i);
+    SEXP this_col = VECTOR_ELT(DT, INTEGER(by)[i]);
+    Rprintf("first loop; this_is_date: %d\n", INHERITS(this_col, char_Date));
+    bool this_is_date = INHERITS(this_col, char_Date);
+    if (this_is_date) {
+      Rprintf("first loop; i %d inherits! j %d\n", i, j);
+      date_cols[j] = INTEGER(by)[i];
+      j++;
+    }
+    Rprintf("first loop; iter end; i: %d\n", i);
+  }
+  Rprintf("j: %d\n", j);
+  if (j > 0) {
+    Rprintf("shallow wrapper\n");
+    DT = shallowwrapper(dt, R_NilValue);
+    Rprintf("second loop\n");
+    for (int i=0; i<j; i++) {
+      SEXP this_col = VECTOR_ELT(dt, date_cols[i]);
+      SET_VECTOR_ELT(DT, date_cols[i], coerceVector(this_col, INTSXP));
+    }
+  }*/
+
   SEXP ans = PROTECT(allocVector(INTSXP, nrow)); n_protect++;
   anso = INTEGER(ans);
   TEND(0)
