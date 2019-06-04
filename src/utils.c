@@ -24,8 +24,23 @@ int typeMiss(SEXP x, SEXPTYPE type) {
   }
   return -1;
 }
+SEXP findClass(SEXP x) {
+  SEXP vclass = getAttrib(x, R_ClassSymbol);
+  if (!isString(vclass)) return R_NilValue;
+  for (int i=0; i<length(vclass); i++) {
+    SEXP this_class = STRING_ELT(vclass, i);
+    if (this_class==char_factor) return char_factor;
+    else if (this_class==char_Date) return char_Date;
+    else if (this_class==char_ITime) return char_ITime;
+    else if (this_class==char_POSIXct) return char_POSIXct;
+    else if (this_class==char_integer64) return char_integer64;
+    else if (this_class==char_nanotime) return char_nanotime;
+  }
+  return R_NilValue;
+}
 int classMiss(SEXP x, SEXP char_class) {
   if (!isNewList(x)) error("x must be a list");
+  if (isNull(char_class)) return -1; // class not handled or NULL class in findClass
   int nx = length(x);
   for (int i=0; i<nx; i++) {
     if (!INHERITS(VECTOR_ELT(x, i), char_class)) return i;

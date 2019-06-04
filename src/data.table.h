@@ -205,6 +205,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
 bool isTrueFalse(SEXP x);
 int lengthMiss(SEXP x, int n, bool scalar);
 int typeMiss(SEXP x, SEXPTYPE type);
+SEXP findClass(SEXP x);
 int classMiss(SEXP x, SEXP char_class);
 int levelsMiss(SEXP x, SEXP levels);
 void which_eq_int(int *x, int nx, int *out, int *nout, int val, bool negate);

@@ -14,15 +14,10 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
   int firstTypeMiss = typeMiss(values, TYPEOF(x));
   if (firstTypeMiss >= 0) error("%s: Replacement %d has internal type %s but typeof(x) is %s. Please coerce before coalescing", __func__, firstTypeMiss+1, type2char(TYPEOF(VECTOR_ELT(values, firstTypeMiss))), type2char(TYPEOF(x)));
 
-  if (INHERITS(x, char_integer64)) {
-    int firstClassMiss = classMiss(values, char_integer64);
-    if (firstClassMiss >= 0) error("%s: Replacement %d does not inherit interger64 class while 'x' do. Please align classes before coalescing", __func__, firstClassMiss+1);
-  } else if (INHERITS(x, char_Date)) {
-    int firstClassMiss = classMiss(values, char_Date);
-    if (firstClassMiss >= 0) error("%s: Replacement %d does not inherit Date class while 'x' do. Please align classes before coalescing", __func__, firstClassMiss+1);
-  } else if (INHERITS(x, char_factor)) {
-    int firstClassMiss = classMiss(values, char_factor);
-    if (firstClassMiss >= 0) error("%s: Replacement %d does not inherit factor class while 'x' do. Please align classes before coalescing", __func__, firstClassMiss+1);
+  SEXP x_class = findClass(x);
+  int firstClassMiss = classMiss(values, x_class);
+  if (firstClassMiss >= 0) error("%s: Replacement %d does not inherit %s class while 'x' do. Please align classes before coalescing", __func__, firstClassMiss+1, CHAR(x_class));
+  if (x_class == char_factor) {
     int firstLevelsMiss = levelsMiss(values, getAttrib(x, R_LevelsSymbol));
     if (firstLevelsMiss >= 0) error("%s: Replacement %d has different factor levels than 'x'. Coerce to character or align factor levels before coalescing", __func__, firstLevelsMiss+1);
   }
