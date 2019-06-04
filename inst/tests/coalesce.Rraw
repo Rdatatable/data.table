@@ -40,6 +40,8 @@ idate = as.IDate(int, origin="1970-01-01")
 idate_val = as.IDate(int_val, origin="1970-01-01")
 itime = as.ITime(int)
 itime_val = as.ITime(int_val)
+posix = as.POSIXct(int, origin="1970-01-01")
+posix_val = as.POSIXct(int_val, origin="1970-01-01")
 # singleton replacements
 test(2055.001, coalesce(bool, TRUE), bool_val)
 test(2055.002, coalesce(bool, NA, TRUE), bool_val)
@@ -57,6 +59,8 @@ test(2055.013, coalesce(idate, as.IDate("1970-01-04")), idate_val)
 test(2055.014, coalesce(idate, as.IDate(NA), as.IDate("1970-01-04")), idate_val)
 test(2055.015, coalesce(itime, as.ITime(3L)), itime_val)
 test(2055.016, coalesce(itime, as.ITime(NA), as.ITime(3L)), itime_val)
+test(2055.017, coalesce(posix, as.POSIXct(3L, origin="1970-01-01")), posix_val)
+test(2055.018, coalesce(posix, as.POSIXct(NA_integer_, origin="1970-01-01"), as.POSIXct(3L, origin="1970-01-01")), posix_val)
 # vector replacements
 test(2055.051, coalesce(bool, rep(TRUE, 3L)), bool_val)
 test(2055.052, coalesce(bool, rep(NA, 3L), rep(TRUE, 3L)), bool_val)
@@ -74,6 +78,8 @@ test(2055.063, coalesce(idate, rep(as.IDate("1970-01-04"), 4L)), idate_val)
 test(2055.064, coalesce(idate, rep(as.IDate(NA), 4L), rep(as.IDate("1970-01-04"), 4L)), idate_val)
 test(2055.065, coalesce(itime, rep(as.ITime(3L), 4L)), itime_val)
 test(2055.066, coalesce(itime, rep(as.ITime(NA), 4L), rep(as.ITime(3L), 4L)), itime_val)
+test(2055.067, coalesce(posix, as.POSIXct(rep(3L, 4L), origin="1970-01-01")), posix_val)
+test(2055.068, coalesce(posix, as.POSIXct(rep(NA_integer_, 4L), origin="1970-01-01"), as.POSIXct(rep(3L, 4L), origin="1970-01-01")), posix_val)
 # .dots argument
 test(2055.101, coalesce(bool, .dots=list(NA, TRUE)), bool_val)
 # floating point extras
@@ -102,6 +108,7 @@ test(2055.212, coalesce(list(1), list(2)), error="'x' must be an atomic vector")
 test(2055.213, coalesce(bool, c(TRUE, FALSE)), error="Only singletons will be recycled")
 test(2055.214, coalesce(as.raw(0), as.raw(1)), error="Incompatible type: raw")
 test(2055.215, coalesce(bool, .dots=list()), bool)
+test(2055.216, coalesce(structure(c(1:2,NA,4L), class=c("a")), c(NA,NA,3L,4L)), structure(1:4, class="a"))
 # verbose output
 old = options(datatable.verbose=TRUE)
 test(2055.251, coalesce(bool, TRUE), bool_val, output='which NA took.*duplicate.*took.*loop over NA indices of x took')
@@ -111,9 +118,9 @@ options(old)
 if (test_bit64) {
   int64 = as.integer64(int)
   int64_val = as.integer64(1:4)
-  test(2055.301, coalesce(int64, as.integer64(3)), int64_val)
-  test(2055.302, coalesce(int64, as.integer64(NA), as.integer64(3)), int64_val)
-  test(2055.303, coalesce(int64, as.integer64(rep(3, 4L))), int64_val)
+  test(2055.301, as.character(coalesce(int64, as.integer64(3))), as.character(int64_val)) # why as.character see nanotime tests below
+  test(2055.302, as.character(coalesce(int64, as.integer64(NA), as.integer64(3))), as.character(int64_val))
+  test(2055.303, as.character(coalesce(int64, as.integer64(rep(3, 4L)))), as.character(int64_val))
   test(2055.304, coalesce(int64, 1), error='does not inherit integer64')
   test(2055.305, coalesce(int64, 1L), error = 'internal type integer')
 }
@@ -121,12 +128,11 @@ if (test_bit64) {
 if (test_nanotime) {
   nt = nanotime(int)
   nt_val = nanotime(1:4)
-  #TODO test fail to properly test: eddelbuettel/nanotime#46
-  test(2055.401, coalesce(nt, nanotime(3L)), nt_val)
-  test(2055.402, coalesce(nt, nanotime(NA), nanotime(3L)), nt_val)
-  test(2055.403, coalesce(nt, nanotime(rep(3, 4L))), nt_val)
-  test(2055.404, coalesce(nt, 1), error='does not inherit nanotime')
-  test(2055.405, coalesce(nt, 1L), error = 'internal type integer')
+  #test(2055.401, as.character(coalesce(nt, nanotime(3L))), as.character(nt_val)) # aas.character due to eddelbuettel/nanotime#46
+  #test(2055.402, as.character(coalesce(nt, nanotime(NA), nanotime(3L))), as.character(nt_val))
+  #test(2055.403, as.character(coalesce(nt, nanotime(rep(3, 4L)))), as.character(nt_val))
+  #test(2055.404, coalesce(nt, 1), error='does not inherit nanotime')
+  #test(2055.405, coalesce(nt, 1L), error = 'internal type integer')
 }
 
 # setcoalesce
