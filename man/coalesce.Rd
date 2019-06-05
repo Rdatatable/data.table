@@ -9,7 +9,7 @@ Fill in missing values in a vector by successively pulling from candidate vector
   coalesce(x, \dots, .dots=NULL)
 }
 \arguments{
-  \item{x}{ An atomic vector of values. }
+  \item{x}{ An atomic vector. }
   \item{\dots}{ Vectors of same class as \code{x} to be used successively as replacements for missing values of \code{x}; singletons are also accepted. }
   \item{.dots}{ List of vectors, an alternative interface to specify \dots argument. }
 }
