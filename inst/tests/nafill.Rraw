@@ -48,6 +48,12 @@ l = list(x, y[1:8], z[1:6])
 test(1.41, nafill(l, "locf"), lapply(l, nafill, "locf"))
 test(1.42, nafill(l, "nocb"), lapply(l, nafill, "nocb"))
 test(1.43, nafill(l, fill=0), lapply(l, nafill, fill=0))
+l = list(a=c(1:2,NA,4:5), b=as.Date(c(1:2,NA,4:5), origin="1970-01-01"), d=c(NA,2L,NA,4L,NA), e=as.Date(c(NA,2L,NA,4L,NA), origin="1970-01-01")) # Date retain class #3617
+test(1.44, nafill(l, "locf"), list(c(1:2,2L,4:5), structure(c(1,2,2,4,5), class="Date"), c(NA,2L,2L,4L,4L), structure(c(NA,2,2,4,4), class="Date")))
+test(1.45, nafill(l, "nocb"), list(c(1:2,4L,4:5), structure(c(1,2,4,4,5), class="Date"), c(2L,2L,4L,4L,NA), structure(c(2,2,4,4,NA), class="Date")))
+test(1.46, nafill(l, fill=0), list(c(1:2,0L,4:5), structure(c(1,2,0,4,5), class="Date"), c(0L,2L,0L,4L,0L), structure(c(0,2,0,4,0), class="Date")))
+test(1.47, nafill(l, fill=as.Date(0, origin="1970-01-01")), list(c(1:2,0L,4:5), structure(c(1,2,0,4,5), class="Date"), c(0L,2L,0L,4L,0L), structure(c(0,2,0,4,0), class="Date")))
+test(1.48, nafill(l, fill=as.Date("2019-06-05")), list(c(1:2,18052L,4:5), structure(c(1,2,18052,4,5), class="Date"), c(18052L,2L,18052L,4L,18052L), structure(c(18052,2,18052,4,18052), class="Date")))
 
 # setnafill
 dt = data.table(V1=1:10, V2=10:1, V3=1:10/2)

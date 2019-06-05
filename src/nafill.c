@@ -1,5 +1,4 @@
 #include "data.table.h"
-#include <Rdefines.h>
 
 SEXP colnamesInt(SEXP x, SEXP cols) {
   if (!isNewList(x)) error("'x' argument must be data.table");
@@ -164,7 +163,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
 
   double tic=0.0, toc=0.0;
   if (bverbose) tic = omp_get_wtime();
-  #pragma omp parallel for if (nx>1) schedule(auto) num_threads(getDTthreads())
+  #pragma omp parallel for if (nx>1) num_threads(getDTthreads())
   for (R_len_t i=0; i<nx; i++) {
     switch (TYPEOF(VECTOR_ELT(x, i))) {
     case REALSXP :
@@ -176,6 +175,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     }
   }
   if (bverbose) toc = omp_get_wtime();
+
+  for (R_len_t i=0; i<nx; i++) {
+    if (!isNull(ATTRIB(VECTOR_ELT(x, i)))) copyMostAttrib(VECTOR_ELT(x, i), VECTOR_ELT(ans, i));
+  }
 
   for (R_len_t i=0; i<nx; i++) {
     if (bverbose && (vans[i].message[0][0] != '\0')) Rprintf("%s: %d: %s", __func__, i+1, vans[i].message[0]);
