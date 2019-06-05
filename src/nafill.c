@@ -110,12 +110,13 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
 
   bool binplace = LOGICAL(inplace)[0];
   SEXP x = R_NilValue;
+  int ncols_int=0;
+  int ncols_double=0;
   if (isVectorAtomic(obj)) {
-    if (binplace) {
-      error("'x' argument is atomic vector, in-place update is supported only for list/data.table");
-    } else if (!(isReal(obj) || isInteger(obj))) {
-      error("'x' argument must be numeric type, or list/data.table of numeric types");
-    }
+    if (binplace) error("'x' argument is atomic vector, in-place update is supported only for list/data.table");
+    else if (isReal(obj)) ncols_double=1;
+    else if (isInteger(obj)) ncols_int=1;
+    else error("'x' argument must be numeric type, or list/data.table of numeric types");
     x = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(x, 0, obj);
   } else {
@@ -123,10 +124,11 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
     int *icols = INTEGER(ricols);
     for (int i=0; i<length(ricols); i++) {
-      if (!(isReal(VECTOR_ELT(obj, icols[i]-1)) || isInteger(VECTOR_ELT(obj, icols[i]-1)))) {
-        error("'x' argument must be numeric type, or list/data.table of numeric types");
-      }
-      SET_VECTOR_ELT(x, i, VECTOR_ELT(obj, icols[i]-1));
+      SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
+      if (isReal(this_col)) ncols_double++;
+      else if (isInteger(this_col)) ncols_int++;
+      else error("'x' argument must be numeric type, or list/data.table of numeric types");
+      SET_VECTOR_ELT(x, i, this_col);
     }
   }
   R_len_t nx = length(x);
@@ -169,15 +171,21 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   int32_t ifill=NA_INTEGER;
   int64_t i64fill=NA_INTEGER64;
   if (itype==0) {
-    if (isInteger(fill)) {
+    if (isInteger(fill) && INTEGER(fill)[0]!=NA_INTEGER) {
       ifill = INTEGER(fill)[0];
-      dfill = INTEGER(fill)[0]==NA_INTEGER ? NA_REAL : (double)INTEGER(fill)[0];
-      i64fill = ((int64_t *)INTEGER(fill))[0];
-    } else if (isReal(fill)) {
-      ifill = ISNA(REAL(fill)[0]) ? NA_INTEGER : (int32_t)REAL(fill)[0];
+      if (ncols_double > 0) {
+        SEXP rdfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
+        dfill = REAL(rdfill)[0];
+        i64fill = ((int64_t *)REAL(rdfill))[0];
+      }
+    } else if (isReal(fill) && !ISNA(REAL(fill)[0])) {
+      if (ncols_int > 0) {
+        SEXP rifill = PROTECT(coerceVector(fill, INTSXP)); protecti++;
+        ifill = INTEGER(rifill)[0];
+      }
       dfill = REAL(fill)[0];
       i64fill = ((int64_t *)REAL(fill))[0];
-    } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL){
+    } else if (isInteger(fill) || isReal(fill) || (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL)) {
       ifill = NA_INTEGER;
       dfill = NA_REAL;
       i64fill = NA_INTEGER64;

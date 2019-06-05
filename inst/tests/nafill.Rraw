@@ -31,7 +31,7 @@ test(1.04, nafill(x, fill=5), INT(5,5,3,4,5,5,7,8,5,5))
 test(1.05, nafill(x, fill=NA_integer_), x)
 test(1.06, nafill(x, fill=NA), x)
 test(1.07, nafill(x, fill=NA_real_), x)
-test(1.08, nafill(x, fill=Inf), x)
+test(1.08, nafill(x, fill=Inf), x, warning="NAs introduced by coercion to integer range")
 test(1.09, nafill(x, fill=NaN), x)
 y = x/2
 test(1.11, nafill(y, "locf"), c(NA,NA,3,4,4,4,7,8,8,8)/2)
@@ -63,6 +63,9 @@ test(1.45, nafill(l, "nocb"), list(c(1:2,4L,4:5), structure(c(1,2,4,4,5), class=
 test(1.46, nafill(l, fill=0), list(c(1:2,0L,4:5), structure(c(1,2,0,4,5), class="Date"), c(0L,2L,0L,4L,0L), structure(c(0,2,0,4,0), class="Date")))
 test(1.47, nafill(l, fill=as.Date(0, origin="1970-01-01")), list(c(1:2,0L,4:5), structure(c(1,2,0,4,5), class="Date"), c(0L,2L,0L,4L,0L), structure(c(0,2,0,4,0), class="Date")))
 test(1.48, nafill(l, fill=as.Date("2019-06-05")), list(c(1:2,18052L,4:5), structure(c(1,2,18052,4,5), class="Date"), c(18052L,2L,18052L,4L,18052L), structure(c(18052,2,18052,4,18052), class="Date")))
+
+test(1.50, )
+
 if (test_bit64) {
   l = list(a=as.integer64(c(1:2,NA,4:5)), b=as.integer64(c(NA,2L,NA,4L,NA)))
   test(1.81, lapply(nafill(l, "locf"), as.character), lapply(list(c(1:2,2L,4:5), c(NA,2L,2L,4L,4L)), as.character))
@@ -74,6 +77,8 @@ if (test_bit64) {
   test(1.86, lapply(nafill(l, "locf"), as.character), list(c("3000000001","3000000002","3000000002","3000000004","3000000005"), c(NA_character_,"3000000002","3000000002","3000000004","3000000004")))
   test(1.87, lapply(nafill(l, "nocb"), as.character), list(c("3000000001","3000000002","3000000004","3000000004","3000000005"), c("3000000002","3000000002","3000000004","3000000004",NA_character_)))
   test(1.88, lapply(nafill(l, fill=as.integer64("3000000000")), as.character), list(c("3000000001","3000000002","3000000000","3000000004","3000000005"), c("3000000000","3000000002","3000000000","3000000004","3000000000")))
+  test(1.89, nafill(as.integer64(c(1,2,NA,4)), fill=3), as.integer64(1:4)) # TODO
+  test(1.90, nafill(as.integer64(c(1,2,NA,4)), fill=3L), as.integer64(1:4)) # TODO
 }
 if (test_nanotime) {
   l = list(a=nanotime(c(1:2,NA,4:5)), b=nanotime(c(NA,2L,NA,4L,NA)))
