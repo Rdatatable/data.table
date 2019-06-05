@@ -128,7 +128,7 @@ if (test_bit64) {
 if (test_nanotime) {
   nt = nanotime(int)
   nt_val = nanotime(1:4)
-  test(2055.401, as.character(coalesce(nt, nanotime(3L))), as.character(nt_val)) # aas.character due to eddelbuettel/nanotime#46
+  test(2055.401, as.character(coalesce(nt, nanotime(3L))), as.character(nt_val)) # as.character due to eddelbuettel/nanotime#46
   test(2055.402, as.character(coalesce(nt, nanotime(NA), nanotime(3L))), as.character(nt_val))
   test(2055.403, as.character(coalesce(nt, nanotime(rep(3, 4L)))), as.character(nt_val))
   test(2055.404, coalesce(nt, 1), error='does not inherit nanotime')
@@ -172,9 +172,14 @@ test(2056.15, which_eq(c(Inf, Inf), Inf, negate=TRUE), integer())
 test(2056.16, which_eq(c(NA, 12L, 5L, NA, NA, 16L, NaN, Inf, NA)+0.1, NaN), 7L)
 test(2056.17, which_eq(c(NA, 12L, 5L, NA, NA, 16L, NaN, Inf, NA)+0.1, Inf), 8L)
 if (test_bit64) {
-  test(2056.51, which_eq(bit64::as.integer64(c(1L, NA, 5L)), bit64::as.integer64(5L), negate=TRUE), c(1L,2L))
-  test(2056.52, which_eq(bit64::as.integer64(c(1L, NA, 5L)), bit64::as.integer64(NA_integer_), negate=TRUE), c(1L,3L))
-  test(2056.53, which_eq(bit64::as.integer64(c(1L, 1L)), bit64::as.integer64(1L), negate=TRUE), integer())
+  test(2056.51, which_eq(as.integer64(c(1L, NA, 5L)), as.integer64(5L), negate=TRUE), c(1L,2L))
+  test(2056.52, which_eq(as.integer64(c(1L, NA, 5L)), as.integer64(NA_integer_), negate=TRUE), c(1L,3L))
+  test(2056.53, which_eq(as.integer64(c(1L, 1L)), as.integer64(1L), negate=TRUE), integer())
+}
+if (test_nanotime) {
+  test(2056.61, which_eq(nanotime(c(1L, NA, 5L)), nanotime(5L), negate=TRUE), c(1L,2L))
+  test(2056.62, which_eq(nanotime(c(1L, NA, 5L)), nanotime(NA_integer_), negate=TRUE), c(1L,3L))
+  test(2056.63, which_eq(nanotime(c(1L, 1L)), nanotime(1L), negate=TRUE), integer())
 }
 test(2056.81, which_eq(list(1L,2L), 1L), error="argument 'x' must be atomic vector")
 test(2056.82, which_eq(c(1:2), 1), error="argument 'value' must of the same type as argument 'x'")

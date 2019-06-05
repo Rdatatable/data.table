@@ -200,7 +200,7 @@ SEXP which_eqR(SEXP x, SEXP val, SEXP negate) {
     which_eq_int(INTEGER(x), nx, iwhich, &nwhich, INTEGER(val)[0], bnegate);
   } break;
   case REALSXP: {
-    if (inherits(x,"integer64")) {
+    if (INHERITS(x,char_integer64) || INHERITS(x,char_nanotime)) {
       which_eq_int64((int64_t *)REAL(x), nx, iwhich, &nwhich, ((int64_t *)REAL(val))[0], bnegate);
     } else {
       which_eq_double(REAL(x), nx, iwhich, &nwhich, REAL(val)[0], bnegate);
