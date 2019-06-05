@@ -14977,6 +14977,10 @@ DT = data.table(
 test(2054, DT[order(C)[1:5], B, verbose=TRUE], c('b', 'b', 'c', 'c', 'a'),
            output = 'order optimisation is on')
 
+# ITime class should be retained for same methods as IDate, #3628
+test(2055.1, seq(from = as.ITime('00:00:00'), to = as.ITime('00:00:05'), by = 5L), as.ITime(c(0, 5L)))
+test(2055.2, c(as.ITime(0L), as.ITime(1L)), as.ITime(c(0L, 1L)))
+test(2055.3, mean(as.ITime(c(0L, 0L))), as.ITime(0L))
 
 ###################################
 #  Add new tests above this line  #
