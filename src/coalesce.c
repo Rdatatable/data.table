@@ -38,7 +38,7 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     which_eq_int(INTEGER(x), nx, iwhich, &nwhich, NA_INTEGER, false);
   } break;
   case REALSXP: {
-    if (inherits(x,"integer64")) {
+    if (INHERITS(x,char_integer64) || INHERITS(x,char_nanotime)) {
       which_eq_int64((int64_t *)REAL(x), nx, iwhich, &nwhich, NA_INTEGER64, false);
     } else {
       which_eq_double(REAL(x), nx, iwhich, &nwhich, NA_REAL, false);
@@ -100,7 +100,7 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
     }
   } break;
   case REALSXP: {
-    if (inherits(x,"integer64")) { // integer64
+    if (INHERITS(x,char_integer64) || INHERITS(x,char_nanotime)) { // integer64 and nanotime
       int64_t *out_ptr = (int64_t *)REAL(out);
       for (int i=0; i<nwhich; i++) {
         int j = 0;

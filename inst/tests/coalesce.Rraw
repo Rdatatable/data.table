@@ -128,11 +128,11 @@ if (test_bit64) {
 if (test_nanotime) {
   nt = nanotime(int)
   nt_val = nanotime(1:4)
-  #test(2055.401, as.character(coalesce(nt, nanotime(3L))), as.character(nt_val)) # aas.character due to eddelbuettel/nanotime#46
-  #test(2055.402, as.character(coalesce(nt, nanotime(NA), nanotime(3L))), as.character(nt_val))
-  #test(2055.403, as.character(coalesce(nt, nanotime(rep(3, 4L)))), as.character(nt_val))
-  #test(2055.404, coalesce(nt, 1), error='does not inherit nanotime')
-  #test(2055.405, coalesce(nt, 1L), error = 'internal type integer')
+  test(2055.401, as.character(coalesce(nt, nanotime(3L))), as.character(nt_val)) # aas.character due to eddelbuettel/nanotime#46
+  test(2055.402, as.character(coalesce(nt, nanotime(NA), nanotime(3L))), as.character(nt_val))
+  test(2055.403, as.character(coalesce(nt, nanotime(rep(3, 4L)))), as.character(nt_val))
+  test(2055.404, coalesce(nt, 1), error='does not inherit nanotime')
+  test(2055.405, coalesce(nt, 1L), error = 'internal type integer')
 }
 
 # setcoalesce
