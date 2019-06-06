@@ -38,6 +38,59 @@ SEXP colnamesInt(SEXP x, SEXP cols) {
   UNPROTECT(protecti);
   return ricols;
 }
+void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
+  if (xlength(fill) != 1) error("%s: fill argument must be length 1", __func__);
+  if (isInteger(fill)) {
+    if (INTEGER(fill)[0]==NA_INTEGER) {
+      ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
+    } else {
+      ifill[0] = INTEGER(fill)[0];
+      dfill[0] = (double)(INTEGER(fill)[0]);
+      i64fill[0] = (int64_t)(INTEGER(fill)[0]);
+    }
+  } else if (isReal(fill)) {
+    if (INHERITS(fill,char_integer64) || INHERITS(fill,char_nanotime)) {
+      long long *llfill = (long long *)REAL(fill);
+      if (llfill[0]==NA_INT64_LL) {
+        ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
+      } else {
+        ifill[0] = llfill[0]>INT32_MAX ? NA_INTEGER : (int32_t)(llfill[0]);
+        dfill[0] = (double)(llfill[0]);
+        i64fill[0] = (int64_t)(llfill[0]);
+      }
+    } else {
+      if (ISNA(REAL(fill)[0])) {
+        ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
+      } else {
+        ifill[0] = (int32_t)(REAL(fill)[0]);
+        dfill[0] = REAL(fill)[0];
+        i64fill[0] = (int64_t)(REAL(fill)[0]);
+      }
+    }
+  } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL) {
+    ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
+  } else {
+    error("%s: fill argument must be numeric", __func__);
+  }
+}
+SEXP coerceFillR(SEXP fill) {
+  int protecti=0;
+  double dfill=NA_REAL;
+  int32_t ifill=NA_INTEGER;
+  int64_t i64fill=NA_INTEGER64;
+  coerceFill(fill, &dfill, &ifill, &i64fill);
+  SEXP ans = PROTECT(allocVector(VECSXP, 3)); protecti++;
+  SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, 1));
+  SET_VECTOR_ELT(ans, 1, allocVector(REALSXP, 1));
+  SET_VECTOR_ELT(ans, 2, allocVector(REALSXP, 1));
+  INTEGER(VECTOR_ELT(ans, 0))[0] = ifill;
+  REAL(VECTOR_ELT(ans, 1))[0] = dfill;
+  long long *ll = (long long *)REAL(VECTOR_ELT(ans, 2));
+  ll[0] = i64fill;
+  setAttrib(VECTOR_ELT(ans, 2), R_ClassSymbol, ScalarString(char_integer64));
+  UNPROTECT(protecti);
+  return ans;
+}
 
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose) {
   double tic=0.0;
@@ -170,29 +223,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   double dfill=NA_REAL;
   int32_t ifill=NA_INTEGER;
   int64_t i64fill=NA_INTEGER64;
-  if (itype==0) {
-    if (isInteger(fill) && INTEGER(fill)[0]!=NA_INTEGER) {
-      ifill = INTEGER(fill)[0];
-      if (ncols_double > 0) {
-        SEXP rdfill = PROTECT(coerceVector(fill, REALSXP)); protecti++;
-        dfill = REAL(rdfill)[0];
-        i64fill = ((int64_t *)REAL(rdfill))[0];
-      }
-    } else if (isReal(fill) && !ISNA(REAL(fill)[0])) {
-      if (ncols_int > 0) {
-        SEXP rifill = PROTECT(coerceVector(fill, INTSXP)); protecti++;
-        ifill = INTEGER(rifill)[0];
-      }
-      dfill = REAL(fill)[0];
-      i64fill = ((int64_t *)REAL(fill))[0];
-    } else if (isInteger(fill) || isReal(fill) || (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL)) {
-      ifill = NA_INTEGER;
-      dfill = NA_REAL;
-      i64fill = NA_INTEGER64;
-    } else {
-      error("fill must be numeric");
-    }
-  }
+  if (itype==0) coerceFill(fill, &dfill, &ifill, &i64fill);
 
   double tic=0.0, toc=0.0;
   if (bverbose) tic = omp_get_wtime();
