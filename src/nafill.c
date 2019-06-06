@@ -163,13 +163,9 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
 
   bool binplace = LOGICAL(inplace)[0];
   SEXP x = R_NilValue;
-  int ncols_int=0;
-  int ncols_double=0;
   if (isVectorAtomic(obj)) {
     if (binplace) error("'x' argument is atomic vector, in-place update is supported only for list/data.table");
-    else if (isReal(obj)) ncols_double=1;
-    else if (isInteger(obj)) ncols_int=1;
-    else error("'x' argument must be numeric type, or list/data.table of numeric types");
+    else if (!isReal(obj) && !isInteger(obj)) error("'x' argument must be numeric type, or list/data.table of numeric types");
     x = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(x, 0, obj);
   } else {
@@ -178,9 +174,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     int *icols = INTEGER(ricols);
     for (int i=0; i<length(ricols); i++) {
       SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
-      if (isReal(this_col)) ncols_double++;
-      else if (isInteger(this_col)) ncols_int++;
-      else error("'x' argument must be numeric type, or list/data.table of numeric types");
+      if (!isReal(this_col) && !isInteger(this_col)) error("'x' argument must be numeric type, or list/data.table of numeric types");
       SET_VECTOR_ELT(x, i, this_col);
     }
   }
