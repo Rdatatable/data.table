@@ -114,9 +114,11 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, check.names=FAL
   n = length(x)
   eachnrow = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
   eachncol = integer(n)
+  missing.check.names = missing(check.names)
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # stop("column or argument ",i," is NULL")
+    if (!is.null(dim(xi)) && missing.check.names) check.names=TRUE
     if ("POSIXlt" %chin% class(xi)) {
       warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
       xi = x[[i]] = as.POSIXct(xi)
