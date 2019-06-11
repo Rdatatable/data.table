@@ -14001,11 +14001,12 @@ test(2002.08, rbindlist( list(list(a=1L, z=list(list("z"))), list(a=2L, z=list(l
 test(2002.09, rbindlist( list(list(a=1L, z=list(list("z",1))), list(a=2L, z=list(list(c("a","b"))))) ),
              data.table(a=1:2, z=list(list("z",1), list(c("a","b")))))
 # tests from #3343
-DT1=list(a=NULL); setDT(DT1)
-DT2=list(a=NULL); setDT(DT2)
-test(2002.10, rbind(DT1, DT2),                 data.table(a=logical()))
-test(2002.11, rbind(A=DT1, B=DT2, idcol='id'), data.table(id=character(), a=logical()))
-test(2002.12, rbind(DT1, DT2, idcol='id'),     data.table(id=integer(), a=logical()))
+L1=list(a=NULL)
+test(2002.10, setDT(L1), error="Item 1 is NULL. Columns in data.table cannot be NULL.")
+L2=list(a=NULL)
+test(2002.11, rbindlist(list(L1, L2)),                 data.table(a=logical()))
+test(2002.12, rbindlist(list(A=L1, B=L2), idcol='id'), data.table(id=character(), a=logical()))
+test(2002.13, rbindlist(list(L1, L2), idcol='id'),     data.table(id=integer(), a=logical()))
 
 #rbindlist coverage
 test(2003.1, rbindlist(list(), use.names=1), error="use.names= should be TRUE, FALSE, or not used [(]\"check\" by default[)]")
@@ -14075,7 +14076,7 @@ DT = structure(list(NULL), names="a", class=c("data.table","data.frame"))
 test(2009.1, DT[a>1], error="Column 1 is NULL; malformed data.table")
 DT = null.data.table()
 x = NULL
-test(2009.2, DT[, .(x)], error="Column 1 of j evaluates to NULL. A NULL column is invalid.")
+test(2009.2, DT[, .(x)], error="Item 1 is NULL. Columns in data.table cannot be NULL.")
 test(2009.3, data.table(character(0), NULL), data.table(character(0)))
 test(2009.4, as.data.table(list(y = character(0), x = NULL)), data.table(y=character()))
 
