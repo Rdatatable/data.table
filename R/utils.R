@@ -83,7 +83,7 @@ name_dots = function(...) {
   }
   still_empty = vnames==""
   if (any(still_empty)) vnames[still_empty] = paste0("V", which(still_empty))
-  list(vnames=vnames, novname=novname)
+  vnames
 }
 
 # convert a vector like c(1, 4, 3, 2) into a string like [1, 4, 3, 2]

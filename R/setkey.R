@@ -367,6 +367,15 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   # Cross Join will then produce a join table with the combination of all values (cross product).
   # The last vector is varied the quickest in the table, so dates should be last for roll for example
   l = list(...)
+  if (isFALSE(getOption("datatable.CJ.names", TRUE))) {  # added as FALSE in v1.11.6 with NEWS item saying TRUE in v1.12.0. TODO: remove in v1.13.0
+    if (is.null(vnames <- names(l))) vnames = paste0("V", seq_len(length(l)))
+    else if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
+    names(l) = vnames
+  } else {
+    names(l) = name_dots(...)
+    # names(l) = names(as.list(substitute(list(...)))[-1L])
+    # names(l) = as.character(substitute(list(...)))[-1L]
+  }
   emptyList = FALSE ## fix for #2511
   if(any(sapply(l, length) == 0L)){
     ## at least one column is empty The whole thing will be empty in the end
@@ -405,16 +414,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
       }
     }
   }
-  setattr(l, "row.names", .set_row_names(length(l[[1L]])))
-  setattr(l, "class", c("data.table", "data.frame"))
-  if (getOption("datatable.CJ.names", TRUE)) {  # added as FALSE in v1.11.6 with NEWS item saying TRUE in v1.12.0. TODO: remove in v1.13.0
-    vnames = name_dots(...)$vnames
-  } else {
-    if (is.null(vnames <- names(l))) vnames = paste0("V", seq_len(length(l)))
-    else if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
-  }
-  setattr(l, "names", vnames)
-
+  l = as.data.table.list(l)
   l = alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
   if (sorted) {
     if (!dups) setattr(l, 'sorted', names(l))

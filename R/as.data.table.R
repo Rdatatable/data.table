@@ -137,7 +137,7 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, check.names=FAL
   nrow = max(eachnrow)
   ans = vector("list",ncol)  # always return a new VECSXP
   recycle = function(x, nrow) {
-    if (length(x)==nrow) return(x)
+    if (length(x)==nrow) return(copy(x))
     if (identical(x,list())) vector("list", nrow) else rep(x, length.out=nrow)
   }
   vnames = character(ncol)
@@ -170,6 +170,7 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, check.names=FAL
   #    setattr(xx, 'names', names(x)[nz])
   #  x = xx
   #}
+  if (any(vnames==".SD")) stop("A column may not be called .SD. That has special meaning.")
   if (check.names) vnames = make.names(vnames, unique=TRUE)
   setattr(ans, "names", vnames)
   setDT(ans, key=key) # copy ensured above; also, setDT handles naming

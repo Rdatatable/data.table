@@ -8357,12 +8357,19 @@ test(1613.561, all(all.equal(x, y, ignore.row.order = FALSE), all.equal(x, y, ig
 test(1613.562, all(is.character(all.equal(x, y, ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(x, y, ignore.row.order = TRUE, tolerance = 0))))
 test(1613.563, all(all.equal(rbind(x,y), rbind(y,y), ignore.row.order = FALSE), all.equal(rbind(x,y), rbind(y,y), ignore.row.order = TRUE)))
 test(1613.564, all(is.character(all.equal(rbind(x,y), rbind(y,y), ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(rbind(x,y), rbind(y,y), ignore.row.order = TRUE, tolerance = 0))))
-test(1613.565, all(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = FALSE), is.character(r<-all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = TRUE)) && any(grepl("force 'tolerance' argument to 0", r)))) # no-match due factor force tolerance=0
+test(1613.565, all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = FALSE) &&
+               is.character(r<-all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = TRUE)) &&
+               any(grepl("force 'tolerance' argument to 0", r))) # no-match due factor force tolerance=0
 test(1613.566, all(all.equal(rbind(x,y,y), rbind(x,y,y), ignore.row.order = FALSE, tolerance = 0), all.equal(rbind(x,y,y), rbind(x,y,y), ignore.row.order = TRUE, tolerance = 0)))
-test(1613.567, all(is.character(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = TRUE, tolerance = 0))))
-test(1613.571, all(all.equal(cbind(x, list(factor(1))), cbind(y, list(factor(1))), ignore.row.order = FALSE), is.character(r<-all.equal(cbind(x, list(factor(1))), cbind(y, list(factor(1))), ignore.row.order = TRUE)) && any(grepl("force 'tolerance' argument to 0", r)))) # no-match due factor force tolerance=0
-test(1613.572, all(all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = FALSE), all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = TRUE))) # x to x with factor equality
-test(1613.573, all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = TRUE, tolerance = 1), error = "Factor columns and ignore.row.order cannot be used with non 0 tolerance argument") # error due to provided non zero tolerance
+test(1613.567, is.character(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = FALSE, tolerance = 0)) &&
+               is.character(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = TRUE, tolerance = 0)))
+test(1613.571, all.equal(cbind(x, factor(1)), cbind(y, factor(1)), ignore.row.order = FALSE) &&
+               is.character(r<-all.equal(cbind(x, factor(1)), cbind(y, factor(1)), ignore.row.order = TRUE)) &&
+               any(grepl("force 'tolerance' argument to 0", r))) # no-match due factor force tolerance=0
+test(1613.572, all.equal(cbind(x, factor(1)), cbind(x, factor(1)), ignore.row.order = FALSE) &&
+               all.equal(cbind(x, factor(1)), cbind(x, factor(1)), ignore.row.order = TRUE)) # x to x with factor equality
+test(1613.573, all.equal(cbind(x, factor(1)), cbind(x, factor(1)), ignore.row.order = TRUE, tolerance = 1),
+               error = "Factor columns and ignore.row.order cannot be used with non 0 tolerance argument") # error due to provided non zero tolerance
 test(1613.581, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = 1), all.equal(x, y, ignore.row.order = TRUE, tolerance = 1)))
 test(1613.582, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = sqrt(.Machine$double.eps)/2), all.equal(x, y, ignore.row.order = TRUE, tolerance = sqrt(.Machine$double.eps)/2)), warning = "Argument 'tolerance' was forced")
 
@@ -11991,7 +11998,7 @@ for (i in 100:1) {
 #   in the process of PR #2573
 ## data.table cannot recycle complicated types
 short_s4_col = getClass("MethodDefinition")
-test(1872.01, data.table(a = 1:4, short_s4_col), error = 'problem recycling.*try a simpler type')
+test(1872.01, data.table(a = 1:4, short_s4_col), error="attempt to replicate an object of type 'S4'")
 ## i must be a data.table when on is specified
 DT = data.table(a = 1:3)
 test(1872.02, DT[c(TRUE, FALSE), on = 'coefficients'], error = "not a data.table, but 'on'")
@@ -13444,7 +13451,7 @@ test(1967.34, data.table(1:5, NULL), data.table(V1=1:5))
 ###   if (novname[i]) vnames[[i]] = namesi
 ### but, on pause for now pending #3193
 ### test(1967.35, data.table(1:5, matrix(6:15, nrow = 5L))
-test(1967.35, data.table(1:5, integer(0L)), error = 'Item 2 has no length')
+test(1967.35, data.table(1:5, integer(0L)), data.table(1:5, NA_integer_))
 test(1967.36, data.table(1:5, key = 5L), error = 'must be character')
 
 x = data.table(a = 1:5)
