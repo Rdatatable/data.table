@@ -11,6 +11,16 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   test = data.table:::test
   INT = data.table:::INT
   colnamesInt = data.table:::colnamesInt
+  coerceFill = data.table:::coerceFill
+}
+
+sugg = c(
+  "bit64",
+  "nanotime"
+)
+for (s in sugg) {
+  assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(require(s, character.only=TRUE))))
+  if (!loaded) cat("\n**** Suggested package",s,"is not installed. Tests using it will be skipped.\n\n")
 }
 
 x = 1:10
@@ -48,6 +58,40 @@ l = list(x, y[1:8], z[1:6])
 test(1.41, nafill(l, "locf"), lapply(l, nafill, "locf"))
 test(1.42, nafill(l, "nocb"), lapply(l, nafill, "nocb"))
 test(1.43, nafill(l, fill=0), lapply(l, nafill, fill=0))
+l = list(a=c(1:2,NA,4:5), b=as.Date(c(1:2,NA,4:5), origin="1970-01-01"), d=c(NA,2L,NA,4L,NA), e=as.Date(c(NA,2L,NA,4L,NA), origin="1970-01-01")) # Date retain class #3617
+test(1.44, nafill(l, "locf"), list(c(1:2,2L,4:5), structure(c(1,2,2,4,5), class="Date"), c(NA,2L,2L,4L,4L), structure(c(NA,2,2,4,4), class="Date")))
+test(1.45, nafill(l, "nocb"), list(c(1:2,4L,4:5), structure(c(1,2,4,4,5), class="Date"), c(2L,2L,4L,4L,NA), structure(c(2,2,4,4,NA), class="Date")))
+test(1.46, nafill(l, fill=0), list(c(1:2,0L,4:5), structure(c(1,2,0,4,5), class="Date"), c(0L,2L,0L,4L,0L), structure(c(0,2,0,4,0), class="Date")))
+test(1.47, nafill(l, fill=as.Date(0, origin="1970-01-01")), list(c(1:2,0L,4:5), structure(c(1,2,0,4,5), class="Date"), c(0L,2L,0L,4L,0L), structure(c(0,2,0,4,0), class="Date")))
+test(1.48, nafill(l, fill=as.Date("2019-06-05")), list(c(1:2,18052L,4:5), structure(c(1,2,18052,4,5), class="Date"), c(18052L,2L,18052L,4L,18052L), structure(c(18052,2,18052,4,18052), class="Date")))
+if (test_bit64) {
+  l = list(a=as.integer64(c(1:2,NA,4:5)), b=as.integer64(c(NA,2L,NA,4L,NA)))
+  test(1.61, lapply(nafill(l, "locf"), as.character), lapply(list(c(1:2,2L,4:5), c(NA,2L,2L,4L,4L)), as.character))
+  test(1.62, lapply(nafill(l, "nocb"), as.character), lapply(list(c(1:2,4L,4:5), c(2L,2L,4L,4L,NA)), as.character))
+  test(1.63, lapply(nafill(l, fill=0), as.character), lapply(list(c(1:2,0L,4:5), c(0L,2L,0L,4L,0L)), as.character))
+  test(1.64, lapply(nafill(l, fill=as.integer64(0)), as.character), lapply(list(c(1:2,0L,4:5), c(0L,2L,0L,4L,0L)), as.character))
+  test(1.65, lapply(nafill(l, fill=as.integer64("3000000000")), as.character), list(c("1","2","3000000000","4","5"), c("3000000000","2","3000000000","4","3000000000")))
+  l = lapply(l, `+`, as.integer64("3000000000"))
+  test(1.66, lapply(nafill(l, "locf"), as.character), list(c("3000000001","3000000002","3000000002","3000000004","3000000005"), c(NA_character_,"3000000002","3000000002","3000000004","3000000004")))
+  test(1.67, lapply(nafill(l, "nocb"), as.character), list(c("3000000001","3000000002","3000000004","3000000004","3000000005"), c("3000000002","3000000002","3000000004","3000000004",NA_character_)))
+  test(1.68, lapply(nafill(l, fill=as.integer64("3000000000")), as.character), list(c("3000000001","3000000002","3000000000","3000000004","3000000005"), c("3000000000","3000000002","3000000000","3000000004","3000000000")))
+  test(1.69, nafill(c(1L,2L,NA,4L), fill=as.integer64(3L)), 1:4)
+  test(1.70, nafill(c(1L,2L,NA,4L), fill=as.integer64(NA)), c(1:2,NA,4L))
+  test(1.71, nafill(c(1,2,NA,4), fill=as.integer64(3)), c(1,2,3,4))
+  test(1.72, nafill(c(1,2,NA,4), fill=as.integer64(NA)), c(1,2,NA,4))
+  test(1.73, nafill(as.integer64(c(1,2,NA,4)), fill=3), as.integer64(1:4))
+  test(1.74, nafill(as.integer64(c(1,2,NA,4)), fill=3L), as.integer64(1:4))
+  test(1.75, nafill(as.integer64(c(1,2,NA,4)), fill=NA_integer_), as.integer64(c(1:2,NA,4L)))
+  test(1.76, nafill(as.integer64(c(1,2,NA,4)), fill=NA_real_), as.integer64(c(1:2,NA,4L)))
+  test(1.77, nafill(as.integer64(c(1,2,NA,4)), fill=NA), as.integer64(c(1:2,NA,4L)))
+}
+if (test_nanotime) {
+  l = list(a=nanotime(c(1:2,NA,4:5)), b=nanotime(c(NA,2L,NA,4L,NA)))
+  test(1.91, lapply(nafill(l, "locf"), as.character), lapply(list(nanotime(c(1:2,2L,4:5)), nanotime(c(NA,2L,2L,4L,4L))), as.character))
+  test(1.92, lapply(nafill(l, "nocb"), as.character), lapply(list(nanotime(c(1:2,4L,4:5)), nanotime(c(2L,2L,4L,4L,NA))), as.character))
+  test(1.93, lapply(nafill(l, fill=0), as.character), lapply(list(nanotime(c(1:2,0L,4:5)), nanotime(c(0L,2L,0L,4L,0L))), as.character))
+  test(1.94, lapply(nafill(l, fill=nanotime(0)), as.character), lapply(list(nanotime(c(1:2,0L,4:5)), nanotime(c(0L,2L,0L,4L,0L))), as.character))
+}
 
 # setnafill
 dt = data.table(V1=1:10, V2=10:1, V3=1:10/2)
@@ -67,6 +111,9 @@ test(2.06, {setnafill(dt, "nocb", cols=c("V2","V3")); dt}, db[, c(list(V1), nafi
 db[, "V4" := c(letters[1:3],NA,letters[5:7],NA,letters[9:10])]
 dt = copy(db)
 test(2.07, {setnafill(dt, "locf", cols=c("V2","V3")); dt}, db[, c(list(V1), nafill(.SD, "locf"), list(V4)), .SDcols=c("V2","V3")])
+l = list(a=c(1:2,NA,4:5), b=as.Date(c(1:2,NA,4:5), origin="1970-01-01"), d=c(NA,2L,NA,4L,NA), e=as.Date(c(NA,2L,NA,4L,NA), origin="1970-01-01")) # Date retain class #3617
+setnafill(l, fill=as.Date("2019-06-05"))
+test(2.08, unname(l), list(c(1:2,18052L,4:5), structure(c(1,2,18052,4,5), class="Date"), c(18052L,2L,18052L,4L,18052L), structure(c(18052,2,18052,4,18052), class="Date")))
 
 # exceptions test coverage
 x = 1:10
@@ -76,7 +123,7 @@ test(3.03, setnafill(x, "locf"), error="in-place update is supported only for li
 test(3.04, nafill(letters[1:5], fill=0), error="must be numeric type, or list/data.table")
 test(3.05, setnafill(list(letters[1:5]), fill=0), error="must be numeric type, or list/data.table")
 test(3.06, nafill(x, fill=1:2), error="fill must be a vector of length 1")
-test(3.07, nafill(x, fill="asd"), error="fill must be numeric")
+test(3.07, nafill(x, fill="asd"), error="fill argument must be numeric")
 
 # colnamesInt helper
 dt = data.table(a=1, b=2, d=3)
@@ -108,3 +155,22 @@ test(5.01, nafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafill
 test(5.02, setnafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
 test(5.03, nafill(dt, "locf", verbose=NA), error="verbose must be TRUE or FALSE")
 
+# coerceFill
+if (test_bit64) {
+  test(6.01, coerceFill(1:2), error="fill argument must be length 1")
+  test(6.02, coerceFill("a"), error="fill argument must be numeric")
+  test(6.11, identical(coerceFill(NA), list(NA_integer_, NA_real_, as.integer64(NA))))
+  test(6.21, identical(coerceFill(3L), list(3L, 3, as.integer64(3))))
+  test(6.22, identical(coerceFill(0L), list(0L, 0, as.integer64(0))))
+  test(6.23, identical(coerceFill(NA_integer_), list(NA_integer_, NA_real_, as.integer64(NA))))
+  test(6.31, identical(coerceFill(as.integer64(3)), list(3L, 3, as.integer64(3))))
+  test(6.32, identical(coerceFill(as.integer64(3000000003)), list(NA_integer_, 3000000003, as.integer64("3000000003"))))
+  test(6.33, identical(coerceFill(as.integer64(0)), list(0L, 0, as.integer64(0))))
+  test(6.34, identical(coerceFill(as.integer64(NA)), list(NA_integer_, NA_real_, as.integer64(NA))))
+  test(6.41, identical(coerceFill(3), list(3L, 3, as.integer64(3))))
+  test(6.42, identical(coerceFill(0), list(0L, 0, as.integer64(0))))
+  test(6.43, identical(coerceFill(NA_real_), list(NA_integer_, NA_real_, as.integer64(NA))))
+  test(6.44, identical(coerceFill(NaN), list(NA_integer_, NaN, as.integer64(NA))))
+  test(6.45, identical(coerceFill(Inf), list(NA_integer_, Inf, as.integer64(NA))))
+  test(6.46, identical(coerceFill(-Inf), list(NA_integer_, -Inf, as.integer64(NA))))
+}
