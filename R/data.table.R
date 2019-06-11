@@ -2674,7 +2674,8 @@ chgroup = function(x) {
 }
 
 rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL) {
-  if(!is.list(l)) stop("Input is not a list")
+  if (is.null(l)) return(null.data.table())
+  if (!is.list(l)) stop("Input is not a list")
   if (isFALSE(idcol)) { idcol = NULL }
   else if (!is.null(idcol)) {
     if (isTRUE(idcol)) idcol = ".id"
