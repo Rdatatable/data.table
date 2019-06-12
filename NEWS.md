@@ -134,6 +134,8 @@
 
 20. `c`, `seq` and `mean` of `ITime` objects now retain the `ITime` class via new `ITime` methods, [#3628](https://github.com/Rdatatable/data.table/issues/3628). Thanks @UweBlock for reporting. The `cut` and `split` methods for `ITime` have been removed since the default methods work, [#3630](https://github.com/Rdatatable/data.table/pull/3630).
 
+20. `as.data.table.array` now handles the case when some of the array's dimension names are `NULL`, [#3636](https://github.com/Rdatatable/data.table/issues/3636).
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.

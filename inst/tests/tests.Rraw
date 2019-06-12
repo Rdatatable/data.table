@@ -14982,6 +14982,16 @@ test(2055.1, seq(from = as.ITime('00:00:00'), to = as.ITime('00:00:05'), by = 5L
 test(2055.2, c(as.ITime(0L), as.ITime(1L)), as.ITime(c(0L, 1L)))
 test(2055.3, mean(as.ITime(c(0L, 0L))), as.ITime(0L))
 
+# as.data.table.array some of dimnames are NULL, #3636
+a = array(1:8, dim=c(2L,2L,2L), dimnames=list(NULL, NULL, as.character(1:2)))
+ans = data.table(V1=c(1L,1L,1L,1L,2L,2L,2L,2L),
+                 V2=c(1L,1L,2L,2L,1L,1L,2L,2L),
+                 V3=c("1","2","1","2","1","2","1","2"),
+                 value=c(1L,5L,3L,7L,2L,6L,4L,8L),
+                 key=c("V1","V2","V3"))
+test(2056, as.data.table(a), ans)
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
