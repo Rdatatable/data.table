@@ -132,6 +132,8 @@
 
 19. `merge.data.table` now retains any custom classes of the first argument, [#1378](https://github.com/Rdatatable/data.table/issues/1378). Thanks to @michaelquinn32 for reopening.
 
+20. `c`, `seq` and `mean` of `ITime` objects now retain the `ITime` class via new `ITime` methods, [#3628](https://github.com/Rdatatable/data.table/issues/3628). Thanks @UweBlock for reporting. The `cut` and `split` methods for `ITime` have been removed since the default methods work, [#3630](https://github.com/Rdatatable/data.table/pull/3630).
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
