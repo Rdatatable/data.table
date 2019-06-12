@@ -167,6 +167,7 @@ R_CallMethodDef callMethods[] = {
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
 {"CnafillR", (DL_FUNC) &nafillR, -1},
 {"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
+{"CcoerceFillR", (DL_FUNC) &coerceFillR, -1},
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
 {NULL, NULL, 0}
 };

@@ -41,3 +41,7 @@ setnafill = function(x, type=c("const","locf","nocb"), fill=NA, cols=seq_along(x
 colnamesInt = function(x, cols) {
   .Call(CcolnamesInt, x, cols)
 }
+
+coerceFill = function(x) {
+  .Call(CcoerceFillR, x)
+}
