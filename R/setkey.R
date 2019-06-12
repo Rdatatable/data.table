@@ -367,7 +367,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   # Cross Join will then produce a join table with the combination of all values (cross product).
   # The last vector is varied the quickest in the table, so dates should be last for roll for example
   l = list(...)
-  if (isFALSE(getOption("datatable.CJ.names", TRUE))) {  # added as FALSE in v1.11.6 with NEWS item saying TRUE in v1.12.0. TODO: remove in v1.13.0
+  if (isFALSE(getOption("datatable.CJ.names", TRUE))) {  # default TRUE from v1.12.0, FALSE before. TODO: remove option in v1.13.0 as stated in news
     if (is.null(vnames <- names(l))) vnames = paste0("V", seq_len(length(l)))
     else if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
     names(l) = vnames

@@ -122,7 +122,7 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, check.names=FAL
   missing.check.names = missing(check.names)
   for (i in seq_len(n)) {
     xi = x[[i]]
-    if (is.null(xi)) next    # stop("column or argument ",i," is NULL")
+    if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
     if (!is.null(dim(xi)) && missing.check.names) check.names=TRUE
     if ("POSIXlt" %chin% class(xi)) {
       warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
@@ -137,7 +137,7 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, check.names=FAL
     eachnrow[i] = NROW(xi)    # for a vector (including list() columns) returns the length
     eachncol[i] = NCOL(xi)    # for a vector returns 1
   }
-  ncol = sum(eachncol)
+  ncol = sum(eachncol)  # hence removes NULL items silently (no error or warning), #842.
   if (ncol==0L) return(null.data.table())
   nrow = max(eachnrow)
   ans = vector("list",ncol)  # always return a new VECSXP
@@ -166,15 +166,6 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, check.names=FAL
       k = k+1L
     }
   }
-
-  # fix for #842.   Not sure what this is for.  Revisit in PR in 1.12.4 if needed, else remove.
-  #if (mn > 0L) {
-  #  nz = which(n > 0L)
-  #  xx = point(vector("list", length(nz)), seq_along(nz), x, nz)
-  #  if (!is.null(names(x)))
-  #    setattr(xx, 'names', names(x)[nz])
-  #  x = xx
-  #}
   if (any(vnames==".SD")) stop("A column may not be called .SD. That has special meaning.")
   if (check.names) vnames = make.names(vnames, unique=TRUE)
   setattr(ans, "names", vnames)

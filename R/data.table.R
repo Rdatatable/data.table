@@ -2705,9 +2705,8 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   } else if (is.list(x)) {
     # copied from as.data.table.list - except removed the copy
     for (i in seq_along(x)) {
-      if (is.null(x[[i]])) stop("Item ", i, " is NULL. Columns in data.table cannot be NULL.")
-      if (inherits(x[[i]], "POSIXlt"))
-        stop("Column ", i, " is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+      if (is.null(x[[i]]))             stop("Item ", i, " is NULL. Columns in data.table cannot be NULL.")
+      if (inherits(x[[i]], "POSIXlt")) stop("Column ", i, " is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
     }
     n = vapply(x, length, 0L)
     n_range = range(n)

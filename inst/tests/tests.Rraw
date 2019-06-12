@@ -6743,14 +6743,18 @@ test(1483.3, merge(x,y,by="country",all=TRUE), data.table(country=factor(c("US",
 setkey(y)
 test(1483.4, y[x], data.table(country="US", key="country"))
 
-# Fix for #842
+# NULL items should be removed when making data.table from list, #842
+# Original fix for #842 added a branch in as.data.table.list() using point()
+# Then PR#3471 moved logic from data.table() into as.data.table.list() and now removes NULL items up front, so longer need for the branch
+# Since the logic was changed, this test was strengthened to explicity test the result rather than compare two calls to SomeFunction()
 SomeFunction <- function(x, setnull=1L) {
   ans <- replicate(length(x), list("bla1", "bla2"), simplify=FALSE)
   ans[setnull] <- list(NULL)
   return(ans)
 }
 DT <- data.table(ID=1:3, key="ID")
-test(1484, DT[, SomeFunction(ID, setnull=1L)], DT[, SomeFunction(ID, setnull=2L)])
+test(1484.1, DT[, SomeFunction(ID, setnull=1L)], ans<-data.table(V1=list("bla1","bla2"), V2=list("bla1","bla2")))
+test(1484.2, DT[, SomeFunction(ID, setnull=2L)], ans)
 
 # Fix for #868
 vals = c("setosa", "versicolor", "virginica")
