@@ -142,8 +142,16 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, check.names=FAL
   nrow = max(eachnrow)
   ans = vector("list",ncol)  # always return a new VECSXP
   recycle = function(x, nrow) {
-    if (length(x)==nrow) return(copy(x))
-    if (identical(x,list())) vector("list", nrow) else rep(x, length.out=nrow)
+    if (length(x)==nrow) {
+      return(copy(x))
+      # This copy used to be achieved via .Call(CcopyNamedInList,x) at the top of data.table(). It maintains pre-Rv3.1.0
+      # behavior, for now. See test 548.2. The copy() calls duplicate() at C level which (importantly) also expands ALTREP objects.
+      # TODO: port this as.data.table.list() to C and use MAYBE_REFERENCED(x) || ALTREP(x) to save some copies.
+      #       That saving used to be done by CcopyNamedInList but the copies happened again as well, so removing CcopyNamedInList is
+      #       not worse than before, and gets us in a better centralized place to port as.data.table.list to C and use MAYBE_REFERENCED
+      #       again in future.
+    }
+    if (identical(x,list())) vector("list", nrow) else rep(x, length.out=nrow)   # new objects don't need copy
   }
   vnames = character(ncol)
   k = 1L

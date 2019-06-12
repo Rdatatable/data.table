@@ -373,8 +373,6 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     names(l) = vnames
   } else {
     names(l) = name_dots(...)
-    # names(l) = names(as.list(substitute(list(...)))[-1L])
-    # names(l) = as.character(substitute(list(...)))[-1L]
   }
   emptyList = FALSE ## fix for #2511
   if(any(sapply(l, length) == 0L)){

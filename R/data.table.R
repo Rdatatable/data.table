@@ -49,27 +49,11 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
 {
   # NOTE: It may be faster in some circumstances for users to create a data.table by creating a list l
   #       first, and then setattr(l,"class",c("data.table","data.frame")) and forgo checking.
-  # TO DO: rewrite data.table(), one of the oldest functions here. Many people use data.table() to convert data.frame rather than
-  # as.data.table which is faster; speed could be better.  Revisit how many copies are taken in for example data.table(DT1,DT2) which
-  # cbind directs to.  And the nested loops for recycling lend themselves to being C level.
-
-  x = list(...)   # doesn't copy named inputs as from R >= 3.1.0 (a very welcome change)
+  x = list(...)   # list() doesn't copy named inputs as from R >= 3.1.0 (a very welcome change)
+  names(x) = name_dots(...)
   if (length(x)==0L) return( null.data.table() )
   if (length(x)==1L && (is.null(x[[1L]]) || (is.list(x[[1L]]) && length(x[[1L]])==0L))) return( null.data.table() ) #5377
-  .Call(CcopyNamedInList,x)   # to maintain pre-Rv3.1.0 behaviour, for now. See test 548.2. TODO: revist
-  # TODO Something strange with NAMED on components of `...` to investigate. Or, just port data.table() to C.
-
-  vnames = if (is.null(names(x))) character(length(x)) else names(x)
-  if (length(w <- which(vnames==""))) {
-    sub = substitute(list(...))
-    for (i in w) {
-      if (is.name(nm<-sub[[i+1L]])) vnames[i]=as.character(nm)
-      else if ((tmp<-deparse(nm)[1L])==make.names(tmp)) vnames[i]=tmp
-    }
-    names(x) = vnames
-  }
-  ans = as.data.table.list(x, keep.rownames=keep.rownames, check.names=check.names)
-  # delete ... if (check.names) setnames(ans, make.names(names(ans),unique=TRUE))
+  ans = as.data.table.list(x, keep.rownames=keep.rownames, check.names=check.names)  # see comments inside as.data.table.list re copies
   if (!is.null(key)) {
     if (!is.character(key)) stop("key argument of data.table() must be character")
     if (length(key)==1L) {
