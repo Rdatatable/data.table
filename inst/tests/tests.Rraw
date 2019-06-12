@@ -14978,6 +14978,15 @@ test(2054, DT[order(C)[1:5], B, verbose=TRUE], c('b', 'b', 'c', 'c', 'a'),
            output = 'order optimisation is on')
 
 
+# rbindlist improved error message, #3638
+DT = data.table(a = 1)
+test(2055.1, rbindlist(list(DT,1)), error="Item 2 of input is not a data.frame, data.table or list")
+test(2055.2, rbindlist(DT), error="Input is not a list")
+
+
+
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
