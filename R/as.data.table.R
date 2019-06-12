@@ -90,10 +90,15 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   if (!missing(sorted) && !is.null(key))
     stop("Please provide either 'key' or 'sorted', but not both.")
 
-
   dnx = dimnames(x)
   # NULL dimnames will create integer keys, not character as in table method
-  val = rev(if (is.null(dnx)) lapply(dx, seq.int) else dnx)
+  val = if (is.null(dnx)) {
+    lapply(dx, seq.int)
+  } else if (any(nulldnx<-sapply(dnx, is.null))) {
+    dnx[nulldnx] = lapply(dx[nulldnx], seq.int) #3636
+    dnx
+  } else dnx
+  val = rev(val)
   if (is.null(names(val)) || all(!nzchar(names(val))))
     setattr(val, 'names', paste0("V", rev(seq_along(val))))
   if (value.name %chin% names(val))
