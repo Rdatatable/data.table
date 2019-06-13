@@ -2107,7 +2107,9 @@ transform.data.table = function (`_data`, ...)
   inx = chmatch(tags, names(`_data`))
   matched = !is.na(inx)
   if (any(matched)) {
-    if (isTRUE(attr(`_data`, ".data.table.locked", TRUE))) setattr(`_data`, ".data.table.locked", NULL) # fix for #1641
+    if (isTRUE(attr(`_data`, ".data.table.locked", TRUE))) {
+      setattr(`_data`, ".data.table.locked", NULL) # fix for #1641, now covered by test 104.2
+    }
     `_data`[,inx[matched]] = e[matched]
     `_data` = as.data.table(`_data`)
   }
