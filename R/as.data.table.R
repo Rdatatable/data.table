@@ -127,8 +127,11 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, check.names=FAL
     if ("POSIXlt" %chin% class(xi)) {
       warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
       xi = x[[i]] = as.POSIXct(xi)
-    } else if (is.matrix(xi) || is.data.frame(xi)) {  # including data.table (a data.frame, too)
-      xi = x[[i]] = as.data.table(xi, keep.rownames=keep.rownames)  # we will never allow a matrix to be a column; always unpack the columns
+    } else if (is.matrix(xi) || is.data.frame(xi)) {
+      if (!is.data.table(xi)) {
+        xi = x[[i]] = as.data.table(xi, keep.rownames=keep.rownames)  # we will never allow a matrix to be a column; always unpack the columns
+      }
+      # else avoid dispatching to as.data.table.data.table (which exists and copies)
     } else if (is.table(xi)) {
       xi = x[[i]] = as.data.table.table(xi, keep.rownames=keep.rownames)
     } else if (is.function(xi)) {
