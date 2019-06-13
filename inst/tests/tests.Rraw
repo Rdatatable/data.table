@@ -14077,9 +14077,13 @@ DT = structure(list(NULL), names="a", class=c("data.table","data.frame"))
 test(2009.1, DT[a>1], error="Column 1 is NULL; malformed data.table")
 DT = null.data.table()
 x = NULL
-test(2009.2, DT[, .(x)], error="Item 1 is NULL. Columns in data.table cannot be NULL.")
-test(2009.3, data.table(character(0), NULL), data.table(character(0)))
-test(2009.4, as.data.table(list(y = character(0), x = NULL)), data.table(y=character()))
+test(2009.2, DT[, .(x)], null.data.table())  # because .(x) evaluated to .(NULL); NULL columns in results removed
+DT = data.table(A=1:3)
+test(2009.3, DT[, .(x)], null.data.table())
+test(2009.4, DT[, .(x, sum(A))], data.table(V1=6L))
+test(2009.5, DT[, .(sum(A), x)], data.table(V1=6L))
+test(2009.6, data.table(character(0), NULL), data.table(V1=character()))
+test(2009.7, as.data.table(list(y = character(0), x = NULL)), data.table(y=character()))
 
 # use.names="check" message|warning for out-of-order; https://github.com/Rdatatable/data.table/pull/3455#issuecomment-472744347
 DT1 = data.table(a=1:2, b=5:6)

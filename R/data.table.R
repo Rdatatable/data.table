@@ -1304,9 +1304,12 @@ replace_order = function(isub, verbose, env) {
         # avoid copy if all vectors are already of same lengths, use setDT
         lenjval = vapply(jval, length, 0L)
         if (any(lenjval != lenjval[1L])) {
-          jval = as.data.table.list(jval)   # does the vector expansion to create equal length vectors
+          jval = as.data.table.list(jval)   # does the vector expansion to create equal length vectors, and drops any NULL items
           jvnames = jvnames[lenjval != 0L]  # fix for #1477
-        } else setDT(jval)
+        } else {
+          if (identical(jval, list(NULL))) return(null.data.table())  # test 2009.2 & 2009.3, otherwise setDT correctly errors that a column can't be NULL
+          setDT(jval)
+        }
       }
       if (is.null(jvnames)) jvnames = character(length(jval)-length(bynames))
       ww = which(jvnames=="")
