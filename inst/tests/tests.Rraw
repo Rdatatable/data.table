@@ -5731,7 +5731,7 @@ test(1380, DT[a==TRUE], DT[3:4])
 # Fix #847, as.data.table.list and character(0) issue
 x <- data.table(a=character(0), b=character(0), c=numeric(0))
 setkey(x, a, b)
-test(1381, x[J("foo", character(0)), nomatch=0L], x)
+test(1381, x[J("foo", character(0)), nomatch=0L], x, warning="Item 2 has 0 rows but longest item has 1; filled with NA")
 
 # Fix for #813 and #758
 DT = data.table(x = 1:2)
@@ -13459,7 +13459,7 @@ test(1967.34, data.table(1:5, NULL), data.table(V1=1:5))
 ###   if (novname[i]) vnames[[i]] = namesi
 ### but, on pause for now pending #3193
 ### test(1967.35, data.table(1:5, matrix(6:15, nrow = 5L))
-test(1967.35, data.table(1:5, integer(0L)), data.table(1:5, NA_integer_))
+test(1967.35, data.table(1:5, integer(0L)), data.table(1:5, NA_integer_), warning="Item 2 has 0 rows but longest item has 5; filled with NA")
 test(1967.36, data.table(1:5, key = 5L), error = 'must be character')
 
 x = data.table(a = 1:5)

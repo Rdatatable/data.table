@@ -160,6 +160,8 @@ as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, check.names=FAL
     if (is.null(xi)) next
     if (eachnrow[i]>1L && nrow%%eachnrow[i]!=0L)   # in future: eachnrow[i]!=nrow
       warning("Item ", i, " has ", eachnrow[i], " rows but longest item has ", nrow, "; recycled with remainder.")
+    if (eachnrow[i]==0L && nrow>0L && is.atomic(xi))   # is.atomic to ignore list() since list() is a common way to initialize; let's not insist on list(NULL)
+      warning("Item ", i, " has 0 rows but longest item has ", nrow, "; filled with NA")  # the rep() in recycle() above creates the NA vector
     if (is.data.table(xi)) {   # matrix and data.frame were coerced to data.table above
       # vnames[[i]] = names(xi)  #if (nm!="" && n>1L) paste(nm, names(xi), sep=".") else names(xi)
       for (j in seq_along(xi)) {
