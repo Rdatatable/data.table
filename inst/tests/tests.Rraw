@@ -15009,6 +15009,39 @@ DF = structure(list(a=list(c("a","b"), c("a","b"), c("a","b")), b=data.frame(foo
 DT = as.data.table(DF)
 test(2057.3, DT, data.table(a=list(c("a","b"), c("a","b"), c("a","b")), foo=1:3, bar=4:6))
 
+# one and two+ row cases of data.table, as.data.table and cbind involving list columns, given
+# the change to tests 1613.571-3 in PR#3471 in v1.12.4
+# in v1.12.2 and before :
+# data.table( data.table(1:2), list(c("a","b"),"a") )
+#       V1     V2     NA
+#    <int> <char> <char>
+# 1:     1      a      a
+# 2:     2      b      a
+# i.e. passing a data.table() to data.table() changed the meaning of list() which was inconsistent,
+#      and an NA column name was introduced too (a bug in itself)
+# from v1.12.4 :
+#       V1     V2
+#    <int> <list>
+# 1:     1    a,b
+# 2:     2      a
+# i.e. now easier to add the list column as intended, and it's consistent with
+#      basic (i.e. not cbind-like) usage of data.table()
+#                                                                               # changed in v1.12.4 ?
+ans = data.table(V1=1, V2=2)                                                    # --------------------
+test(2058.01, data.table( data.table(1),  2),        ans)                       # no
+test(2058.02, as.data.table(list(data.table(1), 2)), ans)                       # no
+test(2058.03, cbind(data.table(1),  2),              ans)                       # no
+ans = data.table(V1=1, V2=list(2))  # 'basic' usage; i.e. not cbind-like
+test(2058.04, sapply(ans, class), c(V1="numeric", V2="list"))                   # no
+test(2058.05, data.table( data.table(1),  list(2) ),       ans)                 # yes
+test(2058.06, as.data.table(list(data.table(1), list(2))), ans)                 # yes
+test(2058.07, cbind(data.table(1), list(2)),               ans)                 # yes
+ans = data.table(V1=1:2, V2=list(c("a","b"),"a"))
+test(2058.08, sapply(ans, class), c(V1="integer", V2="list"))                   # no
+test(2058.09, data.table( data.table(1:2), list(c("a","b"),"a") ),        ans)  # yes
+test(2058.10, as.data.table(list(data.table(1:2), list(c("a","b"),"a"))), ans)  # yes
+test(2058.11, cbind(data.table(1:2), list(c("a","b"),"a")),               ans)  # yes
+
 
 ###################################
 #  Add new tests above this line  #
