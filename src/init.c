@@ -26,7 +26,6 @@ SEXP vecseq();
 SEXP setlistelt();
 SEXP setmutable();
 SEXP address();
-SEXP copyNamedInList();
 SEXP expandAltRep();
 SEXP fmelt();
 SEXP fcast();
@@ -111,7 +110,6 @@ R_CallMethodDef callMethods[] = {
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
 {"Csetmutable", (DL_FUNC) &setmutable, -1},
 {"Caddress", (DL_FUNC) &address, -1},
-{"CcopyNamedInList", (DL_FUNC) &copyNamedInList, -1},
 {"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1},
 {"Cfcast", (DL_FUNC) &fcast, -1},
