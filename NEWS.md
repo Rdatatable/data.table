@@ -138,16 +138,16 @@
 
 21. `as.data.table.array` now handles the case when some of the array's dimension names are `NULL`, [#3636](https://github.com/Rdatatable/data.table/issues/3636).
 
-22. Adding a `list` column using `cbind`, `as.data.table`, or `data.table` now works rather than treating the `list` as if it were a set of columns, [#3471](https://github.com/Rdatatable/data.table/pull/3471). However, please note that using `:=` to add columns is preferred.
+22. Adding a `list` column using `cbind`, `as.data.table`, or `data.table` now works rather than treating the `list` as if it were a set of columns and introducing an invalid NA column name, [#3471](https://github.com/Rdatatable/data.table/pull/3471). However, please note that using `:=` to add columns is preferred.
 
     ```R
-    # cbind( data.table(1:2), list(c("a","b"),"a") )
-    #       V1     V2     NA    # v1.12.2 and before
-    #    <int> <char> <char>    # introduced invalid NA column name too
+    cbind( data.table(1:2), list(c("a","b"),"a") )
+    #       V1     V2     NA   # v1.12.2 and before
+    #    <int> <char> <char>
     # 1:     1      a      a
     # 2:     2      b      a
     #
-    #       V1     V2           # v1.12.4+
+    #       V1     V2          # v1.12.4+
     #    <int> <list>
     # 1:     1    a,b
     # 2:     2      a
