@@ -15041,6 +15041,11 @@ test(2058.09, data.table( data.table(1:2), list(c("a","b"),"a") ),        ans)  
 test(2058.10, as.data.table(list(data.table(1:2), list(c("a","b"),"a"))), ans)  # yes
 test(2058.11, cbind(data.table(1:2), list(c("a","b"),"a")),               ans)  # yes
 
+# rbindlist improved error message, #3638
+DT = data.table(a=1)
+test(2059.1, rbindlist(list(DT,1)), error="Item 2 of input is not a data.frame, data.table or list")
+test(2059.2, rbindlist(DT), error="Input is data.table but should be a plain list of items to be stacked")
+
 
 ###################################
 #  Add new tests above this line  #
