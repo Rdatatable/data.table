@@ -1301,13 +1301,13 @@ replace_order = function(isub, verbose, env) {
         jval = data.table(jval) # TO DO: should this be setDT(list(jval)) instead?
       } else {
         if (is.null(jvnames)) jvnames=names(jval)
-        # avoid copy if all vectors are already of same lengths, use setDT
         lenjval = vapply(jval, length, 0L)
-        if (any(lenjval != lenjval[1L])) {
+        nulljval = vapply(jval, is.null, FALSE)
+        if (lenjval[1L]==0L || any(lenjval != lenjval[1L])) {
           jval = as.data.table.list(jval)   # does the vector expansion to create equal length vectors, and drops any NULL items
-          jvnames = jvnames[lenjval != 0L]  # fix for #1477
+          jvnames = jvnames[!nulljval] # fix for #1477
         } else {
-          if (identical(jval, list(NULL))) return(null.data.table())  # test 2009.2 & 2009.3, otherwise setDT correctly errors that a column can't be NULL
+          # all columns same length and at least 1 row; avoid copy. TODO: remove when as.data.table.list is ported to C
           setDT(jval)
         }
       }
@@ -1325,9 +1325,7 @@ replace_order = function(isub, verbose, env) {
       setattr(jval, 'class', class(x)) # fix for #5296
       if (haskey(x) && all(key(x) %chin% names(jval)) && suppressWarnings(is.sorted(jval, by=key(x))))  # TO DO: perhaps this usage of is.sorted should be allowed internally then (tidy up and make efficient)
         setattr(jval, 'sorted', key(x))
-      # postponed to v1.12.4 because package eplusr creates a NULL column and then runs setcolorder on the result which fails if there are fewer columns
-      # w = sapply(jval, is.null)
-      # if (any(w)) jval = jval[,!w,with=FALSE]  # no !..w due to 'Undefined global functions or variables' note from R CMD check
+      if (any(sapply(jval, is.null))) stop("Internal error: j has created a data.table result containing a NULL column") # nocov
     }
     return(jval)
   }
@@ -2694,18 +2692,18 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   } else if (is.list(x)) {
     # copied from as.data.table.list - except removed the copy
     for (i in seq_along(x)) {
-      if (is.null(x[[i]]))             stop("Item ", i, " is NULL. Columns in data.table cannot be NULL.")
+      if (is.null(x[[i]])) next   # allow NULL columns to be created by setDT(list) even though they are not really allowed
+                                  # many operations still work in the presence of NULL columns and it might be convenient
+                                  # e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
+                                  # fail for NULL columns will give helpful error at that point, #3480 and #3471
       if (inherits(x[[i]], "POSIXlt")) stop("Column ", i, " is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
     }
     n = vapply(x, length, 0L)
     n_range = range(n)
     if (n_range[1L] != n_range[2L]) {
       tbl = sort(table(n))
-      stop("All elements in argument 'x' to 'setDT' must be of same length, ",
-           "but the profile of input lengths (length:frequency) is: ",
-           brackify(sprintf('%s:%d', names(tbl), tbl)),
-           "\nThe first entry with fewer than ", n_range[2L],
-           " entries is ", which.max(n<n_range[2L]))
+      stop("All elements in argument 'x' to 'setDT' must be of same length, but the profile of input lengths (length:frequency) is: ",
+           brackify(sprintf('%s:%d', names(tbl), tbl)), "\nThe first entry with fewer than ", n_range[2L], " entries is ", which.max(n<n_range[2L]))
     }
     xn = names(x)
     if (is.null(xn)) {
