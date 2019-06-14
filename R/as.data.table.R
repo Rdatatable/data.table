@@ -115,7 +115,7 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   ans[]
 }
 
-as.data.table.list <- function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE, ...) {
+as.data.table.list = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE, ...) {
   n = length(x)
   eachnrow = integer(n)          # vector of lengths of each column. may not be equal if silent repetition is required.
   eachncol = integer(n)
