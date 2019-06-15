@@ -16,7 +16,7 @@ as.IDate.numeric = function(x, origin = "1970-01-01", ...) {
     x = as.integer(x)
     class(x) = c("IDate", "Date")
     # We used to use structure() here because class(x)<- copied several times in R before v3.1.0
-    # Since R 3.1.0 improved class()<- and data.table's oldest oldest supportd R is now 3.1.0, we can use class<- again
+    # Since R 3.1.0 improved class()<- and data.table's oldest oldest supported R is now 3.1.0, we can use class<- again
     # structure() contains a match() and replace for specials, which we don't need.
     # class()<- ensures at least 1 shallow copy as appropriate is returned.
     x
@@ -49,11 +49,9 @@ as.Date.IDate = function(x, ...) {
 }
 
 mean.IDate =
-cut.IDate =
 seq.IDate =
 c.IDate =
 rep.IDate =
-split.IDate =
 unique.IDate =
   function(x, ...) {
     as.IDate(NextMethod())
@@ -257,6 +255,10 @@ unique.ITime = function(x, ...) {
   class(ans) = "ITime"
   ans
 }
+
+# various methods to ensure ITime class is retained, #3628
+mean.ITime = seq.ITime = c.ITime = function(x, ...) as.ITime(NextMethod())
+
 
 # create a data.table with IDate and ITime columns
 #   should work for most date/time formats like POSIXct

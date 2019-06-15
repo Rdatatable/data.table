@@ -45,7 +45,7 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
   } else if (is.null(by)) by=seq_along(x)
   o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)
   # if by=key(x), forderv tests for orderedness within it quickly and will short-circuit
-  # there isn't any need in unique() to call uniqlist like duplicated does; uniqlist retuns a new nrow(x) vector anyway and isn't
+  # there isn't any need in unique() to call uniqlist like duplicated does; uniqlist returns a new nrow(x) vector anyway and isn't
   # as efficient as forderv returning empty o when input is already ordered
   if (attr(o, 'maxgrpn') == 1L) return(copy(x))  # return copy so that unique(x)[, col := val] doesn't affect original data.table, #3383.
   f = attr(o,"starts")

@@ -80,7 +80,7 @@
 
 9. New convenience functions `%ilike%` and `%flike%` which map to new `like()` arguments `ignore.case` and `fixed` respectively, [#3333](https://github.com/Rdatatable/data.table/issues/3333). `%ilike%` is for case-insensitive pattern matching. `%flike%` is for more efficient matching of fixed strings. Thanks to @andreasLD for providing most of the core code.
 
-10. It is now possible to join two tables on their common columns, so called _natural join_, [#629](https://github.com/Rdatatable/data.table/issues/629). Use `on=.NATURAL` or `options("datatable.naturaljoin"=TRUE)`. Latter one works only when `x` has no key, if key is present then key columns are being used to join as before. Thanks to David Kulp for request.
+10. `on=.NATURAL` (TODO: `X[on=Y]`) joins two tables on their common column names, so called _natural join_, [#629](https://github.com/Rdatatable/data.table/issues/629). Thanks to David Kulp for request. As before, when `on=` is not provided, `X` must have a key and the key columns are used to join (like rownames, but multi-column and multi-type).
 
 11. `as.data.table` gains `key` argument mirroring its use in `setDT` and `data.table`, [#890](https://github.com/Rdatatable/data.table/issues/890). As a byproduct, the arguments of `as.data.table.array` have changed order, which could affect code relying on positional arguments to this method. Thanks @cooldome for the suggestion and @MichaelChirico for implementation.
 
@@ -91,6 +91,8 @@
 14. `setkey` to an existing index now uses the index, [#2889](https://github.com/Rdatatable/data.table/issues/2889). Thanks to @MichaelChirico for suggesting and @saraswatmks for the PR.
 
 15. `DT[order(col)[1:5], ...]` (i.e. where `i` is a compound expression involving `order()`) is now optimized to use `data.table`'s multithreaded `forder`, [#1921](https://github.com/Rdatatable/data.table/issues/1921). This example is not a fully optimal top-N query since the full ordering is still computed. The improvement is that the call to `order()` is computed faster for any `i` expression using `order`.
+
+16. `as.data.table` now unpacks columns in a `data.frame` which are themselves a `data.frame`. This need arises when parsing JSON, a corollary in [#3369](https://github.com/Rdatatable/data.table/issues/3369#issuecomment-462662752). `data.table` does not allow columns to be objects which themselves have columns (such as `matrix` and `data.frame`), unlike `data.frame` which does. Bug fix 19 in v1.12.2 (see below) added a helpful error (rather than segfault) to detect such invalid `data.table`, and promised that `as.data.table()` would unpack these columns in the next release (i.e. this release) so that the invalid `data.table` is not created in the first place.
 
 #### BUG FIXES
 
@@ -130,7 +132,29 @@
 
 18. `rbind.data.frame` on `IDate` columns changed the column from `integer` to `double`, [#2008](https://github.com/Rdatatable/data.table/issues/2008). Thanks to @rmcgehee for reporting.
 
-19. `CJ` on a list column with `sorted=TRUE` (the default) gives a more helpful error, [#3597](https://github.com/Rdatatable/data.table/issues/3597). Since list columns can't be sorted, only `sorted=FALSE` makes sense in this case.
+19. `merge.data.table` now retains any custom classes of the first argument, [#1378](https://github.com/Rdatatable/data.table/issues/1378). Thanks to @michaelquinn32 for reopening.
+
+20. `c`, `seq` and `mean` of `ITime` objects now retain the `ITime` class via new `ITime` methods, [#3628](https://github.com/Rdatatable/data.table/issues/3628). Thanks @UweBlock for reporting. The `cut` and `split` methods for `ITime` have been removed since the default methods work, [#3630](https://github.com/Rdatatable/data.table/pull/3630).
+
+21. `as.data.table.array` now handles the case when some of the array's dimension names are `NULL`, [#3636](https://github.com/Rdatatable/data.table/issues/3636).
+
+22. Adding a `list` column using `cbind`, `as.data.table`, or `data.table` now works rather than treating the `list` as if it were a set of columns and introducing an invalid NA column name, [#3471](https://github.com/Rdatatable/data.table/pull/3471). However, please note that using `:=` to add columns is preferred.
+
+    ```R
+    cbind( data.table(1:2), list(c("a","b"),"a") )
+    #       V1     V2     NA   # v1.12.2 and before
+    #    <int> <char> <char>
+    # 1:     1      a      a
+    # 2:     2      b      a
+    #
+    #       V1     V2          # v1.12.4+
+    #    <int> <list>
+    # 1:     1    a,b
+    # 2:     2      a
+    ```
+
+23. `CJ` on a list column with `sorted=TRUE` (the default) gives a more helpful error, [#3597](https://github.com/Rdatatable/data.table/issues/3597). Since list columns can't be sorted, only `sorted=FALSE` makes sense in this case.
+
 
 #### NOTES
 
@@ -159,6 +183,8 @@
 9. `DT[col]` where `col` is a column containing row numbers of itself to select, now suggests the correct syntax (`DT[(col)]` or `DT[DT$col]`), [#697](https://github.com/Rdatatable/data.table/issues/697). This expands the message introduced in [#1884](https://github.com/Rdatatable/data.table/issues/1884) for the case where `col` is type `logical` and `DT[col==TRUE]` is suggested.
 
 10. The `datatable.old.unique.by.key` option has been warning for 1 year that it is deprecated: `... Please stop using it and pass by=key(DT) instead for clarity ...`. This warning is now upgraded to error as per the schedule in note 10 of v1.11.0 (May 2018), and note 1 of v1.9.8 (Nov 2016). In June 2020 the option will be removed.
+
+11. We intend to deprecate the `datatable.nomatch` option, [more info](https://github.com/Rdatatable/data.table/pull/3578/files). A message is now printed upon use of the option (once per session) as a first step. It asks you to please stop using the option and to pass `nomatch=NULL` explicitly if you require inner join. Outer join (`nomatch=NA`) has always been the default because it is safer; it does not drop missing data silently. The problem is that the option is global; i.e., if a user changes the default using this option for their own use, that can change the behavior of joins inside packages that use `data.table` too. This is the only `data.table` option with this concern.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
@@ -225,7 +251,7 @@
 
 18. `cbind` with a null (0-column) `data.table` now works as expected, [#3445](https://github.com/Rdatatable/data.table/issues/3445). Thanks to @mb706 for reporting.
 
-19. Subsetting does a better job of catching a malformed `data.table` with error rather than segfault. A column may not be NULL, nor may a column be an object such as a data.frame or matrix which have columns. Thanks to a comment and reproducible example in [#3369](https://github.com/Rdatatable/data.table/issues/3369) from Drew Abbot which demonstrated the issue which arose from parsing JSON. The next release will enable `as.data.table` to unpack columns which are data.frame to support this use case.
+19. Subsetting does a better job of catching a malformed `data.table` with error rather than segfault. A column may not be NULL, nor may a column be an object which has columns (such as a `data.frame` or `matrix`). Thanks to a comment and reproducible example in [#3369](https://github.com/Rdatatable/data.table/issues/3369) from Drew Abbot which demonstrated the issue which arose from parsing JSON. The next release will enable `as.data.table` to unpack columns which are `data.frame` to support this use case.
 
 #### NOTES
 

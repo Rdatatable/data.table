@@ -20,7 +20,7 @@ foverlaps(x, y, by.x = if (!is.null(key(x))) key(x) else key(y),
     by.y = key(y), maxgap = 0L, minoverlap = 1L,
     type = c("any", "within", "start", "end", "equal"),
     mult = c("all", "first", "last"),
-    nomatch = getOption("datatable.nomatch"),
+    nomatch = getOption("datatable.nomatch", NA),
     which = FALSE, verbose = getOption("datatable.verbose"))
 }
 \arguments{
@@ -64,7 +64,7 @@ of the overlap. This will be updated once \code{maxgap} is implemented.}
 \code{"first"} or \code{"last"}.}
 \item{nomatch}{ When a row (with interval say, \code{[a,b]}) in \code{x} has no
 match in \code{y}, \code{nomatch=NA} (default) means \code{NA} is returned for
-\code{y}'s non-\code{by.y} columns for that row of \code{x}. \code{nomatch=NULL} 
+\code{y}'s non-\code{by.y} columns for that row of \code{x}. \code{nomatch=NULL}
 (or \code{0} for backward compatibility) means no rows will be returned for that
 row of \code{x}. Use \code{options(datatable.nomatch=NULL)} to change the default
 value (used when \code{nomatch} is not supplied).}
