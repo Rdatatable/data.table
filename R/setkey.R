@@ -379,7 +379,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   ncol = length(l)
   if (nrow==0L) {
     # at least one column is empty so the result will be empty, #2511
-    l = lapply(l, "[", 0L)  # TODO: this drops attributes though
+    l = lapply(l, "[", 0L)  # TODO: this drops column attributes though? Probabaly easiest to move nrow=0 case inside Ccj for consistency.
   } else {
     for (i in seq_along(l)) {
       y = l[[i]]
@@ -398,9 +398,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
         if (unique) l[[i]] = unique(y)
       }
     }
-    attrib = lapply(l, attributes)  # TODO: use copyMostAttribs at C level instead, and retain names too to avoid needing vnames
     l = .Call(Ccj, l)
-    if (!is.null(attrib)) for (jj in 1:ncol) if (!is.null(attrib[[jj]])) attributes(l[[jj]]) = attrib[[jj]]
   }
   setDT(l)
   l = alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency,
