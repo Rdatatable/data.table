@@ -390,7 +390,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
         if (thisdups) {
           dups = TRUE
           if (length(o)) l[[i]] = if (unique) y[o[attr(o,"starts")]] else y[o]
-          else if (unique) l[[i]] = y[attr(o,"starts")]
+          else if (unique) l[[i]] = y[attr(o,"starts")]  # test 1525.5
         } else {
           if (length(o)) l[[i]] = y[o]
         }
