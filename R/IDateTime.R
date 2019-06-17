@@ -49,11 +49,9 @@ as.Date.IDate = function(x, ...) {
 }
 
 mean.IDate =
-cut.IDate =
 seq.IDate =
 c.IDate =
 rep.IDate =
-split.IDate =
 unique.IDate =
   function(x, ...) {
     as.IDate(NextMethod())
@@ -257,6 +255,10 @@ unique.ITime = function(x, ...) {
   class(ans) = "ITime"
   ans
 }
+
+# various methods to ensure ITime class is retained, #3628
+mean.ITime = seq.ITime = c.ITime = function(x, ...) as.ITime(NextMethod())
+
 
 # create a data.table with IDate and ITime columns
 #   should work for most date/time formats like POSIXct

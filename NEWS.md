@@ -92,7 +92,27 @@
 
 15. `DT[order(col)[1:5], ...]` (i.e. where `i` is a compound expression involving `order()`) is now optimized to use `data.table`'s multithreaded `forder`, [#1921](https://github.com/Rdatatable/data.table/issues/1921). This example is not a fully optimal top-N query since the full ordering is still computed. The improvement is that the call to `order()` is computed faster for any `i` expression using `order`.
 
-16. New function `coalesce` for efficiently replacing missing values according to a prioritized list of candidates (_a la_ SQL), [#3424](https://github.com/Rdatatable/data.table/issues/3424) See [#3608](https://github.com/Rdatatable/data.table/pull/3608) for benchmarks.
+16. `as.data.table` now unpacks columns in a `data.frame` which are themselves a `data.frame`. This need arises when parsing JSON, a corollary in [#3369](https://github.com/Rdatatable/data.table/issues/3369#issuecomment-462662752). `data.table` does not allow columns to be objects which themselves have columns (such as `matrix` and `data.frame`), unlike `data.frame` which does. Bug fix 19 in v1.12.2 (see below) added a helpful error (rather than segfault) to detect such invalid `data.table`, and promised that `as.data.table()` would unpack these columns in the next release (i.e. this release) so that the invalid `data.table` is not created in the first place.
+
+17. `CJ` has been ported to C and parallelized, thanks to a PR by Michael Chirico, [#3596](https://github.com/Rdatatable/data.table/pull/3596). All types benefit, and as in many `data.table` operations, factors benefit more than character.
+
+    ```R
+    # default 4 threads on a laptop with 16GB RAM and 8 logical CPU
+
+    ids = as.vector(outer(LETTERS, LETTERS, paste0))
+    system.time(DT1 <- CJ(ids, 1:500000))  # 3.9GB; 340m rows
+    #   user  system elapsed
+    #  3.000   0.817   3.798  # was
+    #  1.800   0.832   2.190  # now
+
+    ids = as.factor(ids)
+    system.time(DT2 <- CJ(ids, 1:500000))  # 2.6GB; 340m rows
+    #   user  system elapsed
+    #  1.779   0.534   2.293  # was
+    #  0.357   0.763   0.292  # now
+    ```
+
+18. New function `coalesce` for efficiently replacing missing values according to a prioritized list of candidates (_a la_ SQL), [#3424](https://github.com/Rdatatable/data.table/issues/3424) See [#3608](https://github.com/Rdatatable/data.table/pull/3608) for benchmarks.
 
 #### BUG FIXES
 
@@ -132,7 +152,26 @@
 
 18. `rbind.data.frame` on `IDate` columns changed the column from `integer` to `double`, [#2008](https://github.com/Rdatatable/data.table/issues/2008). Thanks to @rmcgehee for reporting.
 
-19. `merge.data,table` now retains any custom classes of the first argument, [#1378](https://github.com/Rdatatable/data.table/issues/1378). Thanks to @michaelquinn32 for reopening.
+19. `merge.data.table` now retains any custom classes of the first argument, [#1378](https://github.com/Rdatatable/data.table/issues/1378). Thanks to @michaelquinn32 for reopening.
+
+20. `c`, `seq` and `mean` of `ITime` objects now retain the `ITime` class via new `ITime` methods, [#3628](https://github.com/Rdatatable/data.table/issues/3628). Thanks @UweBlock for reporting. The `cut` and `split` methods for `ITime` have been removed since the default methods work, [#3630](https://github.com/Rdatatable/data.table/pull/3630).
+
+21. `as.data.table.array` now handles the case when some of the array's dimension names are `NULL`, [#3636](https://github.com/Rdatatable/data.table/issues/3636).
+
+22. Adding a `list` column using `cbind`, `as.data.table`, or `data.table` now works rather than treating the `list` as if it were a set of columns and introducing an invalid NA column name, [#3471](https://github.com/Rdatatable/data.table/pull/3471). However, please note that using `:=` to add columns is preferred.
+
+    ```R
+    cbind( data.table(1:2), list(c("a","b"),"a") )
+    #       V1     V2     NA   # v1.12.2 and before
+    #    <int> <char> <char>
+    # 1:     1      a      a
+    # 2:     2      b      a
+    #
+    #       V1     V2          # v1.12.4+
+    #    <int> <list>
+    # 1:     1    a,b
+    # 2:     2      a
+    ```
 
 #### NOTES
 
@@ -229,7 +268,7 @@
 
 18. `cbind` with a null (0-column) `data.table` now works as expected, [#3445](https://github.com/Rdatatable/data.table/issues/3445). Thanks to @mb706 for reporting.
 
-19. Subsetting does a better job of catching a malformed `data.table` with error rather than segfault. A column may not be NULL, nor may a column be an object such as a data.frame or matrix which have columns. Thanks to a comment and reproducible example in [#3369](https://github.com/Rdatatable/data.table/issues/3369) from Drew Abbot which demonstrated the issue which arose from parsing JSON. The next release will enable `as.data.table` to unpack columns which are data.frame to support this use case.
+19. Subsetting does a better job of catching a malformed `data.table` with error rather than segfault. A column may not be NULL, nor may a column be an object which has columns (such as a `data.frame` or `matrix`). Thanks to a comment and reproducible example in [#3369](https://github.com/Rdatatable/data.table/issues/3369) from Drew Abbot which demonstrated the issue which arose from parsing JSON. The next release will enable `as.data.table` to unpack columns which are `data.frame` to support this use case.
 
 #### NOTES
 

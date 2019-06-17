@@ -319,7 +319,9 @@ test(102, within(dt, {A <- B^2}), transform(dt, A = B^2))
 
 # test .SD object
 test(103, dt[, sum(.SD$B), by = "A"], dt[, sum(B), by = "A"])
-test(104, dt[, transform(.SD, D = min(B)), by = "A"], dt[, list(B,C,D=min(B)), by = "A"])
+test(104.1, dt[, transform(.SD, D=min(B)), by="A"], dt[, list(B,C,D=min(B)), by="A"])
+# and test transform of existing column to mimic .SD example in transform.Rd mentioned in commit to #1641
+test(104.2, dt[, transform(.SD, B=sum(C)), by="A"], data.table(A=rep(1:3,each=4), B=86L, C=21:22, key="A"))
 
 # test numeric and comparison operations on a data table
 test(105, all(dt + dt > dt))
@@ -2633,8 +2635,8 @@ test(927, DT[, if(a==2L) list(42:43,numeric()) else list(42L,3.14), by=a], data.
 test(928, cbind(data.table(a=1L),b=1:3), data.table(a=1L,b=1:3))
 # FR #4813 implementation resulted in changing 929 error to warning
 # test(929, cbind(data.table(a=1L,b=2:3),c=1:3), error="argument 1 (nrow 2) cannot be recycled without remainder to match longest nrow (3)")
-test(929, cbind(data.table(a=1L,b=2:3),c=1:3), data.table(a=1L, b=c(2L,3L,2L), c=1:3), warning="Item 1 is of size 2 but maximum size is 3")
-test(930, cbind(data.table(a=1L,b=2:3),c=1:4), data.table(a=1L,b=INT(2,3,2,3),c=1:4))
+test(929, cbind(data.table(a=1L,b=2:3),c=1:3), data.table(a=1L, b=c(2L,3L,2L), c=1:3), warning="Item 1 has 2 rows but longest item has 3; recycled.")
+test(930, cbind(data.table(a=1L,b=2:3),c=1:4), data.table(a=1L,b=INT(2,3,2,3),c=1:4))  # TODO: warning in future
 DT = data.table(x=c(1,1,1,1,2,2,3),y=c(1,1,2,3,1,1,2))
 DT[,rep:=1L][c(2,7),rep:=c(2L,3L)]   # duplicate row 2 and triple row 7
 DT[,num:=1:.N]                       # to group each row by itself
@@ -2803,11 +2805,26 @@ test(995, DT[CJ(c(5,3), c(5,1), sorted=FALSE)], OUT)
 
 # CJ with ordered factor
 xx <- factor(letters[1:2], ordered=TRUE)
-yy <- sample(2)
-options(datatable.CJ.names=FALSE)
-test(996.1, CJ(xx, yy), setkey(data.table(rep(xx, each=2), rep(base::sort.int(yy), 2))))
+yy <- sample(2L)
+yy_sort = base::sort.int(yy)
+old = options(datatable.CJ.names=FALSE)
+test(996.1, CJ(xx, yy), setkey(data.table(rep(xx, each=2L), rep(yy_sort, 2L))))
+test(996.2, CJ(a = xx, yy), setkey(data.table(a = rep(xx, each=2L), V2 = rep(yy_sort, 2L))))
 options(datatable.CJ.names=TRUE)
-test(996.2, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2), yy = rep(base::sort.int(yy), 2))))
+test(996.3, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2L), yy = rep(yy_sort, 2L))))
+options(old)
+
+# #3597 -- CJ properly informs sorted can't apply to list input
+test(996.4, CJ(list(1:2, 3L)), error = "non-atomic, which can't be sorted")
+test(996.5, CJ(list(1:2, 3), 4:6, sorted = FALSE),
+     data.table(V1 = list(1:2, 1:2, 1:2, 3, 3, 3), V2 = rep(4:6, 2L)))
+test(996.6, CJ(4:6, list(1:2, 3), sorted = FALSE),
+     data.table(V1 = rep(4:6, each = 2L), V2 = rep(list(1:2, 3), 3L)))
+test(996.7, CJ(1:2, list(1:2, 3), 4:5, sorted = FALSE),
+     data.table(V1 = rep(1:2, each = 4L), V2 = rep(rep(list(1:2, 3), each = 2L), 2L), V3 = rep(4:5, 4L)))
+
+test(996.8, CJ(expression(1)), error = "element 1 is non-atomic")
+test(996.9, CJ(expression(2), 3, sorted = FALSE), error = "Type 'expression' not supported")
 
 # That CJ orders NA consistently with setkey and historically, now it doesn't use setkey.
 # NA must always come first in data.table throughout, since binary search relies on that internally.
@@ -3710,10 +3727,10 @@ test(1139, capture.output(print(DT)), c("           x y", "1:     a ~ b 1", "2: 
 
 # FR #4813 - provide warnings if there are remainders for both as.data.table.list(.) and data.table(.)
 X = list(a = 1:2, b = 1:3)
-test(1140, as.data.table(X), data.table(a=c(1:2,1L), b=c(1:3)), warning="Item 1 is of size 2 but maximum")
-test(1141.1, data.table(a=1:2, b=1:3), data.table(a=c(1L,2L,1L), b=1:3), warning="Item 1 is of size 2 but maximum")
-test(1141.2, data.table(a=1:2, data.table(x=1:5, y=6:10)), data.table(a=c(1L,2L,1L,2L,1L), x=1:5, y=6:10), warning="Item 1 is of size 2 but maximum")
-test(1141.3, data.table(a=1:5, data.table(x=c(1,2), y=c(3,4))), data.table(a=c(1:5), x=c(1,2,1,2,1), y=c(3,4,3,4,3)), warning="Item 2 is of size 2 but maximum")
+test(1140, as.data.table(X), data.table(a=c(1:2,1L), b=c(1:3)),                                                       warning="Item 1 has 2 rows but longest item has 3; recycled")
+test(1141.1, data.table(a=1:2, b=1:3), data.table(a=c(1L,2L,1L), b=1:3),                                              warning="Item 1 has 2 rows but longest item has 3; recycled")
+test(1141.2, data.table(a=1:2, data.table(x=1:5, y=6:10)), data.table(a=c(1L,2L,1L,2L,1L), x=1:5, y=6:10),            warning="Item 1 has 2 rows but longest item has 5; recycled")
+test(1141.3, data.table(a=1:5, data.table(x=c(1,2), y=c(3,4))), data.table(a=c(1:5), x=c(1,2,1,2,1), y=c(3,4,3,4,3)), warning="Item 2 has 2 rows but longest item has 5; recycled")
 
 # Fix for bug #5098 - DT[, foo()] returns function definition.
 DT <- data.table(a=1:2)
@@ -5729,7 +5746,7 @@ test(1380, DT[a==TRUE], DT[3:4])
 # Fix #847, as.data.table.list and character(0) issue
 x <- data.table(a=character(0), b=character(0), c=numeric(0))
 setkey(x, a, b)
-test(1381, x[J("foo", character(0)), nomatch=0L], x, warning="Item 2 is of size 0 but maximum size is 1,")
+test(1381, x[J("foo", character(0)), nomatch=0L], x, warning="Item 2 has 0 rows but longest item has 1; filled with NA")
 
 # Fix for #813 and #758
 DT = data.table(x = 1:2)
@@ -6743,14 +6760,18 @@ test(1483.3, merge(x,y,by="country",all=TRUE), data.table(country=factor(c("US",
 setkey(y)
 test(1483.4, y[x], data.table(country="US", key="country"))
 
-# Fix for #842
+# NULL items should be removed when making data.table from list, #842
+# Original fix for #842 added a branch in as.data.table.list() using point()
+# Then PR#3471 moved logic from data.table() into as.data.table.list() and now removes NULL items up front, so longer need for the branch
+# Since the logic was changed, this test was strengthened to explicity test the result rather than compare two calls to SomeFunction()
 SomeFunction <- function(x, setnull=1L) {
   ans <- replicate(length(x), list("bla1", "bla2"), simplify=FALSE)
   ans[setnull] <- list(NULL)
   return(ans)
 }
 DT <- data.table(ID=1:3, key="ID")
-test(1484, DT[, SomeFunction(ID, setnull=1L)], DT[, SomeFunction(ID, setnull=2L)])
+test(1484.1, DT[, SomeFunction(ID, setnull=1L)], ans<-data.table(V1=list("bla1","bla2"), V2=list("bla1","bla2")))
+test(1484.2, DT[, SomeFunction(ID, setnull=2L)], ans)
 
 # Fix for #868
 vals = c("setosa", "versicolor", "virginica")
@@ -7094,10 +7115,14 @@ test(1524, ans1, ans2)
 # 'unique =' argument for CJ, #1148
 x = c(1, 2, 1)
 y = c(5, 8, 8, 4)
+w = c(10, 12, 12, 13)  # already sorted but has dups; more efficient case to cover
 options(datatable.CJ.names=FALSE)
 test(1525.1, CJ(x, y, unique=TRUE), CJ(V1=c(1,2), V2=c(4,5,8)))
+test(1525.2, CJ(x, z=y, unique=TRUE), ans<-data.table(V1=rep(c(1,2), each=3), z=c(4,5,8), key="V1,z")) # naming of one but not both, too
 options(datatable.CJ.names=TRUE)
-test(1525.2, CJ(x, y, unique=TRUE), CJ( x=c(1,2),  y=c(4,5,8)))
+test(1525.3, CJ(x, y, unique=TRUE), CJ( x=c(1,2),  y=c(4,5,8)))
+test(1525.4, CJ(x, z=y, unique=TRUE), setnames(ans,c("x","z")))
+test(1525.5, CJ(x, w, unique=TRUE), data.table(x=(rep(c(1,2), each=3)), w=c(10,12,13), key="x,w"))
 
 # `key` argument fix for `setDT` when input is already a `data.table`,  #1169
 DT <- data.table(A = 1:4, B = 5:8)
@@ -8360,9 +8385,9 @@ test(1613.564, all(is.character(all.equal(rbind(x,y), rbind(y,y), ignore.row.ord
 test(1613.565, all(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = FALSE), is.character(r<-all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = TRUE)) && any(grepl("force 'tolerance' argument to 0", r)))) # no-match due factor force tolerance=0
 test(1613.566, all(all.equal(rbind(x,y,y), rbind(x,y,y), ignore.row.order = FALSE, tolerance = 0), all.equal(rbind(x,y,y), rbind(x,y,y), ignore.row.order = TRUE, tolerance = 0)))
 test(1613.567, all(is.character(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = TRUE, tolerance = 0))))
-test(1613.571, all(all.equal(cbind(x, list(factor(1))), cbind(y, list(factor(1))), ignore.row.order = FALSE), is.character(r<-all.equal(cbind(x, list(factor(1))), cbind(y, list(factor(1))), ignore.row.order = TRUE)) && any(grepl("force 'tolerance' argument to 0", r)))) # no-match due factor force tolerance=0
-test(1613.572, all(all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = FALSE), all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = TRUE))) # x to x with factor equality
-test(1613.573, all.equal(cbind(x, list(factor(1))), cbind(x, list(factor(1))), ignore.row.order = TRUE, tolerance = 1), error = "Factor columns and ignore.row.order cannot be used with non 0 tolerance argument") # error due to provided non zero tolerance
+test(1613.571, all(all.equal(cbind(x, factor(1)), cbind(y, factor(1)), ignore.row.order = FALSE), is.character(r<-all.equal(cbind(x, factor(1)), cbind(y, factor(1)), ignore.row.order = TRUE)) && any(grepl("force 'tolerance' argument to 0", r)))) # no-match due factor force tolerance=0
+test(1613.572, all(all.equal(cbind(x, factor(1)), cbind(x, factor(1)), ignore.row.order = FALSE), all.equal(cbind(x, factor(1)), cbind(x, factor(1)), ignore.row.order = TRUE))) # x to x with factor equality
+test(1613.573, all.equal(cbind(x, factor(1)), cbind(x, factor(1)), ignore.row.order = TRUE, tolerance = 1), error = "Factor columns and ignore.row.order cannot be used with non 0 tolerance argument") # error due to provided non zero tolerance
 test(1613.581, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = 1), all.equal(x, y, ignore.row.order = TRUE, tolerance = 1)))
 test(1613.582, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = sqrt(.Machine$double.eps)/2), all.equal(x, y, ignore.row.order = TRUE, tolerance = sqrt(.Machine$double.eps)/2)), warning = "Argument 'tolerance' was forced")
 
@@ -11991,7 +12016,7 @@ for (i in 100:1) {
 #   in the process of PR #2573
 ## data.table cannot recycle complicated types
 short_s4_col = getClass("MethodDefinition")
-test(1872.01, data.table(a = 1:4, short_s4_col), error = 'problem recycling.*try a simpler type')
+test(1872.01, data.table(a = 1:4, short_s4_col), error="attempt to replicate an object of type 'S4'")
 ## i must be a data.table when on is specified
 DT = data.table(a = 1:3)
 test(1872.02, DT[c(TRUE, FALSE), on = 'coefficients'], error = "not a data.table, but 'on'")
@@ -13444,7 +13469,7 @@ test(1967.34, data.table(1:5, NULL), data.table(V1=1:5))
 ###   if (novname[i]) vnames[[i]] = namesi
 ### but, on pause for now pending #3193
 ### test(1967.35, data.table(1:5, matrix(6:15, nrow = 5L))
-test(1967.35, data.table(1:5, integer(0L)), error = 'Item 2 has no length')
+test(1967.35, data.table(1:5, integer(0L)), data.table(1:5, NA_integer_), warning="Item 2 has 0 rows but longest item has 5; filled with NA")
 test(1967.36, data.table(1:5, key = 5L), error = 'must be character')
 
 x = data.table(a = 1:5)
@@ -14068,10 +14093,9 @@ DT = structure(list(NULL), names="a", class=c("data.table","data.frame"))
 test(2009.1, DT[a>1], error="Column 1 is NULL; malformed data.table")
 DT = null.data.table()
 x = NULL
-test(2009.2, DT[, .(x)], ans<-alloc.col(structure(list(x=NULL), names="x", class=c("data.table","data.frame"))))
-# postponed to 1.12.4 ... V1=null.data.table())  # because .(x) evaluated to NULL; NULL columns in results removed
+test(2009.2, DT[, .(x)], null.data.table())  # because .(x) evaluated to .(NULL); NULL columns in results removed
 DT = data.table(A=1:3)
-test(2009.3, DT[, .(x)], ans)   # null.data.table()
+test(2009.3, DT[, .(x)], null.data.table())
 test(2009.4, DT[, .(x, sum(A))], data.table(V1=6L))
 test(2009.5, DT[, .(sum(A), x)], data.table(V1=6L))
 test(2009.6, data.table(character(0), NULL), data.table(V1=character()))
@@ -14131,7 +14155,7 @@ test(2012.3, data.table(data.frame(), data.frame(a=integer())), data.table(a=int
 dt = as.data.table(iris)
 test(2012.4, cbind(data.table(), dt[0]), dt[0])
 
-# extra validity checks in subsetDT on data.table; #3369
+# extra validity checks in subsetDT on data.table; aside in #3369
 DT = structure(list(a=1:3, b=NULL, c=4:6), class=c("data.table","data.frame"))
 test(2013.1, DT[2], error="Column 2 is NULL; malformed data.table")
 DT = structure(list(a=1:3, b=data.frame(foo=10:12,bar=13:15), c=4:6), class=c("data.table","data.frame"))
@@ -14976,6 +15000,68 @@ DT = data.table(
 )
 test(2054, DT[order(C)[1:5], B, verbose=TRUE], c('b', 'b', 'c', 'c', 'a'),
            output = 'order optimisation is on')
+
+# ITime class should be retained for same methods as IDate, #3628
+test(2055.1, seq(from = as.ITime('00:00:00'), to = as.ITime('00:00:05'), by = 5L), as.ITime(c(0, 5L)))
+test(2055.2, c(as.ITime(0L), as.ITime(1L)), as.ITime(c(0L, 1L)))
+test(2055.3, mean(as.ITime(c(0L, 0L))), as.ITime(0L))
+
+# as.data.table.array some of dimnames are NULL, #3636
+a = array(1:8, dim=c(2L,2L,2L), dimnames=list(NULL, NULL, as.character(1:2)))
+ans = data.table(V1=c(1L,1L,1L,1L,2L,2L,2L,2L),
+                 V2=c(1L,1L,2L,2L,1L,1L,2L,2L),
+                 V3=c("1","2","1","2","1","2","1","2"),
+                 value=c(1L,5L,3L,7L,2L,6L,4L,8L),
+                 key=c("V1","V2","V3"))
+test(2056, as.data.table(a), ans)
+
+# unpack columns which are data.frame; aside in #3369 too.
+DF = structure(list(a=1:3, b=data.frame(foo=4:6, bar=7:9)), row.names=1:3, class="data.frame")
+DT = as.data.table(DF)
+test(2057.1, ncol(DT), 3L)
+test(2057.2, DT[2], data.table(a=2L, foo=5L, bar=8L))
+DF = structure(list(a=list(c("a","b"), c("a","b"), c("a","b")), b=data.frame(foo=1:3, bar=4:6)), row.names=1:3, class="data.frame")
+#  A list being first is needed to mimic the jsonlite case. With this passing, test.R works from https://github.com/Rdatatable/data.table/issues/3369#issuecomment-462662752
+DT = as.data.table(DF)
+test(2057.3, DT, data.table(a=list(c("a","b"), c("a","b"), c("a","b")), foo=1:3, bar=4:6))
+
+# one and two+ row cases of data.table, as.data.table and cbind involving list columns, given
+# the change to tests 1613.571-3 in PR#3471 in v1.12.4
+# in v1.12.2 and before :
+# data.table( data.table(1:2), list(c("a","b"),"a") )
+#       V1     V2     NA
+#    <int> <char> <char>
+# 1:     1      a      a
+# 2:     2      b      a
+# i.e. passing a data.table() to data.table() changed the meaning of list() which was inconsistent,
+#      and an NA column name was introduced too (a bug in itself)
+# from v1.12.4 :
+#       V1     V2
+#    <int> <list>
+# 1:     1    a,b
+# 2:     2      a
+# i.e. now easier to add the list column as intended, and it's consistent with
+#      basic (i.e. not cbind-like) usage of data.table()
+#                                                                               # changed in v1.12.4 ?
+ans = data.table(V1=1, V2=2)                                                    # --------------------
+test(2058.01, data.table( data.table(1),  2),        ans)                       # no
+test(2058.02, as.data.table(list(data.table(1), 2)), ans)                       # no
+test(2058.03, cbind(data.table(1),  2),              ans)                       # no
+ans = data.table(V1=1, V2=list(2))  # 'basic' usage; i.e. not cbind-like
+test(2058.04, sapply(ans, class), c(V1="numeric", V2="list"))                   # no
+test(2058.05, data.table( data.table(1),  list(2) ),       ans)                 # yes
+test(2058.06, as.data.table(list(data.table(1), list(2))), ans)                 # yes
+test(2058.07, cbind(data.table(1), list(2)),               ans)                 # yes
+ans = data.table(V1=1:2, V2=list(c("a","b"),"a"))
+test(2058.08, sapply(ans, class), c(V1="integer", V2="list"))                   # no
+test(2058.09, data.table( data.table(1:2), list(c("a","b"),"a") ),        ans)  # yes
+test(2058.10, as.data.table(list(data.table(1:2), list(c("a","b"),"a"))), ans)  # yes
+test(2058.11, cbind(data.table(1:2), list(c("a","b"),"a")),               ans)  # yes
+
+# rbindlist improved error message, #3638
+DT = data.table(a=1)
+test(2059.1, rbindlist(list(DT,1)), error="Item 2 of input is not a data.frame, data.table or list")
+test(2059.2, rbindlist(DT), error="Input is data.table but should be a plain list of items to be stacked")
 
 
 ###################################

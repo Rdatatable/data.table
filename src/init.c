@@ -26,7 +26,6 @@ SEXP vecseq();
 SEXP setlistelt();
 SEXP setmutable();
 SEXP address();
-SEXP copyNamedInList();
 SEXP expandAltRep();
 SEXP fmelt();
 SEXP fcast();
@@ -83,6 +82,7 @@ SEXP dllVersion();
 SEXP nafillR();
 SEXP colnamesInt();
 SEXP initLastUpdated();
+SEXP cj();
 
 // .Externals
 SEXP fastmean();
@@ -111,7 +111,6 @@ R_CallMethodDef callMethods[] = {
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
 {"Csetmutable", (DL_FUNC) &setmutable, -1},
 {"Caddress", (DL_FUNC) &address, -1},
-{"CcopyNamedInList", (DL_FUNC) &copyNamedInList, -1},
 {"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1},
 {"Cfcast", (DL_FUNC) &fcast, -1},
@@ -167,7 +166,9 @@ R_CallMethodDef callMethods[] = {
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
 {"CnafillR", (DL_FUNC) &nafillR, -1},
 {"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
+{"CcoerceFillR", (DL_FUNC) &coerceFillR, -1},
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
+{"Ccj", (DL_FUNC) &cj, -1},  
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
 {"Cwhich_eqR", (DL_FUNC) &which_eqR, -1},
 {NULL, NULL, 0}
