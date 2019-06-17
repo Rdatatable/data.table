@@ -94,6 +94,25 @@
 
 16. `as.data.table` now unpacks columns in a `data.frame` which are themselves a `data.frame`. This need arises when parsing JSON, a corollary in [#3369](https://github.com/Rdatatable/data.table/issues/3369#issuecomment-462662752). `data.table` does not allow columns to be objects which themselves have columns (such as `matrix` and `data.frame`), unlike `data.frame` which does. Bug fix 19 in v1.12.2 (see below) added a helpful error (rather than segfault) to detect such invalid `data.table`, and promised that `as.data.table()` would unpack these columns in the next release (i.e. this release) so that the invalid `data.table` is not created in the first place.
 
+17. `CJ` has been ported to C and parallelized, thanks to a PR by Michael Chirico, [#3596](https://github.com/Rdatatable/data.table/pull/3596). All types benefit, and as in many `data.table` operations, factors benefit more than character.
+
+    ```R
+    # default 4 threads on a laptop with 16GB RAM and 8 logical CPU
+
+    ids = as.vector(outer(LETTERS, LETTERS, paste0))
+    system.time(DT1 <- CJ(ids, 1:500000))  # 3.9GB; 340m rows
+    #   user  system elapsed
+    #  3.000   0.817   3.798  # was
+    #  1.800   0.832   2.190  # now
+
+    ids = as.factor(ids)
+    system.time(DT2 <- CJ(ids, 1:500000))  # 2.6GB; 340m rows
+    #   user  system elapsed
+    #  1.779   0.534   2.293  # was
+    #  0.357   0.763   0.292  # now
+    ```
+
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -152,8 +171,6 @@
     # 1:     1    a,b
     # 2:     2      a
     ```
-
-23. `CJ` on a list column with `sorted=TRUE` (the default) gives a more helpful error, [#3597](https://github.com/Rdatatable/data.table/issues/3597). Since list columns can't be sorted, only `sorted=FALSE` makes sense in this case.
 
 
 #### NOTES
