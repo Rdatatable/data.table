@@ -82,6 +82,7 @@ SEXP dllVersion();
 SEXP nafillR();
 SEXP colnamesInt();
 SEXP initLastUpdated();
+SEXP cj();
 
 // .Externals
 SEXP fastmean();
@@ -167,6 +168,7 @@ R_CallMethodDef callMethods[] = {
 {"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
 {"CcoerceFillR", (DL_FUNC) &coerceFillR, -1},
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
+{"Ccj", (DL_FUNC) &cj, -1},
 {NULL, NULL, 0}
 };
 

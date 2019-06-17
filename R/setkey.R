@@ -370,53 +370,38 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   if (isFALSE(getOption("datatable.CJ.names", TRUE))) {  # default TRUE from v1.12.0, FALSE before. TODO: remove option in v1.13.0 as stated in news
     if (is.null(vnames <- names(l))) vnames = paste0("V", seq_len(length(l)))
     else if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
-    names(l) = vnames
   } else {
-    names(l) = name_dots(...)
+    vnames = name_dots(...)
   }
-  emptyList = FALSE ## fix for #2511
-  if(any(sapply(l, length) == 0L)){
-    ## at least one column is empty The whole thing will be empty in the end
-    emptyList = TRUE
-    l = lapply(l, "[", 0L)
-  }
-  if (unique && !emptyList) l = lapply(l, unique)
-
   dups = FALSE # fix for #1513
-  if (length(l)==1L && !emptyList && sorted && length(o <- forderv(l[[1L]])))
-    l[[1L]] = l[[1L]][o]
-  else if (length(l) > 1L && !emptyList) {
-    # using rep.int instead of rep speeds things up considerably (but attributes are dropped).
-    attribs = lapply(l, attributes)  # remember attributes for resetting after rep.int
-    n = vapply(l, length, 0L) #lengths(l) will work from R 3.2.0
-    nrow = prod(n)
-    if (nrow > .Machine$integer.max) {
-      stop("Cross product of elements provided to CJ() would result in ",nrow," rows which exceeds .Machine$integer.max == ",.Machine$integer.max)
-    }
-    x = c(rev(  head(cumprod(rev(n)),-1)  ), 1L)
-    for (i in seq_along(x)) {
-      y = l[[i]]
-      # fix for #1513
-      if (sorted) {
-        if (length(o <- forderv(y, retGrp=TRUE))) y = y[o]
-        if (!dups) dups = attr(o, 'maxgrpn') > 1L
+  nrow = prod( vapply_1i(l, length) )  # lengths(l) will work from R 3.2.0
+  if (nrow > .Machine$integer.max) stop("Cross product of elements provided to CJ() would result in ",nrow," rows which exceeds .Machine$integer.max == ",.Machine$integer.max)
+  if (nrow>0L) for (i in seq_along(l)) {
+    y = l[[i]]
+    if (sorted) {
+      if (!is.atomic(y)) stop("'sorted' is TRUE but element ", i, " is non-atomic, which can't be sorted; try setting sorted = FALSE")
+      o = forderv(y, retGrp=TRUE)
+      thisdups = attr(o,'maxgrpn')>1L
+      if (thisdups) {
+        dups = TRUE
+        if (length(o)) l[[i]] = if (unique) y[o[attr(o,"starts")]] else y[o]
+        else if (unique) l[[i]] = y[attr(o,"starts")]  # test 1525.5
+      } else {
+        if (length(o)) l[[i]] = y[o]
       }
-      if (i == 1L)
-        l[[i]] = rep.int(y, times = rep.int(x[i], n[i]))   # i.e. rep(y, each=x[i])
-      else if (i == length(n))
-        l[[i]] = rep.int(y, times = nrow/(x[i]*n[i]))
-      else
-        l[[i]] = rep.int(rep.int(y, times = rep.int(x[i], n[i])), times = nrow/(x[i]*n[i]))
-      if (!is.null(attribs[[i]])){
-        attributes(l[[i]]) = attribs[[i]] # reset all attributes that were destroyed by rep.int
-      }
+    } else {
+      if (unique) l[[i]] = unique(y)
     }
   }
-  l = as.data.table.list(l)
-  l = alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency, and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation.
+  l = .Call(Ccj, l)
+  setDT(l)
+  l = alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since
+                    # it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation
+  setnames(l, vnames)
   if (sorted) {
     if (!dups) setattr(l, 'sorted', names(l))
     else setkey(l) # fix #1513
   }
   l
 }
+
