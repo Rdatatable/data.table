@@ -376,33 +376,27 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   dups = FALSE # fix for #1513
   nrow = prod( vapply_1i(l, length) )  # lengths(l) will work from R 3.2.0
   if (nrow > .Machine$integer.max) stop("Cross product of elements provided to CJ() would result in ",nrow," rows which exceeds .Machine$integer.max == ",.Machine$integer.max)
-  ncol = length(l)
-  if (nrow==0L) {
-    # at least one column is empty so the result will be empty, #2511
-    l = lapply(l, "[", 0L)  # TODO: this drops column attributes though? Probabaly easiest to move nrow=0 case inside Ccj for consistency.
-  } else {
-    for (i in seq_along(l)) {
-      y = l[[i]]
-      if (sorted) {
-        if (!is.atomic(y)) stop("'sorted' is TRUE but element ", i, " is non-atomic, which can't be sorted; try setting sorted = FALSE")
-        o = forderv(y, retGrp=TRUE)
-        thisdups = attr(o,'maxgrpn')>1L
-        if (thisdups) {
-          dups = TRUE
-          if (length(o)) l[[i]] = if (unique) y[o[attr(o,"starts")]] else y[o]
-          else if (unique) l[[i]] = y[attr(o,"starts")]  # test 1525.5
-        } else {
-          if (length(o)) l[[i]] = y[o]
-        }
+  if (nrow>0L) for (i in seq_along(l)) {
+    y = l[[i]]
+    if (sorted) {
+      if (!is.atomic(y)) stop("'sorted' is TRUE but element ", i, " is non-atomic, which can't be sorted; try setting sorted = FALSE")
+      o = forderv(y, retGrp=TRUE)
+      thisdups = attr(o,'maxgrpn')>1L
+      if (thisdups) {
+        dups = TRUE
+        if (length(o)) l[[i]] = if (unique) y[o[attr(o,"starts")]] else y[o]
+        else if (unique) l[[i]] = y[attr(o,"starts")]  # test 1525.5
       } else {
-        if (unique) l[[i]] = unique(y)
+        if (length(o)) l[[i]] = y[o]
       }
+    } else {
+      if (unique) l[[i]] = unique(y)
     }
-    l = .Call(Ccj, l)
   }
+  l = .Call(Ccj, l)
   setDT(l)
-  l = alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency,
-                    # and it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation
+  l = alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since
+                    # it's possible a user may wish to use SJ directly outside a join and would expect consistent over-allocation
   setnames(l, vnames)
   if (sorted) {
     if (!dups) setattr(l, 'sorted', names(l))

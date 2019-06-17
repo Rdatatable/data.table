@@ -5,12 +5,13 @@ SEXP cj(SEXP base_list) {
   SEXP out = PROTECT(allocVector(VECSXP, ncol));
   int nrow = 1;
   // already confirmed to be less than .Machine$integer.max at R level
-  for (int j=0; j<ncol; ++j) nrow *= LENGTH(VECTOR_ELT(base_list, j));
+  for (int j=0; j<ncol; ++j) nrow *= length(VECTOR_ELT(base_list, j));
   int eachrep = 1;
   for (int j=ncol-1; j>=0; --j) {
     SEXP source = VECTOR_ELT(base_list, j), target;
     SET_VECTOR_ELT(out, j, target=allocVector(TYPEOF(source), nrow));
-    copyMostAttrib(source, target);
+    copyMostAttrib(source, target);  // includes levels of factors, integer64, custom classes, etc
+    if (nrow==0) continue;  // one or more columns are empty so the result will be empty, #2511
     int thislen = LENGTH(source);
     int blocklen = thislen*eachrep;
     int ncopy = nrow/blocklen;
