@@ -11,6 +11,7 @@ coalesce = function(x, ..., .dots=NULL) {
 
   .Call(Ccoalesce, x, values, FALSE)
 }
+
 setcoalesce = function(x, ..., .dots=NULL) {
   if (is.null(.dots) && missing(..1)) return(x)
 
@@ -24,6 +25,4 @@ setcoalesce = function(x, ..., .dots=NULL) {
 
   invisible(.Call(Ccoalesce, x, values, TRUE))
 }
-which_eq = function(x, value, negate=FALSE) {
-  .Call(Cwhich_eqR, x, value, negate)
-}
+

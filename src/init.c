@@ -170,7 +170,6 @@ R_CallMethodDef callMethods[] = {
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
 {"Ccj", (DL_FUNC) &cj, -1},  
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
-{"Cwhich_eqR", (DL_FUNC) &which_eqR, -1},
 {NULL, NULL, 0}
 };
 

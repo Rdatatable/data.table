@@ -20,6 +20,7 @@ typedef R_xlen_t RLEN;
 #define IS_LATIN(x) (LEVELS(x) & 4)
 #define IS_TRUE(x)  (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==TRUE)
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
+#define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
 
 #define SIZEOF(x) sizes[TYPEOF(x)]
 #define TYPEORDER(x) typeorder[x]
@@ -205,18 +206,6 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
 // between.c
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
 
-// utils.c
-bool isTrueFalse(SEXP x);
-int lengthMiss(SEXP x, int n, bool scalar);
-int typeMiss(SEXP x, SEXPTYPE type);
-SEXP findClass(SEXP x);
-int classMiss(SEXP x, SEXP char_class);
-int levelsMiss(SEXP x, SEXP levels);
-void which_eq_int(int *x, int nx, int *out, int *nout, int val, bool negate);
-void which_eq_double(double *x, int nx, int *out, int *nout, double val, bool negate);
-void which_eq_char(SEXP x, int nx, int *out, int *nout, SEXP val, bool negate);
-void which_eq_int64(int64_t *x, int nx, int *out, int *nout, int64_t val, bool negate);
-SEXP which_eqR(SEXP x, SEXP val, SEXP negate);
-
 // coalesce.c
 SEXP coalesce(SEXP x, SEXP values, SEXP inplace);
+

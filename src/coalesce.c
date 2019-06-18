@@ -1,152 +1,87 @@
 #include "data.table.h"
 
-SEXP coalesce(SEXP x, SEXP values, SEXP inplace) {
-  int JJ = length(values), protecti = 0, nx = length(x);
+SEXP coalesce(SEXP x, SEXP values, SEXP inplaceArg) {
 
-  if (!isVectorAtomic(x)) error("%s: argument 'x' must be an atomic vector", __func__);
-
-  if (!isTrueFalse(inplace)) error("%s: argument '.inplace' must be TRUE or FALSE", __func__);
-  bool binplace = LOGICAL(inplace)[0];
-
-  int firstLengthMiss = lengthMiss(values, nx, true);
-  if (firstLengthMiss >= 0) error("%s: Replacement %d has length %d but length(x) is %d. Only singletons will be recycled.", __func__, firstLengthMiss+1, length(VECTOR_ELT(values, firstLengthMiss)), nx);
-
-  int firstTypeMiss = typeMiss(values, TYPEOF(x));
-  if (firstTypeMiss >= 0) error("%s: Replacement %d has internal type %s but typeof(x) is %s. Please coerce before coalescing", __func__, firstTypeMiss+1, type2char(TYPEOF(VECTOR_ELT(values, firstTypeMiss))), type2char(TYPEOF(x)));
-
-  SEXP x_class = findClass(x);
-  int firstClassMiss = classMiss(values, x_class);
-  if (firstClassMiss >= 0) error("%s: Replacement %d does not inherit %s class while 'x' do. Please align classes before coalescing", __func__, firstClassMiss+1, CHAR(x_class));
-  if (x_class == char_factor) {
-    int firstLevelsMiss = levelsMiss(values, getAttrib(x, R_LevelsSymbol));
-    if (firstLevelsMiss >= 0) error("%s: Replacement %d has different factor levels than 'x'. Coerce to character or align factor levels before coalescing", __func__, firstLevelsMiss+1);
-  }
-
-  double tic = 0;
+  if (!isVectorAtomic(x)) error("argument 'x' must be an atomic vector");
+  if (!IS_TRUE_OR_FALSE(inplaceArg)) error("argument '.inplace' must be TRUE or FALSE");
+  const bool inplace = LOGICAL(inplaceArg)[0];
   const bool verbose = GetVerbose();
+  const int nval = length(values);
 
-  int *iwhich = malloc(nx*sizeof(iwhich)); // only nwhich will be filled, remaining space will store garbage
-  if (!iwhich) error("%s: Unable to allocate memory", __func__); // # nocov
-  int nwhich=0;
+  const bool factor = isFactor(x);
+  const int nrow = length(x);
 
-  if (verbose) tic = omp_get_wtime();
-  switch(TYPEOF(x)) {
-  case LGLSXP: {
-    which_eq_int(LOGICAL(x), nx, iwhich, &nwhich, NA_LOGICAL, false);
-  } break;
-  case INTSXP: {
-    which_eq_int(INTEGER(x), nx, iwhich, &nwhich, NA_INTEGER, false);
-  } break;
-  case REALSXP: {
-    if (INHERITS(x,char_integer64) || INHERITS(x,char_nanotime)) {
-      which_eq_int64((int64_t *)REAL(x), nx, iwhich, &nwhich, NA_INTEGER64, false);
+  for (int i=0; i<nval; ++i) {
+    SEXP item = VECTOR_ELT(values, i);
+    if (factor) {
+      if (!isFactor(item))
+        error("Item 1 is a factor but item %d is not a factor. When factors are involved, all items must be factor.", i+2);
+      if (!R_compute_identical(getAttrib(x, R_LevelsSymbol), getAttrib(item, R_LevelsSymbol), 0))
+        error("Item %d is a factor but its levels are not identical to the first item's levels", i+2);
     } else {
-      which_eq_double(REAL(x), nx, iwhich, &nwhich, NA_REAL, false);
+      if (isFactor(VECTOR_ELT(values, i)))
+        error("Item %d is a factor but item 1 is not a factor. When factors are involved, all items must be factor.", i+2);
+      SEXP thisclass = getAttrib(item, R_ClassSymbol);
+      if (length(thisclass) && !R_compute_identical(getAttrib(x, R_ClassSymbol), thisclass, 0))
+        error("Item %d has a different class than item 1", i+2);
     }
-  } break;
-  case STRSXP: {
-    which_eq_char(x, nx, iwhich, &nwhich, NA_STRING, false);
-  } break;
-  default: {
-    error("%s: Incompatible type: %s", __func__, type2char(TYPEOF(x)));
+    if (TYPEOF(x) != TYPEOF(item))
+       error("Item %d has internal type %s but the first item has type %s. Please coerce before coalescing", i+2, type2char(TYPEOF(item)), type2char(TYPEOF(x)));
+    if (/*length(item)!=1 &&*/ length(item)!=nrow)
+      error("Item %d is length %d but the first item is length %d. Only singletons are recycled.", i+2, length(item));
   }
-  }
-  if (verbose) Rprintf("%s: which NA took %.3fs\n", __func__, omp_get_wtime()-tic);
-
-  if (nwhich==0) {
-    if (verbose) Rprintf("%s: no NAs in input, skip further processing\n", __func__);
-    return(binplace ? x : duplicate(x));
-  }
-
-  SEXP out = R_NilValue;
-  if (verbose) tic = omp_get_wtime();
-  if (binplace) out = x; else {
-    out = PROTECT(duplicate(x)); protecti++;
-  }
-  if (verbose) Rprintf("%s: duplicate (if !inplace) took %.3fs\n", __func__, omp_get_wtime()-tic);
-
-  int *valueslens = malloc(JJ*sizeof(valueslens));
-  if (!valueslens) error("%s: Unable to allocate memory", __func__); // # nocov
-  for (int j=0; j<JJ; j++) valueslens[j] = length(VECTOR_ELT(values, j));
-
-  if (verbose) tic = omp_get_wtime();
+  if (!inplace) x = PROTECT(duplicate(x));
+  if (verbose) Rprintf("coalesce copied x (inplace=FALSE)\n");
+  void **valP = (void **)R_alloc(nval, sizeof(void *));
   switch(TYPEOF(x)) {
-  case LGLSXP: {
-    int *out_ptr = LOGICAL(out);
-    for (int i=0; i<nwhich; i++) {
-      int j = 0;
-      while (j < JJ) {
-        int this = LOGICAL(VECTOR_ELT(values, j))[valueslens[j]==1 ? 0 : iwhich[i]];
-        if (this != NA_LOGICAL) {
-          out_ptr[iwhich[i]] = this;
-          break;
-        }
-        j++;
-      }
-    }
-  } break;
+  case LGLSXP:
   case INTSXP: {
-    int *out_ptr = INTEGER(out);
-    for (int i=0; i<nwhich; i++) {
-      int j = 0;
-      while (j < JJ) {
-        int this = INTEGER(VECTOR_ELT(values, j))[valueslens[j]==1 ? 0 : iwhich[i]];
-        if (this != NA_INTEGER) {
-          out_ptr[iwhich[i]] = this;
-          break;
-        }
-        j++;
-      }
+    int *xP = INTEGER(x);
+    for (int j=0; j<nval; ++j) valP[j] = INTEGER(VECTOR_ELT(values, j));
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (int i=0; i<nrow; ++i) {
+      int val=xP[i], j=0;
+      if (val!=NA_INTEGER) continue;
+      while (val==NA_INTEGER && j<nval) val=((int *)valP[j++])[i];
+      xP[i] = val;
     }
   } break;
   case REALSXP: {
-    if (INHERITS(x,char_integer64) || INHERITS(x,char_nanotime)) { // integer64 and nanotime
-      int64_t *out_ptr = (int64_t *)REAL(out);
-      for (int i=0; i<nwhich; i++) {
-        int j = 0;
-        while (j < JJ) {
-          int64_t this = ((int64_t *)REAL(VECTOR_ELT(values, j)))[valueslens[j]==1 ? 0 : iwhich[i]];
-          if (this != NA_INTEGER64) {
-            out_ptr[iwhich[i]] = this;
-            break;
-          }
-          j++;
-        }
+    for (int j=0; j<nval; ++j) valP[j] = REAL(VECTOR_ELT(values, j));
+    if (INHERITS(x,char_integer64) || INHERITS(x,char_nanotime)) { // integer64 and nanotime (it seem nanotime does not inherit from integer64)
+      int64_t *xP = (int64_t *)REAL(x);
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int i=0; i<nrow; ++i) {
+        int64_t val=xP[i];
+        if (val!=NA_INTEGER64) continue;
+        int j=0; while (val==NA_INTEGER64 && j<nval) val=((int64_t *)valP[j++])[i];
+        xP[i] = val;
       }
-    } else { // numeric
-      double *out_ptr = REAL(out);
-      for (int i=0; i<nwhich; i++) {
-        int j = 0;
-        while (j < JJ) {
-          double this = REAL(VECTOR_ELT(values, j))[valueslens[j]==1 ? 0 : iwhich[i]];
-          if (!ISNA(this)) {
-            out_ptr[iwhich[i]] = this;
-            break;
-          }
-          j++;
-        }
+    } else {
+      double *xP = (double *)REAL(x);
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int i=0; i<nrow; ++i) {
+        double val=xP[i];
+        if (!ISNA(val)) continue;
+        int j=0; while (ISNA(val) && j<nval) val=((double *)valP[j++])[i];
+        xP[i] = val;
       }
     }
   } break;
   case STRSXP: {
-    for (int i=0; i<nwhich; i++) {
-      int j = 0;
-      while (j < JJ) {
-        SEXP this = STRING_ELT(VECTOR_ELT(values, j), valueslens[j]==1 ? 0 : iwhich[i]);
-        if (this != NA_STRING) {
-          SET_STRING_ELT(out, iwhich[i], this);
-          break;
-        }
-        j++;
-      }
+    const SEXP *xP = STRING_PTR(x);
+    for (int j=0; j<nval; ++j) valP[j] = STRING_PTR(VECTOR_ELT(values, j));
+    for (int i=0; i<nrow; ++i) {
+      SEXP val=xP[i];
+      if (val!=NA_STRING) continue;
+      int j=0; while (val==NA_STRING && j<nval) val=((SEXP *)valP[j++])[i];
+      if (val!=NA_STRING) SET_STRING_ELT(x, i, val);
     }
   } break;
-  default: {
-    error("Internal error in %s -- incompatible type should %s should have been caught by now; please report.", __func__, type2char(TYPEOF(x))); // # nocov
+  default:
+    error("Unsupported type: %s", type2char(TYPEOF(x))); // e.g. raw is tested
   }
-  }
-  if (verbose) Rprintf("%s: loop over NA indices of x took %.3fs\n", __func__, omp_get_wtime()-tic);
-
-  UNPROTECT(protecti);
-  return out;
+  if (!inplace) UNPROTECT(1);
+  return x;
 }
+
