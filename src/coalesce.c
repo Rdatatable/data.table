@@ -25,7 +25,7 @@ SEXP coalesce(SEXP x, SEXP values, SEXP inplaceArg) {
     if (!R_compute_identical(getAttrib(x, R_ClassSymbol), getAttrib(item, R_ClassSymbol), 0))
       error("Item %d has a different class than item 1.", i+2);
     if (length(item)!=1 && length(item)!=nrow)
-      error("Item %d is length %d but the first item is length %d. Only singletons are recycled.", i+2, length(item));
+      error("Item %d is length %d but the first item is length %d. Only singletons are recycled.", i+2, length(item), nrow);
   }
   if (!inplace) x = PROTECT(duplicate(x));
   if (verbose) Rprintf("coalesce copied x (inplace=FALSE)\n");
