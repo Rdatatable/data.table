@@ -53,6 +53,7 @@ export(frollsum)
 export(nafill)
 export(setnafill)
 export(.Last.updated)
+export(coalesce)
 
 S3method("[", data.table)
 S3method("[<-", data.table)

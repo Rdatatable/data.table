@@ -168,7 +168,8 @@ R_CallMethodDef callMethods[] = {
 {"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
 {"CcoerceFillR", (DL_FUNC) &coerceFillR, -1},
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
-{"Ccj", (DL_FUNC) &cj, -1},
+{"Ccj", (DL_FUNC) &cj, -1},  
+{"Ccoalesce", (DL_FUNC) &coalesce, -1},
 {NULL, NULL, 0}
 };
 

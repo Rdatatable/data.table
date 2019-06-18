@@ -100,16 +100,33 @@
     # default 4 threads on a laptop with 16GB RAM and 8 logical CPU
 
     ids = as.vector(outer(LETTERS, LETTERS, paste0))
-    system.time(DT1 <- CJ(ids, 1:500000))  # 3.9GB; 340m rows
-    #   user  system elapsed
+    system.time( CJ(ids, 1:500000) )  # 3.9GB; 340m rows
+    #   user  system elapsed (seconds)
     #  3.000   0.817   3.798  # was
     #  1.800   0.832   2.190  # now
 
-    ids = as.factor(ids)
-    system.time(DT2 <- CJ(ids, 1:500000))  # 2.6GB; 340m rows
-    #   user  system elapsed
+    # ids = as.factor(ids)
+    system.time( CJ(ids, 1:500000) )  # 2.6GB; 340m rows
+    #   user  system elapsed (seconds)
     #  1.779   0.534   2.293  # was
     #  0.357   0.763   0.292  # now
+    ```
+
+18. New function `coalesce(x, ...)` has been written in C, and is multithreaded for numeric and factor types. It replaces missing values according to a prioritized list of candidates (as per SQL COALESCE, `dplyr::coalesce`, and `hutils::coalesce`), [#3424](https://github.com/Rdatatable/data.table/issues/3424). It accepts any number of vectors in several forms. For example, given three vectors `x`, `y`, and `z`, where each `NA` in `x` is to be replaced by the corresponding value in `y` if that is non-NA, else the corresponding value in `z`, the following equivalent forms are all accepted: `coalesce(x,y,z)`, `coalesce(x,list(y,z))`, and `coalesce(list(x,y,z))`.
+
+    ```R
+    # default 4 threads on a laptop with 16GB RAM and 8 logical CPU
+    N = 100e6
+    x = replicate(5, {x=sample(N); x[sample(N, N/2)]=NA; x}, simplify=FALSE)  # 2GB
+    y1 = do.call(dplyr::coalesce, x))
+    y2 = do.call(hutils::coalesce, x))
+    y3 = do.call(data.table::coalesce, x))
+    #   user  system elapsed (seconds)
+    #  4.935   1.876   6.810  # dplyr::coalesce
+    #  3.122   0.831   3.956  # hutils::coalesce
+    #  0.915   0.099   0.379  # data.table::coalesce
+    identical(y1,y2) && identical(y1,y3)
+    # TRUE
     ```
 
 
@@ -171,7 +188,6 @@
     # 1:     1    a,b
     # 2:     2      a
     ```
-
 
 #### NOTES
 

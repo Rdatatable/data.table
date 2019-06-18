@@ -20,6 +20,7 @@ typedef R_xlen_t RLEN;
 #define IS_LATIN(x) (LEVELS(x) & 4)
 #define IS_TRUE(x)  (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==TRUE)
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
+#define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
 
 #define SIZEOF(x) sizes[TYPEOF(x)]
 #define TYPEORDER(x) typeorder[x]
@@ -204,3 +205,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
 
 // between.c
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
+
+// coalesce.c
+SEXP coalesce(SEXP x, SEXP values, SEXP inplace);
+
