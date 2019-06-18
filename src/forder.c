@@ -902,8 +902,13 @@ void radix_r(const int from, const int to, const int radix) {
       // Always ascending sort here (even when sortType==-1) because descending was prepared in write_key
       my_counts[my_key[0]] = 1;
       int i=1;
-      while (skip && i<my_n) { my_counts[my_key[i]]++; skip=(my_key[i]>=my_key[i-1]); i++; }
       while (i<my_n)         { my_counts[my_key[i]]++; i++; }  // as soon as not-ordered is detected (likely quickly when it isn't sorted), save the >= comparison
+      for (i=1; i<my_n; i++) {
+        if (my_key[i]<my_key[i-1]) {
+          skip=false;
+          break;
+        }
+      }
       TEND(11)
     } else {
       for (int i=0; i<my_n; i++) {
