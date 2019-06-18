@@ -15129,11 +15129,15 @@ z = c(11L, NA, 1L, 14L, NA, 16L, 1L, 2L, NA)+0.1
 test(2060.151, coalesce(x, y, z),       ans<-c(11:15,NaN,NaN,Inf,NA)+0.1)
 test(2060.152, coalesce(list(x, y, z)), ans)
 test(2060.153, coalesce(x, list(y,z)),  ans)
+test(2060.154, coalesce(list(x)), x)
+test(2060.155, setcoalesce(list(x)), x)
+test(2060.156, setcoalesce(list(x,y,z)), ans)
+test(2060.157, x, ans)  # setcoalesce updated the first item (x) by reference
 # factor of different levels
 x = factor(c('a','b',NA,NA,'b'))
 y = factor(c('b','b','a',NA,'b'))
 z = factor(c('a',NA,NA,'d','a'))
-test(2060.154, coalesce(x, y, z), error="Item 3 is a factor but its levels are not identical to the first item's levels")
+test(2060.180, coalesce(x, y, z), error="Item 3 is a factor but its levels are not identical to the first item's levels")
 # edge cases/checks
 test(2060.201, coalesce(bool), bool)
 test(2060.202, coalesce(fkt), fkt)
