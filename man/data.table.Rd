@@ -410,6 +410,7 @@ DT[, {tmp <- mean(y);
 pdf("new.pdf")
 DT[, plot(a,b), by=x]                 # can also plot in 'j'
 dev.off()
+\dontshow{file.remove("new.pdf")}
 
 # using rleid, get max(y) and min of all cols in .SDcols for each consecutive run of 'v'
 DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
