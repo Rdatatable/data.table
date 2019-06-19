@@ -129,7 +129,6 @@
     # TRUE
     ```
 
-
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -188,6 +187,8 @@
     # 1:     1    a,b
     # 2:     2      a
     ```
+
+23. Incorrect sorting/grouping results due to a bug in Intel's `icc` compiler 2019 (Version 19.0.4.243 Build 20190416) has been worked around thanks to a report and fix by Sebastian Freundt, [#3647](https://github.com/Rdatatable/data.table/issues/3647). Please run `data.table::test.data.table()`. If that passes, your installation does not have the problem.
 
 #### NOTES
 
