@@ -374,10 +374,9 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     vnames = name_dots(...)
   }
   dups = FALSE # fix for #1513
-  nrow = prod( vapply_1i(l, length) )  # lengths(l) will work from R 3.2.0
-  if (nrow > .Machine$integer.max) stop("Cross product of elements provided to CJ() would result in ",nrow," rows which exceeds .Machine$integer.max == ",.Machine$integer.max)
-  if (nrow>0L) for (i in seq_along(l)) {
+  for (i in seq_along(l)) {
     y = l[[i]]
+    if (!length(y)) next
     if (sorted) {
       if (!is.atomic(y)) stop("'sorted' is TRUE but element ", i, " is non-atomic, which can't be sorted; try setting sorted = FALSE")
       o = forderv(y, retGrp=TRUE)
@@ -393,6 +392,8 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
       if (unique) l[[i]] = unique(y)
     }
   }
+  nrow = prod( vapply_1i(l, length) )  # lengths(l) will work from R 3.2.0
+  if (nrow > .Machine$integer.max) stop("Cross product of elements provided to CJ() would result in ",nrow," rows which exceeds .Machine$integer.max == ",.Machine$integer.max)
   l = .Call(Ccj, l)
   setDT(l)
   l = alloc.col(l)  # a tiny bit wasteful to over-allocate a fixed join table (column slots only), doing it anyway for consistency since

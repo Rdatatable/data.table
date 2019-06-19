@@ -15189,6 +15189,10 @@ test(2060.503, xx_addr, address(xx))
 test(2060.504, xx, x)
 test(2060.505, address(setcoalesce(xx)), xx_addr)
 
+# #3650 -- ensure max nrow check on CJ is applied after unique
+l = replicate(ceiling(log10(.Machine$integer.max)), rep(1L, 10L), simplify = FALSE)
+l$unique = TRUE
+test(2061, do.call(CJ, l), setkey(unique(as.data.table(head(l, -1L)))))
 
 ###################################
 #  Add new tests above this line  #
