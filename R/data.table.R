@@ -2537,7 +2537,7 @@ set = function(x, i=NULL, j, value)  # low overhead, loopable
   #    "to avoid the copy by list() in R < 3.1.0"
   # Should no longer be necessary since R 3.1.0
 
-  .Call(Cassign, x, i, j, /*newcolnames=*/NULL, value)
+  .Call(Cassign, x, i, j, newcolnames=NULL, value)
   invisible(x)
 }
 

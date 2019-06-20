@@ -31,7 +31,6 @@ SEXP fmelt();
 SEXP fcast();
 SEXP uniqlist();
 SEXP uniqlengths();
-SEXP setrev();
 SEXP forder();
 SEXP fsorted();
 SEXP gforce();
@@ -116,7 +115,6 @@ R_CallMethodDef callMethods[] = {
 {"Cfcast", (DL_FUNC) &fcast, -1},
 {"Cuniqlist", (DL_FUNC) &uniqlist, -1},
 {"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
-{"Csetrev", (DL_FUNC) &setrev, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
 {"Cfsorted", (DL_FUNC) &fsorted, -1},
 {"Cgforce", (DL_FUNC) &gforce, -1},
@@ -168,7 +166,7 @@ R_CallMethodDef callMethods[] = {
 {"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
 {"CcoerceFillR", (DL_FUNC) &coerceFillR, -1},
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
-{"Ccj", (DL_FUNC) &cj, -1},  
+{"Ccj", (DL_FUNC) &cj, -1},
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
 {NULL, NULL, 0}
 };

@@ -142,9 +142,6 @@ getindex = function(x, name) {
 
 haskey = function(x) !is.null(key(x))
 
-# reverse a vector by reference (no copy)
-setrev = function(x) .Call(Csetrev, x)
-
 # reorder a vector based on 'order' (integer)
 # to be used in fastorder instead of x[o], but in general, it's better to replace vector subsetting with this..?
 # Basic checks that all items of order are in range 1:n with no NAs are now made inside Creorder.
