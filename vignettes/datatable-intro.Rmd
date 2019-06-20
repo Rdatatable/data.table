@@ -38,7 +38,7 @@ Briefly, if you are interested in reducing *programming* and *compute* time trem
 
 ## Data {#data}
 
-In this vignette, we will use [NYC-flights14](https://github.com/arunsrinivasan/flights/wiki/NYC-Flights-2014-data) data. It contains On-Time flights data from the [Bureau of Transporation Statistics](http://www.transtats.bts.gov/DL_SelectFields.asp?Table_ID=236) for all the flights that departed from New York City airports in 2014 (inspired by [nycflights13](https://github.com/hadley/nycflights13)). The data is available only for Jan-Oct'14.
+In this vignette, we will use [NYC-flights14](https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv) data obtained by [flights](https://github.com/arunsrinivasan/flights) package (available on GitHub only). It contains On-Time flights data from the [Bureau of Transporation Statistics](http://www.transtats.bts.gov/DL_SelectFields.asp?Table_ID=236) for all the flights that departed from New York City airports in 2014 (inspired by [nycflights13](https://github.com/hadley/nycflights13)). The data is available only for Jan-Oct'14.
 
 We can use `data.table`'s fast-and-friendly file reader `fread` to load `flights` directly as follows:
 
@@ -47,7 +47,12 @@ options(width = 100L)
 ```
 
 ```{r}
-flights <- fread("flights14.csv")
+input <- if (file.exists("flights14.csv")) {
+   "flights14.csv"
+} else {
+  "https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv"
+}
+flights <- fread(input)
 flights
 dim(flights)
 ```

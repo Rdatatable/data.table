@@ -1,7 +1,7 @@
 # globals to pass NOTE from R CMD check, see http://stackoverflow.com/questions/9439256
 MB = NCOL = NROW = NULL
 
-tables <- function(mb=TRUE, order.col="NAME", width=80,
+tables = function(mb=TRUE, order.col="NAME", width=80,
                    env=parent.frame(), silent=FALSE, index=FALSE)
 {
   # Prints name, size and colnames of all data.tables in the calling environment by default
@@ -25,7 +25,7 @@ tables <- function(mb=TRUE, order.col="NAME", width=80,
     if (index) set(info_i, , "INDICES", list(list(indices(DT))))
     info_i
   }))
-  if (!order.col %in% names(info)) stop("order.col='",order.col,"' not a column name of info")
+  if (!order.col %chin% names(info)) stop("order.col='",order.col,"' not a column name of info")
   info = info[base::order(info[[order.col]])]  # base::order to maintain locale ordering of table names
   if (!silent) {
     # prettier printing on console

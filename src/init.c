@@ -15,17 +15,17 @@ SEXP selfrefokwrapper();
 SEXP truelength();
 SEXP setcharvec();
 SEXP setcolorder();
-SEXP chmatchwrapper();
+SEXP chmatch_R();
+SEXP chmatchdup_R();
+SEXP chin_R();
 SEXP freadR();
 SEXP fwriteR();
 SEXP reorder();
 SEXP rbindlist();
 SEXP vecseq();
-SEXP copyattr();
 SEXP setlistelt();
 SEXP setmutable();
 SEXP address();
-SEXP copyNamedInList();
 SEXP expandAltRep();
 SEXP fmelt();
 SEXP fcast();
@@ -44,10 +44,9 @@ SEXP pointWrapper();
 SEXP setNumericRounding();
 SEXP getNumericRounding();
 SEXP binary();
-SEXP chmatch2();
 SEXP subsetDT();
 SEXP subsetVector();
-SEXP convertNegativeIdx();
+SEXP convertNegAndZeroIdx();
 SEXP frank();
 SEXP dt_na();
 SEXP lookup();
@@ -78,6 +77,12 @@ SEXP inrange();
 SEXP between();
 SEXP hasOpenMP();
 SEXP uniqueNlogical();
+SEXP frollfunR();
+SEXP dllVersion();
+SEXP nafillR();
+SEXP colnamesInt();
+SEXP initLastUpdated();
+SEXP cj();
 
 // .Externals
 SEXP fastmean();
@@ -95,17 +100,17 @@ R_CallMethodDef callMethods[] = {
 {"Ctruelength", (DL_FUNC) &truelength, -1},
 {"Csetcharvec", (DL_FUNC) &setcharvec, -1},
 {"Csetcolorder", (DL_FUNC) &setcolorder, -1},
-{"Cchmatchwrapper", (DL_FUNC) &chmatchwrapper, -1},
+{"Cchmatch", (DL_FUNC) &chmatch_R, -1},
+{"Cchmatchdup", (DL_FUNC) &chmatchdup_R, -1},
+{"Cchin", (DL_FUNC) &chin_R, -1},
 {"CfreadR", (DL_FUNC) &freadR, -1},
 {"CfwriteR", (DL_FUNC) &fwriteR, -1},
 {"Creorder", (DL_FUNC) &reorder, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
-{"Ccopyattr", (DL_FUNC) &copyattr, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
 {"Csetmutable", (DL_FUNC) &setmutable, -1},
 {"Caddress", (DL_FUNC) &address, -1},
-{"CcopyNamedInList", (DL_FUNC) &copyNamedInList, -1},
 {"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1},
 {"Cfcast", (DL_FUNC) &fcast, -1},
@@ -124,10 +129,9 @@ R_CallMethodDef callMethods[] = {
 {"CsetNumericRounding", (DL_FUNC) &setNumericRounding, -1},
 {"CgetNumericRounding", (DL_FUNC) &getNumericRounding, -1},
 {"Cbinary", (DL_FUNC) &binary, -1},
-{"Cchmatch2", (DL_FUNC) &chmatch2, -1},
 {"CsubsetDT", (DL_FUNC) &subsetDT, -1},
 {"CsubsetVector", (DL_FUNC) &subsetVector, -1},
-{"CconvertNegativeIdx", (DL_FUNC) &convertNegativeIdx, -1},
+{"CconvertNegAndZeroIdx", (DL_FUNC) &convertNegAndZeroIdx, -1},
 {"Cfrank", (DL_FUNC) &frank, -1},
 {"Cdt_na", (DL_FUNC) &dt_na, -1},
 {"Clookup", (DL_FUNC) &lookup, -1},
@@ -158,6 +162,14 @@ R_CallMethodDef callMethods[] = {
 {"Cbetween", (DL_FUNC) &between, -1},
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
+{"CfrollfunR", (DL_FUNC) &frollfunR, -1},
+{"CdllVersion", (DL_FUNC) &dllVersion, -1},
+{"CnafillR", (DL_FUNC) &nafillR, -1},
+{"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
+{"CcoerceFillR", (DL_FUNC) &coerceFillR, -1},
+{"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
+{"Ccj", (DL_FUNC) &cj, -1},  
+{"Ccoalesce", (DL_FUNC) &coalesce, -1},
 {NULL, NULL, 0}
 };
 
@@ -167,6 +179,20 @@ R_ExternalMethodDef externalMethods[] = {
 {"Cfastmean", (DL_FUNC) &fastmean, -1},
 {NULL, NULL, 0}
 };
+
+static void setSizes() {
+  for (int i=0; i<100; ++i) { sizes[i]=0; typeorder[i]=0; }
+  // only these types are currently allowed as column types :
+  sizes[LGLSXP] =  sizeof(int);       typeorder[LGLSXP] =  0;
+  sizes[RAWSXP] =  sizeof(Rbyte);     typeorder[RAWSXP] =  1;
+  sizes[INTSXP] =  sizeof(int);       typeorder[INTSXP] =  2;   // integer and factor
+  sizes[REALSXP] = sizeof(double);    typeorder[REALSXP] = 3;   // numeric and integer64
+  sizes[CPLXSXP] = sizeof(Rcomplex);  typeorder[CPLXSXP] = 4;
+  sizes[STRSXP] =  sizeof(SEXP *);    typeorder[STRSXP] =  5;
+  sizes[VECSXP] =  sizeof(SEXP *);    typeorder[VECSXP] =  6;   // list column
+  if (sizeof(char *)>8) error("Pointers are %d bytes, greater than 8. We have not tested on any architecture greater than 64bit yet.", sizeof(char *));
+  // One place we need the largest sizeof is the working memory malloc in reorder.c
+}
 
 void attribute_visible R_init_datatable(DllInfo *info)
 // relies on pkg/src/Makevars to mv data.table.so to datatable.so
@@ -187,6 +213,9 @@ void attribute_visible R_init_datatable(DllInfo *info)
   if (sizeof(int64_t) != 8) error("Checking sizeof(int64_t) [%d] is 8 %s", sizeof(int64_t), msg);
   if (sizeof(signed char) != 1) error("Checking sizeof(signed char) [%d] is 1 %s", sizeof(signed char), msg);
   if (sizeof(int8_t) != 1) error("Checking sizeof(int8_t) [%d] is 1 %s", sizeof(int8_t), msg);
+  if (sizeof(uint8_t) != 1) error("Checking sizeof(uint8_t) [%d] is 1 %s", sizeof(uint8_t), msg);
+  if (sizeof(int16_t) != 2) error("Checking sizeof(int16_t) [%d] is 2 %s", sizeof(int16_t), msg);
+  if (sizeof(uint16_t) != 2) error("Checking sizeof(uint16_t) [%d] is 2 %s", sizeof(uint16_t), msg);
 
   SEXP tmp = PROTECT(allocVector(INTSXP,2));
   if (LENGTH(tmp)!=2) error("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s", LENGTH(tmp), msg);
@@ -242,11 +271,15 @@ void attribute_visible R_init_datatable(DllInfo *info)
   char_indices =   PRINTNAME(install("indices"));
   char_allLen1 =   PRINTNAME(install("allLen1"));
   char_allGrp1 =   PRINTNAME(install("allGrp1"));
+  char_factor =    PRINTNAME(install("factor"));
+  char_ordered =   PRINTNAME(install("ordered"));
+  char_datatable = PRINTNAME(install("data.table"));
+  char_dataframe = PRINTNAME(install("data.frame"));
+  char_NULL =      PRINTNAME(install("NULL"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
-    error("PRINTNAME(install(\"integer64\")) has returned %s not %s",
-      type2char(TYPEOF(char_integer64)), type2char(CHARSXP));
+    error("PRINTNAME(install(\"integer64\")) has returned %s not %s", type2char(TYPEOF(char_integer64)), type2char(CHARSXP));  // # nocov
   }
 
   // create commonly used symbols, same as R_*Symbol but internal to DT
@@ -260,11 +293,15 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  sym_colClassesAs = install("colClassesAs");
+  sym_verbose = install("datatable.verbose");
+  SelfRefSymbol = install(".internal.selfref");
 
+  initDTthreads();
   avoid_openmp_hang_within_fork();
 }
 
-inline Rboolean INHERITS(SEXP x, SEXP char_) {
+inline bool INHERITS(SEXP x, SEXP char_) {
   // Thread safe inherits() by pre-calling install() above in init first then
   // passing those char_* in here for simple and fast non-API pointer compare.
   // The thread-safety aspect here is only currently actually needed for list columns in
@@ -273,13 +310,13 @@ inline Rboolean INHERITS(SEXP x, SEXP char_) {
   // Thread safe in the limited sense of correct and intended usage :
   // i) no API call such as install() or mkChar() must be passed in.
   // ii) no attrib writes must be possible in other threads.
-  SEXP class;
-  if (isString(class = getAttrib(x, R_ClassSymbol))) {
-  for (int i=0; i<LENGTH(class); i++) {
-    if (STRING_ELT(class, i) == char_) return TRUE;
+  SEXP klass;
+  if (isString(klass = getAttrib(x, R_ClassSymbol))) {
+    for (int i=0; i<LENGTH(klass); i++) {
+      if (STRING_ELT(klass, i) == char_) return true;
+    }
   }
-  }
-  return FALSE;
+  return false;
 }
 
 inline long long DtoLL(double x) {
@@ -304,9 +341,15 @@ inline double LLtoD(long long x) {
   return u.d;
 }
 
+bool GetVerbose() {
+  // don't call repetitively; save first in that case
+  SEXP opt = GetOption(sym_verbose, R_NilValue);
+  return isLogical(opt) && LENGTH(opt)==1 && LOGICAL(opt)[0]==1;
+}
 
+// # nocov start
 SEXP hasOpenMP() {
-  // Just for use by onAttach to avoid an RPRINTF from C level which isn't suppressable by CRAN
+  // Just for use by onAttach (hence nocov) to avoid an RPRINTF from C level which isn't suppressable by CRAN
   // There is now a 'grep' in CRAN_Release.cmd to detect any use of RPRINTF in init.c, which is
   // why RPRINTF is capitalized in this comment to avoid that grep.
   // TODO: perhaps .Platform or .Machine in R itself could contain whether OpenMP is available.
@@ -315,5 +358,19 @@ SEXP hasOpenMP() {
   #else
   return ScalarLogical(FALSE);
   #endif
+}
+// # nocov end
+
+extern int *_Last_updated;  // assign.c
+
+SEXP initLastUpdated(SEXP var) {
+  if (!isInteger(var) || LENGTH(var)!=1) error(".Last.value in namespace is not a length 1 integer");
+  _Last_updated = INTEGER(var);
+  return R_NilValue;
+}
+
+SEXP dllVersion() {
+  // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
+  return(ScalarString(mkChar("1.12.3")));
 }
 

@@ -5,6 +5,8 @@
 \title{Fast rank}
 \description{
   Similar to \code{base::rank} but \emph{much faster}. And it accepts vectors, lists, data.frames or data.tables as input. In addition to the \code{ties.method} possibilities provided by \code{base::rank}, it also provides \code{ties.method="dense"}.
+  
+  Like \code{\link{forder}}, sorting is done in "C-locale"; in particular, this may affect how capital/lowercase letters are ranked. See Details on \code{forder} for more.
 
   \code{bit64::integer64} type is also supported.
 }

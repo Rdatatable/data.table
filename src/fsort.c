@@ -121,21 +121,20 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   int nBatch=nth*2;  // at least nth; more to reduce last-man-home; but not too large to keep counts small in cache
   if (verbose) Rprintf("nth=%d, nBatch=%d\n",nth,nBatch);
 
-  R_xlen_t batchSize = (xlength(x)-1)/nBatch + 1;
+  size_t batchSize = (xlength(x)-1)/nBatch + 1;
   if (batchSize < 1024) batchSize = 1024; // simple attempt to work reasonably for short vector. 1024*8 = 2 4kb pages
   nBatch = (xlength(x)-1)/batchSize + 1;
   R_xlen_t lastBatchSize = xlength(x) - (nBatch-1)*batchSize;
   // could be that lastBatchSize == batchSize when i) xlength(x) is multiple of nBatch
   // and ii) for small vectors with just one batch
 
-  if (ALTREP(x)) { x = PROTECT(duplicate(x)); nprotect++; }
-
   t[1] = wallclock();
   double mins[nBatch], maxs[nBatch];
+  const double *restrict xp = REAL(x);
   #pragma omp parallel for schedule(dynamic) num_threads(nth)
   for (int batch=0; batch<nBatch; batch++) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
-    double *d = &REAL(x)[batchSize * batch];
+    const double *restrict d = xp + batchSize*batch;
     double myMin=*d, myMax=*d;
     d++;
     for (R_xlen_t j=1; j<thisLen; j++) {
@@ -167,10 +166,10 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   int maxBit = floor(log(maxULL-minULL) / log(2));  // 0 is the least significant bit
   int MSBNbits = maxBit > 15 ? 16 : maxBit+1;       // how many bits make up the MSB
   int shift = maxBit + 1 - MSBNbits;                // the right shift to leave the MSB bits remaining
-  int MSBsize = 1<<MSBNbits;                        // the number of possible MSB values (16 bits => 65,536)
+  size_t MSBsize = 1LL<<MSBNbits;                   // the number of possible MSB values (16 bits => 65,536)
   if (verbose) Rprintf("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n", maxBit, MSBNbits, shift, MSBsize);
 
-  R_xlen_t *counts = calloc(nBatch*(size_t)MSBsize, sizeof(R_xlen_t));
+  R_xlen_t *counts = calloc(nBatch*MSBsize, sizeof(R_xlen_t));
   if (counts==NULL) error("Unable to allocate working memory");
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
   // TODO: change all calloc, malloc and free to Calloc and Free to be robust to error() and catch ooms.
@@ -182,10 +181,10 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   #pragma omp parallel for num_threads(nth)
   for (int batch=0; batch<nBatch; batch++) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
-    double *tmp = &REAL(x)[batchSize * (size_t)batch];
-    R_xlen_t *thisCounts = counts + batch*(size_t)MSBsize;
+    const uint64_t *restrict tmp = (uint64_t *)(xp + batchSize*batch);
+    R_xlen_t *restrict thisCounts = counts + batch*MSBsize;
     for (R_xlen_t j=0; j<thisLen; j++) {
-      thisCounts[(*(unsigned long long *)tmp - minULL) >> shift]++;
+      thisCounts[(*tmp - minULL) >> shift]++;
       tmp++;
     }
   }
@@ -203,13 +202,14 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   }  // leaves msb cumSum in the last batch i.e. last row of the matrix
 
   t[4] = wallclock();
+  uint64_t *restrict ansi64 = (uint64_t *)ans;
   #pragma omp parallel for num_threads(nth)
   for (int batch=0; batch<nBatch; batch++) {
     R_xlen_t thisLen = (batch==nBatch-1) ? lastBatchSize : batchSize;
-    double *source = &REAL(x)[batchSize * batch];
-    R_xlen_t *thisCounts = counts + batch*MSBsize;
+    const uint64_t *restrict source = (uint64_t *)(xp + batchSize*batch);
+    R_xlen_t *restrict thisCounts = counts + batch*MSBsize;
     for (R_xlen_t j=0; j<thisLen; j++) {
-      ans[ thisCounts[(*(unsigned long long *)source - minULL) >> shift]++ ] = *source;
+      ansi64[ thisCounts[(*source - minULL) >> shift]++ ] = *source;
       // This assignment to ans is not random access as it may seem, but cache efficient by
       // design since target pages are written to contiguously. MSBsize * 4k < cache.
       // TODO: therefore 16 bit MSB seems too big for this step. Time this step and reduce 16 a lot.
@@ -225,9 +225,9 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     int fromBit = toBit>7 ? toBit-7 : 0;
 
     // sort bins by size, largest first to minimise last-man-home
-    R_xlen_t *msbCounts = counts + (nBatch-1)*(size_t)MSBsize;
+    R_xlen_t *msbCounts = counts + (nBatch-1)*MSBsize;
     // msbCounts currently contains the ending position of each MSB (the starting location of the next) even across empty
-    if (msbCounts[MSBsize-1] != xlength(x)) error("Internal error: counts[nBatch-1][MSBsize-1] != length(x)");
+    if (msbCounts[MSBsize-1] != xlength(x)) error("Internal error: counts[nBatch-1][MSBsize-1] != length(x)"); // # nocov
     R_xlen_t *msbFrom = malloc(MSBsize*sizeof(R_xlen_t));
     int *order = malloc(MSBsize*sizeof(int));
     R_xlen_t cumSum = 0;

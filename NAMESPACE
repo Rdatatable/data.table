@@ -6,8 +6,10 @@ exportClasses(data.table, IDate, ITime)
 ##
 
 export(data.table, tables, setkey, setkeyv, key, "key<-", haskey, CJ, SJ, copy)
-export(set2key, set2keyv, key2, setindex, setindexv, indices)
-export(as.data.table,is.data.table,test.data.table,last,first,like,"%like%",between,"%between%",inrange,"%inrange%")
+export(setindex, setindexv, indices)
+export(set2key, set2keyv, key2) # deprecated with helpful error; remove after May 2019 (see #3399)
+export(as.data.table,is.data.table,test.data.table)
+export(last,first,like,"%like%","%ilike%","%flike%",between,"%between%",inrange,"%inrange%")
 export(timetaken)
 export(truelength, alloc.col, ":=")
 export(setattr, setnames, setcolorder, set, setDT, setDF)
@@ -48,6 +50,12 @@ export(rollup)
 S3method(groupingsets, data.table)
 S3method(cube, data.table)
 S3method(rollup, data.table)
+export(frollmean)
+export(frollsum)
+export(nafill)
+export(setnafill)
+export(.Last.updated)
+export(coalesce)
 
 S3method("[", data.table)
 S3method("[<-", data.table)
@@ -83,6 +91,7 @@ S3method("names<-", data.table)
 S3method(duplicated, data.table)
 S3method(unique, data.table)
 S3method(merge, data.table)
+export(merge.data.table) #2618
 S3method(subset, data.table)
 S3method(transform, data.table)
 S3method(within, data.table)
@@ -92,18 +101,14 @@ S3method(Ops, data.table)
 S3method(anyDuplicated, data.table)
 S3method(split, data.table)
 
-export(dcast)
+export(dcast, melt)
 S3method(dcast, data.table)
-export(dcast.data.table)
-# exported too because if reshape2 is higher on search path, dcast(DT) will not dispatch since reshape2::dcast is not generic. So users
-# and many packges on CRAN call the exported function dcast.data.table() directly. See #3082.
-
-export(melt)
 S3method(melt, data.table)
-export(melt.data.table)
-# method exported too for consistency with dcast.data.table. Can never remember which one is generic in reshape2 and which one
-# isn't. By now too much user code relies on melt.data.table being exported.
 
+# exported for historical reasons -- if reshape2 is higher on search path, 
+# dcast(DT) will not dispatch since reshape2::dcast is not generic. So users
+# and many packges on CRAN call dcast.data.table() and/or melt.data.table() directly. See #3082.
+export(melt.data.table, dcast.data.table)
 
 import(utils)
 S3method(update, dev.pkg)
@@ -114,11 +119,11 @@ import(stats)
 S3method(na.omit, data.table)
 
 S3method(as.data.table, xts)
-if(getRversion() >= "3.6.0") {
+if (getRversion() >= "3.6.0") {
   export(as.xts.data.table)          # fails in R-devel if not exported too, but I don't understand why
   S3method(xts::as.xts, data.table)  # delayed registration (new in R-devel)  -- shouldn't this also export as.xts.data.table for us?
 } else {
-  export(as.xts.data.table)
+  export(as.xts.data.table)          # this on some configuration happens to fail as.xts dispatch to dt method #3286
 }
 
 # IDateTime support:
@@ -147,29 +152,25 @@ S3method(as.POSIXct, IDate)
 S3method(as.POSIXct, ITime)
 S3method(as.POSIXlt, ITime)
 S3method(c, IDate)
-S3method(cut, IDate)
+S3method(c, ITime)
 S3method(format, ITime)
 S3method(IDateTime, default)
 S3method(mean, IDate)
+S3method(mean, ITime)
 S3method(print, ITime)
 S3method(rep, IDate)
 S3method(rep, ITime)
 S3method(round, IDate)
 S3method(seq, IDate)
-S3method(split, IDate)
+S3method(seq, ITime)
 S3method(unique, IDate)
 S3method(unique, ITime)
+S3method('[<-', IDate)
 
-
-
-# [.factor
-# c.factor
 # duplist
 # getdots
 # NCOL
 # NROW
-# take
-# trim
 # which.first
 # which.last
 

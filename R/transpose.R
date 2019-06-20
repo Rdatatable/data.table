@@ -1,4 +1,4 @@
-transpose <- function(l, fill=NA, ignore.empty=FALSE) {
+transpose = function(l, fill=NA, ignore.empty=FALSE) {
   ans = .Call(Ctranspose, l, fill, ignore.empty)
   if (is.data.table(l)) setDT(ans)
   else if (is.data.frame(l)) {
@@ -10,7 +10,7 @@ transpose <- function(l, fill=NA, ignore.empty=FALSE) {
   ans[]
 }
 
-tstrsplit <- function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
+tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   ans = transpose(strsplit(as.character(x), ...), fill=fill, ignore.empty=FALSE)
   if (!missing(keep)) {
     keep = suppressWarnings(as.integer(keep))
@@ -22,7 +22,7 @@ tstrsplit <- function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   }
   # Implementing #1094, but default FALSE
   if(type.convert) ans = lapply(ans, type.convert, as.is = TRUE)
-  if (identical(names, FALSE)) return(ans)
+  if (isFALSE(names)) return(ans)
   else if (isTRUE(names)) names = paste0("V", seq_along(ans))
   if (!is.character(names))
     stop("'names' must be TRUE/FALSE or a character vector.")

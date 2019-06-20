@@ -1,15 +1,17 @@
 # Moved here out from data.table.R on 10 Aug 2017. See data.table.R for history prior to that.
 
-print.data.table <- function(x, topn=getOption("datatable.print.topn"),
+print.data.table = function(x, topn=getOption("datatable.print.topn"),
                nrows=getOption("datatable.print.nrows"),
                class=getOption("datatable.print.class"),
                row.names=getOption("datatable.print.rownames"),
                col.names=getOption("datatable.print.colnames"),
                print.keys=getOption("datatable.print.keys"),
-               quote=FALSE, ...) {    # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
+               quote=FALSE,
+               timezone=FALSE, ...) {
+  # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
   # nrows - under this the whole (small) table is printed, unless topn is provided (100)
   # class - should column class be printed underneath column name? (FALSE)
-  if (!col.names %in% c("auto", "top", "none"))
+  if (!col.names %chin% c("auto", "top", "none"))
     stop("Valid options for col.names are 'auto', 'top', and 'none'")
   if (col.names == "none" && class)
     warning("Column classes will be suppressed when col.names is 'none'")
@@ -21,8 +23,10 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     # This applies just at the prompt. Inside functions, print(DT) will of course print.
     # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
     #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
-    SYS <- sys.calls()
+    SYS = sys.calls()
     if (length(SYS) <= 2L ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
+        ( length(SYS) >= 3L && is.symbol(thisSYS <- SYS[[length(SYS)-2L]][[1L]]) &&
+          as.character(thisSYS) == 'source') || # suppress printing from source(echo = TRUE) calls, #2369
         ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) &&
           as.character(thisSYS) %chin% mimicsAutoPrint ) )  {
       return(invisible(x))
@@ -42,15 +46,19 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     cat("Ind", if (length(ixs) > 1L) "ices" else "ex", ": <",
       paste(ixs, collapse=">, <"), ">\n", sep="")
   }
-  if (nrow(x) == 0L) {
-    if (length(x)==0L)
-       cat("Null data.table (0 rows and 0 cols)\n")  # See FAQ 2.5 and NEWS item in v1.8.9
-    else
-       cat("Empty data.table (0 rows) of ",length(x)," col",if(length(x)>1L)"s",": ",paste(head(names(x),6L),collapse=","),if(ncol(x)>6L)"...","\n",sep="")
+  if (any(dim(x)==0L)) {
+    class = if (is.data.table(x)) "table" else "frame"  # a data.frame could be passed to print.data.table() directly, #3363
+    if (all(dim(x)==0L)) {
+      cat("Null data.",class," (0 rows and 0 cols)\n", sep="")  # See FAQ 2.5 and NEWS item in v1.8.9
+    } else {
+      cat("Empty data.",class," (", dim(x)[1L], " rows and ",length(x)," cols)", sep="")
+      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="")
+      cat("\n")
+    }
     return(invisible(x))
   }
   if ((topn*2+1)<nrow(x) && (nrow(x)>nrows || !topnmiss)) {
-    toprint = rbind(head(x, topn), tail(x, topn))
+    toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=nrow(x), length.out=topn))
     printdots = TRUE
   } else {
@@ -58,10 +66,8 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
     rn = seq_len(nrow(x))
     printdots = FALSE
   }
-  toprint=format.data.table(toprint, na.encode=FALSE, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
-
-  if ((!"bit64" %chin% loadedNamespaces()) && any(sapply(x,inherits,"integer64"))) require_bit64()
-  # When we depend on R 3.2.0 (Apr 2015) we can use isNamespaceLoaded() added then, instead of %chin% above
+  toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
+  require_bit64_if_needed(x)
 
   # FR #5020 - add row.names = logical argument to print.data.table
   if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
@@ -105,11 +111,11 @@ print.data.table <- function(x, topn=getOption("datatable.print.topn"),
   invisible(x)
 }
 
-format.data.table <- function (x, ..., justify="none") {
+format.data.table = function (x, ..., justify="none", timezone = FALSE) {
   if (is.atomic(x) && !is.null(x)) {
     stop("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
-  format.item <- function(x) {
+  format.item = function(x) {
     if (is.null(x))  # NULL item in a list column
       ""
     else if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
@@ -117,9 +123,19 @@ format.data.table <- function (x, ..., justify="none") {
     else
       paste0("<", class(x)[1L], ">")
   }
+  # FR #2842 add timezone for posix timestamps
+  format.timezone = function(col) { # paste timezone to a time object
+    tz = attr(col,'tzone', exact = TRUE)
+    if (!is.null(tz)) { # date object with tz
+      nas = is.na(col)
+      col = paste0(as.character(col)," ",tz) # parse to character
+      col[nas] = NA_character_
+    }
+    return(col)
+  }
   # FR #1091 for pretty printing of character
   # TODO: maybe instead of doing "this is...", we could do "this ... test"?
-  char.trunc <- function(x, trunc.char = getOption("datatable.prettyprint.char")) {
+  char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
     trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
     if (!is.character(x) || trunc.char <= 0L) return(x)
     idx = which(nchar(x) > trunc.char)
@@ -128,6 +144,7 @@ format.data.table <- function (x, ..., justify="none") {
   }
   do.call("cbind",lapply(x,function(col,...){
     if (!is.null(dim(col))) stop("Invalid column: it has dimensions. Can't format it. If it's the result of data.table(table()), use as.data.table(table()) instead.")
+    if(timezone) col = format.timezone(col)
     if (is.list(col)) col = vapply_1c(col, format.item)
     else col = format(char.trunc(col), justify=justify, ...) # added an else here to fix #5435
     col

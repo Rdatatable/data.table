@@ -4,11 +4,6 @@
 
 SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
 
-  R_len_t i, j, k=0, maxlen=0, zerolen=0, anslen;
-  SEXP li, thisi, ans;
-  SEXPTYPE type, maxtype=0;
-  Rboolean coerce = FALSE;
-
   if (!isNewList(l))
     error("l must be a list.");
   if (!length(l))
@@ -22,8 +17,10 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
 
   // preprocessing
   R_len_t *len  = (R_len_t *)R_alloc(ln, sizeof(R_len_t));
-  for (i=0; i<ln; i++) {
-    li = VECTOR_ELT(l, i);
+  int maxlen=0, zerolen=0;
+  SEXPTYPE maxtype=0;
+  for (int i=0; i<ln; ++i) {
+    SEXP li = VECTOR_ELT(l, i);
     if (!isVectorAtomic(li) && !isNull(li))
       error("Item %d of list input is not an atomic vector", i+1);
     len[i] = length(li);
@@ -33,7 +30,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
     if (isFactor(li)) {
       maxtype = STRSXP;
     } else {
-      type = TYPEOF(li);
+      SEXPTYPE type = TYPEOF(li);
       if (type > maxtype)
         maxtype = type;
     }
@@ -42,53 +39,60 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
   fill = PROTECT(coerceVector(fill, maxtype));
 
   // allocate 'ans'
-  ans = PROTECT(allocVector(VECSXP, maxlen));
-  anslen = (!ignore) ? ln : (ln - zerolen);
-  for (i=0; i<maxlen; i++) {
-    SET_VECTOR_ELT(ans, i, thisi=allocVector(maxtype, anslen) );
+  SEXP ans = PROTECT(allocVector(VECSXP, maxlen));
+  int anslen = (!ignore) ? ln : (ln - zerolen);
+  for (int i=0; i<maxlen; ++i) {
+    SET_VECTOR_ELT(ans, i, allocVector(maxtype, anslen));
   }
 
   // transpose
-  for (i=0; i<ln; i++) {
+  int k=0;
+  for (int i=0; i<ln; ++i) {
     if (ignore && !len[i]) continue;
-    li = VECTOR_ELT(l, i);
+    SEXP li = VECTOR_ELT(l, i);
+    bool coerce = false;
     if (TYPEOF(li) != maxtype) {
-      coerce = TRUE;
-      if (!isFactor(li)) li = PROTECT(coerceVector(li, maxtype));
-      else li = PROTECT(asCharacterFactor(li));
+      coerce = true;
+      li = PROTECT(isFactor(li) ? asCharacterFactor(li) : coerceVector(li, maxtype));
     }
-    switch (maxtype) {
-    case INTSXP :
-      for (j=0; j<maxlen; j++) {
-        thisi = VECTOR_ELT(ans, j);
-        INTEGER(thisi)[k] = (j < len[i]) ? INTEGER(li)[j] : INTEGER(fill)[0];
+    switch (maxtype) { // TODO remove more macros
+    case INTSXP : {
+      const int *ili = INTEGER(li);
+      const int *ifill = INTEGER(fill);
+      for (int j=0; j<maxlen; ++j) {
+        SEXP thisi = VECTOR_ELT(ans, j);
+        INTEGER(thisi)[k] = (j < len[i]) ? ili[j] : ifill[0];
       }
+    }
       break;
-    case LGLSXP :
-      for (j=0; j<maxlen; j++) {
-        thisi = VECTOR_ELT(ans, j);
-        LOGICAL(thisi)[k] = (j < len[i]) ? LOGICAL(li)[j] : LOGICAL(fill)[0];
+    case LGLSXP : {
+      const int *ili = LOGICAL(li);
+      const int *ifill = LOGICAL(fill);
+      for (int j=0; j<maxlen; ++j) {
+        SEXP thisi = VECTOR_ELT(ans, j);
+        LOGICAL(thisi)[k] = (j < len[i]) ? ili[j] : ifill[0];
       }
+    }
       break;
-    case REALSXP :
-      for (j=0; j<maxlen; j++) {
-        thisi = VECTOR_ELT(ans, j);
-        REAL(thisi)[k] = (j < len[i]) ? REAL(li)[j] : REAL(fill)[0];
+    case REALSXP : {
+      const double *dli = REAL(li);
+      const double *dfill = REAL(fill);
+      for (int j=0; j<maxlen; ++j) {
+        SEXP thisi = VECTOR_ELT(ans, j);
+        REAL(thisi)[k] = (j < len[i]) ? dli[j] : dfill[0];
       }
+    }
       break;
     case STRSXP :
-      for (j=0; j<maxlen; j++) {
-        thisi = VECTOR_ELT(ans, j);
+      for (int j=0; j<maxlen; ++j) {
+        SEXP thisi = VECTOR_ELT(ans, j);
         SET_STRING_ELT(thisi, k, (j < len[i]) ? STRING_ELT(li, j) : STRING_ELT(fill, 0));
       }
       break;
     default :
         error("Unsupported column type '%s'", type2char(maxtype));
     }
-    if (coerce) {
-      coerce = FALSE;
-      UNPROTECT(1);
-    }
+    if (coerce) UNPROTECT(1);
     k++;
   }
   UNPROTECT(2);
