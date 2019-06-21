@@ -5,7 +5,7 @@
 \alias{any_na}
 \title{Find missing values per row and remove rows with missing values on columns specified}
 \description{
-  \code{is_na()} checks a \code{data.table} for \code{NA} values in row-wise fashion, returning \code{TRUE} if a given row contains a \code{NA} entry and \code{FALSE} otherwise. This corresponds to \code{rowSums(is.na(.))}, but implemented in \code{C} for speed. \code{any_na()} returns the equivalent of \code{any(is_na(.))}, but again is implemented in \code{C} for speed. In order to remove rows containing \code{NA} entries, an S3 generic function to \code{stats::na.omit} if provided for \code{data.table} objects. This internally calls \code{is_na()}. See examples for benchmark timings. \code{bit64::integer64} type is also supported.
+  \code{is_na(DT)} checks the \code{data.table} for \code{NA} values in row-wise fashion, returning a logical vector of length `nrow(DT)`, with each element being \code{TRUE} for rows contains an \code{NA} entry and \code{FALSE} otherwise. This is equivalent to \code{as.logical(rowSums(is.na(DT)))}, but implemented in \code{C} for speed. \code{any_na(DT)} returns the equivalent of \code{any(is_na(DT))}, but again is implemented in \code{C} for speed. In order to remove rows containing \code{NA} entries, an S3 generic function to \code{stats::na.omit} if provided for \code{data.table} objects. This internally calls \code{is_na()}. See examples for benchmark timings. \code{bit64::integer64} type is also supported.
 }
 
 \usage{
