@@ -1088,7 +1088,7 @@ replace_order = function(isub, verbose, env) {
               if (is.list(k)) {
                 origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
                 if (is.character(j)) {
-                  if (length(j)!=1L) stop("L[[i]][,:=] syntax only valid when i is length 1, but its length is %d",length(j))
+                  if (length(j)!=1L) stop("L[[i]][,:=] syntax only valid when i is length 1 but it's length %d",length(j))
                   j = match(j, names(k))
                   if (is.na(j)) stop("Item '",origj,"' not found in names of list")
                 }
