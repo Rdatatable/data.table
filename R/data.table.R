@@ -1123,8 +1123,16 @@ replace_order = function(isub, verbose, env) {
         xcols = w[!wna]
         xcolsAns = which(!wna)
         ivars = names(i)
-        ivars[leftcols] = names(x)[rightcols]
-        w2 = chmatch(ansvars[wna], ivars)
+        if (!anyDuplicated(leftcols)) {
+          ivars[leftcols] = names(x)[rightcols]
+          w2 = chmatch(ansvars[wna], ivars)
+        } else { # duplicated vals in leftcols, #3635, can't find a way to avoid this for loop ... but the logic is here for someone else to attempt to improve it.
+          w2 <- rep(NA_integer_, length(leftcols))
+          for (li in seq_along(leftcols)) { # don't use 'i' as loop cntr var!
+            ivars[leftcols[li]] <- names(x)[rightcols[li]]
+            w2[li] <- chmatch(ansvars[wna][li], ivars)
+          }
+        }
         if (any(w2na <- is.na(w2))) {
           ivars = paste0("i.",ivars)
           ivars[leftcols] = names(i)[leftcols]
