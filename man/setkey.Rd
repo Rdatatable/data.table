@@ -76,7 +76,7 @@ with no warning. (A similar concept exists in SQL, where \code{"select * from \d
 required.)
 
 If you really wish to use column numbers, it is possible but
-deliberately a little harder; e.g., \code{setkeyv(DT,colnames(DT)[1:2])}.
+deliberately a little harder; e.g., \code{setkeyv(DT,names(DT)[1:2])}.
 
 If you wanted to use \code{\link[base]{grep}} to select key columns according to
 a pattern, note that you can just set \code{value = TRUE} to return a character vector instead of the default integer indices.
