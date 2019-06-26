@@ -3,7 +3,8 @@
 SEXP coalesce(SEXP x, SEXP values, SEXP inplaceArg) {
 
   if (!isVectorAtomic(x)) error("argument 'x' must be an atomic vector");
-  if (!IS_TRUE_OR_FALSE(inplaceArg)) error("argument '.inplace' must be TRUE or FALSE");
+  if (!IS_TRUE_OR_FALSE(inplaceArg))
+    error("Internal error in coalesce.c: argument 'inplaceArg' must be TRUE or FALSE"); // # nocov
   const bool inplace = LOGICAL(inplaceArg)[0];
   const bool verbose = GetVerbose();
   const int nval = length(values);

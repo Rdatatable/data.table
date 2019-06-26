@@ -1,9 +1,8 @@
-
 coalesce = function(x, ...) {
   if (missing(..1)) {
     if (is.list(x)) {
       if (length(x)<=1L) return(x[[1L]])
-      values = x[-1L]
+      values = if (is.data.table(x)) x[,-1L] else x[-1L]
       x = x[[1L]]
     } else return(x)
   } else {
@@ -17,7 +16,7 @@ setcoalesce = function(x, ...) {
   if (missing(..1)) {
     if (is.list(x)) {
       if (length(x)<=1L) return(x[[1L]])
-      values = x[-1L]
+      values = if (is.data.table(x)) x[,-1L] else x[-1L]
       x = x[[1L]]
     } else return(x)
   } else {
@@ -26,4 +25,3 @@ setcoalesce = function(x, ...) {
   }
   invisible(.Call(Ccoalesce, x, values, TRUE))
 }
-
