@@ -1,0 +1,82 @@
+destination: docs
+
+# url: http://r-datatable.com
+
+reference:
+- title: Core
+  contents:
+  - data.table
+  - '`special-symbols`'
+  - J
+  - patterns
+  - as.data.table
+  - print.data.table
+  - fread
+  - fwrite
+  - rbindlist
+
+- title: Functions that work with complete tables
+  contents:
+  - all.equal.data.table
+  - as.matrix.data.table
+  - as.xts.data.table
+  - dcast
+  - duplicated.data.table
+  - fintersect
+  - melt.data.table
+  - merge.data.table
+  - na.omit.data.table
+  - split.data.table
+  - subset.data.table
+  - transform.data.table
+
+- title: Grouping and keys
+  contents:
+  - rowid
+  - groupingsets
+  - setkey
+
+- title: Functions that work with vectors
+  contents:
+  - between
+  - chmatch
+  - coalesce
+  - first
+  - foverlaps
+  - frank
+  - frollmean
+  - fsort
+  - last
+  - like
+  - nafill
+  - rleid
+  - shift
+  - transpose
+  - tstrsplit
+
+- title: Efficient in-place modification
+  contents:
+  - set
+  - setattr
+  - setDF
+  - setDT
+  - setcolorder
+  - setnames
+  - setorder
+
+- title: Advanced/Miscellaneous
+  contents:
+  - .Last.updated
+  - address
+  - copy
+  - '`data.table-class`'
+  - datatable.optimize
+  - IDateTime
+  - setDTthreads
+  - setNumericRounding
+  - shouldPrint
+  - tables
+  - test.data.table
+  - timetaken
+  - truelength
+  - update.dev.pkg
