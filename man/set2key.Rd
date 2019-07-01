@@ -4,6 +4,7 @@
 \alias{key2}
 \alias{key<-}
 \title{ Deprecated. }
+\keyword{internal}
 \description{
   These functions are deprecated. They will be removed in future. Please use the functions in \code{\link{setkey}}.
 }
