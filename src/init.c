@@ -18,6 +18,7 @@ SEXP setcolorder();
 SEXP chmatch_R();
 SEXP chmatchdup_R();
 SEXP chin_R();
+SEXP fifelseR();
 SEXP freadR();
 SEXP fwriteR();
 SEXP reorder();
@@ -170,6 +171,7 @@ R_CallMethodDef callMethods[] = {
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
 {"Ccj", (DL_FUNC) &cj, -1},  
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
+{"CfifelseR", (DL_FUNC) &fifelseR, 3},
 {NULL, NULL, 0}
 };
 
