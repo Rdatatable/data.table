@@ -6,7 +6,7 @@ between = function(x,lower,upper,incbounds=TRUE) {
   is.px = function(x) inherits(x, "POSIXct")
   is.i64 = function(x) inherits(x, "integer64")
   # POSIX special handling to auto coerce character
-  if (is.px(x) && !is.null(tz<-attr(x, "tzone", TRUE)) && nzchar(tz) &&
+  if (is.px(x) && !is.null(tz<-attr(x, "tzone", exact=TRUE)) && nzchar(tz) &&
       (is.character(lower) || is.character(upper))) {
     try_posix_cast = function(x, tz) {tryCatch(
       list(status=0L, value=as.POSIXct(x, tz = tz)),
@@ -30,7 +30,7 @@ between = function(x,lower,upper,incbounds=TRUE) {
       ((is.null(x) || !nzchar(x)) && (is.null(y) || !nzchar(y)) && (is.null(z) || !nzchar(z))) ||
         (identical(x, y) && identical(x, z))
     }
-    if (!tz_match(attr(x, "tzone", TRUE), attr(lower, "tzone", TRUE), attr(upper, "tzone", TRUE))) {
+    if (!tz_match(attr(x, "tzone", exact=TRUE), attr(lower, "tzone", exact=TRUE), attr(upper, "tzone", exact=TRUE))) {
       stop("'between' function arguments have mismatched timezone attribute, align all arguments to same timezone")
     }
   }
