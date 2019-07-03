@@ -2,6 +2,13 @@ destination: docs
 
 # url: http://r-datatable.com
 
+home:
+  links:
+  - text: Watch presentations
+    href: https://github.com/Rdatatable/data.table/wiki/Presentations
+  - text: Read articles
+    href: https://github.com/Rdatatable/data.table/wiki/Articles
+
 reference:
 - title: Core
   contents:
