@@ -999,7 +999,6 @@ replace_order = function(isub, verbose, env) {
         # All appropriate returns following this point are wrapped; i.e. return(suppPrint(x)).
 
         if (is.null(names(jsub))) {
-          #print(microbenchmark::get_nanotime())
           # regular LHS:=RHS usage, or `:=`(...) with no named arguments (an error)
           # `:=`(LHS,RHS) is valid though, but more because can't see how to detect that, than desire
           if (length(jsub)!=3L) stop("In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named.")
@@ -1011,15 +1010,12 @@ replace_order = function(isub, verbose, env) {
             # e.g. (MyVar):= or get("MyVar"):=
             lhs = eval(lhs, parent.frame(), parent.frame())
           }
-          #print(microbenchmark::get_nanotime())
         } else {
-          #print(microbenchmark::get_nanotime())
           # `:=`(c2=1L,c3=2L,...)
           lhs = names(jsub)[-1L]
-          if (!all(nzchar(lhs))) stop("In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named.")
+          if (any(lhs=="")) stop("In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named.")
           names(jsub)=""
           jsub[[1L]]=as.name("list")
-          #print(microbenchmark::get_nanotime())
         }
         av = all.vars(jsub,TRUE)
         if (!is.atomic(lhs)) stop("LHS of := must be a symbol, or an atomic vector (column names or positions).")
