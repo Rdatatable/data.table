@@ -14,36 +14,39 @@ reference:
   contents:
   - data.table
   - '`special-symbols`'
-  - J
-  - patterns
   - as.data.table
-  - print.data.table
   - fread
   - fwrite
   - rbindlist
+  - print.data.table
 
-- title: Functions that work with complete tables
+- title: Efficient in-place modification
   contents:
-  - all.equal.data.table
-  - as.matrix.data.table
-  - as.xts.data.table
-  - dcast
-  - duplicated.data.table
-  - fintersect
-  - melt.data.table
-  - merge.data.table
-  - na.omit.data.table
-  - split.data.table
-  - subset.data.table
-  - transform.data.table
-
-- title: Grouping and keys
-  contents:
-  - rowid
-  - groupingsets
+  - set
   - setkey
+  - setattr
+  - setDF
+  - setDT
+  - setcolorder
+  - setnames
+  - setorder
 
-- title: Functions that work with vectors
+- title: Subsetting and reshaping your data
+  - dcast
+  - melt
+  - patterns
+  - CJ
+  - na.omit.data.table
+  - unique.data.table
+  - subset.data.table
+  - split.data.table
+
+- title: Combining and comparing multiple data sets
+  - merge.data.table
+  - fintersect
+  - all.equal.data.table
+
+- title: Convenient functions for data munging
   contents:
   - between
   - chmatch
@@ -53,32 +56,29 @@ reference:
   - frank
   - frollmean
   - fsort
+  - IDateTime
   - last
   - like
   - nafill
   - rleid
+  - rowid
   - shift
   - transpose
   - tstrsplit
+  - groupingsets
 
-- title: Efficient in-place modification
+- title: data.table conversion
   contents:
-  - set
-  - setattr
-  - setDF
-  - setDT
-  - setcolorder
-  - setnames
-  - setorder
+  - as.matrix.data.table
+  - as.xts.data.table
+  - copy
 
-- title: Advanced/Miscellaneous
+- title: Advanced/Internal
   contents:
   - .Last.updated
   - address
-  - copy
   - '`data.table-class`'
   - datatable.optimize
-  - IDateTime
   - setDTthreads
   - setNumericRounding
   - shouldPrint
