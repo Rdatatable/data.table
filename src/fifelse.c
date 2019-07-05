@@ -34,6 +34,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     stack_size = stack_size + 2;
     ta = STRSXP;
   }
+  /*Jan Gorecki : Afair this will make factor class always slower than character, would be nice to have it optimised where possible*/
   
   const uint64_t len0 = LENGTH(l);
   const uint64_t len1 = LENGTH(a);
@@ -329,9 +330,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   }
   
   // Check if class type is Date and adjust
-  if(!isNull(class_type))
-    if( CHAR(STRING_ELT(class_type,0)) == CHAR(STRING_ELT(Rf_mkString("Date"),0)) )
-      setAttrib(result, R_ClassSymbol, mkString("Date"));
+  if(!isNull(class_type) && stack_size < 3) copyMostAttrib(a, result); // issue here for factor with NA value
+    //if( CHAR(STRING_ELT(class_type,0)) == CHAR(STRING_ELT(Rf_mkString("Date"),0)) )
+      //setAttrib(result, R_ClassSymbol, mkString("Date"));
     
   UNPROTECT(stack_size);
   return result;

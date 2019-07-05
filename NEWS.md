@@ -129,6 +129,8 @@
     # TRUE
     ```
 
+19. New function `fifelse(test,yes, no)`, also written in C, has been implemented by Morgan Jacob following feature request [#3657](https://github.com/Rdatatable/data.table/issues/3657). It is comparable to `base::ifelse`, `dplyr::if_else}` and  `hutils::if_else`. It returns a vector of the same length as logical vector `test` but unlike \code{base::ifelse} the output type is consistent with those of \code{yes} and \code{no}. Please see `?data.table::fifelse` for more details.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
