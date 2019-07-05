@@ -15194,6 +15194,33 @@ l = replicate(ceiling(log10(.Machine$integer.max)), rep(1L, 10L), simplify = FAL
 l$unique = TRUE
 test(2061, do.call(CJ, l), setkey(unique(as.data.table(head(l, -1L)))))
 
+# fifelse, #3657
+test(2062.001, fifelse(-5L:5L < 0L, 1L, 0L), c(rep(1L,5L),rep(0L,6L)))
+test(2062.002, fifelse(-5L:5L < 0L, 1, 0), c(rep(1,5L),rep(0,6L)))
+test(2062.003, fifelse(-5L:5L < 0L, TRUE, FALSE), c(rep(TRUE,5L),rep(FALSE,6L)))
+test(2062.004, fifelse(-5L:5L < 0L, "TRUE", "FALSE"), c(rep("TRUE",5L),rep("FALSE",6L)))
+test(2062.005, fifelse(as.logical(c(-5L:5L < 0L, NA)), TRUE, NA), c(rep(TRUE,5L),rep(NA,7L)))
+test(2062.006, fifelse(-5L:5L < 0L, rep(1L,11L), rep(0L,11L)), c(rep(1L,5L),rep(0L,6L)))
+test(2062.007, fifelse(-5L:5L < 0L, rep(1L,11L), 0L), c(rep(1L,5L),rep(0L,6L)))
+test(2062.008, fifelse(-5L:5L < 0L, 1L, rep(0L,11L)), c(rep(1L,5L),rep(0L,6L)))
+test(2062.009, fifelse(-5L:5L < 0L, rep(1L,11L), rep(0L,11L-1)), error = "Length of 'no' must be 1 or equal to length of 'test'.")
+test(2062.010, fifelse(-5L:5L < 0L, rep(1,11L-1), rep(0,11L)), error = "Length of 'yes' must be 1 or equal to length of 'test'.")
+test(2062.011, fifelse(-5L:5L < 0L, rep(TRUE,11L-1), rep(FALSE,11L-1)), error = "Length of 'yes' and 'no' must be 1 or equal to length of 'test'.")
+test(2062.012, fifelse(1L:5L, rep(TRUE,11L-1), rep(FALSE,11L-1)), error = "Argument 'test' must be logical.")
+test(2062.013, fifelse(-5L:5L < 0L, TRUE, "FALSE"), error = "Item 'yes' is of type logical but item 'no' is of type character. Please make sure they are of the same type.")
+test(2062.014, fifelse(-5L:5L < 0L, list(1),list(2,4)), error = "Length of 'no' must be 1 or equal to length of 'test'.")
+test(2062.015, fifelse(-5L:5L < 0L, list(1,3),list(2,4)), error = "Length of 'yes' and 'no' must be 1 or equal to length of 'test'.") 
+test(2062.016, fifelse(-5L:5L < 0L, list(1),2), error = "Item 'yes' has different class than item 'no'. Please make sure that they have same class type.")
+test(2062.017, fifelse(-5L:5L < 0L, 1,list(2)), error = "Item 'yes' is of type double but item 'no' is of type list. Please make sure they are of the same type.")
+test(2062.018,
+     fifelse(as.Date(c("2011-01-01","2011-01-02","2011-01-03","2011-01-04","2011-01-05")) == "2011-01-01",
+             as.Date(c("2011-01-01","2011-01-02","2011-01-03","2011-01-04","2011-01-05")) - 1,
+             as.Date(c("2011-01-01","2011-01-02","2011-01-03","2011-01-04","2011-01-05"))),
+     as.Date(c("2010-12-31","2011-01-02","2011-01-03","2011-01-04","2011-01-05")))
+test(2062.019,
+     fifelse(factor(letters[1:5]) %in% c("a","b","c"), factor(letters[1:5]), factor(NA)),
+     factor(c("a","b","c",NA,NA),levels = levels(factor(letters[1:5]))))
+
 ###################################
 #  Add new tests above this line  #
 ###################################
