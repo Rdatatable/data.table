@@ -15194,6 +15194,14 @@ l = replicate(ceiling(log10(.Machine$integer.max)), rep(1L, 10L), simplify = FAL
 l$unique = TRUE
 test(2061, do.call(CJ, l), setkey(unique(as.data.table(head(l, -1L)))))
 
+# #3679 -- integer / double Date merge should retain attributes
+dbl_date <- structure(17896.0, class = "Date")
+int_date <- structure(17896L, class = "Date")
+x <- data.table(date = int_date, value = 10, key = 'date')
+i <- data.table(date = dbl_date, key = 'date')
+test(2062.1, x[i, class(date)], 'Date')
+test(2062.2, i[x, class(date)], 'Date')
+
 ###################################
 #  Add new tests above this line  #
 ###################################
