@@ -15220,6 +15220,27 @@ test(2062.018,
 test(2062.019,
      fifelse(factor(letters[1:5]) %in% c("a","b","c"), factor(letters[1:5]), factor(NA)),
      factor(c("a","b","c",NA,NA),levels = levels(factor(letters[1:5]))))
+test(2062.020, fifelse(as.logical(c(-5L:5L < 0L, NA)), 1L, 0L), c(rep(1L,5L),rep(0L,6L),NA))
+test(2062.021, fifelse(as.logical(c(-5L:5L < 0L, NA)), rep(1L,12L), 0L), c(rep(1L,5L),rep(0L,6L),NA))
+test(2062.022, fifelse(as.logical(c(-5L:5L < 0L, NA)), rep(1L,12L), rep(0L,12L)), c(rep(1L,5L),rep(0L,6L),NA))
+test(2062.023, fifelse(as.logical(c(-5L:5L < 0L, NA)), 1L, rep(0L,12L)), c(rep(1L,5L),rep(0L,6L),NA))
+test(2062.024, fifelse(as.logical(c(-5L:5L < 0L, NA)), 1, 0), c(rep(1,5L),rep(0,6L),NA))
+test(2062.025, fifelse(as.logical(c(-5L:5L < 0L, NA)), rep(1,12L), 0), c(rep(1,5L),rep(0,6L),NA))
+test(2062.026, fifelse(as.logical(c(-5L:5L < 0L, NA)), rep(1,12L), rep(0,12L)), c(rep(1,5L),rep(0,6L),NA))
+test(2062.027, fifelse(as.logical(c(-5L:5L < 0L, NA)), 1, rep(0,12L)), c(rep(1,5L),rep(0,6L),NA))
+test(2062.028, fifelse(as.logical(c(-5L:5L < 0L, NA)), TRUE, rep(FALSE,12L)), c(rep(TRUE, 5L),rep(FALSE, 6L),NA))
+test(2062.029, fifelse(as.logical(c(-5L:5L < 0L, NA)), rep(TRUE,12L), FALSE), c(rep(TRUE,5L),rep(FALSE,6L),NA))
+test(2062.030, fifelse(as.logical(c(-5L:5L < 0L, NA)), rep(TRUE,12L), rep(FALSE,12L)), c(rep(TRUE,5L),rep(FALSE,6L),NA))
+test(2062.031, fifelse(as.logical(c(-5L:5L < 0L, NA)), "TRUE", rep("FALSE",12L)), c(rep("TRUE", 5L),rep("FALSE", 6L),NA))
+test(2062.032, fifelse(as.logical(c(-5L:5L < 0L, NA)), rep("TRUE",12L), "FALSE"), c(rep("TRUE",5L),rep("FALSE",6L),NA))
+test(2062.033, fifelse(as.logical(c(-5L:5L < 0L, NA)), rep("TRUE",12L), rep("FALSE",12L)), c(rep("TRUE",5L),rep("FALSE",6L),NA))
+test(2062.034, fifelse(as.logical(c(-5L:5L < 0L, NA)), "TRUE", "FALSE"), c(rep("TRUE",5L),rep("FALSE",6L),NA))
+test(2062.035, fifelse(-5L:5L < 0L, as.Date("2011-01-01"), FALSE), error = "Item 'yes' is of type double but item 'no' is of type logical. Please make sure they are of the same type.")
+test(2062.036, fifelse(as.logical(c(-5L:5L < 0L, NA)), 2+5i, 2+7i), c(rep(2+5i,5L),rep(2+7i,6L),NA))
+test(2062.037, fifelse(as.logical(c(-5L:5L < 0L, NA)), rep(2+5i,12L), 2+7i), c(rep(2+5i,5L),rep(2+7i,6L),NA))
+test(2062.038, fifelse(as.logical(c(-5L:5L < 0L, NA)), rep(2+5i,12L), rep(2+7i,12L)), c(rep(2+5i,5L),rep(2+7i,6L),NA))
+test(2062.039, fifelse(as.logical(c(-5L:5L < 0L, NA)), 2+5i, rep(2+7i,12L)), c(rep(2+5i,5L),rep(2+7i,6L),NA))
+test(2062.040, fifelse(-5L:5L < 0L, charToRaw("H"),charToRaw("B")), error = "Type raw is not supported.")
 
 ###################################
 #  Add new tests above this line  #

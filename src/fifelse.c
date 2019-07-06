@@ -71,13 +71,13 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   SEXP result = R_NilValue;
   int *pl = LOGICAL(l);
   
-  int *int_pres;
+  /*int *int_pres;
   int *int_pa;
-  int *int_pb;
+  int *int_pb;*/
   
-  double *double_pres;
+  /*double *double_pres;
   double *double_pa;
-  double *double_pb;
+  double *double_pb;*/
   
   switch(ta)
   {
@@ -88,6 +88,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   case INTSXP :
     result = PROTECT(allocVector(INTSXP, len0));
     stack_size++;
+    int *int_pres, *int_pa, *int_pb;
     int_pres = INTEGER(result);
     int_pa   = INTEGER(a);
     int_pb   = INTEGER(b);
@@ -150,6 +151,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   case REALSXP :
     result = PROTECT(allocVector(REALSXP, len0));
     stack_size++;
+    double *double_pres, *double_pa, *double_pb;
     double_pres = REAL(result);
     double_pa   = REAL(a);
     double_pb   = REAL(b);
@@ -212,9 +214,10 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   case LGLSXP :
     result = PROTECT(allocVector(LGLSXP, len0));
     stack_size++;
-    int_pres = LOGICAL(result);
-    int_pa   = LOGICAL(a);
-    int_pb   = LOGICAL(b);
+    int *lg_pres, *lg_pa, *lg_pb;
+    lg_pres = LOGICAL(result);
+    lg_pa   = LOGICAL(a);
+    lg_pb   = LOGICAL(b);
     switch(adj)
     {
     case 0:
@@ -222,9 +225,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : int_pres[i] = int_pb[i];  break;
-        case 1  : int_pres[i] = int_pa[i];  break;
-        default : int_pres[i] = NA_LOGICAL; break;
+        case 0  : lg_pres[i] = lg_pb[i];  break;
+        case 1  : lg_pres[i] = lg_pa[i];  break;
+        default : lg_pres[i] = NA_LOGICAL; break;
         }
       }
       break;
@@ -234,9 +237,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : int_pres[i] = int_pb[i];  break;
-        case 1  : int_pres[i] = int_pa[0];  break;
-        default : int_pres[i] = NA_LOGICAL; break;
+        case 0  : lg_pres[i] = lg_pb[i];  break;
+        case 1  : lg_pres[i] = lg_pa[0];  break;
+        default : lg_pres[i] = NA_LOGICAL; break;
         }
       }
       break;
@@ -246,9 +249,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : int_pres[i] = int_pb[0];  break;
-        case 1  : int_pres[i] = int_pa[i];  break;
-        default : int_pres[i] = NA_LOGICAL; break;
+        case 0  : lg_pres[i] = lg_pb[0];  break;
+        case 1  : lg_pres[i] = lg_pa[i];  break;
+        default : lg_pres[i] = NA_LOGICAL; break;
         }
       }
       break;
@@ -258,9 +261,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : int_pres[i] = int_pb[0];  break;
-        case 1  : int_pres[i] = int_pa[0];  break;
-        default : int_pres[i] = NA_LOGICAL; break;
+        case 0  : lg_pres[i] = lg_pb[0];  break;
+        case 1  : lg_pres[i] = lg_pa[0];  break;
+        default : lg_pres[i] = NA_LOGICAL; break;
         }
       }
       break;
@@ -269,7 +272,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     
     /*
      This part is for dealing with a (yes) and b (no)
-     in case they are both of type STRSXP (logical)
+     in case they are both of type STRSXP (character)
      */
   case STRSXP :
     result = PROTECT(allocVector(STRSXP, len0));
@@ -320,6 +323,70 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         case 0  : SET_STRING_ELT(result, i, STRING_ELT(b, 0));  break;
         case 1  : SET_STRING_ELT(result, i, STRING_ELT(a, 0));  break;
         default : SET_STRING_ELT(result, i, NA_STRING); break;
+        }
+      }
+      break;
+    }
+    break;
+    
+    /*
+     This part is for dealing with a (yes) and b (no)
+     in case they are both of type CPLXSXP (complex)
+     */
+  case CPLXSXP :
+    result = PROTECT(allocVector(CPLXSXP, len0));
+    Rcomplex *cp_pres, *cp_pa, *cp_pb;
+    Rcomplex NA_CPLX = { NA_REAL, NA_REAL }; // taken from subset.c
+    cp_pres = COMPLEX(result);
+    cp_pa   = COMPLEX(a);
+    cp_pb   = COMPLEX(b);
+    stack_size++;
+    switch(adj)
+    {
+    case 0:
+      for(i = 0; i < len0; i++)
+      {
+        switch(pl[i])
+        {
+        case 0  : cp_pres[i] = cp_pb[i]; break;
+        case 1  : cp_pres[i] = cp_pa[i]; break;
+        default : cp_pres[i] = NA_CPLX;  break;
+        }
+      }
+      break;
+      
+    case 1:
+      for(i = 0; i < len0; i++)
+      {
+        switch(pl[i])
+        {
+        case 0  : cp_pres[i] = cp_pb[i]; break;
+        case 1  : cp_pres[i] = cp_pa[0]; break;
+        default : cp_pres[i] = NA_CPLX;  break;
+        }
+      }
+      break;
+      
+    case 2:
+      for(i = 0; i < len0; i++)
+      {
+        switch(pl[i])
+        {
+        case 0  : cp_pres[i] = cp_pb[0]; break;
+        case 1  : cp_pres[i] = cp_pa[i]; break;
+        default : cp_pres[i] = NA_CPLX;  break;
+        }
+      }
+      break;
+      
+    case 3:
+      for(i = 0; i < len0; i++)
+      {
+        switch(pl[i])
+        {
+        case 0  : cp_pres[i] = cp_pb[0]; break;
+        case 1  : cp_pres[i] = cp_pa[0]; break;
+        default : cp_pres[i] = NA_CPLX;  break;
         }
       }
       break;
