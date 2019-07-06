@@ -89,9 +89,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
           # we've always coerced to int and returned int, for convenience.
           if (verbose) cat("Coercing double column i.",names(i)[ic]," (which contains no fractions) to type integer to match type of x.",names(x)[xc],".\n",sep="")
-          val = i[[ic]]
-          # according to ?as.integer, it's faster than `as.integer()` and will preserve the attributes
-          storage.mode(val) = "integer"
+          val = as.integer(i[[ic]])
+          if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])
           set(i, j=ic, value=val)
           set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
         }
