@@ -15258,6 +15258,9 @@ test(2062.054, fifelse(c(as.logical(NA),TRUE), list(1:5,6:10), list(5:1)), list(
 test(2062.055, fifelse(c(FALSE,TRUE), list(TRUE), list(10:6,5:1)), list(10:6,TRUE))
 test(2062.056, fifelse(c(FALSE,TRUE), list(as.Date("2019-07-07")), list(10:6,5:1)), list(10:6,as.Date("2019-07-07")))
 test(2062.057, fifelse(c(FALSE,TRUE), list(factor(letters[1:5])), list(10:6,5:1)), list(10:6,factor(letters[1:5])))
+test(2062.058, fifelse(c(as.logical(NA),FALSE), list(1:5), list(10:6,5:1)), list(as.integer(NA),5:1))
+test(2062.059, fifelse(c(as.logical(NA),FALSE), list(1:5,6:10), list(5:1)), list(as.integer(NA),5:1))
+test(2062.060, fifelse(c(as.logical(NA),FALSE), list(1:5), list(5:1)), list(as.integer(NA),5:1))
 
 ###################################
 #  Add new tests above this line  #
