@@ -190,6 +190,8 @@
 
 23. Incorrect sorting/grouping results due to a bug in Intel's `icc` compiler 2019 (Version 19.0.4.243 Build 20190416) has been worked around thanks to a report and fix by Sebastian Freundt, [#3647](https://github.com/Rdatatable/data.table/issues/3647). Please run `data.table::test.data.table()`. If that passes, your installation does not have the problem.
 
+24. Changes the warning when using `keyby` with ad-hoc columns to be more informative. [#2763](https://github.com/Rdatatable/data.table/issues/2763). Thanks to @eliocamp.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
