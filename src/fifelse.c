@@ -13,14 +13,41 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   // Check if test is logical
   if(!isLogical(l)) error("Argument 'test' must be logical.");
   
-  SEXPTYPE ta = TYPEOF(a); 
+  const uint64_t len0 = LENGTH(l);
+  const uint64_t len1 = LENGTH(a);
+  const uint64_t len2 = LENGTH(b);
   
-  // Check if same type
-  if(ta != TYPEOF(b))
-    error("Item 'yes' is of type %s but item 'no' is of type %s. Please make sure they are of the same type.", type2char(ta),type2char(TYPEOF(b)));
+  SEXPTYPE ta = TYPEOF(a);
+  SEXPTYPE tb = TYPEOF(b);
   
-  SEXP class_type = PROTECT(getAttrib(a,R_ClassSymbol));
-  unsigned int stack_size = 1;
+  unsigned int stack_size = 0;
+  
+  // Check if same type and do en-listing of singleton
+  if(ta != tb)
+  {
+    if(ta == VECSXP && (tb == INTSXP || tb == REALSXP || tb == LGLSXP || tb == CPLXSXP))
+    {
+      if(len2 == 1)
+      {
+        SEXP tmp = PROTECT(duplicate(b)); stack_size++;
+        b = PROTECT(allocVector(VECSXP,1)); stack_size++;
+        SET_VECTOR_ELT(b, 0, tmp);
+        tb = TYPEOF(b);
+      } 
+    } else if(tb == VECSXP && (ta == INTSXP || ta == REALSXP || ta == LGLSXP || ta == CPLXSXP)){
+      if(len1 == 1)
+      {
+        SEXP tmp = PROTECT(duplicate(a));stack_size++;
+        a = PROTECT(allocVector(VECSXP,1)); stack_size++;
+        SET_VECTOR_ELT(a, 0, tmp);
+        ta = TYPEOF(a);
+      }
+    } else {
+      error("Item 'yes' is of type %s but item 'no' is of type %s. Please make sure they are of the same type.", type2char(ta),type2char(tb));
+    }
+  }
+    
+  SEXP class_type = PROTECT(getAttrib(a,R_ClassSymbol)); stack_size++;
   
   // Check if same class
   if(!R_compute_identical(class_type,getAttrib(b,R_ClassSymbol),0))
@@ -34,12 +61,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     stack_size = stack_size + 2;
     ta = STRSXP;
   }
-  /*Jan Gorecki : Afair this will make factor class always slower than character, would be nice to have it optimised where possible*/
-  
-  const uint64_t len0 = LENGTH(l);
-  const uint64_t len1 = LENGTH(a);
-  const uint64_t len2 = LENGTH(b);
-  uint64_t i;
+  //Jan Gorecki : Afair this will make factor class always slower than character, would be nice to have it optimised where possible
   
   /*
    Variable 'adj' is used to seperate case where l (test),
@@ -70,14 +92,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   
   SEXP result = R_NilValue;
   int *pl = LOGICAL(l);
-  
-  /*int *int_pres;
-  int *int_pa;
-  int *int_pb;*/
-  
-  /*double *double_pres;
-  double *double_pa;
-  double *double_pb;*/
+  uint64_t i;
   
   switch(ta)
   {
@@ -297,7 +312,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         switch(pl[i])
         {
         case 0  : SET_STRING_ELT(result, i, STRING_ELT(b, i));  break;
-        case 1  : SET_STRING_ELT(result, i, STRING_ELT(a, 0));  break;
+        case 1  : SET_STRING_ELT(result, i, STRING_ELT(a, 0));  break;//some speed up can be done here
         default : SET_STRING_ELT(result, i, NA_STRING); break;
         }
       }
@@ -393,11 +408,76 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     }
     break;
     
+    /*
+     This part is for dealing with a (yes) and b (no)
+     in case they are both of type VECSXP (list)
+     */
+  case VECSXP :
+    result = PROTECT(allocVector(VECSXP, len0)); stack_size++;
+    SEXP nms = PROTECT(allocVector(STRSXP, len0)); stack_size++; // create list names
+    // Get list names from a and b
+    SEXP nmsa = PROTECT(getAttrib(a,R_NamesSymbol)); stack_size++;
+    SEXP nmsb = PROTECT(getAttrib(b,R_NamesSymbol)); stack_size++;
+    SEXP na_list = PROTECT(allocVector(INTSXP, 1)); stack_size++;
+    INTEGER(na_list)[0] = NA_INTEGER;
+    switch(adj)
+    {
+    case 0:
+      for(i = 0; i < len0; i++)
+      {
+        switch(pl[i])
+        {
+        case 0  : SET_VECTOR_ELT(result, i, VECTOR_ELT(b, i)); if(!isNull(nmsb))SET_STRING_ELT(nms, i, STRING_ELT(nmsb,i)); break;
+        case 1  : SET_VECTOR_ELT(result, i, VECTOR_ELT(a, i)); if(!isNull(nmsa))SET_STRING_ELT(nms, i, STRING_ELT(nmsa,i)); break;
+        default : SET_VECTOR_ELT(result, i, na_list); break;
+        }
+      }
+      break;
+      
+    case 1:
+      for(i = 0; i < len0; i++)
+      {
+        switch(pl[i])
+        {
+        case 0  : SET_VECTOR_ELT(result, i, VECTOR_ELT(b, i)); if(!isNull(nmsb))SET_STRING_ELT(nms, i, STRING_ELT(nmsb,i)); break;
+        case 1  : SET_VECTOR_ELT(result, i, VECTOR_ELT(a, 0)); if(!isNull(nmsa))SET_STRING_ELT(nms, i, STRING_ELT(nmsa,0)); break;
+        default : SET_VECTOR_ELT(result, i, na_list); break;
+        }
+      }
+      break;
+      
+    case 2:
+      for(i = 0; i < len0; i++)
+      {
+        switch(pl[i])
+        {
+        case 0  : SET_VECTOR_ELT(result, i, VECTOR_ELT(b, 0)); if(!isNull(nmsb))SET_STRING_ELT(nms, i, STRING_ELT(nmsb,0)); break; //some speed up can be done here
+        case 1  : SET_VECTOR_ELT(result, i, VECTOR_ELT(a, i)); if(!isNull(nmsa))SET_STRING_ELT(nms, i, STRING_ELT(nmsa,i)); break;break;
+        default : SET_VECTOR_ELT(result, i, na_list); break;
+        }
+      }
+      break;
+      
+    case 3:
+      for(i = 0; i < len0; i++)
+      {
+        switch(pl[i])
+        {
+        case 0  : SET_VECTOR_ELT(result, i, VECTOR_ELT(b, 0)); if(!isNull(nmsb))SET_STRING_ELT(nms, i, STRING_ELT(nmsb,0)); break;
+        case 1  : SET_VECTOR_ELT(result, i, VECTOR_ELT(a, 0)); if(!isNull(nmsa))SET_STRING_ELT(nms, i, STRING_ELT(nmsa,0)); break;
+        default : SET_VECTOR_ELT(result, i, na_list); break;
+        }
+      }
+      break;
+    }
+    if(!isNull(nmsa) || !isNull(nmsb)) setAttrib(result, R_NamesSymbol, nms);
+    break;
+    
   default: error("Type %s is not supported.",type2char(ta)); break;
   }
   
-  // Check if class type is Date and adjust
-  if(!isNull(class_type) && stack_size < 3) copyMostAttrib(a, result); // issue here for factor with NA value
+  // Check class type and adjust (except for factor)
+  if(!isNull(class_type) && !isFactor(a)) copyMostAttrib(a, result); // issue here for factor with NA value - moved to R code
     
   UNPROTECT(stack_size);
   return result;
