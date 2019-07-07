@@ -2523,24 +2523,32 @@ if (test_bit64) {
   DT = data.table( a=sample(1:1000,n,replace=TRUE),
                    b=sample(as.integer64(2)^35 * 1:10, n, replace=TRUE),
                    c=sample(c("foo","bar","baz"),n,replace=TRUE) )
-  fwrite(DT,f<-tempfile())
+  fwrite(DT,f1<-tempfile())
+  old = options(datatable.integer64 = 'integer64')
   test(897, class(DT$b), "integer64")
-  test(898, fread(f), DT)
-  unlink(f)
-  DT[,a2:=as.integer64(a)][,a3:=as.double(a)][,a4:=gsub(" ","",format(a))]
-  DT[,b2:=as.double(b)][,b3:=gsub(" ","",format(b))]
-  DT[,r:=a/100][,r2:=gsub(" ","",format(r))]
+  test(898, fread(f1), DT)
+  DT[, c('a2', 'a3', 'a4') := .(as.integer64(a), as.double(a), gsub(" ","",format(a)))]
+  DT[, c('b2', 'b3') := .(as.double(b), gsub(" ","",format(b)))]
+  DT[, c('r', 'r2') := .(a/100, gsub(" ","",format(a/100)))]
   DT[112, a2:=as.integer64(12345678901234)]   # start on row 112 to avoid the first 100
   DT[113, a3:=3.14]
   DT[114, a4:="123A"]
   DT[115, b2:=1234567890123.45]
   DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
   DT[117, r2:="3.14A"]
-  fwrite(DT,f<-tempfile())
-  test(899.1, fread(f,verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")
-  test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2")), verbose=TRUE),
+  fwrite(DT,f2<-tempfile())
+  test(899.1, fread(f2,verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")
+  test(899.2, fread(f2, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2")), verbose=TRUE),
               DT, output="Rereading 0 columns due to out-of-sample type exceptions")
-  unlink(f)
+
+  # #3683 -- add explicit tests for datatable.integer64='character'
+  options(datatable.integer64 = 'character')
+  test(899.3, fread(f1), DT[ , .(a, b = as.character(b), c)])
+  # leaving integer64='character' version of 899.1,899.2 until #2749 is fixed
+
+  options(old)
+  unlink(f1)
+  unlink(f2)
 }
 
 # getwd() has been set by test.data.table() to the location of this tests.Rraw file. Test files should be in the same directory.
@@ -2903,7 +2911,11 @@ test(1016.1, sapply(suppressWarnings(fread(f,verbose=TRUE)),"class"), c(A="integ
 test(1016.2, fread(f, colClasses = c(A="numeric"), verbose=TRUE), copy(DT)[,A:=as.numeric(A)], output="Rereading 0 columns")
 DT[90, A:="321456789123456"]   # inside the sample
 write.table(DT,f,sep=",",row.names=FALSE,quote=FALSE)
-if (test_bit64) test(1017.1, fread(f), copy(DT)[,A:=as.integer64(A)])
+if (test_bit64) {
+  old = options(datatable.integer64='integer64')
+  test(1017.1, fread(f), copy(DT)[,A:=as.integer64(A)])
+  options(old)
+}
 test(1017.2, fread(f, integer64="character"), DT)
 unlink(f)
 
@@ -6293,12 +6305,17 @@ quote"\n2,should be ok\n'),
 quote','should be ok')))
 
 if (test_bit64) {
-    # quoted multiline (scrambled data thanks to #810)
-    test(1449, fread(testDir("quoted_multiline.csv"))[c(1,43:44),c(1,22:24),with=FALSE],
-           data.table(GPMLHTLN=as.integer64(c("3308386085360","3440245203140","1305220146734")),
-                      BLYBZ = c(0L,4L,6L),
-                      ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE","",""),
-                      JKCRUUBAVQ = c("",".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ","")))
+  old = options(datatable.integer64 = 'integer64')
+  # quoted multiline (scrambled data thanks to #810)
+  DT = data.table(
+    GPMLHTLN = as.integer64(c("3308386085360", "3440245203140", "1305220146734")),
+    BLYBZ = c(0L,4L,6L),
+    ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE", "", ""),
+    JKCRUUBAVQ = c("", ".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ", "")
+  )
+  test(1449.1, fread(testDir("quoted_multiline.csv"))[c(1L, 43:44), c(1L, 22:24)], DT)
+  test(1449.2, fread(testDir("quoted_multiline.csv"), integer64='character', select = 'GPMLHTLN')[c(1L, 43:44)][[1L]], DT[ , as.character(GPMLHTLN)])
+  options(old)
 }
 
 # Fix for #927
@@ -6919,14 +6936,14 @@ test(1499, ans1, ans2)
 
 # Fix for #488
 if (test_bit64) {
-  test(1500.1, fread("x,y\n3,\n", colClasses = list(integer64 = "y")),
+  test(1500.1, fread("x,y\n3,\n", colClasses = list(integer64="y"), integer64='integer64'),
           data.table(x=3L, y=as.integer64(NA)))
   # more tests after new fix
-  test(1500.2, fread("x,y\n0,12345678901234\n0,\n0,\n0,\n0,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n12345678901234,\n0,\n0,\n0,\n0,\n0,\n"),
-      data.table(x=as.integer64(c(rep(0L, 5L), rep(NA, 11), 12345678901234, rep(0L,5L))),
-                 y=as.integer64(c(12345678901234, rep(NA,21)))))
+  test(1500.2, fread("x,y\n0,12345678901234\n0,\n0,\n0,\n0,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n,\n12345678901234,\n0,\n0,\n0,\n0,\n0,\n", integer64='integer64'),
+      data.table(x=as.integer64(c(rep(0L, 5L), rep(NA, 11L), 12345678901234, rep(0L, 5L))),
+                 y=as.integer64(c(12345678901234, rep(NA, 21L)))))
 
-  x = c("12345678901234", rep("NA", 178), "a")
+  x = c("12345678901234", rep("NA", 178L), "a")
   y = sample(letters, length(x), TRUE)
   ll = paste(x,y, sep=",", collapse="\n")
   test(1500.3, fread(ll, na.strings=NULL),
