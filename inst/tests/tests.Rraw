@@ -15197,7 +15197,7 @@ test(2061, do.call(CJ, l), setkey(unique(as.data.table(head(l, -1L)))))
 # fifelse, #3657
 test_vec = -5L:5L < 0L
 test_vec_na = c(test_vec, NA)
-test(2062.001, fifelse(, 1L, 0L), c(rep(1L,5L),rep(0L,6L)))
+test(2062.001, fifelse(test_vec, 1L, 0L), c(rep(1L,5L),rep(0L,6L)))
 test(2062.002, fifelse(test_vec, 1, 0), c(rep(1,5L),rep(0,6L)))
 test(2062.003, fifelse(test_vec, TRUE, FALSE), c(rep(TRUE,5L),rep(FALSE,6L)))
 test(2062.004, fifelse(test_vec, "TRUE", "FALSE"), c(rep("TRUE",5L),rep("FALSE",6L)))
