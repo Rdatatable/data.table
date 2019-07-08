@@ -9,19 +9,19 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   // a is what to do in case l is TRUE
   // b is what to do in case l is FALSE
   // maybe add something in case l is neither TRUE or FALSE ? for now it will default to NA
-  
+
   // Check if test is logical
   if(!isLogical(l)) error("Argument 'test' must be logical.");
-  
+
   const uint64_t len0 = LENGTH(l);
   const uint64_t len1 = LENGTH(a);
   const uint64_t len2 = LENGTH(b);
-  
+
   SEXPTYPE ta = TYPEOF(a);
   SEXPTYPE tb = TYPEOF(b);
-  
+
   unsigned int stack_size = 0;
-  
+
   // Check if same type and do en-listing of singleton
   if(ta != tb)
   {
@@ -33,7 +33,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         b = PROTECT(allocVector(VECSXP,1)); stack_size++;
         SET_VECTOR_ELT(b, 0, tmp);
         tb = TYPEOF(b);
-      } 
+      }
     } else if(tb == VECSXP && (ta == INTSXP || ta == REALSXP || ta == LGLSXP || ta == CPLXSXP)){
       if(len1 == 1)
       {
@@ -43,16 +43,16 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         ta = TYPEOF(a);
       }
     } else {
-      error("Item 'yes' is of type %s but item 'no' is of type %s. Please make sure they are of the same type.", type2char(ta),type2char(tb));
+      error("'yes' is of type %s but 'no' is of type %s. Please make sure candidate replacements are of the same type.", type2char(ta),type2char(tb));
     }
   }
-    
+
   SEXP class_type = PROTECT(getAttrib(a,R_ClassSymbol)); stack_size++;
-  
+
   // Check if same class
   if(!R_compute_identical(class_type,getAttrib(b,R_ClassSymbol),0))
-    error("Item 'yes' has different class than item 'no'. Please make sure that they have same class type.");
-  
+    error("'yes' has different class than 'no'. Please make sure that candidate replacements have the same class.");
+
   // Check if factor
   if(isFactor(a))
   {
@@ -62,38 +62,38 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     ta = STRSXP;
   }
   //Jan Gorecki : Afair this will make factor class always slower than character, would be nice to have it optimised where possible
-  
+
   /*
    Variable 'adj' is used to seperate case where l (test),
    a (yes) and b (no) are of different length.
    */
   unsigned int adj = 0;
-  
+
   // Check here the length of the different input variables.
-  if(len1 != len2) 
+  if(len1 != len2)
   {
     if(len1 < len2)
     {
-      if(len1 != 1)    error("Length of 'yes' must be 1 or equal to length of 'test'.");
-      if(len2 != len0) error("Length of 'no' must be 1 or equal to length of 'test'.");
+      if(len1 != 1)    error("Length of 'yes' must be 1 or equal to length of 'test' (%d).", len0);
+      if(len2 != len0) error("Length of 'no' must be 1 or equal to length of 'test' (%d).", len0);
       adj = 1;
     } else {
-      if(len2 != 1)    error("Length of 'no' must be 1 or equal to length of 'test'.");
-      if(len1 != len0) error("Length of 'yes' must be 1 or equal to length of 'test'.");
+      if(len2 != 1)    error("Length of 'no' must be 1 or equal to length of 'test' (%d).", len0);
+      if(len1 != len0) error("Length of 'yes' must be 1 or equal to length of 'test' (%d).", len0);
       adj = 2;
     }
   } else {
     if(len0 != len1)
     {
-      if(len1 != 1) error("Length of 'yes' and 'no' must be 1 or equal to length of 'test'.");
+      if(len1 != 1) error("Length of 'yes' and 'no' must be 1 or equal to length of 'test' (%d).", len0);
       adj = 3;
     }
   }
-  
+
   SEXP result = R_NilValue;
   int *pl = LOGICAL(l);
   uint64_t i;
-  
+
   switch(ta)
   {
     /*
@@ -120,7 +120,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 1:
       for(i = 0; i < len0; i++)
       {
@@ -132,7 +132,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 2:
       for(i = 0; i < len0; i++)
       {
@@ -144,7 +144,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 3:
       for(i = 0; i < len0; i++)
       {
@@ -158,7 +158,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
     }
     break;
-    
+
     /*
      This part is for dealing with a (yes) and b (no)
      in case they are both of type REALSXP (double)
@@ -183,7 +183,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 1:
       for(i = 0; i < len0; i++)
       {
@@ -195,7 +195,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 2:
       for(i = 0; i < len0; i++)
       {
@@ -207,7 +207,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 3:
       for(i = 0; i < len0; i++)
       {
@@ -221,7 +221,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
     }
     break;
-    
+
     /*
      This part is for dealing with a (yes) and b (no)
      in case they are both of type LGLSXP (logical)
@@ -246,7 +246,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 1:
       for(i = 0; i < len0; i++)
       {
@@ -258,7 +258,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 2:
       for(i = 0; i < len0; i++)
       {
@@ -270,7 +270,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 3:
       for(i = 0; i < len0; i++)
       {
@@ -284,7 +284,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
     }
     break;
-    
+
     /*
      This part is for dealing with a (yes) and b (no)
      in case they are both of type STRSXP (character)
@@ -305,7 +305,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 1:
       for(i = 0; i < len0; i++)
       {
@@ -317,7 +317,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 2:
       for(i = 0; i < len0; i++)
       {
@@ -329,7 +329,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 3:
       for(i = 0; i < len0; i++)
       {
@@ -343,7 +343,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
     }
     break;
-    
+
     /*
      This part is for dealing with a (yes) and b (no)
      in case they are both of type CPLXSXP (complex)
@@ -369,7 +369,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 1:
       for(i = 0; i < len0; i++)
       {
@@ -381,7 +381,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 2:
       for(i = 0; i < len0; i++)
       {
@@ -393,7 +393,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 3:
       for(i = 0; i < len0; i++)
       {
@@ -407,7 +407,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
     }
     break;
-    
+
     /*
      This part is for dealing with a (yes) and b (no)
      in case they are both of type VECSXP (list)
@@ -433,7 +433,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 1:
       for(i = 0; i < len0; i++)
       {
@@ -445,7 +445,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 2:
       for(i = 0; i < len0; i++)
       {
@@ -457,7 +457,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         }
       }
       break;
-      
+
     case 3:
       for(i = 0; i < len0; i++)
       {
@@ -472,13 +472,13 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     }
     if(!isNull(nmsa) || !isNull(nmsb)) setAttrib(result, R_NamesSymbol, nms);
     break;
-    
+
   default: error("Type %s is not supported.",type2char(ta)); break;
   }
-  
+
   // Check class type and adjust (except for factor)
   if(!isNull(class_type) && !isFactor(a)) copyMostAttrib(a, result); // issue here for factor with NA value - moved to R code
-    
+
   UNPROTECT(stack_size);
   return result;
 }
