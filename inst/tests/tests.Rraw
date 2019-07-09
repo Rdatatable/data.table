@@ -15195,10 +15195,11 @@ l$unique = TRUE
 test(2061, do.call(CJ, l), setkey(unique(as.data.table(head(l, -1L)))))
 
 # #3635, not specific to non-equi joins, but only occurs in non-equi cases.
-d1 <- data.table(a = c(1L, 6L), b = c(11L, 16L))
-d2 <- data.table(r = 1:5, s = seq(0L, 20L, 5L))
-test(2062, d1[d2, on = .(a <= s, b >= s), j = .SD],
-           d1[d2, on = .(a <= s, b >= s)][, .(a, b)])
+d1 = data.table(a = c(1L, 6L), b = c(11L, 16L))
+d2 = data.table(r = 1:5, s = seq(0L, 20L, 5L))
+test(2062.1, d1[d2, on = .(a <= s, b >= s), j = .SD],   ans<-data.table(a=INT(0,5,10,10,15,20), b=INT(0,5,10,10,15,20)))
+test(2062.2, d1[d2, on = .(a <= s, b >= s)][, .(a, b)], ans)
+
 
 ###################################
 #  Add new tests above this line  #
