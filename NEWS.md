@@ -190,7 +190,7 @@
 
 23. Incorrect sorting/grouping results due to a bug in Intel's `icc` compiler 2019 (Version 19.0.4.243 Build 20190416) has been worked around thanks to a report and fix by Sebastian Freundt, [#3647](https://github.com/Rdatatable/data.table/issues/3647). Please run `data.table::test.data.table()`. If that passes, your installation does not have the problem.
 
-24. Non-equi joins broke with 'column not found' error in certain rare cases, [#3635](https://github.com/Rdatatable/data.table/issues/3635). This is now fixed. Thanks to @UweBlock for the report.
+24. `column not found` could incorrectly occur in rare non-equi-join cases, [#3635](https://github.com/Rdatatable/data.table/issues/3635). Thanks to @UweBlock for the report.
 
 #### NOTES
 
