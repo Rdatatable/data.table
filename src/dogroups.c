@@ -2,6 +2,7 @@
 #include <Rdefines.h>
 #include <fcntl.h>
 #include <time.h>
+#include <complex.h>
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verbose)
 {
@@ -214,12 +215,19 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
               rownum = iI[k]-1;
               td[k] = sd[rownum];  // on 32bit copies pointers too
             }
-          } else {  // size 8
+          } else if (size==8) {
             double *td = REAL(target);
             const double *sd = REAL(source);
             for (int k=0; k<grpn; ++k) {
               rownum = iI[k]-1;
               td[k] = sd[rownum];  // on 64bit copies pointers too
+            }
+          } else { // size 16
+            double complex *td = (double complex *)COMPLEX(target);
+            const double complex *sd = (double complex *)COMPLEX(source);
+            for (int k=0; k<grpn; ++k) {
+              rownum = iI[k]-1;
+              td[k] = ds[rownum];
             }
           }
         }
@@ -382,13 +390,18 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     for (int j=0; j<ngrpcols; ++j) {
       target = VECTOR_ELT(ans,j);
       source = VECTOR_ELT(groups, INTEGER(grpcols)[j]-1);  // target and source the same type by construction above
-      if (SIZEOF(target)==4) {
+      int tsize = SIZEOF(target);
+      if (tsize==4) {
         int *td = INTEGER(target);
         int *sd = INTEGER(source);
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
-      } else {
+      } else if (tsize==8) {
         double *td = REAL(target);
         double *sd = REAL(source);
+        for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
+      } else {
+        double complex *td = COMPLEX(target);
+        double complex *sd = COMPLEX(source);
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
       }
       // Shouldn't need SET_* to age objects here since groups, TO DO revisit.
