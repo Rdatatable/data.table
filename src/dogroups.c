@@ -145,6 +145,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         case REALSXP :
           REAL(VECTOR_ELT(SDall,j))[0] = NA_REAL;
           break;
+        case CPLXSXP :
+          // no NA_COMPLEX; have to set r & i parts to NA_REAL individually
+          COMPLEX(VECTOR_ELT(SDall, j))[0].r = NA_REAL;
+          COMPLEX(VECTOR_ELT(SDall, j))[0].i = NA_REAL;
+          break;
         case STRSXP :
           SET_STRING_ELT(VECTOR_ELT(SDall,j),0,NA_STRING);
           break;
@@ -168,6 +173,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           break;
         case REALSXP :
           REAL(VECTOR_ELT(xSD,j))[0] = NA_REAL;
+          break;
+        case CPLXSXP :
+          COMPLEX(VECTOR_ELT(xSD, j))[0].r = NA_REAL;
+          COMPLEX(VECTOR_ELT(xSD, j))[0].i = NA_REAL;
           break;
         case STRSXP :
           SET_STRING_ELT(VECTOR_ELT(xSD,j),0,NA_STRING);
