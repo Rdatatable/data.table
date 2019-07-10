@@ -1,4 +1,5 @@
 #include "data.table.h"
+#include <complex.h>
 
 SEXP reorder(SEXP x, SEXP order)
 {
@@ -13,8 +14,8 @@ SEXP reorder(SEXP x, SEXP order)
     ncol = length(x);
     for (int i=0; i<ncol; i++) {
       SEXP v = VECTOR_ELT(x,i);
-      if (SIZEOF(v)!=4 && SIZEOF(v)!=8)
-        error("Item %d of list is type '%s' which isn't yet supported", i+1, type2char(TYPEOF(v)));
+      if (SIZEOF(v)!=4 && SIZEOF(v)!=8 && SIZEOF(v)!=16)
+        error("Item %d of list is type '%s' which isn't yet supported (SIZEOF=%d)", i+1, type2char(TYPEOF(v)), SIZEOF(v));
       if (length(v)!=nrow)
         error("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table.", i+1, length(v), nrow);
       if (SIZEOF(v) > maxSize)
@@ -22,8 +23,8 @@ SEXP reorder(SEXP x, SEXP order)
       if (ALTREP(v)) SET_VECTOR_ELT(x,i,duplicate(v));  // expand compact vector in place ready for reordering by reference
     }
   } else {
-    if (SIZEOF(x)!=4 && SIZEOF(x)!=8)
-      error("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported", type2char(TYPEOF(x)));
+    if (SIZEOF(x)!=4 && SIZEOF(x)!=8 && SIZEOF(x)!=16)
+      error("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported (SIZEOF=%d)", type2char(TYPEOF(x)), SIZEOF(x));
     if (ALTREP(x)) error("Internal error in reorder.c: cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4 and report this as a bug."); // # nocov
     maxSize = SIZEOF(x);
     nrow = length(x);
@@ -68,13 +69,23 @@ SEXP reorder(SEXP x, SEXP order)
         tmp[i] = cvd[idx[i]-1];  // copies 4 bytes; including pointers on 32bit (STRSXP and VECSXP)
       }
       memcpy(vd+start, tmp+start, (end-start+1)*size);
-    } else {
+    } else if (size==8) {
       double *vd = (double *)DATAPTR(v);
       const double *restrict cvd = vd;
       double *restrict tmp = (double *)TMP;
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=start; i<=end; i++) {
         tmp[i] = cvd[idx[i]-1];  // copies 8 bytes; including pointers on 64bit (STRSXP and VECSXP)
+      }
+      memcpy(vd+start, tmp+start, (end-start+1)*size);
+    } else {
+      // #1444 -- support for copying CPLXSXP (which have size 16)
+      double complex *vd = (double complex *)DATAPTR(v);
+      const double complex *restrict cvd = vd;
+      double complex *restrict tmp = (double complex *)TMP;
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int i=start; i<=end; i++) {
+        tmp[i] = cvd[idx[i]-1];  // copies 16 bytes; including pointers on 64bit (STRSXP and VECSXP)
       }
       memcpy(vd+start, tmp+start, (end-start+1)*size);
     }

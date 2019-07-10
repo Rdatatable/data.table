@@ -15200,6 +15200,9 @@ d2 = data.table(r = 1:5, s = seq(0L, 20L, 5L))
 test(2062.1, d1[d2, on = .(a <= s, b >= s), j = .SD],   ans<-data.table(a=INT(0,5,10,10,15,20), b=INT(0,5,10,10,15,20)))
 test(2062.2, d1[d2, on = .(a <= s, b >= s)][, .(a, b)], ans)
 
+# #1444 -- support for ordering tables with complex columns
+DT = data.table(a = 2:1, z = complex(0, 0:1))
+test(2063, setkey(DT, a), data.table(a = 1:2, z = complex(0, 1:0), key='a'))
 
 ###################################
 #  Add new tests above this line  #
