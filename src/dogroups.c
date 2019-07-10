@@ -4,6 +4,12 @@
 #include <time.h>
 #include <complex.h>
 
+// copied from r-source/src/main/Rcomplex.h
+#if defined(__GNUC__) && (defined(__sun__) || defined(__hpux__) || defined(Win32))
+# undef  I
+# define I (__extension__ 1.0iF)
+#endif
+
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verbose)
 {
   R_len_t rownum, ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp, origIlen=0, origSDnrow=0;
@@ -440,6 +446,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           double *td = REAL(target)+thisansloc;
           for (int r=0; r<maxn; ++r) td[r] = NA_REAL;
         } break;
+        case CPLXSXP : {
+        double complex *td = (double complex *)(COMPLEX(target) + thisansloc);
+        for (int r=0; r<maxn; ++r) { td[r] = NA_REAL + NA_REAL*I; }
+        //for (int r=0; r<,maxn; ++r) { creal(td[r]) = NA_REAL; cimag(td[r]) = NA_REAL; }
+      } break;
         case STRSXP :
           for (int r=0; r<maxn; ++r) SET_STRING_ELT(target,thisansloc+r,NA_STRING);
           break;
