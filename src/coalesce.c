@@ -1,7 +1,8 @@
 #include "data.table.h"
 
 SEXP coalesce(SEXP x, SEXP inplaceArg) {
-  if (TYPEOF(x)!=VECSXP) error("argument 'x' must be a list");
+  if (TYPEOF(x)!=VECSXP)
+    error("Internal error in coalesce.c: input is list(...) at R level"); // # nocov
   if (!IS_TRUE_OR_FALSE(inplaceArg))
     error("Internal error in coalesce.c: argument 'inplaceArg' must be TRUE or FALSE"); // # nocov
   const bool inplace = LOGICAL(inplaceArg)[0];
@@ -10,7 +11,8 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
   SEXP first;  // the first vector (it might be the first argument, or it might be the first column of a data.table|frame
   int off = 1; // when x has been pointed to the list of replacement candidates, is the first candidate in position 0 or 1 in the list
   if (TYPEOF(VECTOR_ELT(x,0)) == VECSXP) {
-    if (length(x)!=1) error("The first argument is a list, data.table or data.frame. In this case there should be no other arguments provided.");
+    if (length(x)!=1)
+      error("The first argument is a list, data.table or data.frame. In this case there should be no other arguments provided.");
     x = VECTOR_ELT(x,0);
     if (length(x)==0) return R_NilValue;
     first = VECTOR_ELT(x,0);
