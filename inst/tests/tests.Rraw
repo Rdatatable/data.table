@@ -2829,6 +2829,8 @@ test(996.09, CJ(expression(2), 3, sorted = FALSE), error = "Type 'expression' no
 ## complex input support (can't handle sorted yet)
 test(996.10, CJ(z = 0:1 + (0:1)*1i, b = 1:3, sorted = FALSE),
      data.table(z = rep(0:1, each=3L) + rep(0:1, each=3L)*1i, b = rep(1:3, 2)))
+test(996.11, CJ(b = 1:3, z = 0:1 + (0:1)*1i, sorted = FALSE),
+     data.table(b = rep(1:3, each = 2L), z = rep(0:1, 3) + rep(0:1, 3)*1i))
 
 
 # That CJ orders NA consistently with setkey and historically, now it doesn't use setkey.
