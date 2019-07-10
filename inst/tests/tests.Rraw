@@ -15200,6 +15200,15 @@ d2 = data.table(r = 1:5, s = seq(0L, 20L, 5L))
 test(2062.1, d1[d2, on = .(a <= s, b >= s), j = .SD],   ans<-data.table(a=INT(0,5,10,10,15,20), b=INT(0,5,10,10,15,20)))
 test(2062.2, d1[d2, on = .(a <= s, b >= s)][, .(a, b)], ans)
 
+# #3639 -- complex values in grouping
+set.seed(42)
+DT = CJ(x = 1:10, a = c("a", "b"), b = 1:2)
+DT[ , z := complex(rnorm(1:.N), rnorm(1:.N))]
+## can simplify this test after #1444
+test(2063.1, all.equal(setkey(copy(DT), NULL), DT[, .(x = x, z = z), by = .(a, b)][order(x, a, b)], ignore.col.order = TRUE))
+test(2063.2, DT[ , base::sum(z), by = a], data.table(a = c('a', 'b'), V1 = c(5.0582228485073+0i, -1.8644229822705+0i)))
+test(2063.3, DT[ , sum(Mod(z)), by = b], data.table(b = 1:2, V2 = c(16.031422657932, 13.533483145656)))
+
 
 ###################################
 #  Add new tests above this line  #

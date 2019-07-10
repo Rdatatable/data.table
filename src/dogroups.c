@@ -8,7 +8,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 {
   R_len_t rownum, ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp, origIlen=0, origSDnrow=0;
   int protecti=0;
-  SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, listwrap, target, source, tmp;
+  SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, BY, N, DOTI, GRP, iSD, xSD, rownames, s, RHS, listwrap, target, source, tmp;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
   clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
 
@@ -53,7 +53,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   for (R_len_t i=0; i<n; ++i) {
     if (ilens[i] > maxGrpSize) maxGrpSize = ilens[i];
   }
-  defineVar(install(".I"), I = PROTECT(allocVector(INTSXP, maxGrpSize)), env); protecti++;
+  // #3639 introduced complex.h, which defines I, so use DOTI to differentiate
+  defineVar(install(".I"), DOTI = PROTECT(allocVector(INTSXP, maxGrpSize)), env); protecti++;
   R_LockBinding(install(".I"), env);
 
   dtnames = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++; // added here to fix #4990 - `:=` did not issue recycling warning during "by"
@@ -77,7 +78,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     copyMostAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), VECTOR_ELT(SDall,i));  // not names, otherwise test 778 would fail
   }
 
-  origIlen = length(I);  // test 762 has length(I)==1 but nrow(SD)==0
+  origIlen = length(DOTI);  // test 762 has length(DOTI)==1 but nrow(SD)==0
   if (length(SDall)) origSDnrow = length(VECTOR_ELT(SDall, 0));
 
   xknames = getAttrib(xSD, R_NamesSymbol);
@@ -155,8 +156,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
       }
       grpn = 1;  // it may not be 1 e.g. test 722. TODO: revisit.
-      SETLENGTH(I, grpn);
-      INTEGER(I)[0] = 0;
+      SETLENGTH(DOTI, grpn);
+      INTEGER(DOTI)[0] = 0;
       for (int j=0; j<length(xSD); ++j) {
         switch (TYPEOF(VECTOR_ELT(xSD, j))) {
         case LGLSXP :
@@ -180,8 +181,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       }
     } else {
       if (LOGICAL(verbose)[0]) tstart = clock();
-      SETLENGTH(I, grpn);
-      int *iI = INTEGER(I);
+      SETLENGTH(DOTI, grpn);
+      int *iI = INTEGER(DOTI);
       if (LENGTH(order)==0) {
         if (grpn) rownum = istarts[i]-1; else rownum = -1;  // not ternary to pass strict-barrier
         for (int j=0; j<grpn; ++j) iI[j] = rownum+j+1;
@@ -223,11 +224,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
               td[k] = sd[rownum];  // on 64bit copies pointers too
             }
           } else { // size 16
+            // #3634 -- CPLXSXP columns have size 16
             double complex *td = (double complex *)COMPLEX(target);
             const double complex *sd = (double complex *)COMPLEX(source);
             for (int k=0; k<grpn; ++k) {
               rownum = iI[k]-1;
-              td[k] = ds[rownum];
+              td[k] = sd[rownum];
             }
           }
         }
@@ -310,7 +312,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);   // length mismatch checked above for all jval columns before starting to add any new columns
         copyMostAttrib(RHS, target);  // not names, otherwise test 778 would fail.
-        /* OLD FIX: commented now. The fix below resulted in segfault on factor columns because I dint set the "levels"
+        /* OLD FIX: commented now. The fix below resulted in segfault on factor columns because I didn't set the "levels"
            Instead of fixing that, I just removed setting class if it's factor. Not appropriate fix.
            Correct fix of copying all attributes (except names) added above. Now, everything should be alright.
            Test 1144 (#5104) will provide the right output now. Modified accordingly.
@@ -400,8 +402,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         double *sd = REAL(source);
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
       } else {
-        double complex *td = COMPLEX(target);
-        double complex *sd = COMPLEX(source);
+        // #3634 -- CPLXSXP columns have size 16
+        double complex *td = (double complex *)COMPLEX(target);
+        double complex *sd = (double complex *)COMPLEX(source);
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
       }
       // Shouldn't need SET_* to age objects here since groups, TO DO revisit.
@@ -465,7 +468,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   } else ans = R_NilValue;
   // Now reset length of .SD columns and .I to length of largest group, otherwise leak if the last group is smaller (often is).
   for (int j=0; j<length(SDall); ++j) SETLENGTH(VECTOR_ELT(SDall,j), origSDnrow);
-  SETLENGTH(I, origIlen);
+  SETLENGTH(DOTI, origIlen);
   if (LOGICAL(verbose)[0]) {
     if (nblock[0] && nblock[1]) error("Internal error: block 0 [%d] and block 1 [%d] have both run", nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;
