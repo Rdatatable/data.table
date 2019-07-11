@@ -96,7 +96,7 @@ const int getMaxListItemLen(const SEXP *col, const int64_t n) {
     int32_t wf = whichWriter(this);
     if (TYPEOF(this)==VECSXP || wf==INT32_MIN || isFactor(this)) {
       error("Row %d of list column is type '%s' - not yet implemented. fwrite() can write list columns containing items which are atomic vectors of" \
-            " type logical, integer, integer64, double and character.", i+1, isFactor(this) ? "factor" : type2char(TYPEOF(this)));
+            " type logical, integer, integer64, double, complex and character.", i+1, isFactor(this) ? "factor" : type2char(TYPEOF(this)));
     }
     int width = writerMaxLen[wf];
     if (width==0) {
