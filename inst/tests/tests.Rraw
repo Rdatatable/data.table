@@ -15208,7 +15208,7 @@ test(2063.2, DT[ , abs(z), by=a], data.table(a=2:1, V1=c(0, 1)))
 DT = data.table(ID=2:1, r=as.raw(0:1))
 test(2063.3, setkey(DT, ID), error="Item 2 of list is type 'raw'")
 # setreordervec triggers !isNewList branch for coverage
-test(2063.4, setreordervec(DT$r), error="reorder accepts vectors but this non-VECSXP")
+test(2063.4, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
 
 ###################################
 #  Add new tests above this line  #
