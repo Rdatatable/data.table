@@ -15211,8 +15211,8 @@ test(2063.3, DT[ , sum(Mod(z)), by = b], data.table(b = 1:2, V1 = c(16.031422657
 # also works for assignment, as noted in #3690
 DT[ , z_sum := base::sum(z), by = .(a, b)]
 test(2063.4, DT[ , z_sum := base::sum(z), by = .(a, b)][1:3, z_sum],
-     c(3.05896822455656+0i, -2.81616342436407+0i, -3.04864360704606+0i))
-test(2063.4, DT[1L, z_sum := 1i][1L, z_sum], 1i)
+     c(1.8791864549242+0i, 3.17903639358309+0i, -4.18868631527035+0i))
+test(2063.5, DT[1L, z_sum := 1i][1L, z_sum], 1i)
 
 ###################################
 #  Add new tests above this line  #
