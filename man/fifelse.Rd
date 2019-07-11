@@ -37,6 +37,39 @@ data.table::fifelse(v \%in\% c("a","b","c"), v, factor(NA))
 # Levels: a b c d e
 
 \dontrun{
+# Example 3:
+# Unlike dplyr::if_else and hutils::if_else, data.table::fifelse and base::ifelse
+# allow singleton replacements to be en-listed ( i.e. wrapped correctly in list()).
+
+base::ifelse(c(TRUE, FALSE), 1L, list(0L))
+# [[1]]
+# [1] 1
+# 
+# [[2]]
+# [1] 0
+
+data.table::fifelse(c(TRUE, FALSE), 1L, list(0L))
+# [[1]]
+# [1] 1
+# 
+# [[2]]
+# [1] 0
+
+dplyr::if_else(c(TRUE, FALSE), 1L, list(0L))
+# Error: `false` must be an integer vector, not a list
+# Call `rlang::last_error()` to see a backtrace
+
+hutils::if_else(c(TRUE, FALSE), 1L, list(0L))
+# Error in hutils::if_else(c(TRUE, FALSE), 1L, list(0L)) : 
+#   typeof(false) == list, yet typeof(true) == integer. Both true and false must have the same type.
+
+# The above is useful given that data.table allows list columns as shown below:
+DT <- data.table::data.table(a = 0:5, b = list(1, list(2:3), list(4:6), list(6:4), list(3:2), 1))
+all.equal(DT[ , b := data.table::fifelse(a > 2, b, 0)],DT[ , b := base::ifelse(a > 2, b, 0)])
+# [1] TRUE
+
+# Example 4 :
+# data.table:fifelse is fast...
 # The below code has been run on a desktop with 32GB RAM and 8 logical CPU
 x <- -3e8L:3e8 < 0  # 2.4GB
 system.time(y1 <- data.table::fifelse(x, 1L, 0L))
