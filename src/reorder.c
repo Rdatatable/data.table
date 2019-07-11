@@ -124,7 +124,7 @@ SEXP setrev(SEXP x) {
       ((int *)xt)[len-1-j] = *(int *)tmp;
     }
   } else {
-    if (size!=8) error("Size of x isn't 4 or 8");
+    if (size!=8) error("Size of x isn't 4, 8 or 16");
     tmp = (char *)Calloc(1, double);
     if (!tmp) error("unable to allocate temporary working memory for reordering x");
     for (j=0;j<n;j++) {
