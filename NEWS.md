@@ -128,6 +128,8 @@
     identical(y1,y2) && identical(y1,y3)
     # TRUE
     ```
+    
+19. Extended support of `shift` to complex vectors, part of [#3690](https://github.com/Rdatatable/data.table/issues/3690).
 
 #### BUG FIXES
 

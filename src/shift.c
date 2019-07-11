@@ -89,7 +89,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
       
     case CPLXSXP :
       thisfill = PROTECT(coerceVector(fill, CPLXSXP)); protecti++;
-      double complex cfill = COMPLEX(thisfill)[0].r + COMPLEX(thisfill)[0].i;
+      double complex cfill = COMPLEX(thisfill)[0].r + COMPLEX(thisfill)[0].i*I;
       for (int j=0; j<nk; j++) {
         R_xlen_t thisk = MIN(abs(kd[j]), xrows);
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(CPLXSXP, xrows) );
