@@ -9594,12 +9594,14 @@ if (test_R.utils) test(1658.54, fread(f), setnames(DT,c("V1","V2")))
 unlink(f)
 
 # complex column support for fwrite, part of #3690
-DT = data.table(a = 1:3, z = 0:2 - (2:0)*1i)
-test(1658.55, fwrite(DT), output = 'a,z\n1,0-2i\n2,1-1i\n3,2+0i')
-test(1658.56, fwrite(data.table(exp(1) - pi*1i)), output = '2.718[0-9]*-3.141[0-9]*i')
+DT = data.table(a=1:3, z=0:2 - (2:0)*1i)
+test(1658.55, fwrite(DT), output='a,z\n1,0-2i\n2,1-1i\n3,2+0i')
+test(1658.56, fwrite(data.table(exp(1) - pi*1i)), output='2.718[0-9]*-3.141[0-9]*i')
 ## formerly 1658.46
 DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c(3i,4i,5i)))
 test(1658.57, fwrite(DT), output='0+3i|0+4i|0+5i')
+DT[ , b := c(1i, -1-1i, NA)]
+test(1658.58, fwrite(DT), output='a,b\n1,0\\+1i\n2,-1-1i\n3,$')
 
 ## End fwrite tests
 

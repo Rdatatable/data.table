@@ -303,12 +303,16 @@ void writeFloat64(double *col, int64_t row, char **pch)
 void writeComplex(double complex *col, int64_t row, char **pch)
 {
   double complex x = col[row];
+  double im = cimag(x);
   char *ch = *pch;
   writeFloat64Scalar(creal(x), &ch);
-  // let writeFloat64 handle the - sign for negative imaginary part
-  if (cimag(x) >= 0.0) *ch++ = '+';
-  writeFloat64Scalar(cimag(x), &ch);
-  *ch++ = 'i';
+  // writeFloat64Scalar handled NA for the real part
+  if (!ISNA(im)) {
+    // let writeFloat64 handle the - sign for negative imaginary part
+    if (im >= 0.0) *ch++ = '+';
+    writeFloat64Scalar(im, &ch);
+    *ch++ = 'i';
+  }
   *pch = ch;
 }
 
