@@ -15196,6 +15196,18 @@ setcoalesce(xx, list())
 test(2060.503, xx_addr, address(xx))
 test(2060.504, xx, x)
 test(2060.505, address(setcoalesce(xx)), xx_addr)
+# complex support for coalesce
+z1 = c(1i, NA, 1-1i, NA, 0+3i, NA)
+z2 = c(NA, 4-2i, 0+0i, NA, NA, NA)
+z3 = c(2, NA, 3+6i, 5-1i, NA, NA)
+na_idx = c(2L, 4L, 6L)
+test(2060.600, coalesce(z1, 0+0i), `[<-`(z1, na_idx, 0+0i))
+test(2060.601, coalesce(z1, z2), `[<-`(z1, na_idx, c(4-2i, NA, NA)))
+test(2060.602, coalesce(z1, z2, z3), `[<-`(z1, na_idx, c(4-2i, 5-1i, NA)))
+z_addr = address(z1)
+setcoalesce(z1, z2, z3)
+test(2060.603, address(z1), z_addr)
+test(2060.604, z1, `[<-`(z1, na_idx, c(4-2i, 5-1i, NA)))
 
 # #3650 -- ensure max nrow check on CJ is applied after unique
 l = replicate(ceiling(log10(.Machine$integer.max)), rep(1L, 10L), simplify = FALSE)

@@ -63,6 +63,12 @@ typedef R_xlen_t RLEN;
 #define ALTREP(x) 0  // for R<3.5.0, see issue #2866 and grep for "ALTREP" to see comments where it's used
 #endif
 
+// for complex type support; copied from r-source/src/main/Rcomplex.h
+#if defined(__GNUC__) && (defined(__sun__) || defined(__hpux__) || defined(Win32))
+# undef  I
+# define I (__extension__ 1.0iF)
+#endif
+
 // init.c
 SEXP char_integer64;
 SEXP char_ITime;

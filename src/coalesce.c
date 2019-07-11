@@ -1,4 +1,5 @@
 #include "data.table.h"
+#include <complex.h>
 
 SEXP coalesce(SEXP x, SEXP inplaceArg) {
   if (TYPEOF(x)!=VECSXP)
@@ -113,6 +114,30 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
         int j=0; while (ISNA(val) && j<k) val=((double *)valP[j++])[i];
         if (!ISNA(val)) xP[i]=val; else if (final) xP[i]=finalVal;
       }
+    }
+  } break;
+  case CPLXSXP: {
+    double complex *xP = (double complex *)COMPLEX(first);
+    double complex finalVal=NA_REAL + NA_REAL*I;
+    int k=0;
+    for (int j=0; j<nval; ++j) {
+      SEXP item = VECTOR_ELT(x, j+off);
+      if (length(item)==1) {
+        double complex tt = ((double)COMPLEX(item)[0].r) + ((double)COMPLEX(item)[0].i)*I ;
+
+        if (creal(tt) == NA_REAL && cimag(tt) == NA_REAL) continue;
+        finalVal = tt;
+        break;
+      }
+      valP[k++] = COMPLEX(item);
+    }
+    const bool final = creal(finalVal) != NA_REAL && cimag(finalVal) != NA_REAL;
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (int i=0; i<nrow; ++i) {
+      double complex val=xP[i];
+      if (!ISNA(creal(val) ) && !ISNA(cimag(val))) continue;
+      int j=0; while (ISNA(creal(val)) && ISNA(cimag(val)) && j<k) val=((double complex *)valP[j++])[i];
+      if (!ISNA(creal(val)) || !ISNA(cimag(val))) xP[i]=val; else if (final) xP[i]=finalVal;
     }
   } break;
   case STRSXP: {
