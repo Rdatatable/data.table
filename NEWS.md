@@ -192,7 +192,7 @@
 
 24. `column not found` could incorrectly occur in rare non-equi-join cases, [#3635](https://github.com/Rdatatable/data.table/issues/3635). Thanks to @UweBlock for the report.
 
-25. Complex columns used in `j` during grouping would get mangled, [#3639](https://github.com/Rdatatable/data.table/issues/3639). We still do not support grouping `by` a complex column; please file a feature request if you would use this in your own work. Thanks to @eliocamp for filing the bug report.
+25. Complex columns used in `j` during grouping would get mangled, [#3639](https://github.com/Rdatatable/data.table/issues/3639). A related bug prevented assigning complex values using `:=` except for full-column plonks. We still do not support grouping `by` a complex column; please file a feature request if you would use this in your own work. Thanks to @eliocamp for filing the bug report.
 
 #### NOTES
 
