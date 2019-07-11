@@ -64,8 +64,9 @@ hutils::if_else(c(TRUE, FALSE), 1L, list(0L))
 #   typeof(false) == list, yet typeof(true) == integer. Both true and false must have the same type.
 
 # The above is useful given that data.table allows list columns as shown below:
-DT <- data.table::data.table(a = 0:5, b = list(1, list(2:3), list(4:6), list(6:4), list(3:2), 1))
-all.equal(DT[ , b := data.table::fifelse(a > 2, b, 0)],DT[ , b := base::ifelse(a > 2, b, 0)])
+DT1 <- data.table::data.table(a = 0:5, b = list(1, list(2:3), list(4:6), list(6:4), list(3:2), 1))
+DT2 <- data.table::data.table(a = 0:5, b = list(1, list(2:3), list(4:6), list(6:4), list(3:2), 1))
+all.equal(DT1[ , b := data.table::fifelse(a > 2, b, 0)],DT2[ , b := base::ifelse(a > 2, b, 0)])
 # [1] TRUE
 
 # Example 4 :
