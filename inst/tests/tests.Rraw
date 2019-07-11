@@ -13569,7 +13569,6 @@ test(1967.78, x[1:5, sum(v), by = list(i5 = 1:5 %% 2L), verbose = TRUE],
 
 # gforce integer overflow coerce to double
 DT = data.table(A=1:5, B=-3i, C=2147483647L)
-test(1968.1, DT[, sum(B), by=A%%2L], error="Type 'complex' not supported by GForce sum (gsum). Either add the")
 test(1968.2, storage.mode(DT$C), "integer")
 test(1968.3, DT[, sum(C), by=A%%2L], data.table(A=c(1L,0L), V1=c(6442450941, 4294967294)),
              warning="sum.*integer column.*more than type 'integer' can hold.*coerced to 'numeric'")
@@ -14224,16 +14223,16 @@ if (test_bit64) {
   DT = data.table(id=c(rep(1L,3), rep(2L, 3)), v=bit64::as.integer64(c(1:3, 4L, 5:6)))
   test(2019, DT[2:6, sum(v), id], data.table(id=1:2, V1=bit64::as.integer64(c(5L,15L)))) # gather, case of int64 and irows
 }
-DT = data.table(id = c(1L,1L,2L), v = c(1i, 2i, 3i))
-test(2020.01, DT[, min(v), by=id], error="'complex' not supported by GForce min")
-test(2020.02, DT[, max(v), by=id], error="'complex' not supported by GForce max")
-test(2020.03, DT[, median(v), by=id], error="'complex' not supported by GForce median")
-test(2020.04, DT[, head(v, 1), by=id], error="'complex' not supported by GForce head")
-test(2020.05, DT[, tail(v, 1), by=id], error="'complex' not supported by GForce tail")
-test(2020.06, DT[, v[1], by=id], error="'complex' not supported by GForce subset")
-test(2020.07, DT[, sd(v), by=id], error="'complex' not supported by GForce sd")
-test(2020.08, DT[, var(v), by=id], error="'complex' not supported by GForce var")
-test(2020.09, DT[, prod(v), by=id], error="'complex' not supported by GForce prod")
+DT = data.table(id = c(1L,1L,2L), v = as.raw(0:2))
+test(2020.01, DT[, min(v), by=id], error="'raw' not supported by GForce min")
+test(2020.02, DT[, max(v), by=id], error="'raw' not supported by GForce max")
+test(2020.03, DT[, median(v), by=id], error="'raw' not supported by GForce median")
+test(2020.04, DT[, head(v, 1), by=id], error="'raw' not supported by GForce head")
+test(2020.05, DT[, tail(v, 1), by=id], error="'raw' not supported by GForce tail")
+test(2020.06, DT[, v[1], by=id], error="'raw' not supported by GForce subset")
+test(2020.07, DT[, sd(v), by=id], error="'raw' not supported by GForce sd")
+test(2020.08, DT[, var(v), by=id], error="'raw' not supported by GForce var")
+test(2020.09, DT[, prod(v), by=id], error="'raw' not supported by GForce prod")
 DT = data.table(id = c(1L,1L,2L,2L), v = c(1L, 2L, NA, NA))
 test(2020.10, DT[, median(v), id], data.table(id=1:2, V1=c(1.5, NA))) # median whole group has NAs
 
@@ -15200,15 +15199,16 @@ d2 = data.table(r = 1:5, s = seq(0L, 20L, 5L))
 test(2062.1, d1[d2, on = .(a <= s, b >= s), j = .SD],   ans<-data.table(a=INT(0,5,10,10,15,20), b=INT(0,5,10,10,15,20)))
 test(2062.2, d1[d2, on = .(a <= s, b >= s)][, .(a, b)], ans)
 
-# #3639 -- complex values in grouping
-set.seed(42)
-DT = CJ(x = 1:10, a = c("a", "b"), b = 1:2)
-DT[ , z := complex(rnorm(1:.N), rnorm(1:.N))]
-## can simplify this test after #1444
-test(2063.1, all.equal(setkey(copy(DT), NULL), DT[, .(x = x, z = z), by = .(a, b)][order(x, a, b)], ignore.col.order = TRUE))
-test(2063.2, DT[ , base::sum(z), by = a], data.table(a = c('a', 'b'), V1 = c(5.0582228485073+0i, -1.8644229822705+0i)))
-test(2063.3, DT[ , sum(Mod(z)), by = b], data.table(b = 1:2, V1 = c(16.031422657932, 13.533483145656)))
-
+# GForce for complex columns, part of #3690
+DT = data.table(id=c(1L,1L,2L), v=c(1i, 2i, 3i))
+test(2063.01, DT[, min(v), by=id], error="'complex' has no well-defined min")
+test(2063.02, DT[, max(v), by=id], error="'complex' has no well-defined max")
+test(2063.03, DT[, head(v, 1), by=id], data.table(id=1:2, V1=c(1, 3)*1i))
+test(2063.04, DT[, tail(v, 1), by=id], data.table(id=1:2, V1=(2:3)*1i))
+test(2063.05, DT[, v[2], by=id], data.table(id = 1:2, V1=c(2i, NA)))
+## former test 1968.1
+DT = data.table(A=1:5, B=-3i, C=2147483647L)
+test(2063.06, DT[, sum(B), by=A%%2L], data.table(A = 1:0, V1 = c(-9i, -6i)))
 
 ###################################
 #  Add new tests above this line  #
