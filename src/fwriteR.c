@@ -55,6 +55,7 @@ writer_fun_t funs[] = {
   &writeInt32,
   &writeInt64,
   &writeFloat64,
+  &writeComplex,
   &writeITime,
   &writeDateInt32,
   &writeDateFloat64,
@@ -130,6 +131,8 @@ static int32_t whichWriter(SEXP column) {
     if (INHERITS(column, char_Date))     return WF_DateFloat64;
     if (INHERITS(column, char_POSIXct))  return WF_POSIXct;
     return WF_Float64;
+  case CPLXSXP:
+    return WF_Complex;
   case STRSXP:
     return WF_String;
   case VECSXP:

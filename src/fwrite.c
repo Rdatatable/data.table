@@ -7,6 +7,7 @@
 #include <math.h>      // isfinite, isnan
 #include <stdlib.h>    // abs
 #include <string.h>    // strlen, strerror
+#include <complex.h>
 
 #ifdef WIN32
 #include <sys/types.h>
@@ -168,7 +169,7 @@ void genLookups() {
 }
 */
 
-void writeFloat64(double *col, int64_t row, char **pch)
+void writeFloat64Scalar(double x, char **pch)
 {
   // hand-rolled / specialized for speed
   // *pch is safely the output destination with enough space (ensured via calculating maxLineLen up front)
@@ -178,7 +179,6 @@ void writeFloat64(double *col, int64_t row, char **pch)
   //  ii) no C libary calls such as sprintf() where the fmt string has to be interpretted over and over
   // iii) no need to return variables or flags.  Just writes.
   //  iv) shorter, easier to read and reason with in one self contained place.
-  double x = col[row];
   char *ch = *pch;
   if (!isfinite(x)) {
     if (isnan(x)) {
@@ -289,6 +289,26 @@ void writeFloat64(double *col, int64_t row, char **pch)
       }
     }
   }
+  *pch = ch;
+}
+
+void writeFloat64(double *col, int64_t row, char **pch)
+{
+  double x = col[row];
+  char *ch = *pch;
+  writeFloat64Scalar(x, &ch);
+  *pch = ch;
+}
+
+void writeComplex(double complex *col, int64_t row, char **pch)
+{
+  double complex x = col[row];
+  char *ch = *pch;
+  writeFloat64Scalar(creal(x), &ch);
+  // let writeFloat64 handle the - sign for negative imaginary part
+  if (cimag(x) >= 0.0) *ch++ = '+';
+  writeFloat64Scalar(cimag(x), &ch);
+  *ch++ = 'i';
   *pch = ch;
 }
 
