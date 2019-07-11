@@ -1,7 +1,7 @@
 #include <R.h>
 #include <Rdefines.h>
 #include <R_ext/Error.h>
-#include<stdint.h>
+#include <stdint.h>
 
 SEXP fifelseR(SEXP l, SEXP a, SEXP b)
 {
@@ -114,9 +114,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : int_pres[i] = int_pb[i];  break;
-        case 1  : int_pres[i] = int_pa[i];  break;
-        default : int_pres[i] = NA_INTEGER; break;
+          case 0  : int_pres[i] = int_pb[i];  break;
+          case 1  : int_pres[i] = int_pa[i];  break;
+          default : int_pres[i] = NA_INTEGER; break;
         }
       }
       break;
@@ -126,9 +126,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : int_pres[i] = int_pb[i];  break;
-        case 1  : int_pres[i] = int_pa[0];  break;
-        default : int_pres[i] = NA_INTEGER; break;
+          case 0  : int_pres[i] = int_pb[i];  break;
+          case 1  : int_pres[i] = int_pa[0];  break;
+          default : int_pres[i] = NA_INTEGER; break;
         }
       }
       break;
@@ -138,9 +138,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : int_pres[i] = int_pb[0];  break;
-        case 1  : int_pres[i] = int_pa[i];  break;
-        default : int_pres[i] = NA_INTEGER; break;
+          case 0  : int_pres[i] = int_pb[0];  break;
+          case 1  : int_pres[i] = int_pa[i];  break;
+          default : int_pres[i] = NA_INTEGER; break;
         }
       }
       break;
@@ -150,9 +150,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : int_pres[i] = int_pb[0];  break;
-        case 1  : int_pres[i] = int_pa[0];  break;
-        default : int_pres[i] = NA_INTEGER; break;
+          case 0  : int_pres[i] = int_pb[0];  break;
+          case 1  : int_pres[i] = int_pa[0];  break;
+          default : int_pres[i] = NA_INTEGER; break;
         }
       }
       break;
@@ -177,9 +177,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : double_pres[i] = double_pb[i];  break;
-        case 1  : double_pres[i] = double_pa[i];  break;
-        default : double_pres[i] = NA_REAL; break;
+          case 0  : double_pres[i] = double_pb[i];  break;
+          case 1  : double_pres[i] = double_pa[i];  break;
+          default : double_pres[i] = NA_REAL; break;
         }
       }
       break;
@@ -189,9 +189,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : double_pres[i] = double_pb[i];  break;
-        case 1  : double_pres[i] = double_pa[0];  break;
-        default : double_pres[i] = NA_REAL; break;
+          case 0  : double_pres[i] = double_pb[i];  break;
+          case 1  : double_pres[i] = double_pa[0];  break;
+          default : double_pres[i] = NA_REAL; break;
         }
       }
       break;
@@ -201,9 +201,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : double_pres[i] = double_pb[0];  break;
-        case 1  : double_pres[i] = double_pa[i];  break;
-        default : double_pres[i] = NA_REAL; break;
+          case 0  : double_pres[i] = double_pb[0];  break;
+          case 1  : double_pres[i] = double_pa[i];  break;
+          default : double_pres[i] = NA_REAL; break;
         }
       }
       break;
@@ -213,9 +213,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : double_pres[i] = double_pb[0];  break;
-        case 1  : double_pres[i] = double_pa[0];  break;
-        default : double_pres[i] = NA_REAL; break;
+          case 0  : double_pres[i] = double_pb[0];  break;
+          case 1  : double_pres[i] = double_pa[0];  break;
+          default : double_pres[i] = NA_REAL; break;
         }
       }
       break;
@@ -240,9 +240,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : lg_pres[i] = lg_pb[i];  break;
-        case 1  : lg_pres[i] = lg_pa[i];  break;
-        default : lg_pres[i] = NA_LOGICAL; break;
+          case 0  : lg_pres[i] = lg_pb[i];  break;
+          case 1  : lg_pres[i] = lg_pa[i];  break;
+          default : lg_pres[i] = NA_LOGICAL; break;
         }
       }
       break;
@@ -252,9 +252,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : lg_pres[i] = lg_pb[i];  break;
-        case 1  : lg_pres[i] = lg_pa[0];  break;
-        default : lg_pres[i] = NA_LOGICAL; break;
+          case 0  : lg_pres[i] = lg_pb[i];  break;
+          case 1  : lg_pres[i] = lg_pa[0];  break;
+          default : lg_pres[i] = NA_LOGICAL; break;
         }
       }
       break;
@@ -264,9 +264,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : lg_pres[i] = lg_pb[0];  break;
-        case 1  : lg_pres[i] = lg_pa[i];  break;
-        default : lg_pres[i] = NA_LOGICAL; break;
+          case 0  : lg_pres[i] = lg_pb[0];  break;
+          case 1  : lg_pres[i] = lg_pa[i];  break;
+          default : lg_pres[i] = NA_LOGICAL; break;
         }
       }
       break;
@@ -276,9 +276,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : lg_pres[i] = lg_pb[0];  break;
-        case 1  : lg_pres[i] = lg_pa[0];  break;
-        default : lg_pres[i] = NA_LOGICAL; break;
+          case 0  : lg_pres[i] = lg_pb[0];  break;
+          case 1  : lg_pres[i] = lg_pa[0];  break;
+          default : lg_pres[i] = NA_LOGICAL; break;
         }
       }
       break;
@@ -291,6 +291,8 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
      */
   case STRSXP :
     result = PROTECT(allocVector(STRSXP, len0));
+    const SEXP *pa = STRING_PTR(a);
+    const SEXP *pb = STRING_PTR(b);
     stack_size++;
     switch(adj)
     {
@@ -299,9 +301,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : SET_STRING_ELT(result, i, STRING_ELT(b, i));  break;
-        case 1  : SET_STRING_ELT(result, i, STRING_ELT(a, i));  break;
-        default : SET_STRING_ELT(result, i, NA_STRING); break;
+          case 0  : SET_STRING_ELT(result, i, pb[i]);  break;
+          case 1  : SET_STRING_ELT(result, i, pa[i]);  break;
+          default : SET_STRING_ELT(result, i, NA_STRING); break;
         }
       }
       break;
@@ -311,9 +313,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : SET_STRING_ELT(result, i, STRING_ELT(b, i));  break;
-        case 1  : SET_STRING_ELT(result, i, STRING_ELT(a, 0));  break;//some speed up can be done here
-        default : SET_STRING_ELT(result, i, NA_STRING); break;
+          case 0  : SET_STRING_ELT(result, i, pb[i]);  break;
+          case 1  : SET_STRING_ELT(result, i, pa[0]);  break;
+          default : SET_STRING_ELT(result, i, NA_STRING); break;
         }
       }
       break;
@@ -323,9 +325,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : SET_STRING_ELT(result, i, STRING_ELT(b, 0));  break;
-        case 1  : SET_STRING_ELT(result, i, STRING_ELT(a, i));  break;
-        default : SET_STRING_ELT(result, i, NA_STRING); break;
+          case 0  : SET_STRING_ELT(result, i, pb[0]);  break;
+          case 1  : SET_STRING_ELT(result, i, pa[i]);  break;
+          default : SET_STRING_ELT(result, i, NA_STRING); break;
         }
       }
       break;
@@ -335,9 +337,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : SET_STRING_ELT(result, i, STRING_ELT(b, 0));  break;
-        case 1  : SET_STRING_ELT(result, i, STRING_ELT(a, 0));  break;
-        default : SET_STRING_ELT(result, i, NA_STRING); break;
+          case 0  : SET_STRING_ELT(result, i, pb[0]);  break;
+          case 1  : SET_STRING_ELT(result, i, pa[0]);  break;
+          default : SET_STRING_ELT(result, i, NA_STRING); break;
         }
       }
       break;
@@ -363,9 +365,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : cp_pres[i] = cp_pb[i]; break;
-        case 1  : cp_pres[i] = cp_pa[i]; break;
-        default : cp_pres[i] = NA_CPLX;  break;
+          case 0  : cp_pres[i] = cp_pb[i]; break;
+          case 1  : cp_pres[i] = cp_pa[i]; break;
+          default : cp_pres[i] = NA_CPLX;  break;
         }
       }
       break;
@@ -375,9 +377,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : cp_pres[i] = cp_pb[i]; break;
-        case 1  : cp_pres[i] = cp_pa[0]; break;
-        default : cp_pres[i] = NA_CPLX;  break;
+          case 0  : cp_pres[i] = cp_pb[i]; break;
+          case 1  : cp_pres[i] = cp_pa[0]; break;
+          default : cp_pres[i] = NA_CPLX;  break;
         }
       }
       break;
@@ -387,9 +389,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : cp_pres[i] = cp_pb[0]; break;
-        case 1  : cp_pres[i] = cp_pa[i]; break;
-        default : cp_pres[i] = NA_CPLX;  break;
+          case 0  : cp_pres[i] = cp_pb[0]; break;
+          case 1  : cp_pres[i] = cp_pa[i]; break;
+          default : cp_pres[i] = NA_CPLX;  break;
         }
       }
       break;
@@ -399,9 +401,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : cp_pres[i] = cp_pb[0]; break;
-        case 1  : cp_pres[i] = cp_pa[0]; break;
-        default : cp_pres[i] = NA_CPLX;  break;
+          case 0  : cp_pres[i] = cp_pb[0]; break;
+          case 1  : cp_pres[i] = cp_pa[0]; break;
+          default : cp_pres[i] = NA_CPLX;  break;
         }
       }
       break;
@@ -420,6 +422,8 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     SEXP nmsb = PROTECT(getAttrib(b,R_NamesSymbol)); stack_size++;
     SEXP na_list = PROTECT(allocVector(INTSXP, 1)); stack_size++;
     INTEGER(na_list)[0] = NA_INTEGER;
+    const int testa = !isNull(nmsa);
+    const int testb = !isNull(nmsb);
     switch(adj)
     {
     case 0:
@@ -427,9 +431,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : SET_VECTOR_ELT(result, i, VECTOR_ELT(b, i)); if(!isNull(nmsb))SET_STRING_ELT(nms, i, STRING_ELT(nmsb,i)); break;
-        case 1  : SET_VECTOR_ELT(result, i, VECTOR_ELT(a, i)); if(!isNull(nmsa))SET_STRING_ELT(nms, i, STRING_ELT(nmsa,i)); break;
-        default : SET_VECTOR_ELT(result, i, na_list); break;
+          case 0  : SET_VECTOR_ELT(result, i, VECTOR_ELT(b, i)); if(testb)SET_STRING_ELT(nms, i, STRING_ELT(nmsb,i)); break;
+          case 1  : SET_VECTOR_ELT(result, i, VECTOR_ELT(a, i)); if(testa)SET_STRING_ELT(nms, i, STRING_ELT(nmsa,i)); break;
+          default : SET_VECTOR_ELT(result, i, na_list); break;
         }
       }
       break;
@@ -439,9 +443,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : SET_VECTOR_ELT(result, i, VECTOR_ELT(b, i)); if(!isNull(nmsb))SET_STRING_ELT(nms, i, STRING_ELT(nmsb,i)); break;
-        case 1  : SET_VECTOR_ELT(result, i, VECTOR_ELT(a, 0)); if(!isNull(nmsa))SET_STRING_ELT(nms, i, STRING_ELT(nmsa,0)); break;
-        default : SET_VECTOR_ELT(result, i, na_list); break;
+          case 0  : SET_VECTOR_ELT(result, i, VECTOR_ELT(b, i)); if(testb)SET_STRING_ELT(nms, i, STRING_ELT(nmsb,i)); break;
+          case 1  : SET_VECTOR_ELT(result, i, VECTOR_ELT(a, 0)); if(testa)SET_STRING_ELT(nms, i, STRING_ELT(nmsa,0)); break;
+          default : SET_VECTOR_ELT(result, i, na_list); break;
         }
       }
       break;
@@ -451,9 +455,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : SET_VECTOR_ELT(result, i, VECTOR_ELT(b, 0)); if(!isNull(nmsb))SET_STRING_ELT(nms, i, STRING_ELT(nmsb,0)); break; //some speed up can be done here
-        case 1  : SET_VECTOR_ELT(result, i, VECTOR_ELT(a, i)); if(!isNull(nmsa))SET_STRING_ELT(nms, i, STRING_ELT(nmsa,i)); break;break;
-        default : SET_VECTOR_ELT(result, i, na_list); break;
+          case 0  : SET_VECTOR_ELT(result, i, VECTOR_ELT(b, 0)); if(testb)SET_STRING_ELT(nms, i, STRING_ELT(nmsb,0)); break; //some speed up can be done here
+          case 1  : SET_VECTOR_ELT(result, i, VECTOR_ELT(a, i)); if(testa)SET_STRING_ELT(nms, i, STRING_ELT(nmsa,i)); break;
+          default : SET_VECTOR_ELT(result, i, na_list); break;
         }
       }
       break;
@@ -463,14 +467,14 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       {
         switch(pl[i])
         {
-        case 0  : SET_VECTOR_ELT(result, i, VECTOR_ELT(b, 0)); if(!isNull(nmsb))SET_STRING_ELT(nms, i, STRING_ELT(nmsb,0)); break;
-        case 1  : SET_VECTOR_ELT(result, i, VECTOR_ELT(a, 0)); if(!isNull(nmsa))SET_STRING_ELT(nms, i, STRING_ELT(nmsa,0)); break;
-        default : SET_VECTOR_ELT(result, i, na_list); break;
+          case 0  : SET_VECTOR_ELT(result, i, VECTOR_ELT(b, 0)); if(testb)SET_STRING_ELT(nms, i, STRING_ELT(nmsb,0)); break;
+          case 1  : SET_VECTOR_ELT(result, i, VECTOR_ELT(a, 0)); if(testa)SET_STRING_ELT(nms, i, STRING_ELT(nmsa,0)); break;
+          default : SET_VECTOR_ELT(result, i, na_list); break;
         }
       }
       break;
     }
-    if(!isNull(nmsa) || !isNull(nmsb)) setAttrib(result, R_NamesSymbol, nms);
+    if(testa || testb) setAttrib(result, R_NamesSymbol, nms);
     break;
 
   default: error("Type %s is not supported.",type2char(ta)); break;
