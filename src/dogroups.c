@@ -185,7 +185,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           SET_VECTOR_ELT(VECTOR_ELT(xSD,j),0,R_NilValue);
           break;
         default:
-          error("Logical error. Type of column should have been checked by now");
+          error("Logical error. Type of column should have been checked by now"); // #nocov
         }
       }
     } else {
