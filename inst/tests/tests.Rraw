@@ -7335,7 +7335,8 @@ DT3 = rbindlist(list(DT2, list(x="d", y=7L, mul=100L)))
 DT3 = DT3[sample(nrow(DT3))]
 DT1[ , x_num := match(x, letters) + .1]
 DT3[ , x_num := match(x, letters) + .1]
-test(1540.36, DT1[DT3, .(x_num), by=.EACHI, on=c(x_num="x_num")])
+test(1540.36, DT1[DT3[1:3], .(y = x_num), by=.EACHI, on=c(x_num="x_num")],
+     data.table(x_num = c(3.1, 4.1, 3.1), y = c(2.1, NA, NA)))
 
 # to do: add tests for :=
 
