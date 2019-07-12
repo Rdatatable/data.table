@@ -485,7 +485,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   {
     if(atest)
     {
-      if(isNull(STRING_ELT(alevels, 0)))
+      if(!R_ExternalPtrAddr(alevels))
       {
         setAttrib(result, R_LevelsSymbol, blevels);
       } else {
