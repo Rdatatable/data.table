@@ -15208,6 +15208,17 @@ d2 = data.table(r = 1:5, s = seq(0L, 20L, 5L))
 test(2062.1, d1[d2, on = .(a <= s, b >= s), j = .SD],   ans<-data.table(a=INT(0,5,10,10,15,20), b=INT(0,5,10,10,15,20)))
 test(2062.2, d1[d2, on = .(a <= s, b >= s)][, .(a, b)], ans)
 
+# forderv (and downstream functions) handles complex vector input, part of #3690
+DT = data.table(
+  a = c(1L, 1L, 8L, 2L, 1L, 9L, 3L, 2L, 6L, 6L),
+  b = c(3+9i, 10+5i, 8+2i, 10+4i, 3+3i, 1+2i, 5+1i, 8+1i, 8+2i, 10+6i)
+)
+test(2063.1, DT[order(a, b)], DT[base::order(a, b)])
+test(2063.2, DT[order(a, -b)], DT[base::order(a, -b)])
+test(2063.3, forderv(DT$b, order = 1L), base::order(DT$b))
+test(2063.4, forderv(DT$b, order = -1L), base::order(-DT$b))
+test(2063.5, forderv(DT, by = 2:1), forderv(DT[ , 2:1]))
+test(2063.6, forderv(DT, by = 2:1, order = c(1L, -1L)), DT[order(b, -a), which = TRUE])
 
 ###################################
 #  Add new tests above this line  #

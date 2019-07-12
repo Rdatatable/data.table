@@ -128,6 +128,8 @@
     identical(y1,y2) && identical(y1,y3)
     # TRUE
     ```
+    
+19. Sorting now extended to complex vectors, [#1703](https://github.com/Rdatatable/data.table/issues/1703). Consistent with `base::order`, sorting is done lexicographically (`z1<z2` means `Re(z1) < Re(z2) | (Re(z1) == Re(z2) & Im(z1) < Im(z2))`).
 
 #### BUG FIXES
 
