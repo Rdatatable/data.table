@@ -9605,6 +9605,11 @@ test(1658.57, fwrite(DT), output='0+3i|0+4i|0+5i')
 DT[ , b := c(1i, -1-1i, NA)]
 test(1658.58, fwrite(DT), output='a,b\n1,0\\+1i\n2,-1-1i\n3,$')
 
+# more coverage
+test(1658.59, fwrite(data.table(a=list('a')), verbose=TRUE),
+     output='fields will be quoted if the field contains either sep.*sep2.*list column')
+test(1658.60, fwrite(data.table(r=as.raw(0))), error = "'raw' - not yet implemented")
+
 ## End fwrite tests
 
 # tests for #679, inrange(), FR #707
