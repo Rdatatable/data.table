@@ -52,6 +52,7 @@ inline void write_chars(const char *x, char **pch)
   *pch = ch;
 }
 
+// #nocov start
 void writeBool8(int8_t *col, int64_t row, char **pch)
 {
   int8_t x = col[row];
@@ -59,6 +60,7 @@ void writeBool8(int8_t *col, int64_t row, char **pch)
   *ch++ = '0'+(x==1);
   *pch = ch-(x==INT8_MIN);  // if NA then step back, to save a branch
 }
+// #nocov end
 
 void writeBool32(int32_t *col, int64_t row, char **pch)
 {
