@@ -15273,6 +15273,18 @@ test(2063.059, fifelse(c(NA,FALSE), list(1:5,6:10), list(5:1)), list(NA_integer_
 test(2063.060, fifelse(c(NA,FALSE), list(1:5), list(5:1)), list(NA_integer_,5:1))
 test(2063.061, fifelse(c(TRUE,FALSE), list(1L), 0L), list(1L,0L))
 test(2063.062, fifelse(c(TRUE,FALSE), 1L, list(0L)), list(1L,0L))
+test(2063.063, # more tests on factors - following up on 2063.019
+     fifelse(factor(letters[1:5]) %in% c("a","b","c"), factor(NA), factor(letters[1:5])),
+     factor(c(NA,NA,NA,"d","e"),levels = letters[1:5]))
+test(2063.064, 
+     fifelse(factor(c(letters[1:5],NA)) %in% c("a","b","c"), factor(NA), factor(letters[1:6])),
+     factor(c(NA,NA,NA,"d","e","f"),levels = letters[1:6]))
+test(2063.065, 
+     fifelse(factor(c(letters[1:5],NA)) %in% c("a","b","c"), factor(letters[1:6]), factor(NA)),
+     factor(c("a","b","c",NA,NA,NA),levels = letters[1:6]))
+test(2063.066, 
+     fifelse(factor(c(letters[1:5],NA)) %in% c("a","b","c"), factor(NA), factor(NA)),
+     factor(c(NA,NA,NA,NA,NA,NA)))
 
 ###################################
 #  Add new tests above this line  #

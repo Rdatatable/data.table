@@ -53,16 +53,17 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   if(!R_compute_identical(class_type,getAttrib(b,R_ClassSymbol),0))
     error("'yes' has different class than 'no'. Please make sure that candidate replacements have the same class.");
 
+  const int atest = isFactor(a);
+  SEXP alevels = R_NilValue, blevels = R_NilValue, result = R_NilValue;
+  
   // Check if factor
-  if(isFactor(a))
+  if(atest)
   {
-    a = PROTECT(asCharacterFactor(a));
-    b = PROTECT(asCharacterFactor(b));
+    alevels = PROTECT(getAttrib(a,R_LevelsSymbol));
+    blevels = PROTECT(getAttrib(b,R_LevelsSymbol));
     stack_size = stack_size + 2;
-    ta = STRSXP;
   }
-  //Jan Gorecki : Afair this will make factor class always slower than character, would be nice to have it optimised where possible
-
+  
   /*
    Variable 'adj' is used to seperate case where l (test),
    a (yes) and b (no) are of different length.
@@ -90,7 +91,6 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     }
   }
 
-  SEXP result = R_NilValue;
   int *pl = LOGICAL(l);
   uint64_t i;
 
@@ -480,8 +480,22 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   default: error("Type %s is not supported.",type2char(ta)); break;
   }
 
-  // Check class type and adjust (except for factor)
-  if(!isNull(class_type) && !isFactor(a)) copyMostAttrib(a, result); // issue here for factor with NA value - moved to R code
+  // Check class type and adjust (including factors)
+  if(!isNull(class_type)) 
+  {
+    if(atest)
+    {
+      if(isNull(STRING_ELT(alevels, 0)))
+      {
+        setAttrib(result, R_LevelsSymbol, blevels);
+      } else {
+        setAttrib(result, R_LevelsSymbol, alevels);
+      }
+      setAttrib(result, R_ClassSymbol, mkString("factor"));
+    } else {
+      copyMostAttrib(a, result);  
+    }
+  }
 
   UNPROTECT(stack_size);
   return result;

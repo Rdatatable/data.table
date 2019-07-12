@@ -79,7 +79,7 @@ system.time(y3 <- base::ifelse(x, 1L, 0L))
 system.time(y4 <- dplyr::if_else(x, 1L, 0L))
 identical(y1,y2) && identical(y1,y3) && identical(y1,y4)
 #   user  system elapsed (seconds)
-#   0.89    1.36    0.68  # data.table v1.12.3
+#   0.55    0.78    1.33  # data.table v1.12.3
 #   2.52    1.44    3.95  # hutils v1.5.0
 #   9.46    5.80   15.26  # base v3.6.0
 #  11.11    9.25   20.38  # dplyr v0.8.3
