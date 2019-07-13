@@ -7,7 +7,6 @@
 #include <math.h>      // isfinite, isnan
 #include <stdlib.h>    // abs
 #include <string.h>    // strlen, strerror
-#include <complex.h>
 
 #ifdef WIN32
 #include <sys/types.h>
@@ -302,12 +301,12 @@ void writeFloat64(double *col, int64_t row, char **pch)
   *pch = ch;
 }
 
-void writeComplex(double complex *col, int64_t row, char **pch)
+void writeComplex(Rcomplex *col, int64_t row, char **pch)
 {
-  double complex x = col[row];
-  double im = cimag(x);
+  Rcomplex x = col[row];
+  double im = x.i;
   char *ch = *pch;
-  writeFloat64Scalar(creal(x), &ch);
+  writeFloat64Scalar(x.r, &ch);
   // writeFloat64Scalar handled NA for the real part
   if (!ISNA(im)) {
     // let writeFloat64 handle the - sign for negative imaginary part
