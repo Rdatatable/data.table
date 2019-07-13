@@ -222,6 +222,8 @@
 
 11. We intend to deprecate the `datatable.nomatch` option, [more info](https://github.com/Rdatatable/data.table/pull/3578/files). A message is now printed upon use of the option (once per session) as a first step. It asks you to please stop using the option and to pass `nomatch=NULL` explicitly if you require inner join. Outer join (`nomatch=NA`) has always been the default because it is safer; it does not drop missing data silently. The problem is that the option is global; i.e., if a user changes the default using this option for their own use, that can change the behavior of joins inside packages that use `data.table` too. This is the only `data.table` option with this concern.
 
+12. The test suite of 9k tests now runs with three R options on: `warnPartialMatchArgs`, `warnPartialMatchAttr`, and `warnPartialMatchDollar`. This ensures that we don't rely on partial argument matching in internal code, for robustness and efficiency, and so that users can turn these options on for their code in production, [#3664](https://github.com/Rdatatable/data.table/issues/3664). Thanks to Vijay Lulla for the suggestion, and Michael Chirico for fixing 48 internal calls to `attr()` which were missing `exact=TRUE`, for example. Thanks to R-core for adding these options to R 2.6.0 (Oct 2007).
+
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 

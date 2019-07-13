@@ -49,7 +49,7 @@
 }
 \usage{
 as.IDate(x, \dots)
-\method{as.IDate}{default}(x, \dots, tz = attr(x, "tzone"))
+\method{as.IDate}{default}(x, \dots, tz = attr(x, "tzone", exact=TRUE))
 \method{as.IDate}{Date}(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)
