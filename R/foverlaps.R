@@ -78,7 +78,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
     stop("Some interval cols are of type POSIXct while others are not. Please ensure all interval cols are (or are not) of POSIXct type")
   }
   # #1143, mismatched timezone
-  getTZ = function(x) if (is.null(tz <- attr(x, "tzone"))) "" else tz # "" == NULL AFAICT
+  getTZ = function(x) if (is.null(tz <- attr(x, "tzone", exact=TRUE))) "" else tz # "" == NULL AFAICT
   tzone_chk = c(getTZ(xval1), getTZ(xval2), getTZ(yval1), getTZ(yval2))
   if (any(tzone_chk != tzone_chk[1L])) {
     warning("POSIXct interval cols have mixed timezones. Overlaps are performed on the internal numerical representation of POSIXct objects, therefore printed values may give the impression that values don't overlap but their internal representations will. Please ensure that POSIXct type interval cols have identical 'tzone' attributes to avoid confusion.")

@@ -125,7 +125,7 @@ format.data.table = function (x, ..., justify="none", timezone = FALSE) {
   }
   # FR #2842 add timezone for posix timestamps
   format.timezone = function(col) { # paste timezone to a time object
-    tz = attr(col,'tzone', exact = TRUE)
+    tz = attr(col,'tzone', exact=TRUE)
     if (!is.null(tz)) { # date object with tz
       nas = is.na(col)
       col = paste0(as.character(col)," ",tz) # parse to character

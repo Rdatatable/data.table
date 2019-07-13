@@ -37,7 +37,7 @@ tables = function(mb=TRUE, order.col="NAME", width=80,
     tt[ , NROW := pretty_format(NROW, width=4L)]
     tt[ , NCOL := pretty_format(NCOL, width=4L)]
     if (mb) tt[ , MB := pretty_format(MB, width=2L)]
-    print(tt, class=FALSE, nrow=Inf)
+    print(tt, class=FALSE, nrows=Inf)
     if (mb) cat("Total: ", prettyNum(sum(info$MB), big.mark=","), "MB\n", sep="")
   }
   invisible(info)
