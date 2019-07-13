@@ -1,5 +1,4 @@
 #include "data.table.h"
-#include <complex.h>
 
 SEXP cj(SEXP base_list) {
   int ncol = LENGTH(base_list);
@@ -46,20 +45,6 @@ SEXP cj(SEXP base_list) {
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=1; i<ncopy; ++i) {
         memcpy(targetP + i*blocklen, targetP, blocklen*sizeof(double));
-      }
-    } break;
-    case CPLXSXP: {
-      const double complex *restrict sourceP = (double complex *)COMPLEX(source);
-      double complex *restrict targetP = (double complex *)COMPLEX(target);
-      #pragma omp parallel for num_threads(getDTthreads())
-      for (int i=0; i<thislen; ++i) {
-        const double complex item = sourceP[i];
-        const int end=(i+1)*eachrep;
-        for (int j=i*eachrep; j<end; ++j) targetP[j] = item;
-      }
-      #pragma omp parallel for num_threads(getDTthreads())
-      for (int i=1; i<ncopy; ++i) {
-        memcpy(targetP + i*blocklen, targetP, blocklen*sizeof(double complex));
       }
     } break;
     case STRSXP: {
