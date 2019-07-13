@@ -1,5 +1,4 @@
 #include "data.table.h"
-#include <complex.h>
 
 SEXP reorder(SEXP x, SEXP order)
 {
@@ -80,9 +79,9 @@ SEXP reorder(SEXP x, SEXP order)
       memcpy(vd+start, tmp+start, (end-start+1)*size);
     } else {
       // #1444 -- support for copying CPLXSXP (which have size 16)
-      double complex *vd = (double complex *)DATAPTR(v);
-      const double complex *restrict cvd = vd;
-      double complex *restrict tmp = (double complex *)TMP;
+      Rcomplex *vd = (Rcomplex *)DATAPTR(v);
+      const Rcomplex *restrict cvd = vd;
+      Rcomplex *restrict tmp = (Rcomplex *)TMP;
       #pragma omp parallel for num_threads(getDTthreads())
       for (int i=start; i<=end; i++) {
         tmp[i] = cvd[idx[i]-1];  // copies 16 bytes; including pointers on 64bit (STRSXP and VECSXP)

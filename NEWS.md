@@ -129,7 +129,7 @@
     # TRUE
     ```
     
-19. Support for `setkey` on `data.table`s with complex-valued columns, [#1444](https://github.com/Rdatatable/data.table/issues/1444). Note that complex columns themselves are not well-ordered (and thus not supported as keys). Thanks @atalikami for the report.
+19. Support for `setkey` on `data.table`s with complex-valued columns, [#1444](https://github.com/Rdatatable/data.table/issues/1444). Note that complex columns themselves are not yet supported as keys). Thanks @atalikami for the report.
 
 #### BUG FIXES
 
