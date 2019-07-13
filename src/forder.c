@@ -446,9 +446,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       error("'by' value %d out of range [1,%d]", INTEGER(by)[i], length(DT));
     if ( nrow != length(VECTOR_ELT(DT, INTEGER(by)[i]-1)) )
       error("Column %d is length %d which differs from length of column 1 (%d)\n", INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
-    if (TYPEOF(VECTOR_ELT(DT, i)) == CPLXSXP) {
-      n_cplx++;
-    }
+    if (TYPEOF(VECTOR_ELT(DT, i)) == CPLXSXP) n_cplx++;
   }
   if (n_cplx) {
     // we don't expect users to need complex sorting extensively
@@ -461,11 +459,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     int n_out = length(by) + n_cplx;
     SEXP new_dt = PROTECT(allocVector(VECSXP, n_out)); n_protect++;
     SEXP new_asc = PROTECT(allocVector(INTSXP, n_out)); n_protect++;
+    // will be simply 1:n_out
     SEXP new_by = PROTECT(allocVector(INTSXP, n_out)); n_protect++;
     int j = 0;
     for (int i=0; i<length(by); i++) {
       int by_idx = INTEGER(by)[i]-1;
       if (TYPEOF(VECTOR_ELT(DT, by_idx)) == CPLXSXP) {
+        // I don't see any shorthand way of splitting of the real&imaginary components,
+        //   i.e., a shorthand way of doing Re(z), Im(z). That includes searching all of
+        //   the r-source code & all of the r-devel archives. So just reproduce Re(), Im()
+        //   as done in do_cmathfuns in complex.c
         SEXP realPart = PROTECT(allocVector(REALSXP, nrow)); n_protect++;
         SEXP cplxPart = PROTECT(allocVector(REALSXP, nrow)); n_protect++;
         double *pre = REAL(realPart);

@@ -15275,6 +15275,22 @@ test(2964.13, frank(DT$z, ties.method='max'), c(2L, 2L, 4L, 4L, 5L, 6L))
 test(2964.14, frank(-DT$z, ties.method='min'), c(5L, 5L, 3L, 3L, 2L, 1L))
 test(2964.15, DT[ , rowid(z, grp)], rep(1L, 6L))
 test(2964.16, DT[ , rowid(z)], c(1:2, 1:2, 1L, 1L))
+test(2964.17, rleid(c(1i, 1i, 1i, 0, 0, 1-1i, 2+3i, 2+3i)), rep(1:4, c(3:1, 2L)))
+
+## assorted coverage tests from along the way
+if (test_bit64) {
+  test(2964.50, is.sorted(as.integer64(10:1)), FALSE)
+  test(2964.51, is.sorted(as.integer64(1:10)))
+}
+# sort by vector outside of table
+ord = 3:1
+test(2964.52, forder(data.table(a = 3:1), ord), 3:1)
+
+# DT1 = data.table(z = c(0+1i, 2-3i, 4+1i))
+# DT2 = data.table(z = c(2-3i, 0+1i, 0+0i))
+# DT1[DT2, on = 'z']
+
+
 
 ###################################
 #  Add new tests above this line  #

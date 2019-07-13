@@ -1,4 +1,5 @@
 #include "data.table.h"
+#include <complex.h>
 
 // DONE: return 'uniqlist' as a vector (same as duplist) and write a separate function to get group sizes
 // Also improvements for numeric type with a hack of checking unsigned int (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
@@ -200,6 +201,11 @@ SEXP rleid(SEXP l, SEXP cols) {
           // 8 bytes of bits are identical. For real (no rounding currently) and integer64
           // long long == 8 bytes checked in init.c
           break;
+        case CPLXSXP: {
+          // tried to make long long complex * but got a warning that it's a GNU extension
+          double complex *pz = (double complex *)COMPLEX(jcol);
+          same = (long long)creal(pz[i]) == (long long)creal(pz[i-1]) && (long long)cimag(pz[i]) == (long long)cimag(pz[i-1]);
+        } break;
         default :
           error("Type '%s' not supported", type2char(TYPEOF(jcol)));  // # nocov
         }
@@ -232,6 +238,13 @@ SEXP rleid(SEXP l, SEXP cols) {
         }
       }
       break;
+    case CPLXSXP: {
+      double complex *pzjcol = (double complex *)COMPLEX(jcol);
+      for (R_xlen_t i=1; i<nrow; i++) {
+        bool same = (long long)creal(pzjcol[i]) == (long long)creal(pzjcol[i-1]) && (long long)cimag(pzjcol[i]) == (long long)cimag(pzjcol[i-1]);
+        ians[i] = (grp += !same);
+      }
+    } break;
     default :
       error("Type '%s' not supported", type2char(TYPEOF(jcol)));
     }

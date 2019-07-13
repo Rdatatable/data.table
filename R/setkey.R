@@ -51,14 +51,9 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   }
   if (identical(cols,"")) stop("cols is the empty string. Use NULL to remove the key.")
   if (!all(nzchar(cols))) stop("cols contains some blanks.")
-  if (!length(cols)) {
-    cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
-  } else {
-    # remove backticks from cols
-    cols = gsub("`", "", cols, fixed = TRUE)
-    miss = !(cols %chin% colnames(x))
-    if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
-  }
+  cols = gsub("`", "", cols, fixed = TRUE)
+  miss = !(cols %chin% colnames(x))
+  if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
 
   ## determine, whether key is already present:
   if (identical(key(x),cols)) {
