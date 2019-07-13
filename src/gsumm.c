@@ -1,6 +1,5 @@
 #include "data.table.h"
 //#include <time.h>
-#include <complex.h>
 
 static int ngrp = 0;         // number of groups
 static int *grpsize = NULL;  // size of each group, used by gmean (and gmedian) not gsum
@@ -300,30 +299,30 @@ void *gather(SEXP x, bool *anyNA)
     }
   } break;
   case CPLXSXP: {
-    const double complex *restrict thisx = (double complex *)COMPLEX(x);
+    const Rcomplex *restrict thisx = COMPLEX(x);
     #pragma omp parallel for num_threads(getDTthreads())
     for (int b=0; b<nBatch; b++) {
       int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
-      memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(double complex));   // original cumulated   // already cumulated for this batch
-      double complex *restrict my_gx = (double complex *)gx + b*batchSize;
+      memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(Rcomplex));   // original cumulated   // already cumulated for this batch
+      Rcomplex *restrict my_gx = (Rcomplex *)gx + b*batchSize;
       const uint16_t *my_high = high + b*batchSize;
       const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
       bool my_anyNA = false;
       if (irowslen==-1) {
-        const double complex *my_x = thisx + b*batchSize;
+        const Rcomplex *my_x = thisx + b*batchSize;
         for (int i=0; i<howMany; i++) {
-          const double complex elem = my_x[i];
+          const Rcomplex elem = my_x[i];
           my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
           // typically just checking one component would be enough,
           //   but ?complex suggests there may be some edge cases; better to be safe
-          if (creal(elem)==NA_REAL && cimag(elem) == NA_REAL) my_anyNA = true;
+          if (elem.r==NA_REAL && elem.i == NA_REAL) my_anyNA = true;
         }
       } else {
         const int *my_x = irows + b*batchSize;
         for (int i=0; i<howMany; i++) {
-          double complex elem = thisx[ my_x[i]-1 ];
+          Rcomplex elem = thisx[ my_x[i]-1 ];
           my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
-          if (creal(elem)==NA_REAL && cimag(elem) == NA_REAL) my_anyNA = true;
+          if (elem.rNA_REAL && elem.i == NA_REAL) my_anyNA = true;
         }
       }
       if (my_anyNA) *anyNA = true;  // naked write ok since just bool and always writing true; and no performance issue as maximum nBatch writes
@@ -460,18 +459,18 @@ SEXP gsum(SEXP x, SEXP narmArg)
     }
   } break;
   case CPLXSXP: {
-    const double complex *restrict gx = gather(x, &anyNA);
+    const Rcomplex *restrict gx = gather(x, &anyNA);
     ans = PROTECT(allocVector(CPLXSXP, ngrp));
-    double complex *restrict ansp = (double complex *)COMPLEX(ans);
-    memset(ansp, 0, ngrp*sizeof(double complex));
+    Rcomplex *restrict ansp = COMPLEX(ans);
+    memset(ansp, 0, ngrp*sizeof(Rcomplex));
     if (!narm || !anyNA) {
       #pragma omp parallel for num_threads(getDTthreads())
       for (int h=0; h<highSize; h++) {
-        double complex *restrict _ans = ansp + (h<<shift);
+        Rcomplex *restrict _ans = ansp + (h<<shift);
         for (int b=0; b<nBatch; b++) {
           const int pos = counts[ b*highSize + h ];
           const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
-          const double complex *my_gx = gx + b*batchSize + pos;
+          const Rcomplex *my_gx = gx + b*batchSize + pos;
           const uint16_t *my_low = low + b*batchSize + pos;
           for (int i=0; i<howMany; i++) {
             _ans[my_low[i]] += my_gx[i];  // let NA propagate when !narm
@@ -482,14 +481,14 @@ SEXP gsum(SEXP x, SEXP narmArg)
       // narm==true and anyNA==true
       #pragma omp parallel for num_threads(getDTthreads())
       for (int h=0; h<highSize; h++) {
-        double complex *restrict _ans = ansp + (h<<shift);
+        Rcomplex *restrict _ans = ansp + (h<<shift);
         for (int b=0; b<nBatch; b++) {
           const int pos = counts[ b*highSize + h ];
           const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
-          const double complex *my_gx = gx + b*batchSize + pos;
+          const Rcomplex *my_gx = gx + b*batchSize + pos;
           const uint16_t *my_low = low + b*batchSize + pos;
           for (int i=0; i<howMany; i++) {
-            const double complex elem = my_gx[i];
+            const Rcomplex elem = my_gx[i];
             if (!ISNAN(elem)) _ans[my_low[i]] += elem;
           }
         }
@@ -523,7 +522,7 @@ SEXP gmean(SEXP x, SEXP narm)
       for (int i=0; i<ngrp; i++) *xd++ /= grpsize[i];  // let NA propogate
     } break;
     case CPLXSXP: {
-      double complex *xd = (double complex *)COMPLEX(ans);
+      Rcomplex *xd = COMPLEX(ans);
       for (int i=0; i<ngrp; i++) *xd++ /= grpsize[i];
     } break;
     default :
@@ -564,7 +563,7 @@ SEXP gmean(SEXP x, SEXP narm)
     }
   } break;
   case CPLXSXP: {
-    const double complex *xd = (double complex *)COMPLEX(x);
+    const Rcomplex *xd = COMPLEX(x);
     for (int i=0; i<n; i++) {
       int thisgrp = grp[i];
       int ix = (irowslen == -1) ? i : irows[i]-1;
@@ -591,15 +590,27 @@ SEXP gmean(SEXP x, SEXP narm)
   } break;
   case CPLXSXP: {
   ans = PROTECT(allocVector(CPLXSXP, ngrp));
-    double complex *ansd = (double complex *)COMPLEX(ans);
+    Rcomplex *ansd = COMPLEX(ans);
     for (int i=0; i<ngrp; i++) {
       if (c[i]==0) { ansd[i] = R_NaN + R_NaN*1i; continue; }  // NaN to follow base::mean
       s[i] /= c[i];
-      if (creal(s[i]) > DBL_MAX) ansd[i] = R_PosInf + cimag(s[i])*I;
-      else if (creal(s[i]) < -DBL_MAX) ansd[i] = R_NegInf + cimag(s[i])*I;
-      if (cimag(s[i]) > DBL_MAX) ansd[i] = creal(s[i]) + R_PosInf*I;
-      else if (cimag(s[i]) < -DBL_MAX) ansd[i] = creal(s[i]) + R_NegInf*I;
-      else ansd[i] = (double complex)s[i];
+      if (s[i].r > DBL_MAX) {
+        Rcomplex REAL_TO_POS_INF = {R_PosInf, s[i].i};
+        ansd[i] = REAL_TO_POS_INF;
+      }
+      else if (s[i].r < -DBL_MAX) {
+        Rcomplex REAL_TO_NEG_INF = {R_NegInf, s[i].i};
+        ansd[i] = REAL_TO_NEG_INF;
+      }
+      if (s[i].i > DBL_MAX) {
+        Rcomplex IMAG_TO_POS_INF = {s[i].r, R_PosInf};
+        ansd[i] = IMAG_TO_POS_INF;
+      }
+      else if (s[i].i < -DBL_MAX) {
+        Rcomplex IMAG_TO_NEG_INF = {s[i].r, R_NegInf};
+        ansd[i] = IMAG_TO_NEG_INF;
+      }
+      else ansd[i] = s[i];
     }
   }
   }
@@ -974,9 +985,9 @@ SEXP glast(SEXP x) {
   }
     break;
   case CPLXSXP: {
-    const double complex *dx = (double complex *)COMPLEX(x);
+    const Rcomplex *dx = COMPLEX(x);
     ans = PROTECT(allocVector(CPLXSXP, ngrp));
-    double complex *dans = (double complex *)COMPLEX(ans);
+    Rcomplex *dans = COMPLEX(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]+grpsize[i]-2;
       if (isunsorted) k = oo[k]-1;
@@ -1056,9 +1067,9 @@ SEXP gfirst(SEXP x) {
   }
     break;
   case CPLXSXP: {
-    const double complex *dx = (double complex *)COMPLEX(x);
+    const Rcomplex *dx = COMPLEX(x);
     ans = PROTECT(allocVector(CPLXSXP, ngrp));
-    double complex *dans = (double complex *)COMPLEX(ans);
+    Rcomplex *dans = COMPLEX(ans);
     for (i=0; i<ngrp; i++) {
       k = ff[i]-1;
       if (isunsorted) k = oo[k]-1;
@@ -1150,9 +1161,9 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
   }
     break;
   case CPLXSXP: {
-    const double complex *dx = (double complex *)COMPLEX(x);
+    const Rcomplex *dx = COMPLEX(x);
     ans = PROTECT(allocVector(CPLXSXP, ngrp));
-    double complex *dans = (double complex *)COMPLEX(ans);
+    Rcomplex *dans = COMPLEX(ans);
     for (i=0; i<ngrp; i++) {
       if (val > grpsize[i]) { COMPLEX(ans)[i].r = NA_REAL; COMPLEX(ans)[i].i = NA_REAL; continue; }
       k = ff[i]+val-2;
