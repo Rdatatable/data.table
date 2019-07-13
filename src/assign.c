@@ -1,7 +1,6 @@
 #include "data.table.h"
 #include <Rdefines.h>
 #include <Rmath.h>
-#include <complex.h>
 
 static void finalizer(SEXP p)
 {
@@ -945,8 +944,8 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
       }
     } break;
     case CPLXSXP: {
-      double complex *td = (double complex *)COMPLEX(target);
-      const double complex *sd = (double complex *)COMPLEX(source);
+      Rcomplex *td = COMPLEX(target);
+      const Rcomplex *sd = COMPLEX(source);
       for (int i=0; i<len; i++) {
         const int w = wd[i];
         if (w<1) continue;
@@ -1013,8 +1012,9 @@ void writeNA(SEXP v, const int from, const int n)
     }
   } break;
   case CPLXSXP: {
-    double complex *vd = (double complex *)COMPLEX(v);
-    for (int i=from; i<=to; ++i) vd[i] = NA_REAL + NA_REAL*I;
+    Rcomplex *vd = COMPLEX(v);
+    Rcomplex NA_CPLX = {NA_REAL, NA_REAL};
+    for (int i=from; i<=to; ++i) vd[i] = NA_CPLX;
   } break;
   case STRSXP :
     // character columns are initialized with blank string (""). So replace the all-"" with all-NA_character_

@@ -2,13 +2,12 @@
 #include <Rdefines.h>
 #include <fcntl.h>
 #include <time.h>
-#include <complex.h>
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verbose)
 {
   R_len_t rownum, ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp, origIlen=0, origSDnrow=0;
   int protecti=0;
-  SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, BY, N, DOTI, GRP, iSD, xSD, rownames, s, RHS, listwrap, target, source, tmp;
+  SEXP names, names2, xknames, bynames, dtnames, ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, listwrap, target, source, tmp;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
   clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
 
@@ -53,8 +52,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   for (R_len_t i=0; i<n; ++i) {
     if (ilens[i] > maxGrpSize) maxGrpSize = ilens[i];
   }
-  // #3639 introduced complex.h, which defines I, so use DOTI to differentiate
-  defineVar(install(".I"), DOTI = PROTECT(allocVector(INTSXP, maxGrpSize)), env); protecti++;
+  defineVar(install(".I"), I = PROTECT(allocVector(INTSXP, maxGrpSize)), env); protecti++;
   R_LockBinding(install(".I"), env);
 
   dtnames = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++; // added here to fix #4990 - `:=` did not issue recycling warning during "by"
@@ -78,7 +76,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     copyMostAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), VECTOR_ELT(SDall,i));  // not names, otherwise test 778 would fail
   }
 
-  origIlen = length(DOTI);  // test 762 has length(DOTI)==1 but nrow(SD)==0
+  origIlen = length(I);  // test 762 has length(I)==1 but nrow(SD)==0
   if (length(SDall)) origSDnrow = length(VECTOR_ELT(SDall, 0));
 
   xknames = getAttrib(xSD, R_NamesSymbol);
@@ -145,11 +143,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         case REALSXP :
           REAL(VECTOR_ELT(SDall,j))[0] = NA_REAL;
           break;
-        case CPLXSXP :
-          // no NA_COMPLEX; have to set r & i parts to NA_REAL individually
-          COMPLEX(VECTOR_ELT(SDall, j))[0].r = NA_REAL;
-          COMPLEX(VECTOR_ELT(SDall, j))[0].i = NA_REAL;
-          break;
+        case CPLXSXP : {
+          Rcomplex NA_CPLX = {NA_REAL, NA_REAL};
+          COMPLEX(VECTOR_ELT(SDall, j))[0] = NA_CPLX;
+        } break;
         case STRSXP :
           SET_STRING_ELT(VECTOR_ELT(SDall,j),0,NA_STRING);
           break;
@@ -161,8 +158,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
       }
       grpn = 1;  // it may not be 1 e.g. test 722. TODO: revisit.
-      SETLENGTH(DOTI, grpn);
-      INTEGER(DOTI)[0] = 0;
+      SETLENGTH(I, grpn);
+      INTEGER(I)[0] = 0;
       for (int j=0; j<length(xSD); ++j) {
         switch (TYPEOF(VECTOR_ELT(xSD, j))) {
         case LGLSXP :
@@ -174,10 +171,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         case REALSXP :
           REAL(VECTOR_ELT(xSD,j))[0] = NA_REAL;
           break;
-        case CPLXSXP :
-          COMPLEX(VECTOR_ELT(xSD, j))[0].r = NA_REAL;
-          COMPLEX(VECTOR_ELT(xSD, j))[0].i = NA_REAL;
-          break;
+        case CPLXSXP : {
+          Rcomplex NA_CPLX = {NA_REAL, NA_REAL};
+          COMPLEX(VECTOR_ELT(xSD, j))[0] = NA_CPLX;
+        }  break;
         case STRSXP :
           SET_STRING_ELT(VECTOR_ELT(xSD,j),0,NA_STRING);
           break;
@@ -190,8 +187,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       }
     } else {
       if (LOGICAL(verbose)[0]) tstart = clock();
-      SETLENGTH(DOTI, grpn);
-      int *iI = INTEGER(DOTI);
+      SETLENGTH(I, grpn);
+      int *iI = INTEGER(I);
       if (LENGTH(order)==0) {
         if (grpn) rownum = istarts[i]-1; else rownum = -1;  // not ternary to pass strict-barrier
         for (int j=0; j<grpn; ++j) iI[j] = rownum+j+1;
@@ -234,8 +231,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             }
           } else { // size 16
             // #3634 -- CPLXSXP columns have size 16
-            double complex *td = (double complex *)COMPLEX(target);
-            const double complex *sd = (double complex *)COMPLEX(source);
+            Rcomplex *td = COMPLEX(target);
+            const Rcomplex *sd = COMPLEX(source);
             for (int k=0; k<grpn; ++k) {
               rownum = iI[k]-1;
               td[k] = sd[rownum];
@@ -412,8 +409,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
       } else {
         // #3634 -- CPLXSXP columns have size 16
-        double complex *td = (double complex *)COMPLEX(target);
-        double complex *sd = (double complex *)COMPLEX(source);
+        Rcomplex *td = COMPLEX(target);
+        Rcomplex *sd = COMPLEX(source);
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
       }
       // Shouldn't need SET_* to age objects here since groups, TO DO revisit.
@@ -441,8 +438,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           for (int r=0; r<maxn; ++r) td[r] = NA_REAL;
         } break;
         case CPLXSXP : {
-        double complex *td = (double complex *)(COMPLEX(target) + thisansloc);
-        for (int r=0; r<maxn; ++r) { td[r] = NA_REAL + NA_REAL*I; }
+        Rcomplex *td = COMPLEX(target) + thisansloc;
+        Rcomplex NA_CPLX = {NA_REAL, NA_REAL};
+        for (int r=0; r<maxn; ++r) td[r] = NA_CPLX;
         //for (int r=0; r<,maxn; ++r) { creal(td[r]) = NA_REAL; cimag(td[r]) = NA_REAL; }
       } break;
         case STRSXP :
@@ -482,7 +480,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   } else ans = R_NilValue;
   // Now reset length of .SD columns and .I to length of largest group, otherwise leak if the last group is smaller (often is).
   for (int j=0; j<length(SDall); ++j) SETLENGTH(VECTOR_ELT(SDall,j), origSDnrow);
-  SETLENGTH(DOTI, origIlen);
+  SETLENGTH(I, origIlen);
   if (LOGICAL(verbose)[0]) {
     if (nblock[0] && nblock[1]) error("Internal error: block 0 [%d] and block 1 [%d] have both run", nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;
