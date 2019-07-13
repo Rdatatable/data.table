@@ -1,6 +1,5 @@
 #include "data.table.h"
 #include <Rdefines.h>
-#include <complex.h>
 
 SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
 
@@ -86,14 +85,14 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
         copyMostAttrib(elem, tmp);
       }
       break;
-      
+
     case CPLXSXP :
       thisfill = PROTECT(coerceVector(fill, CPLXSXP)); protecti++;
-      double complex cfill = COMPLEX(thisfill)[0].r + COMPLEX(thisfill)[0].i*I;
+      Rcomplex cfill = COMPLEX(thisfill)[0];
       for (int j=0; j<nk; j++) {
         R_xlen_t thisk = MIN(abs(kd[j]), xrows);
         SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(CPLXSXP, xrows) );
-        double complex *ctmp = (double complex *)COMPLEX(tmp);
+        Rcomplex *ctmp = COMPLEX(tmp);
         size_t tailk = xrows-thisk;
         if ((stype == LAG && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
           if (tailk > 0) memmove(ctmp+thisk, COMPLEX(elem), tailk*size);
