@@ -23,8 +23,8 @@ duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_
     if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
   } else {
     o = forderv(x, by=query$by, sort=FALSE, retGrp=TRUE)
-    if (attr(o, 'maxgrpn') == 1L) return(rep.int(FALSE, nrow(x)))
-    f = attr(o,"starts")
+    if (attr(o, 'maxgrpn', exact=TRUE) == 1L) return(rep.int(FALSE, nrow(x)))
+    f = attr(o, "starts", exact=TRUE)
     if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
     if (length(o)) f = o[f]
   }
@@ -47,8 +47,8 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
   # if by=key(x), forderv tests for orderedness within it quickly and will short-circuit
   # there isn't any need in unique() to call uniqlist like duplicated does; uniqlist returns a new nrow(x) vector anyway and isn't
   # as efficient as forderv returning empty o when input is already ordered
-  if (attr(o, 'maxgrpn') == 1L) return(copy(x))  # return copy so that unique(x)[, col := val] doesn't affect original data.table, #3383.
-  f = attr(o,"starts")
+  if (attr(o, 'maxgrpn', exact=TRUE) == 1L) return(copy(x))  # return copy so that unique(x)[, col := val] doesn't affect original data.table, #3383.
+  f = attr(o, "starts", exact=TRUE)
   if (fromLast) f = cumsum(uniqlengths(f, nrow(x)))
   if (length(o)) f = o[f]
   if (length(o <- forderv(f))) f = f[o]  # don't sort the uniques too
@@ -149,7 +149,7 @@ uniqueN = function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) 
   }
   if (is.null(by)) by = seq_along(x)
   o = forderv(x, by=by, retGrp=TRUE, na.last=if (!na.rm) FALSE else NA)
-  starts = attr(o, 'starts')
+  starts = attr(o, 'starts', exact=TRUE)
   if (!na.rm) {
     length(starts)
   } else {
