@@ -46,6 +46,7 @@ SEXP cj(SEXP base_list) {
       for (int i=1; i<ncopy; ++i) {
         memcpy(targetP + i*blocklen, targetP, blocklen*sizeof(double));
       }
+    } break;
     case CPLXSXP: {
       const Rcomplex *restrict sourceP = COMPLEX(source);
       Rcomplex *restrict targetP = COMPLEX(target);
