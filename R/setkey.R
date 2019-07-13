@@ -222,21 +222,23 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.las
     if ( (length(order) != 1L && length(order) != length(by)) || !all(order %in% c(1L, -1L)) )
       stop("x is a list, length(order) must be either =1 or =length(by) and each value should be 1 or -1 for each column in 'by', corresponding to ascending or descending order, respectively. If length(order) == 1, it will be recycled to length(by).")
     if (length(order) == 1L) order = rep(order, length(by))
-    is_cplx = vapply_1b(x, is.complex)
+    nn = length(x)
+    is_cplx = vapply_1b(by, function(i) {
+      if (i < 1L) stop("'by' must be positive, received ", i, call. = FALSE)
+      if (i > nn) stop("'by' must be in [1,", nn, "], received ", i, call. = FALSE)
+      is.complex(x[[i]])
+    })
     if (any(is_cplx)) {
-      by_order = order(by)
-      out_x = vector('list', length(x) + sum(is_cplx))
-      # order of order matches by, but is_cplx doesn't
-      order = rep(order, is_cplx[by_order] + 1L)
+      out_x = vector('list', length(by) + sum(is_cplx))
+      order = rep(order, is_cplx + 1L)
       j = 1L
-      for (i in seq_along(is_cplx)) {
-        by_i = by_order[i]
-        if (is_cplx[by_i]) {
-          out_x[[j]] = Re(x[[by_i]])
-          out_x[[j + 1L]] = Im(x[[by_i]])
+      for (i in seq_along(by)) {
+        if (is_cplx[i]) {
+          out_x[[j]] = Re(x[[by[i]]])
+          out_x[[j + 1L]] = Im(x[[by[i]]])
           j = j + 2L
         } else {
-          out_x[[j]] = x[[by_i]]
+          out_x[[j]] = x[[by[i]]]
           j = j + 1L
         }
       }

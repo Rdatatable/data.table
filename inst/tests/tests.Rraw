@@ -2776,7 +2776,7 @@ test(988, unique(dt, by='B'), dt[!duplicated(df[, 'B'])])
 test(989, unique(dt, by='C'), dt[!duplicated(df[, 'C'])])
 test(990, unique(dt, by=c('B', 'C')), dt[!duplicated(df[, c('B', 'C')])])
 test(991, unique(dt, by=NULL), dt[!duplicated(df)])
-test(991.1, unique(dt, by=4), error="'by' value 4 out of range.*1,3")
+test(991.1, unique(dt, by=4), error="'by' must be in [1,3], received 4")
 test(991.2, unique(dt, by=c(1,3.1)), error="'by' is type 'double' and one or more items in it are not whole integers")
 test(991.3, unique(dt, by=2:3), dt[!duplicated(df[,c('B','C')])])
 test(991.4, unique(dt, by=c('C','D','E')), error="'by' contains 'D' which is not a column name")
@@ -11692,11 +11692,11 @@ test(1844.2, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,4))  # prior to v1.12.0 th
 # now with two NAs in that 2-group covers forder.c:forder line 1269 starting: else if (nalast == 0 && tmp==-2) {
 DT = data.table(c("a","a","a","b","b"),c(2,1,3,NA,NA))
 test(1844.3, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,0))
-DT = data.table((0+0i)^(-3:3), 7:1)
-test(1844.4, forder(DT,V1,V2), error="Column 1 of by= (1) is type 'complex', not yet supported")
-test(1844.5, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'complex', not yet supported")
-DT = data.table((0+0i)^(-3:3), c(5L,5L,1L,2L,2L,2L,2L))
-test(1844.6, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'complex', not yet supported")
+DT = data.table(as.raw(0:6), 7:1)
+test(1844.4, forder(DT,V1,V2), error="Column 1 of by= (1) is type 'raw', not yet supported")
+test(1844.5, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'raw', not yet supported")
+DT = data.table(as.raw(0:6), c(5L,5L,1L,2L,2L,2L,2L))
+test(1844.6, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'raw', not yet supported")
 
 # fix for non-equi joins issue #1991. Thanks to Henrik for the nice minimal example.
 d1 <- data.table(x = c(rep(c("b", "a", "c"), each = 3), c("a", "b")), y = c(rep(c(1, 3, 6), 3), 6, 6), id = 1:11)
@@ -15211,7 +15211,8 @@ test(2062.2, d1[d2, on = .(a <= s, b >= s)][, .(a, b)], ans)
 # forderv (and downstream functions) handles complex vector input, part of #3690
 DT = data.table(
   a = c(1L, 1L, 8L, 2L, 1L, 9L, 3L, 2L, 6L, 6L),
-  b = c(3+9i, 10+5i, 8+2i, 10+4i, 3+3i, 1+2i, 5+1i, 8+1i, 8+2i, 10+6i)
+  b = c(3+9i, 10+5i, 8+2i, 10+4i, 3+3i, 1+2i, 5+1i, 8+1i, 8+2i, 10+6i),
+  c = 6
 )
 test(2063.1, DT[order(a, b)], DT[base::order(a, b)])
 test(2063.2, DT[order(a, -b)], DT[base::order(a, -b)])

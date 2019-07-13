@@ -442,7 +442,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   nrow = length(VECTOR_ELT(DT,0));
   for (int i=0; i<LENGTH(by); i++) {
     if (INTEGER(by)[i] < 1 || INTEGER(by)[i] > length(DT))
-      error("'by' value %d out of range [1,%d]", INTEGER(by)[i], length(DT));
+      error("Internal error: 'by' out of range should have been caught earlier"); // #nocov
     if ( nrow != length(VECTOR_ELT(DT, INTEGER(by)[i]-1)) )
       error("Column %d is length %d which differs from length of column 1 (%d)\n", INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
   }
