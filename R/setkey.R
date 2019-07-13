@@ -197,17 +197,6 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.las
     by = NULL
     if ( !missing(order) && (length(order) != 1L || !(order %in% c(1L, -1L))) )
       stop("x is a single vector, length(order) must be =1 and it's value should be 1 (ascending) or -1 (descending).")
-    # we don't expect users to need complex sorting extensively
-    #   or on massive data sets, so we take the approach of
-    #   splitting a complex vector into its real & imaginary parts
-    #   and using the regular forderv machinery to sort; a baremetal
-    #   implementation would at root do the same, but the approach
-    #   here is a bit more slapdash with respect to memory efficiency
-    if (is.complex(x)) {
-      x = list(Re(x), Im(x))
-      by = 1:2
-      order = rep(order, 2L)
-    }
   } else {
     if (!length(x)) return(integer(0L)) # to be consistent with base::order. this'll make sure forderv(NULL) will result in error
                        # (as base does) but forderv(data.table(NULL)) and forderv(list()) will return integer(0L))
@@ -223,29 +212,6 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.las
     if ( (length(order) != 1L && length(order) != length(by)) || !all(order %in% c(1L, -1L)) )
       stop("x is a list, length(order) must be either =1 or =length(by) and each value should be 1 or -1 for each column in 'by', corresponding to ascending or descending order, respectively. If length(order) == 1, it will be recycled to length(by).")
     if (length(order) == 1L) order = rep(order, length(by))
-    nn = length(x)
-    is_cplx = vapply_1b(by, function(i) {
-      if (i < 1L) stop("'by' must be positive, received ", i, call. = FALSE)
-      if (i > nn) stop("'by' must be in [1,", nn, "], received ", i, call. = FALSE)
-      is.complex(x[[i]])
-    })
-    if (any(is_cplx)) {
-      out_x = vector('list', length(by) + sum(is_cplx))
-      order = rep(order, is_cplx + 1L)
-      j = 1L
-      for (i in seq_along(by)) {
-        if (is_cplx[i]) {
-          out_x[[j]] = Re(x[[by[i]]])
-          out_x[[j + 1L]] = Im(x[[by[i]]])
-          j = j + 2L
-        } else {
-          out_x[[j]] = x[[by[i]]]
-          j = j + 1L
-        }
-      }
-      x = out_x; rm(out_x)
-      by = seq_along(x)
-    }
   }
   order = as.integer(order)
   .Call(Cforder, x, by, retGrp, sort, order, na.last)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE

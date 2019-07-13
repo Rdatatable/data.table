@@ -440,11 +440,58 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   if (!isInteger(by) || !LENGTH(by)) error("DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // seq_along(x) at R level
   if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by)) error("Either 'ascArg' is not integer or its length (%d) is different to 'by's length (%d)", LENGTH(ascArg), LENGTH(by));
   nrow = length(VECTOR_ELT(DT,0));
+  int n_cplx = 0;
   for (int i=0; i<LENGTH(by); i++) {
     if (INTEGER(by)[i] < 1 || INTEGER(by)[i] > length(DT))
-      error("Internal error: 'by' out of range should have been caught earlier"); // #nocov
+      error("'by' value %d out of range [1,%d]", INTEGER(by)[i], length(DT));
     if ( nrow != length(VECTOR_ELT(DT, INTEGER(by)[i]-1)) )
       error("Column %d is length %d which differs from length of column 1 (%d)\n", INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
+    if (TYPEOF(VECTOR_ELT(DT, i)) == CPLXSXP) {
+      n_cplx++;
+    }
+  }
+  if (n_cplx) {
+    // we don't expect users to need complex sorting extensively
+    //   or on massive data sets, so we take the approach of
+    //  splitting a complex vector into its real & imaginary parts
+    //  and using the regular forderv machinery to sort; a baremetal
+    //  implementation would at root do the same, but the approach
+    //  here is a bit more slapdash with respect to memory efficiency
+    //  (seen clearly here at C from the 3+2*n_cplx PROTECT() calls)
+    int n_out = length(by) + n_cplx;
+    SEXP new_dt = PROTECT(allocVector(VECSXP, n_out)); n_protect++;
+    SEXP new_asc = PROTECT(allocVector(INTSXP, n_out)); n_protect++;
+    SEXP new_by = PROTECT(allocVector(INTSXP, n_out)); n_protect++;
+    int j = 0;
+    for (int i=0; i<length(by); i++) {
+      int by_idx = INTEGER(by)[i]-1;
+      if (TYPEOF(VECTOR_ELT(DT, by_idx)) == CPLXSXP) {
+        SEXP realPart = PROTECT(allocVector(REALSXP, nrow)); n_protect++;
+        SEXP cplxPart = PROTECT(allocVector(REALSXP, nrow)); n_protect++;
+        double *pre = REAL(realPart);
+        double *pim = REAL(cplxPart);
+        Rcomplex *pz = COMPLEX(VECTOR_ELT(DT, by_idx));
+        for (int i = 0; i < nrow; i++) {
+          pre[i] = pz[i].r;
+          pim[i] = pz[i].i;
+        }
+        SET_VECTOR_ELT(new_dt, j, realPart);
+        SET_VECTOR_ELT(new_dt, j+1, cplxPart);
+        INTEGER(new_asc)[j] = INTEGER(ascArg)[i];
+        INTEGER(new_asc)[j+1] = INTEGER(ascArg)[i];
+        INTEGER(new_by)[j] = j+1;
+        INTEGER(new_by)[j+1] = j+2;
+        j += 2;
+      } else {
+        SET_VECTOR_ELT(new_dt, j, VECTOR_ELT(DT, by_idx));
+        INTEGER(new_asc)[j] = INTEGER(ascArg)[i];
+        INTEGER(new_by)[j] = j+1;
+        j += 1;
+      }
+    }
+    DT = new_dt;
+    ascArg = new_asc;
+    by = new_by;
   }
 
   if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL) error("retGrp must be TRUE or FALSE");

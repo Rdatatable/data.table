@@ -2783,7 +2783,7 @@ test(988, unique(dt, by='B'), dt[!duplicated(df[, 'B'])])
 test(989, unique(dt, by='C'), dt[!duplicated(df[, 'C'])])
 test(990, unique(dt, by=c('B', 'C')), dt[!duplicated(df[, c('B', 'C')])])
 test(991, unique(dt, by=NULL), dt[!duplicated(df)])
-test(991.1, unique(dt, by=4), error="'by' must be in [1,3], received 4")
+test(991.1, unique(dt, by=4), error="'by' value 4 out of range.*1,3")
 test(991.2, unique(dt, by=c(1,3.1)), error="'by' is type 'double' and one or more items in it are not whole integers")
 test(991.3, unique(dt, by=2:3), dt[!duplicated(df[,c('B','C')])])
 test(991.4, unique(dt, by=c('C','D','E')), error="'by' contains 'D' which is not a column name")
@@ -13158,9 +13158,9 @@ setnames(DT, '.xi')
 setkey(DT, NULL)
 test(1962.037, setkey(DT, .xi),
      error = "x contains a column called '.xi'")
-DT = data.table(a = 1+3i)
+DT = data.table(a = as.raw(0))
 test(1962.038, setkey(DT, a),
-     error = "Column 'a' is type 'complex'")
+     error = "Column 'a' is type 'raw'")
 
 test(1962.039, is.sorted(3:1, by = 'x'),
      error = 'x is vector but')
@@ -13216,8 +13216,8 @@ test(1962.064, setorderv(copy(DT)),
 test(1962.065, setorderv(DT, 'c'), error = 'some columns are not in the data.table')
 setnames(DT, 1L, '.xi')
 test(1962.066, setorderv(DT, 'b'), error = "x contains a column called '.xi'")
-test(1962.067, setorderv(data.table(a = 1+3i), 'a'),
-     error = "Column 'a' is type 'complex'")
+test(1962.067, setorderv(data.table(a = as.raw(0)), 'a'),
+     error = "Column 'a' is type 'raw'")
 
 DT = data.table(
   color = c("yellow", "red", "green", "red", "green", "red",
@@ -13743,7 +13743,7 @@ test(1984.05, DT[ , sum(b), keyby = c, verbose = TRUE],
 ### hitting byval = eval(bysub, setattr(as.list(seq_along(xss)), ...)
 test(1984.06, DT[1:3, sum(a), by=b:c], data.table(b=10:8, c=1:3, V1=1:3))
 test(1984.07, DT[, sum(a), by=call('sin',pi)], error='must evaluate to a vector or a list of vectors')
-test(1984.08, DT[, sum(a), by=1+3i],           error='column or expression.*type complex')
+test(1984.08, DT[, sum(a), by=as.raw(0)],           error='column or expression.*type raw')
 test(1984.09, DT[, sum(a), by=.(1,1:2)],       error='The items.*list are length [(]1,2[)].*Each must be length 10; .*rows in x.*after subsetting')
 options('datatable.optimize' = Inf)
 test(1984.10, DT[ , 1, by = .(a %% 2), verbose = TRUE],
@@ -14755,14 +14755,14 @@ dt1 <- data.table(int = 1L:10L,
                   bool = c(rep(FALSE, 9), TRUE),
                   char = letters[1L:10L],
                   fact = factor(letters[1L:10L]),
-                  complex = as.complex(1:5))
+                  raw = as.raw(1:5))
 dt2 <- data.table(int = 1L:5L,
                   doubleInt = as.numeric(1:5),
                   realDouble = seq(0.5, 2.5, by = 0.5),
                   bool = TRUE,
                   char = letters[1L:5L],
                   fact = factor(letters[1L:5L]),
-                  complex = as.complex(1:5))
+                  raw = as.raw(1:5))
 if (test_bit64) {
   dt1[, int64 := as.integer64(c(1:9, 3e10))]
   dt2[, int64 := as.integer64(c(1:4, 3e9))]
@@ -14779,8 +14779,8 @@ test(2044.08, nrow(dt1[dt2, on="fact==fact",             verbose=TRUE]), nrow(dt
 if (test_bit64) {
   test(2044.09, nrow(dt1[dt2, on = "int64==int64",       verbose=TRUE]), nrow(dt2), output="No coercion needed")
 }
-test(2044.10, dt1[dt2, on = "int==complex"],   error = "i.complex is type complex which is not supported by data.table join")
-test(2044.11, dt1[dt2, on = "complex==int"],   error = "x.complex is type complex which is not supported by data.table join")
+test(2044.10, dt1[dt2, on = "int==raw"],   error = "i.raw is type raw which is not supported by data.table join")
+test(2044.11, dt1[dt2, on = "raw==int"],   error = "x.raw is type raw which is not supported by data.table join")
 # incompatible types
 test(2044.20, dt1[dt2, on="bool==int"],        error="Incompatible join types: x.bool (logical) and i.int (integer)")
 test(2044.21, dt1[dt2, on="bool==doubleInt"],  error="Incompatible join types: x.bool (logical) and i.doubleInt (double)")
@@ -15270,15 +15270,11 @@ test(2064.07, DT[ , .N, by=z], data.table(z=unq_z, N=c(2L, 2L, 1L, 1L)))
 # test(2964.10, DT
 test(2964.11, dcast(DT, z ~ grp, value.var='v', fill=0),
      data.table(z=unq_z, `1`=c(3, 4, 5, 0), `2`=c(1, 1, 0, 9), key='z'))
-test(2964.12, frank(DT$z), c(1.5, 1.5, 3.5, 5, 6))
-test(2964.13, frank(DT$z, ties.method='max'), c(2L, 2L, 4L, 5L, 6L))
+test(2964.12, frank(DT$z), c(1.5, 1.5, 3.5, 3.5, 5, 6))
+test(2964.13, frank(DT$z, ties.method='max'), c(2L, 2L, 4L, 4L, 5L, 6L))
 test(2964.14, frank(-DT$z, ties.method='min'), c(5L, 5L, 3L, 3L, 2L, 1L))
 test(2964.15, DT[ , rowid(z, grp)], rep(1L, 6L))
 test(2964.16, DT[ , rowid(z)], c(1:2, 1:2, 1L, 1L))
-
-DT1 = data.table(z = c(0+1i, 2-3i, 4+1i))
-DT2 = data.table(z = c(2-3i, 0+1i, 0+0i))
-DT1[DT2, on = 'z']
 
 ###################################
 #  Add new tests above this line  #
