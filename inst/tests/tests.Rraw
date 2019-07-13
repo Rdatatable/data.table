@@ -92,6 +92,10 @@ for (s in sugg) {
 }
 
 # Control options in case user set them. The user's values are restored at the end of this file.
+# R 3.1.0 had a NULL default for these 3. Set to FALSE now for R 3.1.0, otherwise the options(oldOptions) fails at the end of this file.
+if (is.null(options()$warnPartialMatchArgs))   options(warnPartialMatchArgs=FALSE)
+if (is.null(options()$warnPartialMatchAttr))   options(warnPartialMatchAttr=FALSE)
+if (is.null(options()$warnPartialMatchDollar)) options(warnPartialMatchDollar=FALSE)
 oldOptions = options(
   datatable.optimize = Inf,
   datatable.verbose = FALSE,
