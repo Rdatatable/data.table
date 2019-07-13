@@ -43,7 +43,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   }
   if (!is.data.table(x)) stop("x is not a data.table")
   if (!is.character(cols)) stop("cols is not a character vector. Please see further information in ?setkey.")
-  if (physical && identical(attr(x,".data.table.locked"),TRUE)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
+  if (physical && identical(attr(x, ".data.table.locked", exact=TRUE),TRUE)) stop("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
   if (!length(cols)) {
     warning("cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning.")
     setattr(x,"sorted",NULL)
@@ -64,15 +64,15 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (identical(key(x),cols)) {
     if (!physical) {
       ## create index as integer() because already sorted by those columns
-      if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
-      setattr(attr(x,"index",exact=TRUE), paste0("__", cols, collapse=""), integer())
+      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
+      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), integer())
     }
     return(invisible(x))
   } else if(identical(head(key(x), length(cols)), cols)){
     if (!physical) {
       ## create index as integer() because already sorted by those columns
-      if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
-      setattr(attr(x,"index",exact=TRUE), paste0("__", cols, collapse=""), integer())
+      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
+      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), integer())
     } else {
       ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
       setattr(x,"sorted",cols)
@@ -101,8 +101,8 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     o = getindex(x, newkey)
   }
   if (!physical) {
-    if (is.null(attr(x,"index",exact=TRUE))) setattr(x, "index", integer())
-    setattr(attr(x,"index",exact=TRUE), paste0("__", cols, collapse=""), o)
+    if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
+    setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), o)
     return(invisible(x))
   }
   setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
@@ -120,10 +120,10 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   invisible(x)
 }
 
-key = function(x) attr(x,"sorted",exact=TRUE)
+key = function(x) attr(x, "sorted", exact=TRUE)
 
 indices = function(x, vectors = FALSE) {
-  ans = names(attributes(attr(x,"index",exact=TRUE)))
+  ans = names(attributes(attr(x, "index", exact=TRUE)))
   if (is.null(ans)) return(ans) # otherwise character() gets returned by next line
   ans = gsub("^__","",ans)     # the leading __ is internal only, so remove that in result
   if (isTRUE(vectors))
@@ -133,7 +133,7 @@ indices = function(x, vectors = FALSE) {
 
 getindex = function(x, name) {
   # name can be "col", or "col1__col2", or c("col1","col2")
-  ans = attr(attr(x, 'index'), paste0("__",name,collapse=""), exact=TRUE)
+  ans = attr(attr(x, 'index', exact=TRUE), paste0("__",name,collapse=""), exact=TRUE)
   if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) {
     stop("Internal error: index '",name,"' exists but is invalid")   # nocov
   }
@@ -415,11 +415,11 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
     if (sorted) {
       if (!is.atomic(y)) stop("'sorted' is TRUE but element ", i, " is non-atomic, which can't be sorted; try setting sorted = FALSE")
       o = forderv(y, retGrp=TRUE)
-      thisdups = attr(o,'maxgrpn')>1L
+      thisdups = attr(o, 'maxgrpn', exact=TRUE)>1L
       if (thisdups) {
         dups = TRUE
-        if (length(o)) l[[i]] = if (unique) y[o[attr(o,"starts")]] else y[o]
-        else if (unique) l[[i]] = y[attr(o,"starts")]  # test 1525.5
+        if (length(o)) l[[i]] = if (unique) y[o[attr(o, "starts", exact=TRUE)]] else y[o]
+        else if (unique) l[[i]] = y[attr(o, "starts", exact=TRUE)]  # test 1525.5
       } else {
         if (length(o)) l[[i]] = y[o]
       }
