@@ -113,6 +113,12 @@ SEXP setcolorder(SEXP x, SEXP o);
 // forder.c
 int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(void *p, int i);
+// for sorting of complex values
+typedef struct cplxTwiddled {
+  uint64_t re;
+  uint64_t im;
+} cplxTwiddled;
+cplxTwiddled ctwiddle(Rcomplex *p, int i);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 bool need2utf8(SEXP x, int n);
 SEXP isReallyReal(SEXP);

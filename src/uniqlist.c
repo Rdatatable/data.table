@@ -1,5 +1,4 @@
 #include "data.table.h"
-#include <complex.h>
 
 // DONE: return 'uniqlist' as a vector (same as duplist) and write a separate function to get group sizes
 // Also improvements for numeric type with a hack of checking unsigned int (to overcome NA/NaN/Inf/-Inf comparisons) (> 2x speed-up)
@@ -124,6 +123,15 @@ SEXP uniqlist(SEXP l, SEXP order)
             // to be stored, ii) many short-circuit early before the if (!b) anyway (negating benefit) and iii) we may not have needed LHS this time so logic would be complex.
           }
           break;
+        case CPLXSXP: {
+          Rcomplex *pz = COMPLEX(v);
+          b = (unsigned long long)pz[thisi].r == (unsigned long long)pz[previ].r &&
+            (unsigned long long)pz[thisi].i == (unsigned long long)pz[previ].i;
+          if (!b) {
+            cplxTwiddled thisz=ctwiddle(pz, thisi), prevz=ctwiddle(pz, previ);
+            b = thisz.re == prevz.re && thisz.im == prevz.im;
+          }
+        } break;
         default :
           error("Type '%s' not supported", type2char(TYPEOF(v)));  // # nocov
         }
@@ -317,6 +325,11 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
           double *xd = REAL(v);
           b = i64[j] ? ((int64_t *)xd)[thisi] >= ((int64_t *)xd)[previ] :
                        dtwiddle(xd, thisi) >= dtwiddle(xd, previ);
+        } break;
+        case CPLXSXP: {
+          Rcomplex *pz = COMPLEX(v);
+          cplxTwiddled thisz=ctwiddle(pz, thisi), prevz=ctwiddle(pz, previ);
+          b = thisz.re >= prevz.re || (thisz.re == thisz.re && thisz.im >= thisz.im);
         } break;
         default:
           error("Type '%s' not supported", type2char(TYPEOF(v)));  // # nocov
