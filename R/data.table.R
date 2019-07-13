@@ -1122,11 +1122,11 @@ replace_order = function(isub, verbose, env) {
         if (!length(leftcols)) stop("column(s) not found: ", paste(ansvars[wna],collapse=", "))
         xcols = w[!wna]
         xcolsAns = which(!wna)
-        ivars = names(i)
-        ivars[leftcols] = names(x)[rightcols]
-        w2 = chmatch(ansvars[wna], ivars)
+        map = c(seq_along(i), leftcols)   # this map is to handle dups in leftcols, #3635
+        names(map) = c(names(i), names(x)[rightcols])
+        w2 = map[ansvars[wna]]
         if (any(w2na <- is.na(w2))) {
-          ivars = paste0("i.",ivars)
+          ivars = paste0("i.",names(i))   # ivars is only used in this branch
           ivars[leftcols] = names(i)[leftcols]
           w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
           if (any(w2na <- is.na(w2))) {

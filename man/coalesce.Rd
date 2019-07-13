@@ -7,17 +7,16 @@ Fill in missing values in a vector by successively pulling from candidate vector
 Written in C, and multithreaded for numeric and factor types.
 }
 \usage{
-  coalesce(x, \dots)
+  coalesce(\dots)
 }
 \arguments{
-  \item{x}{ An atomic vector. Or, if \dots is missing, x may be a \code{list} of atomic vectors. }
-  \item{\dots}{ Vectors of same class as \code{x} to be used successively as replacements for missing values of \code{x}; singletons are also accepted. }
+  \item{\dots}{ A set of same-class vectors. These vectors can be supplied as separate arguments or as a single plain list, data.table or data.frame, see examples. }
 }
 \details{
-Factor type is supported only when factor levels are equal.
+Factor type is supported only when the factor levels of each item are equal.
 }
 \value{
-Atomic vector of same type as \code{x} provided on input, having \code{NA} values replaced by corresponding non-\code{NA} values of arguments provided to \dots.
+Atomic vector of the same type and length as the first vector, having \code{NA} values replaced by corresponding non-\code{NA} values from the other vectors.
 }
 \examples{
 x = c(11L, NA, 13L, NA, 15L, NA)
