@@ -15214,12 +15214,38 @@ DT = data.table(
   b = c(3+9i, 10+5i, 8+2i, 10+4i, 3+3i, 1+2i, 5+1i, 8+1i, 8+2i, 10+6i),
   c = 6
 )
-test(2063.1, DT[order(a, b)], DT[base::order(a, b)])
-test(2063.2, DT[order(a, -b)], DT[base::order(a, -b)])
-test(2063.3, forderv(DT$b, order = 1L), base::order(DT$b))
-test(2063.4, forderv(DT$b, order = -1L), base::order(-DT$b))
-test(2063.5, forderv(DT, by = 2:1), forderv(DT[ , 2:1]))
-test(2063.6, forderv(DT, by = 2:1, order = c(1L, -1L)), DT[order(b, -a), which = TRUE])
+test(2063.01, DT[order(a, b)], DT[base::order(a, b)])
+test(2063.02, DT[order(a, -b)], DT[base::order(a, -b)])
+test(2063.03, forderv(DT$b, order = 1L), base::order(DT$b))
+test(2063.04, forderv(DT$b, order = -1L), base::order(-DT$b))
+test(2063.05, forderv(DT, by = 2:1), forderv(DT[ , 2:1]))
+test(2063.06, forderv(DT, by = 2:1, order = c(1L, -1L)), DT[order(b, -a), which = TRUE])
+
+# downstreams of forder
+DT = data.table(
+  z = c(0, 0, 1, 1, 2, 3) + c(1, 1, 2, 2, 3, 4)*1i,
+  grp = rep(1:2, 3L),
+  v = c(3, 1, 4, 1, 5, 9)
+)
+unq_z = 0:3 + (1:4)*1i
+test(2063.07, DT[ , .N, by=z], data.table(z=unq_z, N=c(2L, 2L, 1L, 1L)))
+# uniqlist.c needs work
+# test(2063.08, DT[ , .N, keyby = z],
+# DT = setkey(copy(DT[.N:1]), z)
+# test(2963.09, key(DT), 'z')
+# test(2963.10, DT
+test(2963.11, dcast(DT, z ~ grp, value.var='v', fill=0),
+     data.table(z=unq_z, `1`=c(3, 4, 5, 0), `2`=c(1, 1, 0, 9), key='z'))
+test(2963.12, frank(DT$z), c(1.5, 1.5, 3.5, 5, 6))
+test(2963.13, frank(DT$z, ties.method='max'), c(2L, 2L, 4L, 5L, 6L))
+test(2963.14, frank(-DT$z, ties.method='min'), c(5L, 5L, 3L, 3L, 2L, 1L))
+test(2963.15, DT[ , rowid(z, grp)], rep(1L, 6L))
+test(1963.16, DT[ , rowid(z)], c(1:2, 1:2, 1L, 1L))
+
+DT1 = data.table(z = c(0+1i, 2-3i, 4+1i))
+DT2 = data.table(z = c(2-3i, 0+1i, 0+0i))
+DT1[DT2, on = 'z']
+
 
 ###################################
 #  Add new tests above this line  #
