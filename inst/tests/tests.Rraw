@@ -15242,7 +15242,6 @@ ll = list(1:2, NULL, 3:4)
 test(2063.4, transpose(ll, ignore=TRUE), list(c(1L, 3L), c(2L, 4L)))
 options(old)
 
-<<<<<<< HEAD
 # forderv (and downstream functions) handles complex vector input, part of #3690
 DT = data.table(
   a = c(1L, 1L, 8L, 2L, 1L, 9L, 3L, 2L, 6L, 6L),
@@ -15265,24 +15264,26 @@ DT = data.table(
 unq_z = 0:3 + (1:4)*1i
 test(2064.07, DT[ , .N, by=z], data.table(z=unq_z, N=c(2L, 2L, 1L, 1L)))
 test(2064.08, DT[ , .N, keyby = z], data.table(z=unq_z, N=c(2L, 2L, 1L, 1L), key='z'))
-test(2964.09, dcast(DT, z ~ grp, value.var='v', fill=0),
+test(2064.09, dcast(DT, z ~ grp, value.var='v', fill=0),
      data.table(z=unq_z, `1`=c(3, 4, 5, 0), `2`=c(1, 1, 0, 9), key='z'))
-test(2964.10, frank(DT$z), c(1.5, 1.5, 3.5, 3.5, 5, 6))
-test(2964.12, frank(DT$z, ties.method='max'), c(2L, 2L, 4L, 4L, 5L, 6L))
-test(2964.12, frank(-DT$z, ties.method='min'), c(5L, 5L, 3L, 3L, 2L, 1L))
-test(2964.13, DT[ , rowid(z, grp)], rep(1L, 6L))
-test(2964.14, DT[ , rowid(z)], c(1:2, 1:2, 1L, 1L))
-test(2964.15, rleid(c(1i, 1i, 1i, 0, 0, 1-1i, 2+3i, 2+3i)), rep(1:4, c(3:1, 2L)))
+test(2064.10, frank(DT$z), c(1.5, 1.5, 3.5, 3.5, 5, 6))
+test(2064.12, frank(DT$z, ties.method='max'), c(2L, 2L, 4L, 4L, 5L, 6L))
+test(2064.12, frank(-DT$z, ties.method='min'), c(5L, 5L, 3L, 3L, 2L, 1L))
+test(2064.13, DT[ , rowid(z, grp)], rep(1L, 6L))
+test(2064.14, DT[ , rowid(z)], c(1:2, 1:2, 1L, 1L))
+test(2064.15, rleid(c(1i, 1i, 1i, 0, 0, 1-1i, 2+3i, 2+3i)), rep(1:4, c(3:1, 2L)))
 
 # #1444 -- support for ordering tables with complex columns
 DT = data.table(a = 2:1, z = 0 + (1:0)*1i)
-test(2064.1, setkey(copy(DT), a), data.table(a=1:2, z=complex(0, 1:0), key='a'))
-test(2064.2, DT[ , abs(z), by=a], data.table(a=2:1, V1=c(0, 1)))
+test(2064.16, setkey(copy(DT), a), data.table(a=1:2, z=0+ (0:1)*1i, key='a'))
+test(2064.17, DT[ , abs(z), by=a], data.table(a=2:1, V1=c(1, 0)))
+test(2064.18, setkey(copy(DT), z), data.table(a=1:2, z=0+ (0:1)*1i, key='z'))
+
 # raw continues not to be supported
 DT = data.table(ID=2:1, r=as.raw(0:1))
-test(2064.3, setkey(DT, ID), error="Item 2 of list is type 'raw'")
+test(2064.18, setkey(DT, ID), error="Item 2 of list is type 'raw'")
 # setreordervec triggers !isNewList branch for coverage
-test(2064.4, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
+test(2064.19, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
 
 # DT1 = data.table(z = c(0+1i, 2-3i, 4+1i))
 # DT2 = data.table(z = c(2-3i, 0+1i, 0+0i))
