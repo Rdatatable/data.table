@@ -129,7 +129,7 @@
     # TRUE
     ```
     
-19. Sorting now extended to complex vectors, [#1703](https://github.com/Rdatatable/data.table/issues/1703). Consistent with `base::order`, sorting is done lexicographically (`z1<z2` means `Re(z1) < Re(z2) | (Re(z1) == Re(z2) & Im(z1) < Im(z2))`).
+19. Sorting now extended to complex vectors, [#1703](https://github.com/Rdatatable/data.table/issues/1703). Consistent with `base::order`, sorting is done lexicographically (`z1<z2` means `Re(z1) < Re(z2) | (Re(z1) == Re(z2) & Im(z1) < Im(z2))`). By extension, this means that complex columns can now be used in sorting keys; a related bug ([#1444](https://github.com/Rdatatable/data.table/issues/1444); thanks to @atalikami for the report) was preventing keys to be set on even the non-complex columns of a table.
 
 #### BUG FIXES
 
