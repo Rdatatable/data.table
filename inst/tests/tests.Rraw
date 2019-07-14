@@ -15267,7 +15267,7 @@ test(2064.08, DT[ , .N, keyby = z], data.table(z=unq_z, N=c(2L, 2L, 1L, 1L), key
 test(2064.09, dcast(DT, z ~ grp, value.var='v', fill=0),
      data.table(z=unq_z, `1`=c(3, 4, 5, 0), `2`=c(1, 1, 0, 9), key='z'))
 test(2064.10, frank(DT$z), c(1.5, 1.5, 3.5, 3.5, 5, 6))
-test(2064.12, frank(DT$z, ties.method='max'), c(2L, 2L, 4L, 4L, 5L, 6L))
+test(2064.11, frank(DT$z, ties.method='max'), c(2L, 2L, 4L, 4L, 5L, 6L))
 test(2064.12, frank(-DT$z, ties.method='min'), c(5L, 5L, 3L, 3L, 2L, 1L))
 test(2064.13, DT[ , rowid(z, grp)], rep(1L, 6L))
 test(2064.14, DT[ , rowid(z)], c(1:2, 1:2, 1L, 1L))
@@ -15278,12 +15278,13 @@ DT = data.table(a = 2:1, z = 0 + (1:0)*1i)
 test(2064.16, setkey(copy(DT), a), data.table(a=1:2, z=0+ (0:1)*1i, key='a'))
 test(2064.17, DT[ , abs(z), by=a], data.table(a=2:1, V1=c(1, 0)))
 test(2064.18, setkey(copy(DT), z), data.table(a=1:2, z=0+ (0:1)*1i, key='z'))
+test(2064.19, setorder(DT, z), data.table(a=1:2, z=0+ (0:1)*1i))
 
 # raw continues not to be supported
 DT = data.table(ID=2:1, r=as.raw(0:1))
-test(2064.18, setkey(DT, ID), error="Item 2 of list is type 'raw'")
+test(2064.20, setkey(DT, ID), error="Item 2 of list is type 'raw'")
 # setreordervec triggers !isNewList branch for coverage
-test(2064.19, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
+test(2064.21, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
 
 # DT1 = data.table(z = c(0+1i, 2-3i, 4+1i))
 # DT2 = data.table(z = c(2-3i, 0+1i, 0+0i))

@@ -204,6 +204,8 @@ static union {
   unsigned long long ull;
   long long ll;
   SEXP s;
+  Rcomplex z;
+  cplxTwiddled zull;
 } ival, xval;
 
 static uint64_t i64twiddle(void *p, int i)
@@ -299,7 +301,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     // ilow and iupp now surround the group in ic, too
   }
     break;
-  case STRSXP :
+  case STRSXP : {
     if (op[col] != EQ) error("Only '==' operator is supported for columns of type %s.", type2char(TYPEOF(xc)));
     ival.s = ENC2UTF8(STRING_ELT(ic,ir));
     while(xlow < xupp-1) {
@@ -338,7 +340,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       xval.s = ENC2UTF8(STRING_ELT(ic, o ? o[mid]-1 : mid));
       if (xval.s == ival.s) tmpupp=mid; else ilow=mid;   // see above re ==
     }
-    break;
+  }  break;
   case REALSXP : {
     double *dic = REAL(ic);
     double *dxc = REAL(xc);
@@ -405,6 +407,70 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     // ilow and iupp now surround the group in ic, too
   }
     break;
+  case CPLXSXP : {
+    Rcomplex *dic = COMPLEX(ic);
+    Rcomplex *dxc = COMPLEX(xc);
+    ival.zull = ctwiddle(dic, ir);
+    while(xlow < xupp-1) {
+      int mid = xlow + (xupp-xlow)/2;
+      xval.zull = ctwiddle(dxc, XIND(mid));
+      if (xval.zull.re<ival.zull.re ||
+          (xval.zull.re == ival.zull.re && xval.zull.im < ival.zull.im)) {
+        xlow=mid;
+      } else if (xval.zull.re>ival.zull.re ||
+                 (xval.zull.re = ival.zull.re && xval.zull.im > ival.zull.im)) {
+        xupp=mid;
+      } else { // xval.zull == ival.zull
+        tmplow = mid;
+        tmpupp = mid;
+        while(tmplow<xupp-1) {
+          int mid = tmplow + (xupp-tmplow)/2;
+          xval.zull = ctwiddle(dxc, XIND(mid));
+          if (xval.zull.re == ival.zull.re && xval.zull.im == ival.zull.im) tmplow=mid; else xupp=mid;
+        }
+        while(xlow<tmpupp-1) {
+          int mid = xlow + (tmpupp-xlow)/2;
+          xval.zull = ctwiddle(dxc, XIND(mid));
+          if (xval.zull.re == ival.zull.re && xval.zull.im == ival.zull.im) tmpupp=mid; else xlow=mid;
+        }
+        break;
+      }
+    }
+    if (col>-1 && op[col] != EQ) {
+      Rboolean isivalNA = (Rboolean)(ISNAN(dic[ir].r) || ISNAN(dic[ir].i));
+      switch (op[col]) {
+      case LE : if (!isivalNA) xlow = xlowIn; break;
+      case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
+      case GE : if (!isivalNA) xupp = xuppIn; break;
+      case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
+      }
+      // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
+      if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (ISNAN(dxc[XIND(xlow+1)].r) || ISNAN(dxc[XIND(xlow+1)].i))) {
+        tmplow = xlow; tmpupp = xupp;
+        while (tmplow < tmpupp-1) {
+          int mid = tmplow + (tmpupp-tmplow)/2;
+          xval.z = COMPLEX(xc)[XIND(mid)];
+          if (ISNAN(xval.z.r) || ISNAN(xval.z.i)) tmplow = mid; else tmpupp = mid;
+        }
+        xlow = tmplow; // tmplow is the index of last NA value
+      }
+    }
+    tmplow = lir;
+    tmpupp = lir;
+    if (col>-1) {
+      while(tmplow<iupp-1) {
+        int mid = tmplow + (iupp-tmplow)/2;
+        xval.zull = ctwiddle(dic, o ? o[mid]-1 : mid);
+        if (xval.zull.re == ival.zull.re && xval.zull.im == ival.zull.im) tmplow=mid; else iupp=mid;
+      }
+      while(ilow<tmpupp-1) {
+        int mid = ilow + (tmpupp-ilow)/2;
+        xval.zull = ctwiddle(dic, o ? o[mid]-1 : mid);
+        if (xval.zull.re == ival.zull.re && xval.zull.im == ival.zull.im) tmpupp=mid; else ilow=mid;
+      }
+    }
+    // ilow and iupp now surround the group in ic, too
+  }  break;
   default:
     error("Type '%s' not supported as key column", type2char(TYPEOF(xc)));
   }

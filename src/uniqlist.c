@@ -28,17 +28,19 @@ SEXP uniqlist(SEXP l, SEXP order)
 
   if (ncol==1) {
 
+// unfortunately no equality method overloaded for Rcomplex, compare by components
+#define TEST_ELEM_NEQ if(elem != prev
+#define TEST_ELEM_NEQ_C if((elem.r != prev.r || elem.i != prev.i)
+
 #define COMPARE1                                                                 \
       prev = *vd;                                                                \
       for (int i=1; i<nrow; i++) {                                               \
-        elem = *++vd;                                                            \
-        if (elem!=prev
+        elem = *++vd;
 
 #define COMPARE1_VIA_ORDER                                                       \
       prev = vd[*o -1];                                                          \
       for (int i=1; i<nrow; i++) {                                               \
-        elem = vd[*++o -1];                                                      \
-        if (elem!=prev
+        elem = vd[*++o -1];
 
 #define COMPARE2                                                                 \
                         ) {                                                      \
@@ -59,19 +61,19 @@ SEXP uniqlist(SEXP l, SEXP order)
       int prev, elem;
       if (via_order) {
         // ad hoc by (order passed in)
-        COMPARE1_VIA_ORDER COMPARE2
+        COMPARE1_VIA_ORDER TEST_ELEM_NEQ COMPARE2
       } else {
         // e.g. by=key(DT)[1]
-        COMPARE1           COMPARE2
+        COMPARE1           TEST_ELEM_NEQ COMPARE2
       }
     } break;
     case STRSXP : {
       const SEXP *vd=STRING_PTR(v);
       SEXP prev, elem;
       if (via_order) {
-        COMPARE1_VIA_ORDER && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
+        COMPARE1_VIA_ORDER TEST_ELEM_NEQ && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
       } else {
-        COMPARE1           && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2
+        COMPARE1           TEST_ELEM_NEQ && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2
       }
     } break;
     case REALSXP : {
@@ -80,15 +82,33 @@ SEXP uniqlist(SEXP l, SEXP order)
       // grouping by integer64 makes sense (ids). grouping by float supported but a good use-case for that is harder to imagine
       if (getNumericRounding_C()==0 /*default*/ || inherits(v, "integer64")) {
         if (via_order) {
-          COMPARE1_VIA_ORDER COMPARE2
+          COMPARE1_VIA_ORDER TEST_ELEM_NEQ COMPARE2
         } else {
-          COMPARE1           COMPARE2
+          COMPARE1           TEST_ELEM_NEQ COMPARE2
         }
       } else {
         if (via_order) {
-          COMPARE1_VIA_ORDER && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
+          COMPARE1_VIA_ORDER TEST_ELEM_NEQ && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
         } else {
-          COMPARE1           && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
+          COMPARE1           TEST_ELEM_NEQ && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
+        }
+      }
+    } break;
+    case CPLXSXP : {
+      const Rcomplex *vd=(const Rcomplex *)COMPLEX(v);
+      Rcomplex prev, elem;
+      if (getNumericRounding_C()==0) {
+        if (via_order) {
+          COMPARE1_VIA_ORDER TEST_ELEM_NEQ_C COMPARE2
+        } else {
+          COMPARE1           TEST_ELEM_NEQ_C COMPARE2
+        }
+      } else {
+        cplxTwiddled elemz=ctwiddle(&elem, 0), prevz=ctwiddle(&prev, 0);
+        if (via_order) {
+          COMPARE1_VIA_ORDER TEST_ELEM_NEQ_C && (elemz.re != prevz.re || elemz.im != prevz.im) COMPARE2
+        } else {
+          COMPARE1           TEST_ELEM_NEQ_C && (elemz.re != prevz.re || elemz.im != prevz.im) COMPARE2
         }
       }
     } break;
