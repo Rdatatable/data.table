@@ -993,7 +993,7 @@ replace_order = function(isub, verbose, env) {
       newnames = NULL
       suppPrint = identity
       if (length(av) && av[1L] == ":=") {
-        if (identical(attr(x,".data.table.locked"),TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
+        if (identical(attr(x, ".data.table.locked", exact=TRUE), TRUE)) stop(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
         suppPrint = function(x) { .global$print=address(x); x }
         # Suppress print when returns ok not on error, bug #2376. Thanks to: http://stackoverflow.com/a/13606880/403310
         # All appropriate returns following this point are wrapped; i.e. return(suppPrint(x)).
@@ -1122,11 +1122,11 @@ replace_order = function(isub, verbose, env) {
         if (!length(leftcols)) stop("column(s) not found: ", paste(ansvars[wna],collapse=", "))
         xcols = w[!wna]
         xcolsAns = which(!wna)
-        ivars = names(i)
-        ivars[leftcols] = names(x)[rightcols]
-        w2 = chmatch(ansvars[wna], ivars)
+        map = c(seq_along(i), leftcols)   # this map is to handle dups in leftcols, #3635
+        names(map) = c(names(i), names(x)[rightcols])
+        w2 = map[ansvars[wna]]
         if (any(w2na <- is.na(w2))) {
-          ivars = paste0("i.",ivars)
+          ivars = paste0("i.",names(i))   # ivars is only used in this branch
           ivars[leftcols] = names(i)[leftcols]
           w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
           if (any(w2na <- is.na(w2))) {
@@ -1393,7 +1393,7 @@ replace_order = function(isub, verbose, env) {
           cat("Finding group sizes from the positions (can be avoided to save RAM) ... ")
           flush.console()  # for windows
         }
-        f__ = attr(o__, "starts")
+        f__ = attr(o__, "starts", exact=TRUE)
         len__ = uniqlengths(f__, xnrow)
         if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
         if (!bysameorder && !keyby) {
@@ -1741,7 +1741,7 @@ replace_order = function(isub, verbose, env) {
     if (any(names(x)[cols] %chin% key(x)))
       setkey(x,NULL)
     # fixes #1479. Take care of secondary indices, TODO: cleaner way of doing this
-    attrs = attr(x, 'index')
+    attrs = attr(x, 'index', exact=TRUE)
     skeys = names(attributes(attrs))
     if (!is.null(skeys)) {
       hits  = unlist(lapply(paste0("__", names(x)[cols]), function(x) grep(x, skeys, fixed = TRUE)))
@@ -1899,7 +1899,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     if (!is.logical(xj))
       all.logical = FALSE
     if (length(levels(xj)) > 0L || !(is.numeric(xj) || is.complex(xj) || is.logical(xj)) ||
-        (!is.null(cl <- attr(xj, "class")) && any(cl %chin%
+        (!is.null(cl <- attr(xj, "class", exact=TRUE)) && any(cl %chin%
         c("Date", "POSIXct", "POSIXlt"))))
       non.numeric = TRUE
     if (!is.atomic(xj))
@@ -2108,7 +2108,7 @@ transform.data.table = function (`_data`, ...)
   inx = chmatch(tags, names(`_data`))
   matched = !is.na(inx)
   if (any(matched)) {
-    if (isTRUE(attr(`_data`, ".data.table.locked", TRUE))) {
+    if (isTRUE(attr(`_data`, ".data.table.locked", exact=TRUE))) {
       setattr(`_data`, ".data.table.locked", NULL) # fix for #1641, now covered by test 104.2
     }
     `_data`[,inx[matched]] = e[matched]
@@ -2348,7 +2348,7 @@ point = function(to, to_idx, from, from_idx) {
       setattr(ans, "sorted", head(key(ans), keylength)) ## keep what can be kept
     }
     ## take care of attributes.
-    indices = names(attributes(attr(ans, "index")))
+    indices = names(attributes(attr(ans, "index", exact=TRUE)))
     for(index in indices) {
       indexcols = strsplit(index, split = "__")[[1L]][-1L]
       indexlength = which.first(!indexcols %chin% cols) - 1L
@@ -2357,13 +2357,13 @@ point = function(to, to_idx, from, from_idx) {
       if (reducedindex %chin% indices || !indexlength) {
         ## Either reduced index already present or no columns of the original index remain.
         ## Drop the original index completely
-        setattr(attr(ans, "index", exact = TRUE), index, NULL)
-      } else if(length(attr(attr(ans, "index"), index))) {
+        setattr(attr(ans, "index", exact=TRUE), index, NULL)
+      } else if(length(attr(attr(ans, "index", exact=TRUE), index, exact=TRUE))) {
         ## index is not length 0. Drop it since shortening could lead to spurious reordering in discarded columns (#2336)
-        setattr(attr(ans, "index", exact = TRUE), index, NULL)
+        setattr(attr(ans, "index", exact=TRUE), index, NULL)
       } else {
         ## rename index to reducedindex
-        names(attributes(attr(ans, "index")))[names(attributes(attr(ans, "index"))) == index] = reducedindex
+        names(attributes(attr(ans, "index")))[names(attributes(attr(ans, "index", exact=TRUE))) == index] = reducedindex
       }
     }
   } else { # retain.key == FALSE
@@ -2411,7 +2411,7 @@ setattr = function(x,name,value) {
   # User can also call `attr<-` function directly, but that copies (maybe just when NAMED>0, which is always for data.frame, I think).  See "Confused by NAMED" thread on r-devel 24 Nov 2011.
   # We tend to use setattr() internally in data.table.R because often we construct a data.table and it hasn't
   # got names yet. setnames() is the user interface which checks integrity and doesn't let you drop names for example.
-  if (name=="names" && is.data.table(x) && length(attr(x,"names")) && !is.null(value))
+  if (name=="names" && is.data.table(x) && length(attr(x, "names", exact=TRUE)) && !is.null(value))
     setnames(x,value)
     # Using setnames here so that truelength of names can be retained, to carry out integrity checks such as not
     # creating names longer than the number of columns of x, and to change the key, too
@@ -2484,10 +2484,10 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   m = chmatch(names(x)[i], key(x))
   w = which(!is.na(m))
   if (length(w))
-    .Call(Csetcharvec, attr(x,"sorted"), m[w], new[w])
+    .Call(Csetcharvec, attr(x, "sorted", exact=TRUE), m[w], new[w])
 
   # update secondary keys
-  idx = attr(x,"index")
+  idx = attr(x, "index", exact=TRUE)
   for (k in names(attributes(idx))) {
     tt = strsplit(k,split="__")[[1L]][-1L]
     m = chmatch(names(x)[i], tt)
@@ -2495,12 +2495,12 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     if (length(w)) {
       tt[m[w]] = new[w]
       newk = paste0("__",tt,collapse="")
-      setattr(idx, newk, attr(idx, k))
+      setattr(idx, newk, attr(idx, k, exact=TRUE))
       setattr(idx, k, NULL)
     }
   }
 
-  .Call(Csetcharvec, attr(x,"names"), as.integer(i), new)
+  .Call(Csetcharvec, attr(x, "names", exact=TRUE), as.integer(i), new)
   invisible(x)
 }
 
@@ -2776,7 +2776,7 @@ rowidv = function(x, cols=seq_along(x), prefix=NULL) {
     cols = as.integer(cols)
   }
   xorder = forderv(x, by=cols, sort=FALSE, retGrp=TRUE) # speedup on char with sort=FALSE
-  xstart = attr(xorder, 'start')
+  xstart = attr(xorder, 'starts', exact=TRUE)
   if (!length(xorder)) xorder = seq_along(x[[1L]])
   ids = .Call(Cfrank, xorder, xstart, uniqlengths(xstart, length(xorder)), "sequence")
   if (!is.null(prefix))
@@ -2846,7 +2846,7 @@ isReallyReal = function(x) {
   #'        ATTENTION: If nothing else helps, an auto-index is created on x unless options prevent this.
   if(getOption("datatable.optimize") < 3L) return(NULL) ## at least level three optimization required.
   if (!is.call(isub)) return(NULL)
-  if (!is.null(attr(x, '.data.table.locked'))) return(NULL)  # fix for #958, don't create auto index on '.SD'.
+  if (!is.null(attr(x, '.data.table.locked', exact=TRUE))) return(NULL)  # fix for #958, don't create auto index on '.SD'.
   ## a list of all possible operators with their translations into the 'on' clause
   validOps = list(op = c("==", "%in%", "%chin%"),
                    on = c("==", "==",   "=="))
@@ -2955,7 +2955,7 @@ isReallyReal = function(x) {
     idx = NULL
     for (cand in candidates){
       if (all(names(i) %chin% cand) && length(cand) == length(i)){
-        idx = attr(attr(x, "index"), paste0("__", cand, collapse = ""))
+        idx = attr(attr(x, "index", exact=TRUE), paste0("__", cand, collapse = ""), exact = TRUE)
         idxCols = cand
         break
       }
@@ -2972,7 +2972,7 @@ isReallyReal = function(x) {
     setindexv(x, names(i))
     if (verbose) {cat(timetaken(last.started.at),"\n");flush.console()}
     if (verbose) {cat("Optimized subsetting with index '", paste0(names(i), collapse = "__"),"'\n",sep="");flush.console()}
-    idx = attr(attr(x, "index"), paste0("__", names(i), collapse = ""))
+    idx = attr(attr(x, "index", exact=TRUE), paste0("__", names(i), collapse = ""), exact=TRUE)
     idxCols = names(i)
   }
   if(!is.null(idxCols)){
