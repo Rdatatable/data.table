@@ -224,7 +224,7 @@
 
 12. The test suite of 9k tests now runs with three R options on: `warnPartialMatchArgs`, `warnPartialMatchAttr`, and `warnPartialMatchDollar`. This ensures that we don't rely on partial argument matching in internal code, for robustness and efficiency, and so that users can turn these options on for their code in production, [#3664](https://github.com/Rdatatable/data.table/issues/3664). Thanks to Vijay Lulla for the suggestion, and Michael Chirico for fixing 48 internal calls to `attr()` which were missing `exact=TRUE`, for example. Thanks to R-core for adding these options to R 2.6.0 (Oct 2007).
 
-13. `test.data.table()` wasn't careful about the user option `datatable.integer64` which allows users to specify how `fread` treats columns it thinks could be 64-bit integers, [#3683](https://github.com/Rdatatable/data.table/issues/3683). Thanks @xiaguoxin for pointing this out.
+13. `test.data.table()` could fail if the `datatable.integer64` user option was set, [#3683](https://github.com/Rdatatable/data.table/issues/3683). Thanks @xiaguoxin for reporting.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
