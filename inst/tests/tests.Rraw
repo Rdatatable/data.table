@@ -15248,6 +15248,16 @@ ll = list(1:2, NULL, 3:4)
 test(2063.4, transpose(ll, ignore=TRUE), list(c(1L, 3L), c(2L, 4L)))
 options(old)
 
+# integer / double Date merge should retain attributes, #3679
+dbl_date = structure(17896.0, class = "Date")
+int_date = structure(17896L, class = "Date")
+x = data.table(date = int_date, value = 10, key = 'date')
+i = data.table(date = dbl_date, key = 'date')
+test(2064.1, x[i, class(date), verbose=TRUE], 'Date',
+             output="Coercing double column i.date (which contains no fractions) to type integer to match type of x.date")
+test(2064.2, i[x, class(date), verbose=TRUE], 'Date',
+             output="Coerced integer column i.date to type double for join to match type of x.date")
+
 
 ###################################
 #  Add new tests above this line  #
