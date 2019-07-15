@@ -15217,8 +15217,6 @@ d2 = data.table(r = 1:5, s = seq(0L, 20L, 5L))
 test(2062.1, d1[d2, on = .(a <= s, b >= s), j = .SD],   ans<-data.table(a=INT(0,5,10,10,15,20), b=INT(0,5,10,10,15,20)))
 test(2062.2, d1[d2, on = .(a <= s, b >= s)][, .(a, b)], ans)
 
-
-=======
 # #3664 -- explicitly test some commonly-used partial argument matches, see ?options
 old = options(warnPartialMatchArgs=FALSE,
               warnPartialMatchAttr=FALSE,
