@@ -25,7 +25,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   // Check if same type and do en-listing of singleton
   if(ta != tb)
   {
-    if(ta == VECSXP && (tb == INTSXP || tb == REALSXP || tb == LGLSXP || tb == CPLXSXP))
+    if(ta == VECSXP && (tb == INTSXP || tb == REALSXP || tb == LGLSXP || tb == CPLXSXP || tb == STRSXP))
     {
       if(len2 == 1)
       {
@@ -34,7 +34,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         SET_VECTOR_ELT(b, 0, tmp);
         tb = TYPEOF(b);
       }
-    } else if(tb == VECSXP && (ta == INTSXP || ta == REALSXP || ta == LGLSXP || ta == CPLXSXP)){
+    } else if(tb == VECSXP && (ta == INTSXP || ta == REALSXP || ta == LGLSXP || ta == CPLXSXP || ta == STRSXP)){
       if(len1 == 1)
       {
         SEXP tmp = PROTECT(duplicate(a));stack_size++;
