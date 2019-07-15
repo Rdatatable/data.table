@@ -142,7 +142,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   fill.default = NULL
   if (is.null(fun.call)) {
     oo = forderv(dat, by=varnames, retGrp=TRUE)
-    if (attr(oo, 'maxgrpn') > 1L) {
+    if (attr(oo, 'maxgrpn', exact=TRUE) > 1L) {
       message("Aggregate function missing, defaulting to 'length'")
       fun.call = quote(length)
     }
@@ -159,7 +159,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   }
   order_ = function(x) {
     o = forderv(x, retGrp=TRUE, sort=TRUE)
-    idx = attr(o, 'starts')
+    idx = attr(o, 'starts', exact=TRUE)
     if (!length(o)) o = seq_along(x)
     o[idx] # subsetVector retains attributes, using R's subset for now
   }
