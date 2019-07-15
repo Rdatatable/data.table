@@ -102,6 +102,7 @@ oldOptions = options(
   datatable.alloccol = 1024L,
   datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
   datatable.rbindlist.check = NULL,
+  datatable.integer64 = "integer64",
   warnPartialMatchArgs = TRUE,    # ensure we don't rely on partial argument matching in internal code, #3664
   warnPartialMatchAttr = TRUE,
   warnPartialMatchDollar = TRUE
@@ -2544,9 +2545,11 @@ if (test_bit64) {
   DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
   DT[117, r2:="3.14A"]
   fwrite(DT,f<-tempfile())
-  test(899.1, fread(f,verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")
-  test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2")), verbose=TRUE),
+  test(899.1, fread(f, verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")
+  test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"), integer64="a2", double=c("a3","b2")), verbose=TRUE),
               DT, output="Rereading 0 columns due to out-of-sample type exceptions")
+  test(899.3, fread(f, integer64="character", select=c("a","b","c")), DT[, .(a, b=as.character(b), c)])
+  # leaving integer64='character' version of 899.1,899.2 until #2749 is fixed
   unlink(f)
 }
 
@@ -6300,12 +6303,15 @@ quote"\n2,should be ok\n'),
 quote','should be ok')))
 
 if (test_bit64) {
-    # quoted multiline (scrambled data thanks to #810)
-    test(1449, fread(testDir("quoted_multiline.csv"))[c(1,43:44),c(1,22:24),with=FALSE],
-           data.table(GPMLHTLN=as.integer64(c("3308386085360","3440245203140","1305220146734")),
-                      BLYBZ = c(0L,4L,6L),
-                      ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE","",""),
-                      JKCRUUBAVQ = c("",".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ","")))
+  # quoted multiline (scrambled data thanks to #810)
+  DT = data.table(
+    GPMLHTLN = as.integer64(c("3308386085360", "3440245203140", "1305220146734")),
+    BLYBZ = c(0L,4L,6L),
+    ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE", "", ""),
+    JKCRUUBAVQ = c("", ".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ", "")
+  )
+  test(1449.1, fread(testDir("quoted_multiline.csv"))[c(1L, 43:44), c(1L, 22:24)], DT)
+  test(1449.2, fread(testDir("quoted_multiline.csv"), integer64='character', select = 'GPMLHTLN')[c(1L, 43:44)][[1L]], DT[ , as.character(GPMLHTLN)])
 }
 
 # Fix for #927
