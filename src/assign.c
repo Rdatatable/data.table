@@ -1013,7 +1013,6 @@ void writeNA(SEXP v, const int from, const int n)
   } break;
   case CPLXSXP: {
     Rcomplex *vd = COMPLEX(v);
-    Rcomplex NA_CPLX = {NA_REAL, NA_REAL};
     for (int i=from; i<=to; ++i) vd[i] = NA_CPLX;
   } break;
   case STRSXP :

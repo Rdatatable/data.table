@@ -144,7 +144,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           REAL(VECTOR_ELT(SDall,j))[0] = NA_REAL;
           break;
         case CPLXSXP : {
-          Rcomplex NA_CPLX = {NA_REAL, NA_REAL};
           COMPLEX(VECTOR_ELT(SDall, j))[0] = NA_CPLX;
         } break;
         case STRSXP :
@@ -172,7 +171,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           REAL(VECTOR_ELT(xSD,j))[0] = NA_REAL;
           break;
         case CPLXSXP : {
-          Rcomplex NA_CPLX = {NA_REAL, NA_REAL};
           COMPLEX(VECTOR_ELT(xSD, j))[0] = NA_CPLX;
         }  break;
         case STRSXP :
@@ -438,11 +436,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           for (int r=0; r<maxn; ++r) td[r] = NA_REAL;
         } break;
         case CPLXSXP : {
-        Rcomplex *td = COMPLEX(target) + thisansloc;
-        Rcomplex NA_CPLX = {NA_REAL, NA_REAL};
-        for (int r=0; r<maxn; ++r) td[r] = NA_CPLX;
-        //for (int r=0; r<,maxn; ++r) { creal(td[r]) = NA_REAL; cimag(td[r]) = NA_REAL; }
-      } break;
+          Rcomplex *td = COMPLEX(target) + thisansloc;
+          for (int r=0; r<maxn; ++r) td[r] = NA_CPLX;
+        } break;
         case STRSXP :
           for (int r=0; r<maxn; ++r) SET_STRING_ELT(target,thisansloc+r,NA_STRING);
           break;
