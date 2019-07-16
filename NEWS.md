@@ -192,6 +192,8 @@
 
 24. `column not found` could incorrectly occur in rare non-equi-join cases, [#3635](https://github.com/Rdatatable/data.table/issues/3635). Thanks to @UweBlock for the report.
 
+25. Complex columns used in `j` during grouping would get mangled, [#3639](https://github.com/Rdatatable/data.table/issues/3639). A related bug prevented assigning complex values using `:=` except for full-column plonks. We still do not support grouping `by` a complex column. Thanks to @eliocamp for filing the bug report.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
