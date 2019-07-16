@@ -102,6 +102,7 @@ oldOptions = options(
   datatable.alloccol = 1024L,
   datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
   datatable.rbindlist.check = NULL,
+  datatable.integer64 = "integer64",
   warnPartialMatchArgs = TRUE,    # ensure we don't rely on partial argument matching in internal code, #3664
   warnPartialMatchAttr = TRUE,
   warnPartialMatchDollar = TRUE
@@ -1919,7 +1920,8 @@ test(670, DT[,z:=sum(y),keyby=x], ans)
 DT = data.table(x=1:2, y=1:6)
 test(671, DT[,z:=sum(y),keyby="x"], ans)
 DT = data.table(x=1:2, y=1:6)
-test(672, DT[,z:=sum(y),keyby=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)), warning=":= keyby not straightforward character column names or list() of column names, treating as a by")
+test(672, DT[,z:=sum(y),keyby=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)),
+          warning="The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=")
 DT = data.table(x=1:2, y=1:6)
 test(673, DT[,z:=sum(y),by=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)))
 DT = data.table(x=1:2, y=1:6)
@@ -2544,9 +2546,11 @@ if (test_bit64) {
   DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
   DT[117, r2:="3.14A"]
   fwrite(DT,f<-tempfile())
-  test(899.1, fread(f,verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")
-  test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2")), verbose=TRUE),
+  test(899.1, fread(f, verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")
+  test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"), integer64="a2", double=c("a3","b2")), verbose=TRUE),
               DT, output="Rereading 0 columns due to out-of-sample type exceptions")
+  test(899.3, fread(f, integer64="character", select=c("a","b","c")), DT[, .(a, b=as.character(b), c)])
+  # leaving integer64='character' version of 899.1,899.2 until #2749 is fixed
   unlink(f)
 }
 
@@ -6300,12 +6304,15 @@ quote"\n2,should be ok\n'),
 quote','should be ok')))
 
 if (test_bit64) {
-    # quoted multiline (scrambled data thanks to #810)
-    test(1449, fread(testDir("quoted_multiline.csv"))[c(1,43:44),c(1,22:24),with=FALSE],
-           data.table(GPMLHTLN=as.integer64(c("3308386085360","3440245203140","1305220146734")),
-                      BLYBZ = c(0L,4L,6L),
-                      ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE","",""),
-                      JKCRUUBAVQ = c("",".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ","")))
+  # quoted multiline (scrambled data thanks to #810)
+  DT = data.table(
+    GPMLHTLN = as.integer64(c("3308386085360", "3440245203140", "1305220146734")),
+    BLYBZ = c(0L,4L,6L),
+    ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE", "", ""),
+    JKCRUUBAVQ = c("", ".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ", "")
+  )
+  test(1449.1, fread(testDir("quoted_multiline.csv"))[c(1L, 43:44), c(1L, 22:24)], DT)
+  test(1449.2, fread(testDir("quoted_multiline.csv"), integer64='character', select = 'GPMLHTLN')[c(1L, 43:44)][[1L]], DT[ , as.character(GPMLHTLN)])
 }
 
 # Fix for #927
@@ -15242,89 +15249,99 @@ ll = list(1:2, NULL, 3:4)
 test(2063.4, transpose(ll, ignore=TRUE), list(c(1L, 3L), c(2L, 4L)))
 options(old)
 
+# integer / double Date merge should retain attributes, #3679
+dbl_date = structure(17896.0, class = "Date")
+int_date = structure(17896L, class = "Date")
+x = data.table(date = int_date, value = 10, key = 'date')
+i = data.table(date = dbl_date, key = 'date')
+test(2064.1, x[i, class(date), verbose=TRUE], 'Date',
+             output="Coercing double column i.date (which contains no fractions) to type integer to match type of x.date")
+test(2064.2, i[x, class(date), verbose=TRUE], 'Date',
+             output="Coerced integer column i.date to type double for join to match type of x.date")
+
 # fifelse, #3657
 test_vec = -5L:5L < 0L
 test_vec_na = c(test_vec, NA)
 out_vec = rep(1:0, 5:6)
 out_vec_na = c(out_vec, NA_integer_)
-test(2064.001, fifelse(test_vec, 1L, 0L), out_vec)
-test(2064.002, fifelse(test_vec, 1, 0), as.numeric(out_vec))
-test(2064.003, fifelse(test_vec, TRUE, FALSE), as.logical(out_vec))
-test(2064.004, fifelse(test_vec, "1", "0"), as.character(out_vec))
-test(2064.005, fifelse(test_vec_na, TRUE, NA), c(rep(TRUE,5L), rep(NA,7L)))
-test(2064.006, fifelse(test_vec, rep(1L,11L), rep(0L,11L)), out_vec)
-test(2064.007, fifelse(test_vec, rep(1L,11L), 0L), out_vec)
-test(2064.008, fifelse(test_vec, 1L, rep(0L,11L)), out_vec)
-test(2064.009, fifelse(test_vec, rep(1L,11L), rep(0L,10L)), error = "Length of 'no' must be 1 or equal to length of 'test' (11).")
-test(2064.010, fifelse(test_vec, rep(1,10L), rep(0,11L)), error = "Length of 'yes' must be 1 or equal to length of 'test' (11).")
-test(2064.011, fifelse(test_vec, rep(TRUE,10L), rep(FALSE,10L)), error = "Length of 'yes' and 'no' must be 1 or equal to length of 'test' (11).")
-test(2064.012, fifelse(0:1, rep(TRUE,2L), rep(FALSE,2L)), error = "Argument 'test' must be logical.")
-test(2064.013, fifelse(test_vec, TRUE, "FALSE"), error = "'yes' is of type logical but 'no' is of type character. Please make sure candidate replacements are of the same type.")
-test(2064.014, fifelse(test_vec, list(1),list(2,4)), error = "Length of 'no' must be 1 or equal to length of 'test' (11).")
-test(2064.015, fifelse(test_vec, list(1,3),list(2,4)), error = "Length of 'yes' and 'no' must be 1 or equal to length of 'test' (11).")
-test(2064.016, fifelse(test_vec, list(1), 0), as.list(as.numeric(out_vec)))
-test(2064.017, fifelse(test_vec, 1, list(0)), as.list(as.numeric(out_vec)))
+test(2065.001, fifelse(test_vec, 1L, 0L), out_vec)
+test(2065.002, fifelse(test_vec, 1, 0), as.numeric(out_vec))
+test(2065.003, fifelse(test_vec, TRUE, FALSE), as.logical(out_vec))
+test(2065.004, fifelse(test_vec, "1", "0"), as.character(out_vec))
+test(2065.005, fifelse(test_vec_na, TRUE, NA), c(rep(TRUE,5L), rep(NA,7L)))
+test(2065.006, fifelse(test_vec, rep(1L,11L), rep(0L,11L)), out_vec)
+test(2065.007, fifelse(test_vec, rep(1L,11L), 0L), out_vec)
+test(2065.008, fifelse(test_vec, 1L, rep(0L,11L)), out_vec)
+test(2065.009, fifelse(test_vec, rep(1L,11L), rep(0L,10L)), error = "Length of 'no' must be 1 or equal to length of 'test' (11).")
+test(2065.010, fifelse(test_vec, rep(1,10L), rep(0,11L)), error = "Length of 'yes' must be 1 or equal to length of 'test' (11).")
+test(2065.011, fifelse(test_vec, rep(TRUE,10L), rep(FALSE,10L)), error = "Length of 'yes' and 'no' must be 1 or equal to length of 'test' (11).")
+test(2065.012, fifelse(0:1, rep(TRUE,2L), rep(FALSE,2L)), error = "Argument 'test' must be logical.")
+test(2065.013, fifelse(test_vec, TRUE, "FALSE"), error = "'yes' is of type logical but 'no' is of type character. Please make sure candidate replacements are of the same type.")
+test(2065.014, fifelse(test_vec, list(1),list(2,4)), error = "Length of 'no' must be 1 or equal to length of 'test' (11).")
+test(2065.015, fifelse(test_vec, list(1,3),list(2,4)), error = "Length of 'yes' and 'no' must be 1 or equal to length of 'test' (11).")
+test(2065.016, fifelse(test_vec, list(1), 0), as.list(as.numeric(out_vec)))
+test(2065.017, fifelse(test_vec, 1, list(0)), as.list(as.numeric(out_vec)))
 ## Jan 1 - 5, 2011
 date_vec = as.Date(14975:14979, origin = '1970-01-01')
-test(2064.018,
+test(2065.018,
      fifelse(date_vec == "2011-01-01", date_vec - 1L, date_vec),
      c(date_vec[1L] - 1L, date_vec[2:5]))
-test(2064.019,
+test(2065.019,
      fifelse(factor(letters[1:5]) %in% c("a","b","c"), factor(letters[1:5]), factor(NA)),
      factor(c("a","b","c",NA,NA),levels = letters[1:5]))
-test(2064.020, fifelse(test_vec_na, 1L, 0L), out_vec_na)
-test(2064.021, fifelse(test_vec_na, rep(1L,12L), 0L), out_vec_na)
-test(2064.022, fifelse(test_vec_na, rep(1L,12L), rep(0L,12L)), out_vec_na)
-test(2064.023, fifelse(test_vec_na, 1L, rep(0L,12L)), out_vec_na)
-test(2064.024, fifelse(test_vec_na, 1, 0), as.numeric(out_vec_na))
-test(2064.025, fifelse(test_vec_na, rep(1,12L), 0), as.numeric(out_vec_na))
-test(2064.026, fifelse(test_vec_na, rep(1,12L), rep(0,12L)), as.numeric(out_vec_na))
-test(2064.027, fifelse(test_vec_na, 1, rep(0,12L)), as.numeric(out_vec_na))
-test(2064.028, fifelse(test_vec_na, TRUE, rep(FALSE,12L)), as.logical(out_vec_na))
-test(2064.029, fifelse(test_vec_na, rep(TRUE,12L), FALSE), as.logical(out_vec_na))
-test(2064.030, fifelse(test_vec_na, rep(TRUE,12L), rep(FALSE,12L)), as.logical(out_vec_na))
-test(2064.031, fifelse(test_vec_na, "1", rep("0",12L)), as.character(out_vec_na))
-test(2064.032, fifelse(test_vec_na, rep("1",12L), "0"), as.character(out_vec_na))
-test(2064.033, fifelse(test_vec_na, rep("1",12L), rep("0",12L)), as.character(out_vec_na))
-test(2064.034, fifelse(test_vec_na, "1", "0"), as.character(out_vec_na))
-test(2064.035, fifelse(test_vec, as.Date("2011-01-01"), FALSE), error = "'yes' is of type double but 'no' is of type logical. Please make sure candidate replacements are of the same type.")
-test(2064.036, fifelse(test_vec_na, 1+0i, 0+0i), as.complex(out_vec_na))
-test(2064.037, fifelse(test_vec_na, rep(1+0i,12L), 0+0i), as.complex(out_vec_na))
-test(2064.038, fifelse(test_vec_na, rep(1+0i,12L), rep(0+0i,12L)), as.complex(out_vec_na))
-test(2064.039, fifelse(test_vec_na, 1+0i, rep(0+0i,12L)), as.complex(out_vec_na))
-test(2064.040, fifelse(test_vec, as.raw(0), as.raw(1)), error = "Type raw is not supported.")
-test(2064.041, fifelse(TRUE,1,as.Date("2019-07-07")), error = "'yes' has different class than 'no'. Please make sure that candidate replacements have the same class.")
-test(2064.042, fifelse(TRUE,1L,factor(letters[1])), error = "'yes' has different class than 'no'. Please make sure that candidate replacements have the same class.")
-test(2064.043, fifelse(TRUE, list(1:5), list(5:1)), list(1:5))
-test(2064.044, fifelse(as.logical(NA), list(1:5), list(5:1)), list(NA_integer_))
-test(2064.045, fifelse(FALSE, list(1:5), list(5:1)), list(5:1))
-test(2064.046, fifelse(TRUE, data.table(1:5), data.table(5:1)), data.table(1:5))
-test(2064.047, fifelse(FALSE, data.table(1:5), data.table(5:1)), data.table(5:1))
-test(2064.048, fifelse(TRUE, data.frame(1:5), data.frame(5:1)), data.frame(1:5))
-test(2064.049, fifelse(FALSE, data.frame(1:5), data.frame(5:1)), data.frame(5:1))
-test(2064.050, fifelse(c(TRUE,FALSE), list(1:5,6:10), list(10:6,5:1)), list(1:5,5:1))
-test(2064.051, fifelse(c(NA,TRUE), list(1:5,6:10), list(10:6,5:1)), list(NA_integer_,6:10))
-test(2064.052, fifelse(c(FALSE,TRUE), list(1:5,6:10), list(10:6,5:1)), list(10:6,6:10))
-test(2064.053, fifelse(c(NA,TRUE), list(1:5), list(10:6,5:1)), list(NA_integer_,1:5))
-test(2064.054, fifelse(c(NA,TRUE), list(1:5,6:10), list(5:1)), list(NA_integer_,6:10))
-test(2064.055, fifelse(c(FALSE,TRUE), list(TRUE), list(10:6,5:1)), list(10:6,TRUE))
-test(2064.056, fifelse(c(FALSE,TRUE), list(as.Date("2019-07-07")), list(10:6,5:1)), list(10:6,as.Date("2019-07-07")))
-test(2064.057, fifelse(c(FALSE,TRUE), list(factor(letters[1:5])), list(10:6,5:1)), list(10:6,factor(letters[1:5])))
-test(2064.058, fifelse(c(NA,FALSE), list(1:5), list(10:6,5:1)), list(NA_integer_,5:1))
-test(2064.059, fifelse(c(NA,FALSE), list(1:5,6:10), list(5:1)), list(NA_integer_,5:1))
-test(2064.060, fifelse(c(NA,FALSE), list(1:5), list(5:1)), list(NA_integer_,5:1))
-test(2064.061, fifelse(c(TRUE,FALSE), list(1L), 0L), list(1L,0L))
-test(2064.062, fifelse(c(TRUE,FALSE), 1L, list(0L)), list(1L,0L))
-test(2064.063,
+test(2065.020, fifelse(test_vec_na, 1L, 0L), out_vec_na)
+test(2065.021, fifelse(test_vec_na, rep(1L,12L), 0L), out_vec_na)
+test(2065.022, fifelse(test_vec_na, rep(1L,12L), rep(0L,12L)), out_vec_na)
+test(2065.023, fifelse(test_vec_na, 1L, rep(0L,12L)), out_vec_na)
+test(2065.024, fifelse(test_vec_na, 1, 0), as.numeric(out_vec_na))
+test(2065.025, fifelse(test_vec_na, rep(1,12L), 0), as.numeric(out_vec_na))
+test(2065.026, fifelse(test_vec_na, rep(1,12L), rep(0,12L)), as.numeric(out_vec_na))
+test(2065.027, fifelse(test_vec_na, 1, rep(0,12L)), as.numeric(out_vec_na))
+test(2065.028, fifelse(test_vec_na, TRUE, rep(FALSE,12L)), as.logical(out_vec_na))
+test(2065.029, fifelse(test_vec_na, rep(TRUE,12L), FALSE), as.logical(out_vec_na))
+test(2065.030, fifelse(test_vec_na, rep(TRUE,12L), rep(FALSE,12L)), as.logical(out_vec_na))
+test(2065.031, fifelse(test_vec_na, "1", rep("0",12L)), as.character(out_vec_na))
+test(2065.032, fifelse(test_vec_na, rep("1",12L), "0"), as.character(out_vec_na))
+test(2065.033, fifelse(test_vec_na, rep("1",12L), rep("0",12L)), as.character(out_vec_na))
+test(2065.034, fifelse(test_vec_na, "1", "0"), as.character(out_vec_na))
+test(2065.035, fifelse(test_vec, as.Date("2011-01-01"), FALSE), error = "'yes' is of type double but 'no' is of type logical. Please make sure candidate replacements are of the same type.")
+test(2065.036, fifelse(test_vec_na, 1+0i, 0+0i), as.complex(out_vec_na))
+test(2065.037, fifelse(test_vec_na, rep(1+0i,12L), 0+0i), as.complex(out_vec_na))
+test(2065.038, fifelse(test_vec_na, rep(1+0i,12L), rep(0+0i,12L)), as.complex(out_vec_na))
+test(2065.039, fifelse(test_vec_na, 1+0i, rep(0+0i,12L)), as.complex(out_vec_na))
+test(2065.040, fifelse(test_vec, as.raw(0), as.raw(1)), error = "Type raw is not supported.")
+test(2065.041, fifelse(TRUE,1,as.Date("2019-07-07")), error = "'yes' has different class than 'no'. Please make sure that candidate replacements have the same class.")
+test(2065.042, fifelse(TRUE,1L,factor(letters[1])), error = "'yes' has different class than 'no'. Please make sure that candidate replacements have the same class.")
+test(2065.043, fifelse(TRUE, list(1:5), list(5:1)), list(1:5))
+test(2065.044, fifelse(as.logical(NA), list(1:5), list(5:1)), list(NA_integer_))
+test(2065.045, fifelse(FALSE, list(1:5), list(5:1)), list(5:1))
+test(2065.046, fifelse(TRUE, data.table(1:5), data.table(5:1)), data.table(1:5))
+test(2065.047, fifelse(FALSE, data.table(1:5), data.table(5:1)), data.table(5:1))
+test(2065.048, fifelse(TRUE, data.frame(1:5), data.frame(5:1)), data.frame(1:5))
+test(2065.049, fifelse(FALSE, data.frame(1:5), data.frame(5:1)), data.frame(5:1))
+test(2065.050, fifelse(c(TRUE,FALSE), list(1:5,6:10), list(10:6,5:1)), list(1:5,5:1))
+test(2065.051, fifelse(c(NA,TRUE), list(1:5,6:10), list(10:6,5:1)), list(NA_integer_,6:10))
+test(2065.052, fifelse(c(FALSE,TRUE), list(1:5,6:10), list(10:6,5:1)), list(10:6,6:10))
+test(2065.053, fifelse(c(NA,TRUE), list(1:5), list(10:6,5:1)), list(NA_integer_,1:5))
+test(2065.054, fifelse(c(NA,TRUE), list(1:5,6:10), list(5:1)), list(NA_integer_,6:10))
+test(2065.055, fifelse(c(FALSE,TRUE), list(TRUE), list(10:6,5:1)), list(10:6,TRUE))
+test(2065.056, fifelse(c(FALSE,TRUE), list(as.Date("2019-07-07")), list(10:6,5:1)), list(10:6,as.Date("2019-07-07")))
+test(2065.057, fifelse(c(FALSE,TRUE), list(factor(letters[1:5])), list(10:6,5:1)), list(10:6,factor(letters[1:5])))
+test(2065.058, fifelse(c(NA,FALSE), list(1:5), list(10:6,5:1)), list(NA_integer_,5:1))
+test(2065.059, fifelse(c(NA,FALSE), list(1:5,6:10), list(5:1)), list(NA_integer_,5:1))
+test(2065.060, fifelse(c(NA,FALSE), list(1:5), list(5:1)), list(NA_integer_,5:1))
+test(2065.061, fifelse(c(TRUE,FALSE), list(1L), 0L), list(1L,0L))
+test(2065.062, fifelse(c(TRUE,FALSE), 1L, list(0L)), list(1L,0L))
+test(2065.063,
      fifelse(factor(letters[1:5]) %in% c("a","b","c"), factor(NA), factor(letters[1:5])),
      factor(c(NA,NA,NA,"d","e"),levels = letters[1:5]))
-test(2064.064, 
+test(2065.064, 
      fifelse(factor(c(letters[1:5],NA)) %in% c("a","b","c"), factor(NA), factor(letters[1:6])),
      factor(c(NA,NA,NA,"d","e","f"),levels = letters[1:6]))
-test(2064.065, 
+test(2065.065, 
      fifelse(factor(c(letters[1:5],NA)) %in% c("a","b","c"), factor(letters[1:6]), factor(NA)),
      factor(c("a","b","c",NA,NA,NA),levels = letters[1:6]))
-test(2064.066, 
+test(2065.066, 
      fifelse(factor(c(letters[1:5],NA)) %in% c("a","b","c"), factor(NA), factor(NA)),
      factor(c(NA,NA,NA,NA,NA,NA)))
 
