@@ -1756,7 +1756,7 @@ replace_order = function(isub, verbose, env) {
         setkeyv(x,cnames)  # TO DO: setkey before grouping to get memcpy benefit.
         if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
       }
-      else warning("keyby can only be used with existing columns, treating as by = ", paste(cnames, collapse = ","), "\n")
+      else warning("The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=.\n")
     }
     return(suppPrint(x))
   }
