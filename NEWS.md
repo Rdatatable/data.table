@@ -226,6 +226,8 @@
 
 13. `test.data.table()` could fail if the `datatable.integer64` user option was set, [#3683](https://github.com/Rdatatable/data.table/issues/3683). Thanks @xiaguoxin for reporting.
 
+14. The warning message when using `keyby=` together with `:=` is clearer, [#2763](https://github.com/Rdatatable/data.table/issues/2763). Thanks to @eliocamp.
+
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 
