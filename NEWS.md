@@ -94,7 +94,7 @@
 
 16. `as.data.table` now unpacks columns in a `data.frame` which are themselves a `data.frame`. This need arises when parsing JSON, a corollary in [#3369](https://github.com/Rdatatable/data.table/issues/3369#issuecomment-462662752). `data.table` does not allow columns to be objects which themselves have columns (such as `matrix` and `data.frame`), unlike `data.frame` which does. Bug fix 19 in v1.12.2 (see below) added a helpful error (rather than segfault) to detect such invalid `data.table`, and promised that `as.data.table()` would unpack these columns in the next release (i.e. this release) so that the invalid `data.table` is not created in the first place.
 
-17. `CJ` has been ported to C and parallelized, thanks to a PR by Michael Chirico, [#3596](https://github.com/Rdatatable/data.table/pull/3596). All types benefit, and as in many `data.table` operations, factors benefit more than character.
+17. `CJ` has been ported to C and parallelized, thanks to a PR by Michael Chirico, [#3596](https://github.com/Rdatatable/data.table/pull/3596). All types benefit (including newly supported complex, part of [#3690](https://github.com/Rdatatable/data.table/issues/3690)), and as in many `data.table` operations, factors benefit more than character.
 
     ```R
     # default 4 threads on a laptop with 16GB RAM and 8 logical CPU

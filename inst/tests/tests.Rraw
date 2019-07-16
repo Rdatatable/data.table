@@ -2820,23 +2820,29 @@ xx <- factor(letters[1:2], ordered=TRUE)
 yy <- sample(2L)
 yy_sort = base::sort.int(yy)
 old = options(datatable.CJ.names=FALSE)
-test(996.1, CJ(xx, yy), setkey(data.table(rep(xx, each=2L), rep(yy_sort, 2L))))
-test(996.2, CJ(a = xx, yy), setkey(data.table(a = rep(xx, each=2L), V2 = rep(yy_sort, 2L))))
+test(996.01, CJ(xx, yy), setkey(data.table(rep(xx, each=2L), rep(yy_sort, 2L))))
+test(996.02, CJ(a = xx, yy), setkey(data.table(a = rep(xx, each=2L), V2 = rep(yy_sort, 2L))))
 options(datatable.CJ.names=TRUE)
-test(996.3, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2L), yy = rep(yy_sort, 2L))))
+test(996.03, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2L), yy = rep(yy_sort, 2L))))
 options(old)
 
 # #3597 -- CJ properly informs sorted can't apply to list input
-test(996.4, CJ(list(1:2, 3L)), error = "non-atomic, which can't be sorted")
-test(996.5, CJ(list(1:2, 3), 4:6, sorted = FALSE),
+test(996.04, CJ(list(1:2, 3L)), error = "non-atomic, which can't be sorted")
+test(996.05, CJ(list(1:2, 3), 4:6, sorted = FALSE),
      data.table(V1 = list(1:2, 1:2, 1:2, 3, 3, 3), V2 = rep(4:6, 2L)))
-test(996.6, CJ(4:6, list(1:2, 3), sorted = FALSE),
+test(996.06, CJ(4:6, list(1:2, 3), sorted = FALSE),
      data.table(V1 = rep(4:6, each = 2L), V2 = rep(list(1:2, 3), 3L)))
-test(996.7, CJ(1:2, list(1:2, 3), 4:5, sorted = FALSE),
+test(996.07, CJ(1:2, list(1:2, 3), 4:5, sorted = FALSE),
      data.table(V1 = rep(1:2, each = 4L), V2 = rep(rep(list(1:2, 3), each = 2L), 2L), V3 = rep(4:5, 4L)))
 
-test(996.8, CJ(expression(1)), error = "element 1 is non-atomic")
-test(996.9, CJ(expression(2), 3, sorted = FALSE), error = "Type 'expression' not supported")
+test(996.08, CJ(expression(1)), error = "element 1 is non-atomic")
+test(996.09, CJ(expression(2), 3, sorted = FALSE), error = "Type 'expression' not supported")
+## complex input support (can't handle sorted yet)
+test(996.10, CJ(z = 0:1 + (0:1)*1i, b = 1:3, sorted = FALSE),
+     data.table(z = rep(0:1, each=3L) + rep(0:1, each=3L)*1i, b = rep(1:3, 2)))
+test(996.11, CJ(b = 1:3, z = 0:1 + (0:1)*1i, sorted = FALSE),
+     data.table(b = rep(1:3, each = 2L), z = rep(0:1, 3) + rep(0:1, 3)*1i))
+
 
 # That CJ orders NA consistently with setkey and historically, now it doesn't use setkey.
 # NA must always come first in data.table throughout, since binary search relies on that internally.
