@@ -94,7 +94,7 @@
 
 16. `as.data.table` now unpacks columns in a `data.frame` which are themselves a `data.frame`. This need arises when parsing JSON, a corollary in [#3369](https://github.com/Rdatatable/data.table/issues/3369#issuecomment-462662752). `data.table` does not allow columns to be objects which themselves have columns (such as `matrix` and `data.frame`), unlike `data.frame` which does. Bug fix 19 in v1.12.2 (see below) added a helpful error (rather than segfault) to detect such invalid `data.table`, and promised that `as.data.table()` would unpack these columns in the next release (i.e. this release) so that the invalid `data.table` is not created in the first place.
 
-17. `CJ` has been ported to C and parallelized, thanks to a PR by Michael Chirico, [#3596](https://github.com/Rdatatable/data.table/pull/3596). All types benefit, and as in many `data.table` operations, factors benefit more than character.
+17. `CJ` has been ported to C and parallelized, thanks to a PR by Michael Chirico, [#3596](https://github.com/Rdatatable/data.table/pull/3596). All types benefit (including newly supported complex, part of [#3690](https://github.com/Rdatatable/data.table/issues/3690)), and as in many `data.table` operations, factors benefit more than character.
 
     ```R
     # default 4 threads on a laptop with 16GB RAM and 8 logical CPU
@@ -192,7 +192,7 @@
 
 24. `column not found` could incorrectly occur in rare non-equi-join cases, [#3635](https://github.com/Rdatatable/data.table/issues/3635). Thanks to @UweBlock for the report.
 
-25. Complex columns used in `j` during grouping would get mangled, [#3639](https://github.com/Rdatatable/data.table/issues/3639). We still do not support grouping `by` a complex column; please file a feature request if you would use this in your own work. Thanks to @eliocamp for filing the bug report.
+25. Complex columns used in `j` during grouping would get mangled, [#3639](https://github.com/Rdatatable/data.table/issues/3639). A related bug prevented assigning complex values using `:=` except for full-column plonks. We still do not support grouping `by` a complex column. Thanks to @eliocamp for filing the bug report.
 
 #### NOTES
 
@@ -225,6 +225,10 @@
 11. We intend to deprecate the `datatable.nomatch` option, [more info](https://github.com/Rdatatable/data.table/pull/3578/files). A message is now printed upon use of the option (once per session) as a first step. It asks you to please stop using the option and to pass `nomatch=NULL` explicitly if you require inner join. Outer join (`nomatch=NA`) has always been the default because it is safer; it does not drop missing data silently. The problem is that the option is global; i.e., if a user changes the default using this option for their own use, that can change the behavior of joins inside packages that use `data.table` too. This is the only `data.table` option with this concern.
 
 12. The test suite of 9k tests now runs with three R options on: `warnPartialMatchArgs`, `warnPartialMatchAttr`, and `warnPartialMatchDollar`. This ensures that we don't rely on partial argument matching in internal code, for robustness and efficiency, and so that users can turn these options on for their code in production, [#3664](https://github.com/Rdatatable/data.table/issues/3664). Thanks to Vijay Lulla for the suggestion, and Michael Chirico for fixing 48 internal calls to `attr()` which were missing `exact=TRUE`, for example. Thanks to R-core for adding these options to R 2.6.0 (Oct 2007).
+
+13. `test.data.table()` could fail if the `datatable.integer64` user option was set, [#3683](https://github.com/Rdatatable/data.table/issues/3683). Thanks @xiaguoxin for reporting.
+
+14. The warning message when using `keyby=` together with `:=` is clearer, [#2763](https://github.com/Rdatatable/data.table/issues/2763). Thanks to @eliocamp.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)

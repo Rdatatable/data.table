@@ -151,11 +151,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         case REALSXP :
           REAL(VECTOR_ELT(SDall,j))[0] = NA_REAL;
           break;
-        case CPLXSXP :
-          // no NA_COMPLEX; have to set r & i parts to NA_REAL individually
-          COMPLEX(VECTOR_ELT(SDall, j))[0].r = NA_REAL;
-          COMPLEX(VECTOR_ELT(SDall, j))[0].i = NA_REAL;
-          break;
+        case CPLXSXP : {
+          COMPLEX(VECTOR_ELT(SDall, j))[0] = NA_CPLX;
+        } break;
         case STRSXP :
           SET_STRING_ELT(VECTOR_ELT(SDall,j),0,NA_STRING);
           break;
@@ -180,10 +178,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         case REALSXP :
           REAL(VECTOR_ELT(xSD,j))[0] = NA_REAL;
           break;
-        case CPLXSXP :
-          COMPLEX(VECTOR_ELT(xSD, j))[0].r = NA_REAL;
-          COMPLEX(VECTOR_ELT(xSD, j))[0].i = NA_REAL;
-          break;
+        case CPLXSXP : {
+          COMPLEX(VECTOR_ELT(xSD, j))[0] = NA_CPLX;
+        }  break;
         case STRSXP :
           SET_STRING_ELT(VECTOR_ELT(xSD,j),0,NA_STRING);
           break;
@@ -191,7 +188,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           SET_VECTOR_ELT(VECTOR_ELT(xSD,j),0,R_NilValue);
           break;
         default:
-          error("Logical error. Type of column should have been checked by now");
+          error("Logical error. Type of column should have been checked by now"); // #nocov
         }
       }
     } else {
@@ -240,8 +237,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
             }
           } else { // size 16
             // #3634 -- CPLXSXP columns have size 16
-            double complex *td = (double complex *)COMPLEX(target);
-            const double complex *sd = (double complex *)COMPLEX(source);
+            Rcomplex *td = COMPLEX(target);
+            const Rcomplex *sd = COMPLEX(source);
             for (int k=0; k<grpn; ++k) {
               rownum = iI[k]-1;
               td[k] = sd[rownum];
@@ -418,8 +415,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
       } else {
         // #3634 -- CPLXSXP columns have size 16
-        double complex *td = (double complex *)COMPLEX(target);
-        double complex *sd = (double complex *)COMPLEX(source);
+        Rcomplex *td = COMPLEX(target);
+        Rcomplex *sd = COMPLEX(source);
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
       }
       // Shouldn't need SET_* to age objects here since groups, TO DO revisit.
@@ -447,10 +444,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           for (int r=0; r<maxn; ++r) td[r] = NA_REAL;
         } break;
         case CPLXSXP : {
-        double complex *td = (double complex *)(COMPLEX(target) + thisansloc);
-        for (int r=0; r<maxn; ++r) { td[r] = NA_REAL + NA_REAL*I; }
-        //for (int r=0; r<,maxn; ++r) { creal(td[r]) = NA_REAL; cimag(td[r]) = NA_REAL; }
-      } break;
+          Rcomplex *td = COMPLEX(target) + thisansloc;
+          for (int r=0; r<maxn; ++r) td[r] = NA_CPLX;
+        } break;
         case STRSXP :
           for (int r=0; r<maxn; ++r) SET_STRING_ELT(target,thisansloc+r,NA_STRING);
           break;
