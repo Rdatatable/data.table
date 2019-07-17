@@ -507,20 +507,20 @@ SEXP gsum(SEXP x, SEXP narmArg)
     error("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans);
-  UNPROTECT(1);
   if (verbose) { Rprintf("%.3fs\n", wallclock()-started); }
+  UNPROTECT(1);
   return(ans);
 }
 
 SEXP gmean(SEXP x, SEXP narm)
 {
   SEXP ans=R_NilValue;
-  int protecti=0;
   //clock_t start = clock();
   if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
   if (!isVectorAtomic(x)) error("GForce mean can only be applied to columns, not .SD or similar. Likely you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table.");
   if (inherits(x, "factor")) error("mean is not meaningful for factors.");
   if (!LOGICAL(narm)[0]) {
+    int protecti=0;
     ans = PROTECT(gsum(x,narm)); protecti++;
     switch(TYPEOF(ans)) {
     case LGLSXP: case INTSXP:
@@ -611,12 +611,14 @@ SEXP gmean(SEXP x, SEXP narm)
       ansd[i].r = s[i] >DBL_MAX ? R_PosInf : (s[i] < -DBL_MAX ? R_NegInf : (double)s[i]);
       ansd[i].i = si[i]>DBL_MAX ? R_PosInf : (si[i]< -DBL_MAX ? R_NegInf : (double)si[i]);
     }
-  }
+  } break;
+  default:
+    error("Internal error: unsupported type at the end of gmean"); // # nocov
   }
   free(s); free(si); free(c);
   copyMostAttrib(x, ans);
-  UNPROTECT(1);
   // Rprintf("this gmean na.rm=TRUE took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+  UNPROTECT(1);
   return(ans);
 }
 
