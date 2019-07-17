@@ -86,6 +86,25 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
       }
       break;
 
+    case CPLXSXP :
+      thisfill = PROTECT(coerceVector(fill, CPLXSXP)); protecti++;
+      Rcomplex cfill = COMPLEX(thisfill)[0];
+      for (int j=0; j<nk; j++) {
+        R_xlen_t thisk = MIN(abs(kd[j]), xrows);
+        SET_VECTOR_ELT(ans, i*nk+j, tmp=allocVector(CPLXSXP, xrows) );
+        Rcomplex *ctmp = COMPLEX(tmp);
+        size_t tailk = xrows-thisk;
+        if ((stype == LAG && kd[j] >= 0) || (stype == LEAD && kd[j] < 0)) {
+          if (tailk > 0) memmove(ctmp+thisk, COMPLEX(elem), tailk*size);
+          for (int m=0; m<thisk; m++) ctmp[m] = cfill;
+        } else {
+          if (tailk > 0) memmove(ctmp, COMPLEX(elem)+thisk, tailk*size);
+          for (int m=tailk; m<xrows; m++) ctmp[m] = cfill;
+        }
+        copyMostAttrib(elem, tmp);
+      }
+      break;
+
     case LGLSXP :
       thisfill = PROTECT(coerceVector(fill, LGLSXP)); protecti++;
       int lfill = LOGICAL(thisfill)[0];
