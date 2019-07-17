@@ -15306,7 +15306,13 @@ test(2066.04, DT[, tail(v, 1), by=id], data.table(id=1:2, V1=(2:3)*1i))
 test(2066.05, DT[, v[2], by=id], data.table(id = 1:2, V1=c(2i, NA)))
 ## former test 1968.1
 DT = data.table(A=1:5, B=-3i, C=2147483647L)
-test(2066.06, DT[, sum(B), by=A%%2L], data.table(A = 1:0, V1 = c(-9i, -6i)))
+test(2066.06, DT[,    .(sum(B), mean(B)), by=A%%2L], data.table(A=1:0, V1=c(-9i, -6i), V2=-3i))
+test(2066.07, DT[2:4, .(sum(B), mean(B)), by=A%%2L], data.table(A=0:1, V1=c(-6i, -3i), V2=-3i))
+DT[4, B:=NA]
+test(2066.08, DT[,    .(sum(B), mean(B)), by=A%%2L], data.table(A=1:0, V1=c(-9i, NA), V2=c(-3i, NA)))
+test(2066.09, DT[2:4, .(sum(B), mean(B)), by=A%%2L], data.table(A=0:1, V1=c(NA, -3i), V2=c(NA, -3i)))
+test(2066.10, DT[,    .(sum(B, na.rm=TRUE), mean(B, na.rm=TRUE)), by=A%%2L], data.table(A=1:0, V1=c(-9i, -3i), V2=-3i))
+test(2066.11, DT[2:4, .(sum(B, na.rm=TRUE), mean(B, na.rm=TRUE)), by=A%%2L], data.table(A=0:1, V1=c(-3i, -3i), V2=-3i))
 
 
 ###################################
