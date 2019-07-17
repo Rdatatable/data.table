@@ -1725,10 +1725,13 @@ replace_order = function(isub, verbose, env) {
     #fix for #1683
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
     ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
-    if (verbose) { cat("Returned from gforce()\n"); flush.console(); }
+    if (verbose) { cat("Returned from gforce()\n"); flush.console(); print(ans); flush.console(); }
     gi = if (length(o__)) o__[f__] else f__
+    if (verbose) { cat("point 1\n"); flush.console(); }
     g = lapply(grpcols, function(i) groups[[i]][gi])
+    if (verbose) { cat("point 2\n"); flush.console(); }
     ans = c(g, ans)
+    if (verbose) { cat("point 3\n"); flush.console(); }
   } else {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose)
   }
