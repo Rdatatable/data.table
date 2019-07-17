@@ -112,7 +112,7 @@
     #  0.357   0.763   0.292  # now
     ```
 
-18. New function `coalesce(...)` has been written in C, and is multithreaded for numeric and factor types. It replaces missing values according to a prioritized list of candidates (as per SQL COALESCE, `dplyr::coalesce`, and `hutils::coalesce`), [#3424](https://github.com/Rdatatable/data.table/issues/3424). It accepts any number of vectors in several forms. For example, given three vectors `x`, `y`, and `z`, where each `NA` in `x` is to be replaced by the corresponding value in `y` if that is non-NA, else the corresponding value in `z`, the following equivalent forms are all accepted: `coalesce(x,y,z)`, `coalesce(x,list(y,z))`, and `coalesce(list(x,y,z))`.
+18. New function `coalesce(...)` has been written in C, and is multithreaded for numeric, complex, and factor types. It replaces missing values according to a prioritized list of candidates (as per SQL COALESCE, `dplyr::coalesce`, and `hutils::coalesce`), [#3424](https://github.com/Rdatatable/data.table/issues/3424). It accepts any number of vectors in several forms. For example, given three vectors `x`, `y`, and `z`, where each `NA` in `x` is to be replaced by the corresponding value in `y` if that is non-NA, else the corresponding value in `z`, the following equivalent forms are all accepted: `coalesce(x,y,z)`, `coalesce(x,list(y,z))`, and `coalesce(list(x,y,z))`.
 
     ```R
     # default 4 threads on a laptop with 16GB RAM and 8 logical CPU
@@ -128,8 +128,8 @@
     identical(y1,y2) && identical(y1,y3)
     # TRUE
     ```
-    
-19. Extended support of `shift` to complex vectors, part of [#3690](https://github.com/Rdatatable/data.table/issues/3690).
+
+19. `shift` now supports complex vectors, part of [#3690](https://github.com/Rdatatable/data.table/issues/3690).
 
 #### BUG FIXES
 

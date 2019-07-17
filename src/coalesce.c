@@ -118,6 +118,28 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
       }
     }
   } break;
+  case CPLXSXP: {
+    Rcomplex *xP = COMPLEX(first), finalVal=NA_CPLX;
+    int k=0;
+    for (int j=0; j<nval; ++j) {
+      SEXP item = VECTOR_ELT(x, j+off);
+      if (length(item)==1) {
+        Rcomplex tt = COMPLEX(item)[0];
+        if (ISNAN(tt.r) && ISNAN(tt.i)) continue;
+        finalVal = tt;
+        break;
+      }
+      valP[k++] = COMPLEX(item);
+    }
+    const bool final = !ISNAN(finalVal.r) && !ISNAN(finalVal.i);
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (int i=0; i<nrow; ++i) {
+      Rcomplex val=xP[i];
+      if (!ISNAN(val.r) && !ISNAN(val.i)) continue;
+      int j=0; while (ISNAN(val.r) && ISNAN(val.i) && j<k) val=((Rcomplex *)valP[j++])[i];
+      if (!ISNAN(val.r) || !ISNAN(val.i)) xP[i]=val; else if (final) xP[i]=finalVal;
+    }
+  } break;
   case STRSXP: {
     const SEXP *xP = STRING_PTR(first);
     SEXP finalVal=NA_STRING;
