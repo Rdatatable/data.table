@@ -38,7 +38,8 @@ static int nbit(int n)
 }
 
 SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
-  // double started = wallclock();
+  double started = wallclock();
+  const bool verbose = GetVerbose();
   if (TYPEOF(env) != ENVSXP) error("env is not an environment");
   // The type of jsub is pretty flexbile in R, so leave checking to eval() below.
   if (!isInteger(o)) error("o is not an integer vector");
@@ -94,7 +95,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int *elem = grp + fp[g]-1;
     for (int j=0; j<grpsize[g]; j++)  elem[j] = g;
   }
-  //Rprintf("gforce initial population of grp took %.3f\n", wallclock()-started); started=wallclock();
+  if (verbose) { Rprintf("gforce initial population of grp took %.3f\n", wallclock()-started); started=wallclock(); }
   if (LENGTH(o)) {
     isunsorted = 1; // for gmedian
 
@@ -189,13 +190,13 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     // counts is now cumulated within batch (with ending values) and we leave it that way
     // memcpy(counts + b*256, myCounts, 256*sizeof(int));  // save cumulate for later, first bucket contains position of next. For ease later in the very last batch.
   }
-  //Rprintf("gforce assign high and low took %.3f\n", wallclock()-started); started=wallclock();
+  if (verbose) { Rprintf("gforce assign high and low took %.3f\n", wallclock()-started); started=wallclock(); }
 
   oo = INTEGER(o);
   ff = INTEGER(f);
 
   SEXP ans = PROTECT( eval(jsub, env) );
-  //Rprintf("gforce eval took %.3f\n", wallclock()-started);
+  if (verbose) { Rprintf("gforce eval took %.3f\n", wallclock()-started); started=wallclock(); }
   // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.
   if (isVectorAtomic(ans)) {
     SEXP tt = ans;
@@ -211,7 +212,9 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
 
 void *gather(SEXP x, bool *anyNA)
 {
-  //double started = wallclock();
+  double started=wallclock();
+  const bool verbose = GetVerbose();
+  if (verbose) Rprintf("gather took ... ");
   switch (TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     const int *restrict thisx = INTEGER(x);
@@ -331,7 +334,7 @@ void *gather(SEXP x, bool *anyNA)
   default :
     error("gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'", type2char(TYPEOF(x)));   // # nocov
   }
-  //Rprintf("gather took %.3fs\n", wallclock()-started);
+  if (verbose) { Rprintf("%.3fs\n", wallclock()-started); }
   return gx;
 }
 
@@ -341,7 +344,9 @@ SEXP gsum(SEXP x, SEXP narmArg)
   const bool narm = LOGICAL(narmArg)[0];
   if (inherits(x, "factor")) error("sum is not meaningful for factors.");
   const int n = (irowslen == -1) ? length(x) : irowslen;
-  //clock_t start = clock();
+  double started = wallclock();
+  const bool verbose=GetVerbose();
+  if (verbose) Rprintf("This gsum took (narm=%s) ... ", narm?"TRUE":"FALSE");
   if (nrow != n) error("nrow [%d] != length(x) [%d] in gsum", nrow, n);
   bool anyNA=false;
   SEXP ans;
@@ -502,7 +507,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
   }
   copyMostAttrib(x, ans);
   UNPROTECT(1);
-  // Rprintf("this gsum took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+  if (verbose) { Rprintf("%.3fs\n", wallclock()-started); }
   return(ans);
 }
 
