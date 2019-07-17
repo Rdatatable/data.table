@@ -315,14 +315,14 @@ void *gather(SEXP x, bool *anyNA)
           my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
           // typically just checking one component would be enough,
           //   but ?complex suggests there may be some edge cases; better to be safe
-          if (elem.r==NA_REAL && elem.i == NA_REAL) my_anyNA = true;
+          if (ISNAN(elem.r) && ISNAN(elem.i)) my_anyNA = true;
         }
       } else {
         const int *my_x = irows + b*batchSize;
         for (int i=0; i<howMany; i++) {
           Rcomplex elem = thisx[ my_x[i]-1 ];
           my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
-          if (elem.rNA_REAL && elem.i == NA_REAL) my_anyNA = true;
+          if (ISNAN(elem.r) && ISNAN(elem.i)) my_anyNA = true;
         }
       }
       if (my_anyNA) *anyNA = true;  // naked write ok since just bool and always writing true; and no performance issue as maximum nBatch writes
@@ -473,7 +473,8 @@ SEXP gsum(SEXP x, SEXP narmArg)
           const Rcomplex *my_gx = gx + b*batchSize + pos;
           const uint16_t *my_low = low + b*batchSize + pos;
           for (int i=0; i<howMany; i++) {
-            _ans[my_low[i]] += my_gx[i];  // let NA propagate when !narm
+            _ans[my_low[i]].r += my_gx[i].r;  // let NA propagate when !narm
+            _ans[my_low[i]].i += my_gx[i].i;
           }
         }
       }
@@ -489,7 +490,8 @@ SEXP gsum(SEXP x, SEXP narmArg)
           const uint16_t *my_low = low + b*batchSize + pos;
           for (int i=0; i<howMany; i++) {
             const Rcomplex elem = my_gx[i];
-            if (!ISNAN(elem)) _ans[my_low[i]] += elem;
+            if (!ISNAN(elem.r)) _ans[my_low[i]].r += elem.r;
+            if (!ISNAN(elem.i)) _ans[my_low[i]].i += elem.i;
           }
         }
       }
@@ -523,7 +525,11 @@ SEXP gmean(SEXP x, SEXP narm)
     } break;
     case CPLXSXP: {
       Rcomplex *xd = COMPLEX(ans);
-      for (int i=0; i<ngrp; i++) *xd++ /= grpsize[i];
+      for (int i=0; i<ngrp; i++) {
+        xd->i /= grpsize[i];
+        xd->r /= grpsize[i];
+        xd++;
+      }
     } break;
     default :
       error("Internal error: gsum returned type '%s'. typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x))); // # nocov
@@ -535,7 +541,7 @@ SEXP gmean(SEXP x, SEXP narm)
   const int n = (irowslen == -1) ? length(x) : irowslen;
   if (nrow != n) error("nrow [%d] != length(x) [%d] in gsum", nrow, n);
 
-  long double *s = calloc(ngrp, sizeof(long double));
+  long double *s = calloc(ngrp, sizeof(long double)), *si=NULL;  // s = sum; si = sum imaginary just for complex
   if (!s) error("Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE", ngrp, sizeof(long double));
 
   int *c = calloc(ngrp, sizeof(int));
@@ -564,11 +570,14 @@ SEXP gmean(SEXP x, SEXP narm)
   } break;
   case CPLXSXP: {
     const Rcomplex *xd = COMPLEX(x);
+    long double *si = calloc(ngrp, sizeof(long double));
+    if (!si) error("Unable to allocate %d * %d bytes for si in gmean na.rm=TRUE", ngrp, sizeof(long double));
     for (int i=0; i<n; i++) {
       int thisgrp = grp[i];
       int ix = (irowslen == -1) ? i : irows[i]-1;
-      if (ISNAN(xd[ix])) continue;
-      s[thisgrp] += xd[ix];
+      if (ISNAN(xd[ix].r) || ISNAN(xd[ix].i)) continue;  // || otherwise we'll need two counts in two c's
+      s[thisgrp] += xd[ix].r;
+      si[thisgrp] += xd[ix].i;
       c[thisgrp]++;
     }
   } break;
@@ -583,38 +592,22 @@ SEXP gmean(SEXP x, SEXP narm)
     for (int i=0; i<ngrp; i++) {
       if (c[i]==0) { ansd[i] = R_NaN; continue; }  // NaN to follow base::mean
       s[i] /= c[i];
-      if (s[i] > DBL_MAX) ansd[i] = R_PosInf;
-      else if (s[i] < -DBL_MAX) ansd[i] = R_NegInf;
-      else ansd[i] = (double)s[i];
+      ansd[i] = s[i]>DBL_MAX ? R_PosInf : (s[i] < -DBL_MAX ? R_NegInf : (double)s[i]);
     }
   } break;
   case CPLXSXP: {
-  ans = PROTECT(allocVector(CPLXSXP, ngrp));
+    ans = PROTECT(allocVector(CPLXSXP, ngrp));
     Rcomplex *ansd = COMPLEX(ans);
     for (int i=0; i<ngrp; i++) {
-      if (c[i]==0) { ansd[i] = R_NaN + R_NaN*1i; continue; }  // NaN to follow base::mean
+      if (c[i]==0) { ansd[i].r = R_NaN; ansd[i].i = R_NaN; continue; }
       s[i] /= c[i];
-      if (s[i].r > DBL_MAX) {
-        Rcomplex REAL_TO_POS_INF = {R_PosInf, s[i].i};
-        ansd[i] = REAL_TO_POS_INF;
-      }
-      else if (s[i].r < -DBL_MAX) {
-        Rcomplex REAL_TO_NEG_INF = {R_NegInf, s[i].i};
-        ansd[i] = REAL_TO_NEG_INF;
-      }
-      if (s[i].i > DBL_MAX) {
-        Rcomplex IMAG_TO_POS_INF = {s[i].r, R_PosInf};
-        ansd[i] = IMAG_TO_POS_INF;
-      }
-      else if (s[i].i < -DBL_MAX) {
-        Rcomplex IMAG_TO_NEG_INF = {s[i].r, R_NegInf};
-        ansd[i] = IMAG_TO_NEG_INF;
-      }
-      else ansd[i] = s[i];
+      si[i] /= c[i];
+      ansd[i].r = s[i] >DBL_MAX ? R_PosInf : (s[i] < -DBL_MAX ? R_NegInf : (double)s[i]);
+      ansd[i].i = si[i]>DBL_MAX ? R_PosInf : (si[i]< -DBL_MAX ? R_NegInf : (double)si[i]);
     }
   }
   }
-  free(s); free(c);
+  free(s); free(si); free(c);
   copyMostAttrib(x, ans);
   UNPROTECT(1);
   // Rprintf("this gmean na.rm=TRUE took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
