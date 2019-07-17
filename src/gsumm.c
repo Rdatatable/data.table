@@ -199,6 +199,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (verbose) { Rprintf("gforce eval took %.3f\n", wallclock()-started); started=wallclock(); }
   // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.
   if (isVectorAtomic(ans)) {
+    if (verbose) Rprintf("isVectorAtomic(ans)==TRUE\n");
     SEXP tt = ans;
     ans = PROTECT(allocVector(VECSXP, 1));
     SET_VECTOR_ELT(ans, 0, tt);

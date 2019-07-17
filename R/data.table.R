@@ -1725,6 +1725,7 @@ replace_order = function(isub, verbose, env) {
     #fix for #1683
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
     ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
+    if (verbose) { cat("Returned from gforce()\n"); flush.console(); }
     gi = if (length(o__)) o__[f__] else f__
     g = lapply(grpcols, function(i) groups[[i]][gi])
     ans = c(g, ans)
