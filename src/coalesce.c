@@ -1,5 +1,4 @@
 #include "data.table.h"
-#include <complex.h>
 
 SEXP coalesce(SEXP x, SEXP inplaceArg) {
   if (TYPEOF(x)!=VECSXP)
@@ -120,27 +119,25 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     }
   } break;
   case CPLXSXP: {
-    Rcomplex *xP = COMPLEX(first);
-    Rcomplex finalVal={NA_REAL, NA_REAL};
+    Rcomplex *xP = COMPLEX(first), finalVal=NA_CPLX;
     int k=0;
     for (int j=0; j<nval; ++j) {
       SEXP item = VECTOR_ELT(x, j+off);
       if (length(item)==1) {
         Rcomplex tt = COMPLEX(item)[0];
-
-        if (tt.r == NA_REAL && tt.i == NA_REAL) continue;
+        if (ISNAN(tt.r) && ISNAN(tt.i)) continue;
         finalVal = tt;
         break;
       }
       valP[k++] = COMPLEX(item);
     }
-    const bool final = finalVal.r != NA_REAL && finalVal.i != NA_REAL;
+    const bool final = !ISNAN(finalVal.r) && !ISNAN(finalVal.i);
     #pragma omp parallel for num_threads(getDTthreads())
     for (int i=0; i<nrow; ++i) {
       Rcomplex val=xP[i];
-      if (!ISNA(val.r) && !ISNA(val.i)) continue;
-      int j=0; while (ISNA(val.r) && ISNA(val.i) && j<k) val=((Rcomplex *)valP[j++])[i];
-      if (!ISNA(val.r) || !ISNA(val.i)) xP[i]=val; else if (final) xP[i]=finalVal;
+      if (!ISNAN(val.r) && !ISNAN(val.i)) continue;
+      int j=0; while (ISNAN(val.r) && ISNAN(val.i) && j<k) val=((Rcomplex *)valP[j++])[i];
+      if (!ISNAN(val.r) || !ISNAN(val.i)) xP[i]=val; else if (final) xP[i]=finalVal;
     }
   } break;
   case STRSXP: {
