@@ -35,6 +35,8 @@
     * Gains `yaml` argument matching that of `fread`, [#3534](https://github.com/Rdatatable/data.table/issues/3534). See the item in `fread` for a bit more detail; here, we'd like to reiterate that feedback is appreciated in the initial phase of rollout for this feature.
 
     * Gains `bom` argument to add a *byte order mark* (BOM) at the beginning of the file to signal that the file is encoded in UTF-8, [#3488](https://github.com/Rdatatable/data.table/issues/3488). Thanks to Stefan Fleck for requesting and Philippe Chataignon for implementing.
+    
+    * Now supports type `complex`, [#3690](https://github.com/Rdatatable/data.table/issues/3690).
 
 4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
 
@@ -112,7 +114,7 @@
     #  0.357   0.763   0.292  # now
     ```
 
-18. New function `coalesce(...)` has been written in C, and is multithreaded for numeric and factor types. It replaces missing values according to a prioritized list of candidates (as per SQL COALESCE, `dplyr::coalesce`, and `hutils::coalesce`), [#3424](https://github.com/Rdatatable/data.table/issues/3424). It accepts any number of vectors in several forms. For example, given three vectors `x`, `y`, and `z`, where each `NA` in `x` is to be replaced by the corresponding value in `y` if that is non-NA, else the corresponding value in `z`, the following equivalent forms are all accepted: `coalesce(x,y,z)`, `coalesce(x,list(y,z))`, and `coalesce(list(x,y,z))`.
+18. New function `coalesce(...)` has been written in C, and is multithreaded for numeric, complex, and factor types. It replaces missing values according to a prioritized list of candidates (as per SQL COALESCE, `dplyr::coalesce`, and `hutils::coalesce`), [#3424](https://github.com/Rdatatable/data.table/issues/3424). It accepts any number of vectors in several forms. For example, given three vectors `x`, `y`, and `z`, where each `NA` in `x` is to be replaced by the corresponding value in `y` if that is non-NA, else the corresponding value in `z`, the following equivalent forms are all accepted: `coalesce(x,y,z)`, `coalesce(x,list(y,z))`, and `coalesce(list(x,y,z))`.
 
     ```R
     # default 4 threads on a laptop with 16GB RAM and 8 logical CPU
@@ -130,6 +132,8 @@
     ```
     
 19. Sorting now extended to complex vectors, [#1703](https://github.com/Rdatatable/data.table/issues/1703). Consistent with `base::order`, sorting is done lexicographically (`z1<z2` means `Re(z1) < Re(z2) | (Re(z1) == Re(z2) & Im(z1) < Im(z2))`). By extension, this means that complex columns can now be used in sorting keys; a related bug ([#1444](https://github.com/Rdatatable/data.table/issues/1444); thanks to @atalikami for the report) was preventing keys to be set on even the non-complex columns of a table.
+
+19. `shift` now supports complex vectors, part of [#3690](https://github.com/Rdatatable/data.table/issues/3690).
 
 #### BUG FIXES
 

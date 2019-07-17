@@ -9,12 +9,14 @@
 
 typedef void (*writer_fun_t)(void *, int64_t, char **);
 
+// in the order of writer_fun_t in fwriteR.c
 void writeBool8();
 void writeBool32();
 void writeBool32AsString();
 void writeInt32();
 void writeInt64();
 void writeFloat64();
+void writeComplex();
 void writeITime();
 void writeDateInt32();
 void writeDateFloat64();
@@ -33,6 +35,7 @@ typedef enum {   // same order as fun[] above
   WF_Int32,
   WF_Int64,
   WF_Float64,
+  WF_Complex,
   WF_ITime,
   WF_DateInt32,
   WF_DateFloat64,
@@ -50,6 +53,7 @@ static const int writerMaxLen[] = {  // same order as fun[] and WFs above; max f
   11, //&writeInt32            "-2147483647"
   20, //&writeInt64            "-9223372036854775807"
   29, //&writeFloat64          "-3.141592653589793115998E-123" [max sf 22 consistent with options()$digits]
+  60, //&writeComplex          "-3.141592653589793115998E-123+2.7182818284590450907956i" [3x writeFloat64,+,i]
   32, //&writeITime
   16, //&writeDateInt32
   16, //&writeDateFloat64
