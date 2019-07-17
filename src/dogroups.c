@@ -143,6 +143,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         case REALSXP :
           REAL(VECTOR_ELT(SDall,j))[0] = NA_REAL;
           break;
+        case CPLXSXP : {
+          COMPLEX(VECTOR_ELT(SDall, j))[0] = NA_CPLX;
+        } break;
         case STRSXP :
           SET_STRING_ELT(VECTOR_ELT(SDall,j),0,NA_STRING);
           break;
@@ -167,6 +170,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         case REALSXP :
           REAL(VECTOR_ELT(xSD,j))[0] = NA_REAL;
           break;
+        case CPLXSXP : {
+          COMPLEX(VECTOR_ELT(xSD, j))[0] = NA_CPLX;
+        }  break;
         case STRSXP :
           SET_STRING_ELT(VECTOR_ELT(xSD,j),0,NA_STRING);
           break;
@@ -174,7 +180,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           SET_VECTOR_ELT(VECTOR_ELT(xSD,j),0,R_NilValue);
           break;
         default:
-          error("Logical error. Type of column should have been checked by now");
+          error("Logical error. Type of column should have been checked by now"); // #nocov
         }
       }
     } else {
@@ -214,12 +220,20 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
               rownum = iI[k]-1;
               td[k] = sd[rownum];  // on 32bit copies pointers too
             }
-          } else {  // size 8
+          } else if (size==8) {
             double *td = REAL(target);
             const double *sd = REAL(source);
             for (int k=0; k<grpn; ++k) {
               rownum = iI[k]-1;
               td[k] = sd[rownum];  // on 64bit copies pointers too
+            }
+          } else { // size 16
+            // #3634 -- CPLXSXP columns have size 16
+            Rcomplex *td = COMPLEX(target);
+            const Rcomplex *sd = COMPLEX(source);
+            for (int k=0; k<grpn; ++k) {
+              rownum = iI[k]-1;
+              td[k] = sd[rownum];
             }
           }
         }
@@ -302,7 +316,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         }
         memrecycle(target, order, INTEGER(starts)[i]-1, grpn, RHS);   // length mismatch checked above for all jval columns before starting to add any new columns
         copyMostAttrib(RHS, target);  // not names, otherwise test 778 would fail.
-        /* OLD FIX: commented now. The fix below resulted in segfault on factor columns because I dint set the "levels"
+        /* OLD FIX: commented now. The fix below resulted in segfault on factor columns because I didn't set the "levels"
            Instead of fixing that, I just removed setting class if it's factor. Not appropriate fix.
            Correct fix of copying all attributes (except names) added above. Now, everything should be alright.
            Test 1144 (#5104) will provide the right output now. Modified accordingly.
@@ -382,13 +396,19 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     for (int j=0; j<ngrpcols; ++j) {
       target = VECTOR_ELT(ans,j);
       source = VECTOR_ELT(groups, INTEGER(grpcols)[j]-1);  // target and source the same type by construction above
-      if (SIZEOF(target)==4) {
+      int tsize = SIZEOF(target);
+      if (tsize==4) {
         int *td = INTEGER(target);
         int *sd = INTEGER(source);
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
-      } else {
+      } else if (tsize==8) {
         double *td = REAL(target);
         double *sd = REAL(source);
+        for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
+      } else {
+        // #3634 -- CPLXSXP columns have size 16
+        Rcomplex *td = COMPLEX(target);
+        Rcomplex *sd = COMPLEX(source);
         for (int r=0; r<maxn; ++r) td[ansloc+r] = sd[igrp];
       }
       // Shouldn't need SET_* to age objects here since groups, TO DO revisit.
@@ -414,6 +434,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         case REALSXP : {
           double *td = REAL(target)+thisansloc;
           for (int r=0; r<maxn; ++r) td[r] = NA_REAL;
+        } break;
+        case CPLXSXP : {
+          Rcomplex *td = COMPLEX(target) + thisansloc;
+          for (int r=0; r<maxn; ++r) td[r] = NA_CPLX;
         } break;
         case STRSXP :
           for (int r=0; r<maxn; ++r) SET_STRING_ELT(target,thisansloc+r,NA_STRING);

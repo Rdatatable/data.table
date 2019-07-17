@@ -168,7 +168,7 @@ R_CallMethodDef callMethods[] = {
 {"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
 {"CcoerceFillR", (DL_FUNC) &coerceFillR, -1},
 {"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
-{"Ccj", (DL_FUNC) &cj, -1},  
+{"Ccj", (DL_FUNC) &cj, -1},
 {"Ccoalesce", (DL_FUNC) &coalesce, -1},
 {NULL, NULL, 0}
 };
@@ -254,6 +254,9 @@ void attribute_visible R_init_datatable(DllInfo *info)
   if (NA_INT64_D != -0.0) error("NA_INT64_D (negative -0.0) is not ==-0.0.");
   if (ISNAN(NA_INT64_D)) error("ISNAN(NA_INT64_D) is TRUE but should not be");
   if (isnan(NA_INT64_D)) error("isnan(NA_INT64_D) is TRUE but should not be");
+
+  NA_CPLX.r = NA_REAL;  // NA_REAL is defined as R_NaReal which is not a strict constant and thus initializer {NA_REAL, NA_REAL} can't be used in .h
+  NA_CPLX.i = NA_REAL;  // https://github.com/Rdatatable/data.table/pull/3689/files#r304117234
 
   setNumericRounding(PROTECT(ScalarInteger(0))); // #1642, #1728, #1463, #485
   UNPROTECT(1);
