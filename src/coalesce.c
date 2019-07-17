@@ -8,6 +8,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     error("Internal error in coalesce.c: argument 'inplaceArg' must be TRUE or FALSE"); // # nocov
   const bool inplace = LOGICAL(inplaceArg)[0];
   const bool verbose = GetVerbose();
+  int nprotect = 0;
   if (length(x)==0) return R_NilValue;
   SEXP first;  // the first vector (it might be the first argument, or it might be the first column of a data.table|frame
   int off = 1; // when x has been pointed to the list of replacement candidates, is the first candidate in position 0 or 1 in the list
@@ -30,21 +31,23 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     if (factor) {
       if (!isFactor(item))
         error("Item 1 is a factor but item %d is not a factor. When factors are involved, all items must be factor.", i+2);
-      if (!R_compute_identical(getAttrib(first, R_LevelsSymbol), getAttrib(item, R_LevelsSymbol), 0))
+      if (!R_compute_identical(PROTECT(getAttrib(first, R_LevelsSymbol)), PROTECT(getAttrib(item, R_LevelsSymbol)), 0))
         error("Item %d is a factor but its levels are not identical to the first item's levels.", i+2);
+      UNPROTECT(2);
     } else {
       if (isFactor(item))
         error("Item %d is a factor but item 1 is not a factor. When factors are involved, all items must be factor.", i+2);
     }
     if (TYPEOF(first) != TYPEOF(item))
       error("Item %d is type %s but the first item is type %s. Please coerce before coalescing.", i+2, type2char(TYPEOF(item)), type2char(TYPEOF(first)));
-    if (!R_compute_identical(getAttrib(first, R_ClassSymbol), getAttrib(item, R_ClassSymbol), 0))
+    if (!R_compute_identical(PROTECT(getAttrib(first, R_ClassSymbol)), PROTECT(getAttrib(item, R_ClassSymbol)), 0))
       error("Item %d has a different class than item 1.", i+2);
+    UNPROTECT(2);
     if (length(item)!=1 && length(item)!=nrow)
       error("Item %d is length %d but the first item is length %d. Only singletons are recycled.", i+2, length(item), nrow);
   }
   if (!inplace) {
-    first = PROTECT(duplicate(first));
+    first = PROTECT(duplicate(first)); nprotect++;
     if (verbose) Rprintf("coalesce copied first item (inplace=FALSE)\n");
   }
   void **valP = (void **)R_alloc(nval, sizeof(void *));
@@ -165,7 +168,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
   default:
     error("Unsupported type: %s", type2char(TYPEOF(first))); // e.g. raw is tested
   }
-  if (!inplace) UNPROTECT(1);
+  UNPROTECT(nprotect);
   return first;
 }
 

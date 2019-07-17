@@ -943,6 +943,15 @@ const char *memrecycle(SEXP target, SEXP where, int start, int len, SEXP source)
         td[w-1] = sd[i&mask];
       }
     } break;
+    case CPLXSXP: {
+      Rcomplex *td = COMPLEX(target);
+      const Rcomplex *sd = COMPLEX(source);
+      for (int i=0; i<len; i++) {
+        const int w = wd[i];
+        if (w<1) continue;
+        td[w-1] = sd[i&mask];
+      }
+    } break;
     case STRSXP : {
       const SEXP *sd = STRING_PTR(source);
       for (int i=0; i<len; i++) {
@@ -1001,6 +1010,10 @@ void writeNA(SEXP v, const int from, const int n)
       double *vd = REAL(v);
       for (int i=from; i<=to; ++i) vd[i] = NA_REAL;
     }
+  } break;
+  case CPLXSXP: {
+    Rcomplex *vd = COMPLEX(v);
+    for (int i=from; i<=to; ++i) vd[i] = NA_CPLX;
   } break;
   case STRSXP :
     // character columns are initialized with blank string (""). So replace the all-"" with all-NA_character_

@@ -102,6 +102,7 @@ oldOptions = options(
   datatable.alloccol = 1024L,
   datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
   datatable.rbindlist.check = NULL,
+  datatable.integer64 = "integer64",
   warnPartialMatchArgs = TRUE,    # ensure we don't rely on partial argument matching in internal code, #3664
   warnPartialMatchAttr = TRUE,
   warnPartialMatchDollar = TRUE
@@ -1919,7 +1920,8 @@ test(670, DT[,z:=sum(y),keyby=x], ans)
 DT = data.table(x=1:2, y=1:6)
 test(671, DT[,z:=sum(y),keyby="x"], ans)
 DT = data.table(x=1:2, y=1:6)
-test(672, DT[,z:=sum(y),keyby=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)), warning=":= keyby not straightforward character column names or list() of column names, treating as a by")
+test(672, DT[,z:=sum(y),keyby=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)),
+          warning="The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=")
 DT = data.table(x=1:2, y=1:6)
 test(673, DT[,z:=sum(y),by=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)))
 DT = data.table(x=1:2, y=1:6)
@@ -2544,9 +2546,11 @@ if (test_bit64) {
   DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
   DT[117, r2:="3.14A"]
   fwrite(DT,f<-tempfile())
-  test(899.1, fread(f,verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")
-  test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"),integer64="a2",double=c("a3","b2")), verbose=TRUE),
+  test(899.1, fread(f, verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")
+  test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"), integer64="a2", double=c("a3","b2")), verbose=TRUE),
               DT, output="Rereading 0 columns due to out-of-sample type exceptions")
+  test(899.3, fread(f, integer64="character", select=c("a","b","c")), DT[, .(a, b=as.character(b), c)])
+  # leaving integer64='character' version of 899.1,899.2 until #2749 is fixed
   unlink(f)
 }
 
@@ -2816,23 +2820,29 @@ xx <- factor(letters[1:2], ordered=TRUE)
 yy <- sample(2L)
 yy_sort = base::sort.int(yy)
 old = options(datatable.CJ.names=FALSE)
-test(996.1, CJ(xx, yy), setkey(data.table(rep(xx, each=2L), rep(yy_sort, 2L))))
-test(996.2, CJ(a = xx, yy), setkey(data.table(a = rep(xx, each=2L), V2 = rep(yy_sort, 2L))))
+test(996.01, CJ(xx, yy), setkey(data.table(rep(xx, each=2L), rep(yy_sort, 2L))))
+test(996.02, CJ(a = xx, yy), setkey(data.table(a = rep(xx, each=2L), V2 = rep(yy_sort, 2L))))
 options(datatable.CJ.names=TRUE)
-test(996.3, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2L), yy = rep(yy_sort, 2L))))
+test(996.03, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2L), yy = rep(yy_sort, 2L))))
 options(old)
 
 # #3597 -- CJ properly informs sorted can't apply to list input
-test(996.4, CJ(list(1:2, 3L)), error = "non-atomic, which can't be sorted")
-test(996.5, CJ(list(1:2, 3), 4:6, sorted = FALSE),
+test(996.04, CJ(list(1:2, 3L)), error = "non-atomic, which can't be sorted")
+test(996.05, CJ(list(1:2, 3), 4:6, sorted = FALSE),
      data.table(V1 = list(1:2, 1:2, 1:2, 3, 3, 3), V2 = rep(4:6, 2L)))
-test(996.6, CJ(4:6, list(1:2, 3), sorted = FALSE),
+test(996.06, CJ(4:6, list(1:2, 3), sorted = FALSE),
      data.table(V1 = rep(4:6, each = 2L), V2 = rep(list(1:2, 3), 3L)))
-test(996.7, CJ(1:2, list(1:2, 3), 4:5, sorted = FALSE),
+test(996.07, CJ(1:2, list(1:2, 3), 4:5, sorted = FALSE),
      data.table(V1 = rep(1:2, each = 4L), V2 = rep(rep(list(1:2, 3), each = 2L), 2L), V3 = rep(4:5, 4L)))
 
-test(996.8, CJ(expression(1)), error = "element 1 is non-atomic")
-test(996.9, CJ(expression(2), 3, sorted = FALSE), error = "Type 'expression' not supported")
+test(996.08, CJ(expression(1)), error = "element 1 is non-atomic")
+test(996.09, CJ(expression(2), 3, sorted = FALSE), error = "Type 'expression' not supported")
+## complex input support (can't handle sorted yet)
+test(996.10, CJ(z = 0:1 + (0:1)*1i, b = 1:3, sorted = FALSE),
+     data.table(z = rep(0:1, each=3L) + rep(0:1, each=3L)*1i, b = rep(1:3, 2)))
+test(996.11, CJ(b = 1:3, z = 0:1 + (0:1)*1i, sorted = FALSE),
+     data.table(b = rep(1:3, each = 2L), z = rep(0:1, 3) + rep(0:1, 3)*1i))
+
 
 # That CJ orders NA consistently with setkey and historically, now it doesn't use setkey.
 # NA must always come first in data.table throughout, since binary search relies on that internally.
@@ -6300,12 +6310,15 @@ quote"\n2,should be ok\n'),
 quote','should be ok')))
 
 if (test_bit64) {
-    # quoted multiline (scrambled data thanks to #810)
-    test(1449, fread(testDir("quoted_multiline.csv"))[c(1,43:44),c(1,22:24),with=FALSE],
-           data.table(GPMLHTLN=as.integer64(c("3308386085360","3440245203140","1305220146734")),
-                      BLYBZ = c(0L,4L,6L),
-                      ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE","",""),
-                      JKCRUUBAVQ = c("",".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ","")))
+  # quoted multiline (scrambled data thanks to #810)
+  DT = data.table(
+    GPMLHTLN = as.integer64(c("3308386085360", "3440245203140", "1305220146734")),
+    BLYBZ = c(0L,4L,6L),
+    ZBJBLOAJAQI = c("LHCYS AYE ZLEMYA IFU HEI JG FEYE", "", ""),
+    JKCRUUBAVQ = c("", ".\\YAPCNXJ\\004570_850034_757\\VWBZSS_848482_600874_487_PEKT-6-KQTVIL-7_30\\IRVQT\\HUZWLBSJYHZ\\XFWPXQ-WSPJHC-00-0770000855383.KKZ", "")
+  )
+  test(1449.1, fread(testDir("quoted_multiline.csv"))[c(1L, 43:44), c(1L, 22:24)], DT)
+  test(1449.2, fread(testDir("quoted_multiline.csv"), integer64='character', select = 'GPMLHTLN')[c(1L, 43:44)][[1L]], DT[ , as.character(GPMLHTLN)])
 }
 
 # Fix for #927
@@ -7333,6 +7346,17 @@ test(1540.35, DT1[DT3, lapply(.SD, function(x) x * mul),
                  by=.EACHI, on=c(x="q", y="r"), roll=TRUE],
              DT1.copy[DT3, lapply(.SD, function(x) x * mul),
                  by=.EACHI, roll=TRUE])
+## more coverage tests for by = .EACHI, on = c(LHS = 'RHS') for numeric type
+set.seed(45L)
+DT1 = data.table(x=sample(letters[1:3], 15, TRUE), y=sample(6:10, 15, TRUE),
+                 a=sample(100, 15), b=runif(15))
+DT2 = CJ(x=letters[1:3], y=6:10)[, mul := sample(20, 15)][sample(15L, 5L)]
+DT3 = rbindlist(list(DT2, list(x="d", y=7L, mul=100L)))
+DT3 = DT3[sample(nrow(DT3))]
+DT1[ , x_num := match(x, letters) + .1]
+DT3[ , x_num := match(x, letters) + .1]
+test(1540.36, DT1[DT3[1:3], .(y = x_num), by=.EACHI, on=c(x_num="x_num")],
+     data.table(x_num = c(3.1, 4.1, 3.1), y = c(2.1, NA, NA)))
 
 # to do: add tests for :=
 
@@ -13334,7 +13358,7 @@ test(1963.07, shift(DT, -1:1),
           c(NA, 10L, 9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L)))
 ## some coverage tests for good measure
 test(1963.08, shift(DT$x, type = 'some_other_type'), error='should be one of.*lag.*lead')
-test(1963.09, shift(c(1+3i, 2-1i)), error = 'Unsupported type')
+test(1963.09, shift(as.raw(0:1)), error = 'Unsupported type')
 test(1963.10, shift(DT, -1:1, type="shift", give.names = TRUE), # new type="shift" #3223
      ans <- list(`x_shift_-1` = c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA),
           x_shift_0 = 1:10,
@@ -13578,7 +13602,6 @@ test(1967.78, x[1:5, sum(v), by = list(i5 = 1:5 %% 2L), verbose = TRUE],
 
 # gforce integer overflow coerce to double
 DT = data.table(A=1:5, B=-3i, C=2147483647L)
-test(1968.1, DT[, sum(B), by=A%%2L], error="Type 'complex' not supported by GForce sum (gsum). Either add the")
 test(1968.2, storage.mode(DT$C), "integer")
 test(1968.3, DT[, sum(C), by=A%%2L], data.table(A=c(1L,0L), V1=c(6442450941, 4294967294)),
              warning="sum.*integer column.*more than type 'integer' can hold.*coerced to 'numeric'")
@@ -14233,16 +14256,16 @@ if (test_bit64) {
   DT = data.table(id=c(rep(1L,3), rep(2L, 3)), v=bit64::as.integer64(c(1:3, 4L, 5:6)))
   test(2019, DT[2:6, sum(v), id], data.table(id=1:2, V1=bit64::as.integer64(c(5L,15L)))) # gather, case of int64 and irows
 }
-DT = data.table(id = c(1L,1L,2L), v = c(1i, 2i, 3i))
-test(2020.01, DT[, min(v), by=id], error="'complex' not supported by GForce min")
-test(2020.02, DT[, max(v), by=id], error="'complex' not supported by GForce max")
-test(2020.03, DT[, median(v), by=id], error="'complex' not supported by GForce median")
-test(2020.04, DT[, head(v, 1), by=id], error="'complex' not supported by GForce head")
-test(2020.05, DT[, tail(v, 1), by=id], error="'complex' not supported by GForce tail")
-test(2020.06, DT[, v[1], by=id], error="'complex' not supported by GForce subset")
-test(2020.07, DT[, sd(v), by=id], error="'complex' not supported by GForce sd")
-test(2020.08, DT[, var(v), by=id], error="'complex' not supported by GForce var")
-test(2020.09, DT[, prod(v), by=id], error="'complex' not supported by GForce prod")
+DT = data.table(id = c(1L,1L,2L), v = as.raw(0:2))
+test(2020.01, DT[, min(v), by=id], error="'raw' not supported by GForce min")
+test(2020.02, DT[, max(v), by=id], error="'raw' not supported by GForce max")
+test(2020.03, DT[, median(v), by=id], error="'raw' not supported by GForce median")
+test(2020.04, DT[, head(v, 1), by=id], error="'raw' not supported by GForce head")
+test(2020.05, DT[, tail(v, 1), by=id], error="'raw' not supported by GForce tail")
+test(2020.06, DT[, v[1], by=id], error="'raw' not supported by GForce subset")
+test(2020.07, DT[, sd(v), by=id], error="'raw' not supported by GForce sd")
+test(2020.08, DT[, var(v), by=id], error="'raw' not supported by GForce var")
+test(2020.09, DT[, prod(v), by=id], error="'raw' not supported by GForce prod")
 DT = data.table(id = c(1L,1L,2L,2L), v = c(1L, 2L, NA, NA))
 test(2020.10, DT[, median(v), id], data.table(id=1:2, V1=c(1.5, NA))) # median whole group has NAs
 
@@ -15253,6 +15276,62 @@ test(2063.3, as.data.table(x, keep=TRUE), data.table(rn=names(x), x=unname(x)))
 ll = list(1:2, NULL, 3:4)
 test(2063.4, transpose(ll, ignore=TRUE), list(c(1L, 3L), c(2L, 4L)))
 options(old)
+
+# integer / double Date merge should retain attributes, #3679
+dbl_date = structure(17896.0, class = "Date")
+int_date = structure(17896L, class = "Date")
+x = data.table(date = int_date, value = 10, key = 'date')
+i = data.table(date = dbl_date, key = 'date')
+test(2064.1, x[i, class(date), verbose=TRUE], 'Date',
+             output="Coercing double column i.date (which contains no fractions) to type integer to match type of x.date")
+test(2064.2, i[x, class(date), verbose=TRUE], 'Date',
+             output="Coerced integer column i.date to type double for join to match type of x.date")
+
+# complex values in grouping, #3639
+set.seed(42)
+DT = CJ(x = 1:10, a = c("a", "b"), b = 1:2)
+DT[ , z := complex(rnorm(1:.N), rnorm(1:.N))]
+## can simplify this test after #1444
+test(2065.1, all.equal(setkey(copy(DT), NULL), DT[, .(x = x, z = z), by = .(a, b)][order(x, a, b)], ignore.col.order = TRUE))
+test(2065.2, DT[ , base::sum(z), by = a], data.table(a = c('a', 'b'), V1 = c(5.0582228485073+0i, -1.8644229822705+0i)))
+test(2065.3, DT[ , sum(Mod(z)), by = b], data.table(b = 1:2, V1 = c(16.031422657932, 13.533483145656)))
+## mimicking test 171.3 for coverage
+x = data.table(A=c(25L,85L,25L,25L,85L), B=c("a","a","b","c","c"), z=0:4 + (4:0)*1i)
+test(2065.4, x[ , data.table(A, z)[A==25, z] + data.table(A, z)[A==85, z], by=B],
+     data.table(B = c('a', 'c'), V1 = c(1, 7) + (c(7, 1))*1i))
+## mimicking test 771 for coverage
+a = data.table(first=1:6, third=c(1i,1,1i,3,3i,4), key="first")
+b = data.table(first=c(3,4,4,5,6,7,8), second=1:7, key="first")
+test(2065.5, b[ , third:=a[b, third, by=.EACHI]], error="Supplied 2 items to be assigned to 7 items of")
+# also works for assignment, as noted in #3690
+DT[ , z_sum := base::sum(z), by = .(a, b)]
+test(2065.6, DT[ , z_sum := base::sum(z), by = .(a, b)][1:3, z_sum],
+     c(1.8791864549242+0i, 3.17903639358309+0i, -4.18868631527035+0i))
+test(2065.7, DT[1L, z_sum := 1i][1L, z_sum], 1i)
+
+# GForce for complex columns, part of #3690
+DT = data.table(id=c(1L,1L,2L), v=c(1i, 2i, 3i))
+test(2066.01, DT[, min(v), by=id], error="'complex' has no well-defined min")
+test(2066.02, DT[, max(v), by=id], error="'complex' has no well-defined max")
+test(2066.03, DT[, head(v, 1), by=id], data.table(id=1:2, V1=c(1, 3)*1i))
+test(2066.04, DT[, tail(v, 1), by=id], data.table(id=1:2, V1=(2:3)*1i))
+test(2066.05, DT[, v[2], by=id], data.table(id = 1:2, V1=c(2i, NA)))
+## former test 1968.1
+DT = data.table(A=1:5, B=-3i, C=2147483647L)
+test(2066.06, DT[,    .(sum(B), mean(B)), by=A%%2L], data.table(A=1:0, V1=c(-9i, -6i), V2=-3i))
+test(2066.07, DT[2:4, .(sum(B), mean(B)), by=A%%2L], data.table(A=0:1, V1=c(-6i, -3i), V2=-3i))
+DT[4, B:=NA]
+test(2066.08, DT[,    .(sum(B), mean(B)), by=A%%2L], data.table(A=1:0, V1=c(-9i, NA), V2=c(-3i, NA)))
+test(2066.09, DT[2:4, .(sum(B), mean(B)), by=A%%2L], data.table(A=0:1, V1=c(NA, -3i), V2=c(NA, -3i)))
+test(2066.10, DT[,    .(sum(B, na.rm=TRUE), mean(B, na.rm=TRUE)), by=A%%2L], data.table(A=1:0, V1=c(-9i, -3i), V2=-3i))
+test(2066.11, DT[2:4, .(sum(B, na.rm=TRUE), mean(B, na.rm=TRUE)), by=A%%2L], data.table(A=0:1, V1=c(-3i, -3i), V2=-3i))
+
+# Shift complex values, part of #3690
+z = c(1:3) + c(3:1)*1i
+test(2067.1, shift(z), c(NA, z[1:2]))
+test(2067.2, shift(z, type = 'lead'), c(z[2:3], NA))
+test(2067.3, shift(z, fill = 1i), c(1i, z[1:2]))
+test(2067.4, shift(list(z, 1:3)), list(c(NA, z[1:2]), c(NA, 1:2)))
 
 
 ###################################
