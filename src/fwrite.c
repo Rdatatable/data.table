@@ -51,7 +51,6 @@ inline void write_chars(const char *x, char **pch)
   *pch = ch;
 }
 
-// #nocov start
 void writeBool8(int8_t *col, int64_t row, char **pch)
 {
   int8_t x = col[row];
@@ -59,7 +58,6 @@ void writeBool8(int8_t *col, int64_t row, char **pch)
   *ch++ = '0'+(x==1);
   *pch = ch-(x==INT8_MIN);  // if NA then step back, to save a branch
 }
-// #nocov end
 
 void writeBool32(int32_t *col, int64_t row, char **pch)
 {
@@ -170,7 +168,7 @@ void genLookups() {
 }
 */
 
-void writeFloat64Scalar(double x, char **pch)
+void writeFloat64(double *col, int64_t row, char **pch)
 {
   // hand-rolled / specialized for speed
   // *pch is safely the output destination with enough space (ensured via calculating maxLineLen up front)
@@ -180,6 +178,7 @@ void writeFloat64Scalar(double x, char **pch)
   //  ii) no C libary calls such as sprintf() where the fmt string has to be interpretted over and over
   // iii) no need to return variables or flags.  Just writes.
   //  iv) shorter, easier to read and reason with in one self contained place.
+  double x = col[row];
   char *ch = *pch;
   if (!isfinite(x)) {
     if (isnan(x)) {
@@ -293,25 +292,14 @@ void writeFloat64Scalar(double x, char **pch)
   *pch = ch;
 }
 
-void writeFloat64(double *col, int64_t row, char **pch)
-{
-  double x = col[row];
-  char *ch = *pch;
-  writeFloat64Scalar(x, &ch);
-  *pch = ch;
-}
-
 void writeComplex(Rcomplex *col, int64_t row, char **pch)
 {
   Rcomplex x = col[row];
-  double im = x.i;
   char *ch = *pch;
-  writeFloat64Scalar(x.r, &ch);
-  // writeFloat64Scalar handled NA for the real part
-  if (!ISNA(im)) {
-    // let writeFloat64 handle the - sign for negative imaginary part
-    if (im >= 0.0) *ch++ = '+';
-    writeFloat64Scalar(im, &ch);
+  writeFloat64(&x.r, 0, &ch);
+  if (!ISNAN(x.i)) {
+    if (x.i >= 0.0) *ch++ = '+';  // else writeFloat64 writes the - sign
+    writeFloat64(&x.i, 0, &ch);
     *ch++ = 'i';
   }
   *pch = ch;

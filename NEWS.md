@@ -36,7 +36,7 @@
 
     * Gains `bom` argument to add a *byte order mark* (BOM) at the beginning of the file to signal that the file is encoded in UTF-8, [#3488](https://github.com/Rdatatable/data.table/issues/3488). Thanks to Stefan Fleck for requesting and Philippe Chataignon for implementing.
     
-    * Supports writing complex-valued columns, part of [#3690](https://github.com/Rdatatable/data.table/issues/3690).
+    * Now supports type `complex`, [#3690](https://github.com/Rdatatable/data.table/issues/3690).
 
 4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
 
