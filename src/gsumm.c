@@ -575,7 +575,7 @@ SEXP gmean(SEXP x, SEXP narm)
     for (int i=0; i<n; i++) {
       int thisgrp = grp[i];
       int ix = (irowslen == -1) ? i : irows[i]-1;
-      if (ISNAN(xd[ix].r) || ISNAN(xd[ix].i)) continue;  // || otherwise we'll need two counts in two c's
+      if (ISNAN(xd[ix].r) || ISNAN(xd[ix].i)) continue;  // || otherwise we'll need two counts in two c's too?
       s[thisgrp] += xd[ix].r;
       si[thisgrp] += xd[ix].i;
       c[thisgrp]++;
