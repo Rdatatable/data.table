@@ -96,6 +96,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     for (int j=0; j<grpsize[g]; j++)  elem[j] = g;
   }
   if (verbose) { Rprintf("gforce initial population of grp took %.3f\n", wallclock()-started); started=wallclock(); }
+  isunsorted = 0;
   if (LENGTH(o)) {
     isunsorted = 1; // for gmedian
 
@@ -157,8 +158,8 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   low  = (uint16_t *)R_alloc(nrow, sizeof(uint16_t));
   // global ghigh and glow because the g* functions (inside jsub) share this common memory
 
-  gx = (char *)R_alloc(nrow, sizeof(double));  // enough for a copy of one column (or length(irows) if supplied)
-
+  gx = (char *)R_alloc(nrow, sizeof(Rcomplex));  // enough for a copy of one column (or length(irows) if supplied)
+  // TODO: reduce to the largest type present; won't be faster (untouched RAM won't be fetched) but it will increase the largest size that works.
 
   counts = (int *)S_alloc(nBatch*highSize, sizeof(int));  // (S_ zeros) TODO: cache-line align and make highSize a multiple of 64
   tmpcounts = (int *)R_alloc(getDTthreads()*highSize, sizeof(int));
@@ -199,16 +200,13 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (verbose) { Rprintf("gforce eval took %.3f\n", wallclock()-started); started=wallclock(); }
   // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.
   if (isVectorAtomic(ans)) {
-    if (verbose) Rprintf("isVectorAtomic(ans)==TRUE\n");
-    SEXP tt = ans;
-    ans = PROTECT(allocVector(VECSXP, 1));
-    SET_VECTOR_ELT(ans, 0, tt);
-    UNPROTECT(1);
+    SEXP tt = PROTECT(allocVector(VECSXP, 1));
+    SET_VECTOR_ELT(tt, 0, ans);
+    UNPROTECT(2);
+    return tt;
   }
-  ngrp = 0; maxgrpn=0; irowslen = -1; isunsorted = 0;
-
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 void *gather(SEXP x, bool *anyNA)
@@ -307,7 +305,7 @@ void *gather(SEXP x, bool *anyNA)
     #pragma omp parallel for num_threads(getDTthreads())
     for (int b=0; b<nBatch; b++) {
       int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
-      memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(Rcomplex));   // original cumulated   // already cumulated for this batch
+      memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(int));
       Rcomplex *restrict my_gx = (Rcomplex *)gx + b*batchSize;
       const uint16_t *my_high = high + b*batchSize;
       const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
