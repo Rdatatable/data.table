@@ -15306,7 +15306,7 @@ test(2066.04, DT[, tail(v, 1), by=id], data.table(id=1:2, V1=(2:3)*1i))
 test(2066.05, DT[, v[2], by=id], data.table(id = 1:2, V1=c(2i, NA)))
 ## former test 1968.1
 DT = data.table(A=1:5, B=-3i, C=2147483647L)
-test(2066.06, DT[, sum(B), by=A%%2L], data.table(A = 1:0, V1 = c(-9i, -6i)))
+test(2066.06, DT[, sum(B), by=A%%2L, verbose=TRUE], data.table(A = 1:0, V1 = c(-9i, -6i)))
 
 test(9999, 3L, 3L) # dummy test
 

@@ -508,7 +508,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
 
 SEXP gmean(SEXP x, SEXP narm)
 {
-  SEXP ans;
+  SEXP ans=R_NilValue;
   int protecti=0;
   //clock_t start = clock();
   if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
