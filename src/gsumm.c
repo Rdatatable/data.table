@@ -576,7 +576,7 @@ SEXP gmean(SEXP x, SEXP narm)
   } break;
   case CPLXSXP: {
     const Rcomplex *xd = COMPLEX(x);
-    long double *si = calloc(ngrp, sizeof(long double));
+    si = calloc(ngrp, sizeof(long double));
     if (!si) error("Unable to allocate %d * %d bytes for si in gmean na.rm=TRUE", ngrp, sizeof(long double));
     for (int i=0; i<n; i++) {
       int thisgrp = grp[i];
@@ -1164,7 +1164,7 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
     ans = PROTECT(allocVector(CPLXSXP, ngrp));
     Rcomplex *dans = COMPLEX(ans);
     for (i=0; i<ngrp; i++) {
-      if (val > grpsize[i]) { COMPLEX(ans)[i].r = NA_REAL; COMPLEX(ans)[i].i = NA_REAL; continue; }
+      if (val > grpsize[i]) { dans[i].r = NA_REAL; dans[i].i = NA_REAL; continue; }
       k = ff[i]+val-2;
       if (isunsorted) k = oo[k]-1;
       k = (irowslen == -1) ? k : irows[k]-1;

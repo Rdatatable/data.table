@@ -1735,7 +1735,9 @@ replace_order = function(isub, verbose, env) {
   } else {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose)
   }
+  if (verbose) { cat("point 4\n"); flush.console(); }
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+  if (verbose) { cat("point 5\n"); flush.console(); }
   # TO DO: xrows would be a better name for irows: irows means the rows of x that i joins to
   # Grouping by i: icols the joins columns (might not need), isdcols (the non join i and used by j), all __ are length x
   # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
