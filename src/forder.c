@@ -409,38 +409,6 @@ uint64_t dtwiddle(void *p, int i)
   Error("Unknown non-finite value; not NA, NaN, -Inf or +Inf");  // # nocov
 }
 
-cplxTwiddled ctwiddle(Rcomplex *p, int i) {
-  union {
-    double d;
-    uint64_t u64;
-  } u_re, u_im;
-  cplxTwiddled out;
-  Rcomplex z = p[i];
-  u_re.d = z.r;
-  u_im.d = z.i;
-  if (R_FINITE(u_re.d)) {
-    if (u_re.d==0) u_re.d=0;
-    u_re.u64 ^= (u_re.u64 & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000;
-    u_re.u64 += (u_re.u64 & dmask) << 1;
-    out.re = u_re.u64 >> (dround*8);
-  } else if (ISNAN(u_re.d)) {
-    out.re = ISNA(u_re.d) ? 0 : 1;
-  } else if (isinf(u_re.d)) {
-    out.re = signbit(u_re.d) ? 2: (0xffffffffffffffff>>(dround*8));
-  } else Error("Unknown non-finite value; not NA, NaN, -Inf or +Inf");  // # nocov
-  if (R_FINITE(u_im.d)) {
-    if (u_im.d==0) u_im.d=0;
-    u_im.u64 ^= (u_im.u64 & 0x8000000000000000) ? 0xffffffffffffffff : 0x8000000000000000;
-    u_im.u64 += (u_im.u64 & dmask) << 1;
-    out.re = u_im.u64 >> (dround*8);
-  } else if (ISNAN(u_im.d)) {
-    out.re = ISNA(u_im.d) ? 0 : 1;
-  } else if (isinf(u_im.d)) {
-    out.re = signbit(u_im.d) ? 2: (0xffffffffffffffff>>(dround*8));
-  } else Error("Unknown non-finite value; not NA, NaN, -Inf or +Inf");  // # nocov
-  return out;
-}
-
 void radix_r(const int from, const int to, const int radix);
 
 SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg)

@@ -15360,7 +15360,6 @@ test(2069.11, frank(DT$z, ties.method='max'), c(2L, 2L, 4L, 4L, 5L, 6L))
 test(2069.12, frank(-DT$z, ties.method='min'), c(5L, 5L, 3L, 3L, 2L, 1L))
 test(2069.13, DT[ , rowid(z, grp)], rep(1L, 6L))
 test(2069.14, DT[ , rowid(z)], c(1:2, 1:2, 1L, 1L))
-test(2069.15, rleid(c(1i, 1i, 1i, 0, 0, 1-1i, 2+3i, 2+3i)), rep(1:4, c(3:1, 2L)))
 
 # #1444 -- support for ordering tables with complex columns
 DT = data.table(a = 2:1, z = 0 + (1:0)*1i)
