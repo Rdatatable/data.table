@@ -46,7 +46,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   setcoalesce = data.table:::setcoalesce
   setdiff_ = data.table:::setdiff_
   setreordervec = data.table:::setreordervec
-  setrev = data.table:::setrev
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
@@ -3920,33 +3919,7 @@ test(1159.6, setDT(x), error="Argument 'x' to 'setDT' should be a")
 x <- list(1, 2:3)
 test(1159.7, setDT(x), error="All elements in argument 'x' to 'setDT'")
 
-# tests for setrev
-x <- sample(10)
-y <- rev(x)
-setrev(x)
-test(1160.1, y, x)
-x <- sample(c(1:10, NA), 21, TRUE)
-y <- rev(x)
-setrev(x)
-test(1160.2, y, x)
-x <- sample(runif(10))
-y <- rev(x)
-setrev(x)
-test(1160.3, y, x)
-x <- sample(c(runif(10), NA, NaN), 21, TRUE)
-y <- rev(x)
-setrev(x)
-test(1160.4, y, x)
-x <- sample(letters)
-y <- rev(x)
-setrev(x)
-test(1160.5, y, x)
-x <- as.logical(sample(0:1, 20, TRUE))
-y <- rev(x)
-setrev(x)
-test(1160.6, y, x)
-x <- list(1:10)
-test(1160.7, setrev(x), error="Input 'x' must be a vector")
+# test 1160 was for setrev, now removed
 
 # tests for setreordervec
 # integer
