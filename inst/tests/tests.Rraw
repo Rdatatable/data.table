@@ -15361,38 +15361,40 @@ test(2069.12, frank(-DT$z, ties.method='min'), c(5L, 5L, 3L, 3L, 2L, 1L))
 test(2069.13, DT[ , rowid(z, grp)], rep(1L, 6L))
 test(2069.14, DT[ , rowid(z)], c(1:2, 1:2, 1L, 1L))
 test(2069.15, rleid(c(1i, 1i, 1i, 0, 0, 1-1i, 2+3i, 2+3i)), rep(1:4, c(3:1, 2L)))
-test(2069.16, unique(DT, by = 'z'), data.table(z = unq_z, grp = c(1L, 1L, 1L, 2L), v = c(3, 4, 5, 9)))
-test(2069.17, unique(DT, by = 'z', fromLast = TRUE), data.table(z = unq_z, grp = c(2L, 2L, 1L, 2L), v = c(1, 1, 5, 9)))
-test(2069.18, uniqueN(DT$z), 4L)
+test(2069.16, rleidv(DT, "z"), c(1L, 1L, 2L, 2L, 3L, 4L))
+test(2069.17, unique(DT, by = 'z'), data.table(z = unq_z, grp = c(1L, 1L, 1L, 2L), v = c(3, 4, 5, 9)))
+test(2069.18, unique(DT, by = 'z', fromLast = TRUE), data.table(z = unq_z, grp = c(2L, 2L, 1L, 2L), v = c(1, 1, 5, 9)))
+test(2069.19, uniqueN(DT$z), 4L)
 
 # setkey, setorder work
 DT = data.table(a = 2:1, z = 0 + (1:0)*1i)
-test(2069.19, setkey(copy(DT), z), data.table(a=1:2, z=0+ (0:1)*1i, key='z'))
-test(2069.20, setorder(DT, z), data.table(a=1:2, z=0+ (0:1)*1i))
+test(2069.20, setkey(copy(DT), z), data.table(a=1:2, z=0+ (0:1)*1i, key='z'))
+test(2069.21, setorder(DT, z), data.table(a=1:2, z=0+ (0:1)*1i))
 
 ## assorted coverage tests from along the way
 if (test_bit64) {
-  test(2069.21, is.sorted(as.integer64(10:1)), FALSE)
-  test(2069.22, is.sorted(as.integer64(1:10)))
+  test(2069.22, is.sorted(as.integer64(10:1)), FALSE)
+  test(2069.23, is.sorted(as.integer64(1:10)))
 }
 # sort by vector outside of table
 ord = 3:1
-test(2069.23, forder(data.table(a=3:1), ord), 3:1)
+test(2069.24, forder(data.table(a=3:1), ord), 3:1)
 # dogroups.c coverage
-test(2069.24, data.table(c='1')[ , expression(1), by=c], error="j evaluates to type 'expression'")
-test(2069.25, data.table(c='1', d=2)[ , d := .(NULL), by=c], error='RHS is NULL when grouping :=')
-test(2069.26, data.table(c='1', d=2)[ , c(a='b'), by=c, verbose=TRUE], output='j appears to be a named vector')
-test(2069.27, data.table(c = '1', d = 2)[ , .(a = c(nm='b')), by = c, verbose = TRUE], output = 'Column 1 of j is a named vector')
+test(2069.25, data.table(c='1')[ , expression(1), by=c], error="j evaluates to type 'expression'")
+test(2069.26, data.table(c='1', d=2)[ , d := .(NULL), by=c], error='RHS is NULL when grouping :=')
+test(2069.27, data.table(c='1', d=2)[ , c(a='b'), by=c, verbose=TRUE], output='j appears to be a named vector')
+test(2069.28, data.table(c = '1', d = 2)[ , .(a = c(nm='b')), by = c, verbose = TRUE], output = 'Column 1 of j is a named vector')
 DT <- data.table(a = rep(1:3, each = 4), b = LETTERS[1:4], z = 0:3 + (4:1)*1i)
-test(2069.28, DT[, .SD[3,], by=b], DT[9:12, .(b, a, z)])
+test(2069.29, DT[, .SD[3,], by=b], DT[9:12, .(b, a, z)])
 DT = data.table(x=1:4,y=1:2,lgl=TRUE,key="x,y")
-test(2069.29, DT[CJ(1:4,1:4), any(lgl), by=.EACHI]$V1,
+test(2069.30, DT[CJ(1:4,1:4), any(lgl), by=.EACHI]$V1,
      c(TRUE, NA, NA, NA, NA, TRUE, NA, NA, TRUE, NA, NA, NA, NA, TRUE, NA, NA))
 set.seed(45L)
 DT1 = data.table(a = sample(3L, 15L, TRUE) + .1, b=sample(c(TRUE, FALSE, NA), 15L, TRUE))
 DT2 = data.table(a = sample(3L, 6L, TRUE) + .1, b=sample(c(TRUE, FALSE, NA), 6L, TRUE))
-test(2069.30, DT1[DT2, .(y = sum(b, na.rm=TRUE)), by=.EACHI, on=c(a = 'a', b="b")]$y, rep(0L, 6L))
-
+test(2069.31, DT1[DT2, .(y = sum(b, na.rm=TRUE)), by=.EACHI, on=c(a = 'a', b="b")]$y, rep(0L, 6L))
+DT = data.table(z = 1i)
+test(2069.32, DT[DT, on = 'z'], error = "Type 'complex' not supported for merging")
 
 ###################################
 #  Add new tests above this line  #
