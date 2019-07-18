@@ -130,7 +130,7 @@
     identical(y1,y2) && identical(y1,y3)
     # TRUE
     ```
-    
+
 19. `shift` now supports type `complex`, part of [#3690](https://github.com/Rdatatable/data.table/issues/3690).
 
 20. `setkey` now supports type `complex` as value columns (not as key columns), [#1444](https://github.com/Rdatatable/data.table/issues/1444). Thanks Gareth Ward for the report.

@@ -15361,20 +15361,23 @@ test(2069.12, frank(-DT$z, ties.method='min'), c(5L, 5L, 3L, 3L, 2L, 1L))
 test(2069.13, DT[ , rowid(z, grp)], rep(1L, 6L))
 test(2069.14, DT[ , rowid(z)], c(1:2, 1:2, 1L, 1L))
 test(2069.15, rleid(c(1i, 1i, 1i, 0, 0, 1-1i, 2+3i, 2+3i)), rep(1:4, c(3:1, 2L)))
+test(2069.16, unique(DT, by = 'z'), data.table(z = unq_z, grp = c(1L, 1L, 1L, 2L), v = c(3, 4, 5, 9)))
+test(2069.17, unique(DT, by = 'z', fromLast = TRUE), data.table(z = unq_z, grp = c(2L, 2L, 1L, 2L), v = c(1, 1, 5, 9)))
+test(2069.18, uniqueN(DT$z), 4L)
 
 # setkey, setorder work
 DT = data.table(a = 2:1, z = 0 + (1:0)*1i)
-test(2069.16, setkey(copy(DT), z), data.table(a=1:2, z=0+ (0:1)*1i, key='z'))
-test(2069.17, setorder(DT, z), data.table(a=1:2, z=0+ (0:1)*1i))
+test(2069.19, setkey(copy(DT), z), data.table(a=1:2, z=0+ (0:1)*1i, key='z'))
+test(2069.20, setorder(DT, z), data.table(a=1:2, z=0+ (0:1)*1i))
 
 ## assorted coverage tests from along the way
 if (test_bit64) {
-  test(2069.18, is.sorted(as.integer64(10:1)), FALSE)
-  test(2069.19, is.sorted(as.integer64(1:10)))
+  test(2069.21, is.sorted(as.integer64(10:1)), FALSE)
+  test(2069.22, is.sorted(as.integer64(1:10)))
 }
 # sort by vector outside of table
 ord = 3:1
-test(2069.20, forder(data.table(a = 3:1), ord), 3:1)
+test(2069.23, forder(data.table(a = 3:1), ord), 3:1)
 
 
 ###################################
