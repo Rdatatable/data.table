@@ -84,7 +84,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(SEXP));
   for(int i=0; i<length(xSD); ++i) {
     if (SIZEOF(VECTOR_ELT(xSD, i))==0)
-      error("Type %d in .xSD column %d", TYPEOF(VECTOR_ELT(xSD, i)), i);
+      error("Internal error: type %d in .xSD column %d should have been caught by now", TYPEOF(VECTOR_ELT(xSD, i)), i); // #nocov
     xknameSyms[i] = install(CHAR(STRING_ELT(xknames, i)));
   }
 
