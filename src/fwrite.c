@@ -292,6 +292,19 @@ void writeFloat64(double *col, int64_t row, char **pch)
   *pch = ch;
 }
 
+void writeComplex(Rcomplex *col, int64_t row, char **pch)
+{
+  Rcomplex x = col[row];
+  char *ch = *pch;
+  writeFloat64(&x.r, 0, &ch);
+  if (!ISNAN(x.i)) {
+    if (x.i >= 0.0) *ch++ = '+';  // else writeFloat64 writes the - sign
+    writeFloat64(&x.i, 0, &ch);
+    *ch++ = 'i';
+  }
+  *pch = ch;
+}
+
 // DATE/TIME
 
 static inline void write_time(int32_t x, char **pch)

@@ -92,6 +92,7 @@ double LLtoD(long long x);
 bool GetVerbose();
 double NA_INT64_D;
 long long NA_INT64_LL;
+Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
 
 // cj.c
 SEXP cj(SEXP base_list);
