@@ -36,6 +36,8 @@
 
     * Gains `bom` argument to add a *byte order mark* (BOM) at the beginning of the file to signal that the file is encoded in UTF-8, [#3488](https://github.com/Rdatatable/data.table/issues/3488). Thanks to Stefan Fleck for requesting and Philippe Chataignon for implementing.
 
+    * Now supports type `complex`, [#3690](https://github.com/Rdatatable/data.table/issues/3690).
+
 4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
 
     ```R
@@ -94,7 +96,7 @@
 
 16. `as.data.table` now unpacks columns in a `data.frame` which are themselves a `data.frame`. This need arises when parsing JSON, a corollary in [#3369](https://github.com/Rdatatable/data.table/issues/3369#issuecomment-462662752). `data.table` does not allow columns to be objects which themselves have columns (such as `matrix` and `data.frame`), unlike `data.frame` which does. Bug fix 19 in v1.12.2 (see below) added a helpful error (rather than segfault) to detect such invalid `data.table`, and promised that `as.data.table()` would unpack these columns in the next release (i.e. this release) so that the invalid `data.table` is not created in the first place.
 
-17. `CJ` has been ported to C and parallelized, thanks to a PR by Michael Chirico, [#3596](https://github.com/Rdatatable/data.table/pull/3596). All types benefit, and as in many `data.table` operations, factors benefit more than character.
+17. `CJ` has been ported to C and parallelized, thanks to a PR by Michael Chirico, [#3596](https://github.com/Rdatatable/data.table/pull/3596). All types benefit (including newly supported complex, part of [#3690](https://github.com/Rdatatable/data.table/issues/3690)), and as in many `data.table` operations, factors benefit more than character.
 
     ```R
     # default 4 threads on a laptop with 16GB RAM and 8 logical CPU
@@ -112,7 +114,7 @@
     #  0.357   0.763   0.292  # now
     ```
 
-18. New function `coalesce(...)` has been written in C, and is multithreaded for numeric and factor types. It replaces missing values according to a prioritized list of candidates (as per SQL COALESCE, `dplyr::coalesce`, and `hutils::coalesce`), [#3424](https://github.com/Rdatatable/data.table/issues/3424). It accepts any number of vectors in several forms. For example, given three vectors `x`, `y`, and `z`, where each `NA` in `x` is to be replaced by the corresponding value in `y` if that is non-NA, else the corresponding value in `z`, the following equivalent forms are all accepted: `coalesce(x,y,z)`, `coalesce(x,list(y,z))`, and `coalesce(list(x,y,z))`.
+18. New function `coalesce(...)` has been written in C, and is multithreaded for numeric, complex, and factor types. It replaces missing values according to a prioritized list of candidates (as per SQL COALESCE, `dplyr::coalesce`, and `hutils::coalesce`), [#3424](https://github.com/Rdatatable/data.table/issues/3424). It accepts any number of vectors in several forms. For example, given three vectors `x`, `y`, and `z`, where each `NA` in `x` is to be replaced by the corresponding value in `y` if that is non-NA, else the corresponding value in `z`, the following equivalent forms are all accepted: `coalesce(x,y,z)`, `coalesce(x,list(y,z))`, and `coalesce(list(x,y,z))`.
 
     ```R
     # default 4 threads on a laptop with 16GB RAM and 8 logical CPU
@@ -129,7 +131,11 @@
     # TRUE
     ```
 
-19. New function `fifelse(test,yes, no)`, also written in C, has been implemented by Morgan Jacob following feature request [#3657](https://github.com/Rdatatable/data.table/issues/3657). It is comparable to `base::ifelse`, `dplyr::if_else` and  `hutils::if_else`. It returns a vector of the same length as logical vector `test` but unlike `base::ifelse` the output type is consistent with those of `yes` and `no`. Please see `?data.table::fifelse` for more details.
+19. `shift` now supports type `complex`, part of [#3690](https://github.com/Rdatatable/data.table/issues/3690).
+
+20. `setkey` now supports type `complex` as value columns (not as key columns), [#1444](https://github.com/Rdatatable/data.table/issues/1444). Thanks Gareth Ward for the report.
+
+21. New function `fifelse(test,yes, no)`, also written in C, has been implemented by Morgan Jacob following feature request [#3657](https://github.com/Rdatatable/data.table/issues/3657). It is comparable to `base::ifelse`, `dplyr::if_else` and  `hutils::if_else`. It returns a vector of the same length as logical vector `test` but unlike `base::ifelse` the output type is consistent with those of `yes` and `no`. Please see `?data.table::fifelse` for more details.
 
     ```R
     x <- -5e4L:5e4L < 0
@@ -210,6 +216,8 @@
 23. Incorrect sorting/grouping results due to a bug in Intel's `icc` compiler 2019 (Version 19.0.4.243 Build 20190416) has been worked around thanks to a report and fix by Sebastian Freundt, [#3647](https://github.com/Rdatatable/data.table/issues/3647). Please run `data.table::test.data.table()`. If that passes, your installation does not have the problem.
 
 24. `column not found` could incorrectly occur in rare non-equi-join cases, [#3635](https://github.com/Rdatatable/data.table/issues/3635). Thanks to @UweBlock for the report.
+
+25. Complex columns used in `j` during grouping would get mangled, [#3639](https://github.com/Rdatatable/data.table/issues/3639). A related bug prevented assigning complex values using `:=` except for full-column plonks. We still do not support grouping `by` a complex column. Thanks to @eliocamp for filing the bug report.
 
 #### NOTES
 

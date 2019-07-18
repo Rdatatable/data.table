@@ -38,7 +38,8 @@ static int nbit(int n)
 }
 
 SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
-  // double started = wallclock();
+  double started = wallclock();
+  const bool verbose = GetVerbose();
   if (TYPEOF(env) != ENVSXP) error("env is not an environment");
   // The type of jsub is pretty flexbile in R, so leave checking to eval() below.
   if (!isInteger(o)) error("o is not an integer vector");
@@ -94,7 +95,8 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int *elem = grp + fp[g]-1;
     for (int j=0; j<grpsize[g]; j++)  elem[j] = g;
   }
-  //Rprintf("gforce initial population of grp took %.3f\n", wallclock()-started); started=wallclock();
+  if (verbose) { Rprintf("gforce initial population of grp took %.3f\n", wallclock()-started); started=wallclock(); }
+  isunsorted = 0;
   if (LENGTH(o)) {
     isunsorted = 1; // for gmedian
 
@@ -156,8 +158,8 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   low  = (uint16_t *)R_alloc(nrow, sizeof(uint16_t));
   // global ghigh and glow because the g* functions (inside jsub) share this common memory
 
-  gx = (char *)R_alloc(nrow, sizeof(double));  // enough for a copy of one column (or length(irows) if supplied)
-
+  gx = (char *)R_alloc(nrow, sizeof(Rcomplex));  // enough for a copy of one column (or length(irows) if supplied)
+  // TODO: reduce to the largest type present; won't be faster (untouched RAM won't be fetched) but it will increase the largest size that works.
 
   counts = (int *)S_alloc(nBatch*highSize, sizeof(int));  // (S_ zeros) TODO: cache-line align and make highSize a multiple of 64
   tmpcounts = (int *)R_alloc(getDTthreads()*highSize, sizeof(int));
@@ -189,29 +191,29 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     // counts is now cumulated within batch (with ending values) and we leave it that way
     // memcpy(counts + b*256, myCounts, 256*sizeof(int));  // save cumulate for later, first bucket contains position of next. For ease later in the very last batch.
   }
-  //Rprintf("gforce assign high and low took %.3f\n", wallclock()-started); started=wallclock();
+  if (verbose) { Rprintf("gforce assign high and low took %.3f\n", wallclock()-started); started=wallclock(); }
 
   oo = INTEGER(o);
   ff = INTEGER(f);
 
   SEXP ans = PROTECT( eval(jsub, env) );
-  //Rprintf("gforce eval took %.3f\n", wallclock()-started);
+  if (verbose) { Rprintf("gforce eval took %.3f\n", wallclock()-started); started=wallclock(); }
   // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.
   if (isVectorAtomic(ans)) {
-    SEXP tt = ans;
-    ans = PROTECT(allocVector(VECSXP, 1));
-    SET_VECTOR_ELT(ans, 0, tt);
-    UNPROTECT(1);
+    SEXP tt = PROTECT(allocVector(VECSXP, 1));
+    SET_VECTOR_ELT(tt, 0, ans);
+    UNPROTECT(2);
+    return tt;
   }
-  ngrp = 0; maxgrpn=0; irowslen = -1; isunsorted = 0;
-
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 void *gather(SEXP x, bool *anyNA)
 {
-  //double started = wallclock();
+  double started=wallclock();
+  const bool verbose = GetVerbose();
+  if (verbose) Rprintf("gather took ... ");
   switch (TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     const int *restrict thisx = INTEGER(x);
@@ -298,10 +300,40 @@ void *gather(SEXP x, bool *anyNA)
       }
     }
   } break;
+  case CPLXSXP: {
+    const Rcomplex *restrict thisx = COMPLEX(x);
+    #pragma omp parallel for num_threads(getDTthreads())
+    for (int b=0; b<nBatch; b++) {
+      int *restrict my_tmpcounts = tmpcounts + omp_get_thread_num()*highSize;
+      memcpy(my_tmpcounts, counts + b*highSize, highSize*sizeof(int));
+      Rcomplex *restrict my_gx = (Rcomplex *)gx + b*batchSize;
+      const uint16_t *my_high = high + b*batchSize;
+      const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
+      bool my_anyNA = false;
+      if (irowslen==-1) {
+        const Rcomplex *my_x = thisx + b*batchSize;
+        for (int i=0; i<howMany; i++) {
+          const Rcomplex elem = my_x[i];
+          my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
+          // typically just checking one component would be enough,
+          //   but ?complex suggests there may be some edge cases; better to be safe
+          if (ISNAN(elem.r) && ISNAN(elem.i)) my_anyNA = true;
+        }
+      } else {
+        const int *my_x = irows + b*batchSize;
+        for (int i=0; i<howMany; i++) {
+          Rcomplex elem = thisx[ my_x[i]-1 ];
+          my_gx[ my_tmpcounts[my_high[i]]++ ] = elem;
+          if (ISNAN(elem.r) && ISNAN(elem.i)) my_anyNA = true;
+        }
+      }
+      if (my_anyNA) *anyNA = true;  // naked write ok since just bool and always writing true; and no performance issue as maximum nBatch writes
+    }
+  } break;
   default :
-    error("gather implemented for INTSXP and REALSXP but not '%s'", type2char(TYPEOF(x)));   // # nocov
+    error("gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'", type2char(TYPEOF(x)));   // # nocov
   }
-  //Rprintf("gather took %.3fs\n", wallclock()-started);
+  if (verbose) { Rprintf("%.3fs\n", wallclock()-started); }
   return gx;
 }
 
@@ -311,7 +343,9 @@ SEXP gsum(SEXP x, SEXP narmArg)
   const bool narm = LOGICAL(narmArg)[0];
   if (inherits(x, "factor")) error("sum is not meaningful for factors.");
   const int n = (irowslen == -1) ? length(x) : irowslen;
-  //clock_t start = clock();
+  double started = wallclock();
+  const bool verbose=GetVerbose();
+  if (verbose) Rprintf("This gsum took (narm=%s) ... ", narm?"TRUE":"FALSE");
   if (nrow != n) error("nrow [%d] != length(x) [%d] in gsum", nrow, n);
   bool anyNA=false;
   SEXP ans;
@@ -428,24 +462,63 @@ SEXP gsum(SEXP x, SEXP narmArg)
       }
     }
   } break;
+  case CPLXSXP: {
+    const Rcomplex *restrict gx = gather(x, &anyNA);
+    ans = PROTECT(allocVector(CPLXSXP, ngrp));
+    Rcomplex *restrict ansp = COMPLEX(ans);
+    memset(ansp, 0, ngrp*sizeof(Rcomplex));
+    if (!narm || !anyNA) {
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int h=0; h<highSize; h++) {
+        Rcomplex *restrict _ans = ansp + (h<<shift);
+        for (int b=0; b<nBatch; b++) {
+          const int pos = counts[ b*highSize + h ];
+          const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+          const Rcomplex *my_gx = gx + b*batchSize + pos;
+          const uint16_t *my_low = low + b*batchSize + pos;
+          for (int i=0; i<howMany; i++) {
+            _ans[my_low[i]].r += my_gx[i].r;  // let NA propagate when !narm
+            _ans[my_low[i]].i += my_gx[i].i;
+          }
+        }
+      }
+    } else {
+      // narm==true and anyNA==true
+      #pragma omp parallel for num_threads(getDTthreads())
+      for (int h=0; h<highSize; h++) {
+        Rcomplex *restrict _ans = ansp + (h<<shift);
+        for (int b=0; b<nBatch; b++) {
+          const int pos = counts[ b*highSize + h ];
+          const int howMany = ((h==highSize-1) ? (b==nBatch-1?lastBatchSize:batchSize) : counts[ b*highSize + h + 1 ]) - pos;
+          const Rcomplex *my_gx = gx + b*batchSize + pos;
+          const uint16_t *my_low = low + b*batchSize + pos;
+          for (int i=0; i<howMany; i++) {
+            const Rcomplex elem = my_gx[i];
+            if (!ISNAN(elem.r)) _ans[my_low[i]].r += elem.r;
+            if (!ISNAN(elem.i)) _ans[my_low[i]].i += elem.i;
+          }
+        }
+      }
+    }
+  } break;
   default:
     error("Type '%s' not supported by GForce sum (gsum). Either add the prefix base::sum(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
   }
   copyMostAttrib(x, ans);
+  if (verbose) { Rprintf("%.3fs\n", wallclock()-started); }
   UNPROTECT(1);
-  // Rprintf("this gsum took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
   return(ans);
 }
 
 SEXP gmean(SEXP x, SEXP narm)
 {
-  SEXP ans;
-  int protecti=0;
+  SEXP ans=R_NilValue;
   //clock_t start = clock();
   if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
   if (!isVectorAtomic(x)) error("GForce mean can only be applied to columns, not .SD or similar. Likely you're looking for 'DT[,lapply(.SD,mean),by=,.SDcols=]'. See ?data.table.");
   if (inherits(x, "factor")) error("mean is not meaningful for factors.");
   if (!LOGICAL(narm)[0]) {
+    int protecti=0;
     ans = PROTECT(gsum(x,narm)); protecti++;
     switch(TYPEOF(ans)) {
     case LGLSXP: case INTSXP:
@@ -453,6 +526,14 @@ SEXP gmean(SEXP x, SEXP narm)
     case REALSXP: {
       double *xd = REAL(ans);
       for (int i=0; i<ngrp; i++) *xd++ /= grpsize[i];  // let NA propogate
+    } break;
+    case CPLXSXP: {
+      Rcomplex *xd = COMPLEX(ans);
+      for (int i=0; i<ngrp; i++) {
+        xd->i /= grpsize[i];
+        xd->r /= grpsize[i];
+        xd++;
+      }
     } break;
     default :
       error("Internal error: gsum returned type '%s'. typeof(x) is '%s'", type2char(TYPEOF(ans)), type2char(TYPEOF(x))); // # nocov
@@ -464,7 +545,7 @@ SEXP gmean(SEXP x, SEXP narm)
   const int n = (irowslen == -1) ? length(x) : irowslen;
   if (nrow != n) error("nrow [%d] != length(x) [%d] in gsum", nrow, n);
 
-  long double *s = calloc(ngrp, sizeof(long double));
+  long double *s = calloc(ngrp, sizeof(long double)), *si=NULL;  // s = sum; si = sum imaginary just for complex
   if (!s) error("Unable to allocate %d * %d bytes for sum in gmean na.rm=TRUE", ngrp, sizeof(long double));
 
   int *c = calloc(ngrp, sizeof(int));
@@ -491,23 +572,51 @@ SEXP gmean(SEXP x, SEXP narm)
       c[thisgrp]++;
     }
   } break;
+  case CPLXSXP: {
+    const Rcomplex *xd = COMPLEX(x);
+    si = calloc(ngrp, sizeof(long double));
+    if (!si) error("Unable to allocate %d * %d bytes for si in gmean na.rm=TRUE", ngrp, sizeof(long double));
+    for (int i=0; i<n; i++) {
+      int thisgrp = grp[i];
+      int ix = (irowslen == -1) ? i : irows[i]-1;
+      if (ISNAN(xd[ix].r) || ISNAN(xd[ix].i)) continue;  // || otherwise we'll need two counts in two c's too?
+      s[thisgrp] += xd[ix].r;
+      si[thisgrp] += xd[ix].i;
+      c[thisgrp]++;
+    }
+  } break;
   default:
     free(s); free(c); // # nocov because it already stops at gsum, remove nocov if gmean will support a type that gsum wont
     error("Type '%s' not supported by GForce mean (gmean) na.rm=TRUE. Either add the prefix base::mean(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x))); // # nocov
   }
-  ans = PROTECT(allocVector(REALSXP, ngrp));
-  double *ansd = REAL(ans);
-  for (int i=0; i<ngrp; i++) {
-    if (c[i]==0) { ansd[i] = R_NaN; continue; }  // NaN to follow base::mean
-    s[i] /= c[i];
-    if (s[i] > DBL_MAX) ansd[i] = R_PosInf;
-    else if (s[i] < -DBL_MAX) ansd[i] = R_NegInf;
-    else ansd[i] = (double)s[i];
+  switch(TYPEOF(x)) {
+  case LGLSXP: case INTSXP: case REALSXP: {
+    ans = PROTECT(allocVector(REALSXP, ngrp));
+    double *ansd = REAL(ans);
+    for (int i=0; i<ngrp; i++) {
+      if (c[i]==0) { ansd[i] = R_NaN; continue; }  // NaN to follow base::mean
+      s[i] /= c[i];
+      ansd[i] = s[i]>DBL_MAX ? R_PosInf : (s[i] < -DBL_MAX ? R_NegInf : (double)s[i]);
+    }
+  } break;
+  case CPLXSXP: {
+    ans = PROTECT(allocVector(CPLXSXP, ngrp));
+    Rcomplex *ansd = COMPLEX(ans);
+    for (int i=0; i<ngrp; i++) {
+      if (c[i]==0) { ansd[i].r = R_NaN; ansd[i].i = R_NaN; continue; }
+      s[i] /= c[i];
+      si[i] /= c[i];
+      ansd[i].r = s[i] >DBL_MAX ? R_PosInf : (s[i] < -DBL_MAX ? R_NegInf : (double)s[i]);
+      ansd[i].i = si[i]>DBL_MAX ? R_PosInf : (si[i]< -DBL_MAX ? R_NegInf : (double)si[i]);
+    }
+  } break;
+  default:
+    error("Internal error: unsupported type at the end of gmean"); // # nocov
   }
-  free(s); free(c);
+  free(s); free(si); free(c);
   copyMostAttrib(x, ans);
-  UNPROTECT(1);
   // Rprintf("this gmean na.rm=TRUE took %8.3f\n", 1.0*(clock()-start)/CLOCKS_PER_SEC);
+  UNPROTECT(1);
   return(ans);
 }
 
@@ -617,6 +726,9 @@ SEXP gmin(SEXP x, SEXP narm)
         }
       }
     }
+    break;
+  case CPLXSXP:
+    error("Type 'complex' has no well-defined min");
     break;
   default:
     error("Type '%s' not supported by GForce min (gmin). Either add the prefix base::min(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
@@ -761,6 +873,9 @@ SEXP gmax(SEXP x, SEXP narm)
       }
     }
     break;
+  case CPLXSXP:
+    error("Type 'complex' has no well-defined max");
+    break;
   default:
     error("Type '%s' not supported by GForce max (gmax). Either add the prefix base::max(.) or turn off GForce optimization using options(datatable.optimize=1)", type2char(TYPEOF(x)));
   }
@@ -868,6 +983,17 @@ SEXP glast(SEXP x) {
     }
   }
     break;
+  case CPLXSXP: {
+    const Rcomplex *dx = COMPLEX(x);
+    ans = PROTECT(allocVector(CPLXSXP, ngrp));
+    Rcomplex *dans = COMPLEX(ans);
+    for (i=0; i<ngrp; i++) {
+      k = ff[i]+grpsize[i]-2;
+      if (isunsorted) k = oo[k]-1;
+      k = (irowslen == -1) ? k : irows[k]-1;
+      dans[i] = dx[k];
+    }
+  } break;
   case STRSXP:
     ans = PROTECT(allocVector(STRSXP, ngrp));
     for (i=0; i<ngrp; i++) {
@@ -939,6 +1065,17 @@ SEXP gfirst(SEXP x) {
     }
   }
     break;
+  case CPLXSXP: {
+    const Rcomplex *dx = COMPLEX(x);
+    ans = PROTECT(allocVector(CPLXSXP, ngrp));
+    Rcomplex *dans = COMPLEX(ans);
+    for (i=0; i<ngrp; i++) {
+      k = ff[i]-1;
+      if (isunsorted) k = oo[k]-1;
+      k = (irowslen == -1) ? k : irows[k]-1;
+      dans[i] = dx[k];
+    }
+  } break;
   case STRSXP:
     ans = PROTECT(allocVector(STRSXP, ngrp));
     for (i=0; i<ngrp; i++) {
@@ -1022,6 +1159,18 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
     }
   }
     break;
+  case CPLXSXP: {
+    const Rcomplex *dx = COMPLEX(x);
+    ans = PROTECT(allocVector(CPLXSXP, ngrp));
+    Rcomplex *dans = COMPLEX(ans);
+    for (i=0; i<ngrp; i++) {
+      if (val > grpsize[i]) { dans[i].r = NA_REAL; dans[i].i = NA_REAL; continue; }
+      k = ff[i]+val-2;
+      if (isunsorted) k = oo[k]-1;
+      k = (irowslen == -1) ? k : irows[k]-1;
+      dans[i] = dx[k];
+    }
+  } break;
   case STRSXP:
     ans = PROTECT(allocVector(STRSXP, ngrp));
     for (i=0; i<ngrp; i++) {

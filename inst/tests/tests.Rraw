@@ -46,7 +46,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   setcoalesce = data.table:::setcoalesce
   setdiff_ = data.table:::setdiff_
   setreordervec = data.table:::setreordervec
-  setrev = data.table:::setrev
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
@@ -2820,23 +2819,29 @@ xx <- factor(letters[1:2], ordered=TRUE)
 yy <- sample(2L)
 yy_sort = base::sort.int(yy)
 old = options(datatable.CJ.names=FALSE)
-test(996.1, CJ(xx, yy), setkey(data.table(rep(xx, each=2L), rep(yy_sort, 2L))))
-test(996.2, CJ(a = xx, yy), setkey(data.table(a = rep(xx, each=2L), V2 = rep(yy_sort, 2L))))
+test(996.01, CJ(xx, yy), setkey(data.table(rep(xx, each=2L), rep(yy_sort, 2L))))
+test(996.02, CJ(a = xx, yy), setkey(data.table(a = rep(xx, each=2L), V2 = rep(yy_sort, 2L))))
 options(datatable.CJ.names=TRUE)
-test(996.3, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2L), yy = rep(yy_sort, 2L))))
+test(996.03, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2L), yy = rep(yy_sort, 2L))))
 options(old)
 
 # #3597 -- CJ properly informs sorted can't apply to list input
-test(996.4, CJ(list(1:2, 3L)), error = "non-atomic, which can't be sorted")
-test(996.5, CJ(list(1:2, 3), 4:6, sorted = FALSE),
+test(996.04, CJ(list(1:2, 3L)), error = "non-atomic, which can't be sorted")
+test(996.05, CJ(list(1:2, 3), 4:6, sorted = FALSE),
      data.table(V1 = list(1:2, 1:2, 1:2, 3, 3, 3), V2 = rep(4:6, 2L)))
-test(996.6, CJ(4:6, list(1:2, 3), sorted = FALSE),
+test(996.06, CJ(4:6, list(1:2, 3), sorted = FALSE),
      data.table(V1 = rep(4:6, each = 2L), V2 = rep(list(1:2, 3), 3L)))
-test(996.7, CJ(1:2, list(1:2, 3), 4:5, sorted = FALSE),
+test(996.07, CJ(1:2, list(1:2, 3), 4:5, sorted = FALSE),
      data.table(V1 = rep(1:2, each = 4L), V2 = rep(rep(list(1:2, 3), each = 2L), 2L), V3 = rep(4:5, 4L)))
 
-test(996.8, CJ(expression(1)), error = "element 1 is non-atomic")
-test(996.9, CJ(expression(2), 3, sorted = FALSE), error = "Type 'expression' not supported")
+test(996.08, CJ(expression(1)), error = "element 1 is non-atomic")
+test(996.09, CJ(expression(2), 3, sorted = FALSE), error = "Type 'expression' not supported")
+## complex input support (can't handle sorted yet)
+test(996.10, CJ(z = 0:1 + (0:1)*1i, b = 1:3, sorted = FALSE),
+     data.table(z = rep(0:1, each=3L) + rep(0:1, each=3L)*1i, b = rep(1:3, 2)))
+test(996.11, CJ(b = 1:3, z = 0:1 + (0:1)*1i, sorted = FALSE),
+     data.table(b = rep(1:3, each = 2L), z = rep(0:1, 3) + rep(0:1, 3)*1i))
+
 
 # That CJ orders NA consistently with setkey and historically, now it doesn't use setkey.
 # NA must always come first in data.table throughout, since binary search relies on that internally.
@@ -3914,33 +3919,7 @@ test(1159.6, setDT(x), error="Argument 'x' to 'setDT' should be a")
 x <- list(1, 2:3)
 test(1159.7, setDT(x), error="All elements in argument 'x' to 'setDT'")
 
-# tests for setrev
-x <- sample(10)
-y <- rev(x)
-setrev(x)
-test(1160.1, y, x)
-x <- sample(c(1:10, NA), 21, TRUE)
-y <- rev(x)
-setrev(x)
-test(1160.2, y, x)
-x <- sample(runif(10))
-y <- rev(x)
-setrev(x)
-test(1160.3, y, x)
-x <- sample(c(runif(10), NA, NaN), 21, TRUE)
-y <- rev(x)
-setrev(x)
-test(1160.4, y, x)
-x <- sample(letters)
-y <- rev(x)
-setrev(x)
-test(1160.5, y, x)
-x <- as.logical(sample(0:1, 20, TRUE))
-y <- rev(x)
-setrev(x)
-test(1160.6, y, x)
-x <- list(1:10)
-test(1160.7, setrev(x), error="Input 'x' must be a vector")
+# test 1160 was for setrev, now removed
 
 # tests for setreordervec
 # integer
@@ -7340,6 +7319,17 @@ test(1540.35, DT1[DT3, lapply(.SD, function(x) x * mul),
                  by=.EACHI, on=c(x="q", y="r"), roll=TRUE],
              DT1.copy[DT3, lapply(.SD, function(x) x * mul),
                  by=.EACHI, roll=TRUE])
+## more coverage tests for by = .EACHI, on = c(LHS = 'RHS') for numeric type
+set.seed(45L)
+DT1 = data.table(x=sample(letters[1:3], 15, TRUE), y=sample(6:10, 15, TRUE),
+                 a=sample(100, 15), b=runif(15))
+DT2 = CJ(x=letters[1:3], y=6:10)[, mul := sample(20, 15)][sample(15L, 5L)]
+DT3 = rbindlist(list(DT2, list(x="d", y=7L, mul=100L)))
+DT3 = DT3[sample(nrow(DT3))]
+DT1[ , x_num := match(x, letters) + .1]
+DT3[ , x_num := match(x, letters) + .1]
+test(1540.36, DT1[DT3[1:3], .(y = x_num), by=.EACHI, on=c(x_num="x_num")],
+     data.table(x_num = c(3.1, 4.1, 3.1), y = c(2.1, NA, NA)))
 
 # to do: add tests for :=
 
@@ -9580,8 +9570,8 @@ test(1658.44, file.info(f3)$size, file.info(f1)$size)
 unlink(c(f1,f2,f3))
 DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c("foo", "bar", "baz")))
 test(1658.45, fwrite(DT), output=c("a,b","1,1|2|3|4","2,3.14|1e+12","3,foo|bar|baz"))
-DT[3,b:=c(3i,4i,5i)]
-test(1658.46, fwrite(DT), error="Row 3 of list column is type 'complex'")
+DT[3,b:=as.raw(0:2)]
+test(1658.46, fwrite(DT), error="Row 3 of list column is type 'raw'")
 DT[3,b:=factor(letters[1:3])]
 test(1658.47, fwrite(DT), error="Row 3 of list column is type 'factor'")
 
@@ -9608,6 +9598,21 @@ DT = data.table(l=letters, n=1:26)
 test(1658.53, fwrite(DT, file=f<-tempfile(fileext=".gz"), bom=TRUE, col.names=FALSE), NULL)
 if (test_R.utils) test(1658.54, fread(f), setnames(DT,c("V1","V2")))
 unlink(f)
+
+# complex column support for fwrite, part of #3690
+DT = data.table(a=1:3, z=0:2 - (2:0)*1i)
+test(1658.55, fwrite(DT), output='a,z\n1,0-2i\n2,1-1i\n3,2+0i')
+test(1658.56, fwrite(data.table(exp(1) - pi*1i)), output='2.718[0-9]*-3.141[0-9]*i')
+## formerly 1658.46
+DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c(3i,4i,5i)))
+test(1658.57, fwrite(DT), output='0+3i|0+4i|0+5i')
+DT[ , b := c(1i, -1-1i, NA)]
+test(1658.58, fwrite(DT), output='a,b\n1,0\\+1i\n2,-1-1i\n3,$')
+
+# more coverage
+test(1658.59, fwrite(data.table(a=list('a')), verbose=TRUE),
+     output='fields will be quoted if the field contains either sep.*sep2.*list column')
+test(1658.60, fwrite(data.table(r=as.raw(0))), error = "'raw' - not yet implemented")
 
 ## End fwrite tests
 
@@ -13341,7 +13346,7 @@ test(1963.07, shift(DT, -1:1),
           c(NA, 10L, 9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L)))
 ## some coverage tests for good measure
 test(1963.08, shift(DT$x, type = 'some_other_type'), error='should be one of.*lag.*lead')
-test(1963.09, shift(c(1+3i, 2-1i)), error = 'Unsupported type')
+test(1963.09, shift(as.raw(0:1)), error = 'Unsupported type')
 test(1963.10, shift(DT, -1:1, type="shift", give.names = TRUE), # new type="shift" #3223
      ans <- list(`x_shift_-1` = c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA),
           x_shift_0 = 1:10,
@@ -13585,7 +13590,6 @@ test(1967.78, x[1:5, sum(v), by = list(i5 = 1:5 %% 2L), verbose = TRUE],
 
 # gforce integer overflow coerce to double
 DT = data.table(A=1:5, B=-3i, C=2147483647L)
-test(1968.1, DT[, sum(B), by=A%%2L], error="Type 'complex' not supported by GForce sum (gsum). Either add the")
 test(1968.2, storage.mode(DT$C), "integer")
 test(1968.3, DT[, sum(C), by=A%%2L], data.table(A=c(1L,0L), V1=c(6442450941, 4294967294)),
              warning="sum.*integer column.*more than type 'integer' can hold.*coerced to 'numeric'")
@@ -14240,16 +14244,16 @@ if (test_bit64) {
   DT = data.table(id=c(rep(1L,3), rep(2L, 3)), v=bit64::as.integer64(c(1:3, 4L, 5:6)))
   test(2019, DT[2:6, sum(v), id], data.table(id=1:2, V1=bit64::as.integer64(c(5L,15L)))) # gather, case of int64 and irows
 }
-DT = data.table(id = c(1L,1L,2L), v = c(1i, 2i, 3i))
-test(2020.01, DT[, min(v), by=id], error="'complex' not supported by GForce min")
-test(2020.02, DT[, max(v), by=id], error="'complex' not supported by GForce max")
-test(2020.03, DT[, median(v), by=id], error="'complex' not supported by GForce median")
-test(2020.04, DT[, head(v, 1), by=id], error="'complex' not supported by GForce head")
-test(2020.05, DT[, tail(v, 1), by=id], error="'complex' not supported by GForce tail")
-test(2020.06, DT[, v[1], by=id], error="'complex' not supported by GForce subset")
-test(2020.07, DT[, sd(v), by=id], error="'complex' not supported by GForce sd")
-test(2020.08, DT[, var(v), by=id], error="'complex' not supported by GForce var")
-test(2020.09, DT[, prod(v), by=id], error="'complex' not supported by GForce prod")
+DT = data.table(id = c(1L,1L,2L), v = as.raw(0:2))
+test(2020.01, DT[, min(v), by=id], error="'raw' not supported by GForce min")
+test(2020.02, DT[, max(v), by=id], error="'raw' not supported by GForce max")
+test(2020.03, DT[, median(v), by=id], error="'raw' not supported by GForce median")
+test(2020.04, DT[, head(v, 1), by=id], error="'raw' not supported by GForce head")
+test(2020.05, DT[, tail(v, 1), by=id], error="'raw' not supported by GForce tail")
+test(2020.06, DT[, v[1], by=id], error="'raw' not supported by GForce subset")
+test(2020.07, DT[, sd(v), by=id], error="'raw' not supported by GForce sd")
+test(2020.08, DT[, var(v), by=id], error="'raw' not supported by GForce var")
+test(2020.09, DT[, prod(v), by=id], error="'raw' not supported by GForce prod")
 DT = data.table(id = c(1L,1L,2L,2L), v = c(1L, 2L, NA, NA))
 test(2020.10, DT[, median(v), id], data.table(id=1:2, V1=c(1.5, NA))) # median whole group has NAs
 
@@ -15212,6 +15216,18 @@ setcoalesce(xx, list())
 test(2060.503, xx_addr, address(xx))
 test(2060.504, xx, x)
 test(2060.505, address(setcoalesce(xx)), xx_addr)
+# complex support for coalesce
+z1 = c(1i, NA, 1-1i, NA, 0+3i, NA)
+z2 = c(NA, 4-2i, 0+0i, NA, NA, NA)
+z3 = c(2, NA, 3+6i, 5-1i, NA, NA)
+na_idx = c(2L, 4L, 6L)
+test(2060.600, coalesce(z1, 0+0i), `[<-`(z1, na_idx, 0+0i))
+test(2060.601, coalesce(z1, z2), `[<-`(z1, na_idx, c(4-2i, NA, NA)))
+test(2060.602, coalesce(z1, z2, z3), `[<-`(z1, na_idx, c(4-2i, 5-1i, NA)))
+z_addr = address(z1)
+setcoalesce(z1, z2, z3)
+test(2060.603, address(z1), z_addr)
+test(2060.604, z1, `[<-`(z1, na_idx, c(4-2i, 5-1i, NA)))
 
 # #3650 -- ensure max nrow check on CJ is applied after unique
 l = replicate(ceiling(log10(.Machine$integer.max)), rep(1L, 10L), simplify = FALSE)
@@ -15259,89 +15275,145 @@ test(2064.1, x[i, class(date), verbose=TRUE], 'Date',
 test(2064.2, i[x, class(date), verbose=TRUE], 'Date',
              output="Coerced integer column i.date to type double for join to match type of x.date")
 
+# complex values in grouping, #3639
+set.seed(42)
+DT = CJ(x = 1:10, a = c("a", "b"), b = 1:2)
+DT[ , z := complex(rnorm(1:.N), rnorm(1:.N))]
+## can simplify this test after #1444
+test(2065.1, all.equal(setkey(copy(DT), NULL), DT[, .(x = x, z = z), by = .(a, b)][order(x, a, b)], ignore.col.order = TRUE))
+test(2065.2, DT[ , base::sum(z), by = a], data.table(a = c('a', 'b'), V1 = c(5.0582228485073+0i, -1.8644229822705+0i)))
+test(2065.3, DT[ , sum(Mod(z)), by = b], data.table(b = 1:2, V1 = c(16.031422657932, 13.533483145656)))
+## mimicking test 171.3 for coverage
+x = data.table(A=c(25L,85L,25L,25L,85L), B=c("a","a","b","c","c"), z=0:4 + (4:0)*1i)
+test(2065.4, x[ , data.table(A, z)[A==25, z] + data.table(A, z)[A==85, z], by=B],
+     data.table(B = c('a', 'c'), V1 = c(1, 7) + (c(7, 1))*1i))
+## mimicking test 771 for coverage
+a = data.table(first=1:6, third=c(1i,1,1i,3,3i,4), key="first")
+b = data.table(first=c(3,4,4,5,6,7,8), second=1:7, key="first")
+test(2065.5, b[ , third:=a[b, third, by=.EACHI]], error="Supplied 2 items to be assigned to 7 items of")
+# also works for assignment, as noted in #3690
+DT[ , z_sum := base::sum(z), by = .(a, b)]
+test(2065.6, DT[ , z_sum := base::sum(z), by = .(a, b)][1:3, z_sum],
+     c(1.8791864549242+0i, 3.17903639358309+0i, -4.18868631527035+0i))
+test(2065.7, DT[1L, z_sum := 1i][1L, z_sum], 1i)
+
+# GForce for complex columns, part of #3690
+DT = data.table(id=c(1L,1L,2L), v=c(1i, 2i, 3i))
+test(2066.01, DT[, min(v), by=id], error="'complex' has no well-defined min")
+test(2066.02, DT[, max(v), by=id], error="'complex' has no well-defined max")
+test(2066.03, DT[, head(v, 1), by=id], data.table(id=1:2, V1=c(1, 3)*1i))
+test(2066.04, DT[, tail(v, 1), by=id], data.table(id=1:2, V1=(2:3)*1i))
+test(2066.05, DT[, v[2], by=id], data.table(id = 1:2, V1=c(2i, NA)))
+## former test 1968.1
+DT = data.table(A=1:5, B=-3i, C=2147483647L)
+test(2066.06, DT[,    .(sum(B), mean(B)), by=A%%2L], data.table(A=1:0, V1=c(-9i, -6i), V2=-3i))
+test(2066.07, DT[2:4, .(sum(B), mean(B)), by=A%%2L], data.table(A=0:1, V1=c(-6i, -3i), V2=-3i))
+DT[4, B:=NA]
+test(2066.08, DT[,    .(sum(B), mean(B)), by=A%%2L], data.table(A=1:0, V1=c(-9i, NA), V2=c(-3i, NA)))
+test(2066.09, DT[2:4, .(sum(B), mean(B)), by=A%%2L], data.table(A=0:1, V1=c(NA, -3i), V2=c(NA, -3i)))
+test(2066.10, DT[,    .(sum(B, na.rm=TRUE), mean(B, na.rm=TRUE)), by=A%%2L], data.table(A=1:0, V1=c(-9i, -3i), V2=-3i))
+test(2066.11, DT[2:4, .(sum(B, na.rm=TRUE), mean(B, na.rm=TRUE)), by=A%%2L], data.table(A=0:1, V1=c(-3i, -3i), V2=-3i))
+
+# Shift complex values, part of #3690
+z = c(1:3) + c(3:1)*1i
+test(2067.1, shift(z), c(NA, z[1:2]))
+test(2067.2, shift(z, type = 'lead'), c(z[2:3], NA))
+test(2067.3, shift(z, fill = 1i), c(1i, z[1:2]))
+test(2067.4, shift(list(z, 1:3)), list(c(NA, z[1:2]), c(NA, 1:2)))
+
+# support for ordering tables with complex columns, #1444
+DT = data.table(a = 2:1, z = complex(0, 0:1))
+test(2068.1, setkey(copy(DT), a), data.table(a=1:2, z=complex(0, 1:0), key='a'))
+test(2068.2, DT[ , abs(z), by=a], data.table(a=2:1, V1=c(0, 1)))
+# raw continues not to be supported
+DT = data.table(ID=2:1, r=as.raw(0:1))
+test(2068.3, setkey(DT, ID), error="Item 2 of list is type 'raw'")
+# setreordervec triggers !isNewList branch for coverage
+test(2068.4, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
+
 # fifelse, #3657
 test_vec = -5L:5L < 0L
 test_vec_na = c(test_vec, NA)
 out_vec = rep(1:0, 5:6)
 out_vec_na = c(out_vec, NA_integer_)
-test(2065.001, fifelse(test_vec, 1L, 0L), out_vec)
-test(2065.002, fifelse(test_vec, 1, 0), as.numeric(out_vec))
-test(2065.003, fifelse(test_vec, TRUE, FALSE), as.logical(out_vec))
-test(2065.004, fifelse(test_vec, "1", "0"), as.character(out_vec))
-test(2065.005, fifelse(test_vec_na, TRUE, NA), c(rep(TRUE,5L), rep(NA,7L)))
-test(2065.006, fifelse(test_vec, rep(1L,11L), rep(0L,11L)), out_vec)
-test(2065.007, fifelse(test_vec, rep(1L,11L), 0L), out_vec)
-test(2065.008, fifelse(test_vec, 1L, rep(0L,11L)), out_vec)
-test(2065.009, fifelse(test_vec, rep(1L,11L), rep(0L,10L)), error = "Length of 'no' must be 1 or equal to length of 'test' (11).")
-test(2065.010, fifelse(test_vec, rep(1,10L), rep(0,11L)), error = "Length of 'yes' must be 1 or equal to length of 'test' (11).")
-test(2065.011, fifelse(test_vec, rep(TRUE,10L), rep(FALSE,10L)), error = "Length of 'yes' and 'no' must be 1 or equal to length of 'test' (11).")
-test(2065.012, fifelse(0:1, rep(TRUE,2L), rep(FALSE,2L)), error = "Argument 'test' must be logical.")
-test(2065.013, fifelse(test_vec, TRUE, "FALSE"), error = "'yes' is of type logical but 'no' is of type character. Please make sure candidate replacements are of the same type.")
-test(2065.014, fifelse(test_vec, list(1),list(2,4)), error = "Length of 'no' must be 1 or equal to length of 'test' (11).")
-test(2065.015, fifelse(test_vec, list(1,3),list(2,4)), error = "Length of 'yes' and 'no' must be 1 or equal to length of 'test' (11).")
-test(2065.016, fifelse(test_vec, list(1), 0), as.list(as.numeric(out_vec)))
-test(2065.017, fifelse(test_vec, 1, list(0)), as.list(as.numeric(out_vec)))
+test(2069.001, fifelse(test_vec, 1L, 0L), out_vec)
+test(2069.002, fifelse(test_vec, 1, 0), as.numeric(out_vec))
+test(2069.003, fifelse(test_vec, TRUE, FALSE), as.logical(out_vec))
+test(2069.004, fifelse(test_vec, "1", "0"), as.character(out_vec))
+test(2069.005, fifelse(test_vec_na, TRUE, NA), c(rep(TRUE,5L), rep(NA,7L)))
+test(2069.006, fifelse(test_vec, rep(1L,11L), rep(0L,11L)), out_vec)
+test(2069.007, fifelse(test_vec, rep(1L,11L), 0L), out_vec)
+test(2069.008, fifelse(test_vec, 1L, rep(0L,11L)), out_vec)
+test(2069.009, fifelse(test_vec, rep(1L,11L), rep(0L,10L)), error = "Length of 'no' must be 1 or equal to length of 'test' (11).")
+test(2069.010, fifelse(test_vec, rep(1,10L), rep(0,11L)), error = "Length of 'yes' must be 1 or equal to length of 'test' (11).")
+test(2069.011, fifelse(test_vec, rep(TRUE,10L), rep(FALSE,10L)), error = "Length of 'yes' and 'no' must be 1 or equal to length of 'test' (11).")
+test(2069.012, fifelse(0:1, rep(TRUE,2L), rep(FALSE,2L)), error = "Argument 'test' must be logical.")
+test(2069.013, fifelse(test_vec, TRUE, "FALSE"), error = "'yes' is of type logical but 'no' is of type character. Please make sure candidate replacements are of the same type.")
+test(2069.014, fifelse(test_vec, list(1),list(2,4)), error = "Length of 'no' must be 1 or equal to length of 'test' (11).")
+test(2069.015, fifelse(test_vec, list(1,3),list(2,4)), error = "Length of 'yes' and 'no' must be 1 or equal to length of 'test' (11).")
+test(2069.016, fifelse(test_vec, list(1), 0), as.list(as.numeric(out_vec)))
+test(2069.017, fifelse(test_vec, 1, list(0)), as.list(as.numeric(out_vec)))
 ## Jan 1 - 5, 2011
 date_vec = as.Date(14975:14979, origin = '1970-01-01')
-test(2065.018,
+test(2069.018,
      fifelse(date_vec == "2011-01-01", date_vec - 1L, date_vec),
      c(date_vec[1L] - 1L, date_vec[2:5]))
-test(2065.019,
+test(2069.019,
      fifelse(factor(letters[1:5]) %in% c("a","b","c"), factor(letters[1:5]), factor(NA)),
      factor(c("a","b","c",NA,NA),levels = letters[1:5]))
-test(2065.020, fifelse(test_vec_na, 1L, 0L), out_vec_na)
-test(2065.021, fifelse(test_vec_na, rep(1L,12L), 0L), out_vec_na)
-test(2065.022, fifelse(test_vec_na, rep(1L,12L), rep(0L,12L)), out_vec_na)
-test(2065.023, fifelse(test_vec_na, 1L, rep(0L,12L)), out_vec_na)
-test(2065.024, fifelse(test_vec_na, 1, 0), as.numeric(out_vec_na))
-test(2065.025, fifelse(test_vec_na, rep(1,12L), 0), as.numeric(out_vec_na))
-test(2065.026, fifelse(test_vec_na, rep(1,12L), rep(0,12L)), as.numeric(out_vec_na))
-test(2065.027, fifelse(test_vec_na, 1, rep(0,12L)), as.numeric(out_vec_na))
-test(2065.028, fifelse(test_vec_na, TRUE, rep(FALSE,12L)), as.logical(out_vec_na))
-test(2065.029, fifelse(test_vec_na, rep(TRUE,12L), FALSE), as.logical(out_vec_na))
-test(2065.030, fifelse(test_vec_na, rep(TRUE,12L), rep(FALSE,12L)), as.logical(out_vec_na))
-test(2065.031, fifelse(test_vec_na, "1", rep("0",12L)), as.character(out_vec_na))
-test(2065.032, fifelse(test_vec_na, rep("1",12L), "0"), as.character(out_vec_na))
-test(2065.033, fifelse(test_vec_na, rep("1",12L), rep("0",12L)), as.character(out_vec_na))
-test(2065.034, fifelse(test_vec_na, "1", "0"), as.character(out_vec_na))
-test(2065.035, fifelse(test_vec, as.Date("2011-01-01"), FALSE), error = "'yes' is of type double but 'no' is of type logical. Please make sure candidate replacements are of the same type.")
-test(2065.036, fifelse(test_vec_na, 1+0i, 0+0i), as.complex(out_vec_na))
-test(2065.037, fifelse(test_vec_na, rep(1+0i,12L), 0+0i), as.complex(out_vec_na))
-test(2065.038, fifelse(test_vec_na, rep(1+0i,12L), rep(0+0i,12L)), as.complex(out_vec_na))
-test(2065.039, fifelse(test_vec_na, 1+0i, rep(0+0i,12L)), as.complex(out_vec_na))
-test(2065.040, fifelse(test_vec, as.raw(0), as.raw(1)), error = "Type raw is not supported.")
-test(2065.041, fifelse(TRUE,1,as.Date("2019-07-07")), error = "'yes' has different class than 'no'. Please make sure that candidate replacements have the same class.")
-test(2065.042, fifelse(TRUE,1L,factor(letters[1])), error = "'yes' has different class than 'no'. Please make sure that candidate replacements have the same class.")
-test(2065.043, fifelse(TRUE, list(1:5), list(5:1)), list(1:5))
-test(2065.044, fifelse(as.logical(NA), list(1:5), list(5:1)), list(NA_integer_))
-test(2065.045, fifelse(FALSE, list(1:5), list(5:1)), list(5:1))
-test(2065.046, fifelse(TRUE, data.table(1:5), data.table(5:1)), data.table(1:5))
-test(2065.047, fifelse(FALSE, data.table(1:5), data.table(5:1)), data.table(5:1))
-test(2065.048, fifelse(TRUE, data.frame(1:5), data.frame(5:1)), data.frame(1:5))
-test(2065.049, fifelse(FALSE, data.frame(1:5), data.frame(5:1)), data.frame(5:1))
-test(2065.050, fifelse(c(TRUE,FALSE), list(1:5,6:10), list(10:6,5:1)), list(1:5,5:1))
-test(2065.051, fifelse(c(NA,TRUE), list(1:5,6:10), list(10:6,5:1)), list(NA_integer_,6:10))
-test(2065.052, fifelse(c(FALSE,TRUE), list(1:5,6:10), list(10:6,5:1)), list(10:6,6:10))
-test(2065.053, fifelse(c(NA,TRUE), list(1:5), list(10:6,5:1)), list(NA_integer_,1:5))
-test(2065.054, fifelse(c(NA,TRUE), list(1:5,6:10), list(5:1)), list(NA_integer_,6:10))
-test(2065.055, fifelse(c(FALSE,TRUE), list(TRUE), list(10:6,5:1)), list(10:6,TRUE))
-test(2065.056, fifelse(c(FALSE,TRUE), list(as.Date("2019-07-07")), list(10:6,5:1)), list(10:6,as.Date("2019-07-07")))
-test(2065.057, fifelse(c(FALSE,TRUE), list(factor(letters[1:5])), list(10:6,5:1)), list(10:6,factor(letters[1:5])))
-test(2065.058, fifelse(c(NA,FALSE), list(1:5), list(10:6,5:1)), list(NA_integer_,5:1))
-test(2065.059, fifelse(c(NA,FALSE), list(1:5,6:10), list(5:1)), list(NA_integer_,5:1))
-test(2065.060, fifelse(c(NA,FALSE), list(1:5), list(5:1)), list(NA_integer_,5:1))
-test(2065.061, fifelse(c(TRUE,FALSE), list(1L), 0L), list(1L,0L))
-test(2065.062, fifelse(c(TRUE,FALSE), 1L, list(0L)), list(1L,0L))
-test(2065.063,
+test(2069.020, fifelse(test_vec_na, 1L, 0L), out_vec_na)
+test(2069.021, fifelse(test_vec_na, rep(1L,12L), 0L), out_vec_na)
+test(2069.022, fifelse(test_vec_na, rep(1L,12L), rep(0L,12L)), out_vec_na)
+test(2069.023, fifelse(test_vec_na, 1L, rep(0L,12L)), out_vec_na)
+test(2069.024, fifelse(test_vec_na, 1, 0), as.numeric(out_vec_na))
+test(2069.025, fifelse(test_vec_na, rep(1,12L), 0), as.numeric(out_vec_na))
+test(2069.026, fifelse(test_vec_na, rep(1,12L), rep(0,12L)), as.numeric(out_vec_na))
+test(2069.027, fifelse(test_vec_na, 1, rep(0,12L)), as.numeric(out_vec_na))
+test(2069.028, fifelse(test_vec_na, TRUE, rep(FALSE,12L)), as.logical(out_vec_na))
+test(2069.029, fifelse(test_vec_na, rep(TRUE,12L), FALSE), as.logical(out_vec_na))
+test(2069.030, fifelse(test_vec_na, rep(TRUE,12L), rep(FALSE,12L)), as.logical(out_vec_na))
+test(2069.031, fifelse(test_vec_na, "1", rep("0",12L)), as.character(out_vec_na))
+test(2069.032, fifelse(test_vec_na, rep("1",12L), "0"), as.character(out_vec_na))
+test(2069.033, fifelse(test_vec_na, rep("1",12L), rep("0",12L)), as.character(out_vec_na))
+test(2069.034, fifelse(test_vec_na, "1", "0"), as.character(out_vec_na))
+test(2069.035, fifelse(test_vec, as.Date("2011-01-01"), FALSE), error = "'yes' is of type double but 'no' is of type logical. Please make sure candidate replacements are of the same type.")
+test(2069.036, fifelse(test_vec_na, 1+0i, 0+0i), as.complex(out_vec_na))
+test(2069.037, fifelse(test_vec_na, rep(1+0i,12L), 0+0i), as.complex(out_vec_na))
+test(2069.038, fifelse(test_vec_na, rep(1+0i,12L), rep(0+0i,12L)), as.complex(out_vec_na))
+test(2069.039, fifelse(test_vec_na, 1+0i, rep(0+0i,12L)), as.complex(out_vec_na))
+test(2069.040, fifelse(test_vec, as.raw(0), as.raw(1)), error = "Type raw is not supported.")
+test(2069.041, fifelse(TRUE,1,as.Date("2019-07-07")), error = "'yes' has different class than 'no'. Please make sure that candidate replacements have the same class.")
+test(2069.042, fifelse(TRUE,1L,factor(letters[1])), error = "'yes' has different class than 'no'. Please make sure that candidate replacements have the same class.")
+test(2069.043, fifelse(TRUE, list(1:5), list(5:1)), list(1:5))
+test(2069.044, fifelse(as.logical(NA), list(1:5), list(5:1)), list(NA_integer_))
+test(2069.045, fifelse(FALSE, list(1:5), list(5:1)), list(5:1))
+test(2069.046, fifelse(TRUE, data.table(1:5), data.table(5:1)), data.table(1:5))
+test(2069.047, fifelse(FALSE, data.table(1:5), data.table(5:1)), data.table(5:1))
+test(2069.048, fifelse(TRUE, data.frame(1:5), data.frame(5:1)), data.frame(1:5))
+test(2069.049, fifelse(FALSE, data.frame(1:5), data.frame(5:1)), data.frame(5:1))
+test(2069.050, fifelse(c(TRUE,FALSE), list(1:5,6:10), list(10:6,5:1)), list(1:5,5:1))
+test(2069.051, fifelse(c(NA,TRUE), list(1:5,6:10), list(10:6,5:1)), list(NA_integer_,6:10))
+test(2069.052, fifelse(c(FALSE,TRUE), list(1:5,6:10), list(10:6,5:1)), list(10:6,6:10))
+test(2069.053, fifelse(c(NA,TRUE), list(1:5), list(10:6,5:1)), list(NA_integer_,1:5))
+test(2069.054, fifelse(c(NA,TRUE), list(1:5,6:10), list(5:1)), list(NA_integer_,6:10))
+test(2069.055, fifelse(c(FALSE,TRUE), list(TRUE), list(10:6,5:1)), list(10:6,TRUE))
+test(2069.056, fifelse(c(FALSE,TRUE), list(as.Date("2019-07-07")), list(10:6,5:1)), list(10:6,as.Date("2019-07-07")))
+test(2069.057, fifelse(c(FALSE,TRUE), list(factor(letters[1:5])), list(10:6,5:1)), list(10:6,factor(letters[1:5])))
+test(2069.058, fifelse(c(NA,FALSE), list(1:5), list(10:6,5:1)), list(NA_integer_,5:1))
+test(2069.059, fifelse(c(NA,FALSE), list(1:5,6:10), list(5:1)), list(NA_integer_,5:1))
+test(2069.060, fifelse(c(NA,FALSE), list(1:5), list(5:1)), list(NA_integer_,5:1))
+test(2069.061, fifelse(c(TRUE,FALSE), list(1L), 0L), list(1L,0L))
+test(2069.062, fifelse(c(TRUE,FALSE), 1L, list(0L)), list(1L,0L))
+test(2069.063,
      fifelse(factor(letters[1:5]) %in% c("a","b","c"), factor(NA), factor(letters[1:5])),
      factor(c(NA,NA,NA,"d","e"),levels = letters[1:5]))
-test(2065.064, 
+test(2069.064, 
      fifelse(factor(c(letters[1:5],NA)) %in% c("a","b","c"), factor(NA), factor(letters[1:6])),
      factor(c(NA,NA,NA,"d","e","f"),levels = letters[1:6]))
-test(2065.065, 
+test(2069.065, 
      fifelse(factor(c(letters[1:5],NA)) %in% c("a","b","c"), factor(letters[1:6]), factor(NA)),
      factor(c("a","b","c",NA,NA,NA),levels = letters[1:6]))
-test(2065.066, 
+test(2069.066, 
      fifelse(factor(c(letters[1:5],NA)) %in% c("a","b","c"), factor(NA), factor(NA)),
      factor(c(NA,NA,NA,NA,NA,NA)))
 
