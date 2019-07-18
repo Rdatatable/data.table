@@ -35,7 +35,7 @@
     * Gains `yaml` argument matching that of `fread`, [#3534](https://github.com/Rdatatable/data.table/issues/3534). See the item in `fread` for a bit more detail; here, we'd like to reiterate that feedback is appreciated in the initial phase of rollout for this feature.
 
     * Gains `bom` argument to add a *byte order mark* (BOM) at the beginning of the file to signal that the file is encoded in UTF-8, [#3488](https://github.com/Rdatatable/data.table/issues/3488). Thanks to Stefan Fleck for requesting and Philippe Chataignon for implementing.
-    
+
     * Now supports type `complex`, [#3690](https://github.com/Rdatatable/data.table/issues/3690).
 
 4. Assigning to one item of a list column no longer requires the RHS to be wrapped with `list` or `.()`, [#950](https://github.com/Rdatatable/data.table/issues/950).
@@ -133,7 +133,9 @@
     
 19. Sorting now extended to complex vectors, [#1703](https://github.com/Rdatatable/data.table/issues/1703). Consistent with `base::order`, sorting is done lexicographically (`z1<z2` means `Re(z1) < Re(z2) | (Re(z1) == Re(z2) & Im(z1) < Im(z2))`). By extension, this means that complex columns can now be used in sorting keys; a related bug ([#1444](https://github.com/Rdatatable/data.table/issues/1444); thanks to @atalikami for the report) was preventing keys to be set on even the non-complex columns of a table.
 
-19. `shift` now supports complex vectors, part of [#3690](https://github.com/Rdatatable/data.table/issues/3690).
+19. `shift` now supports type `complex`, part of [#3690](https://github.com/Rdatatable/data.table/issues/3690).
+
+20. `setkey` now supports type `complex` as value columns (not as key columns), [#1444](https://github.com/Rdatatable/data.table/issues/1444). Thanks Gareth Ward for the report.
 
 #### BUG FIXES
 

@@ -46,7 +46,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   setcoalesce = data.table:::setcoalesce
   setdiff_ = data.table:::setdiff_
   setreordervec = data.table:::setreordervec
-  setrev = data.table:::setrev
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
@@ -3920,33 +3919,7 @@ test(1159.6, setDT(x), error="Argument 'x' to 'setDT' should be a")
 x <- list(1, 2:3)
 test(1159.7, setDT(x), error="All elements in argument 'x' to 'setDT'")
 
-# tests for setrev
-x <- sample(10)
-y <- rev(x)
-setrev(x)
-test(1160.1, y, x)
-x <- sample(c(1:10, NA), 21, TRUE)
-y <- rev(x)
-setrev(x)
-test(1160.2, y, x)
-x <- sample(runif(10))
-y <- rev(x)
-setrev(x)
-test(1160.3, y, x)
-x <- sample(c(runif(10), NA, NaN), 21, TRUE)
-y <- rev(x)
-setrev(x)
-test(1160.4, y, x)
-x <- sample(letters)
-y <- rev(x)
-setrev(x)
-test(1160.5, y, x)
-x <- as.logical(sample(0:1, 20, TRUE))
-y <- rev(x)
-setrev(x)
-test(1160.6, y, x)
-x <- list(1:10)
-test(1160.7, setrev(x), error="Input 'x' must be a vector")
+# test 1160 was for setrev, now removed
 
 # tests for setreordervec
 # integer
@@ -15348,18 +15321,28 @@ test(2067.2, shift(z, type = 'lead'), c(z[2:3], NA))
 test(2067.3, shift(z, fill = 1i), c(1i, z[1:2]))
 test(2067.4, shift(list(z, 1:3)), list(c(NA, z[1:2]), c(NA, 1:2)))
 
+# support for ordering tables with complex columns, #1444
+DT = data.table(a = 2:1, z = complex(0, 0:1))
+test(2068.1, setkey(copy(DT), a), data.table(a=1:2, z=complex(0, 1:0), key='a'))
+test(2068.2, DT[ , abs(z), by=a], data.table(a=2:1, V1=c(0, 1)))
+# raw continues not to be supported
+DT = data.table(ID=2:1, r=as.raw(0:1))
+test(2068.3, setkey(DT, ID), error="Item 2 of list is type 'raw'")
+# setreordervec triggers !isNewList branch for coverage
+test(2068.4, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
+
 # forderv (and downstream functions) handles complex vector input, part of #3690
 DT = data.table(
   a = c(1L, 1L, 8L, 2L, 1L, 9L, 3L, 2L, 6L, 6L),
   b = c(3+9i, 10+5i, 8+2i, 10+4i, 3+3i, 1+2i, 5+1i, 8+1i, 8+2i, 10+6i),
   c = 6
 )
-test(2068.01, DT[order(a, b)], DT[base::order(a, b)])
-test(2068.02, DT[order(a, -b)], DT[base::order(a, -b)])
-test(2068.03, forderv(DT$b, order = 1L), base::order(DT$b))
-test(2068.04, forderv(DT$b, order = -1L), base::order(-DT$b))
-test(2068.05, forderv(DT, by = 2:1), forderv(DT[ , 2:1]))
-test(2068.06, forderv(DT, by = 2:1, order = c(1L, -1L)), DT[order(b, -a), which = TRUE])
+test(2069.01, DT[order(a, b)], DT[base::order(a, b)])
+test(2069.02, DT[order(a, -b)], DT[base::order(a, -b)])
+test(2069.03, forderv(DT$b, order = 1L), base::order(DT$b))
+test(2069.04, forderv(DT$b, order = -1L), base::order(-DT$b))
+test(2069.05, forderv(DT, by = 2:1), forderv(DT[ , 2:1]))
+test(2069.06, forderv(DT, by = 2:1, order = c(1L, -1L)), DT[order(b, -a), which = TRUE])
 
 # downstreams of forder
 DT = data.table(
@@ -15368,29 +15351,29 @@ DT = data.table(
   v = c(3, 1, 4, 1, 5, 9)
 )
 unq_z = 0:3 + (1:4)*1i
-test(2068.07, DT[ , .N, by=z], data.table(z=unq_z, N=c(2L, 2L, 1L, 1L)))
-test(2068.08, DT[ , .N, keyby = z], data.table(z=unq_z, N=c(2L, 2L, 1L, 1L), key='z'))
-test(2068.09, dcast(DT, z ~ grp, value.var='v', fill=0),
+test(2069.07, DT[ , .N, by=z], data.table(z=unq_z, N=c(2L, 2L, 1L, 1L)))
+test(2069.08, DT[ , .N, keyby = z], data.table(z=unq_z, N=c(2L, 2L, 1L, 1L), key='z'))
+test(2069.09, dcast(DT, z ~ grp, value.var='v', fill=0),
      data.table(z=unq_z, `1`=c(3, 4, 5, 0), `2`=c(1, 1, 0, 9), key='z'))
-test(2068.10, frank(DT$z), c(1.5, 1.5, 3.5, 3.5, 5, 6))
-test(2068.11, frank(DT$z, ties.method='max'), c(2L, 2L, 4L, 4L, 5L, 6L))
-test(2068.12, frank(-DT$z, ties.method='min'), c(5L, 5L, 3L, 3L, 2L, 1L))
-test(2068.13, DT[ , rowid(z, grp)], rep(1L, 6L))
-test(2068.14, DT[ , rowid(z)], c(1:2, 1:2, 1L, 1L))
-test(2068.15, rleid(c(1i, 1i, 1i, 0, 0, 1-1i, 2+3i, 2+3i)), rep(1:4, c(3:1, 2L)))
+test(2069.10, frank(DT$z), c(1.5, 1.5, 3.5, 3.5, 5, 6))
+test(2069.11, frank(DT$z, ties.method='max'), c(2L, 2L, 4L, 4L, 5L, 6L))
+test(2069.12, frank(-DT$z, ties.method='min'), c(5L, 5L, 3L, 3L, 2L, 1L))
+test(2069.13, DT[ , rowid(z, grp)], rep(1L, 6L))
+test(2069.14, DT[ , rowid(z)], c(1:2, 1:2, 1L, 1L))
+test(2069.15, rleid(c(1i, 1i, 1i, 0, 0, 1-1i, 2+3i, 2+3i)), rep(1:4, c(3:1, 2L)))
 
 # #1444 -- support for ordering tables with complex columns
 DT = data.table(a = 2:1, z = 0 + (1:0)*1i)
-test(2068.16, setkey(copy(DT), a), data.table(a=1:2, z=0+ (0:1)*1i, key='a'))
-test(2068.17, DT[ , abs(z), by=a], data.table(a=2:1, V1=c(1, 0)))
-test(2068.18, setkey(copy(DT), z), data.table(a=1:2, z=0+ (0:1)*1i, key='z'))
-test(2068.19, setorder(DT, z), data.table(a=1:2, z=0+ (0:1)*1i))
+test(2069.16, setkey(copy(DT), a), data.table(a=1:2, z=0+ (0:1)*1i, key='a'))
+test(2069.17, DT[ , abs(z), by=a], data.table(a=2:1, V1=c(1, 0)))
+test(2069.18, setkey(copy(DT), z), data.table(a=1:2, z=0+ (0:1)*1i, key='z'))
+test(2069.19, setorder(DT, z), data.table(a=1:2, z=0+ (0:1)*1i))
 
 # raw continues not to be supported
 DT = data.table(ID=2:1, r=as.raw(0:1))
-test(2068.20, setkey(DT, ID), error="Item 2 of list is type 'raw'")
+test(2069.20, setkey(DT, ID), error="Item 2 of list is type 'raw'")
 # setreordervec triggers !isNewList branch for coverage
-test(2068.21, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
+test(2069.21, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
 
 # DT1 = data.table(z = c(0+1i, 2-3i, 4+1i))
 # DT2 = data.table(z = c(2-3i, 0+1i, 0+0i))
@@ -15398,12 +15381,12 @@ test(2068.21, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors 
 
 ## assorted coverage tests from along the way
 if (test_bit64) {
-  test(2068.50, is.sorted(as.integer64(10:1)), FALSE)
-  test(2068.51, is.sorted(as.integer64(1:10)))
+  test(2069.50, is.sorted(as.integer64(10:1)), FALSE)
+  test(2069.51, is.sorted(as.integer64(1:10)))
 }
 # sort by vector outside of table
 ord = 3:1
-test(2068.52, forder(data.table(a = 3:1), ord), 3:1)
+test(2069.52, forder(data.table(a = 3:1), ord), 3:1)
 
 
 ###################################
