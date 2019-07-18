@@ -15388,6 +15388,10 @@ test(2069.28, DT[, .SD[3,], by=b], DT[9:12, .(b, a, z)])
 DT = data.table(x=1:4,y=1:2,lgl=TRUE,key="x,y")
 test(2069.29, DT[CJ(1:4,1:4), any(lgl), by=.EACHI]$V1,
      c(TRUE, NA, NA, NA, NA, TRUE, NA, NA, TRUE, NA, NA, NA, NA, TRUE, NA, NA))
+set.seed(45L)
+DT1 = data.table(a = sample(3L, 15L, TRUE) + .1, b=sample(c(TRUE, FALSE, NA), 15L, TRUE))
+DT2 = data.table(a = sample(3L, 6L, TRUE) + .1, b=sample(c(TRUE, FALSE, NA), 6L, TRUE))
+test(2069.30, DT1[DT2, .(y = sum(b, na.rm=TRUE)), by=.EACHI, on=c(a = 'a', b="b")]$y, rep(0L, 6L))
 
 
 ###################################

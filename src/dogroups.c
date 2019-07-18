@@ -161,9 +161,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       INTEGER(I)[0] = 0;
       for (int j=0; j<length(xSD); ++j) {
         switch (TYPEOF(VECTOR_ELT(xSD, j))) {
-        case LGLSXP : // #nocov
-          LOGICAL(VECTOR_ELT(xSD,j))[0] = NA_LOGICAL; // #nocov
-          break; // #nocov
+        case LGLSXP :
+          LOGICAL(VECTOR_ELT(xSD,j))[0] = NA_LOGICAL;
+          break;
         case INTSXP :
           INTEGER(VECTOR_ELT(xSD,j))[0] = NA_INTEGER;
           break;
