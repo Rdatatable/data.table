@@ -368,3 +368,4 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
     return ScalarInteger(3-narm);
   return ScalarInteger(2-(narm && third!=NA_LOGICAL));
 }
+
