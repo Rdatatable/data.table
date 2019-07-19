@@ -15396,7 +15396,7 @@ DT1 = data.table(a = sample(3L, 15L, TRUE) + .1, b=sample(c(TRUE, FALSE, NA), 15
 DT2 = data.table(a = sample(3L, 6L, TRUE) + .1, b=sample(c(TRUE, FALSE, NA), 6L, TRUE))
 test(2069.32, DT1[DT2, .(y = sum(b, na.rm=TRUE)), by=.EACHI, on=c(a = 'a', b="b")]$y, rep(0L, 6L))
 DT = data.table(z = 1i)
-test(2069.33, DT[DT, on = 'z'], error = "Type 'complex' not supported for merging")
+test(2069.33, DT[DT, on = 'z'], error = "Type 'complex' not supported for joining/merging")
 
 ###################################
 #  Add new tests above this line  #
