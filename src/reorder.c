@@ -101,3 +101,4 @@ SEXP reorder(SEXP x, SEXP order)
   UNPROTECT(nprotect);
   return(R_NilValue);
 }
+
