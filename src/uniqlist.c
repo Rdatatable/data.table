@@ -203,7 +203,7 @@ SEXP rleid(SEXP l, SEXP cols) {
         case CPLXSXP: {
           // tried to make long long complex * but got a warning that it's a GNU extension
           Rcomplex *pz = COMPLEX(jcol);
-          same = (long long)pz[i].r == (long long)pz[i-1].r && (long long)pz[i].i == (long long)pz[i-1].i;
+          same = pz[i].r == pz[i-1].r && pz[i].i == pz[i-1].i;
         } break;
         default :
           error("Type '%s' not supported", type2char(TYPEOF(jcol)));  // # nocov
@@ -240,8 +240,7 @@ SEXP rleid(SEXP l, SEXP cols) {
     case CPLXSXP: {
       Rcomplex *pzjcol = COMPLEX(jcol);
       for (R_xlen_t i=1; i<nrow; i++) {
-        bool same = (long long)pzjcol[i].r == (long long)pzjcol[i-1].r &&
-                    (long long)pzjcol[i].i == (long long)pzjcol[i-1].i;
+        bool same = pzjcol[i].r == pzjcol[i-1].r && pzjcol[i].i == pzjcol[i-1].i;
         ians[i] = (grp += !same);
       }
     } break;
