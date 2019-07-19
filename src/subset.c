@@ -77,7 +77,6 @@ static void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
   case CPLXSXP : {
     Rcomplex *sp = COMPLEX(source);
     Rcomplex *ap = COMPLEX(ans);
-    Rcomplex NA_CPLX = { NA_REAL, NA_REAL };
     PARLOOP(NA_CPLX)
   } break;
   case RAWSXP : {

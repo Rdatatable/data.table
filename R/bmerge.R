@@ -14,7 +14,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   # careful to only plonk syntax (full column) on i/x from now on otherwise user's i and x would change;
   #   this is why shallow() is very importantly internal only, currently.
 
-  supported = c("logical", "integer", "double", "character", "factor", "integer64")
+  supported = c(ORDERING_TYPES, "factor", "integer64")
 
   getClass = function(x) {
     ans = typeof(x)
@@ -57,7 +57,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       }
     }
     if (xclass == iclass) {
-      if (verbose) cat("i.",names(i)[ic],"has same type (",xclass,") as x.",names(x)[xc],". No coercion needed.")
+      if (verbose) cat("i.",names(i)[ic],"has same type (",xclass,") as x.",names(x)[xc],". No coercion needed.\n", sep="")
       next
     }
     if (xclass=="character" || iclass=="character" ||
@@ -90,6 +90,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           # we've always coerced to int and returned int, for convenience.
           if (verbose) cat("Coercing double column i.",names(i)[ic]," (which contains no fractions) to type integer to match type of x.",names(x)[xc],".\n",sep="")
           val = as.integer(i[[ic]])
+          if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
           set(i, j=ic, value=val)
           set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
         }
@@ -138,13 +139,13 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     # TODO: could check/reuse secondary indices, but we need 'starts' attribute as well!
     xo = forderv(x, xcols, retGrp=TRUE)
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-    xg = attr(xo, 'starts')
+    xg = attr(xo, 'starts', exact=TRUE)
     resetcols = head(xcols, non_equi-1L)
     if (length(resetcols)) {
       # TODO: can we get around having to reorder twice here?
       # or at least reuse previous order?
       if (verbose) {last.started.at=proc.time();cat("  Generating group lengths ... ");flush.console()}
-      resetlen = attr(forderv(x, resetcols, retGrp=TRUE), 'starts')
+      resetlen = attr(forderv(x, resetcols, retGrp=TRUE), 'starts', exact=TRUE)
       resetlen = .Call(Cuniqlengths, resetlen, nrow(x))
       if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
     } else resetlen = integer(0L)

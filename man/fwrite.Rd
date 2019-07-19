@@ -3,8 +3,6 @@
 \title{Fast CSV writer}
 \description{
 As \code{write.csv} but much faster (e.g. 2 seconds versus 1 minute) and just as flexible. Modern machines almost surely have more than one CPU so \code{fwrite} uses them; on all operating systems including Linux, Mac and Windows.
-
-This is new functionality as of Nov 2016. We may need to refine argument names and defaults.
 }
 \usage{
 fwrite(x, file = "", append = FALSE, quote = "auto",

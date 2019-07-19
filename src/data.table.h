@@ -20,6 +20,7 @@ typedef R_xlen_t RLEN;
 #define IS_LATIN(x) (LEVELS(x) & 4)
 #define IS_TRUE(x)  (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==TRUE)
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
+#define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
 
 #define SIZEOF(x) sizes[TYPEOF(x)]
 #define TYPEORDER(x) typeorder[x]
@@ -91,6 +92,10 @@ double LLtoD(long long x);
 bool GetVerbose();
 double NA_INT64_D;
 long long NA_INT64_LL;
+Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
+
+// cj.c
+SEXP cj(SEXP base_list);
 
 // dogroups.c
 SEXP keepattr(SEXP to, SEXP from);
@@ -194,9 +199,14 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
 
 // nafill.c
 SEXP colnamesInt(SEXP x, SEXP cols);
+SEXP coerceFillR(SEXP fill);
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose);
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose);
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose);
 
 // between.c
 SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
+
+// coalesce.c
+SEXP coalesce(SEXP x, SEXP inplace);
+

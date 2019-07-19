@@ -5,7 +5,7 @@
 
 as.IDate = function(x, ...) UseMethod("as.IDate")
 
-as.IDate.default = function(x, ..., tz = attr(x, "tzone")) {
+as.IDate.default = function(x, ..., tz = attr(x, "tzone", exact=TRUE)) {
   if (is.null(tz)) tz = "UTC"
   as.IDate(as.Date(x, tz = tz, ...))
 }
@@ -32,7 +32,7 @@ as.IDate.Date = function(x, ...) {
   x                                 # always return a new object
 }
 
-as.IDate.POSIXct = function(x, tz = attr(x, "tzone"), ...) {
+as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is.null(tz)) tz = "UTC"
   if (tz %chin% c("UTC", "GMT")) {
     (setattr(as.integer(x) %/% 86400L, "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
@@ -49,11 +49,9 @@ as.Date.IDate = function(x, ...) {
 }
 
 mean.IDate =
-cut.IDate =
 seq.IDate =
 c.IDate =
 rep.IDate =
-split.IDate =
 unique.IDate =
   function(x, ...) {
     as.IDate(NextMethod())
@@ -137,7 +135,7 @@ as.ITime.default = function(x, ...) {
   as.ITime(as.POSIXlt(x, ...), ...)
 }
 
-as.ITime.POSIXct = function(x, tz = attr(x, "tzone"), ...) {
+as.ITime.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is.null(tz)) tz = "UTC"
   if (tz %chin% c("UTC", "GMT")) as.ITime(unclass(x), ...)
   else as.ITime(as.POSIXlt(x, tz = tz, ...), ...)
@@ -258,6 +256,10 @@ unique.ITime = function(x, ...) {
   ans
 }
 
+# various methods to ensure ITime class is retained, #3628
+mean.ITime = seq.ITime = c.ITime = function(x, ...) as.ITime(NextMethod())
+
+
 # create a data.table with IDate and ITime columns
 #   should work for most date/time formats like POSIXct
 
@@ -300,7 +302,7 @@ as.POSIXlt.ITime = function(x, ...) {
 ###################################################################
 
 second  = function(x) {
-  if (inherits(x,'POSIXct') && identical(attr(x,'tzone'),'UTC')) {
+  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
     # if we know the object is in UTC, can calculate the hour much faster
     as.integer(x) %% 60L
   } else {
@@ -308,7 +310,7 @@ second  = function(x) {
   }
 }
 minute  = function(x) {
-  if (inherits(x,'POSIXct') && identical(attr(x,'tzone'),'UTC')) {
+  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
     # ever-so-slightly faster than x %% 3600L %/% 60L
     as.integer(x) %/% 60L %% 60L
   } else {
@@ -316,7 +318,7 @@ minute  = function(x) {
   }
 }
 hour = function(x) {
-  if (inherits(x,'POSIXct') && identical(attr(x,'tzone'),'UTC')) {
+  if (inherits(x, 'POSIXct') && identical(attr(x, 'tzone', exact=TRUE), 'UTC')) {
     # ever-so-slightly faster than x %% 86400L %/% 3600L
     as.integer(x) %/% 3600L %% 24L
   } else {

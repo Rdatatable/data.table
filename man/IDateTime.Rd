@@ -17,16 +17,17 @@
 \alias{as.POSIXct.ITime}
 \alias{as.POSIXlt.ITime}
 \alias{c.IDate}
-\alias{cut.IDate}
+\alias{c.ITime}
 \alias{format.ITime}
 \alias{IDateTime.default}
 \alias{mean.IDate}
+\alias{mean.ITime}
 \alias{print.ITime}
 \alias{rep.IDate}
 \alias{rep.ITime}
 \alias{round.IDate}
 \alias{seq.IDate}
-\alias{split.IDate}
+\alias{seq.ITime}
 \alias{second}
 \alias{minute}
 \alias{hour}
@@ -48,7 +49,7 @@
 }
 \usage{
 as.IDate(x, \dots)
-\method{as.IDate}{default}(x, \dots, tz = attr(x, "tzone"))
+\method{as.IDate}{default}(x, \dots, tz = attr(x, "tzone", exact=TRUE))
 \method{as.IDate}{Date}(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)
