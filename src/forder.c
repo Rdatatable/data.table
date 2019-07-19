@@ -440,13 +440,15 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   if (!isInteger(by) || !LENGTH(by)) error("DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // seq_along(x) at R level
   if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by)) error("Either 'ascArg' is not integer or its length (%d) is different to 'by's length (%d)", LENGTH(ascArg), LENGTH(by));
   nrow = length(VECTOR_ELT(DT,0));
+  int n_cplx = 0;
   for (int i=0; i<LENGTH(by); i++) {
-    if (INTEGER(by)[i] < 1 || INTEGER(by)[i] > length(DT))
-      error("'by' value %d out of range [1,%d]", INTEGER(by)[i], length(DT));
-    if ( nrow != length(VECTOR_ELT(DT, INTEGER(by)[i]-1)) )
+    int by_i = INTEGER(by)[i];
+    if (by_i < 1 || by_i > length(DT))
+      error("'by' value %d out of range [1,%d]", by_i, length(DT));
+    if ( nrow != length(VECTOR_ELT(DT, by_i-1)) )
       error("Column %d is length %d which differs from length of column 1 (%d)\n", INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
+    if (TYPEOF(VECTOR_ELT(DT, by_i-1)) == CPLXSXP) n_cplx++;
   }
-
   if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL) error("retGrp must be TRUE or FALSE");
   retgrp = LOGICAL(retGrpArg)[0]==TRUE;
   if (!isLogical(sortGroupsArg) || LENGTH(sortGroupsArg)!=1 || INTEGER(sortGroupsArg)[0]==NA_LOGICAL ) error("sortGroups must be TRUE or FALSE");
@@ -476,11 +478,14 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   savetl_init();   // from now on use Error not error
 
   int ncol=length(by);
-  key = calloc(ncol*8+1, sizeof(uint8_t *));  // needs to be before loop because part II relies on part I, column-by-column. +1 because we check NULL after last one
+  key = calloc((ncol+n_cplx)*8+1, sizeof(uint8_t *));  // needs to be before loop because part II relies on part I, column-by-column. +1 because we check NULL after last one
   // TODO: if key==NULL Error
   nradix=0; // the current byte we're writing this column to; might be squashing into it (spare>0)
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
   bool isReal=false;
+  bool complexRerun = false;   // see comments below in CPLXSXP case
+  SEXP CplxPart = R_NilValue; 
+  if (n_cplx) { CplxPart=PROTECT(allocVector(REALSXP, nrow)); n_protect++; } // one alloc is reused for each part
   TEND(2);
   for (int col=0; col<ncol; col++) {
     // Rprintf("Finding range of column %d ...\n", col);
@@ -493,6 +498,20 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
       range_i32(INTEGER(x), nrow, &min, &max, &na_count);
       break;
+    case CPLXSXP : {
+      // treat as if two separate columns of double
+      const Rcomplex *xd = COMPLEX(x);
+      double *tmp = REAL(CplxPart);
+      if (!complexRerun) {
+        for (int i=0; i<nrow; ++i) tmp[i] = xd[i].r;  // extract the real part on the first time
+        complexRerun = true;
+        col--;  // cause this loop iteration to rerun; decrement now in case of early continue below
+      } else {
+        for (int i=0; i<nrow; ++i) tmp[i] = xd[i].i;
+        complexRerun = false;
+      }
+      x = CplxPart;
+    } // !no break! so as to fall through to REAL case
     case REALSXP :
       if (inherits(x, "integer64")) {
         range_i64((int64_t *)REAL(x), nrow, &min, &max, &na_count);

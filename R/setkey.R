@@ -51,14 +51,9 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   }
   if (identical(cols,"")) stop("cols is the empty string. Use NULL to remove the key.")
   if (!all(nzchar(cols))) stop("cols contains some blanks.")
-  if (!length(cols)) {
-    cols = colnames(x)   # All columns in the data.table, usually a few when used in this form
-  } else {
-    # remove backticks from cols
-    cols = gsub("`", "", cols, fixed = TRUE)
-    miss = !(cols %chin% colnames(x))
-    if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
-  }
+  cols = gsub("`", "", cols, fixed = TRUE)
+  miss = !(cols %chin% colnames(x))
+  if (any(miss)) stop("some columns are not in the data.table: ", paste(cols[miss], collapse=","))
 
   ## determine, whether key is already present:
   if (identical(key(x),cols)) {
@@ -83,7 +78,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   if (".xi" %chin% names(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
+    if (!typeof(.xi) %chin% ORDERING_TYPES) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported as a key column type, currently.")
   }
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
 
@@ -178,6 +173,7 @@ is.sorted = function(x, by=seq_along(x)) {
   # Important to call forder.c::fsorted here, for consistent character ordering and numeric/integer64 twiddling.
 }
 
+ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
 forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
 {
   if (!(sort || retGrp)) stop("At least one of retGrp or sort must be TRUE")
@@ -205,7 +201,7 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.las
       stop("'by' is type 'double' and one or more items in it are not whole integers")
     }
     by = as.integer(by)
-    if ( (length(order) != 1L && length(order) != length(by)) || any(!order %in% c(1L, -1L)) )
+    if ( (length(order) != 1L && length(order) != length(by)) || !all(order %in% c(1L, -1L)) )
       stop("x is a list, length(order) must be either =1 or =length(by) and each value should be 1 or -1 for each column in 'by', corresponding to ascending or descending order, respectively. If length(order) == 1, it will be recycled to length(by).")
     if (length(order) == 1L) order = rep(order, length(by))
   }
@@ -327,7 +323,7 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
   if (".xi" %chin% colnames(x)) stop("x contains a column called '.xi'. Conflicts with internal use by data.table.")
   for (i in cols) {
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
-    if (!typeof(.xi) %chin% c("integer","logical","character","double")) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
+    if (!typeof(.xi) %chin% ORDERING_TYPES) stop("Column '",i,"' is type '",typeof(.xi),"' which is not supported for ordering currently.")
   }
   if (!is.character(cols) || length(cols)<1L) stop("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
 

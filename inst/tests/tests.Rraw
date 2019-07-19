@@ -6460,7 +6460,7 @@ test(1464.03, rleidv(DT, "b"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 test(1464.04, rleid(DT$b), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 test(1464.05, rleidv(DT, "c"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 test(1464.06, rleid(DT$c), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
-test(1464.07, rleid(as.complex(c(1,0+5i,0+5i,1))), error="Type 'complex' not supported")
+test(1464.07, rleid(as.raw(c(3L, 1L, 2L))), error="Type 'raw' not supported")
 test(1464.08, rleidv(DT, 0), error="outside range")
 test(1464.09, rleidv(DT, 5), error="outside range")
 test(1464.10, rleidv(DT, 1:4), 1:nrow(DT))
@@ -11713,11 +11713,11 @@ test(1844.2, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,4))  # prior to v1.12.0 th
 # now with two NAs in that 2-group covers forder.c:forder line 1269 starting: else if (nalast == 0 && tmp==-2) {
 DT = data.table(c("a","a","a","b","b"),c(2,1,3,NA,NA))
 test(1844.3, forder(DT,V1,V2,na.last=NA), INT(2,1,3,0,0))
-DT = data.table((0+0i)^(-3:3), 7:1)
-test(1844.4, forder(DT,V1,V2), error="Column 1 of by= (1) is type 'complex', not yet supported")
-test(1844.5, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'complex', not yet supported")
-DT = data.table((0+0i)^(-3:3), c(5L,5L,1L,2L,2L,2L,2L))
-test(1844.6, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'complex', not yet supported")
+DT = data.table(as.raw(0:6), 7:1)
+test(1844.4, forder(DT,V1,V2), error="Column 1 of by= (1) is type 'raw', not yet supported")
+test(1844.5, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'raw', not yet supported")
+DT = data.table(as.raw(0:6), c(5L,5L,1L,2L,2L,2L,2L))
+test(1844.6, forder(DT,V2,V1), error="Column 2 of by= (2) is type 'raw', not yet supported")
 
 # fix for non-equi joins issue #1991. Thanks to Henrik for the nice minimal example.
 d1 <- data.table(x = c(rep(c("b", "a", "c"), each = 3), c("a", "b")), y = c(rep(c(1, 3, 6), 3), 6, 6), id = 1:11)
@@ -13170,9 +13170,9 @@ setnames(DT, '.xi')
 setkey(DT, NULL)
 test(1962.037, setkey(DT, .xi),
      error = "x contains a column called '.xi'")
-DT = data.table(a = 1+3i)
+DT = data.table(a = as.raw(0))
 test(1962.038, setkey(DT, a),
-     error = "Column 'a' is type 'complex'")
+     error = "Column 'a' is type 'raw'")
 
 test(1962.039, is.sorted(3:1, by = 'x'),
      error = 'x is vector but')
@@ -13228,8 +13228,8 @@ test(1962.064, setorderv(copy(DT)),
 test(1962.065, setorderv(DT, 'c'), error = 'some columns are not in the data.table')
 setnames(DT, 1L, '.xi')
 test(1962.066, setorderv(DT, 'b'), error = "x contains a column called '.xi'")
-test(1962.067, setorderv(data.table(a = 1+3i), 'a'),
-     error = "Column 'a' is type 'complex'")
+test(1962.067, setorderv(data.table(a = as.raw(0)), 'a'),
+     error = "Column 'a' is type 'raw'")
 
 DT = data.table(
   color = c("yellow", "red", "green", "red", "green", "red",
@@ -13754,7 +13754,7 @@ test(1984.05, DT[ , sum(b), keyby = c, verbose = TRUE],
 ### hitting byval = eval(bysub, setattr(as.list(seq_along(xss)), ...)
 test(1984.06, DT[1:3, sum(a), by=b:c], data.table(b=10:8, c=1:3, V1=1:3))
 test(1984.07, DT[, sum(a), by=call('sin',pi)], error='must evaluate to a vector or a list of vectors')
-test(1984.08, DT[, sum(a), by=1+3i],           error='column or expression.*type complex')
+test(1984.08, DT[, sum(a), by=as.raw(0)],           error='column or expression.*type raw')
 test(1984.09, DT[, sum(a), by=.(1,1:2)],       error='The items.*list are length [(]1,2[)].*Each must be length 10; .*rows in x.*after subsetting')
 options('datatable.optimize' = Inf)
 test(1984.10, DT[ , 1, by = .(a %% 2), verbose = TRUE],
@@ -14766,14 +14766,14 @@ dt1 <- data.table(int = 1L:10L,
                   bool = c(rep(FALSE, 9), TRUE),
                   char = letters[1L:10L],
                   fact = factor(letters[1L:10L]),
-                  complex = as.complex(1:5))
+                  raw = as.raw(1:5))
 dt2 <- data.table(int = 1L:5L,
                   doubleInt = as.numeric(1:5),
                   realDouble = seq(0.5, 2.5, by = 0.5),
                   bool = TRUE,
                   char = letters[1L:5L],
                   fact = factor(letters[1L:5L]),
-                  complex = as.complex(1:5))
+                  raw = as.raw(1:5))
 if (test_bit64) {
   dt1[, int64 := as.integer64(c(1:9, 3e10))]
   dt2[, int64 := as.integer64(c(1:4, 3e9))]
@@ -14790,8 +14790,8 @@ test(2044.08, nrow(dt1[dt2, on="fact==fact",             verbose=TRUE]), nrow(dt
 if (test_bit64) {
   test(2044.09, nrow(dt1[dt2, on = "int64==int64",       verbose=TRUE]), nrow(dt2), output="No coercion needed")
 }
-test(2044.10, dt1[dt2, on = "int==complex"],   error = "i.complex is type complex which is not supported by data.table join")
-test(2044.11, dt1[dt2, on = "complex==int"],   error = "x.complex is type complex which is not supported by data.table join")
+test(2044.10, dt1[dt2, on = "int==raw"],   error = "i.raw is type raw which is not supported by data.table join")
+test(2044.11, dt1[dt2, on = "raw==int"],   error = "x.raw is type raw which is not supported by data.table join")
 # incompatible types
 test(2044.20, dt1[dt2, on="bool==int"],        error="Incompatible join types: x.bool (logical) and i.int (integer)")
 test(2044.21, dt1[dt2, on="bool==doubleInt"],  error="Incompatible join types: x.bool (logical) and i.doubleInt (double)")
@@ -15331,6 +15331,72 @@ test(2068.3, setkey(DT, ID), error="Item 2 of list is type 'raw'")
 # setreordervec triggers !isNewList branch for coverage
 test(2068.4, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
 
+# forderv (and downstream functions) handles complex vector input, part of #3690
+DT = data.table(
+  a = c(1L, 1L, 8L, 2L, 1L, 9L, 3L, 2L, 6L, 6L),
+  b = c(3+9i, 10+5i, 8+2i, 10+4i, 3+3i, 1+2i, 5+1i, 8+1i, 8+2i, 10+6i),
+  c = 6
+)
+test(2069.01, DT[order(a, b)], DT[base::order(a, b)])
+test(2069.02, DT[order(a, -b)], DT[base::order(a, -b)])
+test(2069.03, forderv(DT$b, order = 1L), base::order(DT$b))
+test(2069.04, forderv(DT$b, order = -1L), base::order(-DT$b))
+test(2069.05, forderv(DT, by = 2:1), forderv(DT[ , 2:1]))
+test(2069.06, forderv(DT, by = 2:1, order = c(1L, -1L)), DT[order(b, -a), which = TRUE])
+
+# downstreams of forder
+DT = data.table(
+  z = c(0, 0, 1, 1, 2, 3) + c(1, 1, 2, 2, 3, 4)*1i,
+  grp = rep(1:2, 3L),
+  v = c(3, 1, 4, 1, 5, 9)
+)
+unq_z = 0:3 + (1:4)*1i
+test(2069.07, DT[ , .N, by=z], data.table(z=unq_z, N=c(2L, 2L, 1L, 1L)))
+test(2069.08, DT[ , .N, keyby = z], data.table(z=unq_z, N=c(2L, 2L, 1L, 1L), key='z'))
+test(2069.09, dcast(DT, z ~ grp, value.var='v', fill=0),
+     data.table(z=unq_z, `1`=c(3, 4, 5, 0), `2`=c(1, 1, 0, 9), key='z'))
+test(2069.10, frank(DT$z), c(1.5, 1.5, 3.5, 3.5, 5, 6))
+test(2069.11, frank(DT$z, ties.method='max'), c(2L, 2L, 4L, 4L, 5L, 6L))
+test(2069.12, frank(-DT$z, ties.method='min'), c(5L, 5L, 3L, 3L, 2L, 1L))
+test(2069.13, DT[ , rowid(z, grp)], rep(1L, 6L))
+test(2069.14, DT[ , rowid(z)], c(1:2, 1:2, 1L, 1L))
+test(2069.15, rleid(c(1i, 1i, 1i, 0, 0, 1-1i, 2+3i, 2+3i)), rep(1:4, c(3:1, 2L)))
+# handling doubles properly
+test(2069.16, rleid(c(1i, 1.1i)), 1:2)
+test(2069.17, rleidv(DT, "z"), c(1L, 1L, 2L, 2L, 3L, 4L))
+test(2069.18, unique(DT, by = 'z'), data.table(z = unq_z, grp = c(1L, 1L, 1L, 2L), v = c(3, 4, 5, 9)))
+test(2069.19, unique(DT, by = 'z', fromLast = TRUE), data.table(z = unq_z, grp = c(2L, 2L, 1L, 2L), v = c(1, 1, 5, 9)))
+test(2069.20, uniqueN(DT$z), 4L)
+
+# setkey, setorder work
+DT = data.table(a = 2:1, z = 0 + (1:0)*1i)
+test(2069.21, setkey(copy(DT), z), data.table(a=1:2, z=0+ (0:1)*1i, key='z'))
+test(2069.22, setorder(DT, z), data.table(a=1:2, z=0+ (0:1)*1i))
+
+## assorted coverage tests from along the way
+if (test_bit64) {
+  test(2069.23, is.sorted(as.integer64(10:1)), FALSE)
+  test(2069.24, is.sorted(as.integer64(1:10)))
+}
+# sort by vector outside of table
+ord = 3:1
+test(2069.25, forder(data.table(a=3:1), ord), 3:1)
+# dogroups.c coverage
+test(2069.26, data.table(c='1')[ , expression(1), by=c], error="j evaluates to type 'expression'")
+test(2069.27, data.table(c='1', d=2)[ , d := .(NULL), by=c], error='RHS is NULL when grouping :=')
+test(2069.28, data.table(c='1', d=2)[ , c(a='b'), by=c, verbose=TRUE], output='j appears to be a named vector')
+test(2069.29, data.table(c = '1', d = 2)[ , .(a = c(nm='b')), by = c, verbose = TRUE], output = 'Column 1 of j is a named vector')
+DT <- data.table(a = rep(1:3, each = 4), b = LETTERS[1:4], z = 0:3 + (4:1)*1i)
+test(2069.30, DT[, .SD[3,], by=b], DT[9:12, .(b, a, z)])
+DT = data.table(x=1:4,y=1:2,lgl=TRUE,key="x,y")
+test(2069.31, DT[CJ(1:4,1:4), any(lgl), by=.EACHI]$V1,
+     c(TRUE, NA, NA, NA, NA, TRUE, NA, NA, TRUE, NA, NA, NA, NA, TRUE, NA, NA))
+set.seed(45L)
+DT1 = data.table(a = sample(3L, 15L, TRUE) + .1, b=sample(c(TRUE, FALSE, NA), 15L, TRUE))
+DT2 = data.table(a = sample(3L, 6L, TRUE) + .1, b=sample(c(TRUE, FALSE, NA), 6L, TRUE))
+test(2069.32, DT1[DT2, .(y = sum(b, na.rm=TRUE)), by=.EACHI, on=c(a = 'a', b="b")]$y, rep(0L, 6L))
+DT = data.table(z = 1i)
+test(2069.33, DT[DT, on = 'z'], error = "Type 'complex' not supported for joining/merging")
 
 ###################################
 #  Add new tests above this line  #

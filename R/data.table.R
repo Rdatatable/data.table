@@ -829,7 +829,7 @@ replace_order = function(isub, verbose, env) {
         if (!is.list(byval)) stop("'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
         if (length(byval)==1L && is.null(byval[[1L]])) bynull=TRUE #3530 when by=(function()NULL)()
         if (!bynull) for (jj in seq_len(length(byval))) {
-          if (!typeof(byval[[jj]]) %chin% c("integer","logical","character","double")) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
+          if (!typeof(byval[[jj]]) %chin% ORDERING_TYPES) stop("column or expression ",jj," of 'by' or 'keyby' is type ",typeof(byval[[jj]]),". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]")
         }
         tt = vapply_1i(byval,length)
         if (any(tt!=xnrow)) stop("The items in the 'by' or 'keyby' list are length (",paste(tt,collapse=","),"). Each must be length ", xnrow, "; the same length as there are rows in x (after subsetting if i is provided).")

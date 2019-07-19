@@ -200,6 +200,10 @@ SEXP rleid(SEXP l, SEXP cols) {
           // 8 bytes of bits are identical. For real (no rounding currently) and integer64
           // long long == 8 bytes checked in init.c
         } break;
+        case CPLXSXP: {
+          Rcomplex *pz = COMPLEX(jcol);
+          same = memcmp(&pz[i], &pz[i-1], sizeof(Rcomplex))==0; // compiler optimization should replace library call with best 16-byte fixed method
+        } break;
         default :
           error("Type '%s' not supported", type2char(TYPEOF(jcol)));  // # nocov
         }
@@ -217,8 +221,9 @@ SEXP rleid(SEXP l, SEXP cols) {
       }
     } break;
     case STRSXP : {
+      const SEXP *jd = STRING_PTR(jcol);
       for (R_xlen_t i=1; i<nrow; i++) {
-        bool same = STRING_ELT(jcol,i)==STRING_ELT(jcol,i-1);
+        bool same = jd[i]==jd[i-1];
         ians[i] = (grp+=!same);
       }
     } break;
@@ -227,6 +232,13 @@ SEXP rleid(SEXP l, SEXP cols) {
       for (R_xlen_t i=1; i<nrow; i++) {
         bool same = lljcol[i]==lljcol[i-1];
         ians[i] = (grp+=!same);
+      }
+    } break;
+    case CPLXSXP: {
+      Rcomplex *pzjcol = COMPLEX(jcol);
+      for (R_xlen_t i=1; i<nrow; i++) {
+        bool same = memcmp(&pzjcol[i], &pzjcol[i-1], sizeof(Rcomplex))==0;
+        ians[i] = (grp += !same);
       }
     } break;
     default :
