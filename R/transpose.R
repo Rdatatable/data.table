@@ -1,5 +1,5 @@
-transpose = function(l, fill=NA, ignore.empty=FALSE) {
-  ans = .Call(Ctranspose, l, fill, ignore.empty)
+transpose = function(l, fill=NA, ignore.empty=FALSE, keep.rownames=FALSE) {
+  ans = .Call(Ctranspose, l, fill, ignore.empty, keep.rownames)
   if (is.data.table(l)) setDT(ans)
   else if (is.data.frame(l)) {
     if (is.null(names(ans)))

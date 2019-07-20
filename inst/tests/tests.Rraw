@@ -15403,6 +15403,10 @@ DT = data.table(d=sample(seq(as.Date("2015-01-01"), as.Date("2015-01-05"), by="d
 test(2070.01, typeof(DT$d), "double")
 test(2070.02, DT[, .N, keyby=d, verbose=TRUE], output="Column 1.*date.*8 byte double.*no fractions are present.*4 byte integer.*to save space and time")
 
+library(data.table)
+DT = data.table(x=1:5, y=6:10)
+test(2071.1, transpose(DT, keep.rownames = TRUE),
+     data.table(c('x','y'), c(1L, 6L), c(2L, 7L), c(3L, 8L), c(4L, 9L), c(5L, 10L)))
 
 ###################################
 #  Add new tests above this line  #

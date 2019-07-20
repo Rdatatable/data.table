@@ -6,12 +6,13 @@
 }
 
 \usage{
-transpose(l, fill=NA, ignore.empty=FALSE)
+transpose(l, fill=NA, ignore.empty=FALSE, keep.rownames=FALSE)
 }
 \arguments{
   \item{l}{ A list, data.frame or data.table. }
   \item{fill}{ Default is \code{NA}. It is used to fill shorter list elements so as to return each element of the transposed result of equal lengths. }
   \item{ignore.empty}{Default is \code{FALSE}. \code{TRUE} will ignore length-0 list elements.}
+  \item{keep.rownames}{ \code{logical} scalar; if \code{TRUE}, the first column (or list element) of the output will contain the names of the input. }
 }
 \details{
   The list elements (or columns of \code{data.frame}/\code{data.table}) should be all \code{atomic}. If list elements are of unequal lengths, the value provided in \code{fill} will be used so that the resulting list always has all elements of identical lengths. The class of input object is also preserved in the transposed result.
