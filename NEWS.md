@@ -133,6 +133,8 @@
 
 19. Type `complex` is now supported by `setkey`, `setorder`, `:=`, `by=`, `keyby=`, `shift`, `dcast`, `frank`, `rowid`, `rleid`, `CJ`, `coalesce`, `unique`, and `uniqueN`, [#3690](https://github.com/Rdatatable/data.table/issues/3690). Thanks to Gareth Ward and Elio Campitelli for their reports and input. Sorting `complex` is achieved the same way as base R; i.e., first by the real part then by the imaginary part (as if the `complex` column were two separate columns of `double`). There is no plan to support joining/merging on `complex` columns until a user demonstrates a need for that.
 
+20. `setkey`, `[key]by=` and `on=` in verbose mode (`options(datatable.verbose=TRUE)`) now detect any columns inheriting from `Date` which are stored as 8 byte double, test if any fractions are present, and if not suggest using a 4 byte integer instead (such as `data.table::IDate`) to save space and time, [#1738](https://github.com/Rdatatable/data.table/issues/1738). In future this could be upgraded to `message` or `warning` depending on feedback.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
