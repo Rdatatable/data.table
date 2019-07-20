@@ -424,6 +424,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 #endif
 
   int n_protect = 0;
+  const bool verbose = GetVerbose();
 
   if (!isNewList(DT)) {
     if (!isVectorAtomic(DT)) error("Input is not either a list of columns, or an atomic vector.");
@@ -469,43 +470,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   // if n==1, the code is left to proceed below in case one or more of the 1-row by= columns are NA and na.last=NA. Otherwise it would be easy to return now.
   notFirst = false;
 
-  // first simple way, fail before test 1848 during bmerge typeof INT != DATE
-  for (int i=0; i<length(by); i++) { // #1738
-    SEXP this_col = VECTOR_ELT(DT, INTEGER(by)[i]);
-    if (INHERITS(this_col, char_Date)) {
-      SEXP this_col_int = PROTECT(coerceVector(this_col, INTSXP)); n_protect++;
-      SET_VECTOR_ELT(DT, INTEGER(by)[i], this_col_int);
-    }
-  }
-  
-  /* // another way, adding shallow copy, but so far 'memory not mapped somewhere'
-  // at the top of this fun add: SEXP DT = dt; and rename fun arg from DT to dt, also in data.table.h
-  int date_cols[length(by)];
-  int j=0;
-  Rprintf("first loop\n");
-  for (int i=0; i<length(by); i++) { // #1738
-    Rprintf("first loop; i: %d\n", i);
-    SEXP this_col = VECTOR_ELT(DT, INTEGER(by)[i]);
-    Rprintf("first loop; this_is_date: %d\n", INHERITS(this_col, char_Date));
-    bool this_is_date = INHERITS(this_col, char_Date);
-    if (this_is_date) {
-      Rprintf("first loop; i %d inherits! j %d\n", i, j);
-      date_cols[j] = INTEGER(by)[i];
-      j++;
-    }
-    Rprintf("first loop; iter end; i: %d\n", i);
-  }
-  Rprintf("j: %d\n", j);
-  if (j > 0) {
-    Rprintf("shallow wrapper\n");
-    DT = shallowwrapper(dt, R_NilValue);
-    Rprintf("second loop\n");
-    for (int i=0; i<j; i++) {
-      SEXP this_col = VECTOR_ELT(dt, date_cols[i]);
-      SET_VECTOR_ELT(DT, date_cols[i], coerceVector(this_col, INTSXP));
-    }
-  }*/
-
   SEXP ans = PROTECT(allocVector(INTSXP, nrow)); n_protect++;
   anso = INTEGER(ans);
   TEND(0)
@@ -521,7 +485,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
   bool isReal=false;
   bool complexRerun = false;   // see comments below in CPLXSXP case
-  SEXP CplxPart = R_NilValue; 
+  SEXP CplxPart = R_NilValue;
   if (n_cplx) { CplxPart=PROTECT(allocVector(REALSXP, nrow)); n_protect++; } // one alloc is reused for each part
   TEND(2);
   for (int col=0; col<ncol; col++) {
@@ -550,9 +514,16 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       x = CplxPart;
     } // !no break! so as to fall through to REAL case
     case REALSXP :
-      if (inherits(x, "integer64")) {
+      if (INHERITS(x, char_integer64)) {
         range_i64((int64_t *)REAL(x), nrow, &min, &max, &na_count);
       } else {
+        if (verbose && INHERITS(x, char_Date) && INTEGER(isReallyReal(x))[0]==0) {
+          Rprintf("\n*** Column %d passed to forder is a date stored as an 8 byte double but no fractions are present. Please consider a 4 byte integer date such as IDate to save space and time.\n", col+1);
+          // Note the (slightly expensive) isReallyReal will only run when verbose is true. Prefix '***' just to make it stand out in verbose output
+          // In future this could be upgraded to option warning. But I figured that's what we use verbose to do (to trace problems and look for efficiencies).
+          // If an automatic coerce is desired (see discussion in #1738) then this is the point to do that in this file. Move the INTSXP case above to be
+          // next, do the coerce of Date to integer now to a tmp, and then let this case fall through to INTSXP in the same way as CPLXSXP falls through to REALSXP.
+        }
         range_d(REAL(x), nrow, &min, &max, &na_count, &infnan_count);
         if (min==0 && na_count<nrow) { min=3; max=4; } // column contains no finite numbers and is not-all NA; create dummies to yield positive min-2 later
         isReal = true;

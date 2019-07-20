@@ -15398,6 +15398,12 @@ test(2069.32, DT1[DT2, .(y = sum(b, na.rm=TRUE)), by=.EACHI, on=c(a = 'a', b="b"
 DT = data.table(z = 1i)
 test(2069.33, DT[DT, on = 'z'], error = "Type 'complex' not supported for joining/merging")
 
+# forder verbose message when !isReallyReal Date, #1738
+DT = data.table(d=sample(seq(as.Date("2015-01-01"), as.Date("2015-01-05"), by="days"), 20, replace=TRUE))
+test(2070.01, typeof(DT$d), "double")
+test(2070.02, DT[, .N, keyby=d, verbose=TRUE], output="Column 1.*date.*8 byte double.*no fractions are present.*4 byte integer.*to save space and time")
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
