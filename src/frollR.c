@@ -113,7 +113,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   if (!dans) error("%s: Unable to allocate memory answer", __func__); // # nocov
   double* dx[nx];                                               // pointers to source columns
   uint_fast64_t inx[nx];                                        // to not recalculate `length(x[[i]])` we store it in extra array
-  if (bverbose) Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
+  if (verbose) Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
@@ -188,10 +188,11 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
         if (!badaptive) frollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, bverbose);
         else fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, bverbose);
         break;
+      default: error("Internal error: Unknown sfun value in froll: %d", sfun); // #nocov
       }
     }
   }
-  
+
   for (R_len_t i=0; i<nx; i++) {                                // raise errors and warnings, as of now messages are not being produced
     for (R_len_t j=0; j<nk; j++) {
       if (bverbose && (dans[i*nk+j].message[0][0] != '\0')) Rprintf("%s: %d:\n%s", __func__, i*nk+j+1, dans[i*nk+j].message[0]);
@@ -200,7 +201,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       if (dans[i*nk+j].status == 3) error("%s: %d: %s", __func__, i*nk+j+1, dans[i*nk+j].message[3]); // # nocov because only caused by malloc
     }
   }
-  
+
   if (bverbose) Rprintf("%s: processing of %d column(s) and %d window(s) took %.3fs\n", __func__, nx, nk, omp_get_wtime()-tic);
 
   UNPROTECT(protecti);
