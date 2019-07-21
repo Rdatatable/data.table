@@ -15403,6 +15403,19 @@ DT = data.table(d=sample(seq(as.Date("2015-01-01"), as.Date("2015-01-05"), by="d
 test(2070.01, typeof(DT$d), "double")
 test(2070.02, DT[, .N, keyby=d, verbose=TRUE], output="Column 1.*date.*8 byte double.*no fractions are present.*4 byte integer.*to save space and time")
 
+# fwrite uses logic of options('scipen') when writing floats
+oldSciPen = options('scipen')
+testNo = 2071
+dec = 0L
+for (i in -3:3) {
+  for (j in -3:3) {
+    options(scipen=j)
+    # use format to assure the output is the same as in R
+    v = (-1)^(i+j)
+    test(testNo+(dec<-dec+1L)/100, fwrite(data.table(v)), output=format(v))
+  }
+}
+options(oldSciPen)
 
 ###################################
 #  Add new tests above this line  #

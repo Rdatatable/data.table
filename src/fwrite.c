@@ -33,6 +33,7 @@ static char sep2;                      // '|' within list columns. Used here to 
 static char dec;                       // the '.' in the number 3.1416. In Europe often: 3,1416
 static int8_t doQuote=INT8_MIN;        // whether to surround fields with double quote ". NA means 'auto' (default)
 static bool qmethodEscape=false;       // when quoting fields, how to escape double quotes in the field contents (default false means to add another double quote)
+static int scipen;
 static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 
 extern const char *getString(void *, int);
@@ -251,7 +252,7 @@ void writeFloat64(double *col, int64_t row, char **pch)
       // So:  3.1416 => l=31416, sf=5, exp=0     dr=4; dl0=0; width=6
       //      30460  => l=3046, sf=4, exp=4      dr=0; dl0=1; width=5
       //      0.0072 => l=72, sf=2, exp=-3       dr=4; dl0=1; width=6
-      if (width <= sf + (sf>1) + 2 + (abs(exp)>99?3:2)) {
+      if (width <= sf + (sf>1) + 2 + (abs(exp)>99?3:2) + scipen) {
         //               ^^^^ to not include 1 char for dec in -7e-04 where sf==1
         //                       ^ 2 for 'e+'/'e-'
         // decimal format ...
@@ -586,6 +587,7 @@ void fwriteMain(fwriteMainArgs args)
   sep = args.sep;
   sep2 = args.sep2;
   dec = args.dec;
+  scipen = args.scipen;
   doQuote = args.doQuote;
 
   // When NA is a non-empty string, then we must quote all string fields in case they contain the na string

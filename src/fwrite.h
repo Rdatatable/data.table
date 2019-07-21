@@ -96,6 +96,10 @@ typedef struct fwriteMainArgs
   int8_t doQuote;
 
   bool qmethodEscape;     // true means escape quotes using backslash, else double-up double quotes.
+  int scipen;             // same as options('scipen') in R -- used to penalize scientific notation when
+                          //   deciding to write scientific or full decimal format (e.g. in comparing
+                          //   10000000 to 1e+07, first has width 8, second has width 5; prefer the former
+                          //   iff scipen >= 3=8-5
   bool squashDateTime;
   bool append;
   int buffMB;             // [1-1024] default 8MB
