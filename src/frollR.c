@@ -113,7 +113,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   if (!dans) error("%s: Unable to allocate memory answer", __func__); // # nocov
   double* dx[nx];                                               // pointers to source columns
   uint_fast64_t inx[nx];                                        // to not recalculate `length(x[[i]])` we store it in extra array
-  if (verbose) Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
+  if (bverbose) Rprintf("%s: allocating memory for results %dx%d\n", __func__, nx, nk);
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
