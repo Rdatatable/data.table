@@ -8096,17 +8096,25 @@ DT = data.table(x=sample(5, 100, TRUE),
                y2=sample(c(1:10,NA), 100, TRUE),
                z1=runif(100),
                z2=sample(c(runif(10),NA,NaN), 100, TRUE))
-test(1594.1, DT[, lapply(.SD, var, na.rm=FALSE), by=x], DT[, lapply(.SD, stats::var, na.rm=FALSE), by=x])
-test(1594.2, DT[, lapply(.SD, var, na.rm=TRUE), by=x], DT[, lapply(.SD, stats::var, na.rm=TRUE), by=x])
-test(1594.3, DT[, lapply(.SD, var, na.rm=TRUE), by=x, verbose=TRUE], output="GForce optimized j to.*gvar")
+test(1594.01, DT[, lapply(.SD, var, na.rm=FALSE), by=x], DT[, lapply(.SD, stats::var, na.rm=FALSE), by=x])
+test(1594.02, DT[, lapply(.SD, var, na.rm=TRUE), by=x], DT[, lapply(.SD, stats::var, na.rm=TRUE), by=x])
+test(1594.03, DT[, lapply(.SD, var, na.rm=TRUE), by=x, verbose=TRUE], output="GForce optimized j to.*gvar")
+# coverage: default group .N=1 case
+idx=DT[ , .I[1L], by=x]$V1
+out=data.table(x=DT[(idx), x], V1=NA_real_)
+test(1594.05, DT[(idx), var(y1), by=x], out)
+test(1594.06, DT[(idx), var(y1, na.rm=TRUE), by=x], out)
+test(1594.07, DT[(idx), var(z1), by=x], out)
+test(1594.08, DT[(idx), var(z1, na.rm=TRUE), by=x], out)
 
-test(1594.4, DT[, lapply(.SD, sd, na.rm=FALSE), by=x], DT[, lapply(.SD, stats::sd, na.rm=FALSE), by=x])
-test(1594.5, DT[, lapply(.SD, sd, na.rm=TRUE), by=x], DT[, lapply(.SD, stats::sd, na.rm=TRUE), by=x])
-test(1594.6, DT[, lapply(.SD, sd, na.rm=TRUE), by=x, verbose=TRUE], output="GForce optimized j to.*gsd")
+test(1594.09, DT[, lapply(.SD, sd, na.rm=FALSE), by=x], DT[, lapply(.SD, stats::sd, na.rm=FALSE), by=x])
+test(1594.10, DT[, lapply(.SD, sd, na.rm=TRUE), by=x], DT[, lapply(.SD, stats::sd, na.rm=TRUE), by=x])
+test(1594.11, DT[, lapply(.SD, sd, na.rm=TRUE), by=x, verbose=TRUE], output="GForce optimized j to.*gsd")
 
-test(1594.7, DT[, lapply(.SD, prod, na.rm=FALSE), by=x], DT[, lapply(.SD, base::prod, na.rm=FALSE), by=x])
-test(1594.8, DT[, lapply(.SD, prod, na.rm=TRUE), by=x], DT[, lapply(.SD, base::prod, na.rm=TRUE), by=x])
-test(1594.9, DT[, lapply(.SD, prod, na.rm=TRUE), by=x, verbose=TRUE], output="GForce optimized j to.*gprod")
+test(1594.12, DT[, lapply(.SD, prod, na.rm=FALSE), by=x], DT[, lapply(.SD, base::prod, na.rm=FALSE), by=x])
+test(1594.13, DT[, lapply(.SD, prod, na.rm=TRUE), by=x], DT[, lapply(.SD, base::prod, na.rm=TRUE), by=x])
+test(1594.14, DT[, lapply(.SD, prod, na.rm=TRUE), by=x, verbose=TRUE], output="GForce optimized j to.*gprod")
+
 
 # FR #1517
 dt1 = data.table(x=c(1,1,2), y=1:3)
@@ -14217,16 +14225,17 @@ test(2017.1, DT[, first(.SD), by=id, .SDcols="v", verbose=TRUE], data.table(id=1
 test(2017.2, DT[, first(v), by=id,                verbose=TRUE], data.table(id=1:2, V1=c(1L,3L)), output="optimized j to 'gfirst(v)'")
 test(2017.3, DT[, last(v), by=id,                 verbose=TRUE], data.table(id=1:2, V1=c(2L,3L)), output="optimized j to 'glast(v)'")
 test(2017.4, DT[, v[1L], by=id,                   verbose=TRUE], data.table(id=1:2, V1=c(1L,3L)), output="optimized j to '`g[`(v, 1L)'")
-DT = data.table(id = c(1L,1L,2L), v = 1:3, y = 3:1, z = c(TRUE, TRUE, FALSE), u = c("a","b","c"))
-test(2017.5, DT[, first(.SD), by=id, .SDcols=c("v","y","z","u"), verbose=TRUE],
-             data.table(id=1:2, v=c(1L,3L), y=c(3L,1L), z=c(TRUE,FALSE), u=c("a","c")),
-             output="optimized j to 'list(gfirst(v), gfirst(y), gfirst(z), gfirst(u))'")
-test(2017.6, DT[, last(.SD), by=id, .SDcols=c("v","y","z","u"), verbose=TRUE],
-             data.table(id=1:2, v=c(2L,3L), y=c(2L,1L), z=c(TRUE,FALSE), u=c("b","c")),
-             output="optimized j to 'list(glast(v), glast(y), glast(z), glast(u))'")
-test(2017.7, DT[, .SD[1L], by=id, .SDcols=c("v","y","z","u"), verbose=TRUE],
-             data.table(id=1:2, v=c(1L,3L), y=c(3L,1L), z=c(TRUE,FALSE), u=c("a","c")),
-             output="optimized j to 'list(`g[`(v, 1L), `g[`(y, 1L), `g[`(z, 1L), `g[`(u, 1L))'")
+DT = data.table(id = c(1L,1L,2L), v = 1:3, y = 3:1, z = c(TRUE, TRUE, FALSE), u = c("a","b","c"), l=list(list(1L), list(2L), list(3L)))
+test(2017.5, DT[, first(.SD), by=id, .SDcols=c("v","y","z","u","l"), verbose=TRUE],
+             data.table(id=1:2, v=c(1L,3L), y=c(3L,1L), z=c(TRUE,FALSE), u=c("a","c"), l=list(list(1L), list(3L))),
+             output="optimized j to 'list(gfirst(v), gfirst(y), gfirst(z), gfirst(u), gfirst(l))'")
+test(2017.6, DT[, last(.SD), by=id, .SDcols=c("v","y","z","u","l"), verbose=TRUE],
+             data.table(id=1:2, v=c(2L,3L), y=c(2L,1L), z=c(TRUE,FALSE), u=c("b","c"), l=list(list(2L), list(3L))),
+             output="optimized j to 'list(glast(v), glast(y), glast(z), glast(u), glast(l))'")
+test(2017.7, DT[, .SD[1L], by=id, .SDcols=c("v","y","z","u","l"), verbose=TRUE],
+             data.table(id=1:2, v=c(1L,3L), y=c(3L,1L), z=c(TRUE,FALSE), u=c("a","c"), l=list(list(1L), list(3L))),
+             output="optimized j to 'list(`g[`(v, 1L), `g[`(y, 1L), `g[`(z, 1L), `g[`(u, 1L), `g[`(l, 1L))'")
+
 # ghead argument "n" is missing, with no default #3462
 DT = data.table(a=c(rep(1L, 7L), rep(2L, 5L)), b=1:12, d=12:1)
 test(2018.1, DT[, head(.SD), a, verbose=TRUE],
