@@ -41,7 +41,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         count[from[i]-1]++; count[to[i]-1]++;
         type_count[from[i]-1]++; type_count[to[i]-1]++;
       }
-     break;
+      break;
     case START: case END: case ANY: case WITHIN:
       for (i=0; i<xrows; i++) {
         for (j=from[i]; j<=to[i]; j++) {
@@ -55,7 +55,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
       break;
     default: error("Internal error: unknown type in mult=%d in lookup: %d", mult, type); // #nocov
     }
-   break;
+    break;
 
   case LAST :
     switch (type) {
@@ -66,13 +66,13 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
           if (from[i]==j && !type_count[j-1]) type_count[j-1]++;
         }
       }
-     break;
+      break;
     case EQUAL:
       for (i=0; i<xrows; i++) {
         count[from[i]-1]++; count[to[i]-1]++;
         type_count[from[i]-1]++; type_count[to[i]-1]++;
       }
-     break;
+      break;
     case START: case END: case WITHIN:
       for (i=0; i<xrows; i++) {
         for (j=from[i]; j<=to[i]; j++) {
@@ -83,10 +83,9 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         for (i=0; i<uxrows; i++)              // TODO: this allocation can be avoided if we take care of FIRST/LAST accordingly in 'overlaps'
           if (count[i]) type_count[i] = 1;
       }
-     break;
-    default: error("Internal error: unknown type in mult=%d in lookup: %d", mult, type); // #nocov
+      break;
     }
-   break;
+    break;
 
   case ALL :
     switch (type) {
@@ -96,13 +95,13 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
           count[j-1]++; type_count[j-1]++;       // alternatively, we could simply do with type_count=count ?
         }
       }
-     break;
+      break;
     case EQUAL:
       for (i=0; i<xrows; i++) {
         count[from[i]-1]++; count[to[i]-1]++;
         type_count[from[i]-1]++; type_count[to[i]-1]++;
       }
-     break;
+      break;
     case ANY :
       for (i=0; i<xrows; i++) {
         k = from[i];
@@ -111,17 +110,17 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
           if (k==j) type_count[j-1]++;
         }
       }
-     break;
+      break;
     case WITHIN :
       for (i=0; i<xrows; i++) {
         for (j=from[i]; j<=to[i]; j++) {
           count[j-1]++;
         }
       }
-     break;
+      break;
     default: error("Internal error: unknown type in mult=%d in lookup: %d", mult, type); // #nocov
     }
-   break;
+    break;
   default: error("Internal error: unknown mult in lookup: %d", mult); // #nocov
   }
   pass1 = clock() - start;
@@ -151,13 +150,13 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         INTEGER(vv)[idx[j-1]++] = i+1;
       }
     }
-   break;
+    break;
   case EQUAL:
     for (i=0; i<xrows; i++) {
       INTEGER(VECTOR_ELT(lookup, from[i]-1))[idx[from[i]-1]++] = i+1;
       INTEGER(VECTOR_ELT(lookup, to[i]-1))[idx[to[i]-1]++] = i+1;
     }
-   break;
+    break;
   default: error("Internal error: unknown type lookup should have been caught earlier: %d", type); // #nocov
   }
   Free(idx);
@@ -173,7 +172,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
           INTEGER(tt)[0] = INTEGER(vv)[0];
         }
       }
-     break;
+      break;
 
     case LAST :
       for (i=0; i<uxrows; i++) {
@@ -190,7 +189,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
       case START: case END: case EQUAL:
         for (i=0; i<uxrows; i++)
           SET_VECTOR_ELT(type_lookup, i, VECTOR_ELT(lookup, i));
-       break;
+        break;
 
       case ANY :
         for (i=0; i<uxrows; i++) {
@@ -200,7 +199,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
           for (j=count[i]-type_count[i]; j<count[i]; j++)
             INTEGER(tt)[k++] = INTEGER(vv)[j];
         }
-       break;
+        break;
 
       case WITHIN :
         // for (i=0; i<uxrows; i++) {
@@ -209,7 +208,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         //     for (j=0; j<type_count[i]; j++)
         //         INTEGER(tt)[j] = INTEGER(vv)[j];
         // }
-       break; // #nocov
+        break; // #nocov
       default: error("Internal error: unknown type in mult=%d in lookup should have been caught earlier: %d", mult, type); // #nocov
       }
      break;
@@ -259,7 +258,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
     case START: case END:
       for (i=0; i<rows; i++)
         totlen += (from[i] > 0 && type_count[from[i]-1]) ? type_count[from[i]-1] : 1;
-     break;
+      break;
 
     case EQUAL:
       for (i=0; i<rows; i++) {
@@ -282,7 +281,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
         if (len == totlen)
           ++totlen;
       }
-     break;
+      break;
 
     case ANY:
       for (i=0; i<rows; i++) {
@@ -296,7 +295,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
         if (len == totlen)
           ++totlen;
       }
-     break;
+      break;
 
     case WITHIN:
       for (i=0; i<rows; i++) {
@@ -320,7 +319,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
         if (len == totlen)
           ++totlen;
       }
-     break;
+      break;
     default: error("Internal error: unknown type in mult=ALL in overlaps: %d", mult, type); // #nocov
     }
   } else totlen = rows;
@@ -360,7 +359,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           ++thislen;
         }
       }
-     break;
+      break;
 
     case EQUAL :
       for (i=0; i<rows; i++) {
@@ -396,7 +395,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
            ++thislen;
          }
       }
-     break;
+      break;
 
     case ANY :
       for (i=0; i<rows; i++) {
@@ -426,7 +425,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           ++thislen;
         }
       }
-     break;
+      break;
 
     case WITHIN :
       for (i=0; i<rows; i++) {
@@ -461,10 +460,10 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
            ++thislen;
          }
       }
-     break;
+      break;
     default: error("Internal error: unknown type in mult=%d in overlaps: %d", mult, type); // #nocov
     }
-   break;
+    break;
 
   case FIRST:
     switch (type) {
@@ -483,7 +482,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           ++thislen;
         }
       }
-     break;
+      break;
 
     case EQUAL :
       for (i=0; i<rows; i++) {
@@ -515,7 +514,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
            ++thislen;
          }
       }
-     break;
+      break;
 
     case ANY:
       for (i=0; i<rows; i++) {
@@ -536,7 +535,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           ++thislen;
         }
       }
-     break;
+      break;
 
     case WITHIN:
       for (i=0; i<rows; i++) {
@@ -568,10 +567,10 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           ++thislen;
         }
       }
-     break;
+      break;
     default: error("Internal error: unknown type in mult=%d in overlaps: %d", mult, type); // #nocov
     }
-   break;
+    break;
 
   case LAST:
     switch (type) {
@@ -630,7 +629,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
            ++thislen;
          }
       }
-     break;
+      break;
 
       // OLD logic for 'any,last' which had to check for maximum for each 'i'. Better logic below.
       // for 'first' we need to just get the minimum of first non-zero-length element, but not the same case for 'last'.
@@ -685,7 +684,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           ++thislen;
         }
       }
-     break;
+      break;
 
     case WITHIN:
       for (i=0; i<rows; i++) {
@@ -717,10 +716,10 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
            ++thislen;
          }
       }
-     break;
+      break;
     default: error("Internal error: unknown type in mult=%d in overlaps: %d", mult, type); // #nocov
     }
-   break;
+    break;
   default: error("Internal error: unknown mult in overlaps: %d", mult); // #nocov
   }
   end2 = clock() - start;

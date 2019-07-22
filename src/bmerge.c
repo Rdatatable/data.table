@@ -548,8 +548,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     if (iupp<iuppIn)
       bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
     break;
-  // do nothing
-  default : break;
+  default : break;  // do nothing
   }
 }
 
