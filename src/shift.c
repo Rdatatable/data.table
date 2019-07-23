@@ -14,7 +14,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
     SET_VECTOR_ELT(x, 0, obj);
   } else {
     if (!isNewList(obj))
-      error("Internal error: obj passed to shift() must be a list, data.frame or data.table"); // # nocov
+      error("type '%s' passed to shift(). Must be a vector, list, data.frame or data.table", type2char(TYPEOF(obj)));
     x = obj;
   }
   if (length(fill) != 1)

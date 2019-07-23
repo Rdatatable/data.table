@@ -6440,6 +6440,7 @@ test(1463.35, shift(val, 2L), NA_real_)
 test(1463.36, shift(val, 2L, type="lead"), NA_real_)
 
 test(1463.37, shift(1:5, 1L, fill=c(1:2)), error="fill must be a vector of length")
+test(1463.38, shift(mean), error="type 'closure' passed to shift(). Must be a vector, list, data.frame or data.table")
 
 # add tests for date and factor?
 
@@ -6448,7 +6449,7 @@ x = 1:10
 nm = c("x_lag_1", "x_lag_2")
 ans = list(as.integer(c(NA, 1:9)), as.integer(c(NA, NA, 1:8)))
 setattr(ans, 'names', nm)
-test(1463.38, shift(x, 1:2, give.names=TRUE), ans)
+test(1463.39, shift(x, 1:2, give.names=TRUE), ans)
 
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
