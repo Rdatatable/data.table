@@ -15415,6 +15415,9 @@ for (i in -3:3) {
     test(testNo+(dec<-dec+1L)/100, fwrite(data.table(v)), output=format(v))
   }
 }
+# non-numeric scipen defaults to 0
+options(scipen = NULL)
+test(testNo+(dec<-dec+1L)/100, fwrite(data.table(10^5)), output='1e+05')
 options(oldSciPen)
 
 ###################################

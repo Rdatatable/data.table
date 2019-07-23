@@ -651,6 +651,7 @@ void fwriteMain(fwriteMainArgs args)
         STOP("Internal error: type %d has no max length method implemented", args.whichFun[j]);  // # nocov
       }
     }
+    if (args.whichFun[j] == WF_Float64 && args.scipen > 0) width += args.scipen;
     if (width<naLen) width = naLen;
     maxLineLen += width*2;  // *2 in case the longest string is all quotes and they all need to be escaped
   }
