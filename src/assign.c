@@ -489,7 +489,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     SEXP RHS;
 
     if (coln+1 > oldncol) {  // new column
-      SET_VECTOR_ELT(dt, coln, newcol=allocNAVector(TYPEOF(thisvalue), nrow));
+      SET_VECTOR_ELT(dt, coln, newcol=allocNAVectorLike(thisvalue, nrow));
       // initialize with NAs for when 'rows' is a subset and it doesn't touch
       // do not try to save the time to NA fill (contiguous branch free assign anyway) since being
       // sure all items will be written to (isNull(rows), length(rows), vlen<1, targetlen) is not worth the risk.
@@ -1036,6 +1036,14 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
   // We guess that author of allocVector would have liked to initialize with NA but was prevented since memset
   // is restricted to one byte.
   SEXP v = PROTECT(allocVector(type, n));
+  writeNA(v, 0, n);
+  UNPROTECT(1);
+  return(v);
+}
+// #3723 -- build NA vector like x -- mainly used to copy attributes pass this to writeNA
+SEXP allocNAVectorLike(SEXP x, R_len_t n) {
+  SEXP v = PROTECT(allocVector(TYPEOF(x), n));
+  copyMostAttrib(x, v);
   writeNA(v, 0, n);
   UNPROTECT(1);
   return(v);

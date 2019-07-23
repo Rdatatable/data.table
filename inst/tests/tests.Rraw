@@ -15428,6 +15428,14 @@ test(2071.10, dcast(data.table(a=1, b=1, l=list(list(1))), a ~ b, value.var='l')
 test(2071.11, dcast(data.table(a = 1, b = 2, c = 3), a ~ b, value.var = 'c', fill = '2'),
      data.table(a=1, `2`=3, key='a'))
 
+# partial instantiation of integer64 column was creating NA_REAL, not INT64_MIN
+if (test_bit64) {
+  # sub-assign from #3723
+  test(2072.1, data.table(x=1:2)[1, y := bit64::as.integer64(0L)]$y, as.integer64(c(0L, NA)))
+  # rbindlist(fill=TRUE) from #1459
+  test(2072.2, rbind(data.table(a=1:2, b=as.integer64(c(1,NA))), data.table(a=3L), fill=TRUE)$b, as.integer64(c(1, NA, NA)))
+}
+
 ###################################
 #  Add new tests above this line  #
 ###################################

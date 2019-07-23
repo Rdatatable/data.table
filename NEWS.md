@@ -198,6 +198,8 @@
 
 24. `column not found` could incorrectly occur in rare non-equi-join cases, [#3635](https://github.com/Rdatatable/data.table/issues/3635). Thanks to @UweBlock for the report.
 
+25. `integer64` defined on a subset of a new column would leave "gibberish" on the remaining rows, [#3723](https://github.com/Rdatatable/data.table/issues/3723). A bug in `rbindlist` with the same root cause was also fixed, [#1459](https://github.com/Rdatatable/data.table/issues/1459). Thanks @shrektan and @jangorecki for the reports.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
