@@ -12,9 +12,11 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type) {
   if (isVectorAtomic(obj)) {
     x = PROTECT(allocVector(VECSXP, 1)); protecti++;
     SET_VECTOR_ELT(x, 0, obj);
-  } else x = obj;
-  if (!isNewList(x))
-    error("x must be a list, data.frame or data.table");
+  } else {
+    if (!isNewList(obj))
+      error("type '%s' passed to shift(). Must be a vector, list, data.frame or data.table", type2char(TYPEOF(obj)));
+    x = obj;
+  }
   if (length(fill) != 1)
     error("fill must be a vector of length 1");
   // the following two errors should be caught by match.arg() at the R level

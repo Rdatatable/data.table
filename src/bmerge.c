@@ -265,10 +265,11 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     }
     if (col>-1 && op[col] != EQ) {
       switch (op[col]) {
-        case LE : xlow = xlowIn; break;
-        case LT : xupp = xlow + 1; xlow = xlowIn; break;
-        case GE : if (ival.i != NA_INTEGER) xupp = xuppIn; break;
-        case GT : xlow = xupp - 1; if (ival.i != NA_INTEGER) xupp = xuppIn; break;
+      case LE : xlow = xlowIn; break;
+      case LT : xupp = xlow + 1; xlow = xlowIn; break;
+      case GE : if (ival.i != NA_INTEGER) xupp = xuppIn; break;
+      case GT : xlow = xupp - 1; if (ival.i != NA_INTEGER) xupp = xuppIn; break;
+      default : error("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d", type2char(TYPEOF(xc)), op[col]); // #nocov
       }
       // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
       if (op[col] <= 3 && xlow<xupp-1 && ival.i != NA_INTEGER && INTEGER(xc)[XIND(xlow+1)] == NA_INTEGER) {
@@ -376,6 +377,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       case LT : xupp = xlow + 1; if (!isivalNA) xlow = xlowIn; break;
       case GE : if (!isivalNA) xupp = xuppIn; break;
       case GT : xlow = xupp - 1; if (!isivalNA) xupp = xuppIn; break;
+      default : error("Internal error in bmerge_r for '%s' column. Unrecognized value op[col]=%d", type2char(TYPEOF(xc)), op[col]); // #nocov
       }
       // for LE/LT cases, we need to ensure xlow excludes NA indices, != EQ is checked above already
       if (op[col] <= 3 && xlow<xupp-1 && !isivalNA && (!isInt64 ? ISNAN(dxc[XIND(xlow+1)]) : (DtoLL(dxc[XIND(xlow+1)]) == NA_INT64_LL))) {
@@ -546,6 +548,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     if (iupp<iuppIn)
       bmerge_r(xlowIn, xuppIn, iupp-1, iuppIn, col, 1, lowmax && xupp-1==xlowIn, uppmax);
     break;
+  default : break;  // do nothing
   }
 }
 

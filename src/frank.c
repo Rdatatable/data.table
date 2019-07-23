@@ -62,7 +62,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
     }
       break;
     default:
-      error("Unknown column type '%s'", type2char(TYPEOF(v)));
+      error("Unsupported column type '%s'", type2char(TYPEOF(v)));
     }
   }
   UNPROTECT(1);
@@ -127,6 +127,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
     //       INTEGER(ans)[xorder[j]-1] = k++;
     //   }
     //   break;
+    default: error("Internal error: unknown ties value in frank: %d", ties); // #nocov
     }
   }
   UNPROTECT(1);
@@ -198,7 +199,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
     }
       break;
     default:
-      error("Unknown column type '%s'", type2char(TYPEOF(v)));
+      error("Unsupported column type '%s'", type2char(TYPEOF(v)));
     }
     if (LOGICAL(ans)[0]) break;
   }
