@@ -5,7 +5,6 @@
 
 // TO DO: margins
 SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg) {
-
   int nrows=INTEGER(nrowArg)[0], ncols=INTEGER(ncolArg)[0];
   int nlhs=length(lhs), nval=length(val), *idx = INTEGER(idxArg);
   SEXP target;
@@ -80,6 +79,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
         }
       }
       break;
+    default: error("Unsupported column type in fcast val: '%s'", type2char(TYPEOF(thiscol))); // #nocov
     }
     if (count) UNPROTECT(1);
   }
