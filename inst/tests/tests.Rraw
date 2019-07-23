@@ -15412,6 +15412,20 @@ DT = data.table(d=sample(seq(as.Date("2015-01-01"), as.Date("2015-01-05"), by="d
 test(2070.01, typeof(DT$d), "double")
 test(2070.02, DT[, .N, keyby=d, verbose=TRUE], output="Column 1.*date.*8 byte double.*no fractions are present.*4 byte integer.*to save space and time")
 
+# coverage along with switch+default pairing
+test(2071.01, dcast(data.table(id=1, grp=1, e=expression(1)), id ~ grp, value.var='e'), error="Unsupported column type in fcast val: 'expression'")
+test(2071.02, is_na(data.table(expression(1))), error="Unsupported column type 'expression'")
+test(2071.03, is_na(data.table(1L), 2L), error="Item 1 of 'cols' is 2 which is outside")
+test(2071.04, is_na(list(1L, 1:2)), error="Column 2 of input list x is length 2, inconsistent")
+test(2071.05, any_na(data.table(1L), 2L), error="Item 1 of 'cols' is 2 which is outside")
+test(2071.06, any_na(list(1L, 1:2)), error="Column 2 of input list x is length 2, inconsistent")
+test(2071.07, any_na(data.table(as.raw(0L))), FALSE)
+test(2071.08, any_na(data.table(c(1+1i, NA))))
+test(2071.09, any_na(data.table(expression(1))), error="Unsupported column type 'expression'")
+test(2071.10, dcast(data.table(a=1, b=1, l=list(list(1))), a ~ b, value.var='l'),
+     data.table(a=1, `1`=list(list(1)), key='a'))
+test(2071.11, dcast(data.table(a = 1, b = 2, c = 3), a ~ b, value.var = 'c', fill = '2'),
+     data.table(a=1, `2`=3, key='a'))
 
 ###################################
 #  Add new tests above this line  #
