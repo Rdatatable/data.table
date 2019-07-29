@@ -57,7 +57,6 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
 
-  cat("Running", fn, "\n")
   env = new.env(parent=.GlobalEnv)
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
 
@@ -82,7 +81,11 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   assign("filename", fn, envir=env)
   assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
   # It doesn't matter that 3000L is far larger than needed for other and benchmark.
-  if(isTRUE(silent)){
+  cat("test.data.table running script:\n  ", fn, "\nCPU threads details:\n", sep="")
+  thout = capture.output(invisible(th<-getDTthreads(verbose=TRUE)))
+  thout[length(thout)-1L] = paste("getDTthreads", th, sep="==") # added test 2072.1
+  print(as.data.table(tstrsplit(thout, split="==")), row.names=FALSE, col.names="none", class=FALSE)
+  if (isTRUE(silent)){
     try(sys.source(fn, envir=env), silent=silent)  # nocov
   } else {
     sys.source(fn, envir=env)

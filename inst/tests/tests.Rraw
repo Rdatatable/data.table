@@ -15428,6 +15428,10 @@ test(2071.10, dcast(data.table(a=1, b=1, l=list(list(1))), a ~ b, value.var='l')
 test(2071.11, dcast(data.table(a = 1, b = 2, c = 3), a ~ b, value.var = 'c', fill = '2'),
      data.table(a=1, `2`=3, key='a'))
 
+# test.data.table console output depends on getDTthreads verbose output
+thout = capture.output(invisible(getDTthreads(verbose=TRUE)))
+test(2072.1, grepl("^data\\.table is using *. threads", thout[length(thout)-1L]), TRUE)
+
 ###################################
 #  Add new tests above this line  #
 ###################################
