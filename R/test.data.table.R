@@ -57,6 +57,9 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
 
+  cat("getDTthreads(verbose=TRUE):\n")         # for tracing on CRAN; output to log before anything is attempted
+  print(getDTthreads(verbose=TRUE))            # print output of getDTthreads() verbatim as simply as possible; e.g. without depending on data.table for formatting
+  cat("test.data.table() running:", fn, "\n")  # print fn to log before attempting anything on it (in case it is missing); on same line for slightly easier grep
   env = new.env(parent=.GlobalEnv)
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
 
@@ -81,10 +84,6 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   assign("filename", fn, envir=env)
   assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
   # It doesn't matter that 3000L is far larger than needed for other and benchmark.
-  cat("test.data.table running script:\n  ", fn, "\nCPU threads details:\n", sep="")
-  thout = capture.output(invisible(th<-getDTthreads(verbose=TRUE)))
-  thout[length(thout)-1L] = paste("getDTthreads", th, sep="==") # added test 2072.1
-  print(as.data.table(tstrsplit(thout, split="==")), row.names=FALSE, col.names="none", class=FALSE)
   if (isTRUE(silent)){
     try(sys.source(fn, envir=env), silent=silent)  # nocov
   } else {
@@ -118,7 +117,7 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
                 ", TZ=", suppressWarnings(Sys.timezone()),
                 ", locale='", Sys.getlocale(), "'",
                 ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
-                ", getDTthreads()='", paste0(capture.output(invisible(getDTthreads(verbose=TRUE))), collapse="; "), "'")
+                ", getDTthreads()='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'")
   DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
   if ((x<-sum(timings[["nTest"]])) != ntest) {
     warning("Timings count mismatch:",x,"vs",ntest)  # nocov
