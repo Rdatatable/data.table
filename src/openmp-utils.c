@@ -58,10 +58,9 @@ int getDTthreads() {
   return DTthreads;
 }
 
-static const char *mygetenv(const char *name) {
+static const char *mygetenv(const char *name, const char *unset) {
   const char *ans = getenv(name);
-  if (ans==NULL) ans="";
-  return ans;
+  return (ans==NULL || ans[0]=='\0') ? unset : ans;
 }
 
 SEXP getDTthreads_R(SEXP verbose) {
@@ -71,16 +70,17 @@ SEXP getDTthreads_R(SEXP verbose) {
       Rprintf("This installation of data.table has not been compiled with OpenMP support.\n");
     #endif
     // this output is captured, paste0(collapse="; ")'d, and placed at the end of test.data.table() for display in the last 13 lines of CRAN check logs
-    Rprintf("omp_get_num_procs()==%d\n", omp_get_num_procs());
-    const char *p = mygetenv("R_DATATABLE_NUM_PROCS_PERCENT");
-    Rprintf("R_DATATABLE_NUM_PROCS_PERCENT==\"%s\" %s\n", p, p[0]=='\0' ? "(default 50)" : "");
-    Rprintf("R_DATATABLE_NUM_THREADS==\"%s\"\n", mygetenv("R_DATATABLE_NUM_THREADS"));
-    Rprintf("omp_get_thread_limit()==%d\n", omp_get_thread_limit());
-    Rprintf("omp_get_max_threads()==%d\n", omp_get_max_threads());
-    Rprintf("OMP_THREAD_LIMIT==\"%s\"\n", mygetenv("OMP_THREAD_LIMIT"));  // CRAN sets to 2
-    Rprintf("OMP_NUM_THREADS==\"%s\"\n",  mygetenv("OMP_NUM_THREADS"));
-    Rprintf("data.table is using %d threads. This is set on startup, and by setDTthreads(). See ?setDTthreads.\n", getDTthreads());
-    Rprintf("RestoreAfterFork==%s\n", RestoreAfterFork ? "true" : "false");
+    // it is also printed at the start of test.data.table() so that we can trace any Killed events on CRAN before the end is reached
+    // this is printed verbatim (e.g. without using data.table to format the output) in case there is a problem even with simple data.table creation/printing
+    Rprintf("  omp_get_num_procs()            %d\n", omp_get_num_procs());
+    Rprintf("  R_DATATABLE_NUM_PROCS_PERCENT  %s\n", mygetenv("R_DATATABLE_NUM_PROCS_PERCENT", "unset (default 50)"));
+    Rprintf("  R_DATATABLE_NUM_THREADS        %s\n", mygetenv("R_DATATABLE_NUM_THREADS", "unset"));
+    Rprintf("  omp_get_thread_limit()         %d\n", omp_get_thread_limit());
+    Rprintf("  omp_get_max_threads()          %d\n", omp_get_max_threads());
+    Rprintf("  OMP_THREAD_LIMIT               %s\n", mygetenv("OMP_THREAD_LIMIT", "unset"));  // CRAN sets to 2
+    Rprintf("  OMP_NUM_THREADS                %s\n", mygetenv("OMP_NUM_THREADS", "unset"));
+    Rprintf("  RestoreAfterFork               %s\n", RestoreAfterFork ? "true" : "false");
+    Rprintf("  data.table is using %d threads. See ?setDTthreads.\n", getDTthreads());
   }
   return ScalarInteger(getDTthreads());
 }
@@ -99,7 +99,7 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent) {
     // Allows robust testing of environment variables using Sys.setenv() to experiment.
     // Default  is now (as from 1.12.2) threads=NULL which re-reads environment variables.
     // If a CPU has been unplugged (high end servers allow live hardware replacement) then omp_get_num_procs() will
-    // reflect that and a call to setDTthreads(threads=NULL) will update DTthreads. 
+    // reflect that and a call to setDTthreads(threads=NULL) will update DTthreads.
   } else {
     int n=0, protecti=0;
     if (length(threads)!=1) error("threads= must be either NULL (default) or a single number. It has length %d", length(threads));
@@ -140,7 +140,7 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent) {
   From v1.12.0 we're trying again to RestoreAferFork (#2285) with optional-off due to success
   reported by Ken Run and Mark Klik in fst#110 and fst#112. We had tried that before but had
   experienced problems likely on Intel's OpenMP only (Mac).
-  
+
   DO NOT call omp_set_num_threads(1) inside when_fork()!! That causes a different crash/hang on MacOS
   upon mclapply's fork even if data.table is merely loaded and neither used yet in the session nor by
   what mclapply is calling. Even when passing on CRAN's MacOS all-OK. As discovered by several MacOS

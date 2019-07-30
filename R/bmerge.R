@@ -14,7 +14,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   # careful to only plonk syntax (full column) on i/x from now on otherwise user's i and x would change;
   #   this is why shallow() is very importantly internal only, currently.
 
-  supported = c("logical", "integer", "double", "character", "factor", "integer64")
+  supported = c(ORDERING_TYPES, "factor", "integer64")
 
   getClass = function(x) {
     ans = typeof(x)
@@ -57,7 +57,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       }
     }
     if (xclass == iclass) {
-      if (verbose) cat("i.",names(i)[ic],"has same type (",xclass,") as x.",names(x)[xc],". No coercion needed.")
+      if (verbose) cat("i.",names(i)[ic],"has same type (",xclass,") as x.",names(x)[xc],". No coercion needed.\n", sep="")
       next
     }
     if (xclass=="character" || iclass=="character" ||

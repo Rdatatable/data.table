@@ -53,6 +53,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
           if (count[i]) type_count[i] = 1;
       }
       break;
+    default: error("Internal error: unknown type in mult=%d in lookup: %d", mult, type); // #nocov
     }
     break;
 
@@ -117,8 +118,10 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         }
       }
       break;
+    default: error("Internal error: unknown type in mult=%d in lookup: %d", mult, type); // #nocov
     }
     break;
+  default: error("Internal error: unknown mult in lookup: %d", mult); // #nocov
   }
   pass1 = clock() - start;
   if (LOGICAL(verbose)[0])
@@ -154,6 +157,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
       INTEGER(VECTOR_ELT(lookup, to[i]-1))[idx[to[i]-1]++] = i+1;
     }
     break;
+  default: error("Internal error: unknown type lookup should have been caught earlier: %d", type); // #nocov
   }
   Free(idx);
   // generate type_lookup
@@ -204,9 +208,11 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         //     for (j=0; j<type_count[i]; j++)
         //         INTEGER(tt)[j] = INTEGER(vv)[j];
         // }
-        break;
+        break; // #nocov
+      default: error("Internal error: unknown type in mult=%d in lookup should have been caught earlier: %d", mult, type); // #nocov
       }
-      break;
+     break;
+    default: error("Internal error: unknown mult in lookup: %d", mult); // #nocov
     }
   }
   pass3 = clock() - start;
@@ -314,6 +320,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           ++totlen;
       }
       break;
+    default: error("Internal error: unknown type in mult=ALL in overlaps: %d", mult, type); // #nocov
     }
   } else totlen = rows;
   end1 = clock() - start;
@@ -454,12 +461,13 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
          }
       }
       break;
+    default: error("Internal error: unknown type in mult=%d in overlaps: %d", mult, type); // #nocov
     }
     break;
 
   case FIRST:
     switch (type) {
-      case START: case END:
+    case START: case END:
       for (i=0; i<rows; i++) {
         len = thislen;
         INTEGER(f1__)[thislen] = i+1;
@@ -560,6 +568,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
         }
       }
       break;
+    default: error("Internal error: unknown type in mult=%d in overlaps: %d", mult, type); // #nocov
     }
     break;
 
@@ -708,8 +717,10 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
          }
       }
       break;
+    default: error("Internal error: unknown type in mult=%d in overlaps: %d", mult, type); // #nocov
     }
     break;
+  default: error("Internal error: unknown mult in overlaps: %d", mult); // #nocov
   }
   end2 = clock() - start;
   if (LOGICAL(verbose)[0])
