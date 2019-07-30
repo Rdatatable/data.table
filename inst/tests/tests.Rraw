@@ -12942,10 +12942,10 @@ test(1948.14, DT[i, on = 1L], error = "'on' argument should be a named atomic ve
 
 # helpful error when on= is provided but not i, rather than silently ignoring on=
 DT = data.table(A=1:3)
-test(1949.1, DT[,,on=A], DT, warning="i and j are both missing so ignoring the other arguments")
-test(1949.2, DT[,1,on=A], DT, warning="ignoring on= because it is only relevant to i but i is not provided")
-test(1949.3, DT[on=A], DT, warning="i and j are both missing so ignoring the other arguments")
-test(1949.4, DT[,on=A], DT, warning="i and j are both missing so ignoring the other arguments")
+test(1949.1, DT[,,on=A], error="object 'A' not found") # tests .1 to .4 amended after #3621
+test(1949.2, DT[,1,on=A], error="object 'A' not found")
+test(1949.3, DT[on=A], error="object 'A' not found")
+test(1949.4, DT[,on=A], error="object 'A' not found")
 test(1949.5, DT[1,,with=FALSE], error="j must be provided when with=FALSE")
 test(1949.6, DT[], output="A.*1.*2.*3")   # no error
 test(1949.7, DT[,], output="A.*1.*2.*3")  # no error, #3163
@@ -15427,6 +15427,13 @@ test(2071.10, dcast(data.table(a=1, b=1, l=list(list(1))), a ~ b, value.var='l')
      data.table(a=1, `1`=list(list(1)), key='a'))
 test(2071.11, dcast(data.table(a = 1, b = 2, c = 3), a ~ b, value.var = 'c', fill = '2'),
      data.table(a=1, `2`=3, key='a'))
+
+# natural join using X[on=Y] #3621
+X = data.table(a=1:2, b=1:2)
+test(2072.01, X[on=.(a=2:3, d=2:1)], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
+Y = data.table(a=2:3, d=2:1)
+test(2072.02, X[on=Y], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
+
 
 ###################################
 #  Add new tests above this line  #
