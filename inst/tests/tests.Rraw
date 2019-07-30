@@ -15449,6 +15449,9 @@ test(2072.27, between(c("a","c","e"), "a", c("b",NA,"d"), incbounds=TRUE), c(TRU
 test(2072.28, between(c("a","c","e"), "a", c("b",NA,"d"), incbounds=FALSE), c(FALSE, TRUE, FALSE))
 test(2072.29, between(c("a","c","e"), NA, c("b",NA,"d"), incbounds=TRUE), c(TRUE, TRUE, FALSE))
 test(2072.30, between(c("a","c","e"), NA, c("b",NA,"d"), incbounds=FALSE), c(TRUE, TRUE, FALSE))
+# between NA bound as unknown rather than missing #3522
+test(2073.01, between(1:5, 3L, NA, incbounds=TRUE, NAbounds=TRUE), c(FALSE, FALSE, NA, NA, NA))
+test(2073.02, between(1:5, 3L, NA, incbounds=FALSE, NAbounds=TRUE), c(FALSE, FALSE, FALSE, NA, NA))
 
 
 ###################################

@@ -10,12 +10,13 @@ Intended for use in \code{i} in \code{[.data.table}.
 \code{between} is equivalent to \code{x >= lower & x <= upper} when
 \code{incbounds=TRUE}, or \code{x > lower & y < upper} when \code{FALSE}. With a caveat that
 \code{NA} in \code{lower} or \code{upper} are taken as a missing bound and return \code{TRUE} not \code{NA}.
+This can be changed by setting \code{NAbounds} to \code{TRUE}.
 
 \code{inrange} checks whether each value in \code{x} is in between any of
 the intervals provided in \code{lower,upper}.
 }
 \usage{
-between(x, lower, upper, incbounds=TRUE)
+between(x, lower, upper, incbounds=TRUE, NAbounds=FALSE)
 x \%between\% y
 
 inrange(x, lower, upper, incbounds=TRUE)
@@ -32,6 +33,7 @@ interpreted as \code{lower} and \code{y[[2]]} as \code{upper}.}
 \item{incbounds}{ \code{TRUE} means inclusive bounds, i.e., [lower,upper].
 \code{FALSE} means exclusive bounds, i.e., (lower,upper).
 It is set to \code{TRUE} by default for infix notations.}
+\item{NAbounds}{ \code{TRUE} force to treat \code{NA} bound as \code{NA} rather than missing bound.}
 }
 \details{
 

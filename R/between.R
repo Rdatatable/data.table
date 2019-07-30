@@ -1,5 +1,6 @@
 # is x[i] in between lower[i] and upper[i] ?
-between = function(x,lower,upper,incbounds=TRUE) {
+between = function(x,lower,upper,incbounds=TRUE,NAbounds=FALSE) {
+  if (!isTRUEorFALSE(NAbounds)) stop("NAbounds must be TRUE or FALSE")
   if (is.logical(x)) stop("between has been x of type logical")
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
@@ -43,13 +44,13 @@ between = function(x,lower,upper,incbounds=TRUE) {
     stop("'lower' and/or 'upper' are integer64 class while 'x' argument is not, align classes before passing to 'between'")
   }
   is.supported = function(x) is.numeric(x) || is.px(x)
-  if (is.supported(x) && is.supported(lower) && is.supported(upper)) {
+  if (!NAbounds && is.supported(x) && is.supported(lower) && is.supported(upper)) {
     # faster parallelised version for int/double.
     # Cbetween supports length(lower)==1 (recycled) and (from v1.12.0) length(lower)==length(x).
     # length(upper) can be 1 or length(x) independently of lower
     .Call(Cbetween, x, lower, upper, incbounds)
   } else {
-    if (isTRUE(getOption("datatable.verbose"))) cat("optimised between not available for this data type, fallback to slow R routine\n")
+    if (isTRUE(getOption("datatable.verbose"))) cat("optimised between not available for this data type or NAbounds argument, fallback to slow R routine\n")
     # now just for character input. TODO: support character between in Cbetween and remove this branch
     xlen = length(x)
     llen = length(lower)
@@ -59,7 +60,7 @@ between = function(x,lower,upper,incbounds=TRUE) {
     # support NAs as missing bounds also for character #3667
     lower_na = is.na(lower)
     upper_na = is.na(upper)
-    if (!any(c(lower_na, upper_na))) {
+    if (NAbounds || !any(c(lower_na, upper_na))) {
       if (incbounds) x>=lower & x<=upper
       else x>lower & x<upper
     } else {

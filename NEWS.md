@@ -200,6 +200,8 @@
 
 25. Function `between` and operator `%between%` now handles missing bounds for character input as documented, [#3667](https://github.com/Rdatatable/data.table/issues/3667). Thanks to @AnonymousBoba for the report.
 
+26. In recent major release function `between` changed behaviour in handling `NA` values for lower/upper bounds. Starting from 1.12.0 missing value has been interpreted as missing bound rather than unknown bound. New argument `NAbounds` has been added to achieve old behaviour. See `between` manual for details. [#3522](https://github.com/Rdatatable/data.table/issues/3522). Thanks to @cguill95 for reporting.
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
