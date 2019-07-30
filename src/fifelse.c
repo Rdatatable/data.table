@@ -1,7 +1,4 @@
-#include <R.h>
-#include <Rdefines.h>
-#include <R_ext/Error.h>
-#include <stdint.h>
+#include "data.table.h"
 
 SEXP fifelseR(SEXP l, SEXP a, SEXP b)
 {
