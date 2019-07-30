@@ -138,6 +138,7 @@
 21. New function `fifelse(test,yes, no)`, also written in C, has been implemented by Morgan Jacob following feature request [#3657](https://github.com/Rdatatable/data.table/issues/3657). It is comparable to `base::ifelse`, `dplyr::if_else` and  `hutils::if_else`. It returns a vector of the same length as logical vector `test` but unlike `base::ifelse` the output type is consistent with those of `yes` and `no`. Please see `?data.table::fifelse` for more details.
 
     ```R
+    set.seed(123)
     x = sample(c(TRUE,FALSE),2*5e4+1,replace = TRUE)
     microbenchmark::microbenchmark(
       data.table::fifelse(x, 1L, 0L),
