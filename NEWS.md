@@ -138,7 +138,7 @@
 21. New function `fifelse(test,yes, no)`, also written in C, has been implemented by Morgan Jacob following feature request [#3657](https://github.com/Rdatatable/data.table/issues/3657). It is comparable to `base::ifelse`, `dplyr::if_else` and  `hutils::if_else`. It returns a vector of the same length as logical vector `test` but unlike `base::ifelse` the output type is consistent with those of `yes` and `no`. Please see `?data.table::fifelse` for more details.
 
     ```R
-    x = -5e4L:5e4L < 0
+    x = sample(c(TRUE,FALSE),2*5e4+1,replace = TRUE)
     microbenchmark::microbenchmark(
       data.table::fifelse(x, 1L, 0L),
       hutils::if_else(x, 1L, 0L),
@@ -147,11 +147,11 @@
       times = 100L
     )
     # Unit: microseconds
-    #                            expr      min        lq      mean    median        uq       max neval
-    #  data.table::fifelse(x, 1L, 0L)  145.820  181.0985  252.0024  200.1280  293.7765   702.155   100
-    #      hutils::if_else(x, 1L, 0L)  610.217  664.3115  882.9028  746.2005  915.7525  5068.602   100
-    #         base::ifelse(x, 1L, 0L) 2325.835 2377.1500 2986.6524 2462.8885 3231.7530 11141.686   100
-    #       dplyr::if_else(x, 1L, 0L) 2457.544 2548.8405 3739.1684 3274.9420 4350.4110  9798.099   100
+    #                            expr      min        lq      mean   median        uq       max neval
+    #  data.table::fifelse(x, 1L, 0L)  600.819  649.1415  716.5613  669.026  771.4435  1078.481   100
+    #      hutils::if_else(x, 1L, 0L) 1053.678 1090.6680 1512.2376 1143.053 1346.1765 13827.810   100
+    #         base::ifelse(x, 1L, 0L) 3225.178 3302.3650 4229.8110 3504.419 4230.9615 12712.126   100
+    #       dplyr::if_else(x, 1L, 0L) 3306.855 3390.2430 4496.2153 3557.660 4466.7985 16077.566   100
     ```
 
 #### BUG FIXES
