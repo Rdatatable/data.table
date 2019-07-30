@@ -15428,6 +15428,16 @@ test(2071.10, dcast(data.table(a=1, b=1, l=list(list(1))), a ~ b, value.var='l')
 test(2071.11, dcast(data.table(a = 1, b = 2, c = 3), a ~ b, value.var = 'c', fill = '2'),
      data.table(a=1, `2`=3, key='a'))
 
+# between NAs in character bounds #3667
+test(2072.01, letters %between% c("m", NA_character_), c(rep(FALSE, 12L), rep(TRUE, 14L)))
+test(2072.02, between(letters, "m", NA_character_, incbounds=TRUE), c(rep(FALSE, 12L), rep(TRUE, 14L)))
+test(2072.03, between(letters, "m", NA_character_, incbounds=FALSE), c(rep(FALSE, 13L), rep(TRUE, 13L)))
+test(2072.04, between(letters, NA_character_, "m", incbounds=TRUE), c(rep(TRUE, 13L), rep(FALSE, 13L)))
+test(2072.05, between(letters, NA_character_, "m", incbounds=FALSE), c(rep(TRUE, 12L), rep(FALSE, 14L)))
+test(2072.06, between(letters, NA_character_, NA_character_, incbounds=TRUE), rep(TRUE, 26L))
+test(2072.07, between(letters, NA_character_, NA_character_, incbounds=FALSE), rep(TRUE, 26L))
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################

@@ -51,8 +51,23 @@ between = function(x,lower,upper,incbounds=TRUE) {
   } else {
     if (isTRUE(getOption("datatable.verbose"))) cat("optimised between not available for this data type, fallback to slow R routine\n")
     # now just for character input. TODO: support character between in Cbetween and remove this branch
-    if (incbounds) x>=lower & x<=upper
-    else x>lower & x<upper
+    # support NAs as missing bounds also for character #3667
+    lower_na = is.na(lower)
+    upper_na = is.na(upper)
+    if (lower_na || upper_na) {
+      if (lower_na && upper_na) {
+        rep(TRUE, length(x))
+      } else if (lower_na) {
+        if (incbounds) x<=upper else x<upper
+      } else if (upper_na) {
+        if (incbounds) x>=lower else x>lower
+      } else {
+        stop("internal error in between, all cases of lower/upper NAs for character should be handled already, please report") # nocov
+      }
+    } else {
+      if (incbounds) x>=lower & x<=upper
+      else x>lower & x<upper
+    }
   }
 }
 
