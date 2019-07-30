@@ -44,8 +44,8 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
       x = PROTECT(coerceVector(x, REALSXP)); nprotect++;
     }
   }
-  if (inherits(x,"integer64")) {
-    if (!inherits(lower,"integer64") || !inherits(upper,"integer64"))
+  if (INHERITS(x,char_integer64)) {
+    if (!INHERITS(lower,char_integer64) || !INHERITS(upper,char_integer64))
       error("Internal error in between: 'x' is integer64 while 'lower' and/or 'upper' are not, should have been caught by now"); // # nocov
     integer=false;
     integer64=true;

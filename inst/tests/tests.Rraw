@@ -15436,6 +15436,19 @@ test(2072.04, between(letters, NA_character_, "m", incbounds=TRUE), c(rep(TRUE, 
 test(2072.05, between(letters, NA_character_, "m", incbounds=FALSE), c(rep(TRUE, 12L), rep(FALSE, 14L)))
 test(2072.06, between(letters, NA_character_, NA_character_, incbounds=TRUE), rep(TRUE, 26L))
 test(2072.07, between(letters, NA_character_, NA_character_, incbounds=FALSE), rep(TRUE, 26L))
+test(2072.11, between(c("a","b","c"), c("a","b"), "d"), error="bounds recycling works only for scalar")
+test(2072.12, between(c("a","b","c"), "a", c("b","d")), error="bounds recycling works only for scalar")
+test(2072.13, between(c("a","b","c"), c("a","b"), c("b","d")), error="bounds recycling works only for scalar")
+test(2072.21, between(c("a","c","e"), c("b",NA,"d"), "e", incbounds=TRUE), c(FALSE, TRUE, TRUE))
+test(2072.22, between(c("a","c","e"), c("b",NA,"d"), "e", incbounds=FALSE), c(FALSE, TRUE, FALSE))
+test(2072.23, between(c("a","c","e"), c("b","c","d"), NA, incbounds=TRUE), c(FALSE, TRUE, TRUE))
+test(2072.24, between(c("a","c","e"), c("b","c","d"), NA, incbounds=FALSE), c(FALSE, FALSE, TRUE))
+test(2072.25, between(c("a","c","e"), c("b",NA,"d"), NA, incbounds=TRUE), c(FALSE, TRUE, TRUE))
+test(2072.26, between(c("a","c","e"), c("b",NA,"d"), NA, incbounds=FALSE), c(FALSE, TRUE, TRUE))
+test(2072.27, between(c("a","c","e"), "a", c("b",NA,"d"), incbounds=TRUE), c(TRUE, TRUE, FALSE))
+test(2072.28, between(c("a","c","e"), "a", c("b",NA,"d"), incbounds=FALSE), c(FALSE, TRUE, FALSE))
+test(2072.29, between(c("a","c","e"), NA, c("b",NA,"d"), incbounds=TRUE), c(TRUE, TRUE, FALSE))
+test(2072.30, between(c("a","c","e"), NA, c("b",NA,"d"), incbounds=FALSE), c(TRUE, TRUE, FALSE))
 
 
 ###################################
