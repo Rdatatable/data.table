@@ -14651,7 +14651,7 @@ test(2038.04, between(1:5, rep(2L,5L), rep(4L, 5L)), output="between parallel pr
 test(2038.05, between(as.double(1:5), 2, 4, incbounds=FALSE), output="between parallel processing of double using open bounds with recycling took")
 test(2038.06, between(as.double(1:5), 2, 4), output="between parallel processing of double using closed bounds with recycling took")
 test(2038.07, between(as.double(1:5), rep(2, 5L), rep(4, 5L)), output="between parallel processing of double took")
-test(2038.08, between(c("foo","bar","paz"), "bag", "fog"), output="optimised between not available for this data type, fallback to slow R routine")
+test(2038.08, between(c("foo","bar","paz"), "bag", "fog"), output="optimised between not available")
 
 # `between` handle POSIXct type
 x = as.POSIXct("2016-09-18 07:00:00") + 0:10*60*15
