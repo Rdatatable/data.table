@@ -10,9 +10,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   // Check if test is logical
   if(!isLogical(l)) error("Argument 'test' must be logical.");
 
-  const uint64_t len0 = xlength(l);
-  const uint64_t len1 = xlength(a);
-  const uint64_t len2 = xlength(b);
+  const int64_t len0 = xlength(l);
+  const int64_t len1 = xlength(a);
+  const int64_t len2 = xlength(b);
 
   SEXPTYPE ta = TYPEOF(a);
   SEXPTYPE tb = TYPEOF(b);
@@ -88,8 +88,6 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   }
 
   int *pl = LOGICAL(l);
-  uint64_t i;
-
   switch(ta)
   {
     /*
@@ -98,14 +96,13 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
      */
   case INTSXP :
     result = PROTECT(allocVector(INTSXP, len0)); nprotect++;
-    int *int_pres, *int_pa, *int_pb;
-    int_pres = INTEGER(result);
-    int_pa   = INTEGER(a);
-    int_pb   = INTEGER(b);
+    int *int_pres = INTEGER(result);
+    int *int_pa   = INTEGER(a);
+    int *int_pb   = INTEGER(b);
     switch(adj)
     {
     case 0:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -117,7 +114,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 1:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -129,7 +126,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 2:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -141,7 +138,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 3:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -160,14 +157,13 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
      */
   case REALSXP :
     result = PROTECT(allocVector(REALSXP, len0)); nprotect++;
-    double *double_pres, *double_pa, *double_pb;
-    double_pres = REAL(result);
-    double_pa   = REAL(a);
-    double_pb   = REAL(b);
+    double *double_pres = REAL(result);
+    double *double_pa   = REAL(a);
+    double *double_pb   = REAL(b);
     switch(adj)
     {
     case 0:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -179,7 +175,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 1:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -191,7 +187,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 2:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -203,7 +199,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 3:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -222,14 +218,13 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
      */
   case LGLSXP :
     result = PROTECT(allocVector(LGLSXP, len0)); nprotect++;
-    int *lg_pres, *lg_pa, *lg_pb;
-    lg_pres = LOGICAL(result);
-    lg_pa   = LOGICAL(a);
-    lg_pb   = LOGICAL(b);
+    int *lg_pres = LOGICAL(result);
+    int *lg_pa   = LOGICAL(a);
+    int *lg_pb   = LOGICAL(b);
     switch(adj)
     {
     case 0:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -241,7 +236,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 1:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -253,7 +248,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 2:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -265,7 +260,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 3:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -289,7 +284,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     switch(adj)
     {
     case 0:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -301,7 +296,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 1:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -313,7 +308,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 2:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -325,7 +320,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 3:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -344,15 +339,13 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
      */
   case CPLXSXP :
     result = PROTECT(allocVector(CPLXSXP, len0)); nprotect++;
-    Rcomplex *cp_pres, *cp_pa, *cp_pb;
-    Rcomplex NA_CPLX = { NA_REAL, NA_REAL }; // taken from subset.c
-    cp_pres = COMPLEX(result);
-    cp_pa   = COMPLEX(a);
-    cp_pb   = COMPLEX(b);
+    Rcomplex *cp_pres = COMPLEX(result);
+    Rcomplex *cp_pa   = COMPLEX(a);
+    Rcomplex *cp_pb   = COMPLEX(b);
     switch(adj)
     {
     case 0:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -364,7 +357,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 1:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -376,7 +369,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 2:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -388,7 +381,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 3:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -418,7 +411,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     switch(adj)
     {
     case 0:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -430,7 +423,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 1:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -442,7 +435,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 2:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -454,7 +447,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       break;
 
     case 3:
-      for(i = 0; i < len0; i++)
+      for(int64_t i=0; i<len0; ++i)
       {
         switch(pl[i])
         {
@@ -491,3 +484,4 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   UNPROTECT(nprotect);
   return result;
 }
+
