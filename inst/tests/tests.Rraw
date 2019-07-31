@@ -15428,6 +15428,21 @@ test(2071.10, dcast(data.table(a=1, b=1, l=list(list(1))), a ~ b, value.var='l')
 test(2071.11, dcast(data.table(a = 1, b = 2, c = 3), a ~ b, value.var = 'c', fill = '2'),
      data.table(a=1, `2`=3, key='a'))
 
+# gsum int64 support #1647, #3464
+if (test_bit64) {
+  d = data.table(g=1:2, i32=c(2L,-1L,3L,4L), i64=as.integer64(c(2L,-1L,3L,4L)))
+  int64_int32_match = function(x, y) isTRUE(all.equal(lapply(x, as.integer), lapply(y, as.integer)))
+  test(2072.01, int64_int32_match(d[, sum(i32), g], d[, sum(i64), g]))
+  test(2072.02, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
+  d[3L, c("i32","i64") := list(NA_integer_, as.integer64(NA))] # some NA group
+  test(2072.03, int64_int32_match(d[, sum(i32), g], d[, sum(i64), g]))
+  test(2072.04, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
+  d[1L, c("i32","i64") := list(NA_integer_, as.integer64(NA))] # all NA group
+  test(2072.05, int64_int32_match(d[, sum(i32), g], d[, sum(i64), g]))
+  test(2072.06, int64_int32_match(d[, sum(i32, na.rm=TRUE), g], d[, sum(i64, na.rm=TRUE), g]))
+}
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
