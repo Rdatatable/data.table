@@ -17,7 +17,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   SEXPTYPE ta = TYPEOF(a);
   SEXPTYPE tb = TYPEOF(b);
 
-  unsigned int stack_size = 0;
+  int nprotect = 0;
 
   // Check if same type and do en-listing of singleton
   if(ta != tb)
@@ -26,16 +26,16 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     {
       if(len2 == 1)
       {
-        SEXP tmp = PROTECT(duplicate(b)); stack_size++;
-        b = PROTECT(allocVector(VECSXP,1)); stack_size++;
+        SEXP tmp = PROTECT(duplicate(b)); nprotect++;
+        b = PROTECT(allocVector(VECSXP,1)); nprotect++;
         SET_VECTOR_ELT(b, 0, tmp);
         tb = TYPEOF(b);
       }
     } else if(tb == VECSXP && (ta == INTSXP || ta == REALSXP || ta == LGLSXP || ta == CPLXSXP || ta == STRSXP)){
       if(len1 == 1)
       {
-        SEXP tmp = PROTECT(duplicate(a));stack_size++;
-        a = PROTECT(allocVector(VECSXP,1)); stack_size++;
+        SEXP tmp = PROTECT(duplicate(a)); nprotect++;
+        a = PROTECT(allocVector(VECSXP,1)); nprotect++;
         SET_VECTOR_ELT(a, 0, tmp);
         ta = TYPEOF(a);
       }
@@ -44,7 +44,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     }
   }
 
-  SEXP class_type = PROTECT(getAttrib(a,R_ClassSymbol)); stack_size++;
+  SEXP class_type = PROTECT(getAttrib(a,R_ClassSymbol)); nprotect++;
 
   // Check if same class
   if(!R_compute_identical(class_type,getAttrib(b,R_ClassSymbol),0))
@@ -52,15 +52,14 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
 
   const int atest = isFactor(a);
   SEXP alevels = R_NilValue, blevels = R_NilValue, result = R_NilValue;
-  
+
   // Check if factor
   if(atest)
   {
-    alevels = PROTECT(getAttrib(a,R_LevelsSymbol));
-    blevels = PROTECT(getAttrib(b,R_LevelsSymbol));
-    stack_size = stack_size + 2;
+    alevels = PROTECT(getAttrib(a,R_LevelsSymbol)); nprotect++;
+    blevels = PROTECT(getAttrib(b,R_LevelsSymbol)); nprotect++;
   }
-  
+
   /*
    Variable 'adj' is used to seperate case where l (test),
    a (yes) and b (no) are of different length.
@@ -98,8 +97,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
      in case they are both of type INTSXP (integer)
      */
   case INTSXP :
-    result = PROTECT(allocVector(INTSXP, len0));
-    stack_size++;
+    result = PROTECT(allocVector(INTSXP, len0)); nprotect++;
     int *int_pres, *int_pa, *int_pb;
     int_pres = INTEGER(result);
     int_pa   = INTEGER(a);
@@ -161,8 +159,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
      in case they are both of type REALSXP (double)
      */
   case REALSXP :
-    result = PROTECT(allocVector(REALSXP, len0));
-    stack_size++;
+    result = PROTECT(allocVector(REALSXP, len0)); nprotect++;
     double *double_pres, *double_pa, *double_pb;
     double_pres = REAL(result);
     double_pa   = REAL(a);
@@ -224,8 +221,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
      in case they are both of type LGLSXP (logical)
      */
   case LGLSXP :
-    result = PROTECT(allocVector(LGLSXP, len0));
-    stack_size++;
+    result = PROTECT(allocVector(LGLSXP, len0)); nprotect++;
     int *lg_pres, *lg_pa, *lg_pb;
     lg_pres = LOGICAL(result);
     lg_pa   = LOGICAL(a);
@@ -287,10 +283,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
      in case they are both of type STRSXP (character)
      */
   case STRSXP :
-    result = PROTECT(allocVector(STRSXP, len0));
+    result = PROTECT(allocVector(STRSXP, len0)); nprotect++;
     const SEXP *pa = STRING_PTR(a);
     const SEXP *pb = STRING_PTR(b);
-    stack_size++;
     switch(adj)
     {
     case 0:
@@ -348,13 +343,12 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
      in case they are both of type CPLXSXP (complex)
      */
   case CPLXSXP :
-    result = PROTECT(allocVector(CPLXSXP, len0));
+    result = PROTECT(allocVector(CPLXSXP, len0)); nprotect++;
     Rcomplex *cp_pres, *cp_pa, *cp_pb;
     Rcomplex NA_CPLX = { NA_REAL, NA_REAL }; // taken from subset.c
     cp_pres = COMPLEX(result);
     cp_pa   = COMPLEX(a);
     cp_pb   = COMPLEX(b);
-    stack_size++;
     switch(adj)
     {
     case 0:
@@ -412,12 +406,12 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
      in case they are both of type VECSXP (list)
      */
   case VECSXP :
-    result = PROTECT(allocVector(VECSXP, len0)); stack_size++;
-    SEXP nms = PROTECT(allocVector(STRSXP, len0)); stack_size++; // create list names
+    result = PROTECT(allocVector(VECSXP, len0)); nprotect++;
+    SEXP nms = PROTECT(allocVector(STRSXP, len0)); nprotect++; // create list names
     // Get list names from a and b
-    SEXP nmsa = PROTECT(getAttrib(a,R_NamesSymbol)); stack_size++;
-    SEXP nmsb = PROTECT(getAttrib(b,R_NamesSymbol)); stack_size++;
-    SEXP na_list = PROTECT(allocVector(INTSXP, 1)); stack_size++;
+    SEXP nmsa = PROTECT(getAttrib(a,R_NamesSymbol)); nprotect++;
+    SEXP nmsb = PROTECT(getAttrib(b,R_NamesSymbol)); nprotect++;
+    SEXP na_list = PROTECT(allocVector(INTSXP, 1)); nprotect++;
     INTEGER(na_list)[0] = NA_INTEGER;
     const int testa = !isNull(nmsa);
     const int testb = !isNull(nmsb);
@@ -478,7 +472,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   }
 
   // Check class type and adjust (including factors)
-  if(!isNull(class_type)) 
+  if(!isNull(class_type))
   {
     if(atest)
     {
@@ -490,10 +484,10 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       }
       setAttrib(result, R_ClassSymbol, mkString("factor"));
     } else {
-      copyMostAttrib(a, result);  
+      copyMostAttrib(a, result);
     }
   }
 
-  UNPROTECT(stack_size);
+  UNPROTECT(nprotect);
   return result;
 }

@@ -135,7 +135,7 @@
 
 20. `setkey`, `[key]by=` and `on=` in verbose mode (`options(datatable.verbose=TRUE)`) now detect any columns inheriting from `Date` which are stored as 8 byte double, test if any fractions are present, and if not suggest using a 4 byte integer instead (such as `data.table::IDate`) to save space and time, [#1738](https://github.com/Rdatatable/data.table/issues/1738). In future this could be upgraded to `message` or `warning` depending on feedback.
 
-21. New function `fifelse(test,yes, no)`, also written in C, has been implemented by Morgan Jacob following feature request [#3657](https://github.com/Rdatatable/data.table/issues/3657). It is comparable to `base::ifelse`, `dplyr::if_else` and  `hutils::if_else`. It returns a vector of the same length as logical vector `test` but unlike `base::ifelse` the output type is consistent with those of `yes` and `no`. Please see `?data.table::fifelse` for more details.
+21. New function `fifelse(test,yes, no)` has been implemented in C by Morgan Jacob, [#3657](https://github.com/Rdatatable/data.table/issues/3657). It is comparable to `base::ifelse`, `dplyr::if_else`, `hutils::if_else`, and `vcts::if_else()`. It returns a vector of the same length as `test` but unlike `base::ifelse` the output type is consistent with those of `yes` and `no`. Please see `?data.table::fifelse` for more details.
 
     ```R
     set.seed(123)
