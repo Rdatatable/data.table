@@ -26,18 +26,18 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     {
       if(len2 == 1)
       {
-        SEXP tmp = PROTECT(duplicate(b)); nprotect++;
-        b = PROTECT(allocVector(VECSXP,1)); nprotect++;
-        SET_VECTOR_ELT(b, 0, tmp);
-        tb = TYPEOF(b);
+        SEXP tmp = PROTECT(allocVector(VECSXP,1)); nprotect++;
+        SET_VECTOR_ELT(tmp, 0, b);
+        b = tmp;
+        tb = VECSXP;
       }
     } else if(tb == VECSXP && (ta == INTSXP || ta == REALSXP || ta == LGLSXP || ta == CPLXSXP || ta == STRSXP)){
       if(len1 == 1)
       {
-        SEXP tmp = PROTECT(duplicate(a)); nprotect++;
-        a = PROTECT(allocVector(VECSXP,1)); nprotect++;
-        SET_VECTOR_ELT(a, 0, tmp);
-        ta = TYPEOF(a);
+        SEXP tmp = PROTECT(allocVector(VECSXP,1)); nprotect++;
+        SET_VECTOR_ELT(tmp, 0, a);
+        a = tmp;
+        ta = VECSXP;
       }
     } else {
       error("'yes' is of type %s but 'no' is of type %s. Please make sure candidate replacements are of the same type.", type2char(ta),type2char(tb));
