@@ -10,9 +10,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   // Check if test is logical
   if(!isLogical(l)) error("Argument 'test' must be logical.");
 
-  const uint64_t len0 = LENGTH(l);
-  const uint64_t len1 = LENGTH(a);
-  const uint64_t len2 = LENGTH(b);
+  const uint64_t len0 = xlength(l);
+  const uint64_t len1 = xlength(a);
+  const uint64_t len2 = xlength(b);
 
   SEXPTYPE ta = TYPEOF(a);
   SEXPTYPE tb = TYPEOF(b);
