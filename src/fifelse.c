@@ -488,7 +488,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
       } else {
         setAttrib(result, R_LevelsSymbol, alevels);
       }
-      setAttrib(result, R_ClassSymbol, mkString("factor"));
+      setAttrib(result, R_ClassSymbol, ScalarString(char_factor));
     } else {
       copyMostAttrib(a, result);  
     }
