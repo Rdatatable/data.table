@@ -15428,6 +15428,16 @@ test(2071.10, dcast(data.table(a=1, b=1, l=list(list(1))), a ~ b, value.var='l')
 test(2071.11, dcast(data.table(a = 1, b = 2, c = 3), a ~ b, value.var = 'c', fill = '2'),
      data.table(a=1, `2`=3, key='a'))
 
+# groupingsets j=.N by character(0) set #3653
+d = data.table(x = c("a", "a", "b"))
+test(2073.01, groupingsets(d, j = .N, by = "x", sets = list("x", character())), data.table(x=c("a","b",NA_character_), N=c(2L,1L,3L)))
+test(2073.02, groupingsets(d, j = .N, by = "x", sets = list(character())), data.table(x=NA_character_, N=3L))
+test(2073.03, groupingsets(d, j = .GRP, by = "x", sets = list("x", character())), data.table(x=c("a","b",NA_character_), GRP=c(1L,2L,1L)))
+test(2073.04, groupingsets(d, j = .GRP, by = "x", sets = list(character())), data.table(x=NA_character_, GRP=1L))
+test(2073.05, groupingsets(d, j = .I, by = "x", sets = list("x", character())), data.table(x=c("a","a","b",rep(NA_character_,3L)), I=c(1:3,1:3)))
+test(2073.06, groupingsets(d, j = .I, by = "x", sets = list(character())), data.table(x=rep(NA_character_,3L), I=1:3))
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
