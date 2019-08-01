@@ -15424,9 +15424,9 @@ test(2071.07, any_na(data.table(as.raw(0L))), FALSE)
 test(2071.08, any_na(data.table(c(1+1i, NA))))
 test(2071.09, any_na(data.table(expression(1))), error="Unsupported column type 'expression'")
 test(2071.10, dcast(data.table(a=1, b=1, l=list(list(1))), a ~ b, value.var='l'),
-     data.table(a=1, `1`=list(list(1)), key='a'))
+              data.table(a=1, `1`=list(list(1)), key='a'))
 test(2071.11, dcast(data.table(a = 1, b = 2, c = 3), a ~ b, value.var = 'c', fill = '2'),
-     data.table(a=1, `2`=3, key='a'))
+              data.table(a=1, `2`=3, key='a'))
 
 # fifelse, #3657
 test_vec = -5L:5L < 0L
@@ -15441,23 +15441,21 @@ test(2072.005, fifelse(test_vec_na, TRUE, NA), c(rep(TRUE,5L), rep(NA,7L)))
 test(2072.006, fifelse(test_vec, rep(1L,11L), rep(0L,11L)), out_vec)
 test(2072.007, fifelse(test_vec, rep(1L,11L), 0L), out_vec)
 test(2072.008, fifelse(test_vec, 1L, rep(0L,11L)), out_vec)
-test(2072.009, fifelse(test_vec, rep(1L,11L), rep(0L,10L)), error = "Length of 'no' must be 1 or equal to length of 'test' (11).")
-test(2072.010, fifelse(test_vec, rep(1,10L), rep(0,11L)), error = "Length of 'yes' must be 1 or equal to length of 'test' (11).")
-test(2072.011, fifelse(test_vec, rep(TRUE,10L), rep(FALSE,10L)), error = "Length of 'yes' and 'no' must be 1 or equal to length of 'test' (11).")
-test(2072.012, fifelse(0:1, rep(TRUE,2L), rep(FALSE,2L)), error = "Argument 'test' must be logical.")
-test(2072.013, fifelse(test_vec, TRUE, "FALSE"), error = "'yes' is of type logical but 'no' is of type character. Please make sure candidate replacements are of the same type.")
-test(2072.014, fifelse(test_vec, list(1),list(2,4)), error = "Length of 'no' must be 1 or equal to length of 'test' (11).")
-test(2072.015, fifelse(test_vec, list(1,3),list(2,4)), error = "Length of 'yes' and 'no' must be 1 or equal to length of 'test' (11).")
+test(2072.009, fifelse(test_vec, rep(1L,11L), rep(0L,10L)),      error="Length of 'no' is 10 but must be 1 or length of 'test' (11).")
+test(2072.010, fifelse(test_vec, rep(1,10L), rep(0,11L)),        error="Length of 'yes' is 10 but must be 1 or length of 'test' (11).")
+test(2072.011, fifelse(test_vec, rep(TRUE,10L), rep(FALSE,10L)), error="Length of 'yes' is 10 but must be 1 or length of 'test' (11).")
+test(2072.012, fifelse(0:1, rep(TRUE,2L), rep(FALSE,2L)),        error="Argument 'test' must be logical.")
+test(2072.013, fifelse(test_vec, TRUE, "FALSE"),                 error="'yes' is of type logical but 'no' is of type character. Please")
+test(2072.014, fifelse(test_vec, list(1),list(2,4)),             error="Length of 'no' is 2 but must be 1 or length of 'test' (11).")
+test(2072.015, fifelse(test_vec, list(1,3),list(2,4)),           error="Length of 'yes' is 2 but must be 1 or length of 'test' (11).")
 test(2072.016, fifelse(test_vec, list(1), 0), as.list(as.numeric(out_vec)))
 test(2072.017, fifelse(test_vec, 1, list(0)), as.list(as.numeric(out_vec)))
 ## Jan 1 - 5, 2011
 date_vec = as.Date(14975:14979, origin = '1970-01-01')
-test(2072.018,
-     fifelse(date_vec == "2011-01-01", date_vec - 1L, date_vec),
-     c(date_vec[1L] - 1L, date_vec[2:5]))
-test(2072.019,
-     fifelse(factor(letters[1:5]) %in% c("a","b","c"), factor(letters[1:5]), factor(NA)),
-     factor(c("a","b","c",NA,NA),levels = letters[1:5]))
+test(2072.018, fifelse(date_vec == "2011-01-01", date_vec - 1L, date_vec),
+               c(date_vec[1L] - 1L, date_vec[2:5]))
+test(2072.019, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE), factor(letters[1:5]), factor("a", levels=letters[1:5])),
+               factor(c("a","a","c","d","a"), levels=letters[1:5]))
 test(2072.020, fifelse(test_vec_na, 1L, 0L), out_vec_na)
 test(2072.021, fifelse(test_vec_na, rep(1L,12L), 0L), out_vec_na)
 test(2072.022, fifelse(test_vec_na, rep(1L,12L), rep(0L,12L)), out_vec_na)
@@ -15473,46 +15471,42 @@ test(2072.031, fifelse(test_vec_na, "1", rep("0",12L)), as.character(out_vec_na)
 test(2072.032, fifelse(test_vec_na, rep("1",12L), "0"), as.character(out_vec_na))
 test(2072.033, fifelse(test_vec_na, rep("1",12L), rep("0",12L)), as.character(out_vec_na))
 test(2072.034, fifelse(test_vec_na, "1", "0"), as.character(out_vec_na))
-test(2072.035, fifelse(test_vec, as.Date("2011-01-01"), FALSE), error = "'yes' is of type double but 'no' is of type logical. Please make sure candidate replacements are of the same type.")
+test(2072.035, fifelse(test_vec, as.Date("2011-01-01"), FALSE), error="'yes' is of type double but 'no' is of type logical. Please")
 test(2072.036, fifelse(test_vec_na, 1+0i, 0+0i), as.complex(out_vec_na))
 test(2072.037, fifelse(test_vec_na, rep(1+0i,12L), 0+0i), as.complex(out_vec_na))
 test(2072.038, fifelse(test_vec_na, rep(1+0i,12L), rep(0+0i,12L)), as.complex(out_vec_na))
 test(2072.039, fifelse(test_vec_na, 1+0i, rep(0+0i,12L)), as.complex(out_vec_na))
-test(2072.040, fifelse(test_vec, as.raw(0), as.raw(1)), error = "Type raw is not supported.")
-test(2072.041, fifelse(TRUE,1,as.Date("2019-07-07")), error = "'yes' has different class than 'no'. Please make sure that candidate replacements have the same class.")
-test(2072.042, fifelse(TRUE,1L,factor(letters[1])), error = "'yes' has different class than 'no'. Please make sure that candidate replacements have the same class.")
+test(2072.040, fifelse(test_vec, as.raw(0), as.raw(1)), error="Type raw is not supported.")
+test(2072.041, fifelse(TRUE,1,as.Date("2019-07-07")),   error="'yes' has different class than 'no'. Please")
+test(2072.042, fifelse(TRUE,1L,factor(letters[1])),     error="'yes' has different class than 'no'. Please")
 test(2072.043, fifelse(TRUE, list(1:5), list(5:1)), list(1:5))
-test(2072.044, fifelse(as.logical(NA), list(1:5), list(5:1)), list(NA_integer_))
+test(2072.044, fifelse(as.logical(NA), list(1:5), list(5:1)), list(NULL))
 test(2072.045, fifelse(FALSE, list(1:5), list(5:1)), list(5:1))
 test(2072.046, fifelse(TRUE, data.table(1:5), data.table(5:1)), data.table(1:5))
 test(2072.047, fifelse(FALSE, data.table(1:5), data.table(5:1)), data.table(5:1))
 test(2072.048, fifelse(TRUE, data.frame(1:5), data.frame(5:1)), data.frame(1:5))
 test(2072.049, fifelse(FALSE, data.frame(1:5), data.frame(5:1)), data.frame(5:1))
 test(2072.050, fifelse(c(TRUE,FALSE), list(1:5,6:10), list(10:6,5:1)), list(1:5,5:1))
-test(2072.051, fifelse(c(NA,TRUE), list(1:5,6:10), list(10:6,5:1)), list(NA_integer_,6:10))
+test(2072.051, fifelse(c(NA,TRUE), list(1:5,6:10), list(10:6,5:1)), list(NULL,6:10))
 test(2072.052, fifelse(c(FALSE,TRUE), list(1:5,6:10), list(10:6,5:1)), list(10:6,6:10))
-test(2072.053, fifelse(c(NA,TRUE), list(1:5), list(10:6,5:1)), list(NA_integer_,1:5))
-test(2072.054, fifelse(c(NA,TRUE), list(1:5,6:10), list(5:1)), list(NA_integer_,6:10))
+test(2072.053, fifelse(c(NA,TRUE), list(1:5), list(10:6,5:1)), list(NULL,1:5))
+test(2072.054, fifelse(c(NA,TRUE), list(1:5,6:10), list(5:1)), list(NULL,6:10))
 test(2072.055, fifelse(c(FALSE,TRUE), list(TRUE), list(10:6,5:1)), list(10:6,TRUE))
 test(2072.056, fifelse(c(FALSE,TRUE), list(as.Date("2019-07-07")), list(10:6,5:1)), list(10:6,as.Date("2019-07-07")))
 test(2072.057, fifelse(c(FALSE,TRUE), list(factor(letters[1:5])), list(10:6,5:1)), list(10:6,factor(letters[1:5])))
-test(2072.058, fifelse(c(NA,FALSE), list(1:5), list(10:6,5:1)), list(NA_integer_,5:1))
-test(2072.059, fifelse(c(NA,FALSE), list(1:5,6:10), list(5:1)), list(NA_integer_,5:1))
-test(2072.060, fifelse(c(NA,FALSE), list(1:5), list(5:1)), list(NA_integer_,5:1))
+test(2072.058, fifelse(c(NA,FALSE), list(1:5), list(10:6,5:1)), list(NULL,5:1))
+test(2072.059, fifelse(c(NA,FALSE), list(1:5,6:10), list(5:1)), list(NULL,5:1))
+test(2072.060, fifelse(c(NA,FALSE), list(1:5), list(5:1)), list(NULL,5:1))
 test(2072.061, fifelse(c(TRUE,FALSE), list(1L), 0L), list(1L,0L))
 test(2072.062, fifelse(c(TRUE,FALSE), 1L, list(0L)), list(1L,0L))
-test(2072.063,
-     fifelse(factor(letters[1:5]) %in% c("a","b","c"), factor(NA), factor(letters[1:5])),
-     factor(c(NA,NA,NA,"d","e"),levels = letters[1:5]))
-test(2072.064, 
-     fifelse(factor(c(letters[1:5],NA)) %in% c("a","b","c"), factor(NA), factor(letters[1:6])),
-     factor(c(NA,NA,NA,"d","e","f"),levels = letters[1:6]))
-test(2072.065, 
-     fifelse(factor(c(letters[1:5],NA)) %in% c("a","b","c"), factor(letters[1:6]), factor(NA)),
-     factor(c("a","b","c",NA,NA,NA),levels = letters[1:6]))
-test(2072.066, 
-     fifelse(factor(c(letters[1:5],NA)) %in% c("a","b","c"), factor(NA), factor(NA)),
-     factor(c(NA,NA,NA,NA,NA,NA)))
+test(2072.063, fifelse(c(TRUE, TRUE, TRUE, FALSE, FALSE), factor(NA, levels=letters[1:5]), factor(letters[1:5])),
+               factor(c(NA,NA,NA,"d","e"),levels=letters[1:5]))
+test(2072.064, fifelse(c(TRUE, TRUE, TRUE, FALSE, NA, FALSE), factor(NA, levels=letters[1:6]), factor(letters[1:6])),
+               factor(c(NA,NA,NA,"d",NA,"f"),levels=letters[1:6]))
+test(2072.065, fifelse(c(TRUE, TRUE, TRUE, FALSE, NA, FALSE), factor(letters[1:6]), factor(NA, levels=letters[1:6])),
+               factor(c("a","b","c",NA,NA,NA), levels=letters[1:6]))
+test(2072.066, fifelse(c(TRUE, NA, TRUE, FALSE, FALSE, FALSE), factor(NA), factor(NA)),
+               factor(c(NA,NA,NA,NA,NA,NA)))
 
 ###################################
 #  Add new tests above this line  #

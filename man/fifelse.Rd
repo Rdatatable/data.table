@@ -17,9 +17,9 @@ This function is mostly written in C for speed and unlike \code{base::ifelse} th
 A vector of the same length as \code{test} and attributes as \code{yes}. Data values are taken from the values of \code{yes} and \code{no}.
 }
 \examples{
-# In the following 2 examples, one can see the contrast between ifelse and 
-# fifelse. Unlike ifelse, fifelse preserves the 
-# type and class of the inputs. Attributes are are taken from the "yes" argument. 
+# In the following 2 examples, one can see the contrast between ifelse and
+# fifelse. Unlike ifelse, fifelse preserves the
+# type and class of the inputs. Attributes are are taken from the "yes" argument.
 
 ### Example 1 - Date class preserved
 dates = as.Date(c("2011-01-01","2011-01-02","2011-01-03","2011-01-04","2011-01-05"))
@@ -29,12 +29,12 @@ fifelse(dates == "2011-01-01", dates - 1, dates)
 # [1] "2010-12-31" "2011-01-02" "2011-01-03" "2011-01-04" "2011-01-05"
 
 ### Example 2 - Factor class preserved
-v = factor(letters[1:5])
-ifelse(v \%in\% c("a","b","c"), v, factor(NA))
-# [1]  1  2  3 NA NA
-fifelse(v \%in\% c("a","b","c"), v, factor(NA))
-# [1] a    b    c    <NA> <NA>
-# Levels: a b c d e
+v = factor(letters[1:3])
+base::ifelse(c(TRUE,FALSE,TRUE), v, factor("a",levels=levels(v)))
+# [1]  1  1  3
+     fifelse(c(TRUE,FALSE,TRUE), v, factor("a",levels=levels(v)))
+# [1] a    a    c
+# Levels: a b c
 
 \dontrun{
 # Example 3:
@@ -44,14 +44,14 @@ fifelse(v \%in\% c("a","b","c"), v, factor(NA))
 ifelse(c(TRUE, FALSE), 1L, list(0L))
 # [[1]]
 # [1] 1
-# 
+#
 # [[2]]
 # [1] 0
 
 data.table::fifelse(c(TRUE, FALSE), 1L, list(0L))
 # [[1]]
 # [1] 1
-# 
+#
 # [[2]]
 # [1] 0
 
@@ -60,7 +60,7 @@ dplyr::if_else(c(TRUE, FALSE), 1L, list(0L))
 # Call `rlang::last_error()` to see a backtrace
 
 hutils::if_else(c(TRUE, FALSE), 1L, list(0L))
-# Error in hutils::if_else(c(TRUE, FALSE), 1L, list(0L)) : 
+# Error in hutils::if_else(c(TRUE, FALSE), 1L, list(0L)) :
 #   typeof(false) == list, yet typeof(true) == integer. Both true and false must have the same type.
 
 # The above is useful given that data.table allows list columns as shown below:
