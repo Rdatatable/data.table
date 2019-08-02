@@ -36,7 +36,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
         ta = VECSXP;
       }
     } else {
-      error("'yes' is of type %s but 'no' is of type %s. Please make sure candidate replacements are of the same type.", type2char(ta),type2char(tb));
+      error("'yes' is of type %s but 'no' is of type %s. Please make sure candidate replacements are of the same type.", type2char(ta), type2char(tb));
     }
   }
 
@@ -51,8 +51,8 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   }
 
   // Check here the length of the different input variables.
-  if (len1!=1 && len1!=len0) error("Length of 'yes' is %d but must be 1 or length of 'test' (%d).", len1, len0);
-  if (len2!=1 && len2!=len0) error("Length of 'no' is %d but must be 1 or length of 'test' (%d).", len2, len0);
+  if (len1!=1 && len1!=len0) error("Length of 'yes' is %lld but must be 1 or length of 'test' (%lld).", len1, len0);
+  if (len2!=1 && len2!=len0) error("Length of 'no' is %lld but must be 1 or length of 'test' (%lld).", len2, len0);
   const int64_t amask = len1>1 ? INT64_MAX : 0;
   const int64_t bmask = len2>1 ? INT64_MAX : 0;
 
@@ -65,6 +65,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     int *pans = LOGICAL(ans);
     int *pa   = LOGICAL(a);
     int *pb   = LOGICAL(b);
+    #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_LOGICAL);
     }
@@ -73,6 +74,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     int *pans = INTEGER(ans);
     int *pa   = INTEGER(a);
     int *pb   = INTEGER(b);
+    #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_INTEGER);
     }
@@ -81,6 +83,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     double *pans = REAL(ans);
     double *pa   = REAL(a);
     double *pb   = REAL(b);
+    #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_REAL);
     }
@@ -96,6 +99,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     Rcomplex *pans = COMPLEX(ans);
     Rcomplex *pa   = COMPLEX(a);
     Rcomplex *pb   = COMPLEX(b);
+    #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_CPLX);
     }

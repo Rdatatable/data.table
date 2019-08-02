@@ -135,24 +135,16 @@
 
 20. `setkey`, `[key]by=` and `on=` in verbose mode (`options(datatable.verbose=TRUE)`) now detect any columns inheriting from `Date` which are stored as 8 byte double, test if any fractions are present, and if not suggest using a 4 byte integer instead (such as `data.table::IDate`) to save space and time, [#1738](https://github.com/Rdatatable/data.table/issues/1738). In future this could be upgraded to `message` or `warning` depending on feedback.
 
-21. New function `fifelse(test,yes, no)` has been implemented in C by Morgan Jacob, [#3657](https://github.com/Rdatatable/data.table/issues/3657). It is comparable to `base::ifelse`, `dplyr::if_else`, `hutils::if_else`, and `vcts::if_else()`. It returns a vector of the same length as `test` but unlike `base::ifelse` the output type is consistent with those of `yes` and `no`. Please see `?data.table::fifelse` for more details.
+21. New function `fifelse(test,yes, no)` has been implemented in C by Morgan Jacob, [#3657](https://github.com/Rdatatable/data.table/issues/3657). It is comparable to `base::ifelse`, `dplyr::if_else`, `hutils::if_else`, and (forthcoming) [`vctrs::if_else()`](https://vctrs.r-lib.org/articles/stability.html#ifelse). It returns a vector of the same length as `test` but unlike `base::ifelse` the output type is consistent with those of `yes` and `no`. Please see `?data.table::fifelse` for more details.
 
     ```R
-    set.seed(123)
-    x = sample(c(TRUE,FALSE),2*5e4+1,replace = TRUE)
-    microbenchmark::microbenchmark(
-      data.table::fifelse(x, 1L, 0L),
-      hutils::if_else(x, 1L, 0L),
-      base::ifelse(x, 1L, 0L),
-      dplyr::if_else(x, 1L, 0L),
-      times = 100L
-    )
-    # Unit: microseconds
-    #                            expr      min        lq      mean   median        uq       max neval
-    #  data.table::fifelse(x, 1L, 0L)  600.819  649.1415  716.5613  669.026  771.4435  1078.481   100
-    #      hutils::if_else(x, 1L, 0L) 1053.678 1090.6680 1512.2376 1143.053 1346.1765 13827.810   100
-    #         base::ifelse(x, 1L, 0L) 3225.178 3302.3650 4229.8110 3504.419 4230.9615 12712.126   100
-    #       dplyr::if_else(x, 1L, 0L) 3306.855 3390.2430 4496.2153 3557.660 4466.7985 16077.566   100
+    # default 4 threads on a laptop with 16GB RAM and 8 logical CPU
+    x = sample(c(TRUE,FALSE), 5e8, replace=TRUE)  # 2GB
+                                     # seconds
+           base::ifelse(x, 7L, 11L)  #    14.3
+         dplyr::if_else(x, 7L, 11L)  #    15.4
+        hutils::if_else(x, 7L, 11L)  #     4.3
+    data.table::fifelse(x, 7L, 11L)  #     0.7
     ```
 
 #### BUG FIXES
