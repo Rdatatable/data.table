@@ -56,61 +56,61 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   const int64_t amask = len1>1 ? INT64_MAX : 0;
   const int64_t bmask = len2>1 ? INT64_MAX : 0;
 
-  int *pl = LOGICAL(l);
+  const int *restrict pl = LOGICAL(l);
   SEXP ans = PROTECT(allocVector(TYPEOF(a), len0)); nprotect++;
   copyMostAttrib(a, ans);
 
   switch(TYPEOF(a)) {
   case LGLSXP: {
-    int *pans = LOGICAL(ans);
-    int *pa   = LOGICAL(a);
-    int *pb   = LOGICAL(b);
+    int *restrict pans = LOGICAL(ans);
+    const int *restrict pa   = LOGICAL(a);
+    const int *restrict pb   = LOGICAL(b);
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_LOGICAL);
     }
   } break;
   case INTSXP: {
-    int *pans = INTEGER(ans);
-    int *pa   = INTEGER(a);
-    int *pb   = INTEGER(b);
+    int *restrict pans = INTEGER(ans);
+    const int *restrict pa   = INTEGER(a);
+    const int *restrict pb   = INTEGER(b);
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_INTEGER);
     }
   } break;
   case REALSXP: {
-    double *pans = REAL(ans);
-    double *pa   = REAL(a);
-    double *pb   = REAL(b);
+    double *restrict pans = REAL(ans);
+    const double *restrict pa   = REAL(a);
+    const double *restrict pb   = REAL(b);
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_REAL);
     }
   } break;
   case STRSXP : {
-    const SEXP *pa = STRING_PTR(a);
-    const SEXP *pb = STRING_PTR(b);
+    const SEXP *restrict pa = STRING_PTR(a);
+    const SEXP *restrict pb = STRING_PTR(b);
     for (int64_t i=0; i<len0; ++i) {
       SET_STRING_ELT(ans, i, pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_STRING));
     }
   } break;
   case CPLXSXP : {
-    Rcomplex *pans = COMPLEX(ans);
-    Rcomplex *pa   = COMPLEX(a);
-    Rcomplex *pb   = COMPLEX(b);
+    Rcomplex *restrict pans = COMPLEX(ans);
+    const Rcomplex *restrict pa   = COMPLEX(a);
+    const Rcomplex *restrict pb   = COMPLEX(b);
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_CPLX);
     }
   } break;
   case VECSXP : {
-    const SEXP *pa = VECTOR_PTR(a);
-    const SEXP *pb = VECTOR_PTR(b);
+    const SEXP *restrict pa = VECTOR_PTR(a);
+    const SEXP *restrict pb = VECTOR_PTR(b);
     SEXP a_names = PROTECT(getAttrib(a,R_NamesSymbol)); nprotect++;
     SEXP b_names = PROTECT(getAttrib(b,R_NamesSymbol)); nprotect++;
-    SEXP *pa_names = isNull(a_names) ? NULL : STRING_PTR(a_names);
-    SEXP *pb_names = isNull(b_names) ? NULL : STRING_PTR(b_names);
+    const SEXP *restrict pa_names = isNull(a_names) ? NULL : STRING_PTR(a_names);
+    const SEXP *restrict pb_names = isNull(b_names) ? NULL : STRING_PTR(b_names);
     if (!pa_names && !pb_names) {
       for (int64_t i=0; i<len0; ++i) {
         if (pl[i]==NA_INTEGER) continue;  // allocVector already initialized with R_NilValue
