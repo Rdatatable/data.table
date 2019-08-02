@@ -368,12 +368,20 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     # nocov start
     if (!fail) {
-      cat("Test",numStr,"ran without errors but failed check that x equals y:\n")
-      cat("> x =",deparse(xsub),"\n")
-      if (is.data.table(x)) compactprint(x) else {cat("First 6 of ", length(x)," (type '", typeof(x), "'): ", sep=""); print(head(x))}
-      cat("> y =",deparse(ysub),"\n")
-      if (is.data.table(y)) compactprint(y) else {cat("First 6 of ", length(y)," (type '", typeof(y), "'): ", sep=""); print(head(y))}
-      if (!isTRUE(all.equal.result)) cat(all.equal.result,sep="\n")
+      cat("Test", numStr, "ran without errors but failed check that x equals y:\n")
+      failPrint = function(x, xsub) {
+        cat(">", substitute(x), "=", xsub, "\n")
+        if (is.data.table(x)) compactprint(x) else {
+          nn = length(x)
+          cat(sprintf("First %d of %d (type '%s'): \n", min(nn, 6L), length(x), typeof(x)))
+          # head.matrix doesn't restrict columns
+          if (length(d <- dim(x))) do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len)))
+          else print(head(x))
+        }
+      }
+      failPrint(x, deparse(xsub))
+      failPrint(y, deparse(ysub))
+      if (!isTRUE(all.equal.result)) cat(all.equal.result, sep="\n")
       fail = TRUE
     }
     # nocov end

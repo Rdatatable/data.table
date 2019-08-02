@@ -135,6 +135,28 @@
 
 20. `setkey`, `[key]by=` and `on=` in verbose mode (`options(datatable.verbose=TRUE)`) now detect any columns inheriting from `Date` which are stored as 8 byte double, test if any fractions are present, and if not suggest using a 4 byte integer instead (such as `data.table::IDate`) to save space and time, [#1738](https://github.com/Rdatatable/data.table/issues/1738). In future this could be upgraded to `message` or `warning` depending on feedback.
 
+21. New function `fifelse(test, yes, no)` has been implemented in C by Morgan Jacob, [#3657](https://github.com/Rdatatable/data.table/issues/3657). It is comparable to `base::ifelse`, `dplyr::if_else`, `hutils::if_else`, and (forthcoming) [`vctrs::if_else()`](https://vctrs.r-lib.org/articles/stability.html#ifelse). It returns a vector of the same length as `test` but unlike `base::ifelse` the output type is consistent with those of `yes` and `no`. Please see `?data.table::fifelse` for more details.
+
+    ```R
+    # default 4 threads on a laptop with 16GB RAM and 8 logical CPU
+    x = sample(c(TRUE,FALSE), 3e8, replace=TRUE)  # 1GB
+    microbenchmark::microbenchmark(
+      base::ifelse(x, 7L, 11L),
+      dplyr::if_else(x, 7L, 11L),
+      hutils::if_else(x, 7L, 11L),
+      data.table::fifelse(x, 7L, 11L),
+      times = 5L, unit="s"
+    )
+    # Unit: seconds
+    #                            expr  min  med  max neval
+    #        base::ifelse(x, 7L, 11L)  8.5  8.6  8.8     5
+    #      dplyr::if_else(x, 7L, 11L)  9.4  9.5  9.7     5
+    #     hutils::if_else(x, 7L, 11L)  2.6  2.6  2.7     5
+    # data.table::fifelse(x, 7L, 11L)  1.5  1.5  1.6     5  # setDTthreads(1)
+    # data.table::fifelse(x, 7L, 11L)  0.8  0.8  0.9     5  # setDTthreads(2)
+    # data.table::fifelse(x, 7L, 11L)  0.4  0.4  0.5     5  # setDTthreads(4)
+    ```
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
