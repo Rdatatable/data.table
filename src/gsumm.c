@@ -940,8 +940,6 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
 
 SEXP glast(SEXP x) {
 
-  if (!isVectorAtomic(x)) error("GForce tail can only be applied to columns, not .SD or similar. To get tail of all items in a list such as .SD, either add the prefix utils::tail(.SD) or turn off GForce optimization using options(datatable.optimize=1).");
-
   R_len_t i,k;
   int n = (irowslen == -1) ? length(x) : irowslen;
   SEXP ans;
@@ -1021,8 +1019,6 @@ SEXP glast(SEXP x) {
 }
 
 SEXP gfirst(SEXP x) {
-
-  if (!isVectorAtomic(x)) error("GForce head can only be applied to columns, not .SD or similar. To get head of all items in a list such as .SD, either add the prefix utils::head(.SD) or turn off GForce optimization using options(datatable.optimize=1).");
 
   R_len_t i,k;
   int n = (irowslen == -1) ? length(x) : irowslen;
@@ -1204,7 +1200,7 @@ SEXP gnthvalue(SEXP x, SEXP valArg) {
 SEXP gvarsd1(SEXP x, SEXP narm, Rboolean isSD)
 {
   if (!isLogical(narm) || LENGTH(narm)!=1 || LOGICAL(narm)[0]==NA_LOGICAL) error("na.rm must be TRUE or FALSE");
-  if (!isVectorAtomic(x)) error("GForce var/sd can only be applied to columns, not .SD or similar. To find var/sd of all items in a list such as .SD, either add the prefix stats::var(.SD) (or stats::sd(.SD)) or turn off GForce optimization using options(datatable.optimize=1). More likely, you may be looking for 'DT[,lapply(.SD,var),by=,.SDcols=]'");
+  if (!isVectorAtomic(x)) error("GForce var/sd can only be applied to columns, not .SD or similar. For the full covariance matrix of all items in a list such as .SD, either add the prefix stats::var(.SD) (or stats::sd(.SD)) or turn off GForce optimization using options(datatable.optimize=1). Alternatively, if you only need the diagonal elements, 'DT[,lapply(.SD,var),by=,.SDcols=]' is the optimized way to do this.");
   if (inherits(x, "factor")) error("var/sd is not meaningful for factors.");
   long double m, s, v;
   R_len_t i, j, ix, thisgrpsize = 0, n = (irowslen == -1) ? length(x) : irowslen;

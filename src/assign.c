@@ -1021,8 +1021,8 @@ void writeNA(SEXP v, const int from, const int n)
     // If there's ever a way added to R API to pass NA_STRING to allocVector() to tell it to initialize with NA not "", would be great
     for (int i=from; i<=to; ++i) SET_STRING_ELT(v, i, NA_STRING);
     break;
-  case VECSXP :
-    // list columns already have each item initialized to NULL
+  case VECSXP : case EXPRSXP :
+    // list & expression columns already have each item initialized to NULL
     break;
   default :
     error("Internal error: writeNA passed a vector of type '%s'", type2char(TYPEOF(v)));  // # nocov
