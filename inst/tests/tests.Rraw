@@ -15448,8 +15448,8 @@ test(2072.012, fifelse(0:1, rep(TRUE,2L), rep(FALSE,2L)),        error="Argument
 test(2072.013, fifelse(test_vec, TRUE, "FALSE"),                 error="'yes' is of type logical but 'no' is of type character. Please")
 test(2072.014, fifelse(test_vec, list(1),list(2,4)),             error="Length of 'no' is 2 but must be 1 or length of 'test' (11).")
 test(2072.015, fifelse(test_vec, list(1,3),list(2,4)),           error="Length of 'yes' is 2 but must be 1 or length of 'test' (11).")
-test(2072.016, fifelse(test_vec, list(1), 0), as.list(as.numeric(out_vec)))
-test(2072.017, fifelse(test_vec, 1, list(0)), as.list(as.numeric(out_vec)))
+test(2072.016, fifelse(test_vec, list(1), list(0)), as.list(as.numeric(out_vec)))
+test(2072.017, fifelse(test_vec, list(1), list(0)), as.list(as.numeric(out_vec)))
 ## Jan 1 - 5, 2011
 date_vec = as.Date(14975:14979, origin = '1970-01-01')
 test(2072.018, fifelse(date_vec == "2011-01-01", date_vec - 1L, date_vec),
@@ -15497,8 +15497,8 @@ test(2072.057, fifelse(c(FALSE,TRUE), list(factor(letters[1:5])), list(10:6,5:1)
 test(2072.058, fifelse(c(NA,FALSE), list(1:5), list(10:6,5:1)), list(NULL,5:1))
 test(2072.059, fifelse(c(NA,FALSE), list(1:5,6:10), list(5:1)), list(NULL,5:1))
 test(2072.060, fifelse(c(NA,FALSE), list(1:5), list(5:1)), list(NULL,5:1))
-test(2072.061, fifelse(c(TRUE,FALSE), list(1L), 0L), list(1L,0L))
-test(2072.062, fifelse(c(TRUE,FALSE), 1L, list(0L)), list(1L,0L))
+test(2072.061, fifelse(c(TRUE,FALSE), list(1L), list(0L)), list(1L,0L))
+test(2072.062, fifelse(c(TRUE,FALSE), list(1L), list(0L)), list(1L,0L))
 test(2072.063, fifelse(c(TRUE,FALSE), factor(c("a","b")), factor(c("a","c"))), error="'yes' and 'no' are both type factor but their levels are different")
 test(2072.064, fifelse(c(TRUE, TRUE, TRUE, FALSE, FALSE), factor(NA, levels=letters[1:5]), factor(letters[1:5])),
                factor(c(NA,NA,NA,"d","e"),levels=letters[1:5]))
