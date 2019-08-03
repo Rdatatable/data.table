@@ -15520,9 +15520,9 @@ if (test_nanotime) {
 }
 test(2073.21, fifelse(c(TRUE,FALSE,NA), 1:3, c(1,2,3)), c(1,2,NA))
 test(2073.22, fifelse(c(TRUE,FALSE,NA), c(1,2,3), 1:3), c(1,2,NA))
-test(2073.31, names(fifelse(c(a=T,b=F), list(m=1,n=2), list(x=11,y=12))), c("a","b"))
-test(2073.32, names(fifelse(c(a=T,b=F), c(m=1,n=2), c(x=11,y=12))), c("a","b"))
-test(2073.33, names(ifelse(c(a=T,b=F), c(1,2), c(11,12))), c("a","b"))
+test(2073.31, names(fifelse(c(a=TRUE,b=FALSE), list(m=1,n=2), list(x=11,y=12))), c("a","b"))
+test(2073.32, names(fifelse(c(a=TRUE,b=FALSE), c(m=1,n=2), c(x=11,y=12))), c("a","b"))
+test(2073.33, names(ifelse(c(a=TRUE,b=FALSE), c(1,2), c(11,12))), c("a","b"))
 
 
 ###################################
