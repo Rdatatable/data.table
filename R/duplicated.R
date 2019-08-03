@@ -140,14 +140,25 @@ uniqueN = function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) 
     by = key(x)
     stop(error_oldUniqueByKey)
   }
+  #verbose = getOption("datatable.verbose")
   if (is.null(x)) return(0L)
   if (!is.atomic(x) && !is.data.frame(x))
     stop("x must be an atomic vector or data.frames/data.tables")
   if (is.atomic(x)) {
-    if (is.logical(x)) return(.Call(CuniqueNlogical, x, na.rm=na.rm))
+    if (is.logical(x)) {
+    #  if (verbose) cat("uniqueN detected logical type, using optimised C uniqueNlogical\n")
+      return(.Call(CuniqueNlogical, x, na.rm=na.rm))
+    }
+    escape_n = 1e3L #getOption("datatable.escapeUniqueN",1e7L)
+    if (length(x) <= escape_n) {
+      #if (verbose) cat("uniqueN detected atomic type of length ", length(x), " which is small enough to use base R ", if (na.rm) "na.omit+" else "", "duplicated\n",sep="")
+      if (na.rm) x = na.omit(x)
+      return(length(x)-sum(duplicated(x)))
+    }
     x = as_list(x)
   }
   if (is.null(by)) by = seq_along(x)
+  #if (verbose) cat("uniqueN proceeds using forderv\n",sep="")
   o = forderv(x, by=by, retGrp=TRUE, na.last=if (!na.rm) FALSE else NA)
   starts = attr(o, 'starts', exact=TRUE)
   if (!na.rm) {
