@@ -1,13 +1,8 @@
 #include "data.table.h"
 
-SEXP fifelseR(SEXP l, SEXP a, SEXP b)
-{
-  // l is the test
-  // a is what to do in case l is TRUE
-  // b is what to do in case l is FALSE
+SEXP fifelseR(SEXP l, SEXP a, SEXP b) {
 
   if (!isLogical(l)) error("Argument 'test' must be logical.");
-
   const int64_t len0 = xlength(l);
   const int64_t len1 = xlength(a);
   const int64_t len2 = xlength(b);
@@ -15,21 +10,16 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
   SEXPTYPE tb = TYPEOF(b);
   int nprotect = 0;
 
-  // Check if same storage type and do en-listing of singleton
-  if (ta != tb)
-  {
-    if (ta == VECSXP && (tb == INTSXP || tb == REALSXP || tb == LGLSXP || tb == CPLXSXP || tb == STRSXP))
-    {
-      if (len2 == 1)
-      {
+  if (ta != tb) { // Check if same storage type and do en-listing of singleton
+    if (ta == VECSXP && (tb == INTSXP || tb == REALSXP || tb == LGLSXP || tb == CPLXSXP || tb == STRSXP)) {
+      if (len2 == 1) {
         SEXP tmp = PROTECT(allocVector(VECSXP,1)); nprotect++;
         SET_VECTOR_ELT(tmp, 0, b);
         b = tmp;
         tb = VECSXP;
       }
-    } else if (tb == VECSXP && (ta == INTSXP || ta == REALSXP || ta == LGLSXP || ta == CPLXSXP || ta == STRSXP)){
-      if (len1 == 1)
-      {
+    } else if (tb == VECSXP && (ta == INTSXP || ta == REALSXP || ta == LGLSXP || ta == CPLXSXP || ta == STRSXP)) {
+      if (len1 == 1) {
         SEXP tmp = PROTECT(allocVector(VECSXP,1)); nprotect++;
         SET_VECTOR_ELT(tmp, 0, a);
         a = tmp;
@@ -50,10 +40,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b)
     UNPROTECT(2);
   }
 
-  // Check here the length of the different input variables.
   if (len1!=1 && len1!=len0) error("Length of 'yes' is %lld but must be 1 or length of 'test' (%lld).", len1, len0);
   if (len2!=1 && len2!=len0) error("Length of 'no' is %lld but must be 1 or length of 'test' (%lld).", len2, len0);
-  const int64_t amask = len1>1 ? INT64_MAX : 0;
+  const int64_t amask = len1>1 ? INT64_MAX : 0; // for scalar 'a' bitwise AND will reset iterator to first element: pa[i & amask] -> pa[0]
   const int64_t bmask = len2>1 ? INT64_MAX : 0;
 
   const int *restrict pl = LOGICAL(l);
