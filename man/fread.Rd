@@ -141,8 +141,74 @@ On YAML, see \url{http://yaml.org/}; on csvy, see \url{http://csvy.org/}.
   \code{\link[utils:read.table]{read.csv}}, \code{\link[base:connections]{url}}, \code{\link[base:locales]{Sys.setlocale}}, \code{\link{setDTthreads}}, \code{\link{fwrite}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
 }
 \examples{
-\dontrun{
+# Reads text input directly :
+fread("A,B\n1,2\n3,4")
 
+# Reads pasted input directly :
+fread("A,B
+1,2
+3,4
+")
+
+# Finds the first data line automatically :
+fread("
+This is perhaps a banner line or two or ten.
+A,B
+1,2
+3,4
+")
+
+# Detects whether column names are present automatically :
+fread("
+1,2
+3,4
+")
+
+# Numerical precision :
+
+DT = fread("A\n1.010203040506070809010203040506\n")
+# TODO: add numerals=c("allow.loss", "warn.loss", "no.loss") from base::read.table, +"use.Rmpfr"
+typeof(DT$A)=="double"   # currently "allow.loss" with no option
+
+DT = fread("A\n1.46761e-313\n")   # read as 'numeric'
+DT[,sprintf("\%.15E",A)]   # beyond what double precision can store accurately to 15 digits
+# For greater accuracy use colClasses to read as character, then package Rmpfr.
+
+# colClasses
+data = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
+fread(data, colClasses=c(B="character",C="character",D="character"))  # as read.csv
+fread(data, colClasses=list(character=c("B","C","D")))    # saves typing
+fread(data, colClasses=list(character=2:4))     # same using column numbers
+
+# drop
+fread(data, colClasses=c("B"="NULL","C"="NULL"))   # as read.csv
+fread(data, colClasses=list(NULL=c("B","C")))      #
+fread(data, drop=c("B","C"))      # same but less typing, easier to read
+fread(data, drop=2:3)             # same using column numbers
+
+# select
+# (in read.csv you need to work out which to drop)
+fread(data, select=c("A","D"))    # less typing, easier to read
+fread(data, select=c(1,4))        # same using column numbers
+
+# select and types combined
+fread(data, select=c(A="numeric", D="character"))
+fread(data, select=list(numeric="A", character="D"))
+
+# skip blank lines
+fread("a,b\n1,a\n2,b\n\n\n3,c\n", blank.lines.skip=TRUE)
+# fill
+fread("a,b\n1,a\n2\n3,c\n", fill=TRUE)
+fread("a,b\n\n1,a\n2\n\n3,c\n\n", fill=TRUE)
+
+# fill with skip blank lines
+fread("a,b\n\n1,a\n2\n\n3,c\n\n", fill=TRUE, blank.lines.skip=TRUE)
+
+# check.names usage
+fread("a b,a b\n1,2\n")
+fread("a b,a b\n1,2\n", check.names=TRUE) # no duplicates + syntactically valid names
+
+\dontrun{
 # Demo speed-up
 n = 1e6
 DT = data.table( a=sample(1:1000,n,replace=TRUE),
@@ -251,73 +317,6 @@ fread("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
 fread("http://stat-computing.org/dataexpo/2009/1987.csv.bz2")
 
 }
-
-# Reads text input directly :
-fread("A,B\n1,2\n3,4")
-
-# Reads pasted input directly :
-fread("A,B
-1,2
-3,4
-")
-
-# Finds the first data line automatically :
-fread("
-This is perhaps a banner line or two or ten.
-A,B
-1,2
-3,4
-")
-
-# Detects whether column names are present automatically :
-fread("
-1,2
-3,4
-")
-
-# Numerical precision :
-
-DT = fread("A\n1.010203040506070809010203040506\n")
-# TODO: add numerals=c("allow.loss", "warn.loss", "no.loss") from base::read.table, +"use.Rmpfr"
-typeof(DT$A)=="double"   # currently "allow.loss" with no option
-
-DT = fread("A\n1.46761e-313\n")   # read as 'numeric'
-DT[,sprintf("\%.15E",A)]   # beyond what double precision can store accurately to 15 digits
-# For greater accuracy use colClasses to read as character, then package Rmpfr.
-
-# colClasses
-data = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
-fread(data, colClasses=c(B="character",C="character",D="character"))  # as read.csv
-fread(data, colClasses=list(character=c("B","C","D")))    # saves typing
-fread(data, colClasses=list(character=2:4))     # same using column numbers
-
-# drop
-fread(data, colClasses=c("B"="NULL","C"="NULL"))   # as read.csv
-fread(data, colClasses=list(NULL=c("B","C")))      #
-fread(data, drop=c("B","C"))      # same but less typing, easier to read
-fread(data, drop=2:3)             # same using column numbers
-
-# select
-# (in read.csv you need to work out which to drop)
-fread(data, select=c("A","D"))    # less typing, easier to read
-fread(data, select=c(1,4))        # same using column numbers
-
-# select and types combined
-fread(data, select=c(A="numeric", D="character"))
-fread(data, select=list(numeric="A", character="D"))
-
-# skip blank lines
-fread("a,b\n1,a\n2,b\n\n\n3,c\n", blank.lines.skip=TRUE)
-# fill
-fread("a,b\n1,a\n2\n3,c\n", fill=TRUE)
-fread("a,b\n\n1,a\n2\n\n3,c\n\n", fill=TRUE)
-
-# fill with skip blank lines
-fread("a,b\n\n1,a\n2\n\n3,c\n\n", fill=TRUE, blank.lines.skip=TRUE)
-
-# check.names usage
-fread("a b,a b\n1,2\n")
-fread("a b,a b\n1,2\n", check.names=TRUE) # no duplicates + syntactically valid names
 }
 \keyword{ data }
 
