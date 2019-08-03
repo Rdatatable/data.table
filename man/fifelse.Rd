@@ -22,7 +22,7 @@ A vector of the same length as \code{test} and attributes as \code{yes}. Data va
 x = c(1:4, 3:2, 1:4)
 fifelse(x > 2L, x, x - 1L)
 
-# unlike ifelse, fifelse preserves attributes, taken from the "yes" argument
+# unlike ifelse, fifelse preserves attributes, taken from the 'yes' argument
 dates = as.Date(c("2011-01-01","2011-01-02","2011-01-03","2011-01-04","2011-01-05"))
 ifelse(dates == "2011-01-01", dates - 1, dates)
 fifelse(dates == "2011-01-01", dates - 1, dates)
@@ -30,12 +30,5 @@ yes = factor(c("a","b","c"))
 no = yes[1L]
 ifelse(c(TRUE,FALSE,TRUE), yes, no)
 fifelse(c(TRUE,FALSE,TRUE), yes, no)
-
-# allow singleton replacements to be en-listed ( i.e. wrapped correctly in list() )
-ifelse(c(TRUE, FALSE), 1L, list(0L))
-fifelse(c(TRUE, FALSE), 1L, list(0L))
-# the above is useful given that data.table allows list columns
-DT = data.table(a = 0:5, b = list(1, list(2:3), list(4:6), list(6:4), list(3:2), 1))
-DT[ , b := fifelse(a > 2, b, 0)][]
 }
 \keyword{ data }

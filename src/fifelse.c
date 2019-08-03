@@ -10,28 +10,11 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b) {
   SEXPTYPE tb = TYPEOF(b);
   int nprotect = 0;
 
-  if (ta != tb) { // Check if same storage type and do en-listing of singleton
-    if (ta == VECSXP && (tb == INTSXP || tb == REALSXP || tb == LGLSXP || tb == CPLXSXP || tb == STRSXP)) {
-      if (len2 == 1) {
-        SEXP tmp = PROTECT(allocVector(VECSXP,1)); nprotect++;
-        SET_VECTOR_ELT(tmp, 0, b);
-        b = tmp;
-        tb = VECSXP;
-      }
-    } else if (tb == VECSXP && (ta == INTSXP || ta == REALSXP || ta == LGLSXP || ta == CPLXSXP || ta == STRSXP)) {
-      if (len1 == 1) {
-        SEXP tmp = PROTECT(allocVector(VECSXP,1)); nprotect++;
-        SET_VECTOR_ELT(tmp, 0, a);
-        a = tmp;
-        ta = VECSXP;
-      }
-    } else {
-      error("'yes' is of type %s but 'no' is of type %s. Please make sure candidate replacements are of the same type.", type2char(ta), type2char(tb));
-    }
-  }
+  if (ta != tb)
+    error("'yes' is of type %s but 'no' is of type %s. Please make sure that both arguments have the same type.", type2char(ta), type2char(tb));
 
   if (!R_compute_identical(PROTECT(getAttrib(a,R_ClassSymbol)), PROTECT(getAttrib(b,R_ClassSymbol)), 0))
-    error("'yes' has different class than 'no'. Please make sure that candidate replacements have the same class.");
+    error("'yes' has different class than 'no'. Please make sure that both arguments have the same class.");
   UNPROTECT(2);
 
   if (isFactor(a)) {
