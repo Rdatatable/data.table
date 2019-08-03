@@ -15516,7 +15516,7 @@ if (test_bit64) {
 }
 if (test_nanotime) {
   n = nanotime(1:4)
-  test(2073.02, fifelse(c(TRUE,FALSE,NA,TRUE), n, n+100), c(n[1L], n[2L]+100, as.integer64(NA), n[4]))
+  test(2073.02, fifelse(c(TRUE,FALSE,NA,TRUE), n, n+100), c(n[1L], n[2L]+100, nanotime(NA), n[4]))
 }
 
 
