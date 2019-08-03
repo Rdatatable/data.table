@@ -15509,6 +15509,17 @@ test(2072.066, fifelse(c(TRUE, TRUE, TRUE, FALSE, NA, FALSE), factor(letters[1:6
 test(2072.067, fifelse(c(TRUE, NA, TRUE, FALSE, FALSE, FALSE), factor(NA), factor(NA)),
                factor(c(NA,NA,NA,NA,NA,NA)))
 
+# fifelse #3740
+if (test_bit64) {
+  i = as.integer64(1:4)+3e9
+  test(2073.01, fifelse(c(TRUE,FALSE,NA,TRUE), i, i+100), c(i[1L], i[2L]+100, as.integer64(NA), i[4]))
+}
+if (test_nanotime) {
+  n = nanotime(1:4)
+  test(2073.02, fifelse(c(TRUE,FALSE,NA,TRUE), n, n+100), c(n[1L], n[2L]+100, as.integer64(NA), n[4]))
+}
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################

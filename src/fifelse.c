@@ -72,9 +72,10 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b) {
     double *restrict pans = REAL(ans);
     const double *restrict pa   = REAL(a);
     const double *restrict pb   = REAL(b);
+    const double na_double = (INHERITS(a, char_integer64) || INHERITS(a, char_nanotime)) ? NA_INT64_D : NA_REAL; // integer64 and nanotime support
     #pragma omp parallel for num_threads(getDTthreads())
     for (int64_t i=0; i<len0; ++i) {
-      pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : NA_REAL);
+      pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : na_double);
     }
   } break;
   case STRSXP : {
