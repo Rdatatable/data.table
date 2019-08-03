@@ -91,30 +91,19 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b) {
   case VECSXP : {
     const SEXP *restrict pa = VECTOR_PTR(a);
     const SEXP *restrict pb = VECTOR_PTR(b);
-    SEXP a_names = PROTECT(getAttrib(a,R_NamesSymbol)); nprotect++;
-    SEXP b_names = PROTECT(getAttrib(b,R_NamesSymbol)); nprotect++;
-    const SEXP *restrict pa_names = isNull(a_names) ? NULL : STRING_PTR(a_names);
-    const SEXP *restrict pb_names = isNull(b_names) ? NULL : STRING_PTR(b_names);
-    if (!pa_names && !pb_names) {
-      for (int64_t i=0; i<len0; ++i) {
-        if (pl[i]==NA_INTEGER) continue;  // allocVector already initialized with R_NilValue
-        SET_VECTOR_ELT(ans, i, pl[i]==0 ? pb[i & bmask] : pa[i & amask]);
-      }
-    } else {
-      SEXP ans_names = PROTECT(allocVector(STRSXP, len0)); nprotect++;
-      setAttrib(ans, R_NamesSymbol, ans_names);
-      for (int64_t i=0; i<len0; ++i) {
-        if (pl[i]==NA_INTEGER) continue;  // allocVector already initialized with R_NilValue, and names already initialized with ""
-        SET_VECTOR_ELT(ans, i, pl[i]==0 ? pb[i & bmask] : pa[i & amask]);
-        if (pa_names && pl[i]==1) SET_STRING_ELT(ans_names, i, pa_names[i & amask]);
-        if (pb_names && pl[i]==0) SET_STRING_ELT(ans_names, i, pb_names[i & bmask]);
-      }
+    for (int64_t i=0; i<len0; ++i) {
+      if (pl[i]==NA_INTEGER) continue;  // allocVector already initialized with R_NilValue
+      SET_VECTOR_ELT(ans, i, pl[i]==0 ? pb[i & bmask] : pa[i & amask]);
     }
   } break;
   default:
     error("Type %s is not supported.",type2char(TYPEOF(a)));
   }
+
+  SEXP l_names = PROTECT(getAttrib(l, R_NamesSymbol)); nprotect++;
+  if (!isNull(l_names))
+    setAttrib(ans, R_NamesSymbol, l_names);
+
   UNPROTECT(nprotect);
   return ans;
 }
-

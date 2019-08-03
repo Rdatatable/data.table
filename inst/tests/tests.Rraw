@@ -15482,10 +15482,10 @@ test(2072.042, fifelse(TRUE,1L,factor(letters[1])),     error="'yes' has differe
 test(2072.043, fifelse(TRUE, list(1:5), list(5:1)), list(1:5))
 test(2072.044, fifelse(as.logical(NA), list(1:5), list(5:1)), list(NULL))
 test(2072.045, fifelse(FALSE, list(1:5), list(5:1)), list(5:1))
-test(2072.046, fifelse(TRUE, data.table(1:5), data.table(5:1)), data.table(1:5))
-test(2072.047, fifelse(FALSE, data.table(1:5), data.table(5:1)), data.table(5:1))
-test(2072.048, fifelse(TRUE, data.frame(1:5), data.frame(5:1)), data.frame(1:5))
-test(2072.049, fifelse(FALSE, data.frame(1:5), data.frame(5:1)), data.frame(5:1))
+test(2072.046, fifelse(TRUE, list(data.table(1:5)), list(data.table(5:1))), list(data.table(1:5)))
+test(2072.047, fifelse(FALSE, list(data.table(1:5)), list(data.table(5:1))), list(data.table(5:1)))
+test(2072.048, fifelse(TRUE, list(data.frame(1:5)), list(data.frame(5:1))), list(data.frame(1:5)))
+test(2072.049, fifelse(FALSE, list(data.frame(1:5)), list(data.frame(5:1))), list(data.frame(5:1)))
 test(2072.050, fifelse(c(TRUE,FALSE), list(1:5,6:10), list(10:6,5:1)), list(1:5,5:1))
 test(2072.051, fifelse(c(NA,TRUE), list(1:5,6:10), list(10:6,5:1)), list(NULL,6:10))
 test(2072.052, fifelse(c(FALSE,TRUE), list(1:5,6:10), list(10:6,5:1)), list(10:6,6:10))
@@ -15516,10 +15516,13 @@ if (test_bit64) {
 }
 if (test_nanotime) {
   n = nanotime(1:4)
-  test(2073.02, fifelse(c(TRUE,FALSE,NA,TRUE), n, n+100), c(n[1L], n[2L]+100, nanotime(NA), n[4]))
+  test(2073.11, fifelse(c(TRUE,FALSE,NA,TRUE), n, n+100), c(n[1L], n[2L]+100, nanotime(NA), n[4]))
 }
-test(2073.03, fifelse(c(TRUE,FALSE,NA), 1:3, c(1,2,3)), c(1,2,NA))
-test(2073.04, fifelse(c(TRUE,FALSE,NA), c(1,2,3), 1:3), c(1,2,NA))
+test(2073.21, fifelse(c(TRUE,FALSE,NA), 1:3, c(1,2,3)), c(1,2,NA))
+test(2073.22, fifelse(c(TRUE,FALSE,NA), c(1,2,3), 1:3), c(1,2,NA))
+test(2073.31, names(fifelse(c(a=T,b=F), list(m=1,n=2), list(x=11,y=12))), c("a","b"))
+test(2073.32, names(fifelse(c(a=T,b=F), c(m=1,n=2), c(x=11,y=12))), c("a","b"))
+test(2073.33, names(ifelse(c(a=T,b=F), c(1,2), c(11,12))), c("a","b"))
 
 
 ###################################
