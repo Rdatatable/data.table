@@ -6,6 +6,7 @@ between = function(x,lower,upper,incbounds=TRUE,NAbounds=FALSE) {
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
   is.px = function(x) inherits(x, "POSIXct")
   is.i64 = function(x) inherits(x, "integer64")
+  is.nt = function(x) inherits(x, "nanotime")
   # POSIX special handling to auto coerce character
   if (is.px(x) && !is.null(tz<-attr(x, "tzone", exact=TRUE)) && nzchar(tz) &&
       (is.character(lower) || is.character(upper))) {
@@ -35,8 +36,13 @@ between = function(x,lower,upper,incbounds=TRUE,NAbounds=FALSE) {
       stop("'between' function arguments have mismatched timezone attribute, align all arguments to same timezone")
     }
   }
-  # int64
-  if (is.i64(x)) {
+  if (is.nt(x)) {
+    if (!requireNamespace("nanotime", quietly=TRUE)) stop("trying to use nanotime class when 'nanotime' package is not installed") # nocov
+    if (!is.nt(lower) && is.numeric(lower)) lower = nanotime::nanotime(lower)
+    if (!is.nt(upper) && is.numeric(upper)) upper = nanotime::nanotime(upper)
+  } else if (is.nt(lower) || is.nt(upper)) {
+    stop("'lower' and/or 'upper' are nanotime class while 'x' argument is not, align classes before passing to 'between'")
+  } else if (is.i64(x)) {
     if (!requireNamespace("bit64", quietly=TRUE)) stop("trying to use integer64 class when 'bit64' package is not installed") # nocov
     if (!is.i64(lower) && is.numeric(lower)) lower = bit64::as.integer64(lower)
     if (!is.i64(upper) && is.numeric(upper)) upper = bit64::as.integer64(upper)

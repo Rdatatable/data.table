@@ -44,9 +44,11 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
       x = PROTECT(coerceVector(x, REALSXP)); nprotect++;
     }
   }
-  if (INHERITS(x,char_integer64)) {
-    if (!INHERITS(lower,char_integer64) || !INHERITS(upper,char_integer64))
+  if (INHERITS(x,char_integer64) || INHERITS(x,char_nanotime)) {
+    if (INHERITS(x,char_integer64) && (!INHERITS(lower,char_integer64) || !INHERITS(upper,char_integer64)))
       error("Internal error in between: 'x' is integer64 while 'lower' and/or 'upper' are not, should have been caught by now"); // # nocov
+    if (INHERITS(x,char_nanotime) && (!INHERITS(lower,char_nanotime) || !INHERITS(upper,char_nanotime)))
+      error("Internal error in between: 'x' is nanotime while 'lower' and/or 'upper' are not, should have been caught by now"); // # nocov
     integer=false;
     integer64=true;
   } else if (isReal(x)) {
@@ -98,8 +100,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
       }
       if (verbose) Rprintf("between parallel processing of integer took %8.3fs\n", omp_get_wtime()-tic);
     }
-  } else if (!integer64) {
-    // type real
+  } else if (!integer64) { // type double
     const double *lp = REAL(lower);
     const double *up = REAL(upper);
     const double *xp = REAL(x);
@@ -140,8 +141,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds) {
       }
       if (verbose) Rprintf("between parallel processing of double took %8.3fs\n", omp_get_wtime()-tic);
     }
-  } else {
-    // type integer64
+  } else { // type integer64 or nanotime
     const int64_t *lp = (int64_t *)REAL(lower);
     const int64_t *up = (int64_t *)REAL(upper);
     const int64_t *xp = (int64_t *)REAL(x);

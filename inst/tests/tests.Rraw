@@ -15453,6 +15453,18 @@ test(2072.30, between(c("a","c","e"), NA, c("b",NA,"d"), incbounds=FALSE), c(TRU
 test(2073.01, between(1:5, 3L, NA, incbounds=TRUE, NAbounds=TRUE), c(FALSE, FALSE, NA, NA, NA))
 test(2073.02, between(1:5, 3L, NA, incbounds=FALSE, NAbounds=TRUE), c(FALSE, FALSE, FALSE, NA, NA))
 test(2073.03, between(1:5, 3L, NA, incbounds=FALSE, NAbounds=NA), error="NAbounds must be TRUE or FALSE")
+# nanotime support
+if (test_nanotime) {
+  n=nanotime(1:4)
+  n[2L]=NA
+  op = options(datatable.verbose=TRUE)
+  test(2074.01, between(n, nanotime(2), nanotime(10)), c(FALSE, NA, TRUE, TRUE), output="between parallel processing of integer64")
+  test(2074.02, between(n, nanotime(3), nanotime(10), incbounds=FALSE), c(FALSE, NA, FALSE, TRUE), output="between parallel processing of integer64")
+  test(2074.03, between(n, nanotime(3), nanotime(NA), incbounds=FALSE, NAbounds=TRUE), c(FALSE, NA, FALSE, NA), output="optimised between not available for this data type or NAbounds argument")
+  options(op)
+  test(2074.04, between(1:10, nanotime(3), nanotime(6)), error="are nanotime class while 'x' argument is not")
+  test(2074.05, between(1:10, 3, nanotime(6)), error="are nanotime class while 'x' argument is not")
+}
 
 
 ###################################
