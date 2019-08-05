@@ -15509,6 +15509,16 @@ test(2072.066, fifelse(c(TRUE, TRUE, TRUE, FALSE, NA, FALSE), factor(letters[1:6
 test(2072.067, fifelse(c(TRUE, NA, TRUE, FALSE, FALSE, FALSE), factor(NA), factor(NA)),
                factor(c(NA,NA,NA,NA,NA,NA)))
 
+# empty 'by' still valid #3270
+DT = data.table(a = 1:10)
+test(2073.01, DT[ , sum(a), by = .()], data.table(V1=55L))
+test(2073.02, DT[ , sum(a), keyby = .()], data.table(V1=55L))
+test(2073.03, DT[ , sum(a), by = list()], data.table(V1=55L))
+test(2073.04, DT[ , sum(a), keyby = list()], data.table(V1=55L))
+test(2073.05, DT[ , sum(a), by = character()], data.table(V1=55L))
+test(2073.06, DT[ , sum(a), keyby = character()], data.table(V1=55L))
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
