@@ -107,6 +107,6 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
   # actually processing everything here
   rbindlist(c(
     list(empty), # 0 rows template for colorder and type
-    lapply(sets, aggregate.set)
+    lapply(sets, aggregate.set) # all aggregations
   ), use.names=TRUE, fill=TRUE)
 }
