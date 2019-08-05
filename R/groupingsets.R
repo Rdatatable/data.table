@@ -67,21 +67,12 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
   # input arguments handling
   jj = if (!missing(jj)) jj else substitute(j)
   av = all.vars(jj, TRUE)
-  jsym = if (length(av)==1L) {if (".N"==av) "N" else if (".I"==av) "I" else if (".GRP"==av) "GRP"} # workaround for autonamed columns in grand total #3653
   if (":=" %chin% av)
     stop("Expression passed to grouping sets function must not update by reference. Use ':=' on results of your grouping function.")
   if (missing(.SDcols))
     .SDcols = if (".SD" %chin% av) setdiff(names(x), by) else NULL
   # 0 rows template data.table to keep colorder and type
-  if (length(by)) {
-    empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
-  } else {
-    empty = if (length(.SDcols)) x[0L, eval(jj), .SDcols=.SDcols] else x[0L, eval(jj)]
-    if (!is.data.table(empty)) {
-      if (length(empty)>0) empty = empty[0L] # fix for #3173 when no grouping and j constant
-      empty = setDT(list(empty)) # improve after #648, see comment in aggregate.set
-    }
-  }
+  empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
   if (id && "grouping" %chin% names(empty)) # `j` could have been evaluated to `grouping` field
     stop("When using `id=TRUE` the 'j' expression must not evaluate to column named 'grouping'.")
   if (anyDuplicated(names(empty)) > 0L)
@@ -99,19 +90,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
   int64.by.cols = intersect(int64.cols, by)
   # aggregate function called for each grouping set
   aggregate.set = function(by.set, jsym) {
-    if (length(by.set)) {
-      r = if (length(.SDcols)) x[, eval(jj), by.set, .SDcols=.SDcols] else x[, eval(jj), by.set]
-    } else {
-      ## workaround for grand total single var as data.table too, change to drop=FALSE after #648 solved
-      r = if (length(.SDcols)) x[, eval(jj), .SDcols=.SDcols] else x[, eval(jj)]
-      if (!is.data.table(r)) r = setDT(list(r))
-      if (!is.null(jsym)) {
-        if (!"V1" %in% names(r))
-          stop("internal error in groupingsets, V1 is not present, please report") # nocov
-        else
-          setnames(r, "V1", jsym)
-      }
-    }
+    r = if (length(.SDcols)) x[, eval(jj), by.set, .SDcols=.SDcols] else x[, eval(jj), by.set]
     if (id) {
       # integer bit mask of aggregation levels: http://www.postgresql.org/docs/9.5/static/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE
       # 3267: strtoi("", base = 2L) output apparently unstable across platforms
@@ -128,6 +107,6 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
   # actually processing everything here
   rbindlist(c(
     list(empty), # 0 rows template for colorder and type
-    lapply(sets, aggregate.set, jsym) # all aggregations
+    lapply(sets, aggregate.set)
   ), use.names=TRUE, fill=TRUE)
 }
