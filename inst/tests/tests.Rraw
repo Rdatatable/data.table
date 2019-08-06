@@ -15509,6 +15509,10 @@ test(2072.066, fifelse(c(TRUE, TRUE, TRUE, FALSE, NA, FALSE), factor(letters[1:6
 test(2072.067, fifelse(c(TRUE, NA, TRUE, FALSE, FALSE, FALSE), factor(NA), factor(NA)),
                factor(c(NA,NA,NA,NA,NA,NA)))
 
+# cbind 0 cols #3334
+test(2073.01, data.table(data.table(a=1), data.table()), data.table(data.table(a=1)))
+
+
 ###################################
 #  Add new tests above this line  #
 ###################################
