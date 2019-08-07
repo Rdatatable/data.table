@@ -256,6 +256,8 @@
 
 14. The warning message when using `keyby=` together with `:=` is clearer, [#2763](https://github.com/Rdatatable/data.table/issues/2763). Thanks to @eliocamp.
 
+15. `frollmean` coerces `logical` input to `numeric` instead of failing to mimic the behavior of `integer` input.
+
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
 

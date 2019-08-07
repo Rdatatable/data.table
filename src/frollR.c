@@ -14,7 +14,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     x = PROTECT(allocVector(VECSXP, 1)); protecti++;
     if (isReal(obj)) {
       SET_VECTOR_ELT(x, 0, obj);
-    } else if (isInteger(obj)) {
+    } else if (isInteger(obj) || isLogical(obj)) {
       SET_VECTOR_ELT(x, 0, coerceVector(obj, REALSXP));
     } else {
       error("x must be of type numeric");
