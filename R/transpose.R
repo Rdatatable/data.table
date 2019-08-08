@@ -1,12 +1,24 @@
-transpose = function(l, fill=NA, ignore.empty=FALSE) {
-  ans = .Call(Ctranspose, l, fill, ignore.empty)
-  if (is.data.table(l)) setDT(ans)
-  else if (is.data.frame(l)) {
-    if (is.null(names(ans)))
-      setattr(ans, "names", paste0("V", seq_along(ans)))
-    setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
-    setattr(ans, "class", "data.frame")
+transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL) {
+  if (!is.null(make.names)) {
+    stopifnot(length(make.names)==1L)
+    if (is.character(make.names)) {
+      make.names=chmatch(make.names, names(l))
+      if (is.na(make.names))
+        stop("make.names='",make.names,"' not found in names of input")
+    } else {
+      make.names = as.integer(make.names)
+      if (is.na(make.names) || make.names<1L || make.names>length(l))
+        stop("make.names=",make.names," is out of range [1,ncol=",length(l),"]")
+    }
+    colnames = as.character(l[[make.names]])
+    l = if (is.data.table(l)) l[,-make.names,with=FALSE] else l[-make.names]
   }
+  ans = .Call(Ctranspose, l, fill, ignore.empty, keep.names)
+  if (!is.null(make.names)) setattr(ans, "names", c(keep.names, colnames))
+  else if (is.data.frame(l))  # including data.table but not plain list
+    setattr(ans, "names", c(keep.names, paste0("V", seq_len(length(ans)-length(keep.names)))))
+  if (is.data.table(l)) setDT(ans)
+  else if (is.data.frame(l)) setDF(ans)
   ans[]
 }
 
@@ -34,3 +46,4 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   setattr(ans, 'names', names)
   ans
 }
+

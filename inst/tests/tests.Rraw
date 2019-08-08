@@ -6696,7 +6696,7 @@ test(1477.07, transpose(strsplit(ll, ",", fixed=TRUE)), tstrsplit(ll, ",", fixed
 test(1477.08, transpose(1:5), error="l must be a list")
 test(1477.09, transpose(list(as.complex(c(1, 1+5i)))), error="Unsupported column type")
 test(1477.10, transpose(list(list(1:5))), error="Item 1 of list input is")
-test(1477.11, transpose(as.list(1:5), fill=1:2), error="fill must be NULL or length=1 vector")
+test(1477.11, transpose(as.list(1:5), fill=1:2), error="fill must be a length 1 vector")
 test(1477.12, transpose(as.list(1:5), ignore.empty=NA), error="ignore.empty should be logical TRUE/FALSE")
 test(1477.13, transpose(list()), list())
 
@@ -15508,6 +15508,20 @@ test(2072.066, fifelse(c(TRUE, TRUE, TRUE, FALSE, NA, FALSE), factor(letters[1:6
                factor(c("a","b","c",NA,NA,NA), levels=letters[1:6]))
 test(2072.067, fifelse(c(TRUE, NA, TRUE, FALSE, FALSE, FALSE), factor(NA), factor(NA)),
                factor(c(NA,NA,NA,NA,NA,NA)))
+
+DT = data.table(x=1:5, y=6:10)
+test(2073.1, transpose(DT, keep.names="rn"),
+             ans<-data.table(rn=c('x','y'), V1=c(1L, 6L), V2=c(2L, 7L), V3=c(3L, 8L), V4=c(4L, 9L), V5=c(5L, 10L)))
+test(2073.2, transpose(DT, keep.names=TRUE), error="either NULL.*name of the first column of the result")
+test(2073.3, transpose(ans, make.names="rn"), DT)
+test(2073.4, transpose(ans, keep.names="rn", make.names="rn"), data.table(rn=paste0("V",1:5), x=1:5, y=6:10))
+L = list(a=1:3, rn=LETTERS[1:3], b=4:6)
+test(2073.5, transpose(L, make.names=0),  error="make.names=0 is out of range [1,ncol=3]")
+test(2073.6, transpose(L, make.names=4),  error="make.names=4 is out of range [1,ncol=3]")
+test(2073.7, transpose(L, make.names=NA), error="make.names=NA is out of range [1,ncol=3]")
+test(2073.8, transpose(L, make.names=2), list(A=INT(1,4), B=INT(2,5), C=INT(3,6)))
+test(2073.9, transpose(L, make.names=2, keep.names='foo'), list(foo=c("a","b"), A=INT(1,4), B=INT(2,5), C=INT(3,6)))
+
 
 ###################################
 #  Add new tests above this line  #
