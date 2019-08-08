@@ -1,12 +1,9 @@
-transpose = function(l, fill=NA, ignore.empty=FALSE, keep.rownames=FALSE) {
-  ans = .Call(Ctranspose, l, fill, ignore.empty, keep.rownames)
+transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL) {
+  ans = .Call(Ctranspose, l, fill, ignore.empty, keep.names, make.names)
+  if (is.data.frame(l))  # including data.table but not plain list
+    setattr(ans, "names", c(keep.names, paste0("V", seq_len(length(ans)-length(keep.names)))))
   if (is.data.table(l)) setDT(ans)
-  else if (is.data.frame(l)) {
-    if (is.null(names(ans)))
-      setattr(ans, "names", paste0("V", seq_along(ans)))
-    setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
-    setattr(ans, "class", "data.frame")
-  }
+  else if (is.data.frame(l)) setDF(ans)
   ans[]
 }
 
@@ -34,3 +31,4 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   setattr(ans, 'names', names)
   ans
 }
+

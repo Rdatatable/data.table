@@ -157,7 +157,7 @@
     # data.table::fifelse(x, 7L, 11L)  0.4  0.4  0.5     5  # setDTthreads(4)
     ```
 
-22. `transpose` gains `keep.rownames` argument which stores the input's names at the beginning of the output (the first list element or the first column), [#1886](https://github.com/Rdatatable/data.table/issues/1886). Thanks to @ghost for the request.
+22. `transpose` gains `keep.names=` and `make.names=` arguments, [#1886](https://github.com/Rdatatable/data.table/issues/1886). Previously, column names were dropped and there was no way to keep them. `keep.names="rn"` keeps the column names and puts them in the `"rn"` column of the result. Similarly, `make.names="rn"` uses column `"rn"` as the column names of the result. Both arguments are `NULL` by default for backwards compatibility. As these new arguments are new, they are subject to change in future according to community feedback. Thanks to @ghost for the request.
 
 #### BUG FIXES
 

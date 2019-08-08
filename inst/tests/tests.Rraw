@@ -6696,7 +6696,7 @@ test(1477.07, transpose(strsplit(ll, ",", fixed=TRUE)), tstrsplit(ll, ",", fixed
 test(1477.08, transpose(1:5), error="l must be a list")
 test(1477.09, transpose(list(as.complex(c(1, 1+5i)))), error="Unsupported column type")
 test(1477.10, transpose(list(list(1:5))), error="Item 1 of list input is")
-test(1477.11, transpose(as.list(1:5), fill=1:2), error="fill must be NULL or length=1 vector")
+test(1477.11, transpose(as.list(1:5), fill=1:2), error="fill must be a length 1 vector")
 test(1477.12, transpose(as.list(1:5), ignore.empty=NA), error="ignore.empty should be logical TRUE/FALSE")
 test(1477.13, transpose(list()), list())
 
@@ -15510,8 +15510,8 @@ test(2072.067, fifelse(c(TRUE, NA, TRUE, FALSE, FALSE, FALSE), factor(NA), facto
                factor(c(NA,NA,NA,NA,NA,NA)))
 
 DT = data.table(x=1:5, y=6:10)
-test(2073.1, transpose(DT, keep.rownames = TRUE),
-             data.table(c('x','y'), c(1L, 6L), c(2L, 7L), c(3L, 8L), c(4L, 9L), c(5L, 10L)))
+test(2073.1, transpose(DT, keep.names="rn"),
+             data.table(rn=c('x','y'), V1=c(1L, 6L), V2=c(2L, 7L), V3=c(3L, 8L), V4=c(4L, 9L), V5=c(5L, 10L)))
 
 
 ###################################
