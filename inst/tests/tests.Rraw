@@ -15515,6 +15515,12 @@ test(2073.1, transpose(DT, keep.names="rn"),
 test(2073.2, transpose(DT, keep.names=TRUE), error="either NULL.*name of the first column of the result")
 test(2073.3, transpose(ans, make.names="rn"), DT)
 test(2073.4, transpose(ans, keep.names="rn", make.names="rn"), data.table(rn=paste0("V",1:5), x=1:5, y=6:10))
+L = list(a=1:3, rn=LETTERS[1:3], b=4:6)
+test(2073.5, transpose(L, make.names=0),  error="make.names=0 is out of range [1,ncol=3]")
+test(2073.6, transpose(L, make.names=4),  error="make.names=4 is out of range [1,ncol=3]")
+test(2073.7, transpose(L, make.names=NA), error="make.names=NA is out of range [1,ncol=3]")
+test(2073.8, transpose(L, make.names=2), list(A=INT(1,4), B=INT(2,5), C=INT(3,6)))
+test(2073.9, transpose(L, make.names=2, keep.names='foo'), list(foo=c("a","b"), A=INT(1,4), B=INT(2,5), C=INT(3,6)))
 
 
 ###################################
