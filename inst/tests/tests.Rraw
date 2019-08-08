@@ -15511,7 +15511,10 @@ test(2072.067, fifelse(c(TRUE, NA, TRUE, FALSE, FALSE, FALSE), factor(NA), facto
 
 DT = data.table(x=1:5, y=6:10)
 test(2073.1, transpose(DT, keep.names="rn"),
-             data.table(rn=c('x','y'), V1=c(1L, 6L), V2=c(2L, 7L), V3=c(3L, 8L), V4=c(4L, 9L), V5=c(5L, 10L)))
+             ans<-data.table(rn=c('x','y'), V1=c(1L, 6L), V2=c(2L, 7L), V3=c(3L, 8L), V4=c(4L, 9L), V5=c(5L, 10L)))
+test(2073.2, transpose(DT, keep.names=TRUE), error="either NULL.*name of the first column of the result")
+test(2073.3, transpose(ans, make.names="rn"), DT)
+test(2073.4, transpose(ans, keep.names="rn", make.names="rn"), data.table(rn=paste0("V",1:5), x=1:5, y=6:10))
 
 
 ###################################

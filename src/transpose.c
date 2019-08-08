@@ -2,7 +2,7 @@
 #include <Rdefines.h>
 #include <time.h>
 
-SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP makeNamesArg) {
+SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
 
   int nprotect=0;
   if (!isNewList(l))
@@ -12,12 +12,9 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP makeNa
   if (!isLogical(ignoreArg) || LOGICAL(ignoreArg)[0]==NA_LOGICAL)
     error("ignore.empty should be logical TRUE/FALSE.");
   bool ignore = LOGICAL(ignoreArg)[0];
-  if (!isNull(keepNamesArg) && !isString(keepNamesArg) && LENGTH(keepNamesArg)!=1)
+  if (!(isNull(keepNamesArg) || (isString(keepNamesArg) && LENGTH(keepNamesArg)==1)))
     error("keep.names should be either NULL, or the name of the first column of the result in which to place the names of the input");
   bool rn = !isNull(keepNamesArg);
-  if (!isNull(makeNamesArg) && !isString(makeNamesArg) && LENGTH(makeNamesArg)!=1)
-    error("make.names should be either NULL, or the name/number of the input column to use as names of the output");
-  bool cn = !isNull(makeNamesArg);
   if (length(fill) != 1)
     error("fill must be a length 1 vector, such as the default NA");
   R_len_t ln = LENGTH(l);
