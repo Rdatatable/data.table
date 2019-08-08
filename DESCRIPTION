@@ -52,5 +52,5 @@ URL: http://r-datatable.com
 BugReports: https://github.com/Rdatatable/data.table/issues
 VignetteBuilder: knitr
 ByteCompile: TRUE
-Remotes: r-lib/covr    # temporary in dev until covr 3.3.1 is released; covr/issues/391
+Remotes: r-lib/covr
 
