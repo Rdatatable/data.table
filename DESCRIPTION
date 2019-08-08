@@ -53,4 +53,3 @@ BugReports: https://github.com/Rdatatable/data.table/issues
 VignetteBuilder: knitr
 ByteCompile: TRUE
 Remotes: r-lib/covr
-
