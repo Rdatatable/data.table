@@ -52,4 +52,3 @@ URL: http://r-datatable.com
 BugReports: https://github.com/Rdatatable/data.table/issues
 VignetteBuilder: knitr
 ByteCompile: TRUE
-Remotes: r-lib/covr
