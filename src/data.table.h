@@ -116,7 +116,6 @@ int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(void *p, int i);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrp, SEXP sortStrArg, SEXP orderArg, SEXP naArg);
 bool need2utf8(SEXP x, int n);
-SEXP isReallyReal(SEXP);
 int getNumericRounding_C();
 
 // reorder.c
@@ -198,8 +197,6 @@ void fadaptiverollsumExact(double *x, uint_fast64_t nx, ans_t *ans, int *k, doub
 SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasNA, SEXP adaptive, SEXP verbose);
 
 // nafill.c
-SEXP colnamesInt(SEXP x, SEXP cols);
-SEXP coerceFillR(SEXP fill);
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, ans_t *ans, bool verbose);
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose);
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbose);
@@ -210,3 +207,9 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP bounds);
 // coalesce.c
 SEXP coalesce(SEXP x, SEXP inplace);
 
+// utils.c
+bool isRealReallyInt(SEXP x);
+SEXP isReallyReal(SEXP x);
+SEXP colnamesInt(SEXP x, SEXP cols);
+void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill);
+SEXP coerceFillR(SEXP fill);
