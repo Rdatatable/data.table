@@ -32,9 +32,13 @@ SEXP isReallyReal(SEXP x) {
   return(ans);
 }
 
-SEXP colnamesInt(SEXP x, SEXP cols) {
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP check_real) {
   if (!isNewList(x))
-    error("'x' argument must be data.table");
+    error("'x' argument must be data.table compatible");
+  if (!IS_TRUE_OR_FALSE(check_dups))
+    error("'check_dups' argument must be TRUE or FALSE");
+  if (!IS_TRUE_OR_FALSE(check_real))
+    error("'check_real' argument must be TRUE or FALSE");
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
@@ -49,12 +53,14 @@ SEXP colnamesInt(SEXP x, SEXP cols) {
     if (isInteger(cols)) {
       ricols = cols;
     } else if (isReal(cols)) {
+      if (LOGICAL(check_real)[0] && !isRealReallyInt(cols))
+        error("argument specifying columns is type 'double' and one or more items in it are not whole integers");
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }
     int *icols = INTEGER(ricols);
     for (int i=0; i<nc; i++) {
       if ((icols[i]>nx) || (icols[i]<1))
-        error("'cols' argument specify non existing column(s): cols[%d]=%d", i+1, icols[i]); // handles NAs also
+        error("argument specifying columns specify non existing column(s): cols[%d]=%d", i+1, icols[i]); // handles NAs also
     }
   } else if (isString(cols)) {
     SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
@@ -64,13 +70,13 @@ SEXP colnamesInt(SEXP x, SEXP cols) {
     int *icols = INTEGER(ricols);
     for (int i=0; i<nc; i++) {
       if (icols[i]==0)
-        error("'cols' argument specify non existing column(s): cols[%d]='%s'", i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+        error("argument specifying columns specify non existing column(s): cols[%d]='%s'", i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
     }
   } else {
-    error("'cols' argument must be character or numeric");
+    error("argument specifying columns must be character or numeric");
   }
-  if (any_duplicated(ricols, FALSE))
-    error("'cols' argument specify duplicated column(s)");
+  if (LOGICAL(check_dups)[0] && any_duplicated(ricols, FALSE))
+    error("argument specifying columns specify duplicated column(s)");
   UNPROTECT(protecti);
   return ricols;
 }

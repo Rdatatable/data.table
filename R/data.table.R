@@ -437,12 +437,14 @@ replace_order = function(isub, verbose, env) {
         on = on_ops[[1L]]
         ops = on_ops[[2L]]
         # TODO: collect all '==' ops first to speeden up Cnestedid
-        rightcols = chmatch(names(on), names(x))
-        if (length(nacols <- which(is.na(rightcols))))
-          stop("Column(s) [", paste(names(on)[nacols], collapse=","), "] not found in x")
-        leftcols  = chmatch(unname(on), names(i))
-        if (length(nacols <- which(is.na(leftcols))))
-          stop("Column(s) [", paste(unname(on)[nacols], collapse=","), "] not found in i")
+        rightcols = colnamesInt(x, names(on), check_dups=FALSE, check_real=TRUE)
+        #  chmatch(names(on), names(x))
+        #if (length(nacols <- which(is.na(rightcols))))
+        #  stop("Column(s) [", paste(names(on)[nacols], collapse=","), "] not found in x")
+        leftcols  = colnamesInt(i, unname(on), check_dups=FALSE, check_real=TRUE)
+          #chmatch(unname(on), names(i))
+        #if (length(nacols <- which(is.na(leftcols))))
+        #  stop("Column(s) [", paste(unname(on)[nacols], collapse=","), "] not found in i")
       } else {
         ## missing on
         rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in bmerge()
@@ -2179,13 +2181,7 @@ na.omit.data.table = function (object, cols = seq_along(object), invert = FALSE,
   if (!cedta()) return(NextMethod())
   if ( !missing(invert) && is.na(as.logical(invert)) )
     stop("Argument 'invert' must be logical TRUE/FALSE")
-  if (is.character(cols)) {
-    old = cols
-    cols = chmatch(cols, names(object), nomatch=0L)
-    if (any(idx <- cols==0L))
-      stop("Column", if (sum(idx)>1L) "s " else " ", brackify(old[idx]), if (sum(idx)>1L) " don't" else " doesn't", " exist in the input data.table")
-  }
-  cols = as.integer(cols)
+  cols = colnamesInt(object, cols, check_dups=FALSE, check_real=TRUE)
   ix = .Call(Cdt_na, object, cols)
   # forgot about invert with no NA case, #2660
   if (invert) {
@@ -2331,12 +2327,12 @@ point = function(to, to_idx, from, from_idx) {
 }
 
 .shallow = function(x, cols = NULL, retain.key = FALSE, unlock = FALSE) {
-  isnull = is.null(cols)
-  if (!isnull) cols = validate(cols, x)  # NULL is default = all columns
+  wasnull = is.null(cols)
+  cols = colnamesInt(x, cols, check_dups=FALSE, check_real=TRUE)
   ans = .Call(Cshallowwrapper, x, cols)  # copies VECSXP only
 
   if(retain.key){
-    if (isnull) return(ans) # handle most frequent case first
+    if (wasnull) return(ans) # handle most frequent case first
     ## get correct key if cols are present
     cols = names(x)[cols]
     keylength = which.first(!key(ans) %chin% cols) - 1L
@@ -2505,28 +2501,19 @@ setnames = function(x,old,new,skip_absent=FALSE) {
 
 setcolorder = function(x, neworder=key(x))
 {
-  if (anyDuplicated(neworder)) stop("neworder contains duplicates")
+  if (is.character(neworder) && anyDuplicated(names(x)))
+    stop("x has some duplicated column name(s): ", paste(names(x)[duplicated(names(x))], collapse=","), ". Please remove or rename the duplicate(s) and try again.")
   # if (!is.data.table(x)) stop("x is not a data.table")
+  neworder = colnamesInt(x, neworder, check_dups=TRUE, check_real=TRUE)
   if (length(neworder) != length(x)) {
     if (length(neworder) > length(x))
-    stop("neworder is length ", length(neworder),
-       " but x has only ", length(x), " columns.")
+      stop("neworder is length ", length(neworder),
+           " but x has only ", length(x), " columns.")
     #if shorter than length(x), pad by the missing
     #  elements (checks below will catch other mistakes)
-    neworder = c(neworder, setdiff(if (is.character(neworder)) names(x)
-                                   else seq_along(x), neworder))
+    neworder = c(neworder, setdiff(seq_along(x), neworder))
   }
-  if (is.character(neworder)) {
-    if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ", paste(names(x)[duplicated(names(x))], collapse=","), ". Please remove or rename the duplicate(s) and try again.")
-    o = as.integer(chmatch(neworder, names(x)))
-    if (anyNA(o)) stop("Names in neworder not found in x: ", paste(neworder[is.na(o)], collapse=","))
-  } else {
-    if (!is.numeric(neworder)) stop("neworder is not a character or numeric vector")
-    o = as.integer(neworder)
-    m = !(o %in% seq_len(length(x)))
-    if (any(m)) stop("Column numbers in neworder out of bounds: ", paste(o[m], collapse=","))
-  }
-  .Call(Csetcolorder, x, o)
+  .Call(Csetcolorder, x, neworder)
   invisible(x)
 }
 
@@ -2767,12 +2754,8 @@ rowidv = function(x, cols=seq_along(x), prefix=NULL) {
       stop("x is a single vector, non-NULL 'cols' doesn't make sense.")
     cols = 1L
     x = as_list(x)
-  } else {
-    if (!length(cols))
-      stop("x is a list, 'cols' can not be on 0-length.")
-    if (is.character(cols))
-      cols = chmatch(cols, names(x))
-    cols = as.integer(cols)
+  } else if (!length(cols)) {
+    stop("x is a list, 'cols' can not be on 0-length.")
   }
   xorder = forderv(x, by=cols, sort=FALSE, retGrp=TRUE) # speedup on char with sort=FALSE
   xstart = attr(xorder, 'starts', exact=TRUE)
@@ -2796,13 +2779,10 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
       stop("x is a single vector, non-NULL 'cols' doesn't make sense.")
     cols = 1L
     x = as_list(x)
-  } else {
-    if (!length(cols))
-      stop("x is a list, 'cols' can not be 0-length.")
-    if (is.character(cols))
-      cols = chmatch(cols, names(x))
-    cols = as.integer(cols)
+  } else if (!length(cols)) {
+    stop("x is a list, 'cols' can not be 0-length.")
   }
+  cols = colnamesInt(x, cols, check_dups=FALSE, check_real=TRUE)
   ids = .Call(Crleid, x, cols)
   if (!is.null(prefix)) ids = paste0(prefix, ids)
   ids
