@@ -1,4 +1,4 @@
-\name{first}
+\name{last}
 \alias{first}
 \alias{last}
 \title{ First/last item of an object }
