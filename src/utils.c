@@ -32,6 +32,15 @@ SEXP isReallyReal(SEXP x) {
   return(ans);
 }
 
+/* colnamesInt
+ * for provided data.table (or a list-like) and a subset of its columns, it returns integer positions of those columns in DT
+ * handle columns input as: integer, double, character and NULL (handled as seq_along(x))
+ * adds validation for:
+ *   correct int/double range
+ *   existing columns for character
+ *   optionally check for no duplicates
+ *   optionally check that double input is really integer
+ */
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP check_real) {
   if (!isNewList(x))
     error("'x' argument must be data.table compatible");
