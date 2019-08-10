@@ -438,13 +438,7 @@ replace_order = function(isub, verbose, env) {
         ops = on_ops[[2L]]
         # TODO: collect all '==' ops first to speeden up Cnestedid
         rightcols = colnamesInt(x, names(on), check_dups=FALSE, check_real=TRUE)
-        #  chmatch(names(on), names(x))
-        #if (length(nacols <- which(is.na(rightcols))))
-        #  stop("Column(s) [", paste(names(on)[nacols], collapse=","), "] not found in x")
         leftcols  = colnamesInt(i, unname(on), check_dups=FALSE, check_real=TRUE)
-          #chmatch(unname(on), names(i))
-        #if (length(nacols <- which(is.na(leftcols))))
-        #  stop("Column(s) [", paste(unname(on)[nacols], collapse=","), "] not found in i")
       } else {
         ## missing on
         rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in bmerge()
