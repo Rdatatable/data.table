@@ -2500,9 +2500,6 @@ setcolorder = function(x, neworder=key(x))
   # if (!is.data.table(x)) stop("x is not a data.table")
   neworder = colnamesInt(x, neworder, check_dups=TRUE, check_real=TRUE)
   if (length(neworder) != length(x)) {
-    if (length(neworder) > length(x))
-      stop("neworder is length ", length(neworder),
-           " but x has only ", length(x), " columns.")
     #if shorter than length(x), pad by the missing
     #  elements (checks below will catch other mistakes)
     neworder = c(neworder, setdiff(seq_along(x), neworder))
@@ -2749,7 +2746,7 @@ rowidv = function(x, cols=seq_along(x), prefix=NULL) {
     cols = 1L
     x = as_list(x)
   } else if (!length(cols)) {
-    stop("x is a list, 'cols' can not be on 0-length.")
+    stop("x is a list, 'cols' can not be 0-length.")
   }
   xorder = forderv(x, by=cols, sort=FALSE, retGrp=TRUE) # speedup on char with sort=FALSE
   xstart = attr(xorder, 'starts', exact=TRUE)

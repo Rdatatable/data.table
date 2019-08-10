@@ -15522,6 +15522,13 @@ test(2073.7, transpose(L, make.names=NA), error="make.names=NA is out of range [
 test(2073.8, transpose(L, make.names=2), list(A=INT(1,4), B=INT(2,5), C=INT(3,6)))
 test(2073.9, transpose(L, make.names=2, keep.names='foo'), list(foo=c("a","b"), A=INT(1,4), B=INT(2,5), C=INT(3,6)))
 
+# coverage during #3755
+test(2074.01, rowidv(c(1L,2L,3L), 1L), error="x is a single vector, non-NULL")
+test(2074.02, rowidv(list(c(1L,2L,3L)), NULL), error="can not be 0-length")
+test(2074.03, rleidv(c(1L,2L,3L), 1L), error="x is a single vector, non-NULL")
+test(2074.04, rleidv(list(c(1L,2L,3L)), NULL), error="can not be 0-length")
+
+
 
 ###################################
 #  Add new tests above this line  #
