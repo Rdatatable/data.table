@@ -9896,6 +9896,7 @@ test(1686.2, DT[, .(V1=A,B)], DT[, c(.(get("A")), .SD), .SDcols="B"])
 test(1687.1, first(1:5), 1L)
 test(1687.2, first(data.table(x=1:5, y=6:10)), data.table(x=1L, y=6L))
 test(1687.3, first(integer(0L)), integer(0L))
+test(1687.4, first(1:5, 2), 1:2)
 
 if (test_bit64) {
   # fix for #1385 and part of #1459
