@@ -9,14 +9,16 @@ last = function(x, ...) {
       if (!length(x)) return(x) else return(x[[length(x)]])  # for vectors, [[ works like [
     } else if (is.data.frame(x)) return(x[NROW(x),])
   }
+  # nocov start
   if(!requireNamespace("xts", quietly = TRUE)) {
-    tail(x, n = 1L, ...) # nocov
+    tail(x, n = 1L, ...)
   } else {
     # fix with suggestion from Joshua, #1347
     if (!"package:xts" %chin% search()) {
-      tail(x, n = 1L, ...) # nocov
+      tail(x, n = 1L, ...)
     } else xts::last(x, ...) # UseMethod("last") doesn't find xts's methods, not sure what I did wrong.
   }
+  # nocov end
 }
 
 # first(), similar to last(), not sure why this wasn't exported in the first place...
@@ -26,12 +28,14 @@ first = function(x, ...) {
       if (!length(x)) return(x) else return(x[[1L]])
     } else if (is.data.frame(x)) return(x[1L,])
   }
+  # nocov start
   if(!requireNamespace("xts", quietly = TRUE)) {
-    head(x, n = 1L, ...) # nocov
+    head(x, n = 1L, ...)
   } else {
     # fix with suggestion from Joshua, #1347
     if (!"package:xts" %chin% search()) {
-      head(x, n = 1L, ...) # nocov
-    } else xts::first(x, ...) # nocov
+      head(x, n = 1L, ...)
+    } else xts::first(x, ...)
   }
+  # nocov end
 }
