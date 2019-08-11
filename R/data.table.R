@@ -403,6 +403,7 @@ replace_order = function(isub, verbose, env) {
         i = !i
       }
     }
+    browser()
     if (is.null(i)) return( null.data.table() )
     if (is.character(i)) {
       isnull_inames = TRUE
