@@ -15603,7 +15603,7 @@ test(2074.26, foverlaps(x, y), error="NA values in data.table 'y' end column")
 test(2074.27, cube(DT, by=1L), error="Argument 'by' must be a character")
 test(2074.28, cube(DT, by='a', id=1L), error="Argument 'id' must be a logical")
 ## groupingsets
-test(2074.29, groupingsets(DT, .(grouping=max(V2)), by='V1', sets=list('V1'), id=TRUE),
+test(2074.29, groupingsets(DT, .(grouping=max(1)), by='V1', sets=list('V1'), id=TRUE),
      error="When using `id=TRUE` the 'j' expression must not evaluate to a column named 'grouping'")
 ## tstrsplit
 test(2074.30, tstrsplit('a', names=1L), error="'names' must be TRUE/FALSE or a character vector")
