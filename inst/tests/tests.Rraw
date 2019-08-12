@@ -22,6 +22,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   as.IDate.default = data.table:::as.IDate.default
   as.ITime.default = data.table:::as.ITime.default
   binary = data.table:::binary
+  bmerge = data.table:::bmerge
   brackify = data.table:::brackify
   chmatchdup = data.table:::chmatchdup
   compactprint = data.table:::compactprint
@@ -256,6 +257,7 @@ test(69.5, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB COLS KEY\n1:   
 xenv$DT = data.table(A=1:2, B=3:4, C=5:6, D=7:8, E=9:10, F=11:12, G=13:14, H=15:16, key="A,D,F,G")
 test(69.6, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB            COLS     KEY\n1:   DT    2    8  0 A,B,C,D,E,F,... A,D,F,G.*Total: 0MB")
 rm(xenv)
+test(69.7, tables(order.col='asdf'), error="not a column name of info")
 
 a = "d"
 # Variable Twister.  a in this scope has same name as a inside DT scope.
@@ -1653,6 +1655,7 @@ test(567, DT[,.N,list(a,b)][,N,by=a]$N, c(1L,1L,2L,1L))
 test(568, DT[,.N,list(a,b)][,unique(N),by=a]$V1, c(1L,2L,1L))
 test(569, DT[,list(.N=.N),list(a,b)][,.N,a], error="The column '.N' can't be grouped because")
 test(570, DT[,list(.N=.N),list(a,b)][,unique(.N),a], error="The column '.N' can't be grouped because")
+test(570.1, DT[,list(.I=.I),list(a,b)][,.I,a], error="The column '.I' can't be grouped because")
 
 # Test spaces in by="..." format, datatable-help on 31 March
 DT = data.table("a "=1:2, "b"=3:4," b"=5:6, v=1:6)
@@ -8205,13 +8208,18 @@ test(1610.1, capture.output(print(DT1, class=TRUE)),
        "1: <list>     1     1      a   1+0i     1      1",
        "2: <list>     2     2      b   2+0i     2      2",
        "3: <list>     3     3      c   3+0i     3      3"))
-# fails on travis and appveyor; no idea why.. Passes on my mac and windows machine.
-# test(1610.2, capture.output(print(DT2, class=TRUE))
-#      c("         Dcol                Pcol   gcol       Icol   ucol",
-#        "       <Date>              <POSc> <lgcl>     <IDat> <asdf>",
-#        "1: 2016-01-01 2016-01-01 01:00:00   TRUE 2016-01-01      1",
-#        "2: 2016-01-02 2016-01-02 01:00:00   TRUE 2016-01-02      2",
-#        "3: 2016-01-03 2016-01-03 01:00:00   TRUE 2016-01-03      3"))
+DT2 = data.table(
+  Dcol = as.Date('2016-01-01') + 0:2,
+  Pcol = as.POSIXct('2016-01-01 01:00:00', tz = 'UTC') + 86400L*(0:2),
+  gcol = TRUE, Icol = as.IDate(16801) + 0:2,
+  ucol = `class<-`(1:3, 'asdf')
+)
+test(1610.2, capture.output(print(DT2, class=TRUE)),
+     c("         Dcol                Pcol   gcol       Icol   ucol",
+       "       <Date>              <POSc> <lgcl>     <IDat> <asdf>",
+       "1: 2016-01-01 2016-01-01 01:00:00   TRUE 2016-01-01      1",
+       "2: 2016-01-02 2016-01-02 01:00:00   TRUE 2016-01-02      2",
+       "3: 2016-01-03 2016-01-03 01:00:00   TRUE 2016-01-03      3"))
 
 # fix for #833
 l1 = list(a=seq_len(5), matrix(seq_len(25),ncol = 5, nrow = 5))
@@ -8395,7 +8403,11 @@ x = data.table(-0.000189921844659375) # tolerance in action
 y = data.table(-0.000189921844655161)
 test(1613.561, all(all.equal(x, y, ignore.row.order = FALSE), all.equal(x, y, ignore.row.order = TRUE)))
 test(1613.562, all(is.character(all.equal(x, y, ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(x, y, ignore.row.order = TRUE, tolerance = 0))))
-test(1613.563, all(all.equal(rbind(x,y), rbind(y,y), ignore.row.order = FALSE), all.equal(rbind(x,y), rbind(y,y), ignore.row.order = TRUE)))
+test(1613.563, all(
+  all.equal(rbind(x,y), rbind(y,y), ignore.row.order=FALSE),
+  all.equal(rbind(x,y), rbind(y,y), ignore.row.order=TRUE),
+  all.equal(rbind(y,y), rbind(x,y), ignore.row.order=TRUE)
+))
 test(1613.564, all(is.character(all.equal(rbind(x,y), rbind(y,y), ignore.row.order = FALSE, tolerance = 0)), is.character(all.equal(rbind(x,y), rbind(y,y), ignore.row.order = TRUE, tolerance = 0))))
 test(1613.565, all(all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = FALSE), is.character(r<-all.equal(rbind(x,x,y), rbind(y,y,x), ignore.row.order = TRUE)) && any(grepl("force 'tolerance' argument to 0", r)))) # no-match due factor force tolerance=0
 test(1613.566, all(all.equal(rbind(x,y,y), rbind(x,y,y), ignore.row.order = FALSE, tolerance = 0), all.equal(rbind(x,y,y), rbind(x,y,y), ignore.row.order = TRUE, tolerance = 0)))
@@ -15003,7 +15015,7 @@ test(2050.6, rbind(DT[1], data.table(f=factor(letters[10:11]))[0])[,levels(f)], 
 test(2051.1, `-.IDate`(structure(0, class="Date"), 1L), structure(-1, class="Date"))
 test(2051.2, `-.IDate`(1L, 1L), error = 'only subtract from "IDate"')
 test(2051.3, format.data.table(1L), error = 'Possibly corrupt data.table')
-test(2051.4, rleidv(prefix = 1L), error = 'prefix must be NULL or')
+test(2051.4, rleidv(prefix = 1L), error = "'prefix' must be NULL or")
 ## passing Date to second argument of as.POSIXct.ITime
 t = as.ITime(0L)
 test(2051.5, as.POSIXct(t, structure(0L, class="Date")), .POSIXct(0, 'UTC'))
@@ -15524,6 +15536,115 @@ test(2073.07, transpose(L, make.names=4),  error="make.names=4 is out of range [
 test(2073.08, transpose(L, make.names=NA), error="make.names=NA is out of range [1,ncol=3]")
 test(2073.09, transpose(L, make.names=2), list(A=INT(1,4), B=INT(2,5), C=INT(3,6)))
 test(2073.10, transpose(L, make.names=2, keep.names='foo'), list(foo=c("a","b"), A=INT(1,4), B=INT(2,5), C=INT(3,6)))
+
+# 2074.* miscellaneous coverage to bring *.R to 100%; see comments in PR #3761
+## i is NULL
+x = NULL
+test(2074.01, data.table(1:10)[x], data.table(NULL))
+## auto-guessing of byvars when none of the columns have "normal" names
+test(2074.02, data.table(`0`=0, `1`=1)[ , TRUE, by = .(`0` + `1`)], data.table(`0`=1, V1=TRUE))
+## also eval.+ columns are OK, just not eval( patterns, #3758
+evaluate = function(x) c('F', 'D', 'C', 'B', 'A')[findInterval(x, c(0, 60, 70, 80, 90, 100))]
+test(2074.03, data.table(grade=c(50L, 91L, 95L, 51L, 89L))[ , .N, by=evaluate(grade)],
+     data.table(evaluate=c('F', 'A', 'B'), N=c(2L, 2L, 1L)))
+## error: use recursive character list indexing to assign when also doing alloc.col()
+opt = options(datatable.alloccol=1L)
+l = list(foo = list(bar = data.table(a = 1:3, b = 4:6)))
+test(2074.04, l[[c('foo', 'bar')]][ , (letters) := 16:18], error = 'under-allocated recursively indexed list')
+options(opt)
+## alloc.col when using 0-truelength j assigning to a subset
+DT = data.table(a=1)
+### construct incorrectly to have 0 truelength
+zDT = structure(list(b=2), class = c('data.table', 'data.frame'))
+test(2074.05, DT[1L, b := zDT], data.table(a=1, b=2))
+## nested .SD in j
+DT = data.table(a=1, b=2)
+test(2074.06, DT[ , c(.SD[1], .SD[1, .SD[1]]), by=a], data.table(a=1, b=2, b=2))
+## as.matrix.data.table when a column has columns (only possible when constructed incorrectly)
+DT = structure(list(a=1:5, d=data.table(b=6:10, c=11:15), m=matrix(16:25, ncol=2L)), class = c('data.table', 'data.frame'))
+test(2074.07, as.matrix(DT), matrix(1:25, ncol=5L, dimnames=list(NULL, c('a', 'd.b', 'd.c', 'm.1', 'm.2'))))
+## can induce !cedta() from base::rownames to get this error
+test(2074.08, rownames(structure(list(1:5), class='data.table')), error="Has it been created manually")
+## default dimnames.data.table
+test(2074.09, dimnames(data.table(a = 1)), list(NULL, 'a'))
+## unlock argument of .shallow
+DT = data.table(a = 1)
+setattr(DT, '.data.table.locked', TRUE)
+test(2074.10, attr(.shallow(DT, unlock=TRUE), '.data.table.locked'), NULL)
+## coverage of rowidv & rleidv
+test(2074.11, rowidv(1:10, cols=1), error="x is a single vector, non-NULL 'cols'")
+test(2074.12, rowidv(1:10), rep(1L, 10L))
+test(2074.13, rowidv(list(1:10), cols=integer()), error="x is a list, 'cols' cannot be 0-length")
+test(2074.14, rleidv(1:10, cols=1), error="x is a single vector, non-NULL 'cols'")
+test(2074.15, rleidv(list(1:10), cols=integer()), error="x is a list, 'cols' cannot be 0-length")
+## coverage of .prepareFastSubset
+DT = data.table(V1=c('a', 'b', 'a'), V2 = c('hello', 'ello', 'llo'), x=TRUE)
+test(2074.16, nrow(DT[!(V1=='a' & V2 %like% 'll')]), 1L)
+y = c(TRUE, FALSE, FALSE)
+test(2074.17, nrow(DT[x & y]), 1L)
+setkey(DT, V1)
+test(2074.18, DT[V1=='a', verbose=TRUE], output='Optimized subsetting with key')
+
+# print.data.table
+DT2 = data.table(a=1:101)
+test(2074.19, length(capture.output(print(DT2, nrows=1i))), 12L)
+test(2074.20, length(capture.output(print(DT2[-1L], nrows=1i))), 102L)
+test(2074.21, length(capture.output(print(DT2, nrows=-1L))), 0L)
+test(2074.22, length(capture.output(print(DT2, topn=1i))), 12L)
+test(2074.23, capture.output(print(DT2, topn=1L, col.names='none')),
+     c("  1:   1", " ---    ", "101: 101"))
+
+# foverlaps
+x = data.table(start=NA_integer_, end=1L, key='start,end')
+y = copy(x)
+test(2074.24, foverlaps(x, y), error="NA values in data.table 'x' start column")
+x[ , start := 0L]
+setkey(x, start, end)
+test(2074.25, foverlaps(x, y), error="NA values in data.table 'y' start column")
+setkey(y, end, start)
+test(2074.26, foverlaps(x, y), error="NA values in data.table 'y' end column")
+
+# cube
+test(2074.27, cube(DT, by=1L), error="Argument 'by' must be a character")
+test(2074.28, cube(DT, by='a', id=1L), error="Argument 'id' must be a logical")
+
+# groupingsets
+test(2074.29, groupingsets(DT, .(grouping=max(1)), by='V1', sets=list('V1'), id=TRUE),
+     error="When using `id=TRUE` the 'j' expression must not evaluate to a column named 'grouping'")
+
+# tstrsplit
+test(2074.30, tstrsplit('a', names=1L), error="'names' must be TRUE/FALSE or a character vector")
+
+# fcast with eval in fun.aggregate
+DT[ , z := 0L]
+test(2074.31, dcast(DT, V1 ~ z, fun.aggregate=eval(quote(length)), value.var='z'),
+     data.table(V1=c('a', 'b'), `0`=2:1,key='V1'))
+
+# fwrite both logical args
+test(2074.32, fwrite(DT, logical01=TRUE, logicalAsInt=TRUE), error="logicalAsInt has been renamed")
+
+# merge.data.table
+test(2074.33, merge(DT, DT, by.x = 1i, by.y=1i), error="A non-empty vector of column names are required")
+
+# shift naming
+test(2074.34, shift(list(a=1:5, b=6:10), give.names=TRUE), list(a_lag_1=c(NA, 1:4), b_lag_1=c(NA, 6:9)))
+test(2074.35, shift(1:5, 1:2, give.names=TRUE), list(V1_lag_1=c(NA, 1:4), V1_lag_2=c(NA, NA, 1:3)))
+
+# bmerge.c
+x = data.table(a='a')
+test(2074.36, bmerge(x, x, 1L, 1L, 0, FALSE, 0L, "all", '==', FALSE), error="rollends must be a length 2")
+test(2074.37, bmerge(x, x, 1L, 1L, 'nearest', c(TRUE, FALSE), 0L, "all", 1L, FALSE), error="roll='nearest' can't be applied to a character")
+# trigger reallocation on big non-equi-join
+set.seed(384)
+d = data.table(a=sample(150, 150, TRUE), b=1:150)
+test(2074.38, nrow(d[d, on = .(a>a, b>b), allow.cartesian=TRUE]), 5722L)
+
+# fread.c
+## ok / quoted branch of parse_double_extended
+test(2074.39, fread('a,b\n"Inf,2\n'), data.table(a='"Inf', b=2L), warning="Found and resolved")
+## verbose output
+test(2074.40, fread('a\n1', na.strings=character(), verbose=TRUE), output='No NAstrings provided')
+test(2074.41, fread('a\n1', na.strings='9', verbose=TRUE), output='One or more of the NAstrings looks like a number')
 
 
 ###################################

@@ -68,6 +68,7 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   roll = 0.0; rollToNearest = FALSE;
   if (isString(rollarg)) {
     if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0) error("roll is character but not 'nearest'");
+    if (TYPEOF(VECTOR_ELT(i, icols[ncol-1]-1))==STRSXP) error("roll='nearest' can't be applied to a character column, yet.");
     roll=1.0; rollToNearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
   } else {
     if (!isReal(rollarg)) error("Internal error: roll is not character or double"); // # nocov
@@ -77,8 +78,6 @@ SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SE
   if (!isLogical(rollendsArg) || LENGTH(rollendsArg) != 2)
     error("rollends must be a length 2 logical vector");
   rollends = LOGICAL(rollendsArg);
-  if (rollToNearest && TYPEOF(VECTOR_ELT(i, icols[ncol-1]-1))==STRSXP)
-    error("roll='nearest' can't be applied to a character column, yet.");
 
   // nomatch arg
   nomatch = INTEGER(nomatchArg)[0];
