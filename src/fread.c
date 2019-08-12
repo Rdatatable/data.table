@@ -1202,7 +1202,7 @@ int freadMain(freadMainArgs _args) {
       if (fd==-1) STOP("file not found: %s",fnam);
       struct stat stat_buf;
       if (fstat(fd, &stat_buf) == -1) {
-        close(fd); // # nocov
+        close(fd);                                                     // # nocov
         STOP("Opened file ok but couldn't obtain its size: %s", fnam); // # nocov
       }
       fileSize = (size_t) stat_buf.st_size;

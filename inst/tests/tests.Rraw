@@ -8214,7 +8214,6 @@ DT2 = data.table(
   gcol = TRUE, Icol = as.IDate(16801) + 0:2,
   ucol = `class<-`(1:3, 'asdf')
 )
-# fails on travis and appveyor; no idea why.. Passes on my mac and windows machine.
 test(1610.2, capture.output(print(DT2, class=TRUE)),
      c("         Dcol                Pcol   gcol       Icol   ucol",
        "       <Date>              <POSc> <lgcl>     <IDat> <asdf>",

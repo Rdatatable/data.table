@@ -57,7 +57,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       }
     }
     if (xclass == iclass) {
-      if (verbose) cat("i.", names(i)[ic], " has same type (", xclass, ") as x.", names(x)[xc], ". No coercion needed.\n", sep="")
+      if (verbose) cat("i.",names(i)[ic]," has same type (",xclass,") as x.",names(x)[xc],". No coercion needed.\n", sep="")
       next
     }
     if (xclass=="character" || iclass=="character" ||
