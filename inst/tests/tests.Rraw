@@ -7781,6 +7781,7 @@ test(1571.3, names(tstrsplit(X$a, "", fixed=TRUE, names=letters[1:4])), letters[
 test(1571.4, tstrsplit(X$a, "", fixed=TRUE, keep=c(2,4)), list(c("B", "E"), c(NA, "G")))
 test(1571.5, tstrsplit(X$a, "", fixed=TRUE, keep=c(2,7)), error="should contain integer")
 test(1571.6, tstrsplit(X$a, "", fixed=TRUE, keep=c(2,4), names=letters[1:5]), error="is not equal to")
+test(1571.7, tstrsplit(X$a, "", fixed=TRUE, names=1), error="'names' must be TRUE/FALSE or a character vector")
 
 # fix for #1367, quote="" argument in use. Using embedded quotes in the example below reads the
 # first two columns as one. I couldn't find a way to avoid introducing quote argument.
@@ -9908,6 +9909,7 @@ test(1686.2, DT[, .(V1=A,B)], DT[, c(.(get("A")), .SD), .SDcols="B"])
 test(1687.1, first(1:5), 1L)
 test(1687.2, first(data.table(x=1:5, y=6:10)), data.table(x=1L, y=6L))
 test(1687.3, first(integer(0L)), integer(0L))
+test(1687.4, first(1:5, 2), 1:2)
 
 if (test_bit64) {
   # fix for #1385 and part of #1459
@@ -15527,16 +15529,16 @@ test(2073.01, transpose(DT, keep.names="rn"),
              ans<-data.table(rn=c('x','y'), V1=c(1L, 6L), V2=c(2L, 7L), V3=c(3L, 8L), V4=c(4L, 9L), V5=c(5L, 10L)))
 test(2073.02, transpose(DT, keep.names=TRUE), error="either NULL.*name of the first column of the result")
 test(2073.03, transpose(ans, make.names="rn"), DT)
-test(2073.04, transpose(ans, keep.names="rn", make.names="rn"), data.table(rn=paste0("V",1:5), x=1:5, y=6:10))
+test(2073.04, transpose(ans, make.names="notthere"), error="make.names='notthere' not found in names of input")
+test(2073.05, transpose(ans, keep.names="rn", make.names="rn"), data.table(rn=paste0("V",1:5), x=1:5, y=6:10))
 L = list(a=1:3, rn=LETTERS[1:3], b=4:6)
-test(2073.05, transpose(L, make.names=0),  error="make.names=0 is out of range [1,ncol=3]")
-test(2073.06, transpose(L, make.names=4),  error="make.names=4 is out of range [1,ncol=3]")
-test(2073.07, transpose(L, make.names=NA), error="make.names=NA is out of range [1,ncol=3]")
-test(2073.08, transpose(L, make.names=2), list(A=INT(1,4), B=INT(2,5), C=INT(3,6)))
-test(2073.09, transpose(L, make.names=2, keep.names='foo'), list(foo=c("a","b"), A=INT(1,4), B=INT(2,5), C=INT(3,6)))
-test(2073.10, transpose(L, make.names='asdf'), error="make.names not found in names of input")
+test(2073.06, transpose(L, make.names=0),  error="make.names=0 is out of range [1,ncol=3]")
+test(2073.07, transpose(L, make.names=4),  error="make.names=4 is out of range [1,ncol=3]")
+test(2073.08, transpose(L, make.names=NA), error="make.names=NA is out of range [1,ncol=3]")
+test(2073.09, transpose(L, make.names=2), list(A=INT(1,4), B=INT(2,5), C=INT(3,6)))
+test(2073.10, transpose(L, make.names=2, keep.names='foo'), list(foo=c("a","b"), A=INT(1,4), B=INT(2,5), C=INT(3,6)))
 
-# coverage of data.table.R
+# 2074.* miscellaneous coverage to bring *.R to 100%; see comments in PR #3761
 ## i is NULL
 x = NULL
 test(2074.01, data.table(1:10)[x], data.table(NULL))
@@ -15644,6 +15646,7 @@ test(2074.39, fread('a,b\n"Inf,2\n'), data.table(a='"Inf', b=2L), warning="Found
 ## verbose output
 test(2074.40, fread('a\n1', na.strings=character(), verbose=TRUE), output='No NAstrings provided')
 test(2074.41, fread('a\n1', na.strings='9', verbose=TRUE), output='One or more of the NAstrings looks like a number')
+
 
 ###################################
 #  Add new tests above this line  #

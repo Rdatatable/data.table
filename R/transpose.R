@@ -2,9 +2,10 @@ transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names
   if (!is.null(make.names)) {
     stopifnot(length(make.names)==1L)
     if (is.character(make.names)) {
-      make.names=chmatch(make.names, names(l))
-      if (is.na(make.names))
-        stop("make.names not found in names of input")
+      m = chmatch(make.names, names(l))
+      if (is.na(m))
+        stop("make.names='",make.names,"' not found in names of input")
+      make.names = m
     } else {
       make.names = as.integer(make.names)
       if (is.na(make.names) || make.names<1L || make.names>length(l))
