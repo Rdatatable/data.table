@@ -2748,7 +2748,7 @@ rowidv = function(x, cols=seq_along(x), prefix=NULL) {
     cols = 1L
     x = as_list(x)
   } else if (!length(cols)) {
-    stop("x is a list, 'cols' can not be 0-length.")
+    stop("x is a list, 'cols' cannot be 0-length.")
   }
   xorder = forderv(x, by=cols, sort=FALSE, retGrp=TRUE) # speedup on char with sort=FALSE
   xstart = attr(xorder, 'starts', exact=TRUE)
@@ -2773,7 +2773,7 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
     cols = 1L
     x = as_list(x)
   } else if (!length(cols)) {
-    stop("x is a list, 'cols' can not be 0-length.")
+    stop("x is a list, 'cols' cannot be 0-length.")
   }
   cols = colnamesInt(x, cols, check_dups=FALSE, check_real=TRUE)
   ids = .Call(Crleid, x, cols)
