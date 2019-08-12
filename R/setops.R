@@ -136,7 +136,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
      paste0(names(targetTypes)[w],"(",paste(targetTypes[w],currentTypes[w],sep="!="),")")
             ,collapse=" ")))
     }
-    
+
     # check key
     k1 = key(target)
     k2 = key(current)

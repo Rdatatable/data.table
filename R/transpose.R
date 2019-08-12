@@ -2,9 +2,10 @@ transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names
   if (!is.null(make.names)) {
     stopifnot(length(make.names)==1L)
     if (is.character(make.names)) {
-      make.names=chmatch(make.names, names(l))
-      if (is.na(make.names))
+      m = chmatch(make.names, names(l))
+      if (is.na(m))
         stop("make.names='",make.names,"' not found in names of input")
+      make.names = m
     } else {
       make.names = as.integer(make.names)
       if (is.na(make.names) || make.names<1L || make.names>length(l))
@@ -23,6 +24,8 @@ transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names
 }
 
 tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
+  if (!isTRUEorFALSE(names) && !is.character(names))
+    stop("'names' must be TRUE/FALSE or a character vector.")
   ans = transpose(strsplit(as.character(x), ...), fill=fill, ignore.empty=FALSE)
   if (!missing(keep)) {
     keep = suppressWarnings(as.integer(keep))
@@ -36,8 +39,6 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   if(type.convert) ans = lapply(ans, type.convert, as.is = TRUE)
   if (isFALSE(names)) return(ans)
   else if (isTRUE(names)) names = paste0("V", seq_along(ans))
-  if (!is.character(names))
-    stop("'names' must be TRUE/FALSE or a character vector.")
   if (length(names) != length(ans)) {
     str = if (missing(keep)) "ans" else "keep"
     stop("length(names) (= ", length(names),

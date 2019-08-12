@@ -222,6 +222,8 @@
 
 24. `column not found` could incorrectly occur in rare non-equi-join cases, [#3635](https://github.com/Rdatatable/data.table/issues/3635). Thanks to @UweBlock for the report.
 
+25. Slight fix to the logic for auto-naming the `by` clause for using a custom function like `evaluate` to now be named `evaluate` instead of the name of the first symbolic argument, [#3758](https://github.com/Rdatatable/data.table/issues/3758).
+
 #### NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
@@ -257,6 +259,8 @@
 13. `test.data.table()` could fail if the `datatable.integer64` user option was set, [#3683](https://github.com/Rdatatable/data.table/issues/3683). Thanks @xiaguoxin for reporting.
 
 14. The warning message when using `keyby=` together with `:=` is clearer, [#2763](https://github.com/Rdatatable/data.table/issues/2763). Thanks to @eliocamp.
+
+15. `first` and `last` gain an explicit `n=1L` argument so that it's clear the default is 1, and their almost identical manual pages have been merged into one.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)
