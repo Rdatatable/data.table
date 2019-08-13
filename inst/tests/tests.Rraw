@@ -1473,11 +1473,11 @@ DT = data.table(a=1:2,b=3:4,c=5:6)
 test(495.1, setcolorder(DT,c(2,1,3)), data.table(b=3:4,a=1:2,c=5:6))
 test(495.2, setcolorder(DT,c(2,1,3)), data.table(a=1:2,b=3:4,c=5:6))
 test(496, setcolorder(DT,c("c","a","b")), data.table(c=5:6,a=1:2,b=3:4))
-test(497, setcolorder(DT,c("d","a","b")), error="Names in neworder not found in x: d")
+test(497, setcolorder(DT,c("d","a","b")), error="specify non existing column*.*d")
 DT = data.table(a = 1:3, b = 2:4, c = 3:5)
 test(498.1, names(setcolorder(DT, "b")), c("b", "a", "c"))
 test(498.2, names(setcolorder(DT, c(2, 3))), c("a", "c", "b"))
-test(498.3, setcolorder(DT, 1:4), error = "x has only")
+test(498.3, setcolorder(DT, 1:4), error = "specify non existing column*.*4")
 # Test where neworder=NULL, thus ordered by key and index columns
 DT = data.table(a = 1:3, b = 2:4, c = 3:5, d = 4:6, key="b")
 test(498.4, names(setcolorder(DT)), c("b", "a", "c", "d"))
@@ -2789,10 +2789,10 @@ test(988, unique(dt, by='B'), dt[!duplicated(df[, 'B'])])
 test(989, unique(dt, by='C'), dt[!duplicated(df[, 'C'])])
 test(990, unique(dt, by=c('B', 'C')), dt[!duplicated(df[, c('B', 'C')])])
 test(991, unique(dt, by=NULL), dt[!duplicated(df)])
-test(991.1, unique(dt, by=4), error="'by' value 4 out of range.*1,3")
-test(991.2, unique(dt, by=c(1,3.1)), error="'by' is type 'double' and one or more items in it are not whole integers")
+test(991.1, unique(dt, by=4), error="specify non existing column*.*4")
+test(991.2, unique(dt, by=c(1,3.1)), error="is type 'double' and one or more items in it are not whole integers")
 test(991.3, unique(dt, by=2:3), dt[!duplicated(df[,c('B','C')])])
-test(991.4, unique(dt, by=c('C','D','E')), error="'by' contains 'D' which is not a column name")
+test(991.4, unique(dt, by=c('C','D','E')), error="specify non existing column*.*D")
 
 # :=NULL on factor column in empty data.table, #4809
 DT = data.table(A = integer(), B = factor())
@@ -4424,8 +4424,8 @@ test(1249.3, DT[order(x,y)], DT)
 set.seed(1L)
 DT <- data.table(x=sample(3,10,TRUE), y=sample(2,10,TRUE), key="x")
 test(1250.1, duplicated(DT, by=NULL), duplicated.data.frame(DT))
-test(1250.2, duplicated(DT, by=FALSE), error="Only NULL, column indices or column names are allowed in by")
-test(1250.3, duplicated(DT, by=TRUE), error="Only NULL, column indices or column names are allowed in by")
+test(1250.2, duplicated(DT, by=FALSE), error="argument specifying columns must be character or numeric")
+test(1250.3, duplicated(DT, by=TRUE), error="argument specifying columns must be character or numeric")
 
 # more tests for DT[order(...)] - now testing 'decreasing=FALSE/TRUE' argument
 set.seed(1L)
@@ -5378,8 +5378,8 @@ setDF(Y)
 test(1364.18, setdiff_(X, Y), error = 'x and y must both be data.tables')
 setDT(Y)
 test(1364.19, setdiff_(X[0L], Y), X[0L])
-test(1364.20, setdiff_(X, Y, by.x = 'f'), error = 'by.x value [f] not present')
-test(1364.21, setdiff_(X, Y, by.x = c('f', 'g')), error = 'by.x values [f, g] not present')
+test(1364.20, setdiff_(X, Y, by.x = 'f'), error = 'specify non existing column*.*f')
+#test(1364.21, setdiff_(X, Y, by.x = c('f', 'g')), error = 'by.x values [f, g] not present') # now only first no existing column is printed for efficiency
 test(1364.22, setdiff_(X, Y[0L], by.x = 'a'),
      data.table(a = c(1, 3, 2), b = factor(c(1L, 3L, 2L)),
                 c = c("1", "3", "2"), d = c(1L, 3L, 2L), e = c(1L, 5L, 7L)))
@@ -6465,12 +6465,12 @@ test(1464.04, rleid(DT$b), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 test(1464.05, rleidv(DT, "c"), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 test(1464.06, rleid(DT$c), c(1L, 1L, 2L, 2L, 3L, 3L, 3L, 4L, 5L, 5L))
 test(1464.07, rleid(as.raw(c(3L, 1L, 2L))), error="Type 'raw' not supported")
-test(1464.08, rleidv(DT, 0), error="outside range")
-test(1464.09, rleidv(DT, 5), error="outside range")
+test(1464.08, rleidv(DT, 0), error="specify non existing column*.*0")
+test(1464.09, rleidv(DT, 5), error="specify non existing column*.*5")
 test(1464.10, rleidv(DT, 1:4), 1:nrow(DT))
 set.seed(1)
 DT = data.table( sample(1:2,20,replace=TRUE), sample(1:2,20,replace=TRUE), sample(1:2,20, replace=TRUE))
-test(1464.11, rleidv(DT, 1:4), error="outside range")
+test(1464.11, rleidv(DT, 1:4), error="specify non existing column*.*4")
 test(1464.12, rleidv(DT, 1:2), ans<-INT(1,2,3,4,5,6,6,6,7,8,8,9,10,11,12,13,14,15,16,17))
 test(1464.13, rleidv(DT, 2:1), ans)
 test(1464.14, rleidv(DT, c(3,1)), INT(1,1,2,2,3,4,5,5,6,7,8,9,10,11,12,13,14,15,16,17))
@@ -7808,8 +7808,8 @@ test(1574.4, X["bar", on="c"], X[2L]) # missed previously
 # fix for #1376
 X = data.table(a=1:3,b=4:6,c=c("foo","bar","baz"))
 Y = data.table(A=2:4, B=5:7)
-test(1575.1, X[Y, on=c(A="a")], error="not found in x")
-test(1575.2, X[Y, on=c(a="a")], error="not found in i")
+test(1575.1, X[Y, on=c(A="a")], error="specify non existing column*.*A") # does not report 'x' or 'i' anymore after switch to colnamesInt
+test(1575.2, X[Y, on=c(a="a")], error="specify non existing column*.*a")
 
 # work around for issue introduced in v1.9.4, #1396
 X = data.table(x=5:1, y=6:10)
@@ -13100,9 +13100,9 @@ options(old)
 test(1962.003, duplicated(DT, fromLast = NA),
      error = 'must be TRUE or FALSE')
 test(1962.004, duplicated(DT, by = -1L),
-     error = 'Integer values between 1 and ncol')
+     error = 'specify non existing column*.*-1')
 test(1962.005, duplicated(DT, by = 'y'),
-     error = 'by specifies column names that do not exist')
+     error = 'specify non existing column*.*y')
 test(1962.0061, duplicated(data.table(NULL)), logical(0L))
 test(1962.0062, duplicated(data.table(a = 1L), by = character()), logical())
 
@@ -13562,9 +13562,9 @@ test(1967.60, setnames(x, -1:1, c('hey', 'you')), error = "both +ve and -ve")
 test(1967.61, setnames(x, 1+3i, 'cplx'), error = "'old' is type complex")
 test(1967.62, setnames(x, 1, c('d', 'e')), error = "'old' is length 1 but 'new'")
 
-test(1967.63, setcolorder(x, c(1, 1)), error = 'contains duplicates')
-test(1967.64, setcolorder(x, 1+3i), error = 'not a character or numeric')
-test(1967.65, setcolorder(x, 300), error = 'Column numbers in neworder out of bounds')
+test(1967.63, setcolorder(x, c(1, 1)), error = 'specify duplicated column')
+test(1967.64, setcolorder(x, 1+3i), error = 'must be character or numeric')
+test(1967.65, setcolorder(x, 300), error = 'specify non existing column*.*300')
 
 test(1967.66, rbindlist(list(x), idcol = FALSE),
      rbindlist(list(x)))
@@ -13798,8 +13798,8 @@ dimnames(DT) <- list(NULL, 1:5)
 test(1984.21, names(DT), paste0(1:5))
 DT = data.table(a = 1:10)
 test(1984.22, na.omit(DT, invert = 'a'), error="'invert' must be logical")
-test(1984.23, na.omit(DT, cols = 'b'), error="Column [b] doesn't")
-test(1984.24, na.omit(DT, cols = c('b', 'c')), error="Columns [b, c] don't")
+test(1984.23, na.omit(DT, cols = 'b'), error="specify non existing column*.*b")
+#test(1984.24, na.omit(DT, cols = c('b', 'c')), error="Columns [b, c] don't") # only first non-existing col is now reported for efficiency
 ### idcol = TRUE behavior of rbindlist
 test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2, a=1:2))
 test(1984.26, alloc.col(`*tmp*`), error='alloc.col attempting to modify `*tmp*`')

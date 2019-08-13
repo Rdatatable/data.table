@@ -1,29 +1,11 @@
-# For internal use only (input symbol requirement is not checked)
-#   cols [symbol] - columns provided to function argument
-#   dt   [symbol] - a data.table
-# Iff all of 'cols' is present in 'x' return col indices
-# is.data.table(dt) check should be performed in the calling function
-validate = function(cols, dt) {
-  argcols = deparse(substitute(cols))
-  argdt = deparse(substitute(dt))
-  origcols = cols
-  if (is.character(cols)) cols = chmatch(cols, names(dt))
-  cols = as.integer(cols)
-  isna = which(!cols %in% seq_along(dt))
-  if (length(isna))
-    stop(argcols, " value", if (length(isna) > 1L) 's ' else ' ',
-         brackify(origcols[isna]), " not present (or out of range) in ", argdt)
-  cols
-}
-
 # setdiff for data.tables, internal at the moment #547, used in not-join
 setdiff_ = function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE) {
   if (!is.data.table(x) || !is.data.table(y)) stop("x and y must both be data.tables")
   # !ncol redundant since all 0-column data.tables have 0 rows
   if (!nrow(x)) return(x)
-  by.x = validate(by.x, x)
+  by.x = colnamesInt(x, by.x, check_dups=TRUE)
   if (!nrow(y)) return(unique(x, by=by.x))
-  by.y = validate(by.y, y)
+  by.y = colnamesInt(y, by.y, check_dups=TRUE)
   if (length(by.x) != length(by.y)) stop("length(by.x) != length(by.y)")
   # factor in x should've factor/character in y, and viceversa
   for (a in seq_along(by.x)) {
