@@ -119,13 +119,24 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "nocb")) itype = 2;
   else error("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker."); // # nocov
 
-  if (itype==0 && length(fill)!=1)
-    error("fill must be a vector of length 1");
+  if (itype==0) {
+    if (length(fill)!=1)
+      error("fill must be a vector of length 1");
+    if (!isNumeric(fill) && !(isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL))
+      error("fill argument must be numeric");
+  }
 
   double dfill=NA_REAL;
   int32_t ifill=NA_INTEGER;
   int64_t i64fill=NA_INTEGER64;
-  if (itype==0) coerceFill(fill, &dfill, &ifill, &i64fill);
+  if (itype==0) {
+    SEXP rint = PROTECT(ScalarInteger(0)); protecti++;
+    ifill = INTEGER(coerceClass(fill, rint))[0];
+    SEXP rreal = PROTECT(ScalarReal(0)); protecti++;
+    dfill = REAL(coerceClass(fill, rreal))[0];
+    setAttrib(rreal, R_ClassSymbol, ScalarString(char_integer64));
+    i64fill = ((int64_t *)REAL(coerceClass(fill, rreal)))[0];
+  }
 
   double tic=0.0, toc=0.0;
   if (bverbose) tic = omp_get_wtime();

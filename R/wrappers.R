@@ -8,4 +8,5 @@ setcoalesce = function(...) .Call(Ccoalesce, list(...), TRUE)
 fifelse = function(test, yes, no) .Call(CfifelseR,test, yes, no)
 
 colnamesInt = function(x, cols, check_dups=FALSE) .Call(CcolnamesInt, x, cols, check_dups)
-coerceFill = function(x) .Call(CcoerceFillR, x)
+coerceClass = function(x, out) .Call(CcoerceClassR, x, out)
+coerceFill = function(x) coerceClass(x, list(0L, 0, structure(0, class="integer64"))) # temporarily till new tests in place

@@ -87,56 +87,156 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
   return ricols;
 }
 
-void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill) {
-  if (xlength(fill) != 1) error("%s: fill argument must be length 1", __func__);
-  if (isInteger(fill)) {
-    if (INTEGER(fill)[0]==NA_INTEGER) {
-      ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
+SEXP coerceClass(SEXP x, SEXP out) {
+  int protecti = 0;
+  const bool verbose = GetVerbose();
+  SEXP ans = R_NilValue;
+  int64_t n = XLENGTH(x);
+
+  bool to_integer = isInteger(out) || isLogical(out);
+  bool to_real = isReal(out);
+  bool to_longlong = to_real && (INHERITS(out,char_integer64) || INHERITS(out,char_nanotime));
+  bool to_double = to_real && !to_longlong;
+  bool from_integer = isInteger(x) || isLogical(x);
+  bool from_real = isReal(x);
+  bool from_longlong = from_real && (INHERITS(x,char_integer64) || INHERITS(x,char_nanotime));
+  bool from_double = from_real && !from_longlong;
+
+  if (to_integer) {
+    if (!from_integer && !from_real) {
+      if (verbose)
+        Rprintf("%s: unknown to integer using coerceVector\n", __func__);
+      ans = PROTECT(coerceVector(x, INTSXP)); protecti++;
     } else {
-      ifill[0] = INTEGER(fill)[0];
-      dfill[0] = (double)(INTEGER(fill)[0]);
-      i64fill[0] = (int64_t)(INTEGER(fill)[0]);
-    }
-  } else if (isReal(fill)) {
-    if (INHERITS(fill,char_integer64) || INHERITS(fill,char_nanotime)) {
-      long long *llfill = (long long *)REAL(fill);
-      if (llfill[0]==NA_INT64_LL) {
-        ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
+      ans = PROTECT(allocVector(INTSXP, n)); protecti++;
+      int *ansP = INTEGER(ans);
+      if (from_integer) {
+        if (verbose)
+          Rprintf("%s: integer to integer using memcpy\n", __func__);
+        int *xP = INTEGER(x);
+        memcpy(ansP, xP, sizeof(*ansP)*n);
+      } else if (from_real) {
+        if (from_longlong) {
+          if (verbose)
+            Rprintf("%s: long long to integer using loop\n", __func__);
+          long long *xP = (long long *)REAL(x);
+          for (int64_t i=0; i<n; i++) {
+            ansP[i] = (xP[i]==NA_INT64_LL || (xP[i]>INT_MAX || xP[i]<INT_MIN)) ? NA_INTEGER : (int)xP[i];
+          }
+        } else if (from_double) {
+          if (verbose)
+            Rprintf("%s: double to integer using loop\n", __func__);
+          double *xP = REAL(x);
+          for (int64_t i=0; i<n; i++) {
+            ansP[i] = (ISNAN(xP[i]) || (xP[i]>INT_MAX || xP[i]<INT_MIN)) ? NA_INTEGER : (int)xP[i];
+          }
+        } else {
+          error("internal error in %s: real to integer, but real is not double and is not long long, should be one of them", __func__); // # nocov
+        }
       } else {
-        ifill[0] = llfill[0]>INT32_MAX ? NA_INTEGER : (int32_t)(llfill[0]);
-        dfill[0] = (double)(llfill[0]);
-        i64fill[0] = (int64_t)(llfill[0]);
+        error("internal error in %s: this branch should not be reached", __func__); // # nocov
       }
+    }
+  } else if (to_real) {
+    if (!from_integer && !from_real) {
+      if (verbose) {
+        if (to_double) {
+          Rprintf("%s: unknown to double using coerceVector\n", __func__);
+        } else if (to_longlong) {
+          Rprintf("%s: unknown to long long using coerceVector\n", __func__);
+        } else {
+          error("internal error in %s: unknown to real, but real is not double and is not long long, should be one of them", __func__); // # nocov
+        }
+      }
+      ans = PROTECT(coerceVector(x, REALSXP)); protecti++;
     } else {
-      if (ISNA(REAL(fill)[0])) {
-        ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
+      ans = PROTECT(allocVector(REALSXP, n)); protecti++;
+      if (from_integer) {
+        int *xP = INTEGER(x);
+        if (to_double) {
+          if (verbose)
+            Rprintf("%s: integer to double using loop\n", __func__);
+          double *ansP = REAL(ans);
+          for (int64_t i=0; i<n; i++) {
+            ansP[i] = xP[i]==NA_INTEGER ? NA_REAL : (double)xP[i];
+          }
+        } else if (to_longlong) {
+          if (verbose)
+            Rprintf("%s: integer to long long using loop\n", __func__);
+          long long *ansP = (long long *)REAL(ans);
+          for (int64_t i=0; i<n; i++) {
+            ansP[i] = xP[i]==NA_INTEGER ? NA_INT64_LL : (long long)xP[i];
+          }
+        } else {
+          error("internal error in %s: integer to real, but real is not double and is not long long, should be one of them", __func__); // # nocov
+        }
+      } else if (from_real) {
+        if (from_double) {
+          double *xP = REAL(x);
+          if (to_double) {
+            if (verbose)
+              Rprintf("%s: double to double using memcpy\n", __func__);
+            double *ansP = REAL(ans);
+            memcpy(ansP, xP, sizeof(*ansP)*n);
+          } else if (to_longlong) {
+            if (verbose)
+              Rprintf("%s: double to long long using loop\n", __func__);
+            long long *ansP = (long long *)REAL(ans);
+            for (int64_t i=0; i<n; i++) {
+              ansP[i] = ISNAN(xP[i]) ? NA_INT64_LL : (long long)xP[i];
+            }
+          } else {
+            error("internal error in %s: double to real, but real is not double and is not long long, should be one of them", __func__); // # nocov
+          }
+        } else if (from_longlong) {
+          long long *xP = (long long *)REAL(x);
+          if (to_double) {
+            if (verbose)
+              Rprintf("%s: long long to double using loop\n", __func__);
+            double *ansP = REAL(ans);
+            for (int64_t i=0; i<n; i++) {
+              ansP[i] = xP[i]==NA_INT64_LL ? NA_REAL : (double)xP[i];
+            }
+          } else if (to_longlong) {
+            if (verbose)
+              Rprintf("%s: long long to long long using memcpy\n", __func__);
+            long long *ansP = (long long *)REAL(ans);
+            memcpy(ansP, xP, sizeof(*ansP)*n);
+          } else {
+            error("internal error in %s: long long to real, but real is not double and is not long long, should be one of them", __func__); // # nocov
+          }
+        } else {
+          error("internal error in %s: real to real, but 'from' real is not double and is not long long, should be one of them", __func__); // # nocov
+        }
       } else {
-        ifill[0] = (int32_t)(REAL(fill)[0]);
-        dfill[0] = REAL(fill)[0];
-        i64fill[0] = (int64_t)(REAL(fill)[0]);
+        error("internal error in %s: this branch should not be reached", __func__); // # nocov
       }
     }
-  } else if (isLogical(fill) && LOGICAL(fill)[0]==NA_LOGICAL) {
-    ifill[0] = NA_INTEGER; dfill[0] = NA_REAL; i64fill[0] = NA_INTEGER64;
   } else {
-    error("%s: fill argument must be numeric", __func__);
+    if (verbose)
+      Rprintf("%s: unknown to unknown using coerceVector\n", __func__);
+    ans = PROTECT(coerceVector(x, TYPEOF(out))); protecti++;
   }
-}
-SEXP coerceFillR(SEXP fill) {
-  int protecti=0;
-  double dfill=NA_REAL;
-  int32_t ifill=NA_INTEGER;
-  int64_t i64fill=NA_INTEGER64;
-  coerceFill(fill, &dfill, &ifill, &i64fill);
-  SEXP ans = PROTECT(allocVector(VECSXP, 3)); protecti++;
-  SET_VECTOR_ELT(ans, 0, allocVector(INTSXP, 1));
-  SET_VECTOR_ELT(ans, 1, allocVector(REALSXP, 1));
-  SET_VECTOR_ELT(ans, 2, allocVector(REALSXP, 1));
-  INTEGER(VECTOR_ELT(ans, 0))[0] = ifill;
-  REAL(VECTOR_ELT(ans, 1))[0] = dfill;
-  long long *ll = (long long *)REAL(VECTOR_ELT(ans, 2));
-  ll[0] = i64fill;
-  setAttrib(VECTOR_ELT(ans, 2), R_ClassSymbol, ScalarString(char_integer64));
+
+  copyMostAttrib(out, ans);
   UNPROTECT(protecti);
   return ans;
+}
+SEXP coerceClassR(SEXP x, SEXP out) {
+  if (!isVectorAtomic(x))
+    error("'x' argument must be atomic type");
+  if (isVectorAtomic(out)) {
+    // wrap into list logic
+  }
+  if (!isNewList(out) || !length(out))
+    error("'out' argument must be atomic type or a non-empty list");
+
+  int protecti=0;
+  R_len_t n = LENGTH(out);
+  SEXP ans = PROTECT(allocVector(VECSXP, n)); protecti++;
+  for (int i=0; i<n; i++) {
+    SET_VECTOR_ELT(ans, i, coerceClass(x, VECTOR_ELT(out, i)));
+  }
+  UNPROTECT(protecti);
+  return n==1 ? VECTOR_ELT(ans, 0) : ans;
 }

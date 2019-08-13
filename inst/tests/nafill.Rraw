@@ -161,8 +161,8 @@ test(5.03, nafill(dt, "locf", verbose=NA), error="verbose must be TRUE or FALSE"
 
 # coerceFill
 if (test_bit64) {
-  test(6.01, coerceFill(1:2), error="fill argument must be length 1")
-  test(6.02, coerceFill("a"), error="fill argument must be numeric")
+  #test(6.01, coerceFill(1:2), error="fill argument must be length 1") # since coerceClass in utils.c it handle vector input
+  #test(6.02, coerceFill("a"), error="fill argument must be numeric") # since coerceClass in utils.c unsupported input is redirected to R's coerceVector
   test(6.11, identical(coerceFill(NA), list(NA_integer_, NA_real_, as.integer64(NA))))
   test(6.21, identical(coerceFill(3L), list(3L, 3, as.integer64(3))))
   test(6.22, identical(coerceFill(0L), list(0L, 0, as.integer64(0))))
