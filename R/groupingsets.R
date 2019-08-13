@@ -82,7 +82,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
     }
   }
   if (id && "grouping" %chin% names(empty)) # `j` could have been evaluated to `grouping` field
-    stop("When using `id=TRUE` the 'j' expression must not evaluate to column named 'grouping'.")
+    stop("When using `id=TRUE` the 'j' expression must not evaluate to a column named 'grouping'.")
   if (anyDuplicated(names(empty)) > 0L)
     stop("There exists duplicated column names in the results, ensure the column passed/evaluated in `j` and those in `by` are not overlapping.")
   # adding grouping column to template - aggregation level identifier

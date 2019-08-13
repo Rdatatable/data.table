@@ -558,7 +558,7 @@ static void Field(FieldParseContext *ctx)
     }
     break;
   default:
-    return;  // Internal error: undefined quote rule
+    return;  // # nocov Internal error: undefined quote rule
   }
   target->len = (int32_t)(ch - fieldStart);
   target->off = (int32_t)(fieldStart - ctx->anchor);
@@ -1092,7 +1092,7 @@ int freadMain(freadMainArgs _args) {
   bool warningsAreErrors = args.warningsAreErrors;
 
   if (freadCleanup()) {
-    DTWARN("Previous fread() session was not cleaned up properly. Cleaned up ok at the beginning of this fread() call.\n");
+    DTWARN("Previous fread() session was not cleaned up properly. Cleaned up ok at the beginning of this fread() call.\n"); // # nocov
   }
 
   if (verbose) DTPRINT("[01] Check arguments\n");
@@ -1202,8 +1202,8 @@ int freadMain(freadMainArgs _args) {
       if (fd==-1) STOP("file not found: %s",fnam);
       struct stat stat_buf;
       if (fstat(fd, &stat_buf) == -1) {
-        close(fd);
-        STOP("Opened file ok but couldn't obtain its size: %s", fnam);
+        close(fd);                                                     // # nocov
+        STOP("Opened file ok but couldn't obtain its size: %s", fnam); // # nocov
       }
       fileSize = (size_t) stat_buf.st_size;
       if (fileSize == 0) {close(fd); STOP("File is empty: %s", fnam);}
@@ -1243,14 +1243,14 @@ int freadMain(freadMainArgs _args) {
       CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
       if (mmp == NULL) {
     #endif
-      int nbit = 8*sizeof(char *);
+      int nbit = 8*sizeof(char *); // #nocov
       STOP("Opened %s file ok but could not memory map it. This is a %dbit process. %s.", filesize_to_str(fileSize), nbit,
-           nbit<=32 ? "Please upgrade to 64bit" : "There is probably not enough contiguous virtual memory available");
+           nbit<=32 ? "Please upgrade to 64bit" : "There is probably not enough contiguous virtual memory available"); // # nocov
     }
     sof = (const char*) mmp;
     if (verbose) DTPRINT("  Memory mapped ok\n");
   } else {
-    STOP("Neither `input` nor `filename` are given, nothing to read.");
+    STOP("Internal error: Neither `input` nor `filename` are given, nothing to read."); // # nocov
   }
   eof = sof + fileSize;
   tMap = wallclock();
@@ -1893,9 +1893,9 @@ int freadMain(freadMainArgs _args) {
   ch = pos;
   memcpy(tmpType, type, (size_t)ncol) ;
   if (!userOverride(type, colNames, colNamesAnchor, ncol)) { // colNames must not be changed but type[] can be
-    if (verbose) DTPRINT("  Cancelled by user: userOverride() returned false.");
-    freadCleanup();
-    return 1;
+    if (verbose) DTPRINT("  Cancelled by user: userOverride() returned false."); // # nocov
+    freadCleanup(); // # nocov
+    return 1; // # nocov
   }
   ndrop = 0;
   int nUserBumped=0;

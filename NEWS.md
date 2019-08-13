@@ -135,6 +135,30 @@
 
 20. `setkey`, `[key]by=` and `on=` in verbose mode (`options(datatable.verbose=TRUE)`) now detect any columns inheriting from `Date` which are stored as 8 byte double, test if any fractions are present, and if not suggest using a 4 byte integer instead (such as `data.table::IDate`) to save space and time, [#1738](https://github.com/Rdatatable/data.table/issues/1738). In future this could be upgraded to `message` or `warning` depending on feedback.
 
+21. New function `fifelse(test, yes, no)` has been implemented in C by Morgan Jacob, [#3657](https://github.com/Rdatatable/data.table/issues/3657). It is comparable to `base::ifelse`, `dplyr::if_else`, `hutils::if_else`, and (forthcoming) [`vctrs::if_else()`](https://vctrs.r-lib.org/articles/stability.html#ifelse). It returns a vector of the same length as `test` but unlike `base::ifelse` the output type is consistent with those of `yes` and `no`. Please see `?data.table::fifelse` for more details.
+
+    ```R
+    # default 4 threads on a laptop with 16GB RAM and 8 logical CPU
+    x = sample(c(TRUE,FALSE), 3e8, replace=TRUE)  # 1GB
+    microbenchmark::microbenchmark(
+      base::ifelse(x, 7L, 11L),
+      dplyr::if_else(x, 7L, 11L),
+      hutils::if_else(x, 7L, 11L),
+      data.table::fifelse(x, 7L, 11L),
+      times = 5L, unit="s"
+    )
+    # Unit: seconds
+    #                            expr  min  med  max neval
+    #        base::ifelse(x, 7L, 11L)  8.5  8.6  8.8     5
+    #      dplyr::if_else(x, 7L, 11L)  9.4  9.5  9.7     5
+    #     hutils::if_else(x, 7L, 11L)  2.6  2.6  2.7     5
+    # data.table::fifelse(x, 7L, 11L)  1.5  1.5  1.6     5  # setDTthreads(1)
+    # data.table::fifelse(x, 7L, 11L)  0.8  0.8  0.9     5  # setDTthreads(2)
+    # data.table::fifelse(x, 7L, 11L)  0.4  0.4  0.5     5  # setDTthreads(4)
+    ```
+
+22. `transpose` gains `keep.names=` and `make.names=` arguments, [#1886](https://github.com/Rdatatable/data.table/issues/1886). Previously, column names were dropped and there was no way to keep them. `keep.names="rn"` keeps the column names and puts them in the `"rn"` column of the result. Similarly, `make.names="rn"` uses column `"rn"` as the column names of the result. Both arguments are `NULL` by default for backwards compatibility. As these new arguments are new, they are subject to change in future according to community feedback. Thanks to @ghost for the request.
+
 #### BUG FIXES
 
 1. `first`, `last`, `head` and `tail` by group no longer error in some cases, [#2030](https://github.com/Rdatatable/data.table/issues/2030) [#3462](https://github.com/Rdatatable/data.table/issues/3462). Thanks to @franknarf1 for reporting.
@@ -198,7 +222,9 @@
 
 24. `column not found` could incorrectly occur in rare non-equi-join cases, [#3635](https://github.com/Rdatatable/data.table/issues/3635). Thanks to @UweBlock for the report.
 
-25. `integer64` defined on a subset of a new column would leave "gibberish" on the remaining rows, [#3723](https://github.com/Rdatatable/data.table/issues/3723). A bug in `rbindlist` with the same root cause was also fixed, [#1459](https://github.com/Rdatatable/data.table/issues/1459). Thanks @shrektan and @jangorecki for the reports.
+25. Slight fix to the logic for auto-naming the `by` clause for using a custom function like `evaluate` to now be named `evaluate` instead of the name of the first symbolic argument, [#3758](https://github.com/Rdatatable/data.table/issues/3758).
+
+26. `integer64` defined on a subset of a new column would leave "gibberish" on the remaining rows, [#3723](https://github.com/Rdatatable/data.table/issues/3723). A bug in `rbindlist` with the same root cause was also fixed, [#1459](https://github.com/Rdatatable/data.table/issues/1459). Thanks @shrektan and @jangorecki for the reports.
 
 #### NOTES
 
@@ -235,6 +261,8 @@
 13. `test.data.table()` could fail if the `datatable.integer64` user option was set, [#3683](https://github.com/Rdatatable/data.table/issues/3683). Thanks @xiaguoxin for reporting.
 
 14. The warning message when using `keyby=` together with `:=` is clearer, [#2763](https://github.com/Rdatatable/data.table/issues/2763). Thanks to @eliocamp.
+
+15. `first` and `last` gain an explicit `n=1L` argument so that it's clear the default is 1, and their almost identical manual pages have been merged into one.
 
 
 ### Changes in [v1.12.2](https://github.com/Rdatatable/data.table/milestone/14?closed=1)  (07 Apr 2019)

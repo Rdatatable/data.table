@@ -57,7 +57,9 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
 
-  cat("Running", fn, "\n")
+  cat("getDTthreads(verbose=TRUE):\n")         # for tracing on CRAN; output to log before anything is attempted
+  getDTthreads(verbose=TRUE)                   # includes the returned value in the verbose output (rather than dangling '[1] 4'); e.g. "data.table is using 4 threads"
+  cat("test.data.table() running:", fn, "\n")  # print fn to log before attempting anything on it (in case it is missing); on same line for slightly easier grep
   env = new.env(parent=.GlobalEnv)
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
 
@@ -82,7 +84,7 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
   assign("filename", fn, envir=env)
   assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
   # It doesn't matter that 3000L is far larger than needed for other and benchmark.
-  if(isTRUE(silent)){
+  if (isTRUE(silent)){
     try(sys.source(fn, envir=env), silent=silent)  # nocov
   } else {
     sys.source(fn, envir=env)
@@ -115,7 +117,7 @@ test.data.table = function(verbose=FALSE, pkg="pkg", silent=FALSE, with.other.pa
                 ", TZ=", suppressWarnings(Sys.timezone()),
                 ", locale='", Sys.getlocale(), "'",
                 ", l10n_info()='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
-                ", getDTthreads()='", paste0(capture.output(invisible(getDTthreads(verbose=TRUE))), collapse="; "), "'")
+                ", getDTthreads()='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'")
   DT = head(timings[-1L][order(-time)],10)   # exclude id 1 as in dev that includes JIT
   if ((x<-sum(timings[["nTest"]])) != ntest) {
     warning("Timings count mismatch:",x,"vs",ntest)  # nocov
@@ -366,12 +368,20 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,output=NULL,message=NULL) {
     # For test 617 on r-prerel-solaris-sparc on 7 Mar 2013
     # nocov start
     if (!fail) {
-      cat("Test",numStr,"ran without errors but failed check that x equals y:\n")
-      cat("> x =",deparse(xsub),"\n")
-      if (is.data.table(x)) compactprint(x) else {cat("First 6 of ", length(x)," (type '", typeof(x), "'): ", sep=""); print(head(x))}
-      cat("> y =",deparse(ysub),"\n")
-      if (is.data.table(y)) compactprint(y) else {cat("First 6 of ", length(y)," (type '", typeof(y), "'): ", sep=""); print(head(y))}
-      if (!isTRUE(all.equal.result)) cat(all.equal.result,sep="\n")
+      cat("Test", numStr, "ran without errors but failed check that x equals y:\n")
+      failPrint = function(x, xsub) {
+        cat(">", substitute(x), "=", xsub, "\n")
+        if (is.data.table(x)) compactprint(x) else {
+          nn = length(x)
+          cat(sprintf("First %d of %d (type '%s'): \n", min(nn, 6L), length(x), typeof(x)))
+          # head.matrix doesn't restrict columns
+          if (length(d <- dim(x))) do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len)))
+          else print(head(x))
+        }
+      }
+      failPrint(x, deparse(xsub))
+      failPrint(y, deparse(ysub))
+      if (!isTRUE(all.equal.result)) cat(all.equal.result, sep="\n")
       fail = TRUE
     }
     # nocov end
