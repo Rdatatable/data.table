@@ -179,6 +179,8 @@ replace_order = function(isub, verbose, env) {
   naturaljoin = FALSE
   if (missing(i) && !missing(on)) {
     i = eval.parent(.massagei(substitute(on)))
+    if (!is.list(i) || !length(names(i)))
+      stop("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked")
     naturaljoin = TRUE
   }
   if (missing(i) && missing(j)) {
@@ -213,7 +215,6 @@ replace_order = function(isub, verbose, env) {
   if ((isTRUE(which)||is.na(which)) && !missing(j)) stop("which==",which," (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.")
   if (!is.na(nomatch) && is.na(which)) stop("which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch.")
   if (!with && missing(j)) stop("j must be provided when with=FALSE")
-  if (missing(i) && !missing(on)) warning("ignoring on= because it is only relevant to i but i is not provided")
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
   rightcols = leftcols = integer()

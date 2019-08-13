@@ -15654,6 +15654,8 @@ X = data.table(a=1:2, b=1:2)
 test(2076.01, X[on=.(a=2:3, d=2:1)], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
 Y = data.table(a=2:3, d=2:1)
 test(2076.02, X[on=Y], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
+test(2076.03, X[on=3], error="When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join")
+test(2076.04, X[on=list(3)], error="When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join")
 
 
 ###################################
