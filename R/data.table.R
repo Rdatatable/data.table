@@ -437,8 +437,8 @@ replace_order = function(isub, verbose, env) {
         on = on_ops[[1L]]
         ops = on_ops[[2L]]
         # TODO: collect all '==' ops first to speeden up Cnestedid
-        rightcols = colnamesInt(x, names(on), check_dups=FALSE, check_real=TRUE)
-        leftcols  = colnamesInt(i, unname(on), check_dups=FALSE, check_real=TRUE)
+        rightcols = colnamesInt(x, names(on), check_dups=FALSE)
+        leftcols  = colnamesInt(i, unname(on), check_dups=FALSE)
       } else {
         ## missing on
         rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in bmerge()
@@ -2177,7 +2177,7 @@ na.omit.data.table = function (object, cols = seq_along(object), invert = FALSE,
   if (!cedta()) return(NextMethod()) # nocov
   if ( !missing(invert) && is.na(as.logical(invert)) )
     stop("Argument 'invert' must be logical TRUE/FALSE")
-  cols = colnamesInt(object, cols, check_dups=FALSE, check_real=TRUE)
+  cols = colnamesInt(object, cols, check_dups=FALSE)
   ix = .Call(Cdt_na, object, cols)
   # forgot about invert with no NA case, #2660
   if (invert) {
@@ -2324,7 +2324,7 @@ point = function(to, to_idx, from, from_idx) {
 
 .shallow = function(x, cols = NULL, retain.key = FALSE, unlock = FALSE) {
   wasnull = is.null(cols)
-  cols = colnamesInt(x, cols, check_dups=FALSE, check_real=TRUE)
+  cols = colnamesInt(x, cols, check_dups=FALSE)
   ans = .Call(Cshallowwrapper, x, cols)  # copies VECSXP only
 
   if(retain.key){
@@ -2500,7 +2500,7 @@ setcolorder = function(x, neworder=key(x))
   if (is.character(neworder) && anyDuplicated(names(x)))
     stop("x has some duplicated column name(s): ", paste(names(x)[duplicated(names(x))], collapse=","), ". Please remove or rename the duplicate(s) and try again.")
   # if (!is.data.table(x)) stop("x is not a data.table")
-  neworder = colnamesInt(x, neworder, check_dups=TRUE, check_real=TRUE)
+  neworder = colnamesInt(x, neworder, check_dups=TRUE)
   if (length(neworder) != length(x)) {
     #if shorter than length(x), pad by the missing
     #  elements (checks below will catch other mistakes)
@@ -2775,7 +2775,7 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
   } else if (!length(cols)) {
     stop("x is a list, 'cols' cannot be 0-length.")
   }
-  cols = colnamesInt(x, cols, check_dups=FALSE, check_real=TRUE)
+  cols = colnamesInt(x, cols, check_dups=FALSE)
   ids = .Call(Crleid, x, cols)
   if (!is.null(prefix)) ids = paste0(prefix, ids)
   ids

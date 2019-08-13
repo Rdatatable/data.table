@@ -210,6 +210,6 @@ SEXP coalesce(SEXP x, SEXP inplace);
 // utils.c
 bool isRealReallyInt(SEXP x);
 SEXP isReallyReal(SEXP x);
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP check_real);
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
 void coerceFill(SEXP fill, double *dfill, int32_t *ifill, int64_t *i64fill);
 SEXP coerceFillR(SEXP fill);

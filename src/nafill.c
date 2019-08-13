@@ -77,7 +77,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP inplace, SEXP cols, SEXP verbo
     x = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(x, 0, obj);
   } else {
-    SEXP ricols = PROTECT(colnamesInt(obj, cols, ScalarLogical(TRUE), ScalarLogical(TRUE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
+    SEXP ricols = PROTECT(colnamesInt(obj, cols, ScalarLogical(TRUE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
     x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
     int *icols = INTEGER(ricols);
     for (int i=0; i<length(ricols); i++) {

@@ -36,18 +36,15 @@ SEXP isReallyReal(SEXP x) {
  * for provided data.table (or a list-like) and a subset of its columns, it returns integer positions of those columns in DT
  * handle columns input as: integer, double, character and NULL (handled as seq_along(x))
  * adds validation for:
- *   correct int/double range
+ *   correct range [1,ncol], and if type real checks whole integer
  *   existing columns for character
  *   optionally check for no duplicates
- *   optionally check that double input is really integer
  */
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP check_real) {
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
   if (!isNewList(x))
     error("'x' argument must be data.table compatible");
   if (!IS_TRUE_OR_FALSE(check_dups))
     error("'check_dups' argument must be TRUE or FALSE");
-  if (!IS_TRUE_OR_FALSE(check_real))
-    error("'check_real' argument must be TRUE or FALSE");
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
@@ -62,7 +59,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP check_real) {
     if (isInteger(cols)) {
       ricols = cols;
     } else if (isReal(cols)) {
-      if (LOGICAL(check_real)[0] && !isRealReallyInt(cols))
+      if (!isRealReallyInt(cols))
         error("argument specifying columns is type 'double' and one or more items in it are not whole integers");
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }

@@ -7,5 +7,5 @@ setcoalesce = function(...) .Call(Ccoalesce, list(...), TRUE)
 
 fifelse = function(test, yes, no) .Call(CfifelseR,test, yes, no)
 
-colnamesInt = function(x, cols, check_dups=FALSE, check_real=TRUE) .Call(CcolnamesInt, x, cols, check_dups, check_real)
+colnamesInt = function(x, cols, check_dups=FALSE) .Call(CcolnamesInt, x, cols, check_dups)
 coerceFill = function(x) .Call(CcoerceFillR, x)
