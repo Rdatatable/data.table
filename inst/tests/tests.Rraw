@@ -15649,12 +15649,11 @@ test(2074.41, fread('a\n1', na.strings='9', verbose=TRUE), output='One or more o
 # cbind 0 cols, #3334
 test(2075, data.table(data.table(a=1), data.table()), data.table(data.table(a=1)))
 
-
-# natural join using X[on=Y] #3621
+# natural join using X[on=Y], #3621
 X = data.table(a=1:2, b=1:2)
-test(2072.01, X[on=.(a=2:3, d=2:1)], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
+test(2076.01, X[on=.(a=2:3, d=2:1)], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
 Y = data.table(a=2:3, d=2:1)
-test(2072.02, X[on=Y], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
+test(2076.02, X[on=Y], data.table(a=2:3, b=c(2L,NA_integer_), d=2:1))
 
 
 ###################################
