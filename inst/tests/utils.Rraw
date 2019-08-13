@@ -52,19 +52,19 @@ test(4.24, colnamesInt(dt, "a"), error="has no names")
 
 # coerceClass verbose
 op = options(datatable.verbose=TRUE)
-test(5.01, coerceClass("0", list(integer(0))), 0L, output="unknown to integer using coerceVector")
-test(5.02, coerceClass(0L, list(integer(0))), 0L, output="integer to integer using memcpy")
-test(5.03, coerceClass(structure(0, class="integer64"), list(integer(0))), 0L, output="long long to integer using loop")
-test(5.04, coerceClass(0, list(integer(0))), 0L, output="double to integer using loop")
-test(5.05, coerceClass("0", list(double(0))), 0, output="unknown to double using coerceVector")
-test(5.06, coerceClass("0", list(structure(double(0), class="integer64"))), structure(0, class="integer64"), output="unknown to long long using coerceVector")
-test(5.07, coerceClass(0L, list(double(0))), 0, output="integer to double using loop")
-test(5.08, coerceClass(0L, list(structure(double(0), class="integer64"))), structure(0, class="integer64"), output="integer to long long using loop")
-test(5.09, coerceClass(0, list(double(0))), 0, output="double to double using memcpy")
-test(5.10, coerceClass(0, list(structure(double(0), class="integer64"))), structure(0, class="integer64"), output="double to long long using loop")
-test(5.11, coerceClass(structure(0, class="integer64"), list(double(0))), 0, output="long long to double using loop")
-test(5.12, coerceClass(structure(0, class="integer64"), list(structure(double(0), class="integer64"))), structure(0, class="integer64"), output="long long to long long using memcpy")
-test(5.13, coerceClass("0", list(complex(0))), 0+0i, output="unknown to unknown using coerceVector")
+test(5.01, coerceClass("0", list(integer(0))), list(0L), output="unknown to integer using coerceVector")
+test(5.02, coerceClass(0L, list(integer(0))), list(0L), output="integer to integer using memcpy")
+test(5.03, coerceClass(structure(0, class="integer64"), list(integer(0))), list(0L), output="long long to integer using loop")
+test(5.04, coerceClass(0, list(integer(0))), list(0L), output="double to integer using loop")
+test(5.05, coerceClass("0", list(double(0))), list(0), output="unknown to double using coerceVector")
+test(5.06, coerceClass("0", list(structure(double(0), class="integer64"))), list(structure(0, class="integer64")), output="unknown to long long using coerceVector")
+test(5.07, coerceClass(0L, list(double(0))), list(0), output="integer to double using loop")
+test(5.08, coerceClass(0L, list(structure(double(0), class="integer64"))), list(structure(0, class="integer64")), output="integer to long long using loop")
+test(5.09, coerceClass(0, list(double(0))), list(0), output="double to double using memcpy")
+test(5.10, coerceClass(0, list(structure(double(0), class="integer64"))), list(structure(0, class="integer64")), output="double to long long using loop")
+test(5.11, coerceClass(structure(0, class="integer64"), list(double(0))), list(0), output="long long to double using loop")
+test(5.12, coerceClass(structure(0, class="integer64"), list(structure(double(0), class="integer64"))), list(structure(0, class="integer64")), output="long long to long long using memcpy")
+test(5.13, coerceClass("0", list(complex(0))), list(0+0i), output="unknown to unknown using coerceVector")
 options(op)
 # coerceClass atomic out
 test(5.21, coerceClass(0L, integer(0)), 0L)
@@ -81,13 +81,22 @@ test(5.41, coerceClass(1:3, integer(0)), 1:3)
 test(5.42, coerceClass(1:3, double(0)), c(1,2,3))
 test(5.43, coerceClass(c(1,2,3), integer(0)), 1:3)
 test(5.44, coerceClass(c(1,2,3), double(0)), c(1,2,3))
+# coerceClass vector x list out
+test(5.51, coerceClass(1:3, list(integer(0), double(0))), list(1:3, c(1,2,3)))
+test(5.52, coerceClass(1:3, list(double(0), double(0))), list(c(1,2,3), c(1,2,3)))
+test(5.53, coerceClass(c(1,2,3), list(integer(0), integer(0))), list(1:3, 1:3))
+test(5.54, coerceClass(c(1,2,3), list(double(0), integer(0))), list(c(1,2,3), 1:3))
 
 # int32 range
 # int64 range
-# matrix, array, nanotime, int64-nanotime, nanotime-int64, factor
+# matrix, array
+# nanotime, int64-nanotime, nanotime-int64
+# factor
+# character
+# list
 
 if (test_bit64) {
-  out = list(0L, 0, as.integer64(0))
+  out = list(0L, 0, as.integer64(0)) # test ported from old coerceFill, used in nafill
   test(6.01, identical(coerceClass(1:2, out), list(1:2, c(1,2), as.integer64(1:2))))
   test(6.02, coerceClass(0+0i, out), list(0L, 0, as.integer64(0)))
   test(6.11, identical(coerceClass(NA, out), list(NA_integer_, NA_real_, as.integer64(NA))))

@@ -87,6 +87,10 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
   return ricols;
 }
 
+/* coerceClass
+ * coerce 'x' into same class as 'out', content of 'out' is ignored but attributes are copied
+ * handle coercion between integer, numeric, integer64, all others are redirected to R's coerceVector
+ */
 SEXP coerceClass(SEXP x, SEXP out) {
   int protecti = 0;
   const bool verbose = GetVerbose();
@@ -222,12 +226,15 @@ SEXP coerceClass(SEXP x, SEXP out) {
   UNPROTECT(protecti);
   return ans;
 }
+/* coerceClassR
+ * vectorized coerceClass: taking list into 'out' and returning list of coerced objects, so 'x' can be coerced to different classes at once
+ */
 SEXP coerceClassR(SEXP x, SEXP out) {
   if (!isVectorAtomic(x))
     error("'x' argument must be atomic type");
   int protecti = 0;
+  SEXP _out = out;
   if (isVectorAtomic(out)) {
-    SEXP _out = out;
     out = PROTECT(allocVector(VECSXP, 1)); protecti++;
     SET_VECTOR_ELT(out, 0, _out);
   }
@@ -240,5 +247,5 @@ SEXP coerceClassR(SEXP x, SEXP out) {
     SET_VECTOR_ELT(ans, i, coerceClass(x, VECTOR_ELT(out, i)));
   }
   UNPROTECT(protecti);
-  return n==1 ? VECTOR_ELT(ans, 0) : ans;
+  return isVectorAtomic(_out) && n==1 ? VECTOR_ELT(ans, 0) : ans;
 }
