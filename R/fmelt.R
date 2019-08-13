@@ -1,9 +1,21 @@
 # reshape2 dependency was originally abandoned because (1) we wanted to be in control
 #   of the R version dependency and (2) reshape2::dcast is not generic.
-#   Anyway, reshape2 package is deprecated since December 2017.
+#   reshape2 package is deprecated since December 2017, so we'll deprecate our
+#   redirection as well
 
-melt = function(data, ..., na.rm = FALSE, value.name = "value") {
-  UseMethod("melt", data)
+melt <- function(data, ..., na.rm = FALSE, value.name = "value") {
+  if (is.data.table(data)) {
+    UseMethod("melt", data)
+    # if data is not data.table and reshape2 is installed, this won't dispatch to reshape2's method;
+    # CRAN package edarf and others fail without the else branch
+  } else {
+    # nocov start
+    ns = tryCatch(getNamespace("reshape2"), error=function(e)
+      stop("The melt generic in data.table has been passed a ",class(data)[1L]," (not a data.table) but the reshape2 package is not installed to process this type. Please either install reshape2 and try again, or pass a data.table to melt instead."))
+    warning("The dcast generic in melt.table has been passed a ", class(data)[1L], " and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is deprecated, and this redirection is now deprecated as well.")
+    ns$melt(data, ..., na.rm=na.rm, value.name=value.name)
+    # nocov end
+  }
 }
 
 patterns = function(..., cols=character(0L)) {

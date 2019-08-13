@@ -8,9 +8,21 @@ guess = function(x) {
   return(var)
 }
 
-dcast = function(data, formula, fun.aggregate = NULL, ..., margins = NULL,
-                  subset = NULL, fill = NULL, value.var = guess(data)) {
-  UseMethod("dcast", data)
+dcast <- function(
+  data, formula, fun.aggregate = NULL, ..., margins = NULL,
+  subset = NULL, fill = NULL, value.var = guess(data)
+) {
+  if (is.data.table(data)) UseMethod("dcast", data)
+  # nocov start
+  else {
+    # reshape2::dcast is not generic so we have to call it explicitly. See comments at the top of fmelt.R too.
+    ns = tryCatch(getNamespace("reshape2"), error=function(e)
+      stop("The dcast generic in data.table has been passed a ",class(data)[1L]," (not a data.table) but the reshape2 package is not installed to process this type. Please either install reshape2 and try again, or pass a data.table to dcast instead."))
+    warning("The dcast generic in data.table has been passed a ", class(data)[1L], " and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is deprecated, and this redirection is now deprecated as well.")
+    ns$dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
+             subset = subset, fill = fill, value.var = value.var)
+  }
+  # nocov end
 }
 
 check_formula = function(formula, varnames, valnames) {
