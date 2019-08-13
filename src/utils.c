@@ -101,10 +101,12 @@ SEXP coerceClass(SEXP x, SEXP out) {
   bool to_real = isReal(out);
   bool to_longlong = to_real && (INHERITS(out,char_integer64) || INHERITS(out,char_nanotime));
   bool to_double = to_real && !to_longlong;
+  bool to_string = isString(out);
   bool from_integer = isInteger(x) || isLogical(x);
   bool from_real = isReal(x);
   bool from_longlong = from_real && (INHERITS(x,char_integer64) || INHERITS(x,char_nanotime));
   bool from_double = from_real && !from_longlong;
+  bool from_string = isString(x);
 
   if (to_integer) {
     if (!from_integer && !from_real) {
@@ -142,7 +144,7 @@ SEXP coerceClass(SEXP x, SEXP out) {
       }
     }
   } else if (to_real) {
-    if (!from_integer && !from_real) {
+    if (!from_integer && !from_real && !(from_string && to_longlong)) {
       if (verbose) {
         if (to_double) {
           Rprintf("%s: unknown to double using coerceVector\n", __func__);
@@ -212,9 +214,30 @@ SEXP coerceClass(SEXP x, SEXP out) {
         } else {
           error("internal error in %s: real to real, but 'from' real is not double and is not long long, should be one of them", __func__); // # nocov
         }
+      } else if (from_string) {
+        if (to_longlong) {
+          if (verbose)
+            Rprintf("%s: string to long long using loop - TODO - as of now coerceVector\n", __func__);
+          // https://github.com/cran/bit64/blob/ed544d09ce1b81c6198e26ce0bdc91346dbbd305/src/integer64.c#L193-L205
+          ans = PROTECT(coerceVector(x, REALSXP)); protecti++;
+        } else {
+          error("internal error in %s: this branch should not be reached", __func__); // # nocov # should be already redirected to coerceVector before
+        }
       } else {
         error("internal error in %s: this branch should not be reached", __func__); // # nocov
       }
+    }
+  } else if (to_string) {
+    if (!from_longlong) {
+      if (verbose)
+        Rprintf("%s: unknown to string using coerceVector\n", __func__);
+      ans = PROTECT(coerceVector(x, STRSXP)); protecti++;
+    } else {
+      if (verbose)
+        Rprintf("%s: long long to string using loop - TODO - as of now coerceVector twice\n", __func__);
+      // https://github.com/cran/bit64/blob/ed544d09ce1b81c6198e26ce0bdc91346dbbd305/src/integer64.c#L178-L191
+      x = PROTECT(coerceVector(x, INTSXP)); protecti++;
+      ans = PROTECT(coerceVector(x, STRSXP)); protecti++;
     }
   } else {
     if (verbose)

@@ -52,36 +52,29 @@ test(4.24, colnamesInt(dt, "a"), error="has no names")
 
 # coerceClass verbose
 op = options(datatable.verbose=TRUE)
-test(5.01, coerceClass("0", list(integer(0))), list(0L), output="unknown to integer using coerceVector")
-test(5.02, coerceClass(0L, list(integer(0))), list(0L), output="integer to integer using memcpy")
-test(5.03, coerceClass(structure(0, class="integer64"), list(integer(0))), list(0L), output="long long to integer using loop")
-test(5.04, coerceClass(0, list(integer(0))), list(0L), output="double to integer using loop")
-test(5.05, coerceClass("0", list(double(0))), list(0), output="unknown to double using coerceVector")
-test(5.06, coerceClass("0", list(structure(double(0), class="integer64"))), list(structure(0, class="integer64")), output="unknown to long long using coerceVector")
-test(5.07, coerceClass(0L, list(double(0))), list(0), output="integer to double using loop")
-test(5.08, coerceClass(0L, list(structure(double(0), class="integer64"))), list(structure(0, class="integer64")), output="integer to long long using loop")
-test(5.09, coerceClass(0, list(double(0))), list(0), output="double to double using memcpy")
-test(5.10, coerceClass(0, list(structure(double(0), class="integer64"))), list(structure(0, class="integer64")), output="double to long long using loop")
-test(5.11, coerceClass(structure(0, class="integer64"), list(double(0))), list(0), output="long long to double using loop")
-test(5.12, coerceClass(structure(0, class="integer64"), list(structure(double(0), class="integer64"))), list(structure(0, class="integer64")), output="long long to long long using memcpy")
-test(5.13, coerceClass("0", list(complex(0))), list(0+0i), output="unknown to unknown using coerceVector")
+test(5.01, coerceClass(c("0",NA_character_), integer(0)), c(0L,NA_integer_), output="unknown to integer using coerceVector")
+test(5.02, coerceClass(c(0L,NA_integer_), integer(0)), c(0L,NA_integer_), output="integer to integer using memcpy")
+if (test_bit64) test(5.03, coerceClass(as.integer64(c(0,NA_real_)), integer(0)), c(0L,NA_integer_), output="long long to integer using loop")
+test(5.04, coerceClass(c(0,NA_real_), integer(0)), c(0L,NA_integer_), output="double to integer using loop")
+test(5.05, coerceClass(c("0",NA_character_), double(0)), c(0,NA_real_), output="unknown to double using coerceVector")
+if (test_bit64) test(5.06, coerceClass(c(0+0i,NA_complex_), as.integer64(numeric(0))), as.integer64(c("0","9218868437227407266")), output="unknown to long long using coerceVector") # complex-int64 NAs not handled - as expected
+test(5.07, coerceClass(c(0L,NA_integer_), double(0)), c(0,NA_real_), output="integer to double using loop")
+if (test_bit64) test(5.08, coerceClass(c(0L,NA_integer_), as.integer64(numeric(0))), as.integer64(c(0,NA_real_)), output="integer to long long using loop")
+test(5.09, coerceClass(c(0,NA_real_), double(0)), c(0,NA_real_), output="double to double using memcpy")
+if (test_bit64) test(5.10, coerceClass(c(0,NA_real_), as.integer64(numeric(0))), as.integer64(c(0,NA_real_)), output="double to long long using loop")
+if (test_bit64) test(5.11, coerceClass(as.integer64(c(0,NA_real_)), double(0)), c(0,NA_real_), output="long long to double using loop")
+if (test_bit64) test(5.12, coerceClass(as.integer64(c(0,NA_real_)), as.integer64(numeric(0))), as.integer64(c(0,NA_real_)), output="long long to long long using memcpy")
+#if (test_bit64) test(5.13, coerceClass(c("0",NA_character_), as.integer64(numeric(0))), as.integer64(c(0,NA_real_)), output="string to long long using loop") # TODO
+test(5.14, coerceClass(c(0L,NA_integer_), character(0)), c("0",NA_character_), output="unknown to string using coerceVector")
+#if (test_bit64) test(5.15, coerceClass(as.integer64(c(0,NA_real_)), character(0)), c("0",NA_character_), output="long long to string using loop") # TODO
+test(5.16, coerceClass(c("0",NA_character_), complex(0)), c(0+0i, NA_complex_), output="unknown to unknown using coerceVector")
 options(op)
 # coerceClass atomic out
-test(5.21, coerceClass(0L, integer(0)), 0L)
-test(5.22, coerceClass(0L, double(0)), 0)
-test(5.23, coerceClass(0, integer(0)), 0L)
-test(5.24, coerceClass(0, double(0)), 0)
+test(5.41, coerceClass(0L, integer(0)), 0L)
+test(5.42, coerceClass(0L, double(0)), 0)
+test(5.43, coerceClass(0, integer(0)), 0L)
+test(5.44, coerceClass(0, double(0)), 0)
 # coerceClass list out
-test(5.31, coerceClass(0L, list(integer(0), double(0))), list(0L, 0))
-test(5.32, coerceClass(0L, list(double(0), double(0))), list(0, 0))
-test(5.33, coerceClass(0, list(integer(0), integer(0))), list(0L, 0L))
-test(5.34, coerceClass(0, list(double(0), integer(0))), list(0, 0L))
-# coerceClass vector x
-test(5.41, coerceClass(1:3, integer(0)), 1:3)
-test(5.42, coerceClass(1:3, double(0)), c(1,2,3))
-test(5.43, coerceClass(c(1,2,3), integer(0)), 1:3)
-test(5.44, coerceClass(c(1,2,3), double(0)), c(1,2,3))
-# coerceClass vector x list out
 test(5.51, coerceClass(1:3, list(integer(0), double(0))), list(1:3, c(1,2,3)))
 test(5.52, coerceClass(1:3, list(double(0), double(0))), list(c(1,2,3), c(1,2,3)))
 test(5.53, coerceClass(c(1,2,3), list(integer(0), integer(0))), list(1:3, 1:3))
@@ -91,11 +84,16 @@ test(5.61, coerceClass(list(1:3), double(0)), error="argument must be atomic typ
 test(5.62, coerceClass(1:3, list()), error="argument must be atomic type or a non-empty list")
 
 # int32 range
+int_min = 0L-.Machine$integer.max
+int_max = .Machine$integer.max
+# matrix, array, data.frame
 # int64 range
-# matrix, array
 # nanotime, int64-nanotime, nanotime-int64
+# logical
+#test(5.02, coerceClass(c(FALSE,NA), integer(0)), c(0L,NA_integer_), output="integer to integer using memcpy")
+#test(5.02, coerceClass(c(FALSE,NA), double(0)), c(0,NA_real_), output="integer to double using loop")
+#test(5.02, coerceClass(c(0,NA_real_), logical(0)), c(FALSE,NA), output="double to integer using loop") # TODO
 # factor
-# character
 # list
 
 if (test_bit64) {
