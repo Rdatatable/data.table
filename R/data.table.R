@@ -176,6 +176,11 @@ replace_order = function(isub, verbose, env) {
   }
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
+  naturaljoin = FALSE
+  if (missing(i) && !missing(on)) {
+    i = eval.parent(.massagei(substitute(on)))
+    naturaljoin = TRUE
+  }
   if (missing(i) && missing(j)) {
     tt_isub = substitute(i)
     tt_jsub = substitute(j)
@@ -413,13 +418,15 @@ replace_order = function(isub, verbose, env) {
       isnull_inames = is.null(names(i))
       i = as.data.table(i)
     }
+
     if (is.data.table(i)) {
-      naturaljoin = FALSE
       if (missing(on)) {
         if (!haskey(x)) {
           stop("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
         }
-      } else if (identical(substitute(on), as.name(".NATURAL"))) naturaljoin = TRUE
+      } else if (identical(substitute(on), as.name(".NATURAL"))) {
+        naturaljoin = TRUE
+      }
       if (naturaljoin) { # natural join #629
         common_names = intersect(names(x), names(i))
         len_common_names = length(common_names)
