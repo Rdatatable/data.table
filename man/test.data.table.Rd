@@ -24,11 +24,4 @@ test.data.table(verbose=FALSE, pkg="pkg", silent=FALSE,
 When \code{silent} equals to \code{TRUE} it will return \code{TRUE} if all tests were successful. \code{FALSE} otherwise. If \code{silent} equals to \code{FALSE} it will return \code{TRUE} if all tests were successful. Error otherwise.
 }
 \seealso{ \code{\link{data.table}} }
-\examples{
-\dontrun{
-  library(data.table)
-  test.data.table()
-}
-}
 \keyword{ data }
-
