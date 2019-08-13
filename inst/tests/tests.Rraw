@@ -15646,6 +15646,9 @@ test(2074.39, fread('a,b\n"Inf,2\n'), data.table(a='"Inf', b=2L), warning="Found
 test(2074.40, fread('a\n1', na.strings=character(), verbose=TRUE), output='No NAstrings provided')
 test(2074.41, fread('a\n1', na.strings='9', verbose=TRUE), output='One or more of the NAstrings looks like a number')
 
+# cbind 0 cols, #3334
+test(2075, data.table(data.table(a=1), data.table()), data.table(data.table(a=1)))
+
 
 ###################################
 #  Add new tests above this line  #
