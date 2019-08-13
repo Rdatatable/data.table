@@ -444,12 +444,8 @@ replace_order = function(isub, verbose, env) {
         on = on_ops[[1L]]
         ops = on_ops[[2L]]
         # TODO: collect all '==' ops first to speeden up Cnestedid
-        rightcols = chmatch(names(on), names(x))
-        if (length(nacols <- which(is.na(rightcols))))
-          stop("Column(s) [", paste(names(on)[nacols], collapse=","), "] not found in x")
-        leftcols  = chmatch(unname(on), names(i))
-        if (length(nacols <- which(is.na(leftcols))))
-          stop("Column(s) [", paste(unname(on)[nacols], collapse=","), "] not found in i")
+        rightcols = colnamesInt(x, names(on), check_dups=FALSE)
+        leftcols  = colnamesInt(i, unname(on), check_dups=FALSE)
       } else {
         ## missing on
         rightcols = chmatch(key(x),names(x))   # NAs here (i.e. invalid data.table) checked in bmerge()
@@ -848,8 +844,10 @@ replace_order = function(isub, verbose, env) {
               byvars = all.vars(bysubl[[jj+1L]], functions = TRUE)
               if (length(byvars) == 1L) tt = byvars
               else {
-                tt = grep("^eval|^[^[:alpha:]. ]",byvars,invert=TRUE,value=TRUE)
-                if (length(tt)) tt = tt[1L] else all.vars(bysubl[[jj+1L]])[1L]
+                # take the first variable that is (1) not eval (#3758) and (2) starts with a character that can't start a variable name
+                tt = grep("^eval$|^[^[:alpha:]. ]", byvars, invert=TRUE, value=TRUE)
+                # byvars but exclude functions or `0`+`1` becomes `+`
+                tt = if (length(tt)) tt[1L] else all.vars(bysubl[[jj+1L]])[1L]
               }
               # fix for #497
               if (length(byvars) > 1L && tt %chin% all.vars(jsub, FALSE)) {
@@ -1094,9 +1092,9 @@ replace_order = function(isub, verbose, env) {
               if (is.list(k)) {
                 origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
                 if (is.character(j)) {
-                  if (length(j)!=1L) stop("L[[i]][,:=] syntax only valid when i is length 1, but it's length %d",length(j))
+                  if (length(j)!=1L) stop("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but it's length ", length(j))
                   j = match(j, names(k))
-                  if (is.na(j)) stop("Item '",origj,"' not found in names of list")
+                  if (is.na(j)) stop("Internal error -- item '", origj, "' not found in names of list") # nocov
                 }
                 .Call(Csetlistelt,k,as.integer(j), x)
               } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
@@ -1125,7 +1123,7 @@ replace_order = function(isub, verbose, env) {
         xcolsAns = seq_along(ansvars)
         icols = icolsAns = integer()
       } else {
-        if (!length(leftcols)) stop("column(s) not found: ", paste(ansvars[wna],collapse=", "))
+        if (!length(leftcols)) stop("Internal error -- column(s) not found: ", paste(ansvars[wna],collapse=", ")) # nocov
         xcols = w[!wna]
         xcolsAns = which(!wna)
         map = c(seq_along(i), leftcols)   # this map is to handle dups in leftcols, #3635
@@ -1138,7 +1136,7 @@ replace_order = function(isub, verbose, env) {
           if (any(w2na <- is.na(w2))) {
             ivars[leftcols] = paste0("i.",ivars[leftcols])
             w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
-            if (any(w2na <- is.na(w2))) stop("column(s) not found: ", paste(ansvars[wna][w2na],sep=", "))
+            if (any(w2na <- is.na(w2))) stop("Internal error -- column(s) not found: ", paste(ansvars[wna][w2na],sep=", ")) # nocov
           }
         }
         icols = w2
@@ -1301,7 +1299,7 @@ replace_order = function(isub, verbose, env) {
           identical(irows, integer(0L)) && !bynull,
           length(irows) && !anyNA(irows) && all(irows==0L) ## anyNA() because all() returns NA (not FALSE) when irows is all-NA. TODO: any way to not check all 'irows' values?
           ))
-        if (is.atomic(jval)) jval = jval[0L] else jval = lapply(jval, `[`, 0L)
+        jval = lapply(jval, `[`, 0L)
       if (is.atomic(jval)) {
         setattr(jval,"names",NULL)
         jval = data.table(jval) # TO DO: should this be setDT(list(jval)) instead?
@@ -1891,7 +1889,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   non.numeric = non.atomic = FALSE
   all.logical = TRUE
   for (j in seq_len(p)) {
-    if (is.ff(X[[j]])) X[[j]] = X[[j]][]   # to bring the ff into memory, since we need to create a matrix in memory
+    if (is.ff(X[[j]])) X[[j]] = X[[j]][]   # nocov to bring the ff into memory, since we need to create a matrix in memory
     xj = X[[j]]
     if (length(dj <- dim(xj)) == 2L && dj[2L] > 1L) {
       if (inherits(xj, "data.table"))
@@ -1937,13 +1935,13 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
 
 # bug #2375. fixed. same as head.data.frame and tail.data.frame to deal with negative indices
 head.data.table = function(x, n=6L, ...) {
-  if (!cedta()) return(NextMethod())
+  if (!cedta()) return(NextMethod()) # nocov
   stopifnot(length(n) == 1L)
   i = seq_len(if (n<0L) max(nrow(x)+n, 0L) else min(n,nrow(x)))
   x[i, , ]
 }
 tail.data.table = function(x, n=6L, ...) {
-  if (!cedta()) return(NextMethod())
+  if (!cedta()) return(NextMethod()) # nocov
   stopifnot(length(n) == 1L)
   n = if (n<0L) max(nrow(x) + n, 0L) else min(n, nrow(x))
   i = seq.int(to=nrow(x), length.out=n)
@@ -2084,7 +2082,7 @@ within.data.table = function (data, expr, ...)
 # basically within.list but retains key (if any)
 # will be slower than using := or a regular query (see ?within for further info).
 {
-  if (!cedta()) return(NextMethod())
+  if (!cedta()) return(NextMethod()) # nocov
   parent = parent.frame()
   e = evalq(environment(), data, parent)
   eval(substitute(expr), e)  # might (and it's known that some user code does) contain rm()
@@ -2108,7 +2106,7 @@ within.data.table = function (data, expr, ...)
 transform.data.table = function (`_data`, ...)
 # basically transform.data.frame with data.table instead of data.frame, and retains key
 {
-  if (!cedta()) return(NextMethod())
+  if (!cedta()) return(NextMethod()) # nocov
   e = eval(substitute(list(...)), `_data`, parent.frame())
   tags = names(e)
   inx = chmatch(tags, names(`_data`))
@@ -2183,16 +2181,10 @@ any_na = function(x, by=seq_along(x)) .Call(CanyNA, x, by)
 
 na.omit.data.table = function (object, cols = seq_along(object), invert = FALSE, ...) {
   # compare to stats:::na.omit.data.frame
-  if (!cedta()) return(NextMethod())
+  if (!cedta()) return(NextMethod()) # nocov
   if ( !missing(invert) && is.na(as.logical(invert)) )
     stop("Argument 'invert' must be logical TRUE/FALSE")
-  if (is.character(cols)) {
-    old = cols
-    cols = chmatch(cols, names(object), nomatch=0L)
-    if (any(idx <- cols==0L))
-      stop("Column", if (sum(idx)>1L) "s " else " ", brackify(old[idx]), if (sum(idx)>1L) " don't" else " doesn't", " exist in the input data.table")
-  }
-  cols = as.integer(cols)
+  cols = colnamesInt(object, cols, check_dups=FALSE)
   ix = .Call(Cdt_na, object, cols)
   # forgot about invert with no NA case, #2660
   if (invert) {
@@ -2338,12 +2330,12 @@ point = function(to, to_idx, from, from_idx) {
 }
 
 .shallow = function(x, cols = NULL, retain.key = FALSE, unlock = FALSE) {
-  isnull = is.null(cols)
-  if (!isnull) cols = validate(cols, x)  # NULL is default = all columns
+  wasnull = is.null(cols)
+  cols = colnamesInt(x, cols, check_dups=FALSE)
   ans = .Call(Cshallowwrapper, x, cols)  # copies VECSXP only
 
   if(retain.key){
-    if (isnull) return(ans) # handle most frequent case first
+    if (wasnull) return(ans) # handle most frequent case first
     ## get correct key if cols are present
     cols = names(x)[cols]
     keylength = which.first(!key(ans) %chin% cols) - 1L
@@ -2512,28 +2504,16 @@ setnames = function(x,old,new,skip_absent=FALSE) {
 
 setcolorder = function(x, neworder=key(x))
 {
-  if (anyDuplicated(neworder)) stop("neworder contains duplicates")
+  if (is.character(neworder) && anyDuplicated(names(x)))
+    stop("x has some duplicated column name(s): ", paste(names(x)[duplicated(names(x))], collapse=","), ". Please remove or rename the duplicate(s) and try again.")
   # if (!is.data.table(x)) stop("x is not a data.table")
+  neworder = colnamesInt(x, neworder, check_dups=TRUE)
   if (length(neworder) != length(x)) {
-    if (length(neworder) > length(x))
-    stop("neworder is length ", length(neworder),
-       " but x has only ", length(x), " columns.")
     #if shorter than length(x), pad by the missing
     #  elements (checks below will catch other mistakes)
-    neworder = c(neworder, setdiff(if (is.character(neworder)) names(x)
-                                   else seq_along(x), neworder))
+    neworder = c(neworder, setdiff(seq_along(x), neworder))
   }
-  if (is.character(neworder)) {
-    if (any(duplicated(names(x)))) stop("x has some duplicated column name(s): ", paste(names(x)[duplicated(names(x))], collapse=","), ". Please remove or rename the duplicate(s) and try again.")
-    o = as.integer(chmatch(neworder, names(x)))
-    if (anyNA(o)) stop("Names in neworder not found in x: ", paste(neworder[is.na(o)], collapse=","))
-  } else {
-    if (!is.numeric(neworder)) stop("neworder is not a character or numeric vector")
-    o = as.integer(neworder)
-    m = !(o %in% seq_len(length(x)))
-    if (any(m)) stop("Column numbers in neworder out of bounds: ", paste(o[m], collapse=","))
-  }
-  .Call(Csetcolorder, x, o)
+  .Call(Csetcolorder, x, neworder)
   invisible(x)
 }
 
@@ -2768,18 +2748,14 @@ rowid = function(..., prefix=NULL) {
 
 rowidv = function(x, cols=seq_along(x), prefix=NULL) {
   if (!is.null(prefix) && (!is.character(prefix) || length(prefix) != 1L))
-    stop("prefix must be NULL or a character vector of length=1.")
+    stop("'prefix' must be NULL or a character vector of length 1.")
   if (is.atomic(x)) {
     if (!missing(cols) && !is.null(cols))
       stop("x is a single vector, non-NULL 'cols' doesn't make sense.")
     cols = 1L
     x = as_list(x)
-  } else {
-    if (!length(cols))
-      stop("x is a list, 'cols' can not be on 0-length.")
-    if (is.character(cols))
-      cols = chmatch(cols, names(x))
-    cols = as.integer(cols)
+  } else if (!length(cols)) {
+    stop("x is a list, 'cols' cannot be 0-length.")
   }
   xorder = forderv(x, by=cols, sort=FALSE, retGrp=TRUE) # speedup on char with sort=FALSE
   xstart = attr(xorder, 'starts', exact=TRUE)
@@ -2797,19 +2773,16 @@ rleid = function(..., prefix=NULL) {
 
 rleidv = function(x, cols=seq_along(x), prefix=NULL) {
   if (!is.null(prefix) && (!is.character(prefix) || length(prefix) != 1L))
-    stop("prefix must be NULL or a character vector of length=1.")
+    stop("'prefix' must be NULL or a character vector of length 1.")
   if (is.atomic(x)) {
     if (!missing(cols) && !is.null(cols))
       stop("x is a single vector, non-NULL 'cols' doesn't make sense.")
     cols = 1L
     x = as_list(x)
-  } else {
-    if (!length(cols))
-      stop("x is a list, 'cols' can not be 0-length.")
-    if (is.character(cols))
-      cols = chmatch(cols, names(x))
-    cols = as.integer(cols)
+  } else if (!length(cols)) {
+    stop("x is a list, 'cols' cannot be 0-length.")
   }
+  cols = colnamesInt(x, cols, check_dups=FALSE)
   ids = .Call(Crleid, x, cols)
   if (!is.null(prefix)) ids = paste0(prefix, ids)
   ids
@@ -2887,7 +2860,7 @@ isReallyReal = function(x) {
       ## redirect to normal DT[x == TRUE]
       stub = call("==", as.symbol(col), TRUE)
     }
-    if (length(stub[[1L]]) != 1) return(NULL) ## Whatever it is, definitely not one of the valid operators
+    if (length(stub[[1L]]) != 1) return(NULL) # nocov Whatever it is, definitely not one of the valid operators
     operator = as.character(stub[[1L]])
     if (!operator %chin% validOps$op) return(NULL) ## operator not supported
     if (!is.name(stub[[2L]])) return(NULL)
@@ -2909,7 +2882,6 @@ isReallyReal = function(x) {
       # the mode() checks also deals with NULL since mode(NULL)=="NULL" and causes this return, as one CRAN package (eplusr 0.9.1) relies on
       return(NULL)
     }
-    if(is.character(x[[col]]) && !operator %chin% c("==", "%in%", "%chin%")) return(NULL) ## base R allows for non-equi operators on character columns, but these can't be optimized.
     if (!operator %chin% c("%in%", "%chin%")) {
       # additional requirements for notjoin and NA values. Behaviour is different for %in%, %chin% compared to other operators
       # RHS is of length=1 or n
@@ -3005,7 +2977,6 @@ isReallyReal = function(x) {
   pat = paste0("(", ops, ")", collapse="|")
   if (is.call(onsub) && onsub[[1L]] == "eval") {
     onsub = eval(onsub[[2L]], parent.frame(2L), parent.frame(2L))
-    if (is.call(onsub) && onsub[[1L]] == "eval") { onsub = onsub[[2L]] }
   }
   if (is.call(onsub) && as.character(onsub[[1L]]) %chin% c("list", ".")) {
     spat = paste0("[ ]+(", pat, ")[ ]+")
