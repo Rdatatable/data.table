@@ -225,13 +225,15 @@ SEXP coerceClass(SEXP x, SEXP out) {
 SEXP coerceClassR(SEXP x, SEXP out) {
   if (!isVectorAtomic(x))
     error("'x' argument must be atomic type");
+  int protecti = 0;
   if (isVectorAtomic(out)) {
-    // wrap into list logic
+    SEXP _out = out;
+    out = PROTECT(allocVector(VECSXP, 1)); protecti++;
+    SET_VECTOR_ELT(out, 0, _out);
   }
   if (!isNewList(out) || !length(out))
     error("'out' argument must be atomic type or a non-empty list");
 
-  int protecti=0;
   R_len_t n = LENGTH(out);
   SEXP ans = PROTECT(allocVector(VECSXP, n)); protecti++;
   for (int i=0; i<n; i++) {

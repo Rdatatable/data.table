@@ -1,0 +1,115 @@
+require(methods)
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+  if (!identical(suppressWarnings(packageDescription("data.table")), NA)) {
+    remove.packages("data.table")
+    stop("This is dev mode but data.table was installed. Uninstalled it. Please q() this R session and try cc() again. The installed namespace causes problems in dev mode for the S4 tests.\n")
+  }
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+} else {
+  require(data.table)
+  test = data.table:::test
+  colnamesInt = data.table:::colnamesInt
+  coerceClass = data.table:::coerceClass
+  coerceFill = data.table:::coerceFill
+}
+
+sugg = c(
+  "bit64",
+  "nanotime"
+)
+for (s in sugg) {
+  assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(require(s, character.only=TRUE))))
+  if (!loaded) cat("\n**** Suggested package",s,"is not installed. Tests using it will be skipped.\n\n")
+}
+
+# coerceClass verbose
+op = options(datatable.verbose=TRUE)
+test(1.01, coerceClass("0", list(integer(0))), 0L, output="unknown to integer using coerceVector")
+test(1.02, coerceClass(0L, list(integer(0))), 0L, output="integer to integer using memcpy")
+test(1.03, coerceClass(structure(0, class="integer64"), list(integer(0))), 0L, output="long long to integer using loop")
+test(1.04, coerceClass(0, list(integer(0))), 0L, output="double to integer using loop")
+test(1.05, coerceClass("0", list(double(0))), 0, output="unknown to double using coerceVector")
+test(1.06, coerceClass("0", list(structure(double(0), class="integer64"))), structure(0, class="integer64"), output="unknown to long long using coerceVector")
+test(1.07, coerceClass(0L, list(double(0))), 0, output="integer to double using loop")
+test(1.08, coerceClass(0L, list(structure(double(0), class="integer64"))), structure(0, class="integer64"), output="integer to long long using loop")
+test(1.09, coerceClass(0, list(double(0))), 0, output="double to double using memcpy")
+test(1.10, coerceClass(0, list(structure(double(0), class="integer64"))), structure(0, class="integer64"), output="double to long long using loop")
+test(1.11, coerceClass(structure(0, class="integer64"), list(double(0))), 0, output="long long to double using loop")
+test(1.12, coerceClass(structure(0, class="integer64"), list(structure(double(0), class="integer64"))), structure(0, class="integer64"), output="long long to long long using memcpy")
+test(1.13, coerceClass("0", list(complex(0))), 0+0i, output="unknown to unknown using coerceVector")
+options(op)
+# coerceClass atomic out
+test(1.21, coerceClass(0L, integer(0)), 0L)
+test(1.22, coerceClass(0L, double(0)), 0)
+test(1.23, coerceClass(0, integer(0)), 0L)
+test(1.24, coerceClass(0, double(0)), 0)
+# coerceClass list out
+test(1.31, coerceClass(0L, list(integer(0), double(0))), list(0L, 0))
+test(1.32, coerceClass(0L, list(double(0), double(0))), list(0, 0))
+test(1.33, coerceClass(0, list(integer(0), integer(0))), list(0L, 0L))
+test(1.34, coerceClass(0, list(double(0), integer(0))), list(0, 0L))
+# coerceClass vector x
+test(1.41, coerceClass(1:3, integer(0)), 1:3)
+test(1.42, coerceClass(1:3, double(0)), c(1,2,3))
+test(1.43, coerceClass(c(1,2,3), integer(0)), 1:3)
+test(1.44, coerceClass(c(1,2,3), double(0)), c(1,2,3))
+
+# int32 range
+
+# int64 range
+
+#matrix
+#array
+#nanotime
+#int64-nanotime
+#nanotime-int64
+#factor
+
+# colnamesInt helper
+dt = data.table(a=1, b=2, d=3)
+test(4.01, colnamesInt(dt, "a"), 1L)
+test(4.02, colnamesInt(dt, 1L), 1L)
+test(4.03, colnamesInt(dt, 1), 1L)
+test(4.04, colnamesInt(dt, c("a","d")), c(1L, 3L))
+test(4.05, colnamesInt(dt, c(1L, 3L)), c(1L, 3L))
+test(4.06, colnamesInt(dt, c(1, 3)), c(1L, 3L))
+test(4.07, colnamesInt(dt, c("a", "e")), error="specify non existing column*.*e")
+test(4.08, colnamesInt(dt, c(1L, 4L)), error="specify non existing column*.*4")
+test(4.09, colnamesInt(dt, c(1, 4)), error="specify non existing column*.*4")
+test(4.10, colnamesInt(dt, c("a", NA)), error="specify non existing column*.*NA")
+test(4.11, colnamesInt(dt, c(1L, NA)), error="specify non existing column")
+test(4.12, colnamesInt(dt, c(1, NA)), error="specify non existing column")
+test(4.13, colnamesInt(dt, c("a","d","a"), check_dups=TRUE), error="specify duplicated column")
+test(4.14, colnamesInt(dt, c(1L, 3L, 1L), check_dups=TRUE), error="specify duplicated column")
+test(4.15, colnamesInt(dt, c(1, 3, 1), check_dups=TRUE), error="specify duplicated column")
+test(4.16, colnamesInt(dt, list("a")), error="must be character or numeric")
+test(4.17, colnamesInt(dt, NA), error="must be character or numeric")
+test(4.18, colnamesInt(dt, character()), integer())
+test(4.19, colnamesInt(dt, numeric()), integer())
+test(4.20, colnamesInt(dt, integer()), integer())
+test(4.21, colnamesInt(dt, NULL), seq_along(dt))
+test(4.22, colnamesInt("asd", 1), error="must be data.table compatible")
+test(4.23, colnamesInt(dt, 1, check_dups="a"), error="check_dups")
+names(dt) <- NULL
+test(4.24, colnamesInt(dt, "a"), error="has no names")
+
+# coerceFill
+if (test_bit64) {
+  #test(6.01, coerceFill(1:2), error="fill argument must be length 1") # since coerceClass in utils.c it handle vector input
+  #test(6.02, coerceFill("a"), error="fill argument must be numeric") # since coerceClass in utils.c unsupported input is redirected to R's coerceVector
+  test(6.11, identical(coerceFill(NA), list(NA_integer_, NA_real_, as.integer64(NA))))
+  test(6.21, identical(coerceFill(3L), list(3L, 3, as.integer64(3))))
+  test(6.22, identical(coerceFill(0L), list(0L, 0, as.integer64(0))))
+  test(6.23, identical(coerceFill(NA_integer_), list(NA_integer_, NA_real_, as.integer64(NA))))
+  test(6.31, identical(coerceFill(as.integer64(3)), list(3L, 3, as.integer64(3))))
+  test(6.32, identical(coerceFill(as.integer64(3000000003)), list(NA_integer_, 3000000003, as.integer64("3000000003"))))
+  test(6.33, identical(coerceFill(as.integer64(0)), list(0L, 0, as.integer64(0))))
+  test(6.34, identical(coerceFill(as.integer64(NA)), list(NA_integer_, NA_real_, as.integer64(NA))))
+  test(6.41, identical(coerceFill(3), list(3L, 3, as.integer64(3))))
+  test(6.42, identical(coerceFill(0), list(0L, 0, as.integer64(0))))
+  test(6.43, identical(coerceFill(NA_real_), list(NA_integer_, NA_real_, as.integer64(NA))))
+  test(6.44, identical(coerceFill(NaN), list(NA_integer_, NaN, as.integer64(NA))))
+  test(6.45, identical(coerceFill(Inf), list(NA_integer_, Inf, as.integer64(NA))))
+  test(6.46, identical(coerceFill(-Inf), list(NA_integer_, -Inf, as.integer64(NA))))
+}

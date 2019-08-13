@@ -10,8 +10,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   require(data.table)
   test = data.table:::test
   INT = data.table:::INT
-  colnamesInt = data.table:::colnamesInt
-  coerceFill = data.table:::coerceFill
 }
 
 sugg = c(
@@ -125,56 +123,8 @@ test(3.05, setnafill(list(letters[1:5]), fill=0), error="must be numeric type, o
 test(3.06, nafill(x, fill=1:2), error="fill must be a vector of length 1")
 test(3.07, nafill(x, fill="asd"), error="fill argument must be numeric")
 
-# colnamesInt helper
-dt = data.table(a=1, b=2, d=3)
-test(4.01, colnamesInt(dt, "a"), 1L)
-test(4.02, colnamesInt(dt, 1L), 1L)
-test(4.03, colnamesInt(dt, 1), 1L)
-test(4.04, colnamesInt(dt, c("a","d")), c(1L, 3L))
-test(4.05, colnamesInt(dt, c(1L, 3L)), c(1L, 3L))
-test(4.06, colnamesInt(dt, c(1, 3)), c(1L, 3L))
-test(4.07, colnamesInt(dt, c("a", "e")), error="specify non existing column*.*e")
-test(4.08, colnamesInt(dt, c(1L, 4L)), error="specify non existing column*.*4")
-test(4.09, colnamesInt(dt, c(1, 4)), error="specify non existing column*.*4")
-test(4.10, colnamesInt(dt, c("a", NA)), error="specify non existing column*.*NA")
-test(4.11, colnamesInt(dt, c(1L, NA)), error="specify non existing column")
-test(4.12, colnamesInt(dt, c(1, NA)), error="specify non existing column")
-test(4.13, colnamesInt(dt, c("a","d","a"), check_dups=TRUE), error="specify duplicated column")
-test(4.14, colnamesInt(dt, c(1L, 3L, 1L), check_dups=TRUE), error="specify duplicated column")
-test(4.15, colnamesInt(dt, c(1, 3, 1), check_dups=TRUE), error="specify duplicated column")
-test(4.16, colnamesInt(dt, list("a")), error="must be character or numeric")
-test(4.17, colnamesInt(dt, NA), error="must be character or numeric")
-test(4.18, colnamesInt(dt, character()), integer())
-test(4.19, colnamesInt(dt, numeric()), integer())
-test(4.20, colnamesInt(dt, integer()), integer())
-test(4.21, colnamesInt(dt, NULL), seq_along(dt))
-test(4.22, colnamesInt("asd", 1), error="must be data.table compatible")
-test(4.23, colnamesInt(dt, 1, check_dups="a"), error="check_dups")
-names(dt) <- NULL
-test(4.24, colnamesInt(dt, "a"), error="has no names")
-
 # verbose
 dt = data.table(a=c(1L, 2L, NA_integer_), b=c(1, 2, NA_real_))
 test(5.01, nafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
 test(5.02, setnafill(dt, "locf", verbose=TRUE), output="nafillInteger: took.*nafillDouble: took.*nafillR.*took")
 test(5.03, nafill(dt, "locf", verbose=NA), error="verbose must be TRUE or FALSE")
-
-# coerceFill
-if (test_bit64) {
-  #test(6.01, coerceFill(1:2), error="fill argument must be length 1") # since coerceClass in utils.c it handle vector input
-  #test(6.02, coerceFill("a"), error="fill argument must be numeric") # since coerceClass in utils.c unsupported input is redirected to R's coerceVector
-  test(6.11, identical(coerceFill(NA), list(NA_integer_, NA_real_, as.integer64(NA))))
-  test(6.21, identical(coerceFill(3L), list(3L, 3, as.integer64(3))))
-  test(6.22, identical(coerceFill(0L), list(0L, 0, as.integer64(0))))
-  test(6.23, identical(coerceFill(NA_integer_), list(NA_integer_, NA_real_, as.integer64(NA))))
-  test(6.31, identical(coerceFill(as.integer64(3)), list(3L, 3, as.integer64(3))))
-  test(6.32, identical(coerceFill(as.integer64(3000000003)), list(NA_integer_, 3000000003, as.integer64("3000000003"))))
-  test(6.33, identical(coerceFill(as.integer64(0)), list(0L, 0, as.integer64(0))))
-  test(6.34, identical(coerceFill(as.integer64(NA)), list(NA_integer_, NA_real_, as.integer64(NA))))
-  test(6.41, identical(coerceFill(3), list(3L, 3, as.integer64(3))))
-  test(6.42, identical(coerceFill(0), list(0L, 0, as.integer64(0))))
-  test(6.43, identical(coerceFill(NA_real_), list(NA_integer_, NA_real_, as.integer64(NA))))
-  test(6.44, identical(coerceFill(NaN), list(NA_integer_, NaN, as.integer64(NA))))
-  test(6.45, identical(coerceFill(Inf), list(NA_integer_, Inf, as.integer64(NA))))
-  test(6.46, identical(coerceFill(-Inf), list(NA_integer_, -Inf, as.integer64(NA))))
-}
